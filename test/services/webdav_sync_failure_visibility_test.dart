@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/providers/app_sync_timetable_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
+import 'package:university_timetable/services/app_sync_snapshot_service.dart';
+import 'package:university_timetable/services/unified_transfer_service.dart';
 import 'package:university_timetable/services/webdav_sync_coordinator.dart';
 import 'package:university_timetable/services/webdav_sync_service.dart';
 
@@ -17,7 +21,8 @@ import 'package:university_timetable/services/webdav_sync_service.dart';
 class _ThrowingSyncService extends WebdavSyncService {
   @override
   Future<WebdavSyncResult> syncNow({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     bool allowConflictPrompt = true,
   }) => throw StateError('test_sync_now_threw_with_a_secret_url');
 
@@ -26,12 +31,13 @@ class _ThrowingSyncService extends WebdavSyncService {
   // PlatformException），且它发生在 uploadSnapshot 自己的 try 之前。
   @override
   Future<WebdavSyncResult> createManualBackup({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
   }) => throw StateError('test_manual_backup_threw_with_a_secret_url');
 
   @override
   Future<WebdavSyncResult> restoreFromBackup({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required String entryId,
     bool uploadAsCurrent = true,
   }) => throw StateError('test_restore_threw_with_a_secret_url');
@@ -56,7 +62,8 @@ void main() {
     );
     await provider.initialize();
     coordinator = WebdavSyncCoordinator(syncService: _ThrowingSyncService());
-    coordinator.bindProvider(provider);
+    coordinator.bindProvider(AppSyncTimetableViewAccess(provider));
+    coordinator.bindTransferPort(UnifiedTransferProviderAccess(provider));
   });
 
   tearDown(() {

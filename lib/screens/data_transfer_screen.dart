@@ -10,6 +10,7 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/time_scheme_logic.dart';
+import '../providers/unified_transfer_access.dart';
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
 import '../services/transfer_package.dart';
@@ -265,7 +266,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     });
     try {
       final package = _transferService.buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
       );
       await _shareTransferPackage(
         package,
@@ -330,7 +331,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     });
     try {
       final package = _transferService.buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: TransferScope.timeTemplate,
       );
       await _shareTransferPackage(
@@ -358,7 +359,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     });
     try {
       final package = _transferService.buildFullPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
       );
       await _shareTransferPackage(
         package,
@@ -465,7 +466,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     }
     try {
       final package = _transferService.buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         channel: TransferChannel.qr,
         scope: scope,
         selectedCourseIds: selectedCourseIds,
@@ -485,7 +486,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     final l10n = AppLocalizations.of(context)!;
     try {
       final content = _transferService
-          .buildFullPackage(provider: provider, channel: TransferChannel.qr)
+          .buildFullPackage(provider: UnifiedTransferProviderAccess(provider), channel: TransferChannel.qr)
           .encode();
       await _openQrSender(
         Uint8List.fromList(utf8.encode(content)),
@@ -593,7 +594,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       channel: channel,
     );
     final current = _transferService.buildCurrentPackage(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       channel: channel,
     );
     final mergePreview = _transferService.preview(
@@ -616,7 +617,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     }
     final mode = choice;
     final result = await _transferService.applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: mode,
       current: current,
@@ -680,7 +681,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   Future<void> _undoTransfer(TransferUndoToken token) async {
     final provider = context.read<TimetableProvider>();
     final l10n = AppLocalizations.of(context)!;
-    final success = await _transferService.undoToken(provider, token.id);
+    final success = await _transferService.undoToken(UnifiedTransferProviderAccess(provider), token.id);
     if (!mounted) {
       return;
     }

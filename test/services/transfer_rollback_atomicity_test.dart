@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/partner_timetable_binding.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
@@ -59,7 +60,7 @@ void main() {
   ) {
     final base =
         jsonDecode(
-          service.buildCurrentPackage(provider: provider).encode(),
+          service.buildCurrentPackage(provider: UnifiedTransferProviderAccess(provider)).encode(),
         ) as Map<String, dynamic>;
     base['scheduleDateRules'] = [
       for (var index = 0; index < 3; index++)
@@ -108,7 +109,7 @@ void main() {
     final incoming = threeRulePackage(service, provider);
 
     final result = await service.applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -134,7 +135,7 @@ void main() {
 
     // 同一轮事件循环里并发发起：导入与一条普通写请求争同一把写锁。
     final importFuture = service.applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -186,7 +187,7 @@ void main() {
     final incoming = threeRulePackage(service, provider);
 
     final result = await service.applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -222,10 +223,10 @@ void main() {
       ),
     );
     final service = UnifiedTransferService();
-    final incoming = service.buildCurrentPackage(provider: source);
+    final incoming = service.buildCurrentPackage(provider: UnifiedTransferProviderAccess(source));
 
     final result = await service.applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );

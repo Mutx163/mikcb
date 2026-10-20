@@ -1,20 +1,119 @@
 import 'dart:convert';
 
 import 'app_log_service.dart';
+import '../domain/location_time_match_logic.dart';
+import '../domain/schedule_date_rule_logic.dart';
 import '../domain/week_calculator.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
 import '../models/location_time_group.dart';
+import '../models/partner_timetable_binding.dart';
 import '../models/schedule_date_rule.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
+import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
-import '../providers/timetable_provider.dart';
 import 'data_transfer_service.dart';
 import 'transfer_diff_service.dart';
 import 'transfer_package.dart';
 import 'transfer_undo_service.dart';
+
+/// 统一传输（打包 / 预览 / 套用 / 撤销）需要的宿主窄面。
+///
+/// 端口由消费方（本文件）定义：`lib/services/` 在 `providers/` 之下，不得反向
+/// import `providers/timetable_provider.dart`。宿主适配器
+/// `UnifiedTransferProviderAccess` 见 `lib/providers/unified_transfer_access.dart`，
+/// 由调用点注入（屏层、以及 `app_sync_snapshot_service` 这类同层服务的独立参数）。
+///
+/// 成员一律按「本服务真要用到的读数 / 写入口」列，不含注入依赖
+/// （`DataTransferService` / `TransferDiffService` / `TransferUndoService` 走构造器）。
+abstract interface class UnifiedTransferPort {
+  Future<void> initialize();
+
+  Future<T> runMutationExclusive<T>(Future<T> Function() action);
+
+  List<TimetableProfile> get profiles;
+
+  String? get activeProfileId;
+
+  TimetableProfile? get activeProfile;
+
+  List<Course> get courses;
+
+  List<CourseTask> get tasks;
+
+  List<ScheduleItem> get scheduleItems;
+
+  List<Exam> get exams;
+
+  TimetableSettings get settings;
+
+  int get currentWeek;
+
+  List<TimeScheme> get timeSchemes;
+
+  List<ScheduleDateRule> get scheduleDateRules;
+
+  List<LocationTimeGroup> get locationTimeGroups;
+
+  PartnerTimetableBinding? get partnerBinding;
+
+  Course? getCourseById(String id);
+
+  CourseTask? getTaskById(String id);
+
+  ScheduleItem? getScheduleItemById(String id);
+
+  Future<String?> importAppDataBackup(String content);
+
+  Future<String?> importFullAppDataBackup(String content);
+
+  Future<int> importParsedCourses(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+    required String source,
+  });
+
+  Future<TimeScheme> createTimeScheme({
+    required String name,
+    List<SectionTime>? sections,
+  });
+
+  Future<String?> updateTimeScheme({
+    required String schemeId,
+    required String name,
+    required List<SectionTime> sections,
+  });
+
+  Future<void> updateSettings(TimetableSettings settings);
+
+  Future<void> setCurrentWeek(int week, {bool notify = true});
+
+  Future<void> addTask(CourseTask task);
+
+  Future<void> updateTask(CourseTask task);
+
+  Future<void> addScheduleItem(ScheduleItem item);
+
+  Future<void> updateScheduleItem(ScheduleItem item);
+
+  Future<void> addExam(Exam exam);
+
+  Future<void> updateExam(Exam exam);
+
+  Future<void> replaceLocationTimeGroups(
+    List<LocationTimeGroup> groups, {
+    bool resync = true,
+  });
+
+  Future<void> replaceScheduleDateRules(
+    List<ScheduleDateRule> rules, {
+    bool resync = true,
+  });
+
+  Future<void> restorePartnerBinding(PartnerTimetableBinding? binding);
+}
 
 class TransferApplyResult {
   final bool applied;
@@ -56,7 +155,7 @@ class UnifiedTransferService {
   DataTransferService get dataTransferService => _dataTransferService;
 
   TransferPackage buildCurrentPackage({
-    required TimetableProvider provider,
+    required UnifiedTransferPort provider,
     TransferChannel channel = TransferChannel.file,
     TransferScope scope = TransferScope.currentTimetable,
     Iterable<String> selectedCourseIds = const [],
@@ -136,7 +235,7 @@ class UnifiedTransferService {
     List<TimeScheme> timeSchemes,
   })
   _selectScopedMetadata({
-    required TimetableProvider provider,
+    required UnifiedTransferPort provider,
     required TransferScope scope,
     required List<Course> courses,
     Iterable<String> selectedTimeSchemeIds = const [],
@@ -254,7 +353,7 @@ class UnifiedTransferService {
   }
 
   _TransferScopeWindow _buildScopeWindow({
-    required TimetableProvider provider,
+    required UnifiedTransferPort provider,
     required TransferScope scope,
     required List<Course> courses,
   }) {
@@ -292,7 +391,7 @@ class UnifiedTransferService {
   }
 
   TransferPackage buildFullPackage({
-    required TimetableProvider provider,
+    required UnifiedTransferPort provider,
     TransferChannel channel = TransferChannel.file,
   }) {
     return _dataTransferService.buildTransferPackage(
@@ -383,7 +482,7 @@ class UnifiedTransferService {
   }
 
   Future<TransferApplyResult> applyToProvider({
-    required TimetableProvider provider,
+    required UnifiedTransferPort provider,
     required TransferPackage incoming,
     required TransferApplyMode mode,
     TransferPackage? current,
@@ -521,7 +620,7 @@ class UnifiedTransferService {
     );
   }
 
-  Future<bool> undoLast(TimetableProvider provider) async {
+  Future<bool> undoLast(UnifiedTransferPort provider) async {
     final token = undoService.pending;
     if (token == null) {
       return false;
@@ -529,7 +628,7 @@ class UnifiedTransferService {
     return undoToken(provider, token.id);
   }
 
-  Future<bool> undoToken(TimetableProvider provider, String tokenId) async {
+  Future<bool> undoToken(UnifiedTransferPort provider, String tokenId) async {
     final token = undoService.take(tokenId);
     if (token == null) {
       return false;
@@ -561,7 +660,7 @@ class UnifiedTransferService {
   }
 
   Future<void> _overwrite(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     TransferPackage incoming,
   ) async {
     if (incoming.scope.overwriteUsesMergeSemantics) {
@@ -651,7 +750,7 @@ class UnifiedTransferService {
   }
 
   Future<void> _merge(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     TransferPackage incoming,
   ) async {
     // Time-scheme IDs are generated locally and therefore cannot be used as
@@ -722,7 +821,7 @@ class UnifiedTransferService {
   }
 
   Future<Map<String, String>> _mergeTimeSchemes(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     List<TimeScheme> incoming,
   ) async {
     final localSchemesById = {
@@ -842,7 +941,7 @@ class UnifiedTransferService {
   }
 
   Future<void> _mergeRulesAndLocations(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     TransferPackage incoming, {
     Map<String, String> timeSchemeIdMap = const {},
   }) async {
@@ -871,7 +970,7 @@ class UnifiedTransferService {
   }
 
   Future<void> _replaceRulesAndLocations(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     TransferPackage incoming,
   ) async {
     if (incoming.locationTimeGroups.isNotEmpty ||
@@ -896,7 +995,7 @@ class UnifiedTransferService {
   }
 
   Future<void> _restore(
-    TimetableProvider provider,
+    UnifiedTransferPort provider,
     TransferUndoToken token,
   ) async {
     final backup = _dataTransferService.parseFullBackupJson(token.backupJson);

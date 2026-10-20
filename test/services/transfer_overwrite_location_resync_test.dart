@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/location_time_group.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
@@ -73,11 +74,9 @@ void main() {
     addTearDown(sender.dispose);
 
     // scope 默认即 currentTimetable（整表当前课表），这里不再显式重复。
-    final incoming = UnifiedTransferService().buildCurrentPackage(
-      provider: sender,
+    final incoming = UnifiedTransferService().buildCurrentPackage(provider: UnifiedTransferProviderAccess(sender),
     );
-    final result = await UnifiedTransferService().applyToProvider(
-      provider: receiver,
+    final result = await UnifiedTransferService().applyToProvider(provider: UnifiedTransferProviderAccess(receiver),
       incoming: incoming,
       mode: TransferApplyMode.overwrite,
     );

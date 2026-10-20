@@ -12,7 +12,6 @@ import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../models/warehouse_macro_models.dart';
-import '../providers/timetable_provider.dart';
 import 'app_log_service.dart';
 import 'data_transfer_service.dart';
 import 'holiday_service.dart';
@@ -22,6 +21,60 @@ import 'transfer_package.dart';
 import 'unified_transfer_service.dart';
 import 'warehouse_import_preferences_service.dart';
 import 'warehouse_macro_service.dart';
+
+/// 云同步快照管线需要的宿主窄面（端口由消费方定义，12 个成员）。
+///
+/// 本文件在 services 层，不能反向 import `providers/timetable_provider.dart`。
+/// 宿主适配器 `AppSyncTimetableViewAccess` 见
+/// `lib/providers/app_sync_timetable_access.dart`，由组合根
+/// （`main.dart` 的 `bindProvider`）与测试构造注入。
+///
+/// **刻意不 extends UnifiedTransferPort**：本服务自己只用 12 个成员，
+/// 而统一传输要 34 个。让本端口白继承那 24 个用不到的成员，正是
+/// honest-scope 笔记点名的「端口虚胖」病。所以转手给
+/// [UnifiedTransferService] 时走**独立参数** `transferPort`（见
+/// [applySnapshotWithMode]），由上游在组合根一并注入。
+///
+/// 成员语义按「动作 / 读取」两类分，端口层只做一行转发，不得替换语义：
+/// - [reloadFromStorageAfterExternalApply] 是**动作**：外部快照落地后强制重载
+///   profiles / 绑定 / 教师地点等内存镜像（`initialize()` 是进程幂等的，会跳过
+///   这些），绝不能用「读当前快照」代替；
+/// - [scheduleDateRuleLastAppliedSignature] 是**读写对**：采集时读、应用时写回，
+///   两边必须落到同一份状态，否则季节性日期规则会重复批量应用。
+abstract interface class AppSyncTimetablePort {
+  Future<void> initialize();
+
+  Future<T> runMutationExclusive<T>(Future<T> Function() action);
+
+  List<TimetableProfile> get profiles;
+
+  String? get activeProfileId;
+
+  List<TimeScheme> get timeSchemes;
+
+  List<LocationTimeGroup> get locationTimeGroups;
+
+  List<ScheduleDateRule> get scheduleDateRules;
+
+  String? get scheduleDateRuleLastAppliedSignature;
+
+  set scheduleDateRuleLastAppliedSignature(String? value);
+
+  Future<String?> importFullAppDataBackup(String content);
+
+  Future<void> replaceLocationTimeGroups(
+    List<LocationTimeGroup> groups, {
+    bool resync = true,
+  });
+
+  Future<void> replaceScheduleDateRules(
+    List<ScheduleDateRule> rules, {
+    bool resync = true,
+  });
+
+  /// 外部快照应用后的**强制重载动作**（见文件头注释，不可退化成读快照）。
+  Future<void> reloadFromStorageAfterExternalApply();
+}
 
 class AppSyncSnapshot {
   final List<TimetableProfile> profiles;
@@ -263,7 +316,7 @@ class AppSyncSnapshotService {
   void Function()? _webdavBaselineReset;
 
   Future<AppSyncSnapshot> collectSnapshot({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required String deviceId,
     DateTime? exportedAt,
   }) async {
@@ -330,7 +383,7 @@ class AppSyncSnapshotService {
   }
 
   Future<String> buildSnapshotJson({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required String deviceId,
     DateTime? exportedAt,
   }) async {
@@ -690,7 +743,7 @@ class AppSyncSnapshotService {
   }
 
   TransferDiff previewSnapshot({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required AppSyncSnapshot snapshot,
     TransferApplyMode mode = TransferApplyMode.overwrite,
   }) {
@@ -712,7 +765,8 @@ class AppSyncSnapshotService {
   }
 
   Future<String?> applySnapshot({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required AppSyncSnapshot snapshot,
     TransferPackage? transferPackage,
   }) {
@@ -827,8 +881,13 @@ class AppSyncSnapshotService {
   /// Applies a cloud snapshot through the shared transfer service when the
   /// caller explicitly selected merge. The rollback snapshot still includes
   /// cloud-only data so undo remains lossless.
+  ///
+  /// [transferPort] 是统一传输服务的宿主面（34 成员），与快照自己的
+  /// [AppSyncTimetablePort]（12 成员）**分开注入**：两者都由组合根从同一个
+  /// provider 装配，本服务不替任何一方白背对方的成员。
   Future<String?> applySnapshotWithMode({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required AppSyncSnapshot snapshot,
     required TransferApplyMode mode,
     TransferPackage? transferPackage,
@@ -836,6 +895,7 @@ class AppSyncSnapshotService {
     if (mode == TransferApplyMode.overwrite) {
       return applySnapshot(
         provider: provider,
+        transferPort: transferPort,
         snapshot: snapshot,
         transferPackage: transferPackage,
       );
@@ -846,7 +906,7 @@ class AppSyncSnapshotService {
           transferPackage ??
           buildMergeTransferPackageFromSnapshot(snapshot: snapshot);
       final current = _unifiedTransferService.buildCurrentPackage(
-        provider: provider,
+        provider: transferPort,
         channel: TransferChannel.cloud,
       );
       final preview = _transferDiffService.compare(
@@ -872,7 +932,7 @@ class AppSyncSnapshotService {
       );
       try {
         final result = await _unifiedTransferService.applyToProvider(
-          provider: provider,
+          provider: transferPort,
           incoming: package,
           mode: mode,
           current: current,
@@ -938,7 +998,7 @@ class AppSyncSnapshotService {
   }
 
   /// Reverts the most recent cloud apply during this process session.
-  Future<bool> undoLastApply({required TimetableProvider provider}) async {
+  Future<bool> undoLastApply({required AppSyncTimetablePort provider}) async {
     final rollbackSnapshot = _lastRollbackSnapshot;
     if (rollbackSnapshot == null) {
       return false;
@@ -978,7 +1038,7 @@ class AppSyncSnapshotService {
   }
 
   Future<String?> _applySnapshotData({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required AppSyncSnapshot snapshot,
   }) async {
     // Seed location groups (and schemes) before profile import so
@@ -1058,7 +1118,7 @@ class AppSyncSnapshotService {
   }
 
   Future<AppSyncSnapshot> _captureRollbackSnapshot(
-    TimetableProvider provider,
+    AppSyncTimetablePort provider,
   ) async {
     final externalData = await collectSnapshot(
       provider: provider,
@@ -1111,12 +1171,17 @@ class AppSyncSnapshotService {
   }
 
   Future<String?> applySnapshotJson({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required String content,
   }) async {
     try {
       final snapshot = parseSnapshotJson(content);
-      return await applySnapshot(provider: provider, snapshot: snapshot);
+      return await applySnapshot(
+        provider: provider,
+        transferPort: transferPort,
+        snapshot: snapshot,
+      );
     } on FormatException catch (error) {
       return error.message;
     } catch (_) {

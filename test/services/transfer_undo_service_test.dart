@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/transfer_diff_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
@@ -145,7 +146,7 @@ void main() {
         createdAt: DateTime(2026, 8, 5),
       );
 
-      final result = await transferService.undoToken(provider, token.id);
+      final result = await transferService.undoToken(UnifiedTransferProviderAccess(provider), token.id);
 
       expect(result, isFalse);
       expect(undoService.pending, same(token));

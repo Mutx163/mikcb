@@ -21,7 +21,9 @@ import 'blackbox_adapters.dart';
 import 'logging/app_log_messages.dart';
 import 'logging/performance_settings_snapshot.dart';
 import 'models/timetable_settings.dart';
+import 'providers/app_sync_timetable_access.dart';
 import 'providers/timetable_provider.dart';
+import 'providers/unified_transfer_access.dart';
 import 'providers/weather_provider.dart';
 import 'providers/widget_launch_timetable_access.dart';
 import 'screens/debug_deep_link_route_registry.dart';
@@ -1023,7 +1025,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       // 老用户快速路径：等待本地课表快照完成后再进入主界面。
       if (hasAcceptedPrivacy && hasSeenGuide) {
-        _cloudSyncCoordinator.bindProvider(provider);
+        _cloudSyncCoordinator.bindProvider(AppSyncTimetableViewAccess(provider));
+      _cloudSyncCoordinator.bindTransferPort(
+        UnifiedTransferProviderAccess(provider),
+      );
         await provider.initialize();
         // KILL 恢复（业务半场：档案 / 周次）在预热与换入**之前**：预热按
         // 恢复后的设置烤视觉资产，首页换入时第一帧即终态。路由盖回仍留在
@@ -1079,7 +1084,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       final hasHandledPackageMigration = startupResults[2];
 
       await Future.wait([providerInitFuture, legacyPackageFuture]);
-      _cloudSyncCoordinator.bindProvider(provider);
+      _cloudSyncCoordinator.bindProvider(AppSyncTimetableViewAccess(provider));
+      _cloudSyncCoordinator.bindTransferPort(
+        UnifiedTransferProviderAccess(provider),
+      );
       // 与老用户快速路径同一保证：首页换入前视觉资产已就绪（无壁纸时
       // prime 立即返回）。
       await HomeStartupVisualPrimer.prime(provider.settings);

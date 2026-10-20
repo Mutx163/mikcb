@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/course_task.dart';
 import 'package:university_timetable/models/exam.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/transfer_package.dart';
 import 'package:university_timetable/services/storage_service.dart';
@@ -85,7 +86,7 @@ void main() {
     );
 
     final pack = UnifiedTransferService().buildCurrentPackage(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       scope: TransferScope.weekTimetable,
     );
 
@@ -134,7 +135,7 @@ void main() {
     );
 
     final pack = UnifiedTransferService().buildCurrentPackage(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       scope: TransferScope.weekTimetable,
     );
 
@@ -167,7 +168,7 @@ void main() {
 
     // scope 默认即 currentTimetable：整表导出必须带上全部考试与任务。
     final pack = UnifiedTransferService().buildCurrentPackage(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
     );
 
     expect(pack.courses.map((item) => item.id), ['c4']);

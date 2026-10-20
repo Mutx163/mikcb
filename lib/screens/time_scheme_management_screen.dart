@@ -11,6 +11,7 @@ import '../domain/time_scheme_logic.dart';
 import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
+import '../providers/unified_transfer_access.dart';
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
 import '../services/qr_transfer/qr_transfer_codec.dart';
@@ -900,7 +901,7 @@ class _TimeSchemeManagementScreenState
     final provider = context.read<TimetableProvider>();
     try {
       final package = UnifiedTransferService().buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: TransferScope.timeTemplate,
         selectedTimeSchemeIds: [scheme.id],
       );
@@ -943,7 +944,7 @@ class _TimeSchemeManagementScreenState
     final provider = context.read<TimetableProvider>();
     try {
       final package = UnifiedTransferService().buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         channel: TransferChannel.qr,
         scope: TransferScope.timeTemplate,
         selectedTimeSchemeIds: [scheme.id],

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../logging/app_debug_log.dart';
-import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
 import 'sync_operation_gate.dart';
+import 'unified_transfer_service.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_service.dart';
 import 'transfer_package.dart';
@@ -28,7 +28,12 @@ class WebdavSyncCoordinator extends ChangeNotifier {
   }
 
   final WebdavSyncService _syncService;
-  TimetableProvider? _provider;
+  AppSyncTimetablePort? _provider;
+
+  /// 统一传输的宿主面。与 [_provider] 分开持有：快照服务自己只要 12 个成员，
+  /// 而转手给 `UnifiedTransferService` 需要另一套 34 个成员的面。两者由组合根
+  /// 从同一个 provider 装配后分别绑定，谁都不替对方背多余成员。
+  UnifiedTransferPort? _transferPort;
   Timer? _uploadDebounce;
   final SyncOperationGate _syncGate = SyncOperationGate();
 
@@ -37,8 +42,13 @@ class WebdavSyncCoordinator extends ChangeNotifier {
 
   Future<SyncConflictChoice?> Function(SyncConflictInfo info)? onConflict;
 
-  void bindProvider(TimetableProvider provider) {
+  void bindProvider(AppSyncTimetablePort provider) {
     _provider = provider;
+  }
+
+  /// 绑定统一传输的宿主面（与 [bindProvider] 成对调用；组合根负责装配）。
+  void bindTransferPort(UnifiedTransferPort transferPort) {
+    _transferPort = transferPort;
   }
 
   WebdavSyncService get syncService => _syncService;
@@ -49,7 +59,8 @@ class WebdavSyncCoordinator extends ChangeNotifier {
 
   Future<void> maybePullRemote({bool fromManualSync = false}) async {
     final provider = _provider;
-    if (provider == null) {
+    final transferPort = _transferPort;
+    if (provider == null || transferPort == null) {
       return;
     }
 
@@ -65,6 +76,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
           await _collapseSyncFailure(
             () => _syncService.downloadAndApply(
               provider: provider,
+              transferPort: transferPort,
               allowConflictPrompt: false,
             ),
           ),
@@ -77,7 +89,8 @@ class WebdavSyncCoordinator extends ChangeNotifier {
 
   Future<WebdavSyncResult> syncNow({bool allowConflictPrompt = true}) async {
     final provider = _provider;
-    if (provider == null) {
+    final transferPort = _transferPort;
+    if (provider == null || transferPort == null) {
       return const WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
         message: 'provider_not_ready',
@@ -90,6 +103,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
         final result = await _collapseSyncFailure(
           () => _syncService.syncNow(
             provider: provider,
+            transferPort: transferPort,
             allowConflictPrompt: allowConflictPrompt,
           ),
         );
@@ -195,7 +209,8 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     bool uploadAsCurrent = true,
   }) async {
     final provider = _provider;
-    if (provider == null) {
+    final transferPort = _transferPort;
+    if (provider == null || transferPort == null) {
       return WebdavTransferApplyResult(
         applied: false,
         error: 'provider_not_ready',
@@ -205,6 +220,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     return _syncGate.runExclusive(
       () => _syncService.applyPreviewedBackupRestore(
         provider: provider,
+        transferPort: transferPort,
         preview: preview,
         mode: mode,
         uploadAsCurrent: uploadAsCurrent,
@@ -217,7 +233,8 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     bool uploadAsCurrent = true,
   }) async {
     final provider = _provider;
-    if (provider == null) {
+    final transferPort = _transferPort;
+    if (provider == null || transferPort == null) {
       return const WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
         message: 'provider_not_ready',
@@ -230,6 +247,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
         final result = await _collapseSyncFailure(
           () => _syncService.restoreFromBackup(
             provider: provider,
+            transferPort: transferPort,
             entryId: entryId,
             uploadAsCurrent: uploadAsCurrent,
           ),

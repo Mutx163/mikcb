@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/providers/app_sync_timetable_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/services/app_sync_snapshot_service.dart';
 import 'package:university_timetable/services/warehouse_import_preferences_service.dart';
 import 'package:university_timetable/services/webdav_client_service.dart';
 import 'package:university_timetable/services/webdav_sync_config.dart';
 import 'package:university_timetable/services/webdav_sync_credentials_store.dart';
+import 'package:university_timetable/services/unified_transfer_service.dart';
 import 'package:university_timetable/services/webdav_sync_service.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
@@ -53,14 +56,15 @@ class _FakeSnapshotService extends AppSyncSnapshotService {
 
   @override
   Future<AppSyncSnapshot> collectSnapshot({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required String deviceId,
     DateTime? exportedAt,
   }) async => local;
 
   @override
   Future<String?> applySnapshotJson({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required String content,
   }) async {
     applyCalls += 1;
@@ -158,7 +162,10 @@ void main() {
       );
 
       final result = await service.downloadAndApply(
-        provider: TimetableProvider(autoInitialize: false),
+        provider: AppSyncTimetableViewAccess(TimetableProvider(autoInitialize: false)),
+        transferPort: UnifiedTransferProviderAccess(
+          TimetableProvider(autoInitialize: false),
+        ),
       );
 
       expect(result.kind, WebdavSyncResultKind.downloaded);
@@ -201,7 +208,10 @@ void main() {
       );
 
       final result = await service.downloadAndApply(
-        provider: TimetableProvider(autoInitialize: false),
+        provider: AppSyncTimetableViewAccess(TimetableProvider(autoInitialize: false)),
+        transferPort: UnifiedTransferProviderAccess(
+          TimetableProvider(autoInitialize: false),
+        ),
       );
 
       expect(result.kind, WebdavSyncResultKind.downloaded);
@@ -242,7 +252,10 @@ void main() {
       );
 
       final result = await service.downloadAndApply(
-        provider: TimetableProvider(autoInitialize: false),
+        provider: AppSyncTimetableViewAccess(TimetableProvider(autoInitialize: false)),
+        transferPort: UnifiedTransferProviderAccess(
+          TimetableProvider(autoInitialize: false),
+        ),
       );
 
       expect(result.kind, WebdavSyncResultKind.failed);

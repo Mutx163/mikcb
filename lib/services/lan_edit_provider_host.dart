@@ -2,6 +2,14 @@ import 'package:uuid/uuid.dart';
 
 import '../domain/course_domain.dart';
 import '../models/course.dart';
+import '../models/course_task.dart';
+import '../models/exam.dart';
+import '../models/location_time_group.dart';
+import '../models/partner_timetable_binding.dart';
+import '../models/schedule_date_rule.dart';
+import '../models/schedule_item.dart';
+import '../models/time_scheme.dart';
+import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/clock_time.dart';
@@ -21,6 +29,20 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
 
   static const String defaultLanCourseColor = '#2196F3';
   static final RegExp _lanCourseColorPattern = RegExp(r'^#?([0-9a-fA-F]{6})$');
+
+  /// 过渡用的**私有内联**统一传输宿主适配器（只为本类的 5 个 transfer 方法）。
+  ///
+  /// 为什么不 import `lib/providers/unified_transfer_access.dart`：本文件在
+  /// services 层，引 providers 层的适配器会新增一条 `services -> providers`
+  /// 违规边，与本轮「摘除反向依赖」正好反向抵消。端口 [UnifiedTransferPort]
+  /// 由 `unified_transfer_service.dart` 自己定义，这里只实现它。
+  ///
+  /// 本类是**过渡件**：`LanEditProviderHost` 自身仍持有真 provider（它的
+  /// 课表读写面还没端口化，那是后续独立的一刀）。等它端口化后，这层内联
+  /// 适配器随之删除、改用 `UnifiedTransferProviderAccess`。
+  late final UnifiedTransferPort _transferPort = _LanEditTransferPortAdapter(
+    _provider,
+  );
 
   /// Restricts LAN-provided course colors to the hex format used by the app.
   ///
@@ -312,7 +334,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
   @override
   String buildProfileBackupJson() {
     return _transferService
-        .buildCurrentPackage(provider: _provider, channel: TransferChannel.lan)
+        .buildCurrentPackage(provider: _transferPort, channel: TransferChannel.lan)
         .encode();
   }
 
@@ -323,7 +345,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     );
     _rejectWholeDeviceWrite(incoming);
     final current = _transferService.buildCurrentPackage(
-      provider: _provider,
+      provider: _transferPort,
       channel: TransferChannel.lan,
     );
     return LanTransferPreview(
@@ -350,7 +372,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     );
     _rejectWholeDeviceWrite(incoming);
     return _transferService.applyToProvider(
-      provider: _provider,
+      provider: _transferPort,
       incoming: incoming,
       mode: mode,
     );
@@ -363,7 +385,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     );
     _rejectWholeDeviceWrite(incoming);
     final result = await _transferService.applyToProvider(
-      provider: _provider,
+      provider: _transferPort,
       incoming: incoming,
       mode: TransferApplyMode.overwrite,
     );
@@ -379,7 +401,7 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
     );
     _rejectWholeDeviceWrite(incoming);
     final result = await _transferService.applyToProvider(
-      provider: _provider,
+      provider: _transferPort,
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -592,4 +614,151 @@ class LanEditProviderHost implements LanEditHost, LanTransferHost {
   List<SectionTime> get sections => _provider.settings.sections;
 
   int get semesterWeekCountValue => _provider.settings.semesterWeekCount;
+}
+
+/// 过渡用的**私有内联** [UnifiedTransferPort] 实现（见 `_transferPort` 注释）。
+///
+/// 成员一律一行转发；`runMutationExclusive` 原样透传以保住「快照 → 应用 →
+/// 回滚同一次持锁」的不变量。等 `LanEditProviderHost` 自己的课表读写面也
+/// 端口化后，本类删除、改由 `lib/providers/unified_transfer_access.dart` 承担。
+class _LanEditTransferPortAdapter implements UnifiedTransferPort {
+  _LanEditTransferPortAdapter(this._provider);
+
+  final TimetableProvider _provider;
+
+  @override
+  Future<void> initialize() => _provider.initialize();
+
+  @override
+  Future<T> runMutationExclusive<T>(Future<T> Function() action) =>
+      _provider.runMutationExclusive(action);
+
+  @override
+  List<TimetableProfile> get profiles => _provider.profiles;
+
+  @override
+  String? get activeProfileId => _provider.activeProfileId;
+
+  @override
+  TimetableProfile? get activeProfile => _provider.activeProfile;
+
+  @override
+  List<Course> get courses => _provider.courses;
+
+  @override
+  List<CourseTask> get tasks => _provider.tasks;
+
+  @override
+  List<ScheduleItem> get scheduleItems => _provider.scheduleItems;
+
+  @override
+  List<Exam> get exams => _provider.exams;
+
+  @override
+  TimetableSettings get settings => _provider.settings;
+
+  @override
+  int get currentWeek => _provider.currentWeek;
+
+  @override
+  List<TimeScheme> get timeSchemes => _provider.timeSchemes;
+
+  @override
+  List<ScheduleDateRule> get scheduleDateRules => _provider.scheduleDateRules;
+
+  @override
+  List<LocationTimeGroup> get locationTimeGroups => _provider.locationTimeGroups;
+
+  @override
+  PartnerTimetableBinding? get partnerBinding => _provider.partnerBinding;
+
+  @override
+  Course? getCourseById(String id) => _provider.getCourseById(id);
+
+  @override
+  CourseTask? getTaskById(String id) => _provider.getTaskById(id);
+
+  @override
+  ScheduleItem? getScheduleItemById(String id) =>
+      _provider.getScheduleItemById(id);
+
+  @override
+  Future<String?> importAppDataBackup(String content) =>
+      _provider.importAppDataBackup(content);
+
+  @override
+  Future<String?> importFullAppDataBackup(String content) =>
+      _provider.importFullAppDataBackup(content);
+
+  @override
+  Future<int> importParsedCourses(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+    required String source,
+  }) => _provider.importParsedCourses(
+    importedCourses,
+    replaceExisting: replaceExisting,
+    source: source,
+  );
+
+  @override
+  Future<TimeScheme> createTimeScheme({
+    required String name,
+    List<SectionTime>? sections,
+  }) => _provider.createTimeScheme(name: name, sections: sections);
+
+  @override
+  Future<String?> updateTimeScheme({
+    required String schemeId,
+    required String name,
+    required List<SectionTime> sections,
+  }) => _provider.updateTimeScheme(
+    schemeId: schemeId,
+    name: name,
+    sections: sections,
+  );
+
+  @override
+  Future<void> updateSettings(TimetableSettings settings) =>
+      _provider.updateSettings(settings);
+
+  @override
+  Future<void> setCurrentWeek(int week, {bool notify = true}) =>
+      _provider.setCurrentWeek(week, notify: notify);
+
+  @override
+  Future<void> addTask(CourseTask task) => _provider.addTask(task);
+
+  @override
+  Future<void> updateTask(CourseTask task) => _provider.updateTask(task);
+
+  @override
+  Future<void> addScheduleItem(ScheduleItem item) =>
+      _provider.addScheduleItem(item);
+
+  @override
+  Future<void> updateScheduleItem(ScheduleItem item) =>
+      _provider.updateScheduleItem(item);
+
+  @override
+  Future<void> addExam(Exam exam) => _provider.addExam(exam);
+
+  @override
+  Future<void> updateExam(Exam exam) => _provider.updateExam(exam);
+
+  @override
+  Future<void> replaceLocationTimeGroups(
+    List<LocationTimeGroup> groups, {
+    bool resync = true,
+  }) => _provider.replaceLocationTimeGroups(groups, resync: resync);
+
+  @override
+  Future<void> replaceScheduleDateRules(
+    List<ScheduleDateRule> rules, {
+    bool resync = true,
+  }) => _provider.replaceScheduleDateRules(rules, resync: resync);
+
+  @override
+  Future<void> restorePartnerBinding(PartnerTimetableBinding? binding) =>
+      _provider.restorePartnerBinding(binding);
 }

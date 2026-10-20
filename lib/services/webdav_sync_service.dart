@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:webdav_plus/webdav_plus.dart';
 
-import '../providers/timetable_provider.dart';
 import 'app_log_service.dart';
 import 'app_sync_snapshot_service.dart';
 import 'cloud_backup_index_service.dart';
@@ -15,6 +14,7 @@ import 'webdav_sync_config.dart';
 import 'webdav_sync_credentials_store.dart';
 import 'transfer_diff_service.dart';
 import 'transfer_package.dart';
+import 'unified_transfer_service.dart';
 
 enum WebdavSyncResultKind {
   idle,
@@ -257,7 +257,7 @@ class WebdavSyncService {
   }
 
   Future<WebdavSyncResult> uploadSnapshot({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     WebdavSyncConfig? configOverride,
     CloudBackupSource backupSource = CloudBackupSource.auto,
     bool writeHistory = true,
@@ -603,7 +603,7 @@ class WebdavSyncService {
   }
 
   Future<WebdavSyncResult> createManualBackup({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
   }) async {
     final result = await uploadSnapshot(
       provider: provider,
@@ -645,7 +645,7 @@ class WebdavSyncService {
   }
 
   Future<WebdavTransferPreview> previewBackupRestore({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
     required String entryId,
     TransferApplyMode mode = TransferApplyMode.overwrite,
   }) async {
@@ -700,7 +700,8 @@ class WebdavSyncService {
   }
 
   Future<WebdavTransferApplyResult> applyPreviewedBackupRestore({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required WebdavTransferPreview preview,
     required TransferApplyMode mode,
     bool uploadAsCurrent = true,
@@ -710,6 +711,7 @@ class WebdavSyncService {
         : preview.overwritePackage;
     final error = await _snapshotService.applySnapshotWithMode(
       provider: provider,
+      transferPort: transferPort,
       snapshot: preview.snapshot,
       mode: mode,
       transferPackage: package,
@@ -748,7 +750,8 @@ class WebdavSyncService {
   }
 
   Future<WebdavSyncResult> restoreFromBackup({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     required String entryId,
     bool uploadAsCurrent = true,
   }) async {
@@ -786,6 +789,7 @@ class WebdavSyncService {
       final content = utf8.decode(bytes);
       final error = await _snapshotService.applySnapshotJson(
         provider: provider,
+        transferPort: transferPort,
         content: content,
       );
       if (error != null) {
@@ -827,7 +831,7 @@ class WebdavSyncService {
 
   /// Reverts the most recent cloud snapshot apply in this process session.
   /// The remote backup is never deleted or overwritten by this operation.
-  Future<bool> undoLastRestore({required TimetableProvider provider}) {
+  Future<bool> undoLastRestore({required AppSyncTimetablePort provider}) {
     return _snapshotService.undoLastApply(provider: provider);
   }
 
@@ -900,7 +904,8 @@ class WebdavSyncService {
   }
 
   Future<WebdavSyncResult> downloadAndApply({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     WebdavSyncConfig? configOverride,
     bool allowConflictPrompt = true,
   }) async {
@@ -1036,6 +1041,7 @@ class WebdavSyncService {
           : metaHash;
       final error = await _snapshotService.applySnapshotJson(
         provider: provider,
+        transferPort: transferPort,
         content: content,
       );
       if (error != null) {
@@ -1068,7 +1074,8 @@ class WebdavSyncService {
   }
 
   Future<WebdavSyncResult> syncNow({
-    required TimetableProvider provider,
+    required AppSyncTimetablePort provider,
+    required UnifiedTransferPort transferPort,
     bool allowConflictPrompt = true,
   }) async {
     final config = await _configStore.load();
@@ -1078,6 +1085,7 @@ class WebdavSyncService {
 
     final pullResult = await downloadAndApply(
       provider: provider,
+      transferPort: transferPort,
       configOverride: config,
       allowConflictPrompt: allowConflictPrompt,
     );

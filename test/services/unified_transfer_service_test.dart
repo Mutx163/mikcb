@@ -6,6 +6,7 @@ import 'package:university_timetable/models/schedule_date_rule.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/providers/unified_transfer_access.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/transfer_package.dart';
@@ -62,13 +63,13 @@ void main() {
       TransferScope.timeTemplate,
     ]) {
       final package = service.buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: scope,
       );
       expect(package.settings, isNull, reason: scope.value);
     }
 
-    final current = service.buildCurrentPackage(provider: provider);
+    final current = service.buildCurrentPackage(provider: UnifiedTransferProviderAccess(provider));
     expect(current.settings?.appLocaleTag, 'ja');
   });
 
@@ -88,7 +89,7 @@ void main() {
 
     final incoming = UnifiedTransferService()
         .buildCurrentPackage(
-          provider: provider,
+          provider: UnifiedTransferProviderAccess(provider),
           // scope 默认即 currentTimetable（属于 carriesSettings），只显式给通道。
           channel: TransferChannel.lan,
         )
@@ -105,7 +106,7 @@ void main() {
     );
 
     final result = await UnifiedTransferService().applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.overwrite,
     );
@@ -131,7 +132,7 @@ void main() {
     );
 
     final result = await UnifiedTransferService().applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -179,7 +180,7 @@ void main() {
     );
 
     final result = await UnifiedTransferService().applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.merge,
     );
@@ -233,7 +234,7 @@ void main() {
       );
 
       final result = await UnifiedTransferService().applyToProvider(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         incoming: incoming,
         mode: TransferApplyMode.merge,
       );
@@ -273,7 +274,7 @@ void main() {
     );
 
     final result = await UnifiedTransferService().applyToProvider(
-      provider: provider,
+      provider: UnifiedTransferProviderAccess(provider),
       incoming: incoming,
       mode: TransferApplyMode.overwrite,
     );
@@ -399,7 +400,7 @@ void main() {
       );
 
       final package = UnifiedTransferService().buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: TransferScope.weekTimetable,
       );
 
@@ -460,7 +461,7 @@ void main() {
       );
 
       final package = UnifiedTransferService().buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: TransferScope.timeTemplate,
         selectedTimeSchemeIds: [morning.id],
       );
@@ -492,7 +493,7 @@ void main() {
       );
 
       final package = UnifiedTransferService().buildCurrentPackage(
-        provider: provider,
+        provider: UnifiedTransferProviderAccess(provider),
         scope: TransferScope.timeTemplate,
       );
 
