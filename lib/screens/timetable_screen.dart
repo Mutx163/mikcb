@@ -22,6 +22,7 @@ import '../models/schedule_item.dart';
 import '../models/timetable_settings.dart';
 import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
+import '../domain/timetable_layout.dart';
 import '../domain/day_course_display_logic.dart';
 import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
@@ -104,7 +105,6 @@ class TimetableScreen extends StatefulWidget {
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  static const int _minWeek = 1;
   static const double _homeTitleHorizontalNudge = 4;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
@@ -473,7 +473,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _visibleWeekListenable = ValueNotifier<int>(initialWeek);
     _weekPageController = PageController(
       initialPage:
-          _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
+          clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
     _lastObservedWeekPage = _weekPageController.initialPage;
     _dayViewExpandController = AnimationController(
@@ -791,9 +791,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         wallpaperTopLuminance: _luminance.top,
         wallpaperWeekdayLuminance: _luminance.weekday,
         wallpaperBodyLuminance: _luminance.body,
-        timeColumnWidth: _resolveTimeColumnWidth(settings),
-        visibleDays: _visibleDayNumbers(settings),
-        cardInset: _resolveCourseCardInset(settings),
+        timeColumnWidth: timeColumnWidth(settings),
+        visibleDays: visibleDayNumbers(settings),
+        cardInset: courseCardInset(settings),
         isSelectedDay: _isSelectedDay,
         hasExamOnDate: provider.hasExamOnDate,
         onShowWeekSelector: _showWeekSelector,
@@ -977,7 +977,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
     // 与分页共用同一个归一口径（domain/day_view_paging.dart）。
     return normalizeDayOfWeekForVisibleDays(
-      _visibleDayNumbers(settings),
+      visibleDayNumbers(settings),
       storedDayOfWeek,
     );
   }
@@ -1001,7 +1001,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final normalized = normalizeDayOfWeekForVisibleDays(
-      _visibleDayNumbers(settings),
+      visibleDayNumbers(settings),
       selected,
     );
     if (normalized != selected) {
@@ -1011,7 +1011,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   void _restoreViewStateFromProvider(TimetableProvider provider) {
     final settings = provider.settings;
-    _visibleWeek = _clampWeek(provider.currentWeek, settings.semesterWeekCount);
+    _visibleWeek = clampWeek(provider.currentWeek, settings.semesterWeekCount);
     _pendingSettledWeek = _visibleWeek;
     _pendingCommittedWeek = null;
     _visibleWeekListenable.value = _visibleWeek;
@@ -1294,7 +1294,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     bool animate = true,
     bool sameSelectionCloses = true,
   }) async {
-    final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
+    final normalizedWeek = clampWeek(week, settings.semesterWeekCount);
     final isSameSelection =
         _isDayView &&
         _selectedWeekForDayView == normalizedWeek &&
@@ -1392,21 +1392,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     // 「添加课程」还继续预填周六（5 列周视图里看不见那门课）。口径搬到
     // domain/day_view_paging.dart：先归一星期再算页号，并与逆运算严格互逆。
     return dayViewGlobalPage(
-      visibleDays: _visibleDayNumbers(settings),
+      visibleDays: visibleDayNumbers(settings),
       week: week,
       dayOfWeek: dayOfWeek,
     );
   }
 
   int _dayViewPageCount(TimetableSettings settings) {
-    return _visibleDayNumbers(settings).length * settings.semesterWeekCount;
+    return visibleDayNumbers(settings).length * settings.semesterWeekCount;
   }
 
   TimetableDayViewPageTarget _dayViewTargetForPage(
     TimetableSettings settings,
     int page,
   ) {
-    final target = dayViewTargetForGlobalPage(_visibleDayNumbers(settings), page);
+    final target = dayViewTargetForGlobalPage(visibleDayNumbers(settings), page);
     // 可见日表恒为 1..5 或 1..7，null 分支只是防呆回落。
     return TimetableDayViewPageTarget(
       week: target?.$1 ?? 1,
@@ -1638,7 +1638,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_selectedWeekForDayView == null || _selectedDayOfWeek == null) {
       return;
     }
-    final normalizedTargetWeek = _clampWeek(
+    final normalizedTargetWeek = clampWeek(
       targetWeek,
       provider.settings.semesterWeekCount,
     );
@@ -1870,7 +1870,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         controller.positions.length != 1) {
       return;
     }
-    _weekdayBarDragScale = _visibleDayNumbers(settings).length.toDouble();
+    _weekdayBarDragScale = visibleDayNumbers(settings).length.toDouble();
     // 星期栏刮擦也是一次手势：整段拖动只保留一次日切换点击震感。
     _daySwipeHapticFired = false;
     _weekdayBarDrag = controller.position.drag(details, () {
@@ -2335,11 +2335,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return getCoursesForDay(allCourses, week, dayOfWeek, settings);
   }
 
-  int _clampWeek(int week, int maxWeek) {
-    if (week < _minWeek) return _minWeek;
-    if (week > maxWeek) return maxWeek;
-    return week;
-  }
 
   DateTime? _dateForWeekDay(
     TimetableSettings settings,
@@ -2401,7 +2396,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// "same weekday last week" or expand semesterWeekCount.
   bool _canNavigateDayViewToToday(TimetableSettings settings) {
     final now = DateTime.now();
-    final visibleDays = _visibleDayNumbers(settings);
+    final visibleDays = visibleDayNumbers(settings);
     if (!visibleDays.contains(now.weekday)) {
       return false;
     }
@@ -2700,7 +2695,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    final targetWeek = _clampWeek(week, provider.settings.semesterWeekCount);
+    final targetWeek = clampWeek(week, provider.settings.semesterWeekCount);
     if (targetWeek == _visibleWeek) {
       return;
     }
@@ -2752,7 +2747,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   void _handleWeekPageChanged(int page, int maxWeek) {
     _emptySlot.clear();
     _lastObservedWeekPage = page;
-    _pendingSettledWeek = _clampWeek(page + 1, maxWeek);
+    _pendingSettledWeek = clampWeek(page + 1, maxWeek);
     _visibleWeekListenable.value = _pendingSettledWeek!;
   }
 
@@ -2778,7 +2773,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    final targetWeek = _clampWeek(week, maxWeek);
+    final targetWeek = clampWeek(week, maxWeek);
     final targetPage = targetWeek - 1;
     final shouldSyncDayView =
         _isDayView &&
@@ -2840,12 +2835,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final maxWeek = provider.settings.semesterWeekCount;
     final page = controllerPageOrNull(_weekPageController);
     if (page != null) {
-      return _clampWeek(page.round() + 1, maxWeek);
+      return clampWeek(page.round() + 1, maxWeek);
     }
     if (_lastObservedWeekPage != null) {
-      return _clampWeek(_lastObservedWeekPage! + 1, maxWeek);
+      return clampWeek(_lastObservedWeekPage! + 1, maxWeek);
     }
-    return _clampWeek(
+    return clampWeek(
       fallbackWeek ?? _pendingSettledWeek ?? _visibleWeek,
       maxWeek,
     );
@@ -3003,22 +2998,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     return showClassReminderSheet(context, course: course, week: week);
   }
 
-  List<int> _visibleDayNumbers(TimetableSettings settings) {
-    return settings.timetableHideWeekends
-        ? const [1, 2, 3, 4, 5]
-        : const [1, 2, 3, 4, 5, 6, 7];
-  }
 
-  double _resolveTimeColumnWidth(TimetableSettings settings) {
-    return switch (settings.timetableTimeColumnWidthMode) {
-      TimetableTimeColumnWidthMode.narrow => 34,
-      TimetableTimeColumnWidthMode.wide => 40,
-    };
-  }
 
-  double _resolveCourseCardInset(TimetableSettings settings) {
-    return settings.timetableCourseCardGap.clamp(0.0, 3.0);
-  }
 
   void _maybeSelectionClick(TimetableSettings settings) {
     if (!settings.enableHaptics) {
