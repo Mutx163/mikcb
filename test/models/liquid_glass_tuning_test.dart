@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course_glass_tuning.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_tuning_style.dart';
 
 void main() {
   group('LiquidGlassPreset 档位语义', () {

@@ -6,7 +6,8 @@ import 'liquid_glass_tuning.dart';
 ///
 /// 与全局液态玻璃（[LiquidGlassTuning]）的关系：
 ///
-/// * **形状与光照同一套数学** —— 取值仍走 `LiquidGlassTuning.toStyle()` 这个唯一入口，
+/// * **形状与光照同一套数学** —— 取值仍走 ui 侧 `LiquidGlassTuningStyleX.toStyle()`
+///   这个唯一入口（2026-10-20 拆 models→ui 边时从模型迁到 ui 侧扩展），
 ///   深浅配方（`darkBoost`）也照吃，所以两个页面看到的玻璃不会因为"另一套参数"而分叉；
 /// * **值各存各的** —— 卡片不跟随用户在全局那 8 根滑杆上调出来的档位，反之亦然。
 ///   用户 2026-09-21 的原话是「这个玻璃跟全局的玻璃还是不同的，所以单独给他一套自定义配置」。
@@ -232,7 +233,7 @@ class CourseGlassTuning {
     );
   }
 
-  /// 合成给 [LiquidGlassTuning.toStyle] 用的等价全局档。
+  /// 合成给 ui 侧 `LiquidGlassTuningStyleX.toStyle` 用的等价全局档。
   ///
   /// 存在的意义就是**把解析交回唯一入口**：形状、深浅配方、区间收口都只有那一处实现，
   /// 卡片不再自己算一遍（历史教训：同一材质两种观感正是被自带的参数通道搞出来的）。

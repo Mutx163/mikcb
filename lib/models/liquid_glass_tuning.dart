@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../ui/hyperos/liquid/liquid_glass_shader.dart';
-
 /// 「液态玻璃」的观感档位 —— **一条 10 格的厚度阶梯**，全局与课程卡片共用
 /// （2026-10-05：卡片那页也摆这条滑杆，两边推荐值引的是同一批常量）。
 ///
@@ -194,8 +192,10 @@ extension LiquidGlassPresetX on LiquidGlassPreset {
 /// 但取值口径已统一（2026-10-05 用户拍板：「卡片完全跟通用一样」）。注意卡片那份
 /// 的模糊只喂它那张预糊位图、逐帧的光照配方对它不生效（见 `CourseGlassTuning`）。
 ///
-/// 这些参数由 `TimetableSettings` 持久化，并在渲染期经 [toStyle] 合成
-/// [LiquidGlassStyle]。**表面自己不得再传折射参数**：全 app 只此一套，历史上
+/// 这些参数由 `TimetableSettings` 持久化，并在渲染期经 ui 侧的
+/// `LiquidGlassTuningStyleX.toStyle`（`lib/ui/hyperos/liquid/liquid_glass_tuning_style.dart`，
+/// 2026-10-20 拆 models→ui 边时从模型迁出）合成 ui 层的 `LiquidGlassStyle`。
+/// **表面自己不得再传折射参数**：全 app 只此一套，历史上
 /// 「同一材质两种观感」正是被自带的参数通道搞出来的。
 @immutable
 class LiquidGlassTuning {
@@ -540,7 +540,8 @@ class LiquidGlassTuning {
 
   /// 该明暗 + 成对开关下，这块玻璃的底色。
   ///
-  /// 与 [toStyle] 走**同一套**选档（[forMode]）与配方（[LiquidGlassDarkRecipe]），
+  /// 与 ui 侧的 `LiquidGlassTuningStyleX.toStyle` 走**同一套**选档（[forMode]）
+  /// 与配方（[LiquidGlassDarkRecipe]），
   /// 所以静态替身与实体玻璃不会漂。只在需要底色、不想构造整个 style 时用它
   /// （静态替身：没有采样源时顶栏玻璃带画的近似底色）。
   ///
@@ -552,13 +553,17 @@ class LiquidGlassTuning {
     bool link = true,
     bool darkBoost = false,
   }) {
-    final recipe = _recipeFor(brightness, darkBoost: darkBoost);
+    final recipe = recipeFor(brightness, darkBoost: darkBoost);
     final base = forMode(brightness: brightness, dark: dark, link: link);
     return recipe.tintFor(base.tintAlpha);
   }
 
   /// 该明暗 + 开关下要套的配方。浅色恒为恒等配方 ⇒ 浅色逐位不变。
-  static LiquidGlassDarkRecipe _recipeFor(
+  ///
+  /// 公开（2026-10-20）是因为 ui 侧的 `LiquidGlassTuningStyleX.toStyle` 也要走
+  /// 同一条选档：选档是纯数据决策所以住模型，面向 ui 的装配住 ui；若两边各抄
+  /// 一份，漂了就是「同一材质两种观感」的翻版。
+  static LiquidGlassDarkRecipe recipeFor(
     Brightness brightness, {
     required bool darkBoost,
   }) => switch (brightness) {
@@ -584,40 +589,6 @@ class LiquidGlassTuning {
       return this;
     }
     return dark ?? this;
-  }
-
-  /// 合成一块液态玻璃表面的渲染参数。
-  ///
-  /// 这是**全 app 唯一的**参数入口：各表面只提供自己的圆角与当前明暗，折射旋钮、
-  /// 底色、光来向一律从这里出，所以不存在「这个表面折射 8、那个表面折射 12」。
-  ///
-  /// 浅/深成对（2026-09-21）：
-  /// * [dark] 是深色档（null = 跟随浅色档 [this]）；
-  /// * [link] = false 时才真的用 [dark]；true 时深色也以 [this] 为形状；
-  /// * [darkBoost] = true 才把 [LiquidGlassDarkRecipe.standard] 套到深色上。
-  ///
-  /// **默认 `darkBoost = false` 是刻意的**：那是今天的行为（白底 + 深色收 15%），
-  /// 所以未迁移的调用点零回归。由设置驱动的调用点显式传产品默认值。
-  LiquidGlassStyle toStyle({
-    required double borderRadius,
-    required Brightness brightness,
-    LiquidGlassTuning? dark,
-    bool link = true,
-    bool darkBoost = false,
-  }) {
-    final base = forMode(brightness: brightness, dark: dark, link: link);
-    final recipe = _recipeFor(brightness, darkBoost: darkBoost);
-    return LiquidGlassStyle(
-      borderRadius: borderRadius,
-      tint: recipe.tintFor(base.tintAlpha),
-      blurSigma: recipe.blurFor(base.blurSigma),
-      refraction: base.refraction,
-      refractionBand: base.refractionBand,
-      refractionEdgePow: base.refractionEdgePow,
-      dispersion: recipe.dispersionFor(base.dispersion),
-      rimStrength: recipe.rimFor(base.rimStrength),
-      rimWidth: base.rimWidth,
-    );
   }
 
   Map<String, dynamic> toJson() => {

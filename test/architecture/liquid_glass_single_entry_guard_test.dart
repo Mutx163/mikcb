@@ -1,10 +1,17 @@
 // 「液态玻璃只有一个参数出口」守卫：`lib/` 下除声明外，`LiquidGlassStyle` 只允许在
-// `lib/models/liquid_glass_tuning.dart` 里被构造。
+// `lib/ui/hyperos/liquid/liquid_glass_tuning_style.dart`（ui 侧映射扩展）里被构造。
+//
+// 构造点搬家史（2026-10-20）：此前 pin 在 `lib/models/liquid_glass_tuning.dart`
+// ——当时 `toStyle()` 住在模型里。拆 models→ui 反向依赖边（risk-register A5）
+// 时，面向 ui 的映射整体迁到 ui 侧同名扩展 `LiquidGlassTuningStyleX.toStyle`，
+// 本钉同步改挪：钉的语义不变（全 app 唯一非声明构造点），改的只是唯一出口的住址。
+// 模型文件里从此不得再出现 `LiquidGlassStyle(`——models→ui 那条边随本刀闭合
+// （`local/dep_graph.py` 口径 models→ui 归零）。
 //
 // 为什么要有这条：历史上出现过「同一个材质两种观感」——一条自带抓拍纹理的折射通道，
 // 只有部分表面走它，于是顶栏一种观感、弹窗另一种（那条通道与它依赖的第三方包已整体删除，
 // 见 `.agents/notes/implemented/architecture/2026-09-18-liquid-glass-surface.md`）。
-// `LiquidGlassTuning.toStyle` 是压住这件事的唯一入口，也是浅/深成对配方
+// ui 侧的 `LiquidGlassTuningStyleX.toStyle` 是压住这件事的唯一入口，也是浅/深成对配方
 // （`.agents/notes/proposed/architecture/2026-09-21-liquid-glass-light-dark-pair.md`）
 // 的唯一落点：一旦某个表面自己 `LiquidGlassStyle(...)` 一个出来，成对逻辑就被绕过了，
 // 而且绕过之后不会有任何测试报错 —— 所以用扫描测试钉住。
@@ -17,7 +24,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'guard_source.dart';
 
 /// 允许出现的文件 → 该文件里允许的出现形式。
-const _constructionSite = 'lib/models/liquid_glass_tuning.dart';
+/// 2026-10-20 随映射迁居 ui 侧扩展改钉（原 `lib/models/liquid_glass_tuning.dart`）。
+const _constructionSite = 'lib/ui/hyperos/liquid/liquid_glass_tuning_style.dart';
 const _declarationSite = 'lib/ui/hyperos/liquid/liquid_glass_shader.dart';
 
 /// 扫出的每一处 `LiquidGlassStyle(` 及其所在行。
@@ -63,7 +71,7 @@ void main() {
       offenders,
       isEmpty,
       reason:
-          '这些地方自己构造了 LiquidGlassStyle，绕过了 LiquidGlassTuning.toStyle —— '
+          '这些地方自己构造了 LiquidGlassStyle，绕过了 ui 侧 LiquidGlassTuningStyleX.toStyle —— '
           '浅/深成对配方与「全 app 一套观感」都会在那里失效，且不会有别的测试报错。'
           '修法：改成调 toStyle()（它已经是唯一出口），或把需要的旋钮加到 LiquidGlassTuning 上。',
     );

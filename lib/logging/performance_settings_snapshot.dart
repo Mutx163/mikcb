@@ -52,6 +52,7 @@ import '../services/android_animation_scale_service.dart';
 import '../services/app_log_service.dart';
 import '../services/memory_stats_service.dart';
 import '../ui/hyperos/hyperos_miuix_spec.dart';
+import '../ui/hyperos/liquid/liquid_glass_tuning_style.dart';
 import '../utils/home_page_background.dart';
 
 /// 日志分类：复用已注册的 `debug_snapshot`（日志页显示「调试快照」）。

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_shader.dart';
+import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_tuning_style.dart';
 
 void main() {
   group('恒等配方：浅色列必须是恒等', () {

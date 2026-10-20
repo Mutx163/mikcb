@@ -16,6 +16,7 @@ import '../frosted/liquid_glass_degradation.dart';
 import '../hyperos_blurred_header.dart';
 import '../hyperos_glass_backdrop_host.dart';
 import 'liquid_glass_shader.dart';
+import 'liquid_glass_tuning_style.dart';
 
 /// 这块玻璃表面**按哪个作用域取参数**。
 ///

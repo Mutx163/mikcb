@@ -3,6 +3,7 @@ import 'package:flutter/painting.dart' show Color;
 
 import '../models/course_glass_tuning.dart';
 import '../ui/hyperos/frosted/frosted_appearance.dart';
+import '../ui/hyperos/liquid/liquid_glass_tuning_style.dart';
 import 'glass_shader_program.dart';
 
 /// 课程卡片「液态玻璃」档的片元程序。
@@ -118,7 +119,7 @@ double courseGlassFillAlpha(double baseAlpha, double opacityScale) =>
 
 /// 按**卡片自己的**档位 + 当前明暗，解析这张卡片该用的玻璃参数。
 ///
-/// 全流程只经 [LiquidGlassTuning.toStyle] 这一个参数出口：形状、深浅配方、区间收口都在那里，
+/// 全流程只经 ui 侧 `LiquidGlassTuningStyleX.toStyle` 这一个参数出口：形状、深浅配方、区间收口都在那里，
 /// 卡片这边只做两件它特有的映射 ——
 ///
 /// * **底色取课程色**：`toStyle` 产出的 `tint` 是「玻璃底色白 / 深色的中性灰」，卡片不要它，
