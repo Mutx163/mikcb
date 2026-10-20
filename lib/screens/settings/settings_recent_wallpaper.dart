@@ -53,7 +53,7 @@ class RecentWallpaperSection extends StatefulWidget {
 
   final AppLocalizations l10n;
 
-  /// 宿主给的左右内缩（见 `_HomeBackdropFlow.backdropRowHorizontalInset`）：
+  /// 宿主给的左右内缩（见 `HomeBackdropFlow.backdropRowHorizontalInset`）：
   /// 设置页那一处是 16（卡片自己的行内缩），弹窗那一处是 0（面板已经给了 16）。
   final double horizontalInset;
 
