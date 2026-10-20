@@ -6,11 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
-    show
-        Drag,
-        GestureBinding,
-        VelocityTracker,
-        kMinFlingVelocity;
+    show GestureBinding, VelocityTracker, kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +30,7 @@ import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../controllers/day_view_transition_controller.dart';
 import '../controllers/empty_slot_marker_controller.dart';
 import '../controllers/timetable_update_download_controller.dart';
 import '../controllers/home_pull_controller.dart';
@@ -104,7 +101,8 @@ class TimetableScreen extends StatefulWidget {
 }
 
 class _TimetableScreenState extends State<TimetableScreen>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin
+    implements DayViewTransitionHost {
   static const double _homeTitleHorizontalNudge = 4;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
@@ -128,21 +126,12 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 卡片左半是旧壁纸、右半透明（撕裂）。
   late final Listenable _glassDockCardRepaint;
 
-  /// The single day-view pager: pages are globally continuous across weeks
-  /// (globalPage = (week-1)*visibleCount + dayIndex), so crossing a week
-  /// boundary is an ordinary page transition on the same Scrollable — the
-  /// gesture is never dropped and content follows the finger through the
-  /// whole semester.
-  PageController? _dayViewPageController;
-  final Set<PageController> _pendingDayViewControllerDisposals = {};
+  /// 日视图转场状态机（开合 / 翻页 / pager 生命周期 / 星期栏刮擦）在
+  /// `lib/controllers/day_view_transition_controller.dart`；本 State 只通过
+  /// [DayViewTransitionHost] 端口提供字段读写与回调。
+  late final DayViewTransitionController _dayViewTransition;
 
-  /// Recently disposed controllers are retained only as short-lived tombstones.
-  /// A stale replacement frame can still call [_ensureDayViewPageController]
-  /// before the old render tree detaches; two post-frame hops are enough to
-  /// cover that race without growing for the lifetime of the screen.
-  final Set<PageController> _disposedDayViewControllers = {};
   bool _isSyncingWeekPage = false;
-  bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
   int? _lastObservedWeekPage;
   int? _pendingSettledWeek;
@@ -268,27 +257,123 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _daySwipeHapticFired = false;
   late final TimetableDayPagerFlickRescuePhysics _dayPagerPhysics =
       TimetableDayPagerFlickRescuePhysics(
-        takeRescueVelocity: _takeDayPagerRescueVelocity,
+        takeRescueVelocity: _dayViewTransition.takeRescueVelocity,
         parent: const ClampingScrollPhysics(),
       );
 
-  /// Live handle bridging weekday-bar drags into the day pager, so the bar
-  /// scrubs the pager follow-finger instead of snapping a week on release.
-  /// Nulled via the position's onDragCanceled when the pager disposes the
-  /// drag activity mid-gesture (e.g. the cross-week boundary handoff swaps
-  /// controllers).
-  Drag? _weekdayBarDrag;
-
-  /// Bar→pager amplification captured at drag start: the bar spans a whole
-  /// week, so sweeping its width must carry the pager across every visible
-  /// day (7 pages with weekends shown, 5 without).
-  double _weekdayBarDragScale = 1;
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
-  int? _dayViewTransitionSourceWeek;
-  int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
+
+  // ── DayViewTransitionHost：日视图转场控制器的宿主端口 ──────────────────
+  //
+  // 只做字段读写 / 回调转发，不含业务判断；行为口径全部在
+  // `lib/controllers/day_view_transition_controller.dart`。
+
+  @override
+  bool get isMounted => mounted;
+
+  @override
+  bool get isDayView => _isDayView;
+
+  @override
+  int? get selectedWeekForDayView => _selectedWeekForDayView;
+
+  @override
+  set selectedWeekForDayView(int? value) => _selectedWeekForDayView = value;
+
+  @override
+  int? get selectedDayOfWeek => _selectedDayOfWeek;
+
+  @override
+  set selectedDayOfWeek(int? value) => _selectedDayOfWeek = value;
+
+  @override
+  int get visibleWeek => _visibleWeek;
+
+  @override
+  bool get isSyncingWeekPage => _isSyncingWeekPage;
+
+  @override
+  bool get isDaySwipeAnimating => _isDaySwipeAnimating;
+
+  @override
+  set isDaySwipeAnimating(bool value) => _isDaySwipeAnimating = value;
+
+  @override
+  bool get daySwipeHapticFired => _daySwipeHapticFired;
+
+  @override
+  set daySwipeHapticFired(bool value) => _daySwipeHapticFired = value;
+
+  @override
+  double get dayPagerRescueVelocityX => _dayPagerRescueVelocityX;
+
+  @override
+  set dayPagerRescueVelocityX(double value) => _dayPagerRescueVelocityX = value;
+
+  @override
+  DateTime? get dayPagerRescueArmedAt => _dayPagerRescueArmedAt;
+
+  @override
+  set dayPagerRescueArmedAt(DateTime? value) => _dayPagerRescueArmedAt = value;
+
+  @override
+  ValueNotifier<(int, int)?> get dayHeaderPreview => _dayHeaderPreview;
+
+  @override
+  double get dayViewExpandValue => _dayViewExpandController.value;
+
+  @override
+  set dayViewExpandValue(double value) =>
+      _dayViewExpandController.value = value;
+
+  @override
+  Duration get pageSlideDuration => _weekSlideDuration;
+
+  @override
+  set sharedFreeSegmentsExpanded(bool value) =>
+      _sharedFreeSegmentsExpanded = value;
+
+  @override
+  void selectionClick(TimetableSettings settings) =>
+      _maybeSelectionClick(settings);
+
+  @override
+  void clearEmptySlotMarker() => _emptySlot.clear();
+
+  @override
+  Future<void> forwardDayViewExpand() => _dayViewExpandController.forward();
+
+  @override
+  Future<void> reverseDayViewExpand() => _dayViewExpandController.reverse();
+
+  @override
+  void persistDayView({required int dayOfWeek}) => _persistViewState(
+    context.read<TimetableProvider>(),
+    mode: TimetableHomeViewMode.day,
+    dayOfWeek: dayOfWeek,
+  );
+
+  @override
+  void persistWeekView() => _persistViewState(
+    context.read<TimetableProvider>(),
+    mode: TimetableHomeViewMode.week,
+  );
+
+  @override
+  Future<void> jumpToWeek(
+    TimetableProvider provider,
+    int week, {
+    required bool animatePage,
+  }) => _jumpToWeek(provider, week, animatePage: animatePage);
+
+  @override
+  void setStateMutations(VoidCallback mutate) => setState(mutate);
+
+  @override
+  void rebuild() => setState(() {});
 
   /// 底栏点选的内嵌页 id（非 null 时内容区切换为该页，玻璃坞常驻）。
   String? _dockInlinePageId;
@@ -414,7 +499,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       final settings = context.read<TimetableProvider>().settings;
       if (scope.dayView.value) {
         unawaited(
-          _toggleDayView(
+          _dayViewTransition.toggle(
             week: _visibleWeek,
             // 看哪一天与首页「日课表」Tab 同一条口径：宿主的 notifier 可能停在
             // 一个不显示的日子（周末被关掉时的周日），这里按可见日归一，免得
@@ -449,6 +534,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   void initState() {
     super.initState();
+    _dayViewTransition = DayViewTransitionController(host: this);
     _weekdayInkGuard = WeekdayInkContrastGuard();
     _emptySlot = EmptySlotMarkerController()
       ..addListener(_handleEmptySlotChanged);
@@ -566,14 +652,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayAgendaProgressTimer?.cancel();
     _dayAgendaProgressTick.dispose();
     _dayHeaderPreview.dispose();
-    final dayViewController = _dayViewPageController;
-    if (dayViewController != null) {
-      dayViewController.dispose();
-    }
-    for (final controller in _pendingDayViewControllerDisposals) {
-      controller.dispose();
-    }
-    _pendingDayViewControllerDisposals.clear();
+    _dayViewTransition.dispose();
     for (final controller in _previewScrollControllers.values) {
       controller.dispose();
     }
@@ -785,8 +864,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         onPullCancel: _homePull.cancelDrag,
         resetFreeze: _homePull.resetFreeze,
         onPointerMove: _homePull.onPointerMove,
-        dayViewPageController: _dayViewPageController,
-        visibleDayViewWeek: _visibleDayViewWeek,
+        dayViewPageController: _dayViewTransition.pageController,
+        visibleDayViewWeek: _dayViewTransition.visibleWeek,
         shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
         wallpaperTopLuminance: _luminance.top,
         wallpaperWeekdayLuminance: _luminance.weekday,
@@ -799,7 +878,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         onShowWeekSelector: _showWeekSelector,
         onDayTapDown: _captureDayViewAnchor,
         onDayTap: (week, dayOfWeek) {
-          _toggleDayView(
+          _dayViewTransition.toggle(
             week: week,
             dayOfWeek: dayOfWeek,
             settings: settings,
@@ -846,10 +925,10 @@ class _TimetableScreenState extends State<TimetableScreen>
           settings: settings,
           week: week,
         ),
-        onWeekdayBarDragStart: _startWeekdayBarDrag,
-        onWeekdayBarDragUpdate: _updateWeekdayBarDrag,
-        onWeekdayBarDragEnd: _endWeekdayBarDrag,
-        onWeekdayBarDragCancel: _cancelWeekdayBarDrag,
+        onWeekdayBarDragStart: _dayViewTransition.startWeekdayBarDrag,
+        onWeekdayBarDragUpdate: _dayViewTransition.updateWeekdayBarDrag,
+        onWeekdayBarDragEnd: _dayViewTransition.endWeekdayBarDrag,
+        onWeekdayBarDragCancel: _dayViewTransition.cancelWeekdayBarDrag,
         visibleWeekListenable: _visibleWeekListenable,
         shouldShowBackToCurrentWeek: _shouldShowFloatingBackToCurrentWeekButton,
         onJumpToCurrentWeek: () => _jumpToCurrentWeek(provider),
@@ -967,13 +1046,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       _selectedDayOfWeek != null &&
       (_isDayView || _dayViewExpandController.isAnimating);
 
-  int? get _visibleDayViewWeek {
-    if (_isDaySwipeAnimating && _dayViewTransitionSourceWeek != null) {
-      return _dayViewTransitionSourceWeek;
-    }
-    return _selectedWeekForDayView;
-  }
-
   int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
     // 与分页共用同一个归一口径（domain/day_view_paging.dart）。
     return normalizeDayOfWeekForVisibleDays(
@@ -1021,18 +1093,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
     _lastSyncedProvider = provider;
     _lastSyncedProfileId = provider.activeProfileId;
-    _dayViewTransitionSourceWeek = null;
-    _dayViewTransitionSourceDayOfWeek = null;
-    _isSyncingDayViewPage = false;
+    // 转场侧的一次性状态与旧 pager 控制器交给控制器统一按替换路径复位。
+    _dayViewTransition.resetForRestore();
     _isDaySwipeAnimating = false;
-    // Keep the old controller alive through the replacement frame. AnimatedBuilder
-    // detaches from the old PageController during that rebuild; disposing at
-    // the first post-frame callback is still early enough to race didUpdateWidget.
-    final oldController = _dayViewPageController;
-    _dayViewPageController = null;
-    if (oldController != null) {
-      _disposeDayViewControllerAfterReplacement(oldController);
-    }
     // 日 / 周一律照持久化的浏览状态恢复 —— 缩尺预览也走这一条：宿主（外观
     // 编辑页）顶部的日 / 周分段就是照这份状态初始化的，两边天生一致，进页
     // 那一帧不会出现「预览先按日视图搭起来、再被同步指令关掉」的闪跳。
@@ -1281,659 +1344,48 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
-  /// [sameSelectionCloses]：目标与当前选择相同时，要不要按「再点一次」收起。
-  ///
-  /// 首页那颗按钮与底栏 Tab 传 true（点同一档 = 收起日视图）；**外部（缩尺
-  /// 预览）驱动传 false** —— 那边下发的是「要日视图」这个目标状态，不是一次
-  /// 点按：宿主的分段按钮与预览状态本来就该一致，一致时重复下发不该把日视图
-  /// 关掉（真机表现就是「切过去又自己闪回周视图」）。
-  Future<void> _toggleDayView({
-    required int week,
-    required int dayOfWeek,
-    required TimetableSettings settings,
-    bool animate = true,
-    bool sameSelectionCloses = true,
-  }) async {
-    final normalizedWeek = clampWeek(week, settings.semesterWeekCount);
-    final isSameSelection =
-        _isDayView &&
-        _selectedWeekForDayView == normalizedWeek &&
-        _selectedDayOfWeek == dayOfWeek;
-    if (isSameSelection) {
-      if (sameSelectionCloses) {
-        await _closeDayView(settings, animate: animate);
-      }
-      return;
-    }
-    if (_isDayView && _selectedWeekForDayView == normalizedWeek) {
-      await _switchDayWithinWeek(settings, normalizedWeek, dayOfWeek);
-      return;
-    }
-    // 走到这说明是从周视图展开（日视图内不会产生空白格标记，手势层
-    // 在展开时是关闭的）：清掉周视图里可能还挂着的两步式添加标记，
-    // 否则收起日视图后它会原样重现，绕过「点空白处取消」的规则。
-    _emptySlot.clear();
-    final shouldAnimateOpen = animate && !_isDayView;
-    if (!_isDayView) {
-      _recreateDayViewPageController(
-        settings,
-        week: normalizedWeek,
-        dayOfWeek: dayOfWeek,
-      );
-    }
-    // Collapse the expand controller *before* the overlay mounts so the first
-    // painted frame is the small/transparent state. Otherwise a leftover value
-    // of 1 (restore / interrupted close / hot reload) makes open look like a
-    // hard cut, while close still has a visible reverse animation. The dock's
-    // flash path (shouldAnimateOpen=false) inverts this on purpose: land on 1
-    // so the first painted frame is the fully expanded day view.
-    if (!_isDayView) {
-      _dayViewExpandController.value = shouldAnimateOpen ? 0 : 1;
-    }
-    _dayHeaderPreview.value = null;
-    setState(() {
-      _selectedWeekForDayView = normalizedWeek;
-      _selectedDayOfWeek = dayOfWeek;
-      _sharedFreeSegmentsExpanded = false;
-    });
-    _persistViewState(
-      context.read<TimetableProvider>(),
-      mode: TimetableHomeViewMode.day,
-      dayOfWeek: dayOfWeek,
-    );
-    _maybeSelectionClick(settings);
-    if (shouldAnimateOpen) {
-      // Start open animation without awaiting completion (close still awaits
-      // reverse). Controller was reset to 0 above so the first frame is small.
-      unawaited(_dayViewExpandController.forward());
-    }
-  }
+  // ── 日视图转场薄接线 ────────────────────────────────────────────────────
+  //
+  // 真正的状态机（开合 / 翻页 / ScrollEnd 提交 / pager 生命周期 / 星期栏
+  // 刮擦）在 `lib/controllers/day_view_transition_controller.dart`。下面这几个
+  // 转发保留原方法名与签名，供同库分片 `timetable_day_view_part.dart` 使用：
+  // part 只作零行为搬迁，不因这次拆分改一行。
 
   Future<void> _closeDayView(
     TimetableSettings settings, {
     bool animate = true,
-  }) async {
-    if (!_isDayView) {
-      return;
-    }
-    _maybeSelectionClick(settings);
-    if (_dayViewExpandController.value > 0) {
-      if (animate) {
-        await _dayViewExpandController.reverse();
-        if (!mounted) {
-          return;
-        }
-      } else {
-        // 底栏闪现直切：跳过收起动画直接归零，与下方清理同帧生效。
-        _dayViewExpandController.value = 0;
-      }
-    }
-    _dayHeaderPreview.value = null;
-    setState(() {
-      _selectedWeekForDayView = null;
-      _selectedDayOfWeek = null;
-      _dayViewTransitionSourceWeek = null;
-      _dayViewTransitionSourceDayOfWeek = null;
-    });
-    _persistViewState(
-      context.read<TimetableProvider>(),
-      mode: TimetableHomeViewMode.week,
-    );
-  }
+  }) => _dayViewTransition.close(settings, animate: animate);
 
-  int _dayViewPageIndexForDay(
-    TimetableSettings settings,
-    int week,
-    int dayOfWeek,
-  ) {
-    // 原来是 `math.max(0, visibleDays.indexOf(dayOfWeek))`：越界星期（开着
-    // 「隐藏周末」而选中日还是 6/7）被静默折成 0，也就是周一那一页，但状态里
-    // 仍写着 6 —— 于是同一帧内内容显示周一、表头拿 6 去比 1..5 一格都不亮、
-    // 「添加课程」还继续预填周六（5 列周视图里看不见那门课）。口径搬到
-    // domain/day_view_paging.dart：先归一星期再算页号，并与逆运算严格互逆。
-    return dayViewGlobalPage(
-      visibleDays: visibleDayNumbers(settings),
-      week: week,
-      dayOfWeek: dayOfWeek,
-    );
-  }
+  PageController _ensureDayViewPageController(TimetableSettings settings) =>
+      _dayViewTransition.ensurePageController(settings);
 
-  int _dayViewPageCount(TimetableSettings settings) {
-    return visibleDayNumbers(settings).length * settings.semesterWeekCount;
-  }
+  void _syncDayViewPageWithSelection(TimetableSettings settings) =>
+      _dayViewTransition.syncPageWithSelection(settings);
+
+  int _dayViewPageCount(TimetableSettings settings) =>
+      _dayViewTransition.pageCount(settings);
 
   TimetableDayViewPageTarget _dayViewTargetForPage(
     TimetableSettings settings,
     int page,
   ) {
-    final target = dayViewTargetForGlobalPage(visibleDayNumbers(settings), page);
-    // 可见日表恒为 1..5 或 1..7，null 分支只是防呆回落。
+    final target = _dayViewTransition.targetForPage(settings, page);
     return TimetableDayViewPageTarget(
-      week: target?.$1 ?? 1,
-      dayOfWeek: target?.$2 ?? 1,
+      week: target.week,
+      dayOfWeek: target.dayOfWeek,
     );
-  }
-
-  PageController _ensureDayViewPageController(TimetableSettings settings) {
-    final existing = _dayViewPageController;
-    // Never hand out a controller that is pending disposal: the pre-blur
-    // fill (and the PageView) would latch onto it, and once the deferred
-    // disposal runs a stale LayoutBuilder rebuild can hit the disposed
-    // controller and throw.
-    //
-    // A client-less controller is NOT stale: several build-pass call sites
-    // (pre-blur scope, weekday bar, day panel) resolve the controller before
-    // the PageView attaches. Replacing a healthy-but-unattached controller
-    // here used to orphan the weekday bar's AnimatedBuilder subscription on
-    // the first instance, freezing the bar at the crossing-start frame while
-    // the pager kept scrolling.
-    if (existing != null &&
-        !_pendingDayViewControllerDisposals.contains(existing) &&
-        !_disposedDayViewControllers.contains(existing)) {
-      return existing;
-    }
-    final fresh = _createDayViewPageController(settings);
-    _dayViewPageController = fresh;
-    if (existing != null) {
-      // Stale controller (created but never attached, or detached after the
-      // day view closed): replace it instead of reusing a dead position.
-      _disposeDayViewControllerAfterReplacement(existing);
-    }
-    return fresh;
-  }
-
-  PageController _createDayViewPageController(
-    TimetableSettings settings, {
-    int? week,
-    int? dayOfWeek,
-  }) {
-    return PageController(
-      initialPage: _dayViewPageIndexForDay(
-        settings,
-        week ?? _selectedWeekForDayView ?? _visibleWeek,
-        dayOfWeek ?? _selectedDayOfWeek ?? 1,
-      ),
-    );
-  }
-
-  /// Recreates the single day pager anchored on the given day (used when the
-  /// day view opens so the first painted frame lands on the requested day).
-  /// The old controller is kept alive for two post-frame hops so the
-  /// replacing tree can detach.
-  void _recreateDayViewPageController(
-    TimetableSettings settings, {
-    int? week,
-    int? dayOfWeek,
-  }) {
-    final old = _dayViewPageController;
-    _dayViewPageController = _createDayViewPageController(
-      settings,
-      week: week,
-      dayOfWeek: dayOfWeek,
-    );
-    if (old != null) {
-      _disposeDayViewControllerAfterReplacement(old);
-    }
-  }
-
-  void _rememberDisposedDayViewController(PageController controller) {
-    if (!_disposedDayViewControllers.add(controller)) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        _disposedDayViewControllers.remove(controller);
-        return;
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _disposedDayViewControllers.remove(controller);
-      });
-    });
-  }
-
-  void _disposeDayViewControllerAfterReplacement(PageController controller) {
-    if (!_pendingDayViewControllerDisposals.add(controller)) {
-      return;
-    }
-
-    // The replacement widget tree builds and detaches over a couple of
-    // frames. Disposal waits until nothing can reach the controller any
-    // more: the field was swapped (no future build will hand it out) and no
-    // live PageView still holds it. The pre-blur fill re-latches its
-    // listener in the same build that swaps the field, so this ordering
-    // guarantees the listener is detached before dispose — otherwise a
-    // stale LayoutBuilder rebuild can hit the disposed controller and throw
-    // (a PageController used after being disposed).
-    void retryDispose() {
-      if (!mounted) {
-        if (_pendingDayViewControllerDisposals.remove(controller)) {
-          controller.dispose();
-        }
-        return;
-      }
-      if (_dayViewPageController == controller || controller.hasClients) {
-        if (controller.hasClients) {
-          // A PageView still holds this controller: force a rebuild so the
-          // next _ensureDayViewPageController swaps in a fresh controller
-          // and the old one detaches, then re-check next frame.
-          setState(() {});
-        }
-        _pendingDayViewControllerDisposals.add(controller);
-        WidgetsBinding.instance.addPostFrameCallback((_) => retryDispose());
-        WidgetsBinding.instance.scheduleFrame();
-        return;
-      }
-      if (_pendingDayViewControllerDisposals.remove(controller)) {
-        _rememberDisposedDayViewController(controller);
-        controller.dispose();
-      }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        if (_pendingDayViewControllerDisposals.remove(controller)) {
-          controller.dispose();
-        }
-        return;
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) => retryDispose());
-      WidgetsBinding.instance.scheduleFrame();
-    });
-    WidgetsBinding.instance.scheduleFrame();
-  }
-
-  int _displayedDayForWeek(int week) {
-    if (_dayViewTransitionSourceWeek == week &&
-        _dayViewTransitionSourceDayOfWeek != null) {
-      return _dayViewTransitionSourceDayOfWeek!;
-    }
-    return _selectedDayOfWeek ?? 1;
-  }
-
-  void _syncDayViewPageWithSelection(TimetableSettings settings) {
-    if (_isSyncingDayViewPage || !_isDayView) {
-      return;
-    }
-    if (_dayViewTransitionSourceWeek != null) {
-      return;
-    }
-    final controller = _dayViewPageController;
-    // positions.length != 1 → subtree-replacement frame: position/page reads
-    // would throw until the outgoing PageView detaches at end-of-frame.
-    if (controller == null ||
-        !controller.hasClients ||
-        controller.positions.length != 1) {
-      return;
-    }
-    // A live drag / fling owns the pager: selection commit is deferred to
-    // ScrollEnd, so a mid-gesture rebuild would read the stale selection here
-    // and jumpToPage would yank the fling back to the old page.
-    if (controller.position.isScrollingNotifier.value) {
-      return;
-    }
-    final week = _selectedWeekForDayView ?? _visibleWeek;
-    final targetPage = _dayViewPageIndexForDay(
-      settings,
-      week,
-      _displayedDayForWeek(week),
-    );
-    final currentPage =
-        controllerPageOrNull(controller)?.round() ?? controller.initialPage;
-    if (currentPage == targetPage) {
-      return;
-    }
-    controller.jumpToPage(targetPage);
-  }
-
-  Future<void> _switchDayWithinWeek(
-    TimetableSettings settings,
-    int week,
-    int dayOfWeek, {
-    bool animate = true,
-  }) async {
-    final controller = _ensureDayViewPageController(settings);
-    _dayHeaderPreview.value = null;
-    setState(() {
-      _selectedWeekForDayView = week;
-      _selectedDayOfWeek = dayOfWeek;
-    });
-    _persistViewState(
-      context.read<TimetableProvider>(),
-      mode: TimetableHomeViewMode.day,
-      dayOfWeek: dayOfWeek,
-    );
-    _maybeSelectionClick(settings);
-    if (!controller.hasClients) {
-      return;
-    }
-    final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
-    final currentPage =
-        controllerPageOrNull(controller)?.round() ?? controller.initialPage;
-    if (currentPage == targetPage) {
-      return;
-    }
-    _isSyncingDayViewPage = true;
-    try {
-      if (animate && controller.positions.length == 1) {
-        await controller.animateToPage(
-          targetPage,
-          duration: _weekSlideDuration,
-          curve: Curves.easeOutCubic,
-        );
-      } else if (controller.positions.length == 1) {
-        controller.jumpToPage(targetPage);
-      }
-    } finally {
-      _isSyncingDayViewPage = false;
-    }
-  }
-
-  Future<void> _animateDayViewToWeek(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    int targetWeek,
-    int targetDayOfWeek, {
-    bool animateWeekPage = true,
-  }) async {
-    if (_selectedWeekForDayView == null || _selectedDayOfWeek == null) {
-      return;
-    }
-    final normalizedTargetWeek = clampWeek(
-      targetWeek,
-      provider.settings.semesterWeekCount,
-    );
-    // 「已经在目标那天」按**画面实际所在**判断（滑动中取页中点预览），不能
-    // 只看已落定的选择：手势 / 惯性还没停时选择仍停在上一天，用户此刻点
-    // 「回今日」会被这条误判成"已经在今天"而整个调用直接返回——读起来就是
-    // 点了没反应，随后惯性照旧把画面带到别的天。
-    final liveTarget = _visibleDayViewTarget();
-    final liveWeek = liveTarget?.$1 ?? _selectedWeekForDayView;
-    final liveDay = liveTarget?.$2 ?? _selectedDayOfWeek;
-    if (normalizedTargetWeek == liveWeek && targetDayOfWeek == liveDay) {
-      return;
-    }
-
-    _isDaySwipeAnimating = true;
-    try {
-      _dayHeaderPreview.value = null;
-      setState(() {
-        _dayViewTransitionSourceWeek = _selectedWeekForDayView;
-        _dayViewTransitionSourceDayOfWeek = _selectedDayOfWeek;
-        _selectedWeekForDayView = normalizedTargetWeek;
-        _selectedDayOfWeek = targetDayOfWeek;
-      });
-      _persistViewState(
-        provider,
-        mode: TimetableHomeViewMode.day,
-        dayOfWeek: targetDayOfWeek,
-      );
-      // Same single pager scrolls to the target day; the week page follows
-      // for state consistency (it is faded out while the day view is open).
-      await _switchDayWithinWeek(
-        settings,
-        normalizedTargetWeek,
-        targetDayOfWeek,
-        animate: animateWeekPage,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _dayViewTransitionSourceWeek = null;
-        _dayViewTransitionSourceDayOfWeek = null;
-      });
-      if (normalizedTargetWeek != _visibleWeek) {
-        await _jumpToWeek(
-          provider,
-          normalizedTargetWeek,
-          animatePage: animateWeekPage,
-        );
-      }
-    } finally {
-      _isDaySwipeAnimating = false;
-      // 日视图滑动区外层的 IgnorePointer 在 build 时读取该标志：上面所有
-      // setState 都发生在标志仍为 true 的期间，若此处不复位后再补一次重建，
-      // 「回到今天」转场结束后 ignoring:true 会永久滞留，日视图左右滑动
-      // 就再也无响应。必须显式重建一帧把指针放行。
-      if (mounted) {
-        setState(() {});
-      }
-    }
   }
 
   Future<void> _handleDayViewPageChanged(
     TimetableProvider provider,
     TimetableSettings settings,
     int page,
-  ) async {
-    if (_isSyncingDayViewPage || _isDaySwipeAnimating) {
-      if (kDebugMode) {
-        debugPrint(
-          '[DayPager] pageChanged($page) ignored: '
-          'syncing=$_isSyncingDayViewPage animating=$_isDaySwipeAnimating',
-        );
-      }
-      return;
-    }
-    final target = _dayViewTargetForPage(settings, page);
-    if (kDebugMode) {
-      debugPrint(
-        '[DayPager] pageChanged($page) -> week=${target.week} '
-        'day=${target.dayOfWeek}',
-      );
-    }
-    if (_selectedWeekForDayView == target.week &&
-        _selectedDayOfWeek == target.dayOfWeek) {
-      // 回滑到已选那天：必须把提前预览撤掉。留着的话预览标记会停在被滑
-      // 过去的那一天，而 ScrollEnd 收到「选择没变」时不会重建，星期栏
-      // 就永久多亮一格（只能靠「回到今天」之类的整屏重建才消失）。
-      // 清空与翻页发生在同一次 setPixels 里：位置通知已经在同一帧把这
-      // 条栏标脏，本帧的 build 就会读到 null，高亮随之回到已选那天。
-      _dayHeaderPreview.value = null;
-      return;
-    }
-    // Midpoint preview: recolour the weekday header the moment the pager
-    // crosses a page midpoint (matching the indicator), via the scoped
-    // notifier — no full-State rebuild while the fling is still running.
-    // Committing the selection here instead (setState + persist + week-page
-    // jump) rebuilt the whole home screen on *every* page crossing — a single
-    // real-device swipe crosses 30+ pages and each rebuild re-samples the
-    // wallpaper blur, which starved the main thread into an ANR. The actual
-    // selection commit stays on ScrollEnd (_settleDayViewPage), which now
-    // re-checks until the pager is truly stationary.
-    _dayHeaderPreview.value = (target.week, target.dayOfWeek);
-    // 单次手势只震一次：快速甩动跨两页 / 弹簧回弹再过中点时，onPageChanged
-    // 会连发多次，不闩锁就会一次滑动触发两次震动。
-    if (!_daySwipeHapticFired) {
-      _daySwipeHapticFired = true;
-      _maybeSelectionClick(settings);
-    }
-  }
+  ) => _dayViewTransition.handlePageChanged(provider, settings, page);
 
-  /// Commits the settled day-pager page once the horizontal scroll has fully
-  /// stopped, mirroring the week pager's ScrollEnd → finalize model so the
-  /// setState + persist never land mid-animation. A cross-week landing is an
-  /// ordinary page here (the pager is globally continuous), so the week page
-  /// follows the committed week for state consistency.
   void _settleDayViewPage(
     TimetableProvider provider,
     TimetableSettings settings,
-  ) {
-    if (_isSyncingDayViewPage || _isDaySwipeAnimating) {
-      if (kDebugMode) {
-        debugPrint(
-          '[DayPager] settle skipped: syncing=$_isSyncingDayViewPage '
-          'animating=$_isDaySwipeAnimating',
-        );
-      }
-      return;
-    }
-    final controller = _dayViewPageController;
-    if (controller == null ||
-        !controller.hasClients ||
-        controller.positions.length != 1) {
-      return;
-    }
-    // A ScrollEnd fires at the end of *every* activity, including the frame
-    // where a new gesture begins (the previous drag's end is dispatched
-    // before this drag's first move). Under fake-async test frames the snap
-    // spring can still be running at that point (page=0.9988, not 1.0), so a
-    // stale end would commit the old page again and the panel lags the real
-    // content by one day. Rather than dropping this commit opportunity
-    // entirely (which would lose the fix for consecutive quick swipes),
-    // re-check on the next frame until the pager is truly stationary; the
-    // commit then lands on the page the content actually shows.
-    if (controller.position.isScrollingNotifier.value) {
-      _scheduleDayViewSettleRetry(provider, settings);
-      return;
-    }
-    final page = controllerPageOrNull(controller)?.round();
-    if (page == null) {
-      return;
-    }
-    final target = _dayViewTargetForPage(settings, page);
-    if (kDebugMode) {
-      debugPrint(
-        '[DayPager] settle: rawPage=${controllerPageOrNull(controller)?.toStringAsFixed(3)} '
-        '-> page=$page week=${target.week} day=${target.dayOfWeek} '
-        'alreadySelected=${_selectedWeekForDayView == target.week && _selectedDayOfWeek == target.dayOfWeek}',
-      );
-    }
-    _dayHeaderPreview.value = null;
-    if (_selectedWeekForDayView == target.week &&
-        _selectedDayOfWeek == target.dayOfWeek) {
-      return;
-    }
-    setState(() {
-      _selectedWeekForDayView = target.week;
-      _selectedDayOfWeek = target.dayOfWeek;
-    });
-    _persistViewState(
-      provider,
-      mode: TimetableHomeViewMode.day,
-      dayOfWeek: target.dayOfWeek,
-    );
-    // 手势收尾：重新武装点击震感，下一次滑动（含纯惯性续滑）可再次触发。
-    _daySwipeHapticFired = false;
-    if (target.week != _visibleWeek && !_isSyncingWeekPage) {
-      unawaited(_jumpToWeek(provider, target.week, animatePage: false));
-    }
-  }
-
-  /// Re-checks the day pager on the next frame after a ScrollEnd arrived while
-  /// the pager was still scrolling (a stale end interleaved with the next
-  /// gesture). Once the pager is truly stationary the selection is committed
-  /// to the page the content actually shows; if a fresh gesture owns the
-  /// pager we wait for its own ScrollEnd instead of polling forever.
-  void _scheduleDayViewSettleRetry(
-    TimetableProvider provider,
-    TimetableSettings settings,
-  ) {
-    if (!mounted || !_isDayView) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_isDayView) {
-        return;
-      }
-      final controller = _dayViewPageController;
-      if (controller == null ||
-          !controller.hasClients ||
-          controller.positions.length != 1) {
-        return;
-      }
-      if (controller.position.isScrollingNotifier.value) {
-        // Still mid-flight (snap spring running, or a new drag already owns
-        // the pager): the next ScrollEnd will retry again.
-        return;
-      }
-      _settleDayViewPage(provider, settings);
-    });
-  }
-
-  /// Weekday-bar drag → day-pager bridge. The bar acts as a visible-day-count
-  /// (7x) scrubber over the day pager: bar deltas are amplified and injected
-  /// straight into the pager's ScrollPosition, so the content follows the
-  /// finger at week-per-bar-width speed while the bar itself moves slowly.
-  void _startWeekdayBarDrag(
-    TimetableSettings settings,
-    DragStartDetails details,
-  ) {
-    _weekdayBarDrag?.cancel();
-    _weekdayBarDrag = null;
-    if (_isDaySwipeAnimating) {
-      return;
-    }
-    final controller = _dayViewPageController;
-    if (controller == null ||
-        !controller.hasClients ||
-        controller.positions.length != 1) {
-      return;
-    }
-    _weekdayBarDragScale = visibleDayNumbers(settings).length.toDouble();
-    // 星期栏刮擦也是一次手势：整段拖动只保留一次日切换点击震感。
-    _daySwipeHapticFired = false;
-    _weekdayBarDrag = controller.position.drag(details, () {
-      _weekdayBarDrag = null;
-    });
-  }
-
-  void _updateWeekdayBarDrag(DragUpdateDetails details) {
-    final drag = _weekdayBarDrag;
-    if (drag == null) {
-      return;
-    }
-    final dx =
-        (details.primaryDelta ?? details.delta.dx) * _weekdayBarDragScale;
-    drag.update(
-      DragUpdateDetails(
-        sourceTimeStamp: details.sourceTimeStamp,
-        delta: Offset(dx, 0),
-        primaryDelta: dx,
-        globalPosition: details.globalPosition,
-        localPosition: details.localPosition,
-      ),
-    );
-  }
-
-  void _endWeekdayBarDrag(DragEndDetails details) {
-    final drag = _weekdayBarDrag;
-    _weekdayBarDrag = null;
-    if (drag == null) {
-      return;
-    }
-    // Release velocity is amplified like the deltas, then the pager's own
-    // snap physics (_dayPagerPhysics) settles it — same pipeline as a direct
-    // content fling, so midpoint preview / ScrollEnd commit stay intact.
-    final vx = details.velocity.pixelsPerSecond.dx * _weekdayBarDragScale;
-    drag.end(
-      DragEndDetails(
-        velocity: Velocity(pixelsPerSecond: Offset(vx, 0)),
-        primaryVelocity: vx,
-      ),
-    );
-  }
-
-  void _cancelWeekdayBarDrag() {
-    final drag = _weekdayBarDrag;
-    _weekdayBarDrag = null;
-    drag?.cancel();
-  }
-
-  /// One-shot read of the armed rescue velocity for [_dayPagerPhysics].
-  /// Freshness-gated so a stale value can never leak into an unrelated
-  /// ballistic (the drag consumes it within the same event dispatch).
-  double _takeDayPagerRescueVelocity() {
-    final armedAt = _dayPagerRescueArmedAt;
-    final vx = _dayPagerRescueVelocityX;
-    _dayPagerRescueVelocityX = 0;
-    _dayPagerRescueArmedAt = null;
-    if (armedAt == null ||
-        DateTime.now().difference(armedAt) > const Duration(milliseconds: 90)) {
-      return 0;
-    }
-    return vx;
-  }
+  ) => _dayViewTransition.settlePage(provider, settings);
 
   /// Schedules wallpaper luminance sampling without sync I/O in build.
   ///
@@ -2083,7 +1535,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required int week,
   }) {
-    final selectedDayOfWeek = _displayedDayForWeek(week);
+    final selectedDayOfWeek = _dayViewTransition.displayedDayForWeek(week);
     final panel = _buildDayViewPanel(
       provider: provider,
       settings: settings,
@@ -2410,7 +1862,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!_canNavigateDayViewToToday(settings) || currentSemesterWeek == null) {
       return;
     }
-    await _animateDayViewToWeek(
+    await _dayViewTransition.animateToWeek(
       provider,
       settings,
       currentSemesterWeek,
@@ -2532,7 +1984,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         dockInlinePageId: _dockInlinePageId,
         setInlinePageId: (id) => setState(() => _dockInlinePageId = id),
         onSelectionClick: _maybeSelectionClick,
-        toggleDayView: _toggleDayView,
+        toggleDayView: _dayViewTransition.toggle,
         closeDayView: _closeDayView,
         resolveStoredDayOfWeek: _resolveStoredDayOfWeek,
         persistWeekView: () => _persistViewState(
@@ -2580,27 +2032,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 经典形态（底栏在页面之外）下按钮距页面底边的边距。
   static const double _backToTodayButtonClassicMargin = 24;
 
-  /// 日视图"此刻正看着的那一天"。
-  ///
-  /// 滑动中用**页中点预览**（[_dayHeaderPreview]，与星期栏高亮同源），静止时
-  /// 用已落定的选择。必须这么取：日视图滑动期间整屏不 setState（防 ANR），
-  /// 只看落定选择的话，按钮要等 ScrollEnd 之后才可能变化。
-  (int, int)? _visibleDayViewTarget() {
-    if (!_isDayView) {
-      return null;
-    }
-    final preview = _dayHeaderPreview.value;
-    if (preview != null) {
-      return preview;
-    }
-    final week = _selectedWeekForDayView;
-    final day = _selectedDayOfWeek;
-    if (week == null || day == null) {
-      return null;
-    }
-    return (week, day);
-  }
-
   /// 日视图底部的「回今日」浮钮该不该出现。
   ///
   /// **与周视图的「回本周」浮钮是两套独立体系**：各有自己的可见性条件、
@@ -2609,7 +2040,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 控制，这颗只跟着"日视图当前看的不是今天"走。两者之间唯一共用的
   /// 事实是底部导航的物理占用（[_glassDockPillOccupancy]）。
   bool _shouldShowFloatingBackToTodayButton(TimetableProvider provider) {
-    final target = _visibleDayViewTarget();
+    final target = _dayViewTransition.visibleDayViewTarget();
     if (target == null) {
       return false;
     }
@@ -2809,10 +2240,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
 
       if (syncDayView && mounted) {
-        setState(() {
-          _dayViewTransitionSourceWeek = null;
-          _dayViewTransitionSourceDayOfWeek = null;
-        });
+        setState(_dayViewTransition.clearTransitionSource);
       }
 
       if (_weekPageController.positions.length != 1) {
