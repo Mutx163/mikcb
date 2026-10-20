@@ -3,6 +3,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
+import '../../ui/hyperos/hyperos_motion.dart';
 
 /// 成就徽章组件（含解锁动效与进度展示；点击弹出详情弹窗）
 class AchievementBadge extends StatefulWidget {
@@ -30,7 +31,7 @@ class _AchievementBadgeState extends State<AchievementBadge>
     _wasUnlocked = widget.achievement.isUnlocked;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: 420.scaledMs,
     );
     _scale = CurvedAnimation(
       parent: _controller,
