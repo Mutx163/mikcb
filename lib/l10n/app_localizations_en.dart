@@ -3261,7 +3261,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reuseExistingCourseHelper =>
-      'Pick an existing course to autofill name, teacher, and other shared info';
+      'Fills in this course\'s existing info';
 
   @override
   String get manualInputLabel => 'Enter Manually';
@@ -6574,8 +6574,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleEntrySingleTitle => 'Class schedule';
 
   @override
-  String get scheduleEntryCardSubtitle =>
-      'Set when this course meets, which weeks it runs, and who teaches it where';
+  String get scheduleEntryCardSubtitle => 'When, which weeks, and where';
 
   @override
   String get scheduleEntryTimeSectionTitle => 'When';
@@ -6604,9 +6603,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addScheduleEntryAction => 'Add schedule entry';
-
-  @override
-  String get deleteScheduleEntryAction => 'Delete entry';
 
   @override
   String get holidaySettingsEntryTitle => 'Holiday Marking';

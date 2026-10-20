@@ -5695,7 +5695,7 @@ abstract class AppLocalizations {
   /// No description provided for @reuseExistingCourseHelper.
   ///
   /// In zh, this message translates to:
-  /// **'选一个已有课程，自动带入课程名、教师和其他共享信息'**
+  /// **'自动带入这门课已有的信息'**
   String get reuseExistingCourseHelper;
 
   /// No description provided for @manualInputLabel.
@@ -11282,7 +11282,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleEntryCardSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'设置这门课在何时、哪些周、由谁在哪里上课'**
+  /// **'何时、哪些周、在哪里'**
   String get scheduleEntryCardSubtitle;
 
   /// No description provided for @scheduleEntryTimeSectionTitle.
@@ -11332,12 +11332,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'添加排课时间'**
   String get addScheduleEntryAction;
-
-  /// No description provided for @deleteScheduleEntryAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'删除排课'**
-  String get deleteScheduleEntryAction;
 
   /// No description provided for @holidaySettingsEntryTitle.
   ///

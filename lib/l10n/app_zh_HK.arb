@@ -1562,7 +1562,7 @@
   "sharedInfoSheetItemShortName": "課程簡稱：用於超級島等精簡展示，開啓優先顯示簡稱後生效，建議 3 字以內",
   "sharedInfoSheetItemSharedSync": "共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄",
   "reuseExistingCourseLabel": "沿用已有課程",
-  "reuseExistingCourseHelper": "選一個已有課程，自動帶入課程名、教師和其他共享資訊",
+  "reuseExistingCourseHelper": "自動帶入這門課已有的資訊",
   "manualInputLabel": "手動填寫",
   "noTemplateCoursesHint": "目前課表裡還沒有有現成課程，先手動錄入一門，後面臨時加課就能直接選了",
   "courseNameLabel": "課程名稱",
@@ -3402,7 +3402,7 @@
     }
   },
   "scheduleEntrySingleTitle": "上課安排",
-  "scheduleEntryCardSubtitle": "設定這門課在何時、哪些週、由誰在哪裡上課",
+  "scheduleEntryCardSubtitle": "何時、哪些週、在哪裡",
   "scheduleEntryTimeSectionTitle": "什麼時候上",
   "scheduleEntryTimeSectionSubtitle": "選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同",
   "scheduleEntryWeeksSectionTitle": "哪些週上",
@@ -3418,7 +3418,6 @@
     }
   },
   "addScheduleEntryAction": "新增排課時段",
-  "deleteScheduleEntryAction": "刪除排課",
   "holidaySettingsEntryTitle": "假日標記",
   "holidaySettingsEntrySubtitle": "在課表上標記公眾假期和調休補班",
   "holidayMakeupWorkday": "補班",

@@ -1563,7 +1563,7 @@
   "sharedInfoSheetItemShortName": "授業略称：スーパーアイランド等での簡略表示に使用。手動入力が必要で、自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。",
   "sharedInfoSheetItemSharedSync": "共有同期：略称、色、性質、概要等は同名授業の他排課へ同期されます。",
   "reuseExistingCourseLabel": "既存授業を流用",
-  "reuseExistingCourseHelper": "既存授業を選択すると、授業名、教師とその他の共有情報が自動入力",
+  "reuseExistingCourseHelper": "既存の情報を自動入力します",
   "manualInputLabel": "手動入力",
   "noTemplateCoursesHint": "現在の時間割に授業がありません，まず1つ手動で登録すると、以降の臨時追加で直接選択可能",
   "courseNameLabel": "授業名",
@@ -3398,7 +3398,7 @@
     }
   },
   "scheduleEntrySingleTitle": "授業スケジュール",
-  "scheduleEntryCardSubtitle": "この授業の曜日・時限・週次・教員・教室を設定します",
+  "scheduleEntryCardSubtitle": "曜日・週・場所を設定",
   "scheduleEntryTimeSectionTitle": "いつ",
   "scheduleEntryTimeSectionSubtitle": "曜日と時限を選びます，連続時限は開始と終了を、単時限は同じ番号にします",
   "scheduleEntryWeeksSectionTitle": "どの週",
@@ -3414,7 +3414,6 @@
     }
   },
   "addScheduleEntryAction": "排課時間を追加",
-  "deleteScheduleEntryAction": "排課を削除",
   "holidaySettingsEntryTitle": "休日マーク",
   "holidaySettingsEntrySubtitle": "時間割に法定休日と振替出勤日をマーク",
   "holidayMakeupWorkday": "振替出勤",

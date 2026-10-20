@@ -3125,7 +3125,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reuseExistingCourseLabel => '既存授業を流用';
 
   @override
-  String get reuseExistingCourseHelper => '既存授業を選択すると、授業名、教師とその他の共有情報が自動入力';
+  String get reuseExistingCourseHelper => '既存の情報を自動入力します';
 
   @override
   String get manualInputLabel => '手動入力';
@@ -6313,7 +6313,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleEntrySingleTitle => '授業スケジュール';
 
   @override
-  String get scheduleEntryCardSubtitle => 'この授業の曜日・時限・週次・教員・教室を設定します';
+  String get scheduleEntryCardSubtitle => '曜日・週・場所を設定';
 
   @override
   String get scheduleEntryTimeSectionTitle => 'いつ';
@@ -6342,9 +6342,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get addScheduleEntryAction => '排課時間を追加';
-
-  @override
-  String get deleteScheduleEntryAction => '排課を削除';
 
   @override
   String get holidaySettingsEntryTitle => '休日マーク';

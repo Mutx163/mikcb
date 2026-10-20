@@ -928,11 +928,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ),
       ),
       _buildEntryTimeSchemeField(provider, index, l10n, compact: true),
-      if (hasMultipleEntries)
-        _buildCompactDeleteEntryRow(
-          l10n: l10n,
-          onTap: () => _removeScheduleEntry(index),
-        ),
+      // 删除入口已上移到本条记录的标题行（右侧「删除」），不再单占一行：
+      // 多条排课时每行一条删除按钮，既省 50dp/条，也让「删哪一条」与
+      // 「这是第几条」在同一处，不用先看标题再往下找按钮。
       _buildScheduleConflictLinks(index, l10n),
     ], spacing: 8);
 
@@ -954,74 +952,83 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final timePreview =
         '$weekdayLabel · ${l10n.sectionRangeLabel(entry.startSection, entry.endSection)}';
 
-    // 每条排课记录的内衬底色：极浅中性洗色（浅色模式 5% 墨 / 深色模式 6% 白），
-    // 与 HyperosBlurredHeader.nestedSurfaceTintColor 无模糊分支同源。
-    // 不再用 muted@35% 深灰填充——那会在白卡/深卡上读成一整块死灰色，
-    // 与液态玻璃等通透材质并置时尤其突兀（用户反馈“整个框框是灰色的”）。
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final entryInsetFill = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.05);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: entryInsetFill,
-        borderRadius: BorderRadius.circular(HyperosTokens.cardRadius),
-        border: Border.all(color: HyperosColors.outline(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: HyperosTokens.iconBadgeSize,
-                height: HyperosTokens.iconBadgeSize,
-                decoration: BoxDecoration(
-                  color: courseColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(
-                    HyperosTokens.iconBadgeRadius,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: typo.sm.copyWith(
-                    color: courseColor,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.scheduleEntryTitle(index + 1),
-                      style: typo.sm.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      timePreview,
-                      style: typo.xs2.copyWith(
-                        color: colors.mutedForeground,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    // 多条排课记录之间**不套灰底**（用户 2026-10-28：「如果有多个的话，
+    // 怎么变成灰色的了，只有一个排课记录的时候还挺好看」）。
+    //
+    // 原先每条记录包一层 5% 黑的内衬容器，多条时整块读作一片死灰、把卡片
+    // 本身的白底吃掉。现在改成「与卡片同色 + 一条细分隔线 + 编号徽标」：
+    // 分隔靠线不靠底色，卡片保持通透；编号（1/2/3）与「排课记录 N」标题
+    // 本就在，区分度不靠底色也够（用户原话：「你也不用改成分不清是哪条
+    // 排课记录那种」）。
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (index > 0) ...[
           const SizedBox(height: 12),
-          ...entryFields,
+          const HyperosInsetDivider(indent: 0),
+          const SizedBox(height: 12),
         ],
-      ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: HyperosTokens.iconBadgeSize,
+              height: HyperosTokens.iconBadgeSize,
+              decoration: BoxDecoration(
+                color: courseColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(
+                  HyperosTokens.iconBadgeRadius,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${index + 1}',
+                style: typo.sm.copyWith(
+                  color: courseColor,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.scheduleEntryTitle(index + 1),
+                    style: typo.sm.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    timePreview,
+                    style: typo.xs2.copyWith(
+                      color: colors.mutedForeground,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_scheduleEntries.length > 1)
+              TextButton(
+                onPressed: () => _removeScheduleEntry(index),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: colors.mutedForeground,
+                ),
+                child: Text(
+                  l10n.deleteAction,
+                  style: typo.xs2.copyWith(color: colors.mutedForeground),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...entryFields,
+      ],
     );
   }
 
@@ -1159,49 +1166,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 Icons.chevron_right_rounded,
                 size: 16,
                 color: theme.colors.mutedForeground,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactDeleteEntryRow({
-    required AppLocalizations l10n,
-    required VoidCallback onTap,
-  }) {
-    final theme = context.theme;
-    final fieldRadius = BorderRadius.circular(HyperosTokens.controlRadius);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: fieldRadius,
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(
-            minHeight: HyperosTokens.controlMinHeight,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: fieldRadius,
-            border: Border.all(color: HyperosColors.outline(context)),
-          ),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              Icon(
-                Icons.delete_outline_rounded,
-                size: 16,
-                color: theme.colors.destructive,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.deleteScheduleEntryAction,
-                style: theme.typography.body.sm.copyWith(
-                  color: theme.colors.destructive,
-                ),
               ),
             ],
           ),

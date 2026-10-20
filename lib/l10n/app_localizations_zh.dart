@@ -3059,7 +3059,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reuseExistingCourseLabel => '沿用已有课程';
 
   @override
-  String get reuseExistingCourseHelper => '选一个已有课程，自动带入课程名、教师和其他共享信息';
+  String get reuseExistingCourseHelper => '自动带入这门课已有的信息';
 
   @override
   String get manualInputLabel => '手动填写';
@@ -6179,7 +6179,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleEntrySingleTitle => '上课安排';
 
   @override
-  String get scheduleEntryCardSubtitle => '设置这门课在何时、哪些周、由谁在哪里上课';
+  String get scheduleEntryCardSubtitle => '何时、哪些周、在哪里';
 
   @override
   String get scheduleEntryTimeSectionTitle => '什么时候上';
@@ -6207,9 +6207,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addScheduleEntryAction => '添加排课时间';
-
-  @override
-  String get deleteScheduleEntryAction => '删除排课';
 
   @override
   String get holidaySettingsEntryTitle => '节假日标记';
@@ -14406,7 +14403,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get reuseExistingCourseLabel => '沿用已有課程';
 
   @override
-  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、教師和其他共享資訊';
+  String get reuseExistingCourseHelper => '自動帶入這門課已有的資訊';
 
   @override
   String get manualInputLabel => '手動填寫';
@@ -17525,7 +17522,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleEntrySingleTitle => '上課安排';
 
   @override
-  String get scheduleEntryCardSubtitle => '設定這門課在何時、哪些週、由誰在哪裡上課';
+  String get scheduleEntryCardSubtitle => '何時、哪些週、在哪裡';
 
   @override
   String get scheduleEntryTimeSectionTitle => '什麼時候上';
@@ -17553,9 +17550,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get addScheduleEntryAction => '新增排課時段';
-
-  @override
-  String get deleteScheduleEntryAction => '刪除排課';
 
   @override
   String get holidaySettingsEntryTitle => '假日標記';
@@ -25792,7 +25786,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get reuseExistingCourseLabel => '沿用已有課程';
 
   @override
-  String get reuseExistingCourseHelper => '選一個已有課程，自動帶入課程名、教師和其他共享資訊';
+  String get reuseExistingCourseHelper => '自動帶入這門課已有的資訊';
 
   @override
   String get manualInputLabel => '手動填寫';
@@ -28911,7 +28905,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleEntrySingleTitle => '上課安排';
 
   @override
-  String get scheduleEntryCardSubtitle => '設定這門課在何時、哪些週、由誰在哪裡上課';
+  String get scheduleEntryCardSubtitle => '何時、哪些週、在哪裡';
 
   @override
   String get scheduleEntryTimeSectionTitle => '什麼時候上';
@@ -28939,9 +28933,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get addScheduleEntryAction => '新增排課時段';
-
-  @override
-  String get deleteScheduleEntryAction => '刪除排課';
 
   @override
   String get holidaySettingsEntryTitle => '假日標記';

@@ -1722,7 +1722,7 @@
   "sharedInfoSheetItemShortName": "课程简称：用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
   "sharedInfoSheetItemSharedSync": "共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录",
   "reuseExistingCourseLabel": "沿用已有课程",
-  "reuseExistingCourseHelper": "选一个已有课程，自动带入课程名、教师和其他共享信息",
+  "reuseExistingCourseHelper": "自动带入这门课已有的信息",
   "manualInputLabel": "手动填写",
   "noTemplateCoursesHint": "当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了",
   "courseNameLabel": "课程名称",
@@ -3699,7 +3699,7 @@
     }
   },
   "scheduleEntrySingleTitle": "上课安排",
-  "scheduleEntryCardSubtitle": "设置这门课在何时、哪些周、由谁在哪里上课",
+  "scheduleEntryCardSubtitle": "何时、哪些周、在哪里",
   "scheduleEntryTimeSectionTitle": "什么时候上",
   "scheduleEntryTimeSectionSubtitle": "选择星期几和第几节课；连堂请填写起止节次，单节课起止相同",
   "scheduleEntryWeeksSectionTitle": "哪些周上",
@@ -3715,7 +3715,6 @@
     }
   },
   "addScheduleEntryAction": "添加排课时间",
-  "deleteScheduleEntryAction": "删除排课",
   "holidaySettingsEntryTitle": "节假日标记",
   "holidaySettingsEntrySubtitle": "在课表上标记法定节假日和调休补班",
   "holidayMakeupWorkday": "补班",

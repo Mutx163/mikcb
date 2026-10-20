@@ -3143,8 +3143,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reuseExistingCourseLabel => '기존 수업 활용';
 
   @override
-  String get reuseExistingCourseHelper =>
-      '기존 수업을 선택하면 수업명, 교사와 기타 공유 정보가 자동 입력됩니다';
+  String get reuseExistingCourseHelper => '기존 정보를 자동으로 채웁니다';
 
   @override
   String get manualInputLabel => '수동 입력';
@@ -6352,8 +6351,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleEntrySingleTitle => '수업 일정';
 
   @override
-  String get scheduleEntryCardSubtitle =>
-      '이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다';
+  String get scheduleEntryCardSubtitle => '요일, 주, 장소 설정';
 
   @override
   String get scheduleEntryTimeSectionTitle => '언제';
@@ -6382,9 +6380,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get addScheduleEntryAction => '배치 시간 추가';
-
-  @override
-  String get deleteScheduleEntryAction => '배치 삭제';
 
   @override
   String get holidaySettingsEntryTitle => '공휴일 표시';

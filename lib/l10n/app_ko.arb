@@ -1563,7 +1563,7 @@
   "sharedInfoSheetItemShortName": "수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장.",
   "sharedInfoSheetItemSharedSync": "공유 동기화: 약칭, 색상, 성격, 개요 등은 동일 수업명의 다른 배치에 동기화됩니다.",
   "reuseExistingCourseLabel": "기존 수업 활용",
-  "reuseExistingCourseHelper": "기존 수업을 선택하면 수업명, 교사와 기타 공유 정보가 자동 입력됩니다",
+  "reuseExistingCourseHelper": "기존 정보를 자동으로 채웁니다",
   "manualInputLabel": "수동 입력",
   "noTemplateCoursesHint": "현재 시간표에 수업이 없습니다. 먼저 1개를 수동으로 등록하면 이후 임시 추가 시 바로 선택할 수 있습니다",
   "courseNameLabel": "수업명",
@@ -3398,7 +3398,7 @@
     }
   },
   "scheduleEntrySingleTitle": "수업 일정",
-  "scheduleEntryCardSubtitle": "이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다",
+  "scheduleEntryCardSubtitle": "요일, 주, 장소 설정",
   "scheduleEntryTimeSectionTitle": "언제",
   "scheduleEntryTimeSectionSubtitle": "요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다",
   "scheduleEntryWeeksSectionTitle": "어떤 주",
@@ -3414,7 +3414,6 @@
     }
   },
   "addScheduleEntryAction": "배치 시간 추가",
-  "deleteScheduleEntryAction": "배치 삭제",
   "holidaySettingsEntryTitle": "공휴일 표시",
   "holidaySettingsEntrySubtitle": "시간표에 법정 공휴일과 대체 근무일을 표시합니다",
   "holidayMakeupWorkday": "대체 근무",
