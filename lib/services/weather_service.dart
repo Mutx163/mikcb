@@ -72,6 +72,12 @@ class WeatherService {
   ///
   /// 名字不足 2 个字符时接口只会返回空结果，这里直接短路省一次请求。
   /// 失败返回空列表。
+  ///
+  /// **产出坐标一律取整到 2 位小数**（见 [coarsenCoordinate]）：选城市的结果会被
+  /// `WeatherPreferences.saveLocation` 直接落盘，而隐私说明承诺「城市坐标仅以约
+  /// 1 公里精度（经纬度小数点后 2 位）保存」（docs/privacy.html:41）。2026-10-20
+  /// 前这条漏了取整——反查/预报早就是同一口径，只有正向搜索把 Open-Meteo 的
+  /// 4~5 位小数原样带进了本机。
   Future<List<WeatherLocation>> searchLocations(String query) async {
     final trimmed = query.trim();
     if (trimmed.length < 2) {
@@ -102,7 +108,21 @@ class WeatherService {
         continue;
       }
       try {
-        locations.add(WeatherLocation.fromJson(Map<String, dynamic>.from(item)));
+        final parsed = WeatherLocation.fromJson(
+          Map<String, dynamic>.from(item),
+        );
+        // 就地构造（不加 copyWith）：模型文件不在本次写域内，且这里只改坐标。
+        locations.add(
+          WeatherLocation(
+            name: parsed.name,
+            admin1: parsed.admin1,
+            country: parsed.country,
+            district: parsed.district,
+            latitude: coarsenCoordinate(parsed.latitude),
+            longitude: coarsenCoordinate(parsed.longitude),
+            timezone: parsed.timezone,
+          ),
+        );
       } catch (_) {
         // 单条畸形结果跳过，不影响其余候选。
         continue;
@@ -115,8 +135,10 @@ class WeatherService {
   ///
   /// 逐小时天气的网格精度本来就到不了百米级，完整经纬度（≈毫米级分辨率）
   /// 属于过度收集：第三方（预报 / 反查）拿到的只是「街区级」位置，本机
-  /// 明文落盘的那份也随之不再含精确定位。取整只在发请求与解析响应两个
-  /// 汇聚点做，上层（provider / 定位服务 / 选城市页）无感知。
+  /// 明文落盘的那份也随之不再含精确定位。取整在解析响应的三个汇聚点做
+  /// （正向搜索 [searchLocations] / 反查 [reverseGeocode] / IP 估算
+  /// [networkGeocode]）以及预报请求出口 [fetchForecast]，上层（provider /
+  /// 定位服务 / 选城市页）无感知。
   /// 副作用：与取整前缓存的预报会因 matchesLocation 判非同城而多刷一次，
   /// 一次自愈，之后恒定。
   static double coarsenCoordinate(double value) {

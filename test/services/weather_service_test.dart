@@ -268,6 +268,32 @@ void main() {
       );
     });
 
+    test('结果坐标取整到 2 位小数（与落盘精度、隐私说明一致）', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode(_geocodingPayload()),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final locations = await service.searchLocations('杭州');
+
+      // 期望值由「选城市的结果会被直接落盘」（WeatherPreferences.saveLocation）
+      // + 隐私说明（docs/privacy.html:41「城市坐标仅以约 1 公里精度（经纬度
+      // 小数点后 2 位）保存」）推出，不是从实现抄的：
+      //   30.29365 → 30.29、120.16142 → 120.16
+      //   30.06517 → 30.07、102.19527 → 102.2
+      // 反查（reverseGeocode）与预报（fetchForecast）两个汇聚点本来就是同一口径。
+      expect(locations.length, 2);
+      expect(locations.first.latitude, 30.29);
+      expect(locations.first.longitude, 120.16);
+      expect(locations.last.latitude, 30.07);
+      expect(locations.last.longitude, 102.2);
+    });
+
     test('请求带 language=zh 与 count', () async {
       Uri? captured;
       final service = WeatherService(
