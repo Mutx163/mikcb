@@ -751,6 +751,7 @@ class HyperosNavTile extends StatelessWidget {
     this.enabled = true,
     this.showChevron = true,
     this.holdHighlightThroughTransition = true,
+    this.leading,
   });
 
   final IconData? icon;
@@ -765,6 +766,12 @@ class HyperosNavTile extends StatelessWidget {
   /// When false, omits the trailing chevron (read-only preference rows).
   final bool showChevron;
   final bool holdHighlightThroughTransition;
+
+  /// 行首自定义元素（如颜色块），先于 [icon] 渲染。
+  ///
+  /// 需要「值本身带视觉样本」的偏好行用它（课程颜色的色块）：[icon] 走的是
+  /// 圆角图标徽章，不适合承载任意色值的样本。
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -797,6 +804,10 @@ class HyperosNavTile extends StatelessWidget {
       minHeight: rowHeight,
       child: Row(
         children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: HyperosTokens.rowContentGap),
+          ],
           if (icon != null) ...[
             HyperosIconBadge(
               icon: icon!,

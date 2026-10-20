@@ -24,6 +24,7 @@ class HyperosTextField extends StatelessWidget {
     this.obscureText = false,
     this.autofocus = false,
     this.fontSize = HyperosMiuixTextField.labelFontSizeNormal,
+    this.trailing,
   });
 
   final TextEditingController? controller;
@@ -41,6 +42,13 @@ class HyperosTextField extends StatelessWidget {
   final bool obscureText;
   final bool autofocus;
   final double fontSize;
+
+  /// 框内末尾操作（如「取前两字」这类就地补全）。
+  ///
+  /// 透传给 [MiuixTextField.trailingIcon]：**仅单行输入框生效**（上游的单行
+  /// 分支才渲染它，多行分支忽略）。用在框外另加按钮会挤窄输入宽度、也不符合
+  /// Miuix 的表单形态。
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +83,7 @@ class HyperosTextField extends StatelessWidget {
       textInputAction: textInputAction,
       obscureText: obscureText,
       autofocus: autofocus,
+      trailingIcon: trailing,
       colors: fieldColors,
     );
 

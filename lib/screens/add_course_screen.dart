@@ -232,9 +232,6 @@ class _ScheduleEntryData {
 }
 
 class _AddCourseScreenState extends State<AddCourseScreen> {
-  static const _reuseCourseActionWidth = 108.0;
-  static const _shortNameActionWidth = 76.0;
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _shortNameController = TextEditingController();
@@ -543,14 +540,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
+    // 版式依据 flutter_miuix 原生规矩（不是自创画法）：
+    // - 文本输入走 MiuixTextField 的**框内浮动标签**（label 参数），标签在框里、
+    //   聚焦/有内容时缩到 10px 上浮；不给它外挂「框上方小标签」。
+    // - 需要「点开选一项」的行走偏好行（标签在左、值在右 + 箭头），
+    //   与 MiuixBasicComponent / DropdownPreference 同型。
+    // 卡内因此只有两种元素：输入框 + 偏好行，中间用分隔线分组。
     return HyperosControlCard(
-      // Mixed inset fields + full-bleed [HyperosSelectTile]: edge-to-edge card
-      // so the select row applies its own 16dp padding once (not stacked on
-      // [HyperosControlCard.headerlessBodyPadding]).
       edgeToEdge: true,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 卡片标题（分组名，非字段标签）。
           Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosControlCardScope.defaultHorizontalPadding,
@@ -558,49 +559,57 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               HyperosControlCardScope.defaultHorizontalPadding,
               0,
             ),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.sharedInfoTitle,
-                      style: typo.sm.copyWith(fontWeight: FontWeight.w600),
-                    ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.sharedInfoTitle,
+                    style: typo.sm.copyWith(fontWeight: FontWeight.w600),
                   ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: l10n.sharedInfoHint,
-                    onPressed: () => _showSharedInfoHintSheet(l10n),
-                    icon: Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: colors.mutedForeground,
-                    ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
-                ],
-              ),
+                  tooltip: l10n.sharedInfoHint,
+                  onPressed: () => _showSharedInfoHintSheet(l10n),
+                  icon: Icon(
+                    Icons.info_outline_rounded,
+                    size: 18,
+                    color: colors.mutedForeground,
+                  ),
+                ),
+              ],
             ),
           ),
+          // 「沿用已有课程」：Miuix 偏好行形态（标题 + 说明 + 尾部箭头），
+          // 不再是挤在输入框右侧的按钮。
+          if (widget.course == null)
+            HyperosListTile(
+              title: l10n.reuseExistingCourseLabel,
+              subtitle: l10n.reuseExistingCourseHelper,
+              onTap: () => _showCourseTemplateSheet(provider),
+            ),
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+            padding: const EdgeInsets.fromLTRB(
+              HyperosControlCardScope.defaultHorizontalPadding,
+              HyperosControlCardScope.defaultHorizontalPadding,
+              HyperosControlCardScope.defaultHorizontalPadding,
+              0,
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: _withSpacing([
                 _buildCourseNameField(provider, l10n),
                 _buildShortNameField(l10n),
               ], spacing: 8),
             ),
           ),
-          const SizedBox(height: 8),
-          // Full-bleed preference row; owns its own horizontal insets.
+          // 偏好行组：性质（锚定弹层 → 上下双箭头）与颜色（取色弹层 → 单箭头）。
+          const SizedBox(height: 12),
           HyperosSelectTile<CourseNature>(
             label: l10n.courseNatureLabel,
             items: {
@@ -610,42 +619,46 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             value: _courseNature,
             onChanged: (value) => setState(() => _courseNature = value),
           ),
-          const SizedBox(height: 8),
+          _buildCourseColorPreferenceRow(l10n),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosControlCardScope.defaultHorizontalPadding,
-              0,
+              12,
               HyperosControlCardScope.defaultHorizontalPadding,
               HyperosControlCardScope.defaultBodyBottomInset,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: _withSpacing([
-                HyperosTextField(
-                  controller: _descriptionController,
-                  label: l10n.courseDescriptionOptional,
-                  minLines: 2,
-                  maxLines: 4,
-                ),
-                HyperosPickerField(
-                  label: l10n.courseColorTitle,
-                  value: _selectedColor.toUpperCase(),
-                  leading: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: _parseColor(_selectedColor),
-                      borderRadius: BorderRadius.circular(5),
-                      border: Border.all(color: HyperosColors.outline(context)),
-                    ),
-                  ),
-                  onTap: _showFullColorPalette,
-                ),
-              ], spacing: 8),
+            child: HyperosTextField(
+              controller: _descriptionController,
+              label: l10n.courseDescriptionOptional,
+              minLines: 2,
+              maxLines: 4,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 课程颜色偏好行：标签在左、颜色块 + 色值在右、尾部箭头（Miuix 偏好行形态）。
+  ///
+  /// 与「课程性质」同为偏好行，卡内不再出现第二种「带框字段」画法。取色面板
+  /// 仍是原来的全屏调色板（`_showFullColorPalette`），交互不变。
+  Widget _buildCourseColorPreferenceRow(AppLocalizations l10n) {
+    final leadingSwatch = Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: _parseColor(_selectedColor),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: HyperosColors.outline(context)),
+      ),
+    );
+
+    return HyperosNavTile(
+      title: l10n.courseColorTitle,
+      details: _selectedColor.toUpperCase(),
+      onTap: _showFullColorPalette,
+      leading: leadingSwatch,
     );
   }
 
@@ -679,7 +692,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
-    final showReuseAction = widget.course == null;
 
     return FormField<String>(
       validator: (value) {
@@ -696,42 +708,22 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.courseNameLabel,
-              style: typo.sm.copyWith(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: HyperosTextField(
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
-                    onChanged: field.didChange,
-                  ),
-                ),
-                if (showReuseAction) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: _reuseCourseActionWidth,
-                    child: HyperosButton(
-                      label: l10n.reuseExistingCourseLabel,
-                      variant: HyperosButtonVariant.secondary,
-                      dense: true,
-                      expand: true,
-                      fitLabel: true,
-                      onPressed: () => _showCourseTemplateSheet(provider),
-                    ),
-                  ),
-                ],
-              ],
+            // 标签走 MiuixTextField 的框内浮动标签；「沿用已有课程」已上移为
+            // 本卡顶部的偏好行，输入框恢复整行宽度。
+            HyperosTextField(
+              controller: _nameController,
+              label: l10n.courseNameLabel,
+              textInputAction: TextInputAction.next,
+              onChanged: field.didChange,
             ),
             if (helperText != null) ...[
               const SizedBox(height: 6),
               Text(
                 helperText,
                 style: typo.xs2.copyWith(
-                  color: colors.mutedForeground,
+                  color: field.hasError
+                      ? colors.destructive
+                      : colors.mutedForeground,
                   height: 1.35,
                 ),
               ),
@@ -749,32 +741,24 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.courseShortNameOptional,
-          style: typo.sm.copyWith(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: HyperosTextField(
-                controller: _shortNameController,
-                textInputAction: TextInputAction.next,
-              ),
+        HyperosTextField(
+          controller: _shortNameController,
+          label: l10n.courseShortNameOptional,
+          textInputAction: TextInputAction.next,
+          // 就地补全放框内末尾（MiuixTextField.trailingIcon），不再用框外按钮
+          // 挤窄输入宽度。
+          trailing: IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            tooltip: l10n.courseShortNameAutoFillAction,
+            onPressed: _autofillShortNameFromCourseName,
+            icon: Icon(
+              Icons.auto_fix_high_rounded,
+              size: 20,
+              color: colors.mutedForeground,
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: _shortNameActionWidth,
-              child: HyperosButton(
-                label: l10n.courseShortNameAutoFillAction,
-                variant: HyperosButtonVariant.secondary,
-                dense: true,
-                expand: true,
-                fitLabel: true,
-                onPressed: _autofillShortNameFromCourseName,
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 6),
         Text(
