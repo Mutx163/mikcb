@@ -1,26 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../domain/campus_tool_presets.dart';
 import '../l10n/campus_tool_localizer.dart';
 import '../models/campus_tool_entry.dart';
 import '../services/campus_tool_runner.dart';
-import '../services/campus_tools_service.dart';
 import '../ui/hyperos/hyperos.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 import '../utils/app_toast.dart';
-import '../widgets/campus_tool_edit_sheet.dart';
 import '../widgets/campus_tool_icons.dart';
 
-/// 校园小工具：一排可以自己添加快捷入口的按钮。
+/// 校园小工具：一排固定的取件快捷入口，点一下直达。
 ///
-/// 用途是「把常用页面收成一排，一点直达」—— 取件身份码、待取快递、校园网
-/// 认证这类页面通常埋在各自 App 的几层菜单里。跳转口径参考 QuickJump
-/// （github.com/chuhe0719/QuickJump）：**先试直达 deeplink，再拉起官方 App，
-/// 最后网页兜底**，每一条都能在长按编辑里随时改，三方 App 更新导致失效时
-/// 用户自己就能修，不用等发版。
+/// ## 这个页面是什么
 ///
-/// 状态全部由本页持有（不挂 Provider）：入口列表只有这一处消费，另起一个
-/// Provider 只会增加启动期的装配面，没有任何跨页共享需求。
+/// 取件身份码、待取快递这几页在各自 App 里都埋得很深（淘宝要点「我的 → 我的
+/// 快递 → 待取件 → 身份码」好几层）。本页把它们收成固定的一排，点一下就出示
+/// 码。跳转口径参考 QuickJump（github.com/chuhe0719/QuickJump）：先试直达
+/// deeplink，再拉起官方 App，最后网页兜底。
+///
+/// ## 为什么是固定内容、不做自定义
+///
+/// 这是「工具页」不是「配置页」：用户来这里是执行（人在快递柜前，要立刻出示
+/// 码），不是编辑。所以入口表写死在 domain/campus_tool_presets.dart，页面上
+/// 没有添加 / 删除 / 排序 / 改名 —— 那些能力会把一个 2 秒的动作变成「先理解
+/// 数据结构」的事。链接失效的兜底靠多级回退（直达失败自动降级到打开 App），
+/// 而不是靠用户自己改链接。
+///
+/// 状态极其简单：没有持久化、没有 Provider，只有一个「哪条正在跳」的瞬时态。
 class CampusToolsScreen extends StatefulWidget {
   const CampusToolsScreen({super.key});
 
@@ -29,81 +37,29 @@ class CampusToolsScreen extends StatefulWidget {
 }
 
 class _CampusToolsScreenState extends State<CampusToolsScreen> {
-  List<CampusToolEntry> _entries = const <CampusToolEntry>[];
-  bool _loading = true;
-  bool _busy = false;
+  /// 正在跳转的入口 id（防连点，并给那一条画进度）。
+  String? _busyEntryId;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadEntries();
-  }
-
-  Future<void> _loadEntries() async {
-    final entries = await CampusToolsService.load();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _entries = entries;
-      _loading = false;
-    });
-  }
-
-  Future<void> _persist(List<CampusToolEntry> next) async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _entries = List<CampusToolEntry>.unmodifiable(next);
-    });
-    final saved = await CampusToolsService.save(next);
-    if (!mounted || saved) {
-      return;
-    }
-    showAppToast(
-      context,
-      message: l10n.campusToolsSaveFailed,
-      kind: AppToastKind.error,
-    );
-  }
-
-  Future<void> _openEditor({CampusToolEntry? entry}) async {
-    final result = await showCampusToolEditSheet(context: context, entry: entry);
-    if (!mounted || result == null) {
-      return;
-    }
-    final next = List<CampusToolEntry>.of(_entries);
-    final index = next.indexWhere((item) => item.id == result.id);
-    if (index >= 0) {
-      next[index] = result;
-    } else {
-      next.add(result);
-    }
-    await _persist(next);
-  }
-
-  Future<void> _runEntry(CampusToolEntry entry) async {
-    if (_busy || !entry.enabled) {
+  Future<void> _openEntry(CampusToolEntry entry) async {
+    if (_busyEntryId != null) {
       return;
     }
     final l10n = AppLocalizations.of(context)!;
-    final name = campusToolEntryTitle(l10n, entry);
-    setState(() => _busy = true);
+    final title = campusToolEntryTitle(l10n, entry);
+    setState(() => _busyEntryId = entry.id);
     final result = await CampusToolRunner.instance.run(entry);
     if (!mounted) {
       return;
     }
-    setState(() => _busy = false);
+    setState(() => _busyEntryId = null);
     switch (result.status) {
       case CampusToolRunStatus.launched:
-        // 直达成功：目标 App 已经切到前台，这里再弹任何东西都只会碍事。
+        // 直达成功：目标 App 已切到前台，这里再弹任何东西都只会碍事。
         return;
       case CampusToolRunStatus.openedWeb:
         return;
       case CampusToolRunStatus.openedApp:
-        showAppToast(
-          context,
-          message: l10n.campusToolsOpenedAppToast(name),
-        );
+        showAppToast(context, message: l10n.campusToolsOpenedAppToast(title));
         return;
       case CampusToolRunStatus.unsupported:
         showAppToast(
@@ -116,7 +72,7 @@ class _CampusToolsScreenState extends State<CampusToolsScreen> {
         showAppToast(
           context,
           message: l10n.campusToolsLaunchFailed(
-            name,
+            title,
             _reasonLabel(l10n, result.reason),
           ),
           kind: AppToastKind.error,
@@ -137,395 +93,221 @@ class _CampusToolsScreenState extends State<CampusToolsScreen> {
     };
   }
 
-  Future<void> _showEntryActions(CampusToolEntry entry) async {
-    final l10n = AppLocalizations.of(context)!;
-    final action = await showHyperosDialog<String>(
-      context: context,
-      title: campusToolEntryTitle(l10n, entry),
-      message: l10n.campusToolsTargetCount(entry.targetCount),
-      actions: [
-        HyperosDialogAction(
-          label: l10n.campusToolsEditAction,
-          onPressed: () => Navigator.pop(context, 'edit'),
-        ),
-        HyperosDialogAction(
-          label: entry.enabled
-              ? l10n.campusToolsDisableAction
-              : l10n.campusToolsEnableAction,
-          onPressed: () => Navigator.pop(context, 'toggle'),
-        ),
-        HyperosDialogAction(
-          label: l10n.campusToolsDeleteAction,
-          isDestructive: true,
-          onPressed: () => Navigator.pop(context, 'delete'),
-        ),
-      ],
-    );
-    if (!mounted || action == null) {
-      return;
-    }
-    switch (action) {
-      case 'edit':
-        await _openEditor(entry: entry);
-      case 'toggle':
-        await _persist(<CampusToolEntry>[
-          for (final item in _entries)
-            if (item.id == entry.id) item.copyWith(enabled: !item.enabled) else item,
-        ]);
-      case 'delete':
-        await _confirmDelete(entry);
-    }
-  }
-
-  Future<void> _confirmDelete(CampusToolEntry entry) async {
-    final l10n = AppLocalizations.of(context)!;
-    final title = campusToolEntryTitle(l10n, entry);
-    final confirmed = await showHyperosConfirmDialog(
-      context: context,
-      title: l10n.campusToolsDeleteTitle,
-      message: l10n.campusToolsDeleteBody(title),
-      cancelLabel: l10n.cancelAction,
-      confirmLabel: l10n.campusToolsDeleteAction,
-      destructive: true,
-    );
-    if (!mounted || confirmed != true) {
-      return;
-    }
-    await _persist(<CampusToolEntry>[
-      for (final item in _entries)
-        if (item.id != entry.id) item,
-    ]);
-  }
-
-  Future<void> _restoreDefaults() async {
-    final l10n = AppLocalizations.of(context)!;
-    final before = _entries.length;
-    final next = campusToolRestoreMissingPresets(_entries);
-    if (next.length == before) {
-      showAppToast(
-        context,
-        message: l10n.campusToolsRestoreDefaultsEmpty,
-      );
-      return;
-    }
-    await _persist(next);
-    if (!mounted) {
-      return;
-    }
-    showAppToast(
-      context,
-      message: l10n.campusToolsRestoreDefaultsToast(next.length - before),
-      kind: AppToastKind.success,
-    );
-  }
-
-  Future<void> _showMoreActions() async {
-    final l10n = AppLocalizations.of(context)!;
-    final supported = CampusToolRunner.instance.isSupported;
-    final action = await showHyperosDialog<String>(
-      context: context,
-      title: l10n.campusToolsMoreTitle,
-      actions: [
-        if (supported)
-          HyperosDialogAction(
-            label: l10n.campusToolsDiagnoseAction,
-            onPressed: () => Navigator.pop(context, 'diagnose'),
-          ),
-        HyperosDialogAction(
-          label: l10n.campusToolsRestoreDefaults,
-          onPressed: () => Navigator.pop(context, 'restore'),
-        ),
-        HyperosDialogAction(
-          label: l10n.cancelAction,
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-    if (!mounted || action == null) {
-      return;
-    }
-    switch (action) {
-      case 'diagnose':
-        await _showDiagnostics();
-      case 'restore':
-        await _restoreDefaults();
-    }
-  }
-
-  Future<void> _showDiagnostics() async {
-    final l10n = AppLocalizations.of(context)!;
-    final entries = _entries;
-    setState(() => _busy = true);
-    final probes = await Future.wait(<Future<CampusToolProbe>>[
-      for (final entry in entries) CampusToolRunner.instance.probe(entry),
-    ]);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _busy = false);
-    await showHyperosDialog<void>(
-      context: context,
-      title: l10n.campusToolsDiagnoseTitle,
-      maxBodyHeightFactor: 0.6,
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.campusToolsDiagnoseHint,
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.secondaryText(context),
-              ),
-            ),
-            const SizedBox(height: 12),
-            for (var index = 0; index < entries.length; index++)
-              _buildProbeBlock(context, l10n, entries[index], probes[index]),
-          ],
-        ),
-      ),
-      actions: [
-        HyperosDialogAction(
-          label: l10n.closeAction,
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProbeBlock(
-    BuildContext context,
-    AppLocalizations l10n,
-    CampusToolEntry entry,
-    CampusToolProbe probe,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            campusToolEntryTitle(l10n, entry),
-            style: HyperosTypography.listTitle(context),
-          ),
-          const SizedBox(height: 4),
-          for (final link in probe.links)
-            _buildProbeRow(context, link.text, link.ok),
-          for (final item in probe.appInstalled.entries)
-            _buildProbeRow(
-              context,
-              item.key,
-              item.value,
-              okLabel: item.value
-                  ? l10n.campusToolsDiagnoseAppInstalled
-                  : l10n.campusToolsDiagnoseAppMissing,
-            ),
-          if (probe.web != null)
-            _buildProbeRow(context, probe.web!.text, probe.web!.ok),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProbeRow(
-    BuildContext context,
-    String text,
-    bool ok, {
-    String? okLabel,
-  }) {
-    final color = ok
-        ? HyperosColors.primary(context)
-        : HyperosColors.error(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            ok ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
-            size: 16,
-            color: color,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              okLabel == null ? text : '$text  ${okLabel.trim()}',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: HyperosTypography.listDetail(context).copyWith(
-                color: HyperosColors.secondaryText(context),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final visible = <CampusToolEntry>[
-      for (final entry in _entries)
-        if (entry.enabled) entry,
+    final identityCodes = <CampusToolEntry>[
+      for (final entry in kCampusToolPresets)
+        if (campusToolIsIdentityCode(entry.icon)) entry,
+    ];
+    final parcels = <CampusToolEntry>[
+      for (final entry in kCampusToolPresets)
+        if (!campusToolIsIdentityCode(entry.icon)) entry,
     ];
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.campusToolsTitle),
-      suffixes: [
-        FHeaderAction(
-          icon: const Icon(Icons.add_rounded),
-          semanticsLabel: l10n.campusToolsAddAction,
-          onPress: _openEditor,
-        ),
-        FHeaderAction(
-          icon: const Icon(Icons.more_horiz_rounded),
-          semanticsLabel: l10n.campusToolsMoreAction,
-          onPress: _showMoreActions,
-        ),
-      ],
       child: HyperosListView(
         children: [
           Text(
             l10n.campusToolsIntro,
             style: HyperosTypography.listDetail(context).copyWith(
               color: HyperosColors.secondaryText(context),
+              height: 1.5,
             ),
           ),
           const HyperosSectionGap(),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (visible.isEmpty)
-            HyperosEmptyState(
-              title: l10n.campusToolsEmptyTitle,
-              subtitle: l10n.campusToolsEmptySubtitle,
-              icon: Icons.widgets_outlined,
-              action: HyperosButton(
-                label: l10n.campusToolsAddAction,
-                onPressed: _openEditor,
-              ),
-            )
-          else ...[
-            _buildGridCard(context, visible),
-            HyperosSectionDescription(text: l10n.campusToolsGridHint),
-            const HyperosSectionGap(),
-            HyperosSectionLabel(text: l10n.campusToolsManageTitle),
-            HyperosListGroup(
-              children: [
-                for (final entry in _entries)
-                  HyperosListTile(
-                    icon: campusToolIconFor(entry.icon),
-                    title: campusToolEntryTitle(l10n, entry),
-                    details: entry.enabled
-                        ? l10n.campusToolsTargetCount(entry.targetCount)
-                        : l10n.campusToolsDisabledDetails,
-                    onTap: () => _openEditor(entry: entry),
-                    onLongPress: () => _showEntryActions(entry),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGridCard(
-    BuildContext context,
-    List<CampusToolEntry> visible,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final secondary = HyperosColors.secondaryText(context);
-    return HyperosCard(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        runAlignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 10,
-        runSpacing: 12,
-        children: [
-          for (final entry in visible)
-            _CampusToolTile(
-              title: campusToolEntryTitle(l10n, entry),
-              icon: campusToolIconFor(entry.icon),
-              onTap: () => _runEntry(entry),
-              onLongPress: () => _showEntryActions(entry),
-            ),
-          _CampusToolTile(
-            title: l10n.campusToolsAddTile,
-            icon: Icons.add_rounded,
-            onTap: _openEditor,
-            onLongPress: _openEditor,
-            isAdd: true,
+          // 身份码区：最常用、最急，放最上面。
+          _CampusToolSectionHeader(
+            title: l10n.campusToolsIdentitySectionTitle,
+            subtitle: l10n.campusToolsIdentitySectionHint,
           ),
-          if (_busy)
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: secondary),
+          const SizedBox(height: 8),
+          for (final entry in identityCodes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _CampusToolCard(
+                entry: entry,
+                title: campusToolEntryTitle(l10n, entry),
+                subtitle: l10n.campusToolsIdentitySubtitle,
+                busy: _busyEntryId == entry.id,
+                dimmed: _busyEntryId != null && _busyEntryId != entry.id,
+                onTap: () => _openEntry(entry),
+              ),
             ),
+          const HyperosSectionGap(),
+          _CampusToolSectionHeader(
+            title: l10n.campusToolsParcelsSectionTitle,
+            subtitle: l10n.campusToolsParcelsSectionHint,
+          ),
+          const SizedBox(height: 8),
+          for (final entry in parcels)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _CampusToolCard(
+                entry: entry,
+                title: campusToolEntryTitle(l10n, entry),
+                subtitle: l10n.campusToolsParcelsSubtitle,
+                busy: _busyEntryId == entry.id,
+                dimmed: _busyEntryId != null && _busyEntryId != entry.id,
+                onTap: () => _openEntry(entry),
+              ),
+            ),
+          const HyperosSectionGap(),
+          HyperosSectionDescription(text: l10n.campusToolsFooterHint),
         ],
       ),
     );
   }
 }
 
-/// 一颗快捷按钮：46dp 图标砖 + 一行标题，尺寸对齐八宫格编辑器的预览砖。
-class _CampusToolTile extends StatelessWidget {
-  const _CampusToolTile({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    required this.onLongPress,
-    this.isAdd = false,
-  });
+/// 分区标题：一行标题 + 一行灰字说明，说明这一组点下去会看到什么。
+class _CampusToolSectionHeader extends StatelessWidget {
+  const _CampusToolSectionHeader({required this.title, required this.subtitle});
 
   final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final bool isAdd;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    final accent = HyperosColors.primary(context);
-    final secondary = HyperosColors.secondaryText(context);
-    return SizedBox(
-      width: 72,
-      child: GestureDetector(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: isAdd
-                    ? secondary.withValues(alpha: 0.12)
-                    : HyperosBlurredHeader.accentSurfaceTintColor(accent),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, size: 24, color: isAdd ? secondary : accent),
+    return Row(
+      children: [
+        Text(
+          title,
+          style: HyperosTypography.sectionLabel(context).copyWith(
+            color: HyperosColors.primaryText(context),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosColors.secondaryText(context),
             ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 一条入口横条：左侧品牌色图标井 + 平台名 + 功能说明 + 右侧箭头。
+///
+/// 为什么是横条而不是方格：方格（图标 + 下面一行小字）适合一眼扫，但这里每条
+/// 入口都要说清「这是身份码还是查包裹」，方格塞不下一行说明；横条能在一次扫视
+/// 里给出「平台 + 功能」两个信息，而且整行都是热区（48dp 以上），在快递柜前
+/// 手忙脚乱时更好按。
+class _CampusToolCard extends StatelessWidget {
+  const _CampusToolCard({
+    required this.entry,
+    required this.title,
+    required this.subtitle,
+    required this.busy,
+    required this.dimmed,
+    required this.onTap,
+  });
+
+  final CampusToolEntry entry;
+  final String title;
+  final String subtitle;
+  final bool busy;
+  final bool dimmed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = campusToolAccentFor(context, entry.id);
+    final primaryText = HyperosColors.primaryText(context);
+    final secondaryText = HyperosColors.secondaryText(context);
+    return AnimatedOpacity(
+      duration: 150.scaledMs,
+      opacity: dimmed ? 0.45 : 1,
+      child: Material(
+        color: HyperosColors.card(context),
+        shape: const MiuixSquircleBorder(
+          cornerRadius: MiuixCardDefaults.cornerRadius,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: busy ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                _CampusToolIconWell(iconName: entry.icon, accent: accent),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listTitle(
+                          context,
+                        ).copyWith(color: primaryText),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listDetail(
+                          context,
+                        ).copyWith(color: secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (busy)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: accent,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: secondaryText.withValues(alpha: 0.5),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// 图标井：品牌色 12% 淡底 + 品牌色图形，与八宫格预览砖同一口径
+/// （HyperosBlurredHeader.accentSurfaceTintColor）。
+class _CampusToolIconWell extends StatelessWidget {
+  const _CampusToolIconWell({required this.iconName, required this.accent});
+
+  final String iconName;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: HyperosBlurredHeader.accentSurfaceTintColor(accent),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: Icon(campusToolIconFor(iconName), size: 22, color: accent),
     );
   }
 }

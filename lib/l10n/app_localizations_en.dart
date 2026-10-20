@@ -12052,42 +12052,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get campusToolsEntryTitle => 'Campus tools';
 
   @override
-  String get campusToolsAddAction => 'Add shortcut';
-
-  @override
-  String get campusToolsAddTile => 'Add';
-
-  @override
-  String get campusToolsMoreAction => 'More actions';
-
-  @override
-  String get campusToolsMoreTitle => 'Campus tools';
-
-  @override
   String get campusToolsIntro =>
       'Collect the pages you open all the time — parcel pickup codes, campus Wi-Fi — into one row and open them with a single tap.';
-
-  @override
-  String get campusToolsGridHint =>
-      'Tap to open. Long-press to edit, disable or delete.';
-
-  @override
-  String get campusToolsManageTitle => 'Manage entries';
-
-  @override
-  String campusToolsTargetCount(int count) {
-    return '$count targets';
-  }
-
-  @override
-  String get campusToolsDisabledDetails => 'Disabled';
-
-  @override
-  String get campusToolsEmptyTitle => 'No shortcuts yet';
-
-  @override
-  String get campusToolsEmptySubtitle =>
-      'Add one, e.g. a parcel pickup code or your campus network login page';
 
   @override
   String campusToolsLaunchFailed(String name, String reason) {
@@ -12101,135 +12067,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get campusToolsUnsupported => 'This platform cannot open other apps';
-
-  @override
-  String get campusToolsDiagnoseAction => 'Check entries';
-
-  @override
-  String get campusToolsDiagnoseTitle => 'Check entries';
-
-  @override
-  String get campusToolsDiagnoseHint =>
-      '✓ opens on this device; ✗ means the app is missing or the link is dead. Long-press an entry to fix its link.';
-
-  @override
-  String get campusToolsDiagnoseAppInstalled => 'Installed';
-
-  @override
-  String get campusToolsDiagnoseAppMissing => 'Not installed';
-
-  @override
-  String get campusToolsRestoreDefaults => 'Restore default entries';
-
-  @override
-  String campusToolsRestoreDefaultsToast(int count) {
-    return 'Restored $count default entries';
-  }
-
-  @override
-  String get campusToolsRestoreDefaultsEmpty =>
-      'All default entries are present';
-
-  @override
-  String get campusToolsDeleteTitle => 'Delete entry';
-
-  @override
-  String campusToolsDeleteBody(String name) {
-    return 'Delete $name? You can bring default entries back later with Restore default entries.';
-  }
-
-  @override
-  String get campusToolsDeleteAction => 'Delete';
-
-  @override
-  String get campusToolsEditAction => 'Edit';
-
-  @override
-  String get campusToolsEnableAction => 'Enable';
-
-  @override
-  String get campusToolsDisableAction => 'Disable';
-
-  @override
-  String get campusToolsEditTitle => 'Edit entry';
-
-  @override
-  String get campusToolsAddTitle => 'New entry';
-
-  @override
-  String get campusToolsEditHint =>
-      'Name, icon and links can all be changed later; third-party apps may break links after updates.';
-
-  @override
-  String get campusToolsNameLabel => 'Name';
-
-  @override
-  String get campusToolsNameHint => 'e.g. Cainiao pickup code';
-
-  @override
-  String get campusToolsIconLabel => 'Icon';
-
-  @override
-  String get campusToolsLinksLabel => 'Deep links';
-
-  @override
-  String get campusToolsLinksHint =>
-      'One per line, tried in order; write package|link to target one app only';
-
-  @override
-  String get campusToolsLinksHelp =>
-      'When a link stops working, paste the new one from a deep-link inspector — no app update needed.';
-
-  @override
-  String get campusToolsAppPackagesLabel => 'Fallback app';
-
-  @override
-  String get campusToolsAppPackagesHint =>
-      'One package name per line (optional); opened only when every deep link fails';
-
-  @override
-  String get campusToolsWebFallbackLabel => 'Web fallback';
-
-  @override
-  String get campusToolsWebFallbackHint => 'Optional, must start with https://';
-
-  @override
-  String get campusToolsClearTaskLabel => 'Force a fresh target page';
-
-  @override
-  String get campusToolsClearTaskDesc =>
-      'Some devices fail to switch when the target app is in the background; try this if that happens.';
-
-  @override
-  String get campusToolsEnabledLabel => 'Enabled';
-
-  @override
-  String get campusToolsSaveAction => 'Save';
-
-  @override
-  String get campusToolsSaveFailed =>
-      'Couldn\'t save the changes. Please try again.';
-
-  @override
-  String get campusToolsErrorNameRequired => 'Give this entry a name first';
-
-  @override
-  String get campusToolsErrorNoTarget =>
-      'Add at least one deep link, app package or web fallback';
-
-  @override
-  String campusToolsErrorInvalidLink(int line) {
-    return 'Line $line is not a valid link — it must start with scheme://';
-  }
-
-  @override
-  String campusToolsErrorInvalidPackage(int line) {
-    return 'Line $line is not a valid package name';
-  }
-
-  @override
-  String get campusToolsErrorInvalidWeb =>
-      'The web fallback must start with http:// or https://';
 
   @override
   String get campusToolsUntitledEntry => 'Untitled entry';
@@ -12276,4 +12113,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get campusToolsPresetDouyinParcels => 'Douyin parcels';
+
+  @override
+  String get campusToolsIdentitySectionTitle => 'Show pickup code';
+
+  @override
+  String get campusToolsIdentitySectionHint => 'Tap this at the locker';
+
+  @override
+  String get campusToolsIdentitySubtitle => 'Open parcel pickup code';
+
+  @override
+  String get campusToolsParcelsSectionTitle => 'Check parcels';
+
+  @override
+  String get campusToolsParcelsSectionHint => 'See what has arrived';
+
+  @override
+  String get campusToolsParcelsSubtitle => 'Open the parcel list';
+
+  @override
+  String get campusToolsFooterHint =>
+      'Entries use each app\'s public deep links; if one fails, the app is opened instead.';
 }

@@ -11703,41 +11703,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get campusToolsEntryTitle => 'キャンパスツール';
 
   @override
-  String get campusToolsAddAction => 'ショートカットを追加';
-
-  @override
-  String get campusToolsAddTile => '追加';
-
-  @override
-  String get campusToolsMoreAction => 'その他の操作';
-
-  @override
-  String get campusToolsMoreTitle => 'キャンパスツール';
-
-  @override
   String get campusToolsIntro =>
       '受け取りコードや学内 Wi-Fi など、よく使うページを一列にまとめてワンタップで開けます。';
-
-  @override
-  String get campusToolsGridHint => 'タップで開く。長押しで編集・無効化・削除。';
-
-  @override
-  String get campusToolsManageTitle => '入口の管理';
-
-  @override
-  String campusToolsTargetCount(int count) {
-    return '対象 $count 件';
-  }
-
-  @override
-  String get campusToolsDisabledDetails => '無効';
-
-  @override
-  String get campusToolsEmptyTitle => 'ショートカットはまだありません';
-
-  @override
-  String get campusToolsEmptySubtitle =>
-      'まず 1 つ追加しましょう。受け取りコードや学内ネットワークのログインページなど。';
 
   @override
   String campusToolsLaunchFailed(String name, String reason) {
@@ -11751,133 +11718,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get campusToolsUnsupported => 'この環境では他のアプリを開けません';
-
-  @override
-  String get campusToolsDiagnoseAction => '入口チェック';
-
-  @override
-  String get campusToolsDiagnoseTitle => '入口チェック';
-
-  @override
-  String get campusToolsDiagnoseHint =>
-      '✓ はこの端末で開けること、✗ はアプリ未インストールかリンク切れを表します。入口を長押しするとリンクを修正できます。';
-
-  @override
-  String get campusToolsDiagnoseAppInstalled => 'インストール済み';
-
-  @override
-  String get campusToolsDiagnoseAppMissing => '未インストール';
-
-  @override
-  String get campusToolsRestoreDefaults => '既定の入口を復元';
-
-  @override
-  String campusToolsRestoreDefaultsToast(int count) {
-    return '既定の入口を $count 件復元しました';
-  }
-
-  @override
-  String get campusToolsRestoreDefaultsEmpty => '既定の入口はすべて揃っています';
-
-  @override
-  String get campusToolsDeleteTitle => '入口を削除';
-
-  @override
-  String campusToolsDeleteBody(String name) {
-    return '「$name」を削除しますか？あとから「既定の入口を復元」で戻せます。';
-  }
-
-  @override
-  String get campusToolsDeleteAction => '削除';
-
-  @override
-  String get campusToolsEditAction => '編集';
-
-  @override
-  String get campusToolsEnableAction => '有効にする';
-
-  @override
-  String get campusToolsDisableAction => '無効にする';
-
-  @override
-  String get campusToolsEditTitle => '入口を編集';
-
-  @override
-  String get campusToolsAddTitle => '入口を新規作成';
-
-  @override
-  String get campusToolsEditHint =>
-      '名前・アイコン・リンクはいつでも変更できます。外部アプリの更新でリンクが無効になることがあります。';
-
-  @override
-  String get campusToolsNameLabel => '名前';
-
-  @override
-  String get campusToolsNameHint => '例：Cainiao の受け取りコード';
-
-  @override
-  String get campusToolsIconLabel => 'アイコン';
-
-  @override
-  String get campusToolsLinksLabel => '直行リンク';
-
-  @override
-  String get campusToolsLinksHint =>
-      '1 行に 1 件、上から順に試します。「パッケージ名|リンク」で対象アプリを限定できます。';
-
-  @override
-  String get campusToolsLinksHelp =>
-      'リンクが無効になったら、リンク確認ツールで新しいものを調べてここに貼れば、アプリ更新を待たずに直せます。';
-
-  @override
-  String get campusToolsAppPackagesLabel => '代替で開くアプリ';
-
-  @override
-  String get campusToolsAppPackagesHint =>
-      '1 行に 1 つのパッケージ名（任意）。直行リンクが全滅したときだけアプリを開きます。';
-
-  @override
-  String get campusToolsWebFallbackLabel => 'Web の代替';
-
-  @override
-  String get campusToolsWebFallbackHint => '任意。https:// で始まる必要があります';
-
-  @override
-  String get campusToolsClearTaskLabel => '対象ページを新規に開く';
-
-  @override
-  String get campusToolsClearTaskDesc =>
-      '端末によっては対象アプリがバックグラウンドだと切り替わらないことがあります。その場合はオンにしてください。';
-
-  @override
-  String get campusToolsEnabledLabel => '有効';
-
-  @override
-  String get campusToolsSaveAction => '保存';
-
-  @override
-  String get campusToolsSaveFailed => '保存できませんでした。もう一度お試しください。';
-
-  @override
-  String get campusToolsErrorNameRequired => '先にこの入口の名前を入力してください';
-
-  @override
-  String get campusToolsErrorNoTarget =>
-      '直行リンク・アプリのパッケージ名・Web の代替のいずれかを 1 つ以上入力してください';
-
-  @override
-  String campusToolsErrorInvalidLink(int line) {
-    return '$line 行目のリンクが不正です。scheme:// で始めてください';
-  }
-
-  @override
-  String campusToolsErrorInvalidPackage(int line) {
-    return '$line 行目のパッケージ名が不正です';
-  }
-
-  @override
-  String get campusToolsErrorInvalidWeb =>
-      'Web の代替は http:// または https:// で始めてください';
 
   @override
   String get campusToolsUntitledEntry => '名前のない入口';
@@ -11923,4 +11763,26 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get campusToolsPresetDouyinParcels => 'Douyin 受取待ち';
+
+  @override
+  String get campusToolsIdentitySectionTitle => '受け取りコードを表示';
+
+  @override
+  String get campusToolsIdentitySectionHint => 'ロッカーの前でタップ';
+
+  @override
+  String get campusToolsIdentitySubtitle => '受け取りコードを開く';
+
+  @override
+  String get campusToolsParcelsSectionTitle => '荷物を確認';
+
+  @override
+  String get campusToolsParcelsSectionHint => '届いている荷物を見る';
+
+  @override
+  String get campusToolsParcelsSubtitle => '受け取り待ち一覧を開く';
+
+  @override
+  String get campusToolsFooterHint =>
+      '各アプリの公開ディープリンクを使用しています。開けない場合はアプリを起動します。';
 }

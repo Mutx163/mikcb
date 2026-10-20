@@ -33,29 +33,6 @@ class CampusToolRunResult {
       status == CampusToolRunStatus.openedWeb;
 }
 
-/// 「入口体检」里的一条：原样展示被检查的链接 / 包名 + 是否可用。
-class CampusToolProbeLink {
-  const CampusToolProbeLink({required this.text, required this.ok});
-
-  final String text;
-  final bool ok;
-}
-
-class CampusToolProbe {
-  const CampusToolProbe({
-    required this.links,
-    required this.appInstalled,
-    this.web,
-  });
-
-  final List<CampusToolProbeLink> links;
-
-  /// 包名 → 是否已安装。
-  final Map<String, bool> appInstalled;
-
-  final CampusToolProbeLink? web;
-}
-
 /// 快捷入口的执行器：把「多级回退」从页面里拿出来，单独可测。
 ///
 /// 顺序照抄 QuickJump：
@@ -121,42 +98,6 @@ class CampusToolRunner {
     return CampusToolRunResult(
       CampusToolRunStatus.failed,
       reason: lastReason,
-    );
-  }
-
-  /// 体检：不改任何状态，只问「这条链接现在有没有 App 接」「这个应用装没装」。
-  ///
-  /// 返回结构给界面直接渲染成 ✓/✗ 列表。平台不支持时全部为 false —— 页面
-  /// 在这时本来也不会显示体检入口。
-  Future<CampusToolProbe> probe(CampusToolEntry entry) async {
-    final links = <CampusToolProbeLink>[];
-    for (final link in entry.links) {
-      final uri = link.uri.trim();
-      if (uri.isEmpty) {
-        continue;
-      }
-      links.add(
-        CampusToolProbeLink(
-          text: link.editableLine,
-          ok: await _platform.canResolve(uri: uri, package: link.package),
-        ),
-      );
-    }
-    final installed = await _platform.installedPackages(entry.appPackages);
-    CampusToolProbeLink? web;
-    final webUri = entry.webUri?.trim();
-    if (webUri != null && webUri.isNotEmpty) {
-      web = CampusToolProbeLink(
-        text: webUri,
-        ok: await _platform.canResolve(uri: webUri),
-      );
-    }
-    return CampusToolProbe(
-      links: links,
-      appInstalled: <String, bool>{
-        for (final package in entry.appPackages) package: installed.contains(package),
-      },
-      web: web,
     );
   }
 }

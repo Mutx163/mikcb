@@ -6970,24 +6970,7 @@
   "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课",
   "campusToolsTitle": "校园小工具",
   "campusToolsEntryTitle": "校园小工具",
-  "campusToolsAddAction": "添加快捷入口",
-  "campusToolsAddTile": "添加",
-  "campusToolsMoreAction": "更多操作",
-  "campusToolsMoreTitle": "校园小工具",
   "campusToolsIntro": "把取件身份码、待取快递这类常用页面收成一排，点一下就直达。",
-  "campusToolsGridHint": "点按直达，长按可以编辑、停用或删除。",
-  "campusToolsManageTitle": "管理入口",
-  "campusToolsTargetCount": "{count} 个目标",
-  "@campusToolsTargetCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "campusToolsDisabledDetails": "已停用",
-  "campusToolsEmptyTitle": "还没有快捷入口",
-  "campusToolsEmptySubtitle": "先添加一个，比如取件身份码或校园网认证页",
   "campusToolsLaunchFailed": "打不开「{name}」：{reason}",
   "@campusToolsLaunchFailed": {
     "placeholders": {
@@ -7008,71 +6991,6 @@
     }
   },
   "campusToolsUnsupported": "当前平台不支持跳到其它应用",
-  "campusToolsDiagnoseAction": "入口体检",
-  "campusToolsDiagnoseTitle": "入口体检",
-  "campusToolsDiagnoseHint": "✓ 表示当前设备上能打开；✗ 表示没装对应 App 或链接已失效。失效可以长按入口改链接。",
-  "campusToolsDiagnoseAppInstalled": "已安装",
-  "campusToolsDiagnoseAppMissing": "未安装",
-  "campusToolsRestoreDefaults": "补回默认入口",
-  "campusToolsRestoreDefaultsToast": "已补回 {count} 个默认入口",
-  "@campusToolsRestoreDefaultsToast": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "campusToolsRestoreDefaultsEmpty": "默认入口都在，没有需要补回的",
-  "campusToolsDeleteTitle": "删除入口",
-  "campusToolsDeleteBody": "确定删除「{name}」吗？之后可以点「补回默认入口」找回默认项。",
-  "@campusToolsDeleteBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "campusToolsDeleteAction": "删除",
-  "campusToolsEditAction": "编辑",
-  "campusToolsEnableAction": "启用",
-  "campusToolsDisableAction": "停用",
-  "campusToolsEditTitle": "编辑入口",
-  "campusToolsAddTitle": "新建入口",
-  "campusToolsEditHint": "名称、图标和链接都可以随时改；三方 App 更新后链接可能失效。",
-  "campusToolsNameLabel": "名称",
-  "campusToolsNameHint": "比如：菜鸟身份码",
-  "campusToolsIconLabel": "图标",
-  "campusToolsLinksLabel": "直达链接",
-  "campusToolsLinksHint": "每行一条，按顺序试；也可以写成「包名|链接」限定只给某个 App 打开",
-  "campusToolsLinksHelp": "链接失效时，用「开发者助手」这类工具看到新链接后改这里就行，不用等版本更新。",
-  "campusToolsAppPackagesLabel": "兜底打开的应用",
-  "campusToolsAppPackagesHint": "每行一个包名，可选；直达链接都失败时只拉起这个 App",
-  "campusToolsWebFallbackLabel": "网页兜底",
-  "campusToolsWebFallbackHint": "可选，https:// 开头",
-  "campusToolsClearTaskLabel": "强制新开目标页面",
-  "campusToolsClearTaskDesc": "有些机型上目标 App 在后台时会跳不动，打开这个试试",
-  "campusToolsEnabledLabel": "启用",
-  "campusToolsSaveAction": "保存",
-  "campusToolsSaveFailed": "配置没保存上，请重试",
-  "campusToolsErrorNameRequired": "先给这个入口起个名字",
-  "campusToolsErrorNoTarget": "至少填一条直达链接、一个应用包名或一个网页兜底",
-  "campusToolsErrorInvalidLink": "第 {line} 行链接不合法，要写成 scheme:// 开头",
-  "@campusToolsErrorInvalidLink": {
-    "placeholders": {
-      "line": {
-        "type": "int"
-      }
-    }
-  },
-  "campusToolsErrorInvalidPackage": "第 {line} 行包名不合法",
-  "@campusToolsErrorInvalidPackage": {
-    "placeholders": {
-      "line": {
-        "type": "int"
-      }
-    }
-  },
-  "campusToolsErrorInvalidWeb": "网页兜底要以 http:// 或 https:// 开头",
   "campusToolsUntitledEntry": "未命名入口",
   "campusToolsReasonNoActivity": "没有 App 响应这条链接",
   "campusToolsReasonAppNotFound": "没有找到这个 App",
@@ -7087,5 +7005,12 @@
   "campusToolsPresetPinduoduo": "拼多多身份码",
   "campusToolsPresetPinduoduoParcels": "拼多多待取快递",
   "campusToolsPresetJdParcels": "京东待取快递",
-  "campusToolsPresetDouyinParcels": "抖音待取快递"
+  "campusToolsPresetDouyinParcels": "抖音待取快递",
+  "campusToolsIdentitySectionTitle": "出示身份码",
+  "campusToolsIdentitySectionHint": "到柜子前先点这个",
+  "campusToolsIdentitySubtitle": "打开取件身份码",
+  "campusToolsParcelsSectionTitle": "查待取快递",
+  "campusToolsParcelsSectionHint": "看有哪些包裹到了",
+  "campusToolsParcelsSubtitle": "打开待取快递列表",
+  "campusToolsFooterHint": "入口来自各 App 的公开跳转地址；打不开时会自动改为打开对应 App。"
 }

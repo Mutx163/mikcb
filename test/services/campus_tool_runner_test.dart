@@ -10,8 +10,6 @@ class _RecordingPlatform implements CampusToolPlatform {
     this.supported = true,
     this.uriResults = const <String, CampusToolCallResult>{},
     this.appResults = const <String, CampusToolCallResult>{},
-    this.resolveResults = const <String, bool>{},
-    this.installed = const <String>{},
   });
 
   @override
@@ -19,8 +17,6 @@ class _RecordingPlatform implements CampusToolPlatform {
 
   final Map<String, CampusToolCallResult> uriResults;
   final Map<String, CampusToolCallResult> appResults;
-  final Map<String, bool> resolveResults;
-  final Set<String> installed;
 
   final List<String> calls = <String>[];
 
@@ -45,12 +41,12 @@ class _RecordingPlatform implements CampusToolPlatform {
 
   @override
   Future<bool> canResolve({required String uri, String? package}) async {
-    return resolveResults[uri] ?? false;
+    throw UnimplementedError('页面已无体检入口');
   }
 
   @override
   Future<Set<String>> installedPackages(List<String> packages) async {
-    return installed;
+    throw UnimplementedError('页面已无体检入口');
   }
 }
 
@@ -69,15 +65,14 @@ CampusToolEntry _entry({
   List<String> appPackages = const <String>[],
   String? webUri,
   bool clearTask = false,
-  bool enabled = true,
 }) {
   return CampusToolEntry(
     id: 'demo',
+    icon: 'qrCode',
     links: links,
     appPackages: appPackages,
     webUri: webUri,
     clearTask: clearTask,
-    enabled: enabled,
   );
 }
 
@@ -219,37 +214,5 @@ void main() {
       ),
     );
     expect(platform.calls, <String>['uri:a://one#clear']);
-  });
-
-  test('体检：逐条问 canResolve，应用问是否安装，网页也算一条', () async {
-    final platform = _RecordingPlatform(
-      resolveResults: const <String, bool>{
-        'a://one': true,
-        'a://two': false,
-        'https://example.com': true,
-      },
-      installed: const <String>{'com.a.one'},
-    );
-    final runner = CampusToolRunner(platform: platform);
-    final probe = await runner.probe(
-      _entry(
-        links: const <CampusToolLink>[
-          CampusToolLink(uri: 'a://one', package: 'com.a.one'),
-          CampusToolLink(uri: 'a://two'),
-        ],
-        appPackages: const <String>['com.a.one', 'com.a.two'],
-        webUri: 'https://example.com',
-      ),
-    );
-    expect(probe.links.length, 2);
-    expect(probe.links.first.ok, isTrue);
-    expect(probe.links.first.text, 'com.a.one|a://one');
-    expect(probe.links.last.ok, isFalse);
-    expect(probe.appInstalled, <String, bool>{
-      'com.a.one': true,
-      'com.a.two': false,
-    });
-    expect(probe.web?.ok, isTrue);
-    expect(probe.web?.text, 'https://example.com');
   });
 }

@@ -20658,71 +20658,11 @@ abstract class AppLocalizations {
   /// **'校园小工具'**
   String get campusToolsEntryTitle;
 
-  /// No description provided for @campusToolsAddAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'添加快捷入口'**
-  String get campusToolsAddAction;
-
-  /// No description provided for @campusToolsAddTile.
-  ///
-  /// In zh, this message translates to:
-  /// **'添加'**
-  String get campusToolsAddTile;
-
-  /// No description provided for @campusToolsMoreAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'更多操作'**
-  String get campusToolsMoreAction;
-
-  /// No description provided for @campusToolsMoreTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'校园小工具'**
-  String get campusToolsMoreTitle;
-
   /// No description provided for @campusToolsIntro.
   ///
   /// In zh, this message translates to:
   /// **'把取件身份码、待取快递这类常用页面收成一排，点一下就直达。'**
   String get campusToolsIntro;
-
-  /// No description provided for @campusToolsGridHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'点按直达，长按可以编辑、停用或删除。'**
-  String get campusToolsGridHint;
-
-  /// No description provided for @campusToolsManageTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'管理入口'**
-  String get campusToolsManageTitle;
-
-  /// No description provided for @campusToolsTargetCount.
-  ///
-  /// In zh, this message translates to:
-  /// **'{count} 个目标'**
-  String campusToolsTargetCount(int count);
-
-  /// No description provided for @campusToolsDisabledDetails.
-  ///
-  /// In zh, this message translates to:
-  /// **'已停用'**
-  String get campusToolsDisabledDetails;
-
-  /// No description provided for @campusToolsEmptyTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'还没有快捷入口'**
-  String get campusToolsEmptyTitle;
-
-  /// No description provided for @campusToolsEmptySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'先添加一个，比如取件身份码或校园网认证页'**
-  String get campusToolsEmptySubtitle;
 
   /// No description provided for @campusToolsLaunchFailed.
   ///
@@ -20741,228 +20681,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'当前平台不支持跳到其它应用'**
   String get campusToolsUnsupported;
-
-  /// No description provided for @campusToolsDiagnoseAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'入口体检'**
-  String get campusToolsDiagnoseAction;
-
-  /// No description provided for @campusToolsDiagnoseTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'入口体检'**
-  String get campusToolsDiagnoseTitle;
-
-  /// No description provided for @campusToolsDiagnoseHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'✓ 表示当前设备上能打开；✗ 表示没装对应 App 或链接已失效。失效可以长按入口改链接。'**
-  String get campusToolsDiagnoseHint;
-
-  /// No description provided for @campusToolsDiagnoseAppInstalled.
-  ///
-  /// In zh, this message translates to:
-  /// **'已安装'**
-  String get campusToolsDiagnoseAppInstalled;
-
-  /// No description provided for @campusToolsDiagnoseAppMissing.
-  ///
-  /// In zh, this message translates to:
-  /// **'未安装'**
-  String get campusToolsDiagnoseAppMissing;
-
-  /// No description provided for @campusToolsRestoreDefaults.
-  ///
-  /// In zh, this message translates to:
-  /// **'补回默认入口'**
-  String get campusToolsRestoreDefaults;
-
-  /// No description provided for @campusToolsRestoreDefaultsToast.
-  ///
-  /// In zh, this message translates to:
-  /// **'已补回 {count} 个默认入口'**
-  String campusToolsRestoreDefaultsToast(int count);
-
-  /// No description provided for @campusToolsRestoreDefaultsEmpty.
-  ///
-  /// In zh, this message translates to:
-  /// **'默认入口都在，没有需要补回的'**
-  String get campusToolsRestoreDefaultsEmpty;
-
-  /// No description provided for @campusToolsDeleteTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'删除入口'**
-  String get campusToolsDeleteTitle;
-
-  /// No description provided for @campusToolsDeleteBody.
-  ///
-  /// In zh, this message translates to:
-  /// **'确定删除「{name}」吗？之后可以点「补回默认入口」找回默认项。'**
-  String campusToolsDeleteBody(String name);
-
-  /// No description provided for @campusToolsDeleteAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'删除'**
-  String get campusToolsDeleteAction;
-
-  /// No description provided for @campusToolsEditAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'编辑'**
-  String get campusToolsEditAction;
-
-  /// No description provided for @campusToolsEnableAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'启用'**
-  String get campusToolsEnableAction;
-
-  /// No description provided for @campusToolsDisableAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'停用'**
-  String get campusToolsDisableAction;
-
-  /// No description provided for @campusToolsEditTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'编辑入口'**
-  String get campusToolsEditTitle;
-
-  /// No description provided for @campusToolsAddTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'新建入口'**
-  String get campusToolsAddTitle;
-
-  /// No description provided for @campusToolsEditHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'名称、图标和链接都可以随时改；三方 App 更新后链接可能失效。'**
-  String get campusToolsEditHint;
-
-  /// No description provided for @campusToolsNameLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'名称'**
-  String get campusToolsNameLabel;
-
-  /// No description provided for @campusToolsNameHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'比如：菜鸟身份码'**
-  String get campusToolsNameHint;
-
-  /// No description provided for @campusToolsIconLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'图标'**
-  String get campusToolsIconLabel;
-
-  /// No description provided for @campusToolsLinksLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'直达链接'**
-  String get campusToolsLinksLabel;
-
-  /// No description provided for @campusToolsLinksHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'每行一条，按顺序试；也可以写成「包名|链接」限定只给某个 App 打开'**
-  String get campusToolsLinksHint;
-
-  /// No description provided for @campusToolsLinksHelp.
-  ///
-  /// In zh, this message translates to:
-  /// **'链接失效时，用「开发者助手」这类工具看到新链接后改这里就行，不用等版本更新。'**
-  String get campusToolsLinksHelp;
-
-  /// No description provided for @campusToolsAppPackagesLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'兜底打开的应用'**
-  String get campusToolsAppPackagesLabel;
-
-  /// No description provided for @campusToolsAppPackagesHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'每行一个包名，可选；直达链接都失败时只拉起这个 App'**
-  String get campusToolsAppPackagesHint;
-
-  /// No description provided for @campusToolsWebFallbackLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'网页兜底'**
-  String get campusToolsWebFallbackLabel;
-
-  /// No description provided for @campusToolsWebFallbackHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'可选，https:// 开头'**
-  String get campusToolsWebFallbackHint;
-
-  /// No description provided for @campusToolsClearTaskLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'强制新开目标页面'**
-  String get campusToolsClearTaskLabel;
-
-  /// No description provided for @campusToolsClearTaskDesc.
-  ///
-  /// In zh, this message translates to:
-  /// **'有些机型上目标 App 在后台时会跳不动，打开这个试试'**
-  String get campusToolsClearTaskDesc;
-
-  /// No description provided for @campusToolsEnabledLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'启用'**
-  String get campusToolsEnabledLabel;
-
-  /// No description provided for @campusToolsSaveAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'保存'**
-  String get campusToolsSaveAction;
-
-  /// No description provided for @campusToolsSaveFailed.
-  ///
-  /// In zh, this message translates to:
-  /// **'配置没保存上，请重试'**
-  String get campusToolsSaveFailed;
-
-  /// No description provided for @campusToolsErrorNameRequired.
-  ///
-  /// In zh, this message translates to:
-  /// **'先给这个入口起个名字'**
-  String get campusToolsErrorNameRequired;
-
-  /// No description provided for @campusToolsErrorNoTarget.
-  ///
-  /// In zh, this message translates to:
-  /// **'至少填一条直达链接、一个应用包名或一个网页兜底'**
-  String get campusToolsErrorNoTarget;
-
-  /// No description provided for @campusToolsErrorInvalidLink.
-  ///
-  /// In zh, this message translates to:
-  /// **'第 {line} 行链接不合法，要写成 scheme:// 开头'**
-  String campusToolsErrorInvalidLink(int line);
-
-  /// No description provided for @campusToolsErrorInvalidPackage.
-  ///
-  /// In zh, this message translates to:
-  /// **'第 {line} 行包名不合法'**
-  String campusToolsErrorInvalidPackage(int line);
-
-  /// No description provided for @campusToolsErrorInvalidWeb.
-  ///
-  /// In zh, this message translates to:
-  /// **'网页兜底要以 http:// 或 https:// 开头'**
-  String get campusToolsErrorInvalidWeb;
 
   /// No description provided for @campusToolsUntitledEntry.
   ///
@@ -21053,6 +20771,48 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'抖音待取快递'**
   String get campusToolsPresetDouyinParcels;
+
+  /// No description provided for @campusToolsIdentitySectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'出示身份码'**
+  String get campusToolsIdentitySectionTitle;
+
+  /// No description provided for @campusToolsIdentitySectionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'到柜子前先点这个'**
+  String get campusToolsIdentitySectionHint;
+
+  /// No description provided for @campusToolsIdentitySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开取件身份码'**
+  String get campusToolsIdentitySubtitle;
+
+  /// No description provided for @campusToolsParcelsSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查待取快递'**
+  String get campusToolsParcelsSectionTitle;
+
+  /// No description provided for @campusToolsParcelsSectionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'看有哪些包裹到了'**
+  String get campusToolsParcelsSectionHint;
+
+  /// No description provided for @campusToolsParcelsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开待取快递列表'**
+  String get campusToolsParcelsSubtitle;
+
+  /// No description provided for @campusToolsFooterHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'入口来自各 App 的公开跳转地址；打不开时会自动改为打开对应 App。'**
+  String get campusToolsFooterHint;
 }
 
 class _AppLocalizationsDelegate
