@@ -10,6 +10,7 @@ import '../models/location_time_group.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import 'timetable_core_state_port.dart';
 import 'app_log_service.dart';
 
 /// Stats returned after applying location-time rules to the active profile.
@@ -42,11 +43,9 @@ class LocationTimeApplyStats {
 ///
 /// `TimetableProvider` 的成员都是现成的（getter 已有、私有方法各包一层），
 /// 服务不 import provider，可用假端口单测。
-abstract interface class TimetableLocationRulePort {
+abstract interface class TimetableLocationRulePort implements TimetableCoreStatePort {
   List<Course> get courses;
   set courses(List<Course> value);
-
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
 
   List<LocationTimeGroup> get locationTimeGroups;
@@ -60,9 +59,6 @@ abstract interface class TimetableLocationRulePort {
   TimetableProfile? get activeProfile;
   String? get activeProfileId;
   TimeScheme? get activeTimeScheme;
-
-  Future<void> initialize();
-
   /// 把当前设置与活动课表落盘；失败时抛错，由本服务回滚。
   Future<void> persistActiveProfileState();
 
@@ -73,8 +69,6 @@ abstract interface class TimetableLocationRulePort {
   Future<void> saveProfiles(List<TimetableProfile> profiles);
 
   void notifySyncDataChanged();
-  void notifyStateChanged();
-
   /// 课程钟点被整表重写后，实时活动要丢掉旧选择并重推。
   void clearCurrentLiveCourseId();
   Future<void> updateLiveActivity();

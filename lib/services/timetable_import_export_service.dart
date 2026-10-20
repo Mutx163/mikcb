@@ -17,6 +17,7 @@ import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../data/timetable_repository.dart';
+import 'timetable_core_state_port.dart';
 import 'app_analytics.dart';
 import 'app_global_settings_service.dart';
 import 'data_transfer_service.dart';
@@ -32,7 +33,7 @@ import 'timetable_live_activity_service.dart';
 /// 所以这个端口除了读数据，还必须能**写回 provider 的整份内存状态**——
 /// 这是它比别的端口宽的唯一原因；快照对象 [FullBackupRestoreSnapshot] 因此
 /// 也由服务库定义，provider 只负责把快照写回自己的字段。
-abstract interface class TimetableImportExportPort {
+abstract interface class TimetableImportExportPort implements TimetableCoreStatePort {
   // ── 数据面（读 + 写回） ──
   TimetableSettings get settings;
   set settings(TimetableSettings value);
@@ -44,7 +45,6 @@ abstract interface class TimetableImportExportPort {
   set scheduleItems(List<ScheduleItem> value);
   List<Exam> get exams;
   set exams(List<Exam> value);
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
   List<TimeScheme> get timeSchemes;
   set timeSchemes(List<TimeScheme> value);
@@ -103,7 +103,6 @@ abstract interface class TimetableImportExportPort {
   DataTransferService get dataTransferService;
 
   // ── 命令 ──
-  Future<void> initialize();
   Future<T> runMutation<T>(Future<T> Function() operation);
   Future<void> persistActiveProfileState({
     bool touchLastUsedAt = false,
@@ -113,7 +112,6 @@ abstract interface class TimetableImportExportPort {
   Future<void> persistTimeSchemes();
   Future<void> syncExamReminders();
   Future<void> updateLiveActivity({bool syncScheduleSnapshot = true});
-  void notifyStateChanged();
   void applyProfileState(TimetableProfile profile);
   List<Course> syncCoursesWithEffectiveTimeSchemes(
     List<Course> source, {

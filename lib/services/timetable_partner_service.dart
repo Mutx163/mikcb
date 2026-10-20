@@ -1,6 +1,7 @@
 import '../domain/couple_timetable_logic.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
+import 'timetable_core_state_port.dart';
 import 'partner_timetable_service.dart';
 
 /// 情侣课表写入口需要的最小依赖面。
@@ -8,13 +9,11 @@ import 'partner_timetable_service.dart';
 /// 由 `TimetableProvider` 侧的适配器实现：读写绑定、读写课表档案列表与活跃
 /// 课表、统一 mutation 门、TA 课表导入/解绑、落盘、同步钩子、界面通知、
 /// 考试提醒与绑定卡片重推。服务本身不碰 provider 私有字段，可用假端口单测。
-abstract interface class TimetablePartnerPort {
+abstract interface class TimetablePartnerPort implements TimetableCoreStatePort {
   PartnerTimetableBinding? get partnerBinding;
   set partnerBinding(PartnerTimetableBinding? value);
-  List<TimetableProfile> get profiles;
   String? get activeProfileId;
   set activeProfileId(String? value);
-  Future<void> initialize();
   Future<T> runMutation<T>(Future<T> Function() operation);
   Future<PartnerImportResult> importFromContent(
     String content, {
@@ -28,7 +27,6 @@ abstract interface class TimetablePartnerPort {
   Future<void> setActiveProfileId(String profileId);
   Future<void> savePartnerBinding(PartnerTimetableBinding? binding);
   void notifySyncHooks();
-  void notifyStateChanged();
   void syncExamReminders();
   void pushPartnerLiveSurface();
 }

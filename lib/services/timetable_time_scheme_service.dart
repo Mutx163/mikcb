@@ -8,20 +8,19 @@ import '../models/schedule_date_rule.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import 'timetable_core_state_port.dart';
 
 /// 作息（时间模板）族写入口需要的最小宿主面。
 ///
 /// 这个族要动四份内存状态（作息表 / 全部档案 / 全局设置 / 当前课表），落盘还要分
 /// 两次（作息表先写、档案后写），所以端口里既有 `set` 也有两条独立的落盘钩子——
 /// 复合事务的补偿语义必须显式，不能靠"宿主自己在某处顺手存一下"。
-abstract interface class TimetableTimeSchemePort {
+abstract interface class TimetableTimeSchemePort implements TimetableCoreStatePort {
   List<TimeScheme> get timeSchemes;
   set timeSchemes(List<TimeScheme> value);
 
   List<Course> get courses;
   set courses(List<Course> value);
-
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
 
   TimetableSettings get settings;
@@ -49,18 +48,12 @@ abstract interface class TimetableTimeSchemePort {
 
   /// 把当前内存状态写回活动档案条目（落盘前的镜像合并）。
   void mergeActiveProfileIntoProfilesList();
-
-  Future<void> initialize();
-
   /// 只写作息表这一份（不是整份课表）。
   Future<void> persistTimeSchemes();
 
   Future<void> persistActiveProfileState();
 
   Future<void> saveProfiles(List<TimetableProfile> profiles);
-
-  void notifyStateChanged();
-
   void clearCurrentLiveCourseId();
 
   Future<void> updateLiveActivity();

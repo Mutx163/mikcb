@@ -9,13 +9,14 @@ import '../models/course.dart';
 import '../models/course_task.dart';
 import '../models/exam.dart';
 import '../models/timetable_profile.dart';
+import 'timetable_core_state_port.dart';
 
 /// 课程与作业写入口需要的最小宿主面。
 ///
 /// 服务不 import `TimetableProvider`：这些成员在宿主侧都是现成的 getter/setter 或
 /// 一行适配，所以整族写入口可以用假端口钉死在单测里
 /// （`test/services/timetable_course_service_test.dart`），不必拉起 Provider。
-abstract interface class TimetableCoursePort {
+abstract interface class TimetableCoursePort implements TimetableCoreStatePort {
   List<Course> get courses;
   set courses(List<Course> value);
 
@@ -24,8 +25,6 @@ abstract interface class TimetableCoursePort {
 
   List<Exam> get exams;
   set exams(List<Exam> value);
-
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
 
   /// 当前学期周数：课程周次归一要拿它夹上下界。
@@ -57,13 +56,7 @@ abstract interface class TimetableCoursePort {
 
   /// 把当前设置与活动课表落盘；失败时抛错，由本服务回滚。
   Future<void> persistActiveProfileState();
-
-  Future<void> initialize();
-
   void clearCurrentLiveCourseId();
-
-  void notifyStateChanged();
-
   void logEvent(String name, Map<String, Object> parameters);
 
   /// 课程增删会改变考试提醒的派生列表，写完后要重新同步原生提醒。

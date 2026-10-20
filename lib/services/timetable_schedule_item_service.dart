@@ -3,26 +3,19 @@ import 'dart:async';
 import '../domain/clock_order.dart';
 import '../models/schedule_item.dart';
 import '../models/timetable_profile.dart';
+import 'timetable_core_state_port.dart';
 
 /// 日程（安排事项）族需要的最小宿主面：内存里的日程与课表列表，
 /// 以及初始化、落盘、通知、埋点、提醒同步这几个钩子。
 ///
 /// `TimetableProvider` 的成员都是现成的（getter 已有、私有钩子各包一层），
 /// 服务不 import provider，可用假端口单测。
-abstract interface class TimetableScheduleItemPort {
+abstract interface class TimetableScheduleItemPort implements TimetableCoreStatePort {
   List<ScheduleItem> get scheduleItems;
   set scheduleItems(List<ScheduleItem> value);
-
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
-
-  Future<void> initialize();
-
   /// 把当前设置与活动课表落盘；失败时抛错，由本服务回滚。
   Future<void> persistActiveProfileState();
-
-  void notifyStateChanged();
-
   void logEvent(String name, Map<String, Object> parameters);
 
   /// 日程改动会影响考试提醒的派生列表，写完后要重新同步原生提醒。

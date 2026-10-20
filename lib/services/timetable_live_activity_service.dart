@@ -14,6 +14,7 @@ import '../models/holiday_entry.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import 'timetable_core_state_port.dart';
 import 'home_widget_binding_service.dart';
 import 'home_widget_service.dart';
 import 'home_widget_snapshot_service.dart';
@@ -25,13 +26,12 @@ import 'stats_widget_service.dart';
 /// 由 `TimetableProvider` 侧实现：读课表数据与日期语义、拿原生面服务句柄、
 /// 进出 live-surface 门、声明运行态桶。服务不碰 provider 私有字段，可用假端口
 /// 单测。
-abstract interface class TimetableLiveActivityPort {
+abstract interface class TimetableLiveActivityPort implements TimetableCoreStatePort {
   /// 运行态桶（心跳、去重签名、挂起窗口、自检覆盖层）。
   LiveActivityRuntimeState get liveRuntime;
 
   TimetableSettings get settings;
   List<Course> get courses;
-  List<TimetableProfile> get profiles;
   HolidayData? get holidayData;
   String? get currentLiveCourseId;
   set currentLiveCourseId(String? value);
@@ -44,7 +44,6 @@ abstract interface class TimetableLiveActivityPort {
   int get currentWeek;
   int get currentDateWeek;
   int get currentDayOfWeek;
-  Future<void> initialize();
   Future<bool> syncTemporalContext({DateTime? now});
   bool isHoliday(DateTime date);
   bool isAdjustedWorkday(DateTime date);
@@ -61,8 +60,6 @@ abstract interface class TimetableLiveActivityPort {
     DateTime? onDate,
   });
   Future<T> runLiveSurfaceExclusive<T>(Future<T> Function() action);
-  void notifyStateChanged();
-
   MiuiLiveActivitiesService get liveActivitiesService;
   HomeWidgetService get homeWidgetService;
   HomeWidgetSnapshotService get homeWidgetSnapshotService;

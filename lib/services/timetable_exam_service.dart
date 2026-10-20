@@ -1,22 +1,20 @@
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_profile.dart';
+import 'timetable_core_state_port.dart';
 
 /// 考试写入口需要的最小依赖面。
 ///
 /// 由 `TimetableProvider` 侧的适配器实现：读/替换考试列表与档案快照（失败
 /// 回滚用）、统一 mutation 门、初始化、课程关联校验、落盘、提醒/小组件重推
 /// 与埋点。服务本身不碰 provider 私有字段，可用假端口单测。
-abstract interface class TimetableExamPort {
+abstract interface class TimetableExamPort implements TimetableCoreStatePort {
   List<Exam> get exams;
   set exams(List<Exam> value);
-  List<TimetableProfile> get profiles;
   set profiles(List<TimetableProfile> value);
-  Future<void> initialize();
   Future<T> runMutation<T>(Future<T> Function() operation);
   Course? courseForExam(Exam exam);
   Future<void> persistActiveProfileState();
-  void notifyStateChanged();
   void syncExamReminders();
   void invalidateHomeWidgetSnapshot();
   void syncHomeWidgetSnapshot();
