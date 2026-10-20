@@ -1050,6 +1050,12 @@ class WebdavSyncService {
           lastSyncedAt: DateTime.now(),
           lastAppliedRemoteHash: appliedContentHash,
           lastUploadedLocalHash: appliedContentHash,
+          // 拉取成功＝本地现在就是云端那份，所以这个标志从此代表「最近一次
+          // 同步已知的数据有无」，不再只是「上次上传」。不写它就会留下这条
+          // 丢数据组合：本机曾上传空快照（F=false）→ 别机上传了真实数据 →
+          // 本机拉取（F 仍是 false）→ 本地数据掉空 → 自动上传按「上次就是
+          // 空的」放行，用空快照覆盖云端那份好数据（10-19 C1 的残留组合）。
+          lastUploadedHadUserData: parsed.hasUserAuthoredData,
         ),
       );
       return const WebdavSyncResult(kind: WebdavSyncResultKind.downloaded);
