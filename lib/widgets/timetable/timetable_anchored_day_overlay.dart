@@ -48,32 +48,36 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
           // end). Waiting for 0.98 left the close button unhittable for most of
           // the open animation and flaky under widget-test pumps.
           ignoring: progress < 0.05,
-          child: Opacity(
-            opacity: Curves.easeOutCubic.transform(progress),
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: Align(
-                alignment: Alignment(anchorAlignmentX, -1),
-                widthFactor: widthFactor,
-                heightFactor: heightFactor,
-                child: Transform.translate(
-                  offset: Offset(0, translateY),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border.all(color: borderColor),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.shadow.withValues(
-                            alpha: shadowAlpha,
-                          ),
-                          blurRadius: 28 * (1 - progress),
-                          offset: Offset(0, 12 * (1 - progress)),
+          // ⚠️ 面板**不套 Opacity**（2026-10-20 拆掉）：这块面板里是成片的
+          // `CourseSurface` 玻璃卡（BackdropFilter 实时采样），而 BackdropFilter
+          // 在半透明层里采不到身后内容 —— 磨砂整段塌成透明（CourseSurface 类
+          // 注释的原文规则），落定瞬间 progress 到 1、透明层消失，磨砂又「啪」地
+          // 弹回来：用户口径「展开/收完的瞬间变黑然后变白」。浮现的柔和交给
+          // 几何本身（窗口从锚点尺寸长大 + 位移），边框/浮影的淡出在下面各自的
+          // alpha 上（不是玻璃，不进离屏层）。
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: Align(
+              alignment: Alignment(anchorAlignmentX, -1),
+              widthFactor: widthFactor,
+              heightFactor: heightFactor,
+              child: Transform.translate(
+                offset: Offset(0, translateY),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(color: borderColor),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(
+                          alpha: shadowAlpha,
                         ),
-                      ],
-                    ),
-                    child: child,
+                        blurRadius: 28 * (1 - progress),
+                        offset: Offset(0, 12 * (1 - progress)),
+                      ),
+                    ],
                   ),
+                  child: child,
                 ),
               ),
             ),
