@@ -5713,7 +5713,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNameLabel.
   ///
   /// In zh, this message translates to:
-  /// **'课程名称'**
+  /// **'课程名称（必填）'**
   String get courseNameLabel;
 
   /// No description provided for @courseNameHelper.
@@ -5731,7 +5731,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseShortNameOptional.
   ///
   /// In zh, this message translates to:
-  /// **'课程简称'**
+  /// **'课程简称（可选）'**
   String get courseShortNameOptional;
 
   /// No description provided for @courseShortNameHelper.
@@ -5761,7 +5761,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseDescriptionOptional.
   ///
   /// In zh, this message translates to:
-  /// **'课程简介 可选'**
+  /// **'课程简介（可选）'**
   String get courseDescriptionOptional;
 
   /// No description provided for @currentScheduleHint.
@@ -20670,155 +20670,173 @@ abstract class AppLocalizations {
   /// **'简称、颜色、性质、简介同步给同名排课'**
   String get sharedInfoInlineHint;
 
-  /// No description provided for @campusToolsTitle.
+  /// No description provided for @pickupCodeTitle.
   ///
   /// In zh, this message translates to:
-  /// **'校园小工具'**
-  String get campusToolsTitle;
+  /// **'取件码'**
+  String get pickupCodeTitle;
 
-  /// No description provided for @campusToolsEntryTitle.
+  /// No description provided for @pickupCodeEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'校园小工具'**
-  String get campusToolsEntryTitle;
+  /// **'取件码'**
+  String get pickupCodeEntryTitle;
 
-  /// No description provided for @campusToolsLaunchFailed.
+  /// No description provided for @pickupCodeLaunchFailed.
   ///
   /// In zh, this message translates to:
   /// **'打不开「{name}」：{reason}'**
-  String campusToolsLaunchFailed(String name, String reason);
+  String pickupCodeLaunchFailed(String name, String reason);
 
-  /// No description provided for @campusToolsOpenedAppToast.
+  /// No description provided for @pickupCodeOpenedAppToast.
   ///
   /// In zh, this message translates to:
   /// **'「{name}」没有公开的直达页，已打开对应 App，请在 App 内查看'**
-  String campusToolsOpenedAppToast(String name);
+  String pickupCodeOpenedAppToast(String name);
 
-  /// No description provided for @campusToolsUnsupported.
+  /// No description provided for @pickupCodeUnsupported.
   ///
   /// In zh, this message translates to:
   /// **'当前平台不支持跳到其它应用'**
-  String get campusToolsUnsupported;
+  String get pickupCodeUnsupported;
 
-  /// No description provided for @campusToolsUntitledEntry.
+  /// No description provided for @pickupCodeUntitledEntry.
   ///
   /// In zh, this message translates to:
   /// **'未命名入口'**
-  String get campusToolsUntitledEntry;
+  String get pickupCodeUntitledEntry;
 
-  /// No description provided for @campusToolsReasonNoActivity.
+  /// No description provided for @pickupCodeReasonNoActivity.
   ///
   /// In zh, this message translates to:
   /// **'没有 App 响应这条链接'**
-  String get campusToolsReasonNoActivity;
+  String get pickupCodeReasonNoActivity;
 
-  /// No description provided for @campusToolsReasonAppNotFound.
+  /// No description provided for @pickupCodeReasonAppNotFound.
   ///
   /// In zh, this message translates to:
   /// **'没有找到这个 App'**
-  String get campusToolsReasonAppNotFound;
+  String get pickupCodeReasonAppNotFound;
 
-  /// No description provided for @campusToolsReasonInvalidUri.
+  /// No description provided for @pickupCodeReasonInvalidUri.
   ///
   /// In zh, this message translates to:
   /// **'链接格式不对'**
-  String get campusToolsReasonInvalidUri;
+  String get pickupCodeReasonInvalidUri;
 
-  /// No description provided for @campusToolsReasonInvalidPackage.
+  /// No description provided for @pickupCodeReasonInvalidPackage.
   ///
   /// In zh, this message translates to:
   /// **'包名格式不对'**
-  String get campusToolsReasonInvalidPackage;
+  String get pickupCodeReasonInvalidPackage;
 
-  /// No description provided for @campusToolsReasonTimeout.
+  /// No description provided for @pickupCodeReasonTimeout.
   ///
   /// In zh, this message translates to:
   /// **'系统没有响应（超时）'**
-  String get campusToolsReasonTimeout;
+  String get pickupCodeReasonTimeout;
 
-  /// No description provided for @campusToolsReasonUnsupported.
+  /// No description provided for @pickupCodeReasonUnsupported.
   ///
   /// In zh, this message translates to:
   /// **'当前平台不支持'**
-  String get campusToolsReasonUnsupported;
+  String get pickupCodeReasonUnsupported;
 
-  /// No description provided for @campusToolsReasonUnknown.
+  /// No description provided for @pickupCodeReasonUnknown.
   ///
   /// In zh, this message translates to:
   /// **'未知原因'**
-  String get campusToolsReasonUnknown;
+  String get pickupCodeReasonUnknown;
 
-  /// No description provided for @campusToolsPresetCainiao.
+  /// No description provided for @pickupCodePresetCainiao.
   ///
   /// In zh, this message translates to:
   /// **'菜鸟'**
-  String get campusToolsPresetCainiao;
+  String get pickupCodePresetCainiao;
 
-  /// No description provided for @campusToolsPresetTaobao.
+  /// No description provided for @pickupCodePresetTaobao.
   ///
   /// In zh, this message translates to:
   /// **'淘宝'**
-  String get campusToolsPresetTaobao;
+  String get pickupCodePresetTaobao;
 
-  /// No description provided for @campusToolsPresetTaobaoParcels.
+  /// No description provided for @pickupCodePresetTaobaoParcels.
   ///
   /// In zh, this message translates to:
   /// **'淘宝'**
-  String get campusToolsPresetTaobaoParcels;
+  String get pickupCodePresetTaobaoParcels;
 
-  /// No description provided for @campusToolsPresetPinduoduo.
+  /// No description provided for @pickupCodePresetPinduoduo.
   ///
   /// In zh, this message translates to:
   /// **'拼多多'**
-  String get campusToolsPresetPinduoduo;
+  String get pickupCodePresetPinduoduo;
 
-  /// No description provided for @campusToolsPresetPinduoduoParcels.
+  /// No description provided for @pickupCodePresetPinduoduoParcels.
   ///
   /// In zh, this message translates to:
   /// **'拼多多'**
-  String get campusToolsPresetPinduoduoParcels;
+  String get pickupCodePresetPinduoduoParcels;
 
-  /// No description provided for @campusToolsPresetJdParcels.
+  /// No description provided for @pickupCodePresetJdParcels.
   ///
   /// In zh, this message translates to:
   /// **'京东'**
-  String get campusToolsPresetJdParcels;
+  String get pickupCodePresetJdParcels;
 
-  /// No description provided for @campusToolsPresetDouyinParcels.
+  /// No description provided for @pickupCodePresetDouyinParcels.
   ///
   /// In zh, this message translates to:
   /// **'抖音'**
-  String get campusToolsPresetDouyinParcels;
+  String get pickupCodePresetDouyinParcels;
 
-  /// No description provided for @campusToolsIdentitySectionTitle.
+  /// No description provided for @pickupCodeIdentitySectionTitle.
   ///
   /// In zh, this message translates to:
   /// **'出示身份码'**
-  String get campusToolsIdentitySectionTitle;
+  String get pickupCodeIdentitySectionTitle;
 
-  /// No description provided for @campusToolsParcelsSectionTitle.
+  /// No description provided for @pickupCodeParcelsSectionTitle.
   ///
   /// In zh, this message translates to:
   /// **'查待取快递'**
-  String get campusToolsParcelsSectionTitle;
+  String get pickupCodeParcelsSectionTitle;
 
-  /// No description provided for @campusToolsSemanticsEntry.
+  /// No description provided for @pickupCodeSemanticsEntry.
   ///
   /// In zh, this message translates to:
   /// **'{name}，{group}'**
-  String campusToolsSemanticsEntry(String name, String group);
+  String pickupCodeSemanticsEntry(String name, String group);
 
-  /// No description provided for @campusToolsSemanticsNotInstalled.
+  /// No description provided for @pickupCodeSemanticsNotInstalled.
   ///
   /// In zh, this message translates to:
   /// **'未安装对应应用'**
-  String get campusToolsSemanticsNotInstalled;
+  String get pickupCodeSemanticsNotInstalled;
 
-  /// No description provided for @campusToolsLaunchFailedHint.
+  /// No description provided for @pickupCodeLaunchFailedHint.
   ///
   /// In zh, this message translates to:
   /// **'入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。'**
-  String get campusToolsLaunchFailedHint;
+  String get pickupCodeLaunchFailedHint;
+
+  /// No description provided for @courseFormDiscardTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'放弃修改？'**
+  String get courseFormDiscardTitle;
+
+  /// No description provided for @courseFormDiscardMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'离开后，这门课这次填写的内容不会保存。'**
+  String get courseFormDiscardMessage;
+
+  /// No description provided for @courseFormDiscardAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'放弃修改'**
+  String get courseFormDiscardAction;
 }
 
 class _AppLocalizationsDelegate

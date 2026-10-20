@@ -3068,7 +3068,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noTemplateCoursesHint => '当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了';
 
   @override
-  String get courseNameLabel => '课程名称';
+  String get courseNameLabel => '课程名称（必填）';
 
   @override
   String get courseNameHelper => '作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写';
@@ -3077,7 +3077,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pleaseEnterCourseName => '请输入课程名称';
 
   @override
-  String get courseShortNameOptional => '课程简称';
+  String get courseShortNameOptional => '课程简称（可选）';
 
   @override
   String get courseShortNameHelper => '用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内';
@@ -3092,7 +3092,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNatureLabel => '课程性质';
 
   @override
-  String get courseDescriptionOptional => '课程简介 可选';
+  String get courseDescriptionOptional => '课程简介（可选）';
 
   @override
   String get currentScheduleHint => '这里的星期、节次、教室、周次和单双周只影响当前这一条排课';
@@ -11364,86 +11364,95 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sharedInfoInlineHint => '简称、颜色、性质、简介同步给同名排课';
 
   @override
-  String get campusToolsTitle => '校园小工具';
+  String get pickupCodeTitle => '取件码';
 
   @override
-  String get campusToolsEntryTitle => '校园小工具';
+  String get pickupCodeEntryTitle => '取件码';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return '打不开「$name」：$reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '「$name」没有公开的直达页，已打开对应 App，请在 App 内查看';
   }
 
   @override
-  String get campusToolsUnsupported => '当前平台不支持跳到其它应用';
+  String get pickupCodeUnsupported => '当前平台不支持跳到其它应用';
 
   @override
-  String get campusToolsUntitledEntry => '未命名入口';
+  String get pickupCodeUntitledEntry => '未命名入口';
 
   @override
-  String get campusToolsReasonNoActivity => '没有 App 响应这条链接';
+  String get pickupCodeReasonNoActivity => '没有 App 响应这条链接';
 
   @override
-  String get campusToolsReasonAppNotFound => '没有找到这个 App';
+  String get pickupCodeReasonAppNotFound => '没有找到这个 App';
 
   @override
-  String get campusToolsReasonInvalidUri => '链接格式不对';
+  String get pickupCodeReasonInvalidUri => '链接格式不对';
 
   @override
-  String get campusToolsReasonInvalidPackage => '包名格式不对';
+  String get pickupCodeReasonInvalidPackage => '包名格式不对';
 
   @override
-  String get campusToolsReasonTimeout => '系统没有响应（超时）';
+  String get pickupCodeReasonTimeout => '系统没有响应（超时）';
 
   @override
-  String get campusToolsReasonUnsupported => '当前平台不支持';
+  String get pickupCodeReasonUnsupported => '当前平台不支持';
 
   @override
-  String get campusToolsReasonUnknown => '未知原因';
+  String get pickupCodeReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鸟';
+  String get pickupCodePresetCainiao => '菜鸟';
 
   @override
-  String get campusToolsPresetTaobao => '淘宝';
+  String get pickupCodePresetTaobao => '淘宝';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘宝';
+  String get pickupCodePresetTaobaoParcels => '淘宝';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多';
+  String get pickupCodePresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多';
+  String get pickupCodePresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京东';
+  String get pickupCodePresetJdParcels => '京东';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音';
+  String get pickupCodePresetDouyinParcels => '抖音';
 
   @override
-  String get campusToolsIdentitySectionTitle => '出示身份码';
+  String get pickupCodeIdentitySectionTitle => '出示身份码';
 
   @override
-  String get campusToolsParcelsSectionTitle => '查待取快递';
+  String get pickupCodeParcelsSectionTitle => '查待取快递';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name，$group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => '未安装对应应用';
+  String get pickupCodeSemanticsNotInstalled => '未安装对应应用';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       '入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。';
+
+  @override
+  String get courseFormDiscardTitle => '放弃修改？';
+
+  @override
+  String get courseFormDiscardMessage => '离开后，这门课这次填写的内容不会保存。';
+
+  @override
+  String get courseFormDiscardAction => '放弃修改';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -14511,7 +14520,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get noTemplateCoursesHint => '目前課表裡還沒有有現成課程，先手動錄入一門，後面臨時加課就能直接選了';
 
   @override
-  String get courseNameLabel => '課程名稱';
+  String get courseNameLabel => '課程名稱（必填）';
 
   @override
   String get courseNameHelper => '作為課程唯一標識；名稱相同的多條排課將歸為同一課程，請填寫完整名稱，請勿為介面顯示而縮寫';
@@ -14520,7 +14529,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get pleaseEnterCourseName => '請輸入課程名稱';
 
   @override
-  String get courseShortNameOptional => '課程簡稱';
+  String get courseShortNameOptional => '課程簡稱（可選）';
 
   @override
   String get courseShortNameHelper => '用於超級島等精簡展示，開啓優先顯示簡稱後生效，建議 3 字以內';
@@ -14535,7 +14544,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseNatureLabel => '課程性質';
 
   @override
-  String get courseDescriptionOptional => '課程簡介 可選';
+  String get courseDescriptionOptional => '課程簡介（可選）';
 
   @override
   String get currentScheduleHint => '這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課';
@@ -22846,86 +22855,95 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
 
   @override
-  String get campusToolsTitle => '校園小工具';
+  String get pickupCodeTitle => '取件碼';
 
   @override
-  String get campusToolsEntryTitle => '校園小工具';
+  String get pickupCodeEntryTitle => '取件碼';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return '打不開「$name」：$reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '「$name」沒有公開的直達頁，已開啟對應 App，請在 App 內查看';
   }
 
   @override
-  String get campusToolsUnsupported => '目前平台不支援跳到其他應用程式';
+  String get pickupCodeUnsupported => '目前平台不支援跳到其他應用程式';
 
   @override
-  String get campusToolsUntitledEntry => '未命名入口';
+  String get pickupCodeUntitledEntry => '未命名入口';
 
   @override
-  String get campusToolsReasonNoActivity => '沒有 App 回應這條連結';
+  String get pickupCodeReasonNoActivity => '沒有 App 回應這條連結';
 
   @override
-  String get campusToolsReasonAppNotFound => '找不到這個 App';
+  String get pickupCodeReasonAppNotFound => '找不到這個 App';
 
   @override
-  String get campusToolsReasonInvalidUri => '連結格式不正確';
+  String get pickupCodeReasonInvalidUri => '連結格式不正確';
 
   @override
-  String get campusToolsReasonInvalidPackage => '套件名格式不正確';
+  String get pickupCodeReasonInvalidPackage => '套件名格式不正確';
 
   @override
-  String get campusToolsReasonTimeout => '系統沒有回應（逾時）';
+  String get pickupCodeReasonTimeout => '系統沒有回應（逾時）';
 
   @override
-  String get campusToolsReasonUnsupported => '目前平台不支援';
+  String get pickupCodeReasonUnsupported => '目前平台不支援';
 
   @override
-  String get campusToolsReasonUnknown => '未知原因';
+  String get pickupCodeReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鳥';
+  String get pickupCodePresetCainiao => '菜鳥';
 
   @override
-  String get campusToolsPresetTaobao => '淘寶';
+  String get pickupCodePresetTaobao => '淘寶';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘寶';
+  String get pickupCodePresetTaobaoParcels => '淘寶';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多';
+  String get pickupCodePresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多';
+  String get pickupCodePresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京東';
+  String get pickupCodePresetJdParcels => '京東';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音';
+  String get pickupCodePresetDouyinParcels => '抖音';
 
   @override
-  String get campusToolsIdentitySectionTitle => '出示身份碼';
+  String get pickupCodeIdentitySectionTitle => '出示身份碼';
 
   @override
-  String get campusToolsParcelsSectionTitle => '查待取快遞';
+  String get pickupCodeParcelsSectionTitle => '查待取快遞';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name，$group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => '未安裝對應應用';
+  String get pickupCodeSemanticsNotInstalled => '未安裝對應應用';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       '入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。';
+
+  @override
+  String get courseFormDiscardTitle => '放棄修改？';
+
+  @override
+  String get courseFormDiscardMessage => '離開後，這門課這次填寫的內容不會儲存。';
+
+  @override
+  String get courseFormDiscardAction => '放棄修改';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -25993,7 +26011,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get noTemplateCoursesHint => '目前課表裡還沒有有現成課程，先手動錄入一門，後面臨時加課就能直接選了';
 
   @override
-  String get courseNameLabel => '課程名稱';
+  String get courseNameLabel => '課程名稱（必填）';
 
   @override
   String get courseNameHelper => '作為課程唯一標識；名稱相同的多條排課將歸為同一課程，請填寫完整名稱，請勿為介面顯示而縮寫';
@@ -26002,7 +26020,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pleaseEnterCourseName => '請輸入課程名稱';
 
   @override
-  String get courseShortNameOptional => '課程簡稱';
+  String get courseShortNameOptional => '課程簡稱（可選）';
 
   @override
   String get courseShortNameHelper => '用於超級島等精簡展示，開啟優先顯示簡稱後生效，建議 3 字以內';
@@ -26017,7 +26035,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseNatureLabel => '課程性質';
 
   @override
-  String get courseDescriptionOptional => '課程簡介 可選';
+  String get courseDescriptionOptional => '課程簡介（可選）';
 
   @override
   String get currentScheduleHint => '這裡的星期、節次、教室、周次和單雙周只影響目前這一條排課';
@@ -34329,84 +34347,93 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
 
   @override
-  String get campusToolsTitle => '校園小工具';
+  String get pickupCodeTitle => '取件碼';
 
   @override
-  String get campusToolsEntryTitle => '校園小工具';
+  String get pickupCodeEntryTitle => '取件碼';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return '打不開「$name」：$reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '「$name」沒有公開的直達頁，已開啟對應 App，請在 App 內查看';
   }
 
   @override
-  String get campusToolsUnsupported => '目前平台不支援跳到其他應用程式';
+  String get pickupCodeUnsupported => '目前平台不支援跳到其他應用程式';
 
   @override
-  String get campusToolsUntitledEntry => '未命名入口';
+  String get pickupCodeUntitledEntry => '未命名入口';
 
   @override
-  String get campusToolsReasonNoActivity => '沒有 App 回應這條連結';
+  String get pickupCodeReasonNoActivity => '沒有 App 回應這條連結';
 
   @override
-  String get campusToolsReasonAppNotFound => '找不到這個 App';
+  String get pickupCodeReasonAppNotFound => '找不到這個 App';
 
   @override
-  String get campusToolsReasonInvalidUri => '連結格式不正確';
+  String get pickupCodeReasonInvalidUri => '連結格式不正確';
 
   @override
-  String get campusToolsReasonInvalidPackage => '套件名格式不正確';
+  String get pickupCodeReasonInvalidPackage => '套件名格式不正確';
 
   @override
-  String get campusToolsReasonTimeout => '系統沒有回應（逾時）';
+  String get pickupCodeReasonTimeout => '系統沒有回應（逾時）';
 
   @override
-  String get campusToolsReasonUnsupported => '目前平台不支援';
+  String get pickupCodeReasonUnsupported => '目前平台不支援';
 
   @override
-  String get campusToolsReasonUnknown => '未知原因';
+  String get pickupCodeReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鳥';
+  String get pickupCodePresetCainiao => '菜鳥';
 
   @override
-  String get campusToolsPresetTaobao => '淘寶';
+  String get pickupCodePresetTaobao => '淘寶';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘寶';
+  String get pickupCodePresetTaobaoParcels => '淘寶';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多';
+  String get pickupCodePresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多';
+  String get pickupCodePresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京東';
+  String get pickupCodePresetJdParcels => '京東';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音';
+  String get pickupCodePresetDouyinParcels => '抖音';
 
   @override
-  String get campusToolsIdentitySectionTitle => '出示身分碼';
+  String get pickupCodeIdentitySectionTitle => '出示身分碼';
 
   @override
-  String get campusToolsParcelsSectionTitle => '查待取快遞';
+  String get pickupCodeParcelsSectionTitle => '查待取快遞';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name，$group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => '未安裝對應應用';
+  String get pickupCodeSemanticsNotInstalled => '未安裝對應應用';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       '入口位址由各 App 提供，App 更新後可能失效；可以先試試直接開啟對應 App。';
+
+  @override
+  String get courseFormDiscardTitle => '放棄修改？';
+
+  @override
+  String get courseFormDiscardMessage => '離開後，這門課這次填寫的內容不會儲存。';
+
+  @override
+  String get courseFormDiscardAction => '放棄修改';
 }

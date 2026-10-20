@@ -3271,7 +3271,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There are no existing courses yet. Add one manually first, then future temporary lessons can reuse it';
 
   @override
-  String get courseNameLabel => 'Course Name';
+  String get courseNameLabel => 'Course Name (Required)';
 
   @override
   String get courseNameHelper =>
@@ -3281,7 +3281,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseEnterCourseName => 'Please enter the course name';
 
   @override
-  String get courseShortNameOptional => 'Course short name';
+  String get courseShortNameOptional => 'Course short name (Optional)';
 
   @override
   String get courseShortNameHelper =>
@@ -12064,85 +12064,95 @@ class AppLocalizationsEn extends AppLocalizations {
       'Short name, colour, nature and intro sync to classes with the same name';
 
   @override
-  String get campusToolsTitle => 'Campus tools';
+  String get pickupCodeTitle => 'Pickup code';
 
   @override
-  String get campusToolsEntryTitle => 'Campus tools';
+  String get pickupCodeEntryTitle => 'Pickup code';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return 'Can\'t open $name: $reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '$name has no public deep link, so the app was opened instead — look for the page inside it.';
   }
 
   @override
-  String get campusToolsUnsupported => 'This platform cannot open other apps';
+  String get pickupCodeUnsupported => 'This platform cannot open other apps';
 
   @override
-  String get campusToolsUntitledEntry => 'Untitled entry';
+  String get pickupCodeUntitledEntry => 'Untitled entry';
 
   @override
-  String get campusToolsReasonNoActivity => 'No app handles this link';
+  String get pickupCodeReasonNoActivity => 'No app handles this link';
 
   @override
-  String get campusToolsReasonAppNotFound => 'App not found';
+  String get pickupCodeReasonAppNotFound => 'App not found';
 
   @override
-  String get campusToolsReasonInvalidUri => 'Malformed link';
+  String get pickupCodeReasonInvalidUri => 'Malformed link';
 
   @override
-  String get campusToolsReasonInvalidPackage => 'Malformed package name';
+  String get pickupCodeReasonInvalidPackage => 'Malformed package name';
 
   @override
-  String get campusToolsReasonTimeout =>
+  String get pickupCodeReasonTimeout =>
       'The system did not respond (timed out)';
 
   @override
-  String get campusToolsReasonUnsupported => 'Not supported on this platform';
+  String get pickupCodeReasonUnsupported => 'Not supported on this platform';
 
   @override
-  String get campusToolsReasonUnknown => 'Unknown reason';
+  String get pickupCodeReasonUnknown => 'Unknown reason';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao';
+  String get pickupCodePresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao';
+  String get pickupCodePresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao';
+  String get pickupCodePresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo';
+  String get pickupCodePresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
+  String get pickupCodePresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD';
+  String get pickupCodePresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin';
+  String get pickupCodePresetDouyinParcels => 'Douyin';
 
   @override
-  String get campusToolsIdentitySectionTitle => 'Show pickup code';
+  String get pickupCodeIdentitySectionTitle => 'Show pickup code';
 
   @override
-  String get campusToolsParcelsSectionTitle => 'Check parcels';
+  String get pickupCodeParcelsSectionTitle => 'Check parcels';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name, $group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => 'The app is not installed';
+  String get pickupCodeSemanticsNotInstalled => 'The app is not installed';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       'These entries come from each app and may break after updates; try opening the app directly instead.';
+
+  @override
+  String get courseFormDiscardTitle => 'Discard changes?';
+
+  @override
+  String get courseFormDiscardMessage =>
+      'What you entered for this course will not be saved.';
+
+  @override
+  String get courseFormDiscardAction => 'Discard';
 }

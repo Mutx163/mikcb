@@ -8,7 +8,7 @@ import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
-import 'campus_tools_screen.dart';
+import 'pickup_codes_screen.dart';
 import 'changelog_screen.dart';
 import 'cloud_sync_screen.dart';
 import 'couple_timetable_settings_screen.dart';
@@ -175,8 +175,8 @@ final List<HomeMenuPageDescriptor> _catalogPageDescriptors = [
     build: () => const CourseImportScreen(),
   ),
   HomeMenuPageDescriptor(
-    id: 'campusToolsPage',
-    build: () => const CampusToolsScreen(),
+    id: 'pickupCodePage',
+    build: () => const PickupCodesScreen(),
   ),
   HomeMenuPageDescriptor(id: 'taskListPage', build: () => const TaskListScreen()),
   HomeMenuPageDescriptor(id: 'addExamPage', build: () => const AddExamScreen()),

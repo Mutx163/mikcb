@@ -13,8 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///    的在途改动顶到编译失败 —— 一个只该看两个文件字符串的检查，不该背上
 ///    整个 App 的编译面。
 ///
-/// 口径：只认「目录里有 campusTools 条目」+「路由表里有 campusToolsPage 且
-/// 指向 CampusToolsScreen」。条目被删/改名时立刻红，且原因写得出来。
+/// 口径：只认「目录里有 pickupCode 条目」+「路由表里有 pickupCodePage 且
+/// 指向 PickupCodesScreen」。条目被删/改名时立刻红，且原因写得出来。
 void main() {
   final catalogFile = File('lib/widgets/home_menu_catalog.dart');
   final registryFile = File('lib/screens/home_menu_route_registry.dart');
@@ -24,53 +24,53 @@ void main() {
     expect(registryFile.existsSync(), isTrue, reason: registryFile.path);
   });
 
-  test('八宫格目录里有 campusTools 条目，标题走 l10n、打开 campusToolsPage', () {
+  test('八宫格目录里有 pickupCode 条目，标题走 l10n、打开 pickupCodePage', () {
     final source = catalogFile.readAsStringSync();
     expect(
-      source.contains("id: 'campusTools'"),
+      source.contains("id: 'pickupCode'"),
       isTrue,
-      reason: '目录里没有 id: campusTools —— 用户永远看不到这个入口',
+      reason: '目录里没有 id: pickupCode —— 用户永远看不到这个入口',
     );
     expect(
-      source.contains("homePage('campusToolsPage')"),
+      source.contains("homePage('pickupCodePage')"),
       isTrue,
-      reason: '条目没有指向 campusToolsPage（点开会在 homePage 抛 StateError）',
+      reason: '条目没有指向 pickupCodePage（点开会在 homePage 抛 StateError）',
     );
     expect(
-      source.contains('campusToolsEntryTitle'),
+      source.contains('pickupCodeEntryTitle'),
       isTrue,
       reason: '标题必须走 l10n（硬编码中文会被 CJK 审计拦下）',
     );
   });
 
-  test('路由表登记了 campusToolsPage → CampusToolsScreen', () {
+  test('路由表登记了 pickupCodePage → PickupCodesScreen', () {
     final source = registryFile.readAsStringSync();
-    expect(source.contains("id: 'campusToolsPage'"), isTrue);
+    expect(source.contains("id: 'pickupCodePage'"), isTrue);
     expect(
-      source.contains('CampusToolsScreen()'),
+      source.contains('PickupCodesScreen()'),
       isTrue,
-      reason: '描述符的 build 没有造 CampusToolsScreen',
+      reason: '描述符的 build 没有造 PickupCodesScreen',
     );
     expect(
-      source.contains("import 'campus_tools_screen.dart';"),
+      source.contains("import 'pickup_codes_screen.dart';"),
       isTrue,
       reason: '路由表缺 import，build 会编译不过',
     );
   });
 
   test('页面文件与命令行通道名两侧一致（Dart 常量 ↔ Kotlin CHANNEL）', () {
-    final dart = File('lib/services/campus_tool_launcher.dart').readAsStringSync();
+    final dart = File('lib/services/pickup_code_launcher.dart').readAsStringSync();
     final kotlin = File(
-      'android/app/src/main/kotlin/com/mutx163/qingyu/CampusToolLauncher.kt',
+      'android/app/src/main/kotlin/com/mutx163/qingyu/PickupCodeLauncher.kt',
     ).readAsStringSync();
-    const channel = 'com.mutx163.qingyu/campus_tools';
+    const channel = 'com.mutx163.qingyu/pickup_code';
     expect(dart.contains("'$channel'"), isTrue, reason: 'Dart 侧通道名漂了');
     expect(kotlin.contains('"$channel"'), isTrue, reason: 'Kotlin 侧通道名漂了');
   });
 
   test('manifest 的 <queries> 覆盖了全部预置包名与 scheme', () {
     final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
-    // 与 lib/domain/campus_tool_presets.dart 的数据表对应：这些是 Android 11+
+    // 与 lib/domain/pickup_code_presets.dart 的数据表对应：这些是 Android 11+
     // 判断「装没装 / 有没有 App 接」的前提，漏一个就是体检里的一个假 ✗。
     const packages = <String>[
       'com.cainiao.wireless',
@@ -106,7 +106,7 @@ void main() {
   });
 
   test('页面固定四列（两组格子宽度必须一致）', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
     expect(
       source.contains('static const int _columns = 4;'),
       isTrue,
@@ -114,35 +114,35 @@ void main() {
     );
     // 不许按 entries.length 分列（那就是「有几个几列」的写法）
     expect(
-      RegExp(r'Expanded\(\s*child:\s*_CampusToolTile').hasMatch(source),
+      RegExp(r'Expanded\(\s*child:\s*_PickupCodeTile').hasMatch(source),
       isFalse,
       reason: '砖必须包在固定列数的 Row 里，不能直接铺成一行 N 个',
     );
   });
 
   test('没装的入口在界面上有明确状态，不是静默失败', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
     // 进页面就批量查一次，而不是点了才逐个试
     expect(source.contains('installedPackages('), isTrue);
     expect(source.contains('_loadInstalledPackages'), isTrue);
     // 砖上有 missing 态（弱化 + 语义标签）
     expect(source.contains('missing:'), isTrue);
-    expect(source.contains('campusToolsSemanticsNotInstalled'), isTrue);
+    expect(source.contains('pickupCodeSemanticsNotInstalled'), isTrue);
   });
 
   test('每个砖都带无障碍语义标签（分组名 + 平台名）', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
     expect(
       source.contains('Semantics('),
       isTrue,
       reason: '砖必须有 Semantics，否则读屏只念「菜鸟 按钮」',
     );
-    expect(source.contains('campusToolsSemanticsEntry'), isTrue);
+    expect(source.contains('pickupCodeSemanticsEntry'), isTrue);
     expect(source.contains('button: true'), isTrue);
   });
 
   test('点击有触觉反馈，且跟随设置开关', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
     expect(source.contains('HapticFeedback.selectionClick'), isTrue);
     expect(
       source.contains('enableHaptics'),
@@ -152,14 +152,14 @@ void main() {
   });
 
   test('失败提示带「链接可能失效」的引导，不是干巴巴一句打不开', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
-    expect(source.contains('campusToolsLaunchFailedHint'), isTrue);
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
+    expect(source.contains('pickupCodeLaunchFailedHint'), isTrue);
   });
 
   test('分组标题下不再叠加额外间距（SectionLabel 自带 8dp）', () {
-    final source = File('lib/screens/campus_tools_screen.dart').readAsStringSync();
+    final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
     final pattern = RegExp(
-      r'HyperosSectionLabel\(text: l10n\.campusTools\w+SectionTitle\),\s*\n\s*const SizedBox',
+      r'HyperosSectionLabel\(text: l10n\.pickupCode\w+SectionTitle\),\s*\n\s*const SizedBox',
     );
     expect(
       pattern.hasMatch(source),

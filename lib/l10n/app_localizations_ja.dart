@@ -3135,7 +3135,7 @@ class AppLocalizationsJa extends AppLocalizations {
       '現在の時間割に授業がありません，まず1つ手動で登録すると、以降の臨時追加で直接選択可能';
 
   @override
-  String get courseNameLabel => '授業名';
+  String get courseNameLabel => '授業名（必須）';
 
   @override
   String get courseNameHelper =>
@@ -3145,7 +3145,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pleaseEnterCourseName => '授業名を入力してください';
 
   @override
-  String get courseShortNameOptional => '授業略称';
+  String get courseShortNameOptional => '授業略称（任意）';
 
   @override
   String get courseShortNameHelper =>
@@ -11715,84 +11715,93 @@ class AppLocalizationsJa extends AppLocalizations {
   String get sharedInfoInlineHint => '略称・色・性質・概要は同名の排課に同期されます';
 
   @override
-  String get campusToolsTitle => 'キャンパスツール';
+  String get pickupCodeTitle => '受け取りコード';
 
   @override
-  String get campusToolsEntryTitle => 'キャンパスツール';
+  String get pickupCodeEntryTitle => '受け取りコード';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return '「$name」を開けません：$reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '「$name」には公開された直行ページがないため、アプリを開きました。アプリ内でご確認ください。';
   }
 
   @override
-  String get campusToolsUnsupported => 'この環境では他のアプリを開けません';
+  String get pickupCodeUnsupported => 'この環境では他のアプリを開けません';
 
   @override
-  String get campusToolsUntitledEntry => '名前のない入口';
+  String get pickupCodeUntitledEntry => '名前のない入口';
 
   @override
-  String get campusToolsReasonNoActivity => 'このリンクを開けるアプリがありません';
+  String get pickupCodeReasonNoActivity => 'このリンクを開けるアプリがありません';
 
   @override
-  String get campusToolsReasonAppNotFound => 'アプリが見つかりません';
+  String get pickupCodeReasonAppNotFound => 'アプリが見つかりません';
 
   @override
-  String get campusToolsReasonInvalidUri => 'リンクの形式が不正です';
+  String get pickupCodeReasonInvalidUri => 'リンクの形式が不正です';
 
   @override
-  String get campusToolsReasonInvalidPackage => 'パッケージ名の形式が不正です';
+  String get pickupCodeReasonInvalidPackage => 'パッケージ名の形式が不正です';
 
   @override
-  String get campusToolsReasonTimeout => 'システムが応答しません（タイムアウト）';
+  String get pickupCodeReasonTimeout => 'システムが応答しません（タイムアウト）';
 
   @override
-  String get campusToolsReasonUnsupported => 'この環境ではサポートされていません';
+  String get pickupCodeReasonUnsupported => 'この環境ではサポートされていません';
 
   @override
-  String get campusToolsReasonUnknown => '不明な理由';
+  String get pickupCodeReasonUnknown => '不明な理由';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao';
+  String get pickupCodePresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao';
+  String get pickupCodePresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao';
+  String get pickupCodePresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo';
+  String get pickupCodePresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
+  String get pickupCodePresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD';
+  String get pickupCodePresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin';
+  String get pickupCodePresetDouyinParcels => 'Douyin';
 
   @override
-  String get campusToolsIdentitySectionTitle => '受け取りコードを表示';
+  String get pickupCodeIdentitySectionTitle => '受け取りコードを表示';
 
   @override
-  String get campusToolsParcelsSectionTitle => '荷物を確認';
+  String get pickupCodeParcelsSectionTitle => '荷物を確認';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name、$group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => '対応アプリが未インストールです';
+  String get pickupCodeSemanticsNotInstalled => '対応アプリが未インストールです';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       '入口は各アプリが提供しており、更新で使えなくなることがあります。アプリを直接開いてみてください。';
+
+  @override
+  String get courseFormDiscardTitle => '変更を破棄しますか？';
+
+  @override
+  String get courseFormDiscardMessage => 'ここで入力した内容は保存されません。';
+
+  @override
+  String get courseFormDiscardAction => '破棄';
 }

@@ -1725,15 +1725,15 @@
   "reuseExistingCourseHelper": "自动带入这门课已有的信息",
   "manualInputLabel": "手动填写",
   "noTemplateCoursesHint": "当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了",
-  "courseNameLabel": "课程名称",
+  "courseNameLabel": "课程名称（必填）",
   "courseNameHelper": "作为课程唯一标识；名称相同的多条排课将归为同一课程，请填写完整名称，请勿为界面显示而缩写",
   "pleaseEnterCourseName": "请输入课程名称",
-  "courseShortNameOptional": "课程简称",
+  "courseShortNameOptional": "课程简称（可选）",
   "courseShortNameHelper": "用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
   "courseShortNameAutoFillAction": "取前两字",
   "teacherLabel": "授课教师",
   "courseNatureLabel": "课程性质",
-  "courseDescriptionOptional": "课程简介 可选",
+  "courseDescriptionOptional": "课程简介（可选）",
   "currentScheduleHint": "这里的星期、节次、教室、周次和单双周只影响当前这一条排课",
   "followProfileTimeScheme": "跟随当前课表 {name}",
   "@followProfileTimeScheme": {
@@ -6993,10 +6993,10 @@
   },
   "monthViewTapDayHint": "点任意一天查看安排",
   "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课",
-  "campusToolsTitle": "校园小工具",
-  "campusToolsEntryTitle": "校园小工具",
-  "campusToolsLaunchFailed": "打不开「{name}」：{reason}",
-  "@campusToolsLaunchFailed": {
+  "pickupCodeTitle": "取件码",
+  "pickupCodeEntryTitle": "取件码",
+  "pickupCodeLaunchFailed": "打不开「{name}」：{reason}",
+  "@pickupCodeLaunchFailed": {
     "placeholders": {
       "name": {
         "type": "String"
@@ -7006,34 +7006,34 @@
       }
     }
   },
-  "campusToolsOpenedAppToast": "「{name}」没有公开的直达页，已打开对应 App，请在 App 内查看",
-  "@campusToolsOpenedAppToast": {
+  "pickupCodeOpenedAppToast": "「{name}」没有公开的直达页，已打开对应 App，请在 App 内查看",
+  "@pickupCodeOpenedAppToast": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "campusToolsUnsupported": "当前平台不支持跳到其它应用",
-  "campusToolsUntitledEntry": "未命名入口",
-  "campusToolsReasonNoActivity": "没有 App 响应这条链接",
-  "campusToolsReasonAppNotFound": "没有找到这个 App",
-  "campusToolsReasonInvalidUri": "链接格式不对",
-  "campusToolsReasonInvalidPackage": "包名格式不对",
-  "campusToolsReasonTimeout": "系统没有响应（超时）",
-  "campusToolsReasonUnsupported": "当前平台不支持",
-  "campusToolsReasonUnknown": "未知原因",
-  "campusToolsPresetCainiao": "菜鸟",
-  "campusToolsPresetTaobao": "淘宝",
-  "campusToolsPresetTaobaoParcels": "淘宝",
-  "campusToolsPresetPinduoduo": "拼多多",
-  "campusToolsPresetPinduoduoParcels": "拼多多",
-  "campusToolsPresetJdParcels": "京东",
-  "campusToolsPresetDouyinParcels": "抖音",
-  "campusToolsIdentitySectionTitle": "出示身份码",
-  "campusToolsParcelsSectionTitle": "查待取快递",
-  "campusToolsSemanticsEntry": "{name}，{group}",
-  "@campusToolsSemanticsEntry": {
+  "pickupCodeUnsupported": "当前平台不支持跳到其它应用",
+  "pickupCodeUntitledEntry": "未命名入口",
+  "pickupCodeReasonNoActivity": "没有 App 响应这条链接",
+  "pickupCodeReasonAppNotFound": "没有找到这个 App",
+  "pickupCodeReasonInvalidUri": "链接格式不对",
+  "pickupCodeReasonInvalidPackage": "包名格式不对",
+  "pickupCodeReasonTimeout": "系统没有响应（超时）",
+  "pickupCodeReasonUnsupported": "当前平台不支持",
+  "pickupCodeReasonUnknown": "未知原因",
+  "pickupCodePresetCainiao": "菜鸟",
+  "pickupCodePresetTaobao": "淘宝",
+  "pickupCodePresetTaobaoParcels": "淘宝",
+  "pickupCodePresetPinduoduo": "拼多多",
+  "pickupCodePresetPinduoduoParcels": "拼多多",
+  "pickupCodePresetJdParcels": "京东",
+  "pickupCodePresetDouyinParcels": "抖音",
+  "pickupCodeIdentitySectionTitle": "出示身份码",
+  "pickupCodeParcelsSectionTitle": "查待取快递",
+  "pickupCodeSemanticsEntry": "{name}，{group}",
+  "@pickupCodeSemanticsEntry": {
     "placeholders": {
       "name": {
         "type": "String"
@@ -7043,6 +7043,9 @@
       }
     }
   },
-  "campusToolsSemanticsNotInstalled": "未安装对应应用",
-  "campusToolsLaunchFailedHint": "入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。"
+  "pickupCodeSemanticsNotInstalled": "未安装对应应用",
+  "pickupCodeLaunchFailedHint": "入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。",
+  "courseFormDiscardTitle": "放弃修改？",
+  "courseFormDiscardMessage": "离开后，这门课这次填写的内容不会保存。",
+  "courseFormDiscardAction": "放弃修改"
 }

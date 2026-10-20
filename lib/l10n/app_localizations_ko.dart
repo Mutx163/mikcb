@@ -3153,7 +3153,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '현재 시간표에 수업이 없습니다. 먼저 1개를 수동으로 등록하면 이후 임시 추가 시 바로 선택할 수 있습니다';
 
   @override
-  String get courseNameLabel => '수업명';
+  String get courseNameLabel => '수업명 (필수)';
 
   @override
   String get courseNameHelper =>
@@ -3163,7 +3163,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pleaseEnterCourseName => '수업명을 입력하세요';
 
   @override
-  String get courseShortNameOptional => '수업 약칭';
+  String get courseShortNameOptional => '수업 약칭 (선택)';
 
   @override
   String get courseShortNameHelper =>
@@ -11768,84 +11768,93 @@ class AppLocalizationsKo extends AppLocalizations {
   String get sharedInfoInlineHint => '약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다';
 
   @override
-  String get campusToolsTitle => '캠퍼스 도구';
+  String get pickupCodeTitle => '수령 코드';
 
   @override
-  String get campusToolsEntryTitle => '캠퍼스 도구';
+  String get pickupCodeEntryTitle => '수령 코드';
 
   @override
-  String campusToolsLaunchFailed(String name, String reason) {
+  String pickupCodeLaunchFailed(String name, String reason) {
     return '$name을(를) 열 수 없습니다: $reason';
   }
 
   @override
-  String campusToolsOpenedAppToast(String name) {
+  String pickupCodeOpenedAppToast(String name) {
     return '$name에는 공개된 바로가기 페이지가 없어 앱만 열었습니다. 앱 안에서 확인해 주세요.';
   }
 
   @override
-  String get campusToolsUnsupported => '이 플랫폼에서는 다른 앱을 열 수 없습니다';
+  String get pickupCodeUnsupported => '이 플랫폼에서는 다른 앱을 열 수 없습니다';
 
   @override
-  String get campusToolsUntitledEntry => '이름 없는 항목';
+  String get pickupCodeUntitledEntry => '이름 없는 항목';
 
   @override
-  String get campusToolsReasonNoActivity => '이 링크를 처리할 앱이 없습니다';
+  String get pickupCodeReasonNoActivity => '이 링크를 처리할 앱이 없습니다';
 
   @override
-  String get campusToolsReasonAppNotFound => '앱을 찾을 수 없습니다';
+  String get pickupCodeReasonAppNotFound => '앱을 찾을 수 없습니다';
 
   @override
-  String get campusToolsReasonInvalidUri => '링크 형식이 올바르지 않습니다';
+  String get pickupCodeReasonInvalidUri => '링크 형식이 올바르지 않습니다';
 
   @override
-  String get campusToolsReasonInvalidPackage => '패키지명 형식이 올바르지 않습니다';
+  String get pickupCodeReasonInvalidPackage => '패키지명 형식이 올바르지 않습니다';
 
   @override
-  String get campusToolsReasonTimeout => '시스템이 응답하지 않습니다(시간 초과)';
+  String get pickupCodeReasonTimeout => '시스템이 응답하지 않습니다(시간 초과)';
 
   @override
-  String get campusToolsReasonUnsupported => '이 플랫폼에서는 지원하지 않습니다';
+  String get pickupCodeReasonUnsupported => '이 플랫폼에서는 지원하지 않습니다';
 
   @override
-  String get campusToolsReasonUnknown => '알 수 없는 이유';
+  String get pickupCodeReasonUnknown => '알 수 없는 이유';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao';
+  String get pickupCodePresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao';
+  String get pickupCodePresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao';
+  String get pickupCodePresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo';
+  String get pickupCodePresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
+  String get pickupCodePresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD';
+  String get pickupCodePresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin';
+  String get pickupCodePresetDouyinParcels => 'Douyin';
 
   @override
-  String get campusToolsIdentitySectionTitle => '수령 코드 표시';
+  String get pickupCodeIdentitySectionTitle => '수령 코드 표시';
 
   @override
-  String get campusToolsParcelsSectionTitle => '택배 확인';
+  String get pickupCodeParcelsSectionTitle => '택배 확인';
 
   @override
-  String campusToolsSemanticsEntry(String name, String group) {
+  String pickupCodeSemanticsEntry(String name, String group) {
     return '$name, $group';
   }
 
   @override
-  String get campusToolsSemanticsNotInstalled => '해당 앱이 설치되어 있지 않습니다';
+  String get pickupCodeSemanticsNotInstalled => '해당 앱이 설치되어 있지 않습니다';
 
   @override
-  String get campusToolsLaunchFailedHint =>
+  String get pickupCodeLaunchFailedHint =>
       '각 앱이 제공하는 주소라 업데이트 후 사용할 수 없게 될 수 있습니다. 해당 앱을 직접 열어 보세요.';
+
+  @override
+  String get courseFormDiscardTitle => '변경사항을 버릴까요?';
+
+  @override
+  String get courseFormDiscardMessage => '여기서 입력한 내용은 저장되지 않습니다.';
+
+  @override
+  String get courseFormDiscardAction => '버리기';
 }
