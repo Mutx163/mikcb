@@ -111,6 +111,19 @@ class WeatherService {
     return locations;
   }
 
+  /// 出网与落盘统一把坐标取整到 2 位小数（约 1.1 km，2026-10-19 安全清单 #3）。
+  ///
+  /// 逐小时天气的网格精度本来就到不了百米级，完整经纬度（≈毫米级分辨率）
+  /// 属于过度收集：第三方（预报 / 反查）拿到的只是「街区级」位置，本机
+  /// 明文落盘的那份也随之不再含精确定位。取整只在发请求与解析响应两个
+  /// 汇聚点做，上层（provider / 定位服务 / 选城市页）无感知。
+  /// 副作用：与取整前缓存的预报会因 matchesLocation 判非同城而多刷一次，
+  /// 一次自愈，之后恒定。
+  static double coarsenCoordinate(double value) {
+    final scaled = value * 100;
+    return scaled.roundToDouble() / 100;
+  }
+
   /// 按坐标反查可读地名（BigDataCloud 免费客户端接口）。
   ///
   /// Open-Meteo 的地理编码只支持按名字查（缺 `name` 直接报错），所以定位拿到
@@ -122,24 +135,28 @@ class WeatherService {
   ///
   /// 参数用位置式（与 [searchLocations] 一致），这样本方法可以直接当
   /// `ReverseGeocode` 的引用传给 [DeviceLocationService]。
+  /// **只发送取整后的坐标**（见 [coarsenCoordinate]），返回值的坐标同为
+  /// 取整精度——落盘与后续预报请求都用这一份。
   Future<WeatherLocation?> reverseGeocode(
     double latitude,
     double longitude,
   ) async {
+    final coarsenedLatitude = coarsenCoordinate(latitude);
+    final coarsenedLongitude = coarsenCoordinate(longitude);
     final uri = Uri.parse(_reverseGeocodeBaseUrl).replace(
       queryParameters: {
-        'latitude': '$latitude',
-        'longitude': '$longitude',
+        'latitude': '$coarsenedLatitude',
+        'longitude': '$coarsenedLongitude',
         'localityLanguage': 'zh-Hans',
       },
     );
 
     return _parseLocation(
       await _getJson(uri, 'weather_reverse_geocode'),
-      // 坐标用**请求时那一份**而不是响应里回显的：响应会把坐标取整，而天气请求
-      // 该用我们实际拿到的那份。
-      fallbackLatitude: latitude,
-      fallbackLongitude: longitude,
+      // 坐标用**请求时那一份**（已取整）而不是响应里回显的：响应会按它自己
+      // 的精度回填格点，而后续天气请求与落盘该用我们实际发出去的那份。
+      fallbackLatitude: coarsenedLatitude,
+      fallbackLongitude: coarsenedLongitude,
     );
   }
 
@@ -158,7 +175,9 @@ class WeatherService {
   /// 反查与 IP 估算的响应字段完全一样，共用一份解析——免得「city 缺失退到 locality」
   /// 「区名与市名相同时不重复记」这类规则在两处各写一遍、慢慢分叉。
   ///
-  /// [fallbackLatitude] / [fallbackLongitude] 给定时优先用它们，否则取响应里的坐标。
+  /// [fallbackLatitude] / [fallbackLongitude] 给定时优先用它们，否则取响应里的
+  /// 坐标。**产出坐标一律过 [coarsenCoordinate] 取整**：IP 估算与反查的结果
+  /// 都要落盘并参与后续预报请求，精度口径在此统一。
   WeatherLocation? _parseLocation(
     Map<String, dynamic>? json, {
     double? fallbackLatitude,
@@ -185,8 +204,8 @@ class WeatherService {
       country: _text(json['countryName']),
       // 区名与市名相同时不重复记（重庆这类直辖市反查会给出同名的 city 与 locality）。
       district: locality == name ? null : locality,
-      latitude: latitude,
-      longitude: longitude,
+      latitude: coarsenCoordinate(latitude),
+      longitude: coarsenCoordinate(longitude),
     );
   }
 
@@ -200,11 +219,14 @@ class WeatherService {
   }
 
   /// 拉取 [location] 的逐小时预报；失败或没有有效数据时返回 null。
+  ///
+  /// 请求只带取整后的坐标（见 [coarsenCoordinate]）——正常链路里 location
+  /// 本就来自取整后的反查/搜索结果，这里是防御性兜底。
   Future<WeatherForecast?> fetchForecast(WeatherLocation location) async {
     final uri = Uri.parse(_forecastBaseUrl).replace(
       queryParameters: {
-        'latitude': '${location.latitude}',
-        'longitude': '${location.longitude}',
+        'latitude': '${coarsenCoordinate(location.latitude)}',
+        'longitude': '${coarsenCoordinate(location.longitude)}',
         // 显式用城市自己的时区，别让服务端按请求 IP 猜：返回的 hourly.time 是
         // 不带偏移量的墙钟串，与课程时间同为墙钟语义，直接比较即可。
         'timezone': location.timezone ?? 'auto',

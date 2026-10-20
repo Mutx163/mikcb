@@ -140,8 +140,11 @@ void main() {
       expect(captured!.queryParameters['timezone'], 'Asia/Shanghai');
       expect(captured!.queryParameters['past_days'], '1');
       expect(captured!.queryParameters['forecast_days'], '16');
-      expect(captured!.queryParameters['latitude'], '30.29365');
-      expect(captured!.queryParameters['longitude'], '120.16142');
+      // 出网坐标取整到 2 位小数（约 1.1 km，2026-10-19 安全清单 #3）：
+      // 30.29365→30.29、120.16142→120.16。逐小时天气的网格精度本就到不了
+      // 百米级，完整经纬度发给第三方属于过度收集。
+      expect(captured!.queryParameters['latitude'], '30.29');
+      expect(captured!.queryParameters['longitude'], '120.16');
     });
 
     test('城市没带时区时退回 auto', () async {
@@ -355,8 +358,10 @@ void main() {
       expect(location.displayName, '杭州市 · 拱墅区');
       // 时区留空，让预报接口用 timezone=auto 按坐标自行解析。
       expect(location.timezone, isNull);
-      expect(location.latitude, closeTo(30.29365, 1e-9));
-      expect(location.longitude, closeTo(120.16142, 1e-9));
+      // 出网与返回值都取整到 2 位小数（2026-10-19 安全清单 #3）：落盘与
+      // 后续预报请求用的就是这一份，本机不再保留完整精度坐标。
+      expect(location.latitude, 30.29);
+      expect(location.longitude, 120.16);
     });
 
     test('请求带 zh-Hans（传 zh / zh-CN 会返回繁体）', () async {
@@ -587,6 +592,87 @@ void main() {
         WeatherPreferences.forecastKey: '{"latitude":1}',
       });
       expect(await WeatherPreferences.loadForecast(), isNull);
+    });
+  });
+
+  group('坐标出网/落盘取整（2026-10-19 安全清单 #3）', () {
+    test('coarsenCoordinate 四舍五入到 2 位小数（约 1.1 km）', () {
+      expect(WeatherService.coarsenCoordinate(30.29365), 30.29);
+      expect(WeatherService.coarsenCoordinate(120.16142), 120.16);
+      expect(WeatherService.coarsenCoordinate(-99.999), -100.0);
+      expect(WeatherService.coarsenCoordinate(0.0), 0);
+    });
+
+    test('反查请求只发取整坐标，返回值同精度（落盘那份不再含精确定位）', () async {
+      Uri? captured;
+      final service = WeatherService(
+        client: MockClient((request) async {
+          captured = request.url;
+          return http.Response(
+            jsonEncode({
+              'city': '杭州市',
+              // 响应回显高精度格点：不采用，用请求时取整后的那份。
+              'latitude': 30.29345678,
+              'longitude': 120.16123456,
+            }),
+            200,
+            headers: _jsonHeaders,
+          );
+        }),
+      );
+
+      final location = await service.reverseGeocode(30.29365432, 120.16123456);
+
+      expect(captured!.queryParameters['latitude'], '30.29');
+      expect(captured!.queryParameters['longitude'], '120.16');
+      expect(location!.latitude, 30.29);
+      expect(location.longitude, 120.16);
+    });
+
+    test('IP 估算（无坐标请求）响应坐标同样取整', () async {
+      final service = WeatherService(
+        client: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'city': '成都市',
+              'latitude': 30.572815,
+              'longitude': 104.066803,
+            }),
+            200,
+            headers: _jsonHeaders,
+          ),
+        ),
+      );
+
+      final location = await service.networkGeocode();
+
+      expect(location!.latitude, 30.57);
+      expect(location.longitude, 104.07);
+    });
+
+    test('预报请求对传入 location 做防御性取整', () async {
+      Uri? captured;
+      final service = WeatherService(
+        client: MockClient((request) async {
+          captured = request.url;
+          return http.Response(
+            jsonEncode(_forecastPayload()),
+            200,
+            headers: _jsonHeaders,
+          );
+        }),
+      );
+
+      await service.fetchForecast(
+        const WeatherLocation(
+          name: '手工构造',
+          latitude: 30.123456,
+          longitude: 120.987654,
+        ),
+      );
+
+      expect(captured!.queryParameters['latitude'], '30.12');
+      expect(captured!.queryParameters['longitude'], '120.99');
     });
   });
 }
