@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/timetable_provider.dart';
+import '../models/timetable_profile.dart';
+import '../models/timetable_settings.dart';
 import 'home_widget_binding_service.dart';
 import 'partner_timetable_service.dart';
 
@@ -21,6 +21,27 @@ enum WidgetLaunchOutcome {
   bindingMissing,
 }
 
+/// 桌面卡片分流需要的课表窄面（端口由消费方定义）。
+///
+/// 本文件在 services 层，不反向 import `providers/timetable_provider.dart`：
+/// 分流真正需要的只有「初始化 / 情侣绑定判定 / 读设置 / 写设置 / 切课表」
+/// 六个成员。宿主适配器 `WidgetLaunchProviderAccess` 见
+/// `lib/providers/widget_launch_timetable_access.dart`，由调用点（main.dart、
+/// 测试）构造注入。
+abstract class WidgetLaunchTimetable {
+  Future<void> initialize();
+
+  bool get hasPartnerBinding;
+
+  TimetableProfile? get partnerProfile;
+
+  TimetableSettings get settings;
+
+  Future<String?> updateTimetableSettings(TimetableSettings settings);
+
+  Future<void> switchProfile(String profileId);
+}
+
 /// 桌面卡片点击 → App 内分流。
 ///
 /// 原生把卡片点击（带 appWidgetId）作为 pending 递给 Flutter（冷启动由
@@ -37,10 +58,12 @@ class WidgetLaunchRouter {
   /// 课表页只在「本地状态与持久化值发散」时跟随，避免与页内开关竞态。
   static final ValueNotifier<int> coupleOverlayRequestTick = ValueNotifier(0);
 
-  static Future<WidgetLaunchOutcome> handle(BuildContext context) {
-    final provider = context.read<TimetableProvider>();
+  static Future<WidgetLaunchOutcome> handle(
+    BuildContext context, {
+    required WidgetLaunchTimetable timetable,
+  }) {
     return handleWith(
-      provider: provider,
+      timetable: timetable,
       onRequestPopToRoot: context.mounted
           ? () => Navigator.of(context).popUntil((route) => route.isFirst)
           : null,
@@ -51,7 +74,7 @@ class WidgetLaunchRouter {
   /// [onRequestPopToRoot] 在「需要让覆盖层可见」时回调（覆盖层显示在
   /// 课表首页上；从深层页面进来时先回到根路由）。
   static Future<WidgetLaunchOutcome> handleWith({
-    required TimetableProvider provider,
+    required WidgetLaunchTimetable timetable,
     HomeWidgetBindingService bindingService = const HomeWidgetBindingService(),
     void Function()? onRequestPopToRoot,
   }) async {
@@ -59,7 +82,7 @@ class WidgetLaunchRouter {
     if (appWidgetId == null) {
       return WidgetLaunchOutcome.none;
     }
-    await provider.initialize();
+    await timetable.initialize();
 
     final boundProfileId = await bindingService.getWidgetBinding(appWidgetId);
     if (boundProfileId == null) {
@@ -70,12 +93,12 @@ class WidgetLaunchRouter {
         PartnerTimetableService.partnerProfileId ||
         boundProfileId == kHomeWidgetCoupleMergedBindingId;
     if (isPartnerViewBinding) {
-      if (!provider.hasPartnerBinding || provider.partnerProfile == null) {
+      if (!timetable.hasPartnerBinding || timetable.partnerProfile == null) {
         return WidgetLaunchOutcome.bindingMissing;
       }
-      if (!provider.settings.coupleTimetableOverlayEnabled) {
-        await provider.updateTimetableSettings(
-          provider.settings.copyWith(coupleTimetableOverlayEnabled: true),
+      if (!timetable.settings.coupleTimetableOverlayEnabled) {
+        await timetable.updateTimetableSettings(
+          timetable.settings.copyWith(coupleTimetableOverlayEnabled: true),
         );
       }
       onRequestPopToRoot?.call();
@@ -84,7 +107,7 @@ class WidgetLaunchRouter {
     }
 
     // switchProfile 自带守卫：课表不存在 / 是 TA 课表时静默不动。
-    await provider.switchProfile(boundProfileId);
+    await timetable.switchProfile(boundProfileId);
     return WidgetLaunchOutcome.switchedProfile;
   }
 }

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/providers/widget_launch_timetable_access.dart';
 import 'package:university_timetable/services/home_widget_binding_service.dart';
 import 'package:university_timetable/services/miui_live_activities_service.dart';
 import 'package:university_timetable/services/partner_timetable_service.dart';
@@ -66,7 +67,7 @@ void main() {
 
   test('无 pending 点击 → none（普通打开）', () async {
     final provider = await createProvider();
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
     expect(outcome, WidgetLaunchOutcome.none);
     expect(provider.activeProfileId, isNotNull);
     expect(popToRootCalls, 0);
@@ -78,7 +79,7 @@ void main() {
 
     pendingWidgetId = 33;
     bindings[33] = other.id;
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
 
     expect(outcome, WidgetLaunchOutcome.switchedProfile);
     expect(provider.activeProfileId, other.id);
@@ -90,7 +91,7 @@ void main() {
 
     pendingWidgetId = 34;
     bindings[34] = PartnerTimetableService.partnerProfileId;
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
 
     expect(outcome, WidgetLaunchOutcome.bindingMissing);
     expect(provider.activeProfileId, before);
@@ -103,7 +104,7 @@ void main() {
 
     pendingWidgetId = 35;
     bindings[35] = null;
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
 
     expect(outcome, WidgetLaunchOutcome.none);
     expect(provider.activeProfileId, before);
@@ -118,7 +119,7 @@ void main() {
     pendingWidgetId = 36;
     bindings[36] = other.id;
     await provider.deleteProfile(other.id);
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
 
     expect(outcome, WidgetLaunchOutcome.switchedProfile);
     expect(provider.activeProfileId, before);
@@ -152,7 +153,7 @@ void main() {
     pendingWidgetId = 37;
     bindings[37] = PartnerTimetableService.partnerProfileId;
     final outcome = await WidgetLaunchRouter.handleWith(
-      provider: provider,
+      timetable: WidgetLaunchProviderAccess(provider),
       onRequestPopToRoot: () => popToRootCalls++,
     );
 
@@ -191,7 +192,7 @@ void main() {
     pendingWidgetId = 38;
     bindings[38] = kHomeWidgetCoupleMergedBindingId;
     final outcome = await WidgetLaunchRouter.handleWith(
-      provider: provider,
+      timetable: WidgetLaunchProviderAccess(provider),
       onRequestPopToRoot: () => popToRootCalls++,
     );
 
@@ -207,7 +208,7 @@ void main() {
 
     pendingWidgetId = 39;
     bindings[39] = kHomeWidgetCoupleMergedBindingId;
-    final outcome = await WidgetLaunchRouter.handleWith(provider: provider);
+    final outcome = await WidgetLaunchRouter.handleWith(timetable: WidgetLaunchProviderAccess(provider));
 
     expect(outcome, WidgetLaunchOutcome.bindingMissing);
     expect(provider.activeProfileId, before);

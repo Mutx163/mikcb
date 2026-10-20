@@ -23,6 +23,7 @@ import 'logging/performance_settings_snapshot.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
 import 'providers/weather_provider.dart';
+import 'providers/widget_launch_timetable_access.dart';
 import 'screens/import/course_import_entry_screen.dart';
 import 'screens/import/ics_course_import_screen.dart';
 import 'screens/import/spreadsheet_course_import_screen.dart';
@@ -1665,7 +1666,10 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       return;
     }
     try {
-      final outcome = await WidgetLaunchRouter.handle(context);
+      final outcome = await WidgetLaunchRouter.handle(
+        context,
+        timetable: WidgetLaunchProviderAccess(context.read<TimetableProvider>()),
+      );
       if (!mounted || outcome != WidgetLaunchOutcome.bindingMissing) {
         return;
       }
