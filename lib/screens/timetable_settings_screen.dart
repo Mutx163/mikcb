@@ -16,7 +16,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../logging/app_debug_log.dart';
-import '../logging/performance_settings_snapshot.dart';
 import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -68,13 +67,13 @@ import 'settings/settings_home_backdrop_flow.dart';
 import 'settings/settings_reset.dart';
 import 'settings/settings_weather.dart';
 import 'settings/settings_general.dart';
+import 'settings/settings_diagnostics.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_glass_dock_icon_editor.dart';
-part 'settings/settings_diagnostics.dart';
 part 'settings/settings_course_card.dart';
 part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
@@ -97,7 +96,7 @@ Widget? settingsSubpageById(String id) {
     'holidaySettings' => const _HolidaySettingsScreen(),
     'weatherSettings' => const WeatherSettingsScreen(),
     'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
-    'diagnosticsSettings' => const _DiagnosticsScreen(),
+    'diagnosticsSettings' => const DiagnosticsScreen(),
     _ => null,
   };
 }
@@ -256,7 +255,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/diagnostics'),
-            builder: (_) => const _DiagnosticsScreen(),
+            builder: (_) => const DiagnosticsScreen(),
           );
         }
 

@@ -1,4 +1,15 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../logging/performance_settings_snapshot.dart';
+import '../../providers/timetable_provider.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../services/memory_stats_service.dart';
+import '../memory_stats_screen.dart';
+import '../log_viewer_entry.dart';
+import 'settings_shared.dart';
 
 /// 诊断与日志。
 ///
@@ -10,14 +21,14 @@ part of '../timetable_settings_screen.dart';
 /// 「记录应用日志」开关 2026-08-30 从日志查看页头部迁来：开关是配置，
 /// 查看页应是纯阅读器——此前开关卡+折叠排序卡占掉页面大半，日志列表
 /// 被挤到底部。功能入口不收进这里的原则不变，配置类开关不受限。
-class _DiagnosticsScreen extends StatefulWidget {
-  const _DiagnosticsScreen();
+class DiagnosticsScreen extends StatefulWidget {
+  const DiagnosticsScreen({super.key});
 
   @override
-  State<_DiagnosticsScreen> createState() => _DiagnosticsScreenState();
+  State<DiagnosticsScreen> createState() => DiagnosticsScreenState();
 }
 
-class _DiagnosticsScreenState extends State<_DiagnosticsScreen> {
+class DiagnosticsScreenState extends State<DiagnosticsScreen> {
   late final Future<bool> _diagnosticsBuildFuture =
       MemoryStatsService.isDiagnosticsBuild();
 
