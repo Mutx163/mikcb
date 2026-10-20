@@ -47,4 +47,37 @@ void main() {
       );
     });
   });
+
+  group('validatedCoupleWebdavBaseUrl', () {
+    test('空值回落默认坚果云 https', () {
+      expect(
+        validatedCoupleWebdavBaseUrl(''),
+        CoupleWebdavConfig.defaultJianguoyunBaseUrl,
+      );
+      expect(
+        validatedCoupleWebdavBaseUrl('   '),
+        CoupleWebdavConfig.defaultJianguoyunBaseUrl,
+      );
+    });
+
+    test('https 原样放行（含 trim）', () {
+      expect(
+        validatedCoupleWebdavBaseUrl(' https://dav.example.com/dav/ '),
+        'https://dav.example.com/dav/',
+      );
+    });
+
+    test('http 明文拒绝（无 UI 确认入口，未确认不放行）', () {
+      expect(validatedCoupleWebdavBaseUrl('http://192.168.1.10:5005/'), isNull);
+    });
+
+    test('非 http(s) scheme 拒绝', () {
+      expect(validatedCoupleWebdavBaseUrl('ftp://dav.example.com/'), isNull);
+      expect(validatedCoupleWebdavBaseUrl('file:///sdcard/dav'), isNull);
+    });
+
+    test('无 scheme 拒绝', () {
+      expect(validatedCoupleWebdavBaseUrl('dav.example.com/dav/'), isNull);
+    });
+  });
 }

@@ -111,11 +111,15 @@ class CoupleWebdavService {
         resolvedPassword.isEmpty) {
       throw StateError('missing_credentials');
     }
+    // scheme 校验（2026-10-20 补，与 pull/push 同源）：非 http(s) 一律拒绝，
+    // 抛给 UI 的既有 catch（连接弹窗显示「测试失败」兜底文案）。
+    final baseUrl = validatedCoupleWebdavBaseUrl(resolvedConfig.baseUrl);
+    if (baseUrl == null) {
+      throw StateError('couple_webdav_invalid_base_url');
+    }
     await _clientService.testConnection(
       WebdavConnectionParams(
-        baseUrl: resolvedConfig.baseUrl.trim().isEmpty
-            ? CoupleWebdavConfig.defaultJianguoyunBaseUrl
-            : resolvedConfig.baseUrl.trim(),
+        baseUrl: baseUrl,
         username: resolvedUsername,
         password: resolvedPassword,
       ),
@@ -137,11 +141,19 @@ class CoupleWebdavService {
       );
     }
 
+    // scheme 校验（2026-10-20 补）：非 http(s) 拒绝。与 pull 的整体契约一致
+    // ——「只返回错误码、从不抛」；该码未登记 localizeServiceMessage case，
+    // 走 default 兜底显示通用失败文案、原始码留日志。
+    final baseUrl = validatedCoupleWebdavBaseUrl(config.baseUrl);
+    if (baseUrl == null) {
+      return const CoupleWebdavPullResult(
+        status: CoupleWebdavPullStatus.failed,
+        errorCode: 'couple_webdav_invalid_base_url',
+      );
+    }
     final client = _clientService.createClient(
       WebdavConnectionParams(
-        baseUrl: config.baseUrl.trim().isEmpty
-            ? CoupleWebdavConfig.defaultJianguoyunBaseUrl
-            : config.baseUrl.trim(),
+        baseUrl: baseUrl,
         username: config.username.trim(),
         password: password,
       ),
@@ -248,11 +260,15 @@ class CoupleWebdavService {
       currentWeek: provider.currentWeek,
     );
 
+    // scheme 校验（2026-10-20 补）：非 http(s) 拒绝，按本方法的 String? 错误码
+    // 约定返回（同 'couple_webdav_not_connected' 的先例）。
+    final baseUrl = validatedCoupleWebdavBaseUrl(config.baseUrl);
+    if (baseUrl == null) {
+      return 'couple_webdav_invalid_base_url';
+    }
     final client = _clientService.createClient(
       WebdavConnectionParams(
-        baseUrl: config.baseUrl.trim().isEmpty
-            ? CoupleWebdavConfig.defaultJianguoyunBaseUrl
-            : config.baseUrl.trim(),
+        baseUrl: baseUrl,
         username: config.username.trim(),
         password: password,
       ),

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'webdav_sync_config.dart';
+
 class CoupleWebdavConfig {
   static const String prefsKey = 'couple_webdav_config_v1';
   static const String defaultJianguoyunBaseUrl =
@@ -109,6 +111,27 @@ class CoupleWebdavConfig {
       lastRemoteContentHash: json['lastRemoteContentHash'] as String?,
     );
   }
+}
+
+/// 解析并校验情侣同步的 baseUrl，返回可直接交给 WebDAV 客户端的地址；
+/// 不可用（非 http/https）返回 null，由调用方按各自契约报错。
+///
+/// 与云同步同源：2026-10-19 安全清单 #4 给 `inspectWebdavBaseUrlScheme` 上了
+/// 三级分级，但当时只接了云同步的保存入口，情侣路径（testConnection / pull /
+/// push 三处）漏接——同一个洞留了一半，这里补齐（2026-10-20 体检复核确认）。
+///
+/// http 明文：与云同步同口径属合法场景（局域网 NAS），但放行的前提是 UI
+/// 二次确认（cloud_sync_screen.dart 的 `_saveAdvancedFields` 做法）。情侣
+/// 路径当前没有地址输入框、也就没有确认入口，按「未确认不放行」拦截；
+/// 将来加输入框时在 UI 层补同款确认弹窗，再把「已确认」传到这里放行。
+String? validatedCoupleWebdavBaseUrl(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return CoupleWebdavConfig.defaultJianguoyunBaseUrl;
+  }
+  return inspectWebdavBaseUrlScheme(trimmed) == WebdavBaseUrlScheme.https
+      ? trimmed
+      : null;
 }
 
 class CoupleWebdavConfigStore {
