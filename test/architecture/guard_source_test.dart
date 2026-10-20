@@ -33,7 +33,8 @@ void main() {
         continue; // 该样本有在途改动，跳过（CI 干净检出下不会走到这里）
       }
       final worktreeLines = File(path).readAsLinesSync().length;
-      final blob = Process.runSync('git', ['show', ':$path']);
+      final blob = Process.runSync('git', ['show', ':$path'],
+          stdoutEncoding: utf8);
       expect(blob.exitCode, 0, reason: '索引里没有 $path');
       final indexLines = const LineSplitter().convert(blob.stdout as String).length;
       expect(
@@ -49,8 +50,10 @@ void main() {
   });
 
   test('守卫纪律：test/architecture 的守卫一律经 GuardSource.resolve 读文件', () {
-    const directRead = RegExp(
-      r'\b(File|Directory)\(\s*(?!GuardSource\.resolve)',
+    // \s* 必须放在 lookahead 里：放外面时贪心回溯会让 "File(\n  GuardSource..." 
+    // 在中间空白处匹配成功（负 lookahead 在空格位置成立）。
+    final directRead = RegExp(
+      r'\b(File|Directory)\((?!\s*GuardSource\.resolve)',
     );
     final offenders = <String>[];
     for (final entity in Directory(
