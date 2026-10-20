@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
@@ -18,12 +16,10 @@ import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
-import '../ui/app_fonts.dart';
 import '../ui/debug/debug.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
-import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../widgets/course_recolor_sheet.dart';
@@ -52,8 +48,7 @@ import 'settings/settings_holiday.dart';
 import 'settings/settings_live.dart';
 import 'settings/settings_home_widget.dart';
 import 'settings/settings_timetable_page.dart';
-
-part 'settings/settings_appearance.dart';
+import 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_glass_dock_editor.dart';
@@ -66,7 +61,7 @@ part 'settings/settings_course_card.dart';
 Widget? settingsSubpageById(String id) {
   return switch (id) {
     'generalSettings' => const GeneralSettingsScreen(),
-    'appearanceSettings' => const _AppearanceSettingsScreen(),
+    'appearanceSettings' => const AppearanceSettingsScreen(),
     // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
     'appearanceEditor' => const AppearanceEditorScreen(),
     'timetablePageSettings' => const TimetablePageSettingsScreen(),
@@ -113,7 +108,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/appearance'),
-            builder: (_) => const _AppearanceSettingsScreen(),
+            builder: (_) => const AppearanceSettingsScreen(),
           );
         }
 

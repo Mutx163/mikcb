@@ -1,14 +1,29 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/app_fonts.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/theme_manage_sheets.dart';
+import 'settings_shared.dart';
+import 'settings_reset.dart';
+import 'settings_appearance_editor.dart';
 
-class _AppearanceSettingsScreen extends StatefulWidget {
-  const _AppearanceSettingsScreen();
+class AppearanceSettingsScreen extends StatefulWidget {
+  const AppearanceSettingsScreen({super.key});
 
   @override
-  State<_AppearanceSettingsScreen> createState() =>
-      _AppearanceSettingsScreenState();
+  State<AppearanceSettingsScreen> createState() =>
+      AppearanceSettingsScreenState();
 }
 
-class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
+class AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
   /// Visual groups on this page (not one card per control).
   /// 0 preview · 1 appearance editor entry · 2 app display ·
   /// 3 theme manage + seed · 4 reset.
@@ -318,7 +333,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 HyperosNavigation.push(
                   context,
                   settings: const RouteSettings(name: '/settings/theme'),
-                  builder: (_) => const _ThemeManageScreen(),
+                  builder: (_) => const ThemeManageScreen(),
                 );
               },
             ),
@@ -414,14 +429,14 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   }
 }
 
-class _ThemeManageScreen extends StatefulWidget {
-  const _ThemeManageScreen();
+class ThemeManageScreen extends StatefulWidget {
+  const ThemeManageScreen({super.key});
 
   @override
-  State<_ThemeManageScreen> createState() => _ThemeManageScreenState();
+  State<ThemeManageScreen> createState() => ThemeManageScreenState();
 }
 
-class _ThemeManageScreenState extends State<_ThemeManageScreen> {
+class ThemeManageScreenState extends State<ThemeManageScreen> {
   @override
   void dispose() {
     super.dispose();
@@ -854,10 +869,10 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   }
 }
 
-class _HomeTitleStylePreview extends StatelessWidget {
+class HomeTitleStylePreview extends StatelessWidget {
   final HomeTitleStyle style;
 
-  const _HomeTitleStylePreview({required this.style});
+  const HomeTitleStylePreview({super.key, required this.style});
 
   @override
   Widget build(BuildContext context) {

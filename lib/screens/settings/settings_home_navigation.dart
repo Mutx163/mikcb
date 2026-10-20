@@ -285,7 +285,7 @@ class _HomeNavigationSettingsScreenState
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: _HomeTitleStylePreview(style: _draft.homeTitleStyle),
+                  child: HomeTitleStylePreview(style: _draft.homeTitleStyle),
                 ),
                 HyperosSelectTile<HomeTitleStyle>(
                   label: l10n.homeTitleStyleLabel,
