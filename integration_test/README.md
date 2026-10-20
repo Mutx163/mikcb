@@ -7,15 +7,134 @@
 
 | # | 路径 | 文件 | 状态 |
 |---|---|---|---|
-| 1 | 冷启动 → **磁盘里那门课出现在首页网格上** | `cold_start_home_test.dart` | 已写，待跑 |
-| 2 | 加课 → 保存 → **杀进程** → 重开 → 课还在 | `persist_write_phase_test.dart` + `persist_read_phase_test.dart` | 已写，待跑 |
-| 2b | 加课 → 保存 → 首页能看到（UI 全链路） | `add_course_to_home_test.dart` | 已写，**真机通过**（旧 flavor） |
-| 3 | 导入课表 → 解析 → 落库 → 首页能看到 | `import_ics_to_home_test.dart` | 已写，待跑 |
-| 4 | 改设置 → **杀进程** → 重开 → 设置还在 | `settings_persist_write_test.dart` + `settings_persist_read_test.dart` | 已写，待跑 |
-| 5 | 备份 → 清空 → 恢复 → 数据回来 | — | 未开始 |
+| 1 | 冷启动 → **磁盘里那门课出现在首页网格上** | `cold_start_home_test.dart` | ✅ **真机通过**（2026-10-20） |
+| 2 | 加课 → 保存 → **杀进程** → 重开 → 课还在 | `persist_write_phase_test.dart` + `persist_read_phase_test.dart` | ✅ **真机通过**，两阶段 + 咬合探针 |
+| 2b | 加课 → 保存 → 首页能看到（UI 全链路） | `add_course_to_home_test.dart` | ✅ **真机通过** |
+| 3 | 导入课表 → 解析 → 落库 → 首页能看到 | `import_ics_to_home_test.dart` | ✅ **真机通过** |
+| 4 | 改设置 → **杀进程** → 重开 → 设置还在 | `settings_persist_write_test.dart` + `settings_persist_read_test.dart` | 阶段一 ✅ 通过；阶段二 ⏸ 待跑（编译被他人改动阻塞） |
+| 5 | 备份 → 清空 → 恢复 → 数据回来 | `backup_restore_write_phase_test.dart` + `backup_restore_read_phase_test.dart` | 已写，⏸ 待跑（同一阻塞） |
 
-> 「已写，待跑」= 代码与静态检查都过了，但**还没在任何设备上执行过**。
-> 别把 `dart analyze` 通过当成验过——那是两件事。
+> 真机实测细节（输出、阻塞原因、验证顺序）见下文「真机验证记录（2026-10-20）」。
+
+---
+
+## 真机验证记录（2026-10-20）
+
+设备：`25060RK16C` / `10.196.69.43:5555` / Android 17 (API 37)。
+命令一律 `--flavor itest`（隔离包名，见下文事故记录）。
+
+### 通过的五步
+
+**① 第 1 条 · 冷启动读盘**
+
+```
+00:00 +0: 冷启动：磁盘里那门课真的出现在首页网格上
+00:02 +1: All tests passed!
+```
+
+**② 第 2 条 · 跨进程持久化（今天最有价值的一条）**
+
+```
+# 阶段一（写）
+00:00 +0: 阶段一（写）：把一门带标记的课写进磁盘
+00:00 +1: All tests passed!
+```
+
+跑完确认 `.itest` 包**仍在设备上**（`--no-uninstall` 生效），数据才活得到下一次。
+
+```
+# 阶段二（全新进程，读）
+00:00 +0: 阶段二（读，全新进程）：上一阶段加的课仍在首页网格上
+00:02 +1: All tests passed!
+```
+
+关键：阶段二里**先直接问磁盘**那一段通过了 —— 全新进程从磁盘读到
+`itest_persist_course_v1`，且 `dayOfWeek` / `startSection` / `teacher` /
+`location` 四个字段全部一致。**说明真的落盘，不是内存蒙混过关。**
+
+跑完 `.itest` 被自动卸载；用户三个包（prod / profile / dev）全程无损。
+
+**③ 第 2b 条 · 加课 UI 全链路** — `00:05 +1: All tests passed!`
+
+**④ 第 3 条 · ICS 导入** — `00:01 +1: All tests passed!`
+
+**⑤ 第 4 条阶段一（写设置）** — `00:00 +1: All tests passed!`
+
+### 咬合探针：证明第 2 条的断言有牙齿
+
+跑绿之后，把阶段二里「按名字找课」的期望值改成不存在的名字，重跑：
+
+```
+Expected: non-empty
+  Actual: WhereIterable<Course>:[]
+阶段一明明写过「itest_persist_course_v1」，全新进程却从磁盘读不到它：
+数据没有活过进程重启（写没落盘 / 落到了别处 / 被清了）。
+00:01 +0 -1: Some tests failed.
+```
+
+**红了，而且红在正确的那条断言上。** 这证明它不是一个永远绿的摆设。
+探针已还原（`git status` 干净）。
+
+### 未跑的两步：卡在别人的在途改动上
+
+第 4 条阶段二与第 5 条**没能跑**，原因不是测试失败，是**整个工程编译不过**：
+
+```
+lib/screens/live_diagnostics_log_viewer_screen.dart:551:20: Error: The getter
+'diagnosticsLoadFailedTitle' isn't defined for the type 'AppLocalizations'.
+Target kernel_snapshot_program failed: Exception
+BUILD FAILED in 53s
+```
+
+判断依据（三条都确认过）：
+
+1. 该文件引用了 `l10n.diagnosticsLoadFailedTitle`；
+2. **六个 ARB 与生成的 l10n 里都没有这个键**（`app_zh.arb` 命中数 = 0）；
+3. **HEAD 版本没有这个引用** —— 是某个会话未提交的改动引入的，
+   且该文件 mtime 停更后一直没补齐。
+
+按共享工作区规则：**别人的刀不改、不催、不绕。** 等它自己补上再跑。
+
+### 以后自己复验的顺序
+
+```bash
+# 前置：flutter pub get（Windows 侧）→ flutter devices 确认 <device-id>
+
+# 1) 最快最基础
+flutter test integration_test/cold_start_home_test.dart   -d <device-id> --flavor itest
+
+# 2) 跨进程持久化（必须两条，阶段一要 --no-uninstall）
+flutter test integration_test/persist_write_phase_test.dart   -d <device-id> --flavor itest --no-uninstall
+flutter test integration_test/persist_read_phase_test.dart   -d <device-id> --flavor itest
+
+# 3) 加课 UI 全链路
+flutter test integration_test/add_course_to_home_test.dart   -d <device-id> --flavor itest
+
+# 4) ICS 导入
+flutter test integration_test/import_ics_to_home_test.dart   -d <device-id> --flavor itest
+
+# 5) 设置持久化（同样两条）
+flutter test integration_test/settings_persist_write_test.dart   -d <device-id> --flavor itest --no-uninstall
+flutter test integration_test/settings_persist_read_test.dart   -d <device-id> --flavor itest
+
+# 6) 备份恢复（同样两条）
+flutter test integration_test/backup_restore_write_phase_test.dart   -d <device-id> --flavor itest --no-uninstall
+flutter test integration_test/backup_restore_read_phase_test.dart   -d <device-id> --flavor itest
+```
+
+**每一步该看到什么**：最后一行 `All tests passed!`。
+两步一组的，**阶段一和阶段二都必须绿**；只绿阶段一说明「写得进去但活不过重启」。
+
+**跑之前先确认包状态**（这是上次事故留下的习惯）：
+
+```bash
+adb -s <device-id> shell pm list packages | grep qingyu
+```
+
+应当看到 `com.mutx163.qingyu`（正式）、`.profile`（性能）、`.debug`（调试）。
+`.itest` 只在跨进程两阶段之间临时存在，跑完消失 —— 这是正常的。
+
+---
 
 ---
 
@@ -320,6 +439,23 @@ ICS 导入的真实 UI 流程里有**两道阻塞交互**（`ics_course_import_s
 7. **等转场结束再点**：页面 push 时顶栏从屏幕外滑入，widget 两三帧就进树了但
    坐标还在屏幕外，此时 `tap` 会静默落空（只在日志里留一条
    `would not hit test` 警告）。要等目标控件矩形真正落进屏幕再点。
-8. **setUp 里用 `resetForTesting`，不要在测试体裸露处调**：那个方法会重写
+8. **写测试数据前，先在本地跑一次纯 Dart 探针**。这条是花钱买来的教训。
+
+   2026-10-20 写第 3 条时，我把 ICS 的 `DESCRIPTION` 写成
+   普通多行字符串里的 `\\n`。Dart 把它解释成**真实换行**，于是这行在进解析器
+   之前就被拆开了，最终表现是**教师字段被解析成了地点**。
+
+   **关键不在于这个 bug 本身，而在于它的表象具有误导性**：看到「教师字段错了」，
+   第一反应一定是去查解析器的消歧逻辑（那段确实复杂，有 Format A/B 两种格式
+   加 LOCATION 消歧）。而那一次错的其实是**测试数据自己写歪了**。
+
+   真机反馈慢、日志噪声大，这个错误上设备后要排查很久；
+   而一个本地纯 Dart 探针 30 秒就定位到了。
+
+   **做法**：把要验的输入（ICS 文本、备份 JSON、设置值）先写成一个临时
+   `test/` 下单文件，用真实服务跑一遍、`print` 中间结果，确认预期与现实一致，
+   再拿去写 integration test。探针用完即删。
+
+9. **setUp 里用 `resetForTesting`，不要在测试体裸露处调**：那个方法会重写
    存储的写链，在 FakeAsync 区调用会让后续真实异步永远等不到完成
    （详见 `.agents/notes/implemented/testing/2026-10-12-no-resetForTesting-inside-testbody-fakeasync.md`）。
