@@ -6865,5 +6865,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "monthViewTapDayHint": "Tap a day to see its schedule",
+  "sharedInfoInlineHint": "Short name, colour, nature and intro sync to classes with the same name"
 }

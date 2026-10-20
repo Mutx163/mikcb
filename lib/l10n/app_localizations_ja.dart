@@ -11692,4 +11692,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count件の予定';
   }
+
+  @override
+  String get monthViewTapDayHint => '日付をタップして予定を表示';
+
+  @override
+  String get sharedInfoInlineHint => '略称・色・性質・概要は同名の排課に同期されます';
 }

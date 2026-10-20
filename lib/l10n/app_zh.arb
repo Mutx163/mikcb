@@ -6966,5 +6966,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "monthViewTapDayHint": "点任意一天查看安排",
+  "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课"
 }

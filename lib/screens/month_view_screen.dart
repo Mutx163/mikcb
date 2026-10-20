@@ -14,7 +14,7 @@ import 'add_schedule_item_screen.dart';
 
 /// 月视图页：整月概览 + 选中日议程。
 ///
-/// 定位见 `.agents/notes/proposed/feature/2026-10-20-month-view.md`：
+/// 定位见 `.agents/notes/implemented/feature/2026-10-20-month-view.md`：
 /// 回答「这个月哪天有事」，不承担排课网格职责（那是周视图）。点格子 =
 /// 在下方展开当日议程，不再跳走——「点月历格子 → 看当天日程列表」是
 /// 用户从系统日历带来的肌肉记忆；Google 日历 2025 年动过这条路径引发
@@ -22,6 +22,10 @@ import 'add_schedule_item_screen.dart';
 ///
 /// 数据全部来自 [MonthViewLogic]（纯 Dart 域逻辑，已被 `test/domain/` 覆盖），
 /// 本页只做：取 provider 数据 → 调域逻辑 → 画 → 转发点击。
+///
+/// 布局要点（2026-10-20 真机截图返工）：整页用 [LayoutBuilder] 拿可用高度，
+/// 先给议程区留出固定底盘，剩下的全给月网格按行均分——月历是这个页面的
+/// 主体，不许缩成半屏、底下留一大片白。
 class MonthViewScreen extends StatefulWidget {
   const MonthViewScreen({super.key});
 
@@ -170,55 +174,110 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     final selectedInThisMonth =
         selected != null && selected.year == year && selected.month == month;
 
-    return ListView(
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
-        // 玻璃坞内嵌宿主会把底部余量注入到 HyperosListView；本页用普通
-        // ListView（网格不参与 ScrollReliefScope 的列表内边距提升），
-        // 这里显式补上同一份余量，最后一行议程才不会被药丸压住。
-        bottom: 24 + GlassDockScrollReliefScope.insetOf(context),
-      ),
-      children: [
-        _buildMonthHeader(
-          context: context,
-          year: year,
-          month: month,
-          l10n: l10n,
-          onPrevious: () => _shiftMonth(-1),
-          onNext: () => _shiftMonth(1),
-        ),
-        const SizedBox(height: 6),
-        MonthGrid(
-          grid: grid,
-          selectedDate: selectedInThisMonth ? selected : null,
-          onDayTap: (date) {
-            setState(() {
-              // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
-              _selectedDate = selectedInThisMonth && _selectedDate == date
-                  ? null
-                  : date;
-            });
-          },
-        ),
-        if (selectedInThisMonth)
-          MonthDayAgenda(
-            date: selected,
-            rows: MonthViewLogic.buildDayAgenda(
-              date: selected,
-              courses: provider.courses,
-              scheduleItems: provider.scheduleItems,
-              exams: provider.exams,
-              settings: settings,
-              sections: _sectionsFor(provider, settings),
-              now: now,
-            ),
-            onRowTap: (row) => _openAgendaRow(context, row),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 可用高度里要给议程区留底：没选中日时留一句轻提示的高度，
+        // 选中日时留出至少两条议程的高度，剩下全给月网格。
+        //
+        // 这里的 px 是「预算」不是「硬约束」：网格拿到行高后自己高度确定，
+        // 议程若更长会把整页变成可滚动（下方 SingleChildScrollView 兜底），
+        // 所以预算偏小只会让网格高一点，不会截断议程。
+        const headerBudget = _monthHeaderHeight;
+        const viewportPadding = kMonthPageVerticalPadding;
+        // 顶栏高度要从可用高度里扣掉：这截被 padding 让开了，不扣会让
+        // 网格以为自己有更多空间、算出的行高偏大，整页超出视口。
+        final headerInset = HyperosBlurredHeaderScope.insetOf(context);
+        final agendaMinHeight =
+            selectedInThisMonth ? kMonthAgendaMinHeight : kMonthEmptyHintHeight;
+        final gridBudget =
+            constraints.maxHeight -
+            headerInset -
+            viewportPadding * 2 -
+            headerBudget -
+            agendaMinHeight -
+            MonthGrid.headerHeight;
+        final rowHeight = (gridBudget / 6).clamp(
+          MonthGrid.minRowHeight,
+          MonthGrid.maxRowHeight,
+        );
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            12,
+            // ⚠️ 顶栏内边距**必须自己加**：页面壳只把磨砂标题栏的高度放进
+            // `HyperosBlurredHeaderScope`，要不要让开是列表自己的事
+            // （`HyperosListView` 内部会读；本页要按视口算行高，用的是裸
+            // `SingleChildScrollView`）。漏了这条，第一行日期就被标题栏
+            // 压掉半截——2026-10-20 真机截图正是这个症状。
+            viewportPadding + HyperosBlurredHeaderScope.insetOf(context),
+            12,
+            // 玻璃坞内嵌宿主的底部余量：滚动到底时议程才不会被药丸压住。
+            viewportPadding + GlassDockScrollReliefScope.insetOf(context),
           ),
-      ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: headerBudget,
+                child: _buildMonthHeader(
+                  context: context,
+                  year: year,
+                  month: month,
+                  l10n: l10n,
+                  onPrevious: () => _shiftMonth(-1),
+                  onNext: () => _shiftMonth(1),
+                ),
+              ),
+              MonthGrid(
+                grid: grid,
+                selectedDate: selectedInThisMonth ? selected : null,
+                rowHeight: rowHeight,
+                onDayTap: (date) {
+                  setState(() {
+                    // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
+                    _selectedDate = selectedInThisMonth && _selectedDate == date
+                        ? null
+                        : date;
+                  });
+                },
+              ),
+              if (selectedInThisMonth)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: MonthDayAgenda(
+                    date: selected,
+                    rows: MonthViewLogic.buildDayAgenda(
+                      date: selected,
+                      courses: provider.courses,
+                      scheduleItems: provider.scheduleItems,
+                      exams: provider.exams,
+                      settings: settings,
+                      sections: _sectionsFor(provider, settings),
+                      now: now,
+                    ),
+                    onRowTap: (row) => _openAgendaRow(context, row),
+                  ),
+                )
+              else
+                const MonthAgendaPlaceholder(),
+            ],
+          ),
+        );
+      },
     );
   }
+
+  /// 年月标题行高度（自带左右翻月按钮与居中标题）。
+  static const double _monthHeaderHeight = 44;
+
+  /// 页面上下内边距（与 HyperosTokens.listPadding 的观感对齐）。
+  static const double kMonthPageVerticalPadding = 8;
+
+  /// 选中日时议程区的预留高度（约两条议程行）。
+  static const double kMonthAgendaMinHeight = 108;
+
+  /// 未选中日时底部提示的预留高度。
+  static const double kMonthEmptyHintHeight = 40;
 
   Widget _buildMonthHeader({
     required BuildContext context,

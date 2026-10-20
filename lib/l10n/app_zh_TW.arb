@@ -6862,5 +6862,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "monthViewTapDayHint": "點任意一天查看安排",
+  "sharedInfoInlineHint": "簡稱、顏色、性質、簡介同步給同名排課"
 }

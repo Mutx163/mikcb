@@ -12041,4 +12041,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count schedules';
   }
+
+  @override
+  String get monthViewTapDayHint => 'Tap a day to see its schedule';
+
+  @override
+  String get sharedInfoInlineHint =>
+      'Short name, colour, nature and intro sync to classes with the same name';
 }

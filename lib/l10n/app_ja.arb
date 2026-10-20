@@ -6683,5 +6683,39 @@
     "placeholders": {
       "count": { "type": "int" }
     }
+  },
+  "sharedInfoInlineHint": "略称・色・性質・概要は同名の排課に同期されます",
+  "monthViewTitle": "月表示",
+  "monthViewPreviousMonth": "前の月",
+  "monthViewNextMonth": "次の月",
+  "monthViewBackToCurrentMonth": "今月に戻る",
+  "monthViewHolidayBadge": "休",
+  "monthViewAdjustedWorkdayBadge": "出",
+  "monthViewAgendaEmpty": "予定はありません",
+  "monthViewEmptyMonthTitle": "この月は予定がありません",
+  "monthViewTapDayHint": "日付をタップして予定を表示",
+  "monthViewHeaderTitle": "{year}年{month}月",
+  "@monthViewHeaderTitle": {
+    "placeholders": { "year": { "type": "int" }, "month": { "type": "int" } }
+  },
+  "monthViewAgendaTitle": "{month}月{day}日",
+  "@monthViewAgendaTitle": {
+    "placeholders": { "month": { "type": "int" }, "day": { "type": "int" } }
+  },
+  "monthViewDaySemantics": "{month}月{day}日",
+  "@monthViewDaySemantics": {
+    "placeholders": { "month": { "type": "int" }, "day": { "type": "int" } }
+  },
+  "monthViewCourseCountSemantics": "{count}コマ",
+  "@monthViewCourseCountSemantics": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "monthViewExamCountSemantics": "{count}件の試験",
+  "@monthViewExamCountSemantics": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "monthViewScheduleCountSemantics": "{count}件の予定",
+  "@monthViewScheduleCountSemantics": {
+    "placeholders": { "count": { "type": "int" } }
   }
 }

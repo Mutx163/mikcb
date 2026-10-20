@@ -7,14 +7,19 @@ import 'month_day_cell.dart';
 /// 月历网格：星期表头 + 6 行 × 7 列日期格 + 每行学期周次行标。
 ///
 /// 纯展示部件：数据由 [MonthGridData] 带进来，本部件不取数、不读 provider。
-/// 固定 42 格（见 [MonthViewLogic.monthGridDates]），页高跨月稳定——
-/// 4~6 行可变会重演「整页高度随内容跳」的既有教训。
+/// 固定 42 格（见 [MonthViewLogic.monthGridDates]）——行数不随月份在 4~6 之间
+/// 变化，翻月时整页高度纹丝不动。
+///
+/// 行高由外部按可用高度注入（[rowHeight]）：月历是这个页面的主体，把自己
+/// 压成半屏、底下留一大片空白是最丑的形态；能撑开就撑开，撑不开再缩到
+/// [minRowHeight] 的可读下限。
 class MonthGrid extends StatelessWidget {
   const MonthGrid({
     super.key,
     required this.grid,
     required this.selectedDate,
     required this.onDayTap,
+    required this.rowHeight,
     this.showWeekNumbers = true,
   });
 
@@ -22,17 +27,32 @@ class MonthGrid extends StatelessWidget {
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDayTap;
 
+  /// 单行高度（已由调用方按可用空间算好，并钳在可读区间内）。
+  final double rowHeight;
+
   /// 是否显示每行的学期周次行标（「第 N 周」）。学期未配置时内部自动隐藏。
   final bool showWeekNumbers;
+
+  /// 行高可读下限：再矮日期数字与圆点会挤在一起。
+  static const double minRowHeight = 44;
+
+  /// 行高舒适上限：屏幕很高时别把格子拉成大方块（一行 7 格，拉太高显空）。
+  static const double maxRowHeight = 78;
+
+  /// 周次行标列宽（够放「第12周」这类窄排版）。
+  static const double weekLabelWidth = 30;
+
+  /// 星期表头行高度（标题 + 下内边距）。调用方算可用高度时要扣掉它。
+  static const double headerHeight = 24;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final mutedInk = colorScheme.onSurface.withValues(alpha: 0.55);
+    final colorScheme = Theme.of(context).colorScheme;
+    final mutedInk = colorScheme.onSurface.withValues(alpha: 0.6);
 
-    // 周次行标列：只在真的能算出周次时占位（否则留白会更难看）。
+    // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起，
+    // 否则左边会挂一条毫无意义的空白）。
     final weekNumberColumnVisible =
         showWeekNumbers && grid.days.any((day) => day.weekIndex != null);
 
@@ -51,18 +71,19 @@ class MonthGrid extends StatelessWidget {
       children: [
         Row(
           children: [
-            if (weekNumberColumnVisible) const SizedBox(width: 24),
-            for (final header in headers)
+            if (weekNumberColumnVisible)
+              const SizedBox(width: weekLabelWidth),
+            for (var i = 0; i < headers.length; i++)
               Expanded(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      header,
+                      headers[i],
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: mutedInk,
+                        color: i >= 5 ? mutedInk.withValues(alpha: 0.6) : mutedInk,
                       ),
                     ),
                   ),
@@ -82,6 +103,7 @@ class MonthGrid extends StatelessWidget {
     bool weekNumberColumnVisible,
     Color mutedInk,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final rowDays = grid.days.sublist(row * 7, row * 7 + 7);
     // 行标取**行内首个落在本月的日期**的周次；整行都在月外（首末行常见）
     // 时取行首那天的周次，仍能标出「这行属于第几周」。
@@ -91,22 +113,25 @@ class MonthGrid extends StatelessWidget {
     );
     final weekLabel = anchor.weekIndex;
     return SizedBox(
-      height: MonthGrid.rowHeight,
+      height: rowHeight,
       child: Row(
         children: [
           if (weekNumberColumnVisible)
             SizedBox(
-              width: 24,
+              width: weekLabelWidth,
               child: Center(
                 child: weekLabel == null
                     ? const SizedBox.shrink()
                     : Text(
-                        '$weekLabel',
+                        // 纯数字挂左边会被读成"日期"（截图里像误入的鬼影）；
+                        // 复用既有 l10n「第 N 周」把语义说清，不新增文案。
+                        l10n.weekLabel(weekLabel),
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 9,
-                          height: 1,
+                          height: 1.2,
                           fontWeight: FontWeight.w600,
-                          color: mutedInk.withValues(alpha: 0.7),
+                          color: mutedInk.withValues(alpha: 0.5),
                         ),
                       ),
               ),
@@ -118,8 +143,7 @@ class MonthGrid extends StatelessWidget {
                 child: MonthDayCell(
                   entry: day,
                   isToday: day.date == grid.today,
-                  isSelected:
-                      selectedDate != null && day.date == selectedDate,
+                  isSelected: selectedDate != null && day.date == selectedDate,
                   onTap: () => onDayTap(day.date),
                 ),
               ),
@@ -128,9 +152,4 @@ class MonthGrid extends StatelessWidget {
       ),
     );
   }
-
-  /// 单行高度。6 行 × 56 = 336，加表头与议程列表后仍在常见屏高内；
-  /// 数值固定（不按可用高度均分）是为了让「点某天 → 议程列表出现/消失」
-  /// 时网格本身不跳。
-  static const double rowHeight = 56;
 }

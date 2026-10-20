@@ -11342,6 +11342,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count个日程';
   }
+
+  @override
+  String get monthViewTapDayHint => '点任意一天查看安排';
+
+  @override
+  String get sharedInfoInlineHint => '简称、颜色、性质、简介同步给同名排课';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22722,6 +22728,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String monthViewScheduleCountSemantics(int count) {
     return '$count個日程';
   }
+
+  @override
+  String get monthViewTapDayHint => '點任意一天查看安排';
+
+  @override
+  String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -34103,4 +34115,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String monthViewScheduleCountSemantics(int count) {
     return '$count個日程';
   }
+
+  @override
+  String get monthViewTapDayHint => '點任意一天查看安排';
+
+  @override
+  String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
 }

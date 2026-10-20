@@ -20639,6 +20639,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{count}个日程'**
   String monthViewScheduleCountSemantics(int count);
+
+  /// No description provided for @monthViewTapDayHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点任意一天查看安排'**
+  String get monthViewTapDayHint;
+
+  /// No description provided for @sharedInfoInlineHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'简称、颜色、性质、简介同步给同名排课'**
+  String get sharedInfoInlineHint;
 }
 
 class _AppLocalizationsDelegate

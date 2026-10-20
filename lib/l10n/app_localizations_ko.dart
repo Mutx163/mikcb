@@ -11747,4 +11747,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count개 일정';
   }
+
+  @override
+  String get monthViewTapDayHint => '날짜를 눌러 일정 보기';
+
+  @override
+  String get sharedInfoInlineHint => '약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다';
 }

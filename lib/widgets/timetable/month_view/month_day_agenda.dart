@@ -163,3 +163,38 @@ class MonthEmptyHint extends StatelessWidget {
     );
   }
 }
+
+/// 未选中日期时底部那句轻提示。
+///
+/// 不是单纯的空白占位：截图里「网格缩在上半屏、底下全白」是最丑的形态，
+/// 一句提示既填住那块空白、又把「点任一天看详情」这条交互讲明白。
+class MonthAgendaPlaceholder extends StatelessWidget {
+  const MonthAgendaPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.touch_app_outlined,
+            size: 14,
+            color: colorScheme.onSurface.withValues(alpha: 0.32),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            l10n.monthViewTapDayHint,
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurface.withValues(alpha: 0.42),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
