@@ -4,10 +4,6 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
-// OpenContainer 用 vendored 优化版(lib/widgets/open_container.dart):
-// 上游在转场每帧重调 openBuilder/closedBuilder,日视图课程详情的
-// container transform 变成每帧整页 rebuild(见该文件头注释)。
-import 'package:university_timetable/widgets/open_container.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
     show
@@ -22,7 +18,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
-import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/timetable_settings.dart';
 import '../domain/clock_order.dart';
@@ -38,7 +33,6 @@ import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
-import '../utils/course_color_palette.dart';
 import '../controllers/empty_slot_marker_controller.dart';
 import '../controllers/timetable_update_download_controller.dart';
 import '../controllers/home_pull_controller.dart';
@@ -51,13 +45,9 @@ import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
 import '../widgets/course_action_sheet.dart';
-import '../widgets/course_note_sheet.dart';
 import '../widgets/course_card.dart';
-import '../widgets/course_surface.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/course_weather_display.dart';
-import '../widgets/day_agenda_info_row.dart';
-import '../widgets/day_course_weather_row.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/home_top_menu_popup.dart';
@@ -73,6 +63,12 @@ import '../widgets/timetable/timetable_profile_switcher_trigger.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
+import '../widgets/timetable/day_view/day_view_course_agenda_card.dart';
+import '../widgets/timetable/day_view/day_view_empty_state.dart';
+import '../widgets/timetable/day_view/day_view_exam_agenda_card.dart';
+import '../widgets/timetable/day_view/day_view_ink_style.dart';
+import '../widgets/timetable/day_view/day_view_schedule_agenda_card.dart';
+import '../widgets/timetable/day_view/day_view_summary_card.dart';
 import '../widgets/timetable/timetable_add_course_sheet.dart';
 import '../widgets/timetable/timetable_home_action_page_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
