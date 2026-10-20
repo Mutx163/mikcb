@@ -71,11 +71,14 @@ abstract interface class TimetableCoursePort {
   Future<void> updateLiveActivity();
 }
 
-/// 课程与课程作业（任务）族的读写实现 —— **只有这一份定义**。
+/// 课程、课程组与课程作业（任务）族的读写实现 —— **只有这一份定义**。
 ///
-/// 2026-10-20 把两处合到一起（F3）：
+/// 2026-10-20 把三处合到一起（F3 两处 + F4 一处）：
 ///
 /// - 分片 `providers/timetable/course_repository.dart`（248 行）里的四个写入口；
+/// - 分片 `providers/timetable/course_group_repository.dart`（178 行）里的整组
+///   增删改 —— 它写的是同一批状态（课程/考试/作业/档案）、用同一批钩子，
+///   合并成一个服务才不用重复注入同一个端口；
 /// - 父文件里的同族方法与规则：`addCourse` 的整段实现、`addTask` / `updateTask` /
 ///   `toggleTaskCompleted`、作业归一与校验、`_syncHomeworkTasksWithCourses`
 ///   的作业重算、`_normalizeCourse` 的课程归一、以及"清空当前课表"的实现。
@@ -87,18 +90,22 @@ abstract interface class TimetableCoursePort {
 /// 那一条**。
 ///
 /// - [update]：改一条会把共享字段广播给同组其它课次、还会重算作业，落盘失败时那些
-///   都要退回；`deleteCourse` 除了摘掉这门课，还连带摘掉记在它名下的考试与作业 ——
+///   都要退回；[delete] 除了摘掉这门课，还连带摘掉记在它名下的考试与作业 ——
 ///   用户确认的是"删这门课"。
+/// - [deleteGroup] / [updateGroup]：删整组会连带摘掉挂在这组课上的考试与作业
+///   （用户点的是"删课程"，不是"删我的期中考试"）；整组替换是"改一批 + 剪孤儿
+///   作业"，失败就要一起退回，否则留下的是"旧课次没了、新课次没落成功"的半套。
 /// - [clearActiveProfileCourses]：一次清掉整份课表与所有挂在课程上的作业，是本族
 ///   影响面最大的写入口（考试刻意不清：清空后用户往往马上重新导入，考试留着才接得上）。
 /// - [deleteTask]：用户点的是"删这条作业"，它却会顺手把**另一条记录**（那门课
 ///   `sessionNotes` 里对应周的 `hasHomework`）改成 false，所以也必须回滚。
-/// - [add] / [addTask] / [updateTask] / [toggleTaskCompleted] 改的就是用户刚填的那
-///   一条，**不回滚**（与 `addScheduleItem` 同口径）。
+/// - [add] / [addGroup] / [addTask] / [updateTask] / [toggleTaskCompleted] 改的就是
+///   用户刚填的那些，**不回滚**：表单已经报了「保存失败」，再把整张表单清空是更糟的
+///   体验。这条口径写在这里，是为了让后面读到 [deleteGroup] 的人明白为什么两兄弟
+///   处理不同 —— 不是漏了一处。
 ///
-/// 回归钉：`test/providers/schedule_item_write_rollback_test.dart` 无关；本族由
-/// `test/services/timetable_course_service_test.dart`（假端口）与
-/// `test/providers/timetable_provider_course_test.dart` 一类的存量用例共同守着。
+/// 回归钉：`test/services/timetable_course_service_test.dart`（假端口）与存量的
+/// `test/providers/course_write_rollback_test.dart` 等本族用例。
 class TimetableCourseService {
   const TimetableCourseService._();
 
@@ -294,6 +301,163 @@ class TimetableCourseService {
     port.notifyStateChanged();
     unawaited(port.syncExamReminders());
     port.logEvent('course_deleted', {
+      'remaining_course_count': port.courses.length,
+    });
+    unawaited(port.updateLiveActivity());
+  }
+
+  /// 删掉一个课程组（同名多课次）—— 连同挂在这组课上的考试与作业一起摘掉。
+  ///
+  /// 判据同 [delete]：用户点的是"删课程"，不是"删我的期中考试"，
+  /// 落盘失败时课程/考试/作业/档案四份都要退回。
+  static Future<void> deleteGroup(TimetableCoursePort port, String name) async {
+    final key = buildSharedCourseNameKey(name);
+    final deletedCourseIds = port.courses
+        .where((course) => buildSharedCourseNameKey(course.name) == key)
+        .map((course) => course.id)
+        .toSet();
+    final snapshotCourses = List<Course>.from(port.courses);
+    final snapshotExams = List<Exam>.from(port.exams);
+    final snapshotTasks = List<CourseTask>.from(port.tasks);
+    final snapshotProfiles = List<TimetableProfile>.from(port.profiles);
+    port.courses = port.courses
+        .where((course) => !deletedCourseIds.contains(course.id))
+        .toList();
+    port.exams = port.exams
+        .where((exam) => !deletedCourseIds.contains(exam.courseId))
+        .toList();
+    port.tasks = port.tasks
+        .where((task) => !deletedCourseIds.contains(task.courseId))
+        .toList();
+    try {
+      await port.persistActiveProfileState();
+    } catch (_) {
+      port.courses = snapshotCourses;
+      port.exams = snapshotExams;
+      port.tasks = snapshotTasks;
+      port.profiles = snapshotProfiles;
+      rethrow;
+    }
+    port.clearCurrentLiveCourseId();
+    port.notifyStateChanged();
+    unawaited(port.syncExamReminders());
+    port.logEvent('course_group_deleted', {
+      'remaining_course_count': port.courses.length,
+    });
+    unawaited(port.updateLiveActivity());
+  }
+
+  /// 整组替换（同一门课的多条课次一起改）。
+  ///
+  /// 保护区必须覆盖 `recordTeacher` / `recordLocation`（2026-10-07 补，与 [update]
+  /// 同因）：它们各自会落一份盘。原先把 try 放在循环之后，于是第二条课次的教师名
+  /// 写盘失败时：旧课次已经整组摘掉、新课次只加了一半、作业还没剪，而三份快照
+  /// 一份都不退、也不通知。
+  static Future<void> updateGroup(
+    TimetableCoursePort port,
+    String originalName,
+    List<Course> updatedCourses,
+  ) async {
+    final key = buildSharedCourseNameKey(originalName);
+    if (updatedCourses.isEmpty) {
+      // 必须挡在摘除旧课次之前：空集合会让下面的 `updatedCourses.first` 抛
+      // StateError，而那时整组课程已经被摘掉——既没落库也没通知，界面仍显示
+      // 旧组、内存里整组消失，下一次任意成功写入就把「整组没了」落盘。
+      // 与 [addGroup] 的 isEmpty 守卫同一口径（调用方目前都自带非空保证，
+      // 这里是服务侧的兜底，防未来新调用方直接踩）。
+      return;
+    }
+    final snapshotCourses = List<Course>.from(port.courses);
+    final snapshotTasks = List<CourseTask>.from(port.tasks);
+    final snapshotProfiles = List<TimetableProfile>.from(port.profiles);
+    try {
+      final nextCourses = port.courses
+          .where((course) => buildSharedCourseNameKey(course.name) != key)
+          .toList();
+      final shared = updatedCourses.first;
+      for (final course in updatedCourses) {
+        final normalized = normalize(
+          CourseDomain.applySharedFields(course, shared),
+          semesterWeekCount: port.semesterWeekCount,
+        );
+        nextCourses.add(normalized);
+        await port.recordTeacher(normalized.teacher);
+        await port.recordLocation(normalized.location);
+      }
+      port.courses = nextCourses;
+      // 剪孤儿作业：挂到已不存在课程上的作业留不住。
+      final courseIds = nextCourses.map((course) => course.id).toSet();
+      port.tasks = port.tasks
+          .where(
+            (task) => task.courseId == null || courseIds.contains(task.courseId),
+          )
+          .toList();
+      await syncHomeworkTasksWithCourses(port);
+      await port.persistActiveProfileState();
+    } catch (_) {
+      // 整组替换是「改一批 + 剪孤儿作业」，失败就要一起退回：留下的只会是
+      // "旧课次没了、新课次没落成功"的半套状态。
+      port.courses = snapshotCourses;
+      port.tasks = snapshotTasks;
+      port.profiles = snapshotProfiles;
+      rethrow;
+    }
+    port.clearCurrentLiveCourseId();
+    port.notifyStateChanged();
+    unawaited(port.syncExamReminders());
+    port.logEvent('course_group_updated', {
+      'schedule_count': updatedCourses.length,
+      'remaining_course_count': port.courses.length,
+    });
+    unawaited(port.updateLiveActivity());
+  }
+
+  /// 加一组课次（新建一门课的多条课次，只落一次盘）。
+  ///
+  /// 与 [add] 同口径**不回滚**：内存里那些正是用户刚填的内容。
+  /// 先把整组算好、验证全部通过再批量落，避免中途失败留下半套。
+  static Future<void> addGroup(
+    TimetableCoursePort port,
+    List<Course> courses,
+  ) async {
+    if (courses.isEmpty) {
+      return;
+    }
+    final shared = courses.first;
+    final normalizedCourses = <Course>[];
+    final teachers = <String>{};
+    final locations = <String>{};
+    for (final course in courses) {
+      // 与 [add] / [update] 同一契约：只校验**显式绑定**的方案，未绑定时课程自带
+      // 钟点是唯一真源，不在写入环节拒溢出。
+      _validateSections(port, course);
+      final normalized = port.syncCourseWithEffectiveTimeScheme(
+        normalize(
+          CourseDomain.applySharedFields(course, shared),
+          semesterWeekCount: port.semesterWeekCount,
+        ),
+      );
+      normalizedCourses.add(normalized);
+      if (normalized.teacher.isNotEmpty) {
+        teachers.add(normalized.teacher);
+      }
+      if (normalized.location.isNotEmpty) {
+        locations.add(normalized.location);
+      }
+    }
+    port.courses = <Course>[...port.courses, ...normalizedCourses];
+    await syncHomeworkTasksWithCourses(port);
+    for (final teacher in teachers) {
+      await port.recordTeacher(teacher);
+    }
+    for (final location in locations) {
+      await port.recordLocation(location);
+    }
+    await port.persistActiveProfileState();
+    port.clearCurrentLiveCourseId();
+    port.notifyStateChanged();
+    port.logEvent('course_group_created', {
+      'schedule_count': courses.length,
       'remaining_course_count': port.courses.length,
     });
     unawaited(port.updateLiveActivity());

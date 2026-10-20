@@ -657,4 +657,133 @@ void main() {
       expect(port.courses.single.id, 'live_test_1');
     });
   });
+
+  group('课程组：整组替换与整组删除', () {
+    test('删整组：本组课程与名下考试/作业一起摘掉，别的组不动', () async {
+      final port = _FakePort(
+        courses: <Course>[
+          _course('c1'),
+          _course('c2', dayOfWeek: 3),
+          _course('c3', name: '英语'),
+        ],
+        exams: <Exam>[_exam('e1', 'c1'), _exam('e2', 'c3')],
+        tasks: <CourseTask>[
+          _task('t1', courseId: 'c2'),
+          _task('t2', courseId: 'c3'),
+        ],
+      );
+
+      await TimetableCourseService.deleteGroup(port, ' 数学 ');
+
+      expect(port.courses.map((course) => course.id), <String>['c3']);
+      expect(port.exams.map((exam) => exam.id), <String>['e2']);
+      expect(port.tasks.map((task) => task.id), <String>['t2']);
+      expect(port.persistCalls, 1);
+      expect(port.loggedEvents, contains('course_group_deleted'));
+    });
+
+    test('删整组落盘失败：课程/考试/作业/档案全部退回', () async {
+      final port = _FakePort(
+        courses: <Course>[_course('c1')],
+        exams: <Exam>[_exam('e1', 'c1')],
+        tasks: <CourseTask>[_task('t1', courseId: 'c1')],
+        profiles: <TimetableProfile>[_profile('p1')],
+      );
+      port.failPersist = true;
+
+      await expectLater(
+        TimetableCourseService.deleteGroup(port, '数学'),
+        throwsA(isA<StateError>()),
+      );
+      expect(port.courses, hasLength(1));
+      expect(port.exams, hasLength(1));
+      expect(port.tasks, hasLength(1));
+      expect(port.profiles, hasLength(1));
+      expect(port.notifyCalls, 0);
+    });
+
+    test('整组替换：旧课次换成新集合，孤儿作业被剪掉，共享字段生效', () async {
+      final port = _FakePort(
+        courses: <Course>[
+          _course('c1'),
+          _course('c2', dayOfWeek: 3),
+        ],
+        tasks: <CourseTask>[
+          _task('t1', courseId: 'c1'),
+          _task('t2', courseId: 'c2'),
+          _task('t3', title: '手写作业'),
+        ],
+      );
+
+      await TimetableCourseService.updateGroup(port, '数学', <Course>[
+        _course('c1', shortName: '数'),
+        _course('c3', dayOfWeek: 5),
+      ]);
+
+      expect(port.courses.map((course) => course.id), <String>['c1', 'c3']);
+      expect(port.getCourseById('c3')!.shortName, '数');
+      expect(
+        port.tasks.map((task) => task.id),
+        <String>['t1', 't3'],
+        reason: '挂在已删课次 c2 上的作业是孤儿，要剪掉',
+      );
+      expect(port.persistCalls, 1);
+      expect(port.loggedEvents, contains('course_group_updated'));
+    });
+
+    test('整组替换传空列表：no-op，不落盘也不动内存', () async {
+      final port = _FakePort(courses: <Course>[_course('c1')]);
+
+      await TimetableCourseService.updateGroup(port, '数学', const <Course>[]);
+
+      expect(port.courses, hasLength(1));
+      expect(port.persistCalls, 0);
+    });
+
+    test('整组替换落盘失败：课程/作业/档案退回', () async {
+      final port = _FakePort(
+        courses: <Course>[_course('c1')],
+        profiles: <TimetableProfile>[_profile('p1')],
+      );
+      port.failPersist = true;
+
+      await expectLater(
+        TimetableCourseService.updateGroup(port, '数学', <Course>[
+          _course('c9'),
+        ]),
+        throwsA(isA<StateError>()),
+      );
+      expect(port.courses.map((course) => course.id), <String>['c1']);
+      expect(port.profiles, hasLength(1));
+    });
+
+    test('加整组：一次追加多条课次，教师与地点去重后各记一次', () async {
+      final port = _FakePort();
+
+      await TimetableCourseService.addGroup(port, <Course>[
+        _course('c1', name: '物理', teacher: '李老师', location: 'A101'),
+        _course('c2', name: '物理', teacher: '李老师', dayOfWeek: 4),
+      ]);
+
+      expect(port.courses, hasLength(2));
+      expect(port.recordTeacherCalls, 1);
+      expect(port.recordLocationCalls, 1);
+      expect(port.persistCalls, 1);
+      expect(port.loggedEvents, contains('course_group_created'));
+    });
+
+    test('加整组：有一条课次不合法就一条都不加', () async {
+      final port = _FakePort();
+
+      await expectLater(
+        TimetableCourseService.addGroup(port, <Course>[
+          _course('c1', name: '物理'),
+          _course('c2', name: '物理', endSection: 40),
+        ]),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(port.courses, isEmpty);
+      expect(port.persistCalls, 0);
+    });
+  });
 }

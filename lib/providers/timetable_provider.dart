@@ -89,7 +89,6 @@ export '../domain/import_export_logic.dart'
 
 part 'timetable/time_scheme_repository.dart';
 part 'timetable/schedule_date_rule_repository.dart';
-part 'timetable/course_group_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
 
@@ -2134,8 +2133,8 @@ class TimetableProvider
 
   /// Delete all schedule entries (courses) for a given course name.
   Future<void> deleteCourseGroup(String name) {
-    // 实现与落盘失败回滚见 `timetable/course_group_repository.dart`。
-    return _runMutation(() => _timetableDeleteCourseGroup(this, name));
+    // 删整组会连带摘掉挂在这组课上的考试与作业，落盘失败时那些都要一起退回。
+    return _runMutation(() => TimetableCourseService.deleteGroup(this, name));
   }
 
   // ---- 课程任务 CRUD ----
@@ -2219,17 +2218,18 @@ class TimetableProvider
     String originalName,
     List<Course> updatedCourses,
   ) {
-    // 实现与落盘失败回滚见 `timetable/course_group_repository.dart`。
+    // 整组替换要能把旧课次、作业与档案镜像一起退回。
     return _runMutation(
-      () => _timetableUpdateCourseGroup(this, originalName, updatedCourses),
+      () =>
+          TimetableCourseService.updateGroup(this, originalName, updatedCourses),
     );
   }
 
   /// Add multiple schedule entries for a new course group in one persist.
   Future<void> addCourseGroup(List<Course> courses) {
-    // 实现见 `timetable/course_group_repository.dart`；这一条刻意**不**回滚 ——
-    // 内存里那些正是用户刚填的内容，判据见该文件开头的口径说明。
-    return _runMutation(() => _timetableAddCourseGroup(this, courses));
+    // 这一条刻意**不**回滚 —— 内存里那些正是用户刚填的内容，
+    // 判据见 `TimetableCourseService` 开头的口径说明。
+    return _runMutation(() => TimetableCourseService.addGroup(this, courses));
   }
 
   /// 一键重刷整份课表颜色（导入后随时可用，无需重新导入）。
