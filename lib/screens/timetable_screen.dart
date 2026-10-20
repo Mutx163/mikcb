@@ -18,13 +18,14 @@ import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../domain/timetable_layout.dart';
 import '../domain/day_course_display_logic.dart';
+import '../domain/day_task_band_logic.dart';
 import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
 import '../services/screen_capture_service.dart';
-import '../services/timetable_share_service.dart';
 import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
+import '../widgets/timetable_share_export.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../controllers/day_view_transition_controller.dart';
@@ -58,6 +59,7 @@ import '../widgets/timetable/day_view/day_view_exam_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_ink_style.dart';
 import '../widgets/timetable/day_view/day_view_schedule_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_summary_card.dart';
+import '../widgets/timetable/day_view/day_view_task_band.dart';
 import '../widgets/timetable/about_update_navigation.dart';
 import '../widgets/timetable/timetable_add_course_sheet.dart';
 import '../widgets/timetable/timetable_home_action_page_button.dart';
@@ -949,7 +951,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final isDayView =
         settings.timetableHomeViewMode == TimetableHomeViewMode.day &&
         _isDayView;
-    await TimetableShareService.exportAndShare(
+    await shareTimetableImage(
       context: context,
       provider: provider,
       settings: settings,
