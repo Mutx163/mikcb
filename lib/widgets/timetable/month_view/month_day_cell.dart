@@ -173,6 +173,40 @@ class MonthDayCell extends StatelessWidget {
   }
 }
 
+/// 月视图整页的**墨色口径**（表头 / 行标 / 日期数字 / 议程行共用这一处）。
+///
+/// 与日视图摘要卡走**同一个判据**（`contentCardInkOverWallpaper`）：按「卡面
+/// 压在壁纸上的混合亮度」判黑白，而不是裸壁纸亮度。只看壁纸会在浅色主题下把
+/// 白字判到被冲白的卡面上（真机 2026-09-22 日视图那次就是这个）。
+///
+/// 无壁纸、或玻璃管线关着（实体卡片档）时会自然回落到主题墨色 —— 那些场景
+/// 卡面不透壁纸，按壁纸判反而会判反。
+Color monthPageInkOverWallpaper({
+  required BuildContext context,
+  required TimetableSettings settings,
+  required double? wallpaperBodyLuminance,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final blurOn = HyperosBlurredHeader.backdropBlurEnabled(context);
+  return contentCardInkOverWallpaper(
+    // 与 [MonthDayCell] 里真正的卡底色同一份取法（深色取 surface、浅色取
+    // surfaceContainerHighest）。两处必须同源，否则「按卡面判墨」判的是另一张卡。
+    cardFill: isDark ? colorScheme.surface : colorScheme.surfaceContainerHighest,
+    // 卡面把壁纸透出来的比例 —— 与渲染层同一个函数，不另写一份（实体档它
+    // 返回 1，此时壁纸亮度不参与计算，正好等价于「实体卡按主题判墨」）。
+    washAlpha: CourseSurface.washAlpha(
+      context,
+      dayViewContentCardSurfaceStyle(settings, backdropBlurOn: blurOn),
+    ),
+    configuredHex: null,
+    defaultHex: '#000000',
+    themeFallback: colorScheme.onSurface,
+    hasBackdrop: hasHomePageBackdrop(settings) && blurOn,
+    wallpaperLuminance: wallpaperBodyLuminance,
+  );
+}
+
 /// 格子里的文字墨色：按**壁纸亮度**判定，与首页同一条判据。
 ///
 /// 卡面真的透出壁纸时（玻璃/磨砂档且有壁纸），暗壁纸配浅墨、亮壁纸配深墨；

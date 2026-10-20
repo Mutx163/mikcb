@@ -1,40 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/month_view_cache.dart';
 import '../domain/month_view_logic.dart';
 import '../l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/hyperos_motion.dart';
-import '../utils/home_page_background.dart';
+import '../utils/page_wallpaper_luminance.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
+import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
+import '../widgets/timetable/month_view/month_view_toolbar.dart';
+import '../widgets/timetable/timetable_page_chrome_shell.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 
 /// 月视图页：整月概览 + 选中日议程。
 ///
-/// ## 为什么不用 [HyperosSubpage]
+/// ## 与周视图 / 日视图同一套观感（用户口径）
 ///
-/// 用户口径（2026-10-20）：「月视图的整体样式应该要跟周视图、日视图保持一致
-/// 风格，现在差太远了，就像是一个设置里面的二级页面一样。」
+/// 用户两轮口径：①「你自己评价一下这个页面的观感」；②「月视图的整体样式应该要
+/// 跟周视图、日视图保持一致风格，现在差太远了，就像是一个设置里面的二级页面」。
 ///
-/// [HyperosSubpage] 是**设置类二级页**的外壳（纯色页 + 磨砂标题栏），跟首页
-/// 那套「壁纸 + 玻璃卡片」完全不是一个语言。所以本页照日视图的做法自建：
-/// 壁纸铺底（[resolveHomePageRegionBackground]）→ 内容浮在上面 → 卡片一律
-/// 走 [CourseSurface]（[dayViewContentCardSurfaceStyle]，与课程卡同档），
-/// 墨色用 [contentCardInkOverWallpaper] 按卡面实际亮度判。
+/// 所以本页**不再自建外壳**，整页交给 [TimetablePageChromeShell]：
+/// 壁纸铺底（真壁纸，不是纯色）、顶栏是首页那套「软件名字 + 右上角玻璃球菜单」、
+/// 连续玻璃带盖住标题行与工具行、卡片走 `CourseSurface`（与课程卡同档）。
 ///
-/// 与日视图的唯一差别：日视图是首页的一个内嵌面板（由首页 State 驱动转场与
-/// 亮度带），本页是可从菜单/底栏打开的独立页面，所以壁纸亮度需要自己采样
-/// （见 [_MonthViewScreenState._sampleWallpaperLuminance]）。
+/// 首版曾用 `HyperosSubpage`（设置类二级页外壳：纯色页 + 磨砂大标题），那是
+/// 观感跑偏的根因 —— 无论细节怎么调，它读起来都是「设置里的一个页面」。
+///
+/// ## 性能：三个热点，都在这页身上
+///
+/// 1. **每帧 42 次全屏 backdrop 抓取**。42 个格子各一张玻璃卡，玻璃档在
+///    `CourseSurface` 里是 `BackdropFilter.grouped`；没有 `BackdropGroup` 祖先时
+///    每个 filter 各自抓一份全屏（Flutter 的共享是 opt-in）。外壳补上了那个组，
+///    并且给了 `PreblurredWallpaperScope` —— 卡片于是改走「贴一张糊好的位图」，
+///    连实时模糊都不跑。
+/// 2. **每次 setState 重算整月**。翻月、点选日期、provider 任何通知都会让
+///    `itemBuilder` 重跑 `buildMonthGrid`（42 格 × 课程全表扫 + 考试全量解析 +
+///    84 次假期判定）。现在走 [MonthViewDataCache]：同一份数据只算一次，
+///    只算当前页与前后的各一页、且只留三页。
+/// 3. **整页宽度刷新**。翻月时 `onPageChanged` 只更新存储值，但 `itemBuilder`
+///    每帧仍为相邻页构造 widget —— 网格数据有缓存就只剩「画」，没有就每帧重算。
 ///
 /// ## 数据
 ///
-/// 全部来自 [MonthViewLogic]（纯 Dart 域逻辑，`test/domain/` 覆盖），
-/// 本页只做：取 provider 数据 → 调域逻辑 → 画 → 转发点击。
+/// 全部来自 [MonthViewLogic]（纯 Dart 域逻辑，`test/domain/` 覆盖），本页只做：
+/// 取 provider 数据 → 调域逻辑 → 画 → 转发点击。
 class MonthViewScreen extends StatefulWidget {
   const MonthViewScreen({super.key});
 
@@ -49,7 +64,17 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   static const int _baseYear = 2000;
   static const int _pageCount = 200 * 12;
 
+  /// 月网格数据缓存（纯 Dart，见 `month_view_cache.dart`）。
+  ///
+  /// 挂在 State 上而不是全局：页面销毁就该丢，换配置档重进也从头来（那是新数据，
+  /// 缓存本来也会因元素签名变化而全部失效）。
+  final MonthViewDataCache _cache = MonthViewDataCache();
+
   PageController? _pager;
+
+  /// 壁纸亮度采样器（独立页面拿不到首页那份，自己采一次）。
+  final PageWallpaperLuminanceSampler _luminance =
+      PageWallpaperLuminanceSampler();
 
   /// 当前聚焦月（年、月），由 pager 页号推导。
   late int _focusedYear;
@@ -58,11 +83,6 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   /// 选中日；null = 没选（议程区收起）。翻月不自动选中，避免「翻个月
   /// 就被塞一个没看过的日程列表」。
   DateTime? _selectedDate;
-
-  /// 壁纸主体亮度（首页同款三带里的 body 带）。null = 还没采到 / 没壁纸，
-  /// 判墨回落主题色。
-  double? _wallpaperLuminance;
-  String? _luminanceKey;
 
   @override
   void initState() {
@@ -76,54 +96,19 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sampleWallpaperLuminance();
+    // 键没变时是一次字符串比较，可以放心每帧依赖变更都调。
+    _luminance.pull(context.read<TimetableProvider>().settings, () {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
+    _luminance.dispose();
     _pager?.dispose();
     super.dispose();
-  }
-
-  /// 采样壁纸 body 带的亮度，用于判墨。
-  ///
-  /// 首页由 `WallpaperLuminanceController` 在 State 层统一采样（含首帧预热、
-  /// 去抖、失败闸门）；本页是独立页面、拿不到那份状态，所以按同一套口径
-  /// 自己采一次：以「壁纸路径 + 对齐/缩放 + 视口」为键，键不变就不重采。
-  Future<void> _sampleWallpaperLuminance() async {
-    final settings = context.read<TimetableProvider>().settings;
-    final path = homePageBackdropKey(settings);
-    if (path == null || path.isEmpty) {
-      if (_wallpaperLuminance != null || _luminanceKey != null) {
-        setState(() {
-          _wallpaperLuminance = null;
-          _luminanceKey = null;
-        });
-      }
-      return;
-    }
-    final viewport = MediaQuery.sizeOf(context);
-    final key =
-        '$path|${settings.homePageWallpaperAlignX}|'
-        '${settings.homePageWallpaperAlignY}|${settings.homePageWallpaperScale}|'
-        '${viewport.width}x${viewport.height}';
-    if (key == _luminanceKey) {
-      return;
-    }
-    final bands = await sampleHomePageWallpaperLuminanceBands(
-      path,
-      viewportSize: viewport,
-      alignX: settings.homePageWallpaperAlignX,
-      alignY: settings.homePageWallpaperAlignY,
-      scale: settings.homePageWallpaperScale,
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _luminanceKey = key;
-      _wallpaperLuminance = bands?.body;
-    });
   }
 
   static int _pageFor(int year, int month) =>
@@ -167,145 +152,60 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // 整包订阅 provider：本页要读的字段太多（settings + 三份集合 + 活跃时间
+    // 模板 + 假期数据），逐个 `context.select` 反而更脆 —— 漏一个就静默不刷新。
+    // 真正的开销在「每次通知都重算 42 格」，那已经由 `MonthViewDataCache` 挡掉：
+    // 数据没变时取数是纯比较，不重建网格。
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final luminance = _luminance.value;
 
-    // 与首页同一套壁纸底：有壁纸铺壁纸，没有就是主题底色（不透明）。
-    final backgroundVisual = resolveHomePageRegionBackground(
-      settings: settings,
-      isDark: isDark,
-      darkFallback: colorScheme.surface,
-      region: HomePageBackgroundScope.timetable,
-    );
-    final hasBackdrop = backgroundVisual.hasImage;
-    // 卡片判墨：按卡面实际亮度（卡底色压壁纸），与日视图摘要卡同一函数。
-    final ink = contentCardInkOverWallpaper(
-      cardFill: isDark
-          ? colorScheme.surface
-          : colorScheme.surfaceContainerHighest,
-      washAlpha: 0.42,
-      configuredHex: null,
-      defaultHex: '#000000',
-      themeFallback: colorScheme.onSurface,
-      hasBackdrop: hasBackdrop,
-      wallpaperLuminance: _wallpaperLuminance,
-    );
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: homePageBackgroundLayer(
-        visual: backgroundVisual,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _buildTopBar(
-                context: context,
-                l10n: l10n,
-                ink: ink,
-                showBackToMonth: !_isCurrentMonth,
-                onBackToMonth: _backToCurrentMonth,
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pager,
-                  itemCount: _pageCount,
-                  // 翻月只更新存储值；重建会带走「选中日」语义
-                  // （翻到别的月再翻回来，选中日该还在）。
-                  onPageChanged: (page) {
-                    final (year, month) = _monthForPage(page);
-                    if (year == _focusedYear && month == _focusedMonth) {
-                      return;
-                    }
-                    setState(() {
-                      _focusedYear = year;
-                      _focusedMonth = month;
-                    });
-                  },
-                  itemBuilder: (context, page) {
-                    final (year, month) = _monthForPage(page);
-                    return _buildMonthPage(
-                      context: context,
-                      provider: provider,
-                      settings: settings,
-                      year: year,
-                      month: month,
-                      l10n: l10n,
-                      ink: ink,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+    return TimetablePageChromeShell(
+      topLuminance: luminance?.top,
+      bodyLuminance: luminance?.body,
+      toolbarHeight: kMonthViewToolbarHeight,
+      // 工具行做成**独立 widget**（而不是页面里的一个方法）：它的墨色来自
+      // `HomePageChromeInk` 作用域（外壳按壁纸亮度判好的极性），只有在外壳
+      // 内部 build 才读得到；在页面 build 里读只会拿到 null 并回落主题色，
+      // 深色壁纸上就成了看不见的字。
+      toolbar: MonthViewToolbar(
+        year: _focusedYear,
+        month: _focusedMonth,
+        isCurrentMonth: _isCurrentMonth,
+        onPreviousMonth: () => _shiftMonth(-1),
+        onNextMonth: () => _shiftMonth(1),
+        onBackToCurrentMonth: _backToCurrentMonth,
       ),
-    );
-  }
-
-  /// 顶栏：返回 + 年月标题 +（非本月时）回到本月。
-  ///
-  /// 不用 [HyperosSubpage] 的磨砂大标题——那是设置页的语言。这里照首页顶栏的
-  /// 做法：透明底、内容浮在壁纸上、墨色按壁纸亮度判（[ink]）。
-  Widget _buildTopBar({
-    required BuildContext context,
-    required AppLocalizations l10n,
-    required Color ink,
-    required bool showBackToMonth,
-    required VoidCallback onBackToMonth,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: ink,
-            tooltip: l10n.backToWeekViewAction,
-          ),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => _shiftMonth(-1),
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  color: ink.withValues(alpha: 0.8),
-                  tooltip: l10n.monthViewPreviousMonth,
-                  visualDensity: VisualDensity.compact,
-                ),
-                Text(
-                  l10n.monthViewHeaderTitle(_focusedYear, _focusedMonth),
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: ink,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _shiftMonth(1),
-                  icon: const Icon(Icons.chevron_right_rounded),
-                  color: ink.withValues(alpha: 0.8),
-                  tooltip: l10n.monthViewNextMonth,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-          ),
-          if (showBackToMonth)
-            IconButton(
-              onPressed: onBackToMonth,
-              icon: const Icon(Icons.today_rounded),
-              color: ink,
-              tooltip: l10n.monthViewBackToCurrentMonth,
-            )
-          else
-            const SizedBox(width: 48),
-        ],
+      // 翻月时卡片在动、壁纸钉在屏幕上：预糊纹理必须每帧重取景，
+      // 否则玻璃被整块搬走（半边磨砂半边透明）。
+      pagingRepaint: _pager,
+      body: PageView.builder(
+        controller: _pager,
+        itemCount: _pageCount,
+        // 翻月只更新存储值；重建会带走「选中日」语义
+        // （翻到别的月再翻回来，选中日该还在）。
+        onPageChanged: (page) {
+          final (year, month) = _monthForPage(page);
+          if (year == _focusedYear && month == _focusedMonth) {
+            return;
+          }
+          setState(() {
+            _focusedYear = year;
+            _focusedMonth = month;
+          });
+        },
+        itemBuilder: (context, page) {
+          final (year, month) = _monthForPage(page);
+          return _buildMonthPage(
+            context: context,
+            provider: provider,
+            settings: settings,
+            year: year,
+            month: month,
+            l10n: l10n,
+            bodyLuminance: luminance?.body,
+          );
+        },
       ),
     );
   }
@@ -317,10 +217,12 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     required int year,
     required int month,
     required AppLocalizations l10n,
-    required Color ink,
+    required double? bodyLuminance,
   }) {
     final now = DateTime.now();
-    final grid = MonthViewLogic.buildMonthGrid(
+    // 缓存：同一份数据只算一次。键里的三份集合用**元素签名**判失效
+    // （provider 的包装表每次都是新实例，按 list 身份判会恒不命中）。
+    final grid = _cache.grid(
       year: year,
       month: month,
       now: now,
@@ -334,6 +236,13 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     final selectedInThisMonth =
         selected != null && selected.year == year && selected.month == month;
 
+    // 卡片判墨：按**卡面实际亮度**（卡底色压壁纸），与日视图摘要卡同一函数。
+    final ink = monthPageInkOverWallpaper(
+      context: context,
+      settings: settings,
+      wallpaperBodyLuminance: bodyLuminance,
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // 可用高度里先给议程区留底，剩下全给月网格按行均分：月历是主体，
@@ -342,8 +251,9 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
         // 这是「预算」不是「硬约束」：议程更长时整页可滚动兜底，
         // 预算偏小只让网格高一点，不会截断议程。
         const viewportPadding = kMonthPageVerticalPadding;
-        final agendaMinHeight =
-            selectedInThisMonth ? kMonthAgendaMinHeight : kMonthEmptyHintHeight;
+        final agendaMinHeight = selectedInThisMonth
+            ? kMonthAgendaMinHeight
+            : kMonthEmptyHintHeight;
         final gridBudget =
             constraints.maxHeight -
             viewportPadding * 2 -
@@ -426,9 +336,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
     switch (row.kind) {
       case MonthAgendaRowKind.exam:
         await Navigator.of(context).push<void>(
-          HyperosPageRoute<void>(
-            builder: (_) => AddExamScreen(exam: row.exam),
-          ),
+          HyperosPageRoute<void>(builder: (_) => AddExamScreen(exam: row.exam)),
         );
       case MonthAgendaRowKind.schedule:
         final instance = row.schedule;
