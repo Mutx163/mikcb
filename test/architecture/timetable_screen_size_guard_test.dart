@@ -52,7 +52,7 @@ void main() {
     // M5-A13：空白槽标记状态机 + 两个空白槽 widget（净 -160）→ 3796。
     // M5-A14：玻璃坞动作/标题触发器/动作页按钮/星期栏墨色守卫/新增弹层搬出
     // （净 -319）→ 3477，达成 ≤3500。
-    const baselineLines = 2306;
+    const baselineLines = 1844;
     expect(
       lines,
       lessThanOrEqualTo(baselineLines),
