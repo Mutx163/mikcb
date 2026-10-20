@@ -142,7 +142,7 @@ class _HomeNavigationSettingsScreenState
                         settings: const RouteSettings(
                           name: '/settings/glass-dock',
                         ),
-                        builder: (_) => _GlassDockEditorScreen(
+                        builder: (_) => GlassDockEditorScreen(
                           initialIds: resolveGlassDockActionIds(_draft),
                           onChanged: (ids) {
                             _updateDraft(
@@ -183,7 +183,7 @@ class _HomeNavigationSettingsScreenState
                           settings: const RouteSettings(
                             name: '/settings/glass-dock-icon',
                           ),
-                          builder: (_) => _GlassDockIconPickerScreen(
+                          builder: (_) => GlassDockIconPickerScreen(
                             initialName: _draft.glassDockButtonIconName,
                             onChanged: (name) {
                               if (name == null) {

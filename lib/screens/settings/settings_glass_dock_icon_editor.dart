@@ -1,4 +1,7 @@
-part of '../timetable_settings_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import '../../ui/hyperos/hyperos.dart';
 
 /// 圆钮图标挑选页：遍历 Miuix 扩展图标全集（MiuixIcons.extended.names），
 /// 支持按名称过滤。布局自上而下：
@@ -19,8 +22,8 @@ part of '../timetable_settings_screen.dart';
 /// 这里改为：行级惰性构建；每个图标路径只解析一次（翻转矩阵一并烘焙），
 /// 由 [_CachedMiuixVectorPainter] 用缓存 Path 直接按目标尺寸绘制（扩展
 /// 图标均为单路径 alpha=1，直填颜色与 SrcIn tint 视觉等价，无需 saveLayer）。
-class _GlassDockIconPickerScreen extends StatefulWidget {
-  const _GlassDockIconPickerScreen({
+class GlassDockIconPickerScreen extends StatefulWidget {
+  const GlassDockIconPickerScreen({super.key, 
     required this.initialName,
     required this.onChanged,
   });
@@ -29,12 +32,12 @@ class _GlassDockIconPickerScreen extends StatefulWidget {
   final ValueChanged<String?> onChanged;
 
   @override
-  State<_GlassDockIconPickerScreen> createState() =>
-      _GlassDockIconPickerScreenState();
+  State<GlassDockIconPickerScreen> createState() =>
+      GlassDockIconPickerScreenState();
 }
 
-class _GlassDockIconPickerScreenState
-    extends State<_GlassDockIconPickerScreen> {
+class GlassDockIconPickerScreenState
+    extends State<GlassDockIconPickerScreen> {
   /// 网格几何：沿用旧 Wrap 视觉参数——格间水平 8、行距 10、最小格宽 76；
   /// 列数按可用宽度推导后夹在 [3, _maxColumns]。
   static const _cellSpacing = 8.0;
@@ -276,8 +279,8 @@ class _IconCell extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: _GlassDockIconPickerScreenState._iconSize,
-              height: _GlassDockIconPickerScreenState._iconSize,
+              width: GlassDockIconPickerScreenState._iconSize,
+              height: GlassDockIconPickerScreenState._iconSize,
               child: parsed != null
                   ? CustomPaint(
                       painter: _CachedMiuixVectorPainter(

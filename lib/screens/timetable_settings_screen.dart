@@ -47,10 +47,10 @@ import 'settings/settings_home_widget.dart';
 import 'settings/settings_timetable_page.dart';
 import 'settings/settings_appearance.dart';
 import 'settings/settings_course_card.dart';
+import 'settings/settings_glass_dock_editor.dart';
+import 'settings/settings_glass_dock_icon_editor.dart';
 part 'settings/settings_home_navigation.dart';
 part 'settings/settings_home_menu_editor.dart';
-part 'settings/settings_glass_dock_editor.dart';
-part 'settings/settings_glass_dock_icon_editor.dart';
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
