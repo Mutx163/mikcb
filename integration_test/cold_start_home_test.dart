@@ -16,16 +16,16 @@
 //
 // `main()` 第一件事是 `WidgetsBinding.instance.deferFirstFrame()`
 // （lib/main.dart:285）：框架照常构建帧，但先别投给引擎。首页要等
-// `_revealHomeOnce()`（main.dart:749）把 `_homeRevealed` 翻成 true 才进
+// `_revealHomeOnce()`（main.dart:745）把 `_homeRevealed` 翻成 true 才进
 // widget 树；`AnimatedSwitcher` 的两个分支（`AppStartupSplash` / `home`，
-// main.dart:1788）都留在树上，谁在渲染取决于那个标志。
+// main.dart:1776）都留在树上，谁在渲染取决于那个标志。
 //
 // 所以断言一律用**轮询等待**（`_pumpUntil`），等的是「首页真的出现了」，
 // 既不是「等固定 N 秒」，也不是「widget 树非空」。如果只 pump 几次就断言，
 // 拿到的一定是启动画面——首帧放行 / provider 初始化 / 视觉预热 / shader
 // 编译这三段在真机冷启动上远比组件测试的假时钟慢。
 //
-// 兜底时间比 6s 看门狗宽：`main()` 里有个 6 秒首帧看门狗（main.dart:288），
+// 兜底时间比 6s 看门狗宽：`main()` 里有个 6 秒首帧看门狗（main.dart:289），
 // 启动管线真挂死时它会强制放行 + 强制换入。那种情况**仍然算通过**——它确实
 // 是用户能用的状态，只是慢了；真实的性能退化不该由这条功能路径测试判红。
 //
@@ -48,7 +48,7 @@
 //
 // ## 已知局限（如实记录，不要当成已覆盖）
 //
-// 1. `main()` 自己装了 `FlutterError.onError`（main.dart:311），会顶掉
+// 1. `main()` 自己装了 `FlutterError.onError`（main.dart:306），会顶掉
 //    flutter_test 的异常收集器。所以**启动期间的框架异常不会自动让本用例变红**，
 //    只会被 App 记进 AppLogService。本用例靠「首页到底有没有出来」判成败。
 // 2. 只验首页骨架（周网格 + 星期栏），不验「有课」的情形——那要先造数据。
@@ -104,7 +104,7 @@ const Duration _homeRevealTimeout = Duration(seconds: 30);
 /// 会推进一帧并真的等这么久，所以这个值同时决定轮询的粒度。
 ///
 /// 每一步都 `pump` 而不是干等 `Future.delayed`：启动管线里有一步是靠
-/// `addPostFrameCallback` 触发的（预解码启动图标 → 放行首帧，main.dart:817），
+/// `addPostFrameCallback` 触发的（预解码启动图标 → 放行首帧，main.dart:819），
 /// 不推帧它就不会往前走。
 const Duration _pollStep = Duration(milliseconds: 100);
 
@@ -179,7 +179,7 @@ void main() {
     //
     // 这里同样不用「固定等 300ms」：换入的交叉淡入时长走
     // `HyperosMotionPlatform.scaledDuration(kHomeRevealFadeMs)`
-    // （main.dart:218、1785），会跟着设备的「动画时长」设置缩放——把时长
+    // （main.dart:218、1777），会跟着设备的「动画时长」设置缩放——把时长
     // 写死，在动效调慢的设备上就会假红。
     await _pumpUntil(
       tester,
