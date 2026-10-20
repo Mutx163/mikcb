@@ -124,6 +124,42 @@ void main() {
       isTrue,
       reason: '砖高要有上下限：太矮不像按钮，太高在平板上变形',
     );
+    // 留白必须从 scope 读（大标题展开高度、玻璃坞余量都是动态的）——
+    // 手算状态栏+标题的写法已经把首行砖顶进大标题底下（真机截图踩过）
+    expect(
+      source.contains('HyperosBlurredHeaderScope.insetOf(context)') &&
+          source.contains('GlassDockScrollReliefScope.insetOf(context)'),
+      isTrue,
+      reason: '砖高计算必须读 HyperosBlurredHeaderScope / GlassDockScrollReliefScope，'
+              '不许手算头部高度',
+    );
+    // 滚动必须走 HyperosListView（裸 SingleChildScrollView 会漏头部留白）
+    expect(
+      // 匹配构造调用而不是词本身：文档注释里会提到它（讲为什么不用）
+      RegExp(r'(?<!/// )SingleChildScrollView\(').hasMatch(source),
+      isFalse,
+      reason: '禁用裸 SingleChildScrollView：它会绕开大标题留白机制',
+    );
+    expect(
+      source.contains('HyperosListView('),
+      isTrue,
+      reason: '滚动与留白交给 HyperosListView',
+    );
+    // 奇数组末砖跨两列（身份码组 3 个，2×2 会右下角空一块）。
+    // 两条断言互相咬合：删掉 span 分支就必须用空占位补格，而占位被下面禁掉——
+    // 单查字符串存在拦不住 `if (false && ...)` 这种短路破坏。
+    expect(
+      RegExp(r'if \(chunk\.length == 1\) \{[\s\S]*?_PickupCodeTile\(').hasMatch(
+        source,
+      ),
+      isTrue,
+      reason: '末行单砖必须横跨两列满铺（chunk.length == 1 分支里直接放砖）',
+    );
+    expect(
+      source.contains('SizedBox.shrink'),
+      isFalse,
+      reason: '网格里不许有空占位符：奇数末行靠跨列满铺，不是留洞',
+    );
     // 两张表都要登记（底栏内嵌 + 目录推入），缺一张就是「底栏消失」的回归
     final registry = File(
       'lib/screens/home_menu_route_registry.dart',

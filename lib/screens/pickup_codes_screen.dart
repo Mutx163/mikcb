@@ -148,9 +148,8 @@ class _PickupCodesScreenState extends State<PickupCodesScreen> {
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.pickupCodeTitle),
-      // 用 LayoutBuilder + 非滚动布局把可用高度吃满：这一页只有 7 个入口，
-      // 内容天然很短，若按「内容多高就多高」排，大屏上底部会空掉小半屏。
-      // 砖块高度按剩余空间自适应（见 _PickupCodePanel），窗口再高也不会留白。
+      // 砖高按可用高度分配（见 _PickupCodePanel），滚动仍交给
+      // HyperosListView —— 它自己处理大标题留白与玻璃坞底部余量。
       child: LayoutBuilder(
         builder: (context, constraints) {
           return _PickupCodePanel(
@@ -169,20 +168,26 @@ class _PickupCodesScreenState extends State<PickupCodesScreen> {
 
 /// 整页两栏网格：两组入口 + 自适应砖高，把可用高度吃满。
 ///
-/// ## 为什么不用 HyperosListView
+/// ## 砖高怎么算
 ///
-/// 这一页只有 7 个入口，内容天生很短。滚动的列表按内容高度排，大屏上底部会
-/// 空掉小半屏（实测 360×640 只占 344dp）。改成「按可用高度分配砖高」之后：
-/// 屏幕越高砖越大、越容易点，而不是底部一片空白。
+/// 这一页只有 7 个入口，内容天生很短；按内容排，大屏上底部会空掉小半屏
+/// （实测 360×640 只占 344dp）。砖高改为**按剩余空间均分**：
+/// 可用高度 = 页面高 − 顶栏展开高度（HyperosBlurredHeaderScope）−
+/// 两个分组标题 − 行间距 − 玻璃坞底部余量（GlassDockScrollReliefScope）。
+/// 屏幕越高砖越大越好按；夹在 [minTileHeight, maxTileHeight] 之间防变形。
 ///
-/// ## 两列而不是四列
+/// ## 滚动为什么必须交给 HyperosListView
 ///
-/// 四列时砖只有 75dp 宽、88dp 高，信息量只有「首字 + 平台名」，撑不起来。
-/// 两列可以放下「首字 + 平台名 + 一行动作说明」，砖本身也变成 150×120 的
-/// 大按钮 —— 站在快递柜前单手操作更好按。
+/// 上一版用裸 SingleChildScrollView + 手工顶部留白（状态栏 + 26dp），
+/// 漏算了可折叠大标题那层——真机截图里首行砖被标题盖住、首字井全被切掉。
+/// HyperosListView 自己读 HyperosBlurredHeaderScope 的头部 inset、
+/// GlassDockScrollReliefScope 的底部余量与 overscroll 物理，**不许绕开它手算**。
 ///
-/// 砖高夹在 [minTileHeight, maxTileHeight] 之间：太矮不像按钮，太高在平板上
-/// 会拉到变形。中间部分按行数均分剩余空间。
+/// ## 两列 + 奇数末砖跨两列
+///
+/// 四列时砖只有 75dp 宽，撑不起「首字 + 名字 + 说明」；两列是大按钮。
+/// 身份码组只有 3 个：2×2 会右下角空一块，所以**每组的末行若只有一砖，
+/// 让它横跨两列**（bento 常见手法，视觉上是刻意的满铺而不是缺格）。
 class _PickupCodePanel extends StatelessWidget {
   const _PickupCodePanel({
     required this.identityCodes,
@@ -200,13 +205,13 @@ class _PickupCodePanel extends StatelessWidget {
   static const double minTileHeight = 104;
 
   /// 砖高上限：平板上再高就变形，多出来的空间留给底部留白。
-  static const double maxTileHeight = 152;
+  static const double maxTileHeight = 168;
 
-  /// 两组之间 / 组内行之间的间距。
+  /// 组内行间距。
   static const double _rowGap = 10;
 
-  /// 分组标题占位（HyperosSectionLabel 自带 8dp 下边距 + 文字行高）。
-  static const double _sectionLabelHeight = 26;
+  /// 分组标题占位（HyperosSectionLabel：文字行高 + 自带 8dp 下边距）。
+  static const double _sectionLabelHeight = 30;
 
   final List<PickupCodeEntry> identityCodes;
   final List<PickupCodeEntry> parcels;
@@ -222,15 +227,17 @@ class _PickupCodePanel extends StatelessWidget {
   int get _totalRows => _identityRows + _parcelsRows;
 
   /// 按剩余空间算砖高；夹在上下限之间。
+  ///
+  /// 头部与底部留白**从 scope 读**（大标题展开高度、玻璃坞余量都会变），
+  /// 不手算状态栏 / 标题高度 —— 上一版就是手算漏层才把首行顶进标题底下。
   double _resolveTileHeight(BuildContext context) {
-    final insets = MediaQuery.paddingOf(context);
-    // 页头（大标题 + 毛玻璃）由 HyperosSubpage 处理，这里只扣自己的部分：
-    // 顶部安全区、两个分组标题、行间距、底部安全区与呼吸留白。
-    final reserved = insets.top +
-        insets.bottom +
+    final headerInset = HyperosBlurredHeaderScope.insetOf(context);
+    final dockRelief = GlassDockScrollReliefScope.insetOf(context);
+    final reserved = headerInset +
+        dockRelief +
         _sectionLabelHeight * 2 +
-        _rowGap * (_totalRows + 2) +
-        HyperosTokens.listPadding.vertical;
+        _rowGap * (_totalRows + 1) +
+        24; // 列表左右内边距对应的上下呼吸（对齐 HyperosTokens.listPadding）
     final available = maxHeight - reserved;
     final perTile = available / (_totalRows == 0 ? 1 : _totalRows);
     return perTile.clamp(minTileHeight, maxTileHeight);
@@ -240,26 +247,14 @@ class _PickupCodePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final tileHeight = _resolveTileHeight(context);
-    final insets = MediaQuery.paddingOf(context);
-    return SingleChildScrollView(
-      // 砖高已被上限夹住时（大平板）内容可能装不满，仍允许滚动兜底；
-      // 装得下时不会产生滚动，只是把内容按可用高度铺开。
-      padding: EdgeInsets.fromLTRB(
-        HyperosTokens.listPadding.left,
-        insets.top + _sectionLabelHeight,
-        HyperosTokens.listPadding.right,
-        insets.bottom + _rowGap,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          HyperosSectionLabel(text: l10n.pickupCodeIdentitySectionTitle),
-          _buildGrid(context, identityCodes, tileHeight),
-          const SizedBox(height: _rowGap * 2),
-          HyperosSectionLabel(text: l10n.pickupCodeParcelsSectionTitle),
-          _buildGrid(context, parcels, tileHeight),
-        ],
-      ),
+    return HyperosListView(
+      children: [
+        HyperosSectionLabel(text: l10n.pickupCodeIdentitySectionTitle),
+        _buildGrid(context, identityCodes, tileHeight),
+        const SizedBox(height: _rowGap * 2),
+        HyperosSectionLabel(text: l10n.pickupCodeParcelsSectionTitle),
+        _buildGrid(context, parcels, tileHeight),
+      ],
     );
   }
 
@@ -275,33 +270,49 @@ class _PickupCodePanel extends StatelessWidget {
         start,
         (start + columns).clamp(0, entries.length),
       );
-      rows.add(
-        SizedBox(
-          height: tileHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var index = 0; index < columns; index++) ...[
-                if (index > 0) const SizedBox(width: _rowGap),
-                Expanded(
-                  child: index < chunk.length
-                      ? _PickupCodeTile(
-                          entry: chunk[index],
-                          title: pickupCodeEntryTitle(l10n, chunk[index]),
-                          subtitle: pickupCodeEntryHint(l10n, chunk[index]),
-                          busy: busyEntryId == chunk[index].id,
-                          dimmed: busyEntryId != null &&
-                              busyEntryId != chunk[index].id,
-                          missing: _isMissing(chunk[index]),
-                          onTap: () => onTap(chunk[index]),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ],
+      if (chunk.length == 1) {
+        // 末行只有一砖：横跨两列满铺，不留出右下角的洞。
+        rows.add(
+          SizedBox(
+            height: tileHeight,
+            child: _PickupCodeTile(
+              entry: chunk.first,
+              title: pickupCodeEntryTitle(l10n, chunk.first),
+              subtitle: pickupCodeEntryHint(l10n, chunk.first),
+              busy: busyEntryId == chunk.first.id,
+              dimmed: busyEntryId != null && busyEntryId != chunk.first.id,
+              missing: _isMissing(chunk.first),
+              onTap: () => onTap(chunk.first),
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        rows.add(
+          SizedBox(
+            height: tileHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var index = 0; index < columns; index++) ...[
+                  if (index > 0) const SizedBox(width: _rowGap),
+                  Expanded(
+                    child: _PickupCodeTile(
+                      entry: chunk[index],
+                      title: pickupCodeEntryTitle(l10n, chunk[index]),
+                      subtitle: pickupCodeEntryHint(l10n, chunk[index]),
+                      busy: busyEntryId == chunk[index].id,
+                      dimmed:
+                          busyEntryId != null && busyEntryId != chunk[index].id,
+                      missing: _isMissing(chunk[index]),
+                      onTap: () => onTap(chunk[index]),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
       if (start + columns < entries.length) {
         rows.add(const SizedBox(height: _rowGap));
       }
