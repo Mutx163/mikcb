@@ -1,13 +1,27 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/holiday_log_localizer.dart';
+import 'package:university_timetable/l10n/holiday_name_localizer.dart';
+import 'package:provider/provider.dart';
+import '../../models/holiday_entry.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../services/app_log_service.dart';
+import '../../utils/app_toast.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/miuix_date_picker_sheet.dart';
+import '../../widgets/course_field_picker_sheet.dart';
+import 'settings_shared.dart';
 
-class _HolidaySettingsScreen extends StatefulWidget {
-  const _HolidaySettingsScreen();
+class HolidaySettingsScreen extends StatefulWidget {
+  const HolidaySettingsScreen({super.key});
 
   @override
-  State<_HolidaySettingsScreen> createState() => _HolidaySettingsScreenState();
+  State<HolidaySettingsScreen> createState() => HolidaySettingsScreenState();
 }
 
-class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
+class HolidaySettingsScreenState extends State<HolidaySettingsScreen> {
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Future<void> _saveQueue = Future<void>.value();
@@ -457,7 +471,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
             HyperosNavigation.push(
               context,
               settings: const RouteSettings(name: '/settings/holiday/advanced'),
-              builder: (_) => const _HolidayAdvancedSettingsScreen(),
+              builder: (_) => const HolidayAdvancedSettingsScreen(),
             );
           },
         ),
@@ -647,16 +661,16 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
 }
 
 /// Advanced holiday tools: manual refresh + update log (hidden from casual users).
-class _HolidayAdvancedSettingsScreen extends StatefulWidget {
-  const _HolidayAdvancedSettingsScreen();
+class HolidayAdvancedSettingsScreen extends StatefulWidget {
+  const HolidayAdvancedSettingsScreen({super.key});
 
   @override
-  State<_HolidayAdvancedSettingsScreen> createState() =>
-      _HolidayAdvancedSettingsScreenState();
+  State<HolidayAdvancedSettingsScreen> createState() =>
+      HolidayAdvancedSettingsScreenState();
 }
 
-class _HolidayAdvancedSettingsScreenState
-    extends State<_HolidayAdvancedSettingsScreen> {
+class HolidayAdvancedSettingsScreenState
+    extends State<HolidayAdvancedSettingsScreen> {
   bool _refreshing = false;
 
   Future<void> _refreshHolidayData() async {

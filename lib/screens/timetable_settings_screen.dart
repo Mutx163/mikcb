@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/holiday_log_localizer.dart';
-import 'package:university_timetable/l10n/holiday_name_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +14,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../logging/app_debug_log.dart';
-import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
@@ -25,7 +22,6 @@ import '../services/home_widget_service.dart';
 import '../services/home_widget_binding_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/screen_capture_service.dart';
-import '../services/app_log_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
@@ -40,7 +36,6 @@ import '../widgets/miuix_date_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
-import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_recolor_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
 import '../services/bundled_assets.dart';
@@ -68,6 +63,7 @@ import 'settings/settings_reset.dart';
 import 'settings/settings_weather.dart';
 import 'settings/settings_general.dart';
 import 'settings/settings_diagnostics.dart';
+import 'settings/settings_holiday.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -78,8 +74,6 @@ part 'settings/settings_course_card.dart';
 part 'settings/settings_live.dart';
 part 'settings/settings_timetable_page.dart';
 part 'settings/settings_home_widget.dart';
-part 'settings/settings_holiday.dart';
-
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
@@ -93,7 +87,7 @@ Widget? settingsSubpageById(String id) {
     'timetablePageSettings' => const _TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const _LiveSettingsScreen(),
-    'holidaySettings' => const _HolidaySettingsScreen(),
+    'holidaySettings' => const HolidaySettingsScreen(),
     'weatherSettings' => const WeatherSettingsScreen(),
     'homeWidgetSettings' => const _HomeWidgetSettingsScreen(),
     'diagnosticsSettings' => const DiagnosticsScreen(),
@@ -198,7 +192,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/holiday'),
-            builder: (_) => const _HolidaySettingsScreen(),
+            builder: (_) => const HolidaySettingsScreen(),
           );
         }
 
