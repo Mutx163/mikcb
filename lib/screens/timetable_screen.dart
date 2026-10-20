@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
@@ -22,7 +21,6 @@ import '../domain/day_course_display_logic.dart';
 import '../domain/day_view_paging.dart';
 import '../domain/week_calculator.dart';
 import '../providers/timetable_provider.dart';
-import '../providers/weather_provider.dart';
 import '../services/screen_capture_service.dart';
 import '../services/timetable_share_service.dart';
 import '../services/widget_launch_router.dart';
@@ -40,22 +38,16 @@ import '../controllers/week_pager_controller.dart';
 import '../utils/home_page_background.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
-import '../ui/home/home_chrome_spec.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
-import '../widgets/course_card.dart';
 import '../widgets/course_grid_surface_host.dart';
-import '../widgets/course_weather_display.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/timetable_home_preview_scope.dart';
-import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
 import '../widgets/timetable/timetable_course_action_flow.dart';
-import '../widgets/timetable/timetable_profile_switch_flow.dart';
-import '../widgets/timetable/timetable_week_page_body.dart';
+import '../widgets/timetable/timetable_home_page_assembly.dart';
 import '../widgets/timetable/timetable_dock_actions.dart';
 import '../widgets/timetable/weekday_ink_contrast_guard.dart';
-import '../widgets/timetable/timetable_profile_switcher_trigger.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
@@ -68,9 +60,6 @@ import '../widgets/timetable/day_view/day_view_summary_card.dart';
 import '../widgets/timetable/timetable_add_course_sheet.dart';
 import '../widgets/timetable/timetable_home_action_page_button.dart';
 import '../widgets/timetable/timetable_day_pager_physics.dart';
-import '../widgets/timetable/timetable_home_dock_shell.dart';
-import '../widgets/timetable/timetable_home_header.dart';
-import '../widgets/timetable/timetable_home_stack_builder.dart';
 import '../widgets/timetable/timetable_home_scroll.dart';
 import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_top_menu_shell.dart';
@@ -100,7 +89,6 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin
     implements DayViewTransitionHost, WeekPagerHost, HomeMenuHost {
-  static const double _homeTitleHorizontalNudge = 4;
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
 
@@ -403,9 +391,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   static String _dayAgendaScrollKey(int week, int dayOfWeek) =>
       'day-agenda-$week-$dayOfWeek';
 
-  /// 周视图某一页那块网格滚动体的 key。
-  static String _weekGridScrollKey(int week) => 'week-scroll-$week';
-
   /// 预览那份的滚动控制器；真实首页返回 null（照旧走内部兜底控制器）。
   ///
   /// 首次为某个 key 建控制器时取 [HomeScrollOffsets] 里的初值，之后同一个 key
@@ -687,298 +672,88 @@ class _TimetableScreenState extends State<TimetableScreen>
           provider.settings,
         );
         _syncScreenshotListener(provider.settings);
-        final colorScheme = Theme.of(context).colorScheme;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final darkFallback = colorScheme.surface;
         final settings = provider.settings;
-        final viewportSize = MediaQuery.sizeOf(context);
-        // 启动预热器 / 本进程里任意一份首页采过的亮度带，只要这一份键对得上就
-        // 首帧直接采用：标题/状态栏/星期栏/底栏的黑白墨极性第一帧即正确，不出现
-        // 「按主题兜底再翻面」的闪变（缩尺预览那份首页靠的就是这条）。仅在本页
-        // 尚未开始采样时生效；异步精确采样照常运行并以同值幂等收敛。
-        _luminance.seedFromPrimerOrShare(
-          settings,
-          viewportSize: viewportSize,
-        );
-        final chrome = resolveHomeChromeSpec(
-          context: context,
-          settings: settings,
-          isDark: isDark,
-          darkFallback: darkFallback,
-          wallpaperTopLuminance: _luminance.top,
-        );
-        final glassDockForm = chrome.glassDockForm;
-        final hasBackdrop = chrome.hasBackdrop;
-        final chromeForeground = chrome.chromeForeground;
-        final chromeMutedForeground = chrome.chromeMutedForeground;
-        final chromeDotBorderColor = chrome.chromeDotBorderColor;
-        final followsWeekPager = chrome.followsWeekPager;
-        final useHomePreblur = chrome.useHomePreblur;
-        final homePreblurSigma = chrome.homePreblurSigma;
-        final courseCardPreblurSigma = chrome.courseCardPreblurSigma;
-        _luminance.schedule(
-          settings,
-          viewportSize: viewportSize,
-        );
-        // After the sample lands: a hand-picked weekday ink can be invisible
-        // over this wallpaper — never silently override it, explain instead.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _weekdayInkGuard.maybeWarn(
-      context: context,
-      provider: provider,
-      settings: settings,
-      luminance: _luminance.weekdayInk(settings),
-    );
-          }
-        });
-        // 顶栏「更多」「爱心」的常驻玻璃球（[FHeaderActionBall]）。**必须画在
-        // 采样宿主之外**（[HomeMenuController.buildShell] 的 Stack 里、Host 的
-        // 兄弟层）：
-        // 页内玻璃的采样快照录自捕获节点的图层，球若长在捕获子树里，它自己的
-        // 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏，快照是干净的，
-        // 关闭后按钮重绘即触发重采样，球就"变一次材质"并稳定在烘过自己一层
-        // 的样子（2026-09-14 真机现象）。图标墨色见 [_chromeActionBallInk]；
-        // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
-        // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
-        final homeChromeBalls = buildTimetableHomeChromeBalls(
-          homeMenuAnchor: _homeMenu.anchor,
-          moreLink: _moreBallLink,
-          heartLink: _heartBallLink,
-          hasPartnerBinding: provider.hasPartnerBinding,
-          coupleOverlayActive: _isCoupleOverlayActive(provider),
-          moreIcon: buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
-          chromeActionBallInk: _chromeActionBallInk,
-        );
-        // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
-        // UndimmedBackdropCapture（组内首个 filter 缓存整屏壁纸），chrome 玻璃
-        // 带采样这份全尺寸背景。此前首页玻璃带只能采样自己 band bounds 的背
-        // 景，折射位移在带边被钳制，观感与预览（组内全尺寸采样）不一致。
-        //
-        // ⚠️ 这套结构搭好之后，**带那一侧一直没接上开关**
-        // （`HomePageChromeGlassFill.useAncestorBackdropGroup` 默认 false），于是
-        // "折射在带边被钳制"照旧发生，并从那条唯一可见的下边读出来：打开磨砂强度后
-        // 星期栏底边一条黑线（用户 2026-09-20 实测）。2026-09-20 才把开关接上，
-        // 见 `widgets/home_page_region_blur.dart` 的 `HomePageContinuousChromeFrostedOverlay`。
-        final Widget homeStack = _buildHomeStackView(
-          provider: provider,
-          settings: settings,
-          l10n: l10n,
-          chrome: chrome,
-          chromeForeground: chromeForeground,
-          chromeMutedForeground: chromeMutedForeground,
-          hasBackdrop: hasBackdrop,
-          glassDockForm: glassDockForm,
-        );
-
-        // 玻璃坞形态下课表（含壁纸）与设置页都常驻挂载，用 Offstage 切换：
-        // - 设置页的滚动位置与大标题折叠状态不随 Tab 切换丢失（切走再切回，
-        //   标题保持离开时的折叠态）；
-        // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
-        // 玻璃坞导航始终由 [TimetableGlassDockLayer] 浮在最上层（画在采样宿主之外）。
-        return _buildDockShell(
-          homeStack: homeStack,
-          useHomePreblur: useHomePreblur,
-          settings: settings,
-          homePreblurSigma: homePreblurSigma,
-          courseCardPreblurSigma: courseCardPreblurSigma,
-          followsWeekPager: followsWeekPager,
-          glassDockForm: glassDockForm,
-          homeChromeBalls: homeChromeBalls,
-          chromeDotBorderColor: chromeDotBorderColor,
+        return buildTimetableHomePage(
+          TimetableHomePageInput(
+            context: context,
+            provider: provider,
+            settings: settings,
+            l10n: l10n,
+            isMounted: () => mounted,
+            weekPager: _weekPager,
+            dayViewTransition: _dayViewTransition,
+            homePull: _homePull,
+            emptySlot: _emptySlot,
+            luminance: _luminance,
+            weekdayInkGuard: _weekdayInkGuard,
+            homeMenu: _homeMenu,
+            dayViewExpandAnimation: _dayViewExpandController,
+            homePullVerticalPhysics: _homePullVerticalPhysics,
+            previewControllerFor: _previewControllerFor,
+            reportHomeScroll: _reportHomeScroll,
+            timetableSurfaceKey: _timetableSurfaceKey,
+            topMenuButtonKey: _topMenuButtonKey,
+            moreBallLink: _moreBallLink,
+            heartBallLink: _heartBallLink,
+            glassDockKey: _glassDockKey,
+            glassDockRoundKey: _glassDockRoundKey,
+            glassDockCardRepaint: _glassDockCardRepaint,
+            dockInlinePageId: _dockInlinePageId,
+            isDayView: _isDayView,
+            hasSelectedDay: _selectedDayOfWeek != null,
+            coupleOverlayActive: _isCoupleOverlayActive(provider),
+            dayHeaderPreview: _dayHeaderPreview,
+            glassDockPillOccupancy: _glassDockPillOccupancy,
+            glassDockContentScrollInset: _glassDockContentScrollInset,
+            onToggleCoupleOverlay: () {
+              setState(() {
+                _coupleOverlayEnabled = !_coupleOverlayEnabled;
+                _sharedFreeSegmentsExpanded = false;
+              });
+              _persistCoupleOverlayEnabled(
+                provider,
+                enabled: _coupleOverlayEnabled,
+              );
+            },
+            openProfileManagePage: (hostContext, sourceRect) =>
+                openTimetablePopupActionPage(
+                  hostContext,
+                  pageBuilder: (_) => const TimetableProfilesScreen(),
+                  sourceRect: sourceRect,
+                ),
+            isSelectedDay: _isSelectedDay,
+            onDayTapDown: _captureDayViewAnchor,
+            onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
+                unawaited(
+                  _openAddCourseFromEmptySlot(
+                    week,
+                    dayOfWeek,
+                    startSection,
+                    endSection,
+                  ),
+                ),
+            buildAnchoredDayViewOverlay: (week) => _buildAnchoredDayViewOverlay(
+              provider: provider,
+              settings: settings,
+              week: week,
+            ),
+            showCourseActions: _showCourseActions,
+            coursesForDay: _getCoursesForDay,
+            buildDisplayItems: _buildHomeDayDisplayItems,
+            dateForWeekDay: _dateForWeekDay,
+            startingAt: _getDisplayItemsStartingAtSection,
+            resolveColor: _resolveDisplayCourseColor,
+            onDockTap: _handleDockTap,
+            buildMoreActionIcon: buildMoreActionIcon,
+            shouldShowBackToCurrentWeek:
+                _shouldShowFloatingBackToCurrentWeekButton,
+            onJumpToCurrentWeek: () => _jumpToCurrentWeek(provider),
+            shouldShowBackToToday: _shouldShowFloatingBackToTodayButton,
+            backToTodayBottomInset: _backToTodayButtonBottomInset,
+            onNavigateToday: () => unawaited(_navigateDayViewToToday(provider)),
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildHomeStackView({
-    required TimetableProvider provider,
-    required TimetableSettings settings,
-    required AppLocalizations l10n,
-    required HomeChromeSpec chrome,
-    required Color chromeForeground,
-    required Color chromeMutedForeground,
-    required bool hasBackdrop,
-    required bool glassDockForm,
-  }) {
-    return TimetableHomeStackBuilder(
-      host: TimetableHomeStackHost(
-        provider: provider,
-        settings: settings,
-        l10n: l10n,
-        chrome: chrome,
-        chromeForeground: chromeForeground,
-        chromeMutedForeground: chromeMutedForeground,
-        hasBackdrop: hasBackdrop,
-        glassDockForm: glassDockForm,
-        weekPageController: _weekPager.pageController,
-        title: _buildProfileSwitcherTrigger(
-          provider,
-          foreground: chromeForeground,
-          mutedForeground: chromeMutedForeground,
-        ),
-        suffixes: buildTimetableHomeHeaderActions(
-          l10n: l10n,
-          hasPartnerBinding: provider.hasPartnerBinding,
-          coupleOverlayActive: _isCoupleOverlayActive(provider),
-          heartLink: _heartBallLink,
-          moreLink: _moreBallLink,
-          homeMenuAnchor: _homeMenu.anchor,
-          topMenuButtonKey: _topMenuButtonKey,
-          onToggleCoupleOverlay: () {
-            setState(() {
-              _coupleOverlayEnabled = !_coupleOverlayEnabled;
-              _sharedFreeSegmentsExpanded = false;
-            });
-            _persistCoupleOverlayEnabled(
-              provider,
-              enabled: _coupleOverlayEnabled,
-            );
-          },
-          onPrewarmGlass: _homeMenu.prewarmGlass,
-          onReleaseGlass: _homeMenu.releaseGlassAfterTap,
-          onShowTopActions: () =>
-              _homeMenu.showTopActionsSheet(context),
-        ),
-        timetableSurfaceKey: _timetableSurfaceKey,
-        isPullRunning: _homePull.isRunning,
-        pullDragDistance: _homePull.dragDistance,
-        pullTriggerDistance: HomePullController.triggerDistance,
-        isDayView: _isDayView,
-        glassDockContentScrollInset: _glassDockContentScrollInset(settings),
-        onScrollNotification: _homePull.handleScrollNotification,
-        onPullUpdate: _homePull.updateDrag,
-        onPullEnd: _homePull.finishDrag,
-        onPullCancel: _homePull.cancelDrag,
-        resetFreeze: _homePull.resetFreeze,
-        onPointerMove: _homePull.onPointerMove,
-        dayViewPageController: _dayViewTransition.pageController,
-        visibleDayViewWeek: _dayViewTransition.visibleWeek,
-        shouldShowDayViewOverlay: _shouldShowDayViewOverlay,
-        wallpaperTopLuminance: _luminance.top,
-        wallpaperWeekdayLuminance: _luminance.weekday,
-        wallpaperBodyLuminance: _luminance.body,
-        timeColumnWidth: timeColumnWidth(settings),
-        visibleDays: visibleDayNumbers(settings),
-        cardInset: courseCardInset(settings),
-        isSelectedDay: _isSelectedDay,
-        hasExamOnDate: provider.hasExamOnDate,
-        onShowWeekSelector: _showWeekSelector,
-        onDayTapDown: _captureDayViewAnchor,
-        onDayTap: (week, dayOfWeek) {
-          _dayViewTransition.toggle(
-            week: week,
-            dayOfWeek: dayOfWeek,
-            settings: settings,
-          );
-        },
-        onFinalizeWeekPageSettled: () =>
-            _weekPager.finalizeWeekPageSettled(provider),
-        onHandleWeekPageChanged: (page) =>
-            _weekPager.handleWeekPageChanged(page, settings.semesterWeekCount),
-        emptySlot: _emptySlot,
-        coursesForDay: _getCoursesForDay,
-        buildDisplayItems: _buildHomeDayDisplayItems,
-        wrapSurfaceHost: _wrapCourseGridSurfaceHost,
-        dateForWeekDay: _dateForWeekDay,
-        startingAt: _getDisplayItemsStartingAtSection,
-        resolveColor: _resolveDisplayCourseColor,
-        overline: _resolveCompactOverlineText,
-        badge: _resolveCompactBadgeText,
-        weather: (item, date, week) => _weekCardWeatherDisplay(
-          l10n: AppLocalizations.of(context),
-          weather: context.watch<WeatherProvider?>(),
-          settings: settings,
-          course: item.course,
-          date: date,
-          week: week,
-          isPartnerCourse: item.isPartnerCourse,
-        ),
-        showActions: _showCourseActions,
-        onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
-            unawaited(
-              _openAddCourseFromEmptySlot(
-                week,
-                dayOfWeek,
-                startSection,
-                endSection,
-              ),
-            ),
-        buildBody: (settings, week, grid) => _buildWeekPageBody(
-          settings: settings,
-          week: week,
-          grid: grid,
-        ),
-        buildAnchoredOverlay: (week) => _buildAnchoredDayViewOverlay(
-          provider: provider,
-          settings: settings,
-          week: week,
-        ),
-        onWeekdayBarDragStart: _dayViewTransition.startWeekdayBarDrag,
-        onWeekdayBarDragUpdate: _dayViewTransition.updateWeekdayBarDrag,
-        onWeekdayBarDragEnd: _dayViewTransition.endWeekdayBarDrag,
-        onWeekdayBarDragCancel: _dayViewTransition.cancelWeekdayBarDrag,
-        visibleWeekListenable: _weekPager.visibleWeekListenable,
-        shouldShowBackToCurrentWeek: _shouldShowFloatingBackToCurrentWeekButton,
-        onJumpToCurrentWeek: () => _jumpToCurrentWeek(provider),
-        glassDockPillOccupancy: _glassDockPillOccupancy,
-        dayHeaderPreview: _dayHeaderPreview,
-        shouldShowBackToToday: _shouldShowFloatingBackToTodayButton,
-        backToTodayBottomInset: _backToTodayButtonBottomInset,
-        onNavigateToday: () => unawaited(_navigateDayViewToToday(provider)),
-      ),
-    );
-  }
-  Widget _buildDockShell({
-    required Widget homeStack,
-    required bool useHomePreblur,
-    required TimetableSettings settings,
-    required double homePreblurSigma,
-    required double? courseCardPreblurSigma,
-    required bool followsWeekPager,
-    required bool glassDockForm,
-    required List<Widget> homeChromeBalls,
-    required Color chromeDotBorderColor,
-  }) {
-    final inlineId = _dockInlinePageId;
-    return TimetableHomeDockShell(
-      homeStack: homeStack,
-      useHomePreblur: useHomePreblur,
-      settings: settings,
-      homePreblurSigma: homePreblurSigma,
-      courseCardPreblurSigma: courseCardPreblurSigma,
-      isDayView: _isDayView,
-      weekPageController: _weekPager.pageController,
-      ensureDayViewPageController: _ensureDayViewPageController,
-      followsWeekPager: followsWeekPager,
-      repaint: _glassDockCardRepaint,
-      glassDockForm: glassDockForm,
-      inlinePageBuilder: inlineId == null
-          ? null
-          : inlineDockPageFor(inlineId),
-      glassDockScrollInset: _glassDockContentScrollInset(settings),
-      dockLayer: glassDockForm
-          ? TimetableGlassDockLayer(
-              settings: settings,
-              isInlinePage: inlineId != null,
-              wallpaperBodyLuminance: _luminance.body,
-              selectedIndex: _dockSelectedIndex(
-                resolveGlassDockActionIds(settings),
-              ),
-              roundButtonIcon: _roundButtonIcon(settings),
-              onTabSelected: (id) => _handleDockTap(id, settings),
-              onRoundButtonTap: () => _homeMenu.handleRoundButtonTap(settings),
-              pillKey: _glassDockKey,
-              roundKey: _glassDockRoundKey,
-            )
-          : null,
-      wrapHome: (content, {dockLayer}) => _homeMenu.buildShell(
-        content: content,
-        settings: settings,
-        chromeBalls: homeChromeBalls,
-        chromeDotBorderColor: chromeDotBorderColor,
-        dockLayer: dockLayer,
-      ),
     );
   }
 
@@ -1006,16 +781,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool get _isDayView =>
       _selectedDayOfWeek != null && _selectedWeekForDayView != null;
 
-  /// 顶栏两个图标按钮（「更多」「爱心」）常驻玻璃球上的墨色。
-  ///
-  /// **跟球走，不跟壁纸反相**：球是玻璃材质（[FHeaderAction.glassBall]），
-  /// 浓淡只跟主题明暗走 —— 浅色主题是奶白球、深色主题是暗球；跟壁纸反相算出来
-  /// 的白墨到深壁纸下就是「白图标 + 奶白球」，等于没墨。
-  ///
-  /// 同一份墨色也喂给首页菜单弹窗的 `anchorContent`：打开/关闭菜单时，图标会在
-  /// 「按钮的球」与「弹窗形变那颗球」之间交接，两边不同色会看到一次跳色。
-  Color get _chromeActionBallInk => context.theme.colors.foreground;
-
   /// 「更多」按钮的**可见内容**：图标 + 更新红点。
   ///
   /// 常驻玻璃球与弹窗形变起点（`anchorContent`）**必须共用这一份** —— 两者
@@ -1027,14 +792,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   Widget buildMoreActionIcon({required Color dotBorderColor}) =>
       HomeMoreActionIcon(
-        ink: _chromeActionBallInk,
+        ink: context.theme.colors.foreground,
         dotBorderColor: dotBorderColor,
         showUpdateDot: _update.hasUpdate,
       );
-
-  bool get _shouldShowDayViewOverlay =>
-      _selectedDayOfWeek != null &&
-      (_isDayView || _dayViewExpandController.isAnimating);
 
   int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
     // 与分页共用同一个归一口径（domain/day_view_paging.dart）。
@@ -1383,21 +1144,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// gets its lightness pushed for readability ([homePageOverWallpaperInk]);
   /// this explains the change and offers restoring the default (auto B/W).
 
-  Widget _buildProfileSwitcherTrigger(
-    TimetableProvider provider, {
-    required Color foreground,
-    required Color mutedForeground,
-  }) {
-    return TimetableProfileSwitcherTrigger(
-      style: provider.settings.homeTitleStyle,
-      activeProfileName: provider.activeProfile?.name.trim(),
-      onTap: _showProfileQuickSwitchSheet,
-      foreground: foreground,
-      mutedForeground: mutedForeground,
-      leftPadding: _homeTitleHorizontalNudge,
-    );
-  }
-
   /// 首页纵向滚动体统一使用的 physics：下拉开着时冻结（见
   /// [TimetableHomePullFreezeScrollPhysics]）。周课表与日课表都用它，"回拉取消"
   /// 的手感两处一致；runtimeType 恒定，不会中途重建 ScrollPosition。
@@ -1472,25 +1218,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildWeekPageBody({
-    required TimetableSettings settings,
-    required int week,
-    required Widget grid,
-  }) {
-    final scrollRelief = _glassDockContentScrollInset(settings);
-    final scrollKey = _weekGridScrollKey(week);
-    return TimetableWeekPageBody(
-      grid: grid,
-      scrollRelief: scrollRelief,
-      autoFit: settings.timetableAutoFitSectionHeight,
-      scrollKey: scrollKey,
-      controller: _previewControllerFor(scrollKey),
-      physics: _homePullVerticalPhysics,
-      expandAnimation: _dayViewExpandController,
-      reportScroll: _reportHomeScroll,
-    );
-  }
-
   Widget _buildAnchoredDayViewOverlay({
     required TimetableProvider provider,
     required TimetableSettings settings,
@@ -1558,53 +1285,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ((raw * steps).floorToDouble() / steps).clamp(0.02, 0.98);
   }
 
-  /// 周网格课卡上那一行天气；不该显示时返回 null（[CourseCard] 据此不加这一行）。
-  ///
-  /// 三道闸按「成本从低到高」排：先看开关与课程状态（纯内存判断），都过了才去
-  /// 查预报摘要。判据与日视图完全一致：**天气是「那一天」的属性**，只有这节课
-  /// 这一周真的要上才有意义；对方课程在别的城市，拿本地天气同样不对。
-  ///
-  /// 摘要为空但「数据会自己来」时返回**预留的空位**（`CourseWeatherDisplay.reserved`）
-  /// 而不是 null：这一格确实该有天气，先按真行占好位置，预报到达时卡片不会长高一格
-  /// 把整屏内容顶一下。
-  CourseWeatherDisplay? _weekCardWeatherDisplay({
-    required AppLocalizations? l10n,
-    required WeatherProvider? weather,
-    required TimetableSettings settings,
-    required Course course,
-    required DateTime? date,
-    required int week,
-    required bool isPartnerCourse,
-  }) {
-    if (l10n == null ||
-        weather == null ||
-        date == null ||
-        isPartnerCourse ||
-        !settings.weatherShowOnWeekCard ||
-        !course.isActiveInWeek(week)) {
-      return null;
-    }
-    final display = courseWeatherDisplayFor(
-      l10n: l10n,
-      summary: weather.summaryForCourse(
-        date: date,
-        startTime: course.startTime,
-        endTime: course.endTime,
-      ),
-      showPhenomenon: settings.weatherShowPhenomenon,
-      showTemperature: settings.weatherShowTemperature,
-      showProbability: settings.weatherShowProbability,
-      // 周网格的天格太窄（7 天模式下扣掉图标只剩约 27 点，默认字号 8 时约合
-      // 三个汉字），写全「现象 · 温度 · 概率」必然折行；折行又会把整张卡缩小。
-      // 这里只写一项，详见 `WeatherTextDensity.compact`。
-      textDensity: WeatherTextDensity.compact,
-    );
-    if (display != null) {
-      return display;
-    }
-    return weather.isAwaitingData ? const CourseWeatherDisplay.reserved() : null;
-  }
-
   /// 两步式「长按空白格添加课程」的网格级手势层。
   ///
   /// 为什么挂在整块日列 Row 而不是单格：长按拖动的事件只会派发给赢得
@@ -1669,40 +1349,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Future<void> _showWeekSelector() async {
-    final provider = context.read<TimetableProvider>();
-    final availableWeeks = provider.settings.availableWeeks;
-    final currentSemesterWeek = _resolveCurrentSemesterWeek(provider.settings);
-    final selectedWeek = await showWeekSelectorPickerSheet(
-      context,
-      availableWeeks: availableWeeks,
-      visibleWeek: _visibleWeek,
-      currentSemesterWeek: currentSemesterWeek,
-    );
-
-    if (!mounted || selectedWeek == null) {
-      return;
-    }
-
-    await _weekPager.jumpToWeek(provider, selectedWeek);
-  }
-
   List<DayCourseDisplayItem> _getDisplayItemsStartingAtSection(
     List<DayCourseDisplayItem> items,
     int section,
   ) {
     return items.where((item) => item.course.startSection == section).toList();
-  }
-
-  DayCourseDisplayLabels _displayLabels() {
-    final l10n = AppLocalizations.of(context)!;
-    return DayCourseDisplayLabels(
-      nonCurrentWeek: l10n.nonCurrentWeekLabel,
-      conflict: l10n.conflictLabel,
-      coupleTogether: l10n.coupleTimetableLegendTogether,
-      couplePartner: l10n.coupleTimetableLegendPartner,
-      ongoingCourse: l10n.ongoingCourseBadge,
-    );
   }
 
   String? _resolveDisplayCourseColor(
@@ -1714,28 +1365,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       settings: settings,
       coupleColorForKind: (kind) =>
           context.read<TimetableProvider>().coupleColorForKind(kind),
-    );
-  }
-
-  String? _resolveCompactOverlineText(
-    DayCourseDisplayItem item,
-    bool showConflictBadge,
-  ) {
-    return resolveCompactOverlineText(
-      item,
-      labels: _displayLabels(),
-      showConflictBadge: showConflictBadge,
-    );
-  }
-
-  String? _resolveCompactBadgeText(
-    DayCourseDisplayItem item,
-    bool showConflictBadge,
-  ) {
-    return resolveCompactBadgeText(
-      item,
-      labels: _displayLabels(),
-      showConflictBadge: showConflictBadge,
     );
   }
 
@@ -1862,38 +1491,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return 0;
     }
     return _glassDockPillOccupancy + MediaQuery.viewPaddingOf(context).bottom;
-  }
-
-  /// 圆钮图标：用户自选的 Miuix 矢量图标优先；未选时 addCourse 显示
-  /// 加号、其余功能显示目录图标。
-  Widget _roundButtonIcon(TimetableSettings settings) {
-    final customName = settings.glassDockButtonIconName;
-    if (customName != null && customName.isNotEmpty) {
-      final vector = MiuixIcons.extended.byName(customName);
-      if (vector != null) {
-        return MiuixIcon(vector: vector);
-      }
-    }
-    final id = settings.glassDockButtonEntryId;
-    if (id != 'addCourse' && id.isNotEmpty) {
-      final entry = homeMenuEntryById(id);
-      if (entry != null && entry.visible()) {
-        return Icon(entry.icon);
-      }
-    }
-    return const Icon(Icons.add_rounded);
-  }
-
-  /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
-  /// 避免库断言越界（此时底栏全是页面入口，无「当前页」语义）。
-  int _dockSelectedIndex(List<String> ids) {
-    final inline = _dockInlinePageId;
-    if (inline != null && ids.contains(inline)) {
-      return ids.indexOf(inline);
-    }
-    final current = _isDayView ? kGlassDockActionDay : kGlassDockActionWeek;
-    final index = ids.indexOf(current);
-    return index >= 0 ? index : 0;
   }
 
   /// 底栏点击分发：'day'/'week' 闪现直切（animate:false，不播锚点展开/
@@ -2046,14 +1643,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     _maybeSelectionClick(provider.settings);
   }
 
-  /// One shared backdrop group for gaussian cards on this week page.
-  Widget _wrapCourseGridSurfaceHost({
-    required TimetableSettings settings,
-    required Widget child,
-  }) {
-    return CourseGridSurfaceHost(settings: settings, child: child);
-  }
-
   Future<void> _navigateToAddCourse(BuildContext context) async {
     await _showAddCourseSheet();
   }
@@ -2151,22 +1740,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     HapticFeedback.selectionClick();
-  }
-
-  Future<void> _showProfileQuickSwitchSheet() {
-    final provider = context.read<TimetableProvider>();
-    return showTimetableProfileQuickSwitchFlow(
-      context,
-      provider: provider,
-      popupSourceRect: popupActionSourceRect,
-      // 弹层内容在根 Overlay 上，buttonContext 拿不到原路由 —— 先立即摘掉旧
-      // 面板，再用仍然挂载的宿主 context 推管理页（细节见 widget 文件）。
-      openManagePage: (hostContext, sourceRect) => openTimetablePopupActionPage(
-        hostContext,
-        pageBuilder: (_) => const TimetableProfilesScreen(),
-        sourceRect: sourceRect,
-      ),
-    );
   }
 
   /// 菜单项的实际分发（由 [HomeMenuController.dispatchSelection] 在**菜单收完
