@@ -2552,7 +2552,8 @@ class _PreviewLoadingCover extends StatefulWidget {
 
 class _PreviewLoadingCoverState extends State<_PreviewLoadingCover>
     with SingleTickerProviderStateMixin {
-  static const _fade = Duration(milliseconds: 180);
+  /// 淡出基础毫秒数；控制器长命，登记后跟随「页面转场速度」。
+  static const int _fadeMs = 180;
 
   /// 转圈与「加载中」三字的墨色。
   ///
@@ -2561,11 +2562,8 @@ class _PreviewLoadingCoverState extends State<_PreviewLoadingCover>
   static const _coverInk = Color(0xEBFFFFFF);
 
   /// 1 = 完全盖住，0 = 撤净（所以要 `reverse`，见 [_fadeOut]）。
-  late final AnimationController _opacity = AnimationController(
-    vsync: this,
-    value: 1,
-    duration: _fade,
-  );
+  late final AnimationController _opacity = HyperosMotionPlatform.bindController(
+      AnimationController(vsync: this, value: 1), _fadeMs);
 
   /// 是否已经起过淡出。用 `[_opacity.isCompleted]` 判是错的：它初始就停在上界上，
   /// 一上来就是 completed（2026-09-28 实锤：那样 `_fadeOut` 每次都在第一行返回，

@@ -5,6 +5,7 @@ import 'package:university_timetable/ui/hyperos/frosted/liquid_glass_degradation
 import 'package:university_timetable/ui/hyperos/hyperos_blurred_header.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_glass_backdrop_host.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_motion.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_theme.dart';
 import 'package:university_timetable/ui/hyperos/liquid/liquid_glass_surface.dart'
     show UndimmedBackdropCapture;
@@ -26,7 +27,9 @@ const _popupSizing = os4GlassPopupStandardSizing;
 ///
 /// 200ms + `Curves.fastOutSlowIn` 抄的是旧实现（`hyperos_list_popup.dart`
 /// 的 `_submenuRevealDuration`）—— 同一套交互在两处必须同手感。
-const _submenuRevealDuration = Duration(milliseconds: 200);
+/// 取值走 getter：必须跟随「页面转场速度」（用户 2026-10-20 口径：该设置要
+/// 覆盖全应用所有动画）。const 会在启动时求值一次、之后永不更新。
+Duration get _submenuRevealDuration => 200.scaledMs;
 
 /// 「菜单视觉收完」的上限：收起动画开始之后**至多**再等这么久，就可以认为屏幕上
 /// 已经没有菜单了（宿主拿它当「先收菜单、再执行选中项」的闸门，见

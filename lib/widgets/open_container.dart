@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../utils/frame_perf_probe.dart';
+import '../ui/hyperos/hyperos_motion.dart';
 
 /// Signature for `action` callback function provided to [OpenContainer.openBuilder].
 ///
@@ -150,14 +151,14 @@ class OpenContainer<T extends Object?> extends StatefulWidget {
     required this.closedBuilder,
     required this.openBuilder,
     this.tappable = true,
-    this.transitionDuration = const Duration(milliseconds: 300),
+    Duration? transitionDuration,
     this.transitionType = ContainerTransitionType.fade,
     this.useRootNavigator = false,
     this.routeSettings,
     this.clipBehavior = Clip.antiAlias,
     this.closedShadows,
     this.openShadows,
-  });
+  }) : _transitionDuration = transitionDuration;  // ignore: prefer_initializing_formals
 
   /// Background color of the container while it is closed.
   ///
@@ -291,7 +292,14 @@ class OpenContainer<T extends Object?> extends StatefulWidget {
   /// open state and vice versa.
   ///
   /// Defaults to 300ms.
-  final Duration transitionDuration;
+  /// 显式指定的转场时长；null = 跟随「页面转场速度」的默认 300ms。
+  ///
+  /// 默认值不能用 const 默认参数：本仓的「页面转场速度」是运行时可变的，
+  /// const 默认值在编译期固化、改速度不会生效（2026-10-20 全局覆盖）。
+  final Duration? _transitionDuration;
+
+  /// 转场时长（见 [_transitionDuration]）。
+  Duration get transitionDuration => _transitionDuration ?? 300.scaledMs;
 
   /// The type of fade transition that the container will use for its
   /// incoming and outgoing widgets.
