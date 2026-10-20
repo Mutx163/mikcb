@@ -104,6 +104,27 @@ android {
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }
+        // 集成测试专用 flavor（2026-10-20 加）。
+        //
+        // 为什么单独一个包名：`flutter test integration_test/` 默认会在跑完后
+        // **卸载**它安装的包（它自己的日志里有 `--[no-]uninstall`），而卸载会连
+        // 私有数据一起清掉。用 dev flavor 跑测试等于占用 `.debug` 包 ——
+        // 那是开发者日常调试用的包，跑一次测试就把那边的课表与设置清空一次。
+        // 事故实例：2026-10-20 用 `-d <phone> --flavor dev` 跑冷启动测试，
+        // `.debug` 包的数据随之丢失。
+        //
+        // 独立包名后：`.itest` 与 dev / profile / prod 三个包互不影响，
+        // 跑多少次都不会碰到真实数据。
+        itest {
+            dimension "env"
+            applicationIdSuffix ".itest"
+            versionNameSuffix "-itest"
+            buildConfigField "String", "UMENG_CHANNEL", "\"official-itest\""
+            manifestPlaceholders = [
+                    appLabel   : "轻屿课表集成测试",
+                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
+            ]
+        }
     }
 
     buildTypes {
