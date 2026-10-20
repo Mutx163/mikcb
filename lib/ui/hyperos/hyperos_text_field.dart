@@ -59,11 +59,15 @@ class HyperosTextField extends StatelessWidget {
     // 框体填充：Miuix 默认 secondaryContainer（亮 #F0F0F0）与 mikcb 页面背景
     // settingsBackground（#F2F2F2）只差约 2 个灰阶，未激活时整个框融进页面。
     // 亮色降一级用 secondary（#E6E6E6）让框立出来；暗色页面背景 #242424 与
-    // secondaryContainer（#434343）本就对比充分，维持不变。标签/占位文字与
-    // 聚焦边框保持 Miuix 默认配色。
+    // secondaryContainer（#434343）本就对比充分，维持不变。聚焦边框保持 Miuix 默认。
+    //
+    // 标签色**不跟** Miuix 默认的 onSecondaryContainer（亮 #A9A9A9 / 暗 #7C7C7C）：
+    // 那是给 17sp 常规标签定的，而框内标签上浮后只有 10sp，实测对比度
+    // 1.88:1（亮）/ 2.37:1（暗），低于 WCAG AA 的 4.5:1 ——「课程名称」这类
+    // 字段名要凑近才认得出。改用 HyperosColors.fieldLabel（5.53:1 / 4.99:1）。
     final fieldColors = MiuixTextFieldColors(
       backgroundColor: HyperosColors.textFieldContainer(context),
-      labelColor: miuixDefaults.labelColor,
+      labelColor: HyperosColors.fieldLabel(context),
       borderColor: miuixDefaults.borderColor,
     );
 
@@ -317,6 +321,7 @@ class HyperosCompactPreferenceField extends StatelessWidget {
     required this.value,
     required this.onTap,
     this.leading,
+    this.isPlaceholder = false,
   });
 
   final String label;
@@ -326,11 +331,18 @@ class HyperosCompactPreferenceField extends StatelessWidget {
   /// 行首自定义元素（如颜色块）。
   final Widget? leading;
 
+  /// 值还没填（如教师/教室为空时的「手动输入」）。值文字改用次要墨色，
+  /// 与已填内容区分开——只靠文字内容本身看不出这是占位提示。
+  final bool isPlaceholder;
+
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(HyperosMiuixTextField.cornerRadius);
+    // 与 [HyperosTextField] / [HyperosPickerField] 同一套外壳：填充底、**不描边**。
+    // 原先这里多一圈 outline，于是「点开选一项」在同一张卡里长出两种形状——
+    // 名称/简称（输入框，无框）、性质/颜色（带框）、星期/节次（带框），
+    // 三者干的是同一件事却像三种控件。统一靠填充底 + 尾部箭头表意即可。
     final fill = HyperosColors.textFieldContainer(context);
-    final outline = HyperosColors.outline(context);
     final onSurface = HyperosColors.onSurface(context);
     final summary = HyperosColors.onSurfaceVariantSummary(context);
 
@@ -341,49 +353,52 @@ class HyperosCompactPreferenceField extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(color: outline),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 小标签：与 MiuixTextField 浮动后的标签同字号（10），
-                // 让「小标签 + 大值」这一对在两个控件里读起来是一套。
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10, color: summary, height: 1.2),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 小标签：与 MiuixTextField 浮动后的标签同字号（10），
+              // 让「小标签 + 大值」这一对在两个控件里读起来是一套；
+              // 墨色同样走 [HyperosColors.fieldLabel]（AA 达标），
+              // 不用 summary（亮色下对填充底只有 1.9:1，等于看不清）。
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: HyperosColors.fieldLabel(context),
+                  height: 1.2,
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    if (leading != null) ...[
-                      leading!,
-                      const SizedBox(width: 6),
-                    ],
-                    Expanded(
-                      child: Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 15, color: onSurface),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  if (leading != null) ...[
+                    leading!,
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isPlaceholder ? summary : onSurface,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: summary,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: summary,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

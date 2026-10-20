@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
@@ -9,12 +11,14 @@ import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/app_log_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_palette_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
+import 'add_course_week_picker_tiles.dart';
 import '../widgets/miuix_number_picker_sheet.dart';
 import '../widgets/time_scheme_picker_sheet.dart';
 
@@ -57,7 +61,6 @@ List<int> weeksFromRangeSelection({
 const int _defaultEntryStartWeek = 1;
 const int _defaultEntryEndWeek = 16;
 
-enum _WeekSelectionMode { range, custom }
 
 /// 这门课能选到哪些节次。
 ///
@@ -129,7 +132,7 @@ class _ScheduleEntryData {
   int endWeek;
   bool isOddWeek;
   bool isEvenWeek;
-  _WeekSelectionMode weekSelectionMode;
+  WeekSelectionMode weekSelectionMode;
   Set<int> selectedCustomWeeks;
   List<int>? suspendedWeeks;
   String? note;
@@ -153,7 +156,7 @@ class _ScheduleEntryData {
     this.endWeek = _defaultEntryEndWeek,
     this.isOddWeek = false,
     this.isEvenWeek = false,
-    this.weekSelectionMode = _WeekSelectionMode.range,
+    this.weekSelectionMode = WeekSelectionMode.range,
     Set<int>? selectedCustomWeeks,
     this.suspendedWeeks,
     this.note,
@@ -176,8 +179,8 @@ class _ScheduleEntryData {
       isOddWeek: course.isOddWeek,
       isEvenWeek: course.isEvenWeek,
       weekSelectionMode: customWeeks != null
-          ? _WeekSelectionMode.custom
-          : _WeekSelectionMode.range,
+          ? WeekSelectionMode.custom
+          : WeekSelectionMode.range,
       selectedCustomWeeks: customWeeks?.toSet() ?? <int>{},
       suspendedWeeks: course.normalizedSuspendedWeeks,
       note: course.note,
@@ -198,7 +201,7 @@ class _ScheduleEntryData {
     bool hasCustomTime = false,
   }) {
     List<int>? customWeeks;
-    if (weekSelectionMode == _WeekSelectionMode.custom &&
+    if (weekSelectionMode == WeekSelectionMode.custom &&
         selectedCustomWeeks.isNotEmpty) {
       customWeeks = selectedCustomWeeks.toList()..sort();
     }
@@ -243,6 +246,33 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   List<_ScheduleEntryData> _scheduleEntries = [];
   final List<TextEditingController> _entryTeacherControllers = [];
   final List<TextEditingController> _entryLocationControllers = [];
+
+  /// 本页是「新建一门课」而不是「编辑一门已存在的课」。
+  ///
+  /// 两条入口传的东西不同：新建只带初始星期/节次/周次（`course` 与 `courseGroup`
+  /// 都是 null），编辑则**至少**会带 `course`（从月历/待办进）或 `courseGroup`
+  /// （从课程总览、课表、统计页进）。判断「编辑」必须把两者都算上——只看
+  /// `widget.course` 会把「总览 → 编辑」当成新建。
+  bool get _isCreatingNewCourse =>
+      widget.course == null && widget.courseGroup == null;
+
+  /// 保存进行中：期间禁止再次保存。
+  ///
+  /// 保存键在顶栏，一次成功要跑完落盘才关页；没有这个闸时连点两下 = 存两遍 +
+  /// 弹两次「已保存」+ `pop` 两次（第二次把下面那页也弹掉）。
+  bool _saving = false;
+
+  /// 用户改动过内容（用于返回时决定要不要问「放弃修改？」）。
+  ///
+  /// 只在新建页有意义：编辑页同样适用，判据是「与进来时的初值不同」。
+  bool _dirty = false;
+
+  /// 记一次改动。所有能改变表单结果的操作都要调它（输入、选值、加/删排课记录）。
+  void _markDirty() {
+    if (!_dirty) {
+      setState(() => _dirty = true);
+    }
+  }
 
   List<String> _weekdayLabels(AppLocalizations l10n) => [
     l10n.weekdayMon,
@@ -341,33 +371,78 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
 
-    return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
-      title: Text(_resolveTitle()),
-      suffixes: [
-        if (widget.courseGroup != null)
+    return PopScope(
+      // 改过内容就先问一句再走：这张表单没有自动保存、也没有撤销，
+      // 顶栏返回键与系统返回手势原先都是直接关页——误触一下填了半天的
+      // 名称/周次/教室全没了。没改过东西时不打扰（canPop 直接放行）。
+      canPop: !_dirty || _saving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          return;
+        }
+        unawaited(_confirmDiscardAndPop());
+      },
+      child: HyperosSubpage(
+        // 顶栏返回键走同一道闸：`onBack` 自己 pop 会绕过 PopScope，
+        // 所以这里改成 `maybePop`，由上面那条 `canPop` 统一判定。
+        onBack: _handleBackPress,
+        title: Text(_resolveTitle()),
+        suffixes: [
+          if (widget.courseGroup != null)
+            FHeaderAction(
+              icon: const Icon(Icons.delete_outline_rounded),
+              semanticsLabel: l10n.deleteCourseTitle,
+              onPress: _confirmDeleteGroup,
+            )
+          else if (widget.course != null)
+            FHeaderAction(
+              icon: const Icon(Icons.delete_outline_rounded),
+              semanticsLabel: l10n.deleteCourseTitle,
+              onPress: _confirmDeleteCourse,
+            ),
           FHeaderAction(
-            icon: const Icon(Icons.delete_outline_rounded),
-            semanticsLabel: l10n.deleteCourseTitle,
-            onPress: _confirmDeleteGroup,
-          )
-        else if (widget.course != null)
-          FHeaderAction(
-            icon: const Icon(Icons.delete_outline_rounded),
-            semanticsLabel: l10n.deleteCourseTitle,
-            onPress: _confirmDeleteCourse,
+            icon: const Icon(Icons.check_rounded),
+            semanticsLabel: _saving ? l10n.savingAction : l10n.saveAction,
+            // 保存中置空 onPressed：`MiuixIconButton` 对 null 会转成禁用态
+            // （不触发、不显示按压反馈），这是这个按钮唯一可用的禁用手段。
+            onPress: _saving ? null : () => _saveCourse(provider, settings),
           ),
-        FHeaderAction(
-          icon: const Icon(Icons.check_rounded),
-          semanticsLabel: l10n.saveAction,
-          onPress: () => _saveCourse(provider, settings),
+        ],
+        child: Form(
+          key: _formKey,
+          child: _buildGroupEditingBody(provider, settings),
         ),
-      ],
-      child: Form(
-        key: _formKey,
-        child: _buildGroupEditingBody(provider, settings),
       ),
     );
+  }
+
+  /// 顶栏返回键：交给 [PopScope] 判「要不要问」。
+  void _handleBackPress() {
+    if (!mounted) {
+      return;
+    }
+    Navigator.maybePop(context);
+  }
+
+  /// 有未保存改动时确认一次；确认后直接关页（此时 `_dirty` 已清，不会再问）。
+  Future<void> _confirmDiscardAndPop() async {
+    if (_saving) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final discard = await showHyperosConfirmDialog(
+      context: context,
+      title: l10n.courseFormDiscardTitle,
+      message: l10n.courseFormDiscardMessage,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.courseFormDiscardAction,
+      destructive: true,
+    );
+    if (discard != true || !mounted) {
+      return;
+    }
+    _dirty = false;
+    Navigator.pop(context);
   }
 
   Future<void> _confirmDeleteCourse() async {
@@ -558,29 +633,37 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               HyperosControlCardScope.defaultHorizontalPadding,
               0,
             ),
-            child: Row(
+            // 卡头：标题独占一行，那句「同步给同名排课」放到下一行整宽。
+            //
+            // 原先它挤在标题右侧（`Row` + `Flexible` + `maxLines: 1`），21 个字
+            // 在半屏宽里必然被省略号切断——切掉的恰恰是本卡唯一重要的规则
+            // （改一门课的简称/颜色/性质/简介会同步给所有同名排课）。
+            // 一行放不下就换行，比留个看得见却读不全的残句好。
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    l10n.sharedInfoTitle,
-                    style: typo.sm.copyWith(fontWeight: FontWeight.w600),
-                  ),
+                Text(
+                  l10n.sharedInfoTitle,
+                  // 卡标题必须≥卡内条目标题：原先这里 14sp，卡内「沿用已有课程」
+                  // 是 17sp，层级是倒挂的（卡名比里面的一行还小）。
+                  style: HyperosTypography.title(context),
                 ),
-                // 标题右侧一句明话替代原来的 ⓘ：信息直给，也比图标省地方。
-                Flexible(
-                  child: Text(
-                    l10n.sharedInfoInlineHint,
-                    textAlign: TextAlign.end,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: typo.xs2.copyWith(color: colors.mutedForeground),
-                  ),
+                const SizedBox(height: HyperosTokens.titleCaptionGap),
+                Text(
+                  l10n.sharedInfoInlineHint,
+                  style: typo.xs.copyWith(color: colors.mutedForeground),
                 ),
               ],
             ),
           ),
-          // 「沿用已有课程」只在新建时出现：编辑时「换一门课」不是一个操作。
-          if (widget.course == null)
+          // 「沿用已有课程」只在**新建**时出现（`course` 与 `courseGroup` 都为空）。
+          //
+          // 原先判据只写了 `widget.course == null`，而「课程总览 → 编辑」这条入口
+          // 传的是 `courseGroup`、`course` 为 null，于是编辑一门已存在的课时这行
+          // 照样出现——点一下就把整门课的名称、颜色、性质、教师、教室全换成
+          // 另一门课的，中间没有确认。注释说的是「编辑时换一门课不是一个操作」，
+          // 判据没跟上。
+          if (_isCreatingNewCourse)
             HyperosListTile(
               title: l10n.reuseExistingCourseLabel,
               subtitle: l10n.reuseExistingCourseHelper,
@@ -618,6 +701,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               label: l10n.courseDescriptionOptional,
               minLines: 2,
               maxLines: 4,
+              onChanged: (_) => _markDirty(),
             ),
           ),
         ],
@@ -678,8 +762,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           courseNatureLabel(l10n, item): item.index,
       },
       currentValue: _courseNature.index,
-      onSelected: (index) =>
-          setState(() => _courseNature = CourseNature.values[index]),
+      onSelected: (index) {
+        setState(() => _courseNature = CourseNature.values[index]);
+        _markDirty();
+      },
     );
   }
 
@@ -721,7 +807,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               controller: _nameController,
               label: l10n.courseNameLabel,
               textInputAction: TextInputAction.next,
-              onChanged: field.didChange,
+              onChanged: (value) {
+                field.didChange(value);
+                _markDirty();
+              },
             ),
             // 2026-10-20：常驻的「同名排课会归为同一门课」收进卡片标题右侧的
             // 一句明话（sharedInfoInlineHint，同一信息只说一次），框下只在
@@ -749,6 +838,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       controller: _shortNameController,
       label: l10n.courseShortNameOptional,
       textInputAction: TextInputAction.next,
+      onChanged: (_) => _markDirty(),
       // 就地补全放框内末尾（MiuixTextField.trailingIcon），不再用框外按钮
       // 挤窄输入宽度。
       trailing: IconButton(
@@ -906,6 +996,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             onConfirmed: () {
               setState(() {
                 entry.teacher = _entryTeacherControllers[index].text;
+                _dirty = true;
               });
             },
           ),
@@ -922,6 +1013,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             onConfirmed: () {
               setState(() {
                 entry.location = _entryLocationControllers[index].text;
+                _dirty = true;
               });
             },
           ),
@@ -949,8 +1041,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
     final weekdayLabel =
         weekDays[entry.dayOfWeek.clamp(1, weekDays.length) - 1];
-    final timePreview =
-        '$weekdayLabel · ${l10n.sectionRangeLabel(entry.startSection, entry.endSection)}';
+    // 单节课（起 == 止）不写成「第 8～8 节」：那是空区间读法，
+    // 用户看到的是「这节课上了一个什么都不包含的区间」。
+    final sectionText = entry.startSection == entry.endSection
+        ? l10n.sectionLabel(entry.startSection)
+        : l10n.sectionRangeLabel(entry.startSection, entry.endSection);
+    final timePreview = '$weekdayLabel · $sectionText';
 
     // 多条排课记录之间**不套灰底**（用户 2026-10-28：「如果有多个的话，
     // 怎么变成灰色的了，只有一个排课记录的时候还挺好看」）。
@@ -1048,7 +1144,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         title: l10n.weekdayLabel,
         items: weekdayItems,
         currentValue: entry.dayOfWeek,
-        onSelected: (value) => setState(() => entry.dayOfWeek = value),
+        onSelected: (value) {
+          setState(() => entry.dayOfWeek = value);
+          _markDirty();
+        },
       ),
     );
     final startSelect = _buildCompactPickerField(
@@ -1066,6 +1165,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             if (entry.endSection < entry.startSection) {
               entry.endSection = entry.startSection;
             }
+            _dirty = true;
           });
         },
       ),
@@ -1079,7 +1179,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         minValue: entry.startSection,
         maxValue: sectionNumbers.last,
         label: (section) => l10n.scheduleSectionNumberLabel(section),
-        onSelected: (value) => setState(() => entry.endSection = value),
+        onSelected: (value) {
+          setState(() => entry.endSection = value);
+          _markDirty();
+        },
       ),
     );
 
@@ -1114,116 +1217,44 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
+  /// 一个「点开选一项」的紧凑字段。
+  ///
+  /// 版式与同页的 [HyperosCompactPreferenceField]（性质/颜色）**完全相同**：
+  /// 小标签在上、值 + 箭头在下、填充底、无描边。原先这里是「白底 + 描边 +
+  /// 标签与值同一行」，而性质/颜色与输入框又是另外两种长相——同一张卡里
+  /// 三种控件干同一件事，靠外形区分不出「能不能点」，只能靠试。
+  ///
+  /// 抽成一个方法而不是各写一份：`_buildCompactPickerField` 与
+  /// `_buildCompactWeekSummaryRow` 原先几乎是逐行复制的两份（只有分隔符
+  /// 一个是空格一个是「·」），改一处漏一处的风险已经实际发生过。
   Widget _buildCompactPickerField({
     required String label,
     required String value,
     required VoidCallback onPress,
     bool isPlaceholder = false,
   }) {
-    final theme = context.theme;
-    final fieldRadius = BorderRadius.circular(HyperosTokens.controlRadius);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: fieldRadius,
-        onTap: onPress,
-        child: Container(
-          constraints: const BoxConstraints(
-            minHeight: HyperosTokens.controlMinHeight,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: fieldRadius,
-            border: Border.all(color: HyperosColors.outline(context)),
-          ),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: theme.typography.body.sm,
-                    children: [
-                      TextSpan(
-                        text: '$label ',
-                        style: TextStyle(color: theme.colors.mutedForeground),
-                      ),
-                      TextSpan(
-                        text: value,
-                        style: TextStyle(
-                          color: isPlaceholder
-                              ? theme.colors.mutedForeground
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: theme.colors.mutedForeground,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return HyperosCompactPreferenceField(
+      label: label,
+      value: value,
+      onTap: onPress,
+      isPlaceholder: isPlaceholder,
     );
   }
 
+  /// 「哪些周上」的摘要行——和上面那个字段是**同一个控件**。
+  ///
+  /// 原先这里把 label 与摘要拼成一行富文本（`'哪些周上 · 第 6 周-第 16 周'`），
+  /// 而旁边的星期/节次是「标签在上、值在下」。同一组字段里两种排法，
+  /// 摘要一长就把自己的标签挤成省略号。现在统一成标签在上。
   Widget _buildCompactWeekSummaryRow({
     required String label,
     required String summary,
     required VoidCallback onTap,
   }) {
-    final theme = context.theme;
-    final fieldRadius = BorderRadius.circular(HyperosTokens.controlRadius);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: fieldRadius,
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(
-            minHeight: HyperosTokens.controlMinHeight,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: fieldRadius,
-            border: Border.all(color: HyperosColors.outline(context)),
-          ),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: theme.typography.body.sm,
-                    children: [
-                      TextSpan(
-                        text: '$label · ',
-                        style: TextStyle(color: theme.colors.mutedForeground),
-                      ),
-                      TextSpan(text: summary),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: theme.colors.mutedForeground,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return HyperosCompactPreferenceField(
+      label: label,
+      value: summary,
+      onTap: onTap,
     );
   }
 
@@ -1319,6 +1350,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         onSelected: (value) {
           setState(() {
             entry.timeSchemeIdOverride = value;
+            _dirty = true;
           });
         },
       ).whenComplete(() {
@@ -1373,11 +1405,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       _entryLocationControllers.add(
         TextEditingController(text: newEntry.location),
       );
+      _dirty = true;
     });
   }
 
   void _removeScheduleEntry(int index) {
     setState(() {
+      _dirty = true;
       _scheduleEntries.removeAt(index);
       _entryTeacherControllers[index].dispose();
       _entryTeacherControllers.removeAt(index);
@@ -1452,7 +1486,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       courseGroups: provider.courseGroups,
     );
     if (course != null && mounted) {
-      setState(() => _applyCourseTemplate(course));
+      setState(() {
+      _applyCourseTemplate(course);
+      _dirty = true;
+    });
     }
   }
 
@@ -1500,6 +1537,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
     setState(() {
       _selectedColor = result;
+      _dirty = true;
     });
   }
 
@@ -1516,7 +1554,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   /// 摘要显示与保存校验必须用同一个表达式 —— 原先只有自定义模式被挡，
   /// 范围 + 单/双周算出空集照样保存（理由见 `weeksFromRangeSelection`）。
   List<int> _selectedWeeksFor(_ScheduleEntryData entry) {
-    if (entry.weekSelectionMode == _WeekSelectionMode.range) {
+    if (entry.weekSelectionMode == WeekSelectionMode.range) {
       return _buildEntryWeeksFromRange(entry);
     }
     return entry.selectedCustomWeeks.toList()..sort();
@@ -1554,17 +1592,27 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     int endWeek,
     bool isOddWeek,
     bool isEvenWeek,
-    _WeekSelectionMode mode,
+    WeekSelectionMode mode,
     AppLocalizations l10n,
   ) {
-    if (mode == _WeekSelectionMode.range) {
+    if (mode == WeekSelectionMode.range) {
       final isAll =
           startWeek == availableWeeks.first &&
           endWeek == availableWeeks.last &&
           !isOddWeek &&
           !isEvenWeek;
       if (isAll) return l10n.allWeeksFilter;
-      final range = '${l10n.weekLabel(startWeek)}-${l10n.weekLabel(endWeek)}';
+      // 单周（起 == 止）不写成「第 6 周-第 6 周」：那是空区间读法，
+      // 与「第 8～8 节」同一个毛病，单周只留一个周次。
+      //
+      // 区间用**排版连接号**（en dash 带空格）而不是 ASCII 连字符：
+      // 原先 `'${weekLabel(a)}-${weekLabel(b)}'` 在中文里读作「第 6 周-第 16 周」，
+      // 那个半角减号既不是中文标点、也跟同一页节次用的「～」不是一套。
+      // 保留「第 N 周」这个整词仍是刻意的：`add_course_initial_week_prefill_test`
+      // 用它判断带进来的那一周有没有落到摘要上（该测试在冻结目录里，不得改）。
+      final range = startWeek == endWeek
+          ? l10n.weekLabel(startWeek)
+          : '${l10n.weekLabel(startWeek)} – ${l10n.weekLabel(endWeek)}';
       if (isOddWeek) return '$range · ${l10n.oddWeeksFilter}';
       if (isEvenWeek) return '$range · ${l10n.evenWeeksFilter}';
       return range;
@@ -1580,82 +1628,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   // Week summary row (compact)
   // ---------------------------------------------------------------------------
 
-  Widget _buildWeekGridTile({
-    required int week,
-    required bool isSelected,
-    required VoidCallback onPress,
-  }) {
-    // Ready-made Miuix button; dense variant is tuned for grid / chip layouts.
-    return HyperosButton(
-      label: '$week',
-      variant: isSelected
-          ? HyperosButtonVariant.primary
-          : HyperosButtonVariant.secondary,
-      dense: true,
-      onPressed: onPress,
-    );
-  }
-
-  Widget _buildWeekModeTileGroup({
-    required _WeekSelectionMode tempMode,
-    required AppLocalizations l10n,
-    required ValueChanged<_WeekSelectionMode> onSelect,
-  }) {
-    return HyperosChoiceGroup(
-      children: [
-        HyperosChoiceTile(
-          prefix: const Icon(Icons.linear_scale_rounded),
-          title: l10n.rangeWeeksLabel,
-          selected: tempMode == _WeekSelectionMode.range,
-          highlightSelectedText: true,
-          onTap: () => onSelect(_WeekSelectionMode.range),
-        ),
-        HyperosChoiceTile(
-          prefix: const Icon(Icons.apps_rounded),
-          title: l10n.customWeeksLabel,
-          selected: tempMode == _WeekSelectionMode.custom,
-          highlightSelectedText: true,
-          onTap: () => onSelect(_WeekSelectionMode.custom),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeekParityTileGroup({
-    required AppLocalizations l10n,
-    required bool isAllWeeks,
-    required bool isOddWeek,
-    required bool isEvenWeek,
-    required VoidCallback onSelectAll,
-    required VoidCallback onSelectOdd,
-    required VoidCallback onSelectEven,
-  }) {
-    return HyperosChoiceGroup(
-      children: [
-        HyperosChoiceTile(
-          title: l10n.allWeeksFilter,
-          selected: isAllWeeks,
-          highlightSelectedText: true,
-          onTap: onSelectAll,
-        ),
-        HyperosChoiceTile(
-          title: l10n.oddWeeksFilter,
-          selected: isOddWeek,
-          highlightSelectedText: true,
-          onTap: onSelectOdd,
-        ),
-        HyperosChoiceTile(
-          title: l10n.evenWeeksFilter,
-          selected: isEvenWeek,
-          highlightSelectedText: true,
-          onTap: onSelectEven,
-        ),
-      ],
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // Entry-week picker dialog (group editing mode)
+  //
+  // 2026-10-20：三个纯构建小件（周网格按钮 / 模式组 / 单双周组）搬到了
+  // add_course_week_picker_tiles.dart（本文件行数棘轮），弹层本体与
+  // weeksFromRangeSelection 判据仍在这里（冻结的接线测试钉住原文件）。
   // ---------------------------------------------------------------------------
 
   Future<void> _showEntryWeekPickerDialog(
@@ -1684,7 +1663,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final selectedWeeks = tempMode == _WeekSelectionMode.range
+            final selectedWeeks = tempMode == WeekSelectionMode.range
                 ? buildTempWeeksFromRange()
                 : (tempCustomWeeks.toList()..sort());
 
@@ -1701,12 +1680,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           child: ListView(
                             padding: const EdgeInsets.all(16),
                             children: [
-                              _buildWeekModeTileGroup(
+                              buildCourseWeekModeTileGroup(
                                 tempMode: tempMode,
                                 l10n: l10n,
                                 onSelect: (nextMode) {
                                   setDialogState(() {
-                                    if (nextMode == _WeekSelectionMode.custom &&
+                                    if (nextMode == WeekSelectionMode.custom &&
                                         tempCustomWeeks.isEmpty) {
                                       tempCustomWeeks =
                                           buildTempWeeksFromRange().toSet();
@@ -1714,7 +1693,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                         tempCustomWeeks = {tempStartWeek};
                                       }
                                     }
-                                    if (nextMode == _WeekSelectionMode.range &&
+                                    if (nextMode == WeekSelectionMode.range &&
                                         tempCustomWeeks.isNotEmpty) {
                                       final sorted = tempCustomWeeks.toList()
                                         ..sort();
@@ -1728,7 +1707,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                 },
                               ),
                               const SizedBox(height: 12),
-                              if (tempMode == _WeekSelectionMode.range) ...[
+                              if (tempMode == WeekSelectionMode.range) ...[
                                 _buildResponsiveFieldPair(
                                   spacing: 8,
                                   leading: HyperosPickerField(
@@ -1768,7 +1747,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                _buildWeekParityTileGroup(
+                                buildCourseWeekParityTileGroup(
                                   l10n: l10n,
                                   isAllWeeks: !tempIsOddWeek && !tempIsEvenWeek,
                                   isOddWeek: tempIsOddWeek,
@@ -1817,7 +1796,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                         final week = availableWeeks[i];
                                         final isSelected = tempCustomWeeks
                                             .contains(week);
-                                        return _buildWeekGridTile(
+                                        return buildCourseWeekGridTile(
                                           week: week,
                                           isSelected: isSelected,
                                           onPress: () {
@@ -1946,14 +1925,25 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableProvider provider,
     TimetableSettings settings,
   ) async {
+    // 连点闸：置位到 `_saveGroup` 自己 `Navigator.pop` 为止（失败分支会复位）。
+    // 没有它时两下点击会并行跑两遍落盘，各自弹一次「已保存」、各自 pop 一次。
+    if (_saving) {
+      return;
+    }
+    setState(() => _saving = true);
+
     final l10n = AppLocalizations.of(context)!;
     FocusScope.of(context).unfocus();
     await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (!mounted) {
+      return;
+    }
 
     final trimmedName = _nameController.text.trim();
     if (trimmedName.isEmpty) {
       _formKey.currentState?.validate();
       if (!mounted) return;
+      setState(() => _saving = false);
       showAppToast(
         context,
         message: l10n.pleaseEnterCourseName,
@@ -1963,12 +1953,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
 
     if (!_formKey.currentState!.validate()) {
+      setState(() => _saving = false);
       return;
     }
-    await _saveGroup(provider, settings, l10n);
+    final saved = await _saveGroup(provider, settings, l10n);
+    if (!saved && mounted) {
+      // 校验没过或落盘失败：保存态必须退回，否则按钮永远是灰的、再点也没反应。
+      setState(() => _saving = false);
+    }
   }
 
-  Future<void> _saveGroup(
+  /// 返回「是否真的落盘成功」。
+  ///
+  /// 调用方（[_saveCourse]）用它决定要不要把保存态退回去：校验失败与落盘失败
+  /// 都必须让保存键重新可用，只有成功才会关页。
+  Future<bool> _saveGroup(
     TimetableProvider provider,
     TimetableSettings settings,
     AppLocalizations l10n,
@@ -2007,7 +2006,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               '${l10n.scheduleEntryTitle(i + 1)}: ${localizeServiceMessage(l10n, validationMessage)}',
           kind: AppToastKind.warning,
         );
-        return;
+        return false;
       }
 
       // 两种模式都要挡：范围模式叠上单/双周也能算出空集（见 weeksFromRangeSelection），
@@ -2020,7 +2019,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               '${l10n.scheduleEntryTitle(i + 1)}: ${l10n.selectAtLeastOneWeek}',
           kind: AppToastKind.warning,
         );
-        return;
+        return false;
       }
     }
 
@@ -2081,7 +2080,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         }
       }
     } on ArgumentError catch (error) {
-      if (!mounted) return;
+      if (!mounted) return false;
       showAppToast(
         context,
         message: error.message != null
@@ -2089,18 +2088,40 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             : l10n.saveFailed,
         kind: AppToastKind.error,
       );
-      return;
+      return false;
+    } on Object catch (error, stackTrace) {
+      // 落盘失败不再静默：provider 侧回滚并 rethrow，这里既要说出来、
+      // 又要把保存态放回去（原先这个异常会直接漏到 zone，用户零提示）。
+      unawaited(
+        AppLogService.instance.error(
+          'course_save',
+          'save course failed',
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
+      if (!mounted) return false;
+      showAppToast(
+        context,
+        message: l10n.saveFailed,
+        kind: AppToastKind.error,
+      );
+      return false;
     }
 
-    if (!mounted) return;
+    if (!mounted) return false;
     showAppToast(
       context,
-      message: widget.courseGroup == null && widget.course == null
+      message: _isCreatingNewCourse
           ? l10n.courseAddedSuccess
           : l10n.courseUpdatedSuccess,
       kind: AppToastKind.success,
     );
+    // 关页前清脏标记：PopScope 的 canPop 依赖它，不清就会在 pop 那一瞬
+    // 被自己拦住，反问「放弃修改？」
+    _dirty = false;
     Navigator.pop(context);
+    return true;
   }
 
   TimeScheme? _resolveEntryTimeScheme(

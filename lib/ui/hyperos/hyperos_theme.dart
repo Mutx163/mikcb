@@ -185,6 +185,21 @@ abstract final class HyperosColors {
         : HyperosMiuixLightColors.onSurface;
   }
 
+  /// 输入框「字段名」小标签的墨色。
+  ///
+  /// 为什么不直接沿用 Miuix 的 `onSecondaryContainer`（亮 #A9A9A9 / 暗 #7C7C7C）：
+  /// 那是给**17sp** 常规标签定的色。本仓表单里的标签在框内上浮后是 10–12sp，
+  /// 实测对比度只有 **1.88:1（亮）/ 2.37:1（暗）**，远低于 WCAG AA 的 4.5:1——
+  /// 「课程名称」四个字要凑近才认得出，户外或低亮度基本看不见。
+  /// 这里取的是同一色相上加深的两档：亮 #5A5A5A 对 #E6E6E6 是 5.53:1，
+  /// 暗 #B8B8B8 对 #434343 是 4.99:1，两档都过 AA，又都明显轻于正文墨色
+  /// （标签仍读作「次要信息」，不会和字段值抢）。
+  static Color fieldLabel(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? const Color(0xFFB8B8B8)
+        : const Color(0xFF5A5A5A);
+  }
+
   /// Window dimming color for modal barriers.
   static Color windowDimming(BuildContext context) {
     return _brightness(context) == Brightness.dark
