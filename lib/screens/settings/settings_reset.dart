@@ -77,6 +77,9 @@ TimetableSettings applySettingsReset(
       timetableShowNonCurrentWeekCourses: d.timetableShowNonCurrentWeekCourses,
       longPressEmptySlotToAddCourseEnabled:
           d.longPressEmptySlotToAddCourseEnabled,
+      // 周网格「考试/日程卡」开关归本页（它们在「行列与密度」组里）。
+      weekGridShowExams: d.weekGridShowExams,
+      weekGridShowSchedules: d.weekGridShowSchedules,
       screenshotSharePromptEnabled: d.screenshotSharePromptEnabled,
       timetableSectionTimeDisplayMode: d.timetableSectionTimeDisplayMode,
       timetableTimeColumnWidthMode: d.timetableTimeColumnWidthMode,

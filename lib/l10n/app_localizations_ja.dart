@@ -4413,6 +4413,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowOtherWeeksSubtitle => '今週以外の授業は半透明のグレーで表示';
 
   @override
+  String get weekGridShowExamsTitle => '週表示に試験を表示';
+
+  @override
+  String get weekGridShowExamsSubtitle => '試験カードが時間帯に配置され、長押し追加ではスキップされます';
+
+  @override
+  String get weekGridShowSchedulesTitle => '週表示に日程を表示';
+
+  @override
+  String get weekGridShowSchedulesSubtitle => '日程カードが時間帯に配置され、終日指定は列全体を使用します';
+
+  @override
   String get layoutVerticalAlignLabel => '垂直レイアウト';
 
   @override

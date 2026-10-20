@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/day_course_display_logic.dart';
+import '../../domain/week_grid_agenda_placement.dart';
 import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
 import '../../providers/timetable_provider.dart';
@@ -137,12 +138,31 @@ class TimetableWeekGrid extends StatelessWidget {
                       occupiedSections.add((dayOfWeek, s));
                     }
                   }
+                  // 考试/日程卡（WakeUp 式落格）同样算占用：长按空白格加
+                  // 课程会跳过这些时段，防止把课加在考试上。开关关掉时
+                  // 卡与占用一起消失（网格回到只有课程卡的样子）。
+                  final agendaEntries = _agendaEntriesFor(
+                    provider: provider,
+                    settings: settings,
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                  );
+                  for (final entry in agendaEntries) {
+                    for (
+                      var s = entry.startSection;
+                      s <= entry.endSection;
+                      s++
+                    ) {
+                      occupiedSections.add((dayOfWeek, s));
+                    }
+                  }
                   return SizedBox(
                     width: dayWidth,
                     child: TimetableDayColumn(
                       week: week,
                       dayOfWeek: dayOfWeek,
                       displayItems: displayItems,
+                      agendaEntries: agendaEntries,
                       settings: settings,
                       showConflictBadge:
                           settings.showConflictBadgeOnTimetable,
@@ -161,6 +181,34 @@ class TimetableWeekGrid extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// 某一天的考试/日程落格条目（渲染与占用判定共用同一份）。
+  ///
+  /// 学期开始日未设置时返回空：与星期栏考试/日程圆点同口径
+  /// （`_dateForWeekDay` 解析不出日期两边都不显示），否则会出现
+  /// 「有点没卡」或「有卡没点」的两边打架。
+  List<WeekGridAgendaEntry> _agendaEntriesFor({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    if (!settings.weekGridShowExams && !settings.weekGridShowSchedules) {
+      return const <WeekGridAgendaEntry>[];
+    }
+    final date = dayColumnCallbacks.dateForWeekDay(settings, week, dayOfWeek);
+    if (date == null) {
+      return const <WeekGridAgendaEntry>[];
+    }
+    return WeekGridAgendaPlacement.resolve(
+      exams: settings.weekGridShowExams ? provider.exams : const [],
+      scheduleInstances: settings.weekGridShowSchedules
+          ? provider.getScheduleItemInstancesForDate(date)
+          : const [],
+      date: date,
+      sections: settings.sections,
     );
   }
 }

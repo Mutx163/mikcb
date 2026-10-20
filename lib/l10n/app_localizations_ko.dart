@@ -4443,6 +4443,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowOtherWeeksSubtitle => '현재 주가 아닌 수업은 반투명 회색으로 표시됩니다';
 
   @override
+  String get weekGridShowExamsTitle => '주간 보기에 시험 표시';
+
+  @override
+  String get weekGridShowExamsSubtitle => '시험 카드가 시간대에 배치되며 길게 눌러 추가할 때 건너뜁니다';
+
+  @override
+  String get weekGridShowSchedulesTitle => '주간 보기에 일정 표시';
+
+  @override
+  String get weekGridShowSchedulesSubtitle =>
+      '일정 카드가 시간대에 배치되며 종일 항목은 열 전체를 사용합니다';
+
+  @override
   String get layoutVerticalAlignLabel => '수직 레이아웃';
 
   @override

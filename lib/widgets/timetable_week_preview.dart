@@ -21,6 +21,8 @@ import 'course_card.dart';
 import 'course_grid_surface_host.dart';
 import 'course_weather_display.dart';
 import 'preblurred_wallpaper_glass.dart';
+import 'timetable/week_grid_agenda_card.dart';
+import '../domain/week_grid_agenda_placement.dart';
 
 /// Renders the home week timetable surface for settings previews.
 class TimetableWeekPreview extends StatefulWidget {
@@ -1129,6 +1131,47 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     final courseCards = <Widget>[];
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
+    // 考试/日程卡：与首页周网格**同一份域逻辑 + 同一张卡**
+    // （WeekGridAgendaPlacement + TimetableWeekGridAgendaCard），预览少改
+    // 一处用户就会看到「设置里没有、首页有」——天气为这件事付过两次学费。
+    // 开关与首页同一组（weekGridShowExams / weekGridShowSchedules）。
+    final agendaEntries =
+        (settings.weekGridShowExams || settings.weekGridShowSchedules) &&
+            date != null
+        ? WeekGridAgendaPlacement.resolve(
+            exams: settings.weekGridShowExams ? provider.exams : const [],
+            scheduleInstances: settings.weekGridShowSchedules
+                ? provider.getScheduleItemInstancesForDate(date)
+                : const [],
+            date: date,
+            sections: settings.sections,
+          )
+        : const <WeekGridAgendaEntry>[];
+    final agendaCards = <Widget>[];
+    for (final entry in agendaEntries) {
+      agendaCards.add(
+        Positioned(
+          top: (entry.startSection - 1) * sectionHeight,
+          left: 0,
+          right: 0,
+          height: (entry.endSection - entry.startSection + 1) * sectionHeight,
+          child: TimetableWeekGridAgendaCard(
+            entry: entry,
+            settings: settings,
+            sectionHeight: sectionHeight,
+            outerInset: cardInset,
+            surfaceStyle: effectiveCourseCardSurfaceStyle(
+              settings,
+              gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                context,
+              ),
+            ),
+            wallpaperBodyLuminance: wallpaperBodyLuminance,
+            wallpaperTopLuminance: wallpaperTopLuminance,
+          ),
+        ),
+      );
+    }
 
     for (
       var sectionIndex = 0;
@@ -1212,7 +1255,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     return Container(
       height: visibleSectionCount * sectionHeight,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      child: Stack(children: courseCards),
+      child: Stack(children: [...courseCards, ...agendaCards]),
     );
   }
 

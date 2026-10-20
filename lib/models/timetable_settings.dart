@@ -366,6 +366,13 @@ class TimetableSettings {
   final bool courseCardShowWeeks;
   final bool courseCardShowDescription;
 
+  /// 周网格「考试/日程卡」（WakeUp 式落格）：画不画考试卡/日程卡。
+  /// 开关同时管渲染与「空白格」占用判定——关掉后网格回到只有课程卡的样子，
+  /// 长按空白格加课程也不再跳过这些时段（见 `timetable_week_grid` 的
+  /// `occupiedSections`）。
+  final bool weekGridShowExams;
+  final bool weekGridShowSchedules;
+
   /// 天气显示位置：这三个只管「画不画」，不管要不要拉数据——拉数据由设备级的
   /// `WeatherPreferences.enabled` 决定（见 `WeatherProvider`）。分开的理由：
   /// 天气不属于课表领域，provider 不该反向依赖本模型才能判断是否需要刷新。
@@ -740,6 +747,8 @@ class TimetableSettings {
     this.courseCardShowTimeLabels = true,
     this.courseCardShowWeeks = false,
     this.courseCardShowDescription = false,
+    this.weekGridShowExams = true,
+    this.weekGridShowSchedules = true,
     this.weatherShowOnDayCard = true,
     this.weatherShowOnWeekCard = true,
     this.weatherShowOnSheet = true,
@@ -1055,6 +1064,8 @@ class TimetableSettings {
       'courseCardShowWeeks': courseCardShowWeeks,
       'courseCardShowDescription': courseCardShowDescription,
       'weatherShowOnDayCard': weatherShowOnDayCard,
+      'weekGridShowExams': weekGridShowExams,
+      'weekGridShowSchedules': weekGridShowSchedules,
       'weatherShowOnWeekCard': weatherShowOnWeekCard,
       'weatherShowOnSheet': weatherShowOnSheet,
       'weatherShowPhenomenon': weatherShowPhenomenon,
@@ -1378,6 +1389,9 @@ class TimetableSettings {
       courseCardShowDescription:
           lenientBool(json['courseCardShowDescription']) ?? false,
       weatherShowOnDayCard: lenientBool(json['weatherShowOnDayCard']) ?? true,
+      weekGridShowExams: lenientBool(json['weekGridShowExams']) ?? true,
+      weekGridShowSchedules:
+          lenientBool(json['weekGridShowSchedules']) ?? true,
       weatherShowOnWeekCard: lenientBool(json['weatherShowOnWeekCard']) ?? true,
       weatherShowOnSheet: lenientBool(json['weatherShowOnSheet']) ?? true,
       weatherShowPhenomenon: lenientBool(json['weatherShowPhenomenon']) ?? true,
@@ -1865,6 +1879,8 @@ class TimetableSettings {
     bool? courseCardShowTimeLabels,
     bool? courseCardShowWeeks,
     bool? courseCardShowDescription,
+    bool? weekGridShowExams,
+    bool? weekGridShowSchedules,
     bool? weatherShowOnDayCard,
     bool? weatherShowOnWeekCard,
     bool? weatherShowOnSheet,
@@ -2085,6 +2101,9 @@ class TimetableSettings {
       courseCardShowWeeks: courseCardShowWeeks ?? this.courseCardShowWeeks,
       courseCardShowDescription:
           courseCardShowDescription ?? this.courseCardShowDescription,
+      weekGridShowExams: weekGridShowExams ?? this.weekGridShowExams,
+      weekGridShowSchedules:
+          weekGridShowSchedules ?? this.weekGridShowSchedules,
       weatherShowOnDayCard: weatherShowOnDayCard ?? this.weatherShowOnDayCard,
       weatherShowOnWeekCard:
           weatherShowOnWeekCard ?? this.weatherShowOnWeekCard,

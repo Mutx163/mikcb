@@ -7965,6 +7965,30 @@ abstract class AppLocalizations {
   /// **'非本周课程以半透明灰色显示'**
   String get layoutShowOtherWeeksSubtitle;
 
+  /// No description provided for @weekGridShowExamsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'周视图显示考试'**
+  String get weekGridShowExamsTitle;
+
+  /// No description provided for @weekGridShowExamsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试卡落进对应时段；长按加课会跳过考试时段'**
+  String get weekGridShowExamsSubtitle;
+
+  /// No description provided for @weekGridShowSchedulesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'周视图显示日程'**
+  String get weekGridShowSchedulesTitle;
+
+  /// No description provided for @weekGridShowSchedulesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'日程卡按时间落进对应时段，跨天日程占整列'**
+  String get weekGridShowSchedulesSubtitle;
+
   /// No description provided for @layoutVerticalAlignLabel.
   ///
   /// In zh, this message translates to:

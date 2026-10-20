@@ -204,6 +204,24 @@ class TimetablePageSettingsScreenState
               );
             },
           ),
+          // 周网格「考试/日程卡」（WakeUp 式落格）：开关同时管渲染与
+          // 「空白格」占用判定（见 timetable_week_grid 的 occupiedSections）。
+          HyperosSwitchTile(
+            title: l10n.weekGridShowExamsTitle,
+            subtitle: l10n.weekGridShowExamsSubtitle,
+            value: _draft.weekGridShowExams,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(weekGridShowExams: value));
+            },
+          ),
+          HyperosSwitchTile(
+            title: l10n.weekGridShowSchedulesTitle,
+            subtitle: l10n.weekGridShowSchedulesSubtitle,
+            value: _draft.weekGridShowSchedules,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(weekGridShowSchedules: value));
+            },
+          ),
           // 截屏提示同理：只在课表页生效，所以归这里。
           if (_screenshotShareSupported)
             HyperosSwitchTile(

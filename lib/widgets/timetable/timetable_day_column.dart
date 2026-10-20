@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/day_course_display_logic.dart';
+import '../../domain/week_grid_agenda_placement.dart';
 import '../../models/class_reminder.dart';
 import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
@@ -10,6 +11,7 @@ import '../../utils/course_color_palette.dart';
 import '../../utils/home_page_background.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/course_weather_display.dart';
+import 'week_grid_agenda_card.dart';
 
 /// 周网格的日列（2026-10-19 从课表页 State 搬出）。
 ///
@@ -19,6 +21,10 @@ class TimetableDayColumn extends StatelessWidget {
   final int week;
   final int dayOfWeek;
   final List<DayCourseDisplayItem> displayItems;
+
+  /// 考试/日程落格条目（[WeekGridAgendaPlacement] 已按节次映射并排序）。
+  /// 由 `TimetableWeekGrid` 算好传入——渲染与空白格占用判定共用同一份。
+  final List<WeekGridAgendaEntry> agendaEntries;
   final TimetableSettings settings;
   final bool showConflictBadge;
   final double sectionHeight;
@@ -34,6 +40,7 @@ class TimetableDayColumn extends StatelessWidget {
     required this.week,
     required this.dayOfWeek,
     required this.displayItems,
+    required this.agendaEntries,
     required this.settings,
     required this.showConflictBadge,
     required this.sectionHeight,
@@ -180,6 +187,36 @@ class TimetableDayColumn extends StatelessWidget {
       }
     }
 
+    // 考试/日程卡：画在课程卡**之后**（同跨度时叠在上层——考试更紧急，
+    // 与日视图议程的类型次序一致：resolve 已按 start → end → 类型排好，
+    // 后渲染的在 Stack 上层）。条目本身已含节次区间，Positioned 直接落位。
+    final agendaCards = <Widget>[];
+    for (final entry in agendaEntries) {
+      agendaCards.add(
+        Positioned(
+          top: (entry.startSection - 1) * sectionHeight,
+          left: 0,
+          right: 0,
+          height: (entry.endSection - entry.startSection + 1) * sectionHeight,
+          // Do not wrap in Opacity: BackdropFilter cannot sample behind it.
+          child: TimetableWeekGridAgendaCard(
+            entry: entry,
+            settings: settings,
+            sectionHeight: sectionHeight,
+            outerInset: cardInset,
+            surfaceStyle: effectiveCourseCardSurfaceStyle(
+              settings,
+              gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(
+                context,
+              ),
+            ),
+            wallpaperBodyLuminance: callbacks.wallpaperBodyLuminance(),
+            wallpaperTopLuminance: callbacks.wallpaperTopLuminance(),
+          ),
+        ),
+      );
+    }
+
     return Container(
       height: settings.sectionCount * sectionHeight,
       decoration: BoxDecoration(
@@ -187,7 +224,7 @@ class TimetableDayColumn extends StatelessWidget {
       ),
       child: Stack(
         clipBehavior: Clip.antiAlias,
-        children: [...gridLines, ...courseCards],
+        children: [...gridLines, ...courseCards, ...agendaCards],
       ),
     );
   }

@@ -4306,6 +4306,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutShowOtherWeeksSubtitle => '非本周课程以半透明灰色显示';
 
   @override
+  String get weekGridShowExamsTitle => '周视图显示考试';
+
+  @override
+  String get weekGridShowExamsSubtitle => '考试卡落进对应时段；长按加课会跳过考试时段';
+
+  @override
+  String get weekGridShowSchedulesTitle => '周视图显示日程';
+
+  @override
+  String get weekGridShowSchedulesSubtitle => '日程卡按时间落进对应时段，跨天日程占整列';
+
+  @override
   String get layoutVerticalAlignLabel => '垂直排版';
 
   @override
@@ -15578,6 +15590,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get layoutShowOtherWeeksSubtitle => '非本週課程以半透明灰色顯示';
+
+  @override
+  String get weekGridShowExamsTitle => '週檢視顯示考試';
+
+  @override
+  String get weekGridShowExamsSubtitle => '考試卡落進對應時段；長按加課會跳過考試時段';
+
+  @override
+  String get weekGridShowSchedulesTitle => '週檢視顯示日程';
+
+  @override
+  String get weekGridShowSchedulesSubtitle => '日程卡按時間落進對應時段，跨天日程佔整列';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -26892,6 +26916,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get layoutShowOtherWeeksSubtitle => '非本週課程以半透明灰色顯示';
+
+  @override
+  String get weekGridShowExamsTitle => '週檢視顯示考試';
+
+  @override
+  String get weekGridShowExamsSubtitle => '考試卡落進對應時段；長按加課會跳過考試時段';
+
+  @override
+  String get weekGridShowSchedulesTitle => '週檢視顯示日程';
+
+  @override
+  String get weekGridShowSchedulesSubtitle => '日程卡按時間落進對應時段，跨天日程佔整列';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';

@@ -136,8 +136,13 @@ void main() {
   });
 
   test('timetable_settings 逻辑单元行数棘轮：只减不增', () {
-    const baselineMain = 2621;
-    const baselineUnit = 3661;
+    // 2621→2633 / 3661→3673：周网格「考试/日程卡」两个开关
+    // （weekGridShowExams / weekGridShowSchedules，2026-10-20）入主文件——
+    // 字段声明 / 构造默认 / toJson / fromJson / copyWith 五处 +12 行，
+    // 是同一个类的必要增长（TimetableSettings 的字段无法拆出类外，
+    // settings/ 下只放枚举与扩展）；提交信息同步说明。
+    const baselineMain = 2633;
+    const baselineUnit = 3673;
     const unit = [
       'lib/models/timetable_settings.dart',
       'lib/models/settings/timetable_settings_enums.dart',
@@ -229,7 +234,11 @@ void main() {
     // 13735→13743：settings_home_navigation.dart 转正（HomeNavigationSettingsScreen
     // 公开化）——设置域 16 个分身全部转正完毕，设置页 part 数上限收到 0；
     // 全仓 part 总数 28→11（剩 provider 10 + 课表页 2）。
-    const baselineLines = 13743;
+    // 13743→13764：周网格「考试/日程卡」两个开关（2026-10-20）入课表页面
+    // 设置的「行列与密度」组（两行 HyperosSwitchTile + 注释 +19 行）+
+    // settings_reset.dart 的 timetablePage 作用域 +2——用户可见的功能增长，
+    // 两行开关抽成独立文件属过度碎片化；提交信息同步说明。
+    const baselineLines = 13764;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory(GuardSource.resolve('lib/screens/settings'))

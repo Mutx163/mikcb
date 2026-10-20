@@ -4613,6 +4613,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Courses outside the current week are shown in semi-transparent gray';
 
   @override
+  String get weekGridShowExamsTitle => 'Show exams in week view';
+
+  @override
+  String get weekGridShowExamsSubtitle =>
+      'Exam cards fill their time slots; long-press add skips them';
+
+  @override
+  String get weekGridShowSchedulesTitle => 'Show schedules in week view';
+
+  @override
+  String get weekGridShowSchedulesSubtitle =>
+      'Schedule cards fill their time slots; cross-day items span the column';
+
+  @override
   String get layoutVerticalAlignLabel => 'Vertical alignment';
 
   @override
