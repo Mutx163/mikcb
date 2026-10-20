@@ -1,21 +1,37 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../providers/weather_provider.dart';
+import '../../services/screen_capture_service.dart';
+import '../../utils/home_page_background.dart';
+import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/timetable_text_color_settings.dart';
+import '../../widgets/timetable_week_preview.dart';
+import 'settings_shared.dart';
+import 'settings_reset.dart';
+import 'settings_home_backdrop_flow.dart';
+import 'settings_appearance_editor.dart';
 
 /// 课表页面设置。
 ///
 /// 收的是「课表这一页」的属性：行列密度、回到本周、页面背景（含壁纸与背景
 /// 显示区域）、星期栏与时间轴的文字色。重构前这些分散在「课表显示」与
 /// 「外观与主题」两页——背景区域那 8 项本是课表页的属性，却挂在应用外观下。
-class _TimetablePageSettingsScreen extends StatefulWidget {
-  const _TimetablePageSettingsScreen();
+class TimetablePageSettingsScreen extends StatefulWidget {
+  const TimetablePageSettingsScreen({super.key});
 
   @override
-  State<_TimetablePageSettingsScreen> createState() =>
-      _TimetablePageSettingsScreenState();
+  State<TimetablePageSettingsScreen> createState() =>
+      TimetablePageSettingsScreenState();
 }
 
-class _TimetablePageSettingsScreenState
-    extends State<_TimetablePageSettingsScreen>
-    with HomeBackdropFlow<_TimetablePageSettingsScreen> {
+class TimetablePageSettingsScreenState
+    extends State<TimetablePageSettingsScreen>
+    with HomeBackdropFlow<TimetablePageSettingsScreen> {
   late final TimetableProvider _timetableProvider;
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;

@@ -14,10 +14,8 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../providers/weather_provider.dart';
 import '../services/miui_live_activities_service.dart';
-import '../services/screen_capture_service.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
-import '../utils/home_page_background.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/home_top_menu.dart';
 import '../ui/app_fonts.dart';
@@ -46,7 +44,6 @@ import 'miuix_showcase_screen.dart';
 import 'user_guide_screen.dart';
 import 'settings/settings_shared.dart';
 import 'settings/settings_appearance_editor.dart';
-import 'settings/settings_home_backdrop_flow.dart';
 import 'settings/settings_reset.dart';
 import 'settings/settings_weather.dart';
 import 'settings/settings_general.dart';
@@ -54,6 +51,7 @@ import 'settings/settings_diagnostics.dart';
 import 'settings/settings_holiday.dart';
 import 'settings/settings_live.dart';
 import 'settings/settings_home_widget.dart';
+import 'settings/settings_timetable_page.dart';
 
 part 'settings/settings_appearance.dart';
 part 'settings/settings_home_navigation.dart';
@@ -61,7 +59,6 @@ part 'settings/settings_home_menu_editor.dart';
 part 'settings/settings_glass_dock_editor.dart';
 part 'settings/settings_glass_dock_icon_editor.dart';
 part 'settings/settings_course_card.dart';
-part 'settings/settings_timetable_page.dart';
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
@@ -72,7 +69,7 @@ Widget? settingsSubpageById(String id) {
     'appearanceSettings' => const _AppearanceSettingsScreen(),
     // 銆屽瑙傜紪杈戙€嶏細鏁撮〉涓€寮犻椤靛井缂╁浘 + 搴曢儴銆岃皟鏁村绾?/ 鏉愯川銆嶄袱棰楁寜閽€?
     'appearanceEditor' => const AppearanceEditorScreen(),
-    'timetablePageSettings' => const _TimetablePageSettingsScreen(),
+    'timetablePageSettings' => const TimetablePageSettingsScreen(),
     'courseCardSettings' => const _CourseCardSettingsScreen(),
     'liveSettings' => const LiveSettingsScreen(),
     'holidaySettings' => const HolidaySettingsScreen(),
@@ -148,7 +145,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/timetable-page'),
-            builder: (_) => const _TimetablePageSettingsScreen(),
+            builder: (_) => const TimetablePageSettingsScreen(),
           );
         }
 
