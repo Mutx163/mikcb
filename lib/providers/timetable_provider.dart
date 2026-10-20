@@ -444,11 +444,8 @@ class TimetableProvider
       _homeWidgetBindingService;
 
   // ── TimetableImportExportPort：导入导出管线的数据面、内存写回与句柄接线 ──
-  // repository / storage / icsImporter 2026-10-20 起退出端口（「注入依赖不进端口」，
-  // 见 timetable_import_export_service.dart 的端口节）：改由下方入口直传私有字段。
-  @override
-  AppAnalytics get analytics => _analytics;
-
+  // repository / storage / icsImporter / analytics 2026-10-20 起退出端口
+  // （「注入依赖不进端口」）：改由下方入口直传私有字段。
   @override
   int get currentCalendarWeek => _currentCalendarWeek;
 
@@ -3172,7 +3169,7 @@ class TimetableProvider
     content,
     replaceExisting: replaceExisting,
     icsImporter: _icsImportService, repository: _profileRepository,
-    storage: _storageService,
+    storage: _storageService, analytics: _analytics,
   );
 
   Future<int> importParsedCourses(
@@ -3188,6 +3185,7 @@ class TimetableProvider
     semesterStart: semesterStart,
     source: source,
     repository: _profileRepository, storage: _storageService,
+    analytics: _analytics,
     preserveLocalColors: preserveLocalColors,
   );
 
@@ -3195,6 +3193,7 @@ class TimetableProvider
     () => TimetableImportExportService.importAppDataBackup(
       this, content,
       repository: _profileRepository, storage: _storageService,
+      analytics: _analytics,
     ),
   );
 
@@ -3206,6 +3205,7 @@ class TimetableProvider
       this, content,
       profileName: profileName,
       repository: _profileRepository, storage: _storageService,
+      analytics: _analytics,
     ),
   );
 

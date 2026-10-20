@@ -82,22 +82,21 @@ abstract interface class TimetableImportExportPort {
 
   // ── 服务/仓储句柄 ──
   //
-  // `repository` / `storage` / `icsImporter` 原先也在这组。2026-10-20 起按
-  // 「注入依赖不进端口」的设计意图（`provider 拆分诚实定界` 笔记「下一步」第 2 条
+  // `repository` / `storage` / `icsImporter` / `analytics` 原先都在这组。2026-10-20 起
+  // 按「注入依赖不进端口」的设计意图（`provider 拆分诚实定界` 笔记「下一步」第 2 条
   // 引 provider 计划评审 :72-74）改为**调用方参数直传**：
   //
   //   端口只该暴露宿主的状态与内存写回（上面那两节），不该兼作依赖定位器。
-  //   这三个是 provider 构造时注入进来的外部依赖，宿主持有它们只是为了装配；
+  //   这四个是 provider 构造时注入进来的外部依赖，宿主持有它们只是为了装配；
   //   经端口再交出去等于把装配细节写进服务之间的契约——服务的可测性反而被拖住
-  //   （要造一个假端口就得连仓储、存储、解析器一起造）。
+  //   （要造一个假端口就得连仓储、存储、解析器、埋点一起造）。
   //
-  // 收法：静态方法多出几个具名必填参数（`repository:` / `storage:` / `icsImporter:`），
-  // 由唯一调用方 `TimetableProvider` 把自己的私有字段直传；
+  // 收法：静态方法多出几个具名必填参数（`repository:` / `storage:` / `icsImporter:` /
+  // `analytics:`），由唯一调用方 `TimetableProvider` 把自己的私有字段直传；
   // [FullBackupRestoreSnapshot] 在构造时把 repository / storage 一起接住，
   // 所以 `restorePersistence()` 不再需要 host 参数（7 处
   // `restoreAfterFullBackupFailure` 调用点因此全不用动）。
   //
-  // `analytics` 同一批被公开（UI 调用数 0），留下一刀同款收法；
   // `liveRuntime` 与四个原生面服务句柄属方案 B 范畴（真状态容器 / 原生面句柄），
   // 不在这一刀里动。`dataTransferService` 是**本族自带的解析器**（不是外部注入
   // 依赖，和本服务同属导入导出族），仍经端口取。
@@ -111,7 +110,6 @@ abstract interface class TimetableImportExportPort {
     bool notifySync = true,
   });
   TimetableSettings normalizeTimetableSettings(TimetableSettings settings);
-  AppAnalytics get analytics;
   Future<void> persistTimeSchemes();
   Future<void> syncExamReminders();
   Future<void> updateLiveActivity({bool syncScheduleSnapshot = true});
@@ -500,6 +498,7 @@ class TimetableImportExportService {
     required IcsImportService icsImporter,
     required TimetableRepository repository,
     required StorageService storage,
+    required AppAnalytics analytics,
   }) async {
     final result = icsImporter.parseWakeUpSchedule(content);
     return importParsedCourses(
@@ -510,6 +509,7 @@ class TimetableImportExportService {
       source: 'ics',
       repository: repository,
       storage: storage,
+      analytics: analytics,
     );
   }
 
@@ -521,6 +521,7 @@ class TimetableImportExportService {
     required String source,
     required TimetableRepository repository,
     required StorageService storage,
+    required AppAnalytics analytics,
     bool preserveLocalColors = true,
   }) {
     return host.runMutation(() async {
@@ -621,7 +622,7 @@ class TimetableImportExportService {
       notifyUserDataChangedForSync();
       host.clearCurrentLiveCourseId();
       host.notifyStateChanged();
-      host.analytics.logEventLater(
+      analytics.logEventLater(
         name: 'schedule_imported',
         parameters: {
           'imported_course_count': effectiveImportedCount,
@@ -643,6 +644,7 @@ class TimetableImportExportService {
     String content, {
     required TimetableRepository repository,
     required StorageService storage,
+    required AppAnalytics analytics,
   }) async {
     // 回滚快照：与完整备份那条路径同款。缺了它，这条路径是**先换内存、后写盘**——
     // 磁盘满 → 抛错 → 内存里已经是新课表（界面立刻显示新课表），盘上还是旧的；
@@ -705,7 +707,7 @@ class TimetableImportExportService {
       host.clearCurrentLiveCourseId();
       host.notifyStateChanged();
       unawaited(host.syncExamReminders());
-      host.analytics.logEventLater(
+      analytics.logEventLater(
         name: 'backup_imported',
         parameters: {
           'course_count': host.courses.length,
@@ -738,6 +740,7 @@ class TimetableImportExportService {
     String? profileName,
     required TimetableRepository repository,
     required StorageService storage,
+    required AppAnalytics analytics,
   }) async {
     FullBackupRestoreSnapshot? snapshot;
     try {
@@ -797,7 +800,7 @@ class TimetableImportExportService {
       host.clearCurrentLiveCourseId();
       host.notifyStateChanged();
       unawaited(host.syncExamReminders());
-      host.analytics.logEventLater(
+      analytics.logEventLater(
         name: 'backup_imported',
         parameters: {
           'course_count': host.courses.length,

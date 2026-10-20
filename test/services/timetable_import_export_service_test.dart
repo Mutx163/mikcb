@@ -11,7 +11,6 @@ import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
-import 'package:university_timetable/services/app_analytics.dart';
 import 'package:university_timetable/services/data_transfer_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/timetable_import_export_service.dart';
@@ -524,10 +523,6 @@ class _FakePort implements TimetableImportExportPort {
   @override
   DataTransferService get dataTransferService =>
       throw UnimplementedError('本测试不覆盖传输编码');
-
-  @override
-  AppAnalytics get analytics =>
-      throw UnimplementedError('本测试不覆盖埋点');
 
   @override
   Future<void> initialize() async {}
