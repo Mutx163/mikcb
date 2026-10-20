@@ -15,6 +15,7 @@ import '../widgets/statistics/daily_chart.dart';
 import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/overview_section.dart';
 import '../widgets/statistics/semester_progress_card.dart';
+import '../widgets/statistics/statistics_export_document.dart';
 import '../widgets/statistics/statistics_export_sheet.dart';
 import '../widgets/statistics/week_stats_view.dart';
 import '../widgets/statistics/weekly_comparison_card.dart';
@@ -58,9 +59,14 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       await StatisticsShareService.exportAndShare(
         context: context,
         options: options,
-        semesterStats: semesterStats,
-        achievements: achievements,
-        stories: stories,
+        // 分享文档由本层（屏层）组装：服务只负责光栅化与分享，
+        // 不认识 widgets/ 里的导出文档。
+        document: StatisticsExportDocument(
+          options: options,
+          semesterStats: semesterStats,
+          achievements: achievements,
+          stories: stories,
+        ),
       );
     } finally {
       if (mounted) {

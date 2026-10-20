@@ -7,29 +7,28 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
+import '../models/share_export_style.dart';
 import '../models/statistics_export_options.dart';
-import '../models/statistics_models.dart';
-import '../ui/hyperos/hyperos_tokens.dart';
 import '../utils/app_toast.dart';
-import '../widgets/statistics/statistics_export_document.dart';
 import 'image_export_capture.dart';
 
 /// 把课程统计渲染成长图 PNG 并拉起系统分享面板。
 ///
 /// 离屏捕获的机制本体在 [ImageExportCapture]（与课表图片分享共用）；
-/// 这里只管三件事：拼文档、落临时文件、拉起分享。
+/// 这里只管三件事：**光栅化调用方给的文档**、落临时文件、拉起分享。
+///
+/// **文档由调用方（屏层）构造**，这里只收一个已经拼好的 [Widget]。理由有二：
+/// * 服务层不该认识界面层 —— `StatisticsExportDocument` 住在 `widgets/`，
+///   服务 import 它是反向依赖；
+/// * 「分享图长什么样」本来就是界面层的事，文档类型以后要换（比如加模块）
+///   不该牵动分享管线。
 class StatisticsShareService {
   StatisticsShareService._();
-
-  /// 分享图恒用亮色底：透明孔洞在被分享出去后不会变成黑块。
-  static const Color _exportScaffoldColor = HyperosTokens.background;
 
   static Future<void> exportAndShare({
     required BuildContext context,
     required StatisticsExportOptions options,
-    required SemesterStats semesterStats,
-    required List<Achievement> achievements,
-    required List<DataStory> stories,
+    required Widget document,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     if (!options.hasModules) {
@@ -69,13 +68,8 @@ class StatisticsShareService {
         theme: ImageExportCapture.lightExportThemeOf(context),
         textDirection: Directionality.of(context),
         exportWidth: mediaQuery.size.width.clamp(320.0, 420.0),
-        scaffoldColor: _exportScaffoldColor,
-        document: StatisticsExportDocument(
-          options: options,
-          semesterStats: semesterStats,
-          achievements: achievements,
-          stories: stories,
-        ),
+        scaffoldColor: ShareExportStyle.background,
+        document: document,
         debugLabel: 'StatisticsShare',
       );
       if (pngBytes == null) {
