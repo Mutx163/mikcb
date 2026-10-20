@@ -6800,5 +6800,70 @@
         "type": "String"
       }
     }
+  },
+  "monthViewTitle": "Month view",
+  "monthViewPreviousMonth": "Previous month",
+  "monthViewNextMonth": "Next month",
+  "monthViewBackToCurrentMonth": "Back to this month",
+  "monthViewHolidayBadge": "Off",
+  "monthViewAdjustedWorkdayBadge": "Work",
+  "monthViewAgendaEmpty": "Nothing scheduled",
+  "monthViewEmptyMonthTitle": "Nothing scheduled this month",
+  "monthViewHeaderTitle": "{year}/{month}",
+  "@monthViewHeaderTitle": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewAgendaTitle": "{month}/{day}",
+  "@monthViewAgendaTitle": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewDaySemantics": "{month}/{day}",
+  "@monthViewDaySemantics": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewCourseCountSemantics": "{count} classes",
+  "@monthViewCourseCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewExamCountSemantics": "{count} exams",
+  "@monthViewExamCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewScheduleCountSemantics": "{count} schedules",
+  "@monthViewScheduleCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -11987,4 +11987,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String underlineTabSemanticsLabel(String text) {
     return '$text tab';
   }
+
+  @override
+  String get monthViewTitle => 'Month view';
+
+  @override
+  String get monthViewPreviousMonth => 'Previous month';
+
+  @override
+  String get monthViewNextMonth => 'Next month';
+
+  @override
+  String get monthViewBackToCurrentMonth => 'Back to this month';
+
+  @override
+  String get monthViewHolidayBadge => 'Off';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => 'Work';
+
+  @override
+  String get monthViewAgendaEmpty => 'Nothing scheduled';
+
+  @override
+  String get monthViewEmptyMonthTitle => 'Nothing scheduled this month';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year/$month';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month/$day';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month/$day';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$count classes';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count exams';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count schedules';
+  }
 }

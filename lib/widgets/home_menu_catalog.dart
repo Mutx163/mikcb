@@ -184,6 +184,13 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     open: (context) => pushHomeMenuPage(context, homePage('icsExportPage')),
   ),
   HomeMenuEntry(
+    id: 'monthView',
+    title: (l10n) => l10n.monthViewTitle,
+    icon: Icons.calendar_view_month_rounded,
+    category: HomeMenuEntryCategory.features,
+    open: (context) => pushHomeMenuPage(context, homePage('monthViewPage')),
+  ),
+  HomeMenuEntry(
     id: 'timeSchemes',
     title: (l10n) => l10n.timeSchemeTitle,
     icon: Icons.schedule_outlined,

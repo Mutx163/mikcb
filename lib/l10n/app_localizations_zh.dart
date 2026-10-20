@@ -11288,6 +11288,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String underlineTabSemanticsLabel(String text) {
     return '$text，标签';
   }
+
+  @override
+  String get monthViewTitle => '月视图';
+
+  @override
+  String get monthViewPreviousMonth => '上个月';
+
+  @override
+  String get monthViewNextMonth => '下个月';
+
+  @override
+  String get monthViewBackToCurrentMonth => '回到本月';
+
+  @override
+  String get monthViewHolidayBadge => '休';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => '班';
+
+  @override
+  String get monthViewAgendaEmpty => '这天没有安排';
+
+  @override
+  String get monthViewEmptyMonthTitle => '这个月还没有安排';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year年$month月';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$count节课';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count场考试';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count个日程';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22613,6 +22667,60 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String underlineTabSemanticsLabel(String text) {
     return '$text，標籤';
+  }
+
+  @override
+  String get monthViewTitle => '月視圖';
+
+  @override
+  String get monthViewPreviousMonth => '上個月';
+
+  @override
+  String get monthViewNextMonth => '下個月';
+
+  @override
+  String get monthViewBackToCurrentMonth => '回到本月';
+
+  @override
+  String get monthViewHolidayBadge => '休';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => '班';
+
+  @override
+  String get monthViewAgendaEmpty => '這天沒有安排';
+
+  @override
+  String get monthViewEmptyMonthTitle => '這個月還沒有安排';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year年$month月';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$count節課';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count場考試';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count個日程';
   }
 }
 
@@ -33940,5 +34048,59 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String underlineTabSemanticsLabel(String text) {
     return '$text，標籤';
+  }
+
+  @override
+  String get monthViewTitle => '月視圖';
+
+  @override
+  String get monthViewPreviousMonth => '上個月';
+
+  @override
+  String get monthViewNextMonth => '下個月';
+
+  @override
+  String get monthViewBackToCurrentMonth => '回到本月';
+
+  @override
+  String get monthViewHolidayBadge => '休';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => '班';
+
+  @override
+  String get monthViewAgendaEmpty => '這天沒有安排';
+
+  @override
+  String get monthViewEmptyMonthTitle => '這個月還沒有安排';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year年$month月';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$count節課';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count場考試';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count個日程';
   }
 }

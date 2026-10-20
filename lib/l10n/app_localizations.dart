@@ -20555,6 +20555,90 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{text}，标签'**
   String underlineTabSemanticsLabel(String text);
+
+  /// No description provided for @monthViewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'月视图'**
+  String get monthViewTitle;
+
+  /// No description provided for @monthViewPreviousMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'上个月'**
+  String get monthViewPreviousMonth;
+
+  /// No description provided for @monthViewNextMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'下个月'**
+  String get monthViewNextMonth;
+
+  /// No description provided for @monthViewBackToCurrentMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'回到本月'**
+  String get monthViewBackToCurrentMonth;
+
+  /// No description provided for @monthViewHolidayBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'休'**
+  String get monthViewHolidayBadge;
+
+  /// No description provided for @monthViewAdjustedWorkdayBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'班'**
+  String get monthViewAdjustedWorkdayBadge;
+
+  /// No description provided for @monthViewAgendaEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这天没有安排'**
+  String get monthViewAgendaEmpty;
+
+  /// No description provided for @monthViewEmptyMonthTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个月还没有安排'**
+  String get monthViewEmptyMonthTitle;
+
+  /// No description provided for @monthViewHeaderTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年{month}月'**
+  String monthViewHeaderTitle(int year, int month);
+
+  /// No description provided for @monthViewAgendaTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月{day}日'**
+  String monthViewAgendaTitle(int month, int day);
+
+  /// No description provided for @monthViewDaySemantics.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月{day}日'**
+  String monthViewDaySemantics(int month, int day);
+
+  /// No description provided for @monthViewCourseCountSemantics.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count}节课'**
+  String monthViewCourseCountSemantics(int count);
+
+  /// No description provided for @monthViewExamCountSemantics.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count}场考试'**
+  String monthViewExamCountSemantics(int count);
+
+  /// No description provided for @monthViewScheduleCountSemantics.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count}个日程'**
+  String monthViewScheduleCountSemantics(int count);
 }
 
 class _AppLocalizationsDelegate

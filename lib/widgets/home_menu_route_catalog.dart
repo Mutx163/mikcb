@@ -21,6 +21,7 @@ import 'package:university_timetable/screens/ics_export_screen.dart';
 import 'package:university_timetable/screens/lan_edit_screen.dart';
 import 'package:university_timetable/screens/location_time_match_screen.dart';
 import 'package:university_timetable/screens/memory_stats_screen.dart';
+import 'package:university_timetable/screens/month_view_screen.dart';
 import 'package:university_timetable/screens/open_source_licenses_screen.dart';
 import 'package:university_timetable/screens/schedule_date_rule_screen.dart';
 import 'package:university_timetable/screens/schedule_list_screen.dart';
@@ -60,6 +61,8 @@ final Map<String, WidgetBuilder> kInlineDockPages = {
   'coupleTimetable': (context) => const CoupleTimetableSettingsScreen(),
   'timeSchemes': (context) => const TimeSchemeManagementScreen(),
   'icsExport': (context) => const IcsExportScreen(),
+  // 月视图：玻璃坞内嵌页（坞常驻、首页栈内切换，翻月/选中日状态不丢）。
+  'monthView': (context) => const MonthViewScreen(),
   'profiles': (context) => const TimetableProfilesScreen(),
   'feedback': (context) => const FeedbackScreen(),
   'changelog': (context) => const ChangelogScreen(),
@@ -103,6 +106,7 @@ final Map<String, Widget Function()> kHomeCatalogPages = {
   'scheduleDateRulePage': () => const ScheduleDateRuleScreen(),
   'scheduleListPage': () => const ScheduleListScreen(),
   'icsExportPage': () => const IcsExportScreen(),
+  'monthViewPage': () => const MonthViewScreen(),
   'timeSchemesPage': () => const TimeSchemeManagementScreen(),
   'timetableProfilesPage': () => const TimetableProfilesScreen(),
   'dataTransferPage': () => const DataTransferScreen(),

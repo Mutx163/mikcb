@@ -6797,5 +6797,70 @@
         "type": "String"
       }
     }
+  },
+  "monthViewTitle": "월 보기",
+  "monthViewPreviousMonth": "이전 달",
+  "monthViewNextMonth": "다음 달",
+  "monthViewBackToCurrentMonth": "이번 달로",
+  "monthViewHolidayBadge": "휴",
+  "monthViewAdjustedWorkdayBadge": "출",
+  "monthViewAgendaEmpty": "일정이 없습니다",
+  "monthViewEmptyMonthTitle": "이번 달에 일정이 없습니다",
+  "monthViewHeaderTitle": "{year}년 {month}월",
+  "@monthViewHeaderTitle": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewAgendaTitle": "{month}월 {day}일",
+  "@monthViewAgendaTitle": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewDaySemantics": "{month}월 {day}일",
+  "@monthViewDaySemantics": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewCourseCountSemantics": "{count}개 수업",
+  "@monthViewCourseCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewExamCountSemantics": "{count}개 시험",
+  "@monthViewExamCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewScheduleCountSemantics": "{count}개 일정",
+  "@monthViewScheduleCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

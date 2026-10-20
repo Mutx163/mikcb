@@ -11693,4 +11693,58 @@ class AppLocalizationsKo extends AppLocalizations {
   String underlineTabSemanticsLabel(String text) {
     return '$text 탭';
   }
+
+  @override
+  String get monthViewTitle => '월 보기';
+
+  @override
+  String get monthViewPreviousMonth => '이전 달';
+
+  @override
+  String get monthViewNextMonth => '다음 달';
+
+  @override
+  String get monthViewBackToCurrentMonth => '이번 달로';
+
+  @override
+  String get monthViewHolidayBadge => '휴';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => '출';
+
+  @override
+  String get monthViewAgendaEmpty => '일정이 없습니다';
+
+  @override
+  String get monthViewEmptyMonthTitle => '이번 달에 일정이 없습니다';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year년 $month월';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month월 $day일';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month월 $day일';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$count개 수업';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count개 시험';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count개 일정';
+  }
 }

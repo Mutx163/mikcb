@@ -6901,5 +6901,70 @@
         "type": "String"
       }
     }
+  },
+  "monthViewTitle": "月视图",
+  "monthViewPreviousMonth": "上个月",
+  "monthViewNextMonth": "下个月",
+  "monthViewBackToCurrentMonth": "回到本月",
+  "monthViewHolidayBadge": "休",
+  "monthViewAdjustedWorkdayBadge": "班",
+  "monthViewAgendaEmpty": "这天没有安排",
+  "monthViewEmptyMonthTitle": "这个月还没有安排",
+  "monthViewHeaderTitle": "{year}年{month}月",
+  "@monthViewHeaderTitle": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewAgendaTitle": "{month}月{day}日",
+  "@monthViewAgendaTitle": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewDaySemantics": "{month}月{day}日",
+  "@monthViewDaySemantics": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewCourseCountSemantics": "{count}节课",
+  "@monthViewCourseCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewExamCountSemantics": "{count}场考试",
+  "@monthViewExamCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monthViewScheduleCountSemantics": "{count}个日程",
+  "@monthViewScheduleCountSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

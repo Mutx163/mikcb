@@ -11638,4 +11638,58 @@ class AppLocalizationsJa extends AppLocalizations {
   String underlineTabSemanticsLabel(String text) {
     return '$textタブ';
   }
+
+  @override
+  String get monthViewTitle => '月表示';
+
+  @override
+  String get monthViewPreviousMonth => '前の月';
+
+  @override
+  String get monthViewNextMonth => '次の月';
+
+  @override
+  String get monthViewBackToCurrentMonth => '今月に戻る';
+
+  @override
+  String get monthViewHolidayBadge => '休';
+
+  @override
+  String get monthViewAdjustedWorkdayBadge => '出';
+
+  @override
+  String get monthViewAgendaEmpty => '予定はありません';
+
+  @override
+  String get monthViewEmptyMonthTitle => 'この月は予定がありません';
+
+  @override
+  String monthViewHeaderTitle(int year, int month) {
+    return '$year年$month月';
+  }
+
+  @override
+  String monthViewAgendaTitle(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewDaySemantics(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String monthViewCourseCountSemantics(int count) {
+    return '$countコマ';
+  }
+
+  @override
+  String monthViewExamCountSemantics(int count) {
+    return '$count件の試験';
+  }
+
+  @override
+  String monthViewScheduleCountSemantics(int count) {
+    return '$count件の予定';
+  }
 }
