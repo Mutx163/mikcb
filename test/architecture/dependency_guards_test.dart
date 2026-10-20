@@ -149,7 +149,10 @@ void main() {
     // （`TimetableScheduleItemService`）、F2 地点规则族（`TimetableLocationRuleService`）
     // 连实现一起搬到 `lib/services/`，主库只留端口适配器与薄委托；对应的两个 part
     // 分片删除。规矩不变：把规则放回它该在的服务里，不抬基线。
-    const baselineLines = 4043;
+    // 4043→3853：F3 课程/作业族（`TimetableCourseService`）同一做法 —— 除了删掉的
+    // 分片，父文件里 `addCourse` 的实现、作业增删改与重算、课程归一、节次校验一并
+    // 搬走，主库只留委托与 `_runMutation` 门。
+    const baselineLines = 3853;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
