@@ -599,7 +599,7 @@ void main() {
     test('coarsenCoordinate 四舍五入到 2 位小数（约 1.1 km）', () {
       expect(WeatherService.coarsenCoordinate(30.29365), 30.29);
       expect(WeatherService.coarsenCoordinate(120.16142), 120.16);
-      expect(WeatherService.coarsenCoordinate(-99.999), -100.0);
+      expect(WeatherService.coarsenCoordinate(-99.999), -100);
       expect(WeatherService.coarsenCoordinate(0.0), 0);
     });
 
