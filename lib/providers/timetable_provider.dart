@@ -1,7 +1,6 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -21,7 +20,6 @@ import '../models/timetable_settings.dart';
 import '../data/timetable_repository.dart';
 import '../domain/week_calculator.dart';
 import '../domain/clock_order.dart';
-import '../domain/holiday_resolver.dart';
 import '../domain/course_domain.dart';
 import '../domain/schedule_item_expander.dart';
 import '../domain/couple_timetable_logic.dart';
@@ -42,7 +40,6 @@ import '../services/home_widget_snapshot_service.dart';
 import '../services/class_reminder_service.dart';
 import '../services/exam_reminder_service.dart';
 import '../services/partner_timetable_service.dart';
-import '../services/stats_widget_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_operation_gate.dart';
 import '../services/user_data_sync_hooks.dart';
@@ -51,6 +48,7 @@ import '../services/timetable_course_service.dart';
 import '../services/timetable_exam_service.dart';
 import '../services/timetable_holiday_service.dart';
 import '../services/timetable_location_rule_service.dart';
+import '../services/timetable_live_activity_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
@@ -90,7 +88,6 @@ export '../domain/import_export_logic.dart'
         syncImportedCourses;
 
 part 'timetable/import_export_service.dart';
-part 'timetable/live_activity_controller.dart';
 
 bool _isLiveTestingFixture(Course course) => course.id.startsWith('live_test_');
 
@@ -186,9 +183,8 @@ class TimetableProvider
         TimetableLocationRulePort,
         TimetableCoursePort,
         TimetableTimeSchemePort,
-        TimetableScheduleDateRulePort {
-  static const Duration _liveEndReminderWindow = Duration(minutes: 10);
-
+        TimetableScheduleDateRulePort,
+        TimetableLiveActivityPort {
   final StorageService _storageService;
 
   /// Profile 持久化收口（阶段 2）：所有 profile 读写统一走仓储，
@@ -230,20 +226,12 @@ class TimetableProvider
   String? _activeProfileId;
   int _currentDayOfWeek = DateTime.now().weekday;
   bool _isLoading = false;
-  Timer? _liveActivityTimer;
+
+  /// 超级岛 / 桌面小组件的运行态桶（心跳、去重签名、挂起窗口、自检覆盖层）。
+  /// 状态搬进服务库里的显式对象，本类只在生命周期边界清它。
+  final LiveActivityRuntimeState _liveRuntime = LiveActivityRuntimeState();
   String? _currentLiveCourseId;
-  String? _lastLiveActivityStageKey;
-  String? _lastLiveSnapshotSignature;
-  String? _lastHomeWidgetSnapshotSignature;
 
-  /// 绑定卡片（appWidgetId → 专属快照内容签名）的推送去重，语义同上。
-  final Map<int, String> _lastWidgetSnapshotSignatures = <int, String>{};
-  DateTime? _liveActivitySuspendedUntil;
-
-  /// 自检预设课覆盖层：只注入超级岛选课与原生快照路径，绝不写入真实课表
-  /// （内存态，重启即清）。挂载/摘除会 notifyListeners，供自检页显示
-  /// 「测试进行中」状态并驱动开始/取消开关。
-  List<Course> _liveTestFixtureOverlayCourses = const [];
   Future<void>? _initializationFuture;
   Future<void>? _deferredDataFuture;
   // 初始化首帧之后的迁移/同步写盘。导入入口必须先等它们收尾，
@@ -453,6 +441,48 @@ class TimetableProvider
   Future<void> saveScheduleDateRuleLastAppliedSignature(String signature) =>
       _profileRepository.saveScheduleDateRuleLastAppliedSignature(signature);
 
+  // ── TimetableLiveActivityPort：实时活动/原生面管线的数据面与句柄接线 ──
+  @override
+  LiveActivityRuntimeState get liveRuntime => _liveRuntime;
+
+  @override
+  String? get currentLiveCourseId => _currentLiveCourseId;
+
+  @override
+  set currentLiveCourseId(String? value) => _currentLiveCourseId = value;
+
+  @override
+  bool get enableLiveActivitySync => _enableLiveActivitySync;
+
+  @override
+  int calculateCalendarWeekForDate(DateTime date, {int? fallbackWeek}) =>
+      _calculateCalendarWeekForDate(date, fallbackWeek: fallbackWeek);
+
+  @override
+  List<SectionTime>? resolveSectionsForCourse(
+    Course course, {
+    TimetableSettings? settings,
+    DateTime? onDate,
+  }) => _resolveSectionsForCourse(course, settings: settings, onDate: onDate);
+
+  @override
+  Future<T> runLiveSurfaceExclusive<T>(Future<T> Function() action) =>
+      _liveSurfaceGate.runExclusive(action);
+
+  @override
+  MiuiLiveActivitiesService get liveActivitiesService => _liveActivitiesService;
+
+  @override
+  HomeWidgetService get homeWidgetService => _homeWidgetService;
+
+  @override
+  HomeWidgetSnapshotService get homeWidgetSnapshotService =>
+      _homeWidgetSnapshotService;
+
+  @override
+  HomeWidgetBindingService get homeWidgetBindingService =>
+      _homeWidgetBindingService;
+
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
   List<CourseGroup> get courseGroups {
@@ -524,7 +554,9 @@ class TimetableProvider
   bool get isLoading => _isLoading;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
   DataTransferService get dataTransferService => _dataTransferService;
+  @override
   PartnerTimetableBinding? get partnerBinding => _partnerBinding;
+  @override
   bool get hasPartnerBinding => _partnerBinding != null;
   int get partnerWeekOffset => _partnerBinding?.weekOffset ?? 0;
   int partnerWeekFor(int myWeek) =>
@@ -540,6 +572,7 @@ class TimetableProvider
     );
   }
 
+  @override
   TimetableProfile? get partnerProfile =>
       _getProfileById(PartnerTimetableService.partnerProfileId);
   List<Course> get partnerCourses =>
@@ -691,7 +724,7 @@ class TimetableProvider
       if (!_enableLiveActivitySync) {
         return;
       }
-      await _liveHandleAppResumed(this);
+      await TimetableLiveActivityService.handleAppResumed(this);
     } catch (error, stackTrace) {
       await AppLogService.instance.error(
         'live_activity_resume_recovery_failed',
@@ -736,19 +769,15 @@ class TimetableProvider
       await _loadDeferredDataImpl();
       // importFullAppDataBackup may have pushed live surfaces before teachers /
       // locations were reloaded; force one consistent resync after storage load.
-      await _runLiveSurfaceExclusive(() async {
-        _lastLiveSnapshotSignature = null;
-        _lastHomeWidgetSnapshotSignature = null;
+      await _liveSurfaceGate.runExclusive(() async {
+        _liveRuntime.lastLiveSnapshotSignature = null;
+        _liveRuntime.lastHomeWidgetSnapshotSignature = null;
         _currentLiveCourseId = null;
-        await _liveUpdateActivityBody(this);
+        await TimetableLiveActivityService.updateActivityBody(this);
       });
       await _syncExamReminders();
       notifyListeners();
     });
-  }
-
-  Future<T> _runLiveSurfaceExclusive<T>(Future<T> Function() action) {
-    return _liveSurfaceGate.runExclusive(action);
   }
 
   /// Public entry for external apply paths (WebDAV) that must share the
@@ -891,12 +920,12 @@ class TimetableProvider
     await _loadHolidayData();
     // _loadHolidayData already re-pushes surfaces on success. If it failed
     // silently, still push once so widgets are not stuck empty forever.
-    if (_lastHomeWidgetSnapshotSignature == null) {
+    if (_liveRuntime.lastHomeWidgetSnapshotSignature == null) {
       await _syncHomeWidgetSnapshot();
     }
     _ignoreBackgroundFailure(_syncExamReminders());
     if (_enableLiveActivitySync) {
-      _liveStartActivityTick(this);
+      TimetableLiveActivityService.startActivityTick(this);
     }
   }
 
@@ -999,7 +1028,7 @@ class TimetableProvider
   void seedLiveActivityTrackingForTesting({
     String? lastStageKey,
     String? currentCourseId,
-  }) => _liveSeedTrackingForTesting(
+  }) => TimetableLiveActivityService.seedTrackingForTesting(
     this,
     lastStageKey: lastStageKey,
     currentCourseId: currentCourseId,
@@ -1007,12 +1036,12 @@ class TimetableProvider
 
   @visibleForTesting
   void checkLiveActivityStageTransitionForTesting() =>
-      _liveCheckActivityStageTransition(this);
+      TimetableLiveActivityService.checkActivityStageTransition(this);
 
   @visibleForTesting
   Future<void> updateLiveActivityForTesting({
     bool syncScheduleSnapshot = true,
-  }) => _liveUpdateActivityForTesting(
+  }) => TimetableLiveActivityService.updateActivityForTesting(
     this,
     syncScheduleSnapshot: syncScheduleSnapshot,
   );
@@ -1037,17 +1066,17 @@ class TimetableProvider
     if (_ownsHolidayService) {
       _holidayService.dispose();
     }
-    _liveActivityTimer?.cancel();
+    _liveRuntime.timer?.cancel();
     _themeService.dispose();
     super.dispose();
   }
 
   Future<void> _updateLiveActivity({bool syncScheduleSnapshot = true}) =>
-      _liveUpdateActivity(this, syncScheduleSnapshot: syncScheduleSnapshot);
+      TimetableLiveActivityService.updateActivity(this, syncScheduleSnapshot: syncScheduleSnapshot);
 
-  Future<void> _syncLiveScheduleSnapshot() => _liveSyncScheduleSnapshot(this);
+  Future<void> _syncLiveScheduleSnapshot() => TimetableLiveActivityService.syncScheduleSnapshot(this);
 
-  Future<void> _syncHomeWidgetSnapshot() => _liveSyncHomeWidgetSnapshot(this);
+  Future<void> _syncHomeWidgetSnapshot() => TimetableLiveActivityService.syncHomeWidgetSnapshot(this);
 
   TimetableProfile? _getProfileById(String? profileId) {
     if (profileId == null) {
@@ -1986,7 +2015,7 @@ class TimetableProvider
       _activeProfileId = profileId;
       _applyProfileState(targetProfile);
       _currentLiveCourseId = null;
-      _lastLiveSnapshotSignature = null;
+      _liveRuntime.lastLiveSnapshotSignature = null;
       notifyListeners();
 
       try {
@@ -2001,13 +2030,13 @@ class TimetableProvider
           }
         }
         _currentLiveCourseId = null;
-        _lastLiveSnapshotSignature = null;
+        _liveRuntime.lastLiveSnapshotSignature = null;
         notifyListeners();
         rethrow;
       }
 
       await _liveActivitiesService.stopLiveUpdate();
-      _lastLiveActivityStageKey = null;
+      _liveRuntime.lastActivityStageKey = null;
       await _syncLiveScheduleSnapshot();
       await _updateLiveActivity(syncScheduleSnapshot: false);
       unawaited(_syncExamReminders());
@@ -2109,7 +2138,7 @@ class TimetableProvider
           _applyProfileState(activeProfileBeforeDelete);
           _currentLiveCourseId = null;
         }
-        _lastLiveSnapshotSignature = null;
+        _liveRuntime.lastLiveSnapshotSignature = null;
         notifyListeners();
         rethrow;
       }
@@ -2550,12 +2579,14 @@ class TimetableProvider
   List<Exam> getUpcomingExams({int? limit}) =>
       _examService.getUpcomingExams(limit: limit);
 
+  @override
   Exam? getNextExam() => _examService.getNextExam();
 
   bool hasExamOnDate(DateTime date) => _examService.hasExamOnDate(date);
 
-  /// 考试域用例在 [TimetableExamService]。
   Future<void> addExam(Exam exam) => _examService.addExam(exam);
+
+  /// 考试域用例在 [TimetableExamService]。
 
   Future<void> updateExam(Exam exam) => _examService.updateExam(exam);
 
@@ -2652,14 +2683,16 @@ class TimetableProvider
 
   Future<void> _loadHolidayData() => _holidayDomainService.load();
 
+  @override
   HolidayData? get holidayData => _holidayData;
 
   List<HolidayLogEntry> get holidayLogs => _holidayService.logs;
 
+  Future<void> refreshHolidayData() => _holidayDomainService.refresh();
+
+  @override
   HolidayEntry? getHolidayForDate(DateTime date) =>
       _holidayDomainService.getHolidayForDate(date);
-
-  Future<void> refreshHolidayData() => _holidayDomainService.refresh();
 
   Future<List<HolidayEntry>> getCustomHolidays() =>
       _holidayDomainService.getCustomHolidays();
@@ -2682,8 +2715,10 @@ class TimetableProvider
     List<HolidayEntry> newEntries,
   ) => _holidayDomainService.updateCustomHoliday(groupId, newEntries);
 
+  @override
   bool isHoliday(DateTime date) => _holidayDomainService.isHoliday(date);
 
+  @override
   bool isAdjustedWorkday(DateTime date) =>
       _holidayDomainService.isAdjustedWorkday(date);
 
@@ -3043,7 +3078,7 @@ class TimetableProvider
       rethrow;
     }
     unawaited(_syncNativeRuntimePreferences());
-    _lastLiveSnapshotSignature = null;
+    _liveRuntime.lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
     if (homePageBackdropKey(_settings) != previousBackdropKey) {
       await precacheHomePageBackdropImage(_settings);
@@ -3188,6 +3223,7 @@ class TimetableProvider
     );
   }
 
+  @override
   Future<bool> syncTemporalContext({DateTime? now}) {
     return _runMutation(() => _syncTemporalContextImpl(now: now));
   }
@@ -3285,6 +3321,7 @@ class TimetableProvider
     return clampCurrentWeekToSettings(_resolveCurrentCalendarWeek(), _settings);
   }
 
+  @override
   List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
     final targetWeek = week ?? _currentWeek;
     return _courses
@@ -3297,6 +3334,7 @@ class TimetableProvider
   }
 
   /// 获取指定天的有效课程（排除停课），用于小组件和超级岛
+  @override
   List<Course> getActiveCoursesForDay(int dayOfWeek, {int? week}) {
     final targetWeek = week ?? _currentWeek;
     return _courses
@@ -3353,40 +3391,20 @@ class TimetableProvider
     return courses.isEmpty ? null : courses.first;
   }
 
+  /// 正在上的课（实时时钟解析，含日期规则的作息覆盖）。
+  ///
+  /// 实现随实时活动族搬进 [TimetableLiveActivityService]：它和超级岛选课共用
+  /// 同一套实时时钟解析，放在一处避免两套规则漂移。
   List<Course> getCoursesInProgress({
     required int dayOfWeek,
     int? week,
     DateTime? now,
-  }) {
-    final reference = now ?? DateTime.now();
-    final targetWeek = week ?? _calculateWeekForDate(reference);
-    final currentMinutes = reference.hour * 60 + reference.minute;
-    final matches = <Course>[];
-
-    for (final course in getCoursesForDay(dayOfWeek, week: targetWeek)) {
-      final startMinutes = LiveActivityLogic.parseClockMinutes(
-        LiveActivityLogic.resolveRealTime(
-          course,
-          true,
-          _resolveSectionsForCourse(course),
-        ),
-      );
-      final endMinutes = LiveActivityLogic.parseClockMinutes(
-        LiveActivityLogic.resolveRealTime(
-          course,
-          false,
-          _resolveSectionsForCourse(course),
-        ),
-      );
-      if (startMinutes == null || endMinutes == null) {
-        continue;
-      }
-      if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
-        matches.add(resolveCourseDisplayName(course));
-      }
-    }
-    return matches;
-  }
+  }) => TimetableLiveActivityService.getCoursesInProgress(
+    this,
+    dayOfWeek: dayOfWeek,
+    week: week,
+    now: now,
+  );
 
   /// 下一节课。与 [getCurrentCourse] 一样目前零调用方；同样把字典序换成了
   /// `compareClockText`（不补零的 `9:00` 会让 9 点那节被误判成"还没开始"）。
@@ -3440,6 +3458,7 @@ class TimetableProvider
     return null;
   }
 
+  @override
   Course resolveCourseDisplayName(Course course) {
     final resolvedShortName = resolveCourseShortName(course);
     if (resolvedShortName == null || resolvedShortName == course.shortName) {
@@ -3474,7 +3493,7 @@ class TimetableProvider
     DateTime? now,
     bool allowUpcomingFallback = false,
     int? week,
-  }) => _liveGetActivityCourseSelection(
+  }) => TimetableLiveActivityService.getActivityCourseSelection(
     this,
     now: now,
     allowUpcomingFallback: allowUpcomingFallback,
@@ -3483,29 +3502,32 @@ class TimetableProvider
 
   LiveActivityCourseSelection? getTestLiveActivityCourseSelection({
     DateTime? now,
-  }) => _liveGetTestActivityCourseSelection(this, now: now);
+  }) => TimetableLiveActivityService.getTestActivityCourseSelection(this, now: now);
 
   HomeWidgetSnapshot? buildHomeWidgetSnapshot({DateTime? now}) =>
-      _liveBuildHomeWidgetSnapshot(this, now: now);
+      TimetableLiveActivityService.buildHomeWidgetSnapshot(this, now: now);
 
   HomeWidgetSnapshot? buildHomeWidgetSnapshotForProfile(
     TimetableProfile profile, {
     DateTime? now,
-  }) => _liveBuildHomeWidgetSnapshotForProfile(this, profile, now: now);
+  }) => TimetableLiveActivityService.buildHomeWidgetSnapshotForProfile(this, profile, now: now);
 
   /// 情侣课表（我的+TA 合并视图）绑定卡片的专属快照；TA 解绑/无课表时
   /// 返回 null（调用方清掉专属快照回落「跟随当前课表」）。
   HomeWidgetSnapshot? buildHomeWidgetSnapshotForCouple({DateTime? now}) =>
-      _liveBuildCoupleMergedHomeWidgetSnapshot(this, now: now);
+      TimetableLiveActivityService.buildCoupleMergedHomeWidgetSnapshot(this, now: now);
 
-  void suspendLiveActivitySyncFor(Duration duration) {
-    _liveActivitySuspendedUntil = DateTime.now().add(duration);
-  }
+  // ── 实时活动 / 原生面：实现全在 [TimetableLiveActivityService] ──
+  //
+  // 自检预设课覆盖层、挂起窗口与心跳随运行态桶（[LiveActivityRuntimeState]）
+  // 搬进服务，本类只留公开签名。
+
+  void suspendLiveActivitySyncFor(Duration duration) =>
+      TimetableLiveActivityService.suspendSyncFor(this, duration);
 
   /// Clears a temporary live-sync pause (e.g. leftover from older test helpers).
-  void clearLiveActivitySyncSuspend() {
-    _liveActivitySuspendedUntil = null;
-  }
+  void clearLiveActivitySyncSuspend() =>
+      TimetableLiveActivityService.clearSyncSuspend(this);
 
   /// 超级岛选课实际使用的「今天日历周」，与 [getLiveActivityCourseSelection]
   /// 同源（学期未设时回落 [_currentWeek]，学期开始前为 0）。供自检预设课
@@ -3513,58 +3535,30 @@ class TimetableProvider
   int get liveSelectionCalendarWeek => _resolveCurrentCalendarWeek();
 
   bool get hasLiveTestFixtureCourses =>
-      _liveTestFixtureOverlayCourses.isNotEmpty;
+      _liveRuntime.fixtureOverlayCourses.isNotEmpty;
 
   /// 注入自检预设课（整体替换上一批）。只有超级岛管线可见，不进真实课表。
-  void armLiveTestFixtureCourses(List<Course> courses) {
-    if (courses.isEmpty) {
-      return;
-    }
-    _liveTestFixtureOverlayCourses = List.of(courses, growable: false);
-    notifyListeners();
-  }
+  void armLiveTestFixtureCourses(List<Course> courses) =>
+      TimetableLiveActivityService.armFixtureCourses(this, courses);
 
-  void disarmLiveTestFixtureCourses() {
-    if (_liveTestFixtureOverlayCourses.isEmpty) {
-      return;
-    }
-    _liveTestFixtureOverlayCourses = const [];
-    notifyListeners();
-  }
+  void disarmLiveTestFixtureCourses() =>
+      TimetableLiveActivityService.disarmFixtureCourses(this);
 
-  /// 预设课全部结束（按其自由时钟）时摘除覆盖层，返回是否真的摘了。
-  /// 未结束（含节假日等选课为空的场景）时保持挂载，阶段空窗由岛自身停止。
-  /// 注意：这是管线路径（[_liveUpdateActivityBody] 顶部调用，fire-and-forget，
-  /// 可能跨越 provider 生命周期完成），刻意不发 notify——自检页通过 1s 轮询
-  /// 感知自动结束并翻转按钮；显式用户动作走 [disarmLiveTestFixtureCourses]。
-  bool disarmLiveTestFixtureCoursesIfFinished(DateTime now) {
-    if (_liveTestFixtureOverlayCourses.isEmpty) {
-      return false;
-    }
-    for (final course in _liveTestFixtureOverlayCourses) {
-      final endTime = _liveBuildCorrectedCourseDateTime(
-        this,
-        now,
-        _liveResolveRealTime(this, course, false),
-      );
-      if (endTime == null || !endTime.isBefore(now)) {
-        return false;
-      }
-    }
-    _liveTestFixtureOverlayCourses = const [];
-    return true;
-  }
+  /// 预设课全部结束（按其自由时钟）时摘除覆盖层，返回是否真的摘了。管线路径
+  /// [TimetableLiveActivityService.updateActivityBody] 顶部调用，刻意不发
+  /// notify——自检页通过 1s 轮询感知自动结束并翻转按钮。
+  bool disarmLiveTestFixtureCoursesIfFinished(DateTime now) =>
+      TimetableLiveActivityService.disarmFixtureCoursesIfFinished(this, now);
 
-  /// 立即取消自检测试：摘除预设课覆盖层并按正式路径重刷——预设课随本次
-  /// 快照同步从原生侧回收；若此刻有真实课在窗，岛直接切回真实课，否则停岛。
-  /// 供自检页「取消测试」按钮使用，不等下一个 30s tick。
-  Future<void> cancelLiveTestFixtureSession() async {
-    disarmLiveTestFixtureCourses();
-    await refreshLiveActivityNow(forceSnapshotSync: true);
-  }
+  /// 立即取消自检测试：摘除预设课覆盖层并按正式路径重刷。
+  Future<void> cancelLiveTestFixtureSession() =>
+      TimetableLiveActivityService.cancelFixtureSession(this);
 
   Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false}) =>
-      _liveRefreshNow(this, forceSnapshotSync: forceSnapshotSync);
+      TimetableLiveActivityService.refreshNow(
+        this,
+        forceSnapshotSync: forceSnapshotSync,
+      );
 
   void updateCurrentDayOfWeek() {
     unawaited(syncTemporalContext());
@@ -3669,7 +3663,7 @@ class _TimetableExamPort implements TimetableExamPort {
 
   @override
   void invalidateHomeWidgetSnapshot() =>
-      host._lastHomeWidgetSnapshotSignature = null;
+      host._liveRuntime.lastHomeWidgetSnapshotSignature = null;
 
   @override
   void syncHomeWidgetSnapshot() => unawaited(host._syncHomeWidgetSnapshot());
@@ -3726,14 +3720,14 @@ class _TimetableHolidayPort implements TimetableHolidayPort {
 
   @override
   Future<T> runLiveSurfaceExclusive<T>(Future<T> Function() action) =>
-      host._runLiveSurfaceExclusive(action);
+      host.runLiveSurfaceExclusive(action);
 
   @override
   void resetLiveSurfaceTracking() {
-    host._lastHomeWidgetSnapshotSignature = null;
-    host._lastLiveSnapshotSignature = null;
+    host._liveRuntime.lastHomeWidgetSnapshotSignature = null;
+    host._liveRuntime.lastLiveSnapshotSignature = null;
     host._currentLiveCourseId = null;
-    host._lastLiveActivityStageKey = null;
+    host._liveRuntime.lastActivityStageKey = null;
   }
 
   @override

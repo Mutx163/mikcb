@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/services/timetable_live_activity_service.dart';
 
 /// 回归钉（第 27 轮，回前台链路抛错之后 30 秒心跳永久停摆）。
 ///
@@ -63,7 +64,7 @@ void main() {
     await provider.handleAppResumed();
 
     expect(
-      hasLiveActivityTickForTesting(provider),
+      TimetableLiveActivityService.hasLiveActivityTickForTesting(provider),
       isTrue,
       reason: '修复前这里是 false：cancel 之后重排被抛出跳过，心跳整会话死掉',
     );
@@ -81,6 +82,9 @@ void main() {
     await provider.handleAppResumed();
     await provider.handleAppResumed();
 
-    expect(hasLiveActivityTickForTesting(provider), isTrue);
+    expect(
+      TimetableLiveActivityService.hasLiveActivityTickForTesting(provider),
+      isTrue,
+    );
   });
 }

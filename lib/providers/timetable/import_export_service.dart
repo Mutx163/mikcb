@@ -95,8 +95,8 @@ class _FullBackupRestoreSnapshot {
     host._scheduleDateRuleLastAppliedSignature =
         scheduleDateRuleLastAppliedSignature;
     host._currentLiveCourseId = null;
-    host._lastLiveSnapshotSignature = null;
-    host._lastHomeWidgetSnapshotSignature = null;
+    host._liveRuntime.lastLiveSnapshotSignature = null;
+    host._liveRuntime.lastHomeWidgetSnapshotSignature = null;
   }
 
   /// 把 [restoreMemory] 恢复出来的那份状态写回磁盘（失败导入的补偿写）。
