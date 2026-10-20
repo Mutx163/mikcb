@@ -6,13 +6,16 @@ import '../timetable_page_chrome_shell.dart';
 /// 月视图工具行的高度（逻辑 px）。玻璃带的几何按它算，写歪了带底与工具行
 /// 错开几像素，读成一条横贯屏幕的缝（见 [MonthViewToolbar]）。
 ///
-/// 取 48 = [IconButton] 的默认最小点击尺寸（`visualDensity: compact` 只压布局
-/// 密度，不把这颗按钮压到 40 以下）。**不要**改成 40 去蹭星期栏那个常量：
-/// 星期栏高度是它自己的语义，两边绑成同一个值，改一边会静默改掉另一边。
+/// **必须与周/日视图的星期栏（`TimetableWeekdayHeader.height` = 40）同高**：
+/// 顶栏总高 = 标题行 44 + 这一行。曾经取 48（IconButton 的默认点击尺寸），
+/// 结果月视图顶栏比周/日视图高出 8px —— 用户 2026-10-20 实测提出
+/// 「为什么和日视图周视图的顶栏不一样高」。`visualDensity: compact` 的
+/// IconButton 实测恰好 40（探针证实），40 下按钮不裁内容、点击区仍达标。
+/// 再动这个数之前先想清楚：它决定的是「顶栏总高与首页三视图是否一致」。
 ///
 /// 常量住在 widgets 层而不是页面里：页面（screens 层）与工具行（widgets 层）
 /// 必须取同一个值，而 widgets **不许 import screens**（依赖守卫会拦）。
-const double kMonthViewToolbarHeight = 48;
+const double kMonthViewToolbarHeight = 40;
 
 /// 月视图工具行：‹ 上月 · 年月 · 下月 ›（+ 非本月时的「回到本月」）。
 ///

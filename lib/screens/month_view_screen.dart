@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/month_grid_collapse.dart';
 import '../domain/month_view_cache.dart';
 import '../domain/month_view_logic.dart';
 import '../l10n/app_localizations.dart';
@@ -57,7 +58,8 @@ class MonthViewScreen extends StatefulWidget {
   State<MonthViewScreen> createState() => _MonthViewScreenState();
 }
 
-class _MonthViewScreenState extends State<MonthViewScreen> {
+class _MonthViewScreenState extends State<MonthViewScreen>
+    with SingleTickerProviderStateMixin {
   /// 翻月 pager 的页号基准：page = (year - baseYear) * 12 + (month - 1)。
   ///
   /// 取 2000-01 作基准，页号恒为正且足够大，用户不可能翻到边界。
@@ -84,6 +86,27 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
   /// 就被塞一个没看过的日程列表」。
   DateTime? _selectedDate;
 
+  /// 网格展开进度（1 = 全展开、0 = 只留一周），拖拽与吸附共用这一个控制器。
+  ///
+  /// 长命控制器走 [HyperosMotionPlatform.bindController]：用户中途改「页面
+  /// 转场速度」时它能跟着重设时长（否则要杀进程才生效，与日视图展开同一坑）。
+  /// 初始 1.0 = 展开（用户没要求记住收起态，进页面看整月是默认预期）。
+  late final AnimationController _gridExpand =
+      HyperosMotionPlatform.bindController(
+        AnimationController(vsync: this, value: 1),
+        _kGridCollapseBaseMs,
+      );
+
+  /// 拖拽起始进度：松手判「翻面还是弹回」的基准（判据在
+  /// `monthGridSettleTarget`）。
+  double _gridDragStartValue = 1;
+
+  /// 最近一次布局算出的行高：拖拽行程按「收起的总高度」折算成 1:1 跟手。
+  double _gridRowHeight = MonthGrid.minRowHeight;
+
+  /// 收起 / 展开吸附动画的基础时长（毫秒）。
+  static const int _kGridCollapseBaseMs = 260;
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +129,7 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
 
   @override
   void dispose() {
+    _gridExpand.dispose();
     _luminance.dispose();
     _pager?.dispose();
     super.dispose();
@@ -263,6 +287,9 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
           MonthGrid.minRowHeight,
           MonthGrid.maxRowHeight,
         );
+        // 拖拽行程按这个行高折算（1:1 跟手）；存字段是因为手势回调拿不到
+        // LayoutBuilder 的局部量。
+        _gridRowHeight = rowHeight;
 
         return SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -275,19 +302,72 @@ class _MonthViewScreenState extends State<MonthViewScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              MonthGrid(
-                grid: grid,
-                settings: settings,
-                selectedDate: selectedInThisMonth ? selected : null,
-                rowHeight: rowHeight,
-                inkColor: ink,
-                onDayTap: (date) {
-                  setState(() {
-                    // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
-                    _selectedDate = selectedInThisMonth && _selectedDate == date
-                        ? null
-                        : date;
-                  });
+              // 上滑收起 / 下拉展开（用户口径 2026-10-20）：拖拽 1:1 跟手，
+              // 松手按 `monthGridSettleTarget` 吸附。手势包在网格上——它与
+              // 外层 SingleChildScrollView 的纵向拖拽在同一竞技场，子检测器
+              // 先入局获胜 ⇒ 在格子上拖 = 收放，在议程上拖 = 滚动，互不打架。
+              // AnimatedBuilder 让动画帧只重建网格这一小块，不牵动整页。
+              AnimatedBuilder(
+                animation: _gridExpand,
+                builder: (context, _) {
+                  final dates = [for (final day in grid.days) day.date];
+                  return GestureDetector(
+                    behavior: HitTestBehavior.deferToChild,
+                    onVerticalDragStart: (_) {
+                      _gridExpand.stop();
+                      _gridDragStartValue = _gridExpand.value;
+                    },
+                    onVerticalDragUpdate: (details) {
+                      final extent =
+                          (kMonthGridRowCount - kMonthGridCollapsedRows) *
+                          _gridRowHeight;
+                      if (extent <= 0) {
+                        return;
+                      }
+                      // 手指向上（dy < 0）= 收起 = 进度减小。
+                      _gridExpand.value =
+                          (_gridExpand.value + details.delta.dy / extent).clamp(
+                            0.0,
+                            1.0,
+                          );
+                    },
+                    onVerticalDragEnd: (details) {
+                      final target = monthGridSettleTarget(
+                        startValue: _gridDragStartValue,
+                        currentValue: _gridExpand.value,
+                        velocityDy: details.velocity.pixelsPerSecond.dy,
+                      );
+                      _gridExpand.animateTo(
+                        target,
+                        duration: _kGridCollapseBaseMs.scaledMs,
+                        curve: Curves.easeOutCubic,
+                      );
+                    },
+                    child: MonthGrid(
+                      grid: grid,
+                      settings: settings,
+                      selectedDate: selectedInThisMonth ? selected : null,
+                      rowHeight: rowHeight,
+                      inkColor: ink,
+                      collapseProgress: _gridExpand.value,
+                      keptRowIndex: monthGridRowToKeep(
+                        dates: dates,
+                        year: year,
+                        month: month,
+                        selectedDate: selectedInThisMonth ? selected : null,
+                        today: grid.today,
+                      ),
+                      onDayTap: (date) {
+                        setState(() {
+                          // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
+                          _selectedDate =
+                              selectedInThisMonth && _selectedDate == date
+                              ? null
+                              : date;
+                        });
+                      },
+                    ),
+                  );
                 },
               ),
               if (selectedInThisMonth)

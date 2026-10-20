@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../domain/month_grid_collapse.dart';
 import '../../../domain/month_view_logic.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
@@ -13,6 +14,14 @@ import 'month_day_cell.dart';
 ///
 /// 视觉与周视图/日视图同一套：格子是 [MonthDayCell]（玻璃/实底课程卡材质），
 /// 表头与行标用壁纸上的判定墨色（[inkColor]），不用设置页那套固定灰。
+///
+/// ## 收起 / 展开（2026-10-20）
+///
+/// [collapseProgress] 是连续的展开进度（1 = 全展开、0 = 只留一周），由页面把
+/// 拖拽接到动画控制器上再传进来。收起不是「隐藏 5 行」而是**裁剪 + 平移**：
+/// 42 格始终在树上（widget key 与 InkWell 状态不丢），把窗口对准「保留行」
+/// （[keptRowIndex]，判据见 `monthGridRowToKeep`）。判据本身在
+/// `month_grid_collapse.dart`（纯 Dart 可单测），本部件只管画。
 class MonthGrid extends StatelessWidget {
   const MonthGrid({
     super.key,
@@ -23,6 +32,8 @@ class MonthGrid extends StatelessWidget {
     required this.rowHeight,
     required this.inkColor,
     this.showWeekNumbers = true,
+    this.collapseProgress = 1.0,
+    this.keptRowIndex = 0,
   });
 
   final MonthGridData grid;
@@ -38,6 +49,13 @@ class MonthGrid extends StatelessWidget {
 
   /// 是否显示每行的学期周次行标（「第 N 周」）。学期未配置时内部自动隐藏。
   final bool showWeekNumbers;
+
+  /// 展开进度：1 = 全展开（默认，逐字维持旧行为）、0 = 只留一周、
+  /// 中间值 = 拖拽中的连续裁剪。
+  final double collapseProgress;
+
+  /// 收起态保留的行（0 基）。判据在 `monthGridRowToKeep`，由页面算好传入。
+  final int keptRowIndex;
 
   /// 行高可读下限：再矮日期数字与圆点会挤在一起。
   static const double minRowHeight = 44;
@@ -71,36 +89,73 @@ class MonthGrid extends StatelessWidget {
       l10n.weekdaySun,
     ];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            if (weekNumberColumnVisible)
-              const SizedBox(width: weekLabelWidth),
-            for (var i = 0; i < headers.length; i++)
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      headers[i],
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: i >= 5
-                            ? mutedInk.withValues(alpha: 0.7)
-                            : mutedInk,
-                      ),
+    // 表头钉在 [headerHeight]：这个常量既被调用方的行高预算扣掉，也是收起态
+    // 裁剪窗口的上沿。此前它只是"文档值"（实际渲染 ~20），收起窗口比内容高
+    // 出的那 4px 会露出下一行的顶边 —— 现在让布局兑现文档。
+    final headerRow = SizedBox(
+      height: headerHeight,
+      child: Row(
+        children: [
+          if (weekNumberColumnVisible) const SizedBox(width: weekLabelWidth),
+          for (var i = 0; i < headers.length; i++)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    headers[i],
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: i >= 5
+                          ? mutedInk.withValues(alpha: 0.7)
+                          : mutedInk,
                     ),
                   ),
                 ),
               ),
-          ],
+            ),
+        ],
+      ),
+    );
+    final rows = [
+      for (var row = 0; row < 6; row++)
+        _buildWeekRow(context, row, weekNumberColumnVisible, mutedInk),
+    ];
+
+    // 全展开：逐字维持旧路径（无裁剪层，一行不多画）。
+    if (collapseProgress >= 1) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [headerRow, ...rows],
+      );
+    }
+
+    // 收起 / 拖拽中：窗口高度按行数插值，内容向下平移把保留行推到表头正下方。
+    // 42 格仍在树上（InkWell 状态与 widget key 不丢），只是画布被 ClipRect 裁住；
+    // Transform.translate 会连带命中测试一起移，保留行的格子照常可点。
+    final visibleRows = monthGridVisibleRows(collapseProgress);
+    final keptRow = keptRowIndex.clamp(
+      0,
+      (grid.days.length - 1) ~/ kMonthGridDaysPerRow,
+    );
+    final offset = keptRow * rowHeight * (1 - collapseProgress);
+    return ClipRect(
+      child: SizedBox(
+        height: headerHeight + visibleRows * rowHeight,
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          minHeight: 0,
+          maxHeight: double.infinity,
+          child: Transform.translate(
+            offset: Offset(0, -offset),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [headerRow, ...rows],
+            ),
+          ),
         ),
-        for (var row = 0; row < 6; row++)
-          _buildWeekRow(context, row, weekNumberColumnVisible, mutedInk),
-      ],
+      ),
     );
   }
 
