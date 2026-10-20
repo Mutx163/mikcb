@@ -40,6 +40,13 @@ def main() -> int:
         help="ratchet mode: compare per-file counts against baseline file; "
         "fail on regressions, auto-lower baseline on improvements",
     )
+    parser.add_argument(
+        "--update-baseline",
+        metavar="FILE",
+        help="rewrite the baseline with current per-file counts and print the "
+        "diff. Only for justified growth (e.g. a new file whose CJK strings are "
+        "functional keywords): put the reason in the commit message.",
+    )
     args = parser.parse_args()
     hits: list[tuple[str, int, str]] = []
     for path in sorted(LIB.rglob("*.dart")):
@@ -64,6 +71,45 @@ def main() -> int:
         by_file.setdefault(file, []).append((lineno, content))
 
     current = {file: len(items) for file, items in by_file.items()}
+
+    # --update-baseline <file>: 正当增长时显式重测存基线。
+    # 与 --baseline 的「只许减少」互补：棘轮红时，要么删中文，要么走这里并把
+    # 理由写进提交说明。输出完整 diff，避免「悄悄把基线抬高」。
+    if args.update_baseline:
+        baseline_path = Path(args.update_baseline)
+        previous: dict[str, int] = {}
+        if baseline_path.exists():
+            for line in baseline_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                path, _, count = line.rpartition(":")
+                previous[path] = int(count)
+        lines = [f"{file}:{count}" for file, count in sorted(current.items())]
+        baseline_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        increased = sorted(
+            (file, previous.get(file, 0), count)
+            for file, count in current.items()
+            if count > previous.get(file, 0)
+        )
+        decreased = sorted(
+            (file, previous[file], count)
+            for file, count in current.items()
+            if file in previous and count < previous[file]
+        )
+        removed = sorted(set(previous) - set(current))
+        print(
+            f"Baseline rewritten: {len(current)} files, "
+            f"{sum(current.values())} lines (was {len(previous)} / "
+            f"{sum(previous.values())})"
+        )
+        for file, old, new in increased:
+            print(f"  INCREASED {file}: {old} -> {new}")
+        for file, old, new in decreased:
+            print(f"  decreased {file}: {old} -> {new}")
+        for file in removed:
+            print(f"  removed {file}")
+        return 0
 
     # --baseline <file>: 与基线比对，只许减少不许增加（棘轮模式）。
     # 基线文件不存在时生成初始基线并以非零码退出，人工确认后入库。

@@ -1,5 +1,6 @@
 lib/domain/location_building_cluster_logic.dart:67
 lib/domain/time_scheme_logic.dart:3
+lib/domain/warehouse_bridge_gate.dart:9
 lib/l10n/holiday_name_localizer.dart:1
 lib/logging/app_log_messages.dart:5
 lib/main.dart:4
@@ -19,7 +20,7 @@ lib/providers/timetable_provider.dart:4
 lib/screens/feedback_screen.dart:1
 lib/screens/hyperos_showcase_screen.dart:20
 lib/screens/import/import_shared.dart:2
-lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart:10
+lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart:1
 lib/screens/import/warehouse/warehouse_shared.dart:3
 lib/screens/live_testing_fixture_screen.dart:26
 lib/screens/location_time_match_screen.dart:4
@@ -40,7 +41,7 @@ lib/screens/miuix_showcase/utility.dart:20
 lib/screens/miuix_showcase_screen.dart:56
 lib/screens/settings/settings_holiday.dart:1
 lib/services/ai_course_import_service.dart:38
-lib/services/app_sync_snapshot_service.dart:2
+lib/services/app_sync_snapshot_service.dart:3
 lib/services/app_update_service.dart:38
 lib/services/bundled_assets.dart:2
 lib/services/debug_deep_link_navigator.dart:12
