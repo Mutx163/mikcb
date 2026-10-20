@@ -52,6 +52,7 @@ import '../services/timetable_holiday_service.dart';
 import '../services/timetable_partner_service.dart';
 import '../services/timetable_persist_hooks.dart';
 import '../services/timetable_reminder_service.dart';
+import '../services/timetable_settings_writer.dart';
 import '../services/timetable_theme_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/wallpaper_history_service.dart';
@@ -90,7 +91,6 @@ part 'timetable/course_repository.dart';
 part 'timetable/schedule_item_repository.dart';
 part 'timetable/import_export_service.dart';
 part 'timetable/live_activity_controller.dart';
-part 'timetable/settings_repository.dart';
 part 'timetable/location_group_repository.dart';
 part 'timetable/schedule_rule_apply.dart';
 
@@ -220,7 +220,9 @@ class ScheduleDateRuleSaveResult {
 /// - 新增能力一律独立成文件/类，禁止继续向本类堆积；
 /// - 拆分按阶段 3 的顺序进行（Theme → Holiday → Partner → LiveSurface → …），
 ///   完成一个从表中划掉一个；本类最终降级为纯 Facade。
-class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
+class TimetableProvider
+    with ChangeNotifier
+    implements TimetablePersistPort, TimetableSettingsWritePort {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
   final StorageService _storageService;
@@ -345,27 +347,15 @@ class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
   /// 批量更新设置（主题导入、上课提醒开关、天气与统计设置、撤销主题变更、传输层写入）。
   ///
   /// 落盘失败按本仓写入契约退回内存并刷新界面后上抛，形状见
-  /// `timetable/settings_repository.dart` 的 `_rollbackSettingsWrite`。
-  Future<void> updateSettings(TimetableSettings newSettings) {
-    return _runMutation(() async {
-      final snapshot = _SettingsWriteSnapshot(this);
-      _settings = _normalizeSettingsWithTimeScheme(this, newSettings);
-      hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
-      try {
-        await _persistActiveProfileState();
-      } catch (_) {
-        _rollbackSettingsWrite(this, snapshot);
-        notifyListeners();
-        rethrow;
-      }
-      notifyListeners();
-      _logPerformanceSnapshotIfChanged(snapshot.settings);
-    });
-  }
+  /// `services/timetable_settings_writer.dart` 的 `TimetableSettingsWriter.rollback`。
+  Future<void> updateSettings(TimetableSettings newSettings) => _runMutation(
+    () => TimetableSettingsWriter.update(this, newSettings),
+  );
 
   @override
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
+  @override
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
   List<LocationTimeGroup> get locationTimeGroups =>
       List.unmodifiable(_locationTimeGroups);
@@ -374,11 +364,32 @@ class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
 
   /// Last successful bulk-apply signature for seasonal date rules.
   String? _scheduleDateRuleLastAppliedSignature;
+  @override
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
   Map<String, List<Course>> courseConflictMapForWeek(int week) =>
       _buildCourseConflictMap(week: week);
+
+  // ── TimetableSettingsWritePort：设置写协议（归一/快照/回滚）的服务侧接线 ──
+  @override
+  set settings(TimetableSettings value) => _settings = value;
+
+  @override
+  set profiles(List<TimetableProfile> value) => _profiles = value;
+
+  @override
+  Future<void> persistActiveProfileState() => _persistActiveProfileState();
+
+  @override
+  void notifyStateChanged() => _notifyStateChanged();
+
+  @override
+  void applyEdgeHaptics(bool enabled) => hyperosSetEdgeHapticsEnabled(enabled);
+
+  @override
+  void logPerformanceSnapshotIfChanged(TimetableSettings previous) =>
+      _logPerformanceSnapshotIfChanged(previous);
 
   /// Courses grouped by name – each group represents one subject with
   /// one or more schedule entries.
@@ -993,7 +1004,7 @@ class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
   /// `settings` 拿进内存都必须盖一次 —— 少盖一处，那条写路径就会把陈旧镜像
   /// 当成用户改动写回全局。
   TimetableSettings _settingsFromProfile(TimetableProfile profile) =>
-      _normalizeSettingsWithTimeScheme(
+      TimetableSettingsWriter.normalize(
         this,
         AppGlobalSettingsService.overlay(profile.settings),
       );
@@ -1751,9 +1762,8 @@ class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
     return _runMutation(_applyLocationTimeRulesToActiveProfileImpl);
   }
 
-  String _sectionSignature(List<SectionTime> sections) {
-    return jsonEncode(sections.map((section) => section.toJson()).toList());
-  }
+  String _sectionSignature(List<SectionTime> sections) =>
+      TimeSchemeLogic.sectionsSignature(sections);
 
   TimetableSettings _buildDefaultSettingsForNewProfile() {
     final baseDefaults = TimetableSettings.defaults();
@@ -3364,7 +3374,7 @@ class TimetableProvider with ChangeNotifier implements TimetablePersistPort {
     final previousCurrentCalendarWeek = _currentCalendarWeek;
     final semesterStartChanged =
         settings.semesterStartDate != _settings.semesterStartDate;
-    _settings = _normalizeSettingsWithTimeScheme(this, settings);
+    _settings = TimetableSettingsWriter.normalize(this, settings);
     hyperosSetEdgeHapticsEnabled(_settings.enableHaptics);
     _currentCalendarWeek = _resolveCurrentCalendarWeek();
     _currentDateWeek = clampCurrentWeekToSettings(
@@ -4128,17 +4138,7 @@ class _TimetableThemePort implements TimetableThemePort {
   @override
   Future<void> replaceSavedThemes(
     List<SavedTheme> Function(TimetableSettings settings) build,
-  ) async {
-    final snapshot = _SettingsWriteSnapshot(host);
-    host._settings = host._settings.copyWith(savedThemes: build(host._settings));
-    try {
-      await host._persistActiveProfileState();
-    } catch (_) {
-      _rollbackSettingsWrite(host, snapshot);
-      rethrow;
-    }
-    host._notifyStateChanged();
-  }
+  ) => TimetableSettingsWriter.replaceSavedThemes(host, build);
 
   @override
   void notifyStateChanged() => host._notifyStateChanged();

@@ -661,7 +661,7 @@ Future<String?> _timetableImportFullAppDataBackup(
           .map(
             (profile) => profile.copyWith(
               // 设备级信任锚不随备份/云快照外来数据改写，见该方法注释。
-              settings: _normalizeSettingsWithTimeScheme(
+              settings: TimetableSettingsWriter.normalize(
                 host,
                 profile.settings,
               ).keepingDeviceTrustAnchorsFrom(host._settings),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import '../models/course.dart';
@@ -84,6 +86,13 @@ class TimeSchemeLogic {
     }
     return null;
   }
+
+  /// 节次表的规范签名：判断「设置已经等于该模板」时按值比较用。
+  ///
+  /// 原先是 `TimetableProvider._sectionSignature`，设置写协议出库后双方共用这一份
+  /// （含节次钟点与休息规则，见 [SectionTime.toJson]）。
+  static String sectionsSignature(List<SectionTime> sections) =>
+      jsonEncode(sections.map((section) => section.toJson()).toList());
 
   /// Resolves the effective time scheme for a course.
   ///
