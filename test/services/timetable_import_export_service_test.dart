@@ -13,7 +13,6 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_analytics.dart';
 import 'package:university_timetable/services/data_transfer_service.dart';
-import 'package:university_timetable/services/ics_import_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/services/timetable_import_export_service.dart';
 import 'package:university_timetable/services/timetable_live_activity_service.dart';
@@ -56,7 +55,11 @@ void main() {
     port.liveRuntime.lastLiveSnapshotSignature = 'live-before';
     port.liveRuntime.lastHomeWidgetSnapshotSignature = 'widget-before';
 
-    final snapshot = FullBackupRestoreSnapshot(port);
+    final snapshot = FullBackupRestoreSnapshot(
+      port,
+      repository: port.repository,
+      storage: port.storage,
+    );
     expect(
       snapshot.mirrorBaseline.keys,
       containsAll(<String>[
@@ -234,7 +237,11 @@ void main() {
     port.activeProfileId = 'p-before';
     port.currentWeek = 7;
     port.scheduleDateRuleLastAppliedSignature = 'sig-before';
-    final snapshot = FullBackupRestoreSnapshot(port);
+    final snapshot = FullBackupRestoreSnapshot(
+      port,
+      repository: port.repository,
+      storage: port.storage,
+    );
 
     // 失败导入留下的半成品 + 模拟 saveProfiles 写盘失败。
     port.timeSchemes = <TimeScheme>[];
@@ -279,7 +286,11 @@ void main() {
   test('实时活动刷新失败记为 live_surface 失败项', () async {
     final port = _FakePort(settings: const TimetableSettings(sections: _twoSections));
     await port.storage.init();
-    final snapshot = FullBackupRestoreSnapshot(port);
+    final snapshot = FullBackupRestoreSnapshot(
+      port,
+      repository: port.repository,
+      storage: port.storage,
+    );
     port.throwOnUpdateLiveActivity = true;
 
     final failures =
@@ -431,9 +442,11 @@ class _FakePort implements TimetableImportExportPort {
     repository = _RecordingRepository(storage);
   }
 
-  @override
+  // `storage` / `repository` 2026-10-20 起退出端口（「注入依赖不进端口」）：
+  // 不再是接口成员，所以都去掉 `@override`；`icsImporter` 干脆整条删掉。
+  // 测试自己持有它们，构造快照 / 调服务入口时按具名参数直传——这正是收法
+  // 要换来的形状：假端口不必再假装能提供仓储与解析器。
   final StorageService storage = StorageService.forTesting();
-  @override
   late final _RecordingRepository repository;
 
   @override
@@ -507,10 +520,6 @@ class _FakePort implements TimetableImportExportPort {
     }
     return null;
   }
-
-  @override
-  IcsImportService get icsImporter =>
-      throw UnimplementedError('本测试不覆盖唤醒日历解析');
 
   @override
   DataTransferService get dataTransferService =>

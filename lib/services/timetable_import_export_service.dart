@@ -81,10 +81,27 @@ abstract interface class TimetableImportExportPort {
   void clearCurrentLiveCourseId();
 
   // ── 服务/仓储句柄 ──
-  TimetableRepository get repository;
-  IcsImportService get icsImporter;
+  //
+  // `repository` / `storage` / `icsImporter` 原先也在这组。2026-10-20 起按
+  // 「注入依赖不进端口」的设计意图（`provider 拆分诚实定界` 笔记「下一步」第 2 条
+  // 引 provider 计划评审 :72-74）改为**调用方参数直传**：
+  //
+  //   端口只该暴露宿主的状态与内存写回（上面那两节），不该兼作依赖定位器。
+  //   这三个是 provider 构造时注入进来的外部依赖，宿主持有它们只是为了装配；
+  //   经端口再交出去等于把装配细节写进服务之间的契约——服务的可测性反而被拖住
+  //   （要造一个假端口就得连仓储、存储、解析器一起造）。
+  //
+  // 收法：静态方法多出几个具名必填参数（`repository:` / `storage:` / `icsImporter:`），
+  // 由唯一调用方 `TimetableProvider` 把自己的私有字段直传；
+  // [FullBackupRestoreSnapshot] 在构造时把 repository / storage 一起接住，
+  // 所以 `restorePersistence()` 不再需要 host 参数（7 处
+  // `restoreAfterFullBackupFailure` 调用点因此全不用动）。
+  //
+  // `analytics` 同一批被公开（UI 调用数 0），留下一刀同款收法；
+  // `liveRuntime` 与四个原生面服务句柄属方案 B 范畴（真状态容器 / 原生面句柄），
+  // 不在这一刀里动。`dataTransferService` 是**本族自带的解析器**（不是外部注入
+  // 依赖，和本服务同属导入导出族），仍经端口取。
   DataTransferService get dataTransferService;
-  StorageService get storage;
 
   // ── 命令 ──
   Future<void> initialize();
@@ -135,10 +152,20 @@ const importSupplementNameSuffix = '（导入补齐）';
 /// SharedPreferences 没有跨多个 key 的事务；这个对象先把 provider 的旧状态
 /// 留一份，任何一步写盘或导入后同步失败时，至少先把界面恢复成导入前的样子，
 /// 再尽力把旧数据写回各个 key。
+///
+/// 回滚要用的两个注入依赖（`repository` / `storage`）在构造时随宿主一起交进来：
+/// 2026-10-20 起它们不再经端口取（「注入依赖不进端口」，见
+/// [TimetableImportExportPort] 那节注释），所以 [restorePersistence] 也不再需要
+/// host 参数——快照自己记住该往哪儿写。
 class FullBackupRestoreSnapshot {
-  FullBackupRestoreSnapshot(TimetableImportExportPort host)
-    : mirrorBaseline = host.storage.captureSettingsMirrorSnapshot(),
-      timeSchemes = host.timeSchemes
+  FullBackupRestoreSnapshot(
+    TimetableImportExportPort host, {
+    required this._repository,
+    required this._storage,
+  }) : // 事务基准取构造时抓住的盘上值：用形参（= 私有字段）而不是 host 上的
+       // 同一个对象绕一圈，快照不依赖宿主是否还持有它。
+       mirrorBaseline = _storage.captureSettingsMirrorSnapshot(),
+       timeSchemes = host.timeSchemes
           .map(
             (scheme) => scheme.copyWith(
               sections: List<SectionTime>.from(scheme.sections),
@@ -197,6 +224,10 @@ class FullBackupRestoreSnapshot {
   final String? scheduleDateRuleLastAppliedSignature;
   final Map<String, dynamic> mirrorBaseline;
 
+  /// 回滚写盘用的仓储与存储（构造时从调用方接住，不再经端口取）。
+  final TimetableRepository _repository;
+  final StorageService _storage;
+
   void restoreMemory(TimetableImportExportPort host) {
     host.timeSchemes = List<TimeScheme>.from(timeSchemes);
     host.locationTimeGroups = List<LocationTimeGroup>.from(locationTimeGroups);
@@ -224,10 +255,7 @@ class FullBackupRestoreSnapshot {
   ///
   /// 事务基准用 [mirrorBaseline]（构造时抓住的盘上值），不能用开事务时的
   /// 盘上值 —— 那时盘上已经是失败导入的半成品。
-  Future<List<FullBackupRollbackFailure>> restorePersistence(
-    TimetableImportExportPort host,
-  ) async {
-    final repository = host.repository;
+  Future<List<FullBackupRollbackFailure>> restorePersistence() async {
     final failures = <FullBackupRollbackFailure>[];
 
     Future<void> step(String name, Future<void> Function() operation) async {
@@ -256,35 +284,35 @@ class FullBackupRestoreSnapshot {
       // 与 _persistActiveProfileState 的事务分支同口径：先排空全局设置写队列，
       // 队列里未落盘的旧值不许与事务快照交错。
       await AppGlobalSettingsService.waitForPendingWrites();
-      await host.storage.runSettingsMirrorTransaction(() async {
+      await _storage.runSettingsMirrorTransaction(() async {
         await step(
           'time_schemes',
-          () => repository.saveTimeSchemes(timeSchemes),
+          () => _repository.saveTimeSchemes(timeSchemes),
         );
         await step(
           'location_time_groups',
-          () => repository.saveLocationTimeGroups(locationTimeGroups),
+          () => _repository.saveLocationTimeGroups(locationTimeGroups),
         );
         await step(
           'schedule_date_rules',
-          () => repository.saveScheduleDateRules(scheduleDateRules),
+          () => _repository.saveScheduleDateRules(scheduleDateRules),
         );
-        await step('profiles', () => repository.saveProfiles(profiles));
+        await step('profiles', () => _repository.saveProfiles(profiles));
         await step('active_profile_id', () {
           if (activeProfileId == null) {
-            return repository.clearActiveProfileId();
+            return _repository.clearActiveProfileId();
           }
-          return repository.setActiveProfileId(activeProfileId!);
+          return _repository.setActiveProfileId(activeProfileId!);
         });
         await step(
           'schedule_date_rule_signature',
-          () => repository.saveScheduleDateRuleLastAppliedSignature(
+          () => _repository.saveScheduleDateRuleLastAppliedSignature(
             scheduleDateRuleLastAppliedSignature,
           ),
         );
         await step(
           'partner_binding',
-          () => repository.savePartnerTimetableBinding(partnerBinding),
+          () => _repository.savePartnerTimetableBinding(partnerBinding),
         );
         await step(
           'global_settings',
@@ -329,8 +357,9 @@ class TimetableImportExportService {
     TimetableImportExportPort host,
     String content, {
     required bool replaceExisting,
+    required IcsImportService icsImporter,
   }) {
-    final result = host.icsImporter.parseWakeUpSchedule(content);
+    final result = icsImporter.parseWakeUpSchedule(content);
     return host.previewImportedCourseRequiredSectionCount(
       result.courses,
       replaceExisting: replaceExisting,
@@ -468,13 +497,19 @@ class TimetableImportExportService {
     TimetableImportExportPort host,
     String content, {
     required bool replaceExisting,
+    required IcsImportService icsImporter,
+    required TimetableRepository repository,
+    required StorageService storage,
   }) async {
-    final result = host.icsImporter.parseWakeUpSchedule(content);
-    return importParsedCourses(host, 
+    final result = icsImporter.parseWakeUpSchedule(content);
+    return importParsedCourses(
+      host,
       result.courses,
       replaceExisting: replaceExisting,
       semesterStart: result.semesterStart,
       source: 'ics',
+      repository: repository,
+      storage: storage,
     );
   }
 
@@ -484,6 +519,8 @@ class TimetableImportExportService {
     required bool replaceExisting,
     DateTime? semesterStart,
     required String source,
+    required TimetableRepository repository,
+    required StorageService storage,
     bool preserveLocalColors = true,
   }) {
     return host.runMutation(() async {
@@ -497,7 +534,11 @@ class TimetableImportExportService {
       // 一份从未落库的课表，而 `_persistActiveProfileState` 第一步
       // `_mergeActiveProfileIntoProfilesList` 已经把它并进了 `_profiles`，
       // 下一次任意成功写入会替用户坐实「日程整份没了」。
-      final snapshot = FullBackupRestoreSnapshot(host);
+      final snapshot = FullBackupRestoreSnapshot(
+        host,
+        repository: repository,
+        storage: storage,
+      );
 
       final ImportedCourseSyncResult? syncResult;
       final List<Course> mergedCourses;
@@ -599,8 +640,10 @@ class TimetableImportExportService {
 
   static Future<String?> importAppDataBackup(
     TimetableImportExportPort host,
-    String content,
-  ) async {
+    String content, {
+    required TimetableRepository repository,
+    required StorageService storage,
+  }) async {
     // 回滚快照：与完整备份那条路径同款。缺了它，这条路径是**先换内存、后写盘**——
     // 磁盘满 → 抛错 → 内存里已经是新课表（界面立刻显示新课表），盘上还是旧的；
     // 用户退出 App 再进来，课表凭空消失。同一次改动里被一起包住的完整备份路径
@@ -612,10 +655,19 @@ class TimetableImportExportService {
     FullBackupRestoreSnapshot? snapshot;
     try {
       if (host.dataTransferService.isFullBackupJson(content)) {
-        return importFullAppDataBackup(host, content);
+        return importFullAppDataBackup(
+          host,
+          content,
+          repository: repository,
+          storage: storage,
+        );
       }
       final backup = host.dataTransferService.parseBackupJson(content);
-      snapshot = FullBackupRestoreSnapshot(host);
+      snapshot = FullBackupRestoreSnapshot(
+        host,
+        repository: repository,
+        storage: storage,
+      );
       // 2026-10-08：`parseBackupJson` 现在会带回「跳过了多少条」（部分损坏）。
       // 原先这一档被静默吞掉：100 门课里坏 40 门会安静地导入 60 门、写盘、
       // 界面报「导入成功」，用户下次打开才发现少了几十节。
@@ -684,6 +736,8 @@ class TimetableImportExportService {
     TimetableImportExportPort host,
     String content, {
     String? profileName,
+    required TimetableRepository repository,
+    required StorageService storage,
   }) async {
     FullBackupRestoreSnapshot? snapshot;
     try {
@@ -698,7 +752,11 @@ class TimetableImportExportService {
       host.lastImportDroppedCounts = Map<String, int>.of(backup.droppedCounts);
       // 快照必须在第一次改动之前抓：下面 `_resolveSettingsAgainstTimeSchemes` 就会
       // 创建并落盘新作息，之后还要 add 新档案、切激活档案、`_applyProfileState`。
-      snapshot = FullBackupRestoreSnapshot(host);
+      snapshot = FullBackupRestoreSnapshot(
+        host,
+        repository: repository,
+        storage: storage,
+      );
       final nextName = (profileName ?? backup.profileName ?? '导入课表').trim();
       final resolvedSettings = await host.resolveSettingsAgainstTimeSchemes(
         backup.settings,
@@ -772,8 +830,10 @@ class TimetableImportExportService {
 
   static Future<String?> importFullAppDataBackup(
     TimetableImportExportPort host,
-    String content,
-  ) {
+    String content, {
+    required TimetableRepository repository,
+    required StorageService storage,
+  }) {
     return host.runMutation(() async {
       FullBackupRestoreSnapshot? snapshot;
       try {
@@ -781,8 +841,11 @@ class TimetableImportExportService {
         if (backup.profiles.isEmpty) {
           return 'import_no_profiles_in_backup';
         }
-        snapshot = FullBackupRestoreSnapshot(host);
-        final repository = host.repository;
+        snapshot = FullBackupRestoreSnapshot(
+          host,
+          repository: repository,
+          storage: storage,
+        );
 
         host.timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
         host.locationTimeGroups = List<LocationTimeGroup>.from(
@@ -888,7 +951,7 @@ class TimetableImportExportService {
       return const <FullBackupRollbackFailure>[];
     }
     snapshot.restoreMemory(host);
-    final failures = await snapshot.restorePersistence(host);
+    final failures = await snapshot.restorePersistence();
     host.clearCurrentLiveCourseId();
     host.notifyStateChanged();
     try {

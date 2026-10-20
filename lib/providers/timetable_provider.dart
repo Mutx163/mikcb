@@ -444,17 +444,10 @@ class TimetableProvider
       _homeWidgetBindingService;
 
   // ── TimetableImportExportPort：导入导出管线的数据面、内存写回与句柄接线 ──
-  @override
-  TimetableRepository get repository => _profileRepository;
-
-  @override
-  IcsImportService get icsImporter => _icsImportService;
-
+  // repository / storage / icsImporter 2026-10-20 起退出端口（「注入依赖不进端口」，
+  // 见 timetable_import_export_service.dart 的端口节）：改由下方入口直传私有字段。
   @override
   AppAnalytics get analytics => _analytics;
-
-  @override
-  StorageService get storage => _storageService;
 
   @override
   int get currentCalendarWeek => _currentCalendarWeek;
@@ -3148,9 +3141,8 @@ class TimetableProvider
     String content, {
     required bool replaceExisting,
   }) => TimetableImportExportService.previewWakeUpImportRequiredSectionCount(
-    this,
-    content,
-    replaceExisting: replaceExisting,
+    this, content,
+    replaceExisting: replaceExisting, icsImporter: _icsImportService,
   );
 
   @override
@@ -3179,6 +3171,8 @@ class TimetableProvider
     this,
     content,
     replaceExisting: replaceExisting,
+    icsImporter: _icsImportService, repository: _profileRepository,
+    storage: _storageService,
   );
 
   Future<int> importParsedCourses(
@@ -3193,29 +3187,34 @@ class TimetableProvider
     replaceExisting: replaceExisting,
     semesterStart: semesterStart,
     source: source,
+    repository: _profileRepository, storage: _storageService,
     preserveLocalColors: preserveLocalColors,
   );
 
-  Future<String?> importAppDataBackup(String content) =>
-      runMutationExclusive(
-        () => TimetableImportExportService.importAppDataBackup(this, content),
-      );
+  Future<String?> importAppDataBackup(String content) => runMutationExclusive(
+    () => TimetableImportExportService.importAppDataBackup(
+      this, content,
+      repository: _profileRepository, storage: _storageService,
+    ),
+  );
 
   Future<String?> importAppDataBackupAsNewProfile(
     String content, {
     String? profileName,
   }) => runMutationExclusive(
     () => TimetableImportExportService.importAppDataBackupAsNewProfile(
-      this,
-      content,
+      this, content,
       profileName: profileName,
+      repository: _profileRepository, storage: _storageService,
     ),
   );
 
-  Future<String?> importFullAppDataBackup(String content) =>
-      runMutationExclusive(
-        () => TimetableImportExportService.importFullAppDataBackup(this, content),
-      );
+  Future<String?> importFullAppDataBackup(String content) => runMutationExclusive(
+    () => TimetableImportExportService.importFullAppDataBackup(
+      this, content,
+      repository: _profileRepository, storage: _storageService,
+    ),
+  );
 
   Future<void> syncCurrentWeekWithSemesterStart() =>
       _runMutation(_syncCurrentWeekWithSemesterStartImpl);
