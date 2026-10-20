@@ -52,9 +52,19 @@ class TimetableExamService {
     return upcoming.isEmpty ? null : upcoming.first;
   }
 
+  /// 当天是否有**未过期**的考试。
+  ///
+  /// 2026-10-20 补 `!isExpired`：原先只比日期，于是「今天下午看早上那场考完的
+  /// 考试」会让星期栏红点亮着，而日视图议程（`_buildDayAgendaItems` 带
+  /// `!e.isExpired`）和周网格考试卡（`WeekGridAgendaPlacement.resolve` 同一
+  /// 判据）都把它滤掉了 —— 用户看到「有红点、点进去什么都没有」。
+  /// 三处现在同一条口径：**考完即消失**（用户 2026-10-20 拍板）。
   bool hasExamOnDate(DateTime date) {
     final target = DateTime(date.year, date.month, date.day);
     return _port.exams.any((exam) {
+      if (exam.isExpired) {
+        return false;
+      }
       final examDate = DateTime(
         exam.dateTime.year,
         exam.dateTime.month,
