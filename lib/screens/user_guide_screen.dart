@@ -262,10 +262,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
-  /// 分页圆点：底部居中，尺寸按规范取 8dp、间距 8dp。
+  /// 分页圆点：底栏内、与翻页按钮同一行（行内垂直居中），尺寸 8dp、间距 8dp。
   ///
-  /// 三条依据（Baymard《Page Control UI》）：
-  /// - **位置**：移动端默认底部居中，偏离这个惯例是无理由引入摩擦；
+  /// 位置沿革：曾在顶栏（2026-10-20 首版，Baymard 点名「放顶部是无理由引入
+  /// 摩擦」）→ 移到底栏独占一行（研究结论：底部居中是移动端惯例）→
+  /// 2026-10-21 应用户反馈并进按钮行（单独占行多占 ~20px 高度）。研究给的是
+  /// 默认值，用户的紧凑偏好优先——水平和位置由两侧按钮之间的空档决定。
+  ///
+  /// 另两条依据（Baymard《Page Control UI》）：
   /// - **尺寸**：圆点直径至少 8–10px，间距不小于直径——太小的点是低质量
   ///   实现的典型症状；
   /// - **状态区分不能只靠颜色**：当前页用主色、其余淡灰，色盲用户也分得清。
@@ -1011,55 +1015,46 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       color: barBackground,
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 分页圆点：底部居中、在按钮行上方——移动端惯例位置
-            // （Baymard：放顶部或侧边是无理由引入摩擦）。翻页时圆点随
-            // setState 重建，AnimatedContainer 负责过渡。
-            if (_totalPages > 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: _buildPageDots(),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              child: Row(
-                children: [
-                  if (isPrivacyPage)
-                    HyperosButton(
-                      label: l10n.exitAppAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _exitWithoutConsent,
-                    )
-                  else if (showPrev)
-                    HyperosButton(
-                      label: l10n.guidePrevButton,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _goPrev,
-                    ),
-                  // 首页没有左侧按钮时，单个 Spacer 就把右侧按钮推到右缘；
-                  // 旧代码 else 分支再放一个 Spacer，两个弹性件视觉完全等价。
-                  const Spacer(),
-                  if (!isLastPage)
-                    HyperosButton(
-                      label: l10n.guideNextButton,
-                      onPressed: canGoNext ? _goNext : null,
-                    )
-                  else
-                    HyperosButton(
-                      // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
-                      // 用软件了，「开始使用」与场景错位，改「知道了」
-                      //（[AppLocalizations.gotItAction]，现成通用键）。
-                      label: widget.requirePrivacyConsent
-                          ? l10n.agreeAndStartAction
-                          : l10n.gotItAction,
-                      onPressed: _finishGuide,
-                    ),
-                ],
-              ),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          child: Row(
+            children: [
+              if (isPrivacyPage)
+                HyperosButton(
+                  label: l10n.exitAppAction,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: _exitWithoutConsent,
+                )
+              else if (showPrev)
+                HyperosButton(
+                  label: l10n.guidePrevButton,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: _goPrev,
+                ),
+              const Spacer(),
+              // 分页圆点：与翻页按钮同一行、行内垂直居中（Row 默认交叉轴
+              // 居中），水平上夹在两侧按钮之间。用户反馈：单独占一行太占
+              // 高度——合并后底栏省 ~20px。翻页时圆点随 setState 重建，
+              // AnimatedContainer 负责过渡。
+              if (_totalPages > 1) _buildPageDots(),
+              const Spacer(),
+              if (!isLastPage)
+                HyperosButton(
+                  label: l10n.guideNextButton,
+                  onPressed: canGoNext ? _goNext : null,
+                )
+              else
+                HyperosButton(
+                  // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
+                  // 用软件了，「开始使用」与场景错位，改「知道了」
+                  //（[AppLocalizations.gotItAction]，现成通用键）。
+                  label: widget.requirePrivacyConsent
+                      ? l10n.agreeAndStartAction
+                      : l10n.gotItAction,
+                  onPressed: _finishGuide,
+                ),
+            ],
+          ),
         ),
       ),
     );
