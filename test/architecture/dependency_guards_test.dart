@@ -338,7 +338,15 @@ void main() {
     // 净 +4。属正当增长：不提前捕获，导入失败后的回滚记录会把失败导入当恢复
     // 结果写回，导入前课表永久丢失。未拆文件的理由：四键原始值依赖本文件私有
     // key 与 _prefs，外移只能靠新增公开访问器，反而扩大 API 面。
-    const baselineLines = 1933;
+    // 1933→1946：R2「旧 courses 写入通道」标注（2026-10-20）——四个写方法
+    // （saveCourses/addCourse/updateCourse/deleteCourse）生产零调用但**不删**，
+    // 因为读取侧仍被老用户升级迁移 `_doEnsureProfilesInitialized`(:1633) 使用，
+    // 且与该迁移共用 _runCoursesWrite/_readCoursesWithoutLock。新增 13 行**全为
+    // 注释**（零代码行变动，git diff -U0 过滤后为空），用途是防止后来者把
+    // `TimetableProvider.addCourse`（另一套 profile 化实现）误认成本族还活着、
+    // 或误当死代码整块删除而丢掉老用户课表迁移。注释已从初版 34 行压到 13 行；
+    // 不能再压的底线是「为什么保留 + 何时可删 + 同名方法不是同一回事」三条信息。
+    const baselineLines = 1946;
     final storageFile = File(GuardSource.resolve('lib/services/storage_service.dart'));
     expect(storageFile.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = storageFile.readAsLinesSync().length;

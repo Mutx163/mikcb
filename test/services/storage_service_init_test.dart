@@ -91,6 +91,19 @@ void main() {
     });
   });
 
+  // 本组钉的是 `StorageService._runCoursesWrite` 的**写队列语义**（并发写不丢、
+  // 混合写按调用顺序应用、saveCourses 先抓输入快照）。
+  //
+  // ⚠️ 2026-10-20 复查：这一组用的四个写方法（saveCourses / addCourse /
+  // updateCourse / deleteCourse）**在生产代码里已零调用**——课程写入统一走
+  // `TimetableRepository` 了。本组因此是在给「已停用的写通道」保语义。
+  //
+  // 之所以保留：该写链与老用户升级迁移的读取路径（`_doEnsureProfilesInitialized`
+  // 里的 `getCourses()`）共用 `_runCoursesWrite` / `_readCoursesWithoutLock`，
+  // 删除要连共享机制一起动，风险大于收益。详见
+  // `lib/services/storage_service.dart` 中 `saveCourses` 上方的整段说明。
+  //
+  // 别误判：`TimetableProvider.addCourse` 等是另一套实现，与本组无关。
   group('StorageService course write serialization', () {
     test('preserves all concurrently added courses', () async {
       final storage = StorageService();

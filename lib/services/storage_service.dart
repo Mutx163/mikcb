@@ -733,6 +733,16 @@ class StorageService {
     sink.add(encoded);
   }
 
+  // ── 旧 courses 写入通道（已停用，刻意保留） ──
+  // saveCourses/addCourse/updateCourse/deleteCourse 生产零调用：profile 化后课程
+  // 写入统一走 `TimetableRepository`。⚠️ 别误会：TimetableProvider 上的同名
+  // addCourse/updateCourse/deleteCourse（:2170 起）是**另一套实现**（profile 化仓储
+  // + 落盘失败回滚），与本类同名方法无调用关系。
+  // 保留原因：① 读取侧仍活——_doEnsureProfilesInitialized(:1633) 用 getCourses()
+  // 把旧 key 读进新建「默认课表」profile，是老用户升级的数据迁移，删了课表就没了；
+  // ② 与迁移读取共用 _runCoursesWrite / _readCoursesWithoutLock（坏条目隔离档），
+  // 删写方法要连共享机制一起动；③ corrupt_course_entry_test 靠 saveCourses 构造
+  // 「坏条目修复后无害 read-modify-write」场景。迁移路径(:1633)下线后可整块删。
   Future<void> saveCourses(List<Course> courses) {
     final coursesSnapshot = List<Course>.from(courses);
     return _runCoursesWrite(() => _writeCoursesWithoutLock(coursesSnapshot));
@@ -744,6 +754,7 @@ class StorageService {
     await _setStringListChecked(_coursesKey, coursesJson);
   }
 
+  /// 旧 courses 写入通道，生产零调用——保留原因见 [saveCourses] 上方说明。
   Future<void> addCourse(Course course) {
     return _runCoursesWrite(() async {
       final courses = await _readCoursesWithoutLock();
@@ -752,6 +763,7 @@ class StorageService {
     });
   }
 
+  /// 旧 courses 写入通道，生产零调用——保留原因见 [saveCourses] 上方说明。
   Future<void> updateCourse(Course updatedCourse) {
     return _runCoursesWrite(() async {
       final courses = await _readCoursesWithoutLock();
@@ -766,6 +778,7 @@ class StorageService {
     });
   }
 
+  /// 旧 courses 写入通道，生产零调用——保留原因见 [saveCourses] 上方说明。
   Future<void> deleteCourse(String courseId) {
     return _runCoursesWrite(() async {
       final courses = await _readCoursesWithoutLock();
