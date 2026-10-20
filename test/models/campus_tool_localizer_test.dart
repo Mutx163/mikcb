@@ -23,18 +23,73 @@ void main() {
     }
   });
 
-  test('分组标题与说明都不是空串', () {
-    for (final l10n in <AppLocalizations>[zh, en]) {
-      expect(l10n.campusToolsTitle, isNotEmpty);
-      expect(l10n.campusToolsIntro, isNotEmpty);
-      expect(l10n.campusToolsIdentitySectionTitle, isNotEmpty);
-      expect(l10n.campusToolsIdentitySectionHint, isNotEmpty);
-      expect(l10n.campusToolsIdentitySubtitle, isNotEmpty);
-      expect(l10n.campusToolsParcelsSectionTitle, isNotEmpty);
-      expect(l10n.campusToolsParcelsSectionHint, isNotEmpty);
-      expect(l10n.campusToolsParcelsSubtitle, isNotEmpty);
-      expect(l10n.campusToolsFooterHint, isNotEmpty);
+  test('砖上只写平台名，不重复「身份码/待取快递」', () {
+    // 分组标题已经说明这一组干什么；砖上再写一遍就是同一句话两处出现。
+    for (final preset in kCampusToolPresets) {
+      final title = campusToolPresetTitle(zh, preset.id);
+      expect(
+        title.contains('身份码') || title.contains('待取') || title.contains('快递'),
+        isFalse,
+        reason: '${preset.id} 的砖标题「$title」与分组标题重复',
+      );
+      // 两个字的平台名才够短，能一行放下。
+      expect(
+        title.characters.length,
+        lessThanOrEqualTo(4),
+        reason: '${preset.id} 的砖标题「$title」太长，方格会截断',
+      );
     }
+  });
+
+  test('同一个平台的身份码与待取快递用同一个平台名', () {
+    // 菜鸟只出现在身份码组；淘宝/拼多多两组都有 —— 两组里的同平台名字必须一致，
+    // 否则用户会以为是两个不同的东西。
+    final byName = <String, Set<String>>{};
+    for (final preset in kCampusToolPresets) {
+      final name = campusToolPresetTitle(zh, preset.id);
+      byName.putIfAbsent(name, () => <String>{}).add(preset.id);
+    }
+    for (final entry in byName.entries) {
+      if (entry.value.length > 1) {
+        // 同名多条：必须是一条身份码 + 一条待取，不能两个都是身份码。
+        final icons = <String>{
+          for (final preset in kCampusToolPresets)
+            if (entry.value.contains(preset.id))
+              preset.icon,
+        };
+        expect(
+          icons.length,
+          entry.value.length,
+          reason: '「${entry.key}」的多条入口功能重复了：${entry.value}',
+        );
+      }
+    }
+  });
+
+  test('页面只保留分组标题与操作类文案，说明性灰字已删', () {
+    for (final l10n in <AppLocalizations>[zh, en]) {
+      // 留下的：两个分组标题 + 标题 + 失败原因 + 保存失败提示
+      expect(l10n.campusToolsTitle, isNotEmpty);
+      expect(l10n.campusToolsIdentitySectionTitle, isNotEmpty);
+      expect(l10n.campusToolsParcelsSectionTitle, isNotEmpty);
+      expect(l10n.campusToolsUntitledEntry, isNotEmpty);
+    }
+    // 删掉的：这些键已经不存在了（保留断言防止有人又把它们加回来）
+    expect(
+      () => (zh as dynamic).campusToolsIntro,
+      throwsNoSuchMethodError,
+      reason: '「把取件身份码…收成一排」这类说明文字应当已删除',
+    );
+    expect(
+      () => (zh as dynamic).campusToolsIdentitySubtitle,
+      throwsNoSuchMethodError,
+      reason: '砖上的副标题应当已删除（与分组标题重复）',
+    );
+    expect(
+      () => (zh as dynamic).campusToolsFooterHint,
+      throwsNoSuchMethodError,
+      reason: '底部说明应当已删除（给开发者看的）',
+    );
   });
 
   test('未知 id → 未命名入口（不返回空串）', () {

@@ -11098,6 +11098,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskWeekFilter => 'This week';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '${days}d overdue';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return '$count more overdue';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => 'No classes today';
+
+  @override
   String get taskOverdueSection => 'Overdue';
 
   @override
@@ -12052,10 +12065,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get campusToolsEntryTitle => 'Campus tools';
 
   @override
-  String get campusToolsIntro =>
-      'Collect the pages you open all the time — parcel pickup codes, campus Wi-Fi — into one row and open them with a single tap.';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return 'Can\'t open $name: $reason';
   }
@@ -12094,45 +12103,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get campusToolsReasonUnknown => 'Unknown reason';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao pickup code';
+  String get campusToolsPresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao pickup code';
+  String get campusToolsPresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao parcels';
+  String get campusToolsPresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo pickup code';
+  String get campusToolsPresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo parcels';
+  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD parcels';
+  String get campusToolsPresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin parcels';
+  String get campusToolsPresetDouyinParcels => 'Douyin';
 
   @override
   String get campusToolsIdentitySectionTitle => 'Show pickup code';
 
   @override
-  String get campusToolsIdentitySectionHint => 'Tap this at the locker';
-
-  @override
-  String get campusToolsIdentitySubtitle => 'Open parcel pickup code';
-
-  @override
   String get campusToolsParcelsSectionTitle => 'Check parcels';
-
-  @override
-  String get campusToolsParcelsSectionHint => 'See what has arrived';
-
-  @override
-  String get campusToolsParcelsSubtitle => 'Open the parcel list';
-
-  @override
-  String get campusToolsFooterHint =>
-      'Entries use each app\'s public deep links; if one fails, the app is opened instead.';
 }

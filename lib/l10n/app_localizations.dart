@@ -18985,6 +18985,24 @@ abstract class AppLocalizations {
   /// **'本周'**
   String get taskWeekFilter;
 
+  /// No description provided for @dayTaskBandOverdueBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'逾期 {days} 天'**
+  String dayTaskBandOverdueBadge(int days);
+
+  /// No description provided for @dayTaskBandOverdueMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 项逾期'**
+  String dayTaskBandOverdueMore(int count);
+
+  /// No description provided for @dayTaskBandEmptyCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天没有课'**
+  String get dayTaskBandEmptyCourses;
+
   /// No description provided for @taskOverdueSection.
   ///
   /// In zh, this message translates to:
@@ -20658,12 +20676,6 @@ abstract class AppLocalizations {
   /// **'校园小工具'**
   String get campusToolsEntryTitle;
 
-  /// No description provided for @campusToolsIntro.
-  ///
-  /// In zh, this message translates to:
-  /// **'把取件身份码、待取快递这类常用页面收成一排，点一下就直达。'**
-  String get campusToolsIntro;
-
   /// No description provided for @campusToolsLaunchFailed.
   ///
   /// In zh, this message translates to:
@@ -20733,43 +20745,43 @@ abstract class AppLocalizations {
   /// No description provided for @campusToolsPresetCainiao.
   ///
   /// In zh, this message translates to:
-  /// **'菜鸟身份码'**
+  /// **'菜鸟'**
   String get campusToolsPresetCainiao;
 
   /// No description provided for @campusToolsPresetTaobao.
   ///
   /// In zh, this message translates to:
-  /// **'淘宝身份码'**
+  /// **'淘宝'**
   String get campusToolsPresetTaobao;
 
   /// No description provided for @campusToolsPresetTaobaoParcels.
   ///
   /// In zh, this message translates to:
-  /// **'淘宝待取快递'**
+  /// **'淘宝'**
   String get campusToolsPresetTaobaoParcels;
 
   /// No description provided for @campusToolsPresetPinduoduo.
   ///
   /// In zh, this message translates to:
-  /// **'拼多多身份码'**
+  /// **'拼多多'**
   String get campusToolsPresetPinduoduo;
 
   /// No description provided for @campusToolsPresetPinduoduoParcels.
   ///
   /// In zh, this message translates to:
-  /// **'拼多多待取快递'**
+  /// **'拼多多'**
   String get campusToolsPresetPinduoduoParcels;
 
   /// No description provided for @campusToolsPresetJdParcels.
   ///
   /// In zh, this message translates to:
-  /// **'京东待取快递'**
+  /// **'京东'**
   String get campusToolsPresetJdParcels;
 
   /// No description provided for @campusToolsPresetDouyinParcels.
   ///
   /// In zh, this message translates to:
-  /// **'抖音待取快递'**
+  /// **'抖音'**
   String get campusToolsPresetDouyinParcels;
 
   /// No description provided for @campusToolsIdentitySectionTitle.
@@ -20778,41 +20790,11 @@ abstract class AppLocalizations {
   /// **'出示身份码'**
   String get campusToolsIdentitySectionTitle;
 
-  /// No description provided for @campusToolsIdentitySectionHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'到柜子前先点这个'**
-  String get campusToolsIdentitySectionHint;
-
-  /// No description provided for @campusToolsIdentitySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开取件身份码'**
-  String get campusToolsIdentitySubtitle;
-
   /// No description provided for @campusToolsParcelsSectionTitle.
   ///
   /// In zh, this message translates to:
   /// **'查待取快递'**
   String get campusToolsParcelsSectionTitle;
-
-  /// No description provided for @campusToolsParcelsSectionHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'看有哪些包裹到了'**
-  String get campusToolsParcelsSectionHint;
-
-  /// No description provided for @campusToolsParcelsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开待取快递列表'**
-  String get campusToolsParcelsSubtitle;
-
-  /// No description provided for @campusToolsFooterHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'入口来自各 App 的公开跳转地址；打不开时会自动改为打开对应 App。'**
-  String get campusToolsFooterHint;
 }
 
 class _AppLocalizationsDelegate

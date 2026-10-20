@@ -6038,6 +6038,23 @@
   "taskAllFilter": "すべて",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "今週",
+  "dayTaskBandOverdueBadge": "{days}日超過",
+  "@dayTaskBandOverdueBadge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandOverdueMore": "ほか {count} 件が期限切れ",
+  "@dayTaskBandOverdueMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandEmptyCourses": "今日は授業なし",
   "taskOverdueSection": "期限切れ",
   "taskCompletedSection": "完了済み",
   "taskNoTasks": "タスクはまだありません",
@@ -6687,7 +6704,6 @@
   "monthViewTapDayHint": "日付をタップして予定を表示",
   "campusToolsTitle": "キャンパスツール",
   "campusToolsEntryTitle": "キャンパスツール",
-  "campusToolsIntro": "受け取りコードや学内 Wi-Fi など、よく使うページを一列にまとめてワンタップで開けます。",
   "campusToolsLaunchFailed": "「{name}」を開けません：{reason}",
   "campusToolsOpenedAppToast": "「{name}」には公開された直行ページがないため、アプリを開きました。アプリ内でご確認ください。",
   "campusToolsUnsupported": "この環境では他のアプリを開けません",
@@ -6699,18 +6715,13 @@
   "campusToolsReasonTimeout": "システムが応答しません（タイムアウト）",
   "campusToolsReasonUnsupported": "この環境ではサポートされていません",
   "campusToolsReasonUnknown": "不明な理由",
-  "campusToolsPresetCainiao": "Cainiao 受取コード",
-  "campusToolsPresetTaobao": "Taobao 受取コード",
-  "campusToolsPresetTaobaoParcels": "Taobao 受取待ち",
-  "campusToolsPresetPinduoduo": "Pinduoduo 受取コード",
-  "campusToolsPresetPinduoduoParcels": "Pinduoduo 受取待ち",
-  "campusToolsPresetJdParcels": "JD 受取待ち",
-  "campusToolsPresetDouyinParcels": "Douyin 受取待ち",
+  "campusToolsPresetCainiao": "Cainiao",
+  "campusToolsPresetTaobao": "Taobao",
+  "campusToolsPresetTaobaoParcels": "Taobao",
+  "campusToolsPresetPinduoduo": "Pinduoduo",
+  "campusToolsPresetPinduoduoParcels": "Pinduoduo",
+  "campusToolsPresetJdParcels": "JD",
+  "campusToolsPresetDouyinParcels": "Douyin",
   "campusToolsIdentitySectionTitle": "受け取りコードを表示",
-  "campusToolsIdentitySectionHint": "ロッカーの前でタップ",
-  "campusToolsIdentitySubtitle": "受け取りコードを開く",
-  "campusToolsParcelsSectionTitle": "荷物を確認",
-  "campusToolsParcelsSectionHint": "届いている荷物を見る",
-  "campusToolsParcelsSubtitle": "受け取り待ち一覧を開く",
-  "campusToolsFooterHint": "各アプリの公開ディープリンクを使用しています。開けない場合はアプリを起動します。"
+  "campusToolsParcelsSectionTitle": "荷物を確認"
 }

@@ -6426,6 +6426,23 @@
   "taskAllFilter": "全部",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "本周",
+  "dayTaskBandOverdueBadge": "逾期 {days} 天",
+  "@dayTaskBandOverdueBadge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandOverdueMore": "还有 {count} 项逾期",
+  "@dayTaskBandOverdueMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandEmptyCourses": "今天没有课",
   "taskOverdueSection": "已逾期",
   "taskCompletedSection": "已完成",
   "taskNoTasks": "还没有任务",
@@ -6970,7 +6987,6 @@
   "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课",
   "campusToolsTitle": "校园小工具",
   "campusToolsEntryTitle": "校园小工具",
-  "campusToolsIntro": "把取件身份码、待取快递这类常用页面收成一排，点一下就直达。",
   "campusToolsLaunchFailed": "打不开「{name}」：{reason}",
   "@campusToolsLaunchFailed": {
     "placeholders": {
@@ -6999,18 +7015,13 @@
   "campusToolsReasonTimeout": "系统没有响应（超时）",
   "campusToolsReasonUnsupported": "当前平台不支持",
   "campusToolsReasonUnknown": "未知原因",
-  "campusToolsPresetCainiao": "菜鸟身份码",
-  "campusToolsPresetTaobao": "淘宝身份码",
-  "campusToolsPresetTaobaoParcels": "淘宝待取快递",
-  "campusToolsPresetPinduoduo": "拼多多身份码",
-  "campusToolsPresetPinduoduoParcels": "拼多多待取快递",
-  "campusToolsPresetJdParcels": "京东待取快递",
-  "campusToolsPresetDouyinParcels": "抖音待取快递",
+  "campusToolsPresetCainiao": "菜鸟",
+  "campusToolsPresetTaobao": "淘宝",
+  "campusToolsPresetTaobaoParcels": "淘宝",
+  "campusToolsPresetPinduoduo": "拼多多",
+  "campusToolsPresetPinduoduoParcels": "拼多多",
+  "campusToolsPresetJdParcels": "京东",
+  "campusToolsPresetDouyinParcels": "抖音",
   "campusToolsIdentitySectionTitle": "出示身份码",
-  "campusToolsIdentitySectionHint": "到柜子前先点这个",
-  "campusToolsIdentitySubtitle": "打开取件身份码",
-  "campusToolsParcelsSectionTitle": "查待取快递",
-  "campusToolsParcelsSectionHint": "看有哪些包裹到了",
-  "campusToolsParcelsSubtitle": "打开待取快递列表",
-  "campusToolsFooterHint": "入口来自各 App 的公开跳转地址；打不开时会自动改为打开对应 App。"
+  "campusToolsParcelsSectionTitle": "查待取快递"
 }

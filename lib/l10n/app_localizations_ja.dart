@@ -10781,6 +10781,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get taskWeekFilter => '今週';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '$days日超過';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return 'ほか $count 件が期限切れ';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => '今日は授業なし';
+
+  @override
   String get taskOverdueSection => '期限切れ';
 
   @override
@@ -11703,10 +11716,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get campusToolsEntryTitle => 'キャンパスツール';
 
   @override
-  String get campusToolsIntro =>
-      '受け取りコードや学内 Wi-Fi など、よく使うページを一列にまとめてワンタップで開けます。';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return '「$name」を開けません：$reason';
   }
@@ -11744,45 +11753,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get campusToolsReasonUnknown => '不明な理由';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao 受取コード';
+  String get campusToolsPresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao 受取コード';
+  String get campusToolsPresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao 受取待ち';
+  String get campusToolsPresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo 受取コード';
+  String get campusToolsPresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo 受取待ち';
+  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD 受取待ち';
+  String get campusToolsPresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin 受取待ち';
+  String get campusToolsPresetDouyinParcels => 'Douyin';
 
   @override
   String get campusToolsIdentitySectionTitle => '受け取りコードを表示';
 
   @override
-  String get campusToolsIdentitySectionHint => 'ロッカーの前でタップ';
-
-  @override
-  String get campusToolsIdentitySubtitle => '受け取りコードを開く';
-
-  @override
   String get campusToolsParcelsSectionTitle => '荷物を確認';
-
-  @override
-  String get campusToolsParcelsSectionHint => '届いている荷物を見る';
-
-  @override
-  String get campusToolsParcelsSubtitle => '受け取り待ち一覧を開く';
-
-  @override
-  String get campusToolsFooterHint =>
-      '各アプリの公開ディープリンクを使用しています。開けない場合はアプリを起動します。';
 }

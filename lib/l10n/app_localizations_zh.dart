@@ -10441,6 +10441,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get taskWeekFilter => '本周';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '逾期 $days 天';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return '还有 $count 项逾期';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => '今天没有课';
+
+  @override
   String get taskOverdueSection => '已逾期';
 
   @override
@@ -11353,9 +11366,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get campusToolsEntryTitle => '校园小工具';
 
   @override
-  String get campusToolsIntro => '把取件身份码、待取快递这类常用页面收成一排，点一下就直达。';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return '打不开「$name」：$reason';
   }
@@ -11393,46 +11403,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get campusToolsReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鸟身份码';
+  String get campusToolsPresetCainiao => '菜鸟';
 
   @override
-  String get campusToolsPresetTaobao => '淘宝身份码';
+  String get campusToolsPresetTaobao => '淘宝';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘宝待取快递';
+  String get campusToolsPresetTaobaoParcels => '淘宝';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多身份码';
+  String get campusToolsPresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多待取快递';
+  String get campusToolsPresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京东待取快递';
+  String get campusToolsPresetJdParcels => '京东';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音待取快递';
+  String get campusToolsPresetDouyinParcels => '抖音';
 
   @override
   String get campusToolsIdentitySectionTitle => '出示身份码';
 
   @override
-  String get campusToolsIdentitySectionHint => '到柜子前先点这个';
-
-  @override
-  String get campusToolsIdentitySubtitle => '打开取件身份码';
-
-  @override
   String get campusToolsParcelsSectionTitle => '查待取快递';
-
-  @override
-  String get campusToolsParcelsSectionHint => '看有哪些包裹到了';
-
-  @override
-  String get campusToolsParcelsSubtitle => '打开待取快递列表';
-
-  @override
-  String get campusToolsFooterHint => '入口来自各 App 的公开跳转地址；打不开时会自动改为打开对应 App。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -21912,6 +21907,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get taskWeekFilter => '本週';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '逾期 $days 天';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return '還有 $count 項逾期';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => '今日沒有課';
+
+  @override
   String get taskOverdueSection => '已逾期';
 
   @override
@@ -22824,9 +22832,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get campusToolsEntryTitle => '校園小工具';
 
   @override
-  String get campusToolsIntro => '把取件身份碼、待取快遞這類常用頁面收成一排，一按即達。';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return '打不開「$name」：$reason';
   }
@@ -22864,46 +22869,31 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get campusToolsReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鳥身份碼';
+  String get campusToolsPresetCainiao => '菜鳥';
 
   @override
-  String get campusToolsPresetTaobao => '淘寶身份碼';
+  String get campusToolsPresetTaobao => '淘寶';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘寶待取快遞';
+  String get campusToolsPresetTaobaoParcels => '淘寶';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多身份碼';
+  String get campusToolsPresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多待取快遞';
+  String get campusToolsPresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京東待取快遞';
+  String get campusToolsPresetJdParcels => '京東';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音待取快遞';
+  String get campusToolsPresetDouyinParcels => '抖音';
 
   @override
   String get campusToolsIdentitySectionTitle => '出示身份碼';
 
   @override
-  String get campusToolsIdentitySectionHint => '到櫃前先按這個';
-
-  @override
-  String get campusToolsIdentitySubtitle => '開啟取件身份碼';
-
-  @override
   String get campusToolsParcelsSectionTitle => '查待取快遞';
-
-  @override
-  String get campusToolsParcelsSectionHint => '看有哪些包裹到了';
-
-  @override
-  String get campusToolsParcelsSubtitle => '開啟待取快遞列表';
-
-  @override
-  String get campusToolsFooterHint => '入口來自各 App 的公開跳轉位址；打不開時會自動改為開啟對應 App。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33384,6 +33374,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get taskWeekFilter => '本週';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '逾期 $days 天';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return '還有 $count 項逾期';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => '今天沒有課';
+
+  @override
   String get taskOverdueSection => '已逾期';
 
   @override
@@ -34296,9 +34299,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get campusToolsEntryTitle => '校園小工具';
 
   @override
-  String get campusToolsIntro => '把取件身分碼、待取快遞這類常用頁面收成一排，點一下就直達。';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return '打不開「$name」：$reason';
   }
@@ -34336,44 +34336,29 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get campusToolsReasonUnknown => '未知原因';
 
   @override
-  String get campusToolsPresetCainiao => '菜鳥身分碼';
+  String get campusToolsPresetCainiao => '菜鳥';
 
   @override
-  String get campusToolsPresetTaobao => '淘寶身分碼';
+  String get campusToolsPresetTaobao => '淘寶';
 
   @override
-  String get campusToolsPresetTaobaoParcels => '淘寶待取快遞';
+  String get campusToolsPresetTaobaoParcels => '淘寶';
 
   @override
-  String get campusToolsPresetPinduoduo => '拼多多身分碼';
+  String get campusToolsPresetPinduoduo => '拼多多';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => '拼多多待取快遞';
+  String get campusToolsPresetPinduoduoParcels => '拼多多';
 
   @override
-  String get campusToolsPresetJdParcels => '京東待取快遞';
+  String get campusToolsPresetJdParcels => '京東';
 
   @override
-  String get campusToolsPresetDouyinParcels => '抖音待取快遞';
+  String get campusToolsPresetDouyinParcels => '抖音';
 
   @override
   String get campusToolsIdentitySectionTitle => '出示身分碼';
 
   @override
-  String get campusToolsIdentitySectionHint => '到櫃前先按這個';
-
-  @override
-  String get campusToolsIdentitySubtitle => '開啟取件身分碼';
-
-  @override
   String get campusToolsParcelsSectionTitle => '查待取快遞';
-
-  @override
-  String get campusToolsParcelsSectionHint => '看有哪些包裹到了';
-
-  @override
-  String get campusToolsParcelsSubtitle => '開啟待取快遞列表';
-
-  @override
-  String get campusToolsFooterHint => '入口來自各 App 的公開跳轉位址；打不開時會自動改為開啟對應 App。';
 }

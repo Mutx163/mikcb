@@ -109,102 +109,80 @@ class _CampusToolsScreenState extends State<CampusToolsScreen> {
       title: Text(l10n.campusToolsTitle),
       child: HyperosListView(
         children: [
-          Text(
-            l10n.campusToolsIntro,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
-              height: 1.5,
-            ),
+          // 两组之间不写任何说明文字：分组标题已经把「这一组点下去干什么」
+          // 说清了，每条下面只有平台名。
+          HyperosSectionLabel(text: l10n.campusToolsIdentitySectionTitle),
+          const SizedBox(height: 10),
+          _CampusToolGrid(
+            entries: identityCodes,
+            busyEntryId: _busyEntryId,
+            onTap: _openEntry,
           ),
           const HyperosSectionGap(),
-          // 身份码区：最常用、最急，放最上面。
-          _CampusToolSectionHeader(
-            title: l10n.campusToolsIdentitySectionTitle,
-            subtitle: l10n.campusToolsIdentitySectionHint,
+          HyperosSectionLabel(text: l10n.campusToolsParcelsSectionTitle),
+          const SizedBox(height: 10),
+          _CampusToolGrid(
+            entries: parcels,
+            busyEntryId: _busyEntryId,
+            onTap: _openEntry,
           ),
-          const SizedBox(height: 8),
-          for (final entry in identityCodes)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _CampusToolCard(
-                entry: entry,
-                title: campusToolEntryTitle(l10n, entry),
-                subtitle: l10n.campusToolsIdentitySubtitle,
-                busy: _busyEntryId == entry.id,
-                dimmed: _busyEntryId != null && _busyEntryId != entry.id,
-                onTap: () => _openEntry(entry),
-              ),
-            ),
-          const HyperosSectionGap(),
-          _CampusToolSectionHeader(
-            title: l10n.campusToolsParcelsSectionTitle,
-            subtitle: l10n.campusToolsParcelsSectionHint,
-          ),
-          const SizedBox(height: 8),
-          for (final entry in parcels)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _CampusToolCard(
-                entry: entry,
-                title: campusToolEntryTitle(l10n, entry),
-                subtitle: l10n.campusToolsParcelsSubtitle,
-                busy: _busyEntryId == entry.id,
-                dimmed: _busyEntryId != null && _busyEntryId != entry.id,
-                onTap: () => _openEntry(entry),
-              ),
-            ),
-          const HyperosSectionGap(),
-          HyperosSectionDescription(text: l10n.campusToolsFooterHint),
         ],
       ),
     );
   }
 }
 
-/// 分区标题：一行标题 + 一行灰字说明，说明这一组点下去会看到什么。
-class _CampusToolSectionHeader extends StatelessWidget {
-  const _CampusToolSectionHeader({required this.title, required this.subtitle});
+/// 一组入口：等宽方格，一行放三个。
+///
+/// 为什么是方格而不是横条：每条下面只写平台名（两三个字），横条那套
+/// 「图标 + 标题 + 副标题 + 箭头」会留一大片空白，而且七个平台竖排下来要滑两次。
+/// 方格一屏就能看完两组，拇指活动范围也小 —— 站快递柜前单手操作更省事。
+class _CampusToolGrid extends StatelessWidget {
+  const _CampusToolGrid({
+    required this.entries,
+    required this.busyEntryId,
+    required this.onTap,
+  });
 
-  final String title;
-  final String subtitle;
+  final List<CampusToolEntry> entries;
+  final String? busyEntryId;
+  final ValueChanged<CampusToolEntry> onTap;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: HyperosTypography.sectionLabel(context).copyWith(
-            color: HyperosColors.primaryText(context),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: HyperosTypography.listDetail(context).copyWith(
-              color: HyperosColors.secondaryText(context),
+        for (var index = 0; index < entries.length; index++) ...[
+          if (index > 0) const SizedBox(width: 10),
+          Expanded(
+            child: _CampusToolTile(
+              entry: entries[index],
+              title: campusToolEntryTitle(l10n, entries[index]),
+              busy: busyEntryId == entries[index].id,
+              dimmed: busyEntryId != null && busyEntryId != entries[index].id,
+              onTap: () => onTap(entries[index]),
             ),
           ),
-        ),
+        ],
+        // 不满一行时补空位，避免剩下的格子被拉伸得比上面一行宽。
+        for (var index = entries.length; index < 3; index++) ...[
+          if (index > 0) const SizedBox(width: 10),
+          const Expanded(child: SizedBox.shrink()),
+        ],
       ],
     );
   }
 }
 
-/// 一条入口横条：左侧品牌色图标井 + 平台名 + 功能说明 + 右侧箭头。
+/// 一颗入口砖：品牌色图标井 + 平台名。整块可点，最小 84×92dp。
 ///
-/// 为什么是横条而不是方格：方格（图标 + 下面一行小字）适合一眼扫，但这里每条
-/// 入口都要说清「这是身份码还是查包裹」，方格塞不下一行说明；横条能在一次扫视
-/// 里给出「平台 + 功能」两个信息，而且整行都是热区（48dp 以上），在快递柜前
-/// 手忙脚乱时更好按。
-class _CampusToolCard extends StatelessWidget {
-  const _CampusToolCard({
+/// 没有副标题、没有箭头：分组标题已经说明这一组干什么，砖上写平台名就够。
+class _CampusToolTile extends StatelessWidget {
+  const _CampusToolTile({
     required this.entry,
     required this.title,
-    required this.subtitle,
     required this.busy,
     required this.dimmed,
     required this.onTap,
@@ -212,7 +190,6 @@ class _CampusToolCard extends StatelessWidget {
 
   final CampusToolEntry entry;
   final String title;
-  final String subtitle;
   final bool busy;
   final bool dimmed;
   final VoidCallback onTap;
@@ -221,7 +198,6 @@ class _CampusToolCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = campusToolAccentFor(context, entry.id);
     final primaryText = HyperosColors.primaryText(context);
-    final secondaryText = HyperosColors.secondaryText(context);
     return AnimatedOpacity(
       duration: 150.scaledMs,
       opacity: dimmed ? 0.45 : 1,
@@ -234,52 +210,38 @@ class _CampusToolCard extends StatelessWidget {
         child: InkWell(
           onTap: busy ? null : onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-            child: Row(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _CampusToolIconWell(iconName: entry.icon, accent: accent),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: HyperosTypography.listTitle(
-                          context,
-                        ).copyWith(color: primaryText),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: HyperosTypography.listDetail(
-                          context,
-                        ).copyWith(color: secondaryText),
-                      ),
-                    ],
+                SizedBox(
+                  height: 44,
+                  child: Center(
+                    child: busy
+                        ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: accent,
+                            ),
+                          )
+                        : _CampusToolIconWell(
+                            iconName: entry.icon,
+                            accent: accent,
+                          ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (busy)
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: accent,
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: secondaryText.withValues(alpha: 0.5),
-                  ),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: HyperosTypography.listDetail(
+                    context,
+                  ).copyWith(color: primaryText),
+                ),
               ],
             ),
           ),
@@ -300,14 +262,14 @@ class _CampusToolIconWell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
         color: HyperosBlurredHeader.accentSurfaceTintColor(accent),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
-      child: Icon(campusToolIconFor(iconName), size: 22, color: accent),
+      child: Icon(campusToolIconFor(iconName), size: 24, color: accent),
     );
   }
 }

@@ -6088,6 +6088,23 @@
   "taskAllFilter": "전체",
   "taskTodayFilter": "오늘",
   "taskWeekFilter": "이번 주",
+  "dayTaskBandOverdueBadge": "{days}일 지남",
+  "@dayTaskBandOverdueBadge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandOverdueMore": "{count}개 더 기한 초과",
+  "@dayTaskBandOverdueMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandEmptyCourses": "오늘 수업 없음",
   "taskOverdueSection": "기한 초과",
   "taskCompletedSection": "완료됨",
   "taskNoTasks": "아직 할 일이 없습니다",
@@ -6866,7 +6883,6 @@
   "sharedInfoInlineHint": "약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다",
   "campusToolsTitle": "캠퍼스 도구",
   "campusToolsEntryTitle": "캠퍼스 도구",
-  "campusToolsIntro": "수령 코드, 교내 Wi-Fi처럼 자주 쓰는 페이지를 한 줄로 모아 한 번에 열 수 있습니다.",
   "campusToolsLaunchFailed": "{name}을(를) 열 수 없습니다: {reason}",
   "campusToolsOpenedAppToast": "{name}에는 공개된 바로가기 페이지가 없어 앱만 열었습니다. 앱 안에서 확인해 주세요.",
   "campusToolsUnsupported": "이 플랫폼에서는 다른 앱을 열 수 없습니다",
@@ -6878,18 +6894,13 @@
   "campusToolsReasonTimeout": "시스템이 응답하지 않습니다(시간 초과)",
   "campusToolsReasonUnsupported": "이 플랫폼에서는 지원하지 않습니다",
   "campusToolsReasonUnknown": "알 수 없는 이유",
-  "campusToolsPresetCainiao": "Cainiao 수령 코드",
-  "campusToolsPresetTaobao": "Taobao 수령 코드",
-  "campusToolsPresetTaobaoParcels": "Taobao 수령 대기",
-  "campusToolsPresetPinduoduo": "Pinduoduo 수령 코드",
-  "campusToolsPresetPinduoduoParcels": "Pinduoduo 수령 대기",
-  "campusToolsPresetJdParcels": "JD 수령 대기",
-  "campusToolsPresetDouyinParcels": "Douyin 수령 대기",
+  "campusToolsPresetCainiao": "Cainiao",
+  "campusToolsPresetTaobao": "Taobao",
+  "campusToolsPresetTaobaoParcels": "Taobao",
+  "campusToolsPresetPinduoduo": "Pinduoduo",
+  "campusToolsPresetPinduoduoParcels": "Pinduoduo",
+  "campusToolsPresetJdParcels": "JD",
+  "campusToolsPresetDouyinParcels": "Douyin",
   "campusToolsIdentitySectionTitle": "수령 코드 표시",
-  "campusToolsIdentitySectionHint": "보관함 앞에서 누르세요",
-  "campusToolsIdentitySubtitle": "수령 코드 열기",
-  "campusToolsParcelsSectionTitle": "택배 확인",
-  "campusToolsParcelsSectionHint": "도착한 택배 보기",
-  "campusToolsParcelsSubtitle": "수령 대기 목록 열기",
-  "campusToolsFooterHint": "각 앱의 공개 딥링크를 사용합니다. 열 수 없으면 해당 앱을 실행합니다."
+  "campusToolsParcelsSectionTitle": "택배 확인"
 }

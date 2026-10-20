@@ -6085,6 +6085,23 @@
   "taskAllFilter": "全部",
   "taskTodayFilter": "今日",
   "taskWeekFilter": "本週",
+  "dayTaskBandOverdueBadge": "逾期 {days} 天",
+  "@dayTaskBandOverdueBadge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandOverdueMore": "還有 {count} 項逾期",
+  "@dayTaskBandOverdueMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandEmptyCourses": "今日沒有課",
   "taskOverdueSection": "已逾期",
   "taskCompletedSection": "已完成",
   "taskNoTasks": "還沒有任務",
@@ -6866,7 +6883,6 @@
   "sharedInfoInlineHint": "簡稱、顏色、性質、簡介同步給同名排課",
   "campusToolsTitle": "校園小工具",
   "campusToolsEntryTitle": "校園小工具",
-  "campusToolsIntro": "把取件身份碼、待取快遞這類常用頁面收成一排，一按即達。",
   "campusToolsLaunchFailed": "打不開「{name}」：{reason}",
   "campusToolsOpenedAppToast": "「{name}」沒有公開的直達頁，已開啟對應 App，請在 App 內查看",
   "campusToolsUnsupported": "目前平台不支援跳到其他應用程式",
@@ -6878,18 +6894,13 @@
   "campusToolsReasonTimeout": "系統沒有回應（逾時）",
   "campusToolsReasonUnsupported": "目前平台不支援",
   "campusToolsReasonUnknown": "未知原因",
-  "campusToolsPresetCainiao": "菜鳥身份碼",
-  "campusToolsPresetTaobao": "淘寶身份碼",
-  "campusToolsPresetTaobaoParcels": "淘寶待取快遞",
-  "campusToolsPresetPinduoduo": "拼多多身份碼",
-  "campusToolsPresetPinduoduoParcels": "拼多多待取快遞",
-  "campusToolsPresetJdParcels": "京東待取快遞",
-  "campusToolsPresetDouyinParcels": "抖音待取快遞",
+  "campusToolsPresetCainiao": "菜鳥",
+  "campusToolsPresetTaobao": "淘寶",
+  "campusToolsPresetTaobaoParcels": "淘寶",
+  "campusToolsPresetPinduoduo": "拼多多",
+  "campusToolsPresetPinduoduoParcels": "拼多多",
+  "campusToolsPresetJdParcels": "京東",
+  "campusToolsPresetDouyinParcels": "抖音",
   "campusToolsIdentitySectionTitle": "出示身份碼",
-  "campusToolsIdentitySectionHint": "到櫃前先按這個",
-  "campusToolsIdentitySubtitle": "開啟取件身份碼",
-  "campusToolsParcelsSectionTitle": "查待取快遞",
-  "campusToolsParcelsSectionHint": "看有哪些包裹到了",
-  "campusToolsParcelsSubtitle": "開啟待取快遞列表",
-  "campusToolsFooterHint": "入口來自各 App 的公開跳轉位址；打不開時會自動改為開啟對應 App。"
+  "campusToolsParcelsSectionTitle": "查待取快遞"
 }

@@ -6374,6 +6374,23 @@
   "taskAllFilter": "All",
   "taskTodayFilter": "Today",
   "taskWeekFilter": "This week",
+  "dayTaskBandOverdueBadge": "{days}d overdue",
+  "@dayTaskBandOverdueBadge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandOverdueMore": "{count} more overdue",
+  "@dayTaskBandOverdueMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayTaskBandEmptyCourses": "No classes today",
   "taskOverdueSection": "Overdue",
   "taskCompletedSection": "Completed",
   "taskNoTasks": "No tasks yet",
@@ -6869,7 +6886,6 @@
   "sharedInfoInlineHint": "Short name, colour, nature and intro sync to classes with the same name",
   "campusToolsTitle": "Campus tools",
   "campusToolsEntryTitle": "Campus tools",
-  "campusToolsIntro": "Collect the pages you open all the time — parcel pickup codes, campus Wi-Fi — into one row and open them with a single tap.",
   "campusToolsLaunchFailed": "Can't open {name}: {reason}",
   "campusToolsOpenedAppToast": "{name} has no public deep link, so the app was opened instead — look for the page inside it.",
   "campusToolsUnsupported": "This platform cannot open other apps",
@@ -6881,18 +6897,13 @@
   "campusToolsReasonTimeout": "The system did not respond (timed out)",
   "campusToolsReasonUnsupported": "Not supported on this platform",
   "campusToolsReasonUnknown": "Unknown reason",
-  "campusToolsPresetCainiao": "Cainiao pickup code",
-  "campusToolsPresetTaobao": "Taobao pickup code",
-  "campusToolsPresetTaobaoParcels": "Taobao parcels",
-  "campusToolsPresetPinduoduo": "Pinduoduo pickup code",
-  "campusToolsPresetPinduoduoParcels": "Pinduoduo parcels",
-  "campusToolsPresetJdParcels": "JD parcels",
-  "campusToolsPresetDouyinParcels": "Douyin parcels",
+  "campusToolsPresetCainiao": "Cainiao",
+  "campusToolsPresetTaobao": "Taobao",
+  "campusToolsPresetTaobaoParcels": "Taobao",
+  "campusToolsPresetPinduoduo": "Pinduoduo",
+  "campusToolsPresetPinduoduoParcels": "Pinduoduo",
+  "campusToolsPresetJdParcels": "JD",
+  "campusToolsPresetDouyinParcels": "Douyin",
   "campusToolsIdentitySectionTitle": "Show pickup code",
-  "campusToolsIdentitySectionHint": "Tap this at the locker",
-  "campusToolsIdentitySubtitle": "Open parcel pickup code",
-  "campusToolsParcelsSectionTitle": "Check parcels",
-  "campusToolsParcelsSectionHint": "See what has arrived",
-  "campusToolsParcelsSubtitle": "Open the parcel list",
-  "campusToolsFooterHint": "Entries use each app's public deep links; if one fails, the app is opened instead."
+  "campusToolsParcelsSectionTitle": "Check parcels"
 }

@@ -10831,6 +10831,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get taskWeekFilter => '이번 주';
 
   @override
+  String dayTaskBandOverdueBadge(int days) {
+    return '$days일 지남';
+  }
+
+  @override
+  String dayTaskBandOverdueMore(int count) {
+    return '$count개 더 기한 초과';
+  }
+
+  @override
+  String get dayTaskBandEmptyCourses => '오늘 수업 없음';
+
+  @override
   String get taskOverdueSection => '기한 초과';
 
   @override
@@ -11756,10 +11769,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get campusToolsEntryTitle => '캠퍼스 도구';
 
   @override
-  String get campusToolsIntro =>
-      '수령 코드, 교내 Wi-Fi처럼 자주 쓰는 페이지를 한 줄로 모아 한 번에 열 수 있습니다.';
-
-  @override
   String campusToolsLaunchFailed(String name, String reason) {
     return '$name을(를) 열 수 없습니다: $reason';
   }
@@ -11797,45 +11806,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get campusToolsReasonUnknown => '알 수 없는 이유';
 
   @override
-  String get campusToolsPresetCainiao => 'Cainiao 수령 코드';
+  String get campusToolsPresetCainiao => 'Cainiao';
 
   @override
-  String get campusToolsPresetTaobao => 'Taobao 수령 코드';
+  String get campusToolsPresetTaobao => 'Taobao';
 
   @override
-  String get campusToolsPresetTaobaoParcels => 'Taobao 수령 대기';
+  String get campusToolsPresetTaobaoParcels => 'Taobao';
 
   @override
-  String get campusToolsPresetPinduoduo => 'Pinduoduo 수령 코드';
+  String get campusToolsPresetPinduoduo => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo 수령 대기';
+  String get campusToolsPresetPinduoduoParcels => 'Pinduoduo';
 
   @override
-  String get campusToolsPresetJdParcels => 'JD 수령 대기';
+  String get campusToolsPresetJdParcels => 'JD';
 
   @override
-  String get campusToolsPresetDouyinParcels => 'Douyin 수령 대기';
+  String get campusToolsPresetDouyinParcels => 'Douyin';
 
   @override
   String get campusToolsIdentitySectionTitle => '수령 코드 표시';
 
   @override
-  String get campusToolsIdentitySectionHint => '보관함 앞에서 누르세요';
-
-  @override
-  String get campusToolsIdentitySubtitle => '수령 코드 열기';
-
-  @override
   String get campusToolsParcelsSectionTitle => '택배 확인';
-
-  @override
-  String get campusToolsParcelsSectionHint => '도착한 택배 보기';
-
-  @override
-  String get campusToolsParcelsSubtitle => '수령 대기 목록 열기';
-
-  @override
-  String get campusToolsFooterHint =>
-      '각 앱의 공개 딥링크를 사용합니다. 열 수 없으면 해당 앱을 실행합니다.';
 }
