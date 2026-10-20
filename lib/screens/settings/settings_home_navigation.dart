@@ -246,7 +246,7 @@ class _HomeNavigationSettingsScreenState
                       settings: const RouteSettings(
                         name: '/settings/home-menu',
                       ),
-                      builder: (_) => _HomeGridMenuEditorScreen(
+                      builder: (_) => HomeGridMenuEditorScreen(
                         initialIds: [
                           for (final entry in resolveHomeGridMenuEntries(
                             _draft,

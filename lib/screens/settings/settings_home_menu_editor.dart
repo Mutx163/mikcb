@@ -1,11 +1,16 @@
-part of '../timetable_settings_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import '../../models/timetable_settings.dart';
+import '../../widgets/home_menu_catalog.dart';
+import '../../widgets/home_top_menu.dart';
+import '../../ui/hyperos/hyperos.dart';
 
 /// 八宫格按钮自定义编辑器。
 /// 候选来自 kHomeMenuCatalog（全应用的二级页面与功能），按分类分组展示；
 /// 「已启用」支持拖动排序与逐个移除（至少保留一个入口）。所有改动即时
 /// 回调 onChanged，由外观页统一走草稿 + 自动保存队列持久化。
-class _HomeGridMenuEditorScreen extends StatefulWidget {
-  const _HomeGridMenuEditorScreen({
+class HomeGridMenuEditorScreen extends StatefulWidget {
+  const HomeGridMenuEditorScreen({super.key, 
     required this.initialIds,
     required this.themeSeedHex,
     required this.onChanged,
@@ -20,11 +25,11 @@ class _HomeGridMenuEditorScreen extends StatefulWidget {
   final ValueChanged<List<String>> onChanged;
 
   @override
-  State<_HomeGridMenuEditorScreen> createState() =>
-      _HomeGridMenuEditorScreenState();
+  State<HomeGridMenuEditorScreen> createState() =>
+      HomeGridMenuEditorScreenState();
 }
 
-class _HomeGridMenuEditorScreenState extends State<_HomeGridMenuEditorScreen> {
+class HomeGridMenuEditorScreenState extends State<HomeGridMenuEditorScreen> {
   late List<String> _ids = [
     // 目录可能随版本演进（改名/下线入口、构建模式门控）；种子阶段就丢
     // 弹当前环境不可用的 id，保证编辑器里每一行都真实可解析、可打开。
