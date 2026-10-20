@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
-import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +13,6 @@ import '../providers/weather_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../utils/app_toast.dart';
-import '../widgets/home_menu_catalog.dart';
 import '../ui/debug/debug.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
@@ -36,7 +34,6 @@ import 'miuix_showcase_screen.dart';
 import 'user_guide_screen.dart';
 import 'settings/settings_shared.dart';
 import 'settings/settings_appearance_editor.dart';
-import 'settings/settings_reset.dart';
 import 'settings/settings_weather.dart';
 import 'settings/settings_general.dart';
 import 'settings/settings_diagnostics.dart';
@@ -46,10 +43,7 @@ import 'settings/settings_home_widget.dart';
 import 'settings/settings_timetable_page.dart';
 import 'settings/settings_appearance.dart';
 import 'settings/settings_course_card.dart';
-import 'settings/settings_glass_dock_editor.dart';
-import 'settings/settings_glass_dock_icon_editor.dart';
-import 'settings/settings_home_menu_editor.dart';
-part 'settings/settings_home_navigation.dart';
+import 'settings/settings_home_navigation.dart';
 /// 鍏鏍肩瓑澶栭儴鍏ュ彛鐩磋揪璁剧疆瀛愰〉鐨勫伐鍘傘€?
 ///
 /// 鍚勫瓙椤电被淇濇寔搴撳唴绉佹湁锛岃繖閲屾寜绋冲畾 id 鏆撮湶锛涙湭鐭?id 杩斿洖 null锛?
@@ -112,7 +106,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           HyperosNavigation.push(
             context,
             settings: const RouteSettings(name: '/settings/home-navigation'),
-            builder: (_) => const _HomeNavigationSettingsScreen(),
+            builder: (_) => const HomeNavigationSettingsScreen(),
           );
         }
 

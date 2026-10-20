@@ -1,19 +1,33 @@
-part of '../timetable_settings_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../models/timetable_settings.dart';
+import '../../providers/timetable_provider.dart';
+import '../../widgets/home_menu_catalog.dart';
+import '../../ui/hyperos/hyperos.dart';
+import 'settings_shared.dart';
+import 'settings_reset.dart';
+import 'settings_appearance.dart';
+import 'settings_glass_dock_editor.dart';
+import 'settings_glass_dock_icon_editor.dart';
+import 'settings_home_menu_editor.dart';
 
 /// 「首页与导航」二级页：从「外观」迁出的结构性设置（设置 IA 重构）。
 ///
 /// 迁入条目：首页导航形态、玻璃坞独立圆钮显隐与功能/图标、底栏按钮编排、
 /// 右上角菜单形态（homeMenuStyle）与八宫格自定义、首页标题样式。
-class _HomeNavigationSettingsScreen extends StatefulWidget {
-  const _HomeNavigationSettingsScreen();
+class HomeNavigationSettingsScreen extends StatefulWidget {
+  const HomeNavigationSettingsScreen({super.key});
 
   @override
-  State<_HomeNavigationSettingsScreen> createState() =>
-      _HomeNavigationSettingsScreenState();
+  State<HomeNavigationSettingsScreen> createState() =>
+      HomeNavigationSettingsScreenState();
 }
 
-class _HomeNavigationSettingsScreenState
-    extends State<_HomeNavigationSettingsScreen> {
+class HomeNavigationSettingsScreenState
+    extends State<HomeNavigationSettingsScreen> {
   /// Visual groups on this page (not one card per control).
   /// 0 nav form · 1 dock tabs ＋ grid-menu customize · 2 home title · 3 reset.
   static const _homeNavigationSectionCount = 4;

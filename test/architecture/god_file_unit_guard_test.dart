@@ -195,7 +195,10 @@ void main() {
     // 文件头/import，零行为搬迁。
     // 13731→13735：settings_home_menu_editor.dart 转正（HomeGridMenuEditorScreen
     // 公开化），差值全为文件头/import，零行为搬迁。
-    const baselineLines = 13735;
+    // 13735→13743：settings_home_navigation.dart 转正（HomeNavigationSettingsScreen
+    // 公开化）——设置域 16 个分身全部转正完毕，设置页 part 数上限收到 0；
+    // 全仓 part 总数 28→11（剩 provider 10 + 课表页 2）。
+    const baselineLines = 13743;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory('lib/screens/settings')
@@ -216,7 +219,7 @@ void main() {
           '并先做等量瘦身，不要抬基线换绿。',
     );
 
-    // part 数量：只减不增，随「转正」逐格收紧（1 = home_menu_editor 转正后余 1）。
+    // part 数量：设置域 16 个分身已全部转正，上限 0 = 不允许任何新增。
     final settingsMain = File('lib/screens/timetable_settings_screen.dart');
     final partCount = RegExp(
       r"^part\s+'",
@@ -224,7 +227,7 @@ void main() {
     ).allMatches(settingsMain.readAsStringSync()).length;
     expect(
       partCount,
-      lessThanOrEqualTo(1),
+      lessThanOrEqualTo(0),
       reason:
           '设置页 part 数量涨到 $partCount（基线 16）。16 个分身将逐个转正为'
           '独立库文件；part 只作零行为搬迁的过渡，不要新增。',
@@ -232,7 +235,7 @@ void main() {
   });
 
   test('全仓 part 指令总数棘轮：只减不增', () {
-    const baselineParts = 28;
+    const baselineParts = 11;
     final partDirective = RegExp(r"^part\s+'", multiLine: true);
     var total = 0;
     for (final file in Directory('lib').listSync(recursive: true)) {
