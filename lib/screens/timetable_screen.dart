@@ -34,6 +34,7 @@ import '../controllers/day_view_transition_controller.dart';
 import '../controllers/empty_slot_marker_controller.dart';
 import '../controllers/timetable_update_download_controller.dart';
 import '../controllers/home_pull_controller.dart';
+import '../controllers/home_menu_controller.dart';
 import '../controllers/update_check_controller.dart';
 import '../controllers/wallpaper_luminance_controller.dart';
 import '../controllers/week_pager_controller.dart';
@@ -48,8 +49,6 @@ import '../widgets/course_card.dart';
 import '../widgets/course_grid_surface_host.dart';
 import '../widgets/course_weather_display.dart';
 import '../widgets/home_menu_catalog.dart';
-import '../widgets/home_top_menu.dart';
-import '../widgets/home_top_menu_popup.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/week_selector_picker_sheet.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
@@ -103,7 +102,7 @@ class TimetableScreen extends StatefulWidget {
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin
-    implements DayViewTransitionHost, WeekPagerHost {
+    implements DayViewTransitionHost, WeekPagerHost, HomeMenuHost {
   static const double _homeTitleHorizontalNudge = 4;
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
@@ -152,35 +151,25 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 见 [_pushAfterDockGlowSettled]。
   ///
   /// ⚠️ **两块都要**：它们是各自独立的 [LiquidGlassSurface]、各有各的光斑，而
-  /// 圆钮（[_handleRoundButtonTap]）同样会 `entry.open(context)` 推路由。只挂药丸
-  /// 的话，用户把圆钮也指到「外观编辑」时那条路原样漏（2026-09-26 自审补上）。
-  /// 非液态材质档压根没有光斑，`currentState` 为 null，`?.` 天然跳过。
+  /// 圆钮（[HomeMenuController.handleRoundButtonTap]）同样会 `entry.open(context)`
+  /// 推路由。只挂药丸的话，用户把圆钮也指到「外观编辑」时那条路原样漏
+  /// （2026-09-26 自审补上）。非液态材质档压根没有光斑，`currentState` 为 null，
+  /// `?.` 天然跳过。
   final GlobalKey<LiquidGlassSurfaceState> _glassDockKey =
       GlobalKey<LiquidGlassSurfaceState>();
   final GlobalKey<LiquidGlassSurfaceState> _glassDockRoundKey =
       GlobalKey<LiquidGlassSurfaceState>();
-
-  /// 首页「更多」菜单（列表形态）改用上游 flutter_miuix 1.2.0 的 HyperOS 4
-  /// 玻璃弹层后的持有物。按上游约定：锚点与材质捕获容器由宿主创建并持有
-  ///（[MiuixGlassPopupAnchor.dispose] 在 [dispose] 里释放）；弹层是
-  /// 「常驻挂载 + 切 show」的声明式组件，故用 [_homeMenuOpen] 控制显隐。
-  final MiuixGlassPopupAnchor _homeMenuAnchor = MiuixGlassPopupAnchor();
 
   /// 顶栏「更多」「爱心」常驻玻璃球的位置锚（[FHeaderActionBall] 跟随真实
   /// 按钮的透明点击区）。
   final LayerLink _moreBallLink = LayerLink();
   final LayerLink _heartBallLink = LayerLink();
 
-  /// 首页整屏的玻璃采样源。首页自持（而不是让宿主自建）有两个原因：
-  /// 1. 首页右上角菜单与首页内容不在同一棵子树里（菜单要在捕获之外，防反馈采样），
-  ///    菜单必须拿到**首页这一屏**的 backdrop，而不是"注册表栈顶"（玻璃坞里被盖住的
-  ///    内嵌页也会注册，栈顶可能是一屏不绘制的页面 → 快照为空 → 菜单透明）；
-  /// 2. 「更多」按钮按下即 `acquire` 预热录帧，抬手打开菜单时快照已就绪，
-  ///    弹层首帧就有玻璃（否则展开头一两帧是透明轮廓）。
-  final HyperosGlassBackdropController _homeGlass =
-      HyperosGlassBackdropController();
-  bool _homeGlassHeld = false;
-  bool _homeMenuOpen = false;
+  /// 顶栏菜单（列表态玻璃弹层 + 八宫格分发 + 圆钮入口）在
+  /// `lib/controllers/home_menu_controller.dart`；本 State 只通过
+  /// [HomeMenuHost] 端口提供更新红点、锚点内容与选中项执行。
+  late final HomeMenuController _homeMenu;
+
   late final TimetableUpdateDownloadController _updateDownload;
   late final UpdateCheckController _update;
 
@@ -535,6 +524,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   void initState() {
     super.initState();
     _dayViewTransition = DayViewTransitionController(host: this);
+    _homeMenu = HomeMenuController(host: this);
     _weekdayInkGuard = WeekdayInkContrastGuard();
     _emptySlot = EmptySlotMarkerController()
       ..addListener(_handleEmptySlotChanged);
@@ -659,8 +649,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _screenshotSubscription = null;
     _screenshotListening = false;
     unawaited(ScreenCaptureService.stop());
-    _homeMenuAnchor.dispose();
-    _homeGlass.dispose();
+    _homeMenu.dispose();
     _emptySlot.removeListener(_handleEmptySlotChanged);
     _emptySlot.dispose();
     _luminance.removeListener(_handleLuminanceChanged);
@@ -747,7 +736,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           }
         });
         // 顶栏「更多」「爱心」的常驻玻璃球（[FHeaderActionBall]）。**必须画在
-        // 采样宿主之外**（_wrapHomeWithTopMenu 的 Stack 里、Host 的兄弟层）：
+        // 采样宿主之外**（[HomeMenuController.buildShell] 的 Stack 里、Host 的
+        // 兄弟层）：
         // 页内玻璃的采样快照录自捕获节点的图层，球若长在捕获子树里，它自己的
         // 输出会被烘进下一次采样 —— 打开菜单时按钮被上游隐藏，快照是干净的，
         // 关闭后按钮重绘即触发重采样，球就"变一次材质"并稳定在烘过自己一层
@@ -755,12 +745,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         // 「更多」在菜单打开期间让位给弹窗自己的形变球（与真实按钮被
         // `contentHidden` 隐藏的窗口一致，见 ListenableBuilder）。
         final homeChromeBalls = buildTimetableHomeChromeBalls(
-          homeMenuAnchor: _homeMenuAnchor,
+          homeMenuAnchor: _homeMenu.anchor,
           moreLink: _moreBallLink,
           heartLink: _heartBallLink,
           hasPartnerBinding: provider.hasPartnerBinding,
           coupleOverlayActive: _isCoupleOverlayActive(provider),
-          moreIcon: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
+          moreIcon: buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
           chromeActionBallInk: _chromeActionBallInk,
         );
         // 与设置页课表预览完全同构的组采样结构：BackdropGroup 内先放全尺寸
@@ -836,7 +826,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           coupleOverlayActive: _isCoupleOverlayActive(provider),
           heartLink: _heartBallLink,
           moreLink: _moreBallLink,
-          homeMenuAnchor: _homeMenuAnchor,
+          homeMenuAnchor: _homeMenu.anchor,
           topMenuButtonKey: _topMenuButtonKey,
           onToggleCoupleOverlay: () {
             setState(() {
@@ -848,9 +838,10 @@ class _TimetableScreenState extends State<TimetableScreen>
               enabled: _coupleOverlayEnabled,
             );
           },
-          onPrewarmGlass: _prewarmHomeGlass,
-          onReleaseGlass: _releaseHomeGlassAfterTap,
-          onShowTopActions: _showTopActionsSheet,
+          onPrewarmGlass: _homeMenu.prewarmGlass,
+          onReleaseGlass: _homeMenu.releaseGlassAfterTap,
+          onShowTopActions: () =>
+              _homeMenu.showTopActionsSheet(context),
         ),
         timetableSurfaceKey: _timetableSurfaceKey,
         isPullRunning: _homePull.isRunning,
@@ -979,13 +970,13 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
               roundButtonIcon: _roundButtonIcon(settings),
               onTabSelected: (id) => _handleDockTap(id, settings),
-              onRoundButtonTap: () => _handleRoundButtonTap(settings),
+              onRoundButtonTap: () => _homeMenu.handleRoundButtonTap(settings),
               pillKey: _glassDockKey,
               roundKey: _glassDockRoundKey,
             )
           : null,
-      wrapHome: (content, {dockLayer}) => _wrapHomeWithTopMenu(
-        content,
+      wrapHome: (content, {dockLayer}) => _homeMenu.buildShell(
+        content: content,
         settings: settings,
         chromeBalls: homeChromeBalls,
         chromeDotBorderColor: chromeDotBorderColor,
@@ -1036,7 +1027,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   ///
   /// [dotBorderColor] 是红点那圈"挖坑"描边色（顶栏带色 / 无带时的主题底色），
   /// 两处必须同色，否则交接瞬间红点那圈边会跳一下。
-  Widget _buildMoreActionIcon({required Color dotBorderColor}) =>
+  @override
+  Widget buildMoreActionIcon({required Color dotBorderColor}) =>
       HomeMoreActionIcon(
         ink: _chromeActionBallInk,
         dotBorderColor: dotBorderColor,
@@ -1895,38 +1887,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return const Icon(Icons.add_rounded);
   }
 
-  /// 圆钮点击分发：addCourse/空走添加弹层；内嵌注册页在首页栈内
-  /// 切换（坞常驻，再点同钮收回）；其余目录条目普通推入。
-  void _handleRoundButtonTap(TimetableSettings settings) {
-    final id = settings.glassDockButtonEntryId;
-    if (id == 'addCourse' || id.isEmpty) {
-      unawaited(_showAddCourseSheet());
-      return;
-    }
-    final catalogEntry = homeMenuEntryById(id);
-    if (catalogEntry?.visible() == true && inlineDockPageFor(id) != null) {
-      setState(() {
-        _dockInlinePageId = (_dockInlinePageId == id) ? null : id;
-      });
-      // 圆钮保留 toggle 收回（Tab 侧再点当前页已改无动作：圆钮无选中态
-      // 指示，按钮式「再点撤销」成立）；开/收/换页都是真实切换，给触觉。
-      _maybeSelectionClick(settings);
-      return;
-    }
-    final entry = homeMenuEntryById(id);
-    if (entry != null && entry.visible()) {
-      _maybeSelectionClick(settings);
-      // 同 [_handleDockTap] 的推路由分支：圆钮是另一块液态玻璃、自带光斑，
-      // 也必须先收掉再推（否则光斑照样被快照定格）。
-      _pushAfterDockGlowSettled(entry.open);
-      return;
-    }
-
-    // 旧版本可能保存了已经撤掉的入口 id。图标层会回退成加号，
-    // 点击也必须走同一个新增课程回退，不能显示一个无响应按钮。
-    unawaited(_showAddCourseSheet());
-  }
-
   /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
   /// 避免库断言越界（此时底栏全是页面入口，无「当前页」语义）。
   int _dockSelectedIndex(List<String> ids) {
@@ -2245,211 +2205,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     _maybeSelectionClick(provider.settings);
   }
 
-  /// 首页主体 + 顶栏「更多」弹层。
-  ///
-  /// 布局与采样源次序（采样宿主、玻璃坞、常驻球、菜单四层的位次与理由）见
-  /// [TimetableHomeTopMenuShell]；本方法只把 State 里的状态与回调接上去。
-  Widget _wrapHomeWithTopMenu(
-    Widget content, {
-    required TimetableSettings settings,
-    required List<Widget> chromeBalls,
-    required Color chromeDotBorderColor,
-    Widget? dockLayer,
-  }) {
-    return TimetableHomeTopMenuShell(
-      content: content,
-      glassController: _homeGlass,
-      showMenu: _homeMenuOpen,
-      anchor: _homeMenuAnchor,
-      // 形变动效要从按钮位置长出来，故传入按钮内容的**副本**（不含 GlobalKey，
-      // 避免与真实按钮抢同一个 key）：与常驻球**共用同一份**可见内容
-      // （[_buildMoreActionIcon]，含更新红点与同一墨色）。两者不能有差异：
-      // 早先这里只给裸图标，关闭菜单交接那一瞬圆钮会闪一下（2026-09-14 真机反馈）。
-      anchorContent: _buildMoreActionIcon(dotBorderColor: chromeDotBorderColor),
-      entries: resolveHomeGridMenuEntries(settings),
-      hasAvailableUpdate: _update.hasUpdate,
-      onDismissRequest: _closeHomeMenuNow,
-      onSelected: _dispatchTopMenuSelection,
-      onDismissFinished: _noteHomeMenuDismissFinished,
-      dockLayer: dockLayer,
-      chromeBalls: chromeBalls,
-    );
-  }
-
-  /// 「更多」按钮按下即预热：采样区快照在帧末录制，早一拍才能保证菜单首帧有玻璃。
-  ///
-  /// 用 [HyperosGlassBackdropController.holdRecording] 而不是 `acquire()`：
-  /// 首页菜单两块面板都走注入面（读"玻璃背后那条带"），整层图没人读 —— 而
-  /// `acquire()` 会在**整个开合动画期间每帧录一张全屏**（按 dpr ≈ 6.7MB/帧）。
-  void _prewarmHomeGlass() {
-    if (_homeGlassHeld) return;
-    _homeGlassHeld = true;
-    _homeGlass.holdRecording();
-  }
-
-  /// 抬手未展开 / 菜单关闭后归还录帧请求（配对 [holdRecording]，避免首页一直录帧）。
-  void _releaseHomeGlass() {
-    if (!_homeGlassHeld) return;
-    _homeGlassHeld = false;
-    _homeGlass.releaseRecording();
-  }
-
-  /// 「更多」按钮抬手后**帧末**再判要不要归还。
-  ///
-  /// 不能在抬手当场归还：`Listener.onPointerUp` 早于按钮的 `onPress`，而
-  /// `_homeMenuOpen` 是在 `onPress` 里才置 true 的 —— 当场归还就会
-  /// arm → release → arm 走一遍，中间那次让首页正文白重录一次、还多排一次
-  /// 空转录帧（2026-10-19 日志里 `holds=1 → 0 → 1` 就是这个）。推到帧末，
-  /// 这一下 tap 真开了菜单就保持不还。
-  ///
-  /// 显式 `scheduleFrame()`：指针事件本身不保证排帧，而帧末回调只在有帧时跑，
-  /// 漏排一次就等于「这次抬手没归还」，首页会一直录帧。
-  void _releaseHomeGlassAfterTap() {
-    if (_homeMenuOpen) return;
-    WidgetsBinding.instance.scheduleFrame();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_homeMenuOpen) _releaseHomeGlass();
-    });
-  }
-
-  /// 正在等「菜单退场动画走完」的那个信号（见 [_closeHomeMenuAndWait]）。
-  ///
-  /// 由弹层的 `onDismissFinished` 收口（上游 `GlassPopupPresenter._finish`：面板已
-  /// 从覆盖层摘掉、锚点那颗球的图标也交还了）。它比 [kHomeMenuCollapseBudget] 晚
-  /// （弹簧要收敛到 0.0015，实测 ≈670ms，而视觉上 ≈240ms 就收完了），所以只当
-  /// **提前放行**用（关动效那条路是瞬时的），常态是预算到期继续。
-  Completer<void>? _homeMenuDismissed;
-
-  /// 弹层退场结束：唤醒 [_closeHomeMenuAndWait] 里的等待。
-  void _noteHomeMenuDismissFinished() {
-    final completer = _homeMenuDismissed;
-    if (completer == null || completer.isCompleted) {
-      return;
-    }
-    _homeMenuDismissed = null;
-    completer.complete();
-  }
-
-  /// 立刻收起首页菜单（遮罩点击 / 返回键 / 菜单项执行前的统一收口）。
-  void _closeHomeMenuNow() {
-    if (_homeMenuOpen) {
-      setState(() => _homeMenuOpen = false);
-    }
-    _releaseHomeGlass();
-  }
-
-  Future<void> _showTopActionsSheet() async {
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
-
-    // 菜单形态由设置分流：「八宫格」是 v2.0.5.5 已发布版本的底部弹层；
-    // 「列表」自 2026-09-13 起改用上游 flutter_miuix OS4 玻璃弹层
-    // （HomeTopMenuPopup：形变动效 + 不再逐帧重采整页组捕获）。两种形态
-    // 共享同一份自定义排列（homeGridMenuActions），统一以入口 id 回传，
-    // 再经 _dispatchTopMenuSelection 分发到全应用任意二级页面/功能。
-    if (settings.homeMenuStyle != HomeMenuStyle.grid) {
-      _prewarmHomeGlass();
-      setState(() => _homeMenuOpen = true);
-      return;
-    }
-    // 八宫格是底部弹层，不吃首页采样源：抬手即归还预热。
-    _releaseHomeGlass();
-
-    final selectedId = await showHomeTopGridMenuSheet(
-      context,
-      hasAvailableUpdate: _update.hasUpdate,
-      entries: resolveHomeGridMenuEntries(settings),
-      themeSeedHex: settings.themeSeedColor,
-    );
-    if (selectedId == null) {
-      return;
-    }
-    await _dispatchTopMenuSelection(selectedId);
-  }
-
-  /// 顶栏菜单选中项分发：八宫格与列表（OS4 玻璃弹层）两种形态共用入口。
-  ///
-  /// **时序：菜单先收完，再执行选中项。** 用户 2026-10-19 口径：「先进行收缩，
-  /// 收缩完了才弹出新的页面，比如进入设置页面」。以前只有缩放转场那条这么干，
-  /// 通用条目走的是「先推页、等新页盖满再收」（那条为的是避开 2026-09-15 真机
-  /// 反馈的「菜单先收、页面后盖，中间几帧首页顶栏两颗球闪一下」）。
-  ///
-  /// 菜单没开着（八宫格底部弹层形态）时不等，行为与从前一致。
-  Future<void> _dispatchTopMenuSelection(String selectedId) async {
-    if (!mounted) {
-      return;
-    }
-    final provider = context.read<TimetableProvider>();
-
-    // Let the sheet route finish closing before pushing the next page.
-    await Future<void>.delayed(Duration.zero);
-    if (!mounted) {
-      return;
-    }
-
-    await _closeHomeMenuAndWait();
-    if (!mounted) {
-      return;
-    }
-
-    await _runTopMenuSelection(selectedId, provider);
-  }
-
-  /// 收起首页菜单，并等它**视觉上收完**（缩回锚点那颗球）才返回。
-  ///
-  /// 用户 2026-10-19 口径：点菜单项之后先收缩、收缩完才弹新页面。所有条目
-  /// （推路由 / 弹层 / 分享）统一走这里，[_dispatchTopMenuSelection] 只等它返回。
-  ///
-  /// 菜单没开着（八宫格底部弹层形态）时立即返回：底部弹层那格是 `Navigator.pop`
-  /// 直接摘路由（没有退场动画残留），`_homeMenuOpen` 一直是 false。
-  ///
-  /// 等待口径 = **菜单视觉收完**，不是弹层动画的数学收敛：
-  /// * 面板退场是弹簧（上游 `transformBounds(false)` = folmeSpring 阻尼 .8 /
-  ///   response .28s），逐帧实测 200×16ms 测试帧里面板宽从 65px 缩到 12px 用
-  ///   15 帧（≈240ms），此后只剩亚像素抖动 —— 12px 的点趴在锚点那颗球上，肉眼
-  ///   与「没了」无异。
-  /// * 而上游那条 [HomeTopMenuPopup.onDismissFinished] 挂在 `animateGlassTo` 的
-  ///   收敛容差（0.0015）上，实测要 **≈670ms** 才回调。照它等 = 凭空加半秒空档。
-  /// 所以取 [kHomeMenuCollapseBudget] 作上限，弹层若**先**报退场结束（关动效那条
-  ///   路是瞬时的）就立刻走。
-  Future<void> _closeHomeMenuAndWait() async {
-    // completer 必须**先**挂上再收起：`_closeHomeMenuNow` 只翻 `show`，退场是
-    // 弹层在后续帧里跑的，不会同步回调，但先挂可杜绝任何"信号先到、等待后建"。
-    final waiting = _homeMenuOpen
-        ? (_homeMenuDismissed = Completer<void>())
-        : null;
-    _closeHomeMenuNow();
-    if (waiting == null) {
-      return;
-    }
-    await Future.any<void>([
-      waiting.future,
-      Future<void>.delayed(kHomeMenuCollapseBudget),
-    ]);
-    if (identical(_homeMenuDismissed, waiting)) {
-      _homeMenuDismissed = null;
-    }
-    if (!mounted) {
-      return;
-    }
-    // 边缘时序：这 280ms 里用户又点了球、把菜单重开了（收起期第一帧锚点就收回
-    // 输入，见上游 fork 的口径）。此时不再等第二遍 —— 直接收掉就继续，绝不能
-    // 带着一张张开的菜单去推页面。
-    if (_homeMenuOpen) {
-      _closeHomeMenuNow();
-    }
-    // 锚点那颗球的**图标**上游要等退场动画彻底结束才交还
-    // （`MiuixGlassAnchor.contentHidden` ← `GlassPopupPresenter._finish`，≈670ms）。
-    // 那时转场早就走完，首页（或首页快照）上的「更多」球会是个**没有图标的空球**。
-    // 此刻交还正是上游想做的那次视觉交接 —— 弹层自己的形变副本 80ms 就淡完了、
-    // 面板也缩成球了 —— 只是不去等那条数学收敛。写已释放的 anchor 会被它自己的
-    // `_disposed` 挡掉，这里也先判 mounted。
-    if (_homeMenuAnchor.contentHidden) {
-      _homeMenuAnchor.contentHidden = false;
-    }
-  }
-
-  /// 菜单项的实际分发（由 [_dispatchTopMenuSelection] 在**菜单收完之后**调用）。
+  /// 菜单项的实际分发（由 [HomeMenuController.dispatchSelection] 在**菜单收完
+  /// 之后**调用）。
   ///
   /// id → 动作的映射在 [dispatchTimetableTopMenuSelection]；这里只把首页专属的
   /// 六条启动路径接上（它们要读可见周、日视图选中日期、provider 与分享快照）。
@@ -2489,6 +2246,33 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
     );
   }
+
+  // ── HomeMenuHost：顶栏菜单控制器的宿主端口 ──────────────────────────────
+
+  @override
+  bool get hasAvailableUpdate => _update.hasUpdate;
+
+  @override
+  TimetableSettings get menuSettings =>
+      context.read<TimetableProvider>().settings;
+
+  @override
+  Future<void> runTopMenuSelection(String selectedId) =>
+      _runTopMenuSelection(selectedId, context.read<TimetableProvider>());
+
+  @override
+  String? get dockInlinePageId => _dockInlinePageId;
+
+  @override
+  set dockInlinePageId(String? value) =>
+      setState(() => _dockInlinePageId = value);
+
+  @override
+  Future<void> showAddCourseSheet() => _showAddCourseSheet();
+
+  @override
+  void pushAfterDockGlowSettled(Future<void> Function(BuildContext) open) =>
+      _pushAfterDockGlowSettled(open);
 
   Future<void> _checkForAppUpdate({required bool includePrerelease}) {
     return _updateDownload.checkForAppUpdate(
