@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构棘（第 32 轮）：**"今天上完/没课 → 卡片整体切到明天课表"这条门禁只许有一份实现**。
 ///
 /// 正源：`TodayWidgetSupport.isShowingTomorrowCourses`（:1157-1167）先判
@@ -22,7 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('今日系卡片不得内联重复「切到明天」的状态门禁', () {
     final widgetDir = Directory(
-      'android/app/src/main/kotlin/com/mutx163/qingyu',
+      GuardSource.resolve('android/app/src/main/kotlin/com/mutx163/qingyu'),
     );
     expect(widgetDir.existsSync(), isTrue, reason: '需在仓库根运行');
 

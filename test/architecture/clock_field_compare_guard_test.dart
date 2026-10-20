@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构棘（第二十四轮）：**钟点串一律按分钟数比**，不许再出现字段级字典序比较。
 ///
 /// 正源是 `lib/domain/clock_order.dart` 的 `compareClockText`，它自己的注释
@@ -29,7 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 而 `Exam.fromJson`（models/exam.dart:168）走 `normalizeTimeOfDay(...)`，
 /// 恒为补零的 `HH:mm`，字典序与分钟序同序。
 void main() {
-  final libDir = Directory('lib');
+  final libDir = Directory(GuardSource.resolve('lib'));
 
   // 两个方向都要抓：
   //   · 字段在左 —— `course.startTime.compareTo(x)`；
@@ -88,7 +90,9 @@ void main() {
   });
 
   test('允许清单里的那一处仍然是考试排序，没有变成课程或日程', () {
-    final file = File('lib/screens/timetable_day_view_part.dart');
+    final file = File(
+      GuardSource.resolve('lib/screens/timetable_day_view_part.dart'),
+    );
     expect(file.existsSync(), isTrue);
     expect(allowedNote, isNotEmpty);
     final offending = file.readAsLinesSync().where((line) {

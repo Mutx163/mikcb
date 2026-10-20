@@ -19,6 +19,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 例外用**行内标记**而不是整文件白名单：标记写在调用上方几行内，且必须写明理由。
 ///
 /// 整文件白名单会连带放过同一个文件里**新加**的漏网模糊（`liquid_glass_surface.dart`
@@ -83,7 +85,9 @@ bool _hasOkMarker(List<String> rawLines, int line) {
 void main() {
   test('lib/ 下每处 ImageFilter.blur 都必须显式给出 tileMode', () {
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
+    for (final entity in Directory(GuardSource.resolve('lib')).listSync(
+      recursive: true,
+    )) {
       if (entity is! File || !entity.path.endsWith('.dart')) {
         continue;
       }

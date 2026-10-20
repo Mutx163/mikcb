@@ -14,6 +14,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 允许出现的文件 → 该文件里允许的出现形式。
 const _constructionSite = 'lib/models/liquid_glass_tuning.dart';
 const _declarationSite = 'lib/ui/hyperos/liquid/liquid_glass_shader.dart';
@@ -22,11 +24,15 @@ const _declarationSite = 'lib/ui/hyperos/liquid/liquid_glass_shader.dart';
 List<({String path, int line, String text})> _hits(String root) {
   const needle = 'LiquidGlassStyle(';
   final hits = <({String path, int line, String text})>[];
-  for (final entity in Directory(root).listSync(recursive: true)) {
+  for (final entity in Directory(GuardSource.resolve(root)).listSync(
+    recursive: true,
+  )) {
     if (entity is! File || !entity.path.endsWith('.dart')) {
       continue;
     }
-    final path = entity.path.replaceAll(r'\', '/');
+    // repoRelative 归一：快照模式下是绝对路径，下面的「等于字面量」比较
+    // 只有仓库相对形式才成立。
+    final path = GuardSource.repoRelative(entity.path);
     final lines = entity.readAsStringSync().split('\n');
     for (var i = 0; i < lines.length; i++) {
       // 行注释里的提及不算（本文件与文档里就大量引用这个名字）。

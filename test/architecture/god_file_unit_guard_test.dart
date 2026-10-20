@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 上帝单元（一个类/文件承担多个模块职责）的「总量」棘轮（2026-10-19 立）。
 ///
 /// 旧棘轮只量主文件行数，于是「把代码搬进同库 part」就能让门禁变绿：
@@ -47,7 +49,7 @@ void main() {
           '新功能请放进独立 widget/controller；不要靠新增 part 摊薄主文件。',
     );
 
-    final partCount = Directory('lib/screens')
+    final partCount = Directory(GuardSource.resolve('lib/screens'))
         .listSync()
         .whereType<File>()
         .where(
@@ -92,7 +94,9 @@ void main() {
     final hostPrivateAccess = RegExp(r'host\._');
     var hits = 0;
     for (final path in _providerParts()) {
-      hits += hostPrivateAccess.allMatches(File(path).readAsStringSync()).length;
+      hits += hostPrivateAccess
+          .allMatches(File(GuardSource.resolve(path)).readAsStringSync())
+          .length;
     }
     expect(
       hits,
@@ -201,7 +205,7 @@ void main() {
     const baselineLines = 13743;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
-      ...Directory('lib/screens/settings')
+      ...Directory(GuardSource.resolve('lib/screens/settings'))
           .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart'))
@@ -220,7 +224,9 @@ void main() {
     );
 
     // part 数量：设置域 16 个分身已全部转正，上限 0 = 不允许任何新增。
-    final settingsMain = File('lib/screens/timetable_settings_screen.dart');
+    final settingsMain = File(
+      GuardSource.resolve('lib/screens/timetable_settings_screen.dart'),
+    );
     final partCount = RegExp(
       r"^part\s+'",
       multiLine: true,
@@ -238,7 +244,9 @@ void main() {
     const baselineParts = 11;
     final partDirective = RegExp(r"^part\s+'", multiLine: true);
     var total = 0;
-    for (final file in Directory('lib').listSync(recursive: true)) {
+    for (final file in Directory(GuardSource.resolve('lib')).listSync(
+      recursive: true,
+    )) {
       if (file is! File || !file.path.endsWith('.dart')) {
         continue;
       }
@@ -255,13 +263,13 @@ void main() {
 }
 
 int _lineCount(String path) {
-  final file = File(path);
+  final file = File(GuardSource.resolve(path));
   expect(file.existsSync(), isTrue, reason: '$path 不存在，棘已空转');
   return file.readAsLinesSync().length;
 }
 
 List<String> _providerParts() {
-  final dir = Directory('lib/providers/timetable');
+  final dir = Directory(GuardSource.resolve('lib/providers/timetable'));
   expect(dir.existsSync(), isTrue, reason: 'provider part 目录不存在，棘已空转');
   final parts =
       dir

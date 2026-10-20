@@ -18,6 +18,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 const _frozenDirs = <String>['test/widgets', 'test/screens', 'test/ui'];
 
 String _normalize(String path) => path.replaceAll(r'\', '/');
@@ -25,7 +27,7 @@ String _normalize(String path) => path.replaceAll(r'\', '/');
 Set<String> _actualFrozenTestFiles() {
   final files = <String>{};
   for (final dir in _frozenDirs) {
-    final directory = Directory(dir);
+    final directory = Directory(GuardSource.resolve(dir));
     if (!directory.existsSync()) {
       continue;
     }
@@ -33,7 +35,9 @@ Set<String> _actualFrozenTestFiles() {
       if (entity is! File) {
         continue;
       }
-      final path = _normalize(entity.path);
+      // repoRelative 归一：快照模式下 listSync 给的是绝对路径，
+      // 与基线（仓库相对）的集合比较只有归一后才成立。
+      final path = GuardSource.repoRelative(entity.path);
       if (path.endsWith('.dart')) {
         files.add(path);
       }
@@ -43,7 +47,9 @@ Set<String> _actualFrozenTestFiles() {
 }
 
 Set<String> _loadBaseline() {
-  final file = File('test/architecture/frozen_test_dirs_baseline.txt');
+  final file = File(
+    GuardSource.resolve('test/architecture/frozen_test_dirs_baseline.txt'),
+  );
   if (!file.existsSync()) {
     fail('冻结目录基线文件不存在：${file.path}');
   }
@@ -57,7 +63,9 @@ Set<String> _loadBaseline() {
 
 void main() {
   test('冻结目录 baseline 自身合法（有序、无重复、只含三类目录）', () {
-    final file = File('test/architecture/frozen_test_dirs_baseline.txt');
+    final file = File(
+      GuardSource.resolve('test/architecture/frozen_test_dirs_baseline.txt'),
+    );
     final lines = file
         .readAsLinesSync()
         .map((line) => line.trim())

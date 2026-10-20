@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构棘：所有「落盘失败会抛」的 provider 写入，调用点必须 await 且失败有出口。
 ///
 /// ## 为什么需要这条
@@ -131,7 +133,7 @@ void main() {
     final rootFiles = <String>['lib/main.dart'];
     final roots = <String>[
       for (final dir in rootDirs)
-        ...Directory(dir)
+        ...Directory(GuardSource.resolve(dir))
             .listSync(recursive: true)
             .whereType<File>()
             .where((f) => f.path.endsWith('.dart'))
@@ -140,13 +142,18 @@ void main() {
     ];
     expect(roots, isNotEmpty, reason: '扫描范围为空，棘会假绿');
     // 扩根自检：两个新根必须真的进了扫描列表，否则本次扩根等于没做。
+    // （路径经 repoRelative 归一：快照模式下 listSync 给的是绝对路径。）
     expect(
-      roots.any((p) => p.replaceAll('\\', '/').startsWith('lib/ui/')),
+      roots.any(
+        (p) => GuardSource.repoRelative(p).startsWith('lib/ui/'),
+      ),
       isTrue,
       reason: 'lib/ui 未纳入扫描，扩根失效',
     );
     expect(
-      roots.any((p) => p.replaceAll('\\', '/').endsWith('lib/main.dart')),
+      roots.any(
+        (p) => GuardSource.repoRelative(p).endsWith('lib/main.dart'),
+      ),
       isTrue,
       reason: 'lib/main.dart 未纳入扫描，扩根失效',
     );
@@ -155,7 +162,7 @@ void main() {
     var checked = 0;
 
     for (final path in roots) {
-      final lines = File(path).readAsLinesSync();
+      final lines = File(GuardSource.resolve(path)).readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i].trim();
         if (!callPattern.hasMatch(line)) {
@@ -194,7 +201,9 @@ void main() {
   });
 
   test('棘自己不是空转：仓库里确实存在「会抛的 provider 方法」', () {
-    final provider = File('lib/providers/timetable_provider.dart');
+    final provider = File(
+      GuardSource.resolve('lib/providers/timetable_provider.dart'),
+    );
     expect(provider.existsSync(), isTrue);
     final text = provider.readAsStringSync();
     final present = rethrowingProviders

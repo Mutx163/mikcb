@@ -2,16 +2,18 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构守卫棘轮（OPTIMIZATION.md 阶段 0 收尾：度量进 CI）。
 ///
 /// 守卫值只许下降不许上涨；确需放宽时，把基线改成新值并在提交信息说明
 /// 理由。下降后欢迎顺手收紧基线。
 void main() {
   const providerPath = 'lib/providers/timetable_provider.dart';
-  final providerFile = File(providerPath);
+  final providerFile = File(GuardSource.resolve(providerPath));
 
   List<File> libDartFiles() {
-    return Directory('lib')
+    return Directory(GuardSource.resolve('lib'))
         .listSync(recursive: true)
         .whereType<File>()
         .where((file) => file.path.replaceAll('\\', '/').endsWith('.dart'))
@@ -272,7 +274,7 @@ void main() {
     const baselineCallSites = 53;
     final partFiles = [
       providerFile,
-      ...Directory('lib/providers/timetable')
+      ...Directory(GuardSource.resolve('lib/providers/timetable'))
           .listSync()
           .whereType<File>()
           .where((file) => file.path.endsWith('.dart')),
@@ -302,7 +304,7 @@ void main() {
     // 不收敛自己就会长成新的存储问题。未拆文件的理由：清扫逻辑只有 20 行、
     // 且只被本文件的两个备份方法调用，单独成文件是过度碎片化。
     const baselineLines = 1929;
-    final storageFile = File('lib/services/storage_service.dart');
+    final storageFile = File(GuardSource.resolve('lib/services/storage_service.dart'));
     expect(storageFile.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = storageFile.readAsLinesSync().length;
     expect(
@@ -319,7 +321,7 @@ void main() {
       r'''import\s+['"]package:flutter/(widgets|material|cupertino)\.dart['"]''',
     );
     final violations = <String>[];
-    for (final file in Directory('lib/domain').listSync().whereType<File>()) {
+    for (final file in Directory(GuardSource.resolve('lib/domain')).listSync().whereType<File>()) {
       if (!file.path.endsWith('.dart')) {
         continue;
       }
@@ -366,7 +368,7 @@ void main() {
       'inspire_blur': 'https://github.com/Mutx163/inspire_blur.git',
     };
     // 按行取块，不按字符串切片：本仓检出在 Windows 下是 CRLF。
-    final lines = File('pubspec.lock').readAsLinesSync();
+    final lines = File(GuardSource.resolve('pubspec.lock')).readAsLinesSync();
     final entryStart = RegExp(r'^  \S');
     final blocks = <String, String>{};
     for (final name in expected.keys) {
@@ -410,7 +412,7 @@ void main() {
     // （`ref: glassy-surface`）时，`pub get` 照样会把它解析成一个具体 commit 写进
     // lock —— 于是这条守卫全绿，而依赖实际会跟着分支漂（下一次 pub get 就换代码）。
     // 两个文件都要看：lock 证明「当前解析成了哪个 commit」，yaml 证明「声明的是哪个」。
-    final pubspecLines = File('pubspec.yaml').readAsLinesSync();
+    final pubspecLines = File(GuardSource.resolve('pubspec.yaml')).readAsLinesSync();
     final entryStartYaml = RegExp(r'^  \S');
     for (final name in expected.keys) {
       final start = pubspecLines.indexWhere((line) => line == '  $name:');

@@ -11,12 +11,15 @@
 # `flutter test`：全量要几分钟，一旦慢到让人养成 `--no-verify` 的习惯，
 # 这道门禁就等于不存在。
 #
-# 第一道失败时不再一律拦下（2026-10-20 加归因）：守卫读的是**整个工作区**，
-# 并行会话的在途改动会顶爆别人的域、把无辜的提交拦下——2026-10-19 一晚
-# 4 次 --no-verify 全是并行误伤。红项先过 .githooks/guard_attribution.sh
-# 归因（域映射 .githooks/guard_domains.txt）：与本次提交无关、或域内混入
-# 在途改动无法切分的自动放行并打印说明；确属本次提交引入的照旧拦下。
-# 新增守卫测试时必须同步登记域映射，否则红项按「无法归因 = 本次引入」拦下。
+# 守卫读的是**本次提交的快照**，不是工作区（2026-10-20 晚改）：先 `git
+# checkout-index` 把索引物化到临时目录、经 MIKCB_GUARD_SNAPSHOT 交给守卫。
+# 动机：索引=提交内容（普通提交与路径限定提交都成立），工作区里并行会话的
+# 在途改动本来就不属于这次提交——此前守卫读工作区，2026-10-19 一晚 45 次
+# --no-verify 大半是「别人的在途半成品顶爆棘轮」的误伤；先试过红项归因
+# （guard_attribution.sh），但「域内混入在途改动就放行」在设置域常脏的现实下
+# 会把真实回归也放过去，当天即废。守卫红了再以 HEAD 快照对照一次：
+# HEAD 绿 ⇒ 本次提交引入，拦下；HEAD 也红 ⇒ 基线早已失守，先同步基线。
+# 守卫读文件的纪律由 test/architecture/guard_source.dart + 其纪律测试维持。
 #
 # 第二道：analyze 门禁（2026-10-11 新增）。暂存的 .dart 逐批过
 # `dart analyze --fatal-infos`（info 级也算失败，与 CI 同口径），用 `dart`
@@ -51,42 +54,86 @@ guard_relevant=$(printf '%s\n' "$staged" | grep -E '^(lib/|test/architecture/|an
 dart_staged=$(printf '%s\n' "$staged" | grep -E '\.dart$' || true)
 
 out_file=$(mktemp)
-trap 'rm -f "$out_file"' EXIT
+out_head_file=$(mktemp)
+snapshot=""
+snapshot_head=""
+cleanup() {
+  rm -f "$out_file" "$out_head_file"
+  [ -n "$snapshot" ] && rm -rf "$snapshot"
+  [ -n "$snapshot_head" ] && rm -rf "$snapshot_head"
+  true
+}
+trap cleanup EXIT
 
-# ---- 第一道：架构守卫 ----
+# 把当前索引物化成磁盘快照（git checkout-index），供守卫读「本次提交的内容」。
+# 普通提交时索引=共享暂存区；路径限定提交时 git 会给钩子一个临时索引
+# （GIT_INDEX_FILE=next-index-*.lock，只含本次提交的路径更新）——两种方式下
+# 物化结果都精确等于提交内容，工作区里别人的在途改动不在其中。
+materialize() {
+  # $1 = 目标目录（已存在）；物化 HEAD 树时额外把临时索引的路径放 $2
+  local win
+  win=$(cygpath -m "$1" 2>/dev/null) || win=$(cd "$1" && pwd -W 2>/dev/null) || win="$1"
+  if [ "$2" = "HEAD" ]; then
+    local tmpidx
+    tmpidx=$(mktemp)
+    GIT_INDEX_FILE="$tmpidx" git read-tree HEAD
+    GIT_INDEX_FILE="$tmpidx" git checkout-index -a --prefix="$win/"
+    rm -f "$tmpidx"
+  else
+    git checkout-index -a --prefix="$win/"
+  fi
+}
+
+# ---- 第一道：架构守卫（读提交快照，不读工作区） ----
 
 if [ -n "$guard_relevant" ]; then
   if ! command -v flutter >/dev/null 2>&1; then
     echo "pre-commit: 找不到 flutter，跳过架构守卫（CI 仍会兜住）。" >&2
   else
-    echo "pre-commit: 跑架构守卫（test/architecture/，约 6 秒）..."
+    echo "pre-commit: 跑架构守卫（读本次提交快照，约 8 秒）..."
 
-    set +e
-    flutter test test/architecture/ --timeout 60s >"$out_file" 2>&1
-    rc=$?
-    set -e
+    snapshot=$(mktemp -d)
+    if ! materialize "$snapshot"; then
+      echo "pre-commit: 提交快照物化失败（合并冲突中的索引？），跳过本次架构守卫（CI 仍会兜住）。" >&2
+    else
+      set +e
+      MIKCB_GUARD_SNAPSHOT="$(cygpath -m "$snapshot" 2>/dev/null || echo "$snapshot")" \
+        flutter test test/architecture/ --timeout 60s >"$out_file" 2>&1
+      rc=$?
+      set -e
 
-    if [ "$rc" -ne 0 ]; then
-      # 工具链起不来 ≠ 守卫不过。这两种失败必须分开，否则本机 Flutter 一出毛病
-      # 就会拦住所有提交，而那报错与代码无关、也没法就地修。实测踩到过的签名见下。
-      if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found' "$out_file"; then
-        echo "" >&2
-        echo "pre-commit: flutter 工具链自己没跑起来，跳过本次架构守卫（CI 仍会兜住）。" >&2
-        echo "pre-commit: 下面这段是工具链的报错，不是守卫结论：" >&2
-        sed 's/^/    /' "$out_file" >&2
-      else
-        echo "" >&2
-        echo "pre-commit: 架构守卫没过，先归因红项（守卫读整个工作区，红项可能来自并行在途改动）..." >&2
-        if sh .githooks/guard_attribution.sh "$out_file"; then
-          echo "pre-commit: 归因放行：红项与本次提交无关、或无法与在途改动切分。继续 analyze 门禁；CI 仍会兜底。" >&2
+      if [ "$rc" -ne 0 ]; then
+        # 工具链起不来 ≠ 守卫不过。这两种失败必须分开，否则本机 Flutter 一出毛病
+        # 就会拦住所有提交，而那报错与代码无关、也没法就地修。实测踩到过的签名见下。
+        if grep -qE 'Unable to determine engine version|Error: Unable to|Could not find a command named|Error: .*not found' "$out_file"; then
+          echo "" >&2
+          echo "pre-commit: flutter 工具链自己没跑起来，跳过本次架构守卫（CI 仍会兜住）。" >&2
+          echo "pre-commit: 下面这段是工具链的报错，不是守卫结论：" >&2
+          sed 's/^/    /' "$out_file" >&2
         else
+          # 对照 HEAD：红项是本次提交引入的，还是 HEAD 上本就红的
+          #（先前的提交越过基线没同步，参照 99905c37 的同步做法）。
+          snapshot_head=$(mktemp -d)
+          set +e
+          materialize "$snapshot_head" HEAD
+          MIKCB_GUARD_SNAPSHOT="$(cygpath -m "$snapshot_head" 2>/dev/null || echo "$snapshot_head")" \
+            flutter test test/architecture/ --timeout 60s >"$out_head_file" 2>&1
+          head_rc=$?
+          set -e
+
           echo "" >&2
           sed 's/^/    /' "$out_file" >&2
           echo "" >&2
-          echo "pre-commit: 架构守卫红项归因为本次提交引入，拦下。" >&2
-          echo "pre-commit: 行数/依赖扇入棘轮是**只降不升**的，改动该拆就拆，" >&2
-          echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
-          echo "pre-commit: 确认归因有误、确需跳过时用 git commit --no-verify，" >&2
+          if [ "$head_rc" -ne 0 ]; then
+            echo "pre-commit: 架构守卫红，且 HEAD 本身已红 —— 先前的提交越过基线没同步基线。" >&2
+            echo "pre-commit: 在重测同步基线（参照 99905c37）或修复超标文件之前，任何提交都会被拦；" >&2
+            echo "pre-commit: 这不是你一个人的问题，别 --no-verify 硬闯，把基线同步掉就都通了。" >&2
+          else
+            echo "pre-commit: 架构守卫红，HEAD 上是绿的 ⇒ 红项由本次提交引入，拦下。" >&2
+            echo "pre-commit: 行数/依赖扇入棘轮是**只降不升**的，改动该拆就拆，" >&2
+            echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
+          fi
+          echo "pre-commit: 确属门禁 bug、确需跳过时用 git commit --no-verify，" >&2
           echo "           但必须手动补跑本命令，并在 .agents/no-verify-log.md 追加一行留痕。" >&2
           exit 1
         fi

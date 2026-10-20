@@ -22,6 +22,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 const _manifestPath = 'android/app/src/main/AndroidManifest.xml';
 const _legacyRulesPath = 'android/app/src/main/res/xml/backup_rules.xml';
 const _modernRulesPath =
@@ -40,7 +42,7 @@ const _secureStoragePrefs = 'FlutterSecureStorage.xml';
 /// 两个规则文件里「为什么不写 include」的那段说明本身就会把守卫顶红，而守卫存在
 /// 的意义恰恰是拦住真元素——被自己的说明文字绊倒的守卫，迟早被人加白名单绕过。
 String _read(String path) {
-  final file = File(path);
+  final file = File(GuardSource.resolve(path));
   expect(file.existsSync(), isTrue, reason: '缺少文件：$path');
   return file.readAsStringSync().replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
 }

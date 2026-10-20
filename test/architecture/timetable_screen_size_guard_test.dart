@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构棘：`timetable_screen.dart` 行数只减不增（2026-10-10 立）。
 ///
 /// 该文件是全仓最大、改动最频繁的业务文件（近 90 天 244 次提交），长期无任何
@@ -16,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// dependency_guards_test 的 timetable_provider 基线注释）。
 void main() {
   test('timetable_screen 主文件行数棘轮：只减不增', () {
-    final file = File('lib/screens/timetable_screen.dart');
+    final file = File(GuardSource.resolve('lib/screens/timetable_screen.dart'));
     expect(file.existsSync(), isTrue, reason: '文件不存在，棘已空转');
     final lines = file.readAsLinesSync().length;
     // 2026-10-10 搬移两族后 = 8201；2026-10-14 审核修复 +13 → 8214。
@@ -65,7 +67,7 @@ void main() {
     for (final part in [
       'lib/screens/timetable_day_view_part.dart',
     ]) {
-      final f = File(part);
+      final f = File(GuardSource.resolve(part));
       expect(f.existsSync(), isTrue, reason: '\$part 不存在');
       expect(
         f.readAsLinesSync().length,

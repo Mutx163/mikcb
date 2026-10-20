@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'guard_source.dart';
+
 /// 架构棘（第二十四轮）：**引导页不能把 `updateTimetableSettings` 的失败丢掉**。
 ///
 /// 正源：`timetable_provider.dart:3848-3867` 在落盘失败时回滚内存、
@@ -21,7 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 注入写失败后不收尾（`did not complete`，本文件的历史版本踩过），而这条规则
 /// 是纯文本可判的 —— 调用点的 await/catch 形态就写在文件里。
 void main() {
-  final file = File('lib/screens/user_guide_screen.dart');
+  final file = File(GuardSource.resolve('lib/screens/user_guide_screen.dart'));
 
   test('引导页里对 updateTimetableSettings 的每个调用都被 await 且失败有出口', () {
     expect(file.existsSync(), isTrue, reason: '请在仓库根目录运行本测试');
@@ -77,7 +79,7 @@ void main() {
     // reject。`add_exam_screen.dart` 原先写完就 `Navigator.pop`：页面照常关闭、
     // 看起来成功，异常落进 zone，考试只在内存里（add 路径刻意不回滚），杀掉 app 就没了。
     // 同一个函数对"没选课程/没选日期"都会弹 toast，说明失败可见是这页的既定意图。
-    final target = File('lib/screens/add_exam_screen.dart');
+    final target = File(GuardSource.resolve('lib/screens/add_exam_screen.dart'));
     expect(target.existsSync(), isTrue);
     final lines = target.readAsLinesSync();
     final mutating = RegExp(
@@ -142,7 +144,7 @@ void main() {
 
     final allOffenders = <String>[];
     for (final entry in targets.entries) {
-      final file = File(entry.key);
+      final file = File(GuardSource.resolve(entry.key));
       expect(file.existsSync(), isTrue, reason: entry.key);
       final lines = file.readAsLinesSync();
       final offenders = <String>[];
