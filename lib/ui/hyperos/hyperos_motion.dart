@@ -8,6 +8,10 @@ typedef HyperosDurationScaler = Duration Function(int baseMilliseconds);
 final ValueNotifier<int> hyperosMotionRevision = ValueNotifier<int>(0);
 
 void notifyHyperosMotionChanged() {
+  // 先刷新长命控制器，再通知重建：顺序无所谓（重建读的是同一个 scaler），
+  // 但放在这里意味着**任何**通知路径都自动带上控制器刷新，调用方不必记得
+  // 多调一次。钩子装在 [HyperosMotionPlatform] 内部，见那边的说明。
+  HyperosMotionPlatform.refreshBoundControllers();
   hyperosMotionRevision.value++;
 }
 
@@ -36,6 +40,84 @@ abstract final class HyperosMotionPlatform {
     final clamped = speed.clamp(0.5, 2.5);
     onUserTransitionSpeedChanged?.call(clamped);
   }
+
+  // ── 长命动画控制器跟随速度（2026-10-20）───────────────────────────────
+  //
+  // 「页面转场速度」这个设置要覆盖**全应用所有动画**（用户口径 2026-10-20：
+  // 「那个调节应该要覆盖整个软件所有的动画」）。但 `AnimationController.duration`
+  // 是构造时写死的字段：控制器建好之后，用户中途把速度从 1.0 拖到 2.0，
+  // 屏幕上正在用的那个控制器**不会**跟着变 —— 表现为「去设置里调完，回来动效
+  // 还是原来的快慢，要杀进程才生效」。
+  //
+  // 短命控制器（弹层每次打开都新建）构造时读一次 [scaledDuration] 就够了；
+  // 随页面常住的长命控制器（日视图展开、玻璃发光等）必须在这里登记基础毫秒数，
+  // 速度变更时由 [refreshBoundControllers] 统一重新赋值。
+
+  /// 控制器 → 基础毫秒数（速度 1.0 时的时长）。
+  static final Map<AnimationController, int> _boundControllers =
+      <AnimationController, int>{};
+
+  /// 登记 [controller] 的基础时长并立即按当前速度赋值；返回同一控制器便于链式。
+  ///
+  /// 控制器 dispose 之后登记项仍在表里（不持有任何 ticker 引用，只是多一个
+  /// 键），由调用方在 `dispose()` 里配对调用 [unbindController] 清掉。
+  static AnimationController bindController(
+    AnimationController controller,
+    int baseMilliseconds,
+  ) {
+    _boundControllers[controller] = baseMilliseconds;
+    _applyBoundDuration(controller, baseMilliseconds);
+    return controller;
+  }
+
+  /// 速度变更后刷新所有登记中的控制器。
+  ///
+  /// **正在播放的跳过**：改 duration 会让 `value` 与已走过的行程错位，画面
+  /// 会跳一下。这类控制器在下一次 `forward()` 之前由调用方自己重新读一次
+  /// [scaledDuration]（本仓的长命控制器都在 `forward` 前的 `_syncDuration`
+  /// 里做），或等下一次速度变更。
+  static void refreshBoundControllers() {
+    for (final entry in _boundControllers.entries.toList()) {
+      _applyBoundDuration(entry.key, entry.value);
+    }
+  }
+
+  static void _applyBoundDuration(AnimationController controller, int baseMs) {
+    if (controller.isAnimating) {
+      return;
+    }
+    controller.duration = scaledDuration(baseMs);
+  }
+
+  /// 摘除登记（在控制器的 `dispose()` 里调用）。
+  static void unbindController(AnimationController controller) {
+    _boundControllers.remove(controller);
+  }
+
+  /// 当前登记数，仅供测试断言「dispose 之后没有泄漏」。
+  @visibleForTesting
+  static int get debugBoundControllerCount => _boundControllers.length;
+
+  @visibleForTesting
+  static void debugClearBoundControllers() {
+    _boundControllers.clear();
+  }
+}
+
+/// 把「基础毫秒数」按当前动效速度换算成实际时长。
+///
+/// 全应用的动画时长统一走这里，写法：
+/// ```dart
+/// AnimatedContainer(duration: 180.scaledMs, …)
+/// _controller = AnimationController(duration: 360.scaledMs, …)
+/// Navigator.push(route) // 路由自己换算，不用管
+/// ```
+///
+/// **禁止**在动画参数位直接写 `Duration(milliseconds: …)`：那样写死的时长
+/// 不跟随「页面转场速度」设置。`test/architecture/animation_duration_guard_test.dart`
+/// 会拦住新增的裸写法。
+extension HyperosScaledMilliseconds on int {
+  Duration get scaledMs => HyperosMotionPlatform.scaledDuration(this);
 }
 
 /// Snapshot passed through [HyperosMotionScope].
