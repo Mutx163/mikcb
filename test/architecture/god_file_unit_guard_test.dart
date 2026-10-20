@@ -73,18 +73,21 @@ void main() {
     // 6879→6440：F3 把课程/作业族（`TimetableCourseService`）也搬走，分片删一个。
     // 6440→6262：F4 把课程组（同名多课次）那 178 行并进同一个服务，分片再删一个.
     // 6262→5956：F5 作息族（TimetableTimeSchemeService）出库，分片再删一个。
+    // 5956→5771：F6 日期规则批量套用出库，分片再删一个。
+    // 5771→4616：F7 实时活动族（`TimetableLiveActivityService`）出库 —— 1149 行分片
+    // 清零，主库只长出端口接线（净 +17），逻辑单元整体回落 1155 行。
     // 基线取**已提交快照**的实测值；提交当日工作区若有并行会话在途的修改，
     // 实测会略高于基线——棘轮只衡量已落库的代码。
-    const baselineLines = 5771;
+    const baselineLines = 4616;
     final parts = _providerParts();
     final lines =
         _lineCount('lib/providers/timetable_provider.dart') +
         parts.fold<int>(0, (sum, path) => sum + _lineCount(path));
     expect(
       parts.length,
-      lessThanOrEqualTo(2),
+      lessThanOrEqualTo(1),
       reason:
-          'provider part 数量涨到 ${parts.length}（基线 2）。'
+          'provider part 数量涨到 ${parts.length}（基线 1）。'
           '新功能请抽成独立 service，不要继续往 part 里摊。',
     );
     expect(
@@ -103,9 +106,12 @@ void main() {
     // 454→402：F4 课程组整组写入口并入同一个服务。
     // 402→326：F5 作息族出库。
     // 326→291：F6 日期规则批量套用出库。
+    // 291→181：F7 实时活动族出库；这一族原本整片都是 `host._私有字段`（`_settings`
+    // 26 处、`_holidayData` 8 处、两份信号签名与心跳各自一串），搬进服务后端口成员
+    // 是显式的，分片里只剩导入导出那一个 part 的读数。
     // 注意：`extension on TimetableProvider` 里的成员不写 `host.`，不进本棘轮数字，
     // F2 就因此少算了若干处；后续以「part 归零」为准，这个数字只作兜底。
-    const baselineHits = 291;
+    const baselineHits = 181;
     final hostPrivateAccess = RegExp(r'host\._');
     var hits = 0;
     for (final path in _providerParts()) {

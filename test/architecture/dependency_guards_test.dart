@@ -155,7 +155,11 @@ void main() {
     // 3853→3851：F5 作息族（`TimetableTimeSchemeService`）出库，接线成本被委托
     // 压缩抵掉，主文件仍只降不升。
     // 3851→3847：F6 日期规则套用出库。
-    const baselineLines = 3847;
+    // 3847→3841：F7 实时活动族出库。这一族在主库的代码早就只剩一行委托，接线成本
+    // （端口适配器 + `@override`）按规矩必须自己赚回来：运行态桶
+    // （`LiveActivityRuntimeState`）替掉 7 个散字段、自检覆盖层与挂起/恢复整族搬走、
+    // 私有的 live-surface 门 helper 内联，才把新增接线抵成净下降。
+    const baselineLines = 3841;
     final lines = providerFile.readAsLinesSync().length;
     expect(
       lines,
