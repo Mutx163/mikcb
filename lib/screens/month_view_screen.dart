@@ -14,6 +14,7 @@ import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
 import '../widgets/timetable/month_view/month_grid_handle.dart';
+import '../widgets/timetable/month_view/month_panel_drag_area.dart';
 import '../widgets/timetable/month_view/month_panel_top_curve.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
@@ -109,6 +110,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   /// 收起 / 展开吸附动画的基础时长（毫秒）。
   static const int _kGridCollapseBaseMs = 260;
 
+  /// 条目面板的滚动控制器。
+  ///
+  /// 面板要在**任意位置**上下拖动收放表格（用户 2026-10-21 晚口径），而列表
+  /// 自己也要滚 —— 两者靠「列表到边界后把剩余位移交给收放」分工，那需要读列表
+  /// 的滚动位置，所以控制器提到 State 上。
+  final ScrollController _panelScroll = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -131,6 +139,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
 
   @override
   void dispose() {
+    _panelScroll.dispose();
     _gridExpand.dispose();
     _luminance.dispose();
     _pager?.dispose();
@@ -515,32 +524,44 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
         // 被下面的东西盖起来」）。用透明就盖不住。
         color: Theme.of(context).colorScheme.surface,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                // 只纵向滚动（横向由上面的 PageView 负责，面板不参与翻月）。
-                // scrollDirection 不写：默认就是纵向，写出来只是同一件事说两遍。
-                physics: const ClampingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  6,
-                  0,
-                  6,
-                  // 玻璃坞内嵌宿主的底部余量：滑到底时列表不被药丸压住。
-                  8 + GlassDockScrollReliefScope.insetOf(context),
-                ),
-                child: selectedInThisMonth
-                    ? MonthDayAgenda(
-                        date: selected!,
-                        settings: settings,
-                        inkColor: ink,
-                        rows: rows,
-                        onRowTap: (row) => _openAgendaRow(context, row),
-                      )
-                    : MonthAgendaPlaceholder(inkColor: ink),
-              ),
+        // ── 整个面板任意位置都能上下拖动来收放日期表格 ──
+        //
+        // 用户口径（2026-10-21 晚）：「底部信息区域，应该支持在任意位置上下滑动，
+        // 可以操作日期表格的上下收起展开」。
+        //
+        // 列表自己也要纵向滚动、两者同向，**不能靠手势竞技场分工**（只会有一个
+        // 赢家：要么列表永远滚不动、要么面板永远收不起来）。这里改成单一手势源
+        // + 分流：纵向拖拽全由 [MonthPanelDragArea] 接管，列表还能滚就喂列表、
+        // 到边界后同一次手势里无缝接着收放表格。详见该组件的类注释。
+        child: MonthPanelDragArea(
+          scrollController: _panelScroll,
+          onCollapseStart: _beginGridDrag,
+          // 面板里的位移是**原始 dy**（正 = 向下 = 展开）。网格那套
+          // `_updateGridDrag` 吃的是同一个方向约定，直接转发。
+          onCollapseUpdate: _updateGridDragDy,
+          onCollapseEnd: _endGridDrag,
+          // 列表照常滚（Scrollable 自己处理）；Listener 只是旁观指针流，
+          // 在它滚不动时把剩余位移接过来收放表格 —— 两者不争手势。
+          child: SingleChildScrollView(
+            controller: _panelScroll,
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              6,
+              0,
+              6,
+              // 玻璃坞内嵌宿主的底部余量：滚到底时列表不被药丸压住。
+              8 + GlassDockScrollReliefScope.insetOf(context),
             ),
-          ],
+            child: selectedInThisMonth
+                ? MonthDayAgenda(
+                    date: selected!,
+                    settings: settings,
+                    inkColor: ink,
+                    rows: rows,
+                    onRowTap: (row) => _openAgendaRow(context, row),
+                  )
+                : MonthAgendaPlaceholder(inkColor: ink),
+          ),
         ),
       ),
     );
@@ -553,16 +574,17 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   }
 
   /// 拖拽中：手指向上（dy < 0）= 收起 = 进度减小，1:1 跟手。
-  void _updateGridDrag(DragUpdateDetails details) {
+  void _updateGridDrag(DragUpdateDetails details) =>
+      _updateGridDragDy(details.delta.dy);
+
+  /// 同上，但直接吃原始位移（面板那边的分流结果是"一段 dy"，不是 DragUpdateDetails）。
+  void _updateGridDragDy(double dy) {
     final extent =
         (kMonthGridRowCount - kMonthGridCollapsedRows) * _gridRowHeight;
     if (extent <= 0) {
       return;
     }
-    _gridExpand.value = (_gridExpand.value + details.delta.dy / extent).clamp(
-      0.0,
-      1.0,
-    );
+    _gridExpand.value = (_gridExpand.value + dy / extent).clamp(0.0, 1.0);
   }
 
   /// 松手：按判据吸附到两端。
