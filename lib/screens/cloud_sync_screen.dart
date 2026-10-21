@@ -917,7 +917,9 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           children: [
             HyperosSwitchTile(
               title: l10n.cloudBackupManualProtectedTitle,
-              subtitle: l10n.cloudBackupManualProtectedSubtitle,
+              // 不配副标题：原文「开启后，手动创建的备份不会被自动清理」与
+              // 标题「手动备份永不过期」是同一件事——清理的判据就是过期，说
+              // 两遍只会把这一行撑成两行。
               value: _config.manualBackupProtected,
               onChanged: (value) {
                 unawaited(

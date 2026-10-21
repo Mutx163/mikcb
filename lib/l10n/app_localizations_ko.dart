@@ -880,7 +880,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseRecolorTileTitle => '시간표 색상 다시 칠하기';
 
   @override
-  String get courseRecolorTileSubtitle => '다시 가져올 필요 없이 언제든 한 번에 전체 수업 색상 바꾸기';
+  String get courseRecolorTileSubtitle => '다시 가져오지 않고 변경';
 
   @override
   String get courseRecolorSheetTitle => '시간표 색상 다시 칠하기';
@@ -4091,8 +4091,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '수업 색상';
 
   @override
-  String get homeWidgetCourseAccentSubtitle =>
-      '끄면 기존 색으로 돌아가고, 색 막대만 넣거나 과목명과 상태까지 색을 입힐 수 있습니다';
+  String get homeWidgetCourseAccentSubtitle => '끄면 기존 색상으로 복원';
 
   @override
   String get widgetCourseAccentModeOff => '끄기';
@@ -4110,8 +4109,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetHeightAdjustTitle => '카드 높이';
 
   @override
-  String get homeWidgetHeightAdjustHint =>
-      '범위 -16~16, 0은 기본값입니다. 양수는 더 높게, 음수는 더 낮게';
+  String get homeWidgetHeightAdjustHint => '범위 -16~16, 양수면 더 높음';
 
   @override
   String get defaultLabel => '기본';
@@ -4226,8 +4224,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutEnableHapticsTitle => '앱 내 진동 피드백 활성화';
 
   @override
-  String get layoutEnableHapticsSubtitle =>
-      '끄면 페이지 전환 등의 상호작용에서 가벼운 진동이 발생하지 않습니다';
+  String get layoutEnableHapticsSubtitle => '끄면 전환 진동 없음';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -4354,14 +4351,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weekGridShowExamsTitle => '주간 보기에 시험 표시';
 
   @override
-  String get weekGridShowExamsSubtitle => '시험 카드가 시간대에 배치되며 길게 눌러 추가할 때 건너뜁니다';
+  String get weekGridShowExamsSubtitle => '길게 눌러 추가 시 시험 건너뜀';
 
   @override
   String get weekGridShowSchedulesTitle => '주간 보기에 일정 표시';
 
   @override
-  String get weekGridShowSchedulesSubtitle =>
-      '일정 카드가 시간대에 배치되며 종일 항목은 열 전체를 사용합니다';
+  String get weekGridShowSchedulesSubtitle => '시간순, 여러 날은 열 전체';
 
   @override
   String get layoutVerticalAlignLabel => '수직 레이아웃';
@@ -4648,8 +4644,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutRecordDiagnosticsTitle => '앱 로그 기록';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle =>
-      '켜면 앱 로그를 로컬에 계속 기록하며 슈퍼아일랜드 로그는 별도 표시합니다';
+  String get aboutRecordDiagnosticsSubtitle => '실행 로그를 기기에 기록';
 
   @override
   String get aboutExportDiagnosticsAction => '앱 로그 내보내기';
@@ -6299,7 +6294,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holidayEnableTitle => '공휴일 표시 활성화';
 
   @override
-  String get holidayEnableSubtitle => '켜면 시간표에 법정 공휴일과 대체 근무일을 표시합니다';
+  String get holidayEnableSubtitle => '공휴일과 대체 근무일 표시';
 
   @override
   String get holidayDataSectionTitle => '공휴일 데이터';
@@ -6521,8 +6516,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get customHolidayEmpty => '사용자 정의 휴일 없음';
 
   @override
-  String get customHolidayCorrupted =>
-      '사용자 정의 휴일 데이터를 읽지 못했습니다. 데이터 보호를 위해 읽기/쓰기를 중지했습니다';
+  String get customHolidayCorrupted => '읽기 실패, 쓰기 중지';
 
   @override
   String get customHolidayNameRequired => '휴일 이름을 입력하세요';
@@ -9850,8 +9844,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
 
   @override
-  String get settingsScreenshotShareSubtitle =>
-      'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
+  String get settingsScreenshotShareSubtitle => '알림 후 눌러야 생성';
 
   @override
   String get aboutUpdateAvailableHeadline => '새 버전이 있습니다';
@@ -10423,8 +10416,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liquidGlassDarkBoostLabel => '다크 모드에서 유리 어둡게';
 
   @override
-  String get liquidGlassDarkBoostSubtitle =>
-      '다크 모드에서 바탕을 중성 회색으로 하고 흐림을 늘리며 테두리 빛을 줄입니다';
+  String get liquidGlassDarkBoostSubtitle => '회색, 더 흐리게, 가장자리 약하게';
 
   @override
   String get liquidGlassDarkIndependentLabel => '다크 모드 설정 따로 하기';
@@ -10443,8 +10435,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get performanceSnapshotEntryTitle => '설정 스냅숏';
 
   @override
-  String get performanceSnapshotEntrySubtitle =>
-      '현재 성능에 영향을 주는 설정을 앱 로그에 기록합니다';
+  String get performanceSnapshotEntrySubtitle => '현재 설정을 앱 로그에';
 
   @override
   String get performanceSnapshotEntryDone => '앱 로그에 기록했습니다';
@@ -11034,8 +11025,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get glassDockShowAddButtonTitle => '원형 버튼 표시';
 
   @override
-  String get glassDockShowAddButtonSubtitle =>
-      '알약 오른쪽에 독립된 원형 버튼을 표시 — 기능과 아이콘은 아래에서 설정';
+  String get glassDockShowAddButtonSubtitle => '필 옆에 별도 버튼 표시';
 
   @override
   String get glassDockButtonBackToWeekLabel => '이번 주로 / 오늘';
@@ -11494,8 +11484,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherRetryAction => '다시 시도';
 
   @override
-  String get weatherCoverageNote =>
-      '예보는 앞으로 16일까지만 제공되며, 그 이후 날짜에는 날씨를 표시하지 않습니다.';
+  String get weatherCoverageNote => '예보는 향후 16일만';
 
   @override
   String get weatherAttribution => '날씨 데이터: Open-Meteo.com';

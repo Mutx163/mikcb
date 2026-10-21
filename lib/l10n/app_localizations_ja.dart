@@ -882,7 +882,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseRecolorTileTitle => '時間割の配色を更新';
 
   @override
-  String get courseRecolorTileSubtitle => '再インポート不要、いつでもワンタップで全授業の色を組み替え';
+  String get courseRecolorTileSubtitle => '再取込不要でいつでも変更';
 
   @override
   String get courseRecolorSheetTitle => '時間割の配色を更新';
@@ -4068,8 +4068,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '授業の色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle =>
-      'オフで従来の配色に戻ります。色バーのみ、または授業名とステータスも色付けできます';
+  String get homeWidgetCourseAccentSubtitle => 'オフで従来の配色に戻す';
 
   @override
   String get widgetCourseAccentModeOff => 'オフ';
@@ -4087,7 +4086,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetHeightAdjustTitle => 'カードの高さ';
 
   @override
-  String get homeWidgetHeightAdjustHint => '範囲 -16〜16、0 はデフォルト。正数で高く、負数で低くなります';
+  String get homeWidgetHeightAdjustHint => '範囲 -16～16、正の値で高く';
 
   @override
   String get defaultLabel => 'デフォルト';
@@ -4201,8 +4200,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutEnableHapticsTitle => 'アプリ内バイブレーションを有効化';
 
   @override
-  String get layoutEnableHapticsSubtitle =>
-      'オフにするとページ切替などの操作で軽いバイブレーションが発生しなくなる';
+  String get layoutEnableHapticsSubtitle => 'オフで切替の振動なし';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -4329,13 +4327,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weekGridShowExamsTitle => '週表示に試験を表示';
 
   @override
-  String get weekGridShowExamsSubtitle => '試験カードが時間帯に配置され、長押し追加ではスキップされます';
+  String get weekGridShowExamsSubtitle => '長押し追加は試験を回避';
 
   @override
   String get weekGridShowSchedulesTitle => '週表示に日程を表示';
 
   @override
-  String get weekGridShowSchedulesSubtitle => '日程カードが時間帯に配置され、終日指定は列全体を使用します';
+  String get weekGridShowSchedulesSubtitle => '時間順、複数日は列全体';
 
   @override
   String get layoutVerticalAlignLabel => '垂直レイアウト';
@@ -4621,8 +4619,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutRecordDiagnosticsTitle => 'アプリログを記録';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle =>
-      'オンにするとアプリログをローカルに記録し、スーパー島のログは別途表示されます';
+  String get aboutRecordDiagnosticsSubtitle => '実行ログを端末内に記録';
 
   @override
   String get aboutExportDiagnosticsAction => 'アプリログをエクスポート';
@@ -6267,7 +6264,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holidayEnableTitle => '休日マークを有効化';
 
   @override
-  String get holidayEnableSubtitle => 'オンにすると時間割に法定休日と振替出勤日をマーク';
+  String get holidayEnableSubtitle => '祝日と振替出勤日を表示';
 
   @override
   String get holidayDataSectionTitle => '休日データ';
@@ -6487,8 +6484,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get customHolidayEmpty => 'カスタム休日なし';
 
   @override
-  String get customHolidayCorrupted =>
-      'カスタム休日データの読み込みに失敗しました。データ保護のため読み書きを停止しています';
+  String get customHolidayCorrupted => '読取失敗、書込停止';
 
   @override
   String get customHolidayNameRequired => '休日名を入力してください';
@@ -9807,8 +9803,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsScreenshotShareTitle => 'Offer sharing after a screenshot';
 
   @override
-  String get settingsScreenshotShareSubtitle =>
-      'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
+  String get settingsScreenshotShareSubtitle => 'まず通知、タップで生成';
 
   @override
   String get aboutUpdateAvailableHeadline => '新しいバージョンがあります';
@@ -10379,8 +10374,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassDarkBoostLabel => 'ダークモードでガラスを暗く';
 
   @override
-  String get liquidGlassDarkBoostSubtitle =>
-      'ダーク時は下地をニュートラルグレーにし、ぼかしを強め、縁の光を抑えます';
+  String get liquidGlassDarkBoostSubtitle => 'グレー、ぼかし強め、縁を弱く';
 
   @override
   String get liquidGlassDarkIndependentLabel => 'ダーク用を個別に設定';
@@ -10399,8 +10393,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get performanceSnapshotEntryTitle => '設定スナップショット';
 
   @override
-  String get performanceSnapshotEntrySubtitle =>
-      '現在のパフォーマンスに影響する設定をアプリログに書き出します';
+  String get performanceSnapshotEntrySubtitle => '現在の設定をアプリログへ';
 
   @override
   String get performanceSnapshotEntryDone => 'アプリログに書き出しました';
@@ -10989,8 +10982,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockShowAddButtonTitle => '丸ボタンを表示';
 
   @override
-  String get glassDockShowAddButtonSubtitle =>
-      'ピルの右側に独立した丸ボタンを表示 — 機能とアイコンは下でカスタマイズ可';
+  String get glassDockShowAddButtonSubtitle => 'ピル右側に別ボタンを表示';
 
   @override
   String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
@@ -11448,7 +11440,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherRetryAction => '再試行';
 
   @override
-  String get weatherCoverageNote => '予報は今後 16 日分のみです。それより先の日付では天気を表示しません。';
+  String get weatherCoverageNote => '予報は今後 16 日のみ';
 
   @override
   String get weatherAttribution => '天気データ: Open-Meteo.com';

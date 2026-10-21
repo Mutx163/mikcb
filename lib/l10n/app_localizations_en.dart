@@ -922,8 +922,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseRecolorTileTitle => 'Recolor Timetable';
 
   @override
-  String get courseRecolorTileSubtitle =>
-      'Shuffle all course colors anytime — no re-import needed';
+  String get courseRecolorTileSubtitle => 'Recolor anytime, no re-import';
 
   @override
   String get courseRecolorSheetTitle => 'Recolor Timetable';
@@ -4252,8 +4251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => 'Course colors';
 
   @override
-  String get homeWidgetCourseAccentSubtitle =>
-      'Off restores the classic look; add bars only, or tint course names and status too';
+  String get homeWidgetCourseAccentSubtitle => 'Off restores classic colors';
 
   @override
   String get widgetCourseAccentModeOff => 'Off';
@@ -4271,8 +4269,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetHeightAdjustTitle => 'Card height';
 
   @override
-  String get homeWidgetHeightAdjustHint =>
-      'Range -16 to 16; 0 is the default. Positive is taller than default, negative is shorter';
+  String get homeWidgetHeightAdjustHint => 'Range -16~16; positive taller';
 
   @override
   String get defaultLabel => 'Default';
@@ -4389,8 +4386,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutEnableHapticsTitle => 'Enable in-app haptic feedback';
 
   @override
-  String get layoutEnableHapticsSubtitle =>
-      'When off, interactions such as page switching no longer trigger light vibration';
+  String get layoutEnableHapticsSubtitle => 'Off stops the page-switch buzz';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -4525,15 +4521,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekGridShowExamsTitle => 'Show exams in week view';
 
   @override
-  String get weekGridShowExamsSubtitle =>
-      'Exam cards fill their time slots; long-press add skips them';
+  String get weekGridShowExamsSubtitle => 'Long-press add skips exams';
 
   @override
   String get weekGridShowSchedulesTitle => 'Show schedules in week view';
 
   @override
-  String get weekGridShowSchedulesSubtitle =>
-      'Schedule cards fill their time slots; cross-day items span the column';
+  String get weekGridShowSchedulesSubtitle => 'By time; multi-day full column';
 
   @override
   String get layoutVerticalAlignLabel => 'Vertical alignment';
@@ -4827,8 +4821,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutRecordDiagnosticsTitle => 'Record app logs';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle =>
-      'Keeps recording app logs locally; island logs are tagged separately';
+  String get aboutRecordDiagnosticsSubtitle => 'Keeps run logs on this device';
 
   @override
   String get aboutExportDiagnosticsAction => 'Export app logs';
@@ -6523,8 +6516,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayEnableTitle => 'Enable holiday marking';
 
   @override
-  String get holidayEnableSubtitle =>
-      'When enabled, statutory holidays and makeup workdays will be marked on the timetable';
+  String get holidayEnableSubtitle => 'Marks holidays and make-up';
 
   @override
   String get holidayDataSectionTitle => 'Holiday Data';
@@ -6754,8 +6746,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customHolidayEmpty => 'No custom holidays';
 
   @override
-  String get customHolidayCorrupted =>
-      'Custom holiday data failed to load. Reads and writes are paused to prevent data loss.';
+  String get customHolidayCorrupted => 'Read error; paused';
 
   @override
   String get customHolidayNameRequired => 'Please enter a holiday name';
@@ -10106,7 +10097,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsScreenshotShareSubtitle =>
-      'Show a prompt after you screenshot the timetable page; the image is only rendered if you tap it';
+      'Prompts first; tap to generate';
 
   @override
   String get aboutUpdateAvailableHeadline => 'New version available';
@@ -10681,8 +10672,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassDarkBoostLabel => 'Darker glass in dark mode';
 
   @override
-  String get liquidGlassDarkBoostSubtitle =>
-      'Neutral gray tint, a bit more blur and a softer rim in dark mode';
+  String get liquidGlassDarkBoostSubtitle => 'Grey, blurrier, dimmer rim';
 
   @override
   String get liquidGlassDarkIndependentLabel =>
@@ -10703,7 +10693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get performanceSnapshotEntrySubtitle =>
-      'Write every performance-affecting setting to the app log';
+      'Writes settings to the app log';
 
   @override
   String get performanceSnapshotEntryDone => 'Written to the app log';
@@ -11315,8 +11305,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockShowAddButtonTitle => 'Show round button';
 
   @override
-  String get glassDockShowAddButtonSubtitle =>
-      'Show a separate round button to the right of the pill — function and icon customizable below';
+  String get glassDockShowAddButtonSubtitle => 'Shows a button beside the pill';
 
   @override
   String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
@@ -11785,8 +11774,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherRetryAction => 'Retry';
 
   @override
-  String get weatherCoverageNote =>
-      'Forecasts only cover the next 16 days; weather is hidden beyond that.';
+  String get weatherCoverageNote => 'Covers only the next 16 days';
 
   @override
   String get weatherAttribution => 'Weather data from Open-Meteo.com';

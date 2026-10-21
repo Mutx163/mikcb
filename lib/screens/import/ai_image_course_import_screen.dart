@@ -612,7 +612,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
             _weekAlignmentService.startOfWeek(DateTime.now()),
         initialFirstCourseWeek: 1,
         title: l10n.importConfirmSemesterMappingTitle,
-        subtitle: l10n.importConfirmSemesterMappingSubtitleAi,
+        // 不再配副标题。原文「请选择开学日期，再确认第 1 周对应第几周，第一周
+        // 没课通常改成第 2 周」三句里，前两句把标题和下面两个控件的名字各念了
+        // 一遍，第三句由「课表第 1 周对应校历第几周」这一行自己的副标题承担
+        // （同一信息只留一处）。AI 解析拿不到文件里的最早上课日期，这一页确实
+        // 没有「为什么预填成这样」可说，所以整条去掉，而不是换句更短的话。
       );
       if (semesterConfig == null || !mounted) {
         return;

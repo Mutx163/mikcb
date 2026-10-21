@@ -115,11 +115,13 @@ class _CourseDeleteModeSheetBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 原副标题「你可以删掉整条排课，也可以只删当前看到的这一周这一节」
+          // 已删：下面两个选项就是「删这个课 / 删这节课」，第 {week} 周那行提示
+          // 还写了后果，同一件事说了两遍，而且它 26 字在 400dp 上换行。
           _FollowupSheetHeader(
             icon: Icons.delete_outline_rounded,
             iconColor: colors.destructive,
             title: l10n.deleteModeTitle,
-            subtitle: l10n.deleteModeSubtitle,
           ),
           const SizedBox(height: 14),
           _FollowupOptionTile(

@@ -862,7 +862,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseRecolorTileTitle => '课表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '不用重新导入，随时一键给全部课程换套颜色';
+  String get courseRecolorTileSubtitle => '不用重新导入，可随时换色';
 
   @override
   String get courseRecolorSheetTitle => '课表重新配色';
@@ -3988,7 +3988,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '课程颜色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '关闭回到经典配色；也可只加色条，或让课程名与状态一并上色';
+  String get homeWidgetCourseAccentSubtitle => '关闭后恢复经典配色';
 
   @override
   String get widgetCourseAccentModeOff => '关闭';
@@ -4006,7 +4006,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetHeightAdjustTitle => '卡片高度';
 
   @override
-  String get homeWidgetHeightAdjustHint => '范围 -16～16，0 为默认档：正数比默认更高，负数更矮';
+  String get homeWidgetHeightAdjustHint => '范围 -16～16，正数更高，负数更矮';
 
   @override
   String get defaultLabel => '默认';
@@ -4113,7 +4113,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutEnableHapticsTitle => '启用应用内震动反馈';
 
   @override
-  String get layoutEnableHapticsSubtitle => '关闭后，页码切换等交互不再触发轻微震动';
+  String get layoutEnableHapticsSubtitle => '关闭后页码切换不再震动';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -4236,13 +4236,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weekGridShowExamsTitle => '周视图显示考试';
 
   @override
-  String get weekGridShowExamsSubtitle => '考试卡落进对应时段；长按加课会跳过考试时段';
+  String get weekGridShowExamsSubtitle => '长按加课会跳过考试时段';
 
   @override
   String get weekGridShowSchedulesTitle => '周视图显示日程';
 
   @override
-  String get weekGridShowSchedulesSubtitle => '日程卡按时间落进对应时段，跨天日程占整列';
+  String get weekGridShowSchedulesSubtitle => '按时间落位，跨天占整列';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -4517,7 +4517,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutRecordDiagnosticsTitle => '记录应用日志';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle => '开启后本地持续记录运行日志，超级岛日志单独标注';
+  String get aboutRecordDiagnosticsSubtitle => '持续记录运行日志，存本机';
 
   @override
   String get aboutExportDiagnosticsAction => '导出应用日志';
@@ -6147,7 +6147,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayEnableTitle => '启用节假日标记';
 
   @override
-  String get holidayEnableSubtitle => '开启后会在课表上标记法定节假日和调休补班日';
+  String get holidayEnableSubtitle => '标记法定节假日和调休补班日';
 
   @override
   String get holidayDataSectionTitle => '节假日数据';
@@ -6365,7 +6365,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customHolidayEmpty => '暂无自定义假期';
 
   @override
-  String get customHolidayCorrupted => '自定义假期数据读取异常，已暂停读写以防覆盖丢失';
+  String get customHolidayCorrupted => '读取异常，暂停读写防丢';
 
   @override
   String get customHolidayNameRequired => '请输入假期名称';
@@ -9508,7 +9508,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsScreenshotShareTitle => '截屏后提示分享课表';
 
   @override
-  String get settingsScreenshotShareSubtitle => '在课表页截屏后浮出提示，点了才生成图片';
+  String get settingsScreenshotShareSubtitle => '只弹提示，点了才生成图片';
 
   @override
   String get aboutUpdateAvailableHeadline => '发现新版本';
@@ -10062,7 +10062,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
-  String get liquidGlassDarkBoostSubtitle => '深色下换成中性灰底、略增模糊并收边缘高光';
+  String get liquidGlassDarkBoostSubtitle => '中性灰底、更模糊、边缘高光更弱';
 
   @override
   String get liquidGlassDarkIndependentLabel => '独立设置深色档';
@@ -10080,7 +10080,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get performanceSnapshotEntryTitle => '设置快照';
 
   @override
-  String get performanceSnapshotEntrySubtitle => '把当前所有影响流畅度的设置写进应用日志';
+  String get performanceSnapshotEntrySubtitle => '把当前设置写进应用日志';
 
   @override
   String get performanceSnapshotEntryDone => '已写入应用日志';
@@ -10661,7 +10661,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get glassDockShowAddButtonTitle => '显示圆钮';
 
   @override
-  String get glassDockShowAddButtonSubtitle => '在药丸右侧显示独立圆钮，功能与图标可在下方自定义';
+  String get glassDockShowAddButtonSubtitle => '在药丸右侧单独显示';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本周 / 今天';
@@ -11117,7 +11117,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherRetryAction => '重试';
 
   @override
-  String get weatherCoverageNote => '预报只覆盖未来 16 天，更远的日期不显示天气。';
+  String get weatherCoverageNote => '预报只覆盖未来 16 天，更远不显示';
 
   @override
   String get weatherAttribution => '天气数据来自 Open-Meteo.com';
@@ -12254,7 +12254,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseRecolorTileTitle => '課表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '不用重新匯入，隨時一鍵為全部課程換一套顏色';
+  String get courseRecolorTileSubtitle => '不用重新匯入，可隨時換色';
 
   @override
   String get courseRecolorSheetTitle => '課表重新配色';
@@ -15379,7 +15379,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetCourseAccentTitle => '課程顏色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '關閉回到經典配色；也可只加色條，或讓課程名與狀態一併上色';
+  String get homeWidgetCourseAccentSubtitle => '關閉後恢復經典配色';
 
   @override
   String get widgetCourseAccentModeOff => '關閉';
@@ -15397,7 +15397,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetHeightAdjustTitle => '卡片高度';
 
   @override
-  String get homeWidgetHeightAdjustHint => '範圍 -16 ~ 16，0 為預設檔：正數比預設更高，負數更矮';
+  String get homeWidgetHeightAdjustHint => '範圍 -16～16，正數更高，負數更矮';
 
   @override
   String get defaultLabel => '預設';
@@ -15504,7 +15504,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutEnableHapticsTitle => '啟用應用內震動反饋';
 
   @override
-  String get layoutEnableHapticsSubtitle => '關閉後，頁碼切換等交互不再觸發輕微震動';
+  String get layoutEnableHapticsSubtitle => '關閉後頁碼切換不再震動';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -15627,13 +15627,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weekGridShowExamsTitle => '週檢視顯示考試';
 
   @override
-  String get weekGridShowExamsSubtitle => '考試卡落進對應時段；長按加課會跳過考試時段';
+  String get weekGridShowExamsSubtitle => '長按加課會跳過考試時段';
 
   @override
   String get weekGridShowSchedulesTitle => '週檢視顯示日程';
 
   @override
-  String get weekGridShowSchedulesSubtitle => '日程卡按時間落進對應時段，跨天日程佔整列';
+  String get weekGridShowSchedulesSubtitle => '按時間落位，跨天佔整列';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -15908,7 +15908,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle => '開啟後本機持續記錄執行日誌，超級島日誌單獨標註';
+  String get aboutRecordDiagnosticsSubtitle => '持續記錄運行日誌，存本機';
 
   @override
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
@@ -17538,7 +17538,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get holidayEnableTitle => '啟用假日標記';
 
   @override
-  String get holidayEnableSubtitle => '啟用後會在課表上標記公眾假期和調休補班';
+  String get holidayEnableSubtitle => '標記法定節假日和調休補班日';
 
   @override
   String get holidayDataSectionTitle => '假期資料';
@@ -17756,7 +17756,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get customHolidayEmpty => '暫無自訂假期';
 
   @override
-  String get customHolidayCorrupted => '自訂假期資料讀取異常，已暫停讀寫以防覆蓋丟失';
+  String get customHolidayCorrupted => '讀取異常，暫停讀寫防丟';
 
   @override
   String get customHolidayNameRequired => '請輸入假期名稱';
@@ -20939,7 +20939,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsScreenshotShareTitle => '截圖後提示分享課表';
 
   @override
-  String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
+  String get settingsScreenshotShareSubtitle => '只彈提示，點了才生成圖片';
 
   @override
   String get aboutUpdateAvailableHeadline => '發現新版本';
@@ -21493,7 +21493,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
-  String get liquidGlassDarkBoostSubtitle => '深色下換成中性灰底、略增模糊並收邊緣高光';
+  String get liquidGlassDarkBoostSubtitle => '中性灰底、更模糊、邊緣高光更弱';
 
   @override
   String get liquidGlassDarkIndependentLabel => '獨立設定深色檔';
@@ -21511,7 +21511,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get performanceSnapshotEntryTitle => '設定快照';
 
   @override
-  String get performanceSnapshotEntrySubtitle => '把目前所有會影響效能的設定寫入應用日誌';
+  String get performanceSnapshotEntrySubtitle => '把目前設置寫進應用日誌';
 
   @override
   String get performanceSnapshotEntryDone => '已寫入應用日誌';
@@ -22092,7 +22092,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get glassDockShowAddButtonTitle => '顯示圓鈕';
 
   @override
-  String get glassDockShowAddButtonSubtitle => '在藥丸右側顯示獨立圓鈕，功能與圖示可在下方自訂';
+  String get glassDockShowAddButtonSubtitle => '在藥丸右側單獨顯示';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
@@ -22548,7 +22548,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherRetryAction => '重試';
 
   @override
-  String get weatherCoverageNote => '預報只涵蓋未來 16 天，更遠的日期不顯示天氣。';
+  String get weatherCoverageNote => '預報只覆蓋未來 16 天，更遠不顯示';
 
   @override
   String get weatherAttribution => '天氣資料來自 Open-Meteo.com';
@@ -23685,7 +23685,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseRecolorTileTitle => '課表重新配色';
 
   @override
-  String get courseRecolorTileSubtitle => '不用重新匯入，隨時一鍵為全部課程換一套顏色';
+  String get courseRecolorTileSubtitle => '不用重新匯入，可隨時換色';
 
   @override
   String get courseRecolorSheetTitle => '課表重新配色';
@@ -26810,7 +26810,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetCourseAccentTitle => '課程顏色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '關閉回到經典配色；也可只加色條，或讓課程名與狀態一併上色';
+  String get homeWidgetCourseAccentSubtitle => '關閉後恢復經典配色';
 
   @override
   String get widgetCourseAccentModeOff => '關閉';
@@ -26828,7 +26828,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetHeightAdjustTitle => '卡片高度';
 
   @override
-  String get homeWidgetHeightAdjustHint => '範圍 -16 ~ 16，0 為預設檔：正數比預設更高，負數更矮';
+  String get homeWidgetHeightAdjustHint => '範圍 -16～16，正數更高，負數更矮';
 
   @override
   String get defaultLabel => '預設';
@@ -26935,7 +26935,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutEnableHapticsTitle => '啟用應用內震動反饋';
 
   @override
-  String get layoutEnableHapticsSubtitle => '關閉後，頁碼切換等交互不再觸發輕微震動';
+  String get layoutEnableHapticsSubtitle => '關閉後頁碼切換不再震動';
 
   @override
   String pageTransitionSpeedLabel(String speed) {
@@ -27058,13 +27058,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weekGridShowExamsTitle => '週檢視顯示考試';
 
   @override
-  String get weekGridShowExamsSubtitle => '考試卡落進對應時段；長按加課會跳過考試時段';
+  String get weekGridShowExamsSubtitle => '長按加課會跳過考試時段';
 
   @override
   String get weekGridShowSchedulesTitle => '週檢視顯示日程';
 
   @override
-  String get weekGridShowSchedulesSubtitle => '日程卡按時間落進對應時段，跨天日程佔整列';
+  String get weekGridShowSchedulesSubtitle => '按時間落位，跨天佔整列';
 
   @override
   String get layoutVerticalAlignLabel => '垂直排版';
@@ -27339,7 +27339,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutRecordDiagnosticsTitle => '記錄應用日誌';
 
   @override
-  String get aboutRecordDiagnosticsSubtitle => '開啟後本機持續記錄執行日誌，超級島日誌單獨標註';
+  String get aboutRecordDiagnosticsSubtitle => '持續記錄執行日誌，存本機';
 
   @override
   String get aboutExportDiagnosticsAction => '匯出診斷日誌';
@@ -28969,7 +28969,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get holidayEnableTitle => '啟用假日標記';
 
   @override
-  String get holidayEnableSubtitle => '啟用後會在課表上標示放假日與補班日';
+  String get holidayEnableSubtitle => '標記法定節假日和調休補班日';
 
   @override
   String get holidayDataSectionTitle => '假日資料';
@@ -29187,7 +29187,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get customHolidayEmpty => '目前沒有自訂假日';
 
   @override
-  String get customHolidayCorrupted => '自訂假日資料讀取異常，已暫停讀寫以防覆蓋丟失';
+  String get customHolidayCorrupted => '讀取異常，暫停讀寫防丟';
 
   @override
   String get customHolidayNameRequired => '請輸入假日名稱';
@@ -32371,7 +32371,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsScreenshotShareTitle => '截圖後提示分享課表';
 
   @override
-  String get settingsScreenshotShareSubtitle => '在課表頁截圖後浮出提示，點了才產生圖片';
+  String get settingsScreenshotShareSubtitle => '只彈提示，點了才生成圖片';
 
   @override
   String get aboutUpdateAvailableHeadline => '發現新版本';
@@ -32925,7 +32925,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liquidGlassDarkBoostLabel => '深色模式玻璃更暗';
 
   @override
-  String get liquidGlassDarkBoostSubtitle => '深色下換成中性灰底、略增模糊並收邊緣高光';
+  String get liquidGlassDarkBoostSubtitle => '中性灰底、更模糊、邊緣高光更弱';
 
   @override
   String get liquidGlassDarkIndependentLabel => '獨立設定深色檔';
@@ -32943,7 +32943,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get performanceSnapshotEntryTitle => '設定快照';
 
   @override
-  String get performanceSnapshotEntrySubtitle => '把目前所有會影響效能的設定寫入應用日誌';
+  String get performanceSnapshotEntrySubtitle => '把目前設定寫進應用日誌';
 
   @override
   String get performanceSnapshotEntryDone => '已寫入應用日誌';
@@ -33524,7 +33524,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get glassDockShowAddButtonTitle => '顯示圓鈕';
 
   @override
-  String get glassDockShowAddButtonSubtitle => '在藥丸右側顯示獨立圓鈕，功能與圖示可在下方自訂';
+  String get glassDockShowAddButtonSubtitle => '在藥丸右側單獨顯示';
 
   @override
   String get glassDockButtonBackToWeekLabel => '回本週 / 今天';
@@ -33980,7 +33980,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get weatherRetryAction => '重試';
 
   @override
-  String get weatherCoverageNote => '預報只涵蓋未來 16 天，更遠的日期不顯示天氣。';
+  String get weatherCoverageNote => '預報只覆蓋未來 16 天，更遠不顯示';
 
   @override
   String get weatherAttribution => '天氣資料來自 Open-Meteo.com';

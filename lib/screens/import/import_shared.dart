@@ -277,7 +277,7 @@ Future<ImportSemesterConfig?> pickImportSemesterConfig(
   required DateTime initialSemesterStartDate,
   required int initialFirstCourseWeek,
   required String title,
-  required String subtitle,
+  String? subtitle,
   DateTime? inferredFirstCourseDate,
 }) {
   const alignmentService = ImportWeekAlignmentService();
@@ -333,11 +333,15 @@ Future<ImportSemesterConfig?> pickImportSemesterConfig(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: HyperosTypography.sheetTitle(context)),
-                  const SizedBox(height: 8),
-                  Text(
-                    subtitle,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
+                  // 副标题可选：两行控件（开学日期 / 周次对应）自身已带说明，
+                  // 标题也讲清了要确认什么，再补一段就是同一件事说第三遍。
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      style: HyperosTypography.sectionDescription(context),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   HyperosListGroup(
                     children: [
