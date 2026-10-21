@@ -42,16 +42,6 @@ const List<String> _labelColors = [
   '#F9A8D4',
 ];
 
-String _formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
-  if (seconds == 0) {
-    return l10n.liveTimeCorrectionNone;
-  }
-  if (seconds > 0) {
-    return l10n.liveTimeCorrectionDelay(seconds);
-  }
-  return l10n.liveTimeCorrectionAdvance(seconds.abs());
-}
-
 String _buildLiveClassReminderLeadSummary(
   AppLocalizations l10n,
   TimetableSettings settings,
@@ -106,8 +96,6 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     60,
   ];
   static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
-  static const double _timeCorrectionMin = -30;
-  static const double _timeCorrectionMax = 30;
 
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
@@ -135,10 +123,6 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     final l10n = AppLocalizations.of(context)!;
     final duringClassEnabled =
         _draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd;
-    final timeCorrectionText = _formatLiveTimeCorrection(
-      l10n,
-      _draft.liveTimeCorrectionSeconds,
-    );
     // HyperOS list style: section label + one list group of equal-height rows.
     // Avoid ControlCard wrappers and long footnotes so the page scans like
     // system settings (title / one-line subtitle / trailing control).
@@ -161,7 +145,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
               HyperosSwitchTile(
                 title: l10n.duringClassReminderTitle,
-                subtitle: l10n.duringClassReminderSubtitle,
+                // 副标题删：复述标题「课中与下课提醒」，零新增信息。
                 value: duringClassEnabled,
                 onChanged: (value) => _updateDraft(
                   _draft.copyWith(
@@ -256,24 +240,9 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
             ],
           ),
           const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.timeCorrectionTitle),
-          HyperosListGroup(
-            children: [
-              HyperosSliderTile(
-                title: l10n.timeCorrectionLabel(timeCorrectionText),
-                dialogTitle: l10n.timeCorrectionTitle,
-                dialogHelper: l10n.timeCorrectionHelp,
-                value: _draft.liveTimeCorrectionSeconds.toDouble(),
-                min: _timeCorrectionMin,
-                max: _timeCorrectionMax,
-                divisions: (_timeCorrectionMax - _timeCorrectionMin).round(),
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(liveTimeCorrectionSeconds: value.round()),
-                  debounce: true,
-                ),
-              ),
-            ],
-          ),
+          // 「铃声时间矫正」整组删：与自检页同一字段（liveTimeCorrectionSeconds）、
+          // 同参数同文案的重复入口——自检页注释明说「从『提醒时间』页移到这里」，
+          // 这份是搬走时漏删的残页；纯排障旋钮不再占用户偏好路径。
         ],
       ),
     );
@@ -570,14 +539,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     }
     return null;
   }
-
-  /// 「展开详情」组的说明行：按阶段讲清楚哪些字段会渲染成行。
-  ///
-  /// 课前恒为提升态——阶段/状态并入标题、进度只在课中出现，这三个字段
-  /// 已从课前页收走，说明里只描述本页真正可操作的字段行为。
-  String _expandedDetailHint(AppLocalizations l10n) => widget.forDuringEnd
-      ? l10n.liveExpandedDetailHintDuringEnd
-      : l10n.liveExpandedDetailHintBeforeClass;
 
   @override
   Widget build(BuildContext context) {
@@ -1055,14 +1016,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       ),
       const HyperosSectionGap(),
       HyperosSectionLabel(text: l10n.liveExpandedDetailGroupTitle),
-      HyperosListGroup(
-        children: [
-          HyperosListTile(
-            title: l10n.liveExpandedDetailSubtitle,
-            subtitle: _expandedDetailHint(l10n),
-          ),
-        ],
-      ),
+      // 「长按拖动调整顺序」说明卡删：实现是右手柄直接拖（说明与行为不符），
+      // 行序与预览一致预览就在下方自证，字段缺席原因属实现口径。
       const HyperosSectionGap(),
       _ExpandedDetailGroup(
         display: display,
@@ -1658,12 +1613,11 @@ class _LiveKeepAliveSettingsScreenState
       title: Text(l10n.liveKeepAliveTitle),
       child: HyperosListView(
         children: [
-          HyperosSectionLabel(text: l10n.liveKeepAliveOptionsTitle),
+          // 单组页面不再拉「保活选项」分组标签：页标题「后台保活」已说清。
           HyperosListGroup(
             children: [
               HyperosSwitchTile(
                 title: l10n.hideFromRecentsTitle,
-                subtitle: l10n.hideFromRecentsSubtitle,
                 value: _draft.liveHideFromRecents,
                 onChanged: (value) async {
                   final provider = context.read<TimetableProvider>();
@@ -1895,22 +1849,20 @@ class _LiveKeepAliveServiceTile extends StatelessWidget {
                     l10n.keepAliveServiceTitle,
                     style: HyperosTypography.listTitle(context),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    enabled
-                        ? l10n.keepAliveServiceEnabledSubtitle
-                        : l10n.keepAliveServiceDisabledSubtitle,
-                    style: HyperosTypography.listDetail(context),
-                  ),
+                  // 状态副标题删：绿勾/橙图标已表达状态，「当前已开启」后半句
+                  // 复述标题；未开启态的「可进入系统无障碍设置…」是右侧按钮的说明书。
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            HyperosButton(
-              label: l10n.goEnableAction,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: onOpenSettings,
-            ),
+            // 已开启时隐藏「去开启」：按钮唯一用途是开启，开着再引去确认弹窗是噪声。
+            if (!enabled) ...[
+              const SizedBox(width: 8),
+              HyperosButton(
+                label: l10n.goEnableAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: onOpenSettings,
+              ),
+            ],
           ],
         ),
       ),
