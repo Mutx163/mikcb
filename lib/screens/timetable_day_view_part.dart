@@ -310,12 +310,13 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         target.week == _selectedWeekForDayView &&
         target.dayOfWeek == _selectedDayOfWeek;
     // 摘要卡吸顶 + 内容同一条滚动体（见 [TimetableDayViewScrollShell]）。
+    final key = ValueKey('day-content-${target.week}-${target.dayOfWeek}');
     final scrollKey = _TimetableScreenState._dayAgendaScrollKey(
       target.week,
       target.dayOfWeek,
     );
     return TimetableDayViewScrollShell(
-      contentKey: ValueKey('day-content-${target.week}-${target.dayOfWeek}'),
+      contentKey: key,
       columnKey: ValueKey('day-column-${target.week}-${target.dayOfWeek}'),
       scrollKey: scrollKey,
       controller: _previewControllerFor(scrollKey),
@@ -333,19 +334,12 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         courseItems: displayItems,
         scheduleItems: scheduleItems,
         agendaItems: agendaItems,
-        taskCount:
-            _buildDayTaskBand(
-              provider,
-              settings,
-              target.week,
-              target.dayOfWeek,
-            ).actionableCount,
+        taskCount: _buildDayTaskBand(
+          provider, settings, target.week, target.dayOfWeek).actionableCount,
       ),
       slivers: _buildDayAgendaSlivers(
-        provider: provider,
-        settings: settings,
-        week: target.week,
-        dayOfWeek: target.dayOfWeek,
+        provider: provider, settings: settings,
+        week: target.week, dayOfWeek: target.dayOfWeek,
       ),
     );
   }
@@ -603,50 +597,33 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return '$formattedDate ${_weekdayLabel(context, dayOfWeek)}';
   }
 
-  /// 当日议程的 sliver 列表（2026-10-21 由 `_buildExpandedDayColumnView` 改来）。
-  /// 不再自带滚动体，滚动 key/controller/physics 上移到调用方（见
-  /// [TimetableDayViewScrollShell]）。
+  /// 当日议程的 sliver 列表（2026-10-21 由 `_buildExpandedDayColumnView` 改来，
+  /// 不再自带滚动体；滚动 key/controller/physics 上移到调用方）。
   List<Widget> _buildDayAgendaSlivers({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
     required int dayOfWeek,
   }) {
-    final courses = _getCoursesForDay(
-      provider.courses,
-      week,
-      dayOfWeek,
-      settings,
-    );
-    final currentCourseIds =
-        _isSelectedDayToday(
-          provider: provider,
-          settings: settings,
-          week: week,
-          dayOfWeek: dayOfWeek,
-        )
+    final courses = _getCoursesForDay(provider.courses, week, dayOfWeek, settings);
+    final isToday = _isSelectedDayToday(
+      provider: provider, settings: settings, week: week, dayOfWeek: dayOfWeek);
+    final currentCourseIds = isToday
         ? provider
               .getCoursesInProgress(dayOfWeek: dayOfWeek, week: week)
               .map((course) => course.id)
               .toSet()
         : const <String>{};
     final displayItems = _buildHomeDayDisplayItems(
-      provider: provider,
-      settings: settings,
-      week: week,
-      dayOfWeek: dayOfWeek,
-      myCourses: courses,
+      provider: provider, settings: settings, week: week,
+      dayOfWeek: dayOfWeek, myCourses: courses,
       currentCourseIds: currentCourseIds,
     );
     final agendaItems = _buildDayAgendaItems(
-      provider: provider,
-      settings: settings,
-      week: week,
-      dayOfWeek: dayOfWeek,
-      courseItems: displayItems,
+      provider: provider, settings: settings, week: week,
+      dayOfWeek: dayOfWeek, courseItems: displayItems,
     );
-    final taskBand =
-        _buildDayTaskBand(provider, settings, week, dayOfWeek);
+    final taskBand = _buildDayTaskBand(provider, settings, week, dayOfWeek);
     // 玻璃坞避让（含底部安全区）：日课表视口全屏，避让以滚动 padding
     // 实现——静止在列表底部时最后一项仍停在玻璃坞上方，滚动中卡片则
     // 连续穿过避让带，不再在边界被硬裁出与磨砂卡片色差明显的空带。
@@ -659,18 +636,12 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
     final listBottomContentInset =
         8 + dockScrollAvoidance + todayButtonAvoidance;
-    // 空态是**居中块**，不是能滚的列表：那份浮钮余量存在的前提是"最后一张卡
-    // 要能滑到钮上方"，而空态里唯一的像素是屏幕中间那两行字，离屏幕底部的
-    // 浮钮还有大半屏，避让与否都碰不到。带上它反而害它在**今天 ↔ 非今天**之间
-    // 换位置：浮钮只在非今天出现，那多出来的余量在滑动落定、整屏重建那一刻
-    // 才被算进去，把居中的文字往上顶掉半个余量（玻璃坞 29px），用户读到的
-    // 就是"没课那天滑过去，加载一结束'暂无课程'往上跳一下"
-    // （2026-09-29 真机反馈）。所以空态只留药丸避让——与它是否今天无关。
+    // 空态是居中块：浮钮避让带上它会让"今天 ↔ 非今天"换位置、文字跳一下
+    //（2026-09-29 真机反馈），所以空态只留药丸避让。
     final emptyBottomContentInset = 8 + dockScrollAvoidance;
     // 待办带是第 0 项、跟着滚走（钉住会让一天八条作业永久吃掉半屏）；为空时整条不渲染。
     final bandCount = taskBand.isEmpty ? 0 : 1;
     if (agendaItems.isEmpty && bandCount == 0) {
-      // 空白天也要能下拉导入；占摘要卡之后的剩余视口 ⇒「暂无课程」仍居中。
       return <Widget>[
         SliverFillRemaining(
           hasScrollBody: false,
