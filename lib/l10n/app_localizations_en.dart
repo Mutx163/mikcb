@@ -2663,10 +2663,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'During-class / before-end time style';
 
   @override
-  String get duringEndTimeDisplayHelp =>
-      'Choose whether compact reminders show nearest time or the total remaining time.';
-
-  @override
   String get liveDisplayContentTitle => 'Display Content';
 
   @override
@@ -2681,7 +2677,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preferShortNameSubtitle =>
-      'Takes effect only if short name is filled in; recommended within 3 chars';
+      'Takes effect only if short name is filled in';
 
   @override
   String get showLocationTitle => 'Show Location';
@@ -2773,7 +2769,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      'Turns the selected mode on before class and restores it after; DND needs system permission';
+      'Turns on automatically before class and restores after class';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'Off';
@@ -2799,7 +2795,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      'Recommended for Xiaomi/Redmi. Other devices can try showing text in status bar icon; turn off if abnormal';
+      'Recommended for Xiaomi/Redmi. Other devices may render it abnormally';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle =>
@@ -3973,7 +3969,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTestingNotificationSubtitle =>
-      'Used to verify the Island, notification bar, and course short-name display';
+      'Verifies Island and notification bar display';
 
   @override
   String get liveTestingStartAction => 'Start test';
@@ -11417,6 +11413,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMenuMoreTitle => 'More features';
+
+  @override
+  String get homeMenuMoreFeaturesDesc =>
+      'Shortcuts to timetable content and daily actions';
+
+  @override
+  String get homeMenuMoreDataDesc => 'Backup, sync and transfer';
+
+  @override
+  String get homeMenuMoreAboutDesc => 'Version, guide and support';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

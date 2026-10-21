@@ -2555,10 +2555,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get duringEndTimeDisplayLabel => '授業中/終了リマインダーの時間スタイル';
 
   @override
-  String get duringEndTimeDisplayHelp =>
-      'コンパクトリマインダーで直近の時間を表示するか、全体の合計時間を表示するかを制御。';
-
-  @override
   String get liveDisplayContentTitle => '表示内容';
 
   @override
@@ -2572,7 +2568,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get preferShortNameTitle => '略称を優先表示';
 
   @override
-  String get preferShortNameSubtitle => '略称が未入力の場合は無効。3文字以内を推奨';
+  String get preferShortNameSubtitle => '略称が未入力の場合は無効';
 
   @override
   String get showLocationTitle => '場所を表示';
@@ -2657,8 +2653,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveBeforeClassQuickActionAutoTitle => '自動実行';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '授業前に選択したモードを自動オンにし、授業後に戻します。おやすみモードにはシステム権限が必要です';
+  String get liveBeforeClassQuickActionAutoSubtitle => '授業前に自動オン、授業後に戻します';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => 'オフ';
@@ -2684,7 +2679,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      'Xiaomi/Redmi推奨。他機種でもステータスバーアイコンに文字表示を試行可能（異常時はオフにしてください）';
+      'Xiaomi/Redmi推奨。他機種では正しく表示されない場合があります';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字組版と位置の微調整';
@@ -3804,7 +3799,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingNotificationTitle => 'テスト通知';
 
   @override
-  String get liveTestingNotificationSubtitle => 'スーパーアイランド、通知バーと授業略称などの表示効果を検証';
+  String get liveTestingNotificationSubtitle => 'スーパーアイランドと通知バーの表示効果を検証';
 
   @override
   String get liveTestingStartAction => 'テスト開始';
@@ -11090,6 +11085,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeMenuMoreTitle => 'その他の機能';
+
+  @override
+  String get homeMenuMoreFeaturesDesc => '時間割の内容と日常操作へのショートカット';
+
+  @override
+  String get homeMenuMoreDataDesc => 'バックアップ・同期・転送';
+
+  @override
+  String get homeMenuMoreAboutDesc => 'バージョン、ガイドとサポート';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

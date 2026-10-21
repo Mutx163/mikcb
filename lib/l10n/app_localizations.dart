@@ -4660,12 +4660,6 @@ abstract class AppLocalizations {
   /// **'课中时间样式'**
   String get duringEndTimeDisplayLabel;
 
-  /// No description provided for @duringEndTimeDisplayHelp.
-  ///
-  /// In zh, this message translates to:
-  /// **'紧凑提醒显示最近时间或总时长'**
-  String get duringEndTimeDisplayHelp;
-
   /// No description provided for @liveDisplayContentTitle.
   ///
   /// In zh, this message translates to:
@@ -4693,7 +4687,7 @@ abstract class AppLocalizations {
   /// No description provided for @preferShortNameSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'课程未填写简称时不生效；建议简称控制在 3 个字以内'**
+  /// **'课程未填写简称时不生效'**
   String get preferShortNameSubtitle;
 
   /// No description provided for @showLocationTitle.
@@ -4849,7 +4843,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveBeforeClassQuickActionAutoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'上课前自动开启所选模式，下课后恢复；免打扰需系统授权'**
+  /// **'上课前自动开启，下课后恢复'**
   String get liveBeforeClassQuickActionAutoSubtitle;
 
   /// No description provided for @liveBeforeClassQuickActionAutoOptionOff.
@@ -4891,7 +4885,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelImageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'推荐小米/红米设备；其他机型开启后将尝试在状态栏小图标显示文字，若显示异常可随时关闭'**
+  /// **'推荐小米/红米设备；其他机型可能显示异常'**
   String get liveMiuiLabelImageSubtitle;
 
   /// No description provided for @liveMiuiLabelAdvancedAccordionTitle.
@@ -6894,7 +6888,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingNotificationSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'用于验证超级岛、通知栏和课程简称等显示效果'**
+  /// **'验证超级岛与通知栏的显示效果'**
   String get liveTestingNotificationSubtitle;
 
   /// No description provided for @liveTestingStartAction.
@@ -19572,6 +19566,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'更多功能'**
   String get homeMenuMoreTitle;
+
+  /// No description provided for @homeMenuMoreFeaturesDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表内容与日常操作的快捷入口'**
+  String get homeMenuMoreFeaturesDesc;
+
+  /// No description provided for @homeMenuMoreDataDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份、同步与传输'**
+  String get homeMenuMoreDataDesc;
+
+  /// No description provided for @homeMenuMoreAboutDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'版本、指南与支持'**
+  String get homeMenuMoreAboutDesc;
 
   /// No description provided for @classAlarmLeadMinutesLabel.
   ///

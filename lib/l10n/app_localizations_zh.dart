@@ -2503,9 +2503,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get duringEndTimeDisplayLabel => '课中时间样式';
 
   @override
-  String get duringEndTimeDisplayHelp => '紧凑提醒显示最近时间或总时长';
-
-  @override
   String get liveDisplayContentTitle => '显示内容';
 
   @override
@@ -2518,7 +2515,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferShortNameTitle => '优先显示课程简称';
 
   @override
-  String get preferShortNameSubtitle => '课程未填写简称时不生效；建议简称控制在 3 个字以内';
+  String get preferShortNameSubtitle => '课程未填写简称时不生效';
 
   @override
   String get showLocationTitle => '显示地点';
@@ -2601,8 +2598,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveBeforeClassQuickActionAutoTitle => '自动执行';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '上课前自动开启所选模式，下课后恢复；免打扰需系统授权';
+  String get liveBeforeClassQuickActionAutoSubtitle => '上课前自动开启，下课后恢复';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自动执行';
@@ -2627,8 +2623,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '超级岛左侧文字图标';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      '推荐小米/红米设备；其他机型开启后将尝试在状态栏小图标显示文字，若显示异常可随时关闭';
+  String get liveMiuiLabelImageSubtitle => '推荐小米/红米设备；其他机型可能显示异常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版与位置微调';
@@ -3723,7 +3718,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingNotificationTitle => '测试通知';
 
   @override
-  String get liveTestingNotificationSubtitle => '用于验证超级岛、通知栏和课程简称等显示效果';
+  String get liveTestingNotificationSubtitle => '验证超级岛与通知栏的显示效果';
 
   @override
   String get liveTestingStartAction => '开始测试';
@@ -10754,6 +10749,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuMoreTitle => '更多功能';
 
   @override
+  String get homeMenuMoreFeaturesDesc => '课表内容与日常操作的快捷入口';
+
+  @override
+  String get homeMenuMoreDataDesc => '备份、同步与传输';
+
+  @override
+  String get homeMenuMoreAboutDesc => '版本、指南与支持';
+
+  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分钟';
   }
@@ -13905,9 +13909,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
 
   @override
-  String get duringEndTimeDisplayHelp => '控製緊湊提醒裡顯示最近時間還是整段總時間';
-
-  @override
   String get liveDisplayContentTitle => '顯示內容';
 
   @override
@@ -13920,7 +13921,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get preferShortNameTitle => '優先顯示課程簡稱';
 
   @override
-  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效；建議簡稱控制在 3 個字以內';
+  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效';
 
   @override
   String get showLocationTitle => '顯示地點';
@@ -14003,8 +14004,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveBeforeClassQuickActionAutoTitle => '自動執行';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '上課前自動開啟所選模式，下課後恢復；勿擾需系統授權';
+  String get liveBeforeClassQuickActionAutoSubtitle => '上課前自動開啟，下課後恢復';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
@@ -14029,8 +14029,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      '推薦小米/紅米設備；其他機型開啟後將嘗試在狀態欄小圖示顯示文字，若顯示異常可隨時關閉';
+  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米設備；其他機型可能顯示異常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
@@ -15124,7 +15123,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingNotificationTitle => '測試通知';
 
   @override
-  String get liveTestingNotificationSubtitle => '用于驗證超級島、通知欄和課程簡稱等顯示效果';
+  String get liveTestingNotificationSubtitle => '驗證超級島與通知欄的顯示效果';
 
   @override
   String get liveTestingStartAction => '開始測試';
@@ -22195,6 +22194,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuMoreTitle => '更多功能';
 
   @override
+  String get homeMenuMoreFeaturesDesc => '課表內容與日常操作的快捷入口';
+
+  @override
+  String get homeMenuMoreDataDesc => '備份、同步與傳輸';
+
+  @override
+  String get homeMenuMoreAboutDesc => '版本、指南與支援';
+
+  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分鐘';
   }
@@ -25346,9 +25354,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get duringEndTimeDisplayLabel => '課中 / 下課提醒時間樣式';
 
   @override
-  String get duringEndTimeDisplayHelp => '控製緊湊提醒裡顯示最近時間還是整段總時間';
-
-  @override
   String get liveDisplayContentTitle => '顯示內容';
 
   @override
@@ -25361,7 +25366,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get preferShortNameTitle => '優先顯示課程簡稱';
 
   @override
-  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效；建議簡稱控制在 3 個字以內';
+  String get preferShortNameSubtitle => '課程未填寫簡稱時不生效';
 
   @override
   String get showLocationTitle => '顯示地點';
@@ -25444,8 +25449,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveBeforeClassQuickActionAutoTitle => '自動執行';
 
   @override
-  String get liveBeforeClassQuickActionAutoSubtitle =>
-      '上課前自動開啟所選模式，下課後恢復；勿擾需系統授權';
+  String get liveBeforeClassQuickActionAutoSubtitle => '上課前自動開啟，下課後恢復';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '不自動執行';
@@ -25470,8 +25474,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      '推薦小米/紅米裝置；其他機型開啟後將嘗試在狀態列小圖示顯示文字，若顯示異常可隨時關閉';
+  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米裝置；其他機型可能顯示異常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
@@ -26565,7 +26568,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingNotificationTitle => '測試通知';
 
   @override
-  String get liveTestingNotificationSubtitle => '用於驗證超級島、通知欄和課程簡稱等顯示效果';
+  String get liveTestingNotificationSubtitle => '驗證超級島與通知欄的顯示效果';
 
   @override
   String get liveTestingStartAction => '開始測試';
@@ -33635,6 +33638,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeMenuMoreTitle => '更多功能';
+
+  @override
+  String get homeMenuMoreFeaturesDesc => '課表內容與日常操作的快捷入口';
+
+  @override
+  String get homeMenuMoreDataDesc => '備份、同步與傳輸';
+
+  @override
+  String get homeMenuMoreAboutDesc => '版本、指南與支援';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

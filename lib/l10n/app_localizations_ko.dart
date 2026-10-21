@@ -2569,10 +2569,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get duringEndTimeDisplayLabel => '수업 중/종료 알림 시간 스타일';
 
   @override
-  String get duringEndTimeDisplayHelp =>
-      '컴팩트 알림에서 최근 시간을 표시할지 전체 총 시간을 표시할지 제어합니다.';
-
-  @override
   String get liveDisplayContentTitle => '표시 내용';
 
   @override
@@ -2586,7 +2582,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get preferShortNameTitle => '약칭 우선 표시';
 
   @override
-  String get preferShortNameSubtitle => '약칭을 입력하지 않으면 적용되지 않습니다. 3자 이내 권장';
+  String get preferShortNameSubtitle => '약칭을 입력하지 않으면 적용되지 않습니다';
 
   @override
   String get showLocationTitle => '장소 표시';
@@ -2677,7 +2673,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveBeforeClassQuickActionAutoSubtitle =>
-      '수업 전 선택한 모드를 켜고 수업 후 복원합니다. 방해 금지는 시스템 권한이 필요합니다';
+      '수업 전 자동으로 켜고 수업 후 복원합니다';
 
   @override
   String get liveBeforeClassQuickActionAutoOptionOff => '끄기';
@@ -2703,7 +2699,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      'Xiaomi/Redmi 기기 권장. 타 기기도 상태표시줄 아이콘에 텍스트 표시를 시도할 수 있습니다(이상 시 비활성화)';
+      'Xiaomi/Redmi 기기 권장. 타 기기에서는 비정상적으로 표시될 수 있습니다';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '타이포그래피 및 위치 미세 조정';
@@ -3827,8 +3823,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingNotificationTitle => '테스트 알림';
 
   @override
-  String get liveTestingNotificationSubtitle =>
-      '슈퍼아일랜드, 알림바, 수업 약칭 등의 표시 효과를 검증합니다';
+  String get liveTestingNotificationSubtitle => '슈퍼아일랜드와 알림바의 표시 효과를 검증합니다';
 
   @override
   String get liveTestingStartAction => '테스트 시작';
@@ -11142,6 +11137,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeMenuMoreTitle => '더 많은 기능';
+
+  @override
+  String get homeMenuMoreFeaturesDesc => '시간표 콘텐츠와 일상 작업 바로가기';
+
+  @override
+  String get homeMenuMoreDataDesc => '백업, 동기화 및 전송';
+
+  @override
+  String get homeMenuMoreAboutDesc => '버전, 가이드 및 지원';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
