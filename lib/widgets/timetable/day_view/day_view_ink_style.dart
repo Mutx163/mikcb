@@ -162,7 +162,17 @@ Color dayAgendaAutoInk(
     gaussianBlurAvailable: env.backdropBlurOn,
   );
   if (!style.isGlass) {
-    return Colors.white;
+    // 实体档：卡面就是 [fill] 本身的实色（不掺壁纸），所以直接按它的亮度
+    // 在黑白之间选对比度更高的那档。
+    //
+    // 原来这里无条件 `return Colors.white`——对课程卡成立（课程色实底足够深），
+    // 但**作业待办带的底是 `HyperosColors.card`（浅色主题下就是白）**，
+    // 白字压白底等于看不见（2026-10-21 用户截图：无壁纸时作业行只剩一个
+    // 蓝色勾选框和一个红点，标题/课名/日期全"消失"）。
+    //
+    // 改成按 [fill] 亮度判之后，课程卡的行为不变（深色课程底仍拿白字），
+    // 白底/浅底自动拿深色墨。
+    return bestCardInkForLuminance(fill.computeLuminance());
   }
   // 染色比例**必须**是渲染层真正用的那个值（`CourseSurface.washAlpha`），
   // 不能拿出厂常数顶替：用户把卡片的染色滑杆拖到「清澈」时真实 alpha 接近 0，

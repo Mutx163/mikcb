@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/utils/card_surface_ink.dart';
 import 'package:university_timetable/utils/wallpaper_luminance_profile.dart';
 import 'package:university_timetable/widgets/timetable/day_view/day_view_ink_style.dart';
 
@@ -111,18 +112,57 @@ void main() {
   });
 
   group('不是玻璃档时不跟壁纸走', () {
-    test('实体卡恒为白字', () {
+    test('实体卡不看壁纸，只按卡面实色选黑白', () {
       final settings = TimetableSettings.defaults().copyWith(
         courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
         homePageWallpaperPath: wallpaperPath,
       );
+      // 深色课程底 → 白字。这是「不跟壁纸走」的原意：无论壁纸多黑多白，
+      // 实体档的判色只取决于卡面本身的实色。
+      final darkInk = dayAgendaAutoInk(
+        const Color(0xFFB71C1C),
+        settings: settings,
+        env: const DayViewInkEnvironment(backdropBlurOn: false),
+        washAlpha: 1,
+      );
+      expect(darkInk, Colors.white, reason: '深红底上白字对比度 6.57');
+    });
+
+    test('实体卡遇到浅色卡面要给深字（2026-10-21 修）', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
+        homePageWallpaperPath: wallpaperPath,
+      );
+      // 旧实现无条件 `return Colors.white`，于是浅蓝底上的白字对比度只有
+      // 1.75（约等于看不见）。作业待办带的底是 `HyperosColors.card`
+      // （浅色主题下就是白），受同一个 bug 影响：用户截图里「无壁纸时作业行
+      // 只剩勾选框和红点，标题/课名/日期全消失」。
       final ink = dayAgendaAutoInk(
         const Color(0xFF90CAF9),
         settings: settings,
         env: const DayViewInkEnvironment(backdropBlurOn: false),
         washAlpha: 1,
       );
-      expect(ink, Colors.white, reason: '实体卡是课程色实底，白字是既有口径');
+      expect(ink, isNot(Colors.white), reason: '浅底必须给深字，白字对比度仅 1.75');
+      expect(
+        cardInkContrastRatio(ink, const Color(0xFF90CAF9).computeLuminance()),
+        greaterThan(4.5),
+        reason: 'WCAG AA 正文下限',
+      );
+    });
+
+    test('白色卡面（作业待办带的底）也要给深字', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        courseCardSurfaceStyle: CourseCardSurfaceStyle.solid,
+        homePageWallpaperPath: wallpaperPath,
+      );
+      final ink = dayAgendaAutoInk(
+        Colors.white,
+        settings: settings,
+        env: const DayViewInkEnvironment(backdropBlurOn: false),
+        washAlpha: 1,
+      );
+      expect(ink, isNot(Colors.white), reason: '白字压白底 = 完全看不见');
     });
   });
 
