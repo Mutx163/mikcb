@@ -262,12 +262,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return [_buildWelcomePage(l10n), _buildPrivacyPage(l10n)];
   }
 
-  /// 分页圆点：底栏内、与翻页按钮同一行（行内垂直居中），尺寸 8dp、间距 8dp。
+  /// 分页圆点：底栏内与翻页按钮同一行，**整屏水平居中**（Stack 对齐），
+  /// 尺寸 8dp、间距 8dp。
   ///
   /// 位置沿革：曾在顶栏（2026-10-20 首版，Baymard 点名「放顶部是无理由引入
   /// 摩擦」）→ 移到底栏独占一行（研究结论：底部居中是移动端惯例）→
-  /// 2026-10-21 应用户反馈并进按钮行（单独占行多占 ~20px 高度）。研究给的是
-  /// 默认值，用户的紧凑偏好优先——水平和位置由两侧按钮之间的空档决定。
+  /// 并进按钮行但用 Row+Spacer（在首页向左偏半个按钮宽）→ 2026-10-21
+  /// 改 Stack 整屏居中（用户反馈：第一步时圆点不在左右居中）。
   ///
   /// 另两条依据（Baymard《Page Control UI》）：
   /// - **尺寸**：圆点直径至少 8–10px，间距不小于直径——太小的点是低质量
@@ -1017,42 +1018,48 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          child: Row(
+          // Stack 而非 Row+Spacer：圆点必须**整屏水平居中**。Row+Spacer 的
+          // 空档分在「左缘 / 左按钮」与「下一步」之间——第一步没有左按钮时
+          // 圆点居中的是那段空档，向左偏约半个按钮宽（用户反馈）。
+          // Stack 对齐让圆点不随按钮宽度偏移；按钮行定高度，圆点 8dp 在
+          // 同一行内垂直居中。圆点是非交互装饰（ExcludeSemantics + 无手势），
+          // 与按钮几何不重叠（360dp 屏中间空档 ≥100dp、圆点 72dp）。
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              if (isPrivacyPage)
-                HyperosButton(
-                  label: l10n.exitAppAction,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _exitWithoutConsent,
-                )
-              else if (showPrev)
-                HyperosButton(
-                  label: l10n.guidePrevButton,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _goPrev,
-                ),
-              const Spacer(),
-              // 分页圆点：与翻页按钮同一行、行内垂直居中（Row 默认交叉轴
-              // 居中），水平上夹在两侧按钮之间。用户反馈：单独占一行太占
-              // 高度——合并后底栏省 ~20px。翻页时圆点随 setState 重建，
-              // AnimatedContainer 负责过渡。
+              Row(
+                children: [
+                  if (isPrivacyPage)
+                    HyperosButton(
+                      label: l10n.exitAppAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _exitWithoutConsent,
+                    )
+                  else if (showPrev)
+                    HyperosButton(
+                      label: l10n.guidePrevButton,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _goPrev,
+                    ),
+                  const Spacer(),
+                  if (!isLastPage)
+                    HyperosButton(
+                      label: l10n.guideNextButton,
+                      onPressed: canGoNext ? _goNext : null,
+                    )
+                  else
+                    HyperosButton(
+                      // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
+                      // 用软件了，「开始使用」与场景错位，改「知道了」
+                      //（[AppLocalizations.gotItAction]，现成通用键）。
+                      label: widget.requirePrivacyConsent
+                          ? l10n.agreeAndStartAction
+                          : l10n.gotItAction,
+                      onPressed: _finishGuide,
+                    ),
+                ],
+              ),
               if (_totalPages > 1) _buildPageDots(),
-              const Spacer(),
-              if (!isLastPage)
-                HyperosButton(
-                  label: l10n.guideNextButton,
-                  onPressed: canGoNext ? _goNext : null,
-                )
-              else
-                HyperosButton(
-                  // 首启收尾是「同意并开始使用」；从设置复看时用户早就在
-                  // 用软件了，「开始使用」与场景错位，改「知道了」
-                  //（[AppLocalizations.gotItAction]，现成通用键）。
-                  label: widget.requirePrivacyConsent
-                      ? l10n.agreeAndStartAction
-                      : l10n.gotItAction,
-                  onPressed: _finishGuide,
-                ),
             ],
           ),
         ),
