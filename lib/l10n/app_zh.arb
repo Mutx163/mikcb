@@ -1395,9 +1395,9 @@
   "liveDisplayModeTitle": "展示方式",
   "liveDisplayModeSubtitle": "对已开启的提醒生效",
   "duringClassStatusNotificationTitle": "课中状态栏通知",
-  "duringClassStatusNotificationImmediate": "上课后保留状态栏通知",
-  "duringClassStatusNotificationBeforeEnd": "重点提醒前保留普通通知",
-  "duringClassStatusNotificationPersistent": "课中持续显示普通通知",
+  "duringClassStatusNotificationImmediate": "保留状态栏通知",
+  "duringClassStatusNotificationBeforeEnd": "重点提醒前用普通通知",
+  "duringClassStatusNotificationPersistent": "全程显示普通通知",
   "enableIslandDisplayTitle": "展示超级岛",
   "enableIslandDisplaySubtitle": "关闭后不触发系统超级岛",
   "liveTimeThresholdTitle": "时间阈值",
@@ -1847,47 +1847,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "一上课进入重点提醒，下课前 {seconds} 秒开始逐秒倒数",
-  "@liveClassReminderLeadSummaryImmediate": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryKeepNormal": "课中先保持普通通知，下课前 {minutes} 分钟切到重点提醒，最后 {seconds} 秒切到秒级倒计时",
-  "@liveClassReminderLeadSummaryKeepNormal": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryIsland": "下课前 {minutes} 分钟切到超级岛与重点提醒，最后 {seconds} 秒切到秒级倒计时",
-  "@liveClassReminderLeadSummaryIsland": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryFocused": "下课前 {minutes} 分钟开始重点提醒，最后 {seconds} 秒切到秒级倒计时",
-  "@liveClassReminderLeadSummaryFocused": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "liveClassReminderLeadSummaryImmediate": "一上课切重点提醒，下课前逐秒倒数",
+  "liveClassReminderLeadSummaryKeepNormal": "课中普通通知，下课前切重点提醒",
+  "liveClassReminderLeadSummaryIsland": "课中普通通知，下课前切超级岛",
+  "liveClassReminderLeadSummaryFocused": "下课前开始重点提醒",
   "liveSettingsEntrySubtitle": "提醒时段、岛展示、通知栏和显示内容",
   "timetableProfilesEntrySubtitle": "新建、切换、复制、重命名和删除课表",
   "homeTitleSectionTitle": "首页标题",

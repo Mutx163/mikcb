@@ -1249,9 +1249,9 @@
   "liveDisplayModeTitle": "표시 모드",
   "liveDisplayModeSubtitle": "활성화된 알림 시간대에 적용됩니다",
   "duringClassStatusNotificationTitle": "수업 중 상태바 알림",
-  "duringClassStatusNotificationImmediate": "수업 시작 후에도 상태바 알림 유지",
-  "duringClassStatusNotificationBeforeEnd": "종료 알림 시작 전까지 일반 알림 텍스트 유지",
-  "duringClassStatusNotificationPersistent": "수업 시작 후 일반 수업 중 알림을 계속 표시하고 종료 알림 전에 전환",
+  "duringClassStatusNotificationImmediate": "상태표시줄 알림 유지",
+  "duringClassStatusNotificationBeforeEnd": "중요 알림 전까지 일반 알림",
+  "duringClassStatusNotificationPersistent": "전체 동안 일반 알림",
   "enableIslandDisplayTitle": "슈퍼아일랜드 표시",
   "enableIslandDisplaySubtitle": "끄면 시스템 슈퍼아일랜드 트리거를 중단합니다",
   "liveTimeThresholdTitle": "시간 임계값",
@@ -1692,47 +1692,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "수업 시작과 동시에 포커스 알림 표시로 전환하고, 종료 {seconds}초 전에 초 단위 카운트다운으로 전환",
-  "@liveClassReminderLeadSummaryImmediate": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryKeepNormal": "수업 후 먼저 일반 수업 중 알림을 유지하고, 종료 {minutes}분 전에 포커스/종료 알림으로 전환, 마지막 {seconds}초에 초 단위 카운트다운으로 전환",
-  "@liveClassReminderLeadSummaryKeepNormal": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryIsland": "종료 {minutes}분 전에 슈퍼아일랜드와 포커스 알림으로 전환, 마지막 {seconds}초에 초 단위 카운트다운으로 전환",
-  "@liveClassReminderLeadSummaryIsland": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryFocused": "종료 {minutes}분 전에 포커스 알림 표시를 시작하고, 마지막 {seconds}초에 초 단위 카운트다운으로 전환",
-  "@liveClassReminderLeadSummaryFocused": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "liveClassReminderLeadSummaryImmediate": "수업 시작부터 중요, 종료 전 초 단위",
+  "liveClassReminderLeadSummaryKeepNormal": "수업 중 일반 알림, 종료 전 중요로",
+  "liveClassReminderLeadSummaryIsland": "수업 중 일반 알림, 종료 전 아일랜드로",
+  "liveClassReminderLeadSummaryFocused": "종료 전 중요 알림 시작",
   "liveSettingsEntrySubtitle": "알림 시간대, 아일랜드 표시, 알림바 및 표시 내용",
   "timetableProfilesEntrySubtitle": "새로 만들기, 전환, 복사, 이름 변경 및 삭제",
   "homeTitleSectionTitle": "홈 제목",

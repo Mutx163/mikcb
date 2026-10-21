@@ -2606,15 +2606,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get duringClassStatusNotificationImmediate =>
-      'Keep a status notification after class begins';
+      'Keeps the status bar notification';
 
   @override
   String get duringClassStatusNotificationBeforeEnd =>
-      'Keep a regular notification until highlighted reminders begin before class ends';
+      'Normal until the priority reminder';
 
   @override
   String get duringClassStatusNotificationPersistent =>
-      'Keep a regular during-class notification, then switch before class ends';
+      'Normal notification throughout';
 
   @override
   String get enableIslandDisplayTitle => 'Show Island';
@@ -2690,37 +2690,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get countdownFormatHelp =>
-      'Minute-only styles refresh by minute; second-based styles refresh by second.';
+      'Minutes only refreshes per minute; with seconds per second';
 
   @override
   String get showStageTextTitle => 'Show Stage Label';
 
   @override
-  String get showStageTextSubtitle =>
-      'If countdown is hidden, you can still show labels like before class / in class / before end';
-
-  @override
   String get hidePrefixTextTitle => 'Hide \"Starts in / Ends in\" Prefix';
-
-  @override
-  String get hidePrefixTextSubtitle =>
-      'Takes effect when countdown is on; displays numbers only (e.g. hides \"Starts in\")';
 
   @override
   String get hidePrefixTextInactiveHint =>
       'Currently inactive: Requires \"Show countdown\" above';
 
   @override
-  String get showStageTextInactiveHint =>
-      'Currently inactive: Replaced by countdown; takes effect when countdown is off';
+  String get showStageTextInactiveHint => 'No effect while countdown is on';
 
   @override
-  String get courseNameDuplicatedHint =>
-      'Course name is shown on the left; turn off to avoid duplication';
+  String get courseNameDuplicatedHint => 'Also shown on the left';
 
   @override
-  String get locationDuplicatedHint =>
-      'Location is shown on the left; turn off to avoid duplication';
+  String get locationDuplicatedHint => 'Also shown on the left';
 
   @override
   String get liveIslandPreviewTitle => 'Super Island preview';
@@ -2795,7 +2784,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveMiuiLabelImageSubtitle =>
-      'Recommended for Xiaomi/Redmi. Other devices may render it abnormally';
+      'For Xiaomi/Redmi; others may glitch';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle =>
@@ -2815,8 +2804,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveMiuiLabelLogoTitle => 'Left Icon Logo';
 
   @override
-  String get liveMiuiLabelLogoSubtitle =>
-      'Only applies to the icon + text style. If not selected, the app icon remains the fallback';
+  String get liveMiuiLabelLogoSubtitle => 'Falls back to the app icon';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -3379,24 +3367,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return 'Switch to the focused reminder as soon as class starts, then show second-level countdown in the last ${seconds}s before class ends';
-  }
+  String get liveClassReminderLeadSummaryImmediate =>
+      'Island from the start, counts down by the second';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return 'Keep the normal in-class notification first, switch to focused / class-end reminder $minutes minutes before class ends, then show second-level countdown in the last ${seconds}s';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal =>
+      'Normal notification, switches to priority later';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return 'Switch to the Island and focused reminder $minutes minutes before class ends, then show second-level countdown in the last ${seconds}s';
-  }
+  String get liveClassReminderLeadSummaryIsland =>
+      'Normal notification, switches to Island';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return 'Start the focused reminder $minutes minutes before class ends, then show second-level countdown in the last ${seconds}s';
-  }
+  String get liveClassReminderLeadSummaryFocused =>
+      'Priority reminder before class ends';
 
   @override
   String get liveSettingsEntrySubtitle =>
@@ -11000,6 +10984,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskNoDueDate => 'No due date';
+
+  @override
   String get taskDueDateHint => 'Without a due date it never shows in day view';
 
   @override

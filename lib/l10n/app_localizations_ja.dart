@@ -2501,15 +2501,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get duringClassStatusNotificationTitle => '授業中ステータスバー通知';
 
   @override
-  String get duringClassStatusNotificationImmediate => '授業開始後もステータスバー通知を保持';
+  String get duringClassStatusNotificationImmediate => 'ステータスバー通知を保持';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd =>
-      '終了リマインダー開始前まで通常通知テキストを保持';
+  String get duringClassStatusNotificationBeforeEnd => '重点の前は通常通知';
 
   @override
-  String get duringClassStatusNotificationPersistent =>
-      '授業開始後も通常授業中通知を継続表示し、終了リマインダー前に切替';
+  String get duringClassStatusNotificationPersistent => '全体を通して通常通知';
 
   @override
   String get enableIslandDisplayTitle => 'スーパーアイランドを表示';
@@ -2580,32 +2578,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get countdownFormatLabel => 'カウントダウン形式';
 
   @override
-  String get countdownFormatHelp => '分のみスタイルは分単位で更新、秒付きスタイルは秒単位で更新';
+  String get countdownFormatHelp => '分のみは分単位、秒ありは秒単位で更新';
 
   @override
   String get showStageTextTitle => 'ステージステータステキストを表示';
 
   @override
-  String get showStageTextSubtitle => 'カウントダウンオフ後も「もうすぐ授業/授業中/終了リマインダー」を継続表示可能';
-
-  @override
   String get hidePrefixTextTitle => '「授業開始まで / 授業終了まで」接頭辞を非表示';
-
-  @override
-  String get hidePrefixTextSubtitle => 'カウントダウン有効時に反映、数字のみ表示（例：「授業開始まで」を非表示）';
 
   @override
   String get hidePrefixTextInactiveHint => '現在は無効：上の「カウントダウンを表示」を有効にする必要があります';
 
   @override
-  String get showStageTextInactiveHint =>
-      '現在は無効：カウントダウン優先中。上のカウントダウンをオフにすると反映されます';
+  String get showStageTextInactiveHint => 'カウントダウン中は無効';
 
   @override
-  String get courseNameDuplicatedHint => '左側にコース名が表示されています。重複を避けるためオフにできます';
+  String get courseNameDuplicatedHint => '左側にも表示中';
 
   @override
-  String get locationDuplicatedHint => '左側に場所が表示されています。重複を避けるためオフにできます';
+  String get locationDuplicatedHint => '左側にも表示中';
 
   @override
   String get liveIslandPreviewTitle => 'スーパー島プレビュー';
@@ -2678,8 +2669,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '小米アイランド左側テキストアイコン';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      'Xiaomi/Redmi推奨。他機種では正しく表示されない場合があります';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 推奨。他機種は不具合の可能性';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字組版と位置の微調整';
@@ -2698,8 +2688,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveMiuiLabelLogoTitle => '左側アイコンLogo';
 
   @override
-  String get liveMiuiLabelLogoSubtitle =>
-      '「アイコン+テキスト」スタイルでのみ有効，未選択時はアプリアイコンを継続使用';
+  String get liveMiuiLabelLogoSubtitle => '未設定時はアプリアイコンを使用';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -3242,24 +3231,16 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '授業開始と同時にフォーカスリマインダー表示に移行し、終了$seconds秒前に秒単位カウントダウンに切替';
-  }
+  String get liveClassReminderLeadSummaryImmediate => '授業開始から重点、終了前は秒単位';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '授業後はまず通常授業中通知を保持し、終了$minutes分前にフォーカスリマインダー/終了リマインダーに切替、最後の$seconds秒で秒単位カウントダウンに切替';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal => '授業中は通常通知、終了前に重点へ';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '終了$minutes分前にスーパーアイランドとフォーカスリマインダーに切替、最後の$seconds秒で秒単位カウントダウンに切替';
-  }
+  String get liveClassReminderLeadSummaryIsland => '授業中は通常通知、終了前に島へ';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '終了$minutes分前にフォーカスリマインダー表示を開始し、最後の$seconds秒で秒単位カウントダウンに切替';
-  }
+  String get liveClassReminderLeadSummaryFocused => '終了前に重点リマインダーを開始';
 
   @override
   String get liveSettingsEntrySubtitle => 'リマインダー時間帯、アイランド表示、通知バーと表示内容';
@@ -10686,6 +10667,8 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '期限なし';
+
+  @override
   String get taskDueDateHint => '期限がないと日表示に出ません';
 
   @override

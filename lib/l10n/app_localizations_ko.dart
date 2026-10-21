@@ -2514,15 +2514,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get duringClassStatusNotificationTitle => '수업 중 상태바 알림';
 
   @override
-  String get duringClassStatusNotificationImmediate => '수업 시작 후에도 상태바 알림 유지';
+  String get duringClassStatusNotificationImmediate => '상태표시줄 알림 유지';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd =>
-      '종료 알림 시작 전까지 일반 알림 텍스트 유지';
+  String get duringClassStatusNotificationBeforeEnd => '중요 알림 전까지 일반 알림';
 
   @override
-  String get duringClassStatusNotificationPersistent =>
-      '수업 시작 후 일반 수업 중 알림을 계속 표시하고 종료 알림 전에 전환';
+  String get duringClassStatusNotificationPersistent => '전체 동안 일반 알림';
 
   @override
   String get enableIslandDisplayTitle => '슈퍼아일랜드 표시';
@@ -2594,37 +2592,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get countdownFormatLabel => '카운트다운 형식';
 
   @override
-  String get countdownFormatHelp => '분만 표시는 분 단위로, 초 포함 표시는 초 단위로 갱신됩니다';
+  String get countdownFormatHelp => '분만 표시는 분마다, 초 포함은 초마다 갱신';
 
   @override
   String get showStageTextTitle => '스테이지 상태 텍스트 표시';
 
   @override
-  String get showStageTextSubtitle =>
-      '카운트다운 끈 후에도 \'곧 수업/수업 중/종료 알림\'을 계속 표시할 수 있습니다';
-
-  @override
   String get hidePrefixTextTitle => '\'수업 시작까지 / 수업 종료까지\' 접두사 숨기기';
-
-  @override
-  String get hidePrefixTextSubtitle =>
-      '카운트다운 활성화 시 적용, 숫자만 표시(예: \'수업 시작까지\' 숨김)';
 
   @override
   String get hidePrefixTextInactiveHint =>
       '현재 미적용: 상단의 \'카운트다운 표시\'를 먼저 켜야 합니다';
 
   @override
-  String get showStageTextInactiveHint =>
-      '현재 미적용: 카운트다운이 대신 표시 중입니다. 상단 카운트다운을 끄면 적용됩니다';
+  String get showStageTextInactiveHint => '카운트다운이 켜져 있으면 적용되지 않습니다';
 
   @override
-  String get courseNameDuplicatedHint =>
-      '왼쪽에 이미 과목명이 표시되고 있습니다. 중복을 피하려면 끌 수 있습니다';
+  String get courseNameDuplicatedHint => '왼쪽에도 표시 중';
 
   @override
-  String get locationDuplicatedHint =>
-      '왼쪽에 이미 장소가 표시되고 있습니다. 중복을 피하려면 끌 수 있습니다';
+  String get locationDuplicatedHint => '왼쪽에도 표시 중';
 
   @override
   String get liveIslandPreviewTitle => '슈퍼 아일랜드 미리보기';
@@ -2698,8 +2685,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '샤오미 아일랜드 왼쪽 텍스트 아이콘';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      'Xiaomi/Redmi 기기 권장. 타 기기에서는 비정상적으로 표시될 수 있습니다';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 권장. 타 기기는 오류 가능';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '타이포그래피 및 위치 미세 조정';
@@ -2718,8 +2704,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveMiuiLabelLogoTitle => '왼쪽 아이콘 로고';
 
   @override
-  String get liveMiuiLabelLogoSubtitle =>
-      '\'아이콘+텍스트\' 스타일에서만 유효합니다. 미선택 시 앱 아이콘을 계속 사용합니다';
+  String get liveMiuiLabelLogoSubtitle => '설정하지 않으면 앱 아이콘 사용';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -3262,24 +3247,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '수업 시작과 동시에 포커스 알림 표시로 전환하고, 종료 $seconds초 전에 초 단위 카운트다운으로 전환';
-  }
+  String get liveClassReminderLeadSummaryImmediate => '수업 시작부터 중요, 종료 전 초 단위';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '수업 후 먼저 일반 수업 중 알림을 유지하고, 종료 $minutes분 전에 포커스/종료 알림으로 전환, 마지막 $seconds초에 초 단위 카운트다운으로 전환';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal => '수업 중 일반 알림, 종료 전 중요로';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '종료 $minutes분 전에 슈퍼아일랜드와 포커스 알림으로 전환, 마지막 $seconds초에 초 단위 카운트다운으로 전환';
-  }
+  String get liveClassReminderLeadSummaryIsland => '수업 중 일반 알림, 종료 전 아일랜드로';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '종료 $minutes분 전에 포커스 알림 표시를 시작하고, 마지막 $seconds초에 초 단위 카운트다운으로 전환';
-  }
+  String get liveClassReminderLeadSummaryFocused => '종료 전 중요 알림 시작';
 
   @override
   String get liveSettingsEntrySubtitle => '알림 시간대, 아일랜드 표시, 알림바 및 표시 내용';
@@ -10736,6 +10713,8 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '마감일 없음';
+
+  @override
   String get taskDueDateHint => '마감일이 없으면 일간 보기에 안 보임';
 
   @override

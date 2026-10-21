@@ -4573,19 +4573,19 @@ abstract class AppLocalizations {
   /// No description provided for @duringClassStatusNotificationImmediate.
   ///
   /// In zh, this message translates to:
-  /// **'上课后保留状态栏通知'**
+  /// **'保留状态栏通知'**
   String get duringClassStatusNotificationImmediate;
 
   /// No description provided for @duringClassStatusNotificationBeforeEnd.
   ///
   /// In zh, this message translates to:
-  /// **'重点提醒前保留普通通知'**
+  /// **'重点提醒前用普通通知'**
   String get duringClassStatusNotificationBeforeEnd;
 
   /// No description provided for @duringClassStatusNotificationPersistent.
   ///
   /// In zh, this message translates to:
-  /// **'课中持续显示普通通知'**
+  /// **'全程显示普通通知'**
   String get duringClassStatusNotificationPersistent;
 
   /// No description provided for @enableIslandDisplayTitle.
@@ -4711,7 +4711,7 @@ abstract class AppLocalizations {
   /// No description provided for @countdownFormatHelp.
   ///
   /// In zh, this message translates to:
-  /// **'纯分钟样式按分钟刷新，带秒样式按秒刷新'**
+  /// **'纯分钟按分钟刷新，带秒按秒刷新'**
   String get countdownFormatHelp;
 
   /// No description provided for @showStageTextTitle.
@@ -4720,23 +4720,11 @@ abstract class AppLocalizations {
   /// **'显示阶段状态文案'**
   String get showStageTextTitle;
 
-  /// No description provided for @showStageTextSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'关闭倒计时后，仍可显示即将上课、上课中或下课提醒'**
-  String get showStageTextSubtitle;
-
   /// No description provided for @hidePrefixTextTitle.
   ///
   /// In zh, this message translates to:
   /// **'隐藏距上课与距下课前缀'**
   String get hidePrefixTextTitle;
-
-  /// No description provided for @hidePrefixTextSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'开启倒计时时生效，仅保留倒计时数字，隐藏距上课等前缀'**
-  String get hidePrefixTextSubtitle;
 
   /// No description provided for @hidePrefixTextInactiveHint.
   ///
@@ -4747,19 +4735,19 @@ abstract class AppLocalizations {
   /// No description provided for @showStageTextInactiveHint.
   ///
   /// In zh, this message translates to:
-  /// **'当前未生效：已由倒计时承载；关闭上方倒计时后生效'**
+  /// **'倒计时开启时不生效'**
   String get showStageTextInactiveHint;
 
   /// No description provided for @courseNameDuplicatedHint.
   ///
   /// In zh, this message translates to:
-  /// **'左侧已选展示课程名，可关闭避免左右重复'**
+  /// **'左侧已显示课程名'**
   String get courseNameDuplicatedHint;
 
   /// No description provided for @locationDuplicatedHint.
   ///
   /// In zh, this message translates to:
-  /// **'左侧已选展示地点，可关闭避免左右重复'**
+  /// **'左侧已显示地点'**
   String get locationDuplicatedHint;
 
   /// No description provided for @liveIslandPreviewTitle.
@@ -4885,7 +4873,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelImageSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'推荐小米/红米设备；其他机型可能显示异常'**
+  /// **'推荐小米/红米，其他机型可能异常'**
   String get liveMiuiLabelImageSubtitle;
 
   /// No description provided for @liveMiuiLabelAdvancedAccordionTitle.
@@ -4921,7 +4909,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMiuiLabelLogoSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'仅在图标加文字样式下生效，未设置时使用应用图标'**
+  /// **'未设置时用应用图标'**
   String get liveMiuiLabelLogoSubtitle;
 
   /// No description provided for @liveMiuiLabelLogoCornerRadiusLabel.
@@ -5886,26 +5874,26 @@ abstract class AppLocalizations {
   /// No description provided for @liveClassReminderLeadSummaryImmediate.
   ///
   /// In zh, this message translates to:
-  /// **'一上课进入重点提醒，下课前 {seconds} 秒开始逐秒倒数'**
-  String liveClassReminderLeadSummaryImmediate(int seconds);
+  /// **'一上课切重点提醒，下课前逐秒倒数'**
+  String get liveClassReminderLeadSummaryImmediate;
 
   /// No description provided for @liveClassReminderLeadSummaryKeepNormal.
   ///
   /// In zh, this message translates to:
-  /// **'课中先保持普通通知，下课前 {minutes} 分钟切到重点提醒，最后 {seconds} 秒切到秒级倒计时'**
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds);
+  /// **'课中普通通知，下课前切重点提醒'**
+  String get liveClassReminderLeadSummaryKeepNormal;
 
   /// No description provided for @liveClassReminderLeadSummaryIsland.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟切到超级岛与重点提醒，最后 {seconds} 秒切到秒级倒计时'**
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds);
+  /// **'课中普通通知，下课前切超级岛'**
+  String get liveClassReminderLeadSummaryIsland;
 
   /// No description provided for @liveClassReminderLeadSummaryFocused.
   ///
   /// In zh, this message translates to:
-  /// **'下课前 {minutes} 分钟开始重点提醒，最后 {seconds} 秒切到秒级倒计时'**
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds);
+  /// **'下课前开始重点提醒'**
+  String get liveClassReminderLeadSummaryFocused;
 
   /// No description provided for @liveSettingsEntrySubtitle.
   ///
@@ -18822,10 +18810,11 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'无截止日期'**
   String get taskNoDueDate;
+
   /// No description provided for @taskDueDateHint.
   ///
-  /// In en, this message translates to:
-  /// **'Without a due date this task never appears in the day view or Today'**
+  /// In zh, this message translates to:
+  /// **'不设截止日期，日视图就不显示'**
   String get taskDueDateHint;
 
   /// No description provided for @taskCourseLabel.

@@ -1249,9 +1249,9 @@
   "liveDisplayModeTitle": "表示モード",
   "liveDisplayModeSubtitle": "有効なリマインダー時間帯に適用",
   "duringClassStatusNotificationTitle": "授業中ステータスバー通知",
-  "duringClassStatusNotificationImmediate": "授業開始後もステータスバー通知を保持",
-  "duringClassStatusNotificationBeforeEnd": "終了リマインダー開始前まで通常通知テキストを保持",
-  "duringClassStatusNotificationPersistent": "授業開始後も通常授業中通知を継続表示し、終了リマインダー前に切替",
+  "duringClassStatusNotificationImmediate": "ステータスバー通知を保持",
+  "duringClassStatusNotificationBeforeEnd": "重点の前は通常通知",
+  "duringClassStatusNotificationPersistent": "全体を通して通常通知",
   "enableIslandDisplayTitle": "スーパーアイランドを表示",
   "enableIslandDisplaySubtitle": "オフにするとシステムスーパーアイランドのトリガーを停止",
   "liveTimeThresholdTitle": "時間しきい値",
@@ -1692,47 +1692,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "授業開始と同時にフォーカスリマインダー表示に移行し、終了{seconds}秒前に秒単位カウントダウンに切替",
-  "@liveClassReminderLeadSummaryImmediate": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryKeepNormal": "授業後はまず通常授業中通知を保持し、終了{minutes}分前にフォーカスリマインダー/終了リマインダーに切替、最後の{seconds}秒で秒単位カウントダウンに切替",
-  "@liveClassReminderLeadSummaryKeepNormal": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryIsland": "終了{minutes}分前にスーパーアイランドとフォーカスリマインダーに切替、最後の{seconds}秒で秒単位カウントダウンに切替",
-  "@liveClassReminderLeadSummaryIsland": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryFocused": "終了{minutes}分前にフォーカスリマインダー表示を開始し、最後の{seconds}秒で秒単位カウントダウンに切替",
-  "@liveClassReminderLeadSummaryFocused": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "liveClassReminderLeadSummaryImmediate": "授業開始から重点、終了前は秒単位",
+  "liveClassReminderLeadSummaryKeepNormal": "授業中は通常通知、終了前に重点へ",
+  "liveClassReminderLeadSummaryIsland": "授業中は通常通知、終了前に島へ",
+  "liveClassReminderLeadSummaryFocused": "終了前に重点リマインダーを開始",
   "liveSettingsEntrySubtitle": "リマインダー時間帯、アイランド表示、通知バーと表示内容",
   "timetableProfilesEntrySubtitle": "新規作成、切替、コピー、名前変更と削除",
   "homeTitleSectionTitle": "ホームタイトル",

@@ -1248,9 +1248,9 @@
   "liveDisplayModeTitle": "展示方式",
   "liveDisplayModeSubtitle": "對已啟用的提醒時段生效",
   "duringClassStatusNotificationTitle": "課中狀態欄通知",
-  "duringClassStatusNotificationImmediate": "上課後保留狀態欄通知",
-  "duringClassStatusNotificationBeforeEnd": "在下課提醒開始前保留普通通知文案",
-  "duringClassStatusNotificationPersistent": "上課後持續顯示普通課中通知，到下課提醒前再切換",
+  "duringClassStatusNotificationImmediate": "保留狀態列通知",
+  "duringClassStatusNotificationBeforeEnd": "重點提醒前用普通通知",
+  "duringClassStatusNotificationPersistent": "全程顯示普通通知",
   "enableIslandDisplayTitle": "展示超級島",
   "enableIslandDisplaySubtitle": "關閉後不會再尝試觸發系統超級島",
   "liveTimeThresholdTitle": "時間閾值",
@@ -1691,47 +1691,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "從上課開始就進入重點提醒顯示，並在距離下課 {seconds} 秒切到秒級倒數",
-  "@liveClassReminderLeadSummaryImmediate": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryKeepNormal": "課中先保持普通通知，下課前 {minutes} 分鐘切到重點提醒，最後 {seconds} 秒切到秒級倒數",
-  "@liveClassReminderLeadSummaryKeepNormal": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryIsland": "下課前 {minutes} 分鐘切到超級島與重點提醒，最後 {seconds} 秒切到秒級倒數",
-  "@liveClassReminderLeadSummaryIsland": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryFocused": "下課前 {minutes} 分鐘開始重點提醒，最後 {seconds} 秒切到秒級倒數",
-  "@liveClassReminderLeadSummaryFocused": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "liveClassReminderLeadSummaryImmediate": "一上課切重點提醒，下課前逐秒倒數",
+  "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前切重點提醒",
+  "liveClassReminderLeadSummaryIsland": "課中普通通知，下課前切超級島",
+  "liveClassReminderLeadSummaryFocused": "下課前開始重點提醒",
   "liveSettingsEntrySubtitle": "提醒時段、島顯示、通知欄和顯示內容",
   "timetableProfilesEntrySubtitle": "新建、切換、複製、重新命名和刪除課表",
   "homeTitleSectionTitle": "首頁標題",

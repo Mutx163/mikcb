@@ -2452,13 +2452,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get duringClassStatusNotificationTitle => '课中状态栏通知';
 
   @override
-  String get duringClassStatusNotificationImmediate => '上课后保留状态栏通知';
+  String get duringClassStatusNotificationImmediate => '保留状态栏通知';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd => '重点提醒前保留普通通知';
+  String get duringClassStatusNotificationBeforeEnd => '重点提醒前用普通通知';
 
   @override
-  String get duringClassStatusNotificationPersistent => '课中持续显示普通通知';
+  String get duringClassStatusNotificationPersistent => '全程显示普通通知';
 
   @override
   String get enableIslandDisplayTitle => '展示超级岛';
@@ -2527,31 +2527,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get countdownFormatLabel => '倒计时格式';
 
   @override
-  String get countdownFormatHelp => '纯分钟样式按分钟刷新，带秒样式按秒刷新';
+  String get countdownFormatHelp => '纯分钟按分钟刷新，带秒按秒刷新';
 
   @override
   String get showStageTextTitle => '显示阶段状态文案';
 
   @override
-  String get showStageTextSubtitle => '关闭倒计时后，仍可显示即将上课、上课中或下课提醒';
-
-  @override
   String get hidePrefixTextTitle => '隐藏距上课与距下课前缀';
-
-  @override
-  String get hidePrefixTextSubtitle => '开启倒计时时生效，仅保留倒计时数字，隐藏距上课等前缀';
 
   @override
   String get hidePrefixTextInactiveHint => '未生效：需先开启显示倒计时';
 
   @override
-  String get showStageTextInactiveHint => '当前未生效：已由倒计时承载；关闭上方倒计时后生效';
+  String get showStageTextInactiveHint => '倒计时开启时不生效';
 
   @override
-  String get courseNameDuplicatedHint => '左侧已选展示课程名，可关闭避免左右重复';
+  String get courseNameDuplicatedHint => '左侧已显示课程名';
 
   @override
-  String get locationDuplicatedHint => '左侧已选展示地点，可关闭避免左右重复';
+  String get locationDuplicatedHint => '左侧已显示地点';
 
   @override
   String get liveIslandPreviewTitle => '超级岛预览';
@@ -2623,7 +2617,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '超级岛左侧文字图标';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '推荐小米/红米设备；其他机型可能显示异常';
+  String get liveMiuiLabelImageSubtitle => '推荐小米/红米，其他机型可能异常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版与位置微调';
@@ -2641,7 +2635,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveMiuiLabelLogoTitle => '左侧图标 Logo';
 
   @override
-  String get liveMiuiLabelLogoSubtitle => '仅在图标加文字样式下生效，未设置时使用应用图标';
+  String get liveMiuiLabelLogoSubtitle => '未设置时用应用图标';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -3177,24 +3171,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '一上课进入重点提醒，下课前 $seconds 秒开始逐秒倒数';
-  }
+  String get liveClassReminderLeadSummaryImmediate => '一上课切重点提醒，下课前逐秒倒数';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '课中先保持普通通知，下课前 $minutes 分钟切到重点提醒，最后 $seconds 秒切到秒级倒计时';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal => '课中普通通知，下课前切重点提醒';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '下课前 $minutes 分钟切到超级岛与重点提醒，最后 $seconds 秒切到秒级倒计时';
-  }
+  String get liveClassReminderLeadSummaryIsland => '课中普通通知，下课前切超级岛';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '下课前 $minutes 分钟开始重点提醒，最后 $seconds 秒切到秒级倒计时';
-  }
+  String get liveClassReminderLeadSummaryFocused => '下课前开始重点提醒';
 
   @override
   String get liveSettingsEntrySubtitle => '提醒时段、岛展示、通知栏和显示内容';
@@ -10352,6 +10338,8 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '无截止日期';
+
+  @override
   String get taskDueDateHint => '不设截止日期，日视图就不显示';
 
   @override
@@ -13858,14 +13846,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get duringClassStatusNotificationTitle => '課中狀態欄通知';
 
   @override
-  String get duringClassStatusNotificationImmediate => '上課後保留狀態欄通知';
+  String get duringClassStatusNotificationImmediate => '保留狀態欄通知';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd => '在下課提醒開始前保留普通通知文案';
+  String get duringClassStatusNotificationBeforeEnd => '重點提醒前用普通通知';
 
   @override
-  String get duringClassStatusNotificationPersistent =>
-      '上課後持續顯示普通課中通知，到下課提醒前再切換';
+  String get duringClassStatusNotificationPersistent => '全程顯示普通通知';
 
   @override
   String get enableIslandDisplayTitle => '展示超級島';
@@ -13934,31 +13921,25 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get countdownFormatLabel => '倒計時格式';
 
   @override
-  String get countdownFormatHelp => '純分鐘樣式按分鐘刷新，帶秒樣式按秒刷新';
+  String get countdownFormatHelp => '純分鐘按分鐘刷新，帶秒按秒刷新';
 
   @override
   String get showStageTextTitle => '顯示階段狀態文案';
 
   @override
-  String get showStageTextSubtitle => '關閉倒計時後，仍可顯示即將上課、上課中或下課提醒';
-
-  @override
   String get hidePrefixTextTitle => '隱藏距上課與距下課前綴';
-
-  @override
-  String get hidePrefixTextSubtitle => '開啓倒計時時生效，僅保留倒計時數字，隱藏距上課等前綴';
 
   @override
   String get hidePrefixTextInactiveHint => '未生效：需先開啓顯示倒計時';
 
   @override
-  String get showStageTextInactiveHint => '當前未生效：已由倒計時承載；關閉上方倒計時後生效';
+  String get showStageTextInactiveHint => '倒計時開啟時不生效';
 
   @override
-  String get courseNameDuplicatedHint => '左側已選展示課程名，可關閉避免左右重複';
+  String get courseNameDuplicatedHint => '左側已顯示課程名';
 
   @override
-  String get locationDuplicatedHint => '左側已選展示地點，可關閉避免左右重複';
+  String get locationDuplicatedHint => '左側已顯示地點';
 
   @override
   String get liveIslandPreviewTitle => '超級島預覽';
@@ -14030,7 +14011,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米設備；其他機型可能顯示異常';
+  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米，其他機型可能異常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
@@ -14048,7 +14029,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveMiuiLabelLogoTitle => '左側圖示 Logo';
 
   @override
-  String get liveMiuiLabelLogoSubtitle => '僅在圖標加文字樣式下生效，未設置時使用應用圖標';
+  String get liveMiuiLabelLogoSubtitle => '未設置時用應用圖標';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -14584,24 +14565,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '從上課開始就進入重點提醒顯示，並在距離下課 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryImmediate => '一上課切重點提醒，下課前逐秒倒數';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '課中先保持普通通知，下課前 $minutes 分鐘切到重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal => '課中普通通知，下課前切重點提醒';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '下課前 $minutes 分鐘切到超級島與重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryIsland => '課中普通通知，下課前切超級島';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '下課前 $minutes 分鐘開始重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryFocused => '下課前開始重點提醒';
 
   @override
   String get liveSettingsEntrySubtitle => '提醒時段、島顯示、通知欄和顯示內容';
@@ -21798,6 +21771,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get taskNoDueDate => '無截止日期';
+
+  @override
   String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
 
   @override
@@ -25304,14 +25279,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get duringClassStatusNotificationTitle => '課中狀態欄通知';
 
   @override
-  String get duringClassStatusNotificationImmediate => '上課後保留狀態欄通知';
+  String get duringClassStatusNotificationImmediate => '保留狀態列通知';
 
   @override
-  String get duringClassStatusNotificationBeforeEnd => '在下課提醒開始前保留普通通知文案';
+  String get duringClassStatusNotificationBeforeEnd => '重點提醒前用普通通知';
 
   @override
-  String get duringClassStatusNotificationPersistent =>
-      '上課後持續顯示普通課中通知，到下課提醒前再切換';
+  String get duringClassStatusNotificationPersistent => '全程顯示普通通知';
 
   @override
   String get enableIslandDisplayTitle => '展示超級島';
@@ -25380,31 +25354,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get countdownFormatLabel => '倒計時格式';
 
   @override
-  String get countdownFormatHelp => '純分鐘樣式按分鐘刷新，帶秒樣式按秒刷新';
+  String get countdownFormatHelp => '純分鐘按分鐘刷新，帶秒按秒刷新';
 
   @override
   String get showStageTextTitle => '顯示階段狀態文案';
 
   @override
-  String get showStageTextSubtitle => '關閉倒計時後，仍可顯示即將上課、上課中或下課提醒';
-
-  @override
   String get hidePrefixTextTitle => '隱藏距上課與距下課前綴';
-
-  @override
-  String get hidePrefixTextSubtitle => '開啟倒計時時生效，僅保留倒計時數字，隱藏距上課等前綴';
 
   @override
   String get hidePrefixTextInactiveHint => '未生效：需先開啟顯示倒計時';
 
   @override
-  String get showStageTextInactiveHint => '當前未生效：已由倒數承載；關閉上方倒數後生效';
+  String get showStageTextInactiveHint => '倒計時開啟時不生效';
 
   @override
-  String get courseNameDuplicatedHint => '左側已選展示課程名，可關閉避免左右重複';
+  String get courseNameDuplicatedHint => '左側已顯示課程名';
 
   @override
-  String get locationDuplicatedHint => '左側已選展示地點，可關閉避免左右重複';
+  String get locationDuplicatedHint => '左側已顯示地點';
 
   @override
   String get liveIslandPreviewTitle => '超級島預覽';
@@ -25476,7 +25444,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveMiuiLabelImageTitle => '超級島左側文字圖標';
 
   @override
-  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米裝置；其他機型可能顯示異常';
+  String get liveMiuiLabelImageSubtitle => '推薦小米/紅米，其他機型可能異常';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字排版與位置微調';
@@ -25494,7 +25462,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveMiuiLabelLogoTitle => '左側圖示 Logo';
 
   @override
-  String get liveMiuiLabelLogoSubtitle => '僅在圖標加文字樣式下生效，未設置時使用應用圖標';
+  String get liveMiuiLabelLogoSubtitle => '未設置時用應用圖標';
 
   @override
   String liveMiuiLabelLogoCornerRadiusLabel(String value) {
@@ -26030,24 +25998,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String liveClassReminderLeadSummaryImmediate(int seconds) {
-    return '從上課開始就進入重點提醒顯示，並在距離下課 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryImmediate => '一上課切重點提醒，下課前逐秒倒數';
 
   @override
-  String liveClassReminderLeadSummaryKeepNormal(int minutes, int seconds) {
-    return '課中先保持普通通知，下課前 $minutes 分鐘切到重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryKeepNormal => '課中普通通知，下課前切重點提醒';
 
   @override
-  String liveClassReminderLeadSummaryIsland(int minutes, int seconds) {
-    return '下課前 $minutes 分鐘切到超級島與重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryIsland => '課中普通通知，下課前切超級島';
 
   @override
-  String liveClassReminderLeadSummaryFocused(int minutes, int seconds) {
-    return '下課前 $minutes 分鐘開始重點提醒，最後 $seconds 秒切到秒級倒數';
-  }
+  String get liveClassReminderLeadSummaryFocused => '下課前開始重點提醒';
 
   @override
   String get liveSettingsEntrySubtitle => '提醒時段、島顯示、通知欄和顯示內容';
@@ -33245,6 +33205,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get taskNoDueDate => '無截止日期';
+
+  @override
   String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
 
   @override

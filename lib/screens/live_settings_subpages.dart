@@ -42,34 +42,28 @@ const List<String> _labelColors = [
   '#F9A8D4',
 ];
 
+/// 「重点提醒切入时机」右侧的当前效果摘要。
+///
+/// 只描述「怎么切」，不重复具体分钟/秒数——那两个值就在本页「时间阈值」
+/// 组里明摆着，写进摘要会把这一行撑成三行（真机 2026-10-21 截图：灰字
+/// 两行 + 右侧取值挤在中间，读成一句被劈开的话）。
 String _buildLiveClassReminderLeadSummary(
   AppLocalizations l10n,
   TimetableSettings settings,
 ) {
   if (settings.liveClassReminderStartMinutes == 0) {
-    return l10n.liveClassReminderLeadSummaryImmediate(
-      settings.liveEndSecondsCountdownThreshold,
-    );
+    return l10n.liveClassReminderLeadSummaryImmediate;
   }
   if (settings.liveEnableDuringClass &&
       settings.liveShowDuringClassNotification &&
       !settings.livePromoteDuringClass) {
-    return l10n.liveClassReminderLeadSummaryKeepNormal(
-      settings.liveClassReminderStartMinutes,
-      settings.liveEndSecondsCountdownThreshold,
-    );
+    return l10n.liveClassReminderLeadSummaryKeepNormal;
   }
   if (settings.liveEnableDuringClass &&
       settings.liveShowDuringClassNotification) {
-    return l10n.liveClassReminderLeadSummaryIsland(
-      settings.liveClassReminderStartMinutes,
-      settings.liveEndSecondsCountdownThreshold,
-    );
+    return l10n.liveClassReminderLeadSummaryIsland;
   }
-  return l10n.liveClassReminderLeadSummaryFocused(
-    settings.liveClassReminderStartMinutes,
-    settings.liveEndSecondsCountdownThreshold,
-  );
+  return l10n.liveClassReminderLeadSummaryFocused;
 }
 
 /// 上课前快捷操作「自动执行」的可选提前分钟数。

@@ -1418,9 +1418,9 @@
   "liveDisplayModeTitle": "Display Style",
   "liveDisplayModeSubtitle": "Applies to enabled reminder windows",
   "duringClassStatusNotificationTitle": "During-class Status Notification",
-  "duringClassStatusNotificationImmediate": "Keep a status notification after class begins",
-  "duringClassStatusNotificationBeforeEnd": "Keep a regular notification until highlighted reminders begin before class ends",
-  "duringClassStatusNotificationPersistent": "Keep a regular during-class notification, then switch before class ends",
+  "duringClassStatusNotificationImmediate": "Keeps the status bar notification",
+  "duringClassStatusNotificationBeforeEnd": "Normal until the priority reminder",
+  "duringClassStatusNotificationPersistent": "Normal notification throughout",
   "enableIslandDisplayTitle": "Show Island",
   "enableIslandDisplaySubtitle": "Disable this if you never want the app to trigger system island presentation",
   "liveTimeThresholdTitle": "Timing Thresholds",
@@ -1808,47 +1808,10 @@
       }
     }
   },
-  "liveClassReminderLeadSummaryImmediate": "Switch to the focused reminder as soon as class starts, then show second-level countdown in the last {seconds}s before class ends",
-  "@liveClassReminderLeadSummaryImmediate": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryKeepNormal": "Keep the normal in-class notification first, switch to focused / class-end reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
-  "@liveClassReminderLeadSummaryKeepNormal": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryIsland": "Switch to the Island and focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
-  "@liveClassReminderLeadSummaryIsland": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "liveClassReminderLeadSummaryFocused": "Start the focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
-  "@liveClassReminderLeadSummaryFocused": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "liveClassReminderLeadSummaryImmediate": "Island from the start, counts down by the second",
+  "liveClassReminderLeadSummaryKeepNormal": "Normal notification, switches to priority later",
+  "liveClassReminderLeadSummaryIsland": "Normal notification, switches to Island",
+  "liveClassReminderLeadSummaryFocused": "Priority reminder before class ends",
   "liveSettingsEntrySubtitle": "Reminder timing, Island display, notification bar, and display content",
   "timetableProfilesEntrySubtitle": "Create, switch, duplicate, rename, and delete timetables",
   "homeTitleSectionTitle": "Home title",
