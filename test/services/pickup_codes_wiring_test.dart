@@ -105,60 +105,51 @@ void main() {
     }
   });
 
-  test('页面固定两列大砖 + 自适应砖高（底部不许留白）', () {
+  test('入口用横条列表，不是网格（奇偶不产生空格，也不会让某块显大）', () {
     final source = File('lib/screens/pickup_codes_screen.dart').readAsStringSync();
-    // 列数写死：按「有几个分几列」会让两组格子宽度差 30%
+    // 不许出现网格/跨列：7 个入口排两列必然奇偶不均，跨列又会显得那块更重要
+    // （用户原话：「显得你把拼多多放得比其他重要多了」）
     expect(
-      source.contains('static const int columns = 2;'),
-      isTrue,
-      reason: '列数必须写死在 _PickupCodePanel.columns（现在是两列大砖）',
-    );
-    // 砖高必须随可用高度自适应（吃满屏幕，不许底部空旷）
-    expect(
-      source.contains('LayoutBuilder'),
-      isTrue,
-      reason: '页面必须用 LayoutBuilder 把可用高度交给面板分配',
-    );
-    expect(
-      source.contains('minTileHeight') && source.contains('maxTileHeight'),
-      isTrue,
-      reason: '砖高要有上下限：太矮不像按钮，太高在平板上变形',
-    );
-    // 留白必须从 scope 读（大标题展开高度、玻璃坞余量都是动态的）——
-    // 手算状态栏+标题的写法已经把首行砖顶进大标题底下（真机截图踩过）
-    expect(
-      source.contains('HyperosBlurredHeaderScope.insetOf(context)') &&
-          source.contains('GlassDockScrollReliefScope.insetOf(context)'),
-      isTrue,
-      reason: '砖高计算必须读 HyperosBlurredHeaderScope / GlassDockScrollReliefScope，'
-              '不许手算头部高度',
-    );
-    // 滚动必须走 HyperosListView（裸 SingleChildScrollView 会漏头部留白）
-    expect(
-      // 匹配构造调用而不是词本身：文档注释里会提到它（讲为什么不用）
-      RegExp(r'(?<!/// )SingleChildScrollView\(').hasMatch(source),
+      RegExp(r'static const int columns').hasMatch(source),
       isFalse,
-      reason: '禁用裸 SingleChildScrollView：它会绕开大标题留白机制',
+      reason: '不该再有「每行几列」的概念：入口是横条列表',
     );
     expect(
-      source.contains('HyperosListView('),
-      isTrue,
-      reason: '滚动与留白交给 HyperosListView',
-    );
-    // 奇数组末砖跨两列（身份码组 3 个，2×2 会右下角空一块）。
-    // 两条断言互相咬合：删掉 span 分支就必须用空占位补格，而占位被下面禁掉——
-    // 单查字符串存在拦不住 `if (false && ...)` 这种短路破坏。
-    expect(
-      RegExp(r'if \(chunk\.length == 1\) \{[\s\S]*?_PickupCodeTile\(').hasMatch(
-        source,
-      ),
-      isTrue,
-      reason: '末行单砖必须横跨两列满铺（chunk.length == 1 分支里直接放砖）',
+      source.contains('chunk.length == 1'),
+      isFalse,
+      reason: '不该再有「末砖跨两列」分支：那是网格时代的补洞手法',
     );
     expect(
       source.contains('SizedBox.shrink'),
       isFalse,
-      reason: '网格里不许有空占位符：奇数末行靠跨列满铺，不是留洞',
+      reason: '列表布局不该有任何空占位符',
+    );
+    // 行高自适应（吃满屏幕，底部不许空旷），且留白从 scope 读
+    expect(source.contains('LayoutBuilder'), isTrue);
+    expect(
+      source.contains('HyperosBlurredHeaderScope.insetOf(context)') &&
+          source.contains('GlassDockScrollReliefScope.insetOf(context)'),
+      isTrue,
+      reason: '行高计算必须读 HyperosBlurredHeaderScope / '
+              'GlassDockScrollReliefScope，不许手算头部高度',
+    );
+    expect(
+      source.contains('minRowHeight') && source.contains('maxRowHeight'),
+      isTrue,
+      reason: '行高要有上下限：太薄不像能点的行，太厚在平板上变形',
+    );
+    // 滚动必须走 HyperosListView（裸 SingleChildScrollView 会漏头部留白）
+    expect(
+      RegExp(r'(?<!/// )SingleChildScrollView\(').hasMatch(source),
+      isFalse,
+      reason: '禁用裸 SingleChildScrollView：它会绕开大标题留白机制',
+    );
+    expect(source.contains('HyperosListView('), isTrue);
+    // 每行等权：同一组里所有行用同一个高度常量，不许逐条差异
+    expect(
+      RegExp(r'SizedBox\(\s*height: rowHeight,').hasMatch(source),
+      isTrue,
+      reason: '所有行必须共用同一个 rowHeight，不能有「某条特别大」',
     );
     // 两张表都要登记（底栏内嵌 + 目录推入），缺一张就是「底栏消失」的回归
     final registry = File(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -166,28 +165,27 @@ class _PickupCodesScreenState extends State<PickupCodesScreen> {
   }
 }
 
-/// 整页两栏网格：两组入口 + 自适应砖高，把可用高度吃满。
+/// 整页两组入口，每组一张卡片、每行一条横条。
 ///
-/// ## 砖高怎么算
+/// ## 为什么不是网格
 ///
-/// 这一页只有 7 个入口，内容天生很短；按内容排，大屏上底部会空掉小半屏
-/// （实测 360×640 只占 344dp）。砖高改为**按剩余空间均分**：
-/// 可用高度 = 页面高 − 顶栏展开高度（HyperosBlurredHeaderScope）−
-/// 两个分组标题 − 行间距 − 玻璃坞底部余量（GlassDockScrollReliefScope）。
-/// 屏幕越高砖越大越好按；夹在 [minTileHeight, maxTileHeight] 之间防变形。
+/// 7 个入口排两列必然有奇偶问题：末行单砖要么留个洞，要么横跨两列——而跨列
+/// 会让那一块看起来比其他块重要得多（用户原话：「显得你把拼多多放得比其他
+/// 重要多了」）。横条列表没有这个矛盾：7 条就是 7 行，谁都不特殊，也永远
+/// 不会有空格。整行都是热区，手忙脚乱时更好按。
 ///
-/// ## 滚动为什么必须交给 HyperosListView
+/// ## 行高怎么定
 ///
-/// 上一版用裸 SingleChildScrollView + 手工顶部留白（状态栏 + 26dp），
-/// 漏算了可折叠大标题那层——真机截图里首行砖被标题盖住、首字井全被切掉。
-/// HyperosListView 自己读 HyperosBlurredHeaderScope 的头部 inset、
-/// GlassDockScrollReliefScope 的底部余量与 overscroll 物理，**不许绕开它手算**。
+/// 这一页内容天生短，按自然高度排在 640dp 屏上会空掉小半屏。行高**按剩余空间
+/// 均分**：可用高度 = 页面高 − 大标题展开高度（HyperosBlurredHeaderScope）−
+/// 分组标题 − 行间距 − 玻璃坞底部余量（GlassDockScrollReliefScope）− 卡片内
+/// 边距。屏幕越高行越厚越好按；夹在 [minRowHeight, maxRowHeight] 之间防变形。
 ///
-/// ## 两列 + 奇数末砖跨两列
+/// ## 滚动为什么交给 HyperosListView
 ///
-/// 四列时砖只有 75dp 宽，撑不起「首字 + 名字 + 说明」；两列是大按钮。
-/// 身份码组只有 3 个：2×2 会右下角空一块，所以**每组的末行若只有一砖，
-/// 让它横跨两列**（bento 常见手法，视觉上是刻意的满铺而不是缺格）。
+/// 早期版本用裸 SingleChildScrollView + 手算顶部留白，漏算了可折叠大标题那层，
+/// 真机截图里首行被标题盖住。HyperosListView 自己读头部 inset、玻璃坞余量与
+/// overscroll 物理，**不许绕开它手算**。
 class _PickupCodePanel extends StatelessWidget {
   const _PickupCodePanel({
     required this.identityCodes,
@@ -198,20 +196,20 @@ class _PickupCodePanel extends StatelessWidget {
     required this.onTap,
   });
 
-  /// 每行两列。
-  static const int columns = 2;
+  /// 行高下限：低于这个值就不像一条能点的行。
+  static const double minRowHeight = 64;
 
-  /// 砖高下限：低于这个值就不像按钮了。
-  static const double minTileHeight = 104;
+  /// 行高上限：平板上再厚就变形，多出来的空间留给底部。
+  static const double maxRowHeight = 96;
 
-  /// 砖高上限：平板上再高就变形，多出来的空间留给底部留白。
-  static const double maxTileHeight = 168;
-
-  /// 组内行间距。
-  static const double _rowGap = 10;
+  /// 两组之间的间距。
+  static const double _groupGap = 16;
 
   /// 分组标题占位（HyperosSectionLabel：文字行高 + 自带 8dp 下边距）。
   static const double _sectionLabelHeight = 30;
+
+  /// 卡片内上下边距（见 _buildGroup 的 padding）。
+  static const double _cardVerticalPadding = 8;
 
   final List<PickupCodeEntry> identityCodes;
   final List<PickupCodeEntry> parcels;
@@ -220,107 +218,78 @@ class _PickupCodePanel extends StatelessWidget {
   final double maxHeight;
   final ValueChanged<PickupCodeEntry> onTap;
 
-  int get _identityRows => (identityCodes.length / columns).ceil();
+  int get _totalRows => identityCodes.length + parcels.length;
 
-  int get _parcelsRows => (parcels.length / columns).ceil();
-
-  int get _totalRows => _identityRows + _parcelsRows;
-
-  /// 按剩余空间算砖高；夹在上下限之间。
+  /// 按剩余空间算行高；夹在上下限之间。
   ///
-  /// 头部与底部留白**从 scope 读**（大标题展开高度、玻璃坞余量都会变），
-  /// 不手算状态栏 / 标题高度 —— 上一版就是手算漏层才把首行顶进标题底下。
-  double _resolveTileHeight(BuildContext context) {
+  /// 头部与底部留白**从 scope 读**（大标题展开高度、玻璃坞余量都是动态的），
+  /// 不手算状态栏 / 标题高度 —— 早期手算漏层才把首行顶进标题底下。
+  double _resolveRowHeight(BuildContext context) {
     final headerInset = HyperosBlurredHeaderScope.insetOf(context);
     final dockRelief = GlassDockScrollReliefScope.insetOf(context);
     final reserved = headerInset +
         dockRelief +
         _sectionLabelHeight * 2 +
-        _rowGap * (_totalRows + 1) +
-        24; // 列表左右内边距对应的上下呼吸（对齐 HyperosTokens.listPadding）
+        _groupGap +
+        _cardVerticalPadding * 2 +
+        24;
     final available = maxHeight - reserved;
-    final perTile = available / (_totalRows == 0 ? 1 : _totalRows);
-    return perTile.clamp(minTileHeight, maxTileHeight);
+    final perRow = available / (_totalRows == 0 ? 1 : _totalRows);
+    return perRow.clamp(minRowHeight, maxRowHeight);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final tileHeight = _resolveTileHeight(context);
+    final rowHeight = _resolveRowHeight(context);
     return HyperosListView(
       children: [
         HyperosSectionLabel(text: l10n.pickupCodeIdentitySectionTitle),
-        _buildGrid(context, identityCodes, tileHeight),
-        const SizedBox(height: _rowGap * 2),
+        _buildGroup(context, identityCodes, rowHeight),
+        const SizedBox(height: _groupGap),
         HyperosSectionLabel(text: l10n.pickupCodeParcelsSectionTitle),
-        _buildGrid(context, parcels, tileHeight),
+        _buildGroup(context, parcels, rowHeight),
       ],
     );
   }
 
-  Widget _buildGrid(
+  /// 一组入口：一张卡片，行与行之间用缩进分隔线（与设置页列表同口径）。
+  Widget _buildGroup(
     BuildContext context,
     List<PickupCodeEntry> entries,
-    double tileHeight,
+    double rowHeight,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final rows = <Widget>[];
-    for (var start = 0; start < entries.length; start += columns) {
-      final chunk = entries.sublist(
-        start,
-        (start + columns).clamp(0, entries.length),
+    final children = <Widget>[];
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      if (index > 0) {
+        children.add(
+          const HyperosInsetDivider(indent: 68),
+        );
+      }
+      children.add(
+        SizedBox(
+          height: rowHeight,
+          child: _PickupCodeRow(
+            entry: entry,
+            title: pickupCodeEntryTitle(l10n, entry),
+            subtitle: pickupCodeEntryHint(l10n, entry),
+            busy: busyEntryId == entry.id,
+            dimmed: busyEntryId != null && busyEntryId != entry.id,
+            missing: _isMissing(entry),
+            onTap: () => onTap(entry),
+          ),
+        ),
       );
-      if (chunk.length == 1) {
-        // 末行只有一砖：横跨两列满铺，不留出右下角的洞。
-        rows.add(
-          SizedBox(
-            height: tileHeight,
-            child: _PickupCodeTile(
-              entry: chunk.first,
-              title: pickupCodeEntryTitle(l10n, chunk.first),
-              subtitle: pickupCodeEntryHint(l10n, chunk.first),
-              busy: busyEntryId == chunk.first.id,
-              dimmed: busyEntryId != null && busyEntryId != chunk.first.id,
-              missing: _isMissing(chunk.first),
-              onTap: () => onTap(chunk.first),
-            ),
-          ),
-        );
-      } else {
-        rows.add(
-          SizedBox(
-            height: tileHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var index = 0; index < columns; index++) ...[
-                  if (index > 0) const SizedBox(width: _rowGap),
-                  Expanded(
-                    child: _PickupCodeTile(
-                      entry: chunk[index],
-                      title: pickupCodeEntryTitle(l10n, chunk[index]),
-                      subtitle: pickupCodeEntryHint(l10n, chunk[index]),
-                      busy: busyEntryId == chunk[index].id,
-                      dimmed:
-                          busyEntryId != null && busyEntryId != chunk[index].id,
-                      missing: _isMissing(chunk[index]),
-                      onTap: () => onTap(chunk[index]),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      }
-      if (start + columns < entries.length) {
-        rows.add(const SizedBox(height: _rowGap));
-      }
     }
-    return Column(mainAxisSize: MainAxisSize.min, children: rows);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: _cardVerticalPadding),
+      child: HyperosListGroup(children: children),
+    );
   }
 
-  /// 这条入口的兜底应用一个都没装 → 点了也没用，砖上要弱化。
+  /// 这条入口的兜底应用一个都没装 → 点了也没用，行上要弱化。
   bool _isMissing(PickupCodeEntry entry) {
     final installed = installedPackages;
     if (installed == null || entry.appPackages.isEmpty) {
@@ -330,28 +299,27 @@ class _PickupCodePanel extends StatelessWidget {
   }
 }
 
-/// 一颗入口砖（两列大卡）：首字 + 平台名 + 一行动作说明。整块可点。
+/// 一条入口横条：左侧首字井 + 平台名 + 一行动作说明 + 右侧箭头。整行可点。
 ///
 /// ## 为什么图标用「平台首字」而不是 Material 图标
 ///
-/// 四家平台在 Material 图标集里只有近似的购物袋 / 二维码，靠颜色区分——而淘宝
-/// 红、拼多多红、菜鸟橙都是红橙色系，三个一样的二维码图标排在一起扫一眼分不
-/// 出来。改成「菜 / 淘 / 拼 / 京 / 抖」单字方块：字本身就能区分平台，颜色只做
-/// 辅助，深色模式下也不失辨识度。
+/// 几家平台在 Material 图标集里只有近似的购物袋 / 二维码，靠颜色区分——而淘宝
+/// 红、拼多多红、菜鸟橙都是红橙色系，三个一样的图标排在一起扫一眼分不出来。
+/// 改成「菜 / 淘 / 拼 / 京 / 抖」单字方块：字本身就能区分平台，颜色只做辅助，
+/// 深色模式下也不失辨识度。
 ///
 /// ## [subtitle] 必须是**新信息**
 ///
-/// 砖上已经有「平台名 + 分组标题」两层，subtitle 若再写「打开取件码」就是同一
-/// 句话第三遍（用户点过名：灰字太多不简洁）。所以这里只放「这个平台跳过去
-/// 具体到哪」——驿站自提 / 快递柜 / 商城订单——选哪个码的信息，删掉任何一层
-/// 用户都要猜。
+/// 行上已经有「平台名 + 分组标题」两层，subtitle 若再写「打开取件码」就是同一
+/// 句话第三遍（用户明确说过灰字太多不简洁）。所以这里只放「这个平台跳过去
+/// 具体到哪」——驿站自提 / 快递柜 / 某平台的包裹列表——帮用户在几条之间选。
 ///
 /// ## 状态
-/// - `busy`：正在跳转，图标位置换成进度圈
-/// - `dimmed`：别的砖在跳转，这一块淡下去
-/// - `missing`：兜底应用一个都没装，整块降为 55% 并加一行「未安装」角标
-class _PickupCodeTile extends StatelessWidget {
-  const _PickupCodeTile({
+/// - `busy`：正在跳转，首字井位置换成进度圈
+/// - `dimmed`：别的行在跳转，这一条淡下去
+/// - `missing`：兜底应用一个都没装，整条降为 55%、首字加删除线
+class _PickupCodeRow extends StatelessWidget {
+  const _PickupCodeRow({
     required this.entry,
     required this.title,
     required this.subtitle,
@@ -390,62 +358,66 @@ class _PickupCodeTile extends StatelessWidget {
       child: Semantics(
         button: true,
         label: semanticsLabel,
-        child: Material(
-          color: HyperosColors.card(context),
-          shape: const MiuixSquircleBorder(
-            cornerRadius: MiuixCardDefaults.cornerRadius,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: busy ? null : onTap,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 首字井：跳转时换成进度圈（居中保持同一占位）。
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Center(
-                      child: busy
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.4,
-                                color: accent,
-                              ),
-                            )
-                          : _PickupCodeGlyph(
-                              title: title,
-                              accent: accent,
-                              missing: missing,
+        child: InkWell(
+          onTap: busy ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                // 首字井：跳转时换成进度圈（同尺寸占位，整行不跳）。
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: busy
+                        ? SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: accent,
                             ),
-                    ),
+                          )
+                        : _PickupCodeGlyph(
+                            title: title,
+                            accent: accent,
+                            missing: missing,
+                          ),
                   ),
-                  const Spacer(),
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: HyperosTypography.listTitle(
-                      context,
-                    ).copyWith(color: primaryText),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listTitle(
+                          context,
+                        ).copyWith(color: primaryText),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.listDetail(
+                          context,
+                        ).copyWith(color: secondaryText),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: HyperosTypography.listDetail(
-                      context,
-                    ).copyWith(
-                      color: secondaryText,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: secondaryText.withValues(alpha: 0.5),
+                ),
+              ],
             ),
           ),
         ),
