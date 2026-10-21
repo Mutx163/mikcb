@@ -646,10 +646,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               subtitle: l10n.reuseExistingCourseHelper,
               onTap: () => _showCourseTemplateSheet(provider),
             ),
+          // 顶部留白**必须是 0**：卡头已由 [HyperosControlCard] 内置渲染，
+          // 它自己在标题/说明与 body 之间压了 12dp（`hyperos_controls.dart:149`）。
+          // 这里再加 16dp 就是双重间距——用户看到的「共享信息下面的间隙比
+          // 排课记录大」（实测 35dp vs 18dp，差值正是这 16dp）。
+          // 隔壁「排课记录」卡的 body 走 [HyperosControlCardInset]，有卡头时
+          // 顶部补白就是 0（`hyperos_controls.dart:37`），两卡从此同一个口径。
           Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosControlCardScope.defaultHorizontalPadding,
-              HyperosControlCardScope.defaultHorizontalPadding,
+              0,
               HyperosControlCardScope.defaultHorizontalPadding,
               0,
             ),
