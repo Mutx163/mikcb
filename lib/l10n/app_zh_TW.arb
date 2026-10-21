@@ -1458,7 +1458,6 @@
       }
     }
   },
-  "diagnosticsLogIntro": "支持 Markdown 與原文兩種查看方式，排查時可以直接在手機上看完整日誌",
   "diagnosticsRawTab": "原文",
   "diagnosticsStructuredTab": "結構化",
   "diagnosticsLevelLabel": "等級",
@@ -1480,7 +1479,6 @@
     }
   },
   "diagnosticsNoMatchingTitle": "目前篩選下沒有日誌",
-  "diagnosticsNoMatchingSubtitle": "可切換到全部日誌或查看原文排查",
   "diagnosticsLoadEarlierLabel": "加載更早日誌 剩餘 {count} 條",
   "@diagnosticsLoadEarlierLabel": {
     "placeholders": {
@@ -1497,7 +1495,6 @@
   "diagnosticsStreamingHint": "即時更新中，新日誌會自動追加顯示",
   "diagnosticsEmptyTitle": "暫無日誌",
   "diagnosticsLoadFailedTitle": "日誌載入失敗",
-  "diagnosticsEmptySubtitle": "目前沒有有可顯示的超級島診斷日誌",
   "diagnosticsLogTitleFallback": "超級島診斷日誌",
   "diagnosticsDeviceInfoTitle": "設備與匯出資訊",
   "diagnosticsContentTitle": "日誌內容",
@@ -1864,11 +1861,9 @@
   "liveTestingCancelAction": "取消測試",
   "liveTestingSessionRunning": "自檢測試進行中",
   "liveTestingSessionCanceled": "已取消自檢測試",
-  "liveTestingUmengHint": "下面兩個按鈕僅測試版顯示，用於驗證友盟 U-APM 崩潰和卡頓上報",
   "liveTestingCrashAction": "崩潰測試",
   "liveTestingAnrAction": "異常卡頓測試",
   "liveTestingIslandStatusTitle": "上島狀態診斷",
-  "liveTestingIslandStatusSubtitle": "這裡直接顯示原生實時服務、通知構造結果和不上島原因",
   "liveTestingServiceStatusRunning": "服務執行中",
   "liveTestingServiceStatusStopped": "服務未執行",
   "liveTestingNoIslandReasonTitle": "不上島原因",
@@ -1904,18 +1899,15 @@
   "liveTestingSectionNotification": "通知判定結果",
   "liveTestingSectionRecentLogs": "最近診斷日誌",
   "liveTestingRawDataTitle": "原始偵錯資料",
-  "liveTestingRawDataSubtitle": "預設折疊，排查時再展開核對完整原生字段",
   "liveTestingExpandRawJson": "展開原始 JSON",
   "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直佔滿頁面",
   "liveTestingLocalLogsTitle": "本地診斷日誌",
-  "liveTestingLocalLogsSubtitle": "一鍵匯出日誌分享給開發者，也可清空重新收集",
   "liveTestingClearLogsAction": "清空日誌",
   "liveTestingClearingLogs": "清空中",
   "liveTestingViewPhoneLogsAction": "查看手機日誌",
   "liveTestingMoreTesterOptionsAction": "更多測試者選項",
   "yesLabel": "是",
   "noLabel": "否",
-  "liveTestingCurrentNativeFieldsSubtitle": "顯示目前原生診斷字段",
   "liveTestingCrashSoon": "即將觸發友盟 U-APM 測試崩潰，請重新開啟應用檢視背景是否收到上報",
   "liveTestingAnrSoon": "即將觸發約 30 秒主線程卡死，請脫離 flutter run 測試，並在卡死後重新開啟應用檢視友盟背景",
   "liveTestingNoCourseAvailable": "目前沒有可測試的課程",
@@ -6540,6 +6532,7 @@
   "homeMenuCategoryData": "資料與同步",
   "homeMenuCategoryPreferences": "偏好設定",
   "homeMenuCategoryAbout": "關於與支援",
+  "homeMenuMoreTitle": "更多功能",
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

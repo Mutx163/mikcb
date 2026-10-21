@@ -1459,7 +1459,6 @@
       }
     }
   },
-  "diagnosticsLogIntro": "Markdownと原文の2つの表示方式に対応，トラブルシュート時にスマホで完全なログを直接確認可能",
   "diagnosticsRawTab": "原文",
   "diagnosticsStructuredTab": "構造化",
   "diagnosticsLevelLabel": "レベル",
@@ -1481,7 +1480,6 @@
     }
   },
   "diagnosticsNoMatchingTitle": "現在のフィルターに一致するログなし",
-  "diagnosticsNoMatchingSubtitle": "「全て」に切替えるか、原文でトラブルシュートを続行",
   "diagnosticsLoadEarlierLabel": "より前のログを読み込む（残り {count} 件）",
   "@diagnosticsLoadEarlierLabel": {
     "placeholders": {
@@ -1498,7 +1496,6 @@
   "diagnosticsStreamingHint": "リアルタイム更新中，新しいログが自動的に表示されます",
   "diagnosticsEmptyTitle": "ログなし",
   "diagnosticsLoadFailedTitle": "ログの読み込みに失敗しました",
-  "diagnosticsEmptySubtitle": "現在表示可能なスーパーアイランド診断ログがありません",
   "diagnosticsLogTitleFallback": "スーパーアイランド診断ログ",
   "diagnosticsDeviceInfoTitle": "デバイスとエクスポート情報",
   "diagnosticsContentTitle": "ログ内容",
@@ -1865,11 +1862,9 @@
   "liveTestingCancelAction": "テスト停止",
   "liveTestingSessionRunning": "セルフチェック実行中",
   "liveTestingSessionCanceled": "セルフチェックを停止しました",
-  "liveTestingUmengHint": "以下の2つのボタンはテスト版のみ表示，Umeng U-APMクラッシュとフリーズ上报の検証用",
   "liveTestingCrashAction": "クラッシュテスト",
   "liveTestingAnrAction": "異常フリーズテスト",
   "liveTestingIslandStatusTitle": "アイランドステータス診断",
-  "liveTestingIslandStatusSubtitle": "ネイティブリアルタイムサービス、通知構築結果と非アイランド理由を直接表示",
   "liveTestingServiceStatusRunning": "サービス実行中",
   "liveTestingServiceStatusStopped": "サービス未実行",
   "liveTestingNoIslandReasonTitle": "非アイランド理由",
@@ -1905,18 +1900,15 @@
   "liveTestingSectionNotification": "通知判定結果",
   "liveTestingSectionRecentLogs": "最近の診断ログ",
   "liveTestingRawDataTitle": "生のデバッグデータ",
-  "liveTestingRawDataSubtitle": "デフォルト折りたたみ，トラブルシュート時に展開して完全なネイティブフィールドを確認",
   "liveTestingExpandRawJson": "生のJSONを展開",
   "liveTestingExpandRawJsonSubtitle": "大量の生フィールドがページを占拠するのを防止",
   "liveTestingLocalLogsTitle": "ローカル診断ログ",
-  "liveTestingLocalLogsSubtitle": "ワンタップでログを書き出して開発者に共有できます。消して収集し直すこともできます",
   "liveTestingClearLogsAction": "ログをクリア",
   "liveTestingClearingLogs": "クリア中",
   "liveTestingViewPhoneLogsAction": "スマホのログを確認",
   "liveTestingMoreTesterOptionsAction": "その他のテスターオプション",
   "yesLabel": "はい",
   "noLabel": "いいえ",
-  "liveTestingCurrentNativeFieldsSubtitle": "現在のネイティブ診断フィールドを表示",
   "liveTestingCrashSoon": "Umeng U-APMテストクラッシュをトリガーします。アプリを再起動してバックグラウンドで上报を受信したか確認してください。",
   "liveTestingAnrSoon": "約30秒のメインスレッドフリーズをトリガーします。flutter runから離れてテストし、フリーズ後にアプリを再起動してUmengバックグラウンドを確認。",
   "liveTestingNoCourseAvailable": "現在テスト可能な授業がありません",
@@ -6474,6 +6466,7 @@
   "homeMenuCategoryData": "データと同期",
   "homeMenuCategoryPreferences": "設定",
   "homeMenuCategoryAbout": "情報とサポート",
+  "homeMenuMoreTitle": "その他の機能",
   "classAlarmLeadMinutesLabel": "{minutes}分前",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

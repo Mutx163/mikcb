@@ -547,7 +547,8 @@ class _LiveDiagnosticsLogViewerScreenState
             ),
             const SizedBox(height: 12),
             Text(
-              l10n.diagnosticsEmptyTitle,
+              // 加载失败 ≠ 暂无日志：错误态不再复用空态标题「暂无日志」。
+              l10n.diagnosticsLoadFailedTitle,
               style: HyperosTypography.sectionLabel(context),
               textAlign: TextAlign.center,
             ),
@@ -558,11 +559,15 @@ class _LiveDiagnosticsLogViewerScreenState
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            HyperosButton(
-              label: l10n.liveTestingRefreshAction,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: _loadLogs,
-            ),
+            // 刷新按钮只在「一次性加载」模式下有意义：watch 模式的错误
+            // 由流自身重推恢复，手动重拉无意义。此前流错误态点这里会
+            // 对未传入的 loadRawLog 空断言崩溃（三个真实入口都不传它）。
+            if (widget.loadRawLog != null)
+              HyperosButton(
+                label: l10n.liveTestingRefreshAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: _loadLogs,
+              ),
           ],
         ),
       ),
@@ -663,14 +668,8 @@ class _LiveDiagnosticsLogViewerScreenState
               style: HyperosTypography.listTitle(context),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.diagnosticsEmptySubtitle,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(
-                context,
-              ).copyWith(color: HyperosColors.secondaryText(context)),
-            ),
+            // 副标题「当前没有可显示的应用日志」删：复述标题「暂无日志」，
+            // 且在超级岛日志页说「应用日志」口径也不对。
           ],
         ),
       ),
@@ -805,14 +804,8 @@ class _LiveDiagnosticsLogViewerScreenState
               style: HyperosTypography.listTitle(context),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.diagnosticsNoMatchingSubtitle,
-              textAlign: TextAlign.center,
-              style: HyperosTypography.listDetail(
-                context,
-              ).copyWith(color: HyperosColors.secondaryText(context)),
-            ),
+            // 副标题「可切换到全部日志或查看原文排查」删：纯导航说明，
+            // 筛选条就在顶栏上方，「全部」芯片点一下就回来。
           ],
         ),
       ),
@@ -1074,7 +1067,8 @@ class _DisplayOptionsSheetState extends State<_DisplayOptionsSheet> {
     final l10n = AppLocalizations.of(context)!;
     return HyperosSheet(
       title: l10n.diagnosticsDisplayOptionsTitle,
-      description: l10n.diagnosticsLogIntro,
+      // intro「支持 Markdown 与原文两种查看方式…」删：选项实际叫
+      // 「结构化／原文」，Markdown 早不存在——错误说明；后半句是废话。
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.55,

@@ -1569,7 +1569,6 @@
       }
     }
   },
-  "diagnosticsLogIntro": "Supports both Markdown and raw views so you can inspect full logs directly on your phone",
   "diagnosticsRawTab": "Raw",
   "diagnosticsStructuredTab": "Structured",
   "diagnosticsLevelLabel": "Level",
@@ -1591,7 +1590,6 @@
     }
   },
   "diagnosticsNoMatchingTitle": "No logs match this filter",
-  "diagnosticsNoMatchingSubtitle": "Switch back to \"All\" or check the raw view to continue debugging",
   "diagnosticsLoadEarlierLabel": "Load earlier logs ({count} more)",
   "@diagnosticsLoadEarlierLabel": {
     "placeholders": {
@@ -1608,7 +1606,6 @@
   "diagnosticsStreamingHint": "Live updates are on. New logs appear automatically",
   "diagnosticsEmptyTitle": "No Logs Yet",
   "diagnosticsLoadFailedTitle": "Failed to Load Logs",
-  "diagnosticsEmptySubtitle": "There are currently no app logs to display",
   "diagnosticsLogTitleFallback": "Island Diagnostics Log",
   "diagnosticsDeviceInfoTitle": "Device & Export Info",
   "diagnosticsContentTitle": "Log Content",
@@ -2109,11 +2106,9 @@
   "liveTestingCancelAction": "Cancel test",
   "liveTestingSessionRunning": "Self-check test running",
   "liveTestingSessionCanceled": "Self-check test cancelled",
-  "liveTestingUmengHint": "The two buttons below are shown only in test builds and are used to verify Umeng U-APM crash and ANR reporting",
   "liveTestingCrashAction": "Crash test",
   "liveTestingAnrAction": "ANR test",
   "liveTestingIslandStatusTitle": "Island status diagnostics",
-  "liveTestingIslandStatusSubtitle": "This section shows the native live service status, notification build result, and the reason it is not appearing on the Island",
   "liveTestingServiceStatusRunning": "Service running",
   "liveTestingServiceStatusStopped": "Service stopped",
   "liveTestingNoIslandReasonTitle": "Why it is not on the Island",
@@ -2149,18 +2144,15 @@
   "liveTestingSectionNotification": "Notification decision result",
   "liveTestingSectionRecentLogs": "Recent diagnostic logs",
   "liveTestingRawDataTitle": "Raw debug data",
-  "liveTestingRawDataSubtitle": "Collapsed by default. Expand it only when you need to verify the full native fields",
   "liveTestingExpandRawJson": "Expand raw JSON",
   "liveTestingExpandRawJsonSubtitle": "Prevents large raw payloads from taking over the page",
   "liveTestingLocalLogsTitle": "Local diagnostic logs",
-  "liveTestingLocalLogsSubtitle": "Export logs with one tap to share with developers, or clear and collect again",
   "liveTestingClearLogsAction": "Clear logs",
   "liveTestingClearingLogs": "Clearing",
   "liveTestingViewPhoneLogsAction": "View device logs",
   "liveTestingMoreTesterOptionsAction": "More tester options",
   "yesLabel": "Yes",
   "noLabel": "No",
-  "liveTestingCurrentNativeFieldsSubtitle": "Shows the current native diagnostic fields",
   "liveTestingCrashSoon": "A Umeng U-APM test crash is about to be triggered. Reopen the app afterward to check whether it was reported.",
   "liveTestingAnrSoon": "A ~30-second main-thread freeze is about to be triggered. Test outside flutter run, then reopen the app afterward to check Umeng.",
   "liveTestingNoCourseAvailable": "There is no course available for testing right now.",
@@ -6543,6 +6535,7 @@
   "homeMenuCategoryData": "Data & sync",
   "homeMenuCategoryPreferences": "Preferences",
   "homeMenuCategoryAbout": "About & support",
+  "homeMenuMoreTitle": "More features",
   "classAlarmLeadMinutesLabel": "{minutes} min ahead",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

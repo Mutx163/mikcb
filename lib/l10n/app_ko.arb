@@ -1459,7 +1459,6 @@
       }
     }
   },
-  "diagnosticsLogIntro": "Markdown과 원본 두 가지 보기 방식을 지원합니다. 트러블슈팅 시 스마트폰에서 전체 로그를 직접 확인할 수 있습니다",
   "diagnosticsRawTab": "원본",
   "diagnosticsStructuredTab": "구조화",
   "diagnosticsLevelLabel": "레벨",
@@ -1481,7 +1480,6 @@
     }
   },
   "diagnosticsNoMatchingTitle": "현재 필터에 일치하는 로그 없음",
-  "diagnosticsNoMatchingSubtitle": "'전체'로 전환하거나 원본으로 트러블슈팅을 계속하세요",
   "diagnosticsLoadEarlierLabel": "이전 로그 불러오기 ({count}개 남음)",
   "@diagnosticsLoadEarlierLabel": {
     "placeholders": {
@@ -1498,7 +1496,6 @@
   "diagnosticsStreamingHint": "실시간 업데이트 중입니다. 새 로그가 자동으로 표시됩니다",
   "diagnosticsEmptyTitle": "로그 없음",
   "diagnosticsLoadFailedTitle": "로그 로드 실패",
-  "diagnosticsEmptySubtitle": "현재 표시할 수 있는 슈퍼아일랜드 진단 로그가 없습니다",
   "diagnosticsLogTitleFallback": "슈퍼아일랜드 진단 로그",
   "diagnosticsDeviceInfoTitle": "기기 및 내보내기 정보",
   "diagnosticsContentTitle": "로그 내용",
@@ -1865,11 +1862,9 @@
   "liveTestingCancelAction": "테스트 취소",
   "liveTestingSessionRunning": "셀프 체크 진행 중",
   "liveTestingSessionCanceled": "셀프 체크를 취소했습니다",
-  "liveTestingUmengHint": "아래 두 버튼은 테스트판에만 표시됩니다. Umeng U-APM 충돌과 프리즈上报 검증용입니다",
   "liveTestingCrashAction": "충돌 테스트",
   "liveTestingAnrAction": "비정상 프리즈 테스트",
   "liveTestingIslandStatusTitle": "아일랜드 상태 진단",
-  "liveTestingIslandStatusSubtitle": "네이티브 실시간 서비스, 알림 구성 결과 및 비아일랜드 사유를 직접 표시합니다",
   "liveTestingServiceStatusRunning": "서비스 실행 중",
   "liveTestingServiceStatusStopped": "서비스 미실행",
   "liveTestingNoIslandReasonTitle": "비아일랜드 사유",
@@ -1905,18 +1900,15 @@
   "liveTestingSectionNotification": "알림 판정 결과",
   "liveTestingSectionRecentLogs": "최근 진단 로그",
   "liveTestingRawDataTitle": "원시 디버그 데이터",
-  "liveTestingRawDataSubtitle": "기본 접힘. 트러블슈팅 시 펼쳐서 전체 네이티브 필드를 확인하세요",
   "liveTestingExpandRawJson": "원시 JSON 펼치기",
   "liveTestingExpandRawJsonSubtitle": "대량의 원시 필드가 페이지를 차지하는 것을 방지",
   "liveTestingLocalLogsTitle": "로컬 진단 로그",
-  "liveTestingLocalLogsSubtitle": "한 번에 로그를 내보내 개발자에게 공유하거나, 지우고 다시 수집할 수 있습니다",
   "liveTestingClearLogsAction": "로그 비우기",
   "liveTestingClearingLogs": "비우는 중",
   "liveTestingViewPhoneLogsAction": "기기 로그 확인",
   "liveTestingMoreTesterOptionsAction": "기본 테스터 옵션",
   "yesLabel": "예",
   "noLabel": "아니오",
-  "liveTestingCurrentNativeFieldsSubtitle": "현재 네이티브 진단 필드를 표시합니다",
   "liveTestingCrashSoon": "Umeng U-APM 테스트 충돌을 트리거합니다. 앱을 다시 열어 백그라운드에서 上报를 수신했는지 확인하세요.",
   "liveTestingAnrSoon": "약 30초간 메인 스레드 프리즈를 트리거합니다. flutter run에서 벗어나 테스트하고, 프리즈 후 앱을 다시 열어 Umeng 백그라운드를 확인하세요.",
   "liveTestingNoCourseAvailable": "현재 테스트 가능한 수업이 없습니다",
@@ -6540,6 +6532,7 @@
   "homeMenuCategoryData": "데이터 및 동기화",
   "homeMenuCategoryPreferences": "환경설정",
   "homeMenuCategoryAbout": "정보 및 지원",
+  "homeMenuMoreTitle": "더 많은 기능",
   "classAlarmLeadMinutesLabel": "{minutes}분 전",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

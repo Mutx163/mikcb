@@ -92,9 +92,10 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
             ],
           ),
           HyperosSectionDescription(
-            text:
-                '当前方案：$activeSchemeName。安装后将创建并套用超级岛测试作息，按第 1 至 24 节生成测试课程数据。'
-                '一键发送将调整对应节次的起止时间并触发系统超级岛刷新。'
+            // 只留真后果（清除不会自动切回原方案）+ 当前方案名；句2「安装后
+            // 将创建并套用…」复述按钮，句3「一键发送将…」复述下面分组标题，
+            // 都删。
+            text: '当前方案：$activeSchemeName。'
                 '测试完成后请先清除测试课表，再切换回原时间方案。',
           ),
           const HyperosSectionGap(),
@@ -143,15 +144,19 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
               ),
             ],
           ),
-          HyperosSectionDescription(
+          const HyperosSectionDescription(
+            // 前半句「将对应节次改为 N 分钟后上课…」与上面区块说明、
+            // 下面「按节次发送」卡第三次说同一件事，删；后半句是测试员
+            // 判断「为什么提示无课」的唯一解释，留。
             text:
-                '将对应节次改为 $_fixtureLeadMinutes 分钟后上课，再按正式逻辑刷新超级岛。'
                 '若当前日历周超过课程 endWeek、放假或未到课前窗口，会提示无课而不是硬弹出岛。',
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
+            // 副标题两态都删：可触发态「点选某一节：改时间后走正式超级岛
+            // 刷新」是第三次重复同一句操作说明；未安装态与卡内空态文案
+            // （「安装后这里会列出全部节次」）同卡说两遍。
             title: '按节次发送',
-            subtitle: canTrigger ? '点选某一节：改时间后走正式超级岛刷新' : '请先安装 24 时段测试课表',
             child: HyperosControlCardInset(
               child: canTrigger
                   ? GridView.builder(

@@ -725,9 +725,10 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
                 title: _holidayOverrideEnabled
                     ? l10n.liveTestingHolidayModeEnabled
                     : l10n.liveTestingHolidayModeDisabled,
+                // 关闭态副标题只留 why：删复述分组标题的「开启后模拟假期状态」。
                 subtitle: _holidayOverrideEnabled
                     ? l10n.liveTestingHolidayModeEnabledDesc
-                    : l10n.liveTestingHolidayOverrideSubtitle,
+                    : l10n.liveTestingHolidayOverridePurpose,
               ),
             ],
           ),
@@ -802,11 +803,7 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
                       ),
                       if (!kReleaseMode) ...[
                         const SizedBox(height: 12),
-                        Text(
-                          l10n.liveTestingUmengHint,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 12),
+                        // 按钮名自解释，「仅测试版显示/验证 U-APM 上报」是开发者说明书，删。
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
@@ -849,7 +846,7 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
             children: [
               HyperosControlCard(
                 title: l10n.liveTestingIslandStatusTitle,
-                subtitle: l10n.liveTestingIslandStatusSubtitle,
+                // 副标题删：卡内芯片与「不上岛原因」小标题已点名三项，副标题是第三遍。
                 // Mixed inset content + full-bleed [HyperosSwitchTile]: do not
                 // wrap the switch in [HyperosControlCardInset] (double 16dp).
                 edgeToEdge: true,
@@ -905,8 +902,9 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
+                            // 尾巴「可在 课表设置 节假日标记 中管理」导航说明删：测试 toast 已带指引。
                             holidayBlocksIsland
-                                ? l10n.liveTestingNotIslandHoliday
+                                ? l10n.liveTestingHolidayHidden
                                 : notIslandReason.isEmpty
                                 ? l10n.liveTestingNoIslandReasonEmpty
                                 : notIslandReason,
@@ -956,11 +954,12 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
                           });
                         },
                         title: l10n.liveTestingAutoRefreshTitle,
+                        // 关闭态副标题只留 why（稳定查看），删复述开关的前半句。
                         subtitle: _autoRefreshEnabled
                             ? l10n.liveTestingAutoRefreshOn(
                                 _autoRefreshInterval.inSeconds,
                               )
-                            : l10n.liveTestingAutoRefreshOff,
+                            : l10n.liveTestingAutoRefreshOffReason,
                       ),
                     ),
                     Padding(
@@ -1116,9 +1115,8 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
       _LiveTestingSection.rawJson => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 卡头删：卡里只有一个折叠项，副标题在解释"折叠"这个控件本身。
           HyperosControlCard(
-            title: l10n.liveTestingRawDataTitle,
-            subtitle: l10n.liveTestingRawDataSubtitle,
             child: HyperosControlCardInset(
               child: HyperosAccordion(
                 items: [
@@ -1150,7 +1148,7 @@ class LiveTestingSettingsScreenState extends State<LiveTestingSettingsScreen>
       ),
       _LiveTestingSection.localLogs => HyperosControlCard(
         title: l10n.liveTestingLocalLogsTitle,
-        subtitle: l10n.liveTestingLocalLogsSubtitle,
+        // 副标题删：卡上三个按钮没有导出（导出在「上岛状态诊断」卡），文案与实际不符。
         child: HyperosControlCardInset(
           child: Wrap(
             spacing: 12,
@@ -1268,11 +1266,9 @@ class _DebugSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 副标题删：八张卡共用同一句「显示当前原生诊断字段」，卡片标题已各自说清。
     return HyperosControlCard(
       title: title,
-      subtitle: AppLocalizations.of(
-        context,
-      )!.liveTestingCurrentNativeFieldsSubtitle,
       child: HyperosControlCardInset(
         child: Column(
           children: data.entries
