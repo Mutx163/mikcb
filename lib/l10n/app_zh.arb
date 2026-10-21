@@ -3692,7 +3692,7 @@
   "courseNoteWholeCourseHint": "同名课程共享并长期保留，如课堂说明或要求。",
   "courseNoteWholeCoursePlaceholder": "例如：这位教师容易点名、教室在新楼……",
   "courseNoteSessionLabel": "本节课备注",
-  "courseNoteSessionHint": "仅对第 {week} 周这一次课生效，适合记录作业或携带物品。",
+  "courseNoteSessionHint": "仅对第 {week} 周这一次课生效，适合记录携带物品或课堂提醒。",
   "@courseNoteSessionHint": {
     "placeholders": {
       "week": {
@@ -3700,11 +3700,8 @@
       }
     }
   },
-  "courseNoteSessionPlaceholder": "例如：交第三章习题、带电脑……",
-  "courseNoteHasHomeworkTitle": "有作业",
-  "courseNoteHasHomeworkSubtitle": "开启后，周视图课程卡片会显示作业圆标",
-  "courseNoteHomeworkMarked": "本节有作业",
-  "courseNoteTileSubtitleEmpty": "记录作业、带电脑或课堂提醒",
+  "courseNoteSessionPlaceholder": "例如：带电脑、换教室、记得带计算器……",
+  "courseNoteTileSubtitleEmpty": "记录携带物品或课堂提醒",
   "courseNoteTileSubtitleWhole": "已有课程简介",
   "courseNoteTileSubtitleSession": "已有本节课备注",
   "courseNoteTileSubtitleBoth": "课程简介与本节课均有备注",

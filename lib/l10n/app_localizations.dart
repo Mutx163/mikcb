@@ -11378,23 +11378,8 @@ abstract class AppLocalizations {
   /// **'例如：交第三章习题、带电脑……'**
   String get courseNoteSessionPlaceholder;
 
-  /// No description provided for @courseNoteHasHomeworkTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'有作业'**
-  String get courseNoteHasHomeworkTitle;
 
-  /// No description provided for @courseNoteHasHomeworkSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'开启后，周视图课程卡片会显示作业圆标'**
-  String get courseNoteHasHomeworkSubtitle;
 
-  /// No description provided for @courseNoteHomeworkMarked.
-  ///
-  /// In zh, this message translates to:
-  /// **'本节有作业'**
-  String get courseNoteHomeworkMarked;
 
   /// No description provided for @courseNoteTileSubtitleEmpty.
   ///

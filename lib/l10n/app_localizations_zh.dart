@@ -6235,23 +6235,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String courseNoteSessionHint(int week) {
-    return '仅对第 $week 周这一次课生效，适合记录作业或携带物品。';
+    return '仅对第 $week 周这一次课生效，适合记录携带物品或课堂提醒。';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例如：交第三章习题、带电脑……';
+  String get courseNoteSessionPlaceholder => '例如：带电脑、换教室、记得带计算器……';
 
   @override
-  String get courseNoteHasHomeworkTitle => '有作业';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle => '开启后，周视图课程卡片会显示作业圆标';
-
-  @override
-  String get courseNoteHomeworkMarked => '本节有作业';
-
-  @override
-  String get courseNoteTileSubtitleEmpty => '记录作业、带电脑或课堂提醒';
+  String get courseNoteTileSubtitleEmpty => '记录携带物品或课堂提醒';
 
   @override
   String get courseNoteTileSubtitleWhole => '已有课程简介';
@@ -17629,23 +17620,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String courseNoteSessionHint(int week) {
-    return '僅對第 $week 週這一次課生效，適合記錄作業或攜帶物品。';
+    return '僅對第 $week 週這一次課生效，適合記錄攜帶物品或課堂提醒。';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例如：交第三章習題、帶電腦…';
+  String get courseNoteSessionPlaceholder => '例如：帶電腦、換課室、記得帶計算機……';
 
   @override
-  String get courseNoteHasHomeworkTitle => '有作業';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle => '開啟後，週檢視課程卡片會顯示作業圓標';
-
-  @override
-  String get courseNoteHomeworkMarked => '本節有作業';
-
-  @override
-  String get courseNoteTileSubtitleEmpty => '記錄作業、帶電腦或課堂提醒';
+  String get courseNoteTileSubtitleEmpty => '記錄攜帶物品或課堂提醒';
 
   @override
   String get courseNoteTileSubtitleWhole => '已有課程簡介';
@@ -29063,23 +29045,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String courseNoteSessionHint(int week) {
-    return '僅對第 $week 週這一次課生效，適合記錄作業或攜帶物品。';
+    return '僅對第 $week 週這一次課生效，適合記錄攜帶物品或課堂提醒。';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例如：交第三章習題、帶電腦…';
+  String get courseNoteSessionPlaceholder => '例如：帶電腦、換教室、記得帶計算機……';
 
   @override
-  String get courseNoteHasHomeworkTitle => '有作業';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle => '開啟後，週檢視課程卡片會顯示作業圓標';
-
-  @override
-  String get courseNoteHomeworkMarked => '本節有作業';
-
-  @override
-  String get courseNoteTileSubtitleEmpty => '記錄作業、帶電腦或課堂提醒';
+  String get courseNoteTileSubtitleEmpty => '記錄攜帶物品或課堂提醒';
 
   @override
   String get courseNoteTileSubtitleWhole => '已有課程簡介';

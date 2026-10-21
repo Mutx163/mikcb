@@ -3642,7 +3642,7 @@
   "courseNoteWholeCourseHint": "Shared across same-name courses (e.g. syllabus notes or classroom tips).",
   "courseNoteWholeCoursePlaceholder": "e.g. This teacher often takes attendance, classroom is in the new building…",
   "courseNoteSessionLabel": "This-class note",
-  "courseNoteSessionHint": "Applies only to week {week} for this class — good for homework or what to bring.",
+  "courseNoteSessionHint": "Applies only to week {week} for this class — good for what to bring or class reminders.",
   "@courseNoteSessionHint": {
     "placeholders": {
       "week": {
@@ -3650,11 +3650,8 @@
       }
     }
   },
-  "courseNoteSessionPlaceholder": "e.g. Chapter 3 exercises due, bring a laptop…",
-  "courseNoteHasHomeworkTitle": "Has homework",
-  "courseNoteHasHomeworkSubtitle": "When on, week-view cards show a homework badge",
-  "courseNoteHomeworkMarked": "Homework this class",
-  "courseNoteTileSubtitleEmpty": "Note homework, what to bring, or class reminders",
+  "courseNoteSessionPlaceholder": "e.g. bring a laptop, room change, remember the calculator…",
+  "courseNoteTileSubtitleEmpty": "Note what to bring or class reminders",
   "courseNoteTileSubtitleWhole": "Course description set",
   "courseNoteTileSubtitleSession": "This-class note set",
   "courseNoteTileSubtitleBoth": "Course description and this-class notes set",

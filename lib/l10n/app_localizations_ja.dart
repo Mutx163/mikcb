@@ -6352,23 +6352,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String courseNoteSessionHint(int week) {
-    return '第$week週のこの授業だけに有効です。宿題や持ち物の記録に適しています。';
+    return '第$week週のこの授業だけに有効です。持ち物や授業の連絡メモに適しています。';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '例：第3章の演習を提出、パソコン持参…';
+  String get courseNoteSessionPlaceholder => '例：パソコン持参、教室変更、電卓を忘れずに…';
 
   @override
-  String get courseNoteHasHomeworkTitle => '宿題あり';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle => 'オンにすると、週表示の授業カードに宿題マークが表示されます';
-
-  @override
-  String get courseNoteHomeworkMarked => 'この授業は宿題あり';
-
-  @override
-  String get courseNoteTileSubtitleEmpty => '宿題、持ち物、授業の注意点を記録';
+  String get courseNoteTileSubtitleEmpty => '持ち物や授業の注意点を記録';
 
   @override
   String get courseNoteTileSubtitleWhole => '授業の概要あり';

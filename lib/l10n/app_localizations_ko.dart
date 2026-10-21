@@ -6384,23 +6384,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String courseNoteSessionHint(int week) {
-    return '$week주차의 이번 수업에만 적용됩니다. 숙제나 준비물 기록에 적합합니다.';
+    return '$week주차의 이번 수업에만 적용됩니다. 준비물이나 수업 알림 기록에 적합합니다.';
   }
 
   @override
-  String get courseNoteSessionPlaceholder => '예: 3장 연습문제 제출, 노트북 지참…';
+  String get courseNoteSessionPlaceholder => '예: 노트북 지참, 강의실 변경, 계산기 챙기기…';
 
   @override
-  String get courseNoteHasHomeworkTitle => '숙제 있음';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle => '켜면 주간 보기 수업 카드에 숙제 표시가 나타납니다';
-
-  @override
-  String get courseNoteHomeworkMarked => '이번 수업은 숙제 있음';
-
-  @override
-  String get courseNoteTileSubtitleEmpty => '숙제, 준비물, 수업 알림 기록';
+  String get courseNoteTileSubtitleEmpty => '준비물이나 수업 알림 기록';
 
   @override
   String get courseNoteTileSubtitleWhole => '수업 소개 있음';

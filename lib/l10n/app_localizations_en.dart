@@ -6606,26 +6606,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String courseNoteSessionHint(int week) {
-    return 'Applies only to week $week for this class — good for homework or what to bring.';
+    return 'Applies only to week $week for this class — good for what to bring or class reminders.';
   }
 
   @override
   String get courseNoteSessionPlaceholder =>
-      'e.g. Chapter 3 exercises due, bring a laptop…';
-
-  @override
-  String get courseNoteHasHomeworkTitle => 'Has homework';
-
-  @override
-  String get courseNoteHasHomeworkSubtitle =>
-      'When on, week-view cards show a homework badge';
-
-  @override
-  String get courseNoteHomeworkMarked => 'Homework this class';
+      'e.g. bring a laptop, room change, remember the calculator…';
 
   @override
   String get courseNoteTileSubtitleEmpty =>
-      'Note homework, what to bring, or class reminders';
+      'Note what to bring or class reminders';
 
   @override
   String get courseNoteTileSubtitleWhole => 'Course description set';

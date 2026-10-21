@@ -669,13 +669,11 @@ class _CourseActionSheetContent extends StatelessWidget {
       l10n: l10n,
       wholeNote: courseIntroText,
       sessionNoteText: sessionNoteText,
-      hasHomework: hasHomework,
     );
     final noteSubtitle = _resolveNoteTileSubtitle(
       l10n: l10n,
       wholeNote: courseIntroText,
       sessionNoteText: sessionNoteText,
-      hasHomework: hasHomework,
     );
     final linkedTask = provider
         .getTasksForCourse(course.id)
@@ -938,17 +936,18 @@ class _CourseActionSheetContent extends StatelessWidget {
   }
 }
 
+/// 「备注」行的标题。
+///
+/// **不再显示「本节有作业」**（2026-10-21）：作业已经有自己的一行独立入口，
+/// 把这句写在备註行上会让用户以为点进去是看作业。这里只反映**文字**内容——
+/// 本周备注优先，其次是整门课简介，都没有就是「备注」二字。
 String _resolveNoteTileTitle({
   required AppLocalizations l10n,
   required String? wholeNote,
   required String? sessionNoteText,
-  required bool hasHomework,
 }) {
   if (sessionNoteText != null && sessionNoteText.isNotEmpty) {
     return sessionNoteText;
-  }
-  if (hasHomework) {
-    return l10n.courseNoteHomeworkMarked;
   }
   if (wholeNote != null && wholeNote.isNotEmpty) {
     return wholeNote;
@@ -960,10 +959,10 @@ String _resolveNoteTileSubtitle({
   required AppLocalizations l10n,
   required String? wholeNote,
   required String? sessionNoteText,
-  required bool hasHomework,
 }) {
-  final hasSession =
-      hasHomework || (sessionNoteText != null && sessionNoteText.isNotEmpty);
+  // 只看文字：`hasHomework` 曾经让这一行显示「本周有备注」，但作业已拆成
+  // 独立一行，再算它会让两个入口的副标题说同一件事。
+  final hasSession = sessionNoteText != null && sessionNoteText.isNotEmpty;
   final hasWhole = wholeNote != null && wholeNote.isNotEmpty;
   if (hasSession && hasWhole) {
     return l10n.courseNoteTileSubtitleBoth;
