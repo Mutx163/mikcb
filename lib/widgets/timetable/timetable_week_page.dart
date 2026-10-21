@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/timetable_layout.dart';
 import '../../models/timetable_settings.dart';
 import '../../utils/home_page_background.dart';
 import '../../widgets/home_page_region_blur.dart';
@@ -66,13 +67,14 @@ class TimetableWeekPage extends StatelessWidget {
     // 自适应节高按完整可用高度计算：玻璃坞满屏悬浮下网格延伸到药丸
     // 底下（层次感）；被遮住的最后几节由 body 的滚动余量救回——上滑把整段
     // 课表完全滑出到药丸上方，下滑再让药丸盖回。
-    final bodyAvailableHeight =
-        (availableHeight - TimetableWeekdayHeader.height - chromeGridClearance)
-            .clamp(0.0, double.infinity);
-    final sectionHeight =
-        settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
-        ? bodyAvailableHeight / settings.sectionCount
-        : settings.sectionHeight;
+    // 节高的唯一事实来源（`domain/timetable_layout.dart`）：转场算「卡片从哪个
+    // 格子起飞」用的是同一份，两边不会漂。
+    final sectionHeight = gridSectionHeight(
+      settings: settings,
+      availableHeight: availableHeight,
+      weekdayHeaderHeight: TimetableWeekdayHeader.height,
+      chromeSeam: chromeGridClearance,
+    );
     final grid = buildGrid(sectionHeight);
     final weekdayShowsBackdrop = homePageRegionShowsBackdrop(
       settings,

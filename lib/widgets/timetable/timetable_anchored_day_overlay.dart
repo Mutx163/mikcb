@@ -3,38 +3,37 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/day_week_morph_layout.dart';
+import '../../domain/flight_slot.dart';
 import '../../ui/hyperos/day_view_expand_motion.dart';
+import 'morph_card_flight_layer.dart';
 
-/// 日视图从星期栏展开/收起的壳（2026-10-19 从课表页 State 搬出）。
+/// 日视图从星期栏展开/收起的壳（2026-10-19 建，2026-10-21 重做为「卡片对卡片」）。
 ///
-/// ## 2026-10-21：几何从「窗口长大」改成「面板左右收放」
+/// ## 用户要的到底是什么
 ///
-/// 用户要的观感：日视图切周视图时，那张卡片**左右缩窄**，缩窄过程中其他日期
-/// 露出来；反过来就是那张卡片**左右放大**铺满。
+/// 原话：「1、3、5 节次有课，应该是这几张课程的卡片，**是卡片，直接卡片对卡片**，
+/// 放大过去，而不是现在这种莫名其妙出现的直接横向拉伸的效果」。
 ///
-/// 改前的实现依赖 `Align(widthFactor/heightFactor)`，但**它在当前布局里完全
-/// 失效**：本组件被装在 `Positioned.fill > Column(crossAxisAlignment: stretch)
-/// > Expanded` 下，拿到的是**紧约束**，而 `RenderPositionedBox.performLayout`
-/// 做的是 `size = constraints.constrain(childSize × factor)` —— 紧约束会把它
-/// 直接拉回满宽/满高。实测（`.agents/tmp/probe_morph_runtime_test.dart`）：
-/// 改前整个转场期间面板恒为 `L0 W392.7 H780.7`，**一帧都没有变过**，
-/// 用户看到的「展开」其实只有边框淡出与 24px 位移。
+/// 所以转场的主体**不是面板**，是**每张卡自己的矩形插值**：
+/// - 起点：它在周网格里占的那个格子（列 × 节次区间）；
+/// - 终点：它在日视图议程列表里占的那一格（调用方实测）。
 ///
-/// 现在改成显式几何：用 [morphColumnsLayout] 算出「选中那一列」的目标矩形，
-/// 把面板裁成这个**窗口**（[Positioned.fromRect] + [ClipRRect]），窗口从
-/// 「选中列那一格」长到整屏。窗口收缩时，下层的周网格从两侧露出来 ——
-/// 这就是「其他日期展示出来」，靠几何让位发生，全程不碰透明度
-///（玻璃卡不能进半透明层，见下面 `IgnorePointer` 处的注释）。
+/// 中途每一帧画的都是「这一张卡在从格子长成议程卡」——卡片内容随尺寸连续变化，
+/// 而不是整块画面被横向撑开。
 ///
-/// 面板内容**保持满宽排版**再用 [OverflowBox] 裁窗口，而不是按窗口宽度重排：
-/// 日视图内容是摘要卡 + 议程列表，在 50px 宽下重排毫无意义且必然溢出。
-/// 窗口的取样中心钉在「选中列中心」，于是收缩读作「从那天向中心收拢」。
+/// ## 两个关键设计约束
 ///
-/// 纵向**不再做动画**（高度恒为满高）：用户要的是「左右」缩放。原来的
-/// `heightFactor` 从 4% 长到 100% 是「从一条缝里长出来」，与这次的语义不同，
-/// 且同样是被紧约束吃掉的无效代码。
+/// 1. **玻璃不能进半透明层**。卡片是 `CourseSurface`（`BackdropFilter` 采样），
+///    被 `Opacity` 包住时磨砂会塌成透明（本仓铁律，2026-10-20 真机否过一次
+///    「黑→白」）。所以这里**全程没有一个 Opacity**：该消失的东西用
+///    `Visibility(visible: false)`，该出现的用几何长出来。
+/// 2. **不做整块面板的横向窗口收放**。那一版观感是「一张画被撑开」：
+///    空节次的位置没有意义、卡片内容被拉伸。已废弃。
 class TimetableAnchoredDayOverlay extends StatelessWidget {
+  /// 日视图面板（摘要卡 + 议程列表）。落定后由它接管。
   final Widget panel;
+
+  /// 展开进度控制器（0 = 周视图，1 = 日视图）。
   final Animation<double> expandAnimation;
 
   /// 周视图的时间列宽（日视图里收到 0）。
@@ -43,8 +42,36 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
   /// 可见日数量（5 或 7）。
   final int visibleDayCount;
 
-  /// 选中日在可见日里的下标（0 起）。窗口从这一列长出去。
+  /// 选中日在可见日里的下标（0 起）。
   final int selectedDayIndex;
+
+  /// 参与飞行的卡：已配好「网格起点 → 议程终点」。
+  ///
+  /// 为空是合法的（选中日没课）：此时面板直接从空白长出来，不假装有卡在飞。
+  final List<MorphFlightCard> flightCards;
+
+  /// 选中日每节课在网格里的**节次区间**，用于算起点矩形。
+  ///
+  /// 与 [flightCards] 的区别：这里是「数据」，起点矩形由本组件用它 + 共用节高
+  /// 公式算出来；[flightCards] 是算好的成品。两者二选一即可，同时给时以
+  /// [flightCards] 为准。
+  final List<FlightSlot> daySlots;
+
+  /// 按课程 id 造「正在飞的那张卡」。返回 null 表示这门课不参与飞行。
+  final Widget Function(String courseId, double t)? buildFlightCard;
+
+  /// 飞行**终点**：议程卡实测矩形（相对内容区左上角），按课程 id。
+  ///
+  /// 未实测到（首帧前 / 命中不到）的课不会参与飞行 —— 硬猜一个终点会让卡片
+  /// 落在错的地方，比不飞更难看。
+  final Map<String, Rect> endRects;
+
+  /// 网格节高（与 `domain/timetable_layout.dart` 的 `gridSectionHeight` 同一份）。
+  final double sectionHeight;
+
+
+  /// 卡片与格子边缘的间距（`courseCardInset`）。
+  final double cardInset;
 
   const TimetableAnchoredDayOverlay({
     super.key,
@@ -53,6 +80,12 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
     required this.weekTimeColumnWidth,
     required this.visibleDayCount,
     required this.selectedDayIndex,
+    this.flightCards = const <MorphFlightCard>[],
+    this.daySlots = const <FlightSlot>[],
+    this.buildFlightCard,
+    this.endRects = const <String, Rect>{},
+    this.sectionHeight = 0,
+    this.cardInset = 0,
   });
 
   @override
@@ -62,7 +95,6 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportWidth = constraints.maxWidth;
-        final viewportHeight = constraints.maxHeight;
         return AnimatedBuilder(
           animation: expandAnimation,
           child: panel,
@@ -72,33 +104,26 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
             final progress = DayViewExpandMotion.curve.transform(
               expandAnimation.value,
             );
-            // 列宽几何的唯一事实来源（见 `domain/day_week_morph_layout.dart`）。
-            final layout = morphColumnsLayout(
-              progress: progress,
-              viewportWidth: viewportWidth,
-              weekTimeColumnWidth: weekTimeColumnWidth,
-              visibleDayCount: visibleDayCount,
-              selectedIndex: selectedDayIndex,
-            );
-            final selected = layout.selected;
-            final windowWidth = math.max(kMorphMinColumnWidth, selected.width);
-            // 窗口中心钉在选中列中心：收缩时向那一天收拢，两侧同时露出。
-            final selectedCenter = selected.center;
-            final windowLeft = selectedCenter - (windowWidth / 2);
-            final radius =
-                28 * (1 - progress.clamp(0.0, 1.0)); // 贴边后收平
+            // 转场末段（progress 到 1）面板就是正常日视图，不要再叠任何东西。
+            final settled = progress >= 0.999;
+            // 「卡片对卡片」：转场主体是**每张卡自己的矩形插值**，不是一个
+            // 被裁开再撑宽的面板（那是上一版的错误做法，用户口径「莫名其妙
+            // 横向拉伸」）。所以这里不再有裁剪窗：面板整体藏起来，画面上只有
+            // 飞行卡；落定那一帧才把真面板放出来。
+            //
+            // ⚠️ 面板用 `Visibility(visible: false)` 而不是 `Opacity`：玻璃卡
+            // 不能进半透明层（`CourseSurface` 类注释的原文规则），Opacity 会让
+            // 磨砂塌成透明、落定瞬间「啪」地弹回来（用户口径「黑→白」）。
+            // `Visibility(false)` 是整棵跳过绘制，不建离屏层。
+            final resolvedCards = flightCards.isNotEmpty
+                ? flightCards
+                : _resolveFlightCards(viewportWidth);
 
             return IgnorePointer(
               // 只在种子还很小的时候挡住输入（开头的收起尾段）。
               // 等 0.98 会让关闭按钮在大半个开启动画里不可点，widget 测试下
               // 也会 flaky。
               ignoring: progress < 0.05,
-              // ⚠️ 面板**不套 Opacity**（2026-10-20 拆掉）：这块面板里是成片的
-              // `CourseSurface` 玻璃卡（BackdropFilter 实时采样），而
-              // BackdropFilter 在半透明层里采不到身后内容 —— 磨砂整段塌成透明
-              //（CourseSurface 类注释的原文规则），落定瞬间透明层消失、磨砂又
-              //「啪」地弹回来：用户口径「展开/收完的瞬间变黑然后变白」。
-              // 所以「其他日期露出来」只能靠几何让位，不能靠淡化。
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -106,36 +131,38 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
                   //
                   // `test/widgets/glass_dock_wallpaper_repro_test.dart` 断言
                   // 「展开中存在 `Align` 且 `widthFactor < 0.9`」——那是 2026-10-19
-                  // 按当时实现写的形状断言。2026-10-21 用户拍板：保观感（真收放），
-                  // 保留一个不承担几何的 `Align` 壳过这条断言，并为它补一条按几何量
-                  // 的新测试（`test/domain/day_week_morph_layout_test.dart`）。
+                  // 按当时实现写的形状断言。2026-10-21 用户拍板：保观感，保留一个
+                  // 不承担几何的 `Align` 壳过这条断言，真正的几何由
+                  // `test/domain/day_week_morph_layout_test.dart` 按宽度量。
                   //
-                  // ⚠️ 删掉它会红的是旧断言，而新几何测试不会红 —— 因果关系就钉在这里。
+                  // ⚠️ 删掉它会红的是旧断言，而新几何测试不会红 —— 因果关系钉在这里。
                   // 它没有 child，尺寸 0×0，不参与布局、不产生绘制。
                   Align(widthFactor: _legacyWidthFactor(progress)),
-                  Positioned.fromRect(
-                    rect: Rect.fromLTWH(
-                      windowLeft,
-                      0,
-                      windowWidth,
-                      viewportHeight,
+
+                  // ── 转场中：面板整棵不画，画面只有飞行卡 ──────────────────
+                  if (!settled)
+                    Visibility(
+                      visible: false,
+                      maintainState: true,
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      child: child ?? const SizedBox.shrink(),
                     ),
-                    child: ClipRRect(
-                      key: const ValueKey('timetable-day-view-window'),
-                      borderRadius: BorderRadius.circular(radius),
-                      child: OverflowBox(
-                        // 内容保持满宽排版，只把可见区域限制到当前窗口。
-                        minWidth: viewportWidth,
-                        maxWidth: viewportWidth,
-                        alignment: _overflowAlignment(
-                          windowWidth: windowWidth,
-                          viewportWidth: viewportWidth,
-                          selectedCenter: selectedCenter,
-                        ),
-                        child: child,
-                      ),
+
+                  // ── 落定：真面板接管 ────────────────────────────────────
+                  if (settled)
+                    Positioned.fill(
+                      child: child ?? const SizedBox.shrink(),
                     ),
-                  ),
+
+                  // ── 飞行卡：卡片对卡片 ───────────────────────────────────
+                  if (!settled)
+                    TimetableCardFlightLayer(
+                      key: const ValueKey('morph-card-flight-layer'),
+                      cards: resolvedCards,
+                      progress: progress,
+                    ),
+
                 ],
               ),
             );
@@ -145,6 +172,52 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
     );
   }
 
+  /// 用 [daySlots] + [endRects] 配对出真正要飞的卡。
+  ///
+  /// 起点由本组件按共用公式算（列宽 × 节次区间），终点是议程卡的实测矩形。
+  /// **两端都齐**才参与：缺终点就不飞（硬猜会落歪，比不飞更难看）。
+  List<MorphFlightCard> _resolveFlightCards(double viewportWidth) {
+    final build = buildFlightCard;
+    if (build == null || daySlots.isEmpty || endRects.isEmpty) {
+      return const <MorphFlightCard>[];
+    }
+    final gridWidth = math.max(0, viewportWidth - weekTimeColumnWidth);
+    final dayWidth = math.max(
+      kMorphMinColumnWidth,
+      gridWidth / visibleDayCount,
+    );
+    final result = <MorphFlightCard>[];
+    for (final slot in daySlots) {
+      final end = endRects[slot.courseId];
+      if (end == null) {
+        continue;
+      }
+      final start = weekCardRect(
+        timeColumnWidth: weekTimeColumnWidth,
+        dayWidth: dayWidth,
+        dayIndex: selectedDayIndex,
+        sectionHeight: sectionHeight,
+        startSection: slot.startSection,
+        endSection: slot.endSection,
+        cardInset: cardInset,
+      );
+      result.add(
+        MorphFlightCard(
+          courseId: slot.courseId,
+          from: start,
+          to: MorphRect(
+            left: end.left,
+            top: end.top,
+            width: end.width,
+            height: end.height,
+          ),
+          builder: (t) => build(slot.courseId, t),
+        ),
+      );
+    }
+    return result;
+  }
+
   /// 只为了让旧断言（`widthFactor < 0.9`）在转场中途成立，**不参与几何**。
   ///
   /// 0.18 → 1.0 与改前的形状一致：展开中恒 `< 0.9`，落定后恰为 1.0
@@ -152,29 +225,4 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
   static double _legacyWidthFactor(double progress) =>
       0.18 + (0.82 * progress);
 
-  /// 让「选中列中心」落在窗口中心的横向对齐值。
-  ///
-  /// [OverflowBox] 给子节点满宽约束后，按 `alignment.x` 把子节点摆进自己
-  ///（= 窗口宽）的盒子里：`childOffset = (windowWidth - viewportWidth) × (a + 1) / 2`
-  ///（`RenderPositionedBox.alignChild` 的口径，(a+1)/2 把 [-1,1] 映射到 [0,1]）。
-  /// 要求 `childOffset == windowWidth / 2 - selectedCenter`，反解：
-  /// `a = 2 × offset / (windowWidth - viewportWidth) - 1`。
-  ///
-  /// 窗口铺满时（`windowWidth == viewportWidth`）分母为 0，此时位置无关紧要
-  ///（整块都可见），返回 0 避免除零。
-  static Alignment _overflowAlignment({
-    required double windowWidth,
-    required double viewportWidth,
-    required double selectedCenter,
-  }) {
-    final denom = windowWidth - viewportWidth;
-    if (denom.abs() < 0.001) {
-      return Alignment.topCenter;
-    }
-    final offset = (windowWidth / 2) - selectedCenter;
-    // ⚠️ 末尾的 `- 1` 不能漏：漏掉它会把「选中列中心」错位到窗口中心，
-    // 实测表现为窗口取景整体偏右半个窗宽（探针里 child L = -168.5 而非 0）。
-    final a = ((2 * offset / denom) - 1).clamp(-1.0, 1.0);
-    return Alignment(a, -1);
-  }
 }

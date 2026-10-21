@@ -16,6 +16,7 @@ import '../models/schedule_item.dart';
 import '../models/timetable_settings.dart';
 import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
+import '../domain/flight_slot.dart';
 import '../domain/timetable_layout.dart';
 import '../domain/day_course_display_logic.dart';
 import '../domain/day_task_band_logic.dart';
@@ -53,6 +54,8 @@ import '../widgets/timetable/timetable_dock_actions.dart';
 import '../widgets/timetable/weekday_ink_contrast_guard.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
+import '../widgets/timetable/flight_target_cache.dart';
+import '../widgets/timetable/flight_card_body.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/day_view/day_view_course_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_empty_state.dart';
@@ -239,6 +242,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         takeRescueVelocity: _dayViewTransition.takeRescueVelocity,
         parent: const ClampingScrollPhysics(),
       );
+
+  /// 飞行终点缓存（议程卡实测矩形，见 [FlightTargetCache]）。
+  final FlightTargetCache _flightTargets = FlightTargetCache();
 
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
@@ -1210,17 +1216,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildAnchoredDayViewOverlay({
-    required TimetableProvider provider,
-    required TimetableSettings settings,
-    required int week,
-  }) {
+  Widget _buildAnchoredDayViewOverlay({required TimetableProvider provider,
+    required TimetableSettings settings, required int week}) {
     final selectedDayOfWeek = _dayViewTransition.displayedDayForWeek(week);
     final panel = _buildDayViewPanel(provider: provider, settings: settings,
       week: week, dayOfWeek: selectedDayOfWeek);
     final days = visibleDayNumbers(settings);
+    final dayCourses = _getCoursesForDay(provider.courses, week, selectedDayOfWeek, settings);
     return TimetableAnchoredDayOverlay(panel: panel, expandAnimation: _dayViewExpandController,
-      weekTimeColumnWidth: timeColumnWidth(settings),
+      weekTimeColumnWidth: timeColumnWidth(settings), daySlots: flightSlotsFromCourses(dayCourses),
+      endRects: _flightTargets.targets, buildFlightCard: (id, t) => buildFlightCardFor(courseId: id, dayCourses: dayCourses, settings: settings, provider: provider, progress: t, fallbackColor: Theme.of(context).colorScheme.primary),
       visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek));
   }
 

@@ -172,3 +172,97 @@ MorphColumnsLayout morphColumnsLayout({
     selectedIndex: selectedIndex,
   );
 }
+
+/// 一张课程卡在**周网格**里的矩形（相对内容区左上角）。
+///
+/// 「卡片对卡片」转场需要每张卡自己的起点：它在第 [dayIndex] 列、
+/// 从第 [startSection] 节到第 [endSection] 节。宽度与网格同一套口径
+/// （`timetable_week_grid.dart` 的 `dayWidth` 与 `cardInset`），不要在别处
+/// 另立公式。
+///
+/// 参数全部是逻辑像素：
+/// - [timeColumnWidth]：时间列宽；
+/// - [dayWidth]：一天占的宽度；
+/// - [dayIndex]：这一列在可见日里的下标；
+/// - [sectionHeight]：一节的渲染高度（自适应时为 `可用高 / 节数`）；
+/// - [startSection] / [endSection]：1 起的节次，含两端；
+/// - [cardInset]：卡片与格子边缘的间距（`courseCardInset`）。
+///
+/// 返回矩形以**内容区左上角为原点**，与 [MorphColumnsLayout] 同一坐标系，
+/// 方便两端直接 `Rect.lerp`。
+MorphRect weekCardRect({
+  required double timeColumnWidth,
+  required double dayWidth,
+  required int dayIndex,
+  required double sectionHeight,
+  required int startSection,
+  required int endSection,
+  required double cardInset,
+}) {
+  final inset = cardInset.clamp(0.0, 3.0);
+  final first = startSection < 1 ? 1 : startSection;
+  final last = endSection < first ? first : endSection;
+  final left = timeColumnWidth + dayIndex * dayWidth + inset;
+  final width = math.max(kMorphMinColumnWidth, dayWidth - inset * 2);
+  final top = (first - 1) * sectionHeight + inset;
+  final height = math.max(
+    kMorphMinColumnWidth,
+    (last - first + 1) * sectionHeight - inset * 2,
+  );
+  return MorphRect(left: left, top: top, width: width, height: height);
+}
+
+/// 一个二维矩形（逻辑像素）。与 `dart:ui` 的 `Rect` 同形但**不依赖 UI 层**，
+/// 让 domain 的计算可以直接被纯 Dart 单测覆盖。
+///
+/// 两端矩形插值请用 [lerpMorphRect]。
+class MorphRect {
+  const MorphRect({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  double get right => left + width;
+  double get bottom => top + height;
+  double get centerX => left + width / 2;
+
+  @override
+  String toString() => 'MorphRect(${left.toStringAsFixed(1)}, '
+      '${top.toStringAsFixed(1)}, ${width.toStringAsFixed(1)}, '
+      '${height.toStringAsFixed(1)})';
+
+  @override
+  bool operator ==(Object other) =>
+      other is MorphRect &&
+      other.left == left &&
+      other.top == top &&
+      other.width == width &&
+      other.height == height;
+
+  @override
+  int get hashCode => Object.hash(left, top, width, height);
+}
+
+/// 两个矩形之间按 [t] 插值（0 = [a]，1 = [b]）。
+///
+/// 逐分量线性插值：位置与尺寸一起变，「一张卡从网格位长成议程位」就是这条。
+/// [t] 之外的取值会被夹到 [0,1]。
+MorphRect lerpMorphRect(MorphRect a, MorphRect b, double t) {
+  final k = t.clamp(0.0, 1.0);
+  return MorphRect(
+    left: a.left + (b.left - a.left) * k,
+    top: a.top + (b.top - a.top) * k,
+    width: math.max(kMorphMinColumnWidth, a.width + (b.width - a.width) * k),
+    height: math.max(
+      kMorphMinColumnWidth,
+      a.height + (b.height - a.height) * k,
+    ),
+  );
+}
