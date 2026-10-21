@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../ui/hyperos/day_view_expand_motion.dart';
 import '../../ui/hyperos/hyperos.dart';
 
 /// 日视图从星期栏锚点展开/收起的壳（2026-10-19 从课表页 State 搬出）。
@@ -27,7 +28,11 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
       animation: expandAnimation,
       child: panel,
       builder: (context, child) {
-        final progress = Curves.easeInOutCubicEmphasized.transform(
+        // 曲线与时长是**一处**策略（见 [DayViewExpandMotion]）：这里不能再写死
+        // 一条曲线，否则 `DayViewExpandMotion.baseMilliseconds` 调了时长、
+        // 观感却还是旧曲线的配速。2026-10-21 就是这么从「一下就弹开」变成
+        // 「能看到其他日期正在露出来」的。
+        final progress = DayViewExpandMotion.curve.transform(
           expandAnimation.value,
         );
         final widthFactor = 0.18 + (0.82 * progress);
