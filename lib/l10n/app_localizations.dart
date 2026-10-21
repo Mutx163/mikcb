@@ -18822,6 +18822,11 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'无截止日期'**
   String get taskNoDueDate;
+  /// No description provided for @taskDueDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Without a due date this task never appears in the day view or Today'**
+  String get taskDueDateHint;
 
   /// No description provided for @taskCourseLabel.
   ///

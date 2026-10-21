@@ -10736,6 +10736,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '마감일 없음';
+  String get taskDueDateHint => '마감일을 설정하지 않으면 이 할 일은 일간 보기와 「오늘」에 표시되지 않습니다';
 
   @override
   String get taskCourseLabel => '수업';

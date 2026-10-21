@@ -10686,6 +10686,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '期限なし';
+  String get taskDueDateHint => '期限を設定しないと、このタスクは日表示と「今日」に表示されません';
 
   @override
   String get taskCourseLabel => 'コース';
