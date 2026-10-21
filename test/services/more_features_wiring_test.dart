@@ -1,24 +1,24 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/screens/more_features_screen.dart';
+import 'package:university_timetable/widgets/home_menu_catalog.dart';
 
-/// 「更多功能」汇总页的接线契约（**静态源码检查**，模式照抄
-/// `pickup_codes_wiring_test.dart`）。
+/// 「更多功能」汇总页的收录契约（行为断言 + 接线源码检查）。
 ///
-/// 为什么不跑 widget 测试：按 TEST-POLICY，`test/widgets` / `test/screens` /
-/// `test/ui` 是冻结目录；且两张表是两个文件里的字符串，id 对不上时
-/// `homePage()` 在点开那一刻才抛 `StateError`（启动不炸、测试全绿、真机
-/// 一点就崩）。
+/// 收录标准（用户 2026-10-21 拍板）：**全量功能目录**——目录里除「偏好设置」
+/// 分类（设置子页有设置首页这个固定归宿）与「更多功能」自身外的全部可见
+/// 条目。不维护手工清单：此前手筛 10 条漏了总览/统计/考试这些「默认排列里
+/// 有、被移出后就没处找」的页，还把统计设置误收了进来。
 ///
-/// 覆盖三件事：
-/// 1. 目录 ↔ 路由表的双向登记（`more` 内嵌 + `morePage` 推入 + import）；
-/// 2. 汇总页精选清单里的每个 id 都真实存在于目录（改名/下线即红）；
-/// 3. 天气设置补进候选目录后与设置库子页工厂对齐。
+/// 接线部分（目录↔路由表 id 对齐）保持源码级检查：两张表是两个文件里的
+/// 字符串，id 对不上时 `homePage()` 在点开那一刻才抛 `StateError`（启动不炸、
+/// 测试全绿、真机一点就崩）；import 整棵页面树去查会让本测试背上整个 App
+/// 的编译面。
 void main() {
   final catalogFile = File('lib/widgets/home_menu_catalog.dart');
   final registryFile = File('lib/screens/home_menu_route_registry.dart');
   final pageFile = File('lib/screens/more_features_screen.dart');
-  final settingsRootFile = File('lib/screens/timetable_settings_screen.dart');
 
   test('三个接线文件都在（否则本测试空转）', () {
     expect(catalogFile.existsSync(), isTrue, reason: catalogFile.path);
@@ -72,47 +72,69 @@ void main() {
     );
   });
 
-  test('汇总页精选清单里的每个 id 都真实存在于目录', () {
-    final pageSource = pageFile.readAsStringSync();
-    final catalogSource = catalogFile.readAsStringSync();
-    // 从页面源码抽出 kMoreFeaturesEntryIds 的 id（不 import 页面树，
-    // 保持本测试只背两个文件的字符串，不背整棵 App 的编译面）。
-    final block = RegExp(
-      r'kMoreFeaturesEntryIds = \[([\s\S]*?)\];',
-    ).firstMatch(pageSource);
-    expect(block, isNotNull, reason: '页面里找不到 kMoreFeaturesEntryIds 清单');
-    final ids = RegExp(r"'([A-Za-z]+)'")
-        .allMatches(block!.group(1)!)
-        .map((match) => match.group(1)!)
-        .toList();
-    expect(ids, isNotEmpty, reason: '精选清单是空的');
-    expect(ids.toSet().length, ids.length, reason: '精选清单里有重复 id');
-    for (final id in ids) {
-      expect(
-        catalogSource.contains("id: '$id'"),
-        isTrue,
-        reason: '精选清单里的 id "$id" 不在 kHomeMenuCatalog —— 汇总页会静默丢行',
-      );
+  test('收录是全量功能目录：除偏好设置与自身外全部收录', () {
+    final entries = moreFeaturesEntries();
+    final ids = entries.map((entry) => entry.id).toSet();
+    // 设置子页一个都不许进（用户点过名：统计设置不该出现在这里——
+    // 该收的是统计页本身，设置藏在统计页里）。
+    expect(
+      entries.every((entry) => entry.category != HomeMenuEntryCategory.preferences),
+      isTrue,
+      reason: '偏好设置分类（统计设置/天气设置/通用等）不许进汇总页',
+    );
+    expect(ids.contains('more'), isFalse, reason: '汇总页不许自我收录');
+    // 功能页必须全在（漏一个就是用户说的「没找全」）：默认排列里的
+    // 也要收——被移出首页后这里仍是它们的入口。
+    for (final id in const [
+      // 功能入口
+      'overview',
+      'statistics',
+      'exams',
+      'tasks',
+      'scheduleList',
+      'monthView',
+      'pickupCode',
+      'courseConflict',
+      'locationTimeMatch',
+      'scheduleDateRule',
+      'icsExport',
+      'timeSchemes',
+      'profiles',
+      'importCourses',
+      'addCourse',
+      'addExam',
+      'addTask',
+      'addScheduleItem',
+      'courseRecolor',
+      'shareTimetable',
+      'quickSwitchTimetable',
+      // 数据与同步
+      'dataTransfer',
+      'cloudSync',
+      'lanEdit',
+      'coupleTimetable',
+      // 关于与支持
+      'aboutApp',
+      'update',
+      'changelog',
+      'userGuide',
+      'feedback',
+      'openSourceLicenses',
+      'support',
+    ]) {
+      expect(ids.contains(id), isTrue, reason: '功能页 $id 没被收录');
     }
   });
 
-  test('weatherSettings 补进候选目录并与设置库子页工厂对齐', () {
-    final catalogSource = catalogFile.readAsStringSync();
-    final settingsSource = settingsRootFile.readAsStringSync();
-    expect(
-      catalogSource.contains("id: 'weatherSettings'"),
-      isTrue,
-      reason: '候选目录里没有 weatherSettings —— 用户在八宫格编辑器里加不到天气设置',
-    );
-    expect(
-      catalogSource.contains('weatherSettingsEntryTitle'),
-      isTrue,
-      reason: '标题必须走 l10n（与设置首页入口共用同一个键）',
-    );
-    expect(
-      settingsSource.contains("'weatherSettings' =>"),
-      isTrue,
-      reason: '设置库 settingsSubpageById 没有 weatherSettings —— 候选点开是空白',
-    );
+  test('收录与目录同步：目录条目数与收录数一致（新页自动出现）', () {
+    final expected = kHomeMenuCatalog
+        .where(
+          (entry) =>
+              entry.category != HomeMenuEntryCategory.preferences &&
+              entry.id != 'more' &&
+              entry.visible(),
+        )
+        .length;
+    expect(moreFeaturesEntries().length, expected);
   });
 }

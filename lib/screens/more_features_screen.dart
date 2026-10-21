@@ -4,30 +4,26 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/home_menu_catalog.dart';
 
-/// 「更多功能」汇总页：一页收齐「没有其他固定入口」的隐藏功能。
+/// 「更多功能」汇总页：一页收齐全应用的功能入口（设置子页除外）。
 ///
 /// ## 这个页面是什么
 ///
-/// 任务清单、日程安排、取件码、月视图、冲突详情、地点作息匹配、日期作息规则、
-/// 导出日历、统计设置、课程卡天气——这些页面/设置在全应用里**只有首页菜单
-/// （八宫格/底栏/右上角菜单）一处可达**，且不在默认排列里：用户不知道「设置 →
-/// 首页与导航」的编辑器存在，就永远发现不了它们。本页把它们收成一页，用户
-/// 只要在底栏/八宫格添加「更多功能」这一个入口，就能从这里到达全部。
+/// 用户在底栏/八宫格添加「更多功能」这一个入口，就能从这一页到达全部功能
+/// 页面——任务清单（作业列表）、日程安排、月视图、统计、考试、课程总览、
+/// 数据传输、取件码……包括不在默认八宫格排列里的（统计/总览被移出首页后，
+/// 这里仍是它们的入口）与藏在其他页面深处的（冲突详情、地点作息匹配等）。
 ///
-/// ## 为什么是精选清单、不是全部倒进去
+/// ## 收录标准：全量、自动，不维护手工清单
 ///
-/// 右上角菜单已有的常用项（软件更新、加课、导入课程、数据传输这些默认
-/// 能看到的不列）不重复；组件展示页/测试夹具/内存监控是调试版专属
-/// （正式版门控），不收。清单写死在 [kMoreFeaturesEntryIds]：可控、不馁。
-/// 以后新增隐藏页要在这里补一行 id——如果哪天嫌烦，再考虑给目录条目加
-/// 标记自动收录（二期）。
-///
-/// ## 数据从哪来（不维护第二份清单）
-///
-/// 行的图标/标题/点击行为全部来自 `kHomeMenuCatalog` 的目录条目
-/// （[homeMenuEntryById] 按 id 查，[HomeMenuEntry.open] 负责导航）：
-/// 页面只维护「收哪些 id」，元数据仍归目录条目一处真源——与八宫格编辑器
-/// 的取数路径完全一致。
+/// 收 [kHomeMenuCatalog] 里**除「偏好设置」分类外**的全部可见条目：
+/// - 设置子页（统计设置、天气设置、通用……）有设置首页这个固定归宿，
+///   不进功能目录——把统计设置收进来是错的：该收的是统计页本身，设置
+///   藏在统计页里（用户 2026-10-21 点名）；
+/// - 「更多功能」自身排除（不自我收录）；
+/// - visible() 门控照常生效（调试版专属条目不进正式版）。
+/// 新增目录条目自动出现在本页，无手工清单要维护——此前按「有没有其他
+/// 固定入口」手筛 10 条的方案已废弃：漏了总览/统计/考试这些「默认排列里
+/// 有、但被用户移出后就没处找」的页，还把统计设置误收了进来。
 ///
 /// ## 两种展示形态
 ///
@@ -38,71 +34,40 @@ import '../widgets/home_menu_catalog.dart';
 class MoreFeaturesScreen extends StatelessWidget {
   const MoreFeaturesScreen({super.key});
 
-  /// 汇总页收录的目录条目 id（精选清单，与 `kHomeMenuCatalog` 对齐）。
-  ///
-  /// 每个都必须是目录里存在的 id：漏登记/改名的 id 在渲染时被就地丢弃
-  /// （与编辑器种子阶段同一条口径），契约测试会在 CI 阶段先拦下。
-  static const List<String> kMoreFeaturesEntryIds = [
-    // 功能入口
-    'tasks',
-    'scheduleList',
-    'pickupCode',
-    'monthView',
-    'courseConflict',
-    'locationTimeMatch',
-    'scheduleDateRule',
-    'icsExport',
-    // 偏好设置
-    'statisticsSettings',
-    'weatherSettings',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final entries = _resolveEntries();
+    final entries = moreFeaturesEntries();
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.homeMenuMoreTitle),
       child: HyperosListView(
         children: [
           for (final category in HomeMenuEntryCategory.values)
-            if (entries.any((entry) => entry.category == category)) ...[
-              const HyperosSectionGap(),
-              HyperosSectionLabel(
-                text: homeMenuEntryCategoryLabel(l10n, category),
-              ),
-              HyperosListGroup(
-                children: [
-                  for (final entry in entries.where(
-                    (item) => item.category == category,
-                  ))
-                    HyperosNavTile(
-                      icon: entry.icon,
-                      iconAccent: _accentOf(category),
-                      title: entry.title(l10n),
-                      onTap: () => entry.open(context),
-                    ),
-                ],
-              ),
-            ],
+            // 偏好设置分类整组跳过：设置子页的归宿是设置首页，不进功能目录。
+            if (category != HomeMenuEntryCategory.preferences)
+              if (entries.any((entry) => entry.category == category)) ...[
+                const HyperosSectionGap(),
+                HyperosSectionLabel(
+                  text: homeMenuEntryCategoryLabel(l10n, category),
+                ),
+                HyperosListGroup(
+                  children: [
+                    for (final entry in entries.where(
+                      (item) => item.category == category,
+                    ))
+                      HyperosNavTile(
+                        icon: entry.icon,
+                        iconAccent: _accentOf(category),
+                        title: entry.title(l10n),
+                        onTap: () => entry.open(context),
+                      ),
+                  ],
+                ),
+              ],
         ],
       ),
     );
-  }
-
-  /// 按 id 查目录条目：未知 id（改名/下线）就地丢弃，与八宫格编辑器同一条
-  /// 口径；visible() 门控让调试版专属条目在正式版不出现（清单里当前没有
-  /// 这类条目，门控为将来收录留口）。
-  List<HomeMenuEntry> _resolveEntries() {
-    final entries = <HomeMenuEntry>[];
-    for (final id in kMoreFeaturesEntryIds) {
-      final entry = homeMenuEntryById(id);
-      if (entry != null && entry.visible()) {
-        entries.add(entry);
-      }
-    }
-    return entries;
   }
 
   /// 行图标徽章的强调色，按分类固定：与设置首页的分组配色同一套语言
@@ -113,4 +78,19 @@ class MoreFeaturesScreen extends StatelessWidget {
     HomeMenuEntryCategory.preferences => HyperosIconColors.purple,
     HomeMenuEntryCategory.about => HyperosIconColors.orange,
   };
+}
+
+/// 汇总页收录的目录条目（纯函数，契约测试直接断言它）。
+///
+/// 收录标准见类注释：除「偏好设置」分类（设置子页的归宿是设置首页）与
+/// 「更多功能」自身（不自我收录）外的全部可见条目。未知条目不存在于
+/// 目录就不会出现——本函数从目录推导，无手工清单可漂移。
+List<HomeMenuEntry> moreFeaturesEntries() {
+  return [
+    for (final entry in kHomeMenuCatalog)
+      if (entry.category != HomeMenuEntryCategory.preferences &&
+          entry.id != 'more' &&
+          entry.visible())
+        entry,
+  ];
 }

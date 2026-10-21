@@ -260,9 +260,9 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
       await provider.switchProfile(selected);
     },
   ),
-  // 「更多功能」汇总页：一页收齐没有其他固定入口的隐藏功能（任务清单、
-  // 日程安排、取件码、月视图等），用户在底栏/八宫格添加这一个入口即可
-  // 全部可达。收录清单与页面本体在 screens/more_features_screen.dart。
+  // 「更多功能」汇总页：一页收齐全部功能入口（偏好设置分类除外），用户
+  // 在底栏/八宫格添加这一个入口即可全部直达。收录从目录自动推导（设置
+  // 子页不进功能目录），页面本体在 screens/more_features_screen.dart。
   HomeMenuEntry(
     id: 'more',
     title: (l10n) => l10n.homeMenuMoreTitle,
