@@ -499,6 +499,54 @@ void main() {
     expect(find.text('导入课表'), findsOneWidget);
     expect(find.text('从备份恢复'), findsOneWidget);
   });
+
+  testWidgets('horizontal page switch resets collapsed large title', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const TestApp(
+        home: UserGuideScreen(
+          requirePrivacyConsent: true,
+          initialPrivacyChecked: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 2026-10-21 用户真机反馈：隐私页滚到底（大标题缩成小字）后横切到
+    // 权限页，新页在顶部却还是小字——折叠态是外壳共享 behavior 里的
+    // 一份，横向切页不产生纵向通知，旧状态原样带进新页。
+    HyperosCollapsibleTopAppBarState titleState() =>
+        tester
+                .widget<HyperosCollapsibleTopAppBar>(
+                  find.byType(HyperosCollapsibleTopAppBar),
+                )
+                .scrollBehavior!
+                .state;
+
+    // Navigate to the privacy page via Next.
+    await tester.tap(nextButton());
+    await tester.pumpAndSettle();
+
+    // Scroll the privacy page down far enough to fully collapse the title.
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(
+      titleState().heightOffset,
+      lessThan(-5.0),
+      reason: '前置：滚动到底后大标题应处于折叠态',
+    );
+
+    // Swipe horizontally to the permissions page.
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+
+    expect(
+      titleState().heightOffset,
+      0.0,
+      reason: '横切到顶部的新页后，折叠态必须重置回展开（heightOffset=0）',
+    );
+  });
 }
 
 class _AutoOpenGuide extends StatefulWidget {
