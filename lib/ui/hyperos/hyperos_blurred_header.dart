@@ -26,6 +26,7 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
     this.blurEnabled = true,
     this.contentUnderHeader = false,
     this.headerBackgroundColor,
+    this.keyboardInset = 0,
     required super.child,
     super.key,
   });
@@ -42,6 +43,15 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
   /// Opaque header fill while [contentUnderHeader] is false (matches page bg).
   final Color? headerBackgroundColor;
 
+  /// 键盘（IME）从底部遮住的高度。
+  ///
+  /// **必须由 `Scaffold` 外面的那层读出来往下传**：`Scaffold` 在
+  /// `resizeToAvoidBottomInset: true` 时会把子树的 `MediaQuery.viewInsets`
+  /// 清零（它已经把视口压小了，不想让子级再避一次）。于是列表里的
+  /// `MediaQuery.viewInsetsOf(context).bottom` 恒为 0——2026-10-21 实测确认，
+  /// 直接写在列表里读不到键盘高度。
+  final double keyboardInset;
+
   static HyperosBlurredHeaderScope? maybeOf(BuildContext context) {
     return context
         .dependOnInheritedWidgetOfExactType<HyperosBlurredHeaderScope>();
@@ -49,6 +59,11 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
 
   static double insetOf(BuildContext context) {
     return maybeOf(context)?.contentTopInset ?? 0;
+  }
+
+  /// 键盘遮住的高度；无此 scope 时为 0。
+  static double keyboardInsetOf(BuildContext context) {
+    return maybeOf(context)?.keyboardInset ?? 0;
   }
 
   /// Reads [contentTopInset] WITHOUT registering an inherited dependency.
@@ -84,9 +99,14 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
     // [HyperosHeaderUnderContentScope]. Notifying this scope for frost flips
     // rebuilt every list body that only depends on the top inset
     // ([insetOf]) and read as a hitch when content first tucked under the bar.
+    //
+    // keyboardInset **必须**参与判定：列表要把底部内边距加上键盘高度，漏了
+    // 它就只在下次无关重建时才生效，表现为「键盘弹出后列表不跟着让位」。
+    // 它只在键盘升降时变化一次，不像打字那样每帧都动，不会引起抖动。
     return contentTopInset != oldWidget.contentTopInset ||
         blurEnabled != oldWidget.blurEnabled ||
-        headerBackgroundColor != oldWidget.headerBackgroundColor;
+        headerBackgroundColor != oldWidget.headerBackgroundColor ||
+        keyboardInset != oldWidget.keyboardInset;
   }
 }
 

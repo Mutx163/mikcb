@@ -11000,7 +11000,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskNoDueDate => 'No due date';
-  String get taskDueDateHint => 'Without a due date this task never appears in the day view or Today';
+  String get taskDueDateHint => 'Without a due date it never shows in day view';
 
   @override
   String get taskCourseLabel => 'Course';

@@ -586,6 +586,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     required bool routeBlurEnabled,
     required Color headerBackgroundColor,
     required Widget child,
+    double keyboardInset = 0,
   }) {
     // contentUnderHeader lives in a nested scope so frost flips do not
     // notify every list that only depends on contentTopInset (see
@@ -595,6 +596,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       blurEnabled: routeBlurEnabled,
       contentUnderHeader: _headerFrost.contentUnderHeader,
       headerBackgroundColor: headerBackgroundColor,
+      keyboardInset: keyboardInset,
       child: HyperosHeaderUnderContentScope(
         contentUnderHeader: _headerFrost.contentUnderHeader,
         child: child,
@@ -796,6 +798,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     // — which restarted the spring from 0 every frame and made the whole
     // page thrash. Transform.translate is paint-only: no relayout, no clamp.
     final headerInset = _overlayMetrics.overlayContentTopInset(context);
+    // 键盘高度必须在这里读：`Scaffold(resizeToAvoidBottomInset: true)` 会把
+    // 子树的 viewInsets 清零（它自己已经把视口压小了），列表里读到的恒为 0。
+    // 见 `HyperosBlurredHeaderScope.keyboardInset` 的注释与 2026-10-21 实测。
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value:
@@ -814,6 +820,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
           contentTopInset: headerInset,
           routeBlurEnabled: _backdropBlurEnabled,
           headerBackgroundColor: pageBackground,
+          keyboardInset: keyboardInset,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -916,20 +923,44 @@ class _HyperosListViewState extends State<HyperosListView> {
     // 上方，余量小于自身默认底距时不生效。
     final dockRelief = GlassDockScrollReliefScope.insetOf(context);
     final bottom = dockRelief > base.bottom ? dockRelief : base.bottom;
-    // Initial content sits below the overlay header; scrolling still passes
-    // rows under the frosted bar once this padding scrolls away.
+    // 键盘余量必须**加**在底部内边距上，不能只靠 `resizeToAvoidBottomInset`
+    // 把视口压小。
+    //
+    // 只压视口的话，内容总高不变、视口变矮，`maxScrollExtent` 只涨了「两者
+    // 之差」那么多——而这个差值恰好被页面自己的底距吃掉。实测 360×800 屏 +
+    // 300dp 键盘：视口 800→500，内容 505，可滚动余量只剩 5.4dp，表单最后一行
+    // （「已完成」开关，y 454~475）贴着键盘顶边、几乎点不到。表现为
+    // 「键盘一弹，下面的按钮就够不着了」。
+    //
+    // 键盘高度从 scope 取，不能在列表里直接读 `MediaQuery.viewInsets`：
+    // `Scaffold` 已把它清零（见 `HyperosBlurredHeaderScope.keyboardInset`）。
+    //
+    // 与玻璃坞余量取**较大值**而非相加：坞与键盘不会同时出现在同一个列表上，
+    // 相加会凭空多出一大块空白。
+    final keyboardInset = HyperosBlurredHeaderScope.keyboardInsetOf(context);
+    final effectiveBottom = keyboardInset > bottom ? keyboardInset : bottom;
     if (!widget.includeHeaderInset) {
-      return EdgeInsets.fromLTRB(base.left, base.top, base.right, bottom);
+      return EdgeInsets.fromLTRB(
+        base.left,
+        base.top,
+        base.right,
+        effectiveBottom,
+      );
     }
     final headerInset = HyperosBlurredHeaderScope.insetOf(context);
     if (headerInset <= 0) {
-      return EdgeInsets.fromLTRB(base.left, base.top, base.right, bottom);
+      return EdgeInsets.fromLTRB(
+        base.left,
+        base.top,
+        base.right,
+        effectiveBottom,
+      );
     }
     return EdgeInsets.fromLTRB(
       base.left,
       base.top + headerInset,
       base.right,
-      bottom,
+      effectiveBottom,
     );
   }
 

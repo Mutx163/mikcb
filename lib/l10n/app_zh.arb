@@ -6397,7 +6397,7 @@
   "taskNoteHint": "补充说明 可选",
   "taskDueDateLabel": "截止日期",
   "taskNoDueDate": "无截止日期",
-  "taskDueDateHint": "不设截止日期，这条作业不会出现在日视图和「今日」里",
+  "taskDueDateHint": "不设截止日期，日视图就不显示",
   "taskCourseLabel": "来源课程",
   "taskCourseFilter": "课程筛选",
   "taskAllCourses": "全部课程",

@@ -6060,7 +6060,7 @@
   "taskNoteHint": "補充說明 可選",
   "taskDueDateLabel": "截止日期",
   "taskNoDueDate": "無截止日期",
-  "taskDueDateHint": "不設截止日期，這條作業不會出現在日視圖和「今日」裡",
+  "taskDueDateHint": "不設截止日期，日視圖就不顯示",
   "taskCourseLabel": "來源課程",
   "taskCourseFilter": "課程篩選",
   "taskAllCourses": "全部課程",

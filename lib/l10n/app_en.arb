@@ -6345,7 +6345,7 @@
   "taskNoteHint": "Optional details",
   "taskDueDateLabel": "Due date",
   "taskNoDueDate": "No due date",
-  "taskDueDateHint": "Without a due date this task never appears in the day view or Today",
+  "taskDueDateHint": "Without a due date it never shows in day view",
   "taskCourseLabel": "Course",
   "taskCourseFilter": "Course filter",
   "taskAllCourses": "All courses",

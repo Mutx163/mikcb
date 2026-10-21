@@ -750,6 +750,104 @@ void main() {
       );
     },
   );
+  // ── 键盘避让（2026-10-21）────────────────────────────────────────────
+  //
+  // 表单项露在键盘底下就点不到。原先只有 `resizeToAvoidBottomInset: true`：
+  // 它把视口压小，但内容总高不变，`maxScrollExtent` 只涨「视口差」那么多，
+  // 恰好被页面自己的底距吃掉——360×800 屏 + 300dp 键盘时只剩 5.4dp，
+  // 表单最后一行贴着键盘顶边。
+  //
+  // 修法是给列表底部内边距加上键盘高度。键盘高度必须从 `Scaffold` **外面**
+  // 读：`resizeToAvoidBottomInset: true` 会把子树的 viewInsets 清零，列表里
+  // 直接读恒为 0（这条也一并用例钉住，否则后人「简化」回去时测试不会响）。
+  group('HyperosListView 键盘避让', () {
+    testWidgets('键盘弹出后列表底部内边距等于键盘高度（可滚到遮挡物之外）', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosSubpage(
+            onBack: () {},
+            resizeToAvoidBottomInset: true,
+            title: const Text('Form'),
+            child: HyperosListView(
+              itemCount: 1,
+              itemBuilder: (context, index) => const SizedBox(height: 200),
+            ),
+          ),
+        ),
+      );
+      await pumpBlurSettleFrames(tester);
+
+      EdgeInsets paddingOf() {
+        // itemCount 模式走 ListView.builder，children 模式走 SingleChildScrollView。
+        final scrollView = find.byType(SingleChildScrollView);
+        final padding = scrollView.evaluate().isNotEmpty
+            ? tester.widget<SingleChildScrollView>(scrollView.first).padding
+            : tester.widget<ListView>(find.byType(ListView).first).padding;
+        return padding! as EdgeInsets;
+      }
+
+      // 无键盘时底部就是常规列表底距。
+      tester.view.viewInsets = const FakeViewPadding(bottom: 900); // 300dp
+      await tester.pumpAndSettle();
+
+      // 判据直接钉内边距：改成滚动的间接观察会被「视口也被压小」抵消，
+      // 差值算不出真实的键盘余量（实测 106 而非 300），也说不清坏在哪。
+      expect(
+        paddingOf().bottom,
+        300,
+        reason: '底部内边距必须等于键盘高度，列表才能整体滑到键盘上方',
+      );
+    });
+
+    testWidgets('Scaffold 内的 viewInsets 被清零，键盘高度只能从 scope 取', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 900);
+
+      double? insideScaffold;
+      double? scopeValue;
+
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosSubpage(
+            onBack: () {},
+            resizeToAvoidBottomInset: true,
+            title: const Text('Form'),
+            child: HyperosListView(
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                insideScaffold ??= MediaQuery.viewInsetsOf(context).bottom;
+                scopeValue ??=
+                    HyperosBlurredHeaderScope.keyboardInsetOf(context);
+                return const SizedBox(height: 10);
+              },
+            ),
+          ),
+        ),
+      );
+      await pumpBlurSettleFrames(tester);
+
+      expect(
+        insideScaffold,
+        0,
+        reason: 'Scaffold(resizeToAvoidBottomInset: true) 会清零子树 viewInsets',
+      );
+      expect(
+        scopeValue,
+        300,
+        reason: '键盘高度必须由 scope 从 Scaffold 外层带下来',
+      );
+    });
+  });
 }
 
 class _AppearanceStub extends StatelessWidget {

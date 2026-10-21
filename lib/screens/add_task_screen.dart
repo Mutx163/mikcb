@@ -163,6 +163,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 HyperosSwitchTile(
                   title: l10n.taskDueDateLabel,
+                  // 不设截止日期的作业不会出现在日视图待办带、也不会进清单页
+                  // 的「今日」档（`CourseTask` 没有「创建日当到期日」这条语义）。
+                  // 而新建时这个开关**默认是关的**，用户很容易存完就再也找不到
+                  // ——所以关着的时候把后果直接写在这行下面。
+                  subtitle: _hasDueDate ? null : l10n.taskDueDateHint,
                   value: _hasDueDate,
                   onChanged: (value) {
                     setState(() {

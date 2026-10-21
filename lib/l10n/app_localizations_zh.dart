@@ -10352,7 +10352,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get taskNoDueDate => '无截止日期';
-  String get taskDueDateHint => '不设截止日期，这条作业不会出现在日视图和「今日」里';
+  String get taskDueDateHint => '不设截止日期，日视图就不显示';
 
   @override
   String get taskCourseLabel => '来源课程';
@@ -21798,7 +21798,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get taskNoDueDate => '無截止日期';
-  String get taskDueDateHint => '不設截止日期，這條作業不會出現在日視圖和「今日」裡';
+  String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
 
   @override
   String get taskCourseLabel => '來源課程';
@@ -33245,7 +33245,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get taskNoDueDate => '無截止日期';
-  String get taskDueDateHint => '不設截止日期，這條作業不會出現在日視圖和「今日」裡';
+  String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
 
   @override
   String get taskCourseLabel => '來源課程';
