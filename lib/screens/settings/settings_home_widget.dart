@@ -385,11 +385,11 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
       ),
     };
 
-    if (index == 0) {
+    if (section == 0) {
       // 预览区保活：设置页是懒加载列表，滚出视口会回收整块 subtree，
       // 滚回来再重建。PageView / Scrollable / 已渲染的图全要重来一遍，
       // 任何一个环节出岔子就是「下滑再上滑，预览空白」。
-      // 这里让它常驻，回收重建这条路径从根本上不存在了。
+      // 判据须是**分区号**而非列表下标——顶部「精确闹钟权限」横幅占 index 0。
       return _PreviewKeepAlive(child: content);
     }
     return Column(
@@ -441,10 +441,14 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
             child: SizedBox(
               width: viewportWidth,
               child: PageView.builder(
-                // 故意不挂 PageStorageKey：预览是「看效果」，不是「编辑状态」，
-                // 每次进来都从第一张（主卡 2×2）开始，比对比例时才不会因为
-                // 上次停在第 N 张（比如 4×2 横宽）而误以为「默认卡片是扁的」。
-                // 回收重建后的错位由 _syncPreviewIndexFromController 兜底校正。
+                // 必须挂一个**自己的** PageStorageKey：滚动位置是按「从自己往上
+                // 找到的 PageStorageKey」存进 PageStorage 的，纵向列表用的是
+                // `hyperos-list-<路由名>`，轮播不挂 key 就落到同一格子，两边的数
+                // （列表的滚动像素、轮播的页号）互相覆盖 → 预览重建时轮播把列表
+                // 的像素（实测 1076）当成页号，一页都构建不出来：预览整块空白而
+                // 下方标题照旧，即「卡片消失，重进才好」。独立 key 各存各的，且它
+                // 只活在本页路由、退出即销毁，所以仍「每次进来从第一张开始」。
+                key: const PageStorageKey<String>('homeWidgetPreviewCarousel'),
                 controller: _previewController,
                 itemCount: _previewSpecs.length,
                 physics: const PageScrollPhysics(),
