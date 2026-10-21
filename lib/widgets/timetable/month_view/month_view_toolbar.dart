@@ -205,11 +205,12 @@ class _MonthTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final listenable = pageListenable;
     final readPage = pageOf;
     final toMonth = monthOfPage;
     if (listenable == null || readPage == null || toMonth == null) {
-      return Center(child: _labelText(year, month));
+      return Center(child: _labelText(l10n, year, month));
     }
     return AnimatedBuilder(
       animation: listenable,
@@ -221,7 +222,7 @@ class _MonthTitle extends StatelessWidget {
         try {
           page = readPage();
         } catch (_) {
-          return Center(child: _labelText(year, month));
+          return Center(child: _labelText(l10n, year, month));
         }
         final base = page.floor();
         // 滑到几成：只在 0..1 之间用，越界（回弹）时钳住，避免标题飞出容器。
@@ -241,7 +242,7 @@ class _MonthTitle extends StatelessWidget {
                     child: SizedBox(
                       width: w,
                       child: Center(
-                        child: _labelText(current.year, current.month),
+                        child: _labelText(l10n, current.year, current.month),
                       ),
                     ),
                   ),
@@ -250,7 +251,7 @@ class _MonthTitle extends StatelessWidget {
                     offset: Offset(w * (1 - frac), 0),
                     child: SizedBox(
                       width: w,
-                      child: Center(child: _labelText(next.year, next.month)),
+                      child: Center(child: _labelText(l10n, next.year, next.month)),
                     ),
                   ),
                 ],
@@ -265,15 +266,22 @@ class _MonthTitle extends StatelessWidget {
   /// `2026年` + `10月`：年份弱色小一号，月份是主体。
   ///
   /// 系统日历的通行做法 —— 一眼要读的是"哪个月"，年份只是上下文。
-  /// 文案本身仍拼自 l10n（不重排语序假设），只是把两个数字段分开放。
-  Widget _labelText(int y, int m) {
+  /// 两段都来自 l10n（`monthViewYearSegment` / `monthViewMonthSegment`），
+  /// 语序与后缀由各语言自己决定：中文「2026年 / 10月」、英文「2026/ / 10」。
+  ///
+  /// 2026-10-21 修：原先这里写死 `'$y年'` / `'$m月'`，英日韩用户看到的是中文。
+  /// 那是 `9a1c2c00` 重排标题行时引入的——同批还把 `monthViewHeaderTitle`
+  /// 变成了没人引用的孤儿键（本该由它承载整句，但两段颜色不同，必须拆开，
+  /// 而 `{year}年{month}月` 这种模板在运行时切不出「哪半截是年份」，
+  /// 所以改成两段各一个键）。
+  Widget _labelText(AppLocalizations l10n, int y, int m) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          '$y年',
+          l10n.monthViewYearSegment(y),
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -284,7 +292,7 @@ class _MonthTitle extends StatelessWidget {
         ),
         const SizedBox(width: 3),
         Text(
-          '$m月',
+          l10n.monthViewMonthSegment(m),
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,

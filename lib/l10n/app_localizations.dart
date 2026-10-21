@@ -20478,12 +20478,6 @@ abstract class AppLocalizations {
   /// **'下个月'**
   String get monthViewNextMonth;
 
-  /// No description provided for @monthViewBackToCurrentMonth.
-  ///
-  /// In zh, this message translates to:
-  /// **'回到本月'**
-  String get monthViewBackToCurrentMonth;
-
   /// No description provided for @monthViewBackToCurrentMonthShort.
   ///
   /// In zh, this message translates to:
@@ -20544,11 +20538,17 @@ abstract class AppLocalizations {
   /// **'加课'**
   String get monthViewAgendaAddCourse;
 
-  /// No description provided for @monthViewHeaderTitle.
+  /// No description provided for @monthViewYearSegment.
   ///
   /// In zh, this message translates to:
-  /// **'{year}年{month}月'**
-  String monthViewHeaderTitle(int year, int month);
+  /// **'{year}年'**
+  String monthViewYearSegment(int year);
+
+  /// No description provided for @monthViewMonthSegment.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月'**
+  String monthViewMonthSegment(int month);
 
   /// No description provided for @monthViewAgendaTitle.
   ///

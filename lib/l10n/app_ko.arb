@@ -6769,7 +6769,6 @@
   "monthViewTitle": "월 보기",
   "monthViewPreviousMonth": "이전 달",
   "monthViewNextMonth": "다음 달",
-  "monthViewBackToCurrentMonth": "이번 달로",
   "monthViewBackToCurrentMonthShort": "오늘",
   "monthViewHolidayBadge": "휴",
   "monthViewAdjustedWorkdayBadge": "출",
@@ -6780,17 +6779,8 @@
   "monthOverviewScheduledDays": "일정 있는 날 {count}일",
   "monthViewEmptyMonthHint": "수업을 추가하면 달력에 점이 표시됩니다",
   "monthViewAgendaAddCourse": "수업 추가",
-  "monthViewHeaderTitle": "{year}년 {month}월",
-  "@monthViewHeaderTitle": {
-    "placeholders": {
-      "year": {
-        "type": "int"
-      },
-      "month": {
-        "type": "int"
-      }
-    }
-  },
+  "monthViewYearSegment": "{year}년",
+  "monthViewMonthSegment": "{month}월",
   "monthViewAgendaTitle": "{month}월 {day}일",
   "@monthViewAgendaTitle": {
     "placeholders": {

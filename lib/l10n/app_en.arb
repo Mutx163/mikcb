@@ -6772,7 +6772,6 @@
   "monthViewTitle": "Month view",
   "monthViewPreviousMonth": "Previous month",
   "monthViewNextMonth": "Next month",
-  "monthViewBackToCurrentMonth": "Back to this month",
   "monthViewBackToCurrentMonthShort": "Today",
   "monthViewHolidayBadge": "Off",
   "monthViewAdjustedWorkdayBadge": "Work",
@@ -6783,17 +6782,8 @@
   "monthOverviewScheduledDays": "{count} days with plans",
   "monthViewEmptyMonthHint": "Add a class and its dots appear here",
   "monthViewAgendaAddCourse": "Add class",
-  "monthViewHeaderTitle": "{year}/{month}",
-  "@monthViewHeaderTitle": {
-    "placeholders": {
-      "year": {
-        "type": "int"
-      },
-      "month": {
-        "type": "int"
-      }
-    }
-  },
+  "monthViewYearSegment": "{year}/",
+  "monthViewMonthSegment": "{month}",
   "monthViewAgendaTitle": "{month}/{day}",
   "@monthViewAgendaTitle": {
     "placeholders": {

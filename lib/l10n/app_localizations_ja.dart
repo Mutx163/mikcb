@@ -11561,9 +11561,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get monthViewNextMonth => '次の月';
 
   @override
-  String get monthViewBackToCurrentMonth => '今月に戻る';
-
-  @override
   String get monthViewBackToCurrentMonthShort => '今日';
 
   @override
@@ -11596,8 +11593,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get monthViewAgendaAddCourse => '授業を追加';
 
   @override
-  String monthViewHeaderTitle(int year, int month) {
-    return '$year年$month月';
+  String monthViewYearSegment(int year) {
+    return '$year年';
+  }
+
+  @override
+  String monthViewMonthSegment(int month) {
+    return '$month月';
   }
 
   @override

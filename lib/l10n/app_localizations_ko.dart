@@ -11606,9 +11606,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get monthViewNextMonth => '다음 달';
 
   @override
-  String get monthViewBackToCurrentMonth => '이번 달로';
-
-  @override
   String get monthViewBackToCurrentMonthShort => '오늘';
 
   @override
@@ -11641,8 +11638,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get monthViewAgendaAddCourse => '수업 추가';
 
   @override
-  String monthViewHeaderTitle(int year, int month) {
-    return '$year년 $month월';
+  String monthViewYearSegment(int year) {
+    return '$year년';
+  }
+
+  @override
+  String monthViewMonthSegment(int month) {
+    return '$month월';
   }
 
   @override

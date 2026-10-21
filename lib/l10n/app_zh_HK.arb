@@ -6769,7 +6769,6 @@
   "monthViewTitle": "月視圖",
   "monthViewPreviousMonth": "上個月",
   "monthViewNextMonth": "下個月",
-  "monthViewBackToCurrentMonth": "回到本月",
   "monthViewBackToCurrentMonthShort": "今天",
   "monthViewHolidayBadge": "休",
   "monthViewAdjustedWorkdayBadge": "班",
@@ -6780,17 +6779,8 @@
   "monthOverviewScheduledDays": "有安排 {count} 天",
   "monthViewEmptyMonthHint": "先加一節課，日曆上就會顯示圓點",
   "monthViewAgendaAddCourse": "加課",
-  "monthViewHeaderTitle": "{year}年{month}月",
-  "@monthViewHeaderTitle": {
-    "placeholders": {
-      "year": {
-        "type": "int"
-      },
-      "month": {
-        "type": "int"
-      }
-    }
-  },
+  "monthViewYearSegment": "{year}年",
+  "monthViewMonthSegment": "{month}月",
   "monthViewAgendaTitle": "{month}月{day}日",
   "@monthViewAgendaTitle": {
     "placeholders": {

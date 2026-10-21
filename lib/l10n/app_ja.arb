@@ -6608,7 +6608,6 @@
   "monthViewTitle": "月表示",
   "monthViewPreviousMonth": "前の月",
   "monthViewNextMonth": "次の月",
-  "monthViewBackToCurrentMonth": "今月に戻る",
   "monthViewBackToCurrentMonthShort": "今日",
   "monthViewHolidayBadge": "休",
   "monthViewAdjustedWorkdayBadge": "出",
@@ -6619,13 +6618,8 @@
   "monthOverviewScheduledDays": "予定のある日 {count} 日",
   "monthViewEmptyMonthHint": "授業を追加すると、カレンダーに点が表示されます",
   "monthViewAgendaAddCourse": "授業を追加",
-  "monthViewHeaderTitle": "{year}年{month}月",
-  "@monthViewHeaderTitle": {
-    "placeholders": {
-      "year": { "type": "int" },
-      "month": { "type": "int" }
-    }
-  },
+  "monthViewYearSegment": "{year}年",
+  "monthViewMonthSegment": "{month}月",
   "monthViewAgendaTitle": "{month}月{day}日",
   "@monthViewAgendaTitle": {
     "placeholders": {

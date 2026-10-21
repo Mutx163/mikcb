@@ -6879,7 +6879,6 @@
   "monthViewTitle": "月视图",
   "monthViewPreviousMonth": "上个月",
   "monthViewNextMonth": "下个月",
-  "monthViewBackToCurrentMonth": "回到本月",
   "monthViewBackToCurrentMonthShort": "今天",
   "monthViewHolidayBadge": "休",
   "monthViewAdjustedWorkdayBadge": "班",
@@ -6897,12 +6896,17 @@
       }
     }
   },
-  "monthViewHeaderTitle": "{year}年{month}月",
-  "@monthViewHeaderTitle": {
+  "monthViewYearSegment": "{year}年",
+  "monthViewMonthSegment": "{month}月",
+  "@monthViewYearSegment": {
     "placeholders": {
       "year": {
         "type": "int"
-      },
+      }
+    }
+  },
+  "@monthViewMonthSegment": {
+    "placeholders": {
       "month": {
         "type": "int"
       }

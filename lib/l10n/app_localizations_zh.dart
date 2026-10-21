@@ -11236,9 +11236,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get monthViewNextMonth => '下个月';
 
   @override
-  String get monthViewBackToCurrentMonth => '回到本月';
-
-  @override
   String get monthViewBackToCurrentMonthShort => '今天';
 
   @override
@@ -11271,8 +11268,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get monthViewAgendaAddCourse => '加课';
 
   @override
-  String monthViewHeaderTitle(int year, int month) {
-    return '$year年$month月';
+  String monthViewYearSegment(int year) {
+    return '$year年';
+  }
+
+  @override
+  String monthViewMonthSegment(int month) {
+    return '$month月';
   }
 
   @override
@@ -22686,9 +22688,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get monthViewNextMonth => '下個月';
 
   @override
-  String get monthViewBackToCurrentMonth => '回到本月';
-
-  @override
   String get monthViewBackToCurrentMonthShort => '今天';
 
   @override
@@ -22721,8 +22720,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get monthViewAgendaAddCourse => '加課';
 
   @override
-  String monthViewHeaderTitle(int year, int month) {
-    return '$year年$month月';
+  String monthViewYearSegment(int year) {
+    return '$year年';
+  }
+
+  @override
+  String monthViewMonthSegment(int month) {
+    return '$month月';
   }
 
   @override
@@ -34137,9 +34141,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get monthViewNextMonth => '下個月';
 
   @override
-  String get monthViewBackToCurrentMonth => '回到本月';
-
-  @override
   String get monthViewBackToCurrentMonthShort => '今天';
 
   @override
@@ -34172,8 +34173,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get monthViewAgendaAddCourse => '加課';
 
   @override
-  String monthViewHeaderTitle(int year, int month) {
-    return '$year年$month月';
+  String monthViewYearSegment(int year) {
+    return '$year年';
+  }
+
+  @override
+  String monthViewMonthSegment(int month) {
+    return '$month月';
   }
 
   @override

@@ -403,8 +403,6 @@ macroReplayStepFailed
 macroReplayUserCancelled
 manageTimeSchemesAction
 managementSectionTitle
-monthViewBackToCurrentMonth
-monthViewHeaderTitle
 oddWeeksHint
 oddWeeksLabel
 openIssuePage
