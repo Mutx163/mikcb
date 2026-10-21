@@ -86,50 +86,49 @@ class TimetableHomeDockShell extends StatelessWidget {
       return wrapHome(dockContent);
     }
     final inlineBuilder = inlinePageBuilder;
-    // 内嵌页整屏盖住首页时，把玻璃钉进**冻结态**（用预糊壁纸位图，不依赖实时
-    // 采样）。这与路由转场是同一件事的两种来源，所以喂同一个聚合信号。
-    //
-    // 不这么做的话：进去时首页停止绘制、球的采样图停在旧画面（当时看不出，
-    // 因为画面本来没变）；退出时首页恢复绘制，球却要等下一次回读才更新 ——
-    // 那一帧就是用户看到的"闪"（2026-10-21：「切进去不闪，切出来到日视图会闪」）。
-    //
-    // ⚠️ 必须**帧后**再写：`glassFrozen` 是 `ValueNotifier`，在 build 期间改它
-    // 会同步触发订阅者重建 —— 那是"build 期间要求重建"的经典断言
-    //（`setState() or markNeedsBuild() called during build`）。
-    // 记下目标值，帧末统一落一次，值相同则不发通知（信号自身去重）。
-    // 只在**值真的变了**时才排回调：本组件是 StatelessWidget，每次 build 都排
-    // 一个 post-frame 回调会让队列无限增长（而 setHomeScreenCovered 内部虽然
-    // 去重，回调本身仍然在排队）。
+    // 有内嵌页时首页停止绘制（省一遍全屏重绘），没有则正常画。
     final covered = inlineBuilder != null;
-    if (HyperosGlassBackdropController.homeScreenCovered.value != covered) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        HyperosGlassBackdropController.setHomeScreenCovered(covered);
-      });
-    }
-    final Widget hostedContent = inlineBuilder == null
-        ? dockContent
-        : Stack(
-            fit: StackFit.expand,
-            children: [
-              // 内嵌页是**不透明**的整屏 Scaffold，会把首页完全盖住；但 Stack
-              // 的两个孩子每帧都会被绘制，于是内嵌态下首页那一整套（满屏壁纸
-              // 铺底 + 玻璃带 backdrop 采样 + 课程卡片）一直在白白重画。
-              // 用 Visibility(maintainSize) 保留挂载与布局、只去掉绘制（返回
-              // 首页仍是闪现直切，几何/滚动位置不受影响），并用 TickerMode
-              // 停掉被完全遮挡页面的动画节拍。
-              TickerMode(
-                enabled: false,
-                child: Visibility(
-                  visible: false,
-                  maintainState: true,
-                  maintainSize: true,
-                  maintainAnimation: true,
-                  child: dockContent,
-                ),
-              ),
-              // 与旧「设置 Tab」一致：点底栏闪现直切，无滑动转场。
-              Positioned.fill(
-                child: Material(
+    // ⚠️ **树形必须恒定**，不能"有内嵌页才包一层 Stack"。
+    //
+    // 曾经的写法是 `inlineBuilder == null ? dockContent : Stack([...])`：进出内嵌页
+    // 时 `dockContent` 在祖先链里的位置从"深度 0"变成"Stack 的第一个孩子"，
+    // Flutter 按位置复用元素 ⇒ 整棵首页（壁纸 / 课程卡 / 玻璃带 / 右上角那颗球）
+    // 销毁重建。日志证据：`[frame-perf] burst worstBuildMs=40.4 verdict=ui-bound`
+    // —— 一帧 UI 线程 40ms 就是重建的代价。用户看到的"切出来球闪一下"即此
+    //（2026-10-21）。
+    //
+    // 现在 Stack 恒在、内嵌页那层也恒在（空时占位），首页永远是第一个孩子。
+    final Widget hostedContent = Stack(
+      fit: StackFit.expand,
+      children: [
+        // 内嵌页是**不透明**的整屏 Scaffold，会把首页完全盖住；但 Stack
+        // 的两个孩子每帧都会被绘制，于是内嵌态下首页那一整套（满屏壁纸
+        // 铺底 + 玻璃带 backdrop 采样 + 课程卡片）一直在白白重画。
+        // 用 Visibility(maintainSize) 保留挂载与布局、只去掉绘制（返回
+        // 首页仍是闪现直切，几何/滚动位置不受影响），并用 TickerMode
+        // 停掉被完全遮挡页面的动画节拍。
+        // ⚠️ 这两个开关现在**必须跟随内嵌页状态**：这一层已经恒在
+        // （见上），写死 false 会让首页在没有内嵌页时也停止绘制/动画
+        // —— 那等于首页整块消失。
+        TickerMode(
+          enabled: !covered,
+          child: Visibility(
+            visible: !covered,
+            maintainState: true,
+            maintainSize: true,
+            maintainAnimation: true,
+            child: dockContent,
+          ),
+        ),
+        // 与旧「设置 Tab」一致：点底栏闪现直切，无滑动转场。
+        //
+        // 这一层**恒在**（见上面 hostedContent 的注释）：没有内嵌页时
+        // 用空占位顶上，而不是整层消失 —— 否则 Stack 的 children 数量变化
+        // 会让同位置的元素身份错乱。
+        Positioned.fill(
+          child: inlineBuilder == null
+              ? const SizedBox.shrink()
+              : Material(
                   type: MaterialType.transparency,
                   child: Scaffold(
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -144,9 +143,9 @@ class TimetableHomeDockShell extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-            ],
-          );
+        ),
+      ],
+    );
     // 系统返回不拦内嵌页：与日/周课表同口径，底栏任意状态按返回都直接退出
     // 应用（根路由 bubble → 系统退出）。收回内嵌页走底栏切换与圆钮再点。
     return wrapHome(hostedContent, dockLayer: dockLayer);

@@ -283,11 +283,9 @@ class HomeChromeGroupCapture extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: ValueListenableBuilder<bool>(
-        // 与玻璃冻结同源：转场中 **或** 首页被内嵌页盖住时都撤掉这张全屏
-        // 回读 —— 那两种状态下它都没有消费者（带子走冻结位图）。
-        valueListenable: HyperosGlassBackdropController.glassFrozen,
-        builder: (context, frozen, _) =>
-            frozen ? const SizedBox.expand() : const UndimmedBackdropCapture(),
+        valueListenable: HyperosGlassBackdropController.routeTransitionRunning,
+        builder: (context, transitioning, _) =>
+            transitioning ? const SizedBox.expand() : const UndimmedBackdropCapture(),
       ),
     );
   }

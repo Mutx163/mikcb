@@ -44,7 +44,6 @@ import '../utils/home_wallpaper_luminance_share.dart';
 import '../ui/hyperos/day_view_expand_motion.dart';
 import '../ui/hyperos/liquid/liquid_glass_surface.dart'
     show LiquidGlassSurface, LiquidGlassSurfaceState;
-import '../widgets/course_grid_surface_host.dart';
 import '../widgets/home_menu_catalog.dart';
 import '../widgets/timetable_home_preview_scope.dart';
 import '../widgets/timetable/timetable_back_to_today_button.dart';
@@ -63,6 +62,7 @@ import '../widgets/timetable/day_view/day_view_exam_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_ink_style.dart';
 import '../widgets/timetable/day_view/day_view_schedule_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_summary_card.dart';
+import '../widgets/timetable/day_view/day_view_scroll_shell.dart';
 import '../widgets/timetable/day_view/day_view_task_band.dart';
 import '../widgets/timetable/day_view/measured_screen_rect.dart';
 import '../widgets/timetable/about_update_navigation.dart';

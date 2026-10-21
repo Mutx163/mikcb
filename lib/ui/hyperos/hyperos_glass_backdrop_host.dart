@@ -143,49 +143,6 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     false,
   );
 
-  /// 首页被**内嵌页整屏盖住**（玻璃坞内嵌页，如月视图 / 统计页）。
-  ///
-  /// ## 为什么需要这个信号（2026-10-21）
-  ///
-  /// 用户口径：「切进去不闪，切出来到日视图会闪」。
-  ///
-  /// 内嵌页切换**不是路由转场**（`timetable_home_dock_shell` 里写明「点底栏闪现
-  /// 直切，无滑动转场」），所以 [routeTransitionRunning] 全程不变。于是：
-  ///
-  /// * 进内嵌页时，首页被 `Visibility(visible: false)` **停止绘制**，但常驻球的
-  ///   玻璃仍在实时采样 —— 采到的是不再变化的旧画面（进去时看不出来，因为画面
-  ///   本来就没变）；
-  /// * 退出时首页恢复绘制，而球的采样图还是那一张旧图 —— **要等下一次回读才
-  ///   更新**，这一帧就是用户看到的"闪"。
-  ///
-  /// 修法与路由转场完全一致：被盖住期间让玻璃走**预糊壁纸位图**（冻结态），
-  /// 位置与观感都不依赖实时采样，恢复绘制时第一帧就是对的。
-  static final ValueNotifier<bool> homeScreenCovered = ValueNotifier<bool>(
-    false,
-  );
-
-  /// 玻璃是否应当处于**冻结态**（路由转场中 或 首页被内嵌页盖住）。
-  ///
-  /// 两个来源取并集：它们对玻璃是同一件事（"现在别依赖实时采样"），
-  /// 分成两个 notifier 只是为了让设置方互不干扰。
-  static final ValueNotifier<bool> glassFrozen = ValueNotifier<bool>(false);
-
-  /// 设置"首页被内嵌页盖住"，并重算 [glassFrozen]。
-  static void setHomeScreenCovered(bool covered) {
-    if (homeScreenCovered.value == covered) {
-      return;
-    }
-    homeScreenCovered.value = covered;
-    _recomputeGlassFrozen();
-  }
-
-  static void _recomputeGlassFrozen() {
-    final frozen = routeTransitionRunning.value || homeScreenCovered.value;
-    if (glassFrozen.value != frozen) {
-      glassFrozen.value = frozen;
-    }
-  }
-
   /// 页面转场期间**暂停录帧**：玻璃继续用最后一帧的采样图画，不再每帧
   /// `toImageSync` 回读。
   ///
@@ -208,9 +165,6 @@ class HyperosGlassBackdropController extends ChangeNotifier {
     // 派生成「有没有转场在跑」，不是把最后一个 bool 直接写进去：重叠转场时
     // 先结束的那一条不该把闸门关掉（`_routeTransitionsRunning` 是计数）。
     routeTransitionRunning.value = _routeTransitionsRunning > 0;
-    // 转场信号也要重算聚合闸门：玻璃表面监听的是 [glassFrozen]，
-    // 只改 routeTransitionRunning 不会让它们知道该冻结了。
-    _recomputeGlassFrozen();
     return _routeTransitionsRunning;
   }
 

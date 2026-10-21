@@ -309,39 +309,44 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final isActivePage =
         target.week == _selectedWeekForDayView &&
         target.dayOfWeek == _selectedDayOfWeek;
-    return Column(
-      key: ValueKey('day-content-${target.week}-${target.dayOfWeek}'),
-      children: [
-        // Keep original side inset / card width; only the
-        // surface material matches chrome glass (below).
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: _buildDayViewSummary(
-            key: isActivePage ? const ValueKey('day-view-summary') : null,
-            provider: provider,
-            settings: settings,
-            week: target.week,
-            dayOfWeek: target.dayOfWeek,
-            selectedDate: selectedDate,
-            currentCourse: currentCourse,
-            courseItems: displayItems,
-            scheduleItems: scheduleItems,
-            agendaItems: agendaItems,
-            taskCount: _buildDayTaskBand(provider, settings, target.week, target.dayOfWeek)
-                .actionableCount,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: _buildExpandedDayColumnView(
-            key: ValueKey('day-column-${target.week}-${target.dayOfWeek}'),
-            provider: provider,
-            settings: settings,
-            week: target.week,
-            dayOfWeek: target.dayOfWeek,
-          ),
-        ),
-      ],
+    // 摘要卡吸顶 + 内容同一条滚动体（见 [TimetableDayViewScrollShell]）。
+    final scrollKey = _TimetableScreenState._dayAgendaScrollKey(
+      target.week,
+      target.dayOfWeek,
+    );
+    return TimetableDayViewScrollShell(
+      contentKey: ValueKey('day-content-${target.week}-${target.dayOfWeek}'),
+      columnKey: ValueKey('day-column-${target.week}-${target.dayOfWeek}'),
+      scrollKey: scrollKey,
+      controller: _previewControllerFor(scrollKey),
+      physics: _homePullVerticalPhysics,
+      settings: settings,
+      reportScroll: _reportHomeScroll,
+      summary: _buildDayViewSummary(
+        key: isActivePage ? const ValueKey('day-view-summary') : null,
+        provider: provider,
+        settings: settings,
+        week: target.week,
+        dayOfWeek: target.dayOfWeek,
+        selectedDate: selectedDate,
+        currentCourse: currentCourse,
+        courseItems: displayItems,
+        scheduleItems: scheduleItems,
+        agendaItems: agendaItems,
+        taskCount:
+            _buildDayTaskBand(
+              provider,
+              settings,
+              target.week,
+              target.dayOfWeek,
+            ).actionableCount,
+      ),
+      slivers: _buildDayAgendaSlivers(
+        provider: provider,
+        settings: settings,
+        week: target.week,
+        dayOfWeek: target.dayOfWeek,
+      ),
     );
   }
 
@@ -598,8 +603,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return '$formattedDate ${_weekdayLabel(context, dayOfWeek)}';
   }
 
-  Widget _buildExpandedDayColumnView({
-    required Key key,
+  /// 当日议程的 sliver 列表（2026-10-21 由 `_buildExpandedDayColumnView` 改来）。
+  /// 不再自带滚动体，滚动 key/controller/physics 上移到调用方（见
+  /// [TimetableDayViewScrollShell]）。
+  List<Widget> _buildDayAgendaSlivers({
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -660,85 +667,77 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     // 就是"没课那天滑过去，加载一结束'暂无课程'往上跳一下"
     // （2026-09-29 真机反馈）。所以空态只留药丸避让——与它是否今天无关。
     final emptyBottomContentInset = 8 + dockScrollAvoidance;
-    // 预览那份要按宿主给的滚动位置起步（见 [_previewControllerFor]）。
-    final scrollKey = _TimetableScreenState._dayAgendaScrollKey(week, dayOfWeek);
-    final scrollController = _previewControllerFor(scrollKey);
-    if (agendaItems.isEmpty && taskBand.isEmpty) {
-      // 空白天同样要能下拉导入：空态本身不是滚动体，外面套一层
-      // AlwaysScrollable 的滚动视图，下拉才有着力点（有课那天走的是
-      // ListView，两条路都必须能触发）。physics 与有课那天同源，
-      // 「下拉开着时冻结」的手感一致。
-      return _reportHomeScroll(
-        scrollKey,
-        CustomScrollView(
-          key: key,
-          controller: scrollController,
-          physics: _homePullVerticalPhysics,
-          slivers: [
-            // SliverFillRemaining 让空态仍占满视口（内部 Center 照旧居中），
-            // 底距留在 child 的 Padding 上——与改动前"Expanded + Padding"的
-            // 布局逐像素一致，坞避让那条既有断言（找 bottom = 8 + 药丸占用
-            // 的 Padding）也照旧成立。
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  14,
-                  0,
-                  14,
-                  emptyBottomContentInset,
-                ),
-                child: _buildDayViewEmptyColumn(week: week, settings: settings),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
     // 待办带是第 0 项、跟着滚走（钉住会让一天八条作业永久吃掉半屏）；为空时整条不渲染。
     final bandCount = taskBand.isEmpty ? 0 : 1;
-    final agendaList = ListView.separated(
-      key: PageStorageKey<String>(scrollKey),
-      controller: scrollController,
-      padding: EdgeInsets.fromLTRB(14, 0, 14, listBottomContentInset),
-      // 下拉开着时冻结纵向滚动（见 TimetableHomePullFreezeScrollPhysics）：
-      // 回拉取消只收下拉，不把列表一起滚走。
-      physics: _homePullVerticalPhysics,
-      itemCount: bandCount + agendaItems.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, itemIndex) {
-        if (bandCount == 1 && itemIndex == 0) {
-          return MeasuredScreenRect(
-            builder: (context, rect) => DayViewTaskBand(
-              data: taskBand,
-              settings: settings,
-              inkEnvironment: _dayViewInkEnvironment(settings),
-              cardRect: rect,
-              radius: _TimetableScreenState._dayViewCardRadius,
-              courseResolver: provider.getCourseForTask,
-              onToggleCompleted: (task) => toggleTaskFromBand(
-                  context, provider.toggleTaskCompleted, task.id),
-              taskFormBuilder: (task) =>
-                  timetableFormPages.taskForm(task: task),
-            ),
-          );
-        }
-        final item = agendaItems[itemIndex - bandCount];
-        return MeasuredScreenRect(
-          builder: (context, rect) => _buildDayAgendaEntry(
-            provider: provider,
-            week: week,
-            settings: settings,
-            item: item,
-            cardRect: rect,
+    if (agendaItems.isEmpty && bandCount == 0) {
+      // 空白天也要能下拉导入；占摘要卡之后的剩余视口 ⇒「暂无课程」仍居中。
+      return <Widget>[
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14, 0, 14, emptyBottomContentInset),
+            child: _buildDayViewEmptyColumn(week: week, settings: settings),
           ),
-        );
-      },
-    );
-    return CourseGridSurfaceHost(
-      settings: settings,
-      child: _reportHomeScroll(scrollKey, agendaList),
-    );
+        ),
+      ];
+    }
+    return <Widget>[
+      SliverPadding(
+        // 左右 14 与改前一致；底距 = 玻璃坞 + 回今日浮钮的滚动余量。
+        padding: EdgeInsets.fromLTRB(14, 0, 14, listBottomContentInset),
+        sliver: SliverList.separated(
+          itemCount: bandCount + agendaItems.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
+          itemBuilder: (context, itemIndex) {
+            if (bandCount == 1 && itemIndex == 0) {
+              return MeasuredScreenRect(
+                builder: (context, rect) => DayViewTaskBand(
+                  data: taskBand,
+                  settings: settings,
+                  inkEnvironment: _dayViewInkEnvironment(settings),
+                  cardRect: rect,
+                  radius: _TimetableScreenState._dayViewCardRadius,
+                  courseResolver: provider.getCourseForTask,
+                  onToggleCompleted: (task) => toggleTaskFromBand(
+                      context, provider.toggleTaskCompleted, task.id),
+                  taskFormBuilder: (task) =>
+                      timetableFormPages.taskForm(task: task),
+                ),
+              );
+            }
+            final item = agendaItems[itemIndex - bandCount];
+            final entry = MeasuredScreenRect(
+              builder: (context, rect) => _buildDayAgendaEntry(
+                provider: provider,
+                week: week,
+                settings: settings,
+                item: item,
+                cardRect: rect,
+              ),
+            );
+            // 飞行终点：议程卡真实屏幕矩形（不量化、只量一次；量化过的终点会让卡片落地偏几像素）
+            final courseId = item.courseItem?.course.id;
+            return courseId == null
+                ? entry
+                : MeasureFlightTarget(
+                    onMeasured: (r) {
+                      // 写缓存本身不触发重建，而转场壳是在 build 期间读它的
+                      // —— 不主动标记一次，终点永远不会生效（飞行卡不出现）。
+                      // 这里已经过了首帧多个帧，且只在「真正拿到新值」时置脏，
+                      // 不会变成每帧重建。
+                      final changed = _flightTargets.record(courseId, r);
+                      if (changed && mounted) {
+                        // extension 里不能直接 setState（protected），走宿主的
+                        // 端口（`setStateMutations` 内部就是判 mounted 后 setState）。
+                        rebuild();
+                      }
+                    },
+                    child: entry,
+                  );
+          },
+        ),
+      ),
+    ];
   }
 
   Widget _buildDayViewEmptyColumn({
@@ -756,6 +755,38 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         inkEnvironment: _dayViewInkEnvironment(settings),
       ),
     );
+  }
+
+  /// 飞行卡（转场中那一张）：**颜色与材质与议程卡同源**。
+  ///
+  /// 用户 2026-10-21 报：「动画过程中的卡片颜色和课程卡片颜色不一样，材质不一样」。
+  /// 根因是飞行卡另走了一条取色路径（`resolveDisplayCourseColor`）并强制实体材质，
+  /// 而议程卡走的是 `resolveDayAgendaPalette` + 用户设置的材质档。
+  ///
+  /// 这里改成与议程卡**同一个** `resolveDayAgendaPalette`：飞行终点就是议程卡，
+  /// 同源才能读成「同一张卡在长大」。
+  Widget _buildFlightCardFor(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    List<Course> dayCourses,
+    String courseId,
+    double t,
+  ) {
+    final course = dayCourses.where((c) => c.id == courseId).firstOrNull;
+    if (course == null) {
+      return const SizedBox.shrink();
+    }
+    final item = DayCourseDisplayItem(course: course);
+    final palette = resolveDayAgendaPalette(
+      _colorFromHex(resolveDisplayCourseColor(item, settings: settings,
+            coupleColorForKind: provider.coupleColorForKind) ?? course.color, Theme.of(context).colorScheme.primary),
+      foregroundHex: course.textColor,
+      settings: settings,
+      env: _dayViewInkEnvironment(settings),
+      washAlpha: dayAgendaWashAlpha(context, settings),
+    );
+    return FlightCardBody(course: course, settings: settings, progress: t,
+      color: palette.fillColor);
   }
 
   /// 日视图议程条目路由：考试 / 日程 / 课程三种卡片的数据组装与动作接线。

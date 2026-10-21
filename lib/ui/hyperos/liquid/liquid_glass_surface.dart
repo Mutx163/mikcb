@@ -554,10 +554,7 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
     // 的话，闸门落下时没有任何东西触发这颗钮重建，它会一直停在冻结位图上
     // （2026-10-19 真机：日视图「回今日」从菜单退回后变成一块模糊）。
     return ValueListenableBuilder<bool>(
-      // 监听**聚合信号**（路由转场 ∪ 首页被内嵌页盖住）：两者对玻璃是同一件事
-      // ——"现在别依赖实时采样"。只监听路由转场的话，内嵌页（月视图）切换这条
-      // 路根本不会触发，退出时球会闪一下（2026-10-21 实测：进去不闪、出来闪）。
-      valueListenable: HyperosGlassBackdropController.glassFrozen,
+      valueListenable: HyperosGlassBackdropController.routeTransitionRunning,
       builder: (context, running, _) {
         if (!running ||
             !LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
