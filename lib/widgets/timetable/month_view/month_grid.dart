@@ -63,8 +63,12 @@ class MonthGrid extends StatelessWidget {
   /// 行高舒适上限：屏幕很高时别把格子拉成大方块（一行 7 格，拉太高显空）。
   static const double maxRowHeight = 78;
 
-  /// 周次行标列宽（够放「第12周」这类窄排版）。
-  static const double weekLabelWidth = 30;
+  /// 周次行标列宽。
+  ///
+  /// 原 30 放不下「第 12 周」：截图里那三个字被挤到换行、只露出半截
+  /// （用户 2026-10-21 反馈「第 5 周 / 第 6 周」看着像被裁掉）。34 是
+  /// 9px 字号下「第 12 周」一行排得下的最小宽度。
+  static const double weekLabelWidth = 34;
 
   /// 一行几天。
   static const int daysPerRow = 7;

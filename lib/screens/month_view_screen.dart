@@ -369,7 +369,14 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                   context: context,
                   provider: provider,
                   settings: settings,
-                  ink: ink,
+                  // ⚠️ 这里**不能**传上面那个按壁纸亮度判出来的 `ink`。
+                  //
+                  // 那个 ink 回答的是「字压在**壁纸**上该用黑还是白」。面板是
+                  // 一块**不透明白底**，壁纸在它下面根本看不见 —— 拿壁纸的
+                  // 明暗去判面板里的字，暗壁纸会算出白字，于是「10月22日」
+                  // 这行标题白字压白底、直接消失（用户 2026-10-21 截图实测）。
+                  //
+                  // 面板内的字一律跟主题走（`colorScheme.onSurface`）。
                   now: now,
                   selectedInThisMonth: selectedInThisMonth,
                   selected: selected,
@@ -474,11 +481,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     required BuildContext context,
     required TimetableProvider provider,
     required TimetableSettings settings,
-    required Color ink,
     required DateTime now,
     required bool selectedInThisMonth,
     required DateTime? selected,
   }) {
+    // 面板是实底白卡，字跟**主题**走（不跟壁纸）。
+    // 详见调用处那段注释：拿壁纸明暗判面板内的字，暗壁纸会判出白字 → 白底上看不见。
+    final ink = Theme.of(context).colorScheme.onSurface;
     final rows = selectedInThisMonth && selected != null
         ? MonthViewLogic.buildDayAgenda(
             date: selected,
