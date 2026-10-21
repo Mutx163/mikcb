@@ -129,6 +129,12 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 视口先喂给采样器：采样键里带视口段，与首页 chrome 那份**逐字相同**才
+    // 可能命中共享缓存（命中 = 首帧就有正确极性 = 不闪）。
+    final size = MediaQuery.maybeSizeOf(context);
+    if (size != null && size.width > 0 && size.height > 0) {
+      _luminance.setViewport(size);
+    }
     // 键没变时是一次字符串比较，可以放心每帧依赖变更都调。
     _luminance.pull(context.read<TimetableProvider>().settings, () {
       if (mounted) {

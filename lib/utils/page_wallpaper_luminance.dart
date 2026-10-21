@@ -24,6 +24,8 @@ import 'package:flutter/widgets.dart';
 
 import '../models/timetable_settings.dart';
 import 'home_page_background.dart';
+import 'home_startup_visual_primer.dart';
+import 'home_wallpaper_luminance_share.dart';
 
 /// 独立页面的壁纸亮度快照（不可变；变化时由页面 setState 换一份新的）。
 @immutable
@@ -62,6 +64,20 @@ class PageWallpaperLuminanceSampler {
   String? _inFlight;
   bool _disposed = false;
 
+  /// 采样视口（逻辑像素）。null = 未知，键里记成「整图采样」。
+  ///
+  /// 只影响采样键的构成，不参与亮度计算 —— 由页面在拿到约束后喂进来，
+  /// 让键与首页 chrome 那份**逐字相同**，共享缓存才可能命中。
+  Size? _viewportSize;
+
+  /// 页面拿到视口后喂一次（键会因视口变化而重算一次，命中缓存则零延迟）。
+  void setViewport(Size size) {
+    if (_viewportSize == size) {
+      return;
+    }
+    _viewportSize = size;
+  }
+
   /// 最近一次采到的读数；null = 没有壁纸 / 还没采到。
   PageWallpaperLuminance? get value => _value;
 
@@ -83,6 +99,33 @@ class PageWallpaperLuminanceSampler {
     }
     final key = _keyFor(settings, path);
     if (key == _value?.key || key == _inFlight) {
+      return;
+    }
+    // ⚠️ **先用共享缓存把首帧填上**，再去异步采样。
+    //
+    // 不这么做的话，进入页面时 `_value` 是 null，所有判墨都回落到主题色；
+    // 等解码完（几十到几百毫秒）才有正确极性 —— 用户看到的就是「字先闪黑
+    // 再闪白」（2026-10-21 报的就是这个）。
+    //
+    // 首页早在 `WallpaperLuminanceController` 里踩过同一个坑（2026-10-19
+    // 「进设置时星期栏与标题闪白再闪回来」），解法就是这份共享登记：
+    // 首页已经采过的读数直接拿来用，键不命中才回落到异步采样。
+    //
+    // 三级取用，命中任意一级都不必等解码：
+    //   1. 共享登记（首页/本页上一次采到的）；
+    //   2. 启动预热（`HomeStartupVisualPrimer` 在冷启动采样并存下的）；
+    //   3. 都没有才真的去异步采样 —— 这一条才会闪，但它只发生在
+    //      「刚装好 App、还没进过首页」这种极端场景。
+    final shared =
+        HomeWallpaperLuminanceShare.resolve(key) ??
+        HomeStartupVisualPrimer.seededBandsFor(path);
+    if (shared != null) {
+      _value = PageWallpaperLuminance(
+        key: key,
+        top: shared.top,
+        body: shared.body,
+      );
+      onChanged();
       return;
     }
     _inFlight = key;
@@ -111,6 +154,9 @@ class PageWallpaperLuminanceSampler {
         top: bands.top,
         body: bands.body,
       );
+      // 登记到共享缓存：下次进这个页面（或首页 chrome）可以直接用，
+      // 不必再等一次解码 —— 这是消除"闪一次"的另一半。
+      HomeWallpaperLuminanceShare.publish(key, bands);
       onChanged();
     } catch (_) {
       if (_disposed || _inFlight != key) {
@@ -127,8 +173,17 @@ class PageWallpaperLuminanceSampler {
   /// （进出页面时状态栏 inset 变化）对三带平均亮度的影响可以忽略
   /// —— 这也是 `HomeWallpaperLuminanceShare.resolve` 忽略视口的同一条理由。
   String _keyFor(TimetableSettings settings, String path) {
-    return '$path|${settings.homePageWallpaperAlignX}|'
-        '${settings.homePageWallpaperAlignY}|${settings.homePageWallpaperScale}';
+    // ⚠️ 必须用**官方键格式**（`路径|视口|alignX|alignY|scale`），
+    // 不能自己拼一个少一维的：`HomeWallpaperLuminanceShare` 按位置挖掉
+    // 第 2 段（视口）来做"忽略视口"的兜底匹配，少一维会把 alignX 当视口挖掉，
+    // 于是缓存永远不命中、首帧照样回落主题色（闪黑闪白照旧）。
+    return homePageBackdropSampleKey(
+      path: path,
+      viewportKey: homePageBackdropViewportKey(_viewportSize),
+      alignX: settings.homePageWallpaperAlignX,
+      alignY: settings.homePageWallpaperAlignY,
+      scale: settings.homePageWallpaperScale,
+    );
   }
 
   void dispose() {
