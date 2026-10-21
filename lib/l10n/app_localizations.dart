@@ -20508,6 +20508,36 @@ abstract class AppLocalizations {
   /// **'这个月还没有安排'**
   String get monthViewEmptyMonthTitle;
 
+  /// No description provided for @monthOverviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月概览'**
+  String get monthOverviewTitle;
+
+  /// No description provided for @monthOverviewDaysTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月有安排的日子'**
+  String get monthOverviewDaysTitle;
+
+  /// No description provided for @monthOverviewScheduledDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'有安排 {count} 天'**
+  String monthOverviewScheduledDays(int count);
+
+  /// No description provided for @monthViewEmptyMonthHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'先加一节课，日历上就会显示圆点'**
+  String get monthViewEmptyMonthHint;
+
+  /// No description provided for @monthViewAgendaAddCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'加课'**
+  String get monthViewAgendaAddCourse;
+
   /// No description provided for @monthViewHeaderTitle.
   ///
   /// In zh, this message translates to:
@@ -20543,12 +20573,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{count}个日程'**
   String monthViewScheduleCountSemantics(int count);
-
-  /// No description provided for @monthViewTapDayHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'点任意一天查看安排'**
-  String get monthViewTapDayHint;
 
   /// No description provided for @sharedInfoInlineHint.
   ///

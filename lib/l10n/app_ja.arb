@@ -6613,6 +6613,11 @@
   "monthViewAdjustedWorkdayBadge": "出",
   "monthViewAgendaEmpty": "予定はありません",
   "monthViewEmptyMonthTitle": "この月は予定がありません",
+  "monthOverviewTitle": "今月のまとめ",
+  "monthOverviewDaysTitle": "予定のある日",
+  "monthOverviewScheduledDays": "予定のある日 {count} 日",
+  "monthViewEmptyMonthHint": "授業を追加すると、カレンダーに点が表示されます",
+  "monthViewAgendaAddCourse": "授業を追加",
   "monthViewHeaderTitle": "{year}年{month}月",
   "@monthViewHeaderTitle": {
     "placeholders": {
@@ -6653,7 +6658,6 @@
     }
   },
   "sharedInfoInlineHint": "略称・色・性質・概要は同名の排課に同期されます",
-  "monthViewTapDayHint": "日付をタップして予定を表示",
   "pickupCodeTitle": "受け取りコード",
   "pickupCodeEntryTitle": "受け取りコード",
   "pickupCodeLaunchFailed": "「{name}」を開けません：{reason}",

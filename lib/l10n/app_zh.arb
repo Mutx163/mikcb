@@ -6884,6 +6884,18 @@
   "monthViewAdjustedWorkdayBadge": "班",
   "monthViewAgendaEmpty": "这天没有安排",
   "monthViewEmptyMonthTitle": "这个月还没有安排",
+  "monthOverviewTitle": "本月概览",
+  "monthOverviewDaysTitle": "本月有安排的日子",
+  "monthOverviewScheduledDays": "有安排 {count} 天",
+  "monthViewEmptyMonthHint": "先加一节课，日历上就会显示圆点",
+  "monthViewAgendaAddCourse": "加课",
+  "@monthOverviewScheduledDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "monthViewHeaderTitle": "{year}年{month}月",
   "@monthViewHeaderTitle": {
     "placeholders": {
@@ -6941,7 +6953,6 @@
       }
     }
   },
-  "monthViewTapDayHint": "点任意一天查看安排",
   "sharedInfoInlineHint": "简称、颜色、性质、简介同步给同名排课",
   "pickupCodeTitle": "取件码",
   "pickupCodeEntryTitle": "取件码",

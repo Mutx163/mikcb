@@ -429,4 +429,185 @@ void main() {
       expect(rows[1].clockText, '14:00');
     });
   });
+
+  // ── 月度概览（信息面板顶部那三个数字 + 「有安排 N 天」）──
+  //
+  // 期望值全部人推：拿 2026 年 10 月做样本（10/1 周四、网格 09-28 起）。
+  // 关键是**补位格不算本月** —— 那正是这个字段存在的理由，如果实现按 42 格
+  // 累加，9 月末那几天的课就会跑进 10 月的数字里。
+  group('buildMonthGrid：本月概览', () {
+    test('只累本月格子：9 月末补位格的课不算进 10 月', () {
+      // 学期 2026-09-07 开学 → 09-28 是第 4 周、10-05 是第 5 周。
+      // 给周四上课：09-28 之后最近的周四是 10-01（本月）与 10-08（本月），
+      // 而补位区的 09-28 是周一、10-02 是周五 —— 挑周一的课去撞补位格。
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: d(2026, 10, 15),
+        courses: [course(dayOfWeek: 1)],
+        scheduleItems: const [],
+        exams: const [],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      // 2026-10 的周一：10/5、10/12、10/19、10/26 —— 共 4 次。
+      // 补位区里的 09-28、11-02、11-09 都是周一，但属于 9 月 / 11 月，不计。
+      expect(grid.overview.courseCount, 4);
+      expect(grid.overview.scheduledDayCount, 4);
+    });
+
+    test('考试与日程进同一个概览，三天日程算 3 个实例', () {
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: d(2026, 10, 15),
+        courses: const [],
+        scheduleItems: [
+          schedule(startDate: d(2026, 10, 19), endDate: d(2026, 10, 21)),
+        ],
+        exams: [exam(dateTime: d(2026, 10, 22))],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      expect(grid.overview.courseCount, 0);
+      expect(grid.overview.scheduleCount, 3);
+      expect(grid.overview.examCount, 1);
+      // 有安排的日子 = 10/19、10/20、10/21、10/22 → 4 天。
+      expect(grid.overview.scheduledDayCount, 4);
+      expect(grid.overview.isEmpty, isFalse);
+    });
+
+    test('整月什么都没有：isEmpty 为真、四项全 0', () {
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: d(2026, 10, 15),
+        courses: const [],
+        scheduleItems: const [],
+        exams: const [],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      expect(grid.overview.isEmpty, isTrue);
+      expect(grid.overview.courseCount, 0);
+      expect(grid.overview.examCount, 0);
+      expect(grid.overview.scheduleCount, 0);
+      expect(grid.overview.scheduledDayCount, 0);
+    });
+
+    test('过期考试不计入概览（与格子圆点同口径）', () {
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: DateTime(2026, 10, 20, 12), // 20 号中午
+        courses: const [],
+        scheduleItems: const [],
+        exams: [
+          exam(dateTime: d(2026, 10, 20)), // 08:30-10:30，20 号中午已结束
+          exam(dateTime: d(2026, 10, 25)), // 未到期
+        ],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      expect(grid.overview.examCount, 1);
+      expect(grid.overview.scheduledDayCount, 1);
+    });
+  });
+
+  // ── 「本月有安排的日子」的排序（信息面板那一列预览卡）──
+  group('scheduledDaysOfMonth：从今天往后排', () {
+    MonthGridData october() => MonthViewLogic.buildMonthGrid(
+      year: 2026,
+      month: 10,
+      now: d(2026, 10, 15),
+      courses: [
+        course(dayOfWeek: 1), // 10/5、10/12、10/19、10/26
+        course(dayOfWeek: 3), // 10/7、10/14、10/21、10/28
+      ],
+      scheduleItems: const [],
+      exams: const [],
+      settings: settingsWith(semesterStart: d(2026, 9, 7)),
+      holidayData: null,
+    );
+
+    test('站在月中：今天及以后先给，过去的日子接到后面', () {
+      final days = MonthViewLogic.scheduledDaysOfMonth(
+        october(),
+        today: d(2026, 10, 15),
+      );
+      // 本月有安排的日子（人推）：
+      // 10/5、10/7、10/12、10/14、10/19、10/21、10/26、10/28 —— 共 8 天。
+      expect(days, hasLength(8));
+      // 10/15 之后最近的是 10/19（周一），所以它排第一。
+      expect(days.first.date, d(2026, 10, 19));
+      // 最后一个是 10/14（今天之前最晚的那天）—— 过去的日子排在尾部。
+      expect(days.last.date, d(2026, 10, 14));
+      // 顺序整体递增（跨过月首那次回绕除外）：10/19 < 10/21 < 10/26 < 10/28。
+      expect(days[0].date, d(2026, 10, 19));
+      expect(days[1].date, d(2026, 10, 21));
+      expect(days[2].date, d(2026, 10, 26));
+      expect(days[3].date, d(2026, 10, 28));
+      // 回绕到月首：10/5、10/7、10/12、10/14。
+      expect(days[4].date, d(2026, 10, 5));
+      expect(days[7].date, d(2026, 10, 14));
+    });
+
+    test('今天本身有安排：它算「不早于今天」，排第一', () {
+      final days = MonthViewLogic.scheduledDaysOfMonth(
+        october(),
+        today: d(2026, 10, 19),
+      );
+      expect(days.first.date, d(2026, 10, 19));
+      expect(days, hasLength(8));
+    });
+
+    test('站在月末（本月剩下的日子都空）：从月首重排，不留空白', () {
+      final days = MonthViewLogic.scheduledDaysOfMonth(
+        october(),
+        today: d(2026, 10, 30),
+      );
+      // 10/30 之后本月没有安排 → 回绕，第一张是 10/5。
+      expect(days.first.date, d(2026, 10, 5));
+      expect(days, hasLength(8));
+    });
+
+    test('补位格永不入选（它的日子属于隔壁月）', () {
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: d(2026, 10, 15),
+        courses: [course(dayOfWeek: 1)], // 补位区 09-28 / 11-02 / 11-09 也是周一
+        scheduleItems: const [],
+        exams: const [],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      final days = MonthViewLogic.scheduledDaysOfMonth(
+        grid,
+        today: d(2026, 10, 15),
+      );
+      for (final day in days) {
+        expect(day.isOutsideMonth, isFalse, reason: '${day.date} 是补位格');
+        expect(day.date.month, 10);
+      }
+      expect(days, hasLength(4));
+    });
+
+    test('整月空：返回空表（面板据此切空态卡）', () {
+      final grid = MonthViewLogic.buildMonthGrid(
+        year: 2026,
+        month: 10,
+        now: d(2026, 10, 15),
+        courses: const [],
+        scheduleItems: const [],
+        exams: const [],
+        settings: settingsWith(semesterStart: d(2026, 9, 7)),
+        holidayData: null,
+      );
+      expect(
+        MonthViewLogic.scheduledDaysOfMonth(grid, today: d(2026, 10, 15)),
+        isEmpty,
+      );
+    });
+  });
 }

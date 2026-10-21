@@ -11917,6 +11917,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthViewEmptyMonthTitle => 'Nothing scheduled this month';
 
   @override
+  String get monthOverviewTitle => 'Month at a glance';
+
+  @override
+  String get monthOverviewDaysTitle => 'Days with plans';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '$count days with plans';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => 'Add a class and its dots appear here';
+
+  @override
+  String get monthViewAgendaAddCourse => 'Add class';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year/$month';
   }
@@ -11945,9 +11962,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count schedules';
   }
-
-  @override
-  String get monthViewTapDayHint => 'Tap a day to see its schedule';
 
   @override
   String get sharedInfoInlineHint =>

@@ -6777,6 +6777,11 @@
   "monthViewAdjustedWorkdayBadge": "Work",
   "monthViewAgendaEmpty": "Nothing scheduled",
   "monthViewEmptyMonthTitle": "Nothing scheduled this month",
+  "monthOverviewTitle": "Month at a glance",
+  "monthOverviewDaysTitle": "Days with plans",
+  "monthOverviewScheduledDays": "{count} days with plans",
+  "monthViewEmptyMonthHint": "Add a class and its dots appear here",
+  "monthViewAgendaAddCourse": "Add class",
   "monthViewHeaderTitle": "{year}/{month}",
   "@monthViewHeaderTitle": {
     "placeholders": {
@@ -6834,7 +6839,6 @@
       }
     }
   },
-  "monthViewTapDayHint": "Tap a day to see its schedule",
   "sharedInfoInlineHint": "Short name, colour, nature and intro sync to classes with the same name",
   "pickupCodeTitle": "Pickup code",
   "pickupCodeEntryTitle": "Pickup code",

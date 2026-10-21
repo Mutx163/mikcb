@@ -11251,6 +11251,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get monthViewEmptyMonthTitle => '这个月还没有安排';
 
   @override
+  String get monthOverviewTitle => '本月概览';
+
+  @override
+  String get monthOverviewDaysTitle => '本月有安排的日子';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '有安排 $count 天';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => '先加一节课，日历上就会显示圆点';
+
+  @override
+  String get monthViewAgendaAddCourse => '加课';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year年$month月';
   }
@@ -11279,9 +11296,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count个日程';
   }
-
-  @override
-  String get monthViewTapDayHint => '点任意一天查看安排';
 
   @override
   String get sharedInfoInlineHint => '简称、颜色、性质、简介同步给同名排课';
@@ -22684,6 +22698,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get monthViewEmptyMonthTitle => '這個月還沒有安排';
 
   @override
+  String get monthOverviewTitle => '本月概覽';
+
+  @override
+  String get monthOverviewDaysTitle => '本月有安排的日子';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '有安排 $count 天';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => '先加一節課，日曆上就會顯示圓點';
+
+  @override
+  String get monthViewAgendaAddCourse => '加課';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year年$month月';
   }
@@ -22712,9 +22743,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String monthViewScheduleCountSemantics(int count) {
     return '$count個日程';
   }
-
-  @override
-  String get monthViewTapDayHint => '點任意一天查看安排';
 
   @override
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';
@@ -34118,6 +34146,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get monthViewEmptyMonthTitle => '這個月還沒有安排';
 
   @override
+  String get monthOverviewTitle => '本月概覽';
+
+  @override
+  String get monthOverviewDaysTitle => '本月有安排的日子';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '有安排 $count 天';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => '先加一節課，日曆上就會顯示圓點';
+
+  @override
+  String get monthViewAgendaAddCourse => '加課';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year年$month月';
   }
@@ -34146,9 +34191,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String monthViewScheduleCountSemantics(int count) {
     return '$count個日程';
   }
-
-  @override
-  String get monthViewTapDayHint => '點任意一天查看安排';
 
   @override
   String get sharedInfoInlineHint => '簡稱、顏色、性質、簡介同步給同名排課';

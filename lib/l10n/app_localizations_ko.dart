@@ -11620,6 +11620,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get monthViewEmptyMonthTitle => '이번 달에 일정이 없습니다';
 
   @override
+  String get monthOverviewTitle => '이번 달 요약';
+
+  @override
+  String get monthOverviewDaysTitle => '일정 있는 날';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '일정 있는 날 $count일';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => '수업을 추가하면 달력에 점이 표시됩니다';
+
+  @override
+  String get monthViewAgendaAddCourse => '수업 추가';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year년 $month월';
   }
@@ -11648,9 +11665,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count개 일정';
   }
-
-  @override
-  String get monthViewTapDayHint => '날짜를 눌러 일정 보기';
 
   @override
   String get sharedInfoInlineHint => '약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다';

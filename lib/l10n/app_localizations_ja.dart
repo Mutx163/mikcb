@@ -11576,6 +11576,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get monthViewEmptyMonthTitle => 'この月は予定がありません';
 
   @override
+  String get monthOverviewTitle => '今月のまとめ';
+
+  @override
+  String get monthOverviewDaysTitle => '予定のある日';
+
+  @override
+  String monthOverviewScheduledDays(int count) {
+    return '予定のある日 $count 日';
+  }
+
+  @override
+  String get monthViewEmptyMonthHint => '授業を追加すると、カレンダーに点が表示されます';
+
+  @override
+  String get monthViewAgendaAddCourse => '授業を追加';
+
+  @override
   String monthViewHeaderTitle(int year, int month) {
     return '$year年$month月';
   }
@@ -11604,9 +11621,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String monthViewScheduleCountSemantics(int count) {
     return '$count件の予定';
   }
-
-  @override
-  String get monthViewTapDayHint => '日付をタップして予定を表示';
 
   @override
   String get sharedInfoInlineHint => '略称・色・性質・概要は同名の排課に同期されます';

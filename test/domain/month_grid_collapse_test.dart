@@ -443,11 +443,24 @@ void main() {
 
     test('横屏下网格 + 把手 + 面板不许超过可用高度（否则溢出）', () {
       final l = layoutAt(height: 600, keptRow: 0);
-      final used = 8 + l.gridHeight + MonthGridHandle.extent + l.panelHeight;
+      // ⚠️ **不许再单独加那个 8**：`gridHeight` 是从页面顶边量起的，本身已经
+      // 含 8px 上内边距（调用方把它包在 `Padding(top: 8)` 的 `SizedBox` 里）。
+      // 早先这里写成 `8 + gridHeight + ...`，靠 `panelHeight` 当时**多减一次**
+      // topPadding 正好抵消，于是两边一起错、测试却一直是绿的 —— 真机上表现为
+      // 800×600 视口 `RenderFlex overflowed by 8.0 pixels`（2026-10-21 实测，
+      // HEAD 上就有）。现在两处口径已经统一，本式子是**唯一**的占用清单。
+      final used = l.gridHeight + MonthGridHandle.extent + l.panelHeight;
       expect(
         used,
         lessThanOrEqualTo(600 + 0.5),
         reason: '超出可用高度就会 RenderFlex overflow，底部内容被裁',
+      );
+      // 反向钉一下：三者必须**正好铺满**。留白说明哪里算小了（面板被饿着），
+      // 超出说明哪里有重叠。
+      expect(
+        used,
+        closeTo(600, 0.5),
+        reason: '网格 + 把手 + 面板 必须正好等于可用高度',
       );
     });
 

@@ -276,16 +276,21 @@ MonthGridLayout monthGridLayout({
   // [kMonthPanelMinHeight]。否则 panelHeight 会是 0，面板整个不可见
   //（本仓实测 800×600 下就是这样）。
   final rawGridHeight = topPadding + headerHeight + visibleRows * rowHeight;
-  final gridHeight = math.min(
-    rawGridHeight,
-    // 封顶必须与 panelHeight 的算法**同源**：两者都从 availableHeight 里扣
-    // topPadding + handleHeight + kMonthPanelMinHeight。少扣任何一个，
-    // 面板就会比下限还小（本仓实测：漏扣 topPadding ⇒ 面板只剩 88 而非 96）。
-    math.max(
-      topPadding + headerHeight + rowHeight,
-      availableHeight - topPadding - handleHeight - kMonthPanelMinHeight,
-    ),
+  // 封顶上限是「可用高度 − 上内边距 − 把手 − 面板下限」。
+  //
+  // ⚠️ 这里必须**加回** topPadding 才是网格窗口能占的高度：`gridHeight` 含
+  // 上内边距（见上面的注释），而上限是从「不含内边距的空间」推出来的 —— 直接
+  // 拿它当上限，窗口会比真实可用的高度少 8px，于是 MonthGrid 的 6 行内容
+  // 塞不进 380 高的窗口，报 `RenderFlex overflowed by 8.0 pixels`
+  //（2026-10-21 实测：800×600 视口下稳定复现，与面板内容无关，HEAD 上就有）。
+  //
+  // 下限 `topPadding + headerHeight + rowHeight` 保留：再怎么压缩也得放得下
+  // 表头 + 保留的那一行，否则网格本身没意义。
+  final gridHeightCap = math.max(
+    topPadding + headerHeight + rowHeight,
+    availableHeight - handleHeight - kMonthPanelMinHeight,
   );
+  final gridHeight = math.min(rawGridHeight, gridHeightCap);
   final scrollOffset = monthGridScrollOffset(
     keptRow: keptRow,
     rowHeight: rowHeight,
@@ -296,12 +301,18 @@ MonthGridLayout monthGridLayout({
   return MonthGridLayout(
     rowHeight: rowHeight,
     gridHeight: gridHeight,
-    // 面板吃掉剩下的空间，先扣掉**表格把手**那一条与页面**上内边距**：
-    // 两者都长在网格外面，却占同一块可用高度。不扣就会把面板顶出屏幕
-    // （`Expanded` 只吃剩下的空间）。
+    // 面板吃掉剩下的空间，扣掉网格窗口与**表格把手**那一条。
+    //
+    // ⚠️ **不要再减 topPadding**：它已经算在 [gridHeight] 里面了（网格窗口
+    // 从页面顶边量起，含那 8px 上内边距）。少减一次会让面板少 8px、
+    // 网格窗口相对可用高度多出 8px —— 症状正是 800×600 视口下
+    // `RenderFlex overflowed by 8.0 pixels`（2026-10-21 实测，HEAD 上就有）。
+    //
+    // 「谁包含谁」这一条只写在两个地方：上面 gridHeight 的注释与本行 ——
+    // 两处必须同时看才判断得对，所以两边互相点名。
     panelHeight: math.max(
       0,
-      availableHeight - topPadding - gridHeight - handleHeight,
+      availableHeight - gridHeight - handleHeight,
     ),
     scrollOffset: scrollOffset,
     keptRow: keptRow,

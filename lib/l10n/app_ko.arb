@@ -6774,6 +6774,11 @@
   "monthViewAdjustedWorkdayBadge": "출",
   "monthViewAgendaEmpty": "일정이 없습니다",
   "monthViewEmptyMonthTitle": "이번 달에 일정이 없습니다",
+  "monthOverviewTitle": "이번 달 요약",
+  "monthOverviewDaysTitle": "일정 있는 날",
+  "monthOverviewScheduledDays": "일정 있는 날 {count}일",
+  "monthViewEmptyMonthHint": "수업을 추가하면 달력에 점이 표시됩니다",
+  "monthViewAgendaAddCourse": "수업 추가",
   "monthViewHeaderTitle": "{year}년 {month}월",
   "@monthViewHeaderTitle": {
     "placeholders": {
@@ -6831,7 +6836,6 @@
       }
     }
   },
-  "monthViewTapDayHint": "날짜를 눌러 일정 보기",
   "sharedInfoInlineHint": "약칭, 색상, 성격, 소개는 같은 이름의 수업에 동기화됩니다",
   "pickupCodeTitle": "수령 코드",
   "pickupCodeEntryTitle": "수령 코드",

@@ -75,11 +75,18 @@ class MonthGridData {
   /// 聚合时刻的「今天」（dateOnly）。固定 42 格可能不含今天。
   final DateTime today;
 
+  /// 本月概览（只统计落在本月的格子，不含前后月补位）。
+  ///
+  /// 存在这里而不是让渲染层自己 sum：面板要在没选中日期时展示「本月有多少」，
+  /// 而那正是渲染层唯一拿不到数据的时刻 —— 数据必须跟着网格一起来。
+  final MonthOverviewStats overview;
+
   const MonthGridData({
     required this.year,
     required this.month,
     required this.days,
     required this.today,
+    this.overview = MonthOverviewStats.empty,
   });
 
   MonthDayEntry? entryFor(DateTime date) {
@@ -123,6 +130,42 @@ class MonthAgendaRow {
     this.exam,
     this.schedule,
   });
+}
+
+/// 一个月的总量统计（信息面板「本月概览」用）。
+///
+/// 只数**落在本月**的格子（前后月补位格不算），否则 10 月的概览会把 9 月末、
+/// 11 月初那几天的课也算进来 —— 用户看到的数字比实际多。
+class MonthOverviewStats {
+  /// 本月课程**节次**总和（同一天两节课算 2，不是 1 门）。
+  final int courseCount;
+
+  /// 本月未过期考试场次。
+  final int examCount;
+
+  /// 本月日程实例数。
+  final int scheduleCount;
+
+  /// 本月有安排（任意一种）的**天数**。
+  final int scheduledDayCount;
+
+  const MonthOverviewStats({
+    required this.courseCount,
+    required this.examCount,
+    required this.scheduleCount,
+    required this.scheduledDayCount,
+  });
+
+  static const MonthOverviewStats empty = MonthOverviewStats(
+    courseCount: 0,
+    examCount: 0,
+    scheduleCount: 0,
+    scheduledDayCount: 0,
+  );
+
+  /// 整月没有任何安排（面板要切成「这个月还没有安排」那种形态）。
+  bool get isEmpty =>
+      courseCount == 0 && examCount == 0 && scheduleCount == 0;
 }
 
 /// 月视图领域服务（纯 Dart，无 Flutter / IO 依赖）。
@@ -275,6 +318,12 @@ abstract final class MonthViewLogic {
     }
     final today = DateTime(now.year, now.month, now.day);
     final days = <MonthDayEntry>[];
+    // 本月概览的累加器：只累本月格子（补位格属于相邻月，见
+    // [MonthOverviewStats] 的注释）。
+    var overviewCourse = 0;
+    var overviewExam = 0;
+    var overviewSchedule = 0;
+    var overviewDays = 0;
     for (final raw in dates) {
       final date = DateTime(raw.year, raw.month, raw.day);
       final semesterStart = settings.semesterStartDate;
@@ -318,12 +367,64 @@ abstract final class MonthViewLogic {
           isOutsideMonth: date.month != month || date.year != year,
         ),
       );
+      if (date.month == month && date.year == year) {
+        final dayExam = examByDate[date] ?? 0;
+        final daySchedule = scheduleByDate[date] ?? 0;
+        overviewCourse += dayCourses.length;
+        overviewExam += dayExam;
+        overviewSchedule += daySchedule;
+        if (dayCourses.isNotEmpty || dayExam > 0 || daySchedule > 0) {
+          overviewDays++;
+        }
+      }
     }
     return MonthGridData(
       year: year,
       month: month,
       days: List.unmodifiable(days),
       today: today,
+      overview: MonthOverviewStats(
+        courseCount: overviewCourse,
+        examCount: overviewExam,
+        scheduleCount: overviewSchedule,
+        scheduledDayCount: overviewDays,
+      ),
+    );
+  }
+
+  /// 本月**有安排**的日子，按「从今天往后」排（跨过月末就回到月首继续）。
+  ///
+  /// 排序口径是刻意的：面板上这一列是「接下来要忙哪几天」，所以已过去的日子
+  /// 不应该占着最上面那几行 —— 但如果整月剩下的日子都空（比如站在 10-31 看
+  /// 10 月），就从头开始给，宁可显示过去的也不留一片空白。
+  ///
+  /// 只收本月格子（补位格属于相邻月，点它会把用户送到隔壁月去）；「有安排」
+  /// 的口径与 [buildMonthGrid] 里 `scheduledDayCount` 完全一致。
+  static List<MonthDayEntry> scheduledDaysOfMonth(
+    MonthGridData grid, {
+    required DateTime today,
+  }) {
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final busy = [
+      for (final day in grid.days)
+        if (!day.isOutsideMonth &&
+            (day.courseCount > 0 ||
+                day.examCount > 0 ||
+                day.scheduleCount > 0))
+          day,
+    ];
+    if (busy.isEmpty) {
+      return const [];
+    }
+    // 第一个「不早于今天」的日子；找不到（今天之后本月没安排了）就从月首起。
+    final startIndex = busy.indexWhere(
+      (day) => !day.date.isBefore(normalizedToday),
+    );
+    if (startIndex <= 0) {
+      return List<MonthDayEntry>.unmodifiable(busy);
+    }
+    return List<MonthDayEntry>.unmodifiable(
+      busy.sublist(startIndex) + busy.sublist(0, startIndex),
     );
   }
 

@@ -32,6 +32,7 @@ class MonthDayAgenda extends StatelessWidget {
     required this.onRowTap,
     this.radius = 20,
     this.inkColor,
+    this.onAddCourse,
   });
 
   final DateTime date;
@@ -42,6 +43,12 @@ class MonthDayAgenda extends StatelessWidget {
 
   /// 壁纸上的判定墨色；null 时跟主题走。
   final Color? inkColor;
+
+  /// 空态卡里的「加课」入口。null = 不显示入口（只留说明文字）。
+  ///
+  /// 空态是用户最可能想「补点什么」的时刻：这一天什么都没排，说一句「这天没有
+  /// 安排」然后就没了 —— 手里有活儿要记的人还得自己回首页找加课入口。
+  final VoidCallback? onAddCourse;
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +80,26 @@ class MonthDayAgenda extends StatelessWidget {
             // 而它躺在白色面板上（见类注释）。
             forceSolid: true,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-              child: Text(
-                l10n.monthViewAgendaEmpty,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: ink.withValues(alpha: 0.5),
-                ),
+              padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.monthViewAgendaEmpty,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: ink.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (onAddCourse != null) ...[
+                    const SizedBox(height: 12),
+                    _AddCourseAction(
+                      label: l10n.monthViewAgendaAddCourse,
+                      ink: ink,
+                      onTap: onAddCourse!,
+                    ),
+                  ],
+                ],
               ),
             ),
           )
@@ -99,6 +119,53 @@ class MonthDayAgenda extends StatelessWidget {
     );
   }
 }
+
+/// 空态卡里的「加课」小按钮（描边胶囊，不抢卡内文字）。
+class _AddCourseAction extends StatelessWidget {
+  const _AddCourseAction({
+    required this.label,
+    required this.ink,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color ink;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: ink.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_rounded, size: 15, color: ink.withValues(alpha: 0.7)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ink.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class _AgendaRowTile extends StatelessWidget {
   const _AgendaRowTile({
@@ -208,37 +275,8 @@ Color monthExamAccent(ColorScheme colorScheme) {
       : const Color(0xFFE5484D);
 }
 
-/// 未选中日期时底部那句轻提示。
+/// 未选中日期时的底部内容在 [MonthPanelOverview]（本月概览 + 有安排的日子）。
 ///
-/// 不是单纯的空白占位：截图里「网格缩在上半屏、底下全白」是最丑的形态，
-/// 一句提示既填住那块空白、又把「点任一天看详情」这条交互讲明白。
-class MonthAgendaPlaceholder extends StatelessWidget {
-  const MonthAgendaPlaceholder({super.key, this.inkColor});
-
-  /// 壁纸上的判定墨色；null 时跟主题走。
-  final Color? inkColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final ink = inkColor ?? Theme.of(context).colorScheme.onSurface;
-    return Padding(
-      padding: const EdgeInsets.only(top: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.touch_app_outlined,
-            size: 14,
-            color: ink.withValues(alpha: 0.34),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            l10n.monthViewTapDayHint,
-            style: TextStyle(fontSize: 12, color: ink.withValues(alpha: 0.46)),
-          ),
-        ],
-      ),
-    );
-  }
-}
+/// 这里曾经是一个 `MonthAgendaPlaceholder`：一句「点任意一天查看安排」。
+/// 用户在 2026-10-21 要求删掉那句话 —— 它既没回答问题（这个月到底有多少事），
+/// 又把整块下半屏留成空白。现在换成有数据的概览，见 `month_panel_overview.dart`。

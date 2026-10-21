@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../domain/month_grid_collapse.dart';
 import '../domain/month_view_cache.dart';
 import '../domain/month_view_logic.dart';
+import '../domain/week_calculator.dart';
 import '../l10n/app_localizations.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
@@ -15,6 +16,7 @@ import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
 import '../widgets/timetable/month_view/month_grid_handle.dart';
 import '../widgets/timetable/month_view/month_panel_drag_area.dart';
+import '../widgets/timetable/month_view/month_panel_overview.dart';
 import '../widgets/timetable/month_view/month_panel_top_curve.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
@@ -413,6 +415,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                   now: now,
                   selectedInThisMonth: selectedInThisMonth,
                   selected: selected,
+                  grid: grid,
                 ),
               ),
             ],
@@ -517,6 +520,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     required DateTime now,
     required bool selectedInThisMonth,
     required DateTime? selected,
+    required MonthGridData grid,
   }) {
     // 面板是实底白卡，字跟**主题**走（不跟壁纸）。
     // 详见调用处那段注释：拿壁纸明暗判面板内的字，暗壁纸会判出白字 → 白底上看不见。
@@ -583,8 +587,23 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                     inkColor: ink,
                     rows: rows,
                     onRowTap: (row) => _openAgendaRow(context, row),
+                    // 选中日什么都没有时，空态卡里给一个加课入口（带这天 +
+                    // 星期几进表单）：这正是用户最想"补点什么"的时刻。
+                    onAddCourse: () =>
+                        _openAddCourseForDate(context, selected, settings),
                   )
-                : MonthAgendaPlaceholder(inkColor: ink),
+                : MonthPanelOverview(
+                    grid: grid,
+                    settings: settings,
+                    inkColor: ink,
+                    // 「本月有安排的日子」从今天往后排（跨过月末回月首），
+                    // 排序口径见 `MonthViewLogic.scheduledDaysOfMonth`。
+                    upcoming: MonthViewLogic.scheduledDaysOfMonth(
+                      grid,
+                      today: now,
+                    ),
+                    onDayTap: (date) => setState(() => _selectedDate = date),
+                  ),
           ),
         ),
       ),
@@ -636,6 +655,40 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       return schemeSections;
     }
     return settings.sections;
+  }
+
+  /// 空态卡里的「加课」：带着那一天的星期与所在周进表单。
+  ///
+  /// 空态之所以值得给入口：这一天什么都没排，说完「这天没有安排」就断了 ——
+  /// 而用户点进某一天、看见空，往往正是想说「这天要加一节课」。
+  ///
+  /// 参数口径与首页空格加课一致（`timetable_screen.dart` 那几处）：
+  /// `initialDayOfWeek` 传那天的星期，`initialWeek` 传那天的真实周次 ——
+  /// 只传星期不传周次的话，课程默认按第 1 周起排，用户从 10 月点进来却把课
+  /// 排到了 9 月初（`initialWeek` 存在的全部理由就是这个）。
+  /// 学期未配置 / 那天在开学前时 `initialWeek` 为 null，表单自己用默认值。
+  ///
+  /// ⚠️ [settings] 由调用方传入而**不在这里 `context.read`**：本仓有
+  /// 「TimetableProvider 直接读取点只减不增」的架构守卫（基线 230 处），
+  /// 多一处 `read` 就会让守卫变红。调用方本来就在 `_buildAgendaPanel` 里
+  /// 握着同一个 settings 实例，顺手传下来没有任何额外成本。
+  Future<void> _openAddCourseForDate(
+    BuildContext context,
+    DateTime date,
+    TimetableSettings settings,
+  ) async {
+    final semesterStart = settings.semesterStartDate;
+    final weekIndex = semesterStart == null
+        ? null
+        : WeekCalculator.getWeekIndex(date, semesterStart);
+    await Navigator.of(context).push<void>(
+      HyperosPageRoute<void>(
+        builder: (_) => AddCourseScreen(
+          initialDayOfWeek: date.weekday,
+          initialWeek: weekIndex,
+        ),
+      ),
+    );
   }
 
   /// 议程行点击 → 对应编辑/详情去处（与日视图议程卡的去处一致）。
