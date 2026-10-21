@@ -311,6 +311,11 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   /// applied it one frame late, which read as visible stutter.
   final ValueNotifier<double> _collapseInsetDelta = ValueNotifier<double>(0);
 
+  /// 最近一次横向 ScrollEnd 的页位（PageView 的 pixels = 页下标 × 页宽）。
+  /// 用于区分「换了一页」与「横向轻晃被吸回同页」——只有前者才重置折叠
+  /// 状态（见 [_handleBodyScrollForBlur]）。初始 0 与首屏页位一致。
+  double _lastHorizontalPagePixels = 0;
+
   /// setState guarded against build/layout/paint phases. Post-frame callbacks
   /// run at the end of the current frame; see the note below about not
   /// calling [SchedulerBinding.scheduleFrame] here.
@@ -440,6 +445,24 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       // pixels are page offsets, not vertical under-header scroll, and must not
       // toggle frosted-header state.
       if (notification.metrics.axis != Axis.vertical) {
+        // 横向 ScrollEnd 且页位确实变了 = 换了一页。折叠状态由**一份共享
+        // behavior** 收全部页面的纵向滚动驱动，横向切页不产生纵向通知，
+        // 上一页滚出来的「小字」会原样带进新页（新页在顶部却显示小字）。
+        // 重置为展开；回到此前滚过的页时，首次滚动会按 1:1 重新推导回折叠。
+        // 页位没变的回弹（横向轻晃被吸回同页）不重置——那页可能正滚着，
+        // 折叠态是它自己的真实状态。
+        if (notification is ScrollEndNotification && _useCollapsibleTopAppBar) {
+          final pixels = notification.metrics.pixels;
+          if ((pixels - _lastHorizontalPagePixels).abs() > 0.5) {
+            _collapsibleScrollBehavior.resetToExpanded();
+            // 新页从展开态起步：短页停靠用的正文平移量归零。
+            _collapseInsetDelta.value = 0;
+            _headerFrost.scheduleResyncHeaderFrostAfterLayout();
+          }
+        }
+        if (notification is ScrollEndNotification) {
+          _lastHorizontalPagePixels = notification.metrics.pixels;
+        }
         return false;
       }
       _headerFrost.noteScrollContext(

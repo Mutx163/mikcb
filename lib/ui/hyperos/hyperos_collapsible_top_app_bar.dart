@@ -719,6 +719,26 @@ class HyperosExitUntilCollapsedScrollBehavior
   /// title from flickering between big/small while reading mid-page content.
   bool _smallTitleLocked = false;
 
+  /// 横向翻页（PageView）换页后的重置入口。
+  ///
+  /// 页面外壳只包**一个**共享 behavior，收全部页面的纵向滚动——横向切到
+  /// 下一页时不产生任何纵向通知，上一页滚出来的折叠态（含小字锁）会原样
+  /// 带进新页：新页明明在顶部，大标题却还是小字。外壳在横向 ScrollEnd 且
+  /// 页位确实变化时调用本方法。
+  ///
+  /// 重置为**展开**（新页通常在顶部）；回到此前滚过的页时，首次滚动会经
+  /// [_syncOffsetToPosition] 按 1:1 重新推导回折叠。同时清掉小字锁、
+  /// 回弹冻结与短页弹簧的残留状态——它们都锚在旧页的滚动坐标上，带到
+  /// 新页只会产生错误行为。
+  void resetToExpanded() {
+    _smallTitleLocked = false;
+    _frozenDuringOverscrollSpringBack = false;
+    _shortPageSpringReleasePixels = null;
+    _shortPageSpringTargetPixels = null;
+    _shortPageLastUserDragPixels = null;
+    state.heightOffset = 0;
+  }
+
   void _syncOffsetToPosition(ScrollMetrics metrics) {
     final limit = state.heightOffsetLimit;
     if (!limit.isFinite) {
