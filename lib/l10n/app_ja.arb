@@ -6417,9 +6417,10 @@
   "homeMenuCategoryPreferences": "設定",
   "homeMenuCategoryAbout": "情報とサポート",
   "homeMenuMoreTitle": "その他の機能",
-  "homeMenuMoreFeaturesDesc": "時間割の内容と日常操作へのショートカット",
+  "homeMenuMoreFeaturesDesc": "ほかから開けない時間割ページ",
   "homeMenuMoreDataDesc": "バックアップ・同期・転送",
   "homeMenuMoreAboutDesc": "バージョン、ガイドとサポート",
+  "homeMenuMoreScopedHint": "ここには他に入口がない機能だけを載せています。それ以外は時間割設定にあります",
   "classAlarmLeadMinutesLabel": "{minutes}分前",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

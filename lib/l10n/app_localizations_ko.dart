@@ -11100,13 +11100,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuMoreTitle => '더 많은 기능';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '시간표 콘텐츠와 일상 작업 바로가기';
+  String get homeMenuMoreFeaturesDesc => '다른 곳에서 열 수 없는 시간표 페이지';
 
   @override
   String get homeMenuMoreDataDesc => '백업, 동기화 및 전송';
 
   @override
   String get homeMenuMoreAboutDesc => '버전, 가이드 및 지원';
+
+  @override
+  String get homeMenuMoreScopedHint =>
+      '다른 곳에 입구가 없는 기능만 모았습니다. 나머지는 시간표 설정에 있습니다';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

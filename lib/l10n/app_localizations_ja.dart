@@ -11056,13 +11056,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuMoreTitle => 'その他の機能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '時間割の内容と日常操作へのショートカット';
+  String get homeMenuMoreFeaturesDesc => 'ほかから開けない時間割ページ';
 
   @override
   String get homeMenuMoreDataDesc => 'バックアップ・同期・転送';
 
   @override
   String get homeMenuMoreAboutDesc => 'バージョン、ガイドとサポート';
+
+  @override
+  String get homeMenuMoreScopedHint => 'ここには他に入口がない機能だけを載せています。それ以外は時間割設定にあります';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

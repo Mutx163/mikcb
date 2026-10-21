@@ -19570,7 +19570,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuMoreFeaturesDesc.
   ///
   /// In zh, this message translates to:
-  /// **'课表内容与日常操作的快捷入口'**
+  /// **'别处进不去的课表页面'**
   String get homeMenuMoreFeaturesDesc;
 
   /// No description provided for @homeMenuMoreDataDesc.
@@ -19584,6 +19584,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'版本、指南与支持'**
   String get homeMenuMoreAboutDesc;
+
+  /// No description provided for @homeMenuMoreScopedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里只放别处找不到入口的功能；其余都在课表设置里'**
+  String get homeMenuMoreScopedHint;
 
   /// No description provided for @classAlarmLeadMinutesLabel.
   ///

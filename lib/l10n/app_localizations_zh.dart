@@ -10736,13 +10736,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuMoreTitle => '更多功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '课表内容与日常操作的快捷入口';
+  String get homeMenuMoreFeaturesDesc => '别处进不去的课表页面';
 
   @override
   String get homeMenuMoreDataDesc => '备份、同步与传输';
 
   @override
   String get homeMenuMoreAboutDesc => '版本、指南与支持';
+
+  @override
+  String get homeMenuMoreScopedHint => '这里只放别处找不到入口的功能；其余都在课表设置里';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
@@ -22183,13 +22186,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuMoreTitle => '更多功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '課表內容與日常操作的快捷入口';
+  String get homeMenuMoreFeaturesDesc => '別處進不去的課表頁面';
 
   @override
   String get homeMenuMoreDataDesc => '備份、同步與傳輸';
 
   @override
   String get homeMenuMoreAboutDesc => '版本、指南與支援';
+
+  @override
+  String get homeMenuMoreScopedHint => '這裡只放別處找不到入口的功能；其餘都在課表設定裡';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
@@ -33631,13 +33637,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuMoreTitle => '更多功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '課表內容與日常操作的快捷入口';
+  String get homeMenuMoreFeaturesDesc => '別處進不去的課表頁面';
 
   @override
   String get homeMenuMoreDataDesc => '備份、同步與傳輸';
 
   @override
   String get homeMenuMoreAboutDesc => '版本、指南與支援';
+
+  @override
+  String get homeMenuMoreScopedHint => '這裡只放別處找不到入口的功能；其餘都在課表設定裡';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

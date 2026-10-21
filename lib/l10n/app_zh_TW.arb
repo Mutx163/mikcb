@@ -6483,9 +6483,10 @@
   "homeMenuCategoryPreferences": "偏好設定",
   "homeMenuCategoryAbout": "關於與支援",
   "homeMenuMoreTitle": "更多功能",
-  "homeMenuMoreFeaturesDesc": "課表內容與日常操作的快捷入口",
+  "homeMenuMoreFeaturesDesc": "別處進不去的課表頁面",
   "homeMenuMoreDataDesc": "備份、同步與傳輸",
   "homeMenuMoreAboutDesc": "版本、指南與支援",
+  "homeMenuMoreScopedHint": "這裡只放別處找不到入口的功能；其餘都在課表設定裡",
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

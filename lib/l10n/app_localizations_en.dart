@@ -11382,13 +11382,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMenuMoreFeaturesDesc =>
-      'Shortcuts to timetable content and daily actions';
+      'Timetable pages you can\'t reach elsewhere';
 
   @override
   String get homeMenuMoreDataDesc => 'Backup, sync and transfer';
 
   @override
   String get homeMenuMoreAboutDesc => 'Version, guide and support';
+
+  @override
+  String get homeMenuMoreScopedHint =>
+      'Only features with no other entry point; everything else lives in Timetable Settings';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

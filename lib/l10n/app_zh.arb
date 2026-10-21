@@ -6572,9 +6572,10 @@
   "homeMenuCategoryPreferences": "偏好设置",
   "homeMenuCategoryAbout": "关于与支持",
   "homeMenuMoreTitle": "更多功能",
-  "homeMenuMoreFeaturesDesc": "课表内容与日常操作的快捷入口",
+  "homeMenuMoreFeaturesDesc": "别处进不去的课表页面",
   "homeMenuMoreDataDesc": "备份、同步与传输",
   "homeMenuMoreAboutDesc": "版本、指南与支持",
+  "homeMenuMoreScopedHint": "这里只放别处找不到入口的功能；其余都在课表设置里",
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分钟",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {

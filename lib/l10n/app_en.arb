@@ -6486,9 +6486,10 @@
   "homeMenuCategoryPreferences": "Preferences",
   "homeMenuCategoryAbout": "About & support",
   "homeMenuMoreTitle": "More features",
-  "homeMenuMoreFeaturesDesc": "Shortcuts to timetable content and daily actions",
+  "homeMenuMoreFeaturesDesc": "Timetable pages you can't reach elsewhere",
   "homeMenuMoreDataDesc": "Backup, sync and transfer",
   "homeMenuMoreAboutDesc": "Version, guide and support",
+  "homeMenuMoreScopedHint": "Only features with no other entry point; everything else lives in Timetable Settings",
   "classAlarmLeadMinutesLabel": "{minutes} min ahead",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
