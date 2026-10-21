@@ -1,0 +1,161 @@
+#!/bin/sh
+# 提交后：自动记录「哪些提交没走 pre-commit 门禁」（对账式，并发安全）。
+#
+# ## 为什么需要它
+#
+# AGENTS.md 的 GIT-COLLAB 要求每次 `git commit --no-verify` 都去
+# .agents/no-verify-log.md 追加一行留痕，理由写得很清楚——「留痕集中了，跳过率才可见」。
+# 但这是**要求出事之后靠人补记**，实测守不住：2026-10-19~20 两天实际用了 65 次
+# --no-verify，日志里只有 11 条（约 17%），其中大半还是事后从会话记录考古补录的。
+# 跳过率看不见，那条自省机制就等于没接上。
+#
+# ## 机制
+#
+# git 的 `--no-verify` 只跳过 pre-commit / commit-msg / prepare-commit-msg，
+# **跳不过 post-commit**（2026-10-21 在本仓实测确认）。所以：
+#   - pre-commit 走完全部门禁后，把「提交树哈希 + 时间」记进 .git/pre-commit-ok.log；
+#   - post-commit 对账：最近这些提交里，谁的内容在标记里找不到，谁就是跳过的。
+#
+# ## 为什么是「对账」而不是「顺手记自己这次」
+#
+# 因为 post-commit **拿不到任何提交身份**：实测 `env` 里没有任何 GIT_*/SHA 变量，
+# 只能自己 `git rev-parse HEAD`。而多会话并行时，post-commit 执行期间别的会话
+# 可能已经提交成功（git 只串行化提交动作，不串行化 post-commit），于是它读到的是
+# **别人刚推上去的 HEAD**。实测后果：5 个跳过提交只记下 1 个，其余被误判成「正常」，
+# 记录还挂到了错的提交号上。对账式没有这个问题：谁触发的不重要，每次 post-commit
+# 都回头扫一遍最近是谁没对上，漏掉的会被下一次提交兜住。
+#
+# ## 必须守住的约束（都实测踩过，别改回去）
+#
+# 1. **标记只在 pre-commit 全部通过之后才写**。若写在开头，「守卫拦下 → 用
+#    --no-verify 重试同一内容」会被记成正常提交——而那正是最该被抓的场景
+#    （2026-10-19 晚 45 次跳过大半是这种）。实测复现过，已修。
+# 2. **整段对账必须持文件锁**。并发提交时多个 post-commit 会同时进来，
+#    实测 4 个进程各自「读记录→判断没记过→追加」，同一个提交被记了 4 遍。
+# 3. **逐提交取数，不按字段位置解析 git log 的一行**。根提交没有父，`%P` 为空会让
+#    制表符分隔的字段整体错位，实测出现过标题为空、提交信息串到别的字段。
+#
+# 失败一律不阻断提交：本钩子是**记录器**，不是门禁。任何异常都安静退出 0。
+
+set +e
+
+# 用 common-dir 而不是 git-dir：worktree 各自有独立 git-dir，但标记与对账状态
+# 应当共享（主仓与 worktree 的提交都记到同一本账上）。
+gd=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+[ -n "$gd" ] && [ -d "$gd" ] || exit 0
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+marker="$gd/pre-commit-ok.log"
+recorded="$gd/nv-recorded.log"
+sweep_since_file="$gd/nv-sweep-since"
+lockdir="$gd/nv-sweep.lock"
+log_file="$root/.agents/no-verify-log.md"
+
+now=$(date +%s)
+
+# 首次运行只从「此刻」往后来账：否则会把钩子装上之前的历史提交全部标成「跳过」。
+if [ -f "$sweep_since_file" ]; then
+  since=$(cat "$sweep_since_file" 2>/dev/null)
+else
+  since=$now
+  printf '%s\n' "$now" >"$sweep_since_file" 2>/dev/null
+fi
+case "$since" in ''|*[!0-9]*) since=$now ;; esac
+
+# ---- 取锁：拿不到就直接退出 ----
+# 另一个 post-commit 正在对账，它扫的是一样的提交集合，本进程跳过不会漏账。
+if ! mkdir "$lockdir" 2>/dev/null; then
+  # 陈旧锁（持有者被 kill 掉）超过 120 秒就抢过来
+  if [ -d "$lockdir" ]; then
+    age=$(( now - $(stat -c %Y "$lockdir" 2>/dev/null || echo "$now") ))
+    if [ "$age" -gt 120 ]; then
+      rmdir "$lockdir" 2>/dev/null && mkdir "$lockdir" 2>/dev/null || exit 0
+    else
+      exit 0
+    fi
+  else
+    exit 0
+  fi
+fi
+cleanup_lock() { rmdir "$lockdir" 2>/dev/null; }
+trap cleanup_lock EXIT INT TERM
+
+# 清掉过期标记（10 分钟）。不清理的话：pre-commit 过了但提交因别的原因失败
+# （比如 index.lock 被占），残留标记会一直躺着，之后同内容提交可能被误判。
+if [ -f "$marker" ]; then
+  awk -F'\t' -v cut=$((now - 600)) '$2 >= cut' "$marker" >"$marker.tmp" 2>/dev/null &&
+    mv "$marker.tmp" "$marker"
+fi
+
+# ---- 对账：扫最近提交，找出「没走门禁」的 ----
+#
+# 只看最近 60 个，且只要 since 之后的（钩子上线前的历史不算）。
+# merge 提交天然不走 pre-commit，排除掉，否则每合一次就误报一条。
+#
+# 注意：这里是**逐提交**取值。不要改成一次 git log 按 tab 切字段——根提交没有
+# 父，空字段会让整行错位（实测踩过：标题变空、提交信息串位）。
+
+skipped_short=""
+
+for sha in $(git log -n 60 --format='%H' 2>/dev/null); do
+  [ -n "$sha" ] || continue
+
+  ct=$(git show -s --format=%ct "$sha" 2>/dev/null)
+  case "$ct" in ''|*[!0-9]*) continue ;; esac
+  [ "$ct" -ge "$since" ] || continue
+
+  # merge 提交（父数 > 1）不经过 pre-commit，不参与对账
+  nparents=$(git show -s --format=%P "$sha" 2>/dev/null | wc -w | tr -d ' ')
+  [ "${nparents:-0}" -le 1 ] || continue
+
+  # 已经记过的不再记（幂等）
+  if [ -f "$recorded" ] && grep -qx "$sha" "$recorded" 2>/dev/null; then
+    continue
+  fi
+
+  tree=$(git show -s --format=%T "$sha" 2>/dev/null)
+  [ -n "$tree" ] || continue
+
+  # 在标记里找同树哈希、且时间相近（±10 分钟）的一条
+  hit=0
+  if [ -f "$marker" ]; then
+    hit=$(awk -F'\t' -v t="$tree" -v c="$ct" \
+      '$1 == t && ($2 - c) <= 600 && (c - $2) <= 600 { print "1"; exit }' "$marker" 2>/dev/null)
+  fi
+
+  if [ "$hit" = "1" ]; then
+    # 正常走了门禁：消费掉这条标记，记为已核对
+    awk -F'\t' -v t="$tree" -v c="$ct" \
+      '!($1 == t && ($2 - c) <= 600 && (c - $2) <= 600)' "$marker" >"$marker.tmp" 2>/dev/null &&
+      mv "$marker.tmp" "$marker"
+    printf '%s\n' "$sha" >>"$recorded" 2>/dev/null
+    continue
+  fi
+
+  # ---- 到这里 = 这个提交没走 pre-commit ----
+  short=$(printf '%s' "$sha" | cut -c1-8)
+  when=$(date -d "@$ct" '+%Y-%m-%d %H:%M' 2>/dev/null ||
+    date -r "$ct" '+%Y-%m-%d %H:%M' 2>/dev/null || date '+%Y-%m-%d %H:%M')
+  subj=$(git show -s --format=%s "$sha" 2>/dev/null | cut -c1-80)
+  files=$(git show --stat --format='' "$sha" 2>/dev/null | tail -1 | sed 's/^ *//')
+  entry="- $when | $short | 自动留痕：本次提交未走 pre-commit 门禁（--no-verify 或钩子未启用） | ${subj:-（无标题）}${files:+ | $files}"
+
+  if [ -f "$log_file" ]; then
+    printf '%s\n' "$entry" >>"$log_file" 2>/dev/null
+  else
+    printf '%s\n' "$entry" >>"$gd/no-verify-log.md" 2>/dev/null
+  fi
+  printf '%s\n' "$sha" >>"$recorded" 2>/dev/null
+  skipped_short="$skipped_short $short"
+done
+
+# 有新记录时在终端说一声：让当事人知道「这次被记下了、补跑还在自己身上」
+if [ -n "$skipped_short" ]; then
+  echo "" >&2
+  echo "post-commit: 检测到未走 pre-commit 门禁的提交，已记入 .agents/no-verify-log.md：$skipped_short" >&2
+  echo "post-commit: 留痕只是记账，**补跑仍要自己做**：" >&2
+  echo "             flutter test test/architecture/ && dart analyze --fatal-infos" >&2
+  echo "" >&2
+fi
+
+exit 0

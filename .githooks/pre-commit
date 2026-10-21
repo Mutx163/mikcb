@@ -41,8 +41,25 @@
 # 逃生舱：git 约定俗成的 `--no-verify`（`git commit --no-verify`）。真被误伤时
 # 用它跳过，然后**立刻**手动补跑（命令见 README 与各段拦截提示），并在
 # .agents/no-verify-log.md 追加一行留痕——跳过次数涨起来就是规则失效的信号。
+# （2026-10-21 起这一步由 post-commit 自动记，见该文件头注释；不用再手写。）
+#
+# 超时护栏（2026-10-21 新增）：两道 flutter test 各包 `timeout 300`。此前无超时，
+# 2026-10-20 18:13 实测卡死过一次、持锁 15 分钟，挡住工作区所有其他会话的提交。
+# 守卫红时本钩子会跑**两遍**（提交快照 + HEAD 快照），所以单次上限必须存在。
+# `timeout` 来自 coreutils，Git Bash 自带（实测 8.32）；缺失时退回裸调用（不因缺工具拦提交）。
 
 set -e
+
+# 超时包装：$1=秒数，其余=命令。timeout 不存在时降级为直接执行。
+run_timeout() {
+  _secs=$1
+  shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$_secs" "$@"
+  else
+    "$@"
+  fi
+}
 
 repo_root=$(git rev-parse --show-toplevel)
 cd "$repo_root"
@@ -101,9 +118,18 @@ if [ -n "$guard_relevant" ]; then
       snap_win=$(cygpath -m "$snapshot" 2>/dev/null || echo "$snapshot")
       set +e
       MIKCB_GUARD_SNAPSHOT="$snap_win" \
-        flutter test "$snap_win/test/architecture/" --timeout 60s >"$out_file" 2>&1
+        run_timeout 300 flutter test "$snap_win/test/architecture/" --timeout 60s >"$out_file" 2>&1
       rc=$?
       set -e
+
+      # 124 = timeout 杀掉的。工具链卡死与「守卫红」必须分开：卡死不是代码问题，
+      # 按本钩子「环境问题就放行」的既定原则处理，否则会把所有人挡在门外。
+      if [ "$rc" -eq 124 ]; then
+        echo "" >&2
+        echo "pre-commit: 架构守卫超过 300 秒未完成，已中止并跳过本次守卫（CI 仍会兜住）。" >&2
+        echo "pre-commit: 若反复出现，按 .githooks/README.md「卡死排查」逐个单跑守卫定位慢的那个。" >&2
+        rc=0
+      fi
 
       if [ "$rc" -ne 0 ]; then
         # 工具链起不来 ≠ 守卫不过。这两种失败必须分开，否则本机 Flutter 一出毛病
@@ -124,16 +150,26 @@ if [ -n "$guard_relevant" ]; then
             head_materialized=0
           else
             MIKCB_GUARD_SNAPSHOT="$head_win" \
-              flutter test "$head_win/test/architecture/" --timeout 60s >"$out_head_file" 2>&1
+              run_timeout 300 flutter test "$head_win/test/architecture/" --timeout 60s >"$out_head_file" 2>&1
             head_rc=$?
           fi
           set -e
+
+          # HEAD 快照超时同样是环境问题：按「HEAD 也红」处理会误导成「基线失守」，
+          # 所以单独识别并说明（归属未知，但仍按本次引入拦下——宁可多问一句）。
+          if [ "${head_rc:-0}" -eq 124 ]; then
+            echo "" >&2
+            echo "pre-commit: 对照用的 HEAD 守卫超过 300 秒未完成，无法判断红项归属。" >&2
+            head_materialized=2
+          fi
 
           echo "" >&2
           sed 's/^/    /' "$out_file" >&2
           echo "" >&2
           if [ "$head_materialized" = 0 ]; then
             echo "pre-commit: 架构守卫红，但 HEAD 快照物化失败，无法判断红项归属；按本次提交引入处理（保守）。" >&2
+          elif [ "$head_materialized" = 2 ]; then
+            echo "pre-commit: 架构守卫红，但对照用的 HEAD 守卫超时，无法判断红项归属；按本次提交引入处理（保守）。" >&2
           elif [ "$head_rc" -ne 0 ]; then
             echo "pre-commit: 架构守卫红，且 HEAD 本身已红 —— 先前的提交越过基线没同步基线。" >&2
             echo "pre-commit: 在重测同步基线（参照 99905c37）或修复超标文件之前，任何提交都会被拦；" >&2
@@ -170,9 +206,14 @@ if [ -n "$dart_existing" ]; then
 
     set +e
     # shellcheck disable=SC2086  # 有意按空白展开：本仓源码路径不含空格
-    dart analyze --fatal-infos $dart_existing >"$out_file" 2>&1
+    run_timeout 300 dart analyze --fatal-infos $dart_existing >"$out_file" 2>&1
     rc=$?
     set -e
+
+    if [ "$rc" -eq 124 ]; then
+      echo "pre-commit: dart analyze 超过 300 秒未完成，已中止并跳过本道门禁（CI 仍会兜住）。" >&2
+      rc=0
+    fi
 
     if [ "$rc" -ne 0 ]; then
       # 与架构守卫同一条原则：工具链没跑起来就放行，别把人逼成 --no-verify。
@@ -190,6 +231,23 @@ if [ -n "$dart_existing" ]; then
       fi
     fi
   fi
+fi
+
+# ---- 走完全部门禁：标记「这次提交正常走了检查」 ----
+#
+# post-commit 靠这个标记区分「正常提交」与「--no-verify 跳过了」。
+# 关键约束（2026-10-21 实测得出，别改）：**只在所有 exit 1 之后写**。
+# 若写在开头，守卫拦下→用 --no-verify 重试同一内容时标记还在，
+# 那次最该被抓的跳过会被记成正常提交（实测复现过）。
+#
+# 用提交树哈希当键、不用「标记存在与否」：多会话并行时两个提交会交错跑
+# post-commit（实测强制交错可复现），树哈希能精确对上自己那次提交。
+# 反过来 post-commit 里必须一开始就把 HEAD 钉死——实测过晚读 HEAD 会把
+# 结论记到别人刚推上去的提交上。
+tree=$(git write-tree 2>/dev/null || true)
+if [ -n "$tree" ]; then
+  gd=$(git rev-parse --git-dir)
+  printf '%s\t%s\n' "$tree" "$(date +%s)" >> "$gd/pre-commit-ok.log" 2>/dev/null || true
 fi
 
 exit 0
