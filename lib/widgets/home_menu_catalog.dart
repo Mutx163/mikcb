@@ -10,6 +10,7 @@ import 'package:university_timetable/widgets/course_recolor_sheet.dart';
 import 'package:university_timetable/widgets/home_top_menu.dart';
 import 'package:university_timetable/widgets/profile_quick_switch_sheet.dart';
 import 'package:university_timetable/widgets/timetable_share_export.dart';
+import 'package:university_timetable/screens/settings/settings_home_navigation.dart';
 
 export 'home_top_menu.dart'
     show
@@ -309,6 +310,18 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     icon: Icons.tune_rounded,
     category: HomeMenuEntryCategory.preferences,
     open: (context) => pushHomeMenuPage(context, homePage('settingsPage')),
+  ),
+  // 「首页与导航」：底栏形态、八宫格自定义、首页标题样式——「首页长什么样」
+  // 的总开关。此前不在候选目录，「全部功能」页因此列不出它（管入口的页面
+  // 自己没入口）。走普通条目而不是 _settingsSubpageEntry：后者要求 id 在
+  // settingsSubpageById 里，而那会让设置域顶爆行数棘轮（只减不增）。
+  HomeMenuEntry(
+    id: 'homeNavigation',
+    title: (l10n) => l10n.homeNavigationTitle,
+    icon: Icons.dashboard_outlined,
+    category: HomeMenuEntryCategory.preferences,
+    open: (context) =>
+        pushHomeMenuPage(context, const HomeNavigationSettingsScreen()),
   ),
   _settingsSubpageEntry(
     id: 'generalSettings',

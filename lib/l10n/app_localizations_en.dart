@@ -674,8 +674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupViewAll => 'View all versions';
 
   @override
-  String get cloudBackupEmpty =>
-      'No versions yet. They are saved automatically when you sync.';
+  String get cloudBackupEmpty => 'No backups yet';
 
   @override
   String get cloudBackupSourceAuto => 'Auto backup';
@@ -7626,8 +7625,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Treat the week containing this date as calendar week 1';
 
   @override
-  String get importFirstCourseWeekMappingLabel =>
-      'Timetable week 1 maps to calendar week';
+  String get importFirstCourseWeekMappingLabel => 'Week 1 = school week';
 
   @override
   String get importFirstCourseWeekMappingSubtitle =>
@@ -10295,8 +10293,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Buildings found in timetable';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions =>
-      'No recognizable building locations yet';
+  String get locationTimeMatchNoBuildingSuggestions => 'No buildings found';
 
   @override
   String get locationTimeMatchAddBuilding => 'Add';
@@ -10958,12 +10955,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String taskUndatedHint(int count) {
-    return '$count tasks have no due date';
+    return '$count tasks undated';
   }
 
   @override
-  String get taskUndatedHintSubtitle =>
-      'They are hidden from Today and This week — tap to see All';
+  String get taskUndatedHintSubtitle => 'Hidden from Today and Week';
 
   @override
   String get taskDueDateHint => 'Hidden in day view — only visible under All';
@@ -11053,8 +11049,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportSectionTitle => 'Calendar export';
 
   @override
-  String get icsExportSectionSubtitle =>
-      'Choose courses, exams, and schedules to share as an ICS calendar';
+  String get icsExportSectionSubtitle => 'Export to your calendar';
 
   @override
   String get icsExportTitle => 'Export calendar';
@@ -11378,21 +11373,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuCategoryAbout => 'About & support';
 
   @override
-  String get homeMenuMoreTitle => 'More features';
+  String get homeMenuMoreTitle => 'All features';
 
   @override
-  String get homeMenuMoreFeaturesDesc =>
-      'Timetable pages you can\'t reach elsewhere';
+  String get homeMenuMoreSearchHint =>
+      'Search, e.g. appearance, import, widgets';
 
   @override
-  String get homeMenuMoreDataDesc => 'Backup, sync and transfer';
+  String get homeMenuMoreSearchEmptyTitle => 'Nothing found';
 
   @override
-  String get homeMenuMoreAboutDesc => 'Version, guide and support';
-
-  @override
-  String get homeMenuMoreScopedHint =>
-      'Only features with no other entry point; everything else lives in Timetable Settings';
+  String get homeMenuMoreSearchEmptyHint =>
+      'Try another word, or look in Settings';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

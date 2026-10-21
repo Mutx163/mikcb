@@ -1283,7 +1283,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBackupEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'暂无备份版本，同步后会自动生成'**
+  /// **'还没有备份版本'**
   String get cloudBackupEmpty;
 
   /// No description provided for @cloudBackupSourceAuto.
@@ -13187,7 +13187,7 @@ abstract class AppLocalizations {
   /// No description provided for @importFirstCourseWeekMappingLabel.
   ///
   /// In zh, this message translates to:
-  /// **'课表第 1 周对应校历第几周'**
+  /// **'第 1 周对应校历第几周'**
   String get importFirstCourseWeekMappingLabel;
 
   /// No description provided for @importFirstCourseWeekMappingSubtitle.
@@ -17602,7 +17602,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchNoBuildingSuggestions.
   ///
   /// In zh, this message translates to:
-  /// **'当前课表没有可识别的楼栋地点'**
+  /// **'未识别到楼栋地点'**
   String get locationTimeMatchNoBuildingSuggestions;
 
   /// No description provided for @locationTimeMatchAddBuilding.
@@ -18808,13 +18808,13 @@ abstract class AppLocalizations {
   /// 清单页在「今日」/「本周」筛选下，提示有多少条作业因为没有截止日期被筛掉了
   ///
   /// In zh, this message translates to:
-  /// **'还有 {count} 条作业没设截止日期'**
+  /// **'{count} 条作业没设日期'**
   String taskUndatedHint(int count);
 
   /// No description provided for @taskUndatedHintSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'它们在「今日」「本周」里看不到，点这里切到「全部」'**
+  /// **'它们在「今日」「本周」里看不到'**
   String get taskUndatedHintSubtitle;
 
   /// No description provided for @taskDueDateHint.
@@ -18982,7 +18982,7 @@ abstract class AppLocalizations {
   /// No description provided for @icsExportSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'选择课程、考试和日程，生成 ICS 日历并分享'**
+  /// **'选内容导出到系统日历'**
   String get icsExportSectionSubtitle;
 
   /// No description provided for @icsExportTitle.
@@ -19564,32 +19564,26 @@ abstract class AppLocalizations {
   /// No description provided for @homeMenuMoreTitle.
   ///
   /// In zh, this message translates to:
-  /// **'更多功能'**
+  /// **'全部功能'**
   String get homeMenuMoreTitle;
 
-  /// No description provided for @homeMenuMoreFeaturesDesc.
+  /// No description provided for @homeMenuMoreSearchHint.
   ///
   /// In zh, this message translates to:
-  /// **'别处进不去的课表页面'**
-  String get homeMenuMoreFeaturesDesc;
+  /// **'搜功能，如 外观、导入、小组件'**
+  String get homeMenuMoreSearchHint;
 
-  /// No description provided for @homeMenuMoreDataDesc.
+  /// No description provided for @homeMenuMoreSearchEmptyTitle.
   ///
   /// In zh, this message translates to:
-  /// **'备份、同步与传输'**
-  String get homeMenuMoreDataDesc;
+  /// **'没找到'**
+  String get homeMenuMoreSearchEmptyTitle;
 
-  /// No description provided for @homeMenuMoreAboutDesc.
+  /// No description provided for @homeMenuMoreSearchEmptyHint.
   ///
   /// In zh, this message translates to:
-  /// **'版本、指南与支持'**
-  String get homeMenuMoreAboutDesc;
-
-  /// No description provided for @homeMenuMoreScopedHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里只放别处找不到入口的功能；其余都在课表设置里'**
-  String get homeMenuMoreScopedHint;
+  /// **'换个词试试，或去课表设置里找'**
+  String get homeMenuMoreSearchEmptyHint;
 
   /// No description provided for @classAlarmLeadMinutesLabel.
   ///

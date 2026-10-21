@@ -648,7 +648,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudBackupViewAll => '모든 버전 보기';
 
   @override
-  String get cloudBackupEmpty => '아직 버전 기록이 없습니다. 동기화하면 자동 저장됩니다';
+  String get cloudBackupEmpty => '아직 백업이 없습니다';
 
   @override
   String get cloudBackupSourceAuto => '자동 백업';
@@ -7377,8 +7377,7 @@ class AppLocalizationsKo extends AppLocalizations {
       'Treat the week containing this date as calendar week 1';
 
   @override
-  String get importFirstCourseWeekMappingLabel =>
-      'Timetable week 1 maps to calendar week';
+  String get importFirstCourseWeekMappingLabel => '1주차 = 학사력 몇 주';
 
   @override
   String get importFirstCourseWeekMappingSubtitle => '1주차 수업 없으면 2주차';
@@ -10042,8 +10041,7 @@ class AppLocalizationsKo extends AppLocalizations {
       'Buildings found in timetable';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions =>
-      'No recognizable building locations yet';
+  String get locationTimeMatchNoBuildingSuggestions => '건물을 찾지 못했음';
 
   @override
   String get locationTimeMatchAddBuilding => 'Add';
@@ -10691,11 +10689,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String taskUndatedHint(int count) {
-    return '마감일 없는 과제 $count개';
+    return '기한 없는 작업 $count개';
   }
 
   @override
-  String get taskUndatedHintSubtitle => '「오늘」「이번 주」에는 표시되지 않습니다. 눌러서 「전체」로';
+  String get taskUndatedHintSubtitle => '「오늘」「이번 주」에서 숨김';
 
   @override
   String get taskDueDateHint => '일간 보기 미표시. 「전체」에서만';
@@ -10785,7 +10783,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportSectionTitle => '캘린더 내보내기';
 
   @override
-  String get icsExportSectionSubtitle => '수업, 시험, 일정을 선택해 ICS 캘린더로 공유합니다';
+  String get icsExportSectionSubtitle => '선택한 항목을 캘린더로 내보내기';
 
   @override
   String get icsExportTitle => '캘린더 내보내기';
@@ -11097,20 +11095,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuCategoryAbout => '정보 및 지원';
 
   @override
-  String get homeMenuMoreTitle => '더 많은 기능';
+  String get homeMenuMoreTitle => '모든 기능';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '다른 곳에서 열 수 없는 시간표 페이지';
+  String get homeMenuMoreSearchHint => '검색: 외관, 가져오기, 위젯';
 
   @override
-  String get homeMenuMoreDataDesc => '백업, 동기화 및 전송';
+  String get homeMenuMoreSearchEmptyTitle => '찾을 수 없음';
 
   @override
-  String get homeMenuMoreAboutDesc => '버전, 가이드 및 지원';
-
-  @override
-  String get homeMenuMoreScopedHint =>
-      '다른 곳에 입구가 없는 기능만 모았습니다. 나머지는 시간표 설정에 있습니다';
+  String get homeMenuMoreSearchEmptyHint => '다른 단어로 검색하거나 설정을 확인하세요';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

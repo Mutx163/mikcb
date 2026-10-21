@@ -1,34 +1,39 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/l10n/app_localizations_zh.dart';
 import 'package:university_timetable/screens/more_features_screen.dart';
 import 'package:university_timetable/widgets/home_menu_catalog.dart';
 
-/// 「更多功能」页的收录契约（白名单，2026-10-21 定位纠正后）。
+/// 「全部功能」页的收录契约（第三版，2026-10-21）。
 ///
-/// ## 这个测试守的是什么
+/// ## 三版判据的演变（这个测试跟着改了两次，值当记下来）
 ///
-/// 收录标准是**白名单**：只收「别处没有固定入口」的功能页，见
-/// `kMoreFeaturesEntryIds`。判据是**目的地有没有其他固定入口**，不是
-/// 「它在不在八宫格候选池里」——后者是首页快捷位的判据，两者混用正是
-/// 本页一度变成 32 格大杂烩的根因。
+/// 1. **全量推导**：断言「除偏好设置外全部收录」。产出 32 格，用户说「大杂烩」。
+/// 2. **孤儿页白名单**：断言「只收别处没有入口的 9 条」。用户说「外观编辑
+///    都没有显示在这里」——判据是**技术可达**，而用户感受是**体感可达**。
+/// 3. **现版完整索引**：断言三条判据（整页 / 去一个地方 / 过可见性门控）。
 ///
-/// 所以这里断言三件事：
-/// 1. **必收**（唯一入口 + 链式断裂那 9 条）一个都不许少——少一条就是
-///    用户点不到那个功能，本页存在的理由就是它们；
-/// 2. **不许收**（创建动作、瞬时动作、设置页/关于页已有一级入口的）一个都
-///    不许混进来——混一条，这一页就往「大杂烩」滑一步；
-/// 3. 白名单里的 id 都在目录里真实存在（拼错 id 时目录查不到，条目会静默
-///    消失，页面看上去只是「少了一格」）。
-///
-/// 接线部分（目录↔路由表 id 对齐）仍走源码级检查：两张表是两个文件里的
-/// 字符串，id 对不上时 `homePage()` 在点开那一刻才抛 `StateError`（启动不炸、
-/// 测试全绿、真机一点就崩）；import 整棵页面树去查会让本测试背上整个 App
-/// 的编译面。
+/// 所以本测试守的不是「某个数量」，而是**三条判据本身**，以及两次踩过的
+/// 具体坑（用户点名的页面必须真的在列表里）。
 void main() {
   final catalogFile = File('lib/widgets/home_menu_catalog.dart');
   final registryFile = File('lib/screens/home_menu_route_registry.dart');
   final pageFile = File('lib/screens/more_features_screen.dart');
+  final l10n = AppLocalizationsZh();
+
+  // 分组只依赖状态值，不需要真的 TimetableProvider（它的构造要读
+  // shared_preferences，测试环境里跑不起来）。这里给两个「有值」的状态，
+  // 顺带覆盖「副文本拿得到当前值」那条路径。
+  List<MoreFeatureGroup> groups() => buildMoreFeatureGroups(
+    l10n,
+    activeProfileName: '本学期',
+    activeTimeSchemeName: '夏季作息',
+  );
+  Set<String> ids() => {
+    for (final group in groups())
+      for (final item in group.items) item.entry.id,
+  };
 
   test('三个接线文件都在（否则本测试空转）', () {
     expect(catalogFile.existsSync(), isTrue, reason: catalogFile.path);
@@ -36,88 +41,98 @@ void main() {
     expect(pageFile.existsSync(), isTrue, reason: pageFile.path);
   });
 
-  test('八宫格目录里有 more 条目，标题走 l10n、打开 morePage', () {
-    final source = catalogFile.readAsStringSync();
-    expect(
-      source.contains("id: 'more'"),
-      isTrue,
-      reason: '目录里没有 id: more —— 用户在编辑器里看不到「更多功能」',
-    );
-    expect(
-      source.contains("homePage('morePage')"),
-      isTrue,
-      reason: '条目没有指向 morePage（点开会在 homePage 抛 StateError）',
-    );
-    expect(
-      source.contains('homeMenuMoreTitle'),
-      isTrue,
-      reason: '标题必须走 l10n（硬编码中文会被 CJK 审计拦下）',
-    );
+  group('接线', () {
+    test('八宫格目录里有 more 条目，标题走 l10n、打开 morePage', () {
+      final source = catalogFile.readAsStringSync();
+      expect(source.contains("id: 'more'"), isTrue);
+      expect(source.contains("homePage('morePage')"), isTrue);
+      expect(source.contains('homeMenuMoreTitle'), isTrue);
+    });
+
+    test('路由表登记了 morePage → MoreFeaturesScreen', () {
+      final source = registryFile.readAsStringSync();
+      expect(source.contains("id: 'morePage'"), isTrue);
+      expect(source.contains('MoreFeaturesScreen()'), isTrue);
+      expect(source.contains("import 'more_features_screen.dart';"), isTrue);
+    });
+
+    test('底栏内嵌表也登记了 more（缺了就是「底栏消失」的回归）', () {
+      final source = registryFile.readAsStringSync();
+      expect(
+        RegExp(r"_inlineDockPageDescriptors = \[[\s\S]*?id: 'more'").hasMatch(
+          source,
+        ),
+        isTrue,
+        reason: '内嵌表里没有 more：底栏点它会推新页面、底栏消失',
+      );
+    });
   });
 
-  test('路由表登记了 morePage → MoreFeaturesScreen', () {
-    final source = registryFile.readAsStringSync();
-    expect(source.contains("id: 'morePage'"), isTrue);
-    expect(
-      source.contains('MoreFeaturesScreen()'),
-      isTrue,
-      reason: '描述符的 build 没有造 MoreFeaturesScreen',
-    );
-    expect(
-      source.contains("import 'more_features_screen.dart';"),
-      isTrue,
-      reason: '路由表缺 import，build 会编译不过',
-    );
-  });
+  group('用户点名过的页面必须真的在列表里', () {
+    test('外观编辑在（第二版漏掉它，用户当场点名）', () {
+      expect(
+        ids().contains('appearanceEditor'),
+        isTrue,
+        reason: '外观编辑是用户点名的页面。它只有「设置 → 外观与配色 → 往下'
+            '找一行」这一条三层跳转入口，体感等于没有',
+      );
+    });
 
-  test('底栏内嵌表也登记了 more（缺了就是「底栏消失」的回归）', () {
-    final source = registryFile.readAsStringSync();
-    // 取件码踩过的坑：只登记目录表时，底栏点它会推一个全新页面、坞消失。
-    expect(
-      RegExp(r"_inlineDockPageDescriptors = \[[\s\S]*?id: 'more'").hasMatch(
-        source,
-      ),
-      isTrue,
-      reason: '内嵌表里没有 more：底栏点它会推新页面、底栏消失',
-    );
-  });
+    test('首页与导航在（它自己此前不在任何目录里）', () {
+      expect(
+        ids().contains('homeNavigation'),
+        isTrue,
+        reason: '首页与导航管的就是「首页放哪些入口」，它自己没有入口属于'
+            '「管入口的页面没入口」的死结',
+      );
+    });
 
-  group('必收：别处找不到入口的功能页', () {
-    test('9 条唯一入口/链式断裂页全部在收录结果里', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
-      // 每一条的「为什么它进得来」写在 kMoreFeaturesEntryIds 的注释里；
-      // 这里只钉「在不在」。掉一条 = 用户点不到那个功能。
-      for (final id in const [
-        // 全应用唯一入口
-        'pickupCode',
-        'monthView',
-        'statistics',
-        'exams',
-        'scheduleList',
-        'importCourses',
-        // 入口存在但实际找不到
-        'overview',
-        'tasks',
-        'courseConflict',
-      ]) {
-        expect(ids.contains(id), isTrue, reason: '唯一入口 $id 没被收录');
+    test('两个盲区都已在候选目录里登记（否则列表会静默跳过）', () {
+      final catalogIds = kHomeMenuCatalog.map((entry) => entry.id).toSet();
+      for (final id in const ['appearanceEditor', 'homeNavigation']) {
+        expect(
+          catalogIds.contains(id),
+          isTrue,
+          reason: '$id 不在 kHomeMenuCatalog 里，buildMoreFeatureGroups '
+              '会静默跳过它——页面上什么都不会少，只是那个功能消失了',
+        );
       }
     });
 
-    test('收录数量就是白名单里的有效条数（不多不少）', () {
-      final byId = {
-        for (final entry in kHomeMenuCatalog) entry.id: entry,
-      };
-      final expected = kMoreFeaturesEntryIds
-          .where((id) => byId[id]?.visible() ?? false)
-          .length;
-      expect(moreFeaturesEntries().length, expected);
+    test('homeNavigation 有自己的 open，不依赖设置子页表', () {
+      // 走普通目录条目而不是 _settingsSubpageEntry：后者要求 id 在
+      // settingsSubpageById 里，而设置域有「行数只减不增」的棘轮守卫，
+      // 为一个入口加 5 行会顶爆它（不许抬基线换绿）。
+      final source = catalogFile.readAsStringSync();
+      final block = RegExp(
+        r"id: 'homeNavigation',[\s\S]{0,400}?\)\,",
+      ).firstMatch(source);
+      expect(block, isNotNull, reason: '目录里找不到 homeNavigation 条目');
+      expect(
+        block!.group(0)!.contains('HomeNavigationSettingsScreen()'),
+        isTrue,
+        reason: 'homeNavigation 的 open 没有真的推页面——点了会什么都不发生',
+      );
     });
   });
 
-  group('不许收：混进来就往大杂烩滑一步', () {
+  group('判据一：是整页，不是开关/选择器', () {
+    test('主题色、字号这类「改参数」不在列表里', () {
+      // 这些不是独立页面，是设置页里的行控件。它们出现在目录里意味着
+      // 有人把「一个参数」当成「一个目的地」。
+      for (final item in groups().expand((group) => group.items)) {
+        expect(
+          item.entry.id,
+          isNot(anyOf('themeSeed', 'fontSize', 'themeMode')),
+          reason: '${item.entry.id} 是参数不是页面',
+        );
+      }
+    });
+  });
+
+  group('判据二：是「去一个地方」，不是「发生一件事」', () {
     test('创建动作不进（各自有列表页的「+」）', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
+      final present = ids();
       for (final id in const [
         'addCourse',
         'addExam',
@@ -125,119 +140,136 @@ void main() {
         'addScheduleItem',
       ]) {
         expect(
-          ids.contains(id),
+          present.contains(id),
           isFalse,
-          reason: '$id 是创建动作，它有上下文入口；进目录会让用户分不清'
-              '「点下去是去一个地方还是发生一件事」',
+          reason: '$id 是创建动作，混进导航目录会让用户无法预测点下去的后果',
         );
       }
     });
 
     test('瞬时弹层动作不进（不是目的地）', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
+      final present = ids();
       for (final id in const [
         'courseRecolor',
         'shareTimetable',
         'quickSwitchTimetable',
       ]) {
         expect(
-          ids.contains(id),
+          present.contains(id),
           isFalse,
           reason: '$id 是弹层动作，不是页面目的地',
         );
       }
     });
 
-    test('设置首页已有一级行的不进（那份还带回显状态）', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
-      for (final id in const [
-        'profiles',
-        'timeSchemes',
-        'dataTransfer',
-        'cloudSync',
-        'lanEdit',
-        'coupleTimetable',
-        'userGuide',
-      ]) {
-        expect(
-          ids.contains(id),
-          isFalse,
-          reason: '$id 在设置首页是一级行且带回显状态；本页的同名瓷贴'
-              '没有状态，严格劣于那一份',
-        );
-      }
-    });
-
-    test('关于页二级重复的不进', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
-      for (final id in const [
-        'update',
-        'support',
-        'aboutApp',
-        'changelog',
-        'feedback',
-        'openSourceLicenses',
-      ]) {
-        expect(
-          ids.contains(id),
-          isFalse,
-          reason: '$id 在关于页已有入口，平铺到这里是第三份',
-        );
-      }
-    });
-
-    test('偏好设置分类整组不进（设置子页的归宿是设置首页）', () {
-      expect(
-        moreFeaturesEntries().every(
-          (entry) => entry.category != HomeMenuEntryCategory.preferences,
-        ),
-        isTrue,
-        reason: '偏好设置分类不许进本页',
-      );
-    });
-
     test('本页不自我收录', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
-      expect(ids.contains('more'), isFalse, reason: '本页不许自我收录');
-    });
-
-    test('藏在配置页里的那 3 条也不进（该由宿主页负责提示）', () {
-      final ids = moreFeaturesEntries().map((entry) => entry.id).toSet();
-      for (final id in const [
-        'locationTimeMatch',
-        'scheduleDateRule',
-        'icsExport',
-      ]) {
-        expect(
-          ids.contains(id),
-          isFalse,
-          reason: '$id 已有固定归宿（时间模板页 / 数据传输页），'
-              '它们该在宿主页加提示，不是在目录页平铺',
-        );
-      }
+      expect(ids().contains('more'), isFalse);
     });
   });
 
-  group('白名单本身的自洽性', () {
-    test('白名单里每个 id 都在目录里真实存在（拼错会让条目静默消失）', () {
+  group('判据三：过可见性门控', () {
+    test('只收 visible() 为真的条目', () {
+      for (final item in groups().expand((group) => group.items)) {
+        expect(
+          item.entry.visible(),
+          isTrue,
+          reason: '${item.entry.id} 的 visible() 为 false，不该出现在正式版',
+        );
+      }
+    });
+
+    test('白名单里的 id 全部能在目录里解析（拼错会让条目静默消失）', () {
       final catalogIds = kHomeMenuCatalog.map((entry) => entry.id).toSet();
-      final missing = kMoreFeaturesEntryIds
-          .where((id) => !catalogIds.contains(id))
-          .toList();
+      // 从源码里抠出所有 item('xxx') 的 id，逐个查目录。
+      final source = pageFile.readAsStringSync();
+      final referenced = RegExp(r"item\(\s*'([A-Za-z]+)'")
+          .allMatches(source)
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(referenced, isNotEmpty);
+      final missing = referenced.difference(catalogIds);
       expect(
         missing,
         isEmpty,
         reason: '这些 id 在 kHomeMenuCatalog 里查不到（拼错或条目被删），'
-            '页面上会静默少一格：$missing',
+            'buildMoreFeatureGroups 会静默跳过，页面上只是少一行：$missing',
+      );
+    });
+  });
+
+  group('搜索', () {
+    test('空词返回全部分区', () {
+      expect(filterMoreFeatureGroups(groups(), '', l10n).length, groups().length);
+      expect(
+        filterMoreFeatureGroups(groups(), '   ', l10n).length,
+        groups().length,
+        reason: '只有空格也该当成空词',
       );
     });
 
-    test('白名单没有重复 id（重复会让同一格出现两次）', () {
+    test('搜标题能命中', () {
+      final result = filterMoreFeatureGroups(groups(), '月视图', l10n);
+      final hitIds = result.expand((g) => g.items).map((i) => i.entry.id);
+      expect(hitIds, contains('monthView'));
+    });
+
+    test('搜同义词也能命中（界面标题里没有这些词）', () {
+      // AOSP 通用搜索的要求：索引要含「用户会搜、但界面上看不到」的词。
+      // 中文用户搜「换肤」「皮肤」找外观编辑——标题「外观编辑」一个都不含。
+      for (final word in const ['换肤', '皮肤']) {
+        final result = filterMoreFeatureGroups(groups(), word, l10n);
+        final hitIds = result.expand((g) => g.items).map((i) => i.entry.id);
+        expect(
+          hitIds,
+          contains('appearanceEditor'),
+          reason: '搜「$word」应当能找到外观编辑',
+        );
+      }
+    });
+
+    test('搜分区名能露出整个分区', () {
+      final result = filterMoreFeatureGroups(groups(), l10n.settingsAboutSectionTitle, l10n);
+      expect(result.length, 1, reason: '分区名命中时应当只剩那一个分区');
+      expect(result.single.title, l10n.settingsAboutSectionTitle);
       expect(
-        kMoreFeaturesEntryIds.toSet().length,
-        kMoreFeaturesEntryIds.length,
-        reason: '白名单里有重复 id',
+        result.single.items.length,
+        groups()
+            .firstWhere((g) => g.title == l10n.settingsAboutSectionTitle)
+            .items
+            .length,
+        reason: '分区名命中要把整区条目都留下，不是只留标题命中的那条',
       );
+    });
+
+    test('搜不到时返回空（由页面渲染空态）', () {
+      final result = filterMoreFeatureGroups(groups(), 'zzz不存在的词', l10n);
+      expect(result, isEmpty);
+    });
+  });
+
+  group('分组', () {
+    test('没有空分区（空分区会渲染成一个只有标题的孤块）', () {
+      for (final group in groups()) {
+        expect(group.items, isNotEmpty, reason: '分区「${group.title}」是空的');
+      }
+    });
+
+    test('每个条目只出现一次（同一功能挂两个分区会被用户当成两个东西）', () {
+      final all = [
+        for (final group in groups())
+          for (final item in group.items) item.entry.id,
+      ];
+      expect(
+        all.length,
+        all.toSet().length,
+        reason: '有条目出现在多个分区里',
+      );
+    });
+
+    test('分组顺序是任务顺序：课表在最前，关于在最后', () {
+      final titles = groups().map((g) => g.title).toList();
+      expect(titles.first, l10n.settingsTimetableSectionTitle);
+      expect(titles.last, l10n.settingsAboutSectionTitle);
     });
   });
 }

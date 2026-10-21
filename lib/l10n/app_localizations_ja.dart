@@ -650,7 +650,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudBackupViewAll => 'すべての履歴を表示';
 
   @override
-  String get cloudBackupEmpty => '履歴はまだありません。同期すると自動保存されます';
+  String get cloudBackupEmpty => 'バックアップなし';
 
   @override
   String get cloudBackupSourceAuto => '自動バックアップ';
@@ -7337,8 +7337,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importSemesterStartDateSubtitle => 'この日を含む週を校歴第1週として扱います';
 
   @override
-  String get importFirstCourseWeekMappingLabel =>
-      'Timetable week 1 maps to calendar week';
+  String get importFirstCourseWeekMappingLabel => '第1週＝校暦の何週目';
 
   @override
   String get importFirstCourseWeekMappingSubtitle => '第1週に授業がなければ第2週';
@@ -10001,8 +10000,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'Buildings found in timetable';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions =>
-      'No recognizable building locations yet';
+  String get locationTimeMatchNoBuildingSuggestions => '棟が見つかりません';
 
   @override
   String get locationTimeMatchAddBuilding => 'Add';
@@ -10649,11 +10647,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String taskUndatedHint(int count) {
-    return '期限なしの課題が$count件あります';
+    return '期限なし $count 件';
   }
 
   @override
-  String get taskUndatedHintSubtitle => '「今日」「今週」には表示されません。タップで「すべて」へ';
+  String get taskUndatedHintSubtitle => '「今日」「今週」には表示されません';
 
   @override
   String get taskDueDateHint => '日表示に出ません。「すべて」のみ';
@@ -10743,7 +10741,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportSectionTitle => 'カレンダーをエクスポート';
 
   @override
-  String get icsExportSectionSubtitle => '授業、試験、予定を選択して ICS カレンダーとして共有します';
+  String get icsExportSectionSubtitle => '選んだ項目をカレンダーへ出力';
 
   @override
   String get icsExportTitle => 'カレンダーをエクスポート';
@@ -11053,19 +11051,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuCategoryAbout => '情報とサポート';
 
   @override
-  String get homeMenuMoreTitle => 'その他の機能';
+  String get homeMenuMoreTitle => 'すべての機能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => 'ほかから開けない時間割ページ';
+  String get homeMenuMoreSearchHint => '検索：外観、インポート、ウィジェット';
 
   @override
-  String get homeMenuMoreDataDesc => 'バックアップ・同期・転送';
+  String get homeMenuMoreSearchEmptyTitle => '見つかりません';
 
   @override
-  String get homeMenuMoreAboutDesc => 'バージョン、ガイドとサポート';
-
-  @override
-  String get homeMenuMoreScopedHint => 'ここには他に入口がない機能だけを載せています。それ以外は時間割設定にあります';
+  String get homeMenuMoreSearchEmptyHint => '別の言葉で試すか、設定をご覧ください';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

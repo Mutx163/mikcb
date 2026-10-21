@@ -631,7 +631,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudBackupViewAll => '查看全部备份版本';
 
   @override
-  String get cloudBackupEmpty => '暂无备份版本，同步后会自动生成';
+  String get cloudBackupEmpty => '还没有备份版本';
 
   @override
   String get cloudBackupSourceAuto => '自动备份';
@@ -7216,7 +7216,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importSemesterStartDateSubtitle => '按这一天所在周作为校历第 1 周';
 
   @override
-  String get importFirstCourseWeekMappingLabel => '课表第 1 周对应校历第几周';
+  String get importFirstCourseWeekMappingLabel => '第 1 周对应校历第几周';
 
   @override
   String get importFirstCourseWeekMappingSubtitle => '如果第一周没课，就选第 2 周';
@@ -9700,7 +9700,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationTimeMatchBuildingSuggestions => '从课表识别的楼栋';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions => '当前课表没有可识别的楼栋地点';
+  String get locationTimeMatchNoBuildingSuggestions => '未识别到楼栋地点';
 
   @override
   String get locationTimeMatchAddBuilding => '添加';
@@ -10332,11 +10332,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String taskUndatedHint(int count) {
-    return '还有 $count 条作业没设截止日期';
+    return '$count 条作业没设日期';
   }
 
   @override
-  String get taskUndatedHintSubtitle => '它们在「今日」「本周」里看不到，点这里切到「全部」';
+  String get taskUndatedHintSubtitle => '它们在「今日」「本周」里看不到';
 
   @override
   String get taskDueDateHint => '日视图不显示，只在「全部」里看得到';
@@ -10426,7 +10426,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportSectionTitle => '导出日历';
 
   @override
-  String get icsExportSectionSubtitle => '选择课程、考试和日程，生成 ICS 日历并分享';
+  String get icsExportSectionSubtitle => '选内容导出到系统日历';
 
   @override
   String get icsExportTitle => '导出日历';
@@ -10733,19 +10733,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuCategoryAbout => '关于与支持';
 
   @override
-  String get homeMenuMoreTitle => '更多功能';
+  String get homeMenuMoreTitle => '全部功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '别处进不去的课表页面';
+  String get homeMenuMoreSearchHint => '搜功能，如 外观、导入、小组件';
 
   @override
-  String get homeMenuMoreDataDesc => '备份、同步与传输';
+  String get homeMenuMoreSearchEmptyTitle => '没找到';
 
   @override
-  String get homeMenuMoreAboutDesc => '版本、指南与支持';
-
-  @override
-  String get homeMenuMoreScopedHint => '这里只放别处找不到入口的功能；其余都在课表设置里';
+  String get homeMenuMoreSearchEmptyHint => '换个词试试，或去课表设置里找';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
@@ -12044,7 +12041,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudBackupViewAll => '查看全部備份版本';
 
   @override
-  String get cloudBackupEmpty => '暫無備份版本，同步後會自動生成';
+  String get cloudBackupEmpty => '還沒有備份版本';
 
   @override
   String get cloudBackupSourceAuto => '自動備份';
@@ -18628,7 +18625,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importSemesterStartDateSubtitle => '按這一天所在週作為校曆第 1 週';
 
   @override
-  String get importFirstCourseWeekMappingLabel => '課表第 1 週對應校曆第幾週';
+  String get importFirstCourseWeekMappingLabel => '第 1 週對應校曆第幾週';
 
   @override
   String get importFirstCourseWeekMappingSubtitle => '如果第一週沒課，就選第 2 週';
@@ -21152,7 +21149,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get locationTimeMatchBuildingSuggestions => '從課表識別的樓棟';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions => '當前課表沒有可識別的樓棟地點';
+  String get locationTimeMatchNoBuildingSuggestions => '未識別到樓棟地點';
 
   @override
   String get locationTimeMatchAddBuilding => '添加';
@@ -21784,11 +21781,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String taskUndatedHint(int count) {
-    return '還有 $count 條作業沒設截止日期';
+    return '$count 條作業沒設日期';
   }
 
   @override
-  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到，點這裡切到「全部」';
+  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到';
 
   @override
   String get taskDueDateHint => '日視圖不顯示，只在「全部」裡看得到';
@@ -21878,7 +21875,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportSectionTitle => '匯出日曆';
 
   @override
-  String get icsExportSectionSubtitle => '選擇課程、考試和日程，生成 ICS 日曆並分享';
+  String get icsExportSectionSubtitle => '選內容匯出到系統日曆';
 
   @override
   String get icsExportTitle => '匯出日曆';
@@ -22185,19 +22182,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuCategoryAbout => '關於與支援';
 
   @override
-  String get homeMenuMoreTitle => '更多功能';
+  String get homeMenuMoreTitle => '全部功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '別處進不去的課表頁面';
+  String get homeMenuMoreSearchHint => '搜功能，如 外觀、匯入、小工具';
 
   @override
-  String get homeMenuMoreDataDesc => '備份、同步與傳輸';
+  String get homeMenuMoreSearchEmptyTitle => '找不到';
 
   @override
-  String get homeMenuMoreAboutDesc => '版本、指南與支援';
-
-  @override
-  String get homeMenuMoreScopedHint => '這裡只放別處找不到入口的功能；其餘都在課表設定裡';
+  String get homeMenuMoreSearchEmptyHint => '換個詞試試，或到課表設定裡找';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
@@ -23496,7 +23490,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudBackupViewAll => '查看全部備份版本';
 
   @override
-  String get cloudBackupEmpty => '暫無備份版本，同步後會自動生成';
+  String get cloudBackupEmpty => '還沒有備份版本';
 
   @override
   String get cloudBackupSourceAuto => '自動備份';
@@ -30080,7 +30074,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importSemesterStartDateSubtitle => '按這一天所在週作為校曆第 1 週';
 
   @override
-  String get importFirstCourseWeekMappingLabel => '課表第 1 週對應校曆第幾週';
+  String get importFirstCourseWeekMappingLabel => '第 1 週對應校曆第幾週';
 
   @override
   String get importFirstCourseWeekMappingSubtitle => '如果第一週沒課，就選第 2 週';
@@ -32605,7 +32599,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get locationTimeMatchBuildingSuggestions => '從課表辨識的樓棟';
 
   @override
-  String get locationTimeMatchNoBuildingSuggestions => '目前課表沒有可辨識的樓棟地點';
+  String get locationTimeMatchNoBuildingSuggestions => '未識別到樓棟地點';
 
   @override
   String get locationTimeMatchAddBuilding => '添加';
@@ -33237,11 +33231,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String taskUndatedHint(int count) {
-    return '還有 $count 條作業沒設截止日期';
+    return '$count 條作業沒設日期';
   }
 
   @override
-  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到，點這裡切到「全部」';
+  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到';
 
   @override
   String get taskDueDateHint => '日視圖不顯示，只在「全部」裡看得到';
@@ -33331,7 +33325,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get icsExportSectionTitle => '匯出日曆';
 
   @override
-  String get icsExportSectionSubtitle => '選擇課程、考試和日程，產生 ICS 日曆並分享';
+  String get icsExportSectionSubtitle => '選內容匯出到系統日曆';
 
   @override
   String get icsExportTitle => '匯出日曆';
@@ -33638,19 +33632,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuCategoryAbout => '關於與支援';
 
   @override
-  String get homeMenuMoreTitle => '更多功能';
+  String get homeMenuMoreTitle => '全部功能';
 
   @override
-  String get homeMenuMoreFeaturesDesc => '別處進不去的課表頁面';
+  String get homeMenuMoreSearchHint => '搜功能，如 外觀、匯入、小工具';
 
   @override
-  String get homeMenuMoreDataDesc => '備份、同步與傳輸';
+  String get homeMenuMoreSearchEmptyTitle => '找不到';
 
   @override
-  String get homeMenuMoreAboutDesc => '版本、指南與支援';
-
-  @override
-  String get homeMenuMoreScopedHint => '這裡只放別處找不到入口的功能；其餘都在課表設定裡';
+  String get homeMenuMoreSearchEmptyHint => '換個詞試試，或到課表設定裡找';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
