@@ -1382,7 +1382,6 @@
     }
   },
   "duringClassReminderTitle": "课中与下课提醒",
-  "duringClassReminderSubtitle": "上课后到下课前的展示",
   "liveClassReminderLeadTitle": "重点提醒切入时机",
   "liveClassReminderLeadOptionImmediate": "一上课就切换",
   "liveClassReminderLeadOptionMinutes": "下课前 {minutes} 分钟",
@@ -1496,7 +1495,6 @@
     }
   },
   "liveIslandVisualTitle": "胶囊左侧图标",
-  "liveIslandVisualSubtitle": "左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存",
   "liveExpandedIconSectionTitle": "展开卡片大图标",
   "liveMiuiLabelImageTitle": "超级岛左侧文字图标",
   "liveMiuiLabelImageSubtitle": "推荐小米/红米设备；其他机型开启后将尝试在状态栏小图标显示文字，若显示异常可随时关闭",
@@ -1514,7 +1512,6 @@
       }
     }
   },
-  "liveMiuiLabelLogoCornerRadiusTitle": "左侧图标圆角",
   "liveMiuiLabelFontSizeLabel": "左侧文字大小 {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {
@@ -1523,7 +1520,6 @@
       }
     }
   },
-  "liveMiuiLabelFontSizeTitle": "左侧文字大小",
   "liveMiuiLabelOffsetXLabel": "左侧文字水平偏移 {value}",
   "@liveMiuiLabelOffsetXLabel": {
     "placeholders": {
@@ -1532,7 +1528,6 @@
       }
     }
   },
-  "liveMiuiLabelOffsetXTitle": "左侧文字水平偏移",
   "liveMiuiLabelOffsetYLabel": "左侧文字垂直偏移 {value}",
   "@liveMiuiLabelOffsetYLabel": {
     "placeholders": {
@@ -1541,23 +1536,16 @@
       }
     }
   },
-  "liveMiuiLabelOffsetYTitle": "左侧文字垂直偏移",
   "liveMiuiLabelFontWeightLabel": "左侧文字粗细",
   "liveMiuiLabelRenderQualityLabel": "左侧文字清晰度",
   "liveMiuiExpandedIconLabel": "展开态大图标",
   "selectImageAction": "选择图片",
   "replaceImageAction": "更换图片",
   "liveDisplayConfigModeTitle": "配置方式",
-  "liveDisplayConfigModeSubtitle": "开启后课中与下课提醒完全跟随上课前提醒的设置",
   "followBeforeClassDisplayTitle": "跟随上课前提醒设置",
   "liveKeepAliveTitle": "后台保活",
-  "liveKeepAliveOptionsTitle": "保活选项",
-  "liveKeepAliveOptionsSubtitle": "用于提升超级岛和提醒在后台场景下的稳定性",
   "hideFromRecentsTitle": "从最近任务中隐藏应用",
-  "hideFromRecentsSubtitle": "开启后应用会尽量不显示在最近任务列表中",
   "keepAliveServiceTitle": "轻屿课表后台保活服务",
-  "keepAliveServiceEnabledSubtitle": "当前已开启，系统会保持后台保活辅助服务处于可用状态",
-  "keepAliveServiceDisabledSubtitle": "当前未开启，可进入系统无障碍设置手动打开轻屿课表后台保活服务",
   "goEnableAction": "去开启",
   "keepAliveConfirmTitle": "开启后台保活服务",
   "keepAliveConfirmBody": "用于后台更新桌面小组件和课程提醒，不会读取屏幕内容或代为点击。需要系统无障碍权限，可随时关闭。",
@@ -6699,10 +6687,6 @@
   "classAlarmDaySeparator": "、",
   "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展开详情",
-  "liveExpandedDetailSubtitle": "长按拖动调整顺序，开关控制是否显示",
-  "liveExpandedDetailHint": "进度仅课中显示。展开状态下阶段与状态合并至标题显示。",
-  "liveExpandedDetailHintBeforeClass": "这里排的就是展开卡片正文的行序，与下方展开态预览一致。阶段与状态已并入标题、进度仅课中出现，因此不在本页列出。",
-  "liveExpandedDetailHintDuringEnd": "这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。",
   "liveExpandedDetailUnfilledSuffix": "未填写，岛上不显示",
   "liveExpandedDetailUnfilledValue": "无",
   "liveExpandedDetailReorderHandleLabel": "拖动排序",

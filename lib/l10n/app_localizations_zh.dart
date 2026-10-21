@@ -2432,9 +2432,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get duringClassReminderTitle => '课中与下课提醒';
 
   @override
-  String get duringClassReminderSubtitle => '上课后到下课前的展示';
-
-  @override
   String get liveClassReminderLeadTitle => '重点提醒切入时机';
 
   @override
@@ -2624,9 +2621,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveIslandVisualTitle => '胶囊左侧图标';
 
   @override
-  String get liveIslandVisualSubtitle => '左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存';
-
-  @override
   String get liveExpandedIconSectionTitle => '展开卡片大图标';
 
   @override
@@ -2660,15 +2654,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '左侧图标圆角';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左侧文字大小 $value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => '左侧文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2676,15 +2664,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '左侧文字水平偏移';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左侧文字垂直偏移 $value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => '左侧文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左侧文字粗细';
@@ -2705,35 +2687,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle => '开启后课中与下课提醒完全跟随上课前提醒的设置';
-
-  @override
   String get followBeforeClassDisplayTitle => '跟随上课前提醒设置';
 
   @override
   String get liveKeepAliveTitle => '后台保活';
 
   @override
-  String get liveKeepAliveOptionsTitle => '保活选项';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle => '用于提升超级岛和提醒在后台场景下的稳定性';
-
-  @override
   String get hideFromRecentsTitle => '从最近任务中隐藏应用';
 
   @override
-  String get hideFromRecentsSubtitle => '开启后应用会尽量不显示在最近任务列表中';
-
-  @override
   String get keepAliveServiceTitle => '轻屿课表后台保活服务';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle => '当前已开启，系统会保持后台保活辅助服务处于可用状态';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      '当前未开启，可进入系统无障碍设置手动打开轻屿课表后台保活服务';
 
   @override
   String get goEnableAction => '去开启';
@@ -10916,20 +10879,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveExpandedDetailGroupTitle => '展开详情';
 
   @override
-  String get liveExpandedDetailSubtitle => '长按拖动调整顺序，开关控制是否显示';
-
-  @override
-  String get liveExpandedDetailHint => '进度仅课中显示。展开状态下阶段与状态合并至标题显示。';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      '这里排的就是展开卡片正文的行序，与下方展开态预览一致。阶段与状态已并入标题、进度仅课中出现，因此不在本页列出。';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      '这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。';
-
-  @override
   String get liveExpandedDetailUnfilledSuffix => '未填写，岛上不显示';
 
   @override
@@ -13884,9 +13833,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
-  String get duringClassReminderSubtitle => '只影響上課後到下課前的展示';
-
-  @override
   String get liveClassReminderLeadTitle => '下課前多久切到超級島 / 重點提醒';
 
   @override
@@ -14077,9 +14023,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveIslandVisualTitle => '膠囊左側圖示';
 
   @override
-  String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自定義圖片都按目前階段單獨保存';
-
-  @override
   String get liveExpandedIconSectionTitle => '展開卡片大圖示';
 
   @override
@@ -14113,15 +14056,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '左側圖示圓角';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側文字大小 $value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => '左側文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -14129,15 +14066,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '左側文字水平偏移';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側文字垂直偏移 $value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => '左側文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側文字粗細';
@@ -14158,35 +14089,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle => '開啟後課中/下課提醒完全跟隨上課前提醒的設定';
-
-  @override
   String get followBeforeClassDisplayTitle => '跟隨上課前提醒設定';
 
   @override
   String get liveKeepAliveTitle => '後台保活';
 
   @override
-  String get liveKeepAliveOptionsTitle => '保活選項';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle => '用於提升超級島和提醒在後台場景下的穩定性';
-
-  @override
   String get hideFromRecentsTitle => '從最近任務中隱藏應用';
 
   @override
-  String get hideFromRecentsSubtitle => '開啟後應用會盡量不顯示在最近任務列表中';
-
-  @override
   String get keepAliveServiceTitle => '輕嶼課表後台保活服務';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle => '目前已開啟，系統會保持後台保活輔助服務處於可用狀態';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      '目前未開啟，可進入系統無障礙設定手動打開輕嶼課表後台保活服務';
 
   @override
   String get goEnableAction => '去開啟';
@@ -22408,20 +22320,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveExpandedDetailGroupTitle => '展開詳情';
 
   @override
-  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制係咪顯示';
-
-  @override
-  String get liveExpandedDetailHint => '進度僅課中顯示。展開狀態下階段與狀態合併至標題顯示。';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      '此清單即展開卡片的正文行序，與下方展開態預覽一致。階段與狀態已併入標題、進度僅課中出現，因此不在本頁列出。';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
-
-  @override
   String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';
 
   @override
@@ -25376,9 +25274,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get duringClassReminderTitle => '課中與下課提醒';
 
   @override
-  String get duringClassReminderSubtitle => '只影響上課後到下課前的展示';
-
-  @override
   String get liveClassReminderLeadTitle => '下課前多久切到超級島 / 重點提醒';
 
   @override
@@ -25569,9 +25464,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveIslandVisualTitle => '膠囊左側圖示';
 
   @override
-  String get liveIslandVisualSubtitle => '左側文字圖、展開態大圖示和自訂圖片都按目前階段單獨儲存';
-
-  @override
   String get liveExpandedIconSectionTitle => '展開卡片大圖示';
 
   @override
@@ -25605,15 +25497,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '左側圖示圓角';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側文字大小 $value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => '左側文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -25621,15 +25507,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '左側文字水平偏移';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側文字垂直偏移 $value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => '左側文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側文字粗細';
@@ -25650,35 +25530,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveDisplayConfigModeTitle => '配置方式';
 
   @override
-  String get liveDisplayConfigModeSubtitle => '開啟後課中/下課提醒完全跟隨上課前提醒的設定';
-
-  @override
   String get followBeforeClassDisplayTitle => '跟隨上課前提醒設定';
 
   @override
   String get liveKeepAliveTitle => '後台保活';
 
   @override
-  String get liveKeepAliveOptionsTitle => '保活選項';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle => '用於提升超級島和提醒在後台場景下的穩定性';
-
-  @override
   String get hideFromRecentsTitle => '從最近任務中隱藏應用';
 
   @override
-  String get hideFromRecentsSubtitle => '開啟後應用會儘量不顯示在最近任務列表中';
-
-  @override
   String get keepAliveServiceTitle => '輕嶼課表後台保活服務';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle => '目前已開啟，系統會保持後台保活輔助服務處於可用狀態';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      '目前未開啟，可進入系統無障礙設定手動打開輕嶼課表後台保活服務';
 
   @override
   String get goEnableAction => '去開啟';
@@ -33899,20 +33760,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveExpandedDetailGroupTitle => '展開詳情';
-
-  @override
-  String get liveExpandedDetailSubtitle => '長按拖動調整順序，開關控制是否顯示';
-
-  @override
-  String get liveExpandedDetailHint => '進度僅課中顯示。展開狀態下階段與狀態合併至標題顯示。';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      '此清單即展開卡片的正文行序，與下方展開態預覽一致。階段與狀態已併入標題、進度僅課中出現，因此不在本頁列出。';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      '此清單即展開卡片的正文行序，與下方展開態預覽一致。進度僅課中顯示；展開狀態下階段與狀態通常已併入標題與摘要，不單獨成行。';
 
   @override
   String get liveExpandedDetailUnfilledSuffix => '未填寫，島上不顯示';

@@ -2494,9 +2494,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get duringClassReminderTitle => '수업 중과 종료 알림';
 
   @override
-  String get duringClassReminderSubtitle => '수업 시작 후부터 종료 전까지의 표시에만 영향';
-
-  @override
   String get liveClassReminderLeadTitle => '포커스 전환 시점';
 
   @override
@@ -2699,10 +2696,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveIslandVisualTitle => '캡슐 좌측 아이콘';
 
   @override
-  String get liveIslandVisualSubtitle =>
-      '왼쪽 텍스트 이미지, 펼친 상태 큰 아이콘, 사용자 정의 이미지는 모두 현재 스테이지별로 개별 저장됩니다';
-
-  @override
   String get liveExpandedIconSectionTitle => '확장 카드 큰 아이콘';
 
   @override
@@ -2738,15 +2731,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '왼쪽 아이콘 모서리 둥글기';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '왼쪽 텍스트 크기 $value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => '왼쪽 텍스트 크기';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2754,15 +2741,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '왼쪽 텍스트 가로 오프셋';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '왼쪽 텍스트 수직 오프셋 $value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => '왼쪽 텍스트 세로 오프셋';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '왼쪽 텍스트 굵기';
@@ -2783,37 +2764,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '설정 모드';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      '켜면 수업 중/하교 알림이 수업 전 알림 설정을 그대로 따릅니다';
-
-  @override
   String get followBeforeClassDisplayTitle => '수업 전 알림 설정에 연동';
 
   @override
   String get liveKeepAliveTitle => '백그라운드 상주';
 
   @override
-  String get liveKeepAliveOptionsTitle => '상주 옵션';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle => '슈퍼아일랜드와 알림의 백그라운드 안정성을 향상시킵니다';
-
-  @override
   String get hideFromRecentsTitle => '최근 작업에서 앱 숨기기';
 
   @override
-  String get hideFromRecentsSubtitle => '켜면 최근 작업 목록에 표시되지 않도록 합니다';
-
-  @override
   String get keepAliveServiceTitle => '경屿 시간표 백그라운드 상주 서비스';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle =>
-      '현재 켜짐. 시스템이 백그라운드 상주 보조 서비스를 사용 가능한 상태로 유지합니다';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      '현재 꺼짐. 시스템 접근성 설정에서 수동으로 켤 수 있습니다';
 
   @override
   String get goEnableAction => '활성화하기';
@@ -11308,21 +11268,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveExpandedDetailGroupTitle => '펼침 상세';
-
-  @override
-  String get liveExpandedDetailSubtitle => '길게 눌러 순서 변경, 스위치로 표시 여부 전환';
-
-  @override
-  String get liveExpandedDetailHint =>
-      '진행은 수업 중에만 표시됩니다. 펼친 상태에서 단계와 상태는 제목에 포함되어 별도 줄로 나오지 않습니다';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      '이 목록은 펼친 카드 본문의 행 순서로, 아래 미리보기와 일치합니다. 단계와 상태는 제목에 포함되고 진행은 수업 중에만 나오므로 이 페이지에는 표시되지 않습니다.';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      '이 목록은 펼친 카드 본문의 행 순서로, 아래 미리보기와 일치합니다. 진행은 수업 중에만 표시되며, 펼친 상태에서 단계와 상태는 보통 제목과 요약에 포함되어 별도 줄로 나오지 않습니다.';
 
   @override
   String get liveExpandedDetailUnfilledSuffix => '미입력, 섬에 표시되지 않음';

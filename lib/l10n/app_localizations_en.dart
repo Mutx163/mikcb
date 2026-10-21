@@ -2584,10 +2584,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get duringClassReminderTitle => 'During Class and Before End Reminder';
 
   @override
-  String get duringClassReminderSubtitle =>
-      'Only affects the period after class starts and before it ends';
-
-  @override
   String get liveClassReminderLeadTitle => 'Highlight timing';
 
   @override
@@ -2796,10 +2792,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveIslandVisualTitle => 'Capsule Left Icon';
 
   @override
-  String get liveIslandVisualSubtitle =>
-      'The left text icon, expanded large icon, and custom image are all stored separately for the current stage';
-
-  @override
   String get liveExpandedIconSectionTitle => 'Expanded Card Large Icon';
 
   @override
@@ -2836,15 +2828,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => 'Left icon corner radius';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return 'Left Text Size $value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => 'Left text size';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2852,15 +2838,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => 'Left text horizontal offset';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return 'Left Text Vertical Offset $value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => 'Left text vertical offset';
 
   @override
   String get liveMiuiLabelFontWeightLabel => 'Left Text Weight';
@@ -2881,10 +2861,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveDisplayConfigModeTitle => 'Configuration Mode';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      'In-class and after-class alerts then fully follow the before-class alert settings';
-
-  @override
   String get followBeforeClassDisplayTitle =>
       'Follow Before-class Display Settings';
 
@@ -2892,29 +2868,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveKeepAliveTitle => 'Keep Alive';
 
   @override
-  String get liveKeepAliveOptionsTitle => 'Keep-alive Options';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle =>
-      'Used to improve island and reminder stability in background scenarios';
-
-  @override
   String get hideFromRecentsTitle => 'Hide from Recents';
 
   @override
-  String get hideFromRecentsSubtitle =>
-      'When enabled, the app will try not to appear in the recent tasks list';
-
-  @override
   String get keepAliveServiceTitle => 'Qingyu Timetable Keep-alive Service';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle =>
-      'Currently enabled. The system will keep the accessibility-based keep-alive helper available';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      'Currently disabled. You can open system accessibility settings and enable the Qingyu Timetable keep-alive service manually';
 
   @override
   String get goEnableAction => 'Enable Now';
@@ -11592,22 +11549,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveExpandedDetailGroupTitle => 'Expanded details';
-
-  @override
-  String get liveExpandedDetailSubtitle =>
-      'Drag to reorder, use the switch to show or hide';
-
-  @override
-  String get liveExpandedDetailHint =>
-      'Progress only appears during class. Stage and Status are already in the title and won\'t form separate lines';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      'This list is the body order of the expanded card, matching the preview below. Stage and Status fold into the title and Progress only appears during class, so they are not listed here.';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      'This list is the body order of the expanded card, matching the preview below. Progress only appears during class; Stage and Status usually fold into the title and summary instead of forming separate lines.';
 
   @override
   String get liveExpandedDetailUnfilledSuffix =>

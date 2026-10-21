@@ -2481,9 +2481,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get duringClassReminderTitle => '授業中と終了リマインダー';
 
   @override
-  String get duringClassReminderSubtitle => '授業開始後から終了前までの表示にのみ影響';
-
-  @override
   String get liveClassReminderLeadTitle => 'フォーカス切替タイミング';
 
   @override
@@ -2680,10 +2677,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveIslandVisualTitle => 'カプセル左側アイコン';
 
   @override
-  String get liveIslandVisualSubtitle =>
-      '左側テキスト画像、展開状態の大きなアイコンとカスタム画像は全て現在のステージ別に保存';
-
-  @override
   String get liveExpandedIconSectionTitle => '展開カード大アイコン';
 
   @override
@@ -2719,15 +2712,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelLogoCornerRadiusTitle => '左アイコンの角丸';
-
-  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側テキストサイズ$value';
   }
-
-  @override
-  String get liveMiuiLabelFontSizeTitle => '左テキストのサイズ';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2735,15 +2722,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get liveMiuiLabelOffsetXTitle => '左テキストの水平オフセット';
-
-  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側テキスト垂直オフセット$value';
   }
-
-  @override
-  String get liveMiuiLabelOffsetYTitle => '左テキストの垂直オフセット';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側テキスト太さ';
@@ -2764,37 +2745,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveDisplayConfigModeTitle => '設定モード';
 
   @override
-  String get liveDisplayConfigModeSubtitle =>
-      'オンにすると授業中/授業後リマインダーは授業前リマインダーの設定に完全に従います';
-
-  @override
   String get followBeforeClassDisplayTitle => '授業前リマインダー設定に連携';
 
   @override
   String get liveKeepAliveTitle => 'バックグラウンド常駐';
 
   @override
-  String get liveKeepAliveOptionsTitle => '常駐オプション';
-
-  @override
-  String get liveKeepAliveOptionsSubtitle => 'スーパーアイランドとリマインダーのバックグラウンド安定性を向上';
-
-  @override
   String get hideFromRecentsTitle => '最近のタスクからアプリを非表示';
 
   @override
-  String get hideFromRecentsSubtitle => 'オンにすると最近のタスクリストに表示されないようにします';
-
-  @override
   String get keepAliveServiceTitle => '軽屿時間割バックグラウンド常駐サービス';
-
-  @override
-  String get keepAliveServiceEnabledSubtitle =>
-      '現在オン，システムがバックグラウンド常駐補助サービスを利用可能な状態に維持';
-
-  @override
-  String get keepAliveServiceDisabledSubtitle =>
-      '現在オフ，システムのアクセシビリティ設定で手動でオンにできます';
 
   @override
   String get goEnableAction => '有効にする';
@@ -11256,21 +11216,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveExpandedDetailGroupTitle => '展開詳細';
-
-  @override
-  String get liveExpandedDetailSubtitle => '長押しで並べ替え、スイッチで表示を切り替え';
-
-  @override
-  String get liveExpandedDetailHint =>
-      '「進捗」は授業中のみ表示。展開時は「段階」「状態」がタイトルに含まれるため独立行になりません';
-
-  @override
-  String get liveExpandedDetailHintBeforeClass =>
-      'このリストは展開カード本文の行順で、下のプレビューと一致します。「段階」「状態」はタイトルに含まれ、「進捗」は授業中のみのため、このページには表示されません。';
-
-  @override
-  String get liveExpandedDetailHintDuringEnd =>
-      'このリストは展開カード本文の行順で、下のプレビューと一致します。「進捗」は授業中のみ表示され、展開時の「段階」「状態」は通常タイトルと概要に含まれるため独立行になりません。';
 
   @override
   String get liveExpandedDetailUnfilledSuffix => '未入力のため島には表示されません';

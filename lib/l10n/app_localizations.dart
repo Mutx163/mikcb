@@ -4534,12 +4534,6 @@ abstract class AppLocalizations {
   /// **'课中与下课提醒'**
   String get duringClassReminderTitle;
 
-  /// No description provided for @duringClassReminderSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'上课后到下课前的展示'**
-  String get duringClassReminderSubtitle;
-
   /// No description provided for @liveClassReminderLeadTitle.
   ///
   /// In zh, this message translates to:
@@ -4882,12 +4876,6 @@ abstract class AppLocalizations {
   /// **'胶囊左侧图标'**
   String get liveIslandVisualTitle;
 
-  /// No description provided for @liveIslandVisualSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存'**
-  String get liveIslandVisualSubtitle;
-
   /// No description provided for @liveExpandedIconSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -4948,23 +4936,11 @@ abstract class AppLocalizations {
   /// **'左侧图标圆角 {value}'**
   String liveMiuiLabelLogoCornerRadiusLabel(String value);
 
-  /// No description provided for @liveMiuiLabelLogoCornerRadiusTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'左侧图标圆角'**
-  String get liveMiuiLabelLogoCornerRadiusTitle;
-
   /// No description provided for @liveMiuiLabelFontSizeLabel.
   ///
   /// In zh, this message translates to:
   /// **'左侧文字大小 {value}'**
   String liveMiuiLabelFontSizeLabel(String value);
-
-  /// No description provided for @liveMiuiLabelFontSizeTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'左侧文字大小'**
-  String get liveMiuiLabelFontSizeTitle;
 
   /// No description provided for @liveMiuiLabelOffsetXLabel.
   ///
@@ -4972,23 +4948,11 @@ abstract class AppLocalizations {
   /// **'左侧文字水平偏移 {value}'**
   String liveMiuiLabelOffsetXLabel(String value);
 
-  /// No description provided for @liveMiuiLabelOffsetXTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'左侧文字水平偏移'**
-  String get liveMiuiLabelOffsetXTitle;
-
   /// No description provided for @liveMiuiLabelOffsetYLabel.
   ///
   /// In zh, this message translates to:
   /// **'左侧文字垂直偏移 {value}'**
   String liveMiuiLabelOffsetYLabel(String value);
-
-  /// No description provided for @liveMiuiLabelOffsetYTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'左侧文字垂直偏移'**
-  String get liveMiuiLabelOffsetYTitle;
 
   /// No description provided for @liveMiuiLabelFontWeightLabel.
   ///
@@ -5026,12 +4990,6 @@ abstract class AppLocalizations {
   /// **'配置方式'**
   String get liveDisplayConfigModeTitle;
 
-  /// No description provided for @liveDisplayConfigModeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'开启后课中与下课提醒完全跟随上课前提醒的设置'**
-  String get liveDisplayConfigModeSubtitle;
-
   /// No description provided for @followBeforeClassDisplayTitle.
   ///
   /// In zh, this message translates to:
@@ -5044,47 +5002,17 @@ abstract class AppLocalizations {
   /// **'后台保活'**
   String get liveKeepAliveTitle;
 
-  /// No description provided for @liveKeepAliveOptionsTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'保活选项'**
-  String get liveKeepAliveOptionsTitle;
-
-  /// No description provided for @liveKeepAliveOptionsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'用于提升超级岛和提醒在后台场景下的稳定性'**
-  String get liveKeepAliveOptionsSubtitle;
-
   /// No description provided for @hideFromRecentsTitle.
   ///
   /// In zh, this message translates to:
   /// **'从最近任务中隐藏应用'**
   String get hideFromRecentsTitle;
 
-  /// No description provided for @hideFromRecentsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'开启后应用会尽量不显示在最近任务列表中'**
-  String get hideFromRecentsSubtitle;
-
   /// No description provided for @keepAliveServiceTitle.
   ///
   /// In zh, this message translates to:
   /// **'轻屿课表后台保活服务'**
   String get keepAliveServiceTitle;
-
-  /// No description provided for @keepAliveServiceEnabledSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前已开启，系统会保持后台保活辅助服务处于可用状态'**
-  String get keepAliveServiceEnabledSubtitle;
-
-  /// No description provided for @keepAliveServiceDisabledSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前未开启，可进入系统无障碍设置手动打开轻屿课表后台保活服务'**
-  String get keepAliveServiceDisabledSubtitle;
 
   /// No description provided for @goEnableAction.
   ///
@@ -19865,30 +19793,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'展开详情'**
   String get liveExpandedDetailGroupTitle;
-
-  /// No description provided for @liveExpandedDetailSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'长按拖动调整顺序，开关控制是否显示'**
-  String get liveExpandedDetailSubtitle;
-
-  /// No description provided for @liveExpandedDetailHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'进度仅课中显示。展开状态下阶段与状态合并至标题显示。'**
-  String get liveExpandedDetailHint;
-
-  /// No description provided for @liveExpandedDetailHintBeforeClass.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里排的就是展开卡片正文的行序，与下方展开态预览一致。阶段与状态已并入标题、进度仅课中出现，因此不在本页列出。'**
-  String get liveExpandedDetailHintBeforeClass;
-
-  /// No description provided for @liveExpandedDetailHintDuringEnd.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里排的就是展开卡片正文的行序，与下方展开态预览一致。进度仅课中显示；展开状态下阶段与状态通常已并入标题与摘要，不单独成行。'**
-  String get liveExpandedDetailHintDuringEnd;
 
   /// No description provided for @liveExpandedDetailUnfilledSuffix.
   ///

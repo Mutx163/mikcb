@@ -1324,7 +1324,6 @@
     }
   },
   "liveIslandVisualTitle": "Capsule Left Icon",
-  "liveIslandVisualSubtitle": "The left text icon, expanded large icon, and custom image are all stored separately for the current stage",
   "liveExpandedIconSectionTitle": "Expanded Card Large Icon",
   "liveMiuiLabelImageTitle": "Xiaomi Island Left Text Icon",
   "liveMiuiLabelImageSubtitle": "Recommended for Xiaomi/Redmi. Other devices can try showing text in status bar icon; turn off if abnormal",
@@ -1342,7 +1341,6 @@
       }
     }
   },
-  "liveMiuiLabelLogoCornerRadiusTitle": "Left icon corner radius",
   "liveMiuiLabelFontSizeLabel": "Left Text Size {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {
@@ -1351,7 +1349,6 @@
       }
     }
   },
-  "liveMiuiLabelFontSizeTitle": "Left text size",
   "liveMiuiLabelOffsetXLabel": "Left Text Horizontal Offset {value}",
   "@liveMiuiLabelOffsetXLabel": {
     "placeholders": {
@@ -1360,7 +1357,6 @@
       }
     }
   },
-  "liveMiuiLabelOffsetXTitle": "Left text horizontal offset",
   "liveMiuiLabelOffsetYLabel": "Left Text Vertical Offset {value}",
   "@liveMiuiLabelOffsetYLabel": {
     "placeholders": {
@@ -1369,23 +1365,16 @@
       }
     }
   },
-  "liveMiuiLabelOffsetYTitle": "Left text vertical offset",
   "liveMiuiLabelFontWeightLabel": "Left Text Weight",
   "liveMiuiLabelRenderQualityLabel": "Left Text Render Quality",
   "liveMiuiExpandedIconLabel": "Expanded Large Icon",
   "selectImageAction": "Choose Image",
   "replaceImageAction": "Replace Image",
   "liveDisplayConfigModeTitle": "Configuration Mode",
-  "liveDisplayConfigModeSubtitle": "In-class and after-class alerts then fully follow the before-class alert settings",
   "followBeforeClassDisplayTitle": "Follow Before-class Display Settings",
   "liveKeepAliveTitle": "Keep Alive",
-  "liveKeepAliveOptionsTitle": "Keep-alive Options",
-  "liveKeepAliveOptionsSubtitle": "Used to improve island and reminder stability in background scenarios",
   "hideFromRecentsTitle": "Hide from Recents",
-  "hideFromRecentsSubtitle": "When enabled, the app will try not to appear in the recent tasks list",
   "keepAliveServiceTitle": "Qingyu Timetable Keep-alive Service",
-  "keepAliveServiceEnabledSubtitle": "Currently enabled. The system will keep the accessibility-based keep-alive helper available",
-  "keepAliveServiceDisabledSubtitle": "Currently disabled. You can open system accessibility settings and enable the Qingyu Timetable keep-alive service manually",
   "goEnableAction": "Enable Now",
   "keepAliveConfirmTitle": "Enable keep-alive service",
   "keepAliveConfirmBody": "This service only refreshes home-screen widgets and reschedules course reminders in the background. It does not read screen content or perform any actions on your behalf. Enabling it requires the Accessibility permission in system settings, and you can turn it off at any time.",
@@ -1416,7 +1405,6 @@
     }
   },
   "duringClassReminderTitle": "During Class and Before End Reminder",
-  "duringClassReminderSubtitle": "Only affects the period after class starts and before it ends",
   "liveClassReminderLeadTitle": "Highlight timing",
   "liveClassReminderLeadOptionImmediate": "As soon as class starts",
   "liveClassReminderLeadOptionMinutes": "Switch {minutes} min before class ends",
@@ -6609,10 +6597,6 @@
   "classAlarmDaySeparator": ", ",
   "classAlarmDetailSeparator": "; ",
   "liveExpandedDetailGroupTitle": "Expanded details",
-  "liveExpandedDetailSubtitle": "Drag to reorder, use the switch to show or hide",
-  "liveExpandedDetailHint": "Progress only appears during class. Stage and Status are already in the title and won't form separate lines",
-  "liveExpandedDetailHintBeforeClass": "This list is the body order of the expanded card, matching the preview below. Stage and Status fold into the title and Progress only appears during class, so they are not listed here.",
-  "liveExpandedDetailHintDuringEnd": "This list is the body order of the expanded card, matching the preview below. Progress only appears during class; Stage and Status usually fold into the title and summary instead of forming separate lines.",
   "liveExpandedDetailUnfilledSuffix": "not filled in; hidden on the island",
   "liveExpandedDetailUnfilledValue": "None",
   "liveExpandedDetailReorderHandleLabel": "Reorder",
