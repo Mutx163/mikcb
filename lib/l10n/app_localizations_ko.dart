@@ -596,8 +596,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncAccountSectionTitle => '클라우드 계정';
 
   @override
-  String get cloudSyncNotConnectedHint =>
-      'Jianguoyun에 연결하면 여러 기기에서 시간표와 가져온 데이터를 동기화할 수 있습니다';
+  String get cloudSyncNotConnectedHint => '여러 기기에서 동기화';
 
   @override
   String get cloudSyncConnectAccount => 'Jianguoyun 연결';
@@ -803,8 +802,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get lanEditKeepAliveWhenLeavingTitle => '나가도 유지';
 
   @override
-  String get lanEditKeepAliveWhenLeavingSubtitle =>
-      '켜면 이 화면을 떠나도 LAN 편집이 유지되고, 끄면 나갈 때 중지됩니다';
+  String get lanEditKeepAliveWhenLeavingSubtitle => '끄면 이 화면을 나가면 중지';
 
   @override
   String get aboutSupportSectionTitle => '앱 정보 및 지원';
@@ -1104,8 +1102,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get githubIssueTitle => 'GitHub Issue';
 
   @override
-  String get githubIssueSubtitle =>
-      '저장소 Issue 페이지를 열어 문제나 제안을 제출하거나 기존 피드백을 확인할 수 있습니다';
+  String get githubIssueSubtitle => '문제·제안 보내기, 기존 확인';
 
   @override
   String get openIssuePage => 'Issue 페이지 열기';
@@ -1498,7 +1495,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importTimetableTitle => '시간표 가져오기';
 
   @override
-  String get importTimetableSubtitle => '.ics 파일 또는 AI 분석 결과에서 수업 가져오기';
+  String get importTimetableSubtitle => '.ics 또는 AI 결과에서 가져오기';
 
   @override
   String get restoreBackupTitle => '백업에서 복원';
@@ -2019,7 +2016,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutRepositoryTitle => '오픈소스 저장소';
 
   @override
-  String get aboutRepositorySubtitle => 'GitHub 저장소, 소스, Release 및 피드백';
+  String get aboutRepositorySubtitle => '소스, Release, 피드백';
 
   @override
   String get aboutOpenSourceLicensesTitle => '오픈소스 라이선스';
@@ -2226,12 +2223,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timeSchemeBlockerListSeparator => ', ';
 
   @override
-  String get timeSchemeBlockedLocationGroupsSubtitle =>
-      '이 장소 규칙들이 이 템플릿을 가리킵니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다';
+  String get timeSchemeBlockedLocationGroupsSubtitle => '다른 템플릿으로 먼저 바꿔야 삭제';
 
   @override
-  String get timeSchemeBlockedDateRulesSubtitle =>
-      '이 날짜 규칙들이 시간표를 이 템플릿으로 전환합니다. 다른 템플릿으로 먼저 바꿔야 삭제할 수 있습니다';
+  String get timeSchemeBlockedDateRulesSubtitle => '다른 템플릿으로 먼저 바꿔야 삭제';
 
   @override
   String get copiedTimeSchemeMessage => '템플릿을 복사했습니다';
@@ -2270,7 +2265,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 시간표들은 이 템플릿으로 전환 후 이 교시 시간으로 표시됩니다';
 
   @override
-  String get followMainSchemeCoursesTitle => '메인 템플릿에 연동되는 수업';
+  String get followMainSchemeCoursesTitle => '메인을 따르는 수업';
 
   @override
   String get followMainSchemeCoursesEmpty => '현재 메인 템플릿 경유로 사용하는 수업이 없습니다.';
@@ -2280,7 +2275,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 수업들은 부 템플릿을 개별 설정하지 않고 소속 시간표와 함께 이 템플릿을 사용합니다';
 
   @override
-  String get overrideSchemeCoursesTitle => '부 템플릿으로 사용하는 수업';
+  String get overrideSchemeCoursesTitle => '부 템플릿으로 쓰는 수업';
 
   @override
   String get overrideSchemeCoursesEmpty => '현재 이 템플릿을 부 템플릿으로 사용하는 수업이 없습니다.';
@@ -3077,7 +3072,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reuseExistingCourseLabel => '기존 수업 활용';
 
   @override
-  String get reuseExistingCourseHelper => '기존 정보를 자동으로 채웁니다';
+  String get reuseExistingCourseHelper => '기존 정보를 채웁니다';
 
   @override
   String get manualInputLabel => '수동 입력';
@@ -3331,6 +3326,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '배경이 주차 스와이프를 따라감';
+
+  @override
+  String get homePageWallpaperBlurTitle => '배경화면 흐리게';
+
+  @override
+  String get homePageWallpaperBlurSubtitle =>
+      '배경을 고정된 흐림 이미지 한 장으로 만들어 위의 글자가 더 잘 보이게 합니다';
+
+  @override
+  String get homePageWallpaperBlurOff => '끔';
 
   @override
   String get homePageBackdropFollowsWeekPagerSubtitle => '배경이 페이지와 함께 이동';
@@ -3589,8 +3594,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideStatusDoNotDisturbAccess => '방해 금지 접근 권한';
 
   @override
-  String get guideStatusDoNotDisturbAccessHint =>
-      '수업 전 사이런트 / 방해 금지 빠른 작업에 필요합니다. 허용하지 않으면 버튼이 작동하지 않습니다';
+  String get guideStatusDoNotDisturbAccessHint => '권한 없으면 무음이 안 됩니다';
 
   @override
   String get guideStatusAndroidVersion => 'Android 버전';
@@ -3950,10 +3954,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingCourseTestStageTitle => '미리 볼 단계 선택';
 
   @override
-  String get liveTestingCourseTestStageBeforeClass => '수업 전 카운트다운(약 3분 표시)';
+  String get liveTestingCourseTestStageBeforeClass => '수업 전 카운트다운';
 
   @override
-  String get liveTestingCourseTestStageDuringClass => '수업 중(약 4분 표시)';
+  String get liveTestingCourseTestStageDuringClass => '수업 중';
 
   @override
   String liveTestingCourseTestActiveChip(String course) {
@@ -4625,14 +4629,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutCheckPrereleaseTitle => '시험판 검출';
 
   @override
-  String get aboutCheckPrereleaseSubtitle =>
-      '켜면 시험판도 업데이트 확인에 포함됩니다. 일반 사용은 끄기를 권장합니다';
+  String get aboutCheckPrereleaseSubtitle => '불안정한 시험판이 올 수 있음';
 
   @override
   String get aboutUpdatePromptTitle => '업데이트 알림';
 
   @override
-  String get aboutUpdatePromptSubtitle => '새 버전이 감지되면 홈 화면에 자동으로 표시합니다';
+  String get aboutUpdatePromptSubtitle => '끄면 더 보기에 빨간 점만 표시';
 
   @override
   String get aboutDiagnosticsTitle => '테스트 및 진단';
@@ -4716,8 +4719,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutUpdatePackageTitle => '경屿 시간표 업데이트 패키지';
 
   @override
-  String get aboutUpdatePackageDescription =>
-      '시스템 다운로드 관리자에 전달하여 다운로드 중입니다. 완료 후 시스템 알림에서 바로 설치할 수 있습니다';
+  String get aboutUpdatePackageDescription => '시스템에서 다운로드 중. 완료 후 알림에서 설치';
 
   @override
   String get aboutSystemDownloaderQueued =>
@@ -4815,8 +4817,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importConfirmSemesterMappingTitle => '학기 시작일과 주차 대응 확인';
 
   @override
-  String get importConfirmSemesterMappingSubtitleIcs =>
-      '학교 학사일정의 학기 시작일을 선택하세요. 파일 내 가장 이른 수업 날짜에 따라 기본 주차 대응을 제안했습니다. 수동으로 조정할 수도 있습니다';
+  String get importConfirmSemesterMappingSubtitleIcs => '주차는 파일에서 미리 채워집니다';
 
   @override
   String importOverwriteCount(int count) {
@@ -4997,7 +4998,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get warehouseMissingSchoolTitle => '학교 목록에 해당 학교가 없으신가요?';
+  String get warehouseMissingSchoolTitle => '학교가 없나요?';
 
   @override
   String get warehouseMissingSchoolSubtitle =>
@@ -5500,10 +5501,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteModeTitle => '삭제 방식';
-
-  @override
-  String get deleteModeSubtitle =>
-      '배치 전체를 삭제하거나, 현재 보고 있는 이 주의 이 수업만 삭제할 수 있습니다';
 
   @override
   String get deleteCourseAction => '이 수업 삭제';
@@ -6622,8 +6619,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePermissionsSubtitle => '이 설정을 완료해야 슈퍼아일랜드와 알림이 정상 작동합니다';
 
   @override
-  String get guidePermissionsFooterHint =>
-      '자동 시작은 시스템 제한이 있으므로 시스템 페이지 스위치를 기준으로 하세요';
+  String get guidePermissionsFooterHint => '시스템 제한 있음, 스위치 기준';
 
   @override
   String get guideTipsHeader => '사용 팁';
@@ -7401,8 +7397,7 @@ class AppLocalizationsKo extends AppLocalizations {
       'Timetable week 1 maps to calendar week';
 
   @override
-  String get importFirstCourseWeekMappingSubtitle =>
-      'If the first school week has no classes, choose week 2; if the first two weeks are empty, choose week 3.';
+  String get importFirstCourseWeekMappingSubtitle => '1주차 수업 없으면 2주차';
 
   @override
   String get importSemesterMappingNoShiftHint =>
@@ -10037,8 +10032,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get locationTimeMatchBoundSchemeLabel => 'Bound time scheme';
 
   @override
-  String get locationTimeMatchNeedTimeScheme =>
-      'Create at least one time scheme first';
+  String get locationTimeMatchNeedTimeScheme => '먼저 시간 템플릿 생성';
 
   @override
   String get locationTimeMatchEnabledLabel => 'Enable this group';
@@ -10838,8 +10832,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportSkipHolidayCourses => '공휴일 수업 제외';
 
   @override
-  String get icsExportSkipHolidayCoursesSubtitle =>
-      '공휴일과 대체 휴일의 수업은 내보내지 않습니다(대체 근무일은 그대로 내보냄)';
+  String get icsExportSkipHolidayCoursesSubtitle => '대체 휴일도 제외, 근무일은 내보냄';
 
   @override
   String get icsExportSkipHolidayCoursesOn => '공휴일 수업을 제외했습니다';
@@ -11751,8 +11744,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pickupCodeSemanticsNotInstalled => '해당 앱이 설치되어 있지 않습니다';
 
   @override
-  String get pickupCodeLaunchFailedHint =>
-      '각 앱이 제공하는 주소라 업데이트 후 사용할 수 없게 될 수 있습니다. 해당 앱을 직접 열어 보세요.';
+  String get pickupCodeLaunchFailedHint => '안 되면 앱을 직접 열어 보세요';
 
   @override
   String get courseFormDiscardTitle => '변경사항을 버릴까요?';

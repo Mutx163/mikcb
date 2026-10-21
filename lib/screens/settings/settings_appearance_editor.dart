@@ -343,7 +343,8 @@ class AppearanceEditorScreenState extends State<AppearanceEditorScreen>
   TimetableSettings get backdropDraft => _draft;
 
   @override
-  void applyBackdropDraft(TimetableSettings next) => _updateDraft(next);
+  void applyBackdropDraft(TimetableSettings next, {bool debounce = false}) =>
+      _updateDraft(next, debounce: debounce);
 
   @override
   TimetableProvider get backdropProvider => _timetableProvider;

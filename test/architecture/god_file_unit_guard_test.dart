@@ -147,8 +147,15 @@ void main() {
     // 字段声明 / 构造默认 / toJson / fromJson / copyWith 五处 +12 行，
     // 是同一个类的必要增长（TimetableSettings 的字段无法拆出类外，
     // settings/ 下只放枚举与扩展）；提交信息同步说明。
-    const baselineMain = 2633;
-    const baselineUnit = 3673;
+    //
+    // 2633→2666 / 3673→3706：壁纸高斯模糊强度（homePageWallpaperBlurSigma，
+    // 2026-10-21）+33 行 —— 一个 double 字段的六处接线（声明 / 构造默认 / toJson /
+    // fromJson / copyWith 参数 / copyWith 实现）+ 两个上下限常量 + 一个共用夹取 helper
+    // （fromJson 与 copyWith 共用，避免两处 clamp 漂开）。其中 20 行是代码、13 行是
+    // 注释；注释已压到"为什么这个字段必须在这里、上限为什么等于 kPreblurMaxSigma"
+    // 两条不能丢的信息。同属"字段无法拆出类外"的必要增长。
+    const baselineMain = 2666;
+    const baselineUnit = 3706;
     const unit = [
       'lib/models/timetable_settings.dart',
       'lib/models/settings/timetable_settings_enums.dart',
@@ -244,7 +251,21 @@ void main() {
     // 设置的「行列与密度」组（两行 HyperosSwitchTile + 注释 +19 行）+
     // settings_reset.dart 的 timetablePage 作用域 +2——用户可见的功能增长，
     // 两行开关抽成独立文件属过度碎片化；提交信息同步说明。
-    const baselineLines = 13764;
+    //
+    // 13764→13799：壁纸高斯模糊强度（2026-10-21）本泳道 +35 行，其中
+    // settings_home_backdrop_flow.dart +25（mixin 里一个 buildWallpaperBlurTile、
+    // 弹层第二页多接一行、applyBackdropDraft 加 debounce 参数）、
+    // settings_reset.dart +4、settings_timetable_page.dart +3、
+    // settings_appearance_editor.dart +1（只改 applyBackdropDraft 的签名转发）。
+    // **滑杆控件本体已刻意抽到 `lib/widgets/wallpaper_blur_tile.dart`**（不在本统计
+    // 范围内）：两个宿主共用一个 builder 比各抄一份安全，而控件约 90 行、放这里会
+    // 吃掉两倍余量。剩下这 29 行是接线与作用域登记，三处注释分别解释 debounce 理由、
+    // 顺序理由、归哪个重置作用域。属正当功能增长。
+    //
+    // 余下 +6 行来自并行泳道的 settings_home_widget.dart（同一时间窗内的另一处
+    // 设置域改动，与本功能无关）：基线是全目录合计，无法只给自己那一份留位，
+    // 故按实测总量同步到 13799。
+    const baselineLines = 13799;
     final domainFiles = <String>[
       'lib/screens/timetable_settings_screen.dart',
       ...Directory(GuardSource.resolve('lib/screens/settings'))

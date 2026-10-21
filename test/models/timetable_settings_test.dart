@@ -4,6 +4,10 @@ import 'package:university_timetable/models/liquid_glass_tuning.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/models/wallpaper_history.dart';
 import 'package:university_timetable/utils/widget_course_accent.dart';
+// 只为钉「壁纸模糊上限 == 烤图上限」这一条约束（见文件末尾的壁纸模糊用例）：
+// 两个数一旦漂开，滑杆尾段就是"拖了没变化"的死区，而那正是卡片滑杆当年踩过的坑。
+import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart'
+    show kPreblurMaxSigma;
 
 void main() {
   test('defaults include semester week count and preserve it in json', () {
@@ -1096,6 +1100,65 @@ void main() {
       TimetableSettings.fromJson(legacy).homePageWallpaperScale,
       closeTo(1, 1e-9),
     );
+  });
+
+  test('壁纸模糊强度：进 JSON、缺键读 0、越界值在解析与写回两处都被夹住', () {
+    // 来回一趟：值必须原样回来。
+    final settings = TimetableSettings.defaults().copyWith(
+      homePageWallpaperPath: '/tmp/wallpaper.png',
+      homePageWallpaperBlurSigma: 12,
+    );
+    final json = settings.toJson();
+    expect(json['homePageWallpaperBlurSigma'], 12);
+    expect(
+      TimetableSettings.fromJson(json).homePageWallpaperBlurSigma,
+      closeTo(12, 1e-9),
+    );
+
+    // 存量存档（加模糊之前）没有这个键：缺省 0 = 不模糊，
+    // 观感与加这个功能之前逐像素一致。
+    final legacy = Map<String, Object?>.of(json)
+      ..remove('homePageWallpaperBlurSigma');
+    expect(
+      TimetableSettings.fromJson(legacy).homePageWallpaperBlurSigma,
+      closeTo(TimetableSettings.minHomePageWallpaperBlurSigma, 1e-9),
+    );
+
+    // 解析侧夹取：手改坏 JSON 塞一个越界值，读回来必须落在收口带里。
+    // （不像 `homePageWallpaperScale` 那样只在消费侧夹 —— 那条路会留下
+    //  "越界值写进盘、切回来才发现"的口子。）
+    final tooBig = Map<String, Object?>.of(json)
+      ..['homePageWallpaperBlurSigma'] = 999;
+    expect(
+      TimetableSettings.fromJson(tooBig).homePageWallpaperBlurSigma,
+      closeTo(TimetableSettings.maxHomePageWallpaperBlurSigma, 1e-9),
+    );
+    final negative = Map<String, Object?>.of(json)
+      ..['homePageWallpaperBlurSigma'] = -5;
+    expect(
+      TimetableSettings.fromJson(negative).homePageWallpaperBlurSigma,
+      closeTo(TimetableSettings.minHomePageWallpaperBlurSigma, 1e-9),
+    );
+
+    // 写回侧同样夹：滑杆/调用方塞越界值也进不了内存。
+    expect(
+      TimetableSettings.defaults()
+          .copyWith(homePageWallpaperBlurSigma: 999)
+          .homePageWallpaperBlurSigma,
+      closeTo(TimetableSettings.maxHomePageWallpaperBlurSigma, 1e-9),
+    );
+    expect(
+      TimetableSettings.defaults()
+          .copyWith(homePageWallpaperBlurSigma: -1)
+          .homePageWallpaperBlurSigma,
+      closeTo(TimetableSettings.minHomePageWallpaperBlurSigma, 1e-9),
+    );
+
+    // 上限必须与整机玻璃磨砂的天花板同值：两者共用同一张预糊位图管线，
+    // 壁纸那档越过 `kPreblurMaxSigma` 就会撞上烤图侧 `0.5…40` 的夹取带，
+    // 表现为"滑杆继续拖、画面不再变"。
+    expect(TimetableSettings.maxHomePageWallpaperBlurSigma, kPreblurMaxSigma);
+    expect(TimetableSettings.minHomePageWallpaperBlurSigma, 0);
   });
 
   test('home page background settings roundtrip in json', () {

@@ -91,6 +91,10 @@ TimetableSettings applySettingsReset(
           d.timetableFloatingBackToCurrentWeekButtonOpacity,
       timetablePageBackgroundColor: d.timetablePageBackgroundColor,
       homePageBackdropFollowsWeekPager: d.homePageBackdropFollowsWeekPager,
+      // 壁纸模糊强度归本页：它的两根控件，一根在「课表页面」这张壁纸卡旁，
+      // 另一根在壁纸弹层（弹层的宿主之一就是本页）。恢复默认守的是「只覆盖本页
+      // 看得见的东西」，所以它跟着壁纸一起回到出厂档（0 = 不模糊）。
+      homePageWallpaperBlurSigma: d.homePageWallpaperBlurSigma,
       homePageBackgroundScope: d.homePageBackgroundScope,
       // 材质轴（整体档 / 模糊总开关 / 磨砂滑杆 / 各档调参 / 首页顶栏与子页顶栏材质 /
       // 底栏作用范围 / 卡片那一档）2026-09-22 起**不在本页**，划给「外观」作用域。

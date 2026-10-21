@@ -621,8 +621,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncAccountSectionTitle => 'Cloud account';
 
   @override
-  String get cloudSyncNotConnectedHint =>
-      'Connect Jianguoyun to sync timetables and import data across devices';
+  String get cloudSyncNotConnectedHint => 'Sync data across devices';
 
   @override
   String get cloudSyncConnectAccount => 'Connect Jianguoyun';
@@ -841,8 +840,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanEditKeepAliveWhenLeavingTitle => 'Keep open after leaving';
 
   @override
-  String get lanEditKeepAliveWhenLeavingSubtitle =>
-      'When on, leaving this page keeps LAN editing running; when off, leaving stops it';
+  String get lanEditKeepAliveWhenLeavingSubtitle => 'Off: stops when you leave';
 
   @override
   String get aboutSupportSectionTitle => 'About & Support';
@@ -1154,8 +1152,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubIssueTitle => 'GitHub Issue';
 
   @override
-  String get githubIssueSubtitle =>
-      'Open the repository issue page to submit bugs, suggestions, or review existing reports';
+  String get githubIssueSubtitle => 'Report bugs, ideas, or browse';
 
   @override
   String get openIssuePage => 'Open Issues';
@@ -1559,8 +1556,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importTimetableTitle => 'Import Timetable';
 
   @override
-  String get importTimetableSubtitle =>
-      'Import courses from an .ics file or AI parsing result';
+  String get importTimetableSubtitle => 'Import from .ics or AI result';
 
   @override
   String get restoreBackupTitle => 'Restore from Backup';
@@ -2095,8 +2091,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutRepositoryTitle => 'Open Source Repositories';
 
   @override
-  String get aboutRepositorySubtitle =>
-      'GitHub source, releases, and feedback entry';
+  String get aboutRepositorySubtitle => 'Source, releases, feedback';
 
   @override
   String get aboutOpenSourceLicensesTitle => 'Open Source Licenses';
@@ -2306,11 +2301,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeSchemeBlockedLocationGroupsSubtitle =>
-      'These location rules point at this scheme — rebind them to another scheme before deleting it';
+      'Rebind it to another scheme';
 
   @override
   String get timeSchemeBlockedDateRulesSubtitle =>
-      'These date rules switch a timetable to this scheme — rebind them to another scheme before deleting it';
+      'Rebind it to another scheme';
 
   @override
   String get copiedTimeSchemeMessage => 'Time scheme copied';
@@ -2352,7 +2347,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get followMainSchemeCoursesTitle =>
-      'Courses following the timetable main scheme';
+      'Courses following the main scheme';
 
   @override
   String get followMainSchemeCoursesEmpty =>
@@ -2363,8 +2358,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'These courses do not set an override time scheme and follow the timetable’s main schedule';
 
   @override
-  String get overrideSchemeCoursesTitle =>
-      'Courses using this as an override scheme';
+  String get overrideSchemeCoursesTitle => 'Courses using it as override';
 
   @override
   String get overrideSchemeCoursesEmpty =>
@@ -3192,8 +3186,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reuseExistingCourseLabel => 'Reuse Existing Course';
 
   @override
-  String get reuseExistingCourseHelper =>
-      'Fills in this course\'s existing info';
+  String get reuseExistingCourseHelper => 'Fills in existing info';
 
   @override
   String get manualInputLabel => 'Enter Manually';
@@ -3465,6 +3458,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Background follows week swipe';
 
   @override
+  String get homePageWallpaperBlurTitle => 'Wallpaper blur';
+
+  @override
+  String get homePageWallpaperBlurSubtitle =>
+      'Bakes the background into one fixed blurred image so text over it reads better';
+
+  @override
+  String get homePageWallpaperBlurOff => 'Off';
+
+  @override
   String get homePageBackdropFollowsWeekPagerSubtitle =>
       'Background moves with the page';
 
@@ -3729,8 +3732,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideStatusDoNotDisturbAccess => 'Do Not Disturb access';
 
   @override
-  String get guideStatusDoNotDisturbAccessHint =>
-      'Required by the before-class silent / DND quick actions; without it the buttons do nothing';
+  String get guideStatusDoNotDisturbAccessHint => 'Required for silent action';
 
   @override
   String get guideStatusAndroidVersion => 'Android version';
@@ -4107,12 +4109,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTestingCourseTestStageTitle => 'Choose a stage to preview';
 
   @override
-  String get liveTestingCourseTestStageBeforeClass =>
-      'Before-class countdown (island stays for about 3 minutes)';
+  String get liveTestingCourseTestStageBeforeClass => 'Before-class countdown';
 
   @override
-  String get liveTestingCourseTestStageDuringClass =>
-      'During class (island stays for about 4 minutes)';
+  String get liveTestingCourseTestStageDuringClass => 'During class';
 
   @override
   String liveTestingCourseTestActiveChip(String course) {
@@ -4808,15 +4808,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCheckPrereleaseTitle => 'Check prerelease versions';
 
   @override
-  String get aboutCheckPrereleaseSubtitle =>
-      'When enabled, prereleases are also included in update checks. It is recommended to keep this off for normal use';
+  String get aboutCheckPrereleaseSubtitle => 'May add unstable test builds';
 
   @override
   String get aboutUpdatePromptTitle => 'Update prompt';
 
   @override
-  String get aboutUpdatePromptSubtitle =>
-      'Automatically show a dialog on the home screen when a new version is found';
+  String get aboutUpdatePromptSubtitle => 'Off: only a red dot on More';
 
   @override
   String get aboutDiagnosticsTitle => 'Testing & diagnostics';
@@ -4903,7 +4901,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutUpdatePackageDescription =>
-      'The download has been handed to the system download manager. You can install it directly from the system notification once it finishes';
+      'System download; install from notification';
 
   @override
   String get aboutSystemDownloaderQueued =>
@@ -5008,7 +5006,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importConfirmSemesterMappingSubtitleIcs =>
-      'Please select the semester start date in your school calendar. The system has inferred a default week mapping from the earliest class date in the file, and you can still adjust it manually';
+      'Weeks pre-filled from file';
 
   @override
   String importOverwriteCount(int count) {
@@ -5196,8 +5194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get warehouseMissingSchoolTitle =>
-      'Cannot find your school in the list?';
+  String get warehouseMissingSchoolTitle => 'School not listed?';
 
   @override
   String get warehouseMissingSchoolSubtitle =>
@@ -5716,10 +5713,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteModeTitle => 'Delete mode';
-
-  @override
-  String get deleteModeSubtitle =>
-      'You can delete the whole schedule entry or just the single occurrence shown for the current week';
 
   @override
   String get deleteCourseAction => 'Delete course';
@@ -6862,8 +6855,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Complete these settings for Super Island and reminders to work properly';
 
   @override
-  String get guidePermissionsFooterHint =>
-      'Auto-start is limited by the system; use the switch on the system page as the source of truth';
+  String get guidePermissionsFooterHint => 'System limits auto-start';
 
   @override
   String get guideTipsHeader => 'Tips';
@@ -7658,7 +7650,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importFirstCourseWeekMappingSubtitle =>
-      'If the first school week has no classes, choose week 2; if the first two weeks are empty, choose week 3.';
+      'If week 1 is empty, use week 2';
 
   @override
   String get importSemesterMappingNoShiftHint =>
@@ -10295,8 +10287,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationTimeMatchBoundSchemeLabel => 'Bound time scheme';
 
   @override
-  String get locationTimeMatchNeedTimeScheme =>
-      'Create at least one time scheme first';
+  String get locationTimeMatchNeedTimeScheme => 'Create a time scheme first';
 
   @override
   String get locationTimeMatchEnabledLabel => 'Enable this group';
@@ -11111,7 +11102,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get icsExportSkipHolidayCoursesSubtitle =>
-      'Leave out classes that fall on public holidays and adjusted rest days; adjusted workdays are still exported';
+      'Rest days too; workdays export';
 
   @override
   String get icsExportSkipHolidayCoursesOn => 'Holiday classes skipped';
@@ -12052,8 +12043,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickupCodeSemanticsNotInstalled => 'The app is not installed';
 
   @override
-  String get pickupCodeLaunchFailedHint =>
-      'These entries come from each app and may break after updates; try opening the app directly instead.';
+  String get pickupCodeLaunchFailedHint => 'May break; open app directly';
 
   @override
   String get courseFormDiscardTitle => 'Discard changes?';

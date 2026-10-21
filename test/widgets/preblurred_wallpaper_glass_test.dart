@@ -536,6 +536,58 @@ void main() {
       frosted.dispose();
     });
 
+    test('三份位图并存：壁纸底图那份不会顶掉玻璃带与卡片那两份', () async {
+      // 2026-10-21「壁纸高斯模糊」引入第三个消费者：壁纸本身也向同一张缓存要
+      // 一张整屏位图（`widgets/preblurred_wallpaper_backdrop.dart`），而它不加裁剪
+      // 地铺满整屏 —— 与前两份（永远被裁成一条带 / 一张卡）互不相干。
+      //
+      // 上限留在 2 的后果是：每开一次壁纸模糊就顶掉玻璃带那份，转场冻结静默退化
+      // 成实时玻璃（`home_page_region_blur.dart` 的 `live(no-bitmap)` 分支），
+      // 卡片则反复重烤整屏。所以这里钉的就是"三份同时在场"。
+      final cache = PreblurredWallpaperCache.instance;
+      cache.evict();
+      addTearDown(cache.evict);
+
+      final home = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 15,
+        devicePixelRatio: 2,
+      );
+      final card = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 24,
+        devicePixelRatio: 2,
+      );
+      final wallpaper = await cache.obtain(
+        path: wallpaperPath,
+        logicalSigma: 8,
+        devicePixelRatio: 2,
+      );
+      expect(home, isNotNull);
+      expect(card, isNotNull);
+      expect(wallpaper, isNotNull);
+      home!.dispose();
+      card!.dispose();
+      wallpaper!.dispose();
+      expect(
+        cache.entryCount,
+        3,
+        reason: '三个消费槽必须同时在场，否则壁纸模糊会顶掉玻璃带那份',
+      );
+
+      // 依次回头取：三份都要命中快路径，条数不涨、也不互相顶掉。
+      for (final sigma in <double>[15, 24, 8]) {
+        final again = await cache.obtain(
+          path: wallpaperPath,
+          logicalSigma: sigma,
+          devicePixelRatio: 2,
+        );
+        expect(again, isNotNull);
+        again!.dispose();
+        expect(cache.entryCount, 3);
+      }
+    });
+
     test('两份位图并存：首页那份与课程卡片那份各自独立', () async {
       // 卡片有自己的磨砂量，两个 sigma 会交替请求。只留一份发布槽的话谁都命中不了
       // 快路径 —— 每次都要重烤整屏位图（解码 + 高斯 + 离屏渲染）。

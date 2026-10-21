@@ -63,14 +63,24 @@ class PreblurredWallpaperCache {
   PreblurredWallpaperCache._();
   static final PreblurredWallpaperCache instance = PreblurredWallpaperCache._();
 
-  /// 缓存能同时持有的位图数：**首页那份**（页顶玻璃带 / 日视图摘要替身卡）与
-  /// **课程卡片那份**。
+  /// 缓存能同时持有的位图数：**首页那份**（页顶玻璃带 / 日视图摘要替身卡）、
+  /// **课程卡片那份**、**壁纸底图那份**。
   ///
   /// 为什么不是一份：课程卡片有自己一套磨砂量（`CourseGlassTuning.blurSigma`），
   /// 与首页那份可以不同。只留一份会让两个请求互相顶掉 —— 谁都命中不了快路径，
-  /// 每次都要把整屏位图重烤一遍（解码 + 高斯 + 离屏渲染）。消费者就这两类，
-  /// 所以上限压在 2 而不是无限：每份都是整屏 RGBA（1080 宽机约 3 MB、2160 宽屏约 12 MB）。
-  static const int maxEntries = 2;
+  /// 每次都要把整屏位图重烤一遍（解码 + 高斯 + 离屏渲染）。消费者就这三类，
+  /// 所以上限压在 3 而不是无限：每份都是整屏 RGBA（1080 宽机约 3 MB、2160 宽屏约 12 MB）。
+  ///
+  /// 第三份（2026-10-21「壁纸高斯模糊」）与前两份**无关**：它由设置里的
+  /// `homePageWallpaperBlurSigma` 驱动，把整屏壁纸烤糊后**不加裁剪地铺满整屏**
+  /// （见 `widgets/preblurred_wallpaper_backdrop.dart`），而前两份永远被裁成一条带
+  /// 或一张卡片。所以它不寄生在 `PreblurredWallpaperScope` 上 —— 那个 scope 在
+  /// 「实体卡片」档（模糊总开关关）时根本不存在（`ui/home/home_chrome_spec.dart`
+  /// 的 `useHomePreblur`）。留在 2 的后果是：每开一次壁纸模糊就顶掉玻璃带那份，
+  /// 转场冻结静默退化成实时玻璃（`home_page_region_blur.dart` 的
+  /// `live(no-bitmap)` 分支），卡片则反复重烤整屏。
+  /// Note: 见 `.agents/notes/implemented/feature/2026-10-21-home-wallpaper-baked-blur.md`。
+  static const int maxEntries = 3;
 
   /// 已发布位图。Dart 的 `Map` 迭代即插入序，所以 [keys] 的第一项就是最早那项。
   final Map<_PreblurRequest, ui.Image> _images = {};

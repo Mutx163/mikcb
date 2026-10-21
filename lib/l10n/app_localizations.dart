@@ -1187,7 +1187,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncNotConnectedHint.
   ///
   /// In zh, this message translates to:
-  /// **'连接坚果云后，可在多设备间同步课表与导入数据'**
+  /// **'可在多设备间同步课表与导入数据'**
   String get cloudSyncNotConnectedHint;
 
   /// No description provided for @cloudSyncConnectAccount.
@@ -1559,7 +1559,7 @@ abstract class AppLocalizations {
   /// No description provided for @lanEditKeepAliveWhenLeavingSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'开启后，返回设置页不会自动关闭局域网编辑；关闭后离开本页即停止'**
+  /// **'关闭后离开本页就停止'**
   String get lanEditKeepAliveWhenLeavingSubtitle;
 
   /// No description provided for @aboutSupportSectionTitle.
@@ -2099,7 +2099,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubIssueSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开仓库 Issue 页面，可提交问题、建议或查看已有反馈记录'**
+  /// **'提交问题、建议，查看已有反馈'**
   String get githubIssueSubtitle;
 
   /// No description provided for @openIssuePage.
@@ -2789,7 +2789,7 @@ abstract class AppLocalizations {
   /// No description provided for @importTimetableSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'从 .ics 文件或 AI 解析结果导入课程'**
+  /// **'从 .ics 或 AI 解析结果导入'**
   String get importTimetableSubtitle;
 
   /// No description provided for @restoreBackupTitle.
@@ -3704,7 +3704,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutRepositorySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'GitHub 仓库地址、源码、Release 和反馈入口'**
+  /// **'GitHub 源码、Release 和反馈入口'**
   String get aboutRepositorySubtitle;
 
   /// No description provided for @aboutOpenSourceLicensesTitle.
@@ -4051,13 +4051,13 @@ abstract class AppLocalizations {
   /// No description provided for @timeSchemeBlockedLocationGroupsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些地点作息匹配指向这套模板，需要先改绑别的模板才能删除'**
+  /// **'需先改绑到别的模板才能删除'**
   String get timeSchemeBlockedLocationGroupsSubtitle;
 
   /// No description provided for @timeSchemeBlockedDateRulesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'这些日期作息规则会把课表切到这套模板，需要先改绑别的模板才能删除'**
+  /// **'需先改绑到别的模板才能删除'**
   String get timeSchemeBlockedDateRulesSubtitle;
 
   /// No description provided for @copiedTimeSchemeMessage.
@@ -4123,7 +4123,7 @@ abstract class AppLocalizations {
   /// No description provided for @followMainSchemeCoursesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'跟随课表主时间模板的课程'**
+  /// **'跟随主时间模板的课程'**
   String get followMainSchemeCoursesTitle;
 
   /// No description provided for @followMainSchemeCoursesEmpty.
@@ -4141,7 +4141,7 @@ abstract class AppLocalizations {
   /// No description provided for @overrideSchemeCoursesTitle.
   ///
   /// In zh, this message translates to:
-  /// **'把它作为副时间模板的课程'**
+  /// **'设为副时间模板的课程'**
   String get overrideSchemeCoursesTitle;
 
   /// No description provided for @overrideSchemeCoursesEmpty.
@@ -5593,7 +5593,7 @@ abstract class AppLocalizations {
   /// No description provided for @reuseExistingCourseHelper.
   ///
   /// In zh, this message translates to:
-  /// **'自动带入这门课已有的信息'**
+  /// **'带入这门课已有的信息'**
   String get reuseExistingCourseHelper;
 
   /// No description provided for @manualInputLabel.
@@ -6038,6 +6038,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'背景随周次滑动'**
   String get homePageBackdropFollowsWeekPagerTitle;
+
+  /// No description provided for @homePageWallpaperBlurTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'壁纸模糊'**
+  String get homePageWallpaperBlurTitle;
+
+  /// No description provided for @homePageWallpaperBlurSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'把背景糊成一张固定的图，壁纸上的字更好认'**
+  String get homePageWallpaperBlurSubtitle;
+
+  /// No description provided for @homePageWallpaperBlurOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get homePageWallpaperBlurOff;
 
   /// No description provided for @homePageBackdropFollowsWeekPagerSubtitle.
   ///
@@ -6510,7 +6528,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideStatusDoNotDisturbAccessHint.
   ///
   /// In zh, this message translates to:
-  /// **'上课前的静音 / 免打扰快捷操作需要它，未授权时点了没反应'**
+  /// **'未授权时课前静音点了没反应'**
   String get guideStatusDoNotDisturbAccessHint;
 
   /// No description provided for @guideStatusAndroidVersion.
@@ -7158,13 +7176,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveTestingCourseTestStageBeforeClass.
   ///
   /// In zh, this message translates to:
-  /// **'课前倒计时 保持约 3 分钟'**
+  /// **'课前倒计时'**
   String get liveTestingCourseTestStageBeforeClass;
 
   /// No description provided for @liveTestingCourseTestStageDuringClass.
   ///
   /// In zh, this message translates to:
-  /// **'上课中 保持约 4 分钟'**
+  /// **'上课中'**
   String get liveTestingCourseTestStageDuringClass;
 
   /// No description provided for @liveTestingCourseTestActiveChip.
@@ -8328,7 +8346,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCheckPrereleaseSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后会把测试版也纳入更新检查；普通使用建议关闭'**
+  /// **'会收到可能不稳定的测试版'**
   String get aboutCheckPrereleaseSubtitle;
 
   /// No description provided for @aboutUpdatePromptTitle.
@@ -8340,7 +8358,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdatePromptSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'发现新版本时在首页自动弹窗，关闭后仅显示红点角标'**
+  /// **'关闭后只在更多按钮留红点'**
   String get aboutUpdatePromptSubtitle;
 
   /// No description provided for @aboutDiagnosticsTitle.
@@ -8484,7 +8502,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUpdatePackageDescription.
   ///
   /// In zh, this message translates to:
-  /// **'已交给系统下载管理器下载，完成后可直接从系统通知安装'**
+  /// **'已交给系统下载，完成后从通知安装'**
   String get aboutUpdatePackageDescription;
 
   /// No description provided for @aboutSystemDownloaderQueued.
@@ -8646,7 +8664,7 @@ abstract class AppLocalizations {
   /// No description provided for @importConfirmSemesterMappingSubtitleIcs.
   ///
   /// In zh, this message translates to:
-  /// **'请选择学校校历的开学日期，系统已根据文件里最早的上课日期给出默认周次对应，你也可以手动调整'**
+  /// **'周次已按文件里最早的上课日期预填'**
   String get importConfirmSemesterMappingSubtitleIcs;
 
   /// No description provided for @importOverwriteCount.
@@ -8944,7 +8962,7 @@ abstract class AppLocalizations {
   /// No description provided for @warehouseMissingSchoolTitle.
   ///
   /// In zh, this message translates to:
-  /// **'学校列表里没有你的学校？'**
+  /// **'没找到你的学校？'**
   String get warehouseMissingSchoolTitle;
 
   /// No description provided for @warehouseMissingSchoolSubtitle.
@@ -9858,12 +9876,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'删除方式'**
   String get deleteModeTitle;
-
-  /// No description provided for @deleteModeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'你可以删掉整条排课，也可以只删当前看到的这一周这一节'**
-  String get deleteModeSubtitle;
 
   /// No description provided for @deleteCourseAction.
   ///
@@ -11840,7 +11852,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidePermissionsFooterHint.
   ///
   /// In zh, this message translates to:
-  /// **'自启动受系统限制，请以系统页面开关为准'**
+  /// **'自启动受系统限制，以系统开关为准'**
   String get guidePermissionsFooterHint;
 
   /// No description provided for @guideTipsHeader.
@@ -13199,7 +13211,7 @@ abstract class AppLocalizations {
   /// No description provided for @importFirstCourseWeekMappingSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周'**
+  /// **'如果第一周没课，就选第 2 周'**
   String get importFirstCourseWeekMappingSubtitle;
 
   /// No description provided for @importSemesterMappingNoShiftHint.
@@ -17560,7 +17572,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationTimeMatchNeedTimeScheme.
   ///
   /// In zh, this message translates to:
-  /// **'请先创建至少一套时间模板'**
+  /// **'请先创建一套时间模板'**
   String get locationTimeMatchNeedTimeScheme;
 
   /// No description provided for @locationTimeMatchEnabledLabel.
@@ -19048,7 +19060,7 @@ abstract class AppLocalizations {
   /// No description provided for @icsExportSkipHolidayCoursesSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'不导出落在法定假期与调休休息日的课程；调休上班日照常导出'**
+  /// **'调休休息日也跳过，上班日仍导出'**
   String get icsExportSkipHolidayCoursesSubtitle;
 
   /// No description provided for @icsExportSkipHolidayCoursesOn.
@@ -20691,7 +20703,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickupCodeLaunchFailedHint.
   ///
   /// In zh, this message translates to:
-  /// **'入口地址由各 App 提供，App 更新后可能失效；可以先试试直接打开对应 App。'**
+  /// **'入口可能失效，试试直接打开 App'**
   String get pickupCodeLaunchFailedHint;
 
   /// No description provided for @courseFormDiscardTitle.

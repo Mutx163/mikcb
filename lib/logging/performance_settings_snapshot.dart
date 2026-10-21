@@ -190,6 +190,11 @@ Map<String, Object?> _settingsDerivedSnapshot(TimetableSettings s) {
     'wallpaperAlignX': s.homePageWallpaperAlignX,
     'wallpaperAlignY': s.homePageWallpaperAlignY,
     'wallpaperScale': s.homePageWallpaperScale,
+    // 壁纸高斯模糊强度。进「设置推导」这一份（而不是环境量那一份）的理由：
+    // 它是纯设置，且**直接改渲染开销**（开启后会多烤一张整屏位图、多留一张
+    // 常驻位图），正是这份快照存在的意义。加在这里，指纹比较
+    // （`shouldLogPerformanceSettingsChange`）自动覆盖，不必另接。
+    'wallpaperBlurSigma': s.homePageWallpaperBlurSigma,
     'backgroundScope': s.homePageBackgroundScope,
     'backgroundScopeRegions': _backgroundScopeRegions(s.homePageBackgroundScope),
     'courseCardStyle': s.courseCardSurfaceStyle.name,

@@ -18,6 +18,7 @@ import '../../models/wallpaper_history.dart';
 import '../../utils/wallpaper_history.dart';
 import '../../widgets/wallpaper_position_picker_sheet.dart';
 import '../../widgets/preblurred_wallpaper_glass.dart';
+import '../../widgets/wallpaper_blur_tile.dart';
 import '../../ui/hyperos/hyperos.dart';
 import 'settings_recent_wallpaper.dart';
 
@@ -65,7 +66,12 @@ mixin HomeBackdropFlow<T extends StatefulWidget> on State<T> {
   double get bingWallpaperRowInset => backdropRowHorizontalInset;
 
   /// 宿主设置草稿的落盘入口（一般就是宿主的 `_updateDraft`）。
-  void applyBackdropDraft(TimetableSettings next);
+  ///
+  /// [debounce] 透传给宿主的 `_updateDraft(..., debounce: true)`，给**连续拖动**的
+  /// 控件用（壁纸模糊强度滑杆）：每格写一次盘会让缓存按每格一个 sigma 连续重烤整屏。
+  /// 不在本 mixin 里另起 Timer —— 裸 `Duration` 会被 `animation_duration_guard_test`
+  /// 抓，而宿主那个 250ms 是已登记的白名单。
+  void applyBackdropDraft(TimetableSettings next, {bool debounce = false});
 
   /// 课表列表来源：算「在用壁纸白名单」用（历史是全局的，别的课表也可能在用）。
   TimetableProvider get backdropProvider;
@@ -713,7 +719,9 @@ mixin HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     return true;
   }
 
-  /// 壁纸弹窗的**第二页「设置」**：开关类设置（目前只有「背景随周次滑动」）。
+  /// 壁纸弹窗的**第二页「设置」**：动不动（随周次滑动）、糊不糊（模糊强度）。
+  /// ⚠️ 两根控件都别再垫 `Padding`：两端留白由 `_pageShell` 统一给，多垫一层会让
+  /// 行顶偏离视口顶（`test/screens/appearance_editor_test.dart` 钉过）。
   Widget buildWallpaperSheetSettingsPage(
     BuildContext context, {
     required AppLocalizations l10n,
@@ -721,7 +729,26 @@ mixin HomeBackdropFlow<T extends StatefulWidget> on State<T> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [buildBackdropFollowsWeekPagerTile(context, l10n: l10n)],
+      children: [
+        buildBackdropFollowsWeekPagerTile(context, l10n: l10n),
+        buildWallpaperBlurTile(context, l10n: l10n),
+      ],
+    );
+  }
+
+  /// 「壁纸模糊强度」滑杆 —— 与「课表页面」那根同由同值（控件在
+  /// `widgets/wallpaper_blur_tile.dart`）。写回带 `debounce`：拖一格烤一次整屏位图
+  /// 太贵，250ms 合并后一次拖动只落一次盘、只烤一次图。
+  Widget buildWallpaperBlurTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+  }) {
+    return WallpaperBlurTile(
+      sigma: backdropDraft.homePageWallpaperBlurSigma,
+      onChanged: (value) => applyBackdropDraft(
+        backdropDraft.copyWith(homePageWallpaperBlurSigma: value),
+        debounce: true,
+      ),
     );
   }
 

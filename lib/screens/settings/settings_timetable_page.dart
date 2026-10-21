@@ -44,7 +44,8 @@ class TimetablePageSettingsScreenState
   TimetableSettings get backdropDraft => _draft;
 
   @override
-  void applyBackdropDraft(TimetableSettings next) => _updateDraft(next);
+  void applyBackdropDraft(TimetableSettings next, {bool debounce = false}) =>
+      _updateDraft(next, debounce: debounce);
 
   @override
   TimetableProvider get backdropProvider => _timetableProvider;
@@ -376,6 +377,8 @@ class TimetablePageSettingsScreenState
               // 「背景随周次滑动」与壁纸弹窗里那颗是**同一个开关**（同一个
               // builder、同一份设置，见 [buildBackdropFollowsWeekPagerTile]）。
               buildBackdropFollowsWeekPagerTile(context, l10n: l10n),
+              // 壁纸模糊强度：与壁纸弹窗第二页那根**同一个 builder、同一份设置**。
+              buildWallpaperBlurTile(context, l10n: l10n),
               // 「壁纸透出范围」与「顶栏玻璃」开关已下线（2026-09-12）：
               // 壁纸有就整体透出；顶栏玻璃改用材质五档（不想要玻璃选实体），
               // 入口在下面「玻璃 / 材质」区块里，此处不再保留重复入口。

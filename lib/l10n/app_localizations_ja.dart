@@ -598,8 +598,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncAccountSectionTitle => 'クラウドアカウント';
 
   @override
-  String get cloudSyncNotConnectedHint =>
-      'Jianguoyun に接続すると、複数端末間で時間割とインポートデータを同期できます';
+  String get cloudSyncNotConnectedHint => '複数端末で同期できます';
 
   @override
   String get cloudSyncConnectAccount => 'Jianguoyun に接続';
@@ -806,8 +805,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lanEditKeepAliveWhenLeavingTitle => '退出後も維持';
 
   @override
-  String get lanEditKeepAliveWhenLeavingSubtitle =>
-      'オンにするとこの画面を離れてもLAN編集を継続し、オフにすると退出時に停止します';
+  String get lanEditKeepAliveWhenLeavingSubtitle => 'オフなら画面を離れると停止';
 
   @override
   String get aboutSupportSectionTitle => 'アプリ情報とサポート';
@@ -1102,8 +1100,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get githubIssueTitle => 'GitHub Issue';
 
   @override
-  String get githubIssueSubtitle =>
-      'リポジトリのIssueページを開き、問題や提案の送信、既存のフィードバックを確認可能';
+  String get githubIssueSubtitle => '問題・提案の送信、既存の確認';
 
   @override
   String get openIssuePage => 'Issueページを開く';
@@ -1493,7 +1490,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importTimetableTitle => '時間割インポート';
 
   @override
-  String get importTimetableSubtitle => '.icsファイルまたはAI解析結果から授業をインポート';
+  String get importTimetableSubtitle => '.ics か AI 結果からインポート';
 
   @override
   String get restoreBackupTitle => 'バックアップから復元';
@@ -2009,7 +2006,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutRepositoryTitle => 'オープンソースリポジトリ';
 
   @override
-  String get aboutRepositorySubtitle => 'GitHubリポジトリ、ソース、Releaseとフィードバック';
+  String get aboutRepositorySubtitle => 'ソース、Release、フィードバック';
 
   @override
   String get aboutOpenSourceLicensesTitle => 'オープンソースライセンス';
@@ -2214,12 +2211,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeSchemeBlockerListSeparator => '、';
 
   @override
-  String get timeSchemeBlockedLocationGroupsSubtitle =>
-      'これらの場所ルールがこのテンプレートを指しています。別のテンプレートに付け替えてから削除してください';
+  String get timeSchemeBlockedLocationGroupsSubtitle => '先に別テンプレートへ変更が必要';
 
   @override
-  String get timeSchemeBlockedDateRulesSubtitle =>
-      'これらの日程ルールがこのテンプレートに切り替えます。別のテンプレートに付け替えてから削除してください';
+  String get timeSchemeBlockedDateRulesSubtitle => '先に別テンプレートへ変更が必要';
 
   @override
   String get copiedTimeSchemeMessage => 'テンプレートをコピーしました';
@@ -2256,7 +2251,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get directlyBoundProfilesSubtitle => 'これらの時間割はこのテンプレートに切替後、この時限時間で表示';
 
   @override
-  String get followMainSchemeCoursesTitle => 'メインテンプレートに連携する授業';
+  String get followMainSchemeCoursesTitle => 'メインに従う授業';
 
   @override
   String get followMainSchemeCoursesEmpty => '現在メインテンプレート経由で使用している授業はありません。';
@@ -2266,7 +2261,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'これらの授業は個別に副テンプレートを設定しておらず、所属時間割と一緒にこのテンプレートを使用';
 
   @override
-  String get overrideSchemeCoursesTitle => '副テンプレートとして使用する授業';
+  String get overrideSchemeCoursesTitle => '副テンプレートの授業';
 
   @override
   String get overrideSchemeCoursesEmpty =>
@@ -3062,7 +3057,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reuseExistingCourseLabel => '既存授業を流用';
 
   @override
-  String get reuseExistingCourseHelper => '既存の情報を自動入力します';
+  String get reuseExistingCourseHelper => '既存の情報を入力';
 
   @override
   String get manualInputLabel => '手動入力';
@@ -3314,6 +3309,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景を週送りに追従';
+
+  @override
+  String get homePageWallpaperBlurTitle => '壁紙のぼかし';
+
+  @override
+  String get homePageWallpaperBlurSubtitle =>
+      '背景を 1 枚の固定したぼかし画像にして、上の文字を読みやすくします';
+
+  @override
+  String get homePageWallpaperBlurOff => 'オフ';
 
   @override
   String get homePageBackdropFollowsWeekPagerSubtitle => '背景がページと一緒に動く';
@@ -3570,8 +3575,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideStatusDoNotDisturbAccess => 'おやすみモードのアクセス権限';
 
   @override
-  String get guideStatusDoNotDisturbAccessHint =>
-      '授業前のサイレント／おやすみモードのクイック操作に必要です。許可されていないとボタンが効きません';
+  String get guideStatusDoNotDisturbAccessHint => '未許可だとサイレントが効きません';
 
   @override
   String get guideStatusAndroidVersion => 'Androidバージョン';
@@ -3929,10 +3933,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingCourseTestStageTitle => 'プレビューする段階を選択';
 
   @override
-  String get liveTestingCourseTestStageBeforeClass => '授業前カウントダウン（島は約3分表示）';
+  String get liveTestingCourseTestStageBeforeClass => '授業前カウントダウン';
 
   @override
-  String get liveTestingCourseTestStageDuringClass => '授業中（島は約4分表示）';
+  String get liveTestingCourseTestStageDuringClass => '授業中';
 
   @override
   String liveTestingCourseTestActiveChip(String course) {
@@ -4598,13 +4602,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutCheckPrereleaseTitle => 'テスト版を検出';
 
   @override
-  String get aboutCheckPrereleaseSubtitle => 'オンにするとテスト版も更新確認に含む，通常使用はオフ推奨';
+  String get aboutCheckPrereleaseSubtitle => '不安定なテスト版が届きます';
 
   @override
   String get aboutUpdatePromptTitle => '更新ダイアログ';
 
   @override
-  String get aboutUpdatePromptSubtitle => '新しいバージョンを検出したらホーム画面で自動的に表示します';
+  String get aboutUpdatePromptSubtitle => 'オフ時は「もっと見る」に赤点のみ';
 
   @override
   String get aboutDiagnosticsTitle => 'テストと診断';
@@ -4688,8 +4692,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutUpdatePackageTitle => '軽屿時間割更新パッケージ';
 
   @override
-  String get aboutUpdatePackageDescription =>
-      'システムダウンロードマネージャーに渡してダウンロード，完了後、システム通知から直接インストール可能';
+  String get aboutUpdatePackageDescription => 'システムでダウンロード中。完了後は通知から';
 
   @override
   String get aboutSystemDownloaderQueued =>
@@ -4787,8 +4790,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importConfirmSemesterMappingTitle => '学期開始日と週次対応を確認';
 
   @override
-  String get importConfirmSemesterMappingSubtitleIcs =>
-      '学校の校暦の学期開始日を選択，ファイル内の最も早い授業日からデフォルトの週次対応を提案済み，手動調整も可能';
+  String get importConfirmSemesterMappingSubtitleIcs => '週次はファイルから自動入力済み';
 
   @override
   String importOverwriteCount(int count) {
@@ -4969,7 +4971,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get warehouseMissingSchoolTitle => '学校リストにあなたの学校がない？';
+  String get warehouseMissingSchoolTitle => '学校がない？';
 
   @override
   String get warehouseMissingSchoolSubtitle =>
@@ -5470,9 +5472,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteModeTitle => '削除方式';
-
-  @override
-  String get deleteModeSubtitle => '排課全体を削除するか、現在表示中のこの週のこの授業のみ削除可能';
 
   @override
   String get deleteCourseAction => 'この授業を削除';
@@ -6586,8 +6585,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'これらの設定を完了すると、スーパーアイランドとリマインダーが正常に使用可能';
 
   @override
-  String get guidePermissionsFooterHint =>
-      '自動起動はシステム制限あり，システムページのスイッチを基準にしてください';
+  String get guidePermissionsFooterHint => 'システム制限あり、スイッチ優先';
 
   @override
   String get guideTipsHeader => '使い方のコツ';
@@ -7357,8 +7355,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'Timetable week 1 maps to calendar week';
 
   @override
-  String get importFirstCourseWeekMappingSubtitle =>
-      'If the first school week has no classes, choose week 2; if the first two weeks are empty, choose week 3.';
+  String get importFirstCourseWeekMappingSubtitle => '第1週に授業がなければ第2週';
 
   @override
   String get importSemesterMappingNoShiftHint =>
@@ -9992,8 +9989,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get locationTimeMatchBoundSchemeLabel => 'Bound time scheme';
 
   @override
-  String get locationTimeMatchNeedTimeScheme =>
-      'Create at least one time scheme first';
+  String get locationTimeMatchNeedTimeScheme => '時間テンプレートを作成';
 
   @override
   String get locationTimeMatchEnabledLabel => 'Enable this group';
@@ -10792,8 +10788,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportSkipHolidayCourses => '祝日の授業を除外';
 
   @override
-  String get icsExportSkipHolidayCoursesSubtitle =>
-      '祝日と振替休日の授業を出力しません（振替出勤日は出力します）';
+  String get icsExportSkipHolidayCoursesSubtitle => '振替休日も除外、出勤日は書き出し';
 
   @override
   String get icsExportSkipHolidayCoursesOn => '祝日の授業を除外しました';
@@ -11702,8 +11697,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pickupCodeSemanticsNotInstalled => '対応アプリが未インストールです';
 
   @override
-  String get pickupCodeLaunchFailedHint =>
-      '入口は各アプリが提供しており、更新で使えなくなることがあります。アプリを直接開いてみてください。';
+  String get pickupCodeLaunchFailedHint => '使えない時はアプリを直接開く';
 
   @override
   String get courseFormDiscardTitle => '変更を破棄しますか？';

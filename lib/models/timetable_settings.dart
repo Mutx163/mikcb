@@ -345,6 +345,21 @@ class TimetableSettings {
   static const double minPageTransitionSpeed = 0.5;
   static const double maxPageTransitionSpeed = 2.5;
 
+  /// 壁纸高斯模糊强度的收口带（sigma，逻辑 px）；0 = 不烤，直接用原图。
+  ///
+  /// 上限必须与 `kPreblurMaxSigma` 同值（共用同一条烤图管线，越过它滑杆就变死区）。
+  /// 常量住这里而非 `utils/home_page_background.dart`：那个文件已 import 本文件。
+  /// Note: 见 `.agents/notes/implemented/feature/2026-10-21-home-wallpaper-baked-blur.md`。
+  static const double minHomePageWallpaperBlurSigma = 0;
+  static const double maxHomePageWallpaperBlurSigma = 24;
+
+  /// 夹进收口带（null = 缺键，按最小值）。fromJson 与 copyWith 共用，避免两处漂开。
+  static double clampHomePageWallpaperBlurSigma(double? value) =>
+      (value ?? minHomePageWallpaperBlurSigma).clamp(
+        minHomePageWallpaperBlurSigma,
+        maxHomePageWallpaperBlurSigma,
+      );
+
   final List<SectionTime> sections;
   final String? activeTimeSchemeId;
   final double sectionHeight;
@@ -563,6 +578,13 @@ class TimetableSettings {
   /// （见 `utils/home_page_background.dart`）：下限 1（再小就露出底色）、
   /// 上限 4（够看细节，再大只是糊）。
   final double homePageWallpaperScale;
+
+  /// 首页壁纸的高斯模糊强度（sigma，逻辑 px）：**0 = 不模糊**，走清晰原图。
+  ///
+  /// "设置时烤成固定成品"而非每帧实时模糊：大于 0 时渲染侧向
+  /// `PreblurredWallpaperCache` 要一张整屏预糊位图贴上，之后静止 / 翻页 / 转场都
+  /// 只是贴图。默认 0 = 与加本功能之前逐像素一致；跟随课表（不进全局设置清单）。
+  final double homePageWallpaperBlurSigma;
 
   /// 首页壁纸「最近使用」历史，最新在前，最多 10 条。
   ///
@@ -873,6 +895,7 @@ class TimetableSettings {
     this.homePageWallpaperAlignX = 0,
     this.homePageWallpaperAlignY = 0,
     this.homePageWallpaperScale = 1,
+    this.homePageWallpaperBlurSigma = minHomePageWallpaperBlurSigma,
     this.wallpaperHistory = const [],
     this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
@@ -1203,6 +1226,7 @@ class TimetableSettings {
       'homePageWallpaperAlignX': homePageWallpaperAlignX,
       'homePageWallpaperAlignY': homePageWallpaperAlignY,
       'homePageWallpaperScale': homePageWallpaperScale,
+      'homePageWallpaperBlurSigma': homePageWallpaperBlurSigma,
       'wallpaperHistory': [
         for (final entry in wallpaperHistory) entry.toJson(),
       ],
@@ -1687,6 +1711,10 @@ class TimetableSettings {
       // 存量存档没有这个字段：缺省 1（刚好铺满），观感与加缩放之前一致。
       homePageWallpaperScale:
           lenientDouble(json['homePageWallpaperScale']) ?? 1,
+      // 存量存档没有这个字段：缺省 0（不模糊），观感与加模糊之前一致。
+      homePageWallpaperBlurSigma: clampHomePageWallpaperBlurSigma(
+        lenientDouble(json['homePageWallpaperBlurSigma']),
+      ),
       wallpaperHistory: WallpaperHistoryEntry.listFromJson(
         json['wallpaperHistory'],
       ),
@@ -2007,6 +2035,7 @@ class TimetableSettings {
     double? homePageWallpaperAlignX,
     double? homePageWallpaperAlignY,
     double? homePageWallpaperScale,
+    double? homePageWallpaperBlurSigma,
     List<WallpaperHistoryEntry>? wallpaperHistory,
     bool clearWallpaperHistory = false,
     int? homePageBackgroundScope,
@@ -2352,6 +2381,10 @@ class TimetableSettings {
           homePageWallpaperAlignY ?? this.homePageWallpaperAlignY,
       homePageWallpaperScale:
           homePageWallpaperScale ?? this.homePageWallpaperScale,
+      // 同 fromJson：写回也夹，否则滑杆/旧存档能往内存塞越界值。
+      homePageWallpaperBlurSigma: clampHomePageWallpaperBlurSigma(
+        homePageWallpaperBlurSigma ?? this.homePageWallpaperBlurSigma,
+      ),
       wallpaperHistory: clearWallpaperHistory
           ? const []
           : wallpaperHistory ?? this.wallpaperHistory,
