@@ -245,9 +245,11 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
               ),
               // 课程色贯穿：一个三档总开关（关闭 / 仅色条 / 色条+文字），
               // 不做成多个独立开关——「回到之前的样子」必须一次点到位。
+              // 不挂副标题：三档选项名已各自说清；原来那句「关闭后恢复经典
+              // 配色」只在选「关闭」时成立，选「仅色条」时是错的
+              // （真机截图 2026-10-21）。
               HyperosSelectTile<WidgetCourseAccentMode>(
                 label: l10n.homeWidgetCourseAccentTitle,
-                subtitle: l10n.homeWidgetCourseAccentSubtitle,
                 items: {
                   for (final v in WidgetCourseAccentMode.values)
                     widgetCourseAccentModeLabel(l10n, v): v,

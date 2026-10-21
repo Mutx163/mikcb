@@ -3988,9 +3988,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '课程颜色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '关闭后恢复经典配色';
-
-  @override
   String get widgetCourseAccentModeOff => '关闭';
 
   @override
@@ -4071,7 +4068,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetExactAlarmBannerTitle => '精确闹钟权限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '缺少闹钟和提醒权限，桌面卡片刷新可能延迟，建议开启权限';
+  String get homeWidgetExactAlarmBannerText => '缺少闹钟权限，卡片刷新可能延迟';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授权';
@@ -15373,9 +15370,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetCourseAccentTitle => '課程顏色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '關閉後恢復經典配色';
-
-  @override
   String get widgetCourseAccentModeOff => '關閉';
 
   @override
@@ -15456,7 +15450,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '缺少鬧鐘和提醒權限，桌面卡片刷新可能延遲，建議開啓權限';
+  String get homeWidgetExactAlarmBannerText => '缺少鬧鐘權限，卡片刷新可能延遲';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';
@@ -26798,9 +26792,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetCourseAccentTitle => '課程顏色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '關閉後恢復經典配色';
-
-  @override
   String get widgetCourseAccentModeOff => '關閉';
 
   @override
@@ -26881,7 +26872,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetExactAlarmBannerTitle => '精確鬧鐘權限未授予';
 
   @override
-  String get homeWidgetExactAlarmBannerText => '缺少鬧鐘和提醒權限，桌面卡片刷新可能延遲，建議開啟權限';
+  String get homeWidgetExactAlarmBannerText => '缺少鬧鐘權限，卡片重新整理可能延遲';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '去授權';

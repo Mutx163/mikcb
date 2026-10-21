@@ -4091,9 +4091,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '수업 색상';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => '끄면 기존 색상으로 복원';
-
-  @override
   String get widgetCourseAccentModeOff => '끄기';
 
   @override
@@ -4177,8 +4174,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetExactAlarmBannerTitle => '정확한 알람 권한 미허용';
 
   @override
-  String get homeWidgetExactAlarmBannerText =>
-      '\"알람 및 리마인더\" 권한이 없으면 수업 경계 갱신이 부정확한 알람으로 대체되어 위젯이 늦게 갱신될 수 있어요. 정확한 갱신을 위해 권한을 허용해 주세요';
+  String get homeWidgetExactAlarmBannerText => '알람 권한이 없으면 새로고침이 지연될 수 있습니다';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '권한 허용';

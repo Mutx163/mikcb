@@ -64,7 +64,8 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -72,7 +73,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,12 +86,13 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -98,7 +101,7 @@ abstract class AppLocalizations {
     Locale('ko'),
     Locale('zh'),
     Locale('zh', 'HK'),
-    Locale('zh', 'TW')
+    Locale('zh', 'TW'),
   ];
 
   /// No description provided for @appTitle.
@@ -3207,13 +3210,22 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{weekDescription}  教师：{teacher}  教室：{location}'**
-  String courseDetailSummary(String weekDescription, String teacher, String location);
+  String courseDetailSummary(
+    String weekDescription,
+    String teacher,
+    String location,
+  );
 
   /// No description provided for @courseDetailSummaryWithConflict.
   ///
   /// In zh, this message translates to:
   /// **'{weekDescription}  教师：{teacher}  教室：{location}\n冲突课程：{conflictSummary}'**
-  String courseDetailSummaryWithConflict(String weekDescription, String teacher, String location, String conflictSummary);
+  String courseDetailSummaryWithConflict(
+    String weekDescription,
+    String teacher,
+    String location,
+    String conflictSummary,
+  );
 
   /// No description provided for @confirmDeleteTitle.
   ///
@@ -3915,7 +3927,12 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{sections} 节 · {profiles} 个课表 · {courses} 节课程 · {overrideCourses} 节副时间模板'**
-  String timeSchemeSummary(int sections, int profiles, int courses, int overrideCourses);
+  String timeSchemeSummary(
+    int sections,
+    int profiles,
+    int courses,
+    int overrideCourses,
+  );
 
   /// No description provided for @viewUsageAction.
   ///
@@ -5805,13 +5822,24 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{profileName} · {courseName} 周 {weekday} 第 {startSection} 至 {endSection} 节 {usageType}'**
-  String timeSchemeUsageReference(String profileName, String courseName, String weekday, int startSection, int endSection, String usageType);
+  String timeSchemeUsageReference(
+    String profileName,
+    String courseName,
+    String weekday,
+    int startSection,
+    int endSection,
+    String usageType,
+  );
 
   /// No description provided for @weekdaySectionSummary.
   ///
   /// In zh, this message translates to:
   /// **'周 {weekday} {startSection}～{endSection} 节'**
-  String weekdaySectionSummary(String weekday, int startSection, int endSection);
+  String weekdaySectionSummary(
+    String weekday,
+    int startSection,
+    int endSection,
+  );
 
   /// No description provided for @timeRangeValidationNoCrossDay.
   ///
@@ -7385,12 +7413,6 @@ abstract class AppLocalizations {
   /// **'课程颜色'**
   String get homeWidgetCourseAccentTitle;
 
-  /// No description provided for @homeWidgetCourseAccentSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'关闭后恢复经典配色'**
-  String get homeWidgetCourseAccentSubtitle;
-
   /// No description provided for @widgetCourseAccentModeOff.
   ///
   /// In zh, this message translates to:
@@ -7532,7 +7554,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeWidgetExactAlarmBannerText.
   ///
   /// In zh, this message translates to:
-  /// **'缺少闹钟和提醒权限，桌面卡片刷新可能延迟，建议开启权限'**
+  /// **'缺少闹钟权限，卡片刷新可能延迟'**
   String get homeWidgetExactAlarmBannerText;
 
   /// No description provided for @homeWidgetExactAlarmGrantAction.
@@ -8679,7 +8701,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'识别到 {courseCount} 门课，最高到第 {sectionCount} 节 {warningSuffix}'**
-  String aiPreviewSummary(int courseCount, int sectionCount, String warningSuffix);
+  String aiPreviewSummary(
+    int courseCount,
+    int sectionCount,
+    String warningSuffix,
+  );
 
   /// No description provided for @aiWarningCountSuffix.
   ///
@@ -10059,19 +10085,35 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{weekDescription} · {weekday} 第 {startSection}～{endSection} 节'**
-  String courseWeekdaySectionSummary(String weekDescription, String weekday, int startSection, int endSection);
+  String courseWeekdaySectionSummary(
+    String weekDescription,
+    String weekday,
+    int startSection,
+    int endSection,
+  );
 
   /// No description provided for @weekdaySectionTimeSummary.
   ///
   /// In zh, this message translates to:
   /// **'{weekday} 第 {startSection}～{endSection} 节 · {startTime}～{endTime}'**
-  String weekdaySectionTimeSummary(String weekday, int startSection, int endSection, String startTime, String endTime);
+  String weekdaySectionTimeSummary(
+    String weekday,
+    int startSection,
+    int endSection,
+    String startTime,
+    String endTime,
+  );
 
   /// No description provided for @rescheduledToMessage.
   ///
   /// In zh, this message translates to:
   /// **'已调到第 {week} 周 {weekday} 第 {startSection}～{endSection} 节'**
-  String rescheduledToMessage(int week, String weekday, int startSection, int endSection);
+  String rescheduledToMessage(
+    int week,
+    String weekday,
+    int startSection,
+    int endSection,
+  );
 
   /// No description provided for @courseCountSummary.
   ///
@@ -11322,6 +11364,9 @@ abstract class AppLocalizations {
   String get courseNoteAction;
 
   /// No description provided for @courseTaskAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'作业'**
   String get courseTaskAction;
 
   /// No description provided for @courseNoteSaveAction.
@@ -11369,22 +11414,19 @@ abstract class AppLocalizations {
   /// No description provided for @courseNoteSessionHint.
   ///
   /// In zh, this message translates to:
-  /// **'仅对第 {week} 周这一次课生效，适合记录作业或携带物品。'**
+  /// **'仅对第 {week} 周这一次课生效，适合记录携带物品或课堂提醒。'**
   String courseNoteSessionHint(int week);
 
   /// No description provided for @courseNoteSessionPlaceholder.
   ///
   /// In zh, this message translates to:
-  /// **'例如：交第三章习题、带电脑……'**
+  /// **'例如：带电脑、换教室、记得带计算器……'**
   String get courseNoteSessionPlaceholder;
-
-
-
 
   /// No description provided for @courseNoteTileSubtitleEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'记录作业、带电脑或课堂提醒'**
+  /// **'记录携带物品或课堂提醒'**
   String get courseNoteTileSubtitleEmpty;
 
   /// No description provided for @courseNoteTileSubtitleWhole.
@@ -11853,7 +11895,12 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{startMonth} 月 {startDay} 日～{endMonth} 月 {endDay} 日'**
-  String holidayDateDiffMonth(int startMonth, int startDay, int endMonth, int endDay);
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  );
 
   /// No description provided for @liveTestingHolidayOverride.
   ///
@@ -12519,7 +12566,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{day} 第 {startSection}～{endSection} 节'**
-  String statisticsRankingSlotDetail(String day, int startSection, int endSection);
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  );
 
   /// No description provided for @statisticsAchievementEarlyBirdName.
   ///
@@ -12639,7 +12690,13 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'第 {week} 周 · 共 {sections} 节 · {courses} 门课\n较上周 {delta} 节\n最忙的一天是 {busiestDay}'**
-  String weeklyReportBody(int week, int sections, int courses, String delta, String busiestDay);
+  String weeklyReportBody(
+    int week,
+    int sections,
+    int courses,
+    String delta,
+    String busiestDay,
+  );
 
   /// No description provided for @weeklyReportBodyEmpty.
   ///
@@ -13845,7 +13902,10 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'所选时间模板节次数不足，无法覆盖第 {startSection}～{endSection} 节'**
-  String serviceMsgTimeSchemeSectionsInsufficient(int startSection, int endSection);
+  String serviceMsgTimeSchemeSectionsInsufficient(
+    int startSection,
+    int endSection,
+  );
 
   /// No description provided for @serviceMsgSectionCountBelowUsage.
   ///
@@ -13857,7 +13917,15 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'节次数不能小于已用最大节次 第 {requiredMaxSection} 节。正在使用：{profileName} · {courseName} 周 {dayOfWeek} 第 {startSection} 至 {endSection} 节 {usageType}'**
-  String serviceMsgSectionCountBelowUsageDetail(int requiredMaxSection, String profileName, String courseName, int dayOfWeek, int startSection, int endSection, String usageType);
+  String serviceMsgSectionCountBelowUsageDetail(
+    int requiredMaxSection,
+    String profileName,
+    String courseName,
+    int dayOfWeek,
+    int startSection,
+    int endSection,
+    String usageType,
+  );
 
   /// No description provided for @serviceMsgAtLeastOneSectionRequired.
   ///
@@ -13983,7 +14051,10 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'WakeUp 格式需要至少 7 列，但第 {rowNumber} 行只有 {columnCount} 列'**
-  String serviceMsgSpreadsheetWakeupInsufficientColumns(int rowNumber, int columnCount);
+  String serviceMsgSpreadsheetWakeupInsufficientColumns(
+    int rowNumber,
+    int columnCount,
+  );
 
   /// No description provided for @serviceMsgWeekdayMustBe1To7.
   ///
@@ -14013,7 +14084,10 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'开始周 {startWeek} 超过学期周数 {semesterWeekCount}'**
-  String serviceMsgStartWeekExceedsSemester(int startWeek, int semesterWeekCount);
+  String serviceMsgStartWeekExceedsSemester(
+    int startWeek,
+    int semesterWeekCount,
+  );
 
   /// No description provided for @serviceMsgEndWeekBeforeStartWeek.
   ///
@@ -14061,7 +14135,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'第 {rowNumber} 行：结束周 {endWeek} 超过学期周数 {semesterWeekCount}，已调整为 {semesterWeekCount}'**
-  String serviceMsgSpreadsheetEndWeekClamped(int rowNumber, int endWeek, int semesterWeekCount);
+  String serviceMsgSpreadsheetEndWeekClamped(
+    int rowNumber,
+    int endWeek,
+    int semesterWeekCount,
+  );
 
   /// No description provided for @serviceMsgSpreadsheetOddEvenBoth.
   ///
@@ -14145,7 +14223,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{itemName} 包含超出学期周数 {semesterWeekCount} 的周次 {weeks}，超出部分已忽略'**
-  String serviceMsgWeeksExceedSemesterClamped(String itemName, int semesterWeekCount, String weeks);
+  String serviceMsgWeeksExceedSemesterClamped(
+    String itemName,
+    int semesterWeekCount,
+    String weeks,
+  );
 
   /// No description provided for @serviceMsgAiResultNotObject.
   ///
@@ -14445,7 +14527,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'第 {stepIndex}/{totalSteps} 步失败：{detail}'**
-  String serviceMsgMacroStepFailed(int stepIndex, int totalSteps, String detail);
+  String serviceMsgMacroStepFailed(
+    int stepIndex,
+    int totalSteps,
+    String detail,
+  );
 
   /// No description provided for @serviceMsgMacroNavigateUrlEmpty.
   ///
@@ -14499,7 +14585,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{stepLabel} 超时 {timeoutSeconds} 秒 {lastError}'**
-  String serviceMsgMacroPollTimeout(String stepLabel, int timeoutSeconds, String lastError);
+  String serviceMsgMacroPollTimeout(
+    String stepLabel,
+    int timeoutSeconds,
+    String lastError,
+  );
 
   /// No description provided for @serviceMsgMacroReplayNavigate.
   ///
@@ -15429,7 +15519,10 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'快捷导入 {schoolName} {adapterName}'**
-  String courseImportQuickImportDescription(String schoolName, String adapterName);
+  String courseImportQuickImportDescription(
+    String schoolName,
+    String adapterName,
+  );
 
   /// No description provided for @courseImportScriptNoCourses.
   ///
@@ -15513,7 +15606,14 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'周 {weekday} 第 {startSection}～{endSection} 节  {name}  {location}  周次：{weekText}'**
-  String courseImportPreviewLine(String weekday, int startSection, int endSection, String name, String location, String weekText);
+  String courseImportPreviewLine(
+    String weekday,
+    int startSection,
+    int endSection,
+    String name,
+    String location,
+    String weekText,
+  );
 
   /// No description provided for @courseImportCalendarWeekLabel.
   ///
@@ -15987,7 +16087,16 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}'**
-  String logLiveUpdateSettingsSynced(String beforeClass, String duringClass, String beforeEnd, String promote, String notification, String countdown, String courseName, String location);
+  String logLiveUpdateSettingsSynced(
+    String beforeClass,
+    String duringClass,
+    String beforeEnd,
+    String promote,
+    String notification,
+    String countdown,
+    String courseName,
+    String location,
+  );
 
   /// No description provided for @logFieldSource.
   ///
@@ -17229,7 +17338,10 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址'**
-  String courseImportPortalUrlMissingBody(String schoolName, String adapterName);
+  String courseImportPortalUrlMissingBody(
+    String schoolName,
+    String adapterName,
+  );
 
   /// No description provided for @guidePermissionsProgressLabel.
   ///
@@ -17289,7 +17401,11 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'将匹配：{group} · {scheme}，关键词 {keyword}'**
-  String locationTimeMatchPreviewResult(String group, String scheme, String keyword);
+  String locationTimeMatchPreviewResult(
+    String group,
+    String scheme,
+    String keyword,
+  );
 
   /// No description provided for @locationTimeMatchApplyActive.
   ///
@@ -19653,7 +19769,12 @@ abstract class AppLocalizations {
   ///
   /// In zh, this message translates to:
   /// **'将在系统时钟创建每周 {weekday} {time} 的闹钟，提前 {lead} 分钟响铃，上课周次 {weeks}。非上课周与假期仍会响铃，需在系统时钟中删除。'**
-  String classAlarmCourseConfirmMessage(String weekday, String time, int lead, String weeks);
+  String classAlarmCourseConfirmMessage(
+    String weekday,
+    String time,
+    int lead,
+    String weeks,
+  );
 
   /// No description provided for @classAlarmDaySeparator.
   ///
@@ -20628,7 +20749,8 @@ abstract class AppLocalizations {
   String get pickupCodePresetDouyinParcelsHint;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -20637,37 +20759,44 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'ja', 'ko', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'ja', 'ko', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
-    case 'zh': {
-  switch (locale.countryCode) {
-    case 'HK': return AppLocalizationsZhHk();
-case 'TW': return AppLocalizationsZhTw();
-   }
-  break;
-   }
+    case 'zh':
+      {
+        switch (locale.countryCode) {
+          case 'HK':
+            return AppLocalizationsZhHk();
+          case 'TW':
+            return AppLocalizationsZhTw();
+        }
+        break;
+      }
   }
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'ja': return AppLocalizationsJa();
-    case 'ko': return AppLocalizationsKo();
-    case 'zh': return AppLocalizationsZh();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'ja':
+      return AppLocalizationsJa();
+    case 'ko':
+      return AppLocalizationsKo();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

@@ -4068,9 +4068,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => '授業の色';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => 'オフで従来の配色に戻す';
-
-  @override
   String get widgetCourseAccentModeOff => 'オフ';
 
   @override
@@ -4154,8 +4151,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetExactAlarmBannerTitle => '正確なアラーム権限が未許可';
 
   @override
-  String get homeWidgetExactAlarmBannerText =>
-      '「アラームとリマインダー」権限が未許可の場合、授業境界の更新は不正確なアラームにフォールバックし、ウィジェットが遅れて更新されることがあります。正確な更新のため許可をおすすめします';
+  String get homeWidgetExactAlarmBannerText => 'アラーム権限がないと更新が遅れる場合があります';
 
   @override
   String get homeWidgetExactAlarmGrantAction => '許可する';

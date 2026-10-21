@@ -4251,9 +4251,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetCourseAccentTitle => 'Course colors';
 
   @override
-  String get homeWidgetCourseAccentSubtitle => 'Off restores classic colors';
-
-  @override
   String get widgetCourseAccentModeOff => 'Off';
 
   @override
@@ -4340,7 +4337,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetExactAlarmBannerText =>
-      'Without the \"Alarms & reminders\" permission, refreshes at course boundaries fall back to inexact alarms and widgets may update late. Grant it for precise on-schedule refreshes';
+      'Without alarm access, widget refresh may be delayed';
 
   @override
   String get homeWidgetExactAlarmGrantAction => 'Grant';
