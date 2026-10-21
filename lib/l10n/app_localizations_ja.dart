@@ -11553,6 +11553,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get monthViewBackToCurrentMonth => '今月に戻る';
 
   @override
+  String get monthViewBackToCurrentMonthShort => '今日';
+
+  @override
   String get monthViewHolidayBadge => '休';
 
   @override

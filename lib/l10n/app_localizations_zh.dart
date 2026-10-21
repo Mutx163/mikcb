@@ -11228,6 +11228,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get monthViewBackToCurrentMonth => '回到本月';
 
   @override
+  String get monthViewBackToCurrentMonthShort => '今天';
+
+  @override
   String get monthViewHolidayBadge => '休';
 
   @override
@@ -22648,6 +22651,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get monthViewBackToCurrentMonth => '回到本月';
+
+  @override
+  String get monthViewBackToCurrentMonthShort => '今天';
 
   @override
   String get monthViewHolidayBadge => '休';
@@ -34071,6 +34077,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get monthViewBackToCurrentMonth => '回到本月';
+
+  @override
+  String get monthViewBackToCurrentMonthShort => '今天';
 
   @override
   String get monthViewHolidayBadge => '休';

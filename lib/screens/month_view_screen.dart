@@ -216,6 +216,24 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         onPreviousMonth: () => _shiftMonth(-1),
         onNextMonth: () => _shiftMonth(1),
         onBackToCurrentMonth: _backToCurrentMonth,
+        // 标题跟着手指连续滑动：滑到一半能看到两个月份各露一半，
+        // 而不是"松手才换"（2026-10-21 重新设计）。
+        pageListenable: _pager,
+        pageOf: () {
+          // ⚠️ `PageController.page` 在 PageView 尚未构建时会**断言失败**
+          //（"PageController.page cannot be accessed before a PageView is built
+          // with it"）。工具行比网格先构建，所以这里必须先判 hasClients ——
+          // 否则进页面直接崩（本仓 2026-10-21 实测）。
+          final pager = _pager;
+          if (pager == null || !pager.hasClients) {
+            return _pageFor(_focusedYear, _focusedMonth).toDouble();
+          }
+          return pager.page ?? _pageFor(_focusedYear, _focusedMonth).toDouble();
+        },
+        monthOfPage: (page) {
+          final (year, month) = _monthForPage(page);
+          return (year: year, month: month);
+        },
       ),
       // 卡片相对屏幕一动，预糊纹理就必须重取景（否则玻璃里那层背景跟着卡片
       // 走，读起来是"玻璃内部背景不动"）。这里有**两条**运动源，必须都接：

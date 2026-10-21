@@ -11893,6 +11893,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthViewBackToCurrentMonth => 'Back to this month';
 
   @override
+  String get monthViewBackToCurrentMonthShort => 'Today';
+
+  @override
   String get monthViewHolidayBadge => 'Off';
 
   @override

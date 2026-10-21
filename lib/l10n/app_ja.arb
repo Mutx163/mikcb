@@ -6606,6 +6606,7 @@
   "monthViewPreviousMonth": "前の月",
   "monthViewNextMonth": "次の月",
   "monthViewBackToCurrentMonth": "今月に戻る",
+  "monthViewBackToCurrentMonthShort": "今日",
   "monthViewHolidayBadge": "休",
   "monthViewAdjustedWorkdayBadge": "出",
   "monthViewAgendaEmpty": "予定はありません",

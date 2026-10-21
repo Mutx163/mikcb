@@ -19,6 +19,7 @@ import 'timetable_add_course_sheet.dart';
 import 'timetable_form_pages.dart';
 import 'timetable_home_action_page_button.dart';
 import 'timetable_home_header.dart';
+import 'timetable_title_bar.dart';
 import 'timetable_profile_switch_flow.dart';
 import 'timetable_profile_switcher_trigger.dart';
 import 'timetable_top_menu_shell.dart';
@@ -463,50 +464,33 @@ class _TimetablePageChromeShellState extends State<TimetablePageChromeShell> {
     return HomePageChromeInk(
       foreground: chrome.chromeForeground,
       mutedForeground: chrome.chromeMutedForeground,
-      child: HyperosRootHeader(
-        title: Row(
-          children: [
-            // 返回箭头只在「推入路由」这条路上出现：坞内嵌页没有「上一页」语义
-            // （切换走底栏，系统返回直接退应用）—— 与 `HyperosSubpageNoBack`
-            // 同一套门禁，这里读同一个作用域。
-            if (!HyperosSubpageNoBack.of(context))
-              HyperosBackButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-            Expanded(
-              child: TimetableProfileSwitcherTrigger(
-                style: settings.homeTitleStyle,
-                activeProfileName: provider.activeProfile?.name.trim(),
-                onTap: _openProfileSwitcher,
-                foreground: chrome.chromeForeground,
-                mutedForeground: chrome.chromeMutedForeground,
-                // 与首页同一个微调值（`_homeTitleHorizontalNudge`）。
-                leftPadding: 4,
-              ),
-            ),
-          ],
-        ),
-        suffixes: [
-          buildTimetableHomeHeaderActions(
-            l10n: l10n,
-            // 独立页面不接情侣覆盖层（那是首页专属的叠加态），所以爱心按钮
-            // 整颗不出现 —— 布局函数按 `hasPartnerBinding` 门控。
-            hasPartnerBinding: false,
-            coupleOverlayActive: false,
-            heartLink: _heartLink,
-            moreLink: _moreBallLink,
-            homeMenuAnchor: _anchor,
-            topMenuButtonKey: _moreButtonKey,
-            onToggleCoupleOverlay: () {},
-            onPrewarmGlass: _prewarmGlass,
-            onReleaseGlass: _releaseGlass,
-            onShowTopActions: _showMenu,
-          ).last,
-        ],
-        // 不给 padding / minHeight 传参：两个默认值就是首页那一套
-        // （`EdgeInsets.fromLTRB(8, 0, 8, 2)` / 44）。行高由外面那层
-        // `SizedBox(height: titleRowHeight)` 钉死，这里再传一遍只是同一件事
-        // 写两处，而这层已经由 SizedBox 兜住，传歪了也不会生效 —— 索性不传。
+      // ⚠️ 这一行**不再在这里拼装**：首页与独立页面曾各写一份，漂了两处
+      // （底部内边距一处 0 一处 2 ⇒ 标题整体下移 1px；右侧按钮取法也不同）。
+      // 现在两边都走 [TimetableTitleBar]，差异只能改一处。
+      //
+      // 返回箭头只在「推入路由」这条路上出现：坞内嵌页没有「上一页」语义
+      // （切换走底栏、系统返回直接退应用）—— 与 `HyperosSubpageNoBack` 同一套
+      // 门禁，这里读同一个作用域。
+      child: TimetableTitleBar(
+        settings: settings,
+        activeProfileName: provider.activeProfile?.name.trim(),
+        onProfileTap: _openProfileSwitcher,
+        foreground: chrome.chromeForeground,
+        mutedForeground: chrome.chromeMutedForeground,
+        heartLink: _heartLink,
+        moreLink: _moreBallLink,
+        menuAnchor: _anchor,
+        moreButtonKey: _moreButtonKey,
+        onPrewarmGlass: _prewarmGlass,
+        onReleaseGlass: _releaseGlass,
+        onShowTopActions: _showMenu,
+        // 独立页面不接情侣覆盖层（那是首页专属的叠加态），所以爱心整颗不出现
+        // —— 布局函数按 `hasPartnerBinding` 门控。两者都用默认值 false，
+        // 不再显式传（传了也只是同一件事写两遍）。
+        showBackButton: !HyperosSubpageNoBack.of(context),
+        // 底部内边距的判据必须来自 chrome spec（综合壁纸 / 管线 / 设置），
+        // 不能用单个设置项顶替 —— 判错就又回到"差 1px"。
+        headerUsesFrostedChrome: chrome.headerUsesFrostedChrome,
       ),
     );
   }

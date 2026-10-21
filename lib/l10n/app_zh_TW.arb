@@ -6767,6 +6767,7 @@
   "monthViewPreviousMonth": "上個月",
   "monthViewNextMonth": "下個月",
   "monthViewBackToCurrentMonth": "回到本月",
+  "monthViewBackToCurrentMonthShort": "今天",
   "monthViewHolidayBadge": "休",
   "monthViewAdjustedWorkdayBadge": "班",
   "monthViewAgendaEmpty": "這天沒有安排",

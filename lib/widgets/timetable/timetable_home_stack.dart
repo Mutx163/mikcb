@@ -7,6 +7,7 @@ import '../../ui/hyperos/hyperos.dart';
 import '../../utils/home_page_background.dart';
 import '../../widgets/home_page_region_blur.dart';
 import 'timetable_home_pull_indicator.dart';
+import 'timetable_title_bar.dart';
 import 'timetable_weekday_header.dart';
 
 /// 首页「壁纸 + 玻璃带 + 顶栏 + 内容」的一整棵栈（2026-10-19 从 build 搬出）。
@@ -94,11 +95,18 @@ class TimetableHomeStack extends StatelessWidget {
             overlayHeader: false,
             backgroundColor: chrome.scaffoldBackgroundColor,
             headerDecoration: BoxDecoration(color: chrome.headerBarColor),
+            // 底部内边距**必须**与独立页面共用同一个判据
+            // （`TimetableTitleBar.bottomPaddingFor`）：这两处曾经各写一份，
+            // 独立页面那边用了 HyperosRootHeader 的默认值 2，玻璃态下标题因此
+            // 比首页低 1px（用户 2026-10-21：「软件名字位置，为什么显示和其他
+            // 页面的高度是不完全一样的，看起来有变动」）。
             headerPadding: EdgeInsets.fromLTRB(
               8,
               0,
               8,
-              chrome.headerUsesFrostedChrome ? 0.0 : 2.0,
+              TimetableTitleBar.bottomPaddingFor(
+                frosted: chrome.headerUsesFrostedChrome,
+              ),
             ),
             systemOverlayStyle: HyperosColors.systemOverlayForBackground(
               chrome.systemOverlayBackground,

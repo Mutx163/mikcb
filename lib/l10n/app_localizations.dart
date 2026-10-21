@@ -20466,6 +20466,12 @@ abstract class AppLocalizations {
   /// **'回到本月'**
   String get monthViewBackToCurrentMonth;
 
+  /// No description provided for @monthViewBackToCurrentMonthShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get monthViewBackToCurrentMonthShort;
+
   /// No description provided for @monthViewHolidayBadge.
   ///
   /// In zh, this message translates to:

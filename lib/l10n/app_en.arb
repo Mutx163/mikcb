@@ -6770,6 +6770,7 @@
   "monthViewPreviousMonth": "Previous month",
   "monthViewNextMonth": "Next month",
   "monthViewBackToCurrentMonth": "Back to this month",
+  "monthViewBackToCurrentMonthShort": "Today",
   "monthViewHolidayBadge": "Off",
   "monthViewAdjustedWorkdayBadge": "Work",
   "monthViewAgendaEmpty": "Nothing scheduled",

@@ -11597,6 +11597,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get monthViewBackToCurrentMonth => '이번 달로';
 
   @override
+  String get monthViewBackToCurrentMonthShort => '오늘';
+
+  @override
   String get monthViewHolidayBadge => '휴';
 
   @override

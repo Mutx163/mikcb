@@ -6767,6 +6767,7 @@
   "monthViewPreviousMonth": "이전 달",
   "monthViewNextMonth": "다음 달",
   "monthViewBackToCurrentMonth": "이번 달로",
+  "monthViewBackToCurrentMonthShort": "오늘",
   "monthViewHolidayBadge": "휴",
   "monthViewAdjustedWorkdayBadge": "출",
   "monthViewAgendaEmpty": "일정이 없습니다",
