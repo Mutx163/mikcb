@@ -783,6 +783,20 @@ class TimetableCourseService {
     final preservedEdited = <CourseTask>[];
     final unmatchedDerived = <String, CourseTask>{};
     final next = <CourseTask>[];
+    // 「这一周已经有用户亲手加的作业」的键集合。
+    //
+    // 没有它的话会出现重复：`addTask` 会给挂课程的作业顺手置 `hasHomework`，
+    // 而本方法看到标记就按备注文字生成一条 `homeworkMark` 作业——于是同课程
+    // 同周出现两条（2026-10-21 实测：备注里写着「带计算器」，用户从课程面板
+    // 加了一条「第三章习题」，重算后变成两条）。
+    //
+    // 语义上也不该重复：用户亲手记了这周的作业，备注里的标记只是「这节有作业」
+    // 的一个印子，不该再长出第二条实体。
+    final weeksWithManualTask = <String>{
+      for (final task in port.tasks)
+        if (task.source == CourseTaskSource.manual)
+          ?_homeworkKey(task.courseId, task.sourceWeek),
+    };
     for (final task in port.tasks) {
       if (task.source != CourseTaskSource.homeworkMark) {
         next.add(task);
@@ -813,6 +827,11 @@ class TimetableCourseService {
         }
         final key = _homeworkKey(course.id, entry.key);
         if (key == null) {
+          continue;
+        }
+        // 这周已经有用户亲手加的作业：不再按备注生成第二条（见 weeksWithManualTask）。
+        if (weeksWithManualTask.contains(key)) {
+          unmatchedDerived.remove(key);
           continue;
         }
         // 用户接管过这条：它已经在 preservedEdited 里，原样输出，不再生成一条。

@@ -214,4 +214,79 @@ void main() {
       expect(port.courses.single.hasHomeworkInWeek(2), isFalse);
     });
   });
+  group('加作业不会引出重复（2026-10-21 实测回归）', () {
+    test('备注里有文字但没勾作业 → 加一条 manual 作业，重算后仍是 1 条', () async {
+      // 这是实际撞到的场景：`addTask` 会顺手置 hasHomework，而重算看到标记
+      // 就按备注文字生成一条 homeworkMark 作业 → 同课程同周出现两条。
+      final port = _Port(
+        courses: <Course>[
+          _course().copyWith(
+            sessionNotes: {2: const CourseSessionNote(text: '带计算器')},
+          ),
+        ],
+      );
+
+      await TimetableCourseService.addTask(port, _task());
+      expect(port.tasks, hasLength(1));
+
+      await TimetableCourseService.syncHomeworkTasksWithCourses(port);
+
+      expect(
+        port.tasks,
+        hasLength(1),
+        reason: '用户已经亲手记了这周的作业，备注标记不该再长出第二条',
+      );
+      expect(port.tasks.single.id, 't1');
+      expect(port.tasks.single.title, '第三章习题');
+    });
+
+    test('备注里勾了作业、但用户加的是另一周 → 两条各自成立', () async {
+      final port = _Port(
+        courses: <Course>[
+          _course().copyWith(
+            sessionNotes: {
+              2: const CourseSessionNote(text: '习题', hasHomework: true),
+            },
+          ),
+        ],
+      );
+
+      // 用户在第 3 周加了一条手写作业
+      await TimetableCourseService.addTask(port, _task(sourceWeek: 3));
+      await TimetableCourseService.syncHomeworkTasksWithCourses(port);
+
+      // 第 2 周由备注生成、第 3 周是用户加的，两者不是同一周，都该在
+      expect(port.tasks, hasLength(2));
+      final weeks = port.tasks.map((t) => t.sourceWeek).toSet();
+      expect(weeks, containsAll(<int>[2, 3]));
+    });
+
+    test('删掉 manual 作业后，重算会按备注重新生成（不会被永久压住）', () async {
+      final port = _Port(
+        courses: <Course>[
+          _course().copyWith(
+            sessionNotes: {
+              2: const CourseSessionNote(text: '习题', hasHomework: true),
+            },
+          ),
+        ],
+      );
+
+      await TimetableCourseService.addTask(port, _task());
+      await TimetableCourseService.syncHomeworkTasksWithCourses(port);
+      expect(port.tasks, hasLength(1));
+
+      await TimetableCourseService.deleteTask(port, 't1');
+      // 删 manual 作业时会顺手清掉 hasHomework（deleteTask 只清 homeworkMark 的，
+      // 所以这里标记还在）。再重算一次，应当按备注长出 homeworkMark 那条。
+      await TimetableCourseService.syncHomeworkTasksWithCourses(port);
+
+      expect(
+        port.tasks,
+        hasLength(1),
+        reason: 'manual 作业没了，备注标记还在，应回到「由备注生成」的常态',
+      );
+      expect(port.tasks.single.source, CourseTaskSource.homeworkMark);
+    });
+  });
 }
