@@ -7,6 +7,8 @@ import '../../../models/exam.dart';
 import '../../../models/schedule_item.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../ui/hyperos/hyperos.dart';
+import '../../../utils/card_surface_ink.dart';
+import '../../../utils/hex_color.dart';
 import '../../../utils/home_page_background.dart';
 import '../../course_surface.dart';
 import '../timetable_day_agenda_models.dart';
@@ -57,6 +59,11 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
 
   final DayViewInkEnvironment inkEnvironment;
 
+  /// 这张卡在屏幕上的实际矩形（首帧为 null）。
+  ///
+  /// 判字色按它背后那一小块壁纸的亮度；为 null 时回落到星期栏那条带。
+  final Rect? cardRect;
+
   /// 卡片圆角；正源是 `_TimetableScreenState._dayViewCardRadius`。
   final double radius;
 
@@ -82,6 +89,7 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     required this.inkEnvironment,
     required this.radius,
     required this.onClose,
+    this.cardRect,
     this.sharedFreeSummaryBuilder,
   });
 
@@ -105,7 +113,6 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     final lastAgenda = hasAgenda ? agendaItems.last : null;
 
     final isDark = theme.brightness == Brightness.dark;
-    final hasBackdrop = hasHomePageBackdrop(settings);
     final backdropBlurOn = inkEnvironment.backdropBlurOn;
     final courseCardStyle = dayViewContentCardSurfaceStyle(
       settings,
@@ -124,41 +131,45 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     // 实体档那条老口径自然仍成立：无壁纸 / 全局模糊关掉时
     // [effectiveCourseCardSurfaceStyle] 就回落实体，摘要卡跟着实底，不会出现
     // 「课程卡实心、顶上的日期卡还透」。
-    // Ink: 卡面**真的把壁纸透出来**时才自动黑白；否则卡面是主题底色
-    // 的实底，墨色必须跟主题走 —— 按壁纸亮度翻白会让白墨落在亮色卡面上
-    // 不可读。判据是**卡实际用的材质**，不是顶栏状态。
     //
-    // 自动黑白判的是**卡面**亮度（卡自己的底色 + 壁纸那条带按染色强度混合，
-    // 见 [contentCardInkOverWallpaper]），不是裸壁纸亮度：2026-09-22 真机反馈
-    // "浅色主题下卡面发白、字也是浅色糊在一起"，就是漏了卡面那层 32%~42% 的
-    // 自有底色所致。
+    // ── 墨色（2026-10-21 重写） ──
     //
-    // 壁纸那条带取的是 `_weekdayInkLuminance`（信息栏与顶栏带用的就是它）：
-    // 这张卡的墨色本来就是信息栏那套
-    //（configuredHex 取的就是 weekdayBarFontColor*）。
-    // 早先这里用 body 带（整屏下半部，常含壁纸的深色区），于是出现"带是
-    // 浅色、卡片也是亮卡，却按深色壁纸翻成白墨"——白字落在亮卡上读不出来
-    // （真机反馈：高斯档下日课表那张日期卡）。
+    // 旧实现走 `contentCardInkOverWallpaper`：卡面亮度 = 主题背景色 × 染色比例
+    // + 壁纸带 × 其余，分界点 0.20。问题在于**浅色主题下主题背景色接近纯白**，
+    // 白 × 20% 就已经等于 0.20 的分界点，再叠上壁纸分量恒定 ≥ 0.2 ——
+    // 于是「壁纸再怎么黑，这张卡也永远给黑字」。真机上表现为黑字压在近黑夜景上
+    // （截图 2：日期卡 ≈ 1.7:1）。
+    //
+    // 现在与议程卡统一走 `cardSurfaceInk`：卡面亮度按真实染色比例合成，然后
+    // 直接比黑/白各自的**对比度**（等价于在 0.20 处翻转，但不再被"白底加成"
+    // 顶死）。用户手挑的字色仍然优先保留，只要求它在这张卡的实际卡面上达标。
     final glassOverWallpaper = backdropBlurOn && courseCardStyle.isGlass;
-    final summaryInk = glassOverWallpaper
-        ? contentCardInkOverWallpaper(
-            // 判据是**卡面**亮度，不是裸壁纸：卡面上还压着
-            // `CourseSurface.washAlpha` 比例的自有底色（就是这里的
-            // `foruiTheme.colors.background`）。只看壁纸会在浅色主题下把白字
-            // 判到被冲白的卡面上（2026-09-22 真机反馈），详见该函数。
-            cardFill: foruiTheme.colors.background,
-            washAlpha: CourseSurface.washAlpha(context, courseCardStyle),
-            configuredHex: isDark
-                ? settings.weekdayBarFontColorDark
-                : settings.weekdayBarFontColorLight,
-            defaultHex: isDark
-                ? TimetableSettings.defaultWeekdayBarFontColorDark
-                : TimetableSettings.defaultWeekdayBarFontColorLight,
-            themeFallback: foruiTheme.colors.foreground,
-            hasBackdrop: hasBackdrop,
-            wallpaperLuminance: inkEnvironment.wallpaperWeekdayInkLuminance,
-          )
-        : foruiTheme.colors.foreground;
+    final summaryFill = foruiTheme.colors.background;
+    final summaryWashAlpha = glassOverWallpaper
+        ? CourseSurface.washAlpha(context, courseCardStyle)
+        : 1.0;
+    // 判据亮度取**这张卡实际压着的那一小块**壁纸（`cardRect`），拿不到时
+    // 回落到星期栏那条带 —— 这张卡的墨色本来就是信息栏那套
+    //（configuredHex 取的就是 weekdayBarFontColor*），而旧实现错在
+    // 「只看带、不看卡在哪」。
+    final summaryInk = cardSurfaceInk(
+      fill: summaryFill,
+      washAlpha: summaryWashAlpha,
+      wallpaperLuminance: glassOverWallpaper
+          ? (inkEnvironment.luminanceBehind(cardRect) ??
+                inkEnvironment.wallpaperWeekdayInkLuminance)
+          : null,
+      preferred: isDark
+          ? parseHexColorOrFallback(
+              settings.weekdayBarFontColorDark,
+              fallback: foruiTheme.colors.foreground,
+            )
+          : parseHexColorOrFallback(
+              settings.weekdayBarFontColorLight,
+              fallback: foruiTheme.colors.foreground,
+            ),
+      fallback: foruiTheme.colors.foreground,
+    );
     final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
     // 课程计数胶囊与「X 节日程」胶囊同款中性墨：跟摘要卡其余文字一样走
     // 壁纸自动黑白，有课与否不再切换主题蓝强调色。

@@ -9,6 +9,8 @@ import '../../../ui/hyperos/hyperos.dart';
 import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../../utils/app_toast.dart';
 import '../../../utils/hex_color.dart';
+import '../../../utils/home_page_background.dart';
+import '../../course_surface.dart';
 import '../../home_menu_route_catalog.dart';
 import '../../home_top_menu.dart' show pushHomeMenuPage;
 import '../../open_container.dart';
@@ -47,6 +49,12 @@ class DayViewTaskBand extends StatelessWidget {
   final TimetableSettings settings;
   final DayViewInkEnvironment inkEnvironment;
 
+  /// 这张卡在屏幕上的实际矩形（由 `MeasuredScreenRect` 量出，首帧为 null）。
+  ///
+  /// 判字色只用它背后那一小块壁纸的亮度：用整屏平均会让坐在近黑区域的卡拿到
+  /// 给亮背景准备的黑字（2026-10-21 真机）。
+  final Rect? cardRect;
+
   /// 卡片圆角；正源是 `_TimetableScreenState._dayViewCardRadius`。
   final double radius;
 
@@ -76,6 +84,7 @@ class DayViewTaskBand extends StatelessWidget {
     required this.courseResolver,
     required this.onToggleCompleted,
     required this.taskFormBuilder,
+    this.cardRect,
   });
 
   @override
@@ -89,6 +98,15 @@ class DayViewTaskBand extends StatelessWidget {
       surfaceColor,
       settings: settings,
       env: inkEnvironment,
+      cardRect: cardRect,
+      // 真实染色比例（与 CourseSurface 渲染同源），不拿出厂常数顶替。
+      washAlpha: CourseSurface.washAlpha(
+        context,
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable: HyperosBlurredHeader.backdropBlurEnabled(context),
+        ),
+      ),
     );
     final mutedInk = ink.withValues(alpha: 0.62);
     const overdueColor = HyperosColors.destructive;

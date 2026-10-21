@@ -8,15 +8,22 @@ import '../utils/home_page_background.dart';
 import '../utils/home_wallpaper_luminance_share.dart';
 import '../utils/home_startup_visual_primer.dart';
 import '../utils/luminance_sample_gate.dart';
+import '../utils/wallpaper_luminance_profile.dart';
 
 /// 首页壁纸亮度采样控制器（2026-10-20 从 `TimetableScreen` State 搬出）。
 ///
-/// 持有顶栏/星期栏/卡片三条亮度带、采样 key 与失败闸门；采样成功/失败/文件
-/// 丢失时 `notifyListeners()`，由外层 `setState` 重绘。不读 UI，不依赖 State。
+/// 持有顶栏/星期栏/卡片三条亮度带、**逐行亮度剖面**、采样 key 与失败闸门；
+/// 采样成功/失败/文件丢失时 `notifyListeners()`，由外层 `setState` 重绘。
+/// 不读 UI，不依赖 State。
+///
+/// 逐行剖面（[profile]）是 2026-10-21 加的：三条整屏带描述不了「这张卡坐在
+/// 哪一行」，日视图因此判错两张卡的字色。剖面与三条带来自**同一次解码**，
+/// 三条带的口径逐位不变。
 class WallpaperLuminanceController extends ChangeNotifier {
   double? _top;
   double? _weekday;
   double? _body;
+  WallpaperLuminanceProfile? _profile;
   String? _sampleKey;
   String? _requestedKey;
   bool _fileExists = false;
@@ -26,6 +33,9 @@ class WallpaperLuminanceController extends ChangeNotifier {
   double? get top => _top;
   double? get weekday => _weekday;
   double? get body => _body;
+
+  /// 逐行亮度剖面；没采到（或采样失败）时为 null。
+  WallpaperLuminanceProfile? get profile => _profile;
 
   /// 顶栏/星期栏/卡片实际用于判墨的星期栏亮度。
   double? weekdayInk(TimetableSettings settings) {
@@ -63,6 +73,9 @@ class WallpaperLuminanceController extends ChangeNotifier {
     _top = bands.top;
     _weekday = bands.weekday;
     _body = bands.body;
+    // 剖面不在这里补：共享/预热只登记三条带（见 HomeWallpaperLuminanceShare
+    // 的类注释 —— 它有意只留最新一份小数据）。剖面由本类的 _load 采到时才有，
+    // 在那之前日视图按整屏带判色（旧行为），不会比改动前更差。
   }
 
   void schedule(
@@ -75,6 +88,7 @@ class WallpaperLuminanceController extends ChangeNotifier {
       if (_top != null ||
           _weekday != null ||
           _body != null ||
+          _profile != null ||
           _sampleKey != null ||
           _requestedKey != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -84,6 +98,7 @@ class WallpaperLuminanceController extends ChangeNotifier {
           _top = null;
           _weekday = null;
           _body = null;
+          _profile = null;
           _sampleKey = null;
           _requestedKey = null;
           _fileExists = false;
@@ -167,11 +182,13 @@ class WallpaperLuminanceController extends ChangeNotifier {
       if (_top != null ||
           _weekday != null ||
           _body != null ||
+          _profile != null ||
           _sampleKey != null ||
           _fileExists) {
         _top = null;
         _weekday = null;
         _body = null;
+        _profile = null;
         _sampleKey = null;
         _fileExists = false;
         notifyListeners();
@@ -196,7 +213,7 @@ class WallpaperLuminanceController extends ChangeNotifier {
     required double alignY,
     required String key,
   }) async {
-    final bands = await sampleHomePageBackdropLuminanceBands(
+    final profile = await sampleHomePageBackdropLuminanceProfile(
       settings,
       viewportSize: viewportSize,
       alignX: alignX,
@@ -205,7 +222,8 @@ class WallpaperLuminanceController extends ChangeNotifier {
     if (_disposed || _sampleKey != key) {
       return;
     }
-    if (bands == null) {
+    final bands = profile?.bands;
+    if (profile == null || bands == null) {
       // 采样失败不能继续装着「已采过」——守卫看到 sampleKey == key 会每帧
       // 早退，墨色此后停在主题默认色；也不能无条件重试（每帧重解码大图），
       // 交给闸门按 key 限次决定要不要放行下一次。
@@ -220,14 +238,18 @@ class WallpaperLuminanceController extends ChangeNotifier {
     _gate.record(key, succeeded: true);
     // 登记给同进程里此后新建的首页实例（缩尺预览），让它首帧直接用这份极性。
     HomeWallpaperLuminanceShare.publish(key, bands);
-    if (_top == bands.top &&
+    final unchanged =
+        _top == bands.top &&
         _weekday == bands.weekday &&
-        _body == bands.body) {
+        _body == bands.body &&
+        profile.sameValuesAs(_profile);
+    if (unchanged) {
       return;
     }
     _top = bands.top;
     _weekday = bands.weekday;
     _body = bands.body;
+    _profile = profile;
     notifyListeners();
   }
 

@@ -455,12 +455,18 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   ///
   /// 只有 State 拿得到这三条亮度带（`WallpaperLuminanceController`）；搬到独立
   /// widget 后由这里取一次传下去，view 层不反向读 State、也不读 provider。
+  ///
+  /// [DayViewInkEnvironment.profile] / [DayViewInkEnvironment.screenHeight] 是
+  /// 2026-10-21 新增的：有了逐行剖面，每张卡才能按**自己压在哪一行**判黑白，
+  /// 而不是吃整屏一个平均值（两张真机截图因此判错字色）。
   DayViewInkEnvironment _dayViewInkEnvironment(TimetableSettings settings) {
     return DayViewInkEnvironment(
       backdropBlurOn: HyperosBlurredHeader.backdropBlurEnabled(context),
       wallpaperBodyLuminance: _luminance.body,
       wallpaperTopLuminance: _luminance.top,
       wallpaperWeekdayInkLuminance: _luminance.weekdayInk(settings),
+      profile: _luminance.profile,
+      screenHeight: MediaQuery.sizeOf(context).height,
     );
   }
 
@@ -514,33 +520,36 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    return TimetableDayViewSummaryCard(
-      surfaceKey: key,
-      settings: settings,
-      week: week,
-      dateLabel: dateLabel,
-      isToday: isToday,
-      currentCourse: currentCourse,
-      courseItems: courseItems,
-      scheduleItems: scheduleItems,
-      agendaItems: agendaItems,
-      dayExams: dayExams,
-      taskCount: taskCount,
-      inkEnvironment: _dayViewInkEnvironment(settings),
-      radius: _TimetableScreenState._dayViewCardRadius,
-      onClose: () => _closeDayView(settings),
-      // 情侣空闲摘要要读 State 的展开态、又要用摘要卡算出的墨色：给一个
-      // 「给墨色、还我 widget」的回调，卡片只负责摆位置。浮层未启用时传 null。
-      sharedFreeSummaryBuilder: _isCoupleOverlayActive(provider)
-          ? (ink) => _buildDayViewSharedFreeSummary(
-              provider: provider,
-              settings: settings,
-              week: week,
-              dayOfWeek: dayOfWeek,
-              isToday: isToday,
-              ink: ink,
-            )
-          : null,
+    return MeasuredScreenRect(
+      builder: (context, rect) => TimetableDayViewSummaryCard(
+        surfaceKey: key,
+        settings: settings,
+        week: week,
+        dateLabel: dateLabel,
+        isToday: isToday,
+        currentCourse: currentCourse,
+        courseItems: courseItems,
+        scheduleItems: scheduleItems,
+        agendaItems: agendaItems,
+        dayExams: dayExams,
+        taskCount: taskCount,
+        inkEnvironment: _dayViewInkEnvironment(settings),
+        cardRect: rect,
+        radius: _TimetableScreenState._dayViewCardRadius,
+        onClose: () => _closeDayView(settings),
+        // 情侣空闲摘要要读 State 的展开态、又要用摘要卡算出的墨色：给一个
+        // 「给墨色、还我 widget」的回调，卡片只负责摆位置。浮层未启用时传 null。
+        sharedFreeSummaryBuilder: _isCoupleOverlayActive(provider)
+            ? (ink) => _buildDayViewSharedFreeSummary(
+                provider: provider,
+                settings: settings,
+                week: week,
+                dayOfWeek: dayOfWeek,
+                isToday: isToday,
+                ink: ink,
+              )
+            : null,
+      ),
     );
   }
 
@@ -699,22 +708,30 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, itemIndex) {
         if (bandCount == 1 && itemIndex == 0) {
-          return DayViewTaskBand(
-            data: taskBand,
-            settings: settings,
-            inkEnvironment: _dayViewInkEnvironment(settings),
-            radius: _TimetableScreenState._dayViewCardRadius,
-            courseResolver: provider.getCourseForTask,
-            onToggleCompleted: (task) => toggleTaskFromBand(
-                context, provider.toggleTaskCompleted, task.id),
-            taskFormBuilder: (task) => timetableFormPages.taskForm(task: task));
+          return MeasuredScreenRect(
+            builder: (context, rect) => DayViewTaskBand(
+              data: taskBand,
+              settings: settings,
+              inkEnvironment: _dayViewInkEnvironment(settings),
+              cardRect: rect,
+              radius: _TimetableScreenState._dayViewCardRadius,
+              courseResolver: provider.getCourseForTask,
+              onToggleCompleted: (task) => toggleTaskFromBand(
+                  context, provider.toggleTaskCompleted, task.id),
+              taskFormBuilder: (task) =>
+                  timetableFormPages.taskForm(task: task),
+            ),
+          );
         }
         final item = agendaItems[itemIndex - bandCount];
-        return _buildDayAgendaEntry(
-          provider: provider,
-          week: week,
-          settings: settings,
-          item: item,
+        return MeasuredScreenRect(
+          builder: (context, rect) => _buildDayAgendaEntry(
+            provider: provider,
+            week: week,
+            settings: settings,
+            item: item,
+            cardRect: rect,
+          ),
         );
       },
     );
@@ -754,6 +771,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required int week,
     required TimetableSettings settings,
     required TimetableDayAgendaItem item,
+    Rect? cardRect,
   }) {
     if (item.isExam) {
       if (_TimetableScreenState.logDayViewBuilds) {
@@ -764,6 +782,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         settings: settings,
         linkedCourse: provider.getCourseForExam(item.exam!),
         inkEnvironment: _dayViewInkEnvironment(settings),
+        cardRect: cardRect,
         radius: _TimetableScreenState._dayViewCardRadius,
       );
     }
@@ -787,6 +806,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
           baseColor,
         ),
         inkEnvironment: _dayViewInkEnvironment(settings),
+        cardRect: cardRect,
         radius: _TimetableScreenState._dayViewCardRadius,
       );
     }
@@ -808,6 +828,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       foregroundHex: courseItem.course.textColor,
       settings: settings,
       env: _dayViewInkEnvironment(settings),
+      cardRect: cardRect,
+      // 真实染色比例从这里（拿得到 context）算，与 `CourseSurface` 渲染同源：
+      // 判色若用出厂常数，用户把染色拖薄后会把卡面判得比实际亮得多。
+      washAlpha: dayAgendaWashAlpha(context, settings),
     );
     return TimetableDayCourseAgendaCard(
       item: courseItem,
@@ -826,6 +850,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       },
     );
   }
+
 
   TimetableDayAgendaProgressInfo? _resolveDayAgendaProgressInfo(
     Course course, {

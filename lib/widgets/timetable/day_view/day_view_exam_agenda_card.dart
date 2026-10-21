@@ -4,7 +4,10 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
 import '../../../models/timetable_settings.dart';
+import '../../../ui/hyperos/hyperos_blurred_header.dart';
 import '../../../ui/hyperos/hyperos_motion.dart';
+import '../../../utils/home_page_background.dart';
+import '../../course_surface.dart';
 import '../../open_container.dart';
 import '../timetable_form_pages.dart';
 import 'day_view_agenda_surface.dart';
@@ -27,6 +30,9 @@ class TimetableDayExamAgendaCard extends StatelessWidget {
   final Course? linkedCourse;
   final DayViewInkEnvironment inkEnvironment;
 
+  /// 卡片在屏幕上的实际矩形（首帧为 null）；判字色按它背后那块壁纸的亮度。
+  final Rect? cardRect;
+
   /// 卡片圆角；正源是 `_TimetableScreenState._dayViewCardRadius`。
   final double radius;
 
@@ -37,6 +43,7 @@ class TimetableDayExamAgendaCard extends StatelessWidget {
     required this.linkedCourse,
     required this.inkEnvironment,
     required this.radius,
+    this.cardRect,
   });
 
   @override
@@ -48,6 +55,16 @@ class TimetableDayExamAgendaCard extends StatelessWidget {
       colorScheme.error,
       settings: settings,
       env: inkEnvironment,
+      cardRect: cardRect,
+      // 真实染色比例（与 CourseSurface 渲染同源）。
+      washAlpha: CourseSurface.washAlpha(
+        context,
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable:
+              HyperosBlurredHeader.backdropBlurEnabled(context),
+        ),
+      ),
     );
     final courseName = linkedCourse?.name ?? '';
     final location = exam.location ?? linkedCourse?.location ?? '';

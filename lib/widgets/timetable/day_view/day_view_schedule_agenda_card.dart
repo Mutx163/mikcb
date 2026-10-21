@@ -6,6 +6,7 @@ import '../../../models/timetable_settings.dart';
 import '../../../ui/hyperos/hyperos.dart';
 import '../../../ui/hyperos/hyperos_motion.dart';
 import '../../../utils/home_page_background.dart';
+import '../../course_surface.dart';
 import '../../day_agenda_info_row.dart';
 import '../../open_container.dart';
 import '../timetable_day_agenda_models.dart';
@@ -30,6 +31,9 @@ class TimetableDayScheduleAgendaCard extends StatelessWidget {
   final TimetableDayAgendaProgressInfo? progressInfo;
   final DayViewInkEnvironment inkEnvironment;
 
+  /// 卡片在屏幕上的实际矩形（首帧为 null）；判字色按它背后那块壁纸的亮度。
+  final Rect? cardRect;
+
   /// 卡片圆角；正源是 `_TimetableScreenState._dayViewCardRadius`。
   final double radius;
 
@@ -41,6 +45,7 @@ class TimetableDayScheduleAgendaCard extends StatelessWidget {
     required this.progressInfo,
     required this.inkEnvironment,
     required this.radius,
+    this.cardRect,
   });
 
   @override
@@ -55,7 +60,21 @@ class TimetableDayScheduleAgendaCard extends StatelessWidget {
     final isCrossDay = item.endDate.isAfter(item.startDate);
     final progress = progressInfo;
     // Same auto black/white as course agenda cards (glass over bright mist).
-    final ink = dayAgendaAutoInk(cardColor, settings: settings, env: inkEnvironment);
+    final ink = dayAgendaAutoInk(
+      cardColor,
+      settings: settings,
+      env: inkEnvironment,
+      cardRect: cardRect,
+      // 真实染色比例（与 CourseSurface 渲染同源）。
+      washAlpha: CourseSurface.washAlpha(
+        context,
+        effectiveCourseCardSurfaceStyle(
+          settings,
+          gaussianBlurAvailable:
+              HyperosBlurredHeader.backdropBlurEnabled(context),
+        ),
+      ),
+    );
 
     return OpenContainer<void>(
       key: ValueKey('day-view-schedule-card-${agendaItem.id}'),

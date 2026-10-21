@@ -60,6 +60,7 @@ import '../widgets/timetable/day_view/day_view_ink_style.dart';
 import '../widgets/timetable/day_view/day_view_schedule_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_summary_card.dart';
 import '../widgets/timetable/day_view/day_view_task_band.dart';
+import '../widgets/timetable/day_view/measured_screen_rect.dart';
 import '../widgets/timetable/about_update_navigation.dart';
 import '../widgets/timetable/timetable_add_course_sheet.dart';
 import '../widgets/timetable/timetable_home_action_page_button.dart';

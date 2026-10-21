@@ -20,6 +20,7 @@ import '../models/timetable_settings.dart';
 // 不把分叉搬去 widgets/ 的理由：唯一的绘制出口就是本函数，四个消费者全走它。
 import '../widgets/preblurred_wallpaper_backdrop.dart';
 import 'hex_color.dart';
+import 'wallpaper_luminance_profile.dart';
 
 class HomePageBackgroundVisual {
   const HomePageBackgroundVisual({required this.color, this.imageProvider});
@@ -1121,6 +1122,26 @@ sampleHomePageBackdropLuminanceBands(
   );
 }
 
+/// 背景**逐行亮度剖面**入口：与 [sampleHomePageBackdropLuminanceBands] 同一次
+/// 解码、同一套取景参数，但返回逐行数据。
+///
+/// 需要「这张卡背后那块壁纸多亮」的调用方（日视图议程卡判字色）用它；三条带
+/// 仍是 [sampleHomePageBackdropLuminanceBands]，口径不变。
+Future<WallpaperLuminanceProfile?> sampleHomePageBackdropLuminanceProfile(
+  TimetableSettings settings, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+}) {
+  return sampleHomePageWallpaperLuminanceProfile(
+    resolveHomePageBackdropImagePath(settings),
+    viewportSize: viewportSize,
+    alignX: alignX,
+    alignY: alignY,
+    scale: settings.homePageWallpaperScale,
+  );
+}
+
 /// Top-band + weekday-band + card-region WCAG luminance of a wallpaper file, from one decode.
 ///
 /// `top` covers the status bar / title region (header chrome ink), `weekday`
@@ -1129,8 +1150,35 @@ sampleHomePageBackdropLuminanceBands(
 /// dark behind the weekday bar (or vice versa), so each chrome region must
 /// judge its ink from the band actually behind it, not one shared sample —
 /// the top band alone mis-ink the weekday bar on sky/ground photos.
+///
+/// 只给三条带是**不够**的：同一屏上不同高度的卡片可以差 100 倍（2026-10-21
+/// 真机两张卡先后判错字色）。需要「这张卡背后那块壁纸多亮」的调用方用
+/// [sampleHomePageWallpaperLuminanceProfile] 拿逐行剖面；本函数是它的三条带
+/// 快捷视图，口径逐字不变。
 Future<({double top, double weekday, double body})?>
 sampleHomePageWallpaperLuminanceBands(
+  String? path, {
+  Size? viewportSize,
+  double alignX = 0,
+  double alignY = 0,
+  double scale = 1,
+}) async {
+  final profile = await sampleHomePageWallpaperLuminanceProfile(
+    path,
+    viewportSize: viewportSize,
+    alignX: alignX,
+    alignY: alignY,
+    scale: scale,
+  );
+  return profile?.bands;
+}
+
+/// 壁纸的**逐行亮度剖面**：一次解码，既有三条 chrome 亮度带，也能回答
+/// 「屏幕 42%~58% 那一段背后多亮」这类按卡片位置的查询。
+///
+/// [profile.bands] 与 [sampleHomePageWallpaperLuminanceBands] 逐位一致（同一份
+/// 数据、同一套行范围与取整），所以换成这个函数不会改变任何既有 chrome 的判墨。
+Future<WallpaperLuminanceProfile?> sampleHomePageWallpaperLuminanceProfile(
   String? path, {
   Size? viewportSize,
   double alignX = 0,
@@ -1151,9 +1199,9 @@ sampleHomePageWallpaperLuminanceBands(
     }
     try {
       // Must await: releasing the handle in `finally` while
-      // [_averageBandLuminances] is still suspended inside
+      // [_rowLuminanceProfile] is still suspended inside
       // `image.toByteData()` would be a use-after-dispose.
-      return await _averageBandLuminances(
+      return await _rowLuminanceProfile(
         image,
         viewportSize: viewportSize,
         alignX: alignX,
@@ -1201,7 +1249,7 @@ Float64List _buildSrgbLinearizeLut() {
   return lut;
 }
 
-/// 按 cover 裁剪从 [image] 采样三条亮度带（top / weekday / body）。
+/// 按 cover 裁剪从 [image] 采样**逐行**亮度剖面（三带由它派生）。
 ///
 /// **所有权契约**：本函数只读 [image]，**不** dispose 它 —— 调用方创建、
 /// 调用方释放。
@@ -1211,7 +1259,11 @@ Float64List _buildSrgbLinearizeLut() {
 /// 两次，命中 `dart:ui/painting.dart` 中 `Image.dispose` 的断言（debug 直接
 /// 崩；release 下会经 `_handles.isEmpty` 再次调用 `_image.dispose()`，触碰
 /// native `Image::dispose` 双重释放）。所有调用路径必须共用同一条所有权规则。
-Future<({double top, double weekday, double body})?> _averageBandLuminances(
+///
+/// 为什么是逐行而不是三条带：见 [WallpaperLuminanceProfile] 的类注释 —— 同一
+/// 屏上不同高度的卡片亮度可以差 100 倍，三条带平均值描述不了「这张卡坐在哪
+/// 一行」，2026-10-21 真机因此先后判错两张卡的字色。
+Future<WallpaperLuminanceProfile?> _rowLuminanceProfile(
   ui.Image image, {
   Size? viewportSize,
   double alignX = 0,
@@ -1238,15 +1290,20 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
           zoom: scale,
         );
 
+  // ── 三条 chrome 亮度带：**保持旧实现逐字不变** ──
+  //
+  // 顶栏 / 星期栏 / 时间轴 / 底栏的判墨全部钉在这三个数上，任何一位变化都会
+  // 让整屏 chrome 的极性漂移。所以这里不去「用逐行数据累加代替」，而是原样
+  // 保留旧的独立求和（行范围 0–0.09 / 0.07–0.20 / 0.22–0.72，按原图行号取整）。
   double? band(double fromFraction, double toFraction) {
     final sourceTop = sourceRect.top + sourceRect.height * fromFraction;
     final sourceBottom = sourceRect.top + sourceRect.height * toFraction;
     final fromRow = (height * sourceTop).floor().clamp(0, height - 1);
     final toRow = (height * sourceBottom).ceil().clamp(fromRow + 1, height);
-    final sourceLeft = sourceRect.left;
-    final sourceRight = sourceRect.left + sourceRect.width;
-    final fromColumn = (width * sourceLeft).floor().clamp(0, width - 1);
-    final toColumn = (width * sourceRight).ceil().clamp(fromColumn + 1, width);
+    final fromColumn = (width * sourceRect.left).floor().clamp(0, width - 1);
+    final toColumn = (width * (sourceRect.left + sourceRect.width))
+        .ceil()
+        .clamp(fromColumn + 1, width);
     var total = 0.0;
     var count = 0;
     for (var row = fromRow; row < toRow; row++) {
@@ -1274,7 +1331,40 @@ Future<({double top, double weekday, double body})?> _averageBandLuminances(
   if (top == null || weekday == null || body == null) {
     return null;
   }
-  return (top: top, weekday: weekday, body: body);
+
+  // ── 逐行剖面：**按可见行**建立坐标系（屏幕竖直比例 = 剖面下标比例） ──
+  //
+  // 与上面三带是两套坐标：三带按原图行号取整，剖面只保留 cover 裁剪后真正
+  // 显示在屏幕上的那些行，且下标 0 就是屏幕最上一行。这样卡片只要报一个
+  // 「我在屏幕上的 top/bottom 比例」，就能直接查出它背后那块壁纸的亮度。
+  final visibleFromRow = (height * sourceRect.top)
+      .floor()
+      .clamp(0, height - 1);
+  final visibleToRow = (height * (sourceRect.top + sourceRect.height))
+      .ceil()
+      .clamp(visibleFromRow + 1, height);
+  final rowFromColumn = (width * sourceRect.left).floor().clamp(0, width - 1);
+  final rowToColumn = (width * (sourceRect.left + sourceRect.width))
+      .ceil()
+      .clamp(rowFromColumn + 1, width);
+  final columnsInView = rowToColumn - rowFromColumn;
+  final rowLuminances = <double>[];
+  for (var row = visibleFromRow; row < visibleToRow; row++) {
+    final rowOffset = row * width * 4;
+    var total = 0.0;
+    for (var column = rowFromColumn; column < rowToColumn; column++) {
+      final offset = rowOffset + column * 4;
+      total +=
+          0.2126 * _srgbLinearizeLut[buffer[offset]] +
+          0.7152 * _srgbLinearizeLut[buffer[offset + 1]] +
+          0.0722 * _srgbLinearizeLut[buffer[offset + 2]];
+    }
+    rowLuminances.add(columnsInView == 0 ? 0.0 : total / columnsInView);
+  }
+
+  return WallpaperLuminanceProfile(
+    rowLuminances: List<double>.unmodifiable(rowLuminances),
+  );
 }
 
 /// Approximate stacked header band: optional status bar + title row.

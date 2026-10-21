@@ -4,6 +4,7 @@ import '../../../domain/month_view_logic.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../ui/hyperos/hyperos.dart';
+import '../../../utils/card_surface_ink.dart';
 import '../../../utils/hex_color.dart';
 import '../../../utils/home_page_background.dart';
 import '../../course_surface.dart';
@@ -175,9 +176,17 @@ class MonthDayCell extends StatelessWidget {
 
 /// 月视图整页的**墨色口径**（表头 / 行标 / 日期数字 / 议程行共用这一处）。
 ///
-/// 与日视图摘要卡走**同一个判据**（`contentCardInkOverWallpaper`）：按「卡面
-/// 压在壁纸上的混合亮度」判黑白，而不是裸壁纸亮度。只看壁纸会在浅色主题下把
-/// 白字判到被冲白的卡面上（真机 2026-09-22 日视图那次就是这个）。
+/// 与日视图的卡统一走 [cardSurfaceInk]：按「卡面压在壁纸上的混合亮度」判黑白，
+/// 判据是**黑/白各自的对比度**（等价于在 0.20 处翻转），不是裸壁纸亮度。只看
+/// 壁纸会在浅色主题下把白字判到被冲白的卡面上（真机 2026-09-22）。
+///
+/// 2026-10-21 换掉旧实现（`contentCardInkOverWallpaper`）的原因：浅色主题下
+/// 卡底色接近纯白，白 × 染色比例就已经等于旧阈值 0.20，于是「壁纸再黑也永远
+/// 黑字」—— 与日视图日期卡那次是同一个根因。
+///
+/// [wallpaperBodyLuminance] 仍是整屏 body 带：月视图的格子铺满整屏、每格都
+/// 很薄，逐格取局部亮度收益极小而重建代价高（30~42 个格子逐格测量），所以
+/// 这里有意保持整带口径。日视图（卡片少、每张都大）才用逐卡矩形。
 ///
 /// 无壁纸、或玻璃管线关着（实体卡片档）时会自然回落到主题墨色 —— 那些场景
 /// 卡面不透壁纸，按壁纸判反而会判反。
@@ -189,21 +198,20 @@ Color monthPageInkOverWallpaper({
   final colorScheme = Theme.of(context).colorScheme;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final blurOn = HyperosBlurredHeader.backdropBlurEnabled(context);
-  return contentCardInkOverWallpaper(
+  final glassOverWallpaper = blurOn && hasHomePageBackdrop(settings);
+  return cardSurfaceInk(
     // 与 [MonthDayCell] 里真正的卡底色同一份取法（深色取 surface、浅色取
     // surfaceContainerHighest）。两处必须同源，否则「按卡面判墨」判的是另一张卡。
-    cardFill: isDark ? colorScheme.surface : colorScheme.surfaceContainerHighest,
+    fill: isDark ? colorScheme.surface : colorScheme.surfaceContainerHighest,
     // 卡面把壁纸透出来的比例 —— 与渲染层同一个函数，不另写一份（实体档它
     // 返回 1，此时壁纸亮度不参与计算，正好等价于「实体卡按主题判墨」）。
     washAlpha: CourseSurface.washAlpha(
       context,
       dayViewContentCardSurfaceStyle(settings, backdropBlurOn: blurOn),
     ),
-    configuredHex: null,
-    defaultHex: '#000000',
-    themeFallback: colorScheme.onSurface,
-    hasBackdrop: hasHomePageBackdrop(settings) && blurOn,
-    wallpaperLuminance: wallpaperBodyLuminance,
+    // 不透壁纸时传 null：卡面亮度算不出来，按主题墨色走。
+    wallpaperLuminance: glassOverWallpaper ? wallpaperBodyLuminance : null,
+    fallback: colorScheme.onSurface,
   );
 }
 
@@ -223,8 +231,10 @@ Color monthCellInkColor(
   if (!translucent || wallpaperBodyLuminance == null) {
     return colorScheme.onSurface;
   }
-  // 壁纸深 → 浅墨（白）；壁纸浅 → 深墨。阈值与首页 chrome 一致（0.45）。
-  return wallpaperBodyLuminance < 0.45
+  // 判据与全表统一：黑/白各自的对比度更优者胜出（等价于 0.20 处翻转，
+  // 不再是旧的 0.45 —— 那个点黑白都只有 ~2:1）。
+  final ink = bestCardInkForLuminance(wallpaperBodyLuminance);
+  return ink == cardInkLight
       ? Colors.white.withValues(alpha: 0.92)
       : Colors.black.withValues(alpha: 0.82);
 }
