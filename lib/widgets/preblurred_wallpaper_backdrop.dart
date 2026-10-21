@@ -121,6 +121,28 @@ class _PreblurredWallpaperBackdropState
     _loadedSigma = sigma;
     _loadedDevicePixelRatio = devicePixelRatio;
 
+    // **先同步问一次缓存**：命中就当场贴，第一帧直接是糊好的成品。
+    //
+    // 为什么必须这样：`obtain` 即使命中缓存也返回 `Future`（`Future.value` 也要等
+    // 一个微任务），而本控件的第一帧在微任务之前就画了 —— 于是"缓存里明明有糊图，
+    // 第一帧还是先画清晰原图、第二帧才换"（2026-10-21 用户报：日/周视图切月视图时
+    // 整页闪一帧没糊的壁纸）。月视图是个全新页面，壁纸控件从零开始，必然撞上这一帧。
+    //
+    // 只在**首次同步**（或换壁纸/换 sigma）时问；问不到再走异步那条，那时确实没得
+    // 贴（烤图要解码 + 高斯），画原图就是正确行为。
+    final peeked = PreblurredWallpaperCache.instance.peek(
+      path: path,
+      logicalSigma: sigma,
+      devicePixelRatio: devicePixelRatio,
+    );
+    if (peeked != null) {
+      _pending = null;
+      // `_sync` 在 didChangeDependencies / didUpdateWidget 里跑，后面必然跟着一次
+      // build，所以这里只需赋值、不需要 setState（同 `_replaceImage` 的用法）。
+      _replaceImage(peeked);
+      return;
+    }
+
     final token = Object();
     _pending = token;
     unawaited(() async {

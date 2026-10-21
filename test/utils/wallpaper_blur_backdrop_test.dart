@@ -19,6 +19,29 @@ import 'package:university_timetable/widgets/preblurred_wallpaper_glass.dart';
 ///
 /// 真机观感（尤其 1~3 这最弱几档会不会读成"糊得脏"）只能上设备看，见
 /// `.agents/notes/implemented/feature/2026-10-21-home-wallpaper-baked-blur.md` 的 Risks。
+/// 纯异步版：给不带 [WidgetTester] 的普通 `test` 用（`_writeWallpaper` 要
+/// `tester.runAsync`，只能在 widget 用例里调）。
+Future<String> _writeWallpaperAsync({int width = 240}) async {
+  final dir = await Directory.systemTemp.createTemp('wp_blur_peek');
+  final file = File('${dir.path}${Platform.pathSeparator}wallpaper_peek.png');
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  canvas.drawRect(
+    Rect.fromLTWH(0, 0, width.toDouble(), 480),
+    Paint()..color = const Color(0xFF3366CC),
+  );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(width, 480);
+  final png = await image.toByteData(format: ui.ImageByteFormat.png);
+  picture.dispose();
+  image.dispose();
+  await file.writeAsBytes(
+    Uint8List.view(png!.buffer, png.offsetInBytes, png.lengthInBytes),
+    flush: true,
+  );
+  return file.path;
+}
+
 Future<String> _writeWallpaper(WidgetTester tester, {int width = 240}) async {
   final dir = await tester.runAsync(
     () => Directory.systemTemp.createTemp('wp_blur_backdrop'),
@@ -185,6 +208,59 @@ void main() {
       find.descendant(of: backdrop, matching: find.byType(RawImage)),
       findsOneWidget,
       reason: '成品是贴图，运行时不做任何滤镜',
+    );
+  });
+
+  test('缓存命中时 peek 必须**同步**返回位图（这正是"第一帧不闪"的判据）', () async {
+    // 2026-10-21 用户报：日/周视图切月视图时，整页会闪一下没模糊的壁纸。
+    // 月视图是全新页面、壁纸控件从零开始，而 `obtain` 即使命中缓存也返回 Future
+    // （`Future.value` 也要等一个微任务）—— 真实 UI 线程的第一帧在微任务之前就画了，
+    // 于是先摆原图、下一帧才换。
+    //
+    // ⚠️ 这条**不能**写成 widget 用例：`tester.pumpWidget` 会把挂起的微任务一并跑完，
+    // 所以"没有 peek 的实现"在测试里第一帧看起来也是成品（我实测确认过：去掉 peek
+    // 那条 widget 断言照样绿，等于假钉子）。能区分两种实现的，只有 peek 自己的
+    // **同步**语义 —— 所以这里直接钉它。
+    final path = await _writeWallpaperAsync();
+    const sigma = 8.0;
+
+    // 没烤过：同步问必须立刻给 null（而不是一个待完成的 Future）。
+    expect(
+      PreblurredWallpaperCache.instance.peek(
+        path: path,
+        logicalSigma: sigma,
+        devicePixelRatio: 1,
+      ),
+      isNull,
+      reason: '冷缓存时 peek 必须同步 null，调用方据此才敢第一帧画原图',
+    );
+
+    final warmed = await PreblurredWallpaperCache.instance.obtain(
+      path: path,
+      logicalSigma: sigma,
+      devicePixelRatio: 1,
+    );
+    expect(warmed, isNotNull);
+    warmed!.dispose();
+
+    // 烤好之后：同步问必须立刻给图（不需要 await 任何东西）。
+    final peeked = PreblurredWallpaperCache.instance.peek(
+      path: path,
+      logicalSigma: sigma,
+      devicePixelRatio: 1,
+    );
+    expect(peeked, isNotNull, reason: '缓存命中时 peek 必须同步给图');
+    expect(peeked!.width, greaterThan(0));
+    peeked.dispose();
+
+    // 参数不同就不该串号（sigma 是键的一员）。
+    expect(
+      PreblurredWallpaperCache.instance.peek(
+        path: path,
+        logicalSigma: sigma + 1,
+        devicePixelRatio: 1,
+      ),
+      isNull,
     );
   });
 

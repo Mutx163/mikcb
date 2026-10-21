@@ -127,6 +127,43 @@ class PreblurredWallpaperCache {
   /// 卡片把磨砂拖到 0 时，背景要的是与壁纸底图同等清晰，而不是一层极轻的糊。
   /// 与首页那张壁纸底图用同一个 provider 参数，所以通常直接命中 `ImageCache`，
   /// 不多解一次（见 [_build]）。负值非法：调用方一律过解析函数夹过。
+  /// **同步**取一份已经烤好的位图；没有就返回 null（不排队、不烤图）。
+  ///
+  /// 存在的唯一理由是消掉**新页面第一帧**的闪：`obtain` 即使命中缓存也返回
+  /// `Future`（`Future.value` 也要等一个微任务），而 widget 的第一帧在微任务之前
+  /// 就画了 —— 于是"缓存里明明有糊图，第一帧还是先给你看清晰原图，第二帧才换过来"，
+  /// 用户看到的就是闪一下（2026-10-21 用户报：日/周视图切月视图时整页闪一帧没糊的壁纸）。
+  ///
+  /// 调用方只在**首次同步**时问它；问到就直接用它当首帧，问不到再走 [obtain]。
+  /// 返回的是 `clone()`（所有权归调用方，同 [obtain]）。
+  ///
+  /// ⚠️ 命中时同样把条目挪到插入序末尾：与 [obtain] 的 LRU 口径一致，否则
+  /// "谁 peek 谁不吃亏"会让淘汰顺序与真实使用顺序错位。
+  ui.Image? peek({
+    required String? path,
+    required double logicalSigma,
+    required double devicePixelRatio,
+  }) {
+    if (path == null ||
+        path.isEmpty ||
+        logicalSigma < 0 ||
+        devicePixelRatio <= 0) {
+      return null;
+    }
+    final request = _PreblurRequest(
+      path: path,
+      logicalSigma: logicalSigma,
+      devicePixelRatio: devicePixelRatio,
+    );
+    final cached = _images[request];
+    if (cached == null) {
+      return null;
+    }
+    _images.remove(request);
+    _images[request] = cached;
+    return cached.clone();
+  }
+
   Future<ui.Image?> obtain({
     required String? path,
     required double logicalSigma,
@@ -783,6 +820,25 @@ class _PreblurredWallpaperScopeState extends State<PreblurredWallpaperScope> {
     slot.loadedPath = path;
     slot.loadedSigma = sigma;
     slot.loadedDevicePixelRatio = devicePixelRatio;
+
+    // **先同步问一次缓存**，命中就当场用，别等微任务。
+    //
+    // 为什么：`obtain` 即使命中缓存也返回 `Future`（`Future.value` 也要等一个微任务），
+    // 而一个**新页面**（月视图 / 打开设置页）的第一帧在微任务之前就画了 —— 于是
+    // 玻璃面先按"还没有位图"渲染一帧（回落实时模糊 / 裸 tint），下一帧才换成成品。
+    // 用户看到的就是"整页闪一下没模糊的壁纸"（2026-10-21 报，日/周切月视图）。
+    // 同一帧里壁纸层与玻璃层都会闪，所以两处都要先 peek。
+    final peeked = PreblurredWallpaperCache.instance.peek(
+      path: path,
+      logicalSigma: sigma,
+      devicePixelRatio: devicePixelRatio,
+    );
+    if (peeked != null) {
+      slot.pending = null;
+      _replaceImage(slot, peeked);
+      _revision++;
+      return;
+    }
 
     final token = Object();
     slot.pending = token;
