@@ -197,6 +197,16 @@ class MonthGrid extends StatelessWidget {
     // 动画每一帧只重建 builder 里那几个「叶子」widget（ClipRect / SizedBox /
     // OverflowBox / Transform），`child` 原样传递、一个都不重建。详见类注释
     // 「为什么收的是动画」。
+    //
+    // ⚠️ **树形必须恒定**（2026-10-21 实测踩到，别再改回去）：这里**不能**按
+    // `t >= 1` 分叉成「展开态返回裸 child / 收起态返回 ClipRect」。那样 t 一
+    // 越过 1 子树深度就变了，Flutter 按位置复用元素 ⇒ 整棵 42 格销毁重建。
+    // 交替拖动（t 在 0.93 与 1.00 之间来回）实测 **504 格/帧**，比优化前更差。
+    // 同一条纪律在 `timetable_home_dock_shell.dart`（内嵌页）与 `5bd7c625`
+    // （首页栈）各吃过一次。
+    //
+    // 所以裁剪层**恒在**。代价是展开态多一层 ClipRect + 一次 Transform，
+    // 与「每帧重建 42 个玻璃卡」完全不是一个量级。
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -207,14 +217,6 @@ class MonthGrid extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: rows),
           builder: (context, child) {
             final t = progress.value;
-            // 全展开：逐字维持旧路径（无裁剪层，一行不多画）。
-            //
-            // 这一条必须留：展开态是用户停留最久的状态，多一层 ClipRect 就多一次
-            // 裁剪、多一层 Transform 就多一个合成层 —— 玻璃卡在里面还得为这些层
-            // 多付一份代价，而展开态根本不需要裁剪。
-            if (t >= 1) {
-              return child!;
-            }
             final visibleRows = monthGridVisibleRows(t);
             // 内容上移量：收起时把保留行顶到窗口顶端，展开时归零。
             final rowOffset = monthGridScrollOffset(
