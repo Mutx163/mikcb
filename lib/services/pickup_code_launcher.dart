@@ -99,10 +99,19 @@ final class PickupCodeNativeChannel implements PickupCodePlatform {
     } on PlatformException {
       return false;
     } on MissingPluginException {
+      _warnMissingHandler('canResolve');
       return false;
     }
   }
 
+  /// 批量查「装没装」。
+  ///
+  /// **失败一律抛出，不要吞成空集合。** 空集合在这里的含义是「查过了，一个都没
+  /// 装」——页面会据此把每一条入口都降成「未安装」的灰态、执行器也会跳过所有
+  /// App 兜底；而「查不到」（通道没注册、原生报错）完全不是这个意思，它应该让
+  /// 调用方退回「不知道装没装，那就逐条试」。区分方式就是抛异常：
+  /// `PickupCodeRunner.installedPackages` 用 `catch (_) => null` 把异常翻译成
+  /// 「未知」。把异常吞成空集合，等于把「不知道」谎报成「一个都没装」。
   @override
   Future<Set<String>> installedPackages(List<String> packages) async {
     if (!supported || packages.isEmpty) {
@@ -114,16 +123,18 @@ final class PickupCodeNativeChannel implements PickupCodePlatform {
         <String, Object?>{'packages': packages},
       );
       if (result == null) {
-        return const <String>{};
+        throw PlatformException(
+          code: 'no_result',
+          message: 'installedPackages 没有回包',
+        );
       }
       return <String>{
         for (final entry in result.entries)
           if (entry.value == true) entry.key,
       };
-    } on PlatformException {
-      return const <String>{};
     } on MissingPluginException {
-      return const <String>{};
+      _warnMissingHandler('installedPackages');
+      rethrow;
     }
   }
 
@@ -155,7 +166,27 @@ final class PickupCodeNativeChannel implements PickupCodePlatform {
         reason: error.code == kPlatformChannelTimeoutCode ? 'timeout' : error.code,
       );
     } on MissingPluginException {
+      _warnMissingHandler(method);
       return const PickupCodeCallResult(ok: false, reason: 'unsupported');
     }
+  }
+
+  /// 通道「根本没被注册」时喊一声，别让它伪装成「这台设备不支持」。
+  ///
+  /// 为什么值得专门喊：`MissingPluginException` 的语义是**原生侧没有这条通道**，
+  /// 也就是两侧通道名写岔了、或者 Kotlin 里漏注册了——都是本仓的 bug，不是用户
+  /// 设备的能力问题。但调用方只能从 [PickupCodeCallResult.reason] 拿到
+  /// `unsupported`，界面就显示「当前平台不支持跳到其它应用」，看到的人只会以为
+  /// 这功能在别的系统上才可用。2026-10-20 改名时 Dart 侧改成 `pickup_code`、
+  /// Kotlin 侧还留着 `campus_tools`，整页 7 条入口全挂在这条误报上。
+  ///
+  /// 只 `debugPrint`（release 构建里它不输出）：这是给改代码的人看的提示，
+  /// 不该出现在用户面前；界面上仍然沿用原来的 `unsupported` 文案。
+  void _warnMissingHandler(String method) {
+    debugPrint(
+      '[pickup_code] 原生通道 $channelName 未注册（$method 收到 '
+      'MissingPluginException）：Dart 侧与 Kotlin 侧通道名不一致，或 '
+      'MainActivity 漏注册了这条通道 —— 这不是「当前平台不支持」。',
+    );
   }
 }

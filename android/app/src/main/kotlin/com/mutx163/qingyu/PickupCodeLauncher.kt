@@ -10,7 +10,7 @@ import android.os.Build
 import android.util.Log
 
 /**
- * 「校园小工具」的外部跳转实现：ACTION_VIEW + 可选 setPackage。
+ * 「取件码」页的外部跳转实现：ACTION_VIEW + 可选 setPackage。
  *
  * 口径与 QuickJump（github.com/chuhe0719/QuickJump）一致：这些取件身份码
  * 页面没有公开 API，只能靠各 App 自己的 deeplink。**不用 URL scheme 之外的
@@ -20,15 +20,22 @@ import android.util.Log
  * - 只接受 `scheme://...`，file/content/javascript/data/intent 等一律拒绝
  *   （用户手滑粘贴的本地文件路径或脚本链接不该被执行）；
  * - 包名必须匹配 `a.b.c` 形状，避免把任意字符串塞进 setPackage；
- * - URI 长度上限与 Dart 侧 `kCampusToolMaxUriLength` 同值。
+ * - URI 长度上限 4096，与 Dart 侧同一口径。
  *
  * 返回给 Flutter 的统一是 `{ok: Boolean, reason: String?}`：失败原因码由界面
  * 翻译成人话（`no_activity` / `app_not_found` / `invalid_uri` / ...）。
+ *
+ * **通道名必须与 Dart 侧 `PickupCodeNativeChannel.channelName`
+ * （`lib/services/pickup_code_launcher.dart`）逐字一致。** 两侧不一致时
+ * Dart 的每次调用都会抛 MissingPluginException，被 launcher 归成
+ * `unsupported`，整页 7 条入口全部提示「当前平台不支持跳到其它应用」——
+ * 2026-10-20 改名时只改了 Dart 侧、漏了这里，就是这样坏的。
+ * `test/services/pickup_codes_wiring_test.dart` 会钉住这两侧的名字。
  */
-object CampusToolLauncher {
-    const val CHANNEL = "com.mutx163.qingyu/campus_tools"
+object PickupCodeLauncher {
+    const val CHANNEL = "com.mutx163.qingyu/pickup_code"
 
-    private const val TAG = "CampusToolLauncher"
+    private const val TAG = "PickupCodeLauncher"
     private const val MAX_URI_LENGTH = 4096
 
     private val BLOCKED_SCHEMES = setOf(

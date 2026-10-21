@@ -68,6 +68,31 @@ void main() {
     expect(kotlin.contains('"$channel"'), isTrue, reason: 'Kotlin 侧通道名漂了');
   });
 
+  test('MainActivity 真的注册了这条通道（名字对了但没注册，结果一样是「不支持」）', () {
+    // 为什么这条单独存在：上面那条只比两处**字符串常量**。通道名对齐了，但如果
+    // MainActivity 里没挂 MethodChannel、或者 object 改了名没跟着改调用点，
+    // 运行期照样抛 MissingPluginException —— Dart 侧把它归成 `unsupported`，
+    // 界面显示「当前平台不支持跳到其它应用」，看着像设备能力问题，实际是漏接线。
+    final launcher = File(
+      'android/app/src/main/kotlin/com/mutx163/qingyu/PickupCodeLauncher.kt',
+    ).readAsStringSync();
+    final mainActivity = File(
+      'android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt',
+    ).readAsStringSync();
+    // object 名从 Kotlin 文件里读出来，不在这里再写死一遍 —— 写死就是第三处
+    // 需要人工同步的名字，正是这次出问题的方式。
+    final objectMatch = RegExp(r'object\s+(\w+)\s*\{').firstMatch(launcher);
+    expect(objectMatch, isNotNull, reason: 'PickupCodeLauncher.kt 里找不到 object 声明');
+    final objectName = objectMatch!.group(1)!;
+    expect(
+      mainActivity.contains(', $objectName.CHANNEL)'),
+      isTrue,
+      reason: 'MainActivity 没有注册 $objectName.CHANNEL：'
+          'Dart 侧每次调用都会抛 MissingPluginException，'
+          '整页入口都会提示「当前平台不支持跳到其它应用」',
+    );
+  });
+
   test('manifest 的 <queries> 覆盖了全部预置包名与 scheme', () {
     final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
     // 与 lib/domain/pickup_code_presets.dart 的数据表对应：这些是 Android 11+
