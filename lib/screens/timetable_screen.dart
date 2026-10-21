@@ -240,7 +240,6 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
-  double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
 
   // ── DayViewTransitionHost / WeekPagerHost：控制器的宿主端口 ────────────
@@ -729,7 +728,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   sourceRect: sourceRect,
                 ),
             isSelectedDay: _isSelectedDay,
-            onDayTapDown: _captureDayViewAnchor,
+            // 2026-10-21：展开几何不再用点按位置，管线留着不拆。
+            onDayTapDown: (_) {},
             onOpenAddCourse: (week, dayOfWeek, startSection, endSection) =>
                 unawaited(
                   _openAddCourseFromEmptySlot(
@@ -1052,27 +1052,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return _selectedWeekForDayView == week && _selectedDayOfWeek == dayOfWeek;
   }
 
-  /// Opaque chrome for day-view layers over wallpaper-backed week chrome.
-  double get _dayViewAnchorAlignmentX =>
-      (_dayViewAnchorFraction * 2).clamp(0.0, 2.0) - 1;
-
-  void _captureDayViewAnchor(Offset globalPosition) {
-    final surfaceContext = _timetableSurfaceKey.currentContext;
-    final surfaceBox = surfaceContext?.findRenderObject() as RenderBox?;
-    if (surfaceBox == null ||
-        !surfaceBox.hasSize ||
-        surfaceBox.size.width <= 0) {
-      return;
-    }
-    final localDx = surfaceBox.globalToLocal(globalPosition).dx;
-    setState(() {
-      _dayViewAnchorFraction = (localDx / surfaceBox.size.width).clamp(
-        0.1,
-        0.9,
-      );
-    });
-  }
-
   // ── 日视图转场薄接线 ────────────────────────────────────────────────────
   //
   // 真正的状态机（开合 / 翻页 / ScrollEnd 提交 / pager 生命周期 / 星期栏
@@ -1231,17 +1210,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
   }) {
     final selectedDayOfWeek = _dayViewTransition.displayedDayForWeek(week);
-    final panel = _buildDayViewPanel(
-      provider: provider,
-      settings: settings,
-      week: week,
-      dayOfWeek: selectedDayOfWeek,
-    );
-    return TimetableAnchoredDayOverlay(
-      panel: panel,
-      expandAnimation: _dayViewExpandController,
-      anchorAlignmentX: _dayViewAnchorAlignmentX,
-    );
+    final panel = _buildDayViewPanel(provider: provider, settings: settings,
+      week: week, dayOfWeek: selectedDayOfWeek);
+    final days = visibleDayNumbers(settings);
+    return TimetableAnchoredDayOverlay(panel: panel, expandAnimation: _dayViewExpandController,
+      weekTimeColumnWidth: timeColumnWidth(settings),
+      visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek));
   }
 
   Widget _buildDayViewSharedFreeSummary({
