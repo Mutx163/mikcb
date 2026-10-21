@@ -204,21 +204,18 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
     );
   }
 
-  /// 未授权（已查到且为 false）时多一个「精确闹钟权限」引导分区。
-  int get _exactAlarmBannerSections =>
-      _canScheduleExactAlarms == false ? 1 : 0;
+  /// 未授权（已查到且为 false）时在预览区末尾多挂一条「精确闹钟权限」引导。
+  ///
+  /// 2026-10-21 用户要求：从页面顶部移到「添加到桌面」按钮下面。放顶部时它
+  /// 抢在预览前面，第一屏看到的是权限告警而不是卡片长什么样；挪到按钮下面
+  /// 后，先看效果、再添加、最后由这条兜住「添了但不刷新」的原因。
+  bool get _showExactAlarmBanner => _canScheduleExactAlarms == false;
 
-  int get _homeWidgetSectionCount =>
-      (_draft.widgetShowCountdown ? 4 : 3) + 2 + _exactAlarmBannerSections;
+  int get _homeWidgetSectionCount => (_draft.widgetShowCountdown ? 4 : 3) + 2;
 
   Widget _buildHomeWidgetSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
-    final hasBanner = _exactAlarmBannerSections > 0;
-    // 权限引导横幅固定在第 1 位，未展示时跳过；未展示倒计时分区时再偏移。
-    if (hasBanner && index == 0) {
-      return _buildExactAlarmBannerSection(l10n);
-    }
-    var section = hasBanner ? index - 1 : index;
+    var section = index;
     if (!_draft.widgetShowCountdown && section >= 2) {
       section += 1;
     }
@@ -391,7 +388,6 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
       // 预览区保活：设置页是懒加载列表，滚出视口会回收整块 subtree，
       // 滚回来再重建。PageView / Scrollable / 已渲染的图全要重来一遍，
       // 任何一个环节出岔子就是「下滑再上滑，预览空白」。
-      // 判据须是**分区号**而非列表下标——顶部「精确闹钟权限」横幅占 index 0。
       return _PreviewKeepAlive(child: content);
     }
     return Column(
@@ -492,6 +488,12 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
           spec.target,
           label: l10n.homeWidgetPreviewAddAction,
         ),
+        // 精确闹钟未授权：紧跟在「添加到桌面」下面——用户刚点完添加、
+        // 卡片可能不刷新时，原因就在眼前（2026-10-21 从页面顶部挪来）。
+        if (_showExactAlarmBanner) ...[
+          const SizedBox(height: 14),
+          _buildExactAlarmBanner(l10n),
+        ],
       ],
     );
   }
@@ -1028,41 +1030,37 @@ class HomeWidgetSettingsScreenState extends State<HomeWidgetSettingsScreen>
     // 回到前台时 didChangeAppLifecycleState 会重查授权状态。
   }
 
-  /// 「精确闹钟权限」引导分区：Android 12+ 未授予时提示并一键跳系统授权页。
-  Widget _buildExactAlarmBannerSection(AppLocalizations l10n) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        HyperosHintBanner(
-          icon: Icon(
-            Icons.alarm_rounded,
-            size: 18,
-            color: HyperosColors.primary(context),
+  /// 「精确闹钟权限」引导条：Android 12+ 未授予时提示并一键跳系统授权页。
+  ///
+  /// 挂在预览区「添加到桌面」下面（见 [_buildPreviewSection]），不再是独立分区。
+  Widget _buildExactAlarmBanner(AppLocalizations l10n) {
+    return HyperosHintBanner(
+      icon: Icon(
+        Icons.alarm_rounded,
+        size: 18,
+        color: HyperosColors.primary(context),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.homeWidgetExactAlarmBannerTitle,
+            style: HyperosTypography.listTitle(context),
           ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.homeWidgetExactAlarmBannerTitle,
-                style: HyperosTypography.listTitle(context),
-              ),
-              const SizedBox(height: 4),
-              Text(l10n.homeWidgetExactAlarmBannerText),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: HyperosButton(
-                  label: l10n.homeWidgetExactAlarmGrantAction,
-                  variant: HyperosButtonVariant.secondary,
-                  expand: true,
-                  onPressed: _requestExactAlarmPermission,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(l10n.homeWidgetExactAlarmBannerText),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: HyperosButton(
+              label: l10n.homeWidgetExactAlarmGrantAction,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: _requestExactAlarmPermission,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

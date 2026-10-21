@@ -11,9 +11,11 @@
 // 根因有两条，它们各自都能单独造成「卡片消失」，所以分三条用例分别钉住，
 // 避免「修了其中一条，另一条却悄悄退化」：
 //
-//   1. 保活判据写错（`index == 0`）——顶部有「精确闹钟权限」引导横幅时
-//      （Android 12+ 未授权，真机默认形态）横幅占了列表第 0 项，预览被挤到
-//      第 1 项，保活套到了横幅上，预览照旧被回收重建。
+//   1. 保活判据写错（按**列表下标** 0 取预览）——2026-10-21 起「精确闹钟权限」
+//      横幅已从页面顶部挪到预览区「添加到桌面」下面，不再是独立列表项，横幅
+//      存在时预览仍是第 0 项。但判据若退回「列表下标」，将来任何在预览前面
+//      插入分区的改动都会让保活套错对象、预览照旧被回收重建。本用例继续以
+//      「横幅存在」形态跑，钉的是判据本身，不是当前布局。
 //   2. 两个 Scrollable 共用一份 PageStorage 存档——预览的 PageView 没挂自己的
 //      PageStorageKey，往上找到的正是纵向列表的 `hyperos-list-<路由名>`。
 //      列表往里写滚动像素、轮播往里写页号，谁后写谁生效。重建时轮播把列表的
@@ -261,8 +263,17 @@ void main() {
     );
     await _pumpSettled(tester);
 
-    // 顶部横幅确实在，预览被挤到列表第 1 项。
+    // 横幅确实在（2026-10-21 起挂在预览区「添加到桌面」下方，不再是独立列表项）。
     expect(find.textContaining('精确闹钟'), findsWidgets);
+    // 横幅必须落在预览分区内（预览区有稳定 ValueKey），而不是列表最前面。
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('homeWidgetPreviewSection')),
+        matching: find.textContaining('精确闹钟'),
+      ),
+      findsWidgets,
+      reason: '精确闹钟引导应挂在预览分区内（「添加到桌面」之下），不再占列表首项',
+    );
 
     final listScrollable = find
         .descendant(
