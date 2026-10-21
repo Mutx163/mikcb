@@ -197,6 +197,52 @@ void main() {
     });
   });
 
+  group('搜索组件必须是官方 Miuix 的', () {
+    test('用 MiuixSearchBar + MiuixInputField，不用仓库自写的 HyperosSearchBar', () {
+      // 用户 2026-10-21 追问「这个搜索框的放置位置，是 miuix 官方的用法吗」——
+      // 当时用的是本仓自写的 HyperosSearchBar（原生 TextField 包一层），
+      // 名字像 HyperOS 但不是上游组件。改成官方那对之后钉在这里，防止回退。
+      final source = pageFile.readAsStringSync();
+      expect(
+        source.contains('MiuixSearchBar('),
+        isTrue,
+        reason: '本页应当用官方 MiuixSearchBar 容器',
+      );
+      expect(
+        source.contains('MiuixInputField('),
+        isTrue,
+        reason: '本页应当用官方 MiuixInputField 输入框',
+      );
+      expect(
+        source.contains('HyperosSearchBar('),
+        isFalse,
+        reason: 'HyperosSearchBar 是本仓自写的简化输入框，不是 Miuix 官方组件；'
+            '它没有可展开胶囊形态、不处理返回键、也不是 StadiumBorder',
+      );
+      expect(
+        source.contains("import 'package:flutter_miuix/miuix.dart';"),
+        isTrue,
+        reason: '缺 flutter_miuix import 时上面两个构造根本编译不过',
+      );
+    });
+
+    test('折叠态搜索框不持有焦点（官方移动端形态）', () {
+      // 官方 SearchBar.kt 移植说明：折叠态不该抢焦点/弹键盘，点开才进搜索态。
+      // 样板间（miuix_showcase_screen.dart）用 IgnorePointer + 透明手势层实现。
+      final source = pageFile.readAsStringSync();
+      final block = RegExp(
+        r'Widget _buildSearchEntry[\s\S]{0,700}',
+      ).firstMatch(source);
+      expect(block, isNotNull);
+      expect(
+        block!.group(0)!.contains('IgnorePointer'),
+        isTrue,
+        reason: '折叠态搜索胶囊必须屏蔽指针，否则点它会抢焦点弹键盘，'
+            '而不是进搜索态',
+      );
+    });
+  });
+
   group('搜索', () {
     test('空词返回全部分区', () {
       expect(filterMoreFeatureGroups(groups(), '', l10n).length, groups().length);

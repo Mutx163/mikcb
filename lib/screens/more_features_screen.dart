@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -64,23 +65,18 @@ class MoreFeaturesScreen extends StatefulWidget {
 }
 
 class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
-  /// 当前搜索词（已 trim + 小写）。空串 = 不筛选。
-  String _query = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onQueryChanged(String value) {
-    final next = value.trim().toLowerCase();
-    if (next == _query) {
-      return;
-    }
-    setState(() => _query = next);
+  /// 点搜索胶囊 → 推入全屏搜索页（官方移动端形态：折叠态不持有焦点，
+  /// 点开才进搜索态，见 `miuix_search_bar.dart` 的 SearchBar.kt 移植说明）。
+  /// [groups] 由 build 里那份现成结果传进来，**不在这里再读一次 provider**：
+  /// `TimetableProvider` 的读取调用点数有棘轮守卫（只减不增、余量为 0），
+  /// 而搜索页要的数据页面上早就有了，多读一次纯属浪费一个名额。
+  Future<void> _openSearch(List<MoreFeatureGroup> groups) {
+    return Navigator.of(context).push<void>(
+      HyperosPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _MoreFeatureSearchPage(groups: groups),
+      ),
+    );
   }
 
   @override
@@ -94,13 +90,108 @@ class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
       activeProfileName: provider.activeProfile?.name.trim(),
       activeTimeSchemeName: provider.activeTimeScheme?.name,
     );
-    final filtered = filterMoreFeatureGroups(groups, _query, l10n);
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.homeMenuMoreTitle),
       child: HyperosListView(
         children: [
-          _buildSearchCard(l10n),
+          _buildSearchEntry(l10n, groups),
+          for (var index = 0; index < groups.length; index++) ...[
+            const HyperosSectionGap(),
+            HyperosSettingsBlock(
+              title: groups[index].title,
+              child: HyperosListGroup(
+                children: [
+                  for (final item in groups[index].items)
+                    _MoreFeatureRow(item: item),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 折叠态搜索胶囊：官方 `MiuixSearchBar` + `MiuixInputField` 的收起形态。
+  ///
+  /// 为什么包 `IgnorePointer` + 透明手势层：官方移动端就是这么用的
+  /// （`miuix_showcase_screen.dart` 的 `_buildHomeSearchBar`）——折叠态搜索框
+  /// **不该持有焦点、不该弹键盘**，点上它应当直接进搜索态。搜索胶囊本身
+  /// 仍在原地、视觉不变，只是不接输入。
+  Widget _buildSearchEntry(
+    AppLocalizations l10n,
+    List<MoreFeatureGroup> groups,
+  ) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openSearch(groups),
+      child: IgnorePointer(
+        child: MiuixSearchBar(
+          onExpandedChange: (_) {},
+          content: const SizedBox.shrink(),
+          inputField: MiuixInputField(
+            query: '',
+            onQueryChange: (_) {},
+            onSearch: (_) {},
+            expanded: false,
+            onExpandedChange: (_) {},
+            label: l10n.homeMenuMoreSearchHint,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 全屏搜索页：点搜索胶囊后进入。
+///
+/// 官方 SearchBar 的「展开态」在移动端落成一个独立搜索面（样板间用
+/// OverlayEntry 手搓，这里改用普通路由——少一套自管动画与 overlay 生命周期，
+/// 返回键天然等于「收起搜索」）。
+class _MoreFeatureSearchPage extends StatefulWidget {
+  const _MoreFeatureSearchPage({required this.groups});
+
+  final List<MoreFeatureGroup> groups;
+
+  @override
+  State<_MoreFeatureSearchPage> createState() => _MoreFeatureSearchPageState();
+}
+
+class _MoreFeatureSearchPageState extends State<_MoreFeatureSearchPage> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final filtered = filterMoreFeatureGroups(widget.groups, _query, l10n);
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.homeMenuMoreTitle),
+      // 搜索页要跟着键盘抬起来，否则输入法会盖住下半屏结果。
+      resizeToAvoidBottomInset: true,
+      child: HyperosListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: MiuixSearchBar(
+              expanded: true,
+              onExpandedChange: (value) {
+                if (!value) {
+                  Navigator.of(context).maybePop();
+                }
+              },
+              content: const SizedBox.shrink(),
+              inputField: MiuixInputField(
+                query: _query,
+                onQueryChange: (value) => setState(() => _query = value),
+                onSearch: (_) {},
+                expanded: true,
+                onExpandedChange: (_) {},
+                label: l10n.homeMenuMoreSearchHint,
+              ),
+            ),
+          ),
           if (filtered.isEmpty)
             HyperosEmptyState(
               icon: Icons.search_off_rounded,
@@ -108,39 +199,19 @@ class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
               subtitle: l10n.homeMenuMoreSearchEmptyHint,
             )
           else
-            for (var index = 0; index < filtered.length; index++) ...[
+            for (final group in filtered) ...[
               const HyperosSectionGap(),
               HyperosSettingsBlock(
-                title: filtered[index].title,
+                title: group.title,
                 child: HyperosListGroup(
                   children: [
-                    for (final item in filtered[index].items)
+                    for (final item in group.items)
                       _MoreFeatureRow(item: item),
                   ],
                 ),
               ),
             ],
         ],
-      ),
-    );
-  }
-
-  /// 搜索框垫在卡片上：输入组件裸放在 scaffold 背景上时，填充色与页面
-  /// 背景几乎无对比（与玻璃坞图标选择器同一条处理）。
-  Widget _buildSearchCard(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: HyperosCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: HyperosSearchBar(
-          controller: _searchController,
-          hint: l10n.homeMenuMoreSearchHint,
-          onChanged: _onQueryChanged,
-          onClear: () {
-            _searchController.clear();
-            _onQueryChanged('');
-          },
-        ),
       ),
     );
   }
