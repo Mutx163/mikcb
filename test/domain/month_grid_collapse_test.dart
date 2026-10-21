@@ -356,6 +356,54 @@ void main() {
     });
   });
 
+  group('表格把手的占位（2026-10-21 归属修正）', () {
+    // 把手是**表格的部件**，夹在网格与面板之间。它必须从可用高度里扣掉：
+    // 面板用 Expanded 只能吃到剩下的空间，不扣就会把面板顶出屏幕。
+    MonthGridLayout layoutWith(double handleHeight) => monthGridLayout(
+      t: 1,
+      availableHeight: 600,
+      headerHeight: 24,
+      horizontalPadding: 10,
+      availableWidth: 360,
+      weekNumberColumnVisible: true,
+      weekLabelWidth: 30,
+      minRowHeight: 44,
+      maxRowHeight: 78,
+      keptRow: 0,
+      handleHeight: handleHeight,
+    );
+
+    test('不传把手高度时行为不变（默认 0，旧调用方零回归）', () {
+      final without = layoutWith(0);
+      expect(without.panelHeight, closeTo(600 - without.gridHeight, 1e-9));
+    });
+
+    test('传了把手高度，面板就少掉那一截', () {
+      const handle = 24.0;
+      final without = layoutWith(0);
+      final withHandle = layoutWith(handle);
+      expect(
+        withHandle.panelHeight,
+        closeTo(without.panelHeight - handle, 1e-9),
+        reason: '面板必须让出把手的高度，否则被顶出屏幕',
+      );
+    });
+
+    test('网格高度不受把手影响（把手在网格外面，不挤占行高）', () {
+      expect(
+        layoutWith(0).gridHeight,
+        closeTo(layoutWith(24).gridHeight, 1e-9),
+      );
+      expect(layoutWith(0).rowHeight, closeTo(layoutWith(24).rowHeight, 1e-9));
+    });
+
+    test('极端情况（把手比剩余空间还大）钳到 0，不产生负高度', () {
+      final l = layoutWith(9999);
+      expect(l.panelHeight, 0);
+      expect(l.panelHeight, greaterThanOrEqualTo(0));
+    });
+  });
+
   group('常量口径', () {
     test('42 格的合法行号范围是 0..5', () {
       expect(monthGridRowBounds(), (0, 5));

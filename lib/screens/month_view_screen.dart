@@ -13,7 +13,7 @@ import '../utils/page_wallpaper_luminance.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
-import '../widgets/timetable/month_view/month_panel_handle.dart';
+import '../widgets/timetable/month_view/month_grid_handle.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
 import 'add_course_screen.dart';
@@ -306,6 +306,9 @@ class _MonthViewScreenState extends State<MonthViewScreen>
             minRowHeight: MonthGrid.minRowHeight,
             maxRowHeight: MonthGrid.maxRowHeight,
             keptRow: keptRow,
+            // 把手夹在网格与面板之间，必须从可用高度里扣掉 —— 否则面板会被
+            // 挤出屏幕（Expanded 只吃剩下的空间）。
+            handleHeight: MonthGridHandle.extent,
           );
           // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
           _gridRowHeight = layout.rowHeight;
@@ -355,7 +358,19 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                   ),
                 ),
               ),
-              // ── 下半：条目面板（拉杆上拖 = 收放网格；列表自己纵向滚动）──
+              // ── 中间：表格的把手（属于上面那张表格，不属于下面那个面板）──
+              //
+              // 归属很重要（用户 2026-10-21 修正）：这根横条被拖动时收放的是
+              // **上面的日期表格**，所以它画在表格下沿、在面板容器**之外**。
+              // 放进面板里就会读成"底部弹窗的拖拽把手"（iOS bottom sheet 的
+              // 既有心智）—— 那把手势归属讲反了。
+              MonthGridHandle(
+                inkColor: ink,
+                onDragStart: _beginGridDrag,
+                onDragUpdate: _updateGridDrag,
+                onDragEnd: _endGridDrag,
+              ),
+              // ── 下半：条目面板（自身只纵向滚动，不参与收放）──
               Expanded(
                 child: _buildAgendaPanel(
                   context: context,
@@ -437,11 +452,10 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     );
   }
 
-  /// 下半的条目面板：顶部一根拉杆（唯一的纵向手势归属点）+ 可纵向滚动的列表。
+  /// 下半的条目面板：一块实底平面 + 可纵向滚动的列表。
   ///
-  /// 为什么纵向手势挂在**拉杆**上而不是整个面板：列表自己需要纵向滚动，两者都是
-  /// 纵向，只能在明确的把手上区分。用户口径「上下滑动操作的就是这个收起操作」
-  /// 指的就是拖这根拉杆。
+  /// **不持有拉杆**：那是上面那张日期表格的把手（见调用处的 `MonthGridHandle`）。
+  /// 面板在这里的职责只有两件 —— 盖住网格下方的行、以及自己纵向滚动。
   Widget _buildAgendaPanel({
     required BuildContext context,
     required TimetableProvider provider,
@@ -468,17 +482,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
         // 被下面的东西盖起来」）。用透明就盖不住。
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        // 圆角只留上边：它是一块从下方顶上来盖住内容的平面，上沿要圆；
+        // 下沿贴着屏幕底，圆角看不见。
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          MonthPanelHandle(
-            inkColor: ink,
-            onDragStart: _beginGridDrag,
-            onDragUpdate: _updateGridDrag,
-            onDragEnd: _endGridDrag,
-          ),
           Expanded(
             child: SingleChildScrollView(
               // 只纵向滚动（横向由上面的 PageView 负责，面板不参与翻月）。

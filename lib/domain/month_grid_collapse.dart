@@ -226,6 +226,7 @@ MonthGridLayout monthGridLayout({
   required double minRowHeight,
   required double maxRowHeight,
   required int keptRow,
+  double handleHeight = 0,
 }) {
   final progress = t.clamp(0.0, 1.0);
   final visibleRows = monthGridVisibleRows(progress);
@@ -251,7 +252,10 @@ MonthGridLayout monthGridLayout({
   return MonthGridLayout(
     rowHeight: rowHeight,
     gridHeight: gridHeight,
-    panelHeight: math.max(0, availableHeight - gridHeight),
+    // 面板吃掉剩下的空间，但要先扣掉**表格把手**那一条：把手是表格的部件，
+    // 夹在网格与面板中间，不扣就会把面板顶出屏幕 24px（`Expanded` 只能吃掉
+    // 剩下的，多出来的部分会被裁掉或溢出）。
+    panelHeight: math.max(0, availableHeight - gridHeight - handleHeight),
     scrollOffset: scrollOffset,
     keptRow: keptRow,
   );
