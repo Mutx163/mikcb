@@ -101,7 +101,8 @@ class _LiveTestingFixtureScreenState extends State<LiveTestingFixtureScreen> {
           const HyperosSectionGap(),
           HyperosControlCard(
             title: '课前提醒',
-            subtitle: '发送超级岛测试时，提前多久进入课前态',
+            // 副标题只留含义：「发送超级岛测试时」这个上下文整页都是，删。
+            subtitle: '提前多久进入课前态',
             child: HyperosControlCardInset(
               child: HyperosSegmentedControl(
                 tabs: [for (final minutes in leadOptions) '$minutes 分钟'],

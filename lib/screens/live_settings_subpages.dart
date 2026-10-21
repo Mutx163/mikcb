@@ -227,7 +227,8 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
               HyperosSelectTile<LiveDuringClassTimeDisplayMode>(
                 label: l10n.duringEndTimeDisplayLabel,
-                subtitle: l10n.duringEndTimeDisplayHelp,
+                // 副标题「紧凑提醒显示最近时间或总时长」删：两个选项的字面
+                // 就是「最近时间／总时间」，副标题只是把它们念一遍。
                 items: {
                   for (final value in LiveDuringClassTimeDisplayMode.values)
                     liveDuringClassTimeDisplayModeLabel(l10n, value): value,
