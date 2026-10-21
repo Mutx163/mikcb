@@ -130,6 +130,12 @@ class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
         child: MiuixSearchBar(
           onExpandedChange: (_) {},
           content: const SizedBox.shrink(),
+          // 官方 insideMargin 左右各 12 是给**展开时的尾部「取消」按钮**
+          // 让位的（`outsideEndAction` 从右侧滑入）。本页折叠态没有尾部
+          // 按钮、展开态又落在独立页里，留着这 12px 就是纯缩进：叠上列表
+          // 自己左右 16 的内边距，胶囊两侧比内容卡多缩 24px，读作「搜索框
+          // 比下面的卡片窄一圈」（用户实测点名）。置 0 让它与内容卡对齐。
+          insideMargin: EdgeInsets.zero,
           inputField: MiuixInputField(
             query: '',
             onQueryChange: (_) {},
@@ -172,24 +178,20 @@ class _MoreFeatureSearchPageState extends State<_MoreFeatureSearchPage> {
       resizeToAvoidBottomInset: true,
       child: HyperosListView(
         children: [
+          // **不用 MiuixSearchBar 容器**：它的展开态带
+          // `PopScope(canPop: !expanded)`，会吃掉系统返回；而这里的
+          // `expanded` 恒为 true，于是返回键永远退不出这一页（用户实测
+          // 「返回直接卡死」）。本页本身就是那个「展开后的搜索面」，
+          // 只需要输入框本体，所以直接用 `MiuixInputField`。
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: MiuixSearchBar(
+            child: MiuixInputField(
+              query: _query,
+              onQueryChange: (value) => setState(() => _query = value),
+              onSearch: (_) {},
               expanded: true,
-              onExpandedChange: (value) {
-                if (!value) {
-                  Navigator.of(context).maybePop();
-                }
-              },
-              content: const SizedBox.shrink(),
-              inputField: MiuixInputField(
-                query: _query,
-                onQueryChange: (value) => setState(() => _query = value),
-                onSearch: (_) {},
-                expanded: true,
-                onExpandedChange: (_) {},
-                label: l10n.homeMenuMoreSearchHint,
-              ),
+              onExpandedChange: (_) {},
+              label: l10n.homeMenuMoreSearchHint,
             ),
           ),
           if (filtered.isEmpty)

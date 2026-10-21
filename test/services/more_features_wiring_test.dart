@@ -226,6 +226,30 @@ void main() {
       );
     });
 
+    test('搜索页不许用 MiuixSearchBar 容器（它的 PopScope 会吃掉返回）', () {
+      // 2026-10-21 用户实测：「点击搜索会再次跳转到新页面，然后返回就直接
+      // 卡死了」。根因是展开态的 MiuixSearchBar 带
+      // `PopScope(canPop: !expanded)`，而那一页里 expanded 恒为 true ——
+      // 系统返回被它吃掉，页面永远退不出去。本页本身就是「展开后的搜索面」，
+      // 只需要输入框本体，所以搜索页里必须只出现 MiuixInputField。
+      final source = pageFile.readAsStringSync();
+      final searchPage = RegExp(
+        r'class _MoreFeatureSearchPageState[\s\S]*',
+      ).firstMatch(source);
+      expect(searchPage, isNotNull);
+      expect(
+        searchPage!.group(0)!.contains('MiuixSearchBar('),
+        isFalse,
+        reason: '搜索页里又用上了 MiuixSearchBar 容器：它的 PopScope(canPop: '
+            '!expanded) 会吃掉系统返回，expanded 恒 true 时返回键直接卡死',
+      );
+      expect(
+        searchPage.group(0)!.contains('MiuixInputField('),
+        isTrue,
+        reason: '搜索页应当直接用输入框本体',
+      );
+    });
+
     test('折叠态搜索框不持有焦点（官方移动端形态）', () {
       // 官方 SearchBar.kt 移植说明：折叠态不该抢焦点/弹键盘，点开才进搜索态。
       // 样板间（miuix_showcase_screen.dart）用 IgnorePointer + 透明手势层实现。
