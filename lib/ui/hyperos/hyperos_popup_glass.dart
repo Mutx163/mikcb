@@ -190,7 +190,19 @@ class HyperosSelectPopupGlass extends StatelessWidget {
     this.maxRefraction,
     this.surfaceShadow = false,
     this.probeName = 'glassPopup',
+    this.freezeOnRouteTransition = false,
   });
+
+  /// 转场期间把这块玻璃冻结成预糊壁纸位图（默认关）。
+  ///
+  /// 见 [LiquidGlassSurface.freezeOnRouteTransition]。**常驻 chrome 必须开**：
+  /// 那颗球的玻璃要实时滤屏级背景，而页面转场期间背景正在动、采样数据又是新页
+  /// 面刚注册的 —— 首帧拿不到图就走兜底磨砂，下一帧才变液态玻璃，读起来就是
+  /// 「球闪了一下」（2026-10-21 报）。
+  ///
+  /// 冻结用的是**预糊壁纸位图**（首页早就算好、跨页可用的那份缓存），所以这条
+  /// 路不是"预热"，而是**复用已有数据**。
+  final bool freezeOnRouteTransition;
 
   /// 诊断用层名（`[frame-perf] layers=名字:N`，见 `FramePerfProbe.noteLayerPaint`）。
   ///
@@ -283,6 +295,8 @@ class HyperosSelectPopupGlass extends StatelessWidget {
       // 真机口径 2026-09-25：「弹窗里长按着移动，有一团亮光跟着手指动来动去」。
       // 面板里真正可按的行 / 钮自己带按压反馈，不靠这块底板。
       pressGlow: false,
+      // 与「回到本周 / 回今日」那两颗常驻钮同一条口径（它们早就开了）。
+      freezeOnRouteTransition: freezeOnRouteTransition,
       fallbackBuilder: (fallbackContext) =>
           LiquidGlassDegradation.shouldDegrade(fallbackContext)
           ? HyperosSolidPopupSurface(
