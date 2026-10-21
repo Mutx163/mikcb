@@ -15,6 +15,7 @@ void main() {
           liquidGlassChrome: true,
           sheetBlurSigma: 15,
           liquidGlassTunedBlur: 8,
+          wallSigma: 0,
         ),
         8,
       );
@@ -28,6 +29,7 @@ void main() {
           liquidGlassChrome: true,
           sheetBlurSigma: 15,
           liquidGlassTunedBlur: 0.5,
+          wallSigma: 0,
         ),
         0.5,
       );
@@ -37,6 +39,7 @@ void main() {
           liquidGlassChrome: true,
           sheetBlurSigma: 15,
           liquidGlassTunedBlur: 99,
+          wallSigma: 0,
         ),
         24.0,
       );
@@ -49,6 +52,7 @@ void main() {
           liquidGlassChrome: false,
           sheetBlurSigma: 12,
           liquidGlassTunedBlur: null,
+          wallSigma: 0,
         ),
         12,
       );
@@ -59,6 +63,7 @@ void main() {
           liquidGlassChrome: true,
           sheetBlurSigma: 9,
           liquidGlassTunedBlur: null,
+          wallSigma: 0,
         ),
         9,
       );

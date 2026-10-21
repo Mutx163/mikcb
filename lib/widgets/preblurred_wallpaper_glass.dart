@@ -412,6 +412,7 @@ double resolveHomePreblurSigma({
   required bool liquidGlassChrome,
   required double sheetBlurSigma,
   required double? liquidGlassTunedBlur,
+  required double wallSigma,
 }) {
   // ⚠️ **顺序是有意的：液态玻璃带优先，卡片那条信号不许再抢在前面。**
   //
@@ -424,12 +425,24 @@ double resolveHomePreblurSigma({
   //
   // `gaussianCardsDrive` 仍然保留在签名里（三个调用点都在传，且「卡片是玻璃档」
   // 这个信号以后可能用得上），但它**不再影响本函数的结果** —— 别再把判定抢回去。
+  // 壁纸自己那层模糊（`homePageWallpaperBlurSigma`）**必须折进来**：
+  // 这张位图给玻璃带 / 摘要替身卡当背景，而玻璃看到的壁纸是屏幕上那层**已经糊过**
+  // 的 —— 不折进来，玻璃里透出的就是原图，与四周的糊壁纸对不上
+  //（2026-10-21 用户报「壁纸糊了、玻璃底还是原图」）。
+  //
+  // 折进来之后，转场冻结那条路（`frozenHomeChromeGlassBoard`）与实时那条仍然同 σ：
+  // 实时 BackdropFilter 采样的是屏幕上那张糊壁纸，本来就带着这一层。
+  double base;
   if (liquidGlassChrome && liquidGlassTunedBlur != null) {
-    return liquidGlassTunedBlur
+    base = liquidGlassTunedBlur
         .clamp(kHomePreblurMinSigma, kPreblurMaxSigma)
         .toDouble();
+  } else {
+    base = sheetBlurSigma;
   }
-  return sheetBlurSigma;
+  return composePreblurSigmas(glassSigma: base, wallSigma: wallSigma)
+      .clamp(kHomePreblurMinSigma, kPreblurMaxSigma)
+      .toDouble();
 }
 
 /// 课程卡片那张位图该用的 sigma；**卡片不是液态档时返回 null**（不烤）。
@@ -449,13 +462,61 @@ double resolveHomePreblurSigma({
 double? resolveCourseCardPreblurSigma({
   required CourseCardSurfaceStyle cardStyle,
   required CourseGlassTuning? cardTuning,
+  required double wallSigma,
 }) {
   if (cardStyle != CourseCardSurfaceStyle.liquidGlass) {
     return null;
   }
   final sigma = (cardTuning ?? CourseGlassTuning.courseCard).blurSigma;
   final clamped = sigma.clamp(0.0, kPreblurMaxSigma).toDouble();
-  return clamped;
+  // 同 [resolveHomePreblurSigma]：把壁纸那层折进来，否则卡片里透出的是原图。
+  // 注意这里的 0 仍是**有效清档**：σ_glass = 0 且壁纸没糊时返回 0（出原图、不跑高斯），
+  // 只有壁纸确实糊了才变成 wallSigma —— 那时卡片本来就没有自己的磨砂，
+  // 看到的理应只是"糊过的壁纸"本身。
+  return composePreblurSigmas(glassSigma: clamped, wallSigma: wallSigma)
+      .clamp(0.0, kPreblurMaxSigma)
+      .toDouble();
+}
+
+/// 连续两层高斯（壁纸先糊一遍、玻璃表面再糊一遍）的**等效**单层模糊量。
+///
+/// ## 为什么必须合成，而不是只糊壁纸
+///
+/// 玻璃表面（课程卡 / 顶栏玻璃带 / 日视图摘要替身卡）**不画**屏幕上那层壁纸：
+/// 它们从 [PreblurredWallpaperCache] 取另一张"按玻璃自己的磨砂量烤好的整屏位图"，
+/// 再把自己那一块挖出来贴（见 [PreblurredWallpaperAlignedFill]）。
+///
+/// 于是"壁纸开了模糊"之后，屏幕上是**两条独立的糊**：
+///
+/// * 壁纸层：`homePageBackdropImageWidget` 贴的是 σ_wall 的成品；
+/// * 玻璃层：玻璃从**原图**重新烤的 σ_glass 位图。
+///
+/// 后者完全没有经过壁纸那层，所以玻璃里透出来的仍是清晰壁纸 —— 用户看到的就是
+/// "壁纸糊了，可卡片 / 玻璃带底下还是原来那张"（2026-10-21 用户报）。
+///
+/// ## 为什么是平方和开根号
+///
+/// 高斯核的方差可加：先 σ₁ 再 σ₂ 等价于单次 `sqrt(σ₁² + σ₂²)`。所以把壁纸那一层
+/// 折进玻璃的烤图量，玻璃就只能取**一张**位图，不需要二次采样、也不多占一份显存。
+///
+/// 注意这不是"精确"等价：壁纸层是在屏幕上以整屏尺寸糊的，玻璃位图是按屏幕物理
+/// 宽度解码后再糊的，两者像素尺度不同 —— 但 [PreblurredWallpaperCache] 内部已经
+/// 把逻辑 σ 换算到位图空间（见 `_build` 里的 `imageSigma`），所以这个合成在逻辑
+/// 像素口径上是自洽的，观感也对得上。
+///
+/// 任一层为 0（或 ≤ 0）时返回另一层原值：`σ_glass = 0` 是**有效的清档**
+/// （见 [resolveCourseCardPreblurSigma]），不能因为壁纸糊了就被抬成 σ_wall
+/// 之外的东西 —— 那时玻璃本来就没有自己的磨砂，理应只剩壁纸那层。
+double composePreblurSigmas({required double glassSigma, required double wallSigma}) {
+  final g = glassSigma <= 0 ? 0.0 : glassSigma;
+  final w = wallSigma <= 0 ? 0.0 : wallSigma;
+  if (w <= 0) {
+    return g;
+  }
+  if (g <= 0) {
+    return w;
+  }
+  return math.sqrt(g * g + w * w);
 }
 
 /// Pre-blurred wallpaper handed to course-card glass fills.

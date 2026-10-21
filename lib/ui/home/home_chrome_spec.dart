@@ -165,6 +165,13 @@ HomeChromeSpec resolveHomeChromeSpec({
   final useHomePreblur =
       useCoursePreblur || (backdropBlurOn && continuousChromeBlur);
   final dockAppearance = FrostedAppearanceScope.of(context);
+  // 壁纸自己那层模糊：玻璃看到的是屏幕上**已经糊过**的壁纸，必须折进它们的
+  // 烤图量，否则卡片 / 玻璃带里透出的还是原图（2026-10-21 用户报）。
+  // 传同一个值给两处 —— 它们共用同一张"屏幕上那张壁纸"的前提。
+  final wallBlurSigma = settings.homePageWallpaperBlurSigma.clamp(
+    TimetableSettings.minHomePageWallpaperBlurSigma,
+    TimetableSettings.maxHomePageWallpaperBlurSigma,
+  );
   final homePreblurSigma = resolveHomePreblurSigma(
     gaussianCardsDrive: backdropBlurOn && cardStyle.isGlass,
     liquidGlassChrome: dockAppearance.homeBandGlassMaterial == 'liquid',
@@ -172,10 +179,12 @@ HomeChromeSpec resolveHomeChromeSpec({
     liquidGlassTunedBlur:
         (dockAppearance.liquidGlassTuning ?? LiquidGlassTuning.defaults)
             .blurSigma,
+    wallSigma: wallBlurSigma,
   );
   final courseCardPreblurSigma = resolveCourseCardPreblurSigma(
     cardStyle: cardStyle,
     cardTuning: settings.courseCardGlassTuning,
+    wallSigma: wallBlurSigma,
   );
   return HomeChromeSpec(
     glassDockForm: glassDockForm,

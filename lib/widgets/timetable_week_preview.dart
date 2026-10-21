@@ -518,10 +518,17 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
     // 两张图与首页**同源同参**：卡片那份取卡片自己的配置，首页那份沿用
     // resolveHomePreblurSigma（包括"卡片是玻璃档时用面板磨砂"那条既有口径）。
     // 走同一套参数意味着首页已经烤好的那两张会直接命中缓存，预览不多花显存。
+    // 与首页同参：壁纸那层模糊也要折进来，否则设置页预览里的卡片 / 玻璃带
+    // 会与真首页看起来不一样（预览存在的意义正好是"改一处、看这一处"）。
+    final wallGlassSigma = settings.homePageWallpaperBlurSigma.clamp(
+      TimetableSettings.minHomePageWallpaperBlurSigma,
+      TimetableSettings.maxHomePageWallpaperBlurSigma,
+    );
     final cardGlassSigma = preblurredCardGlass && hasBackdrop
         ? resolveCourseCardPreblurSigma(
             cardStyle: settings.courseCardSurfaceStyle,
             cardTuning: settings.courseCardGlassTuning,
+            wallSigma: wallGlassSigma,
           )
         : null;
     final homeGlassSigma = cardGlassSigma == null
@@ -533,6 +540,7 @@ class _TimetableWeekPreviewBody extends StatelessWidget {
                 settings.homeBandGlassMaterialEffective == 'liquid',
             sheetBlurSigma: kDefaultFrostedSheetBlurSigma,
             liquidGlassTunedBlur: settings.liquidGlassTuning?.blurSigma,
+            wallSigma: wallGlassSigma,
           );
 
     return ColoredBox(

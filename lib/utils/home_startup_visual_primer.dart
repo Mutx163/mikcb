@@ -64,6 +64,12 @@ abstract final class HomeStartupVisualPrimer {
       }
       final devicePixelRatio = _devicePixelRatio();
       final appearance = settings.frostedAppearance;
+      // 壁纸自己那层模糊必须与运行时同参，否则预热烤的那张与首页请求的不是同一个
+      // 条目 —— 首帧命中不了缓存，等于白预热一次（还多占一份显存）。
+      final wallSigma = settings.homePageWallpaperBlurSigma.clamp(
+        TimetableSettings.minHomePageWallpaperBlurSigma,
+        TimetableSettings.maxHomePageWallpaperBlurSigma,
+      );
       final sigma = resolveHomePreblurSigma(
         gaussianCardsDrive: settings.courseCardSurfaceStyle.isGlass,
         // 与首页玻璃带消费点同判：顶栏材质是生效值（follow 已解析），只有
@@ -71,6 +77,7 @@ abstract final class HomeStartupVisualPrimer {
         liquidGlassChrome: appearance.homeBandGlassMaterial == 'liquid',
         sheetBlurSigma: appearance.sheetBlurSigma,
         liquidGlassTunedBlur: appearance.liquidGlassTuning?.blurSigma,
+        wallSigma: wallSigma,
       );
 
       // 卡片那份位图走**卡片自己的**磨砂量（与首页那份可以是两个 sigma）。
@@ -80,6 +87,7 @@ abstract final class HomeStartupVisualPrimer {
           ? resolveCourseCardPreblurSigma(
               cardStyle: settings.courseCardSurfaceStyle,
               cardTuning: settings.courseCardGlassTuning,
+              wallSigma: wallSigma,
             )
           : null;
 
