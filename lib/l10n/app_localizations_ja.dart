@@ -11129,6 +11129,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuCategoryAbout => '情報とサポート';
 
   @override
+  String get homeMenuMoreTitle => 'その他の機能';
+
+  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes分前';
   }

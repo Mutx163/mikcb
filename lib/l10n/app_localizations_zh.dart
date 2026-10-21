@@ -10788,6 +10788,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuCategoryAbout => '关于与支持';
 
   @override
+  String get homeMenuMoreTitle => '更多功能';
+
+  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '提前 $minutes 分钟';
   }
@@ -22275,6 +22278,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeMenuCategoryAbout => '關於與支援';
+
+  @override
+  String get homeMenuMoreTitle => '更多功能';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {
@@ -33765,6 +33771,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeMenuCategoryAbout => '關於與支援';
+
+  @override
+  String get homeMenuMoreTitle => '更多功能';
 
   @override
   String classAlarmLeadMinutesLabel(int minutes) {

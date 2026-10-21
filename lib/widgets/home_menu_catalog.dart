@@ -260,6 +260,16 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
       await provider.switchProfile(selected);
     },
   ),
+  // 「更多功能」汇总页：一页收齐没有其他固定入口的隐藏功能（任务清单、
+  // 日程安排、取件码、月视图等），用户在底栏/八宫格添加这一个入口即可
+  // 全部可达。收录清单与页面本体在 screens/more_features_screen.dart。
+  HomeMenuEntry(
+    id: 'more',
+    title: (l10n) => l10n.homeMenuMoreTitle,
+    icon: Icons.apps_rounded,
+    category: HomeMenuEntryCategory.features,
+    open: (context) => pushHomeMenuPage(context, homePage('morePage')),
+  ),
 
   // ── 数据与同步 ────────────────────────────────────────────
   HomeMenuEntry(
@@ -328,6 +338,14 @@ final List<HomeMenuEntry> kHomeMenuCatalog = [
     id: 'courseCardSettings',
     title: (l10n) => l10n.courseCardSettingsTitle,
     icon: Icons.style_outlined,
+  ),
+  // 天气设置此前只有设置首页一处入口、不在候选目录（八宫格加不到它）；
+  // 补进候选后「更多功能」汇总页才有它可列。id 与设置库
+  // settingsSubpageById 的 'weatherSettings' 对齐。
+  _settingsSubpageEntry(
+    id: 'weatherSettings',
+    title: (l10n) => l10n.weatherSettingsEntryTitle,
+    icon: Icons.wb_sunny_outlined,
   ),
   _settingsSubpageEntry(
     id: 'liveSettings',

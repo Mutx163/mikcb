@@ -19639,6 +19639,12 @@ abstract class AppLocalizations {
   /// **'关于与支持'**
   String get homeMenuCategoryAbout;
 
+  /// No description provided for @homeMenuMoreTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'更多功能'**
+  String get homeMenuMoreTitle;
+
   /// No description provided for @classAlarmLeadMinutesLabel.
   ///
   /// In zh, this message translates to:

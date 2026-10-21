@@ -11181,6 +11181,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuCategoryAbout => '정보 및 지원';
 
   @override
+  String get homeMenuMoreTitle => '더 많은 기능';
+
+  @override
   String classAlarmLeadMinutesLabel(int minutes) {
     return '$minutes분 전';
   }

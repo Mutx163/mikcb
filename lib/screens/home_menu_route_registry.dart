@@ -23,6 +23,7 @@ import 'import/course_import_entry_screen.dart';
 import 'lan_edit_screen.dart';
 import 'location_time_match_screen.dart';
 import 'memory_stats_screen.dart';
+import 'more_features_screen.dart';
 import 'month_view_screen.dart';
 import 'open_source_licenses_screen.dart';
 import 'schedule_date_rule_screen.dart';
@@ -164,6 +165,12 @@ final List<HomeMenuPageDescriptor> _inlineDockPageDescriptors = [
       },
     ),
   ),
+  // 「更多功能」：底栏内嵌页（坞保持悬浮、首页栈内切换），id 与目录条目
+  // 一致（'more'）；目录表另有 morePage 推入路由（八宫格/右上角菜单用）。
+  HomeMenuPageDescriptor(
+    id: 'more',
+    build: () => const MoreFeaturesScreen(),
+  ),
 ];
 
 /// 八宫格 / 顶部菜单的推入路由页（`xxxPage` 命名与迁移前逐字一致）。
@@ -263,6 +270,10 @@ final List<HomeMenuPageDescriptor> _catalogPageDescriptors = [
   HomeMenuPageDescriptor(
     id: 'memoryStatsPage',
     build: () => const MemoryStatsScreen(),
+  ),
+  HomeMenuPageDescriptor(
+    id: 'morePage',
+    build: () => const MoreFeaturesScreen(),
   ),
 ];
 

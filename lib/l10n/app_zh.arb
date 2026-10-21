@@ -6615,6 +6615,7 @@
   "homeMenuCategoryData": "数据与同步",
   "homeMenuCategoryPreferences": "偏好设置",
   "homeMenuCategoryAbout": "关于与支持",
+  "homeMenuMoreTitle": "更多功能",
   "classAlarmLeadMinutesLabel": "提前 {minutes} 分钟",
   "@classAlarmLeadMinutesLabel": {
     "placeholders": {
