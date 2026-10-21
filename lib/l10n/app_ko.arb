@@ -6393,6 +6393,7 @@
   "examEndTimeBeforeStart": "종료 시간은 시작 시간보다 빠를 수 없습니다",
   "courseNoteSheetTitle": "수업 메모",
   "courseNoteAction": "메모",
+  "courseTaskAction": "과제",
   "courseNoteSaveAction": "저장",
   "courseNoteTabWholeCourse": "수업 소개",
   "courseNoteTabThisSession": "이번 수업",

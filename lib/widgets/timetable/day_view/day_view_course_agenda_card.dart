@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../providers/timetable_provider.dart';
 import '../../../ui/hyperos/hyperos_motion.dart';
+import '../../../ui/hyperos/hyperos_navigation.dart';
 import '../../../utils/hex_color.dart';
 import '../../course_note_sheet.dart';
 import '../../open_container.dart';
@@ -164,6 +165,27 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
       );
     }
 
+    /// 「记作业」独立入口（2026-10-21 从备注弹层拆出）。
+    ///
+    /// 打开的是**完整的作业表单**（`AddTaskScreen`），不是弹层里的一个开关：
+    /// 那里有课程绑定、截止日期、备注、完成态。课程与周次作为上下文传进去，
+    /// 但**不预填备注原文**——用户点「作业」是想记一条新的，不是编辑那节课的
+    /// 备忘文字。
+    Future<void> openCourseTask() {
+      return Navigator.of(context).push<bool>(
+        HyperosPageRoute<bool>(
+          builder: (_) => timetableFormPages.taskForm(
+            initialCourse: item.course,
+            initialWeek: week,
+          ),
+        ),
+      );
+    }
+
+    final hasTaskThisWeek = provider
+        .getTasksForCourse(item.course.id, sourceWeek: week)
+        .isNotEmpty;
+
     Widget buildCard(VoidCallback openContainer) {
       if (progress != null) {
         return TimetableCourseAgendaProgressCard(
@@ -175,6 +197,8 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
           ink: palette.foregroundColor,
           onTap: openContainer,
           onOpenNotes: openCourseNotes,
+          onOpenTask: openCourseTask,
+          hasTask: hasTaskThisWeek,
           opacityScale: effectiveOpacity,
           courseDate: courseDate,
         );
@@ -189,6 +213,8 @@ class TimetableDayCourseAgendaCard extends StatelessWidget {
         cardDecoration: cardDecoration,
         onTap: openContainer,
         onOpenNotes: openCourseNotes,
+        onOpenTask: openCourseTask,
+        hasTask: hasTaskThisWeek,
         opacityScale: effectiveOpacity,
         courseDate: courseDate,
       );

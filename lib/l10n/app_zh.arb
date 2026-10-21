@@ -3684,6 +3684,7 @@
   "courseActionDeleteSecondary": "删除",
   "courseNoteSheetTitle": "课程备注",
   "courseNoteAction": "备注",
+  "courseTaskAction": "作业",
   "courseNoteSaveAction": "保存",
   "courseNoteTabWholeCourse": "课程简介",
   "courseNoteTabThisSession": "本节课",

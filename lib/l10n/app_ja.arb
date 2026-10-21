@@ -6333,6 +6333,7 @@
   "examEndTimeBeforeStart": "終了時間は開始時間より前に設定できません",
   "courseNoteSheetTitle": "授業メモ",
   "courseNoteAction": "メモ",
+  "courseTaskAction": "宿題",
   "courseNoteSaveAction": "保存",
   "courseNoteTabWholeCourse": "授業の概要",
   "courseNoteTabThisSession": "今回の授業",

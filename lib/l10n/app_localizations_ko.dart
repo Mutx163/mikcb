@@ -6357,6 +6357,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseNoteAction => '메모';
 
   @override
+  String get courseTaskAction => '과제';
+
+  @override
   String get courseNoteSaveAction => '저장';
 
   @override

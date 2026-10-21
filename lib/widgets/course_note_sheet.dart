@@ -53,7 +53,6 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
   final _sessionNoteFocusNode = FocusNode();
   late final TextEditingController _courseNoteController;
   late final TextEditingController _sessionNoteController;
-  late bool _hasHomework;
   bool _isSaving = false;
   double _lastKeyboardHeight = 0;
 
@@ -82,7 +81,6 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
     _sessionNoteController = TextEditingController(
       text: sessionNote?.text ?? '',
     );
-    _hasHomework = sessionNote?.hasHomework ?? false;
     _courseNoteFocusNode.addListener(_handleFocusChange);
     _sessionNoteFocusNode.addListener(_handleFocusChange);
   }
@@ -159,9 +157,14 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
       final current = _liveCourse;
       final courseNoteText = _courseNoteController.text.trim();
       final sessionNoteText = _sessionNoteController.text.trim();
+      // 「本节有作业」已从本弹层移出（作业有自己的入口与表单）。这里必须
+      // **保留原值**，不能写死 false——否则用户只改一句备注，那门课本周的
+      // 作业标记就被悄悄清掉了，对应的 homeworkMark 作业下次重算会消失。
+      final existingHomework =
+          current.sessionNoteForWeek(widget.week)?.hasHomework ?? false;
       final sessionNote = CourseSessionNote(
         text: sessionNoteText,
-        hasHomework: _hasHomework,
+        hasHomework: existingHomework,
       ).normalizedOrNull;
       final updated = current.copyWith(
         // Write shared description so all same-name schedule entries see it.
@@ -288,40 +291,6 @@ class _CourseNoteSheetBodyState extends State<CourseNoteSheetBody>
               context,
               label: l10n.courseNoteSessionLabel,
               hint: l10n.courseNoteSessionHint(widget.week),
-            ),
-            const SizedBox(height: 8),
-            HyperosFrostedSurface(
-              borderRadius: BorderRadius.circular(HyperosTokens.controlRadius),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.courseNoteHasHomeworkTitle,
-                            style: typo.sm.copyWith(height: 1.25),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.courseNoteHasHomeworkSubtitle,
-                            style: muted,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    HyperosSwitch(
-                      value: _hasHomework,
-                      onChanged: widget.readOnly
-                          ? null
-                          : (value) => setState(() => _hasHomework = value),
-                    ),
-                  ],
-                ),
-              ),
             ),
             const SizedBox(height: 8),
             KeyedSubtree(

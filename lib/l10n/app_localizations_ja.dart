@@ -6327,6 +6327,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseNoteAction => 'メモ';
 
   @override
+  String get courseTaskAction => '宿題';
+
+  @override
   String get courseNoteSaveAction => '保存';
 
   @override

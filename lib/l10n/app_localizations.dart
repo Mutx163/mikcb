@@ -11321,6 +11321,9 @@ abstract class AppLocalizations {
   /// **'备注'**
   String get courseNoteAction;
 
+  /// No description provided for @courseTaskAction.
+  String get courseTaskAction;
+
   /// No description provided for @courseNoteSaveAction.
   ///
   /// In zh, this message translates to:

@@ -6579,6 +6579,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseNoteAction => 'Notes';
 
   @override
+  String get courseTaskAction => 'Homework';
+
+  @override
   String get courseNoteSaveAction => 'Save';
 
   @override

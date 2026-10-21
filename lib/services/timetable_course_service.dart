@@ -528,17 +528,70 @@ class TimetableCourseService {
       ..sort(CourseTask.compareByDueDate);
   }
 
-  /// 加一条作业：改的就是用户刚填的那条，**不回滚**。
+  /// 加一条作业。
+  ///
+  /// 挂了课程时**顺手把该课程该周的「有作业」标记置 true**。
+  ///
+  /// 这个标记原先只有课程备注弹层里那个开关会写。2026-10-21 把那个开关从
+  /// 弹层里移走（作业改成独立入口后，设定作业就是最直接的表达，不该再让用户
+  /// 去另一个弹窗里勾一个"本节有作业"），于是**没有任何地方会写它了**——
+  /// 而周卡、日卡、课程面板的作业圆点全都只看这个标记，结果就是「加了作业
+  /// 圆点永远不亮」。在这里补上之后，圆点与作业数据才重新对齐。
+  ///
+  /// 落盘失败要把课程一起退回：标记是这条作业的副作用，作业没存下而标记留下，
+  /// 用户会看到卡片亮着圆点、点进去却没有作业。
   static Future<void> addTask(TimetableCoursePort port, CourseTask task) async {
     final normalized = _normalizeTask(task);
     _validateTask(port, normalized);
+    final snapshotTasks = List<CourseTask>.from(port.tasks);
+    final snapshotCourses = List<Course>.from(port.courses);
+    final snapshotProfiles = List<TimetableProfile>.from(port.profiles);
     port.tasks = sortTasks(<CourseTask>[...port.tasks, normalized]);
-    await port.persistActiveProfileState();
+    _markHomework(port, courseId: normalized.courseId, week: normalized.sourceWeek);
+    try {
+      await port.persistActiveProfileState();
+    } catch (_) {
+      port.tasks = snapshotTasks;
+      port.courses = snapshotCourses;
+      port.profiles = snapshotProfiles;
+      rethrow;
+    }
     port.notifyStateChanged();
     port.logEvent('task_created', {
       'has_course': normalized.courseId == null ? 0 : 1,
       'has_due_date': normalized.dueDate == null ? 0 : 1,
     });
+  }
+
+  /// 把某门课某周的「有作业」标记置 true（课程/周次/备注任一不存在时幂等跳过）。
+  ///
+  /// 周次为空也跳过：`homeworkMark` 的语义是「第 N 周这节课有作业」，
+  /// 手写作业（没指定周次）没法落到某个具体的课次上。
+  static void _markHomework(
+    TimetableCoursePort port, {
+    required String? courseId,
+    required int? week,
+  }) {
+    if (courseId == null || week == null) {
+      return;
+    }
+    final courses = List<Course>.from(port.courses);
+    final index = courses.indexWhere((course) => course.id == courseId);
+    if (index == -1) {
+      return;
+    }
+    final course = courses[index];
+    final existing = course.sessionNoteForWeek(week);
+    if (existing?.hasHomework == true) {
+      return;
+    }
+    courses[index] = course.copyWith(
+      sessionNotes: course.withSessionNote(
+        week,
+        (existing ?? const CourseSessionNote()).copyWith(hasHomework: true),
+      ),
+    );
+    port.courses = courses;
   }
 
   /// 改一条作业：改的是用户点名那条，**不回滚**（缺的只是落盘失败上报）。

@@ -26,6 +26,8 @@ class TimetableCourseAgendaDefaultCard extends StatelessWidget {
   final BoxDecoration cardDecoration;
   final VoidCallback onTap;
   final VoidCallback onOpenNotes;
+  final VoidCallback onOpenTask;
+  final bool hasTask;
   final double opacityScale;
   final DateTime? courseDate;
 
@@ -40,6 +42,8 @@ class TimetableCourseAgendaDefaultCard extends StatelessWidget {
     required this.cardDecoration,
     required this.onTap,
     required this.onOpenNotes,
+    required this.onOpenTask,
+    this.hasTask = false,
     required this.opacityScale,
     required this.courseDate,
   });
@@ -116,6 +120,12 @@ class TimetableCourseAgendaDefaultCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
+                DayAgendaTaskAction(
+                  ink: ink,
+                  onPressed: onOpenTask,
+                  hasTask: hasTask,
+                ),
+                const SizedBox(width: 6),
                 DayAgendaNoteAction(ink: ink, onPressed: onOpenNotes),
               ],
             ),
@@ -186,6 +196,8 @@ class TimetableCourseAgendaProgressCard extends StatelessWidget {
   final Color ink;
   final VoidCallback onTap;
   final VoidCallback onOpenNotes;
+  final VoidCallback onOpenTask;
+  final bool hasTask;
   final double opacityScale;
   final DateTime? courseDate;
 
@@ -199,6 +211,8 @@ class TimetableCourseAgendaProgressCard extends StatelessWidget {
     required this.ink,
     required this.onTap,
     required this.onOpenNotes,
+    required this.onOpenTask,
+    this.hasTask = false,
     required this.opacityScale,
     required this.courseDate,
   });
@@ -351,6 +365,12 @@ class TimetableCourseAgendaProgressCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
+                      DayAgendaTaskAction(
+                        ink: ink,
+                        onPressed: onOpenTask,
+                        hasTask: hasTask,
+                      ),
+                      const SizedBox(width: 6),
                       DayAgendaNoteAction(ink: ink, onPressed: onOpenNotes),
                     ],
                   ),

@@ -3634,6 +3634,7 @@
   "courseActionDeleteSecondary": "Delete",
   "courseNoteSheetTitle": "Course Notes",
   "courseNoteAction": "Notes",
+  "courseTaskAction": "Homework",
   "courseNoteSaveAction": "Save",
   "courseNoteTabWholeCourse": "Course description",
   "courseNoteTabThisSession": "This class",

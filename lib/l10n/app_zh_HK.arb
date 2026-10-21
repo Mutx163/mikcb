@@ -6372,6 +6372,7 @@
   "examEndTimeBeforeStart": "結束時間不能早於開始時間",
   "courseNoteSheetTitle": "課程備註",
   "courseNoteAction": "備註",
+  "courseTaskAction": "作業",
   "courseNoteSaveAction": "儲存",
   "courseNoteTabWholeCourse": "課程簡介",
   "courseNoteTabThisSession": "本節課",

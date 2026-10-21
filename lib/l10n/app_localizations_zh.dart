@@ -6210,6 +6210,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNoteAction => '备注';
 
   @override
+  String get courseTaskAction => '作业';
+
+  @override
   String get courseNoteSaveAction => '保存';
 
   @override
@@ -17599,6 +17602,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get courseNoteAction => '備註';
+
+  @override
+  String get courseTaskAction => '作業';
 
   @override
   String get courseNoteSaveAction => '儲存';
@@ -29030,6 +29036,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseNoteAction => '備註';
+
+  @override
+  String get courseTaskAction => '作業';
 
   @override
   String get courseNoteSaveAction => '儲存';
