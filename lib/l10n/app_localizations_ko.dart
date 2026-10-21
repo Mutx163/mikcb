@@ -11779,4 +11779,56 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => 'Douyin 택배 목록';
+
+  @override
+  String get courseAutoRefreshSectionTitle => '시간표 자동 갱신';
+
+  @override
+  String get courseAutoRefreshTitle => '자동 갱신';
+
+  @override
+  String get courseAutoRefreshSubtitle => '정해진 때에 학사 시간표';
+
+  @override
+  String get courseAutoRefreshModeLabel => '시점';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => '실행할 때마다';
+
+  @override
+  String get courseAutoRefreshModeInterval => 'N시간마다';
+
+  @override
+  String get courseAutoRefreshModeDaily => '매일 정해진 때';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => '간격(시간)';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => '갱신 시각';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => '지금 한 번 실행';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => '시간대를 무시하고 실행';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => '시간표를 자동 갱신했습니다';
+
+  @override
+  String get courseAutoRefreshFailedTip => '자동 갱신 실패, 당겨서 재시도';
+
+  @override
+  String get courseAutoRefreshSummaryNever => '아직 갱신한 적 없음';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return '지난번 $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return '다음 $time쯤';
+  }
 }

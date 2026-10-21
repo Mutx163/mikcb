@@ -12077,4 +12077,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => 'Douyin parcel list';
+
+  @override
+  String get courseAutoRefreshSectionTitle => 'Auto-refresh';
+
+  @override
+  String get courseAutoRefreshTitle => 'Auto-refresh';
+
+  @override
+  String get courseAutoRefreshSubtitle => 'Fetch timetable on schedule';
+
+  @override
+  String get courseAutoRefreshModeLabel => 'When';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => 'Every launch';
+
+  @override
+  String get courseAutoRefreshModeInterval => 'Every N hours';
+
+  @override
+  String get courseAutoRefreshModeDaily => 'Daily at';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => 'Hours';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => 'Time';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => 'Run once now';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => 'Ignore the schedule';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => 'Timetable auto-refreshed';
+
+  @override
+  String get courseAutoRefreshFailedTip => 'Auto-refresh failed, pull to retry';
+
+  @override
+  String get courseAutoRefreshSummaryNever => 'Never refreshed yet';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return 'Last $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return 'Next ~$time';
+  }
 }

@@ -20789,6 +20789,102 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'抖音的包裹列表'**
   String get pickupCodePresetDouyinParcelsHint;
+
+  /// No description provided for @courseAutoRefreshSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表自动更新'**
+  String get courseAutoRefreshSectionTitle;
+
+  /// No description provided for @courseAutoRefreshTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动更新课表'**
+  String get courseAutoRefreshTitle;
+
+  /// No description provided for @courseAutoRefreshSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'到点自动抓一次教务课表'**
+  String get courseAutoRefreshSubtitle;
+
+  /// No description provided for @courseAutoRefreshModeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新时机'**
+  String get courseAutoRefreshModeLabel;
+
+  /// No description provided for @courseAutoRefreshModeEveryLaunch.
+  ///
+  /// In zh, this message translates to:
+  /// **'每次打开时'**
+  String get courseAutoRefreshModeEveryLaunch;
+
+  /// No description provided for @courseAutoRefreshModeInterval.
+  ///
+  /// In zh, this message translates to:
+  /// **'每隔几小时'**
+  String get courseAutoRefreshModeInterval;
+
+  /// No description provided for @courseAutoRefreshModeDaily.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天定时'**
+  String get courseAutoRefreshModeDaily;
+
+  /// No description provided for @courseAutoRefreshIntervalTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'间隔小时数'**
+  String get courseAutoRefreshIntervalTitle;
+
+  /// No description provided for @courseAutoRefreshDailyTimeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天更新时刻'**
+  String get courseAutoRefreshDailyTimeTitle;
+
+  /// No description provided for @courseAutoRefreshTryNowTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即试一次'**
+  String get courseAutoRefreshTryNowTitle;
+
+  /// No description provided for @courseAutoRefreshTryNowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'不等时间窗，马上跑一次'**
+  String get courseAutoRefreshTryNowSubtitle;
+
+  /// No description provided for @courseAutoRefreshUpdatedTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'已自动更新课表'**
+  String get courseAutoRefreshUpdatedTip;
+
+  /// No description provided for @courseAutoRefreshFailedTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动更新没成功，可下拉重试'**
+  String get courseAutoRefreshFailedTip;
+
+  /// No description provided for @courseAutoRefreshSummaryNever.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没成功更新过'**
+  String get courseAutoRefreshSummaryNever;
+
+  /// No description provided for @courseAutoRefreshSummaryLast.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次 {time}'**
+  String courseAutoRefreshSummaryLast(String time);
+
+  /// No description provided for @courseAutoRefreshSummaryNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下次约 {time}'**
+  String courseAutoRefreshSummaryNext(String time);
 }
 
 class _AppLocalizationsDelegate

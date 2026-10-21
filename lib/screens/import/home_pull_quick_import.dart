@@ -38,10 +38,16 @@ const Duration _kHomePullQuickImportWriteTimeout = Duration(minutes: 5);
 ///
 /// Hosted in an [Overlay] (not a route) so the home page stays interactive.
 /// Call [onCancelAvailable] with a cancel callback while the session is active.
+///
+/// [silent] 关掉本函数自己弹的四句前置提示（没有快捷导入记录 / 没有可用登录
+/// 地址 / 取不到 Overlay 等）。给「课表自动更新」用：那是用户没盯着的时候跑的，
+/// 还没配好就弹一句「暂无快捷导入记录」纯属打扰，而且调用方会按结局统一给一句
+/// （见 `course_auto_refresh_runner.dart`）。
 Future<bool> runHomePullWarehouseQuickImport(
   BuildContext context, {
   VoidCallback? onNeedsManualAction,
   void Function(bool Function() cancel)? onCancelAvailable,
+  bool silent = false,
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final macroService = WarehouseMacroService();
@@ -127,7 +133,8 @@ Future<bool> runHomePullWarehouseQuickImport(
         return;
       }
       if (allEntries.isEmpty) {
-        showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+        _explainUnlessSilent(silent, () =>
+          showAppLightTip(context, message: l10n.noSavedQuickImportRecords));
         completeSession(false);
         return;
       }
@@ -148,7 +155,8 @@ Future<bool> runHomePullWarehouseQuickImport(
         return;
       }
       if (macro == null) {
-        showAppLightTip(context, message: l10n.noSavedQuickImportRecords);
+        _explainUnlessSilent(silent, () =>
+          showAppLightTip(context, message: l10n.noSavedQuickImportRecords));
         completeSession(false);
         return;
       }
@@ -169,7 +177,8 @@ Future<bool> runHomePullWarehouseQuickImport(
         return;
       }
       if (initialUrl == null) {
-        showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl);
+        _explainUnlessSilent(silent, () =>
+          showAppLightTip(context, message: l10n.noValidWarehouseLoginUrl));
         completeSession(false);
         return;
       }
@@ -180,7 +189,8 @@ Future<bool> runHomePullWarehouseQuickImport(
 
       final overlay = Overlay.maybeOf(context, rootOverlay: true);
       if (overlay == null) {
-        showAppLightTip(context, message: l10n.quickImportUnknownError);
+        _explainUnlessSilent(silent, () =>
+          showAppLightTip(context, message: l10n.quickImportUnknownError));
         completeSession(false);
         return;
       }
@@ -258,6 +268,14 @@ Future<bool> runHomePullWarehouseQuickImport(
 
   unawaited(prepare());
   return completer.future;
+}
+
+/// 前置失败的解释句：[silent] 为 true 时整句跳过（见函数文档）。
+void _explainUnlessSilent(bool silent, VoidCallback explain) {
+  if (silent) {
+    return;
+  }
+  explain();
 }
 
 

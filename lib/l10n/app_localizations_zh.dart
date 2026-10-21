@@ -11412,6 +11412,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
+
+  @override
+  String get courseAutoRefreshSectionTitle => '课表自动更新';
+
+  @override
+  String get courseAutoRefreshTitle => '自动更新课表';
+
+  @override
+  String get courseAutoRefreshSubtitle => '到点自动抓一次教务课表';
+
+  @override
+  String get courseAutoRefreshModeLabel => '更新时机';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => '每次打开时';
+
+  @override
+  String get courseAutoRefreshModeInterval => '每隔几小时';
+
+  @override
+  String get courseAutoRefreshModeDaily => '每天定时';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => '间隔小时数';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => '每天更新时刻';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => '立即试一次';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => '不等时间窗，马上跑一次';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => '已自动更新课表';
+
+  @override
+  String get courseAutoRefreshFailedTip => '自动更新没成功，可下拉重试';
+
+  @override
+  String get courseAutoRefreshSummaryNever => '还没成功更新过';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return '上次 $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return '下次约 $time';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22861,6 +22913,58 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
+
+  @override
+  String get courseAutoRefreshSectionTitle => '課表自動更新';
+
+  @override
+  String get courseAutoRefreshTitle => '自動更新課表';
+
+  @override
+  String get courseAutoRefreshSubtitle => '到點自動抓一次教務課表';
+
+  @override
+  String get courseAutoRefreshModeLabel => '更新時機';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => '每次開啟時';
+
+  @override
+  String get courseAutoRefreshModeInterval => '每隔幾小時';
+
+  @override
+  String get courseAutoRefreshModeDaily => '每天定時';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => '間隔小時數';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => '每天更新時刻';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => '立即試一次';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => '不等時間窗，馬上跑一次';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => '已自動更新課表';
+
+  @override
+  String get courseAutoRefreshFailedTip => '自動更新沒成功，可下拉重試';
+
+  @override
+  String get courseAutoRefreshSummaryNever => '還沒成功更新過';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return '上次 $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return '下次約 $time';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -34311,4 +34415,56 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => '抖音的包裹列表';
+
+  @override
+  String get courseAutoRefreshSectionTitle => '課表自動更新';
+
+  @override
+  String get courseAutoRefreshTitle => '自動更新課表';
+
+  @override
+  String get courseAutoRefreshSubtitle => '到點自動抓一次教務課表';
+
+  @override
+  String get courseAutoRefreshModeLabel => '更新時機';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => '每次開啟時';
+
+  @override
+  String get courseAutoRefreshModeInterval => '每隔幾小時';
+
+  @override
+  String get courseAutoRefreshModeDaily => '每天定時';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => '間隔小時數';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => '每天更新時刻';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => '立即試一次';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => '不等時間窗，馬上跑一次';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => '已自動更新課表';
+
+  @override
+  String get courseAutoRefreshFailedTip => '自動更新沒成功，可下拉重試';
+
+  @override
+  String get courseAutoRefreshSummaryNever => '還沒成功更新過';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return '上次 $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return '下次約 $time';
+  }
 }

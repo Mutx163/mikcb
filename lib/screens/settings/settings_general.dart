@@ -5,13 +5,13 @@ import 'package:provider/provider.dart';
 import '../../models/timetable_settings.dart';
 import '../../providers/timetable_provider.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../widgets/course_auto_refresh_settings.dart';
 import 'settings_shared.dart';
 
-/// 通用设置：语言、转场速度、触感反馈、首页下拉快速导入。
+/// 通用设置：语言、转场速度、触感反馈、下拉快捷导入、课表自动更新。
 ///
-/// 这四项原本挤在「外观与主题」里，但没有一项是外观：语言是国际化，转场与
-/// 触感是交互反馈，下拉快速导入是一个手势功能开关。放在这里，外观页才能真的
-/// 只谈「长什么样」。
+/// 前四项原本挤在「外观与主题」里，但没有一项是外观：语言是国际化，转场与
+/// 触感是交互反馈，下拉导入是手势开关。放这里，外观页才能只谈「长什么样」。
 class GeneralSettingsScreen extends StatefulWidget {
   const GeneralSettingsScreen({super.key});
 
@@ -99,6 +99,8 @@ class GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               ),
             ],
           ),
+          const HyperosSectionGap(),
+          CourseAutoRefreshSettingsSection(provider: _timetableProvider),
         ],
       ),
     );

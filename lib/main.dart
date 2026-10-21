@@ -27,6 +27,7 @@ import 'providers/unified_transfer_access.dart';
 import 'providers/weather_provider.dart';
 import 'providers/widget_launch_timetable_access.dart';
 import 'screens/debug_deep_link_route_registry.dart';
+import 'screens/import/course_auto_refresh_runner.dart';
 import 'screens/import/course_import_entry_screen.dart';
 import 'screens/import/ics_course_import_screen.dart';
 import 'screens/import/spreadsheet_course_import_screen.dart';
@@ -879,6 +880,13 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     // 出现字面量会被一并计成调用点（写注释时踩过一次，223 → 224）。
     final provider = context.read<TimetableProvider>();
     unawaited(_maybeAutoApplyDailyBingWallpaper(provider));
+    // 课表自动更新也挂在这一档（用户「打开软件」= 冷启动或从后台回来）。
+    // 与云拉取**并行**发出：两者都要写课表，但一个走 WebDAV 快照、一个走教务
+    // 网页导入，串起来只会让用户多等一次网络往返；导入落库由 provider 的
+    // mutation gate 串行，不会互相覆盖。
+    unawaited(
+      runCourseAutoRefreshIfDue(context, provider: provider),
+    );
     await _cloudSyncCoordinator.maybePullRemote();
     if (!mounted) {
       return;
@@ -1065,6 +1073,13 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         // first correct frame, while network work can update it afterward.
         unawaited(_cloudSyncCoordinator.maybePullRemote());
         unawaited(_maybeAutoApplyDailyBingWallpaper(provider));
+        // 冷启动也算「打开软件」：与云拉取同一档（首页已换入），并行发出。
+        // 这里已经 await 过多轮，先确认本 State 还挂着再往下传 context ——
+        // 下面那次调用要拿它挂 Overlay。
+        if (!mounted) {
+          return;
+        }
+        unawaited(runCourseAutoRefreshIfDue(context, provider: provider));
         return;
       }
 

@@ -11735,4 +11735,56 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get pickupCodePresetDouyinParcelsHint => 'Douyin の荷物一覧';
+
+  @override
+  String get courseAutoRefreshSectionTitle => '時間割の自動更新';
+
+  @override
+  String get courseAutoRefreshTitle => '自動更新';
+
+  @override
+  String get courseAutoRefreshSubtitle => '時間になったら教務を取得';
+
+  @override
+  String get courseAutoRefreshModeLabel => 'タイミング';
+
+  @override
+  String get courseAutoRefreshModeEveryLaunch => '起動のたび';
+
+  @override
+  String get courseAutoRefreshModeInterval => 'N 時間ごと';
+
+  @override
+  String get courseAutoRefreshModeDaily => '毎日決まった時刻';
+
+  @override
+  String get courseAutoRefreshIntervalTitle => '間隔（時間）';
+
+  @override
+  String get courseAutoRefreshDailyTimeTitle => '更新時刻';
+
+  @override
+  String get courseAutoRefreshTryNowTitle => '今すぐ試す';
+
+  @override
+  String get courseAutoRefreshTryNowSubtitle => '時間帯を無視して実行';
+
+  @override
+  String get courseAutoRefreshUpdatedTip => '時間割を自動更新しました';
+
+  @override
+  String get courseAutoRefreshFailedTip => '失敗、下引きで再試行';
+
+  @override
+  String get courseAutoRefreshSummaryNever => 'まだ更新していません';
+
+  @override
+  String courseAutoRefreshSummaryLast(String time) {
+    return '前回 $time';
+  }
+
+  @override
+  String courseAutoRefreshSummaryNext(String time) {
+    return '次回 $time 頃';
+  }
 }
