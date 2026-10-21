@@ -166,6 +166,84 @@ bool isTargetDocumentLoaded({
   return before != current;
 }
 
+/// 回放开始前，入口网页是不是已经成了「有内容的完整文档」。
+///
+/// 宿主屏幕是在页面**第一帧**（`postFrameCallback`）就启动回放的，那时 WebView
+/// 往往连第一个字节都还没拿到：document 还是 `about:blank`，或者只收到半截
+/// HTML。旧回放没有这一步，于是宏的第一步（填账号）直接打在空白文档上——实测
+/// 日志里页面打开到回放启动只隔 2ms，紧接着第一步就报元素不存在。
+///
+/// 判据刻意宽松：只要 href 不是空白页且 `readyState === 'complete'` 就放行。
+/// 真正的「登录页长什么样」由各步骤自己等（见 [defaultMacroElementWaitMs]）。
+bool isEntryDocumentReady({
+  required String? href,
+  required String? readyState,
+}) {
+  final value = href?.trim() ?? '';
+  if (value.isEmpty) return false;
+  // about:blank / about:srcdoc 是 WebView 的初始空文档，不是学校的页面。
+  if (value.startsWith('about:')) return false;
+  return readyState == 'complete';
+}
+
+/// 等某个 DOM 元素出现（填充 / 点击）的默认时长。
+///
+/// 教务站首页常常在回放已经开始之后才把表单铺出来，慢网下要好几秒。10 秒是
+/// 实测能覆盖常见强智/正方登录页与菜单页的值，也是用户能忍受的上限。
+const int defaultMacroElementWaitMs = 10000;
+
+/// 等待元素的结果判定：只有明确回报 `found: true` 才算真的找到了。
+///
+/// 解析不出 JSON（脚本抛错、上下文已被导航销毁、平台返回空串）一律按「还没
+/// 找到」处理，继续轮到超时——绝不像旧实现那样把「读不懂」当成「做成了」。
+bool macroElementFound(String normalizedResult) {
+  if (normalizedResult.isEmpty) return false;
+  try {
+    final decoded = jsonDecode(normalizedResult);
+    if (decoded is Map) return decoded['found'] == true;
+  } catch (_) {
+    // 不是 JSON：交给调用方继续轮询 / 报失败。
+  }
+  return false;
+}
+
+/// 脚本明确回报「没找到」（`found: false`）。
+///
+/// 与 [macroElementFound] 的区别是「读不懂」怎么算：断言场景（[ensureMacroElementFound]）
+/// 里读不懂不等于没找到，不能凭空报错；轮询场景里读不懂不等于找到了，必须继续等。
+/// 两种口径各自显式写开，避免同一个 `if` 兼顾两件事。
+bool macroElementExplicitlyMissing(String normalizedResult) {
+  if (normalizedResult.isEmpty) return false;
+  try {
+    final decoded = jsonDecode(normalizedResult);
+    if (decoded is Map) return decoded['found'] == false;
+  } catch (_) {
+    // 不是 JSON：不是「明确没找到」。
+  }
+  return false;
+}
+
+/// 一个选择器之外还该试的等价选择器。
+///
+/// 旧回放里那段「找不到就按 name 再找一次」的兜底是坏的：它把选择器**整条**
+/// 当 name 用，`#userAccount` 会拼成 `input[name="#userAccount"]`，永远匹配不上。
+/// 真正的意图是「旧录制把 id 当选器存了，而页面只写了 name」，所以只在
+/// 选择器是纯 id 形态（`#foo`）时才派生 `input[name="foo"]`。
+List<String> macroSelectorCandidates(String selector) {
+  final trimmed = selector.trim();
+  if (trimmed.isEmpty) return const [];
+  final candidates = <String>[trimmed];
+  if (trimmed.startsWith('#') &&
+      trimmed.length > 1 &&
+      !trimmed.contains(' ') &&
+      !trimmed.contains('>') &&
+      !trimmed.contains('[') &&
+      !trimmed.substring(1).contains('"')) {
+    candidates.add('input[name="${trimmed.substring(1)}"]');
+  }
+  return candidates;
+}
+
 /// 去掉 fragment 再比对；导航到 `#xxx` 只是换锚点，不该被当成两个页面。
 String? _normalizeHref(String? href) {
   final value = href?.trim();

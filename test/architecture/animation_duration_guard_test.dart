@@ -100,7 +100,7 @@ void main() {
 /// 数字取 2026-10-20 整改完成后的实测值。
 const Map<String, int> _allowedBareDurations = <String, int>{
   // ── 自动化回放器：全部是步骤等待与超时（含 15s 步骤超时）──
-  'lib/widgets/warehouse_macro_replayer.dart': 12,
+  'lib/widgets/warehouse_macro_replayer.dart': 11,
 
   // ── 设置页自动保存防抖：连续拖动时合并写盘 ──
   'lib/screens/live_settings_subpages.dart': 4,

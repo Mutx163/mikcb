@@ -105,6 +105,16 @@ class WarehouseMacroReplayer {
   final WebViewController _controller;
   final ReplayCallbacks _callbacks;
   final AppLocalizations _l10n;
+
+  /// 步骤自己没声明等待时长时，等元素的默认预算。
+  ///
+  /// 只有测试会改它：真机上一个「等 10 秒」的用例要跑 10 秒，把整条失败路径
+  /// 变成跑不动的测试，等于没测。生产路径一律用 [defaultMacroElementWaitMs]。
+  final int defaultElementWaitMs;
+
+  /// 开始回放前等入口页成为完整文档的上限；同样只为测试可调。
+  final Duration entryReadyTimeout;
+
   bool _isCancelled = false;
   Timer? _timeoutTimer;
 
@@ -112,6 +122,8 @@ class WarehouseMacroReplayer {
     required this._controller,
     required this._callbacks,
     required this._l10n,
+    this.defaultElementWaitMs = defaultMacroElementWaitMs,
+    this.entryReadyTimeout = const Duration(seconds: 15),
   });
 
   /// 取消回放
@@ -127,6 +139,31 @@ class WarehouseMacroReplayer {
     final fullSteps = compactMacroFillSteps(macro.steps);
     if (fullSteps.isEmpty) {
       _callbacks.onComplete(false, 'macro_no_steps');
+      return;
+    }
+
+    // 先把进度条摆到「第 1 / N 步」，再去等页面。
+    //
+    // 宿主给回放覆盖层的初始进度是 totalSteps=0，等页面这段时间会显示成
+    // 「第 1 / 0 步」。同步一次真实步数，等待期间读数才是对的。
+    _callbacks.onProgress(
+      ReplayProgress(
+        currentStepIndex: 0,
+        totalSteps: fullSteps.length,
+        currentStep: fullSteps.first,
+        status: ReplayStepStatus.pending,
+      ),
+    );
+
+    // 等入口页真的成了一个完整文档。
+    //
+    // 宿主是在页面第一帧就调用这里的（见屏幕侧 _startPlayback），那一刻 WebView
+    // 里通常还是空白页：实测日志里「打开网页」到「回放开始」只隔 2ms，460ms 后
+    // 第一步填账号就报「找不到 #userAccount」。旧实现没有这道门，等于把所有宏都
+    // 建在「页面已经加载好」这个从未被保证的前提上。
+    await _waitForEntryDocumentReady(macro.importUrl);
+    if (_isCancelled) {
+      _callbacks.onComplete(false, 'macro_user_cancelled');
       return;
     }
 
@@ -328,22 +365,50 @@ class WarehouseMacroReplayer {
     return state?.$1;
   }
 
+  /// 等入口网页成为完整文档；超时或被取消都不报失败。
+  ///
+  /// 不在这里直接判失败，是因为「入口页慢」和「这个站就是永远不 complete」
+  /// 在用户眼里是两回事：后者强行报「回放失败」会让人以为宏坏了。放行之后，
+  /// 每一步的等元素轮询还有自己的 10 秒预算，慢站仍然能成功。
+  ///
+  /// 也绝不往外抛：宿主是 `await replayer.execute(...)` 且没有 try/catch，
+  /// 这里抛出去会变成一条没人处理的异步异常（界面停在转圈）。
+  Future<void> _waitForEntryDocumentReady(String importUrl) async {
+    if (importUrl.trim().isEmpty || _isCancelled) return;
+    try {
+      await _pollCondition(
+        check: () async {
+          final document = await _currentDocumentState();
+          return isEntryDocumentReady(
+            href: document?.$1,
+            readyState: document?.$2,
+          );
+        },
+        timeout: entryReadyTimeout,
+        stepLabel: _l10n.macroReplayWaitPageLoad,
+      );
+    } catch (_) {
+      // 15 秒还没 complete，或被取消：交给后续步骤 / 调用方的取消处理。
+    }
+  }
+
   Future<void> _executeFillField(MacroStep step) async {
     final selector = step.selector ?? '';
     final value = step.value ?? '';
     if (selector.isEmpty) throw Exception('macro_fill_selector_empty');
 
-    // 先等待一下确保元素存在
-    await Future.delayed(const Duration(milliseconds: 300));
-
     final escapedValue = jsonEncode(value);
-    final js =
-        '''
+    await _runElementStep(
+      selector: selector,
+      waitMs: step.waitMs,
+      spec: (candidatesJson) =>
+          '''
 (() => {
-  var el = document.querySelector(${jsonEncode(selector)});
-  if (!el) {
-    // 尝试用 name 属性查找
-    el = document.querySelector('input[name="${selector.split('"').join('\\"')}"]');
+  const sels = $candidatesJson;
+  var el = null;
+  for (var i = 0; i < sels.length; i++) {
+    el = document.querySelector(sels[i]);
+    if (el) break;
   }
   if (!el) return JSON.stringify({found: false, selector: ${jsonEncode(selector)}});
   // 已有正确值则跳过改写，避免覆盖浏览器/记住登录的自动填充后再逐字重输。
@@ -362,13 +427,7 @@ class WarehouseMacroReplayer {
   el.dispatchEvent(new Event('blur', { bubbles: true }));
   return JSON.stringify({found: true, tag: el.tagName, type: el.type || ''});
 })();
-''';
-
-    final result = await _controller.runJavaScriptReturningResult(js);
-    final normalized = _normalizeJsResult(result);
-    ensureMacroElementFound(
-      normalized,
-      encodeServiceMessage('macro_element_not_found', {'selector': selector}),
+''',
     );
     // 填充后等待页面响应
     await _waitForPageReady(timeout: 15000);
@@ -378,12 +437,18 @@ class WarehouseMacroReplayer {
     final selector = step.selector ?? '';
     if (selector.isEmpty) throw Exception('macro_click_selector_empty');
 
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final js =
-        '''
+    await _runElementStep(
+      selector: selector,
+      waitMs: step.waitMs,
+      spec: (candidatesJson) =>
+          '''
 (() => {
-  var el = document.querySelector(${jsonEncode(selector)});
+  const sels = $candidatesJson;
+  var el = null;
+  for (var i = 0; i < sels.length; i++) {
+    el = document.querySelector(sels[i]);
+    if (el) break;
+  }
   if (!el) return JSON.stringify({found: false, selector: ${jsonEncode(selector)}});
   if (typeof el.click === 'function') {
     el.click();
@@ -393,17 +458,50 @@ class WarehouseMacroReplayer {
   }
   return JSON.stringify({found: true, tag: el.tagName});
 })();
-''';
-
-    final result = await _controller.runJavaScriptReturningResult(js);
-    final normalized = _normalizeJsResult(result);
-    ensureMacroElementFound(
-      normalized,
-      encodeServiceMessage('macro_element_not_found', {'selector': selector}),
+''',
     );
 
     // 点击后等待页面加载（可能触发导航到新页）
     await _waitForPageReady(timeout: 15000);
+  }
+
+  /// 反复尝试直到脚本明确回报「找到了」，超时才报元素不存在。
+  ///
+  /// 旧实现是「固定等 300ms → 查一次 → 查不到就整条回放失败」：教务站首页把
+  /// 表单铺出来往往要几百毫秒到几秒，慢网下这一拍必然落空，用户看到的就是
+  /// 「一开场就弹失败」。现在按 [defaultMacroElementWaitMs] 的预算轮询，慢站也能过；
+  /// 只有整个预算用完还查不到，才算真的没有这个元素。
+  ///
+  /// [spec] 接收候选选择器的 JSON 数组文本（见 [macroSelectorCandidates]），
+  /// 返回要执行的脚本；脚本必须回 `{found: true|false}` 形态的 JSON。
+  Future<void> _runElementStep({
+    required String selector,
+    required int waitMs,
+    required String Function(String candidatesJson) spec,
+  }) async {
+    final candidatesJson = jsonEncode(macroSelectorCandidates(selector));
+    final js = spec(candidatesJson);
+    final budget = Duration(
+      milliseconds: waitMs > 0 ? waitMs : defaultElementWaitMs,
+    );
+    final deadline = DateTime.now().add(budget);
+
+    while (DateTime.now().isBefore(deadline)) {
+      if (_isCancelled) throw Exception('macro_user_cancelled');
+      try {
+        final normalized = _normalizeJsResult(
+          await _controller.runJavaScriptReturningResult(js),
+        );
+        if (macroElementFound(normalized)) return;
+      } catch (_) {
+        // 导航进行中 JS 上下文会被销毁，这一拍读不到属正常，继续轮询。
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    throw Exception(
+      encodeServiceMessage('macro_element_not_found', {'selector': selector}),
+    );
   }
 
   Future<void> _executeWaitForUrl(MacroStep step) async {
@@ -548,15 +646,14 @@ enum PlaybackUiState {
   error,
 }
 
+/// 脚本明确回报「没找到」时抛出 [errorMessage]；读不懂的返回值一律放过。
+///
+/// 口径与轮询路径分开：这里读不懂 ≠ 没找到（不能凭空报错），轮询里读不懂 ≠ 找到
+/// （必须继续等）。两份判据都在 `domain/warehouse_macro_replay_logic.dart` 里。
 @visibleForTesting
 void ensureMacroElementFound(String normalizedResult, String errorMessage) {
-  try {
-    final decoded = jsonDecode(normalizedResult);
-    if (decoded is Map && decoded['found'] == false) {
-      throw Exception(errorMessage);
-    }
-  } on FormatException {
-    return;
+  if (macroElementExplicitlyMissing(normalizedResult)) {
+    throw Exception(errorMessage);
   }
 }
 

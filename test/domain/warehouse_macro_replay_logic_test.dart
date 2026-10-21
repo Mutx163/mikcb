@@ -476,4 +476,163 @@ void main() {
       }
     });
   });
+
+  group('isEntryDocumentReady（回放别抢跑）', () {
+    test('空白文档不算就绪：about:blank 与空 href 都挡掉', () {
+      // WebView 刚创建、请求还没回来时的真实形态。
+      expect(
+        isEntryDocumentReady(href: 'about:blank', readyState: 'complete'),
+        isFalse,
+      );
+      expect(
+        isEntryDocumentReady(href: 'about:srcdoc', readyState: 'complete'),
+        isFalse,
+      );
+      expect(isEntryDocumentReady(href: null, readyState: 'complete'), isFalse);
+      expect(isEntryDocumentReady(href: '   ', readyState: 'complete'), isFalse);
+    });
+
+    test('真实页面但还在加载也不算就绪（旧实现这一步根本不存在）', () {
+      for (final state in ['loading', 'interactive', null, '']) {
+        expect(
+          isEntryDocumentReady(
+            href: 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/',
+            readyState: state,
+          ),
+          isFalse,
+          reason: 'readyState=$state 时不该放行',
+        );
+      }
+    });
+
+    test('页面到位且 complete 才放行，http 明文站也算', () {
+      expect(
+        isEntryDocumentReady(
+          href: 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/',
+          readyState: 'complete',
+        ),
+        isTrue,
+      );
+      expect(
+        isEntryDocumentReady(
+          href: 'https://jwgl.example.edu.cn/login',
+          readyState: 'complete',
+        ),
+        isTrue,
+      );
+    });
+
+    test('实测日志那一刻的组合必须判「没就绪」', () {
+      // 日志里页面打开 46.483s、回放 46.485s 就开始；那一刻 46.795s 宿主还探到
+      // hasPasswordField=false，说明读到的根本不是登录页。
+      expect(
+        isEntryDocumentReady(href: 'about:blank', readyState: 'loading'),
+        isFalse,
+      );
+    });
+  });
+
+  group('macroElementFound（只有明确找到才算找到）', () {
+    test('found:true 才算找到', () {
+      expect(macroElementFound('{"found":true,"tag":"INPUT"}'), isTrue);
+      expect(macroElementFound('{"found":true,"skipped":true}'), isTrue);
+    });
+
+    test('found:false 不算找到，继续轮到超时', () {
+      expect(macroElementFound('{"found":false,"selector":"#userAccount"}'), isFalse);
+    });
+
+    test('读不懂的返回值一律按「没找到」处理，绝不当成功', () {
+      for (final raw in ['', 'true', 'complete', '{}', '[1,2]', 'null',
+        r'{\"found\":false}']) {
+        expect(macroElementFound(raw), isFalse, reason: 'raw=$raw');
+      }
+    });
+
+    test('JSON 编码过的返回值先归一化再判，仍能认出 found:false', () {
+      const androidQuoted = r'"{\"found\":false,\"selector\":\"#user\"}"';
+      expect(macroElementFound(normalizeWebScriptResult(androidQuoted)), isFalse);
+    });
+  });
+
+  group('macroElementExplicitlyMissing（断言口径）', () {
+    test('只有 found:false 才算「明确没找到」', () {
+      expect(
+        macroElementExplicitlyMissing('{"found":false,"selector":"#user"}'),
+        isTrue,
+      );
+      expect(macroElementExplicitlyMissing('{"found":true}'), isFalse);
+      // 读不懂不等于没找到：断言路径不能凭这个凭空报错。
+      for (final raw in ['', 'true', 'complete', '{}', '[1]']) {
+        expect(macroElementExplicitlyMissing(raw), isFalse, reason: 'raw=$raw');
+      }
+    });
+
+    test('两个口径在读不懂时明确分开', () {
+      // 同一个输入，断言口径说不报错，轮询口径说要继续等。
+      const unreadable = 'complete';
+      expect(macroElementExplicitlyMissing(unreadable), isFalse);
+      expect(macroElementFound(unreadable), isFalse);
+      // 而 found:false 两边一致：断言报错、轮询继续等。
+      const missing = '{"found":false}';
+      expect(macroElementExplicitlyMissing(missing), isTrue);
+      expect(macroElementFound(missing), isFalse);
+    });
+  });
+
+  group('macroSelectorCandidates（坏兜底的替代）', () {
+    test('纯 id 选择器额外派生同名的 name 选择器', () {
+      expect(macroSelectorCandidates('#userAccount'), [
+        '#userAccount',
+        'input[name="userAccount"]',
+      ]);
+    });
+
+    test('旧兜底拼出来的那条永远匹配不上，新派生才正确', () {
+      const selector = '#userAccount';
+      // 旧实现：document.querySelector('input[name="#userAccount"]')
+      const legacyFallback = 'input[name="#userAccount"]';
+      expect(legacyFallback, 'input[name="#userAccount"]');
+      expect(
+        macroSelectorCandidates(selector),
+        isNot(contains(legacyFallback)),
+      );
+      // 真页面（重庆城市科技学院强智模板）只有 id，没有 name：
+      // <input type="text" id="userAccount" value="" />
+      expect(macroSelectorCandidates(selector).last, 'input[name="userAccount"]');
+    });
+
+    test('复合选择器不派生根不存在的 name 变体', () {
+      for (final selector in [
+        'input#userAccount',
+        '.login form > input',
+        'input[name="userAccount"]',
+        '#a b',
+        '#',
+        '',
+        '  ',
+      ]) {
+        expect(
+          macroSelectorCandidates(selector).length,
+          selector.trim().isEmpty ? 0 : 1,
+          reason: 'selector=$selector',
+        );
+      }
+    });
+
+    test('选择器里的引号不会拼出可注入的 name 变体', () {
+      expect(macroSelectorCandidates('#a"b'), ['#a"b']);
+    });
+
+    test('首个候选就是原选择器，行为与旧实现的前半段一致', () {
+      expect(macroSelectorCandidates('  #userAccount  ').first, '#userAccount');
+    });
+  });
+
+  group('defaultMacroElementWaitMs（等元素的预算）', () {
+    test('预算是 10 秒：旧实现只固定等 300ms', () {
+      expect(defaultMacroElementWaitMs, 10000);
+      expect(defaultMacroElementWaitMs, greaterThan(300));
+    });
+  });
 }
