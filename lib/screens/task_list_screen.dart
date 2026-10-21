@@ -250,7 +250,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 // `onToggle` 是 VoidCallback、返回的 Future 没人接 —— 勾选框
                 // 弹回去、用户零提示，异常落进 zone。
                 onToggle: () => _toggleTask(provider, task),
-                onDelete: () => _confirmDelete(task),
+                onConfirmDelete: () => _confirmDelete(task),
                 onViewCourse: provider.getCourseForTask(task) == null
                     ? null
                     : () => _viewCourse(task),
@@ -356,7 +356,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
     );
   }
 
-  Future<void> _confirmDelete(CourseTask task) async {
+  /// 确认并删除一条作业，返回**它是否真的被删掉了**。
+  ///
+  /// 返回值是给侧滑删除用的：`Dismissible.confirmDismiss` 拿 false 会把行弹回
+  /// 原位。用户取消、或落盘失败（`deleteTask` 失败会回滚内存并 rethrow），
+  /// 都必须让行回去——否则界面上行消失了、盘上还在，下次打开它又出现。
+  Future<bool> _confirmDelete(CourseTask task) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showHyperosConfirmDialog(
       context: context,
@@ -367,21 +372,22 @@ class _TaskListScreenState extends State<TaskListScreen> {
       destructive: true,
     );
     if (confirmed != true || !mounted) {
-      return;
+      return false;
     }
     try {
       await context.read<TimetableProvider>().deleteTask(task.id);
+      return true;
     } catch (_) {
       // 落盘失败已回滚内存（见 _timetableDeleteTask），这里必须报出来：原先 await
       // 没有 catch，抛出的错误变成未处理异步异常，列表也原地不动。
-      if (!mounted) {
-        return;
+      if (mounted) {
+        showAppToast(
+          context,
+          message: l10n.saveFailed,
+          kind: AppToastKind.error,
+        );
       }
-      showAppToast(
-        context,
-        message: l10n.saveFailed,
-        kind: AppToastKind.error,
-      );
+      return false;
     }
   }
 }
@@ -392,7 +398,7 @@ class _TaskRow extends StatelessWidget {
     required this.course,
     required this.onEdit,
     required this.onToggle,
-    required this.onDelete,
+    required this.onConfirmDelete,
     required this.onViewCourse,
   });
 
@@ -400,7 +406,10 @@ class _TaskRow extends StatelessWidget {
   final Course? course;
   final VoidCallback onEdit;
   final VoidCallback onToggle;
-  final VoidCallback onDelete;
+
+  /// 弹确认框并删除，返回**是否真的删掉**。侧滑与长按都用它。
+  final Future<bool> Function() onConfirmDelete;
+
   final VoidCallback? onViewCourse;
 
   @override
@@ -430,9 +439,11 @@ class _TaskRow extends StatelessWidget {
       color: task.isOverdue() ? colors.destructive : colors.mutedForeground,
     );
 
-    return HyperosPressableRow(
+    final row = HyperosPressableRow(
       onTap: onEdit,
-      onLongPress: onDelete,
+      // 长按仍然保留（老用户的习惯动作），但不再是唯一入口——侧滑才是
+      // 看得见的那个（见下方 Dismissible）。
+      onLongPress: onConfirmDelete,
       backgroundColor: HyperosColors.card(context),
       highlightColor: HyperosColors.rowHighlight(context),
       child: hyperosListRowShell(
@@ -483,6 +494,31 @@ class _TaskRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // 侧滑删除（2026-10-21）。
+    //
+    // 原来只有**长按**整行能删——长按在界面上没有任何提示，用户不知道能删，
+    // 这是「删不流畅」的直接原因。考试列表早就用侧滑了，这里是同一套姿势，
+    // 用户不用重新学。
+    //
+    // `confirmDismiss` 返回 `onConfirmDelete()` 的真实结果：用户取消、或落盘
+    // 失败（`deleteTask` 会回滚内存并 rethrow）都必须让行弹回原位。
+    return Dismissible(
+      key: ValueKey('task-row-${task.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: HyperosColors.error(context),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: HyperosColors.onError(context),
+        ),
+      ),
+      confirmDismiss: (_) => onConfirmDelete(),
+      onDismissed: (_) {},
+      child: row,
     );
   }
 }

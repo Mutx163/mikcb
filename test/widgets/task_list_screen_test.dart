@@ -126,4 +126,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('忘了设日期的作业'), findsOneWidget);
   });
+  testWidgets('作业行支持侧滑删除，取消后行弹回、确认后消失', (tester) async {
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      await provider.addTask(
+        CourseTask(
+          id: 'swipe-1',
+          title: '要删掉的作业',
+          dueDate: CourseTask.dateOnly(DateTime.now()),
+          createdAt: DateTime(2026, 10, 20),
+          updatedAt: DateTime(2026, 10, 20),
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const TaskListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('task-row-swipe-1'));
+    expect(row, findsOneWidget, reason: '侧滑的 key 必须挂在行上');
+    expect(
+      find.byType(Dismissible),
+      findsWidgets,
+      reason: '长按删除是看不见的操作，必须同时提供侧滑',
+    );
+
+    // 侧滑 → 弹确认框 → 取消
+    await tester.drag(row, const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    final cancel = find.text('取消');
+    if (cancel.evaluate().isNotEmpty) {
+      await tester.tap(cancel.first);
+      await tester.pumpAndSettle();
+    }
+    expect(
+      provider.tasks.where((t) => t.id == 'swipe-1'),
+      hasLength(1),
+      reason: '取消后作业必须还在',
+    );
+    expect(
+      find.text('要删掉的作业'),
+      findsOneWidget,
+      reason: '取消后行必须弹回，不能留下一条已经消失的假象',
+    );
+  });
 }
