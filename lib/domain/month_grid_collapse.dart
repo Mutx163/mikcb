@@ -227,13 +227,17 @@ MonthGridLayout monthGridLayout({
   required double maxRowHeight,
   required int keptRow,
   double handleHeight = 0,
+  double topPadding = 0,
 }) {
   final progress = t.clamp(0.0, 1.0);
   final visibleRows = monthGridVisibleRows(progress);
 
   final rowHeight = monthGridRowHeight(
     availableWidth: availableWidth,
-    availableForGrid: availableHeight - headerHeight,
+    // 行高只能用「扣掉上内边距、把手之后」的高度：这三样都占同一块可用高度，
+    // 少扣一个，算出的行高就偏大，6 行必然放不下（溢出 8px 就是这么来的）。
+    availableForGrid:
+        availableHeight - topPadding - handleHeight - headerHeight,
     weekNumberColumnVisible: weekNumberColumnVisible,
     horizontalPadding: horizontalPadding,
     weekLabelWidth: weekLabelWidth,
@@ -241,7 +245,11 @@ MonthGridLayout monthGridLayout({
     maxRowHeight: maxRowHeight,
   );
 
-  final gridHeight = headerHeight + visibleRows * rowHeight;
+  // gridHeight **包含**页面那层上内边距：调用方会把网格包在一个
+  // `Padding(top: 同一值)` 里，那 8px 是真实占用的高度。不包含的话
+  // PageView 少给 8px，MonthGrid 溢出（本仓实际踩过：overflow 8px）。
+  // 注意行高预算里已经扣过它，两处不能重复扣（那会少 8px 反向留白）。
+  final gridHeight = topPadding + headerHeight + visibleRows * rowHeight;
   final scrollOffset = monthGridScrollOffset(
     keptRow: keptRow,
     rowHeight: rowHeight,
@@ -252,10 +260,13 @@ MonthGridLayout monthGridLayout({
   return MonthGridLayout(
     rowHeight: rowHeight,
     gridHeight: gridHeight,
-    // 面板吃掉剩下的空间，但要先扣掉**表格把手**那一条：把手是表格的部件，
-    // 夹在网格与面板中间，不扣就会把面板顶出屏幕 24px（`Expanded` 只能吃掉
-    // 剩下的，多出来的部分会被裁掉或溢出）。
-    panelHeight: math.max(0, availableHeight - gridHeight - handleHeight),
+    // 面板吃掉剩下的空间，先扣掉**表格把手**那一条与页面**上内边距**：
+    // 两者都长在网格外面，却占同一块可用高度。不扣就会把面板顶出屏幕
+    // （`Expanded` 只吃剩下的空间）。
+    panelHeight: math.max(
+      0,
+      availableHeight - topPadding - gridHeight - handleHeight,
+    ),
     scrollOffset: scrollOffset,
     keptRow: keptRow,
   );

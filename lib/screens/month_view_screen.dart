@@ -207,33 +207,23 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       // 只接翻页那条就是 2026-10-21 用户实测到的 bug：左右滑玻璃正常、
       // 上下收放时玻璃内部背景纹丝不动。
       pagingRepaint: Listenable.merge([_pager, _gridExpand]),
-      body: PageView.builder(
-        controller: _pager,
-        itemCount: _pageCount,
-        // 翻月只更新存储值；重建会带走「选中日」语义
-        // （翻到别的月再翻回来，选中日该还在）。
-        onPageChanged: (page) {
-          final (year, month) = _monthForPage(page);
-          if (year == _focusedYear && month == _focusedMonth) {
-            return;
-          }
-          setState(() {
-            _focusedYear = year;
-            _focusedMonth = month;
-          });
-        },
-        itemBuilder: (context, page) {
-          final (year, month) = _monthForPage(page);
-          return _buildMonthPage(
-            context: context,
-            provider: provider,
-            settings: settings,
-            year: year,
-            month: month,
-            l10n: l10n,
-            bodyLuminance: luminance?.body,
-          );
-        },
+      // ⚠️ 这里**不能**再包一层 PageView。
+      //
+      // 用户 2026-10-21 实测：「我在日期表格的拉杆下面，还能左右滑动，刚刚都说了
+      // 这里只能上下滑动」。根因就是 body 原本是一个包住整页的横向 PageView ——
+      // 它把拉杆与下方条目面板一起罩在横向手势里，于是「横向翻月」在整个下半屏
+      // 都生效。内层网格那层 PageView 只是第二层，删掉外层才真的只让表格能翻月。
+      //
+      // 现在 body 只构建**当前聚焦的那一页**；横向翻月由网格自己那层 PageView
+      // 负责（它只包住网格那一段高度，拉杆与面板都在它外面）。
+      body: _buildMonthPage(
+        context: context,
+        provider: provider,
+        settings: settings,
+        year: _focusedYear,
+        month: _focusedMonth,
+        l10n: l10n,
+        bodyLuminance: luminance?.body,
       ),
     );
   }
@@ -309,6 +299,8 @@ class _MonthViewScreenState extends State<MonthViewScreen>
             // 把手夹在网格与面板之间，必须从可用高度里扣掉 —— 否则面板会被
             // 挤出屏幕（Expanded 只吃剩下的空间）。
             handleHeight: MonthGridHandle.extent,
+            // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出 8px。
+            topPadding: kMonthPageVerticalPadding,
           );
           // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
           _gridRowHeight = layout.rowHeight;
@@ -352,7 +344,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                         year: y,
                         month: m,
                         bodyLuminance: bodyLuminance,
-                        layout: layout,
+                        constraints: constraints,
                       );
                     },
                   ),
@@ -390,6 +382,11 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   }
 
   /// 上半那一页的网格（不含面板）。
+  ///
+  /// ⚠️ **版面必须按这一页自己的保留行算**，不能用外层那份 `layout`：外层那份是
+  /// 按「当前聚焦月」的保留行算出来的，横向翻到相邻月时（PageView 会同时构建
+  /// 左右页）保留行不同 —— 复用会让相邻页的行数与上移量都错位，滑动过程中看见
+  /// 「另一页的格子高度不对」。
   Widget _buildGridPage({
     required BuildContext context,
     required TimetableProvider provider,
@@ -397,7 +394,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     required int year,
     required int month,
     required double? bodyLuminance,
-    required MonthGridLayout layout,
+    required BoxConstraints constraints,
   }) {
     final grid = _cache.grid(
       year: year,
@@ -418,6 +415,28 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     final selectedInThisMonth =
         selected != null && selected.year == year && selected.month == month;
     final dates = [for (final day in grid.days) day.date];
+    final keptRow = monthGridRowToKeep(
+      dates: dates,
+      year: year,
+      month: month,
+      selectedDate: selectedInThisMonth ? selected : null,
+      today: grid.today,
+    );
+    // 本页自己的版面（与外层同一套判据，只是保留行取本页的）。
+    final layout = monthGridLayout(
+      t: _gridExpand.value,
+      availableHeight: constraints.maxHeight,
+      headerHeight: MonthGrid.headerHeight,
+      horizontalPadding: MonthGrid.horizontalPadding,
+      availableWidth: constraints.maxWidth,
+      weekNumberColumnVisible: settings.semesterStartDate != null,
+      weekLabelWidth: MonthGrid.weekLabelWidth,
+      minRowHeight: MonthGrid.minRowHeight,
+      maxRowHeight: MonthGrid.maxRowHeight,
+      keptRow: keptRow,
+      handleHeight: MonthGridHandle.extent,
+      topPadding: kMonthPageVerticalPadding,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -433,13 +452,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         rowHeight: layout.rowHeight,
         inkColor: ink,
         collapseProgress: _gridExpand.value,
-        keptRowIndex: monthGridRowToKeep(
-          dates: dates,
-          year: year,
-          month: month,
-          selectedDate: selectedInThisMonth ? selected : null,
-          today: grid.today,
-        ),
+        keptRowIndex: keptRow,
         onDayTap: (date) {
           setState(() {
             // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
