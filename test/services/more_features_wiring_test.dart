@@ -226,31 +226,66 @@ void main() {
       );
     });
 
-    test('搜索在原页面展开，不推新页面', () {
-      // 2026-10-21 用户连问两次：「为什么点击搜索框要跳转新的页面去，原本的
-      // 页面不行吗」。官方 MiuixSearchBar 就是原地展开（折叠胶囊 → 展开成
-      // 输入框 + 右侧「取消」），跳页是我图省事。这里钉住「不许再推搜索页」。
+    test('搜索走全屏浮层，不推新路由', () {
+      // 2026-10-21 用户连问三次，最后一版口径才说清：
+      //   「这玩意不应该是搜索框往上到页面上面，然后搜索框以外的内容清空，
+      //     然后下面显示搜索结果吗，miuix 没有这么写吗」
+      // 官方组件（MiuixSearchBar）只管胶囊+取消+content 槽，不管「搜索框上移、
+      // 整页清空」；官方**示例 App 的移动端**给的答案就是 OverlayEntry 全屏
+      // 浮层。三种做法的取舍见 more_features_search_overlay.dart 的类注释。
+      //
+      // 钉住两条：① 不许再推独立搜索页（那是死锁与丢位置感的源头）；
+      // ② 实现必须走 OverlayEntry，而不是又退回页内展开。
       final source = pageFile.readAsStringSync();
+      final overlayFile = File('lib/screens/more_features_search_overlay.dart');
+      expect(overlayFile.existsSync(), isTrue, reason: overlayFile.path);
+      final overlaySource = overlayFile.readAsStringSync();
+
       expect(
         source.contains('_MoreFeatureSearchPage'),
         isFalse,
-        reason: '又出现独立搜索页了：官方形态是原地展开，跳页会让用户丢掉'
-            '「还在这页」的空间感',
-      );
-      // 展开/收起靠页内状态驱动，不是路由。
-      expect(
-        RegExp(r'bool _searchExpanded').hasMatch(source),
-        isTrue,
-        reason: '没有页内展开状态：搜索状态若交给路由管，就退回跳页方案了',
+        reason: '又出现独立搜索页了：跳页会让用户丢掉「还在这页」的空间感，'
+            '且曾因两级返回口径不一致把返回键锁死（ac0f7ffd）',
       );
       expect(
-        source.contains('outsideEndAction'),
+        source.contains('OverlayEntry('),
         isTrue,
-        reason: '缺 outsideEndAction：官方展开时右侧要滑出「取消」',
+        reason: '搜索层没走 OverlayEntry：官方示例的移动端形态就是根覆盖层上的'
+            '全屏浮层，它是「整页清空」这个诉求唯一的实现方式',
+      );
+      // 返回键的拦截**必须挂在宿主页**，不能挂在浮层里。
+      //
+      // 这条守卫是 2026-10-21 实测出来的：`PopScope` 靠 `ModalRoute.of(context)`
+      // 找到所属路由去登记拦截器；浮层是 Overlay entry，Overlay 在所有路由之上，
+      // 它子树里没有 `ModalRoute` 祖先 —— 登记落空，真机表现是「按返回，底下
+      // 页面退了、浮层还留在屏幕上」。所以浮层里**不许**出现 PopScope，
+      // 宿主页必须有 `canPop: _searchOverlay == null`。
+      expect(
+        overlaySource.contains('PopScope('),
+        isFalse,
+        reason: '浮层是 Overlay entry，里面没有 ModalRoute 祖先，PopScope 的登记'
+            '会落空——返回键会直接退掉宿主页，浮层留在屏幕上。拦截要挂在宿主页',
+      );
+      expect(
+        RegExp(r'canPop: _searchOverlay == null').hasMatch(source),
+        isTrue,
+        reason: '宿主页没有 PopScope(canPop: _searchOverlay == null)：搜索开着时'
+            '按返回会直接退页，浮层留在屏幕上',
+      );
+      expect(
+        source.contains('_dismissSearchOverlay'),
+        isTrue,
+        reason: '宿主页没把「这次返回」转成「收浮层」',
+      );
+      expect(
+        overlaySource.contains('outsideEndAction'),
+        isFalse,
+        reason: '浮层自己画输入框+取消，不走 MiuixSearchBar 的 outsideEndAction 槽；'
+            '出现它说明又把「页内展开」那一版搬回来了',
       );
     });
 
-    test('折叠态搜索框不持有焦点（官方移动端形态）', () {
+    test('折叠态搜索胶囊不持有焦点（官方移动端形态）', () {
       // 官方 SearchBar.kt 移植说明：折叠态不该抢焦点/弹键盘，点开才进搜索态。
       // 样板间（miuix_showcase_screen.dart）用 IgnorePointer + 透明手势层实现。
       final source = pageFile.readAsStringSync();
@@ -266,25 +301,27 @@ void main() {
       );
     });
 
-    test('展开态用官方 MiuixSearchBar 容器（它有正确的两级返回）', () {
-      // 展开时 PopScope(canPop: !expanded) 会先吃掉一次返回、调
-      // onExpandedChange(false) 收起搜索，再按才退页——这是官方设计，不是 bug。
-      // 上一版把它用在「恒展开」的独立页里才变成死锁（ac0f7ffd 修掉）。
-      final source = pageFile.readAsStringSync();
+    test('浮层里的输入框也是官方 MiuixInputField（不回归自写输入框）', () {
+      // 浮层自己拼「输入框 + 取消」这一行（官方示例同构），但**输入框本身**
+      // 仍必须是官方 MiuixInputField：它有胶囊底、清除按钮、占位标签只在
+      // 「空且折叠」时显示这些细节。自写 TextField 会把这些都丢掉。
+      final overlaySource = File(
+        'lib/screens/more_features_search_overlay.dart',
+      ).readAsStringSync();
       expect(
-        source.contains('MiuixSearchBar('),
+        overlaySource.contains('MiuixInputField('),
         isTrue,
-        reason: '本页应当用官方 MiuixSearchBar 容器承载展开/收起',
+        reason: '浮层应当用官方 MiuixInputField 输入框',
       );
       expect(
-        source.contains('MiuixInputField('),
-        isTrue,
-        reason: '本页应当用官方 MiuixInputField 输入框',
-      );
-      expect(
-        source.contains('HyperosSearchBar('),
+        overlaySource.contains('HyperosSearchBar('),
         isFalse,
         reason: 'HyperosSearchBar 是本仓自写的简化输入框，不是 Miuix 官方组件',
+      );
+      expect(
+        overlaySource.contains('TextField('),
+        isFalse,
+        reason: '浮层里裸用 TextField 会丢掉 Miuix 胶囊底与清除按钮',
       );
     });
   });

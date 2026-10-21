@@ -6,6 +6,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/home_menu_catalog.dart';
+import 'more_features_search_overlay.dart';
 
 /// 「全部功能」页：全应用整页入口的**完整索引**，带搜索。
 ///
@@ -65,62 +66,137 @@ class MoreFeaturesScreen extends StatefulWidget {
 }
 
 class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
-  /// 搜索是否展开。官方 `MiuixSearchBar` 的形态就是**原地展开**：折叠时只是
-  /// 一个胶囊，点开后在原位置变成输入框 + 右侧滑出「取消」+ 结果区，全程
-  /// 不换页（见 `SearchBar.md` 移植说明的 `expanded` 语义）。
+  /// 折叠态搜索胶囊的 key：打开浮层时用它的屏幕矩形做「从原位滑到顶部」的起点。
   ///
-  /// 早先这里推了个独立搜索页，用户当场问「为什么点击搜索框要跳转新的页面去，
-  /// 原本的页面不行吗」——那条路是我图省事：跳页少写一套展开/收起状态，代价是
-  /// 用户丢掉「还在这页」的空间感，返回还曾因此卡死（见提交 ac0f7ffd）。
-  bool _searchExpanded = false;
-  String _query = '';
+  /// 没有这个矩形也能开（浮层会退回「状态栏下方直接开始」），但那样搜索框是
+  /// **凭空出现在顶部**的，用户看不到它从手指点的地方升上去——官方示例里这段
+  /// 连续位移是这套交互最好认的部分。
+  final GlobalKey _searchBarKey = GlobalKey();
 
-  void _expandSearch() {
-    if (!_searchExpanded) {
-      setState(() => _searchExpanded = true);
+  /// 当前挂着的搜索浮层。同一时刻只允许一层（连点胶囊不该叠出两层）。
+  OverlayEntry? _searchOverlay;
+
+  /// 请求浮层收起的句柄（浮层挂载时自己登记进来）。
+  final MoreFeaturesSearchController _searchController =
+      MoreFeaturesSearchController();
+
+  @override
+  void dispose() {
+    _removeSearchOverlay();
+    super.dispose();
+  }
+
+  /// 打开全屏搜索层（官方示例的移动端形态）。
+  ///
+  /// 这一版放弃了「页内展开」：用户口径是「搜索框往上到页面上面，然后搜索框
+  /// 以外的内容清空，下面显示搜索结果」。页内展开做不到「别的内容清空」——
+  /// 原列表还占着下面。层里铺一张不透明底色盖住整页，视觉上就是「内容清空」，
+  /// 而底下那页其实没被销毁，退场时原样露回来，用户的位置感不丢。
+  void _openSearchOverlay() {
+    if (_searchOverlay != null) {
+      return;
+    }
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) {
+      return;
+    }
+    final entry = OverlayEntry(
+      builder: (_) => MoreFeaturesSearchOverlay(
+        anchorRect: _searchBarRect(),
+        groups: _buildGroups(),
+        controller: _searchController,
+        onDismissed: _removeSearchOverlay,
+        onOpenEntry: _openSearchResult,
+      ),
+    );
+    _searchOverlay = entry;
+    overlay.insert(entry);
+    // 让折叠态胶囊的位置判断走「已展开」分支之外的重建（胶囊外观不变，
+    // 只是清掉它自己的按压高亮）。
+    setState(() {});
+  }
+
+  /// 请求收起浮层（返回键 / 左上角返回）：让浮层跑完退场动画再摘，
+  /// 用户看得到搜索框滑回原位。真正的摘除走 `onDismissed` → [_removeSearchOverlay]。
+  void _dismissSearchOverlay() {
+    _searchController.dismiss();
+  }
+
+  /// 摘掉浮层。等动画归零后由浮层自己回调到这里，或由本页 dispose 兜底。
+  void _removeSearchOverlay() {
+    final entry = _searchOverlay;
+    if (entry == null) {
+      return;
+    }
+    _searchOverlay = null;
+    entry.remove();
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  /// 收起：清空搜索词，回到全量列表。
-  void _collapseSearch() {
-    if (!_searchExpanded) {
-      return;
+  /// 点了搜索层里的某一条：**立刻**摘浮层，再用本页的 context 跳页。
+  ///
+  /// 顺序不能反——先跳页的话，新页面会被还活着的搜索层压在下面，用户看到的是
+  /// 「点了没反应」。也不能等退场动画：那 300ms 里新页面同样被压着。
+  void _openSearchResult(MoreFeatureItem item) {
+    _removeSearchOverlay();
+    item.entry.open(context);
+  }
+
+  /// 折叠态胶囊在屏幕坐标系里的矩形；还没挂载/没布局时返回 null。
+  Rect? _searchBarRect() {
+    final box = _searchBarKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return null;
     }
-    setState(() {
-      _searchExpanded = false;
-      _query = '';
-    });
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  /// 全量分组。抽成方法是因为浮层和页面各要一份（浮层拿的是同一份数据，
+  /// 在它内部再筛），两次构建必须是同一口径。
+  List<MoreFeatureGroup> _buildGroups() {
+    final l10n = AppLocalizations.of(context)!;
+    // watch：副文本要显示当前课表名 / 时间模板，这些随 provider 通知变化
+    // （切换课表后回来必须是最新值）。
+    final provider = context.watch<TimetableProvider>();
+    return buildMoreFeatureGroups(
+      l10n,
+      activeProfileName: provider.activeProfile?.name.trim(),
+      activeTimeSchemeName: provider.activeTimeScheme?.name,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // watch：副文本要显示当前课表名 / 时间模板 / 情侣绑定状态，这些随
-    // provider 通知变化（切换课表后回到本页必须是最新值）。
-    final provider = context.watch<TimetableProvider>();
-    final groups = buildMoreFeatureGroups(
-      l10n,
-      activeProfileName: provider.activeProfile?.name.trim(),
-      activeTimeSchemeName: provider.activeTimeScheme?.name,
-    );
-    // 未展开时永远显示全量（收起时也会清掉 _query，这里再兜一层）。
-    final visible = _searchExpanded
-        ? filterMoreFeatureGroups(groups, _query, l10n)
-        : groups;
-    return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
-      title: Text(l10n.homeMenuMoreTitle),
-      child: HyperosListView(
-        children: [
-          _buildSearchBar(l10n),
-          if (visible.isEmpty)
-            HyperosEmptyState(
-              icon: Icons.search_off_rounded,
-              title: l10n.homeMenuMoreSearchEmptyTitle,
-              subtitle: l10n.homeMenuMoreSearchEmptyHint,
-            )
-          else
-            for (final group in visible) ...[
+    final groups = _buildGroups();
+    // 返回键拦截**必须挂在这里**（宿主页在一条路由里），不能挂在浮层里：
+    // 浮层是 Overlay entry，它子树里没有 `ModalRoute` 祖先，`PopScope` 的登记
+    // 会落空 —— 真机表现是「按返回，底下页面退了、浮层还留在屏幕上」。
+    // 详见 `more_features_search_overlay.dart` 的 build 注释。
+    return PopScope(
+      // 浮层开着时不许退页：吃掉这次返回，转成「收浮层」。
+      canPop: _searchOverlay == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _dismissSearchOverlay();
+        }
+      },
+      child: HyperosSubpage(
+        onBack: () {
+          // 左上角返回键与系统返回同一语义：搜索开着先收搜索。
+          if (_searchOverlay != null) {
+            _dismissSearchOverlay();
+          } else {
+            Navigator.pop(context);
+          }
+        },
+        title: Text(l10n.homeMenuMoreTitle),
+        child: HyperosListView(
+          children: [
+            _buildSearchBar(l10n),
+            for (final group in groups) ...[
               const HyperosSectionGap(),
               HyperosSettingsBlock(
                 title: group.title,
@@ -131,67 +207,46 @@ class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
                 ),
               ),
             ],
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// 官方 `MiuixSearchBar`：折叠 = 胶囊；展开 = 输入框 + 右侧「取消」。
+  /// 折叠态搜索胶囊：**只是入口**，不接输入。
   ///
-  /// 折叠态为什么包 `IgnorePointer` + 透明手势层：官方移动端就这么用
-  /// （`miuix_showcase_screen.dart` 的 `_buildHomeSearchBar`）——折叠态搜索框
-  /// **不该持有焦点、不该弹键盘**，点它应当进搜索态。胶囊视觉不变，只是不接
-  /// 输入。
+  /// 为什么包 `IgnorePointer` + 透明手势层（官方示例移动端同一写法）：折叠态
+  /// 的输入框若真持有焦点，点它就会先弹键盘、再触发焦点回调，两件事抢同一帧，
+  /// 出现「展开关闭后再点没反应」。屏蔽指针后点击只走一层
+  /// [GestureDetector]，不依赖焦点系统的异步时序。
   Widget _buildSearchBar(AppLocalizations l10n) {
     final bar = MiuixSearchBar(
-      expanded: _searchExpanded,
-      onExpandedChange: (expanded) {
-        if (!expanded) {
-          _collapseSearch();
-        }
-      },
-      // 展开时右侧滑入的「取消」（官方 `outsideEndAction` 槽）。
-      outsideEndAction: _searchExpanded
-          ? GestureDetector(
-              onTap: _collapseSearch,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 16),
-                child: Text(
-                  l10n.cancelAction,
-                  style: HyperosTypography.listDetail(
-                    context,
-                  ).copyWith(color: context.theme.colors.primary),
-                ),
-              ),
-            )
-          : null,
-      // 结果直接长在页面列表里（下方 groups），不再额外挂 content——
-      // 让结果与全量列表共用同一套分区样式，展开/收起时不跳版式。
+      // 恒为折叠态（`expanded` 用默认值 false）：展开由整页浮层负责，
+      // 这里不展开。
+      // 胶囊永远不自己展开（屏蔽指针后这个回调也不会被触发，留空即可）。
+      onExpandedChange: (_) {},
       content: const SizedBox.shrink(),
-      // 官方 insideMargin 左右各 12 是给展开时的「取消」让位的。这里两个
-      // 状态下都不需要它：折叠态没有尾部按钮；展开态的「取消」自己带 end: 16
-      // 内边距。留着它叠上列表左右 16，胶囊会比内容卡窄一圈（用户点过名）。
+      // 官方 insideMargin 左右 12 是给展开态「取消」让位的；本页自己给左右
+      // 16 与内容卡对齐，留着它会比卡片窄一圈（用户点名过）。
       insideMargin: EdgeInsets.zero,
       inputField: MiuixInputField(
-        query: _query,
-        onQueryChange: (value) => setState(() => _query = value),
+        query: '',
+        onQueryChange: (_) {},
         onSearch: (_) {},
-        expanded: _searchExpanded,
-        onExpandedChange: (expanded) {
-          if (expanded) {
-            _expandSearch();
-          }
-        },
+        // 恒为折叠态：这个参数在上游是必填，没有默认值可省。
+        expanded: false,
+        onExpandedChange: (_) {},
         label: l10n.homeMenuMoreSearchHint,
       ),
     );
-    if (_searchExpanded) {
-      return bar;
-    }
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _expandSearch,
-      child: IgnorePointer(child: bar),
+    return Padding(
+      key: _searchBarKey,
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openSearchOverlay,
+        child: IgnorePointer(child: bar),
+      ),
     );
   }
 }
