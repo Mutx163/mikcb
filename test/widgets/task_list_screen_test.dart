@@ -77,4 +77,53 @@ void main() {
     );
     expect(find.byType(SingleChildScrollView), findsWidgets);
   });
+  testWidgets('切到「今日」时，无截止日期的作业有一条可点提示', (tester) async {
+    final provider = await createInitializedTestProvider(tester);
+    await runRealAsync(tester, () async {
+      // 用户从日视图加过一条、后来把截止日期关掉了
+      await provider.addTask(
+        CourseTask(
+          id: 'undated-1',
+          title: '忘了设日期的作业',
+          createdAt: DateTime(2026, 10, 20),
+          updatedAt: DateTime(2026, 10, 20),
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const TaskListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 「全部」档能看到它，此时没有提示（因为没被筛掉）
+    expect(find.text('忘了设日期的作业'), findsOneWidget);
+    expect(find.textContaining('没设截止日期'), findsNothing);
+
+    // 切到「今日」：作业被筛掉，但出现一条能点回「全部」的提示
+    await tester.tap(find.text('今日').first);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('忘了设日期的作业'),
+      findsNothing,
+      reason: '无日期不归属任何一天，今日不该列出它',
+    );
+    final hint = find.textContaining('没设截止日期');
+    expect(
+      hint,
+      findsOneWidget,
+      reason: '必须告诉用户它去哪了，否则看起来像凭空消失',
+    );
+
+    // 点提示 → 切回「全部」→ 又能看到
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+    expect(find.text('忘了设日期的作业'), findsOneWidget);
+  });
 }

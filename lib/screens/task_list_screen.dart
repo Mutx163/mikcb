@@ -75,6 +75,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
             )
           else
             ..._buildTaskSections(context, provider, visibleTasks),
+          // 无截止日期的作业不归属任何一天，在「今日」「本周」里必然被筛掉。
+          // 不提示的话，用户在编辑页把日期一关，那条作业就像凭空消失了
+          // （只剩「全部」能看，而那不是默认档）。
+          if (_undatedHiddenCount(provider) > 0) _buildUndatedHint(l10n),
         ],
       ),
     );
@@ -106,6 +110,61 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }).toList();
     tasks.sort(CourseTask.compareByDueDate);
     return tasks;
+  }
+
+  /// 当前筛选下**被挡在外面**的无截止日期作业条数。
+  ///
+  /// 无 `dueDate` 的作业不归属任何一天（`DayTaskBandLogic` 的取数口径，理由
+  /// 是把它归到「今天」会让同一条在一年里重复出现 300 多次）。这本身是对的，
+  /// 但那意味着用户在编辑页把截止日期一关，这条作业就从日视图待办带、
+  /// 「今日」「本周」三处**同时消失**，只剩「全部」一个档能看到——而「全部」
+  /// 不是默认档，于是表现为「我找不到这条作业了」（2026-10-21 用户实测报告）。
+  ///
+  /// 这里把它数出来，在列表底部给一条可点的提示，让「消失」变成「挪到别处了」。
+  int _undatedHiddenCount(TimetableProvider provider) {
+    if (_dateFilter == _TaskDateFilter.all) {
+      return 0;
+    }
+    final selectedCourseIds = _courseGroupForFilter(
+      provider,
+    )?.courses.map((course) => course.id).toSet();
+    return provider.tasks.where((task) {
+      if (task.dueDate != null || task.isCompleted) {
+        return false;
+      }
+      final courseFilter = _courseFilter;
+      if (courseFilter == _noneCourseValue && task.courseId != null) {
+        return false;
+      }
+      if (selectedCourseIds != null &&
+          !selectedCourseIds.contains(task.courseId)) {
+        return false;
+      }
+      return true;
+    }).length;
+  }
+
+  /// 「还有 N 条没设截止日期」的可点提示。
+  ///
+  /// 点它就切到「全部」——那是唯一能看到这些作业的档。这不是把一个作业塞进
+  /// 某一天（那会让它在一年里重复出现 300 多次），只是把「它去哪了」讲清楚。
+  Widget _buildUndatedHint(AppLocalizations l10n) {
+    final count = _undatedHiddenCount(context.read<TimetableProvider>());
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: HyperosListGroup(
+        children: [
+          HyperosNavTile(
+            icon: Icons.event_busy_outlined,
+            title: l10n.taskUndatedHint(count),
+            subtitle: l10n.taskUndatedHintSubtitle,
+            onTap: () {
+              setState(() => _dateFilter = _TaskDateFilter.all);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   String _emptyTitle(AppLocalizations l10n, bool noTasksAtAll) {

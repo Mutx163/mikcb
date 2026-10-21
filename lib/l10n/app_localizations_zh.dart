@@ -10331,7 +10331,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get taskNoDueDate => '无截止日期';
 
   @override
-  String get taskDueDateHint => '不设截止日期，日视图就不显示';
+  String taskUndatedHint(int count) {
+    return '还有 $count 条作业没设截止日期';
+  }
+
+  @override
+  String get taskUndatedHintSubtitle => '它们在「今日」「本周」里看不到，点这里切到「全部」';
+
+  @override
+  String get taskDueDateHint => '日视图不显示，只在「全部」里看得到';
 
   @override
   String get taskCourseLabel => '来源课程';
@@ -21756,7 +21764,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get taskNoDueDate => '無截止日期';
 
   @override
-  String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
+  String taskUndatedHint(int count) {
+    return '還有 $count 條作業沒設截止日期';
+  }
+
+  @override
+  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到，點這裡切到「全部」';
+
+  @override
+  String get taskDueDateHint => '日視圖不顯示，只在「全部」裡看得到';
 
   @override
   String get taskCourseLabel => '來源課程';
@@ -33182,7 +33198,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get taskNoDueDate => '無截止日期';
 
   @override
-  String get taskDueDateHint => '不設截止日期，日視圖就不顯示';
+  String taskUndatedHint(int count) {
+    return '還有 $count 條作業沒設截止日期';
+  }
+
+  @override
+  String get taskUndatedHintSubtitle => '它們在「今日」「本週」裡看不到，點這裡切到「全部」';
+
+  @override
+  String get taskDueDateHint => '日視圖不顯示，只在「全部」裡看得到';
 
   @override
   String get taskCourseLabel => '來源課程';

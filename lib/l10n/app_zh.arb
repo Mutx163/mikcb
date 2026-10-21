@@ -6359,7 +6359,15 @@
   "taskNoteHint": "补充说明 可选",
   "taskDueDateLabel": "截止日期",
   "taskNoDueDate": "无截止日期",
-  "taskDueDateHint": "不设截止日期，日视图就不显示",
+  "taskUndatedHint": "还有 {count} 条作业没设截止日期",
+  "taskUndatedHintSubtitle": "它们在「今日」「本周」里看不到，点这里切到「全部」",
+  "@taskUndatedHint": {
+    "description": "清单页在「今日」/「本周」筛选下，提示有多少条作业因为没有截止日期被筛掉了",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "taskDueDateHint": "日视图不显示，只在「全部」里看得到",
   "taskCourseLabel": "来源课程",
   "taskCourseFilter": "课程筛选",
   "taskAllCourses": "全部课程",

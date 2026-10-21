@@ -10648,7 +10648,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get taskNoDueDate => '期限なし';
 
   @override
-  String get taskDueDateHint => '期限がないと日表示に出ません';
+  String taskUndatedHint(int count) {
+    return '期限なしの課題が$count件あります';
+  }
+
+  @override
+  String get taskUndatedHintSubtitle => '「今日」「今週」には表示されません。タップで「すべて」へ';
+
+  @override
+  String get taskDueDateHint => '日表示に出ません。「すべて」のみ';
 
   @override
   String get taskCourseLabel => 'コース';

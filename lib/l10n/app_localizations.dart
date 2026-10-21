@@ -18805,10 +18805,22 @@ abstract class AppLocalizations {
   /// **'无截止日期'**
   String get taskNoDueDate;
 
+  /// 清单页在「今日」/「本周」筛选下，提示有多少条作业因为没有截止日期被筛掉了
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 条作业没设截止日期'**
+  String taskUndatedHint(int count);
+
+  /// No description provided for @taskUndatedHintSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'它们在「今日」「本周」里看不到，点这里切到「全部」'**
+  String get taskUndatedHintSubtitle;
+
   /// No description provided for @taskDueDateHint.
   ///
   /// In zh, this message translates to:
-  /// **'不设截止日期，日视图就不显示'**
+  /// **'日视图不显示，只在「全部」里看得到'**
   String get taskDueDateHint;
 
   /// No description provided for @taskCourseLabel.

@@ -10957,7 +10957,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskNoDueDate => 'No due date';
 
   @override
-  String get taskDueDateHint => 'Without a due date it never shows in day view';
+  String taskUndatedHint(int count) {
+    return '$count tasks have no due date';
+  }
+
+  @override
+  String get taskUndatedHintSubtitle =>
+      'They are hidden from Today and This week — tap to see All';
+
+  @override
+  String get taskDueDateHint => 'Hidden in day view — only visible under All';
 
   @override
   String get taskCourseLabel => 'Course';
