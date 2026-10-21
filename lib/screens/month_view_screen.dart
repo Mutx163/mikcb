@@ -128,6 +128,18 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   /// 判据与实现在 `initState` 里一次性接线，见 [MonthPanelDragState]。
   final MonthPanelDragState _panelDrag = MonthPanelDragState();
 
+  /// 翻月控制器与收放动画的**合并监听**，给预糊位图逐帧重取景用。
+  ///
+  /// ⚠️ **必须在 State 上建一次**，不能写在 `build` 里。`Listenable.merge`
+  /// **没有值相等语义**（Flutter 的 `_MergingListenable` 只包一层 children），
+  /// 而 `PreblurredWallpaperScope` 是按 `identical` 判「监听源换了没」的 ——
+  /// 每帧新建一个实例就等于每帧判定「换了」，于是 42 个玻璃填充位每帧都在
+  /// 拆挂监听器、每帧都 markNeedsPaint（2026-10-21 实测）。
+  ///
+  /// `_gridExpand` 是延迟初始化的 late final，所以这里也延迟到 [initState]
+  /// 第一次读它时再建。
+  late final Listenable _pagingRepaint;
+
   @override
   void initState() {
     super.initState();
@@ -135,6 +147,9 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     _focusedYear = now.year;
     _focusedMonth = now.month;
     _pager = PageController(initialPage: _pageFor(_focusedYear, _focusedMonth));
+    // 两条运动源都要接：横向翻月（PageController）+ 纵向收起/展开（动画控制器）。
+    // 只接翻页那条，上下收放时玻璃内部背景会纹丝不动（2026-10-21 用户实测）。
+    _pagingRepaint = Listenable.merge([_pager, _gridExpand]);
     // 面板列表与网格收放共用同一套判据与回调：接一次线，之后无论怎么重建
     // 都是同一份（physics 里拿到的就是这个对象，不必每帧新建）。
     _panelDrag
@@ -258,7 +273,11 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       // 横向翻月（PageController）+ 纵向收起/展开（网格动画控制器）。
       // 只接翻页那条就是 2026-10-21 用户实测到的 bug：左右滑玻璃正常、
       // 上下收放时玻璃内部背景纹丝不动。
-      pagingRepaint: Listenable.merge([_pager, _gridExpand]),
+      //
+      // ⚠️ 用 State 上那份合并实例，不在这里 `Listenable.merge(...)`：
+      // 每帧新建会让 scope 每帧判定「监听源换了」，42 个玻璃填充位跟着拆挂
+      // 监听器（见 `_pagingRepaint` 的注释）。
+      pagingRepaint: _pagingRepaint,
       // ⚠️ 这里**不能**再包一层 PageView。
       //
       // 用户 2026-10-21 实测：「我在日期表格的拉杆下面，还能左右滑动，刚刚都说了
@@ -318,126 +337,163 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     //   上滑 → 上面几行向上收起、下面几行被下面的东西盖起来、底部出现拉杆；
     //   条目视图不支持左右滑、只支持上下滑（上下滑就是收放网格）；
     //   月份网格支持左右滑（翻月）和上下滑（收放）。
-    // ⚠️ AnimatedBuilder 必须包在 LayoutBuilder **外面**：版面（网格窗口高、
-    // 面板高）都由展开进度 `_gridExpand` 推出来，只把网格包在 builder 里的话，
-    // 窗口高度不会跟着动画变 —— 上滑时格子被裁、面板却不动，读起来是"卡住"。
-    return AnimatedBuilder(
-      animation: _gridExpand,
-      builder: (context, _) => LayoutBuilder(
-        builder: (context, constraints) {
-          final dates = [for (final day in grid.days) day.date];
-          final keptRow = monthGridRowToKeep(
-            dates: dates,
-            year: year,
-            month: month,
-            selectedDate: selectedInThisMonth ? selected : null,
-            today: grid.today,
-          );
-          // 版面三件套（网格窗口高 / 面板高 / 内容位移）必须同源算 ——
-          // 分开算就会出现「面板盖到哪儿」与「网格顶到哪儿」各说各话，
-          // 症状正是收起后仍露出半格。
-          final layout = monthGridLayout(
-            t: _gridExpand.value,
-            availableHeight: constraints.maxHeight,
-            headerHeight: MonthGrid.headerHeight,
-            horizontalPadding: MonthGrid.horizontalPadding,
-            availableWidth: constraints.maxWidth,
-            // 与 `MonthGrid` 内部同一判据：学期没配置时周次列根本不占位。
-            weekNumberColumnVisible: settings.semesterStartDate != null,
-            weekLabelWidth: MonthGrid.weekLabelWidth,
-            minRowHeight: MonthGrid.minRowHeight,
-            maxRowHeight: MonthGrid.maxRowHeight,
-            keptRow: keptRow,
-            // 把手夹在网格与面板之间，必须从可用高度里扣掉 —— 否则面板会被
-            // 挤出屏幕（Expanded 只吃剩下的空间）。
-            handleHeight: MonthGridHandle.extent,
-            // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出 8px。
-            topPadding: kMonthPageVerticalPadding,
-          );
-          // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
-          _gridRowHeight = layout.rowHeight;
+    //
+    // ⚠️ **层次顺序（2026-10-21 改）**：`LayoutBuilder` 在外、`AnimatedBuilder`
+    // 在内，且动画那块带 `child`。
+    //
+    // 改前是反的（动画在外、LayoutBuilder 在内、没有 child），于是动画每一帧
+    // 都把「LayoutBuilder + PageView + 42 个日期格 + 整个条目面板」重新构建
+    // 一遍 —— 真机实测 914 次 build/帧、42 格/帧，而日视图与周视图同一时刻
+    // 只有 1 次。用户读到的就是"这页有点卡"。
+    //
+    // 现在约束（可用宽高）与动画无关，所以 LayoutBuilder 放外层、只跑一次；
+    // 里面只有「网格窗口高度」这一个值随动画变，其余（PageView 子树、拉杆、
+    // 面板）全部作为 `child` 传进动画块，**不参与逐帧重建**。面板是 `Expanded`，
+    // 高度由 Column 自动吃掉剩余空间，不需要跟着动画重建。
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dates = [for (final day in grid.days) day.date];
+        final keptRow = monthGridRowToKeep(
+          dates: dates,
+          year: year,
+          month: month,
+          selectedDate: selectedInThisMonth ? selected : null,
+          today: grid.today,
+        );
+        // 先按展开态算一次，只为拿与动画无关的行高：`monthGridLayout` 的
+        // rowHeight 完全不参与 t 的插值（它按「始终 6 行」的可用空间算），
+        // 所以展开态那份就是任何时刻那份。
+        //
+        // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
+        _gridRowHeight = _layoutFor(
+          t: 1,
+          constraints: constraints,
+          settings: settings,
+          keptRow: keptRow,
+        ).rowHeight;
 
-          return Column(
-            children: [
-              // ── 上半：月份网格（左右翻月 + 上下收放）──
-              //
-              // ⚠️ 必须给 PageView 一个**明确高度**：它在 Column 里没有约束，
-              // 而高度正是「收起」要动的东西（layout.gridHeight 随进度从
-              // 「表头+6 行」缩到「表头+1 行」）。
-              //
-              // 纵向手势由网格自己接（它只包住网格，不包面板）；横向交给 PageView。
-              // 两者方向正交，同一手势里不会互相抢。
-              SizedBox(
-                height: layout.gridHeight,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.deferToChild,
-                  onVerticalDragStart: (_) => _beginGridDrag(),
-                  onVerticalDragUpdate: _updateGridDrag,
-                  onVerticalDragEnd: _endGridDrag,
-                  child: PageView.builder(
-                    controller: _pager,
-                    itemCount: _pageCount,
-                    onPageChanged: (page) {
-                      final (y, m) = _monthForPage(page);
-                      if (y == _focusedYear && m == _focusedMonth) {
-                        return;
-                      }
-                      setState(() {
-                        _focusedYear = y;
-                        _focusedMonth = m;
-                      });
-                    },
-                    itemBuilder: (context, page) {
-                      final (y, m) = _monthForPage(page);
-                      return _buildGridPage(
-                        context: context,
-                        provider: provider,
-                        settings: settings,
-                        year: y,
-                        month: m,
-                        bodyLuminance: bodyLuminance,
-                        constraints: constraints,
-                      );
-                    },
-                  ),
+        return Column(
+          children: [
+            // ── 上半：月份网格（左右翻月 + 上下收放）──
+            //
+            // 动画只改这一层的**高度**：`layout.gridHeight` 随进度从「表头+6 行」
+            // 缩到「表头+1 行」。里面的 PageView 与 42 格是稳定 child，
+            // 帧内不重建（这是这次提速的全部来源）。
+            //
+            // ⚠️ 必须给 PageView 一个**明确高度**：它在 Column 里没有约束，
+            // 而高度正是「收起」要动的东西。
+            //
+            // 纵向手势由网格自己接（它只包住网格，不包面板）；横向交给 PageView。
+            // 两者方向正交，同一手势里不会互相抢。
+            AnimatedBuilder(
+              animation: _gridExpand,
+              child: GestureDetector(
+                behavior: HitTestBehavior.deferToChild,
+                onVerticalDragStart: (_) => _beginGridDrag(),
+                onVerticalDragUpdate: _updateGridDrag,
+                onVerticalDragEnd: _endGridDrag,
+                child: PageView.builder(
+                  controller: _pager,
+                  itemCount: _pageCount,
+                  onPageChanged: (page) {
+                    final (y, m) = _monthForPage(page);
+                    if (y == _focusedYear && m == _focusedMonth) {
+                      return;
+                    }
+                    setState(() {
+                      _focusedYear = y;
+                      _focusedMonth = m;
+                    });
+                  },
+                  itemBuilder: (context, page) {
+                    final (y, m) = _monthForPage(page);
+                    return _buildGridPage(
+                      context: context,
+                      provider: provider,
+                      settings: settings,
+                      year: y,
+                      month: m,
+                      bodyLuminance: bodyLuminance,
+                      constraints: constraints,
+                    );
+                  },
                 ),
               ),
-              // ── 中间：表格的把手（属于上面那张表格，不属于下面那个面板）──
-              //
-              // 归属很重要（用户 2026-10-21 修正）：这根横条被拖动时收放的是
-              // **上面的日期表格**，所以它画在表格下沿、在面板容器**之外**。
-              // 放进面板里就会读成"底部弹窗的拖拽把手"（iOS bottom sheet 的
-              // 既有心智）—— 那把手势归属讲反了。
-              MonthGridHandle(
-                inkColor: ink,
-                onDragStart: _beginGridDrag,
-                onDragUpdate: _updateGridDrag,
-                onDragEnd: _endGridDrag,
-              ),
-              // ── 下半：条目面板（自身只纵向滚动，不参与收放）──
-              Expanded(
-                child: _buildAgendaPanel(
-                  context: context,
-                  provider: provider,
+              builder: (context, child) {
+                final layout = _layoutFor(
+                  t: _gridExpand.value,
+                  constraints: constraints,
                   settings: settings,
-                  // ⚠️ 这里**不能**传上面那个按壁纸亮度判出来的 `ink`。
-                  //
-                  // 那个 ink 回答的是「字压在**壁纸**上该用黑还是白」。面板是
-                  // 一块**不透明白底**，壁纸在它下面根本看不见 —— 拿壁纸的
-                  // 明暗去判面板里的字，暗壁纸会算出白字，于是「10月22日」
-                  // 这行标题白字压白底、直接消失（用户 2026-10-21 截图实测）。
-                  //
-                  // 面板内的字一律跟主题走（`colorScheme.onSurface`）。
-                  now: now,
-                  selectedInThisMonth: selectedInThisMonth,
-                  selected: selected,
-                  grid: grid,
-                ),
+                  keptRow: keptRow,
+                );
+                return SizedBox(height: layout.gridHeight, child: child);
+              },
+            ),
+            // ── 中间：表格的把手（属于上面那张表格，不属于下面那个面板）──
+            //
+            // 归属很重要（用户 2026-10-21 修正）：这根横条被拖动时收放的是
+            // **上面的日期表格**，所以它画在表格下沿、在面板容器**之外**。
+            // 放进面板里就会读成"底部弹窗的拖拽把手"（iOS bottom sheet 的
+            // 既有心智）—— 那把手势归属讲反了。
+            MonthGridHandle(
+              inkColor: ink,
+              onDragStart: _beginGridDrag,
+              onDragUpdate: _updateGridDrag,
+              onDragEnd: _endGridDrag,
+            ),
+            // ── 下半：条目面板（自身只纵向滚动，不参与收放）──
+            Expanded(
+              child: _buildAgendaPanel(
+                context: context,
+                provider: provider,
+                settings: settings,
+                // ⚠️ 这里**不能**传上面那个按壁纸亮度判出来的 `ink`。
+                //
+                // 那个 ink 回答的是「字压在**壁纸**上该用黑还是白」。面板是
+                // 一块**不透明白底**，壁纸在它下面根本看不见 —— 拿壁纸的
+                // 明暗去判面板里的字，暗壁纸会算出白字，于是「10月22日」
+                // 这行标题白字压白底、直接消失（用户 2026-10-21 截图实测）。
+                //
+                // 面板内的字一律跟主题走（`colorScheme.onSurface`）。
+                now: now,
+                selectedInThisMonth: selectedInThisMonth,
+                selected: selected,
+                grid: grid,
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 某一份约束 + 某个展开进度下的版面。
+  ///
+  /// 抽成方法是为了让「展开态算一次拿行高」与「动画帧里算窗口高」走**同一个**
+  /// 函数：两处各写一遍就会漂，而漂的症状是收起后仍露出半格（本仓踩过）。
+  MonthGridLayout _layoutFor({
+    required double t,
+    required BoxConstraints constraints,
+    required TimetableSettings settings,
+    required int keptRow,
+  }) {
+    return monthGridLayout(
+      t: t,
+      availableHeight: constraints.maxHeight,
+      headerHeight: MonthGrid.headerHeight,
+      horizontalPadding: MonthGrid.horizontalPadding,
+      availableWidth: constraints.maxWidth,
+      // 与 `MonthGrid` 内部同一判据：学期没配置时周次列根本不占位。
+      weekNumberColumnVisible: settings.semesterStartDate != null,
+      weekLabelWidth: MonthGrid.weekLabelWidth,
+      minRowHeight: MonthGrid.minRowHeight,
+      maxRowHeight: MonthGrid.maxRowHeight,
+      keptRow: keptRow,
+      // 把手夹在网格与面板之间，必须从可用高度里扣掉 —— 否则面板会被
+      // 挤出屏幕（Expanded 只吃剩下的空间）。
+      handleHeight: MonthGridHandle.extent,
+      // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出 8px。
+      topPadding: kMonthPageVerticalPadding,
     );
   }
 
@@ -482,20 +538,17 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       selectedDate: selectedInThisMonth ? selected : null,
       today: grid.today,
     );
-    // 本页自己的版面（与外层同一套判据，只是保留行取本页的）。
-    final layout = monthGridLayout(
-      t: _gridExpand.value,
-      availableHeight: constraints.maxHeight,
-      headerHeight: MonthGrid.headerHeight,
-      horizontalPadding: MonthGrid.horizontalPadding,
-      availableWidth: constraints.maxWidth,
-      weekNumberColumnVisible: settings.semesterStartDate != null,
-      weekLabelWidth: MonthGrid.weekLabelWidth,
-      minRowHeight: MonthGrid.minRowHeight,
-      maxRowHeight: MonthGrid.maxRowHeight,
+    // 本页的行高：**与展开进度无关**（`monthGridLayout` 按「始终 6 行」的可用
+    // 空间算行高，不参与 t 的插值），所以这里取展开态那份即可 —— 收放过程中
+    // 格子高度不能变，否则读起来像"字放大了"。
+    //
+    // ⚠️ 只取 rowHeight，不取 gridHeight：窗口高度由页面那层随动画改的
+    // `SizedBox` 负责，网格自己不参与收放。
+    final layout = _layoutFor(
+      t: 1,
+      constraints: constraints,
+      settings: settings,
       keptRow: keptRow,
-      handleHeight: MonthGridHandle.extent,
-      topPadding: kMonthPageVerticalPadding,
     );
 
     return Padding(
@@ -511,7 +564,9 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         selectedDate: selectedInThisMonth ? selected : null,
         rowHeight: layout.rowHeight,
         inkColor: ink,
-        collapseProgress: _gridExpand.value,
+        // 传**动画**而不是当前值：网格内部自己订阅，42 格因此不参与逐帧重建
+        // （这是这次提速的另一半，见 `MonthGrid` 的类注释）。
+        progress: _gridExpand,
         keptRowIndex: keptRow,
         onDayTap: (date) {
           setState(() {

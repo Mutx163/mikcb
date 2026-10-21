@@ -152,8 +152,11 @@ void main() {
         )
         .controller!;
 
+    // 2026-10-21：`MonthGrid` 的收放参数从「当前值」改成「动画本身」
+    // （内部订阅，42 格因此不参与逐帧重建，见该文件类注释）。
+    // 读 animation.value 与旧口径等价 —— 断言仍然钉「网格真的被拖到底」。
     double collapse() =>
-        tester.widget<MonthGrid>(find.byType(MonthGrid)).collapseProgress;
+        tester.widget<MonthGrid>(find.byType(MonthGrid)).progress.value;
 
     expect(collapse(), 1.0, reason: '进入时网格应完全展开');
 
