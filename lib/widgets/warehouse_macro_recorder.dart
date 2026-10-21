@@ -1,3 +1,4 @@
+import '../domain/warehouse_macro_replay_logic.dart';
 import '../models/warehouse_macro_models.dart';
 
 /// 录制 JS —— 注入到 WebView 中捕获用户交互
@@ -51,6 +52,16 @@ class MacroRecorderJs {
 
   function _macroIsSensitiveFieldType(fieldType) {
     return fieldType === 'password' || fieldType === 'captcha';
+  }
+
+  /// 元素所属表单的选择器；不在表单里（或页面用 div 假扮表单）时返回 ''。
+  function _macroFormSelector(el) {
+    try {
+      var form = el && el.form ? el.form : (el ? el.closest('form') : null);
+      return form ? _macroMakeSelector(form) : '';
+    } catch (e) {
+      return '';
+    }
   }
 
   function _macroEmit(entry) {
@@ -112,6 +123,9 @@ class MacroRecorderJs {
           selector: selector,
           value: text,
           fieldType: 'button',
+          // 点提交按钮会连带触发所属表单的 submit 事件；把表单选择器带上，
+          // 转换时才知道「后面那条 submit 是同一次动作的重复」（见 convert()）。
+          formSelector: _macroFormSelector(el),
           timestamp: Date.now()
         });
       }
@@ -176,6 +190,10 @@ class MacroRecordingConverter {
     final pendingFillBySelector = <String, _PendingFillField>{};
     final startTime = dedupedEvents.first['timestamp'] as num? ?? 0;
     var lastTimestamp = startTime;
+    // 「上一条事件」的类型与选择器：用于识别「click + submit 是同一个动作」。
+    var previousEventType = '';
+    String? previousFieldType;
+    String? previousFormSelector;
 
     void flushPendingFillFields() {
       if (pendingFillBySelector.isEmpty) return;
@@ -211,6 +229,25 @@ class MacroRecordingConverter {
           steps.add(MacroStep.delay(3000));
         }
       }
+
+      // 同一次「点登录」会先发 click、再发 submit：这两条是同一个动作。
+      //
+      // 浏览器点 <input type=submit> 之后一定跟着所属 <form> 的 submit 事件，
+      // 旧实现两个都转成 MacroStep.click，于是登录变成两步。回放时第一下就跳转
+      // 成功，第二下要点的 #Form1 在新页面（xsMain.jsp）上根本不存在 —— 第 6 步
+      // 报 macro_element_not_found，整条宏失败。2026-10-21 城科实测即此形状。
+      //
+      // 丢弃的是 submit 那条：click 已经足以触发提交，而 submit 的选择器是表单
+      // 本身，跳转后必然找不到。
+      final redundantSubmit =
+          eventType == 'submit' &&
+          isRedundantSubmitAfterClick(
+            previousEventType: previousEventType,
+            previousFieldType: previousFieldType,
+            previousFormSelector: previousFormSelector,
+            currentSelector: selector,
+            gapMs: gap.toInt(),
+          );
 
       switch (eventType) {
         case 'input':
@@ -249,8 +286,13 @@ class MacroRecordingConverter {
           break;
         case 'submit':
           flushPendingFillFields();
-          // 表单提交通常需要等待页面导航
-          if (selector.isNotEmpty) {
+          // 表单提交通常需要等待页面导航。
+          //
+          // 若这条 submit 是上一条「点提交按钮」的同一次动作（见
+          // isRedundantSubmitAfterClick），**不生成点击步骤**：那个按钮已经点过了，
+          // 再点一次表单只会在跳转后的新页面上找 #Form1 —— 找不到就整条失败。
+          // 但等待要保留：它表达的是「等这次提交把页面带走」。
+          if (selector.isNotEmpty && !redundantSubmit) {
             steps.add(MacroStep.click(selector));
           }
           steps.add(MacroStep.delay(2500));
@@ -258,6 +300,9 @@ class MacroRecordingConverter {
       }
 
       lastTimestamp = timestamp;
+      previousEventType = eventType;
+      previousFieldType = fieldType;
+      previousFormSelector = event['formSelector'] as String?;
     }
 
     flushPendingFillFields();

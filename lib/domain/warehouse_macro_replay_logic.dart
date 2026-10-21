@@ -223,6 +223,83 @@ bool macroElementExplicitlyMissing(String normalizedResult) {
   return false;
 }
 
+/// 两个 href 是不是「不同的文档」（忽略 query 与 fragment）。
+///
+/// 用于判断「上一步点击有没有把页面带走」：`?x=1` 与 `#/tab` 这种不算换页，
+/// 只有 scheme+host+path 变了才说明旧页面的元素真的随之作废。
+/// 任一 href 读不到时返回 false（判不准就别认定换了页）。
+bool macroDocumentChanged(String? beforeHref, String? currentHref) {
+  final before = _normalizeHref(beforeHref);
+  final current = _normalizeHref(currentHref);
+  if (before == null || current == null) return false;
+  final beforeUri = Uri.tryParse(before);
+  final currentUri = Uri.tryParse(current);
+  if (beforeUri == null || currentUri == null) return before != current;
+  if (!beforeUri.hasScheme || !currentUri.hasScheme) return before != current;
+  final beforeKey = '${beforeUri.scheme}://${beforeUri.host}${beforeUri.path}';
+  final currentKey =
+      '${currentUri.scheme}://${currentUri.host}${currentUri.path}';
+  return beforeKey.toLowerCase() != currentKey.toLowerCase();
+}
+
+/// 一条「找不到元素」的点击步骤，是不是记录时留下的、已经作废的步骤。
+///
+/// 用于**已经存在手机里的旧宏**（录制器已修，但旧宏不会自动重录）。旧录制把
+/// 一次「点登录」记成了两次点击：先点 `#btnSubmit`，再点它所属的 `#Form1`。
+/// 回放时第一下点击就完成跳转，第二下要点的登录表单在新页面上并不存在，于是把
+/// 10 秒预算耗完、整条宏判失败——2026-10-21 城科实测：登录已经成功、URL 已经到
+/// `xsMain.jsp`，却栽在 `#Form1` 上。
+///
+/// 判据要求三件事同时成立，才认定「这一步已经作废」：
+/// 1. 这一步是**点击**（填充/等待找不到元素，说明页面根本没走到该到的地方）；
+/// 2. 元素确实**没找到**（脚本明确回报 found:false）；
+/// 3. **上一步点击刚刚把页面带走了**（`previousClickNavigated`）。
+///
+/// 第 3 条是关键的收紧项：只有「刚翻过页」才认定旧元素作废。若页面没动过还说
+/// 找不到，那就是真的缺东西，必须如实失败。
+bool shouldSkipStaleClickStep({
+  required bool stepIsClick,
+  required bool elementNotFound,
+  required bool previousClickNavigated,
+}) {
+  return stepIsClick && elementNotFound && previousClickNavigated;
+}
+
+/// 录制事件里，「点提交按钮」后面那条 `submit` 是不是同一个动作的重复。
+///
+/// 浏览器点 `<input type="submit">` 走的是：先 `click`（落在按钮上），再
+/// `submit`（落在它所属的 `<form>` 上）——**一次用户动作、两个事件**。录制器
+/// 两个都收、且都转成 `MacroStep.click`，于是「点登录」变成两步：先点
+/// `#btnSubmit`，再点 `#Form1`。
+///
+/// 回放时第一下点击就完成跳转，第二下打在新页面上（城科是 `xsMain.jsp`）——那里
+/// 没有登录表单，于是第 6 步报 `macro_element_not_found|selector=#Form1`，
+/// 十秒后整条宏失败。2026-10-21 城科实测日志正是这个形状：登录已成功、URL 已到
+/// `xsMain.jsp`，却在一个不存在的表单上耗完预算。
+///
+/// 判据靠录制时一并记下的 [previousFormSelector]（点按钮时它所属表单的选择器，
+/// 由注入脚本的 `formSelector` 字段带回）。只比字符串前缀是不够的：
+/// `#btnSubmit` 与 `#Form1` 之间没有前缀关系，那种写法永远判不出来。
+///
+/// 丢的是**后面那条 submit**：前面的 click 已经足以触发提交，而 submit 那条的
+/// 选择器是表单本身，跳转后的新页面上必然不存在。
+bool isRedundantSubmitAfterClick({
+  required String previousEventType,
+  required String? previousFieldType,
+  required String? previousFormSelector,
+  required String currentSelector,
+  required int gapMs,
+}) {
+  // 上一条必须是「点提交按钮」：只有 input[type=submit|button] 会带 formSelector。
+  if (previousEventType != 'click') return false;
+  if (previousFieldType != 'button') return false;
+  final form = (previousFormSelector ?? '').trim();
+  if (form.isEmpty) return false;
+  // 同一次动作的两个事件紧挨着；窗口外说明是用户先做了别的、之后才提交。
+  if (gapMs < 0 || gapMs > 2000) return false;
+  return currentSelector.trim() == form;
+}
+
 /// 一个选择器之外还该试的等价选择器。
 ///
 /// 旧回放里那段「找不到就按 name 再找一次」的兜底是坏的：它把选择器**整条**

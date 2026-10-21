@@ -9,6 +9,7 @@ import 'package:university_timetable/l10n/service_message_localizer.dart';
 
 import '../domain/warehouse_macro_replay_logic.dart';
 import '../models/warehouse_macro_models.dart';
+import '../services/warehouse_import_session_log.dart';
 import 'warehouse_macro_recorder.dart';
 
 /// 回放步骤的当前状态
@@ -211,6 +212,10 @@ class WarehouseMacroReplayer {
     List<MacroStep> steps, {
     required bool reportFailureToHost,
   }) async {
+    // 上一步点击有没有把文档带走。旧宏把「点登录」记成了两次点击（按钮 + 表单），
+    // 第二下要点的表单在新页面上并不存在；只有「刚翻过页」才把这种找不到当成
+    // 作废步骤跳过，否则照旧如实失败（见 shouldSkipStaleClickStep）。
+    var previousClickNavigated = false;
     for (var i = 0; i < steps.length; i++) {
       if (_isCancelled) {
         _callbacks.onComplete(false, 'macro_user_cancelled');
@@ -227,8 +232,17 @@ class WarehouseMacroReplayer {
         ),
       );
 
+      final hrefBeforeStep = step.type == MacroStepType.click
+          ? await _currentDocumentHref()
+          : null;
       try {
         await _executeStep(step);
+        if (hrefBeforeStep != null) {
+          previousClickNavigated = macroDocumentChanged(
+            hrefBeforeStep,
+            await _currentDocumentHref(),
+          );
+        }
         _callbacks.onProgress(
           ReplayProgress(
             currentStepIndex: i,
@@ -239,6 +253,29 @@ class WarehouseMacroReplayer {
         );
       } catch (e) {
         final detail = _exceptionPayload(e);
+        if (shouldSkipStaleClickStep(
+          stepIsClick: step.type == MacroStepType.click,
+          elementNotFound: detail.contains('macro_element_not_found'),
+          previousClickNavigated: previousClickNavigated,
+        )) {
+          // 这一步要点的元素属于「已经翻过去的那一页」：跳过并继续。
+          //
+          // 必须留痕到用户可导出的导入日志里：跳过就意味着少做了一步，将来若
+          // 「导入成功但数据不对」，日志要能解释是这里放过的，而不是查无实据。
+          WarehouseImportSessionLog.instance.append(
+            message:
+                'playback skipped stale click step=${i + 1}/${steps.length} '
+                'selector=${step.selector} '
+                'reason=element_not_found_after_navigation',
+            level: 'warn',
+          );
+          debugPrint(
+            'WarehouseMacroReplayer: skip stale click step=${i + 1} '
+            'selector=${step.selector}',
+          );
+          previousClickNavigated = false;
+          continue;
+        }
         _callbacks.onProgress(
           ReplayProgress(
             currentStepIndex: i,

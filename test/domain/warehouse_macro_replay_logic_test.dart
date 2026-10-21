@@ -580,6 +580,167 @@ void main() {
     });
   });
 
+  group('isRedundantSubmitAfterClick（一次点登录被记了两遍）', () {
+    // 城科实测形状：点 #btnSubmit 之后浏览器紧接着发 #Form1 的 submit。
+    bool isRedundant({
+      // 上一条事件：点提交按钮时是 click（带 formSelector）。
+      String previousEventType = 'click',
+      String? fieldType = 'button',
+      String? formSelector = '#Form1',
+      String selector = '#Form1',
+      int gapMs = 12,
+    }) => isRedundantSubmitAfterClick(
+      previousEventType: previousEventType,
+      previousFieldType: fieldType,
+      previousFormSelector: formSelector,
+      currentSelector: selector,
+      gapMs: gapMs,
+    );
+
+    test('点提交按钮后紧跟同表单的 submit：判为重复', () {
+      expect(isRedundant(), isTrue);
+    });
+
+    test('表单选择器对不上就不是同一次动作', () {
+      expect(isRedundant(selector: '#OtherForm'), isFalse);
+      expect(isRedundant(selector: ' #Form1 '), isTrue);
+    });
+
+    test('上一条不是「点提交按钮」就不认', () {
+      expect(isRedundant(previousEventType: 'submit'), isFalse);
+      expect(isRedundant(fieldType: 'link'), isFalse);
+      expect(isRedundant(fieldType: 'username'), isFalse);
+      expect(isRedundant(fieldType: null), isFalse);
+      expect(isRedundant(formSelector: ''), isFalse);
+      expect(isRedundant(formSelector: null), isFalse);
+    });
+
+    test('间隔太久不认：那是两次独立动作', () {
+      expect(isRedundant(gapMs: 0), isTrue);
+      expect(isRedundant(gapMs: 2000), isTrue);
+      expect(isRedundant(gapMs: 2001), isFalse);
+      expect(isRedundant(gapMs: -1), isFalse);
+    });
+
+    test('旧判据（比选择器前缀）永远判不出 #btnSubmit/#Form1 这种形状', () {
+      // 曾经想用「点到的元素是否以表单选择器开头」来判，这对真实页面无效。
+      const clicked = '#btnSubmit';
+      const form = '#Form1';
+      final legacyPrefixSays = clicked.startsWith(form);
+      expect(legacyPrefixSays, isFalse);
+      // 新判据靠录制时带回的 formSelector，能判出来。
+      expect(isRedundant(), isTrue);
+    });
+  });
+
+  group('macroDocumentChanged（上一步点击有没有翻页）', () {
+    test('换了 path 才算翻页，query/fragment 变化不算', () {
+      expect(
+        macroDocumentChanged(
+          'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/',
+          'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/framework/xsMain.jsp',
+        ),
+        isTrue,
+      );
+      expect(
+        macroDocumentChanged(
+          'http://jw.cqcst.edu.cn/a?x=1',
+          'http://jw.cqcst.edu.cn/a?x=2',
+        ),
+        isFalse,
+      );
+      expect(
+        macroDocumentChanged(
+          'http://jw.cqcst.edu.cn/a#/tab1',
+          'http://jw.cqcst.edu.cn/a#/tab2',
+        ),
+        isFalse,
+      );
+    });
+
+    test('host 或 scheme 变了也算翻页', () {
+      expect(
+        macroDocumentChanged('http://a.edu/x', 'https://a.edu/x'),
+        isTrue,
+      );
+      expect(
+        macroDocumentChanged('http://a.edu/x', 'http://b.edu/x'),
+        isTrue,
+      );
+    });
+
+    test('读不到 href 时判「没翻页」：判不准就不认定换了页', () {
+      expect(macroDocumentChanged(null, 'http://a.edu/x'), isFalse);
+      expect(macroDocumentChanged('http://a.edu/x', null), isFalse);
+      expect(macroDocumentChanged('', ''), isFalse);
+    });
+
+    test('大小写不同不算翻页', () {
+      expect(
+        macroDocumentChanged('http://A.EDU/X', 'http://a.edu/x'),
+        isFalse,
+      );
+    });
+  });
+
+  group('shouldSkipStaleClickStep（旧宏里的作废点击）', () {
+    test('三个条件全成立才跳过', () {
+      expect(
+        shouldSkipStaleClickStep(
+          stepIsClick: true,
+          elementNotFound: true,
+          previousClickNavigated: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('缺任一条都如实失败', () {
+      // 不是点击步骤：填充/等待找不到元素说明页面根本没走到该到的地方。
+      expect(
+        shouldSkipStaleClickStep(
+          stepIsClick: false,
+          elementNotFound: true,
+          previousClickNavigated: true,
+        ),
+        isFalse,
+      );
+      // 元素没找到但页面没动过：真的缺东西。
+      expect(
+        shouldSkipStaleClickStep(
+          stepIsClick: true,
+          elementNotFound: true,
+          previousClickNavigated: false,
+        ),
+        isFalse,
+      );
+      // 页面翻了但这步不是「找不到元素」：别的错误要如实报。
+      expect(
+        shouldSkipStaleClickStep(
+          stepIsClick: true,
+          elementNotFound: false,
+          previousClickNavigated: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('全组合不变量：只有 (true,true,true) 才返回 true', () {
+      for (final isClick in [true, false]) {
+        for (final notFound in [true, false]) {
+          for (final navigated in [true, false]) {
+            final actual = shouldSkipStaleClickStep(
+              stepIsClick: isClick,
+              elementNotFound: notFound,
+              previousClickNavigated: navigated,
+            );
+            expect(actual, isClick && notFound && navigated);
+          }
+        }
+      }
+    });
+  });
+
   group('macroSelectorCandidates（坏兜底的替代）', () {
     test('纯 id 选择器额外派生同名的 name 选择器', () {
       expect(macroSelectorCandidates('#userAccount'), [

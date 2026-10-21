@@ -204,6 +204,90 @@ void main() {
       );
     });
 
+    test('点登录被记两遍时只留一次点击：按钮 + 同表单 submit', () {
+      // 城科实测形状：click(#btnSubmit) 紧跟 submit(#Form1)。旧转换器把两条都
+      // 转成 click，于是回放第 6 步去点新页面上不存在的 #Form1 而整条失败。
+      final rawEvents = <Map<String, dynamic>>[
+        {
+          'eventType': 'input',
+          'selector': '#userAccount',
+          'value': '2024001',
+          'fieldType': 'username',
+          'timestamp': 1000,
+        },
+        {
+          'eventType': 'click',
+          'selector': '#btnSubmit',
+          'fieldType': 'button',
+          'formSelector': '#Form1',
+          'timestamp': 1500,
+        },
+        {
+          'eventType': 'submit',
+          'selector': '#Form1',
+          'fieldType': 'form',
+          'timestamp': 1502,
+        },
+      ];
+
+      final steps = MacroRecordingConverter.convert(rawEvents);
+
+      // 填充 + 一次点击 + 一次等待；不该出现第二个 click。
+      expect(
+        steps.where((s) => s.type == MacroStepType.click).map((s) => s.selector),
+        ['#btnSubmit'],
+      );
+      // 提交后的等待要保留：它表达「等这次提交把页面带走」。
+      expect(
+        steps.any(
+          (s) => s.type == MacroStepType.delay && s.waitMs == 2500,
+        ),
+        isTrue,
+      );
+    });
+
+    test('只有 submit、没有前置按钮点击时，仍然生成表单点击', () {
+      // 回车提交表单就是这样：没有 click 事件，只有 submit。
+      final rawEvents = <Map<String, dynamic>>[
+        {
+          'eventType': 'submit',
+          'selector': '#Form1',
+          'fieldType': 'form',
+          'timestamp': 1000,
+        },
+      ];
+
+      final steps = MacroRecordingConverter.convert(rawEvents);
+
+      expect(steps.first.type, MacroStepType.click);
+      expect(steps.first.selector, '#Form1');
+    });
+
+    test('两次独立点击（不同表单）都保留，不被误删', () {
+      final rawEvents = <Map<String, dynamic>>[
+        {
+          'eventType': 'click',
+          'selector': '#btnSubmit',
+          'fieldType': 'button',
+          'formSelector': '#Form1',
+          'timestamp': 1000,
+        },
+        {
+          'eventType': 'submit',
+          'selector': '#OtherForm',
+          'fieldType': 'form',
+          'timestamp': 1002,
+        },
+      ];
+
+      final steps = MacroRecordingConverter.convert(rawEvents);
+
+      expect(
+        steps.where((s) => s.type == MacroStepType.click).map((s) => s.selector),
+        ['#btnSubmit', '#OtherForm'],
+      );
+    });
+
     test('submit adds click and longer navigation delay', () {
       final rawEvents = <Map<String, dynamic>>[
         {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,6 +176,75 @@ void main() {
     });
   });
 
+  group('旧宏里那步「点表单」已经不作了：跳过而不是整条失败', () {
+    test('点按钮后页面翻走，随后找不到的表单点击被跳过，宏继续跑完', () async {
+      // 城科旧宏形状：fill → click(#btnSubmit) → delay → click(#Form1)。
+      // 第一下点击把页面带到 xsMain.jsp，#Form1 在新页面并不存在。
+      final timeline = _TimelineWebView()
+        ..href = 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/'
+        ..readyState = 'complete'
+        ..clickTargets = {'#btnSubmit'}
+        ..navigateOnClickSelector = '#btnSubmit';
+
+      final built = buildReplayer(timeline, elementWaitMs: 200);
+      await built.replayer.execute(
+        buildMacro([
+          MacroStep.click('#btnSubmit'),
+          MacroStep.delay(10),
+          MacroStep.click('#Form1'),
+          MacroStep.delay(10),
+        ]),
+      );
+
+      expect(
+        built.outcome.success,
+        isTrue,
+        reason: '作废的那一步应被跳过，而不是让整条宏失败',
+      );
+      expect(timeline.missingLookups, contains('#Form1'));
+    });
+
+    test('页面没翻过就说找不到：照旧如实失败，不跳过', () async {
+      final timeline = _TimelineWebView()
+        ..href = 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/'
+        ..readyState = 'complete'
+        // 点了不跳页，第二个元素确实不存在。
+        ..clickTargets = {'#btnSubmit'};
+
+      final built = buildReplayer(timeline, elementWaitMs: 200);
+      await built.replayer.execute(
+        buildMacro([
+          MacroStep.click('#btnSubmit'),
+          MacroStep.delay(10),
+          MacroStep.click('#Form1'),
+        ]),
+      );
+
+      expect(built.outcome.success, isFalse);
+      expect(built.outcome.errorMessage, contains('#Form1'));
+    });
+
+    test('填充步骤找不到元素绝不跳过：那说明页面根本没走到该到的地方', () async {
+      final timeline = _TimelineWebView()
+        ..href = 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/'
+        ..readyState = 'complete'
+        ..clickTargets = {'#btnSubmit'}
+        ..navigateOnClickSelector = '#btnSubmit';
+
+      final built = buildReplayer(timeline, elementWaitMs: 200);
+      await built.replayer.execute(
+        buildMacro([
+          MacroStep.click('#btnSubmit'),
+          MacroStep.delay(10),
+          MacroStep.fillField(selector: '#userAccount', value: 'x'),
+        ]),
+      );
+
+      expect(built.outcome.success, isFalse);
+      expect(built.outcome.errorMessage, contains('#userAccount'));
+    });
+  });
+
   group('元素晚到要等，不能查一次就判死', () {
     test('元素在第 3 拍才出现：回放要等到它，而不是立刻失败', () async {
       final timeline = _TimelineWebView()
@@ -253,22 +323,53 @@ class _TimelineWebView {
   /// 元素永远不出现（失败路径）。
   bool elementNeverAppears = false;
 
+  /// 页面上「存在」的元素选择器；非空时按这份名单判定找没找到。
+  Set<String> clickTargets = <String>{};
+
+  /// 点这个选择器会把页面带走（模拟表单提交跳转）。
+  String? navigateOnClickSelector;
+
+  /// 查过但页面上没有的选择器，按出现顺序记下来。
+  final List<String> missingLookups = <String>[];
+
   int elementStepRuns = 0;
   DateTime? elementScriptFirstRunAt;
   DateTime? documentReadyAt;
   bool clicked = false;
 
   /// 元素脚本的执行：判定它属于填充还是点击，并回报 found。
-  String runElementScript(String script) {
+  ///
+  /// [script] 是引擎真正生成的那段 JS，[candidates] 是它查的候选选择器。
+  String runElementScript(String script, List<String> candidates) {
     elementStepRuns++;
     elementScriptFirstRunAt ??= DateTime.now();
+    final isClick = script.contains('el.click');
+    final first = candidates.isEmpty ? '' : candidates.first;
     if (elementNeverAppears) {
-      return '{"found":false,"selector":"#userAccount"}';
+      return '{"found":false,"selector":"$first"}';
+    }
+    if (clickTargets.isNotEmpty) {
+      final hit = candidates.where(clickTargets.contains);
+      if (hit.isEmpty) {
+        missingLookups.add(first);
+        return '{"found":false,"selector":"$first"}';
+      }
+      final matched = hit.first;
+      if (isClick) {
+        clicked = true;
+        if (navigateOnClickSelector == matched) {
+          // 表单提交：点到就换页，旧页面的元素随之作废。
+          href = 'http://jw.cqcst.edu.cn/cqdxcskjxy_jsxsd/framework/xsMain.jsp';
+        }
+        return '{"found":true,"tag":"INPUT"}';
+      }
+      return '{"found":true,"tag":"INPUT","type":"text"}';
     }
     if (elementStepRuns <= elementAppearsAfterRuns) {
-      return '{"found":false,"selector":"#userAccount"}';
+      missingLookups.add(first);
+      return '{"found":false,"selector":"$first"}';
     }
-    if (script.contains('el.click')) {
+    if (isClick) {
       clicked = true;
       return '{"found":true,"tag":"INPUT"}';
     }
@@ -330,7 +431,21 @@ class _FakePlatformController extends PlatformWebViewController {
       return timeline.readyState;
     }
     if (script.contains('document.querySelector(sels')) {
-      return timeline.runElementScript(script);
+      // 从引擎生成的脚本里取出它真正查的候选选择器名单，让假页面按同一份
+      // 名单说话（否则测的是「我以为的脚本」而不是「真跑的那段」）。
+      final match = RegExp(r'const sels = (\[.*?\]);').firstMatch(script);
+      List<String> candidates = const [];
+      if (match != null) {
+        try {
+          final decoded = jsonDecode(match.group(1)!);
+          if (decoded is List) {
+            candidates = decoded.map((e) => e.toString()).toList();
+          }
+        } catch (_) {
+          // 解析不出来就当没候选：这条会走失败路径，断言自己会说话。
+        }
+      }
+      return timeline.runElementScript(script, candidates);
     }
     // 其余脚本（登录探测、viewport 改写等）在引擎里不该出现；真出现也别炸，
     // 返回一个「什么都没找到」的形状，让断言自己说话。
