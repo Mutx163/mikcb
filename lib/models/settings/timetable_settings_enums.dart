@@ -168,11 +168,11 @@ abstract final class HomeGridMenu {
 
   /// v2.0.5.5 已发布版本的默认排列（不含后来新增的任务入口）。
   static const List<String> defaultActions = [
-    'update',
     'overview',
     'statistics',
     'addCourse',
     'exams',
+    'tasks',
     'importCourses',
     pinnedActionId,
     'support',
@@ -208,12 +208,12 @@ abstract final class HomeGridMenu {
 ///
 /// id 语义：'day' / 'week' 是视图切换动作，其余 id 走八宫格目录
 /// （kHomeMenuCatalog，含 'settings'）。空排列合法——渲染层回退到
-/// [defaultActions]，因此不做钉住补位（区别于八宫格的 normalize）。
+/// [defaultActions]，因此不做钉住补位（区别于八宫格的 normalize）；默认含 tasks。
 abstract final class HomeDockMenu {
   /// 底栏最多容纳的按钮数量（含视图切换与页面入口）。
   static const int maxSlots = 5;
 
-  static const List<String> defaultActions = <String>['day', 'week'];
+  static const List<String> defaultActions = <String>['day', 'week', 'tasks'];
 
   static List<String> normalize(Iterable<Object?>? raw) {
     if (raw == null) {
