@@ -638,7 +638,8 @@ class _CourseActionSheetContent extends StatelessWidget {
         : ((legacyNote != null && legacyNote.isNotEmpty) ? legacyNote : null);
     final sessionNote = course.sessionNoteForWeek(week);
     final sessionNoteText = sessionNote?.trimmedText;
-    final hasHomework = sessionNote?.hasHomework == true;
+    // hasHomework 随「本周有作业」圆标一并删：作业已有独立一行（linkedTask），
+    // 备注行不再需要这个标记。
     final headerDetail = courseIntroText ?? course.weekDescription(l10n);
     final sectionTitle =
         '${_weekdayLabel(l10n, course.dayOfWeek)} · ${l10n.sectionRangeLabel(course.startSection, course.endSection)}';
@@ -800,26 +801,9 @@ class _CourseActionSheetContent extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasHomework) ...[
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.assignment_outlined,
-                    size: 11,
-                    color: colors.primary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-              ],
+              // 「本周有作业」圆标删：作业已拆成下面独立一行（linkedTaskTitle），
+              // 备注行再挂一个作业标记等于让两个入口说同一件事——与
+              // `_resolveNoteTileSubtitle` 里那句注释同一个口径。
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,

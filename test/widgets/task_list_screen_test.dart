@@ -103,7 +103,7 @@ void main() {
 
     // 「全部」档能看到它，此时没有提示（因为没被筛掉）
     expect(find.text('忘了设日期的作业'), findsOneWidget);
-    expect(find.textContaining('没设截止日期'), findsNothing);
+    expect(find.textContaining('没设日期'), findsNothing);
 
     // 切到「今日」：作业被筛掉，但出现一条能点回「全部」的提示
     await tester.tap(find.text('今日').first);
@@ -114,7 +114,10 @@ void main() {
       findsNothing,
       reason: '无日期不归属任何一天，今日不该列出它',
     );
-    final hint = find.textContaining('没设截止日期');
+    // 2026-10-21 文案整改：标题从「还有 N 条作业没设截止日期」压到
+    // 「N 条作业没设日期」（标题位 ≤11 字），匹配词随之从「没设截止日期」
+    // 缩到「没设日期」。断言意图没变：必须告诉用户它去哪了。
+    final hint = find.textContaining('没设日期');
     expect(
       hint,
       findsOneWidget,

@@ -250,8 +250,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('导出日历'), findsNWidgets(2));
-    expect(find.text('选择课程、考试和日程，生成 ICS 日历并分享'), findsOneWidget);
+    // 2026-10-21 文案整改：分组标签与组内唯一行标题原本都是「导出日历」，
+    // 同一个词上下念两遍。标签已删，所以这里断言 1 次而不是 2 次——
+    // 改成 1 次正是这次整改要钉住的效果，不是为了让它变绿。
+    expect(find.text('导出日历'), findsOneWidget);
+    expect(find.text('选内容导出到系统日历'), findsOneWidget);
     expect(find.byIcon(Icons.event_outlined), findsNothing);
   });
 

@@ -234,10 +234,10 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
             ],
           ),
-          const HyperosSectionGap(),
           // 「铃声时间矫正」整组删：与自检页同一字段（liveTimeCorrectionSeconds）、
           // 同参数同文案的重复入口——自检页注释明说「从『提醒时间』页移到这里」，
           // 这份是搬走时漏删的残页；纯排障旋钮不再占用户偏好路径。
+          // 它下面那道 SectionGap 一并删：整组没了，它就是页尾一条空带。
         ],
       ),
     );
@@ -1018,7 +1018,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       HyperosSectionLabel(text: l10n.liveExpandedDetailGroupTitle),
       // 「长按拖动调整顺序」说明卡删：实现是右手柄直接拖（说明与行为不符），
       // 行序与预览一致预览就在下方自证，字段缺席原因属实现口径。
-      const HyperosSectionGap(),
+      // 卡片下面那道 SectionGap 也一起删——它原本是「说明卡」与「字段组」
+      // 之间的间距，卡没了就只剩标签上下各 12dp 的双倍空档。
       _ExpandedDetailGroup(
         display: display,
         fields: _visibleDetailFields,
@@ -1868,8 +1869,11 @@ class _LiveKeepAliveServiceTile extends StatelessWidget {
       ),
     );
 
+    // 已开启时整行不可点：上一个提交只藏了右侧按钮，但整行仍绑着 onTap，
+    // 点下去照样弹「去开启」的确认弹窗——那个弹窗的唯一用途是引导开启，
+    // 服务已经在跑时再引一次是噪声。行本身用绿勾表达状态即可。
     return HyperosPressableRow(
-      onTap: onOpenSettings,
+      onTap: enabled ? null : onOpenSettings,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: row,

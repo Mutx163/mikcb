@@ -1797,7 +1797,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
           return HyperosListView(
             children: [
-              HyperosSectionLabel(text: l10n.aboutUpdatePromptTitle),
+              // 分组标签「弹窗提醒」删：组里唯一那行开关的标题就是它（同词念两遍）。
               HyperosListGroup(
                 children: [
                   HyperosSwitchTile(
@@ -1813,7 +1813,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
               const HyperosSectionGap(),
               _buildDownloadMethodGroup(),
               const HyperosSectionGap(),
-              HyperosSectionLabel(text: l10n.aboutCheckPrereleaseTitle),
+              // 分组标签「检测测试版」同上：与组内开关标题同词。
               HyperosListGroup(
                 children: [
                   HyperosSwitchTile(

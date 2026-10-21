@@ -82,7 +82,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             ),
           ),
           const HyperosSectionGap(),
-          HyperosSectionLabel(text: l10n.icsExportSectionTitle),
+          // 分组标签「导出日历」删：组里唯一那行标题就是它，同一个词上下念两遍。
           HyperosListGroup(
             children: [
               HyperosNavTile(
