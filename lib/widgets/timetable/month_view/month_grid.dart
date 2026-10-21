@@ -66,6 +66,15 @@ class MonthGrid extends StatelessWidget {
   /// 周次行标列宽（够放「第12周」这类窄排版）。
   static const double weekLabelWidth = 30;
 
+  /// 一行几天。
+  static const int daysPerRow = 7;
+
+  /// 网格左右的内边距（与页面给 `SingleChildScrollView` 的水平 padding 同值）。
+  ///
+  /// 调用方算「格宽 = (可用宽 - 左右内边距 - 周次列) / 7」时要减掉它 ——
+  /// 两处不同源的话，算出来的"正方形行高"会偏，格子又变回长方形。
+  static const double horizontalPadding = 10;
+
   /// 星期表头行高度（标题 + 下内边距）。调用方算可用高度时要扣掉它。
   static const double headerHeight = 24;
 
@@ -131,31 +140,42 @@ class MonthGrid extends StatelessWidget {
       );
     }
 
-    // 收起 / 拖拽中：窗口高度按行数插值，内容向下平移把保留行推到表头正下方。
-    // 42 格仍在树上（InkWell 状态与 widget key 不丢），只是画布被 ClipRect 裁住；
-    // Transform.translate 会连带命中测试一起移，保留行的格子照常可点。
+    // 收起 / 拖拽中：**表头固定，只裁剪平移行区**。
+    //
+    // ⚠️ 这里曾经把表头一起平移（offset 作用在「表头 + 所有行」上），症状是
+    // 收起到一行时**还露出半格上一行、表头也不见了**（用户 2026-10-21 实测）：
+    // 窗口高度按「表头 + 1 行」算，可内容整体上移把表头推出了窗口 —— 露出来的
+    // 自然是被推走那一块后面的上一行下半截。表头是固定表头，不参与滚动。
+    //
+    // 行区的窗口高度按行数插值、内容按 keptRow × 行高 × (1 - 进度) 上移，
+    // 于是收起时恰好只剩保留行完整一格，展开时窗口长到 6 行、位移归零。
+    // 42 格始终在树上（InkWell 状态与 widget key 不丢）；Transform.translate
+    // 会连带命中测试一起移，保留行的格子照常可点。
     final visibleRows = monthGridVisibleRows(collapseProgress);
     final keptRow = keptRowIndex.clamp(
       0,
       (grid.days.length - 1) ~/ kMonthGridDaysPerRow,
     );
-    final offset = keptRow * rowHeight * (1 - collapseProgress);
-    return ClipRect(
-      child: SizedBox(
-        height: headerHeight + visibleRows * rowHeight,
-        child: OverflowBox(
-          alignment: Alignment.topCenter,
-          minHeight: 0,
-          maxHeight: double.infinity,
-          child: Transform.translate(
-            offset: Offset(0, -offset),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [headerRow, ...rows],
+    final rowOffset = keptRow * rowHeight * (1 - collapseProgress);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        headerRow,
+        ClipRect(
+          child: SizedBox(
+            height: visibleRows * rowHeight,
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: Transform.translate(
+                offset: Offset(0, -rowOffset),
+                child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 

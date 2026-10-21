@@ -150,6 +150,145 @@ void main() {
     });
   });
 
+  group('收起几何：行区窗口 + 表头不参与滚动', () {
+    // 这三条钉的是 2026-10-21 那次返工的判据。当时窗口高度算成
+    // `表头 + 可见行数×行高`，但内容整体上移把表头也推出了窗口 ——
+    // 于是"收起不彻底、露出半格上一行、表头消失"。
+    //
+    // 现在的不变式：**行区窗口只按可见行数算**，表头是它外面的固定块。
+    test('收起态（t=0）行区窗口恰好 1 行高', () {
+      const rowHeight = 50.0;
+      final window = monthGridVisibleRows(0) * rowHeight;
+      expect(window, 50.0);
+    });
+
+    test('展开态（t=1）行区窗口恰好 6 行高', () {
+      const rowHeight = 50.0;
+      final window = monthGridVisibleRows(1) * rowHeight;
+      expect(window, 300.0);
+    });
+
+    test('行区窗口不含表头：任何进度下都等于「可见行数 × 行高」', () {
+      const rowHeight = 50.0;
+      for (final t in [0.0, 0.25, 0.5, 0.75, 1.0]) {
+        final window = monthGridVisibleRows(t) * rowHeight;
+        // 窗口若是"表头 + 行"，收起态就会是 24+50=74 而不是 50 ——
+        // 多出的 24px 正是露出上一行的来源。这里钉的正是「只有行、没有表头」。
+        expect(window, closeTo(monthGridVisibleRows(t) * rowHeight, 1e-9));
+        expect(
+          window,
+          lessThan(monthGridVisibleRows(t) * rowHeight + 1),
+          reason: '窗口不许额外加表头高度',
+        );
+      }
+    });
+
+    test('收起位移：保留行被推到窗口内（3 行 × 行高 × 0.65 的中间态）', () {
+      const rowHeight = 50.0;
+      const keptRow = 3;
+      // t = 0.35 时位移应为 3×50×0.65 = 97.5（人推）。
+      const offset = keptRow * rowHeight * (1 - 0.35);
+      expect(offset, closeTo(97.5, 1e-9));
+    });
+  });
+
+  group('monthGridRowHeight：格子要正方形', () {
+    // 判据：取「高度能给的」与「宽度能给的」较小者。
+    // 参考机（360 逻辑宽、可用高 520）：宽向 = (360-20-30)/7 = 44.28…，
+    // 高向 = 520/6 = 86.67 → 取 44.28，正好是格宽 ⇒ 正方形。
+    test('手机竖屏：宽度更紧，行高 = 格宽（正方形）', () {
+      final h = monthGridRowHeight(
+        availableWidth: 360,
+        availableForGrid: 520,
+        weekNumberColumnVisible: true,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      // 人推：(360 - 20 - 30) / 7 = 44.2857…
+      expect(h, closeTo(310 / 7, 1e-9));
+    });
+
+    test('旧口径的形状（只按高度均分）会被宽度这一侧压住，不再拉长', () {
+      // 假如只按高度：520/6 = 86.67，会 clamp 到上限 78 —— 远高于格宽 44.3，
+      // 那正是用户看到的"上下的长方形"。新口径必须远低于 78。
+      final h = monthGridRowHeight(
+        availableWidth: 360,
+        availableForGrid: 520,
+        weekNumberColumnVisible: true,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      expect(h, lessThan(78));
+      expect(h, lessThan(86.67));
+    });
+
+    test('学期未配置（周次列不占位）：格宽变大，行高跟着变', () {
+      final withColumn = monthGridRowHeight(
+        availableWidth: 360,
+        availableForGrid: 520,
+        weekNumberColumnVisible: true,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      final withoutColumn = monthGridRowHeight(
+        availableWidth: 360,
+        availableForGrid: 520,
+        weekNumberColumnVisible: false,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      // 去掉 30 宽后：(360-20)/7 = 48.57 > 44.28。
+      expect(withoutColumn, closeTo(340 / 7, 1e-9));
+      expect(withoutColumn, greaterThan(withColumn));
+    });
+
+    test('高度很紧（横屏 / 平板分栏）时由高度兜住', () {
+      final h = monthGridRowHeight(
+        availableWidth: 900,
+        availableForGrid: 300,
+        weekNumberColumnVisible: true,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      // 宽向 860/7=122.9，高向 300/6=50 → 取 50。
+      expect(h, closeTo(50, 1e-9));
+    });
+
+    test('两端钳制生效（极窄 / 极矮都不会画成畸形）', () {
+      final tiny = monthGridRowHeight(
+        availableWidth: 100,
+        availableForGrid: 999,
+        weekNumberColumnVisible: true,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      // (100-20-30)/7 = 7.14 → 被下限抬到 44。
+      expect(tiny, 44);
+      final huge = monthGridRowHeight(
+        availableWidth: 4000,
+        availableForGrid: 4000,
+        weekNumberColumnVisible: false,
+        horizontalPadding: 10,
+        weekLabelWidth: 30,
+        minRowHeight: 44,
+        maxRowHeight: 78,
+      );
+      expect(huge, 78);
+    });
+  });
+
   group('常量口径', () {
     test('42 格的合法行号范围是 0..5', () {
       expect(monthGridRowBounds(), (0, 5));

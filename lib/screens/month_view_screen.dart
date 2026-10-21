@@ -200,9 +200,12 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         onNextMonth: () => _shiftMonth(1),
         onBackToCurrentMonth: _backToCurrentMonth,
       ),
-      // 翻月时卡片在动、壁纸钉在屏幕上：预糊纹理必须每帧重取景，
-      // 否则玻璃被整块搬走（半边磨砂半边透明）。
-      pagingRepaint: _pager,
+      // 卡片相对屏幕一动，预糊纹理就必须重取景（否则玻璃里那层背景跟着卡片
+      // 走，读起来是"玻璃内部背景不动"）。这里有**两条**运动源，必须都接：
+      // 横向翻月（PageController）+ 纵向收起/展开（网格动画控制器）。
+      // 只接翻页那条就是 2026-10-21 用户实测到的 bug：左右滑玻璃正常、
+      // 上下收放时玻璃内部背景纹丝不动。
+      pagingRepaint: Listenable.merge([_pager, _gridExpand]),
       body: PageView.builder(
         controller: _pager,
         itemCount: _pageCount,
@@ -283,9 +286,17 @@ class _MonthViewScreenState extends State<MonthViewScreen>
             viewportPadding * 2 -
             agendaMinHeight -
             MonthGrid.headerHeight;
-        final rowHeight = (gridBudget / 6).clamp(
-          MonthGrid.minRowHeight,
-          MonthGrid.maxRowHeight,
+        // 行高：取「高度能给的」与「宽度能给的」较小者 —— 目标是**正方形**
+        // （判据在 `monthGridRowHeight`，纯函数可单测）。
+        final rowHeight = monthGridRowHeight(
+          availableWidth: constraints.maxWidth,
+          availableForGrid: gridBudget,
+          // 与 `MonthGrid` 内部同一判据：学期没配置时那一列根本不占位。
+          weekNumberColumnVisible: settings.semesterStartDate != null,
+          horizontalPadding: MonthGrid.horizontalPadding,
+          weekLabelWidth: MonthGrid.weekLabelWidth,
+          minRowHeight: MonthGrid.minRowHeight,
+          maxRowHeight: MonthGrid.maxRowHeight,
         );
         // 拖拽行程按这个行高折算（1:1 跟手）；存字段是因为手势回调拿不到
         // LayoutBuilder 的局部量。
@@ -293,9 +304,11 @@ class _MonthViewScreenState extends State<MonthViewScreen>
 
         return SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
-            10,
+            // 与 `MonthGrid.horizontalPadding` 同一个值：行高预算按它算格宽，
+            // 两处不同源会让"正方形"算偏。
+            MonthGrid.horizontalPadding,
             viewportPadding,
-            10,
+            MonthGrid.horizontalPadding,
             // 玻璃坞内嵌宿主的底部余量：滚动到底时议程才不会被药丸压住。
             viewportPadding + GlassDockScrollReliefScope.insetOf(context),
           ),

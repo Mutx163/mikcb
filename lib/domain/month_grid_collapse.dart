@@ -121,6 +121,36 @@ double monthGridSettleTarget({
   return startValue >= 0.5 ? 1 : 0;
 }
 
+/// 月格子该用的行高：**目标是正方形**。
+///
+/// 用户 2026-10-21 口径：「收起到一行的时候，日期框框不是正方形，是一个上下的
+/// 长方形」。根因是旧口径只按高度均分（6 行铺满可用高度、上限 78），而格宽只有
+/// 约 `(屏宽 - 左右内边距 - 周次列) / 7 ≈ 47` —— 于是格子被拉成竖长方形。
+///
+/// 正确判据是取「高度能给的」与「宽度能给的」**较小者**：手机竖屏宽度更紧，
+/// 按宽度定行高自然得到正方形；平板 / 横屏那种高度更紧的场景由高度兜住。
+///
+/// [horizontalPadding] 与网格给滚动视图的水平 padding 必须同源（同一个常量），
+/// 否则算出来的正方形会偏、格子又变回长方形。
+double monthGridRowHeight({
+  required double availableWidth,
+  required double availableForGrid,
+  required bool weekNumberColumnVisible,
+  required double horizontalPadding,
+  required double weekLabelWidth,
+  required double minRowHeight,
+  required double maxRowHeight,
+}) {
+  final horizontalBudget =
+      availableWidth -
+      horizontalPadding * 2 -
+      (weekNumberColumnVisible ? weekLabelWidth : 0);
+  final squareRowHeight = horizontalBudget / kMonthGridDaysPerRow;
+  return math
+      .min(availableForGrid / kMonthGridRowCount, squareRowHeight)
+      .clamp(minRowHeight, maxRowHeight);
+}
+
 /// 数学边界自检用的常量组合（测试引用；运行时不消费）。
 ///
 /// 放这里而不是测试里：钳制范围与行列数是**同一套口径**的两半，分开写迟早漂。

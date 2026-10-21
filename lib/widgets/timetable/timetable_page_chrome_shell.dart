@@ -99,12 +99,19 @@ class TimetablePageChromeShell extends StatefulWidget {
   /// 壁纸**主体带**（正文 / 卡片区）亮度，用于判卡面墨色。
   final double? bodyLuminance;
 
-  /// 横向翻页 / 滚动时驱动预糊位图重采样的 Listenable。
+  /// 卡片**相对屏幕移动**时驱动预糊位图重采样的 Listenable。
   ///
-  /// 预糊填充画在各自的 `RepaintBoundary` 里：卡片跟着 pager 平移时，纹理会被
-  /// **整块搬走**而不是按新屏幕位置重新取景（卡片半边磨砂半边透明）。把控制它的
-  /// 那个 `PageController` 传进来，每帧重采样即可（首页 / 日视图同一条机制，
-  /// 见 `PreblurredWallpaperScope.repaint`）。
+  /// 预糊填充画在各自的 `RepaintBoundary` 里：卡片一移动，纹理就会被**整块搬走**
+  /// 而不是按新屏幕位置重新取景 —— 玻璃里那层背景跟着卡片走、看着像"背景不动"
+  /// （用户 2026-10-21 口径：「玻璃左右滑动是正常的，上下滑动是玻璃内部背景不动
+  /// 的」）。
+  ///
+  /// 横向翻页与纵向收缩是**两条不同的运动源**，必须都接上：
+  /// - 翻月：`PageController`（横向位移）；
+  /// - 收起 / 展开网格：那个 `AnimationController`（卡片纵向位移，没有滚动发生）。
+  ///
+  /// 页面应当传 `Listenable.merge([翻页控制器, 展开控制器])`。只传前者就是这次
+  /// 的 bug：左右滑正常、上下收放时玻璃内部背景纹丝不动。
   final Listenable? pagingRepaint;
 
   /// 标题行高度：与 `HyperosRootHeader.minHeight` /
@@ -388,8 +395,9 @@ class _TimetablePageChromeShellState extends State<TimetablePageChromeShell> {
             wallpaperAlignX: settings.homePageWallpaperAlignX,
             wallpaperAlignY: settings.homePageWallpaperAlignY,
             wallpaperScale: settings.homePageWallpaperScale,
-            // 横向翻页时卡片在动、壁纸钉在屏幕上：必须每帧重取景，
-            // 否则磨砂纹理被整块搬走（半边磨砂半边透明）。
+            // 卡片一动（横向翻页 / 纵向收放）壁纸都钉在屏幕上：必须每帧重取景，
+            // 否则磨砂纹理被整块搬走 —— 玻璃里的背景跟着卡片走，
+            // 读起来就是"上下滑动时玻璃内部背景不动"。
             repaint: widget.pagingRepaint,
             child: stack,
           )
