@@ -105,15 +105,19 @@ void main() {
     );
   });
 
-  // ── 面板列表必须真的接上那份 physics（2026-10-21 第二轮）──
+  // ── 面板列表的用户滚动必须关掉（2026-10-21 第三轮）──
   //
-  // 用户口径：「下滑的时候应该先收起上面为一行，然后再是下面信息区域滚动」。
+  // 第二版把判据放进自定义 ScrollPhysics，单测全绿、真机仍然各滚各的。
+  // 根因是机制冲突，不是参数问题：
   //
-  // 判据住进了 physics（`MonthPanelScrollPhysics`），但那要靠**页面把它传给
-  // 列表**才生效。接线漏了的话：physics 写得再对，列表也照旧自己滚 —— 而且
-  // 单测 `month_panel_drag_area_test` 是拿 harness 自己接的线，**抓不到漏接**。
-  // 所以必须在真实页面里钉一次"列表身上挂的就是这份 physics"。
-  testWidgets('面板列表挂的是 MonthPanelScrollPhysics（不是默认 physics）', (tester) async {
+  //   网格收起 ⇒ 面板变高 ⇒ 列表 viewportDimension 变大 ⇒ maxScrollExtent
+  //   变小 ⇒ 缩到 0 时 Scrollable 判定不可滚动、当场 goBallistic 结束拖动。
+  //
+  // 实测轨迹 max: 61 → 36 → 11 → 0 + ScrollEndNotification，此后指针怎么动
+  // 都不再被处理。所以必须让 Scrollable 完全别管用户滚动。
+  testWidgets('面板列表挂的是 NeverScrollableScrollPhysics（Scrollable 不参与拖拽）', (
+    tester,
+  ) async {
     await pumpScreen(tester);
     final scrollView = tester.widget<SingleChildScrollView>(
       find.descendant(
@@ -123,20 +127,75 @@ void main() {
     );
     expect(
       scrollView.physics,
-      isA<MonthPanelScrollPhysics>(),
-      reason: '列表没挂上游 physics 的话，拖拽判据一趟都不跑，'
-          '会退回"列表先滚、网格不动"的旧行为',
+      isA<NeverScrollableScrollPhysics>(),
+      reason: '让 Scrollable 自己滚，它会在"面板变高使 maxScrollExtent 缩到 0"'
+          '的瞬间结束整次拖动 —— 这是第二版真机上失效的死因',
     );
-    // 挂上的那份必须与页面里那个 dragState 是同一个实例：
-    // 两个实例 = 状态各记一份，判据永远读到"网格不能收"。
-    final physics = scrollView.physics! as MonthPanelScrollPhysics;
-    final area = tester.widget<MonthPanelDragArea>(
-      find.byType(MonthPanelDragArea),
+  });
+
+  // ── 面板滑动的一体化（2026-10-21 第三轮，必须跑在真实页面上）──
+  //
+  // 前两版都栽在"单测绿、真机废"：测试搭自己接线的 harness，测的是我以为的
+  // 机制。所以这条直接在真实页面上拖，断言的是**用户能看到的两件事**：
+  // 网格真的收到 0，然后是列表真的滚了 —— 而且全程同一条手势。
+  testWidgets('真实页面：一次长拖先把网格收成一行，再滚列表', (tester) async {
+    await pumpScreen(tester);
+
+    final area = find.byType(MonthPanelDragArea);
+    expect(area, findsOneWidget, reason: '面板拖拽区必须存在');
+    final controller = tester
+        .widget<SingleChildScrollView>(
+          find.descendant(
+            of: area,
+            matching: find.byType(SingleChildScrollView),
+          ),
+        )
+        .controller!;
+
+    double collapse() =>
+        tester.widget<MonthGrid>(find.byType(MonthGrid)).collapseProgress;
+
+    expect(collapse(), 1.0, reason: '进入时网格应完全展开');
+
+    // 一条连续手势：网格必须真的走到底（第二版到第 4 步就被掐断了）。
+    final gesture = await tester.startGesture(tester.getCenter(area));
+    var gridMoved = false;
+    var listMovedWhileGridOpen = false;
+    var prevT = collapse();
+    var prevOffset = controller.offset;
+    for (var step = 0; step < 20; step++) {
+      await gesture.moveBy(const Offset(0, -25));
+      await tester.pump();
+      final nextT = collapse();
+      final nextOffset = controller.offset;
+      if (nextT < prevT - 1e-9) {
+        gridMoved = true;
+      }
+      if (nextT > 0.001 && (nextOffset - prevOffset).abs() > 0.5) {
+        listMovedWhileGridOpen = true;
+      }
+      prevT = nextT;
+      prevOffset = nextOffset;
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(
+      gridMoved,
+      isTrue,
+      reason: '拖面板必须驱动网格收放 —— 上一版这里整段没反应',
     );
     expect(
-      identical(physics.dragState, area.dragState),
-      isTrue,
-      reason: 'physics 与 DragArea 必须共用一个 dragState（状态各记一份就永远对不上）',
+      collapse(),
+      0.0,
+      reason: '一次足够长的上拖必须把网格收成一行。'
+          '若停在中间（实测旧版停在 0.67），说明拖动被 Scrollable 掐断了',
+    );
+    expect(
+      listMovedWhileGridOpen,
+      isFalse,
+      reason: '网格没收到底之前列表不许跟着滚：'
+          '这正是用户抱怨的「它可以直接下滑信息区域滚动，而不是先收起上面的东西」',
     );
   });
 

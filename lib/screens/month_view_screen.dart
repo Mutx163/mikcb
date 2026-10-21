@@ -578,17 +578,21 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         // + 分流：纵向拖拽全由 [MonthPanelDragArea] 接管，网格先吃到边界再喂列表、
         // 到边界后同一次手势里无缝接着收放表格。详见该组件的类注释。
         child: MonthPanelDragArea(
+          scrollController: _panelScroll,
           dragState: _panelDrag,
-          // 列表走这份 physics：轮到网格时它的用户位移被吞掉，于是同一段位移
-          // 只会被消费一次。**类型必须恒定**（永远是 MonthPanelScrollPhysics），
-          // 否则 Scrollable 会重建 position、把正在进行的拖动断掉。
+          // ⚠️ 列表的**用户滚动必须关掉**（这一行是本轮的核心）。
           //
-          // ⚠️ 判据必须在这一层（physics），不能放在外层 Listener 里：
-          // Listener 是 Scrollable 的祖先，指针事件**最深者先收到**，等它
-          // 改判据时列表早就把这一帧位移处理完了（本仓实测每次都漏 416px）。
+          // 让 Scrollable 自己滚，它会在"网格收起、面板变高"的瞬间把
+          // maxScrollExtent 缩到 0，然后判定不可滚动、当场 goBallistic 结束
+          // 整次拖动 —— 实测轨迹 61 → 36 → 11 → 0，同一帧发出
+          // ScrollEndNotification，此后指针怎么动都不再被处理，网格停在半收起、
+          // 抬手弹回全展开。这不是参数问题，是机制冲突。
+          //
+          // 现在位移由 MonthPanelDragArea 算好、jumpTo 落进来：一个指针源驱动
+          // 两块内容，一体化是结构保证的（惯性由它在抬手时补）。
           child: SingleChildScrollView(
             controller: _panelScroll,
-            physics: MonthPanelScrollPhysics(dragState: _panelDrag),
+            physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(
               6,
               0,

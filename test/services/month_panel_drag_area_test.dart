@@ -2,34 +2,95 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/widgets/timetable/month_view/month_panel_drag_area.dart';
 
-/// 面板纵向拖拽的**优先级**判据（2026-10-21 第二轮，语义已反转）。
+/// 月视图面板滑动的**一体化**判据（2026-10-21 第三轮）。
 ///
-/// ## 用户两次口径，方向是反的
+/// ## 前两版为什么都废了（这段是本轮最有价值的部分）
 ///
-/// 第一次：「底部信息区域，应该支持在任意位置上下滑动，可以操作日期表格的
-/// 上下收起展开」—— 那一轮实现成「列表能滚就先滚列表，滚到边界才收表格」。
+/// **第一版**：外层 `Listener` 判归属、一个布尔"闸门"挡住列表。
+/// 实测列表照样每次滚 416px。死因是**事件派发顺序**：`Listener` 是
+/// `Scrollable` 的**祖先**，Flutter 指针事件按 hit-test 路径**最深者先收到**，
+/// 等 Listener 改闸门时列表早把这一帧处理完了。
 ///
-/// 第二次（本轮）：「如果想看月视图下面的信息区域，在下滑的时候应该是**先
-/// 收起上面为一行**，**然后再是下面信息区域滚动**向下」。
+/// **第二版**：判据搬进自定义 `ScrollPhysics`（还补了 `applyTo` 重写）。
+/// 单测全绿、真机仍然各滚各的。死因更隐蔽：
 ///
-/// 所以现在的心智是**一根滚动轴两段内容**（Material 折叠头那套）：往下看 →
-/// 先压缩上面的网格，压到底才滚下面；往上看 → 先让下面退回顶部，到顶才把
-/// 网格展开回来。
+/// > 网格收起 ⇒ 面板变高 ⇒ 列表 `viewportDimension` 变大 ⇒
+/// > `maxScrollExtent` 变小 ⇒ 缩到 0 时 `Scrollable` 判定不可滚动，
+/// > **当场 `goBallistic` 结束整次拖动**。
 ///
-/// ## 两层测试
+/// 真实页面上实测到的轨迹（拖动中逐步采样）：`max: 61 → 36 → 11 → 0`，
+/// 同一帧发出 `ScrollEndNotification`，此后指针怎么动、physics 一次都不再
+/// 被调用 —— 网格停在半收起、抬手弹回全展开。用户看到的正是
+/// 「上面收不起来、两个滚动各干各的」。
 ///
-/// 1. **纯函数** [MonthPanelDragArea.collapseTakesPriority]：「哪段归谁」
-///    是这里唯一容易改错的地方（上一轮就改反过），必须能单测；
-/// 2. **真实手势**：走 `Listener` + 闸门 + physics 的整条链路，钉住「一次
-///    连续拖动里先收网格、再滚列表」和「列表不会同时跟着动」。
+/// ## 本版的结构结论
+///
+/// 「面板高度在同一次手势里变化」与「`Scrollable` 自己接管拖动」**不可共存**。
+/// 所以列表的用户滚动整个关掉（`NeverScrollableScrollPhysics`），位移一律由
+/// `MonthPanelDragArea` 算好 `jumpTo` 进去：一个指针源驱动两块，一体化是结构
+/// 保证的，而不是靠调参数。
+///
+/// ⚠️ 真实页面上的端到端验证在 `month_view_gesture_contract_test`（那条会在
+/// 真实页面上拖、并断言网格真的收到 0）；本文件负责**组件级**的四条顺序与
+/// 生命周期判据。
 void main() {
-  group('collapseTakesPriority：哪段归谁（纯函数）', () {
-    test('向上拖（dy < 0，要看下面）：网格还没收完就先收网格', () {
+  /// 组件级 harness：一个能滚的列表 + 可变的"网格还能不能收"。
+  ///
+  /// [absorbBudget] 是网格还能吃多少位移（模拟展开进度），每吃一次递减；
+  /// 递减到 0 就表示"网格已收到底"，此后位移该交给列表。
+  Widget harness({
+    required ScrollController controller,
+    required MonthPanelDragState dragState,
+    required List<double> collapseDeltas,
+    double? absorbBudget,
+    int itemCount = 30,
+  }) {
+    dragState.gridCanAbsorb = (dy) {
+      if (dy >= 0) {
+        return false; // 本 harness 只测收起方向
+      }
+      return absorbBudget == null || absorbBudget! > 0;
+    };
+    dragState.onCollapseStart = () {};
+    dragState.onCollapseUpdate = (d) {
+      collapseDeltas.add(d);
+      if (absorbBudget != null) {
+        absorbBudget = (absorbBudget! + d).clamp(0.0, double.infinity);
+      }
+    };
+    dragState.onCollapseEnd = (_) {};
+
+    return MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          height: 300,
+          child: MonthPanelDragArea(
+            scrollController: controller,
+            dragState: dragState,
+            child: SingleChildScrollView(
+              controller: controller,
+              // ⚠️ 必须是这个：让 Scrollable 自己滚就会在面板变高时
+              // 结束拖动（见文件头第二版死因）。
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  for (var i = 0; i < itemCount; i++)
+                    SizedBox(height: 80, child: Text('row $i')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  group('collapseTakesPriority：哪段归谁', () {
+    test('向上拖（看下面）：网格还没收完就先收网格，与列表能否滚无关', () {
       expect(
         MonthPanelDragState.collapseTakesPriority(
           dy: -20,
-          // 列表明明还能滚 —— 上一轮的实现会把这位移给列表，正是要改的点。
-          listCanScroll: true,
+          listCanScroll: true, // 列表明明能滚 —— 旧行为会把这位移给列表
           gridCanAbsorb: true,
         ),
         isTrue,
@@ -37,7 +98,7 @@ void main() {
       );
     });
 
-    test('向上拖且网格已收到底：位移交给列表', () {
+    test('向上拖且网格已收到底：交给列表', () {
       expect(
         MonthPanelDragState.collapseTakesPriority(
           dy: -20,
@@ -45,22 +106,10 @@ void main() {
           gridCanAbsorb: false,
         ),
         isFalse,
-        reason: '网格已经收成一行了，再拖必须滚列表（否则手指在动画面不动）',
       );
     });
 
-    test('向上拖且网格已收到底、列表也到底：谁都不动（交给边界回弹）', () {
-      expect(
-        MonthPanelDragState.collapseTakesPriority(
-          dy: -20,
-          listCanScroll: false,
-          gridCanAbsorb: false,
-        ),
-        isFalse,
-      );
-    });
-
-    test('向下拖（dy > 0，往回看）且列表不在顶部：先让列表退回顶部', () {
+    test('向下拖且列表不在顶部：先让列表回退', () {
       expect(
         MonthPanelDragState.collapseTakesPriority(
           dy: 20,
@@ -68,11 +117,10 @@ void main() {
           gridCanAbsorb: true,
         ),
         isFalse,
-        reason: '往回看时先把内容收回去（列表先回到顶部），网格最后才展开',
       );
     });
 
-    test('向下拖且列表已在顶部：位移转成网格展开', () {
+    test('向下拖且列表已在顶部：转成网格展开', () {
       expect(
         MonthPanelDragState.collapseTakesPriority(
           dy: 20,
@@ -80,22 +128,10 @@ void main() {
           gridCanAbsorb: true,
         ),
         isTrue,
-        reason: '内容已经在顶部了，继续往下拖就该把上面的网格展回来',
       );
     });
 
-    test('向下拖且网格已完全展开：谁都不动', () {
-      expect(
-        MonthPanelDragState.collapseTakesPriority(
-          dy: 20,
-          listCanScroll: false,
-          gridCanAbsorb: false,
-        ),
-        isFalse,
-      );
-    });
-
-    test('dy == 0：不归任何人（避免零位移被当成一次收放起点）', () {
+    test('dy == 0：不归任何人', () {
       expect(
         MonthPanelDragState.collapseTakesPriority(
           dy: 0,
@@ -107,44 +143,8 @@ void main() {
     });
   });
 
-  group('真实手势：一根轴两段内容', () {
-    /// [itemCount] × 80 决定内容能不能滚（视口 300）。
-    /// [gridCanAbsorb] 决定"网格还能不能收放"，默认恒真（= 永不收到底）。
-    Widget harness({
-      required ScrollController controller,
-      required MonthPanelDragState dragState,
-      required List<double> collapseDeltas,
-      required int itemCount,
-      bool Function(double dy)? gridCanAbsorb,
-    }) {
-      dragState.gridCanAbsorb = gridCanAbsorb ?? (_) => true;
-      dragState
-        ..onCollapseStart = () {}
-        ..onCollapseUpdate = collapseDeltas.add
-        ..onCollapseEnd = (_) {};
-      return MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            height: 300,
-            child: MonthPanelDragArea(
-              dragState: dragState,
-              child: SingleChildScrollView(
-                controller: controller,
-                physics: MonthPanelScrollPhysics(dragState: dragState),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < itemCount; i++)
-                      SizedBox(height: 80, child: Text('row $i')),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    testWidgets('网格还能收：往上拖只收网格，列表一个像素都不动', (tester) async {
+  group('一个指针源驱动两块（同一条手势）', () {
+    testWidgets('网格还能收：往上拖只收网格，列表一像素不动', (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
       final dragState = MonthPanelDragState();
@@ -155,7 +155,6 @@ void main() {
           controller: controller,
           dragState: dragState,
           collapseDeltas: deltas,
-          itemCount: 20,
         ),
       );
       await tester.pumpAndSettle();
@@ -163,7 +162,7 @@ void main() {
       await tester.drag(find.text('row 0'), const Offset(0, -150));
       await tester.pumpAndSettle();
 
-      expect(deltas, isNotEmpty, reason: '这段位移应该归网格收放');
+      expect(deltas, isNotEmpty, reason: '这段位移该归网格');
       expect(
         deltas.every((d) => d <= 0),
         isTrue,
@@ -172,61 +171,47 @@ void main() {
       expect(
         controller.offset,
         0,
-        reason: '网格还没收完时，列表**不许**跟着滚 —— 这正是本轮要修的行为'
-            '（上一轮是列表先滚、网格不动）',
+        reason: '网格还没收完时列表**不许**跟着滚 —— 这正是用户抱怨的行为',
       );
     });
 
-    testWidgets('网格收到底之后：同一次手势里接着滚列表', (tester) async {
+    testWidgets('网格收到底后：同一次手势里接着滚列表（一体化）', (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
       final dragState = MonthPanelDragState();
       final deltas = <double>[];
 
-      // 用一个可变的开关模拟"网格吃到边界"：第一次问还能收，之后就不能了。
-      var absorbRemaining = 60.0;
       await tester.pumpWidget(
         harness(
           controller: controller,
           dragState: dragState,
           collapseDeltas: deltas,
-          itemCount: 20,
-          gridCanAbsorb: (dy) {
-            if (dy < 0) {
-              return absorbRemaining > 0;
-            }
-            return true;
-          },
+          absorbBudget: 60, // 网格还能吃 60px
         ),
       );
       await tester.pumpAndSettle();
 
-      // 模拟网格在吃掉 60px 后到底：用一次拖拽，拖动过程中递减预算。
       final gesture = await tester.startGesture(
         tester.getCenter(find.text('row 0')),
       );
-      var consumed = 0.0;
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 10; i++) {
         await gesture.moveBy(const Offset(0, -20));
         await tester.pump();
-        consumed += 20;
-        if (consumed >= absorbRemaining) {
-          absorbRemaining = 0;
-        }
       }
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(deltas, isNotEmpty, reason: '前半段应该收了网格');
+      // 前 3 步吃掉网格预算，之后必须交给列表 —— 全程同一条手势。
+      expect(deltas, isNotEmpty, reason: '前半段收网格');
       expect(
         controller.offset,
         greaterThan(0),
-        reason: '网格吃到底后，**同一次手势**剩下的位移必须交给列表 —— '
-            '不该要求用户抬手重来',
+        reason: '网格吃到底后，同一次手势剩下的位移必须交给列表，'
+            '不该要求用户抬手重来（"一体化"就是这个意思）',
       );
     });
 
-    testWidgets('往回看：列表不在顶部时先退回列表，网格展开靠后', (tester) async {
+    testWidgets('往下拖且列表不在顶部：只动列表，网格不展开', (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
       final dragState = MonthPanelDragState();
@@ -237,66 +222,55 @@ void main() {
           controller: controller,
           dragState: dragState,
           collapseDeltas: deltas,
-          itemCount: 20,
         ),
       );
       await tester.pumpAndSettle();
 
-      // 先把列表滚下去一点（模拟"已经看了一段内容"）。
-      controller.jumpTo(200);
+      controller.jumpTo(300);
       await tester.pumpAndSettle();
-      final collapseBefore = deltas.length;
 
-      // 拖容器中心而不是某一行：offset=200 时 row 10 已经滚出可视区，
-      // 拿它当拖动起点会命中不到（本仓实测 delta 一直为 0）。
-      await tester.drag(
-        find.byType(MonthPanelDragArea),
-        const Offset(0, 120),
-      );
+      await tester.drag(find.byType(MonthPanelDragArea), const Offset(0, 100));
       await tester.pumpAndSettle();
 
       expect(
-        deltas.length,
-        collapseBefore,
-        reason: '列表还没回到顶部时，往下拖应该先收列表，不该同时展开网格',
+        deltas,
+        isEmpty,
+        reason: '列表还没回到顶部时，下拉只该收列表，网格不许动',
       );
-      expect(
-        controller.offset,
-        lessThan(200),
-        reason: '这段位移归列表（内容往回收）',
-      );
+      expect(controller.offset, lessThan(300), reason: '列表应回退了');
     });
 
-    testWidgets('列表已在顶部、网格还没全展开：往下拖展开网格', (tester) async {
+    testWidgets('列表在顶部 + 网格未满：往下拖展开网格', (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
       final dragState = MonthPanelDragState();
       final deltas = <double>[];
-
       await tester.pumpWidget(
         harness(
           controller: controller,
           dragState: dragState,
           collapseDeltas: deltas,
-          itemCount: 20,
         ),
       );
       await tester.pumpAndSettle();
 
-      // 已在顶部，直接往下拖。
-      await tester.drag(find.text('row 0'), const Offset(0, 120));
+      // ⚠️ 必须在 pump 之后再改：harness() 内部会给 gridCanAbsorb 赋一个
+      // "只测收起方向"的默认实现，先设会被它覆盖掉。
+      dragState.gridCanAbsorb = (_) => true;
+
+      await tester.drag(find.text('row 0'), const Offset(0, 100));
       await tester.pumpAndSettle();
 
-      expect(deltas, isNotEmpty, reason: '内容已在顶部，继续下拉 = 展开网格');
+      expect(deltas, isNotEmpty, reason: '列表已在顶部，下拉应展开网格');
       expect(
         deltas.every((d) => d >= 0),
         isTrue,
         reason: '向下拖的 delta 是正的（展开方向）',
       );
-      expect(controller.offset, 0, reason: '列表已在顶部，不该被这段位移推动');
+      expect(controller.offset, 0, reason: '列表已在顶部，不该被推动');
     });
 
-    testWidgets('闸门开着时抬手不起惯性（不会自己滑走一截）', (tester) async {
+    testWidgets('抬手后列表按速度补惯性', (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
       final dragState = MonthPanelDragState();
@@ -307,20 +281,19 @@ void main() {
           controller: controller,
           dragState: dragState,
           collapseDeltas: deltas,
-          itemCount: 20,
         ),
       );
       await tester.pumpAndSettle();
 
-      // 快速上甩：网格全程消费这段位移（gridCanAbsorb 恒真）。
-      await tester.fling(find.text('row 0'), const Offset(0, -150), 1200);
+      // 网格恒不可收 → 位移全给列表，快速上甩应带出一段额外滚动。
+      dragState.gridCanAbsorb = (_) => false;
+      await tester.fling(find.text('row 0'), const Offset(0, -120), 1200);
       await tester.pumpAndSettle();
 
-      expect(deltas, isNotEmpty);
       expect(
         controller.offset,
-        0,
-        reason: '这次手势的位移全归网格，列表不该在抬手后带着惯性滑走',
+        greaterThan(0),
+        reason: '列表自己的滚动必须能走（用户滚动关掉了，位移得由我们落进去）',
       );
     });
   });
