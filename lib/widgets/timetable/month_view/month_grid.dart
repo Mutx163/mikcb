@@ -147,8 +147,10 @@ class MonthGrid extends StatelessWidget {
     // 窗口高度按「表头 + 1 行」算，可内容整体上移把表头推出了窗口 —— 露出来的
     // 自然是被推走那一块后面的上一行下半截。表头是固定表头，不参与滚动。
     //
-    // 行区的窗口高度按行数插值、内容按 keptRow × 行高 × (1 - 进度) 上移，
-    // 于是收起时恰好只剩保留行完整一格，展开时窗口长到 6 行、位移归零。
+    // 现在按用户口径（2026-10-21 截图）实现「上下同时收」：窗口变矮、内容上移，
+    // 保留行上方的行**走出窗口上沿**，保留行下方的行**被下方面板盖住**。
+    // 两者叠加，保留行最后停在窗口最上沿、紧贴面板拉杆。
+    //
     // 42 格始终在树上（InkWell 状态与 widget key 不丢）；Transform.translate
     // 会连带命中测试一起移，保留行的格子照常可点。
     final visibleRows = monthGridVisibleRows(collapseProgress);
@@ -156,11 +158,17 @@ class MonthGrid extends StatelessWidget {
       0,
       (grid.days.length - 1) ~/ kMonthGridDaysPerRow,
     );
-    final rowOffset = keptRow * rowHeight * (1 - collapseProgress);
+    // 内容上移量：收起时把保留行顶到窗口顶端，展开时归零。
+    final rowOffset = monthGridScrollOffset(
+      keptRow: keptRow,
+      rowHeight: rowHeight,
+      rowOffsetProgress: 1 - collapseProgress,
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         headerRow,
+        // 窗口裁剪：高度按可见行数插值，内容整体上移。
         ClipRect(
           child: SizedBox(
             height: visibleRows * rowHeight,

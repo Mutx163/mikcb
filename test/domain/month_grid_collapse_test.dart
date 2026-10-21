@@ -289,6 +289,73 @@ void main() {
     });
   });
 
+  group('monthGridLayout：上下同时收（2026-10-21 用户截图口径）', () {
+    MonthGridLayout layoutAt(double t, {int keptRow = 3}) => monthGridLayout(
+      t: t,
+      availableHeight: 600,
+      headerHeight: 24,
+      horizontalPadding: 10,
+      availableWidth: 360,
+      weekNumberColumnVisible: true,
+      weekLabelWidth: 30,
+      minRowHeight: 44,
+      maxRowHeight: 78,
+      keptRow: keptRow,
+    );
+
+    test('行高恒按 6 行算：收起时格子不会突然变高', () {
+      // 可用高 600、表头 24 → 576/6 = 96，但宽向 (360-20-30)/7 = 44.28 更紧，
+      // 所以行高恒为 44.28 —— 与进度无关（否则收起像"字放大了"）。
+      final expanded = layoutAt(1);
+      final collapsed = layoutAt(0);
+      expect(expanded.rowHeight, closeTo(310 / 7, 1e-9));
+      expect(collapsed.rowHeight, closeTo(310 / 7, 1e-9));
+    });
+
+    test('窗口高：展开 = 表头 + 6 行；收起 = 表头 + 1 行', () {
+      const rowH = 310 / 7;
+      expect(layoutAt(1).gridHeight, closeTo(24 + 6 * rowH, 1e-9));
+      expect(layoutAt(0).gridHeight, closeTo(24 + rowH, 1e-9));
+    });
+
+    test('面板高 = 可用高 - 网格窗口高（它盖住腾出来的那段）', () {
+      for (final t in [0.0, 0.5, 1.0]) {
+        final l = layoutAt(t);
+        expect(l.panelHeight, closeTo(600 - l.gridHeight, 1e-9));
+      }
+      // 收起时面板必须变得很高（把下方几行盖住）。
+      expect(layoutAt(0).panelHeight, greaterThan(layoutAt(1).panelHeight));
+    });
+
+    test('内容位移：展开为 0，收起把保留行顶到窗口顶端', () {
+      const rowH = 310 / 7;
+      expect(layoutAt(1).scrollOffset, 0);
+      // 保留行 3 → 3 × 行高。
+      expect(layoutAt(0).scrollOffset, closeTo(3 * rowH, 1e-9));
+    });
+
+    test('中间态按进度插值：位移 = keptRow × 行高 × (1 - t)', () {
+      const rowH = 310 / 7;
+      final l = layoutAt(0.4);
+      expect(l.scrollOffset, closeTo(3 * rowH * 0.6, 1e-9));
+    });
+
+    test('保留行在第 5 行（0 基 4）时位移跟着它走 —— 用户截图那种情况', () {
+      final l = layoutAt(0, keptRow: 4);
+      expect(l.scrollOffset, closeTo(4 * (310 / 7), 1e-9));
+      // 保留行下方只剩 1 行，那行就是被面板盖住的。
+      expect(l.keptRow, 4);
+    });
+
+    test('进度越界钳制：不会算出负的窗口高或负的面板高', () {
+      for (final t in [-2.0, 3.0]) {
+        final l = layoutAt(t);
+        expect(l.gridHeight, greaterThan(0));
+        expect(l.panelHeight, greaterThanOrEqualTo(0));
+      }
+    });
+  });
+
   group('常量口径', () {
     test('42 格的合法行号范围是 0..5', () {
       expect(monthGridRowBounds(), (0, 5));

@@ -1,20 +1,28 @@
-/// 月历网格的**收起 / 展开**判据（2026-10-20 立，纯 Dart 可单测）。
+/// 月视图「网格 ⇄ 条目面板」的收起判据（2026-10-20 立，2026-10-21 重构）。
 ///
-/// ## 用户要的交互
+/// ## 用户口径（2026-10-21，带截图）
 ///
-/// 「支持上滑、下拉，上滑把日期列表收起，收到只有一行，显示一个星期七天的，
-/// 动画流畅，展开是把这个日期列表展开到底部，显示铺底」。
+/// > 「月视图永远显示六行日期，每一行就是一个星期。像截图一样，然后收起为一栏
+/// > 的时候，应该是：如果这一周在这个月份的第五行，就应该往上滑动的时候，
+/// > 上面三行向上收起，下面两行往上逐渐被下面的东西盖起来，然后下面显示一个
+/// > 拉杆。下面的条目视图不支持左右滑动，只支持上下滑动，上下滑动操作的就是
+/// > 这个收起操作。上面的月份格子支持左右和上下滑动。」
 ///
-/// 状态只有一个连续量：展开进度 `t`（0 = 收起 / 1 = 展开），手指拖着走、
-/// 松手按下面的判据吸附到两端。渲染（裁剪 + 平移）在 `MonthGrid` 里，
-/// 本文只放**判据**——「收起留哪一行」「可见行数怎么插值」「拖多少算翻面」，
-/// 这些都有明确期望值，埋在 widget 里就只能靠肉眼看。
+/// 翻译成几何：**收起不是把网格裁成一行**，而是**下面那层面板长高、把网格从
+/// 下往上盖住**，同时网格自己往上顶。两种位移叠加，于是：
 ///
-/// ## 为什么「收起」是 1 行而不是全藏
+/// * 保留行**上方**的行往屏幕上边走出去（被顶上去）；
+/// * 保留行**下方**的行被面板盖住（不是被裁掉，是被盖住）。
 ///
-/// 收起态要能一眼看出「这一周是哪一周、今天周几」，所以保留**一周七天的
-/// 日期行**（外加星期表头）。全藏起来就只剩空壳，得先展开才知道自己在看哪一周
-/// —— 系统日历（iOS / Google）的收起态同样保留一周。
+/// 视觉结果就是「上下同时收向保留行」，保留行最后正好停在面板上沿、贴着拉杆。
+///
+/// ## 两个独立量
+///
+/// * [kMonthGridRowCount]：网格**永远** 6 行（用户明确要求，不随月份变 4~6）；
+/// * `t`（展开进度 0..1）：0 = 完全收起（只剩一行），1 = 完全展开。
+///
+/// 渲染在 `MonthGrid` / 页面里，本文只放判据 —— 「保留哪一行」「两个位移各多少」
+/// 「拖多少算翻面」都有明确期望值，埋在 widget 里就只能靠肉眼看。
 library;
 
 import 'dart:math' as math;
@@ -85,11 +93,13 @@ int monthGridRowToKeep({
   return rowOf(DateTime(year, month)) ?? 0;
 }
 
-/// 展开进度 [t]（0..1，0 = 收起）下应可见的行数（表头除外）。
+/// 展开进度 [t]（0..1，0 = 收起）下**网格窗口**应露出几行（表头除外）。
+///
+/// 注意这是**窗口**的行数，不是网格内容的行数 —— 内容永远是 6 行（用户口径），
+/// 收起只是窗口变小：上面几行被顶出窗口、下面几行被面板盖住。
 ///
 /// **行数线性插值而不是总高插值**：直接插总高会让 6 行同时缩放，看起来像
-/// 「整块被压扁」；按行数插值则每格位移一致，读起来是「下面几行被收上去」。
-/// 越界的 [t] 原样钳回 0..1。
+/// 「整块被压扁」。越界的 [t] 钳回 0..1。
 double monthGridVisibleRows(double t) {
   final clamped = t.clamp(0.0, 1.0);
   return kMonthGridCollapsedRows +
@@ -149,6 +159,102 @@ double monthGridRowHeight({
   return math
       .min(availableForGrid / kMonthGridRowCount, squareRowHeight)
       .clamp(minRowHeight, maxRowHeight);
+}
+
+/// 网格**内容**相对窗口的纵向偏移（非负；调用方取负后上移）。
+///
+/// 把保留行顶到窗口顶端 —— 于是保留行上方的行走出窗口（视觉上向上收起）。
+///
+/// [rowOffsetProgress]：1 = 完全顶上去（收起态）、0 = 不动（展开态）。
+double monthGridScrollOffset({
+  required int keptRow,
+  required double rowHeight,
+  required double rowOffsetProgress,
+}) {
+  return keptRow * rowHeight * rowOffsetProgress.clamp(0.0, 1.0);
+}
+
+/// 某一刻的完整版面：网格窗口高度、面板高度、内容位移。
+///
+/// 三者必须**同源算出来**，否则「面板盖到哪儿」「网格顶到哪儿」会各说各话 ——
+/// 症状就是收起后仍露出半格（2026-10-21 实际发生过一次）。
+class MonthGridLayout {
+  const MonthGridLayout({
+    required this.rowHeight,
+    required this.gridHeight,
+    required this.panelHeight,
+    required this.scrollOffset,
+    required this.keptRow,
+  });
+
+  /// 单行高度（正方形目标，见 [monthGridRowHeight]）。
+  final double rowHeight;
+
+  /// 网格**可见窗口**高度（含星期表头）。
+  final double gridHeight;
+
+  /// 下方条目面板的高度（占满剩下的空间）。
+  final double panelHeight;
+
+  /// 网格内容相对窗口的纵向位移（**正数**；绘制时取负即上移）。
+  final double scrollOffset;
+
+  /// 收起后停住的那一行（0 基）。
+  final int keptRow;
+}
+
+/// 算出某一刻的完整版面。
+///
+/// [t] = 展开进度（0 收起 / 1 展开）。
+///
+/// 两个位移**同时发生**（用户口径「上面三行向上收起，下面两行往上逐渐被下面的
+/// 东西盖起来」）：
+///
+/// * 网格窗口从「表头 + 6 行」缩到「表头 + 1 行」；
+/// * 面板高度从 0 长到「可用高 - 收起后网格窗口高」，把网格下方的行盖掉。
+///
+/// 行高按**始终 6 行**的可用空间算：网格永远显示六行，收起只缩小窗口，
+/// 行高本身不能跟着变（否则收起时格子会突然变高，读起来像「字放大了」）。
+MonthGridLayout monthGridLayout({
+  required double t,
+  required double availableHeight,
+  required double headerHeight,
+  required double horizontalPadding,
+  required double availableWidth,
+  required bool weekNumberColumnVisible,
+  required double weekLabelWidth,
+  required double minRowHeight,
+  required double maxRowHeight,
+  required int keptRow,
+}) {
+  final progress = t.clamp(0.0, 1.0);
+  final visibleRows = monthGridVisibleRows(progress);
+
+  final rowHeight = monthGridRowHeight(
+    availableWidth: availableWidth,
+    availableForGrid: availableHeight - headerHeight,
+    weekNumberColumnVisible: weekNumberColumnVisible,
+    horizontalPadding: horizontalPadding,
+    weekLabelWidth: weekLabelWidth,
+    minRowHeight: minRowHeight,
+    maxRowHeight: maxRowHeight,
+  );
+
+  final gridHeight = headerHeight + visibleRows * rowHeight;
+  final scrollOffset = monthGridScrollOffset(
+    keptRow: keptRow,
+    rowHeight: rowHeight,
+    // 展开态保留行就在原位（0），收起态把它顶到窗口顶端（1）。
+    rowOffsetProgress: 1 - progress,
+  );
+
+  return MonthGridLayout(
+    rowHeight: rowHeight,
+    gridHeight: gridHeight,
+    panelHeight: math.max(0, availableHeight - gridHeight),
+    scrollOffset: scrollOffset,
+    keptRow: keptRow,
+  );
 }
 
 /// 数学边界自检用的常量组合（测试引用；运行时不消费）。

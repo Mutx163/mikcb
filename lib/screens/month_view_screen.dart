@@ -13,6 +13,7 @@ import '../utils/page_wallpaper_luminance.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
+import '../widgets/timetable/month_view/month_panel_handle.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
 import 'add_course_screen.dart';
@@ -270,144 +271,272 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       wallpaperBodyLuminance: bodyLuminance,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 可用高度里先给议程区留底，剩下全给月网格按行均分：月历是主体，
-        // 不许缩成半屏、底下留一大片白（真机截图第一轮就是这个毛病）。
-        //
-        // 这是「预算」不是「硬约束」：议程更长时整页可滚动兜底，
-        // 预算偏小只让网格高一点，不会截断议程。
-        const viewportPadding = kMonthPageVerticalPadding;
-        final agendaMinHeight = selectedInThisMonth
-            ? kMonthAgendaMinHeight
-            : kMonthEmptyHintHeight;
-        final gridBudget =
-            constraints.maxHeight -
-            viewportPadding * 2 -
-            agendaMinHeight -
-            MonthGrid.headerHeight;
-        // 行高：取「高度能给的」与「宽度能给的」较小者 —— 目标是**正方形**
-        // （判据在 `monthGridRowHeight`，纯函数可单测）。
-        final rowHeight = monthGridRowHeight(
-          availableWidth: constraints.maxWidth,
-          availableForGrid: gridBudget,
-          // 与 `MonthGrid` 内部同一判据：学期没配置时那一列根本不占位。
-          weekNumberColumnVisible: settings.semesterStartDate != null,
-          horizontalPadding: MonthGrid.horizontalPadding,
-          weekLabelWidth: MonthGrid.weekLabelWidth,
-          minRowHeight: MonthGrid.minRowHeight,
-          maxRowHeight: MonthGrid.maxRowHeight,
-        );
-        // 拖拽行程按这个行高折算（1:1 跟手）；存字段是因为手势回调拿不到
-        // LayoutBuilder 的局部量。
-        _gridRowHeight = rowHeight;
+    // ⚠️ 本次重构的核心：**不再是「一个滚动视图把网格和议程串起来」**，
+    // 而是「网格在上、面板在下」两段式。用户口径（2026-10-21 截图）：
+    //   上滑 → 上面几行向上收起、下面几行被下面的东西盖起来、底部出现拉杆；
+    //   条目视图不支持左右滑、只支持上下滑（上下滑就是收放网格）；
+    //   月份网格支持左右滑（翻月）和上下滑（收放）。
+    // ⚠️ AnimatedBuilder 必须包在 LayoutBuilder **外面**：版面（网格窗口高、
+    // 面板高）都由展开进度 `_gridExpand` 推出来，只把网格包在 builder 里的话，
+    // 窗口高度不会跟着动画变 —— 上滑时格子被裁、面板却不动，读起来是"卡住"。
+    return AnimatedBuilder(
+      animation: _gridExpand,
+      builder: (context, _) => LayoutBuilder(
+        builder: (context, constraints) {
+          final dates = [for (final day in grid.days) day.date];
+          final keptRow = monthGridRowToKeep(
+            dates: dates,
+            year: year,
+            month: month,
+            selectedDate: selectedInThisMonth ? selected : null,
+            today: grid.today,
+          );
+          // 版面三件套（网格窗口高 / 面板高 / 内容位移）必须同源算 ——
+          // 分开算就会出现「面板盖到哪儿」与「网格顶到哪儿」各说各话，
+          // 症状正是收起后仍露出半格。
+          final layout = monthGridLayout(
+            t: _gridExpand.value,
+            availableHeight: constraints.maxHeight,
+            headerHeight: MonthGrid.headerHeight,
+            horizontalPadding: MonthGrid.horizontalPadding,
+            availableWidth: constraints.maxWidth,
+            // 与 `MonthGrid` 内部同一判据：学期没配置时周次列根本不占位。
+            weekNumberColumnVisible: settings.semesterStartDate != null,
+            weekLabelWidth: MonthGrid.weekLabelWidth,
+            minRowHeight: MonthGrid.minRowHeight,
+            maxRowHeight: MonthGrid.maxRowHeight,
+            keptRow: keptRow,
+          );
+          // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
+          _gridRowHeight = layout.rowHeight;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            // 与 `MonthGrid.horizontalPadding` 同一个值：行高预算按它算格宽，
-            // 两处不同源会让"正方形"算偏。
-            MonthGrid.horizontalPadding,
-            viewportPadding,
-            MonthGrid.horizontalPadding,
-            // 玻璃坞内嵌宿主的底部余量：滚动到底时议程才不会被药丸压住。
-            viewportPadding + GlassDockScrollReliefScope.insetOf(context),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          return Column(
             children: [
-              // 上滑收起 / 下拉展开（用户口径 2026-10-20）：拖拽 1:1 跟手，
-              // 松手按 `monthGridSettleTarget` 吸附。手势包在网格上——它与
-              // 外层 SingleChildScrollView 的纵向拖拽在同一竞技场，子检测器
-              // 先入局获胜 ⇒ 在格子上拖 = 收放，在议程上拖 = 滚动，互不打架。
-              // AnimatedBuilder 让动画帧只重建网格这一小块，不牵动整页。
-              AnimatedBuilder(
-                animation: _gridExpand,
-                builder: (context, _) {
-                  final dates = [for (final day in grid.days) day.date];
-                  return GestureDetector(
-                    behavior: HitTestBehavior.deferToChild,
-                    onVerticalDragStart: (_) {
-                      _gridExpand.stop();
-                      _gridDragStartValue = _gridExpand.value;
-                    },
-                    onVerticalDragUpdate: (details) {
-                      final extent =
-                          (kMonthGridRowCount - kMonthGridCollapsedRows) *
-                          _gridRowHeight;
-                      if (extent <= 0) {
+              // ── 上半：月份网格（左右翻月 + 上下收放）──
+              //
+              // ⚠️ 必须给 PageView 一个**明确高度**：它在 Column 里没有约束，
+              // 而高度正是「收起」要动的东西（layout.gridHeight 随进度从
+              // 「表头+6 行」缩到「表头+1 行」）。
+              //
+              // 纵向手势由网格自己接（它只包住网格，不包面板）；横向交给 PageView。
+              // 两者方向正交，同一手势里不会互相抢。
+              SizedBox(
+                height: layout.gridHeight,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.deferToChild,
+                  onVerticalDragStart: (_) => _beginGridDrag(),
+                  onVerticalDragUpdate: _updateGridDrag,
+                  onVerticalDragEnd: _endGridDrag,
+                  child: PageView.builder(
+                    controller: _pager,
+                    itemCount: _pageCount,
+                    onPageChanged: (page) {
+                      final (y, m) = _monthForPage(page);
+                      if (y == _focusedYear && m == _focusedMonth) {
                         return;
                       }
-                      // 手指向上（dy < 0）= 收起 = 进度减小。
-                      _gridExpand.value =
-                          (_gridExpand.value + details.delta.dy / extent).clamp(
-                            0.0,
-                            1.0,
-                          );
+                      setState(() {
+                        _focusedYear = y;
+                        _focusedMonth = m;
+                      });
                     },
-                    onVerticalDragEnd: (details) {
-                      final target = monthGridSettleTarget(
-                        startValue: _gridDragStartValue,
-                        currentValue: _gridExpand.value,
-                        velocityDy: details.velocity.pixelsPerSecond.dy,
-                      );
-                      _gridExpand.animateTo(
-                        target,
-                        duration: _kGridCollapseBaseMs.scaledMs,
-                        curve: Curves.easeOutCubic,
+                    itemBuilder: (context, page) {
+                      final (y, m) = _monthForPage(page);
+                      return _buildGridPage(
+                        context: context,
+                        provider: provider,
+                        settings: settings,
+                        year: y,
+                        month: m,
+                        bodyLuminance: bodyLuminance,
+                        layout: layout,
                       );
                     },
-                    child: MonthGrid(
-                      grid: grid,
-                      settings: settings,
-                      selectedDate: selectedInThisMonth ? selected : null,
-                      rowHeight: rowHeight,
-                      inkColor: ink,
-                      collapseProgress: _gridExpand.value,
-                      keptRowIndex: monthGridRowToKeep(
-                        dates: dates,
-                        year: year,
-                        month: month,
-                        selectedDate: selectedInThisMonth ? selected : null,
-                        today: grid.today,
-                      ),
-                      onDayTap: (date) {
-                        setState(() {
-                          // 再点同一天 = 收起议程（与「点同一档 Tab 收起」同口径）。
-                          _selectedDate =
-                              selectedInThisMonth && _selectedDate == date
-                              ? null
-                              : date;
-                        });
-                      },
-                    ),
-                  );
-                },
-              ),
-              if (selectedInThisMonth)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: MonthDayAgenda(
-                    date: selected,
-                    settings: settings,
-                    inkColor: ink,
-                    rows: MonthViewLogic.buildDayAgenda(
-                      date: selected,
-                      courses: provider.courses,
-                      scheduleItems: provider.scheduleItems,
-                      exams: provider.exams,
-                      settings: settings,
-                      sections: _sectionsFor(provider, settings),
-                      now: now,
-                    ),
-                    onRowTap: (row) => _openAgendaRow(context, row),
                   ),
-                )
-              else
-                MonthAgendaPlaceholder(inkColor: ink),
+                ),
+              ),
+              // ── 下半：条目面板（拉杆上拖 = 收放网格；列表自己纵向滚动）──
+              Expanded(
+                child: _buildAgendaPanel(
+                  context: context,
+                  provider: provider,
+                  settings: settings,
+                  ink: ink,
+                  now: now,
+                  selectedInThisMonth: selectedInThisMonth,
+                  selected: selected,
+                ),
+              ),
             ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// 上半那一页的网格（不含面板）。
+  Widget _buildGridPage({
+    required BuildContext context,
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int year,
+    required int month,
+    required double? bodyLuminance,
+    required MonthGridLayout layout,
+  }) {
+    final grid = _cache.grid(
+      year: year,
+      month: month,
+      now: DateTime.now(),
+      courses: provider.courses,
+      scheduleItems: provider.scheduleItems,
+      exams: provider.exams,
+      settings: settings,
+      holidayData: provider.holidayData,
+    );
+    final ink = monthPageInkOverWallpaper(
+      context: context,
+      settings: settings,
+      wallpaperBodyLuminance: bodyLuminance,
+    );
+    final selected = _selectedDate;
+    final selectedInThisMonth =
+        selected != null && selected.year == year && selected.month == month;
+    final dates = [for (final day in grid.days) day.date];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MonthGrid.horizontalPadding,
+        kMonthPageVerticalPadding,
+        MonthGrid.horizontalPadding,
+        0,
+      ),
+      child: MonthGrid(
+        grid: grid,
+        settings: settings,
+        selectedDate: selectedInThisMonth ? selected : null,
+        rowHeight: layout.rowHeight,
+        inkColor: ink,
+        collapseProgress: _gridExpand.value,
+        keptRowIndex: monthGridRowToKeep(
+          dates: dates,
+          year: year,
+          month: month,
+          selectedDate: selectedInThisMonth ? selected : null,
+          today: grid.today,
+        ),
+        onDayTap: (date) {
+          setState(() {
+            // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
+            _selectedDate = selectedInThisMonth && _selectedDate == date
+                ? null
+                : date;
+          });
+        },
+      ),
+    );
+  }
+
+  /// 下半的条目面板：顶部一根拉杆（唯一的纵向手势归属点）+ 可纵向滚动的列表。
+  ///
+  /// 为什么纵向手势挂在**拉杆**上而不是整个面板：列表自己需要纵向滚动，两者都是
+  /// 纵向，只能在明确的把手上区分。用户口径「上下滑动操作的就是这个收起操作」
+  /// 指的就是拖这根拉杆。
+  Widget _buildAgendaPanel({
+    required BuildContext context,
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required Color ink,
+    required DateTime now,
+    required bool selectedInThisMonth,
+    required DateTime? selected,
+  }) {
+    final rows = selectedInThisMonth && selected != null
+        ? MonthViewLogic.buildDayAgenda(
+            date: selected,
+            courses: provider.courses,
+            scheduleItems: provider.scheduleItems,
+            exams: provider.exams,
+            settings: settings,
+            sections: _sectionsFor(provider, settings),
+            now: now,
+          )
+        : const <MonthAgendaRow>[];
+
+    return Container(
+      decoration: BoxDecoration(
+        // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
+        // 被下面的东西盖起来」）。用透明就盖不住。
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          MonthPanelHandle(
+            inkColor: ink,
+            onDragStart: _beginGridDrag,
+            onDragUpdate: _updateGridDrag,
+            onDragEnd: _endGridDrag,
           ),
-        );
-      },
+          Expanded(
+            child: SingleChildScrollView(
+              // 只纵向滚动（横向由上面的 PageView 负责，面板不参与翻月）。
+              // scrollDirection 不写：默认就是纵向，写出来只是同一件事说两遍。
+              physics: const ClampingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                6,
+                0,
+                6,
+                // 玻璃坞内嵌宿主的底部余量：滑到底时列表不被药丸压住。
+                8 + GlassDockScrollReliefScope.insetOf(context),
+              ),
+              child: selectedInThisMonth
+                  ? MonthDayAgenda(
+                      date: selected!,
+                      settings: settings,
+                      inkColor: ink,
+                      rows: rows,
+                      onRowTap: (row) => _openAgendaRow(context, row),
+                    )
+                  : MonthAgendaPlaceholder(inkColor: ink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 开始拖拽：停掉吸附动画，记下起点（判「翻面还是弹回」要用）。
+  void _beginGridDrag() {
+    _gridExpand.stop();
+    _gridDragStartValue = _gridExpand.value;
+  }
+
+  /// 拖拽中：手指向上（dy < 0）= 收起 = 进度减小，1:1 跟手。
+  void _updateGridDrag(DragUpdateDetails details) {
+    final extent =
+        (kMonthGridRowCount - kMonthGridCollapsedRows) * _gridRowHeight;
+    if (extent <= 0) {
+      return;
+    }
+    _gridExpand.value = (_gridExpand.value + details.delta.dy / extent).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
+  /// 松手：按判据吸附到两端。
+  void _endGridDrag(DragEndDetails details) {
+    final target = monthGridSettleTarget(
+      startValue: _gridDragStartValue,
+      currentValue: _gridExpand.value,
+      velocityDy: details.velocity.pixelsPerSecond.dy,
+    );
+    _gridExpand.animateTo(
+      target,
+      duration: _kGridCollapseBaseMs.scaledMs,
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -462,10 +591,4 @@ class _MonthViewScreenState extends State<MonthViewScreen>
 
   /// 页面上下内边距（与首页课程网格的留白接近）。
   static const double kMonthPageVerticalPadding = 8;
-
-  /// 选中日时议程区的预留高度（约两条议程行）。
-  static const double kMonthAgendaMinHeight = 108;
-
-  /// 未选中日时底部提示的预留高度。
-  static const double kMonthEmptyHintHeight = 40;
 }
