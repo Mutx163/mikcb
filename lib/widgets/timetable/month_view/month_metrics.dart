@@ -14,6 +14,23 @@
 ///
 /// 所以字阶只留四级（caption / body / title / display）加两个专用值，
 /// 左轴只留一条 [MonthMetrics.axisInset]。
+///
+/// ## 一条被实测否决的评审建议（留档，别再重走）
+///
+/// 评审第 P2 条建议「收起时把品牌行折进玻璃带，把那 44dp 还给网格」。
+/// 实测（2026-10-21，393×851）证明**它换不到任何可读性收益**：
+///
+/// * 格子行高按**宽度**定（目标是正方形，见 `monthGridRowHeight`）：
+///   `(393 − 2×12.5 − 40) / 7 = 47.43dp`，而按高度预算能给的也正好是
+///   47.43 —— 上限由屏宽决定，不由高度决定；
+/// * 于是把 44dp 还给正文后，行高一点不变，多出来的高度全进了面板
+///   （实测 390dp → 434dp），而面板本来就有 58% 的行没有内容。
+///
+/// 同时它会破坏两件真东西：品牌行与右上角玻璃球共用 `TimetableTitleBar`
+/// （首页同一份实现），折走会让独立页与首页的顶栏高度分家 —— 那正是
+/// 2026-10-20 用户报「为什么和日视图周视图的顶栏不一样高」的原事故。
+///
+/// ⇒ 竖向空间该从**面板内部**省，不在顶部那两行。
 library;
 
 /// 月视图的字号阶梯。
@@ -54,14 +71,41 @@ abstract final class MonthMetrics {
   ///
   /// 取 14 的依据：旧的四条线是 11.7 / 13.5 / 14.1 / 17.2，14 落在中位数附近，
   /// 且与首页顶栏（8 + 4 微调 + 字侧边距 ≈ 14）自然对齐 —— 不改顶栏也能同轴。
+  ///
+  /// ⚠️ 这条轴对的是**文字墨迹**，不是卡片填充边。填充形状会读得比文字"内缩"，
+  /// 所以卡片一律比它再外扩 [cardOpticalOutdent] —— 两者对齐时眼睛看到的是一根线。
   static const double axisInset = 14;
+
+  /// 卡片填充边比 [axisInset] 外扩的量（2dp）。
+  ///
+  /// 光学对齐的常规做法：实心色块与文字左对齐时，色块要往外让 2~3dp，
+  /// 否则看起来像是文字缩进了色块里。
+  static const double cardOpticalOutdent = 2;
+
+  /// 面板（下半屏）左右内边距 = 卡片填充边该在的位置。
+  static const double panelInset = axisInset - cardOpticalOutdent;
+
+  /// 分区标题相对面板内边距的额外缩进：让它正好落在 [axisInset] 上。
+  static const double sectionTitleInset = cardOpticalOutdent;
 
   /// 网格卡片之间的缝。卡片填充左边缘因此比 [axisInset] 内缩这条缝。
   static const double cellGap = 1.5;
 
+  /// 工具行左右的内边距。
+  ///
+  /// ⚠️ 旧实现**左边距 0.9dp、右边距 5.2dp**（真机实测）：两个箭头直接挂在
+  /// Row 两端，而尾部「今天」药丸是居中在一个 56dp 的定宽槽位里 —— 于是左边
+  /// 顶着屏幕边、右边却空出 5dp，整行读起来是歪的。
+  ///
+  /// 取 6 而不是 [axisInset]：箭头是 40dp 的圆钮，里面那枚 22dp 的图标居中后
+  /// 左沿天然比按钮左沿内缩 9dp —— 按钮左沿 6 + 图标内缩 9 = 15，与品牌名的
+  /// 14 只差 1dp，视觉上落在同一根竖轴上（这才是"圆钮对齐"的正确算法：
+  /// 对的是图标，不是按钮外框）。
+  static const double toolbarInset = 6;
+
   /// 网格左右内边距。**必须由 [axisInset] 推出来**，不能另写一个数：
   /// 卡片左边缘 = 内边距 + [cellGap]，要和面板卡片同轴就只能这么算。
-  static const double gridHorizontalPadding = axisInset - cellGap;
+  static const double gridHorizontalPadding = panelInset - cellGap;
 
   /// 分区之间（概览卡 → 「本月有安排的日子」）的竖向间距。
   static const double sectionGap = 18;

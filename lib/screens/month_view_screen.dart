@@ -10,11 +10,13 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/hyperos_motion.dart';
+import '../utils/month_cell_ink.dart';
 import '../utils/page_wallpaper_luminance.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
 import '../widgets/timetable/month_view/month_grid_handle.dart';
+import '../widgets/timetable/month_view/month_metrics.dart';
 import '../widgets/timetable/month_view/month_panel_drag_area.dart';
 import '../widgets/timetable/month_view/month_panel_overview.dart';
 import '../widgets/timetable/month_view/month_panel_top_curve.dart';
@@ -58,6 +60,17 @@ import 'add_schedule_item_screen.dart';
 /// 取 provider 数据 → 调域逻辑 → 画 → 转发点击。
 class MonthViewScreen extends StatefulWidget {
   const MonthViewScreen({super.key});
+
+  /// **测试专用**：下一个建出来的页面直接采用这份壁纸读数（跳过解码）。
+  ///
+  /// 为什么必须有这个口子：测试宿主机没有壁纸文件，`PageWallpaperLuminanceSampler`
+  /// 采不到剖面 ⇒ 「页面把逐行亮度传给网格」这条链路在测试里根本走不到，
+  /// 于是删掉那行转发测试也不会红（本仓对参数透传类改动有过 43 条用例全绿的
+  /// 前车之鉴，见 AGENTS.md）。
+  ///
+  /// 用例在 `tearDown` 里必须把它清回 null，否则会漏到下一条用例。
+  @visibleForTesting
+  static PageWallpaperLuminance? debugSeedLuminance;
 
   @override
   State<MonthViewScreen> createState() => _MonthViewScreenState();
@@ -150,6 +163,11 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     // 两条运动源都要接：横向翻月（PageController）+ 纵向收起/展开（动画控制器）。
     // 只接翻页那条，上下收放时玻璃内部背景会纹丝不动（2026-10-21 用户实测）。
     _pagingRepaint = Listenable.merge([_pager, _gridExpand]);
+    // 测试专用读数（见 [MonthViewScreen.debugSeedLuminance]）：正常运行时恒为 null。
+    final seeded = MonthViewScreen.debugSeedLuminance;
+    if (seeded != null) {
+      _luminance.seedForTest(seeded);
+    }
     // 面板列表与网格收放共用同一套判据与回调：接一次线，之后无论怎么重建
     // 都是同一份（physics 里拿到的就是这个对象，不必每帧新建）。
     _panelDrag
@@ -437,6 +455,16 @@ class _MonthViewScreenState extends State<MonthViewScreen>
             // 既有心智）—— 那把手势归属讲反了。
             MonthGridHandle(
               inkColor: ink,
+              // 拉杆画在**壁纸上**（不在卡面上），它是全页唯一教用户「这张表
+              // 可以上滑」的控件。旧实现拿整屏带的墨色再乘 0.32 alpha，真机
+              // 实测只有 **1.22:1** —— 等于没有。这里把「拉杆自己那段」的壁纸
+              // 亮度交给它，由它按对比度判满 alpha 的黑/白。
+              wallpaperLuminance: _handleLuminance(
+                context: context,
+                constraints: constraints,
+                settings: settings,
+                keptRow: keptRow,
+              ),
               onDragStart: _beginGridDrag,
               onDragUpdate: _updateGridDrag,
               onDragEnd: _endGridDrag,
@@ -568,6 +596,12 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         // （这是这次提速的另一半，见 `MonthGrid` 的类注释）。
         progress: _gridExpand,
         keptRowIndex: keptRow,
+        // 逐行判墨：42 个格子必须各用**自己那一行**的壁纸亮度（见 P0-1）。
+        rowLuminances: _rowLuminances(
+          context: context,
+          constraints: constraints,
+          settings: settings,
+        ),
         onDayTap: (date) {
           setState(() {
             // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
@@ -577,6 +611,50 @@ class _MonthViewScreenState extends State<MonthViewScreen>
           });
         },
       ),
+    );
+  }
+
+  /// 网格 6 行各自背后那段壁纸的亮度。
+  ///
+  /// ## 为什么不用「整屏一个数」
+  ///
+  /// 旧实现按壁纸主体带（屏幕 22%~72%）的平均亮度判墨，42 格共用。真机上同一
+  /// 屏壁纸自上而下的卡面亮度跨 **0.56 → 0.23**，同一个黑字在 42 格上的对比度
+  /// 因此从 12:1 摆到 5:1，而月外日期（再叠两层弱化）落到 **1.97:1** —— 那一整行
+  /// 物理上不可读（2026-10-21 专业评审实测）。
+  ///
+  /// ## 网格顶边怎么定位
+  ///
+  /// 用「屏幕高 − 正文可用高」反推，**不是**把状态栏 + 标题行 + 工具行加起来：
+  /// 玻璃带那条 4dp 的缝只在带子真的画的时候才存在，加法学不准（差几 dp 就
+  /// 会把一整行判到隔壁亮度上）。`constraints.maxHeight` 是正文那个
+  /// `Expanded` 的高度，两者相减正好是正文顶边在屏幕上的绝对 y。
+  ///
+  /// 返回空列表表示「拿不到剖面」：网格随之退回整屏带口径（改动前的行为）。
+  List<double?> _rowLuminances({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required TimetableSettings settings,
+  }) {
+    final profile = _luminance.value?.profile;
+    if (profile == null || profile.isEmpty) {
+      return const <double?>[];
+    }
+    final screenHeight = MediaQuery.maybeSizeOf(context)?.height;
+    if (screenHeight == null || screenHeight <= 0) {
+      return const <double?>[];
+    }
+    // 正文顶边 = 屏幕高 − 正文高。`constraints.maxHeight` 是整个「网格 + 拉杆 +
+    // 面板」Column 的可用高度，它的顶边就是正文顶边。
+    final gridTopOnScreen = screenHeight - constraints.maxHeight;
+    return monthRowLuminances(
+      profile: profile,
+      screenHeight: screenHeight,
+      gridTopOnScreen: gridTopOnScreen,
+      headerHeight: MonthGrid.headerHeight,
+      rowHeight: _gridRowHeight,
+      rowCount: kMonthGridRowCount,
+      topPadding: kMonthPageVerticalPadding,
     );
   }
 
@@ -596,6 +674,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     // 面板是实底白卡，字跟**主题**走（不跟壁纸）。
     // 详见调用处那段注释：拿壁纸明暗判面板内的字，暗壁纸会判出白字 → 白底上看不见。
     final ink = Theme.of(context).colorScheme.onSurface;
+    final panelColor = Theme.of(context).colorScheme.surface;
     final rows = selectedInThisMonth && selected != null
         ? MonthViewLogic.buildDayAgenda(
             date: selected,
@@ -622,7 +701,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       child: ColoredBox(
         // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
         // 被下面的东西盖起来」）。用透明就盖不住。
-        color: Theme.of(context).colorScheme.surface,
+        color: panelColor,
         // ── 整个面板任意位置都能上下拖动来收放日期表格 ──
         //
         // 用户口径（2026-10-21 晚）：「底部信息区域，应该支持在任意位置上下滑动，
@@ -645,43 +724,117 @@ class _MonthViewScreenState extends State<MonthViewScreen>
           //
           // 现在位移由 MonthPanelDragArea 算好、jumpTo 落进来：一个指针源驱动
           // 两块内容，一体化是结构保证的（惯性由它在抬手时补）。
-          child: SingleChildScrollView(
-            controller: _panelScroll,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-              6,
-              0,
-              6,
-              // 玻璃坞内嵌宿主的底部余量：滚到底时列表不被药丸压住。
-              8 + GlassDockScrollReliefScope.insetOf(context),
-            ),
-            child: selectedInThisMonth
-                ? MonthDayAgenda(
-                    date: selected!,
-                    settings: settings,
-                    inkColor: ink,
-                    rows: rows,
-                    onRowTap: (row) => _openAgendaRow(context, row),
-                    // 选中日什么都没有时，空态卡里给一个加课入口（带这天 +
-                    // 星期几进表单）：这正是用户最想"补点什么"的时刻。
-                    onAddCourse: () =>
-                        _openAddCourseForDate(context, selected, settings),
-                  )
-                : MonthPanelOverview(
-                    grid: grid,
-                    settings: settings,
-                    inkColor: ink,
-                    // 「本月有安排的日子」从今天往后排（跨过月末回月首），
-                    // 排序口径见 `MonthViewLogic.scheduledDaysOfMonth`。
-                    upcoming: MonthViewLogic.scheduledDaysOfMonth(
-                      grid,
-                      today: now,
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                controller: _panelScroll,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  // 左右内边距由**唯一左轴**推出来（见 MonthMetrics）：旧值是 6，
+                  // 于是分区标题落在 6+4=10dp、卡片填充落在 6dp、网格卡片落在
+                  // 11.5dp —— 一屏四条左边线。现在全部落在 axisInset=14 附近。
+                  MonthMetrics.panelInset,
+                  0,
+                  MonthMetrics.panelInset,
+                  // 玻璃坞内嵌宿主的底部余量：滚到底时列表不被药丸压住。
+                  MonthMetrics.panelBottomFade +
+                      GlassDockScrollReliefScope.insetOf(context),
+                ),
+                child: selectedInThisMonth
+                    ? MonthDayAgenda(
+                        date: selected!,
+                        settings: settings,
+                        inkColor: ink,
+                        rows: rows,
+                        onRowTap: (row) => _openAgendaRow(context, row),
+                        // 选中日什么都没有时，空态卡里给一个加课入口（带这天 +
+                        // 星期几进表单）：这正是用户最想"补点什么"的时刻。
+                        onAddCourse: () =>
+                            _openAddCourseForDate(context, selected, settings),
+                      )
+                    : MonthPanelOverview(
+                        grid: grid,
+                        settings: settings,
+                        inkColor: ink,
+                        // 「本月有安排的日子」从今天往后排（跨过月末回月首），
+                        // 排序口径见 `MonthViewLogic.scheduledDaysOfMonth`。
+                        upcoming: MonthViewLogic.scheduledDaysOfMonth(
+                          grid,
+                          today: now,
+                        ),
+                        onDayTap: (date) =>
+                            setState(() => _selectedDate = date),
+                      ),
+              ),
+              // 底部渐隐：玻璃坞药丸悬在面板上方，不处理时列表项会被它从中间
+              // 切开 —— 「1月9日」下面那行被切掉一半，读起来是渲染错误
+              //（2026-10-21 真机截图）。一条从面板底色到透明的短渐变让内容
+              // **淡出**，而不是**被切断**。
+              //
+              // ⚠️ 必须放在 Stack 里、且 `IgnorePointer`：它只是视觉层，
+              // 不能吃掉面板那条「任意位置都能上下拖」的手势。
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: MonthMetrics.panelBottomFade,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          panelColor.withValues(alpha: 0),
+                          panelColor,
+                        ],
+                      ),
                     ),
-                    onDayTap: (date) => setState(() => _selectedDate = date),
                   ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  /// 拉杆（表格把手）位置那段壁纸的亮度。
+  ///
+  /// 拉杆画在网格窗口的下沿、面板上沿之间那条 24dp 的带子里。它的 y 随展开进度
+  /// 变（收起时跟着上移），所以按**当前版面**算：
+  /// 网格窗口高 = `monthGridLayout(...).gridHeight`，拉杆就在它下面。
+  ///
+  /// 拿不到剖面 / 没有壁纸时返回 null，拉杆随之回落到传进来的整屏带墨色
+  /// （改动前的行为）。
+  double? _handleLuminance({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required TimetableSettings settings,
+    required int keptRow,
+  }) {
+    final profile = _luminance.value?.profile;
+    if (profile == null || profile.isEmpty) {
+      return null;
+    }
+    final screenHeight = MediaQuery.maybeSizeOf(context)?.height;
+    if (screenHeight == null || screenHeight <= 0) {
+      return null;
+    }
+    final bodyTop = screenHeight - constraints.maxHeight;
+    final layout = _layoutFor(
+      t: _gridExpand.value,
+      constraints: constraints,
+      settings: settings,
+      keptRow: keptRow,
+    );
+    final handleTop = bodyTop + layout.gridHeight;
+    return monthBandLuminance(
+      profile,
+      screenHeight,
+      top: handleTop,
+      bottom: handleTop + MonthGridHandle.extent,
     );
   }
 
@@ -818,5 +971,4 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   }
 
   /// 页面上下内边距（与首页课程网格的留白接近）。
-  static const double kMonthPageVerticalPadding = 8;
-}
+  static const double kMonthPageVerticalPadding = 8;}

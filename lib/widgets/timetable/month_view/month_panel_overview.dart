@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../domain/month_view_logic.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
+import '../../../utils/month_cell_ink.dart';
 import '../day_view/day_view_agenda_surface.dart';
 import 'month_day_agenda.dart';
 import 'month_day_cell.dart';
+import 'month_metrics.dart';
 
 /// 月视图下半屏在**没选中日期**时的内容：本月概览 + 本月有安排的日子。
 ///
@@ -22,6 +24,17 @@ import 'month_day_cell.dart';
 /// 2. **本月有安排的日子**：从今天往后数几天的预览卡（整月的都走完了就从月首
 ///    开始），点一张就选中那一天、下面立刻换成当日议程 —— 等于把
 ///    「点日期格」这条交互又给了一条更好按的入口（格子只有 1/7 屏宽）。
+///
+/// ## 概览卡为什么必须**真的是卡**（2026-10-21 专业评审 P1）
+///
+/// 旧实现给概览套了一层 `DayViewAgendaSurface`，但它的底色传的是
+/// `colorScheme.surface` —— 与面板底色**逐位相同**（实测都是 250,249,254）。
+/// 于是那张"卡"在视觉上不存在：三个数字悬空浮着，而下面「本月有安排的日子」的
+/// 预览卡是有实体的灰卡 —— 同一屏上两种语言，读起来像两套设计拼在一起。
+///
+/// 现在概览卡与预览卡**同族同底色**（`surfaceContainerHighest`），并且
+/// 竖分隔线给了明确高度（旧实现在 `Row` 里用 `VerticalDivider` 而 Row 没有
+/// 交叉轴约束，实测高度 0，一条线都没画出来）。
 ///
 /// ## 为什么统计数字来自 [MonthGridData.overview]
 ///
@@ -43,7 +56,7 @@ class MonthPanelOverview extends StatelessWidget {
     required this.settings,
     required this.onDayTap,
     this.inkColor,
-    this.radius = 20,
+    this.radius = MonthMetrics.cardRadius,
     this.maxUpcoming = 5,
   });
 
@@ -107,11 +120,11 @@ class MonthPanelOverview extends StatelessWidget {
           ),
         ),
         if (days.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: MonthMetrics.sectionGap),
           _SectionTitle(text: l10n.monthOverviewDaysTitle, ink: ink),
           for (final day in days)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: MonthMetrics.itemGap),
               child: _UpcomingDayTile(
                 entry: day,
                 settings: settings,
@@ -136,13 +149,19 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+      padding: const EdgeInsets.fromLTRB(
+        2,
+        MonthMetrics.sectionGap,
+        2,
+        MonthMetrics.sectionTitleGap,
+      ),
       child: Text(
         text,
+        maxLines: 1,
         style: TextStyle(
-          fontSize: 13,
+          fontSize: MonthType.title,
           fontWeight: FontWeight.w700,
-          color: ink.withValues(alpha: 0.78),
+          color: ink.withValues(alpha: 0.82),
         ),
       ),
     );
@@ -165,51 +184,66 @@ class _StatsCard extends StatelessWidget {
   final MonthOverviewStats overview;
   final String scheduledDaysLabel;
 
+  /// 与列表卡片同族同底色：概览卡是**卡**，不是一块和面板同色的留白。
+  Color _cardFill(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? Theme.of(context).colorScheme.surface
+      : Theme.of(context).colorScheme.surfaceContainerHighest;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final mutedInk = ink.withValues(alpha: 0.55);
-    final divider = ink.withValues(alpha: 0.08);
+    final mutedInk = ink.withValues(alpha: 0.62);
+    final divider = ink.withValues(alpha: 0.10);
     return DayViewAgendaSurface(
       settings: settings,
-      color: Theme.of(context).colorScheme.surface,
+      color: _cardFill(context),
       radius: radius,
       // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），而它躺在白色面板上。
       forceSolid: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                _StatCell(
-                  value: overview.courseCount,
-                  label: l10n.courseCountLabel,
-                  ink: ink,
-                  mutedInk: mutedInk,
-                  // 课程用课程卡同族的强调色，让"这是课"与下面两张卡可分。
-                  dotColor: Theme.of(context).colorScheme.primary,
-                ),
-                VerticalDivider(width: 1, thickness: 1, color: divider),
-                _StatCell(
-                  value: overview.examCount,
-                  label: l10n.examBadgeLabel,
-                  ink: ink,
-                  mutedInk: mutedInk,
-                  dotColor: monthExamAccent(Theme.of(context).colorScheme),
-                ),
-                VerticalDivider(width: 1, thickness: 1, color: divider),
-                _StatCell(
-                  value: overview.scheduleCount,
-                  label: l10n.scheduleBadgeLabel,
-                  ink: ink,
-                  mutedInk: mutedInk,
-                  dotColor: monthScheduleDotColor(
-                    Theme.of(context).colorScheme,
+            // 三个统计格。分隔线**必须自带高度**：`VerticalDivider` 在 Row 里
+            // 没有交叉轴约束时高度是 0，旧实现因此一条线都没画出来（三个数字
+            // 看起来是悬空浮着的）。
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _StatCell(
+                    value: overview.courseCount,
+                    label: l10n.courseCountLabel,
+                    ink: ink,
+                    mutedInk: mutedInk,
+                    cardFill: _cardFill(context),
+                    // 课程用课程卡同族的强调色，让"这是课"与下面两张卡可分。
+                    dotColor: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-              ],
+                  _StatDivider(color: divider),
+                  _StatCell(
+                    value: overview.examCount,
+                    label: l10n.examBadgeLabel,
+                    ink: ink,
+                    mutedInk: mutedInk,
+                    cardFill: _cardFill(context),
+                    dotColor: monthExamAccent(Theme.of(context).colorScheme),
+                  ),
+                  _StatDivider(color: divider),
+                  _StatCell(
+                    value: overview.scheduleCount,
+                    label: l10n.scheduleBadgeLabel,
+                    ink: ink,
+                    mutedInk: mutedInk,
+                    cardFill: _cardFill(context),
+                    dotColor: monthScheduleDotColor(
+                      Theme.of(context).colorScheme,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             Divider(height: 1, thickness: 1, color: divider),
@@ -222,12 +256,16 @@ class _StatsCard extends StatelessWidget {
                   color: mutedInk,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  scheduledDaysLabel,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: mutedInk,
+                Expanded(
+                  child: Text(
+                    scheduledDaysLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: MonthType.body,
+                      fontWeight: FontWeight.w600,
+                      color: mutedInk,
+                    ),
                   ),
                 ),
               ],
@@ -235,6 +273,21 @@ class _StatsCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 统计格之间的竖线：显式给高，不依赖 `VerticalDivider` 的交叉轴约束。
+class _StatDivider extends StatelessWidget {
+  const _StatDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SizedBox(width: 1, child: ColoredBox(color: color)),
     );
   }
 }
@@ -247,6 +300,7 @@ class _StatCell extends StatelessWidget {
     required this.ink,
     required this.mutedInk,
     required this.dotColor,
+    required this.cardFill,
   });
 
   final int value;
@@ -255,52 +309,64 @@ class _StatCell extends StatelessWidget {
   final Color mutedInk;
   final Color dotColor;
 
+  /// 概览卡的底色：为 0 的格子要**向它混色**来弱化（不压 alpha，见类注释）。
+  final Color cardFill;
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        children: [
-          Text(
-            '$value',
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 21,
-              height: 1.1,
-              fontWeight: FontWeight.w700,
-              // 0 弱化：一栏里对比出来"这个月没考试"比三行等重的数字好读。
-              color: value == 0 ? mutedInk.withValues(alpha: 0.6) : ink,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: value == 0
-                      ? dotColor.withValues(alpha: 0.28)
-                      : dotColor,
-                  shape: BoxShape.circle,
-                ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$value',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: MonthType.display,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                // 0 弱化：一栏里对比出来"这个月没考试"比三行等重的数字好读。
+                //
+                // ⚠️ 弱化手段是**向卡面混色**（不透明灰），不是乘 alpha。
+                // alpha 一压，数字与卡面的亮度差一起被吃掉：旧实现里图例那颗
+                // 「考试 0」的圆点只剩 **1.42:1**，读起来像禁用控件。
+                color: value == 0 ? dimTowardCard(ink, cardFill) : ink,
               ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: mutedInk,
+            ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    // 圆点同一条理由：为 0 时向卡面混色，不压 alpha。
+                    color: value == 0
+                        ? dimTowardCard(dotColor, cardFill, amount: 0.5)
+                        : dotColor,
+                    shape: BoxShape.circle,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: MonthType.caption,
+                      fontWeight: FontWeight.w500,
+                      color: mutedInk,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -329,7 +395,7 @@ class _UpcomingDayTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final mutedInk = ink.withValues(alpha: 0.58);
+    final mutedInk = ink.withValues(alpha: 0.62);
     final cardColor = Theme.of(context).brightness == Brightness.dark
         ? colorScheme.surface
         : colorScheme.surfaceContainerHighest;
@@ -350,14 +416,15 @@ class _UpcomingDayTile extends StatelessWidget {
       forceSolid: true,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
         child: Row(
           children: [
             // 日期块：日号大、周几小 —— 与网格里的日期格同一个读取顺序。
             Container(
-              width: 42,
+              width: 40,
               padding: const EdgeInsets.symmetric(vertical: 5),
               decoration: BoxDecoration(
+                // 与卡片同色时这块会消失；用墨色 6% 让它读作"日期筹码"。
                 color: ink.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(11),
               ),
@@ -366,8 +433,9 @@ class _UpcomingDayTile extends StatelessWidget {
                 children: [
                   Text(
                     '${entry.date.day}',
+                    maxLines: 1,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       height: 1.1,
                       fontWeight: FontWeight.w700,
                       color: entry.isHoliday ? monthHolidayInk(colorScheme) : ink,
@@ -376,8 +444,9 @@ class _UpcomingDayTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _weekdayLabel(l10n, entry.date.weekday),
+                    maxLines: 1,
                     style: TextStyle(
-                      fontSize: 9.5,
+                      fontSize: 10,
                       height: 1,
                       fontWeight: FontWeight.w600,
                       color: mutedInk,
@@ -399,7 +468,7 @@ class _UpcomingDayTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: MonthType.title,
                       fontWeight: FontWeight.w600,
                       color: ink,
                     ),
@@ -410,7 +479,7 @@ class _UpcomingDayTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: MonthType.body,
                       color: mutedInk,
                     ),
                   ),
@@ -421,7 +490,7 @@ class _UpcomingDayTile extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 18,
-              color: ink.withValues(alpha: 0.32),
+              color: ink.withValues(alpha: 0.38),
             ),
           ],
         ),
@@ -451,10 +520,14 @@ class _EmptyMonthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mutedInk = ink.withValues(alpha: 0.5);
+    final mutedInk = ink.withValues(alpha: 0.62);
+    final cardColor = Theme.of(context).brightness == Brightness.dark
+        ? Theme.of(context).colorScheme.surface
+        : Theme.of(context).colorScheme.surfaceContainerHighest;
     return DayViewAgendaSurface(
       settings: settings,
-      color: Theme.of(context).colorScheme.surface,
+      // 空态卡与概览卡、预览卡同族：空态不该是唯一一块"没有实体"的内容。
+      color: cardColor,
       radius: radius,
       forceSolid: true,
       child: Padding(
@@ -464,23 +537,23 @@ class _EmptyMonthCard extends StatelessWidget {
             Icon(
               Icons.calendar_month_outlined,
               size: 30,
-              color: ink.withValues(alpha: 0.24),
+              color: ink.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13.5,
+                fontSize: MonthType.title,
                 fontWeight: FontWeight.w600,
-                color: ink.withValues(alpha: 0.72),
+                color: ink.withValues(alpha: 0.78),
               ),
             ),
             const SizedBox(height: 6),
             Text(
               hint,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, color: mutedInk),
+              style: TextStyle(fontSize: MonthType.body, color: mutedInk),
             ),
           ],
         ),
@@ -501,4 +574,3 @@ String _weekdayLabel(AppLocalizations l10n, int weekday) {
     _ => l10n.weekdaySun,
   };
 }
-

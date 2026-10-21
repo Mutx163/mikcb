@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../timetable_page_chrome_shell.dart';
+import 'month_metrics.dart';
 
 /// 月视图工具行的高度（逻辑 px）。玻璃带的几何按它算，写歪了带底与工具行
 /// 错开几像素，读成一条横贯屏幕的缝（见 [MonthViewToolbar]）。
@@ -79,7 +80,7 @@ class MonthViewToolbar extends StatelessWidget {
   static const double arrowSize = kMonthViewToolbarHeight;
 
   /// 尾部槽位宽度：「今天」药丸与箭头同宽，本月空着时也不会让标题偏移。
-  static const double trailingSlotWidth = 56;
+  static const double trailingSlotWidth = 60;
 
   @override
   Widget build(BuildContext context) {
@@ -91,46 +92,51 @@ class MonthViewToolbar extends StatelessWidget {
     // mutedOf 自带回落（onSurfaceVariant），不需要再给 ??。
     final muted = HomePageChromeInk.mutedOf(context);
 
-    return Row(
-      children: [
-        _ArrowButton(
-          icon: Icons.chevron_left_rounded,
-          tooltip: l10n.monthViewPreviousMonth,
-          ink: ink,
-          onTap: onPreviousMonth,
-        ),
-        Expanded(
-          child: _MonthTitle(
-            year: year,
-            month: month,
+    return Padding(
+      // 工具行左右对称内缩：旧实现左边 0.9dp / 右边 5.2dp（真机实测），
+      // 整行看着是歪的。见 [MonthMetrics.toolbarInset] 的取值说明。
+      padding: const EdgeInsets.symmetric(
+        horizontal: MonthMetrics.toolbarInset,
+      ),
+      child: Row(
+        children: [
+          _ArrowButton(
+            icon: Icons.chevron_left_rounded,
+            tooltip: l10n.monthViewPreviousMonth,
             ink: ink,
-            muted: muted,
-            pageListenable: pageListenable,
-            pageOf: pageOf,
-            monthOfPage: monthOfPage,
+            onTap: onPreviousMonth,
           ),
-        ),
-        _ArrowButton(
-          icon: Icons.chevron_right_rounded,
-          tooltip: l10n.monthViewNextMonth,
-          ink: ink,
-          onTap: onNextMonth,
-        ),
-        // 尾部固定槽位：本月留空（同宽），非本月放「今天」。
-        // 标题的可用宽度因此恒定，不会因为多出/少掉一个按钮而左右跳。
-        SizedBox(
-          width: trailingSlotWidth,
-          child: isCurrentMonth
-              ? null
-              : Center(
-                  child: _TodayPill(
+          Expanded(
+            child: _MonthTitle(
+              year: year,
+              month: month,
+              ink: ink,
+              muted: muted,
+              pageListenable: pageListenable,
+              pageOf: pageOf,
+              monthOfPage: monthOfPage,
+            ),
+          ),
+          _ArrowButton(
+            icon: Icons.chevron_right_rounded,
+            tooltip: l10n.monthViewNextMonth,
+            ink: ink,
+            onTap: onNextMonth,
+          ),
+          // 尾部固定槽位：本月留空（同宽），非本月放「今天」。
+          // 标题的可用宽度因此恒定，不会因为多出/少掉一个按钮而左右跳。
+          SizedBox(
+            width: trailingSlotWidth,
+            child: isCurrentMonth
+                ? null
+                : Center(child: _TodayPill(
                     label: l10n.monthViewBackToCurrentMonthShort,
                     ink: ink,
                     onTap: onBackToCurrentMonth,
-                  ),
-                ),
-        ),
-      ],
+                  )),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -274,6 +280,10 @@ class _MonthTitle extends StatelessWidget {
   /// 变成了没人引用的孤儿键（本该由它承载整句，但两段颜色不同，必须拆开，
   /// 而 `{year}年{month}月` 这种模板在运行时切不出「哪半截是年份」，
   /// 所以改成两段各一个键）。
+  ///
+  /// 字号改走 [MonthType]（2026-10-21 专业评审 P1）：旧值是 13 / 17，与页面里
+  /// 其它 9 级字号之间没有模数关系；现在年份取 `monthYear`(13)、月份取
+  /// `monthTitle`(17)，两者都登记在字阶表里，不再有第三个散落的数值。
   Widget _labelText(AppLocalizations l10n, int y, int m) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -282,24 +292,24 @@ class _MonthTitle extends StatelessWidget {
       children: [
         Text(
           l10n.monthViewYearSegment(y),
+          maxLines: 1,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: MonthType.monthYear,
             fontWeight: FontWeight.w600,
             color: muted,
             letterSpacing: 0.1,
           ),
-          maxLines: 1,
         ),
         const SizedBox(width: 3),
         Text(
           l10n.monthViewMonthSegment(m),
+          maxLines: 1,
           style: TextStyle(
-            fontSize: 17,
+            fontSize: MonthType.monthTitle,
             fontWeight: FontWeight.w700,
             color: ink,
             letterSpacing: 0.2,
           ),
-          maxLines: 1,
         ),
       ],
     );
@@ -333,12 +343,12 @@ class _TodayPill extends StatelessWidget {
           ),
           child: Text(
             label,
+            maxLines: 1,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: MonthType.body,
               fontWeight: FontWeight.w600,
               color: ink,
             ),
-            maxLines: 1,
           ),
         ),
       ),

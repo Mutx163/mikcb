@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../utils/hex_color.dart';
 import '../day_view/day_view_agenda_surface.dart';
+import 'month_metrics.dart';
 
 /// 月视图选中日的当日议程（课程 + 考试 + 日程混排）。
 ///
@@ -59,13 +60,20 @@ class MonthDayAgenda extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+          // 与「本月概览」等分区标题共用同一套间距与字阶（见 MonthMetrics）。
+          padding: const EdgeInsets.fromLTRB(
+            2,
+            MonthMetrics.sectionGap,
+            2,
+            MonthMetrics.sectionTitleGap,
+          ),
           child: Text(
             l10n.monthViewAgendaTitle(date.month, date.day),
+            maxLines: 1,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: MonthType.title,
               fontWeight: FontWeight.w700,
-              color: ink.withValues(alpha: 0.78),
+              color: ink.withValues(alpha: 0.82),
             ),
           ),
         ),
@@ -74,7 +82,7 @@ class MonthDayAgenda extends StatelessWidget {
           // 纯色页上的灰字。
           DayViewAgendaSurface(
             settings: settings,
-            color: colorScheme.surface,
+            color: _cardFill(context),
             radius: radius,
             // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），
             // 而它躺在白色面板上（见类注释）。
@@ -87,8 +95,8 @@ class MonthDayAgenda extends StatelessWidget {
                   Text(
                     l10n.monthViewAgendaEmpty,
                     style: TextStyle(
-                      fontSize: 12.5,
-                      color: ink.withValues(alpha: 0.5),
+                      fontSize: MonthType.body,
+                      color: ink.withValues(alpha: 0.62),
                     ),
                   ),
                   if (onAddCourse != null) ...[
@@ -106,7 +114,7 @@ class MonthDayAgenda extends StatelessWidget {
         else
           for (final row in rows)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: MonthMetrics.itemGap),
               child: _AgendaRowTile(
                 row: row,
                 settings: settings,
@@ -118,6 +126,18 @@ class MonthDayAgenda extends StatelessWidget {
       ],
     );
   }
+}
+
+/// 面板内卡片的底色：与「本月概览」「本月有安排的日子」**同族同色**。
+///
+/// 旧实现在同一个面板里用了两种底色（议程卡 `surface` / 预览卡
+/// `surfaceContainerHighest`）：一张白一张灰，同一屏两种语言，读起来像两块界面
+/// 拼在一起（2026-10-21 专业评审）。统一到这里。
+Color _cardFill(BuildContext context) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return Theme.of(context).brightness == Brightness.dark
+      ? colorScheme.surface
+      : colorScheme.surfaceContainerHighest;
 }
 
 /// 空态卡里的「加课」小按钮（描边胶囊，不抢卡内文字）。
@@ -152,10 +172,11 @@ class _AddCourseAction extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 label,
+                maxLines: 1,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: MonthType.body,
                   fontWeight: FontWeight.w600,
-                  color: ink.withValues(alpha: 0.7),
+                  color: ink.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -218,10 +239,11 @@ class _AgendaRowTile extends StatelessWidget {
               width: 44,
               child: Text(
                 row.clockText ?? '--:--',
+                maxLines: 1,
                 style: TextStyle(
-                  fontSize: 11.5,
+                  fontSize: MonthType.caption,
                   fontWeight: FontWeight.w600,
-                  color: inkColor.withValues(alpha: 0.6),
+                  color: inkColor.withValues(alpha: 0.66),
                 ),
               ),
             ),
@@ -234,7 +256,7 @@ class _AgendaRowTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: MonthType.title,
                       fontWeight: FontWeight.w600,
                       color: inkColor,
                     ),
@@ -247,8 +269,8 @@ class _AgendaRowTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 11.5,
-                          color: inkColor.withValues(alpha: 0.58),
+                          fontSize: MonthType.body,
+                          color: inkColor.withValues(alpha: 0.66),
                         ),
                       ),
                     ),
@@ -259,7 +281,7 @@ class _AgendaRowTile extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 18,
-              color: inkColor.withValues(alpha: 0.32),
+              color: inkColor.withValues(alpha: 0.38),
             ),
           ],
         ),

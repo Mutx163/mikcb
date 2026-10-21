@@ -284,6 +284,31 @@ Color resolveHomePageBackgroundColor({
   );
 }
 
+/// 状态栏图标极性翻面的分界亮度：**黑白对比度相等**的那一点。
+///
+/// ## 为什么不是 0.5（2026-10-21 专业评审 P0-3）
+///
+/// 旧实现写的是 `luminance > 0.5 ? 白底 : 深底`，等于「比中灰亮才配深图标」。
+/// 但黑/白对背景的对比度相等点根本不在 0.5 —— 解 `1.05/(L+0.05) =
+/// (L+0.05)/0.06` 得 **L ≈ 0.179**。于是 0.179 ~ 0.5 这一整段都被判给深底
+/// （配白图标），而白图标在那一段恰恰是差的那一档：
+///
+/// | 背景亮度 | 白图标 | 黑图标 |
+/// |---|---|---|
+/// | 0.10 | 7.00 | 3.00 |
+/// | 0.179 | 4.59 | 4.58 |
+/// | 0.356 | **2.59** | 8.12 |
+/// | 0.50 | **1.91** | 11.00 |
+///
+/// 真机截图就是这样：顶部带平均 0.356 → 判成白图标，而在右侧那朵亮云上
+/// （局部 0.738）实测只有 **1.33:1**，5G / 信号 / 电量整排读不出来。
+///
+/// 改用 0.179 之后，同一张壁纸判成黑图标，局部对比度 15.8:1。
+///
+/// 与 [cardGlassInkFlipLuminance]（0.20）是同一个判据、同一个理由；两个数
+/// 略有差别是因为那边按「误差可忽略的整数」取整过，这里直接用了解析解。
+const double statusBarIconFlipLuminance = 0.1791;
+
 /// Representative status-bar background used to derive system icon polarity.
 ///
 /// The status bar can be transparent over the wallpaper, so the page's opaque
@@ -304,7 +329,9 @@ Color resolveHomePageStatusBarBackground({
 
   final luminance = wallpaperTopLuminance;
   if (luminance != null) {
-    return luminance > 0.5
+    // 分界点是"黑白对比度相等"那一点，不是中灰 0.5（见
+    // [statusBarIconFlipLuminance] 的对照表）。
+    return luminance > statusBarIconFlipLuminance
         ? Colors.white
         : (usesFrostedChrome ? const Color(0xFF1A1A1A) : Colors.black);
   }

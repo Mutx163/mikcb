@@ -26,6 +26,7 @@ import '../models/timetable_settings.dart';
 import 'home_page_background.dart';
 import 'home_startup_visual_primer.dart';
 import 'home_wallpaper_luminance_share.dart';
+import 'wallpaper_luminance_profile.dart';
 
 /// 独立页面的壁纸亮度快照（不可变；变化时由页面 setState 换一份新的）。
 @immutable
@@ -34,6 +35,7 @@ class PageWallpaperLuminance {
     required this.key,
     required this.top,
     required this.body,
+    this.profile,
   });
 
   /// 采样键：`壁纸路径 | 对齐X | 对齐Y | 缩放 | 视口`。
@@ -48,6 +50,17 @@ class PageWallpaperLuminance {
 
   /// 主体带（正文 / 卡片区）亮度。
   final double body;
+
+  /// **逐行**亮度剖面：让「这一行日期背后那块壁纸多亮」问得出来。
+  ///
+  /// 三带平均值描述不了月视图的处境 —— 42 个格子自上而下铺满整屏，实测同一张
+  /// 壁纸上卡面亮度从 0.56 走到 0.23，按一个数判墨必然错掉一头（月外日期
+  /// 落到 1.97:1，物理上不可读）。有剖面后每一行查自己那一段。
+  ///
+  /// 为 null 表示只拿到了三带（共享缓存命中 / 预热登记这两个便宜路径只存三带，
+  /// 见 `HomeWallpaperLuminanceShare` 的类注释）：此时调用方回落到整屏带，
+  /// 也就是**与改动前逐字相同**的行为。
+  final WallpaperLuminanceProfile? profile;
 }
 
 /// 采样器：一个页面实例一个，随 State 一起释放。
@@ -63,6 +76,12 @@ class PageWallpaperLuminanceSampler {
   PageWallpaperLuminance? _value;
   String? _inFlight;
   bool _disposed = false;
+
+  /// 已经塞过测试读数：`pull` 不再覆盖它。
+  ///
+  /// 没有这个开关时，塞进去的读数会立刻被 `pull` 清掉 —— 测试环境没有壁纸路径，
+  /// `pull` 走的是「背景没了 ⇒ 把 _value 置空」那条分支，于是剖面永远到不了
+  /// 渲染层（本仓实测：不豁免时契约测试拿到 0 项）。
 
   /// 采样视口（逻辑像素）。null = 未知，键里记成「整图采样」。
   ///
@@ -81,12 +100,30 @@ class PageWallpaperLuminanceSampler {
   /// 最近一次采到的读数；null = 没有壁纸 / 还没采到。
   PageWallpaperLuminance? get value => _value;
 
+  /// 直接塞一份读数，跳过解码。
+  ///
+  /// 为什么需要它：测试宿主机上没有壁纸文件、也解不了图，`pull` 永远拿不到剖面
+  /// —— 「页面把逐行亮度传给网格」这条链路在测试里**走不到**，删掉那行转发
+  /// 测试也不会红（本仓对参数透传类改动有明确教训，见 AGENTS.md）。
+  ///
+  /// 生产代码唯一的调用点是 `MonthViewScreen.initState`，且**只在
+  /// `MonthViewScreen.debugSeedLuminance` 非 null 时**（该字段默认 null，只有
+  /// 测试会赋值）。不给它加 `@visibleForTesting`：页面要调它，加了注解就得在
+  /// 生产代码里留一条 `// ignore:` —— 那比一个带明确文档的普通方法更难读。
+  void seedForTest(PageWallpaperLuminance reading) {
+    _value = reading;
+    _inFlight = null;
+    _seededForTest = true;
+  }
+
+  bool _seededForTest = false;
+
   /// 按当前设置与视口补采一次；键没变就直接返回。
   ///
   /// [onChanged] 在**真的拿到新读数**时调用（页面在里面 `setState`）。异步、
   /// 永不抛：解码失败只是保持 null（墨色回落主题），不能把页面拖崩。
   void pull(TimetableSettings settings, VoidCallback onChanged) {
-    if (_disposed) {
+    if (_disposed || _seededForTest) {
       return;
     }
     final path = homePageBackdropKey(settings);
@@ -139,7 +176,13 @@ class PageWallpaperLuminanceSampler {
     required VoidCallback onChanged,
   }) async {
     try {
-      final bands = await sampleHomePageBackdropLuminanceBands(settings);
+      // 采**逐行剖面**（三带是它的派生视图，口径逐位相同）。
+      //
+      // 月视图 42 格铺满整屏、卡面亮度跨 0.56 → 0.23，按整屏一个数判墨必然错掉
+      // 一头（实测月外日期落到 1.97:1）。剖面与三带来自同一次解码，多拿一层
+      // 「每一行背后多亮」不额外解码一次图。
+      final profile = await sampleHomePageBackdropLuminanceProfile(settings);
+      final bands = profile?.bands;
       if (_disposed || _inFlight != key) {
         return;
       }
@@ -153,6 +196,7 @@ class PageWallpaperLuminanceSampler {
         key: key,
         top: bands.top,
         body: bands.body,
+        profile: profile,
       );
       // 登记到共享缓存：下次进这个页面（或首页 chrome）可以直接用，
       // 不必再等一次解码 —— 这是消除"闪一次"的另一半。

@@ -205,4 +205,77 @@ void main() {
     expect(background.computeLuminance(), greaterThan(0.5));
   });
 
+  // ── 状态栏图标极性：分界点是"黑白对比度相等"那一点（2026-10-21 P0-3）──
+  //
+  // 旧实现用 0.5，于是 0.179~0.5 这一整段都配白图标，而白图标在那一段恰恰是
+  // 差的那一档：真机截图顶部带平均 0.356 → 判白图标，在右侧亮云（局部 0.738）
+  // 上实测 1.33:1，5G / 信号 / 电量整排读不出来。
+  group('状态栏图标极性：黑白对比度相等点（0.179）', () {
+    /// 期望值按公式自己算，不复用被测实现。
+    double contrastOf(Color ink, double backgroundLuminance) {
+      final hi = ink.computeLuminance() > backgroundLuminance
+          ? ink.computeLuminance()
+          : backgroundLuminance;
+      final lo = ink.computeLuminance() > backgroundLuminance
+          ? backgroundLuminance
+          : ink.computeLuminance();
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    Brightness iconsFor(double luminance) {
+      final background = resolveHomePageStatusBarBackground(
+        pageBackground: const Color(0xFFF8FAFC),
+        statusBarShowsBackdrop: true,
+        hasBackdrop: true,
+        isDark: false,
+        usesFrostedChrome: true,
+        wallpaperTopLuminance: luminance,
+      );
+      return background.computeLuminance() > 0.5
+          ? Brightness.dark
+          : Brightness.light;
+    }
+
+    test('0.356 的顶部带必须配黑图标（旧实现配白图标，实测 2.59:1）', () {
+      expect(
+        iconsFor(0.356),
+        Brightness.dark,
+        reason: '0.356 处白图标只有 2.59:1、黑图标 8.12:1 —— 必须选黑',
+      );
+    });
+
+    test('每一个采样亮度下都选对比度更高的那一档', () {
+      for (final luminance in <double>[
+        0.05,
+        0.12,
+        0.18,
+        0.25,
+        0.36,
+        0.45,
+        0.55,
+        0.70,
+      ]) {
+        final icons = iconsFor(luminance);
+        final ink = icons == Brightness.dark ? Colors.black : Colors.white;
+        final other = icons == Brightness.dark ? Colors.white : Colors.black;
+        expect(
+          contrastOf(ink, luminance),
+          greaterThanOrEqualTo(contrastOf(other, luminance)),
+          reason: '亮度 $luminance 下选了对比度更差的那一档图标',
+        );
+      }
+    });
+
+    test('分界点两侧都必须过 4.5:1（不会在两个方向都留暗区）', () {
+      for (final luminance in <double>[0.17, 0.19]) {
+        final icons = iconsFor(luminance);
+        final ink = icons == Brightness.dark ? Colors.black : Colors.white;
+        expect(
+          contrastOf(ink, luminance),
+          greaterThanOrEqualTo(4.5),
+          reason: '黑白对比度相等点附近两者都应是 4.58:1 —— 低于 4.5 说明分界点算错了',
+        );
+      }
+    });
+  });
 }
