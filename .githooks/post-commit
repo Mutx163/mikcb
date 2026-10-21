@@ -108,6 +108,18 @@ for sha in $(git log -n 60 --format='%H' 2>/dev/null); do
   nparents=$(git show -s --format=%P "$sha" 2>/dev/null | wc -w | tr -d ' ')
   [ "${nparents:-0}" -le 1 ] || continue
 
+  # 只有「普通提交」才该走 pre-commit。revert / cherry-pick / rebase 等
+  # 由 git 自己生成的提交**不经过 pre-commit**（实测：git revert 触发了
+  # post-commit 但没有 pre-commit），把它们当跳过就是误报。
+  # reflog 的 subject 能精确区分：普通提交是 "commit: ..."，revert 是 "revert: ..."。
+  # 取不到 reflog（比如提交已出 reflog 窗口）时按普通提交处理，宁可多问一句。
+  rl=$(git log -g --format='%H%x09%gs' -n 200 2>/dev/null | awk -F'\t' -v s="$sha" '$1 == s { print $2; exit }')
+  case "$rl" in
+    'commit:'*|'commit (amend):'*|'commit (initial):'*) : ;;
+    '') : ;;
+    *) continue ;;
+  esac
+
   # 已经记过的不再记（幂等）
   if [ -f "$recorded" ] && grep -qx "$sha" "$recorded" 2>/dev/null; then
     continue
