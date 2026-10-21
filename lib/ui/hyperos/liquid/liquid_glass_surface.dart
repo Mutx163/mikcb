@@ -82,7 +82,8 @@ double liquidGlassDomeForSize(Size size) {
   } else if (shortSide >= _domeFadeToSide) {
     sideRamp = 0;
   } else {
-    sideRamp = (_domeFadeToSide - shortSide) / (_domeFadeToSide - _domeFullBelowSide);
+    sideRamp =
+        (_domeFadeToSide - shortSide) / (_domeFadeToSide - _domeFullBelowSide);
   }
   final aspect = longSide / math.max(shortSide, 1e-3);
   double aspectRamp;
@@ -92,12 +93,12 @@ double liquidGlassDomeForSize(Size size) {
     aspectRamp = 0;
   } else {
     aspectRamp =
-        (_domeFadeToAspect - aspect) / (_domeFadeToAspect - _domeFullBelowAspect);
+        (_domeFadeToAspect - aspect) /
+        (_domeFadeToAspect - _domeFullBelowAspect);
   }
   final dome = sideRamp * aspectRamp;
   return dome.clamp(0.0, 1.0);
 }
-
 
 /// 短边 ≤ 这个值的表面按「窄件」压折射（逻辑 px）。
 const double _narrowSurfaceBelowSide = 52;
@@ -553,7 +554,10 @@ class LiquidGlassSurfaceState extends State<LiquidGlassSurface>
     // 的话，闸门落下时没有任何东西触发这颗钮重建，它会一直停在冻结位图上
     // （2026-10-19 真机：日视图「回今日」从菜单退回后变成一块模糊）。
     return ValueListenableBuilder<bool>(
-      valueListenable: HyperosGlassBackdropController.routeTransitionRunning,
+      // 监听**聚合信号**（路由转场 ∪ 首页被内嵌页盖住）：两者对玻璃是同一件事
+      // ——"现在别依赖实时采样"。只监听路由转场的话，内嵌页（月视图）切换这条
+      // 路根本不会触发，退出时球会闪一下（2026-10-21 实测：进去不闪、出来闪）。
+      valueListenable: HyperosGlassBackdropController.glassFrozen,
       builder: (context, running, _) {
         if (!running ||
             !LiquidGlassSurface._isActuallyRenderable(context, widget.role)) {
@@ -959,9 +963,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
     uniforms.dispersion.set(_style.dispersion);
     // 穹顶：按布局尺寸推导（见 liquidGlassDomeForSize），与 dpr / 祖先缩放无关
     // —— 它混的是**方向**，不是长度。
-    uniforms.dome.set(
-      liquidGlassDomeForSize(Size(size.width, size.height)),
-    );
+    uniforms.dome.set(liquidGlassDomeForSize(Size(size.width, size.height)));
     // 先按窄带上限压（几何适配），再乘入场进度（0..1）。
     final cap = _maxRefraction;
     final cappedRefract = cap == null
@@ -1081,10 +1083,7 @@ class _RenderLiquidGlass extends RenderProxyBox {
         ..save()
         ..translate(offset.dx, offset.dy)
         ..drawRRect(
-          RRect.fromRectAndRadius(
-            Offset.zero & size,
-            Radius.circular(radius),
-          ),
+          RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
           Paint()..color = _style.tint,
         )
         ..restore();

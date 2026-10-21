@@ -86,6 +86,26 @@ class TimetableHomeDockShell extends StatelessWidget {
       return wrapHome(dockContent);
     }
     final inlineBuilder = inlinePageBuilder;
+    // 内嵌页整屏盖住首页时，把玻璃钉进**冻结态**（用预糊壁纸位图，不依赖实时
+    // 采样）。这与路由转场是同一件事的两种来源，所以喂同一个聚合信号。
+    //
+    // 不这么做的话：进去时首页停止绘制、球的采样图停在旧画面（当时看不出，
+    // 因为画面本来没变）；退出时首页恢复绘制，球却要等下一次回读才更新 ——
+    // 那一帧就是用户看到的"闪"（2026-10-21：「切进去不闪，切出来到日视图会闪」）。
+    //
+    // ⚠️ 必须**帧后**再写：`glassFrozen` 是 `ValueNotifier`，在 build 期间改它
+    // 会同步触发订阅者重建 —— 那是"build 期间要求重建"的经典断言
+    //（`setState() or markNeedsBuild() called during build`）。
+    // 记下目标值，帧末统一落一次，值相同则不发通知（信号自身去重）。
+    // 只在**值真的变了**时才排回调：本组件是 StatelessWidget，每次 build 都排
+    // 一个 post-frame 回调会让队列无限增长（而 setHomeScreenCovered 内部虽然
+    // 去重，回调本身仍然在排队）。
+    final covered = inlineBuilder != null;
+    if (HyperosGlassBackdropController.homeScreenCovered.value != covered) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        HyperosGlassBackdropController.setHomeScreenCovered(covered);
+      });
+    }
     final Widget hostedContent = inlineBuilder == null
         ? dockContent
         : Stack(
