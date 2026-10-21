@@ -14,6 +14,7 @@ import '../widgets/timetable/month_view/month_day_agenda.dart';
 import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
 import '../widgets/timetable/month_view/month_grid_handle.dart';
+import '../widgets/timetable/month_view/month_panel_top_curve.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
 import 'add_course_screen.dart';
@@ -490,42 +491,48 @@ class _MonthViewScreenState extends State<MonthViewScreen>
           )
         : const <MonthAgendaRow>[];
 
-    return Container(
-      decoration: BoxDecoration(
+    // ⚠️ 上沿那圈弧属于**上面的表格**，不属于这块面板。
+    //
+    // 用户口径（2026-10-21）：「整个拉杆区域，左右不是有那个圆角吗，他应该是
+    // 向上弯的，容器应该是上面的表格，而不是的信息区域」。
+    //
+    // 首版写的是 `BorderRadius.vertical(top: 16)` —— 那是"下面这块板子从下面
+    // 升上来、自己有圆角"的语言（bottom sheet 的心智）。改成用
+    // [MonthPanelTopCurveClipper] 画一段**向上凸**的弧：白底从表格下沿开始、
+    // 两角向外张开兜住表格，读起来是"表格的白色托底"。
+    return ClipPath(
+      clipper: const MonthPanelTopCurveClipper(cornerRadius: 28),
+      child: ColoredBox(
         // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
         // 被下面的东西盖起来」）。用透明就盖不住。
         color: Theme.of(context).colorScheme.surface,
-        // 圆角只留上边：它是一块从下方顶上来盖住内容的平面，上沿要圆；
-        // 下沿贴着屏幕底，圆角看不见。
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              // 只纵向滚动（横向由上面的 PageView 负责，面板不参与翻月）。
-              // scrollDirection 不写：默认就是纵向，写出来只是同一件事说两遍。
-              physics: const ClampingScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                6,
-                0,
-                6,
-                // 玻璃坞内嵌宿主的底部余量：滑到底时列表不被药丸压住。
-                8 + GlassDockScrollReliefScope.insetOf(context),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                // 只纵向滚动（横向由上面的 PageView 负责，面板不参与翻月）。
+                // scrollDirection 不写：默认就是纵向，写出来只是同一件事说两遍。
+                physics: const ClampingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  6,
+                  0,
+                  6,
+                  // 玻璃坞内嵌宿主的底部余量：滑到底时列表不被药丸压住。
+                  8 + GlassDockScrollReliefScope.insetOf(context),
+                ),
+                child: selectedInThisMonth
+                    ? MonthDayAgenda(
+                        date: selected!,
+                        settings: settings,
+                        inkColor: ink,
+                        rows: rows,
+                        onRowTap: (row) => _openAgendaRow(context, row),
+                      )
+                    : MonthAgendaPlaceholder(inkColor: ink),
               ),
-              child: selectedInThisMonth
-                  ? MonthDayAgenda(
-                      date: selected!,
-                      settings: settings,
-                      inkColor: ink,
-                      rows: rows,
-                      onRowTap: (row) => _openAgendaRow(context, row),
-                    )
-                  : MonthAgendaPlaceholder(inkColor: ink),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

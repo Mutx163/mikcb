@@ -34,6 +34,18 @@ class DayViewAgendaSurface extends StatelessWidget {
   final VoidCallback? onTap;
   final double opacityScale;
 
+  /// 强制走实体材质，忽略用户的课程卡材质设置。
+  ///
+  /// 给它是因为**玻璃卡必须能采到它背后真正的东西**：玻璃档在
+  /// `CourseSurface` 里是 `BackdropFilter`，采的是**屏级 backdrop**（壁纸），
+  /// 而不是"父容器画的白色" —— 父容器不透明也拦不住它。于是把玻璃卡放进一块
+  /// 白色面板里，卡片内部仍会透出壁纸纹理（用户 2026-10-21 报：「为什么每一个
+  /// 卡片，在白色的背景下，还能显示出壁纸来，这不合理」）。
+  ///
+  /// 面板内的卡片因此一律实体化：这是"容器决定材质"的正当例外 —— 玻璃的意义
+  /// 是透出背景，而这里的背景是**面板**，不是壁纸。
+  final bool forceSolid;
+
   const DayViewAgendaSurface({
     super.key,
     required this.settings,
@@ -46,7 +58,27 @@ class DayViewAgendaSurface extends StatelessWidget {
     this.shadow,
     this.onTap,
     this.opacityScale = 1,
+    this.forceSolid = false,
   });
+
+  /// 这一张卡该用哪种材质（**纯函数**，供测试钉口径）。
+  ///
+  /// [forceSolid] 为真时直接实体、不看用户设置 —— 用于"卡片躺在不透明容器里"
+  /// 的场景（月视图信息面板）。理由见字段注释：玻璃采的是屏级 backdrop，
+  /// 父容器不透明拦不住它。
+  static CourseCardSurfaceStyle resolveSurfaceStyle({
+    required TimetableSettings settings,
+    required bool backdropBlurOn,
+    required bool forceSolid,
+  }) {
+    if (forceSolid) {
+      return CourseCardSurfaceStyle.solid;
+    }
+    return dayViewContentCardSurfaceStyle(
+      settings,
+      backdropBlurOn: backdropBlurOn,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +99,10 @@ class DayViewAgendaSurface extends StatelessWidget {
       // so every agenda card falls back to solid. 与顶部摘要卡**同源**
       // （[dayViewContentCardSurfaceStyle]）：日视图两种内容卡一个材质口径，
       // 见那里的说明。
-      style: dayViewContentCardSurfaceStyle(
-        settings,
+      style: resolveSurfaceStyle(
+        settings: settings,
         backdropBlurOn: HyperosBlurredHeader.backdropBlurEnabled(context),
+        forceSolid: forceSolid,
       ),
       color: color,
       borderRadius: radius,

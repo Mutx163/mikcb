@@ -9,9 +9,20 @@ import '../day_view/day_view_agenda_surface.dart';
 /// 月视图选中日的当日议程（课程 + 考试 + 日程混排）。
 ///
 /// 视觉与**日视图议程卡同一套**：每行就是一张 [DayViewAgendaSurface]，
-/// 材质跟随用户的课程卡材质设置，圆角与日视图一致（20）。用户口径
-/// （2026-10-20）：「月视图应该跟周视图、日视图保持一致风格」——所以这里
-/// 不是自己画一套行样式，而是复用日视图那层。
+/// 圆角与日视图一致（20）。用户口径（2026-10-20）：「月视图应该跟周视图、
+/// 日视图保持一致风格」——所以不是自己画一套行样式，而是复用日视图那层。
+///
+/// ## 材质例外：这里一律实体（2026-10-21）
+///
+/// 用户口径：「下面的信息区域，为什么每一个卡片，在白色的背景下，还能显示出
+/// 壁纸来，这不合理」。
+///
+/// 根因：玻璃卡在 `CourseSurface` 里是 `BackdropFilter`，采的是**屏级
+/// backdrop**（壁纸），而不是"父容器画的白色"—— 父容器不透明也拦不住它。
+/// 于是卡片里能看见壁纸纹理，而它明明躺在一块白色面板上。
+///
+/// 所以本族的卡片**强制实体材质**（`forceSolid: true`）。这是"容器决定材质"
+/// 的正当例外：玻璃的意义是透出背景，而这里的背景是面板，不是壁纸。
 class MonthDayAgenda extends StatelessWidget {
   const MonthDayAgenda({
     super.key,
@@ -58,6 +69,9 @@ class MonthDayAgenda extends StatelessWidget {
             settings: settings,
             color: colorScheme.surface,
             radius: radius,
+            // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），
+            // 而它躺在白色面板上（见类注释）。
+            forceSolid: true,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
               child: Text(
@@ -107,10 +121,7 @@ class _AgendaRowTile extends StatelessWidget {
     // 行首竖条：考试固定红、其余用课程/日程自身色（与网格圆点同一套语义色）。
     final accent = row.kind == MonthAgendaRowKind.exam
         ? monthExamAccent(colorScheme)
-        : parseHexColorOrFallback(
-            row.colorHex,
-            fallback: colorScheme.primary,
-          );
+        : parseHexColorOrFallback(row.colorHex, fallback: colorScheme.primary);
     final cardColor = Theme.of(context).brightness == Brightness.dark
         ? colorScheme.surface
         : colorScheme.surfaceContainerHighest;
@@ -119,6 +130,9 @@ class _AgendaRowTile extends StatelessWidget {
       settings: settings,
       color: cardColor,
       radius: radius,
+      // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），
+      // 而它躺在白色面板上（见 MonthDayAgenda 类注释）。
+      forceSolid: true,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
