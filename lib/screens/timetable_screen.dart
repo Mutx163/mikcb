@@ -27,6 +27,7 @@ import '../services/widget_launch_router.dart';
 import '../widgets/class_reminder_sheet.dart';
 import '../widgets/timetable_share_export.dart';
 import '../utils/app_toast.dart';
+import '../utils/app_update_dot_share.dart';
 import '../utils/hex_color.dart';
 import '../controllers/day_view_transition_controller.dart';
 import '../controllers/empty_slot_marker_controller.dart';
@@ -589,6 +590,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _handleUpdateChanged() {
+    // 把「有没有更新」登记到全局：独立页面（月视图等）那个球上也要画同一个
+    // 红点。不登记的话，从首页切过去红点凭空消失 —— 用户读成"球闪一下、
+    // 点丢了"（2026-10-21 报）。检查本身仍只由本页发起，这里只广播结果。
+    AppUpdateDotShare.publish(hasUpdate: _update.hasUpdate);
     if (mounted) {
       setState(() {});
     }

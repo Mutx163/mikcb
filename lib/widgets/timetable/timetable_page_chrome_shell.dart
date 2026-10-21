@@ -8,6 +8,7 @@ import '../../models/timetable_settings.dart';
 import '../../providers/timetable_provider.dart';
 import '../../ui/home/home_chrome_spec.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../utils/app_update_dot_share.dart';
 import '../../utils/home_page_background.dart';
 import '../home_menu_catalog.dart';
 import '../home_page_region_blur.dart';
@@ -417,9 +418,13 @@ class _TimetablePageChromeShellState extends State<TimetablePageChromeShell> {
         anchorContent: HomeMoreActionIcon(
           ink: context.theme.colors.foreground,
           dotBorderColor: chrome.chromeDotBorderColor,
-          // 更新红点住在首页 State 的检查结果里。独立页面不另起一份检查，
-          // 也不画这个点 —— 宁可少一个点，也不要两处口径不同步。
-          showUpdateDot: false,
+          // 红点读**全局共享登记**（首页查到结果后 publish）。
+          //
+          // 曾经这里写死 false，理由是"不另起一份检查"—— 那个顾虑对，
+          // 但结论错了：红点不是首页专属的装饰，它是"有更新"这个**事实**的
+          // 表示。从首页切到独立页时它凭空消失，用户读成"球闪一下、点丢了"
+          //（2026-10-21 报）。检查仍只在首页发起，这里只读结果。
+          showUpdateDot: AppUpdateDotShare.hasUpdate,
         ),
         entries: resolveHomeGridMenuEntries(settings),
         hasAvailableUpdate: false,
@@ -442,7 +447,9 @@ class _TimetablePageChromeShellState extends State<TimetablePageChromeShell> {
           moreIcon: HomeMoreActionIcon(
             ink: context.theme.colors.foreground,
             dotBorderColor: chrome.chromeDotBorderColor,
-            showUpdateDot: false,
+            // 与 anchorContent 必须**同一份值**：两处不一致时，开合菜单交接
+            // 的那一瞬会露出来（红点晚一步出现、整颗球重绘一次）。
+            showUpdateDot: AppUpdateDotShare.hasUpdate,
           ),
           chromeActionBallInk: context.theme.colors.foreground,
         ),
