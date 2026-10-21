@@ -168,6 +168,7 @@ class HyperosSubpage extends StatelessWidget {
     this.overlayHeader = true,
     this.resizeToAvoidBottomInset = false,
     this.collapsibleLargeTitle = true,
+    this.collapsibleScrollBehavior,
     this.bottomBar,
   });
 
@@ -194,6 +195,13 @@ class HyperosSubpage extends StatelessWidget {
   /// (course card / timetable page settings) where a lower list must not drive
   /// large-title collapse.
   final bool collapsibleLargeTitle;
+
+  /// Optional caller-owned collapse behavior (see
+  /// [_HyperosBlurredPage.collapsibleScrollBehavior]): PageView pagers that
+  /// manage per-page collapse states pass their own behavior and re-derive
+  /// the heightOffset from the incoming page's scroll position on page
+  /// switches. Pass the same instance every build.
+  final HyperosExitUntilCollapsedScrollBehavior? collapsibleScrollBehavior;
 
   /// See [HyperosRootPage.bottomBar].
   final Widget? bottomBar;
@@ -222,6 +230,7 @@ class HyperosSubpage extends StatelessWidget {
       collapsibleTitle: collapsibleTitle,
       collapsibleNavigationIcon: navigationIcon,
       collapsibleActions: suffixes,
+      collapsibleScrollBehavior: collapsibleScrollBehavior,
       bottomBar: bottomBar,
       header: HyperosOverlayNestedHeader(
         prefixes:
@@ -249,6 +258,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     this.collapsibleTitle,
     this.collapsibleNavigationIcon,
     this.collapsibleActions,
+    this.collapsibleScrollBehavior,
     this.bottomBar,
   });
 
@@ -267,6 +277,14 @@ class _HyperosBlurredPage extends StatefulWidget {
   final String? collapsibleTitle;
   final Widget? collapsibleNavigationIcon;
   final List<Widget>? collapsibleActions;
+
+  /// Optional caller-owned scroll behavior for the collapsible bar. When
+  /// provided, the shell uses it instead of creating its own, and skips the
+  /// auto-reset on horizontal page switches — the caller owns the collapse
+  /// state's lifecycle (e.g. a PageView pager that re-derives the state from
+  /// the incoming page's scroll position on page changes). Pass the SAME
+  /// instance every build (state lives in it, like a [ScrollController]).
+  final HyperosExitUntilCollapsedScrollBehavior? collapsibleScrollBehavior;
   final Widget? bottomBar;
 
   @override
@@ -372,9 +390,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       onChanged: _deferredSetState,
     );
     // Page shell listens above nested list NotificationListeners → accept any depth.
-    _collapsibleScrollBehavior = HyperosExitUntilCollapsedScrollBehavior(
-      requireOuterScrollable: false,
-    );
+    // 调用方自带 behavior 时（PageView 分页页管理各自折叠态，见
+    // [HyperosSubpage.collapsibleScrollBehavior]），外壳用它而不是自建——
+    // 状态所有权随调用方，外壳的横向换页自动重置也随之跳过。
+    _collapsibleScrollBehavior =
+        widget.collapsibleScrollBehavior ??
+        HyperosExitUntilCollapsedScrollBehavior(requireOuterScrollable: false);
     _bindCollaboratorHosts();
   }
 
@@ -451,7 +472,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
         // 重置为展开；回到此前滚过的页时，首次滚动会按 1:1 重新推导回折叠。
         // 页位没变的回弹（横向轻晃被吸回同页）不重置——那页可能正滚着，
         // 折叠态是它自己的真实状态。
-        if (notification is ScrollEndNotification && _useCollapsibleTopAppBar) {
+        // ⚠️ 只对**外壳自建**的 behavior 生效：调用方自带 behavior（分页页
+        // 管各自折叠态）时，换页的状态设置是调用方的事（它知道每页的滚动
+        // 位置，能设对「滚过的页回到小字」），外壳再重置只会把它刚设对的
+        // 值踩回展开。
+        if (notification is ScrollEndNotification &&
+            _useCollapsibleTopAppBar &&
+            widget.collapsibleScrollBehavior == null) {
           final pixels = notification.metrics.pixels;
           if ((pixels - _lastHorizontalPagePixels).abs() > 0.5) {
             _collapsibleScrollBehavior.resetToExpanded();

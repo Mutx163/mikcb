@@ -500,9 +500,7 @@ void main() {
     expect(find.text('从备份恢复'), findsOneWidget);
   });
 
-  testWidgets('horizontal page switch resets collapsed large title', (
-    tester,
-  ) async {
+  testWidgets('page switch keeps collapse state per page', (tester) async {
     await tester.pumpWidget(
       const TestApp(
         home: UserGuideScreen(
@@ -513,9 +511,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 2026-10-21 用户真机反馈：隐私页滚到底（大标题缩成小字）后横切到
-    // 权限页，新页在顶部却还是小字——折叠态是外壳共享 behavior 里的
-    // 一份，横向切页不产生纵向通知，旧状态原样带进新页。
+    // 2026-10-21 用户真机反馈两条：① 隐私页滚到底（大标题缩成小字）后横切
+    // 到权限页，新页在顶部却还是小字；② 切回隐私页，页面明明已滚到下面，
+    // 大标题却还在。根因：折叠态是外壳共享 behavior 里的一份，切页不产生
+    // 纵向通知，旧状态原样带进新页。修法：折叠态跟着**当前页的滚动位置**
+    // 走——自持 behavior + 每页记录偏移，切页立刻设成新页该有的状态。
     HyperosCollapsibleTopAppBarState titleState() =>
         tester
                 .widget<HyperosCollapsibleTopAppBar>(
@@ -537,14 +537,22 @@ void main() {
       reason: '前置：滚动到底后大标题应处于折叠态',
     );
 
-    // Swipe horizontally to the permissions page.
+    // ① Swipe horizontally to the permissions page (top) → expand.
     await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
-
     expect(
       titleState().heightOffset,
       0.0,
-      reason: '横切到顶部的新页后，折叠态必须重置回展开（heightOffset=0）',
+      reason: '横切到顶部的新页后，折叠态必须立刻重置回展开',
+    );
+
+    // ② Swipe back to the scrolled privacy page → collapse again.
+    await tester.drag(find.byType(PageView), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    expect(
+      titleState().heightOffset,
+      lessThan(-5.0),
+      reason: '切回已滚动的页，标题必须回到该页真实状态（小字）',
     );
   });
 }

@@ -43,6 +43,18 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  /// 自有的折叠行为对象：大标题的收缩状态**跟着当前页走**。外壳共享一份
+  /// behavior 时，横向切页不产生纵向通知，上一页滚出的「小字」会带进新页
+  /// （2026-10-21 用户真机反馈的两条：切页后延迟一秒弹大字、切回滚过的页
+  /// 却是大字）。自持 behavior 后由本页在 [_onPageChanged] 里按新页的
+  /// 滚动位置立刻设对，外壳的自动重置（只对它自建的 behavior）跳过。
+  final HyperosExitUntilCollapsedScrollBehavior _collapseBehavior =
+      HyperosExitUntilCollapsedScrollBehavior(requireOuterScrollable: false);
+
+  /// 每页最近一次滚动时记录的折叠偏移（只有**当前页**会滚，记录即准确）。
+  /// 切页时按它恢复标题状态：顶部的页 → 大字，滚过的页 → 小字。
+  final Map<int, double> _lastCollapseOffsetByPage = {};
+
   bool _isLoading = true;
   bool _hasNotificationPermission = false;
   bool _hasPromotedPermission = false;
@@ -193,8 +205,32 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
+  /// 纵向滚动经过本监听（只有**当前页**会滚），把它的折叠偏移记下来；
+  /// 返回 false 继续冒泡，外壳的磨砂/折叠处理照常。
+  bool _handleActivePageScroll(ScrollNotification notification) {
+    if (notification.metrics.axis == Axis.vertical) {
+      final metrics = notification.metrics;
+      final scrolled = metrics.pixels - metrics.minScrollExtent;
+      // 与外壳 _syncOffsetToPosition 同一套推导：向上滚 → 折叠（负值），
+      // 顶部/回弹 → 0（展开）。
+      _lastCollapseOffsetByPage[_currentPage] = scrolled <= 0
+          ? 0.0
+          : -scrolled;
+    }
+    return false;
+  }
+
+  /// 换页：标题状态**立刻**换成新页该有的样子——顶部的页大字、滚过的页
+  /// 小字（2026-10-21 用户反馈：切页后延迟一秒才弹大字、切回滚过的页
+  /// 却是大字）。先清行为对象里锚在旧页坐标上的残留锁，再按记录的偏移
+  /// 设值；没有记录（首次到这页）即展开。
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
+    _collapseBehavior.resetToExpanded();
+    final offset = _lastCollapseOffsetByPage[page] ?? 0.0;
+    if (offset < 0) {
+      _collapseBehavior.state.heightOffset = offset;
+    }
   }
 
   void _goPrev() {
@@ -234,12 +270,16 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ],
         title: Text(_buildPageTitle(l10n)),
+        collapsibleScrollBehavior: _collapseBehavior,
         bottomBar: _buildBottomBar(l10n),
-        child: PageView(
-          controller: _pageController,
-          physics: const ClampingScrollPhysics(),
-          onPageChanged: _onPageChanged,
-          children: _guidePages(l10n),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _handleActivePageScroll,
+          child: PageView(
+            controller: _pageController,
+            physics: const ClampingScrollPhysics(),
+            onPageChanged: _onPageChanged,
+            children: _guidePages(l10n),
+          ),
         ),
       ),
     );
