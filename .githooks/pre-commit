@@ -39,9 +39,9 @@
 # 就只会被 `--no-verify` 绕过，反而更糟。
 #
 # 逃生舱：git 约定俗成的 `--no-verify`（`git commit --no-verify`）。真被误伤时
-# 用它跳过，然后**立刻**手动补跑（命令见 README 与各段拦截提示），并在
-# .agents/no-verify-log.md 追加一行留痕——跳过次数涨起来就是规则失效的信号。
-# （2026-10-21 起这一步由 post-commit 自动记，见该文件头注释；不用再手写。）
+# 用它跳过，然后**立刻**手动补跑（命令见 README 与各段拦截提示）。
+# 留痕自 2026-10-21 起由 post-commit 自动写（`--no-verify` 跳不过它），不用手记；
+# 但补跑仍是使用者的责任——钩子不知道这次该补跑哪几个文件。
 #
 # 超时护栏（2026-10-21 新增）：两道 flutter test 各包 `timeout 300`。此前无超时，
 # 2026-10-20 18:13 实测卡死过一次、持锁 15 分钟，挡住工作区所有其他会话的提交。
@@ -180,7 +180,7 @@ if [ -n "$guard_relevant" ]; then
             echo "           别用抬基线的方式把它变绿——抬之前先问这次增长能不能下沉。" >&2
           fi
           echo "pre-commit: 确属门禁 bug、确需跳过时用 git commit --no-verify，" >&2
-          echo "           但必须手动补跑本命令，并在 .agents/no-verify-log.md 追加一行留痕。" >&2
+          echo "           但必须手动补跑本命令（留痕由 post-commit 自动记）。" >&2
           exit 1
         fi
       fi
