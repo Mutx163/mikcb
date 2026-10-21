@@ -9,6 +9,8 @@
 // - 吸附：行程阈值 0.35、速度阈值 180，都是"明确意图才翻面"的人为取舍。
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/domain/month_grid_collapse.dart';
+import 'package:university_timetable/widgets/timetable/month_view/month_grid.dart';
+import 'package:university_timetable/widgets/timetable/month_view/month_grid_handle.dart';
 
 DateTime d(int year, int month, int day) => DateTime(year, month, day);
 
@@ -401,6 +403,75 @@ void main() {
       final l = layoutWith(9999);
       expect(l.panelHeight, 0);
       expect(l.panelHeight, greaterThanOrEqualTo(0));
+    });
+  });
+
+  group('屏幕太矮时不许把面板挤没（2026-10-21 审核发现）', () {
+    // 审核时实测：800×600 下 panelHeight = 0 —— 面板整个不可见，
+    // 「任意位置可拖」也就无从谈起。而且压低 gridHeight 之后网格还会溢出。
+    // ⚠️ 必须用**宽**屏（横屏形态）：手机竖屏宽度窄，方形行高由格宽决定
+    // （约 45），6 行本来就放得下 —— 矮屏保护根本不会被触发，测了等于没测
+    // （本审核第一次写的就是这种假绿测试）。
+    MonthGridLayout layoutAt({
+      required double height,
+      required int keptRow,
+      double t = 1,
+      double width = 900,
+    }) => monthGridLayout(
+      t: t,
+      availableHeight: height,
+      headerHeight: MonthGrid.headerHeight,
+      horizontalPadding: MonthGrid.horizontalPadding,
+      availableWidth: width,
+      weekNumberColumnVisible: true,
+      weekLabelWidth: MonthGrid.weekLabelWidth,
+      minRowHeight: MonthGrid.minRowHeight,
+      maxRowHeight: MonthGrid.maxRowHeight,
+      keptRow: keptRow,
+      handleHeight: MonthGridHandle.extent,
+      topPadding: 8,
+    );
+
+    test('横屏（900 宽 × 600 高）：面板至少拿到最小高度，不是 0', () {
+      final l = layoutAt(height: 600, keptRow: 0);
+      expect(
+        l.panelHeight,
+        greaterThanOrEqualTo(kMonthPanelMinHeight - 1),
+        reason: '面板被挤成 0 = 整个信息区消失（审核实测过）',
+      );
+    });
+
+    test('横屏下网格 + 把手 + 面板不许超过可用高度（否则溢出）', () {
+      final l = layoutAt(height: 600, keptRow: 0);
+      final used = 8 + l.gridHeight + MonthGridHandle.extent + l.panelHeight;
+      expect(
+        used,
+        lessThanOrEqualTo(600 + 0.5),
+        reason: '超出可用高度就会 RenderFlex overflow，底部内容被裁',
+      );
+    });
+
+    test('横屏下行高被压缩：6 行放得进新窗口', () {
+      final l = layoutAt(height: 600, keptRow: 0);
+      final needed = MonthGrid.headerHeight + 6 * l.rowHeight;
+      expect(
+        needed,
+        lessThanOrEqualTo(l.gridHeight + 0.5),
+        reason: '行高不跟着压，网格内容就会比窗口高（审核实测溢出 96px）',
+      );
+    });
+
+    test('正常手机竖屏（393 宽 × 852 高）：面板拿到充足空间，行高不受影响', () {
+      final l = layoutAt(height: 852, keptRow: 0, width: 393);
+      expect(l.panelHeight, greaterThan(200));
+      // 手机上行高由格宽决定（正方形），不该被最小面板高度这条压到。
+      expect(l.rowHeight, greaterThan(40));
+    });
+
+    test('收起到一行时面板更大（收起本来就该把空间让给面板）', () {
+      final expanded = layoutAt(height: 852, keptRow: 0, width: 393);
+      final collapsed = layoutAt(height: 852, keptRow: 0, width: 393, t: 0);
+      expect(collapsed.panelHeight, greaterThan(expanded.panelHeight));
     });
   });
 

@@ -36,6 +36,13 @@ const int kMonthGridDaysPerRow = 7;
 /// 收起态保留的行数：1 行（外加星期表头）。
 const int kMonthGridCollapsedRows = 1;
 
+/// 面板至少要留多高（逻辑 px）。
+///
+/// 网格展开态按「6 行铺满可用高度」算，屏幕矮（横屏 / 分屏 / 平板横放）时会
+/// 把面板挤成 0 —— 本仓实测 800×600 下 panelHeight=0：面板整个不可见，
+/// 拖动也就无从谈起。给一个下限让网格让步：宁可格子矮一点，也不能让面板消失。
+const double kMonthPanelMinHeight = 96;
+
 /// 拖动判定为「翻面」的比例：拖过总行程的这个比例就吸附到对面，否则弹回起点。
 ///
 /// 取 0.35 而不是 0.5：收起 / 展开是**低风险、可逆**的小动作（不像删除要
@@ -232,24 +239,53 @@ MonthGridLayout monthGridLayout({
   final progress = t.clamp(0.0, 1.0);
   final visibleRows = monthGridVisibleRows(progress);
 
-  final rowHeight = monthGridRowHeight(
-    availableWidth: availableWidth,
-    // 行高只能用「扣掉上内边距、把手之后」的高度：这三样都占同一块可用高度，
-    // 少扣一个，算出的行高就偏大，6 行必然放不下（溢出 8px 就是这么来的）。
-    availableForGrid:
-        availableHeight - topPadding - handleHeight - headerHeight,
-    weekNumberColumnVisible: weekNumberColumnVisible,
-    horizontalPadding: horizontalPadding,
-    weekLabelWidth: weekLabelWidth,
-    minRowHeight: minRowHeight,
-    maxRowHeight: maxRowHeight,
+  // 行高只能用「扣掉上内边距、把手、面板下限之后」的高度：这些都占同一块
+  // 可用高度，少扣一个算出的行高就偏大，6 行必然放不下（溢出就是这么来的）。
+  //
+  // `minRowHeight` 在这里**不参与下限钳制**：屏幕矮到连 6 × minRowHeight 都放
+  // 不下时，宁可格子比"可读下限"还矮，也不能让网格溢出（溢出 = 底部内容被裁掉
+  // 且控制台报错）。真机矮屏（横屏 / 分屏）会走这条路。
+  final double gridSpaceForRows = math.max(
+    0,
+    availableHeight -
+        topPadding -
+        handleHeight -
+        headerHeight -
+        kMonthPanelMinHeight,
+  );
+  final rowHeight = math.min(
+    monthGridRowHeight(
+      availableWidth: availableWidth,
+      availableForGrid: gridSpaceForRows,
+      weekNumberColumnVisible: weekNumberColumnVisible,
+      horizontalPadding: horizontalPadding,
+      weekLabelWidth: weekLabelWidth,
+      minRowHeight: minRowHeight,
+      maxRowHeight: maxRowHeight,
+    ),
+    // 硬上限：6 行 + 表头必须塞进「可用高度 - 内边距 - 把手 - 面板下限」。
+    gridSpaceForRows / kMonthGridRowCount,
   );
 
   // gridHeight **包含**页面那层上内边距：调用方会把网格包在一个
   // `Padding(top: 同一值)` 里，那 8px 是真实占用的高度。不包含的话
   // PageView 少给 8px，MonthGrid 溢出（本仓实际踩过：overflow 8px）。
   // 注意行高预算里已经扣过它，两处不能重复扣（那会少 8px 反向留白）。
-  final gridHeight = topPadding + headerHeight + visibleRows * rowHeight;
+  //
+  // 另外**不许把面板挤没**：屏幕矮时按可用高度封顶，给面板留
+  // [kMonthPanelMinHeight]。否则 panelHeight 会是 0，面板整个不可见
+  //（本仓实测 800×600 下就是这样）。
+  final rawGridHeight = topPadding + headerHeight + visibleRows * rowHeight;
+  final gridHeight = math.min(
+    rawGridHeight,
+    // 封顶必须与 panelHeight 的算法**同源**：两者都从 availableHeight 里扣
+    // topPadding + handleHeight + kMonthPanelMinHeight。少扣任何一个，
+    // 面板就会比下限还小（本仓实测：漏扣 topPadding ⇒ 面板只剩 88 而非 96）。
+    math.max(
+      topPadding + headerHeight + rowHeight,
+      availableHeight - topPadding - handleHeight - kMonthPanelMinHeight,
+    ),
+  );
   final scrollOffset = monthGridScrollOffset(
     keptRow: keptRow,
     rowHeight: rowHeight,
