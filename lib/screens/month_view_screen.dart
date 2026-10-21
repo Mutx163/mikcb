@@ -115,9 +115,18 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   /// 条目面板的滚动控制器。
   ///
   /// 面板要在**任意位置**上下拖动收放表格（用户 2026-10-21 晚口径），而列表
-  /// 自己也要滚 —— 两者靠「列表到边界后把剩余位移交给收放」分工，那需要读列表
+  /// 自己也要滚 —— 两者靠「先收网格、收到底再滚列表」分工，那需要读列表
   /// 的滚动位置，所以控制器提到 State 上。
   final ScrollController _panelScroll = ScrollController();
+
+  /// 面板与列表共享的拖拽状态（谁吃这段位移、回调是谁）。
+  ///
+  /// 它与传给列表的 [MonthPanelScrollPhysics] **必须是同一个实例**：physics
+  /// 的类型恒定、状态全在这个对象里，于是中途改判据不会重建
+  /// `ScrollPosition`、正在进行的拖动不会断（理由见该文件的类注释）。
+  ///
+  /// 判据与实现在 `initState` 里一次性接线，见 [MonthPanelDragState]。
+  final MonthPanelDragState _panelDrag = MonthPanelDragState();
 
   @override
   void initState() {
@@ -126,6 +135,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     _focusedYear = now.year;
     _focusedMonth = now.month;
     _pager = PageController(initialPage: _pageFor(_focusedYear, _focusedMonth));
+    // 面板列表与网格收放共用同一套判据与回调：接一次线，之后无论怎么重建
+    // 都是同一份（physics 里拿到的就是这个对象，不必每帧新建）。
+    _panelDrag
+      ..gridCanAbsorb = _gridCanAbsorb
+      ..onCollapseStart = _beginGridDrag
+      ..onCollapseUpdate = _updateGridDragDy
+      ..onCollapseEnd = _endGridDrag;
   }
 
   @override
@@ -559,20 +575,20 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         //
         // 列表自己也要纵向滚动、两者同向，**不能靠手势竞技场分工**（只会有一个
         // 赢家：要么列表永远滚不动、要么面板永远收不起来）。这里改成单一手势源
-        // + 分流：纵向拖拽全由 [MonthPanelDragArea] 接管，列表还能滚就喂列表、
+        // + 分流：纵向拖拽全由 [MonthPanelDragArea] 接管，网格先吃到边界再喂列表、
         // 到边界后同一次手势里无缝接着收放表格。详见该组件的类注释。
         child: MonthPanelDragArea(
-          scrollController: _panelScroll,
-          onCollapseStart: _beginGridDrag,
-          // 面板里的位移是**原始 dy**（正 = 向下 = 展开）。网格那套
-          // `_updateGridDrag` 吃的是同一个方向约定，直接转发。
-          onCollapseUpdate: _updateGridDragDy,
-          onCollapseEnd: _endGridDrag,
-          // 列表照常滚（Scrollable 自己处理）；Listener 只是旁观指针流，
-          // 在它滚不动时把剩余位移接过来收放表格 —— 两者不争手势。
+          dragState: _panelDrag,
+          // 列表走这份 physics：轮到网格时它的用户位移被吞掉，于是同一段位移
+          // 只会被消费一次。**类型必须恒定**（永远是 MonthPanelScrollPhysics），
+          // 否则 Scrollable 会重建 position、把正在进行的拖动断掉。
+          //
+          // ⚠️ 判据必须在这一层（physics），不能放在外层 Listener 里：
+          // Listener 是 Scrollable 的祖先，指针事件**最深者先收到**，等它
+          // 改判据时列表早就把这一帧位移处理完了（本仓实测每次都漏 416px）。
           child: SingleChildScrollView(
             controller: _panelScroll,
-            physics: const ClampingScrollPhysics(),
+            physics: MonthPanelScrollPhysics(dragState: _panelDrag),
             padding: EdgeInsets.fromLTRB(
               6,
               0,
@@ -608,6 +624,21 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         ),
       ),
     );
+  }
+
+  /// 网格还能不能继续往这个方向收放。
+  ///
+  /// 收起方向（dy < 0）只要还没完全收起就能继续；展开方向（dy > 0）只要
+  /// 还没完全展开就能继续。到了边界就必须把位移交还给列表 —— 否则网格早已
+  /// 停住、位移却被它吞掉，用户会觉得"手指在动、画面不动"。
+  bool _gridCanAbsorb(double dy) {
+    if (dy < 0) {
+      return _gridExpand.value > 0;
+    }
+    if (dy > 0) {
+      return _gridExpand.value < 1;
+    }
+    return false;
   }
 
   /// 开始拖拽：停掉吸附动画，记下起点（判「翻面还是弹回」要用）。

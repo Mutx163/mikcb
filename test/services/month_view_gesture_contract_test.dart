@@ -9,6 +9,7 @@ import 'package:university_timetable/screens/month_view_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/widgets/timetable/month_view/month_grid.dart';
 import 'package:university_timetable/widgets/timetable/month_view/month_grid_handle.dart';
+import 'package:university_timetable/widgets/timetable/month_view/month_panel_drag_area.dart';
 
 /// 月视图**手势分区**的契约测试（2026-10-21）。
 ///
@@ -101,6 +102,41 @@ void main() {
       pagerBox.size.height,
       lessThan(screenHeight * 0.85),
       reason: 'PageView 若接近整屏高，说明它又包住了面板区域（回归成旧结构）',
+    );
+  });
+
+  // ── 面板列表必须真的接上那份 physics（2026-10-21 第二轮）──
+  //
+  // 用户口径：「下滑的时候应该先收起上面为一行，然后再是下面信息区域滚动」。
+  //
+  // 判据住进了 physics（`MonthPanelScrollPhysics`），但那要靠**页面把它传给
+  // 列表**才生效。接线漏了的话：physics 写得再对，列表也照旧自己滚 —— 而且
+  // 单测 `month_panel_drag_area_test` 是拿 harness 自己接的线，**抓不到漏接**。
+  // 所以必须在真实页面里钉一次"列表身上挂的就是这份 physics"。
+  testWidgets('面板列表挂的是 MonthPanelScrollPhysics（不是默认 physics）', (tester) async {
+    await pumpScreen(tester);
+    final scrollView = tester.widget<SingleChildScrollView>(
+      find.descendant(
+        of: find.byType(MonthPanelDragArea),
+        matching: find.byType(SingleChildScrollView),
+      ),
+    );
+    expect(
+      scrollView.physics,
+      isA<MonthPanelScrollPhysics>(),
+      reason: '列表没挂上游 physics 的话，拖拽判据一趟都不跑，'
+          '会退回"列表先滚、网格不动"的旧行为',
+    );
+    // 挂上的那份必须与页面里那个 dragState 是同一个实例：
+    // 两个实例 = 状态各记一份，判据永远读到"网格不能收"。
+    final physics = scrollView.physics! as MonthPanelScrollPhysics;
+    final area = tester.widget<MonthPanelDragArea>(
+      find.byType(MonthPanelDragArea),
+    );
+    expect(
+      identical(physics.dragState, area.dragState),
+      isTrue,
+      reason: 'physics 与 DragArea 必须共用一个 dragState（状态各记一份就永远对不上）',
     );
   });
 
