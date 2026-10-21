@@ -519,6 +519,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     AppLocalizations l10n,
     LiveDisplaySettings display,
   ) {
+    // 开关已关时不再提示「可关闭」（自相矛盾，真机 2026-10-21 反馈）。
+    if (!display.showCourseName) return null;
     if (display.enableMiuiIslandLabelImage &&
         (display.miuiIslandLabelContent == MiuiIslandLabelContent.courseName ||
             display.miuiIslandLabelContent ==
@@ -532,6 +534,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     AppLocalizations l10n,
     LiveDisplaySettings display,
   ) {
+    if (!display.showLocation) return null;
     if (display.enableMiuiIslandLabelImage &&
         (display.miuiIslandLabelContent == MiuiIslandLabelContent.location ||
             display.miuiIslandLabelContent ==
@@ -586,9 +589,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             opacity: display.showCountdown ? 0.55 : 1.0,
             child: HyperosSwitchTile(
               title: l10n.showStageTextTitle,
+              // 条件不成立时不解释；只在「为什么这行灰着」时说（真机 2026-10-21）。
               subtitle: display.showCountdown
                   ? l10n.showStageTextInactiveHint
-                  : l10n.showStageTextSubtitle,
+                  : null,
               value: display.showStageText,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showStageText: value)),
@@ -599,9 +603,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             opacity: !display.showCountdown ? 0.55 : 1.0,
             child: HyperosSwitchTile(
               title: l10n.hidePrefixTextTitle,
+              // 生效态不挂副标题：原句把标题又念一遍（真机 2026-10-21）。
               subtitle: !display.showCountdown
                   ? l10n.hidePrefixTextInactiveHint
-                  : l10n.hidePrefixTextSubtitle,
+                  : null,
               value: display.hidePrefixText,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(hidePrefixText: value)),
@@ -611,7 +616,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       ),
       if (display.showCountdown) ...[
         const HyperosSectionGap(),
-        HyperosSectionLabel(text: l10n.countdownFormatLabel),
+        // 分组标签「倒计时格式」删：与该组唯一那行的标题是同一个词。
         HyperosListGroup(
           children: [
             HyperosSelectTile<LiveCountdownTextStyle>(
@@ -630,7 +635,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       ],
       if (!widget.forDuringEnd) ...[
         const HyperosSectionGap(),
-        HyperosSectionLabel(text: l10n.beforeClassQuickActionTitle),
+        // 分组标签「上课前快捷操作」删：与该组那行标题是同一个词。
         HyperosListGroup(
           children: [
             HyperosSelectTile<LiveBeforeClassQuickAction>(
