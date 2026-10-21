@@ -328,12 +328,26 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         return;
       }
       setState(() => _isSaving = false);
+      // 分三种说清楚，原先是「一律 taskTitleRequired」：
+      // 磁盘写不进去（saveFailed）也会被说成「请输入任务标题」，用户明明填了
+      // 标题却被告知没填，怎么改都过不去。`_validateTask` 只抛两种
+      // ArgumentError（`task_title_required` / `task_course_not_found`，
+      // 见 `timetable_course_service.dart`），按 message 区分即可。
+      // 「关联课程不存在」复用既有 `serviceMsgLinkedCourseNotFound`，
+      // 不为一句话新增六个 ARB 键。
+      final message = switch (error) {
+        ArgumentError(:final message)
+            when message == 'task_course_not_found' =>
+          l10n.serviceMsgLinkedCourseNotFound,
+        ArgumentError() => l10n.taskTitleRequired,
+        _ => l10n.saveFailed,
+      };
       showAppToast(
         context,
-        message: error is ArgumentError
-            ? (error.message?.toString() ?? l10n.taskTitleRequired)
-            : l10n.taskTitleRequired,
-        kind: AppToastKind.warning,
+        message: message,
+        kind: error is ArgumentError
+            ? AppToastKind.warning
+            : AppToastKind.error,
       );
     }
   }

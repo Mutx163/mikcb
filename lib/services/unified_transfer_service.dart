@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'app_log_service.dart';
+import '../domain/import_export_logic.dart';
 import '../domain/location_time_match_logic.dart';
 import '../domain/schedule_date_rule_logic.dart';
 import '../domain/week_calculator.dart';
@@ -765,6 +766,18 @@ class UnifiedTransferService {
       timeSchemeIdMap,
     );
 
+    // 课程合并会**丢掉导入侧的课程 id**（软匹配后留下本地 id），而作业仍指着
+    // 导入侧那个 id。这里在合并前后各算一次同一份纯函数，就能得出
+    // 「导入 id → 合并后本地 id」的对应关系，把作业的 courseId 改写过去。
+    // 不改 `importParsedCourses` 的返回类型：它有 6 个实现者（providers /
+    // services / 夹具），而这条映射用现成的领域函数就能算准。
+    final idMap = courses.isEmpty
+        ? const <String, String>{}
+        : syncImportedCourses(
+            existingCourses: provider.courses,
+            importedCourses: courses,
+          ).importedIdToLocalId;
+
     if (courses.isNotEmpty) {
       await provider.importParsedCourses(
         courses,
@@ -773,7 +786,13 @@ class UnifiedTransferService {
       );
     }
     final courseIds = provider.courses.map((item) => item.id).toSet();
-    for (final task in incoming.tasks) {
+    for (final rawTask in incoming.tasks) {
+      // 作业指向的课程在合并后换了 id 时，先按映射改写再校验。
+      final task = rawTask.courseId == null
+          ? rawTask
+          : rawTask.copyWith(
+              courseId: idMap[rawTask.courseId!] ?? rawTask.courseId,
+            );
       if (task.courseId != null && !courseIds.contains(task.courseId)) {
         throw StateError('task_course_missing:${task.id}');
       }

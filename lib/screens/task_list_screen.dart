@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/day_task_band_logic.dart';
 import '../l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
@@ -97,7 +98,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
       }
       return switch (_dateFilter) {
         _TaskDateFilter.all => true,
-        _TaskDateFilter.today => task.isDueOn(today),
+        // 口径收在 `DayTaskBandLogic.isRelevantToday`：清单页与日视图待办带
+        // 对「今日」的定义必须一致，否则同一天在两处显示不同的作业。
+        _TaskDateFilter.today => DayTaskBandLogic.isRelevantToday(task, today),
         _TaskDateFilter.week => task.isDueBetween(weekStart, weekEnd),
       };
     }).toList();

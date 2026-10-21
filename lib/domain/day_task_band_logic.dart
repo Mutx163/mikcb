@@ -233,4 +233,22 @@ class DayTaskBandLogic {
   /// 一片空白行，必须有兜底。
   static bool needsDefaultTitle(CourseTask task) =>
       task.title.trim().isEmpty;
+
+  /// 「今日」这个筛选该收哪些作业——**清单页与待办带共用的唯一口径**。
+  ///
+  /// 收两档：今天到期的（含已完成，用户要能回看「今天交了没」）+ 逾期未交的。
+  ///
+  /// 为什么必须含逾期：`CourseTask.isDueOn` 与 `isOverdue` 天然互斥（前者不看
+  /// 完成态、后者按日期严格早于），只按「今天到期」取数，昨天欠着的那几条会在
+  /// 「今日」这个最该看见它们的地方彻底消失。日视图的待办带早就按「逾期单列」
+  /// 处理过这件事，清单页原先却是 `isDueOn(today)` 单条判据——同一个 App 里
+  /// 两处对「今日」的定义不一致（2026-10-21 修）。
+  ///
+  /// 已完成的逾期任务**不算**：那件事已经做完了，用户在这一档要看的是还没做的。
+  static bool isRelevantToday(CourseTask task, DateTime today) {
+    if (task.isDueOn(today)) {
+      return true;
+    }
+    return task.isOverdue(now: today);
+  }
 }

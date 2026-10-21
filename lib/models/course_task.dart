@@ -29,6 +29,21 @@ class CourseTask {
   final String? note;
   final bool isCompleted;
   final CourseTaskSource source;
+
+  /// 用户是否亲手改过这条作业的「可被课程备注推导的字段」
+  /// （`title` / `dueDate` / `courseId`）。
+  ///
+  /// 存在的唯一理由是 [TimetableCourseService.syncHomeworkTasksWithCourses]：
+  /// `homeworkMark` 来源的作业由课程备注单向推导出来，而用户也能在编辑页改
+  /// 标题与截止日。没有这个标记时，用户在编辑页写的「第三章习题 1-10」
+  /// 会在下一次任意课程改动或冷启动时被打回备注原文，截止日也会被
+  /// 无条件重算回课程当天——用户白改，且没有任何提示。
+  ///
+  /// 语义是「这门课的这条作业已被用户接管」：一旦为 true，重算就不再
+  /// 覆盖上述三个字段，只在其课程/周次仍被勾选时保留原样。用户把标记
+  /// 取消勾选（`hasHomework = false`）时仍然会被摘掉——那是用户的明确动作。
+  final bool isUserEdited;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -41,6 +56,7 @@ class CourseTask {
     this.note,
     this.isCompleted = false,
     this.source = CourseTaskSource.manual,
+    this.isUserEdited = false,
     required this.createdAt,
     required this.updatedAt,
   }) : dueDate = dueDate == null ? null : dateOnly(dueDate);
@@ -79,6 +95,9 @@ class CourseTask {
       'note': note,
       'isCompleted': isCompleted,
       'source': source.value,
+      // 只在 true 时写出：保持旧档案与既有导出文件的字节不变（缺键读回
+      // 默认 false），不让一个几乎恒为 false 的键污染每一次落盘 diff。
+      if (isUserEdited) 'isUserEdited': true,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -136,6 +155,11 @@ class CourseTask {
       source: CourseTaskSource.fromValue(
         json['source'] is String ? json['source'] as String : null,
       ),
+      // 口径同 `isCompleted`：类型不对时按缺省 false 收下。这个键缺失在
+      // 旧档案里是常态（2026-10-21 前没有它），必须读得回来。
+      isUserEdited: json['isUserEdited'] is bool
+          ? json['isUserEdited'] as bool
+          : false,
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? now,
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? now,
     );
@@ -156,6 +180,7 @@ class CourseTask {
     Object? note = _unset,
     bool? isCompleted,
     CourseTaskSource? source,
+    bool? isUserEdited,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -172,6 +197,7 @@ class CourseTask {
       note: identical(note, _unset) ? this.note : note as String?,
       isCompleted: isCompleted ?? this.isCompleted,
       source: source ?? this.source,
+      isUserEdited: isUserEdited ?? this.isUserEdited,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

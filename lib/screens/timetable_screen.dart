@@ -1718,10 +1718,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _openTaskFromCourse(Course course, int week) async {
     final provider = context.read<TimetableProvider>();
-    final existing = provider
-        .getTasksForCourse(course.id)
-        .where((task) => task.sourceWeek == null || task.sourceWeek == week)
-        .firstOrNull;
+    // 只认明确属于本周的作业：sourceWeek==null 那种会被表单绑到本周、改掉旧记录。
+    final existing = provider.getTasksForCourse(course.id)
+        .where((task) => task.sourceWeek == week).firstOrNull;
     await Navigator.of(context).push<bool>(
       HyperosPageRoute<bool>(
         builder: (_) => AddTaskScreen(

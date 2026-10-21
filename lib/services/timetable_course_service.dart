@@ -542,6 +542,17 @@ class TimetableCourseService {
   }
 
   /// 改一条作业：改的是用户点名那条，**不回滚**（缺的只是落盘失败上报）。
+  ///
+  /// `homeworkMark` 作业被用户改过「可被备注推导的三个字段」（标题 / 截止日 /
+  /// 来源课程）时，自动盖上 `isUserEdited`，让
+  /// [syncHomeworkTasksWithCourses] 不再把它覆盖回去。只改备注、完成态这类
+  /// 不参与推导的字段不置位——那些改动本来就不会被重算影响。
+  ///
+  /// 用户把作业**挪到另一门课**时，还会顺手清掉原课程那一周的「有作业」标记：
+  /// 否则下次重算会按旧标记再生一条同标题作业，列表里出现两条一模一样的记录
+  /// （2026-10-21 实测）。清标记是那个动作的应有之义——这条作业已经不是
+  /// 那门课的了。为了不让「清掉标记」成为不可撤回的副作用，这里对课程也做
+  /// 快照，落盘失败时连同作业一起退回。
   static Future<void> updateTask(
     TimetableCoursePort port,
     CourseTask task,
@@ -551,14 +562,69 @@ class TimetableCourseService {
     if (index == -1) {
       return;
     }
+    final previous = items[index];
     final normalized = _normalizeTask(
       task,
-    ).copyWith(createdAt: items[index].createdAt, updatedAt: DateTime.now());
+    ).copyWith(createdAt: previous.createdAt, updatedAt: DateTime.now());
     _validateTask(port, normalized);
-    items[index] = normalized;
+    final derivedFieldsChanged =
+        normalized.title != previous.title ||
+        normalized.dueDate != previous.dueDate ||
+        normalized.courseId != previous.courseId;
+
+    final snapshotTasks = List<CourseTask>.from(port.tasks);
+    final snapshotCourses = List<Course>.from(port.courses);
+    final snapshotProfiles = List<TimetableProfile>.from(port.profiles);
+
+    items[index] = derivedFieldsChanged || normalized.isUserEdited
+        ? normalized.copyWith(isUserEdited: true)
+        : normalized;
+    if (previous.source == CourseTaskSource.homeworkMark &&
+        normalized.courseId != previous.courseId) {
+      _clearHomeworkMark(
+        port,
+        courseId: previous.courseId,
+        week: previous.sourceWeek,
+      );
+    }
     port.tasks = sortTasks(items);
-    await port.persistActiveProfileState();
+    try {
+      await port.persistActiveProfileState();
+    } catch (_) {
+      port.tasks = snapshotTasks;
+      port.courses = snapshotCourses;
+      port.profiles = snapshotProfiles;
+      rethrow;
+    }
     port.notifyStateChanged();
+  }
+
+  /// 把某门课某周的「有作业」标记置回 false；课程或备注不存在时静默幂等。
+  static void _clearHomeworkMark(
+    TimetableCoursePort port, {
+    required String? courseId,
+    required int? week,
+  }) {
+    if (courseId == null || week == null) {
+      return;
+    }
+    final courses = List<Course>.from(port.courses);
+    final index = courses.indexWhere((course) => course.id == courseId);
+    if (index == -1) {
+      return;
+    }
+    final course = courses[index];
+    final note = course.sessionNoteForWeek(week);
+    if (note == null || !note.hasHomework) {
+      return;
+    }
+    courses[index] = course.copyWith(
+      sessionNotes: course.withSessionNote(
+        week,
+        note.copyWith(hasHomework: false),
+      ),
+    );
+    port.courses = courses;
   }
 
   /// 勾选/取消勾选一条作业：同上，只改用户点名那条。
@@ -598,26 +664,16 @@ class TimetableCourseService {
     final snapshotCourses = List<Course>.from(port.courses);
     final snapshotProfiles = List<TimetableProfile>.from(port.profiles);
     final task = items[index];
-    if (task.source == CourseTaskSource.homeworkMark &&
-        task.courseId != null &&
-        task.sourceWeek != null) {
-      final courses = List<Course>.from(port.courses);
-      final courseIndex = courses.indexWhere(
-        (course) => course.id == task.courseId,
+    // 清掉备注里的「有作业」标记：不清的话，下一次重算会按那条备注重新生成
+    // 一条新 id 的作业，用户刚删的东西原地复活。
+    // 被用户接管过（`isUserEdited`）的作业同样要清——重算对这类记录的规则是
+    // 「原样保留」，删掉之后它不在列表里了，只剩标记的话反而会重新长出一条。
+    if (task.source == CourseTaskSource.homeworkMark) {
+      _clearHomeworkMark(
+        port,
+        courseId: task.courseId,
+        week: task.sourceWeek,
       );
-      if (courseIndex != -1) {
-        final course = courses[courseIndex];
-        final note = course.sessionNoteForWeek(task.sourceWeek!);
-        if (note != null) {
-          courses[courseIndex] = course.copyWith(
-            sessionNotes: course.withSessionNote(
-              task.sourceWeek!,
-              note.copyWith(hasHomework: false),
-            ),
-          );
-          port.courses = courses;
-        }
-      }
     }
     items.removeAt(index);
     port.tasks = items;
@@ -637,17 +693,59 @@ class TimetableCourseService {
   ///
   /// 这是课程与作业之间的唯一同步点：课程备注勾了「有作业」就长出一条作业、
   /// 到期日取该周那次课的日历日期；取消勾选就摘掉。返回作业列表是否变化。
+  ///
+  /// ## 两类 `homeworkMark` 作业，处置相反
+  ///
+  /// - **没被用户改过的**：完全由备注推导。备注改了就跟着改，勾掉了就摘掉。
+  /// - **被用户改过的**（`CourseTask.isUserEdited`）：**原样保留，既不覆盖也不
+  ///   摘除**。理由是这个标记的含义就是「用户已经接管这条记录」——他可能把
+  ///   标题写成「第三章习题 1-10」、把截止日改成下周一、或把它挪到另一门课。
+  ///   这三种改动在旧实现里都会被下一次重算打回（前两种）或直接换 id 重建
+  ///   （第三种），而重算的触发点包括**冷启动**和任意一次课程编辑——
+  ///   等于用户改什么都会在一次普通操作后静默消失。
+  ///
+  ///   代价要说清楚：用户改过一条作业之后，再去课程备注里改那句作业文字，
+  ///   这条作业不会跟着变了。这是刻意的取舍——「不覆盖用户写的字」优先于
+  ///   「备注是唯一真源」。想恢复联动，在编辑页把标题改回与备注一致即可
+  ///   （标记仍在，但内容已一致，肉眼看不出差别），或删掉重新由备注生成。
+  ///
+  ///   用户把备注的「有作业」取消勾选时，**已被接管的作业仍然保留**：
+  ///   静默删掉用户亲手写过的内容，比留下一条多余记录糟得多。要清掉就删作业
+  ///   （`deleteTask` 会顺手把备注标记置回 false）或直接删那条记录。
+  ///
+  /// ## 为什么不再无条件刷新 `updatedAt`
+  ///
+  /// 旧实现对每条推导出的作业都 `copyWith(updatedAt: now)`，于是「有没改动」
+  /// 的判据（before/after 的 JSON 比对）**永远为真**：冷启动每次都判成
+  /// 「作业变了」并触发一次全量落盘，`updatedAt` 这个字段对所有
+  /// `homeworkMark` 作业也彻底失真（永远是本次启动时间）。现在只有字段真的
+  /// 变了才写新时间戳。
   static Future<bool> syncHomeworkTasksWithCourses(
     TimetableCoursePort port, {
     bool persist = false,
   }) async {
     final before = jsonEncode(port.tasks.map((task) => task.toJson()).toList());
-    final existingHomework = port.tasks
-        .where((task) => task.source == CourseTaskSource.homeworkMark)
-        .toList();
-    final next = port.tasks
-        .where((task) => task.source != CourseTaskSource.homeworkMark)
-        .toList();
+
+    // 用户接管过的、原样保留；其余推导作业按 (课程, 周次) 建索引供匹配。
+    final preservedEdited = <CourseTask>[];
+    final unmatchedDerived = <String, CourseTask>{};
+    final next = <CourseTask>[];
+    for (final task in port.tasks) {
+      if (task.source != CourseTaskSource.homeworkMark) {
+        next.add(task);
+        continue;
+      }
+      if (task.isUserEdited) {
+        preservedEdited.add(task);
+        continue;
+      }
+      final key = _homeworkKey(task.courseId, task.sourceWeek);
+      if (key == null) {
+        // 无课程或无周次的推导作业匹配不到任何备注，与旧实现一样被摘掉。
+        continue;
+      }
+      unmatchedDerived[key] = task;
+    }
     final now = DateTime.now();
 
     for (final course in port.courses) {
@@ -660,19 +758,37 @@ class TimetableCourseService {
         if (!note.hasHomework) {
           continue;
         }
-        CourseTask? existing;
-        for (final candidate in existingHomework) {
-          if (candidate.courseId == course.id &&
-              candidate.sourceWeek == entry.key) {
-            existing = candidate;
-            break;
-          }
+        final key = _homeworkKey(course.id, entry.key);
+        if (key == null) {
+          continue;
         }
+        // 用户接管过这条：它已经在 preservedEdited 里，原样输出，不再生成一条。
+        final claimed = preservedEdited.any(
+          (task) => task.courseId == course.id && task.sourceWeek == entry.key,
+        );
+        if (claimed) {
+          unmatchedDerived.remove(key);
+          continue;
+        }
+
+        final existing = unmatchedDerived.remove(key);
         final noteTitle = note.trimmedText;
         if (noteTitle.isEmpty && existing == null) {
           continue;
         }
         final title = noteTitle.isEmpty ? existing!.title : noteTitle;
+        final dueDate = port.dateForCourseOccurrence(course, entry.key);
+
+        if (existing != null &&
+            existing.title == title &&
+            existing.courseId == course.id &&
+            existing.sourceWeek == entry.key &&
+            existing.dueDate == dueDate) {
+          // 一个字段都没变：原样放回，**不刷新 updatedAt**（见方法注释）。
+          next.add(existing);
+          continue;
+        }
+
         next.add(
           (existing ??
                   CourseTask(
@@ -688,13 +804,16 @@ class TimetableCourseService {
                 title: title,
                 courseId: course.id,
                 sourceWeek: entry.key,
-                dueDate: port.dateForCourseOccurrence(course, entry.key),
+                dueDate: dueDate,
                 source: CourseTaskSource.homeworkMark,
                 updatedAt: now,
               ),
         );
       }
     }
+
+    // 备注已取消勾选、但没被用户接管的推导作业：摘掉（保持既有行为）。
+    next.addAll(preservedEdited);
 
     port.tasks = sortTasks(next);
     final after = jsonEncode(port.tasks.map((task) => task.toJson()).toList());
@@ -703,6 +822,14 @@ class TimetableCourseService {
       await port.persistActiveProfileState();
     }
     return changed;
+  }
+
+  /// 推导作业的匹配键：课程 + 周次。任一为空时无键（这类记录不参与匹配）。
+  static String? _homeworkKey(String? courseId, int? week) {
+    if (courseId == null || week == null) {
+      return null;
+    }
+    return '$courseId|$week';
   }
 
   static void _validateSections(TimetableCoursePort port, Course course) {

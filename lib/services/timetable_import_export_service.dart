@@ -684,11 +684,30 @@ class TimetableImportExportService {
         settings: resolvedSettings,
       );
       final courseIds = host.courses.map((course) => course.id).toSet();
-      host.tasks = backup.tasks
-          .where(
-            (task) => task.courseId == null || courseIds.contains(task.courseId),
-          )
-          .toList();
+      // 作业的 `courseId` 指向本份文件里不存在的课程时只能丢（课程已被过滤掉，
+      // 留着就是一条无处归属的孤儿）。但它必须**计入丢弃数**：原先这里用
+      // `.where()` 静默过滤、`lastImportDroppedCounts` 里也看不到（那里面只有
+      // JSON 解析阶段的丢弃），用户导入完发现作业少了几条，界面上一个字都没有。
+      final keptTasks = <CourseTask>[];
+      var orphanTaskCount = 0;
+      for (final task in backup.tasks) {
+        final courseId = task.courseId;
+        if (courseId == null || courseIds.contains(courseId)) {
+          keptTasks.add(task);
+        } else {
+          orphanTaskCount += 1;
+        }
+      }
+      if (orphanTaskCount > 0) {
+        host.lastImportDroppedCounts = <String, int>{
+          ...host.lastImportDroppedCounts,
+          // 与解析期丢弃的 'tasks' 分开计：一个是「条目坏了」，一个是
+          // 「条目本身好、但它的课程不在这次导入里」，混在一起会让用户
+          // 以为文件损坏。
+          'tasksOrphaned': orphanTaskCount,
+        };
+      }
+      host.tasks = keptTasks;
       host.exams = List<Exam>.from(backup.exams);
       host.scheduleItems = List<ScheduleItem>.from(backup.scheduleItems);
       // 设备级信任锚（更新镜像）保持本机取值：这条路径的入参是外部文件/局域网

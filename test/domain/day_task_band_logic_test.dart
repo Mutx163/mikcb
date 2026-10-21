@@ -153,7 +153,7 @@ void main() {
         _task(
           id: 'loose',
           dueDate: targetDay,
-          createdAt: DateTime(2026, 6, 1),
+          createdAt: DateTime(2026, 6),
         ),
         _task(
           id: 'course',
@@ -286,5 +286,118 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  /// 清单页「今日」筛选与待办带的共用口径（2026-10-21 收口）。
+  ///
+  /// 原先清单页用 `isDueOn(today)` 单条判据，逾期作业在「今日」档里彻底消失
+  /// ——而日视图待办带早已把逾期单列。同一个 App 里两处对「今日」的定义不同，
+  /// 用户看到的是「带子上说欠着 3 项，点进清单页一条都没有」。
+  group('isRelevantToday：清单页与待办带共用的「今日」口径', () {
+    test('今天到期（未完成）：收', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: targetDay),
+          targetDay,
+        ),
+        isTrue,
+      );
+    });
+
+    test('今天到期已完成：也收（用户要能回看「今天交了没」）', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: targetDay, isCompleted: true),
+          targetDay,
+        ),
+        isTrue,
+      );
+    });
+
+    test('昨天到期未完成：收（这是原先被漏掉的那一档）', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: targetDay.subtract(const Duration(days: 1))),
+          targetDay,
+        ),
+        isTrue,
+        reason: '逾期作业在「今日」里消失 = 最该看见的时候看不见',
+      );
+    });
+
+    test('昨天到期已完成：不收（做完了，不是今天的行动项）', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(
+            id: 'a',
+            dueDate: targetDay.subtract(const Duration(days: 1)),
+            isCompleted: true,
+          ),
+          targetDay,
+        ),
+        isFalse,
+      );
+    });
+
+    test('明天到期：不收（那是以后的事）', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: targetDay.add(const Duration(days: 1))),
+          targetDay,
+        ),
+        isFalse,
+      );
+    });
+
+    test('没有截止日：不收（无期限任务不归任何一天）', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: null),
+          targetDay,
+        ),
+        isFalse,
+      );
+    });
+
+    test('时间带时分秒但仍是同一天：算今天', () {
+      expect(
+        DayTaskBandLogic.isRelevantToday(
+          _task(id: 'a', dueDate: DateTime(2026, 6, 15, 23, 59)),
+          targetDay,
+        ),
+        isTrue,
+      );
+    });
+
+    test('与待办带逐条对齐：两边取到的作业集合完全相同', () {
+      final tasks = <CourseTask>[
+        _task(
+          id: 'overdue',
+          dueDate: targetDay.subtract(const Duration(days: 2)),
+        ),
+        _task(id: 'today', dueDate: targetDay),
+        _task(id: 'todayDone', dueDate: targetDay, isCompleted: true),
+        _task(
+          id: 'oldDone',
+          dueDate: targetDay.subtract(const Duration(days: 5)),
+          isCompleted: true,
+        ),
+        _task(id: 'future', dueDate: targetDay.add(const Duration(days: 3))),
+      ];
+
+      final band = DayTaskBandLogic.resolve(tasks: tasks, date: targetDay);
+      final relevantIds = tasks
+          .where((task) => DayTaskBandLogic.isRelevantToday(task, targetDay))
+          .map((task) => task.id)
+          .toSet();
+      final bandIds = <String>{
+        ...band.overdue.map((row) => row.task.id),
+        ...band.today.map((row) => row.task.id),
+        ...band.completed.map((row) => row.task.id),
+      };
+
+      expect(relevantIds, bandIds, reason: '清单页与待办带不能对「今日」有分歧');
+      expect(band.actionableCount, 2, reason: '逾期 1 + 今天未完成 1');
+    });
   });
 }

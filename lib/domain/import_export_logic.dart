@@ -11,10 +11,23 @@ class ImportedCourseSyncResult {
   final int addedCount;
   final int updatedCount;
 
+  /// 导入侧课程 id → 合并后实际留下的本地 id。
+  ///
+  /// 存在的理由是**作业引用**：合并时按「同名 / 同时间」软匹配到已有课次后，
+  /// 留下的是**本地** id（`mergeImportedCourseWithExisting` 里
+  /// `id: existing.id`），导入侧那个 id 直接被丢掉。而随同一份包传过来的作业
+  /// 仍指着导入侧的 id，于是 `task_course_missing` 一抛、整次导入作废。
+  /// 调用方拿这份映射把作业的 `courseId` 改写过去即可。
+  ///
+  /// 新增（没匹配上任何已有课次）的课程是恒等映射——它们的 id 就是导入侧 id。
+  /// 被去重丢掉的重复条目也在表里，指向保留下来的那一条。
+  final Map<String, String> importedIdToLocalId;
+
   const ImportedCourseSyncResult({
     required this.mergedCourses,
     required this.addedCount,
     required this.updatedCount,
+    this.importedIdToLocalId = const <String, String>{},
   });
 }
 
@@ -366,6 +379,19 @@ ImportedCourseSyncResult syncImportedCourses({
   var addedCount = 0;
   var updatedCount = 0;
 
+  // 导入侧 id → 合并后留下的本地 id。先按去重键记下「被去重丢掉的id 归到谁」，
+  // 再在下面逐条记录幸存者的去向（详见 [ImportedCourseSyncResult.importedIdToLocalId]）。
+  final importedIdToLocalId = <String, String>{};
+  final survivorByDedupKey = <String, String>{
+    for (final course in dedupedImported)
+      buildImportedCourseDedupKey(course): course.id,
+  };
+  for (final course in importedCourses) {
+    final survivorId =
+        survivorByDedupKey[buildImportedCourseDedupKey(course)] ?? course.id;
+    importedIdToLocalId[course.id] = survivorId;
+  }
+
   for (final imported in dedupedImported) {
     final groupedMatchIndices = _findGroupedImportedCourseMatchIndices(
       merged,
@@ -383,6 +409,9 @@ ImportedCourseSyncResult syncImportedCourses({
         );
         updatedCount += 1;
       }
+      // 一组同名课次匹配到多条本地记录时，作业无法判断该指哪一条；保留第一条
+      // 之外的映射仍指向第一条，避免出现「映射到 null」。
+      importedIdToLocalId[imported.id] = merged[groupedMatchIndices.first].id;
       continue;
     }
 
@@ -408,9 +437,13 @@ ImportedCourseSyncResult syncImportedCourses({
         preserveLocalColors: preserveLocalColors,
       );
       updatedCount += 1;
+      // 关键一条：软匹配保留了本地 id，作业必须跟着改写。
+      importedIdToLocalId[imported.id] = existing.id;
     } else {
       merged.add(imported);
       addedCount += 1;
+      // 新增课程沿用导入侧 id，映射是恒等。
+      importedIdToLocalId[imported.id] = imported.id;
     }
   }
 
@@ -418,6 +451,7 @@ ImportedCourseSyncResult syncImportedCourses({
     mergedCourses: merged,
     addedCount: addedCount,
     updatedCount: updatedCount,
+    importedIdToLocalId: importedIdToLocalId,
   );
 }
 
