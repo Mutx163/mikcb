@@ -149,6 +149,28 @@ abstract final class HyperosBlurredHeader {
 
   static const darkTintOnlyAlpha = 0.62;
 
+  /// 暗色磨砂衬底的**底色**：中性灰，不是白、也不是页面底色。
+  ///
+  /// 与 [LiquidGlassDarkRecipe.standard] 的目标底色同值（`#565656`）：本仓对
+  /// 「深色膜该用什么色」早有定论 —— **中性灰，不要黑**。黑色压在近黑页面底上
+  /// 与背景糊在一起，既没边界也没玻璃感（见 `models/liquid_glass_tuning.dart`
+  /// 里那两条硬规则与四家上游的做法）。
+  ///
+  /// ⚠️ 2026-10-21 之前这里是**白**（白色亮纱）：那是 2026-09-27 为了治「深色下
+  /// 整条带读成透明片」下的药，药治好了透明片，但深色模式下的顶栏从此一直是一层
+  /// 发白的雾 —— 用户口径 2026-10-21「设置页面顶部的渐变模糊，还是浅色的模糊
+  /// 效果，能不能有一个深色的模糊效果」。灰底 + 更高不透明度给的是「深灰玻璃」，
+  /// 同时**不会**回到 9-27 那个透明片：见 [_frostedScrimColor] 的判据。
+  static const darkVeilBase = Color(0xFF565656);
+
+  /// 暗色衬底不透明度的下 / 上限（用户的「材质浓度」在下限之上才参与）。
+  ///
+  /// 下限 0.34 是「不是透明片」这条老约束的新表达：底灰叠在页面底 `#242424`
+  /// 上、按这个下限算出来是 `#383838`，比页面亮出一档、肉眼读得出「这里有一层
+  /// 材料」；上限 0.58 保证它不像蒙了层灰板（再高就把模糊糊死、读成实色条）。
+  static const darkVeilMinAlpha = 0.34;
+  static const darkVeilMaxAlpha = 0.58;
+
   /// Live [BackdropFilter] blur on mobile; web uses tint-only.
   ///
   /// [liveBlurSupportedOverride] exists because this reads `dart:io`'s
@@ -421,26 +443,40 @@ abstract final class HyperosBlurredHeader {
 
   /// Shared frosted scrim for subpage headers, sheets, and menus.
   ///
-  /// ⚠️ **暗色必须是「亮 veil」，不能是暗 veil**（用户口径 2026-09-27：「暗色模式，进入
-  /// 设置页面渐变模糊也是显示的透明效果」）。理由：暗 veil 压在暗背景上**一点对比都没有**，
-  /// 模糊没有可糊的东西，整条带读起来就是一块透明片 —— 这件事本文件里早就写着：
-  /// [homePageRegionTintColor] 的注释「generic tintColor scrim is too dark and low-contrast
-  /// on dark wallpapers」说的就是同一件。
+  /// ## 暗色档：中性灰底，不是白、也不是页面底色（2026-10-21）
   ///
-  /// 同族的三个接口早就按「暗色用亮 veil」实现：[homePageRegionTintColor] 0.20 /
-  /// [nestedLiquidTileTintColor] 0.12 / [nestedSurfaceTintColor] 0.10 —— **只有这一个共享
-  /// 的写成了暗 veil**，而子页顶栏、弹窗面板、菜单全都经过它，于是暗色下这几处一起读成透明。
+  /// 用户口径 2026-10-21：「设置页面顶部的渐变模糊，还是浅色的模糊效果，能不能有
+  /// 一个深色的模糊效果」。当时深色下这条带是**白纱**，于是整条读起来是浅色的雾。
   ///
-  /// 量级与 [homePageRegionTintColor] 的暗色档保持同一档（0.2 上下）：两处不能漂，否则暗色下
-  /// 顶栏那条带与首页区域会是两种灰。用户的「材质浓度」（[FrostedAppearance.sheetTintAlpha]）
-  /// 仍然起作用，但**留了下限** —— 暗 scrim 落在任何低值上都会读成透明。
+  /// 三个候选各自的历史账，别再走回去：
+  ///
+  /// * **页面底色 + 低不透明度（暗 veil）**：用户口径 2026-09-27「暗色模式，进入设置
+  ///   页面渐变模糊也是显示的透明效果」—— 暗膜压在暗底上一点对比都没有，模糊没有可糊
+  ///   的东西，整条带读成透明片。这条路**不再走**。
+  /// * **白色亮纱**：治好了透明片，但深色下的顶栏从此是一层发白的雾（本次投诉）。
+  /// * **中性灰 + 更高不透明度（现在）**：与 [LiquidGlassDarkRecipe.standard] 的目标
+  ///   底色同源，深灰玻璃；`#565656` 叠在页面底 `#242424` 上、按 [darkVeilMinAlpha]
+  ///   算出来约 `#383838`，比页面**亮一档**——所以「看得见这层材料」这条老约束仍然成立，
+  ///   只是从「白一档」改成了「灰一档」。
+  ///
+  /// 判据必须是**相对于页面底色的亮度差**，不是「必须是白」。原用例钉的是
+  /// `r==g==b==1`（白基），那条钉法把本次诉求本身判成了回归 —— 已改成按
+  /// [darkVeilBase] 的中性色 + 与页面底的对比度下限定。见
+  /// `test/ui/hyperos/dark_mode_frosted_scrim_test.dart`。
+  ///
+  /// 浅色路径**逐像素未动**：仍是 `Colors.white @ sheetTintAlpha`。
   static Color _frostedScrimColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final alpha = _appearanceOf(context).sheetTintAlpha;
     if (isDark) {
-      return Colors.white.withValues(
-        alpha: (alpha * 0.2 + 0.12).clamp(0.16, 0.30),
+      // 用户的「材质浓度」（[FrostedAppearance.sheetTintAlpha]，0..1）在这一档里
+      // 仍然起作用，但**落在 [darkVeilMinAlpha, darkVeilMaxAlpha] 区间内**：
+      // 下限保证「不是透明片」，上限保证模糊没被灰板糊死。
+      final veilAlpha = (alpha * 0.45 + 0.16).clamp(
+        darkVeilMinAlpha,
+        darkVeilMaxAlpha,
       );
+      return darkVeilBase.withValues(alpha: veilAlpha);
     }
     return Colors.white.withValues(alpha: alpha);
   }
