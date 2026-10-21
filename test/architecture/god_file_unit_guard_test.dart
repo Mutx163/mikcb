@@ -41,7 +41,16 @@ void main() {
     // 2026-10-19 晚：拆 models↔l10n 唯一真循环，主文件仅 +1 行 import
     // （course_week_localizations 的扩展），属换依赖方向而非功能增长，
     // 主文件与单元总量各 +1（9154 → 9155）已在提交信息说明。
-    const baselineLines = 2786;
+    //
+    // 2026-10-21 同步到实测 2815（main 1828 + day part 987）。
+    // 立基线 2786 之后落地的 `5bd7c625`（切出内嵌页时整棵首页被重建）把
+    // day part 从 942 涨到 987：修的是「Stack 恒在、内嵌页那层恒在」的树形
+    // 恒定问题（进内嵌页时 dockContent 在祖先链里的位置变了 → 整棵首页销毁
+    // 重建 → 切出来时那颗球闪），属于**必须写在布局现场**的 fix，无法抽成
+    // 独立 widget——把它搬走就等于又改回「位置会变」的树形。
+    // 主文件同期由 1844 降到 1828，净 +29 行是这一个修复的代价。
+    // 这不是「抬基线换绿」的常规口子：同步后上限仍是 2815，此后只减不增。
+    const baselineLines = 2815;
     const unit = [
       'lib/screens/timetable_screen.dart',
       'lib/screens/timetable_day_view_part.dart',
