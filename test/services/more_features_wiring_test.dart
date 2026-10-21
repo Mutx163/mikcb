@@ -226,27 +226,27 @@ void main() {
       );
     });
 
-    test('搜索页不许用 MiuixSearchBar 容器（它的 PopScope 会吃掉返回）', () {
-      // 2026-10-21 用户实测：「点击搜索会再次跳转到新页面，然后返回就直接
-      // 卡死了」。根因是展开态的 MiuixSearchBar 带
-      // `PopScope(canPop: !expanded)`，而那一页里 expanded 恒为 true ——
-      // 系统返回被它吃掉，页面永远退不出去。本页本身就是「展开后的搜索面」，
-      // 只需要输入框本体，所以搜索页里必须只出现 MiuixInputField。
+    test('搜索在原页面展开，不推新页面', () {
+      // 2026-10-21 用户连问两次：「为什么点击搜索框要跳转新的页面去，原本的
+      // 页面不行吗」。官方 MiuixSearchBar 就是原地展开（折叠胶囊 → 展开成
+      // 输入框 + 右侧「取消」），跳页是我图省事。这里钉住「不许再推搜索页」。
       final source = pageFile.readAsStringSync();
-      final searchPage = RegExp(
-        r'class _MoreFeatureSearchPageState[\s\S]*',
-      ).firstMatch(source);
-      expect(searchPage, isNotNull);
       expect(
-        searchPage!.group(0)!.contains('MiuixSearchBar('),
+        source.contains('_MoreFeatureSearchPage'),
         isFalse,
-        reason: '搜索页里又用上了 MiuixSearchBar 容器：它的 PopScope(canPop: '
-            '!expanded) 会吃掉系统返回，expanded 恒 true 时返回键直接卡死',
+        reason: '又出现独立搜索页了：官方形态是原地展开，跳页会让用户丢掉'
+            '「还在这页」的空间感',
+      );
+      // 展开/收起靠页内状态驱动，不是路由。
+      expect(
+        RegExp(r'bool _searchExpanded').hasMatch(source),
+        isTrue,
+        reason: '没有页内展开状态：搜索状态若交给路由管，就退回跳页方案了',
       );
       expect(
-        searchPage.group(0)!.contains('MiuixInputField('),
+        source.contains('outsideEndAction'),
         isTrue,
-        reason: '搜索页应当直接用输入框本体',
+        reason: '缺 outsideEndAction：官方展开时右侧要滑出「取消」',
       );
     });
 
@@ -255,7 +255,7 @@ void main() {
       // 样板间（miuix_showcase_screen.dart）用 IgnorePointer + 透明手势层实现。
       final source = pageFile.readAsStringSync();
       final block = RegExp(
-        r'Widget _buildSearchEntry[\s\S]{0,700}',
+        r'Widget _buildSearchBar[\s\S]{0,1800}',
       ).firstMatch(source);
       expect(block, isNotNull);
       expect(
@@ -263,6 +263,28 @@ void main() {
         isTrue,
         reason: '折叠态搜索胶囊必须屏蔽指针，否则点它会抢焦点弹键盘，'
             '而不是进搜索态',
+      );
+    });
+
+    test('展开态用官方 MiuixSearchBar 容器（它有正确的两级返回）', () {
+      // 展开时 PopScope(canPop: !expanded) 会先吃掉一次返回、调
+      // onExpandedChange(false) 收起搜索，再按才退页——这是官方设计，不是 bug。
+      // 上一版把它用在「恒展开」的独立页里才变成死锁（ac0f7ffd 修掉）。
+      final source = pageFile.readAsStringSync();
+      expect(
+        source.contains('MiuixSearchBar('),
+        isTrue,
+        reason: '本页应当用官方 MiuixSearchBar 容器承载展开/收起',
+      );
+      expect(
+        source.contains('MiuixInputField('),
+        isTrue,
+        reason: '本页应当用官方 MiuixInputField 输入框',
+      );
+      expect(
+        source.contains('HyperosSearchBar('),
+        isFalse,
+        reason: 'HyperosSearchBar 是本仓自写的简化输入框，不是 Miuix 官方组件',
       );
     });
   });

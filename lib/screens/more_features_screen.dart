@@ -65,18 +65,31 @@ class MoreFeaturesScreen extends StatefulWidget {
 }
 
 class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
-  /// 点搜索胶囊 → 推入全屏搜索页（官方移动端形态：折叠态不持有焦点，
-  /// 点开才进搜索态，见 `miuix_search_bar.dart` 的 SearchBar.kt 移植说明）。
-  /// [groups] 由 build 里那份现成结果传进来，**不在这里再读一次 provider**：
-  /// `TimetableProvider` 的读取调用点数有棘轮守卫（只减不增、余量为 0），
-  /// 而搜索页要的数据页面上早就有了，多读一次纯属浪费一个名额。
-  Future<void> _openSearch(List<MoreFeatureGroup> groups) {
-    return Navigator.of(context).push<void>(
-      HyperosPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => _MoreFeatureSearchPage(groups: groups),
-      ),
-    );
+  /// 搜索是否展开。官方 `MiuixSearchBar` 的形态就是**原地展开**：折叠时只是
+  /// 一个胶囊，点开后在原位置变成输入框 + 右侧滑出「取消」+ 结果区，全程
+  /// 不换页（见 `SearchBar.md` 移植说明的 `expanded` 语义）。
+  ///
+  /// 早先这里推了个独立搜索页，用户当场问「为什么点击搜索框要跳转新的页面去，
+  /// 原本的页面不行吗」——那条路是我图省事：跳页少写一套展开/收起状态，代价是
+  /// 用户丢掉「还在这页」的空间感，返回还曾因此卡死（见提交 ac0f7ffd）。
+  bool _searchExpanded = false;
+  String _query = '';
+
+  void _expandSearch() {
+    if (!_searchExpanded) {
+      setState(() => _searchExpanded = true);
+    }
+  }
+
+  /// 收起：清空搜索词，回到全量列表。
+  void _collapseSearch() {
+    if (!_searchExpanded) {
+      return;
+    }
+    setState(() {
+      _searchExpanded = false;
+      _query = '';
+    });
   }
 
   @override
@@ -90,131 +103,95 @@ class _MoreFeaturesScreenState extends State<MoreFeaturesScreen> {
       activeProfileName: provider.activeProfile?.name.trim(),
       activeTimeSchemeName: provider.activeTimeScheme?.name,
     );
+    // 未展开时永远显示全量（收起时也会清掉 _query，这里再兜一层）。
+    final visible = _searchExpanded
+        ? filterMoreFeatureGroups(groups, _query, l10n)
+        : groups;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.homeMenuMoreTitle),
       child: HyperosListView(
         children: [
-          _buildSearchEntry(l10n, groups),
-          for (var index = 0; index < groups.length; index++) ...[
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: groups[index].title,
-              child: HyperosListGroup(
-                children: [
-                  for (final item in groups[index].items)
-                    _MoreFeatureRow(item: item),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 折叠态搜索胶囊：官方 `MiuixSearchBar` + `MiuixInputField` 的收起形态。
-  ///
-  /// 为什么包 `IgnorePointer` + 透明手势层：官方移动端就是这么用的
-  /// （`miuix_showcase_screen.dart` 的 `_buildHomeSearchBar`）——折叠态搜索框
-  /// **不该持有焦点、不该弹键盘**，点上它应当直接进搜索态。搜索胶囊本身
-  /// 仍在原地、视觉不变，只是不接输入。
-  Widget _buildSearchEntry(
-    AppLocalizations l10n,
-    List<MoreFeatureGroup> groups,
-  ) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _openSearch(groups),
-      child: IgnorePointer(
-        child: MiuixSearchBar(
-          onExpandedChange: (_) {},
-          content: const SizedBox.shrink(),
-          // 官方 insideMargin 左右各 12 是给**展开时的尾部「取消」按钮**
-          // 让位的（`outsideEndAction` 从右侧滑入）。本页折叠态没有尾部
-          // 按钮、展开态又落在独立页里，留着这 12px 就是纯缩进：叠上列表
-          // 自己左右 16 的内边距，胶囊两侧比内容卡多缩 24px，读作「搜索框
-          // 比下面的卡片窄一圈」（用户实测点名）。置 0 让它与内容卡对齐。
-          insideMargin: EdgeInsets.zero,
-          inputField: MiuixInputField(
-            query: '',
-            onQueryChange: (_) {},
-            onSearch: (_) {},
-            expanded: false,
-            onExpandedChange: (_) {},
-            label: l10n.homeMenuMoreSearchHint,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 全屏搜索页：点搜索胶囊后进入。
-///
-/// 官方 SearchBar 的「展开态」在移动端落成一个独立搜索面（样板间用
-/// OverlayEntry 手搓，这里改用普通路由——少一套自管动画与 overlay 生命周期，
-/// 返回键天然等于「收起搜索」）。
-class _MoreFeatureSearchPage extends StatefulWidget {
-  const _MoreFeatureSearchPage({required this.groups});
-
-  final List<MoreFeatureGroup> groups;
-
-  @override
-  State<_MoreFeatureSearchPage> createState() => _MoreFeatureSearchPageState();
-}
-
-class _MoreFeatureSearchPageState extends State<_MoreFeatureSearchPage> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final filtered = filterMoreFeatureGroups(widget.groups, _query, l10n);
-    return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
-      title: Text(l10n.homeMenuMoreTitle),
-      // 搜索页要跟着键盘抬起来，否则输入法会盖住下半屏结果。
-      resizeToAvoidBottomInset: true,
-      child: HyperosListView(
-        children: [
-          // **不用 MiuixSearchBar 容器**：它的展开态带
-          // `PopScope(canPop: !expanded)`，会吃掉系统返回；而这里的
-          // `expanded` 恒为 true，于是返回键永远退不出这一页（用户实测
-          // 「返回直接卡死」）。本页本身就是那个「展开后的搜索面」，
-          // 只需要输入框本体，所以直接用 `MiuixInputField`。
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: MiuixInputField(
-              query: _query,
-              onQueryChange: (value) => setState(() => _query = value),
-              onSearch: (_) {},
-              expanded: true,
-              onExpandedChange: (_) {},
-              label: l10n.homeMenuMoreSearchHint,
-            ),
-          ),
-          if (filtered.isEmpty)
+          _buildSearchBar(l10n),
+          if (visible.isEmpty)
             HyperosEmptyState(
               icon: Icons.search_off_rounded,
               title: l10n.homeMenuMoreSearchEmptyTitle,
               subtitle: l10n.homeMenuMoreSearchEmptyHint,
             )
           else
-            for (final group in filtered) ...[
+            for (final group in visible) ...[
               const HyperosSectionGap(),
               HyperosSettingsBlock(
                 title: group.title,
                 child: HyperosListGroup(
                   children: [
-                    for (final item in group.items)
-                      _MoreFeatureRow(item: item),
+                    for (final item in group.items) _MoreFeatureRow(item: item),
                   ],
                 ),
               ),
             ],
         ],
       ),
+    );
+  }
+
+  /// 官方 `MiuixSearchBar`：折叠 = 胶囊；展开 = 输入框 + 右侧「取消」。
+  ///
+  /// 折叠态为什么包 `IgnorePointer` + 透明手势层：官方移动端就这么用
+  /// （`miuix_showcase_screen.dart` 的 `_buildHomeSearchBar`）——折叠态搜索框
+  /// **不该持有焦点、不该弹键盘**，点它应当进搜索态。胶囊视觉不变，只是不接
+  /// 输入。
+  Widget _buildSearchBar(AppLocalizations l10n) {
+    final bar = MiuixSearchBar(
+      expanded: _searchExpanded,
+      onExpandedChange: (expanded) {
+        if (!expanded) {
+          _collapseSearch();
+        }
+      },
+      // 展开时右侧滑入的「取消」（官方 `outsideEndAction` 槽）。
+      outsideEndAction: _searchExpanded
+          ? GestureDetector(
+              onTap: _collapseSearch,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(end: 16),
+                child: Text(
+                  l10n.cancelAction,
+                  style: HyperosTypography.listDetail(
+                    context,
+                  ).copyWith(color: context.theme.colors.primary),
+                ),
+              ),
+            )
+          : null,
+      // 结果直接长在页面列表里（下方 groups），不再额外挂 content——
+      // 让结果与全量列表共用同一套分区样式，展开/收起时不跳版式。
+      content: const SizedBox.shrink(),
+      // 官方 insideMargin 左右各 12 是给展开时的「取消」让位的。这里两个
+      // 状态下都不需要它：折叠态没有尾部按钮；展开态的「取消」自己带 end: 16
+      // 内边距。留着它叠上列表左右 16，胶囊会比内容卡窄一圈（用户点过名）。
+      insideMargin: EdgeInsets.zero,
+      inputField: MiuixInputField(
+        query: _query,
+        onQueryChange: (value) => setState(() => _query = value),
+        onSearch: (_) {},
+        expanded: _searchExpanded,
+        onExpandedChange: (expanded) {
+          if (expanded) {
+            _expandSearch();
+          }
+        },
+        label: l10n.homeMenuMoreSearchHint,
+      ),
+    );
+    if (_searchExpanded) {
+      return bar;
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _expandSearch,
+      child: IgnorePointer(child: bar),
     );
   }
 }
