@@ -252,3 +252,55 @@ class DayTaskBandLogic {
     return task.isOverdue(now: today);
   }
 }
+
+/// 作业表单「打开时的默认状态」——纯函数，不依赖 Flutter。
+///
+/// 抽出来的理由：这两条判断错了，用户每次进表单都要多付一次代价，而它们的
+/// 后果（键盘吃掉半屏、加完看不见）只有渲染层才看得见。放在这里能被纯 Dart
+/// 测试直接钉住，不必 pump 整个表单页。
+class TaskFormDefaults {
+  TaskFormDefaults._();
+
+  /// 打开表单时该不该弹键盘、把光标放进标题框。
+  ///
+  /// 这个页面同时承担三个场景，只有第一个该抢焦点：
+  ///
+  /// 1. **纯新建**（清单页「+」/ 首页菜单「添加任务」）：用户唯一的动作就是
+  ///    打字，替他把这一步省掉。
+  /// 2. **从课程加作业**（课程面板「作业」行）：课程、周次、到期日、备注原文
+  ///    全都预填好了，用户的动作是「看一眼、确认或改」。此时弹键盘会吃掉
+  ///    半个屏幕——实测 360×640 屏 + 300dp 键盘时，「来源课程 / 截止日期 /
+  ///    已完成」三行**全部被遮住**，用户连下面有什么都不知道就得先收键盘。
+  /// 3. **编辑已有作业**：最常见的改动是勾完成、挪日期，未必是改标题。
+  ///
+  /// 判据用「有没有预填内容」而不是「是不是编辑」：从课程进入时 `task` 为
+  /// null（走新建），但内容已经预填，同样不该抢焦点。
+  static bool shouldAutofocusTitle({
+    required bool isEditing,
+    required bool hasInitialCourse,
+    required bool hasInitialWeek,
+  }) => !isEditing && !hasInitialCourse && !hasInitialWeek;
+
+  /// 新建时该用哪个到期日。
+  ///
+  /// **默认今天**：`CourseTask` 没有「创建日当到期日」这条语义，无日期的作业在
+  /// 日视图待办带、「今日」「本周」三处全部不可见，只剩「全部」一个 tab。
+  /// 用户从「今日」tab 点 + 记一件事，回到列表却是空的——看着像没保存。
+  ///
+  /// **编辑态不补**：原有日期可能是有意不设（用户自己关掉的开关），
+  /// 打开编辑页又给他填回来，等于替他改数据。
+  static DateTime? initialDueDate({
+    required DateTime? editingDueDate,
+    required DateTime? courseOccurrenceDate,
+    required bool isEditing,
+    required DateTime today,
+  }) {
+    if (isEditing) {
+      return editingDueDate;
+    }
+    if (courseOccurrenceDate != null) {
+      return courseOccurrenceDate;
+    }
+    return CourseTask.dateOnly(today);
+  }
+}

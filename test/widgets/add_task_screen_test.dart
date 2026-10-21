@@ -89,13 +89,21 @@ void main() {
     expect(find.text('高等数学'), findsOneWidget);
     expect(find.byType(HyperosChoiceGroup), findsNothing);
 
-    // 截止日期开关打开后，日期只应显示一次（下方选择行），开关行不重复显示。
-    await tester.tap(find.text('截止日期'));
-    await tester.pumpAndSettle();
+    // 截止日期**默认打开**（新建时预填今天，见 2026-10-21 笔记：无日期的作业
+    // 在日视图与「今日」里都不可见）。点开关会把它关掉、日期行消失；
+    // 再点一次恢复，且日期只显示一次（下方选择行，开关行不重复显示）。
     final expectedDate = DateFormat.yMMMMd(
       'zh',
     ).format(CourseTask.dateOnly(DateTime.now()));
-    expect(find.text(expectedDate), findsOneWidget);
+    expect(find.text(expectedDate), findsOneWidget, reason: '新建默认填今天');
+
+    await tester.tap(find.text('截止日期'));
+    await tester.pumpAndSettle();
+    expect(find.text(expectedDate), findsNothing, reason: '关掉后日期行消失');
+
+    await tester.tap(find.text('截止日期'));
+    await tester.pumpAndSettle();
+    expect(find.text(expectedDate), findsOneWidget, reason: '再打开仍只显示一次');
   });
 
   testWidgets('new task saves completion toggle state', (tester) async {

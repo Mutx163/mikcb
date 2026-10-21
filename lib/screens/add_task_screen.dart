@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/day_task_band_logic.dart';
 import '../l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/course_task.dart';
@@ -23,6 +24,35 @@ class AddTaskScreen extends StatefulWidget {
   final Course? initialCourse;
   final int? initialWeek;
 
+  /// 这个页面该不该在打开时弹出键盘、把光标放进标题框。
+  ///
+  /// 这个页面同时承担三个场景，只有第一个该抢焦点：
+  ///
+  /// 1. **纯新建**（清单页「+」/ 首页菜单「添加任务」）：用户唯一的动作就是
+  ///    打字，替他把这一步省掉。
+  /// 2. **从课程加作业**（课程面板「作业」行）：课程、周次、到期日、备注原文
+  ///    全都预填好了，用户的动作是「看一眼、确认或改」。此时弹键盘会吃掉
+  ///    半个屏幕——实测 360×640 屏 + 300dp 键盘时，「来源课程 / 截止日期 /
+  ///    已完成」三行**全部被遮住**，用户连下面有什么都不知道就得先收键盘。
+  /// 3. **编辑已有作业**：最常见的改动是勾完成、挪日期，未必是改标题。
+  ///
+  /// 判据用「有没有预填内容」而不是「是不是编辑」：从课程进入时 `task` 为
+  /// null（走新建），但内容已经预填，同样不该抢焦点。
+  ///
+  /// 判据本体在 `TaskFormDefaults.shouldAutofocusTitle`（纯 Dart 可单测）：
+  /// 这个判断错了，用户每次进表单都会被键盘挡住半屏，而只有渲染层测试才抓得到，
+  /// 太晚。这里只做参数适配。
+  @visibleForTesting
+  static bool shouldAutofocusTitle({
+    CourseTask? task,
+    Course? initialCourse,
+    int? initialWeek,
+  }) => TaskFormDefaults.shouldAutofocusTitle(
+    isEditing: task != null,
+    hasInitialCourse: initialCourse != null,
+    hasInitialWeek: initialWeek != null,
+  );
+
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
 }
@@ -33,6 +63,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _noteController = TextEditingController();
+  final _titleFocusNode = FocusNode();
+  final _noteFocusNode = FocusNode();
   String? _courseId;
   int? _sourceWeek;
   DateTime? _dueDate;
@@ -41,6 +73,26 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   bool _isSaving = false;
 
   bool get _isEditing => widget.task != null;
+
+  /// 打开就弹键盘、光标落在标题框——**只在「纯新建」时成立**。
+  ///
+  /// 这个页面同时承担三个场景，只有第一个该抢焦点：
+  ///
+  /// 1. **纯新建**（清单页「+」/ 首页菜单「添加任务」）：用户唯一动作就是打字，
+  ///    替他把这一步省掉。
+  /// 2. **从课程加作业**（课程面板「作业」行）：课程、周次、到期日、备注原文
+  ///    全都预填好了，用户的动作是「看一眼、确认或改」。此时弹键盘会直接吃掉
+  ///    半个屏幕——实测 360×640 屏 + 300dp 键盘时，「来源课程 / 截止日期 /
+  ///    已完成」三行**全部被遮住**，用户连下面有什么都不知道就得先收键盘。
+  /// 3. **编辑已有作业**：最常见的改动是勾完成、挪日期，未必是改标题。
+  ///
+  /// 判据用「有没有预填内容」而不是「是不是编辑」：从课程进入时 `task` 为
+  /// null（走新建），但内容已经预填，同样不该抢焦点。
+  bool get _shouldAutofocusTitle => AddTaskScreen.shouldAutofocusTitle(
+    task: widget.task,
+    initialCourse: widget.initialCourse,
+    initialWeek: widget.initialWeek,
+  );
 
   @override
   void initState() {
@@ -53,12 +105,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     _sourceWeek = task?.sourceWeek ?? initialWeek;
     _dueDate = task?.dueDate;
     _isCompleted = task?.isCompleted ?? false;
-    if (_dueDate == null && initialCourse != null && initialWeek != null) {
-      _dueDate = context.read<TimetableProvider>().dateForCourseOccurrence(
-        initialCourse,
-        initialWeek,
-      );
-    }
+    final courseDate =
+        initialCourse != null && initialWeek != null
+        ? context.read<TimetableProvider>().dateForCourseOccurrence(
+            initialCourse,
+            initialWeek,
+          )
+        : null;
+    // 默认到期日的规则见 `TaskFormDefaults.initialDueDate`：新建默认今天
+    // （无日期的作业在日视图与「今日」里都看不见），从课程进入用那节课的日期，
+    // 编辑态沿用原值。
+    _dueDate = TaskFormDefaults.initialDueDate(
+      editingDueDate: task?.dueDate,
+      courseOccurrenceDate: courseDate,
+      isEditing: _isEditing,
+      today: DateTime.now(),
+    );
     _hasDueDate = _dueDate != null;
   }
 
@@ -89,6 +151,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void dispose() {
     _titleController.dispose();
     _noteController.dispose();
+    _titleFocusNode.dispose();
+    _noteFocusNode.dispose();
     super.dispose();
   }
 
@@ -133,20 +197,30 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           : null,
                       builder: (field) => HyperosTextField(
                         controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        autofocus: _shouldAutofocusTitle,
                         label: l10n.taskTitleLabel,
                         hint: l10n.taskTitleHint,
                         helper: field.errorText,
                         textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _noteFocusNode.requestFocus(),
                         onChanged: field.didChange,
                       ),
                     ),
                     const SizedBox(height: 8),
                     HyperosTextField(
                       controller: _noteController,
+                      focusNode: _noteFocusNode,
                       label: l10n.taskNoteLabel,
                       hint: l10n.taskNoteHint,
                       minLines: 1,
                       maxLines: 4,
+                      // 备注是表单里最后一个输入框：回车直接保存，不再把焦点
+                      // 推到某个开关上（开关不可输入，停在那里什么也不会发生）。
+                      // 原先两处都是 `next`，打完标题按回车只是把光标挪到备注，
+                      // 再按一次就彻底没反应了。
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _save(),
                     ),
                   ],
                 ),
