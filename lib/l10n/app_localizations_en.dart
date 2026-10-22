@@ -12129,4 +12129,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String courseAutoRefreshSummaryNext(String time) {
     return 'Next ~$time';
   }
+
+  @override
+  String get statisticsSessionTitle => 'Session details';
+
+  @override
+  String get statisticsSessionCourseLabel => 'Course';
+
+  @override
+  String get statisticsSessionMetricSessions => 'Sessions';
+
+  @override
+  String get statisticsSessionMetricDone => 'Past';
+
+  @override
+  String get statisticsSessionMetricSections => 'Sections';
+
+  @override
+  String get statisticsSessionMetricNoted => 'Noted';
+
+  @override
+  String get statisticsSessionListTitle => 'Session list';
+
+  @override
+  String get statisticsSessionCoverageTitle => 'Coverage';
+
+  @override
+  String get statisticsSessionCoverageNote => 'With notes';
+
+  @override
+  String get statisticsSessionCoverageHomework => 'With homework';
+
+  @override
+  String get statisticsSessionCoverageReminder => 'With reminder';
+
+  @override
+  String get statisticsSessionPhaseDone => 'Past';
+
+  @override
+  String get statisticsSessionPhaseToday => 'Today';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => 'Upcoming';
+
+  @override
+  String get statisticsSessionPhaseSuspended => 'Suspended';
+
+  @override
+  String get statisticsSessionPhaseHoliday => 'Holiday';
+
+  @override
+  String get statisticsSessionPhaseUndated => 'No date';
+
+  @override
+  String get statisticsSessionNoCalendarHint =>
+      'No semester start date, so sessions are listed by week';
+
+  @override
+  String get statisticsSessionEmpty => 'This course has no sessions';
 }

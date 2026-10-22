@@ -11464,6 +11464,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String courseAutoRefreshSummaryNext(String time) {
     return '下次约 $time';
   }
+
+  @override
+  String get statisticsSessionTitle => '单节课明细';
+
+  @override
+  String get statisticsSessionCourseLabel => '课程';
+
+  @override
+  String get statisticsSessionMetricSessions => '课次';
+
+  @override
+  String get statisticsSessionMetricDone => '已过';
+
+  @override
+  String get statisticsSessionMetricSections => '课时';
+
+  @override
+  String get statisticsSessionMetricNoted => '有备注';
+
+  @override
+  String get statisticsSessionListTitle => '课次列表';
+
+  @override
+  String get statisticsSessionCoverageTitle => '记录覆盖';
+
+  @override
+  String get statisticsSessionCoverageNote => '有备注';
+
+  @override
+  String get statisticsSessionCoverageHomework => '有作业';
+
+  @override
+  String get statisticsSessionCoverageReminder => '设过提醒';
+
+  @override
+  String get statisticsSessionPhaseDone => '已过';
+
+  @override
+  String get statisticsSessionPhaseToday => '今天';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => '未到';
+
+  @override
+  String get statisticsSessionPhaseSuspended => '停课';
+
+  @override
+  String get statisticsSessionPhaseHoliday => '假期';
+
+  @override
+  String get statisticsSessionPhaseUndated => '日期未定';
+
+  @override
+  String get statisticsSessionNoCalendarHint => '没设开学日期，只能按周次列出';
+
+  @override
+  String get statisticsSessionEmpty => '这门课没有排课';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -22965,6 +23022,63 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String courseAutoRefreshSummaryNext(String time) {
     return '下次約 $time';
   }
+
+  @override
+  String get statisticsSessionTitle => '單節課明細';
+
+  @override
+  String get statisticsSessionCourseLabel => '課程';
+
+  @override
+  String get statisticsSessionMetricSessions => '課次';
+
+  @override
+  String get statisticsSessionMetricDone => '已過';
+
+  @override
+  String get statisticsSessionMetricSections => '課時';
+
+  @override
+  String get statisticsSessionMetricNoted => '有備註';
+
+  @override
+  String get statisticsSessionListTitle => '課次列表';
+
+  @override
+  String get statisticsSessionCoverageTitle => '記錄覆蓋';
+
+  @override
+  String get statisticsSessionCoverageNote => '有備註';
+
+  @override
+  String get statisticsSessionCoverageHomework => '有作業';
+
+  @override
+  String get statisticsSessionCoverageReminder => '設過提醒';
+
+  @override
+  String get statisticsSessionPhaseDone => '已過';
+
+  @override
+  String get statisticsSessionPhaseToday => '今天';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => '未到';
+
+  @override
+  String get statisticsSessionPhaseSuspended => '停課';
+
+  @override
+  String get statisticsSessionPhaseHoliday => '假期';
+
+  @override
+  String get statisticsSessionPhaseUndated => '日期未定';
+
+  @override
+  String get statisticsSessionNoCalendarHint => '沒設開學日期，只能按週次列出';
+
+  @override
+  String get statisticsSessionEmpty => '這門課沒有排課';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -34467,4 +34581,61 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String courseAutoRefreshSummaryNext(String time) {
     return '下次約 $time';
   }
+
+  @override
+  String get statisticsSessionTitle => '單節課明細';
+
+  @override
+  String get statisticsSessionCourseLabel => '課程';
+
+  @override
+  String get statisticsSessionMetricSessions => '課次';
+
+  @override
+  String get statisticsSessionMetricDone => '已過';
+
+  @override
+  String get statisticsSessionMetricSections => '課時';
+
+  @override
+  String get statisticsSessionMetricNoted => '有備註';
+
+  @override
+  String get statisticsSessionListTitle => '課次列表';
+
+  @override
+  String get statisticsSessionCoverageTitle => '記錄覆蓋';
+
+  @override
+  String get statisticsSessionCoverageNote => '有備註';
+
+  @override
+  String get statisticsSessionCoverageHomework => '有作業';
+
+  @override
+  String get statisticsSessionCoverageReminder => '設過提醒';
+
+  @override
+  String get statisticsSessionPhaseDone => '已過';
+
+  @override
+  String get statisticsSessionPhaseToday => '今天';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => '未到';
+
+  @override
+  String get statisticsSessionPhaseSuspended => '停課';
+
+  @override
+  String get statisticsSessionPhaseHoliday => '假期';
+
+  @override
+  String get statisticsSessionPhaseUndated => '日期未定';
+
+  @override
+  String get statisticsSessionNoCalendarHint => '沒設開學日期，只能按週次列出';
+
+  @override
+  String get statisticsSessionEmpty => '這門課沒有排課';
 }

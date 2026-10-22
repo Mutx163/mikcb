@@ -20885,6 +20885,120 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'下次约 {time}'**
   String courseAutoRefreshSummaryNext(String time);
+
+  /// No description provided for @statisticsSessionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'单节课明细'**
+  String get statisticsSessionTitle;
+
+  /// No description provided for @statisticsSessionCourseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程'**
+  String get statisticsSessionCourseLabel;
+
+  /// No description provided for @statisticsSessionMetricSessions.
+  ///
+  /// In zh, this message translates to:
+  /// **'课次'**
+  String get statisticsSessionMetricSessions;
+
+  /// No description provided for @statisticsSessionMetricDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已过'**
+  String get statisticsSessionMetricDone;
+
+  /// No description provided for @statisticsSessionMetricSections.
+  ///
+  /// In zh, this message translates to:
+  /// **'课时'**
+  String get statisticsSessionMetricSections;
+
+  /// No description provided for @statisticsSessionMetricNoted.
+  ///
+  /// In zh, this message translates to:
+  /// **'有备注'**
+  String get statisticsSessionMetricNoted;
+
+  /// No description provided for @statisticsSessionListTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课次列表'**
+  String get statisticsSessionListTitle;
+
+  /// No description provided for @statisticsSessionCoverageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'记录覆盖'**
+  String get statisticsSessionCoverageTitle;
+
+  /// No description provided for @statisticsSessionCoverageNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'有备注'**
+  String get statisticsSessionCoverageNote;
+
+  /// No description provided for @statisticsSessionCoverageHomework.
+  ///
+  /// In zh, this message translates to:
+  /// **'有作业'**
+  String get statisticsSessionCoverageHomework;
+
+  /// No description provided for @statisticsSessionCoverageReminder.
+  ///
+  /// In zh, this message translates to:
+  /// **'设过提醒'**
+  String get statisticsSessionCoverageReminder;
+
+  /// No description provided for @statisticsSessionPhaseDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已过'**
+  String get statisticsSessionPhaseDone;
+
+  /// No description provided for @statisticsSessionPhaseToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get statisticsSessionPhaseToday;
+
+  /// No description provided for @statisticsSessionPhaseUpcoming.
+  ///
+  /// In zh, this message translates to:
+  /// **'未到'**
+  String get statisticsSessionPhaseUpcoming;
+
+  /// No description provided for @statisticsSessionPhaseSuspended.
+  ///
+  /// In zh, this message translates to:
+  /// **'停课'**
+  String get statisticsSessionPhaseSuspended;
+
+  /// No description provided for @statisticsSessionPhaseHoliday.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期'**
+  String get statisticsSessionPhaseHoliday;
+
+  /// No description provided for @statisticsSessionPhaseUndated.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期未定'**
+  String get statisticsSessionPhaseUndated;
+
+  /// No description provided for @statisticsSessionNoCalendarHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'没设开学日期，只能按周次列出'**
+  String get statisticsSessionNoCalendarHint;
+
+  /// No description provided for @statisticsSessionEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这门课没有排课'**
+  String get statisticsSessionEmpty;
 }
 
 class _AppLocalizationsDelegate

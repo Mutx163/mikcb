@@ -11787,4 +11787,61 @@ class AppLocalizationsJa extends AppLocalizations {
   String courseAutoRefreshSummaryNext(String time) {
     return '次回 $time 頃';
   }
+
+  @override
+  String get statisticsSessionTitle => 'コマ別の詳細';
+
+  @override
+  String get statisticsSessionCourseLabel => '授業';
+
+  @override
+  String get statisticsSessionMetricSessions => 'コマ数';
+
+  @override
+  String get statisticsSessionMetricDone => '終了';
+
+  @override
+  String get statisticsSessionMetricSections => '時限';
+
+  @override
+  String get statisticsSessionMetricNoted => 'メモあり';
+
+  @override
+  String get statisticsSessionListTitle => 'コマ一覧';
+
+  @override
+  String get statisticsSessionCoverageTitle => '記録の網羅率';
+
+  @override
+  String get statisticsSessionCoverageNote => 'メモあり';
+
+  @override
+  String get statisticsSessionCoverageHomework => '宿題あり';
+
+  @override
+  String get statisticsSessionCoverageReminder => 'リマインド設定';
+
+  @override
+  String get statisticsSessionPhaseDone => '終了';
+
+  @override
+  String get statisticsSessionPhaseToday => '今日';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => '予定';
+
+  @override
+  String get statisticsSessionPhaseSuspended => '休講';
+
+  @override
+  String get statisticsSessionPhaseHoliday => '休日';
+
+  @override
+  String get statisticsSessionPhaseUndated => '日付なし';
+
+  @override
+  String get statisticsSessionNoCalendarHint => '学期開始日が未設定のため、週番号のみで表示します';
+
+  @override
+  String get statisticsSessionEmpty => 'この授業にコマがありません';
 }

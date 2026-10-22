@@ -11831,4 +11831,61 @@ class AppLocalizationsKo extends AppLocalizations {
   String courseAutoRefreshSummaryNext(String time) {
     return '다음 $time쯤';
   }
+
+  @override
+  String get statisticsSessionTitle => '회차별 상세';
+
+  @override
+  String get statisticsSessionCourseLabel => '과목';
+
+  @override
+  String get statisticsSessionMetricSessions => '회차';
+
+  @override
+  String get statisticsSessionMetricDone => '지난 수업';
+
+  @override
+  String get statisticsSessionMetricSections => '시수';
+
+  @override
+  String get statisticsSessionMetricNoted => '메모 있음';
+
+  @override
+  String get statisticsSessionListTitle => '회차 목록';
+
+  @override
+  String get statisticsSessionCoverageTitle => '기록 커버리지';
+
+  @override
+  String get statisticsSessionCoverageNote => '메모 있음';
+
+  @override
+  String get statisticsSessionCoverageHomework => '과제 있음';
+
+  @override
+  String get statisticsSessionCoverageReminder => '알림 설정';
+
+  @override
+  String get statisticsSessionPhaseDone => '지난 수업';
+
+  @override
+  String get statisticsSessionPhaseToday => '오늘';
+
+  @override
+  String get statisticsSessionPhaseUpcoming => '예정';
+
+  @override
+  String get statisticsSessionPhaseSuspended => '휴강';
+
+  @override
+  String get statisticsSessionPhaseHoliday => '휴일';
+
+  @override
+  String get statisticsSessionPhaseUndated => '날짜 없음';
+
+  @override
+  String get statisticsSessionNoCalendarHint => '학기 시작일이 없어 주차로만 표시합니다';
+
+  @override
+  String get statisticsSessionEmpty => '이 과목에는 수업이 없습니다';
 }

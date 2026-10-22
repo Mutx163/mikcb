@@ -21,6 +21,7 @@ import '../widgets/statistics/week_stats_view.dart';
 import '../widgets/statistics/weekly_comparison_card.dart';
 import '../ui/hyperos/hyperos.dart';
 import 'statistics_analysis_screen.dart';
+import 'statistics_session_screen.dart';
 
 /// 课程统计页面（账单式：学期 / 周 双视图）
 class CourseStatisticsScreen extends StatefulWidget {
@@ -290,6 +291,18 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       );
     }
 
+    void openSessions() {
+      Navigator.push(
+        context,
+        HyperosPageRoute(
+          // 独立 name：`hyperos_page.dart` 用它生成 PageStorageKey，
+          // 与 '/statistics/analysis' 重名会串滚动位置。
+          settings: const RouteSettings(name: '/statistics/sessions'),
+          builder: (_) => const StatisticsSessionScreen(),
+        ),
+      );
+    }
+
     final hasOtherProfiles = provider.profiles
         .any((p) => p.id != provider.activeProfile?.id);
 
@@ -297,6 +310,14 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
       title: l10n.statisticsMoreTitle,
       child: HyperosListGroup(
         children: [
+          // 单节课明细排在首位：它是这一组里唯一「按课次看」的入口，
+          // 其余都是按周/按学期聚合。
+          HyperosListTile(
+            icon: Icons.event_note_outlined,
+            iconAccent: HyperosIconColors.teal,
+            title: l10n.statisticsSessionTitle,
+            onTap: openSessions,
+          ),
           HyperosListTile(
             icon: Icons.show_chart_rounded,
             iconAccent: HyperosIconColors.blue,
