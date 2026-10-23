@@ -111,6 +111,56 @@ void main() {
     }
   });
 
+  group('起点兜底：越界下村不能算出屏外的格子', () {
+    test('selectedDayIndex 越界时钳到可见范围内（release 下 assert 不存在）', () {
+      final normal = summaryStartCellRect(
+        viewportWidth: viewportWidth,
+        timeColumnWidth: timeColumnWidth,
+        visibleDayCount: 5,
+        selectedDayIndex: 4,
+        headerHeight: headerHeight,
+      );
+      final overflow = summaryStartCellRect(
+        viewportWidth: viewportWidth,
+        timeColumnWidth: timeColumnWidth,
+        visibleDayCount: 5,
+        selectedDayIndex: 9,
+        headerHeight: headerHeight,
+      );
+      expect(
+        overflow,
+        normal,
+        reason: '越界应钳到最后一格（5 天时下标 4），而不是照算到屏外',
+      );
+      final negative = summaryStartCellRect(
+        viewportWidth: viewportWidth,
+        timeColumnWidth: timeColumnWidth,
+        visibleDayCount: 5,
+        selectedDayIndex: -3,
+        headerHeight: headerHeight,
+      );
+      expect(
+        negative.left,
+        closeTo(timeColumnWidth, 0.01),
+        reason: '负数应钳到第一格（左边界 = 时间列宽）',
+      );
+      expect(negative.width, closeTo(normal.width, 0.01));
+    });
+
+    test('visibleDayCount 为 0 时给一个零矩形（不除零）', () {
+      final rect = summaryStartCellRect(
+        viewportWidth: viewportWidth,
+        timeColumnWidth: timeColumnWidth,
+        visibleDayCount: 0,
+        selectedDayIndex: 0,
+        headerHeight: headerHeight,
+      );
+      expect(rect.width, 0);
+      expect(rect.height, 0);
+      expect(rect.width.isNaN, isFalse, reason: '不能因为除零得到 NaN');
+    });
+  });
+
   group('两端插值：中间帧必在两端之间，端点逐值贴合', () {
     const spec = SummaryFlightSpec(
       startCell: Rect.fromLTWH(241.1, -40, 48.3, 40),

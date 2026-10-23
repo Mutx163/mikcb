@@ -115,27 +115,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('起点没有卡面（星期格那一格本来只是几行字）', (tester) async {
+  testWidgets('起点没有可见卡面（星期格那一格本来只是几行字）', (tester) async {
     // 起点就画不透明卡面，会在星期栏上凭空冒出一块白卡。
+    //
+    // ⚠️ 判据是「卡面**不可见**」而不是「没有卡面」：外层组件必须恒定（见
+    // `SummaryFlightCard` 里那段注释 —— 中途换 widget 类型会让整棵子树重建，
+    // 卡里的字会闪）。所以这里查的是 `CourseSurface.opacityScale` 与渐变 alpha。
     await pumpFrame(tester, lerpSummaryFlight(spec: spec, t: 0));
-    expect(
-      find.byType(CourseSurface),
-      findsNothing,
-      reason:
-          '起点不该已经有卡面。星期栏里那一格是「几行字压在壁纸上」，没有卡片；'
-          '第一帧就画一块实心白卡，读起来像凭空冒出来一张卡。',
-    );
-    // 但字必须看得见。
+    final surfaces = find.byType(CourseSurface);
+    if (surfaces.evaluate().isNotEmpty) {
+      final flight = tester.widget<CourseSurface>(surfaces);
+      expect(
+        flight.opacityScale,
+        closeTo(0, 0.01),
+        reason: '起点卡面必须完全透明（opacityScale=0）。星期栏那一格是「几行字'
+            '压在壁纸上」，第一帧就画一块实心卡，读起来像凭空冒出来一张卡。',
+      );
+    }
+    // 字必须看得见（这才是起点的全部内容）。
     expect(find.text('周五'), findsOneWidget);
     expect(find.text('03/20'), findsOneWidget);
 
-    // 长到 40% 时卡面已经在了（否则会「只有字在飘、卡片最后才出现」）。
+    // 长到 40% 时卡面已经可见（否则会「只有字在飘、卡片最后才出现」）。
     await pumpFrame(tester, lerpSummaryFlight(spec: spec, t: 0.4));
+    final mid = tester.widget<CourseSurface>(find.byType(CourseSurface));
     expect(
-      find.byType(CourseSurface),
-      findsOneWidget,
-      reason: '中途必须已经有卡面：卡面是「包上来」的，不是最后才开始画。',
+      mid.opacityScale,
+      greaterThan(0.9),
+      reason: '到 40% 卡面应该已经完全不透明（前 30% 淡入完毕）',
     );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('中途帧：不溢出、不因为窄格子裁字崩掉', (tester) async {

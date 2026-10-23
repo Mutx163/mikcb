@@ -100,18 +100,6 @@ class TimetableAnchoredDayOverlay extends StatefulWidget {
   /// 与课程卡同一套机制、同一条曲线、同起同落。
   final SummaryFlightInput? summaryFlight;
 
-  /// 摘要卡（带关闭叉那张）底边在**转场层局部坐标**里的位置。
-  ///
-  /// 转场中面板从上往下「揭开」到这个高度：摘要卡整张露出来，下面的议程内容
-  /// 仍然是隐藏的（它们由飞行卡接住）。
-  ///
-  /// 用户口径（2026-10-21）：「那个日视图带叉叉的卡片，不要直接闪现出现，应该
-  /// 从周视图上面的星期上面，拉出来」。
-  ///
-  /// 默认就生效（= 卡顶 14 + 卡高 [kDayViewSummaryCardHeight]），所以调用点不用
-  /// 多传一行 —— `timetable_screen.dart` 的行数余量很紧。
-  final double summaryRevealBottom;
-
   const TimetableAnchoredDayOverlay({
     super.key,
     required this.panel,
@@ -126,7 +114,6 @@ class TimetableAnchoredDayOverlay extends StatefulWidget {
     required this.sectionHeight,
     required this.settings,
     required this.cardInset,
-    this.summaryRevealBottom = 14.0 + kDayViewSummaryCardHeight,
     this.summaryFlight,
   });
 
@@ -184,7 +171,6 @@ class _TimetableAnchoredDayOverlayState
     final panel = widget.panel;
     final flightCards = widget.flightCards;
     final expandAnimation = widget.expandAnimation;
-    final revealBottom = widget.summaryRevealBottom;
     // 宽度从父级约束里取，不让调用方传：`timetable_screen.dart` 的行数棘
     // 余量很紧，调用点多一行就会撞守卫。
     return LayoutBuilder(
@@ -221,15 +207,8 @@ class _TimetableAnchoredDayOverlayState
             final resolvedCards = flightCards.isNotEmpty
                 ? flightCards
                 : _resolveFlightCards(viewportWidth, _layerOrigin);
-            // 摘要卡「拉出来」的露出比例：0 = 完全没露出，1 = 露到摘要卡底边。
-            //
-            // ⚠️ **不要再叠第二条曲线**（2026-10-23 拆掉 `easeOutCubic`）。
-            // 两条曲线串联时摘要卡会比课程卡快一倍还多：实测 50ms 处课程卡只走了
-            // 11.7% 行程，摘要卡已经露出 31%；到一半时间（105ms）课程卡刚过半、
-            // 摘要卡已露 87% —— 读起来是「顶部卡片抢跑弹出，课卡还在慢慢长」。
-            // 转场只有一条配速策略（`DayViewExpandMotion`），所有元素同起同落。
-            final revealFactor =
-                (revealBottom * progress / constraints.maxHeight).clamp(0.0, 1.0);
+            // 摘要卡不再走「露出比例」那条路（2026-10-23）：它自己是一张飞行
+            // 卡，起点是星期栏当日格。面板全程高度 0，所以这里也不需要比例。
             // 摘要卡飞行：起点在这一层里算（这里已经知道层宽 / 时间列 / 天数 /
             // 选中下标），终点是调用方实测的屏幕矩形。
             final summaryFlight = widget.summaryFlight;
@@ -256,6 +235,17 @@ class _TimetableAnchoredDayOverlayState
               ignoring: progress < 0.05,
               child: Stack(
                 fit: StackFit.expand,
+                // ⚠️ **必须** `Clip.none`（2026-10-23 审核发现）。
+                //
+                // 摘要卡的起点在**本层上方**（`top = -星期栏高`，它就是要把自己
+                // 压在星期栏那一格上）。`Stack` 默认 `Clip.hardEdge` 会把负区间
+                // 那段整块裁掉 —— 于是「从星期格里长出来」的前 40% 在真机上什么
+                // 都看不到，卡是凭空出现在层顶的。
+                //
+                // 为什么测试没抓到：`tester.getRect` 只读布局，不读绘制。布局里
+                // 那张卡的位置一直是对的，画的时候才被裁。补的回归证据是
+                // `test/domain/summary_card_flight_clip_test.dart`（截像素）。
+                clipBehavior: Clip.none,
                 children: [
                   // ── 仅用于满足旧断言的形状壳（不承担几何）─────────────────
                   //
@@ -295,9 +285,14 @@ class _TimetableAnchoredDayOverlayState
                       // `RenderPositionedBox` 做的是 `constraints.constrain(
                       // childSize × factor)` —— 紧约束把它拉回满高，裁剪等于没
                       // 发生（实测层高 740 时仍 740，同一门课两份）。
-                      height: summaryFlightFrame == null
-                          ? constraints.maxHeight * revealFactor
-                          : 0,
+                      // 高度恒 0：转场全程面板**不绘制**。
+                      //
+                      // 这里曾经在「摘要卡终点还没量到」时退回旧几何（露出
+                      // `revealBottom × progress` 一条）。那会在**首帧**同时画出
+                      // 面板顶部与飞行课程卡 → 同一门课重影；而首帧正是用户最容易
+                      // 看出跳变的一帧。摘要卡现在自己有兜底（拿不到终点就停在
+                      // 起点格上），面板没有理由再露。
+                      height: 0,
                       child: ClipRect(
                         child: OverflowBox(
                           alignment: Alignment.topCenter,

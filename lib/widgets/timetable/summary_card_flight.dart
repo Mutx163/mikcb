@@ -262,16 +262,19 @@ Rect summaryStartCellRect({
   required int selectedDayIndex,
   required double headerHeight,
 }) {
-  assert(visibleDayCount > 0, 'visibleDayCount must be positive');
-  assert(
-    selectedDayIndex >= 0 && selectedDayIndex < visibleDayCount,
-    'selectedDayIndex out of range',
-  );
+  if (visibleDayCount <= 0) {
+    return const Rect.fromLTWH(0, 0, 0, 0);
+  }
+  // 越界不能只靠 assert：release 下 assert 被剥掉，`clamp` 之前会算出负宽或
+  // 飞出屏外的格子。真实路径存在（日视图停周六 → 用户关掉「显示周末」→ 归一化
+  // 之前那一帧仍可能读到 6），静默钳到可见范围内比崩掉好，但**不能**悄悄偏一格：
+  // 所以钳到边界而不是 0。
+  final index = selectedDayIndex.clamp(0, visibleDayCount - 1);
   final dayWidth = (viewportWidth - timeColumnWidth) / visibleDayCount;
   // 宽度取整格：飞到的那一格就是这一个 `Expanded`（`InkWell` 铺满它），
   // `AnimatedContainer` 的 1dp 外边距只是内部留白，不是格子边界。
   return Rect.fromLTWH(
-    timeColumnWidth + selectedDayIndex * dayWidth,
+    timeColumnWidth + index * dayWidth,
     -headerHeight,
     dayWidth,
     headerHeight,
@@ -580,14 +583,11 @@ class SummaryFlightCard extends StatelessWidget {
     // 起点就画不透明卡面，会在星期栏上凭空冒出一块白卡 —— 它明明只是几行字。
     // 所以卡面按 `surfaceOpacity` 淡入（前 30%），文字从头到尾都在。
     final surfaceAlpha = frame.surfaceOpacity.clamp(0.0, 1.0);
-    if (surfaceAlpha <= 0.001) {
-      return ClipRect(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: Colors.transparent),
-          child: content,
-        ),
-      );
-    }
+    // ⚠️ **不要**在这里按可见度分叉返回两种 widget。
+    //
+    // 分叉会让 30% 处外层从 `ClipRect` 变成 `DayViewAgendaSurface`：widget 类型
+    // 一变，`Element` 就重建整棵子树，卡里那几行字会闪一下（转场里最刺眼的那类）。
+    // 所以外层恒定，可见度只作为**参数**进去 —— 0 时那些参数正好让它什么都不画。
     return DayViewAgendaSurface(
       settings: settings,
       color: frame.fill,

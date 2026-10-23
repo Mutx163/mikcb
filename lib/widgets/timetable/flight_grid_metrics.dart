@@ -77,13 +77,6 @@ const double flightStartCardRadius = 8;
 /// （用户口径「三个环节的圆角也是，圆角应该是渐变的才对」）。
 const double flightEndCardRadius = 20;
 
-/// 日视图摘要卡（带关闭叉那张）的高度。
-///
-/// 实测（`probe_summary_card_test`：落定后摘要卡 `T98.0 H107.0`）。它随当天课程数
-/// 变化，推不出来；转场里只用它决定「拉出来露到哪儿」，107 足够（露到卡片底边
-/// 即可，多一点少一点都在卡片内部，不影响观感）。
-const double kDayViewSummaryCardHeight = 107;
-
 /// 日视图议程卡的课名字号。
 ///
 /// 议程卡用的是 `Theme.of(context).textTheme.titleMedium`（不是写死的数），所以

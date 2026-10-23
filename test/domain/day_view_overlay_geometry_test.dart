@@ -3,29 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/widgets/timetable/timetable_anchored_day_overlay.dart';
 
-/// 日视图转场壳的**几何契约**（2026-10-23）。
+/// 日视图转场壳的**面板契约**（2026-10-23 重写）。
 ///
-/// ## 为什么这条测试必须存在
+/// ## 这一版在测什么，为什么改掉了上一版
 ///
-/// 2026-10-21 的版本把「摘要卡从上往下拉出来」写成：
+/// 上一版测的是「摘要卡从面板上被拉出来时，裁剪高度按 `revealBottom × progress`
+/// 缩」。2026-10-23 摘要卡改成**自己飞的一张卡**（起点 = 星期栏当日格）之后，
+/// 「露出比例」这个机制已经不存在了 —— 那份测试的前提整条作废，留着会变成
+/// 「测一个不存在的机制」。
 ///
-/// ```dart
-/// ClipRect(child: Align(heightFactor: revealFactor, child: …))
-/// ```
+/// 现在真正要钉的契约是三件事，每一件都对应一个真实的坑：
 ///
-/// 外面套的是 `Stack(fit: StackFit.expand)`（紧约束），而
-/// `RenderPositionedBox.performLayout` 做的是
-/// `constraints.constrain(childSize × factor)` —— **紧约束会把它拉回满高**。
-/// 裁剪等于没发生：实测层高 600 时 Align 仍是 600，于是整块日视图面板
-/// （摘要卡 + 全部议程卡）在转场全程都在画，与飞行卡叠成同一门课两份。
-///
-/// 这是「动画和卡片不是一对一」的直接来源之一，而且**肉眼在静态测试里看不出来**
-/// —— 必须按像素量。
-///
-/// 现在改成 `Positioned(height: 层高 × revealFactor)`。这条测试量三件事：
-/// 1. 转场中途裁剪高度确实按比例缩（不是满高）；
-/// 2. 面板内容仍按**整层高**布局（`OverflowBox` 的职责：不重排、只裁窗口）；
-/// 3. 露出高度的上限正好是「摘要卡底边」（14 + 107），不会越露越多。
+/// 1. **面板全程不绘制**。转场中面板必须留在树上（否则量不到飞行终点），
+///    但**一个像素都不能画** —— 画了就会与飞行卡叠成同一门课两份。
+///    这里曾经在「摘要卡终点还没量到时」退回旧几何，等于首帧重影。
+/// 2. **面板仍按整层高布局**。裁剪窗口高度为 0，但 `OverflowBox` 必须让它按
+///    整层高排 —— 否则议程列表会按 0 高度重排，落定那一帧内容跳一下。
+/// 3. **落定后真面板接管整层**（铺满、可滚）。
 void main() {
   const layerHeight = 740.0;
   const layerWidth = 390.0;
@@ -35,8 +29,8 @@ void main() {
     WidgetTester tester, {
     required double animationValue,
   }) async {
-    // 测试默认画布是 800×600，装不下 740 高的层：显式放大，否则会量到
-    // 被父级压缩后的高度，结论就变成在测「父约束」而不是在测裁剪。
+    // 测试默认画布 800×600 装不下 740 高的层：显式放大，否则量到的是被父级
+    // 压缩后的高度，结论就变成在测父约束。
     await tester.binding.setSurfaceSize(const Size(layerWidth, layerHeight));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -59,7 +53,7 @@ void main() {
                 sectionHeight: 60,
                 settings: const TimetableSettings(sections: <SectionTime>[]),
                 cardInset: 2,
-                // 只测几何：不要飞行卡参与（它的矩形依赖实测终点）。
+                // 不给 summaryFlight：这一份只测「没有摘要卡飞行时面板也不许画」。
               ),
             ),
           ),
@@ -69,26 +63,31 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('转场中途：裁剪高度按露出比例缩，不是满高', (tester) async {
-    await pumpOverlay(tester, animationValue: 0.5);
+  /// 转场中包住面板的那个裁剪窗口高度（没有裁剪层时返回 -1）。
+  double panelWindowHeight(WidgetTester tester) {
+    final clip = find.byType(ClipRect);
+    if (clip.evaluate().isEmpty) {
+      return -1;
+    }
+    return tester.getRect(clip.first).height;
+  }
 
-    // revealBottom = 14 + 107 = 121；progress 0.5 时露出 = 121 × 0.5 ≈ 60.5。
-    final clip = tester.getRect(find.byType(ClipRect).first);
-    expect(
-      clip.height,
-      lessThan(layerHeight * 0.5),
-      reason:
-          '裁剪高度 ${clip.height} 接近满高 $layerHeight —— 说明 heightFactor 又被'
-          '紧约束拉回 1.0 了，整块面板都在画（飞行卡会与真卡叠成两份）',
-    );
-    expect(
-      clip.height,
-      greaterThan(0),
-      reason: '中途必须有东西露出来（摘要卡正在被拉出）',
-    );
+  testWidgets('转场中：面板窗口高度恒为 0（一个像素都不画）', (tester) async {
+    for (final t in [0.1, 0.3, 0.5, 0.8, 0.95]) {
+      await pumpOverlay(tester, animationValue: t);
+      final height = panelWindowHeight(tester);
+      expect(
+        height,
+        closeTo(0, 0.01),
+        reason:
+            't=$t 时面板窗口高 $height。转场中面板若露出来，就会与飞行卡叠成'
+            '同一门课两份（用户口径「动画和卡片不是一对一」）。这里曾经在'
+            '「摘要卡终点还没量到」时退回旧几何，等于首帧重影。',
+      );
+    }
   });
 
-  testWidgets('面板内容仍按整层高布局（只裁窗口，不重排）', (tester) async {
+  testWidgets('转场中：面板仍按整层高布局（只把窗口压到 0，不重排）', (tester) async {
     await pumpOverlay(tester, animationValue: 0.5);
     final panel = tester.getRect(find.byKey(panelKey));
     expect(
@@ -96,30 +95,16 @@ void main() {
       closeTo(layerHeight, 0.5),
       reason:
           '面板高度被压成 ${panel.height} —— `OverflowBox` 失效了，议程列表会'
-          '按露出高度重排（内容跳一下）',
+          '按 0 高度重排，落定那一帧内容跳一下。',
     );
   });
 
-  testWidgets('露出上限 = 摘要卡底边（14 + 107），不会越露越多', (tester) async {
-    // progress 到 1 之前，露出高度的上限由 `summaryRevealBottom` 决定。
-    await pumpOverlay(tester, animationValue: 0.9);
-    final clip = tester.getRect(find.byType(ClipRect).first);
-    const summaryBottom = 14.0 + 107;
-    expect(
-      clip.height,
-      lessThanOrEqualTo(summaryBottom + 0.5),
-      reason:
-          '露出 ${clip.height} 超过了摘要卡底边 $summaryBottom：下面的议程卡'
-          '会连同飞行卡一起露出来（重影）',
-    );
-  });
-
-  testWidgets('落定后不再裁剪：真面板接管整层', (tester) async {
+  testWidgets('落定后：真面板接管整层，没有残留裁剪层', (tester) async {
     await pumpOverlay(tester, animationValue: 1);
     expect(
       find.byType(ClipRect),
       findsNothing,
-      reason: ' settled 之后不该还有裁剪层（否则面板永远只露一条）',
+      reason: 'settled 之后不该还有裁剪层（否则面板永远只露一条）',
     );
     final panel = tester.getRect(find.byKey(panelKey));
     expect(panel.height, closeTo(layerHeight, 0.5));
