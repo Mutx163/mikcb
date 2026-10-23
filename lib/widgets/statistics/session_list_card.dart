@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -51,7 +52,10 @@ class _SessionRow extends StatelessWidget {
     final phaseColor = _phaseColor(context, session.phase);
 
     return Padding(
-      padding: HyperosTokens.rowPadding(isFirst: scope?.isFirst ?? true, isLast: scope?.isLast ?? true),
+      padding: HyperosTokens.rowPadding(
+        isFirst: scope?.isFirst ?? true,
+        isLast: scope?.isLast ?? true,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -67,6 +71,22 @@ class _SessionRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
+              // 考试按「本课 + 同一日历日」挂到课次上（领域层已算），
+              // 当天有考试是最值得在行上看见的事。
+              if (session.examCount > 0) ...[
+                HyperosTag(
+                  label: l10n.examBadgeLabel,
+                  backgroundColor: HyperosIconColors.red.withValues(
+                    alpha: 0.12,
+                  ),
+                  textStyle: HyperosTypography.listDetail(context).copyWith(
+                    fontSize: HyperosMiuixTypography.footnote2,
+                    fontWeight: FontWeight.w500,
+                    color: HyperosIconColors.red,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               HyperosTag(
                 label: _phaseLabel(l10n, session.phase),
                 backgroundColor: phaseColor.withValues(alpha: 0.12),
@@ -102,6 +122,9 @@ class _SessionRow extends StatelessWidget {
   }
 
   /// 课程名不在这里重复（整页只谈一门课），标题只描述「哪一次」。
+  ///
+  /// 日期用 DateFormat.MMMd（按当前语言出「9月16日 / Sep 16」），
+  /// 与统计设置页的日期行同一习惯；不写死 yyyy-MM-dd。
   String _title(
     AppLocalizations l10n,
     CourseSession session,
@@ -112,10 +135,8 @@ class _SessionRow extends StatelessWidget {
       return '${l10n.statisticsWeekSelector(session.week)} · '
           '${_weekdayLabel(l10n, session.dayOfWeek)}';
     }
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$month-$day · '
-        '${_weekdayLabel(l10n, session.dayOfWeek)}';
+    final dayLabel = DateFormat.MMMd(l10n.localeName).format(date);
+    return '$dayLabel · ${_weekdayLabel(l10n, session.dayOfWeek)}';
   }
 
   String _subtitle(AppLocalizations l10n, CourseSession session) {

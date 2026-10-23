@@ -51,7 +51,9 @@ Course _course({
 }
 
 TimetableSettings _settings({DateTime? semesterStart}) {
-  return TimetableSettings.defaults().copyWith(semesterStartDate: semesterStart);
+  return TimetableSettings.defaults().copyWith(
+    semesterStartDate: semesterStart,
+  );
 }
 
 CourseSessionStats _build({
@@ -61,7 +63,7 @@ CourseSessionStats _build({
   List<Exam> exams = const [],
   DateTime? now,
   bool Function(DateTime date)? isHoliday,
-  String? Function(String courseId, String date)? reminderLookup,
+  Set<String> reminderKeys = const {},
 }) {
   return CourseSessionStatsCalculator.build(
     courseName: courses.isEmpty ? '' : courses.first.name,
@@ -71,7 +73,7 @@ CourseSessionStats _build({
     exams: exams,
     now: now ?? DateTime(2026, 9, 20),
     isHoliday: isHoliday,
-    reminderDateLookup: reminderLookup,
+    reminderKeys: reminderKeys,
   );
 }
 
@@ -90,12 +92,8 @@ void main() {
     });
 
     test('单周课只展开奇数周，双周课只展开偶数周', () {
-      final odd = _build(
-        courses: [_course(endWeek: 6, isOddWeek: true)],
-      );
-      final even = _build(
-        courses: [_course(endWeek: 6, isEvenWeek: true)],
-      );
+      final odd = _build(courses: [_course(endWeek: 6, isOddWeek: true)]);
+      final even = _build(courses: [_course(endWeek: 6, isEvenWeek: true)]);
 
       expect(odd.sessions.map((s) => s.week).toList(), [1, 3, 5]);
       expect(even.sessions.map((s) => s.week).toList(), [2, 4, 6]);
@@ -137,12 +135,10 @@ void main() {
 
       // 每条各 3 周 → 共 6 次课
       expect(stats.sessions.length, 6);
-      expect(
-        stats.sectionsPerSession,
-        4,
-        reason: '一次课（周一那节）2 节 + 另一次课（周三那节）2 节 = 4 节',
-      );
       expect(stats.sessions.map((s) => s.courseId).toSet(), {'c1', 'c2'});
+      // 每周总节数 = 周一那节 2 节 + 周三那节 2 节；计划课时 = 4 × 3 周 = 12
+      // （逐课次累加口径，见「计划课时（多条目不得翻倍）」组）
+      expect(stats.plannedSections, 12);
     });
   });
 
@@ -191,7 +187,9 @@ void main() {
 
     test('停课优先于假期：既停课又放假时判为停课', () {
       final stats = _build(
-        courses: [_course(suspendedWeeks: [2])],
+        courses: [
+          _course(suspendedWeeks: [2]),
+        ],
         isHoliday: (date) => date == DateTime(2026, 9, 16),
       );
 
@@ -202,19 +200,12 @@ void main() {
     });
 
     test('没设开学日期：全部 undated、日期为空、hasCalendar=false', () {
-      final stats = _build(
-        courses: [_course()],
-        settings: _settings(),
-      );
+      final stats = _build(courses: [_course()], settings: _settings());
 
       expect(stats.hasCalendar, isFalse);
       expect(stats.undatedSessions, 3);
       expect(stats.sessions.every((s) => s.date == null), isTrue);
-      expect(
-        stats.doneSessions,
-        0,
-        reason: '没有日期轴就不能假装「上过了」',
-      );
+      expect(stats.doneSessions, 0, reason: '没有日期轴就不能假装「上过了」');
       expect(stats.plannedSessions, 3, reason: '仍算 3 次排课');
     });
   });
@@ -242,9 +233,7 @@ void main() {
       final stats = _build(
         courses: [
           _course(
-            sessionNotes: {
-              2: const CourseSessionNote(hasHomework: true),
-            },
+            sessionNotes: {2: const CourseSessionNote(hasHomework: true)},
           ),
         ],
       );
@@ -319,23 +308,115 @@ void main() {
     test('提醒按「课程 + 真实日期」匹配，日期不对不亮', () {
       final stats = _build(
         courses: [_course()],
-        reminderLookup: (courseId, date) =>
-            courseId == 'c1' && date == '2026-09-16' ? 'classreminder:x' : null,
+        reminderKeys: {'c1|2026-09-16'},
       );
 
       expect(stats.sessions.firstWhere((s) => s.week == 2).hasReminder, isTrue);
-      expect(stats.sessions.firstWhere((s) => s.week == 1).hasReminder, isFalse);
+      expect(
+        stats.sessions.firstWhere((s) => s.week == 1).hasReminder,
+        isFalse,
+      );
       expect(stats.reminderSessions, 1);
+    });
+
+    test('别的课的提醒不亮', () {
+      final stats = _build(
+        courses: [_course()],
+        reminderKeys: {'other|2026-09-16'},
+      );
+
+      expect(stats.reminderSessions, 0);
     });
 
     test('没设开学日期时，即使有提醒条目也不亮（没有日期可匹配）', () {
       final stats = _build(
         courses: [_course()],
         settings: _settings(),
-        reminderLookup: (courseId, date) => 'classreminder:x',
+        reminderKeys: {'c1|2026-09-16'},
       );
 
       expect(stats.reminderSessions, 0);
+    });
+  });
+
+  group('覆盖口径（分子分母都是全部课次）', () {
+    test('停课周写了备注：计入 notedSessions，覆盖率不超 100%', () {
+      // 现实场景：先写备注、后停课。toggleCourseSuspension 只改
+      // suspendedWeeks、不清备注，所以「停课周有备注」真实存在。
+      // 分母是全部课次（含停课），分子分母同口径，永不超 100%。
+      final stats = _build(
+        courses: [
+          _course(
+            endWeek: 2,
+            suspendedWeeks: [2],
+            sessionNotes: {
+              1: const CourseSessionNote(text: '第一章'),
+              2: const CourseSessionNote(text: '停课前写的'),
+            },
+          ),
+        ],
+      );
+
+      expect(stats.plannedSessions, 1, reason: '计划口径仍不含停课');
+      expect(stats.sessions.length, 2, reason: '覆盖分母 = 全部课次');
+      expect(stats.sessions.firstWhere((s) => s.week == 2).hasNote, isTrue);
+      expect(stats.notedSessions, 2);
+      expect(stats.notedSessions <= stats.sessions.length, isTrue);
+    });
+
+    test('极端场景：2 次里停 2 次且都有备注 → 2/2 而不是 2/0', () {
+      // 旧口径（分母=计划课次）会得到「2 / 0」的假象；
+      // 新口径分母是全部课次，正常显示 2/2。
+      final stats = _build(
+        courses: [
+          _course(
+            endWeek: 2,
+            suspendedWeeks: [1, 2],
+            sessionNotes: {
+              1: const CourseSessionNote(text: 'a'),
+              2: const CourseSessionNote(text: 'b'),
+            },
+          ),
+        ],
+      );
+
+      expect(stats.plannedSessions, 0);
+      expect(stats.notedSessions, 2);
+      expect(stats.sessions.length, 2);
+    });
+
+    test('假期课次的作业标记计入 homeworkSessions', () {
+      final stats = _build(
+        courses: [
+          _course(
+            endWeek: 2,
+            sessionNotes: {
+              1: const CourseSessionNote(hasHomework: true),
+              2: const CourseSessionNote(hasHomework: true),
+            },
+          ),
+        ],
+        isHoliday: (date) => date == DateTime(2026, 9, 16),
+      );
+
+      expect(stats.plannedSessions, 1);
+      expect(stats.homeworkSessions, 2, reason: '假期那次的标记同样真实存在');
+    });
+  });
+
+  group('计划课时（多条目不得翻倍）', () {
+    test('一周两次排课（2+3 节）× 3 周 → 计划 15 节，不是 30', () {
+      // 旧公式「每周总节数 × 计划课次」= 5 × 6 = 30，是错的：
+      // plannedSessions 按「条目 × 周」计数，真实节数是 5 × 3 = 15。
+      final stats = _build(
+        courses: [
+          _course(dayOfWeek: 1), // 周一 1-2 节
+          _course(id: 'c2', startSection: 5, endSection: 7), // 周三（默认）5-7 节
+        ],
+      );
+
+      expect(stats.plannedSessions, 6, reason: '2 个条目 × 3 周');
+      expect(stats.plannedSections, 15);
     });
   });
 
@@ -368,9 +449,7 @@ void main() {
     });
 
     test('计划课时 = 每次节数 × 计划课次', () {
-      final stats = _build(
-        courses: [_course()],
-      );
+      final stats = _build(courses: [_course()]);
 
       expect(stats.plannedSections, 2 * 3);
     });

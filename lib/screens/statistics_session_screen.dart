@@ -20,10 +20,7 @@ import '../widgets/statistics/session_summary_card.dart';
 /// `statistics_analysis_header_inset_test` 按枚举逐个 pump；本页需要「选一门课」
 /// 的自有状态，塞进去会让那个测试的裸构造路径渲染不出内容。
 class StatisticsSessionScreen extends StatefulWidget {
-  const StatisticsSessionScreen({super.key, this.initialCourseName});
-
-  /// 从课程排行点进来时带上课程名；为空则默认第一门课。
-  final String? initialCourseName;
+  const StatisticsSessionScreen({super.key});
 
   @override
   State<StatisticsSessionScreen> createState() =>
@@ -46,11 +43,16 @@ class _StatisticsSessionScreenState extends State<StatisticsSessionScreen> {
           return HyperosSubpage(
             onBack: () => Navigator.pop(context),
             title: Text(l10n.statisticsSessionTitle),
-            child: Center(
-              child: HyperosEmptyState(
-                icon: Icons.event_note_outlined,
-                title: l10n.statisticsNoData,
-                subtitle: l10n.statisticsNoDataHint,
+            // 整页非列表 child 必须手动避让毛玻璃标题栏：裸 Center 会把
+            // 空态顶进标题栏里（statistics_analysis_header_inset_test 钉过
+            // analysis 页的同一类 bug，本页同样适用）。
+            child: HyperosBlurredBodyInset(
+              child: Center(
+                child: HyperosEmptyState(
+                  icon: Icons.event_note_outlined,
+                  title: l10n.statisticsNoData,
+                  subtitle: l10n.statisticsNoDataHint,
+                ),
               ),
             ),
           );
@@ -61,6 +63,12 @@ class _StatisticsSessionScreenState extends State<StatisticsSessionScreen> {
         _courseName = selected;
 
         final group = groups.firstWhere((item) => item.name == selected);
+        // 提醒键集合一次构建：classReminderFor 是线性扫，每课次查一次
+        // 是 O(课次 × 提醒数)；集合交给领域层 O(1) 命中。
+        final reminderKeys = <String>{
+          for (final entry in provider.settings.classReminders)
+            '${entry.courseId}|${entry.date}',
+        };
         final stats = CourseSessionStatsCalculator.build(
           courseName: selected,
           courses: group.courses,
@@ -71,8 +79,7 @@ class _StatisticsSessionScreenState extends State<StatisticsSessionScreen> {
           isHoliday: provider.isHoliday,
           startTimeResolver: provider.resolvedCourseStartTime,
           endTimeResolver: provider.resolvedCourseEndTime,
-          reminderDateLookup: (courseId, date) =>
-              provider.classReminderFor(courseId, date)?.id,
+          reminderKeys: reminderKeys,
         );
 
         return HyperosSubpage(
@@ -80,20 +87,19 @@ class _StatisticsSessionScreenState extends State<StatisticsSessionScreen> {
           title: Text(l10n.statisticsSessionTitle),
           child: HyperosListView(
             children: [
-              HyperosSettingsBlock(
-                title: l10n.statisticsSessionCourseLabel,
-                child: HyperosListGroup(
-                  children: [
-                    HyperosSelectTile<String>(
-                      label: l10n.statisticsSessionCourseLabel,
-                      value: selected,
-                      items: {for (final name in names) name: name},
-                      onChanged: (value) {
-                        setState(() => _courseName = value);
-                      },
-                    ),
-                  ],
-                ),
+              // 课程选择行：不套 HyperosSettingsBlock——区块标题「课程」与
+              // 选择行的 label 会同屏念两遍（ics_export_screen 同款做法）。
+              HyperosListGroup(
+                children: [
+                  HyperosSelectTile<String>(
+                    label: l10n.statisticsSessionCourseLabel,
+                    value: selected,
+                    items: {for (final name in names) name: name},
+                    onChanged: (value) {
+                      setState(() => _courseName = value);
+                    },
+                  ),
+                ],
               ),
               if (!stats.hasCalendar) ...[
                 const SizedBox(height: 8),
@@ -126,14 +132,15 @@ class _StatisticsSessionScreenState extends State<StatisticsSessionScreen> {
     );
   }
 
+  /// 选中项收敛：上一次选择（课程被删时回落第一门）。
+  ///
+  /// 将来若从课程排行加「看单课明细」入口，这里要补一个外部初始值参数，
+  /// 并想清楚它与 [_courseName] 的优先级（外部值应只在首次生效，不能被
+  /// 旧选中值顶掉）——目前没有调用方，先不留死参数。
   String _resolveSelection(List<String> names) {
     final current = _courseName;
     if (current != null && names.contains(current)) {
       return current;
-    }
-    final initial = widget.initialCourseName;
-    if (initial != null && names.contains(initial)) {
-      return initial;
     }
     return names.first;
   }

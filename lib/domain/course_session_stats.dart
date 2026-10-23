@@ -82,6 +82,12 @@ class CourseSession {
 
   /// 是否算「上过了」：只有确定日期且已过去的正常课
   bool get isPast => phase == CourseSessionPhase.done;
+
+  /// 是否计入「计划/覆盖」口径：停课与假期不算（用户没上课，
+  /// 那次课有没有备注都不该摊进「记录覆盖率」）。
+  bool get isPlanned =>
+      phase != CourseSessionPhase.suspended &&
+      phase != CourseSessionPhase.holiday;
 }
 
 /// 「单节课」维度的汇总（全部由现有数据推导，不需要用户额外录入）。
@@ -91,7 +97,6 @@ class CourseSessionStats {
     required this.teacher,
     required this.sessions,
     required this.plannedSessions,
-    required this.sectionsPerSession,
     required this.hasCalendar,
   });
 
@@ -103,9 +108,6 @@ class CourseSessionStats {
 
   /// 计入统计的排课次数（不含停课与假期）
   final int plannedSessions;
-
-  /// 一次课几节（同名课多次排课时为各次之和）
-  final int sectionsPerSession;
 
   /// 是否有真实日期轴（= 设了开学日期）
   final bool hasCalendar;
@@ -122,7 +124,14 @@ class CourseSessionStats {
   int get holidaySessions => countOf(CourseSessionPhase.holiday);
   int get undatedSessions => countOf(CourseSessionPhase.undated);
 
-  /// 已经有备注的课次数
+  /// 已经有备注的课次数（分母与 [sessions.length] 同口径）
+  ///
+  /// 覆盖类统计的分子分母都必须是「全部列出的课次」：停课周不清备注
+  /// （`toggleCourseSuspensionImpl` 只改 `suspendedWeeks`），「停课周有备注」
+  /// 真实存在且列表行照样显示。若分母用 [plannedSessions] 而分子数全部，
+  /// 能构造出「3 / 1」这种超 100% 的自相矛盾；若两边都排除停课，
+  /// 覆盖分母又会与汇总卡的「课次」对不上。全部课次口径下天然对齐，
+  /// 也与覆盖卡的文档语义（「有多少次课留下了记录」）一致。
   int get notedSessions => sessions.where((s) => s.hasNote).length;
 
   /// 标了「有作业」（含挂了该课该周的作业条目）的课次数
@@ -137,7 +146,13 @@ class CourseSessionStats {
       .fold<int>(0, (sum, s) => sum + s.sectionCount);
 
   /// 计划总课时（节，不含停课与假期）
-  int get plannedSections => sectionsPerSession * plannedSessions;
+  ///
+  /// 必须与 [doneSections] 同一算法——逐课次累加。不能写成
+  /// 「每周节数 × [plannedSessions]」：plannedSessions 按「条目 × 周」计数，
+  /// 一门课一周两次排课（2+3 节）× 16 周时该式得 5×32=160，实际 5×16=80。
+  int get plannedSections => sessions
+      .where((s) => s.isPlanned)
+      .fold<int>(0, (sum, s) => sum + s.sectionCount);
 }
 
 /// 单节课统计的计算入口（纯 Dart，无 Flutter / IO 依赖）。
@@ -162,31 +177,55 @@ class CourseSessionStatsCalculator {
     bool Function(DateTime date)? isHoliday,
     String? Function(Course course)? startTimeResolver,
     String? Function(Course course)? endTimeResolver,
-    String? Function(String courseId, String date)? reminderDateLookup,
+
+    /// 已设置的单节课提醒键集合，格式 `courseId|yyyy-MM-dd`。
+    ///
+    /// 由调用方一次构建（provider 的 `classReminderFor` 是线性扫，
+    /// 每 session 查一次是 O(课次 × 提醒数)；集合在这里只需要 O(1) 命中）。
+    Set<String> reminderKeys = const {},
   }) {
     final semesterStart = settings.semesterStartDate;
     final today = DateTime(now.year, now.month, now.day);
 
+    // 预分组：任务按「课程|周次」、考试按「课程|日期」各数一遍，
+    // 避免在每个 session 上全表扫（20 周 × 10 门课 × 几十条任务时最差
+    // 是 O(课次 × 任务数)，预分组后一次 O(任务数)）。
+    final taskCounts = <String, int>{};
+    for (final task in tasks) {
+      final week = task.sourceWeek;
+      final course = task.courseId;
+      if (course == null || week == null) continue;
+      final key = '$course|$week';
+      taskCounts[key] = (taskCounts[key] ?? 0) + 1;
+    }
+    final examCounts = <String, int>{};
+    for (final exam in exams) {
+      final dateTime = exam.dateTime;
+      final key =
+          '${exam.courseId}|'
+          '${dateTime.year.toString().padLeft(4, '0')}-'
+          '${dateTime.month.toString().padLeft(2, '0')}-'
+          '${dateTime.day.toString().padLeft(2, '0')}';
+      examCounts[key] = (examCounts[key] ?? 0) + 1;
+    }
+
     final sessions = <CourseSession>[];
-    var sectionsPerSession = 0;
 
     for (final course in courses) {
-      sectionsPerSession += course.sectionCount;
+      // 每门课只解析一次的量：备注表（sessionNoteForWeek 每次调用都会
+      // 经 normalizedSessionNotesMap 重建整个 Map）与生效钟点。
+      final notes = course.normalizedSessionNotesMap;
+      final startTime = startTimeResolver?.call(course) ?? course.startTime;
+      final endTime = endTimeResolver?.call(course) ?? course.endTime;
       for (final week in _candidateWeeks(course)) {
         final date = courseOccurrenceDate(semesterStart, course, week);
         final suspended = course.isSuspendedInWeek(week);
         final dateKey = date == null ? null : _formatDate(date);
-        final note = course.sessionNoteForWeek(week);
-        final sessionTasks = tasks.where(
-          (task) => task.courseId == course.id && task.sourceWeek == week,
-        );
-        final dayExams = date == null
-            ? const <Exam>[]
-            : exams.where(
-                (exam) =>
-                    exam.courseId == course.id &&
-                    _isSameDay(exam.dateTime, date),
-              );
+        final note = notes?[week];
+        final taskCount = taskCounts['${course.id}|$week'] ?? 0;
+        final examCount = dateKey == null
+            ? 0
+            : examCounts['${course.id}|$dateKey'] ?? 0;
 
         sessions.add(
           CourseSession(
@@ -196,8 +235,8 @@ class CourseSessionStatsCalculator {
             dayOfWeek: course.dayOfWeek,
             startSection: course.startSection,
             endSection: course.endSection,
-            startTime: startTimeResolver?.call(course) ?? course.startTime,
-            endTime: endTimeResolver?.call(course) ?? course.endTime,
+            startTime: startTime,
+            endTime: endTime,
             location: course.location,
             phase: _resolvePhase(
               suspended: suspended,
@@ -206,13 +245,12 @@ class CourseSessionStatsCalculator {
               holiday: date != null && (isHoliday?.call(date) ?? false),
             ),
             noteText: note?.trimmedText,
-            hasHomework:
-                (note?.hasHomework ?? false) || sessionTasks.isNotEmpty,
-            taskCount: sessionTasks.length,
-            examCount: dayExams.length,
+            hasHomework: (note?.hasHomework ?? false) || taskCount > 0,
+            taskCount: taskCount,
+            examCount: examCount,
             hasReminder:
                 dateKey != null &&
-                (reminderDateLookup?.call(course.id, dateKey) != null),
+                reminderKeys.contains('${course.id}|$dateKey'),
           ),
         );
       }
@@ -220,20 +258,13 @@ class CourseSessionStatsCalculator {
 
     sessions.sort(_compareSessions);
 
-    final planned = sessions
-        .where(
-          (session) =>
-              session.phase != CourseSessionPhase.suspended &&
-              session.phase != CourseSessionPhase.holiday,
-        )
-        .length;
+    final planned = sessions.where((session) => session.isPlanned).length;
 
     return CourseSessionStats(
       courseName: courseName,
       teacher: courses.isEmpty ? '' : courses.first.teacher,
       sessions: sessions,
       plannedSessions: planned,
-      sectionsPerSession: sectionsPerSession,
       hasCalendar: semesterStart != null,
     );
   }
@@ -285,9 +316,6 @@ class CourseSessionStatsCalculator {
     if (byDay != 0) return byDay;
     return left.startSection.compareTo(right.startSection);
   }
-
-  static bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 
   static String _formatDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'

@@ -9,6 +9,11 @@ import '../../domain/course_session_stats.dart';
 /// 判断「值不值得补记录」靠这三个数，而不是要求用户额外填表：
 /// 数据本来就散落在课程备注、作业清单、上课提醒里，这里只是把它们按
 /// 课次对齐后数一遍。
+///
+/// 分母是 [CourseSessionStats.sessions.length]（全部列出的课次，含停课与
+/// 假期）：停课周不清备注，那次的记录真实存在、列表里也可见；分子分母
+/// 同口径才不会出现「3 / 1」这种超过 100% 的数字，且与汇总卡「课次」
+/// 天然对齐。
 class SessionCoverageCard extends StatelessWidget {
   const SessionCoverageCard({super.key, required this.stats});
 
@@ -17,7 +22,7 @@ class SessionCoverageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final total = stats.plannedSessions;
+    final total = stats.sessions.length;
     if (total == 0) {
       return HyperosControlCard(
         child: HyperosControlCardInset(
