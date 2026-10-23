@@ -158,6 +158,7 @@ Widget buildTimetableHomePage(TimetableHomePageInput input) {
       shouldShowDayViewOverlay:
           input.hasSelectedDay &&
           (input.isDayView || input.dayViewExpandAnimation.isAnimating),
+      hideCourseIds: input.hideFlightCourseIds,
       wallpaperTopLuminance: luminance.top,
       wallpaperWeekdayLuminance: luminance.weekday,
       wallpaperBodyLuminance: luminance.body,

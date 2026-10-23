@@ -35,6 +35,20 @@ class TimetableDayColumn extends StatelessWidget {
   final Set<(int, int)> occupiedSections;
   final TimetableDayColumnCallbacks callbacks;
 
+  /// 转场途中要藏掉的**课程 id 集合**（2026-10-21 建，2026-10-23 改为按卡）。
+  ///
+  /// 用于日视图「卡片对卡片」转场：这些课此时由飞行卡承担（飞行卡的起止矩形与
+  /// 这里的卡片逐像素同值），原位置再画一张就成了重影 —— 用户口径「动画和卡片
+  /// 不是一对一缩放的」。
+  ///
+  /// ⚠️ 必须按**每门课**判断，不能按「整天藏」：议程列表是 `SliverList`，
+  /// 只构建可视范围内的项；一天课多时屏幕外那几门量不到飞行终点，硬藏就会让
+  /// 它们凭空消失。判定在 `FlightTransitionGlue.flightCardsToHide`。
+  ///
+  /// **只藏课程卡**：时间列、其他日子的列、考试/日程卡与格子线照旧，所以转场
+  /// 开始时看到的是「那几张卡在原地开始长大」，而不是整块课表先消失。
+  final Set<String> hideCourseIds;
+
   const TimetableDayColumn({
     super.key,
     required this.week,
@@ -50,6 +64,7 @@ class TimetableDayColumn extends StatelessWidget {
     required this.dayCount,
     required this.occupiedSections,
     required this.callbacks,
+    this.hideCourseIds = const <String>{},
   });
 
   @override
@@ -91,15 +106,17 @@ class TimetableDayColumn extends StatelessWidget {
       ),
     );
 
-    for (
-      var sectionIndex = 0;
-      sectionIndex < settings.sectionCount;
-      sectionIndex++
-    ) {
+    // 转场途中命中的那几张课程卡由飞行卡接管（见 [hideCourseIds]）。只是不把
+    // 它们塞进 Stack：时间列、格子线、其他日子的列都照旧，所以转场开始时看到的
+    // 是「那几张卡在原地开始长大」，而不是整块课表先消失。
+    for (var sectionIndex = 0; sectionIndex < settings.sectionCount; sectionIndex++) {
       final section = sectionIndex + 1;
       final startingCourses = callbacks.startingAt(displayItems, section);
 
       for (final item in startingCourses) {
+        if (hideCourseIds.contains(item.course.id)) {
+          continue;
+        }
         courseCards.add(
           Positioned(
             top: sectionIndex * sectionHeight,

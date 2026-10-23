@@ -1,6 +1,6 @@
 import 'dart:ui' show Rect;
 
-/// 「卡片对卡片」转场的**飞行终点缓存**（2026-10-21）。
+/// 「卡片对卡片」转场的**飞行终点缓存**（2026-10-21 建，2026-10-23 加代数与重测）。
 ///
 /// ## 为什么是一个可变缓存、而不是 State 字段
 ///
@@ -14,28 +14,71 @@ import 'dart:ui' show Rect;
 /// - `MeasureFlightTarget` 量到之后**直接写进来**（不 setState）；
 /// - 转场壳每帧读它（此时已经有了值）。
 ///
-/// 如果写的时候调 `setState`，同一帧会多跑一遍 build，而结果要到下一帧才用得上。
+/// ## 代数（generation）：为什么需要它
 ///
-/// 抽成独立文件而不是 State 私有字段：`timetable_screen.dart` 与
-/// `timetable_day_view_part.dart` 一起构成一个**行数棘轮**（只减不增），
-/// 而这段逻辑既不属于课表页的业务，也不属于日视图的排版。
+/// 只有 `courseId → Rect` 一张表是不够的：用户滚到议程列表底部关掉日视图、
+/// 再开另一天，表里还留着上一轮的位置。开一次转场就 `bump()` 一代，写入带上
+/// 当前代数、读取只认当代的值 —— 旧一代自动作废，不需要在某个时机精确 `clear()`
+/// （历史 bug：`clear()` 从来没有被调用过，表里一直是上一轮的旧位置）。
+///
+/// ## 为什么还要 [clear]
+///
+/// 代数已经保证「旧轮次不会被读到」，[clear] 只是把内存放掉（开关几十次之后
+/// 表会攒下几十门课的矩形）。转场结束时调一次即可，**不承担正确性**。
 class FlightTargetCache {
-  final Map<String, Rect> _targets = <String, Rect>{};
+  final Map<String, _Entry> _targets = <String, _Entry>{};
 
-  /// 本轮转场已量到的终点（按课程 id）。
-  Map<String, Rect> get targets => Map<String, Rect>.of(_targets);
+  int _generation = 0;
 
-  /// 写一条测量结果。
-  void record(String courseId, Rect globalRect) {
-    _targets[courseId] = globalRect;
+  /// 当前代数（测试用）。
+  int get generation => _generation;
+
+  /// 开新一轮转场：此后读取只认新一轮写入的值。
+  void bump() {
+    _generation++;
   }
 
-  /// 取某门课的终点；没量到返回 null（调用方应跳过这张卡的飞行）。
-  Rect? operator [](String courseId) => _targets[courseId];
-
-  /// 清空：每次转场开始时调用，避免用上一轮的旧位置。
+  /// 本轮已量到的终点（按课程 id）。
   ///
-  /// 不清的后果很具体：换了选中日之后，新那天的课若还没量到，就会拿「同 id
-  /// 课程上一次的屏幕位置」当终点——那张卡会朝一个早已不存在的位置飞过去。
+  /// **只返回当代的值**：跨轮次的旧矩形会让卡片朝一个早已不存在的位置飞过去。
+  Map<String, Rect> get targets => {
+    for (final entry in _targets.entries)
+      if (entry.value.generation == _generation) entry.key: entry.value.rect,
+  };
+
+  /// 写一条测量结果。返回 `true` 表示**当代**值真的变了（调用方据此决定要不要重建）。
+  bool record(String courseId, Rect globalRect) {
+    final prev = _targets[courseId];
+    final sameGeneration = prev != null && prev.generation == _generation;
+    if (sameGeneration && _close(prev.rect, globalRect)) {
+      return false;
+    }
+    _targets[courseId] = _Entry(globalRect, _generation);
+    return true;
+  }
+
+  /// 取某门课**当代**的终点；没量到（或只有旧代）返回 null。
+  Rect? operator [](String courseId) {
+    final entry = _targets[courseId];
+    if (entry == null || entry.generation != _generation) {
+      return null;
+    }
+    return entry.rect;
+  }
+
+  /// 放掉内存（正确性不依赖它，见类注释）。
   void clear() => _targets.clear();
+
+  static bool _close(Rect a, Rect b) =>
+      (a.left - b.left).abs() < 0.5 &&
+      (a.top - b.top).abs() < 0.5 &&
+      (a.width - b.width).abs() < 0.5 &&
+      (a.height - b.height).abs() < 0.5;
+}
+
+class _Entry {
+  const _Entry(this.rect, this.generation);
+
+  final Rect rect;
+  final int generation;
 }

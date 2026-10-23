@@ -57,6 +57,12 @@ class TimetableWeekGrid extends StatelessWidget {
   final TimetableBuildDisplayItems buildDisplayItems;
   final TimetableDayColumnCallbacks dayColumnCallbacks;
 
+  /// 转场途中要交给飞行卡的**课程 id 集合**（按卡不按天）。
+  ///
+  /// 见 `TimetableDayColumn.hideCourseIds`：藏早了会让没量到终点的课凭空消失，
+  /// 所以判定在 `FlightTransitionGlue.flightCardsToHide` 里按每门课做。
+  final Set<String> hideCourseIds;
+
   const TimetableWeekGrid({
     super.key,
     required this.provider,
@@ -73,6 +79,7 @@ class TimetableWeekGrid extends StatelessWidget {
     required this.coursesForDay,
     required this.buildDisplayItems,
     required this.dayColumnCallbacks,
+    this.hideCourseIds = const <String>{},
   });
 
   @override
@@ -173,6 +180,7 @@ class TimetableWeekGrid extends StatelessWidget {
                       dayCount: visibleDays.length,
                       occupiedSections: occupiedSections,
                       callbacks: dayColumnCallbacks,
+                      hideCourseIds: hideCourseIds,
                     ),
                   );
                 }).toList(),

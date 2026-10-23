@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/day_week_morph_layout.dart';
 import '../../domain/flight_slot.dart';
+import '../../models/timetable_settings.dart';
 import '../../ui/hyperos/day_view_expand_motion.dart';
+import 'flight_grid_metrics.dart';
 import 'morph_card_flight_layer.dart';
 
 /// 日视图从星期栏展开/收起的壳（2026-10-19 建，2026-10-21 重做为「卡片对卡片」）。
@@ -29,7 +31,7 @@ import 'morph_card_flight_layer.dart';
 ///    `Visibility(visible: false)`，该出现的用几何长出来。
 /// 2. **不做整块面板的横向窗口收放**。那一版观感是「一张画被撑开」：
 ///    空节次的位置没有意义、卡片内容被拉伸。已废弃。
-class TimetableAnchoredDayOverlay extends StatelessWidget {
+class TimetableAnchoredDayOverlay extends StatefulWidget {
   /// 日视图面板（摘要卡 + 议程列表）。落定后由它接管。
   final Widget panel;
 
@@ -57,10 +59,19 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
   /// [flightCards] 为准。
   final List<FlightSlot> daySlots;
 
-  /// 按课程 id 造「正在飞的那张卡」。返回 null 表示这门课不参与飞行。
-  final Widget Function(String courseId, double t)? buildFlightCard;
+  /// 按课程 id 造「正在飞的那张卡」。
+  ///
+  /// 第三个参数是**当前帧的卡片表面尺寸**：卡内每行字的位置要按真实宽度
+  /// 复算（议程卡课名 2 行、信息行省略号都依赖宽度），拿不到宽度就只能近似。
+  final Widget Function(
+    String courseId,
+    double t,
+    Size fromSurface,
+    Size toSurface,
+  )?
+  buildFlightCard;
 
-  /// 飞行**终点**：议程卡实测矩形（相对内容区左上角），按课程 id。
+  /// 飞行**终点**：议程卡实测矩形，**全局屏幕坐标**（`localToGlobal` 的结果）。
   ///
   /// 未实测到（首帧前 / 命中不到）的课不会参与飞行 —— 硬猜一个终点会让卡片
   /// 落在错的地方，比不飞更难看。
@@ -69,9 +80,27 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
   /// 网格节高（与 `domain/timetable_layout.dart` 的 `gridSectionHeight` 同一份）。
   final double sectionHeight;
 
+  /// 周视图设置（只用来复算「星期栏与网格之间的玻璃缝隙」）。
+  ///
+  /// 起点是「相对网格内容区」算的，而本层的原点在星期栏下方 —— 有壁纸且星期栏
+  /// 开了模糊时，周页在两者之间还插了一条 `homePageFrostedRegionSeamOverlap`
+  /// （4dp）。不把这条缝隙算进去，起点会整体上移 4dp，卡片第一帧就偏上一截。
+  final TimetableSettings settings;
 
   /// 卡片与格子边缘的间距（`courseCardInset`）。
   final double cardInset;
+
+  /// 摘要卡（带关闭叉那张）底边在**转场层局部坐标**里的位置。
+  ///
+  /// 转场中面板从上往下「揭开」到这个高度：摘要卡整张露出来，下面的议程内容
+  /// 仍然是隐藏的（它们由飞行卡接住）。
+  ///
+  /// 用户口径（2026-10-21）：「那个日视图带叉叉的卡片，不要直接闪现出现，应该
+  /// 从周视图上面的星期上面，拉出来」。
+  ///
+  /// 默认就生效（= 卡顶 14 + 卡高 [kDayViewSummaryCardHeight]），所以调用点不用
+  /// 多传一行 —— `timetable_screen.dart` 的行数余量很紧。
+  final double summaryRevealBottom;
 
   const TimetableAnchoredDayOverlay({
     super.key,
@@ -84,12 +113,67 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
     this.daySlots = const <FlightSlot>[],
     this.buildFlightCard,
     this.endRects = const <String, Rect>{},
-    this.sectionHeight = 0,
-    this.cardInset = 0,
+    required this.sectionHeight,
+    required this.settings,
+    required this.cardInset,
+    this.summaryRevealBottom = 14.0 + kDayViewSummaryCardHeight,
   });
 
   @override
+  State<TimetableAnchoredDayOverlay> createState() =>
+      _TimetableAnchoredDayOverlayState();
+}
+
+class _TimetableAnchoredDayOverlayState
+    extends State<TimetableAnchoredDayOverlay> {
+  /// 本层在屏幕上的原点，**帧后测得**。
+  ///
+  /// 为什么不能直接在 build 里读：`localToGlobal` 要求祖先链已完成布局，而
+  /// `LayoutBuilder` 的 builder 恰好在**这一帧布局还没结束**时写出来 ——
+  /// debug 下直接断言 `RenderBox was not laid out`（实测：恢复日视图那条路径
+  /// 每次必炸，整块面板都不出来）。
+  ///
+  /// 所以走帧后回调，量到之后置脏一次。转场期间每帧本来就在重建，多这一次
+  /// 只在首帧发生。
+  Offset _layerOrigin = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleOriginMeasure();
+  }
+
+  @override
+  void didUpdateWidget(covariant TimetableAnchoredDayOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 面板内容变了（换日 / 换周），本层位置可能跟着变。
+    _scheduleOriginMeasure();
+  }
+
+  void _scheduleOriginMeasure() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final box = context.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) {
+        return;
+      }
+      final origin = box.localToGlobal(Offset.zero);
+      if ((origin.dx - _layerOrigin.dx).abs() < 0.5 &&
+          (origin.dy - _layerOrigin.dy).abs() < 0.5) {
+        return;
+      }
+      setState(() => _layerOrigin = origin);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final panel = widget.panel;
+    final flightCards = widget.flightCards;
+    final expandAnimation = widget.expandAnimation;
+    final revealBottom = widget.summaryRevealBottom;
     // 宽度从父级约束里取，不让调用方传：`timetable_screen.dart` 的行数棘
     // 余量很紧，调用点多一行就会撞守卫。
     return LayoutBuilder(
@@ -105,7 +189,15 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
               expandAnimation.value,
             );
             // 转场末段（progress 到 1）面板就是正常日视图，不要再叠任何东西。
-            final settled = progress >= 0.999;
+            //
+            // 「减少动态效果」时控制器本来就被直接推到 1（见
+            // `DayViewExpandMotion.reduceMotion`），这里不需要额外分支；但留一条
+            // `disableAnimations` 的兜底：某些系统会把控制器推到一个中途值
+            // （例如从恢复态重放），此时按落定处理，避免飞行卡停在半空。
+            final settled =
+                progress >= 0.999 ||
+                (DayViewExpandMotion.reduceMotion(context) &&
+                    expandAnimation.isAnimating == false);
             // 「卡片对卡片」：转场主体是**每张卡自己的矩形插值**，不是一个
             // 被裁开再撑宽的面板（那是上一版的错误做法，用户口径「莫名其妙
             // 横向拉伸」）。所以这里不再有裁剪窗：面板整体藏起来，画面上只有
@@ -117,7 +209,16 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
             // `Visibility(false)` 是整棵跳过绘制，不建离屏层。
             final resolvedCards = flightCards.isNotEmpty
                 ? flightCards
-                : _resolveFlightCards(viewportWidth);
+                : _resolveFlightCards(viewportWidth, _layerOrigin);
+            // 摘要卡「拉出来」的露出比例：0 = 完全没露出，1 = 露到摘要卡底边。
+            //
+            // ⚠️ **不要再叠第二条曲线**（2026-10-23 拆掉 `easeOutCubic`）。
+            // 两条曲线串联时摘要卡会比课程卡快一倍还多：实测 50ms 处课程卡只走了
+            // 11.7% 行程，摘要卡已经露出 31%；到一半时间（105ms）课程卡刚过半、
+            // 摘要卡已露 87% —— 读起来是「顶部卡片抢跑弹出，课卡还在慢慢长」。
+            // 转场只有一条配速策略（`DayViewExpandMotion`），所有元素同起同落。
+            final revealFactor =
+                (revealBottom * progress / constraints.maxHeight).clamp(0.0, 1.0);
 
             return IgnorePointer(
               // 只在种子还很小的时候挡住输入（开头的收起尾段）。
@@ -139,14 +240,35 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
                   // 它没有 child，尺寸 0×0，不参与布局、不产生绘制。
                   Align(widthFactor: _legacyWidthFactor(progress)),
 
-                  // ── 转场中：面板整棵不画，画面只有飞行卡 ──────────────────
+                  // ── 转场中：摘要卡从星期栏下面被拉出来 ──────────────────
+                  //
+                  // 用户口径：「不要直接闪现出现，应该从周视图上面的星期上面，
+                  // 拉出来」。课程卡有飞行卡接住，摘要卡没有 —— 所以它单独走
+                  // 一条「几何露出」通道：把面板从上往下**裁**出来一条。
+                  //
+                  // ⚠️ 用 `ClipRect`（像素裁剪）而不是 `Opacity`：面板里是玻璃卡，
+                  // 进半透明层磨砂就塌了（`CourseSurface` 类注释铁律）。
+                  // `ClipRect` 不建离屏层、不改 alpha，玻璃照常采身后内容。
                   if (!settled)
-                    Visibility(
-                      visible: false,
-                      maintainState: true,
-                      maintainSize: true,
-                      maintainAnimation: true,
-                      child: child ?? const SizedBox.shrink(),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      // ⚠️ 高度必须**显式给**，不能靠 `Align(heightFactor:)`：
+                      // `Stack(fit: StackFit.expand)` 给的是紧约束，而
+                      // `RenderPositionedBox` 做的是 `constraints.constrain(
+                      // childSize × factor)` —— 紧约束会把它拉回满高，裁剪
+                      // 等于没发生（实测：层高 600 时 Align 仍是 600，面板
+                      // 全文在画，于是飞行卡 + 真卡 = 同一门课两份）。
+                      height: constraints.maxHeight * revealFactor,
+                      child: ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.topCenter,
+                          minHeight: constraints.maxHeight,
+                          maxHeight: constraints.maxHeight,
+                          child: child ?? const SizedBox.shrink(),
+                        ),
+                      ),
                     ),
 
                   // ── 落定：真面板接管 ────────────────────────────────────
@@ -176,42 +298,76 @@ class TimetableAnchoredDayOverlay extends StatelessWidget {
   ///
   /// 起点由本组件按共用公式算（列宽 × 节次区间），终点是议程卡的实测矩形。
   /// **两端都齐**才参与：缺终点就不飞（硬猜会落歪，比不飞更难看）。
-  List<MorphFlightCard> _resolveFlightCards(double viewportWidth) {
-    final build = buildFlightCard;
-    if (build == null || daySlots.isEmpty || endRects.isEmpty) {
+  ///
+  /// ## 坐标系（这里是这一版唯一容易错的地方）
+  ///
+  /// 三套坐标同时存在，必须一次性换算到「本层局部坐标」：
+  ///
+  /// - `weekCardRect` 给的是**相对网格内容区**（左上角 0,0，从星期栏下方算起）；
+  /// - `endRects` 是 `localToGlobal` 的**全局屏幕坐标**；
+  /// - `Positioned.fromRect`（`TimetableCardFlightLayer` 里）吃的是**本层局部**。
+  ///
+  /// 换算：`本层局部 = 全局 - layerOrigin`；`全局 = 网格局部 + 网格原点`。
+  /// 网格原点 = 本层原点 + 星期栏高 + 玻璃缝隙（本层顶在星期栏底下，而网格
+  /// 又在缝隙之下）。漏任何一个都会让起点偏移整整一截：
+  ///
+  /// | 漏掉的部分 | 现象 |
+  /// |---|---|
+  /// | 减去 `layerOrigin` | 起点偏下「状态栏 + 标题栏」那么多 |
+  /// | 加上星期栏 40dp | 起点偏上 40dp |
+  /// | 加上玻璃缝隙 4dp | 起点偏上 4dp |
+  ///
+  /// 终点同理只需减 `layerOrigin`（它本来就是全局的）。
+  List<MorphFlightCard> _resolveFlightCards(
+      double viewportWidth, Offset layerOrigin) {
+    final build = widget.buildFlightCard;
+    if (build == null || widget.daySlots.isEmpty || widget.endRects.isEmpty) {
       return const <MorphFlightCard>[];
     }
-    final gridWidth = math.max(0, viewportWidth - weekTimeColumnWidth);
+    final gridWidth = math.max(0, viewportWidth - widget.weekTimeColumnWidth);
     final dayWidth = math.max(
       kMorphMinColumnWidth,
-      gridWidth / visibleDayCount,
+      gridWidth / widget.visibleDayCount,
     );
+    // 网格内容区在本层局部坐标里的原点：本层顶在星期栏下方，网格又在
+    // 「星期栏 vs 网格」那条玻璃缝隙之下（无壁纸/未开模糊时缝隙为 0）。
+    final gridOriginY = flightGridOriginYInLayer(widget.settings);
     final result = <MorphFlightCard>[];
-    for (final slot in daySlots) {
-      final end = endRects[slot.courseId];
+    for (final slot in widget.daySlots) {
+      final end = widget.endRects[slot.courseId];
       if (end == null) {
         continue;
       }
       final start = weekCardRect(
-        timeColumnWidth: weekTimeColumnWidth,
+        timeColumnWidth: widget.weekTimeColumnWidth,
         dayWidth: dayWidth,
-        dayIndex: selectedDayIndex,
-        sectionHeight: sectionHeight,
+        dayIndex: widget.selectedDayIndex,
+        sectionHeight: widget.sectionHeight,
         startSection: slot.startSection,
         endSection: slot.endSection,
-        cardInset: cardInset,
+        cardInset: widget.cardInset,
       );
       result.add(
         MorphFlightCard(
           courseId: slot.courseId,
-          from: start,
+          // 起点：网格局部 → 本层局部。
+          from: MorphRect(
+            left: start.left,
+            top: start.top + gridOriginY,
+            width: start.width,
+            height: start.height,
+          ),
+          // 注意：`start` 已经是「卡片表面」矩形（`weekCardRect` 内含 inset），
+          // 终点 `end` 是议程卡表面的实测矩形，两端同一口径。
+          // 终点：全局 → 本层局部。
           to: MorphRect(
-            left: end.left,
-            top: end.top,
+            left: end.left - layerOrigin.dx,
+            top: end.top - layerOrigin.dy,
             width: end.width,
             height: end.height,
           ),
-          builder: (t) => build(slot.courseId, t),
+          builder: (t, fromSurface, toSurface) =>
+              build(slot.courseId, t, fromSurface, toSurface),
         ),
       );
     }

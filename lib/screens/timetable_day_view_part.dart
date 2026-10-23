@@ -14,9 +14,8 @@ part of 'timetable_screen.dart';
 /// - 导航动作：关闭日视图、课程操作面板、日程/考试编辑页（展开动作仍在卡片里，
 ///   但入口回调与返回语义由这里给）。
 ///
-/// 留在主类的同族成员：`_buildSharedFreeTimeChip`（体内 setState 会触发
-/// extension 的 protected lint）、`_groupedDayColumnBorderRadius` 与
-/// `_weekCardWeatherDisplay`（周视图网格共用）。
+/// 留在主类：`_buildSharedFreeTimeChip`（体内 setState 会触发 extension 的
+/// protected lint）、`_groupedDayColumnBorderRadius`、`_weekCardWeatherDisplay`。
 extension _TimetableScreenDayView on _TimetableScreenState {
   Widget _buildDayViewPanel({
     required TimetableProvider provider,
@@ -25,13 +24,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     required int dayOfWeek,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    // 不强制不透明：面板和一周页一样铺壁纸，议程卡的磨砂才有内容可采；
+    // 下面的周网格在日视图展开时已淡到 0，透不出别的东西。
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final darkFallback = colorScheme.surface;
-    // Not forced opaque: the panel shows the wallpaper exactly like a week page
-    // does, so glass / frosted agenda cards have real content to sample. The
-    // week grid underneath is faded to 0 while the day view is up
-    // (see _buildWeekPageBody), so nothing shows through but the wallpaper.
-    // With no wallpaper this resolver already returns an opaque colour.
     final backgroundVisual = resolveHomePageRegionBackground(
       settings: settings,
       isDark: isDark,
@@ -224,11 +220,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  /// One day-pager page: summary card + agenda column.
+  /// 日 pager 的一页：摘要卡 + 议程列。
   ///
-  /// Extracted from the pager itemBuilder so [_dayAgendaProgressTick] can
-  /// rebuild exactly this subtree once a second instead of the whole home
-  /// screen (week pager included), which used to drop day-view FPS.
+  /// 从 itemBuilder 提出来的理由：`_dayAgendaProgressTick` 每秒只重建这一棵
+  /// 子树，而不是整个首页（含周 pager）—— 那样会掉帧。
   Widget _buildDayViewPageContent({
     required TimetableProvider provider,
     required TimetableSettings settings,
@@ -624,22 +619,16 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       dayOfWeek: dayOfWeek, courseItems: displayItems,
     );
     final taskBand = _buildDayTaskBand(provider, settings, week, dayOfWeek);
-    // 玻璃坞避让（含底部安全区）：日课表视口全屏，避让以滚动 padding
-    // 实现——静止在列表底部时最后一项仍停在玻璃坞上方，滚动中卡片则
-    // 连续穿过避让带，不再在边界被硬裁出与磨砂卡片色差明显的空带。
-    // 满屏悬浮（overlay）同样取滚动余量（药丸占用兜底）：此前 overlay
-    // 余量为 0，下滑到底最后一张卡仍压在药丸后面，无法滑出来看。
+    // 避让用滚动 padding 实现（日视图全屏，静止在底部时最后一项仍停在玻璃坞
+    // 上方；滚动中卡片连续穿过避让带，不在边界硬裁出空带）。浮钮同理
+    // （见 [_backToTodayButtonScrollInset]）。
     final dockScrollAvoidance = _glassDockContentScrollInset(settings);
-    // 再叠一层「回今日」浮钮的占用：浮钮浮在药丸上方居中，不补这段余量
-    // 时滑到底的最后一张卡会被它压住（同底栏遮内容的道理，见
-    // [_backToTodayButtonScrollInset]）。
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
     final listBottomContentInset =
         8 + dockScrollAvoidance + todayButtonAvoidance;
-    // 空态是居中块：浮钮避让带上它会让"今天 ↔ 非今天"换位置、文字跳一下
-    //（2026-09-29 真机反馈），所以空态只留药丸避让。
+    // 空态只留药丸避让：带上浮钮避让会让「今天 ↔ 非今天」换位置、文字跳一下。
     final emptyBottomContentInset = 8 + dockScrollAvoidance;
-    // 待办带是第 0 项、跟着滚走（钉住会让一天八条作业永久吃掉半屏）；为空时整条不渲染。
+    // 待办带跟着滚走（钉住会永久吃掉半屏）；为空时整条不渲染。
     final bandCount = taskBand.isEmpty ? 0 : 1;
     if (agendaItems.isEmpty && bandCount == 0) {
       return <Widget>[
@@ -686,20 +675,17 @@ extension _TimetableScreenDayView on _TimetableScreenState {
                 cardRect: rect,
               ),
             );
-            // 飞行终点：议程卡真实屏幕矩形（不量化、只量一次；量化过的终点会让卡片落地偏几像素）
+            // 飞行终点（不量化：量化过的终点落地偏几像素）。key 必须有
+            // （SliverList 复用元素）；revision = 转场代数（换日强制重量）。
             final courseId = item.courseItem?.course.id;
             return courseId == null
                 ? entry
                 : MeasureFlightTarget(
+                    key: ValueKey('flight-target-$courseId'),
+                    revision: _flightTargets.generation,
                     onMeasured: (r) {
-                      // 写缓存本身不触发重建，而转场壳是在 build 期间读它的
-                      // —— 不主动标记一次，终点永远不会生效（飞行卡不出现）。
-                      // 这里已经过了首帧多个帧，且只在「真正拿到新值」时置脏，
-                      // 不会变成每帧重建。
-                      final changed = _flightTargets.record(courseId, r);
-                      if (changed && mounted) {
-                        // extension 里不能直接 setState（protected），走宿主的
-                        // 端口（`setStateMutations` 内部就是判 mounted 后 setState）。
+                      // 写缓存不触发重建，而转场壳在 build 期读它：必须主动置脏。
+                      if (_flightTargets.record(courseId, r) && mounted) {
                         rebuild();
                       }
                     },
@@ -712,8 +698,6 @@ extension _TimetableScreenDayView on _TimetableScreenState {
   }
 
   Widget _buildDayViewEmptyColumn({
-
-
     required int week,
     required TimetableSettings settings,
   }) {
@@ -728,36 +712,63 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  /// 飞行卡（转场中那一张）：**颜色与材质与议程卡同源**。
-  ///
-  /// 用户 2026-10-21 报：「动画过程中的卡片颜色和课程卡片颜色不一样，材质不一样」。
-  /// 根因是飞行卡另走了一条取色路径（`resolveDisplayCourseColor`）并强制实体材质，
-  /// 而议程卡走的是 `resolveDayAgendaPalette` + 用户设置的材质档。
-  ///
-  /// 这里改成与议程卡**同一个** `resolveDayAgendaPalette`：飞行终点就是议程卡，
-  /// 同源才能读成「同一张卡在长大」。
+  /// 当前可见日的课程 id（只给「哪些卡该藏」用）。
+  Iterable<String> _dayCourseIds(TimetableProvider provider) {
+    final week = _dayViewTransition.visibleWeek;
+    final day = _selectedDayOfWeek;
+    if (week == null || day == null) {
+      return const <String>[];
+    }
+    return _getCoursesForDay(provider.courses, week, day, provider.settings)
+        .map((c) => c.id);
+  }
+
+  /// 飞行卡（转场中那一张）。组装在 `flight_card_factory.dart`（不依赖私有
+  /// 状态）。这里只取两样 State 的东西：**展示条目**（必须与议程卡同一份，
+  /// 否则本周课会被判成非本周而染成板岩灰）与**调色板**（要壁纸亮度）。
   Widget _buildFlightCardFor(
     TimetableProvider provider,
     TimetableSettings settings,
-    List<Course> dayCourses,
+    List<DayCourseDisplayItem> items,
     String courseId,
     double t,
+    Size gridSurface,
+    Size agendaSurface,
   ) {
-    final course = dayCourses.where((c) => c.id == courseId).firstOrNull;
-    if (course == null) {
+    final item = items.where((i) => i.course.id == courseId).firstOrNull;
+    if (item == null) {
       return const SizedBox.shrink();
     }
-    final item = DayCourseDisplayItem(course: course);
+    final course = item.course;
     final palette = resolveDayAgendaPalette(
-      _colorFromHex(resolveDisplayCourseColor(item, settings: settings,
-            coupleColorForKind: provider.coupleColorForKind) ?? course.color, Theme.of(context).colorScheme.primary),
+      _colorFromHex(
+        resolveDisplayCourseColor(
+              item,
+              settings: settings,
+              coupleColorForKind: provider.coupleColorForKind,
+            ) ??
+            course.color,
+        Theme.of(context).colorScheme.primary,
+      ),
       foregroundHex: course.textColor,
       settings: settings,
       env: _dayViewInkEnvironment(settings),
       washAlpha: dayAgendaWashAlpha(context, settings),
     );
-    return FlightCardBody(course: course, settings: settings, progress: t,
-      color: palette.fillColor);
+    return buildFlightCard(
+      context: context,
+      settings: settings,
+      course: course,
+      palette: palette,
+      sectionHeight: _flightGlue.gridSectionHeight(
+        settings: settings,
+        fallbackHeight: MediaQuery.sizeOf(context).height,
+      ),
+      opacityScale: item.opacity,
+      gridSurface: gridSurface,
+      agendaSurface: agendaSurface,
+      t: t,
+    );
   }
 
   /// 日视图议程条目路由：考试 / 日程 / 课程三种卡片的数据组装与动作接线。

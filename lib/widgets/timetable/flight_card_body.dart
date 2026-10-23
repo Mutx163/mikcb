@@ -1,135 +1,141 @@
 import 'package:flutter/material.dart';
 
-import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
-import '../../domain/day_course_display_logic.dart';
-import '../../providers/timetable_provider.dart';
-import '../../utils/hex_color.dart';
 import 'day_view/day_view_agenda_surface.dart';
+import 'flight_text_metrics.dart';
 
-/// 转场中「正在飞的那张卡」的渲染（2026-10-21）。
+/// 转场中「正在飞的那张卡」的渲染（2026-10-23 重写）。
 ///
-/// ## 它要看起来像什么
+/// ## 用户要的到底是什么
 ///
-/// 用户口径：「1、3、5 节有课，就应该是那几张课程的卡片，直接卡片对卡片，
-/// 放大过去」。所以飞行卡是**同一张卡在两种排版之间连续变化**：
+/// > 「课程卡片里面的字不是平移过去的，而是开始的、动画上的、最终的，是三个
+/// > 位置，还有三个环节的圆角也是，圆角应该是渐变的才对，从周课表圆角，渐变
+/// > 到日课表圆角，这样才丝滑，还有卡片上的字也要是这样才可以」
 ///
-/// - 起点（`t=0`）：接近周网格里那张紧凑小卡（小字号、单行、几乎贴边）；
-/// - 终点（`t=1`）：接近日视图议程卡（大字号、课名 + 地点）。
+/// 这段话落到实现上是四件事，缺一件就还是「三个位置」：
 ///
-/// 外部矩形由 `MorphFlightCard` 的 `Rect.lerp` 驱动，这里只负责**内部排版**
-///（字号、内边距、行数）。两者一起变，才读作「卡片自己长大」；只缩外框会让
-/// 文字像被拉扁。
+/// 1. **外框**矩形连续（`MorphFlightCard` 的 `Rect.lerp`，已经在做）；
+/// 2. **每一行字的位置与字号连续**（本文件 + `flight_text_metrics.dart`）；
+/// 3. **圆角连续**（8 → 20，线性）；
+/// 4. **表面材质连续**（底色、渐变、投影、字色都与议程卡同源）。
 ///
-/// ## 材质
+/// 第 2 条以前是手写近似值（`52` / `78.5` / `50`），真值与它差几像素，于是起飞
+/// 和落定各跳一次。现在每行字的矩形都由 `measureCompactCardText` /
+/// `measureAgendaCardText` **按两端真实排版复算**，本组件只做插值。
 ///
-/// 用 [DayViewAgendaSurface]（日视图议程卡的同一套表面）并 `forceSolid: true`：
+/// ## 为什么文字用 `Positioned` 而不是复刻两端的排版树
 ///
-/// - 终点就是议程卡，用同一套材质才能无缝交接；
-/// - 为什么强制实体：飞行卡在转场中每帧都在动，玻璃档会每帧重采样身后壁纸
-///   （`CourseSurface` 的 `BackdropFilter` 代价），而实体档是一次渐变填充。
-///   落地瞬间换成真议程卡（它按用户设置决定材质），此时卡片已静止，重新采样
-///   只发生一帧。
+/// 两端的排版树完全不同（网格卡是 `FittedBox` + 居中的 `Column`，议程卡是
+/// 固定顺序的 `Column`）。要让它们「中间连续」，唯一稳的做法是**两端各自算出
+/// 行的矩形**，中间按矩形摆 —— 复刻任何一端的排版树都会在另一端落地时跳。
+///
+/// ## 玻璃铁律
+///
+/// `Opacity` 只包**文字与图标**，绝不包 [DayViewAgendaSurface]（`CourseSurface`
+/// 的 `BackdropFilter` 进半透明层采不到身后内容，磨砂会塌成透明）。
 class FlightCardBody extends StatelessWidget {
   const FlightCardBody({
     super.key,
-    required this.course,
     required this.settings,
     required this.progress,
+    required this.layout,
     required this.color,
+    required this.gradientColors,
+    required this.radius,
+    required this.shadowOpacity,
+    this.opacityScale = 1,
+    this.onCardColor,
   });
 
-  final Course course;
   final TimetableSettings settings;
 
-  /// 飞行进度 0..1（已过曲线）。
+  /// 飞行进度 0..1（**已过曲线**）。
   final double progress;
 
-  /// 卡片主色（已按主题/课程色解析）。
+  /// 当前帧的卡内布局（每行字的位置/字号/字重/透明度）。
+  final FlightLayout layout;
+
+  /// 卡片主色（已按主题/课程色解析，与议程卡的 `fillColor` 同源）。
   final Color color;
+
+  /// 实体档的渐变（与议程卡 `cardDecoration.gradient` 同源）。
+  ///
+  /// 议程卡在实体档下是 `baseColor → fillColor` 的两段渐变，飞行卡若只给纯色，
+  /// 落地那一帧会看到「卡片忽然出现一层渐变」。
+  final Gradient? gradientColors;
+
+  /// 当前帧的圆角（8 → 20 插值）。
+  final double radius;
+
+  /// 当前帧的投影强度（0 → 议程卡的 0.18，插值）。
+  final double shadowOpacity;
+
+  /// 压暗系数（非本周 / 停课）—— 与议程卡的 `opacityScale` 同源。
+  final double opacityScale;
+
+  /// 卡面文字色（`palette.foregroundColor`）。
+  final Color? onCardColor;
 
   @override
   Widget build(BuildContext context) {
-    final t = progress.clamp(0.0, 1.0);
-    // 圆角跟着长大：小卡 8dp → 议程卡 12dp 档（实际值由外层 radius 的二段式
-    // 决定，这里只做内部视觉）。
-    final radius = 8 + (4 * t);
-    // 内边距：紧凑卡 3~4dp → 议程卡 10dp 左右。
-    final pad = 3 + (7 * t);
-    // 字号：紧凑卡约 9sp（网格单行）→ 议程卡 14sp。
-    final titleSize = 9 + (5 * t);
-    final subSize = 7.5 + (3.5 * t);
-
+    final ink = onCardColor ?? const Color(0xFF1A1A1A);
     return DayViewAgendaSurface(
       settings: settings,
       color: color,
       radius: radius,
-      forceSolid: true,
-      child: Padding(
-        padding: EdgeInsets.all(pad),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              course.name,
-              // 早期一行（小卡放不下两行），长大了才允许折行。
-              maxLines: t > 0.45 ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: titleSize,
-                fontWeight: FontWeight.w600,
-                height: 1.15,
-              ),
-            ),
-            if (t > 0.3) ...[
-              SizedBox(height: 1 + 2 * t),
-              Opacity(
-                // 只在卡片已经有空间时淡入副信息。这里用 Opacity 是安全的：
-                // 它包的是纯文本，**不是** CourseSurface 玻璃本体
-                //（玻璃进半透明层的禁忌针对的是卡片表面，见 CourseSurface 注释）。
-                opacity: ((t - 0.3) / 0.7).clamp(0.0, 1.0),
-                child: Text(
-                  course.location,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: subSize, height: 1.2),
-                ),
+      opacityScale: opacityScale,
+      gradient: gradientColors,
+      // 投影跟着进度长出来：0 时不画（`outerShadow` 为空），落定那帧与
+      // 议程卡同款 16px / alpha 0.18。中途用同一份几何、只改 alpha，
+      // 不会出现「阴影突然变形状」。
+      shadow: shadowOpacity <= 0.001
+          ? null
+          : [
+              BoxShadow(
+                color: color.withValues(alpha: shadowOpacity),
+                blurRadius: _lerp(0, 16, shadowOpacity / 0.18),
+                offset: Offset(0, _lerp(0, 4, shadowOpacity / 0.18)),
               ),
             ],
-          ],
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          for (final item in layout.items)
+            if (item.opacity > 0.001)
+              Positioned(
+                left: item.rect.left,
+                top: item.rect.top,
+                width: item.rect.width > 0 ? item.rect.width : null,
+                height: item.isIcon ? item.rect.height : null,
+                child: Opacity(
+                  // 只包文字/图标：玻璃面在本层之外，不会被拖进离屏层。
+                  opacity: item.opacity,
+                  child: item.isIcon
+                      ? Icon(
+                          item.icon,
+                          size: item.fontSize,
+                          color: ink.withValues(alpha: 0.82),
+                        )
+                      : Text(
+                          item.text,
+                          maxLines: item.maxLines,
+                          overflow: item.maxLines == null
+                              ? TextOverflow.clip
+                              : TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: item.fontSize,
+                            fontWeight: item.weight,
+                            height: item.lineHeightFactor,
+                          ),
+                        ),
+                ),
+              ),
+        ],
       ),
     );
   }
 }
 
-/// 按课程 id 从当天课程里造一张飞行卡（找不到就返回空）。
-///
-/// 抽成顶层函数而不是 State 方法：`timetable_screen.dart` 有行数棘（只减不增），
-/// 而这段是纯渲染、不碰 State 私有状态。
-Widget buildFlightCardFor({
-  required String courseId,
-  required List<Course> dayCourses,
-  required TimetableSettings settings,
-  required TimetableProvider provider,
-  required Color fallbackColor,
-  required double progress,
-}) {
-  final course = dayCourses.where((c) => c.id == courseId).firstOrNull;
-  if (course == null) {
-    return const SizedBox.shrink();
-  }
-  final hex = resolveDisplayCourseColor(
-        DayCourseDisplayItem(course: course),
-        settings: settings,
-        coupleColorForKind: provider.coupleColorForKind,
-      ) ??
-      course.color;
-  return FlightCardBody(
-    course: course,
-    settings: settings,
-    progress: progress,
-    color: parseHexColorOrFallback(hex, fallback: fallbackColor),
-  );
-}
+double _lerp(double a, double b, double t) => a + (b - a) * t;

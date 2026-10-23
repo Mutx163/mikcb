@@ -32,6 +32,7 @@ class TimetableWeekGridBuilder extends StatelessWidget {
   final TimetableBuildDisplayItems buildDisplayItems;
   final TimetableWrapSurfaceHost wrapSurfaceHost;
   final bool overlayVisible;
+  final Set<String> hideCourseIds;
   final DateTime? Function(TimetableSettings settings, int week, int dayOfWeek)
   dateForWeekDay;
   final List<DayCourseDisplayItem> Function(
@@ -78,6 +79,7 @@ class TimetableWeekGridBuilder extends StatelessWidget {
     required this.buildDisplayItems,
     required this.wrapSurfaceHost,
     required this.overlayVisible,
+    this.hideCourseIds = const <String>{},
     required this.dateForWeekDay,
     required this.startingAt,
     required this.resolveColor,
@@ -169,6 +171,7 @@ class TimetableWeekGridBuilder extends StatelessWidget {
       coursesForDay: coursesForDay,
       buildDisplayItems: buildDisplayItems,
       dayColumnCallbacks: dayColumnCallbacks,
+      hideCourseIds: hideCourseIds,
     );
   }
 }

@@ -54,7 +54,9 @@ import '../widgets/timetable/weekday_ink_contrast_guard.dart';
 import '../widgets/timetable/timetable_day_view_shared_free_summary.dart';
 import '../widgets/timetable/timetable_anchored_day_overlay.dart';
 import '../widgets/timetable/flight_target_cache.dart';
-import '../widgets/timetable/flight_card_body.dart';
+import '../widgets/timetable/flight_transition_glue.dart';
+import '../widgets/timetable/measure_flight_target.dart';
+import '../widgets/timetable/flight_card_factory.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/day_view/day_view_course_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_empty_state.dart';
@@ -330,12 +332,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   void clearDayViewTransitionSource() =>
       setState(_dayViewTransition.clearTransitionSource);
 
+  /// 展开 / 收起：曲线、时长与「减少动态效果」都在 [DayViewExpandMotion] 里，
+  /// 宿主只转发 —— 判据只有一处，设置改了不会两处不同步。
   @override
   Future<void> forwardDayViewExpand() =>
-      DayViewExpandMotion.forward(_dayViewExpandController);
+      DayViewExpandMotion.expand(context, _dayViewExpandController);
 
   @override
-  Future<void> reverseDayViewExpand() => _dayViewExpandController.reverse();
+  Future<void> reverseDayViewExpand() =>
+      DayViewExpandMotion.collapse(context, _dayViewExpandController);
 
   @override
   void persistDayView({required int dayOfWeek}) => _persistViewState(
@@ -635,6 +640,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     _homePull.removeListener(_handleHomePullChanged);
     _homePull.dispose();
     _weekPager.dispose();
+    _flightGlue.dispose();
     _dayViewExpandController.dispose();
     _dayAgendaProgressTimer?.cancel();
     _dayAgendaProgressTick.dispose();
@@ -719,6 +725,11 @@ class _TimetableScreenState extends State<TimetableScreen>
             dockInlinePageId: _dockInlinePageId,
             isDayView: _isDayView,
             hasSelectedDay: _selectedDayOfWeek != null,
+            hideFlightCourseIds: _flightGlue.hiddenCourseIds(
+              week: _dayViewTransition.visibleWeek,
+              day: _selectedDayOfWeek,
+              courseIds: _dayCourseIds(provider),
+            ),
             coupleOverlayActive: _isCoupleOverlayActive(provider),
             dayHeaderPreview: _dayHeaderPreview,
             glassDockPillOccupancy: _glassDockPillOccupancy,
@@ -1216,16 +1227,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildAnchoredDayViewOverlay({required TimetableProvider provider,
-    required TimetableSettings settings, required int week}) {
+  /// 转场胶水：量高度 / 算节高 / 判哪些原卡片该藏（见同名文件）。
+  late final FlightTransitionGlue _flightGlue = FlightTransitionGlue(
+        expandController: _dayViewExpandController, surfaceKey: _timetableSurfaceKey,
+        rebuild: rebuild)
+      ..hasFlightTargetFor = ((id) => _flightTargets[id] != null)
+      ..onTransitionStart = _flightTargets.bump;
+  Widget _buildAnchoredDayViewOverlay({required TimetableProvider provider, required TimetableSettings settings, required int week}) {
     final selectedDayOfWeek = _dayViewTransition.displayedDayForWeek(week);
-    final panel = _buildDayViewPanel(provider: provider, settings: settings,
-      week: week, dayOfWeek: selectedDayOfWeek);
+    final panel = _buildDayViewPanel(provider: provider, settings: settings, week: week, dayOfWeek: selectedDayOfWeek);
     final days = visibleDayNumbers(settings);
     final dayCourses = _getCoursesForDay(provider.courses, week, selectedDayOfWeek, settings);
+    final flightItems = _buildHomeDayDisplayItems(provider: provider, settings: settings, week: week, dayOfWeek: selectedDayOfWeek, myCourses: dayCourses);
     return TimetableAnchoredDayOverlay(panel: panel, expandAnimation: _dayViewExpandController,
       weekTimeColumnWidth: timeColumnWidth(settings), daySlots: flightSlotsFromCourses(dayCourses),
-      endRects: _flightTargets.targets, buildFlightCard: (id, t) => buildFlightCardFor(courseId: id, dayCourses: dayCourses, settings: settings, provider: provider, progress: t, fallbackColor: Theme.of(context).colorScheme.primary),
+      endRects: _flightTargets.targets, sectionHeight: _flightGlue.gridSectionHeight(settings: settings, fallbackHeight: MediaQuery.sizeOf(context).height), cardInset: courseCardInset(settings), settings: settings, buildFlightCard: (id, t, fromSurface, toSurface) => _buildFlightCardFor(provider, settings, flightItems, id, t, fromSurface, toSurface),
       visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek));
   }
 

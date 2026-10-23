@@ -55,6 +55,12 @@ class TimetableHomePageInput {
   final String? dockInlinePageId;
   final bool isDayView;
   final bool hasSelectedDay;
+
+  /// 转场途中要交给飞行卡的课程 id 集合（空 = 都不藏）。
+  ///
+  /// 转场中这些课的原卡必须藏起来，否则同一张课有两份（重影）。判定在屏幕里，
+  /// 按**每门课**：只有「正在展开/收起 **且** 这门课量到了终点」才藏。
+  final Set<String> hideFlightCourseIds;
   final bool coupleOverlayActive;
   final ValueListenable<(int, int)?> dayHeaderPreview;
   final double glassDockPillOccupancy;
@@ -136,6 +142,7 @@ class TimetableHomePageInput {
     required this.dockInlinePageId,
     required this.isDayView,
     required this.hasSelectedDay,
+    this.hideFlightCourseIds = const <String>{},
     required this.coupleOverlayActive,
     required this.dayHeaderPreview,
     required this.glassDockPillOccupancy,

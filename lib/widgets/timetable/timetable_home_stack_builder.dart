@@ -48,6 +48,13 @@ class TimetableHomeStackHost {
   final PageController? dayViewPageController;
   final int? visibleDayViewWeek;
   final bool shouldShowDayViewOverlay;
+
+  /// 转场途中要交给飞行卡的课程 id 集合（空 = 都不藏）。
+  ///
+  /// 转场中这些课的原卡片必须藏起来，否则同一张课有两份（重影）。判定由屏幕
+  /// 按**每门课**给（`FlightTransitionGlue.flightCardsToHide`）—— 没量到终点的
+  /// 课不藏，否则它会凭空消失。
+  final Set<String> hideCourseIds;
   final double? wallpaperTopLuminance;
   final double? wallpaperWeekdayLuminance;
   final double? wallpaperBodyLuminance;
@@ -144,6 +151,7 @@ class TimetableHomeStackHost {
     required this.dayViewPageController,
     required this.visibleDayViewWeek,
     required this.shouldShowDayViewOverlay,
+    this.hideCourseIds = const <String>{},
     required this.wallpaperTopLuminance,
     required this.wallpaperWeekdayLuminance,
     required this.wallpaperBodyLuminance,
@@ -262,6 +270,7 @@ class TimetableHomeStackBuilder extends StatelessWidget {
             buildDisplayItems: host.buildDisplayItems,
             wrapSurfaceHost: host.wrapSurfaceHost,
             overlayVisible: host.shouldShowDayViewOverlay,
+            hideCourseIds: host.hideCourseIds,
             dateForWeekDay: host.dateForWeekDay,
             startingAt: host.startingAt,
             resolveColor: host.resolveColor,
