@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-22T06:28:34+00:00",
+  "updatedAt": "2026-10-23T06:23:21+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 265,
-    "schools": 260,
+    "total": 266,
+    "schools": 261,
     "generic": 5
   },
   "schools": [
@@ -1707,6 +1707,13 @@
       "name": "燕山大学",
       "initial": "Y",
       "resourceFolder": "YSU",
+      "category": "school"
+    },
+    {
+      "id": "CSU",
+      "name": "中南大学",
+      "initial": "Z",
+      "resourceFolder": "CSU",
       "category": "school"
     },
     {
