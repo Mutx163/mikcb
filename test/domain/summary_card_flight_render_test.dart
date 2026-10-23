@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/widgets/course_surface.dart';
 import 'package:university_timetable/widgets/timetable/summary_card_flight.dart';
 
 /// 飞行的摘要卡**画出来的样子**（2026-10-23）。
@@ -13,6 +15,7 @@ import 'package:university_timetable/widgets/timetable/summary_card_flight.dart'
 /// 2. 落定那一帧看起来**就是摘要卡**：完整日期、有叉、有投影、圆角 20；
 /// 3. 中间任何一帧都不溢出、不裁字（小格里塞不下完整标题会变成一团）。
 void main() {
+  const settings = TimetableSettings(sections: <SectionTime>[]);
   const spec = SummaryFlightSpec(
     startCell: Rect.fromLTWH(241.1, -40, 50.3, 40),
     endRect: Rect.fromLTWH(14, 14, 364, 107),
@@ -37,7 +40,7 @@ void main() {
               // 起点在负区间（星期栏那条带），所以整层往下让 40 才看得见。
               Positioned.fromRect(
                 rect: frame.rect.shift(const Offset(0, 40)),
-                child: SummaryFlightCard(frame: frame),
+                child: SummaryFlightCard(frame: frame, settings: settings),
               ),
             ],
           ),
@@ -110,6 +113,29 @@ void main() {
       reason: '落定必须有投影（与摘要卡同值）',
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('起点没有卡面（星期格那一格本来只是几行字）', (tester) async {
+    // 起点就画不透明卡面，会在星期栏上凭空冒出一块白卡。
+    await pumpFrame(tester, lerpSummaryFlight(spec: spec, t: 0));
+    expect(
+      find.byType(CourseSurface),
+      findsNothing,
+      reason:
+          '起点不该已经有卡面。星期栏里那一格是「几行字压在壁纸上」，没有卡片；'
+          '第一帧就画一块实心白卡，读起来像凭空冒出来一张卡。',
+    );
+    // 但字必须看得见。
+    expect(find.text('周五'), findsOneWidget);
+    expect(find.text('03/20'), findsOneWidget);
+
+    // 长到 40% 时卡面已经在了（否则会「只有字在飘、卡片最后才出现」）。
+    await pumpFrame(tester, lerpSummaryFlight(spec: spec, t: 0.4));
+    expect(
+      find.byType(CourseSurface),
+      findsOneWidget,
+      reason: '中途必须已经有卡面：卡面是「包上来」的，不是最后才开始画。',
+    );
   });
 
   testWidgets('中途帧：不溢出、不因为窄格子裁字崩掉', (tester) async {

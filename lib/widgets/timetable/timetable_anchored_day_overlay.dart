@@ -313,7 +313,10 @@ class _TimetableAnchoredDayOverlayState
                     if (summaryFlightFrame case final frame?)
                       Positioned.fromRect(
                         rect: frame.rect,
-                        child: SummaryFlightCard(frame: frame),
+                        child: SummaryFlightCard(
+                          frame: frame,
+                          settings: widget.settings,
+                        ),
                       ),
 
                   // ── 落定：真面板接管 ────────────────────────────────────

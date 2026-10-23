@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/timetable_settings.dart';
 import '../../ui/hyperos/hyperos.dart';
+import '../../utils/home_page_background.dart';
+import 'day_view/day_view_agenda_surface.dart';
 import 'day_view/day_view_ink_style.dart';
 import 'day_view/day_view_summary_card.dart';
 
@@ -200,12 +202,18 @@ SummaryFlightInput buildSummaryFlightInput({
   final title = date == null
       ? weekday
       : '${date.month}月${date.day}日 $weekday';
+  // ⚠️ 判墨的材质必须与真摘要卡**同一档**：玻璃档的卡面亮度是「卡色 × 染色
+  // 比例 + 壁纸 × 余量」，按实体档判会把字判成黑的，落定后又变白 —— 用户口径
+  // 「材质不一样」的另一半（颜色）。
   final ink = resolveSummaryCardInk(
     context: context,
     settings: settings,
     inkEnvironment: inkEnvironment,
     fill: fill,
-    surfaceStyle: CourseCardSurfaceStyle.solid,
+    surfaceStyle: dayViewContentCardSurfaceStyle(
+      settings,
+      backdropBlurOn: inkEnvironment.backdropBlurOn,
+    ),
   );
   return SummaryFlightInput(
     endRectOnScreen: endRect,
@@ -292,6 +300,7 @@ class SummaryFlightFrame {
     required this.dateWeight,
     required this.metaText,
     required this.countText,
+    required this.surfaceOpacity,
     required this.metaOpacity,
     required this.countOpacity,
     required this.closeOpacity,
@@ -321,6 +330,13 @@ class SummaryFlightFrame {
   /// 终点才有的文案（「今天 · 第 3 周」/「1 门课」）。
   final String metaText;
   final String countText;
+
+  /// 卡面本身的可见度 0..1（起点是 0 —— 星期栏那一格**没有卡面**，只有一行字）。
+  ///
+  /// 起点就把不透明卡面画上去，会在星期栏上凭空冒出一块卡（它明明只是几行字）。
+  /// 所以卡面按这个值淡入，文字始终画 —— 读起来是「那两个字在原地长大，卡面
+  /// 随之包上来」。
+  final double surfaceOpacity;
 
   /// 终点才有的三块：后段淡入。
   final double metaOpacity;
@@ -396,6 +412,8 @@ SummaryFlightFrame lerpSummaryFlight({
     dateWeight: FontWeight.w400,
     metaText: spec.metaLabel,
     countText: spec.countLabel,
+    // 卡面前 30% 淡入：起点那颗字先自己长，长大一点卡面才包上来。
+    surfaceOpacity: (k / 0.30).clamp(0.0, 1.0),
     metaOpacity: ((k - 0.55) / 0.35).clamp(0.0, 1.0),
     countOpacity: ((k - 0.65) / 0.3).clamp(0.0, 1.0),
     closeOpacity: ((k - 0.6) / 0.4).clamp(0.0, 1.0),
@@ -428,132 +446,181 @@ double _estimateTextWidth(String text, double fontSize) {
 /// 立刻触发溢出与截断，读起来是一团乱码。所以这里只画两端都有的那几样，位置与
 /// 字号逐项插值 —— 与课程卡的做法一致。
 ///
+/// ## 材质必须与真摘要卡**同一档**（2026-10-23 修）
+///
+/// 第一版这里自己画了个 `DecoratedBox(color: 白)`：玻璃档下真卡是磨砂玻璃，
+/// 飞行卡是实心白卡 —— 起飞那一瞬间材质就换了，落定又换回来。用户口径：
+/// 「这个新卡的是实体卡材质不一样」。
+///
+/// 现在走 [DayViewAgendaSurface]（= 真摘要卡用的同一个 [CourseSurface] 出口），
+/// 再给同一套描边与投影。于是「档位 / 磨砂 / 染色 / 描边 / 投影」全部同源，
+/// 中间不会换任何一种。
+///
 /// ## 玻璃铁律
 ///
-/// `Opacity` 只包**文字与图标**；卡面是**不透明**的 `DecoratedBox`。全程没有
-/// 半透明卡面，所以磨砂不会塌（`CourseSurface` 铁律）。
+/// `Opacity` 只包**文字与图标**；卡面本身是 `CourseSurface`，全程不进半透明层。
 class SummaryFlightCard extends StatelessWidget {
-  const SummaryFlightCard({super.key, required this.frame});
+  const SummaryFlightCard({
+    super.key,
+    required this.frame,
+    required this.settings,
+  });
 
   final SummaryFlightFrame frame;
+
+  /// 真摘要卡用的那套设置（材质档位由它 + 模糊管线共同决定）。
+  final TimetableSettings settings;
 
   @override
   Widget build(BuildContext context) {
     final ink = frame.ink;
     final muted = frame.mutedInk;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: frame.fill,
-        borderRadius: BorderRadius.circular(frame.radius),
-        boxShadow: frame.shadowOpacity <= 0.001
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: frame.shadowOpacity),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(frame.radius),
-        child: Stack(
-          children: [
-            if (frame.weekdayOpacity > 0.001)
-              Positioned(
-                left: frame.weekdayLeft,
-                top: frame.weekdayTop,
-                child: Opacity(
-                  opacity: frame.weekdayOpacity,
-                  child: Text(
-                    frame.weekdayText,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                      color: ink,
-                      fontSize: frame.weekdayFontSize,
-                      fontWeight: frame.weekdayWeight,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ),
-            Positioned(
-              left: frame.dateLeft,
-              top: frame.dateTop,
+
+    // 文字层：**始终画**（起点那两行字必须看得见）。
+    final content = Stack(
+      children: [
+        if (frame.weekdayOpacity > 0.001)
+          Positioned(
+            left: frame.weekdayLeft,
+            top: frame.weekdayTop,
+            child: Opacity(
+              opacity: frame.weekdayOpacity,
               child: Text(
-                frame.dateText,
+                frame.weekdayText,
                 maxLines: 1,
                 softWrap: false,
                 style: TextStyle(
                   color: ink,
-                  fontSize: frame.dateFontSize,
-                  fontWeight: frame.dateWeight,
-                  height: 1.15,
+                  fontSize: frame.weekdayFontSize,
+                  fontWeight: frame.weekdayWeight,
+                  height: 1.4,
                 ),
               ),
             ),
-            if (frame.metaOpacity > 0.001)
-              Positioned(
-                left: 14,
-                top: 14.5,
-                child: Opacity(
-                  opacity: frame.metaOpacity,
+          ),
+        Positioned(
+          left: frame.dateLeft,
+          top: frame.dateTop,
+          child: Text(
+            frame.dateText,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: ink,
+              fontSize: frame.dateFontSize,
+              fontWeight: frame.dateWeight,
+              height: 1.15,
+            ),
+          ),
+        ),
+        if (frame.metaOpacity > 0.001)
+          Positioned(
+            left: 14,
+            top: 14.5,
+            child: Opacity(
+              opacity: frame.metaOpacity,
+              child: Text(
+                frame.metaText,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ),
+        if (frame.countOpacity > 0.001)
+          Positioned(
+            left: 14,
+            top: 72,
+            child: Opacity(
+              opacity: frame.countOpacity,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: ink.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   child: Text(
-                    frame.metaText,
+                    frame.countText,
                     maxLines: 1,
                     softWrap: false,
                     style: TextStyle(
                       color: muted,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      height: 1.35,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
                     ),
                   ),
                 ),
               ),
-            if (frame.countOpacity > 0.001)
-              Positioned(
-                left: 14,
-                top: 72,
-                child: Opacity(
-                  opacity: frame.countOpacity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: ink.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      child: Text(
-                        frame.countText,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (frame.closeOpacity > 0.001)
-              Positioned(
-                right: 14,
-                top: 12,
-                child: Opacity(
-                  opacity: frame.closeOpacity,
-                  child: Icon(Icons.close_rounded, size: 18, color: muted),
-                ),
-              ),
-          ],
+            ),
+          ),
+        if (frame.closeOpacity > 0.001)
+          Positioned(
+            right: 14,
+            top: 12,
+            child: Opacity(
+              opacity: frame.closeOpacity,
+              child: Icon(Icons.close_rounded, size: 18, color: muted),
+            ),
+          ),
+      ],
+    );
+
+    // 卡面：起点可见度为 0（星期栏那一格根本没有卡面，只有一行字）。
+    //
+    // 起点就画不透明卡面，会在星期栏上凭空冒出一块白卡 —— 它明明只是几行字。
+    // 所以卡面按 `surfaceOpacity` 淡入（前 30%），文字从头到尾都在。
+    final surfaceAlpha = frame.surfaceOpacity.clamp(0.0, 1.0);
+    if (surfaceAlpha <= 0.001) {
+      return ClipRect(
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: Colors.transparent),
+          child: content,
         ),
+      );
+    }
+    return DayViewAgendaSurface(
+      settings: settings,
+      color: frame.fill,
+      radius: frame.radius,
+      // 与真摘要卡同一条渐变（同色两段：摘要卡没有课程色可依托）。实体档读的
+      // 就是这里的 alpha —— 所以卡面可见度对实体档也是真的渐变。
+      gradient: LinearGradient(
+        colors: [
+          frame.fill.withValues(alpha: surfaceAlpha),
+          frame.fill.withValues(alpha: surfaceAlpha),
+        ],
+      ),
+      // 玻璃档的染色强度由 opacityScale 缩放（`CourseSurface` 内部按它算 tint
+      // 的 alpha），所以同一份「可见度」在两种档位下都成立。
+      opacityScale: surfaceAlpha,
+      // 与真摘要卡同一套中性细描边，可见度同步。
+      border: Border.all(color: ink.withValues(alpha: 0.12 * surfaceAlpha)),
+      // 真摘要卡是黑色 0.08 / 16px / (0,4)。这里只让 alpha 随进度长到 0.08 ——
+      // 几何同源，落定同值，不会「忽然变形状」。
+      shadow: frame.shadowOpacity <= 0.001
+          ? null
+          : [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: frame.shadowOpacity * surfaceAlpha,
+                ),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(frame.radius),
+        child: content,
       ),
     );
   }
