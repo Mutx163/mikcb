@@ -28,6 +28,12 @@ import 'dart:ui' show Rect;
 class FlightTargetCache {
   final Map<String, _Entry> _targets = <String, _Entry>{};
 
+  /// 摘要卡（带关闭叉那张）的实测表面矩形，同样按代数的口径走。
+  ///
+  /// 单独一个字段而不是塞进 [_targets]（用课程 id 当键）：摘要卡不是课程，
+  /// 挤进去会让「哪些课量到终点」的判定多出一个永远为真的项。语义分开更安全。
+  _Entry? _summary;
+
   int _generation = 0;
 
   /// 当前代数（测试用）。
@@ -66,8 +72,29 @@ class FlightTargetCache {
     return entry.rect;
   }
 
+  /// 摘要卡**当代**的实测矩形；没量到（或只有旧代）返回 null。
+  Rect? get summary =>
+      _summary != null && _summary!.generation == _generation
+      ? _summary!.rect
+      : null;
+
+  /// 写摘要卡的测量结果。返回 `true` 表示当代值真的变了。
+  bool recordSummary(Rect globalRect) {
+    final prev = _summary;
+    if (prev != null &&
+        prev.generation == _generation &&
+        _close(prev.rect, globalRect)) {
+      return false;
+    }
+    _summary = _Entry(globalRect, _generation);
+    return true;
+  }
+
   /// 放掉内存（正确性不依赖它，见类注释）。
-  void clear() => _targets.clear();
+  void clear() {
+    _targets.clear();
+    _summary = null;
+  }
 
   static bool _close(Rect a, Rect b) =>
       (a.left - b.left).abs() < 0.5 &&

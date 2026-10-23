@@ -57,6 +57,7 @@ import '../widgets/timetable/flight_target_cache.dart';
 import '../widgets/timetable/flight_transition_glue.dart';
 import '../widgets/timetable/measure_flight_target.dart';
 import '../widgets/timetable/flight_card_factory.dart';
+import '../widgets/timetable/summary_card_flight.dart';
 import '../widgets/timetable/timetable_day_agenda_models.dart';
 import '../widgets/timetable/day_view/day_view_course_agenda_card.dart';
 import '../widgets/timetable/day_view/day_view_empty_state.dart';
@@ -188,11 +189,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// 就消失会显得像误触。官方的截屏通知本来就同时弹了，多停几秒不算打扰。
   static const Duration _screenshotPromptDuration = Duration(seconds: 5);
 
-  /// In-flight update check, used for de-duplication.
-  ///
-  /// A shared [Future] (instead of a boolean flag) cannot leak: every early
-  /// exit still completes the future, so a forgotten manual reset is
-  /// impossible no matter how many new early-return branches are added.
+  /// 进行中的更新检查（去重用）。共享 [Future] 而不是 bool：每条早退路径都会
+  /// 完成它，不存在「忘了手动复位」，加多少分支都不会漏。
   TimetableProvider? _lastSyncedProvider;
   String? _lastSyncedProfileId;
   Timer? _dayAgendaProgressTimer;
@@ -200,9 +198,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   /// Minute-of-day the progress heartbeat last forwarded.
   int _lastProgressMinuteOfDay = -1;
 
-  /// Verbose per-build day-view logging. Off by default: rebuilding all
-  /// cached pager pages floods the log otherwise (see the heartbeat below).
-  /// Flip temporarily when debugging the day view build pipeline.
+  /// 日视图逐帧日志。默认关：三页缓存 pager 一起重建会刷屏。调试时临时打开。
   static bool logDayViewBuilds = false;
 
   /// Heartbeat for day-view ongoing-course badges / summary while day view
@@ -563,9 +559,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             if (!mounted || !_isDayView) {
               return;
             }
-            // The pages' output cannot change within one minute (ongoing
-            // badges resolve time at minute granularity), so skip identical
-            // seconds instead of dirtying three cached pager pages.
+            // Pages can't change within a minute (badges resolve at minute
+            // granularity), so skip identical seconds rather than dirtying
+            // three cached pager pages.
             final now = DateTime.now();
             final minuteOfDay = now.hour * 60 + now.minute;
             if (minuteOfDay == _lastProgressMinuteOfDay) {
@@ -668,10 +664,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (state == AppLifecycleState.resumed) {
       final provider = context.read<TimetableProvider>();
       unawaited(provider.syncTemporalContext());
-      // Force-push the current stage and display settings to the native
-      // live-update service.  The native alarm may have fired while the app
-      // was backgrounded and started the service with stale snapshot settings;
-      // this ensures the correct style is applied as soon as the user returns.
+      // Force-push stage + display settings to the native live-update service:
+      // the native alarm may have started it with stale snapshot settings while
+      // backgrounded.
       unawaited(provider.refreshLiveActivityNow());
       if (widget.enableUpdateCheck) {
         _checkForAppUpdate(
@@ -1005,9 +1000,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         provider.settings.timetableLastViewedDayOfWeek == resolvedDayOfWeek) {
       return;
     }
-    // Lightweight path: no notifyListeners / live-activity churn. The old
-    // updateTimetableSettings route re-broadcast the whole provider on every
-    // day switch, rebuilding the home screen a second time mid-animation.
+    // Lightweight path: no notifyListeners / live-activity churn (the old route
+    // re-broadcast the provider on every day switch, rebuilding the home screen
+    // a second time mid-animation).
     unawaited(
       provider.persistHomeViewState(mode: mode, dayOfWeek: resolvedDayOfWeek),
     );
@@ -1239,10 +1234,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     final days = visibleDayNumbers(settings);
     final dayCourses = _getCoursesForDay(provider.courses, week, selectedDayOfWeek, settings);
     final flightItems = _buildHomeDayDisplayItems(provider: provider, settings: settings, week: week, dayOfWeek: selectedDayOfWeek, myCourses: dayCourses);
+    final summaryRect = _flightTargets.summary;
     return TimetableAnchoredDayOverlay(panel: panel, expandAnimation: _dayViewExpandController,
       weekTimeColumnWidth: timeColumnWidth(settings), daySlots: flightSlotsFromCourses(dayCourses),
       endRects: _flightTargets.targets, sectionHeight: _flightGlue.gridSectionHeight(settings: settings, fallbackHeight: MediaQuery.sizeOf(context).height), cardInset: courseCardInset(settings), settings: settings, buildFlightCard: (id, t, fromSurface, toSurface) => _buildFlightCardFor(provider, settings, flightItems, id, t, fromSurface, toSurface),
-      visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek));
+      visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek),
+      summaryFlight: summaryRect == null ? null : _summaryFlightInput(
+              summaryRect, provider, settings, week, selectedDayOfWeek));
   }
 
   Widget _buildDayViewSharedFreeSummary({

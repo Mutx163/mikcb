@@ -112,7 +112,6 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     final firstAgenda = hasAgenda ? agendaItems.first : null;
     final lastAgenda = hasAgenda ? agendaItems.last : null;
 
-    final isDark = theme.brightness == Brightness.dark;
     final backdropBlurOn = inkEnvironment.backdropBlurOn;
     final courseCardStyle = dayViewContentCardSurfaceStyle(
       settings,
@@ -143,36 +142,21 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     // 现在与议程卡统一走 `cardSurfaceInk`：卡面亮度按真实染色比例合成，然后
     // 直接比黑/白各自的**对比度**（等价于在 0.20 处翻转，但不再被"白底加成"
     // 顶死）。用户手挑的字色仍然优先保留，只要求它在这张卡的实际卡面上达标。
-    final glassOverWallpaper = backdropBlurOn && courseCardStyle.isGlass;
     final summaryFill = foruiTheme.colors.background;
-    final summaryWashAlpha = glassOverWallpaper
-        ? CourseSurface.washAlpha(context, courseCardStyle)
-        : 1.0;
-    // 判据亮度取**这张卡实际压着的那一小块**壁纸（`cardRect`），拿不到时
-    // 回落到星期栏那条带 —— 这张卡的墨色本来就是信息栏那套
-    //（configuredHex 取的就是 weekdayBarFontColor*），而旧实现错在
-    // 「只看带、不看卡在哪」。
-    final summaryInk = cardSurfaceInk(
-      fill: summaryFill,
-      washAlpha: summaryWashAlpha,
-      wallpaperLuminance: glassOverWallpaper
-          ? (inkEnvironment.luminanceBehind(cardRect) ??
-                inkEnvironment.wallpaperWeekdayInkLuminance)
-          : null,
-      preferred: isDark
-          ? parseHexColorOrFallback(
-              settings.weekdayBarFontColorDark,
-              fallback: foruiTheme.colors.foreground,
-            )
-          : parseHexColorOrFallback(
-              settings.weekdayBarFontColorLight,
-              fallback: foruiTheme.colors.foreground,
-            ),
-      fallback: foruiTheme.colors.foreground,
-    );
-    final summaryMutedInk = homePageOverWallpaperMutedInk(summaryInk);
+    // 墨色抽成 [resolveSummaryCardInk]：转场里的「飞行摘要卡」必须与这张卡**同
+    // 一个判据**，否则它会中途换色（课程卡上一轮就是这么修的）。
     // 课程计数胶囊与「X 节日程」胶囊同款中性墨：跟摘要卡其余文字一样走
     // 壁纸自动黑白，有课与否不再切换主题蓝强调色。
+    final resolvedInk = resolveSummaryCardInk(
+      context: context,
+      settings: settings,
+      inkEnvironment: inkEnvironment,
+      cardRect: cardRect,
+      fill: summaryFill,
+      surfaceStyle: courseCardStyle,
+    );
+    final summaryInk = resolvedInk.ink;
+    final summaryMutedInk = resolvedInk.mutedInk;
     final countBadgeColor = summaryInk.withValues(alpha: 0.10);
     final countBadgeTextColor = summaryMutedInk;
     final sharedFreeSummary = sharedFreeSummaryBuilder?.call(summaryInk);
@@ -376,6 +360,59 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 摘要卡（以及转场中那张飞行卡）的墨色。
+///
+/// 抽成公共函数而不是各算一份：飞行卡与真卡必须**同一个判据**。曾经的课程卡就是
+/// 因为「两边各配一个颜色」在中途换色（用户口径「颜色差得非常远」）。
+class SummaryCardInk {
+  const SummaryCardInk({required this.ink, required this.mutedInk});
+
+  final Color ink;
+  final Color mutedInk;
+}
+
+SummaryCardInk resolveSummaryCardInk({
+  required BuildContext context,
+  required TimetableSettings settings,
+  required DayViewInkEnvironment inkEnvironment,
+  required Color fill,
+  required CourseCardSurfaceStyle surfaceStyle,
+  Rect? cardRect,
+}) {
+  final theme = Theme.of(context);
+  final foruiTheme = context.theme;
+  final isDark = theme.brightness == Brightness.dark;
+  final glassOverWallpaper =
+      inkEnvironment.backdropBlurOn && surfaceStyle.isGlass;
+  final ink = cardSurfaceInk(
+    fill: fill,
+    washAlpha: glassOverWallpaper
+        ? CourseSurface.washAlpha(context, surfaceStyle)
+        : 1.0,
+    // 判据亮度取**这张卡实际压着的那一小块**壁纸（`cardRect`），拿不到时回落到
+    // 星期栏那条带 —— 这张卡的墨色本来就是信息栏那套（`weekdayBarFontColor*`），
+    // 旧实现错在「只看带、不看卡在哪」。
+    wallpaperLuminance: glassOverWallpaper
+        ? (inkEnvironment.luminanceBehind(cardRect) ??
+              inkEnvironment.wallpaperWeekdayInkLuminance)
+        : null,
+    preferred: isDark
+        ? parseHexColorOrFallback(
+            settings.weekdayBarFontColorDark,
+            fallback: foruiTheme.colors.foreground,
+          )
+        : parseHexColorOrFallback(
+            settings.weekdayBarFontColorLight,
+            fallback: foruiTheme.colors.foreground,
+          ),
+    fallback: foruiTheme.colors.foreground,
+  );
+  return SummaryCardInk(
+    ink: ink,
+    mutedInk: homePageOverWallpaperMutedInk(ink),
+  );
 }
 
 /// 摘要卡下方那排小胶囊（原 `_TimetableScreenState._buildDayViewSummaryChip`）。

@@ -1,21 +1,11 @@
 part of 'timetable_screen.dart';
 
-/// 日视图议程族（2026-10-10 自 `timetable_screen.dart` 原样搬入）。
+/// 日视图议程族（2026-10-10 自 `timetable_screen.dart` 搬入）。
 ///
-/// `_TimetableScreenState` 的成员扩展：相关字段与 `TimetableDayAgendaItem` 等数据类
-/// 仍在主文件。
-///
-/// 2026-10-20：**视图构建已从本分片搬进 `lib/widgets/timetable/day_view/` 的
-/// 独立库**（摘要卡 / 空态 / 课程卡 / 考试卡 / 日程卡 / 卡面与徽标部件），本分片
-/// 只保留 State 胶水：
-/// - 数据组装：当日课程 → `DayCourseDisplayItem` → 议程条目混排（`_buildDayAgendaItems`）；
-/// - 依赖 State 私有状态的判定：壁纸亮度快照（[_dayViewInkEnvironment]）、
-///   进行时进度与调色板（要主文件的 `_quantizeDayAgendaProgress` 与 `_luminance`）；
-/// - 导航动作：关闭日视图、课程操作面板、日程/考试编辑页（展开动作仍在卡片里，
-///   但入口回调与返回语义由这里给）。
-///
-/// 留在主类：`_buildSharedFreeTimeChip`（体内 setState 会触发 extension 的
-/// protected lint）、`_groupedDayColumnBorderRadius`、`_weekCardWeatherDisplay`。
+/// 视图构建在 `lib/widgets/timetable/day_view/`，本分片只留 State 胶水：数据组装、
+/// 依赖私有状态的判定（壁纸亮度、进行时进度）、导航动作。留在主类：
+/// `_buildSharedFreeTimeChip`（体内 setState 会触发 protected lint）、
+/// `_groupedDayColumnBorderRadius`、`_weekCardWeatherDisplay`。
 extension _TimetableScreenDayView on _TimetableScreenState {
   Widget _buildDayViewPanel({
     required TimetableProvider provider,
@@ -49,15 +39,12 @@ extension _TimetableScreenDayView on _TimetableScreenState {
             Expanded(
               child: IgnorePointer(
                 ignoring: _isDaySwipeAnimating,
-                // Same as week grid: default PageView.builder keeps per-page
-                // RepaintBoundary so horizontal swipes composite cheaply.
-                // Pre-blur fills still repaint via pager markNeedsPaint.
+                // 与周网格一致：PageView.builder 每页一个 RepaintBoundary，横滑
+                // 便宜；预模糊填充仍由 pager 的 markNeedsPaint 重绘。
                 child: Listener(
-                  // Raw-pointer fling meter + rescue arming. Touch batching
-                  // under jank starves the framework's VelocityTracker (2–5
-                  // samples per 50–100ms flick → zero velocity → snap-back);
-                  // the probes keep the true displacement/duration so
-                  // _dayPagerPhysics can redo the snap with it.
+                  // 原始指针甩动测量 + 救援装填：卡顿时触摸被批处理，框架的
+                  // VelocityTracker 拿不到足够样本（50–100ms 只 2–5 个 →
+                  // 速度为 0 → 弹回）。这里自己留位移/时长给 _dayPagerPhysics。
                   behavior: HitTestBehavior.translucent,
                   onPointerDown: (event) {
                     // A new touch invalidates any leftover rescue velocity.
@@ -220,10 +207,8 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
-  /// 日 pager 的一页：摘要卡 + 议程列。
-  ///
-  /// 从 itemBuilder 提出来的理由：`_dayAgendaProgressTick` 每秒只重建这一棵
-  /// 子树，而不是整个首页（含周 pager）—— 那样会掉帧。
+  /// 日 pager 的一页：摘要卡 + 议程列。从 itemBuilder 提出来，是为了让
+  /// `_dayAgendaProgressTick` 每秒只重建这一棵子树，而不是整个首页（会掉帧）。
   Widget _buildDayViewPageContent({
     required TimetableProvider provider,
     required TimetableSettings settings,
@@ -301,8 +286,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         'agenda=${agendaItems.length} schedule=${scheduleItems.length}',
       );
     }
-    final isActivePage =
-        target.week == _selectedWeekForDayView &&
+    final isActivePage = target.week == _selectedWeekForDayView &&
         target.dayOfWeek == _selectedDayOfWeek;
     // 摘要卡吸顶 + 内容同一条滚动体（见 [TimetableDayViewScrollShell]）。
     final key = ValueKey('day-content-${target.week}-${target.dayOfWeek}');
@@ -514,7 +498,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    return MeasuredScreenRect(
+    final summary = MeasuredScreenRect(
       builder: (context, rect) => TimetableDayViewSummaryCard(
         surfaceKey: key,
         settings: settings,
@@ -544,6 +528,18 @@ extension _TimetableScreenDayView on _TimetableScreenState {
               )
             : null,
       ),
+    );
+    // 只有正在打开的那一页是飞行终点（三页同时挂着，都写会互相覆盖）。
+    if (key == null) {
+      return summary;
+    }
+    return MeasureFlightTarget(
+      key: const ValueKey('summary-flight-target'),
+      revision: _flightTargets.generation,
+      onMeasured: (r) {
+        if (_flightTargets.recordSummary(r) && mounted) rebuild();
+      },
+      child: summary,
     );
   }
 
@@ -619,13 +615,11 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       dayOfWeek: dayOfWeek, courseItems: displayItems,
     );
     final taskBand = _buildDayTaskBand(provider, settings, week, dayOfWeek);
-    // 避让用滚动 padding 实现（日视图全屏，静止在底部时最后一项仍停在玻璃坞
-    // 上方；滚动中卡片连续穿过避让带，不在边界硬裁出空带）。浮钮同理
-    // （见 [_backToTodayButtonScrollInset]）。
+    // 避让用滚动 padding：静止在底部时最后一项仍停在玻璃坞上方，滚动中连续
+    // 穿过避让带（不在边界硬裁出空带）。浮钮同理。
     final dockScrollAvoidance = _glassDockContentScrollInset(settings);
     final todayButtonAvoidance = _backToTodayButtonScrollInset(provider);
-    final listBottomContentInset =
-        8 + dockScrollAvoidance + todayButtonAvoidance;
+    final listBottomContentInset = 8 + dockScrollAvoidance + todayButtonAvoidance;
     // 空态只留药丸避让：带上浮钮避让会让「今天 ↔ 非今天」换位置、文字跳一下。
     final emptyBottomContentInset = 8 + dockScrollAvoidance;
     // 待办带跟着滚走（钉住会永久吃掉半屏）；为空时整条不渲染。
@@ -712,20 +706,30 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     );
   }
 
+  /// 摘要卡飞行的输入（计数必须与真摘要卡同判据，否则落定时数字会跳）。
+  SummaryFlightInput _summaryFlightInput(
+    Rect r, TimetableProvider p, TimetableSettings s, int w, int d) =>
+      buildSummaryFlightInput(
+          context: context, endRect: r, settings: s, week: w, dayOfWeek: d,
+          inkEnvironment: _dayViewInkEnvironment(s),
+          isToday: _isSelectedDayToday(provider: p, settings: s, week: w, dayOfWeek: d),
+          courseCount: _getCoursesForDay(p.courses, w, d, s).length,
+          scheduleCount:
+              _getScheduleItemsForWeekDay(provider: p, settings: s, week: w, dayOfWeek: d).length,
+          taskCount: _buildDayTaskBand(p, s, w, d).actionableCount);
   /// 当前可见日的课程 id（只给「哪些卡该藏」用）。
-  Iterable<String> _dayCourseIds(TimetableProvider provider) {
+  Iterable<String> _dayCourseIds(TimetableProvider p) {
     final week = _dayViewTransition.visibleWeek;
     final day = _selectedDayOfWeek;
     if (week == null || day == null) {
       return const <String>[];
     }
-    return _getCoursesForDay(provider.courses, week, day, provider.settings)
-        .map((c) => c.id);
+    return _getCoursesForDay(p.courses, week, day, p.settings).map((c) => c.id);
   }
 
-  /// 飞行卡（转场中那一张）。组装在 `flight_card_factory.dart`（不依赖私有
-  /// 状态）。这里只取两样 State 的东西：**展示条目**（必须与议程卡同一份，
-  /// 否则本周课会被判成非本周而染成板岩灰）与**调色板**（要壁纸亮度）。
+  /// 飞行卡（转场中那一张）。组装在 `flight_card_factory.dart`。这里只取两样
+  /// State 的东西：**展示条目**（必须与议程卡同一份，否则本周课会被判成非本周
+  /// 而染成板岩灰）与**调色板**（要壁纸亮度）。
   Widget _buildFlightCardFor(
     TimetableProvider provider,
     TimetableSettings settings,

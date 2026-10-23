@@ -7,7 +7,9 @@ import '../../domain/flight_slot.dart';
 import '../../models/timetable_settings.dart';
 import '../../ui/hyperos/day_view_expand_motion.dart';
 import 'flight_grid_metrics.dart';
+import 'timetable_weekday_header.dart';
 import 'morph_card_flight_layer.dart';
+import 'summary_card_flight.dart';
 
 /// 日视图从星期栏展开/收起的壳（2026-10-19 建，2026-10-21 重做为「卡片对卡片」）。
 ///
@@ -90,6 +92,14 @@ class TimetableAnchoredDayOverlay extends StatefulWidget {
   /// 卡片与格子边缘的间距（`courseCardInset`）。
   final double cardInset;
 
+  /// 摘要卡飞行的两端输入（起点 = 星期栏当日格，终点 = 摘要卡实测矩形）。
+  ///
+  /// 为 null 时退回旧做法（把面板从上往下裁出一条）。用户口径（2026-10-23）：
+  /// 「日视图带叉叉的日期卡片，能不能从顶部星期栏的当日的星期里面，一对一缩放
+  /// 出来，效果和课程卡片差不多」—— 所以现在它也是一张**飞行的卡**，
+  /// 与课程卡同一套机制、同一条曲线、同起同落。
+  final SummaryFlightInput? summaryFlight;
+
   /// 摘要卡（带关闭叉那张）底边在**转场层局部坐标**里的位置。
   ///
   /// 转场中面板从上往下「揭开」到这个高度：摘要卡整张露出来，下面的议程内容
@@ -117,6 +127,7 @@ class TimetableAnchoredDayOverlay extends StatefulWidget {
     required this.settings,
     required this.cardInset,
     this.summaryRevealBottom = 14.0 + kDayViewSummaryCardHeight,
+    this.summaryFlight,
   });
 
   @override
@@ -219,6 +230,24 @@ class _TimetableAnchoredDayOverlayState
             // 转场只有一条配速策略（`DayViewExpandMotion`），所有元素同起同落。
             final revealFactor =
                 (revealBottom * progress / constraints.maxHeight).clamp(0.0, 1.0);
+            // 摘要卡飞行：起点在这一层里算（这里已经知道层宽 / 时间列 / 天数 /
+            // 选中下标），终点是调用方实测的屏幕矩形。
+            final summaryFlight = widget.summaryFlight;
+            final summaryFlightFrame = summaryFlight == null
+                ? null
+                : lerpSummaryFlight(
+                    spec: summaryFlight.specInLayer(
+                      layerOrigin: _layerOrigin,
+                      startCell: summaryStartCellRect(
+                        viewportWidth: viewportWidth,
+                        timeColumnWidth: widget.weekTimeColumnWidth,
+                        visibleDayCount: widget.visibleDayCount,
+                        selectedDayIndex: widget.selectedDayIndex,
+                        headerHeight: TimetableWeekdayHeader.height,
+                      ),
+                    ),
+                    t: progress,
+                  );
 
             return IgnorePointer(
               // 只在种子还很小的时候挡住输入（开头的收起尾段）。
@@ -240,27 +269,35 @@ class _TimetableAnchoredDayOverlayState
                   // 它没有 child，尺寸 0×0，不参与布局、不产生绘制。
                   Align(widthFactor: _legacyWidthFactor(progress)),
 
-                  // ── 转场中：摘要卡从星期栏下面被拉出来 ──────────────────
+                  // ── 转场中 ─────────────────────────────────────────────
                   //
-                  // 用户口径：「不要直接闪现出现，应该从周视图上面的星期上面，
-                  // 拉出来」。课程卡有飞行卡接住，摘要卡没有 —— 所以它单独走
-                  // 一条「几何露出」通道：把面板从上往下**裁**出来一条。
+                  // 1）**摘要卡自己也是一张飞行的卡**（用户 2026-10-23 口径：要从
+                  //    顶部星期栏的当日格里一对一缩放出来，效果和课程卡片差不多）。
+                  //    起点 = 星期栏当日格，终点 = 摘要卡实测矩形，中间逐帧插值。
+                  // 2）面板仍在**树上但不绘制**：飞行终点是议程卡布局完之后量到的
+                  //    （`MeasureFlightTarget.performLayout`），面板一旦离开树就永远
+                  //    量不到 —— 后果不是「精度差一点」，而是**一张卡都不飞**。
                   //
-                  // ⚠️ 用 `ClipRect`（像素裁剪）而不是 `Opacity`：面板里是玻璃卡，
-                  // 进半透明层磨砂就塌了（`CourseSurface` 类注释铁律）。
-                  // `ClipRect` 不建离屏层、不改 alpha，玻璃照常采身后内容。
+                  // ⚠️ 不能换成 `Offstage`：`find.byKey` 默认 `skipOffstage: true`，
+                  // 面板会被找不着（`glass_dock_wallpaper_repro_test` 当场红）；也
+                  // 不能换成 `Opacity(0)`：玻璃进半透明层会塌。用「高度 0 的裁剪」
+                  // ——布局照跑、像素一个不画。
+                  //
+                  // 拿不到摘要卡终点时（首帧）退回「掀开一条」的老几何，好过整块
+                  // 面板闪现。
                   if (!settled)
                     Positioned(
                       top: 0,
                       left: 0,
                       right: 0,
                       // ⚠️ 高度必须**显式给**，不能靠 `Align(heightFactor:)`：
-                      // `Stack(fit: StackFit.expand)` 给的是紧约束，而
+                      // `Stack(fit: StackFit.expand)` 给紧约束，而
                       // `RenderPositionedBox` 做的是 `constraints.constrain(
-                      // childSize × factor)` —— 紧约束会把它拉回满高，裁剪
-                      // 等于没发生（实测：层高 600 时 Align 仍是 600，面板
-                      // 全文在画，于是飞行卡 + 真卡 = 同一门课两份）。
-                      height: constraints.maxHeight * revealFactor,
+                      // childSize × factor)` —— 紧约束把它拉回满高，裁剪等于没
+                      // 发生（实测层高 740 时仍 740，同一门课两份）。
+                      height: summaryFlightFrame == null
+                          ? constraints.maxHeight * revealFactor
+                          : 0,
                       child: ClipRect(
                         child: OverflowBox(
                           alignment: Alignment.topCenter,
@@ -270,6 +307,14 @@ class _TimetableAnchoredDayOverlayState
                         ),
                       ),
                     ),
+
+                  // 摘要卡飞行卡（画在面板上方、课程飞行卡下方：它俩不重叠）。
+                  if (!settled)
+                    if (summaryFlightFrame case final frame?)
+                      Positioned.fromRect(
+                        rect: frame.rect,
+                        child: SummaryFlightCard(frame: frame),
+                      ),
 
                   // ── 落定：真面板接管 ────────────────────────────────────
                   if (settled)
