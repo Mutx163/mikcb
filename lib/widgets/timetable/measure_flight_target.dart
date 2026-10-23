@@ -100,6 +100,17 @@ class _MeasureFlightTargetState extends State<MeasureFlightTarget> {
   }
 
   void _onMeasured(RenderBox box) {
+    // 布局阶段先做一次「这帧根本不用报」的廉价判断，避免白排一个帧后回调。
+    //
+    // 转场期间每帧都会重排（动画驱动外框），如果不在这里早退，每帧每张卡都会
+    // 排一个回调：一天 8 门课 × 三页缓存 ≈ 24 个/帧，转场 13 帧 ≈ 300+ 个 ——
+    // 而它们的答案与上一帧**完全相同**（位置漂移本就不重测）。早退之后，
+    // 稳态每帧 0 个回调，只有尺寸/代数真的变了才排。
+    if (_reported &&
+        _lastSize == box.size &&
+        _lastRevision == widget.revision) {
+      return;
+    }
     _pending = box;
     if (_scheduled) {
       return;
