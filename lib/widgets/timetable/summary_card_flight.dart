@@ -202,13 +202,21 @@ SummaryFlightInput buildSummaryFlightInput({
   final title = date == null
       ? weekday
       : '${date.month}月${date.day}日 $weekday';
-  // ⚠️ 判墨的材质必须与真摘要卡**同一档**：玻璃档的卡面亮度是「卡色 × 染色
-  // 比例 + 壁纸 × 余量」，按实体档判会把字判成黑的，落定后又变白 —— 用户口径
-  // 「材质不一样」的另一半（颜色）。
+  // ⚠️ 判墨必须与真摘要卡**逐输入一致**，否则起飞与落定两端的字色不同。
+  //
+  // 三件事都要对齐（少一件都会偏）：
+  // 1. 材质档：玻璃档的卡面亮度是「卡色 × 染色比例 + 壁纸 × 余量」，按实体档判
+  //    会把字判成黑的，落定后又变白（用户口径「材质不一样」的色那一半）。
+  // 2. **`cardRect`**：真卡传的是实测屏幕矩形，于是取的是「卡背后那一小块壁纸」
+  //    的局部亮度；这里若传 null，就退化成整屏 body 带 —— 深浅壁纸交界处会判错。
+  //    传终点矩形（= 真卡落定后的位置），两端取同一块壁纸。
+  // 3. 底色 `fill`：真卡用 `foruiTheme.colors.background`，这里同一来源。
   final ink = resolveSummaryCardInk(
     context: context,
     settings: settings,
     inkEnvironment: inkEnvironment,
+    // 与真卡落定后同一块壁纸：终点矩形就是它的实测位置。
+    cardRect: endRect,
     fill: fill,
     surfaceStyle: dayViewContentCardSurfaceStyle(
       settings,
@@ -291,13 +299,13 @@ class SummaryFlightFrame {
     required this.ink,
     required this.mutedInk,
     required this.weekdayText,
-    required this.weekdayLeft,
+    required this.weekdayCenterFactor,
     required this.weekdayTop,
     required this.weekdayFontSize,
     required this.weekdayWeight,
     required this.weekdayOpacity,
     required this.dateText,
-    required this.dateLeft,
+    required this.dateCenterFactor,
     required this.dateTop,
     required this.dateFontSize,
     required this.dateWeight,
@@ -318,14 +326,22 @@ class SummaryFlightFrame {
   final Color mutedInk;
 
   final String weekdayText;
-  final double weekdayLeft;
+
+  /// 1 = 在卡片里居中（星期格那一端），0 = 靠左 14dp（摘要卡那一端）。
+  ///
+  /// 用「对齐」而不是「算好的 left」：文字宽度只有真实排版知道，估算必然有误差
+  /// （实测 `03/20` 会偏 10px）。插值这个因子 = 文字一边长大一边从居中挪到左边，
+  /// 两端都精确。
+  final double weekdayCenterFactor;
   final double weekdayTop;
   final double weekdayFontSize;
   final FontWeight weekdayWeight;
   final double weekdayOpacity;
 
   final String dateText;
-  final double dateLeft;
+
+  /// 同 [weekdayCenterFactor]。
+  final double dateCenterFactor;
   final double dateTop;
   final double dateFontSize;
   final FontWeight dateWeight;
@@ -368,7 +384,6 @@ SummaryFlightFrame lerpSummaryFlight({
   // 终点（相对卡表面，实测值）。
   const endTitleTop = 46.0;
   const endTitleSize = 16.0;
-  const endPadLeft = 14.0;
 
   final width = spec.startCell.width +
       (spec.endRect.width - spec.startCell.width) * k;
@@ -383,17 +398,6 @@ SummaryFlightFrame lerpSummaryFlight({
   // （0.45 处字号已到 11.9sp，跳半张卡宽，读作抽了一下）。改成左偏移连续插值，
   // 文字是「一边长大一边挪到左边」。（文字自身 shrink-wrap，所以终点那一侧不
   // 依赖任何宽度估算；起点居中才用得上估算值，误差 1~2dp 在 50dp 格里看不见。）
-  final weekdayLeft = _lerp(
-    (spec.startCell.width - _estimateTextWidth(spec.weekdayLabel, startWeekdaySize)) / 2,
-    endPadLeft,
-    k,
-  );
-  final dateLeft = _lerp(
-    (spec.startCell.width - _estimateTextWidth(spec.cellDateLabel, startDateSize)) / 2,
-    endPadLeft,
-    k,
-  );
-
   return SummaryFlightFrame(
     rect: Rect.fromLTWH(left, top, width, height),
     radius: _lerp(spec.startRadius, spec.endRadius, k),
@@ -402,14 +406,15 @@ SummaryFlightFrame lerpSummaryFlight({
     ink: spec.ink,
     mutedInk: spec.mutedInk,
     weekdayText: spec.weekdayLabel,
-    weekdayLeft: weekdayLeft,
+    // 起点居中（对齐因子 1）→ 终点靠左（0）。前 40% 就挪到位，与字号长大同步。
+    weekdayCenterFactor: 1 - (k / 0.4).clamp(0.0, 1.0),
     weekdayTop: startWeekdayTop,
     weekdayFontSize: startWeekdaySize,
     weekdayWeight: FontWeight.w800,
     // 终点的完整日期里已经含「周五」，所以星期名后段淡出。
     weekdayOpacity: (1 - (k - 0.25) / 0.3).clamp(0.0, 1.0),
     dateText: useEndText ? spec.titleLabel : spec.cellDateLabel,
-    dateLeft: dateLeft,
+    dateCenterFactor: 1 - (k / 0.4).clamp(0.0, 1.0),
     dateTop: _lerp(startDateTop, endTitleTop, k),
     dateFontSize: _lerp(startDateSize, endTitleSize, k),
     dateWeight: FontWeight.w400,
@@ -425,21 +430,19 @@ SummaryFlightFrame lerpSummaryFlight({
 
 double _lerp(double a, double b, double t) => a + (b - a) * t;
 
-/// 粗估一段文字的渲染宽度（只给「起点居中」用）。
-///
-/// 不建 `TextPainter`：起点只有 8~10sp 的两行短文案，而这段代码转场每帧都会
-/// 跑到 —— 建 painter 的代价远大于它带来的 1~2dp 精度。终点侧不依赖估算。
-double _estimateTextWidth(String text, double fontSize) {
-  var em = 0.0;
-  for (final rune in text.runes) {
-    final code = rune;
-    final wide = (code >= 0x3000 && code <= 0x9FFF) ||
-        (code >= 0xFF00 && code <= 0xFFEF) ||
-        (code >= 0x3040 && code <= 0x30FF);
-    em += wide ? 1.0 : 0.55;
-  }
-  return em * fontSize;
-}
+// 这里曾经有一个 `_estimateTextWidth`（按「CJK 1em、其余 0.55em」粗估宽度），
+// 用来把起点那两行字在格子里居中。**已删除**（2026-10-23 审核发现）。
+//
+// 实测误差：`周五`（10sp）真实宽 20.5、估算 20.0 → 偏 0.25px（可接受）；
+// 但 `03/20`（8.5sp）真实宽 **43.75**、估算 23.375 → 居中偏 **10.19px**。
+// 原因是数字与斜杠在多数无衬线字体里的实际 advance 远大于 0.55em。
+//
+// 10px 在 50dp 的格子里是明显偏移 —— 起飞那一帧文字不在星期格的字上。
+// 换字体/换语言/两位数日期还会更糟，靠调系数永远治不好。
+//
+// 现在起点那一侧直接用 `Align(alignment: center)` 让 Flutter 自己居中
+// （它用的是真实排版宽度），终点那一侧保持左对齐，中间用**对齐因子**插值。
+// 见 `SummaryFlightFrame.weekdayCenterFactor` / `dateCenterFactor`。
 
 /// 飞行中的摘要卡。
 ///
@@ -484,9 +487,12 @@ class SummaryFlightCard extends StatelessWidget {
       children: [
         if (frame.weekdayOpacity > 0.001)
           Positioned(
-            left: frame.weekdayLeft,
+            left: 0,
+            right: 0,
             top: frame.weekdayTop,
-            child: Opacity(
+            child: _FlightAlignedText(
+              centerFactor: frame.weekdayCenterFactor,
+              child: Opacity(
               opacity: frame.weekdayOpacity,
               child: Text(
                 frame.weekdayText,
@@ -499,20 +505,24 @@ class SummaryFlightCard extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-            ),
+            )),
           ),
         Positioned(
-          left: frame.dateLeft,
+          left: 0,
+          right: 0,
           top: frame.dateTop,
-          child: Text(
-            frame.dateText,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              color: ink,
-              fontSize: frame.dateFontSize,
-              fontWeight: frame.dateWeight,
-              height: 1.15,
+          child: _FlightAlignedText(
+            centerFactor: frame.dateCenterFactor,
+            child: Text(
+              frame.dateText,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: ink,
+                fontSize: frame.dateFontSize,
+                fontWeight: frame.dateWeight,
+                height: 1.15,
+              ),
             ),
           ),
         ),
@@ -621,6 +631,46 @@ class SummaryFlightCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(frame.radius),
         child: content,
+      ),
+    );
+  }
+}
+
+/// 在「水平居中」与「靠左 14dp」之间连续移动的文字容器。
+///
+/// ## 为什么不用算好的 left
+///
+/// 文字宽度只有真实排版知道。曾经用「CJK 1em / 其余 0.55em」粗估，实测 `03/20`
+/// 在 8.5sp 下真实宽 **43.75**、估算 23.375 —— 居中偏 **10.19px**，在 50dp 的
+/// 星期格里一眼能看出文字不在格子的字上。
+///
+/// 这里改成：左内边距随 [centerFactor] 从 14（终点）变到 0（起点），
+/// 内层用 `Align` 在**剩下的宽度**里居中/靠左，让 Flutter 用真实排版宽度摆。
+/// 两端都精确，中间连续。
+class _FlightAlignedText extends StatelessWidget {
+  const _FlightAlignedText({
+    required this.centerFactor,
+    required this.child,
+  });
+
+  /// 1 = 在整张卡里居中；0 = 距左边 14dp（摘要卡的内边距）。
+  final double centerFactor;
+
+  final Widget child;
+
+  /// 摘要卡的内边距（`Padding(fromLTRB(14,12,14,14))` 的左右值）。
+  static const double _endInset = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = centerFactor.clamp(0.0, 1.0);
+    return Padding(
+      // 两端都留出终点内边距，只在中间连续收回：这样「居中」时左右对称，
+      // 「靠左」时正好落在 14dp 上，中途不会出现文字突然贴边。
+      padding: EdgeInsets.symmetric(horizontal: _endInset * f),
+      child: Align(
+        alignment: Alignment(f * 2 - 1, 0),
+        child: child,
       ),
     );
   }

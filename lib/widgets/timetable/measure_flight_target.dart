@@ -77,8 +77,19 @@ class _MeasureFlightTargetState extends State<MeasureFlightTarget> {
   void didUpdateWidget(covariant MeasureFlightTarget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.revision != _lastRevision) {
-      // 新一轮：允许重量，但等下一次 layout 自己触发（此刻还没布局）。
+      // 新一轮：允许重量。
       _reported = false;
+      // ⚠️ **必须主动要求重排**，不能只等「下一次 layout 自己触发」。
+      //
+      // `performLayout` 只在自身需要重新布局时才会被调用。父级（`SliverList`
+      // 的某一项 / `Stack` 的某个 `Positioned`）位置变了但**约束没变**时，
+      // Flutter 会跳过这次的 `layout`，于是 `_onMeasured` 根本不执行 ——
+      // 「代数变了就重量」这条约定等于空转。
+      //
+      // 实测（2026-10-23）：位置从 top=100 移到 top=40、revision 加一，
+      // 仍然上报旧矩形 100。真实后果是：用户在日视图**滚动过议程列表**再关闭，
+      // 卡片飞向上一次的位置。
+      (context.findRenderObject() as RenderBox?)?.markNeedsLayout();
     }
   }
 

@@ -125,18 +125,37 @@ class FlightTransitionGlue {
   /// 宁可重影一帧，也不要整门课消失。
   bool Function(String courseId) hasFlightTargetFor = (_) => false;
 
-  /// 新一轮转场开始（forward 起飞）：通知宿主 bump 终点代数。
+  /// 新一轮转场开始（**升空与收起都算**）：通知宿主 bump 终点代数。
   ///
   /// 为什么挂在 status 上而不是挂在点击处：点击 → 状态来不及更新（面板还没
-  /// 布局，量不到终点），而 `forward` 状态跃迁就发生在「面板即将布局」那一刻。
+  /// 布局，量不到终点），而状态跃迁就发生在「面板即将布局」那一刻。
+  ///
+  /// ⚠️ **必须连 `reverse` 一起 bump**（2026-10-23 审核发现）。
+  ///
+  /// 旧实现只认 `forward`：关闭转场沿用的是「打开那一轮」的终点代数。而
+  /// `MeasureFlightTarget` 在「尺寸没变 + 代数没变」时会**直接早退**（位置漂移
+  /// 不触发重量，这是为了别在滚动时每帧重建首页）。两件事叠起来的后果：
+  ///
+  /// 用户在日视图里**滚动过议程列表**（终点位置早已改变）再关闭 → 缓存里还是
+  /// 打开那一刻的旧矩形 → 卡片朝一个空位置飞。而且因为代数没变，重测也被早退
+  /// 挡掉，连"下一帧自己好起来"的机会都没有。
+  ///
+  /// 收起时 bump 一次，代价是重测一遍终点（每张卡一次布局读矩形），换来的是
+  /// 关闭动画落点正确。
   void Function()? onTransitionStart;
 
   void _onStatus(AnimationStatus status) {
     if (_disposed) {
       return;
     }
-    // 起飞那一刻开新代数：上一轮的终点全部作废（换日后再开，旧位置不能复用）。
-    if (status == AnimationStatus.forward) {
+    // 起飞与收起都开新代数：上一轮的终点全部作废。
+    //
+    // - `forward`：换日后再开，旧位置不能复用（原有逻辑）。
+    // - `reverse`：日视图里可能滚动过，终点位置已经变了（2026-10-23 补）。
+    //
+    // `completed` / `dismissed` 不动代数：那时转场已经结束，没有飞行卡要落点。
+    if (status == AnimationStatus.forward ||
+        status == AnimationStatus.reverse) {
       onTransitionStart?.call();
     }
     // 四个状态都算「跃迁」：forward/reverse 是转场开始，completed/dismissed
