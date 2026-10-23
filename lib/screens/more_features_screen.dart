@@ -35,6 +35,16 @@ import 'more_features_search_overlay.dart';
 /// 3. **过可见性门控**。调试页/演示页/测试台靠各条目自己的 `visible()`
 ///    挡在正式版外，本页不额外维护排除表。
 ///
+/// ## 2026-10-23 补漏（第三版的漏洞）
+///
+/// 第三版把手写清单（34 条）当成「完整」，但清单没有守卫，漏了也不报错。
+/// 用户当场发现**统计页**不在，顺着对账又找出 3 个同类漏项：
+/// `statistics`（统计）、`courseConflict`（冲突详情）、`update`（版本更新）、
+/// `settings`（设置首页）。教训不是「再数一遍」，而是**手写清单必须有
+/// 一条自动对账守卫**：凡目录里「打开的是整页」的条目（排除创建/弹层动作
+/// 与本页自身）都必须在本页出现，漏一条测试立即红。见
+/// `test/services/more_features_wiring_test.dart` 的同名用例。
+///
 /// 与前两版最大的不同：**不再用「别处有没有入口」当判据**。那条判据的失败
 /// 方式无从预料——它把一个真实存在、用户点名要的页面（外观编辑）判成了
 /// 「有入口、不必列」，因为代码无法衡量「三层跳转」和「一行入口」的体感差别。
@@ -329,6 +339,12 @@ List<MoreFeatureGroup> buildMoreFeatureGroups(
           'overview',
           keywords: const ['课程', '简称', '颜色'],
         ),
+        // 课程统计：2026-10-23 补。这一条是用户当场发现的漏项——本页号称
+        // 「完整索引」，却把统计页漏了，而它唯一的常规入口是首页八宫格
+        // （`statistics` 在 `HomeGridMenu.defaultActions` 里），用户把它从
+        // 八宫格删掉后就真的没地方去了。设置里的「统计设置」只是它的配置
+        // 子页，不是统计页本身。
+        item('statistics', keywords: const ['统计', '排行', '图表', '分析']),
         item(
           'profiles',
           subtitle: activeProfileName,
@@ -350,6 +366,10 @@ List<MoreFeatureGroup> buildMoreFeatureGroups(
         item('exams', keywords: const ['考试', '倒计时', '成绩']),
         item('tasks', keywords: const ['作业', '待办', '截止']),
         item('scheduleList', keywords: const ['日程', '非课程']),
+        // 冲突详情：2026-10-23 补。唯一入口是课程总览页的冲突提示条
+        // （`conflictScheduleCount > 0` 才渲染），而总览页自己也要两层跳转
+        // 才摸到——「两层断裂」等于没有。它又是修课表冲突的唯一去处。
+        item('courseConflict', keywords: const ['冲突', '撞课', '时间重叠']),
         item('monthView', keywords: const ['日历', '整月', '哪天']),
         item('pickupCode', keywords: const ['快递', '取件', '包裹']),
       ].whereType<MoreFeatureItem>().toList(growable: false),
@@ -395,6 +415,10 @@ List<MoreFeatureGroup> buildMoreFeatureGroups(
         item('homeNavigation', keywords: const ['底栏', '八宫格', '菜单']),
         item('generalSettings', keywords: const ['语言', '动画', '触感']),
         item('statisticsSettings', keywords: const ['统计', '算不算']),
+        // 设置首页：一整页、且是「改 App 行为」的总入口。此前不收是因为
+        // 它被钉在八宫格/底栏、体感一定摸得到；但本页定位是**完整索引**，
+        // 索引不全才是缺陷。它与本页不构成自指（本页是 'more'，已排除）。
+        item('settings', keywords: const ['设置', '配置', '偏好']),
       ].whereType<MoreFeatureItem>().toList(growable: false),
     ),
 
@@ -415,6 +439,9 @@ List<MoreFeatureGroup> buildMoreFeatureGroups(
     MoreFeatureGroup(
       title: l10n.settingsAboutSectionTitle,
       items: [
+        // 版本更新：2026-10-23 补。它是一整页（检查更新 / 下载 / 进度），
+        // 别处只有「关于 → 版本更新」一行；关于页本身又藏在设置里。
+        item('update', keywords: const ['更新', '升级', '版本', '下载']),
         item('aboutApp', keywords: const ['版本', '信息']),
         item('userGuide', keywords: const ['教程', '新手']),
         item('diagnosticsSettings', keywords: const ['日志', '排查', '自检']),
@@ -422,6 +449,10 @@ List<MoreFeatureGroup> buildMoreFeatureGroups(
         item('feedback', keywords: const ['意见', '问题']),
         item('openSourceLicenses', keywords: const ['许可', '开源']),
         item('support', keywords: const ['捐赠', '请喝咖啡']),
+        // 内存监控：仅调试/性能版可见，正式版由条目自己的 visible() 挡掉
+        // （判据三）。收进来是为了让「调试版的全部功能页」同样完整——
+        // 门控交给 visible()，本页不另维护排除表。
+        item('memoryStats', keywords: const ['内存', '性能', '调试']),
       ].whereType<MoreFeatureItem>().toList(growable: false),
     ),
   ];

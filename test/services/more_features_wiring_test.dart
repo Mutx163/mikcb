@@ -167,6 +167,74 @@ void main() {
     });
   });
 
+  group('完整索引守卫：目录里的每个整页目的地都必须出现在本页', () {
+    // 2026-10-23 补。第三版把手写清单当「完整」，但手写清单没有守卫：
+    // 统计页、冲突详情、版本更新、设置首页都漏了，页面上只是少一行、不报错，
+    // 用户当场才发现。这条用例把「漏」变成会红的错误。
+    test('目录里无遗漏：整页目的地集合 ⊆ 本页索引集合', () {
+      final source = catalogFile.readAsStringSync();
+      final blocks = source.split(
+        RegExp(r'\n  (?=HomeMenuEntry\(|_settingsSubpageEntry\()'),
+      );
+      const actions = <String>{
+        'addCourse',
+        'addExam',
+        'addTask',
+        'addScheduleItem',
+        'courseRecolor',
+        'shareTimetable',
+        'quickSwitchTimetable',
+      };
+      final pageDestIds = <String>{};
+      for (final block in blocks) {
+        final idMatch = RegExp(r"id:\s*'([^']+)'").firstMatch(block);
+        if (idMatch == null || !block.contains('title:')) {
+          continue;
+        }
+        final id = idMatch.group(1)!;
+        final isPage =
+            block.contains("homePage('") ||
+            block.contains('pushHomeMenuUpdateEntry') ||
+            block.contains('HomeNavigationSettingsScreen()');
+        if (!isPage || actions.contains(id) || id == 'more') {
+          continue;
+        }
+        pageDestIds.add(id);
+      }
+      expect(pageDestIds, isNotEmpty, reason: '没解析出任何整页目的地，守卫空转');
+      // 过 visible() 门控：正式版里 memoryStats 这类被 visible() 挡掉的条目
+      // 本就不该在清单里（清单已收录，但运行时被丢弃）。守卫要比的是
+      // 「正式版可见的整页目的地」与「本页运行时真的列出的条目」。
+      final visibleIds = {
+        for (final entry in kHomeMenuCatalog)
+          if (entry.visible()) entry.id,
+      };
+      final missing = pageDestIds.intersection(visibleIds).difference(ids());
+      expect(
+        missing,
+        isEmpty,
+        reason: '这些整页入口没出现在「全部功能」页里（用户找不到）：$missing。'
+            '要么补进 buildMoreFeatureGroups，要么确认是动作并加进 actions 排除集。',
+      );
+    });
+
+    test('用户点名的统计页与几个同类漏项都在清单里', () {
+      final present = ids();
+      for (final id in const [
+        'statistics',
+        'courseConflict',
+        'update',
+        'settings',
+      ]) {
+        expect(
+          present.contains(id),
+          isTrue,
+          reason: '$id 应当出现在「全部功能」页（2026-10-23 补漏）',
+        );
+      }
+    });
+  });
+
   group('判据三：过可见性门控', () {
     test('只收 visible() 为真的条目', () {
       for (final item in groups().expand((group) => group.items)) {
