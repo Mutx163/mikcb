@@ -264,7 +264,7 @@ class TimetableGlassDockLayer extends StatelessWidget {
         child: roundButtonIcon,
       ),
     );
-    return SizedBox(
+    final face = SizedBox(
       width: 56,
       height: 56,
       child: Semantics(
@@ -305,6 +305,16 @@ class TimetableGlassDockLayer extends StatelessWidget {
           ),
         ),
       ),
+    );
+    // 圆钮与药丸共用同一套阴影系统（2026-10-23 用户口径：「右边独立的圈圈
+    // 也要加上底栏一样的阴影」）。此前只有药丸在 [_dockPillSurface] 里垫了
+    // [HyperosGlassShadow.compactShadow]，圆钮是一块裸玻璃 —— 纯白主题无壁纸
+    // 时两者并排，药丸有边界、圆钮与页面底糊成一片。
+    return HyperosGlassShadow.wrap(
+      borderRadius: BorderRadius.circular(radius),
+      shadowOverride: HyperosGlassShadow.compactShadow,
+      shadowKey: const ValueKey('glass-dock-round-shadow'),
+      child: face,
     );
   }
 }
