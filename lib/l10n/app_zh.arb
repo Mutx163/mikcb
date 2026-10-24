@@ -7056,5 +7056,44 @@
   "statisticsSessionPhaseHoliday": "假期",
   "statisticsSessionPhaseUndated": "日期未定",
   "statisticsSessionNoCalendarHint": "没设开学日期，只能按周次列出",
-  "statisticsSessionEmpty": "这门课没有排课"
+  "statisticsSessionEmpty": "这门课没有排课",
+  "scheduleQuickPresetSectionTitle": "快捷模板",
+  "scheduleQuickPresetSectionSubtitle": "选一个，标题和时长一并填好",
+  "scheduleQuickPresetGroupMeeting": "组会",
+  "scheduleQuickPresetLecture": "讲座",
+  "scheduleQuickPresetMeeting": "会议",
+  "scheduleQuickPresetDefense": "答辩",
+  "scheduleQuickPresetInterview": "面试",
+  "scheduleQuickPresetDining": "聚餐",
+  "scheduleQuickPresetWorkout": "运动",
+  "scheduleQuickPresetStudy": "自习",
+  "scheduleQuickPresetClinic": "就诊",
+  "scheduleQuickPresetCommute": "出行",
+  "scheduleQuickPresetHoursOnly": "{hours} 小时",
+  "@scheduleQuickPresetHoursOnly": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleQuickPresetMinutesOnly": "{minutes} 分钟",
+  "@scheduleQuickPresetMinutesOnly": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleQuickPresetHoursMinutes": "{hours} 小时 {minutes} 分",
+  "@scheduleQuickPresetHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

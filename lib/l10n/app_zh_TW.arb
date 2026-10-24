@@ -6898,5 +6898,20 @@
   "statisticsSessionPhaseHoliday": "假期",
   "statisticsSessionPhaseUndated": "日期未定",
   "statisticsSessionNoCalendarHint": "沒設開學日期，只能按週次列出",
-  "statisticsSessionEmpty": "這門課沒有排課"
+  "statisticsSessionEmpty": "這門課沒有排課",
+  "scheduleQuickPresetSectionTitle": "快速範本",
+  "scheduleQuickPresetSectionSubtitle": "選一個，標題和時長一併填好",
+  "scheduleQuickPresetGroupMeeting": "組會",
+  "scheduleQuickPresetLecture": "講座",
+  "scheduleQuickPresetMeeting": "會議",
+  "scheduleQuickPresetDefense": "答辯",
+  "scheduleQuickPresetInterview": "面試",
+  "scheduleQuickPresetDining": "聚餐",
+  "scheduleQuickPresetWorkout": "運動",
+  "scheduleQuickPresetStudy": "自習",
+  "scheduleQuickPresetClinic": "就診",
+  "scheduleQuickPresetCommute": "出行",
+  "scheduleQuickPresetHoursOnly": "{hours} 小時",
+  "scheduleQuickPresetMinutesOnly": "{minutes} 分鐘",
+  "scheduleQuickPresetHoursMinutes": "{hours} 小時 {minutes} 分"
 }

@@ -6723,5 +6723,20 @@
   "statisticsSessionPhaseHoliday": "休日",
   "statisticsSessionPhaseUndated": "日付なし",
   "statisticsSessionNoCalendarHint": "学期開始日が未設定のため、週番号のみで表示します",
-  "statisticsSessionEmpty": "この授業にコマがありません"
+  "statisticsSessionEmpty": "この授業にコマがありません",
+  "scheduleQuickPresetSectionTitle": "クイックテンプレート",
+  "scheduleQuickPresetSectionSubtitle": "選ぶとタイトルと所要時間が入ります",
+  "scheduleQuickPresetGroupMeeting": "ゼミ",
+  "scheduleQuickPresetLecture": "講演",
+  "scheduleQuickPresetMeeting": "会議",
+  "scheduleQuickPresetDefense": "発表会",
+  "scheduleQuickPresetInterview": "面接",
+  "scheduleQuickPresetDining": "食事",
+  "scheduleQuickPresetWorkout": "運動",
+  "scheduleQuickPresetStudy": "自習",
+  "scheduleQuickPresetClinic": "通院",
+  "scheduleQuickPresetCommute": "移動",
+  "scheduleQuickPresetHoursOnly": "{hours} 時間",
+  "scheduleQuickPresetMinutesOnly": "{minutes} 分",
+  "scheduleQuickPresetHoursMinutes": "{hours} 時間 {minutes} 分"
 }

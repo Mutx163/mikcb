@@ -11888,4 +11888,55 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get statisticsSessionEmpty => '이 과목에는 수업이 없습니다';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => '빠른 템플릿';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle => '하나 고르면 제목과 소요 시간이 채워집니다';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => '세미나';
+
+  @override
+  String get scheduleQuickPresetLecture => '강연';
+
+  @override
+  String get scheduleQuickPresetMeeting => '회의';
+
+  @override
+  String get scheduleQuickPresetDefense => '발표';
+
+  @override
+  String get scheduleQuickPresetInterview => '면접';
+
+  @override
+  String get scheduleQuickPresetDining => '식사';
+
+  @override
+  String get scheduleQuickPresetWorkout => '운동';
+
+  @override
+  String get scheduleQuickPresetStudy => '자습';
+
+  @override
+  String get scheduleQuickPresetClinic => '진료';
+
+  @override
+  String get scheduleQuickPresetCommute => '이동';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours시간';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes분';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours시간 $minutes분';
+  }
 }

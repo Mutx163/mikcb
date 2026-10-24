@@ -20999,6 +20999,96 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'这门课没有排课'**
   String get statisticsSessionEmpty;
+
+  /// No description provided for @scheduleQuickPresetSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷模板'**
+  String get scheduleQuickPresetSectionTitle;
+
+  /// No description provided for @scheduleQuickPresetSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选一个，标题和时长一并填好'**
+  String get scheduleQuickPresetSectionSubtitle;
+
+  /// No description provided for @scheduleQuickPresetGroupMeeting.
+  ///
+  /// In zh, this message translates to:
+  /// **'组会'**
+  String get scheduleQuickPresetGroupMeeting;
+
+  /// No description provided for @scheduleQuickPresetLecture.
+  ///
+  /// In zh, this message translates to:
+  /// **'讲座'**
+  String get scheduleQuickPresetLecture;
+
+  /// No description provided for @scheduleQuickPresetMeeting.
+  ///
+  /// In zh, this message translates to:
+  /// **'会议'**
+  String get scheduleQuickPresetMeeting;
+
+  /// No description provided for @scheduleQuickPresetDefense.
+  ///
+  /// In zh, this message translates to:
+  /// **'答辩'**
+  String get scheduleQuickPresetDefense;
+
+  /// No description provided for @scheduleQuickPresetInterview.
+  ///
+  /// In zh, this message translates to:
+  /// **'面试'**
+  String get scheduleQuickPresetInterview;
+
+  /// No description provided for @scheduleQuickPresetDining.
+  ///
+  /// In zh, this message translates to:
+  /// **'聚餐'**
+  String get scheduleQuickPresetDining;
+
+  /// No description provided for @scheduleQuickPresetWorkout.
+  ///
+  /// In zh, this message translates to:
+  /// **'运动'**
+  String get scheduleQuickPresetWorkout;
+
+  /// No description provided for @scheduleQuickPresetStudy.
+  ///
+  /// In zh, this message translates to:
+  /// **'自习'**
+  String get scheduleQuickPresetStudy;
+
+  /// No description provided for @scheduleQuickPresetClinic.
+  ///
+  /// In zh, this message translates to:
+  /// **'就诊'**
+  String get scheduleQuickPresetClinic;
+
+  /// No description provided for @scheduleQuickPresetCommute.
+  ///
+  /// In zh, this message translates to:
+  /// **'出行'**
+  String get scheduleQuickPresetCommute;
+
+  /// No description provided for @scheduleQuickPresetHoursOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'{hours} 小时'**
+  String scheduleQuickPresetHoursOnly(int hours);
+
+  /// No description provided for @scheduleQuickPresetMinutesOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'{minutes} 分钟'**
+  String scheduleQuickPresetMinutesOnly(int minutes);
+
+  /// No description provided for @scheduleQuickPresetHoursMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'{hours} 小时 {minutes} 分'**
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes);
 }
 
 class _AppLocalizationsDelegate

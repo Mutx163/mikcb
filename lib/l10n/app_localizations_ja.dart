@@ -11844,4 +11844,55 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statisticsSessionEmpty => 'この授業にコマがありません';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => 'クイックテンプレート';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle => '選ぶとタイトルと所要時間が入ります';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => 'ゼミ';
+
+  @override
+  String get scheduleQuickPresetLecture => '講演';
+
+  @override
+  String get scheduleQuickPresetMeeting => '会議';
+
+  @override
+  String get scheduleQuickPresetDefense => '発表会';
+
+  @override
+  String get scheduleQuickPresetInterview => '面接';
+
+  @override
+  String get scheduleQuickPresetDining => '食事';
+
+  @override
+  String get scheduleQuickPresetWorkout => '運動';
+
+  @override
+  String get scheduleQuickPresetStudy => '自習';
+
+  @override
+  String get scheduleQuickPresetClinic => '通院';
+
+  @override
+  String get scheduleQuickPresetCommute => '移動';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours 時間';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes 分';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours 時間 $minutes 分';
+  }
 }

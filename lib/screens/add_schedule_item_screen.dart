@@ -6,6 +6,8 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/schedule_quick_presets.dart';
+import '../l10n/schedule_preset_localizer.dart';
 import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
@@ -15,6 +17,7 @@ import '../utils/hex_color.dart';
 import '../widgets/course_palette_sheet.dart';
 import '../widgets/miuix_date_picker_sheet.dart';
 import '../widgets/miuix_time_picker_sheet.dart';
+import '../widgets/schedule_quick_preset_rail.dart';
 import '../ui/hyperos/hyperos.dart';
 
 class AddScheduleItemScreen extends StatefulWidget {
@@ -39,6 +42,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   static const double _fieldSpacing = 8;
 
   final _formKey = GlobalKey<FormState>();
+  /// 标题字段的 FormField 状态。
+  ///
+  /// 目前只用来在测试里定位标题字段；**不要**指望靠它去同步值：套用快捷模板
+  /// 时写 `_titleController.text`，FormField 的 value 会经 `onChanged` 自动
+  /// 跟上（已实测）。多写一句 `didChange` 是死代码。
+  final _titleFieldKey = GlobalKey<FormFieldState<String>>();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _noteController = TextEditingController();
@@ -56,6 +65,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   bool _notificationPermission = true;
   bool _didResolveSeriesRoot = false;
   bool _dateWasExplicitlyEdited = false;
+
+  /// 最近一次套用的快捷模板 id（null = 没套用过）。
+  ///
+  /// 与「当前是否仍等于模板内容」是两件事，由 [_activePresetId] 区分：
+  /// 套用后用户又手改标题，这条记录还在，但不该再显示成「已选中」。
+  String? _appliedPresetId;
 
   bool get _isEditing => widget.scheduleItem != null;
   bool get _isOccurrenceEditing {
@@ -171,6 +186,10 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         child: HyperosListView(
           padding: const EdgeInsets.all(_pagePadding),
           children: [
+            if (_buildQuickPresetSection(l10n) case final Widget presets) ...[
+              presets,
+              const SizedBox(height: _sectionSpacing),
+            ],
             _buildScheduleEnabledSection(l10n),
             const SizedBox(height: _sectionSpacing),
             HyperosControlCard(
@@ -180,6 +199,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _withSpacing([
                     FormField<String>(
+                      key: _titleFieldKey,
                       initialValue: _titleController.text,
                       validator: (value) {
                         final title = (value ?? _titleController.text).trim();
@@ -195,7 +215,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                           hint: l10n.scheduleTitleHint,
                           helper: field.errorText,
                           textInputAction: TextInputAction.next,
-                          onChanged: field.didChange,
+                          // 标题被改掉之后快捷模板的选中态要跟着掉（判据在
+                          // `_activePresetId` 里读文本），所以这里必须触发重建。
+                          onChanged: (value) {
+                            field.didChange(value);
+                            setState(() {});
+                          },
                         );
                       },
                     ),
@@ -352,6 +377,90 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       ),
       style: hintStyle,
     );
+  }
+
+  /// 快捷模板区：标题 + 一行横向卡。
+  ///
+  /// 只在**新建**时出现。编辑已有日程时它的标题是用户自己写的，给一排
+  /// 「组会 / 讲座」去覆盖，等于把「改时间」的顺手一划变成一次误覆盖。
+  Widget? _buildQuickPresetSection(AppLocalizations l10n) {
+    if (_isEditing) {
+      return null;
+    }
+    return HyperosControlCard(
+      title: l10n.scheduleQuickPresetSectionTitle,
+      subtitle: l10n.scheduleQuickPresetSectionSubtitle,
+      edgeToEdge: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: ScheduleQuickPresetRail(
+          selectedPresetId: _activePresetId,
+          onPresetTap: _applyQuickPreset,
+        ),
+      ),
+    );
+  }
+
+  /// 当前仍然成立的模板 id：套用过、且标题没有被改掉。
+  ///
+  /// 只看 id 不够——用户套了「组会」然后把标题改成「和导师讨论课题」，
+  /// 那颗卡若仍显示选中，就在骗人：卡片说「你选的是组会」，标题却是别的内容。
+  /// 判据取标题正文而不是「之后是否编辑过」的标记位：把文本改回模板标题时，
+  /// 选中态应当自己回来。
+  String? get _activePresetId {
+    return scheduleQuickPresetActiveId(
+      AppLocalizations.of(context)!,
+      appliedId: _appliedPresetId,
+      currentTitle: _titleController.text,
+    );
+  }
+
+  /// 套用/取消套用一条模板。
+  ///
+  /// 只动三样：标题、起止时刻、颜色。**不动日期**——模板与哪一天无关。
+  /// 开始时刻也要「能不动就不动」：用户可能已经选好「今天下午三点开组会」，
+  /// 模板的职责是按活动类型补上时长，不是把时间挪走。只有当天塞不下这段
+  /// 时长时才整段前移（见 `resolveSchedulePresetWindow` 的注释）。
+  void _applyQuickPreset(ScheduleQuickPreset preset) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = scheduleQuickPresetTitle(l10n, preset.id);
+    if (title.isEmpty) {
+      return;
+    }
+    // 再点一次已选中的卡 = 取消套用。
+    //
+    // 只清标题，不把时间和颜色改回去：用户套用之后很可能又手动调过时间，
+    // 「取消选中」若把这些一并回滚，点一下等于撤销一大片，比不提供取消更糟。
+    if (_activePresetId == preset.id) {
+      setState(() {
+        _appliedPresetId = null;
+        _titleController.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _appliedPresetId = preset.id;
+      _titleController.text = title;
+      _selectedColor = preset.colorHex;
+      final window = resolveSchedulePresetWindow(
+        startMinutes: _asMinutes(_startTime),
+        durationMinutes: preset.durationMinutes,
+      );
+      _startTime = TimeOfDay(
+        hour: window.startMinutes ~/ 60,
+        minute: window.startMinutes % 60,
+      );
+      _endTime = TimeOfDay(
+        hour: window.endMinutes ~/ 60,
+        minute: window.endMinutes % 60,
+      );
+    });
+    // 为什么不用再手动 `didChange`：`HyperosTextField` 内部的 MiuixTextField
+    // 会在 text 变化时回调本字段的 `onChanged`，FormField 的 value 跟着同步
+    // （2026-10-24 用校验器探针实测：套用后 validator 收到的就是「聚餐」）。
+    // 反过来「只改 controller 不通知 FormField」这个担心在这里不成立，
+    // 别再加一行 `_titleFieldKey.currentState?.didChange(...)`——它是死代码。
   }
 
   /// 启用日程开关独立成卡，置于「日程信息」上方。

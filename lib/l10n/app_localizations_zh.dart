@@ -11521,6 +11521,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statisticsSessionEmpty => '这门课没有排课';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => '快捷模板';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle => '选一个，标题和时长一并填好';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => '组会';
+
+  @override
+  String get scheduleQuickPresetLecture => '讲座';
+
+  @override
+  String get scheduleQuickPresetMeeting => '会议';
+
+  @override
+  String get scheduleQuickPresetDefense => '答辩';
+
+  @override
+  String get scheduleQuickPresetInterview => '面试';
+
+  @override
+  String get scheduleQuickPresetDining => '聚餐';
+
+  @override
+  String get scheduleQuickPresetWorkout => '运动';
+
+  @override
+  String get scheduleQuickPresetStudy => '自习';
+
+  @override
+  String get scheduleQuickPresetClinic => '就诊';
+
+  @override
+  String get scheduleQuickPresetCommute => '出行';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours 小时';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes 分钟';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours 小时 $minutes 分';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -23079,6 +23130,57 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsSessionEmpty => '這門課沒有排課';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => '快速範本';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle => '選一個，標題和時長一併填好';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => '組會';
+
+  @override
+  String get scheduleQuickPresetLecture => '講座';
+
+  @override
+  String get scheduleQuickPresetMeeting => '會議';
+
+  @override
+  String get scheduleQuickPresetDefense => '答辯';
+
+  @override
+  String get scheduleQuickPresetInterview => '面試';
+
+  @override
+  String get scheduleQuickPresetDining => '聚餐';
+
+  @override
+  String get scheduleQuickPresetWorkout => '運動';
+
+  @override
+  String get scheduleQuickPresetStudy => '自習';
+
+  @override
+  String get scheduleQuickPresetClinic => '就診';
+
+  @override
+  String get scheduleQuickPresetCommute => '出行';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours 小時';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes 分鐘';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours 小時 $minutes 分';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -34638,4 +34740,55 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsSessionEmpty => '這門課沒有排課';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => '快速範本';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle => '選一個，標題和時長一併填好';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => '組會';
+
+  @override
+  String get scheduleQuickPresetLecture => '講座';
+
+  @override
+  String get scheduleQuickPresetMeeting => '會議';
+
+  @override
+  String get scheduleQuickPresetDefense => '答辯';
+
+  @override
+  String get scheduleQuickPresetInterview => '面試';
+
+  @override
+  String get scheduleQuickPresetDining => '聚餐';
+
+  @override
+  String get scheduleQuickPresetWorkout => '運動';
+
+  @override
+  String get scheduleQuickPresetStudy => '自習';
+
+  @override
+  String get scheduleQuickPresetClinic => '就診';
+
+  @override
+  String get scheduleQuickPresetCommute => '出行';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours 小時';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes 分鐘';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours 小時 $minutes 分';
+  }
 }

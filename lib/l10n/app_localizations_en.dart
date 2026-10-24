@@ -12187,4 +12187,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statisticsSessionEmpty => 'This course has no sessions';
+
+  @override
+  String get scheduleQuickPresetSectionTitle => 'Quick templates';
+
+  @override
+  String get scheduleQuickPresetSectionSubtitle =>
+      'Pick one to fill title and length';
+
+  @override
+  String get scheduleQuickPresetGroupMeeting => 'Seminar';
+
+  @override
+  String get scheduleQuickPresetLecture => 'Lecture';
+
+  @override
+  String get scheduleQuickPresetMeeting => 'Meeting';
+
+  @override
+  String get scheduleQuickPresetDefense => 'Defense';
+
+  @override
+  String get scheduleQuickPresetInterview => 'Interview';
+
+  @override
+  String get scheduleQuickPresetDining => 'Meal';
+
+  @override
+  String get scheduleQuickPresetWorkout => 'Workout';
+
+  @override
+  String get scheduleQuickPresetStudy => 'Study';
+
+  @override
+  String get scheduleQuickPresetClinic => 'Clinic';
+
+  @override
+  String get scheduleQuickPresetCommute => 'Commute';
+
+  @override
+  String scheduleQuickPresetHoursOnly(int hours) {
+    return '$hours hr';
+  }
+
+  @override
+  String scheduleQuickPresetMinutesOnly(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
+    return '$hours hr $minutes min';
+  }
 }
