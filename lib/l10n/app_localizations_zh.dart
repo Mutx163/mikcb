@@ -11526,9 +11526,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleQuickPresetSectionTitle => '快捷模板';
 
   @override
-  String get scheduleQuickPresetSectionSubtitle => '选一个，标题和时长一并填好';
-
-  @override
   String get scheduleQuickPresetGroupMeeting => '组会';
 
   @override
@@ -23133,9 +23130,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleQuickPresetSectionTitle => '快速範本';
-
-  @override
-  String get scheduleQuickPresetSectionSubtitle => '選一個，標題和時長一併填好';
 
   @override
   String get scheduleQuickPresetGroupMeeting => '組會';
@@ -34743,9 +34737,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleQuickPresetSectionTitle => '快速範本';
-
-  @override
-  String get scheduleQuickPresetSectionSubtitle => '選一個，標題和時長一併填好';
 
   @override
   String get scheduleQuickPresetGroupMeeting => '組會';

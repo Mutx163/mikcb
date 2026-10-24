@@ -11893,9 +11893,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleQuickPresetSectionTitle => '빠른 템플릿';
 
   @override
-  String get scheduleQuickPresetSectionSubtitle => '하나 고르면 제목과 소요 시간이 채워집니다';
-
-  @override
   String get scheduleQuickPresetGroupMeeting => '세미나';
 
   @override

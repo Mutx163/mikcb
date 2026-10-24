@@ -6900,7 +6900,6 @@
   "statisticsSessionNoCalendarHint": "학기 시작일이 없어 주차로만 표시합니다",
   "statisticsSessionEmpty": "이 과목에는 수업이 없습니다",
   "scheduleQuickPresetSectionTitle": "빠른 템플릿",
-  "scheduleQuickPresetSectionSubtitle": "하나 고르면 제목과 소요 시간이 채워집니다",
   "scheduleQuickPresetGroupMeeting": "세미나",
   "scheduleQuickPresetLecture": "강연",
   "scheduleQuickPresetMeeting": "회의",

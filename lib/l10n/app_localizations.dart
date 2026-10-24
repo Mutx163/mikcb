@@ -21006,12 +21006,6 @@ abstract class AppLocalizations {
   /// **'快捷模板'**
   String get scheduleQuickPresetSectionTitle;
 
-  /// No description provided for @scheduleQuickPresetSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'选一个，标题和时长一并填好'**
-  String get scheduleQuickPresetSectionSubtitle;
-
   /// No description provided for @scheduleQuickPresetGroupMeeting.
   ///
   /// In zh, this message translates to:

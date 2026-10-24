@@ -12192,10 +12192,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleQuickPresetSectionTitle => 'Quick templates';
 
   @override
-  String get scheduleQuickPresetSectionSubtitle =>
-      'Pick one to fill title and length';
-
-  @override
   String get scheduleQuickPresetGroupMeeting => 'Seminar';
 
   @override

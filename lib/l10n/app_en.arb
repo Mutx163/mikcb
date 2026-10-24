@@ -6903,7 +6903,6 @@
   "statisticsSessionNoCalendarHint": "No semester start date, so sessions are listed by week",
   "statisticsSessionEmpty": "This course has no sessions",
   "scheduleQuickPresetSectionTitle": "Quick templates",
-  "scheduleQuickPresetSectionSubtitle": "Pick one to fill title and length",
   "scheduleQuickPresetGroupMeeting": "Seminar",
   "scheduleQuickPresetLecture": "Lecture",
   "scheduleQuickPresetMeeting": "Meeting",

@@ -11849,9 +11849,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleQuickPresetSectionTitle => 'クイックテンプレート';
 
   @override
-  String get scheduleQuickPresetSectionSubtitle => '選ぶとタイトルと所要時間が入ります';
-
-  @override
   String get scheduleQuickPresetGroupMeeting => 'ゼミ';
 
   @override

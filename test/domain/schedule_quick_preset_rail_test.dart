@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/domain/schedule_quick_presets.dart';
 import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
@@ -172,10 +173,9 @@ void main() {
     );
   });
 
-  testWidgets('窄屏（360dp）下轨道右缘有渐隐提示，且第 4 张卡露头', (tester) async {
-    // 360dp 是本仓实测过的最小常见宽度（见 hyperos_tokens 的 400dp 口径讨论）。
-    // 这条钉的是「用户能看出右边还有东西」：十张卡只露 3 张时，若没有任何
-    // 延伸提示，剩下 7 张等于不存在。
+  testWidgets('窄屏（360dp）下十颗胶囊全部可见，不需要滑动', (tester) async {
+    // 用户反馈「按钮太大个、一屏多显示几个」——这条钉的就是那句话：
+    // 十项必须**全部在一屏内**，不能又变成「看到 4 个、剩下 6 个要滑」。
     await tester.binding.setSurfaceSize(const Size(360, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final provider = await createInitializedTestProvider(tester);
@@ -189,22 +189,64 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 按它自己的 Key 精确点名。早先按 `IgnorePointer` 找是错的：
-    // 树上别处也有 IgnorePointer，删掉渐隐后断言照样绿（反向验证抓到）。
+    // 换成 Wrap 之后不再有横向滚动容器：没有隐藏内容，也就不需要滑动提示。
     expect(
-      find.byKey(const Key('schedule-preset-more-hint')),
-      findsOneWidget,
-      reason: '窄屏下轨道右缘没有渐隐提示：用户看不出右边还有 7 张卡',
+      find.descendant(
+        of: find.byType(ScheduleQuickPresetRail),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsNothing,
+      reason: '模板区仍在横向滚动：说明十项没有一屏放完',
     );
 
-    // 第 4 张卡至少要在屏幕里露一点（不是完全在屏幕外）。
-    final fourth = find.byKey(const ValueKey('schedule-quick-preset-defense'));
-    expect(fourth, findsOneWidget);
-    final rect = tester.getRect(fourth);
+    for (final preset in kScheduleQuickPresets) {
+      final chip = find.byKey(ValueKey('schedule-quick-preset-${preset.id}'));
+      expect(chip, findsOneWidget, reason: '${preset.id} 的胶囊没渲染');
+      final rect = tester.getRect(chip);
+      expect(
+        rect.right,
+        lessThanOrEqualTo(360.0),
+        reason:
+            '${preset.id} 右边缘在 ${rect.right}，超出 360dp 屏宽：又要横滑才看得到',
+      );
+      expect(
+        rect.height,
+        lessThanOrEqualTo(36),
+        reason: '${preset.id} 高 ${rect.height}dp，仍接近旧版卡片的 100dp',
+      );
+    }
+  });
+
+  testWidgets('中文下十颗胶囊排成 2 行 5+5（密度钉在这里）', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const AddScheduleItemScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 按 top 分组：同一行的胶囊 y 相同。
+    final rows = <double, int>{};
+    for (final preset in kScheduleQuickPresets) {
+      final r = tester.getRect(
+        find.byKey(ValueKey('schedule-quick-preset-${preset.id}')),
+      );
+      rows[r.top] = (rows[r.top] ?? 0) + 1;
+    }
+
+    // 钉 5+5 而不是「≤4 行」：颗宽 65 时只能每行 4 颗、变成 4+4+2，末行
+    // 两颗孤零零挂在左边，看起来像没排完。压到 62 才让 10 被 5 整除。
+    // 中文字宽不受字体族影响（方块字），所以这个形状在真机与测试环境一致。
     expect(
-      rect.left,
-      lessThan(360),
-      reason: '第 4 张卡的左边缘已在屏幕外（${rect.left}）：没有任何「还能滑」的线索',
+      rows.values.toList(),
+      [5, 5],
+      reason: '中文排布变成 ${rows.values.toList()}（期望 5+5）：密度被改坏了',
     );
   });
 

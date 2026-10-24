@@ -389,10 +389,11 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     }
     return HyperosControlCard(
       title: l10n.scheduleQuickPresetSectionTitle,
-      subtitle: l10n.scheduleQuickPresetSectionSubtitle,
-      edgeToEdge: true,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      // 说明行去掉：区块标题「快捷模板」加十颗带图标的胶囊已经说清它是
+      // 什么；「选一个，标题和时长一并填好」属于解释操作方式——界面本身
+      // 就在演示这件事，写出来只占一行高度（COPY-STYLE 里过程描述优先级
+      // 最低）。腾出的高度换第 4 颗胶囊。
+      child: HyperosControlCardInset(
         child: ScheduleQuickPresetRail(
           selectedPresetId: _activePresetId,
           onPresetTap: _applyQuickPreset,
