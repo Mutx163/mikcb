@@ -73,6 +73,15 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
   /// 情侣空闲摘要（需读 State 的展开态，故用回调构造）。
   final Widget Function(Color ink)? sharedFreeSummaryBuilder;
 
+  /// 日期标题**以下**那整块（计数行 / 状态与考试行 / 情侣空闲块）构建完成时回调。
+  ///
+  /// 转场中的「飞行摘要卡」要用**同一份**：它自己复刻一套的话，落定那一帧会
+  /// 「多出几个胶囊」（真卡有「X 节日程」、进行中、冲突、考试、情侣空闲，
+  /// 而飞行卡只画了计数）。复刻一套还迟早会跟真卡分叉。
+  ///
+  /// 只在**正在打开的那一页**传（翻页器同时挂三页，都回调会互相覆盖）。
+  final ValueChanged<Widget>? onLowerSectionBuilt;
+
   const TimetableDayViewSummaryCard({
     super.key,
     required this.surfaceKey,
@@ -91,6 +100,7 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     required this.onClose,
     this.cardRect,
     this.sharedFreeSummaryBuilder,
+    this.onLowerSectionBuilt,
   });
 
   @override
@@ -157,8 +167,6 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
     );
     final summaryInk = resolvedInk.ink;
     final summaryMutedInk = resolvedInk.mutedInk;
-    final countBadgeColor = summaryInk.withValues(alpha: 0.10);
-    final countBadgeTextColor = summaryMutedInk;
     final sharedFreeSummary = sharedFreeSummaryBuilder?.call(summaryInk);
     return DayViewAgendaSurface(
       surfaceKey: surfaceKey,
@@ -253,108 +261,55 @@ class TimetableDayViewSummaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+            SummaryCardLowerSection(
+              countLabel: courseCount > 0
+                  ? l10n.courseCountSummary(courseCount)
+                  : scheduleCount > 0
+                  ? l10n.scheduleCountSummary(scheduleCount)
+                  : taskCount > 0
+                  ? l10n.dayTaskBandCountSummary(taskCount)
+                  : l10n.courseCountSummary(0),
+              scheduleLabel: (scheduleCount > 0 && courseCount > 0)
+                  ? l10n.scheduleCountSummary(scheduleCount)
+                  : null,
+              agendaRangeLabel: firstAgenda == null
+                  ? null
+                  : '${l10n.classStartsAtLabel(firstAgenda.startTime)} · '
+                        '${l10n.classEndsAtLabel(lastAgenda!.endTime)}',
+              statusChips: <SummaryChipSpec>[
+                if (currentCourse != null)
+                  SummaryChipSpec(
+                    icon: Icons.bolt_rounded,
+                    text: '${l10n.ongoingCourseBadge} · ${currentCourse!.name}',
+                    accentColor: colorScheme.primary,
                   ),
-                  decoration: BoxDecoration(
-                    color: countBadgeColor,
-                    borderRadius: BorderRadius.circular(7),
+                if (conflictCount > 0)
+                  SummaryChipSpec(
+                    icon: Icons.warning_amber_rounded,
+                    text: l10n.conflictCountLabel(conflictCount),
+                    accentColor: colorScheme.error,
                   ),
-                  child: Text(
-                    // 三种日子各说各话：有课说门课、无课有日程说日程、
-                    // 只有作业说作业（否则会显示「0 门课」，与「整天没事」
-                    // 无法区分）。三者皆无才是「0 门课」。
-                    courseCount > 0
-                        ? l10n.courseCountSummary(courseCount)
-                        : scheduleCount > 0
-                        ? l10n.scheduleCountSummary(scheduleCount)
-                        : taskCount > 0
-                        ? l10n.dayTaskBandCountSummary(taskCount)
-                        : l10n.courseCountSummary(0),
-                    style: foruiTheme.typography.body.xs2.copyWith(
-                      color: countBadgeTextColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                if (nonCurrentWeekCourseCount > 0)
+                  SummaryChipSpec(
+                    icon: Icons.visibility_rounded,
+                    text:
+                        '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
+                  ),
+                ...dayExams.map(
+                  (exam) => SummaryChipSpec(
+                    icon: Icons.school_outlined,
+                    text:
+                        '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
+                    accentColor: colorScheme.error,
                   ),
                 ),
-                if (scheduleCount > 0 && courseCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: summaryInk.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: Text(
-                      l10n.scheduleCountSummary(scheduleCount),
-                      style: foruiTheme.typography.body.xs2.copyWith(
-                        color: summaryMutedInk,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                if (firstAgenda != null)
-                  Text(
-                    '${l10n.classStartsAtLabel(firstAgenda.startTime)} · ${l10n.classEndsAtLabel(lastAgenda!.endTime)}',
-                    style: foruiTheme.typography.body.xs2.copyWith(
-                      color: summaryMutedInk,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
               ],
+              bottomBlock: sharedFreeSummary,
+              ink: summaryInk,
+              mutedInk: summaryMutedInk,
+              // 转场中的飞行卡复用**同一份**（见 [onLowerSectionBuilt]）。
+              onBuilt: onLowerSectionBuilt,
             ),
-            if (currentCourse != null ||
-                conflictCount > 0 ||
-                nonCurrentWeekCourseCount > 0 ||
-                dayExams.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  if (currentCourse != null)
-                    _SummaryChip(
-                      icon: Icons.bolt_rounded,
-                      text:
-                          '${l10n.ongoingCourseBadge} · ${currentCourse!.name}',
-                      accentColor: colorScheme.primary,
-                    ),
-                  if (conflictCount > 0)
-                    _SummaryChip(
-                      icon: Icons.warning_amber_rounded,
-                      text: l10n.conflictCountLabel(conflictCount),
-                      accentColor: colorScheme.error,
-                    ),
-                  if (nonCurrentWeekCourseCount > 0)
-                    _SummaryChip(
-                      icon: Icons.visibility_rounded,
-                      text:
-                          '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
-                    ),
-                  ...dayExams.map(
-                    (exam) => _SummaryChip(
-                      icon: Icons.school_outlined,
-                      text:
-                          '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
-                      accentColor: colorScheme.error,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            if (sharedFreeSummary != null) ...[
-              const SizedBox(height: 12),
-              sharedFreeSummary,
-            ],
           ],
         ),
       ),
@@ -413,6 +368,132 @@ SummaryCardInk resolveSummaryCardInk({
     ink: ink,
     mutedInk: homePageOverWallpaperMutedInk(ink),
   );
+}
+
+/// 摘要卡里一个胶囊的内容（图标 / 文案 / 强调色）。
+class SummaryChipSpec {
+  const SummaryChipSpec({
+    required this.icon,
+    required this.text,
+    this.accentColor,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color? accentColor;
+}
+
+/// 摘要卡**日期标题以下**的整块内容（计数行 / 状态与考试行 / 情侣空闲块）。
+///
+/// ## 为什么必须两端共用一份
+///
+/// 转场中的「飞行摘要卡」曾经自己只画了计数胶囊，而真卡还有「X 节日程」、
+/// 进行中、冲突、非本周、考试、情侣空闲 —— 落定那一帧这些块**凭空冒出来**。
+///
+/// 各自复刻一套还迟早会分叉（真卡加一个胶囊，飞行卡就漏一个）。所以这里收成
+/// 一个组件：真卡直接用它，飞行卡通过 [TimetableDayViewSummaryCard
+/// .onLowerSectionBuilt] 拿到**同一个 widget 实例**画进自己的卡片里。
+///
+/// ## 布局口径
+///
+/// 这一段完全靠 `Wrap` 自己排，没有写死的坐标 —— 所以飞行卡只要给它**终点宽度**
+/// 和正确的顶边，内部排布就与真卡逐像素一致（不会出现「中途换个行」）。
+class SummaryCardLowerSection extends StatelessWidget {
+  const SummaryCardLowerSection({
+    super.key,
+    required this.countLabel,
+    required this.ink,
+    required this.mutedInk,
+    this.scheduleLabel,
+    this.agendaRangeLabel,
+    this.statusChips = const <SummaryChipSpec>[],
+    this.bottomBlock,
+    this.onBuilt,
+  });
+
+  /// 计数胶囊的文案（「3 门课」/「2 节日程」/「1 个作业」）。
+  final String countLabel;
+
+  /// 「X 节日程」，null = 不显示（只有「有课且有日程」才显示）。
+  final String? scheduleLabel;
+
+  /// 「08:00 开始 · 09:40 结束」，null = 当天没有议程条目。
+  final String? agendaRangeLabel;
+
+  /// 第二排的状态胶囊（进行中 / 冲突 / 非本周 / 考试）。
+  final List<SummaryChipSpec> statusChips;
+
+  /// 情侣空闲块（浮层未启用时为 null）。
+  final Widget? bottomBlock;
+
+  final Color ink;
+  final Color mutedInk;
+
+  /// 构建完成时把**这一段自己**交出去（飞行卡复用它）。
+  final ValueChanged<Widget>? onBuilt;
+
+  @override
+  Widget build(BuildContext context) {
+    final foruiTheme = context.theme;
+    final chipTextStyle = foruiTheme.typography.body.xs2.copyWith(
+      color: mutedInk,
+      fontWeight: FontWeight.w600,
+    );
+
+    Widget neutralChip(String label) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: ink.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(label, style: chipTextStyle),
+    );
+
+    final section = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            neutralChip(countLabel),
+            if (scheduleLabel != null) neutralChip(scheduleLabel!),
+            if (agendaRangeLabel != null)
+              Text(
+                agendaRangeLabel!,
+                style: foruiTheme.typography.body.xs2.copyWith(
+                  color: mutedInk,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+          ],
+        ),
+        if (statusChips.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final chip in statusChips)
+                _SummaryChip(
+                  icon: chip.icon,
+                  text: chip.text,
+                  accentColor: chip.accentColor,
+                ),
+            ],
+          ),
+        ],
+        if (bottomBlock != null) ...[
+          const SizedBox(height: 12),
+          bottomBlock!,
+        ],
+      ],
+    );
+    onBuilt?.call(section);
+    return section;
+  }
 }
 
 /// 摘要卡下方那排小胶囊（原 `_TimetableScreenState._buildDayViewSummaryChip`）。

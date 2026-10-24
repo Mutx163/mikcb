@@ -23,7 +23,9 @@ void main() {
     cellDateLabel: '03/20',
     titleLabel: '03月20日 周五',
     metaLabel: '今天 · 第 3 周',
-    countLabel: '1 门课',
+    // 下半部分现在是**真卡构建的那一份**（见 `SummaryCardLowerSection`）——
+    // 飞行卡不再自己画计数胶囊。这里塞一个可辨识的替身，验证它真的被渲染。
+    lowerSection: Text('LOWER_SECTION_MARKER'),
     fill: Color(0xFFFFFFFF),
     ink: Color(0xFF1A1A1A),
     mutedInk: Color(0x8A1A1A1A),
@@ -76,12 +78,18 @@ void main() {
     expect(tester.takeException(), isNull, reason: '起点帧不该溢出');
   });
 
-  testWidgets('落定帧：完整日期 + 叉 + 计数胶囊 + 「今天 · 第几周」', (tester) async {
+  testWidgets('落定帧：完整日期 + 叉 + 下半部分 + 「今天 · 第几周」', (tester) async {
     await pumpFrame(tester, lerpSummaryFlight(spec: spec, t: 1));
 
     expect(find.text('03月20日 周五'), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-    expect(find.text('1 门课'), findsOneWidget);
+    expect(
+      find.text('LOWER_SECTION_MARKER'),
+      findsOneWidget,
+      reason:
+          '落定帧必须把**真卡构建的下半部分**画出来（计数 / 状态 / 考试 / 情侣'
+          '空闲都在里面）。飞行卡自己复刻一套的话，落定那一帧会多出几个胶囊。',
+    );
     expect(find.text('今天 · 第 3 周'), findsOneWidget);
     expect(
       find.text('周五'),

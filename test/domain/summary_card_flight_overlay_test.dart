@@ -67,7 +67,7 @@ void main() {
                           cellDateLabel: '03/20',
                           titleLabel: '03月20日 周五',
                           metaLabel: '第 3 周',
-                          countLabel: '1 门课',
+                          lowerSection: null,
                           fill: Color(0xFFFFFFFF),
                           ink: Color(0xFF1A1A1A),
                           mutedInk: Color(0x8A1A1A1A),

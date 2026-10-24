@@ -1,4 +1,4 @@
-import 'dart:ui' show Rect;
+import 'package:flutter/widgets.dart';
 
 /// 「卡片对卡片」转场的**飞行终点缓存**（2026-10-21 建，2026-10-23 加代数与重测）。
 ///
@@ -27,6 +27,16 @@ import 'dart:ui' show Rect;
 /// 表会攒下几十门课的矩形）。转场结束时调一次即可，**不承担正确性**。
 class FlightTargetCache {
   final Map<String, _Entry> _targets = <String, _Entry>{};
+
+  /// 摘要卡「日期标题以下那整块」的 widget（真卡构建出来的那一份）。
+  ///
+  /// 为什么走缓存而不是参数一路传下来：那一块由**真卡自己**构建（它有全部数据：
+  /// 考试、冲突、进行中、情侣空闲…），而转场层在屏幕那一侧构建，拿不到那些数据。
+  /// 传一个 widget 比把十几项数据穿透三层要稳。
+  ///
+  /// **不按代数作废**：它描述的是「这一天长什么样」，换日时真卡会重建并覆盖它；
+  /// 同一天重开时沿用旧值正好是对的。清内存走 [clear]。
+  Widget? _summaryLower;
 
   /// 摘要卡（带关闭叉那张）的实测表面矩形，同样按代数的口径走。
   ///
@@ -90,10 +100,19 @@ class FlightTargetCache {
     return true;
   }
 
+  /// 记录摘要卡的下半部分（真卡每次构建都会调，幂等）。
+  void recordSummaryLower(Widget section) {
+    _summaryLower = section;
+  }
+
+  /// 摘要卡的下半部分；还没构建过时为 null（飞行卡就不画那一块）。
+  Widget? get summaryLower => _summaryLower;
+
   /// 放掉内存（正确性不依赖它，见类注释）。
   void clear() {
     _targets.clear();
     _summary = null;
+    _summaryLower = null;
   }
 
   static bool _close(Rect a, Rect b) =>

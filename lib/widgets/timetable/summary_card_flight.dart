@@ -63,7 +63,7 @@ class SummaryFlightSpec {
     required this.cellDateLabel,
     required this.titleLabel,
     required this.metaLabel,
-    required this.countLabel,
+    required this.lowerSection,
     required this.fill,
     required this.ink,
     required this.mutedInk,
@@ -89,8 +89,8 @@ class SummaryFlightSpec {
   /// 终点才有的「今天 · 第 3 周」。
   final String metaLabel;
 
-  /// 终点才有的计数胶囊（「1 门课」）。
-  final String countLabel;
+  /// 终点才有的下半部分（真卡构建的那一份，见 [SummaryFlightFrame.lowerSection]）。
+  final Widget? lowerSection;
 
   /// 卡面填充（摘要卡的 `foruiTheme.colors.background`）。
   final Color fill;
@@ -118,7 +118,7 @@ class SummaryFlightInput {
     required this.cellDateLabel,
     required this.titleLabel,
     required this.metaLabel,
-    required this.countLabel,
+    required this.lowerSection,
     required this.fill,
     required this.ink,
     required this.mutedInk,
@@ -139,8 +139,8 @@ class SummaryFlightInput {
   /// 终点才有的「今天 · 第 3 周」。
   final String metaLabel;
 
-  /// 终点才有的计数胶囊（「1 门课」）。
-  final String countLabel;
+  /// 终点才有的下半部分（真卡构建的那一份，见 [SummaryFlightFrame.lowerSection]）。
+  final Widget? lowerSection;
 
   final Color fill;
   final Color ink;
@@ -157,7 +157,7 @@ class SummaryFlightInput {
     cellDateLabel: cellDateLabel,
     titleLabel: titleLabel,
     metaLabel: metaLabel,
-    countLabel: countLabel,
+    lowerSection: lowerSection,
     fill: fill,
     ink: ink,
     mutedInk: mutedInk,
@@ -176,9 +176,7 @@ SummaryFlightInput buildSummaryFlightInput({
   required int dayOfWeek,
   required DayViewInkEnvironment inkEnvironment,
   required bool isToday,
-  required int courseCount,
-  required int scheduleCount,
-  required int taskCount,
+  required Widget? lowerSection,
 }) {
   final fill = context.theme.colors.background;
   final l10n = AppLocalizations.of(context)!;
@@ -231,14 +229,7 @@ SummaryFlightInput buildSummaryFlightInput({
     metaLabel: isToday
         ? '${l10n.todayTimetableTitle} · ${l10n.weekLabel(week)}'
         : l10n.weekLabel(week),
-    // 与真摘要卡同一条判据（有课说门课、无课有日程说日程、只有作业说作业）。
-    countLabel: courseCount > 0
-        ? l10n.courseCountSummary(courseCount)
-        : scheduleCount > 0
-        ? l10n.scheduleCountSummary(scheduleCount)
-        : taskCount > 0
-        ? l10n.dayTaskBandCountSummary(taskCount)
-        : l10n.courseCountSummary(0),
+    lowerSection: lowerSection,
     fill: fill,
     ink: ink.ink,
     mutedInk: ink.mutedInk,
@@ -310,10 +301,11 @@ class SummaryFlightFrame {
     required this.dateFontSize,
     required this.dateWeight,
     required this.metaText,
-    required this.countText,
     required this.surfaceOpacity,
     required this.metaOpacity,
-    required this.countOpacity,
+    required this.lowerSection,
+    required this.lowerContentWidth,
+    required this.lowerOpacity,
     required this.closeOpacity,
   });
 
@@ -346,9 +338,23 @@ class SummaryFlightFrame {
   final double dateFontSize;
   final FontWeight dateWeight;
 
-  /// 终点才有的文案（「今天 · 第 3 周」/「1 门课」）。
+  /// 终点才有的文案（「今天 · 第 3 周」）。
   final String metaText;
-  final String countText;
+
+  /// 日期标题**以下**那整块（计数行 / 状态与考试行 / 情侣空闲块）。
+  ///
+  /// 直接复用**真卡构建出来的那个 widget**（见
+  /// `TimetableDayViewSummaryCard.onLowerSectionBuilt`）。自己复刻一套的话，
+  /// 落定那一帧会「多出几个胶囊」—— 真卡有「X 节日程」、进行中、冲突、考试、
+  /// 情侣空闲，而飞行卡只画计数。
+  final Widget? lowerSection;
+
+  /// 那一块的可用宽度（= 终点卡宽 − 左右各 14 的内边距）。
+  ///
+  /// **用终点宽度而不是当前卡宽**：让它内部一次排好、中途不换行。卡片长到终点
+  /// 之前，超出的部分由 `ClipRRect` 裁掉 —— 读起来是「内容已经就位，卡面把它
+  /// 揭开」，而不是「胶囊在飞行途中跳到下一行」。
+  final double lowerContentWidth;
 
   /// 卡面本身的可见度 0..1（起点是 0 —— 星期栏那一格**没有卡面**，只有一行字）。
   ///
@@ -359,7 +365,7 @@ class SummaryFlightFrame {
 
   /// 终点才有的三块：后段淡入。
   final double metaOpacity;
-  final double countOpacity;
+  final double lowerOpacity;
   final double closeOpacity;
 }
 
@@ -419,11 +425,14 @@ SummaryFlightFrame lerpSummaryFlight({
     dateFontSize: _lerp(startDateSize, endTitleSize, k),
     dateWeight: FontWeight.w400,
     metaText: spec.metaLabel,
-    countText: spec.countLabel,
+    lowerSection: spec.lowerSection,
+    lowerContentWidth: (spec.endRect.width - 28).clamp(0.0, double.infinity),
     // 卡面前 30% 淡入：起点那颗字先自己长，长大一点卡面才包上来。
     surfaceOpacity: (k / 0.30).clamp(0.0, 1.0),
     metaOpacity: ((k - 0.55) / 0.35).clamp(0.0, 1.0),
-    countOpacity: ((k - 0.65) / 0.3).clamp(0.0, 1.0),
+    // 整块一起淡入（它内部含计数、状态、考试、情侣空闲 —— 分条淡入会让它们
+    // 看起来是「一个接一个冒出来」，与真卡的一次性呈现不符）。
+    lowerOpacity: ((k - 0.6) / 0.35).clamp(0.0, 1.0),
     closeOpacity: ((k - 0.6) / 0.4).clamp(0.0, 1.0),
   );
 }
@@ -545,35 +554,25 @@ class SummaryFlightCard extends StatelessWidget {
               ),
             ),
           ),
-        if (frame.countOpacity > 0.001)
+        // 日期标题以下那整块：**直接复用真卡构建的那一份**。
+        //
+        // 复用它而不是自己复刻：真卡那一块里有「X 节日程」、进行中、冲突、
+        // 非本周、考试、情侣空闲 —— 飞行卡少画任何一样，落定那一帧就会凭空
+        // 冒出来。而且真卡将来加一个胶囊，这里自动跟着有。
+        //
+        // 宽度用**终点宽度**、顶边用 72（= 日期标题 46 + 行高 18 + 间距 8，实测）：
+        // 内部一次排好、中途不换行；卡片还没长到终点时超出的部分由外层
+        // `ClipRRect` 裁掉 —— 读起来是「内容已就位，卡面把它揭开」。
+        if (frame.lowerSection != null && frame.lowerOpacity > 0.001)
           Positioned(
             left: 14,
             top: 72,
+            width: frame.lowerContentWidth,
             child: Opacity(
-              opacity: frame.countOpacity,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: ink.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    frame.countText,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-              ),
+              // 只包这一块（里面是 Container/Text/Wrap，没有玻璃面），
+              // 所以不触发 `CourseSurface` 那条铁律。
+              opacity: frame.lowerOpacity,
+              child: frame.lowerSection,
             ),
           ),
         if (frame.closeOpacity > 0.001)

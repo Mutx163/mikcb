@@ -128,6 +128,94 @@ void main() {
           '数据与渲染两份测试都覆盖不到这一环。',
     );
 
+    // ── 真实首页里也必须没被祖先裁掉 ─────────────────────────────────
+    //
+    // 隔离测试（`summary_card_flight_clip_test`）搭的是一个合成 `Stack`；真实首页
+    // 在它外面还有好几层（`TimetableWeekPager` 的 `Stack`、`Positioned.fill`、
+    // 首页 Stack…）。任何一层用了默认裁剪，摘要卡在星期栏那条带里的前 40% 都会
+    // 被切掉 —— 而 `getRect` 照样返回正确矩形。
+    //
+    // 判据看 widget 的 `clipBehavior` 声明（不是渲染对象类型：`RenderStack` 的裁剪
+    // 在 paint 里 pushClipRect，祖先链里没有 `RenderClipRect`，上一轮就是被这个
+    // 骗过）。
+    void expectNoAncestorClips(Rect card) {
+      final cardElement = tester.element(find.byType(SummaryFlightCard));
+      cardElement.visitAncestorElements((element) {
+        final w = element.widget;
+        var clips = false;
+        if (w is Stack) {
+          clips = w.clipBehavior != Clip.none;
+        } else if (w is ClipRect) {
+          clips = w.clipBehavior != Clip.none;
+        } else if (w is ClipPath) {
+          clips = w.clipBehavior != Clip.none;
+        }
+        if (clips) {
+          final box = element.renderObject;
+          if (box is RenderBox && box.hasSize) {
+            final r = box.localToGlobal(Offset.zero) & box.size;
+            expect(
+              r.top,
+              lessThanOrEqualTo(card.top + 0.5),
+              reason:
+                  '真实首页里有一层 ${w.runtimeType} 的裁剪区顶边在 y=${r.top}，'
+                  '而飞行摘要卡的顶边在 y=${card.top} —— 卡在星期栏那条带里'
+                  '（层上方）的部分会被切掉，「从星期格里长出来」的前 40% 看不见。'
+                  '该层裁剪区：$r',
+            );
+            expect(
+              r.left,
+              lessThanOrEqualTo(card.left + 0.5),
+              reason: '${w.runtimeType} 的裁剪区左边 ${r.left} 在卡左边 ${card.left} 之内',
+            );
+            expect(
+              r.right,
+              greaterThanOrEqualTo(card.right - 0.5),
+              reason: '${w.runtimeType} 的裁剪区右边 ${r.right} 在卡右边 ${card.right} 之内',
+            );
+          }
+        }
+        return true;
+      });
+    }
+
+    expectNoAncestorClips(tester.getRect(find.byType(SummaryFlightCard)));
+
+    // ── 下半部分必须来自真卡（端到端） ───────────────────────────────
+    //
+    // 飞行卡的下半部分（计数 / 日程 / 状态 / 考试）由**真卡构建**、经
+    // `onLowerSectionBuilt` 存进缓存、再被转场层读走。这条链路任何一环断了，
+    // 飞行卡就会少画那一块 —— 落定那一帧胶囊凭空冒出来。
+    //
+    // 这里种子课表当天有 1 门课，所以真卡的下半部分含「1 门课」。
+    // 逐帧推进到淡入完成（k>0.95），此时它必须已经出现。
+    var sawLowerSection = false;
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+      if (find.byType(SummaryFlightCard).evaluate().isEmpty) {
+        break;
+      }
+      if (find
+          .descendant(
+            of: find.byType(SummaryFlightCard),
+            matching: find.textContaining('门课'),
+          )
+          .evaluate()
+          .isNotEmpty) {
+        sawLowerSection = true;
+        break;
+      }
+    }
+    expect(
+      sawLowerSection,
+      isTrue,
+      reason:
+          '转场中的飞行摘要卡没有画出真卡的下半部分（计数胶囊等）。这条链路是：'
+          '真卡 build → `onLowerSectionBuilt` → `FlightTargetCache.recordSummaryLower`'
+          ' → 转场层读 `summaryLower` → 飞行卡渲染。任何一环断了，落定那一帧'
+          '胶囊都会凭空冒出来。',
+    );
+
     final first = tester.getRect(find.byType(SummaryFlightCard));
     // 它必须真的在长，而不是定在某个位置不动。
     var grew = false;

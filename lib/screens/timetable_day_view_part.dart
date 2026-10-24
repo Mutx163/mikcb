@@ -517,6 +517,9 @@ extension _TimetableScreenDayView on _TimetableScreenState {
         onClose: () => _closeDayView(settings),
         // 情侣空闲摘要要读 State 的展开态、又要用摘要卡算出的墨色：给一个
         // 「给墨色、还我 widget」的回调，卡片只负责摆位置。浮层未启用时传 null。
+        // 只有正在打开的那一页才把下半部分交给飞行卡（翻页器同时挂三页，
+        // 都回调会互相覆盖）。
+        onLowerSectionBuilt: key == null ? null : _flightTargets.recordSummaryLower,
         sharedFreeSummaryBuilder: _isCoupleOverlayActive(provider)
             ? (ink) => _buildDayViewSharedFreeSummary(
                 provider: provider,
@@ -713,10 +716,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
           context: context, endRect: r, settings: s, week: w, dayOfWeek: d,
           inkEnvironment: _dayViewInkEnvironment(s),
           isToday: _isSelectedDayToday(provider: p, settings: s, week: w, dayOfWeek: d),
-          courseCount: _getCoursesForDay(p.courses, w, d, s).length,
-          scheduleCount:
-              _getScheduleItemsForWeekDay(provider: p, settings: s, week: w, dayOfWeek: d).length,
-          taskCount: _buildDayTaskBand(p, s, w, d).actionableCount);
+          lowerSection: _flightTargets.summaryLower);
   /// 当前可见日的课程 id（只给「哪些卡该藏」用）。
   Iterable<String> _dayCourseIds(TimetableProvider p) {
     final week = _dayViewTransition.visibleWeek;

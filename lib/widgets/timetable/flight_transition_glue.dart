@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../models/timetable_settings.dart';
 import 'flight_grid_metrics.dart';
@@ -160,6 +161,36 @@ class FlightTransitionGlue {
     }
     // 四个状态都算「跃迁」：forward/reverse 是转场开始，completed/dismissed
     // 是结束。只在跃迁时重建，所以一次开合只多两次 build。
+    _rebuildSafely();
+  }
+
+  /// 请宿主重建，但**避开 build 期**。
+  ///
+  /// ## 为什么不能直接 `rebuild()`
+  ///
+  /// 转场状态会在 **build 期**变化：`_restoreViewStateFromProvider`（切课表 /
+  /// 冷启动恢复）在 `Consumer<TimetableProvider>` 的 builder 里直接写
+  /// `_dayViewExpandController.value`。控制器状态一变就通知状态监听器 ——
+  /// 于是我们在 build 期同步 `setState`，Flutter 直接抛：
+  ///
+  /// > setState() or markNeedsBuild() called during build.
+  /// > This TimetableScreen widget cannot be marked as needing to build…
+  ///
+  /// 实测：`timetable_switcher_test` 的「switching profiles restores each
+  /// profile timetable view state」两处必抛（切课表时恢复日视图 → value 0→1）。
+  ///
+  /// 推迟到帧后回调即可：这一次重建只用于「藏起原卡片 / 恢复原卡片」，晚一帧
+  /// 没有观感代价 —— 起飞那一帧飞行卡与真卡逐像素重合，藏不藏看不出来。
+  void _rebuildSafely() {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!_disposed) {
+          rebuild();
+        }
+      });
+      return;
+    }
     rebuild();
   }
 }
