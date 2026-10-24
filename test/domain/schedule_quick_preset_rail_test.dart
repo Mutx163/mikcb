@@ -172,6 +172,42 @@ void main() {
     );
   });
 
+  testWidgets('窄屏（360dp）下轨道右缘有渐隐提示，且第 4 张卡露头', (tester) async {
+    // 360dp 是本仓实测过的最小常见宽度（见 hyperos_tokens 的 400dp 口径讨论）。
+    // 这条钉的是「用户能看出右边还有东西」：十张卡只露 3 张时，若没有任何
+    // 延伸提示，剩下 7 张等于不存在。
+    await tester.binding.setSurfaceSize(const Size(360, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final provider = await createInitializedTestProvider(tester);
+    await tester.pumpWidget(
+      TestApp(
+        home: ChangeNotifierProvider.value(
+          value: provider,
+          child: const AddScheduleItemScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 按它自己的 Key 精确点名。早先按 `IgnorePointer` 找是错的：
+    // 树上别处也有 IgnorePointer，删掉渐隐后断言照样绿（反向验证抓到）。
+    expect(
+      find.byKey(const Key('schedule-preset-more-hint')),
+      findsOneWidget,
+      reason: '窄屏下轨道右缘没有渐隐提示：用户看不出右边还有 7 张卡',
+    );
+
+    // 第 4 张卡至少要在屏幕里露一点（不是完全在屏幕外）。
+    final fourth = find.byKey(const ValueKey('schedule-quick-preset-defense'));
+    expect(fourth, findsOneWidget);
+    final rect = tester.getRect(fourth);
+    expect(
+      rect.left,
+      lessThan(360),
+      reason: '第 4 张卡的左边缘已在屏幕外（${rect.left}）：没有任何「还能滑」的线索',
+    );
+  });
+
   testWidgets('手改标题后卡片不再显示选中（不能声称用户选的是聚餐）', (tester) async {
     await pumpScreen(tester);
 

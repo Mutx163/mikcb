@@ -4,6 +4,7 @@ import 'package:flutter_miuix/miuix.dart';
 import '../domain/schedule_quick_presets.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/schedule_preset_localizer.dart';
+import '../ui/hyperos/hyperos_miuix_spec.dart';
 import '../ui/hyperos/hyperos_radius.dart';
 import '../ui/hyperos/hyperos_theme.dart';
 import '../ui/hyperos/hyperos_tokens.dart';
@@ -82,26 +83,92 @@ class ScheduleQuickPresetRail extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final preset in visible) ...[
-            _PresetTile(
-              key: ValueKey('schedule-quick-preset-${preset.id}'),
-              preset: preset,
-              title: scheduleQuickPresetTitle(l10n, preset.id),
-              durationLabel: scheduleQuickPresetDurationLabel(
-                l10n,
-                preset.durationMinutes,
-              ),
-              selected: preset.id == selectedPresetId,
-              onTap: () => onPresetTap(preset),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          // 右侧留 20dp：`_MoreHintEdge` 的渐隐要压在这段空白上，否则它会盖住
+          // 第 4 张卡的右边缘（看起来像卡坏了）。
+          padding: const EdgeInsets.only(right: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final preset in visible) ...[
+                _PresetTile(
+                  key: ValueKey('schedule-quick-preset-${preset.id}'),
+                  preset: preset,
+                  title: scheduleQuickPresetTitle(l10n, preset.id),
+                  durationLabel: scheduleQuickPresetDurationLabel(
+                    l10n,
+                    preset.durationMinutes,
+                  ),
+                  selected: preset.id == selectedPresetId,
+                  onTap: () => onPresetTap(preset),
+                ),
+                const SizedBox(width: HyperosTokens.rowContentGap),
+              ],
+            ],
+          ),
+        ),
+        const Positioned(
+          top: 0,
+          bottom: 0,
+          right: 0,
+          child: _MoreHintEdge(),
+        ),
+      ],
+    );
+  }
+}
+
+/// 右边缘的渐隐提示：告诉用户「这一行还能往右滑」。
+///
+/// ## 为什么必须有
+///
+/// 十张卡在 360dp 屏上只能完全露出 3 张，第 4 张只露一个边角（实测：312dp
+/// 可视 / 96dp 步长 = 3.25 张）。只靠「露半张」这个传统提示是不够的——
+/// 露 25% 的时候，那一角看起来更像**渲染裁切**而不是「还有更多」。
+///
+/// 渐隐本身是「内容延伸出屏幕」的通用视觉语言，不需要文字解释，
+/// 也不占高度（压在轨道右侧、宽度 20dp）。
+///
+/// ## 为什么不用 `ShaderMask` 而是画一块渐变
+///
+/// `ShaderMask` 会在滚动时重建整条轨道的着色器，滚动列表里那是最贵的做法之一；
+/// 这里只需要在**固定位置**盖一块渐变，用 `IgnorePointer` + 渐变容器即可，
+/// 滚动时零重建（它也吃不到手指事件，不会挡住第 4 张卡的点击）。
+class _MoreHintEdge extends StatelessWidget {
+  const _MoreHintEdge();
+
+  /// 测试用来精确点名这块渐隐（按 IgnorePointer 找会因为树上到处都有而假通过）。
+  static const Key hintKey = Key('schedule-preset-more-hint');
+
+  static const double width = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    // 渐隐必须从「完全透明」过渡到**与它身下的底色相同**的颜色，
+    // 否则会看到一条灰带的边界。这里拿卡片所在的表面色作终点。
+    final surface = HyperosColors.card(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final end = isDark
+        ? HyperosMiuixDarkColors.surfaceContainerHighest
+        : surface;
+    return IgnorePointer(
+      key: hintKey,
+      child: SizedBox(
+        width: width,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            // 默认就是从左到右，不必再写 begin/end。
+            // 前 40% 保持全透明：让第 4 张卡露出的那点边角**看得清**，
+            // 只把最后 60% 渐隐成底色。
+            gradient: LinearGradient(
+              colors: [end.withValues(alpha: 0), end],
+              stops: const [0.4, 1.0],
             ),
-            const SizedBox(width: HyperosTokens.rowContentGap),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
