@@ -892,7 +892,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     final elapsedMinutes = currentMinutes - startMinutes;
     final totalMinutes = endMinutes - startMinutes;
     final remainingMinutes = math.max(0, (endMinutes - currentMinutes).ceil());
-    final progress = _TimetableScreenState._quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
+    final progress = quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
     final isEndingSoon = remainingMinutes <= 10;
     return TimetableDayAgendaProgressInfo(
       progress: progress,
@@ -936,7 +936,7 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       end.difference(now).inMinutes +
           (end.difference(now).inSeconds % 60 > 0 ? 1 : 0),
     );
-    final progress = _TimetableScreenState._quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
+    final progress = quantizeDayAgendaProgress(elapsedMinutes / totalMinutes);
     final isEndingSoon = remainingMinutes <= 10;
 
     return TimetableDayAgendaProgressInfo(

@@ -124,7 +124,10 @@ abstract final class HomePageBackgroundScope {
   }
 }
 
-enum TimetableHomeViewMode { week, day }
+/// 首页的三个同级视图。落盘串直接取枚举名（见 `TimetableHomeViewModeX.value`）：
+/// 旧存档只有 'week' / 'day'，[TimetableHomeViewModeX.fromValue] 对任何未知值
+/// （含 null）一律回落 [week]，所以后加的 month 不会让老数据崩或跳视图。
+enum TimetableHomeViewMode { week, day, month }
 
 /// 首页导航形态：经典形态保持原样；玻璃坞形态在底部提供液态玻璃
 /// 药丸导航，滑动/点击即可切换周课表、日课表与设置。

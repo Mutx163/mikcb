@@ -111,7 +111,9 @@ final List<HomeMenuPageDescriptor> _inlineDockPageDescriptors = [
     build: () => const TimeSchemeManagementScreen(),
   ),
   HomeMenuPageDescriptor(id: 'icsExport', build: () => const IcsExportScreen()),
-  // 月视图：玻璃坞内嵌页（坞常驻、首页栈内切换，翻月/选中日状态不丢）。
+  // 月视图：玻璃坞内嵌页（坞常驻、首页栈内切换）。**停在哪个视图**已持久化
+  // （`TimetableHomeViewMode.month`，冷启动恢复得到）；页内的翻月与选中日仍是
+  // 页面 State，切走即丢——要保活得把状态上提到首页，那是另一件事。
   HomeMenuPageDescriptor(
     id: 'monthView',
     build: () => const MonthViewScreen(),

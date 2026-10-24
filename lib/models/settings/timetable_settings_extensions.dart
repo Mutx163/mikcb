@@ -95,10 +95,7 @@ extension HomeTitleStyleX on HomeTitleStyle {
 }
 
 extension TimetableHomeViewModeX on TimetableHomeViewMode {
-  String get value => switch (this) {
-    TimetableHomeViewMode.week => 'week',
-    TimetableHomeViewMode.day => 'day',
-  };
+  String get value => name;
 
   static TimetableHomeViewMode fromValue(String? value) {
     return TimetableHomeViewMode.values.firstWhere(

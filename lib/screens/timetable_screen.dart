@@ -17,7 +17,9 @@ import '../models/timetable_settings.dart';
 import '../domain/clock_order.dart';
 import '../domain/couple_timetable_logic.dart';
 import '../domain/flight_slot.dart';
+import '../domain/home_view_mode.dart';
 import '../domain/timetable_layout.dart';
+import '../domain/day_agenda_progress.dart';
 import '../domain/day_course_display_logic.dart';
 import '../domain/day_task_band_logic.dart';
 import '../domain/day_view_paging.dart';
@@ -340,16 +342,13 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   @override
   void persistDayView({required int dayOfWeek}) => _persistViewState(
-    context.read<TimetableProvider>(),
     mode: TimetableHomeViewMode.day,
     dayOfWeek: dayOfWeek,
   );
 
   @override
-  void persistWeekView() => _persistViewState(
-    context.read<TimetableProvider>(),
-    mode: TimetableHomeViewMode.week,
-  );
+  void persistWeekView() =>
+      _persistViewState(mode: TimetableHomeViewMode.week);
 
   @override
   Future<void> jumpToWeek(
@@ -462,6 +461,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     scope?.dayView.addListener(_onPreviewDayViewChanged);
     scope?.dayOfWeek.addListener(_onPreviewDayViewChanged);
     if (scope != null) {
+      // 预览不摆月视图：宿主的分段只有「日 / 周」两档，摆进来就是个拨不动的页面。
+      _dockInlinePageId = null;
       _onPreviewDayViewChanged();
     }
   }
@@ -888,6 +889,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       _selectedDayOfWeek = null;
       _dayViewExpandController.value = 0;
     }
+    // 月视图照持久化模式摆回内嵌页。**直接写字段、不走 setter**：setter 会
+    // setState + 落盘，而这里是 build 期（本仓有 build 期 setState 炸机的先例）。
+    _dockInlinePageId = restoreInlinePageId(settings);
     _coupleOverlayEnabled = settings.coupleTimetableOverlayEnabled;
     _sharedFreeSegmentsExpanded = false;
   }
@@ -980,8 +984,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  void _persistViewState(
-    TimetableProvider provider, {
+  /// 落盘「上次停在哪个视图」。**provider 由本方法自己取**：四个调用点全是
+  /// 用户动作回调（底栏切视图 / 切日 / 收回内嵌页），没有一处来自 build，
+  /// context 一定是活的；集中一处读，免得每个调用点各写一遍。
+  void _persistViewState({
     required TimetableHomeViewMode mode,
     int? dayOfWeek,
   }) {
@@ -990,6 +996,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (_isPreview) {
       return;
     }
+    final provider = context.read<TimetableProvider>();
     final resolvedDayOfWeek = _resolveStoredDayOfWeek(
       provider.settings,
       dayOfWeek ??
@@ -1279,18 +1286,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  /// Progress snapped to ~0.4% steps (≈1.5 px on a full-width card).
-  ///
-  /// The raw ratio has sub-second precision, so it used to change on every
-  /// 1 s tick and the progress tween was retargeted before it could finish —
-  /// day view ended up animating (and re-rasterizing all its glass chrome)
-  /// on every frame, forever. Stepping is visually indistinguishable while
-  /// letting the tween settle, so no frames are scheduled between steps.
-  static double _quantizeDayAgendaProgress(double raw) {
-    const steps = 250;
-    return ((raw * steps).floorToDouble() / steps).clamp(0.02, 0.98);
-  }
-
   /// 两步式「长按空白格添加课程」的网格级手势层。
   ///
   /// 为什么挂在整块日列 Row 而不是单格：长按拖动的事件只会派发给赢得
@@ -1513,13 +1508,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         isDayView: _isDayView,
         visibleWeek: _visibleWeek,
         dockInlinePageId: _dockInlinePageId,
-        setInlinePageId: (id) => setState(() => _dockInlinePageId = id),
+        setInlinePageId: (id) => dockInlinePageId = id,
         onSelectionClick: _maybeSelectionClick,
         toggleDayView: _dayViewTransition.toggle,
         closeDayView: _closeDayView,
         resolveStoredDayOfWeek: _resolveStoredDayOfWeek,
         persistWeekView: () => _persistViewState(
-          context.read<TimetableProvider>(),
           mode: TimetableHomeViewMode.week,
         ),
         inlineDockPageFor: inlineDockPageFor,
@@ -1801,9 +1795,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   String? get dockInlinePageId => _dockInlinePageId;
 
+  /// 切内嵌页就是切视图：月视图是首页的第三个视图，模式必须在这里落盘，
+  /// 否则「停在月视图」杀进程重开会掉回周视图。底栏与圆钮两条入口都汇到这里。
   @override
-  set dockInlinePageId(String? value) =>
-      setState(() => _dockInlinePageId = value);
+  set dockInlinePageId(String? value) {
+    setState(() => _dockInlinePageId = value);
+    _persistViewState(
+      mode: homeViewModeForInlinePage(inlineId: value, isDayView: _isDayView),
+    );
+  }
 
   @override
   Future<void> showAddCourseSheet() => _showAddCourseSheet();
