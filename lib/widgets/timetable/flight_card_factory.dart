@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/course_week_localizations.dart';
 import '../../ui/app_fonts.dart';
 import '../../models/course.dart';
 import '../../models/timetable_settings.dart';
@@ -51,6 +52,29 @@ FlightCardBody buildFlightCard({
     course.startSection,
     course.endSection,
   );
+  // ── 网格卡上「只有起点才有」的那几行（2026-10-24 补）──────────────
+  //
+  // 旧实现一个都没传，于是：①用户开了「显示周数 / 简介」时，真网格卡上有那几行、
+  // 飞行卡没有 —— 接管那一帧它们消失；②更要命的是 `measureCompactCardText` 按
+  // 「没有这几行」把整块文字居中，于是**每一行都偏**（实测开周数+简介+天气后
+  // 课名从 45.5 变成 19.5，偏 26dp）。
+  //
+  // 文案口径照抄 `course_card.dart`：周数走 `course.weekDescription`，
+  // 时间在 `courseCardShowTimeLabels` 开着时带「开始/结束」前缀（真卡那两行是
+  // 分开画的，所以这里也分成 time / time-end）。
+  final showTimeLabels = settings.courseCardShowTimeLabels;
+  final startTimeText = showTimeLabels
+      ? l10n.classStartsAtLabel(course.startTime)
+      : course.startTime;
+  final endTimeText = showTimeLabels
+      ? l10n.classEndsAtLabel(course.endTime)
+      : course.endTime;
+  final weeksText = settings.courseCardShowWeeks
+      ? course.weekDescription(l10n)
+      : null;
+  final descriptionText = settings.courseCardShowDescription
+      ? course.description?.trim()
+      : null;
 
   final plan = buildFlightCardPlan(
     name: course.name,
@@ -61,10 +85,12 @@ FlightCardBody buildFlightCard({
     // 议程卡的锚点只依赖**宽度**（每行按顺序往下堆，高度只影响外框），
     // 而调用方量到的是整卡矩形 —— 直接用，宽高都真实。
     agendaSurfaceSize: agendaSurface,
-    startTime: course.startTime,
-    endTime: course.endTime,
     teacherLine: '${l10n.teacherPrefix(teacherText)} · $sectionLabel',
     locationLine: l10n.locationPrefix(locationText),
+    startTime: startTimeText,
+    endTime: endTimeText,
+    weeksText: weeksText,
+    descriptionText: descriptionText,
     gridVerticalPadding: sectionHeight < 64 ? 4 : 6,
     gridTitleFontSize: settings.courseCardFontSize,
     agendaTitleFontSize:
