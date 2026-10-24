@@ -1227,7 +1227,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         expandController: _dayViewExpandController, surfaceKey: _timetableSurfaceKey,
         rebuild: rebuild)
       ..hasFlightTargetFor = ((id) => _flightTargets[id] != null)
-      ..onTransitionStart = _flightTargets.bump;
+      ..onTransitionStart = ((r) => _flightTargets.bump(keepFallback: r));
   Widget _buildAnchoredDayViewOverlay({required TimetableProvider provider, required TimetableSettings settings, required int week}) {
     final selectedDayOfWeek = _dayViewTransition.displayedDayForWeek(week);
     final panel = _buildDayViewPanel(provider: provider, settings: settings, week: week, dayOfWeek: selectedDayOfWeek);

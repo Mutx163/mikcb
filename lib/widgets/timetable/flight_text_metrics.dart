@@ -274,8 +274,11 @@ const double kAgendaHeaderRowHeight = 30;
 /// 时间胶囊高度（`vertical: 5` × 2 + 16 行盒）。
 const double kAgendaTimeChipHeight = 26;
 
-/// 胶囊内时间文字的字号（`labelSmall`）。
-const double kAgendaTimeTextSize = 12;
+/// 胶囊内时间文字的字号（`labelSmall` = 11sp）。
+///
+/// 2026-10-24 由 12 改成 11：真卡用的是 `textTheme.labelSmall`（11sp），
+/// 抄成 12 会让落定那一帧时间文字缩一圈（且 16 的行盒常量本来就 = 11×1.45）。
+const double kAgendaTimeTextSize = 11;
 
 /// 胶囊内时间文字的行盒高度（12sp，行高 1 → 12；实测 16 是 labelSmall 的默认行高）。
 const double kAgendaTimeTextHeight = 16;
@@ -534,6 +537,26 @@ class FlightLayout {
   };
 }
 
+/// 共享行的**文案切换点**（2026-10-24 补）。
+///
+/// 位置/字号/字重全程插值，但**文案**只能整段换（逐字符形变会变乱码）。
+/// 取 0.45 与摘要卡同一条节奏（见 `kSummaryTextSwitchAt`）。
+///
+/// ## 为什么必须有这个切换（用户口径的直接来源）
+///
+/// 两端同一行的文案口径不同：
+///
+/// | id | 周网格卡 | 日议程卡 |
+/// |---|---|---|
+/// | teacher | `张老师` | `教师：张老师 · 第 1-2 节` |
+/// | location | `教三-201` | `地点：教三-201` |
+/// | time | `08:00` | `08:00 - 09:40` |
+///
+/// 旧实现一律取终点文案（`b.text`），于是**第一帧**就把「教师：张老师 · 第 1-2 节」
+/// 画在那张网格卡上 —— 用户看到的正是「开始的、动画上的、最终的，是三个位置」：
+/// 位置连续了，**内容却从第一帧起就是另一张卡的**。
+const double kFlightTextSwitchAt = 0.45;
+
 /// 把两端锚点插值成当前帧的布局。
 ///
 /// 三条规则，每条都对应一个具体的观感问题：
@@ -557,10 +580,15 @@ FlightLayout lerpFlightLayout({
     seen.add(a.id);
     final b = to[a.id];
     if (b != null) {
+      // 文案与行数**跟随切换点**：切换前用起点那一份（就是用户点下去时看到的
+      // 那张卡上的字），切换后用终点那一份。
+      final useEndText = k >= kFlightTextSwitchAt;
       items.add(
         FlightLayoutItem(
           id: a.id,
-          text: b.text.isNotEmpty ? b.text : a.text,
+          text: useEndText
+              ? (b.text.isNotEmpty ? b.text : a.text)
+              : (a.text.isNotEmpty ? a.text : b.text),
           rect: _lerpRect(a.rect, b.rect, k),
           fontSize: _lerp(a.fontSize, b.fontSize, k),
           weight: FontWeight.lerp(a.weight, b.weight, k) ?? a.weight,
@@ -568,8 +596,9 @@ FlightLayout lerpFlightLayout({
           isIcon: a.isIcon || b.isIcon,
           icon: b.icon ?? a.icon,
           lineHeightFactor: _lerp(a.lineHeightFactor, b.lineHeightFactor, k),
-          // 行数取两端更宽松的那个：中途收紧会让字突然被截断（读作抖动）。
-          maxLines: b.maxLines ?? a.maxLines,
+          // 行数同理：切换前用起点那份（网格卡的地点行真的会折两行），切换后
+          // 用终点那份（议程卡锁单行 + 省略号）。取「更宽松」会让窄卡里多出一行。
+          maxLines: useEndText ? (b.maxLines ?? a.maxLines) : a.maxLines,
         ),
       );
       continue;
@@ -581,7 +610,12 @@ FlightLayout lerpFlightLayout({
         rect: a.rect,
         fontSize: a.fontSize,
         weight: a.weight,
-        opacity: (1 - (k - 0.45) / 0.35).clamp(0.0, 1.0),
+        // 只起点有的行：切换点之后**快速**淡出（0.45→0.58）。
+        //
+        // 原来是 0.45→0.80，而只终点有的行 0.55 就开始淡入 —— 两者重叠 0.25
+        // 个行程。当这两行是同一语义的两种写法（起点 `09:40` vs 终点
+        // `08:00 - 09:40`）时，屏幕上会同时出现两行不同的时间。
+        opacity: (1 - (k - kFlightTextSwitchAt) / 0.13).clamp(0.0, 1.0),
         isIcon: a.isIcon,
         icon: a.icon,
         lineHeightFactor: a.lineHeightFactor,
@@ -601,7 +635,9 @@ FlightLayout lerpFlightLayout({
         rect: b.rect,
         fontSize: b.fontSize,
         weight: b.weight,
-        opacity: ((k - 0.55) / 0.35).clamp(0.0, 1.0),
+        // 只终点有的行：等只起点那些行淡完再进来（0.58→0.85），中间不留
+        // 「两种写法同时在屏上」的窗口。
+        opacity: ((k - 0.58) / 0.27).clamp(0.0, 1.0),
         isIcon: b.isIcon,
         icon: b.icon,
         lineHeightFactor: b.lineHeightFactor,

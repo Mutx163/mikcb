@@ -26,7 +26,7 @@ void main() {
 
   testWidgets('forward 与 reverse 都会请求换代', (tester) async {
     late AnimationController controller;
-    var bumps = 0;
+    final bumps = <bool>[];
 
     await tester.pumpWidget(
       StatefulBuilder(
@@ -39,7 +39,7 @@ void main() {
             expandController: controller,
             surfaceKey: GlobalKey(),
             rebuild: () {},
-          )..onTransitionStart = (() => bumps++);
+          )..onTransitionStart = bumps.add;
           addTearDown(glue.dispose);
           addTearDown(controller.dispose);
           return harness();
@@ -47,14 +47,14 @@ void main() {
       ),
     );
 
-    expect(bumps, 0, reason: '刚开始不该换代');
+    expect(bumps, isEmpty, reason: '刚开始不该换代');
 
     controller.forward();
     await tester.pump();
     expect(
       bumps,
-      1,
-      reason: '打开（forward）必须换代 —— 这是原有逻辑，不能被删',
+      [false],
+      reason: '打开（forward）必须换代，且 isReverse=false（硬作废旧终点）',
     );
 
     await tester.pump(const Duration(milliseconds: 200));
@@ -64,12 +64,12 @@ void main() {
     await tester.pump();
     expect(
       bumps,
-      2,
+      [false, true],
       reason:
-          '关闭（reverse）**也必须**换代。不换代的话，日视图里滚动过议程列表'
-          '（终点位置已变）再关闭，缓存还是旧矩形 —— 卡片飞向空位置。'
-          '`MeasureFlightTarget` 的「代数没变就早退」会把重测一并挡掉，'
-          '连下一帧自愈的机会都没有。',
+          '关闭（reverse）**也必须**换代，且 isReverse=true（保留旧终点作兜底：'
+          '否则反向中途会有一帧终点全空 + 面板 0 高 = 只剩周网格）。'
+          '不换代的话，日视图里滚动过议程列表（终点位置已变）再关闭，缓存还是'
+          '旧矩形 —— 卡片飞向空位置。',
     );
     // 让 ticker 停下再结束测试（否则 "A Ticker was active at the end"）。
     await tester.pump(const Duration(milliseconds: 200));
@@ -77,7 +77,7 @@ void main() {
 
   testWidgets('completed / dismissed 不换代（转场已结束，没有落点要算）', (tester) async {
     late AnimationController controller;
-    var bumps = 0;
+    final bumps = <bool>[];
 
     await tester.pumpWidget(
       StatefulBuilder(
@@ -90,7 +90,7 @@ void main() {
             expandController: controller,
             surfaceKey: GlobalKey(),
             rebuild: () {},
-          )..onTransitionStart = (() => bumps++);
+          )..onTransitionStart = bumps.add;
           addTearDown(glue.dispose);
           addTearDown(controller.dispose);
           return harness();
@@ -100,20 +100,20 @@ void main() {
 
     controller.forward();
     await tester.pump();
-    final afterForward = bumps;
+    final afterForward = bumps.length;
     await tester.pump(const Duration(milliseconds: 100));
     expect(
-      bumps,
+      bumps.length,
       afterForward,
       reason: '落地（completed）不该再换代 —— 那时没有飞行卡要落点',
     );
 
     controller.reverse();
     await tester.pump();
-    final afterReverse = bumps;
+    final afterReverse = bumps.length;
     await tester.pump(const Duration(milliseconds: 100));
     expect(
-      bumps,
+      bumps.length,
       afterReverse,
       reason: '收起完成（dismissed）不该再换代',
     );

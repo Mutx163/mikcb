@@ -126,7 +126,11 @@ class FlightTransitionGlue {
   /// 宁可重影一帧，也不要整门课消失。
   bool Function(String courseId) hasFlightTargetFor = (_) => false;
 
-  /// 新一轮转场开始（**升空与收起都算**）：通知宿主 bump 终点代数。
+  /// 新一轮转场开始（**升空与收起都算**）：通知宿主换代。
+  ///
+  /// 参数 `isReverse` 表示这是**收起**。宿主据此决定换代方式：收起时保留旧终点
+  /// 作兜底（否则反向中途会有一帧「终点全空 + 面板高度 0」= 只剩周网格，闪一下），
+  /// 升空时硬作废（旧位置属于另一天，硬用会让卡片飞错地方）。
   ///
   /// 为什么挂在 status 上而不是挂在点击处：点击 → 状态来不及更新（面板还没
   /// 布局，量不到终点），而状态跃迁就发生在「面板即将布局」那一刻。
@@ -143,7 +147,7 @@ class FlightTransitionGlue {
   ///
   /// 收起时 bump 一次，代价是重测一遍终点（每张卡一次布局读矩形），换来的是
   /// 关闭动画落点正确。
-  void Function()? onTransitionStart;
+  void Function(bool isReverse)? onTransitionStart;
 
   void _onStatus(AnimationStatus status) {
     if (_disposed) {
@@ -157,7 +161,7 @@ class FlightTransitionGlue {
     // `completed` / `dismissed` 不动代数：那时转场已经结束，没有飞行卡要落点。
     if (status == AnimationStatus.forward ||
         status == AnimationStatus.reverse) {
-      onTransitionStart?.call();
+      onTransitionStart?.call(status == AnimationStatus.reverse);
     }
     // 四个状态都算「跃迁」：forward/reverse 是转场开始，completed/dismissed
     // 是结束。只在跃迁时重建，所以一次开合只多两次 build。

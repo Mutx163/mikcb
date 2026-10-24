@@ -49,15 +49,33 @@ class FlightTargetCache {
   /// 当前代数（测试用）。
   int get generation => _generation;
 
+  /// 上一代终点的兜底快照（只在一部分换代场景里存在，见 [bump]）。
+  Map<String, Rect>? _fallback;
+
   /// 开新一轮转场：此后读取只认新一轮写入的值。
-  void bump() {
+  ///
+  /// [keepFallback] 为真时把当前这一代的值留作**兜底**：新一轮还没量到的 id
+  /// 先沿用旧矩形。什么时候需要它（2026-10-24 补）：
+  ///
+  /// **中途反向**。用户展开到一半再点关闭 → `reverse` 也换代 → 全部终点作废
+  /// → 而 `MeasureFlightTarget` 要到下一帧帧后回调才重新上报 → 中间那一帧
+  /// `endRects` 全空 ⇒ 一张飞行卡都没有，而面板此刻高度为 0 ⇒ **整屏只剩周
+  /// 网格**，闪一下。
+  ///
+  /// 反向时位置基本没变（刚刚才量过），沿用旧矩形完全够用；正向换日则必须硬作废
+  /// （旧位置属于另一天，硬用会让卡片飞向错误的地方）。
+  void bump({bool keepFallback = false}) {
+    _fallback = keepFallback && _targets.isNotEmpty ? targets : null;
     _generation++;
   }
 
   /// 本轮已量到的终点（按课程 id）。
   ///
-  /// **只返回当代的值**：跨轮次的旧矩形会让卡片朝一个早已不存在的位置飞过去。
+  /// 以**当代**的值为准；当代还没量到的 id 用 [bump] 留下的兜底快照（只有
+  /// `keepFallback` 那一轮才有）。跨轮次的旧矩形在正向换日时会被硬作废，不会
+  /// 让卡片朝另一天的位置飞过去。
   Map<String, Rect> get targets => {
+    ...?_fallback,
     for (final entry in _targets.entries)
       if (entry.value.generation == _generation) entry.key: entry.value.rect,
   };
@@ -73,13 +91,13 @@ class FlightTargetCache {
     return true;
   }
 
-  /// 取某门课**当代**的终点；没量到（或只有旧代）返回 null。
+  /// 取某门课的终点：当代优先，其次兜底快照，都没有才 null。
   Rect? operator [](String courseId) {
     final entry = _targets[courseId];
-    if (entry == null || entry.generation != _generation) {
-      return null;
+    if (entry != null && entry.generation == _generation) {
+      return entry.rect;
     }
-    return entry.rect;
+    return _fallback?[courseId];
   }
 
   /// 摘要卡**当代**的实测矩形；没量到（或只有旧代）返回 null。
@@ -111,6 +129,7 @@ class FlightTargetCache {
   /// 放掉内存（正确性不依赖它，见类注释）。
   void clear() {
     _targets.clear();
+    _fallback = null;
     _summary = null;
     _summaryLower = null;
   }

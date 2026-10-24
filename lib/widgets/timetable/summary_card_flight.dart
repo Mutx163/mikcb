@@ -576,9 +576,12 @@ class SummaryFlightCard extends StatelessWidget {
             ),
           ),
         if (frame.closeOpacity > 0.001)
+          // 与真卡实测对齐：图标顶边 15、右边距 20（`IconButton` 的 30×24 盒
+          // 是 top12/右14，但里面那个 18sp 的图标在 top15/右20 —— 落定比的是
+          // **图标**，用盒子坐标会偏 3dp 上、6dp 右）。
           Positioned(
-            right: 14,
-            top: 12,
+            right: 20,
+            top: 15,
             child: Opacity(
               opacity: frame.closeOpacity,
               child: Icon(Icons.close_rounded, size: 18, color: muted),
