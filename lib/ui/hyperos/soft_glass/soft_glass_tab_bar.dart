@@ -132,6 +132,14 @@ class SoftGlassTabBar extends StatefulWidget {
   });
 
   final List<SoftGlassTab> tabs;
+
+  /// 当前选中槽。**-1 = 整栏不亮**（当前页不归底栏任何一格）。
+  ///
+  /// 存在的理由：玻璃坞右侧那颗圆钮把它绑定的内嵌页就地打开时，那一页**不在**药丸
+  /// 槽位里；此时若仍按「日/周兜底」亮一格，亮着的其实是一格**根本没打开**的视图，
+  /// 而真正开着东西的圆钮自己没有任何表态（2026-10-24 用户报告的错位感即此）。
+  /// 判据由父级算，本组件只负责「-1 时不画指示器、全部按未选中墨色绘制，且不进入
+  /// 按压/拖拽闸门」。
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final Color? selectedColor;
@@ -211,9 +219,23 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
     if (_dragging) {
       return;
     }
-    if (oldWidget.selectedIndex != widget.selectedIndex) {
-      _syncExternalSelection(widget.selectedIndex);
+    if (oldWidget.selectedIndex == widget.selectedIndex) {
+      return;
     }
+    if (widget.selectedIndex < 0) {
+      // 整栏不亮：指示器根本不绘制，动画没意义。清掉待确认标记，免得它被下一个
+      // 有选中态误消费（`_syncExternalSelection` 靠它跳过一次同步）。
+      _pendingCommittedIndex = null;
+      return;
+    }
+    if (oldWidget.selectedIndex < 0) {
+      // 从「整栏不亮」恢复：指示器上一态是**不可见**的，从陈旧位置滑过来只会让人
+      // 以为它一直在那。直接落位（与进出内嵌页「闪现直切」同口径）。
+      _pendingCommittedIndex = null;
+      _position.value = widget.selectedIndex.toDouble();
+      return;
+    }
+    _syncExternalSelection(widget.selectedIndex);
   }
 
   @override
@@ -314,6 +336,13 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
   }
 
   void _onPointerDown(PointerDownEvent event, double cellLeft, double cellWidth) {
+    // 整栏不亮期间**没有「当前选中格」**，也就没有拖动起点：原版闸门要求起手点
+    // 落在当前选中格内，而 -1 态下指示器根本没画出来，此时若进入按压/拖拽，松手
+    // 会提交到一个视觉上不存在的位置（还会顺手触发 onTabSelected）。点按切页不受
+    // 影响 —— 那条走 tab item 自己的 onTap，不经过这里。
+    if (widget.selectedIndex < 0) {
+      return;
+    }
     _velocityTracker.reset(event.timeStamp, event.localPosition.dx);
     _velocity = 0;
     // 起手点必须落在**当前选中格**内，否则不进入按压/拖动。
@@ -436,7 +465,17 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
     }
     _dragging = false;
     _velocity = 0;
-    _applyPendingTarget(widget.selectedIndex.clamp(0, _count - 1));
+    // 取消 = 用户明确放弃这次拖动，**绝不能**提交任何选择。
+    //
+    // 沿用原来的 `_applyPendingTarget(selectedIndex.clamp(0, count-1))` 时，「不
+    // 提交」是靠一个巧合成立的：clamp 出来的值恰好等于 selectedIndex。-1（整栏
+    // 不亮）成为合法输入后，clamp(-1) = 0 而 0 != -1，巧合就断了。现实中这条
+    // 走不到（[_onPointerDown] 的闸门已在 -1 态拒绝进入拖动，而 `_dragging` 期间
+    // 父级改不了 selectedIndex —— [didUpdateWidget] 在拖动中直接返回），所以这是
+    // **防御性**修正：语义写成「取消就不提交」，不再依赖 clamp 的巧合。
+    if (widget.selectedIndex >= 0) {
+      _settleTo(widget.selectedIndex.clamp(0, _count - 1).toDouble());
+    }
     _stretch.animateWith(
       SpringSimulation(_SoftGlassSprings.stretch, _stretch.value, 0, 0),
     );
@@ -499,7 +538,12 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
       context,
       polarity: widget.polarity,
     );
-    final selected = widget.selectedIndex.clamp(0, count - 1);
+    // -1 = 整栏不亮：`selected` 保持 -1，于是 `i == selected` 对所有槽都不成立 ⇒
+    // 每格都按**未选中**墨色与字重绘制（这正是我们要的表态），指示器另判。
+    final hasSelection = widget.selectedIndex >= 0;
+    final selected = hasSelection
+        ? widget.selectedIndex.clamp(0, count - 1)
+        : -1;
     final maxBar = _maxBar;
 
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -561,29 +605,33 @@ class _SoftGlassTabBarState extends State<SoftGlassTabBar>
                       return Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          Positioned(
-                            key: const ValueKey('soft-glass-tab-indicator'),
-                            left: indicatorLeft(pos),
-                            top: 0,
-                            bottom: 0,
-                            width: indicatorWidthPx,
-                            child: Transform(
-                              alignment: Alignment(originX * 2 - 1, 0),
-                              transform: Matrix4.diagonal3Values(
-                                pressScale * (1 + stretch),
-                                pressScale,
-                                1,
-                              ),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: indicatorColor,
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(999),
+                          // 整栏不亮（`selectedIndex == -1`，圆钮把它那一页开着那段）：
+                          // 指示器**不构建**，而不是画在某个兜底槽位上 —— 画出来就是
+                          // 又造出一个「亮着一格却没打开」的假信号。
+                          if (hasSelection)
+                            Positioned(
+                              key: const ValueKey('soft-glass-tab-indicator'),
+                              left: indicatorLeft(pos),
+                              top: 0,
+                              bottom: 0,
+                              width: indicatorWidthPx,
+                              child: Transform(
+                                alignment: Alignment(originX * 2 - 1, 0),
+                                transform: Matrix4.diagonal3Values(
+                                  pressScale * (1 + stretch),
+                                  pressScale,
+                                  1,
+                                ),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: indicatorColor,
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(999),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
                           Listener(
                             behavior: HitTestBehavior.opaque,
                             onPointerDown: (event) => _onPointerDown(

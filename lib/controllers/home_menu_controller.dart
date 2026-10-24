@@ -312,8 +312,9 @@ class HomeMenuController {
     final catalogEntry = homeMenuEntryById(id);
     if (catalogEntry?.visible() == true && inlineDockPageFor(id) != null) {
       host.dockInlinePageId = host.dockInlinePageId == id ? null : id;
-      // 圆钮保留 toggle 收回（Tab 侧再点当前页已改无动作：圆钮无选中态
-      // 指示，按钮式「再点撤销」成立）；开/收/换页都是真实切换，给触觉。
+      // 圆钮保留 toggle 收回（Tab 侧再点当前页已改无动作：收回时**圆钮会灭**、
+      // 药丸高亮会重新落回日/周，开/收都有可见反馈，按钮式「再点撤销」成立）；
+      // 开/收/换页都是真实切换，给触觉。
       host.selectionClick(settings);
       return;
     }

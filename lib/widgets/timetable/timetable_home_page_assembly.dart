@@ -238,6 +238,7 @@ Widget buildTimetableHomePage(TimetableHomePageInput input) {
   // - 壁纸层随 homeStack 常驻，解码缓存不失效，切回课表不黑闪。
   // 玻璃坞导航始终由 [TimetableGlassDockLayer] 浮在最上层（画在采样宿主之外）。
   final inlineId = input.dockInlinePageId;
+  final dockIds = resolveGlassDockActionIds(settings);
   return TimetableHomeDockShell(
     homeStack: homeStack,
     useHomePreblur: useHomePreblur,
@@ -260,7 +261,12 @@ Widget buildTimetableHomePage(TimetableHomePageInput input) {
             selectedIndex: _dockSelectedIndex(
               inlineId,
               input.isDayView,
-              resolveGlassDockActionIds(settings),
+              dockIds,
+            ),
+            roundButtonActive: _roundButtonIsActive(
+              inlineId: inlineId,
+              settings: settings,
+              ids: dockIds,
             ),
             roundButtonIcon: _roundButtonIcon(settings),
             onTabSelected: (id) => input.onDockTap(id, settings),
@@ -376,13 +382,42 @@ Widget _roundButtonIcon(TimetableSettings settings) {
 
 /// 当前所在视图（日/周）在排列中的下标；排列未含该视图时高亮 0，
 /// 避免库断言越界（此时底栏全是页面入口，无「当前页」语义）。
+///
+/// 返回 **-1（整栏不亮）** 的唯一情形：开着内嵌页、但那一页**不在**药丸槽位里 ——
+/// 也就是它由右侧圆钮打开。此时按日/周兜底亮一格，亮着的是一格**根本没打开**的
+/// 视图，而真正开着东西的圆钮不表态（2026-10-24 用户报告）。改由圆钮自己亮，
+/// 见 [_roundButtonIsActive]。
 int _dockSelectedIndex(String? inlineId, bool isDayView, List<String> ids) {
-  if (inlineId != null && ids.contains(inlineId)) {
-    return ids.indexOf(inlineId);
+  if (inlineId != null) {
+    // 内嵌页在场且能对上槽位：高亮归那一格（这一档圆钮不再亮）。
+    if (ids.contains(inlineId)) {
+      return ids.indexOf(inlineId);
+    }
+    return -1;
   }
   final current = isDayView ? kGlassDockActionDay : kGlassDockActionWeek;
   final index = ids.indexOf(current);
   return index >= 0 ? index : 0;
+}
+
+/// 圆钮是否处于「选中态」：它绑定的那一页正开着，**且那一页没有对应的药丸槽位**。
+///
+/// 后半个条件是用户 2026-10-24 拍的：同一页既排进药丸又绑给圆钮时只亮药丸，
+/// 避免同一件事在一条底栏上说两遍。`addCourse`（弹半屏层）与未登记的内嵌 id
+/// （推新路由）都落不进 `inlineId`，因此天然不亮。
+bool _roundButtonIsActive({
+  required String? inlineId,
+  required TimetableSettings settings,
+  required List<String> ids,
+}) {
+  if (inlineId == null || inlineId.isEmpty) {
+    return false;
+  }
+  if (inlineId != settings.glassDockButtonEntryId) {
+    return false;
+  }
+  // 该页有对应药丸槽位 ⇒ 高亮归药丸，圆钮不亮。
+  return !ids.contains(inlineId);
 }
 
 DayCourseDisplayLabels _dayCourseDisplayLabels(AppLocalizations l10n) {
