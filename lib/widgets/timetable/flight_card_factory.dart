@@ -29,6 +29,112 @@ import 'timetable_day_agenda_models.dart';
 /// * **材质**：底色 / 渐变 / 投影 / 字色都与议程卡同源；
 /// * **判定口径**：显示哪几行，逐个照抄两端真实卡片的开关（见
 ///   `buildFlightCardPlan` 的表格），任何一处不同都会让那一行中途消失或凭空出现。
+/// 计划缓存（2026-10-24 加）。
+///
+/// ## 为什么可以缓存
+///
+/// `buildFlightCardPlan` 的结果**只取决于输入，与进度 `t` 无关** —— 而转场期间
+/// 每帧每张卡都会调它一次。实测单次约 **273µs**（内部 ~11 次 `TextPainter.layout`），
+/// 8 张卡一帧就是 **2.2ms**，正好吃掉 60fps 预算的 13%。而它算出来的东西整场
+/// 转场一个字节都没变。
+///
+/// 键包含**全部**输入（含字号、对齐、文字缩放、文案），所以命中必然是同一个答案；
+/// 用户改设置 / 换主题时键跟着变，不会拿到旧计划。
+///
+/// 容量上限 64：一屏最多几十张卡，满了整体清空（比 LRU 简单，且这里的重建代价
+/// 只是「下一帧各算一次」）。
+final Map<Object, FlightCardPlan> _planCache = <Object, FlightCardPlan>{};
+
+/// 命中缓存的 `buildFlightCardPlan`（见 [_planCache]）。
+FlightCardPlan flightCardPlanFor({
+  required String name,
+  required String teacher,
+  required String location,
+  required TimetableSettings settings,
+  required Size gridSurfaceSize,
+  required Size agendaSurfaceSize,
+  required String startTime,
+  required String endTime,
+  required String teacherLine,
+  required String locationLine,
+  String? weeksText,
+  String? descriptionText,
+  required double gridVerticalPadding,
+  required double gridTitleFontSize,
+  required double agendaTitleFontSize,
+  required TextStyle gridBaseStyle,
+  required TextStyle agendaBaseStyle,
+  required TextStyle agendaInfoBaseStyle,
+  required bool gridAlignTop,
+  required CrossAxisAlignment gridCrossAxisAlignment,
+  required TitleWeightResolver titleWeight,
+  required TitleWeightResolver detailWeight,
+}) {
+  // 字重解析器是闭包（不可比较），用它的两个设计值参与键即可 —— 同一个调用点
+  // 传进来的解析器行为只由那两件事决定（见 `_resolveWeight`）。
+  final key = (
+    name,
+    teacher,
+    location,
+    settings.courseCardFontSize,
+    settings.courseCardVerticalAlign,
+    settings.courseCardHorizontalAlign,
+    gridSurfaceSize,
+    agendaSurfaceSize,
+    startTime,
+    endTime,
+    teacherLine,
+    locationLine,
+    weeksText,
+    descriptionText,
+    gridVerticalPadding,
+    gridTitleFontSize,
+    agendaTitleFontSize,
+    gridBaseStyle,
+    agendaBaseStyle,
+    agendaInfoBaseStyle,
+    gridAlignTop,
+    gridCrossAxisAlignment,
+  );
+  final hit = _planCache[key];
+  if (hit != null) {
+    return hit;
+  }
+  if (_planCache.length > 64) {
+    _planCache.clear();
+  }
+  final plan = buildFlightCardPlan(
+    name: name,
+    teacher: teacher,
+    location: location,
+    settings: settings,
+    gridSurfaceSize: gridSurfaceSize,
+    agendaSurfaceSize: agendaSurfaceSize,
+    startTime: startTime,
+    endTime: endTime,
+    teacherLine: teacherLine,
+    locationLine: locationLine,
+    weeksText: weeksText,
+    descriptionText: descriptionText,
+    gridVerticalPadding: gridVerticalPadding,
+    gridTitleFontSize: gridTitleFontSize,
+    agendaTitleFontSize: agendaTitleFontSize,
+    gridBaseStyle: gridBaseStyle,
+    agendaBaseStyle: agendaBaseStyle,
+    agendaInfoBaseStyle: agendaInfoBaseStyle,
+    gridAlignTop: gridAlignTop,
+    gridCrossAxisAlignment: gridCrossAxisAlignment,
+    titleWeight: titleWeight,
+    detailWeight: detailWeight,
+  );
+  _planCache[key] = plan;
+  return plan;
+}
+
+/// 测试用：清掉计划缓存（静态状态会跨用例残留）。
+@visibleForTesting
+void resetFlightCardPlanCacheForTest() => _planCache.clear();
+
 FlightCardBody buildFlightCard({
   required BuildContext context,
   required TimetableSettings settings,
@@ -76,7 +182,7 @@ FlightCardBody buildFlightCard({
       ? course.description?.trim()
       : null;
 
-  final plan = buildFlightCardPlan(
+  final plan = flightCardPlanFor(
     name: course.name,
     teacher: course.teacher,
     location: course.location,
