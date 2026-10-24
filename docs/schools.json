@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-23T06:23:21+00:00",
+  "updatedAt": "2026-10-24T06:18:56+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 266,
-    "schools": 261,
+    "total": 267,
+    "schools": 262,
     "generic": 5
   },
   "schools": [
@@ -552,6 +552,13 @@
       "name": "贵州大学",
       "initial": "G",
       "resourceFolder": "GZU",
+      "category": "school"
+    },
+    {
+      "id": "GZTCME",
+      "name": "贵州机电职业技术学院",
+      "initial": "G",
+      "resourceFolder": "GZTCME",
       "category": "school"
     },
     {
