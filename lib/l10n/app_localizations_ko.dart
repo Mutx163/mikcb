@@ -10783,16 +10783,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get icsExportSectionTitle => '캘린더 내보내기';
 
   @override
-  String get icsExportSectionSubtitle => '선택한 항목을 캘린더로 내보내기';
-
-  @override
   String get icsExportTitle => '캘린더 내보내기';
 
   @override
   String get icsExportProfileLabel => '시간표 프로필';
-
-  @override
-  String get icsExportProfileSelectTitle => '시간표 프로필 선택';
 
   @override
   String get icsExportDateRangeTitle => '날짜 범위';

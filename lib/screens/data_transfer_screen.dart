@@ -87,7 +87,6 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             children: [
               HyperosNavTile(
                 title: l10n.icsExportSectionTitle,
-                subtitle: l10n.icsExportSectionSubtitle,
                 onTap: _openIcsExport,
               ),
             ],

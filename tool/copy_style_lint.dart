@@ -19,6 +19,7 @@ import 'copy_style_rules.dart';
 
 const _baselinePath = 'tool/copy_style_baseline.txt';
 const _deadBaselinePath = 'tool/copy_style_dead_keys_baseline.txt';
+const _restatingBaselinePath = 'tool/copy_style_restating_baseline.txt';
 
 /// 开发者专用页：技术字段本来就长，且只对调试构建可见。
 ///
@@ -40,6 +41,10 @@ void main(List<String> args) {
       !args.contains('--dead') || args.contains('--violations');
   final wantDead =
       !args.contains('--violations') || args.contains('--dead');
+  final wantRestating = args.contains('--restating') ||
+      (!args.contains('--dead') &&
+          !args.contains('--violations') &&
+          !args.contains('--restating'));
   final showAll = args.contains('--all');
   final baselineOnly = args.contains('--baseline');
 
@@ -140,6 +145,37 @@ void main(List<String> args) {
       }
     }
   }
+
+  if (wantRestating) {
+    final restating = findRestatingSubtitles(
+      sources: sources,
+      arbByLocale: arbByLocale,
+    );
+    final frozen = _loadRestatingBaseline();
+    final live = restating
+        .where((v) => !_devOnlySources.contains(v.source))
+        .toList();
+    final added = live
+        .where((v) => !frozen.contains(restatingId(v)))
+        .toList();
+    stdout.writeln(
+      '== 说明句复述标题：${live.length} 条'
+      '（存量已冻结 ${live.length - added.length}，新增 ${added.length}）==',
+    );
+    if (added.isNotEmpty) {
+      for (final v in added) {
+        stdout.writeln('  ✗ $v');
+      }
+    } else {
+      stdout.writeln('  ✓ 没有新增复述');
+    }
+    if (showAll && live.isNotEmpty) {
+      stdout.writeln('  --- 全部命中 ---');
+      for (final v in live) {
+        stdout.writeln('  · $v');
+      }
+    }
+  }
 }
 
 void _writeDeadBaseline(List<String> keys) {
@@ -163,6 +199,18 @@ void _writeDeadBaseline(List<String> keys) {
 
 Set<String> _loadDeadBaseline() {
   final file = File(_deadBaselinePath);
+  if (!file.existsSync()) {
+    return <String>{};
+  }
+  return file
+      .readAsLinesSync()
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty && !line.startsWith('#'))
+      .toSet();
+}
+
+Set<String> _loadRestatingBaseline() {
+  final file = File(_restatingBaselinePath);
   if (!file.existsSync()) {
     return <String>{};
   }

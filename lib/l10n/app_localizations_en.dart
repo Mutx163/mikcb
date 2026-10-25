@@ -11049,16 +11049,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icsExportSectionTitle => 'Calendar export';
 
   @override
-  String get icsExportSectionSubtitle => 'Export to your calendar';
-
-  @override
   String get icsExportTitle => 'Export calendar';
 
   @override
   String get icsExportProfileLabel => 'Timetable profile';
-
-  @override
-  String get icsExportProfileSelectTitle => 'Choose timetable profile';
 
   @override
   String get icsExportDateRangeTitle => 'Date range';

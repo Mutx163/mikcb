@@ -36,6 +36,9 @@ import 'guard_source.dart';
 const _baselinePath = 'tool/copy_style_baseline.txt';
 const _deadBaselinePath = 'tool/copy_style_dead_keys_baseline.txt';
 
+/// 复述基线：说明句在标题之外没有新信息的存量（只减不增）。
+const _restatingBaselinePath = 'tool/copy_style_restating_baseline.txt';
+
 /// 开发者专用页：技术字段本来就长，且只对调试构建可见。
 ///
 /// 与 `bfc6b6bf` 的取舍一致。**不是豁免**：不进基线、也不拦，
@@ -93,6 +96,36 @@ void main() {
           '把「怎么做」交给界面本身。\n'
           '整宽段落（HyperosSectionDescription / 对话框正文）不在本规则内，'
           '它们本来就该多行。',
+    );
+  });
+
+  test('说明句不得新增「复述标题」（存量已冻结在基线里）', () {
+    final restating = findRestatingSubtitles(
+      sources: sources,
+      arbByLocale: arbByLocale,
+    );
+    final baseline = _loadIds(_restatingBaselinePath);
+
+    final live = restating
+        .where((v) => !_devOnlySources.contains(v.source))
+        .toList();
+    final added = live.where((v) => !baseline.contains(restatingId(v))).toList();
+
+    expect(
+      added,
+      isEmpty,
+      reason:
+          '这 ${added.length} 处说明句只是在复述标题（去掉标题已有的词之后，'
+          '没剩下什么新信息）：\n'
+          '${added.map((v) => '  $v').join('\n')}\n\n'
+          '判据（tool/copy_style_rules.dart 的 restatingResidue）：'
+          '把说明句切词、剥掉行首操作动词，再看去掉「标题里已有的词」和'
+          '「纯连接词」之后还剩几个词。剩 ≤ $restatingResidueMaxTokens 个，'
+          '说明它没告诉用户标题之外的东西。\n'
+          '改法：删掉说明句（布局已经说清了）；真要保留，就让它说清'
+          '「关掉会怎样 / 什么前提下才生效」这种标题给不出的信息。\n'
+          '确需放过（旧版本兼容等）就在 $_restatingBaselinePath 里'
+          '裸写 `语言/说明键名` 并注明原因，但那是待办不是豁免。',
     );
   });
 

@@ -18979,12 +18979,6 @@ abstract class AppLocalizations {
   /// **'导出日历'**
   String get icsExportSectionTitle;
 
-  /// No description provided for @icsExportSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'选内容导出到系统日历'**
-  String get icsExportSectionSubtitle;
-
   /// No description provided for @icsExportTitle.
   ///
   /// In zh, this message translates to:
@@ -18996,12 +18990,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'课表'**
   String get icsExportProfileLabel;
-
-  /// No description provided for @icsExportProfileSelectTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'选择课表'**
-  String get icsExportProfileSelectTitle;
 
   /// No description provided for @icsExportDateRangeTitle.
   ///

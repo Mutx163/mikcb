@@ -158,7 +158,6 @@ class _IcsExportScreenState extends State<IcsExportScreen> {
               children: [
                 HyperosSelectTile<String>(
                   label: l10n.icsExportProfileLabel,
-                  subtitle: l10n.icsExportProfileSelectTitle,
                   items: _profileItems(provider.profiles, l10n),
                   value: profile?.id,
                   onChanged: _handleProfileChanged,

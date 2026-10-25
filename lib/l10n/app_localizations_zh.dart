@@ -10426,16 +10426,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get icsExportSectionTitle => '导出日历';
 
   @override
-  String get icsExportSectionSubtitle => '选内容导出到系统日历';
-
-  @override
   String get icsExportTitle => '导出日历';
 
   @override
   String get icsExportProfileLabel => '课表';
-
-  @override
-  String get icsExportProfileSelectTitle => '选择课表';
 
   @override
   String get icsExportDateRangeTitle => '日期范围';
@@ -22032,16 +22026,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get icsExportSectionTitle => '匯出日曆';
 
   @override
-  String get icsExportSectionSubtitle => '選內容匯出到系統日曆';
-
-  @override
   String get icsExportTitle => '匯出日曆';
 
   @override
   String get icsExportProfileLabel => '課表';
-
-  @override
-  String get icsExportProfileSelectTitle => '選擇課表';
 
   @override
   String get icsExportDateRangeTitle => '日期範圍';
@@ -33639,16 +33627,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get icsExportSectionTitle => '匯出日曆';
 
   @override
-  String get icsExportSectionSubtitle => '選內容匯出到系統日曆';
-
-  @override
   String get icsExportTitle => '匯出日曆';
 
   @override
   String get icsExportProfileLabel => '課表';
-
-  @override
-  String get icsExportProfileSelectTitle => '選擇課表';
 
   @override
   String get icsExportDateRangeTitle => '日期範圍';

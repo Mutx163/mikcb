@@ -5,6 +5,13 @@
 /// 2. `dart run tool/copy_style_lint.dart`：改文案前手动自查，只报不拦；
 /// 3. AGENTS.md 的 COPY-STYLE 节：写给人和 AI 看的口径，指向本文件。
 ///
+/// 目前守三条：
+/// - [findViolations]：行内文案**超宽**（真的折行）；
+/// - [findDeadKeys]：ARB 里有、代码从不引用的**死键**；
+/// - [findRestatingSubtitles]：说明句**只是在复述标题**（2026-10-25 新增，
+///   对应「避免不必要的次要标签和描述，让布局自己说话」）。
+
+///
 /// ## 为什么要有这个文件
 ///
 /// 2026-10-20～21 做过一轮文案简洁化（15 个提交、删 104 条改短 53 条），
@@ -300,6 +307,283 @@ Set<String> findDeadKeys({
   }
   return dead;
 }
+
+// =====================================================================
+// 「复述标题」判据：说明句是否只是在用别的词把标题重说一遍。
+// =====================================================================
+
+/// 复述判据的残留上限（按 [restatingResidue] 的 token 数计）。
+///
+/// **这是整条判据唯一的数字**，含义：说明句去掉「行首操作动词」「标题里已有的
+/// 词」「纯连接词」之后，还剩几个 token。**0 = 一个都不剩 = 纯复述**。
+///
+/// 为什么不设成 2（「差不多就行」）：实测过，2 会把真话判成废话。
+/// 英文 `Run once now` / `Ignore the schedule` 残留 2 个 token
+/// （ignore、schedule），但它讲的是「不等时间窗」——标题给不出这个信息，
+/// 删掉用户就不知道为什么要有这个按钮。中文 `登录学校教务系统导入` /
+/// `教务系统导入` 同样残留「学校」这层限定。
+/// **误删的代价高于漏删**：漏掉一条灰字只是界面不够干净，删错一条会让用户
+/// 做错决定。这条口径由本仓库的 COPY-STYLE 纪律决定（「不误删优先」）。
+const int restatingResidueMaxTokens = 0;
+
+/// 纯连接词 / 语气词 / 虚词：剥掉它们不影响「这句话有没有新信息」。
+const Set<String> _copyStopWords = <String>{
+  // 中文虚词与连接词
+  '的', '了', '吗', '呢', '吧', '啊', '着', '过', '们', '你', '我', '他', '它',
+  '这', '那', '其', '之', '而', '且', '然', '后', '即', '可', '以', '及', '和',
+  '与', '或', '就', '在', '把', '被', '给', '为', '是', '一', '个', '都', '也',
+  '能', '会', '将', '要', '需', '还', '从', '对', '等', '地', '该', '本', '此',
+  '请', '再', '并', '由', '向', '于', '按', '如', '若',
+  // 英文冠词 / 介词 / 系动词
+  'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'for', 'with', 'and', 'or',
+  'is', 'are', 'be', 'you', 'your', 'it', 'this', 'that', 'will', 'can',
+};
+
+/// 行首操作动词：真正的「怎么做」该由界面表达，不该写进灰字。
+///
+/// 只剥**行首**一个：句中出现动词（「关闭后不再获取天气数据」）不算，
+/// 那种句子讲的是后果，要留。
+const List<String> _leadingActionVerbs = <String>[
+  '登录', '选择', '查看', '进入', '打开', '点按', '点击', '填写', '切换',
+  '设置', '添加', '长按', '滑动', '选中',
+  'select', 'view', 'open', 'enter', 'tap', 'click', 'choose', 'fill',
+  'switch', 'add', 'longpress',
+];
+
+bool _isCjkRune(int rune) => rune > 0x2e80;
+
+/// 把一段文案切成 token：汉字一字一个，拉丁字母/数字连续成词，其余是分隔。
+///
+/// 不用 `split(' ')`：中文没有空格，按词切会把整句当成一个 token，
+/// 判据就永远命中不了。
+///
+/// **注意这里只做「字」级切分，行首动词另由 [stripLeadingActionVerb] 处理**：
+/// 中文词没有分隔符，`「选择课表」` 切成单字后行首动词 `选择` 永远匹配不上，
+/// 会漏掉最典型的复述——这是 2026-10-25 反向验证时抓到的 bug。
+List<String> copyTokens(String text) {
+  final tokens = <String>[];
+  final buffer = StringBuffer();
+  void flush() {
+    if (buffer.isNotEmpty) {
+      tokens.add(buffer.toString().toLowerCase());
+      buffer.clear();
+    }
+  }
+
+  for (final rune in text.runes) {
+    if (_isCjkRune(rune)) {
+      flush();
+      tokens.add(String.fromCharCode(rune));
+    } else if (RegExp(r'[A-Za-z0-9]').hasMatch(String.fromCharCode(rune))) {
+      buffer.write(String.fromCharCode(rune));
+    } else {
+      flush();
+    }
+  }
+  flush();
+  return tokens;
+}
+
+/// 剥掉句子开头那一个「操作动词」（`选择课表` → `课表`）。
+///
+/// 必须在**原字符串**上按词剥，而不是在切好的单字 token 上剥：
+/// 中文动词是两个汉字，单字 token 里没有任何一项等于 `选择`。
+///
+/// 只剥行首一个：「关闭后不再获取天气数据」这类句子里虽然也有动词，
+/// 但它讲的是后果，整句要留。
+String stripLeadingActionVerb(String text) {
+  final trimmed = text.trimLeft();
+  for (final verb in _leadingActionVerbs) {
+    if (trimmed.toLowerCase().startsWith(verb)) {
+      return trimmed.substring(verb.length).trimLeft();
+    }
+  }
+  return trimmed;
+}
+
+/// 说明句在标题之外还剩多少 token；0 表示纯复述。
+///
+/// 步骤：先剥行首操作动词（在字符串上做，见 [stripLeadingActionVerb]），
+/// 再切 token，最后去掉标题里已有的、以及 [copyStopWords]。
+int restatingResidue(String subtitle, String title) {
+  final tokens = copyTokens(stripLeadingActionVerb(subtitle));
+  final titleTokens = copyTokens(title).toSet();
+  var residue = 0;
+  for (final token in tokens) {
+    if (titleTokens.contains(token) || _copyStopWords.contains(token)) {
+      continue;
+    }
+    residue++;
+  }
+  return residue;
+}
+
+/// 一处「说明句复述标题」。
+class RestatingSubtitle {
+  const RestatingSubtitle({
+    required this.titleKey,
+    required this.subtitleKey,
+    required this.locale,
+    required this.widget,
+    required this.residue,
+    required this.source,
+    required this.line,
+    required this.titleText,
+    required this.subtitleText,
+  });
+
+  final String titleKey;
+  final String subtitleKey;
+  final String locale;
+  final String widget;
+
+  /// 残留 token 数（0 = 纯复述）。
+  final int residue;
+  final String source;
+  final int line;
+  final String titleText;
+  final String subtitleText;
+
+  String get id => '$locale/$subtitleKey';
+
+  @override
+  String toString() =>
+      '$subtitleKey [$locale] 残留 $residue token'
+      '（标题「$titleText」/ 说明「$subtitleText」，$widget @ $source:$line）';
+}
+
+/// 一处「同一行控件里的标题键 + 说明键」配对。
+///
+/// 单独抽出来是因为复述判据必须**成对**看：说明句有没有新信息，
+/// 只取决于它和同一行的标题比。单看说明句无从判断。
+class RowCopyPair {
+  const RowCopyPair({
+    required this.widget,
+    required this.titleKey,
+    required this.subtitleKey,
+    required this.source,
+    required this.line,
+  });
+
+  final String widget;
+  final String titleKey;
+  final String subtitleKey;
+  final String source;
+  final int line;
+}
+
+/// 从一处源码里抽出「标题键 + 说明键」配对。
+///
+/// 只认 `subtitle`：`details` / `hint` / `caption` 在仓库里含义不同——
+/// `details` 是行的**右侧取值**（如「已启用 3/6 个」），不是次要说明，
+/// 把它算进来会误伤真实数据。这一点与 [extractBindings] 的口径有意不同：
+/// 那里判「宽不宽」，两个槽位都受挤压；这里判「要不要存在」，只针对说明。
+///
+/// 同一控件块里第一个 title / subtitle 生效（与手工阅读一致）；
+/// 缺标题的配对跳过——没有标题就没有「复述」这回事。
+List<RowCopyPair> extractRowCopyPairs(String source, String sourcePath) {
+  final pairs = <RowCopyPair>[];
+  final widgets = squeezedRowWidgets.join('|');
+  final ctor = RegExp('\\b($widgets)\\s*(?:<[^<>()]*>)?\\s*\\(');
+  final titleRe = RegExp(
+    '\\b(title|label)\\s*:\\s*\\n?\\s*l10n\\.([A-Za-z0-9_]+)',
+  );
+  final subtitleRe = RegExp('\\bsubtitle\\s*:\\s*\\n?\\s*l10n\\.([A-Za-z0-9_]+)');
+
+  for (final match in ctor.allMatches(source)) {
+    final start = match.end;
+    var index = start;
+    var depth = 1;
+    while (index < source.length && depth > 0) {
+      final char = source[index];
+      if (char == '(') {
+        depth++;
+      } else if (char == ')') {
+        depth--;
+      }
+      index++;
+    }
+    if (depth != 0) {
+      continue; // 括号不配对的在途改动，跳过而不是炸。
+    }
+    final body = source.substring(start, index - 1);
+    final subtitleMatch = subtitleRe.firstMatch(body);
+    if (subtitleMatch == null) {
+      continue;
+    }
+    final titleMatch = titleRe.firstMatch(body);
+    if (titleMatch == null) {
+      continue; // 无标题：说明句是这行唯一的标签，不是「复述」。
+    }
+    pairs.add(
+      RowCopyPair(
+        widget: match.group(1)!,
+        titleKey: titleMatch.group(2)!,
+        subtitleKey: subtitleMatch.group(1)!,
+        source: sourcePath,
+        line: _lineOf(source, match.start),
+      ),
+    );
+  }
+  return pairs;
+}
+
+/// 全仓检查：所有语言 × 所有「标题 + 说明」配对，找出复述标题的说明句。
+///
+/// 同一 `locale/说明键` 只报一次（取第一处引用），与 [findViolations] 一致。
+List<RestatingSubtitle> findRestatingSubtitles({
+  required Map<String, String> sources,
+  required Map<String, ArbValues> arbByLocale,
+}) {
+  final pairs = <String, RowCopyPair>{};
+  for (final entry in sources.entries) {
+    for (final pair in extractRowCopyPairs(entry.value, entry.key)) {
+      pairs.putIfAbsent(
+        '${pair.titleKey}\u0000${pair.subtitleKey}',
+        () => pair,
+      );
+    }
+  }
+
+  final found = <RestatingSubtitle>[];
+  final reported = <String>{};
+  for (final pair in pairs.values) {
+    for (final locale in arbByLocale.keys) {
+      final arb = arbByLocale[locale];
+      final title = arb?[pair.titleKey];
+      final subtitle = arb?[pair.subtitleKey];
+      if (title == null || subtitle == null) {
+        continue; // 缺译由 test/l10n 管。
+      }
+      final residue = restatingResidue(subtitle, title);
+      if (residue > restatingResidueMaxTokens) {
+        continue;
+      }
+      final id = '$locale\u0000${pair.subtitleKey}';
+      if (!reported.add(id)) {
+        continue;
+      }
+      found.add(
+        RestatingSubtitle(
+          titleKey: pair.titleKey,
+          subtitleKey: pair.subtitleKey,
+          locale: locale,
+          widget: pair.widget,
+          residue: residue,
+          source: pair.source,
+          line: pair.line,
+          titleText: title,
+          subtitleText: subtitle,
+        ),
+      );
+    }
+  }
+  found.sort((a, b) => a.id.compareTo(b.id));
+  return found;
+}
+
+/// 复述违规的稳定标识（写进基线文件的那一行）。
+String restatingId(RestatingSubtitle v) => v.id;
 
 /// 六种语言的 ARB 文件名（`lib/l10n/app_<locale>.arb`）。
 const List<String> appLocales = <String>[

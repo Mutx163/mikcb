@@ -10741,16 +10741,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get icsExportSectionTitle => 'カレンダーをエクスポート';
 
   @override
-  String get icsExportSectionSubtitle => '選んだ項目をカレンダーへ出力';
-
-  @override
   String get icsExportTitle => 'カレンダーをエクスポート';
 
   @override
   String get icsExportProfileLabel => '時間割プロフィール';
-
-  @override
-  String get icsExportProfileSelectTitle => '時間割プロフィールを選択';
 
   @override
   String get icsExportDateRangeTitle => '日付範囲';
