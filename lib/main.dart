@@ -43,6 +43,7 @@ import 'utils/frame_perf_probe.dart';
 import 'utils/home_page_background.dart';
 import 'utils/home_startup_visual_primer.dart';
 import 'utils/locale_utils.dart';
+import 'utils/perf_probe.dart';
 import 'utils/theme_seed_accent.dart';
 import 'utils/timed_method_channel.dart';
 import 'utils/wallpaper_history.dart';
@@ -222,6 +223,9 @@ const int kHomeRevealFadeMs = 150;
 void _releaseFirstFrame({required bool forced}) {
   if (_firstFrameReleased.isCompleted) return;
   _firstFrameReleased.complete();
+  // 启动分段的「首帧可绘制」。forced 单独记一笔：看门狗兜底放行意味着
+  // 启动管线挂过死，那一轮的耗时数字不能与正常轮混着看。
+  PerfProbe.startupMark(forced ? 'firstFrameForced' : 'firstFrame');
   try {
     WidgetsBinding.instance.allowFirstFrame();
   } catch (_) {
@@ -246,6 +250,9 @@ void Function()? _forcedHomeRevealHook;
 Future<void> main() async {
   runZonedGuarded(
     () async {
+      // 常驻性能探针（仅 profile/debug，或带 --dart-define=PERF_PROBE=true 的正式包）：
+      // 启动分段的第一站。放 zoned body 第一行，尽量贴近 Dart 侧的起点。
+      PerfProbe.startupMark('mainEnter');
       // ensureInitialized() MUST be called inside the same zone as runApp()
       // to avoid a "Zone mismatch" assertion. The binding records the zone
       // in which it was first initialized; if runApp() runs in a different
@@ -254,6 +261,7 @@ Future<void> main() async {
       // particularly after an Android process restart (e.g. returning from
       // the system image picker).
       WidgetsFlutterBinding.ensureInitialized();
+      PerfProbe.startupMark('bindingReady');
       // 帧耗时探针（临时诊断件，release 里是空壳）：按帧统计 UI / 渲染线程耗时，
       // 把「动画卡的那一段」聚合成一条 `[frame-perf]` 日志并判定是哪条线程超时。
       // 详情与删除清单见 `.agents/notes/implemented/process/2026-09-16-frame-perf-probe.md`。
@@ -262,6 +270,12 @@ Future<void> main() async {
       // 等帧 / 构建 / 布局 / 绘制四段，并用命名采样点分出顶栏外壳与页面内容。
       // `[frame-perf]` 已证明尖峰在 UI 线程，但指不出该改哪一段，靠它定位。
       FirstFrameProbe.install();
+      // 页面级性能探针（**常驻诊断能力**，非临时件）：每个经 Navigator 推入的页面
+      // 自动记一行帧账 + CPU/RSS 能耗代理，每 5 秒只在「真有新帧」时落一次盘。
+      // release 且不带 PERF_PROBE 时这里直接 return，下面 navigatorObservers 取到
+      // null —— 正式版连对象都不建（零开销在装配处保证，不靠探针内部到处判断）。
+      // 详情见 `.agents/notes/` 里本次的探针笔记。
+      PerfProbe.install();
       // 金标联盟「谷歌Android导航条适配」（Edge-to-Edge，截止 2026-10-31）：
       // 全局启用手势导航条沉浸式。Android 15+（targetSdk 35+）系统已强制
       // 生效；此处覆盖 Android 10~14 设备，使内容延伸到透明导航条下方，
@@ -384,7 +398,11 @@ Future<void> main() async {
         settingsScreen: () => const TimetableSettingsScreen(),
         subpageById: settingsSubpageById,
       );
+      // 版本进报表头：两版本差分必须先确认「这一轮跑的是哪个包」，否则同一份
+      // 报表里混了 2.1.4.1 与 HEAD 的行就无从解释。
+      PerfProbe.noteAppVersion(packageInfo.version, packageInfo.buildNumber);
       runApp(MyApp(packageInfo: packageInfo));
+      PerfProbe.startupMark('runApp');
       // flutter_miuix 的 OS4 玻璃着色器预热（6 个 `miuix_os4_*.frag`）。
       //
       // 背景：`MiuixGlass` 首次使用时才 `MiuixGlassRendering.load()`，那会让
@@ -527,6 +545,9 @@ class MyApp extends StatelessWidget {
             ),
             builder: (context, settings, child) {
               final fontSpec = settings.fontMode.fontSpec;
+              // 探针的路由观察者取一次存下来：正式包里它是 null（探针没装），
+              // 下面用条件元素跳过它，那一侧连对象都不建。
+              final perfObserver = PerfProbe.observer;
 
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
@@ -561,6 +582,9 @@ class MyApp extends StatelessWidget {
                 // WidgetsApp does not assert "Could not find a generator".
                 onUnknownRoute: _buildUnknownPlatformRoute,
                 navigatorObservers: <NavigatorObserver>[
+                  // 页面级性能归属。探针未安装（正式包）时这里是 null，
+                  // 条件元素让那一侧连对象都不建。
+                  ?perfObserver,
                   _AppRouteLogObserver(),
                   FairMemoryService.instance.routeObserver,
                   hyperosRouteObserver,
@@ -752,9 +776,16 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (!mounted || _homeRevealed) {
         return;
       }
-      setState(() {
-        _homeRevealed = true;
-      });
+      setState(() => _homeRevealed = true);
+      PerfProbe.startupMark('homeRevealed');
+      // 日/周/月三个视图都不经 Navigator（月视图是底栏内嵌页），路由观察者
+      // 看不见；而三者都会把结果写进持久化的 timetableHomeViewMode，所以监听
+      // 这一处就同时拿到三个视图 —— 也就不用往 2,815 行的热文件里插打点。
+      final perfProvider = context.read<TimetableProvider>();
+      PerfProbe.attachHomeViewTracker(
+        source: perfProvider,
+        modeName: () => perfProvider.settings.timetableHomeViewMode.name,
+      );
     }
 
     final hold = splashHoldRemaining(_splashClock.elapsed);

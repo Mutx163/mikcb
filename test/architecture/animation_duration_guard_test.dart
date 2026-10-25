@@ -134,6 +134,9 @@ const Map<String, int> _allowedBareDurations = <String, int>{
   'lib/screens/live_diagnostics_log_viewer_screen.dart': 2,
   'lib/screens/weather_city_picker_screen.dart': 1, // 搜索防抖
   'lib/utils/home_startup_visual_primer.dart': 1, // 预热预算
+  // 性能探针的 CPU/RSS 采样周期。是**逻辑时间**：跟着「转场速度」倍率缩放会
+  // 让采样在 2.5× 时变成每 100ms 读一次 /proc —— 诊断件反过来给自己加负载。
+  'lib/utils/perf_probe.dart': 1,
   'lib/widgets/app_startup_splash.dart': 1, // 最短展示时长
   'lib/widgets/class_reminder_sheet.dart': 2, // 等弹层布局完成
   'lib/widgets/wallpaper_position_picker_sheet.dart': 1,

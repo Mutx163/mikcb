@@ -8,6 +8,7 @@ import 'couple_timetable_settings_screen.dart';
 import 'import/course_import_entry_screen.dart';
 import 'lan_edit_screen.dart';
 import 'live_settings_subpages.dart';
+import 'perf_report_screen.dart';
 import 'settings/settings_live.dart';
 import 'timetable_settings_screen.dart';
 
@@ -68,6 +69,14 @@ DebugDeepLinkBindings buildDebugDeepLinkBindings({
             context,
             settings: const RouteSettings(name: '/settings/live/keep-alive'),
             builder: (_) => const LiveKeepAliveSettingsScreen(),
+          );
+        case 'settings/live/perf-report':
+          // 每页帧率 + 能耗代理排行。正式版探针未装，这一页只会显示
+          // 「probe not installed」，不构成绕过诊断门控的通道。
+          return HyperosNavigation.push<void>(
+            context,
+            settings: const RouteSettings(name: '/settings/live/perf-report'),
+            builder: (_) => const PerfReportScreen(),
           );
         case 'settings/couple':
           return HyperosNavigation.push<void>(

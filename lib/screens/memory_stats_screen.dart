@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/memory_stats_service.dart';
+import 'perf_report_screen.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
 
@@ -237,6 +238,19 @@ class _MemoryStatsScreenState extends State<MemoryStatsScreen>
                 subtitle: _autoRefreshEnabled
                     ? '每 ${_autoRefreshInterval.inSeconds} 秒采样一次'
                     : '已关闭自动刷新，使用右上角按钮手动更新',
+              ),
+              HyperosNavTile(
+                icon: Icons.speed_rounded,
+                iconAccent: HyperosIconColors.teal,
+                title: 'Perf Report',
+                subtitle: 'Per-page fps + energy proxy',
+                onTap: () => HyperosNavigation.push<void>(
+                  context,
+                  settings: const RouteSettings(
+                    name: '/settings/live/perf-report',
+                  ),
+                  builder: (_) => const PerfReportScreen(),
+                ),
               ),
             ],
           ),

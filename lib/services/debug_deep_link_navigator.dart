@@ -129,6 +129,12 @@ class DebugDeepLinkNavigator {
             'settings/live',
             'settings/live/keep-alive',
           ]);
+        case 'settings/live/perf-report':
+          await _pushStack(context, bindings, const <String>[
+            'settings',
+            'settings/live',
+            'settings/live/perf-report',
+          ]);
         case 'action/resume':
           await _runResume(context, bindings);
         case 'action/seed-soon':
