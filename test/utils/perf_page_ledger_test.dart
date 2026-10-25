@@ -46,12 +46,14 @@ PerfPageLedger _ledger(
   _FakeCost cost, {
   double refreshRateHz = 60,
   int minDwellUs = 0,
+  List<double> supportedRefreshRatesHz = const <double>[],
 }) {
   return PerfPageLedger(
     nowUs: clock.read,
     readCost: cost.read,
     refreshRateHz: () => refreshRateHz,
     minDwellUs: minDwellUs,
+    supportedRefreshRatesHz: supportedRefreshRatesHz,
   );
 }
 
@@ -319,6 +321,60 @@ void main() {
       ledger.beginPage('both');
       _feed(ledger, clock, buildUs: 9000, rasterUs: 8000);
       expect(ledger.samplesByName()['both']!.verdict, 'both');
+    });
+
+    test('不在面板支持周期上的 vsync 样本不予采纳（真机采到 6.2ms = 161Hz）', () {
+      // 2026-10-25 真机实测：设备支持 60/90/120/144Hz（周期 16.67/11.11/
+      // 8.33/6.94ms），探针却采到 6.2ms —— 它不是任何一个真实模式，而预算
+      // 因此从 8.33 收紧到 6.20，掉帧阈值从 10.41ms 压到 7.75ms（-26%），
+      // 把合格帧成批判成掉帧（那一轮 69.9% 的掉帧大半是这么来的）。
+      //
+      // 这条用例住在账本层而不是门面层：它是**账本的**判据（采样口径），
+      // 门面只负责把候选模式注入进去。
+      final clock = _FakeClock();
+      final ledger = _ledger(
+        clock,
+        _FakeCost(clock),
+        refreshRateHz: 120,
+        supportedRefreshRatesHz: const <double>[60, 90, 120, 144],
+      );
+      ledger.beginPage('P');
+      // 先采到一个真实节奏：120Hz 的 8333us。
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1000000);
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1008333);
+      expect(ledger.budgetUs, 8333);
+
+      // 再喂 6200us（161Hz，哪个模式都不是）：不许把预算压下去。
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1014533);
+      expect(ledger.budgetUs, 8333, reason: '6.2ms 不是面板节奏，不该收紧预算');
+    });
+
+    test('真实模式之间的切换仍然被采纳（90Hz 样本是合法的）', () {
+      final clock = _FakeClock();
+      final ledger = _ledger(
+        clock,
+        _FakeCost(clock),
+        refreshRateHz: 120,
+        supportedRefreshRatesHz: const <double>[60, 90, 120, 144],
+      );
+      ledger.beginPage('P');
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1000000);
+      // 11111us = 90Hz，是真实模式；预算取 min(上报, 实测) 仍是 8333。
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1011111);
+      expect(ledger.budgetUs, 8333);
+      // 若是 144Hz（6944us）则应把预算收到 6944 —— 证明真实模式确实会被采纳。
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1018055);
+      expect(ledger.budgetUs, 6944);
+    });
+
+    test('不知道面板支持哪些模式时不加过滤（别把规则变成瞎猜）', () {
+      final clock = _FakeClock();
+      final ledger = _ledger(clock, _FakeCost(clock), refreshRateHz: 120);
+      ledger.beginPage('P');
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1000000);
+      _feed(ledger, clock, buildUs: 1000, rasterUs: 1000, vsyncUs: 1006200);
+      // 空表 = 不知道：任何可信间隔都采纳（这里采到 6200）。
+      expect(ledger.budgetUs, 6200);
     });
 
     test('只有 build 超、raster 为 0 也照样判得出来（不能要求两栏都有值）', () {

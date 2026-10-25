@@ -116,6 +116,7 @@ abstract final class PerfProbe {
       nowUs: _nowUs,
       readCost: _currentCost,
       refreshRateHz: _reportedRefreshRate,
+      supportedRefreshRatesHz: _supportedRefreshRates(),
     );
     _startup = PerfStartup();
     _observer = _PerfRouteObserver();
@@ -586,12 +587,16 @@ abstract final class PerfProbe {
 
   /// 把观察者取到的名字再收一次口径。
   ///
-  /// 只处理**已知会与视图名重叠**的那一个：课表主页面。其它页面原样通过，
+  /// 只处理**已知会与视图名重叠**的那几个：课表主页面，以及它的根
+  /// `AppEntryScreen`（`MaterialApp.home` 建出来的就是它 —— 真机读数里它单独
+  /// 占了一行 802 帧 / 40s，把启动期那一大段记到了一个谁都不认识的类名下）。
+  /// 其它页面原样通过，
   /// 这张表多写一条就是多一处误伤风险（把两个真不同的页面并成一行，
   /// 比行名不统一更难查）。
   static String canonicalPageId(String pageId) {
     final normalized = normalizePageId(pageId);
     if (normalized == 'TimetableScreen' ||
+        normalized == 'AppEntryScreen' ||
         normalized == kHomeViewPagePrefix) {
       // 知道停在哪个视图就归到那一行；不知道（未接追踪器）才用父级名。
       // 不递归：viewPageId 产出 `home:day`，不匹配上面两个值。
@@ -762,6 +767,35 @@ abstract final class PerfProbe {
       return stamp > 0 ? stamp : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// 面板支持的刷新率（Hz）。读不到就返回空表 —— 空表意味着「不知道」，
+  /// 账本因此不加过滤（见 `PerfPageLedger._isPanelPeriod`）。
+  ///
+  /// 为什么需要它：真机上采到过 6.2ms（≈161Hz）这种不存在的节奏，而它会把
+  /// 预算从 8.33 收紧到 6.20、掉帧阈值压下 26%，把合格帧成批判成掉帧。
+  static List<double> _supportedRefreshRates() {
+    try {
+      final views = SchedulerBinding.instance.platformDispatcher.views;
+      if (views.isEmpty) {
+        return const <double>[];
+      }
+      final reported = views.first.display.refreshRate;
+      final rates = <double>[];
+      if (reported.isFinite && reported > 1) {
+        rates.add(reported);
+      }
+      // 常见档位一起作为候选：面板会在档位间切换（空闲 60 / 交互 120），
+      // 只认一个值会把「切到另一个真实档位」误判成噪声。
+      for (final hz in const <double>[60, 90, 120, 144]) {
+        if (!rates.any((r) => (r - hz).abs() < 1)) {
+          rates.add(hz);
+        }
+      }
+      return rates;
+    } catch (_) {
+      return const <double>[];
     }
   }
 

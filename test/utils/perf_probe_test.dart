@@ -502,6 +502,39 @@ void main() {
     });
   });
 
+  // 下面两条同样来自 2026-10-25 第二轮真机实测 —— 这一轮数据完整了，
+  // 反而把两个更隐蔽的口径问题照了出来。
+  group('首页根 widget 必须与视图行收敛（真机拆成 AppEntryScreen + home:day 两行）', () {
+    setUp(PerfProbe.debugUninstall);
+    tearDown(PerfProbe.debugUninstall);
+
+    test('AppEntryScreen 收敛到当前视图那一行', () {
+      // 是首页根 StatefulWidget 的类名，`MaterialApp.home` 建出来的就是它。
+      // 真机读数里它单独占了一行（802 帧 / 40s / fps=20），而真正的首页内容
+      // 在 `home:day` 那行（598 帧 / 8.3s）—— 同一页被拆成两行，两版本还未必
+      // 按同样比例分裂，那是假增减；更要紧的是启动期那一大段被记到了一个
+      // 谁都不认识的类名下，最贵的账又一次藏起来了。
+      PerfProbe.debugInstall(minDwellUs: 0);
+      final source = _FakeListenable();
+      PerfProbe.attachHomeViewTracker(source: source, modeName: () => 'day');
+
+      expect(PerfProbe.canonicalPageId('AppEntryScreen'), 'home:day');
+      // 未接视图追踪器时退化成父级名，而不是丢掉。
+      PerfProbe.debugUninstall();
+      PerfProbe.debugInstall(minDwellUs: 0);
+      expect(PerfProbe.canonicalPageId('AppEntryScreen'), 'home');
+    });
+
+    test('收敛只认首页根，别的 *Screen 不受影响', () {
+      PerfProbe.debugInstall(minDwellUs: 0);
+      expect(PerfProbe.canonicalPageId('ExamListScreen'), 'ExamListScreen');
+      expect(PerfProbe.canonicalPageId('AddCourseScreen'), 'AddCourseScreen');
+    });
+  });
+
+  // 「实测 vsync 必须是面板真实节奏」那三条用例住在 perf_page_ledger_test 里：
+  // 它是**账本的**采样口径（门面只负责把候选模式注入），放在账本层才能被
+  // 那条判据的变异直接咬住 —— 之前放在这里，咬合探针改坏账本时根本跑不到它。
   group('报表头带得上解释读数所需的环境', () {
     test('meta 给 CPU 核数、不给会误导的 deviceModel', () {
       // 真机读数 cpuMs=48980 / spanMs=39317 ≈ 1.25 个核。这个数要能解释，

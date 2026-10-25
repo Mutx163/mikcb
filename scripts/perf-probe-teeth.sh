@@ -122,6 +122,7 @@ probe "rss 单位改成字节（KB 口径失效）" "$PROC" "$T_PROC" \
 echo "===== perf_probe.dart ====="
 probe "首页不再收敛行名（home 与 home:day 拆两行）" "$PROBE" "$T_PROBE" \
   "    if (normalized == 'TimetableScreen' ||
+        normalized == 'AppEntryScreen' ||
         normalized == kHomeViewPagePrefix) {" \
   '    if (false) {'
 probe "归一化不剥泛型参数" "$PROBE" "$T_PROBE" \
@@ -194,6 +195,17 @@ probe "认不出页面时又拿路由类型名收工（真页面记成 MaterialP
 probe "报表头不再带 CPU 核数（cpuMs 读数没法解释）" "$PROBE" "$T_PROBE" \
   "      'cpuCount': Platform.numberOfProcessors," \
   "      // mutated: 去掉核数"
+
+echo "===== 第二轮真机实测暴露的两条（2026-10-25 补） ====="
+probe "vsync 不再按面板模式过滤（采到 6.2ms 就把预算压 26%）" "$LEDGER" "$T_LEDGER" \
+  '    if (!_isPanelPeriod(gap)) {
+      return;
+    }' \
+  '    // mutated: 跳过模式过滤'
+probe "首页根 AppEntryScreen 不再收敛（拆成两行，启动账记到陌生类名下）" "$PROBE" "$T_PROBE" \
+  "        normalized == 'AppEntryScreen' ||
+" \
+  ''
 
 echo "===== 还原并复验全绿 ====="
 restore

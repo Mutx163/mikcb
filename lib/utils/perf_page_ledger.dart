@@ -148,6 +148,7 @@ class PerfPageLedger {
     required CostReading Function() readCost,
     required double Function() refreshRateHz,
     this.minDwellUs = 150000,
+    this.supportedRefreshRatesHz = const <double>[],
   }) :
        // 三个读数源存成私有字段。`prefer_initializing_formals` 在这里无法满足：
        // Dart 不允许下划线开头的**具名**形参，改位置参反而更容易串位（三个
@@ -174,6 +175,18 @@ class PerfPageLedger {
 
   /// 还没切过页时的归属：启动期的帧不该无处可去。
   static const String bootPage = 'boot';
+
+  /// 面板**支持**的刷新率（Hz）。空 = 不知道，此时不加过滤。
+  ///
+  /// 用来挡住不可能是面板节奏的 vsync 样本。2026-10-25 真机实测：设备支持
+  /// 60/90/120/144Hz（周期 16.67/11.11/8.33/6.94ms），探针却采到 **6.2ms
+  /// （≈161Hz）** —— 它不是任何一个真实模式，而预算因此从 8.33 收紧到 6.20，
+  /// 掉帧阈值从 10.4ms 压到 7.75ms（**-26%**），把合格帧成批判成掉帧
+  /// （那一轮掉帧率 69.9%，绝大部分是这么来的假警报）。
+  static const double _modeTolerance = 0.08;
+
+  /// 面板支持的刷新率（Hz）；空表示未知，此时任何可信间隔都采纳。
+  final List<double> supportedRefreshRatesHz;
 
   /// 一段访问短于这个时长就并进前一页（误触一下不该在排行里占一行）。
   ///
@@ -463,9 +476,32 @@ class PerfPageLedger {
     if (gap < _minPlausibleGapUs || gap > _maxPlausibleGapUs) {
       return;
     }
+    if (!_isPanelPeriod(gap)) {
+      return;
+    }
     if (_observedMinGapUs == 0 || gap < _observedMinGapUs) {
       _observedMinGapUs = gap;
     }
+  }
+
+  /// 这个间隔是否落在某个「支持模式的周期」上（±8%）。
+  ///
+  /// 不知道支持哪些模式（空表）时一律放行：多一条规则就多一处能猜错的地方，
+  /// 而「不知道」不该被当成「都不像」。
+  bool _isPanelPeriod(int gapUs) {
+    if (supportedRefreshRatesHz.isEmpty) {
+      return true;
+    }
+    for (final hz in supportedRefreshRatesHz) {
+      if (hz <= 0) {
+        continue;
+      }
+      final periodUs = 1000000 / hz;
+      if ((gapUs - periodUs).abs() <= periodUs * _modeTolerance) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
