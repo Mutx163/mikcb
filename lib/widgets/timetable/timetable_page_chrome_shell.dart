@@ -325,7 +325,18 @@ class _TimetablePageChromeShellState extends State<TimetablePageChromeShell> {
     final stack = Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(child: _wallpaperLayer(chrome)),
+        // ⚠️ **不要再包一层 `Positioned.fill`**：`homePageBackdropLayer` 自己
+        // 已经返回 `Positioned.fill(Image)`，外面再包一层就是同一个 RenderObject
+        // 收到两个 `Positioned`（ParentDataWidget 冲突）—— debug 下进页面直接抛
+        // "Competing ParentDataWidgets are providing parent data to the same
+        // RenderObject"，**带壁纸的月视图因此根本打不开**（2026-10-25 渲染取证时
+        // 撞到；此前一直被"测试都没设壁纸"掩盖，无壁纸分支返回 `ColoredBox`，
+        // 一层 `Positioned` 完全合法）。
+        //
+        // 去掉外层包装后两边都对：本 `Stack` 是 `StackFit.expand`，
+        // 非 positioned 的孩子（无壁纸时的 `ColoredBox`）会被拉满。
+        // 回归用例：`test/services/month_view_wallpaper_open_test.dart`。
+        _wallpaperLayer(chrome),
         if (chrome.hasBackdrop && !chrome.statusBarShowsBackdrop)
           HomePageStatusBarBackdropMask(color: chrome.pageBackgroundColor),
         if (chrome.continuousChromeBlur) const HomeChromeGroupCapture(),
