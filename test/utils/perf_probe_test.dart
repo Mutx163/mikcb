@@ -346,6 +346,173 @@ void main() {
       expect(PerfProbe.openLedger!.rankedBy().length, lessThanOrEqualTo(1));
     });
   });
+
+  // 下面四组用例全部来自 2026-10-25 那次真机巡检的实测数据 —— 探针在真机上
+  // 跑出数据之后，暴露出三个自己没测到的问题，逐条补在这里。
+  group('启动打点在 install 之前不能丢（真机实测丢了两段）', () {
+    setUp(PerfProbe.debugUninstall);
+    tearDown(PerfProbe.debugUninstall);
+
+    test('装之前的打点先缓冲、装的时候补记进去', () {
+      // 真机读数里只有 runApp / firstFrame / homeRevealed 三段，
+      // mainEnter 与 bindingReady **整段不见了**：它们在 PerfProbe.install()
+      // 之前调用，而那时启动记录器还没建出来，被静默丢弃。
+      // 丢的偏偏是「进程起来 → Dart 侧起点 → binding 就绪」这一段，
+      // 也就是冷启动里最贵、最想知道的那一段。
+      PerfProbe.debugUninstall();
+      PerfProbe.startupMark('mainEnter');
+      PerfProbe.startupMark('bindingReady');
+      PerfProbe.debugInstall();
+
+      final phases = (PerfProbe.snapshotJson()['startup'] as List<Object?>)
+          .map((e) => (e as Map<String, Object?>)['phase'])
+          .toList();
+      expect(phases, <String>['mainEnter', 'bindingReady']);
+    });
+
+    test('缓冲段与装之后的打点顺序必须对（不能把补记排在后面）', () {
+      PerfProbe.debugUninstall();
+      PerfProbe.startupMark('mainEnter');
+      PerfProbe.debugInstall();
+      PerfProbe.startupMark('runApp');
+      PerfProbe.startupMark('firstFrame');
+
+      final phases = (PerfProbe.snapshotJson()['startup'] as List<Object?>)
+          .map((e) => (e as Map<String, Object?>)['phase'])
+          .toList();
+      expect(phases, <String>['mainEnter', 'runApp', 'firstFrame']);
+    });
+
+    test('卸载会清掉缓冲，不让用例/会话之间顺序耦合', () {
+      // 「正式版不缓冲」由编译期常量 `_willInstall` 保证（release 且无 define
+      // 时那条分支被折叠掉），在 debug 测试里跑不到 —— 所以这里只钉**能验的**
+      // 那半条：卸载必须把缓冲清干净，否则下一次安装会补记上一轮的残留阶段。
+      PerfProbe.debugUninstall();
+      PerfProbe.startupMark('mainEnter');
+      expect(PerfProbe.pendingStartupMarkCount, 1);
+      PerfProbe.debugUninstall();
+      expect(PerfProbe.pendingStartupMarkCount, 0);
+      expect(PerfProbe.isInstalled, isFalse);
+    });
+
+    test('重复 install 不会把缓冲补记两遍', () {
+      PerfProbe.debugUninstall();
+      PerfProbe.startupMark('mainEnter');
+      PerfProbe.debugInstall();
+      PerfProbe.debugInstall();
+      final phases = (PerfProbe.snapshotJson()['startup'] as List<Object?>)
+          .map((e) => (e as Map<String, Object?>)['phase'])
+          .toList();
+      expect(phases, <String>['mainEnter']);
+    });
+  });
+
+  group('跨重启不丢巡检数据（真机实测只剩 2 页）', () {
+    // 真机读数里只有 home:week 与 MaterialPageRoute 两页，而巡检清单里走了
+    // 十几处、还做了 3 次冷启动 —— 因为账本在内存里、冷启动清零，而自动落盘
+    // **覆盖同一个文件名**，最后一次启动把前面几次的巡检结果全盖掉了。
+
+    test('会话文件名带时间戳，且与 live 文件名不同', () {
+      final name = PerfProbe.sessionFileName(DateTime.utc(2026, 10, 25, 5, 6, 7));
+      expect(name, 'perf-session-20261025T050607.json');
+      expect(name, isNot(PerfProbe.liveJsonName));
+    });
+
+    test('轮转只删旧会话，绝不删 live 文件', () {
+      // 不传 keep，用生产默认值：这条要钉的正是「默认口径下也不会删 live 文件」。
+      final doomed = PerfProbe.sessionsToPrune(
+        const <String>[
+          PerfProbe.liveJsonName,
+          'perf-live.txt',
+          'perf-session-20261025T050607.json',
+        ],
+      );
+      expect(doomed, isEmpty);
+    });
+
+    test('会话超出保留数时，从最旧的开始删', () {
+      // 文件名用真实形状（零填充 ISO，字典序即时间序）—— 上一版这里我写了
+      // 带冒号的名字，正则根本不认，测出来会是「一个都没删」的假红。
+      String sessionAt(int hour) =>
+          'perf-session-20261025T${hour.toString().padLeft(2, '0')}0000.json';
+      final existing = <String>[
+        PerfProbe.liveJsonName,
+        for (var h = 1; h <= 12; h++) sessionAt(h),
+      ];
+      // 保留数取 5（非默认值）：这样「该删几份」是这条用例自己定的，
+      // 不会因为以后调整默认保留数而悄悄变成另一条断言。
+      final doomed = PerfProbe.sessionsToPrune(existing, keep: 5);
+      expect(
+        doomed,
+        <String>[for (var h = 1; h <= 7; h++) sessionAt(h)],
+      );
+      expect(doomed, isNot(contains(PerfProbe.liveJsonName)));
+    });
+
+    test('不认得的文件名一律不碰（用户自己放进来的东西不该被探针删掉）', () {
+      final doomed = PerfProbe.sessionsToPrune(
+        const <String>[
+          'perf-live.json',
+          'notes.txt',
+          'backup.json',
+          'perf-session-20261025T050607.json',
+        ],
+        keep: 1,
+      );
+      expect(doomed, isEmpty);
+    });
+  });
+
+  group('认不出页面时不许拿路由类型名收工（真机实测出现 MaterialPageRoute 行）', () {
+    test('路由自身说不出页面身份时给 null，交给回溯去找真页名', () {
+      // 全仓没有任何一处用 MaterialPageRoute（只有注释里说「别用」），
+      // 真机却出现了一行 page=MaterialPageRoute —— 说明那条路由的 name 与
+      // 泛型都给不出身份，而旧逻辑**拿路由类型名当成了「认出来了」**，
+      // 于是跳过了首帧后的页面名回溯，把一页真页面记成了一个框架类名。
+      expect(
+        PerfProbe.routeDeclaredPageId(routeTypeString: 'MaterialPageRoute<dynamic>'),
+        isNull,
+      );
+      expect(
+        PerfProbe.routeDeclaredPageId(routeTypeString: 'HyperosPageRoute<void>'),
+        isNull,
+      );
+    });
+
+    test('命名路由与带页面类型的泛型仍然算认出来了', () {
+      expect(
+        PerfProbe.routeDeclaredPageId(routeName: '/settings'),
+        'settings',
+      );
+      expect(
+        PerfProbe.routeDeclaredPageId(
+          routeTypeString: 'HyperosPageRoute<CourseOverviewScreen>',
+        ),
+        'CourseOverviewScreen',
+      );
+    });
+
+    test('pageIdFrom 的兜底链保持不变（回溯那一侧仍需要它）', () {
+      // 兜底链是「最后手段」，不是「认出页面」的判据：两件事必须分开，
+      // 否则把兜底值当成识别结果，就会重演上面那个 bug。
+      expect(
+        PerfProbe.pageIdFrom(routeTypeString: 'MaterialPageRoute<dynamic>'),
+        'MaterialPageRoute',
+      );
+    });
+  });
+
+  group('报表头带得上解释读数所需的环境', () {
+    test('meta 给 CPU 核数、不给会误导的 deviceModel', () {
+      // 真机读数 cpuMs=48980 / spanMs=39317 ≈ 1.25 个核。这个数要能解释，
+      // 就必须知道机器有几个核（8 核里占 1.25 与 2 核里占 1.25 含义完全不同）。
+      // 而 `Platform.localHostname` 在 Android 上恒为 "localhost"，写进报表
+      // 只会让读的人以为探针认出了机型 —— 删掉，机型由采集侧配对提供。
+      final meta = PerfProbe.debugMeta();
+      expect(meta['cpuCount'], isA<int>());
+      expect(meta.containsKey('deviceModel'), isFalse);
+    });
+  });
 }
 
 /// 可控的 [ChangeNotifier]：只用来数「挂了几个监听」并手动触发。

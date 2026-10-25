@@ -174,6 +174,27 @@ probe "单侧页读数一律记到 base 栏" "$DIFF" "$T_DIFF" \
   '    baseFps: fps,
     headFps: null,'
 
+echo "===== 真机实测暴露的四条（2026-10-25 补） ====="
+probe "启动打点不再缓冲（install 之前的 mainEnter 又丢了）" "$PROBE" "$T_PROBE" \
+  '    _pendingStartup.add((label, _nowUs()));' \
+  '    // mutated: 丢弃 install 之前的打点'
+probe "会话轮转把 live 文件也当成可删的（巡检数据当场被清）" "$PROBE" "$T_PROBE" \
+  '    final sessions = existingNames.where(_sessionNamePattern.hasMatch).toList()' \
+  '    final sessions = existingNames.toList()'
+probe "认不出页面时又拿路由类型名收工（真页面记成 MaterialPageRoute）" "$PROBE" "$T_PROBE" \
+  '    return _genericArgumentOf(routeTypeString);
+  }
+
+  /// 从路由信息推出页面 id，按「越具体越优先」兜底：' \
+  '    return _genericArgumentOf(routeTypeString) ??
+        normalizePageId(null, widgetType: routeTypeString);
+  }
+
+  /// 从路由信息推出页面 id，按「越具体越优先」兜底：'
+probe "报表头不再带 CPU 核数（cpuMs 读数没法解释）" "$PROBE" "$T_PROBE" \
+  "      'cpuCount': Platform.numberOfProcessors," \
+  "      // mutated: 去掉核数"
+
 echo "===== 还原并复验全绿 ====="
 restore
 for f in "$LEDGER" "$PROC" "$PROBE" "$DIFF"; do

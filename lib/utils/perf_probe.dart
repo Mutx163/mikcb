@@ -128,6 +128,8 @@ abstract final class PerfProbe {
     WidgetsBinding.instance.addObserver(_lifecycleObserver!);
     _sampleTimer = Timer.periodic(_costSampleInterval, (_) => _sampleCost());
     _flushTimer = Timer.periodic(_flushInterval, (_) => unawaited(_flushIfBusy()));
+    // 装之前收到的启动打点（mainEnter / bindingReady）在这里补记。
+    _flushPendingStartup();
     // 起点先取一次读数，第一段页面才不会一上来就是 null。
     _sampleCost();
     debugPrint(
@@ -137,7 +139,47 @@ abstract final class PerfProbe {
   }
 
   /// 记一个启动阶段（用探针自己的单调时钟）。未安装时空操作。
-  static void startupMark(String label) => _startup?.mark(label, _nowUs());
+  /// 记一个启动阶段。
+  ///
+  /// **install 之前也要接住**：`mainEnter` / `bindingReady` 发生在
+  /// `PerfProbe.install()` 之前（那时启动记录器还不存在），早期实现直接
+  /// `_startup?.` 把它们静默丢了 —— 2026-10-25 真机读数里恰好缺的就是这两段，
+  /// 也就是「进程起来 → Dart 侧起点 → binding 就绪」这段最贵、最想知道的。
+  /// 现在先缓冲、装的时候按原时间戳补记。
+  static void startupMark(String label) {
+    final startup = _startup;
+    if (startup != null) {
+      startup.mark(label, _nowUs());
+      return;
+    }
+    if (!_willInstall) {
+      // 正式版：连缓冲都不建（下面的分支被编译期常量折叠掉）。
+      return;
+    }
+    _pendingStartup.add((label, _nowUs()));
+  }
+
+  /// install 之前收到的启动打点（按收到的顺序）。
+  static final List<(String, int)> _pendingStartup = <(String, int)>[];
+
+  /// 缓冲里还压着几条（测试用；正式版恒为 0）。
+  @visibleForTesting
+  static int get pendingStartupMarkCount => _pendingStartup.length;
+
+  /// 把缓冲里的启动打点按原顺序补记进去（install 时调一次）。
+  static void _flushPendingStartup() {
+    final startup = _startup;
+    if (startup == null || _pendingStartup.isEmpty) {
+      return;
+    }
+    final pending = List<(String, int)>.of(_pendingStartup);
+    _pendingStartup.clear();
+    for (final (label, atUs) in pending) {
+      // 用**原始时间戳**而不是「现在」：补记的时刻才是真实发生的时刻，
+      // 否则 `mainEnter → bindingReady` 会被压成 0ms，那一段又白量了。
+      startup.mark(label, atUs);
+    }
+  }
 
   /// 手工切换「当前页面」：只用于**不经过 Navigator** 的页面切换
   /// （首页日/周/月三个视图、玻璃坞的内嵌页）。
@@ -238,7 +280,7 @@ abstract final class PerfProbe {
   static Future<String?> readLiveReport() async {
     try {
       final dir = await _reportDirectory();
-      final file = File('${dir.path}/$_liveFileName');
+      final file = File('${dir.path}/$_liveTxtName');
       return file.existsSync() ? file.readAsString() : null;
     } catch (error) {
       debugPrint('[perf-probe] read live failed: $error');
@@ -246,8 +288,95 @@ abstract final class PerfProbe {
     }
   }
 
-  static const String _liveJsonName = 'perf-live.json';
-  static const String _liveFileName = 'perf-live.txt';
+  /// 当前会话的落盘名。固定的好处是取数据只要记一条路径。
+  static const String liveJsonName = 'perf-live.json';
+  static const String _liveTxtName = 'perf-live.txt';
+
+  /// 保留多少份历史会话（每份 = 一次 App 启动）。
+  static const int _maxKeptSessions = 10;
+
+  /// 历史会话文件名（带那次启动的落盘时刻）。
+  ///
+  /// 为什么要有历史会话：账本在内存里，**冷启动会清零**，而自动落盘原本是
+  /// 覆盖同一个文件名 —— 2026-10-25 真机巡检因此只剩最后那次启动的 2 页，
+  /// 前面十几处页面的数据全被盖掉了。改成启动时把上一份 live 文件轮转成
+  /// 带时间戳的会话文件，一次巡检跨几次重启也能全部取回来。
+  @visibleForTesting
+  static String sessionFileName(DateTime stamp) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final utc = stamp.toUtc();
+    return 'perf-session-${utc.year}${two(utc.month)}${two(utc.day)}'
+        'T${two(utc.hour)}${two(utc.minute)}${two(utc.second)}.json';
+  }
+
+  /// 自己写的会话文件名的形状（只认这一种，别的文件一律不碰）。
+  static final RegExp _sessionNamePattern = RegExp(
+    r'^perf-session-\d{8}T\d{6}\.json$',
+  );
+
+  /// 该删哪些历史会话文件。
+  ///
+  /// 三条不变量（每一条都有用例钉着）：
+  /// - 返回值里**永远不含** live 文件；
+  /// - 永远不含不认得的文件名（探针删掉用户自己放进来的东西，比不清理严重得多）；
+  /// - 超量时从**最旧**的开始删（文件名是零填充的 ISO 形状，字典序即时间序）。
+  @visibleForTesting
+  static List<String> sessionsToPrune(
+    List<String> existingNames, {
+    int keep = _maxKeptSessions,
+  }) {
+    final sessions = existingNames.where(_sessionNamePattern.hasMatch).toList()
+      ..sort();
+    if (sessions.length <= keep) {
+      return const <String>[];
+    }
+    return sessions.sublist(0, sessions.length - keep);
+  }
+
+  /// 启动时把上一份 live 文件轮转成会话文件，并清理过旧的那些。
+  ///
+  /// **刻意用同步 I/O**（与「落盘路径不许同步 I/O」那条纪律不冲突，理由要分清）：
+  /// - 它是**一次性**动作，发生在 install 时、首帧之前，几个元数据操作的耗时
+  ///   在这个位置完全看不见；
+  /// - 同步还顺手消掉一个真实竞争：异步版必须让首次落盘 `await` 一个 future，
+  ///   否则可能「先写出新 live 文件、再被轮转改名」，把刚采的数据当成上一份
+  ///   会话搬走。同步执行完才把目录交出去，这个竞争根本不存在。
+  ///
+  /// 与 [PerfPageLedger] 的 250ms 采样、[PerfProbe] 每 5 秒的落盘相比，这里没有
+  /// 任何「周期性」成分 —— 会阻塞主线程的只有反复发生的同步 I/O，不是这一次。
+  static void _rotatePreviousSessionSync(Directory dir) {
+    try {
+      final live = File('${dir.path}/$liveJsonName');
+      if (!live.existsSync()) {
+        return;
+      }
+      final stamp = live.statSync().modified;
+      final base = sessionFileName(stamp);
+      final target = File('${dir.path}/$base');
+      if (target.existsSync()) {
+        // 同一秒内重复启动：不覆盖已有的那份（宁可少一份，不要毁一份）。
+        return;
+      }
+      live.renameSync(target.path);
+      final txt = File('${dir.path}/$_liveTxtName');
+      if (txt.existsSync()) {
+        txt.renameSync('${dir.path}/${base.replaceAll('.json', '.txt')}');
+      }
+      final names = <String>[
+        for (final entity in dir.listSync())
+          if (entity is File) entity.uri.pathSegments.last,
+      ];
+      for (final name in sessionsToPrune(names)) {
+        try {
+          File('${dir.path}/$name').deleteSync();
+        } catch (_) {
+          // 单个删不掉不影响别的。
+        }
+      }
+    } catch (error) {
+      debugPrint('[perf-probe] session rotate failed: $error');
+    }
+  }
 
   static Future<void> _flushIfBusy() async {
     final ledger = _ledger;
@@ -262,8 +391,8 @@ abstract final class PerfProbe {
     _framesAtLastFlush = frames;
     try {
       final dir = await _reportDirectory();
-      await _writeJson(File('${dir.path}/$_liveJsonName'));
-      await File('${dir.path}/$_liveFileName')
+      await _writeJson(File('${dir.path}/$liveJsonName'));
+      await File('${dir.path}/$_liveTxtName')
           .writeAsString(reportText(), flush: true);
     } catch (error) {
       debugPrint('[perf-probe] flush failed: $error');
@@ -362,6 +491,24 @@ abstract final class PerfProbe {
     // 报表行按空白切 token，名字里带换行会把一行劈成两行。
     value = value.replaceAll(RegExp(r'\s+'), ' ').trim();
     return value.isEmpty ? unnamedPage : value;
+  }
+
+  /// 路由**自身**能给出的页面身份；说不出来时给 null。
+  ///
+  /// 与 [pageIdFrom] 的区别就在那个 null：[pageIdFrom] 会把路由类型名当最后
+  /// 兜底（`MaterialPageRoute` 这种），那是「猜一个名字」，不是「认出了页面」。
+  /// 调用方必须用本方法判断「还要不要继续去找真页名」—— 2026-10-25 真机实测
+  /// 里正是把兜底值当成了识别结果，于是跳过首帧后的回溯，把一页真页面记成了
+  /// `MaterialPageRoute`（全仓没有任何一处用这个类，它只可能是兜底值）。
+  static String? routeDeclaredPageId({
+    String? routeName,
+    String? routeTypeString,
+  }) {
+    final name = normalizePageId(routeName);
+    if (name != unnamedPage) {
+      return name;
+    }
+    return _genericArgumentOf(routeTypeString);
   }
 
   /// 从路由信息推出页面 id，按「越具体越优先」兜底：
@@ -537,6 +684,13 @@ abstract final class PerfProbe {
   /// release 下是否也装探针：构建时加 `--dart-define=PERF_PROBE=true` 才生效。
   static const bool _enabledInRelease = bool.fromEnvironment('PERF_PROBE');
 
+  /// **编译期常量**：本次构建到底会不会装探针。
+  ///
+  /// [startupMark] 靠它决定「要不要在装之前先缓冲」；正式版（release 且没带
+  /// define）这个常量为 false，那条缓冲分支会被整体折叠掉 —— 零开销的口径
+  /// 因此仍然成立，不因为多了一个缓冲而破功。
+  static const bool _willInstall = !kReleaseMode || _enabledInRelease;
+
   // ── 内部：读数与接线 ────────────────────────────────────────────
 
   /// 单调时钟。用 [Stopwatch] 而不是 [DateTime]：后者会被系统校时带偏，
@@ -635,6 +789,10 @@ abstract final class PerfProbe {
   /// 这里只留「两次跑的是不是同一台内核」这个可比性凭据。
   static String? _osVersionCache;
 
+  /// 报表头（测试用；正式版无此调用）。
+  @visibleForTesting
+  static Map<String, Object?> debugMeta() => _meta();
+
   static Map<String, Object?> _meta() {
     // 设备标识是差分表的可比性凭据：换机型/换刷新率跑出的数不能互相比。
     // 只取公开系统信息，不落任何用户数据。
@@ -646,7 +804,11 @@ abstract final class PerfProbe {
       'refreshRateHz': _reportedRefreshRate(),
       'platform': Platform.operatingSystem,
       'osKernelVersion': _osVersionCache ??= _safeOsVersion(),
-      'deviceModel': Platform.localHostname,
+      // CPU 核数：`cpuMs` 要能解释 —— 8 核里占 1.25 个核与 2 核里占 1.25 个核
+      // 是两回事。原来的 `deviceModel: Platform.localHostname` 在 Android 上
+      // 恒为 "localhost"，写进报表只会让人以为探针认出了机型，已删；
+      // 机型由采集侧（adb 那份 manifest）配对提供。
+      'cpuCount': Platform.numberOfProcessors,
       'clockTicksPerSecond': _clockTicksPerSecond,
       'pageBytes': _pageBytes,
       'appVersion': appVersionHint,
@@ -664,7 +826,20 @@ abstract final class PerfProbe {
   static Future<Directory>? _dirFuture;
 
   /// 报告目录。缓存那个 Future：不缓存的话每次落盘都要走一遍平台通道问路径。
-  static Future<Directory> _reportDirectory() => _dirFuture ??= _createReportDirectory();
+  static Future<Directory> _reportDirectory() {
+    final existing = _dirFuture;
+    if (existing != null) {
+      return existing;
+    }
+    // 目录一就绪就把上一份会话轮转掉，再把目录交出去 —— 于是任何拿到目录的
+    // 调用方（包括每 5 秒的落盘）都必然在轮转之后，不需要额外的完成句柄。
+    final created = _createReportDirectory().then((dir) {
+      _rotatePreviousSessionSync(dir);
+      return dir;
+    });
+    _dirFuture = created;
+    return created;
+  }
 
   static Future<Directory> _createReportDirectory() async {
     final base = await getApplicationSupportDirectory();
@@ -682,6 +857,11 @@ abstract final class PerfProbe {
   /// 文件取决于谁先跑到——那是最难查的一类 flaky。
   @visibleForTesting
   static void debugInstall({int minDwellUs = 150000}) {
+    // 与 install() 同口径：重复安装是空操作。不加这道守卫时，第二次调用会
+    // 重建启动记录器、把已经补记进去的阶段整段丢掉（用例抓到的就是这个）。
+    if (_installed) {
+      return;
+    }
     _installed = true;
     _ledger = PerfPageLedger(
       nowUs: _nowUs,
@@ -695,6 +875,7 @@ abstract final class PerfProbe {
     _observer = _PerfRouteObserver();
     _framesAtLastFlush = 0;
     _lastPageId = null;
+    _flushPendingStartup();
   }
 
   /// 卸载探针（仅供测试与常驻开关的关闭路径）。可重复调用。
@@ -720,6 +901,7 @@ abstract final class PerfProbe {
     _framesAtLastFlush = 0;
     _lastPageId = null;
     _homeViewMode = null;
+    _pendingStartup.clear();
     _dirFuture = null;
   }
 
@@ -824,14 +1006,14 @@ class _PerfRouteObserver extends NavigatorObserver {
     if (ledger == null) {
       return;
     }
-    final known = PerfProbe.canonicalPageId(
-      PerfProbe.pageIdFrom(
-        routeName: route.settings.name,
-        routeTypeString: route.runtimeType.toString(),
-      ),
+    // 只有「路由自己说得清页面身份」才直接记账；否则一律先挂占位名，
+    // 等首帧之后去子树里找真页名。用兜底值收工会让真页面被记成框架类名。
+    final declared = PerfProbe.routeDeclaredPageId(
+      routeName: route.settings.name,
+      routeTypeString: route.runtimeType.toString(),
     );
-    if (known != PerfProbe.unnamedPage) {
-      PerfProbe.markPage(known);
+    if (declared != null) {
+      PerfProbe.markPage(PerfProbe.canonicalPageId(declared));
       return;
     }
     // 认不出路：先挂占位名，等这一页首帧建完再回溯改名。
