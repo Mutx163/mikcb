@@ -30,9 +30,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get displayModeTitle => '显示模式';
 
   @override
-  String get displayModeSubtitle => '支持跟随系统、浅色模式和深色模式';
-
-  @override
   String get themeModeLabel => '主题模式';
 
   @override
@@ -417,13 +414,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncSettingsSectionTitle => '同步设置';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '可切换手动或自动同步';
-
-  @override
   String get cloudSyncEnabledTitle => '启用云同步';
-
-  @override
-  String get cloudSyncEnabledSubtitle => '关闭后不会上传或下载云端快照';
 
   @override
   String get cloudSyncProviderTitle => '服务提供商';
@@ -2459,9 +2450,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get enableIslandDisplayTitle => '展示超级岛';
-
-  @override
-  String get enableIslandDisplaySubtitle => '关闭后不触发系统超级岛';
 
   @override
   String get liveTimeThresholdTitle => '时间阈值';
@@ -11591,9 +11579,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get displayModeTitle => '顯示模式';
 
   @override
-  String get displayModeSubtitle => '支持跟隨系統、淺色模式和深色模式';
-
-  @override
   String get themeModeLabel => '主題模式';
 
   @override
@@ -11978,13 +11963,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncSettingsSectionTitle => '同步設定';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '可切換手動或自動同步';
-
-  @override
   String get cloudSyncEnabledTitle => '啟用雲端同步';
-
-  @override
-  String get cloudSyncEnabledSubtitle => '關閉後不會上傳或下載雲端快照';
 
   @override
   String get cloudSyncProviderTitle => '服務提供商';
@@ -14020,9 +13999,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get enableIslandDisplayTitle => '展示超級島';
-
-  @override
-  String get enableIslandDisplaySubtitle => '關閉後不會再嘗試觸發系統超級島';
 
   @override
   String get liveTimeThresholdTitle => '時間閾值';
@@ -23191,9 +23167,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get displayModeTitle => '顯示模式';
 
   @override
-  String get displayModeSubtitle => '支持跟隨系統、淺色模式和深色模式';
-
-  @override
   String get themeModeLabel => '主題模式';
 
   @override
@@ -23578,13 +23551,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncSettingsSectionTitle => '同步設定';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '可切換手動或自動同步';
-
-  @override
   String get cloudSyncEnabledTitle => '啟用雲端同步';
-
-  @override
-  String get cloudSyncEnabledSubtitle => '關閉後不會上傳或下載雲端快照';
 
   @override
   String get cloudSyncProviderTitle => '服務提供商';
@@ -25620,9 +25587,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get enableIslandDisplayTitle => '展示超級島';
-
-  @override
-  String get enableIslandDisplaySubtitle => '關閉後不會再尝試觸發系統超級島';
 
   @override
   String get liveTimeThresholdTitle => '時間閾值';

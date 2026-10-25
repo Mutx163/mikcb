@@ -230,7 +230,6 @@ class AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
           children: [
             HyperosSelectTile<AppThemeMode>(
               label: l10n.themeModeLabel,
-              subtitle: l10n.displayModeSubtitle,
               items: {
                 for (final v in AppThemeMode.values)
                   appThemeModeLabel(l10n, v): v,

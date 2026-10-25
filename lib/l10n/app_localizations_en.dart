@@ -30,9 +30,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get displayModeTitle => 'Display Mode';
 
   @override
-  String get displayModeSubtitle => 'Supports system, light, and dark mode';
-
-  @override
   String get themeModeLabel => 'Theme Mode';
 
   @override
@@ -448,15 +445,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncSettingsSectionTitle => 'Sync settings';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle =>
-      'Switch between manual and automatic sync';
-
-  @override
   String get cloudSyncEnabledTitle => 'Enable cloud sync';
-
-  @override
-  String get cloudSyncEnabledSubtitle =>
-      'When off, no snapshot is uploaded or downloaded';
 
   @override
   String get cloudSyncProviderTitle => 'Provider';
@@ -2610,10 +2599,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enableIslandDisplayTitle => 'Show Island';
-
-  @override
-  String get enableIslandDisplaySubtitle =>
-      'Disable this if you never want the app to trigger system island presentation';
 
   @override
   String get liveTimeThresholdTitle => 'Timing Thresholds';

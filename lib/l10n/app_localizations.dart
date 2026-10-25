@@ -146,12 +146,6 @@ abstract class AppLocalizations {
   /// **'显示模式'**
   String get displayModeTitle;
 
-  /// No description provided for @displayModeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'支持跟随系统、浅色模式和深色模式'**
-  String get displayModeSubtitle;
-
   /// No description provided for @themeModeLabel.
   ///
   /// In zh, this message translates to:
@@ -878,23 +872,11 @@ abstract class AppLocalizations {
   /// **'同步设置'**
   String get cloudSyncSettingsSectionTitle;
 
-  /// No description provided for @cloudSyncSettingsSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'可切换手动或自动同步'**
-  String get cloudSyncSettingsSectionSubtitle;
-
   /// No description provided for @cloudSyncEnabledTitle.
   ///
   /// In zh, this message translates to:
   /// **'启用云同步'**
   String get cloudSyncEnabledTitle;
-
-  /// No description provided for @cloudSyncEnabledSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'关闭后不会上传或下载云端快照'**
-  String get cloudSyncEnabledSubtitle;
 
   /// No description provided for @cloudSyncProviderTitle.
   ///
@@ -4593,12 +4575,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'展示超级岛'**
   String get enableIslandDisplayTitle;
-
-  /// No description provided for @enableIslandDisplaySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'关闭后不触发系统超级岛'**
-  String get enableIslandDisplaySubtitle;
 
   /// No description provided for @liveTimeThresholdTitle.
   ///

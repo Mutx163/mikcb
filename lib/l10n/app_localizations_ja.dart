@@ -30,9 +30,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get displayModeTitle => '表示モード';
 
   @override
-  String get displayModeSubtitle => 'システム連携、ライトモード、ダークモードに対応';
-
-  @override
   String get themeModeLabel => 'テーマモード';
 
   @override
@@ -428,13 +425,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncSettingsSectionTitle => '同期設定';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '手動または自動同期を切り替えられます';
-
-  @override
   String get cloudSyncEnabledTitle => 'クラウド同期を有効にする';
-
-  @override
-  String get cloudSyncEnabledSubtitle => 'オフにすると、スナップショットのアップロード・ダウンロードは行われません';
 
   @override
   String get cloudSyncProviderTitle => 'サービスプロバイダ';
@@ -2506,9 +2497,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get enableIslandDisplayTitle => 'スーパーアイランドを表示';
-
-  @override
-  String get enableIslandDisplaySubtitle => 'オフにするとシステムスーパーアイランドのトリガーを停止';
 
   @override
   String get liveTimeThresholdTitle => '時間しきい値';

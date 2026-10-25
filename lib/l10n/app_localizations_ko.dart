@@ -30,9 +30,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get displayModeTitle => '표시 모드';
 
   @override
-  String get displayModeSubtitle => '시스템 연동, 라이트 모드, 다크 모드를 지원합니다';
-
-  @override
   String get themeModeLabel => '테마 모드';
 
   @override
@@ -427,13 +424,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncSettingsSectionTitle => '동기화 설정';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '수동 또는 자동 동기화를 전환할 수 있습니다';
-
-  @override
   String get cloudSyncEnabledTitle => '클라우드 동기화 사용';
-
-  @override
-  String get cloudSyncEnabledSubtitle => '끄면 스냅샷을 업로드하거나 다운로드하지 않습니다';
 
   @override
   String get cloudSyncProviderTitle => '서비스 제공자';
@@ -2519,9 +2510,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get enableIslandDisplayTitle => '슈퍼아일랜드 표시';
-
-  @override
-  String get enableIslandDisplaySubtitle => '끄면 시스템 슈퍼아일랜드 트리거를 중단합니다';
 
   @override
   String get liveTimeThresholdTitle => '시간 임계값';

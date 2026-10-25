@@ -185,7 +185,6 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
               HyperosSwitchTile(
                 title: l10n.enableIslandDisplayTitle,
-                subtitle: l10n.enableIslandDisplaySubtitle,
                 value: _draft.livePromoteDuringClass,
                 onChanged: (value) => _updateDraft(
                   _draft.copyWith(livePromoteDuringClass: value),

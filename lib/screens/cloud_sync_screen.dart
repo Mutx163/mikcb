@@ -1034,7 +1034,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                   children: [
                     HyperosSwitchTile(
                       title: l10n.cloudSyncEnabledTitle,
-                      subtitle: l10n.cloudSyncEnabledSubtitle,
                       value: _config.enabled,
                       onChanged: (value) {
                         unawaited(
@@ -1069,7 +1068,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                       ),
                       HyperosSelectTile<WebdavSyncMode>(
                         label: l10n.cloudSyncModeTitle,
-                        subtitle: l10n.cloudSyncSettingsSectionSubtitle,
                         items: {
                           l10n.cloudSyncModeAuto: WebdavSyncMode.auto,
                           l10n.cloudSyncModeManual: WebdavSyncMode.manual,
