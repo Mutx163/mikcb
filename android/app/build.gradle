@@ -255,4 +255,8 @@ dependencies {
     // 读不了——升级 Kotlin 是 Phase 3 的独立决策，不在这里顺手做。
     composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
     composeP1Implementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
+    // 官方图标包（extended 图标）：miuix-android:0.8.8 的 POM 不带它，
+    // 不显式声明时 `MiuixIcons.Back/ChevronForward` 解析不到。用户 2026-10-26
+    // 批准这一条依赖；仍只挂 composeP1，其余变体零影响。
+    composeP1Implementation 'top.yukonga.miuix.kmp:miuix-icons-android:0.8.8'
 }
