@@ -46,7 +46,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mutx163.qingyu"
-        minSdk = 26
+        minSdk = 33
         targetSdk = 36
         // +100000 offset: Flutter 3.35+ 的 --split-per-abi 会在 versionCode 上加 ABI 乘数 (e.g., arm64: ×2000),
         // 移除 --split-per-abi 后 versionCode 会变小，导致 Android 误判为降级安装。
@@ -57,7 +57,7 @@ android {
         buildConfigField "String", "UMENG_CHANNEL", "\"official\""
         missingDimensionStrategy 'env', 'prod'
         // 仅保留 arm64: ML Kit AAR 自带三份 ABI 的 so(共 ~13MB),其中 x86_64/armeabi-v7a
-        // 约 9MB 是纯冗余——minSdk 26 的真机全为 arm64。注意 defaultConfig 对 debug 同样
+        // 约 9MB 是纯冗余——minSdk 33 的真机全为 arm64。注意 defaultConfig 对 debug 同样
         // 生效,x86_64 模拟器将装不上本工程直出的任何 APK,真机/ARM 模拟器不受影响。
         // 必须用赋值整体替换:Flutter 插件 apply 时会 clear 后填入它支持的全部 ABI,
         // 方法调用写法(abiFilters 'arm64-v8a')只是往里追加,压不掉另两个。
@@ -141,8 +141,8 @@ android {
         composeP1 {
             dimension "env"
             versionNameSuffix "-composeP1"
-            // minSdk 33：官方 miuix-blur（毛玻璃）的硬性要求，用户已拍板抬到 33。
-            // 只在验证包上生效，不影响 prod 的 minSdk 26 决策记录。
+            // minSdk 33：官方 miuix-blur（毛玻璃）的硬性要求，用户已拍板抬到 33（2026-10-26）。
+            // prod 已统一 33，此处保留显式声明以防 defaultConfig 回退。
             minSdk 33
             buildConfigField "String", "UMENG_CHANNEL", "\"official-composeP1\""
             manifestPlaceholders = [
