@@ -3,6 +3,9 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+    // Compose 迁移（Phase 1）：composeP1 flavor 专属。插件在 Kotlin 2.x 起接管
+    // Compose 编译器（不再需要 composeOptions.kotlinCompilerExtensionVersion）。
+    id "org.jetbrains.kotlin.plugin.compose"
 }
 
 def keystoreProperties = new Properties()
@@ -125,6 +128,28 @@ android {
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }
+        // Compose 迁移 Phase 1 专用 flavor（2026-10-26 加）。
+        //
+        // 目的：在**同一个** android/app 工程里验证「同包名 Compose 壳」——
+        // 真机覆盖安装后读同一份 FlutterSharedPreferences、桌面小组件 /
+        // 无障碍 / 通知渠道全部原样保留（manifest 继承 main 源集）。
+        // 验证完成后整个 flavor 连同源集一起删除，不进任何发布渠道。
+        //
+        // 不加 applicationIdSuffix：**必须**与 com.mutx163.qingyu 同包名，
+        // 这是 Phase 1 的全部意义（数据原地、升级链路实证）。也因此它只能
+        // 覆盖安装在「已装正式包」的真机上用于验证——调试日常仍用 dev。
+        composeP1 {
+            dimension "env"
+            versionNameSuffix "-composeP1"
+            // minSdk 33：官方 miuix-blur（毛玻璃）的硬性要求，用户已拍板抬到 33。
+            // 只在验证包上生效，不影响 prod 的 minSdk 26 决策记录。
+            minSdk 33
+            buildConfigField "String", "UMENG_CHANNEL", "\"official-composeP1\""
+            manifestPlaceholders = [
+                    appLabel   : "轻屿课表 Compose P1",
+                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
+            ]
+        }
     }
 
     buildTypes {
@@ -205,4 +230,10 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'androidx.work:work-runtime-ktx:2.10.1'
     testImplementation 'junit:junit:4.13.2'
+
+    // Compose 迁移 Phase 1：仅 composeP1 变体参与编译打包，其余变体零影响。
+    // miuix 0.8.8 锁定：0.9.x 由 Kotlin 2.4.x 元数据编译，主工程 Kotlin 2.2.20
+    // 读不了——升级 Kotlin 是 Phase 3 的独立决策，不在这里顺手做。
+    composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
+    composeP1Implementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
 }

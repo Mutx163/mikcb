@@ -16,6 +16,22 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 subprojects {
+    // integration_test 模块（build.gradle 在 Flutter SDK 里）声明的是动态版本
+    // androidx.test:runner:1.2+：每次构建都要联网拉 maven-metadata.xml 做版本列举，
+    // 而本机到 Maven Central 的 TLS 握手间歇性失败，会把与本次改动无关的任何
+    // 构建挂掉（2026-10-26 composeP1 编译连挂两次；本地缓存已有 1.2.0）。
+    // 这里显式钉到动态版本实际解析出的 1.2.0，构建从此离线可复现。
+    // 复核时机：升级 Flutter SDK 时（integration_test 的声明跟着 SDK 走）。
+    project.configurations.all { configuration ->
+        configuration.resolutionStrategy.eachDependency { details ->
+            def requested = details.requested
+            if (requested.group == 'androidx.test' &&
+                    requested.name == 'runner' &&
+                    requested.version == '1.2+') {
+                details.useVersion('1.2.0')
+            }
+        }
+    }
     project.evaluationDependsOn(":app")
 }
 
