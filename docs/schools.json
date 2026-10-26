@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-19T06:39:04+00:00",
+  "updatedAt": "2026-10-25T06:37:51+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 260,
-    "schools": 255,
+    "total": 267,
+    "schools": 262,
     "generic": 5
   },
   "schools": [
@@ -401,6 +401,13 @@
       "category": "school"
     },
     {
+      "id": "GDCP",
+      "name": "广东交通职业技术学院",
+      "initial": "G",
+      "resourceFolder": "GDCP",
+      "category": "school"
+    },
+    {
       "id": "GDUT",
       "name": "广东工业大学",
       "initial": "G",
@@ -548,6 +555,13 @@
       "category": "school"
     },
     {
+      "id": "GZTCME",
+      "name": "贵州机电职业技术学院",
+      "initial": "G",
+      "resourceFolder": "GZTCME",
+      "category": "school"
+    },
+    {
       "id": "ECJTU",
       "name": "华东交通大学",
       "initial": "H",
@@ -622,6 +636,13 @@
       "name": "怀化职业技术学院",
       "initial": "H",
       "resourceFolder": "HHVTC",
+      "category": "school"
+    },
+    {
+      "id": "HBDFXY",
+      "name": "河北东方学院",
+      "initial": "H",
+      "resourceFolder": "HBDFXY",
       "category": "school"
     },
     {
@@ -1360,6 +1381,13 @@
       "category": "school"
     },
     {
+      "id": "SDWCVC",
+      "name": "山东水利职业学院",
+      "initial": "S",
+      "resourceFolder": "SDWCVC",
+      "category": "school"
+    },
+    {
       "id": "SDIPCT",
       "name": "山东石油化工学院",
       "initial": "S",
@@ -1689,6 +1717,13 @@
       "category": "school"
     },
     {
+      "id": "CSU",
+      "name": "中南大学",
+      "initial": "Z",
+      "resourceFolder": "CSU",
+      "category": "school"
+    },
+    {
       "id": "CSUFT",
       "name": "中南林业科技大学",
       "initial": "Z",
@@ -1714,6 +1749,13 @@
       "name": "中国民航大学",
       "initial": "Z",
       "resourceFolder": "CAUC",
+      "category": "school"
+    },
+    {
+      "id": "OUC",
+      "name": "中国海洋大学",
+      "initial": "Z",
+      "resourceFolder": "OUC",
       "category": "school"
     },
     {
@@ -1798,6 +1840,13 @@
       "name": "浙江树人学院",
       "initial": "Z",
       "resourceFolder": "ZJSRU",
+      "category": "school"
+    },
+    {
+      "id": "ZUST",
+      "name": "浙江科技大学",
+      "initial": "Z",
+      "resourceFolder": "ZUST",
       "category": "school"
     },
     {
