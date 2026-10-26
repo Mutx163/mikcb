@@ -29,11 +29,11 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.11.1" apply false
-    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
+    id "com.android.application" version "9.4.1" apply false
+    id "org.jetbrains.kotlin.android" version "2.4.21" apply false
     // Compose 迁移（Phase 1）：仅 composeP1 flavor 启用 Compose 编译器。
-    // 插件随 Kotlin 2.2.20 同版本发布，版本必须与 kotlin-android 一致。
-    id "org.jetbrains.kotlin.plugin.compose" version "2.2.20" apply false
+    // 插件随 Kotlin 同版本发布，版本必须与 kotlin-android 一致（2026-10-27 随 miuix 0.9.4 抬到 2.4.21）。
+    id "org.jetbrains.kotlin.plugin.compose" version "2.4.21" apply false
 }
 
 // CNB 专用依赖仓库镜像（仅在 CNB 环境生效，GitHub Actions / 本地不受影响）。

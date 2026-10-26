@@ -28,21 +28,21 @@ def overrideVersionName = project.findProperty("OVERRIDE_VERSION_NAME") ?: Syste
 
 android {
     namespace = "com.mutx163.qingyu"
-    compileSdk = 36
+    compileSdk = 37
     ndkVersion = "28.2.13676358"
 
     buildFeatures {
         buildConfig = true
     }
 
+    // JVM target 17（2026-10-27 随 miuix 0.9.4 从 1.8 抬升）：
+    // 0.9.4 的产物按 Java 11 字节码编译，Kotlin 在 1.8 目标下无法内联其 inline 函数
+    // （INLINE_FROM_HIGHER_PLATFORM）。AGP 9 + Gradle 9 本身也以 17 为基线。
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-    }
 
     defaultConfig {
         applicationId = "com.mutx163.qingyu"
@@ -274,6 +274,14 @@ gradle.taskGraph.whenReady { graph ->
     }
 }
 
+// AGP 9 内置 Kotlin（不再应用 kotlin-android 插件，`kotlinOptions` 也随之移除），
+// 编译目标改由顶层 `kotlin { compilerOptions }` 指定。
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 dependencies {
     implementation 'androidx.core:core-splashscreen:1.0.1'
     implementation 'com.umeng.umsdk:common:9.6.3'
@@ -286,20 +294,20 @@ dependencies {
 
     // Compose 迁移 Phase 1：仅 composeP1 变体参与编译打包，其余变体零影响。
     //
-    // miuix 0.8.8 锁定（2026-10-26 复核后维持）：
-    // 0.9.4 全套（miuix-ui/preference/icons/core/squircle/shader）带的 Compose 1.12
-    // **硬要求 AGP 9.1.0+ 与 compileSdk 37**，本工程 AGP 8.11.1 + compileSdk 36，
-    // 升级会牵动整条工具链（含 Flutter 插件兼容性），不在页面批次里顺手做。
-    // 因此页面观感必须靠「把 0.8.8 用对」来达成，而不是靠换版本。
+    // miuix 0.9.4（2026-10-27 用户拍板「按最新状态对齐，不顾一切」）：
+    // 0.9.x 是模块化发布——miuix-ui（基础）/ miuix-preference（官方设置行）/
+    // miuix-icons（图标）/ miuix-squircle / miuix-shader 各自独立。
+    // 代价（已确认可承受）：其依赖的 Compose 1.12 硬要求 AGP 9.1+ 与 compileSdk 37，
+    // 因此本工程同步抬到 AGP 9.4.1 + Gradle 9.8.2 + Kotlin 2.4.21 + compileSdk 37。
+    def miuixVersion = '0.9.4'
     composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
-    composeP1Implementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
-    // 官方图标包（extended 图标）：miuix-android:0.8.8 的 POM 不带它，
-    // 不显式声明时 `MiuixIcons.Back/ChevronForward` 解析不到。用户 2026-10-26
-    // 批准这一条依赖；仍只挂壳变体，其余变体零影响。
-    composeP1Implementation 'top.yukonga.miuix.kmp:miuix-icons-android:0.8.8'
+    composeP1Implementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
+    composeP1Implementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
+    composeP1Implementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
 
     // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
     composeUiImplementation 'androidx.activity:activity-compose:1.13.0'
-    composeUiImplementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
-    composeUiImplementation 'top.yukonga.miuix.kmp:miuix-icons-android:0.8.8'
+    composeUiImplementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
+    composeUiImplementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
+    composeUiImplementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
 }

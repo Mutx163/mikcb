@@ -35,6 +35,23 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects { subproject ->
+    // AGP 9 兼容补丁（2026-10-27）：
+    // file_picker 11.0.3 与 mobile_scanner 7.4.0 检测到 AGP >= 9 后**不再自行应用**
+    // org.jetbrains.kotlin.android，因为 AGP 9 自带 Kotlin 编译。但本工程还有约 20 个
+    // Flutter 插件仍自带该插件，一旦打开 AGP 内置 Kotlin 它们会直接报错
+    // （"plugin is no longer required since AGP 9.0"），因此全局只能维持
+    // android.builtInKotlin=false；代价就是这两个模块的 Kotlin 源码没人编，
+    // 表现为 :app:compileXxxJavaWithJavac 找不到 FilePickerPlugin 之类的类。
+    // 这里在它们身上补回插件，等价于 AGP 8 下的行为。
+    // 移除时机：这两个依赖升到不再跳过 Kotlin 的版本，或全仓 Flutter 插件都迁到内置 Kotlin。
+    if (subproject.name == 'file_picker' || subproject.name == 'mobile_scanner') {
+        subproject.plugins.withId('com.android.library') {
+            subproject.pluginManager.apply('org.jetbrains.kotlin.android')
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
