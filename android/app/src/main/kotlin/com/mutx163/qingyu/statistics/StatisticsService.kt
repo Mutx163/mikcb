@@ -905,7 +905,7 @@ object StatisticsService {
     /** 计算课程在指定周次前的有效周数（service:1045-1053）。 */
     private fun countActiveWeeks(course: CourseStub, currentWeek: Int): Int {
         var count = 0
-        for (week in 1 until currentWeek) {
+        for (week in 1..currentWeek) {
             if (course.isActiveInWeek(week)) {
                 count++
             }
