@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-25T06:37:51+00:00",
+  "updatedAt": "2026-10-26T06:48:17+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 267,
-    "schools": 262,
+    "total": 269,
+    "schools": 264,
     "generic": 5
   },
   "schools": [
@@ -461,6 +461,13 @@
       "name": "广东轻工职业技术大学",
       "initial": "G",
       "resourceFolder": "GDIPU",
+      "category": "school"
+    },
+    {
+      "id": "GZHMU",
+      "name": "广州医科大学",
+      "initial": "G",
+      "resourceFolder": "GZHMU",
       "category": "school"
     },
     {
@@ -1672,6 +1679,13 @@
       "name": "西安理工大学",
       "initial": "X",
       "resourceFolder": "XAUT",
+      "category": "school"
+    },
+    {
+      "id": "XSYU",
+      "name": "西安石油大学",
+      "initial": "X",
+      "resourceFolder": "XSYU",
       "category": "school"
     },
     {
