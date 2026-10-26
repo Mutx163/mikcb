@@ -1,0 +1,37 @@
+<!--
+Compose 迁移 Phase 3 页面开发壳专属 manifest（仅 composeUi 变体合并）。
+
+只做一件事：把 launcher 入口从 Flutter MainActivity 换成页面壳
+（PagesShellActivity），其余全部继承 main manifest。
+
+与 composeP1 的关键区别：本变体**带 .ui 后缀**，与正式版 / 调试版并存，
+不会覆盖用户手机上的正式版；因此它读不到正式版的 FlutterSharedPreferences
+——对静态页（关于 / 开源许可 / 支持作者）来说这是预期行为，不需要老数据。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!-- 禁用 Flutter 入口（工具 attr 而非删节点：main 源集原样，只在本壳合并时失效） -->
+        <activity
+            android:name=".MainActivity"
+            android:enabled="false"
+            tools:node="merge" />
+
+        <activity
+            android:name=".pages.PagesShellActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:enableOnBackInvokedCallback="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

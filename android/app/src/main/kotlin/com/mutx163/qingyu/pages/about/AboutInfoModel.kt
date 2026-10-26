@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.about
 
+import com.mutx163.qingyu.theme.QingyuIconColors
+
 /**
  * 关于页「静态信息区」的纯结构模型（移植 `lib/screens/about_screen.dart:296-450`，
  * 2026-10-26 快照）。
@@ -50,6 +52,47 @@ enum class AboutEntryKind {
 }
 
 /**
+ * 行首图标（与 Flutter `about_screen.dart` 各行的 `Icons.*` 对应）。
+ *
+ * 模型层只记**语义**（这个行该配哪个图标），具体矢量由渲染层从官方图标包里取——
+ * 模型层不能 import Compose/Miuix（main 对全变体编译）。
+ *
+ * 图标名的选择：官方图标包（155 个）里没有 Flutter 侧的 `free_breakfast` /
+ * `gavel` / `history` 等对应物，按语义就近取（见各行 kdoc）。
+ */
+enum class AboutRowIcon {
+    /** 请喝咖啡 → 爱心（官方包无咖啡杯）。 */
+    FAVORITES,
+
+    /** 问题反馈 → 对话。 */
+    MESSAGES,
+
+    /** 版本更新 → 更新。 */
+    UPDATE,
+
+    /** 更新日志 → 最近记录（官方包无 history，就近取 Recent）。 */
+    RECENT,
+
+    /** 应用日志 → 文档。 */
+    NOTES,
+
+    /** 项目定位 → 信息（官方包无 flag，就近取 Info）。 */
+    INFO,
+
+    /** 导入与迁移 → 导入。 */
+    IMPORT,
+
+    /** 代码贡献者 → 社区。 */
+    COMMUNITY,
+
+    /** 开源仓库 → 链接。 */
+    LINK,
+
+    /** 开源许可 → 报告/法务（官方包无 gavel，就近取 Report）。 */
+    REPORT,
+}
+
+/**
  * 一行：标题 + 副标题（+ 可选说明弹层的条目）。
  *
  * [bullets] 非空即代表「点开是说明层而不是跳页」——Dart 侧 `_showInfoSheet` 的调用点
@@ -60,6 +103,12 @@ data class AboutInfoEntry(
     val title: String,
     val subtitle: String,
     val bullets: List<String> = emptyList(),
+    val icon: AboutRowIcon,
+    /**
+     * 行首图标配色（ARGB）。取值与 Flutter `HyperosIconColors.*` 一致
+     * （`lib/ui/hyperos/hyperos_tokens.dart:126-134` 的彩豆）。
+     */
+    val accentArgb: Int,
 )
 
 /** 一个分组：小节标题 + 若干行。 */
@@ -79,26 +128,36 @@ fun aboutInfoSections(): List<AboutInfoSection> = listOf(
         entries = listOf(
             AboutInfoEntry(
                 kind = AboutEntryKind.COFFEE,
+                icon = AboutRowIcon.FAVORITES,
+                accentArgb = QingyuIconColors.YELLOW,
                 title = AboutInfoStrings.coffeeTitle,
                 subtitle = AboutInfoStrings.coffeeSubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.FEEDBACK,
+                icon = AboutRowIcon.MESSAGES,
+                accentArgb = QingyuIconColors.GREEN,
                 title = AboutInfoStrings.feedbackTitle,
                 subtitle = AboutInfoStrings.feedbackSubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.UPDATES,
+                icon = AboutRowIcon.UPDATE,
+                accentArgb = QingyuIconColors.ORANGE,
                 title = AboutInfoStrings.updatesTitle,
                 subtitle = AboutInfoStrings.updatesSubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.CHANGELOG,
+                icon = AboutRowIcon.RECENT,
+                accentArgb = QingyuIconColors.BLUE,
                 title = AboutInfoStrings.changelogTitle,
                 subtitle = AboutInfoStrings.changelogSubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.APP_LOGS,
+                icon = AboutRowIcon.NOTES,
+                accentArgb = QingyuIconColors.CYAN,
                 title = AboutInfoStrings.appLogsTitle,
                 subtitle = AboutInfoStrings.appLogsSubtitle,
             ),
@@ -109,12 +168,16 @@ fun aboutInfoSections(): List<AboutInfoSection> = listOf(
         entries = listOf(
             AboutInfoEntry(
                 kind = AboutEntryKind.POSITIONING,
+                icon = AboutRowIcon.INFO,
+                accentArgb = QingyuIconColors.PURPLE,
                 title = AboutInfoStrings.positioningTitle,
                 subtitle = AboutInfoStrings.positioningSubtitle,
                 bullets = AboutInfoStrings.positioningBullets,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.IMPORT_MIGRATION,
+                icon = AboutRowIcon.IMPORT,
+                accentArgb = QingyuIconColors.TEAL,
                 title = AboutInfoStrings.importMigrationTitle,
                 subtitle = AboutInfoStrings.importMigrationSubtitle,
                 bullets = AboutInfoStrings.importMigrationBullets,
@@ -126,16 +189,22 @@ fun aboutInfoSections(): List<AboutInfoSection> = listOf(
         entries = listOf(
             AboutInfoEntry(
                 kind = AboutEntryKind.CONTRIBUTORS,
+                icon = AboutRowIcon.COMMUNITY,
+                accentArgb = QingyuIconColors.GREEN,
                 title = AboutInfoStrings.contributorsTitle,
                 subtitle = AboutInfoStrings.contributorsSubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.REPOSITORY,
+                icon = AboutRowIcon.LINK,
+                accentArgb = QingyuIconColors.INDIGO,
                 title = AboutInfoStrings.repositoryTitle,
                 subtitle = AboutInfoStrings.repositorySubtitle,
             ),
             AboutInfoEntry(
                 kind = AboutEntryKind.OPEN_SOURCE_LICENSES,
+                icon = AboutRowIcon.REPORT,
+                accentArgb = QingyuIconColors.INDIGO,
                 // 与开源许可页同源，避免同一句话在两处各写一遍（改一处漏一处）。
                 title = OpenSourceLicensesStrings.title,
                 subtitle = OpenSourceLicensesStrings.subtitle,

@@ -150,6 +150,40 @@ android {
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }
+        // Compose 迁移 Phase 3 页面开发壳（2026-10-26 加）。
+        //
+        // 为什么需要它：miuix 只挂在 composeP1 的 classpath 上，而 composeP1
+        // **故意用正式包名**（Phase 1 要验证覆盖安装不丢数据）。到了 Phase 3
+        // 做页面，继续借正式包名就意味着「看一眼新页面要先覆盖用户手机上的正式版」，
+        // 这没有道理。所以另开一个**带后缀**的壳：
+        // - 与正式版 / 调试版并存，互不影响；
+        // - 静态页不需要老数据，正好适合独立包名（读不到正式版数据是预期行为）；
+        // - composeP1 保持原样，它的历史使命（覆盖安装验证）已经完成。
+        //
+        // 页面代码复用 composeP1 源集（见下方 sourceSets），不复制一份。
+        composeUi {
+            dimension "env"
+            applicationIdSuffix ".ui"
+            versionNameSuffix "-composeUi"
+            minSdk 33
+            buildConfigField "String", "UMENG_CHANNEL", "\"official-composeUi\""
+            manifestPlaceholders = [
+                    appLabel   : "轻屿课表 Compose UI",
+                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
+            ]
+        }
+    }
+
+    sourceSets {
+        // 页面壳复用 P1 源集里的**页面源码**，不复制一份。
+        //
+        // 只挂 pages/about/ 而不是整个 src/composeP1/kotlin：同一工作区里还有别的
+        // 会话在写 pages/settings/、pages/conflict/、pages/feedback/ 等（AGENTS.md 说明
+        // 用户习惯多 Agent 并行），把整个目录挂进来会让那些在途、暂时编译不过的文件
+        // 直接拖垮本壳的构建。等它们编译通过了，再逐个加进来。
+        composeUi {
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
+        }
     }
 
     buildTypes {
@@ -251,12 +285,21 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 
     // Compose 迁移 Phase 1：仅 composeP1 变体参与编译打包，其余变体零影响。
-    // miuix 0.8.8 锁定：0.9.x 由 Kotlin 2.4.x 元数据编译，主工程 Kotlin 2.2.20
-    // 读不了——升级 Kotlin 是 Phase 3 的独立决策，不在这里顺手做。
+    //
+    // miuix 0.8.8 锁定（2026-10-26 复核后维持）：
+    // 0.9.4 全套（miuix-ui/preference/icons/core/squircle/shader）带的 Compose 1.12
+    // **硬要求 AGP 9.1.0+ 与 compileSdk 37**，本工程 AGP 8.11.1 + compileSdk 36，
+    // 升级会牵动整条工具链（含 Flutter 插件兼容性），不在页面批次里顺手做。
+    // 因此页面观感必须靠「把 0.8.8 用对」来达成，而不是靠换版本。
     composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
     composeP1Implementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
     // 官方图标包（extended 图标）：miuix-android:0.8.8 的 POM 不带它，
     // 不显式声明时 `MiuixIcons.Back/ChevronForward` 解析不到。用户 2026-10-26
-    // 批准这一条依赖；仍只挂 composeP1，其余变体零影响。
+    // 批准这一条依赖；仍只挂壳变体，其余变体零影响。
     composeP1Implementation 'top.yukonga.miuix.kmp:miuix-icons-android:0.8.8'
+
+    // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
+    composeUiImplementation 'androidx.activity:activity-compose:1.13.0'
+    composeUiImplementation 'top.yukonga.miuix.kmp:miuix-android:0.8.8'
+    composeUiImplementation 'top.yukonga.miuix.kmp:miuix-icons-android:0.8.8'
 }
