@@ -183,6 +183,25 @@ android {
     }
 }
 
+// Compose 编译器插件是模块级应用的，对全部变体的 Kotlin 编译生效；但 Compose
+// runtime 只在 composeP1 的 classpath 上。其余变体编译时插件因找不到 runtime
+// 抛 IncompatibleComposeRuntimeVersionException，把整条 JVM 单测链连坐
+//（2026-10-26 实测 :app:compileProdDebugKotlin 挂）。
+//
+// KGP 2.2.20 没有公开的「按变体关闭编译器插件」开关（androidComponents 的
+// ext 属性与 androidVariantsWithComposePlugin 均不存在，均已实测）。
+// 采用社区成熟做法（stackoverflow.com/questions/69449113 的条件依赖形态，
+// persian-calendar 项目同款）：把 Compose runtime 也挂到**其余变体**的
+// compileOnly 上——插件能找到 runtime 即不报错，runtime 不进产物、不进
+// 运行时 classpath，非 P1 变体的行为与加这条之前完全一致。
+// 体积影响：compileOnly 不打包，APK 零变化（已用 aapt2 对比核对）。
+dependencies {
+    compileOnly "org.jetbrains.compose.runtime:runtime-android:1.12.0"
+    // 单测源集同样会被 Compose 编译器插件扫到（testProdDebugUnitTestKotlin），
+    // testImplementation 把 runtime 也递给测试 classpath（不进 APK）。
+    testImplementation "org.jetbrains.compose.runtime:runtime-android:1.12.0"
+}
+
 // UmengCrashRedaction 靠反射改写 Throwable.detailMessage（java.lang 的私有
 // 字段，java.base 模块不对未命名模块开放）：不加 --add-opens 时 JVM 单测里
 // setAccessible(true) 抛 InaccessibleObjectException，脱敏写入静默回退、
