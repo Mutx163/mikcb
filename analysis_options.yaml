@@ -10,6 +10,14 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  # tmp/ 是 .gitignore 掉的临时草稿目录（handoff 存档、WIP 备份、日志），
+  # 里面的 .dart 是从 lib/ 拷出去的副本，相对 import 必然失效。不排除的话
+  # flutter analyze 会报上百条与产品代码无关的错误（2026-10-26 加）。
+  exclude:
+    - tmp/**
+    # 调试用的临时测试，.gitignore 里同一条（test/**/_debug_*_test.dart）；
+    # 不排除的话它自己的 lint 会让 flutter analyze 退出码非零。
+    - test/**/_debug_*_test.dart
   language:
     # 禁止隐式 cast / 动态调用，尽早暴露类型问题。
     strict-casts: true

@@ -115,7 +115,7 @@ void main() {
   });
 
   test('send 失败（网络层异常）时自建 client 仍会被关闭', () async {
-    managedImageOwnedHttpClientFactory = () => _ThrowingClient();
+    managedImageOwnedHttpClientFactory = _ThrowingClient.new;
 
     final result = await downloadToManagedImage(
       url: Uri.parse('https://example.test/owned-throws.png'),

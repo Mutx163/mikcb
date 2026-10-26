@@ -126,8 +126,8 @@ void main() {
       title: '第三章习题',
       courseId: 'c1',
       dueDate: DateTime(2026, 6, 15),
-      createdAt: DateTime(2026, 6, 1),
-      updatedAt: DateTime(2026, 6, 1),
+      createdAt: DateTime(2026, 6),
+      updatedAt: DateTime(2026, 6),
     );
 
     final editing = kTimetableFormPages.taskForm(task: task) as AddTaskScreen;
