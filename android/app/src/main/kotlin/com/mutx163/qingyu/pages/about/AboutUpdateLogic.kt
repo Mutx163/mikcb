@@ -135,3 +135,51 @@ fun resolveMirrorFallbackPreset(
     }
     return null
 }
+
+/**
+ * 更新卡片的文案（逐字取自 `lib/l10n/app_zh.arb`，键名写在每行注释里）。
+ *
+ * 与另外三页同一纪律：测试直读 ARB 对拍。这批文案一开始我按语义"意译"过一版
+ * （写成"检查更新失败/请检查网络后重试"），对 ARB 时发现与真原文不符——
+ * 已全部改成 ARB 原文，并补上对拍用例，防止再出现"看起来对、其实不一样"。
+ */
+object AboutUpdateStrings {
+    /** aboutUpdateStatusTitle */
+    const val statusSectionTitle = "更新状态"
+
+    /** aboutCheckingLatestVersion */
+    const val checkingTitle = "正在检查最新版本信息……"
+
+    /** aboutReadVersionFailed */
+    const val checkFailedTitle = "检查更新失败，请稍后重试"
+
+    /** aboutReadVersionFailedHint */
+    const val checkFailedHint = "如果你当前网络访问 GitHub 不稳定，可稍后再试，或切到下面的国内下载方式后重试"
+
+    /** aboutRefreshCheckTooltip */
+    const val retryAction = "重新检查"
+
+    /** aboutUpdateAvailableHeadline */
+    const val updateAvailableHeadline = "发现新版本"
+
+    /** aboutAlreadyLatestHeadline */
+    const val alreadyLatestHeadline = "已是最新版本"
+
+    /** aboutUpdateNoUpdateHint */
+    const val noUpdateHint = "当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测"
+
+    /** aboutViewReleaseAction */
+    const val viewReleaseAction = "查看 Release"
+
+    /** aboutDownloadNowAction */
+    const val downloadNowAction = "立即下载"
+
+    /** aboutOpenDownloadPageAction */
+    const val openDownloadPageAction = "打开下载页"
+
+    /** aboutCurrentVersionLabel */
+    const val currentVersionLabel = "当前版本"
+
+    /** aboutLatestVersionLabel */
+    const val latestVersionLabel = "最新版本"
+}

@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.about
 
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -201,5 +203,44 @@ class AboutUpdateLogicTest {
                 availablePresets = emptyList(),
             ),
         )
+    }
+
+    // ---------- 文案与 ARB 对拍 ----------
+
+    private fun arbString(key: String): String {
+        val candidates = listOf(
+            File("../../lib/l10n/app_zh.arb"),
+            File("../lib/l10n/app_zh.arb"),
+            File("lib/l10n/app_zh.arb"),
+        )
+        val file = candidates.firstOrNull { it.isFile }
+            ?: error("找不到 lib/l10n/app_zh.arb，工作目录=" + File(".").absolutePath)
+        @Suppress("UNCHECKED_CAST")
+        val json = MiniJson.parse(file.readText(Charsets.UTF_8)) as Map<String, Any?>
+        return json[key] as? String ?: error("ARB 缺少键 " + key)
+    }
+
+    @Test
+    fun `更新卡片文案与ARB逐字一致`() {
+        // 这批文案第一版是"意译"的（"检查更新失败/请检查网络后重试"），
+        // 与 ARB 真原文不符，被这条对拍抓住后改成原文。
+        val pairs = listOf(
+            "aboutUpdateStatusTitle" to AboutUpdateStrings.statusSectionTitle,
+            "aboutCheckingLatestVersion" to AboutUpdateStrings.checkingTitle,
+            "aboutReadVersionFailed" to AboutUpdateStrings.checkFailedTitle,
+            "aboutReadVersionFailedHint" to AboutUpdateStrings.checkFailedHint,
+            "aboutRefreshCheckTooltip" to AboutUpdateStrings.retryAction,
+            "aboutUpdateAvailableHeadline" to AboutUpdateStrings.updateAvailableHeadline,
+            "aboutAlreadyLatestHeadline" to AboutUpdateStrings.alreadyLatestHeadline,
+            "aboutUpdateNoUpdateHint" to AboutUpdateStrings.noUpdateHint,
+            "aboutViewReleaseAction" to AboutUpdateStrings.viewReleaseAction,
+            "aboutDownloadNowAction" to AboutUpdateStrings.downloadNowAction,
+            "aboutOpenDownloadPageAction" to AboutUpdateStrings.openDownloadPageAction,
+            "aboutCurrentVersionLabel" to AboutUpdateStrings.currentVersionLabel,
+            "aboutLatestVersionLabel" to AboutUpdateStrings.latestVersionLabel,
+        )
+        for ((key, value) in pairs) {
+            assertEquals("ARB 键 " + key + " 与模型不一致", arbString(key), value)
+        }
     }
 }
