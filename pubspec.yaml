@@ -39,7 +39,7 @@ dependencies:
   webdav_plus: ^1.2.2
   url_launcher: ^6.3.1
   path_provider: ^2.1.5
-  open_filex: ^4.7.0
+  open_filex: ^5.0.0
   # 2026-10-20：原 flutter_markdown 被 Google 官方停更（pub.dev 挂 discontinued
   # 横幅，flutter/flutter#162966），换官方点名的社区接盘包，API 同名、仅包名不同。
   flutter_markdown_plus: ^1.0.12
