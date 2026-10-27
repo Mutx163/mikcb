@@ -44,6 +44,11 @@ import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperCheckbox
 import top.yukonga.miuix.kmp.extra.SuperRadioButton
@@ -926,17 +931,48 @@ private fun ShowcaseBlurSection(
         SmallTitle(text = "TextureBlur · 液态玻璃与模糊控制")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // 模拟模糊卡片预览
+                // ── 真模糊（2026-10-27 修正）──
+                //
+                // 旧版这里用「主色 + alpha」冒充模糊，而文案写着「背景捕获 + 高斯模糊」——
+                // 属于 AGENTS.md COPY-STYLE 里点名要改的「不实说明」。现在走官方
+                // `textureBlur`：先铺一层有内容的背景并录进 backdrop，再采样它做高斯模糊，
+                // 饱和度滑杆真的接到 `colorControls` 上。
+                val backdrop = rememberLayerBackdrop()
+                val blurActive = isRuntimeShaderSupported()
+                val blurColors = BlurDefaults.blurColors(saturation = state.blurSaturation)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(110.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            primaryColor.copy(alpha = (state.blurRadius / 100f).coerceIn(0.15f, 0.85f))
-                        ),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center,
                 ) {
+                    // ① 被捕获层：几条彩带，模糊之后仍看得出结构（纯色块糊完是纯色，看不出效果）
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .layerBackdrop(backdrop),
+                    ) {
+                        ShowcaseBlurSampleBackground(primaryColor)
+                    }
+                    // ② 模糊面：采样 ① 并模糊。
+                    //    设备不支持 runtime shader 时不叠这一层，直接露出清晰底图 ——
+                    //    比糊一块假的诚实。
+                    if (blurActive) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .textureBlur(
+                                    backdrop = backdrop,
+                                    shape = RoundedCornerShape(16.dp),
+                                    blurRadius = state.blurRadius.coerceIn(
+                                        0f,
+                                        BlurDefaults.MaxBlurRadius,
+                                    ),
+                                    colors = blurColors,
+                                ),
+                        )
+                    }
                     Text(
                         text = "液态玻璃预览\nR=${state.blurRadius.toInt()} · Sat=${state.blurSaturation}",
                         fontSize = 15.sp,
@@ -966,6 +1002,65 @@ private fun ShowcaseBlurSection(
                     value = state.blurSaturation / 2f,
                     onValueChange = { onStateChange(state.setBlurSaturation(it * 2f)) },
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 模糊演示的**采样底图**：几条斜向彩带 + 几个色块。
+ *
+ * 为什么不用纯色：纯色糊完还是纯色，看不出模糊有没有生效 —— 演示页会失去意义。
+ * 用有结构的图形才能一眼看出「边缘被抹开了」。
+ *
+ * 颜色刻意选高对比（主色 / 青 / 品红 / 琥珀），因为 `vibrancy` 那档加饱和
+ * 在高饱和图上才看得出来。
+ */
+@Composable
+private fun ShowcaseBlurSampleBackground(primaryColor: Color) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 主色打底
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(primaryColor),
+        )
+        // 斜向彩带：给模糊一个明确的"边缘"去抹
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .background(Color(0xFF00BCD4)),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .background(Color(0xFFE91E63)),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .background(Color(0xFFFFB21D)),
+            )
+        }
+        // 一组圆点：模糊后会变成柔和的光斑，是"糊开了"最直观的证据
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            repeat(4) {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.9f)),
                 )
             }
         }
