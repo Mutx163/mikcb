@@ -255,7 +255,19 @@
       "category": "qa",
       "expectedShell": "HyperosSubpage",
       "manualStatus": "pass",
-      "allowLegacy": true,
+      "skipRules": [
+        "colors",
+        "typography",
+        "no-hardcoded-color-hex",
+        "no-material-colors",
+        "no-font-bold",
+        "no-font-w600",
+        "no-raw-textstyle-fontsize",
+        "no-text-theme-headline"
+      ],
+      "skipReason": "验收页：本页就是要并排展示 Material 与 Hyperos 两套组件，硬编码色值与字号是演示内容本身，不是页面样式。组件/壳/圆角/间距等其余规则照常检查。",
+      "shellException": "验收页是组件总览的根页面（并排展示整套组件），不是某一功能子页，因此用 HyperosRootPage 而非 HyperosSubpage。",
+      "scanExempt": "该文件被 checklist 的 excludePathFragments 排除（验收页，本身就是全套 Material/Hyperos 组件并排演示，规则命中全是演示内容），因此不在自动扫描范围内；条目保留只为在总表里可见。",
       "notes": "验收页；含 Material 演示属预期"
     },
     {
@@ -274,7 +286,18 @@
       "category": "feature",
       "expectedShell": "HyperosSubpage",
       "manualStatus": "pass",
-      "allowLegacy": true,
+      "skipRules": [
+        "colors",
+        "typography",
+        "no-hardcoded-color-hex",
+        "no-material-colors",
+        "no-font-bold",
+        "no-font-w600",
+        "no-raw-textstyle-fontsize",
+        "no-text-theme-headline"
+      ],
+      "skipReason": "相机全屏取景页：白字压黑底是取景框的固定配色（不跟随主题才能保证取景可读），字号固定是为了在任意主题下都看得清。其余规则照常检查。",
+      "shellException": "相机全屏取景页：需要全屏黑底与自定义取景层，HyperosSubpage 的顶栏/内边距不适用，用裸 Scaffold。",
       "notes": "相机全屏黑底页：白字/黑底为固定取景配色，不跟随主题；字体用固定字号保证可读性"
     },
     {
@@ -284,7 +307,18 @@
       "category": "feature",
       "expectedShell": "HyperosSubpage",
       "manualStatus": "pass",
-      "allowLegacy": true,
+      "skipRules": [
+        "colors",
+        "typography",
+        "no-hardcoded-color-hex",
+        "no-material-colors",
+        "no-font-bold",
+        "no-font-w600",
+        "no-raw-textstyle-fontsize",
+        "no-text-theme-headline"
+      ],
+      "skipReason": "二维码展示页：深色渐变底 + 白卡是二维码对比度要求（跟随主题会破坏可扫性）。其余规则照常检查。",
+      "shellException": "二维码全屏展示页：同取景页，需要全屏暗底衬托二维码，用裸 Scaffold。",
       "notes": "暗色二维码展示页：深色渐变底 + 白色二维码卡片为固定配色（二维码对比度要求），不跟随主题"
     },
     {

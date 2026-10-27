@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# Pre-commit guard for release cuts: UTF-8 without BOM, parseable version line,
-# optional release-mode alignment (prerelease requires '-' in version).
+# Release-cut guard: UTF-8 without BOM, parseable version line, optional
+# release-mode alignment (prerelease requires '-' in version).
+#
+# 2026-10-27 起由 `.githooks/pre-push` 调用（**不是** pre-commit —— 提交时跑这个
+# 没有意义：release 是推 tag / 推 main 那一刻的事，而 pre-commit 已经很慢）。
+# 也可以手动跑：
+#   bash tool/verify_release_pubspec.sh pubspec.yaml
+#   bash tool/verify_release_pubspec.sh pubspec.yaml prerelease
 set -euo pipefail
 
 PUBSPEC="${1:-pubspec.yaml}"
@@ -8,6 +14,25 @@ RELEASE_MODE="${2:-}"
 
 if [[ ! -f "${PUBSPEC}" ]]; then
   echo "ERROR: ${PUBSPEC} not found" >&2
+  exit 1
+fi
+
+# 找一个能用的 Python。
+#
+# 原先这里硬编码 `python3`：CI（Linux）有，但 Windows 本地只有 `python` / `py`
+# —— 于是这个「守卫」在本机一跑就 exit 49（"Python was not found; run without
+# arguments to install from the Microsoft Store"），等于从来没生效过。
+# 依次探测，全都找不到才报错。
+PY=""
+for candidate in python3 python py; do
+  if command -v "${candidate}" >/dev/null 2>&1 &&
+    "${candidate}" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    PY="${candidate}"
+    break
+  fi
+done
+if [[ -z "${PY}" ]]; then
+  echo "ERROR: 找不到可用的 Python 3.8+（试过 python3 / python / py）" >&2
   exit 1
 fi
 
@@ -27,7 +52,7 @@ if [[ "${HEAD_BYTES}" == "efbbbf" ]]; then
   exit 1
 fi
 
-python3 - "${PUBSPEC}" <<'PY'
+"${PY}" - "${PUBSPEC}" <<'PY'
 import re
 import sys
 

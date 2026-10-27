@@ -1,0 +1,114 @@
+#!/bin/sh
+# 推送前门禁：release 版本的最后一刻一致性检查。
+#
+# ## 为什么是 pre-push 而不是 pre-commit
+#
+# `tool/verify_release_pubspec.sh` 自 2026-09 就在仓库里，注释自称
+# "Pre-commit guard"，但**没有任何地方调用它**（2026-09-26 审计点名：
+# 「脚本 :2 自称 Pre-commit guard 却无人安装」）。一个没人跑的门禁等于没有。
+#
+# 不放进 pre-commit 有两个理由：
+#   1. **语义不对**：版本号只在「推 tag / 推 main 触发 CI 出包」那一刻才有意义。
+#      提交时 pubspec 常常还是旧的（改完代码再改版本号），那时拦下来纯属误伤。
+#   2. **pre-commit 已经够慢**（要跑架构守卫 + analyze，几分钟）。再加东西只会
+#      让人养成 `--no-verify` 的习惯 —— 而 `--no-verify` 跳不过 pre-push，
+#      所以放这里反而是更硬的强制点。
+#
+# ## 什么时候跑
+#
+# 只有两种情况（其余推送直接放行，不做任何事）：
+#   * 推的是 **tag**（`refs/tags/*`）—— 出包的触发点，按 tag 名判断预发布/正式；
+#   * 推的内容里 **改了 pubspec.yaml** —— 版本号动过就得对得上。
+#
+# ## 工具链起不来时
+#
+# 与 pre-commit 同一口径：**放行并提醒**，不拦住推送。门禁因环境问题锁死所有
+# 推送，只会被绕过，比不做更糟。
+#
+# 手动跑：
+#   bash tool/verify_release_pubspec.sh pubspec.yaml
+#   bash tool/verify_release_pubspec.sh pubspec.yaml prerelease
+#   bash tool/verify_release_pubspec.sh pubspec.yaml release
+
+set -u
+
+remote_name="${1:-}"
+remote_url="${2:-}"
+
+zero="0000000000000000000000000000000000000000"
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+guard="${root}/tool/verify_release_pubspec.sh"
+
+if [ ! -f "${guard}" ]; then
+  echo "pre-push: 找不到 ${guard}，跳过 release 版本检查（不拦推送）。" >&2
+  exit 0
+fi
+
+# stdin 每行：<local-ref> <local-sha> <remote-ref> <remote-sha>
+#
+# ⚠️ 循环体里的每条 git 命令都必须 `< /dev/null`：git 会去读 stdin，而 stdin
+# 正是本循环的输入源 —— 不加的话第一条 `git diff` 就把剩下所有 ref 行吃掉，
+# 只处理到第一行；配合「推 tag 时还要再跑一次 guard」，实测会直接挂住
+# （2026-10-27 踩到）。
+tag_refs=""
+pubspec_touched="no"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${local_ref}" ] && continue
+  case "${local_ref}" in
+    refs/tags/*)
+      # 删除远端 tag 时 local_sha 是全零，没有版本可查。
+      [ "${local_sha}" = "${zero}" ] && continue
+      tag_refs="${tag_refs}${local_ref#refs/tags/}
+"
+      ;;
+  esac
+
+  case "${local_sha}" in
+    "${zero}") continue ;;  # 删分支
+  esac
+  # 远端已有这个 ref：直接比两端。
+  #
+  # 新分支（远端全零）时**不要**写 `git diff <sha> --not --all` —— 实测那条会挂住
+  # （2026-10-27：rev-list 风格的参数交给 `git diff` 后行为未定义，进程不返回）。
+  # 退回只看尖端那一个提交，够用：分支推送里真正会动版本号的就是最后一次提交。
+  if [ "${remote_sha}" = "${zero}" ]; then
+    changed="$(git diff --name-only "${local_sha}^" "${local_sha}" < /dev/null 2>/dev/null || echo "pubspec.yaml")"
+  else
+    changed="$(git diff --name-only "${remote_sha}" "${local_sha}" < /dev/null 2>/dev/null || true)"
+  fi
+  if printf '%s\n' "${changed}" | grep -qx "pubspec.yaml"; then
+    pubspec_touched="yes"
+  fi
+done < /dev/stdin
+
+if [ -z "${tag_refs}" ] && [ "${pubspec_touched}" = "no" ]; then
+  exit 0
+fi
+
+# 有 tag 就按 tag 判断模式：带 `-` 的是预发布（v1.1.10.7-rc1 这种），否则正式。
+mode=""
+if [ -n "${tag_refs}" ]; then
+  case "${tag_refs}" in
+    *-*) mode="prerelease" ;;
+    *) mode="release" ;;
+  esac
+  echo "pre-push: 本次推送含 tag，按 ${mode} 校验 pubspec 版本…" >&2
+else
+  echo "pre-push: 本次推送改了 pubspec.yaml，校验版本格式…" >&2
+fi
+
+if ! command -v bash >/dev/null 2>&1; then
+  echo "pre-push: 本机没有 bash，跳过 release 版本检查（不拦推送）。" >&2
+  exit 0
+fi
+
+if bash "${guard}" pubspec.yaml ${mode}; then
+  exit 0
+fi
+
+echo "" >&2
+echo "pre-push: release 版本检查没过，已拦下本次推送。" >&2
+echo "          版本号规则见 docs/RELEASE.md（四段对外版本 v1.1.10.7 ↔ pubspec 1.1.10-7+build）。" >&2
+echo "          确属误报可用 git push --no-verify，但请手动补跑上面那条命令。" >&2
+exit 1

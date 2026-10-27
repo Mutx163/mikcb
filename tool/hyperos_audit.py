@@ -231,22 +231,69 @@ def check_edge_insets_grid(text: str, rel: str, rule: dict, tokens: dict) -> lis
     return out
 
 
+def _matching_paren(text: str, open_idx: int) -> int:
+    """从 `text[open_idx]` 的 `(` 起找配对的 `)`，返回下标（找不到返回 -1）。"""
+    depth = 0
+    i = open_idx
+    while i < len(text):
+        c = text[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
 def check_hyperos_colors_usage(text: str, rel: str, rule: dict) -> list[Violation]:
+    """逐处检查 `TextStyle(color: ...)` 是否走了 Hyperos 语义色。
+
+    2026-10-27 之前这里是**整文件二值**判定：
+
+        uses_hyperos = "HyperosColors." in text or "HyperosTypography." in text
+        if has_text_style_color and not uses_hyperos: -> 报一条
+
+    也就是文件里只要**出现过一次** `HyperosColors.`（哪怕在完全无关的地方），
+    整份文件的硬编码颜色就都不报了。一个文件级的洞，谁都能绕。
+
+    现在按**每一处** `TextStyle(color: X)` 判：X 里没有 `Hyperos` 就报一条，
+    带行号与表达式。同文件里其它走了 token 的用法不受影响。
+
+    为什么敢收紧：实测全仓含 Hyperos 壳的 76 个文件里 `TextStyle(color:)` 只有
+    20 处，其中 14 处非 token、涉及 11 个文件 —— 命中面小到可以逐条看，
+    不是那种一开就红几百条的规则。规则本身是 info 级，不参与 --strict 的失败判定。
+    """
     if "HyperosSubpage" not in text and "HyperosRootPage" not in text:
         return []
-    has_text_style_color = bool(re.search(r"TextStyle\s*\([^)]*color\s*:", text))
-    uses_hyperos = "HyperosColors." in text or "HyperosTypography." in text
-    if has_text_style_color and not uses_hyperos:
-        return [
+
+    out: list[Violation] = []
+    for match in re.finditer(r"TextStyle\s*\(", text):
+        open_idx = match.end() - 1
+        close_idx = _matching_paren(text, open_idx)
+        if close_idx < 0:
+            continue
+        body = text[open_idx + 1 : close_idx]
+        color_match = re.search(r"\bcolor\s*:\s*([^,)]+)", body)
+        if not color_match:
+            continue
+        expr = color_match.group(1).strip()
+        if "Hyperos" in expr:
+            continue
+        line = line_number(text, open_idx)
+        out.append(
             Violation(
                 rule_id=rule["id"],
                 category=rule["category"],
                 severity=rule["severity"],
-                message=rule["message"],
+                message=f"{rule['message']}（本处 `color: {expr}` 未走 Hyperos 语义色）",
                 file=rel,
+                line=line,
+                snippet=expr[:120],
             )
-        ]
-    return []
+        )
+    return out
 
 
 def check_header_inset_false(text: str, rel: str, rule: dict) -> list[Violation]:
@@ -370,16 +417,82 @@ def scan_file(path: Path, checklist: dict) -> FileScan:
     return FileScan(path=rel, violations=violations)
 
 
-def infer_page_status(entry: dict, scan: FileScan | None) -> str:
+def skipped_rules_for(entry: dict) -> set[str]:
+    """这一页被豁免的规则 id 集合。
+
+    2026-10-27 之前这里读的是 `allowLegacy: true` —— 一个布尔值让整页
+    **所有**检查都不生效（`infer_page_status` 直接 return 一个手写状态）。
+    那等于「把门禁关掉」，页面上后来新增的任何违规都不会被发现，而 registry
+    里看不出它关掉了什么。
+
+    现在改成 `skipRules: [<规则 id>...]`，只豁免点名的规则，其余照查；
+    并且必须同时写 `skipReason`，否则算配置错误（见 `registry_problems`）。
+    """
+    raw = entry.get("skipRules") or []
+    if isinstance(raw, str):
+        return {raw}
+    return {str(x) for x in raw}
+
+
+def registry_problems(entry: dict) -> list[str]:
+    """registry 条目的配置错误（会直接判该页 fail）。
+
+    这几条是**故意判红**的：豁免是门禁上开的洞，必须写清开在哪、为什么。
+    不这么写，洞就会悄悄变多。
+    """
+    problems: list[str] = []
     if entry.get("allowLegacy"):
-        return entry.get("manualStatus", "pass")
-    if scan is None or not scan.path:
+        problems.append(
+            f"`{entry.get('id')}` 还在用 allowLegacy —— 它让整页所有规则都不生效，"
+            f"已废弃。改成 `skipRules: [<规则 id>]` + `skipReason: <为什么>`，"
+            f"只豁免真正需要豁免的那几条"
+        )
+    skips = skipped_rules_for(entry)
+    if skips and not (entry.get("skipReason") or "").strip():
+        problems.append(
+            f"`{entry.get('id')}` 声明了 skipRules {sorted(skips)} 但没写 skipReason —— "
+            f"豁免必须写明理由，否则下一个人不知道这个洞能不能堵"
+        )
+    if entry.get("shellException") is not None and not str(
+        entry.get("shellException")
+    ).strip():
+        problems.append(
+            f"`{entry.get('id')}` 写了空的 shellException —— "
+            f"要豁免壳检查就写明为什么，不豁免就删掉这个字段"
+        )
+    if entry.get("scanExempt") is not None and not str(
+        entry.get("scanExempt")
+    ).strip():
+        problems.append(
+            f"`{entry.get('id')}` 写了空的 scanExempt —— "
+            f"要么写明为什么这个文件不进扫描范围，要么把它从 registry 删掉"
+        )
+    return problems
+
+
+def infer_page_status(entry: dict, scan: FileScan | None) -> str:
+    if registry_problems(entry):
         return "fail"
+    if scan is None or not scan.path:
+        # 文件不在扫描范围内（被 checklist 的 excludePathFragments 排除）。
+        # 2026-10-27 之前这种条目靠 allowLegacy 直接报 pass，等于把「登记了却
+        # 根本没查」这件事藏起来。现在要求写明 scanExempt 理由，否则判 fail ——
+        # 要么说明白为什么不扫，要么把条目删掉。
+        if str(entry.get("scanExempt") or "").strip():
+            return entry.get("manualStatus") or "pass"
+        return "fail"
+    skip = skipped_rules_for(entry)
     expected = entry.get("expectedShell", "HyperosSubpage")
     shell = detect_shell(Path(ROOT / scan.path).read_text(encoding="utf-8"))
-    shell_ok = shell == expected
-    errors = [v for v in scan.violations if v.severity == "error"]
-    warns = [v for v in scan.violations if v.severity == "warn"]
+    # 壳检查也允许「写明理由的例外」：有些页面（相机取景、二维码全屏）本来就不该
+    # 套 HyperosSubpage。但必须写 shellException 说明原因，否则仍判不符。
+    shell_ok = shell == expected or bool(
+        str(entry.get("shellException") or "").strip()
+    )
+    # 只滤掉被点名的规则；其余违规照常参与判定。
+    effective = [v for v in scan.violations if v.rule_id not in skip]
+    errors = [v for v in effective if v.severity == "error"]
+    warns = [v for v in effective if v.severity == "warn"]
     if errors:
         return "fail"
     if not shell_ok:
@@ -408,7 +521,8 @@ def audit_all(checklist: dict, registry: dict, user_history: dict | None = None)
                 )
                 if (ROOT / entry["file"]).exists()
                 else "missing",
-                "allowLegacy": entry.get("allowLegacy", False),
+                "skipRules": sorted(skipped_rules_for(entry)),
+                "registryProblems": registry_problems(entry),
             }
         )
 
@@ -670,7 +784,11 @@ def sync_registry_status(registry: dict, result: dict[str, Any]) -> None:
     by_file = {p["file"]: p for p in result["pages"]}
     for entry in registry.get("pages", []):
         page = by_file.get(entry["file"])
-        if not page or entry.get("allowLegacy"):
+        if not page:
+            continue
+        # 有配置错误的条目不同步状态：把 inferredStatus=fail 写回 registry 会
+        # 让「配置写错了」看起来像「页面不合规」，掩盖真正要改的地方。
+        if page.get("registryProblems"):
             continue
         entry["manualStatus"] = page["inferredStatus"]
 

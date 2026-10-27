@@ -86,6 +86,13 @@ jobs:
       - name: CJK hardcode audit
         run: python3 tool/audit_cjk_hardcode.py --baseline tool/cjk_hardcode_baseline.txt
 
+      - name: Lint ratchet (discarded_futures / cascade_invocations)
+        # 这两条 lint 因存量太多（2026-10-27 实测 238 / 510）故意没开在主配置里，
+        # 否则 --fatal-infos 会让全仓红、谁都提交不了。本步骤临时打开它们、
+        # 数一遍、与基线比对，保证**只降不升**。脚本动 analysis_options.yaml 之前
+        # 会先确认它干净；CI 是全新 checkout，天然安全。
+        run: python tool/audit_lint_ratchet.py
+
       - name: Analyze
         # --fatal-infos：info 级问题也视为失败（analysis_options.yaml 已启用
         # strict-casts/strict-raw-types 与扩展 lint 集，需严格门禁防劣化）。

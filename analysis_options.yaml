@@ -59,11 +59,17 @@ linter:
     - avoid_slow_async_io
     - avoid_type_to_string
     - cancel_subscriptions            # 订阅不取消会泄漏
-    # TODO(体检⑧ 第二批): 现存 127 处，多涉及 UI builder 链式赋值，需人工逐处改写。
+    # 下面两条**故意不开**：直接打开会让全仓多出约 750 条 info，而 CI 与
+    # pre-commit 都跑 --fatal-infos，等于全仓红、谁都提交不了。
+    # 现状改用棘轮钉住（只降不升）：
+    #     python tool/audit_lint_ratchet.py            # 检查
+    #     python tool/audit_lint_ratchet.py --update   # 降下来后压基线
+    # 2026-10-27 实测：cascade_invocations 510、discarded_futures 238。
+    # （原先注释写的「127 处 / 195 处」是 2026-09 的旧数，早已过期 ——
+    #  数字要跟着代码走，别把它当账本。）
     # - cascade_invocations
     - conditional_uri_does_not_exist
-    # TODO(体检⑧ 第二批): 现存 195 处，多为 UI 回调 fire-and-forget 语义，
-    # 需逐处判断 unawaited() 包裹或 await，机械修改风险大。
+    # 同上。新代码请用 unawaited(...) 包住故意丢弃的 Future。
     # - discarded_futures
     - join_return_with_assignment
     - literal_only_boolean_expressions
