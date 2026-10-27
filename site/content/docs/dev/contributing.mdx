@@ -35,8 +35,12 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 - 静态分析基线为 0 error、0 warning、0 info（CI 跑 `--fatal-infos`，
   info 也算失败，本地务必用同一条命令）
 - 界面文案统一走 l10n（ARB 文件），新增文案需同步各语言。
-  同步工具在 `tool/` 下（`sync_arb.dart`、`merge_l10n_batch.py` 等一批
-  `*_arb*.py` 脚本），改文案前先看一眼有没有现成脚本，别手工逐语言改
+  同步工具在 `tool/` 下（`sync_arb.dart`、`merge_l10n_batch.py` 等），
+  **但 `tool/` 里同时有几份会写坏文件的脚本，跑之前先确认它是否已修好**：
+  `fix_arb_placeholder_commas.py` 曾把必需的分隔逗号当多余逗号删掉，
+  一跑就让 6 份 ARB 变成非法 JSON、`gen-l10n` 失败、App 编不过
+  （2026-10-27 已改为只删真多余尾逗号 + 写盘前强制 JSON 校验）。
+  拿不准就**手工逐语言改**，别赌脚本
 - 应用支持简体中文、繁体中文（台湾 / 香港）、英文、日文、韩文
 - 修改超级岛规则时，需同步原生实现、预览组件与对应测试
 
