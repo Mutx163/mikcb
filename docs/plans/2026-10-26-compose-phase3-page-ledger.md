@@ -502,6 +502,7 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-K 冲突与反馈小页 | ✅ 已交付 | `aef4c5c8` |
 | P3-0 基础设施 | ✅ 主体完成 | 主题桥 `772ce837`；渲染层逐目录挂载 + CI 编译 + `composeP1` 停役守卫；L0 模块单测 + `safe-gradle` 排队锁；i18n 中文字面量棘轮门禁 `b9bc98d1` |
 | P3-0-glassdock 玻璃导航栏 | ✅ 已交付 | `pages/shell/` 三层 + 20 例 + 3 次咬合探针；壳里 Material 占位条整体删除 |
+| P3-0-interaction 交互与材质 | 🔶 部分完成 | `bfdfabfd`：新增 `components/QingyuCard.kt`（可点默认开 `Sink` 按压 + `showIndication` + 语义圆角），30 文件 107 处调用已换用；**余 27 文件待补**（全部被并发会话占用，见 §9.2）。字号问题未动 |
 | P3-L 小组件 / 超级岛 | ⏸ 待拍板 | RemoteViews 还是 Compose Glance，Lead 未拍板前不开工 |
 
 **本轮验证基线（Lead 亲自跑，21:07）**：`:app:testProdDebugUnitTest` → **2978 例 / 0 失败 / 0 错误 / 0 跳过**（218 个测试类，`BUILD SUCCESSFUL in 1m17s`）。
@@ -528,6 +529,49 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 
 **可复用的判断**：子代理「读完了、想清楚了、马上写」这种汇报连续出现两次而工作区没有文件落盘，
 基本等于不会再写了。有效期应设为 **30~45 分钟无文件落盘即收回**，而不是等它自己说卡住。
+
+### 9.2 交互与材质补齐（P3-0-interaction，2026-10-27 21:1x）
+
+**为什么单独做这件事**：老版 Flutter 的「小米观感」是自建组件层仿出来的
+（`lib/ui/hyperos/` 51 件 26,132 行，含按压状态机、真模糊、弹簧动效）。
+迁到 Compose 后只用了 miuix 本体的**静态外观**，交互与材质管线一层没搬，
+于是出现「用了正主反而更丑、点击没手感」。对照依据已归档在
+`docs/reference/miuix-demo/`（官方 demo 快照 + 四份精读笔记），
+结论见 `docs/reference/miuix-demo/我们的差距与修法.md`。
+
+**官方默认值是「空壳」**（这是根因）：`Card.kt:87-95` 的
+`pressFeedbackType = PressFeedbackType.None`、`showIndication = false` 默认全关，
+官方 `card.md` 的 Interactive Card 一节要求两个都显式打开。我们按默认值抄了。
+
+**本轮已做**（`bfdfabfd`）：
+
+- 新增 `composeP1/.../components/QingyuCard.kt`——官方 `Card` 的封装，
+  **可点时默认 `PressFeedbackType.Sink` + `showIndication = true`**（把正确行为设成默认值，
+  因为靠每个调用点记得传参数已经漏了 230 次）；圆角给语义默认
+  （`Corner` 16 / `SettingsGroupCorner` 24，均取自 `QingyuShapes`）。
+- 30 个页面文件、107 处调用由 `Card(` 换成 `QingyuCard(`。
+- L1 `:app:compileComposeUiDebugKotlin` BUILD SUCCESSFUL（1m27s，仅既存警告）。
+
+**尚未做（接手时照做）**：
+
+1. **余 27 个文件**含裸 `Card(`，本轮**一个都没动**——它们当时全部有未提交改动，
+   属于并发会话的在途工作。跑
+   `python scripts/migrate-card-to-qingyucard.py`（干跑，列出可改与跳过）
+   再 `--write` 即可；脚本自己读 `git status` 跳过脏文件，不会卷进别人的改动。
+   涉及 `showcase`(27) / `sync` / `diagnostics` / `export` / `import·warehouse` /
+   `live` / `conflict` / `feedback` / `statistics` / `timetable` / `weather` / `transfer`。
+2. **字号**：全仓 0 处用 `MiuixTheme.textStyles`、577 处硬写 `fontSize`，
+   散成 14 种字号（含 10/15/22/28 这四种官方刻度里没有的）。官方字阶与我们转录的
+   `QingyuTypography` **一字不差**，所以修法是「改用 `style = MiuixTheme.textStyles.X`」
+   而不是另立一套。这是「廉价感」最大的单一来源，建议单独一批。
+3. **毛玻璃**：`miuix-blur` 依赖已由 `0d23ddf3` 引入（两个变体都有），
+   目前只有壳的玻璃导航栏在用（`layerBackdrop` 1 处）。页面顶栏 / 弹层尚未接，
+   官方接线照抄 `docs/reference/miuix-demo/example/.../utils/PageUtils.kt:116-168`。
+4. **不实文案**：`pages/showcase/MiuixShowcaseSubpages.kt:935-951` 用主色 alpha 冒充毛玻璃，
+   文案（`main/.../ShowcaseStrings.kt:143-146`）却写「背景捕获 + 高斯模糊」——
+   补了真模糊后顺手改，或先改文案。
+
+⚠ 本节全部证据只到 L1（编译过），**没有一页做过真机对照**。
 
 ---
 
