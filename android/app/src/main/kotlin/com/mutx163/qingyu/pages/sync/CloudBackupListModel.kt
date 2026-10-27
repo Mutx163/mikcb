@@ -88,6 +88,14 @@ data class CloudBackupDetailView(
     val canDelete: Boolean get() = actions.contains(CloudBackupDetailAction.DELETE)
 }
 
+/** 两按钮确认弹框（恢复前「是否设为当前版本」等共用）。 */
+data class SyncConfirmDialogView(
+    val title: String,
+    val message: String,
+    val confirmLabel: String,
+    val cancelLabel: String,
+)
+
 /** 备份列表整页 viewState。 */
 data class CloudBackupListViewState(
     val isLoading: Boolean,
@@ -210,6 +218,21 @@ object CloudBackupListLogic {
         entry: CloudBackupEntryModel,
         zone: ZoneId = ZoneId.systemDefault(),
     ): String = SyncStrings.cloudBackupDeleteBody.filled("time", formatEntryTime(entry, zone))
+
+    /** 恢复流程里预览弹框的标题（Dart `showTransferPreviewDialog(title: cloudBackupRestoreTitle)`）。 */
+    fun restorePreviewTitle(): String = SyncStrings.cloudBackupRestoreTitle.zh
+
+    /**
+     * 恢复完的「是否设为当前云端版本」确认弹框（Dart `showAppConfirmDialog`）。
+     *
+     * 默认动作是「设为当前版本」：不设的话其他设备下次同步会撞冲突。
+     */
+    fun uploadAsCurrentDialog(): SyncConfirmDialogView = SyncConfirmDialogView(
+        title = SyncStrings.cloudBackupUploadAsCurrentTitle.zh,
+        message = SyncStrings.cloudBackupUploadAsCurrentBody.zh,
+        confirmLabel = SyncStrings.cloudBackupUploadAsCurrentYes.zh,
+        cancelLabel = SyncStrings.cloudBackupUploadAsCurrentNo.zh,
+    )
 
     /** 整页 viewState：排序在这里做，渲染层只遍历 [CloudBackupListViewState.rows]。 */
     fun buildListViewState(

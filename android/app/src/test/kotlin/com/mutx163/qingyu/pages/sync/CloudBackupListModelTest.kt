@@ -197,6 +197,17 @@ class CloudBackupListModelTest {
         )
     }
 
+    @Test
+    fun `恢复预览标题与设为当前版本确认弹框`() {
+        assertEquals("恢复到此备份", CloudBackupListLogic.restorePreviewTitle())
+
+        val dialog = CloudBackupListLogic.uploadAsCurrentDialog()
+        assertEquals("设为当前云端版本", dialog.title)
+        assertEquals("是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突", dialog.message)
+        assertEquals("设为当前版本", dialog.confirmLabel)
+        assertEquals("仅恢复本地", dialog.cancelLabel)
+    }
+
     // ==========================================
     // 6. 整页状态
     // ==========================================

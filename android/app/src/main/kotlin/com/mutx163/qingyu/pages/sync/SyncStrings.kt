@@ -119,6 +119,14 @@ object SyncStrings {
         ArbText("cloudBackupDeviceLabelHint", "在备份列表中显示的设备名称，例如 我的手机")
     val cloudBackupSummary = ArbText("cloudBackupSummary", "{profileCount} 个课表 · {courseCount} 门课程")
     val cloudBackupRestoreAction = ArbText("cloudBackupRestoreAction", "恢复")
+    val cloudBackupRestoreTitle = ArbText("cloudBackupRestoreTitle", "恢复到此备份")
+    val cloudBackupUploadAsCurrentTitle = ArbText("cloudBackupUploadAsCurrentTitle", "设为当前云端版本")
+    val cloudBackupUploadAsCurrentBody = ArbText(
+        "cloudBackupUploadAsCurrentBody",
+        "是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突",
+    )
+    val cloudBackupUploadAsCurrentYes = ArbText("cloudBackupUploadAsCurrentYes", "设为当前版本")
+    val cloudBackupUploadAsCurrentNo = ArbText("cloudBackupUploadAsCurrentNo", "仅恢复本地")
     val cloudBackupRestoreSuccess = ArbText("cloudBackupRestoreSuccess", "已恢复到此备份")
     val cloudBackupRestoreFailed = ArbText("cloudBackupRestoreFailed", "恢复失败：{message}")
     val cloudBackupDeleteTitle = ArbText("cloudBackupDeleteTitle", "删除此备份")
@@ -260,6 +268,11 @@ object SyncStrings {
             cloudBackupDeviceLabelHint,
             cloudBackupSummary,
             cloudBackupRestoreAction,
+            cloudBackupRestoreTitle,
+            cloudBackupUploadAsCurrentTitle,
+            cloudBackupUploadAsCurrentBody,
+            cloudBackupUploadAsCurrentYes,
+            cloudBackupUploadAsCurrentNo,
             cloudBackupRestoreSuccess,
             cloudBackupRestoreFailed,
             cloudBackupDeleteTitle,
