@@ -116,7 +116,10 @@ fun MonthDayAgenda(
 ) {
     val ink = MonthPanelSurface.ink()
     MonthPanelCard(
-        title = MonthPanelText.agendaTitle(date.monthValue, date.dayOfMonth),
+        title = MonthViewStrings.monthViewAgendaTitle.filled(
+            "month" to date.monthValue.toString(),
+            "day" to date.dayOfMonth.toString(),
+        ),
         modifier = modifier,
         // 议程卡标题与内容之间是 12（概览卡是 10）：Dart 两份原件的实测值不同，
         // 所以由卡壳开一个参数，而不是在内容里再塞一个 Spacer 把两层间距叠起来。
@@ -188,7 +191,7 @@ private fun AddCourseAction(
             )
             Spacer(Modifier.width(MonthAgendaMetrics.ACTION_ICON_GAP.dp))
             Text(
-                text = MonthPanelText.addCourse.zh,
+                text = MonthViewStrings.monthViewAgendaAddCourse.zh,
                 style = MiuixTheme.textStyles.footnote1,
                 fontWeight = FontWeight.SemiBold,
                 color = secondary,

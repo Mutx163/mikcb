@@ -39,13 +39,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
 
 /**
- * 面板半自己的文案句柄：只补 [MonthText]（日历半那份）**没有**的 6 条。
+ * 面板半独有的**三条类别标签**（概览卡里三个统计格下面那行小字）。
  *
- * ## 为什么会有两个句柄
- *
- * [MonthText] 住在 `MonthViewToolbar.kt`（日历半的文件），覆盖的是「工具栏 + 格子」
- * 那批键；面板半要的是 `monthOverview*` / `agendaTitle` / `addCourse` 这 6 条。
- * 两个对象各查各的键，键名错了报错也会指出是哪一边。
+ * 其余文案一律直接用 [MonthViewStrings] 的逐键 accessor（`monthOverview*` /
+ * `monthViewAgendaTitle` / `monthViewAgendaAddCourse`），不再自带反查工具 ——
+ * 2026-10-27 文案层补了逐键 accessor 之后，「按 key 反查」的小工具就该消失。
  *
  * ## 三条类别标签为什么不在 [MonthViewStrings] 里
  *
@@ -55,47 +53,16 @@ import java.time.LocalDateTime
  * 键**去既有字符串表取原文（日视图与作息页已经各有一份逐字对拍的），不新增文案、
  * 也不写中文字面量。改 ARB 时这三处会一起被对拍测试抓到。
  */
-internal object MonthPanelText {
+internal object MonthPanelLabels {
 
-    private val byKey: Map<String, ArbText> by lazy {
-        MonthViewStrings.allTexts.associateBy { it.key }
-    }
-
-    private fun text(key: String): ArbText =
-        byKey[key]
-            ?: error("MonthViewStrings 缺少 ARB 键 `$key`（重新跑 tool/gen_month_view_strings.py）")
-
-    /** 概览卡标题「本月概览」。 */
-    val overviewTitle: ArbText get() = text("monthOverviewTitle")
-
-    /** 「本月有安排的日子」。 */
-    val daysTitle: ArbText get() = text("monthOverviewDaysTitle")
-
-    /** 「加课」入口。 */
-    val addCourse: ArbText get() = text("monthViewAgendaAddCourse")
-
-    // ── 三条类别标签：同一 ARB 键，取既有表（见类注释）──
-
-    /** `课程`（ARB `courseCountLabel`）。 */
-    val courseLabel: String get() = TimeSchemeManagementStrings.courseCountLabel.zh
+    /** `课程`（ARB `courseCountLabel` —— Dart 原件用的就是这个键）。 */
+    val course: String get() = TimeSchemeManagementStrings.courseCountLabel.zh
 
     /** `考试`（ARB `examBadgeLabel`）。 */
-    val examLabel: String get() = DayViewStrings.examBadgeLabel.zh
+    val exam: String get() = DayViewStrings.examBadgeLabel.zh
 
     /** `日程`（ARB `scheduleBadgeLabel`）。 */
-    val scheduleLabel: String get() = DayViewStrings.scheduleBadgeLabel.zh
-
-    /** `有安排 3 天` */
-    fun scheduledDays(count: Int): String =
-        text("monthOverviewScheduledDays").filled("count", count.toString())
-
-    /** `还有 2 天` */
-    fun moreDays(count: Int): String =
-        text("monthOverviewMoreDays").filled("count", count.toString())
-
-    /** `10月5日`（议程卡标题 / 预览行主行）。 */
-    fun agendaTitle(month: Int, day: Int): String =
-        text("monthViewAgendaTitle").filled("month" to month.toString(), "day" to day.toString())
+    val schedule: String get() = DayViewStrings.scheduleBadgeLabel.zh
 }
 
 /**
@@ -217,7 +184,7 @@ fun MonthPanelOverview(
     val counts = MonthPanelModel.overviewCounts(grid)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        MonthPanelCard(title = MonthPanelText.overviewTitle.zh) {
+        MonthPanelCard(title = MonthViewStrings.monthOverviewTitle.zh) {
             if (counts.isEmpty) {
                 // 整月没有任何安排：只留一块空态，不摆三个 0 ——
                 // 「0 节课 / 0 场考试 / 0 个日程」读起来像加载失败。
@@ -271,11 +238,11 @@ private fun UpcomingCard(
 ) {
     val ink = MonthPanelSurface.ink()
     MonthPanelCard(
-        title = MonthPanelText.daysTitle.zh,
+        title = MonthViewStrings.monthOverviewDaysTitle.zh,
         modifier = modifier,
         // 「还有 N 天」放在标题右端：语义从「这是哪一节」变成「这一节还有多少没列」，
         // 信息量增加、高度不增。
-        trailing = if (slice.remaining > 0) MonthPanelText.moreDays(slice.remaining) else null,
+        trailing = if (slice.remaining > 0) MonthViewStrings.monthOverviewMoreDays.filled("count", slice.remaining.toString()) else null,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -347,7 +314,10 @@ private fun UpcomingDayRow(
                 // 主行是**日期**、副行是**事项摘要** —— 与当日议程同一套读取顺序。
                 // 一列「接下来几天」里，用户先找的是日子，再问那天有什么。
                 Text(
-                    text = MonthPanelText.agendaTitle(entry.date.monthValue, entry.date.dayOfMonth),
+                    text = MonthViewStrings.monthViewAgendaTitle.filled(
+                        "month" to entry.date.monthValue.toString(),
+                        "day" to entry.date.dayOfMonth.toString(),
+                    ),
                     style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.SemiBold,
                     color = ink,
@@ -403,7 +373,7 @@ private fun OverviewStatsBody(counts: MonthOverviewCounts) {
         ) {
             StatCell(
                 value = counts.courseCount,
-                label = MonthPanelText.courseLabel,
+                label = MonthPanelLabels.course,
                 ink = ink,
                 mutedInk = mutedInk,
                 cardFill = cardFill,
@@ -414,7 +384,7 @@ private fun OverviewStatsBody(counts: MonthOverviewCounts) {
             StatDivider(divider)
             StatCell(
                 value = counts.examCount,
-                label = MonthPanelText.examLabel,
+                label = MonthPanelLabels.exam,
                 ink = ink,
                 mutedInk = mutedInk,
                 cardFill = cardFill,
@@ -425,7 +395,7 @@ private fun OverviewStatsBody(counts: MonthOverviewCounts) {
             StatDivider(divider)
             StatCell(
                 value = counts.scheduleCount,
-                label = MonthPanelText.scheduleLabel,
+                label = MonthPanelLabels.schedule,
                 ink = ink,
                 mutedInk = mutedInk,
                 cardFill = cardFill,
@@ -446,7 +416,7 @@ private fun OverviewStatsBody(counts: MonthOverviewCounts) {
             Spacer(Modifier.width(MonthOverviewMetrics.FOOTNOTE_ICON_GAP.dp))
             Text(
                 // 「有安排 N 天」：回答「这个月忙不忙」，但不值得一条横线 + 23dp 竖距。
-                text = MonthPanelText.scheduledDays(counts.scheduledDayCount),
+                text = MonthViewStrings.monthOverviewScheduledDays.filled("count", counts.scheduledDayCount.toString()),
                 style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.Medium,
                 color = mutedInk,
