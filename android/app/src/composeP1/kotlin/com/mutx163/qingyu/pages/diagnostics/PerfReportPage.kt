@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -358,7 +359,7 @@ private fun PerfRow(
     if (onClick == null) {
         content()
     } else {
-        Card(
+        QingyuCard(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(0.dp),
             onClick = onClick,

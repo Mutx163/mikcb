@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -150,11 +151,11 @@ fun WarehouseCourseImportPage(
 
             // 快捷导入卡片
             if (!isSearching && hasQuickImportMacro) {
-                Card(
+                QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clickable(onClick = onQuickImportClick)
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    onClick = onQuickImportClick,
                 ) {
                     Row(
                         modifier = Modifier

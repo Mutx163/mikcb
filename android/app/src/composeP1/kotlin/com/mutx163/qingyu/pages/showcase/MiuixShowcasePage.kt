@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -283,11 +284,11 @@ private fun ShowcaseEntryCard(
     primaryColor: Color,
     onClick: () -> Unit
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        insideMargin = PaddingValues(16.dp)
+            .fillMaxWidth(),
+        insideMargin = PaddingValues(16.dp),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

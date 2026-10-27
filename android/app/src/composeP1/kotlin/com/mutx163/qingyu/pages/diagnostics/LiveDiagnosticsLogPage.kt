@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -395,7 +396,7 @@ private fun DiagnosticsDeviceInfoCard(
     onToggle: () -> Unit,
     dark: Boolean,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onToggle,
@@ -440,7 +441,7 @@ private fun DiagnosticsLoadEarlierRow(
     onClick: () -> Unit,
     dark: Boolean,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onClick,
@@ -498,7 +499,7 @@ private fun DiagnosticsEntryCard(
 ) {
     val levelColor = levelColor(entry.level, dark)
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onToggle,

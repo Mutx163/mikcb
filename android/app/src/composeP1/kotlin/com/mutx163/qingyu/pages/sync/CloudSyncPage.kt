@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -348,7 +349,7 @@ fun CloudSyncPage(
                             }
                         } else {
                             items(viewState.backupRows, key = { "backup_${it.entryId}" }) { row ->
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                     onClick = { onOpenBackup(row.entryId) },

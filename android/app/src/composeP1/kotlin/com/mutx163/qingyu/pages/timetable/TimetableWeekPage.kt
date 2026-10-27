@@ -6,6 +6,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
@@ -314,11 +316,11 @@ fun TimetableWeekPage(
                                     .padding(top = 120.dp, start = timeColumnWidth + 16.dp, end = 16.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .clickable(onClick = onAddClick)
-                                        .padding(16.dp),
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    insideMargin = PaddingValues(16.dp),
+                                    onClick = onAddClick,
                                 ) {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
