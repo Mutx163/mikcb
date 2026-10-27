@@ -21,8 +21,9 @@ package com.mutx163.qingyu.pages.shell
  * - [ShellPageDataKind.DIRECT]：页面自带默认值，不需要喂任何数据就能渲染出完整界面。
  * - [ShellPageDataKind.DEMO]：页面必须收一份视图状态；壳里喂的是**演示数据**
  *   （空列表或示例条目），界面上会标出来，免得被当成真实数据。
- * - [ShellPageDataKind.UNAVAILABLE]：**进不去**，且原因必须是「代码里缺东西」而不是「懒得接」。
- *   目前 6 条：4 条渲染层没写、2 条要求宿主提供二维码/相机图形而仓库里没有。
+ * - [ShellPageDataKind.UNAVAILABLE]：**进不去**，且原因必须是「代码里缺东西」而不是「懒得接」，
+ *   并要用 [ShellBlockReason] 标出缺的是哪一类。目前 6 条：4 条没有整页渲染层、
+ *   2 条要求宿主注入二维码/相机图形而仓库里没有对应实现。
  * - [ShellPageDataKind.ALWAYS_VISIBLE]：不是独立页面（本壳底栏），常驻可见，不需要入口。
  */
 enum class ShellPageDataKind {
@@ -30,6 +31,26 @@ enum class ShellPageDataKind {
     DEMO,
     UNAVAILABLE,
     ALWAYS_VISIBLE,
+}
+
+/**
+ * 「暂不可用」到底缺什么——**分类写进数据里，不靠人读整句话猜**。
+ *
+ * 存在的理由很实际：将来有人补齐了某个前置条件，要能一眼查出「哪几条因此可以放开」。
+ * 只写一句「暂不支持」，下一个人得把 6 条原因重新读一遍才知道该动哪条。
+ *
+ * [label] 同时是索引行上原因文字的开头，测试拿它跟 [ShellPageEntry.note] 对拍：
+ * 分类与文字不允许各说各的。
+ */
+enum class ShellBlockReason(val label: String) {
+    /** 有模型/面板/解析层，**没有整页 Composable** —— 要补的是页面本身。 */
+    MISSING_RENDERER("缺整页渲染层"),
+
+    /** 页面实现了，但要宿主注入一块外部图形（二维码、相机预览）—— 要补的是槽位实现。 */
+    MISSING_HOST_SLOT("缺宿主槽位"),
+
+    /** 只差一个第三方库（本轮 6 条里没有单独属于这一类的，留位给后续）。 */
+    MISSING_DEPENDENCY("缺依赖"),
 }
 
 /** 索引里的一行。 */
@@ -41,6 +62,8 @@ data class ShellPageEntry(
     val kind: ShellPageDataKind,
     /** `UNAVAILABLE` 必填：一句话说清缺什么。其余可为 null。 */
     val note: String? = null,
+    /** `UNAVAILABLE` 必填：缺的是哪一类。其余必须为 null。 */
+    val blockedBy: ShellBlockReason? = null,
 )
 
 /** 一个批次 = 索引里的一个分组。 */
@@ -73,11 +96,13 @@ object ShellPageCatalog {
         title: String,
         kind: ShellPageDataKind,
         note: String? = null,
+        blockedBy: ShellBlockReason? = null,
     ): ShellPageEntry = ShellPageEntry(
         id = "${code.lowercase().removePrefix("p3-")}.$name",
         title = title,
         kind = kind,
         note = note,
+        blockedBy = blockedBy,
     )
 
     val batches: List<ShellPageBatch> = listOf(
@@ -88,7 +113,8 @@ object ShellPageCatalog {
                 page("P3-A", "about", "关于", ShellPageDataKind.DIRECT),
                 page(
                     "P3-A", "changelog", "更新日志", ShellPageDataKind.UNAVAILABLE,
-                    "只有解析模型 ReleaseNotesBlocks.kt，没有 Compose 渲染层",
+                    note = "${ShellBlockReason.MISSING_RENDERER.label}：只有解析模型 ReleaseNotesBlocks.kt，没有对应的 Composable",
+                    blockedBy = ShellBlockReason.MISSING_RENDERER,
                 ),
                 page("P3-A", "licenses", "开源许可", ShellPageDataKind.DEMO),
                 page("P3-A", "support", "支持作者", ShellPageDataKind.DEMO),
@@ -114,7 +140,8 @@ object ShellPageCatalog {
                 page("P3-B", "homeMenuEditor", "设置 · 首页菜单编辑器", ShellPageDataKind.DEMO),
                 page(
                     "P3-B", "timetablePage", "设置 · 课表页面", ShellPageDataKind.UNAVAILABLE,
-                    "Kotlin 侧没有这一页的 spec / Composable（SettingsBatchCoverageTest 也未登记）",
+                    note = "${ShellBlockReason.MISSING_RENDERER.label}：Kotlin 侧没有这一屏的 spec，SettingsBatchCoverageTest 也未登记",
+                    blockedBy = ShellBlockReason.MISSING_RENDERER,
                 ),
                 page("P3-B", "courseCard", "设置 · 课程卡片", ShellPageDataKind.DEMO),
                 page("P3-B", "live", "设置 · 实时活动", ShellPageDataKind.DEMO),
@@ -142,7 +169,8 @@ object ShellPageCatalog {
             pages = listOf(
                 page(
                     "P3-C2", "month", "月视图", ShellPageDataKind.UNAVAILABLE,
-                    "只有面板组件（MonthPanelOverview / MonthGrid 等），没有整页 Composable",
+                    note = "${ShellBlockReason.MISSING_RENDERER.label}：只有面板组件（MonthPanelOverview / MonthGrid 等），没有整页 Composable",
+                    blockedBy = ShellBlockReason.MISSING_RENDERER,
                 ),
             ),
         ),
@@ -230,11 +258,13 @@ object ShellPageCatalog {
                 page("P3-G3", "icsExport", "ICS 导出", ShellPageDataKind.DEMO),
                 page(
                     "P3-G3", "qrSend", "二维码发送", ShellPageDataKind.UNAVAILABLE,
-                    "页面要求宿主提供二维码图形（qrSlot 为必传参数），仓库内无二维码编码器",
+                    note = "${ShellBlockReason.MISSING_HOST_SLOT.label}：页面要求宿主传 qrSlot 画二维码；仓库内没有二维码编码器，也没有槽位实现",
+                    blockedBy = ShellBlockReason.MISSING_HOST_SLOT,
                 ),
                 page(
                     "P3-G3", "qrScan", "二维码扫码", ShellPageDataKind.UNAVAILABLE,
-                    "页面要求宿主提供相机预览（cameraSlot 为必传参数），仓库内无 CameraX / 扫码依赖",
+                    note = "${ShellBlockReason.MISSING_HOST_SLOT.label}：页面要求宿主传 cameraSlot 画相机预览；仓库内无 CameraX / 扫码依赖",
+                    blockedBy = ShellBlockReason.MISSING_HOST_SLOT,
                 ),
                 page("P3-G3", "lanEdit", "局域网编辑", ShellPageDataKind.DEMO),
                 page("P3-G3", "pickupCodes", "取件码", ShellPageDataKind.DIRECT),
@@ -275,7 +305,8 @@ object ShellPageCatalog {
                 page("P3-J", "live", "实时活动 / 灵动岛", ShellPageDataKind.DIRECT),
                 page(
                     "P3-J", "keepAlive", "实时活动 · 保持后台运行", ShellPageDataKind.UNAVAILABLE,
-                    "Kotlin 侧 pages/live/ 只有 LiveSettingsPage.kt，这一屏没有实现",
+                    note = "${ShellBlockReason.MISSING_RENDERER.label}：pages/live/ 只有 LiveSettingsPage.kt，这一屏没有实现",
+                    blockedBy = ShellBlockReason.MISSING_RENDERER,
                 ),
                 page("P3-J", "weatherCity", "天气城市选择", ShellPageDataKind.DIRECT),
             ),
