@@ -269,6 +269,92 @@ object ChartMath {
     const val CURVE_SMOOTHNESS: Float = 0.25f
 
     /**
+     * 逐段求三次贝塞尔控制点（首尾段用端点自身兜底，避免曲线甩出画布）。
+     *
+     * 返回 `points.size - 1` 组控制点，与 [cubicControls] 一一对应，
+     * 渲染层据此 `moveTo(p0)` + 逐段 `cubicTo(...)`。
+     */
+    fun curveControlPoints(
+        points: List<ChartPoint>,
+        smoothness: Float = CURVE_SMOOTHNESS,
+    ): List<CubicControls> {
+        if (points.size < 2) return emptyList()
+        val last = points.size - 1
+        return (0 until last).map { i ->
+            val p0 = points[(i - 1).coerceAtLeast(0)]
+            val p1 = points[i]
+            val p2 = points[i + 1]
+            val p3 = points[(i + 2).coerceAtMost(last)]
+            cubicControls(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, smoothness)
+        }
+    }
+
+    /**
+     * 把折线按平滑曲线**采样成密点折线**。
+     *
+     * 用途：面积填充与虚线都得按"曲线上的点"落笔——Compose 的 `Path` 能画贝塞尔，
+     * 但虚线是沿**折线长度**推进的，不采样就只能按原始节点切，弧线会退化成折线。
+     *
+     * 不变量：首点与末点原样保留；点数 = `(n-1) * samplesPerSegment + 1`。
+     */
+    fun sampleCurve(
+        points: List<ChartPoint>,
+        smoothness: Float = CURVE_SMOOTHNESS,
+        samplesPerSegment: Int = 12,
+    ): List<ChartPoint> {
+        if (points.size < 2) return points
+        val perSegment = samplesPerSegment.coerceAtLeast(1)
+        val controls = curveControlPoints(points, smoothness)
+        val result = ArrayList<ChartPoint>((points.size - 1) * perSegment + 1)
+        result.add(points.first())
+        for (i in controls.indices) {
+            val p0 = points[i]
+            val p3 = points[i + 1]
+            val c = controls[i]
+            for (step in 1..perSegment) {
+                val t = step.toFloat() / perSegment
+                val mt = 1f - t
+                // 标准三次贝塞尔展开：B(t) = (1-t)³P0 + 3(1-t)²t·C1 + 3(1-t)t²·C2 + t³P3
+                val x = mt * mt * mt * p0.x +
+                    3f * mt * mt * t * c.c1x +
+                    3f * mt * t * t * c.c2x +
+                    t * t * t * p3.x
+                val y = mt * mt * mt * p0.y +
+                    3f * mt * mt * t * c.c1y +
+                    3f * mt * t * t * c.c2y +
+                    t * t * t * p3.y
+                result.add(ChartPoint(x, y))
+            }
+        }
+        return result
+    }
+
+    /**
+     * 纵轴刻度值（自底向顶）：0、step、2·step……不超过 [maxY]。
+     *
+     * [interval] 非空时用它；为空时按「最多 4 格」自动取步长
+     * （`ceil(maxY / 4)`，至少 1）——fl_chart 自己的自动算法是内部私有的，
+     * 这里给一条**可预测、可手算**的替代规则，并保证不会画成十几条密线。
+     *
+     * 例：`maxY=4, interval=2` → `[0,2,4]`；`maxY=41, interval=null` → `[0,11,22,33]`。
+     */
+    fun leftAxisTicks(maxY: Double, interval: Int?): List<Int> {
+        if (maxY <= 0.0) return listOf(0)
+        val top = maxY.toInt()
+        val step = when {
+            interval != null && interval > 0 -> interval
+            else -> kotlin.math.ceil(maxY / 4.0).toInt().coerceAtLeast(1)
+        }
+        val ticks = mutableListOf<Int>()
+        var value = 0
+        while (value <= top) {
+            ticks.add(value)
+            value += step
+        }
+        return ticks
+    }
+
+    /**
      * 把一条折线按虚线节奏切成若干实线段。
      *
      * Dart 侧未来周用 `dashArray: [6, 4]`（`trend_chart.dart:156`）= 实 6 画 4，

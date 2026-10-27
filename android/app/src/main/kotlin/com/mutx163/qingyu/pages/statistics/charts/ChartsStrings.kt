@@ -47,10 +47,18 @@ object ChartsStrings {
 
     // ── 课程排行 ──
     val statisticsRankingTitle = ChartText("statisticsRankingTitle", "课程排行")
+
+    // ── 课表对比 ──
+    val statisticsCompareTitle = ChartText("statisticsCompareTitle", "课表对比")
+    val statisticsCompareActive = ChartText("statisticsCompareActive", "当前课表")
+    val statisticsCompareDelta = ChartText("statisticsCompareDelta", "较当前 {delta} 节")
     val statisticsRankingSlotDetail = ChartText("statisticsRankingSlotDetail", "{day} 第 {startSection}～{endSection} 节")
     val statisticsCourseList = ChartText("statisticsCourseList", "课程列表")
     val editCourseTitle = ChartText("editCourseTitle", "编辑课程")
     val sectionRangeLabel = ChartText("sectionRangeLabel", "第 {startSection}～{endSection} 节")
+
+    /** 课次列表里"当天有考试"的角标（`app_zh.arb` 里确有这一条，不是新造文案）。 */
+    val examBadgeLabel = ChartText("examBadgeLabel", "考试")
 
     // ── 必修 / 选修 ──
     val statisticsNatureRatio = ChartText("statisticsNatureRatio", "必修 / 选修")
@@ -281,7 +289,8 @@ object ChartsStrings {
         statisticsNoData, statisticsSectionsUnit, statisticsSectionUnit,
         statisticsWeekSelector, statisticsWeekCurrentHint,
         statisticsRankingTitle, statisticsRankingSlotDetail, statisticsCourseList,
-        editCourseTitle, sectionRangeLabel,
+        editCourseTitle, sectionRangeLabel, examBadgeLabel,
+        statisticsCompareTitle, statisticsCompareActive, statisticsCompareDelta,
         statisticsNatureRatio, courseNatureRequired, courseNatureElective,
         statisticsNatureLegendDetail, statisticsNatureNoneRequired, statisticsNatureNoneElective,
         statisticsComparisonTitle, statisticsSectionCount, statisticsComparisonLastWeek,

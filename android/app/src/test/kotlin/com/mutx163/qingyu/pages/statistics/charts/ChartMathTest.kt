@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.statistics.charts
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -386,6 +387,74 @@ class ChartMathTest {
         assertEquals(emptyList<Int>(), ChartMath.sequentialRanks(0))
         assertEquals(emptyList<Int>(), ChartMath.sequentialRanks(-1))
         assertEquals(listOf(1), ChartMath.sequentialRanks(1))
+    }
+
+    // ────────────── 纵轴刻度与曲线采样（渲染层依赖的两条） ──────────────
+
+    @Test
+    fun `纵轴刻度从零起步按步长递增且不越过上限`() {
+        // 上限 4、步长 2 → 0、2、4
+        assertEquals(listOf(0, 2, 4), ChartMath.leftAxisTicks(4.0, 2))
+        // 上限 6、步长 1 → 0..6 共 7 条
+        assertEquals(listOf(0, 1, 2, 3, 4, 5, 6), ChartMath.leftAxisTicks(6.0, 1))
+        // 上限 8、步长 2 → 0、2、4、6、8
+        assertEquals(listOf(0, 2, 4, 6, 8), ChartMath.leftAxisTicks(8.0, 2))
+        // 上限 5、步长 2 → 最后一条 4（不越界画 6）
+        assertEquals(listOf(0, 2, 4), ChartMath.leftAxisTicks(5.0, 2))
+    }
+
+    @Test
+    fun `自动步长最多四格`() {
+        // 41 / 4 = 10.25 → 进位 11 → 0、11、22、33
+        assertEquals(listOf(0, 11, 22, 33), ChartMath.leftAxisTicks(41.0, null))
+        // 6 / 4 = 1.5 → 进位 2 → 0、2、4、6
+        assertEquals(listOf(0, 2, 4, 6), ChartMath.leftAxisTicks(6.0, null))
+        // 刚好整除：9 / 4 = 2.25 → 3
+        assertEquals(listOf(0, 3, 6, 9), ChartMath.leftAxisTicks(9.0, null))
+        // 上限不足 1 只留 0（不画密度线）
+        assertEquals(listOf(0), ChartMath.leftAxisTicks(0.5, null))
+        assertEquals(listOf(0), ChartMath.leftAxisTicks(0.0, 2))
+    }
+
+    @Test
+    fun `曲线采样保持端点在线上且点数可预测`() {
+        // 三个共线水平点，每段采 4 个点 → (3-1)*4+1 = 9 个
+        val straight = listOf(ChartPoint(0f, 0f), ChartPoint(10f, 0f), ChartPoint(20f, 0f))
+        val samples = ChartMath.sampleCurve(straight, samplesPerSegment = 4)
+        assertEquals(9, samples.size)
+        // 线性数据的曲线仍是直线：所有采样点 y 都是 0
+        for (p in samples) assertEquals(0f, p.y, 1e-4f)
+        // 端点原样保留
+        assertEquals(0f, samples.first().x, 1e-4f)
+        assertEquals(20f, samples.last().x, 1e-4f)
+        // x 单调递增（没有回折）
+        for (i in 1 until samples.size) {
+            assertTrue("采样点 x 在 ${i} 处回折了", samples[i].x > samples[i - 1].x - 1e-4f)
+        }
+        // 点数不足时原样返回
+        assertEquals(straight, ChartMath.sampleCurve(straight + emptyList(), samplesPerSegment = 1))
+        assertEquals(2, ChartMath.sampleCurve(listOf(ChartPoint(0f, 0f), ChartPoint(1f, 1f)), samplesPerSegment = 1).size)
+        assertEquals(1, ChartMath.sampleCurve(listOf(ChartPoint(3f, 3f)), samplesPerSegment = 4).size)
+    }
+
+    @Test
+    fun `控制点数量是段数 首尾段用端点兜底`() {
+        val points = listOf(
+            ChartPoint(0f, 0f), ChartPoint(10f, 10f), ChartPoint(20f, 4f), ChartPoint(30f, 8f),
+        )
+        // 4 个点 → 3 段 → 3 组控制点
+        assertEquals(3, ChartMath.curveControlPoints(points).size)
+        // 单点 / 空表没有段
+        assertEquals(0, ChartMath.curveControlPoints(listOf(ChartPoint(1f, 1f))).size)
+        assertEquals(0, ChartMath.curveControlPoints(emptyList()).size)
+
+        // 首段从点 0(0,0) 到点 1(10,10)，p0 用点 0 自身兜底：
+        // c1x = x1 + (x2 - x0) * 0.125 = 0 + (10 - 0) * 0.125 = 1.25
+        val first = ChartMath.curveControlPoints(points)[0]
+        assertEquals(1.25f, first.c1x, 1e-4f)
+        assertEquals(1.25f, first.c1y, 1e-4f)
+        // c2x = x2 - (x3 - x1) * 0.125 = 10 - (20 - 0) * 0.125 = 7.5
+        assertEquals(7.5f, first.c2x, 1e-4f)
     }
 
     // ────────────── 文案数字 ──────────────
