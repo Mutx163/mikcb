@@ -1,0 +1,611 @@
+package com.mutx163.qingyu.pages.time_scheme
+
+import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.core.TimeScheme
+
+/**
+ * 时间模板管理页的纯逻辑层：列表行、操作菜单、删除拦截、使用情况、分享与编辑器
+ * 的全部取值都从这里出，页面只负责把字符串摆上去。
+ *
+ * ## 为什么把「引用计数」做成入参而不是去查仓库
+ *
+ * 这一版只落**逻辑 + 单测**，不引入 Compose 页面。引用关系（哪些课表直接绑了这套
+ * 模板、哪些课程把它当副时间模板、哪些地点规则按地点匹配到它）来自课表仓库，属于
+ * 别人的写作用域，所以这里用一个纯数据的 [TimeSchemeUsageIndex] 接住，由调用方
+ * 灌入。好处是删除拦截这类最怕写错的判定可以脱离 Context/数据库直接单测。
+ *
+ * ## 删除为什么必须拦
+ *
+ * 删掉一套仍被引用的模板，会让课表和课程的节次时间直接落空（周视图按节次取时间，
+ * 取不到就画不出来）。Dart 版在这里做的是「先列清单、再禁掉删除按钮」，这里照搬：
+ * [TimeSchemeDeleteCheck.canDelete] 为 false 时，对话框只留「关闭」，不出现「删除」。
+ *
+ * ## 文案从哪来
+ *
+ * 一切屏上文字都走 [TimeSchemeManagementStrings]，本文件不出现中文字面量（除了拼名字用的
+ * 分隔符，而那个分隔符本身也来自 ARB）。
+ */
+class TimeSchemeManagementModel(
+    /** 模板清单，顺序即展示顺序（仓库给什么顺序就按什么顺序画）。 */
+    val schemes: List<TimeScheme> = emptyList(),
+    /** 引用关系索引，缺省视为「谁都没用」，因此全都可以删。 */
+    val usage: TimeSchemeUsageIndex = TimeSchemeUsageIndex.EMPTY,
+    /** 当前课表正在使用的模板 ID；null = 还没有课表在用。 */
+    val activeSchemeId: String? = null,
+) {
+
+    val isEmpty: Boolean get() = schemes.isEmpty()
+
+    /** 列表页标题栏文案。 */
+    val title: String get() = TimeSchemeManagementStrings.timeSchemeTitle.zh
+
+    /** 新建按钮的无障碍/长按提示。 */
+    val newSchemeTooltip: String get() = TimeSchemeManagementStrings.newSchemeTooltip.zh
+
+    /**
+     * 「地点作息匹配」入口的副标题。
+     *
+     * 一条模板都没有时，地点规则无从绑定，入口提示先建模板；这与 Dart 版
+     * `locationTimeMatchNeedTimeScheme` 的用法一致。
+     */
+    val locationEntrySubtitle: String
+        get() = if (isEmpty) {
+            TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.zh
+        } else {
+            TimeSchemeManagementStrings.timeSchemeEntryTitle.zh
+        }
+
+    val rows: List<TimeSchemeRow> get() = schemes.map { rowOf(it) }
+
+    fun row(schemeId: String): TimeSchemeRow? = schemes.firstOrNull { it.id == schemeId }?.let { rowOf(it) }
+
+    private fun rowOf(scheme: TimeScheme): TimeSchemeRow {
+        val profileCount = usage.directProfiles[scheme.id].orEmpty().size
+        val overrideCount = usage.overrideCourses[scheme.id].orEmpty().size
+        val courseCount = overrideCount +
+            usage.followMainCourses[scheme.id].orEmpty().size +
+            usage.locationCourses[scheme.id].orEmpty().size
+        val isActive = scheme.id == activeSchemeId
+        return TimeSchemeRow(
+            scheme = scheme,
+            isActive = isActive,
+            sectionCount = scheme.sections.size,
+            profileCount = profileCount,
+            courseCount = courseCount,
+            overrideCourseCount = overrideCount,
+            startsAt = scheme.sections.firstOrNull()?.startTime?.takeIf { it.isNotBlank() },
+            summary = TimeSchemeManagementStrings.timeSchemeSummary.filled(
+                "sections" to scheme.sections.size.toString(),
+                "profiles" to profileCount.toString(),
+                "courses" to courseCount.toString(),
+                "overrideCourses" to overrideCount.toString(),
+            ),
+            statusLabel = if (isActive) TimeSchemeManagementStrings.usingNow.zh else "",
+        )
+    }
+
+    // ────────────────────────── 操作菜单 ──────────────────────────
+
+    /**
+     * 卡片右侧「更多操作」里的菜单项。
+     *
+     * 「应用到当前课表」只对**非**当前使用中的模板出现：当前课表已经在用它了，
+     * 这一项点了也没有任何效果，摆在那里只会让人以为状态没生效。
+     */
+    fun menu(schemeId: String): List<TimeSchemeMenuItem> {
+        if (schemes.none { it.id == schemeId }) return emptyList()
+        val isActive = schemeId == activeSchemeId
+        return buildList {
+            if (!isActive) add(menuItem(TimeSchemeAction.APPLY_TO_CURRENT))
+            add(menuItem(TimeSchemeAction.EDIT_SECTIONS))
+            add(menuItem(TimeSchemeAction.VIEW_USAGE))
+            add(menuItem(TimeSchemeAction.RENAME))
+            add(menuItem(TimeSchemeAction.DUPLICATE))
+            add(menuItem(TimeSchemeAction.SHARE))
+            add(menuItem(TimeSchemeAction.DELETE))
+        }
+    }
+
+    private fun menuItem(action: TimeSchemeAction) = TimeSchemeMenuItem(
+        action = action,
+        label = when (action) {
+            TimeSchemeAction.APPLY_TO_CURRENT -> TimeSchemeManagementStrings.applyToCurrentTimetable.zh
+            TimeSchemeAction.EDIT_SECTIONS -> TimeSchemeManagementStrings.editSectionsAction.zh
+            TimeSchemeAction.VIEW_USAGE -> TimeSchemeManagementStrings.viewUsageAction.zh
+            TimeSchemeAction.RENAME -> TimeSchemeManagementStrings.renameAction.zh
+            TimeSchemeAction.DUPLICATE -> TimeSchemeManagementStrings.duplicateAction.zh
+            TimeSchemeAction.SHARE -> TimeSchemeManagementStrings.shareTimeSchemeAction.zh
+            TimeSchemeAction.DELETE -> TimeSchemeManagementStrings.deleteAction.zh
+        },
+    )
+
+    // ────────────────────────── 新建 / 重命名 ──────────────────────────
+
+    /** 新建弹层：标题、字段、占位、确认按钮一次给全。 */
+    val createSheet: TimeSchemeSheet
+        get() = TimeSchemeSheet(
+            title = TimeSchemeManagementStrings.createTimeSchemeTitle.zh,
+            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.zh,
+            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.zh,
+            initialName = "",
+            confirmLabel = TimeSchemeManagementStrings.createAction.zh,
+            nameError = TimeSchemeManagementStrings.nameRequired.zh,
+        )
+
+    fun renameSheet(schemeId: String): TimeSchemeSheet? {
+        val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
+        return TimeSchemeSheet(
+            title = TimeSchemeManagementStrings.renameTimeSchemeTitle.zh,
+            nameLabel = TimeSchemeManagementStrings.timeSchemeNameLabel.zh,
+            nameHint = TimeSchemeManagementStrings.timeSchemeNameHint.zh,
+            initialName = scheme.name,
+            confirmLabel = TimeSchemeManagementStrings.saveAction.zh,
+            nameError = TimeSchemeManagementStrings.nameRequired.zh,
+        )
+    }
+
+    /** 名称校验：只拦「全是空白」这一种。返回 null = 可以提交。 */
+    fun validateName(raw: String): String? =
+        if (raw.isBlank()) TimeSchemeManagementStrings.nameRequired.zh else null
+
+    /**
+     * 复制后的新名字。
+     *
+     * ARB 里没有「副本」这类后缀键，所以这里只用数字区分：`A` → `A 2` → `A 3`。
+     * 用一个纯数字后缀而不是新造一个词，是为了不产生 ARB 里不存在的文案。
+     */
+    fun copyName(base: String): String {
+        val taken = schemes.map { it.name }.toSet()
+        if (base !in taken) return base
+        var index = 2
+        while ("$base $index" in taken) index++
+        return "$base $index"
+    }
+
+    /** 复制成功后的轻提示。 */
+    val copiedMessage: String get() = TimeSchemeManagementStrings.copiedTimeSchemeMessage.zh
+
+    fun renamedMessage(name: String): String = TimeSchemeManagementStrings.renamedToMessage.filled("name", name)
+
+    fun appliedMessage(schemeId: String): String {
+        val name = schemes.firstOrNull { it.id == schemeId }?.name.orEmpty()
+        return TimeSchemeManagementStrings.appliedTimeSchemeMessage.filled("name", name)
+    }
+
+    fun deletedMessage(name: String): String = TimeSchemeManagementStrings.deletedTimeSchemeMessage.filled("name", name)
+
+    // ────────────────────────── 删除拦截 ──────────────────────────
+
+    /**
+     * 删除确认框的完整取值。
+     *
+     * 被引用时 [TimeSchemeDeleteCheck.blockers] 逐条列出占用方，[TimeSchemeDeleteCheck.canDelete]
+     * 为 false，页面据此把「删除」按钮换成唯一的「关闭」。当前课表正在用它时，
+     * 额外把 [TimeSchemeInUse] 那一句顶在最前面——它是用户最直接能感知的占用。
+     */
+    fun deleteCheck(schemeId: String): TimeSchemeDeleteCheck? {
+        val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
+        val blockers = blockers(schemeId)
+        val inUse = schemeId == activeSchemeId
+        return TimeSchemeDeleteCheck(
+            schemeId = schemeId,
+            title = TimeSchemeManagementStrings.deleteTimeSchemeTitle.zh,
+            message = TimeSchemeManagementStrings.deleteTimeSchemeMessage.filled("name", scheme.name),
+            inUseNote = if (inUse) TimeSchemeManagementStrings.timeSchemeInUseMessage.zh else "",
+            blockerIntro = if (blockers.isEmpty()) "" else TimeSchemeManagementStrings.timeSchemeDeleteBlockedIntro.zh,
+            blockers = blockers,
+            canDelete = blockers.isEmpty() && !inUse,
+            confirmLabel = TimeSchemeManagementStrings.deleteAction.zh,
+            cancelLabel = TimeSchemeManagementStrings.closeAction.zh,
+        )
+    }
+
+    /**
+     * 占用清单，顺序固定：课表 → 副模板课程 → 地点匹配课程 → 地点规则 → 日期规则。
+     *
+     * 顺序固定是为了可测：对话框内容随数据抖动会让人以为删不掉的原因变了。
+     */
+    fun blockers(schemeId: String): List<String> {
+        val separator = TimeSchemeManagementStrings.timeSchemeBlockerListSeparator.zh
+        val profiles = usage.directProfiles[schemeId].orEmpty()
+        val overrideCourses = usage.overrideCourses[schemeId].orEmpty()
+        val locationCourses = usage.locationCourses[schemeId].orEmpty()
+        val locationGroups = usage.locationGroups[schemeId].orEmpty()
+        val dateRules = usage.dateRules[schemeId].orEmpty()
+        return buildList {
+            if (profiles.isNotEmpty()) {
+                add(
+                    TimeSchemeManagementStrings.timeSchemeBlockedByProfiles.filled(
+                        "names",
+                        profiles.joinToString(separator) { it.name },
+                    ),
+                )
+            }
+            if (overrideCourses.isNotEmpty()) {
+                add(
+                    TimeSchemeManagementStrings.timeSchemeBlockedByOverrideCourses.filled(
+                        "count",
+                        overrideCourses.size.toString(),
+                    ),
+                )
+            }
+            if (locationCourses.isNotEmpty()) {
+                add(
+                    TimeSchemeManagementStrings.timeSchemeBlockedByLocationCourses.filled(
+                        "count",
+                        locationCourses.size.toString(),
+                    ),
+                )
+            }
+            if (locationGroups.isNotEmpty()) {
+                add(
+                    TimeSchemeManagementStrings.timeSchemeBlockedByLocationGroups.filled(
+                        "names",
+                        locationGroups.joinToString(separator) { it.name },
+                    ),
+                )
+            }
+            if (dateRules.isNotEmpty()) {
+                add(
+                    TimeSchemeManagementStrings.timeSchemeBlockedByDateRules.filled(
+                        "names",
+                        dateRules.joinToString(separator) { it.name },
+                    ),
+                )
+            }
+        }
+    }
+
+    // ────────────────────────── 使用情况 ──────────────────────────
+
+    /**
+     * 使用情况页的整页取值。
+     *
+     * 三段列表对应三种占用方式，各自的副标题与空态都不同：直接绑定（课表级）、
+     * 跟随主模板（课程没设副模板，跟着课表走）、副模板覆盖（课程单独指定）。
+     * 混成一段会让人无法判断「改这套模板会不会动到那门课」。
+     */
+    fun usageView(schemeId: String): TimeSchemeUsageView? {
+        val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
+        val profiles = usage.directProfiles[schemeId].orEmpty()
+        val followCourses = usage.followMainCourses[schemeId].orEmpty()
+        val overrideCourses = usage.overrideCourses[schemeId].orEmpty()
+        val locationCourses = usage.locationCourses[schemeId].orEmpty()
+        val courseCount = followCourses.size + overrideCourses.size + locationCourses.size
+
+        val followLines = followCourses.map {
+            line(it, TimeSchemeManagementStrings.mainTimeSchemeLabel.zh)
+        }
+        val overrideLines = overrideCourses.map {
+            line(it, TimeSchemeManagementStrings.overrideTimeSchemeShortLabel.zh)
+        }
+        // 地点这一段是「删除前必须先改绑」的占用清单，所以课程与规则条目并在一段里：
+        // 用户在这里只关心「还有谁在用」，分不分课程/规则不影响他要做的动作。
+        val locationLines = locationCourses.map {
+            line(it, TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh)
+        } + usage.locationGroups[schemeId].orEmpty().map {
+            TimeSchemeLine(title = it.name, summary = "")
+        }
+
+        val bottomFirst = (followCourses + overrideCourses + locationCourses).firstOrNull()?.courseName
+        val bottomSummary = if (courseCount > 1 && bottomFirst != null) {
+            TimeSchemeManagementStrings.timeSchemeBottomUsageMulti.filled(
+                "first" to bottomFirst,
+                "count" to courseCount.toString(),
+            )
+        } else {
+            ""
+        }
+
+        val blockList = blockers(schemeId)
+        return TimeSchemeUsageView(
+            schemeId = schemeId,
+            title = TimeSchemeManagementStrings.timeSchemeUsageTitle.filled("name", scheme.name),
+            intro = TimeSchemeManagementStrings.timeSchemeUsageIntro.zh,
+            profileCountLabel = TimeSchemeManagementStrings.profileCountLabel.zh,
+            profileCountValue = TimeSchemeManagementStrings.profileCountValue.filled("count", profiles.size.toString()),
+            courseCountLabel = TimeSchemeManagementStrings.courseCountLabel.zh,
+            courseCountValue = TimeSchemeManagementStrings.courseSectionCountValue.filled("count", courseCount.toString()),
+            overrideCountLabel = TimeSchemeManagementStrings.overrideTimeSchemeLabel.zh,
+            overrideCountValue = TimeSchemeManagementStrings.courseSectionCountValue.filled(
+                "count",
+                overrideCourses.size.toString(),
+            ),
+            directProfilesTitle = TimeSchemeManagementStrings.directlyBoundProfilesTitle.zh,
+            directProfilesSubtitle = TimeSchemeManagementStrings.directlyBoundProfilesSubtitle.zh,
+            directProfilesEmpty = TimeSchemeManagementStrings.directlyBoundProfilesEmpty.zh,
+            directProfiles = profiles.map { TimeSchemeLine(title = it.name, summary = "") },
+            followTitle = TimeSchemeManagementStrings.followMainSchemeCoursesTitle.zh,
+            followSubtitle = TimeSchemeManagementStrings.followMainSchemeCoursesSubtitle.zh,
+            followEmpty = TimeSchemeManagementStrings.followMainSchemeCoursesEmpty.zh,
+            followLines = followLines,
+            overrideTitle = TimeSchemeManagementStrings.overrideSchemeCoursesTitle.zh,
+            overrideSubtitle = TimeSchemeManagementStrings.overrideSchemeCoursesSubtitle.zh,
+            overrideEmpty = TimeSchemeManagementStrings.overrideSchemeCoursesEmpty.zh,
+            overrideLines = overrideLines,
+            locationTitle = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
+            locationSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedLocationGroupsSubtitle.zh,
+            locationLines = locationLines,
+            bottomSummary = bottomSummary,
+            canDelete = blockList.isEmpty() && schemeId != activeSchemeId,
+            blockers = blockList,
+        )
+    }
+
+    private fun line(course: TimeSchemeCourseRef, usageType: String): TimeSchemeLine {
+        val weekday = TimeSchemeManagementStrings.weekdayShort(course.dayOfWeek)
+        val title = TimeSchemeManagementStrings.timeSchemeUsageReference.filled(
+            "profileName" to course.profileName,
+            "courseName" to course.courseName,
+            "weekday" to weekday,
+            "startSection" to course.startSection.toString(),
+            "endSection" to course.endSection.toString(),
+            "usageType" to usageType,
+        )
+        return TimeSchemeLine(
+            title = title,
+            summary = TimeSchemeManagementStrings.weekdaySectionRange.filled(
+                "weekday" to weekday,
+                "startSection" to course.startSection.toString(),
+                "endSection" to course.endSection.toString(),
+            ),
+        )
+    }
+
+    // ────────────────────────── 分享 ──────────────────────────
+
+    /** 分享面板：二维码 / 系统文件两条路，外加随分享带出去的说明文字。 */
+    fun shareSheet(schemeId: String): TimeSchemeShareSheet? {
+        val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
+        return TimeSchemeShareSheet(
+            schemeId = schemeId,
+            title = TimeSchemeManagementStrings.shareTimeSchemeTitle.zh,
+            viaQrLabel = TimeSchemeManagementStrings.shareTimeSchemeViaQr.zh,
+            viaSystemLabel = TimeSchemeManagementStrings.shareTimeSchemeViaSystem.zh,
+            cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
+            shareText = TimeSchemeManagementStrings.timeSchemeShareText.filled("name", scheme.name),
+            shareSubject = TimeSchemeManagementStrings.timeSchemeShareSubject.zh,
+        )
+    }
+
+    /** 系统分享失败时的提示（带原始错误串）。 */
+    fun sendFailedMessage(error: String): String =
+        TimeSchemeManagementStrings.sendFailedWithError.filled("error", error)
+
+    /** 二维码中转资源上限的提示。 */
+    val qrResourceLimitMessage: String get() = TimeSchemeManagementStrings.qrTransferResourceLimit.zh
+
+    // ────────────────────────── 编辑器 ──────────────────────────
+
+    /**
+     * 「编辑节次」页取值。
+     *
+     * [TimeSchemeEditorSheet.impactHint] 按真实引用关系挑一句：既被课表用、又有
+     * 课程当副模板时用最长的那句；只有一种占用时说一种；都没有就不提示。含糊地
+     * 一律提示「会影响所有课表」会让没人在用的模板也弹出吓人的警告。
+     */
+    fun editor(schemeId: String): TimeSchemeEditorSheet? {
+        val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
+        val isActive = schemeId == activeSchemeId
+        val overrideCount = usage.overrideCourses[schemeId].orEmpty().size
+        val hint = when {
+            isActive && overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorActiveAndCoursesHint.zh
+            isActive -> TimeSchemeManagementStrings.timeSchemeEditorActiveHint.zh
+            overrideCount > 0 -> TimeSchemeManagementStrings.timeSchemeEditorOverrideHint.zh
+            else -> ""
+        }
+        return TimeSchemeEditorSheet(
+            schemeId = schemeId,
+            title = TimeSchemeManagementStrings.editTimeSchemeTitle.zh,
+            name = scheme.name,
+            impactHint = hint,
+            sectionTimesTitle = TimeSchemeManagementStrings.sectionTimesTitle.zh,
+            sectionTimesSubtitle = TimeSchemeManagementStrings.sectionTimesSubtitle.zh,
+            rows = scheme.sections.mapIndexed { index, section -> sectionRow(index, section) },
+            quickGenerateLabel = TimeSchemeManagementStrings.quickGenerateAction.zh,
+            addSectionLabel = TimeSchemeManagementStrings.addSectionAction.zh,
+            removeLastSectionLabel = TimeSchemeManagementStrings.removeLastSectionAction.zh,
+            resetDefaultLabel = TimeSchemeManagementStrings.resetDefaultAction.zh,
+            saveLabel = TimeSchemeManagementStrings.saveAction.zh,
+            startPickerTitle = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
+            endPickerTitle = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
+            crossDayError = TimeSchemeManagementStrings.timeRangeValidationNoCrossDay.zh,
+        )
+    }
+
+    /**
+     * 单节时间行：序号 + 起止。
+     *
+     * [TimeSchemeSectionRow.rangeText] 直接取 core 的 [SectionTime.displayText]——
+     * 起止时间的拼法是数据层的既有约定，这里再手拼一次只会多出一种格式。
+     */
+    fun sectionRow(index: Int, section: SectionTime): TimeSchemeSectionRow = TimeSchemeSectionRow(
+        index = index,
+        label = TimeSchemeManagementStrings.sectionLabel.filled("section", (index + 1).toString()),
+        startTime = section.startTime,
+        endTime = section.endTime,
+        rangeText = section.displayText,
+    )
+}
+
+/** 列表卡片的一行所需的全部取值。 */
+data class TimeSchemeRow(
+    val scheme: TimeScheme,
+    val isActive: Boolean,
+    val sectionCount: Int,
+    val profileCount: Int,
+    val courseCount: Int,
+    val overrideCourseCount: Int,
+    /** 首节开始时间；null = 这套模板一节都没有。 */
+    val startsAt: String?,
+    val summary: String,
+    /** 「正在使用」标记；非当前模板为空串。 */
+    val statusLabel: String,
+) {
+    val title: String get() = scheme.name
+
+    /**
+     * 卡片右上角的次要信息。
+     *
+     * 正在用的模板显示「正在使用」，其余显示「08:00 起」——一个说状态，一个说
+     * 起点，都是扫一眼就能对上自己作息的那个信息。
+     */
+    val subtitle: String
+        get() = when {
+            isActive -> TimeSchemeManagementStrings.usingNow.zh
+            startsAt != null -> TimeSchemeManagementStrings.timeSchemeStartsAt.filled("start", startsAt)
+            else -> ""
+        }
+}
+
+/** 「更多操作」菜单项。 */
+data class TimeSchemeMenuItem(val action: TimeSchemeAction, val label: String)
+
+/** 卡片菜单里的动作枚举；顺序由 [TimeSchemeManagementModel.menu] 决定，不依赖枚举序。 */
+enum class TimeSchemeAction {
+    APPLY_TO_CURRENT,
+    EDIT_SECTIONS,
+    VIEW_USAGE,
+    RENAME,
+    DUPLICATE,
+    SHARE,
+    DELETE,
+}
+
+/** 新建 / 重命名共用的表单弹层取值。 */
+data class TimeSchemeSheet(
+    val title: String,
+    val nameLabel: String,
+    val nameHint: String,
+    val initialName: String,
+    val confirmLabel: String,
+    val nameError: String,
+)
+
+/** 删除确认框取值。 */
+data class TimeSchemeDeleteCheck(
+    val schemeId: String,
+    val title: String,
+    val message: String,
+    /** 当前课表正在使用时的补一句；否则空串。 */
+    val inUseNote: String,
+    /** 被占用时的说明抬头；可删时为空串。 */
+    val blockerIntro: String,
+    val blockers: List<String>,
+    val canDelete: Boolean,
+    val confirmLabel: String,
+    /** 被占用时唯一可点的按钮。 */
+    val cancelLabel: String,
+)
+
+/** 使用情况页里的一行（课程行或课表行）。 */
+data class TimeSchemeLine(val title: String, val summary: String)
+
+/** 使用情况页整页取值。 */
+data class TimeSchemeUsageView(
+    val schemeId: String,
+    val title: String,
+    val intro: String,
+    val profileCountLabel: String,
+    val profileCountValue: String,
+    val courseCountLabel: String,
+    val courseCountValue: String,
+    val overrideCountLabel: String,
+    val overrideCountValue: String,
+    val directProfilesTitle: String,
+    val directProfilesSubtitle: String,
+    val directProfilesEmpty: String,
+    val directProfiles: List<TimeSchemeLine>,
+    val followTitle: String,
+    val followSubtitle: String,
+    val followEmpty: String,
+    val followLines: List<TimeSchemeLine>,
+    val overrideTitle: String,
+    val overrideSubtitle: String,
+    val overrideEmpty: String,
+    val overrideLines: List<TimeSchemeLine>,
+    /** 按上课地点匹配到这套模板的课程（删除拦截里也算占用）。 */
+    val locationTitle: String,
+    val locationSubtitle: String,
+    val locationLines: List<TimeSchemeLine>,
+    /** 课程多于一条时的「… 等 N 节课程」汇总；否则空串。 */
+    val bottomSummary: String,
+    val canDelete: Boolean,
+    val blockers: List<String>,
+)
+
+/** 分享面板取值。 */
+data class TimeSchemeShareSheet(
+    val schemeId: String,
+    val title: String,
+    val viaQrLabel: String,
+    val viaSystemLabel: String,
+    val cancelLabel: String,
+    val shareText: String,
+    val shareSubject: String,
+)
+
+/** 编辑节次页取值。 */
+data class TimeSchemeEditorSheet(
+    val schemeId: String,
+    val title: String,
+    val name: String,
+    /** 影响范围提示；无人使用时为空串。 */
+    val impactHint: String,
+    val sectionTimesTitle: String,
+    val sectionTimesSubtitle: String,
+    val rows: List<TimeSchemeSectionRow>,
+    val quickGenerateLabel: String,
+    val addSectionLabel: String,
+    val removeLastSectionLabel: String,
+    val resetDefaultLabel: String,
+    val saveLabel: String,
+    val startPickerTitle: String,
+    val endPickerTitle: String,
+    val crossDayError: String,
+)
+
+/** 编辑器里的一节。 */
+data class TimeSchemeSectionRow(
+    val index: Int,
+    val label: String,
+    val startTime: String,
+    val endTime: String,
+    val rangeText: String,
+)
+
+/** 课表级引用。 */
+data class TimeSchemeProfileRef(val id: String, val name: String)
+
+/** 课程级引用（含它落在一周哪一节的哪一段）。 */
+data class TimeSchemeCourseRef(
+    val profileId: String,
+    val profileName: String,
+    val courseId: String,
+    val courseName: String,
+    /** 1-7，周一到周日。 */
+    val dayOfWeek: Int,
+    val startSection: Int,
+    val endSection: Int,
+)
+
+/** 只有名字就够的引用（地点规则、日期规则）。 */
+data class TimeSchemeNameRef(val id: String, val name: String)
+
+/**
+ * 引用关系索引：模板 ID → 占用它的东西。
+ *
+ * 缺键与空表等价（都表示「没人用」），所以调用方可以只填关心的那几个模板。
+ */
+data class TimeSchemeUsageIndex(
+    val directProfiles: Map<String, List<TimeSchemeProfileRef>> = emptyMap(),
+    val followMainCourses: Map<String, List<TimeSchemeCourseRef>> = emptyMap(),
+    val overrideCourses: Map<String, List<TimeSchemeCourseRef>> = emptyMap(),
+    val locationCourses: Map<String, List<TimeSchemeCourseRef>> = emptyMap(),
+    val locationGroups: Map<String, List<TimeSchemeNameRef>> = emptyMap(),
+    val dateRules: Map<String, List<TimeSchemeNameRef>> = emptyMap(),
+) {
+    companion object {
+        val EMPTY = TimeSchemeUsageIndex()
+    }
+}
