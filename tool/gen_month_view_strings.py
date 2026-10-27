@@ -44,11 +44,14 @@ def main():
 
     rows = []
     vals = []
+    names = []
     for key in ORDER:
         name = key[0].lower() + key[1:]
-        rows.append(f'        ArbText("{key}", "{esc(arb[key])}"),')
         vals.append(f'    val {name} = ArbText("{key}", "{esc(arb[key])}")')
-    body = "\n".join(rows)
+        names.append(name)
+    # allTexts 直接复用逐键对象，**不重抄字面量**：否则两份字符串可能漂，
+    # 而对拍测试只扫 allTexts 那一份（2026-10-27 month-calendar 提出的坑）。
+    body = "\n".join(f"        {n}," for n in names)
     accessors = "\n".join(vals)
 
     kotlin = f'''package com.mutx163.qingyu.pages.timetable.month
