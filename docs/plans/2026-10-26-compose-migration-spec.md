@@ -3,6 +3,8 @@
 > 状态：已与用户对齐（2026-10-26）
 > 上游计划：`docs/plans/2026-10-26-compose-migration-plan.md`
 > 数据契约：`docs/plans/2026-10-26-data-contract.md`（Phase 0 冻结件）
+> 页面级任务从哪领：**[Phase 3 页面进度与认领台账](2026-10-26-compose-phase3-page-ledger.md)**
+> （批次划分 / 页面清单 / 互斥写作用域 / 完成门槛；动手前先看本机认领区，别抢别人的批次）
 > 读者：所有参与迁移的 Agent（含并行泳道）。开工前必读。
 
 ## Goal
