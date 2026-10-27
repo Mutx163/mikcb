@@ -339,6 +339,110 @@ void main() {
     });
   });
 
+  group('议程卡的天气行 / 本节备注行（2026-10-27 补）', () {
+    // 病根：旧实现只量到「地点」就返回，而真实议程卡在 location 之后还会挂
+    // `DayCourseWeatherRow` 与本节备注行。于是开着「日卡显示天气」的人，飞行卡
+    // 比真卡少 1~2 行 —— 卡片落地那一帧底部突然多出内容（用户口径的「开始的、
+    // 动画上的、最终的，是三个位置」的尾巴）。
+    //
+    // 这里钉的是**两件事**：
+    // 1. 传了天气/备注，测出来的锚点里就必须有这两行；
+    // 2. 备注行必须排在天气行**下面**（不是和它重叠）—— 顺序错了等于少一行。
+
+    FlightCardAnchors measure({
+      String? weather,
+      String? note,
+      IconData? icon,
+    }) =>
+        measureAgendaCardText(
+          surfaceSize: const Size(364, 260),
+          name: '高等数学',
+          teacherLine: '教师：张老师 · 第1-2节',
+          locationLine: '地点：教三-201',
+          titleFontSize: 16,
+          timeText: '08:00 - 09:40',
+          weatherText: weather,
+          weatherIcon: icon,
+          noteText: note,
+        );
+
+    test('不传天气/备注时不产生这两行（锚点集合与旧行为一致）', () {
+      final anchors = measure();
+      expect(anchors['weather'], isNull);
+      expect(anchors['note'], isNull);
+      expect(anchors['icon-weather'], isNull);
+      expect(anchors['icon-note'], isNull);
+      // 旧的四行必须原样都在，不能因为加功能把它们挤掉。
+      for (final id in ['name', 'teacher', 'location', 'time']) {
+        expect(anchors[id], isNotNull, reason: '缺少 $id');
+      }
+    });
+
+    test('传了天气行：紧接地点行之下，且不与该行重叠', () {
+      final anchors = measure(weather: '晴 23°');
+      final location = anchors['location']!;
+      final weather = anchors['weather']!;
+      expect(
+        weather.rect.top,
+        greaterThan(location.rect.top),
+        reason: '天气行必须在地点行之下',
+      );
+      expect(
+        weather.rect.top,
+        greaterThan(location.rect.bottom),
+        reason: '天气行不能压在地点行上（真实卡有 5.5 的间距）',
+      );
+      expect(anchors['icon-weather']!.isIcon, isTrue);
+    });
+
+    test('天气图标跟随传入的现象图标，不是写死太阳', () {
+      final sunny = measure(weather: '晴 23°', icon: Icons.wb_sunny_outlined);
+      final rainy = measure(weather: '雨 18°', icon: Icons.umbrella_outlined);
+      expect(sunny['icon-weather']!.icon, Icons.wb_sunny_outlined);
+      expect(rainy['icon-weather']!.icon, Icons.umbrella_outlined);
+    });
+
+    test('备注行排在天气行下面（传了天气时备注重心必须下移一整行）', () {
+      const note = '下次课带计算器';
+      final withoutWeather = measure(note: note);
+      final withWeather = measure(weather: '晴 23°', note: note);
+      expect(
+        withWeather['note']!.rect.top,
+        greaterThan(withoutWeather['note']!.rect.top),
+        reason: '天气行占位后，备注行必须往下让，否则两行会叠在一起',
+      );
+      expect(
+        withWeather['note']!.rect.top,
+        greaterThan(withWeather['weather']!.rect.bottom),
+        reason: '备注行必须在天气行之下',
+      );
+    });
+
+    test('空白字符串等于没传（不会占用一行高度）', () {
+      // ⚠️ 天气这条必须传**纯空白**，不能传空串。
+      // 第一版这里传的是 `''`，于是「有没有 trim」判据改坏也照样绿 ——
+      // `isNotEmpty` 对 `''` 同样为 false，探针抓不到（2026-10-27 实测到）。
+      // 真卡的风险点是 `'   '` 这种「看着空、字节非空」的值。
+      final blank = measure(weather: '   ', note: '   ');
+      expect(blank['weather'], isNull, reason: '纯空白天气不该占一行');
+      expect(blank['note'], isNull, reason: '纯空白备注不该占一行');
+      final empty = measure(weather: '', note: '');
+      expect(empty['weather'], isNull, reason: '空串不该占一行');
+      expect(empty['note'], isNull, reason: '空串不该占一行');
+    });
+
+    test('纯空白与有内容之间：只有后者的锚点比地点行低', () {
+      // 把「有/无」的分界钉在**渲染结果**上，而不是只钉 `isNull`：
+      // 传 `'   '` 时天气行必须完全不存在，传 `'晴 23°'` 时它必须比地点行低。
+      final location = measure()['location']!;
+      expect(measure(weather: '   ')['weather'], isNull);
+      expect(
+        measure(weather: '晴 23°')['weather']!.rect.top,
+        greaterThan(location.rect.bottom),
+      );
+    });
+  });
+
   group('两端插值：全程连续，没有断点', () {
     final compact = measureCompactCardText(
       surfaceSize: const Size(52, 132),

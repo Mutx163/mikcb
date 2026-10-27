@@ -727,9 +727,10 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     return _getCoursesForDay(p.courses, week, day, p.settings).map((c) => c.id);
   }
 
-  /// 飞行卡（转场中那一张）。组装在 `flight_card_factory.dart`。这里只取两样
+  /// 飞行卡（转场中那一张）。组装在 `flight_card_factory.dart`。这里只取三样
   /// State 的东西：**展示条目**（必须与议程卡同一份，否则本周课会被判成非本周
-  /// 而染成板岩灰）与**调色板**（要壁纸亮度）。
+  /// 而染成板岩灰）、**调色板**（要壁纸亮度）与议程卡那两行的文案
+  /// （判据在 `flight_agenda_extra_lines.dart`）。
   Widget _buildFlightCardFor(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -738,12 +739,19 @@ extension _TimetableScreenDayView on _TimetableScreenState {
     double t,
     Size gridSurface,
     Size agendaSurface,
+    int week,
   ) {
     final item = items.where((i) => i.course.id == courseId).firstOrNull;
     if (item == null) {
       return const SizedBox.shrink();
     }
     final course = item.course;
+    final extra = FlightAgendaExtraLines.fromContext(
+      context: context,
+      item: item,
+      settings: settings,
+      week: week,
+    );
     final palette = resolveDayAgendaPalette(
       _colorFromHex(
         resolveDisplayCourseColor(
@@ -772,6 +780,9 @@ extension _TimetableScreenDayView on _TimetableScreenState {
       gridSurface: gridSurface,
       agendaSurface: agendaSurface,
       t: t,
+      agendaWeatherText: extra.weatherText,
+      agendaWeatherIcon: extra.weatherIcon,
+      noteText: extra.noteText,
     );
   }
 

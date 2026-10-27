@@ -79,6 +79,7 @@ import '../widgets/timetable/timetable_glass_dock.dart';
 import '../widgets/timetable/timetable_form_pages.dart';
 import '../widgets/timetable/timetable_top_menu_shell.dart';
 import 'add_course_screen.dart';
+import 'flight_agenda_extra_lines.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'add_task_screen.dart';
@@ -1244,7 +1245,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final summaryRect = _flightTargets.summary;
     return TimetableAnchoredDayOverlay(panel: panel, expandAnimation: _dayViewExpandController,
       weekTimeColumnWidth: timeColumnWidth(settings), daySlots: flightSlotsFromCourses(dayCourses),
-      endRects: _flightTargets.targets, sectionHeight: _flightGlue.gridSectionHeight(settings: settings, fallbackHeight: MediaQuery.sizeOf(context).height), cardInset: courseCardInset(settings), settings: settings, buildFlightCard: (id, t, fromSurface, toSurface) => _buildFlightCardFor(provider, settings, flightItems, id, t, fromSurface, toSurface),
+      endRects: _flightTargets.targets, sectionHeight: _flightGlue.gridSectionHeight(settings: settings, fallbackHeight: MediaQuery.sizeOf(context).height), cardInset: courseCardInset(settings), settings: settings, buildFlightCard: (id, t, fromSurface, toSurface) => _buildFlightCardFor(provider, settings, flightItems, id, t, fromSurface, toSurface, week),
       visibleDayCount: days.length, selectedDayIndex: days.indexOf(selectedDayOfWeek),
       summaryFlight: summaryRect == null ? null : _summaryFlightInput(
               summaryRect, provider, settings, week, selectedDayOfWeek));
@@ -1378,27 +1379,15 @@ class _TimetableScreenState extends State<TimetableScreen>
     return getCoursesForDay(allCourses, week, dayOfWeek, settings);
   }
 
+  /// 这一周的某一天是哪一天。实现已搬到 `flight_agenda_extra_lines.dart`
+  /// （纯函数，只依赖 settings 与 WeekCalculator），这里只留转发 ——
+  /// 本文件的行数棘轮只降不升，2026-10-27 搬出净减 19 行。
   DateTime? _dateForWeekDay(
     TimetableSettings settings,
     int week,
     int dayOfWeek,
-  ) {
-    final semesterStart = settings.semesterStartDate;
-    if (semesterStart == null) {
-      return null;
-    }
-
-    final normalizedStart = DateTime(
-      semesterStart.year,
-      semesterStart.month,
-      semesterStart.day,
-    ).subtract(Duration(days: semesterStart.weekday - 1));
-
-    return WeekCalculator.addDays(
-      normalizedStart,
-      (week - 1) * 7 + dayOfWeek - 1,
-    );
-  }
+  ) =>
+      FlightAgendaExtraLines.dateForWeekDay(settings, week, dayOfWeek);
 
   /// Calendar week of today relative to [TimetableSettings.semesterStartDate].
   ///

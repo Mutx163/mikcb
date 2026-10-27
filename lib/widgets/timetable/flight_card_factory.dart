@@ -59,6 +59,15 @@ FlightCardPlan flightCardPlanFor({
   required String locationLine,
   String? weeksText,
   String? descriptionText,
+  /// 议程卡（终点）天气行：文案与图标，完整口径。
+  ///
+  /// 与 `weatherText`（网格卡的紧凑口径）是两个独立口子 —— 网格卡按
+  /// `weatherShowOnWeekCard` 只写一项、议程卡按 `weatherShowOnDayCard` 写全，
+  /// 共用会让某一端的字换错。
+  String? agendaWeatherText,
+  IconData? agendaWeatherIcon,
+  /// 本节备注（议程卡在天气之后那一行）；null = 这一周没有备注。
+  String? noteText,
   required double gridVerticalPadding,
   required double gridTitleFontSize,
   required double agendaTitleFontSize,
@@ -87,6 +96,9 @@ FlightCardPlan flightCardPlanFor({
     locationLine,
     weeksText,
     descriptionText,
+    agendaWeatherText,
+    agendaWeatherIcon,
+    noteText,
     gridVerticalPadding,
     gridTitleFontSize,
     agendaTitleFontSize,
@@ -116,6 +128,9 @@ FlightCardPlan flightCardPlanFor({
     locationLine: locationLine,
     weeksText: weeksText,
     descriptionText: descriptionText,
+    agendaWeatherText: agendaWeatherText,
+    agendaWeatherIcon: agendaWeatherIcon,
+    noteText: noteText,
     gridVerticalPadding: gridVerticalPadding,
     gridTitleFontSize: gridTitleFontSize,
     agendaTitleFontSize: agendaTitleFontSize,
@@ -145,6 +160,18 @@ FlightCardBody buildFlightCard({
   required Size gridSurface,
   required Size agendaSurface,
   required double t,
+  /// 议程卡（终点）天气行：文案与图标，完整口径。
+  ///
+  /// 判据必须与真卡同源（见 `day_view_course_agenda_card_variants.dart` 里
+  /// `DayCourseWeatherRow.visible`）：`weatherShowOnDayCard` 开着、不是对方课程、
+  /// 这一周真的上课。由调用方注入而不是在这里查 provider —— 这个函数是纯函数，好测。
+  ///
+  /// 2026-10-27 补：旧实现没有这个口子，飞行卡比真卡少一行 —— 开着「日卡显示
+  /// 天气」的人，卡片落地那一帧底部会突然多出一行。
+  String? agendaWeatherText,
+  IconData? agendaWeatherIcon,
+  /// 本节备注那一行；null = 这一周没有备注。
+  String? noteText,
 }) {
   final theme = Theme.of(context);
   final l10n = AppLocalizations.of(context)!;
@@ -197,6 +224,9 @@ FlightCardBody buildFlightCard({
     endTime: endTimeText,
     weeksText: weeksText,
     descriptionText: descriptionText,
+    agendaWeatherText: agendaWeatherText,
+    agendaWeatherIcon: agendaWeatherIcon,
+    noteText: noteText,
     gridVerticalPadding: sectionHeight < 64 ? 4 : 6,
     gridTitleFontSize: settings.courseCardFontSize,
     agendaTitleFontSize:
@@ -212,8 +242,6 @@ FlightCardBody buildFlightCard({
     },
     titleWeight: (fontSize) => _resolveWeight(context, 700, fontSize),
     detailWeight: (fontSize) => _resolveWeight(context, 400, fontSize),
-    // 天气不传给飞行卡：网格卡上是「图标 + 短文案」、议程卡上是它自己那一行，
-    // 两端文案口径不同。硬凑一行会在中途换字，比少一行更显眼（默认即 null）。
   );
 
   final k = t.clamp(0.0, 1.0);

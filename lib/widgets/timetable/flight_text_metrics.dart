@@ -320,6 +320,17 @@ FlightCardAnchors measureAgendaCardText({
   double gapAfterTitle = 10,
   double gapBetweenInfoRows = 5.5,
   String? timeText,
+  /// 议程卡（终点）天气行的文案与图标。
+  ///
+  /// 判据由调用方决定（与 `DayCourseWeatherRow.visible` 同源：`weatherShowOnDayCard`
+  /// 开着、不是对方课程、这一周真的上课），这里只按「给了就排一行」处理 —— 量高
+  /// 与渲染必须同一判据，否则飞行卡会比真卡少一行、落地那一帧内容往下跳
+  /// （2026-10-27 修）。
+  String? weatherText,
+  /// 天气行图标：真实卡是 `CourseWeatherDisplay.icon`（随天气现象变）。
+  IconData? weatherIcon,
+  /// 本节备注（`sessionNoteForWeek(week)?.trimmedText`）。同样 null = 不显示。
+  String? noteText,
   /// 课名最终合并到的基底样式（`Theme.of(context).textTheme.titleMedium` 之上
   /// 还有 `DefaultTextStyle`）。量宽高时必须同源，理由同 `measureCompactCardText`。
   TextStyle baseStyle = const TextStyle(),
@@ -470,6 +481,103 @@ FlightCardAnchors measureAgendaCardText({
       FlightTextAnchor(
         id: 'location',
         text: locationLine,
+        rect: Rect.fromLTWH(
+          padLeft + infoIconSize + 6,
+          top + (rowHeight - infoFontSize * infoHeight) / 2,
+          innerWidth - infoIconSize - 6,
+          infoFontSize * infoHeight,
+        ),
+        fontSize: infoFontSize,
+        lineHeightFactor: infoHeight,
+        maxLines: 1,
+      ),
+    );
+    top += rowHeight + gapBetweenInfoRows;
+  }
+
+  // ── 天气行 ────────────────────────────────────────────────────────────
+  //
+  // 真实议程卡在 location 之后挂 `DayCourseWeatherRow`（`topGap = 5.5`）。旧实现
+  // 只量到 location 就返回，于是开了「日卡显示天气」的人：飞行卡比真卡少一行，
+  // 落地那一帧底部突然多出一行 —— 正是用户反馈的「开始的、动画上的、最终的
+  // 是三个位置」的尾巴（2026-10-27 修）。
+  //
+  // 判据必须与真卡同源：真卡在 `courseWeatherDisplayFor` 返回 null（或空文案、
+  // 或那个 `reserved` 占位）时**不画**这一行。这里同样按 `trim()` 后非空才算 ——
+  // 只判 `isNotEmpty` 会让纯空白串凭空占一行（测试 `空白字符串等于没传` 钉住了）。
+  final weatherLine = weatherText?.trim();
+  if (weatherLine != null && weatherLine.isNotEmpty) {
+    final rowHeight = _infoRowHeight(
+      text: weatherLine,
+      fontSize: infoFontSize,
+      height: infoHeight,
+      iconSize: infoIconSize,
+      maxWidth: innerWidth - infoIconSize - 6,
+      textDirection: textDirection,
+      textScaler: textScaler,
+      baseStyle: infoBaseStyle,
+    );
+    anchors.add(
+      FlightTextAnchor(
+        id: 'icon-weather',
+        text: '',
+        rect: Rect.fromLTWH(padLeft, top, infoIconSize, rowHeight),
+        fontSize: infoIconSize,
+        isIcon: true,
+        icon: weatherIcon ?? Icons.wb_sunny_outlined,
+      ),
+    );
+    anchors.add(
+      FlightTextAnchor(
+        id: 'weather',
+        text: weatherLine,
+        rect: Rect.fromLTWH(
+          padLeft + infoIconSize + 6,
+          top + (rowHeight - infoFontSize * infoHeight) / 2,
+          innerWidth - infoIconSize - 6,
+          infoFontSize * infoHeight,
+        ),
+        fontSize: infoFontSize,
+        lineHeightFactor: infoHeight,
+        maxLines: 1,
+      ),
+    );
+    top += rowHeight + gapBetweenInfoRows;
+  }
+
+  // ── 本节备注行 ────────────────────────────────────────────────────────
+  //
+  // 真实卡是 `if (sessionPreview != null && sessionPreview.isNotEmpty)` 再挂一行
+  // `DayAgendaInfoRow(sticky_note_2_outlined)`，间距同为 5.5。同上：不量就等于
+  // 落地时凭空多一行。
+  // 判据同天气行：真卡是 `if (sessionPreview != null && sessionPreview.isNotEmpty)`
+  // 而 `sessionPreview` 已取过 `trimmedText`，所以纯空白也不画。
+  final noteLine = noteText?.trim();
+  if (noteLine != null && noteLine.isNotEmpty) {
+    final rowHeight = _infoRowHeight(
+      text: noteLine,
+      fontSize: infoFontSize,
+      height: infoHeight,
+      iconSize: infoIconSize,
+      maxWidth: innerWidth - infoIconSize - 6,
+      textDirection: textDirection,
+      textScaler: textScaler,
+      baseStyle: infoBaseStyle,
+    );
+    anchors.add(
+      FlightTextAnchor(
+        id: 'icon-note',
+        text: '',
+        rect: Rect.fromLTWH(padLeft, top, infoIconSize, rowHeight),
+        fontSize: infoIconSize,
+        isIcon: true,
+        icon: Icons.sticky_note_2_outlined,
+      ),
+    );
+    anchors.add(
+      FlightTextAnchor(
+        id: 'note',
+        text: noteLine,
         rect: Rect.fromLTWH(
           padLeft + infoIconSize + 6,
           top + (rowHeight - infoFontSize * infoHeight) / 2,
@@ -790,9 +898,22 @@ FlightCardPlan buildFlightCardPlan({
   String? weeksText,
   /// 课程简介；仅 `settings.courseCardShowDescription` 时有效。
   String? descriptionText,
-  /// 天气文案（网格卡片上带图标的那一行）。
+  /// 天气文案（网格卡片上带图标的那一行，紧凑口径）。
   String? weatherText,
   IconData? weatherIcon,
+  /// **议程卡**（终点）天气行的文案与图标，完整口径。
+  ///
+  /// 与 [weatherText] 必须是两个参数，不能共用：网格卡按
+  /// `weatherShowOnWeekCard` + `WeatherTextDensity.compact` 只写一项（格太窄），
+  /// 议程卡按 `weatherShowOnDayCard` + full 口径写「现象 · 温度 · 概率」。
+  /// 两端本来就是两种文案，共用会让起点或终点的字换错。
+  String? agendaWeatherText,
+  IconData? agendaWeatherIcon,
+  /// 本节备注（议程卡上 `sticky_note_2_outlined` 那一行）；null = 这一周没有备注。
+  ///
+  /// 网格卡不画备注（那是「这一节」的属性，只有议程卡展开后才看得到），所以它
+  /// **只参与终点锚点**，不进 [compactLines]。不传会让飞行卡比真卡少一行。
+  String? noteText,
   /// 网格卡的垂直内边距（`sectionHeight < 64 ? 4 : 6`）。
   required double gridVerticalPadding,
   TitleWeightResolver titleWeight = _defaultTitleWeight,
@@ -946,6 +1067,9 @@ FlightCardPlan buildFlightCardPlan({
     locationLine: locationLine,
     titleFontSize: agendaTitleFontSize,
     timeText: '$startTime - $endTime',
+    weatherText: agendaWeatherText,
+    weatherIcon: agendaWeatherIcon,
+    noteText: noteText,
     baseStyle: agendaBaseStyle,
     infoBaseStyle: agendaInfoBaseStyle,
     textScaler: textScaler,
