@@ -425,8 +425,18 @@ class CourseStatisticsModelTest {
     fun `单侧为零时环心给缺失提示`() {
         assertEquals("暂无必修", CourseStatisticsLogic.buildNature(CourseNatureStats(0, 2, 0, 8)).missingLabel)
         assertEquals("暂无选修", CourseStatisticsLogic.buildNature(CourseNatureStats(3, 0, 12, 0)).missingLabel)
-        // 两侧都 0 时必修提示优先（Dart 三元表达式先判必修）
-        assertEquals("暂无必修", CourseStatisticsLogic.buildNature(CourseNatureStats(0, 0, 0, 0)).missingLabel)
+        // 两侧都有课 → 环心不放提示
+        assertNull(CourseStatisticsLogic.buildNature(CourseNatureStats(3, 2, 12, 8)).missingLabel)
+    }
+
+    @Test
+    fun `两侧都为零时连环图都不渲染、也就没有缺失提示`() {
+        // Dart nature_ratio.dart: hasData = totalCount > 0；false 时整块换成 statisticsNoData 文本，
+        // 那个「暂无必修 / 暂无选修」的环心提示属于环图的内部（_buildDonutChart），不会执行。
+        val view = CourseStatisticsLogic.buildNature(CourseNatureStats(0, 0, 0, 0))
+        assertFalse(view.hasData)
+        assertTrue("无数据时不装配图例", view.legend.isEmpty())
+        assertNull("环图不渲染，缺失提示必须为空", view.missingLabel)
     }
 
     @Test
