@@ -204,6 +204,21 @@ android {
         }
     }
 
+    // composeP1 迁移期**停役**（台账 §7.2）：它扫整棵暂存区 pages/，红是设计使然。
+    // 给它的所有 Kotlin 编译任务挂快速失败——误点旧配置时给一行清楚的提示，
+    // 而不是 60+ 条暂存区噪音报错。Phase 3 收尾删除该 flavor 时一并移除本段。
+    tasks.matching {
+        it.name.startsWith('compileComposeP1') && it.name.endsWith('Kotlin')
+    }.configureEach {
+        it.doFirst {
+            throw new GradleException(
+                'composeP1 variant is RETIRED during Compose migration (ledger 7.2): ' +
+                'it compiles the whole pages/ staging tree, which always carries in-flight breakage. ' +
+                'Use :app:compileComposeUiDebugKotlin (the L1 target) instead.'
+            )
+        }
+    }
+
     buildTypes {
         debug {
             // Debug build type - no applicationIdSuffix here, handled by flavor
