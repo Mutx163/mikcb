@@ -199,39 +199,81 @@ class IcsImportService {
       return null;
     }
 
-    final sectionMatch = RegExp(
-      r'第\s*(\d+)\s*-\s*(\d+)\s*节',
-    ).firstMatch(descriptionLines.first);
+    // ── 节次：中文「第X-Y节」优先，其次**导出侧自己写的**「Sections: X-Y」──
+    //
+    // 2026-10-27 修：原先这里只用一条中文正则、且只看 `descriptionLines.first`。
+    // 后果是**本 App 导出的 .ics 导不回来** —— `ics_export_service.dart:318` 写的
+    // 是 `Sections: ${startSection}-${endSection}`，而且它排在第 2 行
+    //（第 1 行是 `Teacher: ...`），两条都不满足，于是整门课被静默丢弃
+    // （审计 §3.1 记的就是这条：任何第三方日历 Google / Apple / Outlook 基本都导不进）。
+    //
+    // 现在：**搜所有行**，并且接受几种常见的写法。仍然要求「有明确节次」才收，
+    // 不猜 —— 猜出来的节次会让课表显示在错误的时间格上，比不导入更糟。
+    final sectionMatch = _findSectionRange(descriptionLines);
     if (sectionMatch == null) {
       return null;
     }
+    final startSection = sectionMatch.startSection;
+    final endSection = sectionMatch.endSection;
 
-    final startSection = int.tryParse(sectionMatch.group(1)!);
-    final endSection = int.tryParse(sectionMatch.group(2)!);
-    if (startSection == null || endSection == null) {
-      return null;
-    }
-    final hasStructuredLocation = descriptionLines.length >= 2;
+    // 节次那一行已经用掉了，剩下的行才是教师/地点的候选。
+    final contentLines = descriptionLines
+        .where((line) => line != sectionMatch.sourceLine)
+        .toList();
 
-    // ICS DESCRIPTION has two known formats after line[0] (section info):
-    //   Format A: line[1]=location, line[2]=teacher
-    //   Format B: line[1]=teacher,   line[2]=location
+    // 显式前缀（导出侧就是这种）：`Teacher: 张三` / `教师：张三`。
+    final explicitTeacher = _prefixedValue(contentLines, const [
+      'teacher',
+      'instructor',
+      '教师',
+      '老师',
+    ]);
+    final explicitLocation = _prefixedValue(contentLines, const [
+      'location',
+      'room',
+      '地点',
+      '教室',
+    ]);
+    // 被前缀行用掉的那些行不再参与位置式配对。
+    final pairingLines = contentLines
+        .where((line) => !_hasKnownPrefix(line))
+        .toList();
+
+    // ⚠️ 这里的下标/阈值是相对**已剔除节次行**的列表算的，与改动前
+    //（`descriptionLines` 还含节次行）差一位：
+    //   旧：`descriptionLines.length >= 2` 表示「节次 + 至少 1 行」，
+    //       `descriptionLines[1]` 是第一行附加信息；
+    //   新：`pairingLines.isNotEmpty` 表示同一件事，
+    //       `pairingLines[0]` 就是那一行。
+    // 2026-10-27 第一版就是漏了这个位移，把中文三行格式的「地点」读成了教师 ——
+    // 往返测试当场抓到（`Expected: 'A101' / Actual: '张老师'`）。
+    final hasStructuredLocation = pairingLines.isNotEmpty;
+
+    // ICS DESCRIPTION has two known formats after the section line:
+    //   Format A: line[0]=location, line[1]=teacher
+    //   Format B: line[0]=teacher,   line[1]=location
     // We use the independent LOCATION field from the ICS event as a
     // tie-breaker: whichever description line matches LOCATION is the
     // location line, and the other is the teacher line.
     String rawLocation;
     String teacher;
-    if (!hasStructuredLocation) {
+    if (explicitTeacher != null || explicitLocation != null) {
+      // 带前缀的写法不需要猜：缺哪一半就从 LOCATION 字段补。
+      final icsLocation = (event['LOCATION'] ?? '').trim();
+      teacher =
+          explicitTeacher ?? _extractTeacherFromCombinedLocation(icsLocation);
+      rawLocation = explicitLocation ?? icsLocation;
+    } else if (!hasStructuredLocation) {
       rawLocation = event['LOCATION'] ?? '';
       teacher = _extractTeacherFromCombinedLocation(rawLocation);
-    } else if (descriptionLines.length < 3) {
+    } else if (pairingLines.length < 2) {
       // Only one extra line — fall back to LOCATION field.
-      rawLocation = descriptionLines[1];
+      rawLocation = pairingLines[0];
       teacher = _extractTeacherFromCombinedLocation(event['LOCATION'] ?? '');
     } else {
       final icsLocation = (event['LOCATION'] ?? '').trim();
-      final line1 = descriptionLines[1].trim();
-      final line2 = descriptionLines[2].trim();
+      final line1 = pairingLines[0].trim();
+      final line2 = pairingLines[1].trim();
 
       final line1MatchesLocation =
           icsLocation.isNotEmpty &&
@@ -293,6 +335,103 @@ class IcsImportService {
 
   String _cleanSummary(String summary) {
     return summary.replaceFirst(RegExp(r'\[\d+\]\[[^\]]+\]$'), '').trim();
+  }
+
+  /// 从描述行里找出「第几节到第几节」。
+  ///
+  /// 搜**所有行**（导出侧把节次排在第 2 行），接受这几种写法：
+  ///
+  /// | 写法 | 谁写的 |
+  /// |---|---|
+  /// | `第1-2节` / `第 1 - 2 节` | 原 WakeUp 格式 |
+  /// | `Sections: 1-2` | **本 App 自己的导出**（`ics_export_service.dart:318`） |
+  /// | `Section 1-2` / `Period 1-2` / `Periods: 1-2` | 常见第三方日历手填 |
+  ///
+  /// 只认「两端都是数字的区间」。找不到就返回 null —— 不猜节次，
+  /// 猜错会让课显示在错误的时间格上，比不导入更糟。
+  _SectionRange? _findSectionRange(List<String> lines) {
+    final patterns = <RegExp>[
+      // 中文：`第X-Y节`（允许中间有空格）
+      RegExp(r'第\s*(\d+)\s*-\s*(\d+)\s*节'),
+      // 导出侧：`Sections: X-Y`（行首、可带 Section/Period 单复数与中英文冒号）
+      RegExp(
+        r'^\s*(?:sections?|periods?)\s*[:：]\s*(\d+)\s*-\s*(\d+)\s*$',
+        caseSensitive: false,
+      ),
+      // 裸区间 + 节：`1-2节` / `1-2 节`
+      RegExp(r'^\s*(\d+)\s*-\s*(\d+)\s*节\s*$'),
+      // 英文裸区间：`Period 1-2` / `Section 1-2`
+      RegExp(
+        r'^\s*(?:section|period)\s+(\d+)\s*-\s*(\d+)\s*$',
+        caseSensitive: false,
+      ),
+    ];
+    for (final line in lines) {
+      for (final pattern in patterns) {
+        final match = pattern.firstMatch(line);
+        if (match == null) {
+          continue;
+        }
+        final start = int.tryParse(match.group(1)!);
+        final end = int.tryParse(match.group(2)!);
+        if (start == null || end == null) {
+          continue;
+        }
+        return _SectionRange(
+          startSection: start,
+          endSection: end,
+          sourceLine: line,
+        );
+      }
+    }
+    return null;
+  }
+
+  /// `Teacher: 张三` / `教师：张三` 这类带前缀的值；没有就返回 null。
+  String? _prefixedValue(List<String> lines, List<String> prefixes) {
+    for (final line in lines) {
+      final lower = line.toLowerCase();
+      for (final prefix in prefixes) {
+        final key = prefix.toLowerCase();
+        if (!lower.startsWith(key)) {
+          continue;
+        }
+        final rest = line.substring(prefix.length).trimLeft();
+        if (!rest.startsWith(':') && !rest.startsWith('：')) {
+          continue;
+        }
+        final value = rest.substring(1).trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// 这一行是不是带已知前缀（教师/地点/节次），不该再参与位置式配对。
+  bool _hasKnownPrefix(String line) {
+    final lower = line.toLowerCase();
+    for (final prefix in const [
+      'teacher',
+      'instructor',
+      'location',
+      'room',
+      'section',
+      'period',
+      '教师',
+      '老师',
+      '地点',
+      '教室',
+    ]) {
+      if (lower.startsWith(prefix.toLowerCase())) {
+        final rest = line.substring(prefix.length).trimLeft();
+        if (rest.startsWith(':') || rest.startsWith('：')) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   List<Course> _mergeAlternatingWeekCourses(List<Course> courses) {
@@ -514,4 +653,20 @@ class IcsImportService {
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
+}
+
+/// 从描述里解析出来的节次区间，附带「是哪一行给的」。
+///
+/// 带上 [sourceLine] 是为了把它从后续的教师/地点候选里剔除：导出侧的
+/// `Sections: 1-2` 若留在候选里，会被当成教师或地点写进课程。
+class _SectionRange {
+  const _SectionRange({
+    required this.startSection,
+    required this.endSection,
+    required this.sourceLine,
+  });
+
+  final int startSection;
+  final int endSection;
+  final String sourceLine;
 }
