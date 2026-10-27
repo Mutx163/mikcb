@@ -395,7 +395,9 @@ sources 全解出来搜，0 命中），只在官方 demo 的 `component/{liquid
 - **声明纪律**：只能声明「编译通过」（L1）或「JVM 单测通过」（L2），
   **不得**声明「能跑 / 能装上 / 已验证」——**编译过 ≠ 能装上**。
 - L1 只编 Kotlin（含 Compose 编译器），不 dex、不打包、不签名；实测 19s~1m37s。
-  每次仍拉起 3 个 JVM、峰值约 2.7 GB：别一改一跑，用户在 AS 里构建时不要并发跑。
+  每次仍会拉起 3 个 JVM（实测合计约 2.1~2.3 GB：gradlew 客户端 107 MB + daemon 1051 MB +
+  Kotlin 编译守护 1006~1132 MB；单次 L1 的这 3 个 JVM 实测占整机 61% CPU）：别一改一跑，
+  用户在 AS 里构建时不要并发跑。走闸门时 daemon 是**复用**的，只有冷启动那一次才新起。
 - ⚠️ **2026-10-27 21:0x 更正：上面「不编 Dart」这条已经不成立。**
   `:app:compileComposeUiDebugKotlin` 现在依赖 `:app:compileFlutterBuildComposeUiDebug`
   （`--dry-run` 可见），于是**别人把 Dart 改坏，你的 L1 也会红**，而且红在与自己无关的文件上
@@ -483,7 +485,10 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 
 **2026-10-27 16:00 起上游有了正式工具，优先用它**：
 - `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>"` —— 免 Gradle 的**模块级 L0**
-  （内置 kotlinc + JUnitCore，0.2 秒、<150MB，完全不受别人半成品拖累）；缺依赖时用 `-ExtraSources` 补。
+  （内置 kotlinc + JUnitCore，完全不受别人半成品拖累）；缺依赖时用 `-ExtraSources` 补。
+  ⚠️ **2026-10-27 实测更正**：旧稿的「0.2 秒、<150MB」混了两个口径 —— 用例执行 **0.1~0.2s**
+  （`JUnitCore` 报的，**不含 kotlinc 编译**）；整次调用实测 **RSS 616~829 MB**（同一模块抓到两个并存
+  `kotlinc` 进程，17 分钟跑了 12 次）。别拿它当「L0 是零成本操作」的依据。
 - `pwsh -File scripts/safe-gradle.ps1 <gradle 参数>` —— 带 Windows 内核互斥锁的 Gradle 包装，
   L1/L2 一律走这条（同一时刻全机只允许一个 Gradle）。
 - 本机的 `.agents/compose-phase3/build-gate.sh` 是这套工具之前的手工版，保留作兜底；
