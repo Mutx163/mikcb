@@ -213,8 +213,17 @@ class ExamListModelTest {
     @Test
     fun `混合偏移按天 小时 分钟用加号连接`() {
         assertEquals("考前 1 小时 + 考前 30 分钟", ExamListLogic.reminderOffsetLabel(90))
-        assertEquals("考前 1 天 + 考前 1 小时", ExamListLogic.reminderOffsetLabel(1500))
+        assertEquals("考前 1 天 + 考前 5 分钟", ExamListLogic.reminderOffsetLabel(1445))
         assertEquals("考前 1 天 + 考前 1 小时 + 考前 5 分钟", ExamListLogic.reminderOffsetLabel(1505))
+    }
+
+    @Test
+    fun `能被 60 整除但不被 1440 整除时说的是小时而不是天加小时`() {
+        // Dart 先判 %1440、再判 %60，1500 = 25 小时会直接走小时分支，
+        // 而不是渲染成「1 天 + 1 小时」（2026-10-27 手推时写错过这一条，
+        // 被实现纠正：见 exam_list_screen.dart:255-261）。
+        assertEquals("考前 25 小时", ExamListLogic.reminderOffsetLabel(1500))
+        assertEquals("考前 36 小时", ExamListLogic.reminderOffsetLabel(2160))
     }
 
     // ==========================================================
