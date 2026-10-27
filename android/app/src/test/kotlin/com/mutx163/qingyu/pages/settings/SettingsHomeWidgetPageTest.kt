@@ -60,7 +60,7 @@ class SettingsHomeWidgetPageTest {
                 "homeWidget.appearance",
                 "homeWidget.gap.binding",
                 "homeWidget.binding.label",
-                "homeWidget.binding",
+                "homeWidget.binding.empty",
                 "homeWidget.gap.resetOuter",
                 "homeWidget.gap.reset",
                 "homeWidget.reset",
@@ -71,15 +71,17 @@ class SettingsHomeWidgetPageTest {
 
     @Test
     fun `关闭显示倒计时后倒计时整块消失`() {
-        // settings_home_widget.dart:214 + :219-221
+        // settings_home_widget.dart:214 + :219-221：整个 section 2 不存在，
+        // 也就是「gap + 区标题 + 组」三个顶层节点一起消失
         val on = spec(SettingsHomeWidgetState(showCountdown = true)).topLevelIds()
         val off = spec(SettingsHomeWidgetState(showCountdown = false)).topLevelIds()
         assertTrue(on.contains("homeWidget.countdown"))
         assertTrue(on.contains("homeWidget.countdown.label"))
         assertFalse(off.contains("homeWidget.countdown"))
         assertFalse(off.contains("homeWidget.countdown.label"))
-        // 关闭后其余区块照旧，只是整体上移一格
-        assertEquals(on.size - 2, off.size)
+        assertFalse(off.contains("homeWidget.gap.countdown"))
+        // 关闭后其余区块照旧，只是整体上移一格（少 gap + label + group）
+        assertEquals(on.size - 3, off.size)
     }
 
     // ------------------------------------------------------- 今日课程组件组
@@ -170,8 +172,8 @@ class SettingsHomeWidgetPageTest {
         val page = spec(
             SettingsHomeWidgetState(
                 showLocation = false,
-                hideCompleted = true,
-                showTomorrow = false,
+                hideCompletedCourses = true,
+                showTomorrowCourses = false,
             ),
         )
         assertEquals(false, page.row("homeWidget.showLocation").switchValue)
@@ -329,13 +331,17 @@ class SettingsHomeWidgetPageTest {
 
     @Test
     fun `桌面上没有卡片时给空态文案`() {
-        // settings_home_widget.dart:805-827：空态下整组只有一句说明
+        // settings_home_widget.dart:805-827：空态下不出下拉组，只给一句说明
+        // （Padding + Text，不是一行控件），所以模型里是一个 SettingsDescription
         val page = spec(SettingsHomeWidgetState())
         assertEquals(
             emptyList<String>(),
-            page.group("homeWidget.binding").childRowIds(),
+            page.flatten().filterIsInstance<SettingsGroup>()
+                .filter { it.id == "homeWidget.binding" }
+                .flatMap { it.childRowIds() },
         )
-        val description = page.flatten().filterIsInstance<SettingsDescription>().single()
+        val description = page.flatten().filterIsInstance<SettingsDescription>()
+            .first { it.id == "homeWidget.binding.empty" }
         assertEquals("homeWidgetBindingEmpty", description.textKey)
         assertEquals("桌面上还没有今日课程卡片，先添加一张再回来绑定", description.text)
     }
@@ -502,7 +508,7 @@ class SettingsHomeWidgetPageTest {
                 "主卡 2×2", "迷你列表 2×2", "概览 2×4", "列表 4×4", "今日横条 4×1",
                 "今日横宽 4×2", "统计 2×2", "统计概览 2×4", "统计横条 4×1", "考试倒计时 2×2",
             ),
-            SettingsHomeWidgetPage.PREVIEW_TARGETS.map { it.label },
+            SettingsHomeWidgetPage.PREVIEW_TARGETS.map { it.label.zh },
         )
         assertEquals(
             listOf(

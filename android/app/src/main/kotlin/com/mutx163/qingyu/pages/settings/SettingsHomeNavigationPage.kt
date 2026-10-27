@@ -260,7 +260,7 @@ object SettingsHomeNavigationPage {
             id = "homeNavigation.dockButtonIcon",
             component = MiuixRowComponent.ARROW,
             title = SettingsStringsExt2.glassDockButtonIconTitle,
-            // 图标名是用户选择值，不来自 ARB（NON_ARB_TEXT 让对照测试跳过）
+            // 图标名是用户选择值，不来自 ARB（键留空 → 对照测试跳过）
             details = state.dockButtonIconName?.let { ArbText(NON_ARB_TEXT, it) }
                 ?: SettingsStringsExt2.glassDockButtonIconDefault,
             action = SettingsAction.NAVIGATE,
@@ -341,9 +341,10 @@ object SettingsHomeNavigationPage {
     /** 「已启用 N/M 个」（`homeGridCustomizeDetails` 模板）。 */
     fun customizeDetails(count: Int, maxSlots: Int): ArbText = ArbText(
         SettingsStringsExt2.homeGridCustomizeDetails.key,
-        SettingsStringsExt2.homeGridCustomizeDetails
-            .filled("count", count.toString())
-            .filled("max", maxSlots.toString()),
+        // ArbText.filled 返回 String（整串替换完的结果），两处占位符要一次换完
+        SettingsStringsExt2.homeGridCustomizeDetails.zh
+            .replace("{count}", count.toString())
+            .replace("{max}", maxSlots.toString()),
     )
 
     /**
@@ -406,6 +407,10 @@ object SettingsHomeNavigationPage {
 
     /**
      * 八宫格候选目录（`kHomeMenuCatalog`，`lib/widgets/home_menu_catalog.dart`）。
+     *
+     * 返回**全部**条目（含当前构建不可见的那几个）；要看「此刻可用的」请自己用
+     * [CatalogEntry.visible] 过滤 —— 因为 `homeMenuEntryById` 本身是全表查找，
+     * 而 `resolve*` 才是负责门控的地方（`home_menu_catalog.dart:509-531`）。
      *
      * 顺序与分类逐项照抄 Dart 目录的声明顺序 —— 编辑器按分类分组展示时，
      * 组内顺序就是这个顺序，所以它属于「屏上顺序」，必须钉住。

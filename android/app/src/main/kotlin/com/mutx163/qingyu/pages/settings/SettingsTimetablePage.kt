@@ -472,9 +472,10 @@ object SettingsTimetablePage {
      * 标题按「当前第 N 周 / 共 M 周」拼；副标题是开学日期，未设置时另一句。
      */
     private fun summaryRow(state: SettingsTimetableState): SettingsRow {
-        val titleText = SettingsStringsExt2.semesterOverviewCurrentWeek
-            .filled("current", state.currentWeek.toString())
-            .filled("total", state.semesterWeekCount.toString())
+        // 模板有两个占位符：filled 只换一个就返回 String，所以直接连做两次 replace
+        val titleText = SettingsStringsExt2.semesterOverviewCurrentWeek.zh
+            .replace("{current}", state.currentWeek.toString())
+            .replace("{total}", state.semesterWeekCount.toString())
         val start = state.semesterStartDate
         val subtitle = if (start == null) {
             SettingsStringsExt2.semesterStartUnset

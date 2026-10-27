@@ -130,8 +130,8 @@ class SettingsTimetablePageTest {
         assertEquals(MiuixRowComponent.ARROW, profiles.component)
         assertEquals("课表管理", profiles.title)
         assertEquals("大二上", profiles.details)
-        // 课表名是用户数据，不来自 ARB
-        assertNull(profiles.detailsKey)
+        // 课表名是用户数据，不来自 ARB：键是 NON_ARB_TEXT 空串（对照测试跳过空键）
+        assertEquals("", profiles.detailsKey)
 
         val scheme = page.row("timetable.timeScheme")
         assertEquals("时间模板", scheme.title)
@@ -152,6 +152,13 @@ class SettingsTimetablePageTest {
         assertNull(page.row("timetable.profiles").details)
         assertEquals("未选择", page.row("timetable.timeScheme").details)
         assertEquals("timeSchemeEntryNotSelected", page.row("timetable.timeScheme").detailsKey)
+
+        // 有值时行尾是用户数据（键为 NON_ARB_TEXT 空串），不是 ARB 文案
+        val filled = spec(
+            SettingsTimetableState(activeProfileName = "大二上", activeTimeSchemeName = "标准作息"),
+        )
+        assertEquals("", filled.row("timetable.profiles").detailsKey)
+        assertEquals("", filled.row("timetable.timeScheme").detailsKey)
     }
 
     @Test
@@ -399,7 +406,7 @@ class SettingsTimetablePageTest {
         val page = SettingsTimetablePage.semesterSpec(
             SettingsTimetableState(semesterStartDate = Triple(2026, 9, 1), semesterWeekCount = 20),
         )
-        assertEquals("timetable-semester", page.id)
+        assertEquals("settings-timetable-semester", page.id)
         assertEquals("settingsSemesterScreenTitle", page.titleKey)
         assertEquals("学期设置", page.title)
         assertEquals(
@@ -454,48 +461,50 @@ class SettingsTimetablePageTest {
 
     @Test
     fun `云同步行尾状态取值`() {
-        assertEquals(CloudSyncTrailing.LOADING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = false, enabled = false, syncing = false, hasError = false))
-        assertEquals(CloudSyncTrailing.DISABLED, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = false, syncing = false, hasError = false))
-        assertEquals(CloudSyncTrailing.SYNCING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = true, hasError = false))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.LOADING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = false, enabled = false, syncing = false, hasError = false))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.DISABLED, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = false, syncing = false, hasError = false))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.SYNCING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = true, hasError = false))
         // 有错优先于「已开启」，但与「同步中」相比是「同步中」先（:1003-1006 的嵌套三元）
-        assertEquals(CloudSyncTrailing.ERROR, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = false, hasError = true))
-        assertEquals(CloudSyncTrailing.SYNCING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = true, hasError = true))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.ERROR, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = false, hasError = true))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.SYNCING, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = true, syncing = true, hasError = true))
         // 关闭时不看同步态与错误（Dart 三元先判 enabled）
-        assertEquals(CloudSyncTrailing.DISABLED, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = false, syncing = true, hasError = true))
+        assertEquals(SettingsTimetablePage.CloudSyncTrailing.DISABLED, SettingsTimetablePage.cloudSyncTrailingOf(loaded = true, enabled = false, syncing = true, hasError = true))
     }
 
     @Test
     fun `超级岛行尾状态取值`() {
-        assertEquals(LiveTrailing.HIDDEN, SettingsTimetablePage.liveTrailingOf(hasPermission = null, reminderEnabled = true))
-        assertEquals(LiveTrailing.PERMISSION_MISSING, SettingsTimetablePage.liveTrailingOf(hasPermission = false, reminderEnabled = true))
-        assertEquals(LiveTrailing.ENABLED, SettingsTimetablePage.liveTrailingOf(hasPermission = true, reminderEnabled = true))
-        assertEquals(LiveTrailing.DISABLED, SettingsTimetablePage.liveTrailingOf(hasPermission = true, reminderEnabled = false))
+        assertEquals(SettingsTimetablePage.LiveTrailing.HIDDEN, SettingsTimetablePage.liveTrailingOf(hasPermission = null, reminderEnabled = true))
+        assertEquals(SettingsTimetablePage.LiveTrailing.PERMISSION_MISSING, SettingsTimetablePage.liveTrailingOf(hasPermission = false, reminderEnabled = true))
+        assertEquals(SettingsTimetablePage.LiveTrailing.ENABLED, SettingsTimetablePage.liveTrailingOf(hasPermission = true, reminderEnabled = true))
+        assertEquals(SettingsTimetablePage.LiveTrailing.DISABLED, SettingsTimetablePage.liveTrailingOf(hasPermission = true, reminderEnabled = false))
     }
 
     @Test
     fun `开发者工具可见性矩阵`() {
         // 诊断构建 → 全显示；正式发布版 → 全隐藏（连整块）；调试版 → 只显示后四行
         assertEquals(
-            DeveloperToolsVisibility.HIDDEN,
+            SettingsTimetablePage.DeveloperToolsVisibility.HIDDEN,
             SettingsTimetablePage.developerToolsVisibility(releaseBuild = true, diagnosticsBuild = false),
         )
         assertEquals(
-            DeveloperToolsVisibility.DEBUG_ONLY,
+            SettingsTimetablePage.DeveloperToolsVisibility.DEBUG_ONLY,
             SettingsTimetablePage.developerToolsVisibility(releaseBuild = false, diagnosticsBuild = false),
         )
         assertEquals(
-            DeveloperToolsVisibility.FULL,
+            SettingsTimetablePage.DeveloperToolsVisibility.FULL,
             SettingsTimetablePage.developerToolsVisibility(releaseBuild = true, diagnosticsBuild = true),
         )
         assertEquals(
-            DeveloperToolsVisibility.FULL,
+            SettingsTimetablePage.DeveloperToolsVisibility.FULL,
             SettingsTimetablePage.developerToolsVisibility(releaseBuild = false, diagnosticsBuild = true),
         )
     }
 
     @Test
-    fun `星期计数文案`() {
-        assertEquals("20 周", SettingsTimetablePage.weekCountLabel(20))
-        assertEquals("1 周", SettingsTimetablePage.weekCountLabel(1))
+    fun `周数读数按模板拼`() {
+        // semesterWeekCountAction = `{count} 周`（ARB 模板，返回 ArbText）
+        assertEquals("20 周", SettingsTimetablePage.weekCountLabel(20).zh)
+        assertEquals("semesterWeekCountAction", SettingsTimetablePage.weekCountLabel(20).key)
+        assertEquals("1 周", SettingsTimetablePage.weekCountLabel(1).zh)
     }
 }

@@ -228,9 +228,9 @@ class SettingsHomeNavigationPageTest {
             row.options.map { it.id }.take(5),
         )
         assertEquals(
+            "「添加」在同一份下拉里不能出现两次",
             1,
             row.options.count { it.id == "addCourse" },
-            "「添加」在同一份下拉里不能出现两次",
         )
     }
 
@@ -285,8 +285,8 @@ class SettingsHomeNavigationPageTest {
                 dockButtonIconName = "plus",
             ),
         ).row("homeNavigation.dockButtonIcon")
-        // 图标名是用户选择值，不来自 ARB（NON_ARB_TEXT）
-        assertNull(set.detailsKey)
+        // 图标名是用户选择值，不来自 ARB：键是 NON_ARB_TEXT 空串（对照测试跳过空键）
+        assertEquals("", set.detailsKey)
         assertEquals("plus", set.details)
     }
 
@@ -392,6 +392,8 @@ class SettingsHomeNavigationPageTest {
 
     @Test
     fun `候选目录顺序与分类与 Dart 目录一致`() {
+        // catalog() 返回全表（含当前构建不可见的条目）；可见性由 visible() 门控，
+        // 这与 Dart 侧 homeMenuEntryById（全表）+ resolve*（门控）的分工一致。
         val catalog = SettingsHomeNavigationPage.catalog(diagnosticsBuild = false)
         assertEquals(
             listOf(
@@ -402,16 +404,31 @@ class SettingsHomeNavigationPageTest {
                 "timeSchemes", "profiles", "quickSwitchTimetable", "more", "dataTransfer",
                 "cloudSync", "lanEdit", "coupleTimetable", "settings", "homeNavigation",
                 "statisticsSettings", "support", "aboutApp", "changelog", "userGuide",
-                "feedback", "openSourceLicenses",
+                "feedback", "openSourceLicenses", "memoryStats",
             ),
             catalog.map { it.id },
+        )
+        // 正式版可见的少一个 memoryStats
+        assertEquals(
+            36,
+            catalog.count { it.visible(diagnosticsBuild = false) },
+        )
+        assertEquals(
+            catalog.size,
+            catalog.count { it.visible(diagnosticsBuild = true) },
         )
     }
 
     @Test
     fun `调试专属条目只在诊断构建里可见`() {
         // home_menu_catalog.dart:448 `visible: () => MemoryStatsService.isDiagnosticsBuildCached`
-        assertFalse(SettingsHomeNavigationPage.catalog(diagnosticsBuild = false).any { it.id == "memoryStats" })
-        assertTrue(SettingsHomeNavigationPage.catalog(diagnosticsBuild = true).any { it.id == "memoryStats" })
+        val notVisible = SettingsHomeNavigationPage.catalog(diagnosticsBuild = false)
+            .filterNot { it.visible(diagnosticsBuild = false) }
+            .map { it.id }
+        assertEquals(listOf("memoryStats"), notVisible)
+        assertTrue(
+            SettingsHomeNavigationPage.catalog(diagnosticsBuild = true)
+                .all { it.visible(diagnosticsBuild = true) },
+        )
     }
 }
