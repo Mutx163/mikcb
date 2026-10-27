@@ -308,4 +308,88 @@ class GlassDockGeometryTest {
         assertEquals(first, w - lastEnd, 1e-4f)
         assertEquals(w - 2 * GlassDockGeometry.HorizontalPaddingDp, lastEnd - first, 1e-4f)
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // 液态玻璃档（2026-10-27 第二批，对照官方 demo 补齐）
+    // ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `按压时内容缩小而指示器放大，两者方向相反`() {
+        // 这条是本档最容易写错的地方：两种反馈方向**故意不同**。
+        //
+        // 内容（图标/文字）：miuix 口径，按下压暗 + 缩小 → pressScale < 1；
+        // 指示器（玻璃里那块高亮）：iOS 液态玻璃口径，按下放大 → grow > 1。
+        //
+        // 如果谁"顺手统一"成同一个方向，视觉上就散了：
+        // 都缩小 → 玻璃像被捏瘪；都放大 → 字会被挤出栏外。
+        val contentScale = GlassDockGeometry.pressScale(GlassDockGeometry.HeightDp)
+        val indicatorGrow = GlassDockGeometry.IndicatorPressGrowScale
+
+        assertTrue("内容按下必须缩小：$contentScale", contentScale < 1f)
+        assertTrue("指示器按下必须放大：$indicatorGrow", indicatorGrow > 1f)
+        assertEquals(0.9f, contentScale, 1e-4f)
+        assertEquals(78f / 56f, indicatorGrow, 1e-4f)
+    }
+
+    @Test
+    fun `液态档的模糊远小于降级档`() {
+        // 液态档 4dp：有折射在塑形，模糊只负责抹噪点。
+        // 降级档 20dp：没有折射，只能靠模糊表达"这是玻璃"。
+        // 若谁把两个数合并成一个，要么液态档糊成一片、要么降级档看不出是玻璃。
+        assertEquals(4f, GlassDockGeometry.GlassBlurRadiusDp, 1e-4f)
+        assertTrue(
+            "液态档必须比降级档清透：${GlassDockGeometry.GlassBlurRadiusDp} vs 20",
+            GlassDockGeometry.GlassBlurRadiusDp < 20f,
+        )
+    }
+
+    @Test
+    fun `采样留白必须同时盖住折射带与按压放大`() {
+        // 采样层要够大，否则边缘一圈采不到东西（露黑边）。
+        // 两个来源：折射带 24dp、按压放大把药丸撑出去的部分。
+        val reach = GlassDockGeometry.SamplingPaddingReachDp
+        assertTrue(
+            "留白($reach) 必须 ≥ 折射带(${GlassDockGeometry.RefractionHeightDp})",
+            reach >= GlassDockGeometry.RefractionHeightDp,
+        )
+        assertTrue(
+            "留白($reach) 必须 ≥ 折射位移(${GlassDockGeometry.RefractionAmountDp})",
+            reach >= GlassDockGeometry.RefractionAmountDp,
+        )
+        assertEquals(40f, reach, 1e-4f)
+    }
+
+    @Test
+    fun `指示器镜片的几何比外壳小`() {
+        // 指示器只在按下时显形（乘 pressProgress），所以它的折射带比外壳薄：
+        // 一样大的话，按下瞬间整块玻璃会被"再折射一次"，出现重影。
+        assertTrue(
+            GlassDockGeometry.IndicatorRefractionHeightDp < GlassDockGeometry.RefractionHeightDp,
+        )
+        assertTrue(
+            GlassDockGeometry.IndicatorRefractionAmountDp < GlassDockGeometry.RefractionAmountDp,
+        )
+        assertEquals(10f, GlassDockGeometry.IndicatorRefractionHeightDp, 1e-4f)
+        assertEquals(14f, GlassDockGeometry.IndicatorRefractionAmountDp, 1e-4f)
+    }
+
+    @Test
+    fun `色散强度落在有效区间`() {
+        // 0 = 关闭（走更便宜的无色散着色器）；>0 才启用。
+        // demo 取 0.5（比文档建议的 Apple 药丸 0.2 更高），因为它只在按下那一下可见。
+        val d = GlassDockGeometry.IndicatorDispersion
+        assertTrue("色散必须为正才会启用：$d", d > 0f)
+        assertTrue("色散过大整块玻璃会泛彩虹：$d", d <= 1f)
+        assertEquals(0.5f, d, 1e-4f)
+    }
+
+    @Test
+    fun `玻璃档的图标比纯色档略小以容纳内边距`() {
+        // 液态档栏内多了 4dp 内边距，图标要相应收一点，否则文字会被挤掉。
+        assertTrue(
+            GlassDockGeometry.GlassIconSizeDp < GlassDockGeometry.IconSizeDp,
+        )
+        assertEquals(22f, GlassDockGeometry.GlassIconSizeDp, 1e-4f)
+        assertEquals(4f, GlassDockGeometry.GlassContentPaddingDp, 1e-4f)
+    }
 }

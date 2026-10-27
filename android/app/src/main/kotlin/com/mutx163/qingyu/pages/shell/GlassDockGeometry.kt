@@ -94,6 +94,74 @@ object GlassDockGeometry {
     /** 拖拽跟手弹簧：响应时长（秒）。 */
     const val DragSpringResponse: Float = 0.15f
 
+    // ---------------------------------------------------------------------
+    // 液态玻璃（2026-10-27 第二批：对照官方 demo 的四层结构补齐）
+    //
+    // 下面这一组数值全部取自官方 demo 的 `component/liquid/LiquidGlassNavigationBar.kt`
+    // 与 `component/liquid/Lens.kt`。demo 是 vendored 只读副本
+    // （`docs/reference/miuix-demo/`），不能直接引用，所以数值在这里登记一次，
+    // 渲染层只从本对象取 —— 与上面那组「miuix GlassNavigationBarDefaults」同一条纪律。
+    // ---------------------------------------------------------------------
+
+    /**
+     * 按下时**指示器**放大的倍数（demo 是 `78f / 56f` ≈ 1.39）。
+     *
+     * ⚠️ 注意方向与 [PressedContentAlpha] / [pressScale] **相反**：
+     * 内容是「压暗 + 缩小」（miuix 口径），指示器是「放大」（iOS 液态玻璃口径）。
+     * 两者同时发生才成立：手指按住时，玻璃里那块高亮被"挤"得更大，
+     * 而玻璃上的字变小变暗 —— 这正是 demo 的观感，别统一成同一个方向。
+     */
+    const val IndicatorPressGrowScale: Float = 78f / 56f
+
+    /** 玻璃外壳的折射带宽度（dp）。demo 取 24dp。 */
+    const val RefractionHeightDp: Float = 24f
+
+    /** 玻璃外壳的折射位移量（dp）。demo 取 24dp，与带宽度相等。 */
+    const val RefractionAmountDp: Float = 24f
+
+    /**
+     * 玻璃外壳的模糊半径（dp）。**注意与降级档的 20dp 不是一回事**：
+     *
+     * * 液态档：4dp —— 因为已经有 [RefractionHeightDp] 的折射在塑形，
+     *   模糊只需抹掉噪点。糊太狠会把折射出来的边缘细节吃掉，玻璃反而"平"了；
+     * * 降级档（无采样源）：20dp —— 没有折射，只能靠模糊表达"这是玻璃"。
+     */
+    const val GlassBlurRadiusDp: Float = 4f
+
+    /**
+     * 采样层的额外留白（dp）：要覆盖「折射带 24dp」与「按压放大 16dp」两者的伸出量。
+     *
+     * 不加够会出现边缘一圈没采样到的透明/黑边（`lens()` 会自己把 padding 抬到
+     * 至少 refractionAmount，但按压放大是 `layerBlock` 干的，它不抬 padding）。
+     */
+    const val SamplingPaddingReachDp: Float = 40f
+
+    /** 指示器镜片的折射带宽度（dp）。比外壳小：它只在按下时才显形。 */
+    const val IndicatorRefractionHeightDp: Float = 10f
+
+    /** 指示器镜片的折射位移量（dp）。 */
+    const val IndicatorRefractionAmountDp: Float = 14f
+
+    /**
+     * 指示器镜片的色散强度。
+     *
+     * `0.5` 是 demo 的取值，比文档建议的「Apple 药丸 0.2」更高 —— 因为指示器只在
+     * 按下时可见（乘了 `pressProgress`），强一点才在短暂的那一下里读得出来。
+     */
+    const val IndicatorDispersion: Float = 0.5f
+
+    /** 指示器内阴影的半径（dp）。同样乘按压进度，静止时为 0。 */
+    const val IndicatorInnerShadowRadiusDp: Float = 8f
+
+    /** 玻璃内容区四周的内边距（dp）。demo 取 4dp。 */
+    const val GlassContentPaddingDp: Float = 4f
+
+    /** 条目内部图标与文字之间的间距（dp）。 */
+    const val IconLabelGapDp: Float = 1f
+
+    /** 条目图标边长（dp）。液态档比 miuix 的 28 略小，因为栏内多了 4dp 内边距。 */
+    const val GlassIconSizeDp: Float = 22f
+
     /** 一段区间。用 data class 是为了让测试能整体比对，不必逐字段。 */
     data class Bounds(val left: Float, val right: Float) {
         val width: Float get() = right - left
