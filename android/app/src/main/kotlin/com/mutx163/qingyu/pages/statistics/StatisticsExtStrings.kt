@@ -12,6 +12,9 @@ package com.mutx163.qingyu.pages.statistics
  */
 object StatisticsExtStrings {
 
+    /** 周次标签（`lib/l10n/app_zh.arb` 的 `weekLabel`，ARB 里原本就有这条，不自拟）。 */
+    val weekLabel = ArbText("weekLabel", "第 {week} 周")
+
     // ── 空态（分析页 / 会话页共用） ──
     val statisticsNoData = ArbText("statisticsNoData", "暂无课程数据")
     val statisticsNoDataHint = ArbText("statisticsNoDataHint", "添加课程后即可查看统计")
@@ -51,6 +54,7 @@ object StatisticsExtStrings {
 
     /** 文案对拍用全集：新增文案必须加进这里，否则对拍测试看不见它。 */
     val allTexts: List<ArbText> = listOf(
+        weekLabel,
         statisticsNoData,
         statisticsNoDataHint,
         statisticsTrendTitle,

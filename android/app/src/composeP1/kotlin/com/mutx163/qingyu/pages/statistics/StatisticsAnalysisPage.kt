@@ -180,7 +180,7 @@ private fun TrendRows(viewState: StatisticsAnalysisViewState, standalone: Boolea
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "第${point.weekNumber}周",
+                text = StatisticsExtStrings.weekLabel.filled("week", point.weekNumber.toString()),
                 fontSize = if (standalone) 15.sp else 14.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
