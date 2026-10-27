@@ -297,14 +297,6 @@ data class MonthAgendaRow(
 object MonthPanelDragRouting {
 
     /**
-     * 边界容差（dp）。
-     *
-     * 滚动物理会在边界留亚像素误差，严格比较会让「边界上那一两个像素」被判成
-     * 「还能滚」，用户在那儿拖会觉得第一下没反应。
-     */
-    const val EDGE_TOLERANCE: Double = 1.0
-
-    /**
      * 抬手后列表惯性的估算系数（秒）。
      *
      * 没有还原原生摩擦模型：面板内容是一列卡片、滚动距离短，线性近似的手感
@@ -319,7 +311,7 @@ object MonthPanelDragRouting {
      * 这段位移该归网格（true）还是归列表（false）。
      *
      * @param dy 本次指针位移（向上为负）。
-     * @param listCanScroll 列表此刻还能不能往这个方向滚（含边界容差）。
+     * @param listCanScroll 列表此刻还能不能往这个方向滚（判据见 [listCanScroll]）。
      * @param gridCanAbsorb 网格此刻还能不能往这个方向收放。
      */
     fun collapseTakesPriority(
@@ -338,38 +330,44 @@ object MonthPanelDragRouting {
     }
 
     /**
-     * 列表此刻还能不能往 [dy] 方向滚（可滚动区间 [minPixels, maxPixels]）。
+     * 列表此刻还能不能往 [dy] 方向滚。
      *
-     * 没有滚动视图 / 还没量出内容（`max <= min`）时恒 false —— 收起态的概览
-     * 正好填满，本来就没有可滚的位移，那时位移应当**全部**交给网格收放。
+     * 判据直接吃 Compose 的 `canScrollForward` / `canScrollBackward`，**不再自己
+     * 用 pixels / min / max 判边界**：`LazyListState` 不暴露 maxScrollExtent（它要
+     * 靠已测量的项累加），而那两个 flag 已经把边界与亚像素余量都算进去了。自己
+     * 凑一个近似的 max，反而会在「滚到底差 0.5dp」时判错 —— 用户在那儿拖会觉得
+     * 第一下没反应。
+     *
+     * 两个 flag 都为 false（没有滚动视图、或内容没超过一屏）时恒 false：概览态
+     * 内容正好填满，本来就没有可滚的位移，那时位移应当**全部**交给网格收放。
      */
     fun listCanScroll(
         dy: Double,
-        pixels: Double,
-        minPixels: Double,
-        maxPixels: Double,
-        tolerance: Double = EDGE_TOLERANCE,
-    ): Boolean {
-        if (maxPixels - minPixels <= 0.0) return false
-        if (dy < 0) return pixels < maxPixels - tolerance
-        if (dy > 0) return pixels > minPixels + tolerance
-        return false
+        canScrollForward: Boolean,
+        canScrollBackward: Boolean,
+    ): Boolean = when {
+        dy < 0 -> canScrollForward
+        dy > 0 -> canScrollBackward
+        else -> false
     }
 
-    /** 抬手后列表惯性的目标位置（手指向下 velocity > 0 ⇒ 内容回退 ⇒ pixels 减小）。 */
-    fun flingTarget(
-        pixels: Double,
-        velocityDy: Double,
-        minPixels: Double,
-        maxPixels: Double,
-    ): Double {
-        if (abs(velocityDy) < FLING_MIN_VELOCITY) return pixels
-        if (maxPixels - minPixels <= 0.0) return pixels
-        return (pixels - velocityDy * FLING_DURATION_FACTOR).coerceIn(minPixels, maxPixels)
-    }
-
-    /** 这段抬手速度够不够触发惯性。 */
+    /** 这一段抬手速度够不够触发惯性（列表的用户滚动被关掉了，惯性得自己补）。 */
     fun hasFling(velocityDy: Double): Boolean = abs(velocityDy) >= FLING_MIN_VELOCITY
+
+    /**
+     * 抬手惯性要滚多远（dp；**与速度同号**）。
+     *
+     * 手指向下（velocityDy > 0）⇒ 内容回退 ⇒ 要往回滚；符号只在调用点转换成
+     * Compose 的 `animateScrollBy` 口径（与 `dispatchRawDelta` 相反），转换点
+     * 只有一处。
+     *
+     * 没有还原原生摩擦模型：面板内容是一列卡片、滚动距离短，线性近似的手感差别
+     * 看不出来，而省掉一整套摩擦模拟。
+     */
+    fun flingDelta(velocityDy: Double): Double {
+        if (!hasFling(velocityDy)) return 0.0
+        return velocityDy * FLING_DURATION_FACTOR
+    }
 }
 
 /**

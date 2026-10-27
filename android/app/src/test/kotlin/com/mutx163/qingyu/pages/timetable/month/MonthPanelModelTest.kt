@@ -538,64 +538,44 @@ class MonthPanelModelTest {
     }
 
     @Test
-    fun `列表可滚动判定带边界容差`() {
-        // 内容比视口短：没有可滚的位移。
+    fun `列表可滚判定按方向取对应一侧的 flag`() {
+        // 内容没超过一屏：两个 flag 都 false，谁都不归列表。
         assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = -10.0, pixels = 0.0, minPixels = 0.0, maxPixels = 0.0),
+            MonthPanelDragRouting.listCanScroll(
+                dy = -10.0,
+                canScrollForward = false,
+                canScrollBackward = false,
+            ),
         )
-        // 已在底部：再上滑不归列表。
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = -10.0, pixels = 300.0, minPixels = 0.0, maxPixels = 300.0),
-        )
-        // 还没到底：上滑归列表。
+        // 上滑（dy < 0，想看下面）只看「还能往下滚」。
         assertTrue(
-            MonthPanelDragRouting.listCanScroll(dy = -10.0, pixels = 100.0, minPixels = 0.0, maxPixels = 300.0),
+            MonthPanelDragRouting.listCanScroll(dy = -10.0, canScrollForward = true, canScrollBackward = false),
         )
-        // 已在顶部：下滑不归列表。
         assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = 10.0, pixels = 0.0, minPixels = 0.0, maxPixels = 300.0),
+            MonthPanelDragRouting.listCanScroll(dy = -10.0, canScrollForward = false, canScrollBackward = true),
         )
-        // 顶部之下 0.5dp：仍在 1dp 容差内，判成「到顶了」—— 否则用户在那儿拖会觉得第一下没反应。
-        assertFalse(
-            MonthPanelDragRouting.listCanScroll(dy = 10.0, pixels = 0.5, minPixels = 0.0, maxPixels = 300.0),
-        )
-        // 顶部之下 2dp：确实还能回退。
+        // 下滑（dy > 0，往回看）只看「还能往上滚」。
         assertTrue(
-            MonthPanelDragRouting.listCanScroll(dy = 10.0, pixels = 2.0, minPixels = 0.0, maxPixels = 300.0),
+            MonthPanelDragRouting.listCanScroll(dy = 10.0, canScrollForward = false, canScrollBackward = true),
+        )
+        assertFalse(
+            MonthPanelDragRouting.listCanScroll(dy = 10.0, canScrollForward = true, canScrollBackward = false),
+        )
+        // 零位移不归列表（避免空转）。
+        assertFalse(
+            MonthPanelDragRouting.listCanScroll(dy = 0.0, canScrollForward = true, canScrollBackward = true),
         )
     }
 
     @Test
-    fun `抬手惯性线性估算并钳在可滚区间`() {
-        // 手指向下甩 200dp/s：内容继续回退 24dp（200 × 0.12）。
-        assertEquals(
-            76.0,
-            MonthPanelDragRouting.flingTarget(pixels = 100.0, velocityDy = 200.0, minPixels = 0.0, maxPixels = 500.0),
-            1e-9,
-        )
+    fun `抬手惯性线性估算_与速度同号且轻甩不补`() {
+        // 手指向下甩 200dp/s：惯性 24dp（200 × 0.12），同号为正（内容回退）。
+        assertEquals(24.0, MonthPanelDragRouting.flingDelta(200.0), 1e-9)
+        // 手指向上甩 200dp/s：−24dp（内容继续往下走）。
+        assertEquals(-24.0, MonthPanelDragRouting.flingDelta(-200.0), 1e-9)
         // 甩太轻（< 120）不补惯性。
-        assertEquals(
-            100.0,
-            MonthPanelDragRouting.flingTarget(pixels = 100.0, velocityDy = 50.0, minPixels = 0.0, maxPixels = 500.0),
-            1e-9,
-        )
-        // 钳在两端。
-        assertEquals(
-            0.0,
-            MonthPanelDragRouting.flingTarget(pixels = 10.0, velocityDy = 900.0, minPixels = 0.0, maxPixels = 500.0),
-            1e-9,
-        )
-        assertEquals(
-            500.0,
-            MonthPanelDragRouting.flingTarget(pixels = 490.0, velocityDy = -900.0, minPixels = 0.0, maxPixels = 500.0),
-            1e-9,
-        )
-        // 不可滚：位置不动。
-        assertEquals(
-            0.0,
-            MonthPanelDragRouting.flingTarget(pixels = 0.0, velocityDy = 900.0, minPixels = 0.0, maxPixels = 0.0),
-            1e-9,
-        )
+        assertEquals(0.0, MonthPanelDragRouting.flingDelta(50.0), 1e-9)
+        assertEquals(0.0, MonthPanelDragRouting.flingDelta(-50.0), 1e-9)
 
         assertTrue(MonthPanelDragRouting.hasFling(120.0))
         assertFalse(MonthPanelDragRouting.hasFling(119.9))
