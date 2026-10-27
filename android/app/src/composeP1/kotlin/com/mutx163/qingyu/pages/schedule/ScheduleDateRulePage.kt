@@ -28,9 +28,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -136,7 +136,7 @@ fun ScheduleDateRulePage(
             )
 
             bannerMessage?.let { banner ->
-                Card(
+                QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
@@ -158,7 +158,7 @@ fun ScheduleDateRulePage(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(24.dp),
                     ) {
@@ -267,7 +267,7 @@ private fun ScheduleDateRuleCard(
     val rangeText = ScheduleStrings.scheduleDateRuleRangeSummary
         .filled("start" to rule.startDate, "end" to rule.endDate)
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(14.dp),
     ) {
@@ -343,7 +343,7 @@ private fun RuleEditorDialog(
     var enabled by remember { mutableStateOf(draft.enabled) }
     var dialogError by remember { mutableStateOf<String?>(null) }
 
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp),
@@ -486,7 +486,7 @@ private fun RuleDeleteConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp),

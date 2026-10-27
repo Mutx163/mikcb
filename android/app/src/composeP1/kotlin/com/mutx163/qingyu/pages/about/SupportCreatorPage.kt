@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
@@ -78,7 +79,7 @@ fun SupportCreatorPage(
         ) {
             // ── 紧凑头图：副标题 + 三个能力胶囊 ──
             item {
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -100,7 +101,7 @@ fun SupportCreatorPage(
 
             // ── 收款方式卡 ──
             item {
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -194,7 +195,7 @@ fun SupportCreatorPage(
                 }
 
                 donorData == null || donorData.donors.isEmpty() -> item {
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp),
                     ) {
@@ -229,7 +230,7 @@ fun SupportCreatorPage(
 @Composable
 private fun FeatureChip(label: String) {
     val dark = isSystemInDarkTheme()
-    Card(insideMargin = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+    QingyuCard(insideMargin = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
         Text(
             text = label,
             fontSize = 12.sp,
@@ -246,7 +247,7 @@ private fun MethodTab(
     onClick: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    Card(
+    QingyuCard(
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
         onClick = onClick,
     ) {

@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -130,7 +130,7 @@ fun TimeSchemeManagementPage(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // ── index 0：两个入口行 ──
-                Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                     ArrowPreference(
                         title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
                         // Dart：locationTimeGroups 为空时 details 不显示（null）
@@ -165,7 +165,7 @@ fun TimeSchemeManagementPage(
 
                 // ── index 3+：空态一行 / 模板卡与间距交替 ──
                 if (model.isEmpty) {
-                    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                         // Dart 这里是一个 **enabled: false、showChevron: false** 的行，
                         // 文案就是「请先创建一套时间模板」。不是新造的空态文案。
                         ArrowPreference(
@@ -205,7 +205,7 @@ private fun SchemeCard(
 ) {
     val dark = isSystemInDarkTheme()
 
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 12.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 12.dp)) {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

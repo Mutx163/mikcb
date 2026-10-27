@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCardRole
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCell
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAnalysisViewState
@@ -129,7 +130,7 @@ private fun AnalysisCard(
 ) {
     val dark = isSystemInDarkTheme()
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(vertical = 14.dp, horizontal = 16.dp),
     ) {

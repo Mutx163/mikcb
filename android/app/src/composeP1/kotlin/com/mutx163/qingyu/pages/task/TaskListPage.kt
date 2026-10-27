@@ -28,10 +28,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -138,7 +138,7 @@ fun TaskListPage(
 
                     // ── 2. 课程筛选入口 ──
                     item {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                             onClick = onCourseFilterClick,
@@ -180,7 +180,7 @@ fun TaskListPage(
                     // ── 3. 空态展示 ──
                     if (viewState.isEmpty) {
                         item {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 24.dp),
@@ -217,7 +217,7 @@ fun TaskListPage(
                             }
 
                             item {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(vertical = 4.dp),
                                 ) {
@@ -247,7 +247,7 @@ fun TaskListPage(
                     // ── 5. 未设到期日被过滤隐藏条目提示条 ──
                     if (viewState.undatedHiddenCount > 0) {
                         item {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp),
@@ -303,7 +303,7 @@ private fun TaskDateSegmentedControl(
         TaskDateFilter.WEEK to TaskStrings.taskWeekFilter,
     )
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(4.dp),
     ) {

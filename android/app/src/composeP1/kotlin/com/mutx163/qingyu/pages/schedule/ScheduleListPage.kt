@@ -31,9 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -116,7 +116,7 @@ fun ScheduleListPage(
                             .padding(24.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(24.dp),
                         ) {
@@ -238,7 +238,7 @@ private fun ScheduleListCard(
     val primaryAlpha = if (dimmed) 0.45f else 1.0f
     val secondaryAlpha = if (dimmed) 0.55f else 0.85f
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onEdit,
@@ -379,7 +379,7 @@ private fun ConfirmDeleteDialog(
     onConfirm: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp),

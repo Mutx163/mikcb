@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -91,7 +91,7 @@ fun OpenSourceLicensesPage(
 
             // ── 许可说明卡 ──
             item {
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -158,7 +158,7 @@ fun OpenSourceLicensesPage(
 @Composable
 private fun HintRow(message: String) {
     val dark = isSystemInDarkTheme()
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(14.dp),
     ) {
@@ -207,7 +207,7 @@ fun OpenSourceLicenseDetailPage(
             ),
         ) {
             item {
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {

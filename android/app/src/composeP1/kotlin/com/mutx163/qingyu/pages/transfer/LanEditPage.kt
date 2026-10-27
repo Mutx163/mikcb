@@ -20,11 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -114,7 +114,7 @@ fun LanEditPage(
                 )
 
                 // ── 离开后保持开启 ──
-                Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                     SwitchPreference(
                         checked = model.keepAliveWhenLeaving,
                         onCheckedChange = onKeepAliveChange,
@@ -142,7 +142,7 @@ fun LanEditPage(
                         color = Color(QingyuTheme.sectionLabel(dark)),
                         modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
                     )
-                    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                         // 访问地址（可复制）
                         ArrowPreference(
                             title = model.addressLabel,

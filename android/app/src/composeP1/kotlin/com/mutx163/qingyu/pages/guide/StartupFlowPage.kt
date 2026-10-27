@@ -30,10 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -165,7 +165,7 @@ private fun MigrationGuideContent(
     ) {
         // 顶部安心提示卡片
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -189,7 +189,7 @@ private fun MigrationGuideContent(
 
         // 迁移三步走
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -217,7 +217,7 @@ private fun MigrationGuideContent(
 
         // 提示横幅
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(14.dp)
             ) {
@@ -367,7 +367,7 @@ private fun DateSetupContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -401,7 +401,7 @@ private fun DateSetupContent(
         }
 
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -467,7 +467,7 @@ private fun DateSetupContent(
 
         // 当前周推导结果卡片
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {

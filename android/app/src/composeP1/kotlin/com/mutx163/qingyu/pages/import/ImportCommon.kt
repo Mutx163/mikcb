@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -139,7 +140,7 @@ fun ImportNavRow(
 ) {
     val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
-    Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -188,7 +189,7 @@ fun ImportSwitchRow(
 ) {
     val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
-    Card(modifier = Modifier.fillMaxWidth()) {
+    QingyuCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -232,7 +233,7 @@ fun ImportValueRow(
     onClick: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = if (enabled) onClick else null,
     ) {
@@ -301,7 +302,7 @@ fun ImportGuidePanel(
 ) {
     val dark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        QingyuCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -329,7 +330,7 @@ fun ImportGuidePanel(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Card(modifier = Modifier.fillMaxWidth()) {
+        QingyuCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

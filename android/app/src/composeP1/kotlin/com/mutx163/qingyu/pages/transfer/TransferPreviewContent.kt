@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -47,7 +47,7 @@ fun TransferPreviewContent(
 ) {
     val dark = isSystemInDarkTheme()
 
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(horizontal = 20.dp, vertical = 18.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(horizontal = 20.dp, vertical = 18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = TransferPreviewModel.title,

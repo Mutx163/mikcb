@@ -31,10 +31,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -137,7 +137,7 @@ fun ExamListPage(
 
                     if (viewState.upcoming.isNotEmpty()) {
                         item {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(vertical = 2.dp),
                             ) {
@@ -169,7 +169,7 @@ fun ExamListPage(
                             )
                         }
                         item {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(vertical = 2.dp),
                             ) {
@@ -235,7 +235,7 @@ fun ExamListPage(
 /** 空态：图标 + 「暂无考试安排」+ 添加按钮。 */
 @Composable
 private fun ExamEmptyState(dark: Boolean, onAddExam: () -> Unit) {
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 48.dp),
@@ -276,7 +276,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
         secondaryText
     }
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
         onClick = onClick,

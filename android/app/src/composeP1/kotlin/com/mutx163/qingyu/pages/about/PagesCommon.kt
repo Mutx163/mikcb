@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
@@ -190,8 +191,8 @@ fun QingyuRow(
 
     val margin = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
     if (onClick == null) {
-        Card(modifier = Modifier.fillMaxWidth(), insideMargin = margin) { content() }
+        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = margin) { content() }
     } else {
-        Card(modifier = Modifier.fillMaxWidth(), insideMargin = margin, onClick = onClick) { content() }
+        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = margin, onClick = onClick) { content() }
     }
 }

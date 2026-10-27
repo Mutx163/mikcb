@@ -34,11 +34,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -247,7 +247,7 @@ fun AddCoursePage(
                     // ── 校验错误横幅（Dart 为 toast；同一份文案键）──
                     val pageError = nameError ?: entryError
                     if (!pageError.isNullOrEmpty()) {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                         ) {
@@ -260,7 +260,7 @@ fun AddCoursePage(
                     }
 
                     // ── 共享信息卡 ──
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
@@ -415,7 +415,7 @@ fun AddCoursePage(
                     }
 
                     // ── 排课记录卡 ──
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
@@ -620,7 +620,7 @@ private fun AddCourseEntryFields(
         mode = entry.weekSelectionMode,
     )
     val weekdayNames = AddCourseStrings.weekdayNames()
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(0.dp),
     ) {

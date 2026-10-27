@@ -39,10 +39,10 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -122,7 +122,7 @@ fun HyperosShowcasePage(
                 // 1. 概要卡片
                 item {
                     ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionSummary.zh)
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
                     ) {
@@ -163,7 +163,7 @@ fun HyperosShowcasePage(
                 // 2. 标签与手风琴 (Accordion)
                 item {
                     ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionTags.zh)
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp)
                     ) {
@@ -210,7 +210,7 @@ fun HyperosShowcasePage(
                 // 3. 控件卡片 (按钮、分段、滑条)
                 item {
                     ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionControls.zh)
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
                     ) {
@@ -264,7 +264,7 @@ fun HyperosShowcasePage(
                 // 4. 基础控件行内 (开关、多选、单选)
                 item {
                     ShowcaseSectionHeader(title = "基础控件 · 行内")
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp)
                     ) {
@@ -347,7 +347,7 @@ fun HyperosShowcasePage(
                 // 5. 输入与选择器
                 item {
                     ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionInput.zh)
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
                     ) {
@@ -398,7 +398,7 @@ fun HyperosShowcasePage(
                 // 6. 颜色选择
                 item {
                     ShowcaseSectionHeader(title = "颜色选择 · ColorChip")
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
                     ) {

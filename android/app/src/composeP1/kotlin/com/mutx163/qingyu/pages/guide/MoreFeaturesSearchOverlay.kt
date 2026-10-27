@@ -30,10 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -153,7 +153,7 @@ fun MoreFeaturesSearchOverlay(
                                 modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
                             )
 
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                             ) {

@@ -33,9 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -258,7 +258,7 @@ fun AddScheduleItemPage(
             ) {
                 // 校验错误横幅
                 errorMessage?.let { error ->
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(12.dp),
                     ) {
@@ -272,7 +272,7 @@ fun AddScheduleItemPage(
 
                 // 快捷模板选择区（新建时展示）
                 if (!isEditing) {
-                    Card(
+                    QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(12.dp),
                     ) {
@@ -341,7 +341,7 @@ fun AddScheduleItemPage(
                 }
 
                 // 启用开关卡片
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                 ) {
@@ -373,7 +373,7 @@ fun AddScheduleItemPage(
                 }
 
                 // 日程信息卡片
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -406,7 +406,7 @@ fun AddScheduleItemPage(
                 }
 
                 // 时间安排与起止设置
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -530,7 +530,7 @@ fun AddScheduleItemPage(
                 }
 
                 // 重复规则设置卡片
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -590,7 +590,7 @@ fun AddScheduleItemPage(
                 }
 
                 // 提醒时间设置卡片
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp),
                 ) {
@@ -667,7 +667,7 @@ fun AddScheduleItemPage(
             ScheduleStrings.scheduleEditScopeAll.zh
         }
 
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),

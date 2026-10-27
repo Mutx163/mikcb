@@ -27,13 +27,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -204,7 +204,7 @@ private fun SettingsGroupCard(
     group: SettingsGroup,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
@@ -393,7 +393,7 @@ private fun SettingsInlineView(node: SettingsInline) {
 @Composable
 private fun PreviewCard(node: SettingsInline) {
     val colors = MiuixTheme.colorScheme
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
@@ -462,7 +462,7 @@ private fun PreviewTile(
 @Composable
 private fun FontPreview(node: SettingsInline) {
     val colors = MiuixTheme.colorScheme
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
@@ -486,7 +486,7 @@ private fun FontPreview(node: SettingsInline) {
 @Composable
 private fun ColorChipGroup(node: SettingsInline) {
     val colors = MiuixTheme.colorScheme
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
@@ -525,7 +525,7 @@ private fun ColorChipGroup(node: SettingsInline) {
 @Composable
 private fun ControlCard(node: SettingsInline) {
     val colors = MiuixTheme.colorScheme
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),

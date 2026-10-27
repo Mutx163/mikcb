@@ -24,9 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -131,7 +131,7 @@ fun LocationTimeMatchPage(
 
                 if (model.isEmpty) {
                     // Dart：空态是一行「新建地点组」ActionTile，不是自造空态文案
-                    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                         ArrowPreference(
                             title = model.createGroupLabel,
                             summary = null,
@@ -154,7 +154,7 @@ fun LocationTimeMatchPage(
                 }
 
                 // ── 试匹配 ──
-                Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 10.dp)) {
+                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 10.dp)) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         TextField(
                             value = previewInput,
@@ -182,7 +182,7 @@ fun LocationTimeMatchPage(
 
                 // ── 尾部：重新匹配当前课表（有规则时才出现，Dart 同口径） ──
                 if (!model.isEmpty) {
-                    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
                         ArrowPreference(
                             title = model.applyActiveLabel,
                             summary = null,
@@ -205,7 +205,7 @@ private fun GroupCardView(
 ) {
     val dark = isSystemInDarkTheme()
 
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
         Column {
             // 第一行：组名 + 副标题 + 开关
             SwitchPreference(

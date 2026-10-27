@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -233,7 +234,7 @@ private fun CourseOverviewEmptyState(
         modifier = modifier.padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        QingyuCard(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(24.dp),
         ) {
@@ -266,7 +267,7 @@ private fun CourseConflictEntryCard(
     dark: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onClick,
@@ -325,7 +326,7 @@ private fun CourseGroupRowCard(
     dark: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onClick,
@@ -413,7 +414,7 @@ private fun CourseOverviewSortPopup(
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true),
     ) {
-        Card(
+        QingyuCard(
             modifier = Modifier.widthIn(min = 160.dp),
             insideMargin = PaddingValues(vertical = 6.dp),
         ) {

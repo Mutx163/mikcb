@@ -40,6 +40,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -181,7 +182,7 @@ private fun WelcomeStepContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -204,7 +205,7 @@ private fun WelcomeStepContent(
         }
 
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(14.dp)
             ) {
@@ -218,7 +219,7 @@ private fun WelcomeStepContent(
         }
 
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(12.dp)
             ) {
@@ -262,7 +263,7 @@ private fun PrivacyStepContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -299,7 +300,7 @@ private fun PrivacyStepContent(
         }
 
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -330,7 +331,7 @@ private fun PrivacyStepContent(
 
         if (requireConsent) {
             item {
-                Card(
+                QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(14.dp)
                 ) {
@@ -381,7 +382,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
     ) {
         // 进度卡片
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -431,7 +432,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
 
         // 权限清单
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(14.dp)
             ) {
@@ -497,7 +498,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues) {
     ) {
         // 首页菜单样式
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -534,7 +535,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues) {
 
         // 默认材质
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -596,7 +597,7 @@ private fun TipsAndFaqStepContent(
     ) {
         // 课程简称建议
         item {
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(16.dp)
             ) {
@@ -667,7 +668,7 @@ private fun TipsAndFaqStepContent(
         // FAQ 列表项
         items(filteredFaq, key = { it.id }) { item ->
             val isExpanded = UserGuideModel.isExpanded(expandedIds, item.id)
-            Card(
+            QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(14.dp)
             ) {
