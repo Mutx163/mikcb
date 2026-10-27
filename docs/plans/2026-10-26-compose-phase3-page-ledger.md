@@ -184,6 +184,14 @@ P3-G1（1 878 行）偏小，可并入 P3-D1 一起做。领的时候在认领�
    签名还不一致（单参 vs vararg），全队为此互相阻塞过。正确做法是收进 `core/` 一处。
 4. **共享暂存区真的会被抢。** 两次实际事故（`459d7ceb` 挂错标题、B-4 提交变空）。
    路径限定提交仍是正道，但 `add` 与 `commit` 之间**不能夹任何耗时操作**。
+5. **验收口径只认 gradle 结果文件，不认自建沙箱的「全绿」。**
+   `:app:testProdDebugUnitTest` 的结果在 `build/app/test-results/testProdDebugUnitTest/*.xml`，
+   逐类读 `tests`/`failures`/`errors` 才是硬证据。
+   隔离沙箱（`.agents/compose-phase3/lead-sandbox.sh`）在**不与 gradle 并发**时可信，
+   但并发时它加载的类会被 gradle 重写的 `build/` 换掉，出现「用例总数从 511 掉到 85
+   + 一堆 initializationError」的假象。沙箱只用于单域快速看红绿与探针反向验证。
+   **旁证**：`--tests` 过滤在这台并发机器上也不可靠——会 `BUILD SUCCESSFUL` 但结果目录里
+   一条目标用例都没有（空跑），必须核对结果文件里真的有那些类。
 
 **验收基线问题（Lead 已修，2026-10-27）**：原基线代码按 miuix **0.8.8** 的
 `extra.Super*` 包名写的，而依赖已升到 **0.9.4**——`extra` 包整体消失，官方改成独立的
