@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 课表左侧时间轴列（Timetable Time Column · Compose Phase 3）。
@@ -67,7 +68,7 @@ fun TimetableTimeColumn(
                 ) {
                     Text(
                         text = "$sectionIndex",
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
                         color = if (isCurrent) accentColor else textColor,
                         textAlign = TextAlign.Center,
@@ -76,7 +77,7 @@ fun TimetableTimeColumn(
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = startTime,
-                            fontSize = 8.5.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             lineHeight = 10.sp,
                             color = if (isCurrent) accentColor.copy(alpha = 0.9f) else subTextColor,
                             textAlign = TextAlign.Center,
@@ -86,7 +87,7 @@ fun TimetableTimeColumn(
                     if (endTime.isNotBlank()) {
                         Text(
                             text = endTime,
-                            fontSize = 8.5.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             lineHeight = 10.sp,
                             color = if (isCurrent) accentColor.copy(alpha = 0.9f) else subTextColor,
                             textAlign = TextAlign.Center,

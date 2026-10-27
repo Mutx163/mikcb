@@ -35,6 +35,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 支持作者页 · Compose 渲染层（Phase 3）。
@@ -86,7 +87,7 @@ fun SupportCreatorPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = SupportCreatorStrings.heroSubtitle,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             lineHeight = 19.sp,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
@@ -108,7 +109,7 @@ fun SupportCreatorPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = SupportCreatorStrings.methodTitle,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
@@ -126,13 +127,13 @@ fun SupportCreatorPage(
                         }
                         Text(
                             text = SupportCreatorStrings.scanTitleFor(method),
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Text(
                             text = SupportCreatorStrings.scanQrSubtitle,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         // 二维码位：图未接线（见文件头 kdoc），先占位保持版式与文案。
@@ -142,14 +143,14 @@ fun SupportCreatorPage(
                         ) {
                             Text(
                                 text = SupportCreatorStrings.hintFor(method),
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 textAlign = TextAlign.Center,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                         }
                         Text(
                             text = SupportCreatorStrings.tapQrHint,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -201,7 +202,7 @@ fun SupportCreatorPage(
                     ) {
                         Text(
                             text = SupportCreatorStrings.donorListEmpty,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             lineHeight = 19.sp,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
@@ -213,7 +214,7 @@ fun SupportCreatorPage(
                         item {
                             Text(
                                 text = SupportCreatorStrings.updatedAtLabel(updatedAt),
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(start = 4.dp),
                             )
@@ -233,7 +234,7 @@ private fun FeatureChip(label: String) {
     QingyuCard(insideMargin = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
@@ -253,7 +254,7 @@ private fun MethodTab(
     ) {
         Text(
             text = label,
-            fontSize = 14.sp,
+            style = MiuixTheme.textStyles.body2,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (selected) {
                 Color(QingyuTheme.primary(dark = dark))

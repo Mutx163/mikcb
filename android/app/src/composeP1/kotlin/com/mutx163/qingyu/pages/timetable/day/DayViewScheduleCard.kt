@@ -35,6 +35,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图日程议程卡 · Compose 渲染层。
@@ -112,7 +113,7 @@ fun DayViewScheduleCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${entry.startTime} - ${entry.endTime}",
-                            fontSize = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.SemiBold,
                             color = ink,
                         )
@@ -156,7 +157,7 @@ fun DayViewScheduleCard(
             // 日程标题
             Text(
                 text = entry.scheduleItem.title,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Bold,
                 color = ink,
                 maxLines = 2,

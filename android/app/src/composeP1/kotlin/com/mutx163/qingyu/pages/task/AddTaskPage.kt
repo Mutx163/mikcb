@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -156,7 +155,7 @@ fun AddTaskPage(
                                     if (!viewState.titleError.isNullOrBlank()) {
                                         Text(
                                             text = viewState.titleError,
-                                            fontSize = 12.sp,
+                                            style = MiuixTheme.textStyles.footnote1,
                                             color = colors.error,
                                             modifier = Modifier.padding(start = 4.dp, top = 4.dp),
                                         )
@@ -194,13 +193,13 @@ fun AddTaskPage(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = viewState.selectedCourseName,
-                                            fontSize = 16.sp,
+                                            style = MiuixTheme.textStyles.body1,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(QingyuTheme.primaryText(dark)),
                                         )
                                         Text(
                                             text = TaskStrings.taskCourseLabel,
-                                            fontSize = 12.sp,
+                                            style = MiuixTheme.textStyles.footnote1,
                                             color = Color(QingyuTheme.secondaryText(dark)),
                                             modifier = Modifier.padding(top = 2.dp),
                                         )
@@ -225,14 +224,14 @@ fun AddTaskPage(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = TaskStrings.taskDueDateLabel,
-                                            fontSize = 16.sp,
+                                            style = MiuixTheme.textStyles.body1,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(QingyuTheme.primaryText(dark)),
                                         )
                                         if (!viewState.hasDueDate) {
                                             Text(
                                                 text = TaskStrings.taskDueDateHint,
-                                                fontSize = 12.sp,
+                                                style = MiuixTheme.textStyles.footnote1,
                                                 color = Color(QingyuTheme.secondaryText(dark)),
                                                 modifier = Modifier.padding(top = 2.dp),
                                             )
@@ -258,7 +257,7 @@ fun AddTaskPage(
                                     ) {
                                         Text(
                                             text = viewState.dueDateFormatted.ifEmpty { TaskStrings.taskDueDateLabel },
-                                            fontSize = 16.sp,
+                                            style = MiuixTheme.textStyles.body1,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(QingyuTheme.primaryText(dark)),
                                             modifier = Modifier.weight(1f),
@@ -283,7 +282,7 @@ fun AddTaskPage(
                                 ) {
                                     Text(
                                         text = TaskStrings.taskCompletedSection,
-                                        fontSize = 16.sp,
+                                        style = MiuixTheme.textStyles.body1,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(QingyuTheme.primaryText(dark)),
                                         modifier = Modifier.weight(1f),

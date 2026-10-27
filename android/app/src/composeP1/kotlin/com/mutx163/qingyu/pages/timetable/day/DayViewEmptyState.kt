@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图「今日无课」极简空态卡片 · Compose 渲染层。
@@ -50,7 +50,7 @@ fun DayViewEmptyState(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = DayViewStrings.dayViewEmptyTitle.zh,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Medium,
                 color = titleColor,
                 textAlign = TextAlign.Center,
@@ -58,7 +58,7 @@ fun DayViewEmptyState(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = subtitle,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = subtitleColor,
                 textAlign = TextAlign.Center,
             )

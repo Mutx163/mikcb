@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 三个页面共用的官方骨架。
@@ -132,7 +133,7 @@ fun QingyuSectionLabel(text: String) {
     val dark = isSystemInDarkTheme()
     Text(
         text = text,
-        fontSize = 13.sp,
+        style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.sectionLabel(dark)),
         modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
     )
@@ -163,14 +164,14 @@ fun QingyuRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 subtitle?.takeIf { it.isNotEmpty() }?.let { sub ->
                     Text(
                         text = sub,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         lineHeight = 18.sp,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         modifier = Modifier.padding(top = 2.dp),

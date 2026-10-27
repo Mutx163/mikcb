@@ -31,6 +31,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Location
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图考试预警卡 · Compose 渲染层。
@@ -93,7 +94,7 @@ fun DayViewExamCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = DayViewStrings.examBadgeLabel.zh,
-                            fontSize = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Bold,
                             color = ink,
                         )
@@ -114,7 +115,7 @@ fun DayViewExamCard(
             // 考试科目名称
             Text(
                 text = entry.exam.name,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Bold,
                 color = ink,
                 maxLines = 2,
@@ -135,7 +136,7 @@ fun DayViewExamCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "${entry.exam.startTime} - ${entry.exam.endTime}",
-                        fontSize = 12.5.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.Medium,
                         color = ink.copy(alpha = 0.9f),
                     )
@@ -166,7 +167,7 @@ fun DayViewExamCard(
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = course.name,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = ink.copy(alpha = 0.75f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

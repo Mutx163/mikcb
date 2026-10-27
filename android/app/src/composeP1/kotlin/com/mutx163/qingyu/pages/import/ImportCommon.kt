@@ -120,7 +120,7 @@ fun ImportSectionLabel(text: String, modifier: Modifier = Modifier) {
     val dark = isSystemInDarkTheme()
     Text(
         text = text,
-        fontSize = 13.sp,
+        style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.sectionLabel(dark)),
         modifier = modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
     )
@@ -152,13 +152,13 @@ fun ImportNavRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 18.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
@@ -201,13 +201,13 @@ fun ImportSwitchRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 18.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
@@ -246,7 +246,7 @@ fun ImportValueRow(
         ) {
             Text(
                 text = title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 color = Color(
                     if (enabled) QingyuTheme.primaryText(dark) else QingyuTheme.secondaryText(dark),
                 ),
@@ -254,7 +254,7 @@ fun ImportValueRow(
             )
             Text(
                 text = value,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             if (enabled) {
@@ -310,13 +310,13 @@ fun ImportGuidePanel(
             ) {
                 Text(
                     text = ImportStrings.applicableScenarioTitle.zh,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = scenarioIntro,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 18.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 4.dp),
@@ -338,13 +338,13 @@ fun ImportGuidePanel(
             ) {
                 Text(
                     text = ImportStrings.supportedFilesTitle.zh,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = supportedFilesSuffix,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 18.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 6.dp),
@@ -352,7 +352,7 @@ fun ImportGuidePanel(
                 if (supportedFilesExtra != null) {
                     Text(
                         text = supportedFilesExtra,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         lineHeight = 18.sp,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         modifier = Modifier.padding(top = 4.dp),
@@ -382,20 +382,20 @@ private fun ImportGuideLine(title: String, subtitle: String) {
             Text(
                 // Dart: title.replaceAll('步骤 ', '')——徽标里只留数字。
                 text = title.replaceFirst("步骤 ", ""),
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = primary,
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 lineHeight = 18.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
@@ -472,14 +472,14 @@ fun ImportReplaceExistingDialog(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = message,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 lineHeight = 20.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = IMPORT_REPLACE_EXISTING_GUIDANCE,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 lineHeight = 20.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -524,7 +524,7 @@ fun ImportSpreadsheetWarningsDialog(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = ImportStrings.spreadsheetImportWarningsMessage.zh,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 lineHeight = 20.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -532,7 +532,7 @@ fun ImportSpreadsheetWarningsDialog(
             for (warning in warnings) {
                 Text(
                     text = "• $warning",
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 19.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(bottom = 6.dp),

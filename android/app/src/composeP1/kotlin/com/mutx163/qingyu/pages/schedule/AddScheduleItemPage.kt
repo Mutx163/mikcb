@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -223,7 +222,7 @@ fun AddScheduleItemPage(
                 }
                 Text(
                     text = if (isEditing) ScheduleStrings.editScheduleTitle.zh else ScheduleStrings.addScheduleTitle.zh,
-                    fontSize = 20.sp,
+                    style = MiuixTheme.textStyles.title3,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
@@ -265,7 +264,7 @@ fun AddScheduleItemPage(
                         Text(
                             text = error,
                             color = Color(QingyuTheme.error(dark)),
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                         )
                     }
                 }
@@ -279,7 +278,7 @@ fun AddScheduleItemPage(
                         Column {
                             Text(
                                 text = ScheduleStrings.scheduleQuickPresetSectionTitle.zh,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(QingyuTheme.sectionLabel(dark)),
                                 modifier = Modifier.padding(bottom = 8.dp),
@@ -332,7 +331,7 @@ fun AddScheduleItemPage(
                                             }
                                             .padding(horizontal = 12.dp, vertical = 8.dp),
                                     ) {
-                                        Text(text = presetTitle, fontSize = 13.sp, color = chipText)
+                                        Text(text = presetTitle, style = MiuixTheme.textStyles.footnote1, color = chipText)
                                     }
                                 }
                             }
@@ -353,14 +352,14 @@ fun AddScheduleItemPage(
                         Column {
                             Text(
                                 text = ScheduleStrings.scheduleEnabledTitle.zh,
-                                fontSize = 16.sp,
+                                style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
                             if (!enabled) {
                                 Text(
                                     text = ScheduleStrings.scheduleDisabledSubtitle.zh,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
@@ -380,7 +379,7 @@ fun AddScheduleItemPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = ScheduleStrings.scheduleInfoSectionTitle.zh,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.sectionLabel(dark)),
                         )
@@ -413,7 +412,7 @@ fun AddScheduleItemPage(
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
                             text = ScheduleStrings.scheduleTimeSectionTitle.zh,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.sectionLabel(dark)),
                         )
@@ -422,7 +421,7 @@ fun AddScheduleItemPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = ScheduleStrings.scheduleStartGroupLabel.zh,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -443,7 +442,7 @@ fun AddScheduleItemPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = ScheduleStrings.scheduleEndGroupLabel.zh,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -467,20 +466,20 @@ fun AddScheduleItemPage(
                         if (recurrence == ScheduleRecurrence.WEEKLY) {
                             Text(
                                 text = ScheduleStrings.scheduleRepeatWeeklyHint.zh,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                         } else if (recurrence == ScheduleRecurrence.DAILY) {
                             Text(
                                 text = ScheduleStrings.scheduleRepeatEndDateHint.zh,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                         } else if (endDate > startDate) {
                             Text(
                                 text = ScheduleStrings.scheduleCrossDaySpanHint
                                     .filled("start" to "$startDate $startTime", "end" to "$endDate $endTime"),
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                         }
@@ -490,7 +489,7 @@ fun AddScheduleItemPage(
                         // 颜色挑选横条
                         Text(
                             text = ScheduleStrings.scheduleAppearanceSectionTitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.sectionLabel(dark)),
                         )
@@ -537,7 +536,7 @@ fun AddScheduleItemPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = ScheduleStrings.scheduleRepeatSectionTitle.zh,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.sectionLabel(dark)),
                         )
@@ -579,7 +578,7 @@ fun AddScheduleItemPage(
                                 ) {
                                     Text(
                                         text = label,
-                                        fontSize = 13.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         fontWeight = FontWeight.Medium,
                                         color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
                                     )
@@ -597,7 +596,7 @@ fun AddScheduleItemPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = ScheduleStrings.scheduleReminderSectionTitle.zh,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.sectionLabel(dark)),
                         )
@@ -637,7 +636,7 @@ fun AddScheduleItemPage(
                                 ) {
                                     Text(
                                         text = label,
-                                        fontSize = 13.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
                                     )
                                 }
@@ -676,13 +675,13 @@ fun AddScheduleItemPage(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = titleText,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = ScheduleStrings.scheduleOccurrenceEditHint.zh,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
                 Row(
@@ -768,7 +767,7 @@ private fun MiuixActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onPrimary,
         )

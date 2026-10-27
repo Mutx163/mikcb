@@ -62,6 +62,7 @@ import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 用户指南与新手问答页 · Compose 渲染层。
@@ -189,14 +190,14 @@ private fun WelcomeStepContent(
                 Column {
                     Text(
                         text = GuideStrings.welcomeAppName.zh,
-                        fontSize = 20.sp,
+                        style = MiuixTheme.textStyles.title3,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = GuideStrings.welcomeSubtitle.zh,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 20.sp
                     )
@@ -211,7 +212,7 @@ private fun WelcomeStepContent(
             ) {
                 Text(
                     text = GuideStrings.thirdPartyDisclaimer.zh,
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     lineHeight = 18.sp
                 )
@@ -270,28 +271,28 @@ private fun PrivacyStepContent(
                 Column {
                     Text(
                         text = GuideStrings.guidePrivacySectionTitle.zh,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = GuideStrings.guidePrivacyParagraph1.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = GuideStrings.guidePrivacyParagraph2.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = GuideStrings.guidePrivacyParagraph3.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
@@ -307,21 +308,21 @@ private fun PrivacyStepContent(
                 Column {
                     Text(
                         text = GuideStrings.guideRiskTitle.zh,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = GuideStrings.guideRiskParagraph1.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = GuideStrings.guideRiskParagraph2.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
@@ -348,7 +349,7 @@ private fun PrivacyStepContent(
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = GuideStrings.guidePrivacyConsentLabel.zh,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.primaryText(dark))
                         )
@@ -393,7 +394,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
                     ) {
                         Text(
                             text = GuideStrings.guidePermissionsSubtitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier.weight(1f)
                         )
@@ -402,7 +403,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
                                 "ready" to "${progress.readyCount}",
                                 "total" to "${progress.totalCount}"
                             ),
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor
                         )
@@ -449,21 +450,21 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = p.title,
-                                    fontSize = 14.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 if (p.subtitle != null) {
                                     Text(
                                         text = p.subtitle,
-                                        fontSize = 12.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         color = Color(QingyuTheme.secondaryText(dark))
                                     )
                                 }
                             }
                             Text(
                                 text = if (p.enabled == true) p.enabledLabel else p.disabledLabel,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = if (p.enabled == true) primaryColor else Color(QingyuTheme.secondaryText(dark))
                             )
                         }
@@ -475,7 +476,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
         item {
             Text(
                 text = GuideStrings.guidePermissionsFooterHint.zh,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 lineHeight = 16.sp
             )
@@ -505,7 +506,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues) {
                 Column {
                     Text(
                         text = GuideStrings.guidePersonalizeMenuStyleTitle.zh,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
@@ -542,7 +543,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues) {
                 Column {
                     Text(
                         text = GuideStrings.frostedGlassModeLabel.zh,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
@@ -604,14 +605,14 @@ private fun TipsAndFaqStepContent(
                 Column {
                     Text(
                         text = GuideStrings.guideShortNameAdviceTitle.zh,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.Bold,
                         color = Color(QingyuTheme.primaryText(dark))
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = GuideStrings.guideShortNameAdviceSubtitle.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         lineHeight = 18.sp
                     )
@@ -619,13 +620,13 @@ private fun TipsAndFaqStepContent(
                     Row {
                         Text(
                             text = GuideStrings.guideShortNameRecommended.zh + "：",
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.SemiBold,
                             color = primaryColor
                         )
                         Text(
                             text = GuideStrings.guideShortNameRecommendedExample.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                     }
@@ -684,7 +685,7 @@ private fun TipsAndFaqStepContent(
                     ) {
                         Text(
                             text = item.question,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.primaryText(dark)),
                             modifier = Modifier.weight(1f)
@@ -707,7 +708,7 @@ private fun TipsAndFaqStepContent(
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = item.answer,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 lineHeight = 19.sp
                             )
@@ -740,7 +741,7 @@ private fun CategoryChip(
     ) {
         Text(
             text = title,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = if (selected) Color.White else primaryColor
         )
@@ -771,14 +772,14 @@ private fun OptionCapsule(
         Column {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.SemiBold,
                 color = if (selected) primaryColor else Color(QingyuTheme.primaryText(dark))
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 lineHeight = 16.sp
             )
@@ -806,14 +807,14 @@ private fun GuideActionRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.primaryText(dark))
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark))
             )
         }
@@ -858,7 +859,7 @@ private fun BottomNavigationBar(
                     Text(
                         text = GuideStrings.guidePrevButton.zh,
                         color = Color(QingyuTheme.primaryText(dark)),
-                        fontSize = 14.sp
+                        style = MiuixTheme.textStyles.body2
                     )
                 }
             } else {
@@ -894,7 +895,7 @@ private fun BottomNavigationBar(
                         GuideStrings.guideNextButton.zh
                     },
                     color = Color.White,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.Medium
                 )
             }

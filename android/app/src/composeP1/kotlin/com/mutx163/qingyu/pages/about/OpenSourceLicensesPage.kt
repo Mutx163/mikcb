@@ -32,6 +32,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 开源许可页 · Compose 渲染层（Phase 3）。
@@ -98,7 +99,7 @@ fun OpenSourceLicensesPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = OpenSourceLicensesStrings.appSectionTitle,
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
@@ -164,7 +165,7 @@ private fun HintRow(message: String) {
     ) {
         Text(
             text = message,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
@@ -176,7 +177,7 @@ private fun LicenseParagraph(text: String) {
     val dark = isSystemInDarkTheme()
     Text(
         text = text,
-        fontSize = 14.sp,
+        style = MiuixTheme.textStyles.body2,
         lineHeight = 20.sp,
         color = Color(QingyuTheme.primaryText(dark)),
     )
@@ -213,7 +214,7 @@ fun OpenSourceLicenseDetailPage(
                 ) {
                     Text(
                         text = pkg.combinedLicenseText,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                         lineHeight = 20.sp,
                         color = Color(QingyuTheme.primaryText(dark)),
                     )

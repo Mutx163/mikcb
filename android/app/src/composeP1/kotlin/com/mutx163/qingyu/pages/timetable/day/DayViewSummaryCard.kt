@@ -33,6 +33,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图顶部全天概览卡（Day View Summary Card）。
@@ -70,20 +71,20 @@ fun DayViewSummaryCard(
                     if (state.isToday) {
                         Text(
                             text = DayViewStrings.todayTimetableTitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Text(
                             text = " · ",
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }
                     Text(
                         text = DayViewStrings.weekLabel(state.week),
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.Medium,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
@@ -107,7 +108,7 @@ fun DayViewSummaryCard(
             // ── 大字日期标题（如 "10月27日 周二"）──
             Text(
                 text = state.dateLabel,
-                fontSize = 22.sp,
+                style = MiuixTheme.textStyles.title3,
                 lineHeight = 26.sp,
                 fontWeight = FontWeight.Normal,
                 maxLines = 1,
@@ -134,7 +135,7 @@ fun DayViewSummaryCard(
                 if (!state.agendaRangeLabel.isNullOrBlank()) {
                     Text(
                         text = state.agendaRangeLabel,
-                        fontSize = 11.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         fontWeight = FontWeight.Medium,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
@@ -173,7 +174,7 @@ private fun SummaryNeutralCapsule(
     ) {
         Text(
             text = text,
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             fontWeight = FontWeight.SemiBold,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
@@ -214,7 +215,7 @@ private fun SummaryStatusCapsule(
             )
             Text(
                 text = chip.text,
-                fontSize = 11.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.SemiBold,
                 color = accentColor,
                 maxLines = 1,

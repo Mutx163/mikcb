@@ -60,6 +60,7 @@ import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * HyperOS 澎湃组件规范展示册 · Compose 渲染层。
@@ -145,14 +146,14 @@ fun HyperosShowcasePage(
                             Column {
                                 Text(
                                     text = "HyperOS UI Kit",
-                                    fontSize = 17.sp,
+                                    style = MiuixTheme.textStyles.main,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = GuideStrings.hyperosShowcaseKitSubtitle.zh,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark))
                                 )
                             }
@@ -179,7 +180,7 @@ fun HyperosShowcasePage(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "HyperosHintBanner · 信息提示横幅",
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                             }
@@ -217,7 +218,7 @@ fun HyperosShowcasePage(
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
                                 text = "按钮样式 (Buttons)",
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(QingyuTheme.primaryText(dark))
                             )
@@ -248,7 +249,7 @@ fun HyperosShowcasePage(
                             // 滑动条 (Slider)
                             Text(
                                 text = "滑块数值: ${(sliderValue * 100).toInt()}%",
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.primaryText(dark))
                             )
 
@@ -277,7 +278,7 @@ fun HyperosShowcasePage(
                             ) {
                                 Text(
                                     text = "开关项 (Switch)",
-                                    fontSize = 15.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Switch(
@@ -296,7 +297,7 @@ fun HyperosShowcasePage(
                             ) {
                                 Text(
                                     text = "多选项 (Checkbox)",
-                                    fontSize = 15.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Checkbox(
@@ -315,7 +316,7 @@ fun HyperosShowcasePage(
                             ) {
                                 Text(
                                     text = "尺寸选择",
-                                    fontSize = 15.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -333,7 +334,7 @@ fun HyperosShowcasePage(
                                             Text(
                                                 text = opt,
                                                 color = if (isSel) Color.White else primaryColor,
-                                                fontSize = 12.sp,
+                                                style = MiuixTheme.textStyles.footnote1,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -354,7 +355,7 @@ fun HyperosShowcasePage(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = "文本输入 (TextField)",
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark))
                             )
                             TextField(
@@ -373,7 +374,7 @@ fun HyperosShowcasePage(
                             ) {
                                 Text(
                                     text = GuideStrings.hyperosShowcasePickerCurrentValue.filled("value", "$pickerValue"),
-                                    fontSize = 14.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -440,7 +441,7 @@ fun HyperosShowcasePage(
 private fun ShowcaseSectionHeader(title: String) {
     Text(
         text = title,
-        fontSize = 13.sp,
+        style = MiuixTheme.textStyles.footnote1,
         fontWeight = FontWeight.SemiBold,
         color = Color(0xFF3482FF),
         modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
@@ -469,7 +470,7 @@ private fun AccordionRow(
         ) {
             Text(
                 text = title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark))
             )
@@ -487,7 +488,7 @@ private fun AccordionRow(
         ) {
             Text(
                 text = body,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 lineHeight = 18.sp,
                 modifier = Modifier.padding(top = 8.dp)

@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -39,6 +38,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 「全部功能」目录全览页 · Compose 渲染层。
@@ -109,7 +109,7 @@ fun MoreFeaturesPage(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = GuideStrings.homeMenuMoreSearchHint.zh,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark))
                             )
                         }
@@ -121,7 +121,7 @@ fun MoreFeaturesPage(
                     Column {
                         Text(
                             text = group.title,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.SemiBold,
                             color = primaryColor,
                             modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
@@ -169,7 +169,7 @@ private fun FeatureItemRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark))
             )
@@ -177,7 +177,7 @@ private fun FeatureItemRow(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = item.subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }

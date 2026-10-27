@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 「哪些周上」弹层的三个纯构建小件（`lib/screens/add_course_week_picker_tiles.dart`
@@ -56,7 +56,7 @@ internal fun AddCourseWeekGridTile(
         // Dart 侧按钮文案是纯数字 `'$week'`，不带「第 N 周」整词。
         Text(
             text = week.toString(),
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
         )
@@ -158,7 +158,7 @@ internal fun AddCourseChoiceChip(
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
         )

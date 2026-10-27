@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
@@ -34,6 +33,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图待办折叠带 · Compose 渲染层。
@@ -77,7 +77,7 @@ fun DayViewTaskBandCard(
             if (data.overdue.isNotEmpty()) {
                 Text(
                     text = DayViewStrings.taskOverdueSection.zh,
-                    fontSize = 11.5.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.SemiBold,
                     color = destructiveColor,
                 )
@@ -109,7 +109,7 @@ fun DayViewTaskBandCard(
                     ) {
                         Text(
                             text = DayViewStrings.dayTaskBandOverdueMore(data.hiddenOverdueCount),
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             fontWeight = FontWeight.Medium,
                             color = secondaryTextColor,
                         )
@@ -157,7 +157,7 @@ fun DayViewTaskBandCard(
 
                 Text(
                     text = DayViewStrings.taskCompletedSection.zh,
-                    fontSize = 11.5.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.SemiBold,
                     color = secondaryTextColor,
                 )
@@ -219,7 +219,7 @@ private fun TaskBandItemRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = if (isCompleted) FontWeight.Normal else FontWeight.SemiBold,
                 color = primaryColor,
                 textDecoration = textDecoration,
@@ -239,7 +239,7 @@ private fun TaskBandItemRow(
                         DayCourseDot(color = dotColor)
                         Text(
                             text = courseName,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = secondaryColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -250,7 +250,7 @@ private fun TaskBandItemRow(
                     if (isOverdue && row.overdueDays > 0) {
                         Text(
                             text = DayViewStrings.dayTaskBandOverdueBadge(row.overdueDays),
-                            fontSize = 11.5.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.destructive()),
                         )

@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.ExamReminderPreset
@@ -54,6 +53,7 @@ import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 添加 / 编辑考试页 · Compose 渲染层（Phase 3）。
@@ -155,7 +155,7 @@ fun AddExamPage(
                     ) {
                         Text(
                             text = toast,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             color = Color(QingyuTheme.error(dark)),
                         )
                     }
@@ -192,13 +192,13 @@ fun AddExamPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = ExamStrings.linkCourse.zh,
-                                    fontSize = 16.sp,
+                                    style = MiuixTheme.textStyles.body1,
                                     fontWeight = FontWeight.Medium,
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
                                 Text(
                                     text = AddExamLogic.courseDetailsText(selectedCourse, courseGroupsEmpty),
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
@@ -217,7 +217,7 @@ fun AddExamPage(
                         if (viewState.selectedCourseId.isNullOrBlank()) {
                             Text(
                                 text = ExamStrings.linkCourseRequired.zh,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.error(dark)),
                                 modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
                             )
@@ -243,7 +243,7 @@ fun AddExamPage(
                         if (!nameError.isNullOrEmpty()) {
                             Text(
                                 text = nameError,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.error(dark)),
                                 modifier = Modifier.padding(top = 4.dp),
                             )
@@ -291,7 +291,7 @@ fun AddExamPage(
                         )
                         Text(
                             text = locationHintText,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         TextField(
@@ -330,7 +330,7 @@ fun AddExamPage(
                         if (offsets.isEmpty()) {
                             Text(
                                 text = ExamStrings.examReminderCustomEmptyHint.zh,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                             )
@@ -345,7 +345,7 @@ fun AddExamPage(
                             ) {
                                 Text(
                                     text = ExamListLogic.reminderOffsetLabel(minutes),
-                                    fontSize = 16.sp,
+                                    style = MiuixTheme.textStyles.body1,
                                     color = Color(QingyuTheme.primaryText(dark)),
                                     modifier = Modifier.weight(1f),
                                 )
@@ -378,7 +378,7 @@ fun AddExamPage(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = ExamStrings.examReminderAddCustom.zh,
-                                fontSize = 16.sp,
+                                style = MiuixTheme.textStyles.body1,
                                 color = Color(QingyuTheme.primary(dark = dark)),
                             )
                         }
@@ -473,13 +473,13 @@ private fun ExamSettingRow(
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = title,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

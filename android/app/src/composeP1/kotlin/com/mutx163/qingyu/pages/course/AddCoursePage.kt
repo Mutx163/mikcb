@@ -33,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.core.Course
@@ -53,6 +52,7 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 颜色选择盘（与 AddScheduleItemPage 同一套十色盘；Dart 侧走共享的 course_palette_sheet）。 */
 private val kCourseColorPalette = listOf(
@@ -253,7 +253,7 @@ fun AddCoursePage(
                         ) {
                             Text(
                                 text = pageError,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.error(dark)),
                             )
                         }
@@ -267,7 +267,7 @@ fun AddCoursePage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
                                 text = AddCourseStrings.sharedInfoTitle.zh,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(QingyuTheme.sectionLabel(dark)),
                             )
@@ -285,7 +285,7 @@ fun AddCoursePage(
                             )
                             Text(
                                 text = nameError ?: AddCourseStrings.courseNameHelper.zh,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(
                                     if (nameError != null) QingyuTheme.error(dark) else QingyuTheme.secondaryText(dark),
                                 ),
@@ -305,7 +305,7 @@ fun AddCoursePage(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = AddCourseStrings.courseShortNameAutoFillAction.zh,
-                                    fontSize = 14.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primary(dark = dark)),
                                     modifier = Modifier
                                         .clickable {
@@ -320,7 +320,7 @@ fun AddCoursePage(
                             }
                             Text(
                                 text = AddCourseStrings.courseShortNameHelper.zh,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                             TextField(
@@ -374,7 +374,7 @@ fun AddCoursePage(
                             )
                             Text(
                                 text = AddCourseStrings.courseColorTitle.zh,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
                             Row(
@@ -408,7 +408,7 @@ fun AddCoursePage(
                             }
                             Text(
                                 text = AddCourseStrings.sharedInfoInlineHint.zh,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                         }
@@ -423,13 +423,13 @@ fun AddCoursePage(
                             Column {
                                 Text(
                                     text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
-                                    fontSize = 14.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     fontWeight = FontWeight.Medium,
                                     color = Color(QingyuTheme.sectionLabel(dark)),
                                 )
                                 Text(
                                     text = AddCourseStrings.scheduleEntryCardSubtitle.zh,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
@@ -481,7 +481,7 @@ fun AddCoursePage(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = AddCourseStrings.addScheduleEntryAction.zh,
-                                    fontSize = 15.sp,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.primary(dark = dark)),
                                 )
                             }
@@ -633,7 +633,7 @@ private fun AddCourseEntryFields(
             ) {
                 Text(
                     text = AddCourseStrings.scheduleEntryIndexTitle(index + 1),
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
@@ -683,13 +683,13 @@ private fun AddCourseEntryFields(
             ) {
                 Text(
                     text = AddCourseStrings.scheduleEntryWeeksSectionTitle.zh,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = weekSummary,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -842,7 +842,7 @@ private fun AddCourseWeekPickerDialog(
                 text = AddCourseStrings.selectedWeeksSummary
                     .filled("count", selectedWeeks.size.toString())
                     .filled("weeks", AddCourseFormLogic.formatWeekList(selectedWeeks)),
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Row(

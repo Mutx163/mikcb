@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -157,13 +156,13 @@ fun TaskListPage(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = viewState.selectedCourseLabel,
-                                        fontSize = 16.sp,
+                                        style = MiuixTheme.textStyles.body1,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(QingyuTheme.primaryText(dark)),
                                     )
                                     Text(
                                         text = TaskStrings.taskCourseFilter,
-                                        fontSize = 12.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                         modifier = Modifier.padding(top = 2.dp),
                                     )
@@ -193,7 +192,7 @@ fun TaskListPage(
                                 ) {
                                     Text(
                                         text = viewState.emptyTitle,
-                                        fontSize = 16.sp,
+                                        style = MiuixTheme.textStyles.body1,
                                         fontWeight = FontWeight.Normal,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                         textAlign = TextAlign.Center,
@@ -210,7 +209,7 @@ fun TaskListPage(
                             item {
                                 Text(
                                     text = section.title,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.sectionLabel(dark)),
                                     modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
                                 )
@@ -262,13 +261,13 @@ fun TaskListPage(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = TaskStrings.taskUndatedHint(viewState.undatedHiddenCount),
-                                            fontSize = 15.sp,
+                                            style = MiuixTheme.textStyles.body2,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(QingyuTheme.primaryText(dark)),
                                         )
                                         Text(
                                             text = TaskStrings.taskUndatedHintSubtitle,
-                                            fontSize = 12.sp,
+                                            style = MiuixTheme.textStyles.footnote1,
                                             color = Color(QingyuTheme.secondaryText(dark)),
                                             modifier = Modifier.padding(top = 2.dp),
                                         )
@@ -332,7 +331,7 @@ private fun TaskDateSegmentedControl(
                 ) {
                     Text(
                         text = label,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isSelected) {
                             Color(QingyuTheme.primaryText(dark))
@@ -387,7 +386,7 @@ private fun TaskRowItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Medium,
                 color = titleColor,
                 textDecoration = if (item.isCompleted) TextDecoration.LineThrough else null,
@@ -396,7 +395,7 @@ private fun TaskRowItem(
             )
             Text(
                 text = item.detailText,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = detailColor,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -405,7 +404,7 @@ private fun TaskRowItem(
             if (!item.note.isNullOrBlank()) {
                 Text(
                     text = item.note,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

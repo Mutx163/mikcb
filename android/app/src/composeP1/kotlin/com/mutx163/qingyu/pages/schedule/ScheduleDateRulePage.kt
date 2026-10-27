@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -130,7 +129,7 @@ fun ScheduleDateRulePage(
             // 说明小标题
             Text(
                 text = ScheduleStrings.scheduleDateRuleSectionSubtitle.zh,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
@@ -145,7 +144,7 @@ fun ScheduleDateRulePage(
                     Text(
                         text = banner,
                         color = Color(QingyuTheme.error(dark)),
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                     )
                 }
             }
@@ -169,7 +168,7 @@ fun ScheduleDateRulePage(
                         ) {
                             Text(
                                 text = ScheduleStrings.scheduleDateRuleEmpty.zh,
-                                fontSize = 16.sp,
+                                style = MiuixTheme.textStyles.body1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                             MiuixActionButton(
@@ -279,14 +278,14 @@ private fun ScheduleDateRuleCard(
             ) {
                 Text(
                     text = rule.name,
-                    fontSize = 17.sp,
+                    style = MiuixTheme.textStyles.main,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 if (item.isActiveToday) {
                     Text(
                         text = ScheduleStrings.scheduleDateRuleActiveToday.zh,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.Medium,
                         color = Color(QingyuTheme.primary(dark = dark)),
                     )
@@ -295,13 +294,13 @@ private fun ScheduleDateRuleCard(
 
             Text(
                 text = rangeText,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
 
             Text(
                 text = item.schemeName.ifEmpty { ScheduleStrings.locationTimeMatchUnknownScheme.zh },
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
 
@@ -352,7 +351,7 @@ private fun RuleEditorDialog(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = if (isNew) ScheduleStrings.scheduleDateRuleAdd.zh else ScheduleStrings.scheduleDateRuleEdit.zh,
-                fontSize = 18.sp,
+                style = MiuixTheme.textStyles.title4,
                 fontWeight = FontWeight.Bold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
@@ -361,7 +360,7 @@ private fun RuleEditorDialog(
                 Text(
                     text = err,
                     color = Color(QingyuTheme.error(dark)),
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                 )
             }
 
@@ -390,7 +389,7 @@ private fun RuleEditorDialog(
             // 方案单选行
             Text(
                 text = ScheduleStrings.scheduleDateRuleBoundScheme.zh,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.sectionLabel(dark)),
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -406,7 +405,7 @@ private fun RuleEditorDialog(
                     ) {
                         Text(
                             text = schemeName,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.primaryText(dark)),
                         )
@@ -428,7 +427,7 @@ private fun RuleEditorDialog(
             ) {
                 Text(
                     text = ScheduleStrings.scheduleDateRuleEnabled.zh,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 MiuixActionButton(
@@ -495,13 +494,13 @@ private fun RuleDeleteConfirmDialog(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = ScheduleStrings.scheduleDateRuleDeleteTitle.zh,
-                fontSize = 18.sp,
+                style = MiuixTheme.textStyles.title4,
                 fontWeight = FontWeight.Bold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = ScheduleStrings.scheduleDateRuleDeleteMessage.filled("name", candidate.name),
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Row(
@@ -538,7 +537,7 @@ private fun MiuixActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onPrimary,
         )

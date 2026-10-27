@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -41,6 +40,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 全部功能页全屏搜索浮层 · Compose 渲染层。
@@ -92,7 +92,7 @@ fun MoreFeaturesSearchOverlay(
                     Text(
                         text = "取消",
                         color = primaryColor,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -124,14 +124,14 @@ fun MoreFeaturesSearchOverlay(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = GuideStrings.homeMenuMoreSearchEmptyTitle.zh,
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Bold,
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = GuideStrings.homeMenuMoreSearchEmptyHint.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark))
                         )
                     }
@@ -147,7 +147,7 @@ fun MoreFeaturesSearchOverlay(
                         Column {
                             Text(
                                 text = group.title,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.SemiBold,
                                 color = primaryColor,
                                 modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
@@ -207,7 +207,7 @@ private fun SearchResultRow(
                 highlightParts.forEach { part ->
                     Text(
                         text = part.text,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = if (part.isHighlight) FontWeight.Bold else FontWeight.Normal,
                         color = if (part.isHighlight) primaryColor else Color(QingyuTheme.primaryText(dark))
                     )
@@ -218,7 +218,7 @@ private fun SearchResultRow(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = item.subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }

@@ -34,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.mutx163.qingyu.components.QingyuCard
@@ -245,7 +244,7 @@ private fun CourseOverviewEmptyState(
             ) {
                 Text(
                     text = hint,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
                 CourseOverviewActionButton(
@@ -288,7 +287,7 @@ private fun CourseConflictEntryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
@@ -297,7 +296,7 @@ private fun CourseConflictEntryCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = detail,
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -340,7 +339,7 @@ private fun CourseGroupRowCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = row.displayName,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Medium,
                         color = Color(QingyuTheme.primaryText(dark)),
                         maxLines = 1,
@@ -352,7 +351,7 @@ private fun CourseGroupRowCard(
                         // Dart HyperosTag：destructive 12% 底色 + 11sp w500。
                         Text(
                             text = CourseOverviewStrings.conflictLabel.zh,
-                            fontSize = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.destructive()),
                             modifier = Modifier
@@ -367,7 +366,7 @@ private fun CourseGroupRowCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = row.subtitle,
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -375,7 +374,7 @@ private fun CourseGroupRowCard(
             }
             Text(
                 text = row.natureLabel,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Icon(
@@ -429,7 +428,7 @@ private fun CourseOverviewSortPopup(
                     ) {
                         Text(
                             text = option.label,
-                            fontSize = 15.sp,
+                            style = MiuixTheme.textStyles.body2,
                             fontWeight = if (option.isSelected) FontWeight.Medium else FontWeight.Normal,
                             color = if (option.isSelected) {
                                 Color(QingyuTheme.primary(dark = dark))
@@ -468,7 +467,7 @@ private fun CourseOverviewActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onPrimary,
         )

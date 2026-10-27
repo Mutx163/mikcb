@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -127,7 +126,7 @@ fun ScheduleListPage(
                             ) {
                                 Text(
                                     text = ScheduleStrings.scheduleListEmptyTitle.zh,
-                                    fontSize = 16.sp,
+                                    style = MiuixTheme.textStyles.body1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                                 MiuixActionButton(
@@ -218,7 +217,7 @@ fun ScheduleListPage(
 private fun ScheduleSectionHeader(title: String, dark: Boolean) {
     Text(
         text = title,
-        fontSize = 13.sp,
+        style = MiuixTheme.textStyles.footnote1,
         fontWeight = FontWeight.Medium,
         color = Color(QingyuTheme.sectionLabel(dark)),
         modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
@@ -265,7 +264,7 @@ private fun ScheduleListCard(
                 ) {
                     Text(
                         text = item.title.ifEmpty { ScheduleStrings.scheduleBadgeLabel.zh },
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(QingyuTheme.primaryText(dark)).copy(alpha = primaryAlpha),
                         maxLines = 1,
@@ -278,7 +277,7 @@ private fun ScheduleListCard(
                     if (recurrenceBadge != null) {
                         Text(
                             text = recurrenceBadge,
-                            fontSize = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Medium,
                             color = Color(QingyuTheme.primary(dark = dark)).copy(alpha = primaryAlpha),
                             modifier = Modifier
@@ -310,7 +309,7 @@ private fun ScheduleListCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = ScheduleStrings.scheduleOngoingLabel.zh,
-                                fontSize = 11.sp,
+                                style = MiuixTheme.textStyles.footnote2,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF22C55E),
                             )
@@ -324,7 +323,7 @@ private fun ScheduleListCard(
                 val metaText = formatScheduleMeta(entry)
                 Text(
                     text = metaText,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)).copy(alpha = secondaryAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -335,7 +334,7 @@ private fun ScheduleListCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = loc,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)).copy(alpha = secondaryAlpha),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -348,7 +347,7 @@ private fun ScheduleListCard(
                     Text(
                         text = ScheduleStrings.scheduleReminderMinutes
                             .filled("minutes", item.reminderMinutesBefore.toString()),
-                        fontSize = 11.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         color = Color(QingyuTheme.secondaryText(dark)).copy(alpha = secondaryAlpha),
                     )
                 }
@@ -391,13 +390,13 @@ private fun ConfirmDeleteDialog(
         ) {
             Text(
                 text = title,
-                fontSize = 18.sp,
+                style = MiuixTheme.textStyles.title4,
                 fontWeight = FontWeight.Bold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = message,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Row(
@@ -474,7 +473,7 @@ private fun MiuixActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = MiuixTheme.colorScheme.onPrimary,
         )

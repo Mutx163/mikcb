@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import java.time.LocalDate
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 课表周视图表头栏（Timetable Weekday Header · Compose Phase 3）。
@@ -88,7 +89,7 @@ fun TimetableWeekdayHeader(
             ) {
                 Text(
                     text = monthOrWeekLabel,
-                    fontSize = 11.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.Bold,
                     color = accentColor,
                     textAlign = TextAlign.Center,
@@ -132,7 +133,7 @@ fun TimetableWeekdayHeader(
                             // 星期标签
                             Text(
                                 text = dayLabel,
-                                fontSize = 11.sp,
+                                style = MiuixTheme.textStyles.footnote2,
                                 fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isToday || isSelected) accentColor else subTextColor,
                             )
@@ -150,7 +151,7 @@ fun TimetableWeekdayHeader(
                                     ) {
                                         Text(
                                             text = dateText,
-                                            fontSize = 10.sp,
+                                            style = MiuixTheme.textStyles.footnote2,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White,
                                             lineHeight = 12.sp,
@@ -159,7 +160,7 @@ fun TimetableWeekdayHeader(
                                 } else {
                                     Text(
                                         text = dateText,
-                                        fontSize = 10.sp,
+                                        style = MiuixTheme.textStyles.footnote2,
                                         fontWeight = FontWeight.Normal,
                                         color = if (isSelected) accentColor else textColor,
                                     )

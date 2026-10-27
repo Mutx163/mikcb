@@ -40,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.ContactsCircle
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 日视图课程议程卡 · Compose 渲染层。
@@ -136,7 +137,7 @@ fun DayViewCourseCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${entry.course.startTime} - ${entry.course.endTime}",
-                                fontSize = 11.sp,
+                                style = MiuixTheme.textStyles.footnote2,
                                 color = ink,
                             )
                         }
@@ -225,7 +226,7 @@ fun DayViewCourseCard(
             // 课程名称
             Text(
                 text = entry.course.name,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Normal,
                 color = ink,
                 maxLines = 2,

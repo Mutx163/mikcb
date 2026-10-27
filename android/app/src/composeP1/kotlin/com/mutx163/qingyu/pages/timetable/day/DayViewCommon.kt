@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 安全解析 16 进制颜色串，失败时回退到 [fallback]。
@@ -80,7 +81,7 @@ fun DayAgendaBadge(
     ) {
         Text(
             text = text,
-            fontSize = 10.5.sp,
+            style = MiuixTheme.textStyles.footnote2,
             lineHeight = 12.sp,
             fontWeight = fontWeight,
             color = textColor,
@@ -181,7 +182,7 @@ fun DayAgendaNoteAction(
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = DayViewStrings.courseNoteAction.zh,
-                fontSize = 11.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.Normal,
                 color = ink,
             )
@@ -223,7 +224,7 @@ fun DayAgendaTaskAction(
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = DayViewStrings.courseTaskAction.zh,
-                fontSize = 11.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 fontWeight = if (hasTask) FontWeight.SemiBold else FontWeight.Normal,
                 color = ink,
             )
@@ -254,7 +255,7 @@ fun DayAgendaInfoRow(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = ink.copy(alpha = 0.85f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

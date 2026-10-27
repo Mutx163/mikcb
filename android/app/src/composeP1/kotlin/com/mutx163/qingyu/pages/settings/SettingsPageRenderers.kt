@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
@@ -178,7 +177,7 @@ private fun SectionLabel(text: String) {
                 bottom = 8.dp,
             ),
         color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-        fontSize = QingyuTypography.SECTION_LABEL.sp,
+        style = MiuixTheme.textStyles.footnote1,
     )
 }
 
@@ -194,7 +193,7 @@ private fun SectionDescription(text: String) {
                 top = 8.dp,
             ),
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        fontSize = QingyuTypography.SECTION_DESCRIPTION.sp,
+        style = MiuixTheme.textStyles.footnote1,
     )
 }
 
@@ -338,7 +337,7 @@ private fun RowScope.TrailingText(text: String?) {
     Text(
         text = text,
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        fontSize = QingyuTypography.LIST_DETAIL.sp,
+        style = MiuixTheme.textStyles.body2,
     )
 }
 
@@ -347,7 +346,7 @@ private fun RowScope.TrailingActionHint(text: String) {
     Text(
         text = text,
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        fontSize = QingyuTypography.FOOTNOTE1.sp,
+        style = MiuixTheme.textStyles.footnote1,
     )
 }
 
@@ -403,7 +402,7 @@ private fun PreviewCard(node: SettingsInline) {
         Text(
             text = node.label.orEmpty(),
             color = colors.onBackground,
-            fontSize = QingyuTypography.PREFERENCE_TITLE.sp,
+            style = MiuixTheme.textStyles.headline1,
             fontWeight = FontWeight.Medium,
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -446,13 +445,13 @@ private fun PreviewTile(
         Text(
             text = label,
             color = colors.onPrimary,
-            fontSize = QingyuTypography.LIST_DETAIL.sp,
+            style = MiuixTheme.textStyles.body2,
         )
         if (!sublabel.isNullOrEmpty()) {
             Text(
                 text = sublabel,
                 color = colors.onPrimary.copy(alpha = 0.7f),
-                fontSize = QingyuTypography.FOOTNOTE1.sp,
+                style = MiuixTheme.textStyles.footnote1,
             )
         }
     }
@@ -477,7 +476,7 @@ private fun FontPreview(node: SettingsInline) {
         Text(
             text = node.texts.firstOrNull()?.text.orEmpty(),
             color = colors.onBackground,
-            fontSize = QingyuTypography.BODY1.sp,
+            style = MiuixTheme.textStyles.body1,
         )
     }
 }
@@ -535,7 +534,7 @@ private fun ControlCard(node: SettingsInline) {
         Text(
             text = node.label.orEmpty(),
             color = colors.onBackground,
-            fontSize = QingyuTypography.PREFERENCE_TITLE.sp,
+            style = MiuixTheme.textStyles.headline1,
             fontWeight = FontWeight.Medium,
         )
         node.value?.let { value ->
@@ -543,7 +542,7 @@ private fun ControlCard(node: SettingsInline) {
                 text = value,
                 modifier = Modifier.padding(top = 4.dp),
                 color = colors.onSurfaceVariantSummary,
-                fontSize = QingyuTypography.LIST_DETAIL.sp,
+                style = MiuixTheme.textStyles.body2,
             )
         }
         if (node.texts.isNotEmpty()) {
@@ -556,7 +555,7 @@ private fun ControlCard(node: SettingsInline) {
                         Text(
                             text = action.text,
                             color = colors.primary,
-                            fontSize = QingyuTypography.BUTTON.sp,
+                            style = MiuixTheme.textStyles.button,
                         )
                     }
                 }
