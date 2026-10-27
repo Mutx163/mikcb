@@ -1,0 +1,566 @@
+package com.mutx163.qingyu.pages.settings
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.theme.QingyuFixedTokens
+import com.mutx163.qingyu.theme.QingyuShapes
+import com.mutx163.qingyu.theme.QingyuTypography
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.preference.SliderPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/**
+ * 设置族三页的**渲染层**：把模型层的 [SettingsPageSpec] 喂给官方 Miuix 组件。
+ *
+ * 只放在 `composeP1` 源集：官方 Miuix 只挂在这个变体的 classpath 上
+ * （`android/app/build.gradle:253-257`），main 源集全变体编译、不能 import 它。
+ *
+ * ## 组件落点（详见 [SettingsRowRenderTable]）
+ *
+ * 0.8.8 的设置行整套在 `top.yukonga.miuix.kmp.extra` 的 `Super*` 家族里，
+ * 直接 import 使用，没有一处自绘控件：
+ *
+ * | 模型 | 组件 |
+ * |---|---|
+ * | [MiuixRowComponent.ARROW] | `extra.SuperArrow` |
+ * | [MiuixRowComponent.SWITCH] | `extra.SuperSwitch` |
+ * | [MiuixRowComponent.DROPDOWN] | `extra.SuperDropdown` |
+ * | [MiuixRowComponent.RADIO] | `extra.SuperRadioButton` |
+ * | [MiuixRowComponent.CHECKBOX] | `extra.SuperCheckbox` |
+ * | [MiuixRowComponent.SLIDER] | `basic.BasicComponent` + `basic.Slider`（0.8.8 无 SuperSlider） |
+ * | [MiuixRowComponent.COLOR_SWATCH] | `extra.SuperArrow` + 行尾 36dp 色块（官方无颜色行） |
+ *
+ * ## 颜色与尺寸一律走 theme/ 桥
+ *
+ * 页面底色/卡片/文字色全部取 `MiuixTheme.colorScheme`——由接线层（shell）按
+ * `docs/plans/2026-10-26-compose-phase3-prep.md` §2.1 的对照表把 Flutter 色板填进
+ * `lightColorScheme()/darkColorScheme()`，本文件不硬编码任何品牌色；
+ * 官方没有的语义槽（危险色）取 [QingyuFixedTokens.DESTRUCTIVE]；
+ * 字号/圆角/行内边距取 [QingyuTypography] / [QingyuShapes]。
+ *
+ * ## 本层不做的三件事（都在宿主接线层）
+ *
+ * 1. **下拉/选色/确认弹层的弹开**：行点击只回调 [onAction]，弹层由宿主接
+ *    （官方 Overlay 系需要 Scaffold 内置 `MiuixPopupHost`，见选型文档 :44）；
+ * 2. **课卡页顶部周预览**：官方无对应物（自绘白名单第 ② 项），由 [preview] 槽位注入；
+ * 3. **设置写回与失败回滚**：模型只标 [SettingsAction]，行为在仓库既有 provider 层。
+ */
+@Composable
+fun SettingsPageScreen(
+    spec: SettingsPageSpec,
+    preview: (@Composable () -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit = { _, _, _ -> },
+) {
+    val colors = MiuixTheme.colorScheme
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            if (onBack == null) {
+                TopAppBar(title = spec.title)
+            } else {
+                TopAppBar(
+                    title = spec.title,
+                    navigationIcon = { BackIconButton(onBack = onBack) },
+                )
+            }
+        },
+        containerColor = colors.surface,
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            // 课程卡片页：预览占 4 成、可调项占 6 成（settings_course_card.dart:84-125）
+            if (preview != null && spec.previewFlex != null && spec.contentFlex != null) {
+                Box(modifier = Modifier.fillMaxWidth().weight(spec.previewFlex.toFloat())) {
+                    preview()
+                }
+            }
+            val listWeight = if (preview != null && spec.contentFlex != null) {
+                Modifier.weight(spec.contentFlex.toFloat())
+            } else {
+                Modifier.fillMaxSize()
+            }
+            LazyColumn(
+                modifier = listWeight.fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 24.dp),
+            ) {
+                items(items = spec.nodes, key = { it.id }) { node ->
+                    SettingsNodeView(node = node, onAction = onAction)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackIconButton(onBack: () -> Unit) {
+    // 0.8.8 的图标集只有 5 个矢量（ArrowRight/ArrowUpDown/Check/Search/SearchCleanup），
+    // 没有返回箭头：用官方 ArrowRight 旋转 180°，不自绘矢量。
+    IconButton(
+        onClick = onBack,
+        backgroundColor = Color.Transparent,
+        minHeight = QingyuShapes.CONTROL_MIN_HEIGHT.dp,
+        minWidth = QingyuShapes.CONTROL_MIN_WIDTH.dp,
+    ) {
+        Icon(
+            imageVector = MiuixIcons.Basic.ArrowRight,
+            contentDescription = null,
+            modifier = Modifier.rotate(180f),
+            tint = MiuixTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun SettingsNodeView(
+    node: SettingsNode,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    when (node) {
+        is SettingsLabel -> SectionLabel(text = node.text)
+        is SettingsDescription -> SectionDescription(text = node.text)
+        is SettingsGap -> Spacer(modifier = Modifier.height(node.heightDp.dp))
+        is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction)
+        is SettingsInline -> SettingsInlineView(node = node)
+        is SettingsRow -> SettingsRowView(row = node, onAction = onAction)
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = QingyuShapes.SECTION_LABEL_INSET.dp,
+                end = QingyuShapes.SECTION_LABEL_INSET.dp,
+                bottom = 8.dp,
+            ),
+        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+        fontSize = QingyuTypography.SECTION_LABEL.sp,
+    )
+}
+
+@Composable
+private fun SectionDescription(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = QingyuShapes.SECTION_LABEL_INSET.dp,
+                end = QingyuShapes.SECTION_LABEL_INSET.dp,
+                top = 8.dp,
+            ),
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = QingyuTypography.SECTION_DESCRIPTION.sp,
+    )
+}
+
+/** 一个白卡分组（`HyperosListGroup`）。分组内**不自动加分隔线**：Flutter 侧也不加。 */
+@Composable
+private fun SettingsGroupCard(
+    group: SettingsGroup,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+        cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
+        insideMargin = PaddingValues(0.dp),
+    ) {
+        group.children.forEach { child -> SettingsNodeView(node = child, onAction = onAction) }
+    }
+}
+
+@Composable
+private fun SettingsRowView(
+    row: SettingsRow,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val click: (() -> Unit)? = row.action?.let { action ->
+        { onAction(action, row.actionTarget, row.id) }
+    }
+    when (row.component) {
+        MiuixRowComponent.SWITCH -> SwitchPreference(
+            checked = row.switchValue ?: false,
+            onCheckedChange = {
+                onAction(row.action ?: SettingsAction.WRITE_SETTING, row.actionTarget, row.id)
+            },
+            title = row.title,
+            summary = row.subtitle,
+            enabled = row.enabled,
+        )
+
+        MiuixRowComponent.ARROW -> ArrowPreference(
+            title = row.title,
+            titleColor = titleColors(row),
+            summary = row.subtitle,
+            onClick = click,
+            enabled = row.enabled,
+            endActions = {
+                TrailingText(SettingsRowRenderTable.trailingText(row))
+                row.trailingAction?.let { TrailingActionHint(it) }
+            },
+        )
+
+        MiuixRowComponent.SLIDER -> SliderRow(row = row, onAction = onAction)
+
+        MiuixRowComponent.DROPDOWN -> OverlayDropdownPreference(
+            items = row.options.map { it.label },
+            selectedIndex = row.options.indexOfFirst { it.id == row.selectedOptionId },
+            title = row.title,
+            summary = row.subtitle,
+            enabled = row.enabled,
+            onSelectedIndexChange = { index ->
+                val option = row.options.getOrNull(index)
+                onAction(
+                    row.action ?: SettingsAction.WRITE_SETTING,
+                    option?.id ?: row.actionTarget,
+                    row.id,
+                )
+            },
+        )
+
+        MiuixRowComponent.RADIO -> RadioButtonPreference(
+            title = row.title,
+            selected = row.selectedOptionId != null,
+            onClick = click ?: {},
+            summary = row.subtitle,
+            enabled = row.enabled,
+            endActions = { row.trailingAction?.let { TrailingActionHint(it) } },
+        )
+
+        MiuixRowComponent.CHECKBOX -> CheckboxPreference(
+            title = row.title,
+            checked = row.switchValue ?: false,
+            onCheckedChange = {
+                onAction(row.action ?: SettingsAction.WRITE_SETTING, row.actionTarget, row.id)
+            },
+            summary = row.subtitle,
+            enabled = row.enabled,
+        )
+
+        MiuixRowComponent.COLOR_SWATCH -> ArrowPreference(
+            title = row.title,
+            titleColor = titleColors(row),
+            onClick = click,
+            enabled = row.enabled,
+            endActions = { ColorSwatch(hex = row.value) },
+        )
+    }
+    // 行尾附加按钮（已存主题的「更多操作」）只渲染提示文案，点击由宿主按
+    // trailingActionKind 接（见 SettingsRowRenderTable 的契约断言）。
+}
+
+/**
+ * 滑杆行。
+ *
+ * 2026-10-27 起用**官方** `preference.SliderPreference`（0.9.4 才有这个组件）。
+ * 在此之前这里是「`basic.BasicComponent` + `basic.Slider` 包一层」的手写实现
+ * ——那是 0.8.8 时代没有官方滑杆行的临时方案，现在官方有了就不该再自绘
+ * （规格 Failure mode 6：官方已有组件直接 import，不许重复造轮子）。
+ *
+ * `steps` 口径差异照旧：模型层 [SettingsSliderSpec.divisions] 是「区间数」，
+ * 而官方 `steps`（Material 口径）是「端点之间的档数」→ 差 1。
+ */
+@Composable
+private fun SliderRow(
+    row: SettingsRow,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val spec = row.slider ?: return
+    val value = row.sliderValue ?: spec.defaultValue
+    SliderPreference(
+        value = value.toFloat(),
+        onValueChange = { changed ->
+            onAction(
+                SettingsAction.WRITE_SETTING,
+                changed.toString(),
+                row.id,
+            )
+        },
+        title = row.title,
+        summary = row.subtitle,
+        valueText = row.value,
+        enabled = row.enabled,
+        valueRange = spec.min.toFloat()..spec.max.toFloat(),
+        steps = (spec.divisions - 1).coerceAtLeast(0),
+    )
+}
+
+/** 行尾读数（`HyperosSliderTile.valueLabel` / `HyperosNavTile.details` 同一槽位）。 */
+@Composable
+private fun RowScope.TrailingText(text: String?) {
+    if (text.isNullOrEmpty()) return
+    Text(
+        text = text,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = QingyuTypography.LIST_DETAIL.sp,
+    )
+}
+
+@Composable
+private fun RowScope.TrailingActionHint(text: String) {
+    Text(
+        text = text,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = QingyuTypography.FOOTNOTE1.sp,
+    )
+}
+
+/** 行尾色块（`timetable_text_color_settings.dart:320-334`：36dp、圆角 10、1px 描边）。 */
+@Composable
+private fun RowScope.ColorSwatch(hex: String?) {
+    val argb = SettingsRowRenderTable.colorFromHex(hex)
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(argb))
+            .border(
+                width = 1.dp,
+                color = MiuixTheme.colorScheme.outline,
+                shape = RoundedCornerShape(10.dp),
+            ),
+    )
+}
+
+/** 危险操作行的标题色：官方没有 destructive 槽，取 theme/ 桥的固定 token。 */
+@Composable
+private fun titleColors(row: SettingsRow): top.yukonga.miuix.kmp.basic.BasicComponentColors {
+    if (!row.destructive) return BasicComponentDefaults.titleColor(
+        MiuixTheme.colorScheme.onBackground,
+        MiuixTheme.colorScheme.disabledOnSurface,
+    )
+    val destructive = Color(QingyuFixedTokens.DESTRUCTIVE)
+    return BasicComponentDefaults.titleColor(destructive, destructive.copy(alpha = 0.45f))
+}
+
+@Composable
+private fun SettingsInlineView(node: SettingsInline) {
+    when (node.kind) {
+        InlineKind.PREVIEW_CARD -> PreviewCard(node = node)
+        InlineKind.FONT_PREVIEW -> FontPreview(node = node)
+        InlineKind.COLOR_CHIP_GROUP -> ColorChipGroup(node = node)
+        InlineKind.CONTROL_CARD -> ControlCard(node = node)
+    }
+}
+
+/** 主题/字体微缩预览（`settings_appearance.dart:116-193`）。 */
+@Composable
+private fun PreviewCard(node: SettingsInline) {
+    val colors = MiuixTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+        cornerRadius = QingyuShapes.CARD_CORNER.dp,
+        insideMargin = PaddingValues(QingyuShapes.SHEET_INSET.dp),
+    ) {
+        Text(
+            text = node.label.orEmpty(),
+            color = colors.onBackground,
+            fontSize = QingyuTypography.PREFERENCE_TITLE.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PreviewTile(
+                modifier = Modifier.weight(1f),
+                container = colors.primary,
+                label = node.texts.getOrNull(0)?.text.orEmpty(),
+                sublabel = node.texts.getOrNull(1)?.text.orEmpty(),
+            )
+            PreviewTile(
+                modifier = Modifier.weight(1f),
+                container = colors.surfaceContainer,
+                label = node.texts.getOrNull(2)?.text.orEmpty(),
+                sublabel = null,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewTile(
+    modifier: Modifier,
+    container: Color,
+    label: String,
+    sublabel: String?,
+) {
+    val colors = MiuixTheme.colorScheme
+    Column(
+        modifier = modifier
+            .height(72.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(container)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            color = colors.onPrimary,
+            fontSize = QingyuTypography.LIST_DETAIL.sp,
+        )
+        if (!sublabel.isNullOrEmpty()) {
+            Text(
+                text = sublabel,
+                color = colors.onPrimary.copy(alpha = 0.7f),
+                fontSize = QingyuTypography.FOOTNOTE1.sp,
+            )
+        }
+    }
+}
+
+/** 字号实时预览（`settings_appearance.dart:297-318`）。 */
+@Composable
+private fun FontPreview(node: SettingsInline) {
+    val colors = MiuixTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                top = 8.dp,
+                bottom = 12.dp,
+            ),
+        cornerRadius = 12.dp,
+        insideMargin = PaddingValues(12.dp),
+    ) {
+        Text(
+            text = node.texts.firstOrNull()?.text.orEmpty(),
+            color = colors.onBackground,
+            fontSize = QingyuTypography.BODY1.sp,
+        )
+    }
+}
+
+/** 统一课卡色的八色板（`settings_course_card.dart:286-299`）。 */
+@Composable
+private fun ColorChipGroup(node: SettingsInline) {
+    val colors = MiuixTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                end = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                top = 8.dp,
+                bottom = 20.dp,
+            ),
+        cornerRadius = QingyuShapes.CARD_CORNER.dp,
+        insideMargin = PaddingValues(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            node.colors.forEach { hex ->
+                val selected = hex.equals(node.selectedColor, ignoreCase = true)
+                val argb = SettingsRowRenderTable.colorFromHex(hex)
+                Box(
+                    modifier = Modifier
+                        .size(QingyuShapes.ICON_BADGE_SIZE.dp)
+                        .clip(RoundedCornerShape(QingyuShapes.ICON_BADGE_RADIUS.dp))
+                        .background(Color(argb))
+                        .border(
+                            width = if (selected) 2.dp else 1.dp,
+                            color = if (selected) colors.primary else colors.outline,
+                            shape = RoundedCornerShape(QingyuShapes.ICON_BADGE_RADIUS.dp),
+                        ),
+                )
+            }
+        }
+    }
+}
+
+/** 控制卡头（`HyperosControlCard`）：标题 + 取值 + 可选按钮。 */
+@Composable
+private fun ControlCard(node: SettingsInline) {
+    val colors = MiuixTheme.colorScheme
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+        cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
+        insideMargin = PaddingValues(QingyuShapes.SHEET_INSET.dp),
+    ) {
+        Text(
+            text = node.label.orEmpty(),
+            color = colors.onBackground,
+            fontSize = QingyuTypography.PREFERENCE_TITLE.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        node.value?.let { value ->
+            Text(
+                text = value,
+                modifier = Modifier.padding(top = 4.dp),
+                color = colors.onSurfaceVariantSummary,
+                fontSize = QingyuTypography.LIST_DETAIL.sp,
+            )
+        }
+        if (node.texts.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                node.texts.forEach { action ->
+                    Button(onClick = { }) {
+                        Text(
+                            text = action.text,
+                            color = colors.primary,
+                            fontSize = QingyuTypography.BUTTON.sp,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
