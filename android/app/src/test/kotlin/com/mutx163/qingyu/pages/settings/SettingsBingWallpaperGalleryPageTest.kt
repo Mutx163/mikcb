@@ -334,4 +334,12 @@ class SettingsBingWallpaperGalleryPageTest {
             keys,
         )
     }
+
+    /** 造一个图库条目（只有 dateKey 关心的用例用它，版权与标题给固定值）。 */
+    private fun bingItem(dateKey: String) = BingGalleryItem(
+        dateKey = dateKey,
+        title = "今日图",
+        copyright = "© 摄影师甲",
+        thumbnailUrl = "https://example.com/$dateKey.jpg",
+    )
 }

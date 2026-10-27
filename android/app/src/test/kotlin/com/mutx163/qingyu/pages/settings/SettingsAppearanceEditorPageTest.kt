@@ -386,9 +386,9 @@ class SettingsAppearanceEditorPageTest {
                 courseCardSurfaceStyle = CourseCardSurfaceStyle.SOLID,
             ),
         )
-        assertEquals("实体", solid.row("material.general.surface.homeBand").value)
-        assertEquals("实体", solid.row("material.general.surface.dock").value)
-        assertEquals("实体", solid.row("material.general.surface.courseCard").value)
+        assertEquals("实体", solid.row("material.general.surface.homeBand").details)
+        assertEquals("实体", solid.row("material.general.surface.dock").details)
+        assertEquals("实体", solid.row("material.general.surface.courseCard").details)
         // 液态档 + 坞关 → 坞报磨砂；课卡选了液态但没有壁纸 → 仍是实体
         val dockOff = general(
             MaterialPanelState(
@@ -397,9 +397,9 @@ class SettingsAppearanceEditorPageTest {
                 hasHomePageBackdrop = false,
             ),
         )
-        assertEquals("液态玻璃", dockOff.row("material.general.surface.homeBand").value)
-        assertEquals("高斯模糊", dockOff.row("material.general.surface.dock").value)
-        assertEquals("实体", dockOff.row("material.general.surface.courseCard").value)
+        assertEquals("液态玻璃", dockOff.row("material.general.surface.homeBand").details)
+        assertEquals("高斯模糊", dockOff.row("material.general.surface.dock").details)
+        assertEquals("实体", dockOff.row("material.general.surface.courseCard").details)
     }
 
     @Test
@@ -408,7 +408,7 @@ class SettingsAppearanceEditorPageTest {
             "已关闭",
             general(MaterialPanelState(homePageHeaderBlurEnabled = false))
                 .row("material.general.surface.homeBand")
-                .value,
+                .details,
         )
     }
 

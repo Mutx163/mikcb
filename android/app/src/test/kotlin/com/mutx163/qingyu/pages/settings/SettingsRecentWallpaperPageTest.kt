@@ -65,17 +65,17 @@ class SettingsRecentWallpaperPageTest {
     fun `已发起移除的那张：压暗、红边、收起角标`() {
         // :261-355：armed ⇒ 描边用危险色、缩略图压一层 60% 黑、角标收起（removable && !armed）
         val armed = SettingsRecentWallpaperSection.cardState("b.jpg", selectedKey = "a.jpg", armedKey = "b.jpg")
-        assertEquals(SettingsRecentWallpaperCardEdge.DANGER, armed.edge)
+        assertEquals(RecentWallpaperCardEdge.DANGER, armed.edge)
         assertTrue(armed.dimmed)
         assertFalse(armed.showRemoveBadge)
         // 未选中且未发起移除：无描边、不压暗、有角标
         val normal = SettingsRecentWallpaperSection.cardState("b.jpg", selectedKey = "a.jpg", armedKey = null)
-        assertEquals(SettingsRecentWallpaperCardEdge.NONE, normal.edge)
+        assertEquals(RecentWallpaperCardEdge.NONE, normal.edge)
         assertFalse(normal.dimmed)
         assertTrue(normal.showRemoveBadge)
         // 选中那张：主题色描边、不压暗、没有角标
         val selected = SettingsRecentWallpaperSection.cardState("a.jpg", selectedKey = "a.jpg", armedKey = null)
-        assertEquals(SettingsRecentWallpaperCardEdge.PRIMARY, selected.edge)
+        assertEquals(RecentWallpaperCardEdge.PRIMARY, selected.edge)
         assertFalse(selected.showRemoveBadge)
     }
 

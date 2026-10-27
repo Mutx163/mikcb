@@ -43,18 +43,29 @@ class SettingsHomeBackdropFlowPageTest {
     // ------------------------------------------------------ 第一页「壁纸」
 
     @Test
-    fun `选图块的四件东西：标题、文件名、三颗按钮`() {
-        // :857-940
+    fun `选图块的标题、未选文案与「选择图片」按钮`() {
+        // :857-940。没选图时只有标题 + 「未选择」+ 选择图片这一颗；
+        // 「调整位置」「清除图片」只在已有壁纸时出现（:910 `if (hasWallpaper)`）
         val spec = selectionPage()
         val row = spec.row("backdrop.image")
         assertEquals("背景图片", row.title)
         // 没选图时显示「未选择」（:866-867）
         assertEquals("未选择", row.subtitle)
         assertEquals("homePageImageNotSelected", row.subtitleKey)
-        val pick = spec.row("backdrop.image.pick")
-        assertEquals("选择图片", pick.title)
+        assertEquals("选择图片", spec.row("backdrop.image.pick").title)
+        assertFalse(spec.flattenedIds().contains("backdrop.image.adjust"))
+        assertFalse(spec.flattenedIds().contains("backdrop.image.clear"))
+    }
+
+    @Test
+    fun `已有壁纸时才有调整位置与清除图片两颗`() {
+        // :910-935
+        val spec = selectionPage(BackdropFlowState(imagePath = "/w/qingyu_1.jpg"))
         assertEquals("调整位置", spec.row("backdrop.image.adjust").title)
         assertEquals("清除图片", spec.row("backdrop.image.clear").title)
+        // 清除写设置，调整位置推页
+        assertEquals(SettingsAction.WRITE_SETTING, spec.row("backdrop.image.clear").action)
+        assertEquals(SettingsAction.NAVIGATE, spec.row("backdrop.image.adjust").action)
     }
 
     @Test
@@ -130,7 +141,8 @@ class SettingsHomeBackdropFlowPageTest {
         val armed = SelectionPageState(
             backdrop = BackdropFlowState(history = listOf("a.jpg")),
             armedKey = "a.jpg",
-        )        val spec = SettingsBackdropFlowPage.selectionPage(armed.backdrop, armed)
+        )
+        val spec = SettingsBackdropFlowPage.selectionPage(armed.backdrop, armed)
         val hint = spec.flatten().filterIsInstance<SettingsDescription>()
             .single { it.textKey == "wallpaperHistoryRemoveConfirmHint" }
         assertEquals("将从最近使用中移除，图片文件也会一起删除", hint.text)
