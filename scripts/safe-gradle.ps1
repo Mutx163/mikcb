@@ -8,14 +8,19 @@
     本脚本利用 Windows 内核级命名互斥锁（Mutex），确保本机同一时刻最多只有 1 个
     Gradle 构建在运行，其余 Agent 自动排队，杜绝内存雪崩。
 
-    本脚本还**只在本地**覆盖两处「为省 CI 而伤本地」的配置。CI / CNB 直接调 gradlew，
-    不经过本脚本，因此完全不受影响；`android/gradle.properties` 保持原样不动。
+    本脚本还**只在本地**覆盖一处「为省 CI 而伤本地」的配置。CI / CNB 直接调 gradlew，
+    不经过本脚本，因此完全不受影响；`android/gradle.properties` 里的 `org.gradle.daemon=false`
+    保留不动。
     （2026-10-27 实测：`org.gradle.daemon=false` 时每次调用固定开销 ~27s，
      当天本机累计启动一次性 JVM ≥577 个、构建耗时 8.2 小时。）
-      --daemon                                  覆盖 org.gradle.daemon=false
-                                                （实测 `:app:help` 28s → 5s）
-      -Dorg.gradle.daemon.idletimeout=600000    守护进程空闲 10 分钟自动退出，
-                                                不长期占住 4G 堆
+      --daemon      覆盖 org.gradle.daemon=false
+                    （实测 `:app:help`：28s → 7s（daemon 热）→ 收敛后 3s）
+
+    daemon 的**空闲退出时间不在这里传**，而是写在 `android/gradle.properties` 的
+    `org.gradle.daemon.idletimeout=600000`。别改成命令行 `-D`：daemon 的复用判据包含
+    `idleTimeout`，多一个 `-D` 就会造出「只有走本闸门的客户端才认」的第二个 daemon，
+    与 Android Studio / 裸 gradlew 各占一份内存（2026-10-27 实测同机因此并存 2 个 daemon、
+    4 个 JVM 合计 6803 MB，可用内存从 9.39 GB 掉到 4.02 GB）。
 
     刻意**不**打开 kotlin 增量编译（尽管 gradle.properties 里写着 false）：
     2026-10-27 实测加 `-Pkotlin.incremental=true` 后，4 个 Flutter 插件模块
