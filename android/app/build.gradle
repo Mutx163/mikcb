@@ -220,6 +220,9 @@ android {
             // 2026-10-27 18:30 补挂：这两批交付时都漏了这一步，导致 3,920 行渲染层
             // 从交付起没有被任何变体编译过，壳里也一直停在占位页。
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable'
+            // 壳的共用件：玻璃导航栏（miuix-blur 装配，P3-0 Lead 专属写作用域）。
+            // 壳 PagesShellActivity 直接用它，不挂就会 Unresolved reference。
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
         }
     }
 
@@ -364,15 +367,22 @@ dependencies {
     // miuix-icons（图标）/ miuix-squircle / miuix-shader 各自独立。
     // 代价（已确认可承受）：其依赖的 Compose 1.12 硬要求 AGP 9.1+ 与 compileSdk 37，
     // 因此本工程同步抬到 AGP 9.4.1 + Gradle 9.8.2 + Kotlin 2.4.21 + compileSdk 37。
+    // miuix-blur 是**独立 artifact**（包名 `top.yukonga.miuix.kmp.blur`），不在 miuix-ui 的
+    // 传递依赖里（实测 0.9.4 的 miuix-ui POM 只带 core / squircle / compose-foundation）。
+    // 玻璃材质的整套引擎都在这里：LayerBackdrop 抓下层、blur/colorControls/blendColors
+    // 效果链、Highlight + BloomStroke 边缘扫光、TiltLight 倾斜光感。
+    // 不引它，miuix-ui 的 NavigationBar 只能画纯色（`squircleBackground(color = surface)`）。
     def miuixVersion = '0.9.4'
     composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
     composeP1Implementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
     composeP1Implementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
     composeP1Implementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
+    composeP1Implementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
 
     // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
     composeUiImplementation 'androidx.activity:activity-compose:1.13.0'
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
+    composeUiImplementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
 }

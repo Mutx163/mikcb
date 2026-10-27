@@ -311,13 +311,30 @@ Phase 3 准备文档 §3.3 待定项 5：小组件展示层是沿用现有 Remot
 `warehouse_playback_overlay`
 
 **归属规则**（按优先级）：
-
 1. 共享件默认**由 Lead 指派**给某一个批次，并在该批次的认领文件「共享件」栏登记；
 2. 没被指派前，谁先用到谁负责**先跟 Lead 说一声**再动手；
 3. 两个批次都要改同一个共享件时：**后到者改设计避让**（在 Kotlin 侧包一层，不去改那个共享件），
    并把避让写进自己的认领文件；
 4. 共享件在 Kotlin 侧的落点统一为
    `android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/<名字>.kt`（新建目录，属 Lead 直管）。
+
+**例外：`pages/shell/`（2026-10-27 新增，Lead 直管）**
+
+底部玻璃导航栏落在这里，而不是 `components/`：它带**页面级**语义（选中下标、
+导航回调），且同时被壳 `PagesShellActivity` 与以后的展示页使用。
+`components/` 那层按现有约定只放无状态的跨页零件（`QingyuPageTheme`）。
+
+| 文件 | 作用 | 门槛 |
+|---|---|---|
+| `composeP1/.../pages/shell/GlassDockNavigationBar.kt` | 玻璃导航栏渲染层（miuix-blur 装配） | L1 绿 |
+| `main/.../pages/shell/GlassDockGeometry.kt` | 几何/动效参数（纯算术） | L0 20 例 |
+| `test/.../pages/shell/GlassDockGeometryTest.kt` | 上述契约测试（含 3 次咬合探针） | 全绿 |
+
+**为什么要有这个组件**：miuix 0.9.4 的 Kotlin 侧**没有**玻璃导航栏——
+`NavigationBar` / `FloatingNavigationBar` 都是纯色 `squircleBackground(color = surface)`，
+`GlassNavigationBar` 只存在于 Flutter 移植（`flutter_miuix` 1.2.0）。
+玻璃材质引擎（`Backdrop` / `blur` / `Highlight` / `TiltLight`）在**独立 artifact**
+`miuix-blur` 里，此前本工程没引（`miuix-ui` 的 POM 不含它），已于本次一并加上。
 
 **顶层 `lib/widgets/*.dart` 其余文件**：随「第一个使用它的页面」迁，写进该批次认领文件。
 
