@@ -117,6 +117,32 @@ class ShellPageCatalogTest {
     }
 
     @Test
+    fun `六条不可用的分类清单`() {
+        // 这张表就是「将来补了东西该放开哪条」的反查依据。每放开一条都应当是显式改动：
+        // 补了整页渲染层 → 从第一行划掉；补了二维码/相机 → 从第二行划掉。
+        val byReason = ShellPageCatalog.all
+            .filter { it.kind == ShellPageDataKind.UNAVAILABLE }
+            .groupBy({ it.blockedBy }, { it.id })
+
+        assertEquals(
+            "缺整页渲染层",
+            setOf("a.changelog", "b.timetablePage", "j.keepAlive"),
+            byReason[ShellBlockReason.MISSING_RENDERER]?.toSet(),
+        )
+        assertEquals(
+            "缺宿主槽位",
+            setOf("g3.qrSend", "g3.qrScan"),
+            byReason[ShellBlockReason.MISSING_HOST_SLOT]?.toSet(),
+        )
+        assertEquals(
+            "缺宿主数据（页面已写好，只差壳侧喂数据）",
+            setOf("c2.month"),
+            byReason[ShellBlockReason.MISSING_HOST_DATA]?.toSet(),
+        )
+        assertNull("本轮没有单纯缺库的条目；真有的话在这里登记", byReason[ShellBlockReason.MISSING_DEPENDENCY])
+    }
+
+    @Test
     fun `行尾短标签与分档一一对应`() {
         // DIRECT 不贴标签（正常页面不需要解释）；其余三档必须各有自己的短标签且互不相同。
         assertNull("可直连的页面不该贴标签", ShellPageCatalog.badgeOf(ShellPageDataKind.DIRECT))

@@ -22,8 +22,8 @@ package com.mutx163.qingyu.pages.shell
  * - [ShellPageDataKind.DEMO]：页面必须收一份视图状态；壳里喂的是**演示数据**
  *   （空列表或示例条目），界面上会标出来，免得被当成真实数据。
  * - [ShellPageDataKind.UNAVAILABLE]：**进不去**，且原因必须是「代码里缺东西」而不是「懒得接」，
- *   并要用 [ShellBlockReason] 标出缺的是哪一类。目前 6 条：4 条没有整页渲染层、
- *   2 条要求宿主注入二维码/相机图形而仓库里没有对应实现。
+ *   并要用 [ShellBlockReason] 标出缺的是哪一类。目前 6 条：3 条没有整页渲染层、
+ *   2 条要求宿主注入二维码/相机图形而仓库里没有对应实现、1 条页面已写好但壳侧没有数据层去喂。
  * - [ShellPageDataKind.ALWAYS_VISIBLE]：不是独立页面（本壳底栏），常驻可见，不需要入口。
  */
 enum class ShellPageDataKind {
@@ -48,6 +48,14 @@ enum class ShellBlockReason(val label: String) {
 
     /** 页面实现了，但要宿主注入一块外部图形（二维码、相机预览）—— 要补的是槽位实现。 */
     MISSING_HOST_SLOT("缺宿主槽位"),
+
+    /**
+     * 页面实现了，但要宿主喂数据（数据提供函数 / 版本戳）—— 要补的是壳侧数据接线。
+     *
+     * 与 [MISSING_HOST_SLOT] 分开：那个缺的是「一块画出来的东西」，这个缺的是
+     * 「一份查出来的数据」，将来动它们的人不是同一批。
+     */
+    MISSING_HOST_DATA("缺宿主数据"),
 
     /** 只差一个第三方库（本轮 6 条里没有单独属于这一类的，留位给后续）。 */
     MISSING_DEPENDENCY("缺依赖"),
@@ -168,9 +176,12 @@ object ShellPageCatalog {
             title = "课表 · 月视图",
             pages = listOf(
                 page(
+                    // 2026-10-27 深夜渲染层已落地（MonthViewPage.kt）；这一条留「不可用」
+                    // 是因为壳侧还没有数据层可喂，不是页面没写——原因文字按这个说，别写反。
                     "P3-C2", "month", "月视图", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_RENDERER.label}：只有面板组件（MonthPanelOverview / MonthGrid 等），没有整页 Composable",
-                    blockedBy = ShellBlockReason.MISSING_RENDERER,
+                    note = "${ShellBlockReason.MISSING_HOST_DATA.label}：整页已写好（MonthViewPage），" +
+                        "要宿主传月网格 / 当日议程两个数据源与 dataRevision；壳里没有数据层，本轮按冻结口径未接",
+                    blockedBy = ShellBlockReason.MISSING_HOST_DATA,
                 ),
             ),
         ),
