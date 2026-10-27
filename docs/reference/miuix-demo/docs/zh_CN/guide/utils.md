@@ -1,0 +1,311 @@
+# 工具函数
+
+Miuix 提供了一系列工具函数，帮助您更高效地开发应用程序。以下是主要工具函数的详细介绍和使用示例。
+
+## 弹出窗口工具 (MiuixPopupUtils)
+
+`MiuixPopupUtils` 是一个用于显示对话框布局和弹出窗口布局的工具类。该类已经集成到 `Scaffold` 组件中，可以直接使用。
+
+每个 `Scaffold` 会自动管理独立的弹出层状态，多个嵌套或并列的 `Scaffold` 无需额外配置即可正常工作。
+
+### 对话框布局 (DialogLayout)
+
+```kotlin
+// 需要一个 MutableState<Boolean> 来控制显示状态
+val showDialogState = remember { mutableStateOf(false) }
+
+DialogLayout(
+    visible = showDialogState,          // MutableState<Boolean> 用于控制对话框的可见性
+    enterTransition = fadeIn(),         // 可选，对话框内容的自定义进入动画
+    exitTransition = fadeOut(),         // 可选，对话框内容的自定义退出动画
+    enableWindowDim = true,             // 可选，是否启用遮罩层, 默认为 true
+    enableAutoLargeScreen = true,       // 可选，是否自动检测大屏幕并调整动画
+    dimEnterTransition = fadeIn(),      // 可选，遮罩层的自定义进入动画
+    dimExitTransition = fadeOut(),      // 可选，遮罩层的自定义退出动画
+    dimAlpha = null,                    // 可选，MutableState<Float> 用于动态控制遮罩层透明度 (0f-1f)
+    onDismissFinished = { /* 动画结束后回调 */ }, // 可选，对话框完全关闭（动画结束）时的回调
+    renderInRootScaffold = true,       // 可选，是否在根（最外层）Scaffold 中渲染，默认为 true
+) {
+    // 对话框内容
+}
+```
+
+正常情况下无需主动使用。详见 [OverlayDialog](../components/overlaydialog.md) 或 [OverlayBottomSheet](../components/overlaybottomsheet.md) 文档。
+
+### 弹出窗口布局 (PopupLayout)
+
+```kotlin
+// 需要一个 MutableState<Boolean> 来控制显示状态
+val showPopupState = remember { mutableStateOf(false) }
+
+PopupLayout(
+    visible = showPopupState,                         // MutableState<Boolean> 用于控制弹出窗口的可见性
+    enterTransition = fadeIn(),                       // 可选，弹出窗口内容的自定义进入动画
+    exitTransition = fadeOut(),                       // 可选，弹出窗口内容的自定义退出动画
+    enableWindowDim = true,                           // 可选，是否启用遮罩层, 默认为 true
+    dimEnterTransition = fadeIn(),                    // 可选，遮罩层的自定义进入动画
+    dimExitTransition = fadeOut(),                   // 可选，遮罩层的自定义退出动画
+    renderInRootScaffold = true,                     // 可选，是否在根（最外层）Scaffold 中渲染，默认为 true
+) {
+    // 弹出窗口内容
+}
+```
+
+正常情况下无需主动使用。详见 [OverlayListPopup](../components/overlaylistpopup) 文档。
+
+## 越界回弹效果 (Overscroll)
+
+Miuix 提供了易于使用的越界回弹效果修饰符，让滚动体验更加流畅自然。
+
+越界回弹仅在按压或平移手势（触摸拖拽；Android 上的触控板平移）期间生效。鼠标滚轮与键盘滚动原样透传，桌面/macOS 的触控板滚动以滚轮事件送达，同样透传——它们没有“松手”信号，无法正确收束回弹。若使用 snap/pager 类自定义 fling 行为，滚轮的剩余速度仍可能在边缘产生一次轻微回弹。
+
+### Web 触屏滚动
+
+当触摸滚动与越界回弹应由 Compose 处理时，请在传给 `ComposeViewport` 的 HTML 容器上设置 `touch-action: none`：
+
+```css
+#composeApp {
+    touch-action: none;
+}
+```
+
+请使用实际的视口容器 ID。此规则必须在首次手势开始前生效；触摸开始后修改 `touch-action` 不会影响当前手势。容器上的限制也适用于 Compose 在其中创建的 canvas。
+
+在列表边界，拖拽位移可能完全被越界回弹消费，而列表本身没有移动。如果同一区域允许浏览器原生平移，浏览器可能接管并取消 Compose 手势。此 CSS 规则让触摸平移始终由 Compose 处理，无需禁用越界回弹，也不会影响鼠标滚轮输入。
+
+请仅对 Compose 容器应用此规则，不要扩大到整个页面。容器内的浏览器原生触摸平移和双指缩放会被禁用，因此仅适用于由 Compose 接管交互的区域。容器外的 HTML 区域仍可保留正常的浏览器手势。Android 和 iOS 原生应用无需此配置。
+
+### 垂直越界回弹
+
+```kotlin
+LazyColumn(
+    modifier = Modifier
+        // 添加越界回弹效果
+        .overScrollVertical()
+        // 如需绑定 TopAppBar 滚动事件，则应在越界回弹效果之后添加
+        .nestedScroll(scrollBehavior.nestedScrollConnection)
+) {
+    // 列表内容
+}
+```
+
+### 水平越界回弹
+
+```kotlin
+LazyRow(
+    modifier = Modifier.overScrollHorizontal()
+) {
+    // 列表内容
+}
+```
+
+### 自定义越界回弹参数
+
+您可以根据需要自定义越界回弹效果的参数：
+
+```kotlin
+LazyColumn(
+    modifier = Modifier.overScrollVertical(
+        nestedScrollToParent = true, // 是否分发嵌套滚动事件到父级，默认 true
+        isEnabled = { true },        // 是否启用效果，默认全平台启用
+    ),
+    overscrollEffect = null // 建议将此参数设置为 null，禁用默认效果
+) {
+    // 列表内容
+}
+```
+
+**参数说明:**
+
+- `nestedScrollToParent`：布尔值，是否分发嵌套滚动事件到父级。默认：`true`。
+- `isEnabled`：Lambda，是否启用越界回弹。默认：全平台启用。
+
+### 通过 OverscrollFactory（主题级集成）
+
+`MiuixOverscrollFactory` 实现了 Compose 的 `OverscrollFactory` 接口，与 `overScrollVertical()` 提供完全相同的弹簧物理效果，但以主题级别集成。两个 `MiuixTheme` 重载均已将其设置为默认工厂，因此所有标准 Compose 可滚动组件（`LazyColumn`、`LazyRow`、`verticalScroll`、`horizontalScroll` 等）无需任何额外修饰符即可自动使用 Miuix 越界回弹效果。
+
+```kotlin
+// 无需额外修饰符 —— MiuixTheme 已自动提供越界回弹效果
+LazyColumn {
+    items(list) { item -> ItemRow(item) }
+}
+```
+
+禁用特定组件的越界效果：
+
+```kotlin
+LazyColumn(overscrollEffect = null) {
+    items(list) { item -> ItemRow(item) }
+}
+```
+
+禁用整个子树的越界效果：
+
+```kotlin
+CompositionLocalProvider(LocalOverscrollFactory provides null) {
+    // 此处的组件不会有 Miuix 越界回弹效果
+}
+```
+
+显式使用 `MiuixOverscrollEffect`（例如与自定义 `Modifier.overscroll()` 配合）：
+
+```kotlin
+val overscrollEffect = rememberOverscrollEffect()
+
+LazyColumn(
+    modifier = Modifier.overscroll(overscrollEffect),
+    overscrollEffect = overscrollEffect,
+) {
+    items(list) { item -> ItemRow(item) }
+}
+```
+
+**与 `overScrollVertical()` 的对比：**
+
+| 特性                       |   `overScrollVertical()`    | `MiuixOverscrollFactory` |
+| :------------------------- | :-------------------------: | :----------------------: |
+| 使用方式                   | 每个组件手动添加 `Modifier` |    主题级别，自动生效    |
+| 物理效果                   |        相同弹簧物理         |       相同弹簧物理       |
+| 默认启用平台               |           全平台            |    全平台（通过主题）    |
+| 内容未超出容器时仍可触发   |             ✅              |            ❌            |
+| 需要逐个组件手动添加修饰符 |             ✅              |            ❌            |
+
+> **限制说明：** `MiuixOverscrollFactory` 通过接收可滚动组件到达滚动边界后无法消耗的剩余 delta 来工作。如果内容未超出容器高度（例如 `LazyColumn` 的所有条目均能在屏幕内完整显示），可滚动组件不会到达真正的边界，`applyToScroll` 不会收到非零剩余量，越界回弹效果将**无法触发**。此类场景请改用 `overScrollVertical()`。
+
+## 滚动到边界触觉反馈 (Modifier.scrollEndHaptic())
+
+Miuix 提供了用于在可滚动容器快速滑动到其开始或结束边界时触发触觉反馈的修饰符，通过触觉反馈确认已到达边界增强用户的交互体验。
+
+```kotlin
+LazyColumn(
+    modifier = Modifier
+        .fillMaxSize()
+        // 添加滚动到边界触觉反馈
+        .scrollEndHaptic(
+            hapticFeedbackType = HapticFeedbackType.TextHandleMove // 默认值
+        )
+) {
+    // 列表内容
+}
+```
+
+**参数说明:**
+
+- `hapticFeedbackType`: 指定滚动到达末端时要执行的触觉反馈类型。默认为 `HapticFeedbackType.TextHandleMove`。您可以使用 `androidx.compose.ui.hapticfeedback.HapticFeedbackType` 中可用的其他类型。
+
+## 按压反馈效果 (Modifier.pressable())
+
+Miuix 提供了视觉反馈效果来增强用户交互体验，通过类似触觉的响应提升操作感。
+
+支持与 `Modifier.clickable()` 等响应式修饰符一起使用，`SinkFeedback` 为默认效果。
+
+```kotlin
+Box(
+    modifier = Modifier
+        .pressable()
+        .background(Color.Blue)
+        .size(100.dp)
+)
+```
+
+### 下沉效果
+
+`SinkFeedback` 指示会在组件被按下时应用一种“下沉”视觉效果，通过平滑缩放组件实现。
+
+`interactionSource` 为 `null` 时，仅在需要时才会懒惰地创建内部 `MutableInteractionSource`，这会降低组合过程中可点击的性能成本。
+
+```kotlin
+Box(
+    modifier = Modifier
+        .pressable(interactionSource = null, indication = SinkFeedback())
+        .background(Color.Blue)
+        .size(100.dp)
+)
+```
+
+### 倾斜效果
+
+`TiltFeedback` 指示会根据用户按压组件的位置应用一种“倾斜”效果。倾斜方向由触摸偏移决定，使一角“下沉”而另一角保持“静止”。
+
+```kotlin
+val interactionSource = remember { MutableInteractionSource() }
+
+Box(
+    modifier = Modifier
+        .pressable(interactionSource = interactionSource, indication = TiltFeedback())
+        .combinedClickable(
+            interactionSource = interactionSource,
+            indication = LocalIndication.current,
+            onClick = {},
+            onLongClick = {}
+        )
+        .background(Color.Green)
+        .size(100.dp)
+)
+```
+
+### 按压反馈类型 (PressFeedbackType)
+
+`PressFeedbackType` 枚举定义了组件被按下时可以应用的不同类型的视觉反馈。
+
+| 类型 | 说明                                   |
+| ---- | -------------------------------------- |
+| None | 无视觉反馈                             |
+| Sink | 应用下沉效果，组件在按下时轻微缩小     |
+| Tilt | 应用倾斜效果，组件根据触摸位置轻微倾斜 |
+
+## Pager 手势冲突处理与弹簧切页 (Modifier.pagerGestureOverride())
+
+`HorizontalPager` 内嵌竖向列表时，使用 `pagerGestureOverride` 可在列表惯性滚动或回弹期间横滑切页。
+
+```kotlin
+val flingBehavior = PagerDefaults.flingBehavior(
+    state = pagerState,
+    snapAnimationSpec = PagerNavigationSpringSpec,
+)
+
+HorizontalPager(
+    state = pagerState,
+    modifier = Modifier.pagerGestureOverride(
+        pagerState = pagerState,
+        flingBehavior = flingBehavior,
+    ),
+    userScrollEnabled = false,
+    flingBehavior = flingBehavior,
+    pageNestedScrollConnection = PagerGestureNestedScrollConnection,
+) { page ->
+    // 页面内容，例如 LazyColumn
+}
+```
+
+::: warning Cross-Axis 配置
+请设置 `userScrollEnabled = false`，并向修饰符和 Pager 传入同一个 `flingBehavior`。Cross-Axis 会单独处理触摸，同时保留 Pager 的滚轮、Shift+滚轮、触控板和吸附行为。使用 `PagerGestureNestedScrollConnection` 可保证 Pager 回弹期间子列表仍能竖向滚动。
+:::
+
+### 拦截模式 (`PagerInterceptionMode`)
+
+通过修饰符的 `mode` 参数选择交互方式：
+
+| 模式                | 行为                                             |
+| :------------------ | :----------------------------------------------- |
+| `CrossAxis`（默认） | 列表滚动或回弹时，仍可横滑切页。                 |
+| `Native`            | 使用 Compose 原生 Pager 手势。                   |
+| `TapToHalt`         | 列表惯性滚动时，首次横滑停止列表，再次横滑切页。 |
+
+禁用滑动切页时，将修饰符的 `enabled` 和 Pager 的 `userScrollEnabled` 都设为 `false`。
+
+### 统一弹簧切页 (`springAnimateToPage()`)
+
+点击标签或导航项时，可用 `springAnimateToPage` 动画切换到指定页：
+
+```kotlin
+coroutineScope.launch {
+    pagerState.springAnimateToPage(targetPage)
+}
+```
+
+## 屏幕缺口修复 (`ProvideDisplayCutoutFix`)
+
+`ProvideDisplayCutoutFix` 解决了部分 Android OEM 设备（如横屏平板设备和折叠屏设备）在系统分发时丢失屏幕缺口（Cutout）的缺陷，通过底层 `WindowManager.currentWindowMetrics` 动态补齐缺口安全边距。
+
+该功能已默认内置在 `MiuixTheme` 中。详情请参见[主题系统](theme.md#屏幕缺口适配-providedisplaycutoutfix)指南。
