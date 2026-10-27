@@ -52,6 +52,17 @@ import java.time.LocalDateTime
  * `courseCountLabel` / `examBadgeLabel` / `scheduleBadgeLabel`。这里按**同一个 ARB
  * 键**去既有字符串表取原文（日视图与作息页已经各有一份逐字对拍的），不新增文案、
  * 也不写中文字面量。改 ARB 时这三处会一起被对拍测试抓到。
+ *
+ * ## 星期名同样复用
+ *
+ * 星期几的短名（`weekdayMon`..`weekdaySun`）走 [MonthText.weekday]，也是全局 ARB 键，
+ * 由 `DayViewStrings` 逐字保管，本表不重复收录。
+ *
+ * > 给下一个改月视图的人：**这两类文案不是漏了，是刻意复用同名的全局 ARB 键**
+ * > （`courseCountLabel` / `examBadgeLabel` / `scheduleBadgeLabel` / `weekdayMon`..`weekdaySun`）。
+ * > 不往 [MonthViewStrings] 再抄一份，是因为多一份副本就多一处会漂；改 ARB 时这些
+ * > 复用点由既有的对拍测试一起兜住（`DayViewStrings` / `TimeSchemeManagementStrings`
+ * > 各有一份逐字对拍的用例）。
  */
 internal object MonthPanelLabels {
 

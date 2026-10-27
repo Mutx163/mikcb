@@ -11,17 +11,19 @@
 
 1. **现在把 `.ui` 壳装到手机上，只有 3 个页面点得进去**：课表、日程、任务。
    本清单列了 **82 个页面单元**（比台账的「页数」更细，设置族的每个页签/子页各算一行），
-   其中 **78 个有渲染层**，但**只有 3 个在壳里点得到**——不是藏起来了，是没接线。
+   其中 **79 个有渲染层**（月视图 10-27 深夜补上），但**只有 3 个在壳里点得到**——不是藏起来了，是没接线。
 2. 所以「真机逐页对照」这件事，**今天最多只能做 3 页**。缺的东西是一个「页面目录」，
    仓库里其实已经有现成的两个（设置首页 + 「全部功能」页），只是没挂进壳。第 5 节把接线需要的东西全列好了，
    是 Lead 一个人的活（壳属 Lead 专属）。
 3. **另外有 4 个页面根本没写**（更新日志 / 课表页面设置 / 月视图 / 实时活动·保持后台运行），这条最要紧——
    台账上它们要么记「已完成」，要么标得语焉不详，光看进度表看不出来。明细见 §4.2。
+   其中**月视图已于 10-27 深夜补齐渲染层**（见 §2.4），所以「根本没写」的现在是剩下那 3 个。
 4. 本清单把**每一页该看什么**都写具体了（不是「看看是否正常」）。接上目录后，
    照着表从上往下点就行，不用再回来读代码。
 
-> 本文写作时间：2026-10-27 22:0x。**统计族图表的绘制、月视图（P3-C2）的迁移此刻正在别的泳道进行**，
-> 涉及这两块的行已标 ⚠️，对照时看到「还没画出来/页面不存在」属预期。
+> 本文写作时间：2026-10-27 22:0x；**月视图那一节于当日深夜补记**（P3-C2 两条泳道已交付渲染层）。
+> 统计族图表的绘制此刻仍在别的泳道进行，涉及那块的行已标 ⚠️，对照时看到「还没画出来」属预期；
+> 月视图则是**页面已写好、只差一个入口**。
 
 ---
 
@@ -132,13 +134,20 @@
 | 课表 · 多课表管理（`timetable_profiles_screen`） | 壳里：❌（周视图顶栏「我的课表 ▾」在壳里是空实现）<br>正式版：课表页 → 左上角课表名 | ① 列表里「当前」标记与课程门数<br>② 新建课表弹层：输入框自动聚焦、空名字要拦<br>③ 重命名/复制/清空/删除四个动作的确认文案<br>④ 删最后一个课表时**必须拦住**（不能删到零个）<br>⑤ 弹层有 21 个 Dialog，逐一点一遍会不会有「弹了不关」的 | 中 |
 
 > 周视图的 55 个控件件（飞行动效、卡片、时间列、星期头）**只有这一页用到**，
-> 所以只看这一页就能代表全部；月视图（未迁）和日视图会复用其中一部分。
+> 所以只看这一页就能代表全部；月视图（§2.4，渲染层已落地）和日视图会复用其中一部分。
 
-### 2.4 P3-C2 课表 · 月视图（1 页）⚠️ 正在迁移
+### 2.4 P3-C2 课表 · 月视图（1 页）—— 渲染层已落地，壳里还没接
 
 | 页面 | 怎么进 | 对照点 | 风险 |
 |---|---|---|---|
-| 月视图（`month_view_screen`） | 壳里：❌ **目录里 0 个文件**<br>正式版：课表页切月视图 / 玻璃坞 → 月视图 | 现在无法对照：`pages/timetable/month/` 目录还不存在。**两条泳道正在迁**，落地后会自动进编译。<br>看的时候重点：月历网格行高、下拉面板回弹位置、选中日与下方日程联动、翻月后今天标记 | **高**（未交付） |
+| 月视图（`month_view_screen`） | 壳里：❌ **渲染层有了，缺的是页面索引**（§5 那件事）<br>**接线后：壳的页面索引 → 课表 · 月视图**<br>正式版：课表页切月视图 / 玻璃坞 → 月视图 | ① **格子行高从头到尾恒定**：拖下拉条收起/展开的过程中，日历格子的行高**不许变**（变了＝归一化口径错了，看着像字在放大缩小）；收起到底时只露 1 行格子 + 概览卡，不该露出半行标题<br>② **面板是被网格「盖住」而不是被裁掉**：拖动时网格底边是硬切线、相邻两行的行距始终一致；若看到行被压扁、字被切掉一半，就是要看的那个错<br>③ **议程的滚动顺序**：选一个排满课的日子，手指按在议程区往上推，应该**先收网格、再滚列表**，全程手指不离屏；松手只会落在「全展开」或「全收起」两个位置，**中间不会停住**（停住＝多加了第三个吸附点）<br>④ **两张空态卡**：某天没有任何安排时是「这天没有安排 + 加课」那张卡；整月无课程/考试/日程时概览卡换成整月空态。两张都不该出现空白块或半个按钮<br>⑤ **翻月前后联动**：工具栏左右箭头与「今天」翻完，今天标记、选中日、下方议程三者同步；行数跟着月历走（5 行月不出空行、6 行月不漏行）<br>⑥ **三环境各看一遍**（§1.3）：卡片底色/正文色必须跟主题走，深色下不该出现白卡片黑字 | **高**（未做过真机对照） |
+
+> 交付事实（2026-10-27 深夜）：`composeP1/.../timetable/month/` 10 件、`main/.../month/` 4 件、
+> `test/.../month/` 5 件，编译验证通过（只到「编译通过」这一级，**没上过真机**）。
+> **刻意没做**：横向滑动翻月——Dart 那个 `PageView` 在日历卡里，属日历半职责，本页只接了工具栏箭头与「今天」。
+> 接线人注意：`MonthViewPage` 收的是**数据提供函数**（月网格 / 当日议程）+ 一个 `dataRevision`，
+> 课程、考试、日程数据一变，宿主**必须换一个新的 revision 值**，否则页面不会重建（这条最容易漏）。
+> 另：概览卡的行数按卡片实际内容高度算，矮屏上只见 1~2 行属预期，不是丢数据。
 
 ### 2.5 P3-C3 课表 · 日视图（1 页）
 
@@ -326,7 +335,7 @@
 | 4 | 成就徽章点不动，没有详情弹窗 | 统计主页 → 成就 | Dart 的 `showAchievementDetailSheet` 未迁 |
 | 5 | 统计的「周视图」只有课程门数/本周课时与周次切换 | 统计主页 → 周页签 | `week_stats_view.dart`（490 行）未 1:1 迁移 |
 | 6 | 地点时间匹配的编辑页是空的/进不去 | 地点时间匹配 → 编辑 | 约 760 行编辑页留下一批未做 |
-| 7 | 月视图点不到 | 课表 → 月视图 | `pages/timetable/month/` **目录都不存在**；两条泳道正在迁 |
+| 7 | 月视图点不到（**这条 2026-10-27 深夜已解除一半**） | 课表 → 月视图 | 渲染层已落地并编译通过；现在点不到的**唯一**原因是壳只有 3 个 `DockSlot`、没有页面索引（§5） |
 
 ### 4.2 页面根本没做（代码里没有这个页面，不是入口问题）
 
@@ -334,8 +343,7 @@
 |---|---|---|---|
 | 1 | 更新日志（`changelog_screen`） | 只有解析模型 `ReleaseNotesBlocks.kt`；`composeP1` 里 0 处引用它、0 个 changelog Composable | P3-A 记「4/4 已完成」——实际有渲染层的是 3 页 |
 | 2 | 课表页面设置（`settings_timetable_page.dart`） | 设置首页那一行指向 `/settings/timetable-page`，但 Kotlin 侧没有对应 spec，覆盖测试 `SettingsBatchCoverageTest` 也没登记它 | P3-B 记「20 页全迁」 |
-| 3 | 月视图（`month_view_screen`） | `pages/timetable/month/` 目录不存在 | P3-C2 已标 ⬜ 未启动（**唯一如实标注的一条**） |
-| 4 | 实时活动 · 保持后台运行（`LiveKeepAliveSettingsScreen`） | `live_settings_subpages.dart` 里有这一屏，Kotlin 侧 `pages/live/` 只有 `LiveSettingsPage.kt`，没有对应实现；它在正式版里也只靠调试深链才能进 | P3-J 记「已交付」——实际只交了这一个文件里的主设置屏 |
+| 3 | 实时活动 · 保持后台运行（`LiveKeepAliveSettingsScreen`） | `live_settings_subpages.dart` 里有这一屏，Kotlin 侧 `pages/live/` 只有 `LiveSettingsPage.kt`，没有对应实现；它在正式版里也只靠调试深链才能进 | P3-J 记「已交付」——实际只交了这一个文件里的主设置屏 |
 
 > 这三条不是「入口没接」，是**页面本身没有 Kotlin 实现**。看到报表说「某批已完成」时，
 > 建议按本清单的行数核对一遍——台账的完成度是人工登记的，只有覆盖测试能机器判定。
@@ -469,7 +477,8 @@ fun MoreFeaturesPage(
 `IcsImportPage` · `SpreadsheetImportPage` · `WarehouseSchoolAdaptersPage` ·
 `WarehouseAdapterDetailPage` · `WarehouseWebLoginPage` · `DataTransferPage` · `IcsExportPage` ·
 `LiveDiagnosticsLogPage` · `MemoryStatsPage` · `PerfReportPage` · `LiveTestingFixturePage` ·
-`CourseConflictPage`
+`CourseConflictPage` · `MonthViewPage`（10-27 深夜交付；要两个提供函数
+`gridProvider(year, month)` / `agendaProvider(date)`，外加一个**跟着数据变**的 `dataRevision`）
 
 **两项暂时接不上（要宿主提供图形，仓库里没有）**
 
@@ -493,7 +502,7 @@ fun MoreFeaturesPage(
 | 壳只能进 3 页 | `composeUi/.../PagesShellActivity.kt`：`DockSlot` 三个值 + `when(slot)` 三个分支；`onAddClick`/`onCourseClick` 等回调全部用默认空实现 |
 | 壳没有深链/文件打开入口 | `composeUi/AndroidManifest.xml` 只有 MAIN/LAUNCHER；`main/AndroidManifest.xml` 的 `.ics/.json/.csv/xlsx` 与 umeng scheme 都挂在被禁用的 `MainActivity` 上；`PagesShellActivity.onCreate` 不读 Intent |
 | 深链不可用 | `lib/services/debug_deep_link_navigator.dart:96` `if (kReleaseMode) return;`；9 条路径见 `lib/screens/debug_deep_link_route_registry.dart` |
-| 月视图没做 | `android/app/src/composeP1/.../pages/timetable/month/` 目录不存在 |
+| 月视图（核对当时）没做 → 10-27 深夜已补齐 | 当时 `pages/timetable/month/` 目录不存在；现在 `composeP1/.../month/` 10 件、`main/.../month/` 4 件、`test/.../month/` 5 件，L1 编译通过（尚未上真机） |
 | 更新日志没渲染层 | `main/.../pages/about/ReleaseNotesBlocks.kt` 存在，但 `composeP1` 里 0 处引用、0 个 changelog Composable |
 | 课表页面设置没渲染层 | 设置首页 `SettingsTimetablePage.kt:148-153` 有指向 `ROUTE_TIMETABLE_PAGE = "/settings/timetable-page"` 的行，但 `main/.../pages/settings/` 下没有对应 spec，`SettingsBatchCoverageTest` 的 `deliveredSpecs` 也没登记 `settings_timetable_page.dart` |
 | 两个现成目录 | 设置首页 26 条 `ROUTE_*` 常量（`SettingsTimetablePage.kt:60-85`）；「全部功能」约 40 个 id（`MoreFeaturesModel.kt:46-260`） |
@@ -514,8 +523,9 @@ fun MoreFeaturesPage(
 ## 7. 一句话收尾
 
 - 你手上这版壳**还不能用来做「逐页对照」**，只能看 3 页。
-- 缺的主要是一个入口目录：78 个有渲染层的页面里，只有 3 个接进了壳，其余 75 个**代码都在**、只是没人接。
-  另外 4 个（更新日志 / 课表页面设置 / 月视图 / 实时活动·保持后台运行）是**真的还没写**。
+- 缺的主要是一个入口目录：79 个有渲染层的页面里，只有 3 个接进了壳，其余 76 个**代码都在**、只是没人接。
+  另外 3 个（更新日志 / 课表页面设置 / 实时活动·保持后台运行）是**真的还没写**；
+  月视图已于 10-27 深夜补齐渲染层，只需接线（§2.4）。
 - 接上之后，这份表的「对照点」列直接照着走，不用再回来看代码。
 
 ---
