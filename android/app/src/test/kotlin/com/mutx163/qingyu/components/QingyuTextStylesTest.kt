@@ -139,4 +139,52 @@ class QingyuTextStylesTest {
         assertEquals(official.footnote1.fontSize, ours.footnote1.fontSize)
         assertNotNull(ours.main)
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // 哨兵值（2026-10-27 咬合探针查出的缺口，补上）
+    // ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `未设置系统粗体时的哨兵值必须归零`() {
+        // `Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED` = Int.MAX_VALUE。
+        //
+        // 不判它的后果是灾难性的：`design + (用户字重 - 400) - Int.MAX_VALUE`
+        // 会下溢成极大的负数，被 `coerceIn(100, 900)` 钳到 **w100** ——
+        // 全站文字变成极细，而且不报错、不崩，只是"看起来不对劲"。
+        //
+        // 这条断言存在的直接理由：咬合探针把实现改回不判哨兵时，
+        // 其余 8 例全绿 —— 说明当时这段判据是裸奔的。现在它被钉住了。
+        assertEquals(0, normalizeSystemWeightDelta(Int.MAX_VALUE))
+
+        // 真值必须原样通过（不能顺手把合法增量也吃掉）。
+        assertEquals(100, normalizeSystemWeightDelta(100))
+        assertEquals(-100, normalizeSystemWeightDelta(-100))
+        assertEquals(0, normalizeSystemWeightDelta(0))
+
+        // 端到端：哨兵值进来时字阶必须与"没开粗体"完全一致。
+        val withSentinel = buildQingyuTextStyles(
+            systemWeightDelta = normalizeSystemWeightDelta(Int.MAX_VALUE),
+        )
+        assertEquals(FontWeight.W400, withSentinel.main.fontWeight)
+        assertEquals(FontWeight.Bold, withSentinel.subtitle.fontWeight)
+    }
+
+    @Test
+    fun `哨兵值直接灌进内核会露馅（证明这条判据不可省）`() {
+        // 反向验证：如果谁绕过 normalizeSystemWeightDelta、把哨兵原值直接给内核，
+        // 字重会被钳到下限。这条断言把"为什么必须判"写成了可执行的证据。
+        val broken = buildQingyuTextStyles(systemWeightDelta = Int.MAX_VALUE)
+        assertEquals(
+            "哨兵原值会让字重下溢并被钳到 w100 —— 这正是要防的",
+            FontWeight.W100,
+            broken.main.fontWeight,
+        )
+        // 而正规路径（经 normalize）不会发生这件事。
+        assertEquals(
+            FontWeight.W400,
+            buildQingyuTextStyles(
+                systemWeightDelta = normalizeSystemWeightDelta(Int.MAX_VALUE),
+            ).main.fontWeight,
+        )
+    }
 }

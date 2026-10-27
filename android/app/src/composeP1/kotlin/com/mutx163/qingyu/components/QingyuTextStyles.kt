@@ -54,15 +54,11 @@ fun rememberQingyuTextStyles(
     userFontWeight: Int = QingyuTypography.WEIGHT_DEFAULT,
     fontFamily: FontFamily? = null,
 ): TextStyles {
-    // 系统粗体增量。API 31 以下该字段不存在，`fontWeightAdjustment` 会返回
-    // FONT_WEIGHT_ADJUSTMENT_UNDEFINED（Int.MAX_VALUE）；Compose 把它暴露成
-    // 普通 Int，这里必须显式判掉，否则字重会被钳到 100、全站变极细。
-    val config = LocalConfiguration.current
-    // `Configuration.fontWeightAdjustment` 是 API 31+ 的 Int 字段；未设置时值是
-    // `FONT_WEIGHT_ADJUSTMENT_UNDEFINED` = Int.MAX_VALUE。本工程 minSdk 33，
-    // 所以这个字段一定存在，不需要版本判断，但要判掉那个哨兵值。
-    val raw = config.fontWeightAdjustment
-    val systemDelta = if (raw == Int.MAX_VALUE) 0 else raw
+    // 系统粗体增量。`Configuration.fontWeightAdjustment` 是 API 31+ 的 Int 字段，
+    // 未设置时值是 `FONT_WEIGHT_ADJUSTMENT_UNDEFINED` = Int.MAX_VALUE。
+    // 本工程 minSdk 33，所以字段一定存在，不需要版本判断，但**必须判掉哨兵值** ——
+    // 不判的话字重会被钳到 w100、全站变极细（见 normalizeSystemWeightDelta 的测试）。
+    val systemDelta = normalizeSystemWeightDelta(LocalConfiguration.current.fontWeightAdjustment)
 
     return remember(userFontWeight, fontFamily, systemDelta) {
         buildQingyuTextStyles(
@@ -72,6 +68,24 @@ fun rememberQingyuTextStyles(
         )
     }
 }
+
+/**
+ * 把 `Configuration.fontWeightAdjustment` 的原始值规整成可用的增量。
+ *
+ * ## 为什么单独抽一个函数（2026-10-27 咬合探针查出的缺口）
+ *
+ * 这段判据原先内联在 [rememberQingyuTextStyles] 里 —— 那是个 `@Composable`，
+ * 普通 JVM 单测调不了，于是它**没有任何测试覆盖**。
+ *
+ * 实证：把 `if (raw == Int.MAX_VALUE) 0 else raw` 改成 `raw`（正是要防的那个错误），
+ * 8 例测试**全绿** —— 说明探针打不响、这条判据当时是裸奔的。
+ * 抽成纯函数后 `QingyuTextStylesTest` 直接钉它，同样改坏立即变红。
+ *
+ * @param raw 平台原值。`Int.MAX_VALUE` = `FONT_WEIGHT_ADJUSTMENT_UNDEFINED`（未设置）。
+ * @return 可用的字重增量；未设置时返回 0（= 不偏移）。
+ */
+internal fun normalizeSystemWeightDelta(raw: Int): Int =
+    if (raw == Int.MAX_VALUE) 0 else raw
 
 /**
  * [rememberQingyuTextStyles] 的纯函数内核——**故意不帶 @Composable**。
