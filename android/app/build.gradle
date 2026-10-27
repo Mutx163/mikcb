@@ -182,6 +182,8 @@ android {
         // 所以这里按**目录**挂载：挂上 = 该批渲染层开始受 L1 与 CI 保护。
         // 行由 Lead 在该批交付/验收时追加，不要改成挂整个 pages/。
         composeUi {
+            // 跨页共享件（台账 §6 指定的落点）：页面主题桥 QingyuPageTheme 在这里。
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/components'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule'
@@ -201,6 +203,18 @@ android {
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
             // P3-E 统计族（stats-renderer 泳道，2026-10-27 12:40 挂载）
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics'
+            // P3-D1 课程表单与概览（lead 泳道，2026-10-27 14:28 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/course'
+            // P3-G1 导入·基础（lead 泳道并入 P3-D1，同刻挂载；import/warehouse 归 P3-G2 泳道另行挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/import'
+            // 六批已交付但漏挂的渲染层收口（conflict/feedback/guide/showcase/live/weather；
+            // 8514b433 会话按台账 §7.2 代 Lead 追加，2026-10-27 15:2x，L1 通过记录见门日志）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/conflict'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/guide'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/live'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/weather'
         }
     }
 
