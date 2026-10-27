@@ -199,6 +199,8 @@ android {
             // `SettingsPageScreen(spec)`，一目录服务全 20 页。4 个智能体正在这里
             // 并行写模型层（main 源集），只改本目录的渲染基础设施时才需要重验 L1。
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
+            // P3-E 统计族（stats-renderer 泳道，2026-10-27 12:40 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics'
         }
     }
 
