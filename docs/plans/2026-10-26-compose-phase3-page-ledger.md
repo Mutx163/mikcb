@@ -33,12 +33,16 @@
 | `lib/screens/import/`（含 `warehouse/`） | 14 | 9 137 |
 | `lib/screens/miuix_showcase/` | 14 | 4 265 |
 | `lib/widgets/*.dart`（跨页共享件） | 63 | 23 756 |
-| `lib/widgets/timetable/` | 77 | 17 563 |
+| `lib/widgets/timetable/` | 77 | 17 592 |
 | `lib/widgets/statistics/` | 22 | 4 460 |
 | `lib/ui/`（主题 / 玻璃 / 动效基建） | 75 | 26 705 |
-| **合计** | **338** | **≈138 291** |
+| **合计** | **338** | **≈138 320** |
 
 复算命令：`wc -l lib/screens/*.dart`、`find <目录> -name "*.dart" -exec cat {} + | wc -l`。
+
+> 2026-10-27 19:22 复算：`lib/widgets/timetable/` 由 17 563 → 17 592 行（+29，来自
+> 19:17 在途的 `month_view/month_panel_overview.dart` 未提交改动），合计同步 +29。
+> 其余 7 行实测与上表一致。Dart 侧 month_view 重写未提交期间这行还会漂，属正常——每次复算后同步。
 
 > 计划书写的「UI 层 ≈12.3 万行」是 `screens + widgets` 口径；上表把 `lib/ui/` 也算进来，
 > 所以是 13.8 万。**以本表实测为准**。
@@ -115,7 +119,7 @@
 | P3-G1 | 导入 · 基础 | 6 | 1 878 行 | `pages/import/`（不含 `pages/import/warehouse/`） | ✅ 已交付（`1b58806b`，17 文件 5 191 行，161 例；未真机对照） |
 | P3-G2 | 导入 · 仓库适配 | 8 | 7 259 行 | `pages/import/warehouse/` | ✅ 已交付（`ea9202aa`，24 文件 6 195 行；6 个 Page 覆盖 8 个 Dart 文件；未真机对照） |
 | P3-G3 | 导出与传输 | 7 | 3 914 行 | `pages/transfer/`、`pages/export/` | 🔄 进行中（`export-transfer` 交 2 页；**余量已拆分**给 P3-G3-b / P3-G3-c） |
-| P3-G3-b | 导出与传输 · 二维码发送/扫码 | 2 | 1 192 行 | `pages/transfer/`（仅 `QrTransfer*`） | 🔄 进行中（`transfer-qr`，2026-10-27 18:30 领） |
+| P3-G3-b | 导出与传输 · 二维码发送/扫码 | 2 | 1 192 行 | `pages/transfer/`（仅 `QrTransfer*`） | 🔄 进行中（`transfer-qr2` 重派，原 `transfer-qr` 空转停写） |
 | P3-G3-c | 导出与传输 · 局域网编辑/取件码/预览 | 3 | 1 011 行 | `pages/transfer/`（仅 `LanEdit*`、`PickupCodes*`、`TransferPreview*`） | 🔄 进行中（`transfer-misc`，2026-10-27 18:30 领） |
 | P3-H | 诊断与测试夹具 | 5 | 3 559 行 | `pages/diagnostics/` | ✅ 已交付（`dcb4b6c9` 等；未真机对照） |
 | P3-I | 引导与展示 | 5 | 3 732 行 | `pages/guide/` | ✅ 已交付（`28cfdc9f`；未真机对照） |
