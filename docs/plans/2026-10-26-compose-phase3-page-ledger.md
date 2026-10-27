@@ -28,21 +28,27 @@
 
 | 层 | 文件 | 行数 |
 |---|---|---|
-| `lib/screens/*.dart`（顶层页面） | 54 | 39 766 |
+| `lib/screens/*.dart`（顶层页面） | 55 | 39 983 |
 | `lib/screens/settings/` | 19 | 12 639 |
 | `lib/screens/import/`（含 `warehouse/`） | 14 | 9 137 |
 | `lib/screens/miuix_showcase/` | 14 | 4 265 |
 | `lib/widgets/*.dart`（跨页共享件） | 63 | 23 756 |
-| `lib/widgets/timetable/` | 77 | 17 627 |
+| `lib/widgets/timetable/` | 77 | 17 779 |
 | `lib/widgets/statistics/` | 22 | 4 460 |
 | `lib/ui/`（主题 / 玻璃 / 动效基建） | 75 | 26 705 |
-| **合计** | **338** | **≈138 320** |
+| **合计** | **339** | **≈138 724** |
 
 复算命令：`wc -l lib/screens/*.dart`、`find <目录> -name "*.dart" -exec cat {} + | wc -l`。
 
 > 2026-10-27 21:05 复算：`lib/widgets/timetable/` 为 **17 627** 行（10-26 原始 17 563，
 > 之后随 month_view 外观重写持续增长）。其余 7 行实测与上表一致。
 > Dart 侧 month_view 那一批改动尚未提交，这行**还会继续漂**——复算后同步即可，不是台账出错。
+
+> 2026-10-27 23:05 再复算（本次）：`lib/screens/*.dart` **54 → 55 个 / 39 766 → 39 983 行**，
+> 新增的是 `flight_agenda_extra_lines.dart`（217 行，日视图转场"飞行卡"补议程行的辅助件，
+> 随 `3d561559` 那批进来）；`lib/widgets/timetable/` **17 627 → 17 779 行**。
+> 两处都是 Dart 侧在途改动带来的漂移，不是台账算错。
+> ⚠️ 这个新文件目前**不属于任何批次**（是辅助件而非页面），等 P3-C3 收尾时决定挂到哪一批。
 
 > 计划书写的「UI 层 ≈12.3 万行」是 `screens + widgets` 口径；上表把 `lib/ui/` 也算进来，
 > 所以是 13.8 万。**以本表实测为准**。
@@ -327,15 +333,35 @@ Phase 3 准备文档 §3.3 待定项 5：小组件展示层是沿用现有 Remot
 
 | 文件 | 作用 | 门槛 |
 |---|---|---|
-| `composeP1/.../pages/shell/GlassDockNavigationBar.kt` | 玻璃导航栏渲染层（miuix-blur 装配） | L1 绿 |
-| `main/.../pages/shell/GlassDockGeometry.kt` | 几何/动效参数（纯算术） | L0 20 例 |
-| `test/.../pages/shell/GlassDockGeometryTest.kt` | 上述契约测试（含 3 次咬合探针） | 全绿 |
+| `composeP1/.../pages/shell/GlassDockNavigationBar.kt` | 玻璃导航栏渲染层（miuix-blur 装配，四层结构） | L1 绿 |
+| `main/.../pages/shell/GlassDockGeometry.kt` | 几何/动效/材质参数（纯算术） | L0 26 例 |
+| `test/.../pages/shell/GlassDockGeometryTest.kt` | 上述契约测试（含 4 次咬合探针） | 全绿 |
 
 **为什么要有这个组件**：miuix 0.9.4 的 Kotlin 侧**没有**玻璃导航栏——
 `NavigationBar` / `FloatingNavigationBar` 都是纯色 `squircleBackground(color = surface)`，
 `GlassNavigationBar` 只存在于 Flutter 移植（`flutter_miuix` 1.2.0）。
 玻璃材质引擎（`Backdrop` / `blur` / `Highlight` / `TiltLight`）在**独立 artifact**
 `miuix-blur` 里，此前本工程没引（`miuix-ui` 的 POM 不含它），已于本次一并加上。
+
+**例外二：`components/liquid/`（2026-10-27 新增，Lead 直管）**
+
+`lens` / `vibrancy` / `innerShadow` / `CombinedBackdrop` / `DampedDragAnimation` /
+`InteractiveHighlight` 六个件**不在 miuix 的任何发布物里**（0.9.4 六个 artifact 的
+sources 全解出来搜，0 命中），只在官方 demo 的 `component/{liquid,animation}/` 下。
+按 Apache-2.0 整段搬入（**保留版权头**，来源注明 `Kyant0/AndroidLiquidGlass`）：
+
+| 文件 | 作用 |
+|---|---|
+| `LiquidLens.kt` | 圆角矩形折射镜片 + 两个 AGSL 着色器（带/不带色散） |
+| `LiquidVibrancy.kt` | 玻璃加饱和（模糊会发灰，真玻璃透色更浓） |
+| `LiquidInnerShadow.kt` | 内阴影（离屏层 + Clear 挖洞 + 模糊） |
+| `LiquidCombinedBackdrop.kt` | 两个 Backdrop 叠成一个采样源 |
+| `LiquidDampedDrag.kt` | 五通道独立弹簧 + 不吃点击的拖拽检测 |
+| `LiquidInteractiveHighlight.kt` | 指尖光斑（平滑阶跃着色器） |
+
+**泳道若要复用它们**（比如给卡片加折射）：直接用，但**不要改**——
+`lens` 的像素口径 uniform 必须除以 `downscaleFactor`、`DampedDragAnimation` 的
+五条弹簧参数是成套的，改一处会连带别处。需要新行为请提给 Lead 加参数。
 
 **顶层 `lib/widgets/*.dart` 其余文件**：随「第一个使用它的页面」迁，写进该批次认领文件。
 
@@ -503,7 +529,7 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-D1 课程表单与概览 | ✅ 已交付 | `8e140fb7`，13 文件 4,816 行，86 例 |
 | P3-D2 日程与任务 | ✅ 已完成 | `97157c7a` + `59faedc8` 修 74 个 miuix 0.9.4 错误中的 schedule/task 部分 |
 | P3-D3 作息与考试 | ✅ **4/4 页已交付** | exam 侧 `40dbb943`（41 例）+ `a84fb0d6`（36 例）；`fae9721a` 作息管理（25 例）+ `7499c7ab` 地点匹配（21 例）。D3-b 渲染层首次进编译 |
-| P3-E 统计族 | ✅ 页 4/4 + **图表 15/22 已真画** | 页：`61f3d80e` `e0473069` `09e2de9f`。图表：`f518c917`（模型层）+`ddc5e48b`（折线/柱/热力/环形/排行条/周分布全为 Canvas 真绘，非读数行），模型层 L0 153 例。**未做 7 件**：成就徽章 454 / 数据故事 187 / 概览 108 + 导出四件 |
+| P3-E 统计族 | ✅ 页 4/4 + **图表 22/22 全迁** | 页：`61f3d80e` `e0473069` `09e2de9f`。图表：`f518c917` `ddc5e48b` `35a0fca2` `96d9b704`，折线/柱/热力/环形/排行条/周分布/热度全为 Canvas 真绘，非读数行；L0 153 例。偏差（无奖杯/锁图标、成就动画与详情弹层未搬、日期仅中文、二维码自写版本 2-L 编码器）均在 KDoc 与提交信息里 |
 | P3-F 同步与备份 | ✅ **4/4 页已交付** | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍） |
 | P3-G1 导入·基础 | ✅ 已交付 | `1b58806b`，17 文件 5,191 行，161 例 |
 | P3-G2 导入·仓库适配 | ✅ 已交付 | `ea9202aa`，24 文件 6,195 行 |
@@ -514,8 +540,8 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-J 实时活动与天气 | ✅ 已交付 | `28cfdc9f` |
 | P3-K 冲突与反馈小页 | ✅ 已交付 | `aef4c5c8` |
 | P3-0 基础设施 | ✅ 主体完成 | 主题桥 `772ce837`；渲染层逐目录挂载 + CI 编译 + `composeP1` 停役守卫；L0 模块单测 + `safe-gradle` 排队锁；i18n 中文字面量棘轮门禁 `b9bc98d1` |
-| P3-0-glassdock 玻璃导航栏 | ✅ 已交付 | `pages/shell/` 三层 + 20 例 + 3 次咬合探针；壳里 Material 占位条整体删除 |
-| P3-0-interaction 交互与材质 | 🔶 大部完成 | `bfdfabfd` 卡片入口（30 文件 107 处）；**字阶迁移完成** `04a78c7f`+`9649c46c`（31 文件 275 处，映射脚本 `scripts/migrate-fontsize-to-textstyles.py`）；`cb731202` 九页改走官方配方；`1577252a` 展示册改真模糊。**未做**：`fontWeight` 未动、毛玻璃页面层未接 |
+| P3-0-glassdock 玻璃导航栏 | ✅ 已交付 | 第一轮 `0d23ddf3`（miuix-blur 装配）；第二轮 `0d6bd966` 补齐 demo 的**四层结构** + 移植 6 个 demo 自带件到 `components/liquid/`；`pages/shell/` 模型层 26 例 + 4 次咬合探针；壳里 Material 占位条整体删除。**未真机对照** |
+| P3-0-interaction 交互与材质 | ✅ 主要项完成 | `bfdfabfd` 卡片入口（30 文件 107 处）+ `1a90f008` 收尾最后 11 处（复扫可点裸 Card = **0 处**）；**字阶迁移完成** `04a78c7f`+`9649c46c`（31 文件 275 处，映射脚本 `scripts/migrate-fontsize-to-textstyles.py`）+ `fb2a2c84` 打通**主题级** textStyles 注入（用户字重/系统粗体/字族，10 例 + 3 次咬合探针）；`cb731202` 九页改走官方配方；`1577252a` 展示册改真模糊。**未做**：`fontWeight` 未动、毛玻璃页面层未接 |
 | P3-L 小组件 / 超级岛 | ⏸ 待拍板 | RemoteViews 还是 Compose Glance，Lead 未拍板前不开工 |
 
 **本轮验证基线（Lead 亲自跑，21:07）**：`:app:testProdDebugUnitTest` → **2978 例 / 0 失败 / 0 错误 / 0 跳过**（218 个测试类，`BUILD SUCCESSFUL in 1m17s`）。
@@ -594,7 +620,7 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 | 泳道 | 批次 | 内容 | 结果 |
 |---|---|---|---|
 | `type-sweep` | P3-0-interaction | 硬写字号 → 官方字阶 | ✅ **31 文件 275 处**：`04a78c7f`（29 文件 269 处）+ `9649c46c`（周视图课卡 5 处 + 玻璃坞标签 1 处） |
-| `stats-charts` | P3-E | 统计族图表：模型层 + 渲染层 | ✅ **18 件 Dart → 15 个落点**，`f518c917`（模型层）+ `ddc5e48b`（六张图真画）；模型层 L0 **153 例**；7 件未做（成就/数据故事/概览 + 导出四件） |
+| `stats-charts` | P3-E | 统计族图表：模型层 + 渲染层 | ✅ **22/22 件全迁**（含导出四件套与自写二维码编码器）：`f518c917` `ddc5e48b` `35a0fca2` `96d9b704`；模型层 12 文件 3 073 行 + 渲染层 10 文件 3 629 行 + 测试 8 文件 2 587 行；L0 **153 例** |
 | `month-calendar` | P3-C2 | 月视图日历半 | ✅ `a7cb2b2b` `810f801a` `644c2d25` `62a6ccea` `45ba821b` |
 | `month-panel` | P3-C2 | 月视图面板半 | ✅ `08805e77` `2e29bb40` `0149149f` `7f85ee1f` |
 | `l4-recon` | — + P3-0 壳 | L4 逐页清单 → 追加：壳页面索引 | ✅ **清单 528 行**（`3f1c35eb`）+ **壳路由**（`867f83e8` `2f59c811`） |
@@ -616,14 +642,15 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 
 | 级别 | 命令 | 结果 |
 |---|---|---|
-| L1 | `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` | **BUILD SUCCESSFUL 1m35s，`e:` 0 条**（四条泳道的产物同时在册） |
+| L1 | `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` | **BUILD SUCCESSFUL，`e:` 0 条**（1m35s 全量、23s 增量，四次泳道产物全部在册） |
 | L0 | `test-kotlin-module.ps1` × 3 模块 | 月视图 **79** + 统计图表 **153** + 壳 **39** = **271 例全绿** |
 | Dart 架构守卫 | `flutter test --no-pub test/architecture/` | **62 例全过**（补跑 `--no-verify` 欠下的门禁） |
 | L2 全量 | `:app:testProdDebugUnitTest` | ❌ **暂时红，但与本轮五行无关**：他人 WIP 把 `components/QingyuTextStylesTest.kt` 放进共用测试源集，而它引用 `composeP1` 的 `buildQingyuTextStyles`（prod 变体编译不到）。证据：46 条 `e:` 全在该文件。**待其所有者把测试挪到 compose 变体源集后重跑** |
 
 **仍未做（诚实清单）**：
 ① **没有一页做过真机对照**——现在至少能点进去了，清单已就位；
-② 统计族 7 件未迁（成就徽章 454 / 数据故事 187 / 概览 108 / 导出四件）；
+② 统计族已 22/22 全迁，但**无 UI 测试设施**，证据只到「L1 编译 + 模型层 L0」；
+   奖杯/锁图标因 miuix 扩展图标没有而用替代视觉，成就进场动画与详情弹层未搬；
 ③ 月视图横向滑动翻月（属日历半的 HorizontalPager，本批刻意不做）；
 ④ 毛玻璃仍只在壳底栏 1 处，页面顶栏/弹层没接；
 ⑤ `fontWeight` 未动（本轮只管字号），局部强调仍写 `fontWeight = Medium`，会盖掉主题字重。
