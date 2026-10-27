@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
@@ -62,14 +63,16 @@ fun SupportCreatorPage(
     var method by remember { mutableStateOf(SupportMethod.WECHAT) }
     val dark = isSystemInDarkTheme()
 
-    QingyuPageScaffold(title = SupportCreatorStrings.heroTitle, onBack = onBack) { innerPadding ->
+    QingyuPageScaffold(title = SupportCreatorStrings.heroTitle, onBack = onBack) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            // 把滚动手势喂给顶栏的折叠行为；漏了这一步大标题就永不收起。
+            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 top = innerPadding.calculateTopPadding(),
-                bottom = 24.dp,
+                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                bottom = innerPadding.calculateBottomPadding() + 24.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {

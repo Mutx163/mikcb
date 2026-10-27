@@ -15,11 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -43,19 +46,59 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
  * 这个文件把 1/3/4 统一收口，页面只负责内容，避免再次各写各的。
  */
 
-/** 页面骨架：官方顶栏（返回图标 + 标题）+ 官方底色。 */
+/**
+ * 页面骨架：官方顶栏进 [Scaffold] 的 `topBar` 槽位 + 官方底色 + 可折叠大标题。
+ *
+ * ## 为什么必须放进 `topBar` 槽位（2026-10-27 返工）
+ *
+ * 第一版把 [TopAppBar] 塞在 `Scaffold` 的 content 里（`Column { TopAppBar(); content() }`）。
+ * 官方 [TopAppBar] 自己就会加 `WindowInsets.systemBars` 的顶部内边距
+ * （`TopAppBar.kt:806`），而 `Scaffold` 在 `topBar` 为空时又把同一份系统栏内边距
+ * 塞进 `contentWindowInsets`，一并交给 `innerPadding`——两者叠起来，
+ * 状态栏高度被算了两遍，标题整体下移约一个状态栏的高度。
+ *
+ * 放进槽位后职责就清了：**顶栏自己吃状态栏，内容只吃顶栏高度 + 底部手势条**。
+ *
+ * ## 为什么必须传 `largeTitle` 与 `scrollBehavior`
+ *
+ * Dart 侧这三页走 `HyperosSubpage`，它 `overlayHeader = true` 且
+ * `collapsibleLargeTitle = true` 都是**默认值**（`hyperos_page.dart:150-170`），
+ * 也就是现版本这些页面本来就有可折叠大标题。官方 [TopAppBar] 的
+ * `largeTitle` 默认等于 `title`、`scrollBehavior` 默认 `null`：
+ * 不传 `largeTitle` 会白送一个 32sp 大标题，不传 `scrollBehavior` 则**永不折叠**，
+ * 白占约 60dp。两处都补齐才对得上现版本。
+ *
+ * 调用方要把 [androidx.compose.ui.input.nestedscroll.nestedScroll] 挂到滚动容器上，
+ * 否则折叠行为收不到滚动手势（各页已经挂好）。
+ */
+/**
+ * 内容槽收到的两样东西：内边距，以及顶栏的折叠行为。
+ *
+ * 折叠行为必须交给内容去挂 `nestedScroll`——只把 `scrollBehavior` 传给顶栏，
+ * 顶栏收不到滚动手势，大标题就会「参数传了但不折叠」。
+ */
+class QingyuPageContentScope(
+    val innerPadding: PaddingValues,
+    val scrollBehavior: ScrollBehavior,
+)
+
 @Composable
 fun QingyuPageScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit,
+    content: @Composable QingyuPageContentScope.() -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(modifier = Modifier.fillMaxWidth()) {
+    // 每个页面实例一个折叠状态：返回后重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
                 title = title,
+                largeTitle = title,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -67,7 +110,12 @@ fun QingyuPageScaffold(
                 },
                 actions = actions,
             )
-            content(innerPadding)
+        },
+    ) { innerPadding ->
+        // 页面主题桥兜住深色：两个壳用的是无参 MiuixTheme{ }（配色恒亮），
+        // 不在这里兜一层，深色下卡片仍是白底而正文取白字 → 内容不可读。
+        QingyuPageTheme {
+            QingyuPageContentScope(innerPadding, scrollBehavior).content()
         }
     }
 }

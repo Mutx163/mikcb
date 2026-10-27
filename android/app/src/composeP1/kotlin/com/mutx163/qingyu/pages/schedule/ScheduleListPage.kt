@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +42,11 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuPageTheme
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.extended.Add
 
 /**
  * 日程列表页 · Compose 渲染层（Phase 3）。
@@ -62,74 +66,88 @@ fun ScheduleListPage(
     val colors = MiuixTheme.colorScheme
     var deleteCandidate by remember { mutableStateOf<ScheduleItemData?>(null) }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
-            // ── 顶栏：返回 + 标题 + 添加按钮 ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = ScheduleStrings.cancelAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-                Text(
-                    text = ScheduleStrings.scheduleListTitle.zh,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    modifier = Modifier.weight(1f),
-                )
-                MiuixActionButton(
-                    text = ScheduleStrings.addScheduleAction.zh,
-                    onClick = onAddSchedule,
-                )
-            }
+    // 顶栏折叠行为：Dart 侧 schedule_list_screen.dart:38 走 HyperosSubpage，
+    // overlayHeader / collapsibleLargeTitle 均为默认 true（可折叠大标题）。
+    val scrollBehavior = MiuixScrollBehavior()
 
-            if (groups.isEmpty) {
-                // ── 空态展示 ──
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(24.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Text(
-                                text = ScheduleStrings.scheduleListEmptyTitle.zh,
-                                fontSize = 16.sp,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                            MiuixActionButton(
-                                text = ScheduleStrings.addScheduleAction.zh,
-                                onClick = onAddSchedule,
+    QingyuPageTheme {
+        Scaffold(
+            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后
+            // Scaffold 不再重复给一份（第一版手搓 Row 时状态栏被算了两遍）。
+            topBar = {
+                TopAppBar(
+                    title = ScheduleStrings.scheduleListTitle.zh,
+                    largeTitle = ScheduleStrings.scheduleListTitle.zh,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = ScheduleStrings.cancelAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
+                    },
+                    // Dart 侧顶栏右侧是 FHeaderAction(Icons.add_rounded) 图标按钮，
+                    // 第一版用了文字按钮「添加」，与现版本形态不一致。
+                    actions = {
+                        IconButton(onClick = onAddSchedule) {
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = ScheduleStrings.addScheduleAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            ) {
+                if (groups.isEmpty) {
+                    // ── 空态展示 ──
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = PaddingValues(24.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                Text(
+                                    text = ScheduleStrings.scheduleListEmptyTitle.zh,
+                                    fontSize = 16.sp,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                )
+                                MiuixActionButton(
+                                    text = ScheduleStrings.addScheduleAction.zh,
+                                    onClick = onAddSchedule,
+                                )
+                            }
+                        }
                     }
-                }
             } else {
                 // ── 分组列表 ──
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (groups.upcoming.isNotEmpty()) {
@@ -176,6 +194,7 @@ fun ScheduleListPage(
                             )
                         }
                     }
+                }
                 }
             }
         }

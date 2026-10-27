@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,6 +40,11 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuPageTheme
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.extended.Add
 
 /**
  * 作息时间表自动切换日期规则页 · Compose 渲染层（Phase 3）。
@@ -62,58 +66,66 @@ fun ScheduleDateRulePage(
     var deletingRule by remember { mutableStateOf<ScheduleDateRuleData?>(null) }
     var bannerMessage by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
-            // ── 顶栏 ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = ScheduleStrings.cancelAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-                Text(
-                    text = ScheduleStrings.scheduleDateRuleSectionTitle.zh,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    modifier = Modifier.weight(1f),
-                )
-                MiuixActionButton(
-                    text = ScheduleStrings.scheduleDateRuleAdd.zh,
-                    onClick = {
-                        if (availableSchemes.isEmpty()) {
-                            bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                            return@MiuixActionButton
+    // 顶栏折叠行为：Dart 侧 schedule_date_rule_screen.dart:27 走 HyperosSubpage 默认参数
+    //（overlayHeader / collapsibleLargeTitle 均 true）。
+    val scrollBehavior = MiuixScrollBehavior()
+
+    QingyuPageTheme {
+        Scaffold(
+            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+            topBar = {
+                TopAppBar(
+                    title = ScheduleStrings.scheduleDateRuleSectionTitle.zh,
+                    largeTitle = ScheduleStrings.scheduleDateRuleSectionTitle.zh,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = ScheduleStrings.cancelAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
                         }
-                        if (rules.size >= ScheduleDateRuleDomain.MAX_RULES_PER_DEVICE) {
-                            bannerMessage = ScheduleStrings.scheduleDateRuleMaxReached.zh
-                            return@MiuixActionButton
+                    },
+                    // Dart 侧右侧是 FHeaderAction(Icons.add_rounded)。
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                if (availableSchemes.isEmpty()) {
+                                    bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
+                                    return@IconButton
+                                }
+                                if (rules.size >= ScheduleDateRuleDomain.MAX_RULES_PER_DEVICE) {
+                                    bannerMessage = ScheduleStrings.scheduleDateRuleMaxReached.zh
+                                    return@IconButton
+                                }
+                                bannerMessage = null
+                                isAddingNew = true
+                                editingRule = ScheduleDateRuleData(
+                                    id = "rule_${System.currentTimeMillis()}",
+                                    name = "",
+                                    timeSchemeId = availableSchemes.first().first,
+                                    startDate = "2026-10-01",
+                                    endDate = "2027-04-30",
+                                    enabled = true,
+                                )
+                            },
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = ScheduleStrings.scheduleDateRuleAdd.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
                         }
-                        bannerMessage = null
-                        isAddingNew = true
-                        editingRule = ScheduleDateRuleData(
-                            id = "rule_${System.currentTimeMillis()}",
-                            name = "",
-                            timeSchemeId = availableSchemes.first().first,
-                            startDate = "2026-10-01",
-                            endDate = "2027-04-30",
-                            enabled = true,
-                        )
                     },
                 )
-            }
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            ) {
 
             // 说明小标题
             Text(
@@ -185,8 +197,14 @@ fun ScheduleDateRulePage(
             } else {
                 // ── 规则卡片列表 ──
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(rules, key = { it.rule.id }) { item ->
@@ -202,6 +220,7 @@ fun ScheduleDateRulePage(
                             },
                         )
                     }
+                }
                 }
             }
         }

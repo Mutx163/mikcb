@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +46,9 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuPageTheme
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 /**
  * 任务清单页 · Compose 渲染层（Phase 3）。
@@ -74,182 +76,93 @@ fun TaskListPage(
     val dark = isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
-            // ── 顶栏 ──
-            TopAppBar(
-                title = TaskStrings.taskListTitle,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = TaskStrings.cancelAction,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAddTask) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = TaskStrings.addTask,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
+    // 顶栏折叠行为：与 Dart 侧 HyperosSubpage（overlayHeader + collapsibleLargeTitle
+    // 均为默认 true）的可折叠大标题一致。必须同时传给 TopAppBar 和内容的 nestedScroll。
+    val scrollBehavior = MiuixScrollBehavior()
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+    QingyuPageTheme {
+        Scaffold(
+            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，
+            // 放进槽位后 Scaffold 不再重复给这份内边距（第一版就是在这里算了两遍）。
+            topBar = {
+                TopAppBar(
+                    title = TaskStrings.taskListTitle,
+                    largeTitle = TaskStrings.taskListTitle,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = TaskStrings.cancelAction,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onAddTask) {
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = TaskStrings.addTask,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
             ) {
-                // ── 1. 日期分段控制器（全部 / 今日 / 本周） ──
-                item {
-                    TaskDateSegmentedControl(
-                        currentFilter = viewState.dateFilter,
-                        onFilterSelected = onDateFilterChange,
-                        dark = dark,
-                    )
-                }
+                LazyColumn(
+                        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // ── 1. 日期分段控制器（全部 / 今日 / 本周） ──
+                    item {
+                        TaskDateSegmentedControl(
+                            currentFilter = viewState.dateFilter,
+                            onFilterSelected = onDateFilterChange,
+                            dark = dark,
+                        )
+                    }
 
-                // ── 2. 课程筛选入口 ──
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-                        onClick = onCourseFilterClick,
-                    ) {
-                        Row(
+                    // ── 2. 课程筛选入口 ──
+                    item {
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.ContactsBook,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = viewState.selectedCourseLabel,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(QingyuTheme.primaryText(dark)),
-                                )
-                                Text(
-                                    text = TaskStrings.taskCourseFilter,
-                                    fontSize = 12.sp,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                    modifier = Modifier.padding(top = 2.dp),
-                                )
-                            }
-                            Icon(
-                                imageVector = MiuixIcons.ChevronForward,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    }
-                }
-
-                // ── 3. 空态展示 ──
-                if (viewState.isEmpty) {
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            insideMargin = PaddingValues(24.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                Text(
-                                    text = viewState.emptyTitle,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                    textAlign = TextAlign.Center,
-                                )
-                                Button(onClick = onAddTask) {
-                                    Text(text = TaskStrings.addTask)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // ── 4. 任务分组列表（已逾期 / 任务清单 / 已完成） ──
-                    viewState.sections.forEach { section ->
-                        item {
-                            Text(
-                                text = section.title,
-                                fontSize = 13.sp,
-                                color = Color(QingyuTheme.sectionLabel(dark)),
-                                modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                            )
-                        }
-
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                insideMargin = PaddingValues(vertical = 4.dp),
-                            ) {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    section.items.forEachIndexed { index, item ->
-                                        if (index > 0) {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                                        }
-                                        TaskRowItem(
-                                            item = item,
-                                            onToggle = { onToggleTask(item.task) },
-                                            onEdit = { onEditTask(item.task) },
-                                            onDelete = { onDeleteTask(item.task) },
-                                            onViewCourse = if (item.hasCourse && onViewCourse != null) {
-                                                { onViewCourse(item.task) }
-                                            } else null,
-                                            dark = dark,
-                                            colors = colors,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── 5. 未设到期日被过滤隐藏条目提示条 ──
-                if (viewState.undatedHiddenCount > 0) {
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-                            onClick = { onDateFilterChange(TaskDateFilter.ALL) },
+                            onClick = onCourseFilterClick,
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
+                                Icon(
+                                    imageVector = MiuixIcons.ContactsBook,
+                                    contentDescription = null,
+                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                                    modifier = Modifier.size(20.dp),
+                                )
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = TaskStrings.taskUndatedHint(viewState.undatedHiddenCount),
-                                        fontSize = 15.sp,
+                                        text = viewState.selectedCourseLabel,
+                                        fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(QingyuTheme.primaryText(dark)),
                                     )
                                     Text(
-                                        text = TaskStrings.taskUndatedHintSubtitle,
+                                        text = TaskStrings.taskCourseFilter,
                                         fontSize = 12.sp,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                         modifier = Modifier.padding(top = 2.dp),
@@ -260,6 +173,112 @@ fun TaskListPage(
                                     contentDescription = null,
                                     tint = Color(QingyuTheme.actionIcon(dark)),
                                 )
+                            }
+                        }
+                    }
+
+                    // ── 3. 空态展示 ──
+                    if (viewState.isEmpty) {
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                insideMargin = PaddingValues(24.dp),
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Text(
+                                        text = viewState.emptyTitle,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Button(onClick = onAddTask) {
+                                        Text(text = TaskStrings.addTask)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // ── 4. 任务分组列表（已逾期 / 任务清单 / 已完成） ──
+                        viewState.sections.forEach { section ->
+                            item {
+                                Text(
+                                    text = section.title,
+                                    fontSize = 13.sp,
+                                    color = Color(QingyuTheme.sectionLabel(dark)),
+                                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
+                                )
+                            }
+
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    insideMargin = PaddingValues(vertical = 4.dp),
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        section.items.forEachIndexed { index, item ->
+                                            if (index > 0) {
+                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                                            }
+                                            TaskRowItem(
+                                                item = item,
+                                                onToggle = { onToggleTask(item.task) },
+                                                onEdit = { onEditTask(item.task) },
+                                                onDelete = { onDeleteTask(item.task) },
+                                                onViewCourse = if (item.hasCourse && onViewCourse != null) {
+                                                    { onViewCourse(item.task) }
+                                                } else null,
+                                                dark = dark,
+                                                colors = colors,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── 5. 未设到期日被过滤隐藏条目提示条 ──
+                    if (viewState.undatedHiddenCount > 0) {
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                                onClick = { onDateFilterChange(TaskDateFilter.ALL) },
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = TaskStrings.taskUndatedHint(viewState.undatedHiddenCount),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(QingyuTheme.primaryText(dark)),
+                                        )
+                                        Text(
+                                            text = TaskStrings.taskUndatedHintSubtitle,
+                                            fontSize = 12.sp,
+                                            color = Color(QingyuTheme.secondaryText(dark)),
+                                            modifier = Modifier.padding(top = 2.dp),
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = MiuixIcons.ChevronForward,
+                                        contentDescription = null,
+                                        tint = Color(QingyuTheme.actionIcon(dark)),
+                                    )
+                                }
                             }
                         }
                     }

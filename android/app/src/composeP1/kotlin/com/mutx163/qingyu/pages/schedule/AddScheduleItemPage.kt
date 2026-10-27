@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +45,13 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuPageTheme
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Ok
 
 private val kColorPalette = listOf(
     "#6366F1", "#0EA5E9", "#2196F3", "#8B5CF6", "#D946EF",
@@ -144,13 +150,63 @@ fun AddScheduleItemPage(
         }
     }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
+    // 顶栏折叠行为：Dart 侧 add_schedule_item_screen.dart:167 走 HyperosSubpage 默认参数
+    //（overlayHeader / collapsibleLargeTitle 均 true）。
+    val scrollBehavior = MiuixScrollBehavior()
+    val pageTitle = if (isEditing) {
+        ScheduleStrings.editScheduleTitle.zh
+    } else {
+        ScheduleStrings.addScheduleTitle.zh
+    }
+
+    QingyuPageTheme {
+        Scaffold(
+            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+            // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，
+            // 放进槽位后 Scaffold 不再重复给一份（第一版手搓 Row 时算了两遍）。
+            topBar = {
+                TopAppBar(
+                    title = pageTitle,
+                    largeTitle = pageTitle,
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = ScheduleStrings.cancelAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
+                    },
+                    // Dart 侧右侧是图标：编辑态 delete_outline_rounded + check_rounded。
+                    actions = {
+                        if (isEditing) {
+                            IconButton(onClick = { validateAndProceed(isDeleting = true) }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = ScheduleStrings.deleteAction.zh,
+                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                                )
+                            }
+                        }
+                        IconButton(onClick = { validateAndProceed(isDeleting = false) }) {
+                            Icon(
+                                imageVector = MiuixIcons.Ok,
+                                contentDescription = ScheduleStrings.saveAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
+                    },
+                )
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // 表单页必须避让键盘，否则底部输入框被 IME 盖住。
+                    .imePadding()
+                    .padding(innerPadding),
+            ) {
             // ── 顶栏 ──
             Row(
                 modifier = Modifier
@@ -190,7 +246,14 @@ fun AddScheduleItemPage(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // 校验错误横幅
@@ -685,6 +748,7 @@ fun AddScheduleItemPage(
                 }
             }
         }
+    }
     }
 }
 

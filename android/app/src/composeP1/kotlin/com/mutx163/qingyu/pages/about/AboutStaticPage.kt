@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
@@ -41,14 +42,16 @@ fun AboutStaticPage(
 ) {
     val sections = aboutInfoSections()
 
-    QingyuPageScaffold(title = "关于", onBack = onBack) { innerPadding ->
+    QingyuPageScaffold(title = "关于", onBack = onBack) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            // 把滚动手势喂给顶栏的折叠行为；漏了这一步大标题就永不收起。
+            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 top = innerPadding.calculateTopPadding(),
-                bottom = 24.dp,
+                // 底部必须把系统手势条那段算进去，否则最后一行会钻到小白条底下。
+                bottom = innerPadding.calculateBottomPadding() + 24.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
