@@ -96,7 +96,11 @@
 | 批次 | 功能域 | 页/件 | 规模 | 写作用域 | 状态 |
 |---|---|---|---|---|---|
 | P3-A | 关于与说明 | 4 | 4 113 行 | `pages/about/` | ✅ 已完成（未真机对照） |
-| P3-B | 设置族 | 20 | 13 795 行 | `pages/settings/` | 🔄 进行中（另一会话） |
+| P3-B | 设置族 | 20 | 13 795 行 | `pages/settings/` | ✅ 已完成（511 例全绿，未真机对照） |
+| P3-B-1 | 设置 · 外观与材质 | 4 | — | 同上 | ✅ 已完成（`39b851f2` `240ad8e9`，112 例） |
+| P3-B-2 | 设置 · 首页与课表展示 | 4 | — | 同上 | ✅ 已完成（`9cbe96b1` `f444aef1`，109 例） |
+| P3-B-3 | 设置 · 行为与系统 | 4 | — | 同上 | ✅ 已完成（`ba47a609` `e398df5a`，128 例） |
+| P3-B-4 | 设置 · 坞栏与重置 | 3+1 | — | 同上 | ✅ 已完成（`459d7ceb`，79 例） |
 | P3-C1 | 课表 · 周视图 | 57 | 13 588 行 | `pages/timetable/`（不含 `pages/timetable/month/`、`pages/timetable/day/`） | ⬜ 待领 |
 | P3-C2 | 课表 · 月视图 | 11 | 4 093 行 | `pages/timetable/month/` | ⬜ 待领（Dart 侧在途，等稳定） |
 | P3-C3 | 课表 · 日视图 | 13 | 4 171 行 | `pages/timetable/day/` | 🔄 进行中（另一会话） |
@@ -128,11 +132,64 @@ P3-G1（1 878 行）偏小，可并入 P3-D1 一起做。领的时候在认领�
 提交证据：`2a7f78ea` `1341633a` `02dfaa2c` `1d8dd0ed` `7357e1a9` `46d806a3`
 **遗留**：整页真机逐页对照未做（§6 第 5 条），谁有空可以补一次对照并更新认领文件。
 
-### P3-B 设置族 🔄 进行中
+### P3-B 设置族 ✅ 已完成（Lead 接管，4 组并行，511 例全绿）
 `lib/screens/settings/` 全 19 件（外观 / 课程卡 / 通用 / 诊断 / 节假日 / 首页背景 / 首页菜单编辑器 /
 首页导航 / 首页小组件 / 实时活动 / 最近壁纸 / 重置 / 共享 / 课表设置 / 天气 / 玻璃坞编辑器 /
 玻璃坞图标编辑器 / Bing 壁纸画廊）+ `timetable_settings_screen`(1156)。
-**已在途**：见 `claims/P3-B.md`。批偏大（20 页），若其负责人要拆分，把拆法写进认领文件即可。
+
+**2026-10-27 接管记录**：原会话产出 4 页（14 文件 / 3,821 行）后于 10-26 21:35 停写、
+连续 15 小时无更新且未署名，Lead 按 §2 回收规则直接接管，拆成 4 组并行，**原产出全部保留**。
+
+**一个改变本批性质的关键发现**（独立 agent 接手前必读）：
+本批的渲染层是**通用的一次性投入**。`composeP1/.../pages/settings/SettingsPageRenderers.kt`
+里的 `SettingsPageScreen(spec: SettingsPageSpec)` 接受任意 spec 就能渲染，
+所以剩余 16 页**不需要写任何 Composable**——每页只需在模型层构造出等价的
+`SettingsPageSpec`（节点树 + ARB 文案）。工作量性质从「16 页 UI 代码」变成
+「16 份数据 + 文案对拍」，且几乎不会遇到 Compose 编译错误。
+
+**拆组与写作用域**（4 个 agent 同写 `pages/settings/` 一个目录，靠**文件名与文案对象**互斥）：
+
+| 组 | 智能体 | 页面 | 文案对象 | 写作用域 |
+|---|---|---|---|---|
+| P3-B-1 | `settings-appearance` | 外观编辑器 / 首页背景流 / 最近壁纸 / Bing 壁纸画廊 | `SettingsStringsExt1` | 只新建 `Settings<Xxx>Page.kt` |
+| P3-B-2 | `settings-home` | 首页小组件 / 首页导航 / 首页菜单编辑器 / 课表页面设置 | `SettingsStringsExt2` | 同上 |
+| P3-B-3 | `settings-behavior` | 实时活动（71 键）/ 节假日 / 天气 / 诊断 | `SettingsStringsExt3` | 同上 |
+| P3-B-4 | `settings-dock` | 玻璃坞编辑器 / 坞图标编辑器 / 重置 + `settings_shared` 核对 | `SettingsStringsExt4` | 同上 |
+
+**谁都不许改**（共享件，4 组同时依赖）：`SettingsStrings.kt`、`SettingsPageModel.kt`、
+`SettingsPageState.kt`、`composeP1/.../settings/**`（那两件渲染基础设施由 Lead 直管）。
+
+**完成度以机器判定**：`SettingsBatchCoverageTest` 要求 20 页全部交付，红即未完成。
+每交付一页改一个 `true`（**由 Lead 统一改**，避免 4 人撞车）。
+
+**交付结论（2026-10-27 15:35）**：20 页全部迁完、代码全部入库（62 文件 / 18,798 行），
+隔离沙箱全量 **511 例全绿**（28 个测试类）。四组提交：
+`39b851f2`+`240ad8e9`（B-1，112 例）、`9cbe96b1`+`f444aef1`（B-2，109 例）、
+`ba47a609`+`e398df5a`（B-3，128 例）、`459d7ceb`（B-4，79 例）；
+基线 4 页与通用渲染层：`88932875` `ba465eba` `82d7ff93`；源集挂载 `69108d08`。
+
+**唯一未完成的门槛是真机逐页对照**（需用户配合）。另外两条必须说明的诚实声明：
+① `:app:testProdDebugUnitTest` 这条官方 gradle 任务本批**从未跑通**——被其它泳道的
+在途测试文件（`pages/course`、`pages/import`）挡住，验收证据来自隔离沙箱
+（`.agents/compose-phase3/lead-sandbox.sh`，只编设置族、不碰别人文件），
+全仓测试源集干净后应再跑一次复核；② `459d7ceb` 的提交信息挂错（内容是 B-4 的 9 个
+真实产物、标题是 B-3 的修复，因共享暂存区被并发重置），内容无误，不重写历史。
+
+**四条可复用的经验**：
+1. **渲染层不挂源集 = 等于没写。** 原基线代码 15 小时「没暴露问题」，根因不是没人检查，
+   而是没有任何变体去编 `pages/settings`。挂上后立刻炸出 miuix 包名错误。
+2. **通用渲染层改变工作量性质。** `SettingsPageScreen(spec)` 一次投入之后，
+   20 页只需写模型层（数据）——这是 4 组能在几小时内并行做完的原因。
+3. **`filled` 这类小工具在多个域各定义一份是踩踏源。** 8 个包各有 `filled`/`filledImport`，
+   签名还不一致（单参 vs vararg），全队为此互相阻塞过。正确做法是收进 `core/` 一处。
+4. **共享暂存区真的会被抢。** 两次实际事故（`459d7ceb` 挂错标题、B-4 提交变空）。
+   路径限定提交仍是正道，但 `add` 与 `commit` 之间**不能夹任何耗时操作**。
+
+**验收基线问题（Lead 已修，2026-10-27）**：原基线代码按 miuix **0.8.8** 的
+`extra.Super*` 包名写的，而依赖已升到 **0.9.4**——`extra` 包整体消失，官方改成独立的
+`miuix-preference` 模块（`preference.{Arrow,Switch,Slider,OverlayDropdown,RadioButton,Checkbox}Preference`）。
+这批代码此前**从未通过编译**，就是这个原因。Lead 已全部改到 0.9.4 官方组件
+（滑杆行也从自绘包一层改为官方 `SliderPreference`），`:app:compileComposeUiDebugKotlin` 已绿。
 
 ### P3-C1 课表 · 周视图 ⬜
 `timetable_screen`(1842) `timetable_profiles_screen`(522) + `lib/widgets/timetable/*.dart` 55 件
@@ -263,8 +320,8 @@ Phase 3 准备文档 §3.3 待定项 5：小组件展示层是沿用现有 Remot
 
 | 级别 | 谁跑 | 命令 | 能证明什么 |
 |---|---|---|---|
-| L1 编译验证 | **领用者**（可高频） | `./gradlew :app:compileComposeUiDebugKotlin`（或 `…compileComposeP1DebugKotlin`） | 代码无编译错误 |
-| L2 单测 | **领用者**（每批交付时一次） | `./gradlew :app:testComposeUiDebugUnitTest` | 能编 + 逻辑正确 |
+| L1 编译验证 | **领用者**（可高频） | `./gradlew :app:compileComposeUiDebugKotlin`（**且该目录已挂载**） | 代码无编译错误 |
+| L2 单测 | **领用者**（每批交付时一次） | `./gradlew :app:testProdDebugUnitTest --tests 'com.mutx163.qingyu.pages.<域>.*'` | 能编 + 逻辑正确 |
 | L3 出包 | **用户**（Android Studio 里点，或 `flutter build`） | `flutter build apk …` | APK 能出来 |
 | L4 真机验证 | **用户**（AS Run / Live Edit） | — | 真的能用 |
 
@@ -312,6 +369,18 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 
 锁是 `.agents/compose-phase3/build-lock/` 目录（mkdir 原子），20 分钟无更新自动回收，最多排队 30 分钟。
 **泳道不要裸跑 `./gradlew`**，否则多条泳道 + AS 同时构建会互相拖到 OOM/超时。
+
+⚠️ **比 OOM 更阴的后果（2026-10-27 13:11 实测）**：两个 Gradle 构建同时跑**同一个工程目录**时，
+它们共享 `android/build`、`android/app/build`，会互相覆盖 Kotlin 增量输出。症状不是「内存不够」，
+而是**假失败**：`compileProdDebugKotlin` 明明 0 错误，紧接着的 `compileProdDebugUnitTestKotlin`
+却报出成千上万条 `Unresolved reference`，指向的还是一分钟前刚编过的主源集类
+（实测 `WidgetDataClock`、`StatisticsService`、`TimeSchemeLogic` 全被报「找不到」）。
+
+- 判别：错误的类**分散在所有模块**（不是集中在某一域）+ 同一提交重跑就好了 → 并发污染。
+- 处置：等外部构建退出后重跑一次，**不要去改代码**（那些引用本来是对的）。
+- 闸门已加固：拿到锁之后**还要等外部 `GradleWrapperMain` 进程清零**才开跑（最多等 30 分钟，
+  超时退出码 112）。只统计 wrapper 进程，不统计常驻 `GradleDaemon`（AS 会一直留着空闲 daemon，
+  算进来会永远等不到零）。
 
 ---
 
