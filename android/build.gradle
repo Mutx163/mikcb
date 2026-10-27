@@ -13,7 +13,20 @@ allprojects {
 
 rootProject.buildDir = "../build"
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    // 只有**工程目录内**的模块才把产物集中到 Flutter 的 build/ 下。
+    //
+    // 为什么不能一律重定向（2026-10-27 实证）：本机 Pub 缓存在 D:\Cache\Pub，
+    // Flutter SDK 在 D:\Flutter，而工程在 C:\cursor\mikcb。把这些外部模块的
+    // buildDir 指到 C:\cursor\mikcb\build\<name> 后，AGP 创建任务时要在
+    // 项目目录（D:）与产物目录（C:）之间算相对路径，直接抛
+    // "this and base files have different roots"，Android Studio 同步报
+    // "Could not create task ':xxx:generateDebugUnitTestConfig'"。
+    // 让外部模块用各自的默认 buildDir（与自身同盘）即可，Flutter 工具只依赖
+    // :app 的产物位置，不受影响。CI（Linux，全部在同一个根下）行为不变。
+    def flutterProjectRoot = rootProject.projectDir.parentFile.toPath()
+    if (project.projectDir.toPath().startsWith(flutterProjectRoot)) {
+        project.buildDir = "${rootProject.buildDir}/${project.name}"
+    }
 }
 subprojects {
     // integration_test 模块（build.gradle 在 Flutter SDK 里）声明的是动态版本
@@ -48,6 +61,22 @@ subprojects { subproject ->
     if (subproject.name == 'file_picker' || subproject.name == 'mobile_scanner') {
         subproject.plugins.withId('com.android.library') {
             subproject.pluginManager.apply('org.jetbrains.kotlin.android')
+        }
+    }
+}
+
+// Kotlin 编译目标兜底（2026-10-27）：
+// AGP 9.4 的 Java 目标是 17（compileOptions 与 AGP 默认一致），但 KGP 在未显式
+// 指定时会让 jvmTarget 跟随**跑 Gradle 的 JVM**。本机 Android Studio 内置 JBR 是
+// 25，一旦 IDE 用自带 JVM 跑构建，file_picker 这类同时含 Java 与 Kotlin 源码的
+// 模块就会报 "Inconsistent JVM-target compatibility ... (17) and ... (25)"，
+// 且 25 字节码 D8 也未必吃得下。
+// 这里对**所有**应用了 kotlin-android 的子项目（含 pub 缓存里的第三方插件）统一钉到 17，
+// 与 AGP baseline、CI 的 setup-java 17、gradle-daemon-jvm.properties 一致。
+subprojects { subproject ->
+    subproject.plugins.withId('org.jetbrains.kotlin.android') {
+        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
+            task.compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 }
