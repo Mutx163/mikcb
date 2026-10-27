@@ -375,6 +375,14 @@ bash .agents/compose-phase3/build-gate.sh :app:compileComposeUiDebugKotlin
 bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'com.mutx163.qingyu.pages.<域>.*'
 ```
 
+**2026-10-27 16:00 起上游有了正式工具，优先用它**：
+- `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>"` —— 免 Gradle 的**模块级 L0**
+  （内置 kotlinc + JUnitCore，0.2 秒、<150MB，完全不受别人半成品拖累）；缺依赖时用 `-ExtraSources` 补。
+- `pwsh -File scripts/safe-gradle.ps1 <gradle 参数>` —— 带 Windows 内核互斥锁的 Gradle 包装，
+  L1/L2 一律走这条（同一时刻全机只允许一个 Gradle）。
+- 本机的 `.agents/compose-phase3/build-gate.sh` 是这套工具之前的手工版，保留作兜底；
+  两者不要同时用（锁不通）。
+
 锁是 `.agents/compose-phase3/build-lock/` 目录（mkdir 原子），20 分钟无更新自动回收，最多排队 30 分钟。
 **泳道不要裸跑 `./gradlew`**，否则多条泳道 + AS 同时构建会互相拖到 OOM/超时。
 
