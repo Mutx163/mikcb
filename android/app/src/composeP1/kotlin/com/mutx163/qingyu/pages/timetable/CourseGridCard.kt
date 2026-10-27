@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ContactsCircle
 import top.yukonga.miuix.kmp.icon.extended.Location
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 周视图课程卡片展示模型。
@@ -131,8 +132,8 @@ fun CourseGridCard(
                             ) {
                                 Text(
                                     text = "非本周",
-                                    fontSize = 7.5.sp,
-                                    lineHeight = 9.sp,
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    lineHeight = 13.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = ink,
                                 )
@@ -147,8 +148,8 @@ fun CourseGridCard(
                             ) {
                                 Text(
                                     text = "冲突",
-                                    fontSize = 7.5.sp,
-                                    lineHeight = 9.sp,
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    lineHeight = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                 )
@@ -160,8 +161,8 @@ fun CourseGridCard(
                 // 课程名称
                 Text(
                     text = course.name,
-                    fontSize = if (model.totalCols > 1) 9.5.sp else 10.5.sp,
-                    lineHeight = 12.sp,
+                    style = MiuixTheme.textStyles.footnote2,
+                    lineHeight = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = ink,
                     maxLines = if (span >= 3) 4 else if (span >= 2) 3 else 2,
@@ -187,8 +188,8 @@ fun CourseGridCard(
                         }
                         Text(
                             text = course.location,
-                            fontSize = if (model.totalCols > 1) 8.5.sp else 9.sp,
-                            lineHeight = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
+                            lineHeight = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = subInk,
                             maxLines = 1,
@@ -211,8 +212,8 @@ fun CourseGridCard(
                         Spacer(modifier = Modifier.width(1.5.dp))
                         Text(
                             text = course.teacher,
-                            fontSize = 8.5.sp,
-                            lineHeight = 10.sp,
+                            style = MiuixTheme.textStyles.footnote2,
+                            lineHeight = 13.sp,
                             fontWeight = FontWeight.Normal,
                             color = subInk.copy(alpha = 0.85f),
                             maxLines = 1,

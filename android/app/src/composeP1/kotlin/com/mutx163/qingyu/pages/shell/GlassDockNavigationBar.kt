@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -322,7 +321,7 @@ private fun GlassDockTab(
                 maxLines = 2,
                 textAlign = TextAlign.Center,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = GlassDockGeometry.LabelSizeSp.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             )
         }
