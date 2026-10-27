@@ -106,7 +106,7 @@
 | P3-B-3 | 设置 · 行为与系统 | 4 | — | 同上 | ✅ 已完成（`ba47a609` `e398df5a`，128 例） |
 | P3-B-4 | 设置 · 坞栏与重置 | 3+1 | — | 同上 | ✅ 已完成（`459d7ceb`，79 例） |
 | P3-C1 | 课表 · 周视图 | 57 | 13 588 行 | `pages/timetable/`（不含 `pages/timetable/month/`、`pages/timetable/day/`） | ✅ 已交付（`367f3aed`；挂载于 18:40 由 Lead 补上，见 §7.2.1） |
-| P3-C2 | 课表 · 月视图 | 11 | 4 093 行 | `pages/timetable/month/` | ⬜ 待领（Dart 侧在途，等稳定） |
+| P3-C2 | 课表 · 月视图 | 11 | 4 093 行 | `pages/timetable/month/` | ✅ **已交付**（两泳道并行：`a7cb2b2b` `810f801a` `644c2d25` + `08805e77` `2e29bb40` `0149149f`；L0 79 例、L1 绿；未真机对照） |
 | P3-C3 | 课表 · 日视图 | 13 | 4 171 行 | `pages/timetable/day/` | ✅ 已交付（另一会话，`b5b8bba2`；随父目录 `timetable` 于 18:40 一并纳入编译，见 §7.2.1） |
 | P3-D1 | 课程表单与概览 | 4 | 2 753 行 | `pages/course/` | ✅ 已交付（`8e140fb7`，13 文件 4 816 行，86 例；未真机对照） |
 | P3-D2 | 日程与任务 | 5 | 3 171 行 | `pages/schedule/`、`pages/task/` | ✅ 已完成（`97157c7a`，未真机对照） |
@@ -217,7 +217,7 @@ P3-G1（1 878 行）偏小，可并入 P3-D1 一起做。领的时候在认领�
 **写作用域**：`pages/timetable/` 顶层，**不含** `pages/timetable/month/`、`pages/timetable/day/`
 （后两个目录分别归 P3-C2 / P3-C3，各写各的，互不越界）。
 
-### P3-C2 课表 · 月视图 ⬜ 唯一剩余未启动
+### P3-C2 课表 · 月视图 ✅ 已交付（2026-10-27 深夜，两泳道并行）
 `month_view_screen`(952) + `lib/widgets/timetable/month_view/` 10 件
 （`month_grid` `month_day_cell` `month_day_agenda` `month_calendar_card` `month_panel_surface` …）。
 `pages/timetable/month/` 当前 **0 文件**；父目录已挂载，**落文件即自动纳入编译**，无需再改 `build.gradle`。
@@ -498,12 +498,12 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-A 关于与说明 | ✅ 已完成 | 6 笔提交（`2a7f78ea`…`46d806a3`），`pages/about/` 5 个 Kotlin 文件 + 测试 |
 | P3-B 设置族 | ✅ 已完成 | 20 页全迁（62 文件 / 18,798 行），511 例全绿；通用渲染层 `SettingsPageScreen(spec)` 一目录服务 20 页 |
 | P3-C1 课表·周视图 | ✅ 已完成（18:40 补挂载并首次编译通过） | `367f3aed`，14 文件 3,591 行，54 例；挂载后修 3 处重复声明，模块 58 例绿 |
-| P3-C2 课表·月视图 | ⬜ 唯一剩余未启动 | Dart 侧 month_view 重写仍在工作区未提交，等它稳定 |
+| P3-C2 课表·月视图 | ✅ 已交付 | 拆两泳道并行：日历半 `a7cb2b2b`+`810f801a`+`644c2d25`，面板半 `08805e77`+`2e29bb40`+`0149149f`；模型层 42 格/周次/课考日程计数，渲染层 10 件；L0 79 例、L1 绿；**未真机对照**；横向滑动翻月刻意未做 |
 | P3-C3 课表·日视图 | ✅ 已交付 | `b5b8bba2`，19 文件 3,456 行，25 例 |
 | P3-D1 课程表单与概览 | ✅ 已交付 | `8e140fb7`，13 文件 4,816 行，86 例 |
 | P3-D2 日程与任务 | ✅ 已完成 | `97157c7a` + `59faedc8` 修 74 个 miuix 0.9.4 错误中的 schedule/task 部分 |
 | P3-D3 作息与考试 | ✅ **4/4 页已交付** | exam 侧 `40dbb943`（41 例）+ `a84fb0d6`（36 例）；`fae9721a` 作息管理（25 例）+ `7499c7ab` 地点匹配（21 例）。D3-b 渲染层首次进编译 |
-| P3-E 统计族 | ✅ **4/4 页已交付**（图表为骨架） | 前 2 页 `61f3d80e`（13 例）+ `e0473069`（26 例）；`09e2de9f` 分析页+会话页（33 例）。`lib/widgets/statistics/` 22 件图表未迁，渲染层给结构一致的读数行 |
+| P3-E 统计族 | ✅ 页 4/4 + **图表 15/22 已真画** | 页：`61f3d80e` `e0473069` `09e2de9f`。图表：`f518c917`（模型层）+`ddc5e48b`（折线/柱/热力/环形/排行条/周分布全为 Canvas 真绘，非读数行），模型层 L0 153 例。**未做 7 件**：成就徽章 454 / 数据故事 187 / 概览 108 + 导出四件 |
 | P3-F 同步与备份 | ✅ **4/4 页已交付** | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍） |
 | P3-G1 导入·基础 | ✅ 已交付 | `1b58806b`，17 文件 5,191 行，161 例 |
 | P3-G2 导入·仓库适配 | ✅ 已交付 | `ea9202aa`，24 文件 6,195 行 |
@@ -515,7 +515,7 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-K 冲突与反馈小页 | ✅ 已交付 | `aef4c5c8` |
 | P3-0 基础设施 | ✅ 主体完成 | 主题桥 `772ce837`；渲染层逐目录挂载 + CI 编译 + `composeP1` 停役守卫；L0 模块单测 + `safe-gradle` 排队锁；i18n 中文字面量棘轮门禁 `b9bc98d1` |
 | P3-0-glassdock 玻璃导航栏 | ✅ 已交付 | `pages/shell/` 三层 + 20 例 + 3 次咬合探针；壳里 Material 占位条整体删除 |
-| P3-0-interaction 交互与材质 | 🔶 部分完成 | `bfdfabfd`：新增 `components/QingyuCard.kt`（可点默认开 `Sink` 按压 + `showIndication` + 语义圆角），30 文件 107 处调用已换用；**余 27 文件待补**（全部被并发会话占用，见 §9.2）。字号问题未动 |
+| P3-0-interaction 交互与材质 | 🔶 大部完成 | `bfdfabfd` 卡片入口（30 文件 107 处）；**字阶迁移完成** `04a78c7f`+`9649c46c`（31 文件 275 处，映射脚本 `scripts/migrate-fontsize-to-textstyles.py`）；`cb731202` 九页改走官方配方；`1577252a` 展示册改真模糊。**未做**：`fontWeight` 未动、毛玻璃页面层未接 |
 | P3-L 小组件 / 超级岛 | ⏸ 待拍板 | RemoteViews 还是 Compose Glance，Lead 未拍板前不开工 |
 
 **本轮验证基线（Lead 亲自跑，21:07）**：`:app:testProdDebugUnitTest` → **2978 例 / 0 失败 / 0 错误 / 0 跳过**（218 个测试类，`BUILD SUCCESSFUL in 1m17s`）。
@@ -586,22 +586,60 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 
 ⚠ 本节全部证据只到 L1（编译过），**没有一页做过真机对照**。
 
-### 9.3 第三轮五泳道（2026-10-27 21:40 领，进行中）
+### 9.3 第三轮五泳道（2026-10-27 21:40 领 · 23:05 收口）
 
 用户口径「查看进度、用智能体团队、领五个任务、提速」。领的五条泳道（写作用域按**文件清单**互斥，
 同域多泳道照 P3-B 的模式办；认领见 `.agents/compose-phase3/claims/`）：
 
-| 泳道 | 批次 | 内容 | 状态 |
+| 泳道 | 批次 | 内容 | 结果 |
 |---|---|---|---|
-| `type-sweep` | P3-0-interaction | 29 文件 269 处硬写字号 → 官方字阶 | ✅ `04a78c7f` |
-| `stats-charts` | P3-E | 统计族 22 件图表：模型层 + 渲染层 | 🔄 模型层 `f518c917`（59 例），渲染层进行中 |
-| `month-calendar` | P3-C2 | 月视图日历半：42 格网格 + 日历卡/格/工具栏 | 🔄 模型层 `a7cb2b2b`，渲染层进行中 |
-| `month-panel` | P3-C2 | 月视图面板半：折叠面板 + 概览 + 议程 + 页壳 | 🔄 模型层 `08805e77`，渲染层进行中 |
-| `l4-recon` | — | 真机对照（L4）逐页清单与入口核对 | 🔄 出 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md` |
+| `type-sweep` | P3-0-interaction | 硬写字号 → 官方字阶 | ✅ **31 文件 275 处**：`04a78c7f`（29 文件 269 处）+ `9649c46c`（周视图课卡 5 处 + 玻璃坞标签 1 处） |
+| `stats-charts` | P3-E | 统计族图表：模型层 + 渲染层 | ✅ **18 件 Dart → 15 个落点**，`f518c917`（模型层）+ `ddc5e48b`（六张图真画）；模型层 L0 **153 例**；7 件未做（成就/数据故事/概览 + 导出四件） |
+| `month-calendar` | P3-C2 | 月视图日历半 | ✅ `a7cb2b2b` `810f801a` `644c2d25` `62a6ccea` `45ba821b` |
+| `month-panel` | P3-C2 | 月视图面板半 | ✅ `08805e77` `2e29bb40` `0149149f` `7f85ee1f` |
+| `l4-recon` | — + P3-0 壳 | L4 逐页清单 → 追加：壳页面索引 | ✅ **清单 528 行**（`3f1c35eb`）+ **壳路由**（`867f83e8` `2f59c811`） |
 
-**Lead 本轮写的共享层**（`4c89c576`）：`scripts/migrate-fontsize-to-textstyles.py`、
-`tool/gen_month_view_strings.py`、`main/.../pages/timetable/month/MonthMetrics.kt`、
-`MonthViewStrings.kt`。月视图两泳道都依赖后两件，**不许改**，要改找 Lead。
+**月视图 P3-C2 至此交付**：模型层（42 格/周次/课考日程计数/假期/busyDays）+ 10 件渲染层
+（日历卡、网格、日期格、工具栏、面板材质、拉拽区、概览、当日议程、拉杆、整页壳）。
+两泳道共用 Lead 写的 `MonthMetrics.kt` / `MonthViewStrings.kt`，**跨泳道只有一处签名依赖**
+（`MonthGridHandle`），实测对上了。L0 **79 例**。
+
+**壳路由是这一轮真正的解锁点**：`composeUi` 壳原本只有课表/日程/任务三个槽位、
+不读 Intent、深链是 Flutter debug 专属，**82 个页面单元只有 3 个点得到**——L4「逐页对照」
+在接线前物理上做不了。现在底部玻璃坞第 4 个槽位「索引」= 按批次分组的页面目录：
+**可进 75 条（16 零参 + 59 演示数据）、暂不可用 6 条、常驻 1**，四个数字被
+`ShellPageCatalogTest` 钉住（改口径必须同时改测试与 L4 清单，是显式决定）。
+「暂不可用」升级成机器可查的 `ShellBlockReason`（缺整页渲染层 4 / 缺宿主槽位 2 / 缺依赖 0），
+原因文字必须以分类标签开头，`filter { blockedBy == … }` 就是将来待放开清单。
+
+**本轮验证基线（Lead 亲自跑）**：
+
+| 级别 | 命令 | 结果 |
+|---|---|---|
+| L1 | `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` | **BUILD SUCCESSFUL 1m35s，`e:` 0 条**（四条泳道的产物同时在册） |
+| L0 | `test-kotlin-module.ps1` × 3 模块 | 月视图 **79** + 统计图表 **153** + 壳 **39** = **271 例全绿** |
+| Dart 架构守卫 | `flutter test --no-pub test/architecture/` | **62 例全过**（补跑 `--no-verify` 欠下的门禁） |
+| L2 全量 | `:app:testProdDebugUnitTest` | ❌ **暂时红，但与本轮五行无关**：他人 WIP 把 `components/QingyuTextStylesTest.kt` 放进共用测试源集，而它引用 `composeP1` 的 `buildQingyuTextStyles`（prod 变体编译不到）。证据：46 条 `e:` 全在该文件。**待其所有者把测试挪到 compose 变体源集后重跑** |
+
+**仍未做（诚实清单）**：
+① **没有一页做过真机对照**——现在至少能点进去了，清单已就位；
+② 统计族 7 件未迁（成就徽章 454 / 数据故事 187 / 概览 108 / 导出四件）；
+③ 月视图横向滑动翻月（属日历半的 HorizontalPager，本批刻意不做）；
+④ 毛玻璃仍只在壳底栏 1 处，页面顶栏/弹层没接；
+⑤ `fontWeight` 未动（本轮只管字号），局部强调仍写 `fontWeight = Medium`，会盖掉主题字重。
+
+#### 本轮可复用的三个做法
+
+1. **「喂坏值」型常驻守卫 > 一次性改坏探针。** `month-calendar` 给共享层写的是
+   `requireCardChrome(40, 2, 26)` 必须抛 / 喂真值必须过，可反复跑；比「今天改坏一次证明有牙」
+   更能证明明天还有牙。`stats-charts` 的 4 处改坏 → 7 条红也留了具体报错原文。
+2. **跨泳道依赖只留一处，并当场点明。** 月视图两条泳道只通过 `MonthGridHandle` 的签名耦合，
+   交付汇报里主动列出这一处，编译时一眼就能判定归属。
+3. **事故主动上报、不动历史。** `month-panel` 的 `git commit --amend` 撞上别人成了 HEAD、
+   立即 `reset --soft` 还原并核对 tree；`2e29bb40` 的提交信息里混进 L0 输出
+   （因为在信息里写了反引号包的命令，**bash 当命令替换真跑了一次**）——**保留不改**，
+   并发提交下 rebase 的风险远大于一条难看的提交信息。这条坑值得记：提交信息里别写反引号命令。
+
 
 #### 三条必须记住的实测（本轮踩出来的）
 
@@ -647,6 +685,34 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin \
 于是两门并列的课会被编成 2、3（原实现的已知缺陷）。**本批保持 1:1**，
 理由是对照基线（L4 逐页截图对拍）不能被行为改进污染；改进留到对照完成之后单开一批，
 两侧一起改。`ChartMath.sequentialRanks` 的 KDoc 里已写明这条。
+
+#### 台账虚标的三处（2026-10-27 由 `l4-recon` 核对发现，Lead 逐条复验）
+
+l4-recon 把「渲染层是否存在」逐页核了一遍，结论比台账乐观的写法更保守。以下三处**复验属实**，
+状态需要从「已完成」降级为「待收口」；根因是**登记靠人工**，而设置族的页面根本没有独立
+Composable（由一个通用 `SettingsPageScreen(spec)` 渲染），于是「没写页面函数」和「没写页面」
+在人工登记里长得一模一样。
+
+| 台账原本 | 实际 | 证据 |
+|---|---|---|
+| P3-A「4 页已完成」 | **3 页**。「更新日志」只有解析层 `about/ReleaseNotesBlocks.kt`(96)，`composeP1/.../about/` 下无对应渲染 | `AboutInfoModel.kt:154` 有入口行，落点没有界面 |
+| P3-B「20 页全迁」 | **19 页**。「课表页面设置」只有入口行 `timetable.pageSettings`（`SettingsTimetablePage.kt:148`），**没有落点 spec** | `SettingsBatchCoverageTest` 登记 41 个 spec id，其中不含该页 |
+| P3-J「已交付」 | 主设置屏交付，「实时活动·保持后台运行」子屏**无实现** | `SettingsLivePage.kt:113` 有 `live.keepAlive` 导航行，落点缺 |
+
+（`l4-recon` 同时报的第四项「月视图没有渲染层」属实但不算虚标——台账本来就写「未启动」，
+本轮已由 `month-calendar` / `month-panel` 开始补。）
+
+**教训与修法**：只登记「页面存在」挡不住这类缺口，**要登记「入口行的落点真的能构造出来」**。
+设置族已有 `SettingsBatchCoverageTest` 做这件事（每个 spec id 都真的构造一次），
+其余族没有；建议补一条同构守卫：扫描渲染层里的入口 id，逐个断言落点。
+
+#### 壳只能进 3 页（L4 的前置阻塞，本轮已开工）
+
+`composeUi` 的 `PagesShellActivity` 只有 `DockSlot`（课表/日程/任务）三个值，没有路由状态、
+不读 Intent；manifest 的 mime/scheme 过滤全挂在 `enabled=false` 的 `MainActivity` 上，
+深链又是 Flutter debug 专属（release 直接 return）。所以**82 个页面单元里只有 3 个点得到**，
+L4「逐页对照」在接线前物理上做不了。交给 `l4-recon` 做 task-6（页索引 + 分派，壳属 Lead 区，
+本次点名授权），并要求「接进去就崩的页面宁可标暂不可用，也不要给一个闪退入口」。
 
 ---
 
