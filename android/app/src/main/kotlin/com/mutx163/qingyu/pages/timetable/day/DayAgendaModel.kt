@@ -238,6 +238,21 @@ object DayAgendaLogic {
 
     /**
      * 将一个日程条目转换为目标日期的议程条目（处理跨天 00:00/23:59 剪裁）。
+     *
+     * ## 重复日程必须先「物化」再判跨天
+     *
+     * 对齐 Dart `ScheduleItemInstance.materializedItem`
+     * （`lib/models/schedule_item.dart:82-87`）：
+     * ```dart
+     * ScheduleItem get materializedItem {
+     *   if (!item.isRecurring) return item;
+     *   return item.copyWith(startDate: date, endDate: date);
+     * }
+     * ```
+     * 重复日程的 `startDate` / `endDate` 只是**系列锚点**，不是这一次发生的区间；
+     * 不物化就会把「锚定 2026-09-01 的每周日程」在 2026-10-27 判成
+     * `startDate < 目标日`，于是起点被剪成 00:00、终点被剪成 23:59，
+     * 界面显示「全天」而不是 09:00-10:00。
      */
     fun scheduleEntryForDate(
         item: ScheduleItem,
@@ -245,8 +260,13 @@ object DayAgendaLogic {
         occurrenceId: String? = null,
     ): DayAgendaEntry.ScheduleEntry {
         val targetDay = CourseTask.dateOnly(targetDate)
-        val continuesPrev = item.startDate.isBefore(targetDay)
-        val continuesNext = item.endDate.isAfter(targetDay)
+        // 重复日程：单次发生的起止日期就是目标日，故不参与跨天判定。
+        // 非重复日程：起止日期一律按**日历日**比较（Dart 侧 _normalizeDate 在构造时
+        // 就把 startDate/endDate 归一成日期，Kotlin 这里在比较处归一，两种写法都稳）。
+        val effectiveStart = if (item.isRecurring) targetDay else CourseTask.dateOnly(item.startDate)
+        val effectiveEnd = if (item.isRecurring) targetDay else CourseTask.dateOnly(item.endDate)
+        val continuesPrev = effectiveStart.isBefore(targetDay)
+        val continuesNext = effectiveEnd.isAfter(targetDay)
 
         return DayAgendaEntry.ScheduleEntry(
             scheduleItem = item,
