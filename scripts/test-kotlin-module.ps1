@@ -71,10 +71,30 @@ if (Test-Path $testDir) {
     $sources += (Get-ChildItem -Path $testDir -Filter "*.kt" -Recurse).FullName
 }
 
-# 默认包含通用辅助类 MiniJson（如果存在且未包含）
-$miniJson = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/core/MiniJson.kt"
-if ((Test-Path $miniJson) -and ($sources -notcontains $miniJson)) {
-    $sources += $miniJson
+# 默认带上公共模型层：绝大多页面模型都依赖 core 里的 Course / Exam / CourseTask /
+# TimetableSettings 等值类型，以及 statistics / share / transfer / sync / infra /
+# widgetdata / theme（色板与形状等 Int ARGB / 数值常量）等纯 Kotlin 数据层，
+# 只收本模块目录会报一堆 unresolved reference。
+# 这些目录全部无 Android/Compose 依赖，体积仍很小，不影响 0.2s 极速目标。
+# 若将来某目录混入 Android 依赖，脚本会自动跳过并打印提示。
+# 注：theme/ 的 QingyuTheme.kt 只放槽位数据类与种子色常量，Compose 接线在 composeP1/，
+# 故 theme/ 始终可进 JVM 单测 classpath；真正踩到 androidx.compose/miuix 时下方过滤会拦。
+$sharedModelDirs = @("core", "calendar", "course", "infrastructure", "infra", "statistics", "share", "transfer", "sync", "weather", "widgetdata", "theme")
+foreach ($sharedDir in $sharedModelDirs) {
+    $absSharedDir = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$sharedDir"
+    if (-not (Test-Path $absSharedDir)) { continue }
+    # 纯 Kotlin 判定：android.* 框架类、androidx.compose.*、miuix 都进不了 JVM 单测 classpath
+    # （androidx.annotation / kotlin 等纯 JVM 依赖不在此列，允许通过）。
+    $androidImports = @(Get-ChildItem -Path $absSharedDir -Filter "*.kt" -Recurse |
+            Select-String -Pattern "^\s*import\s+(android[\.\:]|androidx\.compose|top\.yukonga\.miuix)" -List)
+    if ($androidImports.Count -gt 0) {
+        Write-Host ">>> [test-kotlin-module] 跳过 $sharedDir/（含 Android 依赖，不属于纯 Kotlin 模型层）" -ForegroundColor DarkYellow
+        continue
+    }
+    $sharedSources = (Get-ChildItem -Path $absSharedDir -Filter "*.kt" -Recurse).FullName
+    foreach ($src in $sharedSources) {
+        if ($sources -notcontains $src) { $sources += $src }
+    }
 }
 
 foreach ($extra in $ExtraSources) {
