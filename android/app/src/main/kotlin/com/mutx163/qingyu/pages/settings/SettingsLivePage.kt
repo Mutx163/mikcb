@@ -173,8 +173,14 @@ object SettingsLivePage {
         if (parts.isEmpty()) {
             return LiveSummary(s.liveDisplaySummaryMinimal.key, s.liveDisplaySummaryMinimal.zh)
         }
-        if (parts.size <= 2) {
-            // 拼出来的串不是单条 ARB 文案，故 key 为 null
+        if (parts.size == 1) {
+            // 只有一项时 Dart 侧 `parts.join('·')` 就是那一项本身（:157-159），
+            // 屏上文字与它的 ARB 文案逐字相同 → 键**原样带出去**，
+            // 这样「摘要=课程名」也能被对拍，而不是退化成「拼出来的串」。
+            return LiveSummary(parts.first().key, parts.first().zh)
+        }
+        if (parts.size == 2) {
+            // 两项拼出来的串不是任何单条 ARB 文案
             return LiveSummary(null, parts.joinToString("·") { it.zh })
         }
         return LiveSummary(

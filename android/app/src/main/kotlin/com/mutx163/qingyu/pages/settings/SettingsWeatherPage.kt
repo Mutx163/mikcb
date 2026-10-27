@@ -132,7 +132,10 @@ object SettingsWeatherPage {
             id = "weather.city",
             component = MiuixRowComponent.ARROW,
             title = s.weatherCityLabel,
-            valueKey = if (city == null) s.weatherCityNotSet.key else NON_ARB_TEXT,
+            // 有城市名时它是**运行时数据**（Dart `String?`），不来自 ARB：
+            // 这里必须是 null 而不是空串——空串会被当成「有个键但键名是空的」，
+            // 语义与 `null`（没有键）不是一回事，测试按 null 钉住了它。
+            valueKey = if (city == null) s.weatherCityNotSet.key else null,
             value = city ?: s.weatherCityNotSet.zh,
             // :111 `onClick: weather == null ? null : …`
             enabled = data.providerAvailable,

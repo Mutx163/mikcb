@@ -99,8 +99,38 @@ class SettingsStringsExt3ParityTest {
                 checked++
             }
         }
-        // 防空转：四页 153 个键，铺满后至少应有这个量级的屏上文案。
-        assertTrue("逐字对照的文案条数太少（$checked），遍历器可能失效", checked >= 120)
+        // 防空转：遍历器若坏掉（返回空清单）必须红，而不是「零违规=绿」。
+        //
+        // 阈值取 90 而不是 120：文案表里有 160 条，但**屏上并不全都出现**——
+        // toast（保存失败 / 已写入应用日志 / 已开启应用日志记录…）、弹层正文
+        // （自定义假期的新增/编辑/删除确认）、分享文本（导出日志的 subject/body）
+        // 都不在 spec 里，它们只在动作被触发时才上屏。六份 spec 铺满条件分支后
+        // 实测约 98 条，取 90 留一点余量。
+        assertTrue("逐字对照的文案条数太少（$checked），遍历器可能失效", checked >= 90)
+    }
+
+    @Test
+    fun `六个 spec 一个都不少且每份都有文案`() {
+        // 这条专门防「漏挂某个子页」：总数阈值只要有一页被摘掉仍可能过线，
+        // 逐页非零 + 页数钉死才拦得住。SettingsLiveSelfCheckPage 与
+        // SettingsHolidayAdvancedPage 是最容易被忘在两个子页。
+        val list = specs()
+        assertEquals("spec 数量应恒为 6（4 个 Dart 源共 6 屏）", 6, list.size)
+        val empty = list.filter { spec ->
+            spec.allArbTexts().none { it.first != NON_ARB_TEXT }
+        }.map { it.id }
+        assertEquals("这些 spec 里一条 ARB 文案都没收到，递归遍历可能漏分支", emptyList<String>(), empty)
+        assertEquals(
+            listOf(
+                "settings-live",
+                "settings-live-self-check",
+                "settings-holiday",
+                "settings-holiday-advanced",
+                "settings-weather",
+                "settings-diagnostics",
+            ),
+            list.map { it.id },
+        )
     }
 
     @Test
