@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,8 +21,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -78,39 +80,40 @@ fun PickupCodesPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                for (group in PickupCodesModel.groups) {
-                    Text(
-                        text = PickupCodesModel.groupTitle(group),
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.sectionLabel(dark)),
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                    )
-                    QingyuCard(
+                item {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 2.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        val entries = PickupCodesModel.presetsOf(group)
-                        for ((index, preset) in entries.withIndex()) {
-                            EntryRow(
-                                preset = preset,
-                                installed = installedOf(preset),
-                                onClick = { onEntryClick(preset) },
-                            )
-                            if (index < entries.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 56.dp),
-                                    color = Color(QingyuTheme.dividerLine(dark)),
-                                )
+                        for (group in PickupCodesModel.groups) {
+                            QingyuSectionTitle(text = PickupCodesModel.groupTitle(group))
+                            QingyuCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                insideMargin = PaddingValues(vertical = 2.dp),
+                            ) {
+                                val entries = PickupCodesModel.presetsOf(group)
+                                for ((index, preset) in entries.withIndex()) {
+                                    EntryRow(
+                                        preset = preset,
+                                        installed = installedOf(preset),
+                                        onClick = { onEntryClick(preset) },
+                                    )
+                                    if (index < entries.lastIndex) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 56.dp),
+                                            color = Color(QingyuTheme.dividerLine(dark)),
+                                        )
+                                    }
+                                }
                             }
                         }
+
                     }
                 }
             }
@@ -143,7 +146,7 @@ private fun EntryRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = preset.title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.primaryText(dark)),
@@ -151,7 +154,7 @@ private fun EntryRow(
             Spacer(Modifier.height(2.dp))
             Text(
                 text = preset.hint,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.secondaryText(dark)),
@@ -161,7 +164,7 @@ private fun EntryRow(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = TransferExtStrings.pickupCodeSemanticsNotInstalled.zh,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }

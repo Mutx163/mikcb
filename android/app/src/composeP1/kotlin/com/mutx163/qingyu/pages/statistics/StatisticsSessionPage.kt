@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,12 +26,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.CoverageRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SessionRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.StatisticsSessionViewState
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SummaryMetric
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -111,12 +113,12 @@ fun StatisticsSessionPage(
                         )
                         Text(
                             text = viewState.emptyTitle,
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Text(
                             text = viewState.emptySubtitle,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }
@@ -124,89 +126,95 @@ fun StatisticsSessionPage(
                 return@Scaffold
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // ── 课程选择行 ──
-                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                    val current = viewState.selectedCourse ?: ""
-                    ArrowPreference(
-                        title = viewState.courseLabel,
-                        summary = current,
-                        onClick = {
-                            // 选中项由宿主决定（模型层 resolveSelection 收敛），
-                            // 这里只把「用户点了哪一门」上报。没有下拉是因为官方
-                            // ArrowPreference 不带选项集；宿主侧弹选择器。
-                            val next = viewState.courseNames.let { names ->
-                                if (names.isEmpty()) {
-                                    current
-                                } else {
-                                    val index = names.indexOf(current)
-                                    names[(index + 1) % names.size]
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── 课程选择行 ──
+                        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                            val current = viewState.selectedCourse ?: ""
+                            ArrowPreference(
+                                title = viewState.courseLabel,
+                                summary = current,
+                                onClick = {
+                                    // 选中项由宿主决定（模型层 resolveSelection 收敛），
+                                    // 这里只把「用户点了哪一门」上报。没有下拉是因为官方
+                                    // ArrowPreference 不带选项集；宿主侧弹选择器。
+                                    val next = viewState.courseNames.let { names ->
+                                        if (names.isEmpty()) {
+                                            current
+                                        } else {
+                                            val index = names.indexOf(current)
+                                            names[(index + 1) % names.size]
+                                        }
+                                    }
+                                    onSelectCourse(next)
+                                },
+                            )
+                        }
+
+                        // ── 没设开学日期的提示 ──
+                        val hint = viewState.noCalendarHint
+                        if (hint != null) {
+                            Text(
+                                text = hint,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
+
+                        // ── 四格汇总 ──
+                        if (viewState.summaryMetrics.isNotEmpty()) {
+                            SummaryCard(viewState.summaryMetrics)
+                        }
+
+                        // ── 记录覆盖 ──
+                        SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.zh) {
+                            if (viewState.stats == null || viewState.stats.sessions.isEmpty()) {
+                                Text(
+                                    text = viewState.coverageEmptyText,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                )
+                            } else {
+                                for ((index, row) in viewState.coverageRows.withIndex()) {
+                                    CoverageLine(row)
+                                    if (index < viewState.coverageRows.lastIndex) {
+                                        Spacer(Modifier.height(12.dp))
+                                    }
                                 }
                             }
-                            onSelectCourse(next)
-                        },
-                    )
-                }
-
-                // ── 没设开学日期的提示 ──
-                val hint = viewState.noCalendarHint
-                if (hint != null) {
-                    Text(
-                        text = hint,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                }
-
-                // ── 四格汇总 ──
-                if (viewState.summaryMetrics.isNotEmpty()) {
-                    SummaryCard(viewState.summaryMetrics)
-                }
-
-                // ── 记录覆盖 ──
-                SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.zh) {
-                    if (viewState.stats == null || viewState.stats.sessions.isEmpty()) {
-                        Text(
-                            text = viewState.coverageEmptyText,
-                            fontSize = 14.sp,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                        )
-                    } else {
-                        for ((index, row) in viewState.coverageRows.withIndex()) {
-                            CoverageLine(row)
-                            if (index < viewState.coverageRows.lastIndex) {
-                                Spacer(Modifier.height(12.dp))
-                            }
                         }
-                    }
-                }
 
-                // ── 课次列表 ──
-                SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.zh) {
-                    if (viewState.sessionRows.isEmpty()) {
-                        Text(
-                            text = viewState.coverageEmptyText,
-                            fontSize = 14.sp,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                        )
-                    } else {
-                        for ((index, row) in viewState.sessionRows.withIndex()) {
-                            SessionLine(row)
-                            if (index < viewState.sessionRows.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    color = Color(QingyuTheme.dividerLine(dark)),
+                        // ── 课次列表 ──
+                        SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.zh) {
+                            if (viewState.sessionRows.isEmpty()) {
+                                Text(
+                                    text = viewState.coverageEmptyText,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
                                 )
+                            } else {
+                                for ((index, row) in viewState.sessionRows.withIndex()) {
+                                    SessionLine(row)
+                                    if (index < viewState.sessionRows.lastIndex) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 10.dp),
+                                            color = Color(QingyuTheme.dividerLine(dark)),
+                                        )
+                                    }
+                                }
                             }
                         }
+
                     }
                 }
             }
@@ -230,7 +238,7 @@ private fun SummaryCard(metrics: List<SummaryMetric>) {
                 ) {
                     Text(
                         text = metric.value,
-                        fontSize = 22.sp,
+                        style = MiuixTheme.textStyles.title3,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -243,7 +251,7 @@ private fun SummaryCard(metrics: List<SummaryMetric>) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = metric.label,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = if (metric.highlight) {
@@ -275,10 +283,10 @@ private fun CoverageLine(row: CoverageRow) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = row.label, fontSize = 14.sp, color = Color(QingyuTheme.primaryText(dark)))
+            Text(text = row.label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
             Text(
                 text = row.valueText,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
@@ -319,7 +327,7 @@ private fun SessionLine(row: SessionRow) {
             ) {
                 Text(
                     text = row.phaseLabel,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -327,7 +335,7 @@ private fun SessionLine(row: SessionRow) {
             Spacer(Modifier.width(8.dp))
             Text(
                 text = row.subtitle,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.secondaryText(dark)),
@@ -338,7 +346,7 @@ private fun SessionLine(row: SessionRow) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = note,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.primaryText(dark)),
@@ -352,12 +360,7 @@ private fun SessionLine(row: SessionRow) {
 private fun SectionBlock(title: String, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontSize = 13.sp,
-            color = Color(QingyuTheme.sectionLabel(dark)),
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-        )
+        QingyuSectionTitle(text = title)
         QingyuCard(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),

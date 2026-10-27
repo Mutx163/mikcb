@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,8 +23,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -113,81 +116,88 @@ fun LocationTimeMatchPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // ── 分区标题 ──
-                Text(
-                    text = LocationTimeMatchStrings.entryTitle.zh,
-                    fontSize = 13.sp,
-                    color = Color(QingyuTheme.sectionLabel(dark)),
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                )
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── 分区标题 ──
+                        QingyuSectionTitle(text = LocationTimeMatchStrings.entryTitle.zh)
 
-                if (model.isEmpty) {
-                    // Dart：空态是一行「新建地点组」ActionTile，不是自造空态文案
-                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                        ArrowPreference(
-                            title = model.createGroupLabel,
-                            summary = null,
-                            onClick = onCreateGroup,
-                        )
-                    }
-                } else {
-                    // ── 规则卡 ──
-                    for ((index, card) in model.cards().withIndex()) {
-                        GroupCardView(
-                            card = card,
-                            onToggle = { enabled -> onToggleGroup(card.groupId, enabled) },
-                            onEdit = { onEditGroup(card.groupId) },
-                            onDelete = { onDeleteGroup(card.groupId) },
-                        )
-                        if (index < model.cards().lastIndex) {
-                            Spacer(Modifier.height(8.dp))
+                        if (model.isEmpty) {
+                            // Dart：空态是一行「新建地点组」ActionTile，不是自造空态文案
+                            // 只包 Preference：不传 insideMargin（Preference 自带 16dp）
+                            QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                                ArrowPreference(
+                                    title = model.createGroupLabel,
+                                    summary = null,
+                                    onClick = onCreateGroup,
+                                )
+                            }
+                        } else {
+                            // ── 规则卡 ──
+                            for ((index, card) in model.cards().withIndex()) {
+                                GroupCardView(
+                                    card = card,
+                                    onToggle = { enabled -> onToggleGroup(card.groupId, enabled) },
+                                    onEdit = { onEditGroup(card.groupId) },
+                                    onDelete = { onDeleteGroup(card.groupId) },
+                                )
+                                if (index < model.cards().lastIndex) {
+                                    Spacer(Modifier.height(8.dp))
+                                }
+                            }
                         }
-                    }
-                }
 
-                // ── 试匹配 ──
-                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 10.dp)) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        TextField(
-                            value = previewInput,
-                            onValueChange = { previewInput = it },
-                            label = model.previewLabel,
-                            singleLine = true,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        val preview = model.previewText(previewInput)
+                        // ── 试匹配 ──
+                        // 包自绘内容（TextField + 结果文本）：用官方 ContentInsideMargin(16dp)
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                        ) {
+                            Column {
+                                TextField(
+                                    value = previewInput,
+                                    onValueChange = { previewInput = it },
+                                    label = model.previewLabel,
+                                    singleLine = true,
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                val preview = model.previewText(previewInput)
+                                Text(
+                                    text = preview ?: model.previewHint,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                )
+                            }
+                        }
+
+                        // ── 分区说明 ──
                         Text(
-                            text = preview ?: model.previewHint,
-                            fontSize = 13.sp,
+                            text = model.footerNote,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                         )
-                    }
-                }
 
-                // ── 分区说明 ──
-                Text(
-                    text = model.footerNote,
-                    fontSize = 13.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                )
+                        // ── 尾部：重新匹配当前课表（有规则时才出现，Dart 同口径） ──
+                        if (!model.isEmpty) {
+                            // 只包 Preference：不传 insideMargin
+                            QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                                ArrowPreference(
+                                    title = model.applyActiveLabel,
+                                    summary = null,
+                                    onClick = onApplyActive,
+                                )
+                            }
+                        }
 
-                // ── 尾部：重新匹配当前课表（有规则时才出现，Dart 同口径） ──
-                if (!model.isEmpty) {
-                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                        ArrowPreference(
-                            title = model.applyActiveLabel,
-                            summary = null,
-                            onClick = onApplyActive,
-                        )
                     }
                 }
             }
@@ -205,7 +215,8 @@ private fun GroupCardView(
 ) {
     val dark = isSystemInDarkTheme()
 
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+    // 混装 SwitchPreference 与自绘操作行：不传 insideMargin（各自带 16dp 横向）
+    QingyuCard(modifier = Modifier.fillMaxWidth()) {
         Column {
             // 第一行：组名 + 副标题 + 开关
             SwitchPreference(
@@ -224,7 +235,7 @@ private fun GroupCardView(
             ) {
                 Text(
                     text = LocationTimeMatchStrings.editGroup.zh,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -235,7 +246,7 @@ private fun GroupCardView(
                 )
                 Text(
                     text = LocationTimeMatchStrings.deleteTitle.zh,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = Color(QingyuTheme.error(dark)),

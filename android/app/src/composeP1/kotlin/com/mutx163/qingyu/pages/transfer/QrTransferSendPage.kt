@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -83,67 +83,72 @@ fun QrTransferSendPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // ── 二维码区 ──
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                    insideMargin = PaddingValues(16.dp),
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        qrSlot()
-                    }
-                }
-
-                // ── 拦截提示（超限优先于超时，见模型层注释）──
-                val blocking = model.blockingMessage
-                if (blocking != null) {
-                    Text(
-                        text = blocking,
-                        fontSize = 14.sp,
-                        color = Color(QingyuTheme.error(dark)),
+                item {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    // ── 进度行 + 进度条（帧数没算好时整块不画）──
-                    val progress = model.progressText
-                    if (progress != null) {
-                        Text(
-                            text = progress,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.primaryText(dark)),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── 二维码区 ──
+                        QingyuCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f),
+                            insideMargin = PaddingValues(16.dp),
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                qrSlot()
+                            }
+                        }
+
+                        // ── 拦截提示（超限优先于超时，见模型层注释）──
+                        val blocking = model.blockingMessage
+                        if (blocking != null) {
+                            Text(
+                                text = blocking,
+                                style = MiuixTheme.textStyles.body2,
+                                color = Color(QingyuTheme.error(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        } else {
+                            // ── 进度行 + 进度条（帧数没算好时整块不画）──
+                            val progress = model.progressText
+                            if (progress != null) {
+                                Text(
+                                    text = progress,
+                                    style = MiuixTheme.textStyles.body2,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(QingyuTheme.primaryText(dark)),
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                ProgressBar(fraction = model.progressFraction)
+                            }
+                            Text(
+                                text = model.sendHint,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        // ── 停止按钮 ──
+                        Button(
+                            onClick = onStop,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            ),
+                            content = { Text(text = model.stopLabel) },
                         )
-                        Spacer(Modifier.height(6.dp))
-                        ProgressBar(fraction = model.progressFraction)
-                    }
-                    Text(
-                        text = model.sendHint,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
 
-                // ── 停止按钮 ──
-                Button(
-                    onClick = onStop,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
-                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    ),
-                    content = { Text(text = model.stopLabel) },
-                )
+                    }
+                }
             }
         }
     }

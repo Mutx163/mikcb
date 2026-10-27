@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -87,92 +87,97 @@ fun QrTransferScanPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // ── 相机预览槽位（收齐或出错后可以留着最后一帧，不强制黑屏）──
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                    insideMargin = PaddingValues(0.dp),
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        cameraSlot()
-                    }
-                }
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── 相机预览槽位（收齐或出错后可以留着最后一帧，不强制黑屏）──
+                        QingyuCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f),
+                            insideMargin = PaddingValues(0.dp),
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                cameraSlot()
+                            }
+                        }
 
-                // ── 错误态 ──
-                val errorMessage = model.errorMessage
-                if (errorMessage != null) {
-                    Text(
-                        text = errorMessage,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(QingyuTheme.error(dark)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                    )
-                    Button(
-                        onClick = onRestart,
-                        modifier = Modifier.fillMaxWidth(),
-                        content = { Text(text = model.restartLabel) },
-                    )
-                } else if (model.isComplete) {
-                    // ── 收齐 ──
-                    Text(
-                        text = model.completeMessage,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    // 完整备份会替换本机数据：这是「确认后才发生」的提示
-                    Text(
-                        text = model.fullBackupWarning,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Button(
-                        onClick = onImportFullBackup,
-                        modifier = Modifier.fillMaxWidth(),
-                        content = { Text(text = model.importFullBackupLabel) },
-                    )
-                } else {
-                    // ── 收集中 ──
-                    val progress = model.progressText
-                    if (progress != null) {
+                        // ── 错误态 ──
+                        val errorMessage = model.errorMessage
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(QingyuTheme.error(dark)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                            )
+                            Button(
+                                onClick = onRestart,
+                                modifier = Modifier.fillMaxWidth(),
+                                content = { Text(text = model.restartLabel) },
+                            )
+                        } else if (model.isComplete) {
+                            // ── 收齐 ──
+                            Text(
+                                text = model.completeMessage,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            // 完整备份会替换本机数据：这是「确认后才发生」的提示
+                            Text(
+                                text = model.fullBackupWarning,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Button(
+                                onClick = onImportFullBackup,
+                                modifier = Modifier.fillMaxWidth(),
+                                content = { Text(text = model.importFullBackupLabel) },
+                            )
+                        } else {
+                            // ── 收集中 ──
+                            val progress = model.progressText
+                            if (progress != null) {
+                                Text(
+                                    text = progress,
+                                    style = MiuixTheme.textStyles.body2,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(QingyuTheme.primaryText(dark)),
+                                )
+                                ProgressBar(fraction = model.progressFraction)
+                            }
+                            Text(
+                                text = model.scanHint,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        // ── 明文提醒：任何状态都显示（安全提示不是阶段文案）──
                         Text(
-                            text = progress,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.primaryText(dark)),
+                            text = model.plaintextWarning,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        ProgressBar(fraction = model.progressFraction)
-                    }
-                    Text(
-                        text = model.scanHint,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
 
-                // ── 明文提醒：任何状态都显示（安全提示不是阶段文案）──
-                Text(
-                    text = model.plaintextWarning,
-                    fontSize = 12.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                    }
+                }
             }
         }
     }

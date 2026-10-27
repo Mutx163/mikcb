@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +19,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -82,117 +83,120 @@ fun LanEditPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // ── 说明段 ──
-                Text(
-                    text = model.intro,
-                    fontSize = 13.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                )
-
-                // ── 主按钮 ──
-                Button(
-                    onClick = onToggleRunning,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = if (model.running) {
-                        ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.surfaceVariant,
-                            contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── 说明段 ──
+                        Text(
+                            text = model.intro,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                         )
-                    } else {
-                        ButtonDefaults.buttonColors()
-                    },
-                    content = { Text(text = model.primaryActionLabel) },
-                )
 
-                // ── 离开后保持开启 ──
-                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                    SwitchPreference(
-                        checked = model.keepAliveWhenLeaving,
-                        onCheckedChange = onKeepAliveChange,
-                        title = model.keepAliveTitle,
-                        summary = model.keepAliveSubtitle,
-                    )
-                }
-
-                // ── 启动失败 ──
-                val failed = model.startFailedText
-                if (failed != null) {
-                    Text(
-                        text = failed,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.error(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                }
-
-                // ── 会话块 ──
-                if (model.showSessionBlock) {
-                    Text(
-                        text = model.runningLabel,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.sectionLabel(dark)),
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                    )
-                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                        // 访问地址（可复制）
-                        ArrowPreference(
-                            title = model.addressLabel,
-                            summary = model.addressText,
-                            onClick = onCopyAddress,
+                        // ── 主按钮 ──
+                        Button(
+                            onClick = onToggleRunning,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = if (model.running) {
+                                ButtonDefaults.buttonColors(
+                                    color = MiuixTheme.colorScheme.surfaceVariant,
+                                    contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            },
+                            content = { Text(text = model.primaryActionLabel) },
                         )
-                        val pin = model.pinText
-                        if (pin.isNotEmpty()) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 16.dp),
-                                color = Color(QingyuTheme.dividerLine(dark)),
+
+                        // ── 离开后保持开启 ──
+                        // 只包 Preference：不传 insideMargin（官方 Preference 自带 16dp）
+                        QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                            SwitchPreference(
+                                checked = model.keepAliveWhenLeaving,
+                                onCheckedChange = onKeepAliveChange,
+                                title = model.keepAliveTitle,
+                                summary = model.keepAliveSubtitle,
                             )
-                            InfoRow(label = model.pinLabel, value = pin)
                         }
-                        val port = model.portText
-                        if (port.isNotEmpty()) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 16.dp),
-                                color = Color(QingyuTheme.dividerLine(dark)),
+
+                        // ── 启动失败 ──
+                        val failed = model.startFailedText
+                        if (failed != null) {
+                            Text(
+                                text = failed,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.error(dark)),
+                                modifier = Modifier.padding(horizontal = 4.dp),
                             )
-                            InfoRow(label = model.portLabel, value = port)
                         }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 16.dp),
-                            color = Color(QingyuTheme.dividerLine(dark)),
-                        )
-                        InfoRow(label = model.clientsLabel, value = model.clientsText)
-                        val lastActivity = model.lastActivityLine
-                        if (lastActivity != null) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 16.dp),
-                                color = Color(QingyuTheme.dividerLine(dark)),
+
+                        // ── 会话块 ──
+                        if (model.showSessionBlock) {
+                            QingyuSectionTitle(text = model.runningLabel)
+                            // 混装 Preference 与自绘信息行：不传 insideMargin（两者各自带 16dp）
+                            QingyuCard(modifier = Modifier.fillMaxWidth()) {
+                                // 访问地址（可复制）
+                                ArrowPreference(
+                                    title = model.addressLabel,
+                                    summary = model.addressText,
+                                    onClick = onCopyAddress,
+                                )
+                                val pin = model.pinText
+                                if (pin.isNotEmpty()) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 16.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
+                                    )
+                                    InfoRow(label = model.pinLabel, value = pin)
+                                }
+                                val port = model.portText
+                                if (port.isNotEmpty()) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 16.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
+                                    )
+                                    InfoRow(label = model.portLabel, value = port)
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 16.dp),
+                                    color = Color(QingyuTheme.dividerLine(dark)),
+                                )
+                                InfoRow(label = model.clientsLabel, value = model.clientsText)
+                                val lastActivity = model.lastActivityLine
+                                if (lastActivity != null) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 16.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
+                                    )
+                                    InfoRow(label = model.lastActivityLabel, value = lastActivity)
+                                }
+                            }
+
+                            // 二维码提示与热点提示（都是整宽说明，允许折行）
+                            Text(
+                                text = model.qrHint,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.padding(horizontal = 4.dp),
                             )
-                            InfoRow(label = model.lastActivityLabel, value = lastActivity)
+                            Text(
+                                text = model.hotspotHint,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
                         }
+
                     }
-
-                    // 二维码提示与热点提示（都是整宽说明，允许折行）
-                    Text(
-                        text = model.qrHint,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                    Text(
-                        text = model.hotspotHint,
-                        fontSize = 13.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
                 }
             }
         }
@@ -210,11 +214,11 @@ private fun InfoRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, fontSize = 15.sp, color = Color(QingyuTheme.primaryText(dark)))
+        Text(text = label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
         Spacer(Modifier.height(0.dp))
         Text(
             text = value,
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.body2,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,9 +21,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -121,73 +122,71 @@ fun TimeSchemeManagementPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // ── index 0：两个入口行 ──
-                QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                    ArrowPreference(
-                        title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
-                        // Dart：locationTimeGroups 为空时 details 不显示（null）
-                        summary = null,
-                        onClick = onOpenLocationEntry,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                    ArrowPreference(
-                        title = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.zh,
-                        // Dart：dateRules 为空 → 不显示；非空且今天在区间 → 「今天在区间内」；
-                        // 否则显示条数。三种形态与 Dart 三元表达式一一对应。
-                        summary = when {
-                            dateRuleCount <= 0 -> null
-                            hasActiveDateRule ->
-                                TimeSchemeManagementStrings.scheduleDateRuleActiveToday.zh
-                            else -> dateRuleCount.toString()
-                        },
-                        onClick = onOpenDateRules,
-                    )
-                }
-
-                // ── index 2：分区标题 ──
-                Text(
-                    text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh,
-                    fontSize = 13.sp,
-                    color = Color(QingyuTheme.sectionLabel(dark)),
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                )
-
-                // ── index 3+：空态一行 / 模板卡与间距交替 ──
-                if (model.isEmpty) {
-                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                        // Dart 这里是一个 **enabled: false、showChevron: false** 的行，
-                        // 文案就是「请先创建一套时间模板」。不是新造的空态文案。
-                        ArrowPreference(
-                            title = TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.zh,
-                            summary = null,
-                            onClick = {},
-                            enabled = false,
-                        )
-                    }
-                } else {
-                    val rows = model.rows
-                    for ((index, row) in rows.withIndex()) {
-                        SchemeCard(
-                            row = row,
-                            menu = model.menu(row.scheme.id),
-                            onOpen = { onOpenScheme(row.scheme.id) },
-                            onMenuAction = { action -> onMenuAction(row.scheme.id, action) },
-                        )
-                        // Dart：模板卡之间插 HyperosSectionGap（卡片各占一格、间距占一格）
-                        if (index < rows.lastIndex) {
-                            Spacer(Modifier.height(8.dp))
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // ── index 0：两个入口行 ──
+                        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                            ArrowPreference(
+                                title = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
+                                // Dart：locationTimeGroups 为空时 details 不显示（null）
+                                summary = null,
+                                onClick = onOpenLocationEntry,
+                            )
+                            // 官方 ArrowSection.kt:44-95：多个 Preference 同卡、**中间不加分割线**
+                            ArrowPreference(
+                                title = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.zh,
+                                // Dart：dateRules 为空 → 不显示；非空且今天在区间 → 「今天在区间内」；
+                                // 否则显示条数。三种形态与 Dart 三元表达式一一对应。
+                                summary = when {
+                                    dateRuleCount <= 0 -> null
+                                    hasActiveDateRule ->
+                                        TimeSchemeManagementStrings.scheduleDateRuleActiveToday.zh
+                                    else -> dateRuleCount.toString()
+                                },
+                                onClick = onOpenDateRules,
+                            )
                         }
+
+                        // ── index 2：分区标题 ──
+                        QingyuSectionTitle(text = TimeSchemeManagementStrings.timeSchemeEntryTitle.zh)
+
+                        // ── index 3+：空态一行 / 模板卡与间距交替 ──
+                        if (model.isEmpty) {
+                            QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                                // Dart 这里是一个 **enabled: false、showChevron: false** 的行，
+                                // 文案就是「请先创建一套时间模板」。不是新造的空态文案。
+                                ArrowPreference(
+                                    title = TimeSchemeManagementStrings.locationTimeMatchNeedTimeScheme.zh,
+                                    summary = null,
+                                    onClick = {},
+                                    enabled = false,
+                                )
+                            }
+                        } else {
+                            val rows = model.rows
+                            for ((index, row) in rows.withIndex()) {
+                                SchemeCard(
+                                    row = row,
+                                    menu = model.menu(row.scheme.id),
+                                    onOpen = { onOpenScheme(row.scheme.id) },
+                                    onMenuAction = { action -> onMenuAction(row.scheme.id, action) },
+                                )
+                                // Dart：模板卡之间插 HyperosSectionGap（卡片各占一格、间距占一格）
+                                if (index < rows.lastIndex) {
+                                    Spacer(Modifier.height(8.dp))
+                                }
+                            }
+                        }
+
                     }
                 }
             }
@@ -212,7 +211,7 @@ private fun SchemeCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = row.title,
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -223,7 +222,7 @@ private fun SchemeCard(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = row.statusLabel,
-                                fontSize = 11.sp,
+                                style = MiuixTheme.textStyles.footnote2,
                                 color = Color(QingyuTheme.primary(dark = dark)),
                             )
                         }
@@ -231,7 +230,7 @@ private fun SchemeCard(
                     Spacer(Modifier.height(3.dp))
                     Text(
                         text = row.summary,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = Color(QingyuTheme.secondaryText(dark)),
@@ -241,7 +240,7 @@ private fun SchemeCard(
                         Spacer(Modifier.height(3.dp))
                         Text(
                             text = startsAt,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }

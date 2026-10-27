@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -51,13 +52,13 @@ fun TransferPreviewContent(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = TransferPreviewModel.title,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             // 正文：等宽感靠行结构与空行分段，不加粗不改写
             Text(
                 text = body,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))

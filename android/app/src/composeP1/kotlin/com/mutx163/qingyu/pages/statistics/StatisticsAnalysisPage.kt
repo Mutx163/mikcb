@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,8 +27,11 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCardRole
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCell
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAnalysisViewState
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -98,22 +99,28 @@ fun StatisticsAnalysisPage(
                         .padding(innerPadding),
                 )
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+                QingyuPageList(
+                    innerPadding = innerPadding,
+                    horizontalPadding = QingyuPageCardMargin,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    for (cell in viewState.cells) {
-                        when (cell) {
-                            is AnalysisCell.Gap -> Spacer(Modifier.height(8.dp))
-                            is AnalysisCell.Card -> AnalysisCard(
-                                cell = cell,
-                                viewState = viewState,
-                                onOpenCourse = onOpenCourse,
-                            )
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            for (cell in viewState.cells) {
+                                when (cell) {
+                                    is AnalysisCell.Gap -> Spacer(Modifier.height(8.dp))
+                                    is AnalysisCell.Card -> AnalysisCard(
+                                        cell = cell,
+                                        viewState = viewState,
+                                        onOpenCourse = onOpenCourse,
+                                    )
+                                }
+                            }
+
                         }
                     }
                 }
@@ -140,7 +147,7 @@ private fun AnalysisCard(
             if (!cell.standalone) {
                 Text(
                     text = roleTitle(cell.role),
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.sectionLabel(dark)),
                 )
             }
@@ -204,7 +211,7 @@ private fun HeatmapRows(viewState: StatisticsAnalysisViewState) {
     }
     Text(
         text = viewState.heatmapSummary,
-        fontSize = 14.sp,
+        style = MiuixTheme.textStyles.body2,
         color = Color(QingyuTheme.primaryText(dark)),
     )
 }
@@ -271,10 +278,10 @@ private fun TeacherRows(viewState: StatisticsAnalysisViewState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = label, fontSize = 14.sp, color = Color(QingyuTheme.primaryText(dark)))
+            Text(text = label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
             Text(
                 text = value,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -303,14 +310,14 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: (S
         ) {
             Text(
                 text = "${index + 1}",
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.size(width = 18.dp, height = 18.dp),
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = row.first,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier
                     .weight(1f)
@@ -319,7 +326,7 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: (S
             )
             Text(
                 text = row.second,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
@@ -345,10 +352,10 @@ private fun CompareRows(viewState: StatisticsAnalysisViewState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = label, fontSize = 14.sp, color = Color(QingyuTheme.primaryText(dark)))
+            Text(text = label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
             Text(
                 text = value,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
@@ -359,7 +366,7 @@ private fun CompareRows(viewState: StatisticsAnalysisViewState) {
 @Composable
 private fun MutedLine(text: String) {
     val dark = isSystemInDarkTheme()
-    Text(text = text, fontSize = 14.sp, color = Color(QingyuTheme.secondaryText(dark)))
+    Text(text = text, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.secondaryText(dark)))
 }
 
 /** 空态（Dart `HyperosEmptyState`：图标 + 标题 + 副标题，整页居中）。 */
@@ -379,12 +386,12 @@ private fun EmptyState(title: String, subtitle: String, modifier: Modifier = Mod
             )
             Text(
                 text = title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = subtitle,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
