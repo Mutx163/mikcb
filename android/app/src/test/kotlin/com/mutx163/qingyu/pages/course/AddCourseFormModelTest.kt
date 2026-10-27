@@ -698,6 +698,47 @@ class AddCourseFormModelTest {
     }
 
     @Test
+    fun `range 与 custom 往返后勾选保留不被范围重播种`() {
+        // Dart 判据是 tempCustomWeeks.isEmpty（add_course_screen.dart:1671-1677），
+        // 不是「当前模式是不是 custom」。用「模式」当判据时，range→custom→range→custom
+        // 回程会把用户在 custom 下勾的周用范围整段冲掉。
+        val range = rangeDraft(startWeek = 2, endWeek = 12)
+
+        // 第一步：range → custom，用范围播种
+        val custom = AddCourseWeekDraftLogic.selectMode(range, AddCourseWeekSelectionMode.CUSTOM, availableWeeks20)
+        assertEquals(setOf(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), custom.customWeeks)
+
+        // 第二步：用户在 custom 下改勾选（只留 3、5、9）
+        val picked = custom.copy(customWeeks = setOf(3, 5, 9))
+
+        // 第三步：切回 range —— 勾选集非空，起止周取首末
+        val backToRange = AddCourseWeekDraftLogic.selectMode(picked, AddCourseWeekSelectionMode.RANGE, availableWeeks20)
+        assertEquals(3, backToRange.startWeek)
+        assertEquals(9, backToRange.endWeek)
+
+        // 第四步：再切回 custom —— 勾选集非空，必须原样保留，不能被 3..9 范围重播种
+        val backToCustom = AddCourseWeekDraftLogic.selectMode(backToRange, AddCourseWeekSelectionMode.CUSTOM, availableWeeks20)
+        assertEquals(setOf(3, 5, 9), backToCustom.customWeeks)
+        assertEquals(AddCourseWeekSelectionMode.CUSTOM, backToCustom.mode)
+    }
+
+    @Test
+    fun `自定义模式下勾选被清空后再切换仍会重播种`() {
+        // 保留分支只在勾选集非空时生效；清空后切走再切回，仍要播种，
+        // 否则用户看到的是「一周都没选 + 确认键灰掉」。
+        val emptied = AddCourseWeekDraft(
+            mode = AddCourseWeekSelectionMode.RANGE,
+            startWeek = 4,
+            endWeek = 6,
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = emptySet(),
+        )
+        val next = AddCourseWeekDraftLogic.selectMode(emptied, AddCourseWeekSelectionMode.CUSTOM, availableWeeks20)
+        assertEquals(setOf(4, 5, 6), next.customWeeks)
+    }
+
+    @Test
     fun `切回范围模式用勾选集首末当起止周并清单双周`() {
         // Dart: tempStartWeek = sorted.first; tempEndWeek = sorted.last; 单双周清 false
         val draft = AddCourseWeekDraft(

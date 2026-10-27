@@ -623,8 +623,12 @@ object AddCourseWeekDraftLogic {
     /**
      * 切换选择模式。
      *
-     * - 切到自定义：用当前范围周播种勾选集；若范围算出来是空集，则退化为 `{startWeek}`
-     *   （否则用户切过去就是「一周都没选」，确认键直接灰掉，像坏了）；
+     * - 切到自定义：只在**勾选集为空**时用当前范围周播种；若范围算出来是空集，则退化为
+     *   `{startWeek}`（否则用户切过去就是「一周都没选」，确认键直接灰掉，像坏了）。
+     *   判据用「勾选集是否为空」而不是「当前模式是不是 CUSTOM」（Dart
+     *   `add_course_screen.dart:1671-1677` 的 `tempCustomWeeks.isEmpty`）：用户
+     *   range → custom → range → custom 往返时，回程已经在 custom 下勾过的周不能被范围
+     *   重播种冲掉。
      * - 切回范围：勾选集首末当起止周，并**清掉单双周**（否则「自定义 3,5,9」变回范围会
      *   叠加旧单周过滤，选出与用户勾选不一致的集合）。
      */
@@ -634,7 +638,7 @@ object AddCourseWeekDraftLogic {
         availableWeeks: List<Int>,
     ): AddCourseWeekDraft = when (newMode) {
         AddCourseWeekSelectionMode.CUSTOM -> {
-            if (draft.mode == AddCourseWeekSelectionMode.CUSTOM) {
+            if (draft.customWeeks.isNotEmpty()) {
                 draft.copy(mode = newMode)
             } else {
                 val seeded = AddCourseFormLogic.weeksFromRangeSelection(

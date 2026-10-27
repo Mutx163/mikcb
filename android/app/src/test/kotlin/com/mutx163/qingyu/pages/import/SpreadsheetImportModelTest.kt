@@ -541,4 +541,105 @@ class SpreadsheetImportModelTest {
     fun `周次表达式 空串返回空表`() {
         assertTrue(parseWeeks("").isEmpty())
     }
+
+    // ==========================================
+    // 10. 数值与周次边界（原先 0 覆盖：每一条都曾能穿透行级 catch 崩掉整表导入）
+    // ==========================================
+
+    @Test
+    fun `超大 RANGE 周数报范围过大而不崩`() {
+        // 旧的 groupValues[].toInt() 会抛 NumberFormatException——不是 FormatException，
+        // parseBytes 的行级 catch（只接 FormatException）接不住，整表导入崩。
+        // 结局：与 `1-99` 同一条 week_range_too_large，落行级警告。
+        val hugeInLong = "2-99999999999" // > Int.MAX_VALUE，仍在 Long 内
+        val beyondLong = "2-99999999999999999999999" // > Long.MAX_VALUE，连 Long 都装不下
+        for (raw in listOf(hugeInLong, beyondLong)) {
+            val bytes = csv(wakeupHeader, "高等数学,1,1,2,李老师,楼,$raw")
+            val result = SpreadsheetImportModel.parseBytes(bytes, "a.csv", settings)
+            assertTrue("'$raw' 不应产出课程", result.courses.isEmpty())
+            assertEquals(
+                "'$raw' 的行级警告不符",
+                "spreadsheet_row_warning|rowNumber=2|inner=week_range_too_large|itemName=第 2 行周数",
+                result.warnings.single(),
+            )
+        }
+    }
+
+    @Test
+    fun `超大 RANGE 周数在解析器层抛 FormatException`() {
+        try {
+            parseWeeks("2-99999999999")
+            throw AssertionError("应抛出 FormatException")
+        } catch (expected: com.mutx163.qingyu.core.FormatException) {
+            assertEquals("week_range_too_large|itemName=测试", expected.message)
+        }
+    }
+
+    @Test
+    fun `裸 token 超 Int 但与 Dart int64 一致被接受后钳制`() {
+        // Dart: int.tryParse('3000000000') 在 64 位 int 下解得出来 → 收下 → 超学期被钳掉，
+        // 结局是「周次为空 + 一条钳制警告」，不是 week_token_unrecognized。
+        // 旧实现 toIntOrNull 直接返回 null → 误报 week_token_unrecognized，与 Dart 不一致。
+        val warnings = mutableListOf<String>()
+        val weeks = WeekExpressionParser.parse(
+            "3000000000",
+            itemName = "第 2 行周数",
+            semesterWeekCount = 20,
+            warnings = warnings,
+        )
+        assertTrue(weeks.isEmpty())
+        assertEquals(
+            "weeks_exceed_semester_clamped|itemName=第 2 行周数|semesterWeekCount=20|weeks=3000000000",
+            warnings.single(),
+        )
+
+        // 行级：先出钳制警告，再因周次全被钳掉报 custom_weeks_required（Dart 同序）
+        val bytes = csv(wakeupHeader, "高等数学,1,1,2,李老师,楼,3000000000")
+        val result = SpreadsheetImportModel.parseBytes(bytes, "a.csv", settings)
+        assertTrue(result.courses.isEmpty())
+        assertEquals(
+            listOf(
+                "weeks_exceed_semester_clamped|itemName=第 2 行周数|semesterWeekCount=20|weeks=3000000000",
+                "spreadsheet_row_warning|rowNumber=2|inner=custom_weeks_required",
+            ),
+            result.warnings,
+        )
+    }
+
+    @Test
+    fun `浮点整数超出 Int 范围回落 field_must_be_integer`() {
+        // 旧的 Math.round(asDouble).let(Math::toIntExact) 对 1e18 抛 ArithmeticException
+        // （不是 FormatException）→ 穿透行级 catch 崩掉整表导入。
+        val bytes = csv(wakeupHeader, "高等数学,1,1e18,2,李老师,楼,1-2")
+        val result = SpreadsheetImportModel.parseBytes(bytes, "a.csv", settings)
+        assertTrue(result.courses.isEmpty())
+        assertEquals(
+            "spreadsheet_row_warning|rowNumber=2|inner=field_must_be_integer|field=start_section",
+            result.warnings.single(),
+        )
+    }
+
+    @Test
+    fun `非有限浮点同样回落 field_must_be_integer`() {
+        // 1e400 溢出成 Infinity、NaN 不是整数值：都不能让 round 抛出去
+        for (raw in listOf("1e400", "-1e400", "Infinity", "NaN")) {
+            val bytes = csv(wakeupHeader, "高等数学,1,$raw,2,李老师,楼,1-2")
+            val result = SpreadsheetImportModel.parseBytes(bytes, "a.csv", settings)
+            assertTrue("'$raw' 不应产出课程", result.courses.isEmpty())
+            assertEquals(
+                "'$raw' 的行级警告不符",
+                "spreadsheet_row_warning|rowNumber=2|inner=field_must_be_integer|field=start_section",
+                result.warnings.single(),
+            )
+        }
+    }
+
+    @Test
+    fun `嵌套括号被整段剥掉`() {
+        // 旧的字符类 [^（(）)] 把左括号也排除在外，`(备注(1)2-3` 只剥得掉 `(1)`，
+        // 残留 `(备注2-3` 被当成无法识别的周次。Dart/calendar 参照物都是 [^)）]，
+        // 从第一个左括号剥到第一个右括号 → `2-3`。
+        assertEquals(listOf(2, 3), parseWeeks("(备注(1)2-3"))
+        assertEquals(listOf(2, 3), parseWeeks("（备注（1）2-3"))
+    }
 }
