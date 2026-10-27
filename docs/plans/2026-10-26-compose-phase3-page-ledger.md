@@ -33,16 +33,16 @@
 | `lib/screens/import/`（含 `warehouse/`） | 14 | 9 137 |
 | `lib/screens/miuix_showcase/` | 14 | 4 265 |
 | `lib/widgets/*.dart`（跨页共享件） | 63 | 23 756 |
-| `lib/widgets/timetable/` | 77 | 17 592 |
+| `lib/widgets/timetable/` | 77 | 17 627 |
 | `lib/widgets/statistics/` | 22 | 4 460 |
 | `lib/ui/`（主题 / 玻璃 / 动效基建） | 75 | 26 705 |
 | **合计** | **338** | **≈138 320** |
 
 复算命令：`wc -l lib/screens/*.dart`、`find <目录> -name "*.dart" -exec cat {} + | wc -l`。
 
-> 2026-10-27 19:22 复算：`lib/widgets/timetable/` 由 17 563 → 17 592 行（+29，来自
-> 19:17 在途的 `month_view/month_panel_overview.dart` 未提交改动），合计同步 +29。
-> 其余 7 行实测与上表一致。Dart 侧 month_view 重写未提交期间这行还会漂，属正常——每次复算后同步。
+> 2026-10-27 21:05 复算：`lib/widgets/timetable/` 为 **17 627** 行（10-26 原始 17 563，
+> 之后随 month_view 外观重写持续增长）。其余 7 行实测与上表一致。
+> Dart 侧 month_view 那一批改动尚未提交，这行**还会继续漂**——复算后同步即可，不是台账出错。
 
 > 计划书写的「UI 层 ≈12.3 万行」是 `screens + widgets` 口径；上表把 `lib/ui/` 也算进来，
 > 所以是 13.8 万。**以本表实测为准**。
@@ -110,24 +110,25 @@
 | P3-C3 | 课表 · 日视图 | 13 | 4 171 行 | `pages/timetable/day/` | ✅ 已交付（另一会话，`b5b8bba2`；随父目录 `timetable` 于 18:40 一并纳入编译，见 §7.2.1） |
 | P3-D1 | 课程表单与概览 | 4 | 2 753 行 | `pages/course/` | ✅ 已交付（`8e140fb7`，13 文件 4 816 行，86 例；未真机对照） |
 | P3-D2 | 日程与任务 | 5 | 3 171 行 | `pages/schedule/`、`pages/task/` | ✅ 已完成（`97157c7a`，未真机对照） |
-| P3-D3 | 作息与考试 | 4 | 5 027 行 | `pages/time_scheme/`、`pages/exam/` | 🔄 进行中（`timescheme-exam` 交 2 页；**余量已拆分**给 P3-D3-b / P3-D3-c） |
-| P3-D3-b | 作息与考试 · 作息管理页 | 1 | 1 888 行 | `pages/time_scheme/`（仅 `TimeSchemeManagement*`） | 🔄 进行中（`timescheme-mgmt`，2026-10-27 18:30 领） |
-| P3-D3-c | 作息与考试 · 地点时间匹配页 | 1 | 1 131 行 | `pages/time_scheme/`（仅 `LocationTimeMatch*`） | 🔄 进行中（`timescheme-loc`，2026-10-27 18:30 领） |
-| P3-E | 统计族 | 26 | 5 299 行 | `pages/statistics/` | 🔄 进行中（`stats-renderer` 交 2 页；**余量已拆分**给 P3-E-b） |
-| P3-E-b | 统计族 · 分析页与会话页 | 2 | 355 行 | `pages/statistics/`（仅 `StatisticsAnalysis*`、`StatisticsSession*`） | 🔄 进行中（`stats-extra`，2026-10-27 18:30 领） |
+| P3-D3 | 作息与考试 | 4 | 5 027 行 | `pages/time_scheme/`、`pages/exam/` | ✅ **4/4 页已交付**（exam 侧 2 页 + D3-b/D3-c 各 1 页；未真机对照）；余量已拆分为下列两行 |
+| P3-D3-b | 作息与考试 · 作息管理页 | 1 | 1 888 行 | `pages/time_scheme/`（仅 `TimeSchemeManagement*`） | ✅ 已交付（`fae9721a`，25 例；未真机对照） |
+| P3-D3-c | 作息与考试 · 地点时间匹配页 | 1 | 1 131 行 | `pages/time_scheme/`（仅 `LocationTimeMatch*`） | ✅ 已交付（`7499c7ab`，21 例；编辑页留下一批） |
+| P3-E | 统计族 | 26 | 5 299 行 | `pages/statistics/` | ✅ **4/4 页已交付**（前 2 页 + E-b 的 2 页；widget 图表未迁）；余量已拆分为下列一行 |
+| P3-E-b | 统计族 · 分析页与会话页 | 2 | 355 行 | `pages/statistics/`（仅 `StatisticsAnalysis*`、`StatisticsSession*`） | ✅ 已交付（`09e2de9f`，33 例；图表为骨架） |
 | P3-F | 同步与备份 | 4 | 2 536 行 | `pages/sync/` | 🔶 四件套已交（`dfdac7f2` `03015c20` `65247cb8` `8f5c4675`，86 例）· **L1/L2 未出证**、未真机对照 |
 | P3-G1 | 导入 · 基础 | 6 | 1 878 行 | `pages/import/`（不含 `pages/import/warehouse/`） | ✅ 已交付（`1b58806b`，17 文件 5 191 行，161 例；未真机对照） |
 | P3-G2 | 导入 · 仓库适配 | 8 | 7 259 行 | `pages/import/warehouse/` | ✅ 已交付（`ea9202aa`，24 文件 6 195 行；6 个 Page 覆盖 8 个 Dart 文件；未真机对照） |
-| P3-G3 | 导出与传输 | 7 | 3 914 行 | `pages/transfer/`、`pages/export/` | 🔄 进行中（`export-transfer` 交 2 页；**余量已拆分**给 P3-G3-b / P3-G3-c） |
-| P3-G3-b | 导出与传输 · 二维码发送/扫码 | 2 | 1 192 行 | `pages/transfer/`（仅 `QrTransfer*`） | 🔄 进行中（`transfer-qr2` 重派，原 `transfer-qr` 空转停写） |
-| P3-G3-c | 导出与传输 · 局域网编辑/取件码/预览 | 3 | 1 011 行 | `pages/transfer/`（仅 `LanEdit*`、`PickupCodes*`、`TransferPreview*`） | 🔄 进行中（`transfer-misc`，2026-10-27 18:30 领） |
+| P3-G3 | 导出与传输 | 7 | 3 914 行 | `pages/transfer/`、`pages/export/` | ✅ **7/7 页已交付**（export/transfer 前 2 页 + G3-b/G3-c 的 5 件）；余量已拆分为下列两行 |
+| P3-G3-b | 导出与传输 · 二维码发送/扫码 | 2 | 1 192 行 | `pages/transfer/`（仅 `QrTransfer*`） | ✅ 已交付（`bccbb2e9`，28 例；相机需真机验） |
+| P3-G3-c | 导出与传输 · 局域网编辑/取件码/预览 | 3 | 1 011 行 | `pages/transfer/`（仅 `LanEdit*`、`PickupCodes*`、`TransferPreview*`） | ✅ 已交付（`92050236`，45 例；局域网需真机验） |
 | P3-H | 诊断与测试夹具 | 5 | 3 559 行 | `pages/diagnostics/` | ✅ 已交付（`dcb4b6c9` 等；未真机对照） |
 | P3-I | 引导与展示 | 5 | 3 732 行 | `pages/guide/` | ✅ 已交付（`28cfdc9f`；未真机对照） |
 | P3-I2 | Miuix 展示册 | 15 | 5 413 行 | `pages/showcase/` | ✅ 已交付（`ea9202aa`；未真机对照） |
 | P3-J | 实时活动与天气 | 2 | 2 524 行 | `pages/live/`、`pages/weather/` | ✅ 已交付（`28cfdc9f`；未真机对照） |
 | P3-K | 冲突与反馈小页 | 2 | 606 行 | `pages/conflict/`、`pages/feedback/` | ✅ 已交付（`aef4c5c8`；未真机对照） |
 | P3-L | 小组件 / 超级岛展示层 | — | — | 待定 | ⏸ 待拍板 |
-| P3-0 | 基础设施与共享件 | 138 | ≈50 000 行 | 见 §6 | 🔒 Lead 专属 |
+| P3-0 | 基础设施与共享件 | 138 | ≈50 000 行 | 见 §6 | 🔒 Lead 专属（玻璃导航栏见 P3-0-glassdock） |
+| P3-0-glassdock | 壳 · 玻璃导航栏 | 2 | 约 580 行 | `pages/shell/`（三层） | ✅ 已交付（20 例 + 3 次咬合探针；未真机对照） |
 
 **可合并领取**：P3-K（606 行）偏小，可并入 P3-H 或 P3-D2 一起做；
 P3-G1（1 878 行）偏小，可并入 P3-D1 一起做。领的时候在认领文件里写清你领了哪两批。
@@ -477,27 +478,56 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 
 ---
 
-## 9. 进度快照（2026-10-27 16:05，Lead 更新）
+## 9. 进度快照（2026-10-27 21:10，Lead 更新）
 
 | 批次 | 状态 | 证据 |
 |---|---|---|
 | P3-A 关于与说明 | ✅ 已完成 | 6 笔提交（`2a7f78ea`…`46d806a3`），`pages/about/` 5 个 Kotlin 文件 + 测试 |
-| P3-B 设置族 | 🔄 进行中（另一会话接管，`39b851f2`/`9cbe96b1`/`240ad8e9`/`f444aef1`/`ba47a609`） | 通用渲染层 `SettingsPageScreen(spec)` 一目录服务 20 页；B-1/B-2/B-3 已落三批模型+测试 |
-| P3-C1 课表·周视图 | ✅ 已完成（未真机对照；18:40 补挂载并首次编译通过） | `367f3aed`，14 文件 3,591 行，54 例测试；挂载后修 3 处重复声明，`compileComposeUiDebugKotlin` 绿、模块 58 例绿 |
-| P3-C3 课表·日视图 | ✅ 已交付（另一会话；随父目录挂载后首次编译通过） | `b5b8bba2`，19 文件 3,456 行，25 例测试 |
-| P3-D2 日程与任务 | ✅ 已完成（编译修复后，未真机对照） | `97157c7a` + `59faedc8` 修 74 个 miuix 0.9.4 错误中的 schedule/task 部分 |
-| P3-D3 作息与考试 | 🔄 **2/4 页已交付** | `40dbb943` 考试安排（41 例）+ `a84fb0d6` 添加/编辑考试（36 例）+ `3c82fcf5` 期望值修正；L1 13:43 绿、L2 81 例 15:24 绿。`time_scheme_management`/`location_time_match` 未启动 |
-| P3-E 统计族 | 🔄 **2/4 页已交付** | `61f3d80e` 统计设置（13 例）+ `e0473069` 课程统计主页（26 例）+ `629daea8` 期望值修正；L2 43 例 16:00 提交后新鲜绿。⚠ `CourseStatisticsPage.kt` 整包 L1 未取得（阻塞在 `pages/import/warehouse`、`pages/showcase` 他域在途，本域 0 条报错） |
-| P3-F 同步与备份 | ✅ **4/4 页已交付**（未真机对照） | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍）；闸门内 L2 15:22 全量绿含本域 86 例 |
-| P3-G3 导出与传输 | 🔄 **2/7 页已交付** | `ff6d3bcb` 日历导出（34 例）+ `11988a1d` 数据备份迁移（26 例）；L1 13:50 绿、L2 15:28 绿（60 例）。余 4 页见任务板「P3-G3 余量」 |
-| P3-H 诊断与夹具 | ✅ **5/5（4 渲染页 + 1 并入）已交付**（未真机对照） | `43463b8a`/`2c2d373a`/`b1c72465`/`4462c62a`/`dcb4b6c9`；L1 13:46 绿、L2 91 例 15:03 绿；3 次咬合探针 |
-| P3-0 基础设施 | 部分完成 | 主题桥 `772ce837`；渲染层逐目录挂载 + CI 编译 + `composeP1` 停役守卫（`59faedc8`/`41103aa0`/`4a9cac9a`）；并发构建：本机 `build-gate.sh` 已让位给上游 `scripts/safe-gradle.ps1` 与 `scripts/test-kotlin-module.ps1`（L0 模块级单测） |
-| 其余批次 | ⬜ 待领 | P3-D1 课程表单 / P3-G1 导入基础由另一会话在推（`pages/course`、`pages/import` 已挂载） |
+| P3-B 设置族 | ✅ 已完成 | 20 页全迁（62 文件 / 18,798 行），511 例全绿；通用渲染层 `SettingsPageScreen(spec)` 一目录服务 20 页 |
+| P3-C1 课表·周视图 | ✅ 已完成（18:40 补挂载并首次编译通过） | `367f3aed`，14 文件 3,591 行，54 例；挂载后修 3 处重复声明，模块 58 例绿 |
+| P3-C2 课表·月视图 | ⬜ 唯一剩余未启动 | Dart 侧 month_view 重写仍在工作区未提交，等它稳定 |
+| P3-C3 课表·日视图 | ✅ 已交付 | `b5b8bba2`，19 文件 3,456 行，25 例 |
+| P3-D1 课程表单与概览 | ✅ 已交付 | `8e140fb7`，13 文件 4,816 行，86 例 |
+| P3-D2 日程与任务 | ✅ 已完成 | `97157c7a` + `59faedc8` 修 74 个 miuix 0.9.4 错误中的 schedule/task 部分 |
+| P3-D3 作息与考试 | ✅ **4/4 页已交付** | exam 侧 `40dbb943`（41 例）+ `a84fb0d6`（36 例）；`fae9721a` 作息管理（25 例）+ `7499c7ab` 地点匹配（21 例）。D3-b 渲染层首次进编译 |
+| P3-E 统计族 | ✅ **4/4 页已交付**（图表为骨架） | 前 2 页 `61f3d80e`（13 例）+ `e0473069`（26 例）；`09e2de9f` 分析页+会话页（33 例）。`lib/widgets/statistics/` 22 件图表未迁，渲染层给结构一致的读数行 |
+| P3-F 同步与备份 | ✅ **4/4 页已交付** | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍） |
+| P3-G1 导入·基础 | ✅ 已交付 | `1b58806b`，17 文件 5,191 行，161 例 |
+| P3-G2 导入·仓库适配 | ✅ 已交付 | `ea9202aa`，24 文件 6,195 行 |
+| P3-G3 导出与传输 | ✅ **7/7 页已交付** | 前 2 页 `ff6d3bcb`（34 例）+ `11988a1d`（26 例）；`92050236` 局域网编辑/取件码/预览（45 例）+ `bccbb2e9` 二维码收发（28 例） |
+| P3-H 诊断与夹具 | ✅ **5/5 已交付** | `43463b8a`/`2c2d373a`/`b1c72465`/`4462c62a`/`dcb4b6c9`；91 例；3 次咬合探针 |
+| P3-I 引导与展示 | ✅ 已交付 | `28cfdc9f` |
+| P3-I2 Miuix 展示册 | ✅ 已交付 | `ea9202aa` |
+| P3-J 实时活动与天气 | ✅ 已交付 | `28cfdc9f` |
+| P3-K 冲突与反馈小页 | ✅ 已交付 | `aef4c5c8` |
+| P3-0 基础设施 | ✅ 主体完成 | 主题桥 `772ce837`；渲染层逐目录挂载 + CI 编译 + `composeP1` 停役守卫；L0 模块单测 + `safe-gradle` 排队锁；i18n 中文字面量棘轮门禁 `b9bc98d1` |
+| P3-0-glassdock 玻璃导航栏 | ✅ 已交付 | `pages/shell/` 三层 + 20 例 + 3 次咬合探针；壳里 Material 占位条整体删除 |
+| P3-L 小组件 / 超级岛 | ⏸ 待拍板 | RemoteViews 还是 Compose Glance，Lead 未拍板前不开工 |
 
-**本轮验证基线（Lead 亲自跑）**：`:app:testProdDebugUnitTest` 覆盖 8 个域 → **401 例 / 0 失败 / 0 错误 / 0 跳过**（15:22:31，`BUILD SUCCESSFUL in 1m6s`），XML 快照留在 `.agents/compose-phase3/evidence/2026-10-27-final/`。
-⚠ **没有一页做过真机对照**（L4 需用户配合），所有「绿」只到 L1/L2。
+**本轮验证基线（Lead 亲自跑，21:07）**：`:app:testProdDebugUnitTest` → **2978 例 / 0 失败 / 0 错误 / 0 跳过**（218 个测试类，`BUILD SUCCESSFUL in 1m17s`）。
+L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
+台账守卫 `local/verify_phase3_ledger.ps1` → 全部通过。
 
-> 这份快照只记录**建立台账这一刻**的事实。之后谁做了什么，看认领区，不看这里。
+⚠ **仍然没有一页做过真机对照**（L4 需用户配合），所有「绿」只到 L1/L2。另外两条必须点明的：
+① 统计族六张卡的完整图表（`lib/widgets/statistics/` 22 件）与地点匹配编辑页（约 760 行）
+留作下一批，本批给的是结构一致的骨架/列表；
+② 相机扫码、局域网真实收发热都没有真机证据。
+
+### 9.1 本轮五个批次的过程记录（写给后来者）
+
+2026-10-27 18:30 领五个批次、21:08 全部交付。**四名队友中三人零产出或近乎零产出**，
+实际完成量主要由 Lead 自己写：
+
+| 批次 | 执行者 | 结果 |
+|---|---|---|
+| P3-D3-b | timescheme-mgmt | 交出模型层+文案+测试（25 例）后停写，渲染层由 Lead 补 |
+| P3-D3-c | timescheme-loc | **零产出**，只在未授权目录留了一张文案表；Lead 全量接手 |
+| P3-E-b | stats-extra | **零产出**（自述把时间全花在读材料上），Lead 全量接手 |
+| P3-G3-b | transfer-qr → transfer-qr2 | **两次重派均零产出**，Lead 全量接手 |
+| P3-G3-c | transfer-misc → transfer-misc2 | **两次重派均零产出**，Lead 全量接手 |
+
+**可复用的判断**：子代理「读完了、想清楚了、马上写」这种汇报连续出现两次而工作区没有文件落盘，
+基本等于不会再写了。有效期应设为 **30~45 分钟无文件落盘即收回**，而不是等它自己说卡住。
 
 ---
 
