@@ -274,56 +274,53 @@ private fun nextMonthOf(year: Int, month: Int): Pair<Int, Int> {
 }
 
 /**
- * 月视图的 ARB 文案句柄。
+ * 月视图的 ARB 文案句柄（渲染层统一出口）。
  *
- * `MonthViewStrings` 是 Lead 用 `tool/gen_month_view_strings.py` 从 ARB 生成的
- * **只读**共享层，只暴露 `allTexts` 列表（没有逐键 accessor），所以这里按 key
- * 取一次并缓存。**屏上不许出现中文字面量**：除分隔标点外，所有文案都从这里出。
+ * `MonthViewStrings` 已由 Lead 补上**逐键 accessor**（`monthViewTitle` 等），
+ * 这里只做两件事：① 把渲染层常用的调用点收成好念的名字；② 提供带占位符的
+ * 格式化函数（`yearLabel(2026)` → `2026年`），避免各卡片自己 `filled(...)`。
+ *
+ * **屏上不许出现中文字面量**：除语义标签的分隔标点外，所有文案都从这里出。
+ * 共享层是只读的（Lead 生成），缺键只能在这里补映射。
  */
 internal object MonthText {
 
-    private val byKey: Map<String, ArbText> by lazy {
-        MonthViewStrings.allTexts.associateBy { it.key }
-    }
-
-    private fun text(key: String): ArbText =
-        byKey[key] ?: error("MonthViewStrings is missing ARB key `$key`; re-run tool/gen_month_view_strings.py")
-
-    val title: ArbText get() = text("monthViewTitle")
-    val previousMonth: ArbText get() = text("monthViewPreviousMonth")
-    val nextMonth: ArbText get() = text("monthViewNextMonth")
-    val backToCurrentMonthShort: ArbText get() = text("monthViewBackToCurrentMonthShort")
-    val holidayBadge: ArbText get() = text("monthViewHolidayBadge")
-    val adjustedWorkdayBadge: ArbText get() = text("monthViewAdjustedWorkdayBadge")
-    val agendaEmpty: ArbText get() = text("monthViewAgendaEmpty")
-    val emptyMonthTitle: ArbText get() = text("monthViewEmptyMonthTitle")
-    val emptyMonthHint: ArbText get() = text("monthViewEmptyMonthHint")
-
-    private val yearSegment: ArbText get() = text("monthViewYearSegment")
-    private val monthSegment: ArbText get() = text("monthViewMonthSegment")
-    private val daySemantics: ArbText get() = text("monthViewDaySemantics")
-    private val courseCountSemantics: ArbText get() = text("monthViewCourseCountSemantics")
-    private val examCountSemantics: ArbText get() = text("monthViewExamCountSemantics")
-    private val scheduleCountSemantics: ArbText get() = text("monthViewScheduleCountSemantics")
+    val title: ArbText get() = MonthViewStrings.monthViewTitle
+    val previousMonth: ArbText get() = MonthViewStrings.monthViewPreviousMonth
+    val nextMonth: ArbText get() = MonthViewStrings.monthViewNextMonth
+    val backToCurrentMonthShort: ArbText get() = MonthViewStrings.monthViewBackToCurrentMonthShort
+    val holidayBadge: ArbText get() = MonthViewStrings.monthViewHolidayBadge
+    val adjustedWorkdayBadge: ArbText get() = MonthViewStrings.monthViewAdjustedWorkdayBadge
+    val agendaEmpty: ArbText get() = MonthViewStrings.monthViewAgendaEmpty
+    val emptyMonthTitle: ArbText get() = MonthViewStrings.monthViewEmptyMonthTitle
+    val emptyMonthHint: ArbText get() = MonthViewStrings.monthViewEmptyMonthHint
 
     /** `2026年` */
-    fun yearLabel(year: Int): String = yearSegment.filled("year", year.toString())
+    fun yearLabel(year: Int): String =
+        MonthViewStrings.monthViewYearSegment.filled("year", year.toString())
 
     /** `10月` */
-    fun monthLabel(month: Int): String = monthSegment.filled("month", month.toString())
+    fun monthLabel(month: Int): String =
+        MonthViewStrings.monthViewMonthSegment.filled("month", month.toString())
 
     /** `10月5日`（格子无障碍标签的第一段）。 */
     fun dayLabel(month: Int, day: Int): String =
-        daySemantics.filled("month" to month.toString(), "day" to day.toString())
+        MonthViewStrings.monthViewDaySemantics.filled(
+            "month" to month.toString(),
+            "day" to day.toString(),
+        )
 
     /** `3节课` */
-    fun courseCount(count: Int): String = courseCountSemantics.filled("count", count.toString())
+    fun courseCount(count: Int): String =
+        MonthViewStrings.monthViewCourseCountSemantics.filled("count", count.toString())
 
     /** `1场考试` */
-    fun examCount(count: Int): String = examCountSemantics.filled("count", count.toString())
+    fun examCount(count: Int): String =
+        MonthViewStrings.monthViewExamCountSemantics.filled("count", count.toString())
 
     /** `2个日程` */
-    fun scheduleCount(count: Int): String = scheduleCountSemantics.filled("count", count.toString())
+    fun scheduleCount(count: Int): String =
+        MonthViewStrings.monthViewScheduleCountSemantics.filled("count", count.toString())
 
     /** 星期表头（`周一`…`周日`）：ARB 里是共享键，日视图那份句柄已经逐字对拍过。 */
     fun weekday(dayOfWeek: Int): String = DayViewStrings.weekdayLabel(dayOfWeek)
