@@ -292,8 +292,21 @@ dependencies {
 // 字段，java.base 模块不对未命名模块开放）：不加 --add-opens 时 JVM 单测里
 // setAccessible(true) 抛 InaccessibleObjectException，脱敏写入静默回退、
 // 测不到真实路径。Android（ART）没有模块系统，不受这条限制。
+// i18n 棘轮门禁（CjkLiteralGateTest）与 *ParityTest 都在**运行时**去磁盘读基线文件、
+// ARB 词条与渲染层源码。这类 I/O 对 Gradle 完全不可见：基线/ARB 不在任何 sourceSet
+// 里，改它们不触发编译，任务被判 UP-TO-DATE 直接跳过。2026-10-27 A/B 实测：
+// 把基线里 ComposeP1Activity.kt 的计数从 13 改成 12（门禁必然报错的值），
+// :app:testProdDebugUnitTest 仍 UP-TO-DATE / BUILD SUCCESSFUL，结果 XML 时间戳
+// 停在 11:40:17.479Z 未刷新 —— 门禁假绿。声明成 inputs 后再跑同一改动即 FAILED。
 tasks.withType(Test).configureEach { test ->
     test.jvmArgs('--add-opens', 'java.base/java.lang=ALL-UNNAMED')
+    // 基线 + ARB 是上面那条假绿的直接原因，必须声明。
+    test.inputs.file(project.file('src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline.txt'))
+            .withPropertyName('i18nCjkBaseline')
+    test.inputs.file(project.file('../../lib/l10n/app_zh.arb')).withPropertyName('i18nArbZh')
+    // 渲染层源码本会经编译进入 inputs，但门禁读的是磁盘原文（含未参与编译的资源式
+    // 片段），显式再声明一次：任一文件改动都强制重跑，代价只是一次测试。
+    test.inputs.dir(project.file('src/composeP1/kotlin')).withPropertyName('i18nRenderSources')
 }
 
 flutter {

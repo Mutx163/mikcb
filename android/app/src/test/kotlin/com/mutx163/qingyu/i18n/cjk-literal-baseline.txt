@@ -1,0 +1,34 @@
+# i18n 棘轮基线：Compose 渲染层（composeP1）中文字面量计数
+# 生成：python scripts/i18n-cjk-baseline.py --write
+# 规则见 CjkLiteralGateTest.kt；修复某文件后必须下调该行数字，不得上调。
+com/mutx163/qingyu/pages/showcase/MiuixShowcaseSubpages.kt:73
+com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt:36
+com/mutx163/qingyu/pages/guide/UserGuidePage.kt:22
+com/mutx163/qingyu/ComposeP1Activity.kt:13
+com/mutx163/qingyu/pages/live/LiveSettingsPage.kt:13
+com/mutx163/qingyu/pages/guide/HyperosShowcasePage.kt:12
+com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt:12
+com/mutx163/qingyu/pages/timetable/TimetableWeekdayHeader.kt:9
+com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:8
+com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:6
+com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:5
+com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:5
+com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt:4
+com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:3
+com/mutx163/qingyu/pages/import/ImportCommon.kt:3
+com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:2
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:2
+com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:2
+com/mutx163/qingyu/pages/schedule/AddScheduleItemPage.kt:2
+com/mutx163/qingyu/pages/schedule/ScheduleDateRulePage.kt:2
+com/mutx163/qingyu/pages/timetable/CourseGridCard.kt:2
+com/mutx163/qingyu/pages/about/AboutStaticPage.kt:1
+com/mutx163/qingyu/pages/about/PagesCommon.kt:1
+com/mutx163/qingyu/pages/conflict/CourseConflictPage.kt:1
+com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:1
+com/mutx163/qingyu/pages/guide/MoreFeaturesSearchOverlay.kt:1
+com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:1
+com/mutx163/qingyu/pages/settings/SettingsRowRenderTable.kt:1
+com/mutx163/qingyu/pages/timetable/day/DayViewCommon.kt:1
+com/mutx163/qingyu/pages/timetable/day/DayViewExamCard.kt:1
+com/mutx163/qingyu/pages/weather/WeatherCityPickerPage.kt:1
