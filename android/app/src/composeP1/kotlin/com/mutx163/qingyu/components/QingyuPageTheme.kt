@@ -3,7 +3,9 @@ package com.mutx163.qingyu.components
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import com.mutx163.qingyu.theme.QingyuTheme
+import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -48,12 +50,21 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
  * 语义槽对到 [QingyuTheme] 的同名取值上；未列出的槽位沿用官方默认。
  */
 @Composable
-fun QingyuPageTheme(content: @Composable () -> Unit) {
+fun QingyuPageTheme(
+    userFontWeight: Int = QingyuTypography.WEIGHT_DEFAULT,
+    fontFamily: FontFamily? = null,
+    content: @Composable () -> Unit,
+) {
     val dark = isSystemInDarkTheme()
     // 两份配色必须在 Composable 上下文里先算出来（`remember` 的 lambda 不是
     // @Composable 作用域，不能在里面调 @Composable 函数）。
     val lightColors = qingyuLightColors()
     val darkColors = qingyuDarkColors()
+    // 字阶同理：`rememberQingyuTextStyles` 是 @Composable，要在外面先取。
+    val textStyles = rememberQingyuTextStyles(
+        userFontWeight = userFontWeight,
+        fontFamily = fontFamily,
+    )
     val controller = androidx.compose.runtime.remember(lightColors, darkColors, dark) {
         ThemeController(
             colorSchemeMode = ColorSchemeMode.System,
@@ -62,7 +73,14 @@ fun QingyuPageTheme(content: @Composable () -> Unit) {
             isDark = dark,
         )
     }
-    MiuixTheme(controller = controller, content = content)
+    // ⚠️ textStyles 必须显式传：
+    //
+    // 官方 `MiuixTheme(controller = …, content = …)` 的 `textStyles` 默认值取的是
+    // `MiuixTheme.textStyles`，也就是**当前组合里的** LocalTextStyles。在页面这一层
+    // 那已经是我们自己注入过的（壳那层先注入），所以"不传"看起来也"能工作"——
+    // 但一旦有页面在更外层被单独使用（预览、测试、未来的独立宿主），就会静默回落到
+    // 官方默认字阶，用户字重与系统粗体当场失效。显式传是防这种静默回落。
+    MiuixTheme(controller = controller, textStyles = textStyles, content = content)
 }
 
 /** 亮色板：语义槽对齐 [QingyuTheme]，未列出的沿用官方默认值。 */
