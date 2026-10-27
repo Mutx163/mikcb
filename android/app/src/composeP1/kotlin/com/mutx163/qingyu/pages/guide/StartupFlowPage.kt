@@ -1,0 +1,527 @@
+package com.mutx163.qingyu.pages.guide
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Info
+
+/**
+ * 启动引导流程页面 · Compose 渲染层。
+ * 覆盖：
+ * 1. 旧版数据无缝迁移指引（检测到旧版包名时呈现）；
+ * 2. 开学日期与当前周次初始化设置；
+ * 3. 引导流程状态机流转。
+ */
+@Composable
+fun StartupFlowPage(
+    initialState: StartupFlowState = StartupFlowState(),
+    onBack: () -> Unit,
+    onOpenOldApp: () -> Unit = {},
+    onGoImportBackup: () -> Unit = {},
+    onFinishStartupFlow: (semesterStartDate: String, totalWeeks: Int) -> Unit = { _, _ -> }
+) {
+    val stateMachine = remember { StartupFlowStateMachine(initialState) }
+    var currentState by remember { mutableStateOf(stateMachine.state) }
+    val dark = isSystemInDarkTheme()
+    val primaryColor = Color(QingyuTheme.primary(dark = dark))
+
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark))
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = when (currentState.currentStep) {
+                    StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.zh
+                    StartupStep.DATE_SETUP -> GuideStrings.setSemesterStartDateAction.zh
+                    StartupStep.GUIDE_TOUR -> GuideStrings.welcomeTitle.zh
+                    StartupStep.COMPLETED -> GuideStrings.welcomeAppName.zh
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = MiuixIcons.Back,
+                            contentDescription = "返回",
+                            tint = Color(QingyuTheme.primaryText(dark))
+                        )
+                    }
+                }
+            )
+
+            when (currentState.currentStep) {
+                StartupStep.MIGRATION_CHECK -> {
+                    MigrationGuideContent(
+                        innerPadding = innerPadding,
+                        isOpeningOldApp = currentState.isOpeningOldApp,
+                        onOpenOldApp = {
+                            stateMachine.setOpeningOldApp(true)
+                            currentState = stateMachine.state
+                            onOpenOldApp()
+                        },
+                        onGoImport = {
+                            stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)
+                            currentState = stateMachine.state
+                            onGoImportBackup()
+                        },
+                        onSkip = {
+                            stateMachine.onMigrationAction(MigrationFlowAction.SKIP)
+                            currentState = stateMachine.state
+                        }
+                    )
+                }
+
+                StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
+                    DateSetupContent(
+                        innerPadding = innerPadding,
+                        initialDate = currentState.semesterStartDate ?: "2026-09-01",
+                        initialWeeks = currentState.totalWeeks,
+                        calculatedWeek = currentState.currentWeek,
+                        onDateChanged = { newDate ->
+                            stateMachine.onUpdateSemesterStartDate(newDate)
+                            currentState = stateMachine.state
+                        },
+                        onWeeksChanged = { newWeeks ->
+                            stateMachine.onUpdateTotalWeeks(newWeeks)
+                            currentState = stateMachine.state
+                        },
+                        onConfirm = {
+                            if (stateMachine.onCompleteDateSetup()) {
+                                currentState = stateMachine.state
+                                onFinishStartupFlow(
+                                    currentState.semesterStartDate ?: "2026-09-01",
+                                    currentState.totalWeeks
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 迁移步骤卡片内容。
+ */
+@Composable
+private fun MigrationGuideContent(
+    innerPadding: PaddingValues,
+    isOpeningOldApp: Boolean,
+    onOpenOldApp: () -> Unit,
+    onGoImport: () -> Unit,
+    onSkip: () -> Unit
+) {
+    val dark = isSystemInDarkTheme()
+    val primaryColor = Color(QingyuTheme.primary(dark = dark))
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = innerPadding.calculateTopPadding() + 8.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // 顶部安心提示卡片
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = GuideStrings.migrationSafeTitle.zh,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = GuideStrings.migrationSafeSubtitle.zh,
+                        fontSize = 14.sp,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
+
+        // 迁移三步走
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    MigrationStepRow(
+                        step = 1,
+                        title = GuideStrings.migrationStep1Title.zh,
+                        subtitle = GuideStrings.migrationStep1Subtitle.zh
+                    )
+                    HorizontalDivider()
+                    MigrationStepRow(
+                        step = 2,
+                        title = GuideStrings.migrationStep2Title.zh,
+                        subtitle = GuideStrings.migrationStep2Subtitle.zh
+                    )
+                    HorizontalDivider()
+                    MigrationStepRow(
+                        step = 3,
+                        title = GuideStrings.migrationStep3Title.zh,
+                        subtitle = GuideStrings.migrationStep3Subtitle.zh
+                    )
+                }
+            }
+        }
+
+        // 提示横幅
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(
+                        imageVector = MiuixIcons.Info,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = GuideStrings.migrationNoSaveToFilesTitle.zh,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(QingyuTheme.primaryText(dark))
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = GuideStrings.migrationNoSaveToFilesSubtitle.zh,
+                            fontSize = 13.sp,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // 操作按钮组
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onOpenOldApp,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(primaryColor)
+                ) {
+                    Text(
+                        text = if (isOpeningOldApp) GuideStrings.openingOldApp.zh else GuideStrings.openOldAppForBackup.zh,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = onGoImport,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(Color(QingyuTheme.card(dark)))
+                ) {
+                    Text(
+                        text = GuideStrings.backupDoneGoImport.zh,
+                        color = primaryColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = onSkip,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(Color.Transparent)
+                ) {
+                    Text(
+                        text = GuideStrings.startFreshWithoutMigration.zh,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 步骤序号行。
+ */
+@Composable
+private fun MigrationStepRow(
+    step: Int,
+    title: String,
+    subtitle: String
+) {
+    val dark = isSystemInDarkTheme()
+    val primaryColor = Color(QingyuTheme.primary(dark = dark))
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(primaryColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "$step",
+                color = primaryColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(QingyuTheme.primaryText(dark))
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                fontSize = 13.sp,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+/**
+ * 开学日期与周次设置界面。
+ */
+@Composable
+private fun DateSetupContent(
+    innerPadding: PaddingValues,
+    initialDate: String,
+    initialWeeks: Int,
+    calculatedWeek: Int,
+    onDateChanged: (String) -> Unit,
+    onWeeksChanged: (Int) -> Unit,
+    onConfirm: () -> Unit
+) {
+    val dark = isSystemInDarkTheme()
+    val primaryColor = Color(QingyuTheme.primary(dark = dark))
+    var dateInput by remember { mutableStateOf(initialDate) }
+    var weeksValue by remember { mutableIntStateOf(initialWeeks) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = innerPadding.calculateTopPadding() + 8.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = GuideStrings.semesterStartDateLabel.zh,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(QingyuTheme.primaryText(dark))
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "以开学第一天所在周的周一作为校历第 1 周",
+                        fontSize = 13.sp,
+                        color = Color(QingyuTheme.secondaryText(dark))
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    TextField(
+                        value = dateInput,
+                        onValueChange = {
+                            dateInput = it
+                            if (SemesterDateCalculator.isValidDateFormat(it)) {
+                                onDateChanged(it)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "学期总周数",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(QingyuTheme.primaryText(dark))
+                        )
+                        Text(
+                            text = GuideStrings.currentWeekCompact.filled("week", "$weeksValue"),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 常用总周数快速选择
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(16, 18, 20, 24).forEach { w ->
+                            val isSelected = w == weeksValue
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) primaryColor else primaryColor.copy(alpha = 0.08f)
+                                    )
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Button(
+                                    onClick = {
+                                        weeksValue = w
+                                        onWeeksChanged(w)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(Color.Transparent)
+                                ) {
+                                    Text(
+                                        text = "$w 周",
+                                        color = if (isSelected) Color.White else primaryColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 当前周推导结果卡片
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "当前计算周次",
+                            fontSize = 14.sp,
+                            color = Color(QingyuTheme.secondaryText(dark))
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = GuideStrings.syncedCurrentWeekMessage.filled("week", "$calculatedWeek"),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(QingyuTheme.primaryText(dark))
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(primaryColor.copy(alpha = 0.12f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "第 $calculatedWeek 周",
+                            color = primaryColor,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(primaryColor)
+            ) {
+                Text(
+                    text = GuideStrings.guideNextButton.zh,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
