@@ -338,7 +338,7 @@ private fun TaskRowItem(
     onDelete: () -> Unit,
     onViewCourse: (() -> Unit)?,
     dark: Boolean,
-    colors: top.yukonga.miuix.kmp.theme.ColorScheme,
+    colors: top.yukonga.miuix.kmp.theme.Colors,
 ) {
     val titleColor = when {
         item.isOverdue -> colors.error

@@ -40,6 +40,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 作息时间表自动切换日期规则页 · Compose 渲染层（Phase 3）。
@@ -89,16 +90,16 @@ fun ScheduleDateRulePage(
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
                 )
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.scheduleDateRuleAdd.zh,
                     onClick = {
                         if (availableSchemes.isEmpty()) {
                             bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                            return@Button
+                            return@MiuixActionButton
                         }
                         if (rules.size >= ScheduleDateRuleDomain.MAX_RULES_PER_DEVICE) {
                             bannerMessage = ScheduleStrings.scheduleDateRuleMaxReached.zh
-                            return@Button
+                            return@MiuixActionButton
                         }
                         bannerMessage = null
                         isAddingNew = true
@@ -159,12 +160,12 @@ fun ScheduleDateRulePage(
                                 fontSize = 16.sp,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
-                            Button(
+                            MiuixActionButton(
                                 text = ScheduleStrings.scheduleDateRuleAdd.zh,
                                 onClick = {
                                     if (availableSchemes.isEmpty()) {
                                         bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                                        return@Button
+                                        return@MiuixActionButton
                                     }
                                     bannerMessage = null
                                     isAddingNew = true
@@ -292,12 +293,12 @@ private fun ScheduleDateRuleCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.editAction.zh,
                     onClick = onEdit,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onDelete,
                 )
@@ -349,7 +350,6 @@ private fun RuleEditorDialog(
                 value = name,
                 onValueChange = { name = it },
                 label = ScheduleStrings.scheduleDateRuleNameLabel.zh,
-                placeholder = ScheduleStrings.scheduleDateRuleNameHint.zh,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -412,7 +412,7 @@ private fun RuleEditorDialog(
                     fontSize = 14.sp,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
-                Button(
+                MiuixActionButton(
                     text = if (enabled) "已启用" else "已停用",
                     onClick = { enabled = !enabled },
                 )
@@ -424,12 +424,12 @@ private fun RuleEditorDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.cancelAction.zh,
                     onClick = onDismiss,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.saveAction.zh,
                     onClick = {
                         val candidate = draft.copy(
@@ -489,16 +489,39 @@ private fun RuleDeleteConfirmDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.cancelAction.zh,
                     onClick = onDismiss,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onConfirm,
                 )
             }
         }
+    }
+}
+
+
+/**
+ * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
+ * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
+ * 避免把每处按钮正文都重写一遍。
+ */
+@Composable
+private fun MiuixActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MiuixTheme.colorScheme.onPrimary,
+        )
     }
 }

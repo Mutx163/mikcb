@@ -173,13 +173,13 @@ fun AddScheduleItemPage(
                     modifier = Modifier.weight(1f),
                 )
                 if (isEditing) {
-                    Button(
+                    MiuixActionButton(
                         text = ScheduleStrings.deleteAction.zh,
                         onClick = { validateAndProceed(isDeleting = true) },
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                 }
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.saveAction.zh,
                     onClick = { validateAndProceed(isDeleting = false) },
                 )
@@ -302,7 +302,7 @@ fun AddScheduleItemPage(
                                 )
                             }
                         }
-                        Button(
+                        MiuixActionButton(
                             text = if (enabled) "已启用" else "已暂停",
                             onClick = { enabled = !enabled },
                         )
@@ -325,21 +325,18 @@ fun AddScheduleItemPage(
                             value = title,
                             onValueChange = { title = it },
                             label = ScheduleStrings.scheduleTitleLabel.zh,
-                            placeholder = ScheduleStrings.scheduleTitleHint.zh,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         TextField(
                             value = location,
                             onValueChange = { location = it },
                             label = ScheduleStrings.scheduleLocationLabel.zh,
-                            placeholder = ScheduleStrings.scheduleLocationHint.zh,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         TextField(
                             value = note,
                             onValueChange = { note = it },
                             label = ScheduleStrings.scheduleNoteLabel.zh,
-                            placeholder = ScheduleStrings.scheduleNoteHint.zh,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -630,7 +627,7 @@ fun AddScheduleItemPage(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Button(
+                    MiuixActionButton(
                         text = thisActionText,
                         onClick = {
                             showOccurrenceScopeDialog = false
@@ -658,7 +655,7 @@ fun AddScheduleItemPage(
                         },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    MiuixActionButton(
                         text = allActionText,
                         onClick = {
                             showOccurrenceScopeDialog = false
@@ -688,5 +685,28 @@ fun AddScheduleItemPage(
                 }
             }
         }
+    }
+}
+
+
+/**
+ * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
+ * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
+ * 避免把每处按钮正文都重写一遍。
+ */
+@Composable
+private fun MiuixActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MiuixTheme.colorScheme.onPrimary,
+        )
     }
 }

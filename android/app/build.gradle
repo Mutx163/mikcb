@@ -175,14 +175,30 @@ android {
     }
 
     sourceSets {
-        // 页面壳复用 P1 源集里的**页面源码**，不复制一份。
+        // 页面壳的渲染层**逐目录挂载**（2026-10-27 收口）。
         //
-        // 只挂 pages/about/ 而不是整个 src/composeP1/kotlin：同一工作区里还有别的
-        // 会话在写 pages/settings/、pages/conflict/、pages/feedback/ 等（AGENTS.md 说明
-        // 用户习惯多 Agent 并行），把整个目录挂进来会让那些在途、暂时编译不过的文件
-        // 直接拖垮本壳的构建。等它们编译通过了，再逐个加进来。
+        // `src/composeP1/kotlin/…/pages/` 是 Phase 3 渲染层的暂存区：多会话并行时
+        // 里面永远有半成品，把它整个挂进任何一个变体都会让「编译」这件事失去意义。
+        // 所以这里按**目录**挂载：挂上 = 该批渲染层开始受 L1 与 CI 保护。
+        // 行由 Lead 在该批交付/验收时追加，不要改成挂整个 pages/。
         composeUi {
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule'
+            // P3-G3 导出与传输（export-transfer 泳道，2026-10-27 12:09 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/export'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer'
+            // P3-H 诊断与测试夹具（diagnostics 泳道，2026-10-27 12:24 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics'
+            // P3-F 同步与备份（sync-backup 泳道，2026-10-27 12:31 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/sync'
+            // P3-D3 作息与考试（timescheme-exam 泳道，2026-10-27 12:36 挂载）
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/exam'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme'
+            // P3-B 设置族（Lead 接管，2026-10-27 12:20 挂载）：渲染层是通用的
+            // `SettingsPageScreen(spec)`，一目录服务全 20 页。4 个智能体正在这里
+            // 并行写模型层（main 源集），只改本目录的渲染基础设施时才需要重验 L1。
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
         }
     }
 

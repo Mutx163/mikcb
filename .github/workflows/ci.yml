@@ -102,3 +102,15 @@ jobs:
         run: |
           cd android
           ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
+
+      # Compose 渲染层编译（2026-10-27 补）：`prod` 变体**不含** compose 源集，
+      # 上面那条 `testProdDebugUnitTest` 编译不到 `src/composeP1/kotlin`——迁移中的
+      # Compose 页面此前既不被 CI 编译、也不被 CI 测试（台账 §7.1 记录的覆盖盲区）。
+      # 只做编译（不打包、不签名、不跑测试）：编 `sourceSets.composeUi` 里**已挂载**的
+      # 渲染层目录，挂上 = 该批渲染层开始受 CI 保护（挂载清单见 android/app/build.gradle）。
+      # 注意：composeP1 变体在页面迁移期**故意不编**（它指向整棵 pages/，必然带出在途欠账），
+      # 所以这里不包含 compileComposeP1DebugKotlin。
+      - name: Compose 渲染层编译（composeUi 已挂载页面）
+        run: |
+          cd android
+          ./gradlew :app:compileComposeUiDebugKotlin --stacktrace --quiet

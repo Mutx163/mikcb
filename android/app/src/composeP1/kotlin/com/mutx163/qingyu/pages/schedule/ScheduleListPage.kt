@@ -90,7 +90,7 @@ fun ScheduleListPage(
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
                 )
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.addScheduleAction.zh,
                     onClick = onAddSchedule,
                 )
@@ -118,7 +118,7 @@ fun ScheduleListPage(
                                 fontSize = 16.sp,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
-                            Button(
+                            MiuixActionButton(
                                 text = ScheduleStrings.addScheduleAction.zh,
                                 onClick = onAddSchedule,
                             )
@@ -250,7 +250,7 @@ private fun ScheduleListCard(
                         fontWeight = FontWeight.SemiBold,
                         color = Color(QingyuTheme.primaryText(dark)).copy(alpha = primaryAlpha),
                         maxLines = 1,
-                        overflow = TextOverflow.ellipsis,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
 
@@ -308,7 +308,7 @@ private fun ScheduleListCard(
                     fontSize = 12.sp,
                     color = Color(QingyuTheme.secondaryText(dark)).copy(alpha = secondaryAlpha),
                     maxLines = 1,
-                    overflow = TextOverflow.ellipsis,
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 // 地点展示
@@ -319,7 +319,7 @@ private fun ScheduleListCard(
                         fontSize = 12.sp,
                         color = Color(QingyuTheme.secondaryText(dark)).copy(alpha = secondaryAlpha),
                         maxLines = 1,
-                        overflow = TextOverflow.ellipsis,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -337,7 +337,7 @@ private fun ScheduleListCard(
 
             // 尾部删除与编辑箭头
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onDelete,
                 )
@@ -385,12 +385,12 @@ private fun ConfirmDeleteDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.cancelAction.zh,
                     onClick = onDismiss,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                MiuixActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onConfirm,
                 )
@@ -436,5 +436,28 @@ private fun parseHexColor(hex: String?, fallback: Color): Color {
         }
     } catch (_: Exception) {
         fallback
+    }
+}
+
+
+/**
+ * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
+ * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
+ * 避免把每处按钮正文都重写一遍。
+ */
+@Composable
+private fun MiuixActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MiuixTheme.colorScheme.onPrimary,
+        )
     }
 }
