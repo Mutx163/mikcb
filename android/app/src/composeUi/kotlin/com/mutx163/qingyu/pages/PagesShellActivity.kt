@@ -63,6 +63,30 @@ class PagesShellActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // edge-to-edge 必须在这里真的调用一次：只 import 是没有任何效果的，
+        // 那正是「状态栏与导航条仍然是黑条」的根因（2026-10-27 19:0x 修）。
+        //
+        // 之前的表现：LaunchTheme 继承了 @android:style/Theme.Light.NoTitleBar，
+        // 平台主题的 statusBarColor / navigationBarColor 默认为黑，系统据此把
+        // 状态栏与手势条区域涂黑、图标翻白，壳的内容区被挤到黑条下面。
+        //
+        // 两个 style 都传 Transparent 且用 light()：壳是浅色界面（MiuixTheme 白天档），
+        // 需要深色系统图标。scrim 参数只对 API 26–28 的三键导航栏有意义，
+        // 本工程 minSdk 33，透明即可。页面侧的内缩不在这里补——课表页已有
+        // statusBarsPadding()、底部 dock 已有 navigationBarsPadding()，
+        // 在这里再加会让顶部空白翻倍。
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+        )
+
         setContent {
             MiuixTheme {
                 PagesShell()
