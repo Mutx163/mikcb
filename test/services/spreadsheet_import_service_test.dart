@@ -426,4 +426,76 @@ Course A,Teacher,1,1-2,Room,1-16
     // service asks for.
     expect(SpreadsheetImportService.maxFileBytes, 20 * 1024 * 1024);
   });
+
+  // 回归钉（2026-10-27 迁移审计，上游回执 §1/§2）：
+  // _readInt 对 double.tryParse 得到非有限值的输入（Infinity / 1e400 溢出），
+  // `asDouble == asDouble.roundToDouble()` 判真后 `.round()` 抛 UnsupportedError
+  // ——它不是 FormatException，会穿透 parseBytes 行级 catch（FormatException only）
+  // 把整个导入崩掉。预期结局：与空串/乱文本一致，落 field_must_be_integer 行级警告。
+  // 有限但超 int 的 1e19 不在此列：round() 钳到 int64 上限后走学期上限的干净报错。
+  // 同一次审计还发现 :467-472 有连续两段一模一样的 startWeek<1 检查（复制粘贴
+  // 残留），删除重复段前先在下方钉住幸存行为。
+  group('number fields degrade to row warnings on non-finite input', () {
+    test('开始节填 Infinity 家族：不崩溃，落 field_must_be_integer 警告', () {
+      for (final raw in ['Infinity', '-Infinity', '1e400', '-1e400', 'NaN']) {
+        final csv =
+            '课程名,星期,开始节,结束节,开始周,结束周\n'
+            '高等数学,1,$raw,2,1,16\n';
+
+        final result = service.parseBytes(
+          utf8.encode(csv),
+          fileName: 'courses.csv',
+          settings: settings,
+        );
+
+        expect(result.courses, isEmpty, reason: '$raw 不应入库');
+        expect(
+          result.warnings.join('|'),
+          contains('field_must_be_integer'),
+          reason: '$raw 必须落行级警告而不是抛 UnsupportedError 崩掉 parseBytes',
+        );
+      }
+    });
+
+    test('开始周填 0 或负数：落 start_week_must_be_at_least_1 警告', () {
+      for (final raw in ['0', '-3']) {
+        final csv =
+            '课程名,星期,开始节,结束节,开始周,结束周\n'
+            '高等数学,1,1,2,$raw,16\n';
+
+        final result = service.parseBytes(
+          utf8.encode(csv),
+          fileName: 'courses.csv',
+          settings: settings,
+        );
+
+        expect(result.courses, isEmpty, reason: '$raw 不应入库');
+        expect(
+          result.warnings.join('|'),
+          contains('start_week_must_be_at_least_1'),
+          reason: '删除重复检查段后，幸存的边界检查必须仍然生效',
+        );
+      }
+    });
+
+    test('开始周填 1e19：有限但超学期上限，走 start_week_exceeds_semester', () {
+      const csv = '''
+课程名,星期,开始节,结束节,开始周,结束周
+高等数学,1,1,2,1e19,16
+''';
+
+      final result = service.parseBytes(
+        utf8.encode(csv),
+        fileName: 'courses.csv',
+        settings: settings,
+      );
+
+      expect(result.courses, isEmpty);
+      expect(
+        result.warnings.join('|'),
+        contains('start_week_exceeds_semester'),
+        reason: '有限大数应钳到 int64 上限后走学期上限报错，守卫不能过度拒绝',
+      );
+    });
+  });
 }

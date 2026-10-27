@@ -467,9 +467,6 @@ class SpreadsheetImportService {
       if (startWeek < 1) {
         throw const FormatException('start_week_must_be_at_least_1');
       }
-      if (startWeek < 1) {
-        throw const FormatException('start_week_must_be_at_least_1');
-      }
       if (startWeek > settings.semesterWeekCount) {
         throw FormatException(
           encodeServiceMessage(
@@ -735,7 +732,16 @@ class SpreadsheetImportService {
       return direct;
     }
     final asDouble = double.tryParse(trimmed);
-    if (asDouble != null && asDouble == asDouble.roundToDouble()) {
+    // 回归钉：test/services/spreadsheet_import_service_test.dart
+    // 「number fields degrade to row warnings on non-finite input」。
+    // Infinity / 1e400 这类串 double.tryParse 得到非有限值，与 roundToDouble()
+    // 的相等判真后 round() 抛 UnsupportedError——不是 FormatException，会穿透
+    // parseBytes 的行级 catch 把整个导入崩掉。非有限值（含 NaN）一律按「读不出
+    // 整数」回落 field_must_be_integer；有限大数（如 1e19）round() 会钳到
+    // int64 上限，交给学期上限检查报干净错误，不在此拦。
+    if (asDouble != null &&
+        asDouble.isFinite &&
+        asDouble == asDouble.roundToDouble()) {
       return asDouble.round();
     }
     return null;
