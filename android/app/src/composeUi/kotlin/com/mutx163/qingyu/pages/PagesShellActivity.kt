@@ -19,14 +19,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.mutx163.qingyu.components.QingyuPageTheme
-import com.mutx163.qingyu.pages.schedule.ScheduleItemData
-import com.mutx163.qingyu.pages.schedule.ScheduleListEntry
-import com.mutx163.qingyu.pages.schedule.ScheduleListGroups
 import com.mutx163.qingyu.pages.schedule.ScheduleListPage
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
-import com.mutx163.qingyu.pages.task.TaskDateFilter
-import com.mutx163.qingyu.pages.task.TaskListViewState
 import com.mutx163.qingyu.pages.task.TaskListPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -35,6 +30,7 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Months
+import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 
 /**
@@ -51,12 +47,20 @@ import top.yukonga.miuix.kmp.icon.extended.Tasks
  * 本壳读不到正式版的 FlutterSharedPreferences。日程页喂示例条目只为核对版式与
  * 文案；任务页/课表是空态骨架，示例条目与真实数据接线属于后续批次。
  *
- * ## 接线进度（2026-10-27）
+ * ## 接线进度（2026-10-27 晚）
  *
- * 已接：课表周视图（P3-C1）、日程列表、任务列表。课表槽位自 18:40 起是真实页面，
- * 不再是占位页。
- * 后续批：统计 / 多课表 / 导出 / 传输 / 云同步 / 诊断（viewState 样例另配）、
- * About 族、设置族——按原 App 层级接进 dock 的「全部功能」入口。
+ * 三个槽位（课表周视图 / 日程列表 / 任务列表）与之前**完全一样**，一个字都没动。
+ *
+ * 第四槽位「索引」是**旁路**：原来的三个槽位没覆盖到的 75 个页面，在索引里点一行
+ * 就进得去，返回回到索引。没有它，那 75 个页面在真机上一个都点不到，
+ * L4 逐页对照就无从做起。目录（[com.mutx163.qingyu.pages.shell.ShellPageCatalog]）
+ * 与分派（[ShellPageContent]）分开：加一页只改这两处，不碰槽位逻辑。
+ *
+ * 索引里每条都标了数据来路：
+ * - 无标记：页面自带默认值，直接进；
+ * - 「演示数据」：壳读不到正式版数据，喂的是示例值，只看版式与文案；
+ * - 「暂不可用」：缺宿主能力（二维码发送/扫码要拍照与编解码，仓库里没有），
+ *   宁可不给入口，也不造个假实现骗人点。
  */
 class PagesShellActivity : ComponentActivity() {
 
@@ -121,8 +125,15 @@ class PagesShellActivity : ComponentActivity() {
 private fun PagesShell() {
     var slot by remember { mutableStateOf(DockSlot.TIMETABLE) }
 
+    // 索引里点开的页面。null = 没开页面层，显示当前槽位。
+    var openPageId by remember { mutableStateOf<String?>(null) }
+
     // dock 结构不是导航栈：非主屏时系统返回回课表主屏，而不是退出壳。
     BackHandler(enabled = slot != DockSlot.TIMETABLE) { slot = DockSlot.TIMETABLE }
+
+    // 页面层盖在槽位之上，返回**先**关页面层、回到索引，再往下才是回主屏。
+    // 注册在槽位那条之后，所以同时满足条件时是这一条先吃掉返回键。
+    BackHandler(enabled = openPageId != null) { openPageId = null }
 
     // 玻璃的背景采样源：整个内容区先被录进这个 layer，底栏再拿它当 backdrop。
     // 必须挂在**内容**上、而不是包住整个 Column —— 包住就会把底栏自己也录进去，
@@ -136,46 +147,64 @@ private fun PagesShell() {
                 .fillMaxSize()
                 .layerBackdrop(backdrop),
         ) {
-            when (slot) {
-                DockSlot.TIMETABLE -> TimetableWeekPage()
-                DockSlot.SCHEDULE -> ScheduleListPage(
-                    groups = sampleScheduleGroups(),
-                    onBack = { slot = DockSlot.TIMETABLE },
-                    onAddSchedule = { },
-                    onEditSchedule = { },
-                    onDeleteSchedule = { },
-                )
-                DockSlot.TASK -> TaskListPage(
-                    viewState = sampleTaskViewState(),
-                    onBack = { slot = DockSlot.TIMETABLE },
-                    onDateFilterChange = { },
-                    onCourseFilterClick = { },
-                    onAddTask = { },
-                    onEditTask = { },
-                    onToggleTask = { },
-                    onDeleteTask = { },
-                )
+            val pageId = openPageId
+            if (pageId != null) {
+                // 页面层占满整屏：页面要的是整块屏，不是槽位那点高度。
+                ShellPageContent(pageId = pageId, onBack = { openPageId = null })
+            } else {
+                when (slot) {
+                    DockSlot.TIMETABLE -> TimetableWeekPage()
+                    DockSlot.SCHEDULE -> ScheduleListPage(
+                        groups = shellSampleScheduleGroups(),
+                        onBack = { slot = DockSlot.TIMETABLE },
+                        onAddSchedule = { },
+                        onEditSchedule = { },
+                        onDeleteSchedule = { },
+                    )
+                    DockSlot.TASK -> TaskListPage(
+                        viewState = shellSampleTaskViewState(),
+                        onBack = { slot = DockSlot.TIMETABLE },
+                        onDateFilterChange = { },
+                        onCourseFilterClick = { },
+                        onAddTask = { },
+                        onEditTask = { },
+                        onToggleTask = { },
+                        onDeleteTask = { },
+                    )
+                    // 索引自己也是槽位：从索引进页面，返回回到索引本身。
+                    DockSlot.INDEX -> ShellPageIndexScreen(
+                        onOpenPage = { openPageId = it },
+                        onBack = { slot = DockSlot.TIMETABLE },
+                    )
+                }
             }
         }
 
-        GlassDockNavigationBar(
-            items = dockItems,
-            selectedIndex = slot.ordinal,
-            onSelect = { index -> slot = DockSlot.entries[index] },
-            // 设备不支持 runtime shader 时别把 backdrop 传进去：
-            // 传了也画不出模糊，反而会多录一层、白费一次采样。
-            backdrop = if (glassAvailable) backdrop else null,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+        // 页面层打开时收起 dock：页面的底部操作区不能被 dock 压住，
+        // 而且此时点 dock 会让「返回」语义分叉（到底退页面还是换槽位）。
+        if (openPageId == null) {
+            GlassDockNavigationBar(
+                items = dockItems,
+                selectedIndex = slot.ordinal,
+                onSelect = { index -> slot = DockSlot.entries[index] },
+                // 设备不支持 runtime shader 时别把 backdrop 传进去：
+                // 传了也画不出模糊，反而会多录一层、白费一次采样。
+                backdrop = if (glassAvailable) backdrop else null,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
     }
 }
 
 /**
- * 三个槽位的图标。
+ * 四个槽位的图标。
  *
- * 选型理由：课表=日历格（`Months`）、日程=清单（`ListView`）、任务=勾选（`Tasks`）——
- * 与 Flutter 版玻璃坞的图标语义对齐；名字都取自 `miuix-icons` 的 extended 组，
- * 已确认存在（见 `MiuixIcons` 扩展属性）。
+ * 选型理由：课表=日历格（`Months`）、日程=清单（`ListView`）、任务=勾选（`Tasks`）、
+ * 索引=笔记/目录（`Notes`）——前三个与 Flutter 版玻璃坞的图标语义对齐；
+ * 名字都取自 `miuix-icons` 的 extended 组，已确认存在（见 `MiuixIcons` 扩展属性）。
+ *
+ * 第四个是迁移期专用：正式 App 的玻璃坞只有三个槽位，这里多出来的是
+ * 「其余 75 页怎么点到」的入口，给完之后随页面接线一起拆。
  */
 private val dockItems: List<GlassDockItem>
     @Composable get() = listOf(
@@ -194,84 +223,22 @@ private val dockItems: List<GlassDockItem>
             label = DockSlot.TASK.label,
             contentDescription = DockSlot.TASK.label,
         ),
+        GlassDockItem(
+            icon = MiuixIcons.Notes,
+            label = DockSlot.INDEX.label,
+            contentDescription = "页面索引",
+        ),
     )
 
-/** dock 槽位，对应原 App 玻璃坞的三个常驻入口。 */
+/** dock 槽位：前三个对应原 App 玻璃坞的常驻入口，第四个是迁移期的页面索引入口。 */
 private enum class DockSlot(val label: String) {
     TIMETABLE("课表"),
     SCHEDULE("日程"),
     TASK("任务"),
+    INDEX("索引"),
 }
 
 /*
  * 课表槽位占位页已于 2026-10-27 18:40 移除：P3-C1 的 `pages/timetable/` 已挂进
  * composeUi 源集并取得 L1 绿，槽位换回 `TimetableWeekPage()`。
  */
-
-/** 示例日程条目：三组各一两条，覆盖版式的三种状态。 */
-private fun sampleScheduleGroups(): ScheduleListGroups = ScheduleListGroups(
-    upcoming = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-1",
-                title = "教研会议",
-                location = "教学楼 302",
-                note = "带教材与期末安排",
-                startDate = "2026-11-02",
-                startTime = "14:00",
-                endTime = "15:30",
-                reminderMinutesBefore = 30,
-            ),
-            nextDate = "2026-11-02",
-        ),
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-2",
-                title = "实验室例会",
-                location = "实验楼 508",
-                startDate = "2026-11-06",
-                startTime = "09:00",
-                endTime = "10:00",
-            ),
-            nextDate = "2026-11-06",
-        ),
-    ),
-    past = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-3",
-                title = "期中答疑",
-                location = "线上",
-                startDate = "2026-10-16",
-                startTime = "19:00",
-                endTime = "20:00",
-            ),
-            nextDate = null,
-        ),
-    ),
-    paused = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-4",
-                title = "暑假集训（已暂停）",
-                startDate = "2026-07-01",
-                endDate = "2026-08-31",
-                startTime = "08:00",
-                endTime = "11:30",
-                enabled = false,
-            ),
-            nextDate = null,
-        ),
-    ),
-)
-
-/** 任务列表空态：先看版式骨架，示例条目等 CourseTask 样例批补。 */
-private fun sampleTaskViewState(): TaskListViewState = TaskListViewState(
-    dateFilter = TaskDateFilter.ALL,
-    courseFilter = null,
-    selectedCourseLabel = "全部课程",
-    sections = emptyList(),
-    emptyTitle = "暂无任务",
-    undatedHiddenCount = 0,
-    totalTasksCount = 0,
-)

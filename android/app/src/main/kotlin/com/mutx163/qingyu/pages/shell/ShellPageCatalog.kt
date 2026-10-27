@@ -1,0 +1,322 @@
+package com.mutx163.qingyu.pages.shell
+
+/**
+ * 壳内「页面索引」的**清单数据**——纯 Kotlin，不含 Compose 依赖，因此能在 JVM 上直接测。
+ *
+ * ## 这份清单从哪来
+ *
+ * 逐条来自 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md` §2（82 个页面单元，
+ * 按批次分组）。那份清单是「真机逐页对照（L4）」的依据；本目录是它的**可点击版本**：
+ * 有了它，用户在真机上不用记路径，点一行就能进某页做对照。
+ *
+ * ## 为什么不直接写进 Activity
+ *
+ * 1. **可测**：`ShellPageCatalogTest` 钉住「id 唯一 / 每条都有标题 / 暂无入口的都写了原因 /
+ *    总数与批次对得上」。这些规则写在 Compose 文件里就只能靠人看。
+ * 2. **单一真源**：索引界面与分派层（`ShellPageIndex.kt`）都读这一份，
+ *    加页只改这里 + 分派里加一个分支，不会出现「界面里有、点进去空白」。
+ *
+ * ## kind 三档的判据（写死在这里，避免后来者含糊）
+ *
+ * - [ShellPageDataKind.DIRECT]：页面自带默认值，不需要喂任何数据就能渲染出完整界面。
+ * - [ShellPageDataKind.DEMO]：页面必须收一份视图状态；壳里喂的是**演示数据**
+ *   （空列表或示例条目），界面上会标出来，免得被当成真实数据。
+ * - [ShellPageDataKind.UNAVAILABLE]：**进不去**，且原因必须是「代码里缺东西」而不是「懒得接」。
+ *   目前 6 条：4 条渲染层没写、2 条要求宿主提供二维码/相机图形而仓库里没有。
+ * - [ShellPageDataKind.ALWAYS_VISIBLE]：不是独立页面（本壳底栏），常驻可见，不需要入口。
+ */
+enum class ShellPageDataKind {
+    DIRECT,
+    DEMO,
+    UNAVAILABLE,
+    ALWAYS_VISIBLE,
+}
+
+/** 索引里的一行。 */
+data class ShellPageEntry(
+    /** 稳定 id，格式 `<批次小写>.<名字>`，分派层按它选 Composable。 */
+    val id: String,
+    /** 屏上标题（与 L4 清单同一套名字，便于两边对照）。 */
+    val title: String,
+    val kind: ShellPageDataKind,
+    /** `UNAVAILABLE` 必填：一句话说清缺什么。其余可为 null。 */
+    val note: String? = null,
+)
+
+/** 一个批次 = 索引里的一个分组。 */
+data class ShellPageBatch(
+    /** 台账批次号（`P3-A` 这种），也是 id 前缀的来源。 */
+    val code: String,
+    /** 分组标题（人话）。 */
+    val title: String,
+    val pages: List<ShellPageEntry>,
+)
+
+/**
+ * 全量页面目录。
+ *
+ * 顺序 = L4 清单里的批次顺序，不按拼音重排：对照时要能照着清单一行行走。
+ */
+object ShellPageCatalog {
+
+    /** 索引里显示在行尾的短标签。 */
+    fun badgeOf(kind: ShellPageDataKind): String? = when (kind) {
+        ShellPageDataKind.DIRECT -> null
+        ShellPageDataKind.DEMO -> "演示数据"
+        ShellPageDataKind.UNAVAILABLE -> "暂不可用"
+        ShellPageDataKind.ALWAYS_VISIBLE -> "常驻"
+    }
+
+    private fun page(
+        code: String,
+        name: String,
+        title: String,
+        kind: ShellPageDataKind,
+        note: String? = null,
+    ): ShellPageEntry = ShellPageEntry(
+        id = "${code.lowercase().removePrefix("p3-")}.$name",
+        title = title,
+        kind = kind,
+        note = note,
+    )
+
+    val batches: List<ShellPageBatch> = listOf(
+        ShellPageBatch(
+            code = "P3-A",
+            title = "关于与说明",
+            pages = listOf(
+                page("P3-A", "about", "关于", ShellPageDataKind.DIRECT),
+                page(
+                    "P3-A", "changelog", "更新日志", ShellPageDataKind.UNAVAILABLE,
+                    "只有解析模型 ReleaseNotesBlocks.kt，没有 Compose 渲染层",
+                ),
+                page("P3-A", "licenses", "开源许可", ShellPageDataKind.DEMO),
+                page("P3-A", "support", "支持作者", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-B",
+            title = "设置族（共用一个渲染层）",
+            pages = listOf(
+                page("P3-B", "settingsHome", "设置首页 / 课表设置", ShellPageDataKind.DEMO),
+                page("P3-B", "semester", "设置 · 学期", ShellPageDataKind.DEMO),
+                page("P3-B", "general", "设置 · 通用", ShellPageDataKind.DEMO),
+                page("P3-B", "appearance", "设置 · 外观", ShellPageDataKind.DEMO),
+                page("P3-B", "theme", "设置 · 主题管理", ShellPageDataKind.DEMO),
+                page("P3-B", "appearanceEditor", "设置 · 外观编辑器", ShellPageDataKind.DEMO),
+                page("P3-B", "materialGeneral", "设置 · 材质（通用页签）", ShellPageDataKind.DEMO),
+                page("P3-B", "materialCourseCard", "设置 · 材质（课程卡页签）", ShellPageDataKind.DEMO),
+                page("P3-B", "backdropFlow", "设置 · 首页背景", ShellPageDataKind.DEMO),
+                page("P3-B", "recentWallpaper", "设置 · 最近壁纸", ShellPageDataKind.DEMO),
+                page("P3-B", "bingGallery", "设置 · Bing 壁纸画廊", ShellPageDataKind.DEMO),
+                page("P3-B", "homeWidget", "设置 · 首页小组件", ShellPageDataKind.DEMO),
+                page("P3-B", "homeNavigation", "设置 · 首页导航", ShellPageDataKind.DEMO),
+                page("P3-B", "homeMenuEditor", "设置 · 首页菜单编辑器", ShellPageDataKind.DEMO),
+                page(
+                    "P3-B", "timetablePage", "设置 · 课表页面", ShellPageDataKind.UNAVAILABLE,
+                    "Kotlin 侧没有这一页的 spec / Composable（SettingsBatchCoverageTest 也未登记）",
+                ),
+                page("P3-B", "courseCard", "设置 · 课程卡片", ShellPageDataKind.DEMO),
+                page("P3-B", "live", "设置 · 实时活动", ShellPageDataKind.DEMO),
+                page("P3-B", "liveSelfCheck", "设置 · 实时活动自检", ShellPageDataKind.DEMO),
+                page("P3-B", "holiday", "设置 · 节假日", ShellPageDataKind.DEMO),
+                page("P3-B", "holidayAdvanced", "设置 · 节假日（高级）", ShellPageDataKind.DEMO),
+                page("P3-B", "weather", "设置 · 天气", ShellPageDataKind.DEMO),
+                page("P3-B", "diagnostics", "设置 · 诊断", ShellPageDataKind.DEMO),
+                page("P3-B", "glassDock", "设置 · 玻璃坞编辑器", ShellPageDataKind.DEMO),
+                page("P3-B", "glassDockIcon", "设置 · 玻璃坞图标", ShellPageDataKind.DEMO),
+                page("P3-B", "reset", "设置 · 重置", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-C1",
+            title = "课表 · 周视图",
+            pages = listOf(
+                page("P3-C1", "week", "课表 · 周视图", ShellPageDataKind.DEMO),
+                page("P3-C1", "profiles", "课表 · 多课表管理", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-C2",
+            title = "课表 · 月视图",
+            pages = listOf(
+                page(
+                    "P3-C2", "month", "月视图", ShellPageDataKind.UNAVAILABLE,
+                    "只有面板组件（MonthPanelOverview / MonthGrid 等），没有整页 Composable",
+                ),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-C3",
+            title = "课表 · 日视图",
+            pages = listOf(
+                page("P3-C3", "day", "日视图", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-D1",
+            title = "课程表单与概览",
+            pages = listOf(
+                page("P3-D1", "addCourse", "添加 / 编辑课程", ShellPageDataKind.DEMO),
+                page("P3-D1", "overview", "课程概览", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-D2",
+            title = "日程与任务",
+            pages = listOf(
+                page("P3-D2", "scheduleList", "日程列表", ShellPageDataKind.DEMO),
+                page("P3-D2", "addSchedule", "添加 / 编辑日程", ShellPageDataKind.DEMO),
+                page("P3-D2", "dateRule", "日程日期规则", ShellPageDataKind.DEMO),
+                page("P3-D2", "taskList", "任务列表", ShellPageDataKind.DEMO),
+                page("P3-D2", "addTask", "添加 / 编辑任务", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-D3",
+            title = "作息与考试",
+            pages = listOf(
+                page("P3-D3", "timeSchemes", "作息管理", ShellPageDataKind.DEMO),
+                page("P3-D3", "locationMatch", "地点时间匹配", ShellPageDataKind.DEMO),
+                page("P3-D3", "addExam", "添加 / 编辑考试", ShellPageDataKind.DEMO),
+                page("P3-D3", "examList", "考试列表", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-E",
+            title = "统计族",
+            pages = listOf(
+                page("P3-E", "statistics", "课程统计主页", ShellPageDataKind.DEMO),
+                page("P3-E", "statisticsSettings", "统计设置", ShellPageDataKind.DEMO),
+                page("P3-E", "analysis", "统计分析", ShellPageDataKind.DEMO),
+                page("P3-E", "session", "单节课明细", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-F",
+            title = "同步与备份",
+            pages = listOf(
+                page("P3-F", "cloudSync", "云同步", ShellPageDataKind.DEMO),
+                page("P3-F", "backupList", "备份列表", ShellPageDataKind.DEMO),
+                page("P3-F", "couple", "情侣课表", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-G1",
+            title = "导入 · 基础",
+            pages = listOf(
+                page("P3-G1", "importEntry", "导入入口", ShellPageDataKind.DEMO),
+                page("P3-G1", "icsImport", "ICS 导入", ShellPageDataKind.DIRECT),
+                page("P3-G1", "spreadsheetImport", "表格导入", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-G2",
+            title = "导入 · 仓库适配",
+            pages = listOf(
+                page("P3-G2", "schoolAdapters", "学校适配器列表", ShellPageDataKind.DEMO),
+                page("P3-G2", "adapterDetail", "适配器详情", ShellPageDataKind.DEMO),
+                page("P3-G2", "warehouseImport", "仓库课程导入", ShellPageDataKind.DIRECT),
+                page("P3-G2", "webLogin", "教务网页登录（占位）", ShellPageDataKind.DEMO),
+                page("P3-G2", "customDebug", "自定义调试", ShellPageDataKind.DIRECT),
+                page("P3-G2", "aiImageImport", "AI 识图导入", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-G3",
+            title = "导出与传输",
+            pages = listOf(
+                page("P3-G3", "dataTransfer", "数据传输", ShellPageDataKind.DEMO),
+                page("P3-G3", "icsExport", "ICS 导出", ShellPageDataKind.DEMO),
+                page(
+                    "P3-G3", "qrSend", "二维码发送", ShellPageDataKind.UNAVAILABLE,
+                    "页面要求宿主提供二维码图形（qrSlot 为必传参数），仓库内无二维码编码器",
+                ),
+                page(
+                    "P3-G3", "qrScan", "二维码扫码", ShellPageDataKind.UNAVAILABLE,
+                    "页面要求宿主提供相机预览（cameraSlot 为必传参数），仓库内无 CameraX / 扫码依赖",
+                ),
+                page("P3-G3", "lanEdit", "局域网编辑", ShellPageDataKind.DEMO),
+                page("P3-G3", "pickupCodes", "取件码", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-H",
+            title = "诊断与测试夹具",
+            pages = listOf(
+                page("P3-H", "log", "实时诊断日志", ShellPageDataKind.DEMO),
+                page("P3-H", "memory", "内存统计", ShellPageDataKind.DEMO),
+                page("P3-H", "perfReport", "性能报告", ShellPageDataKind.DEMO),
+                page("P3-H", "fixture", "实时测试夹具", ShellPageDataKind.DEMO),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-I",
+            title = "引导与展示",
+            pages = listOf(
+                page("P3-I", "startup", "启动引导", ShellPageDataKind.DIRECT),
+                page("P3-I", "userGuide", "使用指南", ShellPageDataKind.DIRECT),
+                page("P3-I", "more", "全部功能", ShellPageDataKind.DIRECT),
+                page("P3-I", "moreSearch", "全部功能 · 搜索浮层", ShellPageDataKind.DIRECT),
+                page("P3-I", "hyperosShowcase", "HyperOS 展示", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-I2",
+            title = "Miuix 展示册",
+            pages = listOf(
+                page("P3-I2", "showcase", "Miuix 展示册", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-J",
+            title = "实时活动与天气",
+            pages = listOf(
+                page("P3-J", "live", "实时活动 / 灵动岛", ShellPageDataKind.DIRECT),
+                page(
+                    "P3-J", "keepAlive", "实时活动 · 保持后台运行", ShellPageDataKind.UNAVAILABLE,
+                    "Kotlin 侧 pages/live/ 只有 LiveSettingsPage.kt，这一屏没有实现",
+                ),
+                page("P3-J", "weatherCity", "天气城市选择", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-K",
+            title = "冲突与反馈",
+            pages = listOf(
+                page("P3-K", "conflict", "课程冲突详情", ShellPageDataKind.DEMO),
+                page("P3-K", "feedback", "意见反馈", ShellPageDataKind.DIRECT),
+            ),
+        ),
+        ShellPageBatch(
+            code = "P3-0",
+            title = "壳自身",
+            pages = listOf(
+                page(
+                    "P3-0", "dock", "底部玻璃坞", ShellPageDataKind.ALWAYS_VISIBLE,
+                    "常驻底栏，不需要单独入口",
+                ),
+            ),
+        ),
+    )
+
+    /** 全部页面（按批次顺序展平）。 */
+    val all: List<ShellPageEntry> by lazy { batches.flatMap { it.pages } }
+
+    /** 能点进去的页面（索引里可点击的那些）。 */
+    val openable: List<ShellPageEntry> by lazy { all.filter { it.isOpenable } }
+
+    fun find(id: String): ShellPageEntry? = all.firstOrNull { it.id == id }
+
+    fun countOf(kind: ShellPageDataKind): Int = all.count { it.kind == kind }
+
+    val totalCount: Int get() = all.size
+}
+
+/**
+ * 这一行点下去会不会有东西。
+ *
+ * 故意做成扩展属性而不是让界面各自判断：界面里出现第二套判据，迟早与分派层漂开。
+ */
+val ShellPageEntry.isOpenable: Boolean
+    get() = kind == ShellPageDataKind.DIRECT || kind == ShellPageDataKind.DEMO
