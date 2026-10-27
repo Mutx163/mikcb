@@ -43,10 +43,13 @@ def main():
         raise SystemExit(f"ARB 里缺少这些键：{absent}")
 
     rows = []
+    vals = []
     for key in ORDER:
         name = key[0].lower() + key[1:]
         rows.append(f'        ArbText("{key}", "{esc(arb[key])}"),')
+        vals.append(f'    val {name} = ArbText("{key}", "{esc(arb[key])}")')
     body = "\n".join(rows)
+    accessors = "\n".join(vals)
 
     kotlin = f'''package com.mutx163.qingyu.pages.timetable.month
 
@@ -61,7 +64,9 @@ def main():
  */
 object MonthViewStrings {{
 
-    /** ARB 里的原始键值对：`(键, 中文原文)`。 */
+{accessors}
+
+    /** ARB 里的原始键值对：`(键, 中文原文)`，供逐字对拍测试扫全集。 */
     val allTexts: List<ArbText> = listOf(
 {body}
     )

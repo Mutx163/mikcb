@@ -11,7 +11,29 @@ package com.mutx163.qingyu.pages.timetable.month
  */
 object MonthViewStrings {
 
-    /** ARB 里的原始键值对：`(键, 中文原文)`。 */
+    val monthViewTitle = ArbText("monthViewTitle", "月视图")
+    val monthViewPreviousMonth = ArbText("monthViewPreviousMonth", "上个月")
+    val monthViewNextMonth = ArbText("monthViewNextMonth", "下个月")
+    val monthViewBackToCurrentMonthShort = ArbText("monthViewBackToCurrentMonthShort", "今天")
+    val monthViewYearSegment = ArbText("monthViewYearSegment", "{year}年")
+    val monthViewMonthSegment = ArbText("monthViewMonthSegment", "{month}月")
+    val monthViewHolidayBadge = ArbText("monthViewHolidayBadge", "休")
+    val monthViewAdjustedWorkdayBadge = ArbText("monthViewAdjustedWorkdayBadge", "班")
+    val monthViewAgendaTitle = ArbText("monthViewAgendaTitle", "{month}月{day}日")
+    val monthViewAgendaEmpty = ArbText("monthViewAgendaEmpty", "这天没有安排")
+    val monthViewAgendaAddCourse = ArbText("monthViewAgendaAddCourse", "加课")
+    val monthViewEmptyMonthTitle = ArbText("monthViewEmptyMonthTitle", "这个月还没有安排")
+    val monthViewEmptyMonthHint = ArbText("monthViewEmptyMonthHint", "先加一节课，日历上就会显示圆点")
+    val monthOverviewTitle = ArbText("monthOverviewTitle", "本月概览")
+    val monthOverviewDaysTitle = ArbText("monthOverviewDaysTitle", "本月有安排的日子")
+    val monthOverviewScheduledDays = ArbText("monthOverviewScheduledDays", "有安排 {count} 天")
+    val monthOverviewMoreDays = ArbText("monthOverviewMoreDays", "还有 {count} 天")
+    val monthViewDaySemantics = ArbText("monthViewDaySemantics", "{month}月{day}日")
+    val monthViewCourseCountSemantics = ArbText("monthViewCourseCountSemantics", "{count}节课")
+    val monthViewExamCountSemantics = ArbText("monthViewExamCountSemantics", "{count}场考试")
+    val monthViewScheduleCountSemantics = ArbText("monthViewScheduleCountSemantics", "{count}个日程")
+
+    /** ARB 里的原始键值对：`(键, 中文原文)`，供逐字对拍测试扫全集。 */
     val allTexts: List<ArbText> = listOf(
         ArbText("monthViewTitle", "月视图"),
         ArbText("monthViewPreviousMonth", "上个月"),
