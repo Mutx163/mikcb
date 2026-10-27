@@ -2,8 +2,10 @@ package com.mutx163.qingyu.pages
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,7 @@ import com.mutx163.qingyu.pages.schedule.ScheduleListPage
 import com.mutx163.qingyu.pages.task.TaskDateFilter
 import com.mutx163.qingyu.pages.task.TaskListViewState
 import com.mutx163.qingyu.pages.task.TaskListPage
+import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -51,8 +54,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 接线进度（2026-10-27）
  *
- * 已接：日程列表、任务列表。课表槽位 = 占位页（pages/timetable 泳道重构中，
- * 落地后换回 TimetableWeekPage 并恢复挂载行）。
+ * 已接：课表周视图（P3-C1）、日程列表、任务列表。课表槽位自 18:40 起是真实页面，
+ * 不再是占位页。
  * 后续批：统计 / 多课表 / 导出 / 传输 / 云同步 / 诊断（viewState 样例另配）、
  * About 族、设置族——按原 App 层级接进 dock 的「全部功能」入口。
  */
@@ -89,7 +92,7 @@ private fun PagesShell() {
                 .fillMaxWidth(),
         ) {
             when (slot) {
-                DockSlot.TIMETABLE -> TimetablePendingPage()
+                DockSlot.TIMETABLE -> TimetableWeekPage()
                 DockSlot.SCHEDULE -> ScheduleListPage(
                     groups = sampleScheduleGroups(),
                     onBack = { slot = DockSlot.TIMETABLE },
@@ -149,35 +152,10 @@ private fun ShellDock(current: DockSlot, onSelect: (DockSlot) -> Unit) {
     }
 }
 
-/**
- * 课表槽位占位：pages/timetable 泳道正在重构模型层（main 源集与暂存区暂有重名冲突，
- * 挂载被暂时摘除）。该泳道落地后：恢复 build.gradle 里的 timetable 挂载行，
- * 把本占位换回 `TimetableWeekPage()` 即可点亮，dock 结构无需再动。
+/*
+ * 课表槽位占位页已于 2026-10-27 18:40 移除：P3-C1 的 `pages/timetable/` 已挂进
+ * composeUi 源集并取得 L1 绿，槽位换回 `TimetableWeekPage()`。
  */
-@Composable
-private fun TimetablePendingPage() {
-    val colors = MiuixTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 96.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "课表",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSurface,
-        )
-        Text(
-            text = "课表页正在迁移泳道中重构，落地后本页自动换入。",
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
-            color = colors.onSurfaceVariantSummary,
-            modifier = Modifier.padding(top = 10.dp),
-        )
-    }
-}
 
 /** 示例日程条目：三组各一两条，覆盖版式的三种状态。 */
 private fun sampleScheduleGroups(): ScheduleListGroups = ScheduleListGroups(

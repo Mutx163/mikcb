@@ -215,6 +215,11 @@ android {
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/live'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/weather'
+            // 课表族：周视图 P3-C1（367f3aed，12:05 交付）+ 日视图 P3-C3（b5b8bba2，11:xx 交付）。
+            // 挂父目录会连 `timetable/day/` 一起带进来（子目录不需要单独一行）。
+            // 2026-10-27 18:30 补挂：这两批交付时都漏了这一步，导致 3,920 行渲染层
+            // 从交付起没有被任何变体编译过，壳里也一直停在占位页。
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable'
         }
     }
 

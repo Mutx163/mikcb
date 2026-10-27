@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.icon.extended.Location
  *
  * 封装单门课程在周视图网格内的激活状态、冲突标记以及多列并排时的列索引与总列数。
  */
-data class WeekCourseCardModel(
+data class WeekGridCardModel(
     val course: Course,
     val isCurrentWeek: Boolean = true,
     val isConflicting: Boolean = false,
@@ -75,7 +75,7 @@ fun calculateInk(backgroundColor: Color): Color {
  */
 @Composable
 fun CourseGridCard(
-    model: WeekCourseCardModel,
+    model: WeekGridCardModel,
     onClick: (Course) -> Unit,
     modifier: Modifier = Modifier,
 ) {

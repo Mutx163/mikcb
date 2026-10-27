@@ -10,6 +10,8 @@ data class TimetableProfileItem(
     val isPartnerImported: Boolean = false,
     val courseCount: Int = 0,
     val timeSchemeId: String? = null,
+    /** 当前教学周：渲染层汇总行「N 门课程 · 第 N 周」要用。 */
+    val currentWeek: Long = 1,
 )
 
 /**

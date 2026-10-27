@@ -144,8 +144,8 @@ private fun buildWeekGridLayout(
     courses: List<Course>,
     week: Int,
     visibleDays: List<Int>,
-): List<WeekCourseCardModel> {
-    val result = mutableListOf<WeekCourseCardModel>()
+): List<WeekGridCardModel> {
+    val result = mutableListOf<WeekGridCardModel>()
 
     for (dayOfWeek in visibleDays) {
         val dayCourses = courses.filter { it.dayOfWeek == dayOfWeek }
@@ -181,7 +181,7 @@ private fun buildWeekGridLayout(
             if (cluster.size == 1) {
                 val c = cluster.first()
                 result.add(
-                    WeekCourseCardModel(
+                    WeekGridCardModel(
                         course = c,
                         isCurrentWeek = c.isActiveInWeek(week),
                         isConflicting = false,
@@ -215,7 +215,7 @@ private fun buildWeekGridLayout(
             val totalCols = columnsLastEnd.size
             for ((c, colIndex) in assignments) {
                 result.add(
-                    WeekCourseCardModel(
+                    WeekGridCardModel(
                         course = c,
                         isCurrentWeek = c.isActiveInWeek(week),
                         isConflicting = totalCols > 1,

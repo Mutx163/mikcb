@@ -67,7 +67,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * 课表管理模块文案常量（逐字对齐 `lib/l10n/app_zh.arb` 与 Flutter 界面）。
  */
-object TimetableStrings {
+object TimetableProfilesStrings {
     const val TITLE_PROFILES = "课表管理"
     const val CREATE_TIMETABLE_TOOLTIP = "新建课表"
     const val CREATE_TIMETABLE_TITLE = "新建课表"
@@ -104,19 +104,10 @@ object TimetableStrings {
 }
 
 /**
- * 课表档案列表展示条目。
- */
-data class TimetableProfileItem(
-    val id: String,
-    val name: String,
-    val courseCount: Int = 0,
-    val currentWeek: Long = 1,
-    val isPartnerImported: Boolean = false,
-    val isActive: Boolean = false,
-)
-
-/**
  * 领域模型转换为展示条目。
+ *
+ * `TimetableProfileItem` 由模型层（`main/…/pages/timetable/TimetableProfilesModel.kt`）定义，
+ * 渲染层不再重复声明一份同名同包的数据类——那样模型层一旦被编进同一个变体就是重名冲突。
  */
 fun TimetableProfile.toItem(isActive: Boolean): TimetableProfileItem =
     TimetableProfileItem(
@@ -217,12 +208,12 @@ fun TimetableProfilesPage(
             Column(modifier = Modifier.fillMaxSize()) {
                 // ── 1. 顶栏 ──
                 TopAppBar(
-                    title = TimetableStrings.TITLE_PROFILES,
+                    title = TimetableProfilesStrings.TITLE_PROFILES,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
-                                contentDescription = TimetableStrings.CANCEL_ACTION,
+                                contentDescription = TimetableProfilesStrings.CANCEL_ACTION,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
@@ -231,7 +222,7 @@ fun TimetableProfilesPage(
                         IconButton(onClick = { showCreateDialog = true }) {
                             Icon(
                                 imageVector = MiuixIcons.Add,
-                                contentDescription = TimetableStrings.CREATE_TIMETABLE_TOOLTIP,
+                                contentDescription = TimetableProfilesStrings.CREATE_TIMETABLE_TOOLTIP,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
@@ -344,7 +335,7 @@ fun TimetableProfilesPage(
             },
             onCannotDeleteWarning = {
                 activeMenuProfile = null
-                localToast = TimetableStrings.KEEP_AT_LEAST_ONE_PROFILE
+                localToast = TimetableProfilesStrings.KEEP_AT_LEAST_ONE_PROFILE
             },
         )
     }
@@ -472,9 +463,9 @@ private fun TimetableProfileRow(
             }
 
             val summary = if (profile.isPartnerImported) {
-                TimetableStrings.PARTNER_READ_ONLY_BADGE
+                TimetableProfilesStrings.PARTNER_READ_ONLY_BADGE
             } else {
-                TimetableStrings.coursesAndWeekSummary(profile.courseCount, profile.currentWeek)
+                TimetableProfilesStrings.coursesAndWeekSummary(profile.courseCount, profile.currentWeek)
             }
             Text(
                 text = summary,
@@ -494,7 +485,7 @@ private fun TimetableProfileRow(
             ) {
                 Icon(
                     imageVector = MiuixIcons.More,
-                    contentDescription = TimetableStrings.MORE_ACTIONS_TOOLTIP,
+                    contentDescription = TimetableProfilesStrings.MORE_ACTIONS_TOOLTIP,
                     tint = Color(QingyuTheme.actionIcon(dark)),
                 )
             }
@@ -538,7 +529,7 @@ private fun PartnerBadge(dark: Boolean) {
             .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
-            text = TimetableStrings.PARTNER_BADGE,
+            text = TimetableProfilesStrings.PARTNER_BADGE,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primary(dark = dark)),
@@ -569,7 +560,7 @@ private fun CreateProfileDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = TimetableStrings.CREATE_TIMETABLE_TITLE,
+                    text = TimetableProfilesStrings.CREATE_TIMETABLE_TITLE,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
@@ -578,7 +569,7 @@ private fun CreateProfileDialog(
                 TextField(
                     value = nameInput,
                     onValueChange = { nameInput = it },
-                    label = TimetableStrings.TIMETABLE_NAME_HINT,
+                    label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -590,7 +581,7 @@ private fun CreateProfileDialog(
                     Button(
                         onClick = onDismiss,
                     ) {
-                        Text(text = TimetableStrings.CANCEL_ACTION)
+                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -602,7 +593,7 @@ private fun CreateProfileDialog(
                             }
                         },
                     ) {
-                        Text(text = TimetableStrings.CREATE_ACTION)
+                        Text(text = TimetableProfilesStrings.CREATE_ACTION)
                     }
                 }
             }
@@ -634,7 +625,7 @@ private fun RenameProfileDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = TimetableStrings.RENAME_TIMETABLE_TITLE,
+                    text = TimetableProfilesStrings.RENAME_TIMETABLE_TITLE,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
@@ -643,7 +634,7 @@ private fun RenameProfileDialog(
                 TextField(
                     value = nameInput,
                     onValueChange = { nameInput = it },
-                    label = TimetableStrings.TIMETABLE_NAME_HINT,
+                    label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -655,7 +646,7 @@ private fun RenameProfileDialog(
                     Button(
                         onClick = onDismiss,
                     ) {
-                        Text(text = TimetableStrings.CANCEL_ACTION)
+                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -667,7 +658,7 @@ private fun RenameProfileDialog(
                             }
                         },
                     ) {
-                        Text(text = TimetableStrings.RENAME_ACTION)
+                        Text(text = TimetableProfilesStrings.RENAME_ACTION)
                     }
                 }
             }
@@ -697,14 +688,14 @@ private fun ClearCoursesConfirmDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = TimetableStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
+                    text = TimetableProfilesStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
                 Text(
-                    text = TimetableStrings.clearCurrentTimetableMessage(profile.name),
+                    text = TimetableProfilesStrings.clearCurrentTimetableMessage(profile.name),
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
@@ -718,14 +709,14 @@ private fun ClearCoursesConfirmDialog(
                     Button(
                         onClick = onDismiss,
                     ) {
-                        Text(text = TimetableStrings.CANCEL_ACTION)
+                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = onConfirm,
                     ) {
                         Text(
-                            text = TimetableStrings.CLEAR_ACTION,
+                            text = TimetableProfilesStrings.CLEAR_ACTION,
                             color = Color(QingyuTheme.error(dark)),
                         )
                     }
@@ -757,14 +748,14 @@ private fun DeleteProfileConfirmDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = TimetableStrings.DELETE_TIMETABLE_TITLE,
+                    text = TimetableProfilesStrings.DELETE_TIMETABLE_TITLE,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
                 Text(
-                    text = TimetableStrings.deleteTimetableMessage(profile.name),
+                    text = TimetableProfilesStrings.deleteTimetableMessage(profile.name),
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
@@ -778,14 +769,14 @@ private fun DeleteProfileConfirmDialog(
                     Button(
                         onClick = onDismiss,
                     ) {
-                        Text(text = TimetableStrings.CANCEL_ACTION)
+                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = onConfirm,
                     ) {
                         Text(
-                            text = TimetableStrings.DELETE_ACTION,
+                            text = TimetableProfilesStrings.DELETE_ACTION,
                             color = Color(QingyuTheme.error(dark)),
                         )
                     }
@@ -834,7 +825,7 @@ private fun ProfileMoreActionsDialog(
                 // 1. 切换到此课表（非激活状态展示）
                 if (!profile.isActive) {
                     ActionMenuItem(
-                        title = TimetableStrings.SWITCH_TO_THIS_TIMETABLE,
+                        title = TimetableProfilesStrings.SWITCH_TO_THIS_TIMETABLE,
                         icon = MiuixIcons.Ok,
                         onClick = onSwitch,
                         dark = dark,
@@ -843,7 +834,7 @@ private fun ProfileMoreActionsDialog(
 
                 // 2. 重命名
                 ActionMenuItem(
-                    title = TimetableStrings.RENAME_ACTION,
+                    title = TimetableProfilesStrings.RENAME_ACTION,
                     icon = MiuixIcons.Edit,
                     onClick = onRename,
                     dark = dark,
@@ -851,7 +842,7 @@ private fun ProfileMoreActionsDialog(
 
                 // 3. 复制
                 ActionMenuItem(
-                    title = TimetableStrings.DUPLICATE_ACTION,
+                    title = TimetableProfilesStrings.DUPLICATE_ACTION,
                     icon = MiuixIcons.Copy,
                     onClick = onDuplicate,
                     dark = dark,
@@ -861,7 +852,7 @@ private fun ProfileMoreActionsDialog(
                 if (profile.isActive) {
                     val canClear = profile.courseCount > 0
                     ActionMenuItem(
-                        title = TimetableStrings.CLEAR_COURSES_ACTION,
+                        title = TimetableProfilesStrings.CLEAR_COURSES_ACTION,
                         icon = MiuixIcons.Clear,
                         isDestructive = true,
                         enabled = canClear,
@@ -872,7 +863,7 @@ private fun ProfileMoreActionsDialog(
 
                 // 5. 删除课表
                 ActionMenuItem(
-                    title = TimetableStrings.DELETE_ACTION,
+                    title = TimetableProfilesStrings.DELETE_ACTION,
                     icon = MiuixIcons.Delete,
                     isDestructive = true,
                     enabled = canDelete,
@@ -899,7 +890,7 @@ private fun ProfileMoreActionsDialog(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = TimetableStrings.CANCEL_ACTION,
+                        text = TimetableProfilesStrings.CANCEL_ACTION,
                         fontSize = 16.sp,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
