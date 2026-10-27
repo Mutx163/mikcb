@@ -211,6 +211,51 @@ class MonthMetricsTest {
         assertTrue(MonthMetrics.CELL_RADIUS < 20.0)
     }
 
+    /**
+     * 日历卡「非表格」高度 = 导航 40 + 分隔线 1 + 拉杆区 26 = 67（Dart `cardChrome`）。
+     *
+     * ⚠️ 为什么不直接断言 `MonthCalendarChrome.CARD_CHROME`：那个常量在
+     * `src/composeP1` 源集里，而本测试源集是**所有变体共用**的（`:app:testProdDebugUnitTest`
+     * 也要编它），引用 composeP1 的类会让 prod 变体的测试编译直接红。
+     * L0 只编 `main/` + `test/`，所以这里钉住 L0 能看见的两端（40 / 26）与分隔线 1，
+     * 任何一段被改（或有人把 40 改成 41），这条先红，不用等真机上「贴边/溢出」。
+     *
+     * 另外：`MonthCalendarChrome.CARD_CHROME` 是这三段的**和**（不是另写的字面量），
+     * 所以它不会与这三段脱节；风险只在「三段本身和 Dart 不一致」，正是本用例覆盖的。
+     */
+    @Test
+    fun `日历卡非表格高度 40 加 1 加 26 等于 67`() {
+        assertEquals(40.0, MonthMetrics.CALENDAR_NAV_HEIGHT, 0.0)
+        assertEquals(26.0, MonthMetrics.CALENDAR_HANDLE_HEIGHT, 0.0)
+        requireCardChrome(
+            navHeight = MonthMetrics.CALENDAR_NAV_HEIGHT,
+            dividerHeight = 1.0,
+            handleAreaHeight = MonthMetrics.CALENDAR_HANDLE_HEIGHT,
+        )
+    }
+
+    /** 咬合探针：把分隔线改成 2（旧 Dart 版本曾误算过一段）时，67 的判据必须红。 */
+    @Test
+    fun `咬合探针_卡片高度账能抓住多算的一段`() {
+        assertThrows(AssertionError::class.java) {
+            requireCardChrome(navHeight = 40.0, dividerHeight = 2.0, handleAreaHeight = 26.0)
+        }
+        requireCardChrome(navHeight = 40.0, dividerHeight = 1.0, handleAreaHeight = 26.0)
+    }
+
+    private fun requireCardChrome(
+        navHeight: Double,
+        dividerHeight: Double,
+        handleAreaHeight: Double,
+    ) {
+        assertEquals(
+            "日历卡非表格高度（导航 + 分隔线 + 拉杆区）必须等于 Dart cardChrome = 67",
+            67.0,
+            navHeight + dividerHeight + handleAreaHeight,
+            1e-9,
+        )
+    }
+
     @Test
     fun `收起态按可用高度反推行数 至少留 1 行`() {
         assertEquals(1, MonthMetrics.upcomingRowCapacity(0.0))
