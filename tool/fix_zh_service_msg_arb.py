@@ -1,13 +1,58 @@
 #!/usr/bin/env python3
-"""Fix corrupted serviceMsg keys in app_zh.arb by copying keys from app_en.arb."""
+"""只修 `lib/l10n/app_zh.arb` 里 **serviceMsg 系列**的译文，其余键一个不碰。
+
+用法：
+    python tool/fix_zh_service_msg_arb.py                 # 只检查，不写盘（默认）
+    python tool/fix_zh_service_msg_arb.py --write         # 真写盘（写盘前强制校验）
+    python tool/fix_zh_service_msg_arb.py --arb-dir DIR   # 换一个 ARB 目录（自测用）
+
+为什么重写成这样（2026-10-27）：
+
+上一版先把 zh 里**所有** serviceMsg 键删掉，再从 en 逐键回填
+`ZH_VALUES.get(key, value)` —— 表里没有的键就直接是英文。实测：
+
+* 不丢键，但会改 **44 条**已有中文（其中不少是比脚本表更新的、更好的文案）；
+* `ZH_VALUES` 只有 144 条、对 en 的 149 个 serviceMsg 键，**5 条中文回退成英文**：
+  `serviceMsgImportRollbackIncomplete`、`serviceMsgUpdateDownloadHashMismatch`、
+  `serviceMsgUpdateSha256UnverifiedRefused`、`serviceMsgWarehouseScriptChecksumFailed`、
+  `serviceMsgTimetableShareFailed`；
+* 更根本的问题：它**整份重写**文件（`json.dumps` 全量序列化）。ARB 里既有压成
+  一行的 `{ "type": "String" }`，也有展开成多行的写法，重排后 diff 有上千行，
+  真正的改动（几条文案）被淹没；任何顺手的格式化 bug 也会一次性覆盖全文件。
+
+因此本版守四条：
+
+1. **只碰 serviceMsg 那几行**：按行定位 `"serviceMsgXxx": "..."`，
+   只替换「引号里的值」，键名、缩进、行尾逗号、其余行原样保留。
+2. **补全那 5 条中文**，并把判据写死：要写入的新值必须含中文（否则判为英文回退，
+   整份放弃）；写完之后 zh 的 serviceMsg 普通键里**一个英文值都不许有**。
+3. **写盘前强制校验**：`json.loads` 通过；serviceMsg 之外的键集合与值逐一未变；
+   serviceMsg 键集合未变；除计划改动的行以外，文件其余部分逐行相同。
+   任一不通过 → 整份放弃、原文件一个字节不动、非 0 退出码。
+4. 默认**只检查不写盘**，要 `--write` 才落盘；先写临时文件再原子替换。
+
+配套咬合探针：`tool/selftest_destructive_scripts.py`（只在临时目录跑）。
+"""
 
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
+import tempfile
 from pathlib import Path
 
+# Windows 控制台默认 GBK，直接 print 中文会变乱码（2026-10-27 实测）。
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):
+    pass
+
 ROOT = Path(__file__).resolve().parents[1] / "lib" / "l10n"
+
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]")
 
 ZH_VALUES = {
     "serviceMsgImportFileUnrecognized": "导入失败，文件内容无法识别",
@@ -154,33 +199,229 @@ ZH_VALUES = {
     "serviceMsgSyncFailed": "同步失败",
     "serviceMsgUsageTypeOverride": "副时间表",
     "serviceMsgUsageTypeProfile": "课表主时间表",
+    # 下面这 5 条是旧版漏掉、把中文回退成英文的那几条（2026-10-27 补）。
+    "serviceMsgImportRollbackIncomplete": "导入失败，导入前的数据未能完整恢复，请重试或检查设备存储",
+    "serviceMsgUpdateDownloadHashMismatch": "安装包校验失败，为防止安装被篡改的文件已取消本次更新",
+    "serviceMsgUpdateSha256UnverifiedRefused": "安装包完整性校验失败，已取消更新，请前往发布页下载",
+    "serviceMsgWarehouseScriptChecksumFailed": "适配器脚本完整性校验失败：下载内容与仓库声明的 SHA-256 不一致，已阻止执行。请刷新学校列表后重试；若反复出现，请到 qingyu_warehouse 反馈该适配器",
+    "serviceMsgTimetableShareFailed": "分享失败：{detail}",
 }
 
-
-def strip_service_msg(data: dict) -> dict:
-    return {
-        key: value
-        for key, value in data.items()
-        if not key.startswith("serviceMsg") and not key.startswith("@serviceMsg")
-    }
+# 逐行匹配 `  "serviceMsgXxx": "值",` / `  "serviceMsgXxx": "值"`（不带 @ 前缀的普通键）。
+SERVICE_MSG_LINE = re.compile(r'^(?P<head>  "(?P<key>serviceMsg[^"]+)": ")(?P<value>.*)(?P<tail>")(?P<comma>,?)$')
 
 
-def main() -> None:
-    en = json.loads((ROOT / "app_en.arb").read_text(encoding="utf-8"))
-    zh = json.loads((ROOT / "app_zh.arb").read_text(encoding="utf-8"))
-    base = strip_service_msg(zh)
-    for key, value in en.items():
-        if not key.startswith("serviceMsg") and not key.startswith("@serviceMsg"):
+class Plan:
+    """一份计划的改动：行号 → 新值。"""
+
+    def __init__(self) -> None:
+        self.repairs: list[tuple[int, str, str, str]] = []  # 要修的：(行号, 键, 旧值, 新值)
+        self.preserved: list[tuple[int, str, str]] = []  # 已有中文、保留：(行号, 键, 现值)
+        self.not_found: list[str] = []
+
+    @property
+    def changes(self) -> list[tuple[int, str, str, str]]:
+        return self.repairs
+
+
+def is_english_fallback(value: str) -> bool:
+    """值里一个中日韩字符都没有 → 当作「空值 / 源自英文」，这是唯一该修的情形。"""
+    return not CJK_RE.search(value)
+
+
+def plan_lines(text: str) -> Plan:
+    """只把「空值或英文」的 serviceMsg 行列进修复清单。
+
+    已经有中文的行一律不动 —— 它们可能是后来手工改好的、比 ZH_VALUES 更贴切
+    的译文，本脚本没有资格用一张静态表把它们顶掉（这正是旧版最大的破坏面：
+    它会改动 44 条并不需要动的已有中文）。
+    """
+    plan = Plan()
+    lines = text.splitlines()
+    seen: dict[str, int] = {}
+    for index, line in enumerate(lines):
+        match = SERVICE_MSG_LINE.match(line)
+        if not match:
             continue
-        if key.startswith("serviceMsg") and not key.startswith("@serviceMsg"):
-            base[key] = ZH_VALUES.get(key, value)
-        else:
-            base[key] = value
-    (ROOT / "app_zh.arb").write_text(
-        json.dumps(base, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+        key = match.group("key")
+        seen[key] = seen.get(key, 0) + 1
+        current = match.group("value")
+        if not is_english_fallback(current):
+            plan.preserved.append((index, key, current))
+            continue
+        want = ZH_VALUES.get(key)
+        if want is None:
+            plan.not_found.append(key)
+            continue
+        plan.repairs.append((index, key, current, want))
+    for key in ZH_VALUES:
+        if key not in seen:
+            plan.not_found.append(key)
+    return plan
+
+
+def apply_plan(text: str, plan: Plan) -> str:
+    lines = text.splitlines()
+    for index, _key, _old, new_value in plan.changes:
+        line = lines[index]
+        match = SERVICE_MSG_LINE.match(line)
+        assert match is not None
+        lines[index] = (
+            match.group("head") + new_value + match.group("tail") + match.group("comma")
+        )
+    joined = "\n".join(lines)
+    return joined + ("\n" if text.endswith("\n") else "")
+
+
+def validate(path: Path, old_text: str, new_text: str, plan: Plan) -> list[str]:
+    """写盘前的硬校验。返回错误消息列表，空列表 = 通过。"""
+    errors: list[str] = []
+
+    try:
+        old = json.loads(old_text)
+        new = json.loads(new_text)
+    except json.JSONDecodeError as exc:
+        return [f"JSON 解析失败（{exc}）"]
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        return ["顶层不是 JSON 对象"]
+
+    # 1) 键集合完全不许变
+    lost = [k for k in old if k not in new]
+    if lost:
+        errors.append(f"丢失了 {len(lost)} 个键：{lost[:5]}")
+    added = [k for k in new if k not in old]
+    if added:
+        errors.append(f"多出了 {len(added)} 个键：{added[:5]}")
+
+    # 2) serviceMsg 之外的键，值逐字不变
+    outside = [k for k in old if not k.startswith("serviceMsg")]
+    touched = [k for k in outside if k in new and new[k] != old[k]]
+    if touched:
+        errors.append(f"改动越界，serviceMsg 之外有 {len(touched)} 个键被改：{touched[:5]}")
+
+    # 2b) 没有被列入修复清单的 serviceMsg 键，值也必须逐字不变
+    repair_keys = {key for _i, key, _o, _n in plan.changes}
+    untouched_msgs = [k for k in old if k.startswith("serviceMsg") and k not in repair_keys]
+    drifted = [k for k in untouched_msgs if k in new and new[k] != old[k]]
+    if drifted:
+        errors.append(f"有 {len(drifted)} 个不需要修的 serviceMsg 被改了：{drifted[:5]}")
+
+    # 3) serviceMsg 的键不许丢（旧版虽没丢，但这条是防回归的核心）
+    old_msg = {k for k in old if k.startswith("serviceMsg")}
+    new_msg = {k for k in new if k.startswith("serviceMsg")}
+    if old_msg != new_msg:
+        errors.append(f"serviceMsg 键集变了：少 {sorted(old_msg - new_msg)[:5]} 多 {sorted(new_msg - old_msg)[:5]}")
+
+    # 4) 改完之后 zh 的 serviceMsg 里一个英文值都不许有
+    english = sorted(k for k in new_msg if isinstance(new[k], str) and is_english_fallback(new[k]))
+    if english:
+        errors.append(
+            f"改完仍有 {len(english)} 个 serviceMsg 是英文（不允许写盘）：{english[:5]}"
+        )
+
+    # 5) 计划改的行之外，文件其余行逐行相同（防止顺手重排/格式化）
+    old_lines = old_text.splitlines()
+    new_lines = new_text.splitlines()
+    if len(old_lines) != len(new_lines):
+        errors.append(f"行数变了：{len(old_lines)} → {len(new_lines)}，本脚本不允许增删行")
+    else:
+        allowed = {index for index, *_ in plan.changes}
+        stray = [
+            i for i, (a, b) in enumerate(zip(old_lines, new_lines))
+            if a != b and i not in allowed
+        ]
+        if stray:
+            errors.append(
+                f"计划外有 {len(stray)} 行被改动（第 {[i + 1 for i in stray[:5]]} 行）"
+            )
+
+    # 6) 每一处计划改动都真的生效，且新值含中文
+    for index, key, _old_value, new_value in plan.changes:
+        if is_english_fallback(new_value):
+            errors.append(f"{key} 要写入的新值是英文：{new_value[:40]!r}")
+        if index < len(new_lines):
+            line = new_lines[index]
+            if new_value not in line:
+                errors.append(f"第 {index + 1} 行没写进去：{key}")
+
+    return errors
+
+
+def atomic_write(path: Path, text: str) -> None:
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".zhfix-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    write = "--write" in args
+    arb_dir = ROOT
+    if "--arb-dir" in args:
+        idx = args.index("--arb-dir")
+        if idx + 1 >= len(args):
+            print("--arb-dir 后面要跟一个目录", file=sys.stderr)
+            return 2
+        arb_dir = Path(args[idx + 1]).resolve()
+
+    zh_path = arb_dir / "app_zh.arb"
+    if not zh_path.exists():
+        print(f"ERROR 找不到 {zh_path}", file=sys.stderr)
+        return 2
+
+    original = zh_path.read_text(encoding="utf-8")
+    try:
+        parsed = json.loads(original)
+    except json.JSONDecodeError as exc:
+        print(f"ERROR {zh_path.name} 本身不是合法 JSON（{exc}），什么都不做", file=sys.stderr)
+        return 3
+
+    plan = plan_lines(original)
+
+    if plan.not_found:
+        print(
+            f"ERROR 有 {len(plan.not_found)} 个键在文件里找不到或没有译文，"
+            f"拒绝改动：{plan.not_found[:8]}",
+            file=sys.stderr,
+        )
+        return 4
+
+    print(f"检查 {zh_path.name}：serviceMsg 普通键 {len([k for k in parsed if k.startswith('serviceMsg')])} 个")
+    print(f"  已有中文、原样保留 {len(plan.preserved)} 个")
+    print(f"  空值或英文、需要修 {len(plan.repairs)} 个")
+
+    for _index, key, old_value, new_value in plan.repairs[:20]:
+        print(f"    {key}")
+        print(f"        现：{old_value!r}")
+        print(f"        新：{new_value}")
+    if len(plan.repairs) > 20:
+        print(f"    …… 还有 {len(plan.repairs) - 20} 个，省略")
+
+    if not plan.repairs:
+        print("\n全部合规，无需改动。")
+        return 0
+
+    new_text = apply_plan(original, plan)
+    errors = validate(zh_path, original, new_text, plan)
+    if errors:
+        for msg in errors:
+            print(f"ERROR {msg}", file=sys.stderr)
+        print("\n校验不通过，已放弃写盘，原文件一个字节都没动。", file=sys.stderr)
+        return 1
+
+    if not write:
+        print(f"\n共需修 {len(plan.repairs)} 条。加 --write 才落盘。")
+        return 0
+
+    atomic_write(zh_path, new_text)
+    print(f"\n已写回 {zh_path.name}：修 {len(plan.repairs)} 条，全部通过校验。")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

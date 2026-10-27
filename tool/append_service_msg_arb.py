@@ -1,10 +1,51 @@
 #!/usr/bin/env python3
-"""Append serviceMsg ARB keys before the final closing brace."""
+"""把 serviceMsg 系列 ARB 键补进六份 app_*.arb（**只补缺的，已有的一个字节都不碰**）。
+
+用法：
+    python tool/append_service_msg_arb.py                 # 只检查，不写盘（默认）
+    python tool/append_service_msg_arb.py --write         # 真写盘（写盘前强制校验）
+    python tool/append_service_msg_arb.py --arb-dir DIR   # 换一个 ARB 目录（自测用）
+
+为什么重写成这样（2026-10-27）：
+
+上一版每次都把 `EN_BLOCK` 整块追加到文件末尾，**没有任何「这个键已经有了」的判断**。
+`EN_BLOCK` 的 195 个键在六份 ARB 里全都已经存在，所以：
+
+* 跑第二遍 → 每份文件多出 195 个**重复键**（JSON 里后出现的赢，值被顶掉）；
+* 其中 ja / ko / zh_TW / zh_HK 四份被整块塞进**英文**，繁体日文韩文界面直接变英文；
+* 更糟的是它用「英文整串 → 中文」的 `str.replace` 来造中文块，
+  替换串会命中**键名**：`serviceMsgWeekdayMustBe1To7` 里的 `Weekday` 变成 `星期`，
+  于是凭空造出 `serviceMsg星期MustBe1To7`、`@serviceMsgAiCourseCustom周数Empty`
+  这类非法键名，原有的正确键虽还在，却多出一批垃圾键。
+
+因此本版守四条：
+
+1. **幂等**：逐份读 JSON，只追加「文件里还没有」的键；一个都不缺就一个字节都不写。
+2. **中文块结构化生成**，不再对整块文本做 `str.replace`，键名永远不会被替换串命中。
+3. **写盘前强制校验**：`json.loads` 必须通过；已有键的键集合与值必须**逐一未变**；
+   新增键数必须等于计划数；zh 系列新增的普通键值必须含 CJK（防止中文文件被塞英文）。
+   任一不通过 → 整份放弃、原文件一个字节不动、以非 0 退出码报告。
+4. 默认**只检查不写盘**，要 `--write` 才落盘；先写临时文件再原子替换。
+
+配套咬合探针：`tool/selftest_destructive_scripts.py`（只在临时目录跑）。
+"""
 
 from __future__ import annotations
 
 import json
+import os
+import re
+import sys
+import tempfile
 from pathlib import Path
+
+# Windows 控制台默认 GBK，直接 print 中文会变乱码（2026-10-27 实测：同一段
+# 输出在 cmd 里读不出来，「跳过 195 条」这种关键数字没人看得到）。
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):  # 老 Python / 被重定向到非文本流
+    pass
 
 ROOT = Path(__file__).resolve().parents[1] / "lib" / "l10n"
 
@@ -206,8 +247,8 @@ EN_BLOCK = r'''
   "serviceMsgUsageTypeProfile": "profile main time scheme"
 '''
 
-ZH_BLOCK = EN_BLOCK  # replaced below
-
+# 英文文案 → 中文译文。**只按整串精确匹配**，绝不拿它去做整块文本替换
+# （旧版就是这么干才把 `Weekday` 替进了键名里）。
 ZH_TRANSLATIONS = {
     "Import failed. The file content could not be recognized.": "导入失败，文件内容无法识别",
     "This is a full data backup. Please import using overwrite current timetable.": "这是全部数据备份，请使用“覆盖当前课表”方式导入",
@@ -355,32 +396,220 @@ ZH_TRANSLATIONS = {
     "profile main time scheme": "课表主时间表",
 }
 
+# 这些语系的「新键」用英文兜底（旧版就是这么做的，现状也是如此：zh_TW / zh_HK
+# 的 129 个 serviceMsg 键里有 122 个就是英文）。这里保留行为，但**逐份报告**
+# 有几个键走了英文兜底，方便以后有人真有精力翻译时能找到位置。
+EN_FALLBACK_LOCALES = ("app_ja.arb", "app_ko.arb", "app_zh_TW.arb", "app_zh_HK.arb")
 
-def translate_block(en_block: str) -> str:
-    zh = en_block
-    for en, cn in ZH_TRANSLATIONS.items():
-        zh = zh.replace(en, cn)
-    return zh
+# 只有简体中文这一份必须保证「新值真的是中文」：现状里 app_zh.arb 的
+# serviceMsg 没有一个英文值，所以任何英文新值都是回归，必须拦下来。
+CJK_REQUIRED_LOCALES = ("app_zh.arb",)
 
-
-def append_block(path: Path, block: str) -> None:
-    text = path.read_text(encoding="utf-8").rstrip()
-    if text.endswith("}"):
-        text = text[:-1].rstrip()
-        if not text.endswith(","):
-            text += ","
-        text += block + "\n}\n"
-        path.write_text(text, encoding="utf-8")
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]")
 
 
-def main() -> None:
-    en_block = EN_BLOCK
-    zh_block = translate_block(EN_BLOCK)
-    append_block(ROOT / "app_en.arb", en_block)
-    append_block(ROOT / "app_zh.arb", zh_block)
-    for name in ("app_ja.arb", "app_ko.arb", "app_zh_TW.arb", "app_zh_HK.arb"):
-        append_block(ROOT / name, en_block)
+def parse_en_block() -> dict[str, object]:
+    """把 EN_BLOCK 当 JSON 对象解析（带前导两个空格与尾逗号，套一层花括号即可）。"""
+    data = json.loads("{" + EN_BLOCK + "\n}")
+    if not isinstance(data, dict):
+        raise SystemExit("EN_BLOCK 解析结果不是对象，脚本自身有问题")
+    return data
+
+
+def build_block(data: dict[str, object], keys: list[str], zh: bool) -> str:
+    """按给定键顺序生成可插入 ARB 的片段（每行一个键，行尾带逗号）。
+
+    中文块在这里**结构化**生成：只对「值」做整串查表，键名原样保留。
+    """
+    lines: list[str] = []
+    missing_zh: list[str] = []
+    for key in keys:
+        value = data[key]
+        if zh and not key.startswith("@") and isinstance(value, str):
+            translated = ZH_TRANSLATIONS.get(value)
+            if translated is None:
+                missing_zh.append(key)
+                continue
+            value = translated
+        dumped = json.dumps(value, ensure_ascii=False)
+        lines.append(f'  {json.dumps(key, ensure_ascii=False)}: {dumped},')
+    if missing_zh:
+        raise BlockBuildError(missing_zh)
+    return "\n".join(lines)
+
+
+class BlockBuildError(Exception):
+    def __init__(self, keys: list[str]) -> None:
+        self.keys = keys
+        super().__init__(", ".join(keys[:5]))
+
+
+def merge_text(original: str, block: str) -> str:
+    """把 block 插到最外层 `}` 前面，返回新文本（不改动原有内容）。"""
+    text = original.rstrip()
+    if not text.endswith("}"):
+        raise ValueError("文件没有以 } 结尾，不是合法 ARB 形态，放弃")
+    body = text[:-1].rstrip()
+    if not body.endswith(","):
+        body += ","
+
+    # block 的每一行都带行尾逗号（方便逐行增删），但**最后一行不能带**：
+    # `{"a": 1,}` 不是合法 JSON。这里去掉末尾那一个逗号。
+    tail = block.rstrip()
+    while tail.endswith(","):
+        tail = tail[:-1].rstrip()
+    return body + "\n" + tail + "\n}\n"
+
+
+def validate(path: Path, old_text: str, new_text: str,
+             old: dict[str, object], added: list[str],
+             cjk_required: bool) -> list[str]:
+    """写盘前的硬校验。返回错误消息列表，空列表 = 通过。"""
+    errors: list[str] = []
+
+    try:
+        new = json.loads(new_text)
+    except json.JSONDecodeError as exc:
+        return [f"改完不是合法 JSON（{exc}）"]
+    if not isinstance(new, dict):
+        return ["改完的顶层不是 JSON 对象"]
+
+    # 1) 原有每一个键都还在，且值逐字相同
+    for key, value in old.items():
+        if key not in new:
+            errors.append(f"原有键 {key} 丢失")
+        elif new[key] != value:
+            errors.append(f"原有键 {key} 的值被改动")
+
+    # 2) 新增的键数正好等于计划数，且一个都不缺
+    for key in added:
+        if key not in new:
+            errors.append(f"计划新增的键 {key} 没写进去")
+    unexpected = [k for k in new if k not in old and k not in added]
+    if unexpected:
+        errors.append(f"出现了计划外的新键：{unexpected[:5]}")
+
+    # 3) 简体中文那份不许出现英文新值
+    if cjk_required:
+        for key in added:
+            value = new.get(key)
+            if isinstance(value, str) and not CJK_RE.search(value):
+                errors.append(f"{key} 的值不含中文，疑似英文回退：{value[:40]!r}")
+
+    # 4) 物理层面不许有重复键（旧版就栽在这）
+    physical = re.findall(r'^  "([^"]+)":', new_text, re.M)
+    dups = {k for k in physical if physical.count(k) > 1}
+    if dups:
+        errors.append(f"文件里出现重复键：{sorted(dups)[:5]}")
+
+    return errors
+
+
+def atomic_write(path: Path, text: str) -> None:
+    """先写同目录临时文件再 os.replace，避免写一半留下残file。"""
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".arbfix-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    write = "--write" in args
+    arb_dir = ROOT
+    if "--arb-dir" in args:
+        idx = args.index("--arb-dir")
+        if idx + 1 >= len(args):
+            print("--arb-dir 后面要跟一个目录", file=sys.stderr)
+            return 2
+        arb_dir = Path(args[idx + 1]).resolve()
+
+    try:
+        data = parse_en_block()
+    except json.JSONDecodeError as exc:
+        print(f"ERROR EN_BLOCK 自身不是合法 JSON（{exc}），脚本有问题，什么都不做", file=sys.stderr)
+        return 3
+
+    order = list(data)
+    targets = [arb_dir / name for name in
+               ("app_en.arb", "app_zh.arb", "app_ja.arb", "app_ko.arb",
+                "app_zh_TW.arb", "app_zh_HK.arb")]
+    targets = [p for p in targets if p.exists()]
+    if not targets:
+        print(f"ERROR 在 {arb_dir} 里没找到 app_*.arb", file=sys.stderr)
+        return 2
+
+    failures: list[str] = []
+    planned_total = 0
+    skipped_total = 0
+
+    for path in targets:
+        original = path.read_text(encoding="utf-8")
+        try:
+            old = json.loads(original)
+        except json.JSONDecodeError as exc:
+            failures.append(f"{path.name}: 现有文件不是合法 JSON（{exc}），拒绝改动")
+            continue
+        if not isinstance(old, dict):
+            failures.append(f"{path.name}: 顶层不是 JSON 对象，拒绝改动")
+            continue
+
+        existing = [key for key in order if key in old]
+        missing = [key for key in order if key not in old]
+        skipped_total += len(existing)
+
+        if not missing:
+            print(f"SKIP  {path.name}：{len(existing)} 个键全已存在，未改动")
+            continue
+
+        zh = path.name == "app_zh.arb"
+        try:
+            block = build_block(data, missing, zh)
+        except BlockBuildError as exc:
+            failures.append(
+                f"{path.name}: {len(exc.keys)} 个键缺中文译文，拒绝写盘：{exc.keys}"
+            )
+            continue
+
+        new_text = merge_text(original, block)
+        errors = validate(
+            path, original, new_text, old, missing,
+            cjk_required=path.name in CJK_REQUIRED_LOCALES,
+        )
+        if errors:
+            failures.extend(f"{path.name}: {msg}" for msg in errors)
+            continue
+
+        planned_total += len(missing)
+        note = ""
+        if path.name in EN_FALLBACK_LOCALES:
+            note = "，本次英文兜底"
+        print(f"ADD   {path.name}：缺 {len(missing)} 个键（已存在 {len(existing)} 个，跳过{note}）")
+        if write:
+            atomic_write(path, new_text)
+            print(f"      已写回 {path.name}")
+        else:
+            print("      只检查模式，未写盘（加 --write 才落盘）")
+
+    print()
+    if failures:
+        for msg in failures:
+            print(f"ERROR {msg}", file=sys.stderr)
+        print("\n有文件未通过校验，已全部放弃，原文件一个字节都没动。", file=sys.stderr)
+        return 1
+
+    if planned_total == 0:
+        print(f"六份 ARB 的 {len(order)} 个键都已在位（共跳过 {skipped_total} 个），无需改动。")
+    elif write:
+        print(f"共补 {planned_total} 个键，全部通过 JSON 与格式校验。")
+    else:
+        print(f"共需补 {planned_total} 个键。加 --write 才落盘。")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
