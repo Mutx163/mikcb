@@ -140,9 +140,18 @@ $classpath = "$junitJar;$hamcrestJar"
 $compileSuccess = $false
 
 try {
-    # 使用 cmd /c 调用批处理以避免 PowerShell 参数分词与引号歧义
-    $cmdLine = "`"$kotlinc`" -cp `"$classpath`" -d `"$outDir`" " + ($sources -join " ")
-    cmd.exe /c $cmdLine
+    # 大模块（叠上公共模型层后 >100 个 .kt）拼成一条命令行会撞 Windows 32k 上限，
+    # 报 "The command line is too long."。改为写 kotlinc 的 @argfile（每行一个参数），
+    # 命令行长度与源文件数解耦；argfile 内路径用双引号包住，兼容空格。
+    $argFile = Join-Path $repoRoot "build/tmp/kotlinc_$slug.args"
+    New-Item -ItemType Directory -Path (Split-Path -Parent $argFile) -Force | Out-Null
+    # kotlinc 的 argfile 解析器会把引号内的反斜杠当转义符吃掉（C:\xy\... 变成 C:xy...），
+    # 因此 argfile 里统一写正斜杠路径；JVM 在 Windows 上接受正斜杠。
+    $toSlash = { param($p) $p -replace '\\', '/' }
+    $argLines = @("-cp", "`"$(& $toSlash $classpath)`"", "-d", "`"$(& $toSlash $outDir)`"")
+    foreach ($src in $sources) { $argLines += "`"$(& $toSlash $src)`"" }
+    Set-Content -Path $argFile -Value $argLines -Encoding UTF8
+    & $kotlinc "@$argFile"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[test-kotlin-module] kotlinc 编译失败 (exit code: $LASTEXITCODE)"
         exit $LASTEXITCODE
