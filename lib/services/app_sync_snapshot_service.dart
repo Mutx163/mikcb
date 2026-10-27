@@ -16,6 +16,7 @@ import 'app_log_service.dart';
 import 'data_transfer_service.dart';
 import 'holiday_service.dart';
 import 'storage_service.dart';
+import 'sync_rollback_snapshot_store.dart';
 import 'transfer_diff_service.dart';
 import 'transfer_package.dart';
 import 'unified_transfer_service.dart';
@@ -249,6 +250,7 @@ class AppSyncSnapshotService {
     WarehouseMacroService? warehouseMacroService,
     HolidayService? holidayService,
     DataTransferService? dataTransferService,
+    SyncRollbackSnapshotStore? rollbackSnapshotStore,
   }) : _timetableRepository =
            timetableRepository ?? TimetableRepository(StorageService()),
        _warehousePreferencesService =
@@ -256,7 +258,8 @@ class AppSyncSnapshotService {
        _warehouseMacroService =
            warehouseMacroService ?? WarehouseMacroService(),
        _holidayService = holidayService ?? HolidayService(),
-       _dataTransferService = dataTransferService ?? DataTransferService();
+       _dataTransferService = dataTransferService ?? DataTransferService(),
+       _rollbackStore = rollbackSnapshotStore ?? SyncRollbackSnapshotStore();
 
   /// 课表域持久化的唯一写入口（教师/教室记录、地点分组、日期规则及其签名、
   /// partner 绑定）。快照恢复此前绕过它直连 StorageService，等于在仓储之外
@@ -267,6 +270,18 @@ class AppSyncSnapshotService {
   final WarehouseMacroService _warehouseMacroService;
   final HolidayService _holidayService;
   final DataTransferService _dataTransferService;
+
+  /// 恢复前那份快照的**落盘**副本。
+  ///
+  /// 快照恢复是逐批写盘的（十几处 `await`，见 `_applySnapshotData`），回滚原先只
+  /// 存在内存里（`_lastRollbackSnapshot`）—— 用户在恢复途中杀掉进程，盘上就是
+  /// 「改了一半」的状态，而撤销入口随内存一起没了。把「恢复前」那一份写到这里，
+  /// 重启后仍能读出「上次恢复没走完」这件事（`SyncRollbackRecord.applyingState`）。
+  ///
+  /// 只做**取证与提示**，不自动回滚：自动回滚本身又是十几次写盘，在半截状态上
+  /// 再叠一次自动写，风险比让用户自己决定更大。
+  final SyncRollbackSnapshotStore _rollbackStore;
+
   static List<String> _parseStringList(Object? raw) {
     if (raw is! List) return const <String>[];
     return raw.whereType<String>().where((item) => item.isNotEmpty).toList();
@@ -784,6 +799,10 @@ class AppSyncSnapshotService {
       final undoId = TransferPackage.newPackageId();
       try {
         rollbackSnapshot = await _captureRollbackSnapshot(provider);
+        // 把「恢复前」那一份落盘（2026-10-27）。原先只在内存里，
+        // 恢复途中被杀 = 盘上「改了一半」而撤销入口随内存消失。
+        // 落盘失败不阻断恢复：它是取证用的，不是恢复的前置条件。
+        await _persistRollbackPoint(rollbackSnapshot, undoId);
         await AppLogService.instance.info(
           'cloud_transfer_restore_started',
           'cloud transfer restore started',
@@ -813,6 +832,9 @@ class AppSyncSnapshotService {
 
         _lastRollbackSnapshot = rollbackSnapshot;
         _lastRollbackId = undoId;
+        // 恢复走完了：把落盘那条的状态从 applying 改成 applied（撤销点继续有效，
+        // 但不再被当成「半截恢复」）。
+        await _markRollbackPointApplied(undoId);
         await AppLogService.instance.info(
           'cloud_transfer_restore_completed',
           'cloud transfer restore completed',
@@ -1117,10 +1139,65 @@ class AppSyncSnapshotService {
     return null;
   }
 
+  /// 把回滚点落盘（best-effort）。
+  ///
+  /// **不抛**：落盘是取证用的，失败不该把一次本来能成功的恢复拦下来。
+  /// 失败时落一条 warn —— 那意味着「恢复途中被杀就没有撤销点」，是用户要
+  /// 知道的能力降级。
+  Future<void> _persistRollbackPoint(
+    AppSyncSnapshot snapshot,
+    String undoId,
+  ) async {
+    try {
+      await _rollbackStore.save(
+        undoId: undoId,
+        snapshotJson: buildSnapshotJsonFromSnapshot(snapshot),
+        state: SyncRollbackRecord.applyingState,
+      );
+    } catch (error) {
+      await AppLogService.instance.warn(
+        'sync_rollback_point_persist_failed',
+        '回滚点未能落盘，本次恢复途中被杀将无法撤销',
+        extras: {'undoId': undoId, 'error': '$error'},
+      );
+    }
+  }
+
+  /// 恢复成功后把落盘状态改成 `applied`（best-effort，同样不抛）。
+  Future<void> _markRollbackPointApplied(String undoId) async {
+    try {
+      await _rollbackStore.markApplied(undoId);
+    } catch (error) {
+      await AppLogService.instance.warn(
+        'sync_rollback_point_mark_failed',
+        '回滚点状态未能更新，下次启动可能误报「恢复未完成」',
+        extras: {'undoId': undoId, 'error': '$error'},
+      );
+    }
+  }
+
+  /// 上次恢复是否**没走完**（进程被杀 / 崩溃）。
+  ///
+  /// 启动时读一次即可：返回非 null 表示盘上留着一条 `applying` 状态的记录，
+  /// 也就是「快照恢复了十几次写盘里的前几次就断了」。调用方据此提示用户
+  /// 「上次恢复未完成，可在数据迁移页撤销」。
+  ///
+  /// **只提示、不自动回滚**：自动回滚本身又是十几次写盘，在半截状态上再叠一次
+  /// 自动写，风险比让用户自己决定更大。
+  Future<SyncRollbackRecord?> pendingIncompleteRestore() async {
+    try {
+      final record = await _rollbackStore.read();
+      if (record == null) return null;
+      return record.state == SyncRollbackRecord.applyingState ? record : null;
+    } catch (_) {
+      // 读不出来（文件坏 / 权限）不算「未完成恢复」，静默当没有。
+      return null;
+    }
+  }
+
   Future<AppSyncSnapshot> _captureRollbackSnapshot(
     AppSyncTimetablePort provider,
-  ) async {
-    final externalData = await collectSnapshot(
+  ) async {    final externalData = await collectSnapshot(
       provider: provider,
       deviceId: 'local-rollback',
     );

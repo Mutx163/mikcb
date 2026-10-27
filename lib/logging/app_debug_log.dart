@@ -2,6 +2,151 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+/// 正式包（release）里**仍然**打到 logcat 的标签白名单。
+///
+/// ## 为什么需要这份名单
+///
+/// `appDebugLog` 在 `!kDebugMode` 时默认整条丢弃。这对「每帧都会打」的性能探针是
+/// 必须的（否则 release 日志爆炸），但它同时是一台**放大器**：任何挂在
+/// `appDebugLog` 上的失败路径，在线上都变成「用户说没收到考试提醒 / 云同步没反应 /
+/// 恢复了一半」，而 logcat 里一个字都没有。2026-09-26 审计里那一串「静默失效」
+/// 有一半是这个原因 —— 例如 `exam_reminder_service.dart` 的 tag 是
+/// `ExamReminder`，不在旧白名单里，于是「重建提醒失败」在正式包零痕迹。
+///
+/// ## 取舍理由（为什么不放开全部标签）
+///
+/// 放开全部 = 回到「release 日志爆炸」的老问题：`MiuiLive` / `HomeWidget` /
+/// `BingWallpaper` 这些是**周期性成功路径**（每帧 / 每次刷新 / 每次下载），
+/// 每次都打，放进来的收益是零（它们不会静默失败到不可诊断 —— 真出错时已经
+/// 各自补了 `AppLogService.error/warn` 落盘），成本却是整机共享的 logcat 缓冲区。
+///
+/// 所以判据只有一条：**这条链路失败后，用户看不到、也没有别的落盘痕迹，
+/// 只能靠 logcat 才能定位。** 满足的才进来。
+///
+/// 名单里每个标签都要写明「它替哪条链路作证」，加新标签时请一并补上，
+/// 过期的（已经改成落 `AppLogService` 的）请删掉 —— 这份名单是待办，不是荣誉榜。
+///
+/// ## 总量控制
+///
+/// 白名单只是第一道闸；第二道是 [releaseLogBudgetPerTagPerWindow] 的**按标签频控**
+/// （每个标签每个窗口最多这么多行，超出静默丢弃并在窗口内首条丢弃处打一行标记）。
+/// 两道加起来把 release logcat 的上限钉死在
+/// `标签数 × 每窗口上限 × 窗口数`，与「打了多少次」无关。
+///
+/// 频控状态是**进程内内存**的：它只服务于「别把 logcat 刷爆」，
+/// 不承担跨进程/跨启动的持久语义，重启归零是设计而非缺陷。
+const Set<String> releaseForensicTags = <String>{
+  // 定位时间套用（原有）：用户报「按地点/时间自动改课表改错了」时，
+  // 只有这条链会打出逐门课的命中/改写过程，且已做字段脱敏。
+  'LocationTimeApply',
+  'LocationTimeApplyUI',
+
+  // 考试提醒：提醒重建 / 取消失败时用户只会看到「这次没提醒」，
+  // 而 `AppLogService` 那条要求用户事先打开过「记录应用日志」，刚装上的包一条都没有。
+  'ExamReminder',
+
+  // 云同步（WebDAV）：协调器吞异常，失败后云上/本地谁是新的无法事后判断。
+  'webdav_sync_coordinator',
+
+  // 课表导入解析：教务（warehouse）侧抓取/解析失败时界面上只显示一句通用错误，
+  // 具体是哪个镜像、哪个文件、哪一步解析出来的空，只有这条链会打。
+  'WarehouseService',
+  'WarehouseImportDebug',
+};
+
+/// **明确不进**白名单的高频标签，连同理由。
+///
+/// 这份名单不参与运行判定（[releaseForensicTags] 才是），它的作用是**把取舍写死**：
+/// 下一个想「顺手把某个 tag 也加进白名单」的人必须先看到这几行为什么被拒。
+/// 仓库里有一条测试断言这些标签确实不在白名单里 —— 想加就得先来这里改掉理由。
+const Set<String> releaseForbiddenHighFrequencyTags = <String>{
+  // 实时活动：每帧状态同步都会打（14 处调用），一天能刷出几万行。
+  'MiuiLive',
+  // 桌面小组件：每次刷新 / 每次绑定都打（14 处）。失败路径已各自落
+  // `AppLogService.warn`（`home_widget_binding_service.dart:158` 那条注释就是为此写的）。
+  'HomeWidget',
+  // 必应壁纸：每次下载 / 每次每日切换都打。它是装饰性功能，失败只影响壁纸。
+  'BingWallpaper',
+  // 分享与图片导出：用户主动触发且当场能看到结果（分享面板/文件），
+  // 失败时界面上有 toast，不需要线上再加一条 logcat。
+  'TimetableShare',
+  'StatisticsShare',
+  'ImageExport',
+  // 支持作者 / 更新 / 节假日：都是可重试的低风险链路，且都有各自的落盘或界面反馈。
+  'SupportCreator',
+  'AppUpdateService',
+  'HolidayService',
+};
+
+/// 每个标签在一个频控窗口内最多打多少行。
+///
+/// 30 是「一次失败的完整过程」的量级（一次课程表恢复的逐批落盘大约十几行，
+/// 一次考试提醒重建 4~6 行），足够看清一轮失败；而
+/// `releaseForensicTags.length × 30` 也把总量钉在每分钟两百行出头，
+/// 不会把整机 logcat 的历史窗口冲掉（那会把其它 App 的取证也一起顶没）。
+const int releaseLogBudgetPerTagPerWindow = 30;
+
+/// 频控窗口长度。
+const Duration releaseLogBudgetWindow = Duration(minutes: 1);
+
+/// 当前窗口的起点（注入用，测试里替换成可控时钟）。
+///
+/// 生产默认 `DateTime.now`；测试通过 [debugSetReleaseLogClock] 换成假时钟，
+/// 才能验证「窗口内超限丢弃 / 跨窗口恢复」这条行为本身，而不是靠 sleep。
+DateTime Function() _releaseLogClock = DateTime.now;
+
+/// 每个标签的频控状态。
+final Map<String, _ReleaseLogGate> _releaseLogGates =
+    <String, _ReleaseLogGate>{};
+
+class _ReleaseLogGate {
+  _ReleaseLogGate(this.windowStart);
+
+  DateTime windowStart;
+
+  /// 本窗口已经打出去的行数。
+  int emitted = 0;
+}
+
+/// 一条日志在 release 包里还要不要打到 logcat（含白名单 + 频控）。
+///
+/// 单独摘出来是为了**能被测试直接调用**：`flutter test` 跑的是 debug 构建，
+/// `kDebugMode` 恒为 true，走不到 `appDebugLog` 的 release 分支。
+/// 把判定逻辑提出来，白名单与频控这两条真正会出错的地方才有自动化证据。
+bool releaseLogAllowed(String tag) {
+  if (!releaseForensicTags.contains(tag)) {
+    return false;
+  }
+  final now = _releaseLogClock();
+  final gate = _releaseLogGates.putIfAbsent(tag, () => _ReleaseLogGate(now));
+  if (now.difference(gate.windowStart) >= releaseLogBudgetWindow) {
+    gate
+      ..windowStart = now
+      ..emitted = 0;
+  }
+  if (gate.emitted < releaseLogBudgetPerTagPerWindow) {
+    gate.emitted++;
+    return true;
+  }
+  // 窗口内首条被丢弃时留一行标记：否则线上只会看到「日志突然断了」，
+  // 分不清是链路没跑还是被频控掐了 —— 那等于把「静默失效」换个地方重演。
+  if (gate.emitted == releaseLogBudgetPerTagPerWindow) {
+    gate.emitted++;
+    debugPrint(
+      '[$tag] release 日志超出频控上限（每 ${releaseLogBudgetWindow.inSeconds}s '
+      '$releaseLogBudgetPerTagPerWindow 行），本窗口后续同类日志已丢弃',
+    );
+  }
+  return false;
+}
+
+/// 测试专用：换掉频控时钟；传 `null` 还原为真实时钟。
+@visibleForTesting
+void debugSetReleaseLogClock(DateTime Function()? clock) {
+  _releaseLogClock = clock ?? DateTime.now;
+  _releaseLogGates.clear();
+}
+
 /// Unified debug console logging with Chinese messages.
 void appDebugLog(String tag, String message) {
   if (kDebugMode) {
@@ -10,8 +155,8 @@ void appDebugLog(String tag, String message) {
   }
   // Always print for forensic tags so profile/release diagnostics can be
   // captured from logcat even when kDebugMode is false.
-  const forensicTags = <String>{'LocationTimeApply', 'LocationTimeApplyUI'};
-  if (!forensicTags.contains(tag)) {
+  // 判定见 [releaseForensicTags] 的文档：白名单决定「谁配留下」，频控决定「留多少」。
+  if (!releaseLogAllowed(tag)) {
     return;
   }
   // 这个例外不能把课表内容原样交出去：logcat 是整机共享缓冲区
