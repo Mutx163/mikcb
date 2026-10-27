@@ -279,7 +279,10 @@ class CloudBackupListModelTest {
         assertTrue(parsed.isCurrent)
         assertEquals(3, parsed.profileCount)
         assertEquals(42, parsed.courseCount)
-        // 缺省 file name 时，行标题仍取导出时间（与 Dart 一致）。
-        assertEquals("2026-03-07 09:05", CloudBackupListLogic.buildRow(parsed, zone).title)
+        // isCurrent=true 时行标题换成「当前版本」（导出时间只在非当前行出现）。
+        assertEquals("当前版本", CloudBackupListLogic.buildRow(parsed, zone).title)
+        // 缺省 fileName/sha 也能原样落到副标题（设备 + 摘要）。
+        assertEquals("我的手机 · 3 个课表 · 42 门课程",
+            CloudBackupListLogic.buildRow(parsed, zone).subtitle)
     }
 }

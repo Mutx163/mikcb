@@ -179,9 +179,26 @@ object CloudSyncLogic {
         WebdavSyncMode.MANUAL -> SyncStrings.cloudSyncModeManual.zh
     }
 
-    fun providerLabels(): List<String> = WebdavSyncProvider.entries.map { providerLabel(it) }
+    /**
+     * 选项顺序钉死为 Dart 页面里的书写顺序（不是枚举声明顺序）。
+     *
+     * 枚举 `WebdavSyncMode` 声明是 MANUAL→AUTO（Phase 2 沿用 Dart 值顺序），
+     * 而屏上「自动同步 / 手动同步」是 AUTO 在前；下标必须按**展示顺序**算，
+     * 否则下拉会显示错的那一项。
+     */
+    val PROVIDER_ORDER: List<WebdavSyncProvider> =
+        listOf(WebdavSyncProvider.JIANGUOYUN, WebdavSyncProvider.CUSTOM)
 
-    fun modeLabels(): List<String> = WebdavSyncMode.entries.map { modeLabel(it) }
+    val MODE_ORDER: List<WebdavSyncMode> = listOf(WebdavSyncMode.AUTO, WebdavSyncMode.MANUAL)
+
+    fun providerLabels(): List<String> = PROVIDER_ORDER.map { providerLabel(it) }
+
+    fun modeLabels(): List<String> = MODE_ORDER.map { modeLabel(it) }
+
+    fun providerIndexOf(provider: WebdavSyncProvider): Int =
+        PROVIDER_ORDER.indexOf(provider).coerceAtLeast(0)
+
+    fun modeIndexOf(mode: WebdavSyncMode): Int = MODE_ORDER.indexOf(mode).coerceAtLeast(0)
 
     fun maxCountOptionLabels(): List<String> =
         MAX_BACKUP_COUNT_OPTIONS.map { SyncStrings.cloudBackupMaxCountOption.filled("count", it.toString()) }
@@ -358,10 +375,10 @@ object CloudSyncLogic {
             syncEnabled = config.enabled,
             providerTitle = SyncStrings.cloudSyncProviderTitle.zh,
             providerLabels = providerLabels(),
-            providerIndex = WebdavSyncProvider.entries.indexOf(config.provider).coerceAtLeast(0),
+            providerIndex = providerIndexOf(config.provider),
             modeTitle = SyncStrings.cloudSyncModeTitle.zh,
             modeLabels = modeLabels(),
-            modeIndex = WebdavSyncMode.entries.indexOf(config.syncMode).coerceAtLeast(0),
+            modeIndex = modeIndexOf(config.syncMode),
             advancedTitle = SyncStrings.cloudSyncAdvancedTitle.zh,
             baseUrlLabel = SyncStrings.cloudSyncBaseUrlLabel.zh,
             baseUrl = config.baseUrl,

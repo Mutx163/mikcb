@@ -1,0 +1,150 @@
+package com.mutx163.qingyu.pages.sync
+
+/**
+ * 情侣课表设置页用到的 ARB 文案（`lib/l10n/app_zh.arb`，模板语言 zh）。
+ *
+ * **逐字抄录，不许改写**：在 [CoupleStringsParityTest] 里与 ARB 机械比对。
+ * 覆盖源：`lib/screens/couple_timetable_settings_screen.dart`。
+ */
+object CoupleStrings {
+
+    // ── 绑定状态与对方信息 ──
+    val coupleTimetableTitle = ArbText("coupleTimetableTitle", "情侣课表")
+    val coupleTimetableBoundTitle = ArbText("coupleTimetableBoundTitle", "已绑定对方课表")
+    val coupleTimetableUnboundTitle = ArbText("coupleTimetableUnboundTitle", "尚未绑定对方课表")
+    val coupleTimetablePartnerNameLabel = ArbText("coupleTimetablePartnerNameLabel", "对方名称")
+    val coupleTimetableLastImportedAt = ArbText("coupleTimetableLastImportedAt", "上次导入：{time}")
+    val courseCountBullet = ArbText("courseCountBullet", "课程数量：{count} 门")
+
+    // ── 三个主按钮 ──
+    val coupleTimetableExportForPartner =
+        ArbText("coupleTimetableExportForPartner", "导出我的课表给对方")
+    val coupleTimetableImportPartner = ArbText("coupleTimetableImportPartner", "导入对方课表")
+    val coupleTimetableUnlink = ArbText("coupleTimetableUnlink", "解除绑定")
+    val coupleTimetableImportSuccess = ArbText("coupleTimetableImportSuccess", "已导入对方课表")
+    val coupleTimetableImportUpdated = ArbText("coupleTimetableImportUpdated", "已更新对方课表")
+    val coupleTimetableUnlinkConfirmTitle = ArbText("coupleTimetableUnlinkConfirmTitle", "解除情侣课表绑定？")
+    val coupleTimetableUnlinkConfirmMessage =
+        ArbText("coupleTimetableUnlinkConfirmMessage", "解除后将删除本地保存的对方课表，叠加视图也会关闭")
+    val coupleTimetableUnlinkSuccess = ArbText("coupleTimetableUnlinkSuccess", "已解除绑定")
+
+    // ── 叠加颜色 ──
+    val coupleTimetableColorsTitle = ArbText("coupleTimetableColorsTitle", "叠加颜色")
+    val coupleTimetableLegendMine = ArbText("coupleTimetableLegendMine", "我的课")
+    val coupleTimetableLegendPartner = ArbText("coupleTimetableLegendPartner", "TA的课")
+    val coupleTimetableLegendTogether = ArbText("coupleTimetableLegendTogether", "一起上课")
+
+    // ── 周次偏移 ──
+    val coupleTimetableWeekOffsetTitle = ArbText("coupleTimetableWeekOffsetTitle", "周次偏移")
+    val coupleTimetableWeekOffsetZero = ArbText("coupleTimetableWeekOffsetZero", "无偏移")
+    val coupleTimetableWeekOffsetSigned = ArbText("coupleTimetableWeekOffsetSigned", "{offset} 周")
+    val coupleTimetableWeekOffsetPreview = ArbText(
+        "coupleTimetableWeekOffsetPreview",
+        "查看你的第 {myWeek} 周时，显示对方第 {partnerWeek} 周的课",
+    )
+
+    // ── 情侣 WebDAV（坚果云拉取） ──
+    val coupleWebdavTitle = ArbText("coupleWebdavTitle", "坚果云拉取")
+    val coupleWebdavNotConnected = ArbText("coupleWebdavNotConnected", "尚未连接坚果云")
+    val coupleWebdavConnectedAs = ArbText("coupleWebdavConnectedAs", "已连接：{username}")
+    val coupleWebdavRemotePathHint = ArbText("coupleWebdavRemotePathHint", "远程文件路径：{path}")
+    val coupleWebdavLastPulledAt = ArbText("coupleWebdavLastPulledAt", "上次拉取：{time}")
+    val coupleWebdavConnect = ArbText("coupleWebdavConnect", "连接坚果云")
+    val coupleWebdavDisconnect = ArbText("coupleWebdavDisconnect", "断开连接")
+    val coupleWebdavPullNow = ArbText("coupleWebdavPullNow", "立即拉取对方课表")
+    val coupleWebdavUploadForPartner =
+        ArbText("coupleWebdavUploadForPartner", "上传我的课表到坚果云")
+    val coupleWebdavTestFailed = ArbText("coupleWebdavTestFailed", "连接失败，请检查账号、应用专用密码与网络")
+    val coupleWebdavPullImported = ArbText("coupleWebdavPullImported", "已从坚果云导入对方课表")
+    val coupleWebdavPullUpdated = ArbText("coupleWebdavPullUpdated", "已从坚果云更新对方课表")
+    val coupleWebdavPullUnchanged = ArbText("coupleWebdavPullUnchanged", "对方课表无变化")
+    val coupleWebdavUploadSuccess = ArbText("coupleWebdavUploadSuccess", "已上传课表，对方可拉取")
+    val coupleWebdavPullFailed = ArbText("coupleWebdavPullFailed", "拉取对方课表失败，请稍后重试")
+    val coupleWebdavPartnerFileMissing =
+        ArbText("coupleWebdavPartnerFileMissing", "未找到对方课表文件，请让对方先上传")
+    val coupleWebdavNotConnectedError = ArbText("coupleWebdavNotConnectedError", "请先连接坚果云")
+
+    // ── 导入结果 / 通用失败 ──
+    val importFailedInvalidFile = ArbText("importFailedInvalidFile", "导入失败，请确认文件有效")
+    val importFileReadFailed = ArbText("importFileReadFailed", "无法读取所选文件")
+    val importFileTooLarge = ArbText("importFileTooLarge", "文件超出大小上限 {size}，请选择较小的文件")
+    val importPartialSkippedSuffix = ArbText("importPartialSkippedSuffix", "，其中 {count} 条格式损坏已跳过")
+    val quickImportUnknownError = ArbText("quickImportUnknownError", "发生未知错误")
+    val saveFailed = ArbText("saveFailed", "保存失败")
+    val cancelAction = ArbText("cancelAction", "取消")
+
+    /**
+     * 内部错误码形状（Dart `_internalCodePattern` 原样）：ASCII 小写蛇形，可带 `:细节`。
+     * `Regex.matches` 已是全串匹配，锚点省掉（也避开 raw string 末尾 `$` 的歧义）。
+     */
+    private val internalCodePattern = Regex("""[a-z][a-z0-9_]*(?::[A-Za-z0-9._-]+)?""")
+
+    /**
+     * 服务层码 → 屏上文案。
+     *
+     * 只覆盖本页会出现的三个情侣码（Dart `service_message_localizer.dart` 里
+     * `couple_webdav_*` 那三个 case），其余按 Dart 兜底口径：
+     * 像内部机器码 → 「发生未知错误」；本来就是人话 → 原样透出。
+     */
+    fun localizeServiceMessage(code: String?): String {
+        val raw = code?.trim().orEmpty()
+        return when (raw) {
+            "couple_webdav_not_connected" -> coupleWebdavNotConnectedError.zh
+            "couple_webdav_partner_file_missing" -> coupleWebdavPartnerFileMissing.zh
+            "couple_webdav_pull_failed" -> coupleWebdavPullFailed.zh
+            else -> if (internalCodePattern.matches(raw)) quickImportUnknownError.zh else raw
+        }
+    }
+
+    /** 所有 ARB 文案清单，用于机械化单测逐字对拍。 */
+    val allTexts: List<ArbText> by lazy {
+        listOf(
+            coupleTimetableTitle,
+            coupleTimetableBoundTitle,
+            coupleTimetableUnboundTitle,
+            coupleTimetablePartnerNameLabel,
+            coupleTimetableLastImportedAt,
+            courseCountBullet,
+            coupleTimetableExportForPartner,
+            coupleTimetableImportPartner,
+            coupleTimetableUnlink,
+            coupleTimetableImportSuccess,
+            coupleTimetableImportUpdated,
+            coupleTimetableUnlinkConfirmTitle,
+            coupleTimetableUnlinkConfirmMessage,
+            coupleTimetableUnlinkSuccess,
+            coupleTimetableColorsTitle,
+            coupleTimetableLegendMine,
+            coupleTimetableLegendPartner,
+            coupleTimetableLegendTogether,
+            coupleTimetableWeekOffsetTitle,
+            coupleTimetableWeekOffsetZero,
+            coupleTimetableWeekOffsetSigned,
+            coupleTimetableWeekOffsetPreview,
+            coupleWebdavTitle,
+            coupleWebdavNotConnected,
+            coupleWebdavConnectedAs,
+            coupleWebdavRemotePathHint,
+            coupleWebdavLastPulledAt,
+            coupleWebdavConnect,
+            coupleWebdavDisconnect,
+            coupleWebdavPullNow,
+            coupleWebdavUploadForPartner,
+            coupleWebdavTestFailed,
+            coupleWebdavPullImported,
+            coupleWebdavPullUpdated,
+            coupleWebdavPullUnchanged,
+            coupleWebdavUploadSuccess,
+            coupleWebdavPullFailed,
+            coupleWebdavPartnerFileMissing,
+            coupleWebdavNotConnectedError,
+            importFailedInvalidFile,
+            importFileReadFailed,
+            importFileTooLarge,
+            importPartialSkippedSuffix,
+            quickImportUnknownError,
+            saveFailed,
+            cancelAction,
+        )
+    }
+}
