@@ -165,25 +165,12 @@ private fun PagesShell() {
             } else {
                 when (slot) {
                     // Phase 3.5：课表槽位改用**真宿主**——真数据（壳自己的存档）+ 真回调。
-                    // 以前这里是零参的 `TimetableWeekPage()`，画的是空网格、点了没反应。
-                    DockSlot.TIMETABLE -> TimetableHost(
-                        repository = wiring.timetable,
-                        onOpenAddCourse = { dayOfWeek, section ->
-                            wiring.pendingAddCourseSeed = dayOfWeek to section
-                            wiring.pendingEditCourse = null
-                            openPageId = "d1.addCourse"
-                        },
-                        onOpenCourse = { course ->
-                            wiring.pendingEditCourse = course
-                            wiring.pendingAddCourseSeed = null
-                            openPageId = "d1.addCourse"
-                        },
-                        onOpenProfiles = { openPageId = "c1.profiles" },
-                        onOpenAddCoursePlain = {
-                            wiring.clearAddCourseIntent()
-                            openPageId = "d1.addCourse"
-                        },
-                        onWeekChanged = { week -> wiring.timetable.setCurrentWeek(week) },
+                    // T1（`8866b3b5`）：点课程改为先弹操作层，不再直接进编辑页。
+                    // 与页面层的 `c1.week` 共用同一份接线（`TimetableWithCourseActions`），
+                    // 免得两个入口行为漂移。
+                    DockSlot.TIMETABLE -> TimetableWithCourseActions(
+                        wiring = wiring,
+                        onNavigate = { target -> openPageId = target },
                     )
                     DockSlot.SCHEDULE -> ScheduleListPage(
                         groups = shellSampleScheduleGroups(),

@@ -1,16 +1,25 @@
 package com.mutx163.qingyu.pages
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.app.CourseActionDispatcher
+import com.mutx163.qingyu.app.CourseActionOutcome
 import com.mutx163.qingyu.app.KeyValueStore
+import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSaveDispatcher
 import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
+import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
 /**
@@ -77,6 +86,13 @@ class ShellWiring(context: Context) {
     /** 从课表点某门课进加课页时要带进去的编辑对象；null = 新建。 */
     var pendingEditCourse: Course? = null
 
+    /**
+     * 从课程操作弹层点「加作业」时要带进作业页的预选课程（T1）。
+     *
+     * 与 [pendingEditCourse] 同生命周期：都是「跨子树传一次、用完即清」的意图载体。
+     */
+    var pendingTaskCourse: Course? = null
+
     fun clearAddCourseIntent() {
         pendingAddCourseSeed = null
         pendingEditCourse = null
@@ -132,6 +148,112 @@ class ShellWiring(context: Context) {
 fun rememberShellWiring(): ShellWiring {
     val context = LocalContext.current.applicationContext
     return remember { ShellWiring(context) }
+}
+
+/**
+ * **课表槽位 + 课程操作弹层**（T1，`8866b3b5` 的壳侧接线）。
+ *
+ * ## 为什么抽成一个 Composable
+ *
+ * 课表有两个入口——底部坞的「课表」槽位（`PagesShellActivity`）和页面层的 `c1.week`
+ * （`ShellPageIndex`）。操作弹层必须**两处都在**，否则从某一个入口进去点课程还是没反应。
+ * 抽成一份就不会两边漂。
+ *
+ * ## 行为变化（这是 T1 的核心）
+ *
+ * **点课程卡片不再直接进编辑页**，而是先弹操作层：编辑 / 调课 / 删除 / 停课复课 / 加作业。
+ * 老版就是这个形态（`course_action_sheet.dart`）；之前直接进编辑页是 Phase 3 的临时接法。
+ *
+ * ## 订阅语义
+ *
+ * 先读 `repository.snapshot` 拿初值再 `observe`——`observe` **订阅那一刻不推当前值**
+ * （见 `TimetableRepository` 的 KDoc）。`week` 必须跟着快照走：调课/停课都按「当前周」算，
+ * 用一次性的旧值会把课挪错周。
+ *
+ * ## 失败不假装成功
+ *
+ * `NotWired`（例如「单节课提醒」本机没有调度能力）弹真实原因，**不静默关掉**——
+ * 静默关掉正是「点了没反应」的另一种形态。
+ */
+@Composable
+fun TimetableWithCourseActions(
+    wiring: ShellWiring,
+    onNavigate: (String) -> Unit,
+) {
+    val repository = wiring.timetable
+    var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+    DisposableEffect(repository) {
+        val subscription = repository.observe { snapshot = it }
+        onDispose { subscription.close() }
+    }
+
+    var actionTarget by remember { mutableStateOf<Course?>(null) }
+    val context = LocalContext.current
+    val week = snapshot.currentWeek
+
+    TimetableHost(
+        repository = repository,
+        onOpenAddCourse = { dayOfWeek, section ->
+            wiring.pendingAddCourseSeed = dayOfWeek to section
+            wiring.pendingEditCourse = null
+            onNavigate("d1.addCourse")
+        },
+        // T1：点课程 → 先弹操作层，不直接进编辑页。
+        onOpenCourse = { course -> actionTarget = course },
+        onOpenProfiles = { onNavigate("c1.profiles") },
+        onOpenAddCoursePlain = {
+            wiring.clearAddCourseIntent()
+            onNavigate("d1.addCourse")
+        },
+        onWeekChanged = { repository.setCurrentWeek(it) },
+    )
+
+    val course = actionTarget
+    CourseActionSheet(
+        course = course,
+        week = week,
+        onDismiss = { actionTarget = null },
+        onAction = { action ->
+            if (course == null) {
+                actionTarget = null
+            } else {
+                when (val outcome = CourseActionDispatcher.dispatch(action, course, week, repository)) {
+                    is CourseActionOutcome.OpenEdit -> {
+                        // 带**同一门课**进编辑页（参数透传，别丢）。
+                        wiring.pendingEditCourse = outcome.course
+                        wiring.pendingAddCourseSeed = null
+                        actionTarget = null
+                        onNavigate("d1.addCourse")
+                    }
+                    is CourseActionOutcome.OpenAddTask -> {
+                        wiring.pendingTaskCourse = outcome.course
+                        actionTarget = null
+                        onNavigate("d2.addTask")
+                    }
+                    is CourseActionOutcome.NotWired -> {
+                        Toast.makeText(context, outcome.reason, Toast.LENGTH_SHORT).show()
+                        actionTarget = null
+                    }
+                    // 删除 / 停课 / 调课：分派器已经写库并通知，宿主会自己重组。
+                    else -> actionTarget = null
+                }
+            }
+        },
+        onReschedule = { targetWeek, day, start, end ->
+            if (course != null) {
+                CourseActionDispatcher.rescheduleOccurrence(
+                    port = repository,
+                    courseId = course.id,
+                    sourceWeek = week,
+                    targetWeek = targetWeek,
+                    targetDayOfWeek = day,
+                    targetStartSection = start,
+                    targetEndSection = end,
+                )
+            }
+            actionTarget = null
+        },
+    )
 }
 
 /**

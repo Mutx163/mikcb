@@ -276,7 +276,8 @@ fun ShellPageContent(
         "b.reset" -> SettingsScreen(SettingsResetPage.spec(SettingsPageState()), onBack)
 
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────
-        "c1.week" -> TimetableWeekPage()
+        // T1：与底部坞的课表槽位共用同一份接线（含课程操作弹层），两个入口行为一致。
+        "c1.week" -> TimetableWithCourseActions(wiring = wiring, onNavigate = onOpenPage)
         "c1.profiles" -> TimetableProfilesPage(
             profiles = emptyList(),
             onBack = onBack,
