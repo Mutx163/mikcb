@@ -149,6 +149,29 @@
 
 ---
 
+## 六·附二、闸门实测（2026-10-28 22:40 夜）
+
+> 工作区 21:12 起稳定（连续 10 分钟 0 改动），已不是"半成品在途"，遂跑全量闸门取证。
+
+| 闸门 | 命令 | 结果 |
+|---|---|---|
+| L1 壳编译 | `safe-gradle :app:compileComposeUiDebugKotlin` | **BUILD SUCCESSFUL**（26s）—— 整套壳 + 页面能编过 |
+| L2 单测（权威） | `safe-gradle :app:testProdDebugUnitTest` | **4318 例 / 4 失败** |
+
+**4 条失败全部落在「其它会话的在途文件」上，本会话交付的 `TaskListController` / `TimetableExamService` 在 Gradle 真实单测里 0 失败：**
+
+| # | 守卫用例 | 牵涉文件 | 症状 |
+|---|---|---|---|
+| 1 | `CjkLiteralGateTest` | `pages/settings/SettingsWeekPreview.kt` | 8 处中文硬编码未登记（须走 `ArbText` 或登记基线与原因）|
+| 2 | `ComposePageStyleGuardTest` | `settings/SettingsPageRenderers.kt:443` | R5 写死颜色 1 处 |
+| 3 | `PageScaffoldGuardTest` | `about/AboutStaticPage.kt`、`about/SupportCreatorPage.kt` | 取了 `innerPadding` 却没把底部内边距差消费掉 |
+| 4 | `SettingsActionDispatcherTest` | `app/SettingsActionDispatcher.kt` | 分派器已支持 `timetablePage.sectionHeight`，用例仍断言 `Ignored`（用例没跟上实现）|
+
+⇒ **结论**：编译层已通；单测只差这 4 条守卫（全在别人文件上），由各所有者修掉即全绿。
+（按 Git 纪律与用户口径「让其它会话先提交」，本会话不擅自改这些他人文件。）
+
+---
+
 ## 附：与既有文档的关系
 
 - 本文件**不取代** [全景派工大表]：大表是"谁领哪个包"的看板，本文件是"当前工作区实测 + 收口顺序"的体检单。
