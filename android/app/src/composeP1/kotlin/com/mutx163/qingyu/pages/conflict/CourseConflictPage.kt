@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -67,34 +67,14 @@ fun CourseConflictPage(
 ) {
     val colors = MiuixTheme.colorScheme
 
-    Scaffold(containerColor = colors.surface) { innerPadding ->
+    QingyuPageScaffold(title = view.title, onBack = onBack, smallTopBar = true) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                // 顶栏改由共享骨架提供（官方 TopAppBar + 标准左箭头），
+                // 内容只吃顶栏高度 + 底部手势条。
                 .padding(innerPadding),
         ) {
-            // ── 标题栏：返回 + 标题（HyperosSubpage 的等价结构）──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = "返回",
-                        tint = colors.onBackground,
-                    )
-                }
-                Text(
-                    text = view.title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.onSurface,
-                )
-            }
 
             if (view.isEmpty) {
                 // Dart：Center(Text(courseConflictEmpty, style: listDetail))。

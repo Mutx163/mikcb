@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -70,34 +70,16 @@ fun WeatherCityPickerPage(
 ) {
     val colors = MiuixTheme.colorScheme
 
-    Scaffold(containerColor = colors.surface) { innerPadding ->
+    QingyuPageScaffold(
+        title = WeatherStrings.weatherCityPickerTitle.zh,
+        onBack = onBack,
+        smallTopBar = true,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .padding(innerPadding),
         ) {
-            // ── 标题栏：返回 + "选择城市" ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = "返回",
-                        tint = colors.onBackground,
-                    )
-                }
-                Text(
-                    text = WeatherStrings.weatherCityPickerTitle.zh,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.onSurface,
-                )
-            }
 
             // ── 搜索输入框 ──
             Card(

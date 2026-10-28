@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageContentScope
+import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
@@ -74,16 +76,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 否则折叠行为收不到滚动手势（各页已经挂好）。
  */
 /**
- * 内容槽收到的两样东西：内边距，以及顶栏的折叠行为。
+ * 关于页族的页面骨架：直接转发到 [com.mutx163.qingyu.components.QingyuPageScaffold]
+ * （官方 [TopAppBar] + 标准左箭头），保留这层包装只为不动 5 个关于页的调用点。
  *
- * 折叠行为必须交给内容去挂 `nestedScroll`——只把 `scrollBehavior` 传给顶栏，
- * 顶栏收不到滚动手势，大标题就会「参数传了但不折叠」。
+ * 内容槽类型 [QingyuPageContentScope] 也已上移到 `components`，因此
+ * `innerPadding` / `scrollBehavior` 两个属性照旧可用。
  */
-class QingyuPageContentScope(
-    val innerPadding: PaddingValues,
-    val scrollBehavior: ScrollBehavior,
-)
-
 @Composable
 fun QingyuPageScaffold(
     title: String,
@@ -91,35 +89,7 @@ fun QingyuPageScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable QingyuPageContentScope.() -> Unit,
 ) {
-    val dark = isSystemInDarkTheme()
-    // 每个页面实例一个折叠状态：返回后重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = title,
-                largeTitle = title,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = actions,
-            )
-        },
-    ) { innerPadding ->
-        // 页面主题桥兜住深色：两个壳用的是无参 MiuixTheme{ }（配色恒亮），
-        // 不在这里兜一层，深色下卡片仍是白底而正文取白字 → 内容不可读。
-        QingyuPageTheme {
-            QingyuPageContentScope(innerPadding, scrollBehavior).content()
-        }
-    }
+    SharedPageScaffold(title = title, onBack = onBack, actions = actions, content = content)
 }
 
 /**

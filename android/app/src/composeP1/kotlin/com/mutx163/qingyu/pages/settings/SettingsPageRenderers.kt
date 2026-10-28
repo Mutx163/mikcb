@@ -29,6 +29,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
+import com.mutx163.qingyu.components.QingyuBackIconButton
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
@@ -152,21 +153,10 @@ fun SettingsPageScreen(
 
 @Composable
 private fun BackIconButton(onBack: () -> Unit) {
-    // 0.8.8 的图标集只有 5 个矢量（ArrowRight/ArrowUpDown/Check/Search/SearchCleanup），
-    // 没有返回箭头：用官方 ArrowRight 旋转 180°，不自绘矢量。
-    IconButton(
-        onClick = onBack,
-        backgroundColor = Color.Transparent,
-        minHeight = QingyuShapes.CONTROL_MIN_HEIGHT.dp,
-        minWidth = QingyuShapes.CONTROL_MIN_WIDTH.dp,
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Basic.ArrowRight,
-            contentDescription = null,
-            modifier = Modifier.rotate(180f),
-            tint = MiuixTheme.colorScheme.onBackground,
-        )
-    }
+    // 全站统一：官方 TopAppBar 里的标准左箭头（MiuixIcons.Back）。
+    // 旧实现把 Basic.ArrowRight 旋转 180° 凑数（0.8.8 时代没有返回箭头），
+    // 形状与其它页面不一致，已按用户口径换掉。
+    QingyuBackIconButton(onBack = onBack)
 }
 
 @Composable

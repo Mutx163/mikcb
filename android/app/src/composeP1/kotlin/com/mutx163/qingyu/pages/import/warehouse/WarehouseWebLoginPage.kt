@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,9 +67,10 @@ fun WarehouseWebLoginPage(
             SmallTopAppBar(
                 title = title,
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = WarehouseStrings.cancelAction.zh)
-                    }
+                    QingyuBackIconButton(
+                        onBack = onBack,
+                        contentDescription = WarehouseStrings.cancelAction.zh,
+                    )
                 },
                 actions = {
                     IconButton(onClick = onReload) {

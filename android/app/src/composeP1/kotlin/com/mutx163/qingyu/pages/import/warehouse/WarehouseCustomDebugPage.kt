@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,9 +105,10 @@ fun WarehouseCustomDebugPage(
                 largeTitle = WarehouseStrings.warehouseCustomDebugTitle.zh,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = WarehouseStrings.cancelAction.zh)
-                    }
+                    QingyuBackIconButton(
+                        onBack = onBack,
+                        contentDescription = WarehouseStrings.cancelAction.zh,
+                    )
                 },
                 actions = {
                     IconButton(onClick = { openEditor(null) }) {

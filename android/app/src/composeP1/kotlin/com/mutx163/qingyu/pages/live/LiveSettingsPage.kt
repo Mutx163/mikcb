@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
@@ -73,34 +73,16 @@ fun LiveSettingsPage(
     val dark = isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
 
-    Scaffold(containerColor = colors.surface) { innerPadding ->
+    QingyuPageScaffold(
+        title = LiveStrings.liveActivitySettingsTitle,
+        onBack = onBack,
+        smallTopBar = true,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .padding(innerPadding),
         ) {
-            // ── 顶栏：返回图标 + "实时活动设置" ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = "返回",
-                        tint = colors.onBackground,
-                    )
-                }
-                Text(
-                    text = LiveStrings.liveActivitySettingsTitle,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.onSurface,
-                )
-            }
 
             LazyColumn(
                 modifier = Modifier
@@ -267,7 +249,7 @@ fun LiveSettingsPage(
                             modifier = Modifier.weight(1f),
                         )
                         Button(
-                            text = "保存设置",
+                            content = { Text(text = "保存设置") },
                             onClick = onSave,
                             modifier = Modifier.weight(1f),
                         )

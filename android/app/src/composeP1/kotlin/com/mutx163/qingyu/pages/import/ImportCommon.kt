@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -72,45 +73,30 @@ fun ImportPageScaffold(
     content: @Composable (innerPadding: PaddingValues, scrollBehavior: ScrollBehavior) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    // 每个页面实例一个折叠状态：返回后重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
+    // 统一走共享骨架（官方 TopAppBar + 标准左箭头）。这里只额外保留 Dart 侧
+    // 底部按钮区的 SafeArea 内边距（16/12/16）。
+    val wrappedBottomBar: (@Composable () -> Unit)? = if (bottomBar == null) {
+        null
+    } else {
+        { ImportBottomBarBox(dark) { bottomBar() } }
+    }
+    SharedPageScaffold(
+        title = title,
+        onBack = onBack,
+        bottomBar = wrappedBottomBar,
+    ) { content(innerPadding, scrollBehavior) }
+}
 
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = title,
-                    largeTitle = title,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = "返回",
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                )
-            },
-            bottomBar = {
-                if (bottomBar != null) {
-                    // Dart 侧底部按钮区：SafeArea(minimum: fromLTRB(16, 12, 16, 16))，
-                    // 底色就是页面背景（HyperosSubpage 的 body），不是独立 surface。
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(QingyuTheme.scaffoldBackground(dark)))
-                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                    ) {
-                        bottomBar()
-                    }
-                }
-            },
-        ) { innerPadding ->
-            content(innerPadding, scrollBehavior)
-        }
+/** 导入页底部按钮区的底衬：页面底色 + SafeArea(minimum: 16/12/16)。 */
+@Composable
+private fun ImportBottomBarBox(dark: Boolean, content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(QingyuTheme.scaffoldBackground(dark)))
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+    ) {
+        content()
     }
 }
 
