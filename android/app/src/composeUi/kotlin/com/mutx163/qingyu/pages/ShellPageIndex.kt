@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -142,6 +143,8 @@ import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementModel
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementPage
+import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
+import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
@@ -280,16 +283,37 @@ fun ShellPageContent(
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────
         // T1：与底部坞的课表槽位共用同一份接线（含课程操作弹层），两个入口行为一致。
         "c1.week" -> TimetableWithCourseActions(wiring = wiring, onNavigate = onOpenPage)
-        "c1.profiles" -> TimetableProfilesPage(
-            profiles = emptyList(),
-            onBack = onBack,
-            onCreateProfile = {},
-            onSwitchProfile = {},
-            onRenameProfile = { _, _ -> },
-            onDuplicateProfile = {},
-            onClearCourses = {},
-            onDeleteProfile = {},
-        )
+        "c1.profiles" -> {
+            val repository = wiring.timetable
+            // 订阅照仓储 KDoc：先读 snapshot 拿初值，再 observe（与 TimetableWithCourseActions 同一套）。
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            val controller = remember(repository) { TimetableProfilesController(repository) }
+            var toast by remember { mutableStateOf<String?>(null) }
+
+            TimetableProfilesPage(
+                // ⚠️ 用 `snapshot` 当 key：`items()` 内部读的是仓储当前值，
+                // 不读这个被观察的 state 就不会随变更重组——页面会**停在首次的旧列表上**，
+                // 表现为「新建/切换点了没反应」，其实数据已经写进去了。
+                profiles = remember(snapshot) { controller.items() },
+                onBack = onBack,
+                onCreateProfile = { name -> toast = controller.createProfile(name).toastOrNull() },
+                onSwitchProfile = { id -> toast = controller.switchProfile(id).toastOrNull() },
+                onRenameProfile = { id, newName ->
+                    toast = controller.renameProfile(id, newName).toastOrNull()
+                },
+                onDuplicateProfile = { id -> toast = controller.duplicateProfile(id).toastOrNull() },
+                onClearCourses = { id -> toast = controller.clearCourses(id).toastOrNull() },
+                onDeleteProfile = { id -> toast = controller.deleteProfile(id).toastOrNull() },
+                // 「成没成 / 为什么没成」由控制器算好，壳只负责把字符串放上去——
+                // 不在壳里另写一套判据（那会是第二份判据）。
+                toastMessage = toast,
+                onDismissToast = { toast = null },
+            )
+        }
 
         // ── P3-C3 课表 · 日视图 ────────────────────────────────────────
         "c3.day" -> DayViewPage(
