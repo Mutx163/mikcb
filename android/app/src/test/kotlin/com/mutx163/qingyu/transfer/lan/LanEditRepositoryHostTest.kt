@@ -1,0 +1,363 @@
+package com.mutx163.qingyu.transfer.lan
+
+import com.mutx163.qingyu.app.InMemoryKeyValueStore
+import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.FormatException
+import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.sync.validateTransferPackageJson
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.LocalDateTime
+
+/**
+ * `LanEditRepositoryHost` 的**真数据层**测试（L0）：内存 KV 存储 → `TimetableStore`
+ * → `TimetableRepository` → 适配器，全程不 mock 存储。
+ *
+ * 这一组测的不是「协议」而是**数据**，所以断言落在两处：
+ * - 仓储的对外视图（`repository.courses` 等）；
+ * - **盘上的原始字节**（`InMemoryKeyValueStore.rawSnapshot()`）。
+ *
+ * 后者是本次的验收重点：导入类端点必须「先校验后落盘」，坏备份要能证明
+ * **一个字节都没写**——只断言「抛了异常」不够，那只证明它没成功，不证明它没写坏。
+ */
+class LanEditRepositoryHostTest {
+
+    // -----------------------------------------------------------------------
+    // 导出
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `导出的备份能被同一个校验器认下`() {
+        val (repository, _) = repositoryWith(course("c1", "高等数学"), course("c2", "大学物理"))
+        val host = LanEditRepositoryHost(repository)
+
+        val exported = host.exportProfileBackupJson()
+        val validation = validateTransferPackageJson(exported)
+        assertTrue("导出的包必须自洽：${validation.errors}", validation.isValid)
+        assertTrue(exported.contains("高等数学"))
+        assertTrue(exported.contains("\"scope\":\"current_timetable\""))
+        assertTrue(exported.contains("\"channel\":\"lan\""))
+    }
+
+    // -----------------------------------------------------------------------
+    // 导入：正常路径
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `导出再导入 课程真的落到盘上`() {
+        val (source, _) = repositoryWith(course("c1", "高等数学"), course("c2", "大学物理"))
+        val exported = LanEditRepositoryHost(source).exportProfileBackupJson()
+        assertTrue("导出里必须有两门课：$exported", exported.contains("大学物理"))
+
+        val store = InMemoryKeyValueStore()
+        val target = repositoryOn(store)
+        LanEditRepositoryHost(target).importProfileBackupJson(exported)
+
+        assertEquals(2, target.courses.size)
+        assertEquals(setOf("高等数学", "大学物理"), target.courses.map { it.name }.toSet())
+        // 落盘证据：盘上的档案 JSON 里真的有这两门课（不是只改了内存）
+        val raw = store.rawSnapshot().values.joinToString("\n")
+        assertTrue("盘上必须写着这两门课", raw.contains("高等数学") && raw.contains("大学物理"))
+    }
+
+    // -----------------------------------------------------------------------
+    // 导入：坏备份一个字节都不许写（本次验收重点）
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `坏备份导入失败时盘上原文一字未变`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
+        assertTrue("前置条件：盘上得先有东西", before.isNotEmpty())
+
+        val host = LanEditRepositoryHost(repository)
+        val badBackups = listOf(
+            "not json at all" to "transfer_package_json_invalid",
+            "[]" to "transfer_package_root_invalid",
+            """{"app":"other","packageType":"transfer"}""" to "transfer_package_type_invalid",
+            // 信封对、版本不对
+            """{"app":"mikcb","packageType":"transfer","schemaVersion":9}""" to "transfer_package_schema_unsupported",
+            // 信封对、版本对，但缺必填列表
+            """{"app":"mikcb","packageType":"transfer","schemaVersion":1,"packageId":"p"}""" to
+                "transfer_course_list_required",
+            // 结构都对，但课程缺必填字段（校验能抓到）
+            fullPackage(courses = """[{"id":"c9"}]""") to "transfer_course_name_required",
+            // 结构都对，但课程 id 重复
+            fullPackage(
+                courses = """[${courseJson("dup", "A")},${courseJson("dup", "B")}]""",
+            ) to "transfer_course_id_duplicate",
+        )
+
+        for ((content, expectedError) in badBackups) {
+            val error = try {
+                host.importProfileBackupJson(content)
+                null
+            } catch (e: FormatException) {
+                e
+            }
+            assertNotNull("`$content` 必须被拒", error)
+            assertEquals("`$content` 的错误码", expectedError, error!!.message)
+            assertEquals(
+                "校验失败时盘上必须一字未变（$expectedError）",
+                before,
+                store.rawSnapshot(),
+            )
+        }
+    }
+
+    @Test
+    fun `多档案整份恢复明确拒绝而不是静默丢档案`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
+
+        val withProfiles = fullPackage(
+            courses = "[]",
+            profiles = """[{"id":"p9","name":"另一份课表","courses":[],"tasks":[],"scheduleItems":[],"exams":[],"settings":{},"currentWeek":1,"createdAt":"2026-01-01T00:00:00","lastUsedAt":"2026-01-01T00:00:00"}]""",
+        )
+        val error = try {
+            LanEditRepositoryHost(repository).importProfileBackupJson(withProfiles)
+            null
+        } catch (e: FormatException) {
+            e
+        }
+        assertEquals("profile_backup_profiles_unsupported", error?.message)
+        assertEquals("拒绝时不许动盘", before, store.rawSnapshot())
+    }
+
+    // -----------------------------------------------------------------------
+    // 组替换
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `组替换后组里消失的课真的没了`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        // 同一门课的三条排课（同组）+ 一条别的课
+        repository.addCourse(course("g1", "高等数学", dayOfWeek = 1))
+        repository.addCourse(course("g2", "高等数学", dayOfWeek = 3))
+        repository.addCourse(course("g3", "高等数学", dayOfWeek = 5))
+        repository.addCourse(course("other", "大学物理"))
+        assertEquals(4, repository.courses.size)
+
+        val host = LanEditRepositoryHost(repository)
+        val saved = host.replaceCourseGroup(
+            originalName = "高等数学",
+            slots = listOf(
+                course("g1", "高等数学", dayOfWeek = 2),
+                course("g2", "高等数学", dayOfWeek = 4),
+            ),
+        )
+
+        // 返回的是替换后的整组
+        assertEquals(2, saved.size)
+        assertEquals(setOf(2, 4), saved.map { it.dayOfWeek }.toSet())
+        // 原来那条周五的排课必须真的没了
+        val names = repository.courses.map { it.id }
+        assertFalse("g3 必须被删掉", names.contains("g3"))
+        assertTrue("别的课不能受影响", names.contains("other"))
+        assertEquals(3, repository.courses.size)
+        // 盘上也要跟着变
+        val raw = store.rawSnapshot().values.joinToString("\n")
+        assertFalse("盘上不该再留着 g3", raw.contains("\"g3\""))
+    }
+
+    // -----------------------------------------------------------------------
+    // 表格导入
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `表格导入按 replaceExisting 决定追加还是替换`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("old", "旧课"))
+        val parsed = LanEditSpreadsheetParse(
+            courses = listOf(course("n1", "新课一"), course("n2", "新课二")),
+            warnings = listOf("w1"),
+            format = "csv",
+        )
+        val host = LanEditRepositoryHost(repository) { _, _, _ -> parsed }
+
+        val appended = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = false)
+        assertEquals(2, appended.importedCount)
+        assertEquals("csv", appended.format)
+        assertEquals(listOf("w1"), appended.warnings)
+        assertEquals(3, repository.courses.size)
+
+        val replaced = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
+        assertEquals(2, replaced.importedCount)
+        assertEquals(setOf("n1", "n2"), repository.courses.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `表格一门都没解析出来时不落盘`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("old", "旧课"))
+        val before = store.rawSnapshot()
+
+        val host = LanEditRepositoryHost(repository) { _, _, _ ->
+            LanEditSpreadsheetParse(emptyList(), listOf("no rows"), "csv")
+        }
+        val outcome = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
+
+        assertEquals(0, outcome.importedCount)
+        assertEquals(listOf("no rows"), outcome.warnings)
+        // replaceExisting=true 也不能因为「没解析出课」就把用户的课清空
+        assertEquals("一门都没解析出来时不许动盘", before, store.rawSnapshot())
+        assertEquals(1, repository.courses.size)
+    }
+
+    // -----------------------------------------------------------------------
+    // 其余写入口
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `读写入口都走仓储 增删改与切周切档案`() {
+        val (repository, store) = repositoryWith(course("c1", "高等数学"))
+        val host = LanEditRepositoryHost(repository)
+
+        val created = host.createCourse(course("c2", "大学物理"))
+        assertEquals("c2", created.id)
+        assertEquals(2, host.courses.size)
+
+        val updated = created.copy(teacher = "张老师")
+        assertTrue(host.updateCourse(updated))
+        assertEquals("张老师", repository.getCourseById("c2")?.teacher)
+
+        assertEquals(2, host.deleteCoursesBatch(listOf("c1", "c2", "nope")))
+        assertTrue(host.courses.isEmpty())
+        // 删不存在的返回 false / 0
+        assertFalse(host.updateCourse(updated))
+        assertFalse(host.deleteCourse("c2"))
+        assertEquals(0, host.deleteCoursesBatch(listOf("c2")))
+
+        host.setCurrentWeek(9)
+        assertEquals(9, repository.snapshot.currentWeek)
+
+        assertEquals("p1", host.activeProfileId)
+        assertEquals(2, host.listProfilesSummary().size + 1) // 只有 p1 时是 1 条 → 这里钉住口径
+        val meta = host.buildMetaJson()
+        assertEquals(20, meta["semesterWeekCount"])
+        assertTrue(meta["sections"] is List<*>)
+        assertNotNull(store.rawSnapshot()["flutter.timetable_profiles"])
+    }
+
+    @Test
+    fun `切档案走仓储 未知 id 抛 profile_not_found`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val host = LanEditRepositoryHost(repository)
+
+        val error = try {
+            host.switchProfile("nope")
+            null
+        } catch (e: IllegalArgumentException) {
+            e
+        }
+        assertEquals("profile_not_found", error?.message)
+        // 切到自己（当前档案）是幂等成功，不算错误
+        host.switchProfile("p1")
+        assertEquals("p1", host.activeProfileId)
+    }
+
+    @Test
+    fun `传输包预览与应用暂不支持时明确报 501 而不是假成功`() {
+        val (repository, _) = repositoryWith()
+        val host = LanEditRepositoryHost(repository)
+        assertEquals(null, host.previewTransferJson("{}"))
+        assertEquals(
+            null,
+            host.applyTransferJson("{}", com.mutx163.qingyu.share.TransferApplyMode.MERGE),
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // 工具
+    // -----------------------------------------------------------------------
+
+    private fun repositoryWith(vararg courses: Course): Pair<TimetableRepository, InMemoryKeyValueStore> {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store, courses.toList())
+        return repository to store
+    }
+
+    private fun repositoryOn(
+        store: InMemoryKeyValueStore,
+        courses: List<Course> = emptyList(),
+    ): TimetableRepository {
+        val timetableStore = TimetableStore(store)
+        val now = LocalDateTime.of(2026, 10, 28, 9, 0)
+        timetableStore.saveProfiles(
+            listOf(
+                TimetableProfile(
+                    id = "p1",
+                    name = "默认课表",
+                    courses = courses,
+                    currentWeek = 7,
+                    createdAt = now,
+                    lastUsedAt = now,
+                ),
+            ),
+        )
+        timetableStore.saveActiveProfileId("p1")
+        timetableStore.saveSettings(TimetableSettings.defaults())
+        timetableStore.saveCurrentWeek(7)
+        return TimetableRepository(timetableStore)
+    }
+
+    private fun course(
+        id: String,
+        name: String,
+        dayOfWeek: Int = 1,
+    ): Course = Course(
+        id = id,
+        name = name,
+        teacher = "",
+        location = "",
+        dayOfWeek = dayOfWeek,
+        startSection = 1,
+        endSection = 2,
+        startTime = "08:00",
+        endTime = "09:40",
+    )
+
+    private fun courseJson(id: String, name: String): String =
+        """{"id":"$id","name":"$name","teacher":"","location":"","dayOfWeek":1,""" +
+            """"startSection":1,"endSection":2,"startTime":"08:00","endTime":"09:40"}"""
+
+    /** 一份结构合法的 currentTimetable 包（可替换其中两块来造坏数据）。 */
+    private fun fullPackage(
+        courses: String = "[]",
+        profiles: String = "[]",
+    ): String = """
+        {
+          "app": "mikcb",
+          "packageType": "transfer",
+          "schemaVersion": 1,
+          "packageId": "transfer-test-1",
+          "scope": "current_timetable",
+          "channel": "lan",
+          "exportedAt": "2026-10-28T09:00:00.000",
+          "currentWeek": 7,
+          "settings": {"sections": [], "semesterWeekCount": 20},
+          "courses": $courses,
+          "tasks": [],
+          "scheduleItems": [],
+          "exams": [],
+          "timeSchemes": [],
+          "scheduleDateRules": [],
+          "locationTimeGroups": [],
+          "profiles": $profiles
+        }
+    """.trimIndent()
+}

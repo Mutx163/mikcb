@@ -2,10 +2,14 @@ package com.mutx163.qingyu.transfer.lan
 
 import com.mutx163.qingyu.calendar.WeekExpressionParser
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.share.LanEditSession
+import com.mutx163.qingyu.share.TransferApplyMode
 import java.time.Instant
+import java.time.ZoneId
+import java.util.Base64
 import java.util.UUID
 
 /**
@@ -67,7 +71,50 @@ interface LanEditHost {
 
     /** 按 id 批量删除；返回真正删掉的条数（Dart `deleteCoursesBatch`）。 */
     fun deleteCoursesBatch(courseIds: List<String>): Int
+
+    // ---------- B 组：更深的数据面（默认「不支持」→ 501，与 Dart 的可选能力同口径） ----------
+
+    /** 整份备份导出（Dart `buildProfileBackupJson`）：当前课表的传输包 JSON。 */
+    fun exportProfileBackupJson(): String =
+        throw UnsupportedOperationException("profile_backup_export_unsupported")
+
+    /**
+     * 整份备份导入（Dart `importProfileBackupJson`）。
+     *
+     * **实现方必须先校验后落盘**：校验失败必须抛 [FormatException]（消息 = 错误码串），
+     * 并且**一个字节都不许写**——导入是唯一能一次性覆盖用户全部课表的操作，
+     * 半途写坏比直接拒绝严重得多。
+     */
+    fun importProfileBackupJson(content: String): Unit =
+        throw UnsupportedOperationException("profile_backup_import_unsupported")
+
+    /** 组替换（Dart `replaceCourseGroup`）：按课名整组替换，返回保存后的课。 */
+    fun replaceCourseGroup(originalName: String?, slots: List<Course>): List<Course> =
+        throw UnsupportedOperationException("course_group_replace_unsupported")
+
+    /**
+     * 表格导入（Dart `importSpreadsheetCourses`）。
+     *
+     * 解析器由实现方注入（见 WIRING-NOTE）：`pages/import` 不在 L0 的共享目录名单里，
+     * 本层与适配器都不能静态依赖它，否则全队 L0 会 unresolved。
+     */
+    fun importSpreadsheetBytes(
+        bytes: ByteArray,
+        fileName: String,
+        replaceExisting: Boolean,
+    ): LanEditSpreadsheetImport =
+        throw UnsupportedOperationException("spreadsheet_import_unsupported")
+
+    /** 传输包应用（Dart `LanTransferHost.applyTransferJson`）。返回 null = 不支持 → 501。 */
+    fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>? = null
 }
+
+/** 表格导入结果（Dart `SpreadsheetImportResult` 在 HTTP 层的投影）。 */
+data class LanEditSpreadsheetImport(
+    val importedCount: Int,
+    val warnings: List<String>,
+    val format: String,
+)
 
 /** 审计日志的一条。 */
 data class LanEditAuditEntry(
@@ -201,11 +248,19 @@ class LanEditApiRouter(
                 path == "/api/v1/profiles" && request.method == "GET" -> handleListProfiles()
                 path == "/api/v1/profiles/switch" && request.method == "POST" -> handleSwitchProfile(request)
                 path == "/api/v1/meta" && request.method == "GET" -> handleGetMeta()
+                path == "/api/v1/profile/active" && request.method == "GET" -> handleExportProfileBackup()
+                path == "/api/v1/profile/active" && request.method == "PUT" -> handleImportProfileBackup(request)
                 path == "/api/v1/courses" && request.method == "GET" -> handleListCourses()
                 path == "/api/v1/courses" && request.method == "POST" -> handleCreateCourse(request)
+                path == "/api/v1/courses/group" && request.method == "PUT" -> handleReplaceCourseGroup(request)
                 path == "/api/v1/courses/batch-delete" && request.method == "POST" -> handleBatchDeleteCourses(request)
                 path == "/api/v1/week-expression/parse" && request.method == "POST" -> handleParseWeekExpression(request)
                 path == "/api/v1/import/preview" && request.method == "POST" -> handleTransferPreview(request)
+                path == "/api/v1/import/spreadsheet" && request.method == "POST" -> handleSpreadsheetImport(request)
+                path == "/api/v1/import/apply" && request.method == "POST" -> handleTransferApply(request)
+                // Dart：这条端点**故意**只回 409，强制走「先 preview 再 apply」两步
+                // （`_handleMergeImport` → `_handleLegacyImportRejected`）。
+                path == "/api/v1/import/merge" && request.method == "POST" -> handleLegacyImportRejected()
                 else -> handleCourseById(request, path)
             }
         } catch (error: LanEditHttpException) {
@@ -218,6 +273,15 @@ class LanEditApiRouter(
             // 坏请求体是调用方的问题，不是服务端故障（Dart 原文：这些以前落到通用
             // 分支回 500 并把 Dart 异常原文回显出去）。
             return LanEditHttpResponse.error(statusForBodyFormatError(error), "invalid_request", formatMessage(error))
+        } catch (error: UnsupportedOperationException) {
+            // host 没实现这条可选能力（Dart 用 `host is LanTransferHost` 判，语义等价）：
+            // 501 Not Implemented，错误码就用能力名，前端据此禁用对应入口。
+            val capability = error.message.orEmpty().ifEmpty { "not_supported" }
+            return LanEditHttpResponse.error(501, capability, capability)
+        } catch (error: IllegalArgumentException) {
+            // Dart 各处 `on ArgumentError` 统一回 400 invalid_request，消息即错误码
+            //（`FormatException` 是它的子类，上面那条已经先接走了）。
+            return LanEditHttpResponse.error(400, "invalid_request", error.message ?: "invalid_request")
         } catch (error: Throwable) {
             // 未鉴权路径上的兜底：异常原文（类型名 / provider 内部结构 / 绝对路径）
             // 不能回给同网段的任意请求方，那等于一台没配对的设备也能拿本 App 做指纹。
@@ -575,6 +639,206 @@ class LanEditApiRouter(
         return LanEditHttpResponse.json(200, preview)
     }
 
+    // -----------------------------------------------------------------------
+    // B 组：整份备份 / 组替换 / 表格导入 / 传输包应用
+    // -----------------------------------------------------------------------
+
+    /**
+     * `GET /api/v1/profile/active`：整份备份导出（Dart 直接回
+     * `jsonDecode(host.buildProfileBackupJson())`，即一个传输包 JSON 对象）。
+     */
+    private fun handleExportProfileBackup(): LanEditHttpResponse {
+        host.ensureInitialized()
+        val content = host.exportProfileBackupJson()
+        val decoded = MiniJson.tryParse(content)
+        if (decoded !is Map<*, *>) {
+            // 导出的内容连 JSON 对象都不是：这是服务端自己的 bug，不能把它当 200 发出去。
+            return LanEditHttpResponse.error(500, "internal_error", "internal_error")
+        }
+        return LanEditHttpResponse.json(200, decoded)
+    }
+
+    /**
+     * `PUT /api/v1/profile/active`：整份备份导入（Dart `_handleImportProfile` 的 legacy 分支）。
+     *
+     * ⚠️ 与 Dart 的一处**有意差异**（已记入 WIRING-NOTE）：Dart 在 host 具备传输包能力时
+     * 这条会 409（强制先 preview 再 apply）；Kotlin 侧目前**没有**传输包应用服务，
+     * 所以走 legacy 导入路径。等 apply 落地后应改成 409 以对齐 Dart。
+     *
+     * 请求体是**裸 JSON**（Dart 这里用 `_readBody` 而不是 `_readJsonBody`，不校验 Content-Type）。
+     * 「先校验后落盘」由 host 实现保证（见 [LanEditHost.importProfileBackupJson] 的契约）。
+     */
+    private fun handleImportProfileBackup(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        when (val target = ensureWriteProfileTarget(request, null)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val content = request.body
+        if (content.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "backup_content_required")
+        }
+        try {
+            host.importProfileBackupJson(content)
+        } catch (error: FormatException) {
+            return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
+        }
+        audit.info("lan_edit_profile_imported", "profile backup imported", mapOf("bytes" to content.length))
+        return LanEditHttpResponse.json(200, linkedMapOf<String, Any?>("imported" to true))
+    }
+
+    /**
+     * `PUT /api/v1/courses/group`：按课名整组替换（Dart `_handleReplaceCourseGroup`）。
+     *
+     * `slots` 必须是非空数组；第一门课的课名不能为空（Dart 的 `course_name_required`）。
+     * 返回保存后的整组课。
+     */
+    private fun handleReplaceCourseGroup(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val originalName = body["originalName"]?.toString()
+        val rawSlots = body["slots"]
+        if (rawSlots !is List<*> || rawSlots.isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "at_least_one_schedule_slot")
+        }
+        val slots = ArrayList<Course>(rawSlots.size)
+        for (item in rawSlots) {
+            if (item !is Map<*, *>) {
+                return LanEditHttpResponse.error(400, "invalid_request", "invalid_slot_entry")
+            }
+            @Suppress("UNCHECKED_CAST")
+            val slotMap = LinkedHashMap<String, Any?>(item as Map<String, Any?>)
+            // Dart：课名缺省回落 originalName，再回落「课程」；这里不给中文字面量兜底，
+            // 缺名就交给下面的 course_name_required 拒掉（差异已记入 WIRING-NOTE）。
+            val name = slotMap["name"]?.toString()?.trim()
+            if (name.isNullOrEmpty() && !originalName.isNullOrEmpty()) {
+                slotMap["name"] = originalName
+            }
+            slots.add(courseFromApiJson(slotMap))
+        }
+        if (slots.first().name.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "course_name_required")
+        }
+        val saved = try {
+            host.replaceCourseGroup(originalName, slots)
+        } catch (error: FormatException) {
+            return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
+        }
+        audit.info(
+            "lan_edit_course_group_saved",
+            "course group saved",
+            mapOf(
+                "originalName" to originalName,
+                "courseName" to saved.firstOrNull()?.name,
+                "scheduleCount" to saved.size,
+            ),
+        )
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>("courses" to saved.map { it.toJson() }),
+        )
+    }
+
+    /**
+     * `POST /api/v1/import/spreadsheet`：表格导入（Dart `_handleSpreadsheetImport`）。
+     *
+     * `contentBase64` 是**必填**且必须能 base64 解码；解析与落盘都在 host 里
+     * （解析器由接线方注入，见 [LanEditHost.importSpreadsheetBytes]）。
+     */
+    private fun handleSpreadsheetImport(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val fileName = body["fileName"]?.toString().orEmpty().ifEmpty { "import.csv" }
+        val encoded = body["contentBase64"]?.toString().orEmpty()
+        if (encoded.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "content_base64_required")
+        }
+        val bytes = try {
+            Base64.getDecoder().decode(encoded.trim())
+        } catch (_: IllegalArgumentException) {
+            return LanEditHttpResponse.error(400, "invalid_request", "content_base64_invalid")
+        }
+        val replaceExisting = body["replaceExisting"] == true
+        val outcome = try {
+            host.importSpreadsheetBytes(bytes, fileName, replaceExisting)
+        } catch (error: FormatException) {
+            return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
+        }
+        if (outcome.importedCount > 0) {
+            audit.info(
+                "lan_edit_spreadsheet_imported",
+                "spreadsheet imported",
+                mapOf(
+                    "importedCount" to outcome.importedCount,
+                    "replaceExisting" to replaceExisting,
+                    "format" to outcome.format,
+                ),
+            )
+        }
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>(
+                "importedCount" to outcome.importedCount,
+                "warnings" to outcome.warnings,
+                "format" to outcome.format,
+            ),
+        )
+    }
+
+    /**
+     * `POST /api/v1/import/apply`：应用一份传输包（Dart `_handleTransferApply`）。
+     *
+     * `mode` 只认 `merge` / `overwrite`；host 不支持应用时 501
+     * （Dart 对非 `LanTransferHost` 的 host 也回 501 `transfer_apply_not_supported`）。
+     */
+    private fun handleTransferApply(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val content = body["content"]?.toString().orEmpty()
+        val mode = when (body["mode"]?.toString()) {
+            "merge" -> TransferApplyMode.MERGE
+            "overwrite" -> TransferApplyMode.OVERWRITE
+            else -> null
+        }
+        if (content.trim().isEmpty() || mode == null) {
+            return LanEditHttpResponse.error(
+                400,
+                "invalid_request",
+                "transfer_content_and_mode_required",
+            )
+        }
+        val result = host.applyTransferJson(content, mode)
+        if (result == null) {
+            return LanEditHttpResponse.error(
+                501,
+                "transfer_apply_not_supported",
+                "transfer_apply_not_supported",
+            )
+        }
+        return LanEditHttpResponse.json(200, result)
+    }
+
+    /**
+     * Dart `_handleLegacyImportRejected`：`import/merge` 一律 409，
+     * 要求先 `import/preview` 再 `import/apply` 并显式给 mode。
+     */
+    private fun handleLegacyImportRejected(): LanEditHttpResponse = LanEditHttpResponse.error(
+        409,
+        "transfer_preview_required",
+        "Use /api/v1/import/preview then /api/v1/import/apply with an explicit mode",
+    )
     /**
      * 写目标三道闸（Dart `_ensureWriteProfileTarget` 原样）：
      * 1. `profileId` 从 body / query / `x-profile-id` / 会话绑定值里按优先级取，取不到 400；
@@ -718,5 +982,16 @@ class LanEditApiRouter(
 
     private fun isoNow(): String = iso(clock())
 
-    private fun iso(millis: Long): String = Instant.ofEpochMilli(millis).toString()
+    /**
+     * 时间戳格式**与 Dart 逐字一致**：`DateTime.now().toIso8601String()` 是**本地时间**
+     * 且不带时区后缀（`2026-10-28T12:00:00.000`）。
+     *
+     * 早先这里用的是 `Instant.toString()`（UTC、带 `Z`）：语义上两者都是 ISO-8601、
+     * 前端 `new Date()` 都能解，但**导出的备份包会因为 `Z` 过不了自己的校验**
+     *（`DartTime.tryParseIso` 走 `LocalDateTime.parse`，2026-10-28 实测踩到），
+     * 所以统一改成 Dart 口径，两侧不再有差异。
+     */
+    private fun iso(millis: Long): String = DartTime.toIso(
+        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime(),
+    )
 }
