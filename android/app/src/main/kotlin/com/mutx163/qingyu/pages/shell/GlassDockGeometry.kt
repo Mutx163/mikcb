@@ -20,8 +20,20 @@ import kotlin.math.pow
  *   与 `lib/src/theme/miuix/glass/{miuix_glass_motion,miuix_glass_navigation_geometry}.dart`
  * * 上游：`compose-miuix-ui/miuix` 的 `GlassNavigationBar.kt` / `NavigationDragTarget.kt`
  *
- * 数值一致性由 `GlassDockGeometryTest` 逐条钉住（那份测试是唯一的定义处，
- * 渲染层只允许从这里取数，不许在 Compose 文件里另写字面量）。
+ * 数值一致性由 `GlassDockGeometryTest` 逐条钉住，渲染层不许在 Compose 文件里另写字面量。
+ *
+ * ## 但"有测试"不等于"渲染层在用这些数"（2026-10-28 审核的教训）
+ *
+ * 本文件里现有**两套口径**，测试都很绿，只有一套是渲染层真在用的：
+ *
+ * | 口径 | 入口 | 生产调用 | 谁钉着它 |
+ * |---|---|---|---|
+ * | demo 口径（两侧各 4dp） | `glassSlotWidthPx` / `GlassInnerHeightDp` | **是**（`GlassDockNavigationBar` 的 onSizeChanged、各层高度） | `液态档…` 那 4 条 |
+ * | miuix/Flutter 旧口径（两侧 8dp + 指示器外扩 5dp） | `slotWidth` / `itemLeft` / `indicatorLeftFor` / `indicatorBounds` / `dragTarget` / … | **否**（生产引用 0，只剩测试） | 上面那 20 条 |
+ *
+ * 也就是说：**旧的 20 条用例改坏会红，但界面不会变**；反过来改坏渲染层的接线，
+ * 这 30 条一条也不会红（L0 只编 `src/main` + `src/test`，那个 Compose 文件不在 classpath）。
+ * 处置见 `.agents/audit/glass-dock-2026-10-28/REPORT.md`（建议把旧口径挪走或删掉）。
  *
  * ## 为什么几何必须抽出来单独测
  *
@@ -181,8 +193,9 @@ object GlassDockGeometry {
     // **不要照旧口径写新代码**，液态档一律走下面这组 `glass*` 函数。
     //
     // 两套口径差在哪：旧口径槽宽 = (W - 16)/n，demo 口径 = (W - 8)/n。
-    // 差 8/n dp/格 —— 渲染层如果用了 demo 的 4dp 内边距、却按旧口径的一半减 4dp，
-    // 槽宽就会偏大，末格指示器正好探出玻璃 4dp（就是这次报的那个"一点点"）。
+    // 差 8/n dp/格 —— 渲染层如果用了 demo 的 4dp 内边距、却按"只减一侧"算槽宽
+    // （`W - 4`），每格就偏大 4/n dp，末格右边界会正好压在玻璃右缘上（余量 0），
+    // 首格却还留着 4dp：两端不对等，按下放大立刻从右端顶出去。
     // ---------------------------------------------------------------------
 
     /**
@@ -197,7 +210,19 @@ object GlassDockGeometry {
         return max(0f, containerWidthPx - paddingPx * 2f) / itemCount
     }
 
-    /** 液态档第 [index] 个条目/指示器的左边界（**像素**）：`padding + index × 槽宽`。 */
+    /**
+     * 液态档第 [index] 个条目/指示器的左边界（**像素**）：`padding + index × 槽宽`。
+     *
+     * ⚠️ 渲染层**不直接调用**它：指示器的水平基址由 Compose 的
+     * `.padding(horizontal = GlassContentPaddingDp)` 结构给出，步进由
+     * `translationX = dampedDrag.value * tabWidthPx` 给出。这两个值（以及下面的
+     * [glassIndicatorSpan]）存在的意义是把「首格左边 4dp、末格右边 4dp」这条手推契约
+     * 写成**可执行断言**（`GlassDockGeometryTest` 的 `液态档…` 那组）。
+     *
+     * 也因此：它**拦不住**「渲染层把 `.padding(horizontal)` 改成 `.padding(start)`」
+     * 这类接线错误 —— 那类改动只有源码守卫或真机看得到（见
+     * `.agents/audit/glass-dock-2026-10-28/REPORT.md` 的 C4）。
+     */
     fun glassIndicatorLeftPx(
         index: Int,
         containerWidthPx: Float,

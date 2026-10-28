@@ -239,26 +239,13 @@ private fun PagesShell() {
  */
 private val dockItems: List<GlassDockItem>
     @Composable get() = listOf(
-        GlassDockItem(
-            icon = MiuixIcons.Months,
-            label = DockSlot.TIMETABLE.label,
-            contentDescription = DockSlot.TIMETABLE.label,
-        ),
-        GlassDockItem(
-            icon = MiuixIcons.ListView,
-            label = DockSlot.SCHEDULE.label,
-            contentDescription = DockSlot.SCHEDULE.label,
-        ),
-        GlassDockItem(
-            icon = MiuixIcons.Tasks,
-            label = DockSlot.TASK.label,
-            contentDescription = DockSlot.TASK.label,
-        ),
-        GlassDockItem(
-            icon = MiuixIcons.Notes,
-            label = DockSlot.INDEX.label,
-            contentDescription = "页面索引",
-        ),
+        // 不再传 contentDescription：有 label 时读屏只该念可见文字，两样都给会念两遍
+        // （详见 GlassDockNavigationBar 里那处 semantics 的注释）。
+        GlassDockItem(icon = MiuixIcons.Months, label = DockSlot.TIMETABLE.label),
+        GlassDockItem(icon = MiuixIcons.ListView, label = DockSlot.SCHEDULE.label),
+        GlassDockItem(icon = MiuixIcons.Tasks, label = DockSlot.TASK.label),
+        // 屏上是「索引」，之前这里单独写了「页面索引」，读到与看到的字不一致。
+        GlassDockItem(icon = MiuixIcons.Notes, label = DockSlot.INDEX.label),
     )
 
 /** dock 槽位：前三个对应原 App 玻璃坞的常驻入口，第四个是迁移期的页面索引入口。 */

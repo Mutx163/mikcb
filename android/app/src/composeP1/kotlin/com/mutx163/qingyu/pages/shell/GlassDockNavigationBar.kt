@@ -306,7 +306,12 @@ fun GlassDockNavigationBar(
                     .semantics(mergeDescendants = true) {
                         selected = index == currentIndex
                         role = Role.Tab
-                        item.contentDescription?.let { contentDescription = it }
+                        // 只在**没有可见文字**时才回退到 contentDescription：
+                        // mergeDescendants 会把子 Text 合并进来，两样都给读屏就念两遍
+                        // （"课表，课表"）。demo 一项都不设，只靠 Text 说话。
+                        if (item.label == null) {
+                            item.contentDescription?.let { contentDescription = it }
+                        }
                         onClick {
                             activateTab(index)
                             true
@@ -513,9 +518,13 @@ fun GlassDockNavigationBar(
             // 甩尾拉伸时，这块玻璃会从药丸轮廓里探出去一点点 —— 那是"液态"该有的样子
             // （玻璃被挤出来）。2026-10-28 曾为了消掉"超出"加过一层
             // `matchParentSize() + clip(pillShape)`，用户随即指出「激活态玻璃被底栏框住
-            // 了」：放大被切平、边光与折射也没了。所以那层已删；静止时两端各留 4dp
-            // 是靠几何（[GlassDockGeometry.GlassInnerHeightDp] + 两侧内边距）保证的，
-            // 不靠裁切。要再动这里，先看 demo 的同一段。
+            // 了」：放大被切平、边光与折射也没了。所以那层已删。
+            //
+            // 静止时左右各留 4dp 只由**水平**两件事保证：下面这个
+            // `.padding(horizontal = GlassContentPaddingDp)` 给出基址、`tabWidthPx`
+            // 用 `(W - 2×padding)/n` 给出步进（`GlassDockGeometry.glassSlotWidthPx`）。
+            // 与 [GlassDockGeometry.GlassInnerHeightDp] 无关 —— 那个是竖直方向。
+            // 要再动这里，先看 demo 的同一段。
             if (tabWidthPx > 0f) {
                 val tabWidthDp = with(density) { tabWidthPx.toDp() }
                 Box(
