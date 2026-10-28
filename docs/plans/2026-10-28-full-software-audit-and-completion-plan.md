@@ -53,8 +53,8 @@
 
 | # | 项 | 证据 | 归属 |
 |---|---|---|---|
-| B1 | **考试族写服务** ✅ *服务已交付* | `TimetableCourseService` 无 `addExam/updateExam/deleteExam`；壳喂 `exams = emptyList()` → **已补 `TimetableExamService` + 11 例测试（`f70604b0`）**；壳 `d3.*` 接线待收敛 | 主表外 / 需新开包 |
-| B2 | **任务清单控制器** ✅ *控制器已交付* | `pages/task/` 无 TaskList 控制器/宿主（`addTask/deleteTask` 有，缺装配层）→ **已补 `TaskListController` + 7 例测试（`4efc79f4`）**；壳 `d2.taskList` 接线待收敛后落地 | A4 普查"A4 任务清单" |
+| B1 | **考试族写服务** ✅ *服务已交付* | `TimetableCourseService` 无 `addExam/updateExam/deleteExam`；壳喂 `exams = emptyList()` → **已补 `TimetableExamService` + 11 例测试（`f70604b0`）**；壳 `d3.examList` 已接线（`0f160480`），`d3.addExam` 表单待接 | 主表外 / 需新开包 |
+| B2 | **任务清单控制器** ✅ *控制器已交付* | `pages/task/` 无 TaskList 控制器/宿主（`addTask/deleteTask` 有，缺装配层）→ **已补 `TaskListController` + 7 例测试（`4efc79f4`）**；壳 `d2.taskList` 已接线（`fc2c4520`）| A4 普查"A4 任务清单" |
 | B3 | **统计分享（导出+光栅化+系统分享）** | Kotlin 侧无 `StatisticsShareService` 对应物（`ST1-statistics-wiring.md` §2） | 并入 I3 能力面 |
 | B4 | **局域网 `import/apply`** | `LanEditApiRouter` 仍 9 处 `501`（唯一"真缺的能力"） | `GAP-lan` |
 | B5 | **备份 tasks/exams 写回、多档案恢复** | 台账 §9.4 ③（task-14） | 仓储原子入口 |
