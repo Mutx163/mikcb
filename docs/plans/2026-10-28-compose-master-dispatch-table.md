@@ -17,6 +17,12 @@
 3. **交付证据按 §三 的门槛走**：L0 模块单测 → L1 编译 → 需要时 L2 单测；
    **L3 出包 / L4 真机归用户**。agent 只能声明「编译通过 / JVM 单测通过」，
    **不得**声明「能装上 / 已验证」。L1/L2 一律走 `scripts/safe-gradle.ps1`，裸跑 `./gradlew` 违规。
+4. **动 `composeP1/.../pages/` 下任何页面的布局/滚动/卡片/标题/字号/颜色之前，先读
+   `docs/reference/compose-page-style-rules.md`**：六条规则（R1..R6）有守卫
+   `ComposePageStyleGuardTest` 机械执行，存量债冻结在 `tool/compose_style_baseline/<域>.txt`
+   （棘轮：新增必红、过期必红）。自查用 `pwsh -File scripts/compose-style-lint.ps1 -Domain <域>`。
+   —— 这一节是 2026-10-28 加的：此前页面各写各的（42 页裸 `LazyColumn`、27 页裸 `Card`、
+   34 页写死字号、23 页写死颜色），真机上才看得出差异，靠文档自觉一整轮都没治住。
 
 ---
 
