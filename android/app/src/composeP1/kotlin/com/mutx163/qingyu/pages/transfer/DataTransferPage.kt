@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,17 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.pages.export.ExportStrings
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -45,6 +45,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 数据备份与迁移页 · Compose 渲染层（Phase 3）。
@@ -100,34 +101,32 @@ fun DataTransferPage(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                ),
+        // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+        // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+        // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+        Column(modifier = Modifier.fillMaxSize()) {
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                horizontalPadding = QingyuPageCardMargin,
+                // 顶部 8dp 与底部 24dp 是页面自己的滚动留白；手势条那段由
+                // QingyuPageList 内部按 innerPadding 算，不要重复相加。
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // ── 1. 完整导出 ──
                 item {
-                    SectionLabel(TransferStrings.fullExportTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuSectionTitle(TransferStrings.fullExportTitle.zh)
+                    // 卡里是普通内容（不是 *Preference 行），必须给 16dp 内边距，
+                    // 否则文字贴着卡片边缘；配合列表 12dp 外边距得到 28dp 左缘。
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
                         Text(
                             text = TransferStrings.fullExportSubtitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -167,7 +166,8 @@ fun DataTransferPage(
 
                 // ── 2. 导出日历入口（分组标签删过：组里唯一那行标题就是它） ──
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    // 这一张卡里是 *Preference 行（自带 16dp 内边距），所以**不传** insideMargin。
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         ArrowPreference(
                             title = ExportStrings.icsExportSectionTitle.zh,
                             onClick = onOpenIcsExport,
@@ -177,11 +177,16 @@ fun DataTransferPage(
 
                 // ── 3. 完整导入 ──
                 item {
-                    SectionLabel(TransferStrings.fullImportTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuSectionTitle(TransferStrings.fullImportTitle.zh)
+                    // 卡里是普通内容（不是 *Preference 行），必须给 16dp 内边距，
+                    // 否则文字贴着卡片边缘；配合列表 12dp 外边距得到 28dp 左缘。
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
                         Text(
                             text = TransferStrings.fullImportSubtitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -201,18 +206,23 @@ fun DataTransferPage(
 
                 // ── 4. 二维码面对面传输 ──
                 item {
-                    SectionLabel(TransferStrings.qrTransferSectionTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuSectionTitle(TransferStrings.qrTransferSectionTitle.zh)
+                    // 卡里是普通内容（不是 *Preference 行），必须给 16dp 内边距，
+                    // 否则文字贴着卡片边缘；配合列表 12dp 外边距得到 28dp 左缘。
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
                         Text(
                             text = TransferStrings.qrTransferSectionSubtitle.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         // 明文警告用错误色：Dart 也是 error 色（data_transfer_screen.dart:120-125）。
                         Text(
                             text = TransferStrings.qrTransferPlaintextWarning.zh,
-                            fontSize = 13.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.error(dark)),
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -247,8 +257,13 @@ fun DataTransferPage(
 
                 // ── 5. 当前可迁移内容 ──
                 item {
-                    SectionLabel(TransferStrings.transferOverviewTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuSectionTitle(TransferStrings.transferOverviewTitle.zh)
+                    // 卡里是普通内容（不是 *Preference 行），必须给 16dp 内边距，
+                    // 否则文字贴着卡片边缘；配合列表 12dp 外边距得到 28dp 左缘。
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
                         val rows = viewState.overviewRows
                         for (index in rows.indices) {
                             val row = rows[index]
@@ -260,14 +275,14 @@ fun DataTransferPage(
                             ) {
                                 Text(
                                     text = row.label,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                     modifier = Modifier.weight(1f),
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = row.value,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                     textAlign = TextAlign.End,
                                     modifier = Modifier.weight(1f),
@@ -334,7 +349,7 @@ fun TransferPreviewDialog(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = content?.message.orEmpty(),
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.primaryText(isSystemInDarkTheme())),
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -348,22 +363,5 @@ fun TransferPreviewDialog(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
-    }
-}
-
-/** 小节标题（Dart `HyperosSectionLabel`）。 */
-@Composable
-private fun SectionLabel(text: String, dark: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(QingyuTheme.sectionLabel(dark)),
-            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-        )
     }
 }
