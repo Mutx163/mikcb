@@ -418,8 +418,22 @@ fun ShellPageContent(
                 onBack = onBack,
                 onTitleChange = { taskForm = AddTaskFormReducer.withTitle(taskForm, it) },
                 onNoteChange = { taskForm = AddTaskFormReducer.withNote(taskForm, it) },
-                // ⚠️ 选择课程 / 选日期两个子弹层本批没有（页面里的两个入口暂时点了不响），
-                // 见 `.agents/compose-phase3/claims/T1-course-action-sheet.md` 诚实清单第 8 条。
+                // task-18：两个子弹层的**候选数据 + 处理函数**（弹层由页面自己弹）。
+                // 页面用「回调是否为 null」判断弹不弹：不接就维持「点了不动」的旧行为，
+                // **而不是弹一个空弹层**——把死入口伪装成活入口比不弹更糟。
+                courseOptions = AddTaskFormReducer.coursePickerOptions(
+                    wiring.timetable.snapshot.courses,
+                    taskForm.courseId,
+                ),
+                onCourseOptionPicked = { id ->
+                    taskForm = AddTaskFormReducer.applyPickedCourseOption(
+                        taskForm,
+                        wiring.timetable.snapshot.courses,
+                        id,
+                    )
+                },
+                onDueDatePicked = { date -> taskForm = AddTaskFormReducer.withDueDate(taskForm, date) },
+                onDueDateCleared = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, false) },
                 onPickCourseClick = {},
                 onHasDueDateChange = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, it) },
                 onPickDueDateClick = {},
