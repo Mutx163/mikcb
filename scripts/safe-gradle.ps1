@@ -47,6 +47,13 @@ param(
     # 关掉「只编 Kotlin 时自动跳过 Flutter 资源链」的默认行为。
     [switch]$WithFlutterAssets,
 
+    # 重新看到 Gradle 弃用警告（默认压制：AGP 9 下每个 Flutter 插件模块各打一条
+    # 「Deprecated 'org.jetbrains.kotlin.android' plugin usage」，~19 条纯噪音；
+    # 走 Gradle 警告通道，--warning-mode none 能压掉；AGP 自己的 7 条 WARNING 走
+    # android.sync.suppressAgpWarnings（gradle.properties），与此开关无关。
+    # CI / AS / 裸 gradlew 不经过本闸门，不受影响。）
+    [switch]$ShowDeprecations,
+
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$GradleArgs
 )
@@ -95,6 +102,12 @@ try {
         # 各占一份内存（2026-10-27 实测：同机因此并存 2 个 daemon、4 个 JVM 合计 6.8 GB）。
         # idle 超时统一写在 android/gradle.properties 里，让所有客户端收敛到同一个 daemon。
         $effective = @('--daemon') + @($GradleArgs)
+
+        # 默认压掉 Gradle 通道的弃用警告（见 $ShowDeprecations 注释）。
+        # 加在 $effective 上、在 onlyKotlin 判定之后都不影响：判定读的是 $GradleArgs（纯任务名）。
+        if (-not $ShowDeprecations) {
+            $effective += @('--warning-mode', 'none')
+        }
 
         # 「只编 Kotlin」时自动跳过 Flutter/Dart 那条链；L2 测试任务不匹配，不会被跳过。
         $flutterAssetTask = ':app:compileFlutterBuildComposeUiDebug'
