@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +36,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -138,7 +141,18 @@ fun TimetableWeekPage(
                 // contentWindowInsets 默认就是 systemBars.union(displayCutout)，
                 // 本页没有 topBar 槽位，所以 innerPadding.top 已经等于状态栏高度。
                 // 再加一次就是算两遍，标题会整体下移一个状态栏（2026-10-27 截图确认）。
-                .padding(innerPadding),
+                //
+                // ⚠️ 底部这档**刻意不吃** innerPadding.bottom：滚动视口要一直铺到屏幕最底，
+                // 课程卡才能从透明的手势条底下穿过去（edge-to-edge）。以前把 innerPadding
+                // 整份 padding 在这一层，把视口整体抬到了手势条上方 → 卡片到那条线就被
+                // 截断，手势条露出页面自己的底色（同色，静看看不出、一滑卡才露馅，用户
+                // 2026-10-28 反馈的正是这个）。底部内边距改由滚动内容自己承担（见下面 Row
+                // 的 padding），与 QingyuPageList 及各类列表页的既有做法一致。
+                .padding(
+                    start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                ),
         ) {
             // ── 0. 顶栏「轻屿课表」标题 + 右上角「更多」菜单 ──
             // Flutter 首页顶部那条标题栏（TimetableTitleBar）在 Phase 3 漏搬了，
@@ -186,7 +200,17 @@ fun TimetableWeekPage(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
                     ) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                // 底部留白 = 系统手势条高度 + 悬浮底坞避让余量：最后一行
+                                // 能整体滑到手势条上方，而滚动中途内容可以从透明手势条底下
+                                // 穿过去（这正是「透明」该有的观感）。64dp 与日视图
+                                // DayViewScrollContent 的底坞留白同口径。
+                                .padding(
+                                    bottom = innerPadding.calculateBottomPadding() + 64.dp,
+                                ),
+                        ) {
                             // 左侧时间轴
                             TimetableTimeColumn(
                                 sectionCount = sectionCount,
