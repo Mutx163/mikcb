@@ -17,6 +17,48 @@
     </style>
 
     <!--
+      Compose 壳（composeUi 页面壳 / composeP1 验证壳）的活动主题。
+
+      为什么不直接用 LaunchTheme：它继承 @android:style/Theme.Light.NoTitleBar，而平台
+      主题里 statusBarColor / navigationBarColor 的默认值就是 @android:color/black、
+      windowLightStatusBar / windowLightNavigationBar 默认 false（图标翻白）。壳的活动
+      不自己改这两处，每个页面上下就各留一条黑边。
+
+      2026-10-28 实测（Redmi / Android 16，1280×2772 @ dpr 3.25，用户截图逐像素回读）：
+      上边黑带 152px、下边 66px 全是 (0,0,0)，状态栏图标与手势条都是亮的 —— 正是上面
+      那套平台默认值；而 10-26 的 Flutter 正式版基线截图里同一区域是页面底色 + 深色图标。
+
+      两个壳的活动里已经调过 androidx 的 enableEdgeToEdge()（PagesShellActivity /
+      ComposeP1Activity），但它只是**运行时**改窗口属性，在这台真机上没有产生可见效果：
+      23:59 编的 composeUi 包里确实带着那个调用（dex 里有 applyShellSystemBars，页面
+      索引也在），屏幕上却仍是平台默认的黑边。所以把同一件事写进**主题**：窗口一创建
+      就带透明系统栏与正确的图标极性，不再只押在那一次运行时调用上。
+
+      两层不冲突：主题给的是起点，运行时调用（在认这套的机器上）再把窗口推成真正的
+      edge-to-edge。enforce*Contrast 显式关掉 —— API 29+ 的对比度遮罩会给透明导航栏
+      补一层灰底，把「透明」吃掉。
+
+      windowBackground 换成 @color/compose_shell_background（= 页面底色，不是 splash_background）：
+      透明系统栏在「窗口仍内缩」这条路上露出来的正是窗口背景，若用 splash_background 会与
+      页面差一档（白天 #FFFFFF vs #F2F2F2），整条栏看过去就是一条淡色带。启动画面不受影响
+      —— API 31+ 的启动底色是 windowSplashScreenBackground，继承自 v31 的 LaunchTheme。
+
+      windowLayoutInDisplayCutoutMode 取 always，与 androidx enableEdgeToEdge 在 API 30+ 的
+      做法一致：万一这台机器把壳当成「不画进挖孔区」的窗口（默认档），状态栏那条会由系统
+      按挖孔区涂黑，光把栏色设透明救不回来。
+    -->
+    <style name="ComposeShellTheme" parent="@style/LaunchTheme">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowBackground">@color/compose_shell_background</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!--
       桌面卡片主题：只用来承载卡片的那几个字色属性（见 values/attrs.xml）。
 
       声明在 <appwidget-provider android:theme>（Android 12+ 支持），同时挂到

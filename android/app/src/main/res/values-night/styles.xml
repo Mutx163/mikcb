@@ -15,4 +15,21 @@
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@color/splash_background</item>
     </style>
+
+    <!--
+      Compose 壳的活动主题（夜间档）。与 values/styles.xml 同名同口径，只有两处随档变化：
+      图标极性（windowLight* = false）与窗口底色 @color/compose_shell_background（夜间档
+      是 #FF242424，= 页面底色）。透明系统栏在「窗口仍内缩」时露出的就是窗口底色，
+      所以两者必须一致，否则整条栏会是一条与页面不同色的带。
+    -->
+    <style name="ComposeShellTheme" parent="@style/LaunchTheme">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowBackground">@color/compose_shell_background</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>

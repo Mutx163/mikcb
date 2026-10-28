@@ -18,11 +18,16 @@ Compose 迁移 Phase 3 页面开发壳专属 manifest（仅 composeUi 变体合�
             android:enabled="false"
             tools:node="merge" />
 
+        <!--
+          主题走 ComposeShellTheme（继承 LaunchTheme，只多了透明系统栏与图标极性）。
+          理由与实测见 res/values/styles.xml 里那段注释：LaunchTheme 的平台默认值就是
+          「黑系统栏 + 白图标」，壳的活动不换主题，每个页面上下就是两条黑边。
+        -->
         <activity
             android:name=".pages.PagesShellActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
+            android:theme="@style/ComposeShellTheme"
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

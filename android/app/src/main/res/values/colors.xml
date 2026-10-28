@@ -3,6 +3,16 @@
     <color name="splash_background">#FFFFFFFF</color>
 
     <!--
+      Compose 壳（composeUi / composeP1）的窗口底色，也是那两条系统栏在「窗口仍内缩」时
+      露出来的颜色（见 values/styles.xml 的 ComposeShellTheme）。
+
+      **必须与页面底色同值**：QingyuTheme.scaffoldBackground(dark = false) 取的是
+      QingyuPalette.kt 的 QingyuMikcbOverrides.SETTINGS_BACKGROUND（0xFFF2F2F2）。
+      改了那边要同步改这里，否则系统栏与页面会差出一档（5% 亮度差在整条栏上是看得见的）。
+    -->
+    <color name="compose_shell_background">#FFF2F2F2</color>
+
+    <!--
       桌面卡片中性字色（白天档），与 TodayWidgetSupport.primaryTextColor /
       secondaryTextColor / statusChipTextColor 的取值一致。夜间档见 values-night/colors.xml。
       布局里也用这几个名字，保证卡片刚被创建、还没等到第一次 updateAppWidget 时，

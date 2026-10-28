@@ -3,6 +3,13 @@
     <color name="splash_background">#FF121212</color>
 
     <!--
+      Compose 壳的窗口底色（夜间档）。**必须与 QingyuTheme.scaffoldBackground(dark = true)
+      同值** —— QingyuPalette.kt 的 QingyuDarkPalette.BACKGROUND（0xFF242424）。
+      理由与白天档同，见 values/colors.xml 的同名颜色注释。
+    -->
+    <color name="compose_shell_background">#FF242424</color>
+
+    <!--
       卡片中性字色（夜间档）。芯片两档在夜间是同一个近白色：#2C4A73 / #324561
       两种夜间芯片底都比白天深得多，白天分档的深蓝/深灰在它们上面不可读。
     -->
