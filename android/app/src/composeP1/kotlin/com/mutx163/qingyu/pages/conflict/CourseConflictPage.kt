@@ -1,34 +1,28 @@
 package com.mutx163.qingyu.pages.conflict
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
-import top.yukonga.miuix.kmp.basic.Card
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -45,12 +39,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 组件选择（对照 S2-5 组件表）
  *
- * - Scaffold / Card / Text / Icon / IconButton / HorizontalDivider 全部官方
- *   `top.yukonga.miuix.kmp.basic.*`，不自绘；
- * - 返回与行尾箭头用官方图标包 `miuix-icons-android:0.8.8` 的
- *   `MiuixIcons.Back` / `MiuixIcons.ChevronForward`（依赖由用户 2026-10-26 批准新增，
- *   仍只挂 composeP1）；
- * - 0.8.8 没有 preference 模块（那套在 0.9.4 且要 Kotlin 2.4），列表用 Card + Row，
+ * - 页面骨架 / 滚动 / 卡片 / 分组标题走共享套件：`QingyuPageScaffold`（官方 TopAppBar +
+ *   标准左箭头）、`QingyuPageList`（官方滚动三件套 + 右侧滚动条）、`QingyuCard`（按压反馈 +
+ *   语义圆角）、`QingyuSectionTitle`（官方 SmallTitle，自带 28dp 左缘）；
+ * - Text / Icon / HorizontalDivider 用官方 `top.yukonga.miuix.kmp.basic.*`，不自绘；
+ * - 行尾箭头用官方图标包 `miuix-icons-android:0.8.8` 的 `MiuixIcons.ChevronForward`
+ *   （依赖由用户 2026-10-26 批准新增，仍只挂 composeP1）；
+ * - 0.8.8 没有 preference 模块（那套在 0.9.4 且要 Kotlin 2.4），列表用 QingyuCard + Row，
  *   与已合入的开源许可页同口径。
  *
  * ## 尚未接线（诚实标注）
@@ -68,67 +63,55 @@ fun CourseConflictPage(
     val colors = MiuixTheme.colorScheme
 
     QingyuPageScaffold(title = view.title, onBack = onBack, smallTopBar = true) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 顶栏改由共享骨架提供（官方 TopAppBar + 标准左箭头），
-                // 内容只吃顶栏高度 + 底部手势条。
-                .padding(innerPadding),
+        // 主滚动统一走共享套件：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+        // 与右侧滚动条；`innerPadding` 由套件自己吃掉，不再手写 Column + padding。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-
             if (view.isEmpty) {
                 // Dart：Center(Text(courseConflictEmpty, style: listDetail))。
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = view.emptyText,
-                        fontSize = 14.sp,
-                        color = colors.onSurfaceVariantSummary,
-                    )
+                item(key = "empty") {
+                    Box(
+                        modifier = Modifier.fillParentMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = view.emptyText,
+                            style = MiuixTheme.textStyles.body2,
+                            color = colors.onSurfaceVariantSummary,
+                        )
+                    }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                ) {
-                    items(items = view.pairs, key = { it.index }) { pair ->
-                        Column {
-                            // HyperosSectionLabel：13sp、actionIcon 色、左缩进 16、与列表间距 8。
-                            Text(
-                                text = pair.sectionLabel,
-                                fontSize = 13.sp,
-                                color = colors.onSurfaceVariantActions,
-                                modifier = Modifier.padding(
-                                    start = 16.dp,
-                                    top = 12.dp,
-                                    bottom = 8.dp,
-                                ),
-                            )
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                // 行内边距由行自己给（16/13），与 HyperosListGroup 一致。
-                                insideMargin = PaddingValues(0.dp),
-                            ) {
-                                Column {
+                items(items = view.pairs, key = { it.index }) { pair ->
+                    Column {
+                        // 分组标题走官方 SmallTitle（自带 28dp 左缘），
+                        // 与「Card 外边距 12 + 行内边距 16」的轴线对齐。
+                        QingyuSectionTitle(pair.sectionLabel)
+                        QingyuCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = QingyuPageCardMargin),
+                            // 行内边距由行自己给（16/13），与 HyperosListGroup 一致。
+                            insideMargin = PaddingValues(0.dp),
+                        ) {
+                            Column {
+                                CourseConflictRowView(
+                                    row = pair.rows[0],
+                                    onOpenCourse = onOpenCourse,
+                                )
+                                if (pair.rows.size > 1) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 16.dp),
+                                        thickness = 0.75.dp,
+                                        color = colors.dividerLine,
+                                    )
                                     CourseConflictRowView(
-                                        row = pair.rows[0],
+                                        row = pair.rows[1],
                                         onOpenCourse = onOpenCourse,
                                     )
-                                    if (pair.rows.size > 1) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(start = 16.dp),
-                                            thickness = 0.75.dp,
-                                            color = colors.dividerLine,
-                                        )
-                                        CourseConflictRowView(
-                                            row = pair.rows[1],
-                                            onOpenCourse = onOpenCourse,
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -161,14 +144,14 @@ private fun CourseConflictRowView(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = row.title,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = row.scheduleLine,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = colors.onSurfaceVariantSummary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -176,7 +159,7 @@ private fun CourseConflictRowView(
             )
             Text(
                 text = row.conflictLine,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = colors.error,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
