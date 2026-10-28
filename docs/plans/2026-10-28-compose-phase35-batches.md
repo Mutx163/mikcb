@@ -193,6 +193,35 @@ Gradle 的 `:app:compileProdDebugKotlin` 也收。⇒ **在这些目录里留一
 ## 诚实清单（没做的 / 只到「编译过」的）
 ```
 
+## 3.5 P35-B6 · 相机扫码适配器（**依赖已由 Lead 加好**，2026-10-28）
+
+**前置已完成**：`android/app/build.gradle` 已挂 CameraX 1.6.1 + MLKit barcode-scanning 17.3.0
+（**只挂 compose 变体**，正式包不背这份体积），且两个 artifact 都已在本地 Gradle 缓存里
+（Lead 已跑过一次构建预热，多泳道并发时不会再触发下载）。
+
+**Lead 的选型理由**（写在 `build.gradle` 注释里，别改）：老版 Flutter 的 `mobile_scanner`
+在 Android 上用的就是 MLKit，所以这是**与现产品对齐**而非新增体积；bundled 模型不依赖
+Google Play 服务（目标机型是国产 ROM）；解码鲁棒性对「扫另一台手机上的二维码」这个真实场景更重要。
+
+**做什么**：把 `share/camera/` 那套纯逻辑（B5 已交付）接到真相机上——
+
+1. **适配器放 `composeP1/`，不许放 `main/`**：依赖只挂在 compose 变体上，放 `main/` 会让
+   Flutter 正式包编译失败（`main` 是所有变体的源集）。
+2. 实现 `share/camera/CameraContracts.kt` 里定义的宿主契约：CameraX 的
+   `Preview` + `ImageAnalysis`（`STRATEGY_KEEP_ONLY_LATEST`）→ 送进 `ScanPipeline` →
+   MLKit `BarcodeScanning` 解码 → 经 `ScanResultDeduplicator` 去重 → 回调。
+3. 渲染 `pages/transfer/QrTransferScanPage.kt` 的 `cameraSlot`（该页要宿主传相机预览）。
+4. **权限**：用 B5 的 `CameraPermissionStateMachine`，别自己写一套。
+5. **生命周期**：`ProcessCameraProvider` 必须绑到宿主的 lifecycle；页面离开时解绑，
+   否则相机会一直占着（用户会看到相机指示灯不灭）。
+
+**验收**：
+- L1 `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` → `e:` 0 条；
+- 咬合探针至少一次（例如把去重关掉 → 同一码连续命中应触发多次回调 → 对应测试必须红）；
+- **真机验证只能由用户做**：相机预览、权限弹窗、扫真码、离开页面后指示灯是否熄灭。
+
+**认领**：追加到 `.agents/compose-phase3/claims/P35-B5.md`。
+
 ---
 
 ## 关联

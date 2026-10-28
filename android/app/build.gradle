@@ -403,4 +403,36 @@ dependencies {
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
     composeUiImplementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
+
+    // 相机扫码（Phase 3.5 · 能力缺口 B5，2026-10-28 Lead 拍板）。
+    //
+    // ## 为什么是 CameraX + MLKit，而不是更小的 ZXing
+    //
+    // 1. **与现产品对齐，不是新增体积**：老版 Flutter 的 `mobile_scanner` 在 Android 上
+    //    用的就是 MLKit barcode-scanning，所以正式包**本来就带着这个模型**。
+    //    换 ZXing 反而是一次「为了省体积而改变现网解码能力」的额外风险。
+    // 2. **bundled 模型不依赖 Google Play 服务**：目标机型是国产 ROM（HyperOS / MIUI /
+    //    OriginOS / HarmonyOS），`play-services-mlkit-*`（unbundled 版）在这些机器上
+    //    要么要现场下载 ~15MB，要么直接不可用。bundled 版把模型打进 APK，离线可用。
+    // 3. **解码鲁棒性**：用户是拿手机扫另一台手机上的二维码（可能斜、可能反光），
+    //    MLKit 对模糊/角度的容忍度明显高于 ZXing 的 CPU 解码。
+    // 4. **缓存已就绪**：`com.google.mlkit:barcode-scanning:17.3.0` 与 CameraX 的
+    //    core/camera2/lifecycle 已在本地 Gradle 缓存里（只有 `camera-view` 需要拉一次）。
+    //    多泳道并发时「少一次下载」就是少一次全队构建失败的可能。
+    //
+    // ⚠️ 只挂 compose 变体：正式包（Flutter）现在**不需要**这套东西，
+    // 挂在 `implementation` 上会让 Flutter 包白背一份。
+    // ⚠️ 因此用到这些依赖的适配器代码**必须放 `composeP1/`**，不能放 `main/`。
+    def cameraxVersion = '1.6.1'
+    composeP1Implementation "androidx.camera:camera-core:$cameraxVersion"
+    composeP1Implementation "androidx.camera:camera-camera2:$cameraxVersion"
+    composeP1Implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    composeP1Implementation "androidx.camera:camera-view:$cameraxVersion"
+    composeP1Implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+
+    composeUiImplementation "androidx.camera:camera-core:$cameraxVersion"
+    composeUiImplementation "androidx.camera:camera-camera2:$cameraxVersion"
+    composeUiImplementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    composeUiImplementation "androidx.camera:camera-view:$cameraxVersion"
+    composeUiImplementation 'com.google.mlkit:barcode-scanning:17.3.0'
 }
