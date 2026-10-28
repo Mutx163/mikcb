@@ -508,102 +508,97 @@ fun GlassDockNavigationBar(
             }
 
             // ── ③ 滑动指示器 ──
+            //
+            // ⚠️ 这里**故意不裁切**，与 demo 一致：指示器按下放大（×1.39）、快速滑动
+            // 甩尾拉伸时，这块玻璃会从药丸轮廓里探出去一点点 —— 那是"液态"该有的样子
+            // （玻璃被挤出来）。2026-10-28 曾为了消掉"超出"加过一层
+            // `matchParentSize() + clip(pillShape)`，用户随即指出「激活态玻璃被底栏框住
+            // 了」：放大被切平、边光与折射也没了。所以那层已删；静止时两端各留 4dp
+            // 是靠几何（[GlassDockGeometry.GlassInnerHeightDp] + 两侧内边距）保证的，
+            // 不靠裁切。要再动这里，先看 demo 的同一段。
             if (tabWidthPx > 0f) {
                 val tabWidthDp = with(density) { tabWidthPx.toDp() }
-                // 外面这层只干一件事：把指示器**裁在药丸轮廓内**。
-                //
-                // demo 没有这层，于是按下放大（[GlassDockGeometry.IndicatorPressGrowScale]
-                // ≈1.39）、快速滑动甩尾拉伸时，高亮会从玻璃边上探出去 —— 玻璃里的高亮
-                // 跑到玻璃外面在物理上不成立，用户看到的就是「右边超出了一点点背景」。
-                // 裁掉之后，放大只在玻璃内部显形，手感不变。
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .clip(pillShape),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = GlassDockGeometry.GlassContentPaddingDp.dp)
-                            .graphicsLayer {
-                                val progressOffset = dampedDrag.value * tabWidthPx
-                                translationX = if (isLtr) {
-                                    progressOffset + panelOffset
-                                } else {
-                                    -progressOffset + panelOffset
-                                }
+                        .padding(horizontal = GlassDockGeometry.GlassContentPaddingDp.dp)
+                        .graphicsLayer {
+                            val progressOffset = dampedDrag.value * tabWidthPx
+                            translationX = if (isLtr) {
+                                progressOffset + panelOffset
+                            } else {
+                                -progressOffset + panelOffset
                             }
-                            .then(
-                                if (isBlurActive && combinedBackdrop != null) {
-                                    Modifier.drawBackdrop(
-                                        backdrop = combinedBackdrop,
-                                        shape = { pillShape },
-                                        effects = {
-                                            val progress = dampedDrag.pressProgress
-                                            lens(
-                                                refractionHeight = with(density) {
-                                                    (GlassDockGeometry.IndicatorRefractionHeightDp *
-                                                        progress).dp.toPx()
-                                                },
-                                                refractionAmount = with(density) {
-                                                    (GlassDockGeometry.IndicatorRefractionAmountDp *
-                                                        progress).dp.toPx()
-                                                },
-                                                depthEffect = true,
-                                                chromaticAberration =
-                                                    GlassDockGeometry.IndicatorDispersion,
-                                            )
-                                        },
-                                        highlight = {
-                                            pillHighlight.value.copy(
-                                                alpha = dampedDrag.pressProgress,
-                                            )
-                                        },
-                                        layerBlock = {
-                                            scaleX = dampedDrag.scaleX
-                                            scaleY = dampedDrag.scaleY
-                                            // 甩尾：速度越快，横向越拉长、纵向越压扁。
-                                            // 这是"玻璃被甩出去"的观感来源。
-                                            val v = dampedDrag.velocity / 10f
-                                            scaleX /= 1f - (v * 0.75f).coerceIn(-0.2f, 0.2f)
-                                            scaleY *= 1f - (v * 0.25f).coerceIn(-0.2f, 0.2f)
-                                        },
-                                        onDrawSurface = {
-                                            val progress = dampedDrag.pressProgress
-                                            // 静止时一层淡底，按下时淡出换成更深的压痕。
-                                            drawRect(
-                                                color = if (!isDark) {
-                                                    Color.Black.copy(alpha = 0.1f)
-                                                } else {
-                                                    Color.White.copy(alpha = 0.1f)
-                                                },
-                                                alpha = 1f - progress,
-                                            )
-                                            drawRect(Color.Black.copy(alpha = 0.03f * progress))
-                                        },
-                                    )
-                                } else {
-                                    // 降级：一块淡色圆角，没有折射与内阴影。
-                                    Modifier
-                                        .clip(pillShape)
-                                        .background(accentColor.copy(alpha = 0.15f), pillShape)
-                                },
-                            )
-                            .innerShadow(shape = pillShape) {
-                                if (!isBlurActive) return@innerShadow null
-                                InnerShadow(
-                                    radius = GlassDockGeometry.IndicatorInnerShadowRadiusDp.dp *
-                                        dampedDrag.pressProgress,
-                                    color = Color.Black.copy(alpha = 0.15f),
-                                    alpha = dampedDrag.pressProgress,
+                        }
+                        .then(
+                            if (isBlurActive && combinedBackdrop != null) {
+                                Modifier.drawBackdrop(
+                                    backdrop = combinedBackdrop,
+                                    shape = { pillShape },
+                                    effects = {
+                                        val progress = dampedDrag.pressProgress
+                                        lens(
+                                            refractionHeight = with(density) {
+                                                (GlassDockGeometry.IndicatorRefractionHeightDp *
+                                                    progress).dp.toPx()
+                                            },
+                                            refractionAmount = with(density) {
+                                                (GlassDockGeometry.IndicatorRefractionAmountDp *
+                                                    progress).dp.toPx()
+                                            },
+                                            depthEffect = true,
+                                            chromaticAberration =
+                                                GlassDockGeometry.IndicatorDispersion,
+                                        )
+                                    },
+                                    highlight = {
+                                        pillHighlight.value.copy(
+                                            alpha = dampedDrag.pressProgress,
+                                        )
+                                    },
+                                    layerBlock = {
+                                        scaleX = dampedDrag.scaleX
+                                        scaleY = dampedDrag.scaleY
+                                        // 甩尾：速度越快，横向越拉长、纵向越压扁。
+                                        // 这是"玻璃被甩出去"的观感来源。
+                                        val v = dampedDrag.velocity / 10f
+                                        scaleX /= 1f - (v * 0.75f).coerceIn(-0.2f, 0.2f)
+                                        scaleY *= 1f - (v * 0.25f).coerceIn(-0.2f, 0.2f)
+                                    },
+                                    onDrawSurface = {
+                                        val progress = dampedDrag.pressProgress
+                                        // 静止时一层淡底，按下时淡出换成更深的压痕。
+                                        drawRect(
+                                            color = if (!isDark) {
+                                                Color.Black.copy(alpha = 0.1f)
+                                            } else {
+                                                Color.White.copy(alpha = 0.1f)
+                                            },
+                                            alpha = 1f - progress,
+                                        )
+                                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                    },
                                 )
-                            }
-                            // 药丸高减上下内边距（demo 是 56 = 64-8）：与玻璃四周各留 4dp。
-                            // 用满高的话指示器与玻璃上下边齐平，一放大就顶出边。
-                            .height(GlassDockGeometry.GlassInnerHeightDp.dp)
-                            .width(tabWidthDp),
-                    )
-                }
+                            } else {
+                                // 降级：一块淡色圆角，没有折射与内阴影。
+                                Modifier
+                                    .clip(pillShape)
+                                    .background(accentColor.copy(alpha = 0.15f), pillShape)
+                            },
+                        )
+                        .innerShadow(shape = pillShape) {
+                            if (!isBlurActive) return@innerShadow null
+                            InnerShadow(
+                                radius = GlassDockGeometry.IndicatorInnerShadowRadiusDp.dp *
+                                    dampedDrag.pressProgress,
+                                color = Color.Black.copy(alpha = 0.15f),
+                                alpha = dampedDrag.pressProgress,
+                            )
+                        }
+                        // 药丸高减上下内边距（demo 是 56 = 64-8）：与玻璃四周各留 4dp。
+                        // 用满高的话指示器与玻璃上下边齐平，一放大就顶出边。
+                        .height(GlassDockGeometry.GlassInnerHeightDp.dp)
+                        .width(tabWidthDp),
+                )
             }
         }
     }
