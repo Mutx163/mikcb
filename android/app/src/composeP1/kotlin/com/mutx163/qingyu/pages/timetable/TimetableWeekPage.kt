@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -49,6 +48,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -135,7 +135,10 @@ fun TimetableWeekPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                // 不要再手写 statusBarsPadding()：miuix Scaffold 的
+                // contentWindowInsets 默认就是 systemBars.union(displayCutout)，
+                // 本页没有 topBar 槽位，所以 innerPadding.top 已经等于状态栏高度。
+                // 再加一次就是算两遍，标题会整体下移一个状态栏（2026-10-27 截图确认）。
                 .padding(innerPadding),
         ) {
             // ── 1. 顶部 ActionBar ──
@@ -159,7 +162,7 @@ fun TimetableWeekPage(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = profileName,
-                                fontSize = 16.sp,
+                                style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Bold,
                                 color = textColor,
                                 maxLines = 1,
@@ -177,7 +180,7 @@ fun TimetableWeekPage(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "第 $activeBrowsingWeek 周",
-                                fontSize = 11.5.sp,
+                                style = MiuixTheme.textStyles.footnote2,
                                 fontWeight = FontWeight.Medium,
                                 color = if (isViewingCurrentWeek) accentColor else subTextColor,
                             )
@@ -191,7 +194,7 @@ fun TimetableWeekPage(
                                 ) {
                                     Text(
                                         text = "本周",
-                                        fontSize = 9.5.sp,
+                                        style = MiuixTheme.textStyles.footnote2,
                                         fontWeight = FontWeight.Bold,
                                         color = accentColor,
                                         lineHeight = 11.sp,
@@ -228,7 +231,7 @@ fun TimetableWeekPage(
                                 Spacer(modifier = Modifier.width(3.dp))
                                 Text(
                                     text = "回本周",
-                                    fontSize = 11.sp,
+                                    style = MiuixTheme.textStyles.footnote2,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White,
                                 )
@@ -329,14 +332,14 @@ fun TimetableWeekPage(
                                     ) {
                                         Text(
                                             text = "本周没有排课",
-                                            fontSize = 14.sp,
+                                            style = MiuixTheme.textStyles.body2,
                                             fontWeight = FontWeight.SemiBold,
                                             color = textColor,
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = "点击空白格子或右上角 + 号添课",
-                                            fontSize = 11.5.sp,
+                                            style = MiuixTheme.textStyles.footnote2,
                                             color = subTextColor,
                                         )
                                     }
@@ -352,7 +355,7 @@ fun TimetableWeekPage(
     // ── 3. 周次切换弹窗选择器 ──
     if (showWeekSelectorDialog) {
         Dialog(onDismissRequest = { showWeekSelectorDialog = false }) {
-            Card(
+            QingyuCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -367,7 +370,7 @@ fun TimetableWeekPage(
                     ) {
                         Text(
                             text = "选择周次",
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
                         )
@@ -425,7 +428,7 @@ fun TimetableWeekPage(
                             ) {
                                 Text(
                                     text = "$targetWeek",
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     fontWeight = if (isSelectedWeekItem || isCurrentWeekItem) FontWeight.Bold else FontWeight.Medium,
                                     color = itemTextColor,
                                     textAlign = TextAlign.Center,

@@ -282,8 +282,10 @@ class ComposePageStyleGuardTest {
             pages.size >= 30,
         )
         assertTrue(
+            // 阈值取 5 而不是更大：把债清到接近 0 正是本守卫的目标，不是异常。
+            // 5 条仍足以识别「基线目录被清空/读错」这种空跑（当前刻意保留的例外有十几条）。
             "只读到 ${baseline.size} 条基线，明显不对——基线目录可能被清空了，守卫在空跑。",
-            baseline.size >= 20,
+            baseline.size >= 5,
         )
     }
 

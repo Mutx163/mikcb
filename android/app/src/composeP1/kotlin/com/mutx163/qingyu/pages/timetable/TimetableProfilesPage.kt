@@ -35,6 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuCard
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -241,6 +244,8 @@ fun TimetableProfilesPage(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
+                        .scrollEndHaptic()
+                        .overScrollVertical()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = PaddingValues(
                         start = 16.dp,
@@ -251,7 +256,7 @@ fun TimetableProfilesPage(
                     ),
                 ) {
                     item {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(0.dp),
                         ) {
@@ -300,7 +305,7 @@ fun TimetableProfilesPage(
                     Text(
                         text = currentToast.orEmpty(),
                         color = Color.White,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                     )
                 }
             }
@@ -462,7 +467,7 @@ private fun TimetableProfileRow(
             ) {
                 Text(
                     text = profile.name,
-                    fontSize = 17.sp,
+                    style = MiuixTheme.textStyles.main,
                     fontWeight = if (profile.isActive) FontWeight.SemiBold else FontWeight.Medium,
                     color = if (profile.isActive) {
                         Color(QingyuTheme.primary(dark = dark))
@@ -485,7 +490,7 @@ private fun TimetableProfileRow(
             }
             Text(
                 text = summary,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -546,7 +551,7 @@ private fun PartnerBadge(dark: Boolean) {
     ) {
         Text(
             text = TimetableProfilesStrings.PARTNER_BADGE,
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primary(dark = dark)),
         )
@@ -565,7 +570,7 @@ private fun CreateProfileDialog(
     var nameInput by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
@@ -577,7 +582,7 @@ private fun CreateProfileDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.CREATE_TIMETABLE_TITLE,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -630,7 +635,7 @@ private fun RenameProfileDialog(
     var nameInput by remember(profile) { mutableStateOf(profile.name) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
@@ -642,7 +647,7 @@ private fun RenameProfileDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.RENAME_TIMETABLE_TITLE,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
@@ -693,7 +698,7 @@ private fun ClearCoursesConfirmDialog(
     onConfirm: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
@@ -705,14 +710,14 @@ private fun ClearCoursesConfirmDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
                 Text(
                     text = TimetableProfilesStrings.clearCurrentTimetableMessage(profile.name),
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     lineHeight = 20.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -753,7 +758,7 @@ private fun DeleteProfileConfirmDialog(
     onConfirm: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
@@ -765,14 +770,14 @@ private fun DeleteProfileConfirmDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.DELETE_TIMETABLE_TITLE,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
                 Text(
                     text = TimetableProfilesStrings.deleteTimetableMessage(profile.name),
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     lineHeight = 20.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
@@ -819,7 +824,7 @@ private fun ProfileMoreActionsDialog(
     onCannotDeleteWarning: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        QingyuCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
@@ -828,7 +833,7 @@ private fun ProfileMoreActionsDialog(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = profile.name,
-                    fontSize = 17.sp,
+                    style = MiuixTheme.textStyles.main,
                     fontWeight = FontWeight.Bold,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -907,7 +912,7 @@ private fun ProfileMoreActionsDialog(
                 ) {
                     Text(
                         text = TimetableProfilesStrings.CANCEL_ACTION,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.body1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
@@ -956,7 +961,7 @@ private fun ActionMenuItem(
         )
         Text(
             text = title,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = textColor,
             modifier = Modifier.weight(1f),

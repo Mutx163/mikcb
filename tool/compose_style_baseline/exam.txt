@@ -2,5 +2,6 @@
 # 一行一处待还的债：<相对路径>|<规则>|<说明>
 # 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
 # 由 scripts/compose-style-lint.ps1 -Domain exam -Write 重新生成。
-exam/AddExamPage.kt|R2|用 Column+verticalScroll 当主滚动（非惰性，第 161 行）
-exam/ExamListPage.kt|R5|写死颜色 3 处，首处第 62 行（应用主题语义槽）
+# 例外（已注明原因，非待还的样式债）：
+exam/AddExamPage.kt|R2|例外：表单页（有限输入控件 + 焦点/键盘联动），与输入控件同处单一滚动容器，非惰性列表可接受
+exam/ExamListPage.kt|R5|例外：进行中橙标 kLiveOrange / 默认课程蓝 kDefaultAccent 两个固定语义色，与主题无关

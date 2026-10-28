@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
@@ -61,7 +63,7 @@ fun DayViewScrollContent(
 ) {
     LazyColumn(
         state = lazyListState,
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().scrollEndHaptic().overScrollVertical(),
         contentPadding = contentPadding,
     ) {
         // ── 吸顶全天概览卡 ──

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -85,18 +86,19 @@ fun CloudBackupListPage(
                 ) {
                     Text(
                         text = viewState.emptyText,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                else -> QingyuPageList(
+                    innerPadding = PaddingValues(0.dp),
+                    horizontalPadding = 16.dp,
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     item(key = "create_backup") {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         ) {
@@ -142,7 +144,7 @@ private fun CloudBackupRowCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = row.title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
@@ -151,7 +153,7 @@ private fun CloudBackupRowCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = row.subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -162,7 +164,7 @@ private fun CloudBackupRowCard(
             row.details?.let { badge ->
                 Text(
                     text = badge,
-                    fontSize = 11.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primary(dark = dark)),
                     modifier = Modifier
@@ -211,7 +213,7 @@ fun CloudBackupDetailBody(detail: CloudBackupDetailView, dark: Boolean) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = detail.title,
-            fontSize = 18.sp,
+            style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.SemiBold,
             color = Color(QingyuTheme.primaryText(dark)),
         )
@@ -230,7 +232,7 @@ fun CloudBackupDetailBody(detail: CloudBackupDetailView, dark: Boolean) {
 private fun DetailLine(text: String, dark: Boolean) {
     Text(
         text = text,
-        fontSize = 13.sp,
+        style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.secondaryText(dark)),
     )
 }

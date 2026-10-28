@@ -28,8 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -70,9 +74,10 @@ fun CoupleTimetableSettingsPage(
                 .padding(innerPadding),
         ) {
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
+            QingyuPageList(
+                innerPadding = PaddingValues(0.dp),
+                horizontalPadding = 16.dp,
+                contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // ── 1. 绑定状态 + 对方信息 ──
@@ -81,7 +86,7 @@ fun CoupleTimetableSettingsPage(
                         SectionHeader(viewState.sectionTitle, dark)
                         Spacer(modifier = Modifier.height(6.dp))
                         if (viewState.bound) {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                             ) {
@@ -106,27 +111,27 @@ fun CoupleTimetableSettingsPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SectionHeader(viewState.webdavTitle, dark)
                         Spacer(modifier = Modifier.height(6.dp))
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         ) {
                             Text(
                                 text = viewState.webdavStatusText,
-                                fontSize = 15.sp,
+                                style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = viewState.webdavRemotePathText,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
                             viewState.webdavLastPulledText?.let { lastPulled ->
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = lastPulled,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
@@ -141,7 +146,7 @@ fun CoupleTimetableSettingsPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SectionHeader(viewState.coupleSectionTitle, dark)
                         Spacer(modifier = Modifier.height(6.dp))
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         ) {
@@ -156,7 +161,7 @@ fun CoupleTimetableSettingsPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             SectionHeader(viewState.weekOffsetTitle, dark)
                             Spacer(modifier = Modifier.height(6.dp))
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
                             ) {
@@ -172,7 +177,7 @@ fun CoupleTimetableSettingsPage(
                                     )
                                     Text(
                                         text = viewState.weekOffsetLabel,
-                                        fontSize = 16.sp,
+                                        style = MiuixTheme.textStyles.body1,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(QingyuTheme.primaryText(dark)),
                                         textAlign = TextAlign.Center,
@@ -188,7 +193,7 @@ fun CoupleTimetableSettingsPage(
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
                                     text = viewState.weekOffsetPreview,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
@@ -202,7 +207,7 @@ fun CoupleTimetableSettingsPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             SectionHeader(viewState.colorsTitle, dark)
                             Spacer(modifier = Modifier.height(6.dp))
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                             ) {
@@ -210,7 +215,7 @@ fun CoupleTimetableSettingsPage(
                                     if (index > 0) Spacer(modifier = Modifier.height(14.dp))
                                     Text(
                                         text = row.label,
-                                        fontSize = 14.sp,
+                                        style = MiuixTheme.textStyles.body2,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(QingyuTheme.primaryText(dark)),
                                     )
@@ -232,13 +237,8 @@ fun CoupleTimetableSettingsPage(
 
 @Composable
 private fun SectionHeader(title: String, dark: Boolean) {
-    Text(
-        text = title,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        color = Color(QingyuTheme.sectionLabel(dark)),
-        modifier = Modifier.padding(start = 4.dp),
-    )
+    // 官方 SmallTitle：自带 28dp 左缘，与「Card 12 + 行内 16」的轴线对齐。
+    QingyuSectionTitle(title)
 }
 
 @Composable
@@ -246,13 +246,13 @@ private fun InfoRow(label: String, value: String, dark: Boolean) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
-            fontSize = 14.sp,
+            style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.primaryText(dark)),
             modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             textAlign = TextAlign.End,
         )

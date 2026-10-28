@@ -29,7 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -96,9 +98,10 @@ fun CloudSyncPage(
                 return@Column
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
+            QingyuPageList(
+                innerPadding = PaddingValues(0.dp),
+                horizontalPadding = 16.dp,
+                contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // ── 1. 引导条 ──
@@ -113,7 +116,7 @@ fun CloudSyncPage(
                 // ── 2. 云账号 ──
                 item(key = "account") {
                     SectionBlock(title = viewState.accountSectionTitle) {
-                        Card(
+                        QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
                         ) {
@@ -145,7 +148,7 @@ fun CloudSyncPage(
                 if (viewState.showSyncSettings) {
                     item(key = "settings") {
                         SectionBlock(title = viewState.settingsSectionTitle) {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(0.dp),
                             ) {
@@ -173,7 +176,7 @@ fun CloudSyncPage(
                     // ── 4. 高级设置（地址 / 目录 / 设备名） ──
                     item(key = "advanced") {
                         SectionBlock(title = viewState.advancedTitle) {
-                            Card(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                             ) {
@@ -216,7 +219,7 @@ fun CloudSyncPage(
                                     )
                                     Text(
                                         text = viewState.deviceLabelHint,
-                                        fontSize = 12.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         modifier = Modifier.padding(top = 6.dp),
                                     )
@@ -236,7 +239,7 @@ fun CloudSyncPage(
                     if (viewState.showStatus) {
                         item(key = "status") {
                             SectionBlock(title = viewState.statusSectionTitle) {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                                 ) {
@@ -252,7 +255,7 @@ fun CloudSyncPage(
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
                                                 text = viewState.syncingLabel,
-                                                fontSize = 14.sp,
+                                                style = MiuixTheme.textStyles.body2,
                                                 color = Color(QingyuTheme.primaryText(dark)),
                                             )
                                         }
@@ -298,7 +301,7 @@ fun CloudSyncPage(
                         }
                         if (viewState.loadingBackups) {
                             item(key = "backups_loading") {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(vertical = 16.dp),
                                 ) {
@@ -312,7 +315,7 @@ fun CloudSyncPage(
                             }
                         } else if (viewState.backupRows.isEmpty()) {
                             item(key = "backups_empty") {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
                                 ) {
@@ -336,7 +339,7 @@ fun CloudSyncPage(
                             }
                             if (viewState.hasMoreBackups) {
                                 item(key = "backups_view_all") {
-                                    Card(
+                                    QingyuCard(
                                         modifier = Modifier.fillMaxWidth(),
                                         insideMargin = PaddingValues(0.dp),
                                     ) {
@@ -354,7 +357,7 @@ fun CloudSyncPage(
                     if (viewState.showRetention) {
                         item(key = "retention") {
                             SectionBlock(title = viewState.retentionSectionTitle) {
-                                Card(
+                                QingyuCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     insideMargin = PaddingValues(0.dp),
                                 ) {
@@ -407,19 +410,13 @@ private fun SectionBlock(title: String, content: @Composable () -> Unit) {
 
 @Composable
 private fun SectionHeader(title: String, dark: Boolean) {
-    Text(
-        text = title,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        color = Color(QingyuTheme.sectionLabel(dark)),
-        modifier = Modifier.padding(start = 4.dp),
-    )
+    QingyuSectionTitle(title)
 }
 
 /** 带图标的信息条（Flutter `HyperosHintBanner`）。 */
 @Composable
 private fun HintCard(title: String, body: String, dark: Boolean) {
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     ) {
@@ -436,14 +433,14 @@ private fun HintCard(title: String, body: String, dark: Boolean) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = body,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
@@ -471,7 +468,7 @@ private fun BasicRow(
     ) {
         Text(
             text = title,
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = titleColor,
             maxLines = 1,
@@ -481,7 +478,7 @@ private fun BasicRow(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = it,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -502,13 +499,13 @@ private fun InfoLine(
         Box(modifier = Modifier.width(72.dp)) {
             Text(
                 text = label,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
         Text(
             text = value,
-            fontSize = 14.sp,
+            style = MiuixTheme.textStyles.body2,
             color = valueColor ?: Color(QingyuTheme.primaryText(dark)),
             modifier = Modifier.weight(1f),
         )
@@ -528,7 +525,7 @@ private fun BackupPreviewRow(row: CloudBackupRowView, dark: Boolean) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = row.title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
                 maxLines = 1,
@@ -537,7 +534,7 @@ private fun BackupPreviewRow(row: CloudBackupRowView, dark: Boolean) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = row.subtitle,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -546,7 +543,7 @@ private fun BackupPreviewRow(row: CloudBackupRowView, dark: Boolean) {
         row.details?.let { badge ->
             Text(
                 text = badge,
-                fontSize = 11.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 color = Color(QingyuTheme.primary(dark = dark)),
             )
         }
@@ -599,7 +596,7 @@ fun WebdavConnectSheet(
     var username by remember(initialUsername) { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
 
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp),
@@ -607,14 +604,14 @@ fun WebdavConnectSheet(
     ) {
         Text(
             text = SyncStrings.cloudSyncLoginSheetTitle.zh,
-            fontSize = 18.sp,
+            style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.SemiBold,
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = SyncStrings.cloudSyncLoginSheetSubtitle.zh,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
         Spacer(modifier = Modifier.height(14.dp))
@@ -685,7 +682,7 @@ fun SyncConflictDialog(
     onKeepLocal: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    Card(
+    QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp),
@@ -693,14 +690,14 @@ fun SyncConflictDialog(
     ) {
         Text(
             text = view.title,
-            fontSize = 18.sp,
+            style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.SemiBold,
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = view.message,
-            fontSize = 14.sp,
+            style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
         Spacer(modifier = Modifier.height(16.dp))

@@ -2,18 +2,13 @@
 # 一行一处待还的债：<相对路径>|<规则>|<说明>
 # 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
 # 由 scripts/compose-style-lint.ps1 -Domain timetable -Write 重新生成。
-timetable/CourseGridCard.kt|R5|写死颜色 7 处，首处第 50 行（应用主题语义槽）
-timetable/day/DayViewCommon.kt|R5|写死颜色 2 处，首处第 37 行（应用主题语义槽）
-timetable/day/DayViewCourseCard.kt|R5|写死颜色 4 处，首处第 69 行（应用主题语义槽）
-timetable/day/DayViewScheduleCard.kt|R5|写死颜色 1 处，首处第 58 行（应用主题语义槽）
-timetable/day/DayViewScrollContent.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 62 行）
-timetable/day/DayViewTaskBandCard.kt|R5|写死颜色 1 处，首处第 238 行（应用主题语义槽）
-timetable/month/MonthDayCell.kt|R5|写死颜色 4 处，首处第 276 行（应用主题语义槽）
-timetable/month/MonthPanelOverview.kt|R5|写死颜色 3 处，首处第 573 行（应用主题语义槽）
-timetable/month/MonthViewPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 404 行）
-timetable/TimetableProfilesPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 241 行）
-timetable/TimetableProfilesPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 254 行）
-timetable/TimetableProfilesPage.kt|R4|写死字号 13 处，首处第 303 行（应用 MiuixTheme.textStyles）
-timetable/TimetableWeekPage.kt|R2|用 Column+verticalScroll 当主滚动（非惰性，第 289 行）
-timetable/TimetableWeekPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 357 行）
-timetable/TimetableWeekPage.kt|R4|写死字号 8 处，首处第 164 行（应用 MiuixTheme.textStyles）
+# 例外（已注明原因，非待还的样式债）：R5 全是课程/日程/节假日/考试的固定语义色（数据色，不跟主题走，避免撞色）
+timetable/CourseGridCard.kt|R5|例外：课程色解析/默认调色板（数据色，用户自定义，不跟主题）
+timetable/day/DayViewCommon.kt|R5|例外：课程色解析兜底 0xFF2196F3（数据色）
+timetable/day/DayViewCourseCard.kt|R5|例外：课程卡配色（数据色）
+timetable/day/DayViewScheduleCard.kt|R5|例外：日程卡配色（数据色）
+timetable/day/DayViewTaskBandCard.kt|R5|例外：待办带配色（数据色）
+timetable/month/MonthDayCell.kt|R5|例外：假期灰显/调休班标/考试点固定语义色，源码 KDoc 明示不跟主题（避免撞色）
+timetable/month/MonthPanelOverview.kt|R5|例外：月历语义色（与 MonthDayCell 同源）
+timetable/month/MonthViewPage.kt|R2|例外：议程列表 userScrollEnabled=false，随月网格联动滚动，非用户直滚，无滚动条语义
+timetable/TimetableWeekPage.kt|R2|例外：周视图是自定义 Canvas 网格，单一纵向滚动承载整周（Dart 同构），非惰性可接受
