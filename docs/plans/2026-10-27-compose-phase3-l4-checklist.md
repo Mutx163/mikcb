@@ -48,18 +48,19 @@
 - 设置：通用/外观/主题/课卡 `b.general` / `b.appearance` / `b.theme` / `b.courseCard`，另有 `b.homeNavigation` / `b.homeMenuEditor` / `b.timetablePage` / `b.weather` / `b.glassDock`
 - 同步：云同步 `f.cloudSync`、备份列表 `f.backupList`
 - 传输：二维码发送 `g3.qrSend`、扫码 `g3.qrScan`；天气城市 `j.weatherCity`；许可 `a.licenses`
+- 任务：任务清单 `d2.taskList`（读真实任务，勾完成 / 删除 / 今日·本周筛选）
+- 考试：考试列表 `d3.examList`（读真实考试、可删除；「新增/编辑」走 `d3.addExam`，表单待接）
 
 **仍然点不动 / 仍是演示数据（对照时按「已知未接」看，不是 bug）**：
-- 考试族 `d3.addExam` / `d3.examList` / `d3.timeSchemes` / `d3.locationMatch`
-- 任务清单 `d2.taskList`（底层 `TaskListController` 已就绪，只差接壳）
+- 考试族 `d3.addExam`（新增/编辑表单待接）/ `d3.timeSchemes` / `d3.locationMatch`
+- 任务清单的「课程筛选弹层 / 编辑既有任务」两处待接（列表 / 勾完成 / 删除已可用）
 - 传输 `g3.dataTransfer` / `g3.icsExport` / `g3.lanEdit`；情侣课表 `f.couple`
 - 导入入口 `g1.importEntry` / `g1.spreadsheetImport` / `g1.icsImport`
 - 诊断族 `h.log` / `h.memory` / `h.perfReport` / `h.fixture`（开发用页，用户一般看不到）
 - 示例数据：`g2.schoolAdapters`（学校适配器示例）、`a.contributors`（贡献者）
 
-> 注：`d3.examList` / `d3.addExam` 与 `d2.taskList` 的**底层服务本会话已交付**
-> （`TimetableExamService` `f70604b0` / `TaskListController` `4efc79f4`），只差接壳——
-> 届时上面「点不动」里这几条会转为可测。
+> 更新（2026-10-28 深夜）：`d3.examList` 与 `d2.taskList` **已接线可测**（`0f160480` / `fc2c4520`）；
+> 另修好课表周视图卡片被手势条截断（`bbdd629a`）。并行会话仍在接「任务课程筛选/编辑弹层」，收敛后补齐。
 
 ---
 
