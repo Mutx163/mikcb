@@ -1,3 +1,5 @@
+// ⚠️ 包名仍是 `com.mutx163.qingyu.app`，而文件在 `pages/task/` 目录下——这是**故意的**，
+// 见下面 KDoc 的「为什么这个文件在 pages/task/ 却保留 app 包名」。
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
@@ -18,6 +20,27 @@ import java.time.LocalDateTime
  * `AddTaskViewState(isEditing = false, title = "")` **写死**、所有回调都是空 `{}`：
  * 表单既不能输入也不能保存。只把课程 id 塞进去，用户会看到一个「预选好了但点不动」的死表单
  * ——比不预选更容易误解。所以这里补一层纯状态机：壳持有状态、把回调接到这些函数上。
+ *
+ * ## ⚠️ 为什么这个文件在 `pages/task/` 却保留 `app` 包名（2026-10-28 搬过一次）
+ *
+ * 初版放在 `main/.../app/AddTaskFormReducer.kt`。但 `main/.../app/` 是 L0 脚本的
+ * **sharedModelDirs**——**每条泳道的 L0 都会编它**；而本文件必须引用 `AddTaskViewState` /
+ * `TaskFormLogic` / `TaskStrings`（都是 `pages.task` 的类型）
+ * ⇒ **`-Module pages/<别的域>` 的 L0 全部红在「unresolved reference AddTaskViewState」上**。
+ * 这与本仓既有教训同一条（设置族的桥当初也是这么踩的）：
+ * **`main/.../app/` 里不许出现对 `pages/<域>` 的依赖**——那是公共目录，一破就是全体破。
+ *
+ * **修法**：文件搬进 `pages/task/`——L0 的源集是**按目录**收集的
+ * （`scripts/test-kotlin-module.ps1:101`：`main/.../pages/$Module` + `sharedModelDirs`），
+ * 所以搬进来之后**只有 `-Module pages/task` 会编它**，别的域不再受牵连；
+ * 同时**包名保持 `com.mutx163.qingyu.app` 不变**，壳里已有的
+ * `import com.mutx163.qingyu.app.AddTaskFormReducer`（Lead 提交 `8a1270be`）无需改动
+ * ⇒ 修一次破损**不会**换来另一次编译红。
+ *
+ * 📌 **建议的收尾（可留待有人顺手做）**：把包名改成 `com.mutx163.qingyu.pages.task`
+ * （与本仓「包名跟目录」的惯例一致），同时把 `ShellPageIndex.kt` 里那一行 import 改成
+ * `com.mutx163.qingyu.pages.task.AddTaskFormReducer`——**两处必须同一次改**，否则编译红。
+ * 本次没做，是因为那会让 Lead 刚提交的绿状态在改完之前变红。
  *
  * ## 判据出处（逐条对齐 Dart，只读）
  *
