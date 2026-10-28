@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -37,7 +38,6 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.SelectAll
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
@@ -162,18 +162,17 @@ fun AddTaskPage(
                     .fillMaxSize()
                     // 表单页必须避让键盘：底部输入框被 IME 盖住的话没法填。
                     // Dart 侧靠 resizeToAvoidBottomInset: true 达到同一效果。
-                    .imePadding()
-                    .padding(innerPadding),
+                    .imePadding(),
             ) {
-                LazyColumn(
-                        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                    ),
+                QingyuPageList(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                    horizontalPadding = QingyuPageCardMargin,
+                    // 顶部 8dp 是页面自己的留白；底部手势条那段由 QingyuPageList
+                    // 内部按 innerPadding 算（等价于原先手写的
+                    // innerPadding.calculateBottomPadding()），不要重复相加。
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     // ── 1. 标题与备注输入卡片 ──

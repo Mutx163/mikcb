@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -30,6 +29,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.time.LocalDateTime
 
 /**
@@ -80,7 +81,16 @@ fun TaskCoursePickerSheet(
         title = TaskStrings.taskCourseLabel,
         onDismissRequest = { onPick(null) },
     ) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+        // 弹层内部的短列表不承载页面级滚动，所以不用 `QingyuPageList`
+        //（它带页面级滚动条，且要求 Scaffold 的 innerPadding）；
+        // 但手感要对齐官方：末端轻震 + 过度滚动这两件照官方配方接上。
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+                .scrollEndHaptic()
+                .overScrollVertical(),
+        ) {
             items(options) { option ->
                 val selected = option.isSelected
                 Row(
@@ -92,7 +102,9 @@ fun TaskCoursePickerSheet(
                 ) {
                     Text(
                         text = option.label,
-                        fontSize = 15.sp,
+                        // Dart 侧选项行是 HyperosChoiceTile → HyperosTypography.listTitle，
+                        // 映射到官方字阶是 main（见 docs/reference/miuix-api-mapping.md §2）。
+                        style = MiuixTheme.textStyles.main,
                         fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                         color = if (selected) colors.primary else primaryText,
                         modifier = Modifier.weight(1f),
@@ -100,7 +112,7 @@ fun TaskCoursePickerSheet(
                     if (selected) {
                         Text(
                             text = "✓",
-                            fontSize = 15.sp,
+                            style = MiuixTheme.textStyles.main,
                             color = colors.primary,
                         )
                     }
@@ -204,11 +216,16 @@ private fun StepperRow(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, fontSize = 14.sp, color = primaryText, modifier = Modifier.weight(1f))
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.body2,
+            color = primaryText,
+            modifier = Modifier.weight(1f),
+        )
         TextButton(text = "−", enabled = value > min, onClick = { onChange(value - 1) })
         Text(
             text = value.toString(),
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.main,
             fontWeight = FontWeight.Medium,
             color = primaryText,
             modifier = Modifier.width(48.dp),

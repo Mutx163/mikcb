@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -28,6 +27,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -45,7 +47,6 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
@@ -112,18 +113,17 @@ fun TaskListPage(
         ) { innerPadding ->
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxSize(),
             ) {
-                LazyColumn(
-                        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                    ),
+                QingyuPageList(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                    horizontalPadding = QingyuPageCardMargin,
+                    // 顶部 8dp 是页面自己的留白；底部手势条那段由 QingyuPageList
+                    // 内部按 innerPadding 算（等价于原先手写的
+                    // innerPadding.calculateBottomPadding()），不要重复相加。
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // ── 1. 日期分段控制器（全部 / 今日 / 本周） ──
@@ -139,7 +139,7 @@ fun TaskListPage(
                     item {
                         QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                             onClick = onCourseFilterClick,
                         ) {
                             Row(
@@ -207,12 +207,9 @@ fun TaskListPage(
                         // ── 4. 任务分组列表（已逾期 / 任务清单 / 已完成） ──
                         viewState.sections.forEach { section ->
                             item {
-                                Text(
-                                    text = section.title,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = Color(QingyuTheme.sectionLabel(dark)),
-                                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp),
-                                )
+                                // 分组标题走官方 SmallTitle（自带 28dp 左缘），
+                                // 与下面 Card 里行文字的左缘（12 + 16）落在同一条轴线上。
+                                QingyuSectionTitle(section.title)
                             }
 
                             item {
@@ -223,7 +220,7 @@ fun TaskListPage(
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         section.items.forEachIndexed { index, item ->
                                             if (index > 0) {
-                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                             }
                                             TaskRowItem(
                                                 item = item,
@@ -250,7 +247,7 @@ fun TaskListPage(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp),
-                                insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                                 onClick = { onDateFilterChange(TaskDateFilter.ALL) },
                             ) {
                                 Row(
@@ -316,7 +313,10 @@ private fun TaskDateSegmentedControl(
                     Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (dark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA))
+                        // 选中块用主题的「行高亮」色（亮 #E0E0E0 / 暗 #505050）：
+                        // 两种模式下都与卡片面（亮 #FFFFFF / 暗 #2D2D2D）分得开。
+                        // 原先写死 0xFFE5E5EA / 0xFF2C2C2E，换主题或深色下必然与周围不一致。
+                        .background(Color(QingyuTheme.rowHighlight(dark)))
                 } else {
                     Modifier
                         .weight(1f)
@@ -372,7 +372,7 @@ private fun TaskRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onEdit)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
