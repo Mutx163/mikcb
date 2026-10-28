@@ -158,16 +158,34 @@ object LiveKeepAliveModel {
         return LiveRefreshOutcome(enabled = false, probesUsed = budget + 1)
     }
 
+    /**
+     * 保存失败提示（ARB `saveFailed`）是否该弹：Dart 里 `updateTimetableSettings` 抛异常
+     * 或返回非 null 消息时弹 toast，且**不改** `_draft`。
+     */
+    fun shouldShowSaveFailure(saved: Boolean): Boolean = !saved
+
+    /**
+     * 保存后的开关值：Dart `onChanged` 里成功后 `setState(() => _draft = provider.settings)`，
+     * 失败则 `_draft` 原样不动（开关跟着弹回去）。
+     *
+     * 期望值（手推）：
+     * - `(current=false, requested=true,  saved=true)`  -> true（真的存下了）
+     * - `(current=false, requested=true,  saved=false)` -> false（存失败，开关不动）
+     * - `(current=true,  requested=false, saved=false)` -> true（存失败，开关不动）
+     * - `(current=true,  requested=false, saved=true)`  -> false（真的存下了）
+     */
+    fun resolveHideFromRecentsAfterSave(
+        current: Boolean,
+        requested: Boolean,
+        saved: Boolean,
+    ): Boolean = if (saved) requested else current
+
     /** 勿扰权限行的状态文案键（渲染层拿去查 [LiveKeepAliveStrings]）。 */
     fun resolveDoNotDisturbStatus(
         checked: Boolean,
         granted: Boolean,
     ): LivePermissionStatus = resolvePermissionStatus(checked, granted)
 }
-
-/** 开关状态变异纯函数：翻转「从最近任务中隐藏应用」。 */
-fun LiveKeepAliveState.withToggledHideFromRecents(): LiveKeepAliveState =
-    copy(hideFromRecents = !hideFromRecents)
 
 /** 探测结果回填：写入服务状态与「已探测」标记。 */
 fun LiveKeepAliveState.withAccessibilityProbe(enabled: Boolean): LiveKeepAliveState =

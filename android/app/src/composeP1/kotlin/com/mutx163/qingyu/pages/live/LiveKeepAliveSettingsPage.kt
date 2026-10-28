@@ -157,8 +157,9 @@ fun LiveKeepAliveSettingsPage(
 /**
  * 宿主接线用的状态化重载：内部持有 [LiveKeepAliveState]，把平台动作收成四个回调。
  *
- * - [onPersistHideFromRecents]：落库「从最近任务中隐藏应用」；失败提示（ARB `saveFailed`）
- *   由宿主负责（Dart 侧是 `showAppToast`，属宿主级能力）；
+ * - [onPersistHideFromRecents]：落库「从最近任务中隐藏应用」，**返回是否落库成功**；
+ *   失败时开关保持原值（Dart 成功后 `_draft = provider.settings`、失败不动 `_draft`），
+ *   失败提示（ARB `saveFailed`）由宿主负责（Dart 侧是 `showAppToast`，属宿主级能力）；
  * - [onProbeAccessibilityEnabled]：读无障碍保活服务是否已开启；
  * - [onProbeDoNotDisturbAccessGranted]：读勿扰模式访问权限是否已授予；
  * - [refreshToken]：宿主在 `ON_RESUME`（从系统设置页返回）时自增，触发按 Dart
@@ -168,7 +169,7 @@ fun LiveKeepAliveSettingsPage(
 fun LiveKeepAliveSettingsPage(
     initialState: LiveKeepAliveState = LiveKeepAliveState(),
     onBack: () -> Unit,
-    onPersistHideFromRecents: (Boolean) -> Unit = {},
+    onPersistHideFromRecents: (Boolean) -> Boolean = { true },
     onProbeAccessibilityEnabled: () -> Boolean = { false },
     onProbeDoNotDisturbAccessGranted: () -> Boolean = { false },
     onOpenAccessibilitySettings: () -> Unit = {},
@@ -202,8 +203,15 @@ fun LiveKeepAliveSettingsPage(
     LiveKeepAliveSettingsPage(
         state = state,
         onHideFromRecentsChange = { value ->
-            onPersistHideFromRecents(value)
-            state = state.copy(hideFromRecents = value)
+            val saved = onPersistHideFromRecents(value)
+            // 存失败时开关保持原值：Dart 侧 `_draft` 只在成功后跟随 provider.settings。
+            state = state.copy(
+                hideFromRecents = LiveKeepAliveModel.resolveHideFromRecentsAfterSave(
+                    current = state.hideFromRecents,
+                    requested = value,
+                    saved = saved,
+                ),
+            )
         },
         onOpenAccessibilitySettings = onOpenAccessibilitySettings,
         onBack = onBack,

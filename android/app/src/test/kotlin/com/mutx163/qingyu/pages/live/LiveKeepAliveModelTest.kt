@@ -172,10 +172,43 @@ class LiveKeepAliveModelTest {
     // ── 5. 状态变异与可选行 ──
 
     @Test
-    fun `翻转隐藏开关`() {
-        val initial = LiveKeepAliveState(hideFromRecents = false)
-        assertTrue(initial.withToggledHideFromRecents().hideFromRecents)
-        assertFalse(initial.withToggledHideFromRecents().withToggledHideFromRecents().hideFromRecents)
+    fun `保存成功才翻开关 失败保持原值`() {
+        // Dart `onChanged`：成功 `setState(() => _draft = provider.settings)`；
+        // 抛异常 / 返回非 null 消息时只弹 toast，`_draft` 不动 → 开关跟着弹回去。
+        assertTrue(
+            LiveKeepAliveModel.resolveHideFromRecentsAfterSave(
+                current = false,
+                requested = true,
+                saved = true,
+            ),
+        )
+        assertFalse(
+            LiveKeepAliveModel.resolveHideFromRecentsAfterSave(
+                current = false,
+                requested = true,
+                saved = false,
+            ),
+        )
+        assertTrue(
+            LiveKeepAliveModel.resolveHideFromRecentsAfterSave(
+                current = true,
+                requested = false,
+                saved = false,
+            ),
+        )
+        assertFalse(
+            LiveKeepAliveModel.resolveHideFromRecentsAfterSave(
+                current = true,
+                requested = false,
+                saved = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `保存失败才该弹失败提示`() {
+        assertTrue(LiveKeepAliveModel.shouldShowSaveFailure(saved = false))
+        assertFalse(LiveKeepAliveModel.shouldShowSaveFailure(saved = true))
     }
 
     @Test
