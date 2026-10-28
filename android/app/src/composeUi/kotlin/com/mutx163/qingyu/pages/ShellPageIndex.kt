@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
+import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.about.AboutStaticPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
@@ -192,6 +193,8 @@ fun ShellPageContent(
     pageId: String,
     onBack: () -> Unit,
     wiring: ShellWiring,
+    /** 页面内部要「推一个新页」时用它（路由字符串 → 壳页面 id 由 [shellPageIdForRoute] 负责）。 */
+    onOpenPage: (String) -> Unit = {},
 ) {
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
@@ -218,9 +221,27 @@ fun ShellPageContent(
         // ── P3-B 设置族（24 屏共用一个渲染层）─────────────────────────
         "b.settingsHome" -> SettingsScreen(SettingsTimetablePage.spec(SettingsTimetableState()), onBack)
         "b.semester" -> SettingsScreen(SettingsTimetablePage.semesterSpec(SettingsTimetableState()), onBack)
-        "b.general" -> SettingsScreen(SettingsGeneralPage.spec(SettingsPageState()), onBack)
-        "b.appearance" -> SettingsScreen(SettingsAppearancePage.spec(SettingsPageState()), onBack)
-        "b.theme" -> SettingsScreen(SettingsThemeManagePage.spec(SettingsPageState()), onBack)
+        // Phase 3.5 设置族第一刀：下面 4 页改用**真宿主**（真数据 + 真写回 + 真导航）。
+        // 其余设置页仍是演示数据 —— 每接一页，就把它的 spec id 加进
+        // `SettingsPageBridge.SUPPORTED_PAGE_IDS`，并在这里换成分派。
+        "b.general" -> SettingsHost(
+            pageId = SettingsGeneralPage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        "b.appearance" -> SettingsHost(
+            pageId = SettingsAppearancePage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        "b.theme" -> SettingsHost(
+            pageId = SettingsThemeManagePage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
         "b.appearanceEditor" -> SettingsScreen(SettingsAppearanceEditorPage.spec(SettingsPageState()), onBack)
         "b.materialGeneral" -> SettingsScreen(SettingsMaterialGeneralPage.spec(SettingsPageState()), onBack)
         "b.materialCourseCard" -> SettingsScreen(SettingsMaterialCourseCardPage.spec(SettingsPageState()), onBack)
@@ -230,7 +251,12 @@ fun ShellPageContent(
         "b.homeWidget" -> SettingsScreen(SettingsHomeWidgetPage.spec(SettingsHomeWidgetState()), onBack)
         "b.homeNavigation" -> SettingsScreen(SettingsHomeNavigationPage.spec(SettingsHomeNavigationState()), onBack)
         "b.homeMenuEditor" -> SettingsScreen(SettingsHomeMenuEditorPage.spec(SettingsHomeMenuEditorState()), onBack)
-        "b.courseCard" -> SettingsScreen(SettingsCourseCardPage.spec(SettingsPageState()), onBack)
+        "b.courseCard" -> SettingsHost(
+            pageId = SettingsCourseCardPage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         "b.timetablePage" -> SettingsScreen(
             SettingsTimetablePageSettingsPage.spec(TimetablePageSettingsState()),

@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSaveDispatcher
+import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
@@ -46,9 +48,22 @@ import com.mutx163.qingyu.platform.PrefsKeyValueStore
  */
 class ShellWiring(context: Context) {
 
+    /** 壳自己的存储（`FlutterSharedPreferences`，冻结格式）。两者共用同一个实例。 */
+    private val keyValueStore: KeyValueStore = PrefsKeyValueStore(context)
+
+    private val timetableStore: TimetableStore = TimetableStore(keyValueStore)
+
     /** 课表仓储：壳里所有课表相关状态都从它来。 */
-    val timetable: TimetableRepository =
-        TimetableRepository(TimetableStore(PrefsKeyValueStore(context)))
+    val timetable: TimetableRepository = TimetableRepository(timetableStore)
+
+    /**
+     * 设置模型：**共用 `SettingsPageState` 的 4 页**（通用 / 外观 / 主题管理 / 课程卡片）的读写入口。
+     *
+     * 与 [timetable] 共用同一个 [TimetableStore]，两者写的键**不重叠**
+     * （仓储只写 `timetable_settings` 的 core 4 键，本模型写另外那批显示键），
+     * 且都走 `saveSettingsPatch` 的读-合并-写，所以谁都不会覆盖谁。
+     */
+    val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。
@@ -117,4 +132,59 @@ class ShellWiring(context: Context) {
 fun rememberShellWiring(): ShellWiring {
     val context = LocalContext.current.applicationContext
     return remember { ShellWiring(context) }
+}
+
+/**
+ * 设置页的 `actionTarget` 路由 → **壳页面 id**。
+ *
+ * ## 为什么需要这张表
+ *
+ * 设置页的 `actionTarget` 用的是 Dart 时代的**路由字符串**（`/settings/appearance` 这种），
+ * 而壳的页面层用的是**目录 id**（`b.appearance`）。两套命名空间之间原本没有任何映射，
+ * 所以设置页里点一行「推页」的箭头，壳这边不知道推哪一页。
+ *
+ * ## 规则
+ *
+ * 只映射**目录里真实存在**的 id；映射不到的返回 null，调用方**什么都不做**（不崩、不猜）。
+ * 这张表会随设置族逐刀接线而变长——**每接一页就补上它的出站路由**。
+ *
+ * ⚠️ 已知缺口：本表覆盖的是设置族 4 页当前会发出的路由 + 一批常用路由；
+ * 没列到的路由会静默 no-op。下一刀接更多设置页时，**先来这里补表**，别在页面里硬编码。
+ */
+fun shellPageIdForRoute(route: String?): String? = when (route) {
+    // —— 设置族（4 页当前出站 + 兄弟页）——
+    "/settings/general" -> "b.general"
+    "/settings/appearance" -> "b.appearance"
+    "/settings/theme" -> "b.theme"
+    "/settings/course-card" -> "b.courseCard"
+    "/settings/appearance-editor" -> "b.appearanceEditor"
+    "/settings/semester" -> "b.semester"
+    "/settings/timetable-page" -> "b.timetablePage"
+    "/settings/holiday" -> "b.holiday"
+    "/settings/holiday/advanced" -> "b.holidayAdvanced"
+    "/settings/weather" -> "b.weather"
+    "/settings/weather/city" -> "j.weatherCity"
+    "/settings/live" -> "b.live"
+    "/settings/live/self-check" -> "b.liveSelfCheck"
+    "/settings/live/keep-alive" -> "j.keepAlive"
+    "/settings/home-widget" -> "b.homeWidget"
+    "/settings/home-navigation" -> "b.homeNavigation"
+    "/settings/home-menu" -> "b.homeMenuEditor"
+    "/settings/glass-dock" -> "b.glassDock"
+    "/settings/glass-dock-icon" -> "b.glassDockIcon"
+    "/settings/diagnostics" -> "b.diagnostics"
+    "/settings/reset" -> "b.reset"
+    "/settings/cloud-sync" -> "f.cloudSync"
+    "/settings/couple-timetable" -> "f.couple"
+    "/settings/data-transfer" -> "g3.dataTransfer"
+    "/settings/lan-edit" -> "g3.lanEdit"
+    "/settings/memory-stats" -> "h.memory"
+    "/settings/live-testing-fixture" -> "h.fixture"
+    "/settings/miuix-showcase" -> "i2.showcase"
+    "/settings/hyperos-showcase" -> "i.hyperosShowcase"
+    // —— 跨域常用 ——
+    "/about" -> "a.about"
+    "/user-guide" -> "i.userGuide"
+    "/profiles" -> "c1.profiles"
+    else -> null
 }

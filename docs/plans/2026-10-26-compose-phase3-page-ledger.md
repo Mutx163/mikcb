@@ -801,6 +801,19 @@ L4「逐页对照」在接线前物理上做不了。交给 `l4-recon` 做 task-
    `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/<域>" -ExcludeShared <共享目录>`
    ——**用了它本次结果不覆盖被排除的目录，交付证据里必须写明**（否则等于悄悄缩小验证面）。
 
+6. **Kotlin 的块注释会嵌套：KDoc 正文里写 `/**` 会开第二层注释。**
+   实例（2026-10-28，`TimetableSettingsModel.kt`）：一条泳道在 KDoc 里写了
+   `去重/截断到 8/**钉住 settings**`，那个 `/**` 开了第二层注释、只闭掉一层 ⇒
+   报错出现在**文件末尾**（`Unclosed comment`）+ 整个 package 的 `unresolved reference` 雪崩，
+   **连别人的文件都跟着报**，症状极像「别人把我的符号弄没了」。作者为此白跑两轮 L0。
+   ⇒ **KDoc 正文里不许出现 `/**` 或 `*/`。**
+
+7. **报「我这边红了」之前，先查自己的文件有没有 `syntax error` / `Unclosed comment`，再看别人。**
+   这是第 6 条的直接推论：那类语法错会让**别人的错里混进你的行号**，先看别人会把你带偏。
+   另外等不到别人落盘时，可以**换一个 `pages/` 模块**先拿自己的证据
+   （实例：一条泳道用 `-Module pages/live` 跑通自己的用例，等 `SettingsPageBridge.kt` 落盘后
+   再用官方 `pages/settings` 复跑）。汇报里要写明换了哪个模块、为什么。
+
 **本轮验证基线（Lead 亲自跑）**：
 
 | 级别 | 命令 | 结果 |

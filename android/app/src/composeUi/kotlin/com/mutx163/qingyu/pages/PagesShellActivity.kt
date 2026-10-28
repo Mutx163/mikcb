@@ -154,7 +154,14 @@ private fun PagesShell() {
             val pageId = openPageId
             if (pageId != null) {
                 // 页面层占满整屏：页面要的是整块屏，不是槽位那点高度。
-                ShellPageContent(pageId = pageId, onBack = { openPageId = null }, wiring = wiring)
+                ShellPageContent(
+                    pageId = pageId,
+                    onBack = { openPageId = null },
+                    wiring = wiring,
+                    // 页面内部「推新页」：路由字符串 → 壳页面 id，映射表在 ShellWiring.kt。
+                    // 映射不到时什么都不做（不崩、不猜）。
+                    onOpenPage = { target -> openPageId = target },
+                )
             } else {
                 when (slot) {
                     // Phase 3.5：课表槽位改用**真宿主**——真数据（壳自己的存档）+ 真回调。
