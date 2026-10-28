@@ -1,15 +1,18 @@
 package com.mutx163.qingyu.sync
 
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.HttpURLConnection
-import java.net.InetSocketAddress
+import java.net.InetAddress
 import java.net.ProtocolException
 import java.net.ServerSocket
+import java.net.Socket
 import java.net.URL
 import java.util.Collections
-import java.util.concurrent.Executors
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -22,10 +25,16 @@ import org.junit.Test
 /**
  * WebDAV 传输层的**真 HTTP 往返**测试。
  *
- * 用 JDK 自带的 `com.sun.net.httpserver.HttpServer` 起本地假 WebDAV 服务，
+ * 假 WebDAV 服务是**手写 HTTP/1.1 的裸 socket 服务器**（[FakeWebdavServer]，只用 `java.net.*`），
  * 断言的是**人推的**线格式：请求方法 / 路径 / 头，响应状态码 / 体 / ETag。
  * 覆盖：正常往返、401、404、空体、连接失败、读超时、重定向（跟随 / 环 / 非 http 目标）、
  * 非 UTF-8 字节、超长响应体、PROPFIND 解析、PUT / MKCOL / DELETE / HEAD / LOCK / UNLOCK。
+ *
+ * **为什么不用 `com.sun.net.httpserver.HttpServer`**（2026-10-28 踩过，别再改回去）：
+ * 它属于 `com.sun.*`，不在 AGP 单测编译平台的 system-modules jar 里（那里只有受支持的 JDK API），
+ * 于是 `:app:compileProdDebugUnitTestKotlin`（CI 跑的 `:app:testProdDebugUnitTest` 的编译阶段）
+ * 直接报 `Unresolved reference 'sun'`，而 `scripts/test-kotlin-module.ps1`（L0）用完整 JDK 全绿——
+ * **L0 绿 ≠ CI 绿**。`java.net.*` 两边都可用，所以这里自己写一个。
  */
 class WebdavHttpTransportTest {
 
@@ -465,10 +474,12 @@ class WebdavHttpTransportTest {
     @Test
     fun headReportsLengthAndEtagFromHeaders() {
         server.handler = { exchange, _ ->
-            exchange.responseHeaders.add("ETag", "W/\"rev-3\"")
-            exchange.responseHeaders.add("Content-Length", "4096")
-            exchange.sendResponseHeaders(200, -1)
-            exchange.responseBody.close()
+            // HEAD 不发体，但要声明真实的 Content-Length 与 ETag（显式给了夹具就不补默认值）。
+            exchange.respond(
+                200,
+                ByteArray(0),
+                mapOf("ETag" to "W/\"rev-3\"", "Content-Length" to "4096"),
+            )
         }
 
         val result = transport().head("/Apps/qingyu-sync/snapshot.mikcb")
@@ -614,11 +625,13 @@ class WebdavHttpTransportTest {
 
     @Test
     fun propfindReadsChunkedResponseBody() {
-        // 长度参数 0 ⇒ JDK HttpServer 用 chunked 传输编码；裸 socket 路径必须自己解块。
+        // 夹具故意把体切成两块用 chunked 发；裸 socket 路径必须自己解块、拼回完整 XML。
         server.handler = { exchange, _ ->
-            exchange.responseHeaders.add("Content-Type", "application/xml; charset=utf-8")
-            exchange.sendResponseHeaders(207, 0)
-            exchange.responseBody.use { it.write(HISTORY_MULTISTATUS.toByteArray(Charsets.UTF_8)) }
+            exchange.respondChunked(
+                207,
+                HISTORY_MULTISTATUS.toByteArray(Charsets.UTF_8),
+                mapOf("Content-Type" to "application/xml; charset=utf-8"),
+            )
         }
 
         val result = transport().listHistoryBackupFiles("/Apps/qingyu-sync/history/")
@@ -662,59 +675,211 @@ class WebdavHttpTransportTest {
     )
 
     /**
-     * 本地假 WebDAV 服务：请求先记录（含请求体），再交给测试设置的 handler。
-     * 线程池是守护线程——漏停也不会把 JVM 挂住。
+     * 本地假 WebDAV 服务：**手写 HTTP/1.1 的裸 socket 服务器**，只用 `java.net.*`。
+     *
+     * 一次只服务一条连接（用例都是串行单请求），响应固定 `Connection: close`，
+     * 所以不存在「池化连接被复用成死连接」这类夹具假象。
+     * 服务线程是守护线程，漏停也不会把 JVM 挂住。
      */
     private class FakeWebdavServer {
         val requests: MutableList<Recorded> =
             Collections.synchronizedList(mutableListOf<Recorded>())
 
-        var handler: (HttpExchange, Recorded) -> Unit = { exchange, _ -> exchange.respond(404) }
+        var handler: (FakeExchange, Recorded) -> Unit = { exchange, _ -> exchange.respond(404) }
 
-        private val pool = Executors.newFixedThreadPool(4) { runnable ->
-            Thread(runnable, "fake-webdav").apply { isDaemon = true }
+        private val listener = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        private val worker = Thread({ acceptLoop() }, "fake-webdav").apply {
+            isDaemon = true
+            start()
         }
-        private val http: HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
 
-        val baseUrl: String get() = "http://127.0.0.1:${http.address.port}/dav/"
+        val baseUrl: String get() = "http://127.0.0.1:${listener.localPort}/dav/"
 
-        init {
-            http.executor = pool
-            http.createContext("/") { exchange ->
-                val recorded = Recorded(
-                    method = exchange.requestMethod,
-                    path = exchange.requestURI.path,
-                    authorization = exchange.requestHeaders.getFirst("Authorization"),
-                    depth = exchange.requestHeaders.getFirst("Depth"),
-                    contentType = exchange.requestHeaders.getFirst("Content-Type"),
-                    ifHeader = exchange.requestHeaders.getFirst("If"),
-                    lockTokenHeader = exchange.requestHeaders.getFirst("Lock-Token"),
-                    timeoutHeader = exchange.requestHeaders.getFirst("Timeout"),
-                    body = exchange.requestBody.readBytes(),
-                )
-                requests.add(recorded)
+        private fun acceptLoop() {
+            while (!listener.isClosed) {
+                val client = try {
+                    listener.accept()
+                } catch (_: IOException) {
+                    return
+                }
                 try {
-                    handler(exchange, recorded)
+                    serve(client)
                 } catch (_: Throwable) {
+                    // 客户端提前断开（例如超时用例）：无处可写，忽略。
+                } finally {
                     try {
-                        exchange.respond(500)
-                    } catch (_: Throwable) {
-                        // 客户端已断开（例如超时用例）：无处可写，忽略。
+                        client.close()
+                    } catch (_: IOException) {
+                        // 已经关了。
                     }
                 }
             }
-            http.start()
+        }
+
+        private fun serve(client: Socket) {
+            client.soTimeout = 5_000
+            val input = BufferedInputStream(client.getInputStream())
+            val output = BufferedOutputStream(client.getOutputStream())
+            val requestLine = readLine(input) ?: return
+            val parts = requestLine.split(' ')
+            if (parts.size < 2) return
+            val method = parts[0]
+            val path = parts[1].substringBefore('?')
+            val headers = linkedMapOf<String, String>()
+            while (true) {
+                val line = readLine(input) ?: break
+                if (line.isEmpty()) break
+                val colon = line.indexOf(':')
+                if (colon <= 0) continue
+                headers[line.substring(0, colon).trim().lowercase()] =
+                    line.substring(colon + 1).trim()
+            }
+            val length = headers["content-length"]?.toIntOrNull() ?: 0
+            val body = if (length > 0) {
+                val buffer = ByteArray(length)
+                var read = 0
+                while (read < length) {
+                    val count = input.read(buffer, read, length - read)
+                    if (count < 0) break
+                    read += count
+                }
+                buffer.copyOf(read)
+            } else {
+                ByteArray(0)
+            }
+            val recorded = Recorded(
+                method = method,
+                path = path,
+                authorization = headers["authorization"],
+                depth = headers["depth"],
+                contentType = headers["content-type"],
+                ifHeader = headers["if"],
+                lockTokenHeader = headers["lock-token"],
+                timeoutHeader = headers["timeout"],
+                body = body,
+            )
+            requests.add(recorded)
+            val exchange = FakeExchange(output, path)
+            try {
+                handler(exchange, recorded)
+            } catch (_: Throwable) {
+                try {
+                    exchange.respond(500)
+                } catch (_: Throwable) {
+                    // 写不进去就算了。
+                }
+            }
+            if (!exchange.sent) {
+                try {
+                    exchange.respond(500)
+                } catch (_: Throwable) {
+                    // 同上。
+                }
+            }
+            try {
+                output.flush()
+            } catch (_: IOException) {
+                // 客户端已断开。
+            }
+        }
+
+        private fun readLine(input: InputStream): String? {
+            val out = ByteArrayOutputStream(128)
+            var readAny = false
+            while (true) {
+                val next = input.read()
+                if (next < 0) break
+                readAny = true
+                if (next == '\n'.code) break
+                if (next != '\r'.code) out.write(next)
+            }
+            if (!readAny) return null
+            return String(out.toByteArray(), Charsets.ISO_8859_1)
         }
 
         fun close() {
-            http.stop(0)
-            pool.shutdownNow()
+            try {
+                listener.close()
+            } catch (_: IOException) {
+                // 已经关了。
+            }
         }
     }
 
     /**
+     * 一次请求的「响应端」：handler 通过它写状态码 / 头 / 体。
+     * 形状刻意贴近 `HttpExchange`（`requestURI.path`、`respond`、`respondText`），
+     * 换夹具时用例基本不用动。
+     */
+    private class FakeExchange(private val output: OutputStream, path: String) {
+        /** 只为让用例写 `exchange.requestURI.path`。 */
+        val requestURI = FakeUri(path)
+
+        var sent: Boolean = false
+            private set
+
+        fun respond(
+            status: Int,
+            body: ByteArray = ByteArray(0),
+            headers: Map<String, String> = emptyMap(),
+        ) {
+            val head = StringBuilder()
+            head.append("HTTP/1.1 ").append(status).append(' ').append(reasonPhrase(status)).append("\r\n")
+            var hasLength = false
+            for ((key, value) in headers) {
+                head.append(key).append(": ").append(value).append("\r\n")
+                if (key.equals("Content-Length", ignoreCase = true)) hasLength = true
+            }
+            // HEAD 用例要自己声明 Content-Length（4096）却不发体，所以显式给了就不再补。
+            if (!hasLength) head.append("Content-Length: ").append(body.size).append("\r\n")
+            head.append("Connection: close\r\n\r\n")
+            output.write(head.toString().toByteArray(Charsets.ISO_8859_1))
+            if (body.isNotEmpty()) output.write(body)
+            output.flush()
+            sent = true
+        }
+
+        fun respondText(
+            status: Int,
+            text: String,
+            contentType: String = "application/xml; charset=utf-8",
+        ) {
+            respond(status, text.toByteArray(Charsets.UTF_8), mapOf("Content-Type" to contentType))
+        }
+
+        /** 强制 `Transfer-Encoding: chunked`，并把体**切成两块**发（防「一次读完」侥幸通过）。 */
+        fun respondChunked(
+            status: Int,
+            body: ByteArray,
+            headers: Map<String, String> = emptyMap(),
+        ) {
+            val head = StringBuilder()
+            head.append("HTTP/1.1 ").append(status).append(' ').append(reasonPhrase(status)).append("\r\n")
+            for ((key, value) in headers) {
+                head.append(key).append(": ").append(value).append("\r\n")
+            }
+            head.append("Transfer-Encoding: chunked\r\n")
+            head.append("Connection: close\r\n\r\n")
+            output.write(head.toString().toByteArray(Charsets.ISO_8859_1))
+            val split = body.size / 2
+            for (chunk in listOf(body.copyOfRange(0, split), body.copyOfRange(split, body.size))) {
+                if (chunk.isEmpty()) continue
+                output.write((chunk.size.toString(16) + "\r\n").toByteArray(Charsets.ISO_8859_1))
+                output.write(chunk)
+                output.write("\r\n".toByteArray(Charsets.ISO_8859_1))
+            }
+            output.write("0\r\n\r\n".toByteArray(Charsets.ISO_8859_1))
+            output.flush()
+            sent = true
+        }
+    }
+
+    private class FakeUri(val path: String)
+
+    /**
      * 只会「收一次请求头 → 原样吐一段响应字节 → 关连接」的裸 socket 假服务。
-     * 用来造 `com.sun.net.httpserver` 造不出的响应（无 Content-Length、无 chunked）。
+     * 用来造 [FakeWebdavServer] 造不出的响应：既无 Content-Length 也无 chunked
+     * （HTTP/1.0 风格），只能靠连接关闭定界。
      */
     private class RawResponseServer(private val responseText: String) {
         private val socket = ServerSocket(0)
@@ -843,21 +1008,24 @@ class WebdavHttpTransportTest {
     }
 }
 
-private fun HttpExchange.respond(
-    status: Int,
-    body: ByteArray = ByteArray(0),
-    headers: Map<String, String> = emptyMap(),
-) {
-    for ((key, value) in headers) responseHeaders.add(key, value)
-    val length = if (body.isEmpty()) -1L else body.size.toLong()
-    sendResponseHeaders(status, if (status == 204 || status == 304) -1L else length)
-    if (body.isEmpty()) responseBody.close() else responseBody.use { it.write(body) }
-}
-
-private fun HttpExchange.respondText(
-    status: Int,
-    text: String,
-    contentType: String = "application/xml; charset=utf-8",
-) {
-    respond(status, text.toByteArray(Charsets.UTF_8), mapOf("Content-Type" to contentType))
+/** 状态码 → 原因短语（真实服务器都会给；我们的客户端只读状态码，但线格式要像真的）。 */
+private fun reasonPhrase(status: Int): String = when (status) {
+    200 -> "OK"
+    201 -> "Created"
+    204 -> "No Content"
+    207 -> "Multi-Status"
+    301 -> "Moved Permanently"
+    302 -> "Found"
+    400 -> "Bad Request"
+    401 -> "Unauthorized"
+    403 -> "Forbidden"
+    404 -> "Not Found"
+    405 -> "Method Not Allowed"
+    409 -> "Conflict"
+    412 -> "Precondition Failed"
+    423 -> "Locked"
+    500 -> "Internal Server Error"
+    501 -> "Not Implemented"
+    507 -> "Insufficient Storage"
+    else -> "Status"
 }
