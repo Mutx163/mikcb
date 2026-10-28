@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -100,21 +101,13 @@ private fun ImportBottomBarBox(dark: Boolean, content: @Composable () -> Unit) {
     }
 }
 
-/** 分组小标题（Dart `HyperosSectionLabel`）：13sp / 次要文字色，与设置族同档。 */
-@Composable
-fun ImportSectionLabel(text: String, modifier: Modifier = Modifier) {
-    val dark = isSystemInDarkTheme()
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.footnote1,
-        color = Color(QingyuTheme.sectionLabel(dark)),
-        modifier = modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
-    )
-}
-
 /**
  * 导航行（Dart `HyperosNavTile` + `ImportIconBadge`）：36dp 图标徽标 + 标题 / 副标题
- * + 行尾箭头。用 [Card] 的 `onClick` 重载拿官方按压反馈，不用 `Modifier.clickable`。
+ * + 行尾箭头。用 [QingyuCard] 的 `onClick` 重载拿官方按压反馈，不用 `Modifier.clickable`。
+ *
+ * 行内左右 16dp 是**刻意的**：官方轴线是「页面 0 → Card 外边距 12 → 行内 16 = 文字左缘 28」，
+ * 与 `QingyuSectionTitle`（`SmallTitle` 自带 28）对齐。原来写 14 会让这一列整体偏 2dp，
+ * 分组标题与卡片正文就错开一条缝（2026-10-28 对照 demo 时发现）。
  */
 @Composable
 fun ImportNavRow(
@@ -123,14 +116,15 @@ fun ImportNavRow(
     icon: ImageVector,
     accentHex: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
-    QingyuCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+    QingyuCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -172,14 +166,15 @@ fun ImportSwitchRow(
     checked: Boolean,
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
-    QingyuCard(modifier = Modifier.fillMaxWidth()) {
+    QingyuCard(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -217,16 +212,17 @@ fun ImportValueRow(
     value: String,
     enabled: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         onClick = if (enabled) onClick else null,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -285,15 +281,16 @@ fun ImportGuidePanel(
     step3Subtitle: String,
     supportedFilesSuffix: String,
     supportedFilesExtra: String? = null,
+    modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
-    Column(modifier = Modifier.fillMaxWidth()) {
-        QingyuCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        QingyuCard(
+            modifier = Modifier.fillMaxWidth(),
+            // 普通内容（非 Preference 行）必须给内边距，否则贴卡片边。
+            insideMargin = QingyuCardDefaults.ContentInsideMargin,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.applicableScenarioTitle.zh,
                     style = MiuixTheme.textStyles.body1,
@@ -316,12 +313,11 @@ fun ImportGuidePanel(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        QingyuCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
+        QingyuCard(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = QingyuCardDefaults.ContentInsideMargin,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.supportedFilesTitle.zh,
                     style = MiuixTheme.textStyles.body1,

@@ -1,25 +1,21 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,26 +23,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -91,68 +82,60 @@ fun WarehouseCourseImportPage(
     }
 
     val isSearching = searchQuery.trim().isNotEmpty()
-    // Dart warehouse_course_import_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = WarehouseStrings.importMethodWarehouseTitle.zh,
-                largeTitle = WarehouseStrings.importMethodWarehouseTitle.zh,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    QingyuBackIconButton(
-                        onBack = onBack,
-                        contentDescription = WarehouseStrings.cancelAction.zh,
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { showMoreMenu = !showMoreMenu }) {
-                        Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+    // Dart warehouse_course_import_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    // 骨架 / 顶栏 / 返回键走共享套件（R1），页面级滚动走 QingyuPageList（R2）：
+    // 搜索栏、快捷导入、分组标题与学校卡片同处一个惰性列表。
+    QingyuPageScaffold(
+        title = WarehouseStrings.importMethodWarehouseTitle.zh,
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showMoreMenu = !showMoreMenu }) {
+                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
+            }
+        },
+    ) { innerPadding, scrollBehavior ->
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 8.dp),
         ) {
             // 搜索输入栏
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(
+            item(key = "search_bar") {
+                QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = QingyuPageCardMargin, vertical = 8.dp),
                 ) {
-                    Icon(
-                        imageVector = MiuixIcons.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.weight(1f),
-                        label = WarehouseStrings.searchSchoolHint.zh,
-                        useLabelAsPlaceholder = true,
-                        singleLine = true,
-                    )
-                    if (isSearching) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(
-                                imageVector = MiuixIcons.Close,
-                                contentDescription = WarehouseStrings.clearSearchTooltip.zh,
-                                modifier = Modifier.size(18.dp)
-                            )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.weight(1f),
+                            label = WarehouseStrings.searchSchoolHint.zh,
+                            useLabelAsPlaceholder = true,
+                            singleLine = true,
+                        )
+                        if (isSearching) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = MiuixIcons.Close,
+                                    contentDescription = WarehouseStrings.clearSearchTooltip.zh,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -160,49 +143,51 @@ fun WarehouseCourseImportPage(
 
             // 快捷导入卡片
             if (!isSearching && hasQuickImportMacro) {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    onClick = onQuickImportClick,
-                ) {
-                    Row(
+                item(key = "quick_import") {
+                    QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
+                        onClick = onQuickImportClick,
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = "⚡",
-                                fontSize = 18.sp,
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "⚡",
+                                    style = MiuixTheme.textStyles.title4,
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = WarehouseStrings.quickImportAction.zh,
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = WarehouseStrings.selectQuickImportTitle.zh,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
+                            Icon(
+                                imageVector = MiuixIcons.ChevronForward,
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = WarehouseStrings.quickImportAction.zh,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = WarehouseStrings.selectQuickImportTitle.zh,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 13.sp
-                            )
-                        }
-                        Icon(
-                            imageVector = MiuixIcons.ChevronForward,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions
-                        )
                     }
                 }
             }
@@ -210,116 +195,96 @@ fun WarehouseCourseImportPage(
             // 搜索结果或按字母分组的学校列表
             if (sections.isEmpty()) {
                 // 空状态
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = if (isSearching) WarehouseStrings.noMatchingSchools.zh else WarehouseStrings.noAvailableSchools.zh,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                        if (isSearching) {
-                            Spacer(modifier = Modifier.height(6.dp))
+                item(key = "empty") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = WarehouseStrings.searchSchoolSuggestion.zh,
-                                fontSize = 13.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                text = if (isSearching) WarehouseStrings.noMatchingSchools.zh else WarehouseStrings.noAvailableSchools.zh,
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = onFeedbackClick,
-                                content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
-                                colors = ButtonDefaults.buttonColors(
-                                    color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.primary
+                            if (isSearching) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = WarehouseStrings.searchSchoolSuggestion.zh,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
-                            )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = onFeedbackClick,
+                                    content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        color = MiuixTheme.colorScheme.surfaceVariant,
+                                        contentColor = MiuixTheme.colorScheme.primary,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    for (section in sections) {
-                        item(key = "section_${section.tag}") {
+                for (section in sections) {
+                    item(key = "section_${section.tag}") {
+                        // 分组标题走官方 SmallTitle（自带 28dp 左缘），与卡片正文同一条轴线。
+                        QingyuSectionTitle(
+                            text = when (section.tag) {
+                                "★" -> WarehouseStrings.recentSchoolLabel.zh
+                                "通" -> "通用教务系统"
+                                else -> section.tag
+                            },
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+
+                    items(section.items, key = { it.school.id }) { bean ->
+                        QingyuCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = QingyuPageCardMargin)
+                                .padding(top = 10.dp),
+                            onClick = { onSelectSchool(bean.school) },
+                        ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    text = when (section.tag) {
-                                        "★" -> WarehouseStrings.recentSchoolLabel.zh
-                                        "通" -> "通用教务系统"
-                                        else -> section.tag
-                                    },
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MiuixTheme.colorScheme.primary
-                                )
-                            }
-                        }
-
-                        items(section.items, key = { it.school.id }) { bean ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSelectSchool(bean.school) }
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = bean.school.name,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 15.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(3.dp))
-                                        val matched = adapterMatches[bean.school.id]
-                                        val subtitle = if (!matched.isNullOrEmpty()) {
-                                            WarehouseStrings.warehouseMatchedAdaptersLabel.filled("adapters", matched.joinToString("、"))
-                                        } else if (bean.isRecent) {
-                                            WarehouseStrings.recentSchoolLabel.zh
-                                        } else {
-                                            WarehouseStrings.warehouseSchoolTapHint.zh
-                                        }
-                                        Text(
-                                            text = subtitle,
-                                            fontSize = 12.sp,
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = bean.school.name,
+                                        style = MiuixTheme.textStyles.body1,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    val matched = adapterMatches[bean.school.id]
+                                    val subtitle = if (!matched.isNullOrEmpty()) {
+                                        WarehouseStrings.warehouseMatchedAdaptersLabel.filled("adapters", matched.joinToString("、"))
+                                    } else if (bean.isRecent) {
+                                        WarehouseStrings.recentSchoolLabel.zh
+                                    } else {
+                                        WarehouseStrings.warehouseSchoolTapHint.zh
                                     }
-                                    Icon(
-                                        imageVector = MiuixIcons.ChevronForward,
-                                        contentDescription = null,
-                                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions
+                                    Text(
+                                        text = subtitle,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                                Icon(
+                                    imageVector = MiuixIcons.ChevronForward,
+                                    contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
                             }
                         }
                     }

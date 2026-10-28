@@ -1,25 +1,20 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,24 +23,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.pages.import.parseImportAccentHex
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -56,6 +46,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 3. 提示词复制与剪贴板快速操作；
  * 4. 多行 JSON 输入框与实时解析校验；
  * 5. 解析预览卡片与底部导入确认栏。
+ *
+ * ## 样式（2026-10-28 对齐官方 demo）
+ *
+ * 骨架 / 顶栏 / 返回键走 `QingyuPageScaffold`（R1），页面级滚动走 `QingyuPageList`（R2，
+ * 内含官方滚动三件套与右侧滚动条），卡片走 `QingyuCard`（R3，可点卡片才有按压反馈），
+ * 字号走 `MiuixTheme.textStyles`（R4）。紫色强调色取域内色板
+ * [parseImportAccentHex]（与 Dart `HyperosIconColors.purple` 同源），不再写字面色值（R5）。
  */
 @Composable
 fun AiImageCourseImportPage(
@@ -70,6 +67,9 @@ fun AiImageCourseImportPage(
     var parseError by remember { mutableStateOf<String?>(null) }
     var isImporting by remember { mutableStateOf(false) }
 
+    // Dart 侧 AI 徽标用 HyperosIconColors.purple；取域内色板而不是字面量，深色模式与换主题色时不脱节。
+    val aiAccent = Color(parseImportAccentHex("purple"))
+
     val workflowSteps = remember {
         splitWorkflowArrowTitle(WarehouseStrings.aiWorkflowTitle.zh).ifEmpty {
             listOf("复制提示词", "豆包专家模式识别", "复制JSON返回导入")
@@ -82,7 +82,7 @@ fun AiImageCourseImportPage(
             parseError = WarehouseStrings.aiPasteJsonFirst.zh
             return
         }
-        val result = parseAiImageImportJson(rawJsonInput)
+        val result = parseImageImportJson(rawJsonInput)
         if (result.isValid) {
             parseResult = result
             parseError = null
@@ -93,22 +93,9 @@ fun AiImageCourseImportPage(
     }
 
     // Dart ai_image_course_import_screen.dart:207-209 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = WarehouseStrings.aiImportTitle.zh,
-                largeTitle = WarehouseStrings.aiImportTitle.zh,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    QingyuBackIconButton(
-                        onBack = onBack,
-                        contentDescription = WarehouseStrings.cancelAction.zh,
-                    )
-                }
-            )
-        },
+    QingyuPageScaffold(
+        title = WarehouseStrings.aiImportTitle.zh,
+        onBack = onBack,
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -141,53 +128,45 @@ fun AiImageCourseImportPage(
                 }
             }
         }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 12.dp,
-                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                bottom = innerPadding.calculateBottomPadding() + 12.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) { innerPadding, scrollBehavior ->
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 12.dp),
         ) {
             // 工作流指引卡片
             item(key = "workflow_guide") {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF8E24AA).copy(alpha = 0.12f)),
+                                    .background(aiAccent.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "✨",
-                                    fontSize = 18.sp
+                                    style = MiuixTheme.textStyles.title4
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
                                     text = WarehouseStrings.importMethodAiTitle.zh,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = WarehouseStrings.aiWorkflowSubtitle.zh,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
@@ -214,7 +193,7 @@ fun AiImageCourseImportPage(
                                 ) {
                                     Text(
                                         text = "${index + 1}",
-                                        fontSize = 11.sp,
+                                        style = MiuixTheme.textStyles.footnote2,
                                         fontWeight = FontWeight.Bold,
                                         color = MiuixTheme.colorScheme.primary
                                     )
@@ -222,7 +201,7 @@ fun AiImageCourseImportPage(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = step,
-                                    fontSize = 13.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -231,7 +210,7 @@ fun AiImageCourseImportPage(
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "💡 ${WarehouseStrings.aiExpertModeSuggestion.zh}",
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                     }
@@ -240,11 +219,15 @@ fun AiImageCourseImportPage(
 
             // 操作按钮组
             item(key = "prompt_actions") {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(top = 14.dp),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
@@ -300,21 +283,23 @@ fun AiImageCourseImportPage(
 
             // JSON 输入框
             item(key = "json_input") {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(top = 14.dp),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = WarehouseStrings.aiPasteJsonTitle.zh,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            style = MiuixTheme.textStyles.body1,
+                            fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = WarehouseStrings.aiPasteJsonHintLong.zh,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -340,29 +325,33 @@ fun AiImageCourseImportPage(
             // 错误信息或解析结果预览
             if (parseError != null) {
                 item(key = "parse_error") {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin)
+                            .padding(top = 14.dp),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "⚠️",
-                                fontSize = 16.sp
+                                style = MiuixTheme.textStyles.body1
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = WarehouseStrings.aiParseFailedChip.zh,
+                                    style = MiuixTheme.textStyles.body2,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
                                     color = MiuixTheme.colorScheme.error
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = parseError!!,
-                                    fontSize = 12.sp,
+                                    style = MiuixTheme.textStyles.footnote1,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
@@ -372,16 +361,18 @@ fun AiImageCourseImportPage(
             } else if (parseResult != null) {
                 val res = parseResult!!
                 item(key = "parse_summary") {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin)
+                            .padding(top = 14.dp),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = WarehouseStrings.aiPreviewCoursesTitle.zh,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             val warningSuffix = if (res.warnings.isNotEmpty()) {
@@ -392,7 +383,7 @@ fun AiImageCourseImportPage(
                                     .filled("count", res.courses.size.toString())
                                     .filled("section", res.requiredSectionCount.toString())
                                     .filled("warningSuffix", warningSuffix),
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium
                             )
@@ -402,7 +393,7 @@ fun AiImageCourseImportPage(
                                 for (w in res.warnings) {
                                     Text(
                                         text = "• $w",
-                                        fontSize = 12.sp,
+                                        style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.error
                                     )
                                 }
@@ -412,21 +403,23 @@ fun AiImageCourseImportPage(
                 }
 
                 items(res.courses.take(8)) { course ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
-                        ) {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin)
+                            .padding(top = 12.dp),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = course.name,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "周${course.dayOfWeek} 第${course.startSection}-${course.endSection}节 · ${course.location.ifEmpty { "地点未知" }} · ${course.teacher.ifEmpty { "教师未知" }}",
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
                         }

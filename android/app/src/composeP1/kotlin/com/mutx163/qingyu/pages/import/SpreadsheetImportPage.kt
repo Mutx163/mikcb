@@ -1,15 +1,14 @@
 package com.mutx163.qingyu.pages.import
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 
 /**
  * 表格导入页 · Compose 渲染层（P3-G1）。
@@ -59,17 +58,12 @@ fun SpreadsheetImportPage(
             )
         },
     ) { innerPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = innerPadding.calculateBottomPadding() + 12.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        // 与 ICS 页同款：页面级滚动走共享套件（三件套 + 滚动条），
+        // 横向 12dp 由块自己带（见 docs/reference/compose-page-style-rules.md §三）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 12.dp),
         ) {
             item(key = "guide") {
                 ImportGuidePanel(
@@ -78,6 +72,7 @@ fun SpreadsheetImportPage(
                     step2Subtitle = ImportStrings.spreadsheetStep2Subtitle.zh,
                     step3Subtitle = ImportStrings.spreadsheetStep3Subtitle.zh,
                     supportedFilesSuffix = ImportStrings.spreadsheetSupportedFilesSuffix.zh,
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
         }

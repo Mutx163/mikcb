@@ -2,15 +2,15 @@ package com.mutx163.qingyu.pages.import
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -52,17 +52,11 @@ fun ImportEntryPage(
         title = ImportStrings.courseImportTitle.zh,
         onBack = onBack,
     ) { innerPadding, scrollBehavior ->
-        LazyColumn(
-            // 滚动手势必须喂给顶栏折叠行为，否则大标题永不收起（about 页教训）。
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = innerPadding.calculateBottomPadding() + 24.dp,
-            ),
+        // 页面级滚动走共享套件（官方三件套 + 右侧滚动条 + 顶栏折叠联动）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // ── 随机配色开关（Dart widgets/import_random_color_toggle.dart）──
@@ -75,6 +69,7 @@ fun ImportEntryPage(
                     checked = viewState.randomColorsEnabled,
                     enabled = viewState.preferencesLoaded,
                     onCheckedChange = onToggleRandomColors,
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
             item(key = "random_color_group") {
@@ -83,11 +78,16 @@ fun ImportEntryPage(
                     value = ImportSharedModel.colorGroupDisplayName(viewState.randomColorGroupId),
                     enabled = viewState.preferencesLoaded && viewState.randomColorsEnabled,
                     onClick = onPickColorGroup,
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
             // ── 选择导入方式 ──
             item(key = "method_label") {
-                ImportSectionLabel(ImportStrings.chooseImportMethodTitle.zh)
+                // 分组标题走官方 SmallTitle（自带 28dp 左缘），与「Card 12 + 行内 16」对齐。
+                QingyuSectionTitle(
+                    text = ImportStrings.chooseImportMethodTitle.zh,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
             }
             items(ImportEntryModel.entries.size, key = { index -> "method-$index" }) { index ->
                 val entry = ImportEntryModel.entries[index]
@@ -97,6 +97,7 @@ fun ImportEntryPage(
                     icon = entryIcon(entry.destination),
                     accentHex = entry.accentSlot,
                     onClick = { onOpenDestination(entry.destination) },
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
         }

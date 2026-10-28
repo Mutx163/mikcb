@@ -7,17 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,21 +22,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Copy
@@ -67,71 +64,53 @@ fun WarehouseAdapterDetailPage(
 ) {
     var editUrl by remember(customImportUrl) { mutableStateOf(customImportUrl ?: "") }
     val isCustomized = !customImportUrl.isNullOrBlank()
-    // Dart warehouse_adapter_detail_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = WarehouseStrings.adapterInfoTitle.zh,
-                largeTitle = WarehouseStrings.adapterInfoTitle.zh,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    QingyuBackIconButton(
-                        onBack = onBack,
-                        contentDescription = WarehouseStrings.cancelAction.zh,
-                    )
-                }
-            )
-        },
+    // Dart warehouse_adapter_detail_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    // 骨架、顶栏、返回键统一走共享套件（R1）；滚动走 QingyuPageList（R2）。
+    QingyuPageScaffold(
+        title = WarehouseStrings.adapterInfoTitle.zh,
+        onBack = onBack,
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MiuixTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 Button(
                     onClick = onOpenWebLogin,
                     modifier = Modifier.fillMaxWidth(),
-                    content = { Text(text = WarehouseStrings.openLoginInAppAction.zh) }
+                    content = { Text(text = WarehouseStrings.openLoginInAppAction.zh) },
                 )
             }
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 12.dp,
-                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                bottom = innerPadding.calculateBottomPadding() + 12.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        },
+    ) { innerPadding, scrollBehavior ->
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 12.dp),
         ) {
             // 元数据卡片
             item(key = "meta_card") {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    // 卡片里是普通内容（非 Preference 行），内边距必须自己给。
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = adapter.adapterName,
+                            style = MiuixTheme.textStyles.title4,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = school.name,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         HorizontalDivider()
@@ -151,23 +130,24 @@ fun WarehouseAdapterDetailPage(
             // 说明卡片
             if (adapter.description.isNotBlank()) {
                 item(key = "desc_card") {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = "使用说明",
+                                style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = adapter.description,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                lineHeight = 18.sp
+                                lineHeight = 18.sp,
                             )
                         }
                     }
@@ -176,22 +156,23 @@ fun WarehouseAdapterDetailPage(
 
             // 自定义登录入口地址卡片
             item(key = "custom_url_card") {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = WarehouseStrings.customLoginAddressAction.zh,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (isCustomized) WarehouseStrings.adapterOverrideImportUrlHint.zh else "可覆盖默认登录地址（如学校内网或 VPN 登录页）",
-                            fontSize = 12.sp,
-                            color = if (isCustomized) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = if (isCustomized) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         TextField(
@@ -205,12 +186,12 @@ fun WarehouseAdapterDetailPage(
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Button(
                                 onClick = { onSaveCustomUrl(editUrl) },
                                 modifier = Modifier.weight(1f),
-                                content = { Text(text = WarehouseStrings.saveAction.zh) }
+                                content = { Text(text = WarehouseStrings.saveAction.zh) },
                             )
                             if (isCustomized) {
                                 Button(
@@ -222,8 +203,8 @@ fun WarehouseAdapterDetailPage(
                                     content = { Text(text = WarehouseStrings.clearCustomLoginAddressAction.zh) },
                                     colors = ButtonDefaults.buttonColors(
                                         color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.error
-                                    )
+                                        contentColor = MiuixTheme.colorScheme.error,
+                                    ),
                                 )
                             }
                         }
@@ -233,21 +214,22 @@ fun WarehouseAdapterDetailPage(
 
             // 快捷复制卡片
             item(key = "links_card") {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "链接与调试",
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Button(
                                 onClick = onCopyLoginUrl,
@@ -255,8 +237,8 @@ fun WarehouseAdapterDetailPage(
                                 content = { Text(text = WarehouseStrings.copyLoginAddressAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.primary
-                                )
+                                    contentColor = MiuixTheme.colorScheme.primary,
+                                ),
                             )
                             Button(
                                 onClick = onCopyScriptUrl,
@@ -264,8 +246,8 @@ fun WarehouseAdapterDetailPage(
                                 content = { Text(text = WarehouseStrings.copyScriptAddressAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.primary
-                                )
+                                    contentColor = MiuixTheme.colorScheme.primary,
+                                ),
                             )
                         }
                     }
@@ -280,17 +262,17 @@ private fun DetailMetaRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Text(
             text = value,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
+            style = MiuixTheme.textStyles.footnote1,
+            fontWeight = FontWeight.Medium,
         )
     }
 }

@@ -1,13 +1,12 @@
 package com.mutx163.qingyu.pages.import
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 
 /**
  * ICS 日历导入页 · Compose 渲染层（P3-G1）。
@@ -47,17 +46,13 @@ fun IcsImportPage(
             )
         },
     ) { innerPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = innerPadding.calculateBottomPadding() + 12.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        // 页面级滚动统一走共享套件：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+        // 与右侧滚动条；横向留白由每个块自己带 QingyuPageCardMargin（12dp），
+        // 这样滚动条贴得到屏幕边缘，也与 SmallTitle 的 28dp 轴线对齐。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 12.dp),
         ) {
             item(key = "guide") {
                 ImportGuidePanel(
@@ -67,6 +62,7 @@ fun IcsImportPage(
                     step3Subtitle = ImportStrings.icsStep3Subtitle.zh,
                     supportedFilesSuffix = ImportStrings.supportedFilesSuffix.zh,
                     supportedFilesExtra = ImportStrings.supportedFilesImageHint.zh,
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                 )
             }
         }

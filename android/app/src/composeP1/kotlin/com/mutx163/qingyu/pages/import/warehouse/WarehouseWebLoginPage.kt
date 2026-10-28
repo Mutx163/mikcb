@@ -13,23 +13,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import com.mutx163.qingyu.components.QingyuBackIconButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Phone
@@ -75,53 +71,45 @@ fun WarehouseWebLoginPage(
     onToggleMacroRecording: () -> Unit = {},
     onExecuteImport: () -> Unit = {},
 ) {
-    Scaffold(
-        topBar = {
-            // 与 Dart 侧 warehouse_adapter_web_login_screen.dart:841-844 对齐
-            // （title: SizedBox.shrink()、collapsibleLargeTitle: false）：这一页滚动发生在 WebView
-            // 内部，大标题永远不会被收起，只会常驻占掉一行高度；用官方「无大标题」变体钉死，
-            // 不会漏出大标题。
-            SmallTopAppBar(
-                title = title,
-                navigationIcon = {
-                    QingyuBackIconButton(
-                        onBack = onBack,
-                        contentDescription = WarehouseStrings.cancelAction.zh,
-                    )
-                },
-                actions = {
-                    // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
-                    // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
-                    //
-                    // ⚠️ 图标是**临时选择**：miuix-icons 0.9.4 的 157 个扩展图标里没有
-                    // desktop / monitor 一类（只有 `Phone` / `GridView` / `ScreenMirroring` 这些近邻），
-                    // 而 Dart 用的是 Material 的 smartphone_rounded / desktop_windows_rounded。
-                    // 语义按 Dart：**按钮描述的是「点了会切到哪边」**。
-                    IconButton(onClick = {
-                        webViewController.toggleDesktopMode()
-                        onToggleDesktopMode()
-                    }) {
-                        Icon(
-                            imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
-                            contentDescription = if (webViewController.isDesktopMode) {
-                                WarehouseStrings.switchToMobileWebTooltip.zh
-                            } else {
-                                WarehouseStrings.switchToDesktopWebTooltip.zh
-                            },
-                        )
-                    }
-                    IconButton(onClick = {
-                        // 真视图刷新（原来只调外部回调，页面根本没在动）
-                        webViewController.reload()
-                        onReload()
-                    }) {
-                        Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
-                    }
-                    IconButton(onClick = onMoreOptions) {
-                        Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
-                    }
-                }
-            )
+    // 与 Dart 侧 warehouse_adapter_web_login_screen.dart:841-844 对齐
+    // （title: SizedBox.shrink()、collapsibleLargeTitle: false）：这一页滚动发生在 WebView
+    // 内部，大标题永远不会被收起，只会常驻占掉一行高度；用官方「单行小标题」变体钉死。
+    // 骨架、返回键、主题桥统一走共享套件（R1）。
+    QingyuPageScaffold(
+        title = title,
+        onBack = onBack,
+        smallTopBar = true,
+        actions = {
+            // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
+            // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
+            //
+            // ⚠️ 图标是**临时选择**：miuix-icons 0.9.4 的 157 个扩展图标里没有
+            // desktop / monitor 一类（只有 `Phone` / `GridView` / `ScreenMirroring` 这些近邻），
+            // 而 Dart 用的是 Material 的 smartphone_rounded / desktop_windows_rounded。
+            // 语义按 Dart：**按钮描述的是「点了会切到哪边」**。
+            IconButton(onClick = {
+                webViewController.toggleDesktopMode()
+                onToggleDesktopMode()
+            }) {
+                Icon(
+                    imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
+                    contentDescription = if (webViewController.isDesktopMode) {
+                        WarehouseStrings.switchToMobileWebTooltip.zh
+                    } else {
+                        WarehouseStrings.switchToDesktopWebTooltip.zh
+                    },
+                )
+            }
+            IconButton(onClick = {
+                // 真视图刷新（原来只调外部回调，页面根本没在动）
+                webViewController.reload()
+                onReload()
+            }) {
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
+            }
+            IconButton(onClick = onMoreOptions) {
+                Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
+            }
         },
         bottomBar = {
             Column(
@@ -132,7 +120,7 @@ fun WarehouseWebLoginPage(
             ) {
                 // 账号自动填充提示
                 if (sessionState.shouldPromptAutofill) {
-                    Card(
+                    QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 10.dp)
@@ -149,7 +137,7 @@ fun WarehouseWebLoginPage(
                                     "username",
                                     sessionState.rememberedAccount?.username.orEmpty()
                                 ),
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.Medium
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -172,7 +160,7 @@ fun WarehouseWebLoginPage(
 
                 // 凭据保存提示
                 if (sessionState.shouldPromptSave) {
-                    Card(
+                    QingyuCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 10.dp)
@@ -186,7 +174,7 @@ fun WarehouseWebLoginPage(
                         ) {
                             Text(
                                 text = WarehouseStrings.rememberPasswordTitle.zh,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.Medium
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -235,7 +223,7 @@ fun WarehouseWebLoginPage(
                 }
             }
         }
-    ) { innerPadding ->
+    ) { innerPadding, _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -251,7 +239,7 @@ fun WarehouseWebLoginPage(
                 ) {
                     Text(
                         text = WarehouseStrings.warehouseSessionAlreadyActive.zh,
-                        fontSize = 13.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
                     )
