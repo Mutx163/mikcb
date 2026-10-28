@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -25,34 +24,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
-import com.mutx163.qingyu.components.QingyuBackIconButton
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -98,35 +89,22 @@ fun SettingsPageScreen(
     onBack: (() -> Unit)? = null,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit = { _, _, _ -> },
 ) {
-    val colors = MiuixTheme.colorScheme
-    // 大标题要「跟着滚动收起」，官方 demo（docs/reference/miuix-demo topappbar.md:67-96）要求三件齐：
-    // 一个 ScrollBehavior 实例、顶栏拿到它、本页唯一的滚动容器把滚动手势喂给它。
-    // 少任何一件，Miuix 0.9.4 的 TopAppBar 都会把 largeTitle 常驻显示（它默认等于 title），
-    // 表现就是「上下拉，一直显示的都是大标题」。
-    val scrollBehavior = MiuixScrollBehavior()
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            if (spec.collapsibleLargeTitle) {
-                TopAppBar(
-                    title = spec.title,
-                    largeTitle = spec.title,
-                    navigationIcon = { if (onBack != null) BackIconButton(onBack = onBack) },
-                    scrollBehavior = scrollBehavior,
-                )
-            } else {
-                // 与 Dart 侧 collapsibleLargeTitle: false 的设置页对齐（settings_course_card.dart:81、
-                // settings_timetable_page.dart:102 等）：这些页本来就没有大标题，
-                // 用官方「无大标题」变体 SmallTopAppBar——它会把共享状态钉死，不会漏出大标题。
-                SmallTopAppBar(
-                    title = spec.title,
-                    navigationIcon = { if (onBack != null) BackIconButton(onBack = onBack) },
-                    scrollBehavior = scrollBehavior,
-                )
-            }
-        },
-        containerColor = colors.surface,
-    ) { innerPadding ->
+    // 顶栏 + 折叠行为 + 返回键统一交给共享骨架（规则 R1）：
+    // 骨架内部自己持有一个 ScrollBehavior，并通过 content 槽把它交给下面的 QingyuPageList，
+    // 于是「大标题跟着滚动收起」这条要求只需要在这里声明，不需要本页再手接一遍。
+    //
+    // 两个变体与 Dart 侧一一对应（`collapsibleLargeTitle`）：
+    //   true  → 官方可折叠大标题（smallTopBar = false，与 HyperosSubpage 默认一致）；
+    //   false → 官方 SmallTopAppBar（单行小标题，settings_course_card.dart:81 等本来就是它）。
+    //
+    // onBack 为 null 时骨架仍会画出返回键（套件的返回键是恒定存在的），这里退化成空实现：
+    // 20 页的真实宿主（SettingsHost / ShellPageIndex）**都**传了 onBack，null 只出现在
+    // 未接线的预览调用里，不构成「看得见却按不动」的线上路径。
+    QingyuPageScaffold(
+        title = spec.title,
+        onBack = onBack ?: {},
+        smallTopBar = !spec.collapsibleLargeTitle,
+    ) {
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             // 课程卡片页：预览占 4 成、可调项占 6 成（settings_course_card.dart:84-125）
             if (preview != null && spec.previewFlex != null && spec.contentFlex != null) {
@@ -139,8 +117,12 @@ fun SettingsPageScreen(
             } else {
                 Modifier.fillMaxSize()
             }
-            LazyColumn(
-                modifier = listWeight.fillMaxWidth().nestedScroll(scrollBehavior.nestedScrollConnection),
+            // innerPadding 由外层 Column 统一吃掉（上面的预览区也要落在顶栏之下），
+            // 所以这里传 0：列表内容与滚动条都还在那圈留白里面。
+            QingyuPageList(
+                innerPadding = PaddingValues(0.dp),
+                modifier = listWeight.fillMaxWidth(),
+                scrollBehavior = scrollBehavior,
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
@@ -149,14 +131,6 @@ fun SettingsPageScreen(
             }
         }
     }
-}
-
-@Composable
-private fun BackIconButton(onBack: () -> Unit) {
-    // 全站统一：官方 TopAppBar 里的标准左箭头（MiuixIcons.Back）。
-    // 旧实现把 Basic.ArrowRight 旋转 180° 凑数（0.8.8 时代没有返回箭头），
-    // 形状与其它页面不一致，已按用户口径换掉。
-    QingyuBackIconButton(onBack = onBack)
 }
 
 @Composable
