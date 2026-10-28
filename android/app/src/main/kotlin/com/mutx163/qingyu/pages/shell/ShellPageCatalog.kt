@@ -175,14 +175,7 @@ object ShellPageCatalog {
             code = "P3-C2",
             title = "课表 · 月视图",
             pages = listOf(
-                page(
-                    // 2026-10-27 深夜渲染层已落地（MonthViewPage.kt）；这一条留「不可用」
-                    // 是因为壳侧还没有数据层可喂，不是页面没写——原因文字按这个说，别写反。
-                    "P3-C2", "month", "月视图", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_HOST_DATA.label}：整页已写好（MonthViewPage），" +
-                        "要宿主传月网格 / 当日议程两个数据源与 dataRevision；壳里没有数据层，本轮按冻结口径未接",
-                    blockedBy = ShellBlockReason.MISSING_HOST_DATA,
-                ),
+                page("P3-C2", "month", "月视图", ShellPageDataKind.DIRECT),
             ),
         ),
         ShellPageBatch(
@@ -267,16 +260,8 @@ object ShellPageCatalog {
             pages = listOf(
                 page("P3-G3", "dataTransfer", "数据传输", ShellPageDataKind.DEMO),
                 page("P3-G3", "icsExport", "ICS 导出", ShellPageDataKind.DEMO),
-                page(
-                    "P3-G3", "qrSend", "二维码发送", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_HOST_SLOT.label}：页面要求宿主传 qrSlot 画二维码；仓库内没有二维码编码器，也没有槽位实现",
-                    blockedBy = ShellBlockReason.MISSING_HOST_SLOT,
-                ),
-                page(
-                    "P3-G3", "qrScan", "二维码扫码", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_HOST_SLOT.label}：页面要求宿主传 cameraSlot 画相机预览；仓库内无 CameraX / 扫码依赖",
-                    blockedBy = ShellBlockReason.MISSING_HOST_SLOT,
-                ),
+                page("P3-G3", "qrSend", "二维码发送", ShellPageDataKind.DIRECT),
+                page("P3-G3", "qrScan", "二维码扫码", ShellPageDataKind.DIRECT),
                 page("P3-G3", "lanEdit", "局域网编辑", ShellPageDataKind.DEMO),
                 page("P3-G3", "pickupCodes", "取件码", ShellPageDataKind.DIRECT),
             ),
@@ -314,6 +299,9 @@ object ShellPageCatalog {
             title = "实时活动与天气",
             pages = listOf(
                 page("P3-J", "live", "实时活动 / 灵动岛", ShellPageDataKind.DIRECT),
+                page("P3-J", "displayBefore", "上课前显示设置", ShellPageDataKind.DIRECT),
+                page("P3-J", "displayDuring", "下课前显示设置", ShellPageDataKind.DIRECT),
+                page("P3-J", "reminderTiming", "提醒时机设置", ShellPageDataKind.DIRECT),
                 // 2026-10-28 补口：这一屏原先标「暂不可用」（缺整页渲染层），
                 // 现已补上（`LiveKeepAliveSettingsPage` 的状态化重载）。
                 // 归 DIRECT：无障碍状态读的是**平台真值**（`KeepAliveAccessibilityStatus`），

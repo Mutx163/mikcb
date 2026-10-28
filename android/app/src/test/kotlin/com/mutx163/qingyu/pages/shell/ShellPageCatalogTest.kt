@@ -30,7 +30,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `总数与四档合计对得上`() {
-        assertEquals("目录总条数", 82, ShellPageCatalog.totalCount)
+        assertEquals("目录总条数", 85, ShellPageCatalog.totalCount)
 
         val sum = ShellPageDataKind.entries.sumOf { ShellPageCatalog.countOf(it) }
         assertEquals("四档数量之和必须等于总数（kind 不许漏档）", ShellPageCatalog.totalCount, sum)
@@ -38,8 +38,8 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可进入与不可用的数量`() {
-        assertEquals("可进入条数", 78, ShellPageCatalog.openable.size)
-        assertEquals("暂不可用条数", 3, ShellPageCatalog.countOf(ShellPageDataKind.UNAVAILABLE))
+        assertEquals("可进入条数", 84, ShellPageCatalog.openable.size)
+        assertEquals("暂不可用条数", 0, ShellPageCatalog.countOf(ShellPageDataKind.UNAVAILABLE))
         assertEquals("常驻条数（底部玻璃坞自身）", 1, ShellPageCatalog.countOf(ShellPageDataKind.ALWAYS_VISIBLE))
     }
 
@@ -97,7 +97,7 @@ class ShellPageCatalogTest {
     @Test
     fun `每条不可用都带可反查的分类`() {
         val unavailable = ShellPageCatalog.all.filter { it.kind == ShellPageDataKind.UNAVAILABLE }
-        assertEquals("不可用条数变了就要同步改这条断言与 L4 清单", 3, unavailable.size)
+        assertEquals("不可用条数变了就要同步改这条断言与 L4 清单", 0, unavailable.size)
 
         unavailable.forEach { entry ->
             // 分类不是给人看的形容词，是机器可判的字段：将来补了依赖/槽位，
@@ -130,21 +130,18 @@ class ShellPageCatalogTest {
 
         assertEquals(
             "缺整页渲染层",
-            // 2026-10-28 补口：`a.changelog` / `b.timetablePage` / `j.keepAlive`
-            // 三条（l4-recon 查出的台账虚标三处）全部补上渲染层 + 分派 + 覆盖登记，
-            // 这一档**清空**。将来再有缺渲染层的页面，在这里登记。
             emptySet<String>(),
             byReason[ShellBlockReason.MISSING_RENDERER]?.toSet() ?: emptySet<String>(),
         )
         assertEquals(
             "缺宿主槽位",
-            setOf("g3.qrSend", "g3.qrScan"),
-            byReason[ShellBlockReason.MISSING_HOST_SLOT]?.toSet(),
+            emptySet<String>(),
+            byReason[ShellBlockReason.MISSING_HOST_SLOT]?.toSet() ?: emptySet<String>(),
         )
         assertEquals(
             "缺宿主数据（页面已写好，只差壳侧喂数据）",
-            setOf("c2.month"),
-            byReason[ShellBlockReason.MISSING_HOST_DATA]?.toSet(),
+            emptySet<String>(),
+            byReason[ShellBlockReason.MISSING_HOST_DATA]?.toSet() ?: emptySet<String>(),
         )
         assertNull("本轮没有单纯缺库的条目；真有的话在这里登记", byReason[ShellBlockReason.MISSING_DEPENDENCY])
     }
@@ -166,7 +163,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可点判据只有直连与演示数据两档`() {
-        assertEquals(78, ShellPageCatalog.all.count { it.isOpenable })
+        assertEquals(84, ShellPageCatalog.all.count { it.isOpenable })
 
         val clickable = ShellPageCatalog.all.filter { it.isOpenable }
         assertTrue(

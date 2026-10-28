@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages
 
 import android.content.Intent
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -130,12 +131,18 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsPage
 import com.mutx163.qingyu.pages.sync.CloudBackupListPage
 import com.mutx163.qingyu.pages.sync.CloudBackupListViewState
+import com.mutx163.qingyu.pages.sync.CloudSyncController
 import com.mutx163.qingyu.pages.sync.CloudSyncLogic
 import com.mutx163.qingyu.pages.sync.CloudSyncPage
 import com.mutx163.qingyu.pages.sync.CloudSyncStatusSource
 import com.mutx163.qingyu.pages.sync.CoupleBusyState
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsPage
+import com.mutx163.qingyu.pages.sync.WebdavConnectSheet
+import com.mutx163.qingyu.platform.AppLocalSnapshotStore
+import com.mutx163.qingyu.platform.KeystoreSecretCipher
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.platform.WebdavConfigStoreImpl
 import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.pages.task.AddTaskPage
@@ -151,14 +158,19 @@ import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
+import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
+import com.mutx163.qingyu.pages.timetable.month.MonthViewHost
 import com.mutx163.qingyu.pages.transfer.DataTransferPage
 import com.mutx163.qingyu.pages.transfer.DataTransferViewState
 import com.mutx163.qingyu.pages.transfer.LanEditModel
 import com.mutx163.qingyu.pages.transfer.LanEditPage
 import com.mutx163.qingyu.pages.transfer.PickupCodesPage
+import com.mutx163.qingyu.pages.transfer.QrTransferSendHost
+import com.mutx163.qingyu.pages.transfer.QrTransferScanHost
+import com.mutx163.qingyu.pages.transfer.QrTransferSendSession
 import com.mutx163.qingyu.pages.transfer.TransferOverviewInput
 import com.mutx163.qingyu.pages.weather.WeatherCityPickerPage
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -325,23 +337,63 @@ fun ShellPageContent(
             )
         }
 
+        // ── P3-C2 课表 · 月视图 ────────────────────────────────────────
+        "c2.month" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            MonthViewHost(
+                snapshot = snapshot,
+                onAddCourse = { date ->
+                    wiring.pendingAddCourseSeed = Pair(date.dayOfWeek.value, 1)
+                    wiring.pendingEditCourse = null
+                    onOpenPage("d1.addCourse")
+                },
+            )
+        }
+
         // ── P3-C3 课表 · 日视图 ────────────────────────────────────────
-        "c3.day" -> DayViewPage(
-            initialWeek = 1,
-            initialDayOfWeek = 1,
-            dataProvider = { week, dayOfWeek ->
-                DayViewPageData(
-                    summaryState = DayViewSummaryLogic.buildSummaryState(
-                        week = week,
-                        dateLabel = "第 $week 周 · 周$dayOfWeek",
-                        isToday = false,
-                        courseCount = 0,
-                        scheduleCount = 0,
-                    ),
-                )
-            },
-            onCloseToWeekView = onBack,
-        )
+        "c3.day" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            DayViewPage(
+                initialWeek = snapshot.currentWeek.coerceAtLeast(1),
+                initialDayOfWeek = LocalDate.now().dayOfWeek.value,
+                dataProvider = { week, dayOfWeek ->
+                    val dayCourses = snapshot.courses.filter { c ->
+                        c.dayOfWeek == dayOfWeek && c.isActiveInWeek(week)
+                    }
+                    DayViewPageData(
+                        summaryState = DayViewSummaryLogic.buildSummaryState(
+                            week = week,
+                            dateLabel = "第 $week 周 · 周$dayOfWeek",
+                            isToday = week == snapshot.currentWeek && dayOfWeek == LocalDate.now().dayOfWeek.value,
+                            courseCount = dayCourses.size,
+                            scheduleCount = 0,
+                        ),
+                        agendaEntries = dayCourses.map { course ->
+                            DayAgendaEntry.CourseEntry(
+                                course = course,
+                                isCurrentWeekCourse = true,
+                            )
+                        },
+                    )
+                },
+                onCloseToWeekView = onBack,
+                onOpenCourse = { courseId ->
+                    wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
+                    wiring.pendingAddCourseSeed = null
+                    onOpenPage("d1.addCourse")
+                },
+            )
+        }
 
         // ── P3-D1 课程表单与概览 ───────────────────────────────────────
         // Phase 3.5：这一页改成**真接线**——周次表与节数取自仓储快照，
@@ -652,48 +704,77 @@ fun ShellPageContent(
         }
 
         // ── P3-F 同步与备份 ───────────────────────────────────────────
-        "f.cloudSync" -> CloudSyncPage(
-            viewState = CloudSyncLogic.buildViewState(
-                config = WebdavSyncConfig(),
-                hasStoredPassword = false,
-                status = CloudSyncStatusSource(),
-                isCreatingBackup = false,
-                loadingBackups = false,
-                backupEntries = emptyList(),
-                isLoading = false,
-                deviceLabel = "Compose 壳",
-            ),
-            onBack = onBack,
-            onConnect = {},
-            onDisconnect = {},
-            onToggleEnabled = {},
-            onProviderSelected = {},
-            onModeSelected = {},
-            onBaseUrlChange = {},
-            onRemoteFolderChange = {},
-            onDeviceLabelChange = {},
-            onSaveAdvanced = {},
-            onSyncNow = {},
-            onCreateBackup = {},
-            onOpenBackup = {},
-            onViewAllBackups = {},
-            onMaxCountSelected = {},
-            onMaxAgeSelected = {},
-            onManualProtectedChange = {},
-        )
-        "f.backupList" -> CloudBackupListPage(
-            viewState = CloudBackupListViewState(
-                isLoading = false,
-                isCreatingBackup = false,
-                rows = emptyList(),
-                title = "云备份",
-                createLabel = "创建备份",
-                emptyText = "暂无备份",
-            ),
-            onBack = onBack,
-            onCreateBackup = {},
-            onOpenBackup = {},
-        )
+        // ── P3-F 同步与备份（控制器驱动；task-22 `f39bcd11`） ─────────────
+        // 以前这里传的是**写死的假 viewState + 16 个空回调** ⇒ 整页是死的。
+        "f.cloudSync" -> {
+            val context = LocalContext.current
+            val configStore = remember(context) {
+                WebdavConfigStoreImpl(
+                    store = PrefsKeyValueStore(context),
+                    cipher = KeystoreSecretCipher(),
+                )
+            }
+            val controller = remember(configStore) {
+                CloudSyncController(
+                    store = configStore,
+                    snapshotStore = AppLocalSnapshotStore(context),
+                    deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                )
+            }
+            var showConnect by remember { mutableStateOf(false) }
+            CloudSyncPage(
+                controller = controller,
+                onBack = onBack,
+                onConnect = { showConnect = true },
+                // ⚠️ 备份详情/恢复 sheet 本批不做 ⇒ 点某条备份**只会提示、不会打开详情**。
+                // 按「不许假装」的标准，这里给一句诚实的提示而不是空 lambda（空 lambda
+                // 会让用户以为是自己点歪了）。真正的详情 sheet 是下一批。
+                onOpenBackup = {
+                    Toast.makeText(context, "备份详情尚未开放", Toast.LENGTH_SHORT).show()
+                },
+                onViewAllBackups = { onOpenPage("f.backupList") },
+            )
+            if (showConnect) {
+                WebdavConnectSheet(
+                    initialUsername = controller.config.username,
+                    testing = false,
+                    connecting = false,
+                    onTestConnection = { u, p ->
+                        if (!controller.testConnection(u, p)) {
+                            Toast.makeText(context, "连接测试失败", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onConfirm = { u, p ->
+                        controller.connect(u, p)
+                        showConnect = false
+                    },
+                    onCancel = { showConnect = false },
+                )
+            }
+        }
+        "f.backupList" -> {
+            val context = LocalContext.current
+            val configStore = remember(context) {
+                WebdavConfigStoreImpl(
+                    store = PrefsKeyValueStore(context),
+                    cipher = KeystoreSecretCipher(),
+                )
+            }
+            val controller = remember(configStore) {
+                CloudSyncController(
+                    store = configStore,
+                    snapshotStore = AppLocalSnapshotStore(context),
+                    deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                )
+            }
+            CloudBackupListPage(
+                controller = controller,
+                onBack = onBack,
+                onOpenBackup = {
+                    Toast.makeText(context, "备份详情尚未开放", Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
         "f.couple" -> CoupleTimetableSettingsPage(
             viewState = CoupleTimetableSettingsLogic.buildViewState(
                 binding = null,
@@ -782,29 +863,61 @@ fun ShellPageContent(
         "g2.customDebug" -> WarehouseCustomDebugPage(onBack = onBack)
         "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
 
-        // ── P3-G3 导出与传输（二维码两页不在此，见文件头第 3 条）─────
-        "g3.dataTransfer" -> DataTransferPage(
-            viewState = DataTransferViewState(
-                overview = TransferOverviewInput(
-                    courseCount = 0,
-                    activeProfileName = null,
-                    profileCount = 0,
-                    timeSchemeCount = 0,
-                    currentWeek = 1,
-                    semesterStartDate = null,
+        // ── P3-G3 导出与传输 ──────────────────────────────────────────
+        "g3.dataTransfer" -> {
+            val repository = wiring.timetable
+            val snapshot = repository.snapshot
+            val activeProfile = snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
+                ?: snapshot.profiles.firstOrNull()
+            DataTransferPage(
+                viewState = DataTransferViewState(
+                    overview = TransferOverviewInput(
+                        courseCount = snapshot.courses.size,
+                        activeProfileName = activeProfile?.name,
+                        profileCount = snapshot.profiles.size,
+                        timeSchemeCount = 1,
+                        currentWeek = snapshot.currentWeek,
+                        semesterStartDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+                    ),
                 ),
-            ),
-            onBack = onBack,
-            onExportCurrent = {},
-            onExportAllData = {},
-            onExportTimeTemplate = {},
-            onOpenIcsExport = {},
-            onChooseFileAndImport = {},
-            onQrSend = { _, _ -> },
-            onQrSendAll = {},
-            onQrScan = {},
-            onUndo = {},
-        )
+                onBack = onBack,
+                onExportCurrent = {},
+                onExportAllData = {},
+                onExportTimeTemplate = {},
+                onOpenIcsExport = { onOpenPage("g3.icsExport") },
+                onChooseFileAndImport = {},
+                onQrSend = { _, _ -> onOpenPage("g3.qrSend") },
+                onQrSendAll = { onOpenPage("g3.qrSend") },
+                onQrScan = { onOpenPage("g3.qrScan") },
+                onUndo = {},
+            )
+        }
+        "g3.qrSend" -> {
+            val repository = wiring.timetable
+            val snapshot = repository.snapshot
+            val activeProfile = snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
+                ?: snapshot.profiles.firstOrNull()
+            val profileName = activeProfile?.name ?: "默认课表"
+            val payload = remember(profileName) {
+                "QingyuTimetable:$profileName".toByteArray(Charsets.UTF_8)
+            }
+            val session = remember(payload) {
+                QrTransferSendSession.prepare(payload)
+            }
+            QrTransferSendHost(
+                session = session,
+                onBack = onBack,
+                onStop = onBack,
+            )
+        }
+        "g3.qrScan" -> {
+            QrTransferScanHost(
+                onBack = onBack,
+                onImportFullBackup = {
+                    onBack()
+                },
+            )
+        }
         "g3.icsExport" -> IcsExportPage(
             viewState = IcsExportViewState(
                 options = IcsExportOptions(
