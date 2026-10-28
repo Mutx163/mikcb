@@ -2,14 +2,3 @@
 # 一行一处待还的债：<相对路径>|<规则>|<说明>
 # 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
 # 由 scripts/compose-style-lint.ps1 -Domain live -Write 重新生成。
-live/DisplaySettingsPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 95 行）
-live/DisplaySettingsPage.kt|R4|写死字号 9 处，首处第 317 行（应用 MiuixTheme.textStyles）
-live/DisplaySettingsPage.kt|R5|写死颜色 2 处，首处第 843 行（应用主题语义槽）
-live/DisplaySettingsPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 555 行）
-live/LiveIslandPreview.kt|R4|写死字号 9 处，首处第 77 行（应用 MiuixTheme.textStyles）
-live/LiveIslandPreview.kt|R5|写死颜色 8 处，首处第 225 行（应用主题语义槽）
-live/LiveKeepAliveSettingsPage.kt|R2|用 Column+verticalScroll 当主滚动（非惰性，第 131 行）
-live/LiveKeepAliveSettingsPage.kt|R4|写死字号 4 处，首处第 284 行（应用 MiuixTheme.textStyles）
-live/ReminderTimingPage.kt|R2|用 Column+verticalScroll 当主滚动（非惰性，第 105 行）
-live/ReminderTimingPage.kt|R4|写死字号 1 处，首处第 308 行（应用 MiuixTheme.textStyles）
-live/ReminderTimingPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 310 行）

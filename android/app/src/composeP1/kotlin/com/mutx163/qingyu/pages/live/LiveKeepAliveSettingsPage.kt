@@ -9,15 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,12 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -42,14 +39,9 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Settings
@@ -84,52 +76,25 @@ fun LiveKeepAliveSettingsPage(
     onOpenDoNotDisturbAccessSettings: () -> Unit = {},
 ) {
     val dark = isSystemInDarkTheme()
-    val colors = MiuixTheme.colorScheme
     // 确认弹窗是纯屏上交互状态，不需要宿主参与。
     var confirmVisible by remember { mutableStateOf(false) }
 
-    // 顶栏折叠行为：Dart `live_settings_subpages.dart:1611-1614` 用 HyperosSubpage
-    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`）+ 纯 Text 标题 ⇒ 有大标题；
-    // body 是 HyperosListView（`hyperos_page.dart:925-928`：SingleChildScrollView + Column）⇒ 可滚。
-    // 一个页面实例一个：返回重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    Scaffold(
-        containerColor = colors.surface,
-        topBar = {
-            TopAppBar(
-                title = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
-                largeTitle = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 与 TopAppBar 已各加一次，
-                // 再写一次是第三次叠加（2026-10-27，同 LiveSettingsPage.kt:79-81）。
-                .padding(innerPadding),
+    // 顶栏折叠行为由 QingyuPageScaffold 统一给（Dart `live_settings_subpages.dart:1611-1614`
+    // 用 HyperosSubpage，`collapsibleLargeTitle` 默认 true ⇒ 可折叠大标题）。
+    // 滚动容器走官方配方的 QingyuPageList：Dart 的 HyperosListView 是
+    // SingleChildScrollView + Column，官方 demo 侧一律是 LazyColumn + 滚动三件套，
+    // 「样式从 demo」⇒ 这里换成惰性列表（末端轻震 + 过度滚动 + 右侧滚动条）。
+    QingyuPageScaffold(
+        title = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
+        onBack = onBack,
+    ) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = QingyuShapes.SECTION_GAP.dp),
         ) {
-            // Dart 侧 body 是 HyperosListView（`hyperos_page.dart:925-928`：
-            // SingleChildScrollView + Column）⇒ 就是「Column + verticalScroll」，
-            // 所以手写滚动容器；nestedScroll 必须挂在滚动容器外层，
-            // 顺序反了滚动手势不会上抛，大标题永不折叠。
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState()),
-            ) {
+            // Dart `:1616-1617` 明说「单组页面不再拉分组标签」⇒ 整页只有这一张设置组卡。
+            item(key = "keep-alive") {
                 QingyuCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -281,7 +246,7 @@ private fun LiveKeepAliveServiceRow(
         Text(
             text = LiveKeepAliveStrings.keepAliveServiceTitle.zh,
             modifier = Modifier.weight(1f),
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.body2,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
         )
@@ -331,14 +296,13 @@ private fun LiveDoNotDisturbAccessRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.zh,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.zh,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -346,7 +310,7 @@ private fun LiveDoNotDisturbAccessRow(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = LiveKeepAliveStrings.statusLabel(status),
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
