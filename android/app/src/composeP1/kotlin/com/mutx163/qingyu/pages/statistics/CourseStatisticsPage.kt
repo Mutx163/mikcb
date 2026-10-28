@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +31,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -44,17 +41,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Location
@@ -65,6 +63,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 课程统计主页 · Compose 渲染层（Phase 3）。
@@ -78,6 +77,29 @@ import top.yukonga.miuix.kmp.icon.extended.TopDownloads
  * - 无课程时是空态（图标 + "暂无课程数据" + "添加课程后即可查看统计"）。
  *
  * 数据口径全部来自 [CourseStatisticsViewState]（模型层已算好），这里只画。
+ *
+ * ## 版式（2026-10-28 按页面样式规则 R1..R6 重排）
+ *
+ * 原先自己 `Scaffold + TopAppBar + Column + verticalScroll`，并写了 36 处字面量字号
+ * 与 4 处写死颜色。现在：顶栏/返回键/折叠行为走 [QingyuPageScaffold]（R1）；
+ * 主滚动走 [QingyuPageList]（R2，惰性列表 + 滚动条 + 末端触感）；
+ * 卡片走 [QingyuCard]（R3，按压反馈 + 语义圆角）；分组标题走 [QingyuSectionTitle]（R6）。
+ *
+ * ### 字号映射（R4）
+ *
+ * 官方字阶只有 11 / 13 / 14 / 16 / 17 / 18 / 20 / 24 / 32 这几档，本页原先用的
+ * 10 / 11 / 12 / 13 / 14 / 15 / 16 / 18 / 24 里有几个不在档上，按下表就近落到字阶：
+ *
+ * | 原值 | 字阶 | 说明 |
+ * |---|---|---|
+ * | 10 / 11 / 12 | `footnote2`(11) | 卡内说明、轴标签、徽标小字 |
+ * | 13 | `footnote1`(13) | 空态提示、无数据文案 |
+ * | 14 | `body2`(14) | 正文、图例、故事内容 |
+ * | 15 | `main`(17) | 卡片/行标题：Dart 对应 `listTitle` = 17（`hyperos_miuix_spec.dart:80`），
+ * 且本仓行标题的既有约定也是 `main` |
+ * | 16 | `body1`(16) | 空态标题、徽章星标 |
+ * | 18 | `title4`(18) | 中号读数（Dart `metricMedium` = 18） |
+ * | 24 | `title2`(24) | 大号读数（Dart `metricLarge` = 24） |
  */
 @Composable
 fun CourseStatisticsPage(
@@ -94,102 +116,96 @@ fun CourseStatisticsPage(
     val dark = isSystemInDarkTheme()
     var activeAchievementDetail by remember { mutableStateOf<AchievementView?>(null) }
 
-    // 大标题折叠行为：Dart 原件 lib/screens/course_statistics_screen.dart:122 走 HyperosSubpage，
-    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = viewState.title,
-                largeTitle = viewState.title,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = viewState.title,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    if (viewState.showHeaderActions) {
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(
-                                imageVector = MiuixIcons.Settings,
-                                contentDescription = StatisticsStrings.statisticsSettingsTitle.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        IconButton(onClick = { if (!isExporting) onOpenShare() }) {
-                            Icon(
-                                imageVector = MiuixIcons.Share,
-                                contentDescription = StatisticsStrings.statisticsShareLabel.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    }
-                },
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写状态栏内边距：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
-            if (!viewState.hasData) {
+    // 顶栏 / 返回键 / 折叠行为 / 容器底色统一走共享骨架（规则 R1）。
+    // Dart 原件 lib/screens/course_statistics_screen.dart:122 走 HyperosSubpage，
+    // collapsibleLargeTitle 默认 true ⇒ 用骨架的默认变体（可折叠大标题）。
+    QingyuPageScaffold(
+        title = viewState.title,
+        onBack = onBack,
+        actions = {
+            if (viewState.showHeaderActions) {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = MiuixIcons.Settings,
+                        contentDescription = StatisticsStrings.statisticsSettingsTitle.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+                IconButton(onClick = { if (!isExporting) onOpenShare() }) {
+                    Icon(
+                        imageVector = MiuixIcons.Share,
+                        contentDescription = StatisticsStrings.statisticsShareLabel.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+            }
+        },
+    ) {
+        if (!viewState.hasData) {
+            // 空态自己不吃内边距，这里补一层，免得内容钻到顶栏底下。
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 StatisticsEmptyState(
                     title = viewState.emptyTitle,
                     hint = viewState.emptyHint,
                     dark = dark,
                 )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        // nestedScroll 必须在 verticalScroll 外层：反了则手势不冒泡，大标题收不起来。
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+            }
+        } else {
+            // 官方页面骨架（规则 R2）：惰性列表 + 右侧滚动条 + 末端触感 + 顶栏折叠联动。
+            // 横向留白交给每个块自己带 QingyuPageCardMargin（12dp），
+            // 与分组标题 SmallTitle 自带的 28dp 左缘对齐；不在 contentPadding 里加左右内边距。
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item(key = "tabs") {
                     StatisticsTabRow(
                         tabs = viewState.tabs,
                         selectedIndex = viewState.selectedTabIndex,
                         onTabSelected = onTabSelected,
                         dark = dark,
                     )
+                }
 
-                    val semester = viewState.semester
-                    if (viewState.selectedTabIndex == 0 && semester != null) {
-                        OverviewCard(metrics = semester.overview, dark = dark)
+                val semester = viewState.semester
+                if (viewState.selectedTabIndex == 0 && semester != null) {
+                    item(key = "overview") { OverviewCard(metrics = semester.overview, dark = dark) }
+                    item(key = "semesterProgress") {
                         SemesterProgressCard(view = semester.progress, dark = dark)
+                    }
+                    item(key = "weeklyComparison") {
                         WeeklyComparisonCard(view = semester.comparison, dark = dark)
-                        SectionBlock(StatisticsStrings.statisticsAchievementsTitle.zh, dark) {
+                    }
+                    item(key = "achievements") {
+                        SectionBlock(StatisticsStrings.statisticsAchievementsTitle.zh) {
                             AchievementGrid(
                                 achievements = semester.achievements,
                                 dark = dark,
                                 onAchievementClick = { activeAchievementDetail = it },
                             )
                         }
-                        if (semester.showStoriesSection) {
-                            SectionBlock(StatisticsStrings.statisticsStoriesTitle.zh, dark) {
+                    }
+                    if (semester.showStoriesSection) {
+                        item(key = "stories") {
+                            SectionBlock(StatisticsStrings.statisticsStoriesTitle.zh) {
                                 StoryList(stories = semester.stories, dark = dark)
                             }
                         }
-                        SectionBlock(StatisticsStrings.statisticsDailyDistribution.zh, dark) {
+                    }
+                    item(key = "dailyDistribution") {
+                        SectionBlock(StatisticsStrings.statisticsDailyDistribution.zh) {
                             DailyBarsChart(view = semester.dailyChart, dark = dark)
                         }
-                        SectionBlock(StatisticsStrings.statisticsNatureRatio.zh, dark) {
+                    }
+                    item(key = "natureRatio") {
+                        SectionBlock(StatisticsStrings.statisticsNatureRatio.zh) {
                             NatureRatioBlock(view = semester.nature, dark = dark)
                         }
-                        SectionBlock(StatisticsStrings.statisticsMoreTitle.zh, dark) {
+                    }
+                    item(key = "more") {
+                        SectionBlock(StatisticsStrings.statisticsMoreTitle.zh) {
                             AnalysisEntryList(
                                 entries = viewState.analysisEntries,
                                 onOpenAnalysis = onOpenAnalysis,
@@ -197,9 +213,11 @@ fun CourseStatisticsPage(
                                 dark = dark,
                             )
                         }
-                    } else {
-                        val week = viewState.week
-                        if (week != null) {
+                    }
+                } else {
+                    val week = viewState.week
+                    if (week != null) {
+                        item(key = "week") {
                             val weeklyStats = week.weeklyStats
                             val comparison = week.comparison
                             if (weeklyStats != null && comparison != null) {
@@ -224,8 +242,6 @@ fun CourseStatisticsPage(
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
@@ -251,14 +267,14 @@ private fun StatisticsEmptyState(title: String, hint: String, dark: Boolean) {
     ) {
         Text(
             text = title,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
         )
         Text(
             text = hint,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 6.dp),
@@ -275,7 +291,7 @@ private fun StatisticsTabRow(
     onTabSelected: (Int) -> Unit,
     dark: Boolean,
 ) {
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(4.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             tabs.forEachIndexed { index, label ->
                 val isSelected = index == selectedIndex
@@ -283,8 +299,11 @@ private fun StatisticsTabRow(
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                 Box(
+                    // 选中段的底色取「最高级容器」语义槽：原先写死的
+                    // 0xFFE5E5EA（亮）/ 0xFF2C2C2E（暗）与该槽位（#E8E8E8 / #2D2D2D）几乎同值，
+                    // 换成槽位后深色模式与换主题色都能跟着走（规则 R5）。
                     modifier = if (isSelected) {
-                        base.background(if (dark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA))
+                        base.background(MiuixTheme.colorScheme.surfaceContainerHighest)
                     } else {
                         base
                     }
@@ -294,7 +313,7 @@ private fun StatisticsTabRow(
                 ) {
                     Text(
                         text = label,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isSelected) {
                             Color(QingyuTheme.primaryText(dark))
@@ -310,16 +329,18 @@ private fun StatisticsTabRow(
 
 // ── 分组块（HyperosSettingsBlock = 块头 + 卡片） ──
 
+/**
+ * 一个「分组块」：官方 `SmallTitle` 分组标题 + 一张卡片。
+ *
+ * 标题不再自己拼 `Text(13sp) + padding(start = 4.dp)`——那对不齐官方那条
+ * 「页面 0 → Card 12 → Preference 16 = 文字左缘 28」的轴线（规则 R6），
+ * 改走 [QingyuSectionTitle]（内部就是官方 `SmallTitle`，自带 28dp 左缘）。
+ */
 @Composable
-private fun SectionBlock(title: String, dark: Boolean, content: @Composable () -> Unit) {
+private fun SectionBlock(title: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontSize = 13.sp,
-            color = Color(QingyuTheme.sectionLabel(dark)),
-            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-        )
-        Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+        QingyuSectionTitle(text = title)
+        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
             content()
         }
     }
@@ -330,7 +351,7 @@ private fun SectionBlock(title: String, dark: Boolean, content: @Composable () -
 @Composable
 private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
     if (metrics.isEmpty()) return
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             metrics.forEachIndexed { index, metric ->
                 if (index > 0) {
@@ -347,7 +368,7 @@ private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
                 ) {
                     Text(
                         text = metric.value,
-                        fontSize = 24.sp,
+                        style = MiuixTheme.textStyles.title2,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -359,7 +380,7 @@ private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
                     )
                     Text(
                         text = metric.label,
-                        fontSize = 11.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = if (metric.highlight) {
@@ -380,18 +401,18 @@ private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
 @Composable
 private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
     val primary = Color(QingyuTheme.primary(dark = dark))
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = view.weekLabel,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.SemiBold,
                 color = primary,
             )
@@ -399,7 +420,7 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
         if (view.rangeLabel != null) {
             Text(
                 text = view.rangeLabel,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.secondaryText(dark)),
@@ -438,13 +459,13 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = view.percentText,
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Medium,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = view.detailLabel,
-                    fontSize = 11.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     maxLines = 2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
@@ -457,14 +478,14 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
                 ) {
                     Text(
                         text = view.remainingLabel,
-                        fontSize = 18.sp,
+                        style = MiuixTheme.textStyles.title4,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.End,
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
                     Text(
                         text = view.factLabel,
-                        fontSize = 11.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         maxLines = 2,
                         textAlign = TextAlign.End,
                         color = Color(QingyuTheme.secondaryText(dark)),
@@ -485,16 +506,20 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
         DeltaTone.DOWN -> Color(QingyuTheme.success(dark))
         DeltaTone.FLAT -> Color(QingyuTheme.secondaryText(dark))
     }
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )
-            Text(text = view.weekLabel, fontSize = 12.sp, color = Color(QingyuTheme.secondaryText(dark)))
+            Text(
+                text = view.weekLabel,
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
         }
         Row(
             modifier = Modifier
@@ -533,7 +558,7 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
         if (view.newSemesterHint != null) {
             Text(
                 text = view.newSemesterHint,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -554,7 +579,7 @@ private fun ComparisonCell(
     Column(modifier = modifier, horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
         Text(
             text = value,
-            fontSize = 24.sp,
+            style = MiuixTheme.textStyles.title2,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -563,7 +588,7 @@ private fun ComparisonCell(
         )
         Text(
             text = label,
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (alignEnd) TextAlign.End else TextAlign.Start,
@@ -631,7 +656,7 @@ private fun AchievementBadge(
         ) {
             Text(
                 text = "★",
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 color = if (item.isUnlocked) {
                     Color(QingyuTheme.onAccent(dark))
                 } else {
@@ -641,7 +666,7 @@ private fun AchievementBadge(
         }
         Text(
             text = item.name,
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
@@ -655,7 +680,7 @@ private fun AchievementBadge(
         if (item.progressLabel != null) {
             Text(
                 text = item.progressLabel,
-                fontSize = 10.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -682,12 +707,12 @@ private fun StoryList(stories: List<StoryView>, dark: Boolean) {
             }
             Text(
                 text = story.title,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Text(
                 text = boldSegments(story.content),
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 lineHeight = 19.sp,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
@@ -731,8 +756,8 @@ private fun DailyBarsChart(view: DailyChartView, dark: Boolean) {
                 .height(168.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = topLabel, fontSize = 10.sp, color = Color(QingyuTheme.secondaryText(dark)))
-            Text(text = "0", fontSize = 10.sp, color = Color(QingyuTheme.secondaryText(dark)))
+            Text(text = topLabel, style = MiuixTheme.textStyles.footnote2, color = Color(QingyuTheme.secondaryText(dark)))
+            Text(text = "0", style = MiuixTheme.textStyles.footnote2, color = Color(QingyuTheme.secondaryText(dark)))
         }
         Column(modifier = Modifier.weight(1f)) {
             Canvas(
@@ -777,7 +802,7 @@ private fun DailyBarsChart(view: DailyChartView, dark: Boolean) {
                 view.bars.forEach { bar ->
                     Text(
                         text = bar.label,
-                        fontSize = 10.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         fontWeight = if (bar.isMax) FontWeight.Medium else FontWeight.Normal,
                         textAlign = TextAlign.Center,
                         color = if (bar.isMax) {
@@ -802,7 +827,7 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
     if (!view.hasData) {
         Text(
             text = StatisticsStrings.statisticsNoData.zh,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier
                 .fillMaxWidth()
@@ -821,7 +846,7 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
             if (view.missingLabel != null) {
                 Text(
                     text = view.missingLabel,
-                    fontSize = 10.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     textAlign = TextAlign.Center,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier
@@ -850,18 +875,18 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
                     ) {
                         Text(
                             text = legend.label,
-                            fontSize = 14.sp,
+                            style = MiuixTheme.textStyles.body2,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Text(
                             text = legend.detail,
-                            fontSize = 11.sp,
+                            style = MiuixTheme.textStyles.footnote2,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }
                     Text(
                         text = legend.ratioText,
-                        fontSize = 14.sp,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.SemiBold,
                         color = color,
                     )
@@ -993,7 +1018,7 @@ private fun AnalysisEntryList(
                 )
                 Text(
                     text = entry.title,
-                    fontSize = 15.sp,
+                    style = MiuixTheme.textStyles.main,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
                 )
@@ -1029,11 +1054,11 @@ private fun WeekOverviewCard(
     onWeekChanged: (Int) -> Unit,
     dark: Boolean,
 ) {
-    Card(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = StatisticsStrings.statisticsWeekSelector.filled("week", week.weekNumber.toString()),
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
@@ -1042,7 +1067,7 @@ private fun WeekOverviewCard(
                 if (week.weekNumber > 1) {
                     Text(
                         text = "‹",
-                        fontSize = 18.sp,
+                        style = MiuixTheme.textStyles.title4,
                         color = Color(QingyuTheme.primary(dark = dark)),
                         modifier = Modifier
                             .clickable { onWeekChanged(week.weekNumber - 1) }
@@ -1052,7 +1077,7 @@ private fun WeekOverviewCard(
                 if (week.weekNumber < week.maxWeek) {
                     Text(
                         text = "›",
-                        fontSize = 18.sp,
+                        style = MiuixTheme.textStyles.title4,
                         color = Color(QingyuTheme.primary(dark = dark)),
                         modifier = Modifier
                             .clickable { onWeekChanged(week.weekNumber + 1) }
@@ -1088,20 +1113,29 @@ private fun WeekOverviewCard(
         }
         Text(
             text = StatisticsStrings.statisticsWeekSelector.filled("week", currentWeek.toString()),
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.padding(top = 8.dp),
         )
     }
 }
 
-// ── 图表配色（对齐 Dart `HyperosIconColors` 的语义色） ──
+// ── 图表配色（Dart `HyperosIconColors` 的语义色） ──
+//
+// 数值的唯一定义处在 `theme/QingyuPalette.kt` 的 [QingyuIconColors]（`QingyuPaletteTest` 钉着 9 个值）。
+// 这里原先自己抄了一份**不同**的 Material 调色板字面量（0xFF26A69A / 0xFF2196F3 / 0xFF9C27B0），
+// KDoc 却写着「对齐 Dart HyperosIconColors」——实际与 Dart 的
+// 0xFF14B8A6 / 0xFF3482FF / 0xFF8B5CF6 并不一致，属于「两处定义同一色板且值不同」。
+// 现在改引用唯一出处：既消掉写死色（规则 R5），也修掉这处值不一致。
+//
+// 这些是**数据系列语义色**（青=最低档、蓝=必修、紫=选修），亮暗同值、不跟主题种子色走，
+// 与 `charts/ChartPrimitives.kt` 的 `ChartPalette` 同一套出处。
 
-/** Dart `HyperosIconColors.teal`。 */
-private val TealAccent = Color(0xFF26A69A)
+/** Dart `HyperosIconColors.teal`（柱状图最低档）。 */
+private val TealAccent = Color(QingyuIconColors.TEAL)
 
 /** Dart `HyperosIconColors.blue`（必修）。 */
-private val RequiredAccent = Color(0xFF2196F3)
+private val RequiredAccent = Color(QingyuIconColors.BLUE)
 
 /** Dart `HyperosIconColors.purple`（选修）。 */
-private val ElectiveAccent = Color(0xFF9C27B0)
+private val ElectiveAccent = Color(QingyuIconColors.PURPLE)

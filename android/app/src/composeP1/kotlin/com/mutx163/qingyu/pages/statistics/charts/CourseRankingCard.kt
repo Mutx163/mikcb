@@ -29,7 +29,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.statistics.CourseSemesterStat
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -279,7 +278,6 @@ private fun SlotChips(labels: List<String>, dark: Boolean) {
                         Text(
                             text = label,
                             style = MiuixTheme.textStyles.footnote2,
-                            fontSize = 11.sp,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }

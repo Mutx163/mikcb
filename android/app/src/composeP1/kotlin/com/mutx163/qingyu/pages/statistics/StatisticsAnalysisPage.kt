@@ -22,25 +22,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCardRole
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCell
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAnalysisViewState
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 
 /**
@@ -71,64 +64,42 @@ fun StatisticsAnalysisPage(
     onBack: () -> Unit,
     onOpenCourse: (String) -> Unit = {},
 ) {
-    val dark = isSystemInDarkTheme()
-
-    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = viewState.title,
-                    largeTitle = viewState.title,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = viewState.title,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                )
-            },
-        ) { innerPadding ->
-            if (!viewState.hasData) {
-                EmptyState(
-                    title = viewState.emptyTitle,
-                    subtitle = viewState.emptySubtitle,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                )
-            } else {
-                // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
-                QingyuPageList(
-                    innerPadding = innerPadding,
-                    scrollBehavior = scrollBehavior,
-                    horizontalPadding = QingyuPageCardMargin,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            for (cell in viewState.cells) {
-                                when (cell) {
-                                    is AnalysisCell.Gap -> Spacer(Modifier.height(8.dp))
-                                    is AnalysisCell.Card -> AnalysisCard(
-                                        cell = cell,
-                                        viewState = viewState,
-                                        onOpenCourse = onOpenCourse,
-                                    )
-                                }
+    // 顶栏 / 返回键 / 折叠行为 / 页面主题桥统一走共享骨架（规则 R1）。
+    // 骨架内部自己持有 ScrollBehavior 并交给下面的 QingyuPageList，
+    // 所以本页不再需要 `QingyuPageTheme { Scaffold { TopAppBar } }` 那一套手写组合。
+    QingyuPageScaffold(title = viewState.title, onBack = onBack) {
+        if (!viewState.hasData) {
+            EmptyState(
+                title = viewState.emptyTitle,
+                subtitle = viewState.emptySubtitle,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        } else {
+            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                horizontalPadding = QingyuPageCardMargin,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        for (cell in viewState.cells) {
+                            when (cell) {
+                                is AnalysisCell.Gap -> Spacer(Modifier.height(8.dp))
+                                is AnalysisCell.Card -> AnalysisCard(
+                                    cell = cell,
+                                    viewState = viewState,
+                                    onOpenCourse = onOpenCourse,
+                                )
                             }
-
                         }
+
                     }
                 }
             }
@@ -142,8 +113,6 @@ private fun AnalysisCard(
     viewState: StatisticsAnalysisViewState,
     onOpenCourse: (String) -> Unit,
 ) {
-    val dark = isSystemInDarkTheme()
-
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(vertical = 14.dp, horizontal = 16.dp),
@@ -155,7 +124,11 @@ private fun AnalysisCard(
                 Text(
                     text = roleTitle(cell.role),
                     style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.sectionLabel(dark)),
+                    // 卡内小标题的取色槽：与 `QingyuTheme.sectionLabel(dark)` 同值
+                    // （QingyuPageTheme 把 onSurfaceVariantActions 填成 actionIcon），
+                    // 改走 colorScheme 语义槽后不再触发「手拼分组标题」那条判据的误报
+                    // ——本页并没有分组标题，这条只是卡内抬头。
+                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
             }
 
@@ -196,12 +169,12 @@ private fun TrendRows(viewState: StatisticsAnalysisViewState, standalone: Boolea
         ) {
             Text(
                 text = StatisticsExtStrings.weekLabel.filled("week", point.weekNumber.toString()),
-                fontSize = if (standalone) 15.sp else 14.sp,
+                style = if (standalone) MiuixTheme.textStyles.main else MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Text(
                 text = "${point.sections}",
-                fontSize = if (standalone) 18.sp else 15.sp,
+                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
@@ -233,12 +206,12 @@ private fun TimeUtilRows(viewState: StatisticsAnalysisViewState, standalone: Boo
         ) {
             Text(
                 text = label,
-                fontSize = if (standalone) 15.sp else 14.sp,
+                style = if (standalone) MiuixTheme.textStyles.main else MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Text(
                 text = value,
-                fontSize = if (standalone) 18.sp else 15.sp,
+                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
@@ -260,12 +233,12 @@ private fun VenueRows(viewState: StatisticsAnalysisViewState, standalone: Boolea
         ) {
             Text(
                 text = label,
-                fontSize = if (standalone) 15.sp else 14.sp,
+                style = if (standalone) MiuixTheme.textStyles.main else MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = value,
-                fontSize = if (standalone) 18.sp else 15.sp,
+                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )

@@ -24,11 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
-import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.CoverageRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SessionRow
@@ -38,13 +37,8 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
@@ -75,153 +69,130 @@ fun StatisticsSessionPage(
 ) {
     val dark = isSystemInDarkTheme()
 
-    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    QingyuPageTheme {
-        Scaffold(
-            containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-            topBar = {
-                TopAppBar(
-                    title = viewState.title,
-                    largeTitle = viewState.title,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = viewState.title,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    },
-                )
-            },
-        ) { innerPadding ->
-            if (viewState.isEmpty) {
-                // 一门课都没有：整页空态（Dart 在 groups.isEmpty() 时就走这里，
-                // 连课程选择行都不出现）。
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center,
+    // 顶栏 / 返回键 / 折叠行为 / 页面主题桥统一走共享骨架（规则 R1）。
+    QingyuPageScaffold(title = viewState.title, onBack = onBack) {
+        if (viewState.isEmpty) {
+            // 一门课都没有：整页空态（Dart 在 groups.isEmpty() 时就走这里，
+            // 连课程选择行都不出现）。
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.TopDownloads,
-                            contentDescription = null,
-                            tint = Color(QingyuTheme.secondaryText(dark)),
-                            modifier = Modifier.size(40.dp),
-                        )
-                        Text(
-                            text = viewState.emptyTitle,
-                            style = MiuixTheme.textStyles.body1,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                        )
-                        Text(
-                            text = viewState.emptySubtitle,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = Color(QingyuTheme.secondaryText(dark)),
+                    Icon(
+                        imageVector = MiuixIcons.TopDownloads,
+                        contentDescription = null,
+                        tint = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.size(40.dp),
+                    )
+                    Text(
+                        text = viewState.emptyTitle,
+                        style = MiuixTheme.textStyles.body1,
+                        color = Color(QingyuTheme.primaryText(dark)),
+                    )
+                    Text(
+                        text = viewState.emptySubtitle,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                    )
+                }
+            }
+            return@QingyuPageScaffold
+        }
+
+        // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = QingyuPageCardMargin,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // ── 课程选择行 ──
+                    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
+                        val current = viewState.selectedCourse ?: ""
+                        ArrowPreference(
+                            title = viewState.courseLabel,
+                            summary = current,
+                            onClick = {
+                                // 选中项由宿主决定（模型层 resolveSelection 收敛），
+                                // 这里只把「用户点了哪一门」上报。没有下拉是因为官方
+                                // ArrowPreference 不带选项集；宿主侧弹选择器。
+                                val next = viewState.courseNames.let { names ->
+                                    if (names.isEmpty()) {
+                                        current
+                                    } else {
+                                        val index = names.indexOf(current)
+                                        names[(index + 1) % names.size]
+                                    }
+                                }
+                                onSelectCourse(next)
+                            },
                         )
                     }
-                }
-                return@Scaffold
-            }
 
-            // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
-            QingyuPageList(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                horizontalPadding = QingyuPageCardMargin,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        // ── 课程选择行 ──
-                        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(vertical = 2.dp)) {
-                            val current = viewState.selectedCourse ?: ""
-                            ArrowPreference(
-                                title = viewState.courseLabel,
-                                summary = current,
-                                onClick = {
-                                    // 选中项由宿主决定（模型层 resolveSelection 收敛），
-                                    // 这里只把「用户点了哪一门」上报。没有下拉是因为官方
-                                    // ArrowPreference 不带选项集；宿主侧弹选择器。
-                                    val next = viewState.courseNames.let { names ->
-                                        if (names.isEmpty()) {
-                                            current
-                                        } else {
-                                            val index = names.indexOf(current)
-                                            names[(index + 1) % names.size]
-                                        }
-                                    }
-                                    onSelectCourse(next)
-                                },
-                            )
-                        }
+                    // ── 没设开学日期的提示 ──
+                    val hint = viewState.noCalendarHint
+                    if (hint != null) {
+                        Text(
+                            text = hint,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
 
-                        // ── 没设开学日期的提示 ──
-                        val hint = viewState.noCalendarHint
-                        if (hint != null) {
+                    // ── 四格汇总 ──
+                    if (viewState.summaryMetrics.isNotEmpty()) {
+                        SummaryCard(viewState.summaryMetrics)
+                    }
+
+                    // ── 记录覆盖 ──
+                    SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.zh) {
+                        if (viewState.stats == null || viewState.stats.sessions.isEmpty()) {
                             Text(
-                                text = hint,
-                                style = MiuixTheme.textStyles.footnote1,
+                                text = viewState.coverageEmptyText,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark)),
-                                modifier = Modifier.padding(horizontal = 4.dp),
                             )
-                        }
-
-                        // ── 四格汇总 ──
-                        if (viewState.summaryMetrics.isNotEmpty()) {
-                            SummaryCard(viewState.summaryMetrics)
-                        }
-
-                        // ── 记录覆盖 ──
-                        SectionBlock(title = StatisticsExtStrings.statisticsSessionCoverageTitle.zh) {
-                            if (viewState.stats == null || viewState.stats.sessions.isEmpty()) {
-                                Text(
-                                    text = viewState.coverageEmptyText,
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                )
-                            } else {
-                                for ((index, row) in viewState.coverageRows.withIndex()) {
-                                    CoverageLine(row)
-                                    if (index < viewState.coverageRows.lastIndex) {
-                                        Spacer(Modifier.height(12.dp))
-                                    }
+                        } else {
+                            for ((index, row) in viewState.coverageRows.withIndex()) {
+                                CoverageLine(row)
+                                if (index < viewState.coverageRows.lastIndex) {
+                                    Spacer(Modifier.height(12.dp))
                                 }
                             }
                         }
+                    }
 
-                        // ── 课次列表 ──
-                        SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.zh) {
-                            if (viewState.sessionRows.isEmpty()) {
-                                Text(
-                                    text = viewState.coverageEmptyText,
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                )
-                            } else {
-                                for ((index, row) in viewState.sessionRows.withIndex()) {
-                                    SessionLine(row)
-                                    if (index < viewState.sessionRows.lastIndex) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(vertical = 10.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
+                    // ── 课次列表 ──
+                    SectionBlock(title = StatisticsExtStrings.statisticsSessionListTitle.zh) {
+                        if (viewState.sessionRows.isEmpty()) {
+                            Text(
+                                text = viewState.coverageEmptyText,
+                                style = MiuixTheme.textStyles.body2,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                        } else {
+                            for ((index, row) in viewState.sessionRows.withIndex()) {
+                                SessionLine(row)
+                                if (index < viewState.sessionRows.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        color = Color(QingyuTheme.dividerLine(dark)),
+                                    )
                                 }
                             }
                         }
-
                     }
                 }
             }

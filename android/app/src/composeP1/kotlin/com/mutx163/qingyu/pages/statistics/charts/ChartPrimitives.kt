@@ -26,29 +26,39 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 统计图表层用到的强调色。
+ * 统计图表层用到的强调色（[QingyuIconColors] 的 Compose `Color` 视图）。
  *
- * 数值逐条抄 `lib/ui/hyperos/hyperos_tokens.dart:125-135`（`HyperosIconColors`）。
- * 这些是**语义色**（蓝=必修、紫=选修、青=最低档、橙=小结…），不是主题种子色，
- * 因此不跟 `QingyuTheme.primary` 走——Dart 侧也是写死的。
+ * ## 为什么不再复写十六进制字面量（2026-10-28 样式债清理）
+ *
+ * 这里原先自己抄了一份 `Color(0xFF3482FF)` 这样的字面量副本，而**同一个色板在
+ * `theme/QingyuPalette.kt` 里已经有唯一定义** [QingyuIconColors]（逐条转录自
+ * `lib/ui/hyperos/hyperos_tokens.dart:125-135`，`QingyuPaletteTest` 钉着 9 个值）。
+ * 两处定义同一个色板，改一处忘一处就会出现「图表色与图标色不一致」，而编译器不会响。
+ * 现在只留 `Int → Color` 的装箱，数值出处唯一。
+ *
+ * ## 为什么这些色不跟 `QingyuTheme.primary` 走
+ *
+ * 它们是**语义色**（蓝=必修、紫=选修、青=最低档、橙=小结…），不是主题种子色：
+ * Dart 侧是 `static const`，亮暗两套同值。Miuix `colorScheme` 也没有对应槽位
+ * （`QingyuPalette.kt:163` 的注释就写了「不进主题桥」），所以这里保留应用层 token 的用法。
  */
 object ChartPalette {
-    val Blue = Color(0xFF3482FF)
-    val Green = Color(0xFF10C550)
-    val Orange = Color(0xFFFF6B00)
-    val Purple = Color(0xFF8B5CF6)
-    val Teal = Color(0xFF14B8A6)
-    val Red = Color(0xFFFA382E)
-    val Yellow = Color(0xFFF5A623)
-    val Indigo = Color(0xFF6366F1)
-    val Cyan = Color(0xFF06B6D4)
+    val Blue = Color(QingyuIconColors.BLUE)
+    val Green = Color(QingyuIconColors.GREEN)
+    val Orange = Color(QingyuIconColors.ORANGE)
+    val Purple = Color(QingyuIconColors.PURPLE)
+    val Teal = Color(QingyuIconColors.TEAL)
+    val Red = Color(QingyuIconColors.RED)
+    val Yellow = Color(QingyuIconColors.YELLOW)
+    val Indigo = Color(QingyuIconColors.INDIGO)
+    val Cyan = Color(QingyuIconColors.CYAN)
 }
 
 /**
@@ -420,6 +430,10 @@ fun DonutRingCanvas(
  *
  * 与 Canvas 里 [ChartMath.barCenterX] 的槽位中心一致（都是均分 + 居中），
  * 所以柱子和标签天然对齐，不需要测量文本宽度。
+ *
+ * 字号固定走字阶的 `footnote2`（11sp，与 Dart 轴标签一致）：原先还有一个
+ * `fontSizeSp` 形参在这里覆写字号，但**没有任何调用方传过它**，实际生效的恒等于
+ * `footnote2`；留着它等于给「写死字号」留了一个绕过主题的入口（规则 R4），已删除。
  */
 @Composable
 fun ChartAxisLabelRow(
@@ -427,7 +441,6 @@ fun ChartAxisLabelRow(
     dark: Boolean,
     modifier: Modifier = Modifier,
     highlightIndex: Int? = null,
-    fontSizeSp: Float = 11f,
     topPaddingDp: Float = 6f,
 ) {
     Row(modifier = modifier.fillMaxWidth()) {
@@ -435,7 +448,6 @@ fun ChartAxisLabelRow(
             Text(
                 text = label ?: "",
                 style = MiuixTheme.textStyles.footnote2,
-                fontSize = fontSizeSp.sp,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 color = if (index == highlightIndex) {

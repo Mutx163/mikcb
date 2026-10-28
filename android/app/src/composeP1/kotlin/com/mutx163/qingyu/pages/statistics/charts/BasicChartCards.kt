@@ -192,6 +192,12 @@ fun SemesterHeatmapCard(
                                 .height(rowPitch),
                             contentAlignment = Alignment.CenterStart,
                         ) {
+                            // 字号**故意**不跟字阶走（规则 R4 的已知例外，2026-10-28 样式债清理时判定）：
+                            // 这是热力网格的坐标标签，尺寸由 HeatmapSpec 的几何常量决定
+                            // （列宽 LABEL_WIDTH_DP = 22dp、行高 rowPitch、格宽 CELL_SIZE_DP = 13dp），
+                            // Dart 侧同样是 10sp（`heatmap_card.dart:98` 的 `copyWith(fontSize: 10)`）。
+                            // 抬到字阶最近的一档 footnote2（11sp）会让「周次两位数字」在 13dp 的格子里
+                            // 横向溢出裁字；而跟随用户字阶会把整个网格撑变形。故保留几何口径。
                             Text(
                                 text = HeatmapModel.weekdayLabel(day),
                                 style = MiuixTheme.textStyles.footnote2,
@@ -217,6 +223,9 @@ fun SemesterHeatmapCard(
                             ) {
                                 val label = spec.weekLabels.getOrNull(week - 1)
                                 if (label != null) {
+                                    // 同上一处：周次标签的字号是几何口径（WEEK_LABEL_SP = 9sp，
+                                    // Dart `heatmap_card.dart:98` 同值），格宽只有 CELL_SIZE_DP = 13dp，
+                                    // 抬到 footnote2（11sp）后两位数会溢出。规则 R4 的已知例外。
                                     Text(
                                         text = label.toString(),
                                         style = MiuixTheme.textStyles.footnote2,

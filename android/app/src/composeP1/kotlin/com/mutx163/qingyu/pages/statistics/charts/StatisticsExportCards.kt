@@ -117,8 +117,13 @@ fun StatisticsExportBrandBar(
 
     val qrSize = ExportBrandModel.defaultQrSize().dp
     val matrix = remember { QrEncodeModel.encode(ExportBrandModel.websiteUrl) }
-    // 二维码的墨色：亮色用近黑，暗色用白（Dart `isDark ? Colors.white : 0xFF111111`）
-    val ink = if (dark) Color.White else Color(0xFF111111)
+    // 二维码的墨色：亮色用黑、暗色用白（Dart `isDark ? Colors.white : 0xFF111111`）。
+    //
+    // 这是**功能性固定色**，不是主题色：二维码靠模块与静默区的高对比被扫码器识别，
+    // 跟着主题色走（比如取 primary）会直接降低识别率。所以这里取 Compose 内置常量
+    // `Color.Black` / `Color.White`——亮色下 0xFF000000 与 Dart 的 0xFF111111 都是「纯黑系」，
+    // 对比度只增不减；同时不再往页面里写十六进制字面量（规则 R5）。
+    val ink = if (dark) Color.White else Color.Black
 
     Column(
         modifier = modifier

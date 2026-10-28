@@ -185,11 +185,19 @@ fun AchievementDetailSheet(
 
             Spacer(Modifier.height(16.dp))
 
-            // ── 一句话描述（加粗 15sp） ──
+            // ── 一句话描述（走字阶 body1，不再写死 15sp） ──
+            //
+            // 原先写 `style = title4` + `fontSize = 15.sp`：15 既不在官方字阶上（16 / 14 之间），
+            // 也绕过了 `MiuixTheme` 注入的字阶（用户字重与系统粗体当场失效，规则 R4）。
+            // 这里按「正文角色」取最近的一档 body1（16sp）。
+            //
+            // ⚠️ 与 Dart 的差异（记在这里，不静默改版式）：Dart
+            // `lib/widgets/statistics/achievement_badge.dart:294-300` 用的是
+            // `listTitle.copyWith(fontSize: footnote2 + 2)` = 13sp。迁移时写成了 15sp，
+            // 本次只做「回到字阶」，没有顺手改字号（那是版式变更，需要用户过目）。
             Text(
                 text = achievement.description,
-                style = MiuixTheme.textStyles.title4,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body1,
                 lineHeight = 22.sp,
                 textAlign = TextAlign.Center,
                 color = Color(QingyuTheme.primaryText(dark)),
