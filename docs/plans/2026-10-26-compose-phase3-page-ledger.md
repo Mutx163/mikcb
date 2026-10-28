@@ -933,6 +933,40 @@ WebView 的接线被 `WarehouseWebLoginPage.kt`（别人未提交）挡着，Web
 已加 `-ExcludeShared` 逃生门与判别特征，但**这只是缓解**。
 建议的根治方向：让泳道在**自己的临时目录**里编译（或按目录分源集），绿了才搬进共享目录。
 
+### 9.7 收尾复核（2026-10-28 晚）：L2 全绿
+
+**CI 权威闸门 = `:app:testProdDebugUnitTest`**（`.github/workflows/ci.yml:111`；
+该文件 `:114` 的注释也写明它**不编译 `src/composeP1`**）。
+本轮最终结果：**4173 例 / 0 失败 / 0 错误 / 0 跳过（308 个测试类）**。
+
+**这一轮把「源集错配」这一类缺陷清干净了**（第 10 条纪律的第三、四、五次实例）：
+
+| 文件 | 症状 | 修法 |
+|---|---|---|
+| `pages/transfer/QrFountainLt.kt` | 纯 Kotlin 在 composeP1，被 `src/test` 引用 ⇒ prod 单测**编译**失败 | 搬 `main/`（包名不变） |
+| `pages/transfer/QrScanSessionCoordinator.kt` | 同上 | 搬 `main/` |
+| `pages/transfer/QrTransferReceiveSession.kt` | 同上 | 搬 `main/` |
+| `pages/transfer/QrTransferSendSession.kt` | 同上 | 搬 `main/` |
+| `components/QingyuPageScaffold.kt` | 返回键默认值 `"返回"` 被判 CJK 漏项 | 新增 `app/CommonUiStrings.kt` 承载文案 |
+
+⚠️ **一次误判（已撤回，值得记）**：我先把 `pages/settings/SettingsRowRenderTable.kt` 也搬了，
+事后发现**搬错**——`SettingsSharedParityTest` 是**按源码文本**读它（`composeP1File()`），
+从不引用类，所以它**本来就该留在 composeP1**。我的静态扫描把**KDoc 里出现的类名**当成了引用。
+⇒ **「文件里出现某个类名」≠「引用了这个类」**：静态扫描判「引用」时必须排除注释与字符串。
+这是「核查脚本的基线本身就是失败模式」的第 3 次实证（前两次：文件名写错、只扫显式空回调）。
+
+**CJK 棘轮基线必须跟随现实下调**：机制要求「修复后下调，只许收不许放」。
+用 `python scripts/i18n-cjk-baseline.py --write` 重生成（27 文件 / 224 条），
+重生成**前**先确认「无任何文件超基线」⇒ 只会有下调/删行，不会有上调。
+
+**已知遗留（不是本轮引入，需单独定方案）**：
+`:app:testComposeUiDebugUnitTest`（**非 CI 变体**）里 `QingyuTextStylesTest` 报
+`UnsupportedClassVersionError`（miuix 0.9.4 的 class file 65 = Java 21，而工程 `jvmTarget=17`
+且 `JAVA_HOME` 是 17；本机另有 Android Studio JBR 25）。
+⇒ 任何**在 JVM 里构造 miuix 类型**的单元测试在这个变体下都跑不了。
+候选解法：① 该变体的单测改用 JDK 21+ 的 `javaLauncher`；② 把该测试改成源码级守卫（削弱验证力）。
+**未擅自改**：改整条单测 JVM 环境属构建环境决策，影响所有泳道，应先与用户确认。
+
 ---
 
 ## 10. 维护规则
