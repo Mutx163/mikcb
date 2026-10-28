@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.state.ToggleableState
@@ -62,32 +61,23 @@ import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
-import top.yukonga.miuix.kmp.icon.extended.Import
-import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 用户指南 / 新手引导 · Compose 渲染层（极简重设计版）。
+ * 用户指南 / 新手引导 · Compose 渲染层（干净版）。
  *
- * ## 设计取向（2026-10-28 用户拍板）
+ * ## 设计取向（2026-10-29 用户拍板）
  *
- * 「Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.」
- * —— 一条信息原则：**每页只有「标题 + 内容/操作」**。具体做法：
- * - **没有顶栏、没有大标题、没有折叠/缩放动画**：页面标题就是正文第一行（大号左对齐），
- *   跟着内容一起滚，标题与页面是一体的；
- * - 删掉所有「把标题换个说法」的灰字、复述性副标题、导航说明；
- * - 隐私页是唯一保留长文的地方（法律正文），其余页面靠排版 / 图标 / ✓✗ 对比 / 色块说话。
+ * 走「干净、克制、无卡通图标」的路线：
+ * - **无顶栏、无大标题折叠/缩放**：页面标题就是正文第一行（大号左对齐），和页面一体；
+ * - **不放彩色图标徽章**：操作行只有「文字 + 细箭头」，权限状态用「小圆点 + 颜色」；
+ * - 交互控件一律走 Miuix（[QingyuPageList] / [QingyuCard] / [Text] / [Button] / [TabRow] / [Checkbox]）；
+ * - 文字保持最少：删掉复述性副标题，隐私页法律正文除外。
  *
- * 行为真相仍是 `lib/screens/user_guide_screen.dart`；本页只做「减字 + 去大标题」，
- * 功能（真实权限状态、个性化写回、隐私同意、横滑翻页）一个不少。
- *
- * ## 分层（未变）
- *
- * 本层不探测系统、不写设置：六项权限真实状态经 [permissionState] 传入，个性化改动经
- * [onSettingsPatch] 交宿主落盘，权限行点击经 [onPermissionAction] 交宿主拉起系统页。
- * 契约类型见 [GuideRuntimeTypes]（Lead 冻结）。
+ * 行为真相仍是 `lib/screens/user_guide_screen.dart`；本层不探测系统、不写设置：六项权限真实状态
+ * 经 [permissionState] 传入，个性化改动经 [onSettingsPatch] 交宿主落盘，权限行点击经
+ * [onPermissionAction] 交宿主拉起系统页。契约类型见 GuideRuntimeTypes（Lead 冻结）。
  */
 @Composable
 fun UserGuidePage(
@@ -109,8 +99,6 @@ fun UserGuidePage(
     val scope = rememberCoroutineScope()
 
     var privacyChecked by remember { mutableStateOf(initialPrivacyChecked) }
-
-    // 首启未同意隐私前锁住横滑（恒挂 5 页，用 userScrollEnabled 锁，按钮推进）。
     val gatedToPrivacy = requirePrivacyConsent && !privacyChecked
 
     val pagerState = rememberPagerState(pageCount = { TOTAL_GUIDE_PAGES })
@@ -128,15 +116,13 @@ fun UserGuidePage(
         scope.launch { pagerState.animateScrollToPage(target.coerceIn(0, TOTAL_GUIDE_PAGES - 1)) }
     }
 
-    // 欢迎页导入/恢复：首启未同意隐私前先跳隐私页（Dart :464-480）。
     val runWelcomeAction: (() -> Unit) -> Unit = { action ->
         if (requirePrivacyConsent && !privacyChecked) goToPage(1) else action()
     }
 
-    // 复看模式（从设置进入）才给「关闭」返回键；首启模式必须走完流程。
+    // 复看模式（从设置进入）才给关闭返回键；首启模式必须走完流程。
     val closeGuide: (() -> Unit)? = if (requirePrivacyConsent) null else onBack
 
-    // 无顶栏、无大标题：标题在每页正文首行。Scaffold 只负责底色与底栏。
     Scaffold(
         containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
         bottomBar = {
@@ -165,6 +151,7 @@ fun UserGuidePage(
                     0 -> WelcomePage(
                         innerPadding = innerPadding,
                         title = pageTitles[0],
+                        pageIndex = 0,
                         onBack = closeGuide,
                         onStart = { goToPage(1) },
                         onImport = { runWelcomeAction(onImportCourses) },
@@ -174,6 +161,7 @@ fun UserGuidePage(
                     1 -> PrivacyPage(
                         innerPadding = innerPadding,
                         title = pageTitles[1],
+                        pageIndex = 1,
                         onBack = closeGuide,
                         requireConsent = requirePrivacyConsent,
                         consentChecked = privacyChecked,
@@ -183,6 +171,7 @@ fun UserGuidePage(
                     2 -> PermissionsPage(
                         innerPadding = innerPadding,
                         title = pageTitles[2],
+                        pageIndex = 2,
                         onBack = closeGuide,
                         state = permissionState,
                         onPermissionAction = onPermissionAction,
@@ -192,6 +181,7 @@ fun UserGuidePage(
                     3 -> PersonalizePage(
                         innerPadding = innerPadding,
                         title = pageTitles[3],
+                        pageIndex = 3,
                         onBack = closeGuide,
                         settings = settings,
                         seedOptions = seedOptions,
@@ -201,6 +191,7 @@ fun UserGuidePage(
                     4 -> TipsPage(
                         innerPadding = innerPadding,
                         title = pageTitles[4],
+                        pageIndex = 4,
                         onBack = closeGuide,
                         onOpenCourseOverview = onOpenCourseOverview,
                     )
@@ -210,34 +201,47 @@ fun UserGuidePage(
     }
 }
 
-/** 引导页总页数（Dart :70）。 */
 private const val TOTAL_GUIDE_PAGES = 5
 
 // ───────────────────────────── 共用：页头（标题即正文首行） ─────────────────────────────
 
-/**
- * 无顶栏页头：可选「关闭返回键 + 右侧动作」一行，下面直接是大号标题。
- *
- * 视觉上标题落在正文里、随内容滚动，与页面融为一体；没有条形底色、没有折叠缩放。
- */
 @Composable
 private fun GuideHeader(
     title: String,
+    pageIndex: Int,
     onBack: (() -> Unit)?,
+    eyebrow: String? = null,
     action: (@Composable () -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
     Column(Modifier.fillMaxWidth()) {
-        if (onBack != null || action != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (onBack != null) QingyuBackIconButton(onBack = onBack)
-                Spacer(Modifier.weight(1f))
-                action?.invoke()
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onBack != null) {
+                QingyuBackIconButton(onBack = onBack)
+            } else {
+                Spacer(Modifier.width(1.dp))
             }
+            Spacer(Modifier.weight(1f))
+            action?.invoke()
+            if (action != null) Spacer(Modifier.width(4.dp))
+            Text(
+                text = "${pageIndex + 1} / $TOTAL_GUIDE_PAGES",
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
         }
+        if (eyebrow != null) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = eyebrow,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
         Text(
             text = title,
             style = MiuixTheme.textStyles.title2,
@@ -247,18 +251,16 @@ private fun GuideHeader(
     }
 }
 
-/** 一组内容的小标题（body2 加粗）。只用于真正分组的组名，不复述页面标题。 */
 @Composable
 private fun GuideGroupTitle(text: String, dark: Boolean) {
     Text(
         text = text,
-        style = MiuixTheme.textStyles.body2,
+        style = MiuixTheme.textStyles.footnote1,
         fontWeight = FontWeight.Bold,
-        color = Color(QingyuTheme.primaryText(dark)),
+        color = Color(QingyuTheme.secondaryText(dark)),
     )
 }
 
-/** 正文段落（footnote1，舒适行高）。 */
 @Composable
 private fun GuideParagraph(text: String, dark: Boolean) {
     Text(
@@ -269,75 +271,17 @@ private fun GuideParagraph(text: String, dark: Boolean) {
     )
 }
 
-// ───────────────────────────── 欢迎页 ─────────────────────────────
-
+/** 一行动作：文字 + 细箭头（无图标，靠排版。Dart 欢迎页三动作）。 */
 @Composable
-private fun WelcomePage(
-    innerPadding: PaddingValues,
-    title: String,
-    onBack: (() -> Unit)?,
-    onStart: () -> Unit,
-    onImport: () -> Unit,
-    onRestore: () -> Unit,
-) {
-    val dark = isSystemInDarkTheme()
-    QingyuPageList(
-        innerPadding = innerPadding,
-        horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
-    ) {
-        item(key = "header") { GuideHeader(title, onBack) }
-
-        item(key = "brand") {
-            QingyuCard(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = QingyuCardDefaults.ContentInsideMargin,
-            ) {
-                Text(
-                    text = GuideStrings.welcomeAppName.zh,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-            }
-        }
-
-        item(key = "actions") {
-            QingyuCard(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = QingyuCardDefaults.ContentInsideMargin,
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    GuideNavRow(MiuixIcons.Play, GuideStrings.startUsingTitle.zh, onStart)
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
-                    GuideNavRow(MiuixIcons.Import, GuideStrings.importTimetableTitle.zh, onImport)
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
-                    GuideNavRow(MiuixIcons.Update, GuideStrings.restoreBackupTitle.zh, onRestore)
-                }
-            }
-        }
-    }
-}
-
-/** 一行动作：图标 + 标题 + chevron（无副标题，靠图标和标题自己解释）。 */
-@Composable
-private fun GuideNavRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+private fun GuideNavRow(title: String, onClick: () -> Unit) {
     val dark = isSystemInDarkTheme()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .heightIn(min = 56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color(QingyuTheme.primary(dark = dark)),
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(Modifier.width(14.dp))
         Text(
             text = title,
             style = MiuixTheme.textStyles.body1,
@@ -348,9 +292,48 @@ private fun GuideNavRow(icon: ImageVector, title: String, onClick: () -> Unit) {
         Icon(
             imageVector = MiuixIcons.ChevronForward,
             contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)),
+            tint = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.5f),
             modifier = Modifier.size(16.dp),
         )
+    }
+}
+
+// ───────────────────────────── 欢迎页 ─────────────────────────────
+
+@Composable
+private fun WelcomePage(
+    innerPadding: PaddingValues,
+    title: String,
+    pageIndex: Int,
+    onBack: (() -> Unit)?,
+    onStart: () -> Unit,
+    onImport: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    val dark = isSystemInDarkTheme()
+    QingyuPageList(
+        innerPadding = innerPadding,
+        horizontalPadding = QingyuPageCardMargin,
+        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
+    ) {
+        item(key = "header") {
+            GuideHeader(title, pageIndex, onBack, eyebrow = GuideStrings.welcomeAppName.zh)
+        }
+        item(key = "actions") {
+            QingyuCard(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                Column {
+                    GuideNavRow(GuideStrings.startUsingTitle.zh, onStart)
+                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
+                    GuideNavRow(GuideStrings.importTimetableTitle.zh, onImport)
+                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
+                    GuideNavRow(GuideStrings.restoreBackupTitle.zh, onRestore)
+                }
+            }
+        }
     }
 }
 
@@ -360,6 +343,7 @@ private fun GuideNavRow(icon: ImageVector, title: String, onClick: () -> Unit) {
 private fun PrivacyPage(
     innerPadding: PaddingValues,
     title: String,
+    pageIndex: Int,
     onBack: (() -> Unit)?,
     requireConsent: Boolean,
     consentChecked: Boolean,
@@ -369,12 +353,11 @@ private fun PrivacyPage(
     QingyuPageList(
         innerPadding = innerPadding,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
     ) {
-        item(key = "header") { GuideHeader(title, onBack) }
+        item(key = "header") { GuideHeader(title, pageIndex, onBack) }
 
-        // 隐私正文：法律正文，保留（不属于「次要标签」）。
         item(key = "privacy") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -389,7 +372,6 @@ private fun PrivacyPage(
             }
         }
 
-        // 免责与风险：保留一个组名 + 三段，标题不复述页面名。
         item(key = "risk") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -421,7 +403,7 @@ private fun PrivacyPage(
             item(key = "consent") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Row(
                         modifier = Modifier
@@ -452,6 +434,7 @@ private fun PrivacyPage(
 private fun PermissionsPage(
     innerPadding: PaddingValues,
     title: String,
+    pageIndex: Int,
     onBack: (() -> Unit)?,
     state: GuidePermissionState,
     onPermissionAction: (GuidePermissionAction) -> Unit,
@@ -464,11 +447,11 @@ private fun PermissionsPage(
     QingyuPageList(
         innerPadding = innerPadding,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
     ) {
         item(key = "header") {
-            GuideHeader(title, onBack, action = {
+            GuideHeader(title, pageIndex, onBack, action = {
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = MiuixIcons.Refresh,
@@ -489,7 +472,6 @@ private fun PermissionsPage(
                 }
             }
         } else {
-            // 进度：一根条 + N/6，一句说明都不要。
             item(key = "progress") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -503,20 +485,20 @@ private fun PermissionsPage(
                             ),
                             style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Bold,
-                            color = Color(QingyuTheme.primary(dark = dark)),
+                            color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Spacer(Modifier.height(10.dp))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(6.dp)
+                                .height(7.dp)
                                 .clip(CircleShape)
-                                .background(Color(QingyuTheme.primary(dark = dark)).copy(alpha = 0.15f)),
+                                .background(Color(QingyuTheme.primary(dark = dark)).copy(alpha = 0.12f)),
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(progress.ratio)
-                                    .height(6.dp)
+                                    .height(7.dp)
                                     .clip(CircleShape)
                                     .background(Color(QingyuTheme.primary(dark = dark))),
                             )
@@ -542,14 +524,6 @@ private fun PermissionsPage(
                     }
                 }
             }
-
-            item(key = "footnote") {
-                Text(
-                    text = GuideStrings.guidePermissionsFooterHint.zh,
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-            }
         }
     }
 }
@@ -561,7 +535,7 @@ private fun GuidePermissionRow(
     onClick: () -> Unit,
 ) {
     val statusColor = when (item.enabled) {
-        true -> Color(QingyuTheme.primary(dark = dark))
+        true -> Color(QingyuTheme.success(dark))
         false -> Color(QingyuTheme.secondaryText(dark))
         null -> Color(QingyuTheme.secondaryText(dark))
     }
@@ -569,7 +543,7 @@ private fun GuidePermissionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .heightIn(min = 56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -586,17 +560,26 @@ private fun GuidePermissionRow(
                 )
             }
         }
-        Text(
-            text = if (item.enabled == true) item.enabledLabel else item.disabledLabel,
-            style = MiuixTheme.textStyles.footnote1,
-            color = statusColor,
-        )
-        Spacer(Modifier.width(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(statusColor),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = if (item.enabled == true) item.enabledLabel else item.disabledLabel,
+                style = MiuixTheme.textStyles.footnote1,
+                color = statusColor,
+            )
+        }
+        Spacer(Modifier.width(4.dp))
         Icon(
             imageVector = MiuixIcons.ChevronForward,
             contentDescription = null,
-            tint = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.size(14.dp),
+            tint = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.5f),
+            modifier = Modifier.size(15.dp),
         )
     }
 }
@@ -610,6 +593,7 @@ private fun permissionActionOf(id: String): GuidePermissionAction? =
 private fun PersonalizePage(
     innerPadding: PaddingValues,
     title: String,
+    pageIndex: Int,
     onBack: (() -> Unit)?,
     settings: GuideSettingsSnapshot,
     seedOptions: List<GuideSeedOption>,
@@ -620,12 +604,11 @@ private fun PersonalizePage(
     QingyuPageList(
         innerPadding = innerPadding,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
     ) {
-        item(key = "header") { GuideHeader(title, onBack) }
+        item(key = "header") { GuideHeader(title, pageIndex, onBack) }
 
-        // 菜单样式：两个选项只留标题，选中靠边框。
         item(key = "menuStyle") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -635,15 +618,17 @@ private fun PersonalizePage(
                     GuideGroupTitle(GuideStrings.guidePersonalizeMenuStyleTitle.zh, dark)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OptionCard(
+                        MenuStylePreview(
                             label = GuideStrings.homeMenuStyleList.zh,
+                            grid = false,
                             selected = !settings.homeMenuGrid,
                             dark = dark,
                             onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(false)) },
                             modifier = Modifier.weight(1f),
                         )
-                        OptionCard(
+                        MenuStylePreview(
                             label = GuideStrings.homeMenuStyleGrid.zh,
+                            grid = true,
                             selected = settings.homeMenuGrid,
                             dark = dark,
                             onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(true)) },
@@ -654,7 +639,6 @@ private fun PersonalizePage(
             }
         }
 
-        // 深浅色：三档分段，选项名本身承载语义，不加说明句。
         item(key = "themeMode") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -690,7 +674,6 @@ private fun PersonalizePage(
             }
         }
 
-        // 主题色：纯色块，靠颜色自己解释，无文字。
         item(key = "seedColor") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -715,34 +698,61 @@ private fun PersonalizePage(
     }
 }
 
+/** 菜单样式预览：中性灰块的「列表 / 宫格」示意，选中用主色描边。 */
 @Composable
-private fun OptionCard(
+private fun MenuStylePreview(
     label: String,
+    grid: Boolean,
     selected: Boolean,
     dark: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val primary = Color(QingyuTheme.primary(dark = dark))
+    val shape = RoundedCornerShape(14.dp)
+    val blockColor = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.22f)
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) primary.copy(alpha = 0.12f) else Color(QingyuTheme.card(dark)))
+            .clip(shape)
+            .background(
+                if (selected) primary.copy(alpha = 0.06f) else Color(QingyuTheme.card(dark)),
+            )
             .border(
                 width = if (selected) 2.dp else 1.dp,
                 color = if (selected) primary else Color(QingyuTheme.dividerLine(dark)),
-                shape = RoundedCornerShape(12.dp),
+                shape = shape,
             )
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) primary else Color(QingyuTheme.primaryText(dark)),
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (grid) {
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    repeat(3) {
+                        Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    repeat(3) {
+                        Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
+                    }
+                }
+            } else {
+                repeat(3) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(blockColor))
+                        Box(Modifier.height(6.dp).weight(1f).clip(RoundedCornerShape(3.dp)).background(blockColor))
+                    }
+                }
+            }
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.footnote1,
+                fontWeight = FontWeight.Medium,
+                color = if (selected) primary else Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -754,16 +764,13 @@ private fun ThemeSwatch(
     onClick: () -> Unit,
 ) {
     val color = parseHexColorOrFallback(hex)
+    val ring = if (selected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.dividerLine(dark))
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(32.dp)
             .clip(CircleShape)
             .background(color)
-            .border(
-                width = if (selected) 3.dp else 1.dp,
-                color = if (selected) Color(QingyuTheme.primaryText(dark)) else Color(QingyuTheme.dividerLine(dark)),
-                shape = CircleShape,
-            )
+            .border(width = if (selected) 2.dp else 1.dp, color = ring, shape = CircleShape)
             .clickable(onClick = onClick),
     )
 }
@@ -774,6 +781,7 @@ private fun ThemeSwatch(
 private fun TipsPage(
     innerPadding: PaddingValues,
     title: String,
+    pageIndex: Int,
     onBack: (() -> Unit)?,
     onOpenCourseOverview: () -> Unit,
 ) {
@@ -782,31 +790,22 @@ private fun TipsPage(
     QingyuPageList(
         innerPadding = innerPadding,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(QingyuSectionGap),
     ) {
-        item(key = "header") { GuideHeader(title, onBack) }
+        item(key = "header") { GuideHeader(title, pageIndex, onBack) }
 
-        // 简称：一条 ✓ 正例、一条 ✗ 反例，排版自己说明。
         item(key = "shortName") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
                 Column {
-                    ExampleRow(
-                        ok = true,
-                        label = GuideStrings.guideShortNameRecommended.zh,
-                        example = GuideStrings.guideShortNameRecommendedExample.zh,
-                        dark = dark,
-                    )
+                    GuideGroupTitle(GuideStrings.guideShortNameAdviceTitle.zh, dark)
                     Spacer(Modifier.height(8.dp))
-                    ExampleRow(
-                        ok = false,
-                        label = GuideStrings.guideShortNameNotRecommended.zh,
-                        example = GuideStrings.guideShortNameNotRecommendedExample.zh,
-                        dark = dark,
-                    )
+                    ExampleRow(ok = true, label = GuideStrings.guideShortNameRecommended.zh, example = GuideStrings.guideShortNameRecommendedExample.zh, dark = dark)
+                    Spacer(Modifier.height(6.dp))
+                    ExampleRow(ok = false, label = GuideStrings.guideShortNameNotRecommended.zh, example = GuideStrings.guideShortNameNotRecommendedExample.zh, dark = dark)
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = onOpenCourseOverview,
@@ -823,7 +822,6 @@ private fun TipsPage(
             }
         }
 
-        // 导入方法：三步，数字 + 短句。
         item(key = "importMethods") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -838,31 +836,29 @@ private fun TipsPage(
             }
         }
 
-        // 最终提示：三条，勾 + 短句。
         item(key = "finalTips") {
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = QingyuCardDefaults.ContentInsideMargin,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     GuideGroupTitle(GuideStrings.guideFinalTipsTitle.zh, dark)
-                    TipRow(GuideStrings.guideFinalTip1.zh, dark)
-                    TipRow(GuideStrings.guideFinalTip2.zh, dark)
-                    TipRow(GuideStrings.guideFinalTip3.zh, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip1.zh, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip2.zh, dark)
+                    GuideParagraph(GuideStrings.guideFinalTip3.zh, dark)
                 }
             }
         }
     }
 }
 
-/** ✓ / ✗ 对比行：符号着色 + 标签 + 例子。 */
 @Composable
 private fun ExampleRow(ok: Boolean, label: String, example: String, dark: Boolean) {
-    val markColor = if (ok) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.secondaryText(dark))
+    val markColor = if (ok) Color(QingyuTheme.success(dark)) else Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.6f)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = if (ok) "✓" else "✗",
-            style = MiuixTheme.textStyles.body1,
+            style = MiuixTheme.textStyles.body2,
             fontWeight = FontWeight.Bold,
             color = markColor,
         )
@@ -871,8 +867,8 @@ private fun ExampleRow(ok: Boolean, label: String, example: String, dark: Boolea
             text = label,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
+            modifier = Modifier.width(56.dp),
         )
-        Spacer(Modifier.width(6.dp))
         Text(
             text = example,
             style = MiuixTheme.textStyles.footnote1,
@@ -885,45 +881,17 @@ private fun ExampleRow(ok: Boolean, label: String, example: String, dark: Boolea
 @Composable
 private fun StepRow(step: String, text: String, dark: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(22.dp)
-                .clip(CircleShape)
-                .background(Color(QingyuTheme.primary(dark = dark)).copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = step,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Bold,
-                color = Color(QingyuTheme.primary(dark = dark)),
-            )
-        }
-        Spacer(Modifier.width(10.dp))
         Text(
-            text = text,
+            text = step,
             style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.primaryText(dark)),
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun TipRow(text: String, dark: Boolean) {
-    Row(verticalAlignment = Alignment.Top) {
-        Text(
-            text = "✓",
-            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Bold,
             color = Color(QingyuTheme.primary(dark = dark)),
+            modifier = Modifier.width(18.dp),
         )
-        Spacer(Modifier.width(8.dp))
         Text(
             text = text,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.primaryText(dark)),
-            lineHeight = 19.sp,
             modifier = Modifier.weight(1f),
         )
     }
@@ -944,101 +912,65 @@ private fun GuideBottomBar(
     onNext: () -> Unit,
 ) {
     val primary = Color(QingyuTheme.primary(dark = dark))
-    val onCardText = Color(QingyuTheme.primaryText(dark))
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(QingyuTheme.scaffoldBackground(dark)))
-            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 16.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 20.dp),
     ) {
+        // 分段进度条：靠图形说明「走到第几步」。
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clearAndSetSemantics {
+                contentDescription = "${currentPage + 1} / $TOTAL_GUIDE_PAGES"
+            },
+            horizontalArrangement = Arrangement.Center,
         ) {
-            when {
-                isPrivacyPage -> GuideSecondaryButton(
-                    label = GuideStrings.exitAppAction.zh,
-                    textColor = onCardText,
-                    cardColor = Color(QingyuTheme.card(dark)),
-                    onClick = onExit,
+            for (i in 0 until TOTAL_GUIDE_PAGES) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 3.dp)
+                        .height(5.dp)
+                        .width(40.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            if (i <= currentPage) primary
+                            else Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.25f),
+                        ),
                 )
-
-                currentPage > 0 -> GuideSecondaryButton(
-                    label = GuideStrings.guidePrevButton.zh,
-                    textColor = onCardText,
-                    cardColor = Color(QingyuTheme.card(dark)),
-                    onClick = onPrev,
-                )
-
-                else -> Spacer(Modifier.width(56.dp))
-            }
-
-            if (!isLastPage) {
-                Button(
-                    onClick = onNext,
-                    enabled = canGoNext,
-                    colors = ButtonDefaults.buttonColors(primary),
-                ) {
-                    Text(
-                        text = GuideStrings.guideNextButton.zh,
-                        color = Color.White,
-                        style = MiuixTheme.textStyles.body2,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-            } else {
-                Button(
-                    onClick = onNext,
-                    colors = ButtonDefaults.buttonColors(primary),
-                ) {
-                    Text(
-                        text = if (requireConsent) {
-                            GuideStrings.agreeAndStartAction.zh
-                        } else {
-                            GuideStrings.gotItAction.zh
-                        },
-                        color = Color.White,
-                        style = MiuixTheme.textStyles.body2,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
             }
         }
-
-        // 圆点整屏水平居中（Dart :305-351）；非交互装饰，整组承担页码语义。
-        GuidePageDots(
-            dark = dark,
-            currentPage = currentPage,
-            modifier = Modifier.align(Alignment.Center),
-        )
-    }
-}
-
-@Composable
-private fun GuidePageDots(
-    dark: Boolean,
-    currentPage: Int,
-    modifier: Modifier = Modifier,
-) {
-    val primary = Color(QingyuTheme.primary(dark = dark))
-    val inactive = Color(QingyuTheme.secondaryText(dark)).copy(alpha = 0.3f)
-
-    Row(
-        modifier = modifier.clearAndSetSemantics {
-            contentDescription = "${currentPage + 1} / $TOTAL_GUIDE_PAGES"
-        },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for (i in 0 until TOTAL_GUIDE_PAGES) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (i == currentPage) primary else inactive),
-            )
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            val showPrev = isPrivacyPage || currentPage > 0
+            if (showPrev) {
+                GuideSecondaryButton(
+                    label = if (isPrivacyPage) GuideStrings.exitAppAction.zh else GuideStrings.guidePrevButton.zh,
+                    dark = dark,
+                    onClick = if (isPrivacyPage) onExit else onPrev,
+                )
+            }
+            Button(
+                onClick = onNext,
+                enabled = if (isLastPage) true else canGoNext,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(primary),
+            ) {
+                Text(
+                    text = if (isLastPage) {
+                        if (requireConsent) GuideStrings.agreeAndStartAction.zh else GuideStrings.gotItAction.zh
+                    } else {
+                        GuideStrings.guideNextButton.zh
+                    },
+                    color = Color.White,
+                    style = MiuixTheme.textStyles.body2,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }
@@ -1046,17 +978,16 @@ private fun GuidePageDots(
 @Composable
 private fun GuideSecondaryButton(
     label: String,
-    textColor: Color,
-    cardColor: Color,
+    dark: Boolean,
     onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(cardColor),
+        colors = ButtonDefaults.buttonColors(Color(QingyuTheme.card(dark))),
     ) {
         Text(
             text = label,
-            color = textColor,
+            color = Color(QingyuTheme.primaryText(dark)),
             style = MiuixTheme.textStyles.body2,
             fontWeight = FontWeight.Medium,
         )

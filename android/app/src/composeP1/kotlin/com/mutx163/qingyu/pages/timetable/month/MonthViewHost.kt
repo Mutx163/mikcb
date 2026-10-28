@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.timetable.month
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.calendar.HolidayData
@@ -58,6 +59,7 @@ fun MonthViewHost(
     onAddCourse: (LocalDateTime) -> Unit = {},
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
+    homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
 ) {
@@ -98,6 +100,7 @@ fun MonthViewHost(
         onAddCourse = onAddCourse,
         homeTitleStyle = homeTitleStyle,
         profileName = profileName,
+        homeMenuStyle = homeMenuStyle,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,
     )

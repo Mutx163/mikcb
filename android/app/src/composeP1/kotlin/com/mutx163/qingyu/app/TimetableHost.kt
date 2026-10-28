@@ -160,6 +160,8 @@ fun TimetableHost(
         onWeekChanged = onWeekChanged,
         // 标题样式取自用户存档（Dart `homeTitleStyle`，:1478 默认 classic）。
         homeTitleStyle = settingsModel?.homeTitleStyle ?: HomeTitleStyle.CLASSIC,
+        // 菜单形态取自用户存档（Dart `homeMenuStyle`，:1489 默认 list）；壳没传就走默认。
+        homeMenuStyle = settingsModel?.homeMenuStyle ?: HomeMenuStyle.LIST,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,
     )

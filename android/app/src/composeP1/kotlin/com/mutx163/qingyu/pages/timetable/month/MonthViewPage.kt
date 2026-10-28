@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
@@ -83,6 +84,7 @@ fun MonthViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
 ) {
@@ -141,6 +143,7 @@ fun MonthViewPage(
                 TimetableTopBar(
                     brand = homeTitleStyle == HomeTitleStyle.BRAND,
                     profileName = profileName,
+                    homeMenuStyle = homeMenuStyle,
                     menuItems = homeMenuItems,
                     onMenuSelect = onHomeMenuSelect,
                 )

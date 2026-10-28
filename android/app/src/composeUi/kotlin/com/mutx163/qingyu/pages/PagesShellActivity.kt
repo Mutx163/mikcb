@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
@@ -27,6 +29,7 @@ import com.mutx163.qingyu.pages.task.TaskListPage
 import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TimetableHost
 import java.time.LocalDate
+import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -174,7 +177,15 @@ private fun PagesShell() {
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
+    // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
+    // 它落在课表页自己的 Scaffold 里，而玻璃底栏画在页内容的上一层 → 弹层底部会被底栏盖住。
+    // 容器透明 + 窗口内缩置零：不改变页面自身的边到边布局。
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { _ ->
+        Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -250,6 +261,7 @@ private fun PagesShell() {
                 backdrop = if (glassAvailable) backdrop else null,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
+        }
         }
     }
 }

@@ -28,8 +28,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -42,6 +46,7 @@ import top.yukonga.miuix.kmp.icon.extended.Promotions
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -60,9 +65,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * * [brand] = true（Dart `HomeTitleStyle.brand`）：大字 + 下方小号课表名。两档
  *   其实都是文字，设置里「大 Logo」指的就是这行大字，没有图片资源。
  *
- * ## 右上角「更多」菜单
+ * ## 右上角「更多」菜单（跟设置的 `homeMenuStyle` 分流，与 Flutter 一致）
  *
- * 点「更多」弹底部菜单（`OverlayBottomSheet`，与课程操作弹层同一容器口径）。
+ * * `GRID`（八宫格）：点「更多」弹底部弹层（`OverlayBottomSheet`），4 列图标瓷贴；
+ * * `LIST`（列表）：点「更多」在按钮正下方弹出锚定列表弹层（miuix 自带
+ *   `OverlayListPopup`，带弹簧淡入、放不下自动翻到上方）。这是 Dart
+ *   `homeMenuController.showTopActionsSheet` 的两条分支，默认档位就是 list。
+ *
  * 条目由 [menuItems] 注入（默认 [TimetableMenuDefaults.entries]），点选只回传
  * 稳定的 [TimetableMenuItem.id] —— 本组件不认识路由，页面/壳的分工不被污染。
  *
@@ -76,6 +85,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * @param profileName brand 档副行的课表名；null/空时显示「点击切换课表」提示。
  * @param onTitleClick 点标题区（Dart 口径：打开切课表流程）。null 表示不可点。
  * @param menuItems 右上角菜单条目；空表时不画「更多」按钮。
+ * @param homeMenuStyle 菜单形态：`LIST`（锚定列表，默认，对齐 Dart 默认）/
+ *   `GRID`（八宫格底部弹层）。由壳从设置 `homeMenuStyle` 注入。
  * @param onMenuSelect 点菜单条目回调，参数是 [TimetableMenuItem.id]。
  */
 @Composable
@@ -85,6 +96,7 @@ fun TimetableTopBar(
     brand: Boolean = false,
     profileName: String? = null,
     onTitleClick: (() -> Unit)? = null,
+    homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     menuItems: List<TimetableMenuItem> = emptyList(),
     onMenuSelect: (String) -> Unit = {},
 ) {
@@ -138,24 +150,54 @@ fun TimetableTopBar(
         }
 
         if (menuItems.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .size(TimetableTopBarMetrics.HIT.dp)
-                    .clip(CircleShape)
-                    .clickable { showMenu = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.More,
-                    contentDescription = TimetableStrings.moreTooltip.zh,
-                    tint = primaryText,
-                    modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
-                )
+            // 「更多」按钮 + 列表档的锚定弹层，必须同处一个 Box：
+            // miuix 的 `OverlayListPopup` 拿「父容器的窗口坐标」当锚点，包在一起才锚在按钮下。
+            Box {
+                Box(
+                    modifier = Modifier
+                        .size(TimetableTopBarMetrics.HIT.dp)
+                        .clip(CircleShape)
+                        .clickable { showMenu = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.More,
+                        contentDescription = TimetableStrings.moreTooltip.zh,
+                        tint = primaryText,
+                        modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
+                    )
+                }
+
+                // 列表档：miuix 自带锚定列表弹层（弹簧淡入 / 淡出 + 窗外点即关）。
+                // 右上角按钮 ⇒ 右对齐（Align.End）；下方空间不够时自动翻到按钮上方。
+                if (homeMenuStyle == HomeMenuStyle.LIST) {
+                    OverlayListPopup(
+                        show = showMenu,
+                        alignment = PopupPositionProvider.Align.End,
+                        onDismissRequest = { showMenu = false },
+                    ) {
+                        ListPopupColumn {
+                            menuItems.forEachIndexed { index, item ->
+                                DropdownImpl(
+                                    text = item.label,
+                                    optionSize = menuItems.size,
+                                    isSelected = false,
+                                    index = index,
+                                    onSelectedIndexChange = {
+                                        showMenu = false
+                                        onMenuSelect(item.id)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    if (menuItems.isNotEmpty()) {
+    // 八宫格档：底部弹层（v2.0.5.5 已发布版本的样式）。
+    if (menuItems.isNotEmpty() && homeMenuStyle == HomeMenuStyle.GRID) {
         TimetableHomeMenuSheet(
             show = showMenu,
             entries = menuItems,

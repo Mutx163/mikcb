@@ -424,6 +424,7 @@ fun ShellPageContent(
                     onOpenPage("d1.addCourse")
                 },
                 homeTitleStyle = appSettings.homeTitleStyle,
+                homeMenuStyle = appSettings.homeMenuStyle,
                 profileName = TimetableHostLogic.resolveProfileName(
                     profiles = snapshot.profiles,
                     activeProfileId = snapshot.activeProfileId,
@@ -446,6 +447,7 @@ fun ShellPageContent(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
                 initialDayOfWeek = LocalDate.now().dayOfWeek.value,
                 homeTitleStyle = appSettings.homeTitleStyle,
+                homeMenuStyle = appSettings.homeMenuStyle,
                 profileName = TimetableHostLogic.resolveProfileName(
                     profiles = snapshot.profiles,
                     activeProfileId = snapshot.activeProfileId,

@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
@@ -90,6 +91,7 @@ fun TimetableWeekPage(
     onSwitchProfileClick: () -> Unit = {},
     onWeekChanged: (week: Int) -> Unit = {},
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
+    homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -145,6 +147,7 @@ fun TimetableWeekPage(
                 brand = homeTitleStyle == HomeTitleStyle.BRAND,
                 profileName = profileName,
                 onTitleClick = onSwitchProfileClick,
+                homeMenuStyle = homeMenuStyle,
                 menuItems = homeMenuItems,
                 onMenuSelect = onHomeMenuSelect,
             )

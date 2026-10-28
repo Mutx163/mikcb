@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
@@ -80,6 +81,7 @@ fun DayViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -136,6 +138,7 @@ fun DayViewPage(
                 TimetableTopBar(
                     brand = homeTitleStyle == HomeTitleStyle.BRAND,
                     profileName = profileName,
+                    homeMenuStyle = homeMenuStyle,
                     menuItems = homeMenuItems,
                     onMenuSelect = onHomeMenuSelect,
                 )
