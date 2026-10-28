@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-27T06:41:54+00:00",
+  "updatedAt": "2026-10-28T07:14:10+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 270,
-    "schools": 265,
+    "total": 272,
+    "schools": 267,
     "generic": 5
   },
   "schools": [
@@ -982,6 +982,13 @@
       "category": "school"
     },
     {
+      "id": "JNGCXY",
+      "name": "济南工程职业技术学院",
+      "initial": "J",
+      "resourceFolder": "JNGCXY",
+      "category": "school"
+    },
+    {
       "id": "JNMC",
       "name": "济宁医学院",
       "initial": "J",
@@ -1868,6 +1875,13 @@
       "name": "浙江科技大学",
       "initial": "Z",
       "resourceFolder": "ZUST",
+      "category": "school"
+    },
+    {
+      "id": "ZSC",
+      "name": "电子科技大学中山学院",
+      "initial": "Z",
+      "resourceFolder": "ZSC",
       "category": "school"
     },
     {
