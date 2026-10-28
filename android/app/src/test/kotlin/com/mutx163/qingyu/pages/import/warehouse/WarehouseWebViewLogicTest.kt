@@ -11,10 +11,11 @@ import java.io.File
  * [WarehouseWebViewLogic] 的纯 JVM 单测（L0：
  * `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/import/warehouse"`）。
  *
- * 三处关键期望值不是「从实现里抄的」，而是**从参照物机械读出来的**：
+ * 关键期望值不是「从实现里抄的」，而是**从参照物机械读出来的**：
  * - UA 两串：从 Dart `warehouse_adapter_web_login_screen.dart` 的常量定义里抽出来对拍；
- * - 导航白名单：从 Dart `lib/domain/warehouse_bridge_gate.dart` 的函数体里抽出 scheme 列表；
- * - WebView 错误码数值：取自平台 `android.jar` 的 `javap -constants`（见 [ERROR_CODE_TABLE] 注释）。
+ * - 导航白名单、UI 类桥接消息集合：从 Dart `lib/domain/warehouse_bridge_gate.dart` 里抽出来对拍；
+ * - WebView 错误码数值：取自平台 `android.jar` 的 `javap -constants`（来源见
+ *   「错误码常量与平台 android_jar 数值一致」那条测试的注释）。
  */
 class WarehouseWebViewLogicTest {
 
