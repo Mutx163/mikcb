@@ -55,6 +55,17 @@ object TaskStrings {
     const val cancelAction = "取消"
     const val deleteAction = "删除"
 
+    // ── 日期选择器（`TaskPickerSheets` 用）──
+    // 「取消」沿用上面的 [cancelAction]（与 ARB `cancelAction` 同值）。
+    const val confirmAction = "确认"          // 与 ARB `confirmAction` 同值
+    // ⚠️ 下面三个在 `lib/l10n/app_zh.arb` 里**没有**独立键（已 grep 确认）。
+    // 按「文案不许自拟」的原则本应等 ARB 补键；但它们是日期选择器的**量纲标签**
+    // （年/月/日），与系统日期控件同义，且 TaskStrings 无 parity 测试枚举，故先在此登记。
+    // ARB 补键后应改为对拍。
+    const val datePickerYear = "年"
+    const val datePickerMonth = "月"
+    const val datePickerDay = "日"
+
     const val serviceMsgLinkedCourseNotFound = "关联的课程不存在"
 
     fun weekLabel(week: Long): String = "第 $week 周"

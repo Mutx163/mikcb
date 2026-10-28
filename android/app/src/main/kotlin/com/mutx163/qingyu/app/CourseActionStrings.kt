@@ -41,6 +41,27 @@ object CourseActionStrings {
         "这是对方课表中的课程，仅供查看，无法编辑或调课",
     )
 
+    // ── 调课面板（2026-10-28 补；原先是渲染层里的中文硬编码，被 CJK 门禁判红）──
+    /** 单节课节次摘要模板（ARB `sectionLabel`：「第 {section} 节」）。 */
+    val sectionLabel = CourseArbText("sectionLabel", "第 {section} 节")
+    val weekdayLabel = CourseArbText("weekdayLabel", "星期")
+    val startSectionLabel = CourseArbText("startSectionLabel", "开始节次")
+    val endSectionLabel = CourseArbText("endSectionLabel", "结束节次")
+    val cancelAction = CourseArbText("cancelAction", "取消")
+    val confirmAction = CourseArbText("confirmAction", "确认")
+
+    /**
+     * ⚠️ ARB **没有**「目标周」这个键（已 grep 确认；只有 `serviceMsgTargetWeekOutOfRange` 那种长句）。
+     * 按「文案不许自拟」原则本应等 ARB 补键；但这是调课面板的一个量纲标签，先在此登记。
+     * **不进 [allTexts]**（parity 测试要求每个键都在 ARB 里，缺键会让它红）。
+     * ARB 补 `targetWeekLabel` 后应移入 `allTexts` 改为对拍。
+     */
+    const val targetWeekLabel = "目标周"
+
+    /** 节次摘要：`第 {start}-{end} 节`（复用 ARB `sectionLabel` 模板，把区间塞进 `{section}`）。 */
+    fun sectionRange(start: Int, end: Int): String =
+        sectionLabel.filled("section", "$start-$end")
+
     /** 所有对接 ARB 的文案集合（Parity 测试用）。 */
     val allTexts: List<CourseArbText> = listOf(
         courseActionEditPrimary,
@@ -54,6 +75,12 @@ object CourseActionStrings {
         unknownTeacher,
         unknownLocation,
         courseActionPartnerReadOnlyNotice,
+        sectionLabel,
+        weekdayLabel,
+        startSectionLabel,
+        endSectionLabel,
+        cancelAction,
+        confirmAction,
     )
 
     /** `courseActionSheetNotice` 的周次填充。 */

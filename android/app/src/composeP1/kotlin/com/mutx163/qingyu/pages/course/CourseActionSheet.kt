@@ -18,15 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.app.CourseAction
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.CourseActionStrings
+import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
@@ -115,7 +114,7 @@ fun CourseActionSheet(
             // ── 这节课的信息 ──
             InfoRow(
                 label = "${course.startTime}-${course.endTime}",
-                detail = "第 ${course.startSection}-${course.endSection} 节",
+                detail = CourseActionStrings.sectionRange(course.startSection, course.endSection),
                 primaryText = primaryText,
                 secondaryText = secondaryText,
             )
@@ -135,8 +134,9 @@ fun CourseActionSheet(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = CourseActionStrings.notice(week),
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
+                // 说明句用官方字阶（13sp footnote1）：写死 12sp 会绕过主题，
+                // 用户字重 / 系统粗体 / 字阶调整全部失效（R4）。
+                style = MiuixTheme.textStyles.footnote1,
                 color = secondaryText,
             )
             Spacer(modifier = Modifier.height(14.dp))
@@ -221,7 +221,7 @@ private fun ReschedulePicker(
 
     Text(
         text = CourseActionStrings.courseActionRescheduleSecondary.zh,
-        fontSize = 16.sp,
+        style = MiuixTheme.textStyles.body1,
         fontWeight = FontWeight.Medium,
         color = primaryText,
     )
@@ -229,7 +229,7 @@ private fun ReschedulePicker(
 
     // 目标周
     StepperRow(
-        label = "目标周",
+        label = CourseActionStrings.targetWeekLabel,
         value = targetWeek,
         canDecrease = targetWeek > 1,
         canIncrease = true,
@@ -239,7 +239,7 @@ private fun ReschedulePicker(
     )
     // 星期
     StepperRow(
-        label = "星期",
+        label = CourseActionStrings.weekdayLabel.zh,
         value = day,
         canDecrease = day > 1,
         canIncrease = day < 7,
@@ -249,7 +249,7 @@ private fun ReschedulePicker(
     )
     // 起止节次
     StepperRow(
-        label = "开始节次",
+        label = CourseActionStrings.startSectionLabel.zh,
         value = start,
         canDecrease = start > 1,
         canIncrease = start < end,
@@ -258,7 +258,7 @@ private fun ReschedulePicker(
         onChange = { start = it.coerceIn(1, end) },
     )
     StepperRow(
-        label = "结束节次",
+        label = CourseActionStrings.endSectionLabel.zh,
         value = end,
         canDecrease = end > start,
         canIncrease = end < 30,
@@ -274,14 +274,14 @@ private fun ReschedulePicker(
     ) {
         TextButton(
             modifier = Modifier.weight(1f),
-            text = "取消",
+            text = CourseActionStrings.cancelAction.zh,
             onClick = onCancel,
         )
         Button(
             modifier = Modifier.weight(1f),
             onClick = { onConfirm(targetWeek, day, start, end) },
         ) {
-            Text(text = "确定")
+            Text(text = CourseActionStrings.confirmAction.zh)
         }
     }
     Spacer(modifier = Modifier.height(8.dp))
@@ -302,11 +302,11 @@ private fun StepperRow(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
-        Text(text = label, fontSize = 14.sp, color = primaryText, modifier = Modifier.weight(1f))
+        Text(text = label, style = MiuixTheme.textStyles.body2, color = primaryText, modifier = Modifier.weight(1f))
         TextButton(text = "−", enabled = canDecrease, onClick = { onChange(value - 1) })
         Text(
             text = value.toString(),
-            fontSize = 15.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = primaryText,
             modifier = Modifier.width(36.dp),
@@ -324,20 +324,20 @@ private fun InfoRow(
     primaryText: Color,
     secondaryText: Color,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = primaryText,
             )
             if (detail != null) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = detail, fontSize = 12.sp, color = secondaryText)
+                Text(text = detail, style = MiuixTheme.textStyles.footnote1, color = secondaryText)
             }
         }
     }

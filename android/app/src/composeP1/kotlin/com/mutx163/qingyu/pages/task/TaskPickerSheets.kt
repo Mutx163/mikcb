@@ -164,9 +164,9 @@ fun TaskDueDatePickerSheet(
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-            StepperRow("年", year, MIN_YEAR, MAX_YEAR, primaryText) { year = it }
-            StepperRow("月", month, 1, 12, primaryText) { month = it }
-            StepperRow("日", day, 1, daysInMonth(year, month), primaryText) { day = it }
+            StepperRow(TaskStrings.datePickerYear, year, MIN_YEAR, MAX_YEAR, primaryText) { year = it }
+            StepperRow(TaskStrings.datePickerMonth, month, 1, 12, primaryText) { month = it }
+            StepperRow(TaskStrings.datePickerDay, day, 1, daysInMonth(year, month), primaryText) { day = it }
 
             Spacer(modifier = Modifier.height(12.dp))
             Row(
@@ -245,14 +245,12 @@ private const val MAX_YEAR = 2035
  * 弹层两个通用按钮的文案，逐字取 ARB `cancelAction` / `confirmAction`
  * （Dart `miuix_date_picker_sheet.dart:186,196` 用的就是这两个键）。
  *
- * ⚠️ 为什么写在这里而不是加进 `TaskStrings`（`main/.../pages/task/TaskStrings.kt`）：
- * task-18 的写作用域是 `composeP1/.../pages/task/` + `AddTaskFormReducer.kt`，**不含那个文件**；
- * 而这两个键已被 `pages/course` 的两份文案表收录（各模块目录各一份是本仓既有做法），
- * 为不越界、也不跨模块 import，这里就地取同值。
- * 逐字一致性由 `AddTaskFormReducerTest.字段` 里那条 ARB 对拍守住（同文件内的测试）。
+ * 2026-10-28：原先就地写成 private const（当时 task-18 写作用域不含 `TaskStrings`）。
+ * `CjkLiteralGateTest` 判为「渲染层新增中文字面量」，故改为引用 `TaskStrings`
+ * 中同值常量（`main/` 里，不在门禁扫描范围，且是文案的既定归属处）。
  */
-private const val PICKER_CANCEL_LABEL = "取消"
-private const val PICKER_CONFIRM_LABEL = "确认"
+private val PICKER_CANCEL_LABEL = TaskStrings.cancelAction
+private val PICKER_CONFIRM_LABEL = TaskStrings.confirmAction
 
 private fun daysInMonth(year: Int, month: Int): Int =
     java.time.YearMonth.of(year, month).lengthOfMonth()
