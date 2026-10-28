@@ -15,6 +15,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * 设置族动作分派器单测（Phase 3.5 · 设置族竖切第一刀）。
@@ -470,6 +471,203 @@ class SettingsActionDispatcherTest {
     }
 
     // ================================================================
+    // 9. task-15：渲染层两处死控件（色板 / 控制卡按钮）的接线
+    // ================================================================
+
+    @Test
+    fun `色板点一个色块把值写进模型并落盘`() {
+        val store = TimetableStore(InMemoryKeyValueStore())
+        val modelStore = TimetableSettingsModelStore(store)
+        val before = modelStore.load()
+        assertEquals(
+            TimetableSettingsModel.DEFAULT_UNIFIED_CARD_COLOR,
+            before.timetableUnifiedCardColor,
+        )
+
+        // 渲染层点色块的产出：WRITE_SETTING + target = 该色值 + rowId = 色板 id
+        val write = SettingsActionDispatcher.dispatch(
+            SettingsActionKind.WRITE_SETTING,
+            "#7C3AED",
+            SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS,
+            before,
+        ) as SettingsDispatch.Write
+        assertEquals("#7C3AED", write.model.timetableUnifiedCardColor)
+
+        // 宿主落盘 → 盘上值真的变了（这就是「用户改得了统一课卡色」的证据）
+        modelStore.save(write.model)
+        assertEquals("#7C3AED", store.loadSettingsJson()["timetableUnifiedCardColor"])
+        assertEquals("#7C3AED", modelStore.load().timetableUnifiedCardColor)
+    }
+
+    @Test
+    fun `色板色值非法记 Ignored 不写脏数据`() {
+        for (bad in listOf(null, "", "purple", "#12345", "#GGGGGG")) {
+            assertTrue(
+                "色板值 $bad 应当被拒",
+                dispatch(
+                    SettingsActionKind.WRITE_SETTING,
+                    bad,
+                    SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS,
+                ) is SettingsDispatch.Ignored,
+            )
+        }
+    }
+
+    @Test
+    fun `重置为预设把主题快照按 Dart 短键写回模型`() {
+        // 快照键名逐字对照 Dart ThemeConfig.toJson（timetable_settings.dart:123-144）
+        val model = TimetableSettingsModel(
+            themeCheckpointConfig = mapOf(
+                "v" to 2,
+                "seed" to "#5EA500",
+                "uc" to "#DC2626",
+                "ucOn" to true,
+                "mode" to "dark",
+                "ccl" to "#111111",
+                "ccd" to "#222222",
+                "cdl" to "#333333",
+                "cdd" to "#444444",
+                "wbl" to "#555555",
+                "wal" to "#666666",
+                "tal" to "#777777",
+                "link" to false,
+                "hideWeekend" to true,
+                "spacing" to "compact",
+                "timeDisplay" to "startOnly",
+                // 本模型不拥有的键（材质/玻璃那一刀的范围）必须被安静忽略
+                "bg" to "#000000",
+                "不存在的键" to "x",
+            ),
+        )
+
+        val reset = write(SettingsActionDispatcher.ROW_THEME_CURRENT_RESET, null, model)
+
+        assertEquals("#5EA500", reset.themeSeedColor)
+        assertEquals("#DC2626", reset.timetableUnifiedCardColor)
+        assertTrue(reset.timetableUseUnifiedCardColor)
+        assertEquals(AppThemeMode.DARK, reset.appThemeMode)
+        assertEquals("#111111", reset.courseCardTitleColorLight)
+        assertEquals("#222222", reset.courseCardTitleColorDark)
+        assertEquals("#333333", reset.courseCardDetailColorLight)
+        assertEquals("#444444", reset.courseCardDetailColorDark)
+        assertEquals("#555555", reset.weekdayBarFontColorLight)
+        assertEquals("#666666", reset.weekdayBarAccentColorLight)
+        assertEquals("#777777", reset.timeAxisFontColorLight)
+        assertFalse(reset.linkCourseCardColors)
+        assertTrue(reset.timetableHideWeekends)
+        assertEquals(TimetableCourseSpacingMode.fromValue("compact"), reset.timetableCourseSpacingMode)
+        assertEquals(
+            SectionTimeDisplayMode.fromValue("startOnly"),
+            reset.timetableSectionTimeDisplayMode,
+        )
+    }
+
+    @Test
+    fun `重置为预设遇到坏值保持原值 不崩`() {
+        val model = TimetableSettingsModel(
+            themeSeedColor = "#123456",
+            courseCardTitleColorLight = "#ABCDEF",
+            themeCheckpointConfig = mapOf(
+                "seed" to "not-a-color",
+                "ccl" to 42,
+                "link" to "yes",
+                "mode" to "zzz",
+            ),
+        )
+        val reset = write(SettingsActionDispatcher.ROW_THEME_CURRENT_RESET, null, model)
+        assertEquals("#123456", reset.themeSeedColor)
+        assertEquals("#ABCDEF", reset.courseCardTitleColorLight)
+        // 类型不符的布尔保持原值（默认真）
+        assertTrue(reset.linkCourseCardColors)
+        // 不认识的档位回落 system（Dart X.fromValue 口径）
+        assertEquals(AppThemeMode.SYSTEM, reset.appThemeMode)
+    }
+
+    @Test
+    fun `没有主题快照时重置为预设记 Ignored`() {
+        // Dart：`if (settings.themeCheckpointConfig != null)` 才动手，否则什么都不做。
+        val ignored = dispatch(
+            SettingsActionKind.WRITE_SETTING,
+            null,
+            SettingsActionDispatcher.ROW_THEME_CURRENT_RESET,
+            TimetableSettingsModel(themeCheckpointConfig = null),
+        ) as SettingsDispatch.Ignored
+        assertTrue(ignored.reason.contains("themeCheckpointConfig"))
+    }
+
+    @Test
+    fun `保存当前主题走 DIALOG 意图`() {
+        assertEquals(
+            SettingsDispatch.ShowDialog(null, SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE),
+            dispatch(
+                SettingsActionKind.DIALOG,
+                null,
+                SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE,
+            ),
+        )
+    }
+
+    @Test
+    fun `死控件接线的 rowId 约定逐字一致`() {
+        assertEquals("courseCard.colorChips", SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS)
+        assertEquals("theme.current", SettingsActionDispatcher.ROW_THEME_CURRENT)
+        assertEquals(
+            "theme.current.resetToPreset",
+            SettingsActionDispatcher.ROW_THEME_CURRENT_RESET,
+        )
+        assertEquals("theme.current.saveCurrent", SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE)
+        // 两个按钮行 id 必须是控制卡 id 的后缀（渲染层按这个约定拼）
+        for (rowId in listOf(
+            SettingsActionDispatcher.ROW_THEME_CURRENT_RESET,
+            SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE,
+        )) {
+            assertTrue(
+                "`$rowId` 应当以 `${SettingsActionDispatcher.ROW_THEME_CURRENT}.` 开头",
+                rowId.startsWith("${SettingsActionDispatcher.ROW_THEME_CURRENT}."),
+            )
+        }
+    }
+
+    @Test
+    fun `渲染层两处死控件的接线不许再被改空`() {
+        // 渲染层没有 Compose 测试设施（全仓 createComposeRule 0 命中），所以这里用
+        // 「源码守卫」钉住接线：把 clickable 去掉 / 把 onClick 改回空 lambda 都会红。
+        val source = rendererSource()
+        val chips = functionBody(source, "private fun ColorChipGroup(")
+        val controlCard = functionBody(source, "private fun ControlCard(")
+
+        assertTrue("色板色块必须可点（clickable）", chips.contains("clickable"))
+        assertTrue(
+            "色块点击必须走 onAction 通路并带上色板 rowId",
+            chips.contains("onAction(") &&
+                chips.contains("SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS"),
+        )
+        assertFalse("色板里不许自己写业务判据（比如直接改状态）", chips.contains("timetableUnifiedCardColor"))
+
+        assertTrue(
+            "控制卡按钮必须经 controlCardWiring 翻译成动作",
+            controlCard.contains("controlCardWiring(action.key)"),
+        )
+        assertTrue(controlCard.contains("onAction("))
+        // 「还有没有空 lambda」只看**代码行**：注释里提到旧实现不算（与 CjkLiteralGateTest
+        // 跳过注释行同一套口径）。
+        val codeOnly = source.lines()
+            .filterNot { line ->
+                val t = line.trimStart()
+                t.startsWith("*") || t.startsWith("//") || t.startsWith("/*")
+            }
+            .joinToString("\n")
+        assertFalse("渲染层不许再有空的 onClick = { }", codeOnly.contains("onClick = { }"))
+
+        // 翻译表本身：两个按钮各自的 rowId 与 ARB 键
+        val wiring = functionBody(source, "private fun controlCardWiring(")
+        assertTrue(wiring.contains("SettingsActionDispatcher.ROW_THEME_CURRENT_RESET"))
+        assertTrue(wiring.contains("SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE"))
+        assertTrue(wiring.contains("\"themeResetToPreset\""))
+        assertTrue(wiring.contains("\"themeSaveCurrent\""))
+    }
+
+    // ================================================================
     // 夹具
     // ================================================================
 
@@ -480,8 +678,12 @@ class SettingsActionDispatcherTest {
         model: TimetableSettingsModel = defaults,
     ): SettingsDispatch = SettingsActionDispatcher.dispatch(kind, target, rowId, model)
 
-    private fun write(rowId: String, target: String?): TimetableSettingsModel =
-        (dispatch(SettingsActionKind.WRITE_SETTING, target, rowId) as SettingsDispatch.Write).model
+    private fun write(
+        rowId: String,
+        target: String?,
+        model: TimetableSettingsModel = defaults,
+    ): TimetableSettingsModel =
+        (dispatch(SettingsActionKind.WRITE_SETTING, target, rowId, model) as SettingsDispatch.Write).model
 
     private fun specFor(pageId: String, model: TimetableSettingsModel): SettingsPageSpec =
         SettingsPageBridge.specFor(pageId, SettingsPageBridge.toSettingsPageState(model))!!
@@ -493,4 +695,40 @@ class SettingsActionDispatcherTest {
             .flatMap { it.children }
             .filterIsInstance<SettingsRow>()
             .firstOrNull { it.id == rowId }
+
+    // ---- 源码守卫用的读取工具（与 CjkLiteralGateTest 同一套定位法）----
+
+    private fun rendererSource(): String =
+        File(
+            repoRoot(),
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/settings/SettingsPageRenderers.kt",
+        ).readText(Charsets.UTF_8)
+
+    /** 从 [signature] 起截出函数体（按花括号配平，含签名行本身）。 */
+    private fun functionBody(source: String, signature: String): String {
+        val start = source.indexOf(signature)
+        require(start >= 0) { "渲染层里找不到 `$signature`" }
+        val braceStart = source.indexOf('{', start)
+        require(braceStart >= 0) { "`$signature` 后面没有函数体" }
+        var depth = 0
+        for (index in braceStart until source.length) {
+            when (source[index]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return source.substring(start, index + 1)
+                }
+            }
+        }
+        error("`$signature` 的花括号没有闭合")
+    }
+
+    private fun repoRoot(): File {
+        var dir: File? = File("").absoluteFile
+        repeat(8) {
+            if (File(dir, "lib/l10n/app_zh.arb").isFile) return dir!!
+            dir = dir?.parentFile
+        }
+        error("找不到仓库根（未定位到 lib/l10n/app_zh.arb）")
+    }
 }

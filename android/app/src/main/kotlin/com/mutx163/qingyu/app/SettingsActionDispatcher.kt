@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.LenientJson
+
 /**
  * 设置族动作分派器（Phase 3.5 · 设置族竖切第一刀）。
  *
@@ -145,6 +147,30 @@ object SettingsActionDispatcher {
     const val ROW_CARD_TEXT_LIGHT_DETAIL = "courseCard.textColors.light.detail"
     const val ROW_CARD_TEXT_DARK_TITLE = "courseCard.textColors.dark.title"
     const val ROW_CARD_TEXT_DARK_DETAIL = "courseCard.textColors.dark.detail"
+
+    /**
+     * 统一课卡色的**八色板**（`SettingsInline.id`，不是 `SettingsRow`）。
+     *
+     * 渲染层以前这里没有 `clickable`，色板点了没反应（2026-10-28 task-15 修）。
+     * 现在点一个色块走的就是其它行同一条通路：`WRITE_SETTING` + `target = 该色值 hex`
+     * + 本 rowId（**不需要后缀**——一次点击只可能选中一个色值，值从 `target` 来）。
+     */
+    const val ROW_CARD_COLOR_CHIPS = "courseCard.colorChips"
+
+    /** 主题管理页控制卡（`SettingsInline.id`）与它两个按钮的行 id。 */
+    const val ROW_THEME_CURRENT = "theme.current"
+
+    /**
+     * 「重置为预设」：把 `themeCheckpointConfig` 那份主题快照写回设置。
+     * 出处 `settings_appearance.dart:487-496`（`_applyThemeWithUndo(…, themeCheckpointConfig!)`）。
+     */
+    const val ROW_THEME_CURRENT_RESET = "theme.current.resetToPreset"
+
+    /**
+     * 「保存当前主题」：弹保存对话框（`settings_appearance.dart:497-501` 的
+     * `_showSaveThemeDialog`）。走 `DIALOG` 意图，对话框本体属宿主/页面层。
+     */
+    const val ROW_THEME_CURRENT_SAVE = "theme.current.saveCurrent"
 
     /** 恢复默认的作用域名（`settings_reset.dart:17-23` 里的两个）。 */
     const val SCOPE_APPEARANCE = "appearance"
@@ -356,6 +382,25 @@ object SettingsActionDispatcher {
             ROW_CARD_TEXT_DARK_DETAIL -> applyDetailColor(model, target, dark = true)
                 ?: return ignored(kind, target, rowId, "色值不是 #RRGGBB：$target")
 
+            // 八色板点一个色块：新值就是那个 hex（task-15 接上的死控件）。
+            ROW_CARD_COLOR_CHIPS -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "色板色值不是 #RRGGBB：$target")
+                model.copy(timetableUnifiedCardColor = hex)
+            }
+
+            // 「重置为预设」：把存档里的主题快照写回去（Dart :487-496）。
+            ROW_THEME_CURRENT_RESET -> {
+                val config = model.themeCheckpointConfig
+                    ?: return ignored(
+                        kind,
+                        target,
+                        rowId,
+                        "没有主题存档（themeCheckpointConfig 为空），Dart 同一分支什么都不做",
+                    )
+                applyThemeCheckpoint(model, config)
+            }
+
             else -> {
                 // 主题管理页的预设是 RADIO，渲染层不给 target，值只能从 rowId 后缀取。
                 if (rowId.startsWith(ROW_THEME_PRESET_PREFIX)) {
@@ -373,6 +418,53 @@ object SettingsActionDispatcher {
             }
         }
         return SettingsDispatch.Write(next, rowId)
+    }
+
+    /**
+     * 把主题快照（`themeCheckpointConfig`，Dart `ThemeConfig.toJson` 的**短键**）写回模型。
+     *
+     * 键名逐字对照 `lib/models/timetable_settings.dart:123-144`：
+     * `seed` / `uc` / `ucOn` / `mode` / `ccl` / `ccd` / `cdl` / `cdd` /
+     * `wbl` / `wbd` / `wal` / `wad` / `tal` / `tad` / `link` / `hideWeekend` /
+     * `spacing` / `timeDisplay`。
+     *
+     * **只认本模型拥有的键**：快照里还可能有材质/玻璃调参（`bg` 等）不在本模型覆盖范围，
+     * 原样忽略——本方法不会碰它们，也不会因此崩（Dart 侧那些键由材质那一刀负责）。
+     * 值缺失 / 类型不符 / 色值非法一律**保持原值**（宽松读，与 Dart `ThemeConfig.fromJson` 同口径）。
+     */
+    private fun applyThemeCheckpoint(
+        model: TimetableSettingsModel,
+        config: Map<String, Any?>,
+    ): TimetableSettingsModel {
+        fun color(key: String): String? = normalizeHexColor(config[key] as? String)
+        fun bool(key: String): Boolean? = LenientJson.bool(config[key])
+        fun text(key: String): String? = (config[key] as? String)?.trim()?.takeIf { it.isNotEmpty() }
+
+        return model.copy(
+            themeSeedColor = color("seed") ?: model.themeSeedColor,
+            timetableUnifiedCardColor = color("uc") ?: model.timetableUnifiedCardColor,
+            timetableUseUnifiedCardColor =
+                bool("ucOn") ?: model.timetableUseUnifiedCardColor,
+            appThemeMode = text("mode")?.let { AppThemeMode.fromValue(it) } ?: model.appThemeMode,
+            courseCardTitleColorLight = color("ccl") ?: model.courseCardTitleColorLight,
+            courseCardTitleColorDark = color("ccd") ?: model.courseCardTitleColorDark,
+            courseCardDetailColorLight = color("cdl") ?: model.courseCardDetailColorLight,
+            courseCardDetailColorDark = color("cdd") ?: model.courseCardDetailColorDark,
+            weekdayBarFontColorLight = color("wbl") ?: model.weekdayBarFontColorLight,
+            weekdayBarFontColorDark = color("wbd") ?: model.weekdayBarFontColorDark,
+            weekdayBarAccentColorLight = color("wal") ?: model.weekdayBarAccentColorLight,
+            weekdayBarAccentColorDark = color("wad") ?: model.weekdayBarAccentColorDark,
+            timeAxisFontColorLight = color("tal") ?: model.timeAxisFontColorLight,
+            timeAxisFontColorDark = color("tad") ?: model.timeAxisFontColorDark,
+            linkCourseCardColors = bool("link") ?: model.linkCourseCardColors,
+            timetableHideWeekends = bool("hideWeekend") ?: model.timetableHideWeekends,
+            timetableCourseSpacingMode = text("spacing")
+                ?.let { TimetableCourseSpacingMode.fromValue(it) }
+                ?: model.timetableCourseSpacingMode,
+            timetableSectionTimeDisplayMode = text("timeDisplay")
+                ?.let { SectionTimeDisplayMode.fromValue(it) }
+                ?: model.timetableSectionTimeDisplayMode,
+        )
     }
 
     /**

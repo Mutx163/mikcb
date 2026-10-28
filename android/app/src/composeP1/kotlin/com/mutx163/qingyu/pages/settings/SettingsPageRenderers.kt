@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
@@ -160,7 +162,7 @@ private fun SettingsNodeView(
         is SettingsDescription -> SectionDescription(text = node.text)
         is SettingsGap -> Spacer(modifier = Modifier.height(node.heightDp.dp))
         is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction)
-        is SettingsInline -> SettingsInlineView(node = node)
+        is SettingsInline -> SettingsInlineView(node = node, onAction = onAction)
         is SettingsRow -> SettingsRowView(row = node, onAction = onAction)
     }
 }
@@ -379,12 +381,15 @@ private fun titleColors(row: SettingsRow): top.yukonga.miuix.kmp.basic.BasicComp
 }
 
 @Composable
-private fun SettingsInlineView(node: SettingsInline) {
+private fun SettingsInlineView(
+    node: SettingsInline,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
     when (node.kind) {
         InlineKind.PREVIEW_CARD -> PreviewCard(node = node)
         InlineKind.FONT_PREVIEW -> FontPreview(node = node)
-        InlineKind.COLOR_CHIP_GROUP -> ColorChipGroup(node = node)
-        InlineKind.CONTROL_CARD -> ControlCard(node = node)
+        InlineKind.COLOR_CHIP_GROUP -> ColorChipGroup(node = node, onAction = onAction)
+        InlineKind.CONTROL_CARD -> ControlCard(node = node, onAction = onAction)
     }
 }
 
@@ -481,9 +486,19 @@ private fun FontPreview(node: SettingsInline) {
     }
 }
 
-/** 统一课卡色的八色板（`settings_course_card.dart:286-299`）。 */
+/**
+ * 统一课卡色的八色板（`settings_course_card.dart:286-299`）。
+ *
+ * 2026-10-28（task-15）：色块以前**没有 `clickable`**，点了没反应——用户说的「按钮点击都
+ * 没有反应」有一处就是它。现在每个色块走的是与其它行**同一条** `onAction` 通路：
+ * `WRITE_SETTING` + `target = 该色值` + `rowId = ROW_CARD_COLOR_CHIPS`；
+ * 「点这个色值意味着什么」的判据仍在分派器里，渲染层只负责转达。
+ */
 @Composable
-private fun ColorChipGroup(node: SettingsInline) {
+private fun ColorChipGroup(
+    node: SettingsInline,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
     val colors = MiuixTheme.colorScheme
     QingyuCard(
         modifier = Modifier
@@ -513,16 +528,38 @@ private fun ColorChipGroup(node: SettingsInline) {
                             width = if (selected) 2.dp else 1.dp,
                             color = if (selected) colors.primary else colors.outline,
                             shape = RoundedCornerShape(QingyuShapes.ICON_BADGE_RADIUS.dp),
-                        ),
+                        )
+                        .clickable {
+                            onAction(
+                                SettingsAction.WRITE_SETTING,
+                                hex,
+                                SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS,
+                            )
+                        },
                 )
             }
         }
     }
 }
 
-/** 控制卡头（`HyperosControlCard`）：标题 + 取值 + 可选按钮。 */
+/**
+ * 控制卡头（`HyperosControlCard`）：标题 + 取值 + 可选按钮。
+ *
+ * 2026-10-28（task-15）：按钮以前是 `onClick = { }`（空实现），点不动。
+ * 现在按 Dart `settings_appearance.dart:471-504` 的主题管理段接上：
+ * - 「重置为预设」（ARB 键 `themeResetToPreset`）→ `WRITE_SETTING` +
+ *   `rowId = ROW_THEME_CURRENT_RESET`，分派器把 `themeCheckpointConfig` 写回去；
+ * - 「保存当前主题」（`themeSaveCurrent`）→ `DIALOG` + `rowId = ROW_THEME_CURRENT_SAVE`，
+ *   对话框本体属宿主/页面层。
+ *
+ * 这里只做「按钮 → 动作」的翻译，**判据一律在分派器里**；认不出的键不给点击
+ * （宁可点不动，也不要在渲染层猜一个语义）。
+ */
 @Composable
-private fun ControlCard(node: SettingsInline) {
+private fun ControlCard(
+    node: SettingsInline,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
     val colors = MiuixTheme.colorScheme
     QingyuCard(
         modifier = Modifier
@@ -551,7 +588,14 @@ private fun ControlCard(node: SettingsInline) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 node.texts.forEach { action ->
-                    Button(onClick = { }) {
+                    val wiring = controlCardWiring(action.key)
+                    Button(
+                        onClick = {
+                            if (wiring != null) {
+                                onAction(wiring.first, null, wiring.second)
+                            }
+                        },
+                    ) {
                         Text(
                             text = action.text,
                             color = colors.primary,
@@ -562,4 +606,20 @@ private fun ControlCard(node: SettingsInline) {
             }
         }
     }
+}
+
+/**
+ * 控制卡按钮 → `(动作, rowId)`；认不出的 ARB 键返回 `null`（不给点击）。
+ *
+ * 键名是 `SettingsInline.texts[].key`（ARB 键），与
+ * `SettingsStrings.themeResetToPreset` / `themeSaveCurrent` 一致。
+ */
+private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = when (textKey) {
+    "themeResetToPreset" -> SettingsAction.WRITE_SETTING to
+        SettingsActionDispatcher.ROW_THEME_CURRENT_RESET
+
+    "themeSaveCurrent" -> SettingsAction.DIALOG to
+        SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE
+
+    else -> null
 }
