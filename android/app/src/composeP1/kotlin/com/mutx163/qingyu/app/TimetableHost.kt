@@ -53,10 +53,16 @@ import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
  *
  * ## 显示偏好为什么是入参而不是从 `settings` 读
  *
+ * ⚠️ **下面这四个值目前来自宿主，不是从用户存档里读的。**
+ *
  * `core.TimetableSettings` 是本族裁定的**四键子集**（sections / activeTimeSchemeId /
  * semesterWeekCount / semesterStartDate），没有 `timetableHideWeekends` /
- * `timeColumnWidthMode` / `sectionHeight` / `longPressEmptySlotToAddCourseEnabled`。
- * 完整设置模型由设置族移植，在那之前这几个值只能由壳接线层注入（默认值取 Dart 默认）。
+ * `timeColumnWidthMode` / `sectionHeight` / `longPressEmptySlotToAddCourseEnabled`；
+ * 它的头注释还明确写着「在设置族补齐前，Compose 侧不得用本类整体覆盖设置存档」。
+ * 所以这四个显示偏好现在只能由壳接线层注入（默认值取 Dart 默认）。
+ *
+ * **排查时别被误导**：壳里现在显示的行高/列宽/是否隐藏周末是**宿主默认值**，
+ * 不代表用户在设置页里选了什么。等设置族把完整设置模型并进来，这里换成从存档读。
  *
  * @param repository 课表仓储（task-7 交付）。
  * @param onOpenAddCourse 点/长按**空白格**加课，带星期几与节次预填。
@@ -82,6 +88,9 @@ fun TimetableHost(
     display: TimetableHostDisplayPrefs = TimetableHostDisplayPrefs(),
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
+    // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
+    // 订阅那一刻**不会**推一次当前值（见 `TimetableRepository.kt:56-61` 的通知语义）。
+    // 所以任何宿主都必须先读 `repository.snapshot` 拿初值，否则首帧永远是空数据。
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
 
     DisposableEffect(repository) {
