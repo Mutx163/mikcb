@@ -167,7 +167,17 @@ foreach ($extra in $ExtraSources) {
 #
 # 收录条件（两个都满足才加）：① 文件本身零 `android.*` / `androidx.compose` / miuix 导入；
 # ② 它被共享模型层真实引用。加之前先确认这两条，否则会把 Android 依赖带进 JVM classpath。
-$sharedModelFiles = @("FlutterPrefsCodec.kt")
+#
+# 2026-10-28 补收录 `WidgetRefreshDecisionLogic.kt`：`833c3484` 新增了它（根包纯逻辑，只有
+# `package` 一行、零导入），同时新增的 `app/WidgetRefreshBridge.kt` 直接引用它。上一版白名单
+# 没跟上，导致**任何模块**的 L0 都在这两个文件上红（实测 `pages/course` 87 个 error，其中 4 个
+# 是这里，另 83 个见下方说明），把整个轻量自测通道拖成摆设。
+#
+# 仍未修：`app/AddTaskFormReducer.kt` 引用了 `pages/task/TaskModel.kt` 里的类型（同一个
+# `833c3484` 批次引入）。`app/` 是**每个模块都收**的共享目录，一旦它反向依赖某个页面域，
+# 除该域以外的模块都会红（`pages/course` 那 83 个 error 就是它）。这个只能由来源 `app/`
+# 的改动解耦，脚本侧无解——不要用「把所有 pages/ 都收进来」绕，那会让 L0 失去隔离意义。
+$sharedModelFiles = @("FlutterPrefsCodec.kt", "WidgetRefreshDecisionLogic.kt")
 foreach ($sharedFile in $sharedModelFiles) {
     $absSharedFile = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$sharedFile"
     if (-not (Test-Path $absSharedFile)) {
