@@ -5,6 +5,7 @@ import com.mutx163.qingyu.pages.settings.SettingsAppearancePage
 import com.mutx163.qingyu.pages.settings.SettingsCourseCardPage
 import com.mutx163.qingyu.pages.settings.SettingsGeneralPage
 import com.mutx163.qingyu.pages.settings.SettingsGroup
+import com.mutx163.qingyu.pages.settings.SettingsInline
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
 import com.mutx163.qingyu.pages.settings.SettingsRow
@@ -532,8 +533,8 @@ class SettingsActionDispatcherTest {
                 "tal" to "#777777",
                 "link" to false,
                 "hideWeekend" to true,
-                "spacing" to "compact",
-                "timeDisplay" to "startOnly",
+                "spacing" to "wide",
+                "timeDisplay" to "start_only",
                 // 本模型不拥有的键（材质/玻璃那一刀的范围）必须被安静忽略
                 "bg" to "#000000",
                 "不存在的键" to "x",
@@ -555,9 +556,9 @@ class SettingsActionDispatcherTest {
         assertEquals("#777777", reset.timeAxisFontColorLight)
         assertFalse(reset.linkCourseCardColors)
         assertTrue(reset.timetableHideWeekends)
-        assertEquals(TimetableCourseSpacingMode.fromValue("compact"), reset.timetableCourseSpacingMode)
+        assertEquals(TimetableCourseSpacingMode.WIDE, reset.timetableCourseSpacingMode)
         assertEquals(
-            SectionTimeDisplayMode.fromValue("startOnly"),
+            SectionTimeDisplayMode.START_ONLY,
             reset.timetableSectionTimeDisplayMode,
         )
     }
@@ -668,8 +669,191 @@ class SettingsActionDispatcherTest {
     }
 
     // ================================================================
+    // 10. task-16：hasThemeModifications（决定主题管理页两个按钮渲不渲染）
+    // ================================================================
+
+    @Test
+    fun `没有检查点时不算有改动`() {
+        // Dart :2483 `if (themeCheckpointConfig == null) return false;`
+        assertFalse(
+            SettingsActionDispatcher.hasThemeModifications(
+                TimetableSettingsModel(themeCheckpointConfig = null),
+            ),
+        )
+    }
+
+    @Test
+    fun `检查点里非 null 的字段与当前一致时不算有改动`() {
+        val model = TimetableSettingsModel(
+            themeSeedColor = "#2563EB",
+            courseCardTitleColorLight = "#FFFFFF",
+            themeCheckpointConfig = mapOf(
+                "seed" to "#2563EB",
+                "ccl" to "#FFFFFF",
+                "v" to 2,
+            ),
+        )
+        assertFalse(SettingsActionDispatcher.hasThemeModifications(model))
+    }
+
+    @Test
+    fun `检查点里任一非 null 字段与当前不同就算有改动`() {
+        val model = TimetableSettingsModel(
+            themeSeedColor = "#123456",
+            themeCheckpointConfig = mapOf("seed" to "#2563EB"),
+        )
+        assertTrue(SettingsActionDispatcher.hasThemeModifications(model))
+    }
+
+    @Test
+    fun `只改一个检查点里是 null 的字段 仍不算有改动`() {
+        // **本条的语义核心**（Dart :2488-2492「检查点未设置的字段不比较」）：
+        // 检查点只记了 seed，用户去改 ccl / 字号 / 周末显示……都不算「基于该主题的改动」，
+        // 否则按钮会在用户根本没碰主题时冒出来。
+        val model = TimetableSettingsModel(
+            themeSeedColor = "#2563EB",
+            courseCardTitleColorLight = "#ABCDEF",
+            courseCardFontSize = 12.0,
+            timetableHideWeekends = true,
+            themeCheckpointConfig = mapOf("seed" to "#2563EB"),
+        )
+        assertFalse(SettingsActionDispatcher.hasThemeModifications(model))
+
+        // 反证：一旦动的是检查点**记过**的那个字段，就立刻为真
+        assertTrue(
+            SettingsActionDispatcher.hasThemeModifications(
+                model.copy(themeSeedColor = "#000000"),
+            ),
+        )
+    }
+
+    @Test
+    fun `检查点里的字段为 null 或类型不符时按 Dart 宽松读处理`() {
+        // ① 全 null / 缺键 ⇒ 全部跳过 ⇒ false
+        val allNull = TimetableSettingsModel(
+            themeSeedColor = "#000000",
+            themeCheckpointConfig = mapOf("v" to 2, "seed" to null),
+        )
+        assertFalse(SettingsActionDispatcher.hasThemeModifications(allNull))
+
+        // ② 布尔键拿到非布尔（1）⇒ Dart `lenientBool` 不猜，按「没记过」跳过 ⇒ false
+        //    （lenient_json_readers.dart:41-47）
+        val badBool = TimetableSettingsModel(
+            linkCourseCardColors = false,
+            themeCheckpointConfig = mapOf("link" to 1),
+        )
+        assertFalse(SettingsActionDispatcher.hasThemeModifications(badBool))
+
+        // ③ ⚠️ 但字符串键拿到非字符串**不是**「没记过」：Dart `lenientString` 会
+        //    `v?.toString()`（lenient_json_readers.dart:39）⇒ `ccl: 42` 变成 "42"，
+        //    与当前 "#FFFFFF" 不同 ⇒ true。这条差异必须钉住，否则很容易想当然。
+        val stringified = TimetableSettingsModel(
+            courseCardTitleColorLight = "#FFFFFF",
+            themeCheckpointConfig = mapOf("ccl" to 42),
+        )
+        assertTrue(SettingsActionDispatcher.hasThemeModifications(stringified))
+    }
+
+    @Test
+    fun `颜色按原始字符串逐字比 不归一大小写`() {
+        // Dart `differs` 直接比 `getter(current) != checkpointVal`：大小写不同就是不同。
+        val model = TimetableSettingsModel(
+            courseCardTitleColorLight = "#FFFFFF",
+            themeCheckpointConfig = mapOf("ccl" to "#ffffff"),
+        )
+        assertTrue(SettingsActionDispatcher.hasThemeModifications(model))
+
+        assertFalse(
+            SettingsActionDispatcher.hasThemeModifications(
+                model.copy(themeCheckpointConfig = mapOf("ccl" to "#FFFFFF")),
+            ),
+        )
+    }
+
+    @Test
+    fun `枚举与布尔按值比较`() {
+        val model = TimetableSettingsModel(
+            appThemeMode = AppThemeMode.DARK,
+            linkCourseCardColors = false,
+            // 枚举值逐字用 Dart 的：`start_only`（不是 startOnly）
+            timetableSectionTimeDisplayMode = SectionTimeDisplayMode.START_ONLY,
+            themeCheckpointConfig = mapOf(
+                "mode" to "dark",
+                "link" to false,
+                "timeDisplay" to "start_only",
+            ),
+        )
+        assertFalse(SettingsActionDispatcher.hasThemeModifications(model))
+
+        assertTrue(
+            SettingsActionDispatcher.hasThemeModifications(
+                model.copy(appThemeMode = AppThemeMode.LIGHT),
+            ),
+        )
+        assertTrue(
+            SettingsActionDispatcher.hasThemeModifications(
+                model.copy(linkCourseCardColors = true),
+            ),
+        )
+        assertTrue(
+            SettingsActionDispatcher.hasThemeModifications(
+                model.copy(timetableSectionTimeDisplayMode = SectionTimeDisplayMode.HIDDEN),
+            ),
+        )
+    }
+
+    @Test
+    fun `端到端 有改动时主题管理页真的渲染出两个按钮`() {
+        // 这条把「修好了」与「用户看得见」连起来：task-15 修的是「一旦出现就点得动」，
+        // task-16 让它真的出现——控制卡的 texts 非空才渲染按钮（页面 spec 决定）。
+        val clean = TimetableSettingsModel(
+            themeCheckpointName = "冬季配色",
+            themeSeedColor = "#2563EB",
+            themeCheckpointConfig = mapOf("seed" to "#2563EB"),
+        )
+        assertEquals("无改动时不该出按钮", 0, themeCurrentCard(clean).texts.size)
+
+        val dirty = clean.copy(themeSeedColor = "#000000")
+        val dirtyCard = themeCurrentCard(dirty)
+        assertEquals("有改动时应当出两个按钮", 2, dirtyCard.texts.size)
+        assertEquals(
+            listOf("themeResetToPreset", "themeSaveCurrent"),
+            dirtyCard.texts.map { it.key },
+        )
+    }
+
+    @Test
+    fun `已存主题的选中态要同时看名字与有没有改动`() {
+        // Dart isSavedThemeSelected（theme_manage_sheets.dart:315-318）：
+        // 名字对上但用户改过主题 ⇒ 不算选中。
+        val saved = mapOf(
+            "id" to "t1",
+            "name" to "冬季配色",
+            "themeData" to mapOf("seedColor" to "#3482FF"),
+        )
+        val clean = TimetableSettingsModel(
+            themeCheckpointName = "冬季配色",
+            themeSeedColor = "#2563EB",
+            savedThemes = listOf(saved),
+            themeCheckpointConfig = mapOf("seed" to "#2563EB"),
+        )
+        assertTrue(SettingsPageBridge.toSettingsPageState(clean).savedThemes.single().selected)
+
+        val dirty = clean.copy(themeSeedColor = "#000000")
+        assertFalse(SettingsPageBridge.toSettingsPageState(dirty).savedThemes.single().selected)
+    }
+
+    // ================================================================
     // 夹具
     // ================================================================
+
+    /** 取主题管理页控制卡（`theme.current` 那个 inline 节点）。 */
+    private fun themeCurrentCard(model: TimetableSettingsModel): SettingsInline =
+        SettingsThemeManagePage
+            .spec(SettingsPageBridge.toSettingsPageState(model))
+            .nodes
+            .filterIsInstance<SettingsInline>()
+            .first { it.id == "theme.current" }
 
     private fun dispatch(
         kind: SettingsActionKind,

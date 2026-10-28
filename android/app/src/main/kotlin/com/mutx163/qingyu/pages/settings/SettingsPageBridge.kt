@@ -91,21 +91,23 @@ object SettingsPageBridge {
     /**
      * 设置模型 → 页面状态。
      *
-     * ## 三个**填不满**的字段（诚实清单）
+     * ## 两个**填不满**的字段（诚实清单）
      *
      * - `autoRefresh`：课程自动更新的档位/时刻/上次成功时间**不在** `timetable_settings`
      *   里（Dart 侧是独立的调度存储），本模型也没有。这里恒为 `null` ⇒ 通用页的
      *   「课表自动更新」整块不渲染（模型层 KDoc 写明 null = 尚未加载完，整块不渲染）。
-     * - `themeHasModifications`：要拿当前设置与 `themeCheckpointConfig` 逐字段比对才算得出来，
-     *   本刀不做 ⇒ 恒 `false`（主题管理页的「基于 X 已修改」徽标与两个按钮不出现；
-     *   那两个按钮在渲染层本来也是空 onClick）。
      * - `savedThemes` 的 `selected`：Dart 判据是
      *   `themeCheckpointName == theme.name && !hasThemeModifications`
-     *   （`theme_manage_sheets.dart:315-318`）；`hasThemeModifications` 恒 false，
-     *   所以这里退化成「名字等于当前主题名」。
+     *   （`theme_manage_sheets.dart:315-318`）——两个条件都实现了（`hasThemeModifications`
+     *   见 [SettingsActionDispatcher.hasThemeModifications]，task-16 补齐）。
+     *
+     * `themeHasModifications` 走 [SettingsActionDispatcher.hasThemeModifications]
+     * （口径与 Dart `timetable_settings.dart:2482-2513` 逐条对齐，含「只比检查点里非 null
+     * 的字段」这条）。它决定主题管理页控制卡那两个按钮**渲染不渲染**。
      */
     fun toSettingsPageState(model: TimetableSettingsModel): SettingsPageState {
         val defaults = SettingsPageState()
+        val themeHasModifications = SettingsActionDispatcher.hasThemeModifications(model)
         return SettingsPageState(
             // ---- 通用 ----
             appLocaleTag = model.appLocaleTag,
@@ -136,8 +138,8 @@ object SettingsPageBridge {
             ),
             themeSeedColor = model.themeSeedColor,
             themeCheckpointName = model.themeCheckpointName,
-            themeHasModifications = false,
-            savedThemes = mapSavedThemes(model),
+            themeHasModifications = themeHasModifications,
+            savedThemes = mapSavedThemes(model, themeHasModifications),
             // ---- 课程卡片 ----
             courseCardShowName = model.courseCardShowName,
             courseCardShowTeacher = model.courseCardShowTeacher,
@@ -193,15 +195,22 @@ object SettingsPageBridge {
      * 逐条宽容（Dart `SavedTheme.fromJson`：id/name 缺失的条目丢弃，不让一条坏数据炸整块），
      * 预览色取 `themeData` 的前 4 个（Dart `TimetableSettings.previewColors`，
      * `timetable_settings.dart:264-278`）。
+     *
+     * `selected` 判据逐字照 Dart `isSavedThemeSelected`（`theme_manage_sheets.dart:315-318`）：
+     * `themeCheckpointName == theme.name && !hasThemeModifications`
+     * —— 名字对上了但用户已经改过主题，就不算「选中」。
      */
-    private fun mapSavedThemes(model: TimetableSettingsModel): List<SavedThemeRow> =
+    private fun mapSavedThemes(
+        model: TimetableSettingsModel,
+        themeHasModifications: Boolean,
+    ): List<SavedThemeRow> =
         model.savedThemes.mapNotNull { raw ->
             val id = raw["id"] as? String ?: return@mapNotNull null
             val name = raw["name"] as? String ?: return@mapNotNull null
             SavedThemeRow(
                 id = id,
                 name = name,
-                selected = model.themeCheckpointName == name,
+                selected = model.themeCheckpointName == name && !themeHasModifications,
                 previewColors = previewColorsOf(raw),
             )
         }

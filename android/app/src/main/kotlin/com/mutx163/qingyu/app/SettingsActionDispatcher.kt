@@ -435,37 +435,125 @@ object SettingsActionDispatcher {
     private fun applyThemeCheckpoint(
         model: TimetableSettingsModel,
         config: Map<String, Any?>,
-    ): TimetableSettingsModel {
-        fun color(key: String): String? = normalizeHexColor(config[key] as? String)
-        fun bool(key: String): Boolean? = LenientJson.bool(config[key])
-        fun text(key: String): String? = (config[key] as? String)?.trim()?.takeIf { it.isNotEmpty() }
+    ): TimetableSettingsModel =
+        THEME_CHECKPOINT_FIELDS.fold(model) { acc, field ->
+            if (!config.containsKey(field.key)) {
+                acc
+            } else {
+                field.apply(acc, config[field.key]) ?: acc
+            }
+        }
 
-        return model.copy(
-            themeSeedColor = color("seed") ?: model.themeSeedColor,
-            timetableUnifiedCardColor = color("uc") ?: model.timetableUnifiedCardColor,
-            timetableUseUnifiedCardColor =
-                bool("ucOn") ?: model.timetableUseUnifiedCardColor,
-            appThemeMode = text("mode")?.let { AppThemeMode.fromValue(it) } ?: model.appThemeMode,
-            courseCardTitleColorLight = color("ccl") ?: model.courseCardTitleColorLight,
-            courseCardTitleColorDark = color("ccd") ?: model.courseCardTitleColorDark,
-            courseCardDetailColorLight = color("cdl") ?: model.courseCardDetailColorLight,
-            courseCardDetailColorDark = color("cdd") ?: model.courseCardDetailColorDark,
-            weekdayBarFontColorLight = color("wbl") ?: model.weekdayBarFontColorLight,
-            weekdayBarFontColorDark = color("wbd") ?: model.weekdayBarFontColorDark,
-            weekdayBarAccentColorLight = color("wal") ?: model.weekdayBarAccentColorLight,
-            weekdayBarAccentColorDark = color("wad") ?: model.weekdayBarAccentColorDark,
-            timeAxisFontColorLight = color("tal") ?: model.timeAxisFontColorLight,
-            timeAxisFontColorDark = color("tad") ?: model.timeAxisFontColorDark,
-            linkCourseCardColors = bool("link") ?: model.linkCourseCardColors,
-            timetableHideWeekends = bool("hideWeekend") ?: model.timetableHideWeekends,
-            timetableCourseSpacingMode = text("spacing")
-                ?.let { TimetableCourseSpacingMode.fromValue(it) }
-                ?: model.timetableCourseSpacingMode,
-            timetableSectionTimeDisplayMode = text("timeDisplay")
-                ?.let { SectionTimeDisplayMode.fromValue(it) }
-                ?: model.timetableSectionTimeDisplayMode,
-        )
+    /**
+     * 当前主题设置是否**偏离了存档里的检查点**（Dart `hasThemeModifications`，
+     * `lib/models/timetable_settings.dart:2482-2493`）。
+     *
+     * ## 口径（逐条对齐 Dart，行号可查）
+     *
+     * - `themeCheckpointConfig == null` ⇒ `false`（`:2483`）；
+     * - **只比较检查点里「有值」的字段**：`getter(checkpoint) == null` 就跳过（`:2488-2492`）——
+     *   检查点没记过的字段，用户怎么改都不算「基于该主题的改动」；
+     * - 比较用**原始值**：颜色按字符串逐字比（**不做大小写归一**）、
+     *   布尔按 `.toString()` 比（`:2497` `useUnifiedCardColor?.toString()` / `:2509` / `:2510`）、
+     *   枚举/文本按字符串比（`:2498` `themeMode`、`:2511` `spacingMode`、`:2512` `timeDisplayMode`）。
+     *   所以本方法**不**复用 [applyThemeCheckpoint] 的写回归一化（那会把颜色转成大写、把未知枚举
+     *   回落默认值），而是与快照原始值直接比——两者只有「键表」这一份是共用的。
+     * - 快照值的类型按 Dart `ThemeConfig.fromJson` 的宽松读解析（字符串 / 布尔）；
+     *   解析不出（例如该键是数字）⇒ 与 Dart 一样视为「这个字段没记过」，跳过。
+     *
+     * ## 与 Dart 的**已知差异**（都是「本模型覆盖范围」的边界，不是口径选择）
+     *
+     * - `backgroundColor`（短键 `bg`）在 Dart 的 19 项里（`:2495`），但**不在本模型的 61 键里**
+     *   （课表页背景色属材质/背景那一刀）⇒ 只差 `bg` 时这里返回 `false`，Dart 会返回 `true`；
+     * - 快照里颜色写成小写（`#ffffff`）而当前值是大写时：Dart 逐字比 ⇒ `true`，
+     *   本方法同样逐字比 ⇒ 也是 `true`（一致；写回路径才会归一成大写）。
+     */
+    fun hasThemeModifications(model: TimetableSettingsModel): Boolean {
+        val config = model.themeCheckpointConfig ?: return false
+        return THEME_CHECKPOINT_FIELDS.any { field ->
+            val raw = config[field.key] ?: return@any false
+            val checkpointValue = field.lenientValue(raw) ?: return@any false
+            field.read(model).toString() != checkpointValue.toString()
+        }
     }
+
+    /**
+     * 主题快照的**唯一一张键表**：写回（[applyThemeCheckpoint]）与「是否有改动」
+     * （[hasThemeModifications]）共用，别在别处再抄一份。
+     *
+     * 键名逐字对照 Dart `ThemeConfig.toJson`（`lib/models/timetable_settings.dart:123-144`）。
+     * Dart `hasThemeModifications` 的比较清单见 `:2494-2512`——顺序一致，只少一个 `bg`
+     * （见 [hasThemeModifications] 的差异说明）。
+     */
+    private val THEME_CHECKPOINT_FIELDS: List<ThemeCheckpointField> = listOf(
+        ThemeCheckpointField("seed", ThemeCheckpointKind.COLOR, { it.themeSeedColor }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(themeSeedColor = it) }
+        },
+        ThemeCheckpointField("uc", ThemeCheckpointKind.COLOR, { it.timetableUnifiedCardColor }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(timetableUnifiedCardColor = it) }
+        },
+        ThemeCheckpointField(
+            "ucOn",
+            ThemeCheckpointKind.BOOL,
+            { it.timetableUseUnifiedCardColor },
+        ) { m, v -> LenientJson.bool(v)?.let { m.copy(timetableUseUnifiedCardColor = it) } },
+        ThemeCheckpointField("mode", ThemeCheckpointKind.TEXT, { it.appThemeMode.value }) { m, v ->
+            (v as? String)?.takeIf { it.isNotBlank() }
+                ?.let { m.copy(appThemeMode = AppThemeMode.fromValue(it)) }
+        },
+        ThemeCheckpointField("ccl", ThemeCheckpointKind.COLOR, { it.courseCardTitleColorLight }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(courseCardTitleColorLight = it) }
+        },
+        ThemeCheckpointField("ccd", ThemeCheckpointKind.COLOR, { it.courseCardTitleColorDark }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(courseCardTitleColorDark = it) }
+        },
+        ThemeCheckpointField("cdl", ThemeCheckpointKind.COLOR, { it.courseCardDetailColorLight }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(courseCardDetailColorLight = it) }
+        },
+        ThemeCheckpointField("cdd", ThemeCheckpointKind.COLOR, { it.courseCardDetailColorDark }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(courseCardDetailColorDark = it) }
+        },
+        ThemeCheckpointField("wbl", ThemeCheckpointKind.COLOR, { it.weekdayBarFontColorLight }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(weekdayBarFontColorLight = it) }
+        },
+        ThemeCheckpointField("wbd", ThemeCheckpointKind.COLOR, { it.weekdayBarFontColorDark }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(weekdayBarFontColorDark = it) }
+        },
+        ThemeCheckpointField("wal", ThemeCheckpointKind.COLOR, { it.weekdayBarAccentColorLight }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(weekdayBarAccentColorLight = it) }
+        },
+        ThemeCheckpointField("wad", ThemeCheckpointKind.COLOR, { it.weekdayBarAccentColorDark }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(weekdayBarAccentColorDark = it) }
+        },
+        ThemeCheckpointField("tal", ThemeCheckpointKind.COLOR, { it.timeAxisFontColorLight }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(timeAxisFontColorLight = it) }
+        },
+        ThemeCheckpointField("tad", ThemeCheckpointKind.COLOR, { it.timeAxisFontColorDark }) { m, v ->
+            normalizeHexColor(v as? String)?.let { m.copy(timeAxisFontColorDark = it) }
+        },
+        ThemeCheckpointField("link", ThemeCheckpointKind.BOOL, { it.linkCourseCardColors }) { m, v ->
+            LenientJson.bool(v)?.let { m.copy(linkCourseCardColors = it) }
+        },
+        ThemeCheckpointField("hideWeekend", ThemeCheckpointKind.BOOL, { it.timetableHideWeekends }) { m, v ->
+            LenientJson.bool(v)?.let { m.copy(timetableHideWeekends = it) }
+        },
+        ThemeCheckpointField(
+            "spacing",
+            ThemeCheckpointKind.TEXT,
+            { it.timetableCourseSpacingMode.value },
+        ) { m, v ->
+            (v as? String)?.takeIf { it.isNotBlank() }
+                ?.let { m.copy(timetableCourseSpacingMode = TimetableCourseSpacingMode.fromValue(it)) }
+        },
+        ThemeCheckpointField(
+            "timeDisplay",
+            ThemeCheckpointKind.TEXT,
+            { it.timetableSectionTimeDisplayMode.value },
+        ) { m, v ->
+            (v as? String)?.takeIf { it.isNotBlank() }
+                ?.let { m.copy(timetableSectionTimeDisplayMode = SectionTimeDisplayMode.fromValue(it)) }
+        },
+    )
 
     /**
      * 选主题预设：**同时**写 `foruiTheme` 与 `themeSeedColor = preset.seedHex`。
@@ -574,4 +662,44 @@ object SettingsActionDispatcher {
     /** 课卡字号滑杆的上下限（`SettingsCourseCardPage.kt:63-64`：7.0~12.0）。 */
     private const val FONT_SIZE_MIN = 7.0
     private const val FONT_SIZE_MAX = 12.0
+}
+
+/** 主题快照字段的取值口径（决定宽松解析方式）。 */
+private enum class ThemeCheckpointKind {
+    /** 颜色：字符串 + `#RRGGBB` 校验。 */
+    COLOR,
+
+    /** 布尔。 */
+    BOOL,
+
+    /** 文本 / 枚举值字符串。 */
+    TEXT,
+}
+
+/**
+ * 主题快照里的一个字段（[SettingsActionDispatcher] 的 `THEME_CHECKPOINT_FIELDS` 用）。
+ *
+ * 一张表同时服务两件事：写回（[SettingsActionDispatcher.applyThemeCheckpoint]）与
+ * 「是否有改动」（[SettingsActionDispatcher.hasThemeModifications]）——**别在别处再抄一份**。
+ *
+ * @param key Dart `ThemeConfig.toJson` 的短键（`timetable_settings.dart:123-144`）。
+ * @param kind 宽松解析口径。
+ * @param read 当前值（比较时按 Dart 口径 `.toString()`；颜色返回原样字符串，**不归一大小写**）。
+ * @param apply 写回；返回 `null` 表示这个快照值本模型用不了（保持原值）。
+ */
+private class ThemeCheckpointField(
+    val key: String,
+    val kind: ThemeCheckpointKind,
+    val read: (TimetableSettingsModel) -> Any?,
+    val apply: (TimetableSettingsModel, Any?) -> TimetableSettingsModel?,
+) {
+    /**
+     * Dart `ThemeConfig.fromJson` 的宽松读：解析不出（类型不符）⇒ `null`。
+     * 在 [SettingsActionDispatcher.hasThemeModifications] 里 `null` 等价于
+     * 「检查点没记过这个字段」，跳过不比较（`:2488-2492`）。
+     */
+    fun lenientValue(raw: Any?): Any? = when (kind) {
+        ThemeCheckpointKind.COLOR, ThemeCheckpointKind.TEXT -> LenientJson.string(raw)
+        ThemeCheckpointKind.BOOL -> LenientJson.bool(raw)
+    }
 }
