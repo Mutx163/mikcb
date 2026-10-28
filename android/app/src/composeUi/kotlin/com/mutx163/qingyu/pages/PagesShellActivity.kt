@@ -2,6 +2,8 @@ package com.mutx163.qingyu.pages
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.View
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -67,12 +69,21 @@ class PagesShellActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // edge-to-edge 必须在这里真的调用一次：只 import 是没有任何效果的，
-        // 那正是「状态栏与导航条仍然是黑条」的根因（2026-10-27 19:0x 修）。
+        // 系统栏这件事有两层，缺任一层都会在屏幕上留黑条（2026-10-28 第二轮查清）：
         //
-        // 之前的表现：LaunchTheme 继承了 @android:style/Theme.Light.NoTitleBar，
-        // 平台主题的 statusBarColor / navigationBarColor 默认为黑，系统据此把
-        // 状态栏与手势条区域涂黑、图标翻白，壳的内容区被挤到黑条下面。
+        // 第一层（窗口标志）：系统只对「自己声明要画系统栏背景」的窗口让步。
+        // 这一位由主题的 windowDrawsSystemBarBackgrounds / 运行时 addFlags 打开，
+        // 见下面 applyShellSystemBars()。Flutter 侧一直显式加它，所以正式版能把
+        // 内容画进上下两条栏；壳从来没有，系统就按老规矩自己把两条栏涂成不透明黑。
+        //
+        // 第二层（窗口内缩）：只 import 而不调用 enableEdgeToEdge 时，窗口不会
+        // 铺满整屏，壳的内容区被挤到黑条下面（2026-10-27 19:0x 修的就是这层）。
+        //
+        // 2026-10-28 09:57 那版改成「把栏色写进主题」，真机复验「没区别」——不是
+        // 颜色值不对，是 Android 15+ 起 targetSdk ≥ 35 的窗口被平台强制边到边：
+        // PhoneWindow.generateLayout() 里 mEdgeToEdgeEnforced=true 会跳过主题里的
+        // statusBarColor/navigationBarColor、把栏色强制成透明，setStatusBarColor() 也
+        // 直接 return。所以第一层只能靠窗口标志，与栏色无关。
         //
         // 系统栏图标必须跟壳的明暗走：亮色界面要深色图标（light()），深色界面
         // 要浅色图标（dark()）。此前固定 light()，系统切深色后图标与背景同色，
@@ -104,7 +115,23 @@ class PagesShellActivity : ComponentActivity() {
             Configuration.UI_MODE_NIGHT_YES
 
     /** 系统栏全透明，图标明暗跟随壳的明暗。 */
+    @Suppress("DEPRECATION")
     private fun applyShellSystemBars(isDark: Boolean) {
+        // 窗口标志：告诉系统「系统栏区域由本窗口负责画」。缺这一位时系统会自己给
+        // 上下两条栏涂不透明底（本机 Android 16 上是纯黑），壳的内容再透明也透不出来。
+        // 主题 ComposeShellTheme 里已经有 windowDrawsSystemBarBackgrounds=true，
+        // 这里再补一次是运行时兜底（Activity 重建、别的入口进来都能覆盖到），
+        // 与 FlutterActivity.configureStatusBarForFullscreenFlutterExperience()
+        // 加的是同一位。
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        // 旧路径的「铺满整屏」位。Android 15+ 认的是新路径（setDecorFitsSystemWindows），
+        // 但部分 ROM 的窗口放大逻辑只看这几位，留着兜底；设错也不会缩小窗口。
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            )
+
         val transparent = android.graphics.Color.TRANSPARENT
         enableEdgeToEdge(
             statusBarStyle = if (isDark) {

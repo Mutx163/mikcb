@@ -38,6 +38,19 @@
       edge-to-edge。enforce*Contrast 显式关掉 —— API 29+ 的对比度遮罩会给透明导航栏
       补一层灰底，把「透明」吃掉。
 
+      ⚠️ 2026-10-28 16:35 用户真机复验（同一台 Redmi / Android 16，composeUi 包）：
+      上下仍是两条纯 (0,0,0)，上 152px / 下 65px，图标极性生效（深色图标压在黑条上）。
+      读 AOSP 源码后确认**上面那两行 statusBarColor / navigationBarColor 在 Android 15+
+      上是死代码**：targetSdk ≥ 35 的窗口被平台强制边到边，PhoneWindow.generateLayout()
+      里 mEdgeToEdgeEnforced=true 会跳过主题属性、把 mStatusBarColor 强制成透明，
+      setStatusBarColor()/setNavigationBarColor() 也直接 return。方向错了，不是颜色值不对。
+
+      真正决定「系统还自己画不画那条栏」的是窗口标志 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS，
+      它由下面这行 windowDrawsSystemBarBackgrounds 在窗口创建时打开（Flutter 侧
+      FlutterActivity.configureStatusBarForFullscreenFlutterExperience() 一直显式加这一位，
+      所以正式版能把内容画进上下两条栏；壳从来没加过 = 系统按老规矩自己涂不透明黑）。
+      详见 .agents/notes/implemented/bug-fix/2026-10-28-compose-shell-system-bar-black-bands.md。
+
       windowBackground 换成 @color/compose_shell_background（= 页面底色，不是 splash_background）：
       透明系统栏在「窗口仍内缩」这条路上露出来的正是窗口背景，若用 splash_background 会与
       页面差一档（白天 #FFFFFF vs #F2F2F2），整条栏看过去就是一条淡色带。启动画面不受影响
@@ -52,6 +65,10 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
+        <!-- 让系统知道「系统栏区域由本窗口自己画」：缺这一位，系统会自己给两条栏
+             涂一层不透明底（本机 Android 16 上就是纯黑），窗口内容再透明也透不出来。
+             运行时在 PagesShellActivity.applyShellSystemBars() 里还有一次兜底 addFlags。 -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowBackground">@color/compose_shell_background</item>
         <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:windowLightStatusBar">true</item>

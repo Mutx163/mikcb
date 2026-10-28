@@ -21,12 +21,17 @@
       图标极性（windowLight* = false）与窗口底色 @color/compose_shell_background（夜间档
       是 #FF242424，= 页面底色）。透明系统栏在「窗口仍内缩」时露出的就是窗口底色，
       所以两者必须一致，否则整条栏会是一条与页面不同色的带。
+
+      windowDrawsSystemBarBackgrounds=true 与白天档同因（见 values/styles.xml 的长注释）：
+      Android 15+ 强制边到边后主题里的栏色被平台忽略，窗口必须自己声明「系统栏由我画」，
+      否则系统会自己涂一层不透明黑。
     -->
     <style name="ComposeShellTheme" parent="@style/LaunchTheme">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowBackground">@color/compose_shell_background</item>
         <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:windowLightStatusBar">false</item>
