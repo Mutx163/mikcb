@@ -1,5 +1,13 @@
-package com.mutx163.qingyu.app
+package com.mutx163.qingyu.pages.settings
 
+// ⚠️ 下面这一行是**跨域的反向依赖**（设置域 → `app/` 的分派器镜像枚举），有意为之：
+// 分派器必须待在 `app/`（它被每一次 L0 无条件收录，不能 import `pages.settings`），
+// 而映射函数必须待在 `pages/settings/`（它要 import 本包的页面词汇；放 `app/` 会让
+// **所有模块**的 L0 报 Unresolved）。两边各只依赖对方的一个枚举，方向单一、无环。
+import com.mutx163.qingyu.app.SettingsActionDispatcher
+import com.mutx163.qingyu.app.SettingsActionKind
+// 设置模型（`app/` 下的完整显示模型）。同样是「设置域 → app」方向，理由同上。
+import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.pages.settings.AppFontMode
 import com.mutx163.qingyu.pages.settings.AppThemeMode
 import com.mutx163.qingyu.pages.settings.CourseCardHorizontalAlign

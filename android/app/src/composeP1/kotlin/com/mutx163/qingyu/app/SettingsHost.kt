@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 
 /**
@@ -107,7 +108,9 @@ fun SettingsHost(
                                 kind = kind,
                                 target = target,
                                 rowId = rowId,
-                                reason = "该 rowId 不是本刀支持的选色行",
+                                // 渲染层不许写中文字面量（CjkLiteralGateTest）：这里是
+                                // 开发者向的诊断码，不是屏上文案，所以给稳定错误码。
+                                reason = "row_not_a_color_row",
                             ),
                         )
                     } else {

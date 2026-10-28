@@ -5,6 +5,7 @@ import com.mutx163.qingyu.pages.settings.SettingsAppearancePage
 import com.mutx163.qingyu.pages.settings.SettingsCourseCardPage
 import com.mutx163.qingyu.pages.settings.SettingsGeneralPage
 import com.mutx163.qingyu.pages.settings.SettingsGroup
+import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
 import com.mutx163.qingyu.pages.settings.SettingsRow
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage

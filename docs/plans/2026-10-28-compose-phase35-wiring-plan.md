@@ -72,6 +72,28 @@ L4 在 `composeP1/.../app/`，L5 是 Lead 区。四层互不重叠；同一目�
 > **Android 胶水（Context、Activity、WebView 之类）一律放 `platform/`。**
 > 2026-10-28 已把 `app` 加进该脚本的 `sharedModelDirs` 名单。
 
+### 2.1 源集边界（2026-10-28 踩过两次，写死在这里）
+
+| 目录 | 谁编译得到 | 能被谁引用 |
+|---|---|---|
+| `src/main/kotlin/...` | 所有变体（含 prod 单测） | 谁都能引 |
+| `src/composeP1/kotlin/...` | **只有 compose 变体** | `src/composeUi/**`、`src/composeP1/**` 能引；**`src/test/` 引不到** |
+| `src/test/kotlin/...` | **所有变体共享** | 只能引 `main` 里的东西 |
+| `src/testComposeUi/kotlin/...` | 只有 compose 变体 | 能引 `composeP1` 里的东西 |
+
+**判别顺序（照做就行）**：
+1. 先问「这个文件有没有 `android.*` / `androidx.compose.*` / miuix 导入？」
+   —— **没有就是纯逻辑，放 `main/`**；有才考虑 `composeP1/`。
+2. 再问「有没有 `src/test/` 下的测试要引它？」
+   —— 有的话，它**必须在 `main/`**；否则测试要挪到 `src/testComposeUi/`。
+
+**两次实例（都是同一类错，代价都是全队 CI 红）**：
+- 2026-10-27 `QingyuTextStylesTest` 放 `src/test/` 却引 `composeP1` 的 `buildQingyuTextStyles`
+  → prod 单测编译失败，红了一整晚（`2cec8462` 修复）。
+- 2026-10-28 `SettingsPageBridge.kt` 放 `composeP1/`（**纯 Kotlin，0 个 Compose import**）
+  却引不到——`src/test/` 下的 `SettingsActionDispatcherTest` 要用它，11 条 Unresolved。
+  已搬到 `main/`（包名不变，import 无需改）。
+
 **禁止**：改 `pages/**` 的模型层与渲染层（那是 Phase 3 的交付物，本阶段只接线）、
 改 `lib/**`（Dart 是参照物）、改 `build.gradle`（Lead 挂载）。
 

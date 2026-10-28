@@ -17,7 +17,10 @@ package com.mutx163.qingyu.app
  * （`sharedModelDirs` 里有 `app`），而 `pages/settings` 不在那个名单里。一旦本文件
  * import `pages.settings.*`，**所有泳道的 L0 都会报 Unresolved**。所以这里用
  * [SettingsActionKind] 镜像枚举，映射函数放在
- * `composeP1/.../app/SettingsPageBridge.kt`（纯 Kotlin，无 Compose），
+ * `main/.../pages/settings/SettingsPageBridge.kt`（纯 Kotlin，无 Compose）。
+ * **它必须放在 `pages/settings/` 而不是 `app/`**：它要 import `pages.settings.*`，
+ * 而 `app/` 被每一次 L0 无条件收录——放 `app/` 会让**所有模块**的 L0 报 Unresolved；
+ * 放 `pages/settings/` 则只在 `-Module pages/settings` 时被收，边界正好对上。
  * 由一条「11 个值逐个映射」的测试钉住两边不漂。
  *
  * ## 值的传递约定（照渲染层实际行为，不是猜的）
