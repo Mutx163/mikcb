@@ -18,8 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
+import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.pages.about.AboutStaticPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
 import com.mutx163.qingyu.pages.about.OpenSourceLicensesPage
@@ -392,17 +394,51 @@ fun ShellPageContent(
             onToggleTask = {},
             onDeleteTask = {},
         )
-        "d2.addTask" -> AddTaskPage(
-            viewState = AddTaskViewState(isEditing = false, title = ""),
-            onBack = onBack,
-            onTitleChange = {},
-            onNoteChange = {},
-            onPickCourseClick = {},
-            onHasDueDateChange = {},
-            onPickDueDateClick = {},
-            onCompletedChange = {},
-            onSave = {},
-        )
+        // T1 收尾：作业表单接上真状态机。
+        // 之前这里是 `AddTaskViewState(isEditing = false, title = "")` 写死 + 全部回调空 `{}`
+        // ⇒ 从课程操作弹层点「作业」进来，课程不会被预选，表单也不能输入/保存。
+        // 现在：预选课程（+ 那节课的发生日期作为默认到期日）由 `AddTaskFormReducer.initial`
+        // 算好，回调接到同一个状态机上，保存真写 `TimetableCourseService.addTask`。
+        "d2.addTask" -> {
+            val taskSnapshot = wiring.timetable.snapshot
+            val preselectedCourse = wiring.pendingTaskCourse
+            var taskForm by remember(preselectedCourse?.id) {
+                mutableStateOf(
+                    AddTaskFormReducer.initial(
+                        preselectedCourse = preselectedCourse,
+                        sourceWeek = taskSnapshot.currentWeek,
+                        courseOccurrenceDate = preselectedCourse?.let {
+                            wiring.timetable.dateForCourseOccurrence(it, taskSnapshot.currentWeek)
+                        },
+                    ),
+                )
+            }
+            AddTaskPage(
+                viewState = taskForm,
+                onBack = onBack,
+                onTitleChange = { taskForm = AddTaskFormReducer.withTitle(taskForm, it) },
+                onNoteChange = { taskForm = AddTaskFormReducer.withNote(taskForm, it) },
+                // ⚠️ 选择课程 / 选日期两个子弹层本批没有（页面里的两个入口暂时点了不响），
+                // 见 `.agents/compose-phase3/claims/T1-course-action-sheet.md` 诚实清单第 8 条。
+                onPickCourseClick = {},
+                onHasDueDateChange = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, it) },
+                onPickDueDateClick = {},
+                onCompletedChange = { taskForm = AddTaskFormReducer.withCompleted(taskForm, it) },
+                onSave = {
+                    val titleError = AddTaskFormReducer.validate(taskForm)
+                    if (titleError != null) {
+                        taskForm = taskForm.copy(titleError = titleError)
+                    } else {
+                        TimetableCourseService.addTask(
+                            wiring.timetable,
+                            AddTaskFormReducer.buildTask(taskForm),
+                        )
+                        wiring.pendingTaskCourse = null
+                        onBack()
+                    }
+                },
+            )
+        }
 
         // ── P3-D3 作息与考试 ──────────────────────────────────────────
         "d3.timeSchemes" -> TimeSchemeManagementPage(
