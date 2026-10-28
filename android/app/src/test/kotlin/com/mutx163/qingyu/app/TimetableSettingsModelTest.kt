@@ -69,6 +69,34 @@ class TimetableSettingsModelTest {
         assertEquals("#FFFFFF", model.courseCardTitleColorDark)
         assertEquals("#FFFFFF", model.courseCardDetailColorLight) // 联动为真 → 取标题色
         assertEquals("#FFFFFF", model.courseCardDetailColorDark)
+        // ---- batch 2：课表显示其余 ----
+        assertEquals(68.0, model.sectionHeight, 0.0) // :1385
+        assertFalse(model.timetableAutoFitSectionHeight) // :1387
+        assertFalse(model.timetableShowNonCurrentWeekCourses) // :1398
+        assertTrue(model.weekGridShowExams) // :1416
+        assertTrue(model.weekGridShowSchedules) // :1417
+        assertTrue(model.weatherShowOnDayCard) // :1415
+        assertTrue(model.weatherShowOnWeekCard) // :1419
+        assertTrue(model.weatherShowOnSheet) // :1420
+        assertTrue(model.weatherShowPhenomenon) // :1421
+        assertTrue(model.weatherShowTemperature) // :1422
+        assertFalse(model.weatherShowProbability) // :1424
+        assertEquals(TimetableTimeColumnWidthMode.NARROW, model.timetableTimeColumnWidthMode)
+        assertEquals(TimetableCourseSpacingMode.NARROW, model.timetableCourseSpacingMode)
+        assertEquals(1.25, model.timetableCourseCardGap, 0.0) // :1436-1440 窄档
+        assertEquals(SectionTimeDisplayMode.START_AND_END, model.timetableSectionTimeDisplayMode)
+        assertFalse(model.timetableHideWeekends) // :1531
+        assertEquals(1, model.timetableLastViewedDayOfWeek) // :1521
+        assertFalse(model.coupleTimetableOverlayEnabled) // :1526
+        assertTrue(model.screenshotSharePromptEnabled) // :1539
+        assertFalse(model.longPressEmptySlotToAddCourseEnabled) // :1541
+        // ---- batch 2：星期栏 / 时间轴字色（:285-290） ----
+        assertEquals("#000000", model.weekdayBarFontColorLight)
+        assertEquals("#FFFFFF", model.weekdayBarFontColorDark)
+        assertEquals("#2563EB", model.weekdayBarAccentColorLight)
+        assertEquals("#93C5FD", model.weekdayBarAccentColorDark)
+        assertEquals("#757575", model.timeAxisFontColorLight)
+        assertEquals("#FFFFFF", model.timeAxisFontColorDark)
     }
 
     @Test
@@ -226,6 +254,127 @@ class TimetableSettingsModelTest {
         assertEquals("#333333", unlinked.courseCardDetailColorDark)
     }
 
+    // ---------- batch 2 专有口径 ----------
+
+    @Test
+    fun courseCardGapFallsBackFromSpacingModeRawStringNotAConstant() {
+        // :1436-1440：缺键时按 spacingMode 的**原始字符串**推导 —— wide → 2.0，其余 → 1.25。
+        assertEquals(
+            2.0,
+            TimetableSettingsModel.fromJson(json("""{"timetableCourseSpacingMode":"wide"}"""))
+                .timetableCourseCardGap,
+            0.0,
+        )
+        assertEquals(
+            1.25,
+            TimetableSettingsModel.fromJson(json("""{"timetableCourseSpacingMode":"narrow"}"""))
+                .timetableCourseCardGap,
+            0.0,
+        )
+        // 坏值 / 缺键都走 1.25 这一支（不是抛、也不是按枚举默认 narrow 之外的别的值）。
+        assertEquals(
+            1.25,
+            TimetableSettingsModel.fromJson(json("""{"timetableCourseSpacingMode":123}"""))
+                .timetableCourseCardGap,
+            0.0,
+        )
+        assertEquals(1.25, TimetableSettingsModel.fromJson(emptyMap()).timetableCourseCardGap, 0.0)
+        // 显式给了 gap 就以它为准（字符串数字也收）。
+        assertEquals(
+            4.5,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableCourseCardGap":"4.5","timetableCourseSpacingMode":"wide"}"""),
+            ).timetableCourseCardGap,
+            0.0,
+        )
+    }
+
+    @Test
+    fun lastViewedDayOfWeekIsClampedToOneThroughSeven() {
+        assertEquals(
+            1,
+            TimetableSettingsModel.fromJson(json("""{"timetableLastViewedDayOfWeek":0}"""))
+                .timetableLastViewedDayOfWeek,
+        )
+        assertEquals(
+            7,
+            TimetableSettingsModel.fromJson(json("""{"timetableLastViewedDayOfWeek":9}"""))
+                .timetableLastViewedDayOfWeek,
+        )
+        assertEquals(
+            4,
+            TimetableSettingsModel.fromJson(json("""{"timetableLastViewedDayOfWeek":"4"}"""))
+                .timetableLastViewedDayOfWeek,
+        )
+    }
+
+    @Test
+    fun sectionTimeDisplayModeUsesDiskValuesAndDefaultsToStartAndEnd() {
+        // 磁盘值与枚举名不同名：start_only / start_and_end。
+        assertEquals(
+            SectionTimeDisplayMode.START_ONLY,
+            TimetableSettingsModel.fromJson(json("""{"timetableSectionTimeDisplayMode":"start_only"}"""))
+                .timetableSectionTimeDisplayMode,
+        )
+        assertEquals(
+            SectionTimeDisplayMode.HIDDEN,
+            TimetableSettingsModel.fromJson(json("""{"timetableSectionTimeDisplayMode":"hidden"}"""))
+                .timetableSectionTimeDisplayMode,
+        )
+        // 未知值回落 startAndEnd（不是枚举第一项 hidden）。
+        assertEquals(
+            SectionTimeDisplayMode.START_AND_END,
+            TimetableSettingsModel.fromJson(json("""{"timetableSectionTimeDisplayMode":"nope"}"""))
+                .timetableSectionTimeDisplayMode,
+        )
+        assertEquals(
+            SectionTimeDisplayMode.START_AND_END,
+            TimetableSettingsModel.fromJson(emptyMap()).timetableSectionTimeDisplayMode,
+        )
+        assertEquals(SectionTimeDisplayMode.START_AND_END.value, "start_and_end")
+    }
+
+    @Test
+    fun timetableDisplayBooleansAndEnumsFollowDartFallbacksOnBadTypes() {
+        val model = TimetableSettingsModel.fromJson(
+            json(
+                """
+                {"sectionHeight":"tall","weekGridShowExams":1,"weatherShowProbability":"yes",
+                 "timetableTimeColumnWidthMode":42,"timetableHideWeekends":"maybe",
+                 "timetableLastViewedDayOfWeek":"x"}
+                """.trimIndent(),
+            ),
+        )
+
+        assertEquals(68.0, model.sectionHeight, 0.0)
+        assertTrue(model.weekGridShowExams)
+        assertFalse(model.weatherShowProbability)
+        assertEquals(TimetableTimeColumnWidthMode.NARROW, model.timetableTimeColumnWidthMode)
+        assertFalse(model.timetableHideWeekends)
+        assertEquals(1, model.timetableLastViewedDayOfWeek)
+    }
+
+    @Test
+    fun weekdayAndTimeAxisColorsRoundTripWithDartDefaults() {
+        val (_, store) = storeOf()
+        val custom = TimetableSettingsModel(
+            weekdayBarFontColorLight = "#101010",
+            weekdayBarFontColorDark = "#202020",
+            weekdayBarAccentColorLight = "#303030",
+            weekdayBarAccentColorDark = "#404040",
+            timeAxisFontColorLight = "#505050",
+            timeAxisFontColorDark = "#606060",
+        )
+
+        store.save(custom)
+
+        assertEquals(custom, store.load())
+        assertEquals(
+            "#000000",
+            TimetableSettingsModel.fromJson(emptyMap()).weekdayBarFontColorLight,
+        )
+    }
+
     // ---------- 逐键往返 ----------
 
     @Test
@@ -268,6 +417,33 @@ class TimetableSettingsModelTest {
             courseCardTitleColorDark = "#222222",
             courseCardDetailColorLight = "#333333",
             courseCardDetailColorDark = "#444444",
+            // ---- batch 2 ----
+            sectionHeight = 88.0,
+            timetableAutoFitSectionHeight = true,
+            timetableShowNonCurrentWeekCourses = true,
+            weekGridShowExams = false,
+            weekGridShowSchedules = false,
+            weatherShowOnDayCard = false,
+            weatherShowOnWeekCard = false,
+            weatherShowOnSheet = false,
+            weatherShowPhenomenon = false,
+            weatherShowTemperature = false,
+            weatherShowProbability = true,
+            timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.WIDE,
+            timetableCourseSpacingMode = TimetableCourseSpacingMode.WIDE,
+            timetableCourseCardGap = 3.5,
+            timetableSectionTimeDisplayMode = SectionTimeDisplayMode.HIDDEN,
+            timetableHideWeekends = true,
+            timetableLastViewedDayOfWeek = 7,
+            coupleTimetableOverlayEnabled = true,
+            screenshotSharePromptEnabled = false,
+            longPressEmptySlotToAddCourseEnabled = true,
+            weekdayBarFontColorLight = "#0A0A0A",
+            weekdayBarFontColorDark = "#0B0B0B",
+            weekdayBarAccentColorLight = "#0C0C0C",
+            weekdayBarAccentColorDark = "#0D0D0D",
+            timeAxisFontColorLight = "#0E0E0E",
+            timeAxisFontColorDark = "#0F0F0F",
         )
 
         store.save(original)
@@ -314,7 +490,7 @@ class TimetableSettingsModelTest {
         val (raw, store) = storeOf(
             mapOf(
                 "timetable_settings" to
-                    """{"themeSeedColor":"#000000","timetableHideWeekends":true,
+                    """{"themeSeedColor":"#000000","frostedBlurEnabled":true,
                        "liveShowCourseName":false,"widgetCornerRadius":22,
                        "homePageWallpaperScale":1.4,"deep":{"x":[1,2,3]}}""",
             ),
@@ -323,7 +499,9 @@ class TimetableSettingsModelTest {
         store.save(TimetableSettingsModel(appThemeMode = AppThemeMode.DARK, enableHaptics = false))
 
         val written = json(raw.getString("timetable_settings")!!)
-        assertEquals(true, written["timetableHideWeekends"])
+        // 注意：这些必须是**本模型仍不拥有**的键；随着覆盖批次推进要同步换样本，
+        // 否则「未知键不丢」这条会退化成「自有键被自己写」的假绿。
+        assertEquals(true, written["frostedBlurEnabled"])
         assertEquals(false, written["liveShowCourseName"])
         assertEquals(22, (written["widgetCornerRadius"] as Number).toInt())
         assertEquals(1.4, written["homePageWallpaperScale"])

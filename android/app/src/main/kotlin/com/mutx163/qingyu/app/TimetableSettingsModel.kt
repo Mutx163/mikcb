@@ -106,6 +106,49 @@ data class TimetableSettingsModel(
     val courseCardDetailColorLight: String = DEFAULT_CARD_DETAIL_COLOR,
     /** 联动为真时**等于** [courseCardTitleColorDark]（:1308）。 */
     val courseCardDetailColorDark: String = DEFAULT_CARD_DETAIL_COLOR,
+
+    // ---------- 课表显示（batch 2：settings_timetable_page 所需） ----------
+    /** `sectionHeight`（:1385，缺键 68）。 */
+    val sectionHeight: Double = 68.0,
+    /** `timetableAutoFitSectionHeight`（:1387，缺键 false）。 */
+    val timetableAutoFitSectionHeight: Boolean = false,
+    /** `timetableShowNonCurrentWeekCourses`（:1398，缺键 false）。 */
+    val timetableShowNonCurrentWeekCourses: Boolean = false,
+    val weekGridShowExams: Boolean = true, // :1416
+    val weekGridShowSchedules: Boolean = true, // :1417
+    val weatherShowOnDayCard: Boolean = true, // :1415
+    val weatherShowOnWeekCard: Boolean = true, // :1419
+    val weatherShowOnSheet: Boolean = true, // :1420
+    val weatherShowPhenomenon: Boolean = true, // :1421
+    val weatherShowTemperature: Boolean = true, // :1422
+    val weatherShowProbability: Boolean = false, // :1424
+    val timetableTimeColumnWidthMode: TimetableTimeColumnWidthMode =
+        TimetableTimeColumnWidthMode.NARROW, // :1433
+    val timetableCourseSpacingMode: TimetableCourseSpacingMode =
+        TimetableCourseSpacingMode.NARROW, // :1441
+    /**
+     * `timetableCourseCardGap`（:1436-1440）。
+     *
+     * ⚠️ 缺键时**不是固定默认值**，而是按 `timetableCourseSpacingMode` 的**原始字符串**
+     * 推导：`wide` → 2.0，其余（含坏值/缺键）→ 1.25。这是「看着像常量其实不是」的坑。
+     */
+    val timetableCourseCardGap: Double = DEFAULT_COURSE_CARD_GAP,
+    val timetableSectionTimeDisplayMode: SectionTimeDisplayMode =
+        SectionTimeDisplayMode.START_AND_END, // :1528
+    val timetableHideWeekends: Boolean = false, // :1531
+    /** `timetableLastViewedDayOfWeek`（:1521，缺键 1，clamp 1~7）。 */
+    val timetableLastViewedDayOfWeek: Int = 1,
+    val coupleTimetableOverlayEnabled: Boolean = false, // :1526
+    val screenshotSharePromptEnabled: Boolean = true, // :1539
+    val longPressEmptySlotToAddCourseEnabled: Boolean = false, // :1541
+
+    // ---------- 星期栏 / 时间轴字色（batch 2） ----------
+    val weekdayBarFontColorLight: String = DEFAULT_WEEKDAY_BAR_FONT_LIGHT, // :1755
+    val weekdayBarFontColorDark: String = DEFAULT_WEEKDAY_BAR_FONT_DARK, // :1758
+    val weekdayBarAccentColorLight: String = DEFAULT_WEEKDAY_BAR_ACCENT_LIGHT, // :1761
+    val weekdayBarAccentColorDark: String = DEFAULT_WEEKDAY_BAR_ACCENT_DARK, // :1764
+    val timeAxisFontColorLight: String = DEFAULT_TIME_AXIS_FONT_LIGHT, // :1767
+    val timeAxisFontColorDark: String = DEFAULT_TIME_AXIS_FONT_DARK, // :1770
 ) {
 
     /**
@@ -155,6 +198,32 @@ data class TimetableSettingsModel(
         "courseCardTitleColorDark" to courseCardTitleColorDark,
         "courseCardDetailColorLight" to courseCardDetailColorLight,
         "courseCardDetailColorDark" to courseCardDetailColorDark,
+        "sectionHeight" to sectionHeight,
+        "timetableAutoFitSectionHeight" to timetableAutoFitSectionHeight,
+        "timetableShowNonCurrentWeekCourses" to timetableShowNonCurrentWeekCourses,
+        "weekGridShowExams" to weekGridShowExams,
+        "weekGridShowSchedules" to weekGridShowSchedules,
+        "weatherShowOnDayCard" to weatherShowOnDayCard,
+        "weatherShowOnWeekCard" to weatherShowOnWeekCard,
+        "weatherShowOnSheet" to weatherShowOnSheet,
+        "weatherShowPhenomenon" to weatherShowPhenomenon,
+        "weatherShowTemperature" to weatherShowTemperature,
+        "weatherShowProbability" to weatherShowProbability,
+        "timetableTimeColumnWidthMode" to timetableTimeColumnWidthMode.value,
+        "timetableCourseSpacingMode" to timetableCourseSpacingMode.value,
+        "timetableCourseCardGap" to timetableCourseCardGap,
+        "timetableSectionTimeDisplayMode" to timetableSectionTimeDisplayMode.value,
+        "timetableHideWeekends" to timetableHideWeekends,
+        "timetableLastViewedDayOfWeek" to timetableLastViewedDayOfWeek,
+        "coupleTimetableOverlayEnabled" to coupleTimetableOverlayEnabled,
+        "screenshotSharePromptEnabled" to screenshotSharePromptEnabled,
+        "longPressEmptySlotToAddCourseEnabled" to longPressEmptySlotToAddCourseEnabled,
+        "weekdayBarFontColorLight" to weekdayBarFontColorLight,
+        "weekdayBarFontColorDark" to weekdayBarFontColorDark,
+        "weekdayBarAccentColorLight" to weekdayBarAccentColorLight,
+        "weekdayBarAccentColorDark" to weekdayBarAccentColorDark,
+        "timeAxisFontColorLight" to timeAxisFontColorLight,
+        "timeAxisFontColorDark" to timeAxisFontColorDark,
     )
 
     companion object {
@@ -185,6 +254,18 @@ data class TimetableSettingsModel(
 
         /** `themeSeedColor` 的**读侧**缺键默认（:1696，注意不是构造默认的 `#3482FF`）。 */
         const val DEFAULT_SEED_COLOR_FROM_JSON = "#2563EB"
+
+        /** `timetableCourseCardGap` 的两种缺键默认（:1436-1440，按 spacingMode 选）。 */
+        const val DEFAULT_COURSE_CARD_GAP = 1.25
+        const val DEFAULT_COURSE_CARD_GAP_WIDE = 2.0
+
+        /** `defaultWeekdayBar*` 与 `defaultTimeAxisFont*` 六条颜色默认值（:285-290）。 */
+        const val DEFAULT_WEEKDAY_BAR_FONT_LIGHT = "#000000"
+        const val DEFAULT_WEEKDAY_BAR_FONT_DARK = "#FFFFFF"
+        const val DEFAULT_WEEKDAY_BAR_ACCENT_LIGHT = "#2563EB"
+        const val DEFAULT_WEEKDAY_BAR_ACCENT_DARK = "#93C5FD"
+        const val DEFAULT_TIME_AXIS_FONT_LIGHT = "#757575"
+        const val DEFAULT_TIME_AXIS_FONT_DARK = "#FFFFFF"
 
         /** 本模型拥有并负责回写的键。 */
         val OWNED_KEYS: List<String> = listOf(
@@ -223,6 +304,32 @@ data class TimetableSettingsModel(
             "courseCardTitleColorDark",
             "courseCardDetailColorLight",
             "courseCardDetailColorDark",
+            "sectionHeight",
+            "timetableAutoFitSectionHeight",
+            "timetableShowNonCurrentWeekCourses",
+            "weekGridShowExams",
+            "weekGridShowSchedules",
+            "weatherShowOnDayCard",
+            "weatherShowOnWeekCard",
+            "weatherShowOnSheet",
+            "weatherShowPhenomenon",
+            "weatherShowTemperature",
+            "weatherShowProbability",
+            "timetableTimeColumnWidthMode",
+            "timetableCourseSpacingMode",
+            "timetableCourseCardGap",
+            "timetableSectionTimeDisplayMode",
+            "timetableHideWeekends",
+            "timetableLastViewedDayOfWeek",
+            "coupleTimetableOverlayEnabled",
+            "screenshotSharePromptEnabled",
+            "longPressEmptySlotToAddCourseEnabled",
+            "weekdayBarFontColorLight",
+            "weekdayBarFontColorDark",
+            "weekdayBarAccentColorLight",
+            "weekdayBarAccentColorDark",
+            "timeAxisFontColorLight",
+            "timeAxisFontColorDark",
         )
 
         /**
@@ -299,6 +406,60 @@ data class TimetableSettingsModel(
                 } else {
                     LenientJson.string(json["courseCardDetailColorDark"]) ?: DEFAULT_CARD_DETAIL_COLOR
                 },
+                sectionHeight = LenientJson.double(json["sectionHeight"]) ?: 68.0,
+                timetableAutoFitSectionHeight =
+                    LenientJson.bool(json["timetableAutoFitSectionHeight"]) ?: false,
+                timetableShowNonCurrentWeekCourses =
+                    LenientJson.bool(json["timetableShowNonCurrentWeekCourses"]) ?: false,
+                weekGridShowExams = LenientJson.bool(json["weekGridShowExams"]) ?: true,
+                weekGridShowSchedules = LenientJson.bool(json["weekGridShowSchedules"]) ?: true,
+                weatherShowOnDayCard = LenientJson.bool(json["weatherShowOnDayCard"]) ?: true,
+                weatherShowOnWeekCard = LenientJson.bool(json["weatherShowOnWeekCard"]) ?: true,
+                weatherShowOnSheet = LenientJson.bool(json["weatherShowOnSheet"]) ?: true,
+                weatherShowPhenomenon = LenientJson.bool(json["weatherShowPhenomenon"]) ?: true,
+                weatherShowTemperature =
+                    LenientJson.bool(json["weatherShowTemperature"]) ?: true,
+                weatherShowProbability =
+                    LenientJson.bool(json["weatherShowProbability"]) ?: false,
+                timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.fromValue(
+                    LenientJson.string(json["timetableTimeColumnWidthMode"]),
+                ),
+                timetableCourseSpacingMode = TimetableCourseSpacingMode.fromValue(
+                    LenientJson.string(json["timetableCourseSpacingMode"]),
+                ),
+                // 缺键时按 spacingMode 的**原始字符串**推导，不是固定常量（Dart :1436-1440）。
+                timetableCourseCardGap = LenientJson.double(json["timetableCourseCardGap"])
+                    ?: if (LenientJson.string(json["timetableCourseSpacingMode"]) == "wide") {
+                        DEFAULT_COURSE_CARD_GAP_WIDE
+                    } else {
+                        DEFAULT_COURSE_CARD_GAP
+                    },
+                timetableSectionTimeDisplayMode = SectionTimeDisplayMode.fromValue(
+                    LenientJson.string(json["timetableSectionTimeDisplayMode"]),
+                ),
+                timetableHideWeekends = LenientJson.bool(json["timetableHideWeekends"]) ?: false,
+                timetableLastViewedDayOfWeek =
+                    (LenientJson.int(json["timetableLastViewedDayOfWeek"]) ?: 1L).toInt()
+                        .coerceIn(1, 7),
+                coupleTimetableOverlayEnabled =
+                    LenientJson.bool(json["coupleTimetableOverlayEnabled"]) ?: false,
+                screenshotSharePromptEnabled =
+                    LenientJson.bool(json["screenshotSharePromptEnabled"]) ?: true,
+                longPressEmptySlotToAddCourseEnabled =
+                    LenientJson.bool(json["longPressEmptySlotToAddCourseEnabled"]) ?: false,
+                weekdayBarFontColorLight = LenientJson.string(json["weekdayBarFontColorLight"])
+                    ?: DEFAULT_WEEKDAY_BAR_FONT_LIGHT,
+                weekdayBarFontColorDark = LenientJson.string(json["weekdayBarFontColorDark"])
+                    ?: DEFAULT_WEEKDAY_BAR_FONT_DARK,
+                weekdayBarAccentColorLight =
+                    LenientJson.string(json["weekdayBarAccentColorLight"])
+                        ?: DEFAULT_WEEKDAY_BAR_ACCENT_LIGHT,
+                weekdayBarAccentColorDark = LenientJson.string(json["weekdayBarAccentColorDark"])
+                    ?: DEFAULT_WEEKDAY_BAR_ACCENT_DARK,
+                timeAxisFontColorLight = LenientJson.string(json["timeAxisFontColorLight"])
+                    ?: DEFAULT_TIME_AXIS_FONT_LIGHT,
+                timeAxisFontColorDark = LenientJson.string(json["timeAxisFontColorDark"])
+                    ?: DEFAULT_TIME_AXIS_FONT_DARK,
             )
         }
 
@@ -464,5 +625,44 @@ enum class CourseCardHorizontalAlign(val value: String) {
     companion object {
         fun fromValue(raw: String?): CourseCardHorizontalAlign =
             entries.firstOrNull { it.value == raw } ?: CENTER
+    }
+}
+
+/** `TimetableTimeColumnWidthMode`（`timetable_settings_enums.dart`，未知值回落 narrow）。 */
+enum class TimetableTimeColumnWidthMode(val value: String) {
+    NARROW("narrow"),
+    WIDE("wide");
+
+    companion object {
+        fun fromValue(raw: String?): TimetableTimeColumnWidthMode =
+            entries.firstOrNull { it.value == raw } ?: NARROW
+    }
+}
+
+/** `TimetableCourseSpacingMode`（未知值回落 narrow）。 */
+enum class TimetableCourseSpacingMode(val value: String) {
+    NARROW("narrow"),
+    WIDE("wide");
+
+    companion object {
+        fun fromValue(raw: String?): TimetableCourseSpacingMode =
+            entries.firstOrNull { it.value == raw } ?: NARROW
+    }
+}
+
+/**
+ * `SectionTimeDisplayMode`（`timetable_settings_extensions.dart`）。
+ *
+ * ⚠️ 磁盘值与枚举名不同名：`startOnly` → `start_only`、`startAndEnd` → `start_and_end`；
+ * 未知值回落 **`startAndEnd`**（不是第一个枚举项）。
+ */
+enum class SectionTimeDisplayMode(val value: String) {
+    HIDDEN("hidden"),
+    START_ONLY("start_only"),
+    START_AND_END("start_and_end");
+
+    companion object {
+        fun fromValue(raw: String?): SectionTimeDisplayMode =
+            entries.firstOrNull { it.value == raw } ?: START_AND_END
     }
 }
