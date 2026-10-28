@@ -5,34 +5,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -43,6 +37,7 @@ import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.UploadCloud
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 
 /**
@@ -51,6 +46,9 @@ import top.yukonga.miuix.kmp.basic.Text as MiuixText
  * 对应 Flutter `lib/screens/perf_report_screen.dart`：探针没装时只显示一段说明；
  * 装了则依次是 Totals 概览卡、Startup phases、Per-page ranking、Round control
  * （清空账本 / 展开原文 / 复制文本与 JSON），最后一段「energy 列是代理指标」的说明。
+ *
+ * 骨架与滚动容器照 `docs/reference/compose-page-style-rules.md` §三 的标准配方
+ *（[QingyuPageScaffold] + [QingyuPageList] + [QingyuCard] + [QingyuSectionTitle]）。
  *
  * 文案全英文（Dart 侧刻意如此，见 [PerfReportStrings] 注释）；取值与档位来自
  * [PerfReportViewState]，本文件不做业务计算。
@@ -70,235 +68,214 @@ fun PerfReportPage(
 ) {
     val dark = isSystemInDarkTheme()
     // Dart perf_report_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
-
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = PerfReportStrings.pageTitle,
-                largeTitle = PerfReportStrings.pageTitle,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = DiagnosticsStrings.closeAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = MiuixIcons.Refresh,
-                            contentDescription = PerfReportStrings.refreshTooltip,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                    IconButton(onClick = onExport, enabled = viewState.isAvailable) {
-                        Icon(
-                            imageVector = MiuixIcons.UploadCloud,
-                            contentDescription = PerfReportStrings.exportTooltip,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
+    QingyuPageScaffold(
+        title = PerfReportStrings.pageTitle,
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = MiuixIcons.Refresh,
+                    contentDescription = PerfReportStrings.refreshTooltip,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
+            IconButton(onClick = onExport, enabled = viewState.isAvailable) {
+                Icon(
+                    imageVector = MiuixIcons.UploadCloud,
+                    contentDescription = PerfReportStrings.exportTooltip,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
         },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
+    ) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (!viewState.isAvailable) {
-                    item {
-                        MiuixText(
-                            text = viewState.notInstalledText,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                        )
-                    }
-                    return@LazyColumn
-                }
-
-                // ── Totals ──
-                item { SmallTitle(text = PerfReportStrings.totalsSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                    ) {
-                        MiuixText(
-                            text = viewState.summaryText,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                        )
-                        MiuixText(
-                            text = viewState.summaryTitle,
-                            fontSize = 13.sp,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
-                        MiuixText(
-                            text = viewState.summarySubtitle,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            color = Color(QingyuTheme.secondaryText(dark)),
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                }
-
-                // ── Startup phases ──
-                item { SmallTitle(text = PerfReportStrings.startupSection) }
-                if (viewState.startupRows.isEmpty()) {
-                    item {
-                        SectionHint(text = viewState.noStartupText, dark = dark)
-                    }
-                } else {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(vertical = 4.dp),
-                        ) {
-                            viewState.startupRows.forEachIndexed { index, row ->
-                                if (index > 0) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                                }
-                                PerfRow(
-                                    icon = MiuixIcons.Stopwatch,
-                                    title = row.phase,
-                                    details = row.details,
-                                    subtitle = row.subtitle,
-                                    dark = dark,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ── Per-page ranking ──
-                item { SmallTitle(text = PerfReportStrings.pageSection) }
-                if (viewState.pageRows.isEmpty()) {
-                    item { SectionHint(text = viewState.noPagesText, dark = dark) }
-                } else {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(vertical = 4.dp),
-                        ) {
-                            viewState.pageRows.forEachIndexed { index, row ->
-                                if (index > 0) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                                }
-                                PerfRow(
-                                    icon = verdictIcon(row.verdict),
-                                    iconTint = accentColor(row.accent, dark),
-                                    title = row.page,
-                                    details = row.details,
-                                    subtitle = row.subtitle,
-                                    dark = dark,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ── Round control ──
-                item { SmallTitle(text = PerfReportStrings.roundSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 4.dp),
-                    ) {
-                        PerfRow(
-                            icon = MiuixIcons.Delete,
-                            title = PerfReportStrings.clearLedger,
-                            details = viewState.clearLedgerDetails,
-                            subtitle = PerfReportStrings.clearLedgerHint,
-                            onClick = onClearLedger,
-                            dark = dark,
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        PerfRow(
-                            icon = MiuixIcons.File,
-                            title = viewState.rawToggleText,
-                            details = "",
-                            subtitle = null,
-                            onClick = onToggleRaw,
-                            dark = dark,
-                        )
-                        if (viewState.rawReportVisible) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                MiuixText(
-                                    text = rawReportText,
-                                    fontSize = 10.sp,
-                                    lineHeight = 15.sp,
-                                    color = Color(QingyuTheme.primaryText(dark)),
-                                )
-                                PerfRow(
-                                    icon = MiuixIcons.Copy,
-                                    title = PerfReportStrings.copyText,
-                                    details = "",
-                                    subtitle = null,
-                                    onClick = onCopyTextReport,
-                                    dark = dark,
-                                )
-                                PerfRow(
-                                    icon = MiuixIcons.File,
-                                    title = PerfReportStrings.copyJson,
-                                    details = "",
-                                    subtitle = null,
-                                    onClick = onCopyJson,
-                                    dark = dark,
-                                )
-                                if (jsonSnapshotText.isNotEmpty()) {
-                                    MiuixText(
-                                        text = jsonSnapshotText,
-                                        fontSize = 10.sp,
-                                        lineHeight = 15.sp,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
-                                        maxLines = 12,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── energy 列说明 ──
-                item {
+            if (!viewState.isAvailable) {
+                item(key = "not-installed") {
                     MiuixText(
-                        text = viewState.energyNote,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
+                        text = viewState.notInstalledText,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                        // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
+                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
                     )
                 }
+                return@QingyuPageList
+            }
+
+            // ── Totals ──
+            item(key = "totals-title") { QingyuSectionTitle(PerfReportStrings.totalsSection) }
+            item(key = "totals-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                ) {
+                    MiuixText(
+                        text = viewState.summaryText,
+                        style = MiuixTheme.textStyles.title3,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(QingyuTheme.primaryText(dark)),
+                    )
+                    MiuixText(
+                        text = viewState.summaryTitle,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = Color(QingyuTheme.primaryText(dark)),
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                    MiuixText(
+                        text = viewState.summarySubtitle,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
+            // ── Startup phases ──
+            item(key = "startup-title") { QingyuSectionTitle(PerfReportStrings.startupSection) }
+            if (viewState.startupRows.isEmpty()) {
+                item(key = "startup-empty") {
+                    SectionHint(text = viewState.noStartupText, dark = dark)
+                }
+            } else {
+                item(key = "startup-card") {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(vertical = 4.dp),
+                    ) {
+                        viewState.startupRows.forEachIndexed { index, row ->
+                            if (index > 0) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                            }
+                            PerfRow(
+                                icon = MiuixIcons.Stopwatch,
+                                title = row.phase,
+                                details = row.details,
+                                subtitle = row.subtitle,
+                                dark = dark,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Per-page ranking ──
+            item(key = "page-title") { QingyuSectionTitle(PerfReportStrings.pageSection) }
+            if (viewState.pageRows.isEmpty()) {
+                item(key = "page-empty") { SectionHint(text = viewState.noPagesText, dark = dark) }
+            } else {
+                item(key = "page-card") {
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(vertical = 4.dp),
+                    ) {
+                        viewState.pageRows.forEachIndexed { index, row ->
+                            if (index > 0) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                            }
+                            PerfRow(
+                                icon = verdictIcon(row.verdict),
+                                iconTint = accentColor(row.accent, dark),
+                                title = row.page,
+                                details = row.details,
+                                subtitle = row.subtitle,
+                                dark = dark,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Round control ──
+            item(key = "round-title") { QingyuSectionTitle(PerfReportStrings.roundSection) }
+            item(key = "round-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(vertical = 4.dp),
+                ) {
+                    PerfRow(
+                        icon = MiuixIcons.Delete,
+                        title = PerfReportStrings.clearLedger,
+                        details = viewState.clearLedgerDetails,
+                        subtitle = PerfReportStrings.clearLedgerHint,
+                        onClick = onClearLedger,
+                        dark = dark,
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                    PerfRow(
+                        icon = MiuixIcons.File,
+                        title = viewState.rawToggleText,
+                        details = "",
+                        subtitle = null,
+                        onClick = onToggleRaw,
+                        dark = dark,
+                    )
+                    if (viewState.rawReportVisible) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            MiuixText(
+                                text = rawReportText,
+                                style = MiuixTheme.textStyles.footnote2,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                            )
+                            PerfRow(
+                                icon = MiuixIcons.Copy,
+                                title = PerfReportStrings.copyText,
+                                details = "",
+                                subtitle = null,
+                                onClick = onCopyTextReport,
+                                dark = dark,
+                            )
+                            PerfRow(
+                                icon = MiuixIcons.File,
+                                title = PerfReportStrings.copyJson,
+                                details = "",
+                                subtitle = null,
+                                onClick = onCopyJson,
+                                dark = dark,
+                            )
+                            if (jsonSnapshotText.isNotEmpty()) {
+                                MiuixText(
+                                    text = jsonSnapshotText,
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                    maxLines = 12,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── energy 列说明 ──
+            item(key = "energy-note") {
+                MiuixText(
+                    text = viewState.energyNote,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.padding(
+                        horizontal = QingyuPageCardMargin + 16.dp,
+                        vertical = 8.dp,
+                    ),
+                )
             }
         }
     }
@@ -309,9 +286,9 @@ fun PerfReportPage(
 private fun SectionHint(text: String, dark: Boolean) {
     MiuixText(
         text = text,
-        fontSize = 12.sp,
+        style = MiuixTheme.textStyles.footnote1,
         color = Color(QingyuTheme.secondaryText(dark)),
-        modifier = Modifier.padding(horizontal = 4.dp),
+        modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
     )
 }
 
@@ -344,7 +321,7 @@ private fun PerfRow(
             Column(modifier = Modifier.weight(1f)) {
                 MiuixText(
                     text = title,
-                    fontSize = 16.sp,
+                    style = MiuixTheme.textStyles.body1,
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -352,8 +329,7 @@ private fun PerfRow(
                 subtitle?.let {
                     MiuixText(
                         text = it,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
+                        style = MiuixTheme.textStyles.footnote2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         modifier = Modifier.padding(top = 2.dp),
                     )
@@ -362,7 +338,7 @@ private fun PerfRow(
             if (details.isNotEmpty()) {
                 MiuixText(
                     text = details,
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -383,10 +359,16 @@ private fun PerfRow(
     }
 }
 
-/** 卡顿比例档位 → 颜色（Dart：≥25% 红、≥5% 黄、否则绿，省略即默认蓝）。 */
+/**
+ * 卡顿比例档位 → 颜色（Dart：≥25% 红、≥5% 黄、否则绿，省略即默认蓝）。
+ *
+ * Dart 侧（`perf_report_screen.dart:253-256`）用的是**图标彩豆 token**
+ *（`HyperosIconColors.red/yellow/green`），所以黄档走 [QingyuIconColors.YELLOW]；
+ * 红/绿仍用主题语义槽（`error` / `success`），主题切换时随之变化。
+ */
 private fun accentColor(accent: PerfAccent, dark: Boolean): Color = when (accent) {
     PerfAccent.RED -> Color(QingyuTheme.error(dark))
-    PerfAccent.YELLOW -> Color(0xFFFFD60A)
+    PerfAccent.YELLOW -> Color(QingyuIconColors.YELLOW)
     PerfAccent.GREEN -> Color(QingyuTheme.success(dark))
     PerfAccent.DEFAULT -> Color(QingyuTheme.actionIcon(dark))
 }

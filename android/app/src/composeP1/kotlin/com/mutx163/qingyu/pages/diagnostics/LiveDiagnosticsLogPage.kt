@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,29 +27,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -99,70 +94,58 @@ fun LiveDiagnosticsLogPage(
     onRefresh: (() -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
-    // 顶栏变体：Dart 侧 live_diagnostics_log_viewer_screen.dart 也是 HyperosSubpage，但显式写了
-    // collapsibleLargeTitle: false（:481，日志页顶部有一段不动的死区）⇒ 对应官方 SmallTopAppBar，
-    // 单行小标题、本来就没有大标题可收。别再退回 TopAppBar，那会凭空长出一个大标题。
-    val scrollBehavior = MiuixScrollBehavior()
     // 弹层显隐是纯 UI 状态（Dart 用 showHyperosSheet），不属于模型层。
     var showOptions by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        // 顶栏进槽位：官方 SmallTopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
-        topBar = {
-            SmallTopAppBar(
-                title = viewState.title,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = DiagnosticsStrings.closeAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    if (viewState.loadError == null) {
-                        IconButton(onClick = { showOptions = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.Tune,
-                                contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        IconButton(onClick = onCopy, enabled = viewState.canCopy) {
-                            Icon(
-                                imageVector = MiuixIcons.Copy,
-                                contentDescription = DiagnosticsStrings.appLogsCopyAction.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        IconButton(onClick = onExport, enabled = viewState.canExport) {
-                            Icon(
-                                imageVector = MiuixIcons.Share,
-                                contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                        IconButton(onClick = onClear, enabled = viewState.canClear) {
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    }
-                },
-            )
+    // 顶栏变体：Dart 侧 live_diagnostics_log_viewer_screen.dart 也是 HyperosSubpage，但显式写了
+    // collapsibleLargeTitle: false（:481，日志页顶部有一段不动的死区）⇒ 对应官方 SmallTopAppBar，
+    // 单行小标题、本来就没有大标题可收。
+    // 所以必须走 `QingyuPageScaffold(smallTopBar = true)`：默认变体（可折叠大标题）
+    // 会凭空长出一个 32sp 大标题，也会让 `PageScaffoldGuardTest` 变红。
+    QingyuPageScaffold(
+        title = viewState.title,
+        onBack = onBack,
+        smallTopBar = true,
+        actions = {
+            if (viewState.loadError == null) {
+                IconButton(onClick = { showOptions = true }) {
+                    Icon(
+                        imageVector = MiuixIcons.Tune,
+                        contentDescription = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+                IconButton(onClick = onCopy, enabled = viewState.canCopy) {
+                    Icon(
+                        imageVector = MiuixIcons.Copy,
+                        contentDescription = DiagnosticsStrings.appLogsCopyAction.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+                IconButton(onClick = onExport, enabled = viewState.canExport) {
+                    Icon(
+                        imageVector = MiuixIcons.Share,
+                        contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+                IconButton(onClick = onClear, enabled = viewState.canClear) {
+                    Icon(
+                        imageVector = MiuixIcons.Delete,
+                        contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+            }
         },
-    ) { innerPadding ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
                 // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
                 // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                // 内边距在这里一次性吃掉，所以下面给列表传 0，避免顶/底叠加两次。
                 .padding(innerPadding),
         ) {
             when {
@@ -187,6 +170,8 @@ fun LiveDiagnosticsLogPage(
                 )
 
                 else -> {
+                    // 等级筛选条固定在列表上方（Dart 侧它在 headerExtension 里，
+                    // 属于固定头部，不随日志列表滚动）。
                     DiagnosticsLevelFilterBar(
                         chips = viewState.levelChips,
                         isParsing = viewState.isParsing,
@@ -197,7 +182,7 @@ fun LiveDiagnosticsLogPage(
                     if (viewState.showPausedHint) {
                         Text(
                             text = DiagnosticsStrings.appLogsRecordingPausedHint.zh,
-                            fontSize = 12.sp,
+                            style = MiuixTheme.textStyles.footnote1,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
@@ -210,15 +195,14 @@ fun LiveDiagnosticsLogPage(
                             dark = dark,
                         )
                     } else {
+                        // 主滚动容器走官方配方的 QingyuPageList：三件套 + 右侧滚动条。
                         DiagnosticsLogList(
                             viewState = viewState,
                             onLoadEarlier = onLoadEarlier,
                             onToggleEntry = onToggleEntry,
                             onToggleDeviceInfo = onToggleDeviceInfo,
                             dark = dark,
-                            // 手势喂给同一个行为实例：主滚动容器（日志列表）挂 nestedScroll。
-                            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                            bottomPadding = innerPadding.calculateBottomPadding(),
+                            scrollBehavior = scrollBehavior,
                         )
                     }
                 }
@@ -334,7 +318,7 @@ private fun DiagnosticsFilterChip(
     ) {
         Text(
             text = chip.label,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = if (chip.selected) FontWeight.SemiBold else FontWeight.Normal,
             color = textColor,
         )
@@ -349,18 +333,16 @@ private fun DiagnosticsLogList(
     onToggleEntry: (String) -> Unit,
     onToggleDeviceInfo: () -> Unit,
     dark: Boolean,
+    scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
-    bottomPadding: Dp = 0.dp,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 4.dp,
-            // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-            bottom = bottomPadding + 24.dp,
-        ),
+    // 官方页面骨架（`QingyuPageList` 内含三件套与右侧滚动条）。
+    // 横向留白由每张卡自己带 QingyuPageCardMargin，不塞进 contentPadding。
+    QingyuPageList(
+        innerPadding = PaddingValues(0.dp),
+        modifier = modifier,
+        scrollBehavior = scrollBehavior,
+        contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (viewState.headerRows.isNotEmpty()) {
@@ -421,7 +403,9 @@ private fun DiagnosticsDeviceInfoCard(
     dark: Boolean,
 ) {
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onToggle,
     ) {
@@ -431,7 +415,7 @@ private fun DiagnosticsDeviceInfoCard(
         ) {
             Text(
                 text = DiagnosticsStrings.diagnosticsDeviceInfoTitle.zh,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
@@ -466,7 +450,9 @@ private fun DiagnosticsLoadEarlierRow(
     dark: Boolean,
 ) {
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onClick,
     ) {
@@ -483,7 +469,7 @@ private fun DiagnosticsLoadEarlierRow(
             )
             Text(
                 text = label,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -501,14 +487,15 @@ private fun DiagnosticsLoadEarlierRow(
 /** 原文模式：一条日志的原始文本块（Dart `_buildRawView`）。 */
 @Composable
 private fun DiagnosticsRawEntryCard(entry: DiagnosticsLogEntryView, dark: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    QingyuCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Text(
             text = entry.rawText,
-            fontSize = 12.sp,
-            lineHeight = 18.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.primaryText(dark)),
         )
     }
@@ -524,7 +511,9 @@ private fun DiagnosticsEntryCard(
     val levelColor = levelColor(entry.level, dark)
 
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onToggle,
     ) {
@@ -542,8 +531,7 @@ private fun DiagnosticsEntryCard(
                 )
                 Text(
                     text = entry.collapsedText,
-                    fontSize = 13.sp,
-                    lineHeight = 17.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -595,7 +583,7 @@ private fun DiagnosticsEntryCard(
                 if (entry.categoryLabel.isNotEmpty()) {
                     Text(
                         text = entry.categoryLabel,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
@@ -603,15 +591,14 @@ private fun DiagnosticsEntryCard(
                 entry.formattedTime?.let { time ->
                     Text(
                         text = time,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
                 if (entry.message.isNotEmpty()) {
                     Text(
                         text = entry.message,
-                        fontSize = 15.sp,
-                        lineHeight = 21.sp,
+                        style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
                 }
@@ -642,7 +629,7 @@ private fun DiagnosticsTag(label: String, outlined: Boolean, dark: Boolean) {
             .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, fontSize = 11.sp, color = textColor)
+        Text(text = label, style = MiuixTheme.textStyles.footnote2, color = textColor)
     }
 }
 
@@ -659,15 +646,14 @@ private fun DiagnosticsTagRow(label: String, value: String, dark: Boolean) {
     ) {
         Text(
             text = label,
-            fontSize = 11.sp,
+            style = MiuixTheme.textStyles.footnote2,
             fontWeight = FontWeight.SemiBold,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.width(96.dp),
         )
         Text(
             text = value,
-            fontSize = 11.sp,
-            lineHeight = 15.sp,
+            style = MiuixTheme.textStyles.footnote2,
             color = Color(QingyuTheme.primaryText(dark)),
             modifier = Modifier.weight(1f),
         )
@@ -696,7 +682,7 @@ private fun DiagnosticsLoadErrorBody(
         )
         Text(
             text = DiagnosticsStrings.diagnosticsLoadFailedTitle.zh,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
@@ -704,7 +690,7 @@ private fun DiagnosticsLoadErrorBody(
         )
         Text(
             text = error,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
@@ -743,7 +729,7 @@ private fun DiagnosticsCenteredState(
         )
         Text(
             text = title,
-            fontSize = 16.sp,
+            style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
@@ -752,11 +738,22 @@ private fun DiagnosticsCenteredState(
     }
 }
 
+/**
+ * 警告档的固定琥珀色（0xFFFF9F0A）。
+ *
+ * Dart 侧 `_levelColor`（`live_diagnostics_log_viewer_screen.dart:1484`）对 warn 档**也是写死的**
+ * `const Color(0xFFFF9F0A)`，不走主题 token——这是「与主题无关的固定语义色」：
+ * 它表达的是日志级别，亮暗两种主题下都应当是同一档琥珀色。
+ * 官方彩豆里没有同值 token（`QingyuIconColors.ORANGE` 是 0xFFFF6B00，改了就是改行为），
+ * 而 Dart 是行为真相，所以这里逐通道构造保留原值，并集中成命名常量。
+ */
+private val LogWarnAmber = Color(red = 0xFF, green = 0x9F, blue = 0x0A)
+
 /** 等级语义色（Dart `_levelColor` 1480-1489 行）。 */
 private fun levelColor(level: DiagnosticsLogLevel, dark: Boolean): Color = when (level) {
     DiagnosticsLogLevel.ALL -> Color(QingyuTheme.primary(dark = dark))
     DiagnosticsLogLevel.ERROR -> Color(QingyuTheme.error(dark))
-    DiagnosticsLogLevel.WARN -> Color(0xFFFF9F0A)
+    DiagnosticsLogLevel.WARN -> LogWarnAmber
     DiagnosticsLogLevel.INFO -> Color(QingyuTheme.primary(dark = dark))
     DiagnosticsLogLevel.DEBUG -> Color(QingyuTheme.actionIcon(dark))
     DiagnosticsLogLevel.VERBOSE -> Color(QingyuTheme.secondaryText(dark))

@@ -7,11 +7,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,27 +21,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -62,6 +57,7 @@ import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 内存统计页 · Compose 渲染层（Phase 3）。
@@ -75,7 +71,8 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
  * - 诊断工具：自动分析 / 采样历史 / memoryStats / 原始 JSON / 公平内存事件。
  *
  * 所有取值与文案来自 [MemoryStatsViewState]（模型层算好），本文件只负责布局与回调；
- * 弹层显隐是纯 UI 状态。
+ * 弹层显隐是纯 UI 状态。骨架与滚动容器照 `docs/reference/compose-page-style-rules.md` §三
+ * 的标准配方（[QingyuPageScaffold] + [QingyuPageList] + [QingyuCard] + [QingyuSectionTitle]）。
  */
 @Composable
 fun MemoryStatsPage(
@@ -88,179 +85,159 @@ fun MemoryStatsPage(
 ) {
     val dark = isSystemInDarkTheme()
     // Dart memory_stats_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
     var openSheet by remember { mutableStateOf<MemorySheet?>(null) }
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = MemoryStatsStrings.pageTitle,
-                largeTitle = MemoryStatsStrings.pageTitle,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = DiagnosticsStrings.closeAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = MiuixIcons.Refresh,
-                            contentDescription = MemoryStatsStrings.refreshTooltip,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                    IconButton(onClick = onCopyJson, enabled = viewState.hasSnapshot) {
-                        Icon(
-                            imageVector = MiuixIcons.Copy,
-                            contentDescription = MemoryStatsStrings.copyJsonTooltip,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
+    QingyuPageScaffold(
+        title = MemoryStatsStrings.pageTitle,
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = MiuixIcons.Refresh,
+                    contentDescription = MemoryStatsStrings.refreshTooltip,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
+            IconButton(onClick = onCopyJson, enabled = viewState.hasSnapshot) {
+                Icon(
+                    imageVector = MiuixIcons.Copy,
+                    contentDescription = MemoryStatsStrings.copyJsonTooltip,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
         },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
+    ) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // ── 运行概览 ──
-                item { SmallTitle(text = MemoryStatsStrings.overviewSection) }
-                item {
-                    MemorySummaryCard(
-                        viewState = viewState,
-                        onClick = { openSheet = MemorySheet.OVERVIEW },
+            // ── 运行概览 ──
+            item(key = "overview-title") { QingyuSectionTitle(MemoryStatsStrings.overviewSection) }
+            item(key = "overview-card") {
+                MemorySummaryCard(
+                    viewState = viewState,
+                    onClick = { openSheet = MemorySheet.OVERVIEW },
+                    dark = dark,
+                )
+            }
+            item(key = "refresh-desc") {
+                Text(
+                    text = viewState.refreshDescription,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+                )
+            }
+
+            if (viewState.isLoading && !viewState.hasSnapshot) {
+                item(key = "loading-hint") {
+                    MemoryHintBanner(
+                        text = viewState.loadingHint,
+                        isError = false,
+                        showProgress = true,
                         dark = dark,
                     )
                 }
-                item {
-                    Text(
-                        text = viewState.refreshDescription,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
+            }
+            viewState.errorText?.let { error ->
+                item(key = "error-hint") {
+                    MemoryHintBanner(text = error, isError = true, showProgress = false, dark = dark)
+                }
+            }
+
+            // ── 采样控制 ──
+            item(key = "sampling-title") { QingyuSectionTitle(MemoryStatsStrings.samplingSection) }
+            item(key = "sampling-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(vertical = 4.dp),
+                ) {
+                    MemorySwitchRow(
+                        title = MemoryStatsStrings.autoRefreshTitle,
+                        subtitle = viewState.samplingRows
+                            .first { it.row == MemoryStatsRow.AUTO_REFRESH }
+                            .subtitle.orEmpty(),
+                        checked = viewState.autoRefreshEnabled,
+                        onCheckedChange = onToggleAutoRefresh,
+                        dark = dark,
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                    MemoryRowItem(
+                        row = MemoryRowView(
+                            row = MemoryStatsRow.PERF_REPORT,
+                            title = MemoryStatsStrings.perfReportTitle,
+                            details = "",
+                            subtitle = MemoryStatsStrings.perfReportSubtitle,
+                        ),
+                        onClick = onOpenPerfReport,
+                        dark = dark,
                     )
                 }
+            }
 
-                if (viewState.isLoading && !viewState.hasSnapshot) {
-                    item {
-                        MemoryHintBanner(
-                            text = viewState.loadingHint,
-                            isError = false,
-                            showProgress = true,
-                            dark = dark,
-                        )
-                    }
-                }
-                viewState.errorText?.let { error ->
-                    item {
-                        MemoryHintBanner(text = error, isError = true, showProgress = false, dark = dark)
-                    }
-                }
-
-                // ── 采样控制 ──
-                item { SmallTitle(text = MemoryStatsStrings.samplingSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 4.dp),
-                    ) {
-                        MemorySwitchRow(
-                            title = MemoryStatsStrings.autoRefreshTitle,
-                            subtitle = viewState.samplingRows
-                                .first { it.row == MemoryStatsRow.AUTO_REFRESH }
-                                .subtitle.orEmpty(),
-                            checked = viewState.autoRefreshEnabled,
-                            onCheckedChange = onToggleAutoRefresh,
-                            dark = dark,
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        MemoryRowItem(
-                            row = MemoryRowView(
-                                row = MemoryStatsRow.PERF_REPORT,
-                                title = MemoryStatsStrings.perfReportTitle,
-                                details = "",
-                                subtitle = MemoryStatsStrings.perfReportSubtitle,
-                            ),
-                            onClick = onOpenPerfReport,
-                            dark = dark,
-                        )
-                    }
-                }
-
-                // ── 内存构成 ──
-                item { SmallTitle(text = MemoryStatsStrings.compositionSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 4.dp),
-                    ) {
-                        viewState.compositionRows.forEachIndexed { index, row ->
-                            if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            }
-                            MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+            // ── 内存构成 ──
+            item(key = "composition-title") { QingyuSectionTitle(MemoryStatsStrings.compositionSection) }
+            item(key = "composition-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(vertical = 4.dp),
+                ) {
+                    viewState.compositionRows.forEachIndexed { index, row ->
+                        if (index > 0) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
+                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
                     }
                 }
-                item {
-                    Text(
-                        text = MemoryStatsStrings.compositionDescription,
-                        fontSize = 12.sp,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                }
+            }
+            item(key = "composition-desc") {
+                Text(
+                    text = MemoryStatsStrings.compositionDescription,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+                )
+            }
 
-                // ── 运行环境 ──
-                item { SmallTitle(text = MemoryStatsStrings.environmentSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 4.dp),
-                    ) {
-                        viewState.environmentRows.forEachIndexed { index, row ->
-                            if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            }
-                            MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+            // ── 运行环境 ──
+            item(key = "environment-title") { QingyuSectionTitle(MemoryStatsStrings.environmentSection) }
+            item(key = "environment-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(vertical = 4.dp),
+                ) {
+                    viewState.environmentRows.forEachIndexed { index, row ->
+                        if (index > 0) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
+                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
                     }
                 }
+            }
 
-                // ── 诊断工具 ──
-                item { SmallTitle(text = MemoryStatsStrings.toolsSection) }
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(vertical = 4.dp),
-                    ) {
-                        viewState.toolRows.forEachIndexed { index, row ->
-                            if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            }
-                            MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+            // ── 诊断工具 ──
+            item(key = "tools-title") { QingyuSectionTitle(MemoryStatsStrings.toolsSection) }
+            item(key = "tools-card") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin),
+                    insideMargin = PaddingValues(vertical = 4.dp),
+                ) {
+                    viewState.toolRows.forEachIndexed { index, row ->
+                        if (index > 0) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
+                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
                     }
                 }
             }
@@ -307,7 +284,9 @@ private fun MemorySummaryCard(
     dark: Boolean,
 ) {
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
         onClick = onClick,
     ) {
@@ -325,19 +304,19 @@ private fun MemorySummaryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = viewState.summaryText,
-                    fontSize = 22.sp,
+                    style = MiuixTheme.textStyles.title3,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = MemoryStatsStrings.summaryTitle,
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 Text(
                     text = viewState.summarySubtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -371,12 +350,12 @@ private fun MemorySwitchRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -409,7 +388,7 @@ private fun MemoryRowItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = row.title,
-                fontSize = 16.sp,
+                style = MiuixTheme.textStyles.body1,
                 color = Color(QingyuTheme.primaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -417,7 +396,7 @@ private fun MemoryRowItem(
             row.subtitle?.let { subtitle ->
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -426,7 +405,7 @@ private fun MemoryRowItem(
         if (row.details.isNotEmpty()) {
             Text(
                 text = row.details,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -443,8 +422,10 @@ private fun MemoryHintBanner(
     showProgress: Boolean,
     dark: Boolean,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    QingyuCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuPageCardMargin),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Row(
@@ -463,7 +444,7 @@ private fun MemoryHintBanner(
             }
             Text(
                 text = text,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = if (isError) {
                     Color(QingyuTheme.error(dark))
                 } else {
@@ -486,8 +467,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
         sheet.description?.let { description ->
             Text(
                 text = description,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
@@ -495,7 +475,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
         sheet.emptyText?.let { empty ->
             Text(
                 text = empty,
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 textAlign = TextAlign.Start,
             )
@@ -510,18 +490,17 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
         sheet.cleanableSummary?.let { summary ->
             Text(
                 text = summary,
-                fontSize = 15.sp,
+                style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Medium,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
         sheet.bullets.forEach { bullet ->
             Row {
-                Text(text = "· ", fontSize = 13.sp, color = Color(QingyuTheme.secondaryText(dark)))
+                Text(text = "· ", style = MiuixTheme.textStyles.footnote1, color = Color(QingyuTheme.secondaryText(dark)))
                 Text(
                     text = bullet,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
             }
@@ -538,26 +517,25 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
                 ) {
                     Text(
                         text = row.label,
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.primaryText(dark)),
                         modifier = Modifier.weight(1f),
                     )
                     Text(
                         text = "${row.pssText} · ${row.ratioText}",
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
                 }
                 Text(
                     text = row.cleanableLabel,
-                    fontSize = 11.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     color = cleanableColor(row.cleanable, dark),
                 )
                 if (row.meaning.isNotEmpty()) {
                     Text(
                         text = row.meaning,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
@@ -571,7 +549,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
             ) {
                 Text(
                     text = process.name,
-                    fontSize = 15.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -580,7 +558,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
                         "privateDirty=${process.privateDirtyText}" +
                         (if (process.isMainProcess) "  ·主进程" else "") +
                         (if (process.likelyLiveIsland) "  ·疑似超级岛相关" else ""),
-                    fontSize = 11.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
@@ -593,7 +571,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
             ) {
                 Text(
                     text = summary,
-                    fontSize = 12.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
@@ -602,8 +580,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
                     // Dart：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`
                     text = "${row.timeText}  [${row.stateLabel}]  PSS ${row.pssText}  " +
                         "堆 ${row.heapRatioText}  ${row.liveLabel}  压力 ${row.pressureLevel}",
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
+                    style = MiuixTheme.textStyles.footnote2,
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
             }
@@ -612,8 +589,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
         sheet.bodyText?.let { body ->
             Text(
                 text = body,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
+                style = MiuixTheme.textStyles.footnote2,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
@@ -633,30 +609,41 @@ private fun MemoryKvLine(label: String, value: String, dark: Boolean) {
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
         )
     }
 }
 
-/** 压力语义色（Dart `_pressureColor`）：危急/偏高红橙、升高黄、正常绿。 */
+/**
+ * 压力语义色（Dart `_pressureColor`，`memory_stats_screen.dart:953-960`）。
+ *
+ * Dart 用的是**图标彩豆 token**（`HyperosIconColors.red/orange/yellow/green`），
+ * 不是写死的十六进制；所以这里走 [QingyuIconColors] 同名 token。
+ * （此前 Compose 侧写死的 0xFFFF9F0A / 0xFFFFD60A 与 Dart token 值并不一致，
+ * 属于实现漂移，本次一并按 Dart 校正。）
+ */
 private fun pressureColor(pressure: MemoryPressure, dark: Boolean): Color = when (pressure) {
     MemoryPressure.CRITICAL -> Color(QingyuTheme.error(dark))
-    MemoryPressure.HIGH -> Color(0xFFFF9F0A)
-    MemoryPressure.ELEVATED -> Color(0xFFFFD60A)
+    MemoryPressure.HIGH -> Color(QingyuIconColors.ORANGE)
+    MemoryPressure.ELEVATED -> Color(QingyuIconColors.YELLOW)
     MemoryPressure.NORMAL -> Color(QingyuTheme.success(dark))
 }
 
-/** 可清性语义色（Dart `_BreakdownRow`）：部分可清橙、不可清次要文字、难清红。 */
+/**
+ * 可清性语义色（Dart `_BreakdownRow`，`memory_stats_screen.dart:1081-1085`）。
+ *
+ * 同样按 Dart 走 token：部分可清 = `HyperosIconColors.orange`、不可清 = 次要文字、难清 = 错误色。
+ */
 private fun cleanableColor(cleanable: MemoryCleanability, dark: Boolean): Color = when (cleanable) {
-    MemoryCleanability.PARTIAL -> Color(0xFFFF9F0A)
+    MemoryCleanability.PARTIAL -> Color(QingyuIconColors.ORANGE)
     MemoryCleanability.NO -> Color(QingyuTheme.secondaryText(dark))
     MemoryCleanability.HARD -> Color(QingyuTheme.error(dark))
 }
