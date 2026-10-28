@@ -71,8 +71,10 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginWebState
+import com.mutx163.qingyu.pages.live.DisplaySettingsPage
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
-import com.mutx163.qingyu.pages.live.LiveSettingsPage
+import com.mutx163.qingyu.pages.live.LiveReminderTimingPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.schedule.ScheduleDateRulePage
 import com.mutx163.qingyu.pages.schedule.ScheduleItemData
@@ -267,7 +269,13 @@ fun ShellPageContent(
             SettingsTimetablePageSettingsPage.spec(TimetablePageSettingsState()),
             onBack,
         )
-        "b.live" -> SettingsScreen(SettingsLivePage.spec(SettingsPageState()), onBack)
+        "b.live" -> SettingsPageScreen(
+            spec = SettingsLivePage.spec(SettingsPageState()),
+            onBack = onBack,
+            // 入口页 5 行都走 NAVIGATE：把 actionTarget（路由形态）映射成壳页面 id 再推页。
+            // 原来这里是 no-op 的 SettingsScreen，导致整页点了全无反应。
+            onAction = { _, target, _ -> target?.let { shellPageIdForRoute(it)?.let(onOpenPage) } },
+        )
         "b.liveSelfCheck" -> SettingsScreen(SettingsLiveSelfCheckPage.spec(SettingsPageState()), onBack)
         "b.holiday" -> SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()), onBack)
         "b.holidayAdvanced" -> SettingsScreen(SettingsHolidayAdvancedPage.spec(SettingsPageState()), onBack)
@@ -670,11 +678,42 @@ fun ShellPageContent(
             onBack = onBack,
         )
         "g2.warehouseImport" -> WarehouseCourseImportPage(onBack = onBack)
-        "g2.webLogin" -> WarehouseWebLoginPage(
-            title = SHELL_DEMO_SCHOOL.name,
-            sessionState = WarehouseWebLoginSessionState(),
-            onBack = onBack,
-        )
+        "g2.webLogin" -> {
+            // I2（`383df743`）：以前这里传的是空 `sessionState`，`currentUrl` 为空 ⇒
+            // 宿主按设计「空地址不加载任何东西」⇒ **白屏**。所以必须给一个可加载地址。
+            //
+            // ⚠️ `SHELL_DEMO_LOGIN_URL` 只是**开发壳的占位地址**：`WarehouseSchoolEntry`
+            // 目前**没有 URL 字段**（学校条目只带名字与适配器标识），真正的教务地址要等
+            // 那个字段落地后从条目里取。用 `example.com` 是因为它是 IANA 保留的示例域、
+            // 永远可解析，不会指向任何真实学校站点。
+            var webLoginState by remember {
+                mutableStateOf(WarehouseWebLoginSessionState(currentUrl = SHELL_DEMO_LOGIN_URL))
+            }
+            WarehouseWebLoginPage(
+                title = SHELL_DEMO_SCHOOL.name,
+                sessionState = webLoginState,
+                onBack = onBack,
+                onWebProgress = { progress ->
+                    webLoginState = webLoginState.withStage(
+                        WarehouseWebLoginWebState.stageForProgress(progress),
+                    )
+                },
+                onWebPageStarted = { url -> webLoginState = webLoginState.copy(currentUrl = url) },
+                onWebPageFinished = { url -> webLoginState = webLoginState.copy(currentUrl = url) },
+                onWebError = { error ->
+                    webLoginState = webLoginState.withStage(
+                        newStage = WarehouseWebLoginWebState.stageForError(),
+                        // ⚠️ 已知缺口：`importCleartextBlockedHint` 在 ARB 里有、但 `WarehouseStrings.kt`
+                        // 里没有对应成员（那个文件不在本批写作用域）⇒ 这里取不到中文文案，
+                        // 回落到系统原文。**不是漏写，是缺件**；补 ARB 成员后把 `null` 换掉即可。
+                        error = WarehouseWebLoginWebState.errorText(error) { null },
+                    )
+                },
+                // 已过消息门禁（UI 类消息只在导入执行期放行，见交付方的源码级守卫）。
+                // 真正「收到消息后做什么」属导入执行链路，另一个批次。
+                onWebBridgeMessage = { /* 导入执行链路未接，见 I2 认领文件 §7 */ },
+            )
+        }
         "g2.customDebug" -> WarehouseCustomDebugPage(onBack = onBack)
         "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
 
@@ -802,16 +841,37 @@ fun ShellPageContent(
         "i2.showcase" -> MiuixShowcasePage(onBack = onBack)
 
         // ── P3-J 实时活动与天气 ──────────────────────────────────────
-        "j.live" -> LiveSettingsPage(onBack = onBack)
+        // j.live 现在指向**忠实重建的显示设置页**（原 LiveSettingsPage 是错位的演示壳，已弃用）。
+        "j.live" -> DisplaySettingsPage(forDuringEnd = false, onBack = onBack)
+        "j.displayBefore" -> DisplaySettingsPage(forDuringEnd = false, onBack = onBack)
+        "j.displayDuring" -> DisplaySettingsPage(forDuringEnd = true, onBack = onBack)
+        "j.reminderTiming" -> LiveReminderTimingPage(onBack = onBack)
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         // 走**状态化重载**而不是零参重载：零参重载的探测回调恒返回「未开启」，
         // 那样 L4 只看得到一种状态，「已开启（绿勾 + 整行不可点）」那一支永远对不上。
         // 所以无障碍状态读平台真值。
-        // 唯一不真实的地方是「从最近任务中隐藏」不落盘（壳没有数据层），故归 DEMO。
+        // 「从最近任务中隐藏」现在**真落盘**：与 MainActivity/LiveUpdateService 同一份 prefs
+        // （`native_runtime_prefs` / `hide_from_recents`），并真实应用到 appTasks。
         "j.keepAlive" -> {
             val context = LocalContext.current
+            val initialHideFromRecents = remember {
+                context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)
+                    .getBoolean("hide_from_recents", false)
+            }
             LiveKeepAliveSettingsPage(
+                initialState = com.mutx163.qingyu.pages.live.LiveKeepAliveState(
+                    hideFromRecents = initialHideFromRecents,
+                ),
                 onBack = onBack,
+                onPersistHideFromRecents = { hidden ->
+                    runCatching {
+                        context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit().putBoolean("hide_from_recents", hidden).apply()
+                        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+                        am?.appTasks?.forEach { it.setExcludeFromRecents(hidden) }
+                        true
+                    }.getOrDefault(false)
+                },
                 onProbeAccessibilityEnabled = { KeepAliveAccessibilityStatus.isEnabled(context) },
                 onOpenAccessibilitySettings = {
                     // 壳里点「去开启」也要真的能跳到系统无障碍设置页，否则对照不了
@@ -932,6 +992,25 @@ private val SHELL_DEMO_SCHOOL = WarehouseSchoolEntry(
     initial = "示",
     code = "00000",
 )
+
+/**
+ * 教务登录页在**开发壳**里的占位地址（I2，2026-10-28）。
+ *
+ * ## 为什么需要它
+ *
+ * `WarehouseWebLoginHost` 按设计「`currentUrl` 为空就不加载任何地址」——这是对的
+ * （避免加载一个未知页面），但壳里如果传空状态，用户看到的就是**白屏**。
+ *
+ * ## 为什么是 `example.com`
+ *
+ * `WarehouseSchoolEntry` **目前没有 URL 字段**（学校条目只带名字与适配器标识），
+ * 所以拿不到真实教务地址。选 `example.com` 的理由：它是 IANA 保留的示例域，
+ * **永远可解析、且不指向任何真实学校站点**——不会误导成「这就是那所学校的登录页」。
+ *
+ * ⚠️ 真正的地址要等 `WarehouseSchoolEntry` 加上 URL 字段后从条目里取；
+ * 在那之前，本常量只用于验证「WebView 能加载网页」这条链路本身。
+ */
+private const val SHELL_DEMO_LOGIN_URL = "https://example.com/"
 
 private val SHELL_DEMO_ADAPTER = WarehouseAdapterEntry(
     id = "shell-demo-adapter",
