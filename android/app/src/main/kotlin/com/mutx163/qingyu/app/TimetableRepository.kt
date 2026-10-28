@@ -3,6 +3,8 @@ package com.mutx163.qingyu.app
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.ScheduleDateRule
+import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.TimetableProfile
@@ -25,6 +27,10 @@ data class TimetableSnapshot(
     val profiles: List<TimetableProfile> = emptyList(),
     val activeProfileId: String? = null,
     val courses: List<Course> = emptyList(),
+    /** 活动档案里的日程条目（`timetable_profiles[].scheduleItems`，冻结格式内嵌）。 */
+    val scheduleItems: List<ScheduleItem> = emptyList(),
+    /** 作息日期规则（顶层 key `schedule_date_rules`，不属于单个档案）。 */
+    val scheduleDateRules: List<ScheduleDateRule> = emptyList(),
     val settings: TimetableSettings = TimetableSettings.defaults(),
     val currentWeek: Int = 1,
     val semesterStartEpochDay: Long? = null,
@@ -67,13 +73,14 @@ data class TimetableSnapshot(
  * - 不做跨 key 事务日志（`app_global_settings_mirror_tx_v1`）：那是全局设置族的活。
  * - 不做并发写串行化：宿主是单线程 Compose 状态持有者；真并发场景由 Phase 4 决定。
  */
-class TimetableRepository(private val store: TimetableStore) : TimetableCoursePort {
+class TimetableRepository(private val store: TimetableStore) : TimetableCoursePort, TimetableScheduleItemPort {
 
     private var loadedProfiles: List<TimetableProfile> = emptyList()
     private var loadedActiveProfileId: String? = null
     private var loadedSettings: TimetableSettings = TimetableSettings.defaults()
     private var loadedCurrentWeek: Int? = null
     private var loadedTimeSchemes: List<TimeScheme> = emptyList()
+    private var loadedScheduleDateRules: List<ScheduleDateRule> = emptyList()
 
     /** Dart 侧是 provider 的一个内存字段（`_currentLiveCourseId`），不落盘。 */
     private var currentLiveCourseId: String? = null
@@ -98,6 +105,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedSettings = store.loadSettings()
         loadedCurrentWeek = store.loadCurrentWeek()
         loadedTimeSchemes = store.loadTimeSchemes().schemes
+        loadedScheduleDateRules = store.loadScheduleDateRules()
     }
 
     /** 盘上档案的解析结果（含「只是条目级损坏」信号，供宿主决定是否提示用户）。 */
@@ -110,6 +118,8 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
             profiles = loadedProfiles,
             activeProfileId = activeProfile.id,
             courses = activeProfile.courses,
+            scheduleItems = activeProfile.scheduleItems,
+            scheduleDateRules = loadedScheduleDateRules,
             settings = loadedSettings,
             currentWeek = resolvedCurrentWeek(),
             semesterStartEpochDay = loadedSettings.semesterStartDate?.toLocalDate()?.toEpochDay(),
@@ -269,6 +279,27 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         set(value) {
             loadedProfiles = value
         }
+
+    // ---------- TimetableScheduleItemPort ----------
+
+    /**
+     * 活动档案的日程列表。setter 只改内存（与 courses/tasks/exams 同口径），
+     * 落盘由 [ScheduleItemService] 显式调用 [persistActiveProfileState] 触发。
+     */
+    override var scheduleItems: List<ScheduleItem>
+        get() = activeProfile.scheduleItems
+        set(value) {
+            updateActiveProfile { it.copy(scheduleItems = value) }
+        }
+
+    // ---------- 作息日期规则 ----------
+
+    /** 整份替换作息日期规则：落盘成功后才改内存并通知（成功才通知语义）。 */
+    fun updateScheduleDateRules(rules: List<ScheduleDateRule>) {
+        store.saveScheduleDateRules(rules)
+        loadedScheduleDateRules = rules
+        notifyStateChanged()
+    }
 
     override val semesterWeekCount: Int
         get() = loadedSettings.semesterWeekCount

@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
@@ -232,6 +233,39 @@ class TimetableStore(
         store.putString(KEY_TIME_SCHEMES, MiniJson.encode(schemes.map { it.toJson() }))
     }
 
+    // ---------- schedule_date_rules ----------
+
+    /**
+     * 作息日期规则数组（数据契约 §2.1 `schedule_date_rules`，String(JSON) 数组）。
+     *
+     * 这是**顶层 key**（不属于某个档案）。逐条宽松解析：坏条目丢弃，不让一条坏规则炸掉整份；
+     * 整份不是数组时留档 + 删 key（与 profiles 同口径，坏数据不静默吞）。
+     */
+    fun loadScheduleDateRules(): List<ScheduleDateRule> {
+        val raw = store.getString(KEY_SCHEDULE_DATE_RULES)
+        if (raw.isNullOrEmpty()) return emptyList()
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*>) {
+            archiveCorrupt(KEY_SCHEDULE_DATE_RULES)
+            return emptyList()
+        }
+        val rules = mutableListOf<ScheduleDateRule>()
+        for (item in decoded) {
+            if (item !is Map<*, *>) continue
+            try {
+                @Suppress("UNCHECKED_CAST")
+                rules.add(ScheduleDateRule.fromJson(item as Map<String, Any?>))
+            } catch (_: Exception) {
+                // 单条坏规则丢弃（lenient 口径）。
+            }
+        }
+        return rules
+    }
+
+    fun saveScheduleDateRules(rules: List<ScheduleDateRule>) {
+        store.putString(KEY_SCHEDULE_DATE_RULES, MiniJson.encode(rules.map { it.toJson() }))
+    }
+
     // ---------- teacher_records / location_records（List<String>） ----------
 
     /**
@@ -290,6 +324,7 @@ class TimetableStore(
         const val KEY_SETTINGS = "timetable_settings"
         const val KEY_CURRENT_WEEK = "current_week"
         const val KEY_TIME_SCHEMES = "time_schemes"
+        const val KEY_SCHEDULE_DATE_RULES = "schedule_date_rules"
         const val KEY_TEACHER_RECORDS = "teacher_records"
         const val KEY_LOCATION_RECORDS = "location_records"
 
