@@ -34,6 +34,7 @@ import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.icon.extended.Settings
 
 /**
  * Compose 迁移 Phase 3 · 页面开发壳（composeUi 变体专属）。
@@ -202,8 +203,8 @@ private fun PagesShell() {
                     DockSlot.SCHEDULE -> ScheduleListPage(
                         groups = shellSampleScheduleGroups(),
                         onBack = { slot = DockSlot.TIMETABLE },
-                        onAddSchedule = { },
-                        onEditSchedule = { },
+                        onAddSchedule = { openPageId = "d3.addSchedule" },
+                        onEditSchedule = { openPageId = "d3.addSchedule" },
                         onDeleteSchedule = { },
                     )
                     DockSlot.TASK -> TaskListPage(
@@ -211,15 +212,17 @@ private fun PagesShell() {
                         onBack = { slot = DockSlot.TIMETABLE },
                         onDateFilterChange = { },
                         onCourseFilterClick = { },
-                        onAddTask = { },
-                        onEditTask = { },
+                        onAddTask = { openPageId = "d2.addTask" },
+                        onEditTask = { openPageId = "d2.addTask" },
                         onToggleTask = { },
                         onDeleteTask = { },
                     )
-                    // 索引自己也是槽位：从索引进页面，返回回到索引本身。
-                    DockSlot.INDEX -> ShellPageIndexScreen(
-                        onOpenPage = { openPageId = it },
+                    // 设置主槽位：直接渲染设置主页，点击子项自然跳转子页面。
+                    DockSlot.SETTINGS -> ShellPageContent(
+                        pageId = "b.settingsHome",
                         onBack = { slot = DockSlot.TIMETABLE },
+                        wiring = wiring,
+                        onOpenPage = { target -> openPageId = target },
                     )
                 }
             }
@@ -258,16 +261,15 @@ private val dockItems: List<GlassDockItem>
         GlassDockItem(icon = MiuixIcons.Months, label = DockSlot.TIMETABLE.label),
         GlassDockItem(icon = MiuixIcons.ListView, label = DockSlot.SCHEDULE.label),
         GlassDockItem(icon = MiuixIcons.Tasks, label = DockSlot.TASK.label),
-        // 屏上是「索引」，之前这里单独写了「页面索引」，读到与看到的字不一致。
-        GlassDockItem(icon = MiuixIcons.Notes, label = DockSlot.INDEX.label),
+        GlassDockItem(icon = MiuixIcons.Settings, label = DockSlot.SETTINGS.label),
     )
 
-/** dock 槽位：前三个对应原 App 玻璃坞的常驻入口，第四个是迁移期的页面索引入口。 */
+/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。 */
 private enum class DockSlot(val label: String) {
     TIMETABLE("课表"),
     SCHEDULE("日程"),
     TASK("任务"),
-    INDEX("索引"),
+    SETTINGS("设置"),
 }
 
 /*

@@ -175,6 +175,32 @@ android {
     }
 
     sourceSets {
+        main {
+            kotlin.srcDirs += 'src/composeUi/kotlin'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/components'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/export'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/sync'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/exam'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/course'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/import'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/conflict'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/guide'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/live'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/weather'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/app'
+        }
         // 页面壳的渲染层**逐目录挂载**（2026-10-27 收口）。
         //
         // `src/composeP1/kotlin/…/pages/` 是 Phase 3 渲染层的暂存区：多会话并行时
@@ -391,18 +417,13 @@ dependencies {
     // 效果链、Highlight + BloomStroke 边缘扫光、TiltLight 倾斜光感。
     // 不引它，miuix-ui 的 NavigationBar 只能画纯色（`squircleBackground(color = surface)`）。
     def miuixVersion = '0.9.4'
-    composeP1Implementation 'androidx.activity:activity-compose:1.13.0'
-    composeP1Implementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
-    composeP1Implementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
-    composeP1Implementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
-    composeP1Implementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
+    implementation 'androidx.activity:activity-compose:1.13.0'
+    implementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
+    implementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
+    implementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
+    implementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
 
     // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
-    composeUiImplementation 'androidx.activity:activity-compose:1.13.0'
-    composeUiImplementation "top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"
-    composeUiImplementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
-    composeUiImplementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
-    composeUiImplementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
 
     // 相机扫码（Phase 3.5 · 能力缺口 B5，2026-10-28 Lead 拍板）。
     //
@@ -424,15 +445,10 @@ dependencies {
     // 挂在 `implementation` 上会让 Flutter 包白背一份。
     // ⚠️ 因此用到这些依赖的适配器代码**必须放 `composeP1/`**，不能放 `main/`。
     def cameraxVersion = '1.6.1'
-    composeP1Implementation "androidx.camera:camera-core:$cameraxVersion"
-    composeP1Implementation "androidx.camera:camera-camera2:$cameraxVersion"
-    composeP1Implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
-    composeP1Implementation "androidx.camera:camera-view:$cameraxVersion"
-    composeP1Implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+    implementation "androidx.camera:camera-core:$cameraxVersion"
+    implementation "androidx.camera:camera-camera2:$cameraxVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    implementation "androidx.camera:camera-view:$cameraxVersion"
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 
-    composeUiImplementation "androidx.camera:camera-core:$cameraxVersion"
-    composeUiImplementation "androidx.camera:camera-camera2:$cameraxVersion"
-    composeUiImplementation "androidx.camera:camera-lifecycle:$cameraxVersion"
-    composeUiImplementation "androidx.camera:camera-view:$cameraxVersion"
-    composeUiImplementation 'com.google.mlkit:barcode-scanning:17.3.0'
 }
