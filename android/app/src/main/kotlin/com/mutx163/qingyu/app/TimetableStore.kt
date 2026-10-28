@@ -146,23 +146,51 @@ class TimetableStore(
     }
 
     /**
+     * 盘上 `timetable_settings` 的**原始 JSON 对象**（不做模型解析）。
+     *
+     * 供设置族完整模型 [TimetableSettingsModel] 按自己的口径读——那层认识几十个键，
+     * 本层只认识 4 个。坏值同样留档 + 删 key，返回空 map。
+     */
+    fun loadSettingsJson(): Map<String, Any?> {
+        val raw = store.getString(KEY_SETTINGS)
+        if (raw.isNullOrEmpty()) return emptyMap()
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is Map<*, *>) {
+            archiveCorrupt(KEY_SETTINGS)
+            return emptyMap()
+        }
+        val out = LinkedHashMap<String, Any?>()
+        for ((key, value) in decoded) {
+            if (key is String) out[key] = value
+        }
+        return out
+    }
+
+    /**
+     * **读-合并-写**：只覆盖 [patch] 里出现的键，盘上其余键（Dart 侧 250+ 个）原样保留。
+     *
+     * 这是全仓唯一一份 `timetable_settings` 合并写实现——[saveSettings]（4 键子集）
+     * 与设置族完整模型都走这里。合并逻辑若有两份，「测试用的那份」就会比真实现宽松。
+     *
+     * ⚠️ 与 Dart `toJson()` **整体覆盖**的一处必要差异：Dart 对 null 值的键是**省略**
+     * （省略即删除）；合并写下「省略」等于「保留旧值」，所以这里把 `null` **显式写进
+     * JSON**。两者对读侧等价（Dart 的 `lenientXxx(null) ?? 默认值` 与
+     * `parseNestedObject` 都把 null 当缺键），但只有显式 null 才能真正清掉一个键。
+     */
+    fun saveSettingsPatch(patch: Map<String, Any?>) {
+        if (patch.isEmpty()) return
+        val merged = LinkedHashMap<String, Any?>()
+        merged.putAll(loadSettingsJson())
+        merged.putAll(patch)
+        store.putString(KEY_SETTINGS, MiniJson.encode(merged))
+    }
+
+    /**
      * **合并写**：保留盘上 JSON 里本层不认识的键（Dart 侧 250+ 字段），
      * 只覆盖本层拥有的那几个。见类注释「设置为什么是合并不是整体覆盖」。
      */
     fun saveSettings(settings: TimetableSettings) {
-        val owned = settings.toJson()
-        val existing = store.getString(KEY_SETTINGS)
-        val merged = LinkedHashMap<String, Any?>()
-        if (!existing.isNullOrEmpty()) {
-            val decoded = MiniJson.tryParse(existing)
-            if (decoded is Map<*, *>) {
-                for ((key, value) in decoded) {
-                    if (key is String) merged[key] = value
-                }
-            }
-        }
-        merged.putAll(owned)
-        store.putString(KEY_SETTINGS, MiniJson.encode(merged))
+        saveSettingsPatch(settings.toJson())
     }
 
     // ---------- current_week ----------
