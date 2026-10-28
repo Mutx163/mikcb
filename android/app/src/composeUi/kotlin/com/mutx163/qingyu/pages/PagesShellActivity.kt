@@ -23,7 +23,7 @@ import com.mutx163.qingyu.pages.schedule.ScheduleListPage
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.task.TaskListPage
-import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
+import com.mutx163.qingyu.app.TimetableHost
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -128,6 +128,10 @@ private fun PagesShell() {
     // 索引里点开的页面。null = 没开页面层，显示当前槽位。
     var openPageId by remember { mutableStateOf<String?>(null) }
 
+    // Phase 3.5 接线层：壳自己的存储 + 课表仓储。
+    // 在这之前槽位喂的是演示数据、回调是空的（137 处 `{}`），所以「点了没反应」。
+    val wiring = rememberShellWiring()
+
     // dock 结构不是导航栈：非主屏时系统返回回课表主屏，而不是退出壳。
     BackHandler(enabled = slot != DockSlot.TIMETABLE) { slot = DockSlot.TIMETABLE }
 
@@ -150,10 +154,30 @@ private fun PagesShell() {
             val pageId = openPageId
             if (pageId != null) {
                 // 页面层占满整屏：页面要的是整块屏，不是槽位那点高度。
-                ShellPageContent(pageId = pageId, onBack = { openPageId = null })
+                ShellPageContent(pageId = pageId, onBack = { openPageId = null }, wiring = wiring)
             } else {
                 when (slot) {
-                    DockSlot.TIMETABLE -> TimetableWeekPage()
+                    // Phase 3.5：课表槽位改用**真宿主**——真数据（壳自己的存档）+ 真回调。
+                    // 以前这里是零参的 `TimetableWeekPage()`，画的是空网格、点了没反应。
+                    DockSlot.TIMETABLE -> TimetableHost(
+                        repository = wiring.timetable,
+                        onOpenAddCourse = { dayOfWeek, section ->
+                            wiring.pendingAddCourseSeed = dayOfWeek to section
+                            wiring.pendingEditCourse = null
+                            openPageId = "d1.addCourse"
+                        },
+                        onOpenCourse = { course ->
+                            wiring.pendingEditCourse = course
+                            wiring.pendingAddCourseSeed = null
+                            openPageId = "d1.addCourse"
+                        },
+                        onOpenProfiles = { openPageId = "c1.profiles" },
+                        onOpenAddCoursePlain = {
+                            wiring.clearAddCourseIntent()
+                            openPageId = "d1.addCourse"
+                        },
+                        onWeekChanged = { week -> wiring.timetable.setCurrentWeek(week) },
+                    )
                     DockSlot.SCHEDULE -> ScheduleListPage(
                         groups = shellSampleScheduleGroups(),
                         onBack = { slot = DockSlot.TIMETABLE },

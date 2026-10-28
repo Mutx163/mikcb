@@ -191,6 +191,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun ShellPageContent(
     pageId: String,
     onBack: () -> Unit,
+    wiring: ShellWiring,
 ) {
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
@@ -280,18 +281,43 @@ fun ShellPageContent(
         )
 
         // ── P3-D1 课程表单与概览 ───────────────────────────────────────
-        "d1.addCourse" -> AddCoursePage(
-            // 表单要一个「节次 → 起止时间」的解析器；壳里给一份线性示例（08:00 起每节 45+10 分）。
-            clockResolver = { entry ->
-                val sectionIndex = (entry.startSection - 1).coerceAtLeast(0)
-                val startMinutes = 8 * 60 + sectionIndex * 55
-                AddCourseEntryClock(
-                    startTime = clockText(startMinutes),
-                    endTime = clockText(startMinutes + 45),
-                )
-            },
-            onBack = onBack,
-        )
+        // Phase 3.5：这一页改成**真接线**——周次表与节数取自仓储快照，
+        // 保存回调真的写进仓储（以前 `onSave` 是默认的空实现，所以点了「保存」什么也不发生）。
+        "d1.addCourse" -> {
+            val snapshot = wiring.timetable.snapshot
+            AddCoursePage(
+                initialCourse = wiring.pendingEditCourse,
+                initialDayOfWeek = wiring.pendingAddCourseSeed?.first,
+                initialStartSection = wiring.pendingAddCourseSeed?.second,
+                availableWeeks = (1..snapshot.settings.semesterWeekCount.coerceAtLeast(1)).toList(),
+                globalSectionCount = snapshot.settings.sections.size,
+                // 表单要一个「节次 → 起止时间」的解析器；优先用**用户自己的作息表**，
+                // 拿不到才退回壳里的线性示例（08:00 起每节 45+10 分）。
+                clockResolver = { entry ->
+                    val sections = snapshot.settings.sections
+                    val index = (entry.startSection - 1).coerceAtLeast(0)
+                    val section = sections.getOrNull(index)
+                    if (section != null) {
+                        AddCourseEntryClock(startTime = section.startTime, endTime = section.endTime)
+                    } else {
+                        val startMinutes = 8 * 60 + index * 55
+                        AddCourseEntryClock(
+                            startTime = clockText(startMinutes),
+                            endTime = clockText(startMinutes + 45),
+                        )
+                    }
+                },
+                onSave = { payload ->
+                    wiring.applyAddCourseSave(payload)
+                    wiring.clearAddCourseIntent()
+                    onBack()
+                },
+                onBack = {
+                    wiring.clearAddCourseIntent()
+                    onBack()
+                },
+            )
+        }
         "d1.overview" -> CourseOverviewPage(
             viewState = CourseOverviewLogic.buildViewState(emptyList(), emptyMap()),
             onBack = onBack,
