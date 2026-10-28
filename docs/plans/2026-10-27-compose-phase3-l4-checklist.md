@@ -33,6 +33,36 @@
 
 ---
 
+## 0.5 2026-10-28 夜 · 现状刷新（覆盖下文若干旧说法）
+
+> 本节据 2026-10-28 22:40 的机器体检 + 闸门实测刷新；与下文旧描述冲突时，**以本节为准**。
+
+**闸门现状**：L1（`compileComposeUiDebugKotlin`）**编译通过**；L2（`testProdDebugUnitTest`）**4318 例 / 4 失败**，
+4 条全是代码守卫（中文硬编码 / 样式 / 页面骨架 / 设置用例），落在**他人未提交文件**上，详见
+[体检计划](2026-10-28-full-software-audit-and-completion-plan.md) §六·附二。功能层 4314 例全绿。
+
+**现在就能真机测的页面（已接真实宿主 / 数据）**：
+- 课表：周视图 `c1.week`（含课程操作）、档案 `c1.profiles`、月视图 `c2.month`、课程总览 `d1.overview`、加课 `d1.addCourse`、加作业 `d2.addTask`
+- 日程：列表 `d2.scheduleList`、添加 `d2.addSchedule`、日期规则 `d2.dateRule`
+- 统计：主页 `e.statistics`、深度分析 `e.analysis`、单节课 `e.session`、统计设置 `e.statisticsSettings`（图表读真数据）
+- 设置：通用/外观/主题/课卡 `b.general` / `b.appearance` / `b.theme` / `b.courseCard`，另有 `b.homeNavigation` / `b.homeMenuEditor` / `b.timetablePage` / `b.weather` / `b.glassDock`
+- 同步：云同步 `f.cloudSync`、备份列表 `f.backupList`
+- 传输：二维码发送 `g3.qrSend`、扫码 `g3.qrScan`；天气城市 `j.weatherCity`；许可 `a.licenses`
+
+**仍然点不动 / 仍是演示数据（对照时按「已知未接」看，不是 bug）**：
+- 考试族 `d3.addExam` / `d3.examList` / `d3.timeSchemes` / `d3.locationMatch`
+- 任务清单 `d2.taskList`（底层 `TaskListController` 已就绪，只差接壳）
+- 传输 `g3.dataTransfer` / `g3.icsExport` / `g3.lanEdit`；情侣课表 `f.couple`
+- 导入入口 `g1.importEntry` / `g1.spreadsheetImport` / `g1.icsImport`
+- 诊断族 `h.log` / `h.memory` / `h.perfReport` / `h.fixture`（开发用页，用户一般看不到）
+- 示例数据：`g2.schoolAdapters`（学校适配器示例）、`a.contributors`（贡献者）
+
+> 注：`d3.examList` / `d3.addExam` 与 `d2.taskList` 的**底层服务本会话已交付**
+> （`TimetableExamService` `f70604b0` / `TaskListController` `4efc79f4`），只差接壳——
+> 届时上面「点不动」里这几条会转为可测。
+
+---
+
 ## 1. 前置：装什么、怎么看
 
 ### 1.1 两个包，互不覆盖
