@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -41,7 +43,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -62,7 +63,6 @@ fun ScheduleListPage(
     onDeleteSchedule: (ScheduleItemData) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val colors = MiuixTheme.colorScheme
     var deleteCandidate by remember { mutableStateOf<ScheduleItemData?>(null) }
 
     // 顶栏折叠行为：Dart 侧 schedule_list_screen.dart:38 走 HyperosSubpage，
@@ -102,62 +102,64 @@ fun ScheduleListPage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+            // 与右侧滚动条。底部手势条由本页**显式**算一次放进 contentPadding，所以喂给套件的
+            // innerPadding 只取顶部——套件内部还会再加一次 innerPadding 的 bottom，
+            // 两份都给就会把小白条算两遍（原版正是「Column padding(innerPadding) +
+            // contentPadding 里再来一次」，本来就重复）。
+            QingyuPageList(
+                innerPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
+                scrollBehavior = scrollBehavior,
+                contentPadding = PaddingValues(
+                    top = 8.dp,
+                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (groups.isEmpty) {
                     // ── 空态展示 ──
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        QingyuCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            insideMargin = PaddingValues(24.dp),
+                    item(key = "empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillParentMaxSize()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Column(
+                            QingyuCard(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                insideMargin = PaddingValues(24.dp),
                             ) {
-                                Text(
-                                    text = ScheduleStrings.scheduleListEmptyTitle.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
-                                )
-                                MiuixActionButton(
-                                    text = ScheduleStrings.addScheduleAction.zh,
-                                    onClick = onAddSchedule,
-                                )
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleListEmptyTitle.zh,
+                                        style = MiuixTheme.textStyles.body1,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                    )
+                                    MiuixActionButton(
+                                        text = ScheduleStrings.addScheduleAction.zh,
+                                        onClick = onAddSchedule,
+                                    )
+                                }
                             }
                         }
                     }
-            } else {
-                // ── 分组列表 ──
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                } else {
+                    // ── 分组列表：横向留白按配方由每个块自己带 12dp ──
                     if (groups.upcoming.isNotEmpty()) {
                         item(key = "header_upcoming") {
-                            ScheduleSectionHeader(ScheduleStrings.scheduleUpcomingSection.zh, dark)
+                            QingyuSectionTitle(ScheduleStrings.scheduleUpcomingSection.zh)
                         }
                         items(groups.upcoming, key = { "upcoming_${it.item.id}" }) { entry ->
                             ScheduleListCard(
                                 entry = entry,
                                 dimmed = false,
                                 dark = dark,
+                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                                 onEdit = { onEditSchedule(entry.item) },
                                 onDelete = { deleteCandidate = entry.item },
                             )
@@ -166,13 +168,14 @@ fun ScheduleListPage(
 
                     if (groups.past.isNotEmpty()) {
                         item(key = "header_past") {
-                            ScheduleSectionHeader(ScheduleStrings.schedulePastSection.zh, dark)
+                            QingyuSectionTitle(ScheduleStrings.schedulePastSection.zh)
                         }
                         items(groups.past, key = { "past_${it.item.id}" }) { entry ->
                             ScheduleListCard(
                                 entry = entry,
                                 dimmed = true,
                                 dark = dark,
+                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                                 onEdit = { onEditSchedule(entry.item) },
                                 onDelete = { deleteCandidate = entry.item },
                             )
@@ -181,19 +184,19 @@ fun ScheduleListPage(
 
                     if (groups.paused.isNotEmpty()) {
                         item(key = "header_paused") {
-                            ScheduleSectionHeader(ScheduleStrings.schedulePausedSection.zh, dark)
+                            QingyuSectionTitle(ScheduleStrings.schedulePausedSection.zh)
                         }
                         items(groups.paused, key = { "paused_${it.item.id}" }) { entry ->
                             ScheduleListCard(
                                 entry = entry,
                                 dimmed = true,
                                 dark = dark,
+                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                                 onEdit = { onEditSchedule(entry.item) },
                                 onDelete = { deleteCandidate = entry.item },
                             )
                         }
                     }
-                }
                 }
             }
         }
@@ -214,31 +217,22 @@ fun ScheduleListPage(
 }
 
 @Composable
-private fun ScheduleSectionHeader(title: String, dark: Boolean) {
-    Text(
-        text = title,
-        style = MiuixTheme.textStyles.footnote1,
-        fontWeight = FontWeight.Medium,
-        color = Color(QingyuTheme.sectionLabel(dark)),
-        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
-    )
-}
-
-@Composable
 private fun ScheduleListCard(
     entry: ScheduleListEntry,
     dimmed: Boolean,
     dark: Boolean,
+    modifier: Modifier = Modifier,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val item = entry.item
-    val accentColor = parseHexColor(item.color, fallback = Color(0xFF5B9CF6))
+    // Dart：parseHexColorOrFallback(item.color, fallback: HyperosIconColors.blue)。
+    val accentColor = parseHexColor(item.color, fallback = Color(QingyuIconColors.BLUE))
     val primaryAlpha = if (dimmed) 0.45f else 1.0f
     val secondaryAlpha = if (dimmed) 0.55f else 0.85f
 
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         onClick = onEdit,
     ) {
@@ -295,7 +289,7 @@ private fun ScheduleListCard(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .background(
-                                    Color(0xFF22C55E).copy(alpha = 0.14f),
+                                    Color(QingyuIconColors.GREEN).copy(alpha = 0.14f),
                                     RoundedCornerShape(999.dp),
                                 )
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
@@ -304,14 +298,14 @@ private fun ScheduleListCard(
                                 modifier = Modifier
                                     .size(6.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF22C55E)),
+                                    .background(Color(QingyuIconColors.GREEN)),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = ScheduleStrings.scheduleOngoingLabel.zh,
                                 style = MiuixTheme.textStyles.footnote2,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF22C55E),
+                                color = Color(QingyuIconColors.GREEN),
                             )
                         }
                     }

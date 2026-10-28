@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -45,7 +46,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -204,109 +204,111 @@ fun AddScheduleItemPage(
                     .fillMaxSize()
                     // 表单页必须避让键盘，否则底部输入框被 IME 盖住。
                     .imePadding()
-                    .padding(innerPadding),
+                    // 只吃顶部：底部手势条交给列表的 contentPadding 显式算一次
+                    //（QingyuPageList 内部还会再加一次 innerPadding 的 bottom，
+                    // 两份都给就会把小白条算两遍）。
+                    .padding(top = innerPadding.calculateTopPadding()),
             ) {
             // 2026-10-28：这里原来还留着一版「手搓顶栏」Row（返回图标 + 标题 + 删除/保存按钮），
             // 是顶栏挪进 Scaffold 槽位之前的旧代码——结果标题和按钮在屏幕上出现两遍。
             // 顶栏现在只有 Scaffold 的 topBar 槽那一处。
 
             // ── 滚动表单 ──
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // nestedScroll 必须挂在滚动修饰符**外层**（也就是写在 verticalScroll 之前）。
-                    // 顺序反了滚动手势不会向上抛给顶栏，大标题永远收不起来——这正是用户报的
-                    //「上下拉，一直显示的都是大标题」。官方 NestedScrollConnection 的注解写明：
-                    // 它只接收「滚动子节点」（scrolling child）派发上来的事件，
-                    // 所以连接必须位于滚动节点的祖先一侧。
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState())
+            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+            // 与右侧滚动条；卡片间距由列表的 verticalArrangement 承担。
+            // 横向留白按配方由每张卡自己带 QingyuPageCardMargin(12dp)，不放进 contentPadding。
+            QingyuPageList(
+                innerPadding = PaddingValues(0.dp),
+                scrollBehavior = scrollBehavior,
+                contentPadding = PaddingValues(
+                    top = 8.dp,
                     // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
-                    ),
+                    bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // 校验错误横幅
                 errorMessage?.let { error ->
-                    QingyuCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(12.dp),
-                    ) {
-                        Text(
-                            text = error,
-                            color = Color(QingyuTheme.error(dark)),
-                            style = MiuixTheme.textStyles.body2,
-                        )
+                    item(key = "error") {
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                            insideMargin = PaddingValues(12.dp),
+                        ) {
+                            Text(
+                                text = error,
+                                color = Color(QingyuTheme.error(dark)),
+                                style = MiuixTheme.textStyles.body2,
+                            )
+                        }
                     }
                 }
 
                 // 快捷模板选择区（新建时展示）
                 if (!isEditing) {
-                    QingyuCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(12.dp),
-                    ) {
-                        Column {
-                            Text(
-                                text = ScheduleStrings.scheduleQuickPresetSectionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(QingyuTheme.sectionLabel(dark)),
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                val activePreset = scheduleQuickPresetActiveId(appliedPresetId, title)
-                                for (preset in kScheduleQuickPresets) {
-                                    val isSelected = activePreset == preset.id
-                                    val presetTitle = scheduleQuickPresetTitle(preset.id)
-                                    val chipBg = if (isSelected) {
-                                        Color(QingyuTheme.primary(dark = dark))
-                                    } else {
-                                        Color(QingyuTheme.card(dark))
-                                    }
-                                    val chipText = if (isSelected) {
-                                        Color.White
-                                    } else {
-                                        Color(QingyuTheme.primaryText(dark))
-                                    }
+                    item(key = "presets") {
+                        QingyuCard(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                            insideMargin = PaddingValues(12.dp),
+                        ) {
+                            Column {
+                                Text(
+                                    text = ScheduleStrings.scheduleQuickPresetSectionTitle.zh,
+                                    style = MiuixTheme.textStyles.body2,
+                                    fontWeight = FontWeight.Medium,
+                                    // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    val activePreset = scheduleQuickPresetActiveId(appliedPresetId, title)
+                                    for (preset in kScheduleQuickPresets) {
+                                        val isSelected = activePreset == preset.id
+                                        val presetTitle = scheduleQuickPresetTitle(preset.id)
+                                        val chipBg = if (isSelected) {
+                                            Color(QingyuTheme.primary(dark = dark))
+                                        } else {
+                                            Color(QingyuTheme.card(dark))
+                                        }
+                                        val chipText = if (isSelected) {
+                                            Color.White
+                                        } else {
+                                            Color(QingyuTheme.primaryText(dark))
+                                        }
 
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(chipBg)
-                                            .border(
-                                                1.dp,
-                                                if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                                                RoundedCornerShape(8.dp),
-                                            )
-                                            .clickable {
-                                                if (isSelected) {
-                                                    appliedPresetId = null
-                                                    title = ""
-                                                } else {
-                                                    appliedPresetId = preset.id
-                                                    title = presetTitle
-                                                    selectedColor = preset.colorHex
-                                                    val win = resolveSchedulePresetWindow(
-                                                        ScheduleDateUtils.parseMinutes(startTime),
-                                                        preset.durationMinutes,
-                                                    )
-                                                    startTime = ScheduleDateUtils.formatMinutes(win.startMinutes)
-                                                    endTime = ScheduleDateUtils.formatMinutes(win.endMinutes)
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(chipBg)
+                                                .border(
+                                                    1.dp,
+                                                    if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
+                                                    RoundedCornerShape(8.dp),
+                                                )
+                                                .clickable {
+                                                    if (isSelected) {
+                                                        appliedPresetId = null
+                                                        title = ""
+                                                    } else {
+                                                        appliedPresetId = preset.id
+                                                        title = presetTitle
+                                                        selectedColor = preset.colorHex
+                                                        val win = resolveSchedulePresetWindow(
+                                                            ScheduleDateUtils.parseMinutes(startTime),
+                                                            preset.durationMinutes,
+                                                        )
+                                                        startTime = ScheduleDateUtils.formatMinutes(win.startMinutes)
+                                                        endTime = ScheduleDateUtils.formatMinutes(win.endMinutes)
+                                                    }
                                                 }
-                                            }
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                    ) {
-                                        Text(text = presetTitle, style = MiuixTheme.textStyles.footnote1, color = chipText)
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        ) {
+                                            Text(text = presetTitle, style = MiuixTheme.textStyles.footnote1, color = chipText)
+                                        }
                                     }
                                 }
                             }
@@ -315,187 +317,196 @@ fun AddScheduleItemPage(
                 }
 
                 // 启用开关卡片
-                QingyuCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                item(key = "enabled") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                     ) {
-                        Column {
-                            Text(
-                                text = ScheduleStrings.scheduleEnabledTitle.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(QingyuTheme.primaryText(dark)),
-                            )
-                            if (!enabled) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column {
                                 Text(
-                                    text = ScheduleStrings.scheduleDisabledSubtitle.zh,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = Color(QingyuTheme.secondaryText(dark)),
+                                    text = ScheduleStrings.scheduleEnabledTitle.zh,
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(QingyuTheme.primaryText(dark)),
                                 )
+                                if (!enabled) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleDisabledSubtitle.zh,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                    )
+                                }
                             }
+                            MiuixActionButton(
+                                text = if (enabled) "已启用" else "已暂停",
+                                onClick = { enabled = !enabled },
+                            )
                         }
-                        MiuixActionButton(
-                            text = if (enabled) "已启用" else "已暂停",
-                            onClick = { enabled = !enabled },
-                        )
                     }
                 }
 
                 // 日程信息卡片
-                QingyuCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = ScheduleStrings.scheduleInfoSectionTitle.zh,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.sectionLabel(dark)),
-                        )
-                        TextField(
-                            value = title,
-                            onValueChange = { title = it },
-                            label = ScheduleStrings.scheduleTitleLabel.zh,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        TextField(
-                            value = location,
-                            onValueChange = { location = it },
-                            label = ScheduleStrings.scheduleLocationLabel.zh,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        TextField(
-                            value = note,
-                            onValueChange = { note = it },
-                            label = ScheduleStrings.scheduleNoteLabel.zh,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                item(key = "info") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(14.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = ScheduleStrings.scheduleInfoSectionTitle.zh,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
+                            TextField(
+                                value = title,
+                                onValueChange = { title = it },
+                                label = ScheduleStrings.scheduleTitleLabel.zh,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            TextField(
+                                value = location,
+                                onValueChange = { location = it },
+                                label = ScheduleStrings.scheduleLocationLabel.zh,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            TextField(
+                                value = note,
+                                onValueChange = { note = it },
+                                label = ScheduleStrings.scheduleNoteLabel.zh,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
 
                 // 时间安排与起止设置
-                QingyuCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = ScheduleStrings.scheduleTimeSectionTitle.zh,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.sectionLabel(dark)),
-                        )
+                item(key = "time") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(14.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = ScheduleStrings.scheduleTimeSectionTitle.zh,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleStartGroupLabel.zh,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    TextField(
+                                        value = startDate,
+                                        onValueChange = { startDate = it },
+                                        label = ScheduleStrings.scheduleStartDateLabel.zh,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    TextField(
+                                        value = startTime,
+                                        onValueChange = { startTime = it },
+                                        label = ScheduleStrings.scheduleStartTimeLabel.zh,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleEndGroupLabel.zh,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    TextField(
+                                        value = endDate,
+                                        onValueChange = { endDate = it },
+                                        label = ScheduleStrings.scheduleEndDateLabel.zh,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    TextField(
+                                        value = endTime,
+                                        onValueChange = { endTime = it },
+                                        label = ScheduleStrings.scheduleEndTimeLabel.zh,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            }
+
+                            // 跨天或重复提示
+                            if (recurrence == ScheduleRecurrence.WEEKLY) {
                                 Text(
-                                    text = ScheduleStrings.scheduleStartGroupLabel.zh,
+                                    text = ScheduleStrings.scheduleRepeatWeeklyHint.zh,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                TextField(
-                                    value = startDate,
-                                    onValueChange = { startDate = it },
-                                    label = ScheduleStrings.scheduleStartDateLabel.zh,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                TextField(
-                                    value = startTime,
-                                    onValueChange = { startTime = it },
-                                    label = ScheduleStrings.scheduleStartTimeLabel.zh,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
+                            } else if (recurrence == ScheduleRecurrence.DAILY) {
                                 Text(
-                                    text = ScheduleStrings.scheduleEndGroupLabel.zh,
+                                    text = ScheduleStrings.scheduleRepeatEndDateHint.zh,
                                     style = MiuixTheme.textStyles.footnote1,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                TextField(
-                                    value = endDate,
-                                    onValueChange = { endDate = it },
-                                    label = ScheduleStrings.scheduleEndDateLabel.zh,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                TextField(
-                                    value = endTime,
-                                    onValueChange = { endTime = it },
-                                    label = ScheduleStrings.scheduleEndTimeLabel.zh,
-                                    modifier = Modifier.fillMaxWidth(),
+                            } else if (endDate > startDate) {
+                                Text(
+                                    text = ScheduleStrings.scheduleCrossDaySpanHint
+                                        .filled("start" to "$startDate $startTime", "end" to "$endDate $endTime"),
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
-                        }
 
-                        // 跨天或重复提示
-                        if (recurrence == ScheduleRecurrence.WEEKLY) {
-                            Text(
-                                text = ScheduleStrings.scheduleRepeatWeeklyHint.zh,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                        } else if (recurrence == ScheduleRecurrence.DAILY) {
-                            Text(
-                                text = ScheduleStrings.scheduleRepeatEndDateHint.zh,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                        } else if (endDate > startDate) {
-                            Text(
-                                text = ScheduleStrings.scheduleCrossDaySpanHint
-                                    .filled("start" to "$startDate $startTime", "end" to "$endDate $endTime"),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                        }
+                            HorizontalDivider(modifier = Modifier.fillMaxWidth())
 
-                        HorizontalDivider(modifier = Modifier.fillMaxWidth())
-
-                        // 颜色挑选横条
-                        Text(
-                            text = ScheduleStrings.scheduleAppearanceSectionTitle.zh,
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.sectionLabel(dark)),
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            for (hex in kColorPalette) {
-                                val isChosen = selectedColor.equals(hex, ignoreCase = true)
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(android.graphics.Color.parseColor(hex)))
-                                        .border(
-                                            width = if (isChosen) 3.dp else 1.dp,
-                                            color = if (isChosen) Color.White else Color.Transparent,
-                                            shape = RoundedCornerShape(8.dp),
-                                        )
-                                        .clickable { selectedColor = hex },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    if (isChosen) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White),
-                                        )
+                            // 颜色挑选横条
+                            Text(
+                                text = ScheduleStrings.scheduleAppearanceSectionTitle.zh,
+                                style = MiuixTheme.textStyles.footnote1,
+                                fontWeight = FontWeight.Medium,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                for (hex in kColorPalette) {
+                                    val isChosen = selectedColor.equals(hex, ignoreCase = true)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(34.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(android.graphics.Color.parseColor(hex)))
+                                            .border(
+                                                width = if (isChosen) 3.dp else 1.dp,
+                                                color = if (isChosen) Color.White else Color.Transparent,
+                                                shape = RoundedCornerShape(8.dp),
+                                            )
+                                            .clickable { selectedColor = hex },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (isChosen) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(10.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color.White),
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -504,59 +515,62 @@ fun AddScheduleItemPage(
                 }
 
                 // 重复规则设置卡片
-                QingyuCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = ScheduleStrings.scheduleRepeatSectionTitle.zh,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.sectionLabel(dark)),
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            val options = listOf(
-                                ScheduleRecurrence.NONE to ScheduleStrings.scheduleRepeatNone.zh,
-                                ScheduleRecurrence.DAILY to ScheduleStrings.scheduleRepeatDaily.zh,
-                                ScheduleRecurrence.WEEKLY to ScheduleStrings.scheduleRepeatWeekly.zh,
+                item(key = "recurrence") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(14.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = ScheduleStrings.scheduleRepeatSectionTitle.zh,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
-                            for ((rec, label) in options) {
-                                val isSelected = recurrence == rec
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            if (isSelected) {
-                                                Color(QingyuTheme.primary(dark = dark))
-                                            } else {
-                                                Color(QingyuTheme.card(dark))
-                                            },
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                                            RoundedCornerShape(8.dp),
-                                        )
-                                        .clickable {
-                                            recurrence = rec
-                                            if (recurrence != ScheduleRecurrence.NONE && endDate < startDate) {
-                                                endDate = startDate
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                val options = listOf(
+                                    ScheduleRecurrence.NONE to ScheduleStrings.scheduleRepeatNone.zh,
+                                    ScheduleRecurrence.DAILY to ScheduleStrings.scheduleRepeatDaily.zh,
+                                    ScheduleRecurrence.WEEKLY to ScheduleStrings.scheduleRepeatWeekly.zh,
+                                )
+                                for ((rec, label) in options) {
+                                    val isSelected = recurrence == rec
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isSelected) {
+                                                    Color(QingyuTheme.primary(dark = dark))
+                                                } else {
+                                                    Color(QingyuTheme.card(dark))
+                                                },
+                                            )
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
+                                                RoundedCornerShape(8.dp),
+                                            )
+                                            .clickable {
+                                                recurrence = rec
+                                                if (recurrence != ScheduleRecurrence.NONE && endDate < startDate) {
+                                                    endDate = startDate
+                                                }
                                             }
-                                        }
-                                        .padding(vertical = 10.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
-                                    )
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MiuixTheme.textStyles.footnote1,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -564,56 +578,59 @@ fun AddScheduleItemPage(
                 }
 
                 // 提醒时间设置卡片
-                QingyuCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    insideMargin = PaddingValues(14.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = ScheduleStrings.scheduleReminderSectionTitle.zh,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.sectionLabel(dark)),
-                        )
-                        val reminderChoices = listOf(
-                            null to ScheduleStrings.scheduleReminderOff.zh,
-                            5 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "5"),
-                            10 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "10"),
-                            15 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "15"),
-                            30 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "30"),
-                            60 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "60"),
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            for ((mins, label) in reminderChoices) {
-                                val isSelected = reminderMinutes == mins
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            if (isSelected) {
-                                                Color(QingyuTheme.primary(dark = dark))
-                                            } else {
-                                                Color(QingyuTheme.card(dark))
-                                            },
+                item(key = "reminder") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
+                        insideMargin = PaddingValues(14.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = ScheduleStrings.scheduleReminderSectionTitle.zh,
+                                style = MiuixTheme.textStyles.body2,
+                                fontWeight = FontWeight.Medium,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
+                            val reminderChoices = listOf(
+                                null to ScheduleStrings.scheduleReminderOff.zh,
+                                5 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "5"),
+                                10 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "10"),
+                                15 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "15"),
+                                30 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "30"),
+                                60 to ScheduleStrings.scheduleReminderMinutes.filled("minutes", "60"),
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                for ((mins, label) in reminderChoices) {
+                                    val isSelected = reminderMinutes == mins
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isSelected) {
+                                                    Color(QingyuTheme.primary(dark = dark))
+                                                } else {
+                                                    Color(QingyuTheme.card(dark))
+                                                },
+                                            )
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
+                                                RoundedCornerShape(8.dp),
+                                            )
+                                            .clickable { reminderMinutes = mins }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MiuixTheme.textStyles.footnote1,
+                                            color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
                                         )
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
-                                            RoundedCornerShape(8.dp),
-                                        )
-                                        .clickable { reminderMinutes = mins }
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
-                                    )
+                                    }
                                 }
                             }
                         }

@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -28,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -39,7 +39,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -120,96 +119,99 @@ fun ScheduleDateRulePage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+            // 与右侧滚动条。底部手势条由本页**显式**算一次放进 contentPadding，所以喂给套件的
+            // innerPadding 只取顶部——套件内部还会再加一次它的 bottom，两份都给会算两遍。
+            QingyuPageList(
+                innerPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
+                scrollBehavior = scrollBehavior,
+                contentPadding = PaddingValues(
+                    top = 4.dp,
+                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-
-            // 说明小标题
-            Text(
-                text = ScheduleStrings.scheduleDateRuleSectionSubtitle.zh,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-
-            bannerMessage?.let { banner ->
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    insideMargin = PaddingValues(10.dp),
-                ) {
+                // 说明小标题
+                item(key = "subtitle") {
                     Text(
-                        text = banner,
-                        color = Color(QingyuTheme.error(dark)),
+                        text = ScheduleStrings.scheduleDateRuleSectionSubtitle.zh,
                         style = MiuixTheme.textStyles.footnote1,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
-            }
 
-            if (rules.isEmpty()) {
-                // ── 空态 ──
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    QingyuCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(24.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                bannerMessage?.let { banner ->
+                    item(key = "banner") {
+                        QingyuCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = QingyuPageCardMargin, vertical = 4.dp),
+                            insideMargin = PaddingValues(10.dp),
                         ) {
                             Text(
-                                text = ScheduleStrings.scheduleDateRuleEmpty.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                color = Color(QingyuTheme.secondaryText(dark)),
-                            )
-                            MiuixActionButton(
-                                text = ScheduleStrings.scheduleDateRuleAdd.zh,
-                                onClick = {
-                                    if (availableSchemes.isEmpty()) {
-                                        bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                                        return@MiuixActionButton
-                                    }
-                                    bannerMessage = null
-                                    isAddingNew = true
-                                    editingRule = ScheduleDateRuleData(
-                                        id = "rule_${System.currentTimeMillis()}",
-                                        name = "",
-                                        timeSchemeId = availableSchemes.first().first,
-                                        startDate = "2026-10-01",
-                                        endDate = "2027-04-30",
-                                        enabled = true,
-                                    )
-                                },
+                                text = banner,
+                                color = Color(QingyuTheme.error(dark)),
+                                style = MiuixTheme.textStyles.footnote1,
                             )
                         }
                     }
                 }
-            } else {
-                // ── 规则卡片列表 ──
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+
+                if (rules.isEmpty()) {
+                    // ── 空态 ──
+                    item(key = "empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillParentMaxSize()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            QingyuCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                insideMargin = PaddingValues(24.dp),
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleDateRuleEmpty.zh,
+                                        style = MiuixTheme.textStyles.body1,
+                                        color = Color(QingyuTheme.secondaryText(dark)),
+                                    )
+                                    MiuixActionButton(
+                                        text = ScheduleStrings.scheduleDateRuleAdd.zh,
+                                        onClick = {
+                                            if (availableSchemes.isEmpty()) {
+                                                bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
+                                                return@MiuixActionButton
+                                            }
+                                            bannerMessage = null
+                                            isAddingNew = true
+                                            editingRule = ScheduleDateRuleData(
+                                                id = "rule_${System.currentTimeMillis()}",
+                                                name = "",
+                                                timeSchemeId = availableSchemes.first().first,
+                                                startDate = "2026-10-01",
+                                                endDate = "2027-04-30",
+                                                enabled = true,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // ── 规则卡片列表：横向留白按配方由每张卡自己带 12dp ──
                     items(rules, key = { it.rule.id }) { item ->
                         ScheduleDateRuleCard(
                             item = item,
                             dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                             onEdit = {
                                 isAddingNew = false
                                 editingRule = item.rule
@@ -219,7 +221,6 @@ fun ScheduleDateRulePage(
                             },
                         )
                     }
-                }
                 }
             }
         }
@@ -259,6 +260,7 @@ fun ScheduleDateRulePage(
 private fun ScheduleDateRuleCard(
     item: ScheduleDateRuleItemView,
     dark: Boolean,
+    modifier: Modifier = Modifier,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -267,7 +269,7 @@ private fun ScheduleDateRuleCard(
         .filled("start" to rule.startDate, "end" to rule.endDate)
 
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         insideMargin = PaddingValues(14.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -390,7 +392,8 @@ private fun RuleEditorDialog(
             Text(
                 text = ScheduleStrings.scheduleDateRuleBoundScheme.zh,
                 style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.sectionLabel(dark)),
+                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 for ((id, schemeName) in availableSchemes) {
