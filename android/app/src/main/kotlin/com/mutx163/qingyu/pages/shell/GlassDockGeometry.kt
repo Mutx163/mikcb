@@ -162,6 +162,69 @@ object GlassDockGeometry {
     /** 条目图标边长（dp）。液态档比 miuix 的 28 略小，因为栏内多了 4dp 内边距。 */
     const val GlassIconSizeDp: Float = 22f
 
+    /**
+     * 液态档内容区的高度：药丸高度减掉上下两条 [GlassContentPaddingDp]。
+     *
+     * demo 是 `64.dp` 的药丸 + `56.dp` 的指示器/折射副本；本仓药丸是 [HeightDp]（54），
+     * 对应 46。**指示器不能直接用 [HeightDp]**：那样它与玻璃上下边齐平，四周没有留量，
+     * 一放大就从边缘探出去（用户口径：「右边还超出了一点点背景」）。
+     */
+    const val GlassInnerHeightDp: Float = HeightDp - 2f * GlassContentPaddingDp
+
+    // ---------------------------------------------------------------------
+    // 液态档的槽位与指示器（2026-10-28 修正：照 demo 的算式，与上面那组旧口径无关）
+    //
+    // 上面 `slotWidth` / `itemLeft` / `indicatorLeftFor` 那一组是 **miuix/Flutter 旧口径**
+    // （两侧各 [HorizontalPaddingDp]=8dp、指示器再外扩 [IndicatorOverhangDp]=5dp）。
+    // 液态档照 demo 重写后，渲染层已**不再使用**那一组；它保留下来是因为
+    // `GlassDockGeometryTest` 还钉着它、且迁移期还要拿它跟 Flutter 侧对拍。
+    // **不要照旧口径写新代码**，液态档一律走下面这组 `glass*` 函数。
+    //
+    // 两套口径差在哪：旧口径槽宽 = (W - 16)/n，demo 口径 = (W - 8)/n。
+    // 差 8/n dp/格 —— 渲染层如果用了 demo 的 4dp 内边距、却按旧口径的一半减 4dp，
+    // 槽宽就会偏大，末格指示器正好探出玻璃 4dp（就是这次报的那个"一点点"）。
+    // ---------------------------------------------------------------------
+
+    /**
+     * 液态档单个条目的宽度（**像素**）：`(栏宽 - 2 × 内容内边距) / 条目数`。
+     *
+     * @param containerWidthPx 药丸整宽（px）。**是药丸自身的宽度**，不是外面那层容器的宽度
+     *   —— 两者相差两倍内边距，混用会让格子整体右偏、末格探出玻璃。
+     * @param paddingPx 单侧内容内边距（px），取 [GlassContentPaddingDp] 的 px 值。
+     */
+    fun glassSlotWidthPx(containerWidthPx: Float, itemCount: Int, paddingPx: Float): Float {
+        if (itemCount <= 0) return 0f
+        return max(0f, containerWidthPx - paddingPx * 2f) / itemCount
+    }
+
+    /** 液态档第 [index] 个条目/指示器的左边界（**像素**）：`padding + index × 槽宽`。 */
+    fun glassIndicatorLeftPx(
+        index: Int,
+        containerWidthPx: Float,
+        itemCount: Int,
+        paddingPx: Float,
+    ): Float = paddingPx + index * glassSlotWidthPx(containerWidthPx, itemCount, paddingPx)
+
+    /** [glassSlotWidthPx] 的 dp 版（内边距取 [GlassContentPaddingDp]），给单测与手推用。 */
+    fun glassSlotWidth(containerWidthDp: Float, itemCount: Int): Float =
+        glassSlotWidthPx(containerWidthDp, itemCount, GlassContentPaddingDp)
+
+    /** [glassIndicatorLeftPx] 的 dp 版。 */
+    fun glassIndicatorLeft(index: Int, containerWidthDp: Float, itemCount: Int): Float =
+        glassIndicatorLeftPx(index, containerWidthDp, itemCount, GlassContentPaddingDp)
+
+    /**
+     * 液态档指示器的区间（dp 版）。
+     *
+     * 不变式：`第 0 格 left == GlassContentPaddingDp`、
+     * `第 n-1 格 right == containerWidth - GlassContentPaddingDp` —— 两端各留 4dp，
+     * 首末对等。少减一侧内边距时，末格 right 会变成 `containerWidth`（探出玻璃）。
+     */
+    fun glassIndicatorSpan(index: Int, containerWidthDp: Float, itemCount: Int): Bounds {
+        val left = glassIndicatorLeft(index, containerWidthDp, itemCount)
+        return Bounds(left, left + glassSlotWidth(containerWidthDp, itemCount))
+    }
+
     /** 一段区间。用 data class 是为了让测试能整体比对，不必逐字段。 */
     data class Bounds(val left: Float, val right: Float) {
         val width: Float get() = right - left
@@ -178,10 +241,12 @@ object GlassDockGeometry {
     )
 
     /**
-     * 单个条目的占位宽度。
+     * 单个条目的占位宽度（**旧 miuix/Flutter 口径**，两侧各 [HorizontalPaddingDp]=8dp）。
      *
      * 不是简单的 `containerWidth / count`：两侧各留 [HorizontalPaddingDp]，
      * 内容区才排得下。少减这 16，条目会整体往外顶、最后一个被裁掉。
+     *
+     * ⚠️ 液态档（demo 口径）**不用这个**，用 [glassSlotWidthPx]（两侧各 4dp）。
      */
     fun slotWidth(containerWidth: Float, itemCount: Int): Float {
         if (itemCount <= 0) return 0f

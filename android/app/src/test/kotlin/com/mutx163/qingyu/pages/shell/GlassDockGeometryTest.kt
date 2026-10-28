@@ -392,4 +392,74 @@ class GlassDockGeometryTest {
         assertEquals(22f, GlassDockGeometry.GlassIconSizeDp, 1e-4f)
         assertEquals(4f, GlassDockGeometry.GlassContentPaddingDp, 1e-4f)
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // 液态档的槽位与指示器（2026-10-28，照 demo 的算式钉住）
+    //
+    // 这一组是为一个**已经发生过的**缺陷补的：渲染层用了 demo 的 4dp 内边距，
+    // 算格子时却只减了一侧（`W - 4`），于是每格偏大 4/n dp，末格指示器正好探出
+    // 玻璃 4dp（用户口径：「右边还超出了一点点背景」）。旧的 `slotWidth` 那组
+    // 用例全程是绿的 —— 它钉的是另一套口径，管不到这里。
+    // ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `液态档槽位两侧各留 4，与旧口径的 8 不是一回事`() {
+        // 400 宽 4 格：(400 - 4×2) / 4 = 98。
+        assertEquals(98f, GlassDockGeometry.glassSlotWidth(400f, 4), 1e-4f)
+        // 旧口径（两侧各 8）是 96；差 2dp/格，四格累积 8dp —— 混用就会错位。
+        assertEquals(96f, GlassDockGeometry.slotWidth(400f, 4), 1e-4f)
+        assertFalse(
+            "液态档不能复用旧口径",
+            GlassDockGeometry.glassSlotWidth(400f, 4) == GlassDockGeometry.slotWidth(400f, 4),
+        )
+        // 条目数为 0 时不能除零崩。
+        assertEquals(0f, GlassDockGeometry.glassSlotWidth(400f, 0), 1e-4f)
+    }
+
+    @Test
+    fun `液态档首末两端留白对等，指示器不许探出玻璃`() {
+        // 手推：400 宽 4 格，槽宽 98。
+        // 首格 [4, 102]；末格 [4 + 3×98, 4 + 4×98] = [298, 396] = [400-102, 400-4]。
+        val first = GlassDockGeometry.glassIndicatorSpan(0, 400f, 4)
+        val last = GlassDockGeometry.glassIndicatorSpan(3, 400f, 4)
+        assertEquals(4f, first.left, 1e-4f)
+        assertEquals(102f, first.right, 1e-4f)
+        assertEquals(298f, last.left, 1e-4f)
+        assertEquals(396f, last.right, 1e-4f)
+        // 两端留白必须相等：只减一侧内边距时首格仍是 4、末格 right 变成 400，
+        // 正好压在玻璃右边缘上（一点余量都不留，按下放大就从那儿顶出去）。
+        assertEquals(first.left, 400f - last.right, 1e-4f)
+        assertTrue("末格探出了玻璃：$last", last.right <= 400f - 4f + 1e-4f)
+    }
+
+    @Test
+    fun `液态档格子必须按药丸宽度算，不是外层容器宽度`() {
+        // 渲染层的 onSizeChanged 挂在药丸自身上，拿到的是药丸宽（W = 400，槽宽 98）。
+        // 误用外层容器宽（W + 2×4 = 408）会得到槽宽 100、末格 right 404 ——
+        // 比玻璃右边缘还多 4dp，这就是"选中块探出背景"那种形态。
+        val pillWidth = 400f
+        val outerWidth = pillWidth + 2f * GlassDockGeometry.GlassContentPaddingDp
+        val lastOnPill = GlassDockGeometry.glassIndicatorSpan(3, pillWidth, 4).right
+        val lastOnOuter = GlassDockGeometry.glassIndicatorSpan(3, outerWidth, 4).right
+        assertEquals(396f, lastOnPill, 1e-4f)
+        assertEquals(404f, lastOnOuter, 1e-4f)
+        assertTrue("用外层宽算就会探出玻璃", lastOnOuter > pillWidth)
+    }
+
+    @Test
+    fun `液态档指示器高度比药丸矮 8，四周各留 4`() {
+        // demo：药丸 64、指示器/折射副本 56（= 64 - 8）。
+        // 本仓药丸 54 → 内容高 46。用满高的话指示器与玻璃上下边齐平，
+        // 按下放大（×1.39）时立刻顶出边缘。
+        assertEquals(46f, GlassDockGeometry.GlassInnerHeightDp, 1e-4f)
+        assertEquals(
+            GlassDockGeometry.HeightDp - 2f * GlassDockGeometry.GlassContentPaddingDp,
+            GlassDockGeometry.GlassInnerHeightDp,
+            1e-4f,
+        )
+        // 上下合计让出 8dp（每侧 4dp）。
+        assertEquals(8f, GlassDockGeometry.HeightDp - GlassDockGeometry.GlassInnerHeightDp, 1e-4f)
+        // 反证：内容高必须小于药丸高，否则四周没有留量。
+        assertTrue(GlassDockGeometry.GlassInnerHeightDp < GlassDockGeometry.HeightDp)
+    }
 }

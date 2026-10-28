@@ -361,113 +361,53 @@ fun GlassDockNavigationBar(
                 .fillMaxWidth(),
             contentAlignment = Alignment.CenterStart,
         ) {
-            Box(modifier = Modifier.padding(GlassDockGeometry.GlassContentPaddingDp.dp)) {
-                // ── ① 外壳胶囊 ──
-                CompositionLocalProvider(LocalContentColor provides tabContentColor) {
-                    Row(
-                        modifier = Modifier
-                            .selectableGroup()
-                            .onSizeChanged { coords ->
-                                totalWidthPx = coords.width.toFloat()
-                                val contentWidthPx = totalWidthPx -
-                                    with(density) {
-                                        GlassDockGeometry.GlassContentPaddingDp.dp.toPx()
-                                    }
-                                tabWidthPx = (contentWidthPx / tabsCount).coerceAtLeast(0f)
-                            }
-                            .graphicsLayer { translationX = panelOffset }
-                            .dropShadow(
-                                shape = pillShape,
-                                shadow = Shadow(
-                                    radius = 10.dp,
-                                    color = Color.Black,
-                                    // 亮色主题下更淡：深色阴影压在浅色页面上会显出一圈灰边。
-                                    alpha = if (isDark) 0.2f else 0.1f,
-                                ),
-                            )
-                            .then(
-                                if (isBlurActive && backdrop != null) {
-                                    Modifier.drawBackdrop(
-                                        backdrop = backdrop,
-                                        shape = { pillShape },
-                                        effects = {
-                                            // 采样层要够大：盖住折射带与按压放大伸出量。
-                                            // ⚠️ 必须在 blur() 读它之前抬起来。
-                                            padding = maxOf(
-                                                padding,
-                                                with(density) {
-                                                    GlassDockGeometry.SamplingPaddingReachDp.dp.toPx()
-                                                },
-                                            )
-                                            vibrancy()
-                                            blur(
-                                                with(density) {
-                                                    GlassDockGeometry.GlassBlurRadiusDp.dp.toPx()
-                                                },
-                                            )
-                                            lens(
-                                                refractionHeight = with(density) {
-                                                    GlassDockGeometry.RefractionHeightDp.dp.toPx()
-                                                },
-                                                refractionAmount = with(density) {
-                                                    GlassDockGeometry.RefractionAmountDp.dp.toPx()
-                                                },
-                                            )
-                                        },
-                                        highlight = {
-                                            baseHighlight.value.copy(alpha = 0.75f)
-                                        },
-                                        layerBlock = {
-                                            // 按压时整块玻璃放大一点点：宽度是按比例算的，
-                                            // 所以窄屏上不会把药丸撑出栏外。
-                                            val width = size.width.coerceAtLeast(1f)
-                                            val s = lerpFloat(
-                                                1f,
-                                                1f + with(density) { 16.dp.toPx() } / width,
-                                                dampedDrag.pressProgress,
-                                            )
-                                            scaleX = s
-                                            scaleY = s
-                                        },
-                                        onDrawSurface = { drawRect(containerColor) },
-                                    )
-                                } else {
-                                    Modifier.background(containerColor, pillShape)
+            // ── ① 外壳胶囊 ──
+            //
+            // ⚠️ 这一层与 ③ 指示器在 demo 里是**同一个 Box 的直接子节点**，中间不再包
+            // 一层 4dp 内边距；那 4dp 是 Row 自己 `.height().padding(4.dp)` 的内边距。
+            // 这里曾经多包了一层：玻璃因此比 demo 窄 8dp、整体还右下各偏 4dp，而指示器
+            // 仍按外层坐标摆放 —— 结果选中块在左端贴死玻璃边、右端却空出 4dp，两端不对称。
+            CompositionLocalProvider(LocalContentColor provides tabContentColor) {
+                Row(
+                    modifier = Modifier
+                        .selectableGroup()
+                        .onSizeChanged { coords ->
+                            totalWidthPx = coords.width.toFloat()
+                            // 两侧各让出一个内边距。少减一侧（写成 `- 4`）每格就偏大
+                            // 4/n dp，末格的右边界会正好压在玻璃边缘上（一点余量不留），
+                            // 按下放大立刻从那儿顶出去。
+                            tabWidthPx = GlassDockGeometry.glassSlotWidthPx(
+                                containerWidthPx = totalWidthPx,
+                                itemCount = tabsCount,
+                                paddingPx = with(density) {
+                                    GlassDockGeometry.GlassContentPaddingDp.dp.toPx()
                                 },
                             )
-                            .then(
-                                if (isBlurActive) {
-                                    interactiveHighlight.modifier
-                                        .then(interactiveHighlight.gestureModifier)
-                                } else {
-                                    Modifier
-                                },
-                            )
-                            .then(dampedDrag.modifier)
-                            .height(GlassDockGeometry.HeightDp.dp)
-                            .padding(GlassDockGeometry.GlassContentPaddingDp.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        content = tabsContent,
-                    )
-                }
-
-                // ── ② 图标折射副本 ──
-                //
-                // 这份副本 `alpha(0f)` 看不见，唯一作用是把自己**录进 tabsBackdrop**：
-                // ③ 层采样 combinedBackdrop（背景 + 这份副本）时，图标就跟着玻璃一起被
-                // lens 折射了。没有它，图标是"贴"在玻璃上的一层贴纸，一眼假。
-                if (isBlurActive && backdrop != null) {
-                    CompositionLocalProvider(LocalContentColor provides accentColor) {
-                        Row(
-                            modifier = Modifier
-                                .clearAndSetSemantics {}
-                                .alpha(0f)
-                                .layerBackdrop(tabsBackdrop)
-                                .graphicsLayer { translationX = panelOffset }
-                                .drawBackdrop(
+                        }
+                        .graphicsLayer { translationX = panelOffset }
+                        .dropShadow(
+                            shape = pillShape,
+                            shadow = Shadow(
+                                radius = 10.dp,
+                                color = Color.Black,
+                                // 亮色主题下更淡：深色阴影压在浅色页面上会显出一圈灰边。
+                                alpha = if (isDark) 0.2f else 0.1f,
+                            ),
+                        )
+                        .then(
+                            if (isBlurActive && backdrop != null) {
+                                Modifier.drawBackdrop(
                                     backdrop = backdrop,
                                     shape = { pillShape },
                                     effects = {
+                                        // 采样层要够大：盖住折射带与按压放大伸出量。
+                                        // ⚠️ 必须在 blur() 读它之前抬起来。
+                                        padding = maxOf(
+                                            padding,
+                                            with(density) {
+                                                GlassDockGeometry.SamplingPaddingReachDp.dp.toPx()
+                                            },
+                                        )
                                         vibrancy()
                                         blur(
                                             with(density) {
@@ -483,102 +423,187 @@ fun GlassDockNavigationBar(
                                             },
                                         )
                                     },
+                                    highlight = {
+                                        baseHighlight.value.copy(alpha = 0.75f)
+                                    },
+                                    layerBlock = {
+                                        // 按压时整块玻璃放大一点点：宽度是按比例算的，
+                                        // 所以窄屏上不会把药丸撑出栏外。
+                                        val width = size.width.coerceAtLeast(1f)
+                                        val s = lerpFloat(
+                                            1f,
+                                            1f + with(density) { 16.dp.toPx() } / width,
+                                            dampedDrag.pressProgress,
+                                        )
+                                        scaleX = s
+                                        scaleY = s
+                                    },
                                     onDrawSurface = { drawRect(containerColor) },
                                 )
-                                .then(interactiveHighlight.modifier)
-                                .height(GlassDockGeometry.HeightDp.dp)
-                                .padding(
-                                    horizontal = GlassDockGeometry.GlassContentPaddingDp.dp,
-                                ),
-                            verticalAlignment = Alignment.CenterVertically,
-                            content = tabsContent,
+                            } else {
+                                Modifier.background(containerColor, pillShape)
+                            },
                         )
-                    }
+                        .then(
+                            if (isBlurActive) {
+                                interactiveHighlight.modifier
+                                    .then(interactiveHighlight.gestureModifier)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .then(dampedDrag.modifier)
+                        .height(GlassDockGeometry.HeightDp.dp)
+                        .padding(GlassDockGeometry.GlassContentPaddingDp.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = tabsContent,
+                )
+            }
+
+            // ── ② 图标折射副本 ──
+            //
+            // 这份副本 `alpha(0f)` 看不见，唯一作用是把自己**录进 tabsBackdrop**：
+            // ③ 层采样 combinedBackdrop（背景 + 这份副本）时，图标就跟着玻璃一起被
+            // lens 折射了。没有它，图标是"贴"在玻璃上的一层贴纸，一眼假。
+            if (isBlurActive && backdrop != null) {
+                CompositionLocalProvider(LocalContentColor provides accentColor) {
+                    Row(
+                        modifier = Modifier
+                            .clearAndSetSemantics {}
+                            .alpha(0f)
+                            .layerBackdrop(tabsBackdrop)
+                            .graphicsLayer { translationX = panelOffset }
+                            .drawBackdrop(
+                                backdrop = backdrop,
+                                shape = { pillShape },
+                                effects = {
+                                    vibrancy()
+                                    blur(
+                                        with(density) {
+                                            GlassDockGeometry.GlassBlurRadiusDp.dp.toPx()
+                                        },
+                                    )
+                                    lens(
+                                        refractionHeight = with(density) {
+                                            GlassDockGeometry.RefractionHeightDp.dp.toPx()
+                                        },
+                                        refractionAmount = with(density) {
+                                            GlassDockGeometry.RefractionAmountDp.dp.toPx()
+                                        },
+                                    )
+                                },
+                                onDrawSurface = { drawRect(containerColor) },
+                            )
+                            .then(interactiveHighlight.modifier)
+                            // 与真内容同高（药丸高减上下内边距，demo 是 64-8=56）：
+                            // 用满高会让折射出来的图标比真图标错开 4dp，选中时看着"虚"。
+                            .height(GlassDockGeometry.GlassInnerHeightDp.dp)
+                            .padding(
+                                horizontal = GlassDockGeometry.GlassContentPaddingDp.dp,
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = tabsContent,
+                    )
                 }
             }
 
             // ── ③ 滑动指示器 ──
             if (tabWidthPx > 0f) {
                 val tabWidthDp = with(density) { tabWidthPx.toDp() }
+                // 外面这层只干一件事：把指示器**裁在药丸轮廓内**。
+                //
+                // demo 没有这层，于是按下放大（[GlassDockGeometry.IndicatorPressGrowScale]
+                // ≈1.39）、快速滑动甩尾拉伸时，高亮会从玻璃边上探出去 —— 玻璃里的高亮
+                // 跑到玻璃外面在物理上不成立，用户看到的就是「右边超出了一点点背景」。
+                // 裁掉之后，放大只在玻璃内部显形，手感不变。
                 Box(
                     modifier = Modifier
-                        .padding(horizontal = GlassDockGeometry.GlassContentPaddingDp.dp)
-                        .graphicsLayer {
-                            val progressOffset = dampedDrag.value * tabWidthPx
-                            translationX = if (isLtr) {
-                                progressOffset + panelOffset
-                            } else {
-                                -progressOffset + panelOffset
+                        .matchParentSize()
+                        .clip(pillShape),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = GlassDockGeometry.GlassContentPaddingDp.dp)
+                            .graphicsLayer {
+                                val progressOffset = dampedDrag.value * tabWidthPx
+                                translationX = if (isLtr) {
+                                    progressOffset + panelOffset
+                                } else {
+                                    -progressOffset + panelOffset
+                                }
                             }
-                        }
-                        .then(
-                            if (isBlurActive && combinedBackdrop != null) {
-                                Modifier.drawBackdrop(
-                                    backdrop = combinedBackdrop,
-                                    shape = { pillShape },
-                                    effects = {
-                                        val progress = dampedDrag.pressProgress
-                                        lens(
-                                            refractionHeight = with(density) {
-                                                (GlassDockGeometry.IndicatorRefractionHeightDp *
-                                                    progress).dp.toPx()
-                                            },
-                                            refractionAmount = with(density) {
-                                                (GlassDockGeometry.IndicatorRefractionAmountDp *
-                                                    progress).dp.toPx()
-                                            },
-                                            depthEffect = true,
-                                            chromaticAberration =
-                                                GlassDockGeometry.IndicatorDispersion,
-                                        )
-                                    },
-                                    highlight = {
-                                        pillHighlight.value.copy(
-                                            alpha = dampedDrag.pressProgress,
-                                        )
-                                    },
-                                    layerBlock = {
-                                        scaleX = dampedDrag.scaleX
-                                        scaleY = dampedDrag.scaleY
-                                        // 甩尾：速度越快，横向越拉长、纵向越压扁。
-                                        // 这是"玻璃被甩出去"的观感来源。
-                                        val v = dampedDrag.velocity / 10f
-                                        scaleX /= 1f - (v * 0.75f).coerceIn(-0.2f, 0.2f)
-                                        scaleY *= 1f - (v * 0.25f).coerceIn(-0.2f, 0.2f)
-                                    },
-                                    onDrawSurface = {
-                                        val progress = dampedDrag.pressProgress
-                                        // 静止时一层淡底，按下时淡出换成更深的压痕。
-                                        drawRect(
-                                            color = if (!isDark) {
-                                                Color.Black.copy(alpha = 0.1f)
-                                            } else {
-                                                Color.White.copy(alpha = 0.1f)
-                                            },
-                                            alpha = 1f - progress,
-                                        )
-                                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
-                                    },
-                                )
-                            } else {
-                                // 降级：一块淡色圆角，没有折射与内阴影。
-                                Modifier
-                                    .clip(pillShape)
-                                    .background(accentColor.copy(alpha = 0.15f), pillShape)
-                            },
-                        )
-                        .innerShadow(shape = pillShape) {
-                            if (!isBlurActive) return@innerShadow null
-                            InnerShadow(
-                                radius = GlassDockGeometry.IndicatorInnerShadowRadiusDp.dp *
-                                    dampedDrag.pressProgress,
-                                color = Color.Black.copy(alpha = 0.15f),
-                                alpha = dampedDrag.pressProgress,
+                            .then(
+                                if (isBlurActive && combinedBackdrop != null) {
+                                    Modifier.drawBackdrop(
+                                        backdrop = combinedBackdrop,
+                                        shape = { pillShape },
+                                        effects = {
+                                            val progress = dampedDrag.pressProgress
+                                            lens(
+                                                refractionHeight = with(density) {
+                                                    (GlassDockGeometry.IndicatorRefractionHeightDp *
+                                                        progress).dp.toPx()
+                                                },
+                                                refractionAmount = with(density) {
+                                                    (GlassDockGeometry.IndicatorRefractionAmountDp *
+                                                        progress).dp.toPx()
+                                                },
+                                                depthEffect = true,
+                                                chromaticAberration =
+                                                    GlassDockGeometry.IndicatorDispersion,
+                                            )
+                                        },
+                                        highlight = {
+                                            pillHighlight.value.copy(
+                                                alpha = dampedDrag.pressProgress,
+                                            )
+                                        },
+                                        layerBlock = {
+                                            scaleX = dampedDrag.scaleX
+                                            scaleY = dampedDrag.scaleY
+                                            // 甩尾：速度越快，横向越拉长、纵向越压扁。
+                                            // 这是"玻璃被甩出去"的观感来源。
+                                            val v = dampedDrag.velocity / 10f
+                                            scaleX /= 1f - (v * 0.75f).coerceIn(-0.2f, 0.2f)
+                                            scaleY *= 1f - (v * 0.25f).coerceIn(-0.2f, 0.2f)
+                                        },
+                                        onDrawSurface = {
+                                            val progress = dampedDrag.pressProgress
+                                            // 静止时一层淡底，按下时淡出换成更深的压痕。
+                                            drawRect(
+                                                color = if (!isDark) {
+                                                    Color.Black.copy(alpha = 0.1f)
+                                                } else {
+                                                    Color.White.copy(alpha = 0.1f)
+                                                },
+                                                alpha = 1f - progress,
+                                            )
+                                            drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                        },
+                                    )
+                                } else {
+                                    // 降级：一块淡色圆角，没有折射与内阴影。
+                                    Modifier
+                                        .clip(pillShape)
+                                        .background(accentColor.copy(alpha = 0.15f), pillShape)
+                                },
                             )
-                        }
-                        .height(GlassDockGeometry.HeightDp.dp)
-                        .width(tabWidthDp),
-                )
+                            .innerShadow(shape = pillShape) {
+                                if (!isBlurActive) return@innerShadow null
+                                InnerShadow(
+                                    radius = GlassDockGeometry.IndicatorInnerShadowRadiusDp.dp *
+                                        dampedDrag.pressProgress,
+                                    color = Color.Black.copy(alpha = 0.15f),
+                                    alpha = dampedDrag.pressProgress,
+                                )
+                            }
+                            // 药丸高减上下内边距（demo 是 56 = 64-8）：与玻璃四周各留 4dp。
+                            // 用满高的话指示器与玻璃上下边齐平，一放大就顶出边。
+                            .height(GlassDockGeometry.GlassInnerHeightDp.dp)
+                            .width(tabWidthDp),
+                    )
+                }
             }
         }
     }
