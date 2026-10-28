@@ -5,9 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimetableSaveDispatcher
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
-import com.mutx163.qingyu.pages.course.AddCourseSaveMode
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
@@ -35,11 +35,14 @@ import com.mutx163.qingyu.platform.PrefsKeyValueStore
  *
  * ## 已知未接线（诚实清单）
  *
- * 1. **组编辑**（`UPDATE_GROUP`）只按单课逐个更新，**不做「整组替换」**：
- *    `TimetableCourseService.updateGroup` 需要原始组名，而壳从课表点进课程时
- *    只带得到那一门课。真做要先把「课程 → 所属组」的上下文传进来。
- * 2. **删课**：`AddCoursePage` 的 `onDelete` 还是空的（同一原因：需要组上下文）。
- * 3. 课程详情、档案管理、切档案这些入口只做到「能跳过去」，页内动作尚未接全。
+ * 1. **课程详情入口**：Dart 点课程弹的是**操作弹层**（`course_action_sheet.dart`，6 个动作：
+ *    编辑 / 调课 / 停课复课 / 删除 / 加作业 / 单节课提醒）。Kotlin 侧其中 4 个动作**全仓 0 命中**，
+ *    且弹层要落在 `pages/course/`。补一个只剩「编辑 + 删除」的残弹层是负价值，
+ *    所以本轮**不补**——这两个动作现在都能用（点课程进编辑页，编辑页里能删）。
+ *    建议单列一批「课程操作弹层」。
+ * 2. **档案管理 / 切档案**：只做到「能跳过去」，页内动作尚未接全。
+ * 3. **显示偏好**（隐藏周末 / 时间列宽 / 节次行高 / 长按空档加课）来自宿主默认值，
+ *    不是从用户存档读的——等设置族完整模型到位后改（见 `TimetableHostDisplayPrefs` KDoc）。
  */
 class ShellWiring(context: Context) {
 
@@ -71,13 +74,36 @@ class ShellWiring(context: Context) {
      * 所以这个分派属于宿主职责，不是页面职责。
      */
     fun applyAddCourseSave(payload: AddCourseSavePayload) {
-        when (payload.mode) {
-            AddCourseSaveMode.ADD -> payload.courses.forEach(timetable::addCourse)
-            // 组编辑：逐课更新（rename 由 `previousSharedName` 表达，这里没有那个上下文）。
-            // ⚠️ 这**不等于**整组替换——组里被删掉的课不会被移除。见类注释「已知未接线」第 1 条。
-            AddCourseSaveMode.UPDATE_GROUP -> payload.courses.forEach {
-                timetable.updateCourse(it, previousSharedName = null)
-            }
+        // **整组替换**，不是逐课 update：编辑态删掉的课次必须真的从仓储消失。
+        // 判据等价关系由 `TimetableHostLogicTest` 的跨层契约测试钉住：
+        // 编辑 ⟺ `payload.targetGroupName != null`（所以这里只传组名，不传 mode）。
+        TimetableSaveDispatcher.applySave(
+            port = timetable,
+            originalGroupName = payload.targetGroupName,
+            courses = payload.courses,
+        )
+    }
+
+    /**
+     * 编辑态删除。
+     *
+     * 壳目前只以**单课形态**进编辑页（没有 courseGroup 上下文），所以走 SingleCourse
+     * （Dart `add_course_screen.dart:448-473`）；将来接组编辑入口时，
+     * 这里把 `originalGroupName` 传成组名就会自动走整组删除（`:1406-1425`），分派器不用改。
+     *
+     * @return true 表示删除成功（调用方据此决定是否关页）
+     */
+    fun deleteEditingCourse(): Boolean {
+        val target = TimetableSaveDispatcher.resolveDeleteTarget(
+            originalGroupName = null,
+            initialCourse = pendingEditCourse,
+        ) ?: return false
+        return try {
+            TimetableSaveDispatcher.applyDelete(timetable, target)
+            true
+        } catch (_: Exception) {
+            // Dart 口径：落盘失败**不报成功、不关页**，由页面弹 deleteFailed。
+            false
         }
     }
 }

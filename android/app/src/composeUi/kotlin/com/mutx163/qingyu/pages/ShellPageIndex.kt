@@ -312,6 +312,14 @@ fun ShellPageContent(
                     wiring.clearAddCourseIntent()
                     onBack()
                 },
+                onDelete = {
+                    // 确认弹窗由 AddCoursePage 自己渲染（`AddCoursePage.kt:556-580`），
+                    // 这里只在用户确认后执行删除；失败则留在页面上（Dart 口径：不报成功、不关页）。
+                    if (wiring.deleteEditingCourse()) {
+                        wiring.clearAddCourseIntent()
+                        onBack()
+                    }
+                },
                 onBack = {
                     wiring.clearAddCourseIntent()
                     onBack()
