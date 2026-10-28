@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.SettingsHost
+import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.pages.about.AboutStaticPage
@@ -644,17 +645,29 @@ fun ShellPageContent(
                     now = LocalDateTime.now(),
                 ),
                 onBack = onBack,
-                // ⚠️ **链缺口（本批新发现，比交付方预估的更深）**：
-                // `WeeklyReportScheduler.scheduleNext(context, enabled, fireAtMillis, title, body)`
-                // 需要**调用方自己算**下次触发时刻与通知标题/正文——Flutter 侧这些值是
-                // **Dart 算好再经 method channel 传下来**的（见 `MainActivity.kt:1235-1247`）。
-                // ⇒ Kotlin 侧目前**只有持久化入口，没有「按当前设置算出下一次」的入口**。
-                // 所以这里**有意留空**：不伪造 fireAt/文案（那会让用户收到内容错误的周报），
-                // 也不假装开关已生效。补法：把 Dart 那段计算移植成纯逻辑（可 JVM 测），
-                // 或在 scheduler 上加一个高层 `enable(context, now)`。
-                // 关（`cancel`）本身是自洽的，但在「开」不可用前只接关会让开关**看起来能开**，
-                // 所以两向一起留空。
-                onWeeklyReportToggle = {},
+                // `scheduleNext` 要的四个参数由 `WeeklyReportScheduleLogic` 算（纯逻辑，JVM 可测）：
+                // 触发时刻逐字对齐 Dart `weekly_report_service.dart:23-34`（**每周日 21:00**，
+                // 「已到点」也算已到点、顺延一周）；标题/正文对齐 `:36` / `:38-71`。
+                // 统计数字**不重算**——复用已交付的 `statistics/StatisticsService`。
+                onWeeklyReportToggle = { enabled ->
+                    if (enabled) {
+                        val now = LocalDateTime.now()
+                        val snap = wiring.timetable.snapshot
+                        WeeklyReportScheduler.scheduleNext(
+                            context = wiring.context,
+                            enabled = true,
+                            fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(now),
+                            title = WeeklyReportScheduleLogic.buildTitle(),
+                            body = WeeklyReportScheduleLogic.buildBody(
+                                courses = snap.courses,
+                                currentWeek = snap.currentWeek,
+                                semesterWeekCount = snap.settings.semesterWeekCount,
+                            ),
+                        )
+                    } else {
+                        WeeklyReportScheduler.cancel(wiring.context)
+                    }
+                },
             )
         }
         "e.analysis" -> {
