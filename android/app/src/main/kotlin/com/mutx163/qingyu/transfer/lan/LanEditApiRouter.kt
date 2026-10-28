@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.transfer.lan
 
+import com.mutx163.qingyu.calendar.WeekExpressionParser
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.MiniJson
@@ -52,6 +53,20 @@ interface LanEditHost {
      * 返回 null = 本 host 不支持 → 501 `transfer_preview_not_supported`。
      */
     fun previewTransferJson(content: String): Map<String, Any?>? = null
+
+    /** 设置当前周（Dart `LanEditHost.setCurrentWeek`）。 */
+    fun setCurrentWeek(week: Int)
+
+    /**
+     * 切换激活档案（Dart `LanEditHost.switchProfile`）。
+     *
+     * @throws IllegalArgumentException 消息里含 `profile_not_found` / `profile_switch_failed`
+     *   时路由映射成 404，其余 400（与 Dart 对 `ArgumentError` 的分支一致）。
+     */
+    fun switchProfile(profileId: String)
+
+    /** 按 id 批量删除；返回真正删掉的条数（Dart `deleteCoursesBatch`）。 */
+    fun deleteCoursesBatch(courseIds: List<String>): Int
 }
 
 /** 审计日志的一条。 */
@@ -144,6 +159,12 @@ class LanEditApiRouter(
     /** 仅供测试断言并发计数归零。 */
     fun inFlightCount(): Int = synchronized(lock) { inFlight }
 
+    /**
+     * 会话是否已过期。给服务端的空闲看门狗用（Dart `_idleTimer` 每 30 秒查的就是它），
+     * 也是服务端 `sessionExpired` 参数的默认值——**不传也会自动停服**。
+     */
+    val isSessionExpired: Boolean get() = session.isExpired
+
     /** 写目标判定结果。用返回值传，不用「先写字段再读」——并发下那种写法会串台。 */
     sealed interface ProfileTarget {
         data class Allowed(val profileId: String) : ProfileTarget
@@ -176,8 +197,14 @@ class LanEditApiRouter(
 
             return when {
                 path == "/api/v1/session" && request.method == "GET" -> handleGetSession()
+                path == "/api/v1/session" && request.method == "PATCH" -> handlePatchSession(request)
+                path == "/api/v1/profiles" && request.method == "GET" -> handleListProfiles()
+                path == "/api/v1/profiles/switch" && request.method == "POST" -> handleSwitchProfile(request)
+                path == "/api/v1/meta" && request.method == "GET" -> handleGetMeta()
                 path == "/api/v1/courses" && request.method == "GET" -> handleListCourses()
                 path == "/api/v1/courses" && request.method == "POST" -> handleCreateCourse(request)
+                path == "/api/v1/courses/batch-delete" && request.method == "POST" -> handleBatchDeleteCourses(request)
+                path == "/api/v1/week-expression/parse" && request.method == "POST" -> handleParseWeekExpression(request)
                 path == "/api/v1/import/preview" && request.method == "POST" -> handleTransferPreview(request)
                 else -> handleCourseById(request, path)
             }
@@ -292,6 +319,146 @@ class LanEditApiRouter(
         return LanEditHttpResponse.json(
             200,
             linkedMapOf<String, Any?>("courses" to host.courses.map { it.toJson() }),
+        )
+    }
+
+    /** `GET /api/v1/meta`：节次表 / 学期周数一类元信息（Dart 直接回 `host.buildMetaJson()`）。 */
+    private fun handleGetMeta(): LanEditHttpResponse {
+        host.ensureInitialized()
+        return LanEditHttpResponse.json(200, host.buildMetaJson())
+    }
+
+    /** `GET /api/v1/profiles`：可切换档案摘要（Dart 同形）。 */
+    private fun handleListProfiles(): LanEditHttpResponse {
+        host.ensureInitialized()
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>(
+                "activeProfileId" to host.activeProfileId,
+                "profiles" to host.listProfilesSummary(),
+            ),
+        )
+    }
+
+    /**
+     * `PATCH /api/v1/session`：切当前周（Dart `_handlePatchSession`）。
+     *
+     * 两道校验：必须是数字且 ≥ 1；不能超过学期周数。Dart 的 message 是中文
+     * （`currentWeek 无效` / `currentWeek 不能超过学期周数 N`），Kotlin 侧按仓库
+     * i18n 纪律不写中文字面量，改用等义的错误码串——**错误码 `invalid_request` 与状态码不变**，
+     * 只有 message 文本不同（已记入 WIRING-NOTE 的差异表）。
+     */
+    private fun handlePatchSession(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val week = (body["currentWeek"] as? Number)?.toInt()
+        if (week == null || week < 1) {
+            return LanEditHttpResponse.error(400, "invalid_request", "current_week_invalid")
+        }
+        if (week > host.semesterWeekCount) {
+            return LanEditHttpResponse.error(
+                400,
+                "invalid_request",
+                "current_week_exceeds_semester_weeks:${host.semesterWeekCount}",
+            )
+        }
+        host.setCurrentWeek(week)
+        audit.info("lan_edit_current_week_set", "current week set", mapOf("currentWeek" to week))
+        return LanEditHttpResponse.json(200, linkedMapOf<String, Any?>("currentWeek" to host.currentWeek))
+    }
+
+    /**
+     * `POST /api/v1/profiles/switch`：切换激活档案（Dart `_handleSwitchProfile`）。
+     *
+     * 注意它**不走**写目标三道闸（那是给课表写入用的）：这里本来就是换档案，
+     * 换完把会话绑定值重置成新的激活档案。
+     */
+    private fun handleSwitchProfile(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        val profileId = body["profileId"]?.toString()?.trim().orEmpty()
+        if (profileId.isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "profile_id_required")
+        }
+        try {
+            host.switchProfile(profileId)
+        } catch (error: IllegalArgumentException) {
+            val message = error.message.orEmpty()
+            val notFound = message.contains("profile_not_found") || message.contains("profile_switch_failed")
+            return LanEditHttpResponse.error(
+                if (notFound) 404 else 400,
+                if (notFound) "not_found" else "invalid_request",
+                message.ifEmpty { "profile_switch_failed" },
+            )
+        }
+        session.boundProfileId = host.activeProfileId
+        audit.info(
+            "lan_edit_profile_switched",
+            "profile switched",
+            mapOf("profileId" to host.activeProfileId, "profileName" to host.activeProfileName),
+        )
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>(
+                "profileId" to host.activeProfileId,
+                "profileName" to host.activeProfileName,
+                "profiles" to host.listProfilesSummary(),
+                "meta" to host.buildMetaJson(),
+            ),
+        )
+    }
+
+    /** `POST /api/v1/courses/batch-delete`：按 id 批量删（Dart `_handleBatchDeleteCourses`）。 */
+    private fun handleBatchDeleteCourses(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val rawIds = body["ids"]
+        if (rawIds !is List<*> || rawIds.isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "ids_required")
+        }
+        val ids = rawIds.map { it.toString() }
+        val deletedCount = host.deleteCoursesBatch(ids)
+        audit.info(
+            "lan_edit_courses_batch_deleted",
+            "courses batch deleted",
+            mapOf("deletedCount" to deletedCount, "requested" to ids.size),
+        )
+        return LanEditHttpResponse.json(200, linkedMapOf<String, Any?>("deletedCount" to deletedCount))
+    }
+
+    /**
+     * `POST /api/v1/week-expression/parse`：把「1-16周 单周」这类表达式解析成周次数组
+     * （Dart `_handleParseWeekExpression`）。**不需要写目标档案**——它是纯计算。
+     *
+     * `itemName` 只影响 warning 文案，Dart 缺省是本地化的「课程」；Kotlin 侧缺省空串
+     * （不写中文字面量），网页端本来每次都会带上它。
+     */
+    private fun handleParseWeekExpression(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        val expression = body["expression"]?.toString()?.trim().orEmpty()
+        if (expression.isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "expression_required")
+        }
+        val itemName = body["itemName"]?.toString()?.trim().orEmpty()
+        val warnings = mutableListOf<String>()
+        val weeks = WeekExpressionParser.parse(
+            raw = expression,
+            itemName = itemName,
+            semesterWeekCount = host.semesterWeekCount,
+            warnings = warnings,
+        )
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>("weeks" to weeks, "warnings" to warnings),
         )
     }
 

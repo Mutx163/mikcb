@@ -12,6 +12,7 @@ import java.net.InetAddress
 import java.net.Socket
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * **真 HTTP 往返**测试（L0）：真起 [LanEditHttpServer]、真开 socket、真发请求、真读响应。
@@ -279,6 +280,113 @@ class LanEditHttpServerTest {
     }
 
     // -----------------------------------------------------------------------
+    // 第二切片：新端点的真往返 + 空闲看门狗
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `第二切片端点也走真往返 meta 与批量删除与切档案`() {
+        val host = FakeLanEditHost()
+        host.seed(course("c1", "高等数学"), course("c2", "大学物理"))
+        val session = session(boundProfileId = "p1")
+        withServer(host = host, session = session) { _, port, _ ->
+            val meta = parseResponse(
+                exchange(port, "GET /api/v1/meta HTTP/1.1\r\nHost: h\r\nAuthorization: Bearer ${session.token}\r\n\r\n"),
+            )
+            assertEquals(200, meta.status)
+            assertTrue(meta.body.contains("semesterWeekCount"))
+
+            val deleted = parseResponse(
+                exchange(
+                    port,
+                    post(port, "/api/v1/courses/batch-delete", """{"ids":["c1"],"profileId":"p1"}""", session.token),
+                ),
+            )
+            assertEquals(200, deleted.status)
+            assertTrue("实际删掉 1 条：${deleted.body}", deleted.body.contains("\"deletedCount\":1"))
+
+            val switched = parseResponse(
+                exchange(port, post(port, "/api/v1/profiles/switch", """{"profileId":"p2"}""", session.token)),
+            )
+            assertEquals(200, switched.status)
+            assertTrue(switched.body.contains("\"profileId\":\"p2\""))
+        }
+    }
+
+    @Test
+    fun `会话过期后看门狗自动停服并按 idle_timeout 留审计`() {
+        val expired = AtomicBoolean(false)
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val session = session()
+        val server = LanEditHttpServer(
+            router = LanEditApiRouter(host = FakeLanEditHost(), session = session, audit = audit, clock = { now }),
+            bindAddress = InetAddress.getByName("127.0.0.1"),
+            audit = audit,
+            sessionExpired = { expired.get() },
+            idleCheckIntervalMillis = 20,
+        )
+        val port = server.start()
+        try {
+            // 还没过期时不能自己停
+            Thread.sleep(80)
+            assertTrue("会话没过期就不该停", server.isRunning)
+            assertEquals(200, parseResponse(exchange(port, "GET /api/v1/health HTTP/1.1\r\nHost: h\r\n\r\n")).status)
+
+            expired.set(true)
+            val deadline = System.currentTimeMillis() + 5_000
+            while (server.isRunning && System.currentTimeMillis() < deadline) {
+                Thread.sleep(20)
+            }
+            assertFalse("会话过期后看门狗必须停服", server.isRunning)
+            assertEquals("idle_timeout", audit.snapshot().last().extras["reason"])
+        } finally {
+            server.stop("test_cleanup")
+        }
+    }
+
+    @Test
+    fun `显式传 null 时不启看门狗`() {
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val server = LanEditHttpServer(
+            router = LanEditApiRouter(host = FakeLanEditHost(), session = session(), audit = audit, clock = { now }),
+            bindAddress = InetAddress.getByName("127.0.0.1"),
+            audit = audit,
+            sessionExpired = null,
+        )
+        server.start()
+        try {
+            Thread.sleep(120)
+            assertTrue("没有判据就不该自己停", server.isRunning)
+            assertEquals(listOf("lan_edit_session_started"), audit.categories())
+        } finally {
+            server.stop("test_cleanup")
+        }
+    }
+
+    @Test
+    fun `不传判据时默认按会话过期自动停服`() {
+        // 默认值就是 `{ router.isSessionExpired }`：接线的人什么都不传也不会留下挂着的套接字
+        val session = session(createdAtMillis = now - LanEditSession.MAX_DURATION_MILLIS - 1)
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val server = LanEditHttpServer(
+            router = LanEditApiRouter(host = FakeLanEditHost(), session = session, audit = audit, clock = { now }),
+            bindAddress = InetAddress.getByName("127.0.0.1"),
+            audit = audit,
+            idleCheckIntervalMillis = 20,
+        )
+        server.start()
+        try {
+            val deadline = System.currentTimeMillis() + 5_000
+            while (server.isRunning && System.currentTimeMillis() < deadline) {
+                Thread.sleep(20)
+            }
+            assertFalse("会话早已过期，默认就该自动停服", server.isRunning)
+            assertEquals("idle_timeout", audit.snapshot().last().extras["reason"])
+        } finally {
+            server.stop("test_cleanup")
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // 生命周期
     // -----------------------------------------------------------------------
 
@@ -373,20 +481,31 @@ class LanEditHttpServerTest {
         pin: String = "123456",
         token: String = "tok-abc",
         boundProfileId: String? = null,
+        createdAtMillis: Long = now,
     ): LanEditSession = LanEditSession.forTest(
         pin = pin,
         token = token,
-        createdAtMillis = now,
+        createdAtMillis = createdAtMillis,
         lastActivityAtMillis = now,
         boundProfileId = boundProfileId,
         clockMillis = { now },
     )
 
-    private fun post(port: Int, path: String, body: String): String {
+    private fun post(port: Int, path: String, body: String, token: String? = null): String {
         val bytes = body.toByteArray(Charsets.UTF_8)
+        val auth = if (token != null) "Authorization: Bearer $token\r\n" else ""
         return "POST $path HTTP/1.1\r\nHost: 127.0.0.1:$port\r\nContent-Type: application/json\r\n" +
-            "Content-Length: ${bytes.size}\r\n\r\n$body"
+            "$auth" + "Content-Length: ${bytes.size}\r\n\r\n$body"
     }
+
+    private fun course(id: String, name: String): Map<String, Any?> = linkedMapOf(
+        "id" to id,
+        "name" to name,
+        "teacher" to "",
+        "location" to "",
+        "startTime" to "",
+        "endTime" to "",
+    )
 
     /** 开一个真 socket，发原始请求文本（发完半关写端），读到 EOF。 */
     private fun exchange(port: Int, request: String): String {

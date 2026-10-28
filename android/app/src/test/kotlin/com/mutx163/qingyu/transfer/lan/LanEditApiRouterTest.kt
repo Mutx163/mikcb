@@ -423,6 +423,186 @@ class LanEditApiRouterTest {
     }
 
     // -----------------------------------------------------------------------
+    // 第二切片：meta / 档案 / 当前周 / 批量删除 / 周次表达式
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `meta 直接回 host 的元信息`() {
+        val session = session()
+        val response = router(session = session).route(get("/api/v1/meta", token = session.token))
+        assertEquals(200, response.status)
+        val body = json(response)
+        assertEquals(20L, body["semesterWeekCount"])
+        assertTrue(body["sections"] is List<*>)
+        // 未鉴权一律 401（与其它读接口一致）
+        assertEquals(401, router(session = session).route(get("/api/v1/meta")).status)
+    }
+
+    @Test
+    fun `profiles 列出可切换档案`() {
+        val session = session()
+        val response = router(session = session).route(get("/api/v1/profiles", token = session.token))
+        assertEquals(200, response.status)
+        val body = json(response)
+        assertEquals("p1", body["activeProfileId"])
+        val profiles = body["profiles"] as List<*>
+        assertEquals(2, profiles.size)
+        assertEquals(true, (profiles[0] as Map<*, *>)["isActive"])
+    }
+
+    @Test
+    fun `切换档案成功后会话绑定值跟着走 并留审计`() {
+        val host = FakeLanEditHost()
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val session = session(boundProfileId = "p1")
+        val router = LanEditApiRouter(host = host, session = session, audit = audit, clock = { now })
+
+        val response = router.route(
+            postJson("/api/v1/profiles/switch", """{"profileId":"p2"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        val body = json(response)
+        assertEquals("p2", body["profileId"])
+        assertEquals("第二课表", body["profileName"])
+        assertTrue(body["profiles"] is List<*>)
+        assertTrue(body["meta"] is Map<*, *>)
+        // 换档案后会话绑定值必须重置成新的激活档案，否则后续写操作会被三道闸拒
+        assertEquals("p2", session.boundProfileId)
+        assertEquals("p2", host.activeProfileId)
+        assertTrue(audit.categories().contains("lan_edit_profile_switched"))
+    }
+
+    @Test
+    fun `切换档案的空 id 回 400 未知 id 回 404`() {
+        val session = session(boundProfileId = "p1")
+        val router = router(session = session)
+        val empty = router.route(postJson("/api/v1/profiles/switch", """{"profileId":"  "}""", token = session.token))
+        assertEquals(400, empty.status)
+        assertEquals("profile_id_required", json(empty)["message"])
+
+        val unknown = router.route(
+            postJson("/api/v1/profiles/switch", """{"profileId":"nope"}""", token = session.token),
+        )
+        assertEquals(404, unknown.status)
+        assertEquals("not_found", json(unknown)["error"])
+        assertEquals("profile_not_found", json(unknown)["message"])
+    }
+
+    @Test
+    fun `切换档案的失败按 Dart 口径分 404 与 400`() {
+        // Dart：消息里含 profile_not_found **或** profile_switch_failed 都算 404
+        for (message in listOf("profile_not_found", "profile_switch_failed: provider busy")) {
+            val host = FakeLanEditHost()
+            host.switchFailure = message
+            val session = session(boundProfileId = "p1")
+            val response = router(host = host, session = session).route(
+                postJson("/api/v1/profiles/switch", """{"profileId":"p2"}""", token = session.token),
+            )
+            assertEquals("`$message` 应回 404", 404, response.status)
+            assertEquals("not_found", json(response)["error"])
+        }
+        // 其它失败原因 → 400 invalid_request（异常原文作为 message 回给前端）
+        val host = FakeLanEditHost()
+        host.switchFailure = "invalid_profile_id"
+        val session = session(boundProfileId = "p1")
+        val response = router(host = host, session = session).route(
+            postJson("/api/v1/profiles/switch", """{"profileId":"p2"}""", token = session.token),
+        )
+        assertEquals(400, response.status)
+        assertEquals("invalid_request", json(response)["error"])
+        assertEquals("invalid_profile_id", json(response)["message"])
+    }
+
+    @Test
+    fun `PATCH 会话切当前周并做上下界校验`() {
+        val host = FakeLanEditHost()
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val session = session(boundProfileId = "p1")
+        val router = LanEditApiRouter(host = host, session = session, audit = audit, clock = { now })
+
+        val ok = router.route(
+            jsonRequest("/api/v1/session", "PATCH", """{"currentWeek":9,"profileId":"p1"}""", session.token),
+        )
+        assertEquals(200, ok.status)
+        assertEquals(9L, json(ok)["currentWeek"])
+        assertEquals(9, host.currentWeek)
+        assertTrue(audit.categories().contains("lan_edit_current_week_set"))
+
+        // 0 / 缺字段 / 非数字 都是 400
+        for (body in listOf("""{"currentWeek":0,"profileId":"p1"}""", """{"profileId":"p1"}""", """{"currentWeek":"9","profileId":"p1"}""")) {
+            val bad = router.route(jsonRequest("/api/v1/session", "PATCH", body, session.token))
+            assertEquals("body=$body 应回 400", 400, bad.status)
+            assertEquals("current_week_invalid", json(bad)["message"])
+        }
+        // 超过学期周数（20）也是 400，且消息里带上限
+        val over = router.route(
+            jsonRequest("/api/v1/session", "PATCH", """{"currentWeek":21,"profileId":"p1"}""", session.token),
+        )
+        assertEquals(400, over.status)
+        assertEquals("current_week_exceeds_semester_weeks:20", json(over)["message"])
+        // 写目标闸照常生效
+        val noProfile = router.route(jsonRequest("/api/v1/session", "PATCH", """{"currentWeek":3}""", session.token))
+        assertEquals(200, noProfile.status) // 会话已绑定 p1，缺省就用绑定值
+    }
+
+    @Test
+    fun `批量删除回删除条数并留审计`() {
+        val host = FakeLanEditHost()
+        host.seed(courseJson("c1", "高等数学"), courseJson("c2", "大学物理"), courseJson("c3", "线性代数"))
+        val audit = LanEditAuditRingBuffer(clock = { now })
+        val session = session(boundProfileId = "p1")
+        val router = LanEditApiRouter(host = host, session = session, audit = audit, clock = { now })
+
+        val response = router.route(
+            postJson("/api/v1/courses/batch-delete", """{"ids":["c1","c3","nope"],"profileId":"p1"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        // 只算真正删掉的：nope 不存在
+        assertEquals(2L, json(response)["deletedCount"])
+        assertEquals(1, host.courses.size)
+        val entry = audit.snapshot().first { it.category == "lan_edit_courses_batch_deleted" }
+        assertEquals(2, entry.extras["deletedCount"])
+        assertEquals(3, entry.extras["requested"])
+    }
+
+    @Test
+    fun `批量删除的空 ids 与缺 ids 都回 400`() {
+        val session = session(boundProfileId = "p1")
+        val router = router(session = session)
+        for (body in listOf("""{"ids":[],"profileId":"p1"}""", """{"profileId":"p1"}""", """{"ids":"c1","profileId":"p1"}""")) {
+            val response = router.route(postJson("/api/v1/courses/batch-delete", body, token = session.token))
+            assertEquals("body=$body 应回 400", 400, response.status)
+            assertEquals("ids_required", json(response)["message"])
+        }
+    }
+
+    @Test
+    fun `周次表达式解析回 weeks 与 warnings 且不需要写目标档案`() {
+        val session = session()
+        val router = router(session = session)
+
+        val response = router.route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"1,2、4","itemName":"高等数学"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        val body = json(response)
+        assertEquals(listOf(1L, 2L, 4L), body["weeks"])
+        assertTrue(body["warnings"] is List<*>)
+
+        // 双周表达式：与 calendar/WeekExpressionParser 的既有口径一致
+        val even = router.route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"1-5双"}""", token = session.token),
+        )
+        assertEquals(200, even.status)
+        assertEquals(listOf(2L, 4L), json(even)["weeks"])
+
+        // 空表达式 400
+        val empty = router.route(postJson("/api/v1/week-expression/parse", """{"expression":"  "}""", token = session.token))
+        assertEquals(400, empty.status)
+        assertEquals("expression_required", json(empty)["message"])
+    }
+
+    // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------
 
@@ -510,13 +690,23 @@ internal class FakeLanEditHost(
 
     override var activeProfileName: String? = "默认课表"
 
-    override var currentWeek: Int = 7
+    // 注意：不能写成 `override var currentWeek`——它的 setter 与 `setCurrentWeek(Int)`
+    // 在 JVM 上是同一个签名，会报 platform declaration clash。用 backing field 分开。
+    private var currentWeekValue: Int = 7
+
+    override val currentWeek: Int get() = currentWeekValue
 
     override var semesterWeekCount: Int = 20
 
     var previewResult: Map<String, Any?>? = null
 
     var failWith: Throwable? = null
+
+    /** 可切换的档案表（id → 名字）。 */
+    val knownProfiles = linkedMapOf("p1" to "默认课表", "p2" to "第二课表")
+
+    /** 非 null 时 [switchProfile] 抛这个消息的 IllegalArgumentException。 */
+    var switchFailure: String? = null
 
     /** 并发测试用：进入业务层前先卡住，用来证明「一个连接卡住不挡另一个连接」。 */
     var onEnsureInitialized: (() -> Unit)? = null
@@ -535,15 +725,52 @@ internal class FakeLanEditHost(
         failWith?.let { throw it }
     }
 
-    override fun listProfilesSummary(): List<Map<String, Any?>> = listOf(
-        linkedMapOf(
-            "id" to activeProfileId,
-            "name" to activeProfileName,
-            "courseCount" to stored.size,
-            "currentWeek" to currentWeek,
-            "isActive" to true,
-        ),
-    )
+    override fun listProfilesSummary(): List<Map<String, Any?>> {
+        val result = knownProfiles.entries.map { (id, name) ->
+            linkedMapOf<String, Any?>(
+                "id" to id,
+                "name" to name,
+                "courseCount" to stored.size,
+                "currentWeek" to currentWeek,
+                "isActive" to (id == activeProfileId),
+            )
+        }.toMutableList()
+        val active = activeProfileId
+        if (active != null && knownProfiles.keys.none { it == active }) {
+            result.add(
+                0,
+                linkedMapOf<String, Any?>(
+                    "id" to active,
+                    "name" to activeProfileName,
+                    "courseCount" to stored.size,
+                    "currentWeek" to currentWeek,
+                    "isActive" to true,
+                ),
+            )
+        }
+        return result
+    }
+
+    override fun setCurrentWeek(week: Int) {
+        currentWeekValue = week
+    }
+
+    override fun switchProfile(profileId: String) {
+        switchFailure?.let { throw IllegalArgumentException(it) }
+        if (!knownProfiles.containsKey(profileId)) {
+            throw IllegalArgumentException("profile_not_found")
+        }
+        activeProfileId = profileId
+        activeProfileName = knownProfiles[profileId]
+    }
+
+    override fun deleteCoursesBatch(courseIds: List<String>): Int {
+        var removed = 0
+        for (id in courseIds) {
+            if (deleteCourse(id)) removed++
+        }
+        return removed
+    }
 
     override fun findCourse(id: String): Course? = stored.firstOrNull { it.id == id }
 

@@ -43,12 +43,24 @@ class LanEditHttpServer(
     private val audit: LanEditAuditSink = LanEditAuditNoop,
     private val bindAddress: InetAddress = InetAddress.getByName("0.0.0.0"),
     private val requestedPort: Int = 0,
+    /**
+     * 空闲判据：返回 true 就自动停服（Dart `LanEditServerService._idleTimer` 的对应物）。
+     *
+     * **默认就是「会话过期就停」**（`{ router.isSessionExpired }`）——把正确行为设成默认值，
+     * 免得接线的人忘了传参数就留下一个永远挂着的套接字。测试里想完全手动控制时显式传 null。
+     *
+     * 为什么必须有：会话过期后每个请求都会回 401，**授权**是安全的；但套接字会一直挂着、
+     * 前台服务通知也一直亮着，用户以为「还在共享中」。
+     */
+    private val sessionExpired: (() -> Boolean)? = { router.isSessionExpired },
+    private val idleCheckIntervalMillis: Long = DEFAULT_IDLE_CHECK_INTERVAL_MILLIS,
 ) {
 
     private val running = AtomicBoolean(false)
     private var serverSocket: ServerSocket? = null
     private var acceptThread: Thread? = null
     private var workers: ThreadPoolExecutor? = null
+    private var watchdog: Thread? = null
 
     /** 实际监听端口；未启动为 0。 */
     @Volatile
@@ -92,8 +104,39 @@ class LanEditHttpServer(
             isDaemon = true
             start()
         }
+        if (sessionExpired != null) {
+            watchdog = Thread({ idleWatchLoop() }, "lan-edit-idle-watch").apply {
+                isDaemon = true
+                start()
+            }
+        }
         audit.info("lan_edit_session_started", "session started", mapOf("port" to port))
         return port
+    }
+
+    /**
+     * 空闲看门狗：每 [idleCheckIntervalMillis] 查一次会话是否过期，过期就按
+     * `idle_timeout` 停服（Dart `_idleTimer` 每 30 秒查一次，间隔同值）。
+     */
+    private fun idleWatchLoop() {
+        val check = sessionExpired ?: return
+        while (running.get()) {
+            try {
+                Thread.sleep(idleCheckIntervalMillis)
+            } catch (_: InterruptedException) {
+                return
+            }
+            if (!running.get()) return
+            val expired = try {
+                check()
+            } catch (_: Throwable) {
+                false
+            }
+            if (expired) {
+                stop("idle_timeout")
+                return
+            }
+        }
     }
 
     /** 停服：关监听套接字、放工作池。可重复调用（第二次是空操作）。 */
@@ -106,6 +149,12 @@ class LanEditHttpServer(
         }
         acceptThread?.interrupt()
         acceptThread = null
+        // 看门狗可能是「自己」调过来的（会话过期 → stop）：此时别自我 interrupt。
+        val watch = watchdog
+        watchdog = null
+        if (watch != null && watch !== Thread.currentThread()) {
+            watch.interrupt()
+        }
         workers?.shutdownNow()
         workers = null
         port = 0
@@ -280,5 +329,8 @@ class LanEditHttpServer(
     private companion object {
         const val CR = 13.toByte()
         const val LF = 10.toByte()
+
+        /** 与 Dart `_idleTimer` 的 30 秒一致。 */
+        const val DEFAULT_IDLE_CHECK_INTERVAL_MILLIS = 30_000L
     }
 }
