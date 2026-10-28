@@ -518,6 +518,11 @@ object CourseStatisticsLogic {
      *
      * 与 Dart 屏层一一对应：先回正选中周，再算学期总览/进度/对比/成就/故事/日分布/必修选修，
      * 最后按有无课程决定顶栏动作与内容区。
+     *
+     * @param now 注入时钟（学期进度卡的「今天」与已上节数按它算）；null = 取真实当前时间。
+     *   单测必须传固定值，别让「今天」渗透进期望值（TEST-POLICY「日期老化」）。
+     * @param profileName 活动课表名，只进桌面统计小组件快照（Dart
+     *   `provider.activeProfile?.name ?? ''`）。默认空串 = 老行为，壳接线时传真名。
      */
     fun buildViewState(
         courses: List<Course>,
@@ -528,6 +533,7 @@ object CourseStatisticsLogic {
         semesterView: Boolean,
         hasOtherProfiles: Boolean,
         now: LocalDateTime? = null,
+        profileName: String = "",
     ): CourseStatisticsViewState {
         val resolvedWeek = resolveSelectedWeek(selectedWeek, currentWeek, semesterWeekCount)
         val hasData = courses.isNotEmpty()
@@ -622,7 +628,7 @@ object CourseStatisticsLogic {
                 courses = courses,
                 currentWeek = currentWeek,
                 semesterWeekCount = semesterWeekCount,
-                profileName = "",
+                profileName = profileName,
             ),
         )
     }
