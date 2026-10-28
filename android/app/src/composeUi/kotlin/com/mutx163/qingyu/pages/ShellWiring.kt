@@ -206,6 +206,11 @@ fun TimetableWithCourseActions(
             onNavigate("d1.addCourse")
         },
         onWeekChanged = { repository.setCurrentWeek(it) },
+        // S1：显示偏好改从**用户存档**读，不再吃宿主默认值。
+        // ⚠️ 这里每次重组都会 `load()` 一次——设置存储没有变更通道（见交付方诚实清单第 2 条）。
+        // 验收路径（杀进程重开 / 离开再回课表）都拿得到新值；「课表页正开着时后台改设置」
+        // 不会自刷，但本 App 里不存在这种同屏场景。
+        settingsModel = wiring.settingsModel.load(),
     )
 
     val course = actionTarget
