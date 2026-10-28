@@ -1,4 +1,4 @@
-package com.mutx163.qingyu.app
+package com.mutx163.qingyu
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

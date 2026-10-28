@@ -1,6 +1,5 @@
-package com.mutx163.qingyu.app
+package com.mutx163.qingyu
 
-import com.mutx163.qingyu.WidgetRefreshDecisionLogic
 
 /** 唤醒小组件刷新的原因，随 [WidgetRefreshRequest] 一起交给宿主，便于日志与去重诊断。 */
 enum class WidgetRefreshReason {
