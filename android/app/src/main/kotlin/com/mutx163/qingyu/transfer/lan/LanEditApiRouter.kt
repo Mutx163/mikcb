@@ -1,0 +1,555 @@
+package com.mutx163.qingyu.transfer.lan
+
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.FormatException
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.share.LanEditSession
+import java.time.Instant
+import java.util.UUID
+
+/**
+ * 局域网编辑 API 的**数据与写入面**（对应 Dart `lib/services/lan_edit_host.dart` 的
+ * `LanEditHost`）。
+ *
+ * 为什么要有这层接口：HTTP 那一层（[LanEditApiRouter] / [LanEditHttpServer]）不该知道
+ * 课表存在哪、怎么写。真实实现在 Android 侧要接到 `TimetableCourseService` +
+ * provider（属 Lead 接线），本泳道只定契约，并用假 host 把协议行为测穿。
+ *
+ * **全部同步**：Dart 侧是 `Future`，Kotlin 侧刻意定成阻塞式——服务端本来就是
+ * 「一个连接一个工作线程」，阻塞在这里不占主线程。真实实现若要调 `suspend` 接口，
+ * 在适配器里用 `runBlocking` 包一层即可（该线程不是主线程）。
+ */
+interface LanEditHost {
+    fun ensureInitialized()
+
+    val activeProfileId: String?
+
+    val activeProfileName: String?
+
+    /** 可切换的课表档案摘要；每条含 `id` / `name` / `courseCount` / `currentWeek` / `isActive`。 */
+    fun listProfilesSummary(): List<Map<String, Any?>>
+
+    val currentWeek: Int
+
+    val semesterWeekCount: Int
+
+    val courses: List<Course>
+
+    fun findCourse(id: String): Course?
+
+    fun createCourse(draft: Course): Course
+
+    /** @return false 表示这条记录已经不在了（Dart 用 `StateError('course_not_found')` 表达同一件事）。 */
+    fun updateCourse(course: Course): Boolean
+
+    /** @return false 表示这条记录本来就不存在。 */
+    fun deleteCourse(id: String): Boolean
+
+    fun buildMetaJson(): Map<String, Any?>
+
+    /**
+     * 可选能力：解析一份备份 JSON 并给出合并/覆盖两种预览（Dart `LanTransferHost.previewTransferJson`）。
+     * 返回 null = 本 host 不支持 → 501 `transfer_preview_not_supported`。
+     */
+    fun previewTransferJson(content: String): Map<String, Any?>? = null
+}
+
+/** 审计日志的一条。 */
+data class LanEditAuditEntry(
+    val category: String,
+    val message: String,
+    val extras: Map<String, Any?>,
+    val atMillis: Long,
+)
+
+/**
+ * 审计出口。Dart 侧落到 `AppLogService`；Kotlin 侧先定接口，
+ * 真实落点由接线方接（本泳道不碰 `pages/diagnostics` 的日志设施）。
+ *
+ * 分类串与 Dart **逐字一致**（`lan_edit_auth_failed` / `lan_edit_course_created` …），
+ * 这样两边日志能对上，排查时不用做映射表。
+ */
+interface LanEditAuditSink {
+    fun info(category: String, message: String, extras: Map<String, Any?> = emptyMap())
+}
+
+/** 什么都不记（默认值，避免调用方为了「不想记日志」写一个匿名实现）。 */
+object LanEditAuditNoop : LanEditAuditSink {
+    override fun info(category: String, message: String, extras: Map<String, Any?>) = Unit
+}
+
+/** 内存环形缓冲：够测试与「最近活动」展示用，容量满了丢最旧。 */
+class LanEditAuditRingBuffer(
+    private val capacity: Int = 200,
+    private val clock: () -> Long = System::currentTimeMillis,
+) : LanEditAuditSink {
+    private val entries = ArrayDeque<LanEditAuditEntry>()
+
+    override fun info(category: String, message: String, extras: Map<String, Any?>) {
+        synchronized(entries) {
+            entries.addLast(LanEditAuditEntry(category, message, extras, clock()))
+            while (entries.size > capacity) entries.removeFirst()
+        }
+    }
+
+    fun snapshot(): List<LanEditAuditEntry> = synchronized(entries) { entries.toList() }
+
+    fun categories(): List<String> = snapshot().map { it.category }
+}
+
+/**
+ * 局域网编辑 HTTP API 的路由与业务规则（对应 Dart
+ * `lib/services/lan_edit_api_handlers.dart`，只取第一切片需要的部分）。
+ *
+ * 与 Dart 逐条对齐的行为：
+ * - `OPTIONS` 直接 204（CORS 预检不吃鉴权）；
+ * - **跨源请求 403**：同网段任意网页都能连到手机，`Origin` 与请求 `Host` 不同就拒，
+ *   否则逛一个陌生网站就能烧掉机主的 PIN 尝试次数；
+ * - `/api/v1/health` 与 `/api/v1/auth/verify` 免鉴权，其余一律 Bearer 令牌；
+ * - 写操作要过 `profileId` 三道闸（绑定 / 请求 / 当前激活），见 [ensureWriteProfileTarget]；
+ * - JSON 体必须声明 `Content-Type: application/json`，否则 400（否则跨源 HTML 表单
+ *   用 `text/plain` 就能绕开预检直接打进来）；
+ * - 未鉴权路径上的异常一律 500 `internal_error`，**不回显异常原文**
+ *   （Dart 原文：异常里的类型名 / 内部结构 / 绝对路径会变成对同网段的指纹）。
+ *
+ * **本类必须可并发使用**：一个请求一个线程，所以任何「先写字段、再读字段」的
+ * 传值方式都会在并发下串台——所有判定都走返回值（[ProfileTarget] / 可空响应）。
+ * 唯一共享的可变状态是 [tryEnter] 的并发计数，它在锁内自增。
+ *
+ * 状态码与响应体形状都照 Dart：`{"error":…,"message":…}`。
+ */
+class LanEditApiRouter(
+    private val host: LanEditHost,
+    private val session: LanEditSession,
+    private val audit: LanEditAuditSink = LanEditAuditNoop,
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
+
+    private val lock = Any()
+    private var inFlight = 0
+
+    /** 返回 false 表示已按 503 拒掉，调用方不要再往下走（Dart `_inFlight` 同义）。 */
+    fun tryEnter(): Boolean = synchronized(lock) {
+        if (inFlight >= LanEditHttpLimits.MAX_CONCURRENT_REQUESTS) return false
+        inFlight += 1
+        return true
+    }
+
+    fun exit() {
+        synchronized(lock) {
+            if (inFlight > 0) inFlight -= 1
+        }
+    }
+
+    /** 仅供测试断言并发计数归零。 */
+    fun inFlightCount(): Int = synchronized(lock) { inFlight }
+
+    /** 写目标判定结果。用返回值传，不用「先写字段再读」——并发下那种写法会串台。 */
+    sealed interface ProfileTarget {
+        data class Allowed(val profileId: String) : ProfileTarget
+        data class Rejected(val response: LanEditHttpResponse) : ProfileTarget
+    }
+
+    fun route(request: LanEditHttpRequest): LanEditHttpResponse {
+        try {
+            if (request.method == "OPTIONS") {
+                return LanEditHttpResponse.empty(204)
+            }
+            if (!request.isSameOrigin) {
+                return LanEditHttpResponse.error(403, "cross_origin_forbidden", "Forbidden")
+            }
+
+            val path = request.path
+            if (path == "/api/v1/health") {
+                return LanEditHttpResponse.json(
+                    200,
+                    linkedMapOf<String, Any?>(
+                        "ok" to true,
+                        "serverTime" to isoNow(),
+                    ),
+                )
+            }
+            if (path == "/api/v1/auth/verify" && request.method == "POST") {
+                return handleVerify(request)
+            }
+            authorize(request)?.let { return it }
+
+            return when {
+                path == "/api/v1/session" && request.method == "GET" -> handleGetSession()
+                path == "/api/v1/courses" && request.method == "GET" -> handleListCourses()
+                path == "/api/v1/courses" && request.method == "POST" -> handleCreateCourse(request)
+                path == "/api/v1/import/preview" && request.method == "POST" -> handleTransferPreview(request)
+                else -> handleCourseById(request, path)
+            }
+        } catch (error: LanEditHttpException) {
+            return LanEditHttpResponse.error(
+                error.failure.status,
+                error.failure.error,
+                error.detail.ifEmpty { error.failure.error },
+            )
+        } catch (error: FormatException) {
+            // 坏请求体是调用方的问题，不是服务端故障（Dart 原文：这些以前落到通用
+            // 分支回 500 并把 Dart 异常原文回显出去）。
+            return LanEditHttpResponse.error(statusForBodyFormatError(error), "invalid_request", formatMessage(error))
+        } catch (error: Throwable) {
+            // 未鉴权路径上的兜底：异常原文（类型名 / provider 内部结构 / 绝对路径）
+            // 不能回给同网段的任意请求方，那等于一台没配对的设备也能拿本 App 做指纹。
+            audit.info("lan_edit_internal_error", "internal_error", mapOf("type" to error::class.simpleName))
+            return LanEditHttpResponse.error(500, "internal_error", "internal_error")
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // 鉴权
+    // -----------------------------------------------------------------------
+
+    private fun handleVerify(request: LanEditHttpRequest): LanEditHttpResponse {
+        val clientIp = request.remoteAddress
+        if (session.isExpired) {
+            audit.info(
+                "lan_edit_auth_failed",
+                "auth failed",
+                mapOf("reason" to "session_expired", "clientIp" to clientIp),
+            )
+            return LanEditHttpResponse.error(401, "session_expired", "Session expired")
+        }
+        if (session.isPinRateLimited(clientIp)) {
+            audit.info(
+                "lan_edit_auth_failed",
+                "auth failed",
+                mapOf("reason" to "rate_limited", "clientIp" to clientIp),
+            )
+            return LanEditHttpResponse.error(429, "rate_limited", "Too many PIN attempts")
+        }
+        val body = readJsonBody(request)
+        val pin = body["pin"]?.toString().orEmpty()
+        if (!session.verifyPin(pin, clientIp)) {
+            audit.info(
+                "lan_edit_auth_failed",
+                "auth failed",
+                mapOf("reason" to "invalid_pin", "clientIp" to clientIp),
+            )
+            return LanEditHttpResponse.error(401, "invalid_pin", "Invalid PIN")
+        }
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>(
+                "token" to session.token,
+                "expiresAt" to iso(session.expiresAt),
+            ),
+        )
+    }
+
+    /** @return null = 放行；非 null = 直接回这个响应。 */
+    private fun authorize(request: LanEditHttpRequest): LanEditHttpResponse? {
+        val clientIp = request.remoteAddress
+        if (session.isExpired) {
+            audit.info(
+                "lan_edit_auth_failed",
+                "auth failed",
+                mapOf("reason" to "session_expired", "clientIp" to clientIp),
+            )
+            return LanEditHttpResponse.error(401, "session_expired", "Session expired")
+        }
+        val token = request.bearerToken
+        if (!session.verifyTokenForRequest(token, clientIp)) {
+            audit.info(
+                "lan_edit_auth_failed",
+                "auth failed",
+                mapOf(
+                    "reason" to if (token.isNullOrEmpty()) "missing_token" else "invalid_token",
+                    "clientIp" to clientIp,
+                ),
+            )
+            return LanEditHttpResponse.error(401, "unauthorized", "Unauthorized")
+        }
+        return null
+    }
+
+    // -----------------------------------------------------------------------
+    // 读
+    // -----------------------------------------------------------------------
+
+    private fun handleGetSession(): LanEditHttpResponse {
+        host.ensureInitialized()
+        if (session.boundProfileId == null) session.boundProfileId = host.activeProfileId
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>(
+                "profileId" to host.activeProfileId,
+                "profileName" to host.activeProfileName,
+                "profiles" to host.listProfilesSummary(),
+                "activeWeek" to host.currentWeek,
+                "semesterWeekCount" to host.semesterWeekCount,
+                "serverTime" to isoNow(),
+                "expiresAt" to iso(session.expiresAt),
+            ),
+        )
+    }
+
+    private fun handleListCourses(): LanEditHttpResponse {
+        host.ensureInitialized()
+        return LanEditHttpResponse.json(
+            200,
+            linkedMapOf<String, Any?>("courses" to host.courses.map { it.toJson() }),
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // 写
+    // -----------------------------------------------------------------------
+
+    private fun handleCreateCourse(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        val profileId = when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> target.profileId
+        }
+        val draft = courseFromApiJson(body)
+        if (draft.name.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "course_name_required")
+        }
+        val created = host.createCourse(draft)
+        audit.info(
+            "lan_edit_course_created",
+            "course created",
+            mapOf("courseId" to created.id, "courseName" to created.name, "profileId" to profileId),
+        )
+        return LanEditHttpResponse.json(201, created.toJson())
+    }
+
+    private fun handleCourseById(request: LanEditHttpRequest, path: String): LanEditHttpResponse {
+        val id = matchCourseId(path) ?: return LanEditHttpResponse.error(404, "not_found", "Resource not found")
+        return when (request.method) {
+            "GET" -> handleGetCourse(id)
+            "PATCH" -> handlePatchCourse(request, id)
+            "DELETE" -> handleDeleteCourse(request, id)
+            // Dart 对「路径认识但方法不对」的组合也回 404（不是 405）：路由是
+            // 路径 + 方法的联合判断，落到最后就是 not_found。
+            else -> LanEditHttpResponse.error(404, "not_found", "Resource not found")
+        }
+    }
+
+    private fun handleGetCourse(courseId: String): LanEditHttpResponse {
+        host.ensureInitialized()
+        val course = host.findCourse(courseId)
+            ?: return LanEditHttpResponse.error(404, "not_found", "Course not found")
+        return LanEditHttpResponse.json(200, course.toJson())
+    }
+
+    private fun handlePatchCourse(request: LanEditHttpRequest, courseId: String): LanEditHttpResponse {
+        host.ensureInitialized()
+        val existing = host.findCourse(courseId)
+            ?: return LanEditHttpResponse.error(404, "not_found", "Course not found")
+        val patch = readJsonBody(request)
+        val profileId = when (val target = ensureWriteProfileTarget(request, patch)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> target.profileId
+        }
+        val merged = mergeCoursePatch(existing, patch)
+        if (merged.name.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "course_name_required")
+        }
+        if (!host.updateCourse(merged)) {
+            // 预检之后到真正写入之间课程被删掉：必须回 404，不能回 200
+            // 让浏览器显示「已保存」（Dart 原文的 StateError('course_not_found') 分支）。
+            return LanEditHttpResponse.error(404, "not_found", "Course not found")
+        }
+        audit.info(
+            "lan_edit_course_updated",
+            "course updated",
+            mapOf("courseId" to merged.id, "courseName" to merged.name, "profileId" to profileId),
+        )
+        return LanEditHttpResponse.json(200, merged.toJson())
+    }
+
+    private fun handleDeleteCourse(request: LanEditHttpRequest, courseId: String): LanEditHttpResponse {
+        host.ensureInitialized()
+        val profileId = when (val target = ensureWriteProfileTarget(request, null)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> target.profileId
+        }
+        val existing = host.findCourse(courseId)
+            ?: return LanEditHttpResponse.error(404, "not_found", "Course not found")
+        if (!host.deleteCourse(courseId)) {
+            return LanEditHttpResponse.error(404, "not_found", "Course not found")
+        }
+        audit.info(
+            "lan_edit_course_deleted",
+            "course deleted",
+            mapOf("courseId" to courseId, "courseName" to existing.name, "profileId" to profileId),
+        )
+        return LanEditHttpResponse.json(200, linkedMapOf<String, Any?>("deleted" to true, "id" to courseId))
+    }
+
+    private fun handleTransferPreview(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        when (val target = ensureWriteProfileTarget(request, null)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val content = request.body
+        if (content.trim().isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "backup_content_required")
+        }
+        val preview = try {
+            host.previewTransferJson(content)
+        } catch (error: FormatException) {
+            return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
+        }
+        if (preview == null) {
+            return LanEditHttpResponse.error(
+                501,
+                "transfer_preview_not_supported",
+                "transfer_preview_not_supported",
+            )
+        }
+        return LanEditHttpResponse.json(200, preview)
+    }
+
+    /**
+     * 写目标三道闸（Dart `_ensureWriteProfileTarget` 原样）：
+     * 1. `profileId` 从 body / query / `x-profile-id` / 会话绑定值里按优先级取，取不到 400；
+     * 2. 与会话绑定值不一致 → 400 `profile_id_mismatch`（换了档案就重新握手）；
+     * 3. 与当前激活档案不一致 → 409 `profile_mismatch`，并把三方 id 一起回给前端
+     *    （前端据此提示「档案变了，刷新或切换」）。
+     */
+    private fun ensureWriteProfileTarget(
+        request: LanEditHttpRequest,
+        body: Map<String, Any?>?,
+    ): ProfileTarget {
+        host.ensureInitialized()
+        if (session.boundProfileId == null) session.boundProfileId = host.activeProfileId
+
+        val fromBody = body?.get("profileId")?.toString()?.trim()
+        val fromQuery = request.queryParam("profileId")?.trim()
+        val fromHeader = request.header("x-profile-id")?.trim()
+        val requested = when {
+            !fromBody.isNullOrEmpty() -> fromBody
+            !fromQuery.isNullOrEmpty() -> fromQuery
+            !fromHeader.isNullOrEmpty() -> fromHeader
+            else -> session.boundProfileId?.trim()
+        }
+        if (requested.isNullOrEmpty()) {
+            return ProfileTarget.Rejected(
+                LanEditHttpResponse.error(
+                    400,
+                    "profile_id_required",
+                    "profileId is required for write operations",
+                ),
+            )
+        }
+        val bound = session.boundProfileId?.trim()
+        if (!bound.isNullOrEmpty() && bound != requested) {
+            return ProfileTarget.Rejected(
+                LanEditHttpResponse.error(
+                    400,
+                    "profile_id_mismatch",
+                    "profileId does not match session-bound profile",
+                ),
+            )
+        }
+        val active = host.activeProfileId
+        if (active != null && active != requested) {
+            return ProfileTarget.Rejected(
+                LanEditHttpResponse.json(
+                    409,
+                    linkedMapOf<String, Any?>(
+                        "error" to "profile_mismatch",
+                        "message" to "Active profile changed; refresh or switch profile",
+                        "activeProfileId" to active,
+                        "requestedProfileId" to requested,
+                        "boundProfileId" to bound,
+                    ),
+                ),
+            )
+        }
+        session.boundProfileId = requested
+        return ProfileTarget.Allowed(requested)
+    }
+
+    // -----------------------------------------------------------------------
+    // 请求体与课程构造
+    // -----------------------------------------------------------------------
+
+    private fun readJsonBody(request: LanEditHttpRequest): Map<String, Any?> {
+        // 不校验 Content-Type 的话，跨源 HTML 表单能用 text/plain 发体打到这个 API：
+        // 浏览器因此跳过 CORS 预检，请求照样落地（Dart 原文）。
+        if (request.contentTypeMime != "application/json") {
+            throw FormatException("unsupported_content_type")
+        }
+        val raw = request.body
+        if (raw.isBlank()) return emptyMap()
+        val decoded = MiniJson.tryParse(raw) ?: throw FormatException("Expected JSON object")
+        @Suppress("UNCHECKED_CAST")
+        return decoded as? Map<String, Any?> ?: throw FormatException("Expected JSON object")
+    }
+
+    /**
+     * 从 API JSON 构造一门课。
+     *
+     * ⚠️ **未移植**：Dart `LanEditProviderHost.courseFromApiJson` 还负责
+     * 「周次表达式」（`weekExpression` / `applyWeekExpressionFields`）与节次时间表的联动，
+     * 那部分依赖 `WeekExpressionParser`（本切片未移植，见 WIRING-NOTE 的未移植清单）。
+     * 这里只做：补齐 `id`（缺省生成）→ 走 `Course.fromJson` 的既有归一化与校验。
+     */
+    private fun courseFromApiJson(body: Map<String, Any?>): Course {
+        val normalized = LinkedHashMap<String, Any?>(body)
+        val id = normalized["id"]?.toString()?.trim()
+        if (id.isNullOrEmpty()) {
+            normalized["id"] = UUID.randomUUID().toString()
+        }
+        fillDefaults(normalized)
+        return Course.fromJson(normalized)
+    }
+
+    /**
+     * PATCH：把补丁字段叠到既有记录上。
+     *
+     * ⚠️ **未移植**：Dart `LanEditProviderHost.mergeCoursePatch` 还做
+     * `applyWeekExpressionFields` 的联动；这里只做字段覆盖 + `id` 保持 + 缺省补齐。
+     */
+    private fun mergeCoursePatch(existing: Course, patch: Map<String, Any?>): Course {
+        val merged = LinkedHashMap<String, Any?>(existing.toJson())
+        for ((key, value) in patch) {
+            if (key == "id" || key == "profileId") continue
+            merged[key] = value
+        }
+        merged["id"] = existing.id
+        fillDefaults(merged)
+        return Course.fromJson(merged)
+    }
+
+    /**
+     * `Course.fromJson` 对 `teacher` / `location` / `startTime` / `endTime` 是必填
+     * （缺了抛 `FormatException`）。局域网网页端只改「课名 / 星期 / 节次 / 周次」时
+     * 不会带这些字段，所以缺省补空串——比让一次合法请求回 400 更合理，
+     * 也与 Dart 侧这些字段默认可空的行为一致。
+     */
+    private fun fillDefaults(map: MutableMap<String, Any?>) {
+        for (key in listOf("teacher", "location", "startTime", "endTime")) {
+            if (map[key] == null) map[key] = ""
+        }
+    }
+
+    private fun matchCourseId(path: String): String? {
+        val prefix = "/api/v1/courses/"
+        if (!path.startsWith(prefix)) return null
+        val rest = path.substring(prefix.length)
+        if (rest.isEmpty() || rest.contains('/')) return null
+        return rest
+    }
+
+    private fun statusForBodyFormatError(error: FormatException): Int = when (formatMessage(error)) {
+        "request_body_too_large" -> 413
+        "request_body_timeout" -> 408
+        else -> 400
+    }
+
+    private fun formatMessage(error: FormatException): String = error.message ?: "invalid_request"
+
+    private fun isoNow(): String = iso(clock())
+
+    private fun iso(millis: Long): String = Instant.ofEpochMilli(millis).toString()
+}

@@ -1,0 +1,284 @@
+package com.mutx163.qingyu.transfer.lan
+
+import com.mutx163.qingyu.share.UNKNOWN_LAN_CLIENT_IP
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * 局域网编辑的**真 HTTP 服务端**（能力缺口 B2，P3-G3 域）。
+ *
+ * 对应 Dart `lib/services/lan_edit_server_service.dart` 里 `HttpServer.bind(...)` 那一段：
+ * 绑全部网卡、随机端口、一个连接一个工作线程、按请求分发到 [LanEditApiRouter]。
+ *
+ * 只用 JDK 自带件（`java.net.ServerSocket` / `Socket`）——**不许加依赖**，
+ * 也不能用 `com.sun.net.httpserver`（JDK 私有实现，Gradle 的 Android 单测编译看不到）。
+ *
+ * 与 Dart 的差异（有意，逐条都有理由）：
+ * - **每个连接只处理一个请求**（响应固定 `Connection: close`）。Dart 的 `HttpServer` 带
+ *   keep-alive，但那要完整的连接复用状态机（还要处理流水线请求与半关连接），
+ *   局域网编辑一次页面加载几个请求，新开连接的开销可以忽略，少一个状态机就少一类走私面。
+ * - **不支持 `Transfer-Encoding: chunked`**：明确 400，不半信半疑地读长度。
+ * - **不做静态资源服务**（Dart 从 Flutter asset 里发 index.html / app.js / css）：
+ *   那是 Android 侧 `assets/` 与 `WebView`/浏览器壳的接线问题，属接线方，见 WIRING-NOTE。
+ *
+ * 线程模型：1 个接受线程 + 一个有界工作池（上限 [LanEditHttpLimits.MAX_CONCURRENT_REQUESTS]
+ * + 少量余量）。池满时新连接直接回 503，而不是无限堆线程——手机扛不住。
+ * 全部线程是 daemon，进程退出不会被它们挂住。
+ */
+class LanEditHttpServer(
+    private val router: LanEditApiRouter,
+    private val audit: LanEditAuditSink = LanEditAuditNoop,
+    private val bindAddress: InetAddress = InetAddress.getByName("0.0.0.0"),
+    private val requestedPort: Int = 0,
+) {
+
+    private val running = AtomicBoolean(false)
+    private var serverSocket: ServerSocket? = null
+    private var acceptThread: Thread? = null
+    private var workers: ThreadPoolExecutor? = null
+
+    /** 实际监听端口；未启动为 0。 */
+    @Volatile
+    var port: Int = 0
+        private set
+
+    val isRunning: Boolean get() = running.get()
+
+    /**
+     * 绑定并开始接受连接。**端口 0 = 由系统分配**（与 Dart `HttpServer.bind(anyIPv4, 0)` 同）。
+     *
+     * @return 实际监听端口。
+     * @throws IllegalStateException 已经在跑。
+     */
+    fun start(): Int {
+        check(!running.get()) { "LAN edit server is already running" }
+        val socket = ServerSocket()
+        try {
+            socket.reuseAddress = true
+            socket.bind(InetSocketAddress(bindAddress, requestedPort), LanEditHttpLimits.BACKLOG)
+        } catch (error: IOException) {
+            runCatching { socket.close() }
+            throw error
+        }
+        serverSocket = socket
+        port = socket.localPort
+        running.set(true)
+
+        workers = ThreadPoolExecutor(
+            0,
+            LanEditHttpLimits.MAX_CONCURRENT_REQUESTS + 4,
+            30L,
+            TimeUnit.SECONDS,
+            SynchronousQueue(),
+            { runnable ->
+                Thread(runnable, "lan-edit-worker").apply { isDaemon = true }
+            },
+        )
+
+        acceptThread = Thread({ acceptLoop(socket) }, "lan-edit-accept").apply {
+            isDaemon = true
+            start()
+        }
+        audit.info("lan_edit_session_started", "session started", mapOf("port" to port))
+        return port
+    }
+
+    /** 停服：关监听套接字、放工作池。可重复调用（第二次是空操作）。 */
+    fun stop(reason: String = "manual") {
+        val wasRunning = running.getAndSet(false)
+        val socket = serverSocket
+        serverSocket = null
+        if (socket != null) {
+            runCatching { socket.close() }
+        }
+        acceptThread?.interrupt()
+        acceptThread = null
+        workers?.shutdownNow()
+        workers = null
+        port = 0
+        if (wasRunning) {
+            audit.info("lan_edit_session_stopped", "session stopped", mapOf("reason" to reason))
+        }
+    }
+
+    private fun acceptLoop(socket: ServerSocket) {
+        while (running.get()) {
+            val client = try {
+                socket.accept()
+            } catch (error: SocketException) {
+                // 正常停服路径：close() 会让 accept 抛 SocketException。
+                if (running.get()) {
+                    audit.info("lan_edit_server_error", "accept failed", mapOf("type" to error::class.simpleName))
+                }
+                return
+            } catch (error: IOException) {
+                if (!running.get()) return
+                audit.info("lan_edit_server_error", "accept failed", mapOf("type" to error::class.simpleName))
+                continue
+            }
+            try {
+                workers?.execute { handleConnection(client) }
+            } catch (_: RejectedExecutionException) {
+                // 池满：明确回 503 再关，别让对端一直等。
+                writeQuietly(client, LanEditHttpResponse.error(503, "too_many_requests", "Too many requests"))
+                closeQuietly(client)
+            }
+        }
+    }
+
+    private fun handleConnection(socket: Socket) {
+        var entered = false
+        try {
+            socket.soTimeout = LanEditHttpLimits.SOCKET_IDLE_TIMEOUT_MILLIS
+            socket.tcpNoDelay = true
+            val input = BufferedInputStream(socket.getInputStream())
+            val head = readHead(input)
+            val lines = head.split("\r\n")
+            val requestLine = LanEditHttpParse.parseRequestLine(lines.firstOrNull().orEmpty())
+            val headers = LanEditHttpParse.parseHeaders(lines.drop(1))
+            val contentLength = LanEditHttpParse.requireContentLength(headers)
+            val body = readBody(input, contentLength)
+            val (path, queryString) = LanEditHttpParse.splitTarget(requestLine.target)
+            val request = LanEditHttpRequest(
+                method = requestLine.method,
+                target = requestLine.target,
+                path = path,
+                query = LanEditHttpParse.parseQuery(queryString),
+                headers = headers,
+                body = body,
+                remoteAddress = socket.inetAddress?.hostAddress ?: UNKNOWN_LAN_CLIENT_IP,
+            )
+            if (!router.tryEnter()) {
+                writeQuietly(
+                    socket,
+                    LanEditHttpResponse.error(503, "too_many_requests", "Too many requests"),
+                )
+                return
+            }
+            entered = true
+            val response = router.route(request)
+            writeQuietly(socket, response)
+        } catch (error: LanEditHttpException) {
+            writeQuietly(
+                socket,
+                LanEditHttpResponse.error(error.failure.status, error.failure.error, error.failure.error),
+            )
+        } catch (_: ClientDisconnected) {
+            // 对端半途消失（浏览器关标签页 / 手机走出 WiFi）：没有对端可回，安静收摊。
+        } catch (_: SocketTimeoutException) {
+            writeQuietly(
+                socket,
+                LanEditHttpResponse.error(
+                    LanEditHttpFailure.BODY_TIMEOUT.status,
+                    LanEditHttpFailure.BODY_TIMEOUT.error,
+                    LanEditHttpFailure.BODY_TIMEOUT.error,
+                ),
+            )
+        } catch (_: IOException) {
+            // 读/写失败（连接被重置等）一律安静收摊，不让一个坏连接打死工作线程。
+        } catch (error: Throwable) {
+            audit.info("lan_edit_server_error", "connection failed", mapOf("type" to error::class.simpleName))
+            writeQuietly(socket, LanEditHttpResponse.error(500, "internal_error", "internal_error"))
+        } finally {
+            if (entered) router.exit()
+            closeQuietly(socket)
+        }
+    }
+
+    /**
+     * 读到 `\r\n\r\n` 为止（含）。
+     *
+     * 严格只认 CRLF：单 LF 结尾是「请求行折叠 / 走私」的常见载体，收下它就得再写一套
+     * 归一化规则，不如直接 400。头部总字节超限抛 431。
+     */
+    private fun readHead(input: InputStream): String {
+        val limit = LanEditHttpLimits.MAX_HEADER_BYTES + LanEditHttpLimits.MAX_REQUEST_LINE_BYTES
+        val buffer = ByteArray(limit)
+        var size = 0
+        while (size < limit) {
+            val byte = input.read()
+            if (byte < 0) {
+                throw LanEditHttpException(
+                    LanEditHttpFailure.MALFORMED_REQUEST_LINE,
+                    if (size == 0) "connection closed before request" else "truncated request head",
+                )
+            }
+            buffer[size++] = byte.toByte()
+            if (size >= 4 &&
+                buffer[size - 4] == CR && buffer[size - 3] == LF &&
+                buffer[size - 2] == CR && buffer[size - 1] == LF
+            ) {
+                // 丢掉结尾的 CRLFCRLF
+                return String(buffer, 0, size - 4, Charsets.UTF_8)
+            }
+        }
+        throw LanEditHttpException(LanEditHttpFailure.HEADER_TOO_LARGE, "$size bytes")
+    }
+
+    /**
+     * 读请求体：长度由 `Content-Length` 决定，整体受墙钟预算约束。
+     *
+     * 预算按 Dart `_bodyReadBudget` 取 20 秒——**整个体的预算，不是每块的**：
+     * 一个每秒挤一个字节的连接否则能一直占着工作线程。
+     */
+    private fun readBody(input: InputStream, length: Long): String {
+        if (length <= 0) return ""
+        if (length > LanEditHttpLimits.MAX_BODY_BYTES) {
+            throw LanEditHttpException(LanEditHttpFailure.BODY_TOO_LARGE, "$length bytes")
+        }
+        val target = length.toInt()
+        val buffer = ByteArray(target)
+        var read = 0
+        val deadline = System.currentTimeMillis() + LanEditHttpLimits.BODY_READ_BUDGET_MILLIS
+        while (read < target) {
+            if (System.currentTimeMillis() > deadline) {
+                throw LanEditHttpException(LanEditHttpFailure.BODY_TIMEOUT, "budget exceeded")
+            }
+            val chunk = input.read(buffer, read, target - read)
+            if (chunk < 0) {
+                throw ClientDisconnected("eof after $read/$target bytes")
+            }
+            read += chunk
+        }
+        return String(buffer, Charsets.UTF_8)
+    }
+
+    private fun writeQuietly(socket: Socket, response: LanEditHttpResponse) {
+        try {
+            val out = BufferedOutputStream(socket.getOutputStream())
+            out.write(response.toByteArray())
+            out.flush()
+        } catch (_: IOException) {
+            // 对端已断开：响应发不出去是正常情况，不是错误。
+        }
+    }
+
+    private fun closeQuietly(socket: Socket) {
+        try {
+            socket.close()
+        } catch (_: IOException) {
+            // 忽略
+        }
+    }
+
+    /** 对端在请求体读完之前消失（不是服务端错误，不需要响应）。 */
+    private class ClientDisconnected(message: String) : RuntimeException(message)
+
+    private companion object {
+        const val CR = 13.toByte()
+        const val LF = 10.toByte()
+    }
+}
