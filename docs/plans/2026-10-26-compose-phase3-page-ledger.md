@@ -797,9 +797,16 @@ L4「逐页对照」在接线前物理上做不了。交给 `l4-recon` 做 task-
 |---|---|---|
 | L0 | `test-kotlin-module.ps1` × 3 模块（settings / shell / live） | **535 + 44 + 36 例全绿** |
 | L1 | `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` | **BUILD SUCCESSFUL，`e:` 0 条**（三条泳道渲染层同批进编译） |
-| L2 | `safe-gradle :app:testProdDebugUnitTest` | ❌ **暂时红，但与我的改动无关**：46 条 `e:` 全在 `sync/WebdavHttpTransportTest.kt` 的 `com.sun.*` 上（task-5 已派回 `cap-webdav`）。修完需重跑复核 |
+| L2 | `safe-gradle :app:testProdDebugUnitTest` | ✅ **3421 例 / 0 失败 / 0 错误 / 0 跳过**（252 个测试类，`BUILD SUCCESSFUL`）。数字取自结果文件 `build/app/test-results/testProdDebugUnitTest/*.xml`，**不认「BUILD SUCCESSFUL」这一句**（台账 §5 纪律）。对比 2026-10-27 21:07 基线 2978 例 / 218 类 |
 | 守卫探针 | 改坏 `b.courseCard` → 红（2 条断言指名道姓）→ 字节级还原 | ✅ |
 | 源集探针 | 往 `src/testComposeUi/...` 注入不存在的符号 → `compileComposeUiDebugUnitTestKotlin` 报错 | ✅ 证明源集登记生效 |
+
+**L2 复核过程里又踩到一次第 2 条纪律**（记下来当实例）：`cap-webview` 在
+`transfer/lan/` 写局域网服务端时，一个 550 行的文件分两次落盘，中间那次缺
+`import com.mutx163.qingyu.core.FormatException`（**仓库自己定义**的类，`Course.kt:9`，
+不是 JDK 的），于是 `:app:compileProdDebugKotlin` 连带 `:app:testProdDebugUnitTest` 一起红。
+它改成「每落一个文件立刻跑一次 L0」后解决。
+⇒ 共享模型层目录里的文件，**写盘即生效于全队**，中间态必须可编译。
 
 **仍未做（诚实清单）**：① 一页都没真机对照（现在 78 条可点，入口齐了，**就差用户在手机上走一遍**）；
 ② WebDAV / WebView 都只到「JVM 真 HTTP 单测」/「L1 编译」，**没有一页接过界面**——
