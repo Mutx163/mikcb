@@ -20,8 +20,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mutx163.qingyu.pages.statistics.charts.WeekStatsView
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -66,14 +71,11 @@ import top.yukonga.miuix.kmp.icon.extended.TopDownloads
  * - 顶栏：返回 + "课程统计"；**有数据时**才出现设置与分享两个动作；
  * - 学期视图：分段 → 总览四格 → 学期进度 → 本周小结 → 成就徽章 →
  *   （有故事时）数据故事 → 每日课时分布 → 必修/选修 → 深度分析入口组；
- * - 周视图：分段 → 选中周总量；
+ * - 周视图：分段 → 完整周视图（周选择器 + 本周小结 + 每日课时分布 + 必/选修比例 + 时间利用 + 课程明细）；
+ * - 成就徽章：点击徽章呼出详情弹层（OverlayBottomSheet）；
  * - 无课程时是空态（图标 + "暂无课程数据" + "添加课程后即可查看统计"）。
  *
  * 数据口径全部来自 [CourseStatisticsViewState]（模型层已算好），这里只画。
- * 图表用 Compose `Canvas` 手绘（官方 Miuix 无图表组件）。
- *
- * 已知差异（记录在认领文件「差异与风险」）：`week_stats_view.dart`（490 行）
- * 的图表件尚未 1:1 迁移，周视图当前只呈现课程门数与课时总量。
  */
 @Composable
 fun CourseStatisticsPage(
@@ -88,6 +90,7 @@ fun CourseStatisticsPage(
     isExporting: Boolean = false,
 ) {
     val dark = isSystemInDarkTheme()
+    var activeAchievementDetail by remember { mutableStateOf<AchievementView?>(null) }
 
     Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
         Column(
@@ -156,7 +159,11 @@ fun CourseStatisticsPage(
                         SemesterProgressCard(view = semester.progress, dark = dark)
                         WeeklyComparisonCard(view = semester.comparison, dark = dark)
                         SectionBlock(StatisticsStrings.statisticsAchievementsTitle.zh, dark) {
-                            AchievementGrid(achievements = semester.achievements, dark = dark)
+                            AchievementGrid(
+                                achievements = semester.achievements,
+                                dark = dark,
+                                onAchievementClick = { activeAchievementDetail = it },
+                            )
                         }
                         if (semester.showStoriesSection) {
                             SectionBlock(StatisticsStrings.statisticsStoriesTitle.zh, dark) {
@@ -180,12 +187,28 @@ fun CourseStatisticsPage(
                     } else {
                         val week = viewState.week
                         if (week != null) {
-                            WeekOverviewCard(
-                                week = week,
-                                currentWeek = viewState.currentWeek,
-                                onWeekChanged = onWeekChanged,
-                                dark = dark,
-                            )
+                            val weeklyStats = week.weeklyStats
+                            val comparison = week.comparison
+                            if (weeklyStats != null && comparison != null) {
+                                WeekStatsView(
+                                    stats = weeklyStats,
+                                    currentSemesterWeek = viewState.currentWeek,
+                                    comparison = comparison,
+                                    dark = dark,
+                                    timeUtilization = week.timeUtilization,
+                                    onWeekSelectorClick = {
+                                        val nextWeek = if (week.weekNumber >= week.maxWeek) 1 else week.weekNumber + 1
+                                        onWeekChanged(nextWeek)
+                                    },
+                                )
+                            } else {
+                                WeekOverviewCard(
+                                    week = week,
+                                    currentWeek = viewState.currentWeek,
+                                    onWeekChanged = onWeekChanged,
+                                    dark = dark,
+                                )
+                            }
                         }
                     }
 
@@ -193,6 +216,12 @@ fun CourseStatisticsPage(
                 }
             }
         }
+
+        AchievementDetailSheet(
+            achievement = activeAchievementDetail,
+            dark = dark,
+            onDismiss = { activeAchievementDetail = null },
+        )
     }
 }
 
@@ -534,14 +563,23 @@ private fun ComparisonCell(
 // ── 成就徽章（4 列） ──
 
 @Composable
-private fun AchievementGrid(achievements: List<AchievementView>, dark: Boolean) {
+private fun AchievementGrid(
+    achievements: List<AchievementView>,
+    dark: Boolean,
+    onAchievementClick: (AchievementView) -> Unit,
+) {
     if (achievements.isEmpty()) return
     val columns = 4
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         achievements.chunked(columns).forEach { rowItems ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 rowItems.forEach { item ->
-                    AchievementBadge(item = item, dark = dark, modifier = Modifier.weight(1f))
+                    AchievementBadge(
+                        item = item,
+                        dark = dark,
+                        onClick = { onAchievementClick(item) },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 // 补齐末行，保持列宽一致
                 repeat(columns - rowItems.size) {
@@ -553,14 +591,22 @@ private fun AchievementGrid(achievements: List<AchievementView>, dark: Boolean) 
 }
 
 @Composable
-private fun AchievementBadge(item: AchievementView, dark: Boolean, modifier: Modifier = Modifier) {
+private fun AchievementBadge(
+    item: AchievementView,
+    dark: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val accent = if (item.isUnlocked) {
         Color(QingyuTheme.primary(dark = dark))
     } else {
         Color(QingyuTheme.surfaceContainerHighest(dark))
     }
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

@@ -125,6 +125,33 @@ object StatisticsStrings {
     val achievementGapMasterDescription =
         ArbText("statisticsAchievementGapMasterDescription", "最长课间空档 ≤ 2 节")
 
+    val statisticsAchievementEarlyBirdDetail =
+        ArbText("statisticsAchievementEarlyBirdDetail", "解锁条件：课表中有 08:00 或更早开始的课程。")
+    val statisticsAchievementPerfectAttendanceDetail =
+        ArbText("statisticsAchievementPerfectAttendanceDetail", "解锁条件：至少一门课程在学期内每周均有课，无停课或跳周。")
+    val statisticsAchievementWeekendWarriorDetail =
+        ArbText("statisticsAchievementWeekendWarriorDetail", "解锁条件：周六或周日有课。")
+    val statisticsAchievementClassKingDetail =
+        ArbText("statisticsAchievementClassKingDetail", "解锁条件：某一天排课达到 6 节及以上。")
+    val statisticsAchievementScholarDetail =
+        ArbText("statisticsAchievementScholarDetail", "解锁条件：学期累计课时达到 100 节。")
+    val statisticsAchievementBalancedDetail =
+        ArbText("statisticsAchievementBalancedDetail", "解锁条件：每天课时差距不超过 2 节，课表安排均衡。")
+    val statisticsAchievementNightOwlDetail =
+        ArbText("statisticsAchievementNightOwlDetail", "解锁条件：有 18:00 以后才结束的课。")
+    val statisticsAchievementExplorerDetail =
+        ArbText("statisticsAchievementExplorerDetail", "解锁条件：使用过 5 个及以上不同的教室。")
+    val statisticsAchievementFullDayKingDetail =
+        ArbText("statisticsAchievementFullDayKingDetail", "解锁条件：某一天排课达到 8 节及以上，全天满课。")
+    val statisticsAchievementBuildingHopperDetail =
+        ArbText("statisticsAchievementBuildingHopperDetail", "解锁条件：同一天内去过 3 栋及以上不同的教学楼。")
+    val statisticsAchievementMorningPersonDetail =
+        ArbText("statisticsAchievementMorningPersonDetail", "解锁条件：12:00 前的课程节数占总节数一半以上。")
+    val statisticsAchievementGapMasterDetail =
+        ArbText("statisticsAchievementGapMasterDetail", "解锁条件：每天课间最长空档不超过 2 节，时间安排紧凑。")
+    val statisticsAchievementDetailConfirm =
+        ArbText("statisticsAchievementDetailConfirm", "知道了")
+
     // ── 数据故事 ──
     val storyBusiestDayTitle = ArbText("statisticsStoryBusiestDayTitle", "最忙的一天")
     val storyBusiestDayContent = ArbText(
@@ -234,6 +261,23 @@ object StatisticsStrings {
         else -> id
     }
 
+    /** 成就详细说明（对齐 Dart `achievement_badge.dart` 详情弹窗正文）。 */
+    fun achievementDetail(id: String): String = when (id) {
+        "early_bird" -> statisticsAchievementEarlyBirdDetail.zh
+        "perfect_attendance" -> statisticsAchievementPerfectAttendanceDetail.zh
+        "weekend_warrior" -> statisticsAchievementWeekendWarriorDetail.zh
+        "class_king" -> statisticsAchievementClassKingDetail.zh
+        "scholar" -> statisticsAchievementScholarDetail.zh
+        "balanced" -> statisticsAchievementBalancedDetail.zh
+        "night_owl" -> statisticsAchievementNightOwlDetail.zh
+        "explorer" -> statisticsAchievementExplorerDetail.zh
+        "full_day_king" -> statisticsAchievementFullDayKingDetail.zh
+        "building_hopper" -> statisticsAchievementBuildingHopperDetail.zh
+        "morning_person" -> statisticsAchievementMorningPersonDetail.zh
+        "gap_master" -> statisticsAchievementGapMasterDetail.zh
+        else -> ""
+    }
+
     /** 全部文案（文案对拍逐条遍历）。 */
     val allTexts: List<ArbText> = listOf(
         statisticsTitle,
@@ -312,6 +356,19 @@ object StatisticsStrings {
         achievementMorningPersonDescription,
         achievementGapMasterName,
         achievementGapMasterDescription,
+        statisticsAchievementEarlyBirdDetail,
+        statisticsAchievementPerfectAttendanceDetail,
+        statisticsAchievementWeekendWarriorDetail,
+        statisticsAchievementClassKingDetail,
+        statisticsAchievementScholarDetail,
+        statisticsAchievementBalancedDetail,
+        statisticsAchievementNightOwlDetail,
+        statisticsAchievementExplorerDetail,
+        statisticsAchievementFullDayKingDetail,
+        statisticsAchievementBuildingHopperDetail,
+        statisticsAchievementMorningPersonDetail,
+        statisticsAchievementGapMasterDetail,
+        statisticsAchievementDetailConfirm,
         storyBusiestDayTitle,
         storyBusiestDayContent,
         storyLightestDayTitle,

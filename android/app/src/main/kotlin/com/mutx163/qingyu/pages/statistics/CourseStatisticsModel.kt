@@ -13,6 +13,8 @@ import com.mutx163.qingyu.statistics.StatisticsService
 import com.mutx163.qingyu.statistics.StatsWidgetSnapshotBuilder
 import com.mutx163.qingyu.statistics.StoryType
 import com.mutx163.qingyu.statistics.WeeklyComparison
+import com.mutx163.qingyu.statistics.WeeklyStats
+import com.mutx163.qingyu.statistics.TimeUtilizationStats
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Locale
@@ -90,8 +92,16 @@ data class AchievementView(
     val id: String,
     val name: String,
     val description: String,
+    val detail: String = "",
     val isUnlocked: Boolean,
     val progressLabel: String?,
+    val hasProgress: Boolean = false,
+    val progressCurrent: Int? = null,
+    val progressTarget: Int? = null,
+    val progressRatio: Float = 0f,
+    val statusLabel: String = "",
+    val confirmLabel: String = "知道了",
+    val rawAchievement: Achievement? = null,
 )
 
 /** 数据故事视图（正文里的 `**` 由渲染层渲染成加粗）。 */
@@ -152,12 +162,15 @@ data class SemesterContent(
     val showStoriesSection: Boolean get() = stories.isNotEmpty()
 }
 
-/** 周视图（`WeekStatsView`）本次迁移只装配总量口径，其余图表件待补。 */
+/** 周视图（`WeekStatsView`）数据结构：含总量、周次、完整周统计与时间利用指标。 */
 data class WeekContent(
     val weekNumber: Int,
     val courseCount: Int,
     val sectionCount: Int,
     val maxWeek: Int,
+    val weeklyStats: WeeklyStats? = null,
+    val comparison: WeeklyComparison? = null,
+    val timeUtilization: TimeUtilizationStats? = null,
 )
 
 /** 课程统计主页整页视图状态。 */
@@ -345,24 +358,43 @@ object CourseStatisticsLogic {
     }
 
     fun buildAchievement(achievement: Achievement): AchievementView {
-        val progressLabel = if (achievement.hasProgress) {
+        val hasProgress = achievement.hasProgress
+        val progressLabel = if (hasProgress) {
             if (achievement.isUnlocked) {
                 StatisticsStrings.statisticsAchievementDone.zh
             } else {
                 StatisticsStrings.statisticsAchievementProgress.filled(
-                    "current" to achievement.progressCurrent.toString(),
-                    "target" to achievement.progressTarget.toString(),
+                    "current" to (achievement.progressCurrent ?: 0).toString(),
+                    "target" to (achievement.progressTarget ?: 0).toString(),
                 )
             }
         } else {
             null
         }
+        val ratio = if (hasProgress && (achievement.progressTarget ?: 0) > 0) {
+            ((achievement.progressCurrent ?: 0).toFloat() / (achievement.progressTarget ?: 1)).coerceIn(0f, 1f)
+        } else {
+            if (achievement.isUnlocked) 1f else 0f
+        }
+        val statusLabel = if (achievement.isUnlocked) {
+            StatisticsStrings.statisticsAchievementDone.zh
+        } else {
+            StatisticsStrings.statisticsAchievementLocked.zh
+        }
         return AchievementView(
             id = achievement.id,
             name = StatisticsStrings.achievementName(achievement.id),
             description = StatisticsStrings.achievementDescription(achievement.id),
+            detail = StatisticsStrings.achievementDetail(achievement.id),
             isUnlocked = achievement.isUnlocked,
             progressLabel = progressLabel,
+            hasProgress = hasProgress,
+            progressCurrent = achievement.progressCurrent,
+            progressTarget = achievement.progressTarget,
+            progressRatio = ratio,
+            statusLabel = statusLabel,
+            confirmLabel = StatisticsStrings.statisticsAchievementDetailConfirm.zh,
+            rawAchievement = achievement,
         )
     }
 
@@ -546,6 +578,15 @@ object CourseStatisticsLogic {
             currentWeek = currentWeek,
         )
         val weekStats = StatisticsService.calculate(allCourses = stubs, week = resolvedWeek)
+        val weekComparison = StatisticsService.calculateWeeklyComparison(
+            allCourses = stubs,
+            currentWeek = resolvedWeek,
+            semesterWeekCount = semesterWeekCount,
+        )
+        val weekTimeUtil = StatisticsService.calculateTimeUtilization(
+            allCourses = stubs,
+            currentWeek = resolvedWeek,
+        )
 
         return CourseStatisticsViewState(
             title = StatisticsStrings.statisticsTitle.zh,
@@ -570,6 +611,9 @@ object CourseStatisticsLogic {
                 courseCount = weekStats.totalCourses,
                 sectionCount = weekStats.totalSections,
                 maxWeek = semesterWeekCount,
+                weeklyStats = weekStats,
+                comparison = weekComparison,
+                timeUtilization = weekTimeUtil,
             ),
             selectedWeek = resolvedWeek,
             currentWeek = currentWeek,

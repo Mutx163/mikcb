@@ -331,17 +331,54 @@ class CourseStatisticsModelTest {
         assertEquals("学霸", unlocked.name)
         assertEquals("总课时 ≥ 100", unlocked.description)
         assertEquals("已达成", unlocked.progressLabel)  // statisticsAchievementDone
+        assertEquals("解锁条件：学期累计课时达到 100 节。", unlocked.detail)
+        assertTrue(unlocked.hasProgress)
+        assertEquals(120, unlocked.progressCurrent)
+        assertEquals(100, unlocked.progressTarget)
+        assertEquals(1.0f, unlocked.progressRatio, 0.0001f)
+        assertEquals("已达成", unlocked.statusLabel)
+        assertEquals("知道了", unlocked.confirmLabel)
 
         val locked = CourseStatisticsLogic.buildAchievement(
             Achievement(id = "scholar", isUnlocked = false, progressCurrent = 86, progressTarget = 100),
         )
         assertEquals("86/100", locked.progressLabel)    // statisticsAchievementProgress
         assertFalse(locked.isUnlocked)
+        assertEquals("解锁条件：学期累计课时达到 100 节。", locked.detail)
+        assertTrue(locked.hasProgress)
+        assertEquals(86, locked.progressCurrent)
+        assertEquals(100, locked.progressTarget)
+        assertEquals(0.86f, locked.progressRatio, 0.0001f)
+        assertEquals("未达成", locked.statusLabel)
+        assertEquals("知道了", locked.confirmLabel)
 
         val noProgress = CourseStatisticsLogic.buildAchievement(
             Achievement(id = "weekend_warrior", isUnlocked = false),
         )
         assertNull("无进度信息的徽章不显示进度", noProgress.progressLabel)
+        assertFalse(noProgress.hasProgress)
+        assertEquals("解锁条件：周六或周日有课。", noProgress.detail)
+        assertEquals("未达成", noProgress.statusLabel)
+    }
+
+    @Test
+    fun `周视图携带完整的WeeklyStats与WeeklyComparison与TimeUtilization`() {
+        val c1 = course("c1", "高数", dayOfWeek = 1, startSection = 1, endSection = 2)
+        val state = CourseStatisticsLogic.buildViewState(
+            courses = listOf(c1),
+            currentWeek = 2,
+            semesterWeekCount = 16,
+            semesterStartDate = LocalDate.of(2026, 9, 1),
+            selectedWeek = 2,
+            semesterView = false,
+            hasOtherProfiles = false,
+        )
+        val week = state.week
+        assertNotNull(week)
+        assertNotNull(week!!.weeklyStats)
+        assertEquals(2, week.weeklyStats!!.weekNumber)
+        assertNotNull(week.comparison)
+        assertNotNull(week.timeUtilization)
     }
 
     // ── 9. 数据故事（data_story_card.dart，`**` 由渲染层解析） ──
