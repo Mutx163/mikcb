@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -41,7 +42,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 @Composable
 fun QingyuBackIconButton(
     onBack: () -> Unit,
-    contentDescription: String = "返回",
+    contentDescription: String = CommonUiStrings.back,
     tint: Color? = null,
 ) {
     val dark = isSystemInDarkTheme()
