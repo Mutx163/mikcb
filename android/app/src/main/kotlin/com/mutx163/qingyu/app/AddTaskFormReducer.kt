@@ -3,6 +3,7 @@ package com.mutx163.qingyu.app
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.task.AddTaskViewState
+import com.mutx163.qingyu.pages.task.TaskCourseOption
 import com.mutx163.qingyu.pages.task.TaskFormDefaults
 import com.mutx163.qingyu.pages.task.TaskFormLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
@@ -81,12 +82,50 @@ object AddTaskFormReducer {
     fun withNote(state: AddTaskViewState, note: String): AddTaskViewState =
         state.copy(note = note)
 
-    /** 到期日开关（Dart `:248` 只改开关，原日期留着，保存时由 `hasDueDate` 决定用不用）。 */
-    fun withHasDueDate(state: AddTaskViewState, hasDueDate: Boolean): AddTaskViewState =
-        state.copy(hasDueDate = hasDueDate)
+    /**
+     * 到期日开关（逐字对齐 Dart `add_task_screen.dart:246-253`）：打开时
+     * `_dueDate ??= dateOnly(now)`；**关掉时把日期清成 null**。
+     *
+     * ⚠️ 这里更正过一次：本文件初版只看到 `:248` 的 `_hasDueDate = value;`，据此写成
+     * 「关掉只改开关、原日期留着」。核完整块才发现 `:250-252` 明写 `if (!value) _dueDate = null;`
+     * ⇒ 关掉就是**清空**（这也是 task-18「清空到期日」的语义出处）。
+     */
+    fun withHasDueDate(
+        state: AddTaskViewState,
+        hasDueDate: Boolean,
+        today: LocalDateTime = LocalDateTime.now(),
+    ): AddTaskViewState = if (hasDueDate) {
+        val date = state.dueDate ?: CourseTask.dateOnly(today)
+        state.copy(
+            hasDueDate = true,
+            dueDate = date,
+            dueDateFormatted = TaskFormLogic.formatDate(date),
+        )
+    } else {
+        state.copy(
+            hasDueDate = false,
+            dueDate = null,
+            dueDateFormatted = TaskFormLogic.formatDate(null),
+        )
+    }
 
-    fun withDueDate(state: AddTaskViewState, dueDate: LocalDateTime?): AddTaskViewState =
-        state.copy(dueDate = dueDate, dueDateFormatted = TaskFormLogic.formatDate(dueDate))
+    /**
+     * 选定到期日（Dart `add_task_screen.dart:361-364`：`_dueDate = dateOnly(selected)` 且
+     * **顺带把开关打开**）。传 `null` 等价于清空，走 [withHasDueDate] 的关闭分支。
+     */
+    fun withDueDate(
+        state: AddTaskViewState,
+        dueDate: LocalDateTime?,
+    ): AddTaskViewState = if (dueDate == null) {
+        withHasDueDate(state, hasDueDate = false)
+    } else {
+        val date = CourseTask.dateOnly(dueDate)
+        state.copy(
+            hasDueDate = true,
+            dueDate = date,
+            dueDateFormatted = TaskFormLogic.formatDate(date),
+        )
+    }
 
     fun withCompleted(state: AddTaskViewState, isCompleted: Boolean): AddTaskViewState =
         state.copy(isCompleted = isCompleted)
@@ -101,6 +140,73 @@ object AddTaskFormReducer {
 
     /** 保存前校验：返回错误文案，`null` 表示可以保存。 */
     fun validate(state: AddTaskViewState): String? = TaskFormLogic.validateTitle(state.title)
+
+    // ------------------------------------------------------------------
+    // 选课程弹层（判据出处：Dart `add_task_screen.dart:282-347`）
+    // ------------------------------------------------------------------
+
+    /** 「无关联课程」这一项的 id（Dart `_noneCourseValue` 的对位件）。 */
+    const val NO_COURSE_OPTION_ID = "task.noCourse"
+
+    /**
+     * 选课程弹层的候选项（Dart `:287-295`）：
+     *
+     * - **按课程名分组**（课表里同一门课的每个时段是独立条目，这里一门课只出现一次），
+     *   分组按名称**升序**排；
+     * - 第一项固定是「无关联课程」（`taskNoCourse`），在未关联任何课程时选中；
+     * - 选中判据是「当前绑定课程的**名字**等于这个分组名」（Dart `:314-316`）；
+     * - 分组对应的 id 取该组**第一条**课程（Dart `:344` `group.courses.first.id`）。
+     */
+    fun coursePickerOptions(
+        courses: List<Course>,
+        selectedCourseId: String?,
+    ): List<TaskCourseOption> {
+        val boundName = courses.firstOrNull { it.id == selectedCourseId }?.name
+        val grouped = courses.groupBy { it.name }.toSortedMap()
+        return buildList {
+            add(
+                TaskCourseOption(
+                    id = NO_COURSE_OPTION_ID,
+                    label = TaskStrings.taskNoCourse,
+                    isSelected = selectedCourseId == null,
+                ),
+            )
+            grouped.forEach { (name, group) ->
+                add(
+                    TaskCourseOption(
+                        id = group.first().id,
+                        label = name,
+                        isSelected = boundName == name,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * 用户在选课程弹层点了某一项之后更新状态（逐条对齐 Dart `:330-346`）：
+     *
+     * - 选「无关联课程」⇒ 清掉 `courseId` 与 `sourceWeek`（`:331-334`）；
+     * - 重选**当前已绑定分组**⇒ **什么都不改**（`:336-339`：保留原来的具体课时绑定，
+     *   否则每次点开弹层再点一次同名分组都会把用户绑到「第一节课」上去）；
+     * - 其它 ⇒ 绑定该分组的第一条课程（`:343-345`）。
+     *
+     * @param pickedOptionId 选项 id（[NO_COURSE_OPTION_ID] 或某条课程的 id）；
+     *   传 `null` 表示用户取消（不改状态）。
+     */
+    fun applyPickedCourseOption(
+        state: AddTaskViewState,
+        courses: List<Course>,
+        pickedOptionId: String?,
+    ): AddTaskViewState {
+        if (pickedOptionId == null) return state
+        if (pickedOptionId == NO_COURSE_OPTION_ID) return withCourse(state, null)
+
+        val boundName = courses.firstOrNull { it.id == state.courseId }?.name
+        val picked = courses.firstOrNull { it.id == pickedOptionId } ?: return state
+        if (boundName != null && boundName == picked.name) return state
+        return withCourse(state, picked)
+    }
 
     /**
      * 由表单状态构建作业实体（交给宿主 `TimetableCourseService.addTask` 落库）。

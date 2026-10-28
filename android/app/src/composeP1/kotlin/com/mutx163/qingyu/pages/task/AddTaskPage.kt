@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,6 +65,18 @@ fun AddTaskPage(
     onCompletedChange: (Boolean) -> Unit,
     onSave: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    // ---- task-18 追加：两个子弹层的入参 ----
+    // ⚠️ 回调故意用**可空**默认值：宿主没接之前，这两行保持「点了不动」的旧行为，
+    // 而不是弹出一个空弹层（那等于把「死入口」伪装成「活入口」，比不弹更糟）。
+    // 宿主接上 `onCourseOptionPicked` / `onDueDatePicked` 之后才会弹。
+    /** 选课程弹层的候选项（`AddTaskFormReducer.coursePickerOptions` 生成）。 */
+    courseOptions: List<TaskCourseOption> = emptyList(),
+    /** 选中项 id（`AddTaskFormReducer.NO_COURSE_OPTION_ID` 或某条课程 id）；`null` = 取消。 */
+    onCourseOptionPicked: ((String?) -> Unit)? = null,
+    /** 选日期弹层确认。 */
+    onDueDatePicked: ((java.time.LocalDateTime) -> Unit)? = null,
+    /** 选日期弹层「无到期日」。 */
+    onDueDateCleared: (() -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
@@ -70,6 +86,32 @@ fun AddTaskPage(
     // 顶栏折叠行为：与 Dart 侧 HyperosSubpage（overlayHeader + collapsibleLargeTitle
     // 均为默认 true）的可折叠大标题一致。必须同时传给 TopAppBar 和内容的 nestedScroll。
     val scrollBehavior = MiuixScrollBehavior()
+
+    // task-18：两个子弹层由页面自己持有开关（判据仍在宿主的 reducer 里）。
+    var showCoursePicker by remember { mutableStateOf(false) }
+    var showDueDatePicker by remember { mutableStateOf(false) }
+
+    TaskCoursePickerSheet(
+        show = showCoursePicker,
+        options = courseOptions,
+        onPick = { optionId ->
+            showCoursePicker = false
+            onCourseOptionPicked?.invoke(optionId)
+        },
+    )
+    TaskDueDatePickerSheet(
+        show = showDueDatePicker,
+        initial = viewState.dueDate,
+        onPick = { date ->
+            showDueDatePicker = false
+            onDueDatePicked?.invoke(date)
+        },
+        onClear = {
+            showDueDatePicker = false
+            onDueDateCleared?.invoke()
+        },
+        onDismiss = { showDueDatePicker = false },
+    )
 
     QingyuPageTheme {
         Scaffold(
@@ -185,7 +227,17 @@ fun AddTaskPage(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = onPickCourseClick)
+                                        .clickable {
+                                            // task-18：这一行以前点不动（宿主给的回调是空实现，
+                                            // 页面自己也没有子弹层）。现在页面自己弹选课程层，
+                                            // 选完通过 onCourseOptionPicked 交给宿主的 reducer。
+                                            // 宿主没接（回调为 null）或没有候选项时不弹——
+                                            // 弹一个空列表等于把死入口伪装成活入口。
+                                            onPickCourseClick()
+                                            if (onCourseOptionPicked != null && courseOptions.isNotEmpty()) {
+                                                showCoursePicker = true
+                                            }
+                                        }
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -250,7 +302,14 @@ fun AddTaskPage(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(onClick = onPickDueDateClick)
+                                            .clickable {
+                                                // task-18：同上，日期行以前也点不动。
+                                                // 宿主没接 onDueDatePicked 时不弹（见签名处说明）。
+                                                onPickDueDateClick()
+                                                if (onDueDatePicked != null) {
+                                                    showDueDatePicker = true
+                                                }
+                                            }
                                             .padding(horizontal = 14.dp, vertical = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),

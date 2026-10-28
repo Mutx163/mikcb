@@ -6,6 +6,7 @@ import com.mutx163.qingyu.pages.task.TaskStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -145,16 +146,196 @@ class AddTaskFormReducerTest {
     }
 
     @Test
-    fun `关掉到期日开关时不写 dueDate 但原日期留着`() {
+    fun `关掉到期日开关会清空日期`() {
+        // 更正过的判据：Dart `add_task_screen.dart:246-253` 的 `if (!value) _dueDate = null;`
+        // ——关掉开关就是**清空**，不是「留着日期不用」（本文件初版写错过一次）。
         val state = AddTaskFormReducer.initial(today = today)
         val off = AddTaskFormReducer.withHasDueDate(state, false)
 
         assertFalse(off.hasDueDate)
-        assertEquals("原日期留着（Dart :248 同口径）", CourseTask.dateOnly(today), off.dueDate)
-        assertNull("不勾就不写", AddTaskFormReducer.buildTask(
-            AddTaskFormReducer.withTitle(off, "作业"),
-            now = today,
-        ).dueDate)
+        assertNull("关掉就是清空", off.dueDate)
+        assertNull(
+            "不勾就不写",
+            AddTaskFormReducer.buildTask(
+                AddTaskFormReducer.withTitle(off, "作业"),
+                now = today,
+            ).dueDate,
+        )
+    }
+
+    @Test
+    fun `重新打开到期日开关时没有日期就用今天`() {
+        val cleared = AddTaskFormReducer.withHasDueDate(
+            AddTaskFormReducer.initial(today = today),
+            false,
+        )
+        val on = AddTaskFormReducer.withHasDueDate(cleared, true, today = today)
+
+        assertTrue(on.hasDueDate)
+        assertEquals(CourseTask.dateOnly(today), on.dueDate)
+    }
+
+    // ================================================================
+    // 3. task-18：选课程 / 选日期两个子弹层的判据
+    // ================================================================
+
+    @Test
+    fun `选课程弹层按课名分组升序 首项是无关联课程`() {
+        val courses = listOf(
+            course("c2", "高等数学"),
+            course("c1", "大学物理"),
+            course("c3", "高等数学"), // 同名不同时段 ⇒ 同一个分组
+        )
+
+        val options = AddTaskFormReducer.coursePickerOptions(courses, selectedCourseId = null)
+
+        assertEquals(
+            "首项哨兵 + 其余按名字升序",
+            listOf(AddTaskFormReducer.NO_COURSE_OPTION_ID, "大学物理", "高等数学"),
+            options.map { it.label }.map { label ->
+                if (label == TaskStrings.taskNoCourse) AddTaskFormReducer.NO_COURSE_OPTION_ID else label
+            },
+        )
+        assertEquals(TaskStrings.taskNoCourse, options.first().label)
+        assertTrue("未关联课程时首项应选中", options.first().isSelected)
+        assertEquals("同名课只出现一次", 3, options.size)
+        assertEquals("分组 id 取该组第一条课程", "c2", options[2].id)
+    }
+
+    @Test
+    fun `选课程弹层的选中态跟着当前绑定课程的名字`() {
+        val courses = listOf(
+            course("c2", "高等数学"),
+            course("c3", "高等数学"),
+            course("c1", "大学物理"),
+        )
+
+        val options = AddTaskFormReducer.coursePickerOptions(courses, selectedCourseId = "c3")
+
+        val selected = options.filter { it.isSelected }
+        assertEquals("只有一组被选中", 1, selected.size)
+        assertEquals("高等数学", selected.single().label)
+        assertEquals("组内第二条也算选中", "c2", selected.single().id)
+    }
+
+    @Test
+    fun `选无关联课程会清掉课程与周次`() {
+        val state = AddTaskFormReducer.initial(
+            preselectedCourse = course("c1", "大学物理"),
+            sourceWeek = 3,
+            today = today,
+        )
+
+        val cleared = AddTaskFormReducer.applyPickedCourseOption(
+            state,
+            listOf(course("c1", "大学物理")),
+            AddTaskFormReducer.NO_COURSE_OPTION_ID,
+        )
+
+        assertNull(cleared.courseId)
+        assertNull(cleared.sourceWeek)
+        assertEquals(TaskStrings.taskNoCourse, cleared.selectedCourseName)
+    }
+
+    @Test
+    fun `重选当前已绑定分组时保留原来的具体课时绑定`() {
+        // Dart `:336-339`：同名分组再点一次**什么都不改**，否则用户每次点开弹层再点一次
+        // 就会被悄悄绑到该组「第一节课」上。
+        val bound = course("c3", "高等数学")
+        val state = AddTaskFormReducer.initial(
+            preselectedCourse = bound,
+            sourceWeek = 5,
+            today = today,
+        )
+        val courses = listOf(course("c2", "高等数学"), bound)
+
+        val after = AddTaskFormReducer.applyPickedCourseOption(state, courses, "c2")
+
+        assertEquals("绑定的具体课时不许被换掉", "c3", after.courseId)
+        assertEquals(5L, after.sourceWeek)
+    }
+
+    @Test
+    fun `选另一门课时绑定到该组第一条`() {
+        val state = AddTaskFormReducer.initial(
+            preselectedCourse = course("c1", "大学物理"),
+            sourceWeek = 3,
+            today = today,
+        )
+        val courses = listOf(
+            course("c1", "大学物理"),
+            course("c2", "高等数学"),
+            course("c3", "高等数学"),
+        )
+
+        val after = AddTaskFormReducer.applyPickedCourseOption(state, courses, "c2")
+
+        assertEquals("c2", after.courseId)
+        assertEquals("高等数学", after.selectedCourseName)
+        assertEquals("换课不动周次（Dart 只改 _courseId）", 3L, after.sourceWeek)
+    }
+
+    @Test
+    fun `取消选课程不改状态`() {
+        val state = AddTaskFormReducer.initial(
+            preselectedCourse = course("c1", "大学物理"),
+            sourceWeek = 3,
+            today = today,
+        )
+
+        assertSame(state, AddTaskFormReducer.applyPickedCourseOption(state, emptyList(), null))
+    }
+
+    @Test
+    fun `选日期会写回 date-only 并打开开关`() {
+        val cleared = AddTaskFormReducer.withHasDueDate(
+            AddTaskFormReducer.initial(today = today),
+            false,
+        )
+        val picked = LocalDateTime.of(2026, 12, 5, 21, 45)
+
+        val after = AddTaskFormReducer.withDueDate(cleared, picked)
+
+        assertTrue("Dart :363 顺带把开关打开", after.hasDueDate)
+        assertEquals(LocalDateTime.of(2026, 12, 5, 0, 0), after.dueDate)
+        assertEquals("2026年12月5日", after.dueDateFormatted)
+    }
+
+    @Test
+    fun `选日期传 null 等价于清空`() {
+        val state = AddTaskFormReducer.initial(today = today)
+
+        val after = AddTaskFormReducer.withDueDate(state, null)
+
+        assertFalse(after.hasDueDate)
+        assertNull(after.dueDate)
+    }
+
+    @Test
+    fun `子弹层用的两个通用按钮文案与 ARB 逐字一致`() {
+        // 这两个键写在渲染层文件里（task-18 写作用域不含 TaskStrings.kt），
+        // 所以在这里钉住它们与 ARB 的值一致。
+        val arb = loadArbZh()
+        assertEquals("取消", arb["cancelAction"])
+        assertEquals("确认", arb["confirmAction"])
+    }
+
+    private fun loadArbZh(): Map<String, String> {
+        var dir: java.io.File? = java.io.File("").absoluteFile
+        var file: java.io.File? = null
+        repeat(8) {
+            val candidate = java.io.File(dir, "lib/l10n/app_zh.arb")
+            if (candidate.isFile) {
+                file = candidate
+                return@repeat
+            }
+            dir = dir?.parentFile
+        }
+        val arbFile = file ?: error("找不到 lib/l10n/app_zh.arb")
+        val parsed = com.mutx163.qingyu.core.MiniJson.parse(arbFile.readText(Charsets.UTF_8))
+        val map = LinkedHashMap<String, String>()
+        (parsed as Map<*, *>).forEach { (k, v) -> if (k is String && v is String) map[k] = v }
+        return map
     }
 
     private fun course(id: String, name: String): Course = Course(
