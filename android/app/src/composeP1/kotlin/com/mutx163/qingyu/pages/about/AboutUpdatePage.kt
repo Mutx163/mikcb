@@ -436,8 +436,8 @@ private fun NotesHeaderCard(release: AppReleaseInfo?) {
 private fun NotesBodyCard(body: String) {
     val colors = MiuixTheme.colorScheme
     val digest = remember(body) { buildReleaseNotesDigest(body) }
-    val plainBlocks = remember(body) {
-        if (digest.isEmpty) splitReleaseNotesIntoBlocks(body) else emptyList()
+    val markdownBlocks = remember(body) {
+        if (digest.isEmpty) buildReleaseNotesMarkdownBlocks(body, stripVersionHeading = true) else emptyList()
     }
 
     QingyuCard(
@@ -445,7 +445,7 @@ private fun NotesBodyCard(body: String) {
         insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         if (digest.isEmpty) {
-            if (plainBlocks.isEmpty()) {
+            if (markdownBlocks.isEmpty()) {
                 Text(
                     text = AboutUpdatePageStrings.noUpdateHint,
                     style = MiuixTheme.textStyles.footnote1,
@@ -453,15 +453,7 @@ private fun NotesBodyCard(body: String) {
                     lineHeight = 20.sp,
                 )
             } else {
-                for (block in plainBlocks) {
-                    Text(
-                        text = block,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = colors.onSurface,
-                        lineHeight = 20.sp,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                }
+                ReleaseNotesMarkdownView(markdownBlocks)
             }
         } else {
             ExpandedDigest(digest)
