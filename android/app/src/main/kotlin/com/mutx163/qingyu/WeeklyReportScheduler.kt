@@ -68,6 +68,20 @@ object WeeklyReportScheduler {
         )
     }
 
+    /**
+     * 周报开关当前是否开启——**供界面读取初始状态**（2026-10-28 补）。
+     *
+     * ## 为什么必须由本对象提供，而不是让界面自己读 prefs
+     *
+     * `PREFS_NAME` / `KEY_ENABLED` 都是 `private`。界面若为了省一个访问器而**复制键名**去读，
+     * 两边就形成了一份**无守卫的隐式契约**：哪天这里改了键名或改了默认值，
+     * 界面会**静默读成 `false`**——用户明明开着周报，设置页却显示「关」，
+     * 而编译、单测、日志**全都正常**。这类漂移只有真机能发现。
+     *
+     * 所以：**读同一个对象**，不要复制键名。
+     */
+    fun isEnabled(context: Context): Boolean = readPrefs(context).enabled
+
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return

@@ -20,6 +20,7 @@ import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.pages.course.CourseActionSheet
+import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
 /**
@@ -57,6 +58,9 @@ import com.mutx163.qingyu.platform.PrefsKeyValueStore
  */
 class ShellWiring(context: Context) {
 
+    /** 应用上下文：宿主需要它读系统侧状态（例如周报开关、通知权限）。 */
+    val context: Context = context.applicationContext
+
     /** 壳自己的存储（`FlutterSharedPreferences`，冻结格式）。两者共用同一个实例。 */
     private val keyValueStore: KeyValueStore = PrefsKeyValueStore(context)
 
@@ -92,6 +96,16 @@ class ShellWiring(context: Context) {
      * 与 [pendingEditCourse] 同生命周期：都是「跨子树传一次、用完即清」的意图载体。
      */
     var pendingTaskCourse: Course? = null
+
+    /**
+     * 统计深度分析页当前要打开的模块（ST1）：`e.statistics` 的 `onOpenAnalysis` 写入、
+     * `e.analysis` 读取。
+     *
+     * 为什么放这里：`e.statistics` 与 `e.analysis` 是**两个独立的路由分支**，不是同一棵子树，
+     * 共享不到局部状态；与 [pendingEditCourse] 同属「跨子树传一次」的意图载体。
+     * 默认 `TREND` 与页面原有的写死值一致，避免未设置时行为变化。
+     */
+    var pendingAnalysisModule: StatisticsAnalysisModule = StatisticsAnalysisModule.TREND
 
     fun clearAddCourseIntent() {
         pendingAddCourseSeed = null
@@ -294,6 +308,9 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/settings/live" -> "b.live"
     "/settings/live/self-check" -> "b.liveSelfCheck"
     "/settings/live/keep-alive" -> "j.keepAlive"
+    "/settings/live/reminder-timing" -> "j.reminderTiming"
+    "/settings/live/display/before-class" -> "j.displayBefore"
+    "/settings/live/display/during-end" -> "j.displayDuring"
     "/settings/home-widget" -> "b.homeWidget"
     "/settings/home-navigation" -> "b.homeNavigation"
     "/settings/home-menu" -> "b.homeMenuEditor"

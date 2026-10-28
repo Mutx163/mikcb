@@ -117,11 +117,13 @@ import com.mutx163.qingyu.pages.settings.TimetablePageSettingsState
 import com.mutx163.qingyu.pages.settings.SettingsTimetableState
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
+import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsLogic
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsPage
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisPage
+import com.mutx163.qingyu.pages.statistics.StatisticsFeed
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionPage
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
@@ -541,50 +543,113 @@ fun ShellPageContent(
         )
 
         // ── P3-E 统计族 ───────────────────────────────────────────────
-        "e.statistics" -> CourseStatisticsPage(
-            viewState = CourseStatisticsLogic.buildViewState(
-                courses = emptyList(),
-                currentWeek = 1,
-                semesterWeekCount = 20,
-                semesterStartDate = null,
-                selectedWeek = 1,
-                semesterView = true,
-                hasOtherProfiles = false,
-            ),
-            onBack = onBack,
-            onTabSelected = {},
-            onOpenSettings = {},
-            onOpenShare = {},
-            onWeekChanged = {},
-            onOpenAnalysis = {},
-            onOpenSessions = {},
-        )
-        "e.statisticsSettings" -> StatisticsSettingsPage(
-            viewState = StatisticsSettingsLogic.buildViewState(
-                weeklyReportEnabled = false,
-                now = LocalDateTime.now(),
-            ),
-            onBack = onBack,
-            onWeeklyReportToggle = {},
-        )
-        "e.analysis" -> StatisticsAnalysisPage(
-            // 六个模块共用一页；壳里默认进「趋势」。courseCount=0 → 空态。
-            viewState = StatisticsAnalysisModel.viewState(
-                module = StatisticsAnalysisModule.TREND,
-                courseCount = 0,
-            ),
-            onBack = onBack,
-        )
-        "e.session" -> StatisticsSessionPage(
-            viewState = StatisticsSessionModel.viewState(
-                courseNames = emptyList(),
-                previousSelection = null,
-                statsOf = { null },
-                dateTextOf = { null },
-            ),
-            onBack = onBack,
-            onSelectCourse = {},
-        )
+        "e.statistics" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            // 壳内局部状态：分段（学期/周）与周视图选中的周。
+            var semesterView by remember { mutableStateOf(true) }
+            var selectedWeek by remember { mutableStateOf<Int?>(null) }
+            // 一次装配两份状态——`StatisticsFeed` 的 KDoc 明说必须同源，
+            // 否则「主页说 3 门课、明细页只有一个可选」这类不一致会天天出现。
+            val feedState = remember(snapshot, semesterView, selectedWeek) {
+                StatisticsFeed.feed(
+                    input = StatisticsFeed.Input.fromSnapshot(snapshot),
+                    now = LocalDateTime.now(),
+                    selectedWeek = selectedWeek,
+                    semesterView = semesterView,
+                )
+            }
+            CourseStatisticsPage(
+                viewState = feedState.home,
+                onBack = onBack,
+                // tab 0 = 学期视图（`CourseStatisticsPage.kt:170` `selectedTabIndex == 0 && semester != null`）
+                onTabSelected = { index -> semesterView = index == 0 },
+                onOpenSettings = { onOpenPage("e.statisticsSettings") },
+                // ⚠️ **链缺口**（交付方核实）：Kotlin 侧没有「统计图导出并分享」的实现
+                // （Dart 走 `StatisticsShareService.exportAndShare`：光栅化 + 系统分享），
+                // 而仓库里现有的分享适配器只管**日历/文件**，不是画图。
+                // ⇒ 这里**有意留空**并记录为待办；**不塞假动作**让它看起来接完了。
+                onOpenShare = {},
+                onWeekChanged = { week -> selectedWeek = week },
+                onOpenAnalysis = { module ->
+                    wiring.pendingAnalysisModule = module
+                    onOpenPage("e.analysis")
+                },
+                onOpenSessions = { onOpenPage("e.session") },
+            )
+        }
+        "e.statisticsSettings" -> {
+            StatisticsSettingsPage(
+                viewState = StatisticsSettingsLogic.buildViewState(
+                    // 走 `WeeklyReportScheduler.isEnabled`（本次新加的公开读访问器）——
+                    // **不复制 prefs 键名**：键名是 private，复制会形成一份无守卫的隐式契约，
+                    // 哪天那边改了键名或默认值，这里会静默读成 false（用户开着、界面显示关着）。
+                    weeklyReportEnabled = WeeklyReportScheduler.isEnabled(wiring.context),
+                    now = LocalDateTime.now(),
+                ),
+                onBack = onBack,
+                // ⚠️ **链缺口（本批新发现，比交付方预估的更深）**：
+                // `WeeklyReportScheduler.scheduleNext(context, enabled, fireAtMillis, title, body)`
+                // 需要**调用方自己算**下次触发时刻与通知标题/正文——Flutter 侧这些值是
+                // **Dart 算好再经 method channel 传下来**的（见 `MainActivity.kt:1235-1247`）。
+                // ⇒ Kotlin 侧目前**只有持久化入口，没有「按当前设置算出下一次」的入口**。
+                // 所以这里**有意留空**：不伪造 fireAt/文案（那会让用户收到内容错误的周报），
+                // 也不假装开关已生效。补法：把 Dart 那段计算移植成纯逻辑（可 JVM 测），
+                // 或在 scheduler 上加一个高层 `enable(context, now)`。
+                // 关（`cancel`）本身是自洽的，但在「开」不可用前只接关会让开关**看起来能开**，
+                // 所以两向一起留空。
+                onWeeklyReportToggle = {},
+            )
+        }
+        "e.analysis" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            val feedState = remember(snapshot) {
+                StatisticsFeed.feed(
+                    input = StatisticsFeed.Input.fromSnapshot(snapshot),
+                    now = LocalDateTime.now(),
+                )
+            }
+            StatisticsAnalysisPage(
+                viewState = StatisticsAnalysisModel.viewState(
+                    module = wiring.pendingAnalysisModule,
+                    courseCount = feedState.courseCount,
+                ),
+                onBack = onBack,
+                // ⚠️ 页面签名里 `onOpenCourse` 的默认实现就是空的（普查第 6 个盲区：
+                // 「只扫显式空回调」扫不到签名默认值）⇒ 点课程名进该课明细**尚不可用**。
+                // 有意不在这里塞一个空 lambda 冒充「已接」，等明细页选中态可复用后再接。
+            )
+        }
+        "e.session" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            var selectedCourse by remember { mutableStateOf<String?>(null) }
+            val feedState = remember(snapshot, selectedCourse) {
+                StatisticsFeed.feed(
+                    input = StatisticsFeed.Input.fromSnapshot(snapshot),
+                    now = LocalDateTime.now(),
+                    previousSelection = selectedCourse,
+                )
+            }
+            StatisticsSessionPage(
+                viewState = feedState.session,
+                onBack = onBack,
+                onSelectCourse = { name -> selectedCourse = name },
+            )
+        }
 
         // ── P3-F 同步与备份 ───────────────────────────────────────────
         "f.cloudSync" -> CloudSyncPage(
