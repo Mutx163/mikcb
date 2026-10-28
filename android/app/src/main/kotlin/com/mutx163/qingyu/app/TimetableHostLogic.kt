@@ -1,7 +1,10 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.course.TimetableCoursePort
+import com.mutx163.qingyu.course.TimetableCourseService
 
 /**
  * 课表宿主的显示偏好。
@@ -110,4 +113,93 @@ object TimetableHostLogic {
         activeTimeSchemeId: String?,
     ): TimeScheme? =
         schemes.firstOrNull { it.id == activeTimeSchemeId } ?: schemes.firstOrNull()
+}
+
+/** 删除目标（Dart `add_course_screen.dart` 两条删除分支）。 */
+sealed interface TimetableDeleteTarget {
+
+    /**
+     * 整组删除（Dart `:1406-1425`，组编辑态）：按**原始组名**摘掉整组课次，
+     * 连带挂在这组课上的考试与作业（服务侧 `deleteGroup` 已实现）。
+     */
+    data class WholeGroup(val originalGroupName: String) : TimetableDeleteTarget
+
+    /** 单条课次删除（Dart `:448-473`，单课编辑态）：只摘这一条，同组其它课次留着。 */
+    data class SingleCourse(val courseId: String) : TimetableDeleteTarget
+}
+
+/**
+ * 加课页的保存/删除载荷 → 仓储的分派（**宿主职责**）。
+ *
+ * 为什么在宿主层：`AddCoursePage` 的 KDoc 写着「保存载荷交给壳层落盘，由壳层按 mode 分派」，
+ * 也就是说页面只产载荷，落到哪个仓储方法是宿主的事。
+ *
+ * ## 保存：Dart 是「三分支」，其中**编辑走整组替换**（`add_course_screen.dart:2044-2064`）
+ *
+ * ```dart
+ * if (widget.courseGroup != null)      await provider.updateCourseGroup(widget.courseGroup!.name, courses);
+ * else if (widget.course != null)      await provider.updateCourseGroup(widget.course!.name, courses);
+ * else                                 for (final c in courses) await provider.addCourse(c);
+ * ```
+ *
+ * ⚠️ **单课编辑也走整组替换**，Dart 原注释写明理由：走 delete+add 的话，
+ * 同名兄弟课次会活过 delete，随后 `addCourse` 的共享字段广播又把它们的旧
+ * 颜色/名字/性质盖回用户刚改的内容——「保存成功提示照弹，界面却没变」。
+ *
+ * ⚠️ 壳里原来的实现是**逐课 `updateCourse`**：那是「组里被删掉的课次不会被移除」的洞
+ * ——编辑后把 3 门课删成 2 门，第 3 门会**留在盘上**。
+ *
+ * ## 参数口径：用 `originalGroupName` 而不是 mode 枚举
+ *
+ * 页面模型 `AddCourseFormLogic.resolveSaveTarget` 的契约是
+ * 「编辑既有课/组 → `UPDATE_GROUP` 且 `targetGroupName != null`；新建 → `ADD` 且 null」，
+ * 两者等价。所以这里直接收 `targetGroupName`（壳一行传参即可），并有一条契约测试
+ * 钉住这个等价关系（`TimetableHostLogicTest`）。
+ *
+ * @param originalGroupName 编辑态的**原始**组名（改名前的那个名字）；新建传 null。
+ * @param courses 保存后应当存在的**完整**课次列表（整组替换的语义就在这里）。
+ */
+object TimetableSaveDispatcher {
+
+    /** 保存：编辑既有课/组 → 整组替换；新建 → 逐条新增（与 Dart 分支逐条一致）。 */
+    fun applySave(
+        port: TimetableCoursePort,
+        originalGroupName: String?,
+        courses: List<Course>,
+    ) {
+        if (originalGroupName == null) {
+            // Dart `:2059-2063`：新建是逐条 addCourse（不是 addGroup）。
+            courses.forEach { TimetableCourseService.add(port, it) }
+        } else {
+            // Dart `:2047` / `:2058`：整组替换。服务侧对空集合是 no-op（挡在摘除旧课次之前）。
+            TimetableCourseService.updateGroup(port, originalGroupName, courses)
+        }
+    }
+
+    /**
+     * 删除目标判定（Dart 的两条分支 + 新建态没有删除入口）。
+     *
+     * 期望值（手推）：
+     * - 组编辑（`originalGroupName != null`）→ [TimetableDeleteTarget.WholeGroup]（组名优先，即使 course 也在场）
+     * - 单课编辑（只有 `initialCourse`）→ [TimetableDeleteTarget.SingleCourse]（只删这一条）
+     * - 新建（两者都 null）→ `null`（没有可删的东西，调用方应当什么都不做）
+     */
+    fun resolveDeleteTarget(
+        originalGroupName: String?,
+        initialCourse: Course?,
+    ): TimetableDeleteTarget? = when {
+        originalGroupName != null -> TimetableDeleteTarget.WholeGroup(originalGroupName)
+        initialCourse != null -> TimetableDeleteTarget.SingleCourse(initialCourse.id)
+        else -> null
+    }
+
+    /** 删除：整组走 `deleteGroup`（连带摘考试/作业），单条走 `delete`。 */
+    fun applyDelete(port: TimetableCoursePort, target: TimetableDeleteTarget) {
+        when (target) {
+            is TimetableDeleteTarget.WholeGroup ->
+                TimetableCourseService.deleteGroup(port, target.originalGroupName)
+            is TimetableDeleteTarget.SingleCourse ->
+                TimetableCourseService.delete(port, target.courseId)
+        }
+    }
 }

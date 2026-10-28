@@ -1,8 +1,12 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.pages.course.AddCourseFormLogic
+import com.mutx163.qingyu.pages.course.AddCourseGroupData
+import com.mutx163.qingyu.pages.course.AddCourseSaveMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -18,6 +22,7 @@ import java.time.LocalDateTime
  * - `lib/models/timetable_settings.dart:754`（节次行高默认 68）
  * - `lib/widgets/timetable/timetable_empty_slot_layer.dart:46,111`（空档加课开关）
  * - `lib/services/storage_service.dart:1645`（首启档案名「默认课表」）
+ * - `lib/screens/add_course_screen.dart:2044-2064`（保存三分支）/ `:448-473`、`:1406-1425`（删除两分支）
  */
 class TimetableHostLogicTest {
 
@@ -179,5 +184,207 @@ class TimetableHostLogicTest {
         sections = listOf(SectionTime("08:00", "08:45")),
         createdAt = baseTime,
         updatedAt = baseTime,
+    )
+
+    // ── 6. 保存分派：整组替换（P3.5-1c 的验收核心）──
+
+    @Test
+    fun `组编辑后只剩两门课时 第三门必须真的从仓储消失`() {
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+        repo.addCourse(course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3))
+        repo.addCourse(course(id = "c3", name = "高等数学", dayOfWeek = 5, section = 5))
+        assertEquals(3, groupSize(repo, "高等数学"))
+
+        // 用户在编辑页把第三条课次删掉；保存载荷里只剩两条（整组替换的语义）。
+        TimetableSaveDispatcher.applySave(
+            port = repo,
+            originalGroupName = "高等数学",
+            courses = listOf(
+                course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1),
+                course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3),
+            ),
+        )
+
+        assertEquals(2, groupSize(repo, "高等数学"))
+        assertFalse(
+            "第 3 门课必须真的从仓储消失——壳里旧的「逐课 updateCourse」实现会把它留在盘上",
+            repo.snapshot.courses.any { it.id == "c3" },
+        )
+        assertTrue("保留的两条应当在", repo.snapshot.courses.any { it.id == "c1" })
+        assertTrue("保留的两条应当在", repo.snapshot.courses.any { it.id == "c2" })
+    }
+
+    @Test
+    fun `整组替换按原始组名摘除 改名后不留旧名课次`() {
+        // Dart add_course_screen.dart:2049-2058 的注释：走 delete+add 会让同名兄弟
+        // 课次活下来、再把旧的共享字段广播回去。整组替换必须按**原始**组名摘。
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+        repo.addCourse(course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3))
+        repo.addCourse(course(id = "c3", name = "高等数学", dayOfWeek = 5, section = 5))
+
+        TimetableSaveDispatcher.applySave(
+            port = repo,
+            originalGroupName = "高等数学",
+            courses = listOf(
+                course(id = "c1", name = "高等数学 A", dayOfWeek = 1, section = 1),
+                course(id = "c2", name = "高等数学 A", dayOfWeek = 3, section = 3),
+            ),
+        )
+
+        assertEquals(0, groupSize(repo, "高等数学"))
+        assertEquals(2, groupSize(repo, "高等数学 A"))
+        assertEquals(2, repo.snapshot.courses.size)
+    }
+
+    @Test
+    fun `空课次列表是 no-op 不会把整组抹掉`() {
+        // 服务侧 updateGroup 对空集合直接 return（挡在摘除旧课次之前）：
+        // 否则「表单里一条不剩」会把整组课无声删光。
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+        repo.addCourse(course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3))
+
+        TimetableSaveDispatcher.applySave(
+            port = repo,
+            originalGroupName = "高等数学",
+            courses = emptyList(),
+        )
+
+        assertEquals(2, groupSize(repo, "高等数学"))
+    }
+
+    @Test
+    fun `新建走逐条新增 不碰既有课次`() {
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+
+        TimetableSaveDispatcher.applySave(
+            port = repo,
+            originalGroupName = null,
+            courses = listOf(
+                course(id = "n1", name = "大学物理", dayOfWeek = 2, section = 2),
+                course(id = "n2", name = "大学物理", dayOfWeek = 4, section = 4),
+            ),
+        )
+
+        assertEquals(1, groupSize(repo, "高等数学"))
+        assertEquals(2, groupSize(repo, "大学物理"))
+    }
+
+    // ── 7. 删除分派 ──
+
+    @Test
+    fun `删除目标判定 组编辑优先整组 单课编辑只删一条 新建态没有删除入口`() {
+        val existing = course(id = "c9", name = "高等数学", dayOfWeek = 1, section = 1)
+        assertEquals(
+            TimetableDeleteTarget.WholeGroup("高等数学"),
+            TimetableSaveDispatcher.resolveDeleteTarget(
+                originalGroupName = "高等数学",
+                initialCourse = existing,
+            ),
+        )
+        assertEquals(
+            TimetableDeleteTarget.SingleCourse("c9"),
+            TimetableSaveDispatcher.resolveDeleteTarget(
+                originalGroupName = null,
+                initialCourse = existing,
+            ),
+        )
+        assertNull(
+            TimetableSaveDispatcher.resolveDeleteTarget(
+                originalGroupName = null,
+                initialCourse = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `整组删除把同名的三条课次一起摘掉`() {
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+        repo.addCourse(course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3))
+        repo.addCourse(course(id = "c3", name = "高等数学", dayOfWeek = 5, section = 5))
+        repo.addCourse(course(id = "p1", name = "大学物理", dayOfWeek = 2, section = 2))
+
+        TimetableSaveDispatcher.applyDelete(
+            port = repo,
+            target = TimetableDeleteTarget.WholeGroup("高等数学"),
+        )
+
+        assertEquals(0, groupSize(repo, "高等数学"))
+        assertEquals(1, groupSize(repo, "大学物理"))
+    }
+
+    @Test
+    fun `单条删除只摘那一条 同组兄弟留着`() {
+        val repo = newRepository()
+        repo.addCourse(course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1))
+        repo.addCourse(course(id = "c2", name = "高等数学", dayOfWeek = 3, section = 3))
+        repo.addCourse(course(id = "c3", name = "高等数学", dayOfWeek = 5, section = 5))
+
+        TimetableSaveDispatcher.applyDelete(
+            port = repo,
+            target = TimetableDeleteTarget.SingleCourse("c2"),
+        )
+
+        assertEquals(2, groupSize(repo, "高等数学"))
+        assertFalse(repo.snapshot.courses.any { it.id == "c2" })
+        assertTrue(repo.snapshot.courses.any { it.id == "c1" })
+        assertTrue(repo.snapshot.courses.any { it.id == "c3" })
+    }
+
+    // ── 8. 分派判据的跨层契约（分派器依赖的那条等价关系）──
+
+    @Test
+    fun `编辑态载荷的 targetGroupName 非空 新建态为空`() {
+        // `TimetableSaveDispatcher.applySave` 用「originalGroupName == null ? 新建 : 整组替换」
+        // 判断分支，所以页面模型必须保证：编辑 ⟺ UPDATE_GROUP ⟺ targetGroupName != null。
+        // 这条断言钉住的就是这个等价关系（壳里只传 payload.targetGroupName）。
+        val existing = course(id = "c1", name = "高等数学", dayOfWeek = 1, section = 1)
+
+        val singleEdit = AddCourseFormLogic.resolveSaveTarget(
+            initialCourse = existing,
+            courseGroup = null,
+        )
+        assertEquals(AddCourseSaveMode.UPDATE_GROUP, singleEdit.mode)
+        assertEquals("高等数学", singleEdit.targetGroupName)
+
+        val groupEdit = AddCourseFormLogic.resolveSaveTarget(
+            initialCourse = null,
+            courseGroup = AddCourseGroupData(name = "高等数学", courses = listOf(existing)),
+        )
+        assertEquals(AddCourseSaveMode.UPDATE_GROUP, groupEdit.mode)
+        assertEquals("高等数学", groupEdit.targetGroupName)
+
+        val create = AddCourseFormLogic.resolveSaveTarget(initialCourse = null, courseGroup = null)
+        assertEquals(AddCourseSaveMode.ADD, create.mode)
+        assertNull(create.targetGroupName)
+    }
+
+    // ── 测试夹具 ──
+
+    private fun newRepository(): TimetableRepository =
+        TimetableRepository(TimetableStore(InMemoryKeyValueStore()))
+
+    private fun groupSize(repo: TimetableRepository, name: String): Int =
+        repo.snapshot.courses.count { it.name == name }
+
+    private fun course(
+        id: String,
+        name: String,
+        dayOfWeek: Int,
+        section: Int,
+    ): Course = Course(
+        id = id,
+        name = name,
+        teacher = "张老师",
+        location = "三教-401",
+        dayOfWeek = dayOfWeek,
+        startSection = section,
+        endSection = section,
+        startTime = "08:00",
+        endTime = "08:45",
     )
 }
