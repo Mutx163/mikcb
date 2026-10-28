@@ -119,11 +119,10 @@ object ShellPageCatalog {
             title = "关于与说明",
             pages = listOf(
                 page("P3-A", "about", "关于", ShellPageDataKind.DIRECT),
-                page(
-                    "P3-A", "changelog", "更新日志", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_RENDERER.label}：只有解析模型 ReleaseNotesBlocks.kt，没有对应的 Composable",
-                    blockedBy = ShellBlockReason.MISSING_RENDERER,
-                ),
+                // 2026-10-28 补口：这一屏原先标「暂不可用」（只有解析模型没有界面）。
+                // 现已补上 `ChangelogPage`（零参渲染，页面自己去读 assets 里的发布说明）。
+                // 归 DIRECT：不需要壳喂任何数据。至此台账虚标的三处全部收口。
+                page("P3-A", "changelog", "更新日志", ShellPageDataKind.DIRECT),
                 page("P3-A", "licenses", "开源许可", ShellPageDataKind.DEMO),
                 page("P3-A", "support", "支持作者", ShellPageDataKind.DEMO),
             ),
@@ -315,11 +314,12 @@ object ShellPageCatalog {
             title = "实时活动与天气",
             pages = listOf(
                 page("P3-J", "live", "实时活动 / 灵动岛", ShellPageDataKind.DIRECT),
-                page(
-                    "P3-J", "keepAlive", "实时活动 · 保持后台运行", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_RENDERER.label}：pages/live/ 只有 LiveSettingsPage.kt，这一屏没有实现",
-                    blockedBy = ShellBlockReason.MISSING_RENDERER,
-                ),
+                // 2026-10-28 补口：这一屏原先标「暂不可用」（缺整页渲染层），
+                // 现已补上（`LiveKeepAliveSettingsPage` 的零参重载自带默认状态）。
+                // 归 DIRECT 而不是 DEMO：页面自带默认值就能渲染出完整界面，
+                // 壳里不需要喂任何演示数据（无障碍权限探测默认返回「未开启」，
+                // 那是**真实可能的状态**，不是编造的假数据）。
+                page("P3-J", "keepAlive", "实时活动 · 保持后台运行", ShellPageDataKind.DIRECT),
                 page("P3-J", "weatherCity", "天气城市选择", ShellPageDataKind.DIRECT),
             ),
         ),

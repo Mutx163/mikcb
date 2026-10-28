@@ -18,13 +18,13 @@ import org.junit.Test
  *
  * ## 钉住的是「不许悄悄变少」
  *
- * 总数 82 / 可进入 76 / 暂不可用 5 是照 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md`
+ * 总数 82 / 可进入 78 / 暂不可用 3 是照 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md`
  * §2 数出来的。将来真接进去几页，改这里的数字就是**显式决定**（并同步改清单），
  * 而不是某次重构顺手掉两页、没人发现。
  *
- * （2026-10-28：「设置 · 课表页面」补上落点，可进入 75 → 76、暂不可用 6 → 5；
- * 清单与台账同步改过。剩下的 `a.changelog` / `j.keepAlive` 两条在补渲染层，
- * 补完继续往 78 / 3 走。）
+ * （2026-10-28 补口：`a.changelog` / `b.timetablePage` / `j.keepAlive` 三处台账虚标
+ * 全部收口，可进入 75 → 78、暂不可用 6 → 3；清单与台账同步改过。剩下 3 条不是
+ * 「缺渲染层」，而是缺宿主槽位（二维码收发 2 条）与缺宿主数据（月视图 1 条）。）
  */
 class ShellPageCatalogTest {
 
@@ -38,8 +38,8 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可进入与不可用的数量`() {
-        assertEquals("可进入条数", 76, ShellPageCatalog.openable.size)
-        assertEquals("暂不可用条数", 5, ShellPageCatalog.countOf(ShellPageDataKind.UNAVAILABLE))
+        assertEquals("可进入条数", 78, ShellPageCatalog.openable.size)
+        assertEquals("暂不可用条数", 3, ShellPageCatalog.countOf(ShellPageDataKind.UNAVAILABLE))
         assertEquals("常驻条数（底部玻璃坞自身）", 1, ShellPageCatalog.countOf(ShellPageDataKind.ALWAYS_VISIBLE))
     }
 
@@ -97,7 +97,7 @@ class ShellPageCatalogTest {
     @Test
     fun `每条不可用都带可反查的分类`() {
         val unavailable = ShellPageCatalog.all.filter { it.kind == ShellPageDataKind.UNAVAILABLE }
-        assertEquals("不可用条数变了就要同步改这条断言与 L4 清单", 5, unavailable.size)
+        assertEquals("不可用条数变了就要同步改这条断言与 L4 清单", 3, unavailable.size)
 
         unavailable.forEach { entry ->
             // 分类不是给人看的形容词，是机器可判的字段：将来补了依赖/槽位，
@@ -130,10 +130,11 @@ class ShellPageCatalogTest {
 
         assertEquals(
             "缺整页渲染层",
-            // 2026-10-28 补口：`b.timetablePage` 已交付（spec + 分派 + 覆盖登记），
-            // 从这一行划掉。剩两条等渲染层补上后再划。
-            setOf("a.changelog", "j.keepAlive"),
-            byReason[ShellBlockReason.MISSING_RENDERER]?.toSet(),
+            // 2026-10-28 补口：`a.changelog` / `b.timetablePage` / `j.keepAlive`
+            // 三条（l4-recon 查出的台账虚标三处）全部补上渲染层 + 分派 + 覆盖登记，
+            // 这一档**清空**。将来再有缺渲染层的页面，在这里登记。
+            emptySet<String>(),
+            byReason[ShellBlockReason.MISSING_RENDERER]?.toSet() ?: emptySet<String>(),
         )
         assertEquals(
             "缺宿主槽位",
@@ -165,7 +166,7 @@ class ShellPageCatalogTest {
 
     @Test
     fun `可点判据只有直连与演示数据两档`() {
-        assertEquals(76, ShellPageCatalog.all.count { it.isOpenable })
+        assertEquals(78, ShellPageCatalog.all.count { it.isOpenable })
 
         val clickable = ShellPageCatalog.all.filter { it.isOpenable }
         assertTrue(

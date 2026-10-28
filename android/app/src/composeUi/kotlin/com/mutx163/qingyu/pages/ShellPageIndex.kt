@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.about.AboutStaticPage
+import com.mutx163.qingyu.pages.about.ChangelogPage
 import com.mutx163.qingyu.pages.about.OpenSourceLicensesPage
 import com.mutx163.qingyu.pages.about.SupportCreatorPage
 import com.mutx163.qingyu.pages.conflict.CourseConflictPage
@@ -62,6 +63,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
+import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.live.LiveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.schedule.ScheduleDateRulePage
@@ -100,6 +102,8 @@ import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePage
+import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
+import com.mutx163.qingyu.pages.settings.TimetablePageSettingsState
 import com.mutx163.qingyu.pages.settings.SettingsTimetableState
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
@@ -187,6 +191,9 @@ fun ShellPageContent(
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         "a.about" -> AboutStaticPage(onBack = onBack, onEntryClick = {})
+        // 2026-10-28 补口：这一屏原先只有解析模型没有界面（台账虚标三处之一）。
+        // 零参调用：页面自己去读 assets 里的发布说明。
+        "a.changelog" -> ChangelogPage(onBack = onBack)
         "a.licenses" -> OpenSourceLicensesPage(
             packages = emptyList(),
             onBack = onBack,
@@ -657,6 +664,9 @@ fun ShellPageContent(
 
         // ── P3-J 实时活动与天气 ──────────────────────────────────────
         "j.live" -> LiveSettingsPage(onBack = onBack)
+        // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
+        // 走的是零参重载：默认状态 + 探测回调返回「未开启」，不造假数据。
+        "j.keepAlive" -> LiveKeepAliveSettingsPage(onBack = onBack)
         "j.weatherCity" -> WeatherCityPickerPage(
             onBack = onBack,
             onSelectCity = {},
