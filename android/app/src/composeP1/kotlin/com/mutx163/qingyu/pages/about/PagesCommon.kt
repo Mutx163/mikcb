@@ -92,22 +92,10 @@ fun QingyuPageScaffold(
     SharedPageScaffold(title = title, onBack = onBack, actions = actions, content = content)
 }
 
-/**
- * 分组小标题（Dart 侧 `HyperosSectionLabel`）。
- *
- * 字号 13 / 次要文字色，与 Flutter 侧的分组标签同档（`hyperos_typography` 的
- * footnote 档），不再各页各估。
- */
-@Composable
-fun QingyuSectionLabel(text: String) {
-    val dark = isSystemInDarkTheme()
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.footnote1,
-        color = Color(QingyuTheme.sectionLabel(dark)),
-        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
-    )
-}
+// 分组小标题原先在这里自己拼（13sp + `start = 4.dp` + 次要文字色），对不齐官方那条
+// 28dp 轴线（页面 0 → Card 外边距 12 → Preference 自带 16）。2026-10-28 已删除，
+// 关于域三页统一改用 `components/QingyuSectionTitle`（官方 SmallTitle，自带 28dp 左缘）。
+// 这里不再提供第二套实现——第二套就是「各页各写各的」的起点。
 
 /**
  * 列表行：官方 [Card] 的可点击重载（**带按压反馈**）+ 行首图标 + 行尾箭头。
@@ -160,7 +148,10 @@ fun QingyuRow(
         }
     }
 
-    val margin = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+    // 行内边距 16dp：与官方 `*Preference` 自带的内边距同值。配合列表的
+    // `horizontalPadding = QingyuPageCardMargin`（12dp）得到文字左缘 12 + 16 = 28，
+    // 正好落在官方那条轴线上（原先写 14dp 会差 2dp，分组标题与行文字对不齐）。
+    val margin = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     if (onClick == null) {
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = margin) { content() }
     } else {

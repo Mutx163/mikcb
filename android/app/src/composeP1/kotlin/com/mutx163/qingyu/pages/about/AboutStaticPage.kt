@@ -3,14 +3,13 @@ package com.mutx163.qingyu.pages.about
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
@@ -43,21 +42,21 @@ fun AboutStaticPage(
     val sections = aboutInfoSections()
 
     QingyuPageScaffold(title = "关于", onBack = onBack) {
-        LazyColumn(
-            // 把滚动手势喂给顶栏的折叠行为；漏了这一步大标题就永不收起。
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding(),
-                // 底部必须把系统手势条那段算进去，否则最后一行会钻到小白条底下。
-                bottom = innerPadding.calculateBottomPadding() + 24.dp,
-            ),
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            // 官方配方：页面横向留白由每个块自己带（Card 12dp），
+            // 不在 contentPadding 里加左右内边距——否则滚动条贴不到屏幕边缘。
+            horizontalPadding = QingyuPageCardMargin,
+            // 底部手势条那段由 QingyuPageList 内部按 innerPadding 算
+            //（等价于原先手写的 innerPadding.calculateBottomPadding()），
+            // 这里只补额外的滚动留白，避免重复相加。
+            contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             for (section in sections) {
                 item(key = "section-${section.label}") {
-                    QingyuSectionLabel(section.label)
+                    QingyuSectionTitle(section.label)
                 }
                 items(section.entries) { entry ->
                     QingyuRow(

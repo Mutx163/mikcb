@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,11 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -66,16 +65,15 @@ fun SupportCreatorPage(
     val dark = isSystemInDarkTheme()
 
     QingyuPageScaffold(title = SupportCreatorStrings.heroTitle, onBack = onBack) {
-        LazyColumn(
-            // 把滚动手势喂给顶栏的折叠行为；漏了这一步大标题就永不收起。
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding(),
-                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                bottom = innerPadding.calculateBottomPadding() + 24.dp,
-            ),
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+            horizontalPadding = QingyuPageCardMargin,
+            // 底部手势条那段由 QingyuPageList 内部按 innerPadding 算
+            //（等价于原先手写的 innerPadding.calculateBottomPadding()），
+            // 这里只补额外的滚动留白，避免重复相加。
+            contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             // ── 紧凑头图：副标题 + 三个能力胶囊 ──
@@ -169,7 +167,7 @@ fun SupportCreatorPage(
                 }
             }
 
-            item { QingyuSectionLabel(SupportCreatorStrings.donorListTitle) }
+            item { QingyuSectionTitle(SupportCreatorStrings.donorListTitle) }
 
             when {
                 isLoading -> item {

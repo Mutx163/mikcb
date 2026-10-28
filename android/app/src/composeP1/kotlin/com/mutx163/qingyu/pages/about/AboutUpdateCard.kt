@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.about
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,7 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.yukonga.miuix.kmp.basic.Card
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -43,9 +43,11 @@ fun AboutUpdateStatusCard(
 ) {
     val colors = MiuixTheme.colorScheme
 
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(14.dp),
+        // 卡内是普通内容（不是 *Preference 行），必须显式给 16dp 内边距，
+        // 否则文字贴着卡片边缘；配合列表 12dp 外边距得到官方那条 28dp 左缘。
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             when (state) {
@@ -53,13 +55,13 @@ fun AboutUpdateStatusCard(
                     // 与「已是最新」分开画：失败不能长得像成功（Dart :832-835 的注释）。
                     Text(
                         text = AboutUpdateStrings.checkFailedTitle,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.main,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSurface,
                     )
                     Text(
                         text = AboutUpdateStrings.checkFailedHint,
-                        fontSize = 12.sp,
+                        style = MiuixTheme.textStyles.footnote1,
                         lineHeight = 18.sp,
                         color = colors.onSurfaceVariantSummary,
                     )
@@ -73,7 +75,7 @@ fun AboutUpdateStatusCard(
                 AboutUpdateCardState.ALREADY_LATEST -> {
                     Text(
                         text = AboutUpdateStrings.alreadyLatestHeadline,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.main,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSurface,
                     )
@@ -95,7 +97,7 @@ fun AboutUpdateStatusCard(
                 AboutUpdateCardState.UPDATE_AVAILABLE -> {
                     Text(
                         text = AboutUpdateStrings.updateAvailableHeadline,
-                        fontSize = 16.sp,
+                        style = MiuixTheme.textStyles.main,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSurface,
                     )
@@ -120,9 +122,9 @@ fun AboutUpdateStatusCard(
 @Composable
 fun AboutUpdateCheckingCard() {
     val colors = MiuixTheme.colorScheme
-    Card(
+    QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(14.dp),
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -132,7 +134,7 @@ fun AboutUpdateCheckingCard() {
             CircularProgressIndicator()
             Text(
                 text = AboutUpdateStrings.checkingTitle,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = colors.onSurfaceVariantSummary,
             )
         }
@@ -153,12 +155,12 @@ private fun VersionLine(label: String, version: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = colors.onSurfaceVariantSummary,
         )
         Text(
             text = version,
-            fontSize = 12.sp,
+            style = MiuixTheme.textStyles.footnote1,
             color = colors.onSurface,
         )
     }
@@ -173,7 +175,7 @@ private fun ActionRow(
     val colors = MiuixTheme.colorScheme
     Text(
         text = label,
-        fontSize = 14.sp,
+        style = MiuixTheme.textStyles.body2,
         fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
         color = if (emphasized) colors.primary else colors.onSurfaceVariantSummary,
         modifier = Modifier.clickable { onClick() },
