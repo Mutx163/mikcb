@@ -110,7 +110,12 @@ if (Test-Path $testDir) {
 # 若将来某目录混入 Android 依赖，脚本会自动跳过并打印提示。
 # 注：theme/ 的 QingyuTheme.kt 只放槽位数据类与种子色常量，Compose 接线在 composeP1/，
 # 故 theme/ 始终可进 JVM 单测 classpath；真正踩到 androidx.compose/miuix 时下方过滤会拦。
-$sharedModelDirs = @("core", "calendar", "course", "infrastructure", "infra", "statistics", "share", "transfer", "sync", "weather", "widgetdata", "theme")
+# 注 2（2026-10-28）：`app/` 是 Phase 3.5 接线阶段的**纯逻辑**层（存储抽象 / 领域存储 /
+# 仓储）。它必须保持纯 Kotlin——**Android 胶水放 `platform/`，不要放这里**：
+# 本脚本的判定是「整目录只要有一个 .kt 引 android.* 就跳过整个目录」，
+# 一旦 app/ 混进 android import，全队的 app/ 都会被静默跳过，
+# 表现为「测试里 app 的符号全都 Unresolved」。
+$sharedModelDirs = @("app", "core", "calendar", "course", "infrastructure", "infra", "statistics", "share", "transfer", "sync", "weather", "widgetdata", "theme")
 foreach ($sharedDir in $sharedModelDirs) {
     $absSharedDir = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$sharedDir"
     if (-not (Test-Path $absSharedDir)) { continue }
@@ -133,6 +138,26 @@ foreach ($extra in $ExtraSources) {
     if ($sources -notcontains $resolved) {
         $sources += $resolved
     }
+}
+
+# 顶层单文件白名单（2026-10-28 新增）。
+#
+# 有些纯 Kotlin 文件放在包根（`com/mutx163/qingyu/`）而不是共享子目录里，
+# 但确实被共享模型层引用——典型是 `FlutterPrefsCodec.kt`（Phase 0 冻结件，
+# Phase 3.5 的 `app/` 存储层要拿它编解码）。包根整体不能收（那里有 MainActivity、
+# 各种 WidgetProvider 等 Android 文件，纯 Kotlin 判定会整目录跳过），
+# 所以这里按**单个文件**点名收。
+#
+# 收录条件（两个都满足才加）：① 文件本身零 `android.*` / `androidx.compose` / miuix 导入；
+# ② 它被共享模型层真实引用。加之前先确认这两条，否则会把 Android 依赖带进 JVM classpath。
+$sharedModelFiles = @("FlutterPrefsCodec.kt")
+foreach ($sharedFile in $sharedModelFiles) {
+    $absSharedFile = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$sharedFile"
+    if (-not (Test-Path $absSharedFile)) {
+        Write-Host ">>> [test-kotlin-module] 白名单文件不存在，已跳过：$sharedFile" -ForegroundColor DarkYellow
+        continue
+    }
+    if ($sources -notcontains $absSharedFile) { $sources += $absSharedFile }
 }
 
 if ($sources.Count -eq 0) {

@@ -223,6 +223,9 @@ android {
             // 壳的共用件：玻璃导航栏（miuix-blur 装配，P3-0 Lead 专属写作用域）。
             // 壳 PagesShellActivity 直接用它，不挂就会 Unresolved reference。
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
+            // Phase 3.5 接线与装配（2026-10-28 挂载）：把仓储接到页面上的 Compose 宿主层。
+            // 计划见 docs/plans/2026-10-28-compose-phase35-wiring-plan.md。
+            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/app'
         }
 
         // JVM 单测的**变体专属**源集（2026-10-27 的教训，2026-10-28 补登记）。
