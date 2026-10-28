@@ -168,6 +168,114 @@ class TimetableHostLogicTest {
         assertNull(TimetableHostLogic.resolveActiveTimeScheme(emptyList(), "s1"))
     }
 
+    // ================================================================
+    // S1：显示偏好从**用户存档**读，而不是吃宿主默认
+    // ================================================================
+
+    @Test
+    fun `隐藏周末从存档读`() {
+        assertTrue(
+            TimetableHostDisplayPrefs.fromSettings(
+                TimetableSettingsModel(timetableHideWeekends = true),
+            ).hideWeekends,
+        )
+        assertFalse(
+            "缺省必须是 Dart 默认 false（timetable_settings.dart:1531）",
+            TimetableHostDisplayPrefs.fromSettings(TimetableSettingsModel()).hideWeekends,
+        )
+    }
+
+    @Test
+    fun `时间列宽档从存档读`() {
+        assertTrue(
+            TimetableHostDisplayPrefs.fromSettings(
+                TimetableSettingsModel(
+                    timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.WIDE,
+                ),
+            ).wideTimeColumn,
+        )
+        assertFalse(
+            "缺省档是 narrow（:1433 的 fromValue 回落）",
+            TimetableHostDisplayPrefs.fromSettings(
+                TimetableSettingsModel(
+                    timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.NARROW,
+                ),
+            ).wideTimeColumn,
+        )
+    }
+
+    @Test
+    fun `节次行高从存档读 缺省是 68 不是渲染层签名的 64`() {
+        assertEquals(
+            92f,
+            TimetableHostDisplayPrefs.fromSettings(
+                TimetableSettingsModel(sectionHeight = 92.0),
+            ).sectionHeightDp,
+        )
+        assertEquals(
+            "Dart 构造默认与读侧缺省都是 68（:754 / :1385）",
+            68f,
+            TimetableHostDisplayPrefs.fromSettings(TimetableSettingsModel()).sectionHeightDp,
+        )
+    }
+
+    @Test
+    fun `长按空档加课从存档读`() {
+        assertTrue(
+            TimetableHostDisplayPrefs.fromSettings(
+                TimetableSettingsModel(longPressEmptySlotToAddCourseEnabled = true),
+            ).longPressEmptySlotToAddCourseEnabled,
+        )
+        assertFalse(
+            TimetableHostDisplayPrefs.fromSettings(TimetableSettingsModel())
+                .longPressEmptySlotToAddCourseEnabled,
+        )
+    }
+
+    @Test
+    fun `端到端 改设置落盘后重建宿主 显示偏好跟着变`() {
+        // 「重建宿主」= 等价于杀进程重开：重新 load 存档再推导（本层不做 IO）。
+        val store = TimetableStore(InMemoryKeyValueStore())
+        val modelStore = TimetableSettingsModelStore(store)
+
+        assertEquals(
+            "初始应等于 Dart 默认",
+            TimetableHostDisplayPrefs(),
+            TimetableHostDisplayPrefs.fromSettings(modelStore.load()),
+        )
+
+        // 走真实落盘路径（合并写）改这四项
+        modelStore.save(
+            modelStore.load().copy(
+                timetableHideWeekends = true,
+                timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.WIDE,
+                sectionHeight = 92.0,
+                longPressEmptySlotToAddCourseEnabled = true,
+            ),
+        )
+
+        val after = TimetableHostDisplayPrefs.fromSettings(modelStore.load())
+        assertTrue(after.hideWeekends)
+        assertTrue(after.wideTimeColumn)
+        assertEquals(92f, after.sectionHeightDp)
+        assertTrue(after.longPressEmptySlotToAddCourseEnabled)
+        assertEquals(
+            "列宽跟着档位走（窄 34 / 宽 40）",
+            40f,
+            TimetableHostLogic.timeColumnWidthDp(after.wideTimeColumn),
+        )
+    }
+
+    @Test
+    fun `存档里的未知列宽值按 Dart 口径回落窄`() {
+        val store = TimetableStore(InMemoryKeyValueStore())
+        store.saveSettingsPatch(mapOf("timetableTimeColumnWidthMode" to "gigantic"))
+
+        val prefs = TimetableHostDisplayPrefs.fromSettings(TimetableSettingsModelStore(store).load())
+
+        assertFalse("未知值回落 narrow（:1433）", prefs.wideTimeColumn)
+    }
+
     // ── 构造工具 ──
 
     private fun profile(id: String, name: String): TimetableProfile = TimetableProfile(

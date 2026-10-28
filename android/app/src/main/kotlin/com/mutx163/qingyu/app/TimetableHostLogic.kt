@@ -9,11 +9,18 @@ import com.mutx163.qingyu.course.TimetableCourseService
 /**
  * 课表宿主的显示偏好。
  *
- * 为什么是**入参**而不是从 `settings` 读：`core.TimetableSettings` 是本族裁定的四键子集
- * （sections / activeTimeSchemeId / semesterWeekCount / semesterStartDate），没有
- * `timetableHideWeekends` / `timetableTimeColumnWidthMode` / `sectionHeight` /
- * `longPressEmptySlotToAddCourseEnabled`。完整设置模型由设置族移植，在那之前这几个值
- * 由壳接线层注入。
+ * ## 值的来源（2026-10-28 S1 起）：**用户存档**
+ *
+ * 这四个值的真实来源是完整设置模型 [TimetableSettingsModel]，用
+ * [fromSettings] 从存档推导出来；壳接线层只需把 `settingsModel.load()` 交给
+ * `TimetableHost`，**不再传「假默认」**。
+ *
+ * 本类型保留两个用途：
+ * 1. **注入点**——测试或将来要覆盖时可以直接给一份（`TimetableHost(display = …)`）；
+ * 2. 把「渲染层要的四个值」与「设置模型那 75 个键」解耦，渲染层不用认识设置模型。
+ *
+ * ⚠️ 历史：S1 之前这里写的是「`core.TimetableSettings` 没有这四个键，所以只能由壳注入」
+ * （task-8 的临时做法，注释里留了「待办：设置族并入时对齐」）。设置族并入后该待办已消。
  *
  * 默认值全部取 **Dart 默认**，不取渲染层签名默认：Dart `sectionHeight` 默认 68
  * （`models/timetable_settings.dart:754`），而 `TimetableWeekPage` 的签名默认是 64
@@ -27,7 +34,39 @@ data class TimetableHostDisplayPrefs(
     val wideTimeColumn: Boolean = false,
     val sectionHeightDp: Float = TimetableHostLogic.DEFAULT_SECTION_HEIGHT_DP,
     val longPressEmptySlotToAddCourseEnabled: Boolean = false,
-)
+) {
+    companion object {
+
+        /**
+         * 从**用户存档**（完整设置模型）推导宿主显示偏好（S1）。
+         *
+         * 四个键的类型与缺省**逐条去 Dart 核过**（`lib/models/timetable_settings.dart`）：
+         *
+         * | 本字段 | 设置模型的键 | Dart 类型 / 构造默认 | Dart 读侧缺省 | 行号 |
+         * |---|---|---|---|---|
+         * | [hideWeekends] | `timetableHideWeekends` | `bool` / `false` | `lenientBool(...) ?? false` | `:819` / `:1531` |
+         * | [wideTimeColumn] | `timetableTimeColumnWidthMode` | 枚举 `narrow`/`wide` / 见下 | `fromValue(...)`，**未知值回落 `narrow`** | `:1433` + `extensions.dart:387-399` |
+         * | [sectionHeightDp] | `sectionHeight` | `double` / `68` | `lenientDouble(...) ?? 68` | `:754` / `:1385` |
+         * | [longPressEmptySlotToAddCourseEnabled] | `longPressEmptySlotToAddCourseEnabled` | `bool` / `false` | `lenientBool(...) ?? false` | `:824` / `:1541` |
+         *
+         * **「读侧缺省」与「构造默认」这四个键是一致的**（本仓有过三个反例：主题种子色
+         * `#2563EB` vs `#3482FF`、`timetableCourseCardGap` 按另一个键推导、
+         * `SectionTimeDisplayMode` 未知值回落不是第一项——所以这里逐条核了，没有照抄直觉）。
+         *
+         * 唯一一处 `sectionHeight` 的 clamp 在 `lib/widgets/timetable_export_document.dart:137`
+         * （导出文档专用），**课表视图侧没有 clamp** ⇒ 这里原样透传，不做归一。
+         */
+        fun fromSettings(model: TimetableSettingsModel): TimetableHostDisplayPrefs =
+            TimetableHostDisplayPrefs(
+                hideWeekends = model.timetableHideWeekends,
+                wideTimeColumn =
+                    model.timetableTimeColumnWidthMode == TimetableTimeColumnWidthMode.WIDE,
+                sectionHeightDp = model.sectionHeight.toFloat(),
+                longPressEmptySlotToAddCourseEnabled =
+                    model.longPressEmptySlotToAddCourseEnabled,
+            )
+    }
+}
 
 /**
  * Phase 3.5 · L4 宿主层的**纯逻辑**（无 `android.*`、无 Compose）。
