@@ -45,7 +45,20 @@ param(
     [string]$Module,
 
     [Parameter(Mandatory = $false)]
-    [string[]]$ExtraSources = @()
+    [string[]]$ExtraSources = @(),
+
+    # 临时排除某个共享模型目录（如 `transfer`），默认空 = 全收。
+    #
+    # 用途：某条泳道在共享目录里留了半成品时，**别的**泳道仍能自测自己那部分。
+    # 2026-10-28 一天之内，`sync/` 与 `transfer/` 各挡了全队一次 L0（一次是漏 import，
+    # 一次是「只留函数签名、把函数体删掉」导致花括号不闭合）。
+    #
+    # ⚠️ 这是**逃生门，不是默认姿势**：
+    # 1. 用了它，本次结果**不覆盖**被排除的目录——绿了也不能当成「全绿」；
+    # 2. 交付证据里必须写明用了它、排除了哪个目录（否则等于悄悄缩小了验证面）；
+    # 3. 排除掉的是**别人**的半成品；你自己的半成品请自己修完再跑。
+    [Parameter(Mandatory = $false)]
+    [string[]]$ExcludeShared = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -117,6 +130,10 @@ if (Test-Path $testDir) {
 # 表现为「测试里 app 的符号全都 Unresolved」。
 $sharedModelDirs = @("app", "core", "calendar", "course", "infrastructure", "infra", "statistics", "share", "transfer", "sync", "weather", "widgetdata", "theme")
 foreach ($sharedDir in $sharedModelDirs) {
+    if ($ExcludeShared -contains $sharedDir) {
+        Write-Host ">>> [test-kotlin-module] ⚠️ 按 -ExcludeShared 跳过 $sharedDir/ —— 本次结果**不覆盖**该目录，报告里必须写明" -ForegroundColor Yellow
+        continue
+    }
     $absSharedDir = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$sharedDir"
     if (-not (Test-Path $absSharedDir)) { continue }
     # 纯 Kotlin 判定：android.* 框架类、androidx.compose.*、miuix 都进不了 JVM 单测 classpath
