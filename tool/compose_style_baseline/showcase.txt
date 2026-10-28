@@ -1,0 +1,9 @@
+# showcase 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
+# 一行一处待还的债：<相对路径>|<规则>|<说明>
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 由 scripts/compose-style-lint.ps1 -Domain showcase -Write 重新生成。
+showcase/MiuixShowcasePage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 144 行）
+showcase/MiuixShowcasePage.kt|R4|写死字号 6 处，首处第 198 行（应用 MiuixTheme.textStyles）
+showcase/MiuixShowcaseSubpages.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 82 行）
+showcase/MiuixShowcaseSubpages.kt|R4|写死字号 36 处，首处第 223 行（应用 MiuixTheme.textStyles）
+showcase/MiuixShowcaseSubpages.kt|R5|写死颜色 5 处，首处第 214 行（应用主题语义槽）

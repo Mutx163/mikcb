@@ -1,0 +1,16 @@
+# sync 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
+# 一行一处待还的债：<相对路径>|<规则>|<说明>
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 由 scripts/compose-style-lint.ps1 -Domain sync -Write 重新生成。
+sync/CloudBackupListPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 93 行）
+sync/CloudBackupListPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 99 行）
+sync/CloudBackupListPage.kt|R4|写死字号 6 处，首处第 88 行（应用 MiuixTheme.textStyles）
+sync/CloudSyncPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 99 行）
+sync/CloudSyncPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 116 行）
+sync/CloudSyncPage.kt|R4|写死字号 16 处，首处第 219 行（应用 MiuixTheme.textStyles）
+sync/CloudSyncPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 414 行）
+sync/CoupleTimetableSettingsPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 73 行）
+sync/CoupleTimetableSettingsPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 84 行）
+sync/CoupleTimetableSettingsPage.kt|R4|写死字号 9 处，首处第 115 行（应用 MiuixTheme.textStyles）
+sync/CoupleTimetableSettingsPage.kt|R5|写死颜色 2 处，首处第 358 行（应用主题语义槽）
+sync/CoupleTimetableSettingsPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 239 行）

@@ -1,0 +1,240 @@
+# Compose 页面样式规则（对齐官方 miuix demo）
+
+> **一句话**：`composeP1` 下的每个页面都必须用**共享页面套件**搭，不许直接调 miuix 裸组件。
+> 判定由 `android/app/src/test/kotlin/com/mutx163/qingyu/pages/ComposePageStyleGuardTest.kt` 机械执行，
+> 每个域一份棘轮基线 `tool/compose_style_baseline/<域>.txt`。
+>
+> 建立日期：2026-10-28。起因：用户实测「好多页面各不一样」「对比 demo 一堆毛病」，
+> 根因是共享封装早就写好了，但页面还在直接调裸组件，于是手感/滚动/圆角/轴线各写各的。
+
+---
+
+## 一、为什么是「规则 + 棘轮」，不是「写进文档请大家自觉」
+
+2026-10-28 实测（`pages/` 下 60 个带返回键的页面）：
+
+| 症状 | 实测 | 后果 |
+|---|---|---|
+| 裸 `LazyColumn`，不走 `QingyuPageList` | 42 页 | 没有末端轻震、没有过度滚动回弹、没有右侧滚动条 |
+| `Column + verticalScroll` 当主滚动 | 8 页 | 非惰性列表，长列表逐项组合，卡 |
+| 裸 `Card(`，绕过 `QingyuCard` | 27 页 | 可点卡片按下去**零反馈**；圆角被默认压成 16（设置组应 24） |
+| 写死 `fontSize =` | 34 页 | 用户字重 / 系统粗体 / 字阶全失效 |
+| 写死 `Color(0x…)` | 23 页 | 深色模式与主题色失效 |
+| 自己拼分组标题 | 47 页 | 文字左缘对不齐官方那条 28dp 轴线 |
+
+这些**都不是编译错误**，测试全绿、真机才看得出来 ⇒ 靠人记着写必然漏。
+所以：**把正确行为设成默认值**（共享组件），**再用测试钉住不许绕开**。
+
+---
+
+## 二、六条规则
+
+> 每条给：**必须怎么干** / **判定** / **为什么**。
+> 规则编号 `R1…R6` 就是基线文件里那一列，报错时对号入座。
+
+### R1 · 页面骨架与顶栏 → `QingyuPageScaffold`
+
+```kotlin
+QingyuPageScaffold(
+    title = "标题",
+    onBack = onBack,          // 必须传，返回键由套件统一给
+    smallTopBar = false,      // true = 官方 SmallTopAppBar（单行小标题，不可折叠）
+    actions = { /* 顶栏右侧按钮 */ },
+) {
+    // this: QingyuPageContentScope(innerPadding, scrollBehavior)
+}
+```
+
+- **判定**：页面文件里出现 `TopAppBar(` / `SmallTopAppBar(` 却**没有** `QingyuPageScaffold(` → 违规。
+- **为什么**：官方 `TopAppBar` 有两个**静默**默认值（`largeTitle` 默认等于 `title`、`scrollBehavior` 默认 `null`），
+  不传就是「白送一个 32sp 大标题且永不折叠」；返回键也各有各的画法（本项目历史上出现过
+  「右箭头转 180°」「透明底」「20sp 手写标题」三种）。套件把这两件事一次收口。
+- **豁免**：`components/` 下的套件自身；`pages/shell/` 的壳层（它自带导航栏，不是子页）。
+
+### R2 · 滚动容器 → `QingyuPageList`
+
+```kotlin
+QingyuPageList(
+    innerPadding = innerPadding,
+    scrollBehavior = scrollBehavior,   // 从骨架拿，接上顶栏折叠
+) {
+    item(key = "group") { /* 一组 = 一个 item */ }
+}
+```
+
+- **判定**：
+  - 出现 `LazyColumn(` 但**既没有** `QingyuPageList(` **也没有** `scrollEndHaptic` → 违规（裸 LazyColumn）；
+  - 出现 `verticalScroll(rememberScrollState())` → 违规（非惰性列表）。
+- **为什么**：官方配方是三件套 `scrollEndHaptic()` + `overScrollVertical()` + `nestedScroll(behavior.nestedScrollConnection)`，
+  再配一条 `VerticalScrollBar`。少任何一件，手感与观感都与 demo 不同；
+  `Column + verticalScroll` 还会把长列表的惰性组合丢掉。
+- **豁免**：弹层/抽屉内部的短列表（不承载页面级滚动）、`QingyuPageList.kt` 自身。
+
+### R3 · 卡片 → `QingyuCard`
+
+```kotlin
+QingyuCard(onClick = { … }) { /* 内容 */ }              // 普通卡片，圆角 16
+QingyuCard(cornerRadius = QingyuCardDefaults.SettingsGroupCorner, onClick = …) { }
+```
+
+- **判定**：出现 `Card(`（前面不是 `Qingyu`）→ 违规。
+- **为什么**：官方 `Card` 的 `pressFeedbackType` 默认 `None`、`showIndication` 默认 `false`
+  ⇒ 能点的卡片按下去**什么都不发生**；圆角默认 16，而设置组在 Dart 侧是 24。
+  `QingyuCard` 把「可点就自动 `Sink` 反馈 + 开指示」设成默认。
+- **内边距**：包 `*Preference` 行时**不要**传 `insideMargin`（Preference 自带 16）；
+  包普通内容时传 `QingyuCardDefaults.ContentInsideMargin`（否则贴边）。
+- **豁免**：`components/QingyuCard.kt` 自身。
+
+### R4 · 字号 → `MiuixTheme.textStyles.*`
+
+```kotlin
+Text(text = "标题", style = MiuixTheme.textStyles.body1, color = …)   // ✅
+Text(text = "标题", fontSize = 15.sp, color = …)                     // ❌
+```
+
+- **判定**：页面文件里出现 `fontSize = <数字>.sp` → 违规。
+- **为什么**：`fontSize` 绕过了 `MiuixTheme` 注入的字阶，**用户自定义字重、系统粗体、字阶调整全部失效**
+  （`QingyuPageTheme` 已经把字阶注入进去了）。字阶取值见 `theme/QingyuTypography.kt`：
+  main/paragraph/button 17 · body1 16 · body2/subtitle 14 · footnote1 13 · footnote2 11 ·
+  title1 32 · title2 24 · title3 20 · title4 18。
+
+### R5 · 颜色 → `MiuixTheme.colorScheme.*` 或 `Color(QingyuTheme.*)`
+
+```kotlin
+color = MiuixTheme.colorScheme.onBackground          // ✅ 主题感知
+color = Color(QingyuTheme.secondaryText(dark))       // ✅ 自家色板
+color = Color(0xFF999999)                            // ❌ 深色模式下必然错
+```
+
+- **判定**：页面文件里出现 `Color(0x` → 违规。
+- **为什么**：写死色值在深色模式/换主题色后必然与周围不一致；`QingyuPageTheme` 已把自家色板桥进
+  `MiuixTheme.colorScheme`，语义槽取色即可。语义槽对照表见 `docs/reference/miuix-api-mapping.md` §1。
+- **豁免**：确实与主题无关的固定语义色（如危险色 `QingyuFixedTokens.DESTRUCTIVE`、图标彩豆），
+  但**应当**改走 token 而不是字面量；要留在基线里必须在该行写明原因。
+
+### R6 · 分组标题 → `QingyuSectionTitle`
+
+```kotlin
+QingyuSectionTitle("分组名")     // ✅ 官方 SmallTitle，自带 28dp 左缘
+```
+
+- **判定**：页面文件里出现 `sectionLabel(`（自己拼分组标题）却**没有** `QingyuSectionTitle(` → 违规。
+- **为什么**：官方骨架的横向刻度是「页面 0 → Card 外边距 12 → Preference 自带 16 = 文字左缘 **28**」，
+  而 `SmallTitle` 自带 28 正好对齐。自己写 `Text(13.sp) + padding(start = 4.dp)` 就对不齐这条轴线，
+  整页看起来「行不齐」。
+
+---
+
+## 三、页面的标准配方（照抄）
+
+```kotlin
+@Composable
+fun XxxPage(viewState: XxxViewState, onBack: () -> Unit) {
+    QingyuPageScaffold(title = viewState.title, onBack = onBack) {
+        // innerPadding / scrollBehavior 来自骨架
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+        ) {
+            item(key = "group1") {
+                QingyuSectionTitle("分组一")
+                QingyuCard(
+                    modifier = Modifier
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
+                    // 里面是 Preference → 不传 insideMargin
+                ) {
+                    SwitchPreference(title = "开关", checked = …, onCheckedChange = …)
+                    ArrowPreference(title = "跳转", onClick = …)
+                }
+            }
+            item(key = "group2") {
+                QingyuSectionTitle("分组二")
+                QingyuCard(
+                    modifier = Modifier
+                        .padding(horizontal = QingyuPageCardMargin)
+                        .padding(bottom = QingyuSectionGap),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,  // 普通内容必须给
+                ) {
+                    Text(text = "任意内容", style = MiuixTheme.textStyles.body2)
+                }
+            }
+        }
+    }
+}
+```
+
+要点：
+1. **不要**自己 `Scaffold` + `TopAppBar`（R1）；
+2. **不要**自己 `LazyColumn`（R2）；
+3. **不要**自己 `Card`（R3）；
+4. 字号/颜色一律走主题（R4/R5）；
+5. 分组 = 一个 `item(key = "…")`，里面 `QingyuSectionTitle → QingyuCard → 多行`（R6）；
+6. 页面横向留白由每个块自己带 12dp，**不要在 `contentPadding` 里加左右 16dp**
+   （否则滚动条贴不到屏幕边缘、与 `SmallTitle` 的 28 轴线错开）。
+
+---
+
+## 四、棘轮基线怎么用（改页面的人看这一节）
+
+### 4.1 基线在哪、谁拥有
+
+```
+tool/compose_style_baseline/
+    about.txt      ← 拥有 about/ 这个域的人维护
+    course.txt
+    ...
+```
+
+一行 = 一处待还的债，格式 `<相对路径>|<规则>|<说明>`。**一个域一个文件**，
+这样多个 Agent 并行时各改各的、不会撞车（共用一个文件必然冲突）。
+
+### 4.2 三条纪律
+
+1. **守卫只拦新增**：基线里已冻结的违规不会让测试变红；**新写的**违规会。
+   ⇒ 新页面天然无法退回旧写法。
+2. **修好一条就删一行**：基线里那行还留着、但代码已经不违规了，测试会报「**过期**」并变红。
+   ⇒ 逼着人还债，不许只进不出。
+3. **不许为了让提交变绿往基线里加行**（除非写清原因，例如「本页确实需要固定语义色」）。
+   那是把守卫变成摆设，比没有守卫更糟。
+
+### 4.3 怎么跑
+
+```powershell
+# 看自己域还欠哪些（不写文件）
+pwsh -File scripts/compose-style-lint.ps1 -Domain statistics
+
+# 修完之后重新生成自己域的基线（会自动删掉已修好的行）
+pwsh -File scripts/compose-style-lint.ps1 -Domain statistics -Write
+
+# 权威闸门（JUnit，CI 与 L2 都跑这个）
+pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
+```
+
+> 只跑自己域：**不要**在别人的域还没修完时跑全量 `-Domain all -Write`，那会把别人的债
+> 记到你头上、也让他们的过期判定失效。
+
+---
+
+## 五、边界与例外
+
+| 情况 | 处理 |
+|---|---|
+| `components/` 下的共享套件自身 | 天然豁免（它就是被用来绕开裸组件的） |
+| `pages/shell/`（壳、导航栏、玻璃坞） | 豁免 R1；它自带导航栏，不是子页 |
+| `pages/showcase/`（组件展厅） | 豁免 R1/R3——**它故意逐个展示官方裸组件**，这正是它的用途 |
+| 弹层/抽屉内部的短列表 | 豁免 R2（不承载页面级滚动） |
+| 确实需要的固定语义色 | 允许，但要在基线行里写原因 |
+| 与 Dart 原版行为冲突 | **Dart 是行为真相、demo 是样式真相**；冲突时行为从 Dart、样式从 demo，并在 KDoc 写明 |
+
+---
+
+## 六、相关文件
+
+- 套件：`components/QingyuPageScaffold.kt`（骨架/返回键）· `QingyuPageList.kt`（滚动三件套+滚动条）·
+  `QingyuCard.kt`（按压反馈+圆角）· `QingyuPageTheme.kt`（主题桥）
+- 守卫：`android/app/src/test/kotlin/com/mutx163/qingyu/pages/ComposePageStyleGuardTest.kt`
+- 上游基准：`docs/reference/miuix-demo/CHEATSHEET-Demo范例.md` §3（页面骨架配方）、§3.4（分组节奏表）、
+  §3.7（六个坑）；`docs/reference/miuix-demo/CHEATSHEET-玻璃与手感.md` §2（按压反馈）
+- 既有同类守卫（写法参考）：`PageScaffoldGuardTest.kt`、`SettingsRowComponentGuardTest.kt`
+- 色板对照：`docs/reference/miuix-api-mapping.md`

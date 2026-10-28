@@ -1,0 +1,11 @@
+# schedule 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
+# 一行一处待还的债：<相对路径>|<规则>|<说明>
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 由 scripts/compose-style-lint.ps1 -Domain schedule -Write 重新生成。
+schedule/AddScheduleItemPage.kt|R2|用 Column+verticalScroll 当主滚动（非惰性，第 223 行）
+schedule/AddScheduleItemPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 258 行）
+schedule/ScheduleDateRulePage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 198 行）
+schedule/ScheduleDateRulePage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 393 行）
+schedule/ScheduleListPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 141 行）
+schedule/ScheduleListPage.kt|R5|写死颜色 4 处，首处第 236 行（应用主题语义槽）
+schedule/ScheduleListPage.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 222 行）

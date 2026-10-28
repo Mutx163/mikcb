@@ -1,0 +1,27 @@
+# import 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
+# 一行一处待还的债：<相对路径>|<规则>|<说明>
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 由 scripts/compose-style-lint.ps1 -Domain import -Write 重新生成。
+import/IcsImportPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 50 行）
+import/ImportCommon.kt|R6|自己拼分组标题，未走 QingyuSectionTitle（第 110 行）
+import/ImportEntryPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 55 行）
+import/SpreadsheetImportPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 62 行）
+import/warehouse/AiImageCourseImportPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 145 行）
+import/warehouse/AiImageCourseImportPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 161 行）
+import/warehouse/AiImageCourseImportPage.kt|R4|写死字号 16 处，首处第 177 行（应用 MiuixTheme.textStyles）
+import/warehouse/AiImageCourseImportPage.kt|R5|写死颜色 1 处，首处第 172 行（应用主题语义槽）
+import/warehouse/WarehouseAdapterDetailPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 102 行）
+import/warehouse/WarehouseAdapterDetailPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 118 行）
+import/warehouse/WarehouseAdapterDetailPage.kt|R4|写死字号 9 处，首处第 127 行（应用 MiuixTheme.textStyles）
+import/warehouse/WarehouseCourseImportPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 247 行）
+import/warehouse/WarehouseCourseImportPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 123 行）
+import/warehouse/WarehouseCourseImportPage.kt|R4|写死字号 8 处，首处第 184 行（应用 MiuixTheme.textStyles）
+import/warehouse/WarehouseCustomDebugPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 238 行）
+import/warehouse/WarehouseCustomDebugPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 128 行）
+import/warehouse/WarehouseCustomDebugPage.kt|R4|写死字号 7 处，首处第 141 行（应用 MiuixTheme.textStyles）
+import/warehouse/WarehouseSchoolAdaptersPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 89 行）
+import/warehouse/WarehouseSchoolAdaptersPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 105 行）
+import/warehouse/WarehouseSchoolAdaptersPage.kt|R4|写死字号 7 处，首处第 122 行（应用 MiuixTheme.textStyles）
+import/warehouse/WarehouseWebLoginPage.kt|R1|自己组合顶栏，未走 QingyuPageScaffold（第 84 行）
+import/warehouse/WarehouseWebLoginPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 135 行）
+import/warehouse/WarehouseWebLoginPage.kt|R4|写死字号 3 处，首处第 152 行（应用 MiuixTheme.textStyles）

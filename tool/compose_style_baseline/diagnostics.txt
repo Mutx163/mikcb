@@ -1,0 +1,20 @@
+# diagnostics 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
+# 一行一处待还的债：<相对路径>|<规则>|<说明>
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 由 scripts/compose-style-lint.ps1 -Domain diagnostics -Write 重新生成。
+diagnostics/LiveDiagnosticsLogPage.kt|R1|自己组合顶栏，未走 QingyuPageScaffold（第 113 行）
+diagnostics/LiveDiagnosticsLogPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 355 行）
+diagnostics/LiveDiagnosticsLogPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 504 行）
+diagnostics/LiveDiagnosticsLogPage.kt|R4|写死字号 15 处，首处第 200 行（应用 MiuixTheme.textStyles）
+diagnostics/LiveDiagnosticsLogPage.kt|R5|写死颜色 1 处，首处第 759 行（应用主题语义槽）
+diagnostics/LiveTestingFixturePage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 96 行）
+diagnostics/LiveTestingFixturePage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 108 行）
+diagnostics/LiveTestingFixturePage.kt|R4|写死字号 10 处，首处第 143 行（应用 MiuixTheme.textStyles）
+diagnostics/MemoryStatsPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 137 行）
+diagnostics/MemoryStatsPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 184 行）
+diagnostics/MemoryStatsPage.kt|R4|写死字号 27 处，首处第 158 行（应用 MiuixTheme.textStyles）
+diagnostics/MemoryStatsPage.kt|R5|写死颜色 3 处，首处第 652 行（应用主题语义槽）
+diagnostics/PerfReportPage.kt|R2|裸 LazyColumn，缺滚动三件套与滚动条（第 118 行）
+diagnostics/PerfReportPage.kt|R3|裸 Card，缺按压反馈与语义圆角（第 142 行）
+diagnostics/PerfReportPage.kt|R4|写死字号 11 处，首处第 131 行（应用 MiuixTheme.textStyles）
+diagnostics/PerfReportPage.kt|R5|写死颜色 1 处，首处第 389 行（应用主题语义槽）
