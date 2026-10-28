@@ -1,0 +1,362 @@
+package com.mutx163.qingyu.app
+
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.course.TimetableCoursePort
+import com.mutx163.qingyu.course.TimetableCourseService
+import java.util.UUID
+
+/**
+ * 课程卡片操作弹层的**动作分派器**（Phase 3.5 · 主派工大表 T1）。
+ *
+ * ## 它解决什么
+ *
+ * Dart 点课程卡片弹的是 `lib/widgets/course_action_sheet.dart` 的**操作弹层**：
+ * 上方是这节课的信息（时间/教师/地点/备注…），下方 6 个动作——编辑 / 调课 / 停课复课 /
+ * 删除 / 加作业 / 单节课提醒（`:876-914`）。Compose 侧此前**一个都没有**，
+ * 所以点课程卡片「没反应」。本文件把「点某个动作之后到底发生什么」定下来：
+ * 能真写库的**真写**，写不了的**明确报缺口**（[CourseActionOutcome.NotWired]），绝不假成功。
+ *
+ * ## 分层
+ *
+ * 本层是**纯逻辑**（无 Android / 无 Compose）：输入「动作 + 课程 + 周次 + 数据端口」，
+ * 输出一个结果（导航意图 / 写库回执 / 缺口）。渲染层
+ * `composeP1/.../pages/course/CourseActionSheet.kt` 只负责把动作转出来；
+ * 壳负责按结果跳页与提示。
+ *
+ * ## 写入口径（逐条对齐 Dart，行号可查）
+ *
+ * | 动作 | Dart 出处 | 本层 |
+ * |---|---|---|
+ * | 删除整门课 | `timetable_course_sheet_actions.dart:188-235` → `deleteCourse(id)` | [deleteCourse] |
+ * | 删这一周的课 | `timetable_provider.dart:2756-2827` `_deleteCourseOccurrenceImpl` | [deleteOccurrence] |
+ * | 调课 | `timetable_provider.dart:2853-2927` `_rescheduleCourseOccurrenceImpl` | [rescheduleOccurrence] |
+ * | 本周停/复课 | `timetable_provider.dart:2336-2360` `_toggleCourseSuspensionImpl` | [toggleSuspensionThisWeek] |
+ * | 整门停/复课 | `:79-83` 的 `suspendAllWeeks` / `unsuspendAllWeeks` | [suspendAllWeeks] / [unsuspendAllWeeks] |
+ *
+ * ## 为什么这些写操作落在宿主层而不是数据层
+ *
+ * `TimetableCourseService`（task-7 交付）只有 add / update / delete / deleteGroup / updateGroup，
+ * **没有** occurrence 级的删与调课、也没有停课一族。本批写作用域是 `app/` + `composeP1/.../course/`，
+ * 改不了那个服务，所以按 Dart 的**可观测语义**用既有原语（`Course.activeWeeks` /
+ * `sessionNotesExcludingWeek` + `update` / `add` / `delete`）在本层实现。
+ * ⚠️ 这几条**应该搬回数据层**（它们不是 UI 逻辑）；等数据层泳道下次动那个服务时一并迁。
+ */
+enum class CourseAction {
+    /** 编辑这门课（带真实课程进编辑页）。 */
+    EDIT,
+
+    /** 调课：把这一周的这次课挪到别的周 / 星期 / 节次。 */
+    RESCHEDULE,
+
+    /** 停课 / 复课（本周）。 */
+    SUSPEND,
+
+    /** 删除整门课。 */
+    DELETE,
+
+    /** 只删这一周的这次课。 */
+    DELETE_OCCURRENCE,
+
+    /** 加作业（进作业页，带上这门课）。 */
+    ADD_TASK,
+
+    /** 给这节课设闹钟。 */
+    SET_ALARM,
+}
+
+/** 停课作用域（Dart `CourseSuspendMode`，`course_followup_sheets.dart`）。 */
+enum class SuspendScope {
+    THIS_WEEK,
+    ALL_WEEKS,
+}
+
+/** 分派结果：导航意图 / 写库回执 / 明确缺口。 */
+sealed interface CourseActionOutcome {
+
+    /** 进编辑页；**带的就是这一门课**（参数透传契约，见测试）。 */
+    data class OpenEdit(val course: Course) : CourseActionOutcome
+
+    /** 进作业页；带这门课做预选。 */
+    data class OpenAddTask(val course: Course) : CourseActionOutcome
+
+    /** 进调课弹层（目标周/星期/节次的选择属 UI，选完回调 [rescheduleOccurrence]）。 */
+    data class OpenReschedule(val course: Course, val week: Int) : CourseActionOutcome
+
+    /** 已删除整门课。 */
+    data class DeletedCourse(val courseId: String) : CourseActionOutcome
+
+    /**
+     * 已删除这一周的这次课。
+     *
+     * @param removedWholeCourse 该课只剩这一周 ⇒ 整门课被摘掉（Dart `:2790-2791`）。
+     */
+    data class DeletedOccurrence(
+        val courseId: String,
+        val week: Int,
+        val removedWholeCourse: Boolean,
+    ) : CourseActionOutcome
+
+    /** 已调课（或判定为「无变化」⇒ [changed] 为 false，Dart `:2916-2918`）。 */
+    data class Rescheduled(
+        val courseId: String,
+        val sourceWeek: Int,
+        val targetWeek: Int,
+        val changed: Boolean,
+    ) : CourseActionOutcome
+
+    /** 停课状态已翻转。 */
+    data class SuspensionChanged(
+        val courseId: String,
+        val suspended: Boolean,
+        val scope: SuspendScope,
+    ) : CourseActionOutcome
+
+    /**
+     * **明确缺口**：这个动作在 Compose 侧还没有落点。宿主应当据此提示用户，
+     * **不要**假装成功（本仓纪律：不假实现）。
+     */
+    data class NotWired(val action: CourseAction, val reason: String) : CourseActionOutcome
+}
+
+object CourseActionDispatcher {
+
+    /**
+     * 分派一个动作。
+     *
+     * @param course 被操作的课程（**同一个实例**会被原样带进编辑/作业意图）。
+     * @param week 用户当前正在看的周次（occurrence 级操作与闹钟都按它定位）。
+     * @param port 数据端口（`TimetableRepository` 实现了它）。
+     */
+    fun dispatch(
+        action: CourseAction,
+        course: Course,
+        week: Int,
+        port: TimetableCoursePort,
+    ): CourseActionOutcome = when (action) {
+        CourseAction.EDIT -> CourseActionOutcome.OpenEdit(course)
+
+        CourseAction.ADD_TASK -> CourseActionOutcome.OpenAddTask(course)
+
+        CourseAction.RESCHEDULE -> if (!course.isInWeek(week)) {
+            CourseActionOutcome.NotWired(
+                CourseAction.RESCHEDULE,
+                "course_not_scheduled_week:${course.id}@$week",
+            )
+        } else {
+            CourseActionOutcome.OpenReschedule(course, week)
+        }
+
+        CourseAction.SET_ALARM -> CourseActionOutcome.NotWired(
+            CourseAction.SET_ALARM,
+            "no_class_alarm_scheduler",
+        )
+
+        CourseAction.DELETE -> {
+            deleteCourse(port, course.id)
+            CourseActionOutcome.DeletedCourse(course.id)
+        }
+
+        CourseAction.DELETE_OCCURRENCE -> deleteOccurrence(port, course.id, week)
+
+        CourseAction.SUSPEND -> toggleSuspensionThisWeek(port, course.id, week)
+    }
+
+    // ------------------------------------------------------------------
+    // 写入（可单独调用，弹层里「先选作用域再写」的路径也走这些）
+    // ------------------------------------------------------------------
+
+    /** 删除整门课（Dart `deleteCourse(id)`，服务侧连带摘考试与作业）。 */
+    fun deleteCourse(port: TimetableCoursePort, courseId: String) {
+        TimetableCourseService.delete(port, courseId)
+    }
+
+    /**
+     * 删除**某一周**的这次课（Dart `_deleteCourseOccurrenceImpl`，`:2756-2827`）：
+     *
+     * 1. 找不到课 / 那周本来就没课 ⇒ 抛 `IllegalArgumentException`（Dart 抛 `ArgumentError`）；
+     * 2. 从 `activeWeeks` 里去掉这一周，写成 `customWeeks` + 首尾周，并清掉单双周标志
+     *    （`:2795-2802`）；
+     * 3. 去掉这一周的 `sessionNotes`（`:2801`）；
+     * 4. 一周不剩 ⇒ 整门课删掉（`:2790-2791`）。
+     */
+    fun deleteOccurrence(
+        port: TimetableCoursePort,
+        courseId: String,
+        sourceWeek: Int,
+    ): CourseActionOutcome.DeletedOccurrence {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_delete")
+        if (!course.isInWeek(sourceWeek)) {
+            throw IllegalArgumentException("course_not_scheduled_week:$sourceWeek")
+        }
+
+        val remainingWeeks = course.activeWeeks.filter { it != sourceWeek }.sorted()
+        if (remainingWeeks.isEmpty()) {
+            TimetableCourseService.delete(port, courseId)
+            return CourseActionOutcome.DeletedOccurrence(courseId, sourceWeek, removedWholeCourse = true)
+        }
+
+        val updated = course.copy(
+            startWeek = remainingWeeks.first(),
+            endWeek = remainingWeeks.last(),
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = remainingWeeks,
+            sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
+        )
+        TimetableCourseService.update(port, updated, previousSharedName = null)
+        return CourseActionOutcome.DeletedOccurrence(courseId, sourceWeek, removedWholeCourse = false)
+    }
+
+    /**
+     * 调课：把 `sourceWeek` 的这次课挪到目标周/星期/节次（Dart `:2853-2927`）。
+     *
+     * 语义与 Dart 逐条对齐：
+     * - 无变化（目标与现状全等）⇒ **不写**，返回 `changed = false`（`:2909-2918`）；
+     * - 原课还剩别的周 ⇒ 原课收缩到剩余周，另**新增一条单周条目**放在目标位置（`:2920-2923` 及后续）；
+     * - 原课只剩这一周 ⇒ 就地改（不新增条目）；
+     * - 目标位置用**同名前缀**（服务侧会把共享字段广播过去，颜色/简称不会分叉）。
+     */
+    fun rescheduleOccurrence(
+        port: TimetableCoursePort,
+        courseId: String,
+        sourceWeek: Int,
+        targetWeek: Int,
+        targetDayOfWeek: Int,
+        targetStartSection: Int,
+        targetEndSection: Int,
+        targetLocation: String? = null,
+    ): CourseActionOutcome.Rescheduled {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_reschedule")
+        if (!course.isInWeek(sourceWeek)) {
+            throw IllegalArgumentException("course_not_scheduled_week:$sourceWeek")
+        }
+        val semesterWeekCount = port.semesterWeekCount
+        if (targetWeek < 1 || targetWeek > semesterWeekCount) {
+            throw IllegalArgumentException("target_week_out_of_range")
+        }
+        val location = targetLocation?.trim() ?: course.location
+        val isNoop = sourceWeek == targetWeek &&
+            course.dayOfWeek == targetDayOfWeek &&
+            course.startSection == targetStartSection &&
+            course.endSection == targetEndSection &&
+            course.location == location
+        if (isNoop) {
+            return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = false)
+        }
+
+        val remainingWeeks = course.activeWeeks.filter { it != sourceWeek }.sorted()
+        if (remainingWeeks.isEmpty()) {
+            // 只剩这一周：原地改位置即可（Dart 同分支的等价写法）。
+            val moved = course.copy(
+                dayOfWeek = targetDayOfWeek,
+                startSection = targetStartSection,
+                endSection = targetEndSection,
+                location = location,
+            )
+            TimetableCourseService.update(port, moved, previousSharedName = null)
+            return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
+        }
+
+        val shrunk = course.copy(
+            startWeek = remainingWeeks.first(),
+            endWeek = remainingWeeks.last(),
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = remainingWeeks,
+            sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
+        )
+        TimetableCourseService.update(port, shrunk, previousSharedName = null)
+
+        // 目标位置的新条目：新 id、单周、目标星期/节次；共享字段由服务侧广播。
+        val moved = course.copy(
+            id = UUID.randomUUID().toString(),
+            dayOfWeek = targetDayOfWeek,
+            startSection = targetStartSection,
+            endSection = targetEndSection,
+            location = location,
+            startWeek = targetWeek,
+            endWeek = targetWeek,
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = listOf(targetWeek),
+            sessionNotes = null,
+        )
+        TimetableCourseService.add(port, moved)
+        return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
+    }
+
+    /**
+     * 本周停课 / 复课（Dart `_toggleCourseSuspensionImpl`，`:2336-2360`）：
+     * 在 `suspendedWeeks` 里加上 / 去掉这一周；空集合写回 `null`（Dart `:2356-2358`）。
+     */
+    fun toggleSuspensionThisWeek(
+        port: TimetableCoursePort,
+        courseId: String,
+        week: Int,
+    ): CourseActionOutcome.SuspensionChanged {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_suspend")
+        val current = course.suspendedWeeks.orEmpty()
+        val nowSuspended = week !in current
+        val next = if (nowSuspended) (current + week).sorted() else current.filter { it != week }
+        TimetableCourseService.update(
+            port,
+            course.copy(suspendedWeeks = next.takeIf { it.isNotEmpty() }),
+            previousSharedName = null,
+        )
+        return CourseActionOutcome.SuspensionChanged(courseId, nowSuspended, SuspendScope.THIS_WEEK)
+    }
+
+    /** 整门课停课（Dart `suspendAllWeeks`）：所有教学周都进 `suspendedWeeks`。 */
+    fun suspendAllWeeks(
+        port: TimetableCoursePort,
+        courseId: String,
+    ): CourseActionOutcome.SuspensionChanged {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_suspend")
+        TimetableCourseService.update(
+            port,
+            course.copy(suspendedWeeks = course.activeWeeks.sorted()),
+            previousSharedName = null,
+        )
+        return CourseActionOutcome.SuspensionChanged(courseId, true, SuspendScope.ALL_WEEKS)
+    }
+
+    /** 整门课复课（Dart `unsuspendAllWeeks`）：清空 `suspendedWeeks`。 */
+    fun unsuspendAllWeeks(
+        port: TimetableCoursePort,
+        courseId: String,
+    ): CourseActionOutcome.SuspensionChanged {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_suspend")
+        TimetableCourseService.update(
+            port,
+            course.copy(suspendedWeeks = null),
+            previousSharedName = null,
+        )
+        return CourseActionOutcome.SuspensionChanged(courseId, false, SuspendScope.ALL_WEEKS)
+    }
+
+    /**
+     * 「调课」入口该不该可点（Dart `canReschedule`，`course_action_sheet.dart:889-891`：
+     * `onPressed: canReschedule ? … : null`）。
+     *
+     * 判据：这一周**本来就有**这节课。没有的话「把这一次课挪走」无从谈起——
+     * Dart 是把按钮置灰，本层把这个判据公开给渲染层，免得渲染层自己写业务规则。
+     */
+    fun canReschedule(course: Course, week: Int): Boolean = course.isInWeek(week)
+
+    /**
+     * 单节课提醒是否应当出现在弹层里。
+     *
+     * Dart 判据是 `_isAlarmAvailable(settings, week, course, provider)`
+     * （`course_action_sheet.dart:840-846`）：那节课要在这一周、且用户设置允许精确闹钟。
+     * **本批返回 false**——Compose 侧没有任何「单节课闹钟」调度器（全仓只有
+     * `ExamReminderScheduler` / `LiveUpdateScheduler` / `WeeklyReportScheduler`，
+     * 没有 class-alarm 那条），依赖的原生能力属 Phase 4。
+     * 渲染层据此**不显示**这一行，而不是显示一个点了没反应的入口。
+     */
+    fun isClassAlarmAvailable(): Boolean = false
+}
