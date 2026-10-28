@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,7 +30,9 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Phone
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -47,6 +47,23 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun WarehouseWebLoginPage(
     title: String,
     sessionState: WarehouseWebLoginSessionState,
+    // ---- task-21 接线新增：全部带默认值，不破坏任何现有调用点 ----
+    // 控制句柄：调用方想自己持有（比如要在壳里发脚本）就传进来，否则页面自己记住一个。
+    webViewController: WarehouseWebViewController = rememberWarehouseWebViewController(),
+    /** 加载进度 0..100；由调用方回写 `sessionState`（页面是无状态渲染）。 */
+    onWebProgress: (Int) -> Unit = {},
+    /** 主框架导航开始 / 完成（地址已非空归一）。 */
+    onWebPageStarted: (String) -> Unit = {},
+    onWebPageFinished: (String) -> Unit = {},
+    /** 主框架加载失败（子资源失败不会到这里）。 */
+    onWebError: (WarehouseWebViewError) -> Unit = {},
+    /**
+     * `QingyuBridge` 收到的**已过门禁**的原始消息。
+     *
+     * ⚠️ 页面在把它交出去之前已经过 §6.2 的门禁（UI 类消息只在导入执行期放行）；
+     * 调用方拿到的就是「可以处理」的消息，不需要再判一次。
+     */
+    onWebBridgeMessage: ((String) -> Unit)? = null,
     onBack: () -> Unit = {},
     onReload: () -> Unit = {},
     onToggleDesktopMode: () -> Unit = {},
@@ -73,7 +90,31 @@ fun WarehouseWebLoginPage(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onReload) {
+                    // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
+                    // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
+                    //
+                    // ⚠️ 图标是**临时选择**：miuix-icons 0.9.4 的 157 个扩展图标里没有
+                    // desktop / monitor 一类（只有 `Phone` / `GridView` / `ScreenMirroring` 这些近邻），
+                    // 而 Dart 用的是 Material 的 smartphone_rounded / desktop_windows_rounded。
+                    // 语义按 Dart：**按钮描述的是「点了会切到哪边」**。
+                    IconButton(onClick = {
+                        webViewController.toggleDesktopMode()
+                        onToggleDesktopMode()
+                    }) {
+                        Icon(
+                            imageVector = if (webViewController.isDesktopMode) MiuixIcons.Phone else MiuixIcons.GridView,
+                            contentDescription = if (webViewController.isDesktopMode) {
+                                WarehouseStrings.switchToMobileWebTooltip.zh
+                            } else {
+                                WarehouseStrings.switchToDesktopWebTooltip.zh
+                            },
+                        )
+                    }
+                    IconButton(onClick = {
+                        // 真视图刷新（原来只调外部回调，页面根本没在动）
+                        webViewController.reload()
+                        onReload()
+                    }) {
                         Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
                     }
                     IconButton(onClick = onMoreOptions) {
@@ -217,35 +258,31 @@ fun WarehouseWebLoginPage(
                 }
             }
 
-            // WebView 视口占位与引导
-            Box(
+            // 真 WebView 宿主（task-21 接线）：原来是「灰底 + 引导文案」的占位块，
+            // 教务登录页在 Compose 侧根本没有浏览器。这一段是本次接线的核心。
+            WarehouseWebViewHost(
+                initialUrl = sessionState.currentUrl,
+                controller = webViewController,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = when (sessionState.stage) {
-                            WarehouseWebLoginStage.LOADING -> "正在加载教务系统网页..."
-                            WarehouseWebLoginStage.INJECTING_SCRIPT -> WarehouseStrings.injectingAdapterScript.zh
-                            WarehouseWebLoginStage.EXECUTING -> WarehouseStrings.importingAction.zh
-                            WarehouseWebLoginStage.SUCCESS -> "导入完成"
-                            WarehouseWebLoginStage.ERROR -> sessionState.errorMessage ?: WarehouseStrings.saveFailed.zh
-                            else -> "请在上方登录教务系统，随后点击下方【执行导入】"
-                        },
-                        fontSize = 14.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = sessionState.currentUrl.ifEmpty { "https://..." },
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.7f)
-                    )
-                }
-            }
+                    .weight(1f),
+                desktopMode = webViewController.isDesktopMode,
+                onProgress = onWebProgress,
+                onPageStarted = onWebPageStarted,
+                onPageFinished = onWebPageFinished,
+                onError = onWebError,
+                onBridgeMessage = { raw ->
+                    // ---- §6.2 消息门禁（**不许省**，Dart 修过的钓鱼洞）----
+                    // 宿主对任意页面开放 QingyuBridge，UI 类消息（toast/confirm/prompt/
+                    // singleSelection/error）的唯一合法生产者是导入执行期的适配脚本；
+                    // 不过这道门禁，任意网页都能在原生层弹任意标题/内容的对话框。
+                    // 判定放在 WarehouseWebLoginWebState 里（纯逻辑、有 JVM 测试），
+                    // 且页面源码级守卫钉着「这里必须调它」。
+                    if (WarehouseWebLoginWebState.shouldDeliverBridgeMessage(raw, sessionState.stage)) {
+                        onWebBridgeMessage?.invoke(raw)
+                    }
+                },
+            )
         }
     }
 }
