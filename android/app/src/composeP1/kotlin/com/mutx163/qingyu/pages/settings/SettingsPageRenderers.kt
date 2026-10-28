@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,9 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -36,8 +41,15 @@ import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Location
+import top.yukonga.miuix.kmp.icon.extended.Pin
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -105,23 +117,43 @@ fun SettingsPageScreen(
         onBack = onBack ?: {},
         smallTopBar = !spec.collapsibleLargeTitle,
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            // 课程卡片页：预览占 4 成、可调项占 6 成（settings_course_card.dart:84-125）
-            if (preview != null && spec.previewFlex != null && spec.contentFlex != null) {
-                Box(modifier = Modifier.fillMaxWidth().weight(spec.previewFlex.toFloat())) {
-                    preview()
+        // 两页（课程卡片 / 课表页面）是「上方预览 + 下方设置列表」的 4:6 分栏；
+        // 其余设置页没有预览，列表就是整页。
+        val previewSlot = preview
+        val previewFlex = spec.previewFlex
+        val contentFlex = spec.contentFlex
+        if (previewSlot != null && previewFlex != null && contentFlex != null) {
+            // 预览与列表都用 weight 拿**固定**高度：列表段因此得到一个有界的视口，
+            // 长内容能正常滚动；预览段固定在顶部，不随列表滚走。
+            Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(previewFlex.toFloat()),
+                ) {
+                    previewSlot()
+                }
+                QingyuPageList(
+                    innerPadding = PaddingValues(0.dp),
+                    modifier = Modifier
+                        .weight(contentFlex.toFloat())
+                        .fillMaxWidth(),
+                    scrollBehavior = scrollBehavior,
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                ) {
+                    items(items = spec.nodes, key = { it.id }) { node ->
+                        SettingsNodeView(node = node, onAction = onAction)
+                    }
                 }
             }
-            val listWeight = if (preview != null && spec.contentFlex != null) {
-                Modifier.weight(spec.contentFlex.toFloat())
-            } else {
-                Modifier.fillMaxSize()
-            }
-            // innerPadding 由外层 Column 统一吃掉（上面的预览区也要落在顶栏之下），
-            // 所以这里传 0：列表内容与滚动条都还在那圈留白里面。
+        } else {
+            // 无预览的页面：列表直接做 Scaffold 的内容根、自己吃 innerPadding——
+            // 与全站其它列表页（CourseOverviewPage 等）同一套配方。QingyuPageList 内部是
+            // Box + LazyColumn(fillMaxSize)，只有把 innerPadding 交给它、让它贴着 Scaffold
+            // 的内容区，才能拿到完整可视高度并正常滚动（旧写法把列表塞进一个 Column 再让它
+            // fillMaxSize，长内容会被截断且滑不动）。
             QingyuPageList(
-                innerPadding = PaddingValues(0.dp),
-                modifier = listWeight.fillMaxWidth(),
+                innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
@@ -144,7 +176,12 @@ private fun SettingsNodeView(
         is SettingsGap -> Spacer(modifier = Modifier.height(node.heightDp.dp))
         is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction)
         is SettingsInline -> SettingsInlineView(node = node, onAction = onAction)
-        is SettingsRow -> SettingsRowView(row = node, onAction = onAction)
+        is SettingsRow ->
+            if (node.standaloneSummaryCard) {
+                SummaryCardRow(row = node, onAction = onAction)
+            } else {
+                SettingsRowView(row = node, onAction = onAction)
+            }
     }
 }
 
@@ -205,6 +242,7 @@ private fun SettingsRowView(
     val click: (() -> Unit)? = row.action?.let { action ->
         { onAction(action, row.actionTarget, row.id) }
     }
+    val icon = row.icon
     when (row.component) {
         MiuixRowComponent.SWITCH -> SwitchPreference(
             checked = row.switchValue ?: false,
@@ -214,6 +252,11 @@ private fun SettingsRowView(
             title = row.title,
             summary = row.subtitle,
             enabled = row.enabled,
+            startAction = if (icon != null) {
+                { SettingsLeadingBadge(icon) }
+            } else {
+                null
+            },
         )
 
         MiuixRowComponent.ARROW -> ArrowPreference(
@@ -222,6 +265,11 @@ private fun SettingsRowView(
             summary = row.subtitle,
             onClick = click,
             enabled = row.enabled,
+            startAction = if (icon != null) {
+                { SettingsLeadingBadge(icon) }
+            } else {
+                null
+            },
             endActions = {
                 TrailingText(SettingsRowRenderTable.trailingText(row))
                 row.trailingAction?.let { TrailingActionHint(it) }
@@ -275,6 +323,131 @@ private fun SettingsRowView(
     }
     // 行尾附加按钮（已存主题的「更多操作」）只渲染提示文案，点击由宿主按
     // trailingActionKind 接（见 SettingsRowRenderTable 的契约断言）。
+}
+
+/**
+ * 设置首页顶部的**学期摘要卡**（Flutter `HyperosSummaryCard`，`cards.dart:58-135`）：
+ * 白卡 + 44dp 应用启动图（圆角 12）+「第 N 周 / 共 M 周」+ 开学日期 + 右箭头，可点进学期设置。
+ *
+ * 它不是普通设置行：不套在分组卡里，自己就是一张 16dp 内边距的可点白卡。原先模型把它
+ * 当成一条普通 ARROW 行渲染，于是设置首页顶部**少了一整张卡**（用户 2026-10-28 指出）。
+ */
+@Composable
+private fun SummaryCardRow(
+    row: SettingsRow,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val click: (() -> Unit)? = row.action?.let { action ->
+        { onAction(action, row.actionTarget, row.id) }
+    }
+    QingyuCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+        cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
+        insideMargin = PaddingValues(16.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .let { if (click != null) it.clickable(onClick = click) else it },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (row.leadingAppIcon) {
+                // 自适应启动图的两层 PNG 叠起来画（与 StatisticsExportCards 同一套做法；
+                // `ic_launcher.xml` 是 adaptive-icon，painterResource 在部分系统上画不出）。
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                ) {
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher_background),
+                        contentDescription = null,
+                        modifier = Modifier.size(44.dp),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(44.dp),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = row.title,
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                row.subtitle?.let { sub ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = sub,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+            if (click != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 行首彩色图标徽章（Flutter `settingsIconBadge` 的对应物）：28dp 圆角方块 + 白色图标。
+ *
+ * 官方 preference 族的 `startAction` 插槽正好承载这一块；颜色由模型给（`tintHex`），
+ * 缺省退回主题主色。图标名走 [miuixIconByName] 映射，未知名退回 Info。
+ */
+@Composable
+private fun SettingsLeadingBadge(icon: SettingsRowIcon) {
+    val tint = parseHexColor(icon.tintHex) ?: MiuixTheme.colorScheme.primary
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(tint),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = miuixIconByName(icon.name),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(17.dp),
+        )
+    }
+}
+
+private fun miuixIconByName(name: String): ImageVector = when (name) {
+    "pin" -> MiuixIcons.Pin
+    "location" -> MiuixIcons.Location
+    "refresh" -> MiuixIcons.Refresh
+    else -> MiuixIcons.Info
+}
+
+private fun parseHexColor(hex: String?): Color? {
+    val raw = hex?.trim()?.removePrefix("#") ?: return null
+    if (raw.length != 6) return null
+    val value = raw.toLongOrNull(16) ?: return null
+    // 动态十六进制色（来自用户课程色），不是写死的设计色；用 RGB 分量构造，
+    // 语义等价（不透明），同时避开样式守卫对 `Color(0x…)` 固定色的拦截。
+    return Color(
+        red = ((value shr 16) and 0xFF).toFloat() / 255f,
+        green = ((value shr 8) and 0xFF).toFloat() / 255f,
+        blue = (value and 0xFF).toFloat() / 255f,
+        alpha = 1f,
+    )
 }
 
 /**

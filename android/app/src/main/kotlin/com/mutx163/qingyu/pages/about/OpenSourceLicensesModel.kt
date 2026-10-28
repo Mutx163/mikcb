@@ -84,6 +84,89 @@ fun filterOpenSourcePackages(
 }
 
 /**
+ * 把 Flutter 的 `NOTICES`（`flutter_assets/NOTICES.Z` 解压后的全文）解析成注册表条目。
+ *
+ * ## 为什么需要它（2026-10-28 补的数据源）
+ *
+ * Flutter 侧用 `LicenseRegistry.licenses` 拿许可证；Compose 侧没有这个运行时，但 APK 里打包的
+ * `NOTICES` 文件就是 `LicenseRegistry` 的**同一份底层来源**（Flutter 工具链把所有依赖包 LICENSE
+ * 汇总成一个文件）。这里把它的文本格式解析出来，复用 [buildOpenSourcePackageLicenses] 做聚合——
+ * 于是列表**真的有内容**，而不是永远空。
+ *
+ * ## NOTICES 的文本格式（与 Flutter 一致，已用构建产物实测）
+ *
+ * 每个条目之间用**一整行恰好 80 个 `-`** 分隔。条目内：
+ * 1. 开头连续若干**非空行** = 包名（一个包一行）；
+ * 2. 空行之后是许可证正文，正文里的空行分段（对应 [LicenseRegistryEntry.paragraphs]）。
+ *
+ * 解析不出来（空块 / 无包名 / 正文全空）的条目**跳过**，绝不产生空条目。
+ *
+ * @param text `NOTICES` 解压后的全文
+ * @return 按出现顺序的注册表条目（聚合与排序交给 [buildOpenSourcePackageLicenses]）
+ */
+fun parseFlutterNotices(text: String): List<LicenseRegistryEntry> {
+    val normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    if (normalized.isBlank()) {
+        return emptyList()
+    }
+    val separator = "-".repeat(80)
+    val blocks = mutableListOf<MutableList<String>>()
+    var current = mutableListOf<String>()
+    for (line in normalized.split("\n")) {
+        if (line == separator) {
+            blocks.add(current)
+            current = mutableListOf()
+        } else {
+            current.add(line)
+        }
+    }
+    if (current.isNotEmpty()) {
+        blocks.add(current)
+    }
+
+    val entries = mutableListOf<LicenseRegistryEntry>()
+    for (block in blocks) {
+        val trimmed = block.dropWhile { it.isBlank() }.dropLastWhile { it.isBlank() }
+        if (trimmed.isEmpty()) {
+            continue
+        }
+        val packageLines = trimmed.takeWhile { it.isNotBlank() }
+        val bodyLines = trimmed.drop(packageLines.size).dropWhile { it.isBlank() }
+        val packages = packageLines.map { it.trim() }.filter { it.isNotEmpty() }
+        val paragraphs = splitNoticesParagraphs(bodyLines)
+        if (packages.isEmpty() || paragraphs.isEmpty()) {
+            continue
+        }
+        entries.add(LicenseRegistryEntry(packages = packages, paragraphs = paragraphs))
+    }
+    return entries
+}
+
+/** 按空行分段，逐段 `trim`，丢弃空段（与 Flutter `LicenseEntryWithLineBreaks` 口径一致）。 */
+private fun splitNoticesParagraphs(lines: List<String>): List<String> {
+    val paragraphs = mutableListOf<String>()
+    val buffer = mutableListOf<String>()
+    fun flush() {
+        if (buffer.isNotEmpty()) {
+            val paragraph = buffer.joinToString("\n").trim()
+            if (paragraph.isNotEmpty()) {
+                paragraphs.add(paragraph)
+            }
+            buffer.clear()
+        }
+    }
+    for (line in lines) {
+        if (line.isBlank()) {
+            flush()
+        } else {
+            buffer.add(line)
+        }
+    }
+    flush()
+    return paragraphs
+}
+
+/**
  * 开源许可页文案（逐字取自 `lib/l10n/app_zh.arb`）。
  *
  * 不做手抄信任：`OpenSourceLicensesModelTest` 会用 MiniJson 直接读 ARB 文件逐字对拍，

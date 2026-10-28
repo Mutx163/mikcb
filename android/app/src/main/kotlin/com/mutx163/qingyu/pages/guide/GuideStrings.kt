@@ -113,7 +113,24 @@ object GuideStrings {
     val guideVisualEffectSolidDesc = ArbText("guideVisualEffectSolidDesc", "顶栏、玻璃坞与课程卡片回到实体，最省性能；弹窗等固定小件保持玻璃")
     val guideVisualEffectWallpaperHint = ArbText("guideVisualEffectWallpaperHint", "玻璃材质配上首页壁纸后效果更明显")
     val guidePersonalizeThemeModeTitle = ArbText("guidePersonalizeThemeModeTitle", "深浅色模式")
+    /** 深浅色三段 Tab 文案（与设置页 `themeModeSystem/Light/Dark` 同键同值，逐字对齐 ARB）。 */
+    val themeModeSystem = ArbText("themeModeSystem", "跟随系统")
+    val themeModeLight = ArbText("themeModeLight", "浅色模式")
+    val themeModeDark = ArbText("themeModeDark", "深色模式")
     val guidePersonalizeSeedColorTitle = ArbText("guidePersonalizeSeedColorTitle", "主题色")
+
+    // ── 主题色名（复用 app_zh.arb 的 foruiTheme* 现成键，供 seedOptions 色块标签用）──
+    val foruiThemeMiuix = ArbText("foruiThemeMiuix", "默认")
+    val foruiThemeNeutral = ArbText("foruiThemeNeutral", "中性灰")
+    val foruiThemeZinc = ArbText("foruiThemeZinc", "锌灰")
+    val foruiThemeSlate = ArbText("foruiThemeSlate", "石板灰")
+    val foruiThemeBlue = ArbText("foruiThemeBlue", "蓝")
+    val foruiThemeGreen = ArbText("foruiThemeGreen", "绿")
+    val foruiThemeOrange = ArbText("foruiThemeOrange", "橙")
+    val foruiThemeRed = ArbText("foruiThemeRed", "红")
+    val foruiThemeRose = ArbText("foruiThemeRose", "玫红")
+    val foruiThemeViolet = ArbText("foruiThemeViolet", "紫")
+    val foruiThemeYellow = ArbText("foruiThemeYellow", "黄")
 
     // ── 用户指南：使用技巧页与底部按钮 ──
     val guideTipsPageTitle = ArbText("guideTipsPageTitle", "使用技巧")
@@ -306,7 +323,21 @@ object GuideStrings {
             guideVisualEffectSolidDesc,
             guideVisualEffectWallpaperHint,
             guidePersonalizeThemeModeTitle,
+            themeModeSystem,
+            themeModeLight,
+            themeModeDark,
             guidePersonalizeSeedColorTitle,
+            foruiThemeMiuix,
+            foruiThemeNeutral,
+            foruiThemeZinc,
+            foruiThemeSlate,
+            foruiThemeBlue,
+            foruiThemeGreen,
+            foruiThemeOrange,
+            foruiThemeRed,
+            foruiThemeRose,
+            foruiThemeViolet,
+            foruiThemeYellow,
             guideTipsPageTitle,
             guideShortNameAdviceTitle,
             guideShortNameAdviceSubtitle,

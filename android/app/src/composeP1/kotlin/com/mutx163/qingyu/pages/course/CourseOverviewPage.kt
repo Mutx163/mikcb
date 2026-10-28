@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.course
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,17 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,20 +25,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.PopupPositionProvider
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -50,9 +58,10 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -68,28 +77,44 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 排序、同名聚合、冲突标记、行标题/副标题拼装、弹层三项与选中态**全部**在
  * 模型层 [CourseOverviewLogic.buildViewState] 里算好，本文件只做三件事：
  * 1. 把 [CourseOverviewViewState] 的字段摆上屏；
- * 2. 持有**纯 UI 状态** `sortPopupOpen`（Dart 侧同样放在 State 里，不是业务状态）；
- * 3. 把点击回调按语义转给壳层（onOpenGroup 带整行，onOpenConflictDetail 不带参数）。
+ * 2. 持有**纯 UI 状态** `sortPopupOpen` 与排序图标的屏幕坐标（Dart 侧同样放在 State 里，
+ *    不是业务状态：`_sortPopupOpen` / `_sortAnchorRect`）；
+ * 3. 把点击回调按语义转给壳层（onOpenGroup 带整组，onOpenConflictDetail 不带参数）。
+ *
+ * ## 视觉对齐 Flutter 原页（2026-10-28 逐项核对）
+ *
+ * - **同名课程行是「一整张卡片里的多行」**，不是一行一张卡：Dart 用
+ *   `HyperosListView > HyperosListGroup(children = [for group in sorted _CourseGroupTile])`，
+ *   一张 `HyperosAdaptiveCard` 里竖排全部课程行（无行间分割线）。本页照此把全部课程行放进
+ *   **同一个** [QingyuCard]，行内边距 16/13、两行行高下限 72dp（对齐
+ *   `HyperosTokens.chevronRowPadding` / `listRowTwoLineMinHeight`）。
+ * - **冲突入口单独一张卡**：Dart 是独立的单行 `HyperosListGroup`，其后再接
+ *   `HyperosSectionGap`（12dp）到课程卡，与 [QingyuPageList] 的 `spacedBy(12.dp)` 同值。
+ * - **字号**对齐 Dart `HyperosTypography`：标题 17sp（`textStyles.main`）/ 副标题与课程性质
+ *   14sp（`textStyles.body2`）/ 冲突标签 11sp（`textStyles.footnote2`）；标题↔副标题间距 3dp
+ *   （`titleCaptionGap`）。
+ * - **空态**对齐 Dart `_buildEmptyState`：居中 56dp 图标 + 提示句 + 主按钮（图标见差异说明）。
  *
  * ## 与 Dart 的渲染层差异（都记在这里，不进别的文件）
  *
  * - **排序弹层**：Dart 用 `HyperosSelectPopup`（常驻挂载 + 锚定矩形 + 切 show）。
  *   Miuix 0.9.4 没有「任意锚点的选择弹层」这种组件——`WindowDropdownPreference` /
  *   `OverlayDropdownPreference` 都是**设置行**形态（自带标题行），不能挂到顶栏图标下。
- *   所以这里用官方 [Card] + [Text] 行组合出弹层，弹层容器用 Compose 原生 [Popup]
- *   （`focusable = true`，点空白/返回键即关，对齐 Dart `onDismiss` 语义）。没有自绘
- *   任何「官方已有」的组件形态，只是在官方容器里摆官方文字行。
+ *   所以这里用共享 [QingyuCard] + 官方 [Text] 行组合出弹层，弹层容器用 Compose 原生 [Popup]
+ *   （`focusable = true`，点空白/返回键即关，对齐 Dart `onDismiss` 语义）。**锚点位置按排序
+ *   图标实测的屏幕矩形动态计算**（`onGloballyPositioned` 取 `boundsInWindow()`，右对齐、
+ *   贴图标下方 4dp），不再写死「状态栏 + 60dp」——大标题折叠态下也贴得住。
  * - **冲突入口图标**：Dart 用 `Icons.warning_amber_rounded` + `HyperosIconColors.orange`
- *   （`0xFFFF6B00`）。Miuix 0.9.4 的 extended 图标里**没有**警告类字形（实测 AAR
- *   只有 Info/Kind 等），取最接近的官方 [MiuixIcons.Info]，颜色沿用 Dart 的橙色。
- * - **空态**：Dart 是「56dp 校徽图标 + 提示 + 按钮」。Miuix 无学校字形，按
- *   `ScheduleListPage` 已交付空态的先例（卡片 + 提示 + 按钮，不带图标），避免自绘图标。
+ *   （`0xFFFF6B00`）。Miuix 0.9.4 的 extended 图标里**没有**警告类字形，取最接近的官方
+ *   [MiuixIcons.Info]，颜色沿用 Dart 的橙色（语义由橙色 + 行内标题承载，不靠字形）。
+ * - **空态图标**：Dart 用 `Icons.school_outlined`，Miuix 无学校字形，取官方
+ *   [MiuixIcons.ContactsBook]（全站「课程」语义已用它，见任务页「查看课程」按钮），
+ *   尺寸 / 颜色与 Dart 同（56dp / secondaryText）。
  *
  * @param viewState 整页视图状态（模型层产出，见 [CourseOverviewViewState]）
  * @param onBack 返回（Dart `onBack: Navigator.pop`）
  * @param onAddCourse 顶栏「+」与空态按钮（Dart 两处都进 `/course/create`）
- * @param onOpenGroup 点课程组行进编辑页（Dart `AddCourseScreen(courseGroup: group)`，
- *   按 Catalog 契约该页收的是 `CourseFormPayload(courseGroup = …)`）
+ * @param onOpenGroup 点课程组行进**组编辑**页（Dart `AddCourseScreen(courseGroup: group)`）
  * @param onOpenConflictDetail 冲突详情入口（Dart 进 `/course/conflicts`）
  * @param onSortModeSelected 弹层选中一档（Dart `_onSortSelected`：改档 + 关弹层，
  *   两件事都由壳/模型侧完成，本页只上报选择）
@@ -109,9 +134,10 @@ fun CourseOverviewPage(
     // overlayHeader / collapsibleLargeTitle 均为默认 true（可折叠大标题）。
     val scrollBehavior = MiuixScrollBehavior()
 
-    // 「排序」弹层的显示开关：**纯 UI 状态**（Dart `_sortPopupOpen`）。锚点矩形在
-    // Compose 侧由弹层自身的 TopEnd 对齐表达，不需要 Dart 那套 GlobalKey 取矩形。
+    // 「排序」弹层的显示开关与锚点：**纯 UI 状态**（Dart `_sortPopupOpen` /
+    // `_sortAnchorRect` 的对应物）。锚点在排序图标 `onGloballyPositioned` 时实测。
     var sortPopupOpen by remember { mutableStateOf(false) }
+    var sortAnchorBounds by remember { mutableStateOf<Rect?>(null) }
 
     QingyuPageTheme {
         // 弹层要锚在「整个页面坐标系」的右上，所以 Scaffold 外面再包一层 Box。
@@ -136,7 +162,13 @@ fun CourseOverviewPage(
                         },
                         // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
                         actions = {
-                            IconButton(onClick = { sortPopupOpen = true }) {
+                            IconButton(
+                                onClick = { sortPopupOpen = true },
+                                // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
+                                modifier = Modifier.onGloballyPositioned { coords ->
+                                    sortAnchorBounds = coords.boundsInWindow()
+                                },
+                            ) {
                                 Icon(
                                     imageVector = MiuixIcons.Sort,
                                     contentDescription = CourseOverviewStrings.sortAction.zh,
@@ -165,36 +197,36 @@ fun CourseOverviewPage(
                             .padding(innerPadding),
                     )
                 } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 8.dp,
-                            // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                            bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                        ),
+                    // 主滚动统一走共享套件：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+                    // 与右侧滚动条。横向留白按配方由每个块自己带 12dp，**不**放进
+                    // contentPadding —— 放进去滚动条会跟着内缩、也偏离 28dp 轴线。
+                    QingyuPageList(
+                        innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         // 冲突入口：只有一条，详情在独立页（对齐 Dart「单入口」注释）。
+                        // 它是**独立的单行卡片**，与课程卡之间由 spacedBy(12dp) 隔开
+                        // （= Dart 的 HyperosSectionGap）。
                         if (viewState.conflictCount > 0) {
                             item(key = "conflict_entry") {
                                 CourseConflictEntryCard(
                                     title = viewState.conflictEntryTitle,
                                     detail = viewState.conflictEntryDetail,
                                     dark = dark,
+                                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
                                     onClick = onOpenConflictDetail,
                                 )
                             }
                         }
-                        items(viewState.rows, key = { "group_${it.group.name}" }) { row ->
-                            CourseGroupRowCard(
-                                row = row,
+                        // 同名课程聚合行：**全部行放进同一张卡片**（Dart 的一个 HyperosListGroup）。
+                        item(key = "course_list") {
+                            CourseGroupListCard(
+                                rows = viewState.rows,
                                 dark = dark,
-                                onClick = { onOpenGroup(row.group) },
+                                modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                                onOpenGroup = onOpenGroup,
                             )
                         }
                     }
@@ -205,6 +237,7 @@ fun CourseOverviewPage(
                 CourseOverviewSortPopup(
                     options = viewState.sortOptions,
                     dark = dark,
+                    anchorBounds = sortAnchorBounds,
                     onSelect = { option ->
                         onSortModeSelected(option.mode)
                         sortPopupOpen = false
@@ -217,7 +250,7 @@ fun CourseOverviewPage(
 }
 
 /**
- * 空态：全屏居中，提示句 + 添加入口（Dart `_buildEmptyState` 的正文与按钮）。
+ * 空态：全屏居中，图标 + 提示句 + 添加入口（对齐 Dart `_buildEmptyState`）。
  *
  * 图标缺口见文件头「与 Dart 的渲染层差异」第三条。
  */
@@ -230,28 +263,31 @@ private fun CourseOverviewEmptyState(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.padding(24.dp),
+        modifier = modifier.padding(32.dp),
         contentAlignment = Alignment.Center,
     ) {
-        QingyuCard(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = hint,
-                    style = MiuixTheme.textStyles.body1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-                CourseOverviewActionButton(
-                    text = actionLabel,
-                    onClick = onAddCourse,
-                )
-            }
+            Icon(
+                imageVector = MiuixIcons.ContactsBook,
+                contentDescription = null,
+                tint = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.size(56.dp),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = hint,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            CourseOverviewActionButton(
+                text = actionLabel,
+                onClick = onAddCourse,
+            )
         }
     }
 }
@@ -264,26 +300,38 @@ private fun CourseConflictEntryCard(
     title: String,
     detail: String,
     dark: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        modifier = modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(0.dp),
         onClick = onClick,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 72.dp)
+                .padding(horizontal = 16.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                imageVector = MiuixIcons.Info,
-                // Dart 侧该图标是装饰性的（行内有标题），不带语义标签。
-                contentDescription = null,
-                // HyperosIconColors.orange = 0xFFFF6B00（lib/ui/hyperos/hyperos_tokens.dart:128）。
-                tint = COURSE_OVERVIEW_WARNING_ORANGE,
-                modifier = Modifier.size(20.dp),
-            )
+            // Dart `HyperosListTile(icon: warning_amber, iconAccent: orange)` 走的是
+            // `HyperosIconBadge`：26dp 实色圆角方块 + 14dp 白色字形（tiles.dart:155-164）。
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .background(COURSE_OVERVIEW_WARNING_ORANGE, RoundedCornerShape(7.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Info,
+                    // Dart 侧该图标是装饰性的（行内有标题），不带语义标签。
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -293,10 +341,10 @@ private fun CourseConflictEntryCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = detail,
-                    style = MiuixTheme.textStyles.footnote1,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -312,7 +360,36 @@ private fun CourseConflictEntryCard(
 }
 
 /**
- * 课程组行（Dart `_CourseGroupTile`）：
+ * 同名课程聚合卡：**一整张卡片里竖排全部课程行**（Dart 的一个 `HyperosListGroup`）。
+ *
+ * 行内点击进组编辑页；行间没有分割线（Dart 原页即如此，靠 26dp 纵向留白 + 两行内容分隔）。
+ */
+@Composable
+private fun CourseGroupListCard(
+    rows: List<CourseGroupRow>,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+    onOpenGroup: (CourseGroup) -> Unit,
+) {
+    QingyuCard(
+        modifier = modifier.fillMaxWidth(),
+        // 行自己带 16/13 内边距，卡片不再额外给内边距（对齐 Dart HyperosListGroup）。
+        insideMargin = PaddingValues(0.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEach { row ->
+                CourseGroupRow(
+                    row = row,
+                    dark = dark,
+                    onClick = { onOpenGroup(row.group) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 单条课程组行（Dart `_CourseGroupTile`）：
  * - 第一行：显示名（名称 /「名称 (短名)」）+ 冲突标签；
  * - 第二行：教师 · 课表摘要（多时段点号分隔）；
  * - 尾部：课程性质（必修/选修）+ 右箭头。
@@ -320,115 +397,142 @@ private fun CourseConflictEntryCard(
  * 全部字符串由模型层 [CourseGroupRow] 提供，本函数不拼串（对齐「渲染层不做计算」）。
  */
 @Composable
-private fun CourseGroupRowCard(
+private fun CourseGroupRow(
     row: CourseGroupRow,
     dark: Boolean,
     onClick: () -> Unit,
 ) {
-    QingyuCard(
-        modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-        onClick = onClick,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            // 两行行高下限 72dp（Dart HyperosTokens.listRowTwoLineMinHeight）；
+            // heightIn 在 padding 之前 → 约束的是「内容 + 内边距」的总高。
+            .heightIn(min = 72.dp)
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = row.displayName,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (row.hasConflict) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        // Dart HyperosTag：destructive 12% 底色 + 11sp w500。
-                        Text(
-                            text = CourseOverviewStrings.conflictLabel.zh,
-                            style = MiuixTheme.textStyles.footnote2,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(QingyuTheme.destructive()),
-                            modifier = Modifier
-                                .background(
-                                    Color(QingyuTheme.destructive()).copy(alpha = 0.12f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(2.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = row.subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
+                    text = row.displayName,
+                    // Dart listTitle = 17sp（textStyles.main）。
+                    style = MiuixTheme.textStyles.main,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                if (row.hasConflict) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    // Dart HyperosTag：destructive 12% 底色 + 11sp w500。
+                    Text(
+                        text = CourseOverviewStrings.conflictLabel.zh,
+                        style = MiuixTheme.textStyles.footnote2,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(QingyuTheme.destructive()),
+                        modifier = Modifier
+                            .background(
+                                Color(QingyuTheme.destructive()).copy(alpha = 0.12f),
+                                RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
             }
+            // Dart titleCaptionGap = 3dp。
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
-                text = row.natureLabel,
-                style = MiuixTheme.textStyles.footnote1,
+                text = row.subtitle,
+                // Dart listDetail = 14sp（textStyles.body2）。
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Icon(
-                imageVector = MiuixIcons.ChevronForward,
-                contentDescription = null,
-                tint = Color(QingyuTheme.actionIcon(dark)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+        Text(
+            text = row.natureLabel,
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
+        Icon(
+            imageVector = MiuixIcons.ChevronForward,
+            contentDescription = null,
+            tint = Color(QingyuTheme.actionIcon(dark)),
+        )
     }
 }
 
 /**
  * 「排序」选择弹层（Dart `HyperosSelectPopup` 的三项 + 当前档）。
  *
- * 形态差异见文件头第一条：官方 Card 容器的弹层，锚在页面右上、顶栏之下。
- * 三项文案与顺序来自 [CourseOverviewViewState.sortOptions]（added → name → schedule），
- * 当前档由 `isSelected` 标出（尾部落一个对勾）。
+ * 形态差异见文件头第一条：官方 Card 容器的弹层，**右对齐到排序图标、贴其下方 4dp**
+ * （锚点矩形由调用方在 `onGloballyPositioned` 实测传入）。三项文案与顺序来自
+ * [CourseOverviewViewState.sortOptions]（added → name → schedule），当前档由 `isSelected`
+ * 标出（文字转主题色 + 尾部对勾）。
+ *
+ * 行内边距对齐 Dart `HyperosMiuixDropdown`：首/末行纵向 20dp、中间行 12dp、横向 20dp。
  */
 @Composable
 private fun CourseOverviewSortPopup(
     options: List<CourseSortOption>,
     dark: Boolean,
+    anchorBounds: Rect?,
     onSelect: (CourseSortOption) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val density = LocalDensity.current
-    // 顶栏之下落弹层：系统状态栏高度 + 顶栏高度。TopAppBar 的小标题行标准高度
-    // 约 60dp（与 ScheduleListPage 顶栏同款），这里按 60dp 估位；
-    // 精确贴合留给真机逐页对照（L4）调。
-    val statusBarPx = WindowInsets.statusBars.getTop(density)
-    val offsetY = statusBarPx + with(density) { 60.dp.roundToPx() }
+    val gapPx = with(density) { 4.dp.roundToPx() }
+    val positionProvider = remember(anchorBounds) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBoundsPx: IntRect,
+                windowSize: IntSize,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize,
+            ): IntOffset {
+                // 右对齐到排序图标、贴其下方；锚点还没测到时退回窗口右上角。
+                val iconRight = anchorBounds?.right?.roundToInt() ?: windowSize.width
+                val iconBottom = anchorBounds?.bottom?.roundToInt() ?: 0
+                val x = (iconRight - popupContentSize.width).coerceAtLeast(gapPx)
+                return IntOffset(x = x, y = iconBottom + gapPx)
+            }
+        }
+    }
 
     Popup(
-        alignment = Alignment.TopEnd,
-        offset = IntOffset(x = with(density) { (-12).dp.roundToPx() }, y = offsetY),
+        popupPositionProvider = positionProvider,
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true),
     ) {
         QingyuCard(
-            modifier = Modifier.widthIn(min = 160.dp),
-            insideMargin = PaddingValues(vertical = 6.dp),
+            modifier = Modifier.widthIn(min = 180.dp),
+            insideMargin = PaddingValues(0.dp),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                options.forEach { option ->
+                options.forEachIndexed { index, option ->
+                    val isFirst = index == 0
+                    val isLast = index == options.lastIndex
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .clickable { onSelect(option) }
+                            .padding(
+                                start = 20.dp,
+                                end = 20.dp,
+                                top = if (isFirst) 20.dp else 12.dp,
+                                bottom = if (isLast) 20.dp else 12.dp,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
                             text = option.label,
-                            style = MiuixTheme.textStyles.body2,
+                            // Dart 弹层条目 = preferenceTitleSize 17sp。
+                            style = MiuixTheme.textStyles.main,
                             fontWeight = if (option.isSelected) FontWeight.Medium else FontWeight.Normal,
                             color = if (option.isSelected) {
                                 Color(QingyuTheme.primary(dark = dark))
@@ -442,7 +546,7 @@ private fun CourseOverviewSortPopup(
                                 imageVector = MiuixIcons.Ok,
                                 contentDescription = null,
                                 tint = Color(QingyuTheme.primary(dark = dark)),
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
@@ -474,8 +578,8 @@ private fun CourseOverviewActionButton(
     }
 }
 
-/** HyperosIconColors.orange（lib/ui/hyperos/hyperos_tokens.dart:128）。 */
-private val COURSE_OVERVIEW_WARNING_ORANGE = Color(0xFFFF6B00)
+/** 冲突入口图标色：走 `HyperosIconColors.orange` 的 Compose 端口（0xFFFF6B00，与 Dart 同值）。 */
+private val COURSE_OVERVIEW_WARNING_ORANGE = Color(QingyuIconColors.ORANGE)
 
 // ============================================================================
 // 表单页目录的渲染侧接线（`lib/screens/timetable_form_pages_impl.dart` 的 Compose 形态）

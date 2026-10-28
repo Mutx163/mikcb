@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
@@ -56,23 +57,17 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 import java.time.LocalDate
 
 /**
  * 课表周视图完整页面（Timetable Week Page · Compose Phase 3）。
  *
  * 对应 Flutter `lib/screens/timetable_screen.dart` 周视图部分：
- * - 顶部 ActionBar：
- *   - 标题区：当前课表名称 + 下拉切换入口；当前浏览第 N 周；
- *   - 右侧操作项：回到本周按钮（非本周高亮）、"+" 号快捷添课入口、课表管理入口（跳转 Profiles）；
+ * - 顶部一条标题栏 [TimetableTopBar]：「轻屿课表」+ 右上角「更多」菜单（与日/月视图同源）；
  * - 主体区：
  *   - 基于 [HorizontalPager] 原生实现 1..totalWeeks 平滑翻周手势；
- *   - 每周页面组合 [TimetableWeekdayHeader]、[TimetableTimeColumn]、[TimetableWeekGrid]；
+ *   - 每周页面组合 [TimetableWeekdayHeader]（左端是周次选择器）、[TimetableTimeColumn]、[TimetableWeekGrid]；
  *   - 本周无课时展示优雅极简空态提示（"本周没有排课"）。
  */
 @Composable
@@ -94,6 +89,9 @@ fun TimetableWeekPage(
     onManageProfilesClick: () -> Unit = {},
     onSwitchProfileClick: () -> Unit = {},
     onWeekChanged: (week: Int) -> Unit = {},
+    homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
+    onHomeMenuSelect: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -115,7 +113,6 @@ fun TimetableWeekPage(
     }
 
     val activeBrowsingWeek = pagerState.currentPage + 1
-    val isViewingCurrentWeek = activeBrowsingWeek == currentWeek
 
     var showWeekSelectorDialog by remember { mutableStateOf(false) }
 
@@ -141,126 +138,23 @@ fun TimetableWeekPage(
                 // 再加一次就是算两遍，标题会整体下移一个状态栏（2026-10-27 截图确认）。
                 .padding(innerPadding),
         ) {
-            // ── 1. 顶部 ActionBar ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                // 左侧标题区（课表名称 + 当前周次标签 + 下拉切换）
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { showWeekSelectorDialog = true }
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = profileName,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Bold,
-                                color = textColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = MiuixIcons.ChevronForward,
-                                contentDescription = "切换课表",
-                                modifier = Modifier.size(14.dp),
-                                tint = subTextColor,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "第 $activeBrowsingWeek 周",
-                                style = MiuixTheme.textStyles.footnote2,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isViewingCurrentWeek) accentColor else subTextColor,
-                            )
-                            if (isViewingCurrentWeek) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(999.dp))
-                                        .background(accentColor.copy(alpha = 0.16f))
-                                        .padding(horizontal = 5.dp, vertical = 1.dp),
-                                ) {
-                                    Text(
-                                        text = "本周",
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        fontWeight = FontWeight.Bold,
-                                        color = accentColor,
-                                        lineHeight = 11.sp,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+            // ── 0. 顶栏「轻屿课表」标题 + 右上角「更多」菜单 ──
+            // Flutter 首页顶部那条标题栏（TimetableTitleBar）在 Phase 3 漏搬了，
+            // 这里补回；三个视图共用 TimetableTopBar 一份实现。
+            TimetableTopBar(
+                brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                profileName = profileName,
+                onTitleClick = onSwitchProfileClick,
+                menuItems = homeMenuItems,
+                onMenuSelect = onHomeMenuSelect,
+            )
 
-                // 右侧操作项
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 回到本周按钮（若非本周高亮）
-                    if (!isViewingCurrentWeek) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(accentColor)
-                                .clickable {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage((currentWeek - 1).coerceIn(0, pageCount - 1))
-                                    }
-                                }
-                                .padding(horizontal = 10.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = MiuixIcons.Refresh,
-                                    contentDescription = "回到本周",
-                                    modifier = Modifier.size(12.dp),
-                                    tint = Color.White,
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = "回本周",
-                                    style = MiuixTheme.textStyles.footnote2,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White,
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-
-                    // "+" 号快捷添加
-                    IconButton(onClick = onAddClick) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = "添加",
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-
-                    // 课表管理入口
-                    IconButton(onClick = onManageProfilesClick) {
-                        Icon(
-                            imageVector = MiuixIcons.Favorites,
-                            contentDescription = "课表管理",
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                }
-            }
-
-            // ── 2. 主体区：HorizontalPager 翻周 ──
+            // ── 1. 主体区：HorizontalPager 翻周 ──
+            // 注意：这里**不再**自建一行「课表名 + 第 N 周 + 加课/管理」的 ActionBar。
+            // Flutter 首页顶栏只有一条「轻屿课表」标题行（本文件顶部 TimetableTopBar），
+            // 周次选择器长在下面的星期栏左端（TimetableWeekdayHeader 的 "8周" 格）。
+            // 之前三行叠着显示（轻屿课表 / 默认课表+第8周 / 8周），用户 2026-10-28
+            // 截图反馈「首页好奇怪、跟 Flutter 差很多」，根因就是这条重复的 ActionBar。
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),

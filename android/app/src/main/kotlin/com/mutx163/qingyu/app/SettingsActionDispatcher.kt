@@ -35,11 +35,12 @@ import com.mutx163.qingyu.core.LenientJson
  * | RADIO | `onAction(action, row.actionTarget, row.id)` | `target` 通常为 null ⇒ **从 rowId 后缀取值** |
  * | ARROW / COLOR_SWATCH | `onAction(action, row.actionTarget, row.id)` | `target` = 路由 / 作用域 |
  *
- * ## 本刀覆盖的 4 页
+ * ## 本刀覆盖的页面
  *
  * 通用（`settings-general`）/ 外观（`settings-appearance`）/ 主题管理（`settings-theme`）/
- * 课程卡片（`settings-course-card`）。其余 16 页各自私有 state，未识别 rowId 一律
- * [SettingsDispatch.Ignored]（no-op + 带理由，**不崩**）。
+ * 课程卡片（`settings-course-card`）/ 首页与导航（`settings-home-navigation`，含底栏编辑器与
+ * 八宫格编辑器那批 add / remove / move / reset 增量动作）。其余页各自私有 state，
+ * 未识别 rowId 一律 [SettingsDispatch.Ignored]（no-op + 带理由，**不崩**）。
  *
  * ## 判据出处（Dart 只读参照，逐条核过）
  *
@@ -157,6 +158,29 @@ object SettingsActionDispatcher {
      */
     const val ROW_CARD_COLOR_CHIPS = "courseCard.colorChips"
 
+    // ---------------------------------------------------- 首页与导航（settings-home-navigation）
+    // 渲染层实际传来的 target：形态/样式走下拉 option id（form 是 "classic"/"glassDock"，
+    // 注意**不是**磁盘值 "glass_dock"），开关不带 target，底栏/菜单的增删移走 target=入口 id
+    // 或 "from:to"，reset 不带 target。
+
+    const val ROW_HOME_NAV_FORM = "homeNavigation.form"
+    const val ROW_HOME_NAV_MENU_STYLE = "homeNavigation.menuStyle"
+    const val ROW_HOME_NAV_HOME_TITLE_STYLE = "homeNavigation.homeTitleStyle"
+    const val ROW_HOME_NAV_SHOW_ADD_BUTTON = "homeNavigation.showAddButton"
+    const val ROW_HOME_NAV_DOCK_BUTTON_ENTRY = "homeNavigation.dockButtonEntry"
+
+    /** 玻璃坞底栏编辑器：添加 / 移除 / 排序 / 恢复默认（target=入口 id 或 "from:to"）。 */
+    const val ROW_DOCK_ADD = "dock.add"
+    const val ROW_DOCK_REMOVE = "dock.remove"
+    const val ROW_DOCK_MOVE = "dock.move"
+    const val ROW_DOCK_RESET = "dock.reset"
+
+    /** 八宫格菜单编辑器：添加 / 移除 / 排序 / 恢复默认。 */
+    const val ROW_MENU_ADD = "menu.add"
+    const val ROW_MENU_REMOVE = "menu.remove"
+    const val ROW_MENU_MOVE = "menu.move"
+    const val ROW_MENU_RESET = "menu.reset"
+
     /** 主题管理页控制卡（`SettingsInline.id`）与它两个按钮的行 id。 */
     const val ROW_THEME_CURRENT = "theme.current"
 
@@ -172,9 +196,36 @@ object SettingsActionDispatcher {
      */
     const val ROW_THEME_CURRENT_SAVE = "theme.current.saveCurrent"
 
+    // ---------------------------------------------------- 课表页面设置（settings-timetable-page）
+    // 渲染层实际传来的 target：开关不带 target；两个下拉走 option id（页面词汇
+    // `hidden/startOnly/startAndEnd` 与 `narrow/wide`）；滑杆是数字字符串。
+    // 背景色板见下方 [ROW_TP_BG_CHIPS]。
+    const val ROW_TP_AUTO_FIT = "timetablePage.autoFit"
+    const val ROW_TP_HIDE_WEEKENDS = "timetablePage.hideWeekends"
+    const val ROW_TP_SHOW_OTHER_WEEKS = "timetablePage.showOtherWeeks"
+    const val ROW_TP_LONG_PRESS = "timetablePage.longPressEmptySlot"
+    const val ROW_TP_WEEK_EXAMS = "timetablePage.weekGridExams"
+    const val ROW_TP_WEEK_SCHEDULES = "timetablePage.weekGridSchedules"
+    const val ROW_TP_SCREENSHOT = "timetablePage.screenshotShare"
+    const val ROW_TP_TIME_DISPLAY = "timetablePage.timeColumnDisplay"
+    const val ROW_TP_TIME_WIDTH = "timetablePage.timeColumnWidth"
+    const val ROW_TP_SECTION_HEIGHT = "timetablePage.sectionHeight"
+    const val ROW_TP_CARD_GAP = "timetablePage.courseCardGap"
+    const val ROW_TP_BACK_WEEK_OPACITY = "timetablePage.backToWeek.opacity"
+
+    /**
+     * 课表背景色板。渲染层的 `ColorChipGroup` 复用了课卡色板的 rowId（历史原因），
+     * 本页宿主会把它拦成本常量；本模型**不拥有** `timetablePageBackgroundColor`，
+     * 所以写它只能 Ignored（等背景/材质那一刀扩模型后再接）。
+     */
+    const val ROW_TP_BG_CHIPS = "timetablePage.background.colorChips"
+
     /** 恢复默认的作用域名（`settings_reset.dart:17-23` 里的两个）。 */
     const val SCOPE_APPEARANCE = "appearance"
     const val SCOPE_COURSE_CARD = "courseCard"
+
+    /** 首页与导航作用域（`settings_reset.dart:29-30` 的 `homeNavigation`）。 */
+    const val SCOPE_HOME_NAVIGATION = "homeNavigation"
 
     /**
      * Dart `TimetableSettings` 的**构造**默认种子色（`timetable_settings.dart:889`）。
@@ -273,6 +324,20 @@ object SettingsActionDispatcher {
                 themeSeedColor = RESET_THEME_SEED_COLOR,
                 // 材质那一档（`courseCardSurfaceStyle`）归本作用域（Dart `:154`）。
                 courseCardSurfaceStyle = CourseCardSurfaceStyle.SOLID,
+            )
+
+            SCOPE_HOME_NAVIGATION -> model.copy(
+                homeNavigationForm = HomeNavigationForm.CLASSIC,
+                homeMenuStyle = HomeMenuStyle.LIST,
+                homeTitleStyle = HomeTitleStyle.CLASSIC,
+                glassDockActions = emptyList(),
+                glassDockShowAddButton = false,
+                glassDockButtonEntryId = TimetableSettingsModel.DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
+                glassDockButtonIconName = null,
+                glassDockShowDayTab = true,
+                glassDockShowSettingsTab = true,
+                glassDockShowWeekTab = true,
+                homeGridMenuActions = emptyList(),
             )
 
             else -> null
@@ -401,6 +466,209 @@ object SettingsActionDispatcher {
                 applyThemeCheckpoint(model, config)
             }
 
+            // ---------------------------------------------------- 首页与导航
+            ROW_HOME_NAV_FORM -> {
+                // 页面下拉的 option id 是 "glassDock"，而枚举磁盘值是 "glass_dock"（见枚举 KDoc），
+                // 两个都收，避免「选了玻璃坞却回落经典」。未知值按本刀约定 Ignored（不猜）。
+                val form = when (target) {
+                    "classic" -> HomeNavigationForm.CLASSIC
+                    "glassDock", "glass_dock" -> HomeNavigationForm.GLASS_DOCK
+                    else -> return ignored(kind, target, rowId, "首页导航形态不认识：$target")
+                }
+                model.copy(homeNavigationForm = form)
+            }
+
+            ROW_HOME_NAV_MENU_STYLE -> {
+                val style = when (target) {
+                    "list" -> HomeMenuStyle.LIST
+                    "grid" -> HomeMenuStyle.GRID
+                    else -> return ignored(kind, target, rowId, "菜单形态不认识：$target")
+                }
+                model.copy(homeMenuStyle = style)
+            }
+
+            ROW_HOME_NAV_HOME_TITLE_STYLE -> {
+                val style = when (target) {
+                    "classic" -> HomeTitleStyle.CLASSIC
+                    "brand" -> HomeTitleStyle.BRAND
+                    else -> return ignored(kind, target, rowId, "首页标题样式不认识：$target")
+                }
+                model.copy(homeTitleStyle = style)
+            }
+
+            ROW_HOME_NAV_SHOW_ADD_BUTTON -> model.copy(
+                glassDockShowAddButton = !model.glassDockShowAddButton,
+            )
+
+            ROW_HOME_NAV_DOCK_BUTTON_ENTRY -> model.copy(
+                // 缺省/空串回落 addCourse（Dart `_effectiveGlassDockButtonEntryId` 同口径）。
+                glassDockButtonEntryId = target?.takeIf { it.isNotBlank() }
+                    ?: TimetableSettingsModel.DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
+            )
+
+            ROW_DOCK_ADD -> {
+                val id = target?.takeIf { it.isNotBlank() }
+                    ?: return ignored(kind, target, rowId, "底栏添加缺少入口 id")
+                if (model.glassDockActions.size >= TimetableSettingsModel.HOME_DOCK_MENU_MAX_SLOTS ||
+                    id in model.glassDockActions
+                ) {
+                    model
+                } else {
+                    model.copy(glassDockActions = model.glassDockActions + id)
+                }
+            }
+
+            ROW_DOCK_REMOVE -> {
+                val id = target?.takeIf { it.isNotBlank() }
+                    ?: return ignored(kind, target, rowId, "底栏移除缺少入口 id")
+                if (model.glassDockActions.size <= 1 || id !in model.glassDockActions) {
+                    model
+                } else {
+                    model.copy(glassDockActions = model.glassDockActions.filter { it != id })
+                }
+            }
+
+            ROW_DOCK_MOVE -> {
+                val (from, to) = parseMoveTarget(target)
+                    ?: return ignored(kind, target, rowId, "底栏排序不是 from:to 两个整数：$target")
+                val ids = model.glassDockActions
+                if (from !in ids.indices || to !in ids.indices) {
+                    return ignored(kind, target, rowId, "底栏排序越界：$target")
+                }
+                val moved = ids.toMutableList()
+                moved.add(to, moved.removeAt(from))
+                model.copy(glassDockActions = moved)
+            }
+
+            ROW_DOCK_RESET -> model.copy(
+                glassDockActions = listOf("day", "week", "tasks"),
+            )
+
+            ROW_MENU_ADD -> {
+                val id = target?.takeIf { it.isNotBlank() }
+                    ?: return ignored(kind, target, rowId, "菜单添加缺少入口 id")
+                if (model.homeGridMenuActions.size >= TimetableSettingsModel.HOME_GRID_MENU_MAX_SLOTS ||
+                    id in model.homeGridMenuActions
+                ) {
+                    model
+                } else {
+                    model.copy(
+                        homeGridMenuActions = TimetableSettingsModel.normalizeHomeGridMenuActions(
+                            model.homeGridMenuActions + id,
+                        ),
+                    )
+                }
+            }
+
+            ROW_MENU_REMOVE -> {
+                val id = target?.takeIf { it.isNotBlank() }
+                    ?: return ignored(kind, target, rowId, "菜单移除缺少入口 id")
+                val pinned = TimetableSettingsModel.HOME_GRID_MENU_PINNED_ACTION_ID
+                if (id == pinned || id !in model.homeGridMenuActions ||
+                    model.homeGridMenuActions.size <= 1
+                ) {
+                    model
+                } else {
+                    model.copy(
+                        homeGridMenuActions = model.homeGridMenuActions.filter { it != id },
+                    )
+                }
+            }
+
+            ROW_MENU_MOVE -> {
+                val (from, to) = parseMoveTarget(target)
+                    ?: return ignored(kind, target, rowId, "菜单排序不是 from:to 两个整数：$target")
+                val ids = model.homeGridMenuActions
+                if (from !in ids.indices || to !in ids.indices) {
+                    return ignored(kind, target, rowId, "菜单排序越界：$target")
+                }
+                val moved = ids.toMutableList()
+                moved.add(to, moved.removeAt(from))
+                model.copy(homeGridMenuActions = moved)
+            }
+
+            ROW_MENU_RESET -> model.copy(
+                homeGridMenuActions = listOf(
+                    "overview", "statistics", "addCourse", "exams",
+                    "tasks", "importCourses", "settings", "support",
+                ),
+            )
+
+            // ---------------------------------------------------- 课表页面设置
+            ROW_TP_AUTO_FIT -> model.copy(
+                timetableAutoFitSectionHeight = !model.timetableAutoFitSectionHeight,
+            )
+
+            ROW_TP_HIDE_WEEKENDS -> model.copy(
+                timetableHideWeekends = !model.timetableHideWeekends,
+            )
+
+            ROW_TP_SHOW_OTHER_WEEKS -> model.copy(
+                timetableShowNonCurrentWeekCourses = !model.timetableShowNonCurrentWeekCourses,
+            )
+
+            ROW_TP_LONG_PRESS -> model.copy(
+                longPressEmptySlotToAddCourseEnabled =
+                !model.longPressEmptySlotToAddCourseEnabled,
+            )
+
+            ROW_TP_WEEK_EXAMS -> model.copy(weekGridShowExams = !model.weekGridShowExams)
+
+            ROW_TP_WEEK_SCHEDULES -> model.copy(
+                weekGridShowSchedules = !model.weekGridShowSchedules,
+            )
+
+            ROW_TP_SCREENSHOT -> model.copy(
+                screenshotSharePromptEnabled = !model.screenshotSharePromptEnabled,
+            )
+
+            ROW_TP_TIME_DISPLAY -> {
+                val mode = when (target) {
+                    "hidden" -> SectionTimeDisplayMode.HIDDEN
+                    "startOnly" -> SectionTimeDisplayMode.START_ONLY
+                    "startAndEnd" -> SectionTimeDisplayMode.START_AND_END
+                    else -> return ignored(kind, target, rowId, "节次时间显示方式不认识：$target")
+                }
+                model.copy(timetableSectionTimeDisplayMode = mode)
+            }
+
+            ROW_TP_TIME_WIDTH -> {
+                val width = when (target) {
+                    "narrow" -> TimetableTimeColumnWidthMode.NARROW
+                    "wide" -> TimetableTimeColumnWidthMode.WIDE
+                    else -> return ignored(kind, target, rowId, "时间栏宽度不认识：$target")
+                }
+                model.copy(timetableTimeColumnWidthMode = width)
+            }
+
+            ROW_TP_SECTION_HEIGHT -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "节次高度不是数字")
+                model.copy(sectionHeight = value.coerceIn(48.0, 92.0))
+            }
+
+            ROW_TP_CARD_GAP -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "课程卡间距不是数字")
+                model.copy(timetableCourseCardGap = value.coerceIn(0.0, 3.0))
+            }
+
+            ROW_TP_BACK_WEEK_OPACITY -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "浮钮不透明度不是数字")
+                model.copy(
+                    timetableFloatingBackToCurrentWeekButtonOpacity = value.coerceIn(0.55, 1.0),
+                )
+            }
+
+            // 模型不拥有课表页背景色：明确 Ignored，别让它落到课卡字段上。
+            ROW_TP_BG_CHIPS -> return ignored(
+                kind,
+                target,
+                rowId,
+                "课表背景色不在本模型覆盖范围（背景/材质批次再补）",
+            )
+
             else -> {
                 // 主题管理页的预设是 RADIO，渲染层不给 target，值只能从 rowId 后缀取。
                 if (rowId.startsWith(ROW_THEME_PRESET_PREFIX)) {
@@ -412,7 +680,7 @@ object SettingsActionDispatcher {
                         kind,
                         target,
                         rowId,
-                        "未识别的 rowId（本刀只接通用/外观/主题管理/课程卡片 4 页）",
+                        "未识别的 rowId（本刀只接通用/外观/主题管理/课程卡片/首页与导航）",
                     )
                 }
             }
@@ -651,6 +919,18 @@ object SettingsActionDispatcher {
     }
 
     private fun parseDouble(raw: String?): Double? = raw?.trim()?.toDoubleOrNull()
+
+    /**
+     * 解析底栏/菜单排序的 `"from:to"`（两个整数，冒号分隔）。
+     * 段数不对、非整数一律 null ⇒ 调用方记 Ignored（不猜、不动列表）。
+     */
+    private fun parseMoveTarget(raw: String?): Pair<Int, Int>? {
+        val parts = raw?.split(":") ?: return null
+        if (parts.size != 2) return null
+        val from = parts[0].trim().toIntOrNull() ?: return null
+        val to = parts[1].trim().toIntOrNull() ?: return null
+        return from to to
+    }
 
     private fun ignored(
         kind: SettingsActionKind,

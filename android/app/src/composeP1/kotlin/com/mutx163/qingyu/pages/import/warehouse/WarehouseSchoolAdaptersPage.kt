@@ -68,7 +68,7 @@ fun WarehouseSchoolAdaptersPage(
                 Icon(imageVector = MiuixIcons.Refresh, contentDescription = WarehouseStrings.reloadAction.zh)
             }
         },
-    ) { innerPadding, scrollBehavior ->
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,

@@ -213,10 +213,16 @@ class SettingsHomeMenuEditorPageTest {
     @Test
     fun `分类候选全启用时给一句说明而不是空组`() {
         // :131-133 `if (candidates.isEmpty) return [HyperosSectionDescription(text: l10n.homeGridEditorAllAdded)]`
-        // 偏好设置分类只有三项：settings / homeNavigation / statisticsSettings
+        // 偏好设置分类现有 13 项（settings / homeNavigation / 10 个新设置页 / statisticsSettings），
+        // 必须全部启用才会出现空态
         val page = spec(
             SettingsHomeMenuEditorState(
-                enabledIds = listOf("settings", "homeNavigation", "statisticsSettings"),
+                enabledIds = listOf(
+                    "settings", "homeNavigation", "generalSettings", "appearanceSettings",
+                    "appearanceEditor", "timetablePageSettings", "courseCardSettings",
+                    "weatherSettings", "liveSettings", "holidaySettings",
+                    "homeWidgetSettings", "diagnosticsSettings", "statisticsSettings",
+                ),
             ),
         )
         val description = page.flatten().filterIsInstance<SettingsDescription>()
@@ -290,7 +296,11 @@ class SettingsHomeMenuEditorPageTest {
             diagnosticsBuild = false,
         )
         assertEquals(
-            listOf("homeNavigation", "statisticsSettings"),
+            listOf(
+                "homeNavigation", "generalSettings", "appearanceSettings", "appearanceEditor",
+                "timetablePageSettings", "courseCardSettings", "weatherSettings", "liveSettings",
+                "holidaySettings", "homeWidgetSettings", "diagnosticsSettings", "statisticsSettings",
+            ),
             candidates.map { it.id },
         )
     }

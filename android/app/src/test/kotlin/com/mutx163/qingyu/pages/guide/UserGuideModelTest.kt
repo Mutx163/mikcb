@@ -85,4 +85,96 @@ class UserGuideModelTest {
         assertFalse(UserGuideModel.isExpanded(expanded, "item1"))
         assertTrue(UserGuideModel.isExpanded(expanded, "item2"))
     }
+
+    // ---------------------------------------------------------------- permissionItems
+
+    @Test
+    fun `权限行六项的顺序_标题与状态映射`() {
+        val state = GuidePermissionState(
+            notification = true,
+            promotedIsland = false,
+            promotedDeclared = false,
+            autoStart = true,
+            batteryUnrestricted = false,
+            keepAliveAccessibility = true,
+            doNotDisturbAccess = false,
+        )
+        val items = UserGuideModel.permissionItems(state)
+
+        assertEquals(6, items.size)
+        // id 与 GuidePermissionAction 枚举名一致，渲染层可直接 valueOf
+        assertEquals(
+            listOf(
+                GuidePermissionAction.Notification.name,
+                GuidePermissionAction.PromotedIsland.name,
+                GuidePermissionAction.AutoStart.name,
+                GuidePermissionAction.Battery.name,
+                GuidePermissionAction.KeepAliveAccessibility.name,
+                GuidePermissionAction.DoNotDisturbAccess.name,
+            ),
+            items.map { it.id },
+        )
+        // 标题逐项对齐 GuideStrings
+        assertEquals(
+            listOf(
+                GuideStrings.guideStatusNotificationPermission.zh,
+                GuideStrings.guideStatusIslandSupport.zh,
+                GuideStrings.quickActionAutoStartTitle.zh,
+                GuideStrings.guideStatusBatteryOptimization.zh,
+                GuideStrings.guideStatusKeepAlive.zh,
+                GuideStrings.guideStatusDoNotDisturbAccess.zh,
+            ),
+            items.map { it.title },
+        )
+        // enabled 直接取 state 对应项
+        assertEquals(listOf(true, false, true, false, true, false), items.map { it.enabled })
+        // 通知行标签
+        assertEquals(GuideStrings.guideStatusEnabled.zh, items[0].enabledLabel)
+        assertEquals(GuideStrings.guideStatusDisabled.zh, items[0].disabledLabel)
+        // 电池行标签跟着电池口径
+        assertEquals(GuideStrings.guideStatusBatteryUnrestricted.zh, items[3].enabledLabel)
+        assertEquals(GuideStrings.guideStatusBatteryRestricted.zh, items[3].disabledLabel)
+        // 只有勿扰行有 subtitle，其余 5 行都必须没有自造副标题
+        assertTrue(items.slice(0 until 5).all { it.subtitle == null })
+        assertEquals(GuideStrings.guideStatusDoNotDisturbAccessHint.zh, items[5].subtitle)
+    }
+
+    @Test
+    fun `超级岛未开启文案按是否已声明分两分支`() {
+        val notDeclared = UserGuideModel.permissionItems(
+            GuidePermissionState(promotedIsland = false, promotedDeclared = false),
+        )
+        assertEquals(GuideStrings.guideStatusSuggestedCheck.zh, notDeclared[1].disabledLabel)
+        assertEquals(GuideStrings.guideStatusSystemAllowed.zh, notDeclared[1].enabledLabel)
+
+        val declared = UserGuideModel.permissionItems(
+            GuidePermissionState(promotedIsland = false, promotedDeclared = true),
+        )
+        assertEquals(GuideStrings.guideStatusEnabledPending.zh, declared[1].disabledLabel)
+
+        val posting = UserGuideModel.permissionItems(
+            GuidePermissionState(promotedIsland = true, promotedDeclared = true),
+        )
+        assertEquals(GuideStrings.guideStatusSystemAllowed.zh, posting[1].enabledLabel)
+    }
+
+    @Test
+    fun `未知_null_状态不计入权限进度`() {
+        // 全未知：6 行 enabled 都是 null，进度总数为 0
+        val unknown = UserGuideModel.permissionItems(GuidePermissionState())
+        assertEquals(6, unknown.size)
+        assertEquals(0, unknown.count { it.enabled != null })
+        val p0 = PermissionProgress.calculate(unknown)
+        assertEquals(0, p0.totalCount)
+        assertEquals(0, p0.readyCount)
+
+        // 只探测了 2 项：进度总数只算这 2 项，其中 1 项已就绪
+        val partial = UserGuideModel.permissionItems(
+            GuidePermissionState(notification = true, autoStart = false),
+        )
+        val p1 = PermissionProgress.calculate(partial)
+        assertEquals(2, p1.totalCount)
+        assertEquals(1, p1.readyCount)
+        assertEquals(0.5f, p1.ratio, 0.001f)
+    }
 }

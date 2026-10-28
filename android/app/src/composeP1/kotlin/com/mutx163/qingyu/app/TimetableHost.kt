@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 
 /**
@@ -92,6 +93,9 @@ fun TimetableHost(
     // 是 `core.TimetableSettings` 那个四键子集），同名的参数会被它遮蔽、且极易读错。
     settingsModel: TimetableSettingsModel? = null,
     display: TimetableHostDisplayPrefs? = null,
+    // 顶栏「轻屿课表」+ 右上角「更多」菜单：条目与选中回调由壳注入（页面不认识路由）。
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
+    onHomeMenuSelect: (String) -> Unit = {},
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -154,5 +158,9 @@ fun TimetableHost(
         onManageProfilesClick = onOpenProfiles,
         onSwitchProfileClick = onSwitchProfile,
         onWeekChanged = onWeekChanged,
+        // 标题样式取自用户存档（Dart `homeTitleStyle`，:1478 默认 classic）。
+        homeTitleStyle = settingsModel?.homeTitleStyle ?: HomeTitleStyle.CLASSIC,
+        homeMenuItems = homeMenuItems,
+        onHomeMenuSelect = onHomeMenuSelect,
     )
 }

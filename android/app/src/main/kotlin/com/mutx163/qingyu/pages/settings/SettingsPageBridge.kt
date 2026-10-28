@@ -7,7 +7,10 @@ package com.mutx163.qingyu.pages.settings
 import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.app.SettingsActionKind
 // 设置模型（`app/` 下的完整显示模型）。同样是「设置域 → app」方向，理由同上。
+import com.mutx163.qingyu.app.HomeNavigationForm
+import com.mutx163.qingyu.app.SectionTimeDisplayMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
+import com.mutx163.qingyu.app.TimetableTimeColumnWidthMode
 import com.mutx163.qingyu.pages.settings.AppFontMode
 import com.mutx163.qingyu.pages.settings.AppThemeMode
 import com.mutx163.qingyu.pages.settings.CourseCardHorizontalAlign
@@ -86,6 +89,82 @@ object SettingsPageBridge {
         SettingsActionDispatcher.ROW_CARD_TEXT_DARK_TITLE -> model.courseCardTitleColorDark
         SettingsActionDispatcher.ROW_CARD_TEXT_DARK_DETAIL -> model.courseCardDetailColorDark
         else -> null
+    }
+
+    // ------------------------------------------------- 首页与导航 / 两个编辑器
+
+    /**
+     * 设置模型 → 首页与导航页状态（`SettingsHomeNavigationPage.spec` 的唯一输入）。
+     *
+     * ## 空表语义（三处 list 都**原样**给，不做 resolve）
+     *
+     * `dockActionIds` / `gridMenuActions` 直接给模型里的**原始** list——即使用户曾把底栏删空、
+     * 存成空表，这里也照实给空表。**空表回退默认值由渲染前的 resolve 负责**：
+     * [SettingsHomeNavigationPage.resolveDockActionIds] / [resolveGridEntryIds]
+     * （底栏编辑器另有 [SettingsGlassDockEditorPage.sanitize]）。宿主如果直接把
+     * 状态喂给 spec 而跳过 resolve，空表会显示成「一个按钮都没有」——这是宿主的接线责任，
+     * 不是本函数偷偷塞默认值能替代的（偷偷塞默认值会让「用户真的清空了」这件事无法表达）。
+     *
+     * ## 导航形态的**词汇翻译**（这里最容易写错）
+     *
+     * 页面把两档叫 `"classic"` / `"glassDock"`（下拉 option id 与 `isGlassDock` 判断都认这两个串），
+     * 而模型的磁盘值是 `"classic"` / `"glass_dock"`。所以 [navigationFormToken] 必须做翻译，
+     * **不能**直接写 `model.homeNavigationForm.value`——那样玻璃坞形态的底栏区块永远不渲染
+     * （`"glass_dock" != "glassDock"`）。其余三项（menuStyle / titleStyle）页面词汇与磁盘值恰好
+     * 逐字一致（`list`/`grid`、`classic`/`brand`），直接用 `.value` 即可。
+     */
+    fun toHomeNavigationState(model: TimetableSettingsModel): SettingsHomeNavigationState =
+        SettingsHomeNavigationState(
+            navigationForm = navigationFormToken(model.homeNavigationForm),
+            showAddButton = model.glassDockShowAddButton,
+            dockActionIds = model.glassDockActions,
+            dockButtonEntryId = model.glassDockButtonEntryId,
+            dockButtonIconName = model.glassDockButtonIconName,
+            menuStyle = model.homeMenuStyle.value,
+            gridMenuActions = model.homeGridMenuActions,
+            titleStyle = model.homeTitleStyle.value,
+            diagnosticsBuild = false,
+        )
+
+    /**
+     * 设置模型 → 玻璃坞底栏编辑器状态（`SettingsGlassDockEditorPage.spec` 的输入）。
+     *
+     * `enabledIds` 给模型里的**原始** `glassDockActions`；编辑器渲染前的「去脏 id / 去不可见」
+     * 由 [SettingsGlassDockEditorPage.sanitize] 负责，本函数不预先过滤（见 [toHomeNavigationState]
+     * 关于空表语义的说明）。
+     */
+    fun toGlassDockEditorState(
+        model: TimetableSettingsModel,
+        debugBuild: Boolean = false,
+    ): GlassDockEditorState = GlassDockEditorState(
+        enabledIds = model.glassDockActions,
+        debugBuild = debugBuild,
+    )
+
+    /**
+     * 设置模型 → 八宫格菜单编辑器状态（`SettingsHomeMenuEditorPage.spec` 的输入）。
+     *
+     * `enabledIds` 给模型里的**原始** `homeGridMenuActions`；编辑器渲染前的种子清洗
+     * （`sanitizeSeed`）与 resolve 由页面/宿主负责，本函数不预过滤。
+     */
+    fun toHomeMenuEditorState(
+        model: TimetableSettingsModel,
+        debugBuild: Boolean = false,
+    ): SettingsHomeMenuEditorState = SettingsHomeMenuEditorState(
+        enabledIds = model.homeGridMenuActions,
+        // 参数叫 debugBuild（与另两个映射一致），状态字段叫 diagnosticsBuild——
+        // 同一件事（调试/性能构建可见调试条目），语义相同、名字不同。
+        diagnosticsBuild = debugBuild,
+    )
+
+    /**
+     * 导航形态：模型枚举 → 页面词汇（`"classic"` / `"glassDock"`）。
+     *
+     * ⚠️ 磁盘值 `glass_dock` → 页面词 `glassDock` 的翻译就在这一处，别在别处再写一遍。
+     */
+    private fun navigationFormToken(form: HomeNavigationForm): String = when (form) {
+        HomeNavigationForm.CLASSIC -> "classic"
+        HomeNavigationForm.GLASS_DOCK -> "glassDock"
     }
 
     /**
@@ -179,6 +258,51 @@ object SettingsPageBridge {
             courseCardDetailColorDark = model.courseCardDetailColorDark,
         )
     }
+
+    /**
+     * 设置模型 → 「课表页面设置」页状态（`SettingsTimetablePageSettingsPage.spec` 的输入）。
+     *
+     * 本页的状态有一批字段**本模型还不拥有**（背景色/壁纸/模糊/背景随周滑动、
+     * 以及单值的星期栏与时间轴字色——模型存的是明暗两套）。这些字段用页面默认值，
+     * 对应行也还没接写回（宿主会 Ignore，等背景/材质那一刀扩模型）。**已拥有的密度与
+     * 浮钮不透明度全部按模型真值喂**，所以这一片是真能存住的。
+     *
+     * @param screenshotShareSupported 设备能力（Android 14 截屏回调）；默认 false =
+     *   该行整行不出现，是保守口径（Dart 也是不支持就不显示）。
+     */
+    fun toTimetablePageState(
+        model: TimetableSettingsModel,
+        screenshotShareSupported: Boolean = false,
+    ): TimetablePageSettingsState = TimetablePageSettingsState(
+        autoFitSectionHeight = model.timetableAutoFitSectionHeight,
+        hideWeekends = model.timetableHideWeekends,
+        showNonCurrentWeekCourses = model.timetableShowNonCurrentWeekCourses,
+        longPressEmptySlotToAddCourse = model.longPressEmptySlotToAddCourseEnabled,
+        weekGridShowExams = model.weekGridShowExams,
+        weekGridShowSchedules = model.weekGridShowSchedules,
+        screenshotSharePromptEnabled = model.screenshotSharePromptEnabled,
+        screenshotShareSupported = screenshotShareSupported,
+        sectionTimeDisplayMode = when (model.timetableSectionTimeDisplayMode) {
+            SectionTimeDisplayMode.HIDDEN -> PageSectionTimeDisplayMode.HIDDEN
+            SectionTimeDisplayMode.START_ONLY -> PageSectionTimeDisplayMode.START_ONLY
+            SectionTimeDisplayMode.START_AND_END -> PageSectionTimeDisplayMode.START_AND_END
+        },
+        timeColumnWidthMode = when (model.timetableTimeColumnWidthMode) {
+            TimetableTimeColumnWidthMode.NARROW -> PageTimeColumnWidthMode.NARROW
+            TimetableTimeColumnWidthMode.WIDE -> PageTimeColumnWidthMode.WIDE
+        },
+        sectionHeight = model.sectionHeight,
+        courseCardGap = model.timetableCourseCardGap,
+        backToCurrentWeekOpacity = model.timetableFloatingBackToCurrentWeekButtonOpacity,
+        // 以下八项本模型未拥有：给页面默认值（不会写回，宿主 Ignore）。
+        pageBackgroundColor = "#F8FAFC",
+        imagePath = null,
+        backdropFollowsWeekPager = false,
+        wallpaperBlurSigma = 0.0,
+        weekdayBarColor = model.weekdayBarFontColorLight,
+        weekdayBarAccentColor = model.weekdayBarAccentColorLight,
+        timeAxisColor = model.timeAxisFontColorLight,
+    )
 
     // ------------------------------------------------------------------ 内部
 

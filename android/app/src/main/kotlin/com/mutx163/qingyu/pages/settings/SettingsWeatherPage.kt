@@ -121,6 +121,7 @@ object SettingsWeatherPage {
             id = "weather.useCurrentLocation",
             component = MiuixRowComponent.ARROW,
             title = s.weatherUseCurrentLocation,
+            icon = SettingsRowIcon("pin", "#2F7CF6"),
             // :93 定位中、或 provider 缺席 → onClick 为 null
             enabled = data.providerAvailable && !data.locating,
             action = SettingsAction.RUN_NOW,
@@ -132,6 +133,7 @@ object SettingsWeatherPage {
             id = "weather.city",
             component = MiuixRowComponent.ARROW,
             title = s.weatherCityLabel,
+            icon = SettingsRowIcon("location", "#12B5A5"),
             // 有城市名时它是**运行时数据**（Dart `String?`），不来自 ARB：
             // 这里必须是 null 而不是空串——空串会被当成「有个键但键名是空的」，
             // 语义与 `null`（没有键）不是一回事，测试按 null 钉住了它。
@@ -148,6 +150,7 @@ object SettingsWeatherPage {
                 id = "weather.retry",
                 component = MiuixRowComponent.ARROW,
                 title = s.weatherStatusFailed,
+                icon = SettingsRowIcon("refresh", "#F5A623"),
                 valueKey = s.weatherRetryAction.key,
                 value = s.weatherRetryAction.zh,
                 action = SettingsAction.RUN_NOW,

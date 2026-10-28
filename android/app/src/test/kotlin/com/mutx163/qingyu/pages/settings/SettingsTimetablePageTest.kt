@@ -337,15 +337,15 @@ class SettingsTimetablePageTest {
     // ------------------------------------------------------ 开发者 section
 
     @Test
-    fun `正式版只留两项调试工具`() {
+    fun `调试版只留组件展示与调试叠层`() {
         // :1065-1144：非诊断构建 + kReleaseMode → 整块不渲染；
-        // 非诊断构建 + 非 release（即调试版）→ 只留组件展示与调试叠层四行
+        // 非诊断构建 + 非 release（即调试版）→ 组件展示（Miuix demo）+ 调试叠层两行。
+        // 2026-10-28：HyperOS 自研组件库已不存在，设置页底部只保留 Miuix 官方 demo。
         val debug = spec(
             SettingsTimetableState(releaseBuild = false, diagnosticsBuild = false),
         )
         assertEquals(
             listOf(
-                "timetable.hyperosShowcase",
                 "timetable.miuixShowcase",
                 "timetable.debugOverlay",
                 "timetable.debugPanel",
@@ -364,7 +364,6 @@ class SettingsTimetablePageTest {
             listOf(
                 "timetable.memoryStats",
                 "timetable.liveTestingFixture",
-                "timetable.hyperosShowcase",
                 "timetable.miuixShowcase",
                 "timetable.debugOverlay",
                 "timetable.debugPanel",

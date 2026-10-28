@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -24,9 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.theme.QingyuFixedTokens
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
@@ -39,6 +41,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -49,13 +52,9 @@ import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
-import top.yukonga.miuix.kmp.extra.SuperArrow
-import top.yukonga.miuix.kmp.extra.SuperCheckbox
-import top.yukonga.miuix.kmp.extra.SuperRadioButton
-import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Check
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -66,9 +65,17 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.CheckboxPreference
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 分类详情视图分发路由。
+ *
+ * 页面级滚动走共享套件 `QingyuPageList`（R2：官方三件套 + 右侧滚动条 + 顶栏折叠联动），
+ * `innerPadding` 与 `scrollBehavior` 由调用它的 [MiuixShowcasePage] 从骨架里取。
  */
 @Composable
 fun MiuixShowcaseCategoryDetail(
@@ -76,12 +83,15 @@ fun MiuixShowcaseCategoryDetail(
     state: ShowcaseInteractionState,
     onStateChange: (ShowcaseInteractionState) -> Unit,
     dark: Boolean,
-    primaryColor: Color
+    primaryColor: Color,
+    innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior?,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    QingyuPageList(
+        innerPadding = innerPadding,
+        scrollBehavior = scrollBehavior,
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         when (category) {
             ShowcaseCategoryId.BUTTONS -> item {
@@ -210,7 +220,8 @@ private fun ShowcaseButtonsSection(
                     Icon(
                         imageVector = MiuixIcons.Delete,
                         contentDescription = "删除",
-                        tint = Color(0xFFFF3B30)
+                        // 危险色取固定 token（亮暗同值），不再写字面量（R5）。
+                        tint = Color(QingyuFixedTokens.DESTRUCTIVE)
                     )
                 }
             }
@@ -219,7 +230,7 @@ private fun ShowcaseButtonsSection(
         if (state.buttonClickCount > 0) {
             Text(
                 text = "点击记录：${state.lastClickedButton} (累计 ${state.buttonClickCount} 次)",
-                fontSize = 13.sp,
+                style = MiuixTheme.textStyles.footnote1,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
@@ -264,7 +275,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputWifi.zh, fontSize = 15.sp)
+                    Text(ShowcaseStrings.inputWifi.zh, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.wifiEnabled,
                         onCheckedChange = { onStateChange(state.toggleWifi()) }
@@ -276,7 +287,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputBluetooth.zh, fontSize = 15.sp)
+                    Text(ShowcaseStrings.inputBluetooth.zh, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.bluetoothEnabled,
                         onCheckedChange = { onStateChange(state.toggleBluetooth()) }
@@ -288,7 +299,7 @@ private fun ShowcaseInputsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.inputAirplane.zh, fontSize = 15.sp)
+                    Text(ShowcaseStrings.inputAirplane.zh, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.airplaneMode,
                         onCheckedChange = { onStateChange(state.toggleAirplaneMode()) }
@@ -307,11 +318,11 @@ private fun ShowcaseInputsSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = state.rememberPassword,
-                        onCheckedChange = { onStateChange(state.toggleRememberPassword()) }
+                        state = if (state.rememberPassword) ToggleableState.On else ToggleableState.Off,
+                        onClick = { onStateChange(state.toggleRememberPassword()) }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(ShowcaseStrings.inputRememberPassword.zh, fontSize = 15.sp)
+                    Text(ShowcaseStrings.inputRememberPassword.zh, style = MiuixTheme.textStyles.body1)
                 }
                 HorizontalDivider()
                 Row(
@@ -321,13 +332,17 @@ private fun ShowcaseInputsSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = state.triState == true,
-                        onCheckedChange = { onStateChange(state.cycleTriState()) }
+                        state = when (state.triState) {
+                            true -> ToggleableState.On
+                            false -> ToggleableState.Off
+                            null -> ToggleableState.Indeterminate
+                        },
+                        onClick = { onStateChange(state.cycleTriState()) }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         "${ShowcaseStrings.inputTriState.zh} (状态: ${state.triState})",
-                        fontSize = 15.sp
+                        style = MiuixTheme.textStyles.body1
                     )
                 }
             }
@@ -338,7 +353,7 @@ private fun ShowcaseInputsSection(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "${ShowcaseStrings.inputContinuousSlider.zh}: ${(state.continuousSliderValue * 100).toInt()}%",
-                    fontSize = 14.sp
+                    style = MiuixTheme.textStyles.body2
                 )
                 Slider(
                     value = state.continuousSliderValue,
@@ -348,7 +363,7 @@ private fun ShowcaseInputsSection(
                 HorizontalDivider()
                 Text(
                     "${ShowcaseStrings.inputSteppedSlider.zh}: ${state.steppedSliderValue} 档",
-                    fontSize = 14.sp
+                    style = MiuixTheme.textStyles.body2
                 )
                 Slider(
                     value = state.steppedSliderValue.toFloat() / 10f,
@@ -371,7 +386,13 @@ private fun ShowcaseMenusSection(
     primaryColor: Color
 ) {
     val options = listOf("红色", "绿色", "蓝色", "黄色")
-    val swatchColors = listOf(Color(0xFFFF5B29), Color(0xFF34C759), Color(0xFF3482FF), Color(0xFFFFB21D))
+    // 彩豆取应用层 token（QingyuIconColors，Miuix colorScheme 无对应槽），不写字面量（R5）。
+    val swatchColors = listOf(
+        Color(QingyuIconColors.RED),
+        Color(QingyuIconColors.GREEN),
+        Color(QingyuIconColors.BLUE),
+        Color(QingyuIconColors.YELLOW),
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SmallTitle(text = "Dropdown 菜单选择演示")
@@ -395,11 +416,11 @@ private fun ShowcaseMenusSection(
                                     .background(swatchColors[index])
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(name, fontSize = 15.sp)
+                            Text(name, style = MiuixTheme.textStyles.body1)
                         }
                         if (state.dropdownSelectedIndex == index) {
                             Icon(
-                                imageVector = MiuixIcons.Check,
+                                imageVector = MiuixIcons.Ok,
                                 contentDescription = "已选",
                                 tint = primaryColor,
                                 modifier = Modifier.size(18.dp)
@@ -424,21 +445,21 @@ private fun ShowcaseDisplaySection(
         SmallTitle(text = "MiuixText · 字阶规范")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Title 1 示例文本", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("Headline 示例文本", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                Text("Subtitle 示例文本", fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                Text("Body 1 示例文本", fontSize = 15.sp)
-                Text("Footnote 示例文本", fontSize = 12.sp, color = Color(QingyuTheme.secondaryText(dark)))
+                Text("Title 1 示例文本", style = MiuixTheme.textStyles.title1, fontWeight = FontWeight.Bold)
+                Text("Headline 示例文本", style = MiuixTheme.textStyles.title3, fontWeight = FontWeight.SemiBold)
+                Text("Subtitle 示例文本", style = MiuixTheme.textStyles.main, fontWeight = FontWeight.Medium)
+                Text("Body 1 示例文本", style = MiuixTheme.textStyles.body1)
+                Text("Footnote 示例文本", style = MiuixTheme.textStyles.footnote1, color = Color(QingyuTheme.secondaryText(dark)))
             }
         }
 
         SmallTitle(text = "MiuixCard · 卡片容器")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("强调态主色卡片", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = primaryColor)
+                Text("强调态主色卡片", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold, color = primaryColor)
                 Text(
                     "使用 RoundedCornerShape 与 squircle 连续曲率平滑边框，带来澎湃 OS 现代美学感受。",
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }
@@ -449,7 +470,7 @@ private fun ShowcaseDisplaySection(
             BasicComponent(
                 title = "带图标的基础列表行",
                 summary = "支持 startAction 与 endActions 自由插槽",
-                leftAction = {
+                startAction = {
                     Icon(
                         imageVector = MiuixIcons.Info,
                         contentDescription = null,
@@ -476,24 +497,24 @@ private fun ShowcasePreferencesSection(
         SmallTitle(text = "SuperPreference 族 · 澎湃设置行规范")
         Card(insideMargin = PaddingValues(12.dp)) {
             Column {
-                SuperArrow(
+                ArrowPreference(
                     title = ShowcaseStrings.prefSecurity.zh,
                     summary = ShowcaseStrings.prefSecuritySummary.zh,
                     onClick = {}
                 )
                 HorizontalDivider()
-                SuperArrow(
+                ArrowPreference(
                     title = ShowcaseStrings.prefGeneral.zh,
                     onClick = {}
                 )
                 HorizontalDivider()
-                SuperSwitch(
+                SwitchPreference(
                     title = ShowcaseStrings.prefLocation.zh,
                     checked = state.locationEnabled,
                     onCheckedChange = { onStateChange(state.toggleLocation()) }
                 )
                 HorizontalDivider()
-                SuperCheckbox(
+                CheckboxPreference(
                     title = ShowcaseStrings.inputRememberPassword.zh,
                     checked = state.rememberPassword,
                     onCheckedChange = { onStateChange(state.toggleRememberPassword()) }
@@ -511,7 +532,7 @@ private fun ShowcasePreferencesSection(
                 )
                 themes.forEachIndexed { index, name ->
                     if (index > 0) HorizontalDivider()
-                    SuperRadioButton(
+                    RadioButtonPreference(
                         title = name,
                         selected = state.themeModeIndex == index,
                         onClick = { onStateChange(state.setThemeModeIndex(index)) }
@@ -544,7 +565,7 @@ private fun ShowcasePickersSection(
             ) {
                 Text(
                     text = ShowcaseStrings.pickerCurrentTime.filled("time", timeFormatted),
-                    fontSize = 18.sp,
+                    style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = primaryColor
                 )
@@ -558,19 +579,19 @@ private fun ShowcasePickersSection(
                         IconButton(onClick = { onStateChange(state.adjustHour(1)) }) {
                             Icon(imageVector = MiuixIcons.Add, contentDescription = "+1小时")
                         }
-                        Text("${state.pickerHour} 时", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${state.pickerHour} 时", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold)
                         IconButton(onClick = { onStateChange(state.adjustHour(-1)) }) {
                             Icon(imageVector = MiuixIcons.Remove, contentDescription = "-1小时")
                         }
                     }
 
-                    Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(":", style = MiuixTheme.textStyles.title2, fontWeight = FontWeight.Bold)
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(onClick = { onStateChange(state.adjustMinute(5)) }) {
                             Icon(imageVector = MiuixIcons.Add, contentDescription = "+5分")
                         }
-                        Text("${state.pickerMinute} 分", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${state.pickerMinute} 分", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold)
                         IconButton(onClick = { onStateChange(state.adjustMinute(-5)) }) {
                             Icon(imageVector = MiuixIcons.Remove, contentDescription = "-5分")
                         }
@@ -584,7 +605,7 @@ private fun ShowcasePickersSection(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     ShowcaseStrings.pickerColorSpace.filled("space", spaces[state.pickerColorSpaceIndex]),
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
                 Row(
@@ -606,7 +627,7 @@ private fun ShowcasePickersSection(
                         ) {
                             Text(
                                 text = sp,
-                                fontSize = 12.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.Medium,
                                 color = if (state.pickerColorSpaceIndex == idx) Color.White else primaryColor
                             )
@@ -658,7 +679,7 @@ private fun ShowcaseFeedbackSection(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                    Text("环形旋转进度指示器", fontSize = 14.sp)
+                    Text("环形旋转进度指示器", style = MiuixTheme.textStyles.body2)
                 }
                 HorizontalDivider()
                 Row(
@@ -666,7 +687,7 @@ private fun ShowcaseFeedbackSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("线性进度：${(state.progress * 100).toInt()}%", fontSize = 14.sp)
+                    Text("线性进度：${(state.progress * 100).toInt()}%", style = MiuixTheme.textStyles.body2)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
                             text = "+20%",
@@ -752,7 +773,7 @@ private fun ShowcaseOverlaysSection(
             ) {
                 Text(
                     ShowcaseStrings.overlayCounterLabel.filled("count", state.counter.toString()),
-                    fontSize = 15.sp,
+                    style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Medium
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -779,7 +800,7 @@ private fun ShowcaseOverlaysSection(
             ) {
                 Text(
                     text = ShowcaseStrings.overlaySheetContent.zh,
-                    fontSize = 14.sp,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
                 Button(
@@ -821,7 +842,7 @@ private fun ShowcaseNavigationSection(
                 )
                 Text(
                     text = ShowcaseStrings.navCurrentSelected.filled("tab", tabs[state.selectedTabRowIndex]),
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }
@@ -841,10 +862,10 @@ private fun ShowcaseUtilitySection(
         SmallTitle(text = "Surface · 表面容器与滚动")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("阻尼弹性滚动与刷新表面", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text("阻尼弹性滚动与刷新表面", style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold)
                 Text(
                     "为课表主视图、日程流与列表提供自然且符合 HyperOS 物理阻尼直觉的滚动边界触感。",
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }
@@ -874,7 +895,7 @@ private fun ShowcaseThemingSection(
         SmallTitle(text = "DynamicTheme · 动态种子色取色")
         Card(insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(ShowcaseStrings.themeSeedColor.zh, fontSize = 14.sp)
+                Text(ShowcaseStrings.themeSeedColor.zh, style = MiuixTheme.textStyles.body2)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
@@ -891,7 +912,7 @@ private fun ShowcaseThemingSection(
                         ) {
                             if (isSelected) {
                                 Icon(
-                                    imageVector = MiuixIcons.Check,
+                                    imageVector = MiuixIcons.Ok,
                                     contentDescription = "选中",
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
@@ -906,7 +927,7 @@ private fun ShowcaseThemingSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(ShowcaseStrings.themeModeLabel.zh, fontSize = 15.sp)
+                    Text(ShowcaseStrings.themeModeLabel.zh, style = MiuixTheme.textStyles.body1)
                     Switch(
                         checked = state.isDarkTheme,
                         onCheckedChange = { onStateChange(state.toggleDarkTheme()) }
@@ -975,7 +996,7 @@ private fun ShowcaseBlurSection(
                     }
                     Text(
                         text = "液态玻璃预览\nR=${state.blurRadius.toInt()} · Sat=${state.blurSaturation}",
-                        fontSize = 15.sp,
+                        style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -983,7 +1004,7 @@ private fun ShowcaseBlurSection(
 
                 Text(
                     ShowcaseStrings.blurRadiusLabel.filled("radius", state.blurRadius.toInt().toString()),
-                    fontSize = 14.sp
+                    style = MiuixTheme.textStyles.body2
                 )
                 Slider(
                     value = state.blurRadius / 60f,
@@ -996,7 +1017,7 @@ private fun ShowcaseBlurSection(
                         "saturation",
                         "%.1f".format(state.blurSaturation)
                     ),
-                    fontSize = 14.sp
+                    style = MiuixTheme.textStyles.body2
                 )
                 Slider(
                     value = state.blurSaturation / 2f,
@@ -1014,7 +1035,7 @@ private fun ShowcaseBlurSection(
  * 为什么不用纯色：纯色糊完还是纯色，看不出模糊有没有生效 —— 演示页会失去意义。
  * 用有结构的图形才能一眼看出「边缘被抹开了」。
  *
- * 颜色刻意选高对比（主色 / 青 / 品红 / 琥珀），因为 `vibrancy` 那档加饱和
+ * 颜色刻意选高对比（主色 / 青 / 红 / 黄，取 QingyuIconColors 彩豆 token），因为 `vibrancy` 那档加饱和
  * 在高饱和图上才看得出来。
  */
 @Composable
@@ -1026,25 +1047,26 @@ private fun ShowcaseBlurSampleBackground(primaryColor: Color) {
                 .fillMaxSize()
                 .background(primaryColor),
         )
-        // 斜向彩带：给模糊一个明确的"边缘"去抹
+        // 斜向彩带：给模糊一个明确的"边缘"去抹。
+        // 三个色带取应用层彩豆 token（青 / 红 / 黄），只要求彼此高对比，不写字面量（R5）。
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
-                    .background(Color(0xFF00BCD4)),
+                    .background(Color(QingyuIconColors.CYAN)),
             )
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
-                    .background(Color(0xFFE91E63)),
+                    .background(Color(QingyuIconColors.RED)),
             )
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
-                    .background(Color(0xFFFFB21D)),
+                    .background(Color(QingyuIconColors.YELLOW)),
             )
         }
         // 一组圆点：模糊后会变成柔和的光斑，是"糊开了"最直观的证据
@@ -1103,7 +1125,7 @@ private fun ShowcaseFoundationSection(
                         "radius",
                         state.squircleRadius.toInt().toString()
                     ),
-                    fontSize = 14.sp
+                    style = MiuixTheme.textStyles.body2
                 )
                 Slider(
                     value = state.squircleRadius / 48f,
@@ -1126,7 +1148,7 @@ private fun ShowcaseFoundationSection(
                         "type",
                         hapticTypes[state.hapticTypeIndex]
                     ),
-                    fontSize = 13.sp,
+                    style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark))
                 )
             }

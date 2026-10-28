@@ -403,14 +403,17 @@ class SettingsHomeNavigationPageTest {
                 "locationTimeMatch", "scheduleDateRule", "icsExport", "monthView",
                 "timeSchemes", "profiles", "quickSwitchTimetable", "more", "dataTransfer",
                 "cloudSync", "lanEdit", "coupleTimetable", "settings", "homeNavigation",
-                "statisticsSettings", "support", "aboutApp", "changelog", "userGuide",
-                "feedback", "openSourceLicenses", "memoryStats",
+                "generalSettings", "appearanceSettings", "appearanceEditor", "timetablePageSettings",
+                "courseCardSettings", "weatherSettings", "liveSettings", "holidaySettings",
+                "homeWidgetSettings", "diagnosticsSettings", "statisticsSettings", "support",
+                "aboutApp", "changelog", "userGuide", "feedback", "openSourceLicenses",
+                "memoryStats",
             ),
             catalog.map { it.id },
         )
-        // 正式版可见的少一个 memoryStats
+        // 正式版可见的少一个 memoryStats（47 条目录 - 1 = 46）
         assertEquals(
-            36,
+            46,
             catalog.count { it.visible(diagnosticsBuild = false) },
         )
         assertEquals(

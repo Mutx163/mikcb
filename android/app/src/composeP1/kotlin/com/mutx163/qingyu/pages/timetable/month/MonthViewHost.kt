@@ -3,10 +3,12 @@ package com.mutx163.qingyu.pages.timetable.month
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.calendar.HolidayData
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import java.time.LocalDateTime
 
 /**
@@ -54,6 +56,10 @@ fun MonthViewHost(
     showWeekNumbers: Boolean = true,
     onOpenAgendaRow: (MonthAgendaRow) -> Unit = {},
     onAddCourse: (LocalDateTime) -> Unit = {},
+    homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
+    profileName: String? = null,
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
+    onHomeMenuSelect: (String) -> Unit = {},
 ) {
     val clock = now ?: remember { LocalDateTime.now() }
 
@@ -90,5 +96,9 @@ fun MonthViewHost(
         showWeekNumbers = showWeekNumbers,
         onOpenAgendaRow = onOpenAgendaRow,
         onAddCourse = onAddCourse,
+        homeTitleStyle = homeTitleStyle,
+        profileName = profileName,
+        homeMenuItems = homeMenuItems,
+        onHomeMenuSelect = onHomeMenuSelect,
     )
 }

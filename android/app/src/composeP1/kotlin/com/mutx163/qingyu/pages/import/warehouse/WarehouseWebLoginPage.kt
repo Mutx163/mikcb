@@ -223,7 +223,7 @@ fun WarehouseWebLoginPage(
                 }
             }
         }
-    ) { innerPadding, _ ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()

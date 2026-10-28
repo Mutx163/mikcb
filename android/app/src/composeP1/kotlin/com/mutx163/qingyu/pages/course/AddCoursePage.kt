@@ -11,17 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
@@ -241,32 +239,25 @@ fun AddCoursePage(
                 )
             },
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .imePadding()
-                    .padding(innerPadding),
+            // 主滚动统一走共享套件（R2）：内含官方三件套（末端轻震 + 过度滚动 + 顶栏联动）
+            // 与右侧滚动条；`innerPadding` 由套件自己吃掉，不再手写 Column + padding。
+            // 横向留白按配方由每个块自己带 12dp，**不**放进 contentPadding
+            //（放进去滚动条会跟着内缩、也偏离 28dp 轴线）。
+            QingyuPageList(
+                innerPadding = innerPadding,
+                modifier = Modifier.imePadding(),
+                scrollBehavior = scrollBehavior,
+                contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        // nestedScroll 必须挂在滚动容器外层：顺序反了滚动手势不会上抛，大标题永不折叠。
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .verticalScroll(rememberScrollState())
-                        .padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 8.dp,
-                            // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
-                            bottom = innerPadding.calculateBottomPadding() + 8.dp,
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // ── 校验错误横幅（Dart 为 toast；同一份文案键）──
-                    val pageError = nameError ?: entryError
-                    if (!pageError.isNullOrEmpty()) {
+                // ── 校验错误横幅（Dart 为 toast；同一份文案键）──
+                val pageError = nameError ?: entryError
+                if (!pageError.isNullOrEmpty()) {
+                    item(key = "error") {
                         QingyuCard(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = QingyuPageCardMargin),
                             insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                         ) {
                             Text(
@@ -276,10 +267,14 @@ fun AddCoursePage(
                             )
                         }
                     }
+                }
 
+                item(key = "shared_info") {
                     // ── 共享信息卡 ──
                     QingyuCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -287,7 +282,7 @@ fun AddCoursePage(
                                 text = AddCourseStrings.sharedInfoTitle.zh,
                                 style = MiuixTheme.textStyles.body2,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(QingyuTheme.sectionLabel(dark)),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
                             TextField(
                                 value = sharedName,
@@ -431,10 +426,14 @@ fun AddCoursePage(
                             )
                         }
                     }
+                }
 
+                item(key = "schedule_entries") {
                     // ── 排课记录卡 ──
                     QingyuCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = QingyuPageCardMargin),
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -443,7 +442,7 @@ fun AddCoursePage(
                                     text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
                                     style = MiuixTheme.textStyles.body2,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(QingyuTheme.sectionLabel(dark)),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                 )
                                 Text(
                                     text = AddCourseStrings.scheduleEntryCardSubtitle.zh,

@@ -21,11 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.mutx163.qingyu.components.QingyuPageTheme
-import com.mutx163.qingyu.pages.schedule.ScheduleListPage
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.task.TaskListPage
+import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TimetableHost
+import java.time.LocalDate
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -200,12 +201,21 @@ private fun PagesShell() {
                         wiring = wiring,
                         onNavigate = { target -> openPageId = target },
                     )
-                    DockSlot.SCHEDULE -> ScheduleListPage(
-                        groups = shellSampleScheduleGroups(),
+                    DockSlot.SCHEDULE -> ScheduleListHost(
+                        repository = wiring.timetable,
+                        todayIso = LocalDate.now().toString(),
                         onBack = { slot = DockSlot.TIMETABLE },
-                        onAddSchedule = { openPageId = "d3.addSchedule" },
-                        onEditSchedule = { openPageId = "d3.addSchedule" },
-                        onDeleteSchedule = { },
+                        onAdd = {
+                            wiring.clearScheduleIntent()
+                            wiring.pendingScheduleInitialDate = LocalDate.now().toString()
+                            openPageId = "d2.addSchedule"
+                        },
+                        onEdit = { item ->
+                            wiring.pendingScheduleEdit = item
+                            wiring.pendingScheduleOccurrenceDate = null
+                            openPageId = "d2.addSchedule"
+                        },
+                        onDelete = { item -> wiring.deleteScheduleItem(item, null) },
                     )
                     DockSlot.TASK -> TaskListPage(
                         viewState = shellSampleTaskViewState(),

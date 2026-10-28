@@ -219,6 +219,35 @@ fun aboutInfoSections(): List<AboutInfoSection> = listOf(
  * 测试直读 ARB 逐字对拍（不手抄信任），与许可页/支持作者页同一纪律。
  */
 object AboutInfoStrings {
+    /** ARB `aboutTitle`（主页面标题：**「关于软件」**，不是「关于」——2026-10-28 修一处硬编码）。 */
+    const val aboutTitle = "关于软件"
+
+    /** ARB `timetableAppName`（头部信息卡的应用名）。 */
+    const val appName = "轻屿课表"
+
+    /** ARB `aboutHeroSubtitle`（头部信息卡的一句定位）。 */
+    const val heroSubtitle =
+        "一个围绕课表查看、课程提醒和 HyperOS 超级岛体验打磨的 Android 开源项目"
+
+    /** ARB `versionLabel`（`版本 {version}`）。加载完成前的兜底用 [loadingText]。 */
+    fun versionLabel(version: String): String = "版本 $version"
+
+    /** ARB `loadingText`（版本号读取中）。 */
+    const val loadingText = "读取中"
+
+    /** 头部元信息条三格标签（ARB `platformLabel` / `focusLabel` / `updateLabel`）。 */
+    const val platformLabel = "平台"
+    const val focusLabel = "重点"
+    const val updateLabel = "更新"
+
+    /** 元信息条两端的固定取值（Dart 侧写死 'Android' / 'HyperOS'，非 ARB）。 */
+    const val platformValue = "Android"
+    const val focusValue = "HyperOS"
+
+    /** ARB `prereleaseIncluded` / `stableOnly`（元信息条「更新」格的两种取值）。 */
+    const val prereleaseIncluded = "含预发布"
+    const val stableOnly = "正式版"
+
     const val supportUpdatesSectionTitle = "支持与更新"
     const val coffeeTitle = "请喝咖啡"
     /** Dart 把支持作者页的标题直接当副标题用（`about_screen.dart:304`）。 */
@@ -264,4 +293,41 @@ object AboutInfoStrings {
         "特此声明：本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，" +
             "与小米科技有限责任公司无任何隶属、合作或授权关系。如涉及内容侵权，请权利方联系作者，" +
             "我们将第一时间下架并删除相关内容。"
+}
+
+/**
+ * 「开源仓库」说明弹层（Dart `_showRepositorySheet`，`about_screen.dart:478-523`）的文案与地址。
+ *
+ * 三个动作：打开主仓 GitHub / 打开教务适配仓 / 复制主仓地址。文案逐字取自 ARB。
+ */
+object AboutRepositoryStrings {
+    /** ARB `aboutRepositorySheetTitle`。 */
+    const val sheetTitle = "开源仓库"
+
+    /** ARB `aboutRepositorySheetHint`。 */
+    const val sheetHint = "如果你想补学校教务导入适配，建议同时查看教务适配仓 qingyu_warehouse"
+
+    /** ARB `aboutOpenGitHubAction`。 */
+    const val openGitHubAction = "打开 GitHub"
+
+    /** ARB `aboutOpenWarehouseRepoAction`。 */
+    const val openWarehouseRepoAction = "打开教务适配仓"
+
+    /** ARB `copyAddress`。 */
+    const val copyAddress = "复制地址"
+
+    /** ARB `copiedRepositoryAddress`（复制成功提示）。 */
+    const val copiedAddress = "已复制仓库地址"
+
+    /** 主仓地址（Dart `AppUpdateService.repositoryUrl`）。 */
+    const val mainRepoUrl = "https://github.com/Mutx163/mikcb"
+
+    /** 教务适配仓地址（Dart `_openWarehouseRepository` 写死）。 */
+    const val warehouseRepoUrl = "https://github.com/Mutx163/qingyu_warehouse"
+
+    /** Release 列表页（「查看 Release」动作的落点，Dart `AppUpdateService.releaseListUrl`）。 */
+    const val releasePageUrl = "https://github.com/Mutx163/mikcb/releases"
+
+    /** 下载页（「打开下载页」动作的落点）。正式版走 Release 页。 */
+    const val downloadPageUrl = "https://github.com/Mutx163/mikcb/releases"
 }

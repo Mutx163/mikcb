@@ -2,7 +2,9 @@ package com.mutx163.qingyu.pages.timetable.day
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -15,8 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableTopBar
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -72,6 +77,11 @@ fun DayViewPage(
     onViewAllOverdue: () -> Unit = {},
     courseResolver: (CourseTask) -> Course? = { null },
     onPageChanged: ((week: Int, dayOfWeek: Int) -> Unit)? = null,
+    homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
+    profileName: String? = null,
+    showTopBar: Boolean = true,
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
+    onHomeMenuSelect: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -116,12 +126,26 @@ fun DayViewPage(
         containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
-        HorizontalPager(
-            state = pagerState,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-        ) { page ->
+        ) {
+            // 顶栏「轻屿课表」+ 右上角「更多」菜单（Flutter 日视图叠在首页上，顶部仍是它）。
+            if (showTopBar) {
+                TimetableTopBar(
+                    brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                    profileName = profileName,
+                    menuItems = homeMenuItems,
+                    onMenuSelect = onHomeMenuSelect,
+                )
+            }
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) { page ->
             val target = DayViewPaging.targetForGlobalPage(visibleDays, page)
             if (target != null) {
                 val pageData = dataProvider(target.week, target.dayOfWeek)
@@ -172,4 +196,5 @@ fun DayViewPage(
             }
         }
     }
+}
 }

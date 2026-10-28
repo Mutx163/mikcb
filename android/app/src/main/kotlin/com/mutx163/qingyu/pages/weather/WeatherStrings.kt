@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.weather
 
+import com.mutx163.qingyu.weather.WeatherCategory
+
 /**
  * 天气与城市选择模块用到的 ARB 文案（`lib/l10n/app_zh.arb`，模板语言 zh）。
  *
@@ -56,6 +58,61 @@ object WeatherStrings {
     val weatherLocationAddressUnavailable = ArbText("weatherLocationAddressUnavailable", "已定位，但解析不出地名，请改用手动搜索城市")
     val weatherLocationEstimated = ArbText("weatherLocationEstimated", "已按网络位置估算，可能不精确")
 
+    // ── 天气现象与取值格式（ARB 逐字对拍，供卡片/详情弹窗天气行使用）──
+    val weatherClear = ArbText("weatherClear", "晴")
+    val weatherMainlyClear = ArbText("weatherMainlyClear", "晴间多云")
+    val weatherPartlyCloudy = ArbText("weatherPartlyCloudy", "多云")
+    val weatherOvercast = ArbText("weatherOvercast", "阴")
+    val weatherFog = ArbText("weatherFog", "雾")
+    val weatherDrizzle = ArbText("weatherDrizzle", "毛毛雨")
+    val weatherFreezingDrizzle = ArbText("weatherFreezingDrizzle", "冻毛毛雨")
+    val weatherLightRain = ArbText("weatherLightRain", "小雨")
+    val weatherRain = ArbText("weatherRain", "中雨")
+    val weatherHeavyRain = ArbText("weatherHeavyRain", "大雨")
+    val weatherFreezingRain = ArbText("weatherFreezingRain", "冻雨")
+    val weatherLightSnow = ArbText("weatherLightSnow", "小雪")
+    val weatherSnow = ArbText("weatherSnow", "中雪")
+    val weatherHeavySnow = ArbText("weatherHeavySnow", "大雪")
+    val weatherSnowGrains = ArbText("weatherSnowGrains", "米雪")
+    val weatherRainShowers = ArbText("weatherRainShowers", "阵雨")
+    val weatherHeavyRainShowers = ArbText("weatherHeavyRainShowers", "强阵雨")
+    val weatherSnowShowers = ArbText("weatherSnowShowers", "阵雪")
+    val weatherThunderstorm = ArbText("weatherThunderstorm", "雷阵雨")
+    val weatherThunderstormHail = ArbText("weatherThunderstormHail", "雷阵雨伴冰雹")
+    val weatherTemperatureValue = ArbText("weatherTemperatureValue", "{temperature}°")
+    val weatherProbabilityValue = ArbText("weatherProbabilityValue", "{probability}%")
+    val weatherSummarySeparator = ArbText("weatherSummarySeparator", " · ")
+
+    /** 天气现象分类 → 本地化名（对齐 Flutter `WeatherCategoryLocalizer.label`）。 */
+    fun categoryLabel(category: WeatherCategory): String = when (category) {
+        WeatherCategory.CLEAR -> weatherClear.zh
+        WeatherCategory.MAINLY_CLEAR -> weatherMainlyClear.zh
+        WeatherCategory.PARTLY_CLOUDY -> weatherPartlyCloudy.zh
+        WeatherCategory.OVERCAST -> weatherOvercast.zh
+        WeatherCategory.FOG -> weatherFog.zh
+        WeatherCategory.DRIZZLE -> weatherDrizzle.zh
+        WeatherCategory.FREEZING_DRIZZLE -> weatherFreezingDrizzle.zh
+        WeatherCategory.LIGHT_RAIN -> weatherLightRain.zh
+        WeatherCategory.RAIN -> weatherRain.zh
+        WeatherCategory.HEAVY_RAIN -> weatherHeavyRain.zh
+        WeatherCategory.FREEZING_RAIN -> weatherFreezingRain.zh
+        WeatherCategory.RAIN_SHOWERS -> weatherRainShowers.zh
+        WeatherCategory.HEAVY_RAIN_SHOWERS -> weatherHeavyRainShowers.zh
+        WeatherCategory.LIGHT_SNOW -> weatherLightSnow.zh
+        WeatherCategory.SNOW -> weatherSnow.zh
+        WeatherCategory.HEAVY_SNOW -> weatherHeavySnow.zh
+        WeatherCategory.SNOW_GRAINS -> weatherSnowGrains.zh
+        WeatherCategory.SNOW_SHOWERS -> weatherSnowShowers.zh
+        WeatherCategory.THUNDERSTORM -> weatherThunderstorm.zh
+        WeatherCategory.THUNDERSTORM_HAIL -> weatherThunderstormHail.zh
+    }
+
+    fun temperatureValue(celsius: Int): String =
+        weatherTemperatureValue.filled("temperature", celsius.toString())
+
+    fun probabilityValue(percent: Int): String =
+        weatherProbabilityValue.filled("probability", percent.toString())
+
     // ── 格式化纯函数与辅助词（供 UI 与模型层调用）──
     const val hotCitiesSection: String = "热门城市"
     const val currentLocationCity: String = "当前定位城市"
@@ -87,6 +144,29 @@ object WeatherStrings {
         weatherLocationFailed,
         weatherLocationAddressUnavailable,
         weatherLocationEstimated,
+        weatherClear,
+        weatherMainlyClear,
+        weatherPartlyCloudy,
+        weatherOvercast,
+        weatherFog,
+        weatherDrizzle,
+        weatherFreezingDrizzle,
+        weatherLightRain,
+        weatherRain,
+        weatherHeavyRain,
+        weatherFreezingRain,
+        weatherLightSnow,
+        weatherSnow,
+        weatherHeavySnow,
+        weatherSnowGrains,
+        weatherRainShowers,
+        weatherHeavyRainShowers,
+        weatherSnowShowers,
+        weatherThunderstorm,
+        weatherThunderstormHail,
+        weatherTemperatureValue,
+        weatherProbabilityValue,
+        weatherSummarySeparator,
     )
 
     /**

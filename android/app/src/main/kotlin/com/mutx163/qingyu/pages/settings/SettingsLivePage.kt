@@ -39,11 +39,11 @@ object SettingsLivePage {
 
     const val ID_TITLE_KEY = "liveSettingsTitle"
 
-    /** 导航目标键（不是路由名：这几个子页由 Dart 直接 new 出来，没有具名路由）。 */
-    const val TARGET_REMINDER_TIMING = "live/reminder-timing"
-    const val TARGET_BEFORE_CLASS_DISPLAY = "live/display/before-class"
-    const val TARGET_DURING_END_DISPLAY = "live/display/during-end"
-    const val TARGET_KEEP_ALIVE = "live/keep-alive"
+    /** 导航目标键（用**路由形态**，与 `ShellWiring.shellPageIdForRoute` 一一对应）。 */
+    const val TARGET_REMINDER_TIMING = "/settings/live/reminder-timing"
+    const val TARGET_BEFORE_CLASS_DISPLAY = "/settings/live/display/before-class"
+    const val TARGET_DURING_END_DISPLAY = "/settings/live/display/during-end"
+    const val TARGET_KEEP_ALIVE = "/settings/live/keep-alive"
 
     /** 自检页有具名路由（:151-158 + `debug_deep_link_route_registry.dart:64`）。 */
     const val ROUTE_SELF_CHECK = "/settings/live/self-check"

@@ -123,6 +123,9 @@ object ShellPageCatalog {
                 // 现已补上 `ChangelogPage`（零参渲染，页面自己去读 assets 里的发布说明）。
                 // 归 DIRECT：不需要壳喂任何数据。至此台账虚标的三处全部收口。
                 page("P3-A", "changelog", "更新日志", ShellPageDataKind.DIRECT),
+                // 版本更新页：渲染层 + 宿主装配层由「版本更新页 1:1 复刻」批次交付（真检查/下载/设置）。
+                page("P3-A", "update", "版本更新", ShellPageDataKind.DIRECT),
+                page("P3-A", "contributors", "代码贡献者", ShellPageDataKind.DEMO),
                 page("P3-A", "licenses", "开源许可", ShellPageDataKind.DEMO),
                 page("P3-A", "support", "支持作者", ShellPageDataKind.DEMO),
             ),
@@ -156,7 +159,7 @@ object ShellPageCatalog {
                 page("P3-B", "liveSelfCheck", "设置 · 实时活动自检", ShellPageDataKind.DEMO),
                 page("P3-B", "holiday", "设置 · 节假日", ShellPageDataKind.DEMO),
                 page("P3-B", "holidayAdvanced", "设置 · 节假日（高级）", ShellPageDataKind.DEMO),
-                page("P3-B", "weather", "设置 · 天气", ShellPageDataKind.DEMO),
+                page("P3-B", "weather", "设置 · 天气", ShellPageDataKind.DIRECT),
                 page("P3-B", "diagnostics", "设置 · 诊断", ShellPageDataKind.DEMO),
                 page("P3-B", "glassDock", "设置 · 玻璃坞编辑器", ShellPageDataKind.DEMO),
                 page("P3-B", "glassDockIcon", "设置 · 玻璃坞图标", ShellPageDataKind.DEMO),

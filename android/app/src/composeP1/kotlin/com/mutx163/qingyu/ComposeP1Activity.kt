@@ -1,10 +1,14 @@
 package com.mutx163.qingyu
 
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +18,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -52,12 +57,44 @@ class ComposeP1Activity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 与 PagesShellActivity 同一处修复（2026-10-27）：edge-to-edge 必须真调用，
+        // 只 import 没有效果。LaunchTheme 的平台默认 system bar 是黑色，不启用
+        // edge-to-edge 时状态栏与手势条就是两条黑边，与浅色界面割裂。
+        // 图标明暗跟随系统深浅，避免深色下图标与背景同色看不见。
+        applyShellSystemBars(isDark = isNightMode())
+
         setContent {
-            // 官方 Miuix 主题先行接入：Phase 3 全量替换 Flutter UI 时的基座。
-            MiuixTheme {
+            val dark = isSystemInDarkTheme()
+            SideEffect { applyShellSystemBars(isDark = dark) }
+            // 无参 MiuixTheme{ } 的配色恒取官方默认亮色板，深色下白字白底。
+            // 改走主题桥后跟随系统深浅。
+            QingyuPageTheme {
                 ComposeP1Screen(activity = this@ComposeP1Activity)
             }
         }
+    }
+
+    /** 当前资源配置是否为深色。仅作首帧兜底，组合内以 isSystemInDarkTheme() 为准。 */
+    private fun isNightMode(): Boolean =
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    /** 系统栏全透明，图标明暗跟随壳的明暗。 */
+    private fun applyShellSystemBars(isDark: Boolean) {
+        val transparent = android.graphics.Color.TRANSPARENT
+        enableEdgeToEdge(
+            statusBarStyle = if (isDark) {
+                SystemBarStyle.dark(transparent)
+            } else {
+                SystemBarStyle.light(transparent, transparent)
+            },
+            navigationBarStyle = if (isDark) {
+                SystemBarStyle.dark(transparent)
+            } else {
+                SystemBarStyle.light(transparent, transparent)
+            },
+        )
     }
 }
 
@@ -92,7 +129,9 @@ private fun ComposeP1Screen(activity: ComponentActivity) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+                // 默认 systemBars.union(displayCutout)，本页无 topBar 槽位，
+                // innerPadding.top 已含状态栏高度，再写一次会算两遍。
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),

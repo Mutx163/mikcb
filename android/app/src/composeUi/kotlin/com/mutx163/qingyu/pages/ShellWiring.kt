@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.CourseActionOutcome
 import com.mutx163.qingyu.app.KeyValueStore
+import com.mutx163.qingyu.app.ScheduleEditDispatcher
 import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSaveDispatcher
@@ -20,7 +21,11 @@ import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.pages.course.CourseActionSheet
+import com.mutx163.qingyu.pages.course.CourseGroup
+import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
+import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
+import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
 /**
@@ -91,11 +96,41 @@ class ShellWiring(context: Context) {
     var pendingEditCourse: Course? = null
 
     /**
+     * 从课程总览点某个课程组进编辑页时要带进去的**整组**；null = 不是组编辑。
+     *
+     * 与 [pendingEditCourse] 同属「跨子树传一次、用完即清」的意图载体：
+     * 课程总览页的行是「同名课聚合组」，Dart 侧 `AddCourseScreen(courseGroup: group)`
+     * 编辑的是整组（改名走 `updateCourseGroup`），不是单门课。
+     * 两者互斥：组编辑只填本字段，单课编辑只填 [pendingEditCourse]。
+     */
+    var pendingEditGroup: CourseGroup? = null
+
+    /**
      * 从课程操作弹层点「加作业」时要带进作业页的预选课程（T1）。
      *
      * 与 [pendingEditCourse] 同生命周期：都是「跨子树传一次、用完即清」的意图载体。
      */
     var pendingTaskCourse: Course? = null
+
+    /**
+     * 从日程列表点某条日程进入编辑页时要带进去的对象；null = 新建。
+     *
+     * 与 [pendingEditCourse] 同属「跨子树传一次、用完即清」的意图载体：日程槽位（或索引里的
+     * 日程列表）与添加/编辑页是两棵子树，共享不到局部状态。
+     */
+    var pendingScheduleEdit: ScheduleItemData? = null
+
+    /** 从某一次重复日程进入编辑/删除时带的 occurrenceDate（`yyyy-MM-dd`）；null = 非单次编辑。 */
+    var pendingScheduleOccurrenceDate: String? = null
+
+    /** 新建日程时的默认日期（`yyyy-MM-dd`）；null 时页面自己取今天。 */
+    var pendingScheduleInitialDate: String? = null
+
+    fun clearScheduleIntent() {
+        pendingScheduleEdit = null
+        pendingScheduleOccurrenceDate = null
+        pendingScheduleInitialDate = null
+    }
 
     /**
      * 统计深度分析页当前要打开的模块（ST1）：`e.statistics` 的 `onOpenAnalysis` 写入、
@@ -110,6 +145,7 @@ class ShellWiring(context: Context) {
     fun clearAddCourseIntent() {
         pendingAddCourseSeed = null
         pendingEditCourse = null
+        pendingEditGroup = null
     }
 
     /**
@@ -139,8 +175,10 @@ class ShellWiring(context: Context) {
      * @return true 表示删除成功（调用方据此决定是否关页）
      */
     fun deleteEditingCourse(): Boolean {
+        // 编辑上下文二选一：组编辑（课程总览入口）传组名 → WholeGroup；
+        // 单课编辑传 initialCourse → SingleCourse。resolveDeleteTarget 自带这条优先级。
         val target = TimetableSaveDispatcher.resolveDeleteTarget(
-            originalGroupName = null,
+            originalGroupName = pendingEditGroup?.name,
             initialCourse = pendingEditCourse,
         ) ?: return false
         return try {
@@ -148,6 +186,51 @@ class ShellWiring(context: Context) {
             true
         } catch (_: Exception) {
             // Dart 口径：落盘失败**不报成功、不关页**，由页面弹 deleteFailed。
+            false
+        }
+    }
+
+    /**
+     * 日程页的保存载荷 → 仓储（新增 / 改全部 / 改这一次）。
+     *
+     * 分派判据在 [ScheduleEditDispatcher]（纯 Kotlin，已单测）：新建 → add；正在编辑某一次发生
+     * 且用户选「只这一次」→ updateOccurrence；否则 → update（改整条/整系列）。
+     *
+     * @return true 表示保存成功（调用方据此决定是否关页）；失败留在页面上，不假装成功。
+     */
+    fun saveScheduleItem(draft: ScheduleItemData, applyToAll: Boolean?): Boolean {
+        return try {
+            val existing = timetable.snapshot.scheduleItems.firstOrNull { it.id == draft.id }
+            val core = ScheduleItemBridge.toCore(draft, preserveCreatedAt = existing?.createdAt)
+            ScheduleEditDispatcher.save(
+                port = timetable,
+                item = core,
+                isNew = existing == null,
+                isOccurrenceEditing = draft.occurrenceDate != null,
+                applyToAll = applyToAll,
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 日程页的删除 → 仓储（删整条/整系列 或 只删这一次）。
+     *
+     * @return true 表示删除成功（调用方据此决定是否关页）。
+     */
+    fun deleteScheduleItem(item: ScheduleItemData, applyToAll: Boolean?): Boolean {
+        return try {
+            val core = ScheduleItemBridge.toCore(item)
+            ScheduleEditDispatcher.delete(
+                port = timetable,
+                item = core,
+                isOccurrenceEditing = item.occurrenceDate != null,
+                applyToAll = applyToAll,
+            )
+            true
+        } catch (_: Exception) {
             false
         }
     }
@@ -220,11 +303,17 @@ fun TimetableWithCourseActions(
             onNavigate("d1.addCourse")
         },
         onWeekChanged = { repository.setCurrentWeek(it) },
+        // 标题区点击 = 切课表（Dart `TimetableProfileSwitcherTrigger` 的口径）：
+        // 壳里没有独立快切弹层，推到课表管理页，行为可预期、不空点。
+        onSwitchProfile = { onNavigate("c1.profiles") },
         // S1：显示偏好改从**用户存档**读，不再吃宿主默认值。
         // ⚠️ 这里每次重组都会 `load()` 一次——设置存储没有变更通道（见交付方诚实清单第 2 条）。
         // 验收路径（杀进程重开 / 离开再回课表）都拿得到新值；「课表页正开着时后台改设置」
         // 不会自刷，但本 App 里不存在这种同屏场景。
         settingsModel = wiring.settingsModel.load(),
+        // 顶栏右上角「更多」菜单：8 个默认条目 → 壳页面 id（见 shellTimetableMenuPageId）。
+        homeMenuItems = TimetableMenuDefaults.entries(),
+        onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onNavigate) },
     )
 
     val course = actionTarget
@@ -238,9 +327,10 @@ fun TimetableWithCourseActions(
             } else {
                 when (val outcome = CourseActionDispatcher.dispatch(action, course, week, repository)) {
                     is CourseActionOutcome.OpenEdit -> {
-                        // 带**同一门课**进编辑页（参数透传，别丢）。
+                        // 带**同一门课**进编辑页（参数透传，别丢）。单课编辑，清掉可能的组意图。
                         wiring.pendingEditCourse = outcome.course
                         wiring.pendingAddCourseSeed = null
+                        wiring.pendingEditGroup = null
                         actionTarget = null
                         onNavigate("d1.addCourse")
                     }
@@ -300,6 +390,7 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/settings/course-card" -> "b.courseCard"
     "/settings/appearance-editor" -> "b.appearanceEditor"
     "/settings/semester" -> "b.semester"
+    "/settings/time-schemes" -> "d3.timeSchemes"
     "/settings/timetable-page" -> "b.timetablePage"
     "/settings/holiday" -> "b.holiday"
     "/settings/holiday/advanced" -> "b.holidayAdvanced"
@@ -317,6 +408,7 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/settings/glass-dock" -> "b.glassDock"
     "/settings/glass-dock-icon" -> "b.glassDockIcon"
     "/settings/diagnostics" -> "b.diagnostics"
+    "app-logs" -> "h.log"
     "/settings/reset" -> "b.reset"
     "/settings/cloud-sync" -> "f.cloudSync"
     "/settings/couple-timetable" -> "f.couple"
@@ -332,3 +424,31 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/profiles" -> "c1.profiles"
     else -> null
 }
+
+/**
+ * 顶栏右上角「更多」菜单条目 id → 壳页面 id。
+ *
+ * ## 为什么单独一张表
+ *
+ * 菜单条目 id 沿用 Dart `HomeGridMenu.defaultActions` 的稳定主键（`overview` /
+ * `statistics` / `addCourse` / `exams` / `tasks` / `importCourses` / `settings` /
+ * `support`），与 `shellPageIdForRoute` 的 Dart 路由字符串是**两套命名空间**。
+ * 页面层只回传 id（不认路由），点哪一项推到哪一页由这张表决定。
+ *
+ * 映射不到时返回 null，调用方什么都不做（不崩、不猜）。将来「全部功能」页接进来时，
+ * 在这里补条目即可。
+ */
+fun shellTimetableMenuPageId(id: String): String? = when (id) {
+    "overview" -> "d1.overview"
+    "statistics" -> "e.statistics"
+    "addCourse" -> "d1.addCourse"
+    "exams" -> "d3.examList"
+    "tasks" -> "d2.taskList"
+    "importCourses" -> "g1.importEntry"
+    "settings" -> "b.settingsHome"
+    "support" -> "a.support"
+    // 首页/更多菜单里的「版本更新」→ 版本更新页（1:1 复刻批次交付）。
+    "update" -> "a.update"
+    else -> null
+}
+

@@ -153,6 +153,14 @@ sealed interface SettingsNode {
     val id: String
 }
 
+/** 行首彩色图标徽章（Flutter `settingsIconBadge(icon, color)` 的对应物）。 */
+data class SettingsRowIcon(
+    /** Miuix 图标名（渲染层按名取 `MiuixIcons` 扩展：`pin` / `location` / `refresh` …）。 */
+    val name: String,
+    /** 徽章底色（`#RRGGBB`）；null = 主题主色。 */
+    val tintHex: String? = null,
+)
+
 /**
  * 一行设置控件。
  *
@@ -183,6 +191,8 @@ data class SettingsRow(
     val switchValue: Boolean? = null,
     /** false = 行禁用（Flutter 侧 `onChanged: null`）。 */
     val enabled: Boolean = true,
+    /** 行首图标徽章；null = 无图标。 */
+    val icon: SettingsRowIcon? = null,
     /** 危险操作行（恢复默认），渲染层按 `QingyuFixedTokens.DESTRUCTIVE` 上色。 */
     val destructive: Boolean = false,
     val options: List<SettingsOption> = emptyList(),
@@ -198,6 +208,13 @@ data class SettingsRow(
     val trailingActionKind: SettingsAction? = null,
     /** 行内色点预览（已存主题的 `previewColors`）。 */
     val previewColors: List<String> = emptyList(),
+    /**
+     * 以**独立摘要卡**渲染（`HyperosSummaryCard`）：设置首页顶部的学期摘要。
+     * 与普通行不同，它不套在分组卡里，自己就是一张白卡（16dp 内边距、可点、带右箭头）。
+     */
+    val standaloneSummaryCard: Boolean = false,
+    /** 摘要卡左侧显示应用图标（`HyperosSummaryCard.leading` 用的是启动图，44dp / 圆角 12）。 */
+    val leadingAppIcon: Boolean = false,
 ) : SettingsNode
 
 /** 一个白卡分组（`HyperosListGroup` / `HyperosControlCard`）。 */
@@ -314,6 +331,7 @@ fun settingsRow(
     switchValue: Boolean? = null,
     enabled: Boolean = true,
     destructive: Boolean = false,
+    icon: SettingsRowIcon? = null,
     options: List<SettingsOption> = emptyList(),
     selectedOptionId: String? = null,
     slider: SettingsSliderSpec? = null,
@@ -324,6 +342,8 @@ fun settingsRow(
     trailingAction: String? = null,
     trailingActionKind: SettingsAction? = null,
     previewColors: List<String> = emptyList(),
+    standaloneSummaryCard: Boolean = false,
+    leadingAppIcon: Boolean = false,
 ): SettingsRow = SettingsRow(
     id = id,
     component = component,
@@ -338,6 +358,7 @@ fun settingsRow(
     switchValue = switchValue,
     enabled = enabled,
     destructive = destructive,
+    icon = icon,
     options = options,
     selectedOptionId = selectedOptionId,
     slider = slider,
@@ -348,4 +369,6 @@ fun settingsRow(
     trailingAction = trailingAction,
     trailingActionKind = trailingActionKind,
     previewColors = previewColors,
+    standaloneSummaryCard = standaloneSummaryCard,
+    leadingAppIcon = leadingAppIcon,
 )

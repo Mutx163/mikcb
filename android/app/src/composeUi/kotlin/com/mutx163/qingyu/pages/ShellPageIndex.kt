@@ -19,22 +19,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
+import com.mutx163.qingyu.app.GlassDockEditorHost
+import com.mutx163.qingyu.app.HomeMenuEditorHost
+import com.mutx163.qingyu.app.HomeNavigationHost
 import com.mutx163.qingyu.app.SettingsHost
+import com.mutx163.qingyu.app.WeatherSettingsHost
+import com.mutx163.qingyu.weather.JdkWeatherHttp
+import com.mutx163.qingyu.weather.WeatherPreferences
+import com.mutx163.qingyu.weather.WeatherProvider
+import com.mutx163.qingyu.weather.WeatherService
+import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
+import com.mutx163.qingyu.app.TimetablePageSettingsHost
+import com.mutx163.qingyu.app.ScheduleDateRuleHost
+import com.mutx163.qingyu.app.ScheduleListHost
+import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.pages.about.AboutStaticPage
+import com.mutx163.qingyu.pages.about.AboutUpdateHostPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
-import com.mutx163.qingyu.pages.about.OpenSourceLicensesPage
+import com.mutx163.qingyu.pages.about.ContributorsPage
+import com.mutx163.qingyu.pages.about.OpenSourceLicensesHost
 import com.mutx163.qingyu.pages.about.SupportCreatorPage
 import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
-import com.mutx163.qingyu.pages.course.CourseOverviewLogic
-import com.mutx163.qingyu.pages.course.CourseOverviewPage
 import com.mutx163.qingyu.infra.DiagnosticsLogSnapshot
 import com.mutx163.qingyu.pages.diagnostics.DiagnosticsLogViewport
 import com.mutx163.qingyu.pages.diagnostics.LiveDiagnosticsLogPage
@@ -56,8 +72,10 @@ import com.mutx163.qingyu.pages.feedback.FeedbackPage
 import com.mutx163.qingyu.pages.guide.HyperosShowcasePage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesPage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesSearchOverlay
+import com.mutx163.qingyu.pages.guide.GuideSettingsMapping
 import com.mutx163.qingyu.pages.guide.StartupFlowPage
 import com.mutx163.qingyu.pages.guide.UserGuidePage
+import com.mutx163.qingyu.platform.guide.GuidePermissionProbe
 import com.mutx163.qingyu.pages.import.IcsImportPage
 import com.mutx163.qingyu.pages.import.IcsImportViewState
 import com.mutx163.qingyu.pages.import.ImportEntryPage
@@ -78,11 +96,6 @@ import com.mutx163.qingyu.pages.live.DisplaySettingsPage
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.live.LiveReminderTimingPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
-import com.mutx163.qingyu.pages.schedule.ScheduleDateRulePage
-import com.mutx163.qingyu.pages.schedule.ScheduleItemData
-import com.mutx163.qingyu.pages.schedule.ScheduleListEntry
-import com.mutx163.qingyu.pages.schedule.ScheduleListGroups
-import com.mutx163.qingyu.pages.schedule.ScheduleListPage
 import com.mutx163.qingyu.pages.settings.BingGalleryState
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.GlassDockEditorState
@@ -114,9 +127,8 @@ import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePage
-import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
-import com.mutx163.qingyu.pages.settings.TimetablePageSettingsState
 import com.mutx163.qingyu.pages.settings.SettingsTimetableState
+import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
 import com.mutx163.qingyu.WeeklyReportScheduler
@@ -156,6 +168,7 @@ import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementModel
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementPage
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
+import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
@@ -173,7 +186,7 @@ import com.mutx163.qingyu.pages.transfer.QrTransferSendHost
 import com.mutx163.qingyu.pages.transfer.QrTransferScanHost
 import com.mutx163.qingyu.pages.transfer.QrTransferSendSession
 import com.mutx163.qingyu.pages.transfer.TransferOverviewInput
-import com.mutx163.qingyu.pages.weather.WeatherCityPickerPage
+import com.mutx163.qingyu.pages.weather.WeatherCityPickerHost
 import com.mutx163.qingyu.theme.QingyuTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -185,6 +198,21 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+
+/**
+ * 设置族「行点击 → 推页」的壳级回调。
+ *
+ * 设置族 20+ 页共用一个 `SettingsPageScreen(spec)` 渲染层，但**每个页面分支**都要能
+ * 把行上的 `actionTarget`（Dart 路由串）交给壳去映射成页面 id。原先只有 4 个宿主页
+ * 各自接了 `onNavigate`，其余页面统一走 `SettingsScreen`，而它的 `onAction` 是空实现
+ * ⇒ 设置主页（`b.settingsHome`）与 17 个演示页的箭头行**全部点了没反应**。
+ *
+ * 用一个 CompositionLocal 把 `onOpenPage` 透到每个 `SettingsScreen`，避免逐个分支
+ * 传参，也不会漏掉未来的新页面。**只对 `SettingsScreen` 生效，不改变各页自身的写回逻辑。**
+ */
+private val LocalShellOpenPage = staticCompositionLocalOf<(String) -> Unit> { {} }
 
 /**
  * 页面索引的**分派层**：一个 id 一个 Composable。
@@ -218,27 +246,52 @@ fun ShellPageContent(
     /** 页面内部要「推一个新页」时用它（路由字符串 → 壳页面 id 由 [shellPageIdForRoute] 负责）。 */
     onOpenPage: (String) -> Unit = {},
 ) {
+    // 单一天气 provider（设备级状态：开关/城市/预报缓存）。跨页共享：设置页、选城页、
+    // 以及后续卡片显示都读它，改城市后各处跟着变（对齐 Dart 把 WeatherProvider 挂在 Navigator 之上）。
+    val context = LocalContext.current
+    val weatherProvider = remember(wiring, context) {
+        val service = WeatherService(JdkWeatherHttp())
+        WeatherProvider(
+            service = service,
+            preferences = WeatherPreferences(PrefsKeyValueStore(context)),
+            locationSource = AndroidWeatherLocationSource(
+                context = context,
+                reverseGeocode = { lat, lon -> service.reverseGeocode(lat, lon) },
+                networkGeocode = { service.networkGeocode() },
+            ),
+        )
+    }
+    // 把「推页」回调装进 CompositionLocal，供各设置页的 `SettingsScreen` 使用（见上方 KDoc）。
+    CompositionLocalProvider(LocalShellOpenPage provides onOpenPage) {
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
-        "a.about" -> AboutStaticPage(onBack = onBack, onEntryClick = {})
+        // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
+        // 现在把「点了要去哪一页」交给壳（onOpenPage），页内说明/仓库弹层由页面自己处理。
+        "a.about" -> AboutStaticPage(onBack = onBack, onOpenPage = onOpenPage)
         // 2026-10-28 补口：这一屏原先只有解析模型没有界面（台账虚标三处之一）。
         // 零参调用：页面自己去读 assets 里的发布说明。
         "a.changelog" -> ChangelogPage(onBack = onBack)
-        "a.licenses" -> OpenSourceLicensesPage(
-            packages = emptyList(),
-            onBack = onBack,
-            onOpenPackage = {},
-            isLoading = false,
-            loadError = null,
-        )
+        // 2026-10-28 补口：接真实许可证数据（读 APK 内 NOTICES.Z）+ 页内详情导航。
+        "a.licenses" -> OpenSourceLicensesHost(onBack = onBack)
         "a.support" -> SupportCreatorPage(
             donorData = null,
             onBack = onBack,
             onReload = {},
-            onSaveQr = {},
             isLoading = false,
             loadError = null,
         )
+        // 2026-10-28 新增：代码贡献者页（此前整页缺失、入口点了没反应）。
+        // 适配者名单待仓储服务接线后由宿主喂真数据；现在显示 Flutter 同款空态。
+        "a.contributors" -> ContributorsPage(
+            maintainers = emptyList(),
+            isLoading = false,
+            error = null,
+            onBack = onBack,
+            onReload = {},
+        )
+        // 版本更新页（`a.update`）：由「版本更新页 1:1 复刻」批次交付。
+        // 宿主装配层（真实检查更新 / 系统下载 / 设置读写 / 镜像测速）在 AboutUpdateHostPage。
+        "a.update" -> AboutUpdateHostPage(onBack = onBack)
 
         // ── P3-B 设置族（24 屏共用一个渲染层）─────────────────────────
         "b.settingsHome" -> SettingsScreen(SettingsTimetablePage.spec(SettingsTimetableState()), onBack)
@@ -271,18 +324,29 @@ fun ShellPageContent(
         "b.recentWallpaper" -> SettingsScreen(SettingsRecentWallpaperSection.spec(RecentWallpaperState()), onBack)
         "b.bingGallery" -> SettingsScreen(SettingsBingWallpaperGalleryPage.spec(BingGalleryState()), onBack)
         "b.homeWidget" -> SettingsScreen(SettingsHomeWidgetPage.spec(SettingsHomeWidgetState()), onBack)
-        "b.homeNavigation" -> SettingsScreen(SettingsHomeNavigationPage.spec(SettingsHomeNavigationState()), onBack)
-        "b.homeMenuEditor" -> SettingsScreen(SettingsHomeMenuEditorPage.spec(SettingsHomeMenuEditorState()), onBack)
+        // 2026-10-28 S2 接线：这两页原先走 no-op SettingsScreen（写死默认状态、点了不动），
+        // 改成真宿主：读 TimetableSettingsModel、控件改动经分派器写回并合并落盘。
+        "b.homeNavigation" -> HomeNavigationHost(
+            store = wiring.settingsModel,
+            onBack = onBack,
+            // 子页（底栏编辑器 / 菜单编辑器 / 圆钮图标）走 NAVIGATE 路由，由壳映射并推页。
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        "b.homeMenuEditor" -> HomeMenuEditorHost(store = wiring.settingsModel, onBack = onBack)
         "b.courseCard" -> SettingsHost(
             pageId = SettingsCourseCardPage.ID,
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            preview = { SettingsWeekPreviewSlot(wiring) },
         )
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
-        "b.timetablePage" -> SettingsScreen(
-            SettingsTimetablePageSettingsPage.spec(TimetablePageSettingsState()),
-            onBack,
+        // S2 第二批：改真宿主——密度/浮钮不透明度读模型并合并落盘；背景/材质/字色待扩模型。
+        "b.timetablePage" -> TimetablePageSettingsHost(
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            preview = { SettingsWeekPreviewSlot(wiring) },
         )
         "b.live" -> SettingsPageScreen(
             spec = SettingsLivePage.spec(SettingsPageState()),
@@ -294,12 +358,14 @@ fun ShellPageContent(
         "b.liveSelfCheck" -> SettingsScreen(SettingsLiveSelfCheckPage.spec(SettingsPageState()), onBack)
         "b.holiday" -> SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()), onBack)
         "b.holidayAdvanced" -> SettingsScreen(SettingsHolidayAdvancedPage.spec(SettingsPageState()), onBack)
-        "b.weather" -> SettingsScreen(SettingsWeatherPage.spec(SettingsPageState()), onBack)
-        "b.diagnostics" -> SettingsScreen(SettingsDiagnosticsPage.spec(SettingsPageState()), onBack)
-        "b.glassDock" -> SettingsScreen(
-            SettingsGlassDockEditorPage.spec(SettingsPageState(), GlassDockEditorState()),
-            onBack,
+        "b.weather" -> WeatherSettingsHost(
+            provider = weatherProvider,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
+        "b.diagnostics" -> SettingsScreen(SettingsDiagnosticsPage.spec(SettingsPageState()), onBack)
+        "b.glassDock" -> GlassDockEditorHost(store = wiring.settingsModel, onBack = onBack)
         "b.glassDockIcon" -> SettingsScreen(SettingsGlassDockIconEditorPage.spec(SettingsPageState()), onBack)
         "b.reset" -> SettingsScreen(SettingsResetPage.spec(SettingsPageState()), onBack)
 
@@ -346,6 +412,7 @@ fun ShellPageContent(
                 val subscription = repository.observe { snapshot = it }
                 onDispose { subscription.close() }
             }
+            val appSettings = wiring.settingsModel.load()
             MonthViewHost(
                 snapshot = snapshot,
                 onAddCourse = { date ->
@@ -353,6 +420,13 @@ fun ShellPageContent(
                     wiring.pendingEditCourse = null
                     onOpenPage("d1.addCourse")
                 },
+                homeTitleStyle = appSettings.homeTitleStyle,
+                profileName = TimetableHostLogic.resolveProfileName(
+                    profiles = snapshot.profiles,
+                    activeProfileId = snapshot.activeProfileId,
+                ),
+                homeMenuItems = TimetableMenuDefaults.entries(),
+                onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
             )
         }
 
@@ -364,9 +438,17 @@ fun ShellPageContent(
                 val subscription = repository.observe { snapshot = it }
                 onDispose { subscription.close() }
             }
+            val appSettings = wiring.settingsModel.load()
             DayViewPage(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
                 initialDayOfWeek = LocalDate.now().dayOfWeek.value,
+                homeTitleStyle = appSettings.homeTitleStyle,
+                profileName = TimetableHostLogic.resolveProfileName(
+                    profiles = snapshot.profiles,
+                    activeProfileId = snapshot.activeProfileId,
+                ),
+                homeMenuItems = TimetableMenuDefaults.entries(),
+                onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
                 dataProvider = { week, dayOfWeek ->
                     val dayCourses = snapshot.courses.filter { c ->
                         c.dayOfWeek == dayOfWeek && c.isActiveInWeek(week)
@@ -403,6 +485,9 @@ fun ShellPageContent(
             val snapshot = wiring.timetable.snapshot
             AddCoursePage(
                 initialCourse = wiring.pendingEditCourse,
+                // 组编辑：课程总览点某个课程组进来时带整组（Dart `AddCourseScreen(courseGroup:)`），
+                // 让「改名 / 改整组课次」走 updateCourseGroup，而不是只改单门课。
+                courseGroup = wiring.pendingEditGroup,
                 initialDayOfWeek = wiring.pendingAddCourseSeed?.first,
                 initialStartSection = wiring.pendingAddCourseSeed?.second,
                 availableWeeks = (1..snapshot.settings.semesterWeekCount.coerceAtLeast(1)).toList(),
@@ -442,34 +527,59 @@ fun ShellPageContent(
                 },
             )
         }
-        "d1.overview" -> CourseOverviewPage(
-            viewState = CourseOverviewLogic.buildViewState(emptyList(), emptyMap()),
+        // 课程总览：真接线收在 CourseOverviewHost（订阅仓储 + 冲突索引 + 排序档 UI 态 +
+        // 组编辑/冲突详情/新建三条导航）。以前这里喂 `emptyList()` + 4 个空回调，
+        // 于是页面永远空态、排序点不动、行点了没反应。
+        "d1.overview" -> CourseOverviewHost(
+            wiring = wiring,
             onBack = onBack,
-            onAddCourse = {},
-            onOpenGroup = {},
-            onOpenConflictDetail = {},
-            onSortModeSelected = {},
+            onOpenPage = onOpenPage,
         )
 
-        // ── P3-D2 日程与任务 ──────────────────────────────────────────
-        "d2.scheduleList" -> ScheduleListPage(
-            groups = shellSampleScheduleGroups(),
+        // ── P3-D2 日程域：从示例数据换成真宿主（Phase 3.5 接线）──────────
+        // 列表/日期规则走 ScheduleHost 订阅仓储；添加/编辑页由壳带意图（编辑对象 / 默认日期 /
+        // 某一次发生的日期）打开，保存/删除经 ShellWiring 的 ScheduleEditDispatcher 落盘。
+        "d2.scheduleList" -> ScheduleListHost(
+            repository = wiring.timetable,
+            todayIso = LocalDate.now().toString(),
             onBack = onBack,
-            onAddSchedule = {},
-            onEditSchedule = {},
-            onDeleteSchedule = {},
+            onAdd = {
+                wiring.clearScheduleIntent()
+                wiring.pendingScheduleInitialDate = LocalDate.now().toString()
+                onOpenPage("d2.addSchedule")
+            },
+            onEdit = { item ->
+                wiring.pendingScheduleEdit = item
+                wiring.pendingScheduleOccurrenceDate = null
+                onOpenPage("d2.addSchedule")
+            },
+            onDelete = { item -> wiring.deleteScheduleItem(item, null) },
         )
         "d2.addSchedule" -> AddScheduleItemPage(
-            onBack = onBack,
-            onSave = { _, _ -> },
-            onDelete = { _, _ -> },
+            scheduleItem = wiring.pendingScheduleEdit,
+            initialDate = wiring.pendingScheduleInitialDate ?: LocalDate.now().toString(),
+            occurrenceDate = wiring.pendingScheduleOccurrenceDate,
+            onBack = {
+                wiring.clearScheduleIntent()
+                onBack()
+            },
+            onSave = { draft, applyToAll ->
+                if (wiring.saveScheduleItem(draft, applyToAll)) {
+                    wiring.clearScheduleIntent()
+                    onBack()
+                }
+            },
+            onDelete = { item, applyToAll ->
+                if (wiring.deleteScheduleItem(item, applyToAll)) {
+                    wiring.clearScheduleIntent()
+                    onBack()
+                }
+            },
         )
-        "d2.dateRule" -> ScheduleDateRulePage(
-            rules = emptyList(),
-            availableSchemes = emptyList(),
+        "d2.dateRule" -> ScheduleDateRuleHost(
+            repository = wiring.timetable,
+            todayIso = LocalDate.now().toString(),
             onBack = onBack,
-            onSaveRule = {},
-            onDeleteRule = {},
         )
         "d2.taskList" -> TaskListPage(
             viewState = shellSampleTaskViewState(),
@@ -1020,7 +1130,47 @@ fun ShellPageContent(
 
         // ── P3-I 引导与展示 ──────────────────────────────────────────
         "i.startup" -> StartupFlowPage(onBack = onBack)
-        "i.userGuide" -> UserGuidePage(onBack = onBack)
+        "i.userGuide" -> {
+            // 引导页接真实数据（对齐 Flutter user_guide_screen.dart）：
+            // 权限状态来自平台真值；个性化读写走同一个设置模型；导航接壳内已有页面。
+            val context = LocalContext.current
+            val lifecycleOwner = LocalLifecycleOwner.current
+            var permissionState by remember { mutableStateOf(GuidePermissionProbe.probe(context)) }
+            var guideSettings by remember {
+                mutableStateOf(GuideSettingsMapping.snapshotFrom(wiring.settingsModel.load()))
+            }
+            // 从系统设置页返回时重新探测权限 + 重新读设置，让「点完回来状态变了」看得见。
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        permissionState = GuidePermissionProbe.probe(context)
+                        guideSettings = GuideSettingsMapping.snapshotFrom(wiring.settingsModel.load())
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+            UserGuidePage(
+                onBack = onBack,
+                permissionState = permissionState,
+                settings = guideSettings,
+                seedOptions = GuideSettingsMapping.seedOptions(),
+                onPermissionAction = { action ->
+                    GuidePermissionProbe.open(context, action)
+                    permissionState = GuidePermissionProbe.probe(context)
+                },
+                onRefreshPermissions = { permissionState = GuidePermissionProbe.probe(context) },
+                onSettingsPatch = { patch ->
+                    val next = GuideSettingsMapping.applyPatch(wiring.settingsModel.load(), patch)
+                    wiring.settingsModel.save(next)
+                    guideSettings = GuideSettingsMapping.snapshotFrom(next)
+                },
+                onImportCourses = { onOpenPage("g1.importEntry") },
+                onRestoreBackup = { onOpenPage("f.backupList") },
+                onOpenCourseOverview = { onOpenPage("d1.overview") },
+                onFinishGuide = { onBack() },
+            )
+        }
         "i.more" -> MoreFeaturesWithSearch(onBack = onBack)
         "i.moreSearch" -> MoreFeaturesSearchOverlay(
             onDismiss = onBack,
@@ -1076,34 +1226,73 @@ fun ShellPageContent(
                 },
             )
         }
-        "j.weatherCity" -> WeatherCityPickerPage(
+        "j.weatherCity" -> WeatherCityPickerHost(
+            provider = weatherProvider,
             onBack = onBack,
-            onSelectCity = {},
         )
 
         // ── P3-K 冲突与反馈 ──────────────────────────────────────────
-        "k.conflict" -> CourseConflictPage(
-            view = buildCourseConflictView(emptyList()),
-            onBack = onBack,
-        )
+        // 冲突详情：从「空列表」换成**真数据**（以前恒空态）。冲突对由模型层
+        // `buildCourseConflictView(snapshot.courses)` 算好；点某行进该课的编辑页，
+        // 与 Dart `course_conflict_screen.dart:_openCourseEditor` 同口径。
+        "k.conflict" -> {
+            val repository = wiring.timetable
+            var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { snapshot = it }
+                onDispose { subscription.close() }
+            }
+            CourseConflictPage(
+                view = buildCourseConflictView(snapshot.courses),
+                onBack = onBack,
+                onOpenCourse = { courseId ->
+                    wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
+                    wiring.pendingEditGroup = null
+                    wiring.pendingAddCourseSeed = null
+                    onOpenPage("d1.addCourse")
+                },
+            )
+        }
         "k.feedback" -> FeedbackPage(onBack = onBack)
 
         // 目录里登记了、分派里没接：**宁可明确报错，也不要静默显示空白**
         else -> ShellMissingPage(pageId = pageId, onBack = onBack)
     }
+    }
 }
 
-/** 设置族 24 屏的统一入口：spec 由各页的模型层给，这里只负责壳的返回与空行为。 */
+/** 设置族 24 屏的统一入口：spec 由各页的模型层给，这里只负责壳的返回与「箭头行推页」。 */
 @Composable
 private fun SettingsScreen(
     spec: com.mutx163.qingyu.pages.settings.SettingsPageSpec,
     onBack: () -> Unit,
 ) {
+    val openPage = LocalShellOpenPage.current
     SettingsPageScreen(
         spec = spec,
         onBack = onBack,
-        // 写回与弹层由宿主接：壳里没有持久化层，点了不该崩，只当无操作。
-        onAction = { _, _, _ -> },
+        // 这些页还没接真模型：开关/滑杆等写回仍是 no-op；但「箭头行」必须能推页，
+        // 否则设置主页与子页之间的导航会整块断掉（actionTarget 就是 Dart 路由串）。
+        onAction = { _, target, _ -> shellPageIdForRoute(target)?.let(openPage) },
+    )
+}
+
+/**
+ * 课程卡片 / 课表页面两页顶部那块「本周课表缩略预览」：直接用课表仓储的真数据画，
+ * 不另造示例。两页共用同一份（数据同源：同一仓储快照）。
+ *
+ * 预览只随仓储快照变化；页面里改开关（显示字段等）不会实时改这张缩略图——它展示的是
+ * 「本周排了什么课」，不是「开关此刻长什么样」，与 Flutter 侧 `TimetableWeekPreview`
+ * 的定位一致。
+ */
+@Composable
+private fun SettingsWeekPreviewSlot(wiring: ShellWiring) {
+    val snapshot = wiring.timetable.snapshot
+    SettingsWeekPreview(
+        courses = snapshot.courses,
+        settings = snapshot.settings,
+        currentWeek = snapshot.currentWeek,
+        timeScheme = snapshot.timeSchemes.firstOrNull { it.id == snapshot.activeTimeSchemeId },
     )
 }
 
@@ -1217,66 +1406,6 @@ private fun clockText(minutesOfDay: Int): String {
     val minute = normalized % 60
     return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 }
-
-/**
- * 示例日程条目：与壳的三个槽位用同一份数据（槽位与索引看到的东西必须一致，
- * 否则同一页在两条路径上长得不一样，会被当成 bug 报上来）。
- */
-internal fun shellSampleScheduleGroups(): ScheduleListGroups = ScheduleListGroups(
-    upcoming = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-1",
-                title = "教研会议",
-                location = "教学楼 302",
-                note = "带教材与期末安排",
-                startDate = "2026-11-02",
-                startTime = "14:00",
-                endTime = "15:30",
-                reminderMinutesBefore = 30,
-            ),
-            nextDate = "2026-11-02",
-        ),
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-2",
-                title = "实验室例会",
-                location = "实验楼 508",
-                startDate = "2026-11-06",
-                startTime = "09:00",
-                endTime = "10:00",
-            ),
-            nextDate = "2026-11-06",
-        ),
-    ),
-    past = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-3",
-                title = "期中答疑",
-                location = "线上",
-                startDate = "2026-10-16",
-                startTime = "19:00",
-                endTime = "20:00",
-            ),
-            nextDate = null,
-        ),
-    ),
-    paused = listOf(
-        ScheduleListEntry(
-            item = ScheduleItemData(
-                id = "demo-4",
-                title = "暑假集训（已暂停）",
-                startDate = "2026-07-01",
-                endDate = "2026-08-31",
-                startTime = "08:00",
-                endTime = "11:30",
-                enabled = false,
-            ),
-            nextDate = null,
-        ),
-    ),
-)
 
 /** 任务列表空态：先看版式骨架，示例条目等 CourseTask 样例批补。 */
 internal fun shellSampleTaskViewState(): TaskListViewState = TaskListViewState(

@@ -47,7 +47,10 @@ class FakeLiveHost(
 
     override var currentDateWeek: Int = 1
 
-    override var currentDayOfWeek: Int = LocalDateTime.now().dayOfWeek.value
+    // 固定星期一（对齐用例的 day=2026-03-02 与 course() 默认 dayOfWeek=1）。
+    // 不能用 LocalDateTime.now()：真时钟会让这批用例「只在周一绿」——
+    // 2026-10-26（周一）提交当日 4 例绿，次日（周二）同 4 例红的实证。TEST-POLICY 日期老化条。
+    override var currentDayOfWeek: Int = 1
 
     override val currentWeek: Int get() = 1
 

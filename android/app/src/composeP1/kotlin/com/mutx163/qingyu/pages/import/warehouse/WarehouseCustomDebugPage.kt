@@ -100,7 +100,7 @@ fun WarehouseCustomDebugPage(
                 Icon(imageVector = MiuixIcons.Add, contentDescription = WarehouseStrings.addDebugRecordTooltip.zh)
             }
         },
-    ) { innerPadding, scrollBehavior ->
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,

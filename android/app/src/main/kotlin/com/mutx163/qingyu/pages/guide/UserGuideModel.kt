@@ -87,6 +87,78 @@ data class UserGuideFaqItem(
  */
 object UserGuideModel {
 
+    /**
+     * 把真实权限状态 [state] 映射成权限页要渲染的 6 行。
+     *
+     * 口径完全对齐 Flutter 原版 `lib/screens/user_guide_screen.dart:640-704` 的
+     * `_buildPermissionItems`：
+     * - 行顺序固定：通知 / 超级岛 / 自启动 / 电池 / 保活 / 勿扰；
+     * - `enabled` 直接取 state 对应项（**可 null = 还没探测**，进度条会把它排除在总数外）；
+     * - 只有「勿扰」行有 subtitle（`guideStatusDoNotDisturbAccessHint`），其余 5 行无副标题；
+     * - 超级岛的“未开启”文案依赖 `promotedDeclared`：已声明 → 已开启待生效，未声明 → 建议检查。
+     *
+     * [PermissionItemData.id] 采用**与 [GuidePermissionAction] 枚举名一致的字符串**，
+     * 渲染层可直接 `GuidePermissionAction.valueOf(item.id)` 拿到点击要发的动作。
+     */
+    fun permissionItems(state: GuidePermissionState): List<PermissionItemData> {
+        val enabledLabel = GuideStrings.guideStatusEnabled.zh
+        val disabledLabel = GuideStrings.guideStatusDisabled.zh
+        return listOf(
+            PermissionItemData(
+                id = GuidePermissionAction.Notification.name,
+                title = GuideStrings.guideStatusNotificationPermission.zh,
+                subtitle = null,
+                enabled = state.notification,
+                enabledLabel = GuideStrings.guideStatusEnabled.zh,
+                disabledLabel = GuideStrings.guideStatusDisabled.zh,
+            ),
+            PermissionItemData(
+                id = GuidePermissionAction.PromotedIsland.name,
+                title = GuideStrings.guideStatusIslandSupport.zh,
+                subtitle = null,
+                enabled = state.promotedIsland,
+                enabledLabel = GuideStrings.guideStatusSystemAllowed.zh,
+                disabledLabel = if (state.promotedDeclared) {
+                    GuideStrings.guideStatusEnabledPending.zh
+                } else {
+                    GuideStrings.guideStatusSuggestedCheck.zh
+                },
+            ),
+            PermissionItemData(
+                id = GuidePermissionAction.AutoStart.name,
+                title = GuideStrings.quickActionAutoStartTitle.zh,
+                subtitle = null,
+                enabled = state.autoStart,
+                enabledLabel = enabledLabel,
+                disabledLabel = disabledLabel,
+            ),
+            PermissionItemData(
+                id = GuidePermissionAction.Battery.name,
+                title = GuideStrings.guideStatusBatteryOptimization.zh,
+                subtitle = null,
+                enabled = state.batteryUnrestricted,
+                enabledLabel = GuideStrings.guideStatusBatteryUnrestricted.zh,
+                disabledLabel = GuideStrings.guideStatusBatteryRestricted.zh,
+            ),
+            PermissionItemData(
+                id = GuidePermissionAction.KeepAliveAccessibility.name,
+                title = GuideStrings.guideStatusKeepAlive.zh,
+                subtitle = null,
+                enabled = state.keepAliveAccessibility,
+                enabledLabel = enabledLabel,
+                disabledLabel = disabledLabel,
+            ),
+            PermissionItemData(
+                id = GuidePermissionAction.DoNotDisturbAccess.name,
+                title = GuideStrings.guideStatusDoNotDisturbAccess.zh,
+                subtitle = GuideStrings.guideStatusDoNotDisturbAccessHint.zh,
+                enabled = state.doNotDisturbAccess,
+                enabledLabel = enabledLabel,
+                disabledLabel = disabledLabel,
+            ),
+        )
+    }
+
     /** 内置常见问答清单 */
     val defaultFaqItems: List<UserGuideFaqItem> = listOf(
         UserGuideFaqItem(

@@ -448,8 +448,24 @@ object SettingsHomeNavigationPage {
         CatalogEntry("lanEdit", SettingsStringsExt2.lanEditTitle, "data"),
         CatalogEntry("coupleTimetable", SettingsStringsExt2.coupleTimetableTitle, "data"),
         // ── 偏好设置（preferences）─────────────────────────────────
+        // 13 条，与 `SettingsGlassDockEditorPage.catalog` 的 preferences 段逐条一致
+        // （都镜像 Dart `home_menu_catalog.dart:327-384`）。顺序即 Dart 声明顺序。
         CatalogEntry("settings", SettingsStringsExt2.homeMenuSettingsTitle, "preferences"),
         CatalogEntry("homeNavigation", SettingsStringsExt2.homeNavigationTitle, "preferences"),
+        CatalogEntry("generalSettings", SettingsStringsExt4.generalSettingsTitle, "preferences"),
+        CatalogEntry("appearanceSettings", SettingsStringsExt4.appearanceTitle, "preferences"),
+        CatalogEntry("appearanceEditor", SettingsStringsExt4.appearanceEditorTitle, "preferences"),
+        CatalogEntry(
+            "timetablePageSettings",
+            SettingsStringsExt4.timetablePageSettingsTitle,
+            "preferences",
+        ),
+        CatalogEntry("courseCardSettings", SettingsStringsExt4.courseCardSettingsTitle, "preferences"),
+        CatalogEntry("weatherSettings", SettingsStringsExt4.weatherSettingsEntryTitle, "preferences"),
+        CatalogEntry("liveSettings", SettingsStringsExt4.liveSettingsTitle, "preferences"),
+        CatalogEntry("holidaySettings", SettingsStringsExt4.holidaySettingsTitle, "preferences"),
+        CatalogEntry("homeWidgetSettings", SettingsStringsExt4.homeWidgetSettingsTitle, "preferences"),
+        CatalogEntry("diagnosticsSettings", SettingsStringsExt4.diagnosticsEntryTitle, "preferences"),
         CatalogEntry("statisticsSettings", SettingsStringsExt2.statisticsSettingsTitle, "preferences"),
         // ── 关于与支持（about）─────────────────────────────────────
         CatalogEntry("support", SettingsStringsExt2.homeMenuCoffeeTitle, "about"),

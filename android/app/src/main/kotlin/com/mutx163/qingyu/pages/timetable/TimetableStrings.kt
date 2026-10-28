@@ -63,6 +63,20 @@ object TimetableStrings {
     val todayTimetableTitle = ArbText("todayTimetableTitle", "今日课表")
     val dayViewEmptyTitle = ArbText("dayViewEmptyTitle", "暂无课程")
 
+    // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（Dart HomeGridMenu.defaultActions 的默认 8 条）──
+    // 标题与菜单标题都复用既有 ARB 键（appTitle / moreTooltip / homeMenuXxx），
+    // 与 Flutter 版同源，不另拟说法。
+    val appTitle = ArbText("appTitle", "轻屿课表")
+    val moreTooltip = ArbText("moreTooltip", "更多")
+    val homeMenuOverviewTitle = ArbText("homeMenuOverviewTitle", "课程总览")
+    val homeMenuStatisticsTitle = ArbText("homeMenuStatisticsTitle", "课程统计")
+    val homeMenuAddCourseTitle = ArbText("homeMenuAddCourseTitle", "添加")
+    val examListTitle = ArbText("examListTitle", "考试安排")
+    val homeMenuTasksTitle = ArbText("homeMenuTasksTitle", "任务清单")
+    val homeMenuImportTitle = ArbText("homeMenuImportTitle", "导入课程")
+    val homeMenuSettingsTitle = ArbText("homeMenuSettingsTitle", "课表设置")
+    val homeMenuCoffeeTitle = ArbText("homeMenuCoffeeTitle", "请喝咖啡")
+
     // ── 星期几名称 ──
     val weekdayMon = ArbText("weekdayMon", "周一")
     val weekdayTue = ArbText("weekdayTue", "周二")
@@ -157,6 +171,16 @@ object TimetableStrings {
             weekLabel,
             todayTimetableTitle,
             dayViewEmptyTitle,
+            appTitle,
+            moreTooltip,
+            homeMenuOverviewTitle,
+            homeMenuStatisticsTitle,
+            homeMenuAddCourseTitle,
+            examListTitle,
+            homeMenuTasksTitle,
+            homeMenuImportTitle,
+            homeMenuSettingsTitle,
+            homeMenuCoffeeTitle,
             weekdayMon,
             weekdayTue,
             weekdayWed,

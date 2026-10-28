@@ -94,7 +94,7 @@ fun WarehouseCourseImportPage(
                 Icon(imageVector = MiuixIcons.More, contentDescription = WarehouseStrings.moreActionsTooltip.zh)
             }
         },
-    ) { innerPadding, scrollBehavior ->
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,

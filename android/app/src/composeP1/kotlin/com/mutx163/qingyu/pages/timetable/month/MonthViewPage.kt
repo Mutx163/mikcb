@@ -25,6 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableTopBar
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -77,6 +80,11 @@ fun MonthViewPage(
     showWeekNumbers: Boolean = true,
     onOpenAgendaRow: (MonthAgendaRow) -> Unit = {},
     onAddCourse: (LocalDateTime) -> Unit = {},
+    homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
+    profileName: String? = null,
+    showTopBar: Boolean = true,
+    homeMenuItems: List<TimetableMenuItem> = emptyList(),
+    onHomeMenuSelect: (String) -> Unit = {},
 ) {
     // ── 状态：聚焦月 + 选中日 + 展开进度 ──
     //
@@ -128,6 +136,15 @@ fun MonthViewPage(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            // 顶栏「轻屿课表」+ 右上角「更多」菜单（Flutter 月视图走独立页外壳，顶部也是它）。
+            if (showTopBar) {
+                TimetableTopBar(
+                    brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                    profileName = profileName,
+                    menuItems = homeMenuItems,
+                    onMenuSelect = onHomeMenuSelect,
+                )
+            }
             MonthViewBody(
                 grid = grid,
                 agendaRows = agendaRows,

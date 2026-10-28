@@ -301,7 +301,7 @@ class SettingsActionDispatcherTest {
         assertEquals("someUnknown.row", ignored.rowId)
         assertTrue(ignored.reason.contains("未识别的 rowId"))
         // 别的页（各自私有 state）也一样：本刀不写、不崩。
-        assertTrue(dispatch(SettingsActionKind.WRITE_SETTING, "1", "timetablePage.sectionHeight") is SettingsDispatch.Ignored)
+        assertTrue(dispatch(SettingsActionKind.WRITE_SETTING, "1", "someOtherPage.unknownRow") is SettingsDispatch.Ignored)
     }
 
     // ================================================================
@@ -841,6 +841,336 @@ class SettingsActionDispatcherTest {
 
         val dirty = clean.copy(themeSeedColor = "#000000")
         assertFalse(SettingsPageBridge.toSettingsPageState(dirty).savedThemes.single().selected)
+    }
+
+    // ================================================================
+    // 11. 首页与导航 + 底栏/八宫格编辑器（writeSetting 新分支）
+    // ================================================================
+
+    @Test
+    fun `首页导航形态 页面词汇 glassDock 要写成枚举 GLASS_DOCK`() {
+        // 渲染层下拉 option id 是 "classic"/"glassDock"；枚举磁盘值却是 "glass_dock"。
+        // 这条钉住「选了玻璃坞真的进玻璃坞」，不能回落经典。
+        assertEquals(
+            HomeNavigationForm.GLASS_DOCK,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_FORM, "glassDock").homeNavigationForm,
+        )
+        assertEquals(
+            HomeNavigationForm.CLASSIC,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_FORM, "classic").homeNavigationForm,
+        )
+        // 未知值一律 Ignored（不猜）
+        assertTrue(
+            dispatch(
+                SettingsActionKind.WRITE_SETTING,
+                "zzz",
+                SettingsActionDispatcher.ROW_HOME_NAV_FORM,
+            ) is SettingsDispatch.Ignored,
+        )
+    }
+
+    @Test
+    fun `菜单形态与首页标题样式按值写 未知值 Ignored`() {
+        assertEquals(
+            HomeMenuStyle.GRID,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_MENU_STYLE, "grid").homeMenuStyle,
+        )
+        assertEquals(
+            HomeMenuStyle.LIST,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_MENU_STYLE, "list").homeMenuStyle,
+        )
+        assertEquals(
+            HomeTitleStyle.BRAND,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_HOME_TITLE_STYLE, "brand").homeTitleStyle,
+        )
+        assertEquals(
+            HomeTitleStyle.CLASSIC,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_HOME_TITLE_STYLE, "classic").homeTitleStyle,
+        )
+        assertTrue(
+            dispatch(
+                SettingsActionKind.WRITE_SETTING,
+                "zzz",
+                SettingsActionDispatcher.ROW_HOME_NAV_MENU_STYLE,
+            ) is SettingsDispatch.Ignored,
+        )
+        assertTrue(
+            dispatch(
+                SettingsActionKind.WRITE_SETTING,
+                "zzz",
+                SettingsActionDispatcher.ROW_HOME_NAV_HOME_TITLE_STYLE,
+            ) is SettingsDispatch.Ignored,
+        )
+    }
+
+    @Test
+    fun `圆钮开关取反 圆钮功能缺省回 addCourse`() {
+        assertTrue(write(SettingsActionDispatcher.ROW_HOME_NAV_SHOW_ADD_BUTTON, null).glassDockShowAddButton)
+        assertEquals(
+            "overview",
+            write(SettingsActionDispatcher.ROW_HOME_NAV_DOCK_BUTTON_ENTRY, "overview").glassDockButtonEntryId,
+        )
+        // null / 空串 → addCourse（Dart `_effectiveGlassDockButtonEntryId` 同口径）
+        assertEquals(
+            TimetableSettingsModel.DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
+            write(SettingsActionDispatcher.ROW_HOME_NAV_DOCK_BUTTON_ENTRY, null).glassDockButtonEntryId,
+        )
+        assertEquals(
+            "addCourse",
+            write(SettingsActionDispatcher.ROW_HOME_NAV_DOCK_BUTTON_ENTRY, "").glassDockButtonEntryId,
+        )
+    }
+
+    @Test
+    fun `底栏添加守上限与去重`() {
+        val two = TimetableSettingsModel(glassDockActions = listOf("day", "week"))
+        assertEquals(
+            listOf("day", "week", "tasks"),
+            write(SettingsActionDispatcher.ROW_DOCK_ADD, "tasks", two).glassDockActions,
+        )
+        // 已存在 → 原样
+        assertEquals(
+            listOf("day", "week"),
+            write(SettingsActionDispatcher.ROW_DOCK_ADD, "day", two).glassDockActions,
+        )
+        // 满 5 → 原样
+        val five = TimetableSettingsModel(
+            glassDockActions = listOf("day", "week", "tasks", "exams", "overview"),
+        )
+        assertEquals(
+            five.glassDockActions,
+            write(SettingsActionDispatcher.ROW_DOCK_ADD, "monthView", five).glassDockActions,
+        )
+        // 空 target → Ignored
+        assertTrue(
+            dispatch(SettingsActionKind.WRITE_SETTING, "", SettingsActionDispatcher.ROW_DOCK_ADD, two)
+                is SettingsDispatch.Ignored,
+        )
+    }
+
+    @Test
+    fun `底栏移除至少留一个`() {
+        val three = TimetableSettingsModel(glassDockActions = listOf("day", "week", "tasks"))
+        assertEquals(
+            listOf("day", "tasks"),
+            write(SettingsActionDispatcher.ROW_DOCK_REMOVE, "week", three).glassDockActions,
+        )
+        // 只剩一个 → 原样，不允许清空
+        val one = TimetableSettingsModel(glassDockActions = listOf("day"))
+        assertEquals(
+            listOf("day"),
+            write(SettingsActionDispatcher.ROW_DOCK_REMOVE, "day", one).glassDockActions,
+        )
+        // 不在表里 → 原样
+        assertEquals(
+            three.glassDockActions,
+            write(SettingsActionDispatcher.ROW_DOCK_REMOVE, "none", three).glassDockActions,
+        )
+    }
+
+    @Test
+    fun `底栏排序 冒号两个整数 长度不变`() {
+        val three = TimetableSettingsModel(glassDockActions = listOf("day", "week", "tasks"))
+        // Dart onReorder 语义：removeAt(from) 后插到 to
+        assertEquals(
+            listOf("week", "tasks", "day"),
+            write(SettingsActionDispatcher.ROW_DOCK_MOVE, "0:2", three).glassDockActions,
+        )
+        assertEquals(
+            listOf("tasks", "day", "week"),
+            write(SettingsActionDispatcher.ROW_DOCK_MOVE, "2:0", three).glassDockActions,
+        )
+        // 坏 target → Ignored
+        for (bad in listOf(null, "", "abc", "0", "0:", "0:x", "1:2:3")) {
+            assertTrue(
+                "底栏排序 $bad 应当被拒",
+                dispatch(
+                    SettingsActionKind.WRITE_SETTING,
+                    bad,
+                    SettingsActionDispatcher.ROW_DOCK_MOVE,
+                    three,
+                ) is SettingsDispatch.Ignored,
+            )
+        }
+        // 越界 → Ignored
+        assertTrue(
+            dispatch(
+                SettingsActionKind.WRITE_SETTING,
+                "0:9",
+                SettingsActionDispatcher.ROW_DOCK_MOVE,
+                three,
+            ) is SettingsDispatch.Ignored,
+        )
+    }
+
+    @Test
+    fun `底栏恢复默认回到 day week tasks`() {
+        assertEquals(
+            listOf("day", "week", "tasks"),
+            write(
+                SettingsActionDispatcher.ROW_DOCK_RESET,
+                null,
+                TimetableSettingsModel(glassDockActions = listOf("exams")),
+            ).glassDockActions,
+        )
+    }
+
+    @Test
+    fun `八宫格添加保留钉住项并守上限`() {
+        val base = TimetableSettingsModel(homeGridMenuActions = listOf("overview", "settings"))
+        assertEquals(
+            listOf("overview", "settings", "exams"),
+            write(SettingsActionDispatcher.ROW_MENU_ADD, "exams", base).homeGridMenuActions,
+        )
+        // 已存在 → 原样
+        assertEquals(
+            base.homeGridMenuActions,
+            write(SettingsActionDispatcher.ROW_MENU_ADD, "overview", base).homeGridMenuActions,
+        )
+        // 满 8 → 原样
+        val full = TimetableSettingsModel(
+            homeGridMenuActions = listOf(
+                "overview", "statistics", "addCourse", "exams",
+                "tasks", "importCourses", "settings", "support",
+            ),
+        )
+        assertEquals(
+            full.homeGridMenuActions,
+            write(SettingsActionDispatcher.ROW_MENU_ADD, "monthView", full).homeGridMenuActions,
+        )
+    }
+
+    @Test
+    fun `八宫格添加即使从空表开始也会补回钉住项`() {
+        // normalizeHomeGridMenuActions 语义：缺 settings 时补上，保证能回到编辑器
+        assertEquals(
+            listOf("overview", "settings"),
+            write(
+                SettingsActionDispatcher.ROW_MENU_ADD,
+                "overview",
+                TimetableSettingsModel(),
+            ).homeGridMenuActions,
+        )
+    }
+
+    @Test
+    fun `八宫格移除不动钉住项 且至少留一个`() {
+        val base = TimetableSettingsModel(homeGridMenuActions = listOf("overview", "settings"))
+        assertEquals(
+            listOf("settings"),
+            write(SettingsActionDispatcher.ROW_MENU_REMOVE, "overview", base).homeGridMenuActions,
+        )
+        // 钉住项 settings 不可移除
+        assertEquals(
+            base.homeGridMenuActions,
+            write(SettingsActionDispatcher.ROW_MENU_REMOVE, "settings", base).homeGridMenuActions,
+        )
+        // 只剩一个 → 原样
+        val one = TimetableSettingsModel(homeGridMenuActions = listOf("settings"))
+        assertEquals(
+            one.homeGridMenuActions,
+            write(SettingsActionDispatcher.ROW_MENU_REMOVE, "settings", one).homeGridMenuActions,
+        )
+    }
+
+    @Test
+    fun `八宫格排序与恢复默认`() {
+        val three = TimetableSettingsModel(homeGridMenuActions = listOf("overview", "settings", "exams"))
+        assertEquals(
+            listOf("settings", "exams", "overview"),
+            write(SettingsActionDispatcher.ROW_MENU_MOVE, "0:2", three).homeGridMenuActions,
+        )
+        // 恢复默认完整 8 项
+        assertEquals(
+            listOf(
+                "overview", "statistics", "addCourse", "exams",
+                "tasks", "importCourses", "settings", "support",
+            ),
+            write(SettingsActionDispatcher.ROW_MENU_RESET, null).homeGridMenuActions,
+        )
+        // 坏 target → Ignored
+        assertTrue(
+            dispatch(
+                SettingsActionKind.WRITE_SETTING,
+                "x",
+                SettingsActionDispatcher.ROW_MENU_MOVE,
+                three,
+            ) is SettingsDispatch.Ignored,
+        )
+    }
+
+    @Test
+    fun `首页与导航作用域恢复默认`() {
+        val dirty = TimetableSettingsModel(
+            homeNavigationForm = HomeNavigationForm.GLASS_DOCK,
+            homeMenuStyle = HomeMenuStyle.GRID,
+            homeTitleStyle = HomeTitleStyle.BRAND,
+            glassDockActions = listOf("day", "week"),
+            glassDockShowAddButton = true,
+            glassDockButtonEntryId = "overview",
+            glassDockButtonIconName = "star",
+            glassDockShowDayTab = false,
+            glassDockShowSettingsTab = false,
+            glassDockShowWeekTab = false,
+            homeGridMenuActions = listOf("overview", "settings"),
+        )
+        val reset = SettingsActionDispatcher.applyResetScope(
+            dirty,
+            SettingsActionDispatcher.SCOPE_HOME_NAVIGATION,
+        )!!
+        assertEquals(HomeNavigationForm.CLASSIC, reset.homeNavigationForm)
+        assertEquals(HomeMenuStyle.LIST, reset.homeMenuStyle)
+        assertEquals(HomeTitleStyle.CLASSIC, reset.homeTitleStyle)
+        assertEquals(emptyList<String>(), reset.glassDockActions)
+        assertFalse(reset.glassDockShowAddButton)
+        assertEquals(
+            TimetableSettingsModel.DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
+            reset.glassDockButtonEntryId,
+        )
+        assertNull(reset.glassDockButtonIconName)
+        assertTrue(reset.glassDockShowDayTab)
+        assertTrue(reset.glassDockShowSettingsTab)
+        assertTrue(reset.glassDockShowWeekTab)
+        assertEquals(emptyList<String>(), reset.homeGridMenuActions)
+    }
+
+    @Test
+    fun `bridge 把模型映射成三个页面状态 含 glassDock 词汇翻译`() {
+        val model = TimetableSettingsModel(
+            homeNavigationForm = HomeNavigationForm.GLASS_DOCK,
+            homeMenuStyle = HomeMenuStyle.GRID,
+            homeTitleStyle = HomeTitleStyle.BRAND,
+            glassDockActions = listOf("day", "tasks"),
+            glassDockShowAddButton = true,
+            glassDockButtonEntryId = "overview",
+            glassDockButtonIconName = "star",
+            homeGridMenuActions = listOf("overview", "settings"),
+        )
+        val nav = SettingsPageBridge.toHomeNavigationState(model)
+        // ⚠️ 关键：磁盘的 glass_dock 必须翻译成页面词汇 glassDock，否则底栏区块不渲染
+        assertEquals("glassDock", nav.navigationForm)
+        assertEquals("grid", nav.menuStyle)
+        assertEquals("brand", nav.titleStyle)
+        assertEquals(listOf("day", "tasks"), nav.dockActionIds)
+        assertEquals(true, nav.showAddButton)
+        assertEquals("overview", nav.dockButtonEntryId)
+        assertEquals("star", nav.dockButtonIconName)
+        assertEquals(listOf("overview", "settings"), nav.gridMenuActions)
+
+        // classic 形态翻译回 classic
+        assertEquals(
+            "classic",
+            SettingsPageBridge.toHomeNavigationState(TimetableSettingsModel()).navigationForm,
+        )
+
+        // 两个编辑器状态：原始 list 直接给，不做 resolve
+        val dock = SettingsPageBridge.toGlassDockEditorState(model, debugBuild = true)
+        assertEquals(listOf("day", "tasks"), dock.enabledIds)
+        assertEquals(true, dock.debugBuild)
+        assertEquals(
+            listOf("overview", "settings"),
+            SettingsPageBridge.toHomeMenuEditorState(model).enabledIds,
+        )
     }
 
     // ================================================================

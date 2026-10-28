@@ -82,7 +82,7 @@ fun AiImageCourseImportPage(
             parseError = WarehouseStrings.aiPasteJsonFirst.zh
             return
         }
-        val result = parseImageImportJson(rawJsonInput)
+        val result = parseAiImageImportJson(rawJsonInput)
         if (result.isValid) {
             parseResult = result
             parseError = null
@@ -128,7 +128,7 @@ fun AiImageCourseImportPage(
                 }
             }
         }
-    ) { innerPadding, scrollBehavior ->
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,

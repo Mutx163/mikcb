@@ -493,6 +493,10 @@ object SettingsTimetablePage {
             subtitle = subtitle,
             action = SettingsAction.NAVIGATE,
             actionTarget = ROUTE_SEMESTER,
+            // Flutter 这里是一张独立摘要卡（`HyperosSummaryCard`：应用图标 + 第N周/共M周 +
+            // 开学日期 + 右箭头），不是普通设置行。标记出来让渲染层画成卡。
+            standaloneSummaryCard = true,
+            leadingAppIcon = true,
         )
     }
 
@@ -527,14 +531,6 @@ object SettingsTimetablePage {
                 actionTarget = ROUTE_LIVE_FIXTURE,
             )
         }
-        rows += settingsRow(
-            id = "timetable.hyperosShowcase",
-            component = MiuixRowComponent.ARROW,
-            title = SettingsStringsExt2.hyperosShowcaseEntryTitle,
-            details = SettingsStringsExt2.hyperosShowcaseEntrySubtitle,
-            action = SettingsAction.NAVIGATE,
-            actionTarget = ROUTE_HYPEROS_SHOWCASE,
-        )
         rows += settingsRow(
             id = "timetable.miuixShowcase",
             component = MiuixRowComponent.ARROW,

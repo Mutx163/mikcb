@@ -84,7 +84,7 @@ fun WarehouseAdapterDetailPage(
                 )
             }
         },
-    ) { innerPadding, scrollBehavior ->
+    ) {
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
