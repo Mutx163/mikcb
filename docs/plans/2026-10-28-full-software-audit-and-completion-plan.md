@@ -167,8 +167,12 @@
 | 3 | `PageScaffoldGuardTest` | `about/AboutStaticPage.kt`、`about/SupportCreatorPage.kt` | 取了 `innerPadding` 却没把底部内边距差消费掉 |
 | 4 | `SettingsActionDispatcherTest` | `app/SettingsActionDispatcher.kt` | 分派器已支持 `timetablePage.sectionHeight`，用例仍断言 `Ignored`（用例没跟上实现）|
 
-⇒ **结论**：编译层已通；单测只差这 4 条守卫（全在别人文件上），由各所有者修掉即全绿。
-（按 Git 纪律与用户口径「让其它会话先提交」，本会话不擅自改这些他人文件。）
+⇒ **结论**：编译层已通；单测只差这 4 条守卫（全在别人文件上）。
+
+> **2026-10-28 22:52 更新（Lead 接手收口）**：经用户授权，Lead 已修掉这 4 条守卫（About 两页补手势条底距 /
+> 动态取色避开写死色检测 / 过期用例改真未知 id / cjk 基线按棘轮下调），**L2 转全绿（4318 例 / 0 失败）**；
+> 并把积累的多域接线（87 文件，仅 `android/app/src`）统一收口提交 **`9f19cd26`**。
+> 提交后 HEAD 与已验证工作区一致。Dart `lib/**` 另一摊未纳入。
 
 ---
 
