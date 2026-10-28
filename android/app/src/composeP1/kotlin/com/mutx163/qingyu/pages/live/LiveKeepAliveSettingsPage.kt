@@ -132,7 +132,7 @@ fun LiveKeepAliveSettingsPage(
                     onOpenSettings = { confirmVisible = true },
                 )
 
-                if (LiveKeepAliveModel.shouldShowDoNotDisturbAccessRow(showDoNotDisturbAccessRow)) {
+                if (showDoNotDisturbAccessRow) {
                     HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
                     LiveDoNotDisturbAccessRow(
                         checked = state.doNotDisturbAccessChecked,
@@ -193,7 +193,7 @@ fun LiveKeepAliveSettingsPage(
         val outcome = LiveKeepAliveModel.resolveRefreshOutcome(probes, retryIfDisabled = true)
         state = state.withAccessibilityProbe(outcome.enabled)
 
-        if (LiveKeepAliveModel.shouldShowDoNotDisturbAccessRow(showDoNotDisturbAccessRow)) {
+        if (showDoNotDisturbAccessRow) {
             // Dart `_DoNotDisturbAccessTileState._refresh()` 没有重试，单读一次。
             state = state.withDoNotDisturbProbe(onProbeDoNotDisturbAccessGranted())
         }

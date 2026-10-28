@@ -158,9 +158,6 @@ object LiveKeepAliveModel {
         return LiveRefreshOutcome(enabled = false, probesUsed = budget + 1)
     }
 
-    /** 勿扰权限行是否该出现在屏上（Dart 里它只在选了免打扰档的显示设置屏出现）。 */
-    fun shouldShowDoNotDisturbAccessRow(showRequested: Boolean): Boolean = showRequested
-
     /** 勿扰权限行的状态文案键（渲染层拿去查 [LiveKeepAliveStrings]）。 */
     fun resolveDoNotDisturbStatus(
         checked: Boolean,

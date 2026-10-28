@@ -219,12 +219,6 @@ class LiveKeepAliveModelTest {
     }
 
     @Test
-    fun `勿扰权限行默认不渲染 宿主显式打开才出现`() {
-        assertFalse(LiveKeepAliveModel.shouldShowDoNotDisturbAccessRow(showRequested = false))
-        assertTrue(LiveKeepAliveModel.shouldShowDoNotDisturbAccessRow(showRequested = true))
-    }
-
-    @Test
     fun `默认状态全部关闭且未探测`() {
         val fresh = LiveKeepAliveState()
         assertFalse(fresh.hideFromRecents)
