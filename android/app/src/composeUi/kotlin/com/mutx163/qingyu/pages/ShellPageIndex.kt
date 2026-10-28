@@ -40,7 +40,9 @@ import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.course.CoursePortExamAdapter
 import com.mutx163.qingyu.course.TimetableCourseService
+import com.mutx163.qingyu.course.TimetableExamService
 import com.mutx163.qingyu.pages.about.AboutStaticPage
 import com.mutx163.qingyu.pages.about.AboutUpdateHostPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
@@ -692,18 +694,33 @@ fun ShellPageContent(
             onEditCustomReminder = {},
             onRemoveCustomReminder = {},
         )
-        "d3.examList" -> ExamListPage(
-            viewState = ExamListLogic.buildListViewState(
-                exams = emptyList(),
-                courses = emptyList(),
-                semesterStart = null,
-                now = LocalDateTime.now(),
-            ),
-            onBack = onBack,
-            onAddExam = {},
-            onOpenExam = {},
-            onDeleteExam = {},
-        )
+        "d3.examList" -> {
+            val repository = wiring.timetable
+            // 快照 TimetableSnapshot 不含 exams，故用 tick 无条件触发重组：
+            // deleteExam 会 notifyStateChanged，回调里 tick++ 让列表立刻刷新。
+            var tick by remember(repository) { mutableStateOf(0) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { tick++ }
+                onDispose { subscription.close() }
+            }
+            val examService = remember(repository) {
+                TimetableExamService(CoursePortExamAdapter(repository))
+            }
+            ExamListPage(
+                viewState = remember(tick) {
+                    ExamListLogic.buildListViewState(
+                        exams = repository.exams,
+                        courses = repository.courses,
+                        semesterStart = null,
+                        now = LocalDateTime.now(),
+                    )
+                },
+                onBack = onBack,
+                onAddExam = { onOpenPage("d3.addExam") },
+                onOpenExam = { onOpenPage("d3.addExam") },
+                onDeleteExam = { examService.deleteExam(it.id) },
+            )
+        }
 
         // ── P3-E 统计族 ───────────────────────────────────────────────
         "e.statistics" -> {
