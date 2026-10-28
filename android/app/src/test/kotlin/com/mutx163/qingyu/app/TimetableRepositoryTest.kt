@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
@@ -441,6 +443,146 @@ class TimetableRepositoryTest {
         currentWeek = 3L,
         createdAt = LocalDateTime.of(2026, 9, 1, 8, 0),
         lastUsedAt = LocalDateTime.of(2026, 9, 2, 8, 0),
+    )
+
+    // ---------- 备份恢复用的原子入口 ----------
+
+    @Test
+    fun replaceActiveProfileContentWritesAllThreeBlocksWithOneNotification() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        repository.addCourse(course("c1", name = "数学"))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        repository.replaceActiveProfileContent(
+            courses = listOf(course("c9", name = "恢复的课")),
+            tasks = listOf(task("t1", courseId = "c9")),
+            exams = listOf(exam("e1", courseId = "c9")),
+        )
+
+        val snapshot = repository.snapshot
+        assertEquals(listOf("c9"), snapshot.courses.map { it.id })
+        assertEquals(listOf("t1"), snapshot.profiles.single().tasks.map { it.id })
+        assertEquals(listOf("e1"), snapshot.profiles.single().exams.map { it.id })
+        // 一次原子替换 = 一次通知（逐个 setter 会是三次）。
+        assertEquals(1, seen.size)
+        assertEquals(listOf("c9"), seen[0].courses.map { it.id })
+        // 三块内容都真落盘了。
+        val written = raw.getString("timetable_profiles")!!
+        assertTrue(written.contains("\"c9\""))
+        assertTrue(written.contains("\"t1\""))
+        assertTrue(written.contains("\"e1\""))
+    }
+
+    @Test
+    fun replaceActiveProfileContentOnWriteFailureLeavesMemoryAndListenersUntouched() {
+        val failing = FailingWriteStore(
+            mapOf(
+                "timetable_profiles" to
+                    "[${profile("p1", listOf(course("c1", name = "数学"))).toJsonString()}]",
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(failing))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        try {
+            repository.replaceActiveProfileContent(listOf(course("c9")), emptyList(), emptyList())
+            fail("落盘失败必须上抛")
+        } catch (expected: IllegalStateException) {
+            assertEquals("disk_full", expected.message)
+        }
+
+        // 先落盘后改内存 ⇒ 失败时内存原样。
+        assertEquals(listOf("c1"), repository.snapshot.courses.map { it.id })
+        assertTrue("落盘失败不许通知", seen.isEmpty())
+    }
+
+    @Test
+    fun replaceAllProfilesPersistsEverythingAndKeepsDanglingIdAsDartDoes() {
+        val raw = InMemoryKeyValueStore()
+        val store = TimetableStore(raw)
+        store.saveProfiles(listOf(profile("p1", listOf(course("c1")))))
+        store.saveActiveProfileId("p1")
+        val repository = TimetableRepository(store)
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        repository.replaceAllProfiles(listOf(profile("p2", listOf(course("c2")))), "ghost")
+
+        // 写侧：Dart 恢复流程不校验 activeProfileId，悬空值原样落盘。
+        assertEquals("ghost", raw.getString("active_timetable_profile_id"))
+        assertEquals(listOf("p2"), repository.snapshot.profiles.map { it.id })
+        // 读侧：本层回落第一份（Dart 只对「情侣导入档」回落，其余悬空保留 → provider 侧 null；
+        // 这里是有意放宽，见 replaceAllProfiles KDoc）。
+        assertEquals("p2", repository.snapshot.activeProfileId)
+        assertEquals(listOf("c2"), repository.snapshot.courses.map { it.id })
+        assertEquals(1, seen.size)
+        assertTrue(raw.getString("timetable_profiles")!!.contains("\"p2\""))
+
+        // 「杀进程重开」：同一份盘、新实例，仍然读得出来（悬空 id 回落）。
+        val reopened = TimetableRepository(TimetableStore(raw))
+        assertEquals(listOf("p2"), reopened.snapshot.profiles.map { it.id })
+        assertEquals("p2", reopened.snapshot.activeProfileId)
+    }
+
+    @Test
+    fun replaceAllProfilesWithNullActiveIdClearsTheKey() {
+        val raw = InMemoryKeyValueStore()
+        val store = TimetableStore(raw)
+        store.saveProfiles(listOf(profile("p1")))
+        store.saveActiveProfileId("p1")
+        val repository = TimetableRepository(store)
+
+        repository.replaceAllProfiles(listOf(profile("p1", listOf(course("c1")))), null)
+
+        assertFalse("null 表示没有激活档案，键要被删掉", raw.contains("active_timetable_profile_id"))
+        // 读侧仍然给得出一个激活档案（回落第一份），宿主不会拿到 null。
+        assertEquals("p1", repository.snapshot.activeProfileId)
+    }
+
+    @Test
+    fun replaceAllProfilesOnWriteFailureLeavesMemoryAndListenersUntouched() {
+        val failing = FailingWriteStore(
+            mapOf(
+                "timetable_profiles" to "[${profile("p1", listOf(course("c1"))).toJsonString()}]",
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(failing))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        try {
+            repository.replaceAllProfiles(listOf(profile("pX")), "pX")
+            fail("落盘失败必须上抛")
+        } catch (expected: IllegalStateException) {
+            assertEquals("disk_full", expected.message)
+        }
+
+        assertEquals(listOf("p1"), repository.snapshot.profiles.map { it.id })
+        assertTrue("落盘失败不许通知", seen.isEmpty())
+    }
+
+    // ---------- 夹具 ----------
+
+    private fun task(id: String, courseId: String? = null) = CourseTask(
+        id = id,
+        title = "作业-$id",
+        courseId = courseId,
+        createdAt = LocalDateTime.of(2026, 9, 1, 8, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 8, 0),
+    )
+
+    private fun exam(id: String, courseId: String) = Exam(
+        id = id,
+        courseId = courseId,
+        name = "考试-$id",
+        dateTime = LocalDateTime.of(2026, 10, 1, 9, 0),
+        startTime = "09:00",
+        endTime = "11:00",
+        createdAt = LocalDateTime.of(2026, 9, 1, 8, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 8, 0),
     )
 
     /** 读正常、**写一律抛**的存储：用来验证「落盘失败 → 回滚 → 不通知」。 */

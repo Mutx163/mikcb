@@ -157,6 +157,71 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         notifyStateChanged()
     }
 
+    // ---------- 备份恢复用的原子入口 ----------
+
+    /**
+     * **原子替换活动档案的三块内容**（课 / 作业 / 考试）：一次落盘、一次通知。
+     *
+     * 为什么要它：`courses` / `tasks` / `exams` 三个 setter **各自都会落盘并通知**
+     * （见 [courses] 等），逐个用就是 3 次写 + 3 次通知——备份恢复这种整块替换
+     * 既慢又会让界面闪三下中间态。本方法一次写、一次通知。
+     *
+     * **调用方义务**：本方法不做任何校验（不知道调用方在恢复什么）。备份包里的
+     * 内容是否合法、是否该覆盖当前档案，由调用方先校验完再调这里。
+     *
+     * **失败语义**：先落盘、成功后才改内存；落盘抛错时内存与监听者都不动
+     * （与 [addCourse] 等同一套「成功才通知」）。落盘本身是两次 key 写
+     * （profiles + active id），两次之间失败会留下「盘新内存旧」——
+     * Dart 侧用 `runSettingsMirrorTransaction` 覆盖这一段，本层未实现事务。
+     */
+    fun replaceActiveProfileContent(
+        courses: List<Course>,
+        tasks: List<CourseTask>,
+        exams: List<Exam>,
+    ) {
+        val current = activeProfile
+        val next = current.copy(courses = courses, tasks = tasks, exams = exams)
+        val nextProfiles = upsertProfile(next)
+        // 先落盘：失败则内存与监听者都不动。
+        store.saveProfiles(nextProfiles)
+        store.saveActiveProfileId(next.id)
+        loadedProfiles = nextProfiles
+        loadedActiveProfileId = next.id
+        notifyStateChanged()
+    }
+
+    /**
+     * **整份替换所有档案 + 指定激活项**（多档案备份恢复）。**破坏性操作。**
+     *
+     * ## 调用方义务（校验先行）
+     *
+     * 本方法**不校验、不合并、不备份**：传进来什么就写什么，当前档案列表会被整份替换掉。
+     * 调用方必须先自己校验（备份包完整性、是否要覆盖、是否要留旧档），否则用户数据
+     * 会无声消失。`activeProfileId` 传 null 表示「没有激活档案」（会删掉盘上那个键）。
+     *
+     * ## `activeProfileId` 不在 [profiles] 里时的口径（去 Dart 核过，不是自创）
+     *
+     * - **写侧**：Dart 恢复流程是 `saveProfiles(profiles)` 之后直接
+     *   `setActiveProfileId(activeProfileId)`（`timetable_import_export_service.dart:296-301`），
+     *   **不校验、不抛异常、不偷偷改写**。本方法照做：悬空 id 原样落盘。
+     * - **读侧**：Dart 在 `timetable_provider.dart:864-872` 只对「指向**情侣导入**档案」
+     *   这一种情况回落（换成本档案列表里第一个非情侣档案）；其余悬空 id **原样保留**，
+     *   表现为 `activeProfile` 为 null。
+     * - ⚠️ **本层读侧比 Dart 宽松**（task-7 已裁定并写进 KDoc）：任何悬空 id 都回落
+     *   第一份档案，保证宿主拿到的 `activeProfile` 永不为 null。这是**有意偏离**，
+     *   不是漏抄。
+     *
+     * **失败语义**：先落盘、成功后才改内存；落盘抛错时内存与监听者都不动。
+     */
+    fun replaceAllProfiles(profiles: List<TimetableProfile>, activeProfileId: String?) {
+        // 先落盘：失败则内存与监听者都不动。
+        store.saveProfiles(profiles)
+        store.saveActiveProfileId(activeProfileId)
+        loadedProfiles = profiles
+        loadedActiveProfileId = activeProfileId
+        notifyStateChanged()
+    }
+
     /**
      * 切当前周次（宿主 `onWeekChanged` 的落点）。
      *
