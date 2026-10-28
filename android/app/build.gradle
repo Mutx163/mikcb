@@ -224,6 +224,21 @@ android {
             // 壳 PagesShellActivity 直接用它，不挂就会 Unresolved reference。
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
         }
+
+        // JVM 单测的**变体专属**源集（2026-10-27 的教训，2026-10-28 补登记）。
+        //
+        // `src/test/` 是**所有变体共享**的测试源集，所以放进那里的用例只能引用
+        // `main` 源集的类。而 `src/composeP1/` 只有 compose 变体编译得到，
+        // 于是 `QingyuTextStylesTest` 一旦放在 `src/test/` 下，
+        // `prod` 变体的 `:app:testProdDebugUnitTest`（**CI 跑的就是这条**）
+        // 就会因 Unresolved reference 编译失败——2026-10-27 起它红了一整晚。
+        //
+        // 规矩：**测 compose 变体专属代码的用例一律放 `src/testComposeUi/`**。
+        // 这里显式登记而不是只靠默认目录约定，是为了避免「源集名改了、
+        // 测试静默不跑、而 prod 又刚好绿了」这种最难查的组合。
+        testComposeUi {
+            kotlin.srcDirs += 'src/testComposeUi/kotlin'
+        }
     }
 
     // composeP1 迁移期**停役**（台账 §7.2）：它扫整棵暂存区 pages/，红是设计使然。

@@ -146,11 +146,12 @@ object ShellPageCatalog {
                 page("P3-B", "homeWidget", "设置 · 首页小组件", ShellPageDataKind.DEMO),
                 page("P3-B", "homeNavigation", "设置 · 首页导航", ShellPageDataKind.DEMO),
                 page("P3-B", "homeMenuEditor", "设置 · 首页菜单编辑器", ShellPageDataKind.DEMO),
-                page(
-                    "P3-B", "timetablePage", "设置 · 课表页面", ShellPageDataKind.UNAVAILABLE,
-                    note = "${ShellBlockReason.MISSING_RENDERER.label}：Kotlin 侧没有这一屏的 spec，SettingsBatchCoverageTest 也未登记",
-                    blockedBy = ShellBlockReason.MISSING_RENDERER,
-                ),
+                // 2026-10-28 补口：这一屏原先标「暂不可用」（缺整页渲染层），
+                // 现已补上 spec（`SettingsTimetablePageSettingsPage`）并登记进
+                // `SettingsBatchCoverageTest`，同时接上分派分支。台账原记
+                // P3-B「20 页全迁」是人工登记失真——20 页共用一个
+                // `SettingsPageScreen(spec)`，「没写页面函数」与「没写页面」长得一样。
+                page("P3-B", "timetablePage", "设置 · 课表页面", ShellPageDataKind.DEMO),
                 page("P3-B", "courseCard", "设置 · 课程卡片", ShellPageDataKind.DEMO),
                 page("P3-B", "live", "设置 · 实时活动", ShellPageDataKind.DEMO),
                 page("P3-B", "liveSelfCheck", "设置 · 实时活动自检", ShellPageDataKind.DEMO),

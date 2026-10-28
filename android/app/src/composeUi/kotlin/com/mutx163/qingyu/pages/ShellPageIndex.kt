@@ -219,6 +219,11 @@ fun ShellPageContent(
         "b.homeNavigation" -> SettingsScreen(SettingsHomeNavigationPage.spec(SettingsHomeNavigationState()), onBack)
         "b.homeMenuEditor" -> SettingsScreen(SettingsHomeMenuEditorPage.spec(SettingsHomeMenuEditorState()), onBack)
         "b.courseCard" -> SettingsScreen(SettingsCourseCardPage.spec(SettingsPageState()), onBack)
+        // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
+        "b.timetablePage" -> SettingsScreen(
+            SettingsTimetablePageSettingsPage.spec(TimetablePageSettingsState()),
+            onBack,
+        )
         "b.live" -> SettingsScreen(SettingsLivePage.spec(SettingsPageState()), onBack)
         "b.liveSelfCheck" -> SettingsScreen(SettingsLiveSelfCheckPage.spec(SettingsPageState()), onBack)
         "b.holiday" -> SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()), onBack)

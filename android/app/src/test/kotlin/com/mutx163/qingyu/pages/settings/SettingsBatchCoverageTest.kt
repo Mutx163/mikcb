@@ -58,6 +58,14 @@ class SettingsBatchCoverageTest {
         "settings/settings_home_navigation.dart" to setOf("settings-home-navigation"),
         "settings/settings_home_menu_editor.dart" to setOf("settings-home-menu-editor"),
         "timetable_settings_screen.dart" to setOf("settings-timetable"),
+        // ── 补口（2026-10-28）──────────────────────────────────────────
+        // `l4-recon` 逐页核对发现这一页**从来没有落点**：入口行
+        // `timetable.pageSettings` 一直指着 `/settings/timetable-page`，
+        // 而设置族里没有 spec 接它。台账原记「20 页全迁」是人工登记失真的结果——
+        // 20 页共用一个 `SettingsPageScreen(spec)`，所以「没写页面函数」
+        // 与「没写页面」在登记表里长得一模一样。登记进这里之后，
+        // 「登记了 id 但构造不出来」会直接红。
+        "settings/settings_timetable_page.dart" to setOf("settings-timetable-page"),
 
         // ── P3-B-3 行为与系统（settings-behavior）──────────────────────
         "settings/settings_live.dart" to setOf("settings-live", "settings-live-self-check"),
@@ -125,6 +133,13 @@ class SettingsBatchCoverageTest {
             SettingsHomeMenuEditorPage.spec(SettingsHomeMenuEditorState())
         },
         "settings-timetable" to { SettingsTimetablePage.spec(SettingsTimetableState()) },
+        // 补口：截屏提示那一行是条件行（不支持截屏回调的平台整行不出现），
+        // 所以这里用「支持」态构造，保证条件分支里的行也被真的建一次。
+        "settings-timetable-page" to {
+            SettingsTimetablePageSettingsPage.spec(
+                TimetablePageSettingsState(screenshotShareSupported = true),
+            )
+        },
 
         // P3-B-3
         "settings-live" to { SettingsLivePage.spec(SettingsPageState()) },
@@ -189,9 +204,10 @@ class SettingsBatchCoverageTest {
     @Test
     fun `已交付页面数不得低于基线`() {
         // 2026-10-27 基线：18 个 Dart 页面文件。只许变大；变小说明已交付的页面被删了。
+        // 2026-10-28 补口后升到 19（`settings/settings_timetable_page.dart` 补上落点）。
         assertTrue(
             "已交付页面数回退：当前 ${deliveredSpecs.size} 个文件",
-            deliveredSpecs.size >= 18,
+            deliveredSpecs.size >= 19,
         )
     }
 }

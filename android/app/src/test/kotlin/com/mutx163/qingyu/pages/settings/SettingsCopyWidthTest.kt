@@ -37,6 +37,10 @@ class SettingsCopyWidthTest {
             ),
         ),
         SettingsCourseCardPage.spec(SettingsPageState(timetableUseUnifiedCardColor = true)),
+        // 补口页（2026-10-28）：用「支持截屏提示」的状态，把条件行也纳入宽度检查
+        SettingsTimetablePageSettingsPage.spec(
+            TimetablePageSettingsState(screenshotShareSupported = true),
+        ),
     )
 
     @Test
