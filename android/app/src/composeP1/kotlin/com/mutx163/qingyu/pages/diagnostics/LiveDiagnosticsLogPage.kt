@@ -46,9 +46,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -99,19 +99,19 @@ fun LiveDiagnosticsLogPage(
     onRefresh: (() -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
-    // 顶栏折叠行为：Dart 侧 live_diagnostics_log_viewer_screen.dart 走 HyperosSubpage，
-    // collapsibleLargeTitle 默认 true ⇒ 可折叠大标题。必须同时传给 TopAppBar 与内容 nestedScroll。
+    // 顶栏变体：Dart 侧 live_diagnostics_log_viewer_screen.dart 也是 HyperosSubpage，但显式写了
+    // collapsibleLargeTitle: false（:481，日志页顶部有一段不动的死区）⇒ 对应官方 SmallTopAppBar，
+    // 单行小标题、本来就没有大标题可收。别再退回 TopAppBar，那会凭空长出一个大标题。
     val scrollBehavior = MiuixScrollBehavior()
     // 弹层显隐是纯 UI 状态（Dart 用 showHyperosSheet），不属于模型层。
     var showOptions by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
+        // 顶栏进槽位：官方 SmallTopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = viewState.title,
-                largeTitle = viewState.title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {

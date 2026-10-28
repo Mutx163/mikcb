@@ -92,6 +92,47 @@ class PageScaffoldGuardTest {
 
     private fun relOf(file: File): String = file.relativeTo(pagesRoot).path.replace(File.separatorChar, '/')
 
+    /**
+     * 仓库根：从 `android/app/src` 往上找到同时有 `lib/screens` 与 `pubspec.yaml` 的那层。
+     *
+     * 有它才能把 Dart 原版当**前提**来钉（见下面那条变体一致性判据）。
+     * 找不到就失败，不静默跳过——跳过等于判据不存在。
+     */
+    private fun repoRoot(): File {
+        var dir: File? = androidSrc().absoluteFile
+        while (dir != null) {
+            if (File(dir, "lib/screens").isDirectory && File(dir, "pubspec.yaml").isFile) return dir
+            dir = dir.parentFile
+        }
+        throw AssertionError(
+            "找不到仓库根（lib/screens 与 pubspec.yaml）—— 守卫无法验证，按失败处理。" +
+                "当前工作目录：${System.getProperty("user.dir")}",
+        )
+    }
+
+    /**
+     * 返回**代码行**里提到顶栏组件名的行号（从 1 开始）。
+     *
+     * 用途是「判据覆盖自检」：范围 S 靠一条要求括号紧邻的正则认顶栏，
+     * Kotlin 却允许 `TopAppBar` 与左括号之间留空白，写成那样整页会**悄无声息地**
+     * 从 S 里消失（守卫与离线脚本同时瞎）。这里改用最松的判据——代码行里提到就认，
+     * 再去要求它落进 S，于是「括号前多一个空格」这种写法跑不掉。
+     *
+     * 两个变体名：`SmallTopAppBar` 里也含 `TopAppBar`，所以整行先看有没有前者。
+     * 注释（行首星号、行首双斜杠、行内双斜杠之后）与 `import` 行都不算：
+     * 2026-10-28 实测 `about/PagesCommon.kt` 的文档注释里就摆着示例代码，
+     * 用子串判会把注释当成真顶栏，造出假红。
+     */
+    private fun barMentionLines(text: String): List<Int> =
+        text.lineSequence()
+            .mapIndexedNotNull { index, line ->
+                val code = line.substringBefore("//").trimStart()
+                val isComment = code.startsWith("*") || code.startsWith("/*")
+                val mentionsBar = "TopAppBar" in code && "SmallTopAppBar" !in code
+                if (!isComment && !code.startsWith("import ") && mentionsBar) index + 1 else null
+            }
+            .toList()
+
     private fun pageFile(relative: String): File = File(pagesRoot, relative)
 
     private fun read(relative: String): String {
@@ -275,6 +316,141 @@ class PageScaffoldGuardTest {
     }
 
     // ───────────────────────── 2. 历史三条坑（受管页 + 范围 S） ─────────────────────────
+
+    // ───────────── 1.5 Dart 变体一致性与判据覆盖自检（2026-10-28 独立复核新增） ─────────────
+
+    /**
+     * Dart 侧明确关掉折叠大标题的页面，Compose 侧不许再出现大标题。
+     *
+     * 2026-10-28 独立复核抓到一例：`diagnostics/LiveDiagnosticsLogPage.kt` 的注释写着
+     * 「Dart 侧走 HyperosSubpage，collapsibleLargeTitle 默认 true ⇒ 可折叠大标题」，
+     * 于是照可折叠大标题接了线。但 Dart 那页是**显式**关掉的：
+     * `lib/screens/live_diagnostics_log_viewer_screen.dart` 里写着 false，
+     * 上面还留了一段说明——大标题收起后 body 顶部 inset 仍按展开态保持，长列表 delta=0 不重测，
+     * 大标题区会变成一条永久死区，筛选条底下跟一条空白。工具页要的是固定小标题栏。
+     *
+     * 这类错**原判据一条都拦不住**：只查「有 largeTitle + 有 scrollBehavior」的写法，
+     * 参数齐全、方向反了照样绿。所以这里把「Dart 说了 false」的页面逐个钉住，
+     * 并顺手盯住 Dart 那一行还在不在——前提变了要重新对照，不能默默放过。
+     */
+    @Test
+    fun `Dart 侧关掉折叠大标题的页面不许再出现大标题`() {
+        val entries = listOf(
+            "lib/screens/live_diagnostics_log_viewer_screen.dart" to
+                "diagnostics/LiveDiagnosticsLogPage.kt",
+            "lib/screens/import/warehouse/warehouse_adapter_web_login_screen.dart" to
+                "import/warehouse/WarehouseWebLoginPage.kt",
+        )
+        val root = repoRoot()
+        entries.forEach { (dartRel, composeRel) ->
+            val dart = File(root, dartRel)
+            assertTrue("Dart 原版文件不存在：$dartRel", dart.isFile)
+            assertTrue(
+                "$dartRel 里已经不再写 collapsibleLargeTitle: false —— 前提变了，" +
+                    "请重新对照 Dart 与 Compose 的页面壳变体，再决定这条判据的去留。",
+                "collapsibleLargeTitle: false" in dart.readText(),
+            )
+            assertTrue(
+                "$composeRel 用了大标题，但 Dart 原版 $dartRel 明确写了 " +
+                    "collapsibleLargeTitle: false（这页不该有大标题）：请改用 SmallTopAppBar，" +
+                    "照 settings/SettingsPageRenderers.kt 的写法。",
+                "largeTitle" !in read(composeRel),
+            )
+        }
+    }
+
+    /**
+     * 判据覆盖自检：代码里出现顶栏组件名的页面，都必须落进范围 S。
+     *
+     * 范围 S 用一条要求括号紧邻的正则认顶栏，于是「组件名与左括号之间留个空白」
+     * 这种合法排版会让整页从守卫里消失；注释里的提及反过来会造出假红。
+     * 这里按 [barMentionLines] 的结论反查一遍，把两个方向都堵上。
+     */
+    @Test
+    fun `代码里出现的顶栏组件名都必须落进判据范围`() {
+        val scope = collapsibleBarPages().map { it.first }.toSet()
+        val offenders = allPageFiles().mapNotNull { file ->
+            val rel = relOf(file)
+            when {
+                rel in scope -> null
+                barMentionLines(file.readText()).isEmpty() -> null
+                else -> rel
+            }
+        }
+        assertTrue(
+            "以下页面在代码里组合了顶栏，却没被范围 S 认出来（判据可能写坏了，" +
+                "会让整页从守卫里消失）：\n" +
+                offenders.joinToString("\n") { "  $it" },
+            offenders.isEmpty(),
+        )
+    }
+
+    /**
+     * 取每个骨架调用的实参表文本：从组件名起，到「后面跟左花括号」的那个右括号为止
+     * （也就是尾随 lambda 的开始处）。这样多行实参、实参里嵌函数调用都切不断。
+     */
+    private fun skeletonCallTexts(text: String): List<String> {
+        val names = listOf("QingyuPageScaffold(", "ImportPageScaffold(")
+        val calls = mutableListOf<String>()
+        for (name in names) {
+            var from = text.indexOf(name)
+            while (from >= 0) {
+                var end = -1
+                var i = from + name.length
+                while (i < text.length) {
+                    if (text[i] == ')') {
+                        var j = i + 1
+                        while (j < text.length && text[j].isWhitespace()) j++
+                        if (j < text.length && text[j] == '{') {
+                            end = i + 1
+                            break
+                        }
+                    }
+                    i++
+                }
+                calls += text.substring(from, if (end < 0) text.length else end)
+                from = text.indexOf(name, from + name.length)
+            }
+        }
+        return calls
+    }
+
+    /**
+     * 这个文件有没有「真有大标题」的骨架调用：骨架里 `smallTopBar = true` 走的是官方
+     * SmallTopAppBar，单行小标题、压根没有大标题可以收，不该被下面的接线判据要求。
+     */
+    private fun hasCollapsibleSkeletonCall(text: String): Boolean =
+        skeletonCallTexts(text).any { "smallTopBar = true" !in it }
+
+    /**
+     * 用共用骨架的页面必须自己把滚动手势接上（2026-10-28 复核补的盲区）。
+     *
+     * 范围 S 只认「自己组合了顶栏」的文件，于是用骨架的页面**一个都不在守卫里**：
+     * 顶栏在骨架里、列表在调用页手里，接线责任落在调用页，却没有任何测试看着它。
+     * 现状可折叠的那些都接对了，这条是把「零防护」补上——以后谁改这些页、或改骨架
+     * `content(innerPadding, scrollBehavior)` 的契约，都会有测试红。
+     *
+     * 只要求「可折叠大标题」的调用页（`smallTopBar` 缺省 false 或显式 false）；
+     * `smallTopBar = true` 的页面渲染单行小标题，没有大标题可收，豁免。
+     */
+    @Test
+    fun `用共用骨架的页面必须自己把滚动手势接上`() {
+        val callers = allPageFiles()
+            .map { relOf(it) to it.readText() }
+            .filter { (rel, text) -> rel !in sharedScaffolds && hasCollapsibleSkeletonCall(text) }
+        assertTrue(
+            "只找到 ${callers.size} 个用骨架渲染可折叠大标题的调用页，明显不对——判据可能写坏了，守卫在空跑。",
+            callers.size >= 6,
+        )
+        val offenders = callers.filter { (_, text) -> !wiringTokens(text) }.map { it.first }
+        assertTrue(
+            "以下页面用共用骨架渲染列表，却没把滚动手势接上（大标题收不起来）：\n" +
+                offenders.joinToString("\n") { "  $it" } +
+                "\n骨架把行为交给调用页，调用页要在自己的滚动容器上写 " +
+                "Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)。",
+            offenders.isEmpty(),
+        )
+    }
 
     @Test
     fun `nestedScroll 必须写在滚动修饰符外层`() {
