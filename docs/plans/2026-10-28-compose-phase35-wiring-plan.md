@@ -71,6 +71,27 @@ L4 在 `composeP1/.../app/`，L5 是 Lead 区。四层互不重叠；同一目�
 > `android.*`，整个 `app/` 会被静默跳过，表现为「测试里 app 的符号全都 Unresolved」。
 > **Android 胶水（Context、Activity、WebView 之类）一律放 `platform/`。**
 > 2026-10-28 已把 `app` 加进该脚本的 `sharedModelDirs` 名单。
+>
+> ⚠️⚠️ **`app/` 不许 import 任何 `com.mutx163.qingyu.pages.<域>`。**（2026-10-28 补，已加机器守卫）
+>
+> 这是上一条的**推广形式**，也是同一天踩了**三次**的坑（`sync/`、`transfer/`、`app/`）。
+> 推导很短：`app/` 在 `sharedModelDirs` 里 ⇒ **被每一次 L0 无条件收录**；
+> 而 `pages/<域>` 只在 `-Module <那个域>` 时才收 ⇒ 一旦 `app/` 引用了它，
+> **除那个域以外的所有模块的 L0 都会红，且报错文件是 `app/` 里那一个**——
+> 别人看到的是「我的模块编译不过」，根本查不到源头。
+> 最坏的一次红了 **2 小时 40 分**（`AddTaskFormReducer` 引用 `pages.task`），代价由所有泳道一起付。
+>
+> **规则要写不变量，不要写当时那个例子**：最初我只写了「不许 import `pages.settings.*`」
+> （那是我踩坑时看到的实例），下一个人只记住例子，换成 `pages.task` 又踩一次。
+>
+> **怎么修**：把文件搬进它依赖的那个 `pages/<域>/` 目录（L0 源集**按目录**收集，
+> 搬进去后只有那个模块会编它）。**包名可以保持不变**，这样不会打断引用方的 import。
+>
+> **机器守卫**：`test/.../app/AppLayerPurityTest.kt` 扫描 `main/.../app/**/*.kt`，
+> 断言①无 `import com.mutx163.qingyu.pages.`、②无 Android/Compose/miuix 导入、
+> ③扫描器必须真的扫到 ≥5 个文件（否则路径写错时守卫会静默变绿）。
+> 探针已验证：塞一个 `import ...pages.task.X` 并跑 `-Module pages/task`（此时两边都在源集里、
+> **编译得过**，正是守卫要防的场景）⇒ 守卫红并打印违规行；删除后复绿。
 
 ### 2.1 源集边界（2026-10-28 踩过两次，写死在这里）
 
