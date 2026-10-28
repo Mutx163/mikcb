@@ -164,6 +164,7 @@ import com.mutx163.qingyu.pages.task.AddTaskPage
 import com.mutx163.qingyu.pages.task.AddTaskViewState
 import com.mutx163.qingyu.pages.task.TaskDateFilter
 import com.mutx163.qingyu.pages.task.TaskListViewState
+import com.mutx163.qingyu.pages.task.TaskListController
 import com.mutx163.qingyu.pages.task.TaskListPage
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
@@ -583,16 +584,31 @@ fun ShellPageContent(
             todayIso = LocalDate.now().toString(),
             onBack = onBack,
         )
-        "d2.taskList" -> TaskListPage(
-            viewState = shellSampleTaskViewState(),
-            onBack = onBack,
-            onDateFilterChange = {},
-            onCourseFilterClick = {},
-            onAddTask = {},
-            onEditTask = {},
-            onToggleTask = {},
-            onDeleteTask = {},
-        )
+        "d2.taskList" -> {
+            val repository = wiring.timetable
+            // observe 回调里 tick++ 无条件触发重组：勾选/删除任务后会
+            // notifyStateChanged，列表据此即时刷新。
+            var tick by remember(repository) { mutableStateOf(0) }
+            DisposableEffect(repository) {
+                val subscription = repository.observe { tick++ }
+                onDispose { subscription.close() }
+            }
+            val taskController = remember(repository) { TaskListController(repository) }
+            TaskListPage(
+                viewState = remember(tick, taskController.dateFilter, taskController.courseFilter) {
+                    taskController.viewState()
+                },
+                onBack = onBack,
+                onDateFilterChange = { taskController.setDateFilter(it); tick++ },
+                // TODO(接壳): 课程筛选弹层尚未接（controller.courseOptions() 已就绪）。
+                onCourseFilterClick = {},
+                onAddTask = { wiring.pendingTaskCourse = null; onOpenPage("d2.addTask") },
+                // TODO(接壳): 编辑既有任务需 AddTask 表单支持「载入已有任务」，暂留空。
+                onEditTask = {},
+                onToggleTask = { taskController.toggleTask(it) },
+                onDeleteTask = { taskController.deleteTask(it) },
+            )
+        }
         // T1 收尾：作业表单接上真状态机。
         // 之前这里是 `AddTaskViewState(isEditing = false, title = "")` 写死 + 全部回调空 `{}`
         // ⇒ 从课程操作弹层点「作业」进来，课程不会被预选，表单也不能输入/保存。
