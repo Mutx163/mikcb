@@ -97,6 +97,25 @@ class TimetableSettingsModelTest {
         assertEquals("#93C5FD", model.weekdayBarAccentColorDark)
         assertEquals("#757575", model.timeAxisFontColorLight)
         assertEquals("#FFFFFF", model.timeAxisFontColorDark)
+        // ---- batch 3：首页导航与玻璃坞 ----
+        assertEquals(HomeTitleStyle.CLASSIC, model.homeTitleStyle) // :1478
+        assertEquals(TimetableHomeViewMode.WEEK, model.timetableHomeViewMode) // :1481
+        assertEquals(HomeNavigationForm.CLASSIC, model.homeNavigationForm) // :1484
+        assertEquals(HomeMenuStyle.LIST, model.homeMenuStyle) // :1489
+        assertTrue(model.homeGridMenuActions.isEmpty()) // :1500（非 List → 空表，无默认排列）
+        // 缺键时由两个 Tab 开关推导（两者缺省 true）→ ['day','week']。
+        assertEquals(listOf("day", "week"), model.glassDockActions) // :1492-1499
+        assertTrue(model.glassDockShowDayTab) // :1504
+        assertTrue(model.glassDockShowSettingsTab) // :1505
+        assertTrue(model.glassDockShowWeekTab) // :1507
+        assertEquals("addCourse", model.glassDockButtonEntryId) // :1508
+        assertNull(model.glassDockButtonIconName) // :1510
+        assertFalse(model.glassDockShowAddButton) // :1511
+        assertEquals(
+            BackToCurrentWeekButtonStyle.FLOATING,
+            model.timetableBackToCurrentWeekButtonStyle, // :1513
+        )
+        assertEquals(0.96, model.timetableFloatingBackToCurrentWeekButtonOpacity, 0.0) // :1517
     }
 
     @Test
@@ -364,6 +383,10 @@ class TimetableSettingsModelTest {
             weekdayBarAccentColorDark = "#404040",
             timeAxisFontColorLight = "#505050",
             timeAxisFontColorDark = "#606060",
+            // 两个列表键要给「规范化后稳定」的值，否则往返会被 normalize 改写：
+            // 空表读回来会补钉住项 / 走旧档推导（见本文件里那条不对称用例）。
+            homeGridMenuActions = listOf("settings"),
+            glassDockActions = listOf("day", "week"),
         )
 
         store.save(custom)
@@ -373,6 +396,179 @@ class TimetableSettingsModelTest {
             "#000000",
             TimetableSettingsModel.fromJson(emptyMap()).weekdayBarFontColorLight,
         )
+    }
+
+    // ---------- batch 3 专有口径 ----------
+
+    @Test
+    fun backToCurrentWeekButtonStyleMigratesInlineAndUnknownToFloating() {
+        // 读侧不返回 INLINE：存量 'inline'（入口已下线）与未知值都被迁移成 floating。
+        assertEquals(
+            BackToCurrentWeekButtonStyle.FLOATING,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableBackToCurrentWeekButtonStyle":"inline"}"""),
+            ).timetableBackToCurrentWeekButtonStyle,
+        )
+        assertEquals(
+            BackToCurrentWeekButtonStyle.FLOATING,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableBackToCurrentWeekButtonStyle":"nope"}"""),
+            ).timetableBackToCurrentWeekButtonStyle,
+        )
+        assertEquals(
+            BackToCurrentWeekButtonStyle.FLOATING,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableBackToCurrentWeekButtonStyle":"floating"}"""),
+            ).timetableBackToCurrentWeekButtonStyle,
+        )
+        // 写侧仍能表达旧值（磁盘字符串逐字保留）。
+        assertEquals("inline", BackToCurrentWeekButtonStyle.INLINE.value)
+    }
+
+    @Test
+    fun backToCurrentWeekOpacityIsClamped() {
+        assertEquals(
+            1.0,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableFloatingBackToCurrentWeekButtonOpacity":9.0}"""),
+            ).timetableFloatingBackToCurrentWeekButtonOpacity,
+            0.0,
+        )
+        assertEquals(
+            0.55,
+            TimetableSettingsModel.fromJson(
+                json("""{"timetableFloatingBackToCurrentWeekButtonOpacity":0.1}"""),
+            ).timetableFloatingBackToCurrentWeekButtonOpacity,
+            0.0,
+        )
+    }
+
+    @Test
+    fun glassDockActionsDerivesFromTabSwitchesOnlyWhenKeyIsMissingOrInvalid() {
+        // 缺键 → 由两个开关推导（缺省都 true）。
+        assertEquals(
+            listOf("day", "week"),
+            TimetableSettingsModel.fromJson(emptyMap()).glassDockActions,
+        )
+        // 开关关掉一个 → 推导结果跟着变。
+        assertEquals(
+            listOf("week"),
+            TimetableSettingsModel.fromJson(json("""{"glassDockShowDayTab":false}"""))
+                .glassDockActions,
+        )
+        assertEquals(
+            emptyList<String>(),
+            TimetableSettingsModel.fromJson(
+                json("""{"glassDockShowDayTab":false,"glassDockShowWeekTab":false}"""),
+            ).glassDockActions,
+        )
+        // 类型不对（非 List）也走推导分支。
+        assertEquals(
+            listOf("day", "week"),
+            TimetableSettingsModel.fromJson(json("""{"glassDockActions":"day"}"""))
+                .glassDockActions,
+        )
+        // **显式给了列表就按它来**（含显式空表 → 空表，不推导）。
+        assertEquals(
+            listOf("tasks"),
+            TimetableSettingsModel.fromJson(json("""{"glassDockActions":["tasks"]}"""))
+                .glassDockActions,
+        )
+        assertEquals(
+            emptyList<String>(),
+            TimetableSettingsModel.fromJson(
+                json("""{"glassDockActions":[],"glassDockShowDayTab":true}"""),
+            ).glassDockActions,
+        )
+        // 去重 + 剔空串/非字符串 + 截断到 5。
+        assertEquals(
+            listOf("day", "week", "tasks", "exams", "statistics"),
+            TimetableSettingsModel.fromJson(
+                json(
+                    """{"glassDockActions":["day","day","","week",7,"tasks","exams",
+                       "statistics","importCourses"]}""".trimIndent(),
+                ),
+            ).glassDockActions,
+        )
+    }
+
+    @Test
+    fun homeGridMenuActionsNormalizePinsSettingsAndCapsAtEight() {
+        // 去重 + 剔空串/非字符串。
+        assertEquals(
+            listOf("overview", "settings"),
+            TimetableSettingsModel.fromJson(
+                json("""{"homeGridMenuActions":["overview","overview","",3,"settings"]}"""),
+            ).homeGridMenuActions,
+        )
+        // 缺钉住项 → 补上。
+        assertEquals(
+            listOf("overview", "statistics", "settings"),
+            TimetableSettingsModel.fromJson(
+                json("""{"homeGridMenuActions":["overview","statistics"]}"""),
+            ).homeGridMenuActions,
+        )
+        // 已满 8 且缺钉住项 → 先丢最后一个再补（仍是 8 个，且含 settings）。
+        val full = (1..8).joinToString(",") { "\"a$it\"" }
+        val normalized = TimetableSettingsModel.fromJson(
+            json("""{"homeGridMenuActions":[$full]}"""),
+        ).homeGridMenuActions
+        assertEquals(8, normalized.size)
+        assertTrue(normalized.contains("settings"))
+        assertFalse("最后一个要给钉住项腾位", normalized.contains("a8"))
+        // 非 List → 空表（渲染层自己回退默认排列）。
+        assertEquals(
+            emptyList<String>(),
+            TimetableSettingsModel.fromJson(json("""{"homeGridMenuActions":"overview"}"""))
+                .homeGridMenuActions,
+        )
+    }
+
+    @Test
+    fun homeNavigationFormUsesSnakeCaseDiskValue() {
+        assertEquals("glass_dock", HomeNavigationForm.GLASS_DOCK.value)
+        assertEquals(
+            HomeNavigationForm.GLASS_DOCK,
+            TimetableSettingsModel.fromJson(json("""{"homeNavigationForm":"glass_dock"}"""))
+                .homeNavigationForm,
+        )
+        // 驼峰写法不是磁盘值 → 回落 classic。
+        assertEquals(
+            HomeNavigationForm.CLASSIC,
+            TimetableSettingsModel.fromJson(json("""{"homeNavigationForm":"glassDock"}"""))
+                .homeNavigationForm,
+        )
+        assertEquals(
+            TimetableHomeViewMode.MONTH,
+            TimetableSettingsModel.fromJson(json("""{"timetableHomeViewMode":"month"}"""))
+                .timetableHomeViewMode,
+        )
+    }
+
+    @Test
+    fun emptyGridMenuGainsPinnedSettingsWhileEmptyDockMenuStaysEmpty() {
+        // 两个列表键的「空」不对称，且都**与构造默认不同**：
+        // - homeGridMenuActions 显式空数组 → normalize 会补钉住项 'settings'（:200-205）；
+        //   但**缺键**（非 List）→ 直接空表，不补（:188-190）。
+        assertEquals(
+            listOf("settings"),
+            TimetableSettingsModel.fromJson(json("""{"homeGridMenuActions":[]}"""))
+                .homeGridMenuActions,
+        )
+        assertEquals(
+            emptyList<String>(),
+            TimetableSettingsModel.fromJson(emptyMap()).homeGridMenuActions,
+        )
+        // - glassDockActions 显式空数组 → 保持空表（不钉项，渲染层自己回落默认排列）。
+        assertEquals(
+            emptyList<String>(),
+            TimetableSettingsModel.fromJson(
+                json("""{"glassDockActions":[],"glassDockShowDayTab":true}"""),
+            ).glassDockActions,
+        )
+        // 构造默认也是空表，所以「存一个空表再读」对 glassDock 是恒等的、对 grid 不是。
+        assertTrue(TimetableSettingsModel().glassDockActions.isEmpty())
+        assertTrue(TimetableSettingsModel().homeGridMenuActions.isEmpty())
     }
 
     // ---------- 逐键往返 ----------
@@ -444,6 +640,22 @@ class TimetableSettingsModelTest {
             weekdayBarAccentColorDark = "#0D0D0D",
             timeAxisFontColorLight = "#0E0E0E",
             timeAxisFontColorDark = "#0F0F0F",
+            // ---- batch 3 ----
+            homeTitleStyle = HomeTitleStyle.BRAND,
+            timetableHomeViewMode = TimetableHomeViewMode.MONTH,
+            homeNavigationForm = HomeNavigationForm.GLASS_DOCK,
+            homeMenuStyle = HomeMenuStyle.GRID,
+            homeGridMenuActions = listOf("overview", "settings"),
+            glassDockActions = listOf("day", "week", "tasks"),
+            glassDockShowDayTab = false,
+            glassDockShowSettingsTab = false,
+            glassDockShowWeekTab = false,
+            glassDockButtonEntryId = "settings",
+            glassDockButtonIconName = "ic_test",
+            glassDockShowAddButton = true,
+            // 读侧永远 floating，所以往返值只能取 FLOATING。
+            timetableBackToCurrentWeekButtonStyle = BackToCurrentWeekButtonStyle.FLOATING,
+            timetableFloatingBackToCurrentWeekButtonOpacity = 0.8,
         )
 
         store.save(original)
@@ -544,7 +756,13 @@ class TimetableSettingsModelTest {
 
         val model = store.load()
 
-        assertEquals(TimetableSettingsModel(), model)
+        // 注意：**构造默认 ≠ 读侧缺省**。缺 key 时 `glassDockActions` 会由两个 Tab 开关
+        // 推导出 ['day','week']（:1492-1499），而构造默认是空表；`homeGridMenuActions`
+        // 缺 key 是空表（非 List → 空表），但**显式空数组**读回来会补上钉住项 ['settings']。
+        assertEquals(
+            TimetableSettingsModel(glassDockActions = listOf("day", "week")),
+            model,
+        )
         assertEquals("[1,2,3]", raw.rawSnapshot()["flutter.timetable_settings_corrupt_backup_999"])
         assertFalse(raw.contains("timetable_settings"))
     }

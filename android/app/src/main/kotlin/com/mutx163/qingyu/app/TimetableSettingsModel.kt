@@ -149,6 +149,39 @@ data class TimetableSettingsModel(
     val weekdayBarAccentColorDark: String = DEFAULT_WEEKDAY_BAR_ACCENT_DARK, // :1764
     val timeAxisFontColorLight: String = DEFAULT_TIME_AXIS_FONT_LIGHT, // :1767
     val timeAxisFontColorDark: String = DEFAULT_TIME_AXIS_FONT_DARK, // :1770
+
+    // ---------- 首页导航与玻璃坞（batch 3） ----------
+    val homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC, // :1478
+    val timetableHomeViewMode: TimetableHomeViewMode = TimetableHomeViewMode.WEEK, // :1481
+    val homeNavigationForm: HomeNavigationForm = HomeNavigationForm.CLASSIC, // :1484
+    val homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST, // :1489
+    /** `homeGridMenuActions`（:1500，去重 / 截断到 8 / 钉住 `settings`）。 */
+    val homeGridMenuActions: List<String> = emptyList(),
+    /**
+     * `glassDockActions`（:1492-1499）。
+     *
+     * ⚠️ 缺键（或类型不对）时**不是空表**，而是由 `glassDockShowDayTab` /
+     * `glassDockShowWeekTab`（两者缺省都是 true）推导出 `['day','week']`；
+     * 但**显式给了空数组就是空表**（渲染层再回落默认值）。去重、截断到 5、不钉项。
+     */
+    val glassDockActions: List<String> = emptyList(),
+    val glassDockShowDayTab: Boolean = true, // :1504
+    val glassDockShowSettingsTab: Boolean = true, // :1505
+    val glassDockShowWeekTab: Boolean = true, // :1507
+    val glassDockButtonEntryId: String = DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID, // :1508
+    val glassDockButtonIconName: String? = null, // :1510
+    val glassDockShowAddButton: Boolean = false, // :1511
+    /**
+     * `timetableBackToCurrentWeekButtonStyle`（:1513）。
+     *
+     * ⚠️ 读侧把**存量 `'inline'` 与一切未知值都映射成 `FLOATING`**
+     * （`BackToCurrentWeekButtonStyleX.fromValue` 的迁移注释：内嵌小字入口已收敛为浮钮）。
+     * 枚举保留 INLINE 只为让写侧能表达旧值，**读回来的永远不可能是 INLINE**。
+     */
+    val timetableBackToCurrentWeekButtonStyle: BackToCurrentWeekButtonStyle =
+        BackToCurrentWeekButtonStyle.FLOATING,
+    /** `timetableFloatingBackToCurrentWeekButtonOpacity`（:1517，缺键 0.96，clamp 0.55~1.0）。 */
+    val timetableFloatingBackToCurrentWeekButtonOpacity: Double = 0.96,
 ) {
 
     /**
@@ -224,6 +257,21 @@ data class TimetableSettingsModel(
         "weekdayBarAccentColorDark" to weekdayBarAccentColorDark,
         "timeAxisFontColorLight" to timeAxisFontColorLight,
         "timeAxisFontColorDark" to timeAxisFontColorDark,
+        "homeTitleStyle" to homeTitleStyle.value,
+        "timetableHomeViewMode" to timetableHomeViewMode.value,
+        "homeNavigationForm" to homeNavigationForm.value,
+        "homeMenuStyle" to homeMenuStyle.value,
+        "homeGridMenuActions" to homeGridMenuActions,
+        "glassDockActions" to glassDockActions,
+        "glassDockShowDayTab" to glassDockShowDayTab,
+        "glassDockShowSettingsTab" to glassDockShowSettingsTab,
+        "glassDockShowWeekTab" to glassDockShowWeekTab,
+        "glassDockButtonEntryId" to glassDockButtonEntryId,
+        "glassDockButtonIconName" to glassDockButtonIconName,
+        "glassDockShowAddButton" to glassDockShowAddButton,
+        "timetableBackToCurrentWeekButtonStyle" to timetableBackToCurrentWeekButtonStyle.value,
+        "timetableFloatingBackToCurrentWeekButtonOpacity" to
+            timetableFloatingBackToCurrentWeekButtonOpacity,
     )
 
     companion object {
@@ -266,6 +314,16 @@ data class TimetableSettingsModel(
         const val DEFAULT_WEEKDAY_BAR_ACCENT_DARK = "#93C5FD"
         const val DEFAULT_TIME_AXIS_FONT_LIGHT = "#757575"
         const val DEFAULT_TIME_AXIS_FONT_DARK = "#FFFFFF"
+
+        /** `glassDockButtonEntryId` 缺键默认（:1508-1509）。 */
+        const val DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID = "addCourse"
+
+        /** `HomeGridMenu` 槽位上限与钉住项（`timetable_settings_enums.dart:160-208`）。 */
+        const val HOME_GRID_MENU_MAX_SLOTS = 8
+        const val HOME_GRID_MENU_PINNED_ACTION_ID = "settings"
+
+        /** `HomeDockMenu` 槽位上限（`timetable_settings_enums.dart:215-236`，不钉项）。 */
+        const val HOME_DOCK_MENU_MAX_SLOTS = 5
 
         /** 本模型拥有并负责回写的键。 */
         val OWNED_KEYS: List<String> = listOf(
@@ -330,6 +388,20 @@ data class TimetableSettingsModel(
             "weekdayBarAccentColorDark",
             "timeAxisFontColorLight",
             "timeAxisFontColorDark",
+            "homeTitleStyle",
+            "timetableHomeViewMode",
+            "homeNavigationForm",
+            "homeMenuStyle",
+            "homeGridMenuActions",
+            "glassDockActions",
+            "glassDockShowDayTab",
+            "glassDockShowSettingsTab",
+            "glassDockShowWeekTab",
+            "glassDockButtonEntryId",
+            "glassDockButtonIconName",
+            "glassDockShowAddButton",
+            "timetableBackToCurrentWeekButtonStyle",
+            "timetableFloatingBackToCurrentWeekButtonOpacity",
         )
 
         /**
@@ -460,6 +532,45 @@ data class TimetableSettingsModel(
                     ?: DEFAULT_TIME_AXIS_FONT_LIGHT,
                 timeAxisFontColorDark = LenientJson.string(json["timeAxisFontColorDark"])
                     ?: DEFAULT_TIME_AXIS_FONT_DARK,
+                homeTitleStyle = HomeTitleStyle.fromValue(
+                    LenientJson.string(json["homeTitleStyle"]),
+                ),
+                timetableHomeViewMode = TimetableHomeViewMode.fromValue(
+                    LenientJson.string(json["timetableHomeViewMode"]),
+                ),
+                homeNavigationForm = HomeNavigationForm.fromValue(
+                    LenientJson.string(json["homeNavigationForm"]),
+                ),
+                homeMenuStyle = HomeMenuStyle.fromValue(
+                    LenientJson.string(json["homeMenuStyle"]),
+                ),
+                homeGridMenuActions = normalizeHomeGridMenuActions(json["homeGridMenuActions"]),
+                // 缺键/类型不对 → 由日、周 Tab 开关推导（两者缺省 true）；显式空数组保持空表。
+                glassDockActions = if (json["glassDockActions"] is List<*>) {
+                    normalizeGlassDockActions(json["glassDockActions"] as List<*>)
+                } else {
+                    normalizeGlassDockActions(
+                        buildList {
+                            if (LenientJson.bool(json["glassDockShowDayTab"]) ?: true) add("day")
+                            if (LenientJson.bool(json["glassDockShowWeekTab"]) ?: true) add("week")
+                        },
+                    )
+                },
+                glassDockShowDayTab = LenientJson.bool(json["glassDockShowDayTab"]) ?: true,
+                glassDockShowSettingsTab =
+                    LenientJson.bool(json["glassDockShowSettingsTab"]) ?: true,
+                glassDockShowWeekTab = LenientJson.bool(json["glassDockShowWeekTab"]) ?: true,
+                glassDockButtonEntryId = LenientJson.string(json["glassDockButtonEntryId"])
+                    ?: DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
+                glassDockButtonIconName = LenientJson.string(json["glassDockButtonIconName"]),
+                glassDockShowAddButton = LenientJson.bool(json["glassDockShowAddButton"]) ?: false,
+                timetableBackToCurrentWeekButtonStyle = BackToCurrentWeekButtonStyle.fromValue(
+                    LenientJson.string(json["timetableBackToCurrentWeekButtonStyle"]),
+                ),
+                timetableFloatingBackToCurrentWeekButtonOpacity =
+                    (LenientJson.double(json["timetableFloatingBackToCurrentWeekButtonOpacity"])
+                        ?: 0.96)
+                        .coerceIn(0.55, 1.0),
             )
         }
 
@@ -496,8 +607,41 @@ data class TimetableSettingsModel(
             }
         }
 
-        private fun asMap(raw: Any?): Map<String, Any?>? {
-            if (raw !is Map<*, *>) return null
+        /**
+         * `HomeGridMenu.normalize`（`timetable_settings_enums.dart:187-207`）：
+         * 非 List → 空表；去重、剔空串与非字符串 → 截断到 8 → **保证钉住项 `settings` 在场**
+         * （若已满 8 先丢最后一个给它腾位）。钉住的原因是它是回到八宫格编辑器的唯一入口。
+         */
+        fun normalizeHomeGridMenuActions(raw: Any?): List<String> {
+            if (raw !is List<*>) return emptyList()
+            val unique = ArrayList<String>(raw.size)
+            for (item in raw) {
+                if (item is String && item.isNotEmpty() && !unique.contains(item)) unique.add(item)
+            }
+            if (unique.size > HOME_GRID_MENU_MAX_SLOTS) {
+                while (unique.size > HOME_GRID_MENU_MAX_SLOTS) unique.removeAt(unique.size - 1)
+            }
+            if (!unique.contains(HOME_GRID_MENU_PINNED_ACTION_ID)) {
+                if (unique.size >= HOME_GRID_MENU_MAX_SLOTS) unique.removeAt(unique.size - 1)
+                unique.add(HOME_GRID_MENU_PINNED_ACTION_ID)
+            }
+            return unique
+        }
+
+        /**
+         * `HomeDockMenu.normalize`（`timetable_settings_enums.dart:221-235`）：
+         * 去重、剔空串与非字符串 → 截断到 5。**不钉项**（空排列合法，渲染层回落默认值）。
+         */
+        fun normalizeGlassDockActions(raw: List<*>): List<String> {
+            val unique = ArrayList<String>(raw.size)
+            for (item in raw) {
+                if (item is String && item.isNotEmpty() && !unique.contains(item)) unique.add(item)
+            }
+            while (unique.size > HOME_DOCK_MENU_MAX_SLOTS) unique.removeAt(unique.size - 1)
+            return unique
+        }
+
+        private fun asMap(raw: Any?): Map<String, Any?>? {            if (raw !is Map<*, *>) return null
             val out = LinkedHashMap<String, Any?>()
             for ((key, value) in raw) {
                 if (key is String) out[key] = value
@@ -664,5 +808,71 @@ enum class SectionTimeDisplayMode(val value: String) {
     companion object {
         fun fromValue(raw: String?): SectionTimeDisplayMode =
             entries.firstOrNull { it.value == raw } ?: START_AND_END
+    }
+}
+
+/** `HomeTitleStyle`（`timetable_settings_enums.dart:95`，未知值回落 classic）。 */
+enum class HomeTitleStyle(val value: String) {
+    CLASSIC("classic"),
+    BRAND("brand");
+
+    companion object {
+        fun fromValue(raw: String?): HomeTitleStyle =
+            entries.firstOrNull { it.value == raw } ?: CLASSIC
+    }
+}
+
+/** `TimetableHomeViewMode`（:130，`value` 取枚举名；未知值一律回落 week）。 */
+enum class TimetableHomeViewMode(val value: String) {
+    WEEK("week"),
+    DAY("day"),
+    MONTH("month");
+
+    companion object {
+        fun fromValue(raw: String?): TimetableHomeViewMode =
+            entries.firstOrNull { it.value == raw } ?: WEEK
+    }
+}
+
+/**
+ * `HomeNavigationForm`（:134）。
+ *
+ * ⚠️ 玻璃坞档的**磁盘值是 `glass_dock`**（下划线），与枚举名不同。
+ */
+enum class HomeNavigationForm(val value: String) {
+    CLASSIC("classic"),
+    GLASS_DOCK("glass_dock");
+
+    companion object {
+        fun fromValue(raw: String?): HomeNavigationForm =
+            entries.firstOrNull { it.value == raw } ?: CLASSIC
+    }
+}
+
+/** `HomeMenuStyle`（:139，未知值回落 list）。 */
+enum class HomeMenuStyle(val value: String) {
+    LIST("list"),
+    GRID("grid");
+
+    companion object {
+        fun fromValue(raw: String?): HomeMenuStyle =
+            entries.firstOrNull { it.value == raw } ?: LIST
+    }
+}
+
+/**
+ * `BackToCurrentWeekButtonStyle`（:238）。
+ *
+ * ⚠️ **读侧不返回 [INLINE]**：存量 `'inline'`（时间栏内嵌小字，入口已下线）与一切未知值
+ * 都被迁移成 [FLOATING]（`BackToCurrentWeekButtonStyleX.fromValue` 的注释：内嵌入口已收敛为浮钮）。
+ * 枚举保留 [INLINE] 只为让写侧能表达旧值。
+ */
+enum class BackToCurrentWeekButtonStyle(val value: String) {
+    INLINE("inline"),
+    FLOATING("floating");
+
+    companion object {
+        /** 读侧永远 FLOATING：`'inline'` 与未知值都被迁移（见枚举 KDoc）。 */
+        fun fromValue(raw: String?): BackToCurrentWeekButtonStyle = FLOATING
     }
 }
