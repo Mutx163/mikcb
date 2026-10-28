@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.about.AboutStaticPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
@@ -665,8 +669,27 @@ fun ShellPageContent(
         // ── P3-J 实时活动与天气 ──────────────────────────────────────
         "j.live" -> LiveSettingsPage(onBack = onBack)
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
-        // 走的是零参重载：默认状态 + 探测回调返回「未开启」，不造假数据。
-        "j.keepAlive" -> LiveKeepAliveSettingsPage(onBack = onBack)
+        // 走**状态化重载**而不是零参重载：零参重载的探测回调恒返回「未开启」，
+        // 那样 L4 只看得到一种状态，「已开启（绿勾 + 整行不可点）」那一支永远对不上。
+        // 所以无障碍状态读平台真值。
+        // 唯一不真实的地方是「从最近任务中隐藏」不落盘（壳没有数据层），故归 DEMO。
+        "j.keepAlive" -> {
+            val context = LocalContext.current
+            LiveKeepAliveSettingsPage(
+                onBack = onBack,
+                onProbeAccessibilityEnabled = { KeepAliveAccessibilityStatus.isEnabled(context) },
+                onOpenAccessibilitySettings = {
+                    // 壳里点「去开启」也要真的能跳到系统无障碍设置页，否则对照不了
+                    // 「点完回来状态变了」这条路径。取不到目标页时静默失败，不崩壳。
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                },
+            )
+        }
         "j.weatherCity" -> WeatherCityPickerPage(
             onBack = onBack,
             onSelectCity = {},

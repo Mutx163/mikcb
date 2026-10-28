@@ -747,6 +747,66 @@ Composable（由一个通用 `SettingsPageScreen(spec)` 渲染），于是「没
 L4「逐页对照」在接线前物理上做不了。交给 `l4-recon` 做 task-6（页索引 + 分派，壳属 Lead 区，
 本次点名授权），并要求「接进去就崩的页面宁可标暂不可用，也不要给一个闪退入口」。
 
+### 9.4 补口轮（2026-10-28 上午，用户口径「继续做什么」→ 选了两条）
+
+用户当时选的是：**① 补 3 处虚标 + 修 L2 红点 + 加落点守卫**，**② 补底层能力缺口**。
+这一轮把①做完，②开了个头（WebDAV + WebView 两条泳道）。
+
+| 任务 | 泳道 | 结果 |
+|---|---|---|
+| 台账虚标 3 处补渲染层 | `gap-changelog` / `gap-live` / Lead | ✅ 三处全部补上并接进索引：`2801c320`（更新日志）、`5aa302b7`+`78fd44b7`+`c4b9bf72`（保活子屏）、`2cec8462`（课表页面设置） |
+| 三处**接线**（目录 + 分派） | Lead | ✅ `b2189d95`；「缺整页渲染层」这一档**清空**，口径 82 / 78 / 3 / 1 |
+| L2 红点（`QingyuTextStylesTest` 放错源集） | Lead | ✅ `2cec8462`：挪到 `src/testComposeUi/` + `build.gradle` 显式登记 |
+| 目录↔分派一致性守卫 | Lead | ✅ `ShellPageDispatchCoverageTest`（含防空转断言与咬合探针） |
+| 能力缺口 B1 WebDAV 真收发 | `cap-webdav` | ✅ `c339330d`（4 文件 2376 行，70 例）；**收口未完**：测试用了 `com.sun.*` 让 CI 单测编译红 → 见 task-5 |
+| 能力缺口 B3 教务网页登录 WebView | `cap-webview` | ✅ `ca94d1a6`+`2dec48fb`（4 文件 1585 行，17 例）；**接线未做**（目标文件仍是别人未提交的 `M`） |
+
+**这一轮踩出来的四条（都值得写进纪律）**：
+
+1. **L0 绿 ≠ CI 绿：两者的编译平台不是同一个。**
+   `scripts/test-kotlin-module.ps1` 用**完整 JDK**，Gradle 的 Android 单测用
+   **AGP 裁剪过的 system-modules jar**（只含受支持的 JDK API）。
+   `com.sun.net.httpserver.*` 在前者可见、后者不可见 ⇒ `cap-webdav` 的测试
+   L0 156 例全绿，`:app:testProdDebugUnitTest` 直接编译失败。
+   **凡测试里用了 JDK 内部 API（`com.sun.*` / `sun.*`），必须再过一次真 Gradle 任务。**
+
+2. **`sync/` 是共享模型层，被每一次 L0 无条件收进去。**
+   一条泳道在 `sync/` 留一行编译错误，**全队四条泳道 + Lead 的 L0 全红**。
+   规矩：在 `sharedModelDirs` 名单里的目录（`core` / `sync` / `share` / `transfer` /
+   `statistics` / `theme` / …）里写文件，**必须保持时刻可编译**，不能攒到最后。
+
+3. **`src/test/` 是所有变体共享的测试源集。**
+   引用 `composeP1`（只被 compose 变体编译）的用例放进去，prod 变体的
+   `:app:testProdDebugUnitTest`（**CI 跑的那条**）就会编译失败——它红了一整晚没人发现。
+   修法不只是挪文件，还要在 `build.gradle` **显式登记** `src/testComposeUi/`：
+   只靠默认目录约定的话，「源集名改了、测试静默不跑、而 prod 刚好绿」是最难查的组合。
+   验证方式（已做）：往挪走的测试里注入一个不存在的符号 →
+   `:app:compileComposeUiDebugUnitTestKotlin` 必须报错（证明它真在那个源集里）。
+
+4. **「入口行有、落点没有」是这一轮三处虚标的共同形态，且人工登记看不出来。**
+   设置族 20 页共用一个 `SettingsPageScreen(spec)`，所以「没写页面函数」与
+   「没写页面」在登记表里长得一模一样。
+   现在有 `ShellPageDispatchCoverageTest` 钉「目录里标可进入 ↔ 分派里有分支」；
+   **仍未解决**的是「设置首页那一行 `actionTarget` 指的路由，是否真有 spec 接」——
+   两侧用的是两套命名空间（`/settings/xxx` vs `b.xxx`），中间没有可机器校验的映射。
+   建议下一批补一条**路由 → spec 的登记表**并让守卫逐条构造一次。
+
+**本轮验证基线（Lead 亲自跑）**：
+
+| 级别 | 命令 | 结果 |
+|---|---|---|
+| L0 | `test-kotlin-module.ps1` × 3 模块（settings / shell / live） | **535 + 44 + 36 例全绿** |
+| L1 | `safe-gradle :app:compileComposeUiDebugKotlin -x :app:compileFlutterBuildComposeUiDebug` | **BUILD SUCCESSFUL，`e:` 0 条**（三条泳道渲染层同批进编译） |
+| L2 | `safe-gradle :app:testProdDebugUnitTest` | ❌ **暂时红，但与我的改动无关**：46 条 `e:` 全在 `sync/WebdavHttpTransportTest.kt` 的 `com.sun.*` 上（task-5 已派回 `cap-webdav`）。修完需重跑复核 |
+| 守卫探针 | 改坏 `b.courseCard` → 红（2 条断言指名道姓）→ 字节级还原 | ✅ |
+| 源集探针 | 往 `src/testComposeUi/...` 注入不存在的符号 → `compileComposeUiDebugUnitTestKotlin` 报错 | ✅ 证明源集登记生效 |
+
+**仍未做（诚实清单）**：① 一页都没真机对照（现在 78 条可点，入口齐了，**就差用户在手机上走一遍**）；
+② WebDAV / WebView 都只到「JVM 真 HTTP 单测」/「L1 编译」，**没有一页接过界面**——
+WebView 的接线被 `WarehouseWebLoginPage.kt`（别人未提交）挡着，WebDAV 还没定接到哪一屏；
+③ 局域网收发与相机扫码**尚未开工**（相机要新依赖，属 build.gradle = Lead 区）；
+④ 毛玻璃页面层 / `fontWeight` / 余 26 个文件裸 `Card(` 未动。
+
 ---
 
 ## 10. 维护规则

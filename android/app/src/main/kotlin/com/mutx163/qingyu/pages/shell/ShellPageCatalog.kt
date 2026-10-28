@@ -315,10 +315,11 @@ object ShellPageCatalog {
             pages = listOf(
                 page("P3-J", "live", "实时活动 / 灵动岛", ShellPageDataKind.DIRECT),
                 // 2026-10-28 补口：这一屏原先标「暂不可用」（缺整页渲染层），
-                // 现已补上（`LiveKeepAliveSettingsPage` 的零参重载自带默认状态）。
-                // 归 DIRECT 而不是 DEMO：页面自带默认值就能渲染出完整界面，
-                // 壳里不需要喂任何演示数据（无障碍权限探测默认返回「未开启」，
-                // 那是**真实可能的状态**，不是编造的假数据）。
+                // 现已补上（`LiveKeepAliveSettingsPage` 的状态化重载）。
+                // 归 DIRECT：无障碍状态读的是**平台真值**（`KeepAliveAccessibilityStatus`），
+                // 不是编造的演示数据；页面自带默认值即可渲染。
+                // 唯一不真实的地方是「从最近任务中隐藏」不落盘（壳没有数据层）——
+                // 这一点写在 L4 清单该行的对照点里，不靠行尾标记表达。
                 page("P3-J", "keepAlive", "实时活动 · 保持后台运行", ShellPageDataKind.DIRECT),
                 page("P3-J", "weatherCity", "天气城市选择", ShellPageDataKind.DIRECT),
             ),
