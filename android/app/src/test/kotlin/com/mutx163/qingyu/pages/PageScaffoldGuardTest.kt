@@ -57,7 +57,7 @@ class PageScaffoldGuardTest {
 
     /** 从当前工作目录向上找 `android/app/src`，兼容 Gradle（在 android/ 跑）与 IDE。 */
     private fun androidSrc(): File {
-        var dir: File? = File(System.getProperty("user.dir")).absoluteFile
+        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
         while (dir != null) {
             val candidate = File(dir, "android/app/src")
             if (candidate.isDirectory) return candidate
