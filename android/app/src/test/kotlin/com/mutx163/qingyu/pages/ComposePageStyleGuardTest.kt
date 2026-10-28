@@ -154,8 +154,12 @@ class ComposePageStyleGuardTest {
     // 注意：Kotlin 的尾随 lambda 可以写成 `Card {` 而**没有括号**，所以判据一律用
     // `\s*[({]` 同时接受两种写法。只写 `\(` 会留下一条绕过通道
     // （2026-10-28 咬合探针实测：`Card {` / `LazyColumn {` 写法当时被判据完全漏掉）。
-    private val reTopAppBar = Regex("""(?<![A-Za-z])Small?TopAppBar\s*[({]""")
-    private val reSkeleton = Regex("""QingyuPageScaffold\s*[({]""")
+    // R1 判据曾写成 `Small?TopAppBar`（= "Smal" + 可选 l），只匹配 SmallTopAppBar、
+    // 漏掉最常见的裸 TopAppBar（2026-10-28 自查抓到）。现改为判「手搓顶栏行」：
+    // 有 IconButton(onClick = onBack) 却没有任何官方 TopAppBar / QingyuPageScaffold。
+    // 裸 TopAppBar / SmallTopAppBar 都是官方组件、输出正确，不再视为违规。
+    private val reHasTopBar = Regex("""(?:Small)?TopAppBar\s*[({]|QingyuPageScaffold\s*[({]""")
+    private val reBackButton = Regex("""IconButton\s*\(\s*onClick\s*=\s*onBack""")
     private val reLazyColumn = Regex("""(?<![A-Za-z])LazyColumn\s*[({]""")
     private val rePageList = Regex("""QingyuPageList\s*[({]""")
     private val reHaptic = Regex("""scrollEndHaptic""")
@@ -177,9 +181,9 @@ class ComposePageStyleGuardTest {
         fun first(re: Regex): Int = lines.firstOrNull { re.containsMatchIn(it.second) }?.first ?: 0
         fun count(re: Regex): Int = lines.count { re.containsMatchIn(it.second) }
 
-        // R1 页面骨架与顶栏 → QingyuPageScaffold
-        if ("R1" !in exempt && reTopAppBar.containsMatchIn(all) && !reSkeleton.containsMatchIn(all)) {
-            out += Violation(rel, "R1", "自己组合顶栏，未走 QingyuPageScaffold（第 ${first(reTopAppBar)} 行）")
+        // R1 页面骨架与顶栏 → 不许手搓顶栏行（官方 TopAppBar / QingyuPageScaffold 都行）
+        if ("R1" !in exempt && reBackButton.containsMatchIn(all) && !reHasTopBar.containsMatchIn(all)) {
+            out += Violation(rel, "R1", "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 ${first(reBackButton)} 行）")
         }
 
         // R2 滚动容器 → QingyuPageList

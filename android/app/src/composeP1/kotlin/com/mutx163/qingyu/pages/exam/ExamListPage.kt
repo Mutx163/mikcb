@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -53,6 +54,8 @@ import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 进行中徽标用的琥珀色（对齐 Dart `HyperosIconColors.orange`）。 */
@@ -129,6 +132,9 @@ fun ExamListPage(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    // 官方滚动手感：末端轻震 + 过度滚动回弹。
+                    .scrollEndHaptic()
+                    .overScrollVertical()
                     .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = PaddingValues(
                     start = 16.dp,
@@ -181,12 +187,7 @@ fun ExamListPage(
 
                     if (viewState.past.isNotEmpty()) {
                         item {
-                            Text(
-                                text = ExamStrings.examPassed.zh,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.sectionLabel(dark)),
-                                modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 2.dp),
-                            )
+                            QingyuSectionTitle(ExamStrings.examPassed.zh)
                         }
                         item {
                             QingyuCard(

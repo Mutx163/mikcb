@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -202,7 +204,7 @@ private fun WelcomeStepContent(
     // 折叠手势喂给页面唯一的 scrollBehavior。五个步骤是互斥渲染的 `when` 分支，
     // 同一时刻只有一个列表在吃手势，所以每处都接上不会把滚动量送两遍。
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -285,7 +287,7 @@ private fun PrivacyStepContent(
 
     // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -404,7 +406,7 @@ private fun PermissionsStepContent(innerPadding: PaddingValues, scrollBehavior: 
 
     // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -521,7 +523,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues, scrollBehavior: 
 
     // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {

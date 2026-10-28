@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -70,26 +72,17 @@ fun FeedbackPage(
     val colors = MiuixTheme.colorScheme
 
     QingyuPageScaffold(title = view.title, onBack = onBack, smallTopBar = true) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 顶栏改由共享骨架提供（官方 TopAppBar + 标准左箭头），
-                // 内容只吃顶栏高度 + 底部手势条。
-                .padding(innerPadding),
+        // 滚动走官方配方（QingyuPageList：末端轻震 + 过度滚动 + 顶栏联动 + 右侧滚动条）；
+        // 页面横向 16dp 由 horizontalPadding 给，卡片内边距交给每行自己。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = 16.dp,
+            contentPadding = PaddingValues(bottom = 12.dp),
         ) {
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
+            item(key = "channels") {
                 // 单个列表组（Dart 侧 HyperosListGroup 只放这一组）。
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    // 行内边距由每行自己给（水平 16 / 垂直 13）。
-                    insideMargin = PaddingValues(0.dp),
-                ) {
+                QingyuCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
                         view.channels.forEachIndexed { index, channel ->
                             if (index > 0) {
@@ -138,14 +131,14 @@ private fun FeedbackChannelRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = channel.title,
-                fontSize = 17.sp,
+                style = MiuixTheme.textStyles.main,
                 color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = channel.subtitle,
-                fontSize = 14.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = colors.onSurfaceVariantSummary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -187,7 +180,7 @@ private fun BrandBadge(channel: FeedbackChannel) {
     ) {
         Text(
             text = channel.title.take(1),
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.SemiBold,
             color = letterColor,
         )

@@ -32,24 +32,20 @@
 > 每条给：**必须怎么干** / **判定** / **为什么**。
 > 规则编号 `R1…R6` 就是基线文件里那一列，报错时对号入座。
 
-### R1 · 页面骨架与顶栏 → `QingyuPageScaffold`
+### R1 · 不许手搓顶栏行 → 官方 `TopAppBar` / `QingyuPageScaffold`
 
 ```kotlin
-QingyuPageScaffold(
-    title = "标题",
-    onBack = onBack,          // 必须传，返回键由套件统一给
-    smallTopBar = false,      // true = 官方 SmallTopAppBar（单行小标题，不可折叠）
-    actions = { /* 顶栏右侧按钮 */ },
-) {
-    // this: QingyuPageContentScope(innerPadding, scrollBehavior)
-}
+QingyuPageScaffold(title, onBack, smallTopBar = ...) { ... }   // 首选
+// 或直接用官方 Scaffold + TopAppBar（大标题+scrollBehavior+接线三件齐，见 PageScaffoldGuardTest）
 ```
 
-- **判定**：页面文件里出现 `TopAppBar(` / `SmallTopAppBar(` 却**没有** `QingyuPageScaffold(` → 违规。
-- **为什么**：官方 `TopAppBar` 有两个**静默**默认值（`largeTitle` 默认等于 `title`、`scrollBehavior` 默认 `null`），
-  不传就是「白送一个 32sp 大标题且永不折叠」；返回键也各有各的画法（本项目历史上出现过
-  「右箭头转 180°」「透明底」「20sp 手写标题」三种）。套件把这两件事一次收口。
-- **豁免**：`components/` 下的套件自身；`pages/shell/` 的壳层（它自带导航栏，不是子页）。
+- **判定**：文件里有 `IconButton(onClick = onBack)`（手搓返回键）却**没有**任何官方 `TopAppBar` /
+  `SmallTopAppBar` / `QingyuPageScaffold` → 违规。
+- **为什么**：历史上返回键被手写进 `Row`/`Column`，于是图标、底色、位置各写各的（右箭头转 180°、
+  透明底、20sp 手写标题三种）。官方 `TopAppBar` 与 `QingyuPageScaffold` 都是可接受的正解；
+  真伪分歧只在「有没有官方顶栏」。
+- **注意**：本规则曾是 `Small?TopAppBar`（正则写错，等于只匹配 `SmallTopAppBar`），2026-10-28 自查
+  修正为现在这条——它不再因为一个页面直接用了官方 `TopAppBar` 而误报。
 
 ### R2 · 滚动容器 → `QingyuPageList`
 

@@ -12,20 +12,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -95,32 +96,30 @@ fun IcsExportPage(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
-                ),
+        // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+        // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+        // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+        Column(modifier = Modifier.fillMaxSize()) {
+            QingyuPageList(
+                innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
+                // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+                horizontalPadding = QingyuPageCardMargin,
+                // 顶部 8dp 与底部 24dp 是页面自己的滚动留白；手势条那段由
+                // QingyuPageList 内部按 innerPadding 算，不要重复相加。
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // ── 1. 课表选择 ──
                 item {
-                    SectionLabel(ExportStrings.icsExportProfileLabel.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuSectionTitle(ExportStrings.icsExportProfileLabel.zh)
+                    // 卡里要么是 *Preference 行（自带 16dp），要么是自带 16dp 内边距的提示行，
+                    // 所以**不传** insideMargin，避免叠成 32dp。
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         if (viewState.profiles.isEmpty()) {
                             Text(
                                 text = ExportStrings.icsExportNoProfiles.zh,
-                                fontSize = 14.sp,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                             )
@@ -144,7 +143,7 @@ fun IcsExportPage(
                 // ── 2. 日期范围 ──
                 item {
                     SectionLabel(ExportStrings.icsExportDateRangeTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         ArrowPreference(
                             title = ExportStrings.icsExportStartDate.zh,
                             summary = IcsExportLogic.formatDate(options.fromDate),
@@ -169,7 +168,7 @@ fun IcsExportPage(
                 // ── 3. 日历内容 ──
                 item {
                     SectionLabel(ExportStrings.icsExportTypesTitle.zh, dark)
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         CheckboxPreference(
                             title = ExportStrings.icsExportCourses.zh,
                             checked = options.eventKinds.contains(IcsExportEventKind.COURSE),
@@ -201,10 +200,10 @@ fun IcsExportPage(
 
                 // ── 4. 摘要 ──
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = viewState.summary.title,
-                            fontSize = 16.sp,
+                            style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
@@ -212,7 +211,7 @@ fun IcsExportPage(
                         for (line in viewState.summary.lines) {
                             Text(
                                 text = line.text,
-                                fontSize = 13.sp,
+                                style = MiuixTheme.textStyles.footnote1,
                                 color = Color(
                                     if (line.isError) {
                                         QingyuTheme.error(dark)
@@ -228,7 +227,7 @@ fun IcsExportPage(
 
                 // ── 5. 同步到系统日历 / 移除 ──
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Button(
                                 onClick = onSyncCalendar,
@@ -255,7 +254,7 @@ fun IcsExportPage(
 
                 // ── 6. 导出并分享 ──
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = onExport,
                             enabled = !viewState.isExporting,
@@ -302,7 +301,7 @@ private fun SectionLabel(text: String, dark: Boolean) {
     ) {
         Text(
             text = text,
-            fontSize = 13.sp,
+            style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.sectionLabel(dark)),
             modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),

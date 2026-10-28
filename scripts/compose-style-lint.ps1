@@ -57,8 +57,13 @@ if ($Domain -eq "all") {
 # 注意：Kotlin 的尾随 lambda 可以写成 `Card {` 而**没有括号**，所以判据一律用
 # `\s*[({]` 同时接受两种写法。只写 `\(` 会留下一条绕过通道
 # （2026-10-28 咬合探针实测：`Card {` / `LazyColumn {` 写法当时被判据完全漏掉）。
-$reTopAppBar = [regex]'(?<![A-Za-z])Small?TopAppBar\s*[({]'
-$reSkeleton = [regex]'QingyuPageScaffold\s*[({]'
+#
+# R1 判据曾写成 `Small?TopAppBar`（= "Smal" + 可选 l），只匹配到 SmallTopAppBar，
+# 漏掉了最常见的裸 TopAppBar —— 2026-10-28 自查抓到。现改为判「手搓顶栏行」：
+# 文件里有 `IconButton(onClick = onBack)` 却没有官方 TopAppBar / QingyuPageScaffold。
+# 裸 TopAppBar 与 SmallTopAppBar 都是官方组件、输出正确，不再视为违规。
+$reHasTopBar = [regex]'(?:Small)?TopAppBar\s*[({]|QingyuPageScaffold\s*[({]'
+$reBackButton = [regex]'IconButton\s*\(\s*onClick\s*=\s*onBack'
 $reLazyColumn = [regex]'(?<![A-Za-z])LazyColumn\s*[({]'
 $rePageList = [regex]'QingyuPageList\s*[({]'
 $reHaptic = [regex]'scrollEndHaptic'
@@ -113,9 +118,9 @@ function Get-Violations {
             @($lines | Where-Object { $re.IsMatch($_.Code) }).Count
         }
 
-        # R1 页面骨架与顶栏 → QingyuPageScaffold
-        if ($ex -notcontains "R1" -and $reTopAppBar.IsMatch($all) -and -not $reSkeleton.IsMatch($all)) {
-            $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R1"; Detail = "自己组合顶栏，未走 QingyuPageScaffold（第 $(& $firstLine $reTopAppBar) 行）" })
+        # R1 页面骨架与顶栏 → 不许手搓顶栏行（用官方 TopAppBar 或 QingyuPageScaffold）
+        if ($ex -notcontains "R1" -and $reBackButton.IsMatch($all) -and -not $reHasTopBar.IsMatch($all)) {
+            $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R1"; Detail = "手搓顶栏行（返回键），未走官方 TopAppBar / QingyuPageScaffold（第 $(& $firstLine $reBackButton) 行）" })
         }
 
         # R2 滚动容器 → QingyuPageList
