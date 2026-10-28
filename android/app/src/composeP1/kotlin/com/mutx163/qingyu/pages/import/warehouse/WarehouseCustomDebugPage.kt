@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,13 +31,14 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Plus
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -57,6 +59,8 @@ fun WarehouseCustomDebugPage(
 ) {
     var editingRecord by remember { mutableStateOf<WarehouseCustomDebugRecord?>(null) }
     var isAddingNew by remember { mutableStateOf(false) }
+    // Dart warehouse_custom_debug_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    val scrollBehavior = MiuixScrollBehavior()
 
     var formName by remember { mutableStateOf("") }
     var formScript by remember { mutableStateOf("") }
@@ -97,6 +101,8 @@ fun WarehouseCustomDebugPage(
         topBar = {
             TopAppBar(
                 title = WarehouseStrings.warehouseCustomDebugTitle.zh,
+                largeTitle = WarehouseStrings.warehouseCustomDebugTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = MiuixIcons.Back, contentDescription = WarehouseStrings.cancelAction.zh)
@@ -104,7 +110,7 @@ fun WarehouseCustomDebugPage(
                 },
                 actions = {
                     IconButton(onClick = { openEditor(null) }) {
-                        Icon(imageVector = MiuixIcons.Plus, contentDescription = WarehouseStrings.addDebugRecordTooltip.zh)
+                        Icon(imageVector = MiuixIcons.Add, contentDescription = WarehouseStrings.addDebugRecordTooltip.zh)
                     }
                 }
             )
@@ -137,7 +143,8 @@ fun WarehouseCustomDebugPage(
                             value = formName,
                             onValueChange = { formName = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = WarehouseStrings.debugRecordNameHint.zh,
+                            label = WarehouseStrings.debugRecordNameHint.zh,
+                            useLabelAsPlaceholder = true,
                             singleLine = true,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -145,7 +152,8 @@ fun WarehouseCustomDebugPage(
                             value = formUrl,
                             onValueChange = { formUrl = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = "登录入口地址（可选，https://...）",
+                            label = "登录入口地址（可选，https://...）",
+                            useLabelAsPlaceholder = true,
                             singleLine = true,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -153,7 +161,8 @@ fun WarehouseCustomDebugPage(
                             value = formScript,
                             onValueChange = { formScript = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = WarehouseStrings.debugScriptHint.zh,
+                            label = WarehouseStrings.debugScriptHint.zh,
+                            useLabelAsPlaceholder = true,
                             minLines = 4,
                             maxLines = 10,
                         )
@@ -178,16 +187,16 @@ fun WarehouseCustomDebugPage(
                                     isAddingNew = false
                                 },
                                 modifier = Modifier.weight(1f),
-                                text = WarehouseStrings.cancelAction.zh,
+                                content = { Text(text = WarehouseStrings.cancelAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.onSurfaceVariant
+                                    contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                                 )
                             )
                             Button(
                                 onClick = ::submitForm,
                                 modifier = Modifier.weight(1f),
-                                text = WarehouseStrings.saveDebugRecordAction.zh
+                                content = { Text(text = WarehouseStrings.saveDebugRecordAction.zh) }
                             )
                         }
                     }
@@ -208,18 +217,18 @@ fun WarehouseCustomDebugPage(
                             text = WarehouseStrings.noSavedDebugRecords.zh,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = WarehouseStrings.noSavedDebugRecordsHint.zh,
                             fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = { openEditor(null) },
-                            text = WarehouseStrings.addDebugRecordAction.zh
+                            content = { Text(text = WarehouseStrings.addDebugRecordAction.zh) }
                         )
                     }
                 }
@@ -227,8 +236,15 @@ fun WarehouseCustomDebugPage(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        .weight(1f)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(records, key = { it.id }) { record ->
@@ -247,7 +263,7 @@ fun WarehouseCustomDebugPage(
                                 Text(
                                     text = WarehouseStrings.debugScriptLength.filled("length", record.scriptLength.toString()),
                                     fontSize = 12.sp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariant
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                                 if (!record.customUrl.isNullOrBlank()) {
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -269,12 +285,12 @@ fun WarehouseCustomDebugPage(
                                     Button(
                                         onClick = { onRunDebug(record) },
                                         modifier = Modifier.weight(1.2f),
-                                        text = WarehouseStrings.startDebugAction.zh
+                                        content = { Text(text = WarehouseStrings.startDebugAction.zh) }
                                     )
                                     Button(
                                         onClick = { openEditor(record) },
                                         modifier = Modifier.weight(1f),
-                                        text = WarehouseStrings.editAction.zh,
+                                        content = { Text(text = WarehouseStrings.editAction.zh) },
                                         colors = ButtonDefaults.buttonColors(
                                             color = MiuixTheme.colorScheme.surfaceVariant,
                                             contentColor = MiuixTheme.colorScheme.primary
@@ -283,7 +299,7 @@ fun WarehouseCustomDebugPage(
                                     Button(
                                         onClick = { onDeleteRecord(record.id) },
                                         modifier = Modifier.weight(1f),
-                                        text = WarehouseStrings.deleteAction.zh,
+                                        content = { Text(text = WarehouseStrings.deleteAction.zh) },
                                         colors = ButtonDefaults.buttonColors(
                                             color = MiuixTheme.colorScheme.surfaceVariant,
                                             contentColor = MiuixTheme.colorScheme.error

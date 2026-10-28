@@ -28,6 +28,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -69,12 +70,17 @@ fun QrTransferScanPage(
 ) {
     val dark = isSystemInDarkTheme()
 
+    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
+    val scrollBehavior = MiuixScrollBehavior()
+
     QingyuPageTheme {
         Scaffold(
             containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
             topBar = {
                 TopAppBar(
                     title = model.title,
+                    largeTitle = model.title,
+                    scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
@@ -90,6 +96,7 @@ fun QrTransferScanPage(
             // 官方页面骨架：LazyColumn + 滚动条 + 末端触感（见 QingyuPageList 注释）
             QingyuPageList(
                 innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
                 horizontalPadding = QingyuPageCardMargin,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

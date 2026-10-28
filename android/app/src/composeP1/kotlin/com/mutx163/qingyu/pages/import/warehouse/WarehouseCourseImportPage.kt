@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -88,11 +90,15 @@ fun WarehouseCourseImportPage(
     }
 
     val isSearching = searchQuery.trim().isNotEmpty()
+    // Dart warehouse_course_import_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = WarehouseStrings.importMethodWarehouseTitle.zh,
+                largeTitle = WarehouseStrings.importMethodWarehouseTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = MiuixIcons.Back, contentDescription = WarehouseStrings.cancelAction.zh)
@@ -127,14 +133,15 @@ fun WarehouseCourseImportPage(
                         imageVector = MiuixIcons.Search,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariant
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = WarehouseStrings.searchSchoolHint.zh,
+                        label = WarehouseStrings.searchSchoolHint.zh,
+                        useLabelAsPlaceholder = true,
                         singleLine = true,
                     )
                     if (isSearching) {
@@ -185,14 +192,14 @@ fun WarehouseCourseImportPage(
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = WarehouseStrings.selectQuickImportTitle.zh,
-                                color = MiuixTheme.colorScheme.onSurfaceVariant,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 13.sp
                             )
                         }
                         Icon(
                             imageVector = MiuixIcons.ChevronForward,
                             contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceVariant
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions
                         )
                     }
                 }
@@ -213,19 +220,19 @@ fun WarehouseCourseImportPage(
                             text = if (isSearching) WarehouseStrings.noMatchingSchools.zh else WarehouseStrings.noAvailableSchools.zh,
                             fontWeight = FontWeight.Medium,
                             fontSize = 16.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                         if (isSearching) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = WarehouseStrings.searchSchoolSuggestion.zh,
                                 fontSize = 13.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariant
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = onFeedbackClick,
-                                text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh,
+                                content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.primary
@@ -238,8 +245,15 @@ fun WarehouseCourseImportPage(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        .weight(1f)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     for (section in sections) {
@@ -293,7 +307,7 @@ fun WarehouseCourseImportPage(
                                         Text(
                                             text = subtitle,
                                             fontSize = 12.sp,
-                                            color = MiuixTheme.colorScheme.onSurfaceVariant,
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -301,7 +315,7 @@ fun WarehouseCourseImportPage(
                                     Icon(
                                         imageVector = MiuixIcons.ChevronForward,
                                         contentDescription = null,
-                                        tint = MiuixTheme.colorScheme.onSurfaceVariant
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions
                                     )
                                 }
                             }

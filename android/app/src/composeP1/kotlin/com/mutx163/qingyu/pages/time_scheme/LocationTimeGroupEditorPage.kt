@@ -33,6 +33,7 @@ import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -130,12 +131,17 @@ fun LocationTimeGroupEditorPage(
         LocationBuildingClusterLogic.uncoveredClusters(availableLocations, coveredKeywords)
     }
 
+    // 顶栏折叠行为：一页一个实例，同时喂给 TopAppBar 与 QingyuPageList（组件内部已接 nestedScroll）。
+    val scrollBehavior = MiuixScrollBehavior()
+
     QingyuPageTheme {
         Scaffold(
             containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
             topBar = {
                 TopAppBar(
                     title = title,
+                    largeTitle = title,
+                    scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(MiuixIcons.Back, contentDescription = title, tint = Color(QingyuTheme.actionIcon(dark)))
@@ -157,6 +163,7 @@ fun LocationTimeGroupEditorPage(
         ) { innerPadding ->
             QingyuPageList(
                 innerPadding = innerPadding,
+                scrollBehavior = scrollBehavior,
                 horizontalPadding = QingyuPageCardMargin,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

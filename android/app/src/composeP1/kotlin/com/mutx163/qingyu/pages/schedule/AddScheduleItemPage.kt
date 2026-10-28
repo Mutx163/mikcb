@@ -206,46 +206,21 @@ fun AddScheduleItemPage(
                     .imePadding()
                     .padding(innerPadding),
             ) {
-            // ── 顶栏 ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack, backgroundColor = Color.Transparent) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = ScheduleStrings.cancelAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
-                }
-                Text(
-                    text = if (isEditing) ScheduleStrings.editScheduleTitle.zh else ScheduleStrings.addScheduleTitle.zh,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    modifier = Modifier.weight(1f),
-                )
-                if (isEditing) {
-                    MiuixActionButton(
-                        text = ScheduleStrings.deleteAction.zh,
-                        onClick = { validateAndProceed(isDeleting = true) },
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                }
-                MiuixActionButton(
-                    text = ScheduleStrings.saveAction.zh,
-                    onClick = { validateAndProceed(isDeleting = false) },
-                )
-            }
+            // 2026-10-28：这里原来还留着一版「手搓顶栏」Row（返回图标 + 标题 + 删除/保存按钮），
+            // 是顶栏挪进 Scaffold 槽位之前的旧代码——结果标题和按钮在屏幕上出现两遍。
+            // 顶栏现在只有 Scaffold 的 topBar 槽那一处。
 
             // ── 滚动表单 ──
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    // nestedScroll 必须挂在滚动修饰符**外层**（也就是写在 verticalScroll 之前）。
+                    // 顺序反了滚动手势不会向上抛给顶栏，大标题永远收不起来——这正是用户报的
+                    //「上下拉，一直显示的都是大标题」。官方 NestedScrollConnection 的注解写明：
+                    // 它只接收「滚动子节点」（scrolling child）派发上来的事件，
+                    // 所以连接必须位于滚动节点的祖先一侧。
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .verticalScroll(rememberScrollState())
                     // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
                     .padding(
                         start = 16.dp,

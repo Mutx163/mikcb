@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +30,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -72,16 +73,16 @@ fun IcsExportPage(
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
     val options = viewState.options
+    // Dart ics_export_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
                 title = ExportStrings.icsExportTitle.zh,
+                largeTitle = ExportStrings.icsExportTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -92,10 +93,24 @@ fun IcsExportPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                .padding(innerPadding),
+        ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // ── 1. 课表选择 ──

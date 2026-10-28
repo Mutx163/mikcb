@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -43,6 +44,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -97,18 +99,20 @@ fun LiveDiagnosticsLogPage(
     onRefresh: (() -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
+    // 顶栏折叠行为：Dart 侧 live_diagnostics_log_viewer_screen.dart 走 HyperosSubpage，
+    // collapsibleLargeTitle 默认 true ⇒ 可折叠大标题。必须同时传给 TopAppBar 与内容 nestedScroll。
+    val scrollBehavior = MiuixScrollBehavior()
     // 弹层显隐是纯 UI 状态（Dart 用 showHyperosSheet），不属于模型层。
     var showOptions by remember { mutableStateOf(false) }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
+        topBar = {
             TopAppBar(
                 title = viewState.title,
+                largeTitle = viewState.title,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -151,7 +155,16 @@ fun LiveDiagnosticsLogPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                .padding(innerPadding),
+        ) {
             when {
                 viewState.loadError != null -> DiagnosticsLoadErrorBody(
                     error = viewState.loadError,
@@ -203,6 +216,9 @@ fun LiveDiagnosticsLogPage(
                             onToggleEntry = onToggleEntry,
                             onToggleDeviceInfo = onToggleDeviceInfo,
                             dark = dark,
+                            // 手势喂给同一个行为实例：主滚动容器（日志列表）挂 nestedScroll。
+                            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                            bottomPadding = innerPadding.calculateBottomPadding(),
                         )
                     }
                 }
@@ -333,10 +349,18 @@ private fun DiagnosticsLogList(
     onToggleEntry: (String) -> Unit,
     onToggleDeviceInfo: () -> Unit,
     dark: Boolean,
+    modifier: Modifier = Modifier,
+    bottomPadding: Dp = 0.dp,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 4.dp,
+            // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+            bottom = bottomPadding + 24.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (viewState.headerRows.isNotEmpty()) {

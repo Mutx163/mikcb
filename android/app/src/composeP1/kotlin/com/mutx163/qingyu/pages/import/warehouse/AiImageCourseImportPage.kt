@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +37,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -89,10 +91,15 @@ fun AiImageCourseImportPage(
         }
     }
 
+    // Dart ai_image_course_import_screen.dart:207-209 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = WarehouseStrings.aiImportTitle.zh,
+                largeTitle = WarehouseStrings.aiImportTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(imageVector = MiuixIcons.Back, contentDescription = WarehouseStrings.cancelAction.zh)
@@ -114,7 +121,7 @@ fun AiImageCourseImportPage(
                     Button(
                         onClick = ::parseCurrentInput,
                         modifier = Modifier.weight(1f),
-                        text = WarehouseStrings.previewAction.zh,
+                        content = { Text(text = WarehouseStrings.previewAction.zh) },
                         colors = ButtonDefaults.buttonColors(
                             color = MiuixTheme.colorScheme.surfaceVariant,
                             contentColor = MiuixTheme.colorScheme.primary
@@ -126,7 +133,7 @@ fun AiImageCourseImportPage(
                             parseResult?.let { onConfirmImport(it) }
                         },
                         modifier = Modifier.weight(1f),
-                        text = if (isImporting) "导入中..." else WarehouseStrings.confirmImportAction.zh,
+                        content = { Text(text = if (isImporting) "导入中..." else WarehouseStrings.confirmImportAction.zh) },
                         enabled = !isImporting && parseResult != null
                     )
                 }
@@ -136,8 +143,15 @@ fun AiImageCourseImportPage(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 12.dp,
+                // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                bottom = innerPadding.calculateBottomPadding() + 12.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // 工作流指引卡片
@@ -172,7 +186,7 @@ fun AiImageCourseImportPage(
                                 Text(
                                     text = WarehouseStrings.aiWorkflowSubtitle.zh,
                                     fontSize = 12.sp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariant
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
                         }
@@ -216,7 +230,7 @@ fun AiImageCourseImportPage(
                         Text(
                             text = "💡 ${WarehouseStrings.aiExpertModeSuggestion.zh}",
                             fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                     }
                 }
@@ -234,7 +248,7 @@ fun AiImageCourseImportPage(
                         Button(
                             onClick = onCopyPrompt,
                             modifier = Modifier.fillMaxWidth(),
-                            text = WarehouseStrings.copyAddress.zh
+                            content = { Text(text = WarehouseStrings.copyAddress.zh) }
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -243,7 +257,7 @@ fun AiImageCourseImportPage(
                             Button(
                                 onClick = onShowPromptSheet,
                                 modifier = Modifier.weight(1f),
-                                text = WarehouseStrings.aiPromptShortAction.zh,
+                                content = { Text(text = WarehouseStrings.aiPromptShortAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.primary
@@ -258,7 +272,7 @@ fun AiImageCourseImportPage(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                text = WarehouseStrings.pasteAction.zh,
+                                content = { Text(text = WarehouseStrings.pasteAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
                                     contentColor = MiuixTheme.colorScheme.primary
@@ -271,10 +285,10 @@ fun AiImageCourseImportPage(
                                     parseError = null
                                 },
                                 modifier = Modifier.weight(1f),
-                                text = WarehouseStrings.clearAction.zh,
+                                content = { Text(text = WarehouseStrings.clearAction.zh) },
                                 colors = ButtonDefaults.buttonColors(
                                     color = MiuixTheme.colorScheme.surfaceVariant,
-                                    contentColor = MiuixTheme.colorScheme.onSurfaceVariant
+                                    contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                                 )
                             )
                         }
@@ -299,7 +313,7 @@ fun AiImageCourseImportPage(
                         Text(
                             text = WarehouseStrings.aiPasteJsonHintLong.zh,
                             fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         TextField(
@@ -312,7 +326,8 @@ fun AiImageCourseImportPage(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = WarehouseStrings.aiPasteJsonHintShort.zh,
+                            label = WarehouseStrings.aiPasteJsonHintShort.zh,
+                            useLabelAsPlaceholder = true,
                             minLines = 6,
                             maxLines = 16,
                         )
@@ -346,7 +361,7 @@ fun AiImageCourseImportPage(
                                 Text(
                                     text = parseError!!,
                                     fontSize = 12.sp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariant
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
                         }
@@ -410,7 +425,7 @@ fun AiImageCourseImportPage(
                             Text(
                                 text = "周${course.dayOfWeek} 第${course.startSection}-${course.endSection}节 · ${course.location.ifEmpty { "地点未知" }} · ${course.teacher.ifEmpty { "教师未知" }}",
                                 fontSize = 12.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariant
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
                         }
                     }

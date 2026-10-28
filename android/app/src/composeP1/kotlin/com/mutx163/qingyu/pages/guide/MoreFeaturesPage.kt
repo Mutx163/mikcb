@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -31,6 +32,7 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -62,12 +64,17 @@ fun MoreFeaturesPage(
         activeTimeSchemeName = activeTimeSchemeName
     )
 
+    // 大标题折叠行为：Dart 原件 lib/screens/more_features_screen.dart:196 走 HyperosSubpage，
+    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark))
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize()) {
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
                 title = GuideStrings.homeMenuMoreTitle.zh,
+                largeTitle = GuideStrings.homeMenuMoreTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -78,14 +85,18 @@ fun MoreFeaturesPage(
                     }
                 }
             )
-
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = innerPadding.calculateTopPadding() + 4.dp,
-                    bottom = 24.dp
+                    top = 4.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

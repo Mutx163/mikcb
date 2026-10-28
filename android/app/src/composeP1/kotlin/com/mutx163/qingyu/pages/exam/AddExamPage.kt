@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -101,15 +103,20 @@ fun AddExamPage(
 ) {
     val dark = isSystemInDarkTheme()
     var confirmDelete by remember { mutableStateOf(false) }
+    val pageTitle = if (viewState.isEditing) ExamStrings.editExam.zh else ExamStrings.addExam.zh
+    // 顶栏折叠行为：Dart `add_exam_screen.dart:83-86` 走 HyperosSubpage 默认参数
+    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
+    // 一个页面实例一个：返回重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
+        topBar = {
             TopAppBar(
-                title = if (viewState.isEditing) ExamStrings.editExam.zh else ExamStrings.addExam.zh,
+                title = pageTitle,
+                largeTitle = pageTitle,
+                scrollBehavior = scrollBehavior,
                 color = Color(QingyuTheme.scaffoldBackground(dark)),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -139,12 +146,26 @@ fun AddExamPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            // nestedScroll 必须挂在滚动容器外层：顺序反了滚动手势不会上抛，大标题永不折叠。
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
+                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 val toast = viewState.toastMessage

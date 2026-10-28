@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
@@ -37,8 +38,10 @@ import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -95,15 +98,29 @@ fun SettingsPageScreen(
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit = { _, _, _ -> },
 ) {
     val colors = MiuixTheme.colorScheme
+    // 大标题要「跟着滚动收起」，官方 demo（docs/reference/miuix-demo topappbar.md:67-96）要求三件齐：
+    // 一个 ScrollBehavior 实例、顶栏拿到它、本页唯一的滚动容器把滚动手势喂给它。
+    // 少任何一件，Miuix 0.9.4 的 TopAppBar 都会把 largeTitle 常驻显示（它默认等于 title），
+    // 表现就是「上下拉，一直显示的都是大标题」。
+    val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            if (onBack == null) {
-                TopAppBar(title = spec.title)
-            } else {
+            if (spec.collapsibleLargeTitle) {
                 TopAppBar(
                     title = spec.title,
-                    navigationIcon = { BackIconButton(onBack = onBack) },
+                    largeTitle = spec.title,
+                    navigationIcon = { if (onBack != null) BackIconButton(onBack = onBack) },
+                    scrollBehavior = scrollBehavior,
+                )
+            } else {
+                // 与 Dart 侧 collapsibleLargeTitle: false 的设置页对齐（settings_course_card.dart:81、
+                // settings_timetable_page.dart:102 等）：这些页本来就没有大标题，
+                // 用官方「无大标题」变体 SmallTopAppBar——它会把共享状态钉死，不会漏出大标题。
+                SmallTopAppBar(
+                    title = spec.title,
+                    navigationIcon = { if (onBack != null) BackIconButton(onBack = onBack) },
+                    scrollBehavior = scrollBehavior,
                 )
             }
         },
@@ -122,7 +139,7 @@ fun SettingsPageScreen(
                 Modifier.fillMaxSize()
             }
             LazyColumn(
-                modifier = listWeight.fillMaxWidth(),
+                modifier = listWeight.fillMaxWidth().nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->

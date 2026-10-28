@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
@@ -86,17 +87,17 @@ fun MemoryStatsPage(
     onOpenPerfReport: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    // Dart memory_stats_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
+    val scrollBehavior = MiuixScrollBehavior()
     var openSheet by remember { mutableStateOf<MemorySheet?>(null) }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
                 title = MemoryStatsStrings.pageTitle,
+                largeTitle = MemoryStatsStrings.pageTitle,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -123,10 +124,23 @@ fun MemoryStatsPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                .padding(innerPadding),
+        ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // ── 运行概览 ──

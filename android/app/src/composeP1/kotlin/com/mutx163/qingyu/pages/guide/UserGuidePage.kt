@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,7 +50,9 @@ import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -96,12 +99,19 @@ fun UserGuidePage(
         GuideStrings.guideTipsPageTitle.zh
     )
 
+    // 大标题折叠行为：Dart 原件 lib/screens/user_guide_screen.dart:260 走 HyperosSubpage，
+    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
+    val scrollBehavior = MiuixScrollBehavior()
+    // 顶栏标题随步骤变化：抽成同一个局部变量喂给 title 与 largeTitle，避免两处各写一遍分叉。
+    val pageTitle = stepTitles.getOrElse(currentStep) { GuideStrings.userGuideEntryTitle.zh }
+
     Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark))
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize()) {
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
-                title = stepTitles.getOrElse(currentStep) { GuideStrings.userGuideEntryTitle.zh },
+                title = pageTitle,
+                largeTitle = pageTitle,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     if (!requirePrivacyConsent || currentStep > 0) {
                         IconButton(onClick = {
@@ -116,25 +126,36 @@ fun UserGuidePage(
                     }
                 }
             )
-
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Box(modifier = Modifier.weight(1f)) {
                 when (currentStep) {
                     0 -> WelcomeStepContent(
                         innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
                         onStart = { currentStep = 1 },
                         onImport = onImportCourses,
                         onRestore = onRestoreBackup
                     )
                     1 -> PrivacyStepContent(
                         innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
                         requireConsent = requirePrivacyConsent,
                         consentChecked = privacyChecked,
                         onConsentChanged = { privacyChecked = it }
                     )
-                    2 -> PermissionsStepContent(innerPadding = innerPadding)
-                    3 -> PersonalizeStepContent(innerPadding = innerPadding)
+                    2 -> PermissionsStepContent(
+                        innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior
+                    )
+                    3 -> PersonalizeStepContent(
+                        innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior
+                    )
                     4 -> TipsAndFaqStepContent(
                         innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
                         faqQuery = faqSearchQuery,
                         onFaqQueryChange = { faqSearchQuery = it },
                         selectedCategory = selectedCategory,
@@ -170,6 +191,7 @@ fun UserGuidePage(
 @Composable
 private fun WelcomeStepContent(
     innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
     onStart: () -> Unit,
     onImport: () -> Unit,
     onRestore: () -> Unit
@@ -177,8 +199,10 @@ private fun WelcomeStepContent(
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
 
+    // 折叠手势喂给页面唯一的 scrollBehavior。五个步骤是互斥渲染的 `when` 分支，
+    // 同一时刻只有一个列表在吃手势，所以每处都接上不会把滚动量送两遍。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -252,14 +276,16 @@ private fun WelcomeStepContent(
 @Composable
 private fun PrivacyStepContent(
     innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
     requireConsent: Boolean,
     consentChecked: Boolean,
     onConsentChanged: (Boolean) -> Unit
 ) {
     val dark = isSystemInDarkTheme()
 
+    // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -362,7 +388,7 @@ private fun PrivacyStepContent(
 
 /** 权限步骤卡片 */
 @Composable
-private fun PermissionsStepContent(innerPadding: PaddingValues) {
+private fun PermissionsStepContent(innerPadding: PaddingValues, scrollBehavior: ScrollBehavior) {
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
 
@@ -376,8 +402,9 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
     )
     val progress = PermissionProgress.calculate(items)
 
+    // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -486,14 +513,15 @@ private fun PermissionsStepContent(innerPadding: PaddingValues) {
 
 /** 个性化定制步骤卡片 */
 @Composable
-private fun PersonalizeStepContent(innerPadding: PaddingValues) {
+private fun PersonalizeStepContent(innerPadding: PaddingValues, scrollBehavior: ScrollBehavior) {
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
     var menuStyle by remember { mutableStateOf(GuideHomeMenuStyle.LIST) }
     var visualEffect by remember { mutableStateOf(GuideVisualEffect.LIQUID_GLASS) }
 
+    // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -577,6 +605,7 @@ private fun PersonalizeStepContent(innerPadding: PaddingValues) {
 @Composable
 private fun TipsAndFaqStepContent(
     innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
     faqQuery: String,
     onFaqQueryChange: (String) -> Unit,
     selectedCategory: GuideCategory?,
@@ -591,8 +620,12 @@ private fun TipsAndFaqStepContent(
         category = selectedCategory
     )
 
+    // 本页主体滚动容器：5 个步骤页里只有这一页（技巧与问答）内容长度真能滚起来，
+    // 折叠手势喂给页面唯一的 scrollBehavior（互斥分支，见 WelcomeStepContent 注释）。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {

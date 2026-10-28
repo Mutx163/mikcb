@@ -27,8 +27,8 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -59,7 +59,11 @@ fun WarehouseWebLoginPage(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            // 与 Dart 侧 warehouse_adapter_web_login_screen.dart:841-844 对齐
+            // （title: SizedBox.shrink()、collapsibleLargeTitle: false）：这一页滚动发生在 WebView
+            // 内部，大标题永远不会被收起，只会常驻占掉一行高度；用官方「无大标题」变体钉死，
+            // 不会漏出大标题。
+            SmallTopAppBar(
                 title = title,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -108,15 +112,15 @@ fun WarehouseWebLoginPage(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = onDismissAutofill,
-                                    text = WarehouseStrings.notNowAction.zh,
+                                    content = { Text(text = WarehouseStrings.notNowAction.zh) },
                                     colors = ButtonDefaults.buttonColors(
                                         color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariant
+                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                                     )
                                 )
                                 Button(
                                     onClick = onAutofillLogin,
-                                    text = WarehouseStrings.autofillAction.zh
+                                    content = { Text(text = WarehouseStrings.autofillAction.zh) }
                                 )
                             }
                         }
@@ -145,15 +149,15 @@ fun WarehouseWebLoginPage(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = onDismissSaveLogin,
-                                    text = WarehouseStrings.dontRememberAction.zh,
+                                    content = { Text(text = WarehouseStrings.dontRememberAction.zh) },
                                     colors = ButtonDefaults.buttonColors(
                                         color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariant
+                                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                                     )
                                 )
                                 Button(
                                     onClick = onSaveRememberedLogin,
-                                    text = WarehouseStrings.rememberAndAutofillAction.zh
+                                    content = { Text(text = WarehouseStrings.rememberAndAutofillAction.zh) }
                                 )
                             }
                         }
@@ -169,11 +173,11 @@ fun WarehouseWebLoginPage(
                     Button(
                         onClick = onToggleMacroRecording,
                         modifier = Modifier.weight(1f),
-                        text = if (isRecording) {
+                        content = { Text(text = if (isRecording) {
                             "停止录制 (${sessionState.recordedStepsCount})"
                         } else {
                             WarehouseStrings.recordImportAction.zh
-                        },
+                        }) },
                         colors = ButtonDefaults.buttonColors(
                             color = if (isRecording) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.surfaceVariant,
                             contentColor = if (isRecording) MiuixTheme.colorScheme.surface else MiuixTheme.colorScheme.primary
@@ -183,7 +187,7 @@ fun WarehouseWebLoginPage(
                     Button(
                         onClick = onExecuteImport,
                         modifier = Modifier.weight(1.5f),
-                        text = WarehouseStrings.executeImportScriptAction.zh
+                        content = { Text(text = WarehouseStrings.executeImportScriptAction.zh) }
                     )
                 }
             }
@@ -230,13 +234,13 @@ fun WarehouseWebLoginPage(
                             else -> "请在上方登录教务系统，随后点击下方【执行导入】"
                         },
                         fontSize = 14.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariant
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = sessionState.currentUrl.ifEmpty { "https://..." },
                         fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.7f)
                     )
                 }
             }

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,7 @@ import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -194,12 +196,20 @@ fun AddCoursePage(
         confirmDiscard = true
     }
 
+    val pageTitle = if (isEditing) AddCourseStrings.editCourseTitle.zh else AddCourseStrings.addCourseTitle.zh
+    // 顶栏折叠行为：Dart 侧同一页面走 HyperosSubpage 默认参数
+    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
+    // 一个页面实例一个：返回重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
+
     QingyuPageTheme {
         Scaffold(
             containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
             topBar = {
                 TopAppBar(
-                    title = if (isEditing) AddCourseStrings.editCourseTitle.zh else AddCourseStrings.addCourseTitle.zh,
+                    title = pageTitle,
+                    largeTitle = pageTitle,
+                    scrollBehavior = scrollBehavior,
                     color = Color(QingyuTheme.scaffoldBackground(dark)),
                     navigationIcon = {
                         IconButton(onClick = ::requestBack) {
@@ -240,8 +250,16 @@ fun AddCoursePage(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        // nestedScroll 必须挂在滚动容器外层：顺序反了滚动手势不会上抛，大标题永不折叠。
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 8.dp,
+                            // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
+                            bottom = innerPadding.calculateBottomPadding() + 8.dp,
+                        ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // ── 校验错误横幅（Dart 为 toast；同一份文案键）──

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +38,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -84,15 +86,19 @@ fun ExamListPage(
 ) {
     val dark = isSystemInDarkTheme()
     var pendingDelete by remember { mutableStateOf<Exam?>(null) }
+    // 顶栏折叠行为：Dart `exam_list_screen.dart:30-32` 走 HyperosSubpage 默认参数
+    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
+    // 一个页面实例一个：返回重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
+        topBar = {
             TopAppBar(
                 title = ExamStrings.examListTitle.zh,
+                largeTitle = ExamStrings.examListTitle.zh,
+                scrollBehavior = scrollBehavior,
                 color = Color(QingyuTheme.scaffoldBackground(dark)),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -113,10 +119,24 @@ fun ExamListPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                    bottom = innerPadding.calculateBottomPadding() + 28.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (viewState.isEmpty) {

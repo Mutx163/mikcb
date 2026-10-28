@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -85,21 +87,22 @@ fun MiuixShowcasePage(
         MiuixShowcaseCatalog.filterEntries(searchQuery)
     }
 
+    // Dart miuix_showcase_screen.dart:604-622 的 MiuixTopAppBar 传了 scrollBehavior 且没关大标题，
+    // largeTitle 默认等于 title ⇒ 保留可折叠大标题。
+    val pageTitle = if (activeCategory == null) {
+        ShowcaseStrings.showcaseScreenTitle.zh
+    } else {
+        MiuixShowcaseCatalog.findEntryByCategory(activeCategory!!).title
+    }
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark))
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // 顶栏
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
-                title = if (activeCategory == null) {
-                    ShowcaseStrings.showcaseScreenTitle.zh
-                } else {
-                    MiuixShowcaseCatalog.findEntryByCategory(activeCategory!!).title
-                },
+                title = pageTitle,
+                largeTitle = pageTitle,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -118,6 +121,14 @@ fun MiuixShowcasePage(
                     }
                 }
             )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(innerPadding)
+        ) {
 
             // 若进入子分类，则渲染该分类对应的交互详情页
             if (activeCategory != null) {
@@ -206,7 +217,7 @@ fun MiuixShowcasePage(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(16.dp))
-                                            .background(Color(QingyuTheme.cardBackground(dark)))
+                                            .background(Color(QingyuTheme.card(dark)))
                                             .clickable { searchQuery = tag }
                                             .padding(horizontal = 12.dp, vertical = 6.dp)
                                     ) {

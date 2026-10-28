@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -48,6 +49,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -92,17 +94,17 @@ fun CourseStatisticsPage(
     val dark = isSystemInDarkTheme()
     var activeAchievementDetail by remember { mutableStateOf<AchievementView?>(null) }
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
+    // 大标题折叠行为：Dart 原件 lib/screens/course_statistics_screen.dart:122 走 HyperosSubpage，
+    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
+    val scrollBehavior = MiuixScrollBehavior()
+
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
                 title = viewState.title,
+                largeTitle = viewState.title,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -131,7 +133,16 @@ fun CourseStatisticsPage(
                     }
                 },
             )
-
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 不手写状态栏内边距：miuix Scaffold 的 contentWindowInsets
+                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                .padding(innerPadding),
+        ) {
             if (!viewState.hasData) {
                 StatisticsEmptyState(
                     title = viewState.emptyTitle,
@@ -142,6 +153,8 @@ fun CourseStatisticsPage(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        // nestedScroll 必须在 verticalScroll 外层：反了则手势不冒泡，大标题收不起来。
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +38,9 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -66,17 +69,24 @@ fun StartupFlowPage(
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
 
+    // 大标题折叠行为：Dart 原件 lib/screens/startup_flow_screens.dart:34 走 HyperosSubpage，
+    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
+    val scrollBehavior = MiuixScrollBehavior()
+    // 顶栏标题随状态机步骤变化：抽成同一个局部变量喂给 title 与 largeTitle，避免两处各写一遍分叉。
+    val pageTitle = when (currentState.currentStep) {
+        StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.zh
+        StartupStep.DATE_SETUP -> GuideStrings.setSemesterStartDateAction.zh
+        StartupStep.GUIDE_TOUR -> GuideStrings.welcomeTitle.zh
+        StartupStep.COMPLETED -> GuideStrings.welcomeAppName.zh
+    }
+
     Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark))
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize()) {
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        topBar = {
             TopAppBar(
-                title = when (currentState.currentStep) {
-                    StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.zh
-                    StartupStep.DATE_SETUP -> GuideStrings.setSemesterStartDateAction.zh
-                    StartupStep.GUIDE_TOUR -> GuideStrings.welcomeTitle.zh
-                    StartupStep.COMPLETED -> GuideStrings.welcomeAppName.zh
-                },
+                title = pageTitle,
+                largeTitle = pageTitle,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -87,11 +97,14 @@ fun StartupFlowPage(
                     }
                 }
             )
-
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             when (currentState.currentStep) {
                 StartupStep.MIGRATION_CHECK -> {
                     MigrationGuideContent(
                         innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
                         isOpeningOldApp = currentState.isOpeningOldApp,
                         onOpenOldApp = {
                             stateMachine.setOpeningOldApp(true)
@@ -113,6 +126,7 @@ fun StartupFlowPage(
                 StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
                     DateSetupContent(
                         innerPadding = innerPadding,
+                        scrollBehavior = scrollBehavior,
                         initialDate = currentState.semesterStartDate ?: "2026-09-01",
                         initialWeeks = currentState.totalWeeks,
                         calculatedWeek = currentState.currentWeek,
@@ -146,6 +160,7 @@ fun StartupFlowPage(
 @Composable
 private fun MigrationGuideContent(
     innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
     isOpeningOldApp: Boolean,
     onOpenOldApp: () -> Unit,
     onGoImport: () -> Unit,
@@ -154,13 +169,15 @@ private fun MigrationGuideContent(
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
 
+    // 折叠手势喂给页面唯一的 scrollBehavior。每一步的内容都是互斥渲染的，
+    // 同一时刻只会有一个列表在吃手势，所以每处都接上不会把滚动量送两遍。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = innerPadding.calculateTopPadding() + 8.dp,
-            bottom = 24.dp
+            top = 8.dp,
+            bottom = innerPadding.calculateBottomPadding() + 24.dp
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -345,6 +362,7 @@ private fun MigrationStepRow(
 @Composable
 private fun DateSetupContent(
     innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
     initialDate: String,
     initialWeeks: Int,
     calculatedWeek: Int,
@@ -357,13 +375,17 @@ private fun DateSetupContent(
     var dateInput by remember { mutableStateOf(initialDate) }
     var weeksValue by remember { mutableIntStateOf(initialWeeks) }
 
+    // 本页主体滚动容器：4 个步骤里 3 个（DATE_SETUP / GUIDE_TOUR / COMPLETED）都渲染这一份，
+    // 折叠手势喂给页面唯一的 scrollBehavior。
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = innerPadding.calculateTopPadding() + 8.dp,
-            bottom = 24.dp
+            top = 8.dp,
+            bottom = innerPadding.calculateBottomPadding() + 24.dp
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {

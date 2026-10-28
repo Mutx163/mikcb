@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -84,11 +88,19 @@ fun LiveKeepAliveSettingsPage(
     // 确认弹窗是纯屏上交互状态，不需要宿主参与。
     var confirmVisible by remember { mutableStateOf(false) }
 
+    // 顶栏折叠行为：Dart `live_settings_subpages.dart:1611-1614` 用 HyperosSubpage
+    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`）+ 纯 Text 标题 ⇒ 有大标题；
+    // body 是 HyperosListView（`hyperos_page.dart:925-928`：SingleChildScrollView + Column）⇒ 可滚。
+    // 一个页面实例一个：返回重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
         containerColor = colors.surface,
         topBar = {
             TopAppBar(
                 title = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
+                largeTitle = LiveKeepAliveStrings.liveKeepAliveTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -108,37 +120,48 @@ fun LiveKeepAliveSettingsPage(
                 // 再写一次是第三次叠加（2026-10-27，同 LiveSettingsPage.kt:79-81）。
                 .padding(innerPadding),
         ) {
-            QingyuCard(
+            // Dart 侧 body 是 HyperosListView（`hyperos_page.dart:925-928`：
+            // SingleChildScrollView + Column）⇒ 就是「Column + verticalScroll」，
+            // 所以手写滚动容器；nestedScroll 必须挂在滚动容器外层，
+            // 顺序反了滚动手势不会上抛，大标题永不折叠。
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
-                        vertical = QingyuShapes.SECTION_GAP.dp,
-                    ),
-                cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
-                // 包 Preference 行时**不传** insideMargin：官方 `*Preference` 自带 16dp。
-                insideMargin = PaddingValues(0.dp),
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                SwitchPreference(
-                    checked = state.hideFromRecents,
-                    onCheckedChange = onHideFromRecentsChange,
-                    title = LiveKeepAliveStrings.hideFromRecentsTitle.zh,
-                )
-
-                HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
-
-                LiveKeepAliveServiceRow(
-                    enabled = state.accessibilityEnabled,
-                    onOpenSettings = { confirmVisible = true },
-                )
-
-                if (showDoNotDisturbAccessRow) {
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
-                    LiveDoNotDisturbAccessRow(
-                        checked = state.doNotDisturbAccessChecked,
-                        granted = state.doNotDisturbAccessGranted,
-                        onClick = onOpenDoNotDisturbAccessSettings,
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                            vertical = QingyuShapes.SECTION_GAP.dp,
+                        ),
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+                    // 包 Preference 行时**不传** insideMargin：官方 `*Preference` 自带 16dp。
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    SwitchPreference(
+                        checked = state.hideFromRecents,
+                        onCheckedChange = onHideFromRecentsChange,
+                        title = LiveKeepAliveStrings.hideFromRecentsTitle.zh,
                     )
+
+                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
+
+                    LiveKeepAliveServiceRow(
+                        enabled = state.accessibilityEnabled,
+                        onOpenSettings = { confirmVisible = true },
+                    )
+
+                    if (showDoNotDisturbAccessRow) {
+                        HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
+                        LiveDoNotDisturbAccessRow(
+                            checked = state.doNotDisturbAccessChecked,
+                            granted = state.doNotDisturbAccessGranted,
+                            onClick = onOpenDoNotDisturbAccessSettings,
+                        )
+                    }
                 }
             }
         }

@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -73,18 +75,19 @@ fun DataTransferPage(
 ) {
     val dark = isSystemInDarkTheme()
     var qrScopeDialogVisible by remember { mutableStateOf(false) }
+    // 顶栏折叠行为：Dart `data_transfer_screen.dart:49-51` 走 HyperosSubpage 默认参数
+    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
+    // 一个页面实例一个：返回重新进入应从展开态开始。
+    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(containerColor = Color(QingyuTheme.scaffoldBackground(dark))) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-                .padding(innerPadding),
-        ) {
+    Scaffold(
+        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
+        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
+        topBar = {
             TopAppBar(
                 title = TransferStrings.dataTransferTitle.zh,
+                largeTitle = TransferStrings.dataTransferTitle.zh,
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -95,10 +98,27 @@ fun DataTransferPage(
                     }
                 },
             )
-
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
+                // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
+                // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
+                .padding(innerPadding),
+        ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // ── 1. 完整导出 ──
