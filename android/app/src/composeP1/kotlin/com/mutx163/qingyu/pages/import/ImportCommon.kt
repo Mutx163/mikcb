@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,12 +45,14 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.time.LocalDateTime
 
 /**
  * 导入域共享组合件（P3-G1 · 移植 `lib/screens/import/import_shared.dart` 的 UI 部分）。
@@ -547,3 +554,282 @@ fun parseImportAccentHex(slot: String): Long = when (slot.trim().lowercase()) {
 /** Dart `askImportReplaceExisting` 正文末尾的固定引导句（硬编码，不在 ARB）。 */
 private const val IMPORT_REPLACE_EXISTING_GUIDANCE =
     "日常更新建议优先选择更新课表，保留本地独有课程并合并新课程"
+
+// ==========================================================================
+// 导入流程的三个弹层（2026-10-29 · F07 接线补）
+//
+// Dart 侧这条链路是三张独立对话框接力：`askImportReplaceExisting` →
+// `pickImportSemesterConfig` → `ensureImportSectionCapacity`（外加表格那条
+// `_showSpreadsheetWarnings` 先于它们）。Kotlin 侧把「替换选择」与「学期映射」
+// 合并成**一张预览卡**：用户在同一个地方看到「识别到几门课 / 开学日 / 第 1 周对应
+// 校历第几周 / 覆盖还是更新」，少一次点击，也少一处「上一步选了什么都没显示」的
+// 状态。**语义不变**：确认前一个字节都不落盘。
+// ==========================================================================
+
+/** 预览卡确认后交给宿主的东西（宿主据此做节次检查与落盘）。 */
+data class ImportPreviewChoice(
+    /** 用户确认的开学日；表格导入没有学期映射环节，传 null。 */
+    val semesterStartDate: LocalDateTime?,
+    /** 第 1 周对应校历第几周（仅 ICS 用）。 */
+    val firstCourseWeek: Int,
+    /** true = 覆盖导入；false = 更新课表（保留本地课程并合并）。 */
+    val replaceExisting: Boolean,
+)
+
+/**
+ * 导入预览确认卡（合并 Dart 的「替换选择」与「学期映射」两张对话框）。
+ *
+ * @param semesterStartDate 非 null 才显示学期映射两行（ICS 走这条）；表格导入传 null。
+ * @param lastAllowedWeek 校历周数上限（设置里的 `semesterWeekCount`），周次步进不会越过它。
+ * @param hasExistingCourses 本地已有课程 ⇒ 必须让用户在「覆盖」和「更新」之间明确选一个。
+ */
+@Composable
+fun ImportPreviewDialog(
+    show: Boolean,
+    importLabel: String,
+    courseCount: Int,
+    semesterStartDate: LocalDateTime?,
+    initialFirstCourseWeek: Int,
+    lastAllowedWeek: Int,
+    hasExistingCourses: Boolean,
+    onCancel: () -> Unit,
+    onConfirm: (ImportPreviewChoice) -> Unit,
+) {
+    if (!show) return
+    val dark = isSystemInDarkTheme()
+    val maxWeek = lastAllowedWeek.coerceAtLeast(1)
+    var startDate by remember(show, semesterStartDate) { mutableStateOf(semesterStartDate) }
+    var firstWeek by remember(show, initialFirstCourseWeek) {
+        mutableIntStateOf(initialFirstCourseWeek.coerceIn(1, maxWeek))
+    }
+
+    OverlayDialog(
+        show = true,
+        title = ImportStrings.importReplaceExistingTitle.zh,
+        onDismissRequest = onCancel,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 「识别到 N 门课程，是否导入？」
+            Text(
+                text = ImportStrings.importCourseCountPrompt.filled("count", courseCount.toString()),
+                style = MiuixTheme.textStyles.body2,
+                lineHeight = 20.sp,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            val start = startDate
+            if (start != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                // 开学日只能按周挪：学期起点本来就归一到周一，按天调只会造出半周。
+                ImportStepperRow(
+                    title = ImportStrings.importSemesterStartDateTitle.zh,
+                    subtitle = ImportStrings.importSemesterStartDateSubtitle.zh,
+                    value = ImportSharedModel.importFormatDate(start),
+                    onDecrease = { startDate = start.minusDays(7) },
+                    onIncrease = { startDate = start.plusDays(7) },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ImportStepperRow(
+                    title = ImportStrings.importFirstCourseWeekMappingLabel.zh,
+                    subtitle = ImportStrings.importFirstCourseWeekMappingSubtitle.zh,
+                    value = firstWeek.toString(),
+                    onDecrease = { if (firstWeek > 1) firstWeek -= 1 },
+                    onIncrease = { if (firstWeek < maxWeek) firstWeek += 1 },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (firstWeek > 1) {
+                        ImportStrings.importSemesterMappingShiftHint.filled(
+                            "shiftedWeeks" to (firstWeek - 1).toString(),
+                            "calendarWeek" to firstWeek.toString(),
+                        )
+                    } else {
+                        ImportStrings.importSemesterMappingNoShiftHint.zh
+                    },
+                    style = MiuixTheme.textStyles.footnote1,
+                    lineHeight = 18.sp,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+            if (hasExistingCourses) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = ImportStrings.importReplaceExistingMessage.filled("name", importLabel),
+                    style = MiuixTheme.textStyles.body2,
+                    lineHeight = 20.sp,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = IMPORT_REPLACE_EXISTING_GUIDANCE,
+                    style = MiuixTheme.textStyles.body2,
+                    lineHeight = 20.sp,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            val choiceStart = startDate
+            if (hasExistingCourses) {
+                ImportActionButton(
+                    label = ImportStrings.courseImportOverwriteAction.zh,
+                    onClick = {
+                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
+                    },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ImportActionButton(
+                    label = ImportStrings.courseImportUpdateRecommendedAction.zh,
+                    onClick = {
+                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = false))
+                    },
+                    secondary = true,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ImportActionButton(
+                    label = ImportStrings.cancelAction.zh,
+                    onClick = onCancel,
+                    secondary = true,
+                )
+            } else {
+                // 本地没课 ⇒ 只有一条路（整份写入），不摆「覆盖 / 更新」二选一。
+                ImportActionButton(
+                    label = ImportStrings.spreadsheetImportWarningsContinue.zh,
+                    onClick = {
+                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
+                    },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ImportActionButton(
+                    label = ImportStrings.cancelAction.zh,
+                    onClick = onCancel,
+                    secondary = true,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 一行「标题 + 说明 + ◀ 取值 ▶」（Dart `pickImportSemesterConfig` 里的两个可调行）。
+ * 步进按钮用官方 [TextButton]，不自己画圆形箭头——按压反馈与无障碍都跟着 miuix。
+ */
+@Composable
+private fun ImportStepperRow(
+    title: String,
+    subtitle: String,
+    value: String,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+) {
+    val dark = isSystemInDarkTheme()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            Text(
+                text = subtitle,
+                style = MiuixTheme.textStyles.footnote1,
+                lineHeight = 18.sp,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
+        TextButton(text = "－", onClick = onDecrease)
+        Text(
+            text = value,
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.primaryText(dark)),
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        TextButton(text = "＋", onClick = onIncrease)
+    }
+}
+
+/**
+ * 节次容量不足确认（Dart `ensureImportSectionCapacity` 的对话框那一半）。
+ *
+ * 「自动补齐」会**当场改作息**（写时间模板 / 设置节次表），所以这里必须让用户看见
+ * 「现在几节 / 导入需要到第几节」，不能悄悄补。
+ */
+@Composable
+fun ImportCapacityDialog(
+    show: Boolean,
+    currentSectionCount: Int,
+    requiredSectionCount: Int,
+    onCancel: () -> Unit,
+    onAutoFill: () -> Unit,
+) {
+    if (!show) return
+    val dark = isSystemInDarkTheme()
+    OverlayDialog(
+        show = true,
+        title = ImportStrings.courseImportSectionCountInsufficientTitle.zh,
+        onDismissRequest = onCancel,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = ImportStrings.courseImportSectionCountInsufficientMessage.filled(
+                    "current" to currentSectionCount.toString(),
+                    "required" to requiredSectionCount.toString(),
+                ),
+                style = MiuixTheme.textStyles.body2,
+                lineHeight = 20.sp,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            ImportActionButton(
+                label = ImportStrings.courseImportAutoFillAndImportAction.zh,
+                onClick = onAutoFill,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ImportActionButton(
+                label = ImportStrings.cancelAction.zh,
+                onClick = onCancel,
+                secondary = true,
+            )
+        }
+    }
+}
+
+/**
+ * 随机配色组选择弹层（Dart `import_random_color_toggle.dart` 的 `showHyperosSheet`）。
+ *
+ * 选项顺序与色板表一致（[ImportRandomColorStore.GROUP_OPTIONS]）；选中项行尾显示对勾。
+ * 选完立刻落盘并关闭——与 Dart 一致（`await PlaybackRandomColorPreferences.setGroupId` 后 pop）。
+ */
+@Composable
+fun ImportColorGroupDialog(
+    show: Boolean,
+    selectedGroupId: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (!show) return
+    OverlayDialog(
+        show = true,
+        title = ImportStrings.importRandomColorGroupTitle.zh,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            for ((index, groupId) in ImportRandomColorStore.GROUP_OPTIONS.withIndex()) {
+                if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+                ImportValueRow(
+                    title = ImportRandomColorStore.groupLabel(groupId),
+                    value = if (groupId == selectedGroupId) "✓" else "",
+                    enabled = true,
+                    onClick = { onSelect(groupId) },
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            ImportActionButton(
+                label = ImportStrings.cancelAction.zh,
+                onClick = onDismiss,
+                secondary = true,
+            )
+        }
+    }
+}

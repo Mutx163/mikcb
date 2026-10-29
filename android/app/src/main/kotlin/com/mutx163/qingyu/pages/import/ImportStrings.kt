@@ -160,6 +160,11 @@ object ImportStrings {
     val importNoCourseChanges = ImportArbText("importNoCourseChanges", "没有需要新增或更新的课程")
     val aiWarningExtraSuffix = ImportArbText("aiWarningExtraSuffix", "，另有 {count} 条识别提醒")
 
+    // ── 导入预览（确认对话框的「识别到 N 门课程」）──
+    // Dart 侧这句话用在 AI 识图导入的预览确认上；ICS / 表格两条线原先各有自己的对话框链
+    // （替换选择 → 学期映射 → 节次容量），Kotlin 侧合并成一张预览卡，计数句沿用同一条 ARB。
+    val importCourseCountPrompt = ImportArbText("importCourseCountPrompt", "识别到 {count} 门课程，是否导入？")
+
     // ── 通用动作 ──
     val cancelAction = ImportArbText("cancelAction", "取消")
 
@@ -256,6 +261,7 @@ object ImportStrings {
             importOverwriteCount,
             importUpdatedCount,
             importNoCourseChanges,
+            importCourseCountPrompt,
             aiWarningExtraSuffix,
             cancelAction,
         )

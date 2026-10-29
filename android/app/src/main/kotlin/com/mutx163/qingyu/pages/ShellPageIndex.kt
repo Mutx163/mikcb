@@ -94,12 +94,10 @@ import com.mutx163.qingyu.pages.guide.StartupFlowState
 import com.mutx163.qingyu.pages.guide.UserGuidePage
 import com.mutx163.qingyu.pages.guide.planStartupSemesterWrite
 import com.mutx163.qingyu.platform.guide.GuidePermissionProbe
-import com.mutx163.qingyu.pages.import.IcsImportPage
-import com.mutx163.qingyu.pages.import.IcsImportViewState
-import com.mutx163.qingyu.pages.import.ImportEntryPage
-import com.mutx163.qingyu.pages.import.ImportEntryViewState
-import com.mutx163.qingyu.pages.import.SpreadsheetImportPage
-import com.mutx163.qingyu.pages.import.SpreadsheetImportViewState
+import com.mutx163.qingyu.pages.import.IcsImportHost
+import com.mutx163.qingyu.pages.import.ImportEntryHost
+import com.mutx163.qingyu.pages.import.ImportShellBridge
+import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterEntry
@@ -275,6 +273,9 @@ fun ShellPageContent(
     // 传输包跨路由暂存：「二维码发送」与「扫码接收」是两个独立路由，而发送载荷只有数据备份页
     // 才算得出来（要读仓储）。挂在 `when` 之上，切路由才不会丢（2026-10-29 接线）。
     val transferBridge = remember { TransferShellBridge() }
+    // 导入三页的跨路由暂存（2026-10-29 F07）：子页成功落盘后要能让入口页也自关，
+    // 对应 Dart 的 `Navigator.pop(true)` + 入口页 `_openImportPage` 的关单规则。
+    val importBridge = remember { ImportShellBridge() }
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
@@ -1106,23 +1107,25 @@ fun ShellPageContent(
         )
 
         // ── P3-G1 导入 · 基础 ────────────────────────────────────────
-        "g1.importEntry" -> ImportEntryPage(
-            viewState = ImportEntryViewState(),
+        // 2026-10-29 F07 接壳：此前三页都是「默认视图状态 + 空回调」——随机配色开关点了不动、
+        // 四条导入方式点了不动、两个「选择文件」与「下载模板」全空。现在交给三个宿主：
+        // 偏好读写走 `ImportRandomColorStore`、选文件走 SAF（20 MB 限长读）、解析走
+        // `IcsImportModel` / `SpreadsheetImportModel`（xlsx 先过 `XlsxSheetDecoder`）、
+        // 预览确认后 `replaceActiveProfileContent` 真落盘、模板写缓存再分享。
+        "g1.importEntry" -> ImportEntryHost(
+            bridge = importBridge,
             onBack = onBack,
-            onToggleRandomColors = {},
-            onPickColorGroup = {},
-            onOpenDestination = {},
+            onOpenPage = onOpenPage,
         )
-        "g1.icsImport" -> IcsImportPage(
-            viewState = IcsImportViewState(),
+        "g1.icsImport" -> IcsImportHost(
+            repository = wiring.timetable,
+            bridge = importBridge,
             onBack = onBack,
-            onChooseFile = {},
         )
-        "g1.spreadsheetImport" -> SpreadsheetImportPage(
-            viewState = SpreadsheetImportViewState(),
+        "g1.spreadsheetImport" -> SpreadsheetImportHost(
+            repository = wiring.timetable,
+            bridge = importBridge,
             onBack = onBack,
-            onDownloadTemplate = {},
-            onChooseFile = {},
         )
 
         // ── P3-G2 导入 · 仓库适配 ────────────────────────────────────
