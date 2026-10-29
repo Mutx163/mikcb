@@ -30,6 +30,7 @@ import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
+import com.mutx163.qingyu.app.IcsExportHost
 import com.mutx163.qingyu.app.LiveTestingFixtureHost
 import com.mutx163.qingyu.app.MemoryStatsHost
 import com.mutx163.qingyu.app.PerfReportHost
@@ -65,9 +66,6 @@ import com.mutx163.qingyu.pages.exam.AddExamPage
 import com.mutx163.qingyu.pages.exam.AddExamViewState
 import com.mutx163.qingyu.pages.exam.ExamListLogic
 import com.mutx163.qingyu.pages.exam.ExamListPage
-import com.mutx163.qingyu.pages.export.IcsExportOptions
-import com.mutx163.qingyu.pages.export.IcsExportPage
-import com.mutx163.qingyu.pages.export.IcsExportViewState
 import com.mutx163.qingyu.pages.feedback.FeedbackPage
 import com.mutx163.qingyu.pages.guide.HyperosShowcasePage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesPage
@@ -1177,26 +1175,10 @@ fun ShellPageContent(
                 },
             )
         }
-        "g3.icsExport" -> IcsExportPage(
-            viewState = IcsExportViewState(
-                options = IcsExportOptions(
-                    fromDate = LocalDate.now().minusDays(7),
-                    toDate = LocalDate.now(),
-                ),
-            ),
-            onBack = onBack,
-            onSelectProfile = {},
-            onFromDateChange = {},
-            onToDateChange = {},
-            onToggleEventKind = { _, _ -> },
-            onSkipHolidayCoursesChange = {},
-            onExport = {},
-            onShareExported = {},
-            onSaveExported = {},
-            onDismissExportMenu = {},
-            onSyncCalendar = {},
-            onRemoveCalendar = {},
-        )
+        // 2026-10-29 F04 接壳：此前是「写死今天-7..今天 + 11 个空回调」——课表下拉永远空
+        // （profiles 没喂）、日期点了不动、导出/分享/保存/同步/移除一个都不通。
+        // 现在交给 `IcsExportHost`：真档案 + 真事件收集（课程/考试/日程）+ 真分享/SAF/系统日历。
+        "g3.icsExport" -> IcsExportHost(wiring = wiring, onBack = onBack)
         "g3.lanEdit" -> LanEditPage(
             model = LanEditModel(),
             onBack = onBack,
