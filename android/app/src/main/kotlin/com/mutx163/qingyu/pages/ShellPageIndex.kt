@@ -150,15 +150,13 @@ import com.mutx163.qingyu.pages.sync.CloudSyncController
 import com.mutx163.qingyu.pages.sync.CloudSyncLogic
 import com.mutx163.qingyu.pages.sync.CloudSyncPage
 import com.mutx163.qingyu.pages.sync.CloudSyncStatusSource
-import com.mutx163.qingyu.pages.sync.CoupleBusyState
+import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsHost
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
-import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsPage
 import com.mutx163.qingyu.pages.sync.WebdavConnectSheet
 import com.mutx163.qingyu.platform.AppLocalSnapshotStore
 import com.mutx163.qingyu.platform.KeystoreSecretCipher
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.WebdavConfigStoreImpl
-import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.pages.task.AddTaskPage
 import com.mutx163.qingyu.pages.task.AddTaskViewState
@@ -1027,21 +1025,13 @@ fun ShellPageContent(
                 },
             )
         }
-        "f.couple" -> CoupleTimetableSettingsPage(
-            viewState = CoupleTimetableSettingsLogic.buildViewState(
-                binding = null,
-                webdavConfig = CoupleWebdavConfig(),
-                hasStoredPassword = false,
-                busy = CoupleBusyState(),
-                partnerCourseCount = 0,
-                partnerProfileName = null,
-                myWeek = 1,
-                partnerWeek = 1,
-            ),
+        // 2026-10-29（C1 收口）：这一屏原先喂 `binding = null` + 默认配置 + 三个空回调
+        // ⇒ 永远停在「尚未绑定」、九个按钮点了没反应（审核见
+        // `docs/plans/2026-10-29-compose-couple-audit.md` §四）。现在换成真宿主：
+        // 状态从仓储/prefs 读、九个动作落到控制器、导入导出走 SAF、结果弹 Toast。
+        "f.couple" -> CoupleTimetableSettingsHost(
+            wiring = wiring,
             onBack = onBack,
-            onAction = {},
-            onShiftWeekOffset = {},
-            onPickColor = { _, _ -> },
         )
 
         // ── P3-G1 导入 · 基础 ────────────────────────────────────────
