@@ -182,6 +182,14 @@ data class TimetableSettingsModel(
         BackToCurrentWeekButtonStyle.FLOATING,
     /** `timetableFloatingBackToCurrentWeekButtonOpacity`（:1517，缺键 0.96，clamp 0.55~1.0）。 */
     val timetableFloatingBackToCurrentWeekButtonOpacity: Double = 0.96,
+
+    /**
+     * `liveEnableLocalDiagnostics`（`timetable_settings.dart:517 / :851 / :1602-1603`）：
+     * 「记录应用日志」开关。缺键回落 false（Dart `lenientBool(...) ?? false`）。
+     *
+     * 设置→诊断页（`settings_diagnostics.dart:38-41 / :121-147`）唯一的读写方。
+     */
+    val liveEnableLocalDiagnostics: Boolean = false,
 ) {
 
     /**
@@ -272,6 +280,7 @@ data class TimetableSettingsModel(
         "timetableBackToCurrentWeekButtonStyle" to timetableBackToCurrentWeekButtonStyle.value,
         "timetableFloatingBackToCurrentWeekButtonOpacity" to
             timetableFloatingBackToCurrentWeekButtonOpacity,
+        "liveEnableLocalDiagnostics" to liveEnableLocalDiagnostics,
     )
 
     companion object {
@@ -402,6 +411,7 @@ data class TimetableSettingsModel(
             "glassDockShowAddButton",
             "timetableBackToCurrentWeekButtonStyle",
             "timetableFloatingBackToCurrentWeekButtonOpacity",
+            "liveEnableLocalDiagnostics",
         )
 
         /**
@@ -571,6 +581,8 @@ data class TimetableSettingsModel(
                     (LenientJson.double(json["timetableFloatingBackToCurrentWeekButtonOpacity"])
                         ?: 0.96)
                         .coerceIn(0.55, 1.0),
+                liveEnableLocalDiagnostics =
+                    LenientJson.bool(json["liveEnableLocalDiagnostics"]) ?: false,
             )
         }
 
