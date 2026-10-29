@@ -22,7 +22,9 @@ import com.mutx163.qingyu.pages.diagnostics.LiveFixtureActions
 import com.mutx163.qingyu.pages.import.ImportSharedModel
 import com.mutx163.qingyu.pages.import.ImportStrings
 import com.mutx163.qingyu.pages.live.DisplaySettingsPage
+import com.mutx163.qingyu.pages.live.DisplaySettingsStrings
 import com.mutx163.qingyu.pages.live.LiveDisplayStore
+import com.mutx163.qingyu.pages.live.LiveImagePickLogic
 import com.mutx163.qingyu.pages.live.LiveImagePickTarget
 import com.mutx163.qingyu.pages.live.LiveReminderTimingPage
 import com.mutx163.qingyu.pages.live.MiuiIslandExpandedIconMode
@@ -115,8 +117,8 @@ fun LiveDisplayHost(
                     context = context,
                     uri = uri,
                     directoryName = when (target) {
-                        LiveImagePickTarget.LABEL_LOGO -> LABEL_LOGO_DIR
-                        LiveImagePickTarget.EXPANDED_ICON -> EXPANDED_ICON_DIR
+                        LiveImagePickTarget.LABEL_LOGO -> LiveImagePickLogic.LABEL_LOGO_DIR
+                        LiveImagePickTarget.EXPANDED_ICON -> LiveImagePickLogic.EXPANDED_ICON_DIR
                     },
                     filePrefix = when (target) {
                         LiveImagePickTarget.LABEL_LOGO ->
@@ -219,13 +221,11 @@ private const val SAVE_DEBOUNCE_MILLIS: Long = 250L
 
 private const val IMAGE_MIME = "image/*"
 
-/** Dart `_labelLogoDir`（`live_settings_subpages.dart:35`）。 */
-private const val LABEL_LOGO_DIR = "miui_label_logos"
-
-/** Dart `_expandedIconDir`（同文件 `:34`）。 */
-private const val EXPANDED_ICON_DIR = "miui_expanded_icons"
-
-private const val IMAGE_PICK_FAILED_MESSAGE = "图片读取失败，请换一张再试"
+/**
+ * 选图失败提示。文案走 `DisplaySettingsStrings`（ARB `liveImagePickFailed`），
+ * 不再在渲染层写死中文——2026-10-29 质量审核发现该句绕过了 i18n 层。
+ */
+private val IMAGE_PICK_FAILED_MESSAGE: String = DisplaySettingsStrings.imagePickFailed.zh
 
 /** 选图结果三态：成功带绝对路径 / 超限 / 其他失败。 */
 private sealed interface ImagePickOutcome {
@@ -241,12 +241,13 @@ private sealed interface ImagePickOutcome {
  * 拿到的是一条**纯路径字符串**（`liveMiuiIslandLabelLogoPath`），
  * 而 `content://` 的读权限只在当前会话内、重启即失效。
  *
- * 与 Dart 对齐的三件事（`live_settings_subpages.dart:1310-1364`）：
- * 1. 落盘目录是 documents 下的 `miui_label_logos` / `miui_expanded_icons`；
- * 2. 文件名是固定前缀（`before_class_label_logo.png` 这类），不是随机名 ——
- *    这样换一张图时旧图能被同前缀清理掉，不会越攒越多；
- * 3. 上限 20 MB，**边读边判**（`ExternalImportReader.readCapped`），
- *    不先 `readBytes()` 再量大小：那一步已经在内存里花掉了，用户选一张相机原图会当场被杀。
+ * 判据（超不超限 / 存成什么名字 / 哪些旧图该删）一律交给
+ * [LiveImagePickLogic]——那层是纯函数、有 JVM 单测；这里只做「读流、写文件」。
+ *
+ * 两条**顺序**要求都不能颠倒：
+ * 1. **先挡声明长度，再读**：能挡住就别把 20 MB 读进内存；
+ * 2. **先写新图，再清旧图**：写失败时最多「多留一张旧图」，不会把用户已有的图弄没
+ *    （Dart `:1350-1361` 也是先 `writeAsBytes` 再 `_deleteManagedImageArtifacts`）。
  *
  * Flutter 的 documents 目录在 Android 上是 `<pkg>/app_flutter`（`path_provider` 口径），
  * 这里按同样位置拼：`filesDir.parent / app_flutter / <dir>`；取不到父目录就退到 `filesDir`。
@@ -262,27 +263,31 @@ private fun persistPickedImage(
     return try {
         val declaredLength = context.contentResolver.openAssetFileDescriptor(uri, "r")
             ?.use { it.length } ?: -1L
-        if (declaredLength > ExternalImportReader.MAX_IMPORT_BYTES) {
-            return ImagePickOutcome.TooLarge
-        }
+        if (declaredLength > LiveImagePickLogic.MAX_BYTES) return ImagePickOutcome.TooLarge
+
         val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
-            ExternalImportReader.readCapped(input)
-        } ?: return ImagePickOutcome.Failed
-        if (bytes.isEmpty()) return ImagePickOutcome.Failed
+            // 显式传上限：与 [LiveImagePickLogic.MAX_BYTES] 同一个数，不留第二份口径。
+            ExternalImportReader.readCapped(input, LiveImagePickLogic.MAX_BYTES)
+        }
+        when (LiveImagePickLogic.classify(declaredLength, bytes)) {
+            LiveImagePickLogic.Outcome.TOO_LARGE -> return ImagePickOutcome.TooLarge
+            LiveImagePickLogic.Outcome.FAILED -> return ImagePickOutcome.Failed
+            LiveImagePickLogic.Outcome.OK -> Unit
+        }
+        val payload = bytes ?: return ImagePickOutcome.Failed
 
         val root = context.filesDir?.parentFile ?: context.filesDir
         val targetDir = File(File(root, FLUTTER_DOCUMENTS_DIR), directoryName)
         if (!targetDir.exists() && !targetDir.mkdirs()) return ImagePickOutcome.Failed
-        // 同前缀的旧图先清掉（保留即将写入的这一份）。
-        val extension = extensionOf(context.contentResolver.getType(uri))
-        val fileName = "$filePrefix.$extension"
+
+        val fileName = LiveImagePickLogic.fileNameFor(filePrefix, context.contentResolver.getType(uri))
+        val target = File(targetDir, fileName)
+        target.writeBytes(payload)
         targetDir.listFiles()?.forEach { existing ->
-            if (existing.isFile && existing.name.startsWith("$filePrefix.") && existing.name != fileName) {
+            if (existing.isFile && LiveImagePickLogic.shouldDelete(existing.name, filePrefix, fileName)) {
                 existing.delete()
             }
         }
-        val target = File(targetDir, fileName)
-        target.writeBytes(bytes)
         ImagePickOutcome.Stored(target.absolutePath)
     } catch (_: Exception) {
         ImagePickOutcome.Failed
@@ -291,21 +296,6 @@ private fun persistPickedImage(
 
 /** `path_provider` 在 Android 上的 documents 目录名。 */
 private const val FLUTTER_DOCUMENTS_DIR = "app_flutter"
-
-/**
- * MIME 子类型 → 文件扩展名。
- *
- * 认不出的按 `png` 兜底（Dart 同一处也是 `: 'png'`）：扩展名只影响文件名，
- * 图片内容与解码方式由文件头决定，超级岛按路径读图不靠后缀。
- */
-private fun extensionOf(mimeType: String?): String = when (mimeType?.lowercase()) {
-    "image/png" -> "png"
-    "image/jpeg", "image/jpg" -> "jpg"
-    "image/webp" -> "webp"
-    "image/gif" -> "gif"
-    "image/bmp" -> "bmp"
-    else -> "png"
-}
 
 /**
  * 打开系统「勿扰权限」页面。
@@ -318,7 +308,7 @@ private fun openDoNotDisturbAccess(context: Context, toast: (String) -> Unit) {
     val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     val opened = runCatching { context.startActivity(intent) }.isSuccess
-    if (!opened) toast("这台设备没有勿扰权限设置页，请到系统设置里手动授权")
+    if (!opened) toast(DisplaySettingsStrings.doNotDisturbAccessUnavailable.zh)
 }
 
 /** 壳与正式包共用的存储装配：`FlutterSharedPreferences` + 冻结键格式。 */

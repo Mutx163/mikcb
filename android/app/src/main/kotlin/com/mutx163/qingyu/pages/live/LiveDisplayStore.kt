@@ -235,9 +235,13 @@ object LiveDisplayCodec {
                 expandedIconMode(json[KEY_DURING_END_EXPANDED_ICON_MODE] ?: json[KEY_EXPANDED_ICON_MODE]),
             miuiIslandExpandedIconPath = LenientJson.string(json[KEY_DURING_END_EXPANDED_ICON_PATH])
                 ?: LenientJson.string(json[KEY_EXPANDED_ICON_PATH]),
-            expandedDetailFields = expandedFields(
-                json[KEY_DURING_END_EXPANDED_DETAIL_FIELDS] ?: json[KEY_EXPANDED_DETAIL_FIELDS],
-            ),
+            // 回退必须落在**解析之后**，不能落在取原始值上：Dart
+            // `lenientStringList(dur_end) ?? lenientStringList(before)`（`:1690-1692`）
+            // 的 `??` 就在「解析成列表」这一步，所以课中档那个键**存在但不是列表**时
+            // 仍然要继续回退。写成 `json[dur] ?: json[before]` 在这种脏数据上会直接放弃回退，
+            // 页面变成「全部显示」——用户的顺序设置看起来就丢了。
+            expandedDetailFields = expandedFields(json[KEY_DURING_END_EXPANDED_DETAIL_FIELDS])
+                ?: expandedFields(json[KEY_EXPANDED_DETAIL_FIELDS]),
             beforeClassQuickAction = quickAction(json[KEY_BEFORE_CLASS_QUICK_ACTION]),
             beforeClassQuickActionAutoMinutes =
                 int(json, KEY_BEFORE_CLASS_QUICK_ACTION_AUTO_MINUTES, 0),

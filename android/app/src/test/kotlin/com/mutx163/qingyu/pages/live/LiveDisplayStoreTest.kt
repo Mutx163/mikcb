@@ -481,6 +481,25 @@ class LiveDisplayStoreTest {
     }
 
     @Test
+    fun `课中档展开字段是脏类型时仍回退到上课前档`() {
+        // 审核发现的等价性边界：Dart 的 `??` 在「解析成列表」之后
+        // （`lenientStringList(dur) ?? lenientStringList(before)`），所以课中档那个键
+        // 存在但不是列表时，必须继续回退。写成「先取原始值再 ?:」会在这里丢掉回退，
+        // 页面上变成「全部显示」——用户的顺序设置看起来丢了。
+        val raw = disk(
+            """
+            {"liveExpandedDetailFields":["time"],
+             "liveDuringEndExpandedDetailFields":"不是列表",
+             "liveDuringEndFollowBeforeClass":false}
+            """.trimIndent(),
+        )
+
+        val loaded = store(raw).loadDisplay(forDuringEnd = true)
+
+        assertEquals(listOf(LiveExpandedDetailField.TIME), loaded.expandedDetailFields)
+    }
+
+    @Test
     fun `展开字段写的也是 wireValue 字符串`() {
         val raw = disk()
         store(raw).saveDisplay(
