@@ -5,12 +5,12 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.app.CourseActionDispatcher
-import com.mutx163.qingyu.app.CourseActionOutcome
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.ScheduleEditDispatcher
 import com.mutx163.qingyu.app.TimetableHost
@@ -23,16 +23,29 @@ import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.calendar.HolidayProvider
 import com.mutx163.qingyu.calendar.HolidayService
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
+import com.mutx163.qingyu.pages.course.CourseActionEvent
 import com.mutx163.qingyu.pages.course.CourseActionSheet
+import com.mutx163.qingyu.pages.course.CourseActionSheetModel
+import com.mutx163.qingyu.pages.course.CourseDeleteScope
 import com.mutx163.qingyu.pages.course.CourseGroup
+import com.mutx163.qingyu.pages.course.CourseSheetWeatherInfo
+import com.mutx163.qingyu.pages.course.CourseSheetWeatherPrefs
+import com.mutx163.qingyu.pages.course.CourseSuspendScope
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshStore
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
+import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.weather.JdkWeatherHttp
+import com.mutx163.qingyu.weather.WeatherPreferences
+import com.mutx163.qingyu.weather.WeatherProvider
+import com.mutx163.qingyu.weather.WeatherService
 
 /**
  * 壳的**接线层**（Phase 3.5 · L5，Lead 专属写作用域）。
@@ -90,6 +103,35 @@ class ShellWiring(context: Context) {
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
 
     /**
+     * 「课表自动更新」的配置与台账（通用设置页那一整块）。
+     *
+     * 为什么**不**塞进 [settingsModel]：Dart 侧明确把它另存一个 prefs 键
+     * （`lib/services/course_auto_refresh_store.dart:9-18`：台账必须留本机，
+     * 不能跟着课表备份/同步跑到别的设备上去）。键名与值类型逐字对齐 Dart。
+     */
+    val autoRefresh: CourseAutoRefreshStore = CourseAutoRefreshStore(keyValueStore)
+
+    /** 只读一次盘：下面两个运行期偏好初值来自同一份设置，别为了两行解析两遍 JSON。 */
+    private val initialSettings: TimetableSettingsModel = settingsModel.load()
+
+    /**
+     * 页面转场速度（Dart `pageTransitionSpeed`，0.5~2.5，1.0 = 原速）。
+     *
+     * 设为**可观察状态**：设置页拖滑杆时经 `SettingsHost.onTransitionSpeedChanged`
+     * 当场写这里，`NavDisplay` 读到新值后按倍率缩放转场时长 —— 与 Dart
+     * `HyperosMotionPlatform.applyUserTransitionSpeed` 的「不重启也立刻变快变慢」一致。
+     */
+    var pageTransitionSpeed: Double by mutableStateOf(initialSettings.pageTransitionSpeed)
+
+    /**
+     * 应用内震动总开关（Dart `enableHaptics`）。
+     *
+     * 壳在 `PagesShell` 根部按它决定要不要把 [androidx.compose.ui.hapticfeedback.HapticFeedback]
+     * 换成空实现 —— 这样 miuix 组件自带的触感（滚轮、滚到尽头）也跟着这个开关走。
+     */
+    var enableHaptics: Boolean by mutableStateOf(initialSettings.enableHaptics)
+
+    /**
      * 节假日数据（设备级状态：年度缓存 / 自定义假期 / 更新日志），2026-10-29 新增。
      *
      * 三处共用同一份实例，这就是「一处改、多处跟着变」的前提：
@@ -124,33 +166,33 @@ class ShellWiring(context: Context) {
     }.getOrNull()
 
     /**
-     * 「课表自动更新」的配置与台账（通用设置页那一整块）。
+     * 天气（设备级状态：开关 / 城市 / 预报缓存），2026-10-29 从 `ShellPageIndex` 的
+     * `remember` 挪到这里。
      *
-     * 为什么**不**塞进 [settingsModel]：Dart 侧明确把它另存一个 prefs 键
-     * （`lib/services/course_auto_refresh_store.dart:9-18`：台账必须留本机，
-     * 不能跟着课表备份/同步跑到别的设备上去）。键名与值类型逐字对齐 Dart。
-     */
-    val autoRefresh: CourseAutoRefreshStore = CourseAutoRefreshStore(keyValueStore)
-
-    /** 只读一次盘：下面两个运行期偏好初值来自同一份设置，别为了两行解析两遍 JSON。 */
-    private val initialSettings: TimetableSettingsModel = settingsModel.load()
-
-    /**
-     * 页面转场速度（Dart `pageTransitionSpeed`，0.5~2.5，1.0 = 原速）。
+     * ## 为什么必须挪
      *
-     * 设为**可观察状态**：设置页拖滑杆时经 `SettingsHost.onTransitionSpeedChanged`
-     * 当场写这里，`NavDisplay` 读到新值后按倍率缩放转场时长 —— 与 Dart
-     * `HyperosMotionPlatform.applyUserTransitionSpeed` 的「不重启也立刻变快变慢」一致。
-     */
-    var pageTransitionSpeed: Double by mutableStateOf(initialSettings.pageTransitionSpeed)
-
-    /**
-     * 应用内震动总开关（Dart `enableHaptics`）。
+     * 课表的**两个入口**（底部坞 `DockSlot.TIMETABLE` 与页面层 `c1.week`）都要弹课程操作层，
+     * 弹层里有「天气」行。provider 原先只在 `ShellPageIndex` 的 `remember` 里造一份，
+     * 底部坞那条路根本拿不到 ⇒ 同一次点击从两个入口进去，一个有天气行、一个没有。
      *
-     * 壳在 `PagesShell` 根部按它决定要不要把 [androidx.compose.ui.hapticfeedback.HapticFeedback]
-     * 换成空实现 —— 这样 miuix 组件自带的触感（滚轮、滚到尽头）也跟着这个开关走。
+     * 挪进 `ShellWiring` 后全 App 只有**一份**（`rememberShellWiring` 保证），
+     * 与 Dart 把 `WeatherProvider` 挂在 Navigator 之上同一语义：
+     * 设置页改城市 → 弹层那一行跟着变。
+     *
+     * 它同时被三处消费：设置页 `b.weather`、选城页 `j.weatherCity`、课表操作弹层。
      */
-    var enableHaptics: Boolean by mutableStateOf(initialSettings.enableHaptics)
+    val weather: WeatherProvider by lazy {
+        val service = WeatherService(JdkWeatherHttp())
+        WeatherProvider(
+            service = service,
+            preferences = WeatherPreferences(PrefsKeyValueStore(context)),
+            locationSource = AndroidWeatherLocationSource(
+                context = context,
+                reverseGeocode = { lat, lon -> service.reverseGeocode(lat, lon) },
+                networkGeocode = { service.networkGeocode() },
+            ),
+        )
+    }
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。
@@ -208,6 +250,15 @@ class ShellWiring(context: Context) {
         pendingScheduleOccurrenceDate = null
         pendingScheduleInitialDate = null
     }
+
+    /**
+     * 时间模板「编辑节次」页要打开哪一套（P35-TS，2026-10-29）。
+     *
+     * `d3.timeSchemes`（列表页宿主）写、`d3.timeSchemeEditor`（编辑页宿主）读：
+     * 两者是**两条独立的壳路由分支**，共享不到局部状态，与 [pendingEditCourse] 同属
+     * 「跨子树传一次、用完即清」的意图载体。用完由编辑页宿主清空（返回时清）。
+     */
+    var pendingTimeSchemeEditId: String? = null
 
     /**
      * 统计深度分析页当前要打开的模块（ST1）：`e.statistics` 的 `onOpenAnalysis` 写入、
@@ -344,15 +395,24 @@ fun rememberShellWiring(): ShellWiring {
  * （见 `TimetableRepository` 的 KDoc）。`week` 必须跟着快照走：调课/停课都按「当前周」算，
  * 用一次性的旧值会把课挪错周。
  *
+ * ## 参数透传（2026-10-29 重做后新增的两条硬要求）
+ *
+ * 1. **操作对象按事件里的 `courseId` 现取**，不用 `actionTarget`：弹层内部允许切到冲突课
+ *    （Dart `_selectedIndex`），用旧引用会把编辑/删除落到「最初点开的那门课」上。
+ * 2. **`weatherProvider` 必须传下来**：弹层「天气」行的数据只在壳里有（设备级 provider），
+ *    不传就是「设置里开了天气、弹层里没有那一行」。
+ *
  * ## 失败不假装成功
  *
- * `NotWired`（例如「单节课提醒」本机没有调度能力）弹真实原因，**不静默关掉**——
- * 静默关掉正是「点了没反应」的另一种形态。
+ * 写库失败（分派器回滚并 rethrow，Dart 同一口径）一律如实 toast，**不静默关掉**——
+ * 静默就是「点了没反应」的另一种形态。单节课提醒这一行已经在渲染层按「本机没有调度器」
+ * 不出现（见 `CourseActionDispatcher.isClassAlarmAvailable`），不再走 NotWired 提示。
  */
 @Composable
 fun TimetableWithCourseActions(
     wiring: ShellWiring,
     onNavigate: (String) -> Unit,
+    weatherProvider: WeatherProvider? = null,
 ) {
     val repository = wiring.timetable
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
@@ -364,6 +424,94 @@ fun TimetableWithCourseActions(
     var actionTarget by remember { mutableStateOf<Course?>(null) }
     val context = LocalContext.current
     val week = snapshot.currentWeek
+    // 设置模型：弹层里的天气四开关要它。⚠️ 每次重组都 `load()` 一次——设置存储没有变更通道
+    // （与 `TimetableHost` 里那一处同口径，见那里的注释）。
+    val settingsModel = wiring.settingsModel.load()
+
+    // 天气 provider **不是** Compose 可观察的（它是 `addListener` 那套）。这里用一个计数
+    // 把「数据到了 / 城市变了」转成重组；`DisposableEffect` 负责订阅与退订，
+    // 退订必须用**同一个** lambda 引用，否则监听器会漏在 provider 里。
+    var weatherTick by remember(weatherProvider) { mutableIntStateOf(0) }
+    DisposableEffect(weatherProvider) {
+        val provider = weatherProvider
+        if (provider == null) {
+            onDispose { }
+        } else {
+            val listener: () -> Unit = { weatherTick += 1 }
+            provider.addListener(listener)
+            onDispose { provider.removeListener(listener) }
+        }
+    }
+
+    // 预览条目：主课 + 同周冲突课（Dart `timetable_course_action_items.dart`）。
+    // 情侣课本轮**没有数据源**（Compose 周视图还没有情侣叠加层），按缺口留空口、不伪造。
+    val previewItems = remember(actionTarget, week, snapshot.courses) {
+        val target = actionTarget
+        if (target == null) {
+            emptyList()
+        } else {
+            CourseActionSheetModel.buildPreviewItems(
+                courses = snapshot.courses,
+                primary = target,
+                week = week,
+            )
+        }
+    }
+
+    val weatherPrefs = remember(settingsModel) {
+        CourseSheetWeatherPrefs(
+            showOnSheet = settingsModel.weatherShowOnSheet,
+            showPhenomenon = settingsModel.weatherShowPhenomenon,
+            showTemperature = settingsModel.weatherShowTemperature,
+            showProbability = settingsModel.weatherShowProbability,
+        )
+    }
+
+    // 调课弹层要的节次表：Dart 是
+    // `resolvedSectionsForCourse(course) ?? scheme?.sections ?? settings.sections`
+    // （`timetable_screen.dart:9153-9158`）。**不能**直接传全局 `settings.sections`：
+    // 钉了自定义钟点的课会显示错时间、选到越界节还会被写库校验拒掉。
+    // 这里按**主课**解析（弹层允许切到冲突课，冲突课一般同作息；差异记在审核报告诚实清单）。
+    val sectionTimes = remember(actionTarget, snapshot.timeSchemes, snapshot.settings) {
+        val target = actionTarget
+        val scheme = if (target == null) {
+            null
+        } else {
+            TimeSchemeLogic.resolveCourseTimeScheme(
+                schemes = snapshot.timeSchemes,
+                settings = snapshot.settings,
+                course = target,
+            )
+        }
+        scheme?.sections?.takeIf { it.isNotEmpty() } ?: snapshot.settings.sections
+    }
+
+    // 弹层内容描述（模型层算，渲染层只画）。
+    // 依赖里带 `snapshot`：作业 / 设置 / 课程任何一处变更后都要重算那一行的标题与副题。
+    val details = remember(previewItems, week, snapshot, weatherTick, weatherPrefs, sectionTimes) {
+        CourseActionSheetModel.build(
+            previewItems = previewItems,
+            week = week,
+            tasks = repository.tasks,
+            weatherPrefs = weatherPrefs,
+            dateOf = { course -> repository.dateForCourseOccurrence(course, week)?.toLocalDate() },
+            weatherOf = { course ->
+                val date = repository.dateForCourseOccurrence(course, week)
+                val provider = weatherProvider
+                when {
+                    date == null -> CourseSheetWeatherInfo()
+                    provider == null -> CourseSheetWeatherInfo(date = date.toLocalDate())
+                    else -> CourseSheetWeatherInfo(
+                        date = date.toLocalDate(),
+                        summary = provider.summaryForCourse(date, course.startTime, course.endTime),
+                        awaiting = provider.isAwaitingData,
+                    )
+                }
+            },
+            weekCount = snapshot.settings.semesterWeekCount,
+            sectionTimes = sectionTimes,
+        )
+    }
 
     TimetableHost(
         repository = repository,
@@ -409,7 +557,7 @@ fun TimetableWithCourseActions(
         // ⚠️ 这里每次重组都会 `load()` 一次——设置存储没有变更通道（见交付方诚实清单第 2 条）。
         // 验收路径（杀进程重开 / 离开再回课表）都拿得到新值；「课表页正开着时后台改设置」
         // 不会自刷，但本 App 里不存在这种同屏场景。
-        settingsModel = wiring.settingsModel.load(),
+        settingsModel = settingsModel,
         // 顶栏右上角「更多」菜单：8 个默认条目 → 壳页面 id（见 shellTimetableMenuPageId）。
         homeMenuItems = TimetableMenuDefaults.entries(),
         onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onNavigate) },
@@ -419,50 +567,91 @@ fun TimetableWithCourseActions(
     CourseActionSheet(
         course = course,
         week = week,
+        previewItems = previewItems,
+        details = details,
         onDismiss = { actionTarget = null },
-        onAction = { action ->
-            if (course == null) {
-                actionTarget = null
-            } else {
-                when (val outcome = CourseActionDispatcher.dispatch(action, course, week, repository)) {
-                    is CourseActionOutcome.OpenEdit -> {
+        // 弹层只抛事件、不写库；写库与导航都在这里。
+        //
+        // ⚠️ **不能**用 `actionTarget` 当被操作对象：弹层内部允许切到冲突课
+        // （Dart `_selectedIndex`），事件自带 `courseId`。一律按 id 回最新快照取实体，
+        // 这样既不会把操作落到「最初点开的那门课」，也不会拿旧对象覆盖别人刚写过的字段。
+        onEvent = { event ->
+            val target = snapshot.courses.firstOrNull { it.id == event.courseId }
+            actionTarget = null
+            // 课程在弹层打开期间被删掉了（或换了课表）：不写库、不假装成功。
+            if (target != null) {
+                when (event) {
+                    is CourseActionEvent.Edit -> {
                         // 带**同一门课**进编辑页（参数透传，别丢）。单课编辑，清掉可能的组意图。
-                        wiring.pendingEditCourse = outcome.course
+                        wiring.pendingEditCourse = target
                         wiring.pendingAddCourseSeed = null
                         wiring.pendingEditGroup = null
-                        actionTarget = null
                         onNavigate("d1.addCourse")
                     }
-                    is CourseActionOutcome.OpenAddTask -> {
-                        wiring.pendingTaskCourse = outcome.course
+                    is CourseActionEvent.AddTask -> {
+                        wiring.pendingTaskCourse = target
                         // 从课程加作业是「新建」，必须清掉可能残留的「编辑目标」，
                         // 否则会误把上一次没保存的编辑对象载进表单。
                         wiring.pendingTaskForEdit = null
-                        actionTarget = null
                         onNavigate("d2.addTask")
                     }
-                    is CourseActionOutcome.NotWired -> {
-                        Toast.makeText(context, outcome.reason, Toast.LENGTH_SHORT).show()
-                        actionTarget = null
+                    // 删除 / 停课 / 调课 / 备注：分派器写库并通知，宿主会自己重组。
+                    // 落盘失败的分派器会回滚并 rethrow（Dart 同一口径），**不接就是静默失败**，
+                    // 所以每条都如实 toast 出来。
+                    is CourseActionEvent.Delete -> try {
+                        when (event.scope) {
+                            CourseDeleteScope.WHOLE_COURSE ->
+                                CourseActionDispatcher.deleteCourse(repository, target.id)
+                            CourseDeleteScope.THIS_WEEK ->
+                                CourseActionDispatcher.deleteOccurrence(repository, target.id, week)
+                        }
+                    } catch (_: Exception) {
+                        Toast.makeText(context, TimetableStrings.deleteFailed.zh, Toast.LENGTH_SHORT).show()
                     }
-                    // 删除 / 停课 / 调课：分派器已经写库并通知，宿主会自己重组。
-                    else -> actionTarget = null
+                    is CourseActionEvent.Suspend -> try {
+                        when (event.scope) {
+                            CourseSuspendScope.THIS_WEEK ->
+                                CourseActionDispatcher.toggleSuspensionThisWeek(repository, target.id, week)
+                            // 整门：当前有停课记录 ⇒ 恢复全部；否则停全部。
+                            // 判据与弹层里那两行文案同源（`CourseFollowupModel.suspendScopeOptions`）。
+                            CourseSuspendScope.ALL_WEEKS ->
+                                if (target.suspendedWeeks.isNullOrEmpty()) {
+                                    CourseActionDispatcher.suspendAllWeeks(repository, target.id)
+                                } else {
+                                    CourseActionDispatcher.unsuspendAllWeeks(repository, target.id)
+                                }
+                        }
+                    } catch (_: Exception) {
+                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                    }
+                    is CourseActionEvent.Reschedule -> try {
+                        CourseActionDispatcher.rescheduleOccurrence(
+                            port = repository,
+                            courseId = target.id,
+                            sourceWeek = week,
+                            targetWeek = event.target.targetWeek,
+                            targetDayOfWeek = event.target.targetDayOfWeek,
+                            targetStartSection = event.target.targetStartSection,
+                            targetEndSection = event.target.targetEndSection,
+                            targetLocation = event.target.targetLocation,
+                        )
+                    } catch (_: Exception) {
+                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                    }
+                    is CourseActionEvent.SaveNotes -> try {
+                        // `hasHomework` 由分派器保留原值（Dart `course_note_sheet.dart:160-175`）。
+                        CourseActionDispatcher.saveCourseNotes(
+                            port = repository,
+                            courseId = target.id,
+                            week = week,
+                            wholeNote = event.wholeNote,
+                            sessionNoteText = event.sessionNote,
+                        )
+                    } catch (_: Exception) {
+                        Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
-        },
-        onReschedule = { targetWeek, day, start, end ->
-            if (course != null) {
-                CourseActionDispatcher.rescheduleOccurrence(
-                    port = repository,
-                    courseId = course.id,
-                    sourceWeek = week,
-                    targetWeek = targetWeek,
-                    targetDayOfWeek = day,
-                    targetStartSection = start,
-                    targetEndSection = end,
-                )
-            }
-            actionTarget = null
         },
     )
 }
@@ -493,6 +682,9 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/settings/appearance-editor" -> "b.appearanceEditor"
     "/settings/semester" -> "b.semester"
     "/settings/time-schemes" -> "d3.timeSchemes"
+    // 时间模板「编辑节次」子页（P35-TS）：列表页点卡片按钮 / 新建成功后推这一页，
+    // 具体编辑哪一套走 `ShellWiring.pendingTimeSchemeEditId`（路由串不带参数，与其余页面同构）。
+    "/settings/time-schemes/editor" -> "d3.timeSchemeEditor"
     "/settings/timetable-page" -> "b.timetablePage"
     "/settings/holiday" -> "b.holiday"
     "/settings/holiday/advanced" -> "b.holidayAdvanced"

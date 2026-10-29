@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseSessionNote
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -290,6 +291,138 @@ class CourseActionDispatcherTest {
         // 渲染层用的是同一个判据（Dart `course_action_sheet.dart:889` 把按钮置灰）
         assertFalse(CourseActionDispatcher.canReschedule(target, week = 9))
         assertTrue(CourseActionDispatcher.canReschedule(target, week = 2))
+    }
+
+    // ================================================================
+    // 6. 备注弹层的写入口径（Dart `course_note_sheet.dart:149-197`）
+    // ================================================================
+
+    @Test
+    fun `保存备注写共享简介并清掉 legacy note`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3)
+                .copy(description = null, note = "旧备注"),
+        )
+
+        val saved = CourseActionDispatcher.saveCourseNotes(
+            port = repo,
+            courseId = "c1",
+            week = 2,
+            wholeNote = "  教材第 3 章  ",
+            sessionNoteText = "  带计算器  ",
+        )
+
+        assertEquals("首尾空白要 trim 掉", "教材第 3 章", saved.description)
+        // Dart `note: null`：两处都留着会出现「改了一处、另一处还是旧值」的漂移。
+        assertEquals(null, saved.note)
+        assertEquals("带计算器", saved.sessionNoteForWeek(2)?.text)
+        assertEquals("只写这一周", 1, saved.normalizedSessionNotesMap?.size)
+        // 落盘也要真的写进去（不是只改返回值）
+        assertEquals("教材第 3 章", repo.snapshot.courses.single().description)
+    }
+
+    @Test
+    fun `保存备注保留本周作业标记 只改文本`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3).copy(
+                sessionNotes = mapOf(2 to CourseSessionNote(text = "旧文字", hasHomework = true)),
+            ),
+        )
+
+        val saved = CourseActionDispatcher.saveCourseNotes(
+            port = repo,
+            courseId = "c1",
+            week = 2,
+            wholeNote = null,
+            sessionNoteText = "新文字",
+        )
+
+        assertEquals("新文字", saved.sessionNoteForWeek(2)?.text)
+        // 关键：用户只改一句备注，那门课本周的作业标记不能被悄悄清掉
+        // （清掉之后 homeworkMark 作业下次重算会消失，Dart 注释 :160-164 专写这条）。
+        assertTrue(saved.sessionNoteForWeek(2)?.hasHomework == true)
+    }
+
+    @Test
+    fun `清空备注文本时保留作业标记 而不是整条删掉`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3).copy(
+                sessionNotes = mapOf(2 to CourseSessionNote(text = "旧文字", hasHomework = true)),
+            ),
+        )
+
+        val saved = CourseActionDispatcher.saveCourseNotes(
+            port = repo,
+            courseId = "c1",
+            week = 2,
+            wholeNote = null,
+            sessionNoteText = "   ",
+        )
+
+        val note = saved.sessionNoteForWeek(2)
+        assertTrue("有作业标记时不能写 null（normalizedOrNull 口径）", note != null)
+        assertEquals("", note?.text)
+        assertTrue(note?.hasHomework == true)
+    }
+
+    @Test
+    fun `没有作业时清空文本只删这一周 别的周备注不动`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 4).copy(
+                sessionNotes = mapOf(
+                    2 to CourseSessionNote(text = "第二周", hasHomework = false),
+                    4 to CourseSessionNote(text = "第四周", hasHomework = false),
+                ),
+            ),
+        )
+
+        val saved = CourseActionDispatcher.saveCourseNotes(
+            port = repo,
+            courseId = "c1",
+            week = 2,
+            wholeNote = null,
+            sessionNoteText = "",
+        )
+
+        assertEquals(null, saved.sessionNoteForWeek(2))
+        assertEquals("第四周", saved.sessionNoteForWeek(4)?.text)
+    }
+
+    @Test
+    fun `简介写给同名课的其它课次`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3, dayOfWeek = 1),
+            course(id = "c2", name = "高等数学", startWeek = 1, endWeek = 3, dayOfWeek = 3),
+        )
+
+        CourseActionDispatcher.saveCourseNotes(
+            port = repo,
+            courseId = "c1",
+            week = 1,
+            wholeNote = "同名课共享简介",
+            sessionNoteText = null,
+        )
+
+        // Dart 注释：「Write shared description so all same-name schedule entries see it」。
+        assertEquals(
+            "同名课次必须跟着变（description 是课程级共享字段）",
+            "同名课共享简介",
+            repo.snapshot.courses.first { it.id == "c2" }.description,
+        )
+        // 另一条课次的单周备注不受影响（它是按条目 + 周次存的）。
+        assertEquals(null, repo.snapshot.courses.first { it.id == "c2" }.normalizedSessionNotesMap)
+    }
+
+    @Test
+    fun `课程不存在时抛错 不静默成功`() {
+        val repo = repositoryWith(course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3))
+        var threw = false
+        try {
+            CourseActionDispatcher.saveCourseNotes(repo, "missing", 1, "x", "y")
+        } catch (e: IllegalArgumentException) {
+            threw = true
+        }
+        assertTrue("找不到课必须抛，不能假装写成功", threw)
     }
 
     // ================================================================

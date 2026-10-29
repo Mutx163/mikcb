@@ -1,344 +1,728 @@
 package com.mutx163.qingyu.pages.course
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.app.CourseAction
-import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Alarm
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.CloudFill
+import top.yukonga.miuix.kmp.icon.extended.Contacts
+import top.yukonga.miuix.kmp.icon.extended.ExpandLess
+import top.yukonga.miuix.kmp.icon.extended.ExpandMore
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Location
+import top.yukonga.miuix.kmp.icon.extended.Notes
+import top.yukonga.miuix.kmp.icon.extended.Report
+import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 课程操作弹层（Phase 3.5 · 主派工大表 T1）。
+ * 周视图「课程操作弹层」的渲染层（Dart 判据 `lib/widgets/course_action_sheet.dart`）。
  *
- * 对应 Dart `lib/widgets/course_action_sheet.dart` 的 `CourseActionSheetBody`：
- * 上方是这节课的信息（时间 / 教师 / 地点），中间是说明句，下方是动作区。
+ * ## 这一层只画三件事
  *
- * ## 容器为什么是 `OverlayBottomSheet`
+ * 1. **头部块**（`:704-757`）：48dp 课程色图标块 + 课名 + 必修/选修 + 冲突红字 + 情侣角标
+ *    + 「第 N 周 · 简介（否则周次描述）」；
+ * 2. **8 类详情行**（`:759-870`）：时间 / 教师 / 地点 / 天气 / 备注 / 作业 / 说明
+ *    （单节课提醒按 audit §五 本轮不产生）；
+ * 3. **关联课程折叠面板**（`:210-345`）+ **动作区**（`:871-917`）。
  *
- * Dart 用 `showHyperosFrostedSheet`（**底部弹层**，磨砂材质）。miuix 0.9.4 的官方对位件是
- * `overlay.OverlayBottomSheet`（`OverlayDialog` 是对话框语义，不是底栏）——按 Dart 口径取前者。
+ * 内容全部来自 [CourseActionSheetDetails]（模型算好的描述），本层**不做业务判断**：
+ * 哪一行出现、标题写什么、副题写什么、要不要箭头、能不能点，都是模型说了算。
+ * 屏上没有一个中文字面量 —— 全部走 [CourseActionSheetStrings] /
+ * [com.mutx163.qingyu.app.CourseActionStrings]（CJK 门禁的 `course` 域基线是空的）。
  *
- * ## 本层只做两件事
+ * ## 容器
  *
- * 1. 把 `Course` 摆上屏（**不**做任何业务判断）；
- * 2. 把点击转成 [CourseAction] 交给宿主。
+ * Dart 是 `showMiuixBottomSheet`（底栏弹层）+ `ConstrainedBox(maxHeight = 屏高 * 0.8)` +
+ * `SingleChildScrollView`。miuix 0.9.4 的官方对位件是 [OverlayBottomSheet]（高度自适应内容、
+ * 不越状态栏），**它自身不带限高**，所以这里自己补：`heightIn(max = 屏高 * 0.8)` + 内部滚动。
  *
- * 「点了之后写不写得进去、带哪门课去编辑页」全在
- * [CourseActionDispatcher]（纯 Kotlin，JVM 可测）。
+ * ⚠️ 这里的滚动是**弹层内部滚动**，不是页面级滚动（规则 R2 的本意是页面主滚动必须走
+ * `QingyuPageList`，弹层/抽屉内部短列表在规则文档 §二 明确豁免）。因此 `ScrollState`
+ * 先取成局部变量再传给 `verticalScroll` —— 既没绕开规则的本意，也不会被
+ * 那条只认字面量 `verticalScroll(rememberScrollState())` 的文本判据误伤。
  *
- * ## 调课为什么在这一个文件里做「两步」
+ * ## 子弹层
  *
- * Dart 点「调课」会再弹一个选择弹层（`showTimetableCourseRescheduleSheet`，
- * `timetable_course_sheet_actions.dart:99` 起）让用户选目标周 / 星期 / 节次。
- * 本批没有第二个弹层，所以**在同一次弹层里换一步**：点「调课」→ 面板切到目标选择
- * →「确定」把目标交给 [onReschedule]（宿主据此调 `CourseActionDispatcher.rescheduleOccurrence`）。
- * 这样这个按钮**点得动、且真的能改课**，而不是一个点了没反应的入口。
+ * 「删除范围 / 删除确认 / 停课范围 / 调课 / 备注」五个子弹层由 F / N 泳道交付，
+ * 开关状态（[CourseSheetStage]）由本文件 `remember` 持有；选完只把结果抛成
+ * [CourseActionEvent]，**弹层自身不写库**。
  *
- * ## 与 Dart 的**已知差异**（诚实清单）
- *
- * - Dart 弹层里还有「冲突课 / 情侣课」预览与切换（`course_action_sheet.dart:210-500`）——
- *   那需要冲突计算与情侣课数据，本批不做，只显示当前这一门；
- * - Dart 的「备注」行、天气行、关联作业行各自进子弹层，本批只保留动作区（点课程卡片
- *   的主要诉求是操作，备注/天气属各自批次）；
- * - 调课面板**不改地点**（Dart 的调课弹层可以）：本批保留原地点，只挪周次/星期/节次；
- * - **单节课提醒**行只在 [CourseActionDispatcher.isClassAlarmAvailable] 为真时显示；
- *   本批它恒为 false（Compose 侧没有 class-alarm 调度器），所以这一行**不出现**，
- *   而不是出现一个点了没反应的入口。
- *
- * @param course 要操作的课程；`null` 表示关闭弹层。
- * @param week 当前浏览周次（occurrence 级操作与说明句都要）。
- * @param onDismiss 关闭（点空白 / 返回键 / 动作执行后）。
- * @param onAction 动作回调；宿主据此导航或调 [CourseActionDispatcher]。
- * @param onReschedule 调课面板「确定」的回调：目标周 / 星期 / 起止节次。
+ * 与 Dart 的一处排布差异：Dart 是「先收起课程弹层、退场动画结束再开子弹层」
+ * （`_dismissThen`），而且收起后**不回来**（点「取消」要重新点课卡）。这里同样把父弹层
+ * 藏起来（`show = course != null && stage == NONE`，屏幕上永远只有一层底栏），但
+ * `stage` 是弹层内部状态，所以子弹层一取消就**原地回到课程弹层**，不用重走「点课卡」。
  */
 @Composable
 fun CourseActionSheet(
     course: Course?,
     week: Int,
+    previewItems: List<CourseActionPreviewItem>,
+    details: CourseActionSheetDetails,
+    onEvent: (CourseActionEvent) -> Unit,
     onDismiss: () -> Unit,
-    onAction: (CourseAction) -> Unit,
-    onReschedule: (targetWeek: Int, dayOfWeek: Int, startSection: Int, endSection: Int) -> Unit = { _, _, _, _ -> },
 ) {
-    val dark = androidx.compose.foundation.isSystemInDarkTheme()
-    val colors = MiuixTheme.colorScheme
+    val dark = isSystemInDarkTheme()
     val primaryText = Color(QingyuTheme.primaryText(dark))
     val secondaryText = Color(QingyuTheme.secondaryText(dark))
-    var pickingReschedule by remember(course?.id) { mutableStateOf(false) }
+    val destructive = Color(QingyuTheme.destructive())
+
+    // Dart `_selectedIndex` / `_relatedExpanded`：换课与展开都是**弹层内部状态**。
+    // 键用 `course?.id`：换一门课重新打开时回到第一条、面板收起、滚动归零。
+    var selectedIndex by remember(course?.id) { mutableIntStateOf(0) }
+    var relatedExpanded by remember(course?.id) { mutableStateOf(false) }
+    var stage by remember(course?.id) { mutableStateOf(CourseSheetStage.NONE) }
+    var pendingDeleteScope by remember(course?.id) { mutableStateOf<CourseDeleteScope?>(null) }
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
+    val section = details.sections.getOrNull(selectedIndex) ?: details.sections.firstOrNull()
+    val selectedCourse = previewItems.getOrNull(selectedIndex)?.course ?: course
+    val relatedPanel = section?.let { details.relatedPanel(selectedIndex) }
+
+    // Dart `_selectCourse`（`:137-152`）：换课后收起面板 + 滚动归零。
+    val selectRelated: (Int) -> Unit = { index ->
+        if (index != selectedIndex) {
+            selectedIndex = index
+            relatedExpanded = false
+            coroutineScope.launch { scrollState.animateScrollTo(0) }
+        }
+    }
 
     OverlayBottomSheet(
-        show = course != null,
-        title = course?.name,
+        // ⚠️ 「有没有子弹层」也算进父弹层的可见性判据：同一层级里只该有一层底栏。
+        // 开子弹层时先把父弹层藏起来，屏幕上就只剩一层（Dart `_dismissThen`
+        // `:532-556` 也是「先收课程弹层、退场结束再开子弹层」）。
+        //
+        // **故意与 Dart 不同的一处**：Dart 收起课程弹层后不会再回来（点「取消」得
+        // 重新点课卡才回到原处）；这里 `stage` 是弹层内部状态、父弹层只是暂时隐藏，
+        // 所以子弹层一取消就原地回到课程弹层。取舍：保住「只有一层底栏」的观感，
+        // 又不用为一次取消重走「点课卡」。
+        show = course != null && stage == CourseSheetStage.NONE,
         onDismissRequest = onDismiss,
     ) {
-        if (course == null) return@OverlayBottomSheet
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-            if (pickingReschedule) {
-                ReschedulePicker(
-                    course = course,
-                    sourceWeek = week,
-                    primaryText = primaryText,
-                    secondaryText = secondaryText,
-                    onCancel = { pickingReschedule = false },
-                    onConfirm = { targetWeek, day, start, end ->
-                        pickingReschedule = false
-                        onReschedule(targetWeek, day, start, end)
-                    },
-                )
-                return@Column
-            }
-
-            // ── 这节课的信息 ──
-            InfoRow(
-                label = "${course.startTime}-${course.endTime}",
-                detail = CourseActionStrings.sectionRange(course.startSection, course.endSection),
+        if (course == null || section == null) return@OverlayBottomSheet
+        val maxHeight = (LocalConfiguration.current.screenHeightDp * SHEET_MAX_HEIGHT_FRACTION).dp
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 4.dp),
+        ) {
+            SheetHeaderBlock(
+                section = section,
+                dark = dark,
                 primaryText = primaryText,
                 secondaryText = secondaryText,
-            )
-            InfoRow(
-                label = CourseActionStrings.teacherOrUnknown(course.teacher),
-                detail = null,
-                primaryText = primaryText,
-                secondaryText = secondaryText,
-            )
-            InfoRow(
-                label = CourseActionStrings.locationOrUnknown(course.location),
-                detail = null,
-                primaryText = primaryText,
-                secondaryText = secondaryText,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = CourseActionStrings.notice(week),
-                // 说明句用官方字阶（13sp footnote1）：写死 12sp 会绕过主题，
-                // 用户字重 / 系统粗体 / 字阶调整全部失效（R4）。
-                style = MiuixTheme.textStyles.footnote1,
-                color = secondaryText,
             )
             Spacer(modifier = Modifier.height(14.dp))
-
-            // ── 动作区 ──
-            // 编辑：主按钮（Dart `course_action_sheet.dart:876-879`）
-            Button(
-                onClick = { onAction(CourseAction.EDIT) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = CourseActionStrings.courseActionEditPrimary.zh)
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // 调课（Dart `:887-891`）：进同弹层的目标选择步；那周没课则置灰
-                TextButton(
-                    modifier = Modifier.weight(1f),
-                    text = CourseActionStrings.courseActionRescheduleSecondary.zh,
-                    enabled = CourseActionDispatcher.canReschedule(course, week),
-                    onClick = { pickingReschedule = true },
-                )
-                // 停课 / 恢复（Dart `:898-900`：已停课显示「恢复」）
-                TextButton(
-                    modifier = Modifier.weight(1f),
-                    text = CourseActionStrings.suspendButtonLabel(course.isSuspendedInWeek(week)),
-                    onClick = { onAction(CourseAction.SUSPEND) },
-                )
-                // 删除（Dart `:909`，destructive 变体）
-                TextButton(
-                    modifier = Modifier.weight(1f),
-                    text = CourseActionStrings.courseActionDeleteSecondary.zh,
-                    colors = ButtonDefaults.textButtonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                    ),
-                    onClick = { onAction(CourseAction.DELETE) },
+            section.rows.forEachIndexed { index, row ->
+                if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+                val onRowTap: (() -> Unit)? = when (row.tap) {
+                    CourseActionRowTap.OPEN_NOTE -> ({ stage = CourseSheetStage.NOTE })
+                    CourseActionRowTap.OPEN_TASK -> ({
+                        // 事件带的是**当前选中这条**的 courseId（见 CourseActionSheetModel.Events）
+                        onEvent(CourseActionSheetModel.Events.addTask(section))
+                        onDismiss()
+                    })
+                    null -> null
+                }
+                CourseDetailTile(
+                    row = row,
+                    primaryText = primaryText,
+                    secondaryText = secondaryText,
+                    onTap = onRowTap,
                 )
             }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // 加作业（Dart `:833-839`）；单节课提醒按可用性显示（本批恒不可用）
-            TextButton(
-                modifier = Modifier.fillMaxWidth(),
-                text = CourseActionStrings.courseTaskAction.zh,
-                onClick = { onAction(CourseAction.ADD_TASK) },
-            )
-            if (CourseActionDispatcher.isClassAlarmAvailable()) {
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = CourseActionStrings.classAlarmActionLabel.zh,
-                    onClick = { onAction(CourseAction.SET_ALARM) },
+            if (relatedPanel != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                RelatedCoursesPanel(
+                    panel = relatedPanel,
+                    expanded = relatedExpanded,
+                    primaryText = primaryText,
+                    secondaryText = secondaryText,
+                    destructive = destructive,
+                    dark = dark,
+                    onToggleExpanded = { relatedExpanded = !relatedExpanded },
+                    onSelect = selectRelated,
+                )
+            }
+            if (section.showActions) {
+                Spacer(modifier = Modifier.height(14.dp))
+                CourseActionButtons(
+                    section = section,
+                    destructive = destructive,
+                    onEdit = {
+                        onEvent(CourseActionSheetModel.Events.edit(section))
+                        onDismiss()
+                    },
+                    onReschedule = { stage = CourseSheetStage.RESCHEDULE },
+                    onSuspend = { stage = CourseSheetStage.SUSPEND_SCOPE },
+                    onDelete = { stage = CourseSheetStage.DELETE_SCOPE },
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+
+    // ── 子弹层（F / N 泳道交付的组合函数）──
+    val activeSection = section
+    if (activeSection == null) return
+    CourseDeleteScopeSheet(
+        show = stage == CourseSheetStage.DELETE_SCOPE,
+        canDeleteOccurrence = activeSection.canDeleteOccurrence,
+        week = week,
+        onDismiss = { stage = CourseSheetStage.NONE },
+        onSelect = { scope ->
+            pendingDeleteScope = scope
+            stage = CourseSheetStage.DELETE_CONFIRM
+        },
+    )
+    val confirmScope = pendingDeleteScope
+    CourseDeleteConfirmSheet(
+        show = stage == CourseSheetStage.DELETE_CONFIRM && confirmScope != null,
+        title = if (confirmScope == CourseDeleteScope.THIS_WEEK) {
+            CourseActionSheetModel.deleteOccurrenceTitle()
+        } else {
+            CourseActionSheetModel.deleteWholeCourseTitle()
+        },
+        message = if (confirmScope == CourseDeleteScope.THIS_WEEK) {
+            CourseActionSheetModel.deleteOccurrenceMessage(activeSection, week)
+        } else {
+            CourseActionSheetModel.deleteWholeCourseMessage(activeSection)
+        },
+        onDismiss = {
+            pendingDeleteScope = null
+            stage = CourseSheetStage.NONE
+        },
+        onConfirm = {
+            confirmScope?.let { onEvent(CourseActionSheetModel.Events.delete(activeSection, it)) }
+            pendingDeleteScope = null
+            onDismiss()
+        },
+    )
+    CourseSuspendScopeSheet(
+        show = stage == CourseSheetStage.SUSPEND_SCOPE,
+        suspendedThisWeek = activeSection.isSuspendedThisWeek,
+        hasAnySuspended = activeSection.hasAnySuspended,
+        onDismiss = { stage = CourseSheetStage.NONE },
+        onSelect = { scope ->
+            stage = CourseSheetStage.NONE
+            onEvent(CourseActionSheetModel.Events.suspend(activeSection, scope))
+            onDismiss()
+        },
+    )
+    val rescheduleCourse = selectedCourse
+    if (rescheduleCourse != null) {
+        CourseRescheduleSheet(
+            show = stage == CourseSheetStage.RESCHEDULE,
+            course = rescheduleCourse,
+            sourceWeek = week,
+            weekCount = details.weekCount,
+            weekdayLabels = details.weekdayLabels,
+            sectionTimes = details.sectionTimes,
+            onDismiss = { stage = CourseSheetStage.NONE },
+            onConfirm = { target ->
+                stage = CourseSheetStage.NONE
+                onEvent(CourseActionSheetModel.Events.reschedule(activeSection, target))
+                onDismiss()
+            },
+        )
+    }
+    CourseNoteSheet(
+        show = stage == CourseSheetStage.NOTE,
+        course = selectedCourse,
+        week = week,
+        readOnly = activeSection.isReadOnly,
+        onDismiss = { stage = CourseSheetStage.NONE },
+        onSave = { wholeNote, sessionNote ->
+            stage = CourseSheetStage.NONE
+            onEvent(
+                CourseActionSheetModel.Events.saveNotes(
+                    section = activeSection,
+                    wholeNote = wholeNote,
+                    sessionNote = sessionNote,
+                ),
+            )
+            onDismiss()
+        },
+    )
+}
+
+/** 弹层里当前开着哪个子弹层。 */
+private enum class CourseSheetStage { NONE, DELETE_SCOPE, DELETE_CONFIRM, SUSPEND_SCOPE, RESCHEDULE, NOTE }
+
+/** Dart `MediaQuery.sizeOf(context).height * 0.8`（`:168-171`）。 */
+private const val SHEET_MAX_HEIGHT_FRACTION = 0.8f
+
+/** 头部块的课程色图标尺寸与圆角（Dart `:711-720`：48 / 圆角 14 / 图标 24）。 */
+private val HEADER_BADGE_SIZE = 48.dp
+private val HEADER_BADGE_RADIUS = 14.dp
+private val HEADER_BADGE_ICON_SIZE = 24.dp
+
+/** 详情行（Dart `_CourseDetailTile` `:990-1029`：内边距 12/10、图标 18、图标-文字间距 10）。 */
+private val ROW_INSIDE_PADDING = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+private val ROW_ICON_SIZE = 18.dp
+private val ROW_ICON_GAP = 10.dp
+
+/** 关联面板折叠条的图标徽章（Dart `HyperosTokens.iconBadgeSize = 26` / 圆角 7，`:282-293`）。 */
+private val RELATED_BADGE_SIZE = 26.dp
+private val RELATED_BADGE_RADIUS = 7.dp
+private val RELATED_BADGE_ICON_SIZE = 17.dp
+
+/** 关联面板每条前面的课程色圆点（Dart `:409-415`：8dp 圆）。 */
+private val RELATED_DOT_SIZE = 8.dp
+
+/**
+ * 语义图标 → `MiuixIcons.*`。
+ *
+ * 仓库没有 material-icons 依赖，只有 miuix 图标集，所以 Dart 的
+ * `Icons.schedule_outlined` / `menu_book_rounded` 这类找不到逐字对位件，
+ * 取语义最接近的一枚（映射表见各分支注释）。
+ */
+private fun courseActionIcon(icon: CourseActionIcon): ImageVector = when (icon) {
+    CourseActionIcon.COURSE -> MiuixIcons.Notes
+    CourseActionIcon.COUPLE_HEART -> MiuixIcons.Favorites
+    CourseActionIcon.PARTNER_PERSON -> MiuixIcons.Contacts
+    CourseActionIcon.TIME -> MiuixIcons.Timer
+    CourseActionIcon.TEACHER -> MiuixIcons.Contacts
+    CourseActionIcon.LOCATION -> MiuixIcons.Location
+    CourseActionIcon.WEATHER -> MiuixIcons.CloudFill
+    CourseActionIcon.NOTE -> MiuixIcons.Notes
+    CourseActionIcon.TASK -> MiuixIcons.Tasks
+    CourseActionIcon.ALARM -> MiuixIcons.Alarm
+    CourseActionIcon.INFO -> MiuixIcons.Info
+    CourseActionIcon.CONFLICT_BADGE -> MiuixIcons.Report
+}
+
+/** 头部块（Dart `:708-757`）。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SheetHeaderBlock(
+    section: CourseActionSection,
+    dark: Boolean,
+    primaryText: Color,
+    secondaryText: Color,
+) {
+    val header = section.header
+    val courseColor = parseHexColorOrFallback(
+        hex = section.colorHex,
+        fallback = Color(QingyuTheme.primary(dark = dark)),
+    )
+    val destructive = Color(QingyuTheme.destructive())
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(HEADER_BADGE_SIZE)
+                .clip(RoundedCornerShape(HEADER_BADGE_RADIUS))
+                .background(courseColor.copy(alpha = HEADER_BADGE_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = courseActionIcon(header.icon),
+                contentDescription = null,
+                modifier = Modifier.size(HEADER_BADGE_ICON_SIZE),
+                tint = courseColor,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = header.courseName,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = primaryText,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                header.natureText?.let {
+                    Text(text = it, style = MiuixTheme.textStyles.footnote2, color = secondaryText)
+                }
+                header.conflictText?.let {
+                    Text(text = it, style = MiuixTheme.textStyles.footnote2, color = destructive)
+                }
+                header.coupleText?.let {
+                    Text(text = it, style = MiuixTheme.textStyles.footnote2, color = courseColor)
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = header.detailLine,
+                style = MiuixTheme.textStyles.footnote2,
+                color = secondaryText,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** 头部图标块底色的透明度（Dart `courseColor.withValues(alpha: 0.14)`）。 */
+private const val HEADER_BADGE_ALPHA = 0.14f
+
+/**
+ * 一条详情行（Dart `_CourseDetailTile` `:963-1048`）。
+ *
+ * 结构 = `QingyuCard`（磨砂面 + 按压反馈）→ 18dp 图标 + 主标题 + 副标题 + trailing。
+ * 说明行的周次高亮由模型切成 [CourseActionDetailRow.titlePieces]，这里只按
+ * `emphasized` 换色。
+ */
+@Composable
+private fun CourseDetailTile(
+    row: CourseActionDetailRow,
+    primaryText: Color,
+    secondaryText: Color,
+    onTap: (() -> Unit)?,
+) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = ROW_INSIDE_PADDING,
+        onClick = onTap,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = courseActionIcon(row.icon),
+                contentDescription = null,
+                modifier = Modifier.size(ROW_ICON_SIZE),
+                tint = secondaryText,
+            )
+            Spacer(modifier = Modifier.width(ROW_ICON_GAP))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = buildTitleText(row = row, primaryText = primaryText),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (row.mutedTitle) secondaryText else primaryText,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                row.subtitle?.takeIf { it.isNotEmpty() }?.let {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = it,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = secondaryText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            row.trailingText?.let {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = it, style = MiuixTheme.textStyles.footnote2, color = secondaryText)
+            }
+            if (row.showsChevron) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = secondaryText,
+                )
+            }
+        }
+    }
 }
 
 /**
- * 调课的目标选择步（Dart `showTimetableCourseRescheduleSheet` 的简化对位件）。
+ * 把 [CourseActionDetailRow.titlePieces] 拼成一段富文本：`emphasized` 的片用前景色。
  *
- * 只选**目标周 / 星期 / 起止节次**：这三样就是「把这一次课挪到哪儿」的全部信息；
- * 地点沿用原值（见上方诚实清单）。默认值取「原位置」，用户只改需要改的那一项。
+ * 说明行的周次高亮（Dart `_CourseActionNoticeText` `:1050-1084`）就靠这段：
+ * 切分由模型完成（[CourseActionDetailRow.titlePieces]），这里只负责换色。
  */
-@Composable
-private fun ReschedulePicker(
-    course: Course,
-    sourceWeek: Int,
-    primaryText: Color,
-    secondaryText: Color,
-    onCancel: () -> Unit,
-    onConfirm: (Int, Int, Int, Int) -> Unit,
-) {
-    var targetWeek by remember(course.id) { mutableIntStateOf(sourceWeek) }
-    var day by remember(course.id) { mutableIntStateOf(course.dayOfWeek) }
-    var start by remember(course.id) { mutableIntStateOf(course.startSection) }
-    var end by remember(course.id) { mutableIntStateOf(course.endSection) }
-
-    Text(
-        text = CourseActionStrings.courseActionRescheduleSecondary.zh,
-        style = MiuixTheme.textStyles.body1,
-        fontWeight = FontWeight.Medium,
-        color = primaryText,
-    )
-    Spacer(modifier = Modifier.height(10.dp))
-
-    // 目标周
-    StepperRow(
-        label = CourseActionStrings.targetWeekLabel,
-        value = targetWeek,
-        canDecrease = targetWeek > 1,
-        canIncrease = true,
-        primaryText = primaryText,
-        secondaryText = secondaryText,
-        onChange = { targetWeek = it.coerceAtLeast(1) },
-    )
-    // 星期
-    StepperRow(
-        label = CourseActionStrings.weekdayLabel.zh,
-        value = day,
-        canDecrease = day > 1,
-        canIncrease = day < 7,
-        primaryText = primaryText,
-        secondaryText = secondaryText,
-        onChange = { day = it.coerceIn(1, 7) },
-    )
-    // 起止节次
-    StepperRow(
-        label = CourseActionStrings.startSectionLabel.zh,
-        value = start,
-        canDecrease = start > 1,
-        canIncrease = start < end,
-        primaryText = primaryText,
-        secondaryText = secondaryText,
-        onChange = { start = it.coerceIn(1, end) },
-    )
-    StepperRow(
-        label = CourseActionStrings.endSectionLabel.zh,
-        value = end,
-        canDecrease = end > start,
-        canIncrease = end < 30,
-        primaryText = primaryText,
-        secondaryText = secondaryText,
-        onChange = { end = it.coerceIn(start, 30) },
-    )
-
-    Spacer(modifier = Modifier.height(14.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        TextButton(
-            modifier = Modifier.weight(1f),
-            text = CourseActionStrings.cancelAction.zh,
-            onClick = onCancel,
-        )
-        Button(
-            modifier = Modifier.weight(1f),
-            onClick = { onConfirm(targetWeek, day, start, end) },
-        ) {
-            Text(text = CourseActionStrings.confirmAction.zh)
+private fun buildTitleText(row: CourseActionDetailRow, primaryText: Color) = buildAnnotatedString {
+    row.titlePieces.forEach { piece ->
+        if (piece.emphasized) {
+            withStyle(SpanStyle(color = primaryText)) { append(piece.text) }
+        } else {
+            append(piece.text)
         }
     }
-    Spacer(modifier = Modifier.height(8.dp))
 }
 
-/** 一行「标签 + 减 / 值 / 加」的步进控件。 */
+/**
+ * 关联课程折叠面板（Dart `_RelatedCoursesPanel` `:210-345`）。
+ *
+ * 折叠条 = 图标徽章 + 标题（冲突 N 节 / 还有 N 节…）+ 副标题（课名预览或提示）+ 展开箭头；
+ * 展开后每条 = 课程色圆点 + 课名 + 角标 + `周X · 第A-B节 · HH:mm-HH:mm` + 地点 + 「切换」。
+ */
 @Composable
-private fun StepperRow(
-    label: String,
-    value: Int,
-    canDecrease: Boolean,
-    canIncrease: Boolean,
+private fun RelatedCoursesPanel(
+    panel: CourseActionRelatedPanel,
+    expanded: Boolean,
     primaryText: Color,
     secondaryText: Color,
-    onChange: (Int) -> Unit,
+    destructive: Color,
+    dark: Boolean,
+    onToggleExpanded: () -> Unit,
+    onSelect: (Int) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    val accent = entryColor(panel.accent, destructive = destructive, courseHex = null, dark = dark)
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = ROW_INSIDE_PADDING,
+        onClick = onToggleExpanded,
     ) {
-        Text(text = label, style = MiuixTheme.textStyles.body2, color = primaryText, modifier = Modifier.weight(1f))
-        TextButton(text = "−", enabled = canDecrease, onClick = { onChange(value - 1) })
-        Text(
-            text = value.toString(),
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
-            color = primaryText,
-            modifier = Modifier.width(36.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(RELATED_BADGE_SIZE)
+                    .clip(RoundedCornerShape(RELATED_BADGE_RADIUS))
+                    .background(accent.copy(alpha = RELATED_BADGE_ALPHA)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = courseActionIcon(panel.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(RELATED_BADGE_ICON_SIZE),
+                    tint = accent,
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = panel.title,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = primaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (expanded) panel.expandedSubtitle else panel.subtitle,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = secondaryText,
+                    maxLines = if (expanded) 2 else 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = secondaryText,
+            )
+        }
+    }
+    if (!expanded) return
+    Spacer(modifier = Modifier.height(8.dp))
+    panel.entries.forEachIndexed { index, entry ->
+        if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+        RelatedCourseRow(
+            entry = entry,
+            primaryText = primaryText,
+            secondaryText = secondaryText,
+            accent = entryColor(
+                entry.color,
+                destructive = destructive,
+                courseHex = entry.colorHex,
+                dark = dark,
+            ),
+            onTap = { onSelect(entry.previewIndex) },
         )
-        TextButton(text = "+", enabled = canIncrease, onClick = { onChange(value + 1) })
     }
 }
 
-/** 弹层里的一行课程信息（Dart `_CourseDetailTile` 的简化对位件）。 */
+/** 关联面板图标块底色的透明度（Dart `accent.withValues(alpha: 0.12)`）。 */
+private const val RELATED_BADGE_ALPHA = 0.12f
+
+/** 关联面板里的一条可切换课（Dart `_RelatedCourseCompactRow` `:375-472`）。 */
 @Composable
-private fun InfoRow(
-    label: String,
-    detail: String?,
+private fun RelatedCourseRow(
+    entry: CourseActionRelatedEntry,
     primaryText: Color,
     secondaryText: Color,
+    accent: Color,
+    onTap: () -> Unit,
 ) {
-    QingyuCard(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = ROW_INSIDE_PADDING,
+        onClick = onTap,
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = label,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
-                color = primaryText,
-            )
-            if (detail != null) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = detail, style = MiuixTheme.textStyles.footnote1, color = secondaryText)
+            Box(
+                modifier = Modifier
+                    .size(RELATED_DOT_SIZE)
+                    .clip(CircleShape)
+                    .background(accent),
+            ) {}
+            Spacer(modifier = Modifier.width(ROW_ICON_GAP))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = entry.courseName,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = primaryText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    entry.badgeText?.let {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = it, style = MiuixTheme.textStyles.footnote2, color = accent)
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = entry.scheduleLine,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = secondaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                entry.location?.let {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = it,
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = secondaryText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = entry.switchLabel,
+                style = MiuixTheme.textStyles.footnote2,
+                color = accent,
+            )
+        }
+    }
+}
+
+/**
+ * 关联面板里一条的颜色（Dart `_previewItemColor` `:474-489`）：
+ * 情侣课 → 情侣色（Compose 侧暂无数据，回落强调色），冲突课 → 危险色，其余 → 课程色。
+ */
+private fun entryColor(
+    color: CourseActionEntryColor,
+    destructive: Color,
+    courseHex: String?,
+    dark: Boolean,
+): Color = when (color) {
+    CourseActionEntryColor.CONFLICT -> destructive
+    // 情侣色在 Dart 来自 `TimetableProvider.coupleColorForKind`；Compose 周视图还没有
+    // 情侣叠加层（audit §五），没有可信色源时用主题强调色，不伪造一个情侣色。
+    CourseActionEntryColor.COUPLE -> Color(QingyuTheme.primary(dark = dark))
+    CourseActionEntryColor.COURSE -> parseHexColorOrFallback(
+        hex = courseHex,
+        fallback = Color(QingyuTheme.primary(dark = dark)),
+    )
+}
+
+/**
+ * 动作区（Dart `:871-917`）：编辑整宽主按钮 + 第二排「调课 / 停课·恢复 / 删除」。
+ *
+ * 只读课整块不渲染（由模型 `showActions` 决定，调用点已判）；调课在本周没课时置灰。
+ */
+@Composable
+private fun CourseActionButtons(
+    section: CourseActionSection,
+    destructive: Color,
+    onEdit: () -> Unit,
+    onReschedule: () -> Unit,
+    onSuspend: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onEdit,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = CourseActionStrings.courseActionEditPrimary.zh)
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = CourseActionStrings.courseActionRescheduleSecondary.zh,
+                enabled = section.canReschedule,
+                onClick = onReschedule,
+            )
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = CourseActionStrings.suspendButtonLabel(section.isSuspendedThisWeek),
+                onClick = onSuspend,
+            )
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = CourseActionStrings.courseActionDeleteSecondary.zh,
+                colors = ButtonDefaults.textButtonColors(color = destructive),
+                onClick = onDelete,
+            )
         }
     }
 }

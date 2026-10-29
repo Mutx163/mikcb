@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseSessionNote
 import com.mutx163.qingyu.course.TimetableCoursePort
 import com.mutx163.qingyu.course.TimetableCourseService
 import java.util.UUID
@@ -337,6 +338,49 @@ object CourseActionDispatcher {
             previousSharedName = null,
         )
         return CourseActionOutcome.SuspensionChanged(courseId, false, SuspendScope.ALL_WEEKS)
+    }
+
+    /**
+     * 保存「课程简介」与「本节备注」（Dart `course_note_sheet.dart:149-197` 的 `_save`）。
+     *
+     * ## 三条口径，逐条对齐 Dart
+     *
+     * 1. **课程简介写共享字段 `description`**：同名课程的其它课次都读它，
+     *    所以必须走 [TimetableCourseService.update] —— 它会用 `CourseDomain.applySharedFields`
+     *    把共享字段广播给同名的其它条目（Dart 是 `provider.updateCourse` 的同一层语义）。
+     * 2. **顺手清掉 legacy `note`**（Dart `note: null`）：两处都留着会出现
+     *    「改了一处、另一处还是旧值」的双字段漂移。
+     * 3. **`hasHomework` 必须保留原值**：Dart 的注释写得很清楚 —— 用户只改一句备注，
+     *    那门课本周的作业标记不能被悄悄清掉（清掉之后 homeworkMark 作业下次重算会消失）。
+     *    所以本节备注用 `CourseSessionNote(text = …, hasHomework = 原值).normalizedOrNull`：
+     *    文本与作业标记**都空**时才写 `null`（等于删掉这一周的备注）。
+     *
+     * @param wholeNote 课程简介原文；`trim()` 后为空 ⇒ 写成 `null`。
+     * @param sessionNoteText 本节备注原文；`trim()` 后为空且无作业 ⇒ 这一周不再有备注。
+     * @return 写库后的课程（服务侧归一过的版本）。
+     */
+    fun saveCourseNotes(
+        port: TimetableCoursePort,
+        courseId: String,
+        week: Int,
+        wholeNote: String?,
+        sessionNoteText: String?,
+    ): Course {
+        val course = port.getCourseById(courseId)
+            ?: throw IllegalArgumentException("course_not_found_for_notes")
+        val existingHomework = course.sessionNoteForWeek(week)?.hasHomework ?: false
+        val sessionNote = CourseSessionNote(
+            text = sessionNoteText.orEmpty().trim(),
+            hasHomework = existingHomework,
+        ).normalizedOrNull
+        val whole = wholeNote.orEmpty().trim()
+        val updated = course.copy(
+            description = whole.ifEmpty { null },
+            note = null,
+            sessionNotes = course.withSessionNote(week, sessionNote),
+        )
+        TimetableCourseService.update(port, updated, previousSharedName = null)
+        return port.getCourseById(courseId) ?: updated
     }
 
     /**
