@@ -119,6 +119,19 @@ object LiveFixtureMessages {
     fun cleared(count: Int): String = "已清除 $count 门测试课"
 
     fun clearFailed(error: String): String = "清除测试课表失败：$error"
+
+    /**
+     * 「触发某节」写课成功后的一句话。
+     *
+     * Dart 这个位置的文案来自原生触发管线（`LiveTestingTriggerResult.message`，
+     * success/inFlight/error 三态各一句）。Kotlin 侧管线还没迁，所以这里**不假装**
+     * 岛已弹出：说清「课已改好」与「刷新还差什么」。
+     */
+    fun triggered(sectionNumber: Int, leadMinutes: Long): String =
+        "已把第${sectionNumber}节改成 ${leadMinutes} 分钟后上课；" +
+            LiveFixtureActions.TRIGGER_REFRESH_MISSING
+
+    fun triggerFailed(detail: String): String = "触发测试失败：$detail"
 }
 
 /**
