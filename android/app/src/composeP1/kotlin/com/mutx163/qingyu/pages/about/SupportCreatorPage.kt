@@ -77,14 +77,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 3. 保存到相册走 MediaStore（minSdk 33，直接插 `Pictures/qingyu`）；
  * 4. 头图有应用图标 + 「运行中」徽标。
  *
- * ## 仍依赖宿主的部分
+ * ## 数据从哪来
  *
- * 鸣谢名单仍由宿主喂 [donorData]（Compose 侧还没有移植 `SupportCreatorService` 的网络拉取），
- * 宿主喂 null 时显示 Flutter 同款空态文案。
+ * 鸣谢名单由宿主喂 [donorData] / [isLoading] / [loadError] / [onReload]。
+ * 2026-10-29（F09）起宿主是 [SupportCreatorHostPage]：官方 raw 为主、GitCode 直连兜底
+ * （见 `SupportDonorsFeed`），成功显示名单、失败显示真原因并给重试入口。
  *
  * ## 文案纪律
  *
- * 无中文字面量，全部取自 main 层 [SupportCreatorStrings]。
+ * 无中文字面量，全部取自 main 层 [SupportCreatorStrings]。[loadError] 是**诊断码**
+ * （`http_404` 这类 ASCII），不经 ARB——它是排查信息，不是界面文案。
  */
 @Composable
 fun SupportCreatorPage(
@@ -244,17 +246,27 @@ fun SupportCreatorPage(
                 }
 
                 loadError != null -> item {
-                    QingyuRow(
-                        title = SupportCreatorStrings.donorListLoadFailed,
-                        icon = {
-                            Icon(
-                                imageVector = MiuixIcons.Refresh,
-                                contentDescription = null,
-                                tint = Color(QingyuIconColors.ORANGE),
-                            )
-                        },
-                        onClick = onReload,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        QingyuRow(
+                            title = SupportCreatorStrings.donorListLoadFailed,
+                            icon = {
+                                Icon(
+                                    imageVector = MiuixIcons.Refresh,
+                                    contentDescription = null,
+                                    tint = Color(QingyuIconColors.ORANGE),
+                                )
+                            },
+                            onClick = onReload,
+                        )
+                        // 真原因照实显示（`http_404` / `network_unreachable` / `donors_payload_not_map`）。
+                        // 只写「加载失败」会让用户和排查的人都没法区分「断网」与「服务器上没这个文件」。
+                        Text(
+                            text = loadError,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.error(dark)),
+                            modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                        )
+                    }
                 }
 
                 donorData == null || donorData.donors.isEmpty() -> item {

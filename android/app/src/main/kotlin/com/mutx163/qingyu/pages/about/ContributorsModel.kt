@@ -61,8 +61,20 @@ object ContributorsStrings {
     /** ARB `aboutWarehouseMaintainerCount`（`{count} 个适配项`）。 */
     fun maintainerCount(count: Int): String = "$count 个适配项"
 
+    /**
+     * 名单缓存时间标注（ARB `updatedAtLabel`：`更新于 {time}`）。
+     *
+     * 复用支持作者页那条同义 ARB 键，不新造文案：本页要表达的正是「这份名单是那个时刻拉到的」，
+     * 与鸣谢名单的「更新于 X」语义完全一致；新造一条只会在六份 ARB 里多一个同义键。
+     * 逐字对拍由 `AboutFeedTest` 钉住。
+     */
+    fun cachedAtLabel(time: String): String = "更新于 $time"
+
     /** ARB `aboutWarehouseMaintainersLoadFailed`（`暂时无法读取适配者名单：{error}`）。 */
     fun loadFailed(error: String): String = "暂时无法读取适配者名单：$error"
+
+    /** ARB `reloadAction`（`重新加载`）：失败后重试入口，与支持作者页共用同一条键。 */
+    const val reloadAction = "重新加载"
 
     /** 教务适配仓地址（Dart `defaultQingyuWarehouseSource.repositoryUrl`）。 */
     const val warehouseRepoUrl = "https://github.com/Mutx163/qingyu_warehouse"

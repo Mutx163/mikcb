@@ -43,9 +43,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 数据从哪来
  *
  * 与 Flutter 一致：适配者名单由宿主提供（Flutter 是网络拉取 + 本地缓存）。
- * 本渲染层只按 [maintainers] / [isLoading] / [error] 三态画，不自己发网络——
- * Compose 侧目前还没有移植 `WarehouseRepositoryService`（见本轮审计报告），
- * 待适配仓服务接线后由宿主喂真数据。现在宿主喂空列表时，页面显示 Flutter 同款空态文案。
+ * 本渲染层只按 [maintainers] / [isLoading] / [error] / [cachedAt] 四态画，不自己发网络——
+ * 2026-10-29（F09）起宿主是 [ContributorsHostPage]：读 `index/root_index.yaml` +
+ * 每校 `adapters.yaml`（见 `WarehouseMaintainersFeed`），缓存优先、后台刷新、失败可重试。
  *
  * ## 文案纪律
  *
@@ -58,6 +58,14 @@ fun ContributorsPage(
     error: String?,
     onBack: () -> Unit,
     onReload: () -> Unit,
+    /**
+     * 当前展示的名单是**缓存**时，这份缓存被写入的时刻（已格式化，见
+     * `formatMaintainersCacheTime`）。null = 展示的是刚拉到的数据。
+     *
+     * 为什么必须有这个参数：缓存优先 + 后台刷新的页面，用户看到「有名单」并不等于
+     * 「刚刚拉到」；不标时间就等于把昨天的名单当成今天的结果（F09 验收第一条）。
+     */
+    cachedAt: String? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
@@ -99,19 +107,38 @@ fun ContributorsPage(
                             lineHeight = 19.sp,
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
+                        // 缓存时间：只在「正在显示上次缓存」时出现，后台刷新成功后本行自动消失。
+                        cachedAt?.let { time ->
+                            Text(
+                                text = ContributorsStrings.cachedAtLabel(time),
+                                style = MiuixTheme.textStyles.footnote2,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                        }
                         when {
-                            isLoading -> Row(
+                            // 「转圈」只用于**手上什么都没有**的时候。已有缓存时后台还在刷新：
+                            // 继续显示旧数据，靠上面那行缓存时间说明它有多旧——本页自己的说明句
+                            // 就写着「若本地已有缓存，会先显示缓存，再后台刷新」，被转圈盖住等于说话不算数。
+                            isLoading && groups.isEmpty() -> Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.Center,
                             ) {
                                 CircularProgressIndicator()
                             }
 
-                            error != null && groups.isEmpty() -> Text(
-                                text = ContributorsStrings.loadFailed(error),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = Color(QingyuTheme.error(dark)),
-                            )
+                            error != null && groups.isEmpty() -> Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = ContributorsStrings.loadFailed(error),
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = Color(QingyuTheme.error(dark)),
+                                )
+                                TextButton(
+                                    text = ContributorsStrings.reloadAction,
+                                    onClick = onReload,
+                                )
+                            }
 
                             groups.isEmpty() -> Text(
                                 text = ContributorsStrings.maintainersEmpty,
@@ -119,12 +146,27 @@ fun ContributorsPage(
                                 color = Color(QingyuTheme.secondaryText(dark)),
                             )
 
-                            else -> for (group in groups) {
-                                ContributorRow(
-                                    name = group.name,
-                                    subtitle = ContributorsStrings.maintainerCount(group.adapterLabels.size),
-                                    details = group.adapterLabels,
-                                )
+                            else -> {
+                                // 有缓存但刷新失败：名单照常显示（比空屏有用），但要如实说明
+                                // 「这次没拉到」并给重试，不许让旧数据冒充刚刷新的结果。
+                                if (error != null) {
+                                    Text(
+                                        text = ContributorsStrings.loadFailed(error),
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = Color(QingyuTheme.error(dark)),
+                                    )
+                                    TextButton(
+                                        text = ContributorsStrings.reloadAction,
+                                        onClick = onReload,
+                                    )
+                                }
+                                for (group in groups) {
+                                    ContributorRow(
+                                        name = group.name,
+                                        subtitle = ContributorsStrings.maintainerCount(group.adapterLabels.size),
+                                        details = group.adapterLabels,
+                                    )
+                                }
                             }
                         }
                     }
