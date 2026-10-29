@@ -3,8 +3,9 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
-    // Compose 迁移（Phase 1）：composeP1 flavor 专属。插件在 Kotlin 2.x 起接管
-    // Compose 编译器（不再需要 composeOptions.kotlinCompilerExtensionVersion）。
+    // Compose 编译器插件：自 2026-10-29 起 Compose 页面源码全部挂在 `main` 源集
+    // （迁移期的 composeP1 / composeUi 两个 flavor 已删除），插件对所有变体生效。
+    // 插件在 Kotlin 2.x 起接管 Compose 编译器（不再需要 composeOptions.kotlinCompilerExtensionVersion）。
     id "org.jetbrains.kotlin.plugin.compose"
 }
 
@@ -127,55 +128,12 @@ android {
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }
-        // Compose 迁移 Phase 1 专用 flavor（2026-10-26 加）。
-        //
-        // 目的：在**同一个** android/app 工程里验证「同包名 Compose 壳」——
-        // 真机覆盖安装后读同一份 FlutterSharedPreferences、桌面小组件 /
-        // 无障碍 / 通知渠道全部原样保留（manifest 继承 main 源集）。
-        // 验证完成后整个 flavor 连同源集一起删除，不进任何发布渠道。
-        //
-        // 不加 applicationIdSuffix：**必须**与 com.mutx163.qingyu 同包名，
-        // 这是 Phase 1 的全部意义（数据原地、升级链路实证）。也因此它只能
-        // 覆盖安装在「已装正式包」的真机上用于验证——调试日常仍用 dev。
-        composeP1 {
-            dimension "env"
-            versionNameSuffix "-composeP1"
-            // minSdk 33：官方 miuix-blur（毛玻璃）的硬性要求，用户已拍板抬到 33（2026-10-26）。
-            // prod 已统一 33，此处保留显式声明以防 defaultConfig 回退。
-            minSdk 33
-            buildConfigField "String", "UMENG_CHANNEL", "\"official-composeP1\""
-            manifestPlaceholders = [
-                    appLabel   : "轻屿课表 Compose P1",
-                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
-            ]
-        }
-        // Compose 迁移 Phase 3 页面开发壳（2026-10-26 加）。
-        //
-        // 为什么需要它：miuix 只挂在 composeP1 的 classpath 上，而 composeP1
-        // **故意用正式包名**（Phase 1 要验证覆盖安装不丢数据）。到了 Phase 3
-        // 做页面，继续借正式包名就意味着「看一眼新页面要先覆盖用户手机上的正式版」，
-        // 这没有道理。所以另开一个**带后缀**的壳：
-        // - 与正式版 / 调试版并存，互不影响；
-        // - 静态页不需要老数据，正好适合独立包名（读不到正式版数据是预期行为）；
-        // - composeP1 保持原样，它的历史使命（覆盖安装验证）已经完成。
-        //
-        // 页面代码复用 composeP1 源集（见下方 sourceSets），不复制一份。
-        composeUi {
-            dimension "env"
-            applicationIdSuffix ".ui"
-            versionNameSuffix "-composeUi"
-            minSdk 33
-            buildConfigField "String", "UMENG_CHANNEL", "\"official-composeUi\""
-            manifestPlaceholders = [
-                    appLabel   : "轻屿课表 Compose UI",
-                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
-            ]
-        }
     }
 
     sourceSets {
         main {
-            kotlin.srcDirs += 'src/composeUi/kotlin'
+            // 壳的 6 个文件（PagesShellActivity / ShellWiring / ShellRoute …）已于
+            // 2026-10-29 从 `src/composeUi/kotlin` 搬进本目录，不再需要单独挂载。
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/components'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
@@ -200,89 +158,12 @@ android {
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
             kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/app'
         }
-        // 页面壳的渲染层**逐目录挂载**（2026-10-27 收口）。
-        //
-        // `src/composeP1/kotlin/…/pages/` 是 Phase 3 渲染层的暂存区：多会话并行时
-        // 里面永远有半成品，把它整个挂进任何一个变体都会让「编译」这件事失去意义。
-        // 所以这里按**目录**挂载：挂上 = 该批渲染层开始受 L1 与 CI 保护。
-        // 行由 Lead 在该批交付/验收时追加，不要改成挂整个 pages/。
-        composeUi {
-            // 跨页共享件（台账 §6 指定的落点）：页面主题桥 QingyuPageTheme 在这里。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/components'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule'
-            // P3-G3 导出与传输（export-transfer 泳道，2026-10-27 12:09 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/export'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer'
-            // P3-H 诊断与测试夹具（diagnostics 泳道，2026-10-27 12:24 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics'
-            // P3-F 同步与备份（sync-backup 泳道，2026-10-27 12:31 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/sync'
-            // P3-D3 作息与考试（timescheme-exam 泳道，2026-10-27 12:36 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/exam'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme'
-            // P3-B 设置族（Lead 接管，2026-10-27 12:20 挂载）：渲染层是通用的
-            // `SettingsPageScreen(spec)`，一目录服务全 20 页。4 个智能体正在这里
-            // 并行写模型层（main 源集），只改本目录的渲染基础设施时才需要重验 L1。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
-            // P3-E 统计族（stats-renderer 泳道，2026-10-27 12:40 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics'
-            // P3-D1 课程表单与概览（lead 泳道，2026-10-27 14:28 挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/course'
-            // P3-G1 导入·基础（lead 泳道并入 P3-D1，同刻挂载；import/warehouse 归 P3-G2 泳道另行挂载）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/import'
-            // 六批已交付但漏挂的渲染层收口（conflict/feedback/guide/showcase/live/weather；
-            // 8514b433 会话按台账 §7.2 代 Lead 追加，2026-10-27 15:2x，L1 通过记录见门日志）
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/conflict'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/guide'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/live'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/weather'
-            // 课表族：周视图 P3-C1（367f3aed，12:05 交付）+ 日视图 P3-C3（b5b8bba2，11:xx 交付）。
-            // 挂父目录会连 `timetable/day/` 一起带进来（子目录不需要单独一行）。
-            // 2026-10-27 18:30 补挂：这两批交付时都漏了这一步，导致 3,920 行渲染层
-            // 从交付起没有被任何变体编译过，壳里也一直停在占位页。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable'
-            // 壳的共用件：玻璃导航栏（miuix-blur 装配，P3-0 Lead 专属写作用域）。
-            // 壳 PagesShellActivity 直接用它，不挂就会 Unresolved reference。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
-            // Phase 3.5 接线与装配（2026-10-28 挂载）：把仓储接到页面上的 Compose 宿主层。
-            // 计划见 docs/plans/2026-10-28-compose-phase35-wiring-plan.md。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/app'
-        }
 
-        // JVM 单测的**变体专属**源集（2026-10-27 的教训，2026-10-28 补登记）。
-        //
-        // `src/test/` 是**所有变体共享**的测试源集，所以放进那里的用例只能引用
-        // `main` 源集的类。而 `src/composeP1/` 只有 compose 变体编译得到，
-        // 于是 `QingyuTextStylesTest` 一旦放在 `src/test/` 下，
-        // `prod` 变体的 `:app:testProdDebugUnitTest`（**CI 跑的就是这条**）
-        // 就会因 Unresolved reference 编译失败——2026-10-27 起它红了一整晚。
-        //
-        // 规矩：**测 compose 变体专属代码的用例一律放 `src/testComposeUi/`**。
-        // 这里显式登记而不是只靠默认目录约定，是为了避免「源集名改了、
-        // 测试静默不跑、而 prod 又刚好绿了」这种最难查的组合。
-        testComposeUi {
-            kotlin.srcDirs += 'src/testComposeUi/kotlin'
-        }
+        // 迁移期那个 `testComposeUi` 变体专属测试源集随 composeUi 变体一并删除（2026-10-29）。
+        // 页面源码自 2026-10-29 起全部住在 `main` 源集（原 `src/composeUi/kotlin` 已搬入），
+        // 因此测它们的用例可以直接放共享的 `src/test/`，prod 变体的单测也会跑到。
     }
 
-    // composeP1 迁移期**停役**（台账 §7.2）：它扫整棵暂存区 pages/，红是设计使然。
-    // 给它的所有 Kotlin 编译任务挂快速失败——误点旧配置时给一行清楚的提示，
-    // 而不是 60+ 条暂存区噪音报错。Phase 3 收尾删除该 flavor 时一并移除本段。
-    tasks.matching {
-        it.name.startsWith('compileComposeP1') && it.name.endsWith('Kotlin')
-    }.configureEach {
-        it.doFirst {
-            throw new GradleException(
-                'composeP1 variant is RETIRED during Compose migration (ledger 7.2): ' +
-                'it compiles the whole pages/ staging tree, which always carries in-flight breakage. ' +
-                'Use :app:compileComposeUiDebugKotlin (the L1 target) instead.'
-            )
-        }
-    }
 
     buildTypes {
         debug {
@@ -302,6 +183,30 @@ android {
                 signingConfig = signingConfigs.release
             }
         }
+        // bench：**真正的性能包**（2026-10-29 加）。
+        //
+        // 为什么不是 profile：`profile` 是 `initWith(debug)`，debuggable=true ⇒ ART 跳过
+        // AOT、R8 不跑，用它量的帧率/启动时间不代表正式版。bench 直接继承 release 的整档
+        // 优化（R8 混淆 + 非 debuggable，minify 取 AGP 9 对 release 的默认值，不再单独覆盖，
+        // 免得出现「测的档位和正式版不是一个档位」），同时保留最小的可观测性：
+        //
+        //   · `src/bench/AndroidManifest.xml` 的 `<profileable android:shell="true"/>`：
+        //     不开 debuggable 也能被 Perfetto / simpleperf / `dumpsys gfxinfo` 采样；
+        //   · `proguard-bench.pro` 保留行号与源文件名 ⇒ 崩溃栈与采样栈能对回源码；
+        //   · **不加 applicationIdSuffix** ⇒ 与正式版同包名、同一份真实数据，
+        //     能直接和正式版做 A/B（空数据的课表比满数据的课表快，测不出真问题）。
+        //     ⚠️ 代价：装 bench 会覆盖手机上的正式版（应用数据保留，与升级一致）；
+        //     想换回来就再装一次 release。这一条与 composeP1 当初覆盖安装验证同一路子。
+        bench {
+            initWith(getByName("release"))
+            matchingFallbacks = ['release', 'debug']
+            versionNameSuffix "-bench"
+            // 只**追加**这一份规则（initWith 已带上 release 的那两条），不覆盖。
+            proguardFiles 'proguard-bench.pro'
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.release
+            }
+        }
     }
 
     // JVM 单测（:app:testProdDebugUnitTest）默认让 android.jar 的每个方法抛
@@ -315,10 +220,14 @@ android {
     }
 }
 
-// Compose 编译器插件是模块级应用的，对全部变体的 Kotlin 编译生效；但 Compose
-// runtime 只在 composeP1 的 classpath 上。其余变体编译时插件因找不到 runtime
-// 抛 IncompatibleComposeRuntimeVersionException，把整条 JVM 单测链连坐
+// Compose 编译器插件是模块级应用的，对全部变体的 Kotlin 编译生效。2026-10-26 建这两个
+// flavor 时，Compose runtime 只挂在 composeP1 的 classpath 上，其余变体编译时插件因找不到
+// runtime 抛 IncompatibleComposeRuntimeVersionException，把整条 JVM 单测链连坐
 //（2026-10-26 实测 :app:compileProdDebugKotlin 挂）。
+//
+// 2026-10-29 两个迁移期 flavor 已删、页面源码并入 main 后，miuix 的 `implementation` 已经
+// 给所有变体带上了 compose runtime，下面这两条 compileOnly 理论上不再必要；**先保留**
+// 作为兜底（不打包、不影响 APK 体积与运行时），等下一次专门验证依赖图时再删。
 //
 // KGP 2.2.20 没有公开的「按变体关闭编译器插件」开关（androidComponents 的
 // ext 属性与 androidVariantsWithComposePlugin 均不存在，均已实测）。
@@ -406,7 +315,8 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.10.1'
     testImplementation 'junit:junit:4.13.2'
 
-    // Compose 迁移 Phase 1：仅 composeP1 变体参与编译打包，其余变体零影响。
+    // Compose 页面源码自 2026-10-29 起全部挂在 `main` 源集（composeP1 / composeUi 两个
+    // 迁移期变体已删），所以下面这些依赖对**所有**变体生效。
     //
     // miuix 0.9.4（2026-10-27 用户拍板「按最新状态对齐，不顾一切」）：
     // 0.9.x 是模块化发布——miuix-ui（基础）/ miuix-preference（官方设置行）/
@@ -429,7 +339,7 @@ dependencies {
     // 故 :app 的 Kotlin 目标必须是 21（见根 android/build.gradle 的 subprojects 特殊分支）。
     implementation "top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion"
 
-    // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
+    // 页面开发壳（PagesShellActivity）已搬进 main 源集，见上方依赖。
 
     // 相机扫码（Phase 3.5 · 能力缺口 B5，2026-10-28 Lead 拍板）。
     //

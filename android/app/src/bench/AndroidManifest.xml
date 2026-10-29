@@ -1,0 +1,17 @@
+<!--
+bench 构建类型专用 manifest（仅 bench 变体合并，2026-10-29）。
+
+只做一件事：声明 `<profileable android:shell="true"/>`。
+
+为什么需要它：bench 为了跟正式版同档性能，`debuggable=false`。而系统自 API 29 起
+只有在 `debuggable=true` 或声明了 profileable 时才允许 shell 侧采样（Perfetto /
+simpleperf / `dumpsys gfxinfo` 的详细数据）。不声明这一条，bench 包虽然快，
+但抓不到帧数据——那就又回到「靠肉眼猜」了。
+
+正式版（release）不加这一条：用户装的包不应该给 shell 开采样权限。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <profileable android:shell="true" />
+    </application>
+</manifest>

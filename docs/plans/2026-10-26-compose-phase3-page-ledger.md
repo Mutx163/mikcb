@@ -12,6 +12,16 @@
 > 谁正在做什么，一律以本机认领区 `.agents/compose-phase3/claims/` 为准（见 §2）。
 > 这样设计的原因：状态高频变化，放进仓库等于每次改状态都要提交，多个会话必然冲突。
 
+> ⚠️ **【2026-10-29 变体清理：本文里的 `composeUi` / `composeP1` 变体已不存在】**
+> 两个迁移期 flavor（`composeP1`、`composeUi`）已删除；壳的 6 个文件（`PagesShellActivity` /
+> `ShellWiring` / `ShellRoute` / `ShellPageIndex*` / `CourseOverviewHost`）已从
+> `src/composeUi/kotlin` 搬进 `src/main/kotlin/.../pages/`，Compose 页面源码仍留在
+> `src/composeP1/...`（目录名保留，由 `main` 源集挂载）。
+> 因此本文与派工表里出现的 `:app:compileComposeUiDebugKotlin`、`:app:testComposeUiDebugUnitTest`、
+> `composeUi 壳`、`ComposeP1Activity` 都是**当时的命令，照抄会失败**。
+> 现在的闸门是 `:app:compileDevDebugKotlin` / `:app:testDevDebugUnitTest`；
+> 要量性能用新增的 `bench` 构建类型（与正式版同档优化 + `<profileable>`），见 AGENTS.md 的 L3.5 行。
+
 ---
 
 ## 0. 三十秒上手（独立 agent 从这里开始）

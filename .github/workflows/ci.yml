@@ -105,19 +105,12 @@ jobs:
       # 这些测试不依赖 org.json stub（见 WidgetHolidayLogicTest 注释），
       # 但 Gradle 要先跑 flutter 的 gradle 脚本生成任务图，耗时较长，与
       # flutter test 并行意义不大，放最后串行执行。
+      #
+      # 2026-10-29：原来这里还有一条「Compose 渲染层编译（composeUi 变体）」的独立步骤，
+      # 用来覆盖 `prod` 变体编不到的 Compose 页面（台账 §7.1 的覆盖盲区）。两个迁移期
+      # flavor（composeP1 / composeUi）删除、页面源码并入 `main` 源集之后，`prod` 本来就
+      # 会编译它们，这条独立步骤成了重复劳动，随之删除——覆盖没有减少，编译次数少一次。
       - name: Android JVM unit tests
         run: |
           cd android
           ./gradlew :app:testProdDebugUnitTest --stacktrace --quiet
-
-      # Compose 渲染层编译（2026-10-27 补）：`prod` 变体**不含** compose 源集，
-      # 上面那条 `testProdDebugUnitTest` 编译不到 `src/composeP1/kotlin`——迁移中的
-      # Compose 页面此前既不被 CI 编译、也不被 CI 测试（台账 §7.1 记录的覆盖盲区）。
-      # 只做编译（不打包、不签名、不跑测试）：编 `sourceSets.composeUi` 里**已挂载**的
-      # 渲染层目录，挂上 = 该批渲染层开始受 CI 保护（挂载清单见 android/app/build.gradle）。
-      # 注意：composeP1 变体在页面迁移期**故意不编**（它指向整棵 pages/，必然带出在途欠账），
-      # 所以这里不包含 compileComposeP1DebugKotlin。
-      - name: Compose 渲染层编译（composeUi 已挂载页面）
-        run: |
-          cd android
-          ./gradlew :app:compileComposeUiDebugKotlin --stacktrace --quiet
