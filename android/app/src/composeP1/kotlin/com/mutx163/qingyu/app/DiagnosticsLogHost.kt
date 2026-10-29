@@ -80,10 +80,13 @@ import java.io.File
  *
  * - **warehouseImport 源**没有宿主数据：Kotlin 侧没有「教务导入会话日志」的内存实现，
  *   传进来只会是空页（[source] 默认 [AppLogSource.MERGED]，壳里也只接 MERGED）。
- * - **导出走系统分享**：`AndroidManifest` 未注册 `FileProvider`，拿不到 content Uri，
- *   于是降级为「整份日志当纯文本交给分享面板」，不静默失败、也不自研分享面板。
- * - 记录开关 `liveEnableLocalDiagnostics` 直接读 `FlutterSharedPreferences`：
- *   Kotlin 的 `TimetableSettingsModel` 还没有这个字段（泳道 D 在补）。
+ * - **导出走系统分享**：写 `cacheDir/log-share/` 下的临时文件 → `FileProvider` 换成
+ *   content Uri → `Intent.createChooser`。白名单条目在 `res/xml/file_paths.xml`
+ *   （`name="log_share"`）。provider 万一不可用时降级为「整份日志当纯文本交给分享面板」，
+ *   不静默失败、也不自研分享面板。
+ * - 记录开关 `liveEnableLocalDiagnostics`：`TimetableSettingsModel` 已补该字段（泳道 D），
+ *   但这里仍读 `FlutterSharedPreferences` —— 迁移期两边写的是同一份 prefs，读盘能同时看到
+ *   Flutter 侧与 Kotlin 侧写入的值；等 Flutter 入口下线再改读模型。
  */
 @Composable
 fun DiagnosticsLogHost(
@@ -370,6 +373,15 @@ private const val POLL_INTERVAL_MILLIS = 1_000L
 private const val CLIP_LABEL = "mikcb-app-logs"
 
 /**
+ * 日志导出临时副本的子目录名（相对 `cacheDir`）。
+ *
+ * 必须与 `res/xml/file_paths.xml` 里 `<cache-path name="log_share" path="log-share/">`
+ * 的 `path` **逐字一致**（连字符，不是下划线）；名字对不上时 `FileProvider.getUriForFile`
+ * 会抛 IllegalArgumentException，分享就退化成纯文本。改这里必须同步改那个 XML。
+ */
+private const val LOG_SHARE_DIR_NAME = "log-share"
+
+/**
  * 把整份日志交给系统分享面板。
  *
  * 与 `platform/AndroidShareAdapter.kt` 同一套三步（写缓存文件 → content Uri →
@@ -387,8 +399,11 @@ private fun shareLogText(
     shareText: String,
     shareSubject: String,
 ): Boolean {
+    // 必须写进 cacheDir 的**已登记子目录**：FileProvider 只放行 `res/xml/file_paths.xml`
+    // 里列出的路径，写在 cacheDir 根目录会让 getUriForFile 抛 IllegalArgumentException，
+    // 于是静默降级成「纯文本分享」——接收方拿不到 .log 附件，与 Dart（share_plus 发文件）不一致。
     val file = runCatching {
-        File(context.cacheDir, fileName).apply {
+        File(File(context.cacheDir, LOG_SHARE_DIR_NAME), fileName).apply {
             parentFile?.mkdirs()
             writeText(text, Charsets.UTF_8)
         }

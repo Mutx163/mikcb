@@ -39,4 +39,19 @@
 
     <!-- .mikcb 传输包导出：AndroidTransferShareAdapter 把包体写进 cacheDir/transfer-share/ -->
     <cache-path name="transfer_share" path="transfer-share/" />
+
+    <!--
+      应用日志导出（2026-10-29 加）：`DiagnosticsLogHost.shareLogText` 把当前视图那份日志
+      写进 cacheDir/log-share/ 再交给系统分享面板。
+
+      为什么这一条以前缺：诊断族的导出原先是个空 lambda，接真数据后才第一次走到
+      「分享一份 .log」。provider 刚注册时白名单只有上面两个子目录，而日志写的是
+      cacheDir **根目录** ⇒ `getUriForFile` 抛 IllegalArgumentException，代码降级成
+      「把整份日志塞进 Intent 正文」。降级不崩，但接收方拿到的是纯文字不是 .log 附件，
+      与 Dart 版（share_plus 发文件）不一致。
+
+      name 取 `log_share`、path 取 `log-share/`（下划线/连字符口径与上两条一致）。
+      日志上限 512KB，仍在 Binder 事务范围内；降级分支保留，provider 万一不可用也不静默失败。
+    -->
+    <cache-path name="log_share" path="log-share/" />
 </paths>
