@@ -389,7 +389,10 @@ gradle.taskGraph.whenReady { graph ->
 // 编译目标改由顶层 `kotlin { compilerOptions }` 指定。
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // 21：miuix-nav 的 inline entry 是 Java21 字节码。注意根 android/build.gradle 的
+        // subprojects 分支也把 :app 钉到 21（那里负责第三方子项目保持 17）；两处必须一致，
+        // 否则只改一处会静默退回 17 并再次报 INLINE_FROM_HIGHER_PLATFORM。
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
