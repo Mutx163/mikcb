@@ -34,6 +34,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -70,6 +71,20 @@ fun IcsExportPage(
     onDismissExportMenu: () -> Unit,
     onSyncCalendar: () -> Unit,
     onRemoveCalendar: () -> Unit,
+    /**
+     * 「同步到系统日历」的**首次说明**是否展开。
+     *
+     * Dart 只在第一次同步时弹这段说明（`_calendarSyncNoticePrefsKey`，确认过就不再问），
+     * 之后按钮是一键直达。遮挡语义与「每次同步都弹」完全不同，所以状态放在宿主、
+     * 显隐交给本页渲染。
+     */
+    syncNoticeVisible: Boolean,
+    onConfirmSyncNotice: () -> Unit,
+    onDismissSyncNotice: () -> Unit,
+    /** 「移除已同步的日程」的确认弹窗。Dart 每次都要确认（删除是破坏性动作）。 */
+    removeConfirmVisible: Boolean,
+    onConfirmRemove: () -> Unit,
+    onDismissRemoveConfirm: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
@@ -288,6 +303,78 @@ fun IcsExportPage(
                 title = ExportStrings.icsExportActionSave.zh,
                 onClick = onSaveExported,
             )
+        }
+    }
+
+    // ── 同步前的一次性说明（Dart `_calendarSyncNoticePrefsKey`：确认过就不再问） ──
+    OverlayDialog(
+        show = syncNoticeVisible,
+        title = ExportStrings.icsExportSyncCalendarTitle.zh,
+        onDismissRequest = onDismissSyncNotice,
+    ) {
+        Text(
+            text = ExportStrings.icsExportSyncCalendarBody.filled(
+                "calendarName",
+                IcsExportLogic.syncCalendarName(viewState.selectedProfile?.name.orEmpty()),
+            ),
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        ConfirmRow(
+            cancelLabel = ExportStrings.cancelAction.zh,
+            confirmLabel = ExportStrings.icsExportSyncCalendarConfirm.zh,
+            onCancel = onDismissSyncNotice,
+            onConfirm = onConfirmSyncNotice,
+        )
+    }
+
+    // ── 移除已同步日程的确认（Dart `_removeFromSystemCalendar` 每次都问） ──
+    OverlayDialog(
+        show = removeConfirmVisible,
+        title = ExportStrings.icsExportRemoveCalendarTitle.zh,
+        onDismissRequest = onDismissRemoveConfirm,
+    ) {
+        Text(
+            text = ExportStrings.icsExportRemoveCalendarBody.zh,
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        ConfirmRow(
+            cancelLabel = ExportStrings.cancelAction.zh,
+            confirmLabel = ExportStrings.icsExportRemoveCalendarConfirm.zh,
+            onCancel = onDismissRemoveConfirm,
+            onConfirm = onConfirmRemove,
+        )
+    }
+}
+
+/**
+ * 确认弹窗底部的「取消 / 确认」一行（与 `SettingsHost` 里主题弹窗同一套摆法：
+ * 两个等宽按钮、间距 12dp、取消在左）。
+ */
+@Composable
+private fun ConfirmRow(
+    cancelLabel: String,
+    confirmLabel: String,
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TextButton(
+            modifier = Modifier.weight(1f),
+            text = cancelLabel,
+            onClick = onCancel,
+        )
+        Button(
+            modifier = Modifier.weight(1f),
+            onClick = onConfirm,
+        ) {
+            Text(confirmLabel)
         }
     }
 }

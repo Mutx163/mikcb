@@ -36,6 +36,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * 「导出日历」页（`g3.icsExport`）的**真宿主**。
@@ -155,15 +156,32 @@ fun IcsExportHost(
         }
         // 一年数据都没有、也没有自定义假期 ⇒ 没有判据可用，返回 null（调用方不过滤）。
         if (custom.isEmpty() && officialByYear.values.all { it == null }) return null
-        return { date ->
+
+        // 判据仍然只有一份：每天都问 `HolidayData.isHoliday`（自定义条目优先、调休上班日优先），
+        // 本层不重写「哪天才算假期」。
+        fun isHolidayDay(date: LocalDate): Boolean {
             val official = officialByYear[date.year]
-            val entries = (official?.entries ?: emptyList()) + custom
-            HolidayData(
+            return HolidayData(
                 year = date.year,
                 version = official?.version ?: 0,
-                entries = entries,
+                entries = (official?.entries ?: emptyList()) + custom,
             ).isHoliday(date.atStartOfDay())
         }
+
+        // 一次导出会问「这一天放假吗」成千上万次（每门课 × 每周），逐次拼列表既慢又吃内存，
+        // 所以先把**区间内**的假期日算成一个集合；区间异常大时（用户手选十几年）退回逐日判定，
+        // 宁可慢一点，也不静默丢掉节假日过滤。
+        val days = ChronoUnit.DAYS.between(from, to) + 1
+        if (days <= 0 || days > HOLIDAY_PRECOMPUTE_MAX_DAYS) {
+            return { isHolidayDay(it) }
+        }
+        val holidayDates = HashSet<LocalDate>((days / 8).toInt() + 8)
+        var cursor = from
+        while (!cursor.isAfter(to)) {
+            if (isHolidayDay(cursor)) holidayDates.add(cursor)
+            cursor = cursor.plusDays(1)
+        }
+        return { it in holidayDates }
     }
 
     // ── 5. 运行期状态 ──
@@ -174,6 +192,13 @@ fun IcsExportHost(
     /** 已生成、等待「分享 / 保存」二选一的 `.ics` 正文（不落临时文件）。 */
     var pendingContent by remember { mutableStateOf<String?>(null) }
     var pendingCount by remember { mutableStateOf(0) }
+    /** 同步前的一次性说明（Dart 只在首次同步时弹，确认后写 prefs）。 */
+    var syncNoticeVisible by remember { mutableStateOf(false) }
+    /** 移除已同步日程的确认（Dart 每次都问）。 */
+    var removeConfirmVisible by remember { mutableStateOf(false) }
+
+    // 与 Dart 共用的偏好存储（键名逐字一致，见 CALENDAR_SYNC_NOTICE_KEY）。
+    val shellPreferences: KeyValueStore = remember(appContext) { PrefsKeyValueStore(appContext) }
 
     val toast: (String) -> Unit = { message ->
         Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
@@ -195,47 +220,57 @@ fun IcsExportHost(
         )
     }
 
-    // ── 6. 导出：校验 → 收集 → 序列化 → 展开二选一菜单 ──
-    val runExport: () -> Unit = {
-        val opts = effectiveOptions
-        when (IcsExportLogic.validate(selectedProfile, opts)) {
+    /**
+     * 导出与「同步到系统日历」共用的前置校验（Dart `_export` 与 `_syncToSystemCalendar`
+     * 的三条分支同源，见 `ics_export_screen.dart:442-466` / `:588-612`）。
+     *
+     * 通过才执行 [action]；不通过就按门栏种类给一句实话，**不做任何半截动作**。
+     */
+    fun runAfterValidation(action: () -> Unit) {
+        when (IcsExportLogic.validate(selectedProfile, effectiveOptions)) {
             IcsExportBlocker.NO_PROFILES -> toast(ExportStrings.icsExportNoProfiles.zh)
             IcsExportBlocker.NO_SELECTION -> toast(ExportStrings.icsExportNoSelection.zh)
             IcsExportBlocker.SEMESTER_START_REQUIRED ->
                 toast(ExportStrings.icsExportSemesterStartRequired.zh)
-            null -> {
-                isExporting = true
-                try {
-                    val collected = collectEvents()
-                    if (collected.events.isEmpty()) {
-                        // Dart 同口径：0 条事件不弹菜单，直接说清楚。
-                        toast(ExportStrings.icsExportNoEvents.zh)
-                    } else {
-                        val profileName = selectedSource?.profileName.orEmpty()
-                        val request = IcsShareWiring.requestFromEvents(
-                            calendarName = IcsEventCollection.exportCalendarName(
-                                profileName,
-                                opts.fromDate,
-                                opts.toDate,
-                            ),
-                            fromDateTime = opts.fromDate.atStartOfDay(),
-                            toDateTime = opts.toDate.atStartOfDay(),
-                            generatedAt = LocalDateTime.now(),
-                            events = collected.events,
-                            applicationId = appContext.packageName,
-                            profileName = profileName,
-                            from = opts.fromDate,
-                            to = opts.toDate,
-                        )
-                        pendingContent = request.content
-                        pendingCount = collected.events.size
-                        menuVisible = true
-                    }
-                } catch (e: Exception) {
-                    toast(ExportStrings.icsExportFailed.zh)
-                } finally {
-                    isExporting = false
+            null -> action()
+        }
+    }
+
+    // ── 6. 导出：校验 → 收集 → 序列化 → 展开二选一菜单 ──
+    val runExport: () -> Unit = {
+        val opts = effectiveOptions
+        runAfterValidation {
+            isExporting = true
+            try {
+                val collected = collectEvents()
+                if (collected.events.isEmpty()) {
+                    // Dart 同口径：0 条事件不弹菜单，直接说清楚。
+                    toast(ExportStrings.icsExportNoEvents.zh)
+                } else {
+                    val profileName = selectedSource?.profileName.orEmpty()
+                    val request = IcsShareWiring.requestFromEvents(
+                        calendarName = IcsEventCollection.exportCalendarName(
+                            profileName,
+                            opts.fromDate,
+                            opts.toDate,
+                        ),
+                        fromDateTime = opts.fromDate.atStartOfDay(),
+                        toDateTime = opts.toDate.atStartOfDay(),
+                        generatedAt = LocalDateTime.now(),
+                        events = collected.events,
+                        applicationId = appContext.packageName,
+                        profileName = profileName,
+                        from = opts.fromDate,
+                        to = opts.toDate,
+                    )
+                    pendingContent = request.content
+                    pendingCount = collected.events.size
+                    menuVisible = true
                 }
+            } catch (e: Exception) {
+                toast(ExportStrings.icsExportFailed.zh)
+            } finally {
+                isExporting = false
             }
         }
     }
@@ -349,7 +384,8 @@ fun IcsExportHost(
         }
     }
 
-    val requestSync: () -> Unit = {
+    /** 权限已拿到就直接同步；否则先申请（申请结果经 [permissionLauncher] 回到 `runSync`）。 */
+    val proceedSync: () -> Unit = {
         if (CalendarSync.hasCalendarPermission(appContext)) {
             runSync()
         } else {
@@ -359,7 +395,34 @@ fun IcsExportHost(
         }
     }
 
+    val requestSync: () -> Unit = {
+        // 与 Dart 同序：先过三条校验（`ics_export_screen.dart:588-612`），再讲规则、再要权限。
+        runAfterValidation {
+            // Dart 只在**第一次**同步前讲清规则（覆盖语义 + 日历归属），确认过就写 prefs，
+            // 之后按钮是一键直达（`ics_export_screen.dart:612-636`）。
+            if (shellPreferences.getBool(CALENDAR_SYNC_NOTICE_KEY, false)) {
+                proceedSync()
+            } else {
+                syncNoticeVisible = true
+            }
+        }
+    }
+
     val requestRemove: () -> Unit = {
+        // 删除是破坏性动作：Dart 每次都先确认（`_removeFromSystemCalendar` 无 prefs 豁免）。
+        removeConfirmVisible = true
+    }
+
+    val confirmSyncNotice: () -> Unit = {
+        syncNoticeVisible = false
+        // 记不住也不拦本次同步（Dart 同样 `setBool` 后继续）：写失败只会导致下次再问一遍，
+        // 比「以为记住了其实没记住」安全。
+        runCatching { shellPreferences.putBool(CALENDAR_SYNC_NOTICE_KEY, true) }
+        proceedSync()
+    }
+
+    val confirmRemove: () -> Unit = {
+        removeConfirmVisible = false
         if (CalendarSync.hasCalendarPermission(appContext)) {
             runRemove()
         } else {
@@ -382,9 +445,12 @@ fun IcsExportHost(
         onBack = onBack,
         onSelectProfile = { id ->
             selectedProfileId = id
-            // 换档案 ⇒ 区间回到新档案的默认学期区间（Dart `_handleProfileChanged`）。
-            // 已经手改过区间的人，改完课表再看到的是「新档案的合理区间」，而不是上一份档案的。
-            options = null
+            // 换档案**只重算区间**：Dart `_handleProfileChanged` 只改 `_fromDate/_toDate`
+            // （`ics_export_screen.dart:406-418`），用户勾过/取消过的「日历内容」与
+            // 「跳过节假日课程」必须原样保留 —— 否则换个课表就把勾选悄悄改回默认值。
+            val nextProfile = profileRows.firstOrNull { it.id == id }
+            val range = IcsExportLogic.defaultRangeFor(nextProfile, today)
+            options = effectiveOptions.copy(fromDate = range.from, toDate = range.to)
         },
         onFromDateChange = { date ->
             options = IcsExportLogic.onFromDateChanged(effectiveOptions, date)
@@ -410,6 +476,9 @@ fun IcsExportHost(
             if (content == null) {
                 menuVisible = false
             } else {
+                // Dart 先收起二选一菜单再弹系统保存框（`_handleExportAction` 先走退场再执行动作）；
+                // 不收起的话保存框关掉后菜单还挂着，看起来像没生效。
+                menuVisible = false
                 saveLauncher.launch(
                     IcsExportLogic.buildFileName(
                         selectedSource?.profileName.orEmpty(),
@@ -425,11 +494,33 @@ fun IcsExportHost(
         },
         onSyncCalendar = requestSync,
         onRemoveCalendar = requestRemove,
+        syncNoticeVisible = syncNoticeVisible,
+        onConfirmSyncNotice = confirmSyncNotice,
+        onDismissSyncNotice = { syncNoticeVisible = false },
+        removeConfirmVisible = removeConfirmVisible,
+        onConfirmRemove = confirmRemove,
+        onDismissRemoveConfirm = { removeConfirmVisible = false },
     )
 }
 
 /** `CalendarSync` 用这个码表示「系统拒绝（权限没拿到）」，见 `CalendarSync.handle` 的 catch 分支。 */
 private const val PERMISSION_DENIED_CODE = "PERMISSION_DENIED"
+
+/**
+ * 假期日预计算的区间上限（天）。超过就退回「逐日问 `HolidayData.isHoliday`」。
+ *
+ * 3 年 ≈ 1100 天：正常学期/学年区间都在这以内；用户把日期手推到 1970~2100 时不至于
+ * 一次点导出就扫两万天。
+ */
+private const val HOLIDAY_PRECOMPUTE_MAX_DAYS = 1100L
+
+/**
+ * 「同步前说明已确认过」的标记键（**与 Dart 同一个键**）。
+ *
+ * Dart：`ics_export_screen.dart:21` `ics_calendar_sync_notice_acknowledged_v1`。
+ * 键名必须逐字一致：Dart 时代已经确认过的用户，切到 Compose 壳后不该再被问一次。
+ */
+private const val CALENDAR_SYNC_NOTICE_KEY = "ics_calendar_sync_notice_acknowledged_v1"
 
 /**
  * 调 [CalendarSync] 的既有实现（清旧 + 整批插入 / 删专属日历）。

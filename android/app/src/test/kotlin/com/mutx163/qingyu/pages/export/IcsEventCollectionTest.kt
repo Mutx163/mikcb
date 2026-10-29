@@ -385,6 +385,70 @@ class IcsEventCollectionTest {
         assertEquals(1, result.events.size)
     }
 
+    @Test
+    fun holidayPredicateUnavailable_stillExportsEverything() {
+        // 调用方拿不到假期数据时传 null：宁可多导几节，也不把课表导成空文件（静默失败更糟）。
+        val course = Course(
+            id = "course-1",
+            name = "线性代数",
+            teacher = "张老师",
+            location = "B101",
+            dayOfWeek = 1,
+            startSection = 1,
+            endSection = 2,
+            startTime = "08:00",
+            endTime = "09:40",
+            startWeek = 1,
+            endWeek = 2,
+        )
+        val result = IcsEventCollection.collect(
+            source = source(
+                courses = listOf(course),
+                semesterStartDate = LocalDateTime.of(2026, 3, 2, 0, 0),
+            ),
+            kinds = setOf(IcsExportEventKind.COURSE),
+            from = LocalDate.of(2026, 3, 1),
+            to = LocalDate.of(2026, 3, 31),
+            skipHolidayCourses = true,
+            isHoliday = null,
+        )
+        assertEquals(0, result.skippedHolidayCourses)
+        assertEquals(2, result.events.size)
+    }
+
+    @Test
+    fun duplicateExamRows_areDedupedByUid() {
+        // 同一场考试在档案里出现两次（导入重复数据）：uid 相同 ⇒ 只留一条。
+        val x = exam(id = "exam-dup")
+        val y = exam(id = "exam-dup")
+        val result = IcsEventCollection.collect(
+            source = source(exams = listOf(x, y)),
+            kinds = setOf(IcsExportEventKind.EXAM),
+            from = LocalDate.of(2026, 3, 1),
+            to = LocalDate.of(2026, 3, 31),
+        )
+        assertEquals(1, result.events.size)
+    }
+
+    @Test
+    fun multiDaySchedule_usesStartDateAndEndDate() {
+        // 跨天日程（03-02 ~ 03-04 每天 14:00-15:00）：Dart 传 eventDate=startDate、
+        // endDate=endDate ⇒ 一条从 03-02 14:00 到 03-04 15:00 的事件。
+        val item = scheduleItem(
+            startDate = LocalDateTime.of(2026, 3, 2, 0, 0),
+            endDate = LocalDateTime.of(2026, 3, 4, 0, 0),
+        )
+        val result = IcsEventCollection.collect(
+            source = source(scheduleItems = listOf(item)),
+            kinds = setOf(IcsExportEventKind.SCHEDULE_ITEM),
+            from = LocalDate.of(2026, 3, 1),
+            to = LocalDate.of(2026, 3, 31),
+        )
+        val event = result.events.single()
+        assertEquals(LocalDateTime.of(2026, 3, 2, 14, 0), event.start)
+        assertEquals(LocalDateTime.of(2026, 3, 4, 15, 0), event.end)
+    }
+
     // ------------------------------------------------------------------
     // uid 与课程那条实现一致（防两套物料漂移）
     // ------------------------------------------------------------------
