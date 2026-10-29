@@ -330,3 +330,45 @@ Lead 给的版式基准我已逐条回 Dart 核对，**基准本身是对的**�
   「渲染器真的能画缩略图」而不是「节点 id 在里面」。
 - **J2/D3 落点**：现在没有任何守卫断言 target 可达。这类「点了没反应」是本仓反复吃过的病
   （见 `ShellPageIndex.kt` 里 2026-10-29 补口那段注释），B 段要把它做成守卫。
+
+---
+
+## 7. B 段实际结论（2026-10-29 · Lead 自查替代）
+
+> 说明：本条 lane 的审核员在 B 段启动后未能产出（返回内容损坏、本报告未更新）。
+> 下面由 Lead 就**同一批清单**做可复现的自查，并明确标注「证到哪一级」。
+> 本节只补证据，不改 §1–§5 的 A 段历史结论。
+
+### 7.1 六处最可能「看着像、其实没接上」的复核
+
+| # | 复核点 | 怎么证的 | 结论 |
+|---|---|---|---|
+| 1 | 取消 = 回滚到**进页快照**，且回滚前先 flush 欠档 | `AppearanceEditorHost.kt:162-182`：`persistNow()` → `if (model != openedWith)` 整份 `store.save(openedWith)` → `onBack()`；注释写明「顺序反了会让防抖里那一档后落地」 | 已复刻（代码级） |
+| 2 | 防抖只落在滑杆行 | `isDebouncedSliderRow`（`:442-446`）= `material.*` 且含 `.tuning.` / `.darkTuning.`，或 `backdrop.blur`；其余 `debounce=false` 立即写 | 已复刻（代码级） |
+| 3 | 状态桥真读真键 | 抽查 `homePageWallpaperBlurSigma` / `homePageBackdropFollowsWeekPager` / `linkLiquidGlassTuning` / `hasHomePageBackdrop`，桥里逐条取模型字段（`AppearanceEditorState.kt:144/146/166/178`）；18 键往返另有 `AppearanceEditorBridgeTest` | 已复刻（单测级，L0 绿） |
+| 4 | 分段行的 target 是 option id | `SegmentedRow` 点击走 `onAction(WRITE_SETTING, option.id, row.id)`；`glassMode` / `homeBand` / `surfaceStyle` 三处 options 均带 id | 已复刻（代码级） |
+| 5 | 面板里无二级弹层 / 半屏 / 内缩 16 | 两个 SheetBody 全文无 Dialog / 路由；`heightIn(max = 屏高×0.5−42)`；`insideMargin = DpSize(16.dp, 0.dp)`；最近使用「确认条 / 反悔条」就地生长 | 已复刻（代码级） |
+| 6 | 几何数值逐条对 Dart | 卡片可用宽 0.86、上下净空 `topInset+16+40+18` / `bottomInset+24+56+8+18`、胶囊 84×40、圆钮 56×56 间距 40、圆角 = 屏幕圆角 × scale、浮影 `0x66000000` / 32 / 2 —— 在 `AppearanceEditorScreen.kt` / `AppearanceEditorChrome.kt` 内逐项存在 | 已复刻（代码级）；**屏上像素未验** |
+
+### 7.2 已消除的 A 段缺口（提交 `6116529c`）
+
+- **页型**：列表骨架 → 沉浸式整页（A 段「完全没做」31 条里的页面形态部分已落地）。
+- **落点**：`b.appearanceEditor` / `b.materialGeneral` / `b.materialCourseCard` /
+  `b.backdropFlow` / `b.recentWallpaper` 五条分支改真宿主；两颗圆钮与面板页签直达宿主，
+  不再经过路由串。
+- **数据**：材质 11 键 + 壁纸 7 键进设置模型（五处齐全）；分派器 15 条 rowId 写回分支；
+  状态桥逐键同源（每条带 Dart 行号）。
+- **语义**：即时落盘 / 取消回滚 / 完成保留 / 离开补写 / 加载罩三态（宿主当前传
+  `previewReady = true`，理由见宿主「已知差异」）。
+- **§6.1 三处「假绿」**：`keyPoints` 已有表达位并接到官方 `SliderPreference`；
+  最近使用缩略图条由 `RecentWallpaperStrip.kt`（577 行）真实绘制；落点守卫仍未补（见 7.3-6）。
+
+### 7.3 仍未做（不许算完成）
+
+1. **`b.bingGallery`** 仍走空 state（图库页本身在，数据源下一刀）。
+2. **选图落盘**：面板只发 `backdrop.image.picked:<uri>` 意图，受管目录与写回缺 Kotlin 实现。
+3. **「调整位置」** 行缺宿主页（点了不发请求，因此不会假成功）。
+4. **图库「每天自动更换」** 缺台账真源 ⇒ 该行只读「不可用」。
+5. **顶部渐变模糊带**未接线（全仓 miuix-blur 真实页面 0 处，属独立批次）。
+6. **落点守卫**：`appearanceEditor.*` 的 target 可达性仍只靠人读，没有测试钉住（A 段 §6.1 J2）。
+7. **真机未验**：屏幕几何、预览是否随改随变、两个面板手感 —— 只有用户真机才作数。
