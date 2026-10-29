@@ -80,7 +80,7 @@ import java.time.temporal.ChronoUnit
  * 4. **设置全部下传**：卡面字段/字号/材质/冲突开关/时间列显示档/星期栏字色都由
  *    [WeekViewStyle] 决定，页面不再写死。
  *
- * ## 已知未复刻（见 `.agents/compose-phase3/claims/_AUDIT-week-view.md`）
+ * ## 已知未复刻（见 `docs/plans/2026-10-29-compose-week-view-audit.md` §六）
  *
  * 壁纸与玻璃坞（属于壳）、下拉快捷导入（`homePull`）、周↔日/月飞行动效、
  * 课卡天气行、情侣课表叠加。这些不是本页能单独补齐的。

@@ -309,7 +309,7 @@ fun TimetableWithCourseActions(
         onWeekChanged = { repository.setCurrentWeek(it) },
         // 点星期栏某一天 → 日视图（Dart `TimetableDayViewPart` 的入口）。
         // ⚠️ 已知缺口：`c3.day` 宿主目前不接收「要打开哪一天」，进去落在今天；
-        // 传 day 的重载在日视图接线批次里补（见 `_AUDIT-week-view.md` P2-2）。
+        // 传 day 的重载在日视图接线批次里补（见 `docs/plans/2026-10-29-compose-week-view-audit.md` §六 P2）。
         onOpenDay = { _ -> onNavigate("c3.day") },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。

@@ -101,7 +101,7 @@ fun calculateInk(backgroundColor: Color): Color {
  * ## 刻意没做的（已在审计里记账，不是遗忘）
  *
  * - 天气行（`CourseWeatherDisplay`）：Compose 侧天气数据还没接进课表宿主，见
- *   `_AUDIT-week-view.md` 的 P1-3；
+ *   `docs/plans/2026-10-29-compose-week-view-audit.md` 的 P1-1（课卡天气行）；
  * - 高斯/液态玻璃卡面：没有壁纸与预糊位图管线时两者都会退化成半透明实体，
  *   这里按 [WeekCardSurface.TRANSLUCENT] 的降级口径画（与 Dart 无壁纸时一致）；
  * - 每行的 flex 比例（Dart 用 `flex: 4/2/3` 分配高度）：这里用 maxLines + 省略号，
