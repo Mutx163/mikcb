@@ -61,6 +61,11 @@ fun SettingsGroup.childIds(): List<String> = children.map { it.id }
  *
  * 覆盖：行标题/说明/行尾值、分组标题、整宽说明、内联块里的按钮与预览文案、
  * 以及下拉选项名（选项名也是屏上的字）。
+ *
+ * **固定底栏（[SettingsPageSpec.footerNode]）与顶栏动作也在口径内**（2026-10-29 补）：
+ * 节假日高级页把「检查更新」从 `nodes` 移到了底栏，如果这里只看 `nodes`，
+ * 那颗按钮的文案就悄悄退出了逐字对拍——一个「越改越安全」的假象。
+ * 顶栏动作只有语义标签（无障碍朗读），没有 ARB 键，所以不进这个清单。
  */
 fun SettingsPageSpec.allArbTexts(): List<Pair<String, String>> {
     val out = ArrayList<Pair<String, String>>()
@@ -68,7 +73,8 @@ fun SettingsPageSpec.allArbTexts(): List<Pair<String, String>> {
         // 空键 = 文案不来自 ARB（用户数据，如已存主题名），对照时跳过
         if (!key.isNullOrEmpty() && text != null) out.add(key to text)
     }
-    flatten().forEach { node ->
+    // 底栏节点不在 nodes 里，单独并进同一份遍历（顺序：正文在前、底栏在后，与屏上一致）。
+    (flatten() + listOfNotNull(footerNode)).forEach { node ->
         when (node) {
             is SettingsRow -> {
                 add(node.titleKey, node.title)

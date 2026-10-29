@@ -120,6 +120,15 @@ object SettingsActionDispatcher {
     const val ROW_HAPTICS = "general.haptics"
     const val ROW_HOME_PULL_IMPORT = "general.homePullImport"
 
+    /**
+     * 节假日标记总开关（`settings_holiday.dart:508-516` 的 `HyperosSwitchTile`）。
+     *
+     * 这一行不属上面四页的 45 个字段，是 2026-10-29 接节假日页时补进来的：
+     * `TimetableSettingsModel` 从第一批起就带 `enableHolidayMarking`（模型层要喂
+     * 月视图与超级岛），但**分派器没有对应分支** ⇒ 开关点了界面不会变、盘上也不会变。
+     */
+    const val ROW_HOLIDAY_ENABLE = "holiday.enable"
+
     const val ROW_THEME_MODE = "appearance.themeMode"
     const val ROW_FONT_MODE = "appearance.fontMode"
     const val ROW_FONT_WEIGHT = "appearance.fontWeight"
@@ -368,6 +377,9 @@ object SettingsActionDispatcher {
             }
 
             ROW_HAPTICS -> model.copy(enableHaptics = !model.enableHaptics)
+
+            ROW_HOLIDAY_ENABLE ->
+                model.copy(enableHolidayMarking = !model.enableHolidayMarking)
 
             ROW_HOME_PULL_IMPORT ->
                 model.copy(homePullQuickImportEnabled = !model.homePullQuickImportEnabled)

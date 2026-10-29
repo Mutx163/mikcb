@@ -24,6 +24,11 @@ class SettingsHolidayPageTest {
     private fun advanced(logs: List<HolidayLogEntry> = emptyList()) =
         SettingsHolidayAdvancedPage.spec(SettingsPageState(), HolidayAdvancedData(logs = logs))
 
+    /** 高级页的固定底栏（唯一一个 `footerNode`，必须是「检查更新」控制卡）。 */
+    private fun SettingsPageSpec.footerInline(): SettingsInline =
+        footerNode as? SettingsInline
+            ?: error("页面 ${this.id} 的 footerNode 不是 SettingsInline：$footerNode")
+
     // ==================================================== 节假日标记（主页面）
 
     @Test
@@ -315,6 +320,83 @@ class SettingsHolidayPageTest {
         assertEquals("/settings/holiday/advanced", SettingsHolidayPage.ROUTE_ADVANCED)
     }
 
+    @Test
+    fun `顶栏动作指向高级页且朗读文案是节假日数据更新`() {
+        // settings_holiday.dart:466-478 `FHeaderAction(icon: tune, semanticsLabel: …)`
+        val action = page().topBarAction ?: error("主页面必须有进高级页的顶栏动作")
+        assertEquals(SettingsHolidayPage.ROUTE_ADVANCED, action.route)
+        assertEquals("节假日数据更新", action.semanticsLabel)
+    }
+
+    @Test
+    fun `默认不出现兜底入口行`() {
+        // 原版入口只在顶栏；兜底行默认关闭 ⇒ 顶层节点与既往完全一致
+        assertTrue(
+            page().flatten().none { it.id == SettingsHolidayPage.ADVANCED_ENTRY_ROW_ID },
+        )
+    }
+
+    @Test
+    fun `打开兜底入口时末尾多一行导航到高级页`() {
+        // 兜底行是「顶栏 action 槽接不上时」的唯一出路：必须在列表末尾、可点、NAVIGATE
+        val spec = SettingsHolidayPage.spec(
+            SettingsPageState(),
+            HolidayPageData(),
+            showAdvancedEntryFallback = true,
+        )
+        assertEquals("holiday.group.advancedEntry", spec.topLevelIds().last())
+        val row = spec.row(SettingsHolidayPage.ADVANCED_ENTRY_ROW_ID)
+        assertEquals("holidayAdvancedTitle", row.titleKey)
+        assertEquals("节假日数据更新", row.title)
+        assertEquals(MiuixRowComponent.ARROW, row.component)
+        assertEquals(SettingsAction.NAVIGATE, row.action)
+        assertEquals(SettingsHolidayPage.ROUTE_ADVANCED, row.actionTarget)
+    }
+
+    @Test
+    fun `兜底入口只在关闭顶栏能力时才加 不影响既有区块顺序`() {
+        // 打开兜底后，原三区块的顺序与内容一个都不许变（只是尾巴多一组）
+        val withFallback = SettingsHolidayPage.spec(
+            SettingsPageState(),
+            HolidayPageData(),
+            showAdvancedEntryFallback = true,
+        ).topLevelIds()
+        assertEquals(
+            page().topLevelIds(),
+            withFallback.dropLast(1),
+        )
+    }
+
+    @Test
+    fun `已过去的法定节假日带降透明度标记`() {
+        // settings_holiday.dart:613-614 `Opacity(opacity: holiday.isPast ? 0.55 : 1)`
+        val data = HolidayPageData(
+            officialHolidays = listOf(
+                HolidayItem("国庆节", "2026-10-01", "2026-10-07", HolidayKind.VACATION, isPast = false),
+                HolidayItem("元旦", "2026-01-01", "2026-01-01", HolidayKind.VACATION, isPast = true),
+            ),
+        )
+        val rows = page(data).group("holiday.group.official").children.filterIsInstance<SettingsRow>()
+        assertEquals(listOf(false, true), rows.map { it.dimmed })
+        // dim 是「可读但次要」，不是禁用：行仍可读、仍带区间
+        assertTrue(rows.all { it.enabled })
+    }
+
+    @Test
+    fun `自定义假期行点按编辑 长按删除 两种意图可区分`() {
+        // settings_holiday.dart:556-570：`onTap` 打开编辑弹层、`onLongPress` 走删除确认。
+        // 宿主靠 (action, rowId) 分辨：SHEET + holiday.custom.* = 编辑，DIALOG + 同一个 id = 删除确认。
+        val data = HolidayPageData(
+            customHolidays = listOf(
+                HolidayGroupRow("g1", "校庆", "2026-10-01", "2026-10-03", HolidayKind.VACATION),
+            ),
+        )
+        val row = page(data).row("holiday.custom.g1")
+        assertEquals(SettingsAction.SHEET, row.action)
+        assertEquals(SettingsAction.DIALOG, row.longPressAction)
+        assertNull("长按不需要 target：行 id 已带 groupId", row.longPressTarget)
+    }
+
     // ============================================== 节假日数据更新（高级页）
 
     @Test
@@ -324,9 +406,23 @@ class SettingsHolidayPageTest {
         assertEquals("settings-holiday-advanced", spec.id)
         assertEquals("holidayAdvancedTitle", spec.titleKey)
         assertEquals("节假日数据更新", spec.title)
+        // 「检查更新」是固定底栏（:792-812，Column 的最后一个子项），不在滚动区里
         assertEquals(
-            listOf("holidayAdvanced.section.log", "holidayAdvanced.group.log", "holidayAdvanced.card.refresh"),
+            listOf("holidayAdvanced.section.log", "holidayAdvanced.group.log"),
             spec.topLevelIds(),
+        )
+    }
+
+    @Test
+    fun `检查更新是固定底栏 不在滚动列表里`() {
+        // settings_holiday.dart:710-812：底栏是 Column 最后一个子项，不随日志滚动。
+        // 这条同时是「别又塞回 nodes」的反向钉子：渲染层的 bottomBar 只认 footerNode。
+        val spec = advanced(logs = listOf(HolidayLogEntry("09:00", "已从内置数据加载")))
+        assertEquals("holidayAdvanced.card.refresh", spec.footerInline().id)
+        // flatten() 只走 nodes，所以这条等价于「按钮不在滚动区里」
+        assertTrue(
+            "检查更新卡不能同时出现在 nodes 里（会跟着日志滚走）",
+            spec.flatten().none { it.id == "holidayAdvanced.card.refresh" },
         )
     }
 
@@ -337,8 +433,7 @@ class SettingsHolidayPageTest {
         val label = spec.flatten().filterIsInstance<SettingsLabel>().single()
         assertEquals("holidayUpdateLog", label.textKey)
         assertEquals("更新日志", label.text)
-        val card = spec.flatten().filterIsInstance<SettingsInline>()
-            .single { it.id == "holidayAdvanced.card.refresh" }
+        val card = spec.footerInline()
         assertEquals(listOf("检查更新"), card.texts.map { it.text })
         assertEquals(listOf("holidayCheckUpdate"), card.texts.map { it.key })
     }
@@ -359,13 +454,16 @@ class SettingsHolidayPageTest {
             ),
         )
         val rows = filled.group("holidayAdvanced.group.log").children.filterIsInstance<SettingsRow>()
-        // 时刻上行、正文下行（:754-779 的两层 Text）
+        // 时刻在上、正文在下（:750-781 的两层 Text，上下排不是左右排）
         assertEquals(listOf("09:00", "09:01"), rows.map { it.title })
-        assertEquals(listOf("已从内置数据加载", "远端拉取成功"), rows.map { it.value })
+        assertEquals(listOf("已从内置数据加载", "远端拉取成功"), rows.map { it.subtitle })
         // 时刻与正文都是运行时数据，不来自 ARB
         rows.forEach {
             assertEquals(NON_ARB_TEXT, it.titleKey)
-            assertEquals(NON_ARB_TEXT, it.valueKey)
+            assertEquals(NON_ARB_TEXT, it.subtitleKey)
+            // 上下排：左右排会把长正文挤成一行省略号（:773-779）
+            assertTrue("日志行必须是上下两行", it.stacked)
+            assertFalse("日志行纯展示、不可点", it.enabled)
         }
     }
 
@@ -374,8 +472,18 @@ class SettingsHolidayPageTest {
         // settings_holiday.dart:803-807：label 恒为 holidayCheckUpdate，只有 loading 变
         val card = SettingsHolidayAdvancedPage
             .spec(SettingsPageState(), HolidayAdvancedData(refreshing = true))
-            .flatten().filterIsInstance<SettingsInline>()
-            .single { it.id == "holidayAdvanced.card.refresh" }
+            .footerInline()
         assertEquals(listOf("检查更新"), card.texts.map { it.text })
+        // 2026-10-29 补：Dart 是 `loading: _refreshing` + `onPressed: _refreshing ? null : …`；
+        // 模型把这件事表达成 busy，渲染层据此转圈并吞掉点击。没有这条断言，
+        // refreshing 就只是一个「没人读的字段」，请求期间按钮照样能连点。
+        assertTrue("刷新中按钮必须是 loading 态", card.busy)
+        assertFalse(
+            "不刷新时必须可点（否则按钮永远点不动）",
+            SettingsHolidayAdvancedPage
+                .spec(SettingsPageState(), HolidayAdvancedData(refreshing = false))
+                .footerInline()
+                .busy,
+        )
     }
 }

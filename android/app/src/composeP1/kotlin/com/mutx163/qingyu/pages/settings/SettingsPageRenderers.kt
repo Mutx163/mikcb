@@ -3,7 +3,11 @@ package com.mutx163.qingyu.pages.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +24,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -37,14 +43,18 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
+import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Location
@@ -57,6 +67,18 @@ import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/**
+ * 「已过去」的行降到的透明度（Flutter `Opacity(opacity: 0.55)`，`settings_holiday.dart:613-614`）。
+ * 55% 是 Dart 侧写死的值，不是随手挑的——见 [SettingsRow.dimmed]。
+ */
+private const val ROW_DIMMED_ALPHA = 0.55f
+
+/**
+ * 顶栏动作行的 rowId：`SettingsTopAction` 没有「行」，但宿主仍需要一个稳定的
+ * rowId 来区分「这个 NAVIGATE 是顶栏发出来的」。壳侧按它做分支即可。
+ */
+const val TOP_ACTION_ROW_ID = "topAction"
 
 /**
  * 设置族三页的**渲染层**：把模型层的 [SettingsPageSpec] 喂给官方 Miuix 组件。
@@ -112,10 +134,38 @@ fun SettingsPageScreen(
     // onBack 为 null 时骨架仍会画出返回键（套件的返回键是恒定存在的），这里退化成空实现：
     // 20 页的真实宿主（SettingsHost / ShellPageIndex）**都**传了 onBack，null 只出现在
     // 未接线的预览调用里，不构成「看得见却按不动」的线上路径。
+    // 顶栏右侧动作（Flutter `HyperosSubpage(suffixes: [FHeaderAction(...)])`）与固定底栏
+    // （Flutter `Column` 的最后一个子项）都在这里接——两件事都属「壳的能力」，不属单页：
+    // 顶栏 action 槽由 [QingyuPageScaffold] 的 `actions` 承载，底栏由它的 `bottomBar` 承载。
+    // 见 `settings_holiday.dart:466-478`（齿轮进高级页）与 `:792-812`（固定的检查更新按钮）。
+    val dark = isSystemInDarkTheme()
+    val topAction = spec.topBarAction
+    val footer = spec.footerNode
+    val footerSlot: (@Composable () -> Unit)? = if (footer == null) {
+        null
+    } else {
+        { SettingsNodeView(node = footer, onAction = onAction) }
+    }
     QingyuPageScaffold(
         title = spec.title,
         onBack = onBack ?: {},
         smallTopBar = !spec.collapsibleLargeTitle,
+        actions = {
+            if (topAction != null) {
+                IconButton(
+                    onClick = {
+                        onAction(SettingsAction.NAVIGATE, topAction.route, TOP_ACTION_ROW_ID)
+                    },
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Tune,
+                        contentDescription = topAction.semanticsLabel,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+            }
+        },
+        bottomBar = footerSlot,
     ) {
         // 两页（课程卡片 / 课表页面）是「上方预览 + 下方设置列表」的 4:6 分栏；
         // 其余设置页没有预览，列表就是整页。
@@ -177,10 +227,21 @@ private fun SettingsNodeView(
         is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction)
         is SettingsInline -> SettingsInlineView(node = node, onAction = onAction)
         is SettingsRow ->
-            if (node.standaloneSummaryCard) {
-                SummaryCardRow(row = node, onAction = onAction)
-            } else {
-                SettingsRowView(row = node, onAction = onAction)
+            // 「已过去」的行整行降到 55% 透明度（Flutter `Opacity(0.55)`，settings_holiday.dart:613-614）。
+            // 包在行外面而不是改组件内部颜色：卡片/背景/描边一起变淡才与原版一致，
+            // 也不影响点击热区与禁用态语义（那两件事各有自己的字段）。
+            Box(
+                modifier = if (node.dimmed) {
+                    Modifier.alpha(ROW_DIMMED_ALPHA)
+                } else {
+                    Modifier
+                },
+            ) {
+                if (node.standaloneSummaryCard) {
+                    SummaryCardRow(row = node, onAction = onAction)
+                } else {
+                    SettingsRowView(row = node, onAction = onAction)
+                }
             }
     }
 }
@@ -259,22 +320,33 @@ private fun SettingsRowView(
             },
         )
 
-        MiuixRowComponent.ARROW -> ArrowPreference(
-            title = row.title,
-            titleColor = titleColors(row),
-            summary = row.subtitle,
-            onClick = click,
-            enabled = row.enabled,
-            startAction = if (icon != null) {
-                { SettingsLeadingBadge(icon) }
-            } else {
-                null
-            },
-            endActions = {
-                TrailingText(SettingsRowRenderTable.trailingText(row))
-                row.trailingAction?.let { TrailingActionHint(it) }
-            },
-        )
+        MiuixRowComponent.ARROW -> when {
+            // 上下两行（高级页的更新日志：时刻在上、正文在下，Flutter `:750-781`）。
+            row.stacked -> StackedRow(row = row)
+            // 长按行（自定义假期的长按删除，Flutter `:568-570`）。
+            row.longPressAction != null -> LongPressArrowRow(
+                row = row,
+                icon = icon,
+                click = click,
+                onAction = onAction,
+            )
+            else -> ArrowPreference(
+                title = row.title,
+                titleColor = titleColors(row),
+                summary = row.subtitle,
+                onClick = click,
+                enabled = row.enabled,
+                startAction = if (icon != null) {
+                    { SettingsLeadingBadge(icon) }
+                } else {
+                    null
+                },
+                endActions = {
+                    TrailingText(SettingsRowRenderTable.trailingText(row))
+                    row.trailingAction?.let { TrailingActionHint(it) }
+                },
+            )
+        }
 
         MiuixRowComponent.SLIDER -> SliderRow(row = row, onAction = onAction)
 
@@ -323,6 +395,116 @@ private fun SettingsRowView(
     }
     // 行尾附加按钮（已存主题的「更多操作」）只渲染提示文案，点击由宿主按
     // trailingActionKind 接（见 SettingsRowRenderTable 的契约断言）。
+}
+
+/**
+ * 上下两行的行（[SettingsRow.stacked]）：第一行 [SettingsRow.title] 用次要色小字，
+ * 第二行 [SettingsRow.subtitle] 用正文字色——逐字对齐 Flutter 高级页的更新日志条目
+ * （`settings_holiday.dart:750-781`：时刻 `listDetail` + tabular 数字，正文 `listDetail`
+ * + `primaryText` 色）。
+ *
+ * 用官方 `BasicComponent` 的 content 槽承载，不自绘行容器；`enabled = false` 让它不响应点击
+ * （原版日志条目本来就不可点）。tabular 数字（`tnum`）在 Dart 侧是
+ * `FontFeature.tabularFigures()`，Compose 的同义写法是 `fontFeatureSettings = "tnum"`。
+ */
+@Composable
+private fun StackedRow(row: SettingsRow) {
+    BasicComponent(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = BasicComponentDefaults.InsideMargin,
+        enabled = row.enabled,
+    ) {
+        Text(
+            text = row.title,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = MiuixTheme.textStyles.body2.copy(fontFeatureSettings = "tnum"),
+        )
+        if (!row.subtitle.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = row.subtitle!!,
+                color = MiuixTheme.colorScheme.onBackground,
+                style = MiuixTheme.textStyles.body2,
+            )
+        }
+    }
+}
+
+/**
+ * 支持长按的行（[SettingsRow.longPressAction]）：外观与官方 `ArrowPreference` 一致
+ * （标题 / 摘要 / 行首徽章 / 行尾文本 + 右箭头），但点击与长按都挂在我们自己的
+ * `Modifier.combinedClickable` 上。
+ *
+ * 为什么要重画这一行：官方 `ArrowPreference` **没有长按回调**（0.9.4 `ArrowPreference.kt:49-62`
+ * 的形参表里只有 `onClick`），而 Flutter 侧的自定义假期行有 `onLongPress`（`:568-570`）。
+ * `BasicComponent` 只在 `onClick != null` 时才自己挂 `clickable`（`Component.kt:146-158`），
+ * 所以这里传 `onClick = null`、由外层 `combinedClickable` 同时接管点击与长按——
+ * 仍然是官方组件 + 官方指示（`LocalIndication`），没有自研控件。
+ */
+@Composable
+private fun LongPressArrowRow(
+    row: SettingsRow,
+    icon: SettingsRowIcon?,
+    click: (() -> Unit)?,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val longPress = row.longPressAction ?: return
+    BasicComponent(
+        modifier = Modifier.combinedClickable(
+            interactionSource = interaction,
+            indication = LocalIndication.current,
+            enabled = row.enabled,
+            onLongClick = { onAction(longPress, row.longPressTarget, row.id) },
+            onClick = { click?.invoke() },
+        ),
+        title = row.title,
+        titleColor = titleColors(row),
+        summary = row.subtitle,
+        startAction = if (icon != null) {
+            { SettingsLeadingBadge(icon) }
+        } else {
+            null
+        },
+        endActions = {
+            // 与官方 ArrowPreference 同一套排布：行尾读数（有的话）在前、右箭头在后。
+            val trailing = SettingsRowRenderTable.trailingText(row)
+            if (!trailing.isNullOrEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(end = 8.dp),
+                ) {
+                    TrailingText(trailing)
+                }
+            }
+            ArrowEndAction(enabled = row.enabled)
+        },
+        enabled = row.enabled,
+        interactionSource = interaction,
+    )
+}
+
+/**
+ * 行尾右箭头：与官方 `ArrowPreference` 的 `ArrowPreferenceEndAction` **同尺寸同色**
+ * （10×16dp、`onSurfaceVariantActions` / 禁用 `disabledOnSecondaryVariant`）。
+ * 官方那个是 `private`，长按行只能按同样的口径画一次。
+ */
+@Composable
+private fun RowScope.ArrowEndAction(enabled: Boolean) {
+    val tint = if (enabled) {
+        MiuixTheme.colorScheme.onSurfaceVariantActions
+    } else {
+        MiuixTheme.colorScheme.disabledOnSecondaryVariant
+    }
+    Icon(
+        imageVector = MiuixIcons.Basic.ArrowRight,
+        contentDescription = null,
+        tint = tint,
+        modifier = Modifier
+            .align(Alignment.CenterVertically)
+            .size(width = 10.dp, height = 16.dp),
+    )
 }
 
 /**
@@ -745,11 +927,17 @@ private fun ControlCard(
                     val wiring = controlCardWiring(action.key)
                     Button(
                         onClick = {
-                            if (wiring != null) {
+                            // busy 期间吞掉点击：Dart 的 `onPressed: _refreshing ? null : …`（`:807`）。
+                            if (wiring != null && !node.busy) {
                                 onAction(wiring.first, null, wiring.second)
                             }
                         },
+                        enabled = !node.busy,
                     ) {
+                        if (node.busy) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
                         Text(
                             text = action.text,
                             color = colors.primary,
@@ -774,6 +962,15 @@ private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = 
 
     "themeSaveCurrent" -> SettingsAction.DIALOG to
         SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE
+
+    // 节假日两页的两颗整宽按钮（2026-10-29）。键与行 id 都是页面模型里写死的那两处：
+    // - 「添加假期」：`SettingsHolidayPage` 的 `holiday.card.add`（原版 `settings_holiday.dart:576-592`）；
+    // - 「检查更新」：`SettingsHolidayAdvancedPage` 的 `holidayAdvanced.card.refresh`（`:792-812`）。
+    // 动作语义：前者弹新增弹层（SHEET），后者立刻刷数据（RUN_NOW）；
+    // 宿主按 rowId 认，两个都只当「界面意图」转出去，渲染层不碰业务判据。
+    "customHolidayAdd" -> SettingsAction.SHEET to "holiday.card.add"
+
+    "holidayCheckUpdate" -> SettingsAction.RUN_NOW to "holidayAdvanced.card.refresh"
 
     else -> null
 }

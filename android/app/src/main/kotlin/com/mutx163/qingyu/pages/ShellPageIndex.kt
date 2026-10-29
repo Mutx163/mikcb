@@ -27,6 +27,8 @@ import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
+import com.mutx163.qingyu.app.SettingsHolidayAdvancedHost
+import com.mutx163.qingyu.app.SettingsHolidayHost
 import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.app.SettingsSemesterHost
 import com.mutx163.qingyu.app.SettingsTimetableHubHost
@@ -382,8 +384,19 @@ fun ShellPageContent(
             onAction = { _, target, _ -> target?.let { shellPageIdForRoute(it)?.let(onOpenPage) } },
         )
         "b.liveSelfCheck" -> SettingsScreen(SettingsLiveSelfCheckPage.spec(SettingsPageState()), onBack)
-        "b.holiday" -> SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()), onBack)
-        "b.holidayAdvanced" -> SettingsScreen(SettingsHolidayAdvancedPage.spec(SettingsPageState()), onBack)
+        // 2026-10-29 节假日两页接真宿主（此前是 `SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()))`：
+        // 入参是**默认构造**的 state，屏上永远「开关开、两个列表空、年份空」，开关写不落盘，
+        // 添加 / 长按删除 / 检查更新也都没有落点）。数据源 `wiring.holiday` 与月视图、小组件共用一份。
+        "b.holiday" -> SettingsHolidayHost(
+            provider = wiring.holiday,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        "b.holidayAdvanced" -> SettingsHolidayAdvancedHost(
+            provider = wiring.holiday,
+            onBack = onBack,
+        )
         "b.weather" -> WeatherSettingsHost(
             provider = weatherProvider,
             store = wiring.settingsModel,

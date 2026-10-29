@@ -143,6 +143,25 @@ class SettingsActionDispatcherTest {
         assertTrue(write(SettingsActionDispatcher.ROW_HOME_PULL_IMPORT, null).homePullQuickImportEnabled)
     }
 
+    @Test
+    fun `节假日标记开关取反`() {
+        // 2026-10-29 补：这个键从第一批模型起就有（enableHolidayMarking），但分派器一直没有分支，
+        // 于是「点了不落盘」。默认值是 true（timetable_settings.dart:760）⇒ 先点一下必须变 false。
+        val off = write(SettingsActionDispatcher.ROW_HOLIDAY_ENABLE, null)
+        assertFalse("默认开 ⇒ 点一下关", off.enableHolidayMarking)
+        // 取反是幂等的两态：再点一次回到 true（不是「点一次关、再点还是关」）。
+        val backOn = SettingsActionDispatcher.dispatch(
+            SettingsActionKind.WRITE_SETTING,
+            null,
+            SettingsActionDispatcher.ROW_HOLIDAY_ENABLE,
+            off,
+        )
+        assertTrue(backOn is SettingsDispatch.Write)
+        assertTrue((backOn as SettingsDispatch.Write).model.enableHolidayMarking)
+        // rowId 与页面模型逐字一致（模型改了这里要跟着红，而不是等真机点不动）。
+        assertEquals("holiday.enable", SettingsActionDispatcher.ROW_HOLIDAY_ENABLE)
+    }
+
     // ================================================================
     // 3. WRITE_SETTING：外观与主题管理页
     // ================================================================

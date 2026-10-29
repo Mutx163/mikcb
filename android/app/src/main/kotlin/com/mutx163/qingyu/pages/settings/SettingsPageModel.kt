@@ -209,6 +209,35 @@ data class SettingsRow(
     /** 行内色点预览（已存主题的 `previewColors`）。 */
     val previewColors: List<String> = emptyList(),
     /**
+     * 整行降到 55% 透明度（Flutter `Opacity(0.55)`，`settings_holiday.dart:613-614`：
+     * 已经过去的法定节假日**变淡但仍显示**）。
+     *
+     * 与 [enabled] 不同：禁用行是「不可交互」的语义（官方组件自己会调灰），
+     * 而 dim 是「可读但次要」的视觉层级，渲染层用 `Modifier.alpha(0.55f)` 包整行，
+     * 不改组件的禁用态、不改文案颜色。两者可以叠加。
+     */
+    val dimmed: Boolean = false,
+    /**
+     * 长按动作（Flutter `HyperosNavTile(onLongPress:)`，`settings_holiday.dart:568-570`：
+     * 长按自定义假期行 = 删除确认）。
+     *
+     * 官方 `ArrowPreference` 没有长按回调，渲染层会在 `BasicComponent` 外挂
+     * `Modifier.combinedClickable`（薄封装、不改 miuix 行为）。
+     * null = 不响应长按（绝大多数行）。
+     */
+    val longPressAction: SettingsAction? = null,
+    /** 长按动作的 target（与 [actionTarget] 同义，长按通常不需要，留作扩展）。 */
+    val longPressTarget: String? = null,
+    /**
+     * 上下两行左对齐渲染（Flutter 高级页的日志条目：时刻一行 + 正文一行，`settings_holiday.dart:750-781`）。
+     *
+     * 语义固定为「[title] 在上、用次要色小字；[subtitle] 在下、用主要色正文」
+     * ——与 Dart 的日志条目逐字对齐（时刻是 `listDetail` + tabular 数字，正文是
+     * `listDetail` + `primaryText` 色）。由渲染层用 `BasicComponent` 的 content 槽实现
+     * （仍是官方组件，不手绘行）。
+     */
+    val stacked: Boolean = false,
+    /**
      * 以**独立摘要卡**渲染（`HyperosSummaryCard`）：设置首页顶部的学期摘要。
      * 与普通行不同，它不套在分组卡里，自己就是一张白卡（16dp 内边距、可点、带右箭头）。
      */
@@ -277,7 +306,29 @@ data class SettingsInline(
     val texts: List<SettingsInlineText> = emptyList(),
     val colors: List<String> = emptyList(),
     val selectedColor: String? = null,
+    /**
+     * 卡内按钮正在执行（Flutter `HyperosButton(loading: true)`，`settings_holiday.dart:806`：
+     * 「检查更新」请求期间按钮转圈并不可点）。
+     *
+     * 渲染层据此把按钮画成 loading 态并吞掉点击——**文案不变**（Dart 的 label 是写死的
+     * 「检查更新」，只换 spinner），所以这里只给一个布尔，不给另一套文案。
+     */
+    val busy: Boolean = false,
 ) : SettingsNode
+
+/**
+ * 顶栏右侧的单图标动作（Flutter `HyperosSubpage(suffixes: [FHeaderAction(...)])`）。
+ *
+ * 目前只有一处在用：节假日标记页右上角的齿轮，点它去「节假日数据更新」页
+ * （`settings_holiday.dart:466-478`）。渲染层把它塞进 `QingyuPageScaffold(actions = …)`，
+ * 点击等价于一次 `NAVIGATE`（路由取 [route]）。
+ */
+data class SettingsTopAction(
+    /** 与行上的 `actionTarget` 同一套路由串（壳的 `shellPageIdForRoute` 负责翻译）。 */
+    val route: String,
+    /** 无障碍朗读文案（Flutter `semanticsLabel`），不是屏上可见文字。 */
+    val semanticsLabel: String,
+)
 
 /** 一页的完整结构。 */
 data class SettingsPageSpec(
@@ -290,6 +341,15 @@ data class SettingsPageSpec(
     /** 预览区与可调项的高度权重（课程卡片页 4:6），null 表示本页无预览区。 */
     val previewFlex: Int? = null,
     val contentFlex: Int? = null,
+    /**
+     * 固定底栏节点：**不随列表滚动**，钉在页面底部（Flutter 高级页的「检查更新」按钮，
+     * `settings_holiday.dart:792-812` 就是 `Column` 的最后一个子项）。
+     *
+     * 渲染层把它交给 `QingyuPageScaffold(bottomBar = …)`，因此**不要**同时把它放进 [nodes]。
+     */
+    val footerNode: SettingsNode? = null,
+    /** 顶栏右侧动作；null = 没有（绝大多数页）。 */
+    val topBarAction: SettingsTopAction? = null,
 )
 
 /** `HyperosTokens.sectionGap`（`lib/ui/hyperos/hyperos_tokens.dart`，与 theme/ 桥一致）。 */
@@ -344,6 +404,10 @@ fun settingsRow(
     previewColors: List<String> = emptyList(),
     standaloneSummaryCard: Boolean = false,
     leadingAppIcon: Boolean = false,
+    dimmed: Boolean = false,
+    longPressAction: SettingsAction? = null,
+    longPressTarget: String? = null,
+    stacked: Boolean = false,
 ): SettingsRow = SettingsRow(
     id = id,
     component = component,
@@ -371,4 +435,8 @@ fun settingsRow(
     previewColors = previewColors,
     standaloneSummaryCard = standaloneSummaryCard,
     leadingAppIcon = leadingAppIcon,
+    dimmed = dimmed,
+    longPressAction = longPressAction,
+    longPressTarget = longPressTarget,
+    stacked = stacked,
 )

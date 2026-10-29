@@ -1,5 +1,11 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.calendar.HolidayData
+import com.mutx163.qingyu.calendar.HolidayEntry
+import com.mutx163.qingyu.calendar.HolidayType
+import java.time.LocalDate
+import java.time.LocalDateTime
+
 /**
  * 节假日标记两页（`lib/screens/settings/settings_holiday.dart`）结构模型。
  *
@@ -18,7 +24,7 @@ package com.mutx163.qingyu.pages.settings
  * | Flutter（行号见 Dart 源） | 本模型 | 官方 Miuix 对应物 |
  * |---|---|---|
  * | `HyperosSubpage(title: holidaySettingsTitle)`（:479） | `titleKey/title` | `basic.TopAppBar` |
- * | 顶栏齿轮 `FHeaderAction`（:466-478） | [ROUTE_ADVANCED] | `TopAppBar` 的 action 槽 |
+ * | 顶栏齿轮 `FHeaderAction`（:466-478） | `topBarAction` ( [ROUTE_ADVANCED] ) | `TopAppBar` 的 action 槽 |
  * | `HyperosSwitchTile(启用节假日标记)`（:508-516） | `holiday.enable` | `MiuixSwitchPreference` |
  * | `HyperosSectionLabel(customHolidayTitle)`（:525） | `SettingsLabel` | preference category |
  * | `HyperosNavTile(三态之一)`（:528-571） | `holiday.custom.*` | `MiuixArrowPreference` |
@@ -26,13 +32,22 @@ package com.mutx163.qingyu.pages.settings
  * | `HyperosSectionLabel(holidayDataYearLabel)`（:600-602） | `SettingsLabel` | preference category |
  * | `HyperosNavTile(法定节假日)`（:604-627） | `holiday.official.*` | `MiuixArrowPreference`（无箭头） |
  *
+ * ## 数据 → 入参：[buildPageData]
+ *
+ * 页面要显示的东西全在 Dart 的 `build` 里现算（`:396-462`）：官方条目归并成「一个假期一行」、
+ * 挑代表项、判「已过去」、自定义假期按组归并排序。这些判断不能留在渲染层（渲染层没有
+ * 数据层类型、也没法在 JVM 里单测），所以集中在一个纯函数里：[buildPageData]。
+ *
+ * 与 Dart 的**有意**差异有两条（isPast 的当天边界、损坏态不带旧列表），
+ * 逐条写在 [buildPageData] 的 KDoc 上。
+ *
  * ## 不写进模型的两件事
  *
  * 1. **写盘队列**（:53-83）：`_updateDraft` → `_enqueuePersist` 是串行队列，
  *    而且写入前要用真源回灌节次表（`withLiveScheduleFieldsFrom`）——草稿可能比真源旧；
  * 2. **新增/编辑弹层的完整字段**（:85-315）：名字输入、起止日期两个日历、
  *    类型分段控件、删除按钮。模型只保留它用到的文案（[SettingsStringsExt3]）
- *    与「点了打开什么」（`SettingsAction.SHEET`）。
+ *    与「点了/长按了打开什么」（`action = SHEET` = 编辑，`longPressAction = DIALOG` = 删除确认）。
  */
 object SettingsHolidayPage {
 
@@ -43,9 +58,35 @@ object SettingsHolidayPage {
     /** 高级页的具名路由（:473）。 */
     const val ROUTE_ADVANCED = "/settings/holiday/advanced"
 
+    /**
+     * 进高级页入口的稳定 rowId。
+     *
+     * 原版入口是顶栏右上角齿轮（`FHeaderAction`，:466-478），屏上没有行；Compose 里
+     * 顶栏 action 槽由渲染层提供 [SettingsPageSpec.topBarAction]，同一个目标还有一条
+     * **兜底行**（[spec] 的 `showAdvancedEntryFallback`）。两处共用这个 id/常量，
+     * 宿主与渲染层按 id 认入口，**不要按文案匹配**。
+     */
+    const val ADVANCED_ENTRY_ROW_ID = "holiday.advancedEntry"
+
+    /** 进高级页的文案（`FHeaderAction.semanticsLabel`，:469 用的是 `holidayAdvancedTitle`）。 */
+    val ADVANCED_ENTRY_LABEL: ArbText = SettingsStringsExt3.holidayAdvancedTitle
+
+    /** 用户自建假期的 groupId 前缀（`:426`，这类条目不属于「法定节假日」）。 */
+    const val CUSTOM_GROUP_PREFIX = "custom-"
+
+    /** 自定义假期里没有 groupId 的条目归到哪一组（Dart `:399` `entry.groupId ?? 'ungrouped'`）。 */
+    const val UNGROUPED_CUSTOM_GROUP = "ungrouped"
+
     fun spec(
         state: SettingsPageState,
         data: HolidayPageData = HolidayPageData(),
+        /**
+         * 是否在列表末尾（法定节假日区块之后）附一行「[ADVANCED_ENTRY_LABEL]」导航行。
+         *
+         * 默认 `false`：原版没有这一行（入口只在顶栏），既有的渲染行为与既有测试因此
+         * 完全不变；渲染层的顶栏 action 槽不可用时由宿主开成 `true` 兜底。
+         */
+        showAdvancedEntryFallback: Boolean = false,
     ): SettingsPageSpec {
         val s = SettingsStringsExt3
         return SettingsPageSpec(
@@ -104,6 +145,38 @@ object SettingsHolidayPage {
                     id = "holiday.group.official",
                     children = officialHolidayRows(data),
                 ),
+            ) + advancedEntryFallbackNodes(showAdvancedEntryFallback),
+            // 顶栏右上角齿轮（:466-478）：原版是 `suffixes: [FHeaderAction(...)]`，
+            // 这里表达成渲染层的 action 槽（点击等价一次 NAVIGATE 到 ROUTE_ADVANCED）。
+            topBarAction = SettingsTopAction(
+                route = ROUTE_ADVANCED,
+                semanticsLabel = s.holidayAdvancedTitle.zh,
+            ),
+        )
+    }
+
+    /**
+     * 兜底入口行（仅 `showAdvancedEntryFallback = true` 时出现）。
+     *
+     * 为什么需要：Flutter 原版进高级页的**唯一**入口是顶栏齿轮（`:466-478`）。
+     * 渲染层的顶栏 action 槽若还没接上，高级页在 Compose 里就是完全进不去的死页
+     * （壳有 `b.holidayAdvanced` 分派，页面里却没有出口）。这一行把同一目标再暴露一次，
+     * 位置照设置族「行式入口」惯例排在列表末尾。
+     */
+    private fun advancedEntryFallbackNodes(enabled: Boolean): List<SettingsNode> {
+        if (!enabled) return emptyList()
+        return listOf(
+            SettingsGroup(
+                id = "holiday.group.advancedEntry",
+                children = listOf(
+                    settingsRow(
+                        id = ADVANCED_ENTRY_ROW_ID,
+                        component = MiuixRowComponent.ARROW,
+                        title = ADVANCED_ENTRY_LABEL,
+                        action = SettingsAction.NAVIGATE,
+                        actionTarget = ROUTE_ADVANCED,
+                    ),
+                ),
             ),
         )
     }
@@ -147,6 +220,12 @@ object SettingsHolidayPage {
                 valueKey = range.key,
                 value = range.text,
                 action = SettingsAction.SHEET,
+                // :568-570 `onLongPress: () => _confirmDeleteCustomHoliday(group.groupId)`
+                //
+                // **DIALOG 在这里表示「删除确认」这个界面意图，不是 OverlayDialog 的字面语义**：
+                // 渲染层只把 action 原样转给宿主，宿主靠 (action, rowId) 两个维度分辨弹哪个层
+                // —— `SHEET` + `holiday.custom.*` = 编辑弹层，`DIALOG` + `holiday.custom.*` = 删除确认。
+                longPressAction = SettingsAction.DIALOG,
             )
         }
     }
@@ -177,6 +256,9 @@ object SettingsHolidayPage {
                 value = range.text,
                 // :615-624 `showChevron: false` 且没有 onTap —— 纯展示
                 action = null,
+                // :613-614 `Opacity(opacity: holiday.isPast ? 0.55 : 1)`：
+                // 已经过去的节假日变淡但仍显示（与 enabled 不同，不是禁用语义）
+                dimmed = item.isPast,
             )
         }
     }
@@ -186,6 +268,131 @@ object SettingsHolidayPage {
         HolidayKind.VACATION -> SettingsStringsExt3.customHolidayTypeVacation
         HolidayKind.ADJUSTED_WORKDAY -> SettingsStringsExt3.customHolidayTypeWorkday
     }
+
+    // ---------------------------------------------------------------- 数据 → 入参
+
+    /**
+     * 把「真数据」转成 [HolidayPageData]——本页唯一需要业务判断的地方。
+     *
+     * 逐条对齐 Dart：
+     * - 官方列表：`settings_holiday.dart:421-462`（跳过 `custom-` 组 → 按 groupId 归并 →
+     *   每组取代表项 → 按开始日期升序）；
+     * - 自定义假期：`:396-412`（按 groupId 归并 → 组内按日期升序 → 组间按开始日期升序）。
+     *
+     * ## 与 Dart 的两处**有意**差异
+     *
+     * 1. **isPast 的边界**：Dart 是 `last.date.isBefore(DateTime.now())`（`:443`），
+     *    `now` 带时刻而条目日期是零点 ⇒ 假期最后一天**就是今天**时 Dart 判「已过去」
+     *    （当天节假日一进页面就变淡，明显不对）。本实现按「日期比日期」：
+     *    `endDate < today` 才算过去，`endDate == today` 不算过去。
+     * 2. **损坏态不带旧列表**：Dart 在损坏态只是不渲染列表（`:528`），`_customHolidays`
+     *    里的残留值仍留在 state 里。这里索性不把它们带进模型——写入链路遇损坏会抛
+     *    `HolidayCustomSaveException`，显示旧条目会让人以为还能改。
+     *
+     * @param official 官方数据；`null` = 还没加载（法定节假日出空态、年份留空串）。
+     * @param customCorrupted 自定义假期的存储损坏态：**优先**于列表，见上。
+     * @param today 「今天」，由调用方注入（不要在模型层读系统时钟，否则测试钉不住边界）。
+     */
+    fun buildPageData(
+        enableHolidayMarking: Boolean,
+        official: HolidayData?,
+        customHolidays: List<HolidayEntry>,
+        customCorrupted: Boolean,
+        today: LocalDate,
+    ): HolidayPageData = HolidayPageData(
+        enableHolidayMarking = enableHolidayMarking,
+        customHolidaysCorrupted = customCorrupted,
+        customHolidays = if (customCorrupted) emptyList() else groupCustomHolidays(customHolidays),
+        // :601 `holidayData?.year ?? ''`
+        year = official?.year?.toString() ?: "",
+        officialHolidays = if (official == null) emptyList() else buildOfficialItems(official, today),
+    )
+
+    /** `_groupCustomHolidays`（:396-412）。 */
+    private fun groupCustomHolidays(entries: List<HolidayEntry>): List<HolidayGroupRow> {
+        // Dart 用 Map 保序（首次出现顺序），组内顺序随后由 sort 定，组间由 :411 定
+        val grouped = LinkedHashMap<String, MutableList<HolidayEntry>>()
+        for (entry in entries) {
+            grouped.getOrPut(entry.groupId ?: UNGROUPED_CUSTOM_GROUP) { mutableListOf() }.add(entry)
+        }
+        return grouped.map { (groupId, group) ->
+            // 组内按日期升序（:403）：起止取首尾，名字/类型取第一条
+            val sorted = group.sortedBy { it.date }
+            HolidayGroupRow(
+                groupId = groupId,
+                name = sorted.first().name,
+                startDate = isoDate(sorted.first().date),
+                endDate = isoDate(sorted.last().date),
+                type = displayKind(sorted.first().type),
+            )
+        }.sortedBy { it.startDate }  // :411 组间按开始日期升序
+    }
+
+    /** 官方列表构造（:421-462）。 */
+    private fun buildOfficialItems(official: HolidayData, today: LocalDate): List<HolidayItem> {
+        val s = SettingsStringsExt3
+        val items = mutableListOf<HolidayItem>()
+        // `seenGroups`（:424）：每组只出一项，代表项取**该组第一次出现**时的归并结果
+        val seenGroups = mutableSetOf<String>()
+        for (entry in official.entries) {
+            val groupId = entry.groupId
+            // :426-428 用户自建的假期（custom- 前缀）属于「自定义假期」区块，这里跳过
+            if (groupId != null && groupId.startsWith(CUSTOM_GROUP_PREFIX)) continue
+            if (groupId != null) {
+                if (!seenGroups.add(groupId)) continue
+                val groupEntries = official.entriesForGroup(groupId)  // 已按日期升序
+                val vacationEntries = groupEntries.filter { it.type == HolidayType.Vacation }
+                // :431-436 代表项：优先该组第一条 vacation，没有则组内第一条
+                val representative =
+                    if (vacationEntries.isNotEmpty()) vacationEntries else groupEntries
+                val name = localizeHolidayName(representative.first().name, s.holidayStatutoryLabel)
+                items += HolidayItem(
+                    name = name.zh,
+                    startDate = isoDate(representative.first().date),
+                    endDate = isoDate(representative.last().date),
+                    // 类型照实给（:442）；三值 HolidayType → 两档 HolidayKind 的映射见 [displayKind]
+                    type = displayKind(representative.first().type),
+                    // :443 isPast 看组内**最后一条**，不是代表项那一条
+                    isPast = isPast(representative.last().date, today),
+                    nameKey = name.key,
+                )
+            } else if (entry.type == HolidayType.AdjustedWorkday) {
+                // :446-457 无组的补班日单独成项：名称固定「补班」、起止同日
+                items += HolidayItem(
+                    name = s.holidayMakeupWorkday.zh,
+                    startDate = isoDate(entry.date),
+                    endDate = isoDate(entry.date),
+                    type = HolidayKind.ADJUSTED_WORKDAY,
+                    isPast = isPast(entry.date, today),
+                    nameKey = s.holidayMakeupWorkday.key,
+                )
+            }
+        }
+        // :462 全部按开始日期升序（`yyyy-MM-dd` 的字典序与时间序一致，sortedBy 稳定）
+        return items.sortedBy { it.startDate }
+    }
+
+    /**
+     * Dart 的 `HolidayType` 三值 → 本模型的 [HolidayKind] 两档。
+     *
+     * 丢掉的那一档是 `AdjustedRestday`（调休休息日）。模型只有「假期 / 调休上班」两档，
+     * 因为**法定节假日那一行根本不渲染类型**（:610-627 只给 title + details），
+     * 唯一会显示类型的是自定义假期行，而自定义假期只有 vacation / adjustedWorkday 两种
+     * （新增弹层的分段控件就两档，:85-315）。调休休息日在语义上是「放假」，归到假期一档。
+     */
+    private fun displayKind(type: HolidayType): HolidayKind = when (type) {
+        HolidayType.Vacation -> HolidayKind.VACATION
+        HolidayType.AdjustedWorkday -> HolidayKind.ADJUSTED_WORKDAY
+        HolidayType.AdjustedRestday -> HolidayKind.VACATION
+    }
+
+    /** `yyyy-MM-dd`（补零）——补零后字典序才等于时间序，排序与区间文案都靠它。 */
+    private fun isoDate(date: LocalDateTime): String =
+        "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+
+    /** 日期比日期：`today` 当天不算过去（与 Dart 的 `isBefore(now)` 差异见 [buildPageData]）。 */
+    private fun isPast(date: LocalDateTime, today: LocalDate): Boolean =
+        date.toLocalDate().isBefore(today)
 
     /**
      * 节假日区间文案（:633-650）。

@@ -19,6 +19,9 @@ import com.mutx163.qingyu.app.TimetableSaveDispatcher
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.calendar.HolidayPreferences
+import com.mutx163.qingyu.calendar.HolidayProvider
+import com.mutx163.qingyu.calendar.HolidayService
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.pages.course.CourseActionSheet
@@ -85,6 +88,40 @@ class ShellWiring(context: Context) {
      * 且都走 `saveSettingsPatch` 的读-合并-写，所以谁都不会覆盖谁。
      */
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
+
+    /**
+     * 节假日数据（设备级状态：年度缓存 / 自定义假期 / 更新日志），2026-10-29 新增。
+     *
+     * 三处共用同一份实例，这就是「一处改、多处跟着变」的前提：
+     * 1. 设置页的「节假日标记」两页（`b.holiday` / `b.holidayAdvanced`）；
+     * 2. 月视图的节假日底色与补班标记（`MonthViewHost(holidayData = …)`，下一步接）；
+     * 3. 桌面小组件 / 超级岛（`HolidayData.holidayDateKeysForSnapshot()`）。
+     *
+     * 读的是**壳自己**的 `FlutterSharedPreferences`（与正式版同一套冻结格式），
+     * 键 `holiday_data_<year>`（年度数据）与 `custom_holidays`（用户自建），与
+     * `lib/services/holiday_service.dart:36-37` 逐字一致。
+     *
+     * `builtinJson` 注入的是 APK 内兜底资产 `assets/holidays/<year>.json`；
+     * 远端两个端点都失败且本地无缓存时用它（Dart `_loadBuiltin`，`:245-253`）。
+     */
+    val holiday: HolidayProvider by lazy {
+        HolidayProvider(
+            service = HolidayService(),
+            preferences = HolidayPreferences(keyValueStore),
+            builtinJson = ::builtinHolidayJson,
+        )
+    }
+
+    /**
+     * 读内置节假日资产；该年没有文件（或读失败）返回 null。
+     *
+     * 放在这里而不是 `calendar/`：`calendar` 是**纯 Kotlin 模型目录**，一旦 import
+     * `android.content.res.AssetManager`，`scripts/test-kotlin-module.ps1` 会把整个目录
+     * 跳过，全队 L0 都会少掉节假日那一层（见脚本里 `sharedModelDirs` 的说明）。
+     */
+    private fun builtinHolidayJson(year: Int): String? = runCatching {
+        context.assets.open("holidays/$year.json").bufferedReader().use { it.readText() }
+    }.getOrNull()
 
     /**
      * 「课表自动更新」的配置与台账（通用设置页那一整块）。
