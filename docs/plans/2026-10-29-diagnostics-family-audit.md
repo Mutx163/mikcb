@@ -114,12 +114,12 @@ CPU/RSS 走 `Process.getElapsedCpuTime()` + `/proc/self/statm`；启用门控 = 
 | # | 缺口 | 为什么没做 | 需要什么 |
 |---|---|---|---|
 | N1 | 日志「分类/消息」229 键本地化（Dart `AppLogMessageLocalizer`） | 跨页共享件，要同步 ARB 与 key 表，属单独一批 | 移植后改 `buildDiagnosticsLogEntryView` 的 `categoryLabel`/`message` 出口 |
-| N2 | `warehouseImport` 源（教务导入执行日志）无数据 | Kotlin 侧没有该会话日志的实现 | 服务移植后给 `DiagnosticsLogHost(source = WAREHOUSE_IMPORT)` 传正文（配置已就绪） |
-| N3 | `live` 源在壳里没有独立入口 | 设置→实时活动页没有「实时诊断日志」行 | 补该行 + `DiagnosticsLogHost(source = LIVE)` |
-| N4 | 导出拿不到 `.log` 附件（只能纯文本分享） | `AndroidManifest.xml` 未注册 `FileProvider`（全仓 0 处） | 注册 `FileProvider` + `res/xml` 路径；代码里的附件分支已写好 |
+| N2 | `warehouseImport` 源（教务导入执行日志）无数据 | Kotlin 侧没有该会话日志的实现（`warehouse_import_session_log` 是 Dart 内存态） | 服务移植后给 `DiagnosticsLogHost(source = WAREHOUSE_IMPORT)` 传正文（配置已就绪） |
+| N3 | `live` 源在壳里没有入口 | Dart 那个入口不是「设置→实时活动」的一行，而是该页 `_LiveTestingSection.localLogs` 卡里的一个按钮（`settings_live.dart:1168`），整块诊断卡（上岛状态 raw JSON + 本地日志三按钮）在 Compose 侧**整块没搬** | 属设置族「实时活动」批次；搬完那张卡就把按钮接到 `DiagnosticsLogHost(source = LIVE)`（宿主已支持 `source` 参数） |
+| N4 | ~~日志导出拿不到 `.log` 附件~~ **已修** | `FileProvider` 只放行 `file_paths.xml` 里登记的路径，日志却写在 `cacheDir` 根目录 ⇒ `getUriForFile` 抛异常、降级成纯文本 | 已改写到 `cacheDir/log-share/` + 补 `<cache-path name="log_share">`（提交 `51578aa3`），降级分支保留 |
 | N5 | 性能快照 76 键只接了 26 键 | 玻璃材质 / 材质工厂 / 壁纸路径 / 动画缩放 **没有 Kotlin 读源**，Dart 源文件明确禁止重新推导 | 逐个接读源，接一个删一条 `PENDING_DART_KEYS` |
 | N6 | 夹具「24 时段方案条目」没建 | `TimetableRepository` 没有 `createTimeScheme` / `updateTimeScheme` / `applyTimeScheme` | 给仓储加这三个方法 |
-| N7 | 夹具「触发某节」不刷新原生超级岛 | `live_testing_trigger.dart`(978) 的岛刷新链路在 Kotlin 侧没有生产实现 | 移植 `LiveHostFace` 的生产实现 |
+| N7 | 夹具「触发某节」不刷新原生超级岛 | `live_testing_trigger.dart`(978) 的岛刷新链路在 Kotlin 侧没有生产实现（`LiveHostFace` 只有测试用 `FakeLiveHost`） | 移植生产实现 |
 | N8 | 设置→诊断的「规则拒绝」支今天不可达 | Kotlin 合并写没有任何规则校验（Dart 那条是针对节次数的载荷校验） | 逻辑位与单测已就位，真规则上线即接上 |
 | N9 | 顶栏毛玻璃 | 全仓未接线（AGENTS 待办） | 共享套件批次 |
 | N10 | **真机逐页对照** | 铁律禁止 agent 操作设备 | 用户装 `dev` 包，在 `PagesShellActivity` 里逐页看（见 §七） |
