@@ -51,7 +51,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('status', 'apply', 'watch', 'launch', 'restore')]
+    [ValidateSet('status', 'apply', 'watch', 'launch', 'restore', 'install', 'uninstall')]
     [string]$Mode = 'status',
 
     [ValidateSet('all', 'build', 'agents')]
@@ -78,13 +78,32 @@ param(
 
     [switch]$DryRun,
 
-    [string]$StateFile
+    [string]$StateFile,
+
+    [string]$LogFile
 )
 
 $ErrorActionPreference = 'Stop'
 
 if (-not $StateFile) {
     $StateFile = Join-Path (Join-Path $PSScriptRoot '..\.agents\cpu-governor') 'state.json'
+}
+
+$script:AutoStartTaskName = 'Mikcb-CpuGovernor'
+
+# 常驻模式没有终端可看，改动要落到日志里；超过 1 MB 轮转一次，别让文件无限长
+function Say([string]$msg, [string]$color = 'Gray') {
+    Write-Host $msg -ForegroundColor $color
+    if (-not $LogFile) { return }
+    try {
+        $dir = Split-Path $LogFile -Parent
+        if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        if ((Test-Path $LogFile) -and (Get-Item $LogFile).Length -gt 1MB) {
+            Move-Item $LogFile "$LogFile.old" -Force
+        }
+        Add-Content -Path $LogFile -Encoding utf8 -Value ("[{0}] {1}" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $msg)
+    }
+    catch { }
 }
 
 # ---------------------------------------------------------------- CPU 拓扑
@@ -251,7 +270,7 @@ function Set-Governed($proc, [uint64]$mask, [string]$prio) {
             if (-not $DryRun) {
                 Save-Original $proc
                 try { $proc.ProcessorAffinity = [IntPtr]([int64]$mask); $changed += 'affinity' }
-                catch { if (-not $proc.HasExited) { Write-Warning ("亲和性设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) } }
+                catch { if (-not $proc.HasExited) { Say ("警告: 亲和性设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) 'Yellow' } }
             }
             else { $changed += 'affinity(dry)' }
         }
@@ -263,7 +282,7 @@ function Set-Governed($proc, [uint64]$mask, [string]$prio) {
             if (-not $DryRun) {
                 Save-Original $proc
                 try { $proc.PriorityClass = $want; $changed += 'priority' }
-                catch { if (-not $proc.HasExited) { Write-Warning ("优先级设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) } }
+                catch { if (-not $proc.HasExited) { Say ("警告: 优先级设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) 'Yellow' } }
             }
             else { $changed += 'priority(dry)' }
         }
@@ -279,7 +298,7 @@ function Invoke-Govern([uint64]$mask, [string]$prio) {
     $total = 0
 
     if (-not $script:HeaderShown) {
-        Write-Host ("[governor] 允许的核 mask = 0x{0:X}（{1} 线程），优先级 = {2}" -f $mask, (Get-PopCount $mask), $prio) -ForegroundColor Cyan
+        Say ("[governor] 允许的核 mask = 0x{0:X}（{1} 线程），优先级 = {2}" -f $mask, (Get-PopCount $mask), $prio) 'Cyan'
         $script:HeaderShown = $true
     }
 
@@ -301,7 +320,7 @@ function Invoke-Govern([uint64]$mask, [string]$prio) {
         $ch = @(Set-Governed $p $mask $prio)
         if ($ch.Count -gt 0) {
             $touched++
-            Write-Host ("  已限速 {0}({1})  ->  {2}" -f $p.Name, $p.Id, ($ch -join '+')) -ForegroundColor Yellow
+            Say ("  已限速 {0}({1})  ->  {2}" -f $p.Name, $p.Id, ($ch -join '+')) 'Yellow'
         }
     }
 
@@ -309,7 +328,7 @@ function Invoke-Govern([uint64]$mask, [string]$prio) {
 
     # 看门狗模式下「这一轮什么都没改」是常态，别每 5 秒刷一行
     if ($Mode -ne 'watch' -or $touched -gt 0) {
-        Write-Host ("[governor] 扫描 {0} 个匹配进程，本次改动 {1} 个。" -f $total, $touched) -ForegroundColor Cyan
+        Say ("[governor] 扫描 {0} 个匹配进程，本次改动 {1} 个。" -f $total, $touched) 'Cyan'
     }
     return $touched
 }
@@ -366,6 +385,21 @@ switch ($Mode) {
                         $e.Name, $e.Pid, $e.Affinity, $e.Priority, [int64]$p.ProcessorAffinity)
             }
         }
+
+        Write-Host ''
+        Write-Host '=== 开机自启 ===' -ForegroundColor Cyan
+        $task = Get-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            Write-Host '  （未安装）目前只在手动跑 / 本会话内生效，重启就没了'
+        }
+        else {
+            $info = Get-ScheduledTaskInfo -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+            Write-Host ("  计划任务 {0}：状态={1} 上次运行={2} 上次结果=0x{3:X}" -f `
+                    $script:AutoStartTaskName, $task.State, $info.LastRunTime, $info.LastTaskResult)
+            $wd = @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" |
+                    Where-Object { $_.CommandLine -like '*cpu-governor*' -and $_.CommandLine -like '*-Mode watch*' })
+            Write-Host ("  正在跑的看门狗进程：{0} 个" -f $wd.Count)
+        }
     }
 
     'apply' {
@@ -373,8 +407,8 @@ switch ($Mode) {
     }
 
     'watch' {
-        Write-Host ("[governor] 看门狗启动：每 {0} 秒扫一次；Ctrl+C 停止。" -f $IntervalSeconds) -ForegroundColor Green
-        Write-Host ("[governor] 目标预设 = {0}；用户保留 {1} 个物理核 (mask=0x{2:X})。" -f $Preset, $ReserveCores, $userMask) -ForegroundColor Green
+        Say ("[governor] 看门狗启动：每 {0} 秒扫一次；Ctrl+C 停止。" -f $IntervalSeconds) 'Green'
+        Say ("[governor] 目标预设 = {0}；用户保留 {1} 个物理核 (mask=0x{2:X})。" -f $Preset, $ReserveCores, $userMask) 'Green'
         while ($true) {
             $null = Invoke-Govern -mask $aiMask -prio $Priority
             Start-Sleep -Seconds $IntervalSeconds
@@ -425,5 +459,47 @@ switch ($Mode) {
         }
         Remove-Item $StateFile -ErrorAction SilentlyContinue
         Write-Host ("[governor] 还原 {0} 个进程。" -f $done) -ForegroundColor Cyan
+    }
+
+    'install' {
+        $exe = (Get-Process -Id $PID).Path
+        if (-not $exe) { $exe = (Get-Command pwsh).Source }
+        $logPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\.agents\cpu-governor\governor.log'))
+        $logDir = Split-Path $logPath -Parent
+        if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+        if (-not $exe) { throw '取不到 pwsh 的可执行文件路径，无法注册自启' }
+
+        # 用 -File 而不是 -Command，避免计划任务参数里再套一层引号
+        $arg = "-NoProfile -WindowStyle Hidden -File `"$PSCommandPath`" -Mode watch -Preset all -ReserveCores $ReserveCores -LogFile `"$logPath`""
+
+        $action = New-ScheduledTaskAction -Execute $exe -Argument $arg
+        $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+        # ExecutionTimeLimit 设为 0 = 不限时（默认 3 天会被杀掉，常驻守护必须改掉）
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+            -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+            -StartWhenAvailable -MultipleInstances IgnoreNew
+
+        # 先停掉可能在跑的旧实例：注册时设了 MultipleInstances=IgnoreNew，
+        # 不停的话 Start-ScheduledTask 会直接不生效，跑的还是旧参数。
+        Stop-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+
+        Register-ScheduledTask -TaskName $script:AutoStartTaskName -Action $action -Trigger $trigger `
+            -Principal $principal -Settings $settings -Force `
+            -Description '把 AI/构建进程限到部分物理核并降优先级，留核给桌面。由 scripts/cpu-governor.ps1 -Mode install 注册。' | Out-Null
+
+        Start-ScheduledTask -TaskName $script:AutoStartTaskName
+        Write-Host ("[governor] 已注册登录自启：计划任务 {0}" -f $script:AutoStartTaskName) -ForegroundColor Green
+        Write-Host ("[governor] 留给你 {0} 个物理核；AI 用 mask=0x{1:X}；日志 {2}" -f $ReserveCores, $aiMask, $logPath) -ForegroundColor Green
+        Write-Host '[governor] 取消自启：-Mode uninstall' -ForegroundColor Green
+    }
+
+    'uninstall' {
+        $task = Get-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+        if (-not $task) { Write-Host '[governor] 没有注册过开机自启。' -ForegroundColor Cyan; break }
+        Stop-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName $script:AutoStartTaskName -Confirm:$false
+        Write-Host ("[governor] 已删除计划任务 {0}。" -f $script:AutoStartTaskName) -ForegroundColor Cyan
+        Write-Host '[governor] 已被限速的进程还在限速状态；要一起恢复用 -Mode restore。' -ForegroundColor Cyan
     }
 }
