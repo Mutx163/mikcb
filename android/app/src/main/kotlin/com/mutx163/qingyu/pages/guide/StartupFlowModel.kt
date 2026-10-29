@@ -239,3 +239,79 @@ class StartupFlowStateMachine(initialState: StartupFlowState = StartupFlowState(
         return true
     }
 }
+
+/**
+ * 引导「确认开学日期」时要落盘的那三样东西。
+ *
+ * 为什么不是一个「直接写仓储」的函数：仓储（`TimetableRepository`）住 `app/`，
+ * 写它还带着「先改内存再落盘再通知」的时序，塞进模型层会让这段逻辑在 JVM 单测里
+ * 变成「测一个桩」。所以这里只算**写什么**（纯函数），壳那边只做三行搬运：
+ *
+ * ```kotlin
+ * val settings = repository.snapshot.settings
+ * repository.updateSettings(settings.copy(
+ *     semesterStartDate = plan.semesterStartDate,
+ *     semesterWeekCount = plan.semesterWeekCount,
+ * ))
+ * repository.setCurrentWeek(plan.currentWeek)
+ * ```
+ *
+ * `semesterStartDate` / `semesterWeekCount` 就是 `b.semester`（学期设置页）用的同一对键，
+ * **没有第二条写入通道**——Dart 侧也只有 `TimetableSettings` 这一处。
+ *
+ * [currentWeek] 而不是 1：用户可能在学期中途第一次装 App（Dart `_syncCurrentWeekWithSemesterStartImpl`
+ * 同口径：早于开学周按第 1 周，超出学期周数钳到末周）。
+ */
+data class StartupSemesterPlan(
+    /** 已 trim 的 `YYYY-MM-DD`，用于回填页面与日志。 */
+    val startDateText: String,
+    /** 落盘用的时刻（当天零点，与 `SemesterSettingsLogic.startDateTime` 同口径）。 */
+    val semesterStartDate: java.time.LocalDateTime,
+    val semesterWeekCount: Int,
+    val currentWeek: Int,
+)
+
+/**
+ * 由用户填的「开学日期 + 学期周数」算出落盘计划；任一非法返回 null（**不许**写半截数据）。
+ *
+ * 日期必须 `YYYY-MM-DD` 且年份 2000~2100；周数必须落在 1~40。两条与
+ * [SemesterDateCalculator] 的判据同一处，不再是第二套规则。
+ */
+fun planStartupSemesterWrite(
+    semesterStartDate: String?,
+    totalWeeks: Int,
+    today: LocalDate = LocalDate.now(),
+): StartupSemesterPlan? {
+    if (!SemesterDateCalculator.isValidDateFormat(semesterStartDate)) return null
+    if (totalWeeks !in SemesterDateCalculator.MIN_TOTAL_WEEKS..SemesterDateCalculator.MAX_TOTAL_WEEKS) {
+        return null
+    }
+    val text = semesterStartDate!!.trim()
+    val startDate = LocalDate.parse(text)
+    return StartupSemesterPlan(
+        startDateText = text,
+        semesterStartDate = startDate.atStartOfDay(),
+        semesterWeekCount = totalWeeks,
+        currentWeek = SemesterDateCalculator.calculateWeek(
+            startDate = startDate,
+            targetDate = today,
+            totalWeeks = totalWeeks,
+        ),
+    )
+}
+
+/**
+ * 「打开旧版去备份」要试的包名，顺序即尝试顺序
+ * （Dart `lib/services/app_migration_service.dart:5-7` 逐字照抄）。
+ *
+ * 换包名事故的现场：新版叫 `com.mutx163.qingyu`，旧版是 `com.example.university_timetable`，
+ * 桌面上会同时出现两个图标。用户点「打开旧版」时，正式版包名先试、debug 包名后试
+ * （同一台机器上两者可能都存在，正式版优先）。
+ *
+ * 本页**只**负责「按这个顺序找到哪个能开、就开哪个」；找不到就照 ARB 的
+ * `openOldAppFailed` 给一句实话，不假装打开了。
+ */
+val STARTUP_LEGACY_PACKAGE_CANDIDATES: List<String> = listOf(
+    "com.example.university_timetable",
+    "com.example.university_timetable.debug",
+)

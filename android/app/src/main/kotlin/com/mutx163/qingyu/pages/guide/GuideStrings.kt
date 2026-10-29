@@ -47,6 +47,14 @@ object GuideStrings {
     val currentWeekCompact = ArbText("currentWeekCompact", "{week} 周")
     val syncedCurrentWeekMessage = ArbText("syncedCurrentWeekMessage", "已同步到第 {week} 周")
 
+    /**
+     * 通用「保存失败」（ARB 键 `saveFailed`，其它域也共用同一条）。
+     *
+     * 引导页收尾要写开学日期 + 周数 + 完成标记；任何一步写不进去都必须**当场说实话**，
+     * 不能显示「已保存」然后下次启动又弹一遍引导。
+     */
+    val saveFailed = ArbText("saveFailed", "保存失败")
+
     // ── 用户指南：欢迎页 ──
     val welcomeTitle = ArbText("welcomeTitle", "欢迎使用")
     val welcomeAppName = ArbText("welcomeAppName", "轻屿课表")

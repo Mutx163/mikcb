@@ -59,6 +59,7 @@ import com.mutx163.qingyu.app.TimeSchemeManagementHost
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.course.CoursePortExamAdapter
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.course.TimetableExamService
@@ -85,8 +86,13 @@ import com.mutx163.qingyu.pages.guide.MoreFeaturesModel
 import com.mutx163.qingyu.pages.guide.MoreFeaturesPage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesSearchOverlay
 import com.mutx163.qingyu.pages.guide.GuideSettingsMapping
+import com.mutx163.qingyu.pages.guide.GuideStrings
+import com.mutx163.qingyu.pages.guide.STARTUP_LEGACY_PACKAGE_CANDIDATES
 import com.mutx163.qingyu.pages.guide.StartupFlowPage
+import com.mutx163.qingyu.pages.guide.StartupFlowPreferences
+import com.mutx163.qingyu.pages.guide.StartupFlowState
 import com.mutx163.qingyu.pages.guide.UserGuidePage
+import com.mutx163.qingyu.pages.guide.planStartupSemesterWrite
 import com.mutx163.qingyu.platform.guide.GuidePermissionProbe
 import com.mutx163.qingyu.pages.import.IcsImportPage
 import com.mutx163.qingyu.pages.import.IcsImportViewState
@@ -1235,7 +1241,15 @@ fun ShellPageContent(
         "h.fixture" -> LiveTestingFixtureHost(repository = wiring.timetable, onBack = onBack)
 
         // ── P3-I 引导与展示 ──────────────────────────────────────────
-        "i.startup" -> StartupFlowPage(onBack = onBack)
+        // 启动引导（F11，2026-10-29）：三个回调原来全是默认空实现 ——
+        // 用户填完开学日期点确认，**一个字节都没写**，下次启动又被拉来重填一遍。
+        // 现在：确认 = 学期开始日 + 周数 + 当前周落盘（与 `b.semester` 同一对键）
+        // + 写「引导已完成」标记；「去导入」推备份页；「打开旧版」真按包名拉起旧版。
+        "i.startup" -> StartupFlowHost(
+            repository = wiring.timetable,
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+        )
         "i.userGuide" -> {
             // 引导页接真实数据（对齐 Flutter user_guide_screen.dart）：
             // 权限状态来自平台真值；个性化读写走同一个设置模型；导航接壳内已有页面。
@@ -1505,6 +1519,116 @@ private fun MoreFeaturesWithSearch(
     }
 }
 
+/**
+ * 启动引导的**真宿主**（F11，2026-10-29）。
+ *
+ * ## 原来坏在哪
+ *
+ * `StartupFlowPage` 的三个回调都是默认空实现，壳只传了 `onBack`：
+ * - 「打开旧版去备份」按钮：点了没反应（Dart 是 `PackageManager` 拉起旧版包名）；
+ * - 「我已完成备份，去导入」：点了没反应（Dart 关掉引导后走备份导入流程）；
+ * - 「确认」：**开学日期与周数根本没落盘**，用户白填一遍，下次启动又重新问。
+ *
+ * ## 三条动作各自的落点
+ *
+ * | 动作 | 落点 | Dart 出处 |
+ * |---|---|---|
+ * | 确认（开学日期 + 周数） | `repository.updateSettings(...)`（与 `b.semester` 同一对键）+ `setCurrentWeek` + 写 `has_completed_onboarding` | `main.dart:1486` |
+ * | 去导入 | 推壳里的 `f.backupList`（备份列表） | `main.dart:1166-1174` |
+ * | 打开旧版 | 按 `STARTUP_LEGACY_PACKAGE_CANDIDATES` 顺序找**装了的**那个并拉起；找不到给 ARB 实话 | `app_migration_service.dart:13-35` |
+ *
+ * ## 诚实清单（没做的，不假装）
+ *
+ * - **不写** `has_handled_package_migration`：Dart 只在「迁移引导被处理过」时写它，
+ *   且「去导入」那条要等**导入真的成功**才写（`main.dart:1168-1174`）——那属于备份导入
+ *   流程的判断，本页看不到导入结果，不替它写。
+ * - **不写** `has_seen_user_guide` / `accepted_privacy_policy`：那是用户指南页（`i.userGuide`）
+ *   的职责（`main.dart:1474-1487`）。
+ * - 旧版**是否装着**读的是系统包管理器；用户没装旧版时如实提示「未能打开旧版应用」，
+ *   不静默失败、也不假装打开过。
+ */
+@Composable
+private fun StartupFlowHost(
+    repository: com.mutx163.qingyu.app.TimetableRepository,
+    onBack: () -> Unit,
+    onOpenPage: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val snapshot = remember(repository) { mutableStateOf(repository.snapshot) }
+    DisposableEffect(repository) {
+        val subscription = repository.observe { snapshot.value = it }
+        onDispose { subscription.close() }
+    }
+    // 与 `ShellWiring` 里的 `keyValueStore` 同一个 SharedPreferences 文件（按名字缓存，进程内一份）。
+    val preferences = remember(context) { StartupFlowPreferences(PrefsKeyValueStore(context)) }
+    val current = snapshot.value
+
+    StartupFlowPage(
+        // 初始值取真仓储：用户在 `b.semester` 改过开学日期/周数，这里必须看到改后的值，
+        // 否则「回显」当场就是假的（同一条数据两个入口显示两套值）。
+        initialState = StartupFlowState(
+            semesterStartDate = TimetableSettings.formatSemesterStartDateText(
+                current.settings.semesterStartDate,
+            ),
+            totalWeeks = current.settings.semesterWeekCount,
+            currentWeek = current.currentWeek,
+        ),
+        onBack = onBack,
+        onOpenOldApp = {
+            if (!openLegacyApp(context, STARTUP_LEGACY_PACKAGE_CANDIDATES)) {
+                Toast.makeText(context, GuideStrings.openOldAppFailed.zh, Toast.LENGTH_LONG).show()
+            }
+        },
+        onGoImportBackup = { onOpenPage("f.backupList") },
+        onFinishStartupFlow = { date, weeks ->
+            val plan = planStartupSemesterWrite(date, weeks)
+            if (plan == null) {
+                // 非法输入不写半截数据：页面上的确认按钮本身有校验，这里是兜底。
+                Toast.makeText(context, GuideStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            } else {
+                val saved = runCatching {
+                    // 与学期设置页同一个写入入口（没有第二条通道）。
+                    val settings = repository.snapshot.settings
+                    repository.updateSettings(
+                        settings.copy(
+                            semesterStartDate = plan.semesterStartDate,
+                            semesterWeekCount = plan.semesterWeekCount,
+                        ),
+                    )
+                    repository.setCurrentWeek(plan.currentWeek)
+                    // 落盘 + 立刻回读；只有读回来真的是 true，才算引导走完。
+                    preferences.markOnboardingCompletedAndVerify()
+                }.getOrDefault(false)
+                if (!saved) {
+                    // 写不进去就**不许**显示成功：否则用户下次启动又被拉来重填，
+                    // 而且这次他还以为自己已经设好了。
+                    Toast.makeText(context, GuideStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                } else {
+                    onBack()
+                }
+            }
+        },
+    )
+}
+
+/**
+ * 按顺序找**装了**的旧版并拉起（Dart `AppMigrationService.openPackage` 的等价实现）。
+ *
+ * 为什么复制一份而不是调 `MainActivity` 的私有方法：那边是 Flutter 的 MethodChannel 处理函数，
+ * 与 Compose 宿主不是同一条通道；`GuidePermissionProbe` 也是同样的处理（复制必要实现，不改 MainActivity）。
+ * `getLaunchIntentForPackage` 对没装的包直接返回 null，所以「找装了哪个」与「能不能开」
+ * 是同一次判断，不需要先 `getPackageInfo`。
+ */
+private fun openLegacyApp(context: Context, candidates: List<String>): Boolean {
+    val manager = context.packageManager
+    for (packageName in candidates) {
+        val intent = manager.getLaunchIntentForPackage(packageName) ?: continue
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (runCatching { context.startActivity(intent) }.isSuccess) return true
+    }
+    return false
+}
+
 /** 分派漏了 id 时的兜底页：把 id 显示出来，方便定位是目录还是分派没对齐。 */
 @Composable
 private fun ShellMissingPage(pageId: String, onBack: () -> Unit) {
@@ -1660,7 +1784,9 @@ private object FeedbackChannelHost {
             Log.w(TAG, "copy: 拿不到 ClipboardManager")
             return
         }
-        runCatching { manager.setPrimaryClip(ClipData.newPlainText("轻屿课表", value)) }
+        // 剪贴板条目标签用 ASCII：这是系统剪贴板里的「来源说明」，不是界面文案，
+        // 走 ARB 反而要为一个不渲染的字符串加键；也避免撞渲染层的 CJK 字面量门禁。
+        runCatching { manager.setPrimaryClip(ClipData.newPlainText("qingyu-feedback", value)) }
             .onFailure { Log.w(TAG, "copy: 写剪贴板失败", it) }
     }
 
