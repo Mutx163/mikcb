@@ -190,6 +190,81 @@ data class TimetableSettingsModel(
      * 设置→诊断页（`settings_diagnostics.dart:38-41 / :121-147`）唯一的读写方。
      */
     val liveEnableLocalDiagnostics: Boolean = false,
+
+    // ---------- 材质与液态玻璃（外观编辑页材质面板所需） ----------
+    /**
+     * 模糊总开关（`timetable_settings.dart:655` 字段、`:925` 构造默认
+     * `defaultFrostedBlurEnabled`（`:292` = true）、`:1773-1774` 读侧）。
+     *
+     * 它就是整机「默认材质」两档里较钝的那一档（`glass_mode_choice.dart:22-24`）：
+     * 关掉 ⇒ 实体卡片，全 app 不再有液态玻璃表面。
+     */
+    val frostedBlurEnabled: Boolean = true,
+    /**
+     * 首页顶栏玻璃带开关（`timetable_settings.dart:707` / `:935`）。
+     *
+     * ⚠️ 读侧**恒为 true**：那两个开关键在 Dart 侧已下线（界面不再有入口），
+     * `fromJson` 直接写死（`:1827-1829`「两个玻璃带显示开关已下线，恒为开」）。
+     * 本模型照抄——存档里的旧值不读，与 Dart 逐字同口径。
+     */
+    val homePageHeaderBlurEnabled: Boolean = true,
+    /**
+     * 首页顶栏玻璃带材质（`timetable_settings.dart:722` / `:937` / 读侧 `:1837-1846`）。
+     *
+     * 三档 `follow` / `liquid` / `solid`，读侧一律过 `sanitizeHomeBandGlassMaterial`
+     * （`:339-343`）：不属于这三档的一切取值（含存量 progressive / gaussian / soft）
+     * 都归 `liquid`。**不要**直接拿本字段判分支——`follow` 要按模糊总开关解析成
+     * 生效值（`:730-735`，Kotlin 侧是 `SettingsMaterialModel.effectiveHomeBandMaterial`）。
+     */
+    val homeBandGlassMaterial: String = DEFAULT_HOME_BAND_GLASS_MATERIAL,
+    /**
+     * 液态玻璃档位（`timetable_settings.dart:671` / `:928` / 读侧 `:1786-1798`）。
+     *
+     * 存档值是 `clear` / `level2`…`dense` / `custom`（`liquid_glass_tuning.dart:44-84`）。
+     * 缺键与不认识的值回落 `standard`，但**还要与参数键收敛**
+     * —— 判据见 [LiquidGlassTuningModel.reconcileStoredPreset]。
+     */
+    val liquidGlassPreset: String = LIQUID_GLASS_PRESET_STANDARD,
+    /** 浅色档那八个参数（`:672` / `:929`）；null = 从没调过，渲染回落出厂档（`:664-666`）。 */
+    val liquidGlassTuning: LiquidGlassTuningModel? = null,
+    /** 深色档那八个参数（`:675` / `:930`）；null = 跟随浅色档。 */
+    val liquidGlassTuningDark: LiquidGlassTuningModel? = null,
+    /** 深色档是否跟随浅色档（`:682` / `:931`，构造默认 `:307` `defaultLinkLiquidGlassTuning` = true）。 */
+    val linkLiquidGlassTuning: Boolean = true,
+    /** 深色模式是否套「变暗配方」（`:685` / `:932`，构造默认 `:313` = true）。 */
+    val darkGlassBoostEnabled: Boolean = true,
+    /** 玻璃坞（含坞内圆钮）是否走液态玻璃（`:661` / `:926`，构造默认 `:300` = true）。 */
+    val liquidGlassDockEnabled: Boolean = true,
+    /** 课程卡片自己那档的档位（`:705` / `:934` / 读侧 `:1811-1826`，收敛口径同上）。 */
+    val courseCardGlassPreset: String = LIQUID_GLASS_PRESET_STANDARD,
+    /** 课程卡片那八个参数（`:695` / `:933`）；null = 出厂卡片档。 */
+    val courseCardGlassTuning: LiquidGlassTuningModel? = null,
+
+    // ---------- 首页壁纸（`timetable_settings.dart:559-594` + `:746`） ----------
+    /** 壁纸路径（`:559` / 构造默认 `:894`；null = 没有壁纸）。 */
+    val homePageWallpaperPath: String? = null,
+    /** 取景水平对齐（`:563` / `:895`，-1 靠左 … 0 居中 … 1 靠右）。 */
+    val homePageWallpaperAlignX: Double = 0.0,
+    /** 取景垂直对齐（`:567` / `:896`，-1 靠上 … 0 居中 … 1 靠下）。 */
+    val homePageWallpaperAlignY: Double = 0.0,
+    /**
+     * 放大倍数（`:580` / `:897`，1 = 刚好铺满 = cover 的原始大小）。
+     *
+     * ⚠️ 读侧**不夹**（Dart `:1712-1713` 就是 `?? 1`）：夹在渲染 / 编辑两侧，
+     * 共用 `kWallpaperMinScale` / `kWallpaperMaxScale` = 1 / 4（`home_page_background.dart:586-587`）。
+     */
+    val homePageWallpaperScale: Double = 1.0,
+    /**
+     * 壁纸高斯模糊强度（`:587` / `:898`，0 = 不模糊）。
+     *
+     * 读侧夹在 `minHomePageWallpaperBlurSigma`…`maxHomePageWallpaperBlurSigma` = 0…24
+     * （`:353-360` 的 `clampHomePageWallpaperBlurSigma`），越界值一律收口。
+     */
+    val homePageWallpaperBlurSigma: Double = MIN_HOME_PAGE_WALLPAPER_BLUR_SIGMA,
+    /** 「最近使用」历史（`:594` / `:899`，最新在前；脏条目在 [WallpaperHistoryRowModel.listFromJson] 里逐条丢弃）。 */
+    val wallpaperHistory: List<WallpaperHistoryRowModel> = emptyList(),
+    /** 背景是否跟着周次翻页一起滑动（`:746` / `:939`，**默认关**；读侧缺键也是关，`:1849-1853`）。 */
+    val homePageBackdropFollowsWeekPager: Boolean = false,
 ) {
 
     /**
@@ -281,6 +356,28 @@ data class TimetableSettingsModel(
         "timetableFloatingBackToCurrentWeekButtonOpacity" to
             timetableFloatingBackToCurrentWeekButtonOpacity,
         "liveEnableLocalDiagnostics" to liveEnableLocalDiagnostics,
+        // ---------- 首页壁纸（写侧口径：`timetable_settings.dart:1224-1232`） ----------
+        "homePageWallpaperPath" to homePageWallpaperPath,
+        "homePageWallpaperAlignX" to homePageWallpaperAlignX,
+        "homePageWallpaperAlignY" to homePageWallpaperAlignY,
+        "homePageWallpaperScale" to homePageWallpaperScale,
+        "homePageWallpaperBlurSigma" to homePageWallpaperBlurSigma,
+        "wallpaperHistory" to wallpaperHistory.map { it.toJson() },
+        // ---------- 材质与液态玻璃（写侧口径：`timetable_settings.dart:1258-1275`） ----------
+        "frostedBlurEnabled" to frostedBlurEnabled,
+        "liquidGlassDockEnabled" to liquidGlassDockEnabled,
+        "liquidGlassPreset" to liquidGlassPreset,
+        // Dart 写侧对这三个可空参数是「null 时省略键」（`:1262-1269`）；本模型是**合并写**，
+        // 省略等于保留旧值、清不掉，所以显式写 null（见类注释「写侧：显式 null 才能清键」）。
+        "liquidGlassTuning" to liquidGlassTuning?.toJson(),
+        "liquidGlassTuningDark" to liquidGlassTuningDark?.toJson(),
+        "linkLiquidGlassTuning" to linkLiquidGlassTuning,
+        "darkGlassBoostEnabled" to darkGlassBoostEnabled,
+        "courseCardGlassTuning" to courseCardGlassTuning?.toJson(),
+        "courseCardGlassPreset" to courseCardGlassPreset,
+        "homePageHeaderBlurEnabled" to homePageHeaderBlurEnabled,
+        "homeBandGlassMaterial" to homeBandGlassMaterial,
+        "homePageBackdropFollowsWeekPager" to homePageBackdropFollowsWeekPager,
     )
 
     companion object {
@@ -333,6 +430,52 @@ data class TimetableSettingsModel(
 
         /** `HomeDockMenu` 槽位上限（`timetable_settings_enums.dart:215-236`，不钉项）。 */
         const val HOME_DOCK_MENU_MAX_SLOTS = 5
+
+        /**
+         * 壁纸高斯模糊强度的收口带（`timetable_settings.dart:353-354`
+         * `minHomePageWallpaperBlurSigma` / `maxHomePageWallpaperBlurSigma`）。
+         *
+         * 读侧（`:1715-1717`）与 `copyWith`（`:2385-2387`）都走
+         * [clampHomePageWallpaperBlurSigma]，0 = 不模糊（走清晰原图）。
+         */
+        const val MIN_HOME_PAGE_WALLPAPER_BLUR_SIGMA = 0.0
+        const val MAX_HOME_PAGE_WALLPAPER_BLUR_SIGMA = 24.0
+
+        /** `defaultHomeBandGlassMaterial`（`timetable_settings.dart:329`，出厂单独指定液态）。 */
+        const val DEFAULT_HOME_BAND_GLASS_MATERIAL = "liquid"
+
+        /** 首页顶栏玻璃带的三档取值（`:330-334` `homeBandGlassMaterialValues`）。 */
+        const val HOME_BAND_FOLLOW = "follow"
+        const val HOME_BAND_LIQUID = "liquid"
+        const val HOME_BAND_SOLID = "solid"
+
+        /**
+         * 液态玻璃档位的两个特殊存档值（`liquid_glass_tuning.dart:44-84`）：
+         * `standard` 是缺键与坏值的归宿（`fromValue` 的 `orElse`），`custom` 不在 10 格阶梯上。
+         */
+        const val LIQUID_GLASS_PRESET_STANDARD = "standard"
+        const val LIQUID_GLASS_PRESET_CUSTOM = "custom"
+
+        /**
+         * Dart `clampHomePageWallpaperBlurSigma`（`timetable_settings.dart:357-360`）：
+         * null 按 0 处理，再夹进 0…24。**读侧与写侧同一口径**。
+         */
+        fun clampHomePageWallpaperBlurSigma(value: Double?): Double =
+            (value ?: MIN_HOME_PAGE_WALLPAPER_BLUR_SIGMA)
+                .coerceIn(MIN_HOME_PAGE_WALLPAPER_BLUR_SIGMA, MAX_HOME_PAGE_WALLPAPER_BLUR_SIGMA)
+
+        /**
+         * Dart `sanitizeHomeBandGlassMaterial`（`timetable_settings.dart:339-343`）：
+         * 只有 `solid` / `follow` 原样保留，**其余一律液态**（含存量 progressive /
+         * gaussian / soft 与一切非字符串坏值）。
+         *
+         * 与 Dart 一致只认字符串：数字之类按 `null` 处理（→ 液态），不做 `toString`。
+         */
+        fun sanitizeHomeBandGlassMaterial(raw: Any?): String = when (raw) {
+            HOME_BAND_SOLID -> HOME_BAND_SOLID
+            HOME_BAND_FOLLOW -> HOME_BAND_FOLLOW
+            else -> HOME_BAND_LIQUID
+        }
 
         /** 本模型拥有并负责回写的键。 */
         val OWNED_KEYS: List<String> = listOf(
@@ -412,6 +555,26 @@ data class TimetableSettingsModel(
             "timetableBackToCurrentWeekButtonStyle",
             "timetableFloatingBackToCurrentWeekButtonOpacity",
             "liveEnableLocalDiagnostics",
+            // 首页壁纸（`timetable_settings.dart:559-594` + `:746`）
+            "homePageWallpaperPath",
+            "homePageWallpaperAlignX",
+            "homePageWallpaperAlignY",
+            "homePageWallpaperScale",
+            "homePageWallpaperBlurSigma",
+            "wallpaperHistory",
+            // 材质与液态玻璃（`timetable_settings.dart:655-746`）
+            "frostedBlurEnabled",
+            "liquidGlassDockEnabled",
+            "liquidGlassPreset",
+            "liquidGlassTuning",
+            "liquidGlassTuningDark",
+            "linkLiquidGlassTuning",
+            "darkGlassBoostEnabled",
+            "courseCardGlassTuning",
+            "courseCardGlassPreset",
+            "homePageHeaderBlurEnabled",
+            "homeBandGlassMaterial",
+            "homePageBackdropFollowsWeekPager",
         )
 
         /**
@@ -423,6 +586,13 @@ data class TimetableSettingsModel(
                 ?: DEFAULT_CARD_TITLE_COLOR
             val titleDark = LenientJson.string(json["courseCardTitleColorDark"])
                 ?: DEFAULT_CARD_TITLE_COLOR
+            // 档位与参数分别在两个键里存，读取时必须收敛成一致（`timetable_settings.dart:1364-1380`）：
+            // 渲染只吃参数键，档位键只用来画那根 10 格滑杆；两者对不上就会出现
+            // 「滑杆停在第 7 格、旋钮却是自定义参数」的面板在说谎。
+            val parsedLiquidGlassTuning =
+                LiquidGlassTuningModel.fromJson(json["liquidGlassTuning"])
+            val parsedCourseCardGlassTuning =
+                LiquidGlassTuningModel.fromJson(json["courseCardGlassTuning"])
             return TimetableSettingsModel(
                 appLocaleTag = normalizeAppLocaleTag(
                     LenientJson.string(json["appLocaleTag"])
@@ -583,6 +753,49 @@ data class TimetableSettingsModel(
                         .coerceIn(0.55, 1.0),
                 liveEnableLocalDiagnostics =
                     LenientJson.bool(json["liveEnableLocalDiagnostics"]) ?: false,
+                // ---------- 首页壁纸（`timetable_settings.dart:1706-1720` + `:1852-1853`） ----------
+                // 路径只认字符串/null（Dart `lenientString` 会把非字符串 toString，这里同口径）。
+                homePageWallpaperPath = LenientJson.string(json["homePageWallpaperPath"]),
+                // 两根对齐读侧**不夹**（`:1707-1710` 就是 `?? 0`），夹在渲染/编辑侧。
+                homePageWallpaperAlignX = LenientJson.double(json["homePageWallpaperAlignX"]) ?: 0.0,
+                homePageWallpaperAlignY = LenientJson.double(json["homePageWallpaperAlignY"]) ?: 0.0,
+                // 存量存档没有这个字段：缺省 1（刚好铺满），观感与加缩放之前一致（`:1711-1713`）。
+                homePageWallpaperScale = LenientJson.double(json["homePageWallpaperScale"]) ?: 1.0,
+                // 存量存档没有这个字段：缺省 0（不模糊）+ 收口带（`:1714-1717`）。
+                homePageWallpaperBlurSigma = clampHomePageWallpaperBlurSigma(
+                    LenientJson.double(json["homePageWallpaperBlurSigma"]),
+                ),
+                // 脏条目在 listFromJson 内逐条校验丢弃，绝不让单个坏值炸掉整个设置（`:1718-1720`）。
+                wallpaperHistory = WallpaperHistoryRowModel.listFromJson(json["wallpaperHistory"]),
+                // 缺键按**默认关**：缺键只可能来自引入该字段之前的老存档，等价于"从没主动选过"
+                // （`:1849-1853`）。
+                homePageBackdropFollowsWeekPager =
+                    LenientJson.bool(json["homePageBackdropFollowsWeekPager"]) ?: false,
+                // ---------- 材质与液态玻璃（`timetable_settings.dart:1773-1846`） ----------
+                frostedBlurEnabled =
+                    LenientJson.bool(json["frostedBlurEnabled"]) ?: true, // :292 defaultFrostedBlurEnabled
+                liquidGlassDockEnabled =
+                    LenientJson.bool(json["liquidGlassDockEnabled"]) ?: true, // :300
+                // 两个玻璃带显示开关已下线，Dart 恒写 true（`:1827-1831`）：存档值不读。
+                homePageHeaderBlurEnabled = true,
+                homeBandGlassMaterial = sanitizeHomeBandGlassMaterial(json["homeBandGlassMaterial"]),
+                liquidGlassPreset = LiquidGlassTuningModel.reconcileStoredPreset(
+                    rawStored = json["liquidGlassPreset"],
+                    tuning = parsedLiquidGlassTuning,
+                ),
+                liquidGlassTuning = parsedLiquidGlassTuning,
+                liquidGlassTuningDark = LiquidGlassTuningModel.fromJson(json["liquidGlassTuningDark"]),
+                linkLiquidGlassTuning =
+                    LenientJson.bool(json["linkLiquidGlassTuning"]) ?: true, // :307
+                darkGlassBoostEnabled =
+                    LenientJson.bool(json["darkGlassBoostEnabled"]) ?: true, // :313
+                courseCardGlassPreset = LiquidGlassTuningModel.reconcileStoredPreset(
+                    rawStored = json["courseCardGlassPreset"],
+                    // 卡片那 10 格与全局同值（`course_glass_tuning.dart:73-124`：直接引用全局常量），
+                    // 所以同一个收敛函数可直接用在卡片参数上（Dart `:1822-1825` 同口径）。
+                    tuning = parsedCourseCardGlassTuning,
+                ),
+                courseCardGlassTuning = parsedCourseCardGlassTuning,
             )
         }
 
@@ -886,5 +1099,393 @@ enum class BackToCurrentWeekButtonStyle(val value: String) {
     companion object {
         /** 读侧永远 FLOATING：`'inline'` 与未知值都被迁移（见枚举 KDoc）。 */
         fun fromValue(raw: String?): BackToCurrentWeekButtonStyle = FLOATING
+    }
+}
+/**
+ * 液态玻璃的**八个观感参数**（`lib/models/liquid_glass_tuning.dart:201-451`）。
+ *
+ * ## 为什么在 `app/` 里另有一个同名概念的类
+ *
+ * `pages/settings/SettingsMaterialModel.kt` 里那份 `LiquidGlassTuning` 是**面板显示**用的
+ * （它自带 10 格档位表与最近格推算）；它住在 `pages/settings/`，而 `app/` 是**每一次 L0
+ * 都会收的共享模型层**，不能反向依赖某个页面域（见 `SettingsActionDispatcher.kt` 的类注释
+ * 「为什么参数是镜像枚举」）。所以设置模型需要一份自己的纯数据类，页面侧那份继续只管渲染。
+ * 两边数值必须一致——`AppearanceEditorBridgeTest` 有一条逐字段对拍两处档位表的测试。
+ *
+ * ## 口径
+ *
+ * - 八个默认值 = 第 7 格「标准」= 全 app 的玻璃基准（`:408-454`）；
+ * - 上下限 = 滑杆区间（`:456-474`）；
+ * - 读侧 `fromJson` 缺键取默认值、随后**整体收口**（`:605-624` 的 `.clamped()`）。
+ *
+ * ⚠️ 课程卡片那套（Dart `CourseGlassTuning`，`lib/models/course_glass_tuning.dart`）是
+ * **同一个八字段形状、同一批出厂值与上下限**（`:45-71` / `:197-234` 直接引用全局常量），
+ * 所以本类一并承载它；两者的区别只在**染色语义**（全局染玻璃底色白、卡片染课程色）
+ * 与存档键，不是数值口径。
+ */
+data class LiquidGlassTuningModel(
+    /** 边缘处的最大折射位移（逻辑 px，`:476-477`）。 */
+    val refraction: Double = DEFAULT_REFRACTION,
+    /** 折射作用带宽度（逻辑 px，`:479-480`）。 */
+    val refractionBand: Double = DEFAULT_REFRACTION_BAND,
+    /** 位移沿边缘上升的陡缓（`:482-483`）。 */
+    val refractionEdgePow: Double = DEFAULT_REFRACTION_EDGE_POW,
+    /** 色散强度 0–1（`:485-486`）。 */
+    val dispersion: Double = DEFAULT_DISPERSION,
+    /** 边缘高光强度 0–1（`:488-489`）。 */
+    val rimStrength: Double = DEFAULT_RIM_STRENGTH,
+    /** 边缘高光带宽（逻辑 px，`:491-492`）。 */
+    val rimWidth: Double = DEFAULT_RIM_WIDTH,
+    /** 实时背景的模糊量（逻辑 px，`:494-495`）。 */
+    val blurSigma: Double = DEFAULT_BLUR_SIGMA,
+    /** 底色（白）不透明度 0–1（`:497-498`）。 */
+    val tintAlpha: Double = DEFAULT_TINT_ALPHA,
+) {
+
+    /** 逐项收口（Dart `clamped()`，`:522-539`）。 */
+    fun clamped(): LiquidGlassTuningModel = copy(
+        refraction = refraction.coerceIn(MIN_REFRACTION, MAX_REFRACTION),
+        refractionBand = refractionBand.coerceIn(MIN_REFRACTION_BAND, MAX_REFRACTION_BAND),
+        refractionEdgePow = refractionEdgePow.coerceIn(
+            MIN_REFRACTION_EDGE_POW,
+            MAX_REFRACTION_EDGE_POW,
+        ),
+        dispersion = dispersion.coerceIn(MIN_DISPERSION, MAX_DISPERSION),
+        rimStrength = rimStrength.coerceIn(MIN_RIM_STRENGTH, MAX_RIM_STRENGTH),
+        rimWidth = rimWidth.coerceIn(MIN_RIM_WIDTH, MAX_RIM_WIDTH),
+        blurSigma = blurSigma.coerceIn(MIN_BLUR_SIGMA, MAX_BLUR_SIGMA),
+        tintAlpha = tintAlpha.coerceIn(MIN_TINT_ALPHA, MAX_TINT_ALPHA),
+    )
+
+    /** 落盘：八个短键，顺序与 Dart `toJson` 一致（`:594-603`）。 */
+    fun toJson(): Map<String, Any?> = linkedMapOf(
+        "refraction" to refraction,
+        "refractionBand" to refractionBand,
+        "refractionEdgePow" to refractionEdgePow,
+        "dispersion" to dispersion,
+        "rimStrength" to rimStrength,
+        "rimWidth" to rimWidth,
+        "blurSigma" to blurSigma,
+        "tintAlpha" to tintAlpha,
+    )
+
+    companion object {
+
+        // ---- 出厂值（即第 7 格「标准」，`liquid_glass_tuning.dart:408-454`）----
+        const val DEFAULT_REFRACTION = 8.0 // :410
+        const val DEFAULT_REFRACTION_BAND = 11.0 // :418
+        const val DEFAULT_REFRACTION_EDGE_POW = 2.5 // :419
+        const val DEFAULT_RIM_STRENGTH = 0.2 // :432
+        const val DEFAULT_RIM_WIDTH = 1.5 // :433
+        const val DEFAULT_BLUR_SIGMA = 15.0 // :450
+        const val DEFAULT_TINT_ALPHA = 0.70 // :451
+        const val DEFAULT_DISPERSION = 0.35 // :454
+
+        // ---- 滑杆区间（同文件 `:456-474`）----
+        const val MIN_REFRACTION = 0.0 // :457
+        const val MAX_REFRACTION = 20.0 // :458
+        const val MIN_REFRACTION_BAND = 1.0 // :459
+        const val MAX_REFRACTION_BAND = 24.0 // :460
+        const val MIN_REFRACTION_EDGE_POW = 1.0 // :461
+        const val MAX_REFRACTION_EDGE_POW = 6.0 // :462
+        const val MIN_DISPERSION = 0.0 // :463
+        const val MAX_DISPERSION = 1.0 // :464
+        const val MIN_RIM_STRENGTH = 0.0 // :465
+        const val MAX_RIM_STRENGTH = 1.0 // :466
+        const val MIN_RIM_WIDTH = 0.0 // :467
+        const val MAX_RIM_WIDTH = 3.0 // :470
+        const val MIN_BLUR_SIGMA = 0.0 // :471
+        const val MAX_BLUR_SIGMA = 40.0 // :472
+        const val MIN_TINT_ALPHA = 0.0 // :473
+        const val MAX_TINT_ALPHA = 1.0 // :474
+
+        /** 出厂档（`static const defaults = LiquidGlassTuning()`，`:213`）。 */
+        val DEFAULTS = LiquidGlassTuningModel()
+
+        /**
+         * 10 格阶梯的存档值，**顺序就是厚度从薄到厚**（`liquid_glass_tuning.dart:135-146`
+         * `LiquidGlassPresetX.builtIns`）。
+         *
+         * 注意第 6 / 7 / 10 格沿用旧的 `light` / `standard` / `dense`（`:44-84` 的枚举注释），
+         * `custom` 不在阶梯上，所以不在这张表里。
+         */
+        val PRESET_VALUES: List<String> = listOf(
+            "clear",
+            "level2",
+            "level3",
+            "level4",
+            "level5",
+            "light",
+            "standard",
+            "level8",
+            "level9",
+            "dense",
+        )
+
+        /** 每格的推荐参数（`presetClear` … `presetDense`，`:254-368`）。 */
+        val PRESET_TUNINGS: List<LiquidGlassTuningModel> = listOf(
+            // 第 1 格：染色与模糊都归零，背景一块都不挡（`:254-266`）
+            LiquidGlassTuningModel(
+                refraction = 6.0,
+                refractionBand = 8.0,
+                refractionEdgePow = 3.25,
+                dispersion = 0.15,
+                rimStrength = 0.1,
+                rimWidth = 1.2,
+                blurSigma = 0.0,
+                tintAlpha = 0.0,
+            ),
+            // 第 2 格（`:269-278`）
+            LiquidGlassTuningModel(
+                refraction = 6.0,
+                refractionBand = 8.5,
+                refractionEdgePow = 3.25,
+                dispersion = 0.2,
+                rimStrength = 0.1,
+                rimWidth = 1.2,
+                blurSigma = 1.0,
+                tintAlpha = 0.1,
+            ),
+            // 第 3 格（`:281-290`）
+            LiquidGlassTuningModel(
+                refraction = 6.5,
+                refractionBand = 9.0,
+                refractionEdgePow = 3.0,
+                dispersion = 0.2,
+                rimStrength = 0.15,
+                rimWidth = 1.3,
+                blurSigma = 3.0,
+                tintAlpha = 0.2,
+            ),
+            // 第 4 格（`:293-302`）
+            LiquidGlassTuningModel(
+                refraction = 7.0,
+                refractionBand = 9.5,
+                refractionEdgePow = 3.0,
+                dispersion = 0.25,
+                rimStrength = 0.15,
+                rimWidth = 1.3,
+                blurSigma = 5.0,
+                tintAlpha = 0.3,
+            ),
+            // 第 5 格（`:305-317`）
+            LiquidGlassTuningModel(
+                refraction = 7.0,
+                refractionBand = 10.0,
+                refractionEdgePow = 2.75,
+                dispersion = 0.25,
+                rimStrength = 0.2,
+                rimWidth = 1.4,
+                blurSigma = 8.0,
+                tintAlpha = 0.4,
+            ),
+            // 第 6 格（存档值沿用旧的 light，`:320-330`）
+            LiquidGlassTuningModel(
+                refraction = 7.5,
+                refractionBand = 10.5,
+                refractionEdgePow = 2.75,
+                dispersion = 0.3,
+                rimStrength = 0.2,
+                rimWidth = 1.4,
+                blurSigma = 12.0,
+                tintAlpha = 0.55,
+            ),
+            // 第 7 格 = 标准档 = 出厂值（`:249-250` presetStandard = defaults）
+            DEFAULTS,
+            // 第 8 格（`:333-342`）
+            LiquidGlassTuningModel(
+                refraction = 9.0,
+                refractionBand = 13.0,
+                refractionEdgePow = 2.25,
+                dispersion = 0.4,
+                rimStrength = 0.25,
+                rimWidth = 1.7,
+                blurSigma = 18.0,
+                tintAlpha = 0.75,
+            ),
+            // 第 9 格（`:345-354`）
+            LiquidGlassTuningModel(
+                refraction = 10.0,
+                refractionBand = 14.0,
+                refractionEdgePow = 2.25,
+                dispersion = 0.45,
+                rimStrength = 0.3,
+                rimWidth = 1.9,
+                blurSigma = 21.0,
+                tintAlpha = 0.8,
+            ),
+            // 第 10 格（最厚，存档值沿用旧的 dense，`:357-368`；染色刻意不到 1）
+            LiquidGlassTuningModel(
+                refraction = 11.0,
+                refractionBand = 15.0,
+                refractionEdgePow = 2.0,
+                dispersion = 0.5,
+                rimStrength = 0.3,
+                rimWidth = 2.1,
+                blurSigma = 24.0,
+                tintAlpha = 0.9,
+            ),
+        )
+
+        /** 阶梯格数（`LiquidGlassPresetX.builtIns.length`，`:135-146`）。 */
+        val PRESET_STEPS: Int get() = PRESET_VALUES.size
+
+        /**
+         * 读侧解析（`liquid_glass_tuning.dart:605-624`）：非 Map ⇒ null（Dart `parseNestedObject`
+         * 面对非 Map 返回 null，`timetable_settings.dart:1344-1355`）。
+         *
+         * 每个字段「有值就收，收不下按缺键处理」，再整体收口（`.clamped()`）。
+         *
+         * 与 Dart 的**唯一差异**：Dart 的 `fromJson` 对任一字段做 `as num?` 强转，遇到字符串
+         * 之类会抛 TypeError，被 `parseNestedObject` 的 `catch` 吞掉后**整个参数对象变 null**；
+         * 这里逐字段宽松读（那一个字段失效、其余保留）。两者对合法存档逐字节等价，
+         * 对脏数据则这里更宽容——与「绝不让一个坏值把整份设置打回默认」这条仓规一致。
+         */
+        fun fromJson(raw: Any?): LiquidGlassTuningModel? {
+            val map = raw as? Map<*, *> ?: return null
+            fun d(key: String, fallback: Double): Double =
+                LenientJson.double(map[key]) ?: fallback
+            return LiquidGlassTuningModel(
+                refraction = d("refraction", DEFAULT_REFRACTION),
+                refractionBand = d("refractionBand", DEFAULT_REFRACTION_BAND),
+                refractionEdgePow = d("refractionEdgePow", DEFAULT_REFRACTION_EDGE_POW),
+                dispersion = d("dispersion", DEFAULT_DISPERSION),
+                rimStrength = d("rimStrength", DEFAULT_RIM_STRENGTH),
+                rimWidth = d("rimWidth", DEFAULT_RIM_WIDTH),
+                blurSigma = d("blurSigma", DEFAULT_BLUR_SIGMA),
+                tintAlpha = d("tintAlpha", DEFAULT_TINT_ALPHA),
+            ).clamped()
+        }
+
+        /**
+         * 档位值 → 存档值（`LiquidGlassPresetX.fromValue`，`liquid_glass_tuning.dart:86-112`）：
+         * 认识的原样返回，**不认识（含缺键）一律 `standard`**——绝不能是 `custom`，
+         * 否则"从没调过"的老用户会被显示成自定义、参数区莫名展开。
+         */
+        fun presetValueOrStandard(raw: String?): String {
+            if (raw == TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM) {
+                return TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM
+            }
+            return if (PRESET_VALUES.contains(raw)) {
+                raw!!
+            } else {
+                TimetableSettingsModel.LIQUID_GLASS_PRESET_STANDARD
+            }
+        }
+
+        /** 该档的推荐参数（`recommendedTuning`，`:167-180`；`custom` / 坏值回落出厂档）。 */
+        fun tuningOfPreset(preset: String?): LiquidGlassTuningModel {
+            val index = PRESET_VALUES.indexOf(preset)
+            return if (index >= 0) PRESET_TUNINGS[index] else DEFAULTS
+        }
+
+        /**
+         * 第几格（1 起）→ 档位（`LiquidGlassPresetX.fromStep`，`:156-165`）。
+         * 越界回落 `standard`：滑杆只会给 1~10，这里只是别让坏值把渲染层带崩。
+         */
+        fun fromStep(step: Int): String =
+            if (step < 1 || step > PRESET_STEPS) {
+                TimetableSettingsModel.LIQUID_GLASS_PRESET_STANDARD
+            } else {
+                PRESET_VALUES[step - 1]
+            }
+
+        /** 反推档位（`matchPreset`，`:370-378`）：都不匹配时 `custom`。 */
+        fun matchPreset(tuning: LiquidGlassTuningModel): String {
+            PRESET_VALUES.forEachIndexed { index, value ->
+                if (PRESET_TUNINGS[index] == tuning) return value
+            }
+            return TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM
+        }
+
+        /**
+         * 存档里「档位键」与「参数键」对不上时以谁为准（`reconcileStoredPreset`，
+         * `liquid_glass_tuning.dart:113-129`）——**参数侧永远是真源**，因为渲染只吃参数键。
+         *
+         * 三种情况逐条照 Dart：
+         * 1. 没有参数键（null）⇒ 没有任何东西与档位键矛盾，返回档位键的值（缺键 → `standard`）；
+         * 2. 档位键有值、且不是 `custom`、且逐字段等于该档推荐值 ⇒ 保留档位键；
+         * 3. 其余 ⇒ `matchPreset` 的结果（等于某格就回那格，否则 `custom`）。
+         *
+         * @param rawStored 存档里的**原始**值，只用于区分「缺键」与「真的写了某一档」。
+         */
+        fun reconcileStoredPreset(rawStored: Any?, tuning: LiquidGlassTuningModel?): String {
+            val raw = rawStored as? String
+            val stored = presetValueOrStandard(raw)
+            if (tuning == null) return stored
+            if (raw != null &&
+                stored != TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM &&
+                tuningOfPreset(stored) == tuning
+            ) {
+                return stored
+            }
+            return matchPreset(tuning)
+        }
+    }
+}
+
+/**
+ * 首页壁纸「最近使用」的一条（`lib/models/wallpaper_history.dart:15-125`）。
+ *
+ * [key] 是**背景身份键**（自选图片 = 文件绝对路径），与 `homePageBackdropKey` 同口径；
+ * 模型层只当它是不透明字符串，不理解 `builtin:` 之类前缀（`:10-13`）。
+ *
+ * [alignX] / [alignY] / [scale] 是**用这张图时的取景**：切回历史时要连缩放一起还原，
+ * 只还原位置等于取景被改了一半（`:33-37`）。
+ */
+data class WallpaperHistoryRowModel(
+    val key: String,
+    val alignX: Double = 0.0,
+    val alignY: Double = 0.0,
+    val scale: Double = 1.0,
+    /** 最近一次使用时间（epoch 毫秒）；旧数据缺字段回退 0（`:39-42`）。 */
+    val usedAt: Long = 0L,
+) {
+
+    /** 空 key 是无意义条目，直接视为脏数据（`:44-45`）。 */
+    val isValid: Boolean get() = key.trim().isNotEmpty()
+
+    /** 落盘：五个短键（`:61-67`）。 */
+    fun toJson(): Map<String, Any?> = linkedMapOf(
+        "key" to key,
+        "alignX" to alignX,
+        "alignY" to alignY,
+        "scale" to scale,
+        "usedAt" to usedAt,
+    )
+
+    companion object {
+
+        /**
+         * 单条解析（`wallpaper_history.dart:78-95`）：非法输入返回 null 而不是抛错。
+         *
+         * ⚠️ 数值字段**只认 num**（`_numOrNull`，`:97-98`），字符串数字按缺失处理——
+         * Dart 那里刻意不用 `as num?`（遇到字符串会抛 TypeError，被上层吞掉后整份设置回落默认，
+         * 见 `:69-77` 的注释）。`LenientJson.double` 会接受字符串数字，所以这里不能直接用。
+         */
+        fun fromJson(raw: Any?): WallpaperHistoryRowModel? {
+            val map = raw as? Map<*, *> ?: return null
+            val key = map["key"] as? String ?: return null
+            fun numOrNull(value: Any?): Double? = (value as? Number)?.toDouble()
+            val entry = WallpaperHistoryRowModel(
+                key = key,
+                alignX = numOrNull(map["alignX"]) ?: 0.0,
+                alignY = numOrNull(map["alignY"]) ?: 0.0,
+                // 存量存档没有 scale：缺省 1（刚好铺满），与加缩放之前一致（`:90-91`）。
+                scale = numOrNull(map["scale"]) ?: 1.0,
+                usedAt = (map["usedAt"] as? Number)?.toLong() ?: 0L,
+            )
+            return if (entry.isValid) entry else null
+        }
+
+        /** 列表解析（`:100-108`）：非 List ⇒ 空表；坏条目**逐条丢弃**，不影响其余条目。 */
+        fun listFromJson(raw: Any?): List<WallpaperHistoryRowModel> {
+            val list = raw as? List<*> ?: return emptyList()
+            val out = ArrayList<WallpaperHistoryRowModel>(list.size)
+            for (item in list) {
+                fromJson(item)?.let { out.add(it) }
+            }
+            return out
+        }
     }
 }

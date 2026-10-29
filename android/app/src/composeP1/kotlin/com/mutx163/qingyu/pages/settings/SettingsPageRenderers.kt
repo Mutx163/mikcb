@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.R
@@ -52,6 +53,7 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
@@ -215,16 +217,33 @@ fun SettingsPageScreen(
     }
 }
 
+/**
+ * 单个节点 → 官方 Miuix 组件。
+ *
+ * 可见性从 `private` 放宽到 `internal`（2026-10-29）：外观编辑页的两个底部面板是
+ * **根覆盖层自插条目**，面板正文只能内联渲染，而它们的内容与设置列表同源
+ * （同一批 [SettingsNode]）—— 面板那两页因此直接复用这里的行部件，不另写一套
+ * 「长得像」的控件（两套方言迟早分叉：字号、圆角、按压反馈各走各的）。
+ */
 @Composable
-private fun SettingsNodeView(
+internal fun SettingsNodeView(
     node: SettingsNode,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+    /**
+     * 分组白卡的左右内缩；`null` = 用设置列表的默认轴线
+     * （卡片 12 + 行 16 = 文字左缘 28，见 `docs/reference/compose-page-style-rules.md`）。
+     *
+     * 只有「嵌在底部弹层里」的那两处需要改它：弹层自己在官方 `insideMargin` 里已经给到
+     * 16，卡片再垫 12 就成了 44，而行部件内部还有 16 ⇒ 比 Dart 面板多出整整 12。
+     * 传 `0.dp` 后行左缘 = 弹层 16 + 行 16 = 32，与 Dart 面板一致。
+     */
+    rowInset: Dp? = null,
 ) {
     when (node) {
         is SettingsLabel -> SectionLabel(text = node.text)
         is SettingsDescription -> SectionDescription(text = node.text)
         is SettingsGap -> Spacer(modifier = Modifier.height(node.heightDp.dp))
-        is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction)
+        is SettingsGroup -> SettingsGroupCard(group = node, onAction = onAction, rowInset = rowInset)
         is SettingsInline -> SettingsInlineView(node = node, onAction = onAction)
         is SettingsRow ->
             // 「已过去」的行整行降到 55% 透明度（Flutter `Opacity(0.55)`，settings_holiday.dart:613-614）。
@@ -283,15 +302,18 @@ private fun SectionDescription(text: String) {
 private fun SettingsGroupCard(
     group: SettingsGroup,
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+    rowInset: Dp? = null,
 ) {
     QingyuCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
+            .padding(horizontal = rowInset ?: QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
         cornerRadius = QingyuShapes.SETTINGS_GROUP_RADIUS.dp,
         insideMargin = PaddingValues(0.dp),
     ) {
-        group.children.forEach { child -> SettingsNodeView(node = child, onAction = onAction) }
+        group.children.forEach { child ->
+            SettingsNodeView(node = child, onAction = onAction, rowInset = rowInset)
+        }
     }
 }
 
@@ -366,14 +388,25 @@ private fun SettingsRowView(
             },
         )
 
-        MiuixRowComponent.RADIO -> RadioButtonPreference(
-            title = row.title,
-            selected = row.selectedOptionId != null,
-            onClick = click ?: {},
-            summary = row.subtitle,
-            enabled = row.enabled,
-            endActions = { row.trailingAction?.let { TrailingActionHint(it) } },
-        )
+        // 单选项有两种形态，靠 `options` 的条数区分：
+        // * 一条 = 本仓设置族的常规写法「一选项一行」（`SettingsAppearancePage` 那批），
+        //   行本身就是那颗单选钮；
+        // * 多条 = **一行里横排全部分段**（材质面板的「默认材质 / 首页顶栏玻璃 /
+        //   卡片外观」三处，Dart 是 `_MaterialSegmented`，即官方 `TabRow` 的轮廓轨道 +
+        //   连续滑动指示器）。上一版只读 `selectedOptionId`、不画 `options`，
+        //   于是这三处在屏上是「一行单选、选项既看不见也点不到」。
+        MiuixRowComponent.RADIO -> if (row.options.size > 1) {
+            SegmentedRow(row = row, onAction = onAction)
+        } else {
+            RadioButtonPreference(
+                title = row.title,
+                selected = row.selectedOptionId != null,
+                onClick = click ?: {},
+                summary = row.subtitle,
+                enabled = row.enabled,
+                endActions = { row.trailingAction?.let { TrailingActionHint(it) } },
+            )
+        }
 
         MiuixRowComponent.CHECKBOX -> CheckboxPreference(
             title = row.title,
@@ -665,6 +698,60 @@ private fun SliderRow(
         enabled = row.enabled,
         valueRange = spec.min.toFloat()..spec.max.toFloat(),
         steps = (spec.divisions - 1).coerceAtLeast(0),
+        // 建议点位原样交给官方组件（它自己画刻点并按 `magnetThreshold` 吸附）：
+        // 材质面板那几根旋钮在 Dart 侧就是靠这个把「预设档」变得好停
+        // （`settings_appearance_editor.dart:1441-1444` / :1492-1495 等）。
+        showKeyPoints = spec.showKeyPoints && !spec.keyPoints.isNullOrEmpty(),
+        keyPoints = spec.keyPoints?.map { it.toFloat() },
+    )
+}
+
+/**
+ * 「一行里横排全部分段」的单选行。
+ *
+ * ## 它对应 Dart 的哪个控件
+ *
+ * `_MaterialSegmented`（`settings_appearance_editor.dart:2358-2398`）—— 薄适配层，真正
+ * 的控件是全 App 共用的 `HyperosTabRow`，内部即官方 `MiuixTabRowWithContour`
+ * （超椭圆轨道 + 一整块连续滑动的指示器 + 选中态自动加粗 + 每格自带
+ * 「第几个 / 共几个、是否选中」的读屏语义）。Compose 侧因此直接用它，
+ * **不要再手搓灰轨道 + 全圆胶囊**：那一版 2026-09-26 已被否掉（圆角塌成胶囊撞上
+ * 本项目的圆角规矩），而且会造出全项目第二个分段方言。
+ *
+ * ## 为什么要把 min/max 宽度改成 0 / ∞
+ *
+ * 上游默认按 62~84dp 定宽从左排，格数少时右边空一大块（`calculateTabWidth` 把
+ * 理想宽度夹到这个区间）。Dart 的适配层把这一条改掉了（「默认铺满整行」），
+ * 这里用同一手法：夹取区间放到两端，于是 `idealWidth = 可用宽 / 格数` 原样生效。
+ *
+ * ## 为什么这一行不画 `row.title`
+ *
+ * 材质面板三处（默认材质 / 首页顶栏玻璃 / 卡片外观）在 Dart 里都是
+ * 「`HyperosSectionLabel` 分组标题 + 分段」，分段自身没有标题；模型里的
+ * `row.title` 只是给文案对照测试用的元数据，画出来会和分组标题重复一遍。
+ */
+@Composable
+private fun SegmentedRow(
+    row: SettingsRow,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+) {
+    val selectedIndex = row.options.indexOfFirst { it.id == row.selectedOptionId }
+        .coerceAtLeast(0)
+    TabRowWithContour(
+        tabs = row.options.map { it.label },
+        selectedTabIndex = selectedIndex,
+        onTabSelected = { index ->
+            val option = row.options.getOrNull(index)
+            if (option != null) {
+                onAction(row.action ?: SettingsAction.WRITE_SETTING, option.id, row.id)
+            }
+        },
+        minWidth = 0.dp,
+        maxWidth = Dp.Infinity,
+        // 与行内其它控件同一条左缘轴线（官方 preference 的 `insideMargin` 是 16）。
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
@@ -973,4 +1060,39 @@ private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = 
     "holidayCheckUpdate" -> SettingsAction.RUN_NOW to "holidayAdvanced.card.refresh"
 
     else -> null
+}
+
+/**
+ * 只渲染节点列表、**不带页面骨架**的入口。
+ *
+ * 给「外观编辑」页的两个底部面板用（材质 / 壁纸）。面板是**根覆盖层自插条目**：
+ * 任何二级路由 / 弹层都会落在它背面被挡住（2026-09-19 真机实锤），所以面板正文
+ * 只能是内联的一层——但它的内容与设置列表**同源**（同一批 [SettingsNode]），
+ * 于是这里把「列表那半」单独开放出来，行部件继续共用 [SettingsNodeView]。
+ *
+ * 与 [SettingsPageScreen] 的两处差异（有意）：
+ * * 不带顶栏 / 返回键 / 大标题折叠——面板顶上是它自己的翻页胶囊，那才是这一层的标题；
+ * * 不由本函数吃 `innerPadding`：面板的左右内缩来自官方弹层的 `insideMargin`，
+ *   再垫一层就是 32。调用方按自己的面板几何传 [contentPadding]。
+ *
+ * @param rowInset 分组白卡的左右内缩；面板里传 `0.dp`（弹层的 `insideMargin` 已经是
+ *   Dart 那个 16，卡片再垫 12 会让行左缘比 Dart 多 12）。`null` = 设置列表的默认轴线。
+ */
+@Composable
+fun SettingsNodeList(
+    nodes: List<SettingsNode>,
+    onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(bottom = 24.dp),
+    rowInset: Dp? = null,
+) {
+    QingyuPageList(
+        innerPadding = PaddingValues(0.dp),
+        modifier = modifier,
+        contentPadding = contentPadding,
+    ) {
+        items(items = nodes, key = { it.id }) { node ->
+            SettingsNodeView(node = node, onAction = onAction, rowInset = rowInset)
+        }
+    }
 }

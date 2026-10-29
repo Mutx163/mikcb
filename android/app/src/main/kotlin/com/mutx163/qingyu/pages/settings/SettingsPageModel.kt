@@ -146,6 +146,17 @@ data class SettingsSliderSpec(
     val max: Double,
     val divisions: Int,
     val defaultValue: Double,
+    /**
+     * 是否在轨道上画「建议点位」（`HyperosSliderTile.showKeyPoints`）。
+     *
+     * 材质面板那几根旋钮有推荐档位（预设档、卡片四根旋钮的建议值），Dart 侧把它们画成
+     * 轨道上的小刻点、拖到附近会被吸附（`settings_appearance_editor.dart:1441-1444` 等）。
+     * 官方 `preference.SliderPreference` 原生支持 `showKeyPoints` / `keyPoints`，
+     * 模型这里只负责把值带过去，不自己画点。
+     */
+    val showKeyPoints: Boolean = false,
+    /** 建议点位的刻度值（与 [min]/[max] 同一坐标系）；null = 不画点。 */
+    val keyPoints: List<Double>? = null,
 )
 
 /** 页面结构树的节点。 */

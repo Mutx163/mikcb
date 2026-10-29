@@ -704,9 +704,9 @@ class TimetableSettingsModelTest {
         val (raw, store) = storeOf(
             mapOf(
                 "timetable_settings" to
-                    """{"themeSeedColor":"#000000","frostedBlurEnabled":true,
+                    """{"themeSeedColor":"#000000","homePageWeekdayBarBlurEnabled":true,
                        "liveShowCourseName":false,"widgetCornerRadius":22,
-                       "homePageWallpaperScale":1.4,"deep":{"x":[1,2,3]}}""",
+                       "homePageBackgroundImagePath":"/img/legacy.jpg","deep":{"x":[1,2,3]}}""",
             ),
         )
 
@@ -715,10 +715,12 @@ class TimetableSettingsModelTest {
         val written = json(raw.getString("timetable_settings")!!)
         // 注意：这些必须是**本模型仍不拥有**的键；随着覆盖批次推进要同步换样本，
         // 否则「未知键不丢」这条会退化成「自有键被自己写」的假绿。
-        assertEquals(true, written["frostedBlurEnabled"])
+        // 2026-10-29 T1：`frostedBlurEnabled` / `homePageWallpaperScale` 已被外观编辑页那批收进
+        // OWNED_KEYS，样本换成仍未覆盖的「首页玻璃带开关」与旧壁纸指针键。
+        assertEquals(true, written["homePageWeekdayBarBlurEnabled"])
         assertEquals(false, written["liveShowCourseName"])
         assertEquals(22, (written["widgetCornerRadius"] as Number).toInt())
-        assertEquals(1.4, written["homePageWallpaperScale"])
+        assertEquals("/img/legacy.jpg", written["homePageBackgroundImagePath"])
         assertEquals("""{"x":[1,2,3]}""", MiniJson.encode(written["deep"]))
         // 本模型确实改了它拥有的键。
         assertEquals("dark", written["appThemeMode"])

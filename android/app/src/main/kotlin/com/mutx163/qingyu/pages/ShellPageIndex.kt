@@ -31,6 +31,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
+import com.mutx163.qingyu.app.AppearanceEditorHost
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
@@ -108,6 +109,7 @@ import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.settings.BingGalleryState
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.GlassDockEditorState
+import com.mutx163.qingyu.pages.settings.MaterialSheetPages
 import com.mutx163.qingyu.pages.settings.RecentWallpaperState
 import com.mutx163.qingyu.pages.settings.SettingsAppearanceEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsAppearancePage
@@ -135,6 +137,7 @@ import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
+import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
@@ -342,11 +345,50 @@ fun ShellPageContent(
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
-        "b.appearanceEditor" -> SettingsScreen(SettingsAppearanceEditorPage.spec(SettingsPageState()), onBack)
-        "b.materialGeneral" -> SettingsScreen(SettingsMaterialGeneralPage.spec(SettingsPageState()), onBack)
-        "b.materialCourseCard" -> SettingsScreen(SettingsMaterialCourseCardPage.spec(SettingsPageState()), onBack)
-        "b.backdropFlow" -> SettingsScreen(SettingsBackdropFlowPage.settingsPage(BackdropFlowState()), onBack)
-        "b.recentWallpaper" -> SettingsScreen(SettingsRecentWallpaperSection.spec(RecentWallpaperState()), onBack)
+        // 2026-10-29 外观编辑页接真宿主。原先这一屏是
+        // `SettingsScreen(SettingsAppearanceEditorPage.spec(SettingsPageState()))`——传**空构造的
+        // state** 渲染成一份设置列表，形态与原件完全不同（原件是沉浸式整页：整屏暗底 +
+        // 真课表页缩尺预览 + 顶部一行 chrome + 底部两颗圆钮），两颗入口的 target 在壳里
+        // 也没有落点 ⇒ 点了全无反应。宿主见 `composeP1: app/AppearanceEditorHost.kt`。
+        "b.appearanceEditor" -> AppearanceEditorHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        // 「材质（通用 / 课程卡片）」在原版里**不是两页**，是外观编辑页那个底部弹层的
+        // 两个页签（`settings_appearance_editor.dart:2253-2255`）。所以这两条路由直达同一
+        // 个宿主并让弹层停在对应页签——关掉弹层落下的就是外观编辑页本身，与原件从
+        // 「课程卡片」设置页跳进来时的落点一致。
+        "b.materialGeneral" -> AppearanceEditorHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            initialMaterialPage = MaterialSheetPages.GENERAL,
+        )
+        "b.materialCourseCard" -> AppearanceEditorHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            initialMaterialPage = MaterialSheetPages.COURSE_CARD,
+        )
+        // 这两条同理：壁纸面板的两个页签（`_WallpaperSheetBody`，:2104-2224）。
+        "b.backdropFlow" -> AppearanceEditorHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            initialWallpaperPage = WallpaperSheetPages.PICKER,
+        )
+        "b.recentWallpaper" -> AppearanceEditorHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            initialWallpaperPage = WallpaperSheetPages.PICKER,
+        )
         "b.bingGallery" -> SettingsScreen(SettingsBingWallpaperGalleryPage.spec(BingGalleryState()), onBack)
         "b.homeWidget" -> SettingsScreen(SettingsHomeWidgetPage.spec(SettingsHomeWidgetState()), onBack)
         // 2026-10-28 S2 接线：这两页原先走 no-op SettingsScreen（写死默认状态、点了不动），

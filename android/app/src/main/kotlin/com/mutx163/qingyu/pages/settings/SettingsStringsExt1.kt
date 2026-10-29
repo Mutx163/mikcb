@@ -152,3 +152,37 @@ object SettingsStringsExt1 {
     val bingWallpaperDateYesterday = ArbText("bingWallpaperDateYesterday", "昨天")
     val bingWallpaperDateMonthDay = ArbText("bingWallpaperDateMonthDay", "{month} 月 {day} 日")
 }
+
+/**
+ * 外观编辑页「日视图预览」顶部那行日期标签（`第 N 周 · 周X`）。
+ *
+ * Dart 侧这行是 l10n 直接拼的（键 `weekLabel` + `weekdayMon`…`weekdaySun`）。
+ * Compose 渲染层（`composeP1`）不许出现中文字面量（`CjkLiteralGateTest` 棘轮），
+ * 所以拼装这一步留在这里——与 `CourseConflictStrings.weekLabel` 同一手法：
+ * 渲染层只拿拼好的值，i18n 只在 `main/` 这一层出现。
+ */
+object AppearanceEditorPreviewStrings {
+
+    /** ARB `weekLabel`（`第 {week} 周`）。 */
+    private val weekLabel = ArbText("weekLabel", "第 {week} 周")
+
+    /** ARB `weekdayMon` … `weekdaySun`（周一 … 周日）。 */
+    private val weekdays = listOf(
+        ArbText("weekdayMon", "周一"),
+        ArbText("weekdayTue", "周二"),
+        ArbText("weekdayWed", "周三"),
+        ArbText("weekdayThu", "周四"),
+        ArbText("weekdayFri", "周五"),
+        ArbText("weekdaySat", "周六"),
+        ArbText("weekdaySun", "周日"),
+    )
+
+    /**
+     * @param week 周次（1 起）
+     * @param dayOfWeek 星期几（1 = 周一 … 7 = 周日）；越界按两端收口，不抛异常
+     */
+    fun dayLabel(week: Int, dayOfWeek: Int): String {
+        val weekday = weekdays[(dayOfWeek - 1).coerceIn(0, weekdays.lastIndex)]
+        return weekLabel.filled("week", week.toString()) + " · " + weekday.zh
+    }
+}

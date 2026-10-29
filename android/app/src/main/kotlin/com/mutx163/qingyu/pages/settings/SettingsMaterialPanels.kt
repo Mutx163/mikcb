@@ -153,6 +153,10 @@ object SettingsMaterialGeneralPage {
                         max = LiquidGlassTuning.PRESET_STEPS.toDouble(),
                         divisions = LiquidGlassTuning.PRESET_STEPS - 1,
                         defaultValue = 7.0,
+                        // Dart :1441-1444：轨道上把 10 格全画成节点（滑到附近被吸附），
+                        // 读数仍只给数字 —— 节点由官方 SliderPreference 自己画。
+                        showKeyPoints = true,
+                        keyPoints = (1..LiquidGlassTuning.PRESET_STEPS).map { it.toDouble() },
                     ),
                     sliderValue = SettingsMaterialModel
                         .presetStep(material, tuning, material.liquidGlassPreset)
@@ -267,14 +271,25 @@ object SettingsMaterialGeneralPage {
      *
      * 滑杆一律关掉「点标题弹数字输入框」（`tapToEdit: false`）：那会开出二级弹层，
      * 而本面板是根覆盖层自插条目，嵌套弹层会被压在背面（:1454-1455）。
+     *
+     * [showRecommendedKeyPoints] 只有**卡片档**传 true：那四根旋钮在轨道上画「建议点位」
+     * （= 出厂值那一点；画点、划过变亮、经过一次触感，:1457-1459）。点位值取自
+     * `CourseGlassTuning.defaultRefraction` 等四个常量，而在 Dart 里那四个**全部**引用全局
+     * 标准档（`course_glass_tuning.dart:45-71`），所以这里直接用他们那组
+     * `LiquidGlassTuning.DEFAULT_*`，不再抄一份数——两套类型各自的染色语义不同，但点数同源。
      */
     fun tuningRows(
         idPrefix: String,
         tuning: LiquidGlassTuning,
         blurSigmaMax: Double,
+        showRecommendedKeyPoints: Boolean = false,
     ): List<SettingsNode> {
         // 存量值可能高于本档上限（旧版卡片那根能拖到 40）：拇指与数字都夹到上限
         val blurSigma = LiquidGlassTuning.clampBlur(tuning.blurSigma, blurSigmaMax)
+        // 建议点位只给四根旋钮（Dart :1492-1495 / :1506-1509 / :1521-1524 / :1571-1574）；
+        // 其余四根 Dart 传 `keyPoints: null`，轨道上不画点。
+        fun keyPointOf(defaultValue: Double): List<Double>? =
+            if (showRecommendedKeyPoints) listOf(defaultValue) else null
         return listOf(
             tuningRow(
                 id = "$idPrefix.refraction",
@@ -285,6 +300,8 @@ object SettingsMaterialGeneralPage {
                 divisions = 40,
                 // 读数一位小数（:1491）
                 label = format(tuning.refraction, 1),
+                // 建议点位 = 出厂折射强度（:1492-1495）
+                keyPoints = keyPointOf(LiquidGlassTuning.DEFAULT_REFRACTION),
             ),
             tuningRow(
                 id = "$idPrefix.refractionBand",
@@ -294,6 +311,8 @@ object SettingsMaterialGeneralPage {
                 max = LiquidGlassTuning.MAX_REFRACTION_BAND,
                 divisions = 46,
                 label = format(tuning.refractionBand, 1),
+                // 建议点位 = 出厂作用带宽度（:1506-1509）
+                keyPoints = keyPointOf(LiquidGlassTuning.DEFAULT_REFRACTION_BAND),
             ),
             tuningRow(
                 id = "$idPrefix.edgePow",
@@ -304,6 +323,8 @@ object SettingsMaterialGeneralPage {
                 divisions = 20,
                 // 陡缓两位小数（:1520）
                 label = format(tuning.refractionEdgePow, 2),
+                // 建议点位 = 出厂边缘陡缓（:1521-1524）
+                keyPoints = keyPointOf(LiquidGlassTuning.DEFAULT_REFRACTION_EDGE_POW),
             ),
             tuningRow(
                 id = "$idPrefix.dispersion",
@@ -354,6 +375,8 @@ object SettingsMaterialGeneralPage {
                 // 染色 20 档（步长 0.05）：10 格预设的染色全都落在它上面（:1461-1465）
                 divisions = 20,
                 label = percent(tuning.tintAlpha),
+                // 建议点位 = 出厂染色强度（:1571-1574）
+                keyPoints = keyPointOf(LiquidGlassTuning.DEFAULT_TINT_ALPHA),
             ),
         )
     }
@@ -366,12 +389,22 @@ object SettingsMaterialGeneralPage {
         max: Double,
         divisions: Int,
         label: String,
+        keyPoints: List<Double>? = null,
     ) = settingsRow(
         id = id,
         component = MiuixRowComponent.SLIDER,
         title = title,
         value = label,
-        slider = SettingsSliderSpec(min, max, divisions, defaultValue = value),
+        slider = SettingsSliderSpec(
+            min = min,
+            max = max,
+            divisions = divisions,
+            defaultValue = value,
+            // 建议点位原样交给官方 `SliderPreference`：它自己画刻点并按
+            // `magnetThreshold` 吸附（Dart `HyperosSliderTile.showKeyPoints/keyPoints`）。
+            showKeyPoints = keyPoints != null,
+            keyPoints = keyPoints,
+        ),
         sliderValue = value,
         action = SettingsAction.WRITE_SETTING,
     )
@@ -526,6 +559,11 @@ object SettingsMaterialCourseCardPage {
                             max = LiquidGlassTuning.PRESET_STEPS.toDouble(),
                             divisions = LiquidGlassTuning.PRESET_STEPS - 1,
                             defaultValue = 7.0,
+                            // 与第一页**同一个部件、同一套分格**（:1263-1266 / :1423-1449）：
+                            // 两页既然共用一套档位预设，节点也必须一模一样，否则同一格拖出来
+                            // 的值不同。
+                            showKeyPoints = true,
+                            keyPoints = (1..LiquidGlassTuning.PRESET_STEPS).map { it.toDouble() },
                         ),
                         sliderValue = SettingsMaterialModel
                             .presetStep(card, tuning, card.courseCardGlassPreset)
@@ -543,6 +581,8 @@ object SettingsMaterialCourseCardPage {
                     // 卡片的磨砂量只喂它那张预糊位图，出图侧夹到 kPreblurMaxSigma：
                     // 滑杆上限取同一个常量，0 是有效的「清」档（:1299-1302）
                     blurSigmaMax = LiquidGlassTuning.PREBLUR_MAX_SIGMA,
+                    // 卡片档四根旋钮画建议点位（:1298 的 `showKeyPoints: true`）
+                    showRecommendedKeyPoints = true,
                 ),
             )
         }

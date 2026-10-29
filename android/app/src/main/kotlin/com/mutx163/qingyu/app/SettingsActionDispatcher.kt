@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.LenientJson
+import kotlin.math.roundToInt
 
 /**
  * 设置族动作分派器（Phase 3.5 · 设置族竖切第一刀）。
@@ -39,7 +40,9 @@ import com.mutx163.qingyu.core.LenientJson
  *
  * 通用（`settings-general`）/ 外观（`settings-appearance`）/ 主题管理（`settings-theme`）/
  * 课程卡片（`settings-course-card`）/ 首页与导航（`settings-home-navigation`，含底栏编辑器与
- * 八宫格编辑器那批 add / remove / move / reset 增量动作）。其余页各自私有 state，
+ * 八宫格编辑器那批 add / remove / move / reset 增量动作）。2026-10-29 起还覆盖**外观编辑页的
+ * 材质面板与壁纸弹层**（`material.general.*` / `material.courseCard.*` / `backdrop.*`，
+ * 见 [ROW_MATERIAL_GLASS_MODE] 那一节）。其余页各自私有 state，
  * 未识别 rowId 一律 [SettingsDispatch.Ignored]（no-op + 带理由，**不崩**）。
  *
  * ## 判据出处（Dart 只读参照，逐条核过）
@@ -233,6 +236,49 @@ object SettingsActionDispatcher {
     const val SCOPE_APPEARANCE = "appearance"
     const val SCOPE_COURSE_CARD = "courseCard"
 
+    // ------------------------------------------------ 外观编辑页：材质（settings-material-*）
+    // rowId 与 `pages/settings/SettingsMaterialPanels.kt` 逐字一致；传值约定同其它页：
+    // SWITCH 不带 target（取反当前值），RADIO 传 option id（**形状是「跟随 / 实体 / 液态」
+    // 与「实体 / 高斯 / 液态」，值见各行的 `options`），SLIDER 传数字字符串。
+    const val ROW_MATERIAL_GLASS_MODE = "material.general.glassMode.row"
+    const val ROW_MATERIAL_HOME_BAND = "material.general.homeBand.row"
+    const val ROW_MATERIAL_PRESET = "material.general.preset"
+
+    /** 浅色档八根旋钮的前缀（后缀 = 参数名，见 [withTuningField]）。 */
+    const val ROW_MATERIAL_TUNING_PREFIX = "material.general.tuning."
+
+    /** 深色档八根旋钮的前缀。 */
+    const val ROW_MATERIAL_DARK_TUNING_PREFIX = "material.general.darkTuning."
+
+    /** 面板里那颗「恢复默认」（只清液态调参，不动整体材质，`settings_appearance_editor.dart:1058-1085`）。 */
+    const val ROW_MATERIAL_RESET = "material.general.reset"
+    const val ROW_MATERIAL_DARK_BOOST = "material.general.darkBoost"
+
+    /** ⚠️ 开关语义是「独立设置深色档」，字段存的是「是否跟随」→ 写回要**取反**（`:1106-1118`）。 */
+    const val ROW_MATERIAL_DARK_INDEPENDENT = "material.general.darkIndependent"
+    const val ROW_MATERIAL_SCOPE_DOCK = "material.general.scopeDock"
+    const val ROW_MATERIAL_CARD_SURFACE_STYLE = "material.courseCard.surfaceStyle.row"
+    const val ROW_MATERIAL_CARD_PRESET = "material.courseCard.preset"
+
+    /** 卡片档八根旋钮的前缀。 */
+    const val ROW_MATERIAL_CARD_TUNING_PREFIX = "material.courseCard.tuning."
+
+    // ------------------------------------------------ 外观编辑页：壁纸（backdrop.*）
+    /** 背景随周次翻页滑动（`settings_home_backdrop_flow.dart:780-788`，开关，取反）。 */
+    const val ROW_BACKDROP_FOLLOWS_WEEK_PAGER = "backdrop.followsWeekPager"
+
+    /** 壁纸高斯模糊 sigma（`widgets/wallpaper_blur_tile.dart:56-74`，滑杆，0~24 收口）。 */
+    const val ROW_BACKDROP_BLUR = "backdrop.blur"
+
+    /**
+     * 液态玻璃的「恢复默认」作用域名
+     * （`pages/settings/SettingsMaterialPanels.kt` 的 `RESET_SCOPE_LIQUID_GLASS` 逐字一致）。
+     *
+     * 它**不是** `SettingsResetScope` 的一员（Dart 那颗按钮不走撤销栈，就是一次
+     * `copyWith(preset: standard, tuning: defaults)`，`settings_appearance_editor.dart:1062-1070`）。
+     */
+    const val SCOPE_LIQUID_GLASS = "liquidGlass"
+
     /** 首页与导航作用域（`settings_reset.dart:29-30` 的 `homeNavigation`）。 */
     const val SCOPE_HOME_NAVIGATION = "homeNavigation"
 
@@ -348,6 +394,10 @@ object SettingsActionDispatcher {
                 glassDockShowWeekTab = true,
                 homeGridMenuActions = emptyList(),
             )
+
+            // 材质面板里那颗「恢复默认」：**只清液态调参**，不动整体材质
+            // （`settings_appearance_editor.dart:1058-1085`，按钮旁边那句说明就是它的范围）。
+            SCOPE_LIQUID_GLASS -> resetLiquidGlassTuning(model)
 
             else -> null
         }
@@ -606,6 +656,103 @@ object SettingsActionDispatcher {
                 ),
             )
 
+            // ---------------------------------------------------- 外观编辑页：材质（通用页）
+            // 总闸两档（`glass_mode_choice.dart:22-40` 的 `applyGlassModeChoice`）：
+            // 实体 = 关模糊；液态 = 开模糊**且**顺手打开玻璃坞那把唯一的例外开关。
+            // 页面 option id 是 `GlassModeChoice.value`；老渲染层（单行 SuperRadioButton）
+            // 不带 target，此时按「两档互切」处理。
+            ROW_MATERIAL_GLASS_MODE -> when (target) {
+                "solid" -> model.copy(frostedBlurEnabled = false)
+                "liquidGlass" -> model.copy(
+                    frostedBlurEnabled = true,
+                    liquidGlassDockEnabled = true,
+                )
+                null -> if (model.frostedBlurEnabled) {
+                    model.copy(frostedBlurEnabled = false)
+                } else {
+                    model.copy(frostedBlurEnabled = true, liquidGlassDockEnabled = true)
+                }
+                else -> return ignored(kind, target, rowId, "默认材质档不认识：$target")
+            }
+
+            // 顶栏玻璃带三档（`glass_mode_choice.dart:44-58` 的 `applyHomeBandGlassMaterial`）：
+            // 写入口一律过 sanitize，本模型里就是同一份判据（`timetable_settings.dart:339-343`）。
+            ROW_MATERIAL_HOME_BAND -> {
+                val material = when (target) {
+                    TimetableSettingsModel.HOME_BAND_FOLLOW,
+                    TimetableSettingsModel.HOME_BAND_SOLID,
+                    TimetableSettingsModel.HOME_BAND_LIQUID,
+                    -> target
+                    else -> return ignored(kind, target, rowId, "顶栏玻璃材质不认识：$target")
+                }
+                model.copy(
+                    homeBandGlassMaterial =
+                    TimetableSettingsModel.sanitizeHomeBandGlassMaterial(material),
+                )
+            }
+
+            // 档位滑杆（10 格）：选一格 = **档位名 + 那档的推荐参数一起写**
+            // （`settings_appearance_editor.dart:1026-1042`）。只写档位名会让面板与渲染对不上。
+            ROW_MATERIAL_PRESET -> {
+                val step = parseStep(target)
+                    ?: return ignored(kind, target, rowId, "液态档位不是 1~10 的数字：$target")
+                val preset = LiquidGlassTuningModel.fromStep(step)
+                model.copy(
+                    liquidGlassPreset = preset,
+                    liquidGlassTuning = LiquidGlassTuningModel.tuningOfPreset(preset),
+                )
+            }
+
+            // 面板那颗「恢复默认」（本行 action 是 RESET_SCOPE，正常走确认弹窗后由宿主调
+            // [applyResetScope]；这里再兜一条 WRITE_SETTING，两个入口同一份结果）。
+            ROW_MATERIAL_RESET -> resetLiquidGlassTuning(model)
+
+            ROW_MATERIAL_DARK_BOOST ->
+                model.copy(darkGlassBoostEnabled = !model.darkGlassBoostEnabled)
+
+            // ⚠️ 取反：开关显示的是「独立设置深色档」，字段存的是「是否跟随」
+            // （`settings_appearance_editor.dart:1106-1118`）。
+            ROW_MATERIAL_DARK_INDEPENDENT -> applyDarkIndependent(model)
+
+            ROW_MATERIAL_SCOPE_DOCK ->
+                model.copy(liquidGlassDockEnabled = !model.liquidGlassDockEnabled)
+
+            // ---------------------------------------------------- 外观编辑页：材质（课程卡片页）
+            ROW_MATERIAL_CARD_SURFACE_STYLE -> {
+                // 页面 option id 就是磁盘值（`SettingsMaterialPanels.kt` 的
+                // `CourseCardSurfaceStyle.entries.map { option(it.value, …) }`）。
+                val style = CourseCardSurfaceStyle.entries
+                    .firstOrNull { it.value == target }
+                    ?: return ignored(kind, target, rowId, "课程卡片外观档不认识：$target")
+                model.copy(courseCardSurfaceStyle = style)
+            }
+
+            ROW_MATERIAL_CARD_PRESET -> {
+                val step = parseStep(target)
+                    ?: return ignored(kind, target, rowId, "卡片档位不是 1~10 的数字：$target")
+                val preset = LiquidGlassTuningModel.fromStep(step)
+                model.copy(
+                    courseCardGlassPreset = preset,
+                    // 卡片那 10 格与全局同值（`course_glass_tuning.dart:73-124` 直接引用全局常量）。
+                    courseCardGlassTuning = LiquidGlassTuningModel.tuningOfPreset(preset),
+                )
+            }
+
+            // ---------------------------------------------------- 外观编辑页：壁纸
+            ROW_BACKDROP_FOLLOWS_WEEK_PAGER -> model.copy(
+                homePageBackdropFollowsWeekPager = !model.homePageBackdropFollowsWeekPager,
+            )
+
+            ROW_BACKDROP_BLUR -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "壁纸模糊量不是数字")
+                // 与 Dart `copyWith` 同一道收口（`timetable_settings.dart:2385-2387`）。
+                model.copy(
+                    homePageWallpaperBlurSigma =
+                    TimetableSettingsModel.clampHomePageWallpaperBlurSigma(value),
+                )
+            }
+
             // ---------------------------------------------------- 课表页面设置
             ROW_TP_AUTO_FIT -> model.copy(
                 timetableAutoFitSectionHeight = !model.timetableAutoFitSectionHeight,
@@ -688,12 +835,15 @@ object SettingsActionDispatcher {
                     applyThemePreset(model, presetValue)
                         ?: return ignored(kind, target, rowId, "主题预设值不认识：$presetValue")
                 } else {
-                    return ignored(
-                        kind,
-                        target,
-                        rowId,
-                        "未识别的 rowId（本刀只接通用/外观/主题管理/课程卡片/首页与导航）",
-                    )
+                    // 材质面板的三组八根旋钮走**前缀**（后缀 = 参数名），`when (rowId)` 的
+                    // 等值分支写不了前缀，所以留在这里认。
+                    return applyMaterialTuningRow(model, target, rowId)
+                        ?: ignored(
+                            kind,
+                            target,
+                            rowId,
+                            "未识别的 rowId（本刀只接通用/外观/主题管理/课程卡片/首页与导航/材质/壁纸）",
+                        )
                 }
             }
         }
@@ -918,6 +1068,181 @@ object SettingsActionDispatcher {
         }
     }
 
+    // ------------------------------------------------------- 外观编辑页：材质与壁纸
+
+    /**
+     * 材质面板那三组八根旋钮（`material.general.tuning.*` / `material.general.darkTuning.*`
+     * / `material.courseCard.tuning.*`）。不在任何分支里的 rowId 返回 null，由调用方记 Ignored。
+     *
+     * 三组的**写法不一样**，逐条照 Dart：
+     * - 浅色档：写参数 + 档位打成 `custom`（`settings_appearance_editor.dart:1355-1370`）；
+     * - 深色档：只写参数，**不动档位**——深色那套没有独立档名（`:1373-1384`）；
+     * - 卡片档：写参数 + 卡片档位打成 `custom`（`:1395-1401`）。
+     */
+    private fun applyMaterialTuningRow(
+        model: TimetableSettingsModel,
+        target: String?,
+        rowId: String,
+    ): SettingsDispatch? {
+        val (prefix, family) = when {
+            rowId.startsWith(ROW_MATERIAL_DARK_TUNING_PREFIX) ->
+                ROW_MATERIAL_DARK_TUNING_PREFIX to TuningFamily.DARK
+
+            rowId.startsWith(ROW_MATERIAL_TUNING_PREFIX) ->
+                ROW_MATERIAL_TUNING_PREFIX to TuningFamily.LIGHT
+
+            rowId.startsWith(ROW_MATERIAL_CARD_TUNING_PREFIX) ->
+                ROW_MATERIAL_CARD_TUNING_PREFIX to TuningFamily.CARD
+
+            else -> return null
+        }
+        val field = rowId.removePrefix(prefix)
+        val value = parseDouble(target)
+            ?: return ignored(
+                SettingsActionKind.WRITE_SETTING,
+                target,
+                rowId,
+                "液态玻璃滑杆值不是数字",
+            )
+        val base = when (family) {
+            TuningFamily.LIGHT -> model.liquidGlassTuning ?: LiquidGlassTuningModel.DEFAULTS
+            // 回落链必须与面板读的那条一致（深色档 ?? 浅色档 ?? 默认），否则拖杆会从另一档初值开始跳。
+            TuningFamily.DARK -> model.liquidGlassTuningDark
+                ?: model.liquidGlassTuning
+                ?: LiquidGlassTuningModel.DEFAULTS
+
+            TuningFamily.CARD -> model.courseCardGlassTuning ?: LiquidGlassTuningModel.DEFAULTS
+        }
+        val updated = withTuningField(base, field, value)
+            ?: return ignored(
+                SettingsActionKind.WRITE_SETTING,
+                target,
+                rowId,
+                "不认识的液态玻璃参数：$field",
+            )
+        val next = when (family) {
+            TuningFamily.LIGHT -> model.copy(
+                liquidGlassTuning = updated,
+                liquidGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM,
+            )
+
+            TuningFamily.DARK -> model.copy(liquidGlassTuningDark = updated)
+
+            TuningFamily.CARD -> model.copy(
+                courseCardGlassTuning = updated,
+                courseCardGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM,
+            )
+        }
+        return SettingsDispatch.Write(next, rowId)
+    }
+
+    /**
+     * 改一个参数并**按滑杆区间收口**（`liquid_glass_tuning.dart:522-539` 的 `clamped()`）。
+     *
+     * 后缀名就是面板行 id 的后缀（`SettingsMaterialPanels.kt` 的 `$idPrefix.<name>`）；
+     * 染色那一根面板写作 `tint`，Dart 字段叫 `tintAlpha`，两个都收。
+     *
+     * @return null 表示后缀不认识（调用方记 Ignored，不猜）。
+     */
+    private fun withTuningField(
+        tuning: LiquidGlassTuningModel,
+        field: String,
+        value: Double,
+    ): LiquidGlassTuningModel? = when (field) {
+        "refraction" -> tuning.copy(
+            refraction = value.coerceIn(
+                LiquidGlassTuningModel.MIN_REFRACTION,
+                LiquidGlassTuningModel.MAX_REFRACTION,
+            ),
+        )
+
+        "refractionBand" -> tuning.copy(
+            refractionBand = value.coerceIn(
+                LiquidGlassTuningModel.MIN_REFRACTION_BAND,
+                LiquidGlassTuningModel.MAX_REFRACTION_BAND,
+            ),
+        )
+
+        "edgePow" -> tuning.copy(
+            refractionEdgePow = value.coerceIn(
+                LiquidGlassTuningModel.MIN_REFRACTION_EDGE_POW,
+                LiquidGlassTuningModel.MAX_REFRACTION_EDGE_POW,
+            ),
+        )
+
+        "dispersion" -> tuning.copy(
+            dispersion = value.coerceIn(
+                LiquidGlassTuningModel.MIN_DISPERSION,
+                LiquidGlassTuningModel.MAX_DISPERSION,
+            ),
+        )
+
+        "rimStrength" -> tuning.copy(
+            rimStrength = value.coerceIn(
+                LiquidGlassTuningModel.MIN_RIM_STRENGTH,
+                LiquidGlassTuningModel.MAX_RIM_STRENGTH,
+            ),
+        )
+
+        "rimWidth" -> tuning.copy(
+            rimWidth = value.coerceIn(
+                LiquidGlassTuningModel.MIN_RIM_WIDTH,
+                LiquidGlassTuningModel.MAX_RIM_WIDTH,
+            ),
+        )
+
+        "blurSigma" -> tuning.copy(
+            blurSigma = value.coerceIn(
+                LiquidGlassTuningModel.MIN_BLUR_SIGMA,
+                LiquidGlassTuningModel.MAX_BLUR_SIGMA,
+            ),
+        )
+
+        "tint", "tintAlpha" -> tuning.copy(
+            tintAlpha = value.coerceIn(
+                LiquidGlassTuningModel.MIN_TINT_ALPHA,
+                LiquidGlassTuningModel.MAX_TINT_ALPHA,
+            ),
+        )
+
+        else -> null
+    }
+
+    /**
+     * 液态调参恢复默认（`settings_appearance_editor.dart:1062-1070`）：档位回 `standard`、
+     * 参数回出厂档。**不动**深色档与其它材质开关 —— 那颗按钮旁边那句说明就是它的范围。
+     */
+    private fun resetLiquidGlassTuning(
+        model: TimetableSettingsModel,
+    ): TimetableSettingsModel = model.copy(
+        liquidGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_STANDARD,
+        liquidGlassTuning = LiquidGlassTuningModel.DEFAULTS,
+    )
+
+    /**
+     * 「独立设置深色档」开关（`settings_appearance_editor.dart:1106-1118`）。
+     *
+     * 开关显示的是**独立**、字段存的是**是否跟随**，所以取反后再写：
+     * - 打开独立（`link` 变 false）：从没设过深色档时**以浅色档为起点**，这一按不会让画面跳；
+     * - 关掉独立（`link` 变 true）：**保留**深色那套 —— Dart 的 `copyWith` 对可空字段是 `??`
+     *   语义、清不掉它，注释写明「关掉只是不使用，再打开要拿回原来那套」（`:679-682`）。
+     */
+    private fun applyDarkIndependent(
+        model: TimetableSettingsModel,
+    ): TimetableSettingsModel = if (model.linkLiquidGlassTuning) {
+        model.copy(
+            linkLiquidGlassTuning = false,
+            liquidGlassTuningDark = model.liquidGlassTuningDark
+                ?: model.liquidGlassTuning
+                ?: LiquidGlassTuningModel.DEFAULTS,
+        )
+    } else {
+        model.copy(linkLiquidGlassTuning = true)
+    }
+
+    /** 10 格档位滑杆 → 第几格：Dart 那边是 `value.round()` 再 `fromStep`（`:1449`）。 */
+    private fun parseStep(raw: String?): Int? = raw?.trim()?.toDoubleOrNull()?.roundToInt()
+
     /**
      * 色值归一：只收 `#RRGGBB` / `#AARRGGBB`（大小写不敏感，统一大写）。
      * 别的一律 null ⇒ Ignored——宁可不动，也不要把脏字符串写进存档。
@@ -994,4 +1319,11 @@ private class ThemeCheckpointField(
         ThemeCheckpointKind.COLOR, ThemeCheckpointKind.TEXT -> LenientJson.string(raw)
         ThemeCheckpointKind.BOOL -> LenientJson.bool(raw)
     }
+}
+
+/** 材质面板三组八根旋钮各自写哪：浅色档 / 深色档 / 课程卡片档（见 `applyMaterialTuningRow`）。 */
+private enum class TuningFamily {
+    LIGHT,
+    DARK,
+    CARD,
 }
