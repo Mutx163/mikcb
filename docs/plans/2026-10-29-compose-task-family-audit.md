@@ -165,19 +165,23 @@ unzip -o -q ~/.gradle/caches/modules-2/files-2.1/top.yukonga.miuix.kmp/miuix-ico
 
 ---
 
-## 五、验证口径
+## 五、验证口径与**本轮实测结果**
 
-| 级别 | 谁跑 | 命令 | 能证明什么 |
+| 级别 | 谁跑 | 命令 | 结果 |
 |---|---|---|---|
-| L0 | Lead | `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/task"` | 模型层逻辑 + 文案对拍 |
-| 咬合探针 | Lead | 故意改坏模型判据 → 必须红 → 还原 | 新测试有牙齿 |
-| L1 | Lead（**全 writer 停笔后一次**） | `pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` | 编译通过 |
-| 样式守卫 | 各泳道自查 | `pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain task` | R1–R6 无新增违规 |
-| L2 | Lead | `pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest` | 全量单测 + CJK 门禁 |
-| L4 | **用户** | composeUi 壳真机点一遍 | 真能用 |
+| L0 | Lead | `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/task"` | ✅ **OK (30 tests)** |
+| L0 | Lead | `pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/shell"` | ✅ **OK (56 tests)** |
+| 咬合探针 | Lead | 标题初值改回空串 / 底栏改回死页签名 | ✅ 分别红 2 例 / 红 1 例，还原后全绿（`git diff` 干净） |
+| L1 | Lead | `pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` | ⚠️ **未绿**：错误全部落在**其他会话在途文件**（`AppearanceEditorHost.kt` 等 5 个），**任务族文件零错误**；并发共享工作区的已知情况 |
+| 样式守卫 | W1/W2/W3 自查 + Lead 复核 | `pwsh -NoProfile -File scripts/compose-style-lint.ps1 -Domain task` | ✅ **0 处** |
+| CJK 门禁 | Lead | 按 `CjkLiteralGateTest` 同规则复算 4 个渲染文件 | ✅ **0 条**（基线本就为 0） |
+| L2 | — | `:app:testDevDebugUnitTest` | ⛔ 未跑：L1 未绿时 L2 必红（同一编译前置），且单次占 2GB/全局互斥 |
+| L4 真机 | **用户** | composeUi / dev 壳逐页点一遍 | ⛔ **未做**（agent 不碰设备） |
 
-**禁令**：Agent 不跑 `flutter build` / `assemble*` / `adb install`；不碰用户设备；
-渲染层改动**不要**各自单跑 L1（全局互斥 + 2GB/次，攒到最后一次）。
+**提交**：`b8eb9533`（主体，10 files / +1308 −566）+ `21b29038`（复核修复，3 files / +56 −11）。
+
+**禁令**（本轮遵守）：Agent 未跑 `flutter build` / `assemble*` / `adb install`；未碰用户设备；
+渲染层未各自单跑 L1（攒到全 writer 停笔后由 Lead 跑，全轮共 3 次）。
 
 ---
 
