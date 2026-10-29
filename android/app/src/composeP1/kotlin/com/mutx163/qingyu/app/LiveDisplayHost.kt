@@ -94,8 +94,13 @@ fun LiveDisplayHost(
         store.saveDisplay(latestState, forDuringEnd)
     }
     // 离开页面补写：防抖窗口内退出时那一份不能丢（Dart `dispose` 同口径）。
+    // `version == 0` = 用户什么都没改 ⇒ **一个字节都不写**：
+    // 无脑补写会把「课中/下课档在跟随时派生出来的那 22 个键」也落盘，
+    // 存档里凭空多出一批用户从没设过的字段，日后排查配置问题时是纯噪音。
     DisposableEffect(store, forDuringEnd) {
-        onDispose { store.saveDisplay(latestState, forDuringEnd) }
+        onDispose {
+            if (version > 0) store.saveDisplay(latestState, forDuringEnd)
+        }
     }
 
     val pickLauncher = rememberLauncherForActivityResult(
@@ -192,8 +197,9 @@ fun LiveReminderTimingHost(onBack: () -> Unit) {
         delay(SAVE_DEBOUNCE_MILLIS)
         store.saveReminderTiming(latestState)
     }
+    // 没改过就不写（理由同显示设置宿主）。
     DisposableEffect(store) {
-        onDispose { store.saveReminderTiming(latestState) }
+        onDispose { if (version > 0) store.saveReminderTiming(latestState) }
     }
 
     LiveReminderTimingPage(
