@@ -197,6 +197,44 @@ object TimeSchemeManagementStrings {
         TimeSchemeManagementText("timeRangeValidationNoCrossDay", "结束时间必须晚于开始时间")
 
     /**
+     * 复制出来的新名字模板。
+     *
+     * 借的是 ARB 里已有的同形键（`themeDuplicateCopyName` = `{name} 副本`）。理由与
+     * [nameRequired] 相同：Dart 侧这个名字本身也是**硬编码字面量**
+     * （`timetable_time_scheme_service.dart:224` 的 `'${source.name} 副本'`），
+     * 借一条已有键既能让对拍覆盖它，又不新造一个字。
+     */
+    val copiedSchemeNameTemplate = TimeSchemeManagementText("themeDuplicateCopyName", "{name} 副本")
+
+    // ── 快捷生成弹层（TimeSchemeQuickGenerateSheet，契约变更 4） ──
+    val quickGenerateTimeSchemeTitle = TimeSchemeManagementText("quickGenerateTimeSchemeTitle", "快捷生成课表时间")
+    val morningSectionCountLabel = TimeSchemeManagementText("morningSectionCountLabel", "上午几节")
+    val morningFirstSectionTimeLabel = TimeSchemeManagementText("morningFirstSectionTimeLabel", "早上第一节时间")
+    val afternoonSectionCountLabel = TimeSchemeManagementText("afternoonSectionCountLabel", "下午几节")
+    val afternoonFirstSectionTimeLabel = TimeSchemeManagementText("afternoonFirstSectionTimeLabel", "下午第一节时间")
+    val eveningSectionCountLabel = TimeSchemeManagementText("eveningSectionCountLabel", "晚上几节")
+    val eveningFirstSectionTimeLabel = TimeSchemeManagementText("eveningFirstSectionTimeLabel", "晚上第一节时间")
+    val classDurationMinutesLabel = TimeSchemeManagementText("classDurationMinutesLabel", "单节课时长 分钟")
+    val smallBreakDurationMinutesLabel = TimeSchemeManagementText("smallBreakDurationMinutesLabel", "小课间时长 分钟")
+    val largeBreakRulesTitle = TimeSchemeManagementText("largeBreakRulesTitle", "大课间规则")
+    val noLargeBreakRulesHint =
+        TimeSchemeManagementText("noLargeBreakRulesHint", "未设置大课间规则，将全部使用小课间时长")
+    val addBreakRuleAction = TimeSchemeManagementText("addBreakRuleAction", "新增大课间规则")
+    val afterSectionLabel = TimeSchemeManagementText("afterSectionLabel", "第几节后")
+    val breakDurationMinutesLabel = TimeSchemeManagementText("breakDurationMinutesLabel", "休息时长 分钟")
+    val deleteRuleTooltip = TimeSchemeManagementText("deleteRuleTooltip", "删除规则")
+    val generateAction = TimeSchemeManagementText("generateAction", "生成")
+    val fillNumbersValidationMessage =
+        TimeSchemeManagementText("fillNumbersValidationMessage", "请把节数和时长填写为数字")
+    val breakOverrideInvalidMessage = TimeSchemeManagementText(
+        "breakOverrideInvalidMessage",
+        "大课间规则要改：第几节后填 1 以上的数字，时长填 0 以上的数字",
+    )
+
+    /** 时间选择器「确定」（与 [cancelAction] 一对；快捷生成里时/分滚轮页要用）。 */
+    val confirmAction = TimeSchemeManagementText("confirmAction", "确认")
+
+    /**
      * 名称必填提示。
      *
      * 借的是 ARB 里已有的通用句（键 `scheduleDateRuleErrorNameRequired`），
@@ -301,6 +339,26 @@ object TimeSchemeManagementStrings {
             selectStartTimeTitle,
             selectEndTimeTitle,
             timeRangeValidationNoCrossDay,
+            copiedSchemeNameTemplate,
+            quickGenerateTimeSchemeTitle,
+            morningSectionCountLabel,
+            morningFirstSectionTimeLabel,
+            afternoonSectionCountLabel,
+            afternoonFirstSectionTimeLabel,
+            eveningSectionCountLabel,
+            eveningFirstSectionTimeLabel,
+            classDurationMinutesLabel,
+            smallBreakDurationMinutesLabel,
+            largeBreakRulesTitle,
+            noLargeBreakRulesHint,
+            addBreakRuleAction,
+            afterSectionLabel,
+            breakDurationMinutesLabel,
+            deleteRuleTooltip,
+            generateAction,
+            fillNumbersValidationMessage,
+            breakOverrideInvalidMessage,
+            confirmAction,
             nameRequired,
         )
     }

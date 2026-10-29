@@ -920,6 +920,25 @@ WebView 的接线被 `WarehouseWebLoginPage.kt`（别人未提交）挡着，Web
 **被藏住的 Phase 2 缺口**：`core/TimetableSettings.kt` 只是**四键子集**，而设置族 20 页需要几十个字段——
 在完整模型到位前设置族根本没法接线。这就是为什么先补数据模型。
 
+**第三条竖切（时间模板族 `d3.timeSchemes` + `d3.timeSchemeEditor`）—— 已打通（2026-10-29）**
+
+用户口径「时间模板页面审核一下重构质量，功能有没有复刻完」。审核结论：**模型层搬得细，页面在壳里是死的**
+（空模型 + 7 个空回调），且**编辑节次整屏不存在**。审核报告与修复结果见
+[时间模板页审核](2026-10-29-compose-time-scheme-audit.md)（29 条差异逐项销项）。
+
+| 层 | 落点 | 规模 |
+|---|---|---|
+| 仓储写入口 | `main/.../app/TimetableRepository.kt`（新建/改名/复制/改节次/应用/删除六入口） | +284 |
+| 地点分组数据通路 | `main/.../app/TimetableStore.kt`（`location_time_groups` 读写） | +41 |
+| 列表模型 / 编辑器状态机 / 占用索引 / 服务消息 | `main/.../pages/time_scheme/` 四件 | 726 + 489 + 119 + 180 |
+| 列表页渲染 / 六个弹层 | `composeP1/.../pages/time_scheme/` | 402 + 603 |
+| 编辑节次页 / 快捷生成弹层 | `composeP1/.../pages/time_scheme/` | 384 + 649 |
+| 宿主（真数据 + 真动作 + 弹层状态机） | `composeP1/.../app/TimeSchemeHost.kt` | 626 |
+| 壳路由 | `main/.../pages/ShellWiring.kt`（`pendingTimeSchemeEditId` + `/settings/time-schemes/editor`）、`ShellPageIndex.kt` | 小改 |
+
+L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。**真机未对照**。
+未接：分享（I3/C2 缺传输包与 `FileProvider`）、地点匹配页本身仍是演示数据（`P35-B2` 余量）。
+
 **能力缺口进展**
 
 | 能力 | 状态 | 提交 |

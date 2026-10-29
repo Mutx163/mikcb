@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.TimeScheme
@@ -22,6 +23,8 @@ import com.mutx163.qingyu.core.TimetableSettings
  * | `timetable_settings` | String(JSON) | 设置（本层只拥有时间/周次 4 键，见下） |
  * | `current_week` | int | 当前周次 |
  * | `time_schemes` | String(JSON) | 作息方案数组 |
+ * | `schedule_date_rules` | String(JSON) | 作息日期规则数组 |
+ * | `location_time_groups` | String(JSON) | 地点作息分组数组 |
  * | `teacher_records` / `location_records` | **List<String>** | 教师/地点历史（走 [FrozenValueCodec]） |
  *
  * `flutter.` 前缀由 [KeyValueStore] 的实现负责，本层永远只说**契约 key**。
@@ -266,6 +269,43 @@ class TimetableStore(
         store.putString(KEY_SCHEDULE_DATE_RULES, MiniJson.encode(rules.map { it.toJson() }))
     }
 
+    // ---------- location_time_groups ----------
+
+    /**
+     * 地点作息分组数组（数据契约 §2.1 `location_time_groups`，String(JSON) 数组；
+     * 键名与 Dart `storage_service.dart:25` 同名）。
+     *
+     * 逐条宽松解析：坏条目丢弃，不让一条坏分组炸掉整份；整份不是数组时
+     * 留档 + 删 key（与 [loadScheduleDateRules] 同口径，坏数据不静默吞）。
+     *
+     * 为什么这一层也要有它：删除/应用时间模板的拦截判据要用地点分组
+     * （绑定了该模板的分组会阻止删除），而 1.6 的快照字段就是从这里读的。
+     */
+    fun loadLocationTimeGroups(): List<LocationTimeGroup> {
+        val raw = store.getString(KEY_LOCATION_TIME_GROUPS)
+        if (raw.isNullOrEmpty()) return emptyList()
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*>) {
+            archiveCorrupt(KEY_LOCATION_TIME_GROUPS)
+            return emptyList()
+        }
+        val groups = mutableListOf<LocationTimeGroup>()
+        for (item in decoded) {
+            if (item !is Map<*, *>) continue
+            try {
+                @Suppress("UNCHECKED_CAST")
+                groups.add(LocationTimeGroup.fromJson(item as Map<String, Any?>))
+            } catch (_: Exception) {
+                // 单条坏分组丢弃（lenient 口径）。
+            }
+        }
+        return groups
+    }
+
+    fun saveLocationTimeGroups(groups: List<LocationTimeGroup>) {
+        store.putString(KEY_LOCATION_TIME_GROUPS, MiniJson.encode(groups.map { it.toJsonMap() }))
+    }
+
     // ---------- teacher_records / location_records（List<String>） ----------
 
     /**
@@ -325,6 +365,7 @@ class TimetableStore(
         const val KEY_CURRENT_WEEK = "current_week"
         const val KEY_TIME_SCHEMES = "time_schemes"
         const val KEY_SCHEDULE_DATE_RULES = "schedule_date_rules"
+        const val KEY_LOCATION_TIME_GROUPS = "location_time_groups"
         const val KEY_TEACHER_RECORDS = "teacher_records"
         const val KEY_LOCATION_RECORDS = "location_records"
 

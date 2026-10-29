@@ -212,6 +212,9 @@ object ShellPageCatalog {
             title = "作息与考试",
             pages = listOf(
                 page("P3-D3", "timeSchemes", "作息管理", ShellPageDataKind.DEMO),
+                // 2026-10-29（P35-TS）：时间模板的「编辑节次」子页。DIRECT 表示有真渲染层且不需要外部数据：
+                // 它由 `d3.timeSchemes` 写入 `ShellWiring.pendingTimeSchemeEditId` 后推入（与 `b.appearanceEditor` 同构）。
+                page("P3-D3", "timeSchemeEditor", "编辑时间模板节次", ShellPageDataKind.DIRECT),
                 page("P3-D3", "locationMatch", "地点时间匹配", ShellPageDataKind.DEMO),
                 page("P3-D3", "addExam", "添加 / 编辑考试", ShellPageDataKind.DEMO),
                 page("P3-D3", "examList", "考试列表", ShellPageDataKind.DEMO),

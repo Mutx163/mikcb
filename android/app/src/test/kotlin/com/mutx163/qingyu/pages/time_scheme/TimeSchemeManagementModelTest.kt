@@ -103,17 +103,18 @@ class TimeSchemeManagementModelTest {
     // ────────────────────────── 菜单 ──────────────────────────
 
     @Test
-    fun `非当前模板的菜单含应用到当前课表且顺序固定`() {
+    fun `非当前模板的菜单含应用到当前课表且顺序与 Dart 逐项一致`() {
         val model = TimeSchemeManagementModel(
             schemes = listOf(scheme("s1", "夏季")),
+            usage = TimeSchemeUsageIndex(directProfiles = mapOf("s1" to listOf(profile("p1", "三年级")))),
             activeSchemeId = "other",
         )
         val menu = model.menu("s1")
         assertEquals(
             listOf(
+                TimeSchemeAction.VIEW_USAGE,
                 TimeSchemeAction.APPLY_TO_CURRENT,
                 TimeSchemeAction.EDIT_SECTIONS,
-                TimeSchemeAction.VIEW_USAGE,
                 TimeSchemeAction.RENAME,
                 TimeSchemeAction.DUPLICATE,
                 TimeSchemeAction.SHARE,
@@ -121,16 +122,49 @@ class TimeSchemeManagementModelTest {
             ),
             menu.map { it.action },
         )
-        assertEquals("应用到当前课表", menu.first().label)
+        assertEquals("查看使用情况", menu.first().label)
+        assertEquals("应用到当前课表", menu[1].label)
         assertEquals("删除", menu.last().label)
     }
 
     @Test
+    fun `没人用时不摆查看使用情况`() {
+        val model = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季")))
+        assertTrue(model.isUnused("s1"))
+        assertEquals(
+            listOf(
+                TimeSchemeAction.APPLY_TO_CURRENT,
+                TimeSchemeAction.EDIT_SECTIONS,
+                TimeSchemeAction.RENAME,
+                TimeSchemeAction.DUPLICATE,
+                TimeSchemeAction.SHARE,
+                TimeSchemeAction.DELETE,
+            ),
+            model.menu("s1").map { it.action },
+        )
+    }
+
+    @Test
     fun `当前使用中的模板不再提供应用到当前课表`() {
-        val model = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季")), activeSchemeId = "s1")
+        val model = TimeSchemeManagementModel(
+            schemes = listOf(scheme("s1", "夏季")),
+            usage = TimeSchemeUsageIndex(followMainCourses = mapOf("s1" to listOf(course("高数")))),
+            activeSchemeId = "s1",
+        )
         val actions = model.menu("s1").map { it.action }
         assertFalse(actions.contains(TimeSchemeAction.APPLY_TO_CURRENT))
-        assertEquals(6, actions.size)
+        assertFalse(model.isUnused("s1"))
+        assertEquals(
+            listOf(
+                TimeSchemeAction.VIEW_USAGE,
+                TimeSchemeAction.EDIT_SECTIONS,
+                TimeSchemeAction.RENAME,
+                TimeSchemeAction.DUPLICATE,
+                TimeSchemeAction.SHARE,
+                TimeSchemeAction.DELETE,
+            ),
+            actions,
+        )
     }
 
     // ────────────────────────── 新建 / 重命名 / 复制 ──────────────────────────
@@ -163,12 +197,14 @@ class TimeSchemeManagementModelTest {
     }
 
     @Test
-    fun `复制名字按数字后缀递增直到不冲突`() {
+    fun `复制名字用 Dart 的副本后缀且重名才退化成数字`() {
         val model = TimeSchemeManagementModel(
-            schemes = listOf(scheme("s1", "夏季"), scheme("s2", "夏季 2"), scheme("s3", "夏季 3")),
+            schemes = listOf(scheme("s1", "夏季"), scheme("s2", "夏季 副本"), scheme("s3", "夏季 副本 2")),
         )
-        assertEquals("夏季 4", model.copyName("夏季"))
-        assertEquals("冬季", model.copyName("冬季"))
+        // Dart 的默认复制名是 '<原名> 副本'，重名才加数字（Dart 侧不去重，
+        // 本侧保留去重是为了列表里能分清两套同名模板）。
+        assertEquals("夏季 副本 3", model.copyName("夏季"))
+        assertEquals("冬季 副本", model.copyName("冬季"))
         assertEquals("已复制时间模板", model.copiedMessage)
     }
 
@@ -195,7 +231,8 @@ class TimeSchemeManagementModelTest {
         assertEquals("", check.blockerIntro)
         assertEquals("确定删除作息 夏季？删除后无法恢复", check.message)
         assertEquals("删除", check.confirmLabel)
-        assertEquals("关闭", check.cancelLabel)
+        // 两个删除弹层的取消按钮都是「取消」（Dart :683/:793）；「关闭」只属于使用情况弹层。
+        assertEquals("取消", check.cancelLabel)
     }
 
     @Test
@@ -233,8 +270,8 @@ class TimeSchemeManagementModelTest {
         val check = model.deleteCheck("s1")!!
         assertFalse(check.canDelete)
         assertEquals("还有下面的地方在用这套模板，解除后才能删除：", check.blockerIntro)
-        // 被占用时唯一可点的按钮是「关闭」，不出现「删除」以外的第二个危险动作。
-        assertEquals("关闭", check.cancelLabel)
+        // 被占用时唯一可点的按钮是「取消」，不出现「删除」以外的第二个危险动作。
+        assertEquals("取消", check.cancelLabel)
     }
 
     // ────────────────────────── 使用情况 ──────────────────────────
@@ -299,6 +336,57 @@ class TimeSchemeManagementModelTest {
         assertEquals("当前没有课程把它作为副时间模板", view.overrideEmpty)
     }
 
+    // ────────────────────────── 两个入口行的行尾 ──────────────────────────
+
+    @Test
+    fun `地点入口行尾等于分组条数且零条时不显示`() {
+        assertEquals(null, TimeSchemeManagementModel().locationEntryDetails)
+        assertEquals(
+            "3",
+            TimeSchemeManagementModel(locationGroupCount = 3).locationEntryDetails,
+        )
+    }
+
+    @Test
+    fun `日期规则行尾在今天是区间内时换成今天在区间内`() {
+        assertEquals(null, TimeSchemeManagementModel().dateRuleEntryDetails)
+        assertEquals("2", TimeSchemeManagementModel(dateRuleCount = 2).dateRuleEntryDetails)
+        assertEquals(
+            "今天在区间内",
+            TimeSchemeManagementModel(dateRuleCount = 2, hasActiveDateRule = true).dateRuleEntryDetails,
+        )
+        // 没有规则时「今天在区间内」不该凭空出现（hasActiveDateRule 与条数矛盾时的兜底）。
+        assertEquals(null, TimeSchemeManagementModel(hasActiveDateRule = true).dateRuleEntryDetails)
+    }
+
+    // ────────────────────────── 行上的首节与「没有节次」 ──────────────────────────
+
+    @Test
+    fun `首节起止与没有节次两种渲染分支`() {
+        val normal = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季")))
+        assertEquals("08:00-08:45", normal.row("s1")!!.firstSectionText)
+        assertFalse(normal.row("s1")!!.hasNoSections)
+
+        val empty = TimeSchemeManagementModel(schemes = listOf(scheme("s2", "空模板", emptyList())))
+        assertEquals(null, empty.row("s2")!!.firstSectionText)
+        assertTrue(empty.row("s2")!!.hasNoSections)
+    }
+
+    // ────────────────────────── 使用情况：日期规则可选段 ──────────────────────────
+
+    @Test
+    fun `使用情况页带日期规则可选段`() {
+        val usage = TimeSchemeUsageIndex(dateRules = mapOf("s1" to listOf(TimeSchemeNameRef("d1", "期中周"))))
+        val view = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季")), usage = usage).usageView("s1")!!
+        assertEquals("日期作息规则", view.dateRuleTitle)
+        assertEquals("需先改绑到别的模板才能删除", view.dateRuleSubtitle)
+        assertEquals(listOf("期中周"), view.dateRuleLines.map { it.title })
+
+        // 没有日期规则时是空段（渲染层据此不画这一段）。
+        val emptyView = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季"))).usageView("s1")!!
+        assertTrue(emptyView.dateRuleLines.isEmpty())
+    }
+
     // ────────────────────────── 分享 ──────────────────────────
 
     @Test
@@ -306,6 +394,7 @@ class TimeSchemeManagementModelTest {
         val model = TimeSchemeManagementModel(schemes = listOf(scheme("s1", "夏季")))
         val sheet = model.shareSheet("s1")!!
         assertEquals("s1", sheet.schemeId)
+        assertEquals("夏季", sheet.schemeName)
         assertEquals("分享时间模板", sheet.title)
         assertEquals("二维码分享", sheet.viaQrLabel)
         assertEquals("系统分享文件", sheet.viaSystemLabel)

@@ -3,17 +3,22 @@ package com.mutx163.qingyu.app
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.core.ServiceMessage
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
+import com.mutx163.qingyu.core.validateSectionTimes
 import com.mutx163.qingyu.course.TimetableCoursePort
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.sync.isLiveTestingFixtureCourseId
 import java.time.LocalDateTime
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -36,6 +41,8 @@ data class TimetableSnapshot(
     val semesterStartEpochDay: Long? = null,
     val timeSchemes: List<TimeScheme> = emptyList(),
     val activeTimeSchemeId: String? = null,
+    /** 地点作息分组（顶层 key `location_time_groups`，不属于单个档案）。 */
+    val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
 )
 
 /**
@@ -81,6 +88,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     private var loadedCurrentWeek: Int? = null
     private var loadedTimeSchemes: List<TimeScheme> = emptyList()
     private var loadedScheduleDateRules: List<ScheduleDateRule> = emptyList()
+    private var loadedLocationTimeGroups: List<LocationTimeGroup> = emptyList()
 
     /** Dart 侧是 provider 的一个内存字段（`_currentLiveCourseId`），不落盘。 */
     private var currentLiveCourseId: String? = null
@@ -106,6 +114,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedCurrentWeek = store.loadCurrentWeek()
         loadedTimeSchemes = store.loadTimeSchemes().schemes
         loadedScheduleDateRules = store.loadScheduleDateRules()
+        loadedLocationTimeGroups = store.loadLocationTimeGroups()
     }
 
     /** 盘上档案的解析结果（含「只是条目级损坏」信号，供宿主决定是否提示用户）。 */
@@ -125,6 +134,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
             semesterStartEpochDay = loadedSettings.semesterStartDate?.toLocalDate()?.toEpochDay(),
             timeSchemes = loadedTimeSchemes,
             activeTimeSchemeId = loadedSettings.activeTimeSchemeId,
+            locationTimeGroups = loadedLocationTimeGroups,
         )
 
     /** 订阅变更；返回的 [AutoCloseable] 用于退订。**订阅时不立刻回调**（见类注释）。 */
@@ -298,6 +308,280 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     fun updateScheduleDateRules(rules: List<ScheduleDateRule>) {
         store.saveScheduleDateRules(rules)
         loadedScheduleDateRules = rules
+        notifyStateChanged()
+    }
+
+    // ---------- 时间模板（作息）写入口 ----------
+
+    /**
+     * 时间模板族的六个写入口，语义逐条对 Dart `TimetableTimeSchemeService`
+     * （`lib/services/timetable_time_scheme_service.dart`）。
+     *
+     * ## 回滚语义为什么不在这里手写
+     *
+     * Dart 侧是「先改内存、后写盘」，所以每个入口都要手写快照/补偿。本层的做法是
+     * **先落盘、成功才改内存**，落盘抛错时内存与监听者都不动 —— 回滚语义天然成立。
+     * 唯一需要显式补偿的是 [updateTimeScheme]：它要写两个 key（作息表 + 档案），
+     * 第二笔失败时第一笔已落盘，必须把旧作息表写回去，否则「盘上新节次、内存旧节次」，
+     * 冷启动后用户被告知「没改成」的节次会自己生效（Dart 同处注释记的正是这个事故）。
+     *
+     * ## 成功才通知
+     *
+     * 每个入口都在最后一步才 [notifyStateChanged]；校验失败、被引用拒绝、找不到目标
+     * 都**不通知**，界面不会闪一下再退回。
+     */
+
+    /**
+     * 新建一套时间模板。
+     *
+     * 节次缺省取「当前生效模板的节次」，再退到全局设置的节次（Dart `create` 同口径：
+     * `sections ?? activeTimeScheme?.sections ?? settings.sections`）。
+     * [applyToActiveProfile] 为真时顺手把它套到当前课表（等于随后调 [applyTimeScheme]）。
+     */
+    fun createTimeScheme(
+        name: String,
+        sections: List<SectionTime>? = null,
+        applyToActiveProfile: Boolean = false,
+    ): TimeScheme {
+        val now = LocalDateTime.now()
+        val scheme = TimeScheme(
+            id = UUID.randomUUID().toString(),
+            name = name.trim(),
+            sections = (sections ?: activeTimeScheme()?.sections ?: loadedSettings.sections).toList(),
+            createdAt = now,
+            updatedAt = now,
+        )
+        val next = loadedTimeSchemes + scheme
+        store.saveTimeSchemes(next)
+        loadedTimeSchemes = next
+        if (applyToActiveProfile) {
+            applyTimeScheme(scheme.id)
+        } else {
+            notifyStateChanged()
+        }
+        return scheme
+    }
+
+    /** 改名；找不到返回 null（不落盘、不通知）。 */
+    fun renameTimeScheme(schemeId: String, name: String): TimeScheme? {
+        val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
+        if (index < 0) return null
+        val updated = loadedTimeSchemes[index].copy(name = name.trim(), updatedAt = LocalDateTime.now())
+        val next = loadedTimeSchemes.toMutableList().also { it[index] = updated }
+        store.saveTimeSchemes(next)
+        loadedTimeSchemes = next
+        notifyStateChanged()
+        return updated
+    }
+
+    /**
+     * 复制一套模板；源不存在返回 null。
+     *
+     * 默认名是 Dart 的硬编码字面量 `'${source.name} 副本'`（
+     * `timetable_time_scheme_service.dart:224`）。**这不是新造的文案**：它与 Dart
+     * 逐字一致，宿主通常直接传入列表页算好的 `copyName`（那条走 ARB 同形键）。
+     */
+    fun duplicateTimeScheme(schemeId: String, name: String? = null): TimeScheme? {
+        val source = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return null
+        val now = LocalDateTime.now()
+        val duplicated = source.copy(
+            id = UUID.randomUUID().toString(),
+            name = (name ?: "${source.name} 副本").trim(),
+            sections = source.sections.toList(),
+            createdAt = now,
+            updatedAt = now,
+        )
+        val next = loadedTimeSchemes + duplicated
+        store.saveTimeSchemes(next)
+        loadedTimeSchemes = next
+        notifyStateChanged()
+        return duplicated
+    }
+
+    /**
+     * 改一套模板的名称与节次表；成功返回 null，失败返回 service message 码。
+     *
+     * 两道校验顺序与 Dart 一致：
+     * 1. [validateSectionTimes]：节次表本身是否合法（含跨天、倒序、格式）；
+     * 2. 节次数不能小于**已用最大节次**：课程按节次下标取钟点，收窄会让课程无处取时间。
+     *    能定位到具体是哪门课时给带明细的那条（`section_count_below_usage_detail`）。
+     */
+    fun updateTimeScheme(schemeId: String, name: String, sections: List<SectionTime>): String? {
+        validateSectionTimes(sections)?.let { return it }
+
+        val requiredMaxSection = TimeSchemeLogic.maxUsedSection(
+            profiles = loadedProfiles,
+            schemeId = schemeId,
+            profilesOverride = null,
+            schemes = loadedTimeSchemes,
+            locationTimeGroups = loadedLocationTimeGroups,
+        )
+        val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
+        if (index >= 0 && requiredMaxSection > 0 && sections.size < requiredMaxSection) {
+            val usage = TimeSchemeLogic.maxSectionUsage(
+                profiles = loadedProfiles,
+                schemeId = schemeId,
+                profilesOverride = null,
+                schemes = loadedTimeSchemes,
+                locationTimeGroups = loadedLocationTimeGroups,
+            )
+            if (usage != null) {
+                return ServiceMessage.encode(
+                    "section_count_below_usage_detail",
+                    linkedMapOf(
+                        "requiredMaxSection" to requiredMaxSection,
+                        "profileName" to usage.profileName,
+                        "courseName" to usage.course.name,
+                        "dayOfWeek" to usage.course.dayOfWeek,
+                        "startSection" to usage.course.startSection,
+                        "endSection" to usage.course.endSection,
+                        "usageType" to if (usage.usesOverride) "usage_type_override" else "usage_type_profile",
+                    ),
+                )
+            }
+            return ServiceMessage.encode(
+                "section_count_below_usage",
+                linkedMapOf("requiredMaxSection" to requiredMaxSection),
+            )
+        }
+        if (index < 0) return "time_scheme_not_found"
+
+        val updated = loadedTimeSchemes[index].copy(
+            name = name.trim(),
+            sections = sections.toList(),
+            updatedAt = LocalDateTime.now(),
+        )
+        val nextSchemes = loadedTimeSchemes.toMutableList().also { it[index] = updated }
+
+        // 档案里那份设置只是镜像：以该模板为主模板的档要把节次镜像同步过去，
+        // 并按新节次重排课程钟点（Dart update 里的 nextProfiles 循环）。
+        val nextProfiles = loadedProfiles.map { profile ->
+            val normalized = if (profile.settings.activeTimeSchemeId == schemeId) {
+                profile.settings.copy(activeTimeSchemeId = schemeId, sections = updated.sections)
+            } else {
+                profile.settings
+            }
+            profile.copy(
+                courses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+                    source = profile.courses,
+                    schemes = nextSchemes,
+                    settings = normalized,
+                    locationTimeGroups = loadedLocationTimeGroups,
+                    scheduleDateRules = loadedScheduleDateRules,
+                ),
+                settings = normalized,
+            )
+        }
+        val nextSettings = if (loadedSettings.activeTimeSchemeId == schemeId) {
+            loadedSettings.copy(activeTimeSchemeId = schemeId, sections = updated.sections)
+        } else {
+            loadedSettings
+        }
+
+        // 第一笔：作息表。
+        store.saveTimeSchemes(nextSchemes)
+        try {
+            // 第二笔：档案（含各档镜像设置）+ 全局设置。
+            store.saveProfiles(nextProfiles)
+            if (nextSettings != loadedSettings) store.saveSettings(nextSettings)
+        } catch (error: Throwable) {
+            // 补偿：第一笔已经成功落盘，把旧作息表写回去。补偿失败不遮住原始错误。
+            runCatching { store.saveTimeSchemes(loadedTimeSchemes) }
+            throw error
+        }
+
+        loadedTimeSchemes = nextSchemes
+        loadedProfiles = nextProfiles
+        loadedSettings = nextSettings
+        currentLiveCourseId = null
+        notifyStateChanged()
+        return null
+    }
+
+    /**
+     * 把某套模板套到当前课表；成功返回 null，失败返回 service message 码。
+     *
+     * 先查「现有课程最靠后的那一节」：课程保留自己的节次下标，目标模板必须覆盖它们，
+     * 否则那些课会取不到钟点（`section_count_below_usage`）。
+     */
+    fun applyTimeScheme(schemeId: String): String? {
+        val scheme = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return "time_scheme_not_found"
+        val requiredMaxSection = activeProfile.courses.maxOfOrNull { it.endSection } ?: 0
+        if (requiredMaxSection > scheme.sections.size) {
+            return ServiceMessage.encode(
+                "section_count_below_usage",
+                linkedMapOf("requiredMaxSection" to requiredMaxSection),
+            )
+        }
+        val nextSettings = loadedSettings.copy(
+            activeTimeSchemeId = scheme.id,
+            sections = scheme.sections,
+        )
+        val nextCourses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+            source = activeProfile.courses,
+            schemes = loadedTimeSchemes,
+            settings = nextSettings,
+            locationTimeGroups = loadedLocationTimeGroups,
+            scheduleDateRules = loadedScheduleDateRules,
+        )
+        persistActiveProfileContent(courses = nextCourses, settings = nextSettings)
+        return null
+    }
+
+    /**
+     * 删一套模板：**被任何档案 / 课程 / 地点分组 / 日期规则引用时直接拒绝**
+     * （返回 false、不落盘、不通知）；成功返回 true。
+     *
+     * 判据走 [TimeSchemeLogic.isSchemeInUse] 这唯一一份口径，不在本层另写一套。
+     */
+    fun deleteTimeScheme(schemeId: String): Boolean {
+        if (TimeSchemeLogic.isSchemeInUse(
+                profiles = loadedProfiles,
+                schemeId = schemeId,
+                locationTimeGroups = loadedLocationTimeGroups,
+                schemes = loadedTimeSchemes,
+                scheduleDateRules = loadedScheduleDateRules,
+            )
+        ) {
+            return false
+        }
+        val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
+        if (index < 0) return false
+        val next = loadedTimeSchemes.toMutableList().also { it.removeAt(index) }
+        store.saveTimeSchemes(next)
+        loadedTimeSchemes = next
+        notifyStateChanged()
+        return true
+    }
+
+    /** 当前课表正在使用的那套模板（[TimetableSettings.activeTimeSchemeId] 指向的）。 */
+    private fun activeTimeScheme(): TimeScheme? =
+        loadedTimeSchemes.firstOrNull { it.id == loadedSettings.activeTimeSchemeId }
+
+    /**
+     * 落盘「活动档案的内容 + 全局设置」：**先写、成功才改内存并通知**。
+     *
+     * 与 [persistActiveProfileState] 的区别只在于「课与设置由调用方给」——
+     * 那个方法是从当前内存状态推出来的，套用模板这条路径必须用**算好的新值**。
+     */
+    private fun persistActiveProfileContent(courses: List<Course>, settings: TimetableSettings) {
+        val week = resolvedCurrentWeek()
+        val profile = activeProfile.copy(
+            courses = courses,
+            settings = settings,
+            currentWeek = week.toLong(),
+            lastUsedAt = LocalDateTime.now(),
+        )
+        val nextProfiles = upsertProfile(profile)
+        store.saveProfiles(nextProfiles)
+        store.saveActiveProfileId(profile.id)
+        store.saveSettings(settings)
+        store.saveCurrentWeek(week)
+        loadedProfiles = nextProfiles
+        loadedActiveProfileId = profile.id
+        loadedSettings = settings
+        loadedCurrentWeek = week
+        currentLiveCourseId = null
         notifyStateChanged()
     }
 

@@ -32,6 +32,12 @@ class TimeSchemeManagementModel(
     val usage: TimeSchemeUsageIndex = TimeSchemeUsageIndex.EMPTY,
     /** 当前课表正在使用的模板 ID；null = 还没有课表在用。 */
     val activeSchemeId: String? = null,
+    /** 「地点作息匹配」入口行行尾；等于地点分组条数，0 时不显示（Dart `:385-390`）。 */
+    val locationGroupCount: Int = 0,
+    /** 「日期作息规则」入口行行尾（Dart `:398-408`）。 */
+    val dateRuleCount: Int = 0,
+    /** 今天是否落在某条日期规则区间内（为真时行尾换成 [TimeSchemeManagementStrings.scheduleDateRuleActiveToday]）。 */
+    val hasActiveDateRule: Boolean = false,
 ) {
 
     val isEmpty: Boolean get() = schemes.isEmpty()
@@ -55,6 +61,27 @@ class TimeSchemeManagementModel(
             TimeSchemeManagementStrings.timeSchemeEntryTitle.zh
         }
 
+    /**
+     * 「地点作息匹配」入口行的行尾；null = 不显示行尾（Dart `details: 条数 > 0 ? 条数 : null`）。
+     *
+     * 行尾是**条数**而不是「已启用条数」：这条入口就是把用户送到地点规则页，
+     * 停用的规则也在那一页里，藏掉会让「我明明有 3 条，这里怎么没有」变成疑问。
+     */
+    val locationEntryDetails: String? get() = locationGroupCount.takeIf { it > 0 }?.toString()
+
+    /**
+     * 「日期作息规则」入口行的行尾（Dart `:398-408`）。
+     *
+     * 今天落在某条规则区间内时**换成**「今天在区间内」：那一刻用户最需要知道的是
+     * 「今天按哪套作息」，而不是规则总条数。没有规则时不显示行尾。
+     */
+    val dateRuleEntryDetails: String?
+        get() = when {
+            dateRuleCount <= 0 -> null
+            hasActiveDateRule -> TimeSchemeManagementStrings.scheduleDateRuleActiveToday.zh
+            else -> dateRuleCount.toString()
+        }
+
     val rows: List<TimeSchemeRow> get() = schemes.map { rowOf(it) }
 
     fun row(schemeId: String): TimeSchemeRow? = schemes.firstOrNull { it.id == schemeId }?.let { rowOf(it) }
@@ -66,6 +93,7 @@ class TimeSchemeManagementModel(
             usage.followMainCourses[scheme.id].orEmpty().size +
             usage.locationCourses[scheme.id].orEmpty().size
         val isActive = scheme.id == activeSchemeId
+        val firstSection = scheme.sections.firstOrNull()
         return TimeSchemeRow(
             scheme = scheme,
             isActive = isActive,
@@ -81,24 +109,45 @@ class TimeSchemeManagementModel(
                 "overrideCourses" to overrideCount.toString(),
             ),
             statusLabel = if (isActive) TimeSchemeManagementStrings.usingNow.zh else "",
+            // 首节起止与「一节都没有」是渲染层的两个不同分支：Dart 在没有任何节次时
+            // 画占位 `-`，而不是画一个空的时间段。
+            firstSectionText = if (firstSection == null || firstSection.displayText.isBlank()) {
+                null
+            } else {
+                firstSection.displayText
+            },
+            hasNoSections = scheme.sections.isEmpty(),
         )
     }
 
     // ────────────────────────── 操作菜单 ──────────────────────────
 
+    /** 这套模板有没有被任何课表 / 课程引用（Dart `_TimeSchemeUsageSummary.isUnused`）。 */
+    fun isUnused(schemeId: String): Boolean {
+        val profileCount = usage.directProfiles[schemeId].orEmpty().size
+        val courseCount = usage.courseReferences(schemeId).size
+        return profileCount == 0 && courseCount == 0
+    }
+
     /**
-     * 卡片右侧「更多操作」里的菜单项。
+     * 卡片右侧「更多操作」里的菜单项，顺序与 Dart `:306-345` **逐项一致**：
      *
-     * 「应用到当前课表」只对**非**当前使用中的模板出现：当前课表已经在用它了，
-     * 这一项点了也没有任何效果，摆在那里只会让人以为状态没生效。
+     * ```
+     * usage(仅 !isUnused) → apply(仅非当前) → edit → rename → duplicate → share → delete
+     * ```
+     *
+     * 两条守卫都有语义：
+     * - **没人用**时不出「查看使用情况」——点进去是一屏空段，纯噪音；
+     * - **当前课表已在用它**时不出「应用到当前课表」——点了没有任何效果，摆着只会
+     *   让人以为状态没生效。
      */
     fun menu(schemeId: String): List<TimeSchemeMenuItem> {
         if (schemes.none { it.id == schemeId }) return emptyList()
         val isActive = schemeId == activeSchemeId
         return buildList {
+            if (!isUnused(schemeId)) add(menuItem(TimeSchemeAction.VIEW_USAGE))
             if (!isActive) add(menuItem(TimeSchemeAction.APPLY_TO_CURRENT))
             add(menuItem(TimeSchemeAction.EDIT_SECTIONS))
-            add(menuItem(TimeSchemeAction.VIEW_USAGE))
             add(menuItem(TimeSchemeAction.RENAME))
             add(menuItem(TimeSchemeAction.DUPLICATE))
             add(menuItem(TimeSchemeAction.SHARE))
@@ -149,17 +198,25 @@ class TimeSchemeManagementModel(
         if (raw.isBlank()) TimeSchemeManagementStrings.nameRequired.zh else null
 
     /**
-     * 复制后的新名字。
+     * 复制出来的新名字（**改回 Dart 口径**：`'${source.name} 副本'`，
+     * `lib/services/timetable_time_scheme_service.dart:224`）。
      *
-     * ARB 里没有「副本」这类后缀键，所以这里只用数字区分：`A` → `A 2` → `A 3`。
-     * 用一个纯数字后缀而不是新造一个词，是为了不产生 ARB 里不存在的文案。
+     * 旧写法是 `A` → `A 2`（纯数字后缀），那是自创文案；这里改成与 Dart 字面量
+     * 完全一致的「副本」后缀。后缀本身不新造字：ARB 里已有同形键
+     * `themeDuplicateCopyName`（`{name} 副本`），借来用，见
+     * [TimeSchemeManagementStrings.copiedSchemeNameTemplate]。
+     *
+     * 重名才退化成数字：`A 副本` 已被占用 → `A 副本 2` → `A 副本 3`……
+     * （Dart 侧不做去重，允许同名；Kotlin 侧保留去重是既有行为，避免「复制两次得到
+     * 两个一模一样的名字」让用户在列表里分不清哪套是哪套。）
      */
     fun copyName(base: String): String {
         val taken = schemes.map { it.name }.toSet()
-        if (base !in taken) return base
+        val candidate = TimeSchemeManagementStrings.copiedSchemeNameTemplate.filled("name", base)
+        if (candidate !in taken) return candidate
         var index = 2
-        while ("$base $index" in taken) index++
-        return "$base $index"
+        while ("$candidate $index" in taken) index++
+        return "$candidate $index"
     }
 
     /** 复制成功后的轻提示。 */
@@ -196,7 +253,9 @@ class TimeSchemeManagementModel(
             blockers = blockers,
             canDelete = blockers.isEmpty() && !inUse,
             confirmLabel = TimeSchemeManagementStrings.deleteAction.zh,
-            cancelLabel = TimeSchemeManagementStrings.closeAction.zh,
+            // 两个删除弹层的取消按钮都是「取消」（Dart :683 与 :793）；「关闭」只属于
+            // 使用情况弹层（:1179）。原先这里恒给 closeAction，是把两个弹层的按钮串了。
+            cancelLabel = TimeSchemeManagementStrings.cancelAction.zh,
         )
     }
 
@@ -326,6 +385,11 @@ class TimeSchemeManagementModel(
             locationTitle = TimeSchemeManagementStrings.locationTimeMatchEntryTitle.zh,
             locationSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedLocationGroupsSubtitle.zh,
             locationLines = locationLines,
+            dateRuleTitle = TimeSchemeManagementStrings.scheduleDateRuleSectionTitle.zh,
+            dateRuleSubtitle = TimeSchemeManagementStrings.timeSchemeBlockedDateRulesSubtitle.zh,
+            dateRuleLines = usage.dateRules[schemeId].orEmpty().map {
+                TimeSchemeLine(title = it.name, summary = "")
+            },
             bottomSummary = bottomSummary,
             canDelete = blockList.isEmpty() && schemeId != activeSchemeId,
             blockers = blockList,
@@ -334,16 +398,8 @@ class TimeSchemeManagementModel(
 
     private fun line(course: TimeSchemeCourseRef, usageType: String): TimeSchemeLine {
         val weekday = TimeSchemeManagementStrings.weekdayShort(course.dayOfWeek)
-        val title = TimeSchemeManagementStrings.timeSchemeUsageReference.filled(
-            "profileName" to course.profileName,
-            "courseName" to course.courseName,
-            "weekday" to weekday,
-            "startSection" to course.startSection.toString(),
-            "endSection" to course.endSection.toString(),
-            "usageType" to usageType,
-        )
         return TimeSchemeLine(
-            title = title,
+            title = formatUsageReference(course, usageType),
             summary = TimeSchemeManagementStrings.weekdaySectionRange.filled(
                 "weekday" to weekday,
                 "startSection" to course.startSection.toString(),
@@ -359,6 +415,7 @@ class TimeSchemeManagementModel(
         val scheme = schemes.firstOrNull { it.id == schemeId } ?: return null
         return TimeSchemeShareSheet(
             schemeId = schemeId,
+            schemeName = scheme.name,
             title = TimeSchemeManagementStrings.shareTimeSchemeTitle.zh,
             viaQrLabel = TimeSchemeManagementStrings.shareTimeSchemeViaQr.zh,
             viaSystemLabel = TimeSchemeManagementStrings.shareTimeSchemeViaSystem.zh,
@@ -428,6 +485,22 @@ class TimeSchemeManagementModel(
     )
 }
 
+/**
+ * 一条课程引用的整句描述（Dart `_formatUsageReference`，`:1015-1030`）。
+ *
+ * 抽出成顶层函数是因为它有**两个**消费方：使用情况页的列表行与编辑器的引用预览
+ * （[TimeSchemeEditorModel.header]）。同一句话在两处各拼一遍，早晚出现两种格式。
+ */
+fun formatUsageReference(course: TimeSchemeCourseRef, usageType: String): String =
+    TimeSchemeManagementStrings.timeSchemeUsageReference.filled(
+        "profileName" to course.profileName,
+        "courseName" to course.courseName,
+        "weekday" to TimeSchemeManagementStrings.weekdayShort(course.dayOfWeek),
+        "startSection" to course.startSection.toString(),
+        "endSection" to course.endSection.toString(),
+        "usageType" to usageType,
+    )
+
 /** 列表卡片的一行所需的全部取值。 */
 data class TimeSchemeRow(
     val scheme: TimeScheme,
@@ -441,6 +514,10 @@ data class TimeSchemeRow(
     val summary: String,
     /** 「正在使用」标记；非当前模板为空串。 */
     val statusLabel: String,
+    /** 首节起止 `08:00-08:45`；null = 这套模板没有任何节次（Dart 渲染成占位 `-`）。 */
+    val firstSectionText: String? = null,
+    /** 这套模板是不是「一节都没有」，渲染成占位 `-`。 */
+    val hasNoSections: Boolean = false,
 ) {
     val title: String get() = scheme.name
 
@@ -528,6 +605,16 @@ data class TimeSchemeUsageView(
     val locationTitle: String,
     val locationSubtitle: String,
     val locationLines: List<TimeSchemeLine>,
+    /**
+     * 「日期作息规则」可选段：只有非空才渲染（与地点段同口径）。
+     *
+     * 这三项是**契约变更 1**（ts-list 提、Lead 裁定采纳）：日期规则同样会阻止删除，
+     * 用户在这页看不到它就会以为「没人用它、为什么删不掉」。三项都有默认值，
+     * 既有构造点不受影响。
+     */
+    val dateRuleTitle: String = "",
+    val dateRuleSubtitle: String = "",
+    val dateRuleLines: List<TimeSchemeLine> = emptyList(),
     /** 课程多于一条时的「… 等 N 节课程」汇总；否则空串。 */
     val bottomSummary: String,
     val canDelete: Boolean,
@@ -537,6 +624,12 @@ data class TimeSchemeUsageView(
 /** 分享面板取值。 */
 data class TimeSchemeShareSheet(
     val schemeId: String,
+    /**
+     * 被分享模板的名字（Dart 分享弹层正文那句，`:860-866`）。
+     *
+     * 有默认空串：既有构造点不受影响，渲染层按名字接即可。
+     */
+    val schemeName: String = "",
     val title: String,
     val viaQrLabel: String,
     val viaSystemLabel: String,
@@ -604,7 +697,29 @@ data class TimeSchemeUsageIndex(
     val locationCourses: Map<String, List<TimeSchemeCourseRef>> = emptyMap(),
     val locationGroups: Map<String, List<TimeSchemeNameRef>> = emptyMap(),
     val dateRules: Map<String, List<TimeSchemeNameRef>> = emptyMap(),
+    /**
+     * 课程级引用，按 Dart 的「档案 → 课程」遍历序（契约变更 5，附加字段）。
+     *
+     * 三张分类表（follow / override / location）各自有序、但**它们之间的先后关系丢了**；
+     * 编辑器头部的引用预览要显示「第一条」，用分类表拼出来的第一条与 Dart 显示的可能
+     * 不是同一门课。工厂按 True 的原序额外记一份，预览就走这里。默认空表 ⇒ 既有构造点
+     * 与只读分类表的调用方零影响。
+     */
+    val orderedCourseRefs: Map<String, List<TimeSchemeCourseRef>> = emptyMap(),
 ) {
+    /**
+     * 这套模板引用的**全部**课程，按 Dart 遍历序。
+     *
+     * 缺 [orderedCourseRefs] 时退化成「跟随主模板 + 副模板 + 地点匹配」的拼接序，
+     * 保证手工构造索引的调用方与单测仍拿到完整的课程集合。
+     */
+    fun courseReferences(schemeId: String): List<TimeSchemeCourseRef> {
+        orderedCourseRefs[schemeId]?.let { return it }
+        return followMainCourses[schemeId].orEmpty() +
+            overrideCourses[schemeId].orEmpty() +
+            locationCourses[schemeId].orEmpty()
+    }
+
     companion object {
         val EMPTY = TimeSchemeUsageIndex()
     }
