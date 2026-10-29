@@ -193,6 +193,17 @@
 
 ---
 
+## 六·附四、2026-10-29 上午：Java21 + miuix-nav 迁移已收口
+
+- **新交付基线 = HEAD `5666cc7b`**：某会话完成的 **Java21 升级 + 官方导航库 miuix-nav（NavDisplay 返回栈）+ 任务选择/编辑弹层**，
+  由 Lead 整包收口（16 文件：app/根 build.gradle、daemon JVM、CI 3 件、12 个 Kotlin）。
+- 证据：L1 `:app:compileComposeUiDebugKotlin --rerun-tasks`（真编、非缓存）→ **BUILD SUCCESSFUL 3m1s**；
+  L2 `:app:testProdDebugUnitTest` → **4320 例 / 0 失败**。
+- 同日工作区有会话在细化 build 配置（`app` 段 jvmTarget 由「靠根脚本覆盖的 17」显式改为 21，Java/Kotlin 一致）——未提交。
+- Dart `lib/**` 另一摊仍未纳入。
+
+---
+
 ## 附：与既有文档的关系
 
 - 本文件**不取代** [全景派工大表]：大表是"谁领哪个包"的看板，本文件是"当前工作区实测 + 收口顺序"的体检单。
