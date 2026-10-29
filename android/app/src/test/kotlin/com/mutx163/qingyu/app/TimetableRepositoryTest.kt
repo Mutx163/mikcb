@@ -591,10 +591,12 @@ class TimetableRepositoryTest {
 
         override fun getString(key: String): String? = delegate.getString(key)
         override fun getInt(key: String, default: Int): Int = delegate.getInt(key, default)
+        override fun getLong(key: String, default: Long): Long = delegate.getLong(key, default)
         override fun getBool(key: String, default: Boolean): Boolean = delegate.getBool(key, default)
         override fun getStringList(key: String): List<String>? = delegate.getStringList(key)
         override fun putString(key: String, value: String) = failWrite()
         override fun putInt(key: String, value: Int) = failWrite()
+        override fun putLong(key: String, value: Long) = failWrite()
         override fun putBool(key: String, value: Boolean) = failWrite()
         override fun putStringList(key: String, value: List<String>) = failWrite()
         override fun remove(key: String) = failWrite()

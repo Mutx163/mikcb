@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
@@ -29,10 +33,17 @@ import com.mutx163.qingyu.pages.task.TaskListPage
 import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TimetableHost
 import java.time.LocalDate
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
+import top.yukonga.miuix.kmp.nav.runtime.NavProgrammaticEasing
+import top.yukonga.miuix.kmp.nav.transition.NavMotion
+import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
+import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
+import top.yukonga.miuix.kmp.nav.transition.NavTransition
+import top.yukonga.miuix.kmp.nav.transition.NavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -162,6 +173,18 @@ private fun PagesShell() {
     // Phase 3.5 接线层：壳自己的存储 + 课表仓储。
     val wiring = rememberShellWiring()
 
+    // ── 两个「运行期偏好」：改了当场生效，不用重启（Dart 是同一个形态）───────────
+    // 1) 震动总开关：关掉时把 `LocalHapticFeedback` 换成空实现。
+    //    这样 miuix 组件自带的触感（滚轮、滚到尽头、按压反馈）自动跟着静音，
+    //    不用在几十个调用点各判一次开关（Dart 侧是全局门 + 各点直读）。
+    // 2) 页面转场速度：只缩放官方转场的**时长**，几何仍用 MiuixDefault（自研转场是禁区）。
+    val systemHaptics = LocalHapticFeedback.current
+    val shellHaptics: HapticFeedback =
+        if (wiring.enableHaptics) systemHaptics else NoopHapticFeedback
+    val pageTransition = remember(wiring.pageTransitionSpeed) {
+        NavTransitions.MiuixDefault.scaledToUserSpeed(wiring.pageTransitionSpeed)
+    }
+
     // 页面层用 miuix-nav 的返回栈（唯一合规做法，不自研转场）。栈底是 [ShellRoute.Dock]
     // （底部四槽主屏），打开一页 push 一层、返回 pop 一层；切槽 = 替换栈底那条路由。
     // 所有转场由 NavDisplay（NavTransitions.MiuixDefault + NavDisplayEffects.Default）负责，
@@ -215,6 +238,8 @@ private fun PagesShell() {
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { _ ->
+    // 震动总开关的落点：整棵页面树都挂在它下面（含玻璃坞与两个入口页）。
+    CompositionLocalProvider(LocalHapticFeedback provides shellHaptics) {
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -232,7 +257,8 @@ private fun PagesShell() {
                 NavDisplay(
                     backStack = backStack,
                     onBack = { popPage() },
-                    transition = NavTransitions.MiuixDefault,
+                    // 官方预设 + 按用户倍率缩放过的时长（见 [scaledToUserSpeed]）。
+                    transition = pageTransition,
                     effects = NavDisplayEffects.Default,
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -242,9 +268,12 @@ private fun PagesShell() {
                             ?: DockSlot.TIMETABLE
                         when (dockSlot) {
                             // Phase 3.5：课表槽位改用**真宿主**——真数据 + 真回调。
+                            // `weather` 与页面层 `c1.week` 共用 `ShellWiring` 里那一份实例
+                            // （弹层天气行要它；两个入口传同一份，才不会一处有天气一处没有）。
                             DockSlot.TIMETABLE -> TimetableWithCourseActions(
                                 wiring = wiring,
                                 onNavigate = { target -> pushPage(target) },
+                                weatherProvider = wiring.weather,
                             )
                             DockSlot.SCHEDULE -> ScheduleListHost(
                                 repository = wiring.timetable,
@@ -309,6 +338,7 @@ private fun PagesShell() {
             }
         }
     }
+    }
 }
 
 /**
@@ -331,8 +361,65 @@ private val dockItems: List<GlassDockItem>
         GlassDockItem(icon = MiuixIcons.Settings, label = DockSlot.SETTINGS.label),
     )
 
-/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。[id] 是路由里用的稳定短串。 */
-private enum class DockSlot(val id: String, val label: String) {
+/**
+ * 给官方转场预设套一层**时长缩放**：几何一点不改，只把「程序化整步」那一档
+ * 的时长换成按倍率缩放过的值。
+ *
+ * ## 为什么必须是「包一层」而不是自己写几何
+ *
+ * `MIUIX-FIRST` 规定页面转场只能用 miuix 官方能力（`NavTransitions.MiuixDefault`
+ * + `NavDisplayEffects.Default`），自己写 `slideIn…` / `fadeIn…` 这类转场是禁区。
+ * 而官方预设把时长写死在自己声明的 `NavMotion` 里（没有参数可传），所以这里用委托的方式：
+ * `transformEntry / opaqueDepth / dismissDirection / scrimFraction` 全部原样转交
+ * 官方对象，**只**替换 `motion.programmatic`。
+ *
+ * ## 倍率口径（与 Dart 逐条对齐）
+ *
+ * Dart `HyperosMotionPlatform.durationScaler` 把每个动画的基础毫秒数按倍率缩放，
+ * 方向是「**速度越大、时长越短**」（`scaledDuration(base) = base / speed`）；
+ * 上下限 `clamp(0.5, 2.5)` 与设置页滑杆的区间一致（`settings_general.dart:70-72`）。
+ *
+ * 基础时长取 500ms —— 这就是官方 `NavDriverSpec.PROGRAMMATIC_DURATION_MILLIS`
+ * 的默认值（那个对象是 `internal`，引用不到，只能把数值抄在这里并守住语义）。
+ */
+private fun NavTransition.scaledToUserSpeed(speed: Double): NavTransition {
+    val clamped = speed.coerceIn(MIN_PAGE_TRANSITION_SPEED, MAX_PAGE_TRANSITION_SPEED)
+    val baseDuration = OFFICIAL_PROGRAMMATIC_DURATION_MILLIS
+    // 速度 2.0 ⇒ 250ms；0.5 ⇒ 1000ms；1.0 ⇒ 500ms（原速）。
+    val durationMillis = (baseDuration / clamped).roundToInt().coerceAtLeast(1)
+    val scaledMotion = NavMotion(
+        programmatic = NavSettleSpec.Tween(durationMillis, NavProgrammaticEasing),
+    )
+    val delegate = this
+    return object : NavTransition {
+        override fun Modifier.transformEntry(scope: NavTransitionScope): Modifier =
+            with(delegate) { this@transformEntry.transformEntry(scope) }
+
+        override val opaqueDepth: Float get() = delegate.opaqueDepth
+
+        override val dismissDirection: NavSwipeDirection get() = delegate.dismissDirection
+
+        override val motion: NavMotion get() = scaledMotion
+
+        override fun scrimFraction(scope: NavTransitionScope): Float = delegate.scrimFraction(scope)
+    }
+}
+
+/** 转场速度滑杆的下限（`TimetableSettings.minPageTransitionSpeed`）。 */
+private const val MIN_PAGE_TRANSITION_SPEED = 0.5
+
+/** 转场速度滑杆的上限（`TimetableSettings.maxPageTransitionSpeed`）。 */
+private const val MAX_PAGE_TRANSITION_SPEED = 2.5
+
+/** miuix `NavDriverSpec.PROGRAMMATIC_DURATION_MILLIS` 的默认值（对方是 internal）。 */
+private const val OFFICIAL_PROGRAMMATIC_DURATION_MILLIS = 500
+
+/** 震动关掉时的空实现：所有 `performHapticFeedback` 都静默丢弃。 */
+private object NoopHapticFeedback : HapticFeedback {
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
+}
+
+/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。[id] 是路由里用的稳定短串。 */private enum class DockSlot(val id: String, val label: String) {
     TIMETABLE("timetable", "课表"),
     SCHEDULE("schedule", "日程"),
     TASK("task", "任务"),

@@ -51,6 +51,23 @@ class PrefsKeyValueStore(context: Context) : KeyValueStore {
         }
     }
 
+    /**
+     * 与 [getInt] 同一套宽松口径：Flutter 插件落 `int` 用 `putLong` ⇒ 盘上是 `Long`；
+     * 别的实现可能落成 `Int` 或数字字符串，三种都收，类型不符才回落默认值。
+     *
+     * 不用 `prefs.getLong(...)`：它遇到 String 类型会抛 `ClassCastException`，
+     * 把「一条脏数据」升级成「读配置就崩」。
+     */
+    override fun getLong(key: String, default: Long): Long {
+        val raw = readRaw(key) ?: return default
+        return when (raw) {
+            is Long -> raw
+            is Int -> raw.toLong()
+            is String -> raw.toLongOrNull() ?: default
+            else -> default
+        }
+    }
+
     override fun getBool(key: String, default: Boolean): Boolean {
         val raw = readRaw(key) ?: return default
         return when (raw) {
@@ -77,6 +94,11 @@ class PrefsKeyValueStore(context: Context) : KeyValueStore {
     override fun putInt(key: String, value: Int) {
         // 与 Flutter 插件逐字节一致：int 落盘为 Long。
         prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value.toLong()).commit()
+    }
+
+    override fun putLong(key: String, value: Long) {
+        // 与 Dart `prefs.setInt` 同类型、同步落盘（理由见类注释第 1 条）。
+        prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value).commit()
     }
 
     override fun putBool(key: String, value: Boolean) {

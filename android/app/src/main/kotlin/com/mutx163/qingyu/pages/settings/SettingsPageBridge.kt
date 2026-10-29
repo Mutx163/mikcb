@@ -25,6 +25,7 @@ import com.mutx163.qingyu.pages.settings.SettingsGeneralPage
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
 import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
+import java.time.LocalDateTime
 
 /**
  * 设置族的**桥**：页面词汇（`pages/settings`）↔ 宿主词汇（`app/`）。
@@ -184,7 +185,19 @@ object SettingsPageBridge {
      * （口径与 Dart `timetable_settings.dart:2482-2513` 逐条对齐，含「只比检查点里非 null
      * 的字段」这条）。它决定主题管理页控制卡那两个按钮**渲染不渲染**。
      */
-    fun toSettingsPageState(model: TimetableSettingsModel): SettingsPageState {
+    fun toSettingsPageState(
+        model: TimetableSettingsModel,
+        /**
+         * 通用页「课表自动更新」整块的状态；`null` = 宿主还没接上那份本地存储
+         * （此时整块不渲染，与 Phase 3.5 第一刀的行为一致）。
+         *
+         * ⚠️ 它**不来自** [model]：自动更新的开关/时机存在另一个 prefs 键里
+         * （Dart `lib/services/course_auto_refresh_store.dart:35`），理由见那边的类注释
+         * （台账必须跟随本机、不能跟着课表备份走）。所以只能由宿主读盘后传进来，
+         * 见 [toAutoRefreshState]。
+         */
+        autoRefresh: AutoRefreshState? = null,
+    ): SettingsPageState {
         val defaults = SettingsPageState()
         val themeHasModifications = SettingsActionDispatcher.hasThemeModifications(model)
         return SettingsPageState(
@@ -193,7 +206,7 @@ object SettingsPageBridge {
             pageTransitionSpeed = model.pageTransitionSpeed,
             enableHaptics = model.enableHaptics,
             homePullQuickImportEnabled = model.homePullQuickImportEnabled,
-            autoRefresh = null,
+            autoRefresh = autoRefresh,
             // ---- 外观与主题 ----
             appThemeMode = pick(
                 AppThemeMode.entries,
@@ -258,6 +271,56 @@ object SettingsPageBridge {
             courseCardDetailColorDark = model.courseCardDetailColorDark,
         )
     }
+
+    /**
+     * 「课表自动更新」的本地存储 → 通用页那一整块的状态（[SettingsGeneralPage.spec] 的
+     * `general.autoRefresh.*` 节点）。
+     *
+     * 期望值来源全部是 Dart：
+     * - 字段含义与默认值：`lib/widgets/course_auto_refresh_settings.dart:100-165`；
+     * - 「上次 X / 下次约 Y」两段文案的拼法：同文件 `:226-240`（`_summaryText`）；
+     * - 时刻的短格式：同文件 `:246-252`（月不补零、日补零、24 小时制）。
+     *
+     * ## 为什么收基本类型、不收 `pages/import` 的配置对象
+     *
+     * 那对象（`CourseAutoRefreshSchedule`）与它的档位枚举在 `pages/import/` 下，
+     * 而本桥只在 `pages/settings` 的 L0 里被 `-ExtraSources` 单独拉进编译；
+     * 一旦这里 import 了 `pages/import`，**所有照抄那条 L0 命令的泳道都会 Unresolved**。
+     * 收 `modeValue` 字符串既避开了这条跨域依赖，口径也更直接：Dart 往盘上写的就是
+     * `everyLaunch` / `intervalHours` / `dailyAt` 这三个短串。
+     *
+     * @param modeValue 磁盘上的档位短串；认不出（或空）按 `everyLaunch` 处理——与 Dart
+     *   `CourseAutoRefreshMode.fromName` 的容错口径一致。
+     * @param lastSuccess 上一次**成功**更新的时刻；null = 从没成功过。
+     * @param nextRun 下一次预计运行的时刻；null = 功能关着（或没有下次）。
+     */
+    fun toAutoRefreshState(
+        enabled: Boolean,
+        modeValue: String,
+        intervalHours: Int,
+        dailyMinuteOfDay: Int,
+        lastSuccess: LocalDateTime?,
+        nextRun: LocalDateTime?,
+    ): AutoRefreshState = AutoRefreshState(
+        enabled = enabled,
+        mode = CourseAutoRefreshMode.entries.firstOrNull { it.value == modeValue }
+            ?: CourseAutoRefreshMode.EVERY_LAUNCH,
+        intervalHours = intervalHours,
+        dailyMinuteOfDay = dailyMinuteOfDay,
+        lastSuccessLabel = lastSuccess?.let { shortDateTime(it) },
+        nextRunLabel = nextRun?.let { shortDateTime(it) },
+    )
+
+    /**
+     * 时刻 → 「9-21 07:30」。逐字照 Dart `_shortDateTime`
+     * （`course_auto_refresh_settings.dart:246-252`）：**月不补零**、日补零。
+     */
+    private fun shortDateTime(value: LocalDateTime): String = SettingsGeneralPage.shortDateTime(
+        month = value.monthValue,
+        day = value.dayOfMonth,
+        hour = value.hour,
+        minute = value.minute,
+    )
 
     /**
      * 设置模型 → 「课表页面设置」页状态（`SettingsTimetablePageSettingsPage.spec` 的输入）。

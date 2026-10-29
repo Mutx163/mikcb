@@ -34,6 +34,15 @@ interface KeyValueStore {
     /** 键不存在或类型不符时返回 [default]。 */
     fun getInt(key: String, default: Int): Int
 
+    /**
+     * 读 **64 位整数**：给毫秒时间戳一类 `Int` 装不下的值用。
+     *
+     * 不能拿 [getInt] 凑合：epoch 毫秒 2026 年就已经是 1.7e12，超出 `Int` 上限；
+     * 读成 Int 会溢出成负数，「上次什么时候成功」直接算错。
+     * 键不存在或类型不符时返回 [default]。
+     */
+    fun getLong(key: String, default: Long): Long
+
     /** 键不存在或类型不符时返回 [default]。 */
     fun getBool(key: String, default: Boolean): Boolean
 
@@ -49,6 +58,9 @@ interface KeyValueStore {
     fun putString(key: String, value: String)
 
     fun putInt(key: String, value: Int)
+
+    /** 写 64 位整数（与 [getLong] 配对；毫秒时间戳走这里）。 */
+    fun putLong(key: String, value: Long)
 
     fun putBool(key: String, value: Boolean)
 
@@ -132,6 +144,15 @@ class InMemoryKeyValueStore(
     override fun getInt(key: String, default: Int): Int =
         raw[FrozenValueCodec.physicalKey(key)]?.toIntOrNull() ?: default
 
+    /**
+     * 与 [getInt] 共用「落盘只存字符串」的规则：盘上是十进制文本就直接解析。
+     *
+     * 两者**不打架**：`putInt(5)` 落成 `"5"`，`getLong` 读到 5L；
+     * `putLong(1_700_000_000_000)` 落成 `"1700000000000"`，`getInt` 溢出解析失败 ⇒ 回落默认值。
+     */
+    override fun getLong(key: String, default: Long): Long =
+        raw[FrozenValueCodec.physicalKey(key)]?.toLongOrNull() ?: default
+
     override fun getBool(key: String, default: Boolean): Boolean =
         raw[FrozenValueCodec.physicalKey(key)]?.let { it == "true" } ?: default
 
@@ -145,6 +166,10 @@ class InMemoryKeyValueStore(
     }
 
     override fun putInt(key: String, value: Int) {
+        raw[FrozenValueCodec.physicalKey(key)] = value.toString()
+    }
+
+    override fun putLong(key: String, value: Long) {
         raw[FrozenValueCodec.physicalKey(key)] = value.toString()
     }
 

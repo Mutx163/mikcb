@@ -16,12 +16,14 @@ import com.mutx163.qingyu.app.ScheduleEditDispatcher
 import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSaveDispatcher
+import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.pages.course.CourseGroup
+import com.mutx163.qingyu.pages.import.CourseAutoRefreshStore
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
@@ -83,6 +85,35 @@ class ShellWiring(context: Context) {
      * 且都走 `saveSettingsPatch` 的读-合并-写，所以谁都不会覆盖谁。
      */
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
+
+    /**
+     * 「课表自动更新」的配置与台账（通用设置页那一整块）。
+     *
+     * 为什么**不**塞进 [settingsModel]：Dart 侧明确把它另存一个 prefs 键
+     * （`lib/services/course_auto_refresh_store.dart:9-18`：台账必须留本机，
+     * 不能跟着课表备份/同步跑到别的设备上去）。键名与值类型逐字对齐 Dart。
+     */
+    val autoRefresh: CourseAutoRefreshStore = CourseAutoRefreshStore(keyValueStore)
+
+    /** 只读一次盘：下面两个运行期偏好初值来自同一份设置，别为了两行解析两遍 JSON。 */
+    private val initialSettings: TimetableSettingsModel = settingsModel.load()
+
+    /**
+     * 页面转场速度（Dart `pageTransitionSpeed`，0.5~2.5，1.0 = 原速）。
+     *
+     * 设为**可观察状态**：设置页拖滑杆时经 `SettingsHost.onTransitionSpeedChanged`
+     * 当场写这里，`NavDisplay` 读到新值后按倍率缩放转场时长 —— 与 Dart
+     * `HyperosMotionPlatform.applyUserTransitionSpeed` 的「不重启也立刻变快变慢」一致。
+     */
+    var pageTransitionSpeed: Double by mutableStateOf(initialSettings.pageTransitionSpeed)
+
+    /**
+     * 应用内震动总开关（Dart `enableHaptics`）。
+     *
+     * 壳在 `PagesShell` 根部按它决定要不要把 [androidx.compose.ui.hapticfeedback.HapticFeedback]
+     * 换成空实现 —— 这样 miuix 组件自带的触感（滚轮、滚到尽头）也跟着这个开关走。
+     */
+    var enableHaptics: Boolean by mutableStateOf(initialSettings.enableHaptics)
 
     /**
      * 从课表空档进加课页时要预填的 `(星期, 节次)`。

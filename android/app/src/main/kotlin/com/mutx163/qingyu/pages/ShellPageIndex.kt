@@ -320,11 +320,18 @@ fun ShellPageContent(
         // Phase 3.5 设置族第一刀：下面 4 页改用**真宿主**（真数据 + 真写回 + 真导航）。
         // 其余设置页仍是演示数据 —— 每接一页，就把它的 spec id 加进
         // `SettingsPageBridge.SUPPORTED_PAGE_IDS`，并在这里换成分派。
+        // 2026-10-29 补口（通用页审计 P0）：这一屏原先把 `autoRefresh = null` 写死在桥里
+        // ⇒ Flutter 原件里最长的那一块「课表自动更新」（分组标题 + 5 行 + 底部灰字）
+        // **整块不在屏上**。现在把独立存储 `wiring.autoRefresh` 接进来，整块按真值渲染；
+        // 转场速度与震动总开关也在这里接「当场生效」的回调（Dart 是同一个形态）。
         "b.general" -> SettingsHost(
             pageId = SettingsGeneralPage.ID,
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            autoRefreshStore = wiring.autoRefresh,
+            onTransitionSpeedChanged = { wiring.pageTransitionSpeed = it },
+            onHapticsChanged = { wiring.enableHaptics = it },
         )
         "b.appearance" -> SettingsHost(
             pageId = SettingsAppearancePage.ID,

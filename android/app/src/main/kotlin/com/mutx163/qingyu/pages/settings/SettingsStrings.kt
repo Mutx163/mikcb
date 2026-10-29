@@ -51,6 +51,19 @@ object SettingsStrings {
     val courseAutoRefreshSummaryLast = ArbText("courseAutoRefreshSummaryLast", "上次 {time}")
     val courseAutoRefreshSummaryNext = ArbText("courseAutoRefreshSummaryNext", "下次约 {time}")
 
+    /**
+     * 「立即试一次」在当前壳里跑不起来时的弹窗正文。
+     *
+     * 用 ARB 已有的 `aboutUnavailable`（"不可用"）而不是新造一句：新增 ARB 键会在
+     * `copy_style_guard_test` 的「死键只减不增」上翻红——那个扫描器只看 `lib/` 与
+     * `test/` 的 Dart 引用，Kotlin 侧用的键它看不见。等执行器接进来（见
+     * `docs/plans/2026-10-29-compose-general-page-audit.md` §三），这里连弹窗都不需要了。
+     */
+    val aboutUnavailable = ArbText("aboutUnavailable", "不可用")
+
+    /** 确认键（ARB `confirmAction`；设置域的弹层按钮共用这一条）。 */
+    val confirmAction = ArbText("confirmAction", "确认")
+
     // -------------------------------------------------------- 外观与配色页
 
     val appearanceTitle = ArbText("appearanceTitle", "外观与配色")
