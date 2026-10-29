@@ -127,15 +127,24 @@ CPU/RSS 走 `Process.getElapsedCpuTime()` + `/proc/self/statm`；启用门控 = 
 ## 七、验证口径
 
 - **已做（可复跑）**：
-  - L0：`pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/diagnostics"` → **OK (236 tests)**（诊断域 17 个测试类）。
-  - L1：`pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` → **BUILD SUCCESSFUL in 37s**（含本轮全部宿主接线与探针挂载）。
+  - L0：`pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/diagnostics"` → **OK (236 tests)**（诊断域 17 个测试类）；
+    `-Module "pages/shell"` → **OK (52 tests)**（含本轮新增的「壳分支必须接真宿主」守卫 4 例）。
+  - L1：`pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` → **BUILD SUCCESSFUL**（含全部宿主接线与探针挂载）。
+  - 单测源码 Gradle 编译：`:app:compileDevDebugUnitTestKotlin` → **BUILD SUCCESSFUL in 30s**（新守卫在真 Gradle 工具链下也能编）。
   - 样式守卫：`scripts/compose-style-lint.ps1 -Domain diagnostics` → **0 处**。
-  - 咬合探针共 6 次（内存 key 对拍 / 日志页标题 / 日志 payload `source` / 日志增量解析 / 夹具清空不误删 / 台账预算收紧与排行次序），
-    每次都是「改坏 → 红 → 还原 → 绿」，无一次留在工作区。
-- **L2 现状（不是本族的红）**：`:app:testDevDebugUnitTest` 4982 例 / 7 红，逐条查过归属：
-  `CjkLiteralGateTest`（`app/TimeSchemeHost.kt`，另一泳道在途）、`ComposePageStyleGuardTest`（`sync/CoupleTimetableSettingsPage.kt` 的 R5 过期基线行）、
-  `ShellPageDispatchCoverageTest` ×5（它自己的路径常量还写着 `src/composeUi/…/ShellPageIndex.kt`，而文件已搬进 `src/main/`）。
-  **诊断域全绿**；这三处属别的批次，本轮不越界改。
+  - 咬合探针共 7 次（内存 key 对拍 / 日志页标题 / 日志 payload `source` / 日志增量解析 / 夹具清空不误删 /
+    台账预算收紧与排行次序 / 新守卫），每次都是「改坏 → 红 → 还原 → 绿」，无一次留在工作区。
+- **L2 当前跑不起来（不是本族的红）**：`:app:testDevDebugUnitTest` 在 `:app:packageDevDebugUnitTestForUnitTest`
+  阶段失败，报「该任务用了 `:app:copyFlutterAssetsDevDebug` 的输出但没声明依赖」。成因是工作区里**别人在途的
+  AGP 9.5 升级**（`android/settings.gradle` 9.4.1→9.5.0 + `android/app/build.gradle` 新开的
+  `unitTests.includeAndroidResources = true`），配置期任务图变化触发 Gradle 9.8 的严格校验。
+  这两份文件属 Lead 专属且正在被改，本族**不动**；本族的 L2 替代证据用上面那条「单测源码 Gradle 编译绿」+ L0 全绿。
+  （AGP 升级落地后应重跑一次 L2 并把结果补在这里。）
+- **新增守卫（本轮补的纪律）**：`pages/shell/DiagnosticsWiringGuardTest` 读 `ShellPageIndex.kt` 的分支文本，
+  判「受管页面必须由真宿主渲染」且「分支里不许出现空 lambda / 空列表 / 空快照 / 空构造 state」。
+  这正是本轮事故的机器化拦网：以后谁把某个 `h.*` 分支改回喂空数据，L0 立刻红。
+  加新受管页面只需往 `MANAGED` 加一行。
+
 - **能在真机上验的**（需要用户，本机做不了）：
   1. 设置 → 诊断：开关拨一下退出再进，值还在；诊断包里能看到「内存状态 / 设置快照」两行。
   2. 应用日志：进页面应当有内容（不是空态）；切级别 / 切排序 / 复制 / 导出各点一次。
