@@ -73,6 +73,42 @@ object CoupleStrings {
     val saveFailed = ArbText("saveFailed", "保存失败")
     val cancelAction = ArbText("cancelAction", "取消")
 
+    // ── 连接坚果云弹层（Dart `couple_webdav_connect_sheet.dart`） ──
+    val coupleWebdavLoginSheetTitle = ArbText("coupleWebdavLoginSheetTitle", "连接坚果云情侣课表")
+    val coupleWebdavLoginSheetSubtitle = ArbText(
+        "coupleWebdavLoginSheetSubtitle",
+        "请使用坚果云应用专用密码，对方需先将课表上传到约定路径",
+    )
+    val coupleWebdavMySlotLabel = ArbText("coupleWebdavMySlotLabel", "本机槽位")
+    val coupleWebdavMySlotHint = ArbText(
+        "coupleWebdavMySlotHint",
+        "双方必须选不同槽位：一方选 1，另一方选 2，否则会互相读不到课表",
+    )
+    val coupleWebdavSlotOne = ArbText("coupleWebdavSlotOne", "槽位 1")
+    val coupleWebdavSlotTwo = ArbText("coupleWebdavSlotTwo", "槽位 2")
+    val coupleWebdavConfirmConnect = ArbText("coupleWebdavConfirmConnect", "连接并拉取")
+    val coupleWebdavTestSuccess = ArbText("coupleWebdavTestSuccess", "坚果云连接成功")
+    val cloudSyncUsernameLabel = ArbText("cloudSyncUsernameLabel", "邮箱 / 用户名")
+    val cloudSyncUsernameHint = ArbText("cloudSyncUsernameHint", "坚果云注册邮箱")
+    val cloudSyncPasswordLabel = ArbText("cloudSyncPasswordLabel", "应用专用密码")
+    val cloudSyncPasswordHint = ArbText("cloudSyncPasswordHint", "在坚果云账户安全选项中生成")
+    val cloudSyncTestConnection = ArbText("cloudSyncTestConnection", "测试连接")
+
+    // ── 导出分享 ──
+    val coupleTimetableShareText = ArbText(
+        "coupleTimetableShareText",
+        "这是我的课表，导入到轻屿课表的情侣课表即可一起查看",
+    )
+
+    // ── 单档包解析错误码（Dart `parseBackupJson` 抛的那三个） ──
+    val partnerImportRequiresSingleProfile = ArbText(
+        "partnerImportRequiresSingleProfile",
+        "请导入单课表备份文件，不支持全量备份",
+    )
+    val serviceMsgUnrecognizedMikcbDataFile =
+        ArbText("serviceMsgUnrecognizedMikcbDataFile", "不是可识别的 mikcb 数据文件")
+    val serviceMsgMissingSettingsData = ArbText("serviceMsgMissingSettingsData", "缺少设置数据")
+
     /**
      * 内部错误码形状（Dart `_internalCodePattern` 原样）：ASCII 小写蛇形，可带 `:细节`。
      * `Regex.matches` 已是全串匹配，锚点省掉（也避开 raw string 末尾 `$` 的歧义）。
@@ -92,6 +128,9 @@ object CoupleStrings {
             "couple_webdav_not_connected" -> coupleWebdavNotConnectedError.zh
             "couple_webdav_partner_file_missing" -> coupleWebdavPartnerFileMissing.zh
             "couple_webdav_pull_failed" -> coupleWebdavPullFailed.zh
+            "partner_import_requires_single_profile" -> partnerImportRequiresSingleProfile.zh
+            "unrecognized_mikcb_data_file" -> serviceMsgUnrecognizedMikcbDataFile.zh
+            "missing_settings_data" -> serviceMsgMissingSettingsData.zh
             else -> if (internalCodePattern.matches(raw)) quickImportUnknownError.zh else raw
         }
     }
@@ -145,6 +184,23 @@ object CoupleStrings {
             quickImportUnknownError,
             saveFailed,
             cancelAction,
+            coupleWebdavLoginSheetTitle,
+            coupleWebdavLoginSheetSubtitle,
+            coupleWebdavMySlotLabel,
+            coupleWebdavMySlotHint,
+            coupleWebdavSlotOne,
+            coupleWebdavSlotTwo,
+            coupleWebdavConfirmConnect,
+            coupleWebdavTestSuccess,
+            cloudSyncUsernameLabel,
+            cloudSyncUsernameHint,
+            cloudSyncPasswordLabel,
+            cloudSyncPasswordHint,
+            cloudSyncTestConnection,
+            coupleTimetableShareText,
+            partnerImportRequiresSingleProfile,
+            serviceMsgUnrecognizedMikcbDataFile,
+            serviceMsgMissingSettingsData,
         )
     }
 }

@@ -16,7 +16,14 @@ import java.time.ZoneId
  * 3. 忙碌态：按钮文案接 `...` 且不可点（Dart `'$label...'` + `onPressed: busy ? null`）。
  */
 
-/** 对方课表绑定（Dart `PartnerTimetableBinding` 的展示子集）。 */
+/**
+ * 对方课表绑定（Dart `PartnerTimetableBinding` 的展示子集 + **落盘所需的全部字段**）。
+ *
+ * 落盘时不能只写「页面上看得到的这几项」：Dart 那份 JSON 还有
+ * `partnerProfileId` / `linkedAt` / `sourceFileHash`，漏写等于每次改周偏移都把
+ * 「什么时候绑的、来源文件哈希」洗掉。三个可选字段带默认值，只为兼容调用方；
+ * 真正读写一律走 [CoupleBindingCodec]。
+ */
 data class PartnerTimetableBindingModel(
     val partnerName: String,
     val lastImportedAtIso: String? = null,
@@ -24,6 +31,9 @@ data class PartnerTimetableBindingModel(
     val mineColorHex: String = CoupleTimetableSettingsLogic.MINE_COLOR_DEFAULT,
     val partnerColorHex: String = CoupleTimetableSettingsLogic.PARTNER_COLOR_DEFAULT,
     val togetherColorHex: String = CoupleTimetableSettingsLogic.TOGETHER_COLOR_DEFAULT,
+    val partnerProfileId: String = CoupleTimetableSettingsLogic.PARTNER_PROFILE_ID,
+    val linkedAtIso: String? = null,
+    val sourceFileHash: String? = null,
 )
 
 /** 五个「正在做」开关（Dart 同名的五个 `_isXxx` 字段）。 */
@@ -37,11 +47,20 @@ data class CoupleBusyState(
 
 enum class CoupleWebdavPullStatus { IMPORTED, UPDATED, UNCHANGED, FAILED }
 
+/**
+ * 按钮样式：Dart `HyperosButtonVariant` 的两种。
+ *
+ * 渲染层据此选「主色按钮」还是「次要按钮」——Dart 原版里「导出 / 拉取 / 连接」是主色，
+ * 「导入 / 解绑 / 上传 / 断开」是次要样式（`couple_timetable_settings_screen.dart:141`、`:230-242`）。
+ */
+enum class CoupleButtonVariant { PRIMARY, SECONDARY }
+
 data class CoupleActionButton(
     val id: String,
     val label: String,
     val loading: Boolean,
     val enabled: Boolean,
+    val variant: CoupleButtonVariant = CoupleButtonVariant.PRIMARY,
 )
 
 data class CoupleColorRowView(
@@ -56,6 +75,24 @@ data class CoupleConfirmDialogView(
     val message: String,
     val cancelLabel: String,
     val confirmLabel: String,
+)
+
+/** 连接坚果云弹层的静态文案（Dart `couple_webdav_connect_sheet.dart` 用到的全部 ARB 条目）。 */
+data class CoupleWebdavSheetTexts(
+    val title: String,
+    val subtitle: String,
+    val usernameLabel: String,
+    val usernameHint: String,
+    val passwordLabel: String,
+    val passwordHint: String,
+    val slotLabel: String,
+    val slotHint: String,
+    val slotOne: String,
+    val slotTwo: String,
+    val testLabel: String,
+    val confirmLabel: String,
+    val testSuccess: String,
+    val testFailed: String,
 )
 
 data class CoupleTimetableSettingsViewState(
@@ -93,6 +130,8 @@ data class CoupleTimetableSettingsViewState(
     val unlinkConfirmMessage: String,
     val unlinkConfirmCancelLabel: String,
     val unlinkConfirmActionLabel: String,
+    /** 连接坚果云弹层的文案（弹层由壳层托管；页面只把「连接」按钮转成 [CoupleTimetableSettingsLogic.WEBDAV_CONNECT]）。 */
+    val webdavSheetTexts: CoupleWebdavSheetTexts,
 )
 
 object CoupleTimetableSettingsLogic {
@@ -100,6 +139,12 @@ object CoupleTimetableSettingsLogic {
     /** Dart `CoupleTimetableLogic.minWeekOffset` / `maxWeekOffset`。 */
     const val MIN_WEEK_OFFSET: Int = -15
     const val MAX_WEEK_OFFSET: Int = 15
+
+    /** 对方课表档案 id（Dart `PartnerTimetableService.partnerProfileId`）。 */
+    const val PARTNER_PROFILE_ID: String = "partner-imported"
+
+    /** 对方名称兜底（Dart `PartnerTimetableBinding.fromJson` 的 `'TA的课表'`）。 */
+    const val PARTNER_NAME_FALLBACK: String = "TA的课表"
 
     const val MINE_COLOR_DEFAULT: String = "#2196F3"
     const val PARTNER_COLOR_DEFAULT: String = "#E91E63"
@@ -185,6 +230,12 @@ object CoupleTimetableSettingsLogic {
 
     fun canIncrement(offset: Int): Boolean = offset < MAX_WEEK_OFFSET
 
+    /** Dart `CoupleTimetableLogic.clampWeekOffset`：夹到 -15..15。 */
+    fun clampWeekOffset(offset: Int): Int = offset.coerceIn(MIN_WEEK_OFFSET, MAX_WEEK_OFFSET)
+
+    /** Dart `CoupleTimetableLogic.partnerWeekForMyWeek`：我看第 N 周时对方是第 N+offset 周。 */
+    fun partnerWeekFor(myWeek: Int, offset: Int): Int = myWeek + clampWeekOffset(offset)
+
     /**
      * 颜色快选列表：选中色在快捷表里就原样用；不在就补到行首
      * （Dart `_paletteIncluding`，比较时忽略大小写）。
@@ -223,6 +274,24 @@ object CoupleTimetableSettingsLogic {
         confirmLabel = CoupleStrings.coupleTimetableUnlink.zh,
     )
 
+    /** 连接弹层文案（Dart `couple_webdav_connect_sheet.dart` 逐条对位）。 */
+    fun sheetTexts(): CoupleWebdavSheetTexts = CoupleWebdavSheetTexts(
+        title = CoupleStrings.coupleWebdavLoginSheetTitle.zh,
+        subtitle = CoupleStrings.coupleWebdavLoginSheetSubtitle.zh,
+        usernameLabel = CoupleStrings.cloudSyncUsernameLabel.zh,
+        usernameHint = CoupleStrings.cloudSyncUsernameHint.zh,
+        passwordLabel = CoupleStrings.cloudSyncPasswordLabel.zh,
+        passwordHint = CoupleStrings.cloudSyncPasswordHint.zh,
+        slotLabel = CoupleStrings.coupleWebdavMySlotLabel.zh,
+        slotHint = CoupleStrings.coupleWebdavMySlotHint.zh,
+        slotOne = CoupleStrings.coupleWebdavSlotOne.zh,
+        slotTwo = CoupleStrings.coupleWebdavSlotTwo.zh,
+        testLabel = CoupleStrings.cloudSyncTestConnection.zh,
+        confirmLabel = CoupleStrings.coupleWebdavConfirmConnect.zh,
+        testSuccess = CoupleStrings.coupleWebdavTestSuccess.zh,
+        testFailed = CoupleStrings.coupleWebdavTestFailed.zh,
+    )
+
     /**
      * 整页 viewState。
      *
@@ -252,6 +321,7 @@ object CoupleTimetableSettingsLogic {
                     label = CoupleStrings.coupleWebdavConnect.zh,
                     loading = false,
                     enabled = true,
+                    variant = CoupleButtonVariant.PRIMARY,
                 ),
             )
         } else {
@@ -261,6 +331,7 @@ object CoupleTimetableSettingsLogic {
                     label = busyLabel(CoupleStrings.coupleWebdavPullNow.zh, busy.isPullingWebdav),
                     loading = busy.isPullingWebdav,
                     enabled = !busy.isPullingWebdav,
+                    variant = CoupleButtonVariant.PRIMARY,
                 ),
                 CoupleActionButton(
                     id = WEBDAV_UPLOAD,
@@ -270,12 +341,14 @@ object CoupleTimetableSettingsLogic {
                     ),
                     loading = busy.isUploadingWebdav,
                     enabled = !busy.isUploadingWebdav,
+                    variant = CoupleButtonVariant.SECONDARY,
                 ),
                 CoupleActionButton(
                     id = WEBDAV_DISCONNECT,
                     label = CoupleStrings.coupleWebdavDisconnect.zh,
                     loading = false,
                     enabled = true,
+                    variant = CoupleButtonVariant.SECONDARY,
                 ),
             )
         }
@@ -287,6 +360,7 @@ object CoupleTimetableSettingsLogic {
                     label = busyLabel(CoupleStrings.coupleTimetableExportForPartner.zh, busy.isExporting),
                     loading = busy.isExporting,
                     enabled = !busy.isExporting,
+                    variant = CoupleButtonVariant.PRIMARY,
                 ),
             )
             add(
@@ -295,6 +369,7 @@ object CoupleTimetableSettingsLogic {
                     label = busyLabel(CoupleStrings.coupleTimetableImportPartner.zh, busy.isImporting),
                     loading = busy.isImporting,
                     enabled = !busy.isImporting,
+                    variant = CoupleButtonVariant.SECONDARY,
                 ),
             )
             if (bound) {
@@ -304,6 +379,7 @@ object CoupleTimetableSettingsLogic {
                         label = busyLabel(CoupleStrings.coupleTimetableUnlink.zh, busy.isUnlinking),
                         loading = busy.isUnlinking,
                         enabled = !busy.isUnlinking,
+                        variant = CoupleButtonVariant.SECONDARY,
                     ),
                 )
             }
@@ -339,6 +415,7 @@ object CoupleTimetableSettingsLogic {
             unlinkConfirmMessage = CoupleStrings.coupleTimetableUnlinkConfirmMessage.zh,
             unlinkConfirmCancelLabel = CoupleStrings.cancelAction.zh,
             unlinkConfirmActionLabel = CoupleStrings.coupleTimetableUnlink.zh,
+            webdavSheetTexts = sheetTexts(),
         )
     }
 
