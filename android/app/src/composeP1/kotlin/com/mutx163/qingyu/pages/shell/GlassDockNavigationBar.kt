@@ -279,13 +279,20 @@ fun GlassDockNavigationBar(
 
     // 扫光跟随重力方向（"倾灯"）：手机倾向哪边，玻璃边缘的高光就在哪边。
     // 只在绘制期读 .value，避免传感器 50Hz 写入触发整棵树重组。
+    //
+    // ⚠️ 重力角只算**一次**并复用：`rememberQuantizedGravityAngle()` 内部会调
+    // `rememberDeviceTilt()`，也就是注册一个 SENSOR_DELAY_GAME 监听。两个高光各调一次
+    // = 两份监听 + 两遍平滑 + 每帧两个新 DeviceTilt（2026-10-29 审计第 6 条）。
+    val gravityAngle = rememberQuantizedGravityAngle()
     val baseHighlight = rememberGravityRotatedHighlight(
         base = GlassDockSpecular,
         extraDegrees = -45f,
+        gravityAngle = gravityAngle,
     )
     val pillHighlight = rememberGravityRotatedHighlight(
         base = GlassDockSpecular,
         extraDegrees = 90f,
+        gravityAngle = gravityAngle,
     )
 
     val navBarBottomPadding = WindowInsets.navigationBars
@@ -482,6 +489,16 @@ fun GlassDockNavigationBar(
                                 backdrop = backdrop,
                                 shape = { pillShape },
                                 effects = {
+                                    // 与 ① 同一条纪律：采样层要在 blur() 读它之前抬起来。
+                                    // 少了这一句，lens() 事后把 padding 抬到 24dp，会命中 miuix
+                                    // `apply()` 里「blur 的 clamp 已过期 → 重跑整段 effects」那条分支
+                                    // ⇒ 每次更新都白算两遍 blur + lens（2026-10-29 审计第 4 条）。
+                                    padding = maxOf(
+                                        padding,
+                                        with(density) {
+                                            GlassDockGeometry.SamplingPaddingReachDp.dp.toPx()
+                                        },
+                                    )
                                     vibrancy()
                                     blur(
                                         with(density) {
@@ -555,8 +572,16 @@ fun GlassDockNavigationBar(
                                                     progress).dp.toPx()
                                             },
                                             depthEffect = true,
+                                            // 色散版本每像素要 7 次 `content.eval`，而它只在
+                                            // 「按下那一下」看得见。常开等于静止时也在付 7 倍采样。
+                                            // 切成 0 会走无配色的那条 shader（两条都按 key 缓存，
+                                            // 来回切不产生编译），2026-10-29 审计第 3 条。
                                             chromaticAberration =
-                                                GlassDockGeometry.IndicatorDispersion,
+                                                if (dampedDrag.pressProgress > 0.01f) {
+                                                    GlassDockGeometry.IndicatorDispersion
+                                                } else {
+                                                    0f
+                                                },
                                         )
                                     },
                                     highlight = {
@@ -596,6 +621,9 @@ fun GlassDockNavigationBar(
                         )
                         .innerShadow(shape = pillShape) {
                             if (!isBlurActive) return@innerShadow null
+                            // 静止时 radius/alpha 都是 0，但返回非 null 依然会录一层离屏层、
+                            // 做两次 clipPath draw。直接不返回是最省的（2026-10-29 审计第 5 条）。
+                            if (dampedDrag.pressProgress <= 0.01f) return@innerShadow null
                             InnerShadow(
                                 radius = GlassDockGeometry.IndicatorInnerShadowRadiusDp.dp *
                                     dampedDrag.pressProgress,
@@ -711,8 +739,9 @@ private fun rememberQuantizedGravityAngle(): State<Float> {
 private fun rememberGravityRotatedHighlight(
     base: Highlight,
     extraDegrees: Float,
+    /** 由调用方算好一次后复用的重力角，见调用处注释。 */
+    gravityAngle: State<Float>,
 ): State<Highlight> {
-    val gravityAngle = rememberQuantizedGravityAngle()
     return remember(gravityAngle, base, extraDegrees) {
         derivedStateOf {
             val baseStyle = base.style as BloomStroke

@@ -198,6 +198,12 @@ private fun PagesShell() {
     // 玻璃的背景采样源：整个内容区先被录进这个 layer，底栏再拿它当 backdrop。
     // 必须挂在**内容**上、而不是包住整个 Column —— 包住就会把底栏自己也录进去，
     // 底栏于是拿「含自己」的图去算模糊，展开动画里明暗会来回颤。
+    //
+    // ⚠️ 录制有成本：miuix 的 `LayerBackdropNode.draw()` 实际是
+    // `drawContent(); recordLayer { onDraw() }` —— 内容每重绘一帧（滚动、转场、任何动画），
+    // 都会先在屏幕上画一遍、再把整屏录进一张离屏 GraphicsLayer。所以只在
+    // **栈底 + 设备支持 runtime shader** 时才挂：压着页面时底栏不显示（`atRoot=false`），
+    // 没有任何东西采样它，那段录制是纯浪费（2026-10-29 审计第 1 条）。
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
 
@@ -213,7 +219,15 @@ private fun PagesShell() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .layerBackdrop(backdrop),
+                    // 只有栈底且能画模糊时才录制（理由见上方 `backdrop` 的注释）。
+                    // 压着页面时不录制，回栈底那一帧由新的内容重绘重新录一次。
+                    .then(
+                        if (atRoot && glassAvailable) {
+                            Modifier.layerBackdrop(backdrop)
+                        } else {
+                            Modifier
+                        },
+                    ),
             ) {
                 NavDisplay(
                     backStack = backStack,
