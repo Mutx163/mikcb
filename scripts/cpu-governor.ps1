@@ -22,7 +22,8 @@
 .PARAMETER Preset
     build  = 构建链（java / gradle / kotlin / dart / flutter_tester / 本机构建外的编译器）
     agents = AI 侧（node / DSH / claude / codex / cursor-agent）
-    all    = 两者（默认）
+    ide    = 编辑器/IDE 本体（studio64 / idea64 / devenv …，走 -UiPriority）
+    all    = 三者（默认）
 
 .PARAMETER ReserveCores
     留给用户/系统的物理核数量（默认 2）。不是线程数——脚本会自动把该物理核的
@@ -32,6 +33,12 @@
     给受限进程设定的调度优先级，默认 BelowNormal（低于正常）。
     桌面任何普通优先级线程一有活就能抢到 CPU；机器空闲时 AI 仍可吃满自己那几个核。
     想更激进可以用 Idle（只在完全没人用 CPU 时才跑）。
+
+.PARAMETER UiPriority
+    编辑器/IDE 本体（studio64 等）单独用的优先级，默认 Normal。
+    它们的**核**跟 AI 一起限（用户要求「Studio 也要和 AI 一起」），但**优先级不跟着降**：
+    降到 BelowNormal 会让你亲手操作的界面本身抢不到 CPU，反而更卡。
+    真想把 Studio 也压到 BelowNormal，传 -UiPriority BelowNormal。
 
 .EXAMPLE
     # 先看现状（什么都不改）
@@ -54,7 +61,7 @@ param(
     [ValidateSet('status', 'apply', 'watch', 'launch', 'restore', 'install', 'uninstall')]
     [string]$Mode = 'status',
 
-    [ValidateSet('all', 'build', 'agents')]
+    [ValidateSet('all', 'build', 'agents', 'ide')]
     [string]$Preset = 'all',
 
     [string[]]$Names,
@@ -66,6 +73,11 @@ param(
 
     [ValidateSet('BelowNormal', 'Idle', 'Normal')]
     [string]$Priority = 'BelowNormal',
+
+    # 编辑器/IDE 本体（studio64 等）的优先级。默认保持 Normal：降下去会让你亲手
+    # 操作的界面变卡，那不是「核分配」想解决的问题。
+    [ValidateSet('BelowNormal', 'Idle', 'Normal')]
+    [string]$UiPriority = 'Normal',
 
     [ValidateRange(1, 120)]
     [int]$IntervalSeconds = 5,
@@ -200,14 +212,23 @@ $PresetMap = @{
         'node', 'DSH', 'dsh',
         'claude', 'claude-code', 'codex', 'cursor-agent', 'aider', 'gemini', 'qwen'
     )
+    # 编辑器/IDE 本体。用户 2026-10-29 要求「Studio 也要和 AI 一起」⇒ 核一起切，
+    # 但优先级不能一起降（降到 BelowNormal 会让亲手操作的界面本身变卡），
+    # 所以这些名字走 -UiPriority（默认 Normal）。
+    ide    = @(
+        'studio64', 'idea64', 'webstorm64', 'pycharm64', 'goland64', 'rider64', 'devenv'
+    )
 }
+
+$script:UiTargets = $PresetMap.ide
 
 function Resolve-TargetNames {
     if ($Names -and $Names.Count -gt 0) { return @($Names) }
     switch ($Preset) {
         'build'  { return $PresetMap.build }
         'agents' { return $PresetMap.agents }
-        default  { return @($PresetMap.build + $PresetMap.agents | Select-Object -Unique) }
+        'ide'    { return $PresetMap.ide }
+        default  { return @($PresetMap.build + $PresetMap.agents + $PresetMap.ide | Select-Object -Unique) }
     }
 }
 
@@ -222,9 +243,17 @@ function Read-State {
 function Write-State($entries) {
     $dir = Split-Path $StateFile -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    # 只留还活着的进程，避免文件无限膨胀
+
+    # 必须与磁盘上已有的记录「合并」，不能直接覆盖：
+    # 看门狗和手动 apply 会同时写这个文件，覆盖会把对方刚加的那条抹掉
+    # （实测：手动限了 studio64，随后看门狗一轮写入把它从 state 里抹掉了）。
+    $merged = [ordered]@{}
+    foreach ($e in @(Read-State)) { $merged["$($e.Pid)|$($e.StartTicks)"] = $e }
+    foreach ($e in $entries) { $merged["$($e.Pid)|$($e.StartTicks)"] = $e }
+
+    # 只留还活着的进程（且 StartTicks 对得上，防 PID 复用），避免文件无限膨胀
     $live = @()
-    foreach ($e in $entries) {
+    foreach ($e in $merged.Values) {
         $p = Get-Process -Id $e.Pid -ErrorAction SilentlyContinue
         if ($p -and $p.StartTime.Ticks -eq $e.StartTicks) { $live += $e }
     }
@@ -276,16 +305,16 @@ function Set-Governed($proc, [uint64]$mask, [string]$prio) {
         }
     }
 
-    if ($prio -ne 'Normal') {
-        $want = [System.Diagnostics.ProcessPriorityClass]::$prio
-        if (-not $proc.HasExited -and $proc.PriorityClass -ne $want) {
-            if (-not $DryRun) {
-                Save-Original $proc
-                try { $proc.PriorityClass = $want; $changed += 'priority' }
-                catch { if (-not $proc.HasExited) { Say ("警告: 优先级设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) 'Yellow' } }
-            }
-            else { $changed += 'priority(dry)' }
+    # 注意：这里不再用「prio 不是 Normal 才动」的短路。IDE 本体要显式保持在 Normal，
+    # 而且 -Priority Normal 也要能把之前降下去过的进程抬回来。
+    $want = [System.Diagnostics.ProcessPriorityClass]::$prio
+    if (-not $proc.HasExited -and $proc.PriorityClass -ne $want) {
+        if (-not $DryRun) {
+            Save-Original $proc
+            try { $proc.PriorityClass = $want; $changed += 'priority' }
+            catch { if (-not $proc.HasExited) { Say ("警告: 优先级设置失败 {0}({1}): {2}" -f $proc.Name, $proc.Id, $_.Exception.Message) 'Yellow' } }
         }
+        else { $changed += 'priority(dry)' }
     }
 
     return $changed
@@ -298,7 +327,7 @@ function Invoke-Govern([uint64]$mask, [string]$prio) {
     $total = 0
 
     if (-not $script:HeaderShown) {
-        Say ("[governor] 允许的核 mask = 0x{0:X}（{1} 线程），优先级 = {2}" -f $mask, (Get-PopCount $mask), $prio) 'Cyan'
+        Say ("[governor] 允许的核 mask = 0x{0:X}（{1} 线程）；后台进程优先级 = {2}，IDE 本体保持 {3}" -f $mask, (Get-PopCount $mask), $prio, $UiPriority) 'Cyan'
         $script:HeaderShown = $true
     }
 
@@ -317,10 +346,12 @@ function Invoke-Govern([uint64]$mask, [string]$prio) {
 
     foreach ($p in $procs) {
         $total++
-        $ch = @(Set-Governed $p $mask $prio)
+        # IDE 本体：核跟 AI 一起限，优先级不跟着降（否则亲手操作的界面会变卡）
+        $effPrio = if ($script:UiTargets -contains $p.Name) { $UiPriority } else { $prio }
+        $ch = @(Set-Governed $p $mask $effPrio)
         if ($ch.Count -gt 0) {
             $touched++
-            Say ("  已限速 {0}({1})  ->  {2}" -f $p.Name, $p.Id, ($ch -join '+')) 'Yellow'
+            Say ("  已限速 {0}({1})  ->  {2}（优先级 {3}）" -f $p.Name, $p.Id, ($ch -join '+'), $effPrio) 'Yellow'
         }
     }
 
@@ -362,6 +393,7 @@ switch ($Mode) {
         Write-Host '=== 当前分配方案（按现在的参数）===' -ForegroundColor Cyan
         Write-Host ("  用户/系统  {0} 个物理核  mask=0x{1:X} ({2} 线程)" -f $ReserveCores, $userMask, (Get-PopCount $userMask))
         Write-Host ("  AI/构建    {0} 个物理核  mask=0x{1:X} ({2} 线程)" -f ($coreCount - $ReserveCores), $aiMask, (Get-PopCount $aiMask))
+        Write-Host ("  优先级    后台进程 = {0}；IDE 本体（{1}）= {2}" -f $Priority, ($script:UiTargets -join ' / '), $UiPriority)
         Write-Host ''
         Write-Host '=== 当前 CPU 占用最高的进程 ===' -ForegroundColor Cyan
         try {
@@ -442,6 +474,12 @@ switch ($Mode) {
     }
 
     'restore' {
+        $wdCount = @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" |
+                Where-Object { $_.CommandLine -like '*cpu-governor*' -and $_.CommandLine -like '*-Mode watch*' }).Count
+        if ($wdCount -gt 0) {
+            Write-Host ("[governor] 注意：还有 {0} 个看门狗在跑，还原后 5 秒内会被重新限回去。先停它：" -f $wdCount) -ForegroundColor Yellow
+            Write-Host '           pwsh -File scripts/cpu-governor.ps1 -Mode uninstall' -ForegroundColor Yellow
+        }
         $state = @(Read-State)
         if ($state.Count -eq 0) { Write-Host '[governor] 没有需要还原的记录。'; break }
         $done = 0
