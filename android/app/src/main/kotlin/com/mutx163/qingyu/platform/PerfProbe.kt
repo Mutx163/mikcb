@@ -36,7 +36,7 @@ import java.time.format.DateTimeFormatter
  * |---|---|---|
  * | 每帧 build 耗时 | `Window.OnFrameMetricsAvailableListener` + `FrameMetrics.ANIMATION_DURATION / LAYOUT_MEASURE_DURATION / DRAW_DURATION` | 这三段就是 Android 主线程的「动画 / 布局测量 / 记录绘制命令」，对应 Dart `FrameTiming.buildDuration`（build + layout + paint）。**逐帧**给出，不是采样估算 |
  * | 每帧 raster 耗时 | 同一回调的 `SYNC_DURATION / COMMAND_ISSUE_DURATION / SWAP_BUFFERS_DURATION` | 这三段在渲染线程与合成器一侧（GPU 同步、下发命令、交换缓冲），对应 Dart `FrameTiming.rasterDuration` |
- * | 帧间隔（判面板节奏） | `Choreographer.postFrameCallback` 的 `frameTimeNanos`，主用 `FrameMetrics.INTENDED_VSYNC` | 必须是**引擎/面板的 vsync 时刻**，不能用回调到达时间：UI 线程忙时多帧一次性送达，到达间隔要么没有样本要么自相矛盾（Dart 侧同一个坑，`perf_page_ledger.dart:460-462`） |
+ * | 帧间隔（判面板节奏） | `Choreographer.postFrameCallback` 的 `frameTimeNanos`，主用 `FrameMetrics.INTENDED_VSYNC_TIMESTAMP`（缺失退 `VSYNC_TIMESTAMP`） | 必须是**引擎/面板的 vsync 时刻**，不能用回调到达时间：UI 线程忙时多帧一次性送达，到达间隔要么没有样本要么自相矛盾（Dart 侧同一个坑，`perf_page_ledger.dart:460-462`） |
  * | 进程 CPU / RSS | `Process.getElapsedCpuTime()`（毫秒）+ `/proc/self/statm` | 都不用 binder、不用起进程；`getElapsedCpuTime` 就是进程累计 CPU 时间，`statm` 第二个字段 × 页大小 = RSS。Dart 读 `/proc/self/stat`，口径同源 |
  *
  * ## 口径适配（照抄不了的四处，理由都写在这里）
@@ -99,7 +99,7 @@ object PerfProbe {
 
     /**
      * Choreographer 给的最近一帧 vsync 时刻（微秒）。
-     * 只在 `FrameMetrics.INTENDED_VSYNC` 用不了时兜底。
+     * 只在 `FrameMetrics.INTENDED_VSYNC_TIMESTAMP` / `VSYNC_TIMESTAMP` 都用不了时兜底。
      */
     @Volatile
     private var latestChoreographerVsyncUs: Long = -1L
@@ -156,8 +156,15 @@ object PerfProbe {
         // 起点先取一次读数，第一段页面才不会一上来就是 null。
         sampleCost()
         rotatePreviousSession(app)
-        registerLifecycle(app)
-        startSampler(app)
+        // 生命周期与成本采样要 Application（`registerActivityLifecycleCallbacks` 在它上面）。
+        // 拿不到（单测里的假 Context）就只装账本 + Choreographer，不崩也不假装有数据。
+        val application = app as? Application
+        if (application != null) {
+            registerLifecycle(application)
+            startSampler(application)
+        } else {
+            Log.i(TAG, "application context unavailable - lifecycle/cost sampling skipped")
+        }
         attachWindowIfPossible(context)
         Log.i(
             TAG,
@@ -239,7 +246,7 @@ object PerfProbe {
         Choreographer.getInstance().postFrameCallback(choreographerCallback)
     }
 
-    /** 逐帧 vsync 时刻（兜底用；`INTENDED_VSYNC` 缺失时它至少让预算能收紧）。 */
+    /** 逐帧 vsync 时刻（兜底用；`INTENDED_VSYNC_TIMESTAMP` 缺失时它至少让预算能收紧）。 */
     private val choreographerCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             latestChoreographerVsyncUs = frameTimeNanos / 1000L
@@ -267,19 +274,29 @@ object PerfProbe {
         // 宁可高估一栏，也不要让一帧真实耗时被读成 0ms。
         val buildForLedger = if (buildUs <= 0L && rasterUs <= 0L) totalUs else buildUs
 
-        val intendedVsyncUs = metricUs(metrics, FrameMetrics.INTENDED_VSYNC)
+        // `INTENDED_VSYNC_TIMESTAMP` = 这一帧「本该」对齐的 vsync 时刻（ns，CLOCK_MONOTONIC），
+        // 语义与 Dart `FramePhase.vsyncStart` 一致；缺失时退 `VSYNC_TIMESTAMP`，再退 Choreographer。
+        val intendedVsyncUs = metricUs(metrics, FrameMetrics.INTENDED_VSYNC_TIMESTAMP)
+        val presentedVsyncUs = metricUs(metrics, FrameMetrics.VSYNC_TIMESTAMP)
         val vsyncUs = when {
             intendedVsyncUs > 0L -> intendedVsyncUs
+            presentedVsyncUs > 0L -> presentedVsyncUs
             latestChoreographerVsyncUs > 0L -> latestChoreographerVsyncUs
             else -> null
         }
         PerfProbeCore.ingest(buildUs = buildForLedger, rasterUs = rasterUs, vsyncUs = vsyncUs)
     }
 
+    /**
+     * `FrameMetrics.getMetric` 的返回值**一律是纳秒**（时长与时间戳都一样），这里统一换成微秒。
+     *
+     * 换算是必须的：账本的预算、门槛、vsync 间隔全按微秒算（Dart `FrameTiming` 也是微秒），
+     * 少除这一次会让每一帧都「超预算一千倍」。
+     */
     private fun metricUs(metrics: FrameMetrics, id: Int): Long {
-        val value = metrics.getMetric(id)
+        val nanos = metrics.getMetric(id)
         // 未定义/不可用会给负值，一律当 0：负数会把 sum 拖成负预算。
-        return if (value > 0L) value else 0L
+        return if (nanos > 0L) nanos / 1000L else 0L
     }
 
     // ── 生命周期 ──────────────────────────────────────────────────
