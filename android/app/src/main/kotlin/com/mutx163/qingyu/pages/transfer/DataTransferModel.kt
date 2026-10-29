@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.transfer
 
+import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferScope
 import java.time.LocalDate
@@ -49,6 +50,27 @@ data class QrScopeOption(
     val label: String,
     /** 选它之前要先勾课程（Dart `_qrSendCurrent` 里 selectedCourses/selectedCourse 分支）。 */
     val requiresCourseSelection: Boolean,
+)
+
+/** 二维码范围弹窗的一个动作；[scope] 为 null 表示「取消」。 */
+data class QrScopeDialogAction(
+    val label: String,
+    val scope: TransferScope?,
+    /** 最后一个动作是主操作（Dart `isPrimary: true`，`data_transfer_screen.dart:730`）。 */
+    val isPrimary: Boolean = false,
+)
+
+/**
+ * 选课弹层里的一个科目组（Dart `provider.courseGroups` 的**展示投影**）。
+ *
+ * 为什么按科目聚合而不逐条列课：Dart 的注释写明「避免同一科目多次出现逐条列出」，
+ * 勾选语义也是**整组**全选/全不选（`data_transfer_screen.dart:797-811`）。
+ */
+data class TransferCourseGroup(
+    val name: String,
+    /** 老师名（空串表示没有，行只显示单行标题）。 */
+    val teacher: String,
+    val courseIds: List<String>,
 )
 
 /** 导入完成后的提示（[isWarning] 为真时用警告样式）。 */
@@ -163,6 +185,80 @@ object DataTransferLogic {
     )
 
     /**
+     * 二维码范围弹窗的**动作序列**（Dart `_chooseQrScope`：710-734 的按钮顺序）。
+     *
+     * 5 个动作竖排：取消 → 分享本周课表 → 分享勾选的课程 → 分享时间模板 → 发送当前课表（primary）。
+     * 取消是弹窗自己的动作（Dart 里 `Navigator.pop` 返回 null），不属于 [TransferScope]，
+     * 所以 [QrScopeDialogAction.scope] 为 null。
+     */
+    fun qrScopeDialogActions(): List<QrScopeDialogAction> =
+        buildList {
+            add(QrScopeDialogAction(label = TransferStrings.cancelAction.zh, scope = null))
+            for (option in qrScopeOptions()) {
+                add(
+                    QrScopeDialogAction(
+                        label = option.label,
+                        scope = option.scope,
+                        // Dart 把「二维码发送当前课表」标成主操作（源码顺序里它是最后一个）。
+                        isPrimary = option.scope == TransferScope.CURRENT_TIMETABLE,
+                    ),
+                )
+            }
+        }
+
+    /**
+     * 该范围是否要先在选课弹层里勾课（Dart `_qrSendCurrent`：458-465）。
+     *
+     * Dart 对单数 `selectedCourse` 与复数 `selectedCourses` **同权处理**，走同一个弹层。
+     */
+    fun requiresCourseSelection(scope: TransferScope): Boolean =
+        scope == TransferScope.SELECTED_COURSES || scope == TransferScope.SELECTED_COURSE
+
+    /**
+     * 某个科目组当前是否显示为「已勾选」。
+     *
+     * Dart 的判据是「组里**任一**课程被勾」（`data_transfer_screen.dart:793-795`），
+     * 不是「全部」——因为用户可能只勾了同科目的一部分。
+     */
+    fun isCourseGroupSelected(selected: Set<String>, group: TransferCourseGroup): Boolean =
+        group.courseIds.any { it in selected }
+
+    /**
+     * 点一下科目组：整组已全选则整组取消，否则整组加入（`data_transfer_screen.dart:797-811`）。
+     *
+     * 注意「已全选」与「显示为已勾选」是两个不同判据：只勾了一部分时点一下是**补齐**整组，
+     * 不是取消（Dart 的 `allSelected = groupIds.every(selected.contains)`）。
+     */
+    fun toggleCourseGroup(selected: Set<String>, group: TransferCourseGroup): Set<String> {
+        if (group.courseIds.isEmpty()) return selected
+        val ids = group.courseIds.toSet()
+        val allSelected = ids.all { it in selected }
+        return if (allSelected) selected - ids else selected + ids
+    }
+
+    /**
+     * 把课程列表按科目聚合成选课弹层的行（Dart `CourseGroup.buildFrom`：
+     * `lib/utils/course_group.dart:24-32`）。
+     *
+     * 口径三条：① 按 `name` 分组、**保持课程在列表里的出现顺序**；
+     * ② 组长（老师名）取**该组第一门课**的老师（`course_group.dart:35`）；
+     * ③ 组内 id 即该组全部课程 id——勾一行等于勾这门的全部时段。
+     */
+    fun courseGroups(courses: List<Course>): List<TransferCourseGroup> {
+        val grouped = LinkedHashMap<String, MutableList<Course>>()
+        for (course in courses) {
+            grouped.getOrPut(course.name) { mutableListOf() }.add(course)
+        }
+        return grouped.map { (name, groupCourses) ->
+            TransferCourseGroup(
+                name = name,
+                teacher = groupCourses.first().teacher,
+                courseIds = groupCourses.map { it.id },
+            )
+        }
+    }
+
+    /**
      * 导入完成提示（Dart `_previewAndApply`：640-661）。
      *
      * 基础句 + 「超出当前作息范围」+「格式损坏已跳过」两个可选后缀，
@@ -251,6 +347,8 @@ data class DataTransferViewState(
     val isImporting: Boolean = false,
     /** 当前生效课表名（没有课表时 null，导出文案兜底用）。 */
     val activeProfileName: String? = null,
+    /** 选课弹层要列的科目组（Dart `provider.courseGroups`；空 = 弹层显示空态）。 */
+    val courseGroups: List<TransferCourseGroup> = emptyList(),
 ) {
     val overviewRows: List<TransferOverviewRow>
         get() = DataTransferLogic.overviewRows(overview)
@@ -261,18 +359,16 @@ data class DataTransferViewState(
             TransferStrings.dataTransferProfileShareSubjectNamed.filled("profileName", it)
         } ?: TransferStrings.dataTransferProfileShareSubject.zh
 
-    /** 导出按钮忙碌时的文案（Dart 62-64：`完整导出...`）。 */
-    val exportCurrentLabel: String
-        get() = if (isExporting) {
-            "${TransferStrings.fullExportTitle.zh}..."
-        } else {
-            TransferStrings.exportCurrentTimetable.zh
-        }
+    /**
+     * 导出 / 导入按钮的文案。
+     *
+     * Dart 这里原本还有「忙碌文案」（`_isExporting ? '${fullExportTitle}...' : exportCurrentTimetable`，
+     * `data_transfer_screen.dart:62-64` 与 `:99-101`），但那是**永远上不了屏的死字面量**：
+     * `HyperosButton` 在 `loading: true` 时把整个标签换成 18×18 的转圈
+     * （`hyperos_controls.dart:745-753`）⇒ 「完整导出...」「完整导入...」不会出现在任何真机上。
+     * 所以这里只保留正常文案，忙碌只体现为转圈（2026-10-29 审核口径）。
+     */
+    val exportCurrentLabel: String get() = TransferStrings.exportCurrentTimetable.zh
 
-    val importLabel: String
-        get() = if (isImporting) {
-            "${TransferStrings.fullImportTitle.zh}..."
-        } else {
-            TransferStrings.chooseFileAndImport.zh
-        }
+    val importLabel: String get() = TransferStrings.chooseFileAndImport.zh
 }

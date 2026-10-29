@@ -134,6 +134,21 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- transfer/ics 共用 FileProvider（Lead 2026-10-29 添加）。
+             2026-10-29 之前全仓 6 个 manifest 一条 provider 都没有 ⇒ 任何「导出并分享」
+             （ICS 日历、.mikcb 传输包）在代码路径上**必然**落到「provider 不可用」分支。
+             authority 后缀必须与 share/TransferShareContract.PROVIDER_AUTHORITY_SUFFIX、
+             pages/export/IcsShareLogic 的同名常量逐字一致；
+             路径白名单见 res/xml/file_paths.xml（只授 cacheDir 下两个子目录）。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"

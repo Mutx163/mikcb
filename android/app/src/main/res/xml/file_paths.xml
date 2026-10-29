@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 的路径映射表（被 AndroidManifest.xml 里那个
+  `android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"`
+  的 <meta-data> 引用）。
+
+  ## 这个文件为什么必须存在
+
+  `FileProvider.getUriForFile(context, authority, file)` 只有在「file 落在某个声明的根目录下」
+  时才会返回 content Uri，否则抛 IllegalArgumentException。本仓在 2026-10-29 之前一条 provider
+  都没注册、这个文件也不存在，所以两条导出路径（ICS 日历分享、.mikcb 传输包分享）在代码上
+  必然走到「provider 不可用」分支。
+
+  ## name 与 path 的区别（最容易踩的地方）
+
+  · `name` = content Uri 里的**第一段路径**（形如 content://authority/name/相对路径）；
+  · `path` = 真实的**相对 cacheDir 的目录名**，末尾斜杠必须有（否则按文件名前缀匹配）。
+
+  两个值都不是随便起的名，各自钉在纯 Kotlin 契约的常量上，改一处就要同步改另一处：
+
+  · ICS 日历导出：name="ics_export"，path="ics-export/"
+    对应 IcsShareLogic.PROVIDER_PATH_NAME 与 IcsShareLogic.SHARE_DIR_NAME；
+  · .mikcb 传输包导出：name="transfer_share"，path="transfer-share/"
+    对应 TransferShareContract.PROVIDER_PATH_NAME 与 TransferShareContract.CACHE_DIR_NAME。
+
+  注意下划线（Uri 里的别名）与连字符（真实目录名）不是笔误：两段各归各的口径。
+
+  只写 <cache-path>，不写 root-path / external-path：本 App 的分享文件全写在自己的 cacheDir 里，
+  授出别的目录等于把用户文件暴露给任意接收方应用。
+
+  ## 生命周期说明（不是配置问题，但排障时会撞上）
+
+  cacheDir 里的文件随时可能被系统清掉——这正是我们要的语义：分享出去的是临时副本，
+  用户真正要留的那份由接收方应用（文件管理器 / 微信 / 网盘）保存。所以这里不做任何「保活」配置。
+-->
+<paths>
+    <!-- ICS 日历导出：AndroidShareAdapter 把 .ics 写进 cacheDir/ics-export/ -->
+    <cache-path name="ics_export" path="ics-export/" />
+
+    <!-- .mikcb 传输包导出：AndroidTransferShareAdapter 把包体写进 cacheDir/transfer-share/ -->
+    <cache-path name="transfer_share" path="transfer-share/" />
+</paths>

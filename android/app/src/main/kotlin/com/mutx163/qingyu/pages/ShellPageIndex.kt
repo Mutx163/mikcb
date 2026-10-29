@@ -182,15 +182,14 @@ import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
 import com.mutx163.qingyu.pages.timetable.month.MonthViewHost
-import com.mutx163.qingyu.pages.transfer.DataTransferPage
-import com.mutx163.qingyu.pages.transfer.DataTransferViewState
+import com.mutx163.qingyu.pages.transfer.DataTransferHost
 import com.mutx163.qingyu.pages.transfer.LanEditModel
 import com.mutx163.qingyu.pages.transfer.LanEditPage
 import com.mutx163.qingyu.pages.transfer.PickupCodesPage
 import com.mutx163.qingyu.pages.transfer.QrTransferSendHost
 import com.mutx163.qingyu.pages.transfer.QrTransferScanHost
 import com.mutx163.qingyu.pages.transfer.QrTransferSendSession
-import com.mutx163.qingyu.pages.transfer.TransferOverviewInput
+import com.mutx163.qingyu.pages.transfer.TransferShellBridge
 import com.mutx163.qingyu.pages.weather.WeatherCityPickerHost
 import com.mutx163.qingyu.theme.QingyuTheme
 import java.time.LocalDate
@@ -268,6 +267,9 @@ fun ShellPageContent(
     }
     // 把「推页」回调装进 CompositionLocal，供各设置页的 `SettingsScreen` 使用（见上方 KDoc）。
     CompositionLocalProvider(LocalShellOpenPage provides onOpenPage) {
+    // 传输包跨路由暂存：「二维码发送」与「扫码接收」是两个独立路由，而发送载荷只有数据备份页
+    // 才算得出来（要读仓储）。挂在 `when` 之上，切路由才不会丢（2026-10-29 接线）。
+    val transferBridge = remember { TransferShellBridge() }
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
@@ -1107,45 +1109,21 @@ fun ShellPageContent(
         "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
 
         // ── P3-G3 导出与传输 ──────────────────────────────────────────
-        "g3.dataTransfer" -> {
-            val repository = wiring.timetable
-            val snapshot = repository.snapshot
-            val activeProfile = snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
-                ?: snapshot.profiles.firstOrNull()
-            DataTransferPage(
-                viewState = DataTransferViewState(
-                    overview = TransferOverviewInput(
-                        courseCount = snapshot.courses.size,
-                        activeProfileName = activeProfile?.name,
-                        profileCount = snapshot.profiles.size,
-                        timeSchemeCount = 1,
-                        currentWeek = snapshot.currentWeek,
-                        semesterStartDate = snapshot.settings.semesterStartDate?.toLocalDate(),
-                    ),
-                ),
-                onBack = onBack,
-                onExportCurrent = {},
-                onExportAllData = {},
-                onExportTimeTemplate = {},
-                onOpenIcsExport = { onOpenPage("g3.icsExport") },
-                onChooseFileAndImport = {},
-                onQrSend = { _, _ -> onOpenPage("g3.qrSend") },
-                onQrSendAll = { onOpenPage("g3.qrSend") },
-                onQrScan = { onOpenPage("g3.qrScan") },
-                onUndo = {},
-            )
-        }
+        "g3.dataTransfer" -> DataTransferHost(
+            repository = wiring.timetable,
+            bridge = transferBridge,
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+            onRequestQrSend = { onOpenPage("g3.qrSend") },
+            onRequestQrScan = { onOpenPage("g3.qrScan") },
+        )
         "g3.qrSend" -> {
-            val repository = wiring.timetable
-            val snapshot = repository.snapshot
-            val activeProfile = snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
-                ?: snapshot.profiles.firstOrNull()
-            val profileName = activeProfile?.name ?: "默认课表"
-            val payload = remember(profileName) {
-                "QingyuTimetable:$profileName".toByteArray(Charsets.UTF_8)
-            }
+            // 2026-10-29 修：此前这里发的是字符串 `"QingyuTimetable:<课表名>"`——
+            // 对方扫码收到的根本不是传输包，解析必然失败。现在载荷由数据备份页打包并暂存到
+            // `transferBridge`，本页只负责建会话与展示。
+            val payload = transferBridge.outboundPayload ?: ByteArray(0)
             val session = remember(payload) {
-                QrTransferSendSession.prepare(payload)
+                if (payload.isEmpty()) null else QrTransferSendSession.prepare(payload)
             }
             QrTransferSendHost(
                 session = session,
@@ -1154,9 +1132,12 @@ fun ShellPageContent(
             )
         }
         "g3.qrScan" -> {
+            // 2026-10-29 修：此前把收到的字节直接丢掉（`onImportFullBackup = { onBack() }`），
+            // 扫完等于什么都没发生。现在把字节交回数据备份页，走与选文件同一条导入链路。
             QrTransferScanHost(
                 onBack = onBack,
-                onImportFullBackup = {
+                onImportFullBackup = { raw ->
+                    transferBridge.inboundBytes = raw
                     onBack()
                 },
             )
