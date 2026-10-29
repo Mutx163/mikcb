@@ -206,15 +206,32 @@ pwsh -File scripts/compose-style-lint.ps1 -Domain transfer
 
 ### 5.4 L1（编译闸门）
 
-`pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` 两次都 **BUILD FAILED**，
-但**报错文件里没有一个属于本批改动**——全部是其它会话在途的
-`composeP1/app/TimeSchemeHost.kt`、`main/pages/ShellWiring.kt`（时间模板族接线进行中的签名不匹配）。
-本批文件的编译结论以三件事为凭：
-① 报错列表里 0 条命中 `pages/transfer/`、`platform/AndroidTransfer*`、`share/TransferShareContract`；
-② L0 编译（真 kotlinc）通过了本批全部模型层与 182 个用例；
-③ 样式守卫脚本（同样读源码）0 违规。
-**诚实结论：`DataTransferPage.kt` / `DataTransferHost.kt` 的 Kotlin 编译尚未拿到一次干净的成功输出**
-——要等那条会话收口后再复跑一次闸门（见 §六·9）。
+`pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin`
+→ **`BUILD SUCCESSFUL in 56s`，`e:` 行数 = 0**。
+
+过程如实记录：前三次都是 **BUILD FAILED**，但 15 条报错**全部落在其它会话当时在途的文件**上
+（`composeP1/app/TimeSchemeHost.kt`、`composeP1/pages/time_scheme/TimeSchemeManagementPage.kt`、
+`main/pages/ShellWiring.kt`——时间模板族接线进行中的签名不匹配），
+按 `grep "^e: " | grep -E "pages/transfer/|AndroidTransfer|TransferShareContract"` 命中 **0 条**。
+等那几条泳道收口后复跑即绿，说明本批文件（含 `DataTransferPage.kt` / `DataTransferHost.kt`
+两个 Compose 文件）能过 Kotlin + Compose 编译器。
+
+### 5.5 L2（权威单测闸门）
+
+`pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest`
+→ **`4983 tests completed, 2 failed`**，两条都**不在本批**：
+
+| 失败用例 | 归属 |
+|---|---|
+| `CjkLiteralGateTest > 渲染层…硬编码手机号` | 其它域的页面文案（本批文件里没有这类字面量） |
+| `ComposePageStyleGuardTest > 基线里已经修好的行要删掉` | 别的域修好了一处存量债但没同步删基线行 |
+
+隔几分钟**单独复跑这两个类** → `BUILD SUCCESSFUL`（源码在那两次运行之间已被对应泳道修正）；
+随后全量任务再跑 → `BUILD SUCCESSFUL`（up-to-date）。
+本批新增的 6 个测试类（182 例）在全量那一轮里 **0 失败**。
+
+> 口径提醒：L0/L1/L2 都只证明「编译过 / JVM 逻辑对」，**不证明真机可用**（见 §六·1）。
+
 
 ---
 
@@ -236,7 +253,8 @@ pwsh -File scripts/compose-style-lint.ps1 -Domain transfer
    与 Dart 的 `buildCurrentPackage` 在同一 scope 下是否逐字段一致，**只做了结构级单测**
    （scope / 是否带设置 / 课程 id 集合 / 自产包过校验），没有做「同一份数据在 Flutter 与 Compose 下导出字节相同」的对拍。
 8. **`g3.icsExport` 仍然全是空回调**（同域另一页），本批未动，避免一次提交变成一次重构。
-9. **L1 闸门尚未拿到本批文件的干净成功输出**（见 §5.4，被其它会话的在途文件挡住）。
+9. **L1/L2 的时效性**：本页的编译证据是在「其它泳道收口之后」才拿到的（§5.4）；
+   共享工作区里别人一动半成品，闸门就会红在与本页无关的文件上——复跑时先看报错文件属谁。
 10. **`settings` 只带 core 子集**：Kotlin `TimetableSettings.toJson` 目前只有 5 个键（节次表 / 作息 id /
     学期周数 / 开学日期），Dart 是 250+ 键。所以「导出的设置比 Flutter 少」是编制层缺口，不是本页漏调。
 11. **`locationTimeGroups` 恒空**：`TimetableSnapshot` 没有这个字段，按「不臆造数据」处理。
