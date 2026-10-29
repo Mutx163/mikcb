@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-28T07:14:10+00:00",
+  "updatedAt": "2026-10-29T07:34:58+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 272,
-    "schools": 267,
+    "total": 273,
+    "schools": 268,
     "generic": 5
   },
   "schools": [
@@ -1441,6 +1441,13 @@
       "name": "山东轻工职业学院",
       "initial": "S",
       "resourceFolder": "SDLIVC",
+      "category": "school"
+    },
+    {
+      "id": "SDYU",
+      "name": "山东青年政治学院",
+      "initial": "S",
+      "resourceFolder": "SDYU",
       "category": "school"
     },
     {
