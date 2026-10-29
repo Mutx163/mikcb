@@ -5,11 +5,6 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.course.TimetableCoursePort
 import com.mutx163.qingyu.course.TimetableCourseService
-import com.mutx163.qingyu.pages.timetable.WeekCardHorizontalAlign
-import com.mutx163.qingyu.pages.timetable.WeekCardSurface
-import com.mutx163.qingyu.pages.timetable.WeekCardVerticalAlign
-import com.mutx163.qingyu.pages.timetable.WeekSectionTimeMode
-import com.mutx163.qingyu.pages.timetable.WeekViewStyle
 
 /**
  * 课表宿主的显示偏好。
@@ -157,97 +152,6 @@ object TimetableHostLogic {
         activeTimeSchemeId: String?,
     ): TimeScheme? =
         schemes.firstOrNull { it.id == activeTimeSchemeId } ?: schemes.firstOrNull()
-
-    /**
-     * 从**用户存档**推导周视图渲染风格（设置 → 渲染层的唯一映射点）。
-     *
-     * 未映射前，渲染层自造了一套值：卡面字段全开、字号 13sp（`footnote2`）、
-     * 星期标签「一/二」、今天用蓝胶囊……设置里改哪一项都没反应。这里逐键对上：
-     *
-     * | 设置键（`lib/models/timetable_settings.dart`） | 本函数去处 |
-     * |---|---|
-     * | `courseCardShowName/Teacher/Location/Time/TimeLabels/Weeks/Description` | 同名字段 |
-     * | `courseCardFontSize`（默认 9）/ `compactFontSize`（9） | `cardTitleFontSize` / `compactFontSize` |
-     * | `courseCardVerticalAlign` / `HorizontalAlign` | 同名枚举（页面本地枚举） |
-     * | `courseCardSurfaceStyle`：`solid`/`gaussian`/`refraction` | `SOLID`/`GAUSSIAN`/`TRANSLUCENT`（无壁纸时折射档在 Dart 也退化成半透明） |
-     * | `timetableUseUnifiedCardColor` + `timetableUnifiedCardColor` | `unifiedCardColorHex`（未开 = null） |
-     * | `showConflictBadgeOnTimetable` / `timetableConflictCourseOpacity` | `showConflictBadge` / `conflictCourseOpacity` |
-     * | `timetableSectionTimeDisplayMode` | `sectionTimeMode`（**未知值回落 `startAndEnd`**，不是第一项） |
-     * | `sectionHeight` / `timetableAutoFitSectionHeight` | `sectionHeightDp` / `autoFitSectionHeight` |
-     * | `timetableTimeColumnWidthMode` | `timeColumnWidthDp`（宽 40 / 窄 34） |
-     * | `timetableCourseCardGap`（默认 1.25，clamp 0..3） | `cardInsetDp`（Dart `courseCardInset`） |
-     * | `timetableShowNonCurrentWeekCourses` / `weekGridShowExams` / `weekGridShowSchedules` | 同名字段 |
-     * | `longPressEmptySlotToAddCourseEnabled` / `enableHolidayMarking` | 同名字段 |
-     * | `weekdayBarFontColor*` / `weekdayBarAccentColor*` / `timeAxisFontColor*` | 同名字段 |
-     * | `courseCardTitleColor*` / `courseCardDetailColor*` | 同名字段 |
-     * | `timetableBackToCurrentWeekButtonStyle` | `showBackToCurrentWeek`（读侧恒 `floating`，见枚举 KDoc） |
-     * | `timetableFloatingBackToCurrentWeekButtonOpacity` | `backToCurrentWeekOpacity` |
-     * | `weatherShowOnWeekCard` | `showWeatherOnCard`（本批未接线，仅保留口径） |
-     */
-    fun weekViewStyle(model: TimetableSettingsModel): WeekViewStyle = WeekViewStyle(
-        showName = model.courseCardShowName,
-        showTeacher = model.courseCardShowTeacher,
-        showLocation = model.courseCardShowLocation,
-        showTime = model.courseCardShowTime,
-        showTimeLabels = model.courseCardShowTimeLabels,
-        showWeeks = model.courseCardShowWeeks,
-        showDescription = model.courseCardShowDescription,
-        cardTitleFontSize = model.courseCardFontSize.toFloat(),
-        compactFontSize = model.compactFontSize.toFloat(),
-        verticalAlign = when (model.courseCardVerticalAlign) {
-            CourseCardVerticalAlign.TOP -> WeekCardVerticalAlign.TOP
-            CourseCardVerticalAlign.CENTER -> WeekCardVerticalAlign.CENTER
-            CourseCardVerticalAlign.BOTTOM -> WeekCardVerticalAlign.BOTTOM
-            CourseCardVerticalAlign.SPACE_EVENLY -> WeekCardVerticalAlign.SPACE_EVENLY
-        },
-        horizontalAlign = when (model.courseCardHorizontalAlign) {
-            CourseCardHorizontalAlign.LEFT -> WeekCardHorizontalAlign.LEFT
-            CourseCardHorizontalAlign.CENTER -> WeekCardHorizontalAlign.CENTER
-            CourseCardHorizontalAlign.RIGHT -> WeekCardHorizontalAlign.RIGHT
-        },
-        surfaceStyle = when (model.courseCardSurfaceStyle) {
-            CourseCardSurfaceStyle.SOLID -> WeekCardSurface.SOLID
-            CourseCardSurfaceStyle.GAUSSIAN -> WeekCardSurface.GAUSSIAN
-            // 无壁纸/无模糊管线时 Dart 的折射档同样退化成半透明实体。
-            CourseCardSurfaceStyle.LIQUID_GLASS -> WeekCardSurface.TRANSLUCENT
-        },
-        unifiedCardColorHex =
-            if (model.timetableUseUnifiedCardColor) model.timetableUnifiedCardColor else null,
-        cardTitleColorLight = model.courseCardTitleColorLight,
-        cardTitleColorDark = model.courseCardTitleColorDark,
-        cardDetailColorLight = model.courseCardDetailColorLight,
-        cardDetailColorDark = model.courseCardDetailColorDark,
-        showConflictBadge = model.showConflictBadgeOnTimetable,
-        conflictCourseOpacity = model.timetableConflictCourseOpacity.toFloat(),
-        sectionTimeMode = when (model.timetableSectionTimeDisplayMode) {
-            SectionTimeDisplayMode.HIDDEN -> WeekSectionTimeMode.HIDDEN
-            SectionTimeDisplayMode.START_ONLY -> WeekSectionTimeMode.START_ONLY
-            SectionTimeDisplayMode.START_AND_END -> WeekSectionTimeMode.START_AND_END
-        },
-        sectionHeightDp = model.sectionHeight.toFloat(),
-        autoFitSectionHeight = model.timetableAutoFitSectionHeight,
-        timeColumnWidthDp = timeColumnWidthDp(
-            model.timetableTimeColumnWidthMode == TimetableTimeColumnWidthMode.WIDE,
-        ),
-        // Dart `courseCardInset`：`timetableCourseCardGap.clamp(0, 3)`。
-        cardInsetDp = model.timetableCourseCardGap.toFloat().coerceIn(0f, 3f),
-        showNonCurrentWeekCourses = model.timetableShowNonCurrentWeekCourses,
-        showWeekGridExams = model.weekGridShowExams,
-        showWeekGridSchedules = model.weekGridShowSchedules,
-        longPressEmptySlotToAddCourse = model.longPressEmptySlotToAddCourseEnabled,
-        holidayMarkingEnabled = model.enableHolidayMarking,
-        weekdayFontColorLight = model.weekdayBarFontColorLight,
-        weekdayFontColorDark = model.weekdayBarFontColorDark,
-        weekdayAccentColorLight = model.weekdayBarAccentColorLight,
-        weekdayAccentColorDark = model.weekdayBarAccentColorDark,
-        timeAxisColorLight = model.timeAxisFontColorLight,
-        timeAxisColorDark = model.timeAxisFontColorDark,
-        showBackToCurrentWeek =
-            model.timetableBackToCurrentWeekButtonStyle == BackToCurrentWeekButtonStyle.FLOATING,
-        backToCurrentWeekOpacity =
-            model.timetableFloatingBackToCurrentWeekButtonOpacity.toFloat(),
-        showWeatherOnCard = model.weatherShowOnWeekCard,
-    )
 }
 
 /** 删除目标（Dart `add_course_screen.dart` 两条删除分支）。 */

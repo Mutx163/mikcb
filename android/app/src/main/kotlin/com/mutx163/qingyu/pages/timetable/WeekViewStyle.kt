@@ -13,7 +13,7 @@ package com.mutx163.qingyu.pages.timetable
  *
  * 本类把「Dart 侧渲染真正读到的那些键」收成一个不可变快照：
  * - 渲染层只认 [WeekViewStyle]，不直接摸 `TimetableSettingsModel`（分层）；
- * - 从设置模型到本类的映射只有一处 —— `app/TimetableHostLogic.weekViewStyle(...)`，
+ * - 从设置模型到本类的映射只有一处 —— [TimetableStyleMapping.weekViewStyle]，
  *   带逐键行号，单测钉住（改映射不改渲染就会红）。
  *
  * 默认值**逐条对齐 Dart 构造默认**（`lib/models/timetable_settings.dart`），

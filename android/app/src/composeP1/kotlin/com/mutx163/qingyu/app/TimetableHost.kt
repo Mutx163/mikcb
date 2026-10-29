@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.WeekAgendaCardModel
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
@@ -33,7 +34,7 @@ import java.time.LocalDateTime
  *
  * 旧版把 `sectionHeight` / `timeColumnWidth` 两个值当「全部显示偏好」传给页面，
  * 设置里的卡面字段开关、字号、材质、冲突开关、时间列显示档、星期栏字色一个都没传，
- * 于是「设置里改了没反应」。现在由 [TimetableHostLogic.weekViewStyle] 一次映射成
+ * 于是「设置里改了没反应」。现在由 [TimetableStyleMapping.weekViewStyle] 一次映射成
  * [WeekViewStyle] 交给页面，映射表逐键带 Dart 行号（见该函数 KDoc）。
  *
  * @param repository 课表仓储（task-7 交付）。
@@ -84,7 +85,7 @@ fun TimetableHost(
     }
     // 渲染风格：设置模型 → 页面（唯一映射点，纯 Kotlin 可测）。
     val style: WeekViewStyle = remember(settingsModel) {
-        settingsModel?.let { TimetableHostLogic.weekViewStyle(it) } ?: WeekViewStyle()
+        settingsModel?.let { TimetableStyleMapping.weekViewStyle(it) } ?: WeekViewStyle()
     }
     // 周次钳制复用模型层判据（Dart `clampWeek`，domain/timetable_layout.dart:23-27），不重写。
     val currentWeek = clampCurrentWeekToSettings(snapshot.currentWeek.toLong(), settings).toInt()
