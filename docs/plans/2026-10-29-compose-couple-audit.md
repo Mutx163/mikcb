@@ -183,11 +183,12 @@
 
 ## 五、验证与未验
 
-- 已做：L0 模块 JVM 单测（`pages/sync`，`OK (213 tests)`）+ 咬合探针（clamp 去掉立即红）。
-- **未拿到**：L1 编译闸门的干净证据。同一工作区其它会话的在途改动把整仓编译打红
-  （`PagesShellActivity.kt` 语法错误、`ShellWiring.kt` / `PerfProbe.kt` / `LiveTestingFixtureHost.kt`
-  的类型不匹配），报错文件没有一个属于本批改动——但「不是这批改坏的」不等于「这批编得过」，
-  所以不写成已验。等那批落地后重跑 `pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` 才算数。
+- 已做：L0 模块 JVM 单测（`pages/sync`，`OK (213 tests)`）+ 咬合探针（clamp 去掉立即红、还原后绿）+
+  样式域检查（`compose-style-lint -Domain sync` = 0 条）+ L1 编译闸门（`BUILD SUCCESSFUL`，
+  复跑 `UP-TO-DATE`）。
+- **L1 的过程波折**：前两次跑红是**同仓其它会话的在途改动**（`PagesShellActivity` 语法错误、
+  `ShellWiring` / `PerfProbe` / `TimeSchemeHost` 类型不匹配），报错文件无一属于本批；
+  等它们落地后重跑才转绿。以后遇到同样情况：**不要**把这批的红记在自己头上，也不要跳过 L1。
 - **未做（agent 不能声明）**：真机逐项对照，清单见 §七.7。
 
 ---
@@ -248,7 +249,8 @@
 |---|---|
 | L0（模块 JVM 单测） | `OK (213 tests)`（原 169 + 新增 44：单档包 13 / 绑定编解码 7 / 控制器 24） |
 | 咬合探针 | 把 `shiftWeekOffset` 里的 `clampWeekOffset` 去掉 → `shiftWeekOffsetClampsAtUpperBound` 立刻红（`expected:<15> but was:<18>`），还原后绿 |
-| L1（编译闸门） | **本次未拿到干净证据**：同一工作区其他会话的在途改动把整仓编译打红（`PagesShellActivity.kt` 语法错误、`ShellWiring.kt` 的 `CourseActionSheet` 参数不匹配、`PerfProbe.kt` 类型不匹配、`LiveTestingFixtureHost.kt` Int/Long）。报错文件**没有一个是本批改动的文件**，但这只能说明「不是这批改坏的」，不能当成「这批编得过」 |
+| L1（编译闸门） | `pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` → **BUILD SUCCESSFUL**；随后复跑为 `:app:compileDevDebugKotlin UP-TO-DATE`（说明当前输入（含本批全部文件）上一次编译是成功的）。**过程说明**：中途两次 L1 因同仓其它会话的在途改动打红（`PagesShellActivity` 语法错误、`ShellWiring` / `PerfProbe` / `TimeSchemeHost` 类型不匹配），报错文件无一属于本批；等那批落地后重跑才转绿 |
+| 提交 | `02698142`（模型/控制器/存储/渲染/文案/测试，15 文件 +3013/-189）、`c6012a18`（`ShellPageIndex` 的 `f.couple` 换成真宿主入口） |
 
 ### 7.6 与 Dart 的已知差异（诚实清单）
 
