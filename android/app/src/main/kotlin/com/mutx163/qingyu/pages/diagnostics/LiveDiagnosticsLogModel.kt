@@ -376,7 +376,11 @@ fun buildDiagnosticsLogViewState(
     val hasLoadError = loadError != null
 
     return DiagnosticsLogViewState(
-        title = parsed.title.ifEmpty { title },
+        // 标题恒用入口标题（Dart 页头是 `Text(widget.title)`，`parsed.title` 从不参与渲染）：
+        // 日志文件头部首行是 `log_export_title` 这个**键名**，若拿它当标题，
+        // 真数据一进来页头就会变成 `log_export_title`。`parsed.title` 只在调用方
+        // 没给标题时兜底。
+        title = title.ifEmpty { parsed.title },
         viewMode = viewMode,
         timeSort = timeSort,
         selectedLevel = selectedLevel,

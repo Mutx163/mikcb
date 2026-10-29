@@ -39,6 +39,10 @@ object DiagnosticsStrings {
     /** 顶栏返回按钮的无障碍标签（Dart 走 `HyperosSubpage` 的默认返回语义）。 */
     val closeAction = ArbText("closeAction", "关闭")
 
+    /** 清空确认弹层的两个按钮（`app_zh.arb:492-493`，与全站同一套文案）。 */
+    val cancelAction = ArbText("cancelAction", "取消")
+    val confirmAction = ArbText("confirmAction", "确认")
+
     // ── 日志查看器：来源与等级 ──
     val appLogsSourceApp = ArbText("appLogsSourceApp", "应用")
     val appLogsSourceNative = ArbText("appLogsSourceNative", "超级岛")
@@ -113,6 +117,8 @@ object DiagnosticsStrings {
             appLogsClearFailed,
             appLogsRecordingPausedHint,
             closeAction,
+            cancelAction,
+            confirmAction,
             appLogsSourceApp,
             appLogsSourceNative,
             diagnosticsLevelLabel,

@@ -7,14 +7,17 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +43,6 @@ import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -61,6 +64,7 @@ import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -92,10 +96,20 @@ fun LiveDiagnosticsLogPage(
     onExport: () -> Unit,
     onClear: () -> Unit,
     onRefresh: (() -> Unit)? = null,
+    /**
+     * 列表状态由宿主持有：宿主用它做三件 Dart 侧有、渲染层做不了的事——
+     * 贴最新端判定（`_syncStickToLatest` 382-400 行）、自动滚到最新端
+     * （`_scheduleAutoScroll` 402-444 行）、「加载更早」后的视口锚定
+     * （`_loadEarlierEntriesWithAnchor` 872-911 行）。
+     */
+    listState: LazyListState = rememberLazyListState(),
 ) {
     val dark = isSystemInDarkTheme()
     // 弹层显隐是纯 UI 状态（Dart 用 showHyperosSheet），不属于模型层。
     var showOptions by remember { mutableStateOf(false) }
+    // 清空确认：Dart 的 `_clearLogs`（1001-1037 行）是点了就清、没有二次确认。
+    // 本批按任务书要求加了确认步，避免误触把用户排查现场清掉（处置见 _DIAG-log-gaps.md）。
+    var showClearConfirm by remember { mutableStateOf(false) }
 
     // 顶栏变体：Dart 侧 live_diagnostics_log_viewer_screen.dart 也是 HyperosSubpage，但显式写了
     // collapsibleLargeTitle: false（:481，日志页顶部有一段不动的死区）⇒ 对应官方 SmallTopAppBar，
@@ -123,18 +137,38 @@ fun LiveDiagnosticsLogPage(
                     )
                 }
                 IconButton(onClick = onExport, enabled = viewState.canExport) {
-                    Icon(
-                        imageVector = MiuixIcons.Share,
-                        contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
+                    // 导出中换成进度圈（Dart `_buildHeaderActions` 516-525 行：
+                    // `_exporting ? HyperosCircularProgress(18) : Icon(ios_share)`）。
+                    if (viewState.isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = MiuixIcons.Share,
+                            contentDescription = DiagnosticsStrings.appLogsExportAction.zh,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
+                    }
                 }
-                IconButton(onClick = onClear, enabled = viewState.canClear) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
+                IconButton(
+                    onClick = { showClearConfirm = true },
+                    enabled = viewState.canClear,
+                ) {
+                    // 清空中同样换进度圈（Dart 526-532 行）。
+                    if (viewState.isClearing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = MiuixIcons.Delete,
+                            contentDescription = DiagnosticsStrings.appLogsClearAction.zh,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
+                    }
                 }
             }
         },
@@ -203,6 +237,7 @@ fun LiveDiagnosticsLogPage(
                             onToggleDeviceInfo = onToggleDeviceInfo,
                             dark = dark,
                             scrollBehavior = scrollBehavior,
+                            listState = listState,
                         )
                     }
                 }
@@ -253,6 +288,33 @@ fun LiveDiagnosticsLogPage(
                     if (sort != viewState.timeSort) onTimeSortChange(sort)
                 },
             )
+        }
+    }
+
+    OverlayDialog(
+        show = showClearConfirm,
+        title = DiagnosticsStrings.appLogsClearAction.zh,
+        onDismissRequest = { showClearConfirm = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Button(
+                onClick = { showClearConfirm = false },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(text = DiagnosticsStrings.cancelAction.zh)
+            }
+            Button(
+                onClick = {
+                    showClearConfirm = false
+                    onClear()
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(text = DiagnosticsStrings.confirmAction.zh)
+            }
         }
     }
 }
@@ -334,6 +396,7 @@ private fun DiagnosticsLogList(
     onToggleDeviceInfo: () -> Unit,
     dark: Boolean,
     scrollBehavior: ScrollBehavior,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     // 官方页面骨架（`QingyuPageList` 内含三件套与右侧滚动条）。
@@ -341,6 +404,7 @@ private fun DiagnosticsLogList(
     QingyuPageList(
         innerPadding = PaddingValues(0.dp),
         modifier = modifier,
+        state = listState,
         scrollBehavior = scrollBehavior,
         contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -427,16 +491,37 @@ private fun DiagnosticsDeviceInfoCard(
             )
         }
         if (expanded) {
-            Column(
+            // Dart 展开态是 `Wrap` 里一串 `键: 值` 小胶囊（`_DiagnosticsHeaderRow`
+            // 1215-1244 行），不是「左标签右值」的两列行——键长短不一时后者会留大片空白。
+            DiagnosticsInfoChipFlow(rows = rows, dark = dark)
+        }
+    }
+}
+
+/** 设备信息展开后的胶囊流（Dart `Wrap(spacing: 8, runSpacing: 8)`）。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DiagnosticsInfoChipFlow(
+    rows: List<DiagnosticsKeyValueRow>,
+    dark: Boolean,
+) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        rows.forEach { row ->
+            Text(
+                text = "${row.label}: ${row.value}",
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                rows.forEach { row ->
-                    DiagnosticsTagRow(label = row.label, value = row.value, dark = dark)
-                }
-            }
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(QingyuTheme.rowHighlight(dark)))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         }
     }
 }
@@ -495,7 +580,10 @@ private fun DiagnosticsRawEntryCard(entry: DiagnosticsLogEntryView, dark: Boolea
     ) {
         Text(
             text = entry.rawText,
-            style = MiuixTheme.textStyles.footnote1,
+            // Dart 原文模式是 `copyWith(fontFamily: 'monospace', height: 1.45)`
+            //（`_buildRawView` 854-859 行）：原文里 `key=value` 的对齐靠等宽字体。
+            // 行高不自己算倍数（会绕过字阶），沿用主题字号。
+            style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
             color = Color(QingyuTheme.primaryText(dark)),
         )
     }
@@ -550,28 +638,31 @@ private fun DiagnosticsEntryCard(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+                    // Dart 展开态顶部是 `CrossAxisAlignment.start`（1325-1326 行）：
+                    // 标签换行成两排时图标与箭头仍在第一排，不跟着居中。
+                    verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        imageVector = levelIcon(entry.level),
-                        contentDescription = null,
-                        tint = levelColor,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    // 22dp 圆角方块 + 12% 透明度的等级底色 + 14dp 图标（Dart 1328-1338 行）。
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(levelColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        DiagnosticsTag(label = entry.levelLabel, outlined = true, dark = dark)
-                        DiagnosticsTag(label = entry.sourceLabel, outlined = true, dark = dark)
-                        if (entry.isLevelInferred) {
-                            DiagnosticsTag(
-                                label = DiagnosticsStrings.diagnosticsLevelInferred.zh,
-                                outlined = true,
-                                dark = dark,
-                            )
-                        }
+                        Icon(
+                            imageVector = levelIcon(entry.level),
+                            contentDescription = null,
+                            tint = levelColor,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                    // 等级 / 来源 / 推断等级 / 类别挤在同一个换行流里（Dart 1341-1366 行）。
+                    // 用 Box 吃掉剩余宽度再放 FlowRow：FlowRowScope 的 weight 是较新
+                    // 才有的，包一层 Row 作用域的 Box 兼容性更稳。
+                    Box(modifier = Modifier.weight(1f)) {
+                        DiagnosticsEntryTagFlow(entry = entry, dark = dark)
                     }
                     Icon(
                         imageVector = MiuixIcons.ExpandLess,
@@ -580,19 +671,12 @@ private fun DiagnosticsEntryCard(
                     )
                 }
 
-                if (entry.categoryLabel.isNotEmpty()) {
-                    Text(
-                        text = entry.categoryLabel,
-                        style = MiuixTheme.textStyles.footnote1,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                }
                 entry.formattedTime?.let { time ->
                     Text(
                         text = time,
                         style = MiuixTheme.textStyles.footnote1,
                         color = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
                 if (entry.message.isNotEmpty()) {
@@ -600,16 +684,86 @@ private fun DiagnosticsEntryCard(
                         text = entry.message,
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.primaryText(dark)),
+                        modifier = Modifier.padding(top = 6.dp),
                     )
                 }
                 if (entry.detailRows.isNotEmpty()) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    entry.detailRows.forEach { row ->
-                        DiagnosticsTagRow(label = row.label, value = row.value, dark = dark)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        entry.detailRows.forEach { row ->
+                            DiagnosticsDetailBlock(label = row.label, value = row.value, dark = dark)
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/** 等级 / 来源 / 推断等级 / 类别（Dart 展开态的 `Wrap`，1341-1366 行）。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DiagnosticsEntryTagFlow(entry: DiagnosticsLogEntryView, dark: Boolean) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(end = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        DiagnosticsTag(label = entry.levelLabel, outlined = true, dark = dark)
+        DiagnosticsTag(label = entry.sourceLabel, outlined = true, dark = dark)
+        if (entry.isLevelInferred) {
+            DiagnosticsTag(
+                label = DiagnosticsStrings.diagnosticsLevelInferred.zh,
+                outlined = true,
+                dark = dark,
+            )
+        }
+        if (entry.categoryLabel.isNotEmpty()) {
+            Text(
+                text = entry.categoryLabel,
+                style = MiuixTheme.textStyles.footnote1,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+        }
+    }
+}
+
+/**
+ * 详情键值块（Dart `_DiagnosticsDetailRow`，1404-1450 行）：**标签在上、值在下**，
+ * 整块底色，值里含换行时切等宽字体。
+ *
+ * 之前这里画成「左标签 96dp + 右值」的两列行，与 Dart 的上下结构不一致；
+ * 栈/异常这类长值在两列布局里会缩成很窄的一条。
+ */
+@Composable
+private fun DiagnosticsDetailBlock(label: String, value: String, dark: Boolean) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(QingyuTheme.rowHighlight(dark)))
+            .padding(8.dp),
+    ) {
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.footnote2,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
+        Text(
+            text = value,
+            style = MiuixTheme.textStyles.footnote2,
+            color = Color(QingyuTheme.primaryText(dark)),
+            fontFamily = if (value.contains('\n')) FontFamily.Monospace else null,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 
@@ -630,33 +784,6 @@ private fun DiagnosticsTag(label: String, outlined: Boolean, dark: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = MiuixTheme.textStyles.footnote2, color = textColor)
-    }
-}
-
-/** 详情 / 设备信息的一行：左标签 + 右值（值里含换行时按原文铺）。 */
-@Composable
-private fun DiagnosticsTagRow(label: String, value: String, dark: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(QingyuTheme.rowHighlight(dark)))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.width(96.dp),
-        )
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.footnote2,
-            color = Color(QingyuTheme.primaryText(dark)),
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 
