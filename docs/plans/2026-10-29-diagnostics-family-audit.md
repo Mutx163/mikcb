@@ -126,15 +126,43 @@ CPU/RSS 走 `Process.getElapsedCpuTime()` + `/proc/self/statm`；启用门控 = 
 
 ## 七、验证口径
 
-- **已做（可复跑）**：L0 `pages/diagnostics` → **OK (236 tests)**；样式守卫 `-Domain diagnostics` → **0 处**。
-  咬合探针共 4 次（内存 key 对拍 / 日志页标题 / 夹具清空不误删 / 台账 ranking），每次都是「改坏 → 红 → 还原 → 绿」。
+- **已做（可复跑）**：
+  - L0：`pwsh -File scripts/test-kotlin-module.ps1 -Module "pages/diagnostics"` → **OK (236 tests)**（诊断域 17 个测试类）。
+  - L1：`pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin` → **BUILD SUCCESSFUL in 37s**（含本轮全部宿主接线与探针挂载）。
+  - 样式守卫：`scripts/compose-style-lint.ps1 -Domain diagnostics` → **0 处**。
+  - 咬合探针共 6 次（内存 key 对拍 / 日志页标题 / 日志 payload `source` / 日志增量解析 / 夹具清空不误删 / 台账预算收紧与排行次序），
+    每次都是「改坏 → 红 → 还原 → 绿」，无一次留在工作区。
+- **L2 现状（不是本族的红）**：`:app:testDevDebugUnitTest` 4982 例 / 7 红，逐条查过归属：
+  `CjkLiteralGateTest`（`app/TimeSchemeHost.kt`，另一泳道在途）、`ComposePageStyleGuardTest`（`sync/CoupleTimetableSettingsPage.kt` 的 R5 过期基线行）、
+  `ShellPageDispatchCoverageTest` ×5（它自己的路径常量还写着 `src/composeUi/…/ShellPageIndex.kt`，而文件已搬进 `src/main/`）。
+  **诊断域全绿**；这三处属别的批次，本轮不越界改。
 - **能在真机上验的**（需要用户，本机做不了）：
   1. 设置 → 诊断：开关拨一下退出再进，值还在；诊断包里能看到「内存状态 / 设置快照」两行。
   2. 应用日志：进页面应当有内容（不是空态）；切级别 / 切排序 / 复制 / 导出各点一次。
   3. 内存统计：首屏就有数字，停 3 秒数字会变；长按「原始 JSON」应直接复制。
   4. 性能报告：`dev` 或 `devBench` 包应出排行（不再显示「未安装」）；正式包应仍显示「未安装」（这是对的）。
+     120Hz 面板上 `budgetMs` 应约 8.3 而不是恒 16.7 —— 这一条能证明「实测 vsync 收紧预算」真的生效。
   5. 临时测试夹具：装一次 → 课表里出现一批临时课；清空 → 只剩你自己的课。
 - **不能声明的**：像素级一致（受 miuix 组件能力限制，见 §八）、手势/滚动手感、系统分享面板真实行为。
+
+### 提交与归属说明（多 Agent 并行，工作区共享）
+
+| 提交 | 内容 |
+|---|---|
+| `795d797a` / `141ff16d` / `e25baddb` | 泳道 A：日志存储层、日志查看器接线、贴最新端判定修复 |
+| `57ad8ca5` | 泳道 B：内存页模型/渲染层对齐 |
+| `7339b35e` / `6d92d794` | 泳道 C：帧探针 + 台账、按 L1 修正三处 API |
+| `b6ada3ff` / `2d171f22` | 泳道 D：设置模型字段、设置→诊断与夹具宿主 |
+| `012e068d` | Lead：日志存储层初始化、设置首页开发者工具组传真可见性、本文档 |
+| `95cf9c40` | Lead：壳 Activity 挂载帧采集 + `markStartup("shellAttach")` |
+
+⚠️ 两处**已知的归属串台**（内容完整、未改写历史，仅记账）：
+1. `795d797a` 误带了泳道 B 的 `MemoryStatsHost.kt` 与 `MemoryStatsCollectorKeyCompatTest.kt`
+   （共享暂存区并发 + pre-commit 跑了 5 分钟）；之后各泳道全部改成路径限定提交。
+2. `ShellPageIndex.kt` 的五个壳分支替换与另一个批次（节假日 / 时间模板接线）在同一份未提交文件里，
+   由该批次提交时一并带入——**本族的接线确实在 HEAD 里**，可在 `ShellPageIndex.kt` 的
+   `b.diagnostics` / `h.log` / `h.memory` / `h.perfReport` / `h.fixture` 五处核对。
+
 
 ## 八、有意偏差登记（与 Dart 不同，且是故意的）
 
