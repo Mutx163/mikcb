@@ -264,6 +264,23 @@ function Write-State($entries) {
     $live | ConvertTo-Json -Depth 4 | Set-Content -Path $StateFile -Encoding utf8
 }
 
+# 停掉正在跑的看门狗进程。
+# 注意：自启改成 wscript + VBS 垫片之后，「计划任务的动作」会立即结束（真正的守护是它的
+# 子进程），所以 Stop-ScheduledTask 已经杀不掉守护了，必须按命令行匹配进程来清。
+function Stop-Watchdog {
+    $me = $PID
+    $found = @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" |
+            Where-Object {
+                $_.ProcessId -ne $me -and
+                $_.CommandLine -like '*cpu-governor*' -and
+                $_.CommandLine -like '*-Mode watch*'
+            })
+    foreach ($p in $found) {
+        try { Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop } catch { }
+    }
+    return $found.Count
+}
+
 # 全局待写状态（内存里累积，结束时一次性落盘）
 $script:State = $null
 
@@ -426,11 +443,17 @@ switch ($Mode) {
         }
         else {
             $info = Get-ScheduledTaskInfo -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
-            Write-Host ("  计划任务 {0}：状态={1} 上次运行={2} 上次结果=0x{3:X}" -f `
+            Write-Host ("  计划任务 {0}：动作状态={1} 上次运行={2} 上次结果=0x{3:X}" -f `
                     $script:AutoStartTaskName, $task.State, $info.LastRunTime, $info.LastTaskResult)
+            Write-Host '  （动作状态 Ready 是正常的：wscript 启动器瞬间结束，真正干活的是下面的看门狗进程）'
             $wd = @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" |
                     Where-Object { $_.CommandLine -like '*cpu-governor*' -and $_.CommandLine -like '*-Mode watch*' })
-            Write-Host ("  正在跑的看门狗进程：{0} 个" -f $wd.Count)
+            if ($wd.Count -eq 1) {
+                Write-Host ("  正在跑的看门狗进程：1 个 ← 正常工作（无窗口）") -ForegroundColor Green
+            }
+            else {
+                Write-Host ("  正在跑的看门狗进程：{0} 个 ← 异常，应恰好 1 个；重装一次：-Mode install" -f $wd.Count) -ForegroundColor Red
+            }
         }
     }
 
@@ -507,10 +530,18 @@ switch ($Mode) {
         if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
         if (-not $exe) { throw '取不到 pwsh 的可执行文件路径，无法注册自启' }
 
-        # 用 -File 而不是 -Command，避免计划任务参数里再套一层引号
-        $arg = "-NoProfile -WindowStyle Hidden -File `"$PSCommandPath`" -Mode watch -Preset all -ReserveCores $ReserveCores -LogFile `"$logPath`""
+        # 用 wscript + VBS 垫片启动，才能真正「无窗口」。
+        # 直接让计划任务跑 pwsh 会留一个可见的控制台窗口（实测：用户截图里那个
+        # 「C:\Program Files\WindowsApp…」窗口就是它），`-WindowStyle Hidden` 不生效
+        # ——控制台是 Task Scheduler 建的，pwsh 拿到参数时窗口已经画出来了。
+        # WScript.Shell.Run(..., 0, False) 的第二个参数 0 = 隐藏窗口，且 wscript 本身没有控制台。
+        $vbsPath = Join-Path $logDir 'run-hidden.vbs'
+        $inner = '"' + $exe + '" -NoProfile -NonInteractive -File "' + $PSCommandPath +
+            '" -Mode watch -Preset all -ReserveCores ' + $ReserveCores + ' -LogFile "' + $logPath + '"'
+        $vbsBody = 'CreateObject("WScript.Shell").Run "' + $inner.Replace('"', '""') + '", 0, False' + "`r`n"
+        Set-Content -Path $vbsPath -Value $vbsBody -Encoding ascii -NoNewline
 
-        $action = New-ScheduledTaskAction -Execute $exe -Argument $arg
+        $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\wscript.exe" -Argument ('"' + $vbsPath + '"')
         $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
         $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
         # ExecutionTimeLimit 设为 0 = 不限时（默认 3 天会被杀掉，常驻守护必须改掉）
@@ -520,14 +551,17 @@ switch ($Mode) {
 
         # 先停掉可能在跑的旧实例：注册时设了 MultipleInstances=IgnoreNew，
         # 不停的话 Start-ScheduledTask 会直接不生效，跑的还是旧参数。
+        # wscript 垫片下计划任务记录的动作会瞬间结束，所以还要显式清掉真正的守护进程。
         Stop-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
+        $killed = Stop-Watchdog
+        if ($killed -gt 0) { Write-Host ("[governor] 已停掉 {0} 个旧看门狗进程。" -f $killed) -ForegroundColor Yellow }
 
         Register-ScheduledTask -TaskName $script:AutoStartTaskName -Action $action -Trigger $trigger `
             -Principal $principal -Settings $settings -Force `
             -Description '把 AI/构建进程限到部分物理核并降优先级，留核给桌面。由 scripts/cpu-governor.ps1 -Mode install 注册。' | Out-Null
 
         Start-ScheduledTask -TaskName $script:AutoStartTaskName
-        Write-Host ("[governor] 已注册登录自启：计划任务 {0}" -f $script:AutoStartTaskName) -ForegroundColor Green
+        Write-Host ("[governor] 已注册登录自启：计划任务 {0}（无窗口运行）" -f $script:AutoStartTaskName) -ForegroundColor Green
         Write-Host ("[governor] 留给你 {0} 个物理核；AI 用 mask=0x{1:X}；日志 {2}" -f $ReserveCores, $aiMask, $logPath) -ForegroundColor Green
         Write-Host '[governor] 取消自启：-Mode uninstall' -ForegroundColor Green
     }
@@ -537,7 +571,10 @@ switch ($Mode) {
         if (-not $task) { Write-Host '[governor] 没有注册过开机自启。' -ForegroundColor Cyan; break }
         Stop-ScheduledTask -TaskName $script:AutoStartTaskName -ErrorAction SilentlyContinue
         Unregister-ScheduledTask -TaskName $script:AutoStartTaskName -Confirm:$false
-        Write-Host ("[governor] 已删除计划任务 {0}。" -f $script:AutoStartTaskName) -ForegroundColor Cyan
+        $killed = Stop-Watchdog
+        $vbs = Join-Path ([System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\.agents\cpu-governor'))) 'run-hidden.vbs'
+        Remove-Item $vbs -ErrorAction SilentlyContinue
+        Write-Host ("[governor] 已删除计划任务 {0}，并停掉 {1} 个看门狗进程。" -f $script:AutoStartTaskName, $killed) -ForegroundColor Cyan
         Write-Host '[governor] 已被限速的进程还在限速状态；要一起恢复用 -Mode restore。' -ForegroundColor Cyan
     }
 }
