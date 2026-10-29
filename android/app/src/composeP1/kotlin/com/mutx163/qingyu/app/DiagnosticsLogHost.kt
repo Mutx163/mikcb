@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
@@ -193,11 +194,14 @@ fun DiagnosticsLogHost(
     )
 
     // 贴最新端判定（Dart `_syncStickToLatest` 382-400 行）。
+    // 这个 effect 只在切换排序方向时重启，滚动事件里必须读**当下**的窗口：
+    // 直接用闭包捕获的 resolvedViewport 会拿到首次组合时的快照（钉住的起点永远不更新）。
+    val latestResolvedViewport = rememberUpdatedState(resolvedViewport)
     LaunchedEffect(listState, viewState.latestAtBottom) {
         snapshotFlow { listState.canScrollForward to listState.canScrollBackward }
             .collect { (forward, backward) ->
                 val next = isStuckToLatest(viewState.latestAtBottom, forward, backward)
-                viewport = DiagnosticsLogPaging.onStickToLatestChange(resolvedViewport, next)
+                viewport = DiagnosticsLogPaging.onStickToLatestChange(latestResolvedViewport.value, next)
             }
     }
 
