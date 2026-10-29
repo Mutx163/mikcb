@@ -1,231 +1,237 @@
 package com.mutx163.qingyu.pages.timetable
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.Course
-import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 课表周视图网格主体布局（Timetable Week Grid · Compose Phase 3）。
+ * 周视图课程网格（对应 Dart `lib/widgets/timetable/timetable_week_grid.dart` +
+ * `timetable_day_column.dart`）。
  *
- * 对应 Flutter `lib/widgets/timetable/timetable_week_grid.dart`：
- * - 二维网格系统：按 (dayOfWeek, section) 将课程卡片绝对定位到精确像素坐标；
- * - 连堂撑满：多节次连堂课程纵向高度自动为 (endSection - startSection + 1) * sectionHeight；
- * - 冲突并列：同天同节次重叠课程自动分列（Interval Scheduling 算法），按比例平分当天宽度并展示冲突状态；
- * - 背景辅助线：节次之间淡灰色水平线、日期列之间垂直分割线；
- * - 空白点击：点击无课节次网格立即回调 [onEmptySlotClick]，方便快捷添课。
+ * ## 与旧实现的差别（2026-10-29 重做）
+ *
+ * 1. **不再画背景网格线**：Dart 周网格没有横线/竖线（`timetable_day_column.dart`
+ *    的 `gridLines` 只放空白标记槽，不是分隔线）。旧实现用 Canvas 画了一整张
+ *    网格，视觉上比原版重得多。
+ * 2. **课程卡占满整列**：Dart 的课卡是 `Positioned(left: 0, right: 0)`，同天
+ *    重叠时后画的压住先画的；旧实现自己发明了「按列平分」，与 Flutter 完全不同。
+ * 3. **考试 / 日程落格卡**：Dart 会把当天的考试与日程按钟点映射成节次卡，画在
+ *    课程卡**之上**（`WeekGridAgendaPlacement`），旧实现完全没有。
+ * 4. **空白格**：Dart 里点空白什么都不做；只有开了「长按空白格加课」时长按才
+ *    出现加课入口。旧实现把每一格都挂成「点一下就加课」，误触很多。
  */
 @Composable
 fun TimetableWeekGrid(
-    courses: List<Course>,
-    week: Int,
-    visibleDays: List<Int> = listOf(1, 2, 3, 4, 5, 6, 7),
+    cardsByDay: Map<Int, List<WeekCardModel>>,
+    agendaByDay: Map<Int, List<WeekAgendaCardModel>> = emptyMap(),
+    visibleDays: List<Int> = (1..7).toList(),
     sectionCount: Int = 12,
-    sectionHeight: Dp = 64.dp,
+    sectionHeight: Dp = 68.dp,
+    style: WeekViewStyle = WeekViewStyle(),
+    holidayForDay: (Int) -> Boolean = { false },
     onCourseClick: (Course) -> Unit = {},
-    onEmptySlotClick: (dayOfWeek: Int, section: Int) -> Unit = { _, _ -> },
+    onAgendaClick: (WeekAgendaCardModel) -> Unit = {},
+    onLongPressEmptySlot: ((dayOfWeek: Int, section: Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
     val totalHeight = sectionHeight * sectionCount
-    val dividerColor = Color(QingyuTheme.dividerLine(dark)).copy(alpha = 0.35f)
-
-    // ── 算法：按天对课程进行冲突分组与分列排版 ──
-    val layoutModels = remember(courses, week, visibleDays) {
-        buildWeekGridLayout(courses, week, visibleDays)
-    }
+    val dayCount = visibleDays.size.coerceAtLeast(1)
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .height(totalHeight),
     ) {
-        val totalWidth = maxWidth
-        val dayCount = visibleDays.size.coerceAtLeast(1)
-        val dayWidth = totalWidth / dayCount
+        val dayWidth: Dp = maxWidth / dayCount.toFloat()
 
-        // ── 1. 背景网格细线 ──
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 0.5.dp.toPx()
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-
-            // 水平节次线
-            val sectionHeightPx = sectionHeight.toPx()
-            for (i in 1 until sectionCount) {
-                val y = i * sectionHeightPx
-                drawLine(
-                    color = dividerColor,
-                    start = Offset(0f, y),
-                    end = Offset(canvasWidth, y),
-                    strokeWidth = strokeWidth,
-                )
-            }
-
-            // 垂直日列线
-            val dayWidthPx = canvasWidth / dayCount
-            for (i in 1 until dayCount) {
-                val x = i * dayWidthPx
-                drawLine(
-                    color = dividerColor,
-                    start = Offset(x, 0f),
-                    end = Offset(x, canvasHeight),
-                    strokeWidth = strokeWidth,
-                )
-            }
-        }
-
-        // ── 2. 空白节次点击响应层 ──
-        // 覆盖在背景网格上方、课程卡片下方；未被课程阻挡的点击将触发空白加课
-        for (dayIndex in visibleDays.indices) {
-            val dayOfWeek = visibleDays[dayIndex]
-            val xOffset = dayWidth * dayIndex
-
-            for (section in 1..sectionCount) {
-                val yOffset = sectionHeight * (section - 1)
+        Row(modifier = Modifier.fillMaxWidth()) {
+            for (dayOfWeek in visibleDays) {
+                val cards = cardsByDay[dayOfWeek].orEmpty()
+                val agenda = agendaByDay[dayOfWeek].orEmpty()
                 Box(
                     modifier = Modifier
-                        .offset(x = xOffset, y = yOffset)
-                        .size(width = dayWidth, height = sectionHeight)
-                        .clickable { onEmptySlotClick(dayOfWeek, section) },
-                )
-            }
-        }
+                        .width(dayWidth)
+                        .fillMaxHeight(),
+                ) {
+                    // ── 1. 空白格长按层（Dart `TimetableEmptySlotGestureArea`）──
+                    if (onLongPressEmptySlot != null && style.longPressEmptySlotToAddCourse) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            for (section in 1..sectionCount) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(sectionHeight)
+                                        .pointerInput(dayOfWeek, section) {
+                                            detectTapGestures(
+                                                onLongPress = {
+                                                    onLongPressEmptySlot(dayOfWeek, section)
+                                                },
+                                            )
+                                        },
+                                )
+                            }
+                        }
+                    }
 
-        // ── 3. 课程卡片层 ──
-        for (model in layoutModels) {
-            val course = model.course
-            val dayIndex = visibleDays.indexOf(course.dayOfWeek)
-            if (dayIndex < 0) continue
+                    // ── 2. 课程卡（整列宽，重叠时按排序叠放）──
+                    for (card in cards) {
+                        val startSection = card.course.startSection.coerceIn(1, sectionCount)
+                        val endSection = card.course.endSection.coerceIn(startSection, sectionCount)
+                        val span = endSection - startSection + 1
+                        Box(
+                            modifier = Modifier
+                                .offset(y = sectionHeight * (startSection - 1))
+                                .fillMaxWidth()
+                                .height(sectionHeight * span),
+                        ) {
+                            CourseGridCard(
+                                model = card,
+                                style = style,
+                                sectionHeight = sectionHeight,
+                                isHoliday = holidayForDay(dayOfWeek),
+                                onClick = { onCourseClick(card.course) },
+                            )
+                        }
+                    }
 
-            val startSec = course.startSection.coerceIn(1, sectionCount)
-            val endSec = course.endSection.coerceIn(startSec, sectionCount)
-            val span = endSec - startSec + 1
-
-            val colWidth = dayWidth / model.totalCols.coerceAtLeast(1)
-            val x = dayWidth * dayIndex + colWidth * model.colIndex
-            val y = sectionHeight * (startSec - 1)
-            val cardHeight = sectionHeight * span
-
-            Box(
-                modifier = Modifier
-                    .offset(x = x, y = y)
-                    .size(width = colWidth, height = cardHeight),
-            ) {
-                CourseGridCard(
-                    model = model,
-                    onClick = onCourseClick,
-                )
+                    // ── 3. 考试 / 日程卡（画在课程卡之上，Dart 同序）──
+                    for (entry in agenda) {
+                        val start = entry.startSection.coerceIn(1, sectionCount)
+                        val end = entry.endSection.coerceIn(start, sectionCount)
+                        val span = end - start + 1
+                        Box(
+                            modifier = Modifier
+                                .offset(y = sectionHeight * (start - 1))
+                                .fillMaxWidth()
+                                .height(sectionHeight * span),
+                        ) {
+                            WeekAgendaCard(
+                                model = entry,
+                                style = style,
+                                sectionHeight = sectionHeight,
+                                onClick = { onAgendaClick(entry) },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 /**
- * 将整周的课程列表进行空间排版与分列计算。
+ * 周网格里的考试 / 日程卡（Dart `week_grid_agenda_card.dart`）。
+ *
+ * 视觉口径：圆角 8、徽标药丸（考试红 / 日程本色）、标题两行、非跨天时补一行时刻。
  */
-private fun buildWeekGridLayout(
-    courses: List<Course>,
-    week: Int,
-    visibleDays: List<Int>,
-): List<WeekGridCardModel> {
-    val result = mutableListOf<WeekGridCardModel>()
+@Composable
+private fun WeekAgendaCard(
+    model: WeekAgendaCardModel,
+    style: WeekViewStyle,
+    sectionHeight: Dp,
+    onClick: () -> Unit,
+) {
+    val isExam = model.kind == WeekAgendaKind.EXAM
+    val fill = if (isExam) {
+        MiuixTheme.colorScheme.error
+    } else {
+        parseHexColor(model.colorHex, fallback = MiuixTheme.colorScheme.primary)
+    }
+    val ink = calculateInk(fill)
+    val titleFontSize = style.cardTitleFontSize + 1f
+    val detailFontSize = style.cardTitleFontSize.coerceIn(7f, 13f)
+    val verticalPadding = if (sectionHeight < 64.dp) 3.dp else 5.dp
+    val shape = RoundedCornerShape(WeekCardMetrics.CORNER_RADIUS_DP.dp)
 
-    for (dayOfWeek in visibleDays) {
-        val dayCourses = courses.filter { it.dayOfWeek == dayOfWeek }
-        if (dayCourses.isEmpty()) continue
-
-        // 按照起始节次升序排，节次相同按结束节次降序排
-        val sortedCourses = dayCourses.sortedWith(
-            compareBy<Course> { it.startSection }.thenByDescending { it.endSection },
-        )
-
-        // 划分相互重叠的冲突群簇 (Clusters)
-        val clusters = mutableListOf<MutableList<Course>>()
-        for (course in sortedCourses) {
-            var added = false
-            for (cluster in clusters) {
-                // 如果当前课程与群簇中任意一门课时段重叠，则加入该群簇
-                val hasOverlap = cluster.any { existing ->
-                    !(course.endSection < existing.startSection || existing.endSection < course.startSection)
-                }
-                if (hasOverlap) {
-                    cluster.add(course)
-                    added = true
-                    break
-                }
-            }
-            if (!added) {
-                clusters.add(mutableListOf(course))
-            }
-        }
-
-        // 对每个群簇分配分列索引 (Greedy Interval Coloring)
-        for (cluster in clusters) {
-            if (cluster.size == 1) {
-                val c = cluster.first()
-                result.add(
-                    WeekGridCardModel(
-                        course = c,
-                        isCurrentWeek = c.isActiveInWeek(week),
-                        isConflicting = false,
-                        colIndex = 0,
-                        totalCols = 1,
-                    ),
+    Box(
+        modifier = Modifier
+            .padding(style.cardInsetDp.dp)
+            .fillMaxWidth()
+            .fillMaxHeight()
+            .clip(shape)
+            .background(fill.copy(alpha = 0.9f))
+            .pointerInput(model.id) {
+                detectTapGestures(onTap = { onClick() })
+            },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = WeekCardMetrics.INNER_HORIZONTAL_DP.dp,
+                    vertical = verticalPadding,
+                ),
+            verticalArrangement = Arrangement.Top,
+        ) {
+            // 徽标药丸：考试 / 日程
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(ink.copy(alpha = 0.18f))
+                    .padding(horizontal = 3.dp, vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                Text(
+                    text = if (isExam) {
+                        TimetableStrings.examBadgeLabel.zh
+                    } else {
+                        TimetableStrings.scheduleBadgeLabel.zh
+                    },
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontSize = detailFontSize.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ink,
+                    maxLines = 1,
                 )
-                continue
             }
-
-            // 存在多门课程重叠，分配列号
-            val columnsLastEnd = mutableListOf<Int>()
-            val assignments = mutableListOf<Pair<Course, Int>>()
-
-            for (c in cluster) {
-                var assignedCol = -1
-                for (col in columnsLastEnd.indices) {
-                    if (columnsLastEnd[col] < c.startSection) {
-                        assignedCol = col
-                        columnsLastEnd[col] = c.endSection
-                        break
-                    }
-                }
-                if (assignedCol == -1) {
-                    assignedCol = columnsLastEnd.size
-                    columnsLastEnd.add(c.endSection)
-                }
-                assignments.add(c to assignedCol)
-            }
-
-            val totalCols = columnsLastEnd.size
-            for ((c, colIndex) in assignments) {
-                result.add(
-                    WeekGridCardModel(
-                        course = c,
-                        isCurrentWeek = c.isActiveInWeek(week),
-                        isConflicting = totalCols > 1,
-                        colIndex = colIndex,
-                        totalCols = totalCols,
-                    ),
+            Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
+            Text(
+                text = model.title,
+                style = MiuixTheme.textStyles.footnote2,
+                fontSize = titleFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = ink,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 跨天日程的时刻是 00:00–23:59（整列占位），画出来只是噪音。
+            if (!model.isCrossDay && model.startTime.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
+                Text(
+                    text = "${model.startTime} - ${model.endTime}",
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontSize = detailFontSize.sp,
+                    color = ink.copy(alpha = 0.88f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
     }
-
-    return result
 }

@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -55,9 +56,94 @@ class TimetableStringsParityTest {
     }
 
     @Test
-    fun `本周无课文案符合规范定义`() {
-        assertEquals("本周无课", TimetableStrings.noCourseThisWeek.zh)
+    fun `周视图新增格式化函数按 ARB 模板插值`() {
+        // 星期栏左端：ARB `currentWeekCompact` = "{week} 周"（半角空格），
+        // Dart 调用点 timetable_weekday_header.dart:181。
+        assertEquals("8 周", TimetableStrings.formatCurrentWeekCompact(8))
+        assertEquals("1 周", TimetableStrings.formatCurrentWeekCompact(1))
+
+        // 课卡时间行：ARB `classStartsAtLabel` / `classEndsAtLabel`（course_card.dart）。
+        assertEquals("08:00 开始", TimetableStrings.formatClassStartsAt("08:00"))
+        assertEquals("09:35 结束", TimetableStrings.formatClassEndsAt("09:35"))
     }
+
+    /**
+     * 周次文案真源：`lib/l10n/course_week_localizations.dart:31-43`（courseWeekDescription）
+     * 与 `:4-29`（formatCourseWeekList）。
+     *
+     * - 有 customWeeks ⇒ 走 `courseWeekListLabel`（「第 {weeks} 周」），压缩后按 `、` 连接；
+     * - 否则走 `courseWeekRangeLabel`（「第 {startWeek}～{endWeek} 周{mode}」），
+     *   单/双周后缀是**带前导空格**的「 单周」/「 双周」。
+     */
+    @Test
+    fun `课程周次文案按单双周与自定义周次生成`() {
+        assertEquals(
+            "第 1～16 周",
+            TimetableStrings.formatCourseWeekDescription(courseForWeeks(startWeek = 1, endWeek = 16)),
+        )
+        assertEquals(
+            "单周后缀带前导空格（ARB mode 段原样拼在「周」后面）",
+            "第 1～16 周 单周",
+            TimetableStrings.formatCourseWeekDescription(
+                courseForWeeks(startWeek = 1, endWeek = 16, isOddWeek = true),
+            ),
+        )
+        assertEquals(
+            "双周后缀带前导空格",
+            "第 2～16 周 双周",
+            TimetableStrings.formatCourseWeekDescription(
+                courseForWeeks(startWeek = 2, endWeek = 16, isEvenWeek = true),
+            ),
+        )
+        assertEquals(
+            "customWeeks 优先于 start/end 与单双周",
+            "第 1、3、5 周",
+            TimetableStrings.formatCourseWeekDescription(
+                courseForWeeks(customWeeks = listOf(1, 3, 5), isOddWeek = true),
+            ),
+        )
+        assertEquals(
+            "customWeeks 连续段压成区间并用顿号连接",
+            "第 1-3、7-8 周",
+            TimetableStrings.formatCourseWeekDescription(
+                courseForWeeks(startWeek = 1, endWeek = 8, customWeeks = listOf(1, 2, 3, 7, 8)),
+            ),
+        )
+    }
+
+    @Test
+    fun `周次列表压缩成区间并用顿号连接`() {
+        assertEquals("", TimetableStrings.formatWeekList(emptyList()))
+        assertEquals("3", TimetableStrings.formatWeekList(listOf(3)))
+        assertEquals("1-3", TimetableStrings.formatWeekList(listOf(1, 2, 3)))
+        assertEquals("1、3、5", TimetableStrings.formatWeekList(listOf(1, 3, 5)))
+        assertEquals("1-3、7-8", TimetableStrings.formatWeekList(listOf(1, 2, 3, 7, 8)))
+        assertEquals("1、3、5-8、12", TimetableStrings.formatWeekList(listOf(1, 3, 5, 6, 7, 8, 12)))
+    }
+
+    /** 只为周次文案准备的课程夹具：其余字段不影响 `courseWeekDescription`。 */
+    private fun courseForWeeks(
+        startWeek: Int = 1,
+        endWeek: Int = 16,
+        isOddWeek: Boolean = false,
+        isEvenWeek: Boolean = false,
+        customWeeks: List<Int>? = null,
+    ): Course = Course(
+        id = "week-fixture",
+        name = "周次夹具",
+        teacher = "任课教师",
+        location = "教学楼 101",
+        dayOfWeek = 1,
+        startSection = 1,
+        endSection = 2,
+        startTime = "08:00",
+        endTime = "09:35",
+        startWeek = startWeek,
+        endWeek = endWeek,
+        isOddWeek = isOddWeek,
+        isEvenWeek = isEvenWeek,
+        customWeeks = customWeeks,
+    )
 
     private fun assertMatchesArb(key: String, text: String, template: String) {
         if (!template.contains('{')) {

@@ -5,24 +5,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -36,61 +34,76 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 /**
- * 课表周视图完整页面（Timetable Week Page · Compose Phase 3）。
+ * 课表周视图完整页面（对应 Flutter `lib/screens/timetable_screen.dart` 的周视图部分）。
  *
- * 对应 Flutter `lib/screens/timetable_screen.dart` 周视图部分：
- * - 顶部一条标题栏 [TimetableTopBar]：「轻屿课表」+ 右上角「更多」菜单（与日/月视图同源）；
- * - 主体区：
- *   - 基于 [HorizontalPager] 原生实现 1..totalWeeks 平滑翻周手势；
- *   - 每周页面组合 [TimetableWeekdayHeader]（左端是周次选择器）、[TimetableTimeColumn]、[TimetableWeekGrid]；
- *   - 本周无课时展示优雅极简空态提示（"本周没有排课"）。
+ * ## 2026-10-29 重做的四个决定
+ *
+ * 1. **不画自造空态**：旧版在「本周无课」时盖一张卡「本周没有排课 / 点击空白格子…」。
+ *    Dart 周网格没有空态（`grep 本周没有排课 lib/` = 0），无课就是一张空白网格。
+ * 2. **节高按设置 + 自动充满**：`weekSectionHeight` 走
+ *    `settings.timetableAutoFitSectionHeight`（Dart `gridSectionHeight`），
+ *    旧版永远用宿主注入的固定值。
+ * 3. **「回本周」浮钮**：当浏览的周 ≠ 按开学日算出的真实周时出现（Dart
+ *    `_shouldShowFloatingBackToCurrentWeekButton`），点它跳回本周。
+ * 4. **设置全部下传**：卡面字段/字号/材质/冲突开关/时间列显示档/星期栏字色都由
+ *    [WeekViewStyle] 决定，页面不再写死。
+ *
+ * ## 已知未复刻（见 `.agents/compose-phase3/claims/_AUDIT-week-view.md`）
+ *
+ * 壁纸与玻璃坞（属于壳）、下拉快捷导入（`homePull`）、周↔日/月飞行动效、
+ * 课卡天气行、情侣课表叠加。这些不是本页能单独补齐的。
  */
 @Composable
 fun TimetableWeekPage(
     courses: List<Course> = emptyList(),
     timeScheme: TimeScheme? = null,
     settings: TimetableSettings = TimetableSettings.defaults(),
-    profileName: String = "我的课表",
+    style: WeekViewStyle = WeekViewStyle(),
+    profileName: String = "",
     currentWeek: Int = 1,
     totalWeeks: Int = 20,
     initialWeek: Int = currentWeek,
-    visibleDays: List<Int> = listOf(1, 2, 3, 4, 5, 6, 7),
-    timeColumnWidth: Dp = 34.dp,
-    sectionHeight: Dp = 64.dp,
+    visibleDays: List<Int> = (1..7).toList(),
+    exams: List<Exam> = emptyList(),
+    scheduleItems: List<ScheduleItem> = emptyList(),
+    now: LocalDateTime = LocalDateTime.now(),
+    todayDate: LocalDate = now.toLocalDate(),
     onCourseClick: (Course) -> Unit = {},
-    onEmptySlotClick: (dayOfWeek: Int, section: Int) -> Unit = { _, _ -> },
+    onAgendaClick: (WeekAgendaCardModel) -> Unit = {},
+    onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit = { _, _ -> },
     onDayClick: (dayOfWeek: Int) -> Unit = {},
-    onAddClick: () -> Unit = {},
-    onManageProfilesClick: () -> Unit = {},
     onSwitchProfileClick: () -> Unit = {},
     onWeekChanged: (week: Int) -> Unit = {},
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
@@ -104,21 +117,16 @@ fun TimetableWeekPage(
 
     val pageCount = totalWeeks.coerceAtLeast(1)
     val startPage = (initialWeek - 1).coerceIn(0, pageCount - 1)
+    val pagerState = rememberPagerState(initialPage = startPage, pageCount = { pageCount })
 
-    val pagerState = rememberPagerState(
-        initialPage = startPage,
-        pageCount = { pageCount },
-    )
-
-    // 监听翻页事件
+    // 翻页 → 通知宿主（Dart `commitPendingWeek`：停稳后写回 provider.currentWeek）。
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect { page ->
             onWeekChanged(page + 1)
         }
     }
 
-    val activeBrowsingWeek = pagerState.currentPage + 1
-
+    val browsingWeek = pagerState.currentPage + 1
     var showWeekSelectorDialog by remember { mutableStateOf(false) }
 
     val accentColor = Color(QingyuTheme.primary(dark = dark))
@@ -129,6 +137,11 @@ fun TimetableWeekPage(
     val sectionTimes: List<SectionTime> = timeScheme?.sections?.takeIf { it.isNotEmpty() }
         ?: settings.sections
     val sectionCount = sectionTimes.size.coerceAtLeast(12)
+    val semesterStart = settings.semesterStartDate?.toLocalDate()
+    val realCurrentWeek = currentSemesterWeek(semesterStart, totalWeeks, todayDate)
+    val showBackToCurrentWeek = style.showBackToCurrentWeek &&
+        realCurrentWeek != null &&
+        realCurrentWeek != browsingWeek
 
     Scaffold(
         containerColor = scaffoldBg,
@@ -137,26 +150,16 @@ fun TimetableWeekPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                // 不要再手写 statusBarsPadding()：miuix Scaffold 的
-                // contentWindowInsets 默认就是 systemBars.union(displayCutout)，
-                // 本页没有 topBar 槽位，所以 innerPadding.top 已经等于状态栏高度。
-                // 再加一次就是算两遍，标题会整体下移一个状态栏（2026-10-27 截图确认）。
-                //
-                // ⚠️ 底部这档**刻意不吃** innerPadding.bottom：滚动视口要一直铺到屏幕最底，
-                // 课程卡才能从透明的手势条底下穿过去（edge-to-edge）。以前把 innerPadding
-                // 整份 padding 在这一层，把视口整体抬到了手势条上方 → 卡片到那条线就被
-                // 截断，手势条露出页面自己的底色（同色，静看看不出、一滑卡才露馅，用户
-                // 2026-10-28 反馈的正是这个）。底部内边距改由滚动内容自己承担（见下面 Row
-                // 的 padding），与 QingyuPageList 及各类列表页的既有做法一致。
+                // 顶部吃 innerPadding（miuix Scaffold 的 contentWindowInsets 已含状态栏）；
+                // 底部刻意不吃——滚动视口要铺到屏幕最底，卡片从手势条底下穿过去
+                // （2026-10-28 用户反馈「卡片被手势条截断」就是这层多算了一次）。
                 .padding(
                     start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
                     top = innerPadding.calculateTopPadding(),
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 ),
         ) {
-            // ── 0. 顶栏「轻屿课表」标题 + 右上角「更多」菜单 ──
-            // Flutter 首页顶部那条标题栏（TimetableTitleBar）在 Phase 3 漏搬了，
-            // 这里补回；三个视图共用 TimetableTopBar 一份实现。
+            // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
             TimetableTopBar(
                 brand = homeTitleStyle == HomeTitleStyle.BRAND,
                 profileName = profileName,
@@ -166,114 +169,61 @@ fun TimetableWeekPage(
                 onMenuSelect = onHomeMenuSelect,
             )
 
-            // ── 1. 主体区：HorizontalPager 翻周 ──
-            // 注意：这里**不再**自建一行「课表名 + 第 N 周 + 加课/管理」的 ActionBar。
-            // Flutter 首页顶栏只有一条「轻屿课表」标题行（本文件顶部 TimetableTopBar），
-            // 周次选择器长在下面的星期栏左端（TimetableWeekdayHeader 的 "8周" 格）。
-            // 之前三行叠着显示（轻屿课表 / 默认课表+第8周 / 8周），用户 2026-10-28
-            // 截图反馈「首页好奇怪、跟 Flutter 差很多」，根因就是这条重复的 ActionBar。
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                val pageWeek = page + 1
-                val weekCourses = remember(courses, pageWeek) {
-                    courses.filter { it.isInWeek(pageWeek) }
-                }
-                val hasCoursesInWeek = weekCourses.isNotEmpty()
-
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // 表头星期栏
-                    TimetableWeekdayHeader(
-                        week = pageWeek,
+            Box(modifier = Modifier.fillMaxSize()) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    WeekPageContent(
+                        pageWeek = page + 1,
                         currentWeek = currentWeek,
-                        semesterStartDate = settings.semesterStartDate?.toLocalDate(),
+                        todayDate = todayDate,
+                        semesterStart = semesterStart,
                         visibleDays = visibleDays,
-                        timeColumnWidth = timeColumnWidth,
+                        courses = courses,
+                        style = style,
+                        sectionTimes = sectionTimes,
+                        sectionCount = sectionCount,
+                        exams = exams,
+                        scheduleItems = scheduleItems,
+                        now = now,
+                        bottomInset = innerPadding.calculateBottomPadding(),
+                        onCourseClick = onCourseClick,
+                        onAgendaClick = onAgendaClick,
+                        onLongPressEmptySlot = onLongPressEmptySlot,
                         onDayClick = onDayClick,
                         onWeekTitleClick = { showWeekSelectorDialog = true },
                     )
+                }
 
-                    // 滚动课表主体
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                // 底部留白 = 系统手势条高度 + 悬浮底坞避让余量：最后一行
-                                // 能整体滑到手势条上方，而滚动中途内容可以从透明手势条底下
-                                // 穿过去（这正是「透明」该有的观感）。64dp 与日视图
-                                // DayViewScrollContent 的底坞留白同口径。
-                                .padding(
-                                    bottom = innerPadding.calculateBottomPadding() + 64.dp,
-                                ),
-                        ) {
-                            // 左侧时间轴
-                            TimetableTimeColumn(
-                                sectionCount = sectionCount,
-                                sectionTimes = sectionTimes,
-                                sectionHeight = sectionHeight,
-                                timeColumnWidth = timeColumnWidth,
-                            )
-
-                            // 右侧课程网格
-                            TimetableWeekGrid(
-                                courses = weekCourses,
-                                week = pageWeek,
-                                visibleDays = visibleDays,
-                                sectionCount = sectionCount,
-                                sectionHeight = sectionHeight,
-                                onCourseClick = onCourseClick,
-                                onEmptySlotClick = onEmptySlotClick,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-
-                        // 本周无课空态覆盖
-                        if (!hasCoursesInWeek) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 120.dp, start = timeColumnWidth + 16.dp, end = 16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                QingyuCard(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp)),
-                                    insideMargin = PaddingValues(16.dp),
-                                    onClick = onAddClick,
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center,
-                                        modifier = Modifier.padding(16.dp),
-                                    ) {
-                                        Text(
-                                            text = "本周没有排课",
-                                            style = MiuixTheme.textStyles.body2,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = textColor,
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "点击空白格子或右上角 + 号添课",
-                                            style = MiuixTheme.textStyles.footnote2,
-                                            color = subTextColor,
-                                        )
-                                    }
+                // ── 「回本周」浮钮（Dart 浮钮唯一入口）──
+                if (showBackToCurrentWeek) {
+                    Button(
+                        onClick = {
+                            realCurrentWeek?.let { target ->
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        (target - 1).coerceIn(0, pageCount - 1),
+                                    )
                                 }
                             }
-                        }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = TimetableStrings.backToCurrentWeekAction.zh,
+                            style = MiuixTheme.textStyles.button,
+                        )
                     }
                 }
             }
         }
     }
 
-    // ── 3. 周次切换弹窗选择器 ──
+    // ── 周次选择弹窗（点星期栏左端「8 周」打开）──
     if (showWeekSelectorDialog) {
         Dialog(onDismissRequest = { showWeekSelectorDialog = false }) {
             QingyuCard(
@@ -281,16 +231,14 @@ fun TimetableWeekPage(
                     .fillMaxWidth()
                     .padding(16.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "选择周次",
+                            text = TimetableStrings.selectWeekTitle.zh,
                             style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Bold,
                             color = textColor,
@@ -298,7 +246,7 @@ fun TimetableWeekPage(
                         IconButton(onClick = { showWeekSelectorDialog = false }) {
                             Icon(
                                 imageVector = MiuixIcons.Close,
-                                contentDescription = "关闭",
+                                contentDescription = TimetableStrings.closeAction.zh,
                                 modifier = Modifier.size(18.dp),
                                 tint = subTextColor,
                             )
@@ -315,34 +263,25 @@ fun TimetableWeekPage(
                     ) {
                         items(pageCount) { idx ->
                             val targetWeek = idx + 1
-                            val isCurrentWeekItem = targetWeek == currentWeek
-                            val isSelectedWeekItem = targetWeek == activeBrowsingWeek
-
-                            val itemBg = if (isSelectedWeekItem) {
-                                accentColor
-                            } else if (isCurrentWeekItem) {
-                                accentColor.copy(alpha = 0.16f)
-                            } else {
-                                Color(QingyuTheme.card(dark))
+                            val isRealCurrentWeek = targetWeek == realCurrentWeek
+                            val isSelectedWeek = targetWeek == browsingWeek
+                            val itemBg = when {
+                                isSelectedWeek -> accentColor
+                                isRealCurrentWeek -> accentColor.copy(alpha = 0.16f)
+                                else -> Color(QingyuTheme.card(dark))
                             }
-
-                            val itemTextColor = if (isSelectedWeekItem) {
-                                Color.White
-                            } else if (isCurrentWeekItem) {
-                                accentColor
-                            } else {
-                                textColor
+                            val itemTextColor = when {
+                                isSelectedWeek -> Color.White
+                                isRealCurrentWeek -> accentColor
+                                else -> textColor
                             }
-
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(itemBg)
                                     .clickable {
                                         showWeekSelectorDialog = false
-                                        coroutineScope.launch {
-                                            pagerState.animateScrollToPage(idx)
-                                        }
+                                        coroutineScope.launch { pagerState.animateScrollToPage(idx) }
                                     }
                                     .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center,
@@ -350,7 +289,11 @@ fun TimetableWeekPage(
                                 Text(
                                     text = "$targetWeek",
                                     style = MiuixTheme.textStyles.footnote1,
-                                    fontWeight = if (isSelectedWeekItem || isCurrentWeekItem) FontWeight.Bold else FontWeight.Medium,
+                                    fontWeight = if (isSelectedWeek || isRealCurrentWeek) {
+                                        FontWeight.Bold
+                                    } else {
+                                        FontWeight.Medium
+                                    },
                                     color = itemTextColor,
                                     textAlign = TextAlign.Center,
                                 )
@@ -360,5 +303,167 @@ fun TimetableWeekPage(
                 }
             }
         }
+    }
+}
+
+/**
+ * pager 里的一周：星期栏 + 可纵向滚动的时间列/网格。
+ *
+ * 节高在这里定：`weekSectionHeight` 要拿到实际可用高度才能算「自动充满」。
+ */
+@Composable
+private fun WeekPageContent(
+    pageWeek: Int,
+    currentWeek: Int,
+    todayDate: LocalDate,
+    semesterStart: LocalDate?,
+    visibleDays: List<Int>,
+    courses: List<Course>,
+    style: WeekViewStyle,
+    sectionTimes: List<SectionTime>,
+    sectionCount: Int,
+    exams: List<Exam>,
+    scheduleItems: List<ScheduleItem>,
+    now: LocalDateTime,
+    bottomInset: Dp,
+    onCourseClick: (Course) -> Unit,
+    onAgendaClick: (WeekAgendaCardModel) -> Unit,
+    onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit,
+    onDayClick: (dayOfWeek: Int) -> Unit,
+    onWeekTitleClick: () -> Unit,
+) {
+    val cardsByDay = remember(courses, pageWeek, style, visibleDays) {
+        WeekGridCourseMapping.cardsForWeek(courses, pageWeek, style, visibleDays)
+    }
+    val agendaByDay = remember(exams, scheduleItems, pageWeek, style, visibleDays, semesterStart) {
+        buildAgendaByDay(
+            week = pageWeek,
+            semesterStart = semesterStart,
+            visibleDays = visibleDays,
+            sectionTimes = sectionTimes,
+            exams = exams,
+            scheduleItems = scheduleItems,
+            now = now,
+            style = style,
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TimetableWeekdayHeader(
+            week = pageWeek,
+            currentWeek = currentWeek,
+            todayDate = todayDate,
+            semesterStartDate = semesterStart,
+            visibleDays = visibleDays,
+            style = style,
+            timeColumnWidth = style.timeColumnWidthDp.dp,
+            hasExamOnDate = { date -> WeekAgendaLogic.hasExamOn(date, exams, now) },
+            hasScheduleOnDate = { date -> WeekAgendaLogic.hasScheduleOn(date, scheduleItems) },
+            onDayClick = onDayClick,
+            onWeekTitleClick = onWeekTitleClick,
+        )
+
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val sectionHeight = weekSectionHeight(
+                style = style,
+                availableHeightDp = maxHeight.value,
+                weekdayHeaderHeightDp = WEEKDAY_HEADER_HEIGHT_DP,
+                sectionCount = sectionCount,
+            ).dp
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // 底部留白 = 手势条高度 + 底坞避让余量（最后一行能滑到坞上方）。
+                        .padding(bottom = bottomInset + WEEK_GRID_BOTTOM_CLEARANCE_DP.dp),
+                ) {
+                    TimetableTimeColumn(
+                        sectionCount = sectionCount,
+                        sectionTimes = sectionTimes,
+                        sectionHeight = sectionHeight,
+                        timeColumnWidth = style.timeColumnWidthDp.dp,
+                        style = style,
+                    )
+                    TimetableWeekGrid(
+                        cardsByDay = cardsByDay,
+                        agendaByDay = agendaByDay,
+                        visibleDays = visibleDays,
+                        sectionCount = sectionCount,
+                        sectionHeight = sectionHeight,
+                        style = style,
+                        onCourseClick = onCourseClick,
+                        onAgendaClick = onAgendaClick,
+                        onLongPressEmptySlot = onLongPressEmptySlot,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 星期栏高度（Dart `TimetableWeekdayHeader.height = 40`）。 */
+private const val WEEKDAY_HEADER_HEIGHT_DP = 40f
+
+/** 周网格底部避让：手势条之上再留 64dp 给浮坞。 */
+private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
+
+/** 某周某天的真实日期（Dart `timetable_weekday_header.dart:_dateForWeekDay`）。 */
+fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalDate? {
+    val start = semesterStart ?: return null
+    val monday = start.minusDays((start.dayOfWeek.value - 1).toLong())
+    return monday.plusDays(((week - 1) * 7 + (dayOfWeek - 1)).toLong())
+}
+
+/**
+ * 按开学日算出的「真实当前周」；学期未配置或超出周数范围返回 null。
+ *
+ * 对齐 Dart `_resolveCurrentSemesterWeek`：开学日先归一化到周一，
+ * `(今天 - 周一)/7 + 1`，越界即 null（此时「回本周」浮钮不出现）。
+ */
+fun currentSemesterWeek(semesterStart: LocalDate?, totalWeeks: Int, today: LocalDate): Int? {
+    val start = semesterStart ?: return null
+    val monday = start.minusDays((start.dayOfWeek.value - 1).toLong())
+    val days = ChronoUnit.DAYS.between(monday, today)
+    val week = (days / 7).toInt() + 1
+    if (week < 1 || week > totalWeeks) return null
+    return week
+}
+
+/**
+ * 整周的考试/日程落格（Dart `_agendaEntriesFor`）：逐天算日期再映射节次。
+ *
+ * 学期开始日未设置时返回空——与星期栏圆点同口径，避免「有点没卡」或
+ * 「有卡没点」两边打架。
+ */
+fun buildAgendaByDay(
+    week: Int,
+    semesterStart: LocalDate?,
+    visibleDays: List<Int>,
+    sectionTimes: List<SectionTime>,
+    exams: List<Exam>,
+    scheduleItems: List<ScheduleItem>,
+    now: LocalDateTime,
+    style: WeekViewStyle,
+): Map<Int, List<WeekAgendaCardModel>> {
+    if (semesterStart == null) return emptyMap()
+    if (!style.showWeekGridExams && !style.showWeekGridSchedules) return emptyMap()
+    return visibleDays.associateWith { dayOfWeek ->
+        val date = dateForWeekDay(semesterStart, week, dayOfWeek)
+            ?: return@associateWith emptyList()
+        WeekAgendaLogic.resolve(
+            date = date,
+            sections = sectionTimes,
+            exams = exams,
+            scheduleItems = scheduleItems,
+            now = now,
+            showExams = style.showWeekGridExams,
+            showSchedules = style.showWeekGridSchedules,
+        )
     }
 }

@@ -26,6 +26,7 @@ import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 
 /**
@@ -305,12 +306,34 @@ fun TimetableWithCourseActions(
         },
         // T1：点课程 → 先弹操作层，不直接进编辑页。
         onOpenCourse = { course -> actionTarget = course },
-        onOpenProfiles = { onNavigate("c1.profiles") },
-        onOpenAddCoursePlain = {
-            wiring.clearAddCourseIntent()
-            onNavigate("d1.addCourse")
-        },
         onWeekChanged = { repository.setCurrentWeek(it) },
+        // 点星期栏某一天 → 日视图（Dart `TimetableDayViewPart` 的入口）。
+        // ⚠️ 已知缺口：`c3.day` 宿主目前不接收「要打开哪一天」，进去落在今天；
+        // 传 day 的重载在日视图接线批次里补（见 `_AUDIT-week-view.md` P2-2）。
+        onOpenDay = { _ -> onNavigate("c3.day") },
+        // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
+        // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。
+        // 这里按 id 找回实体再带进目标页；找不到就退到列表页，不让点击变哑。
+        onAgendaClicked = { entry ->
+            when (entry.kind) {
+                WeekAgendaKind.EXAM -> onNavigate("d3.examList")
+                WeekAgendaKind.SCHEDULE -> {
+                    val item = snapshot.scheduleItems.firstOrNull { candidate ->
+                        entry.id == candidate.id || entry.id.startsWith("${candidate.id}@")
+                    }
+                    if (item == null) {
+                        onNavigate("d2.scheduleList")
+                    } else {
+                        wiring.clearScheduleIntent()
+                        wiring.pendingScheduleEdit = ScheduleItemBridge.toUiData(item)
+                        wiring.pendingScheduleOccurrenceDate =
+                            entry.id.substringAfter('@', missingDelimiterValue = "")
+                                .takeIf { it.isNotBlank() }
+                        onNavigate("d2.addSchedule")
+                    }
+                }
+            }
+        },
         // 标题区点击 = 切课表（Dart `TimetableProfileSwitcherTrigger` 的口径）：
         // 壳里没有独立快切弹层，推到课表管理页，行为可预期、不空点。
         onSwitchProfile = { onNavigate("c1.profiles") },

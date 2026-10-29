@@ -86,8 +86,26 @@ object TimetableStrings {
     val weekdaySat = ArbText("weekdaySat", "周六")
     val weekdaySun = ArbText("weekdaySun", "周日")
 
-    // ── 周视图空态专用文案（新UI规范定义） ──
-    val noCourseThisWeek = ArbText("noCourseThisWeek", "本周无课")
+    // ── 周视图表头 / 课卡 / 周次选择器（全部来自 ARB，2026-10-29 重做时补齐）──
+    /** 星期栏左端周次简写（Dart `timetable_weekday_header.dart:181`，`{week} 周` 带半角空格）。 */
+    val currentWeekCompact = ArbText("currentWeekCompact", "{week} 周")
+    val selectWeekTitle = ArbText("selectWeekTitle", "选择周次")
+    val closeAction = ArbText("closeAction", "关闭")
+
+    /** 课卡「开始 / 结束」时间行（Dart `course_card.dart` `classStartsAtLabel`）。 */
+    val classStartsAtLabel = ArbText("classStartsAtLabel", "{time} 开始")
+    val classEndsAtLabel = ArbText("classEndsAtLabel", "{time} 结束")
+
+    /** 周网格里的考试 / 日程徽标（Dart `week_grid_agenda_card.dart`）。 */
+    val examBadgeLabel = ArbText("examBadgeLabel", "考试")
+    val scheduleBadgeLabel = ArbText("scheduleBadgeLabel", "日程")
+
+    /** 课卡周次行（Dart `l10n/course_week_localizations.dart`）。 */
+    val oddWeeksFilter = ArbText("oddWeeksFilter", "单周")
+    val evenWeeksFilter = ArbText("evenWeeksFilter", "双周")
+    val weekListSeparator = ArbText("weekListSeparator", "、")
+    val courseWeekListLabel = ArbText("courseWeekListLabel", "第 {weeks} 周")
+    val courseWeekRangeLabel = ArbText("courseWeekRangeLabel", "第 {startWeek}～{endWeek} 周{mode}")
 
     // ── 纯函数格式化 ──
 
@@ -130,6 +148,59 @@ object TimetableStrings {
         6 -> weekdaySat.zh
         7 -> weekdaySun.zh
         else -> ""
+    }
+
+    /** 星期栏左端「{week} 周」（Dart `l10n.currentWeekCompact`）。 */
+    fun formatCurrentWeekCompact(week: Int): String =
+        currentWeekCompact.filled("week", week.toString())
+
+    /** 课卡开始时间行（Dart `l10n.classStartsAtLabel`）。 */
+    fun formatClassStartsAt(time: String): String = classStartsAtLabel.filled("time", time)
+
+    /** 课卡结束时间行（Dart `l10n.classEndsAtLabel`）。 */
+    fun formatClassEndsAt(time: String): String = classEndsAtLabel.filled("time", time)
+
+    /**
+     * 课程周次文案（Dart `courseWeekDescription`，`lib/l10n/course_week_localizations.dart:27`）。
+     *
+     * customWeeks 存在 ⇒ 「第 1、3、5 周」；否则「第 1～16 周 + 单/双周后缀」。
+     */
+    fun formatCourseWeekDescription(course: com.mutx163.qingyu.core.Course): String {
+        val custom = course.normalizedCustomWeeks
+        if (custom != null) {
+            return courseWeekListLabel.filled("weeks", formatWeekList(custom))
+        }
+        val mode = when {
+            course.isOddWeek -> " ${oddWeeksFilter.zh}"
+            course.isEvenWeek -> " ${evenWeeksFilter.zh}"
+            else -> ""
+        }
+        return courseWeekRangeLabel.filled(
+            "startWeek" to course.startWeek.toString(),
+            "endWeek" to course.endWeek.toString(),
+            "mode" to mode,
+        )
+    }
+
+    /** 连续周次压成区间后用 `、` 连接（Dart `formatCourseWeekList`）。 */
+    fun formatWeekList(weeks: List<Int>): String {
+        if (weeks.isEmpty()) return ""
+        val sorted = weeks.sorted()
+        val ranges = mutableListOf<String>()
+        var rangeStart = sorted.first()
+        var previous = sorted.first()
+        for (index in 1 until sorted.size) {
+            val current = sorted[index]
+            if (current == previous + 1) {
+                previous = current
+                continue
+            }
+            ranges.add(if (rangeStart == previous) "$rangeStart" else "$rangeStart-$previous")
+            rangeStart = current
+            previous = current
+        }
+        ranges.add(if (rangeStart == previous) "$rangeStart" else "$rangeStart-$previous")
+        return ranges.joinToString(weekListSeparator.zh)
     }
 
     /**
@@ -188,6 +259,18 @@ object TimetableStrings {
             weekdayFri,
             weekdaySat,
             weekdaySun,
+            currentWeekCompact,
+            selectWeekTitle,
+            closeAction,
+            classStartsAtLabel,
+            classEndsAtLabel,
+            examBadgeLabel,
+            scheduleBadgeLabel,
+            oddWeeksFilter,
+            evenWeeksFilter,
+            weekListSeparator,
+            courseWeekListLabel,
+            courseWeekRangeLabel,
         )
     }
 }

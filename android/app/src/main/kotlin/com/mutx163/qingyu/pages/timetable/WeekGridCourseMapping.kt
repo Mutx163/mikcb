@@ -1,240 +1,240 @@
 package com.mutx163.qingyu.pages.timetable
 
-import kotlin.math.max
-import kotlin.math.min
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.course.CourseDomain
 
 /**
- * 课表周视图统一课程模型。
+ * 课卡左上角那行小字（Dart `resolveCompactOverlineText`，
+ * `lib/domain/day_course_display_logic.dart:147`）。优先级：非本周 > 冲突。
  */
-data class TimetableCourse(
-    val id: String,
-    val name: String,
-    val teacher: String = "",
-    val location: String = "",
-    val dayOfWeek: Int, // 1..7（周一到周日）
-    val startSection: Int,
-    val endSection: Int,
-    val weeks: List<Int> = emptyList(),
-    val color: String = "#2196F3",
-    val textColor: String? = null,
-    val isSuspended: Boolean = false,
-    val suspendedWeeks: List<Int> = emptyList(),
-) {
-    val sectionCount: Int
-        get() = (endSection - startSection + 1).coerceAtLeast(1)
+enum class WeekCardOverline { NON_CURRENT_WEEK, CONFLICT }
 
-    fun isActiveInWeek(week: Int): Boolean {
-        if (isSuspended || suspendedWeeks.contains(week)) return false
-        return weeks.contains(week)
-    }
+/** 课卡右上角角标（Dart `resolveCompactBadgeText`，`day_course_display_logic.dart:170`）。 */
+enum class WeekCardBadge { CONFLICT }
+
+/**
+ * 周视图一张课卡的展示模型（纯数据，渲染层只管画）。
+ *
+ * 与 `day_course_display_logic.dart` 的 `DayCourseDisplayItem` 同义：周视图不接
+ * 情侣叠加，也**不标「正在上课」**（Dart 周网格传的 `currentCourseIds` 是空集，
+ * 只有日视图才标），所以这里没有 `isCurrentCourse` / `coupleKind` 两档。
+ */
+data class WeekCardModel(
+    val course: Course,
+    val isCurrentWeek: Boolean,
+    val isConflicting: Boolean,
+    val isSuspended: Boolean,
+    val overline: WeekCardOverline?,
+    val badge: WeekCardBadge?,
+    /** 卡面透明度（冲突 / 非本周压淡，Dart `courseDisplayOpacity`）。 */
+    val opacity: Float,
+    /** 统一课卡色（设置开了「统一卡片颜色」时非空；空则用课程自己的 color）。 */
+    val colorHex: String?,
+) {
+    val sectionSpan: Int get() = course.sectionCount
 }
 
 /**
- * 周网格课卡渲染模型。
- * 包含重叠冲突计算后的列分配（colIndex 与 totalCols），供 Compose 布局切分宽度。
+ * 周视图的课程取数与排版（纯 Kotlin，零 UI 依赖）。
+ *
+ * ## 与 2026-10-27 旧实现的差别（这是重做的核心）
+ *
+ * 旧实现自己发明了一套「同天重叠课程按列平分宽度」（Interval Coloring），
+ * 模型层与渲染层各写一份、且渲染层从不调用模型层。**Dart 侧根本不是这样**：
+ * - 课程卡永远**占满整列宽度**（`timetable_day_column.dart:120-135`：
+ *   `Positioned(left: 0, right: 0)`），重叠时后画的压住先画的；
+ * - 冲突只体现在两处：卡面透明度（`timetableConflictCourseOpacity`）+ 左上角
+ *   「冲突」小字 + 右上角「冲突」角标（`showConflictBadgeOnTimetable` 开关）；
+ * - 非本周课：默认**不显示**；开了「显示非本周课程」后，被本周课压住的仍不显示，
+ *   同一时段有多门非本周课时只留「离本周最近」的那一门。
+ *
+ * 所以本文件按 Dart 逐条重写，并删掉旧的列平分模型。
  */
-data class WeekCourseCardModel(
-    val course: TimetableCourse,
-    val dayOfWeek: Int,
-    val startSection: Int,
-    val endSection: Int,
-    val sectionSpan: Int,
-    val isCurrentWeek: Boolean,
-    val isConflicting: Boolean = false,
-    val colIndex: Int = 0,
-    val totalCols: Int = 1,
-    val displayColor: String = course.color,
-    val opacity: Float = 1.0f,
-)
-
-/**
- * 周视图某一天的列模型。
- */
-data class WeekDayColumn(
-    val dayOfWeek: Int,
-    val dayName: String = TimetableStrings.formatWeekday(dayOfWeek),
-    val isToday: Boolean = false,
-    val courses: List<WeekCourseCardModel> = emptyList(),
-)
-
 object WeekGridCourseMapping {
 
+    /** 非本周课的固定灰（Dart `kNonCurrentWeekCourseColorHex`）。 */
     const val NON_CURRENT_WEEK_COLOR_HEX = "#94A3B8"
+
+    /** 非本周课的固定透明度（Dart `kNonCurrentWeekCourseOpacity`）。 */
     const val NON_CURRENT_WEEK_OPACITY = 0.62f
-    const val CONFLICT_COURSE_OPACITY = 0.85f
 
     /**
-     * 将课程列表按周次过滤并计算同天重叠节次的列分配（colIndex, totalCols）。
+     * 本周冲突索引：课程 id → 与之在本周冲突的其它课程 id。
      *
-     * @param courses 全部课程
-     * @param week 当前查看的周次（1-based）
-     * @param showNonCurrentWeeks 是否包含非本周课程（非本周课程以灰卡淡化展示）
-     * @return 映射表：星期 1..7 -> 该日课卡模型列表
+     * 直接复用 `CourseDomain.buildConflictMap`（含「停课周不误报」「customWeeks
+     * 优先」两条判据），不在渲染层重写。
      */
-    fun filterAndPlaceCoursesForWeek(
-        courses: List<TimetableCourse>,
+    fun conflictMap(courses: List<Course>, week: Int): Map<String, Set<String>> =
+        CourseDomain.buildConflictMap(courses, week = week)
+            .mapValues { (_, partners) -> partners.map { it.id }.toSet() }
+
+    /**
+     * 某一天参与排版的全部课程（Dart `getCoursesForDay`，`day_course_display_logic.dart:196`）。
+     *
+     * 过滤：星期匹配，且（本周有课 **或** 开了「显示非本周课程」且该课本周及以后
+     * 仍有上课周——已结课的不再以「非本周」挂在网格上）。
+     *
+     * 排序：开始节次 → 本周课靠后（非本周先画，被本周压住）→ 结束节次 → id。
+     */
+    fun coursesForDay(
+        allCourses: List<Course>,
         week: Int,
-        showNonCurrentWeeks: Boolean = true,
-    ): Map<Int, List<WeekCourseCardModel>> {
-        val result = LinkedHashMap<Int, MutableList<WeekCourseCardModel>>()
-        for (day in 1..7) {
-            result[day] = mutableListOf()
+        dayOfWeek: Int,
+        showNonCurrentWeekCourses: Boolean,
+    ): List<Course> =
+        allCourses
+            .filter { course ->
+                if (course.dayOfWeek != dayOfWeek) return@filter false
+                if (course.isInWeek(week)) return@filter true
+                showNonCurrentWeekCourses && course.hasActiveWeekOnOrAfter(week)
+            }
+            .sortedWith(dayCourseComparator(week))
+
+    /**
+     * 把某一天的课程收成卡片模型（Dart `buildDayCourseDisplayItems`，
+     * `day_course_display_logic.dart:96`）：先滤掉被本周课压住的非本周课，
+     * 再排序、算透明度与角标。
+     */
+    fun displayCards(
+        dayCourses: List<Course>,
+        week: Int,
+        style: WeekViewStyle,
+        conflicts: Map<String, Set<String>>,
+    ): List<WeekCardModel> {
+        val visible = dayCourses.filter { course ->
+            if (course.isInWeek(week)) return@filter true
+            if (hasCurrentWeekOverlap(dayCourses, course, week)) return@filter false
+            isPreferredNonCurrentCourse(dayCourses, course, week)
         }
 
-        // 1. 过滤有效课程
-        val eligibleCourses = courses.filter { course ->
-            course.dayOfWeek in 1..7 &&
-                course.startSection <= course.endSection &&
-                course.startSection >= 1 &&
-                (showNonCurrentWeeks || course.isActiveInWeek(week))
-        }
-
-        // 2. 按天分组处理
-        val coursesByDay = eligibleCourses.groupBy { it.dayOfWeek }
-
-        for (day in 1..7) {
-            val dayCourses = coursesByDay[day] ?: emptyList()
-            if (dayCourses.isEmpty()) continue
-
-            // 排序：开始节次升序 -> 本周优先 -> 结束节次升序 -> id 升序
-            val sorted = dayCourses.sortedWith(
-                compareBy(
-                    { it.startSection },
-                    { !it.isActiveInWeek(week) },
-                    { it.endSection },
-                    { it.id },
+        return visible
+            .sortedWith(dayCourseComparator(week))
+            .map { course ->
+                val isCurrentWeek = course.isInWeek(week)
+                val isConflicting = conflicts[course.id]?.isNotEmpty() == true
+                WeekCardModel(
+                    course = course,
+                    isCurrentWeek = isCurrentWeek,
+                    isConflicting = isConflicting,
+                    isSuspended = course.isSuspendedInWeek(week),
+                    overline = resolveOverline(
+                        isCurrentWeek = isCurrentWeek,
+                        isConflicting = isConflicting,
+                        showConflictBadge = style.showConflictBadge,
+                    ),
+                    badge = resolveBadge(
+                        isConflicting = isConflicting,
+                        showConflictBadge = style.showConflictBadge,
+                    ),
+                    opacity = courseDisplayOpacity(
+                        isCurrentWeek = isCurrentWeek,
+                        isConflicting = isConflicting,
+                        conflictOpacity = style.conflictCourseOpacity,
+                    ),
+                    colorHex = style.unifiedCardColorHex,
                 )
-            )
-
-            // 3. 将当天课程切分为重叠连通块（Cluster）
-            val clusters = buildOverlapClusters(sorted)
-
-            // 4. 为每个连通块分配列轨道
-            for (cluster in clusters) {
-                val models = assignColumnsToCluster(cluster, week)
-                result[day]?.addAll(models)
             }
-        }
-
-        return result
     }
 
     /**
-     * 判断两门课在节次上是否有重叠交集。
+     * 整周排版（按星期分组）：`Map<dayOfWeek 1..7, List<WeekCardModel>>`。
+     *
+     * 冲突索引整周只算一次（Dart 的 `provider.courseConflictMapForWeek(week)`
+     * 也是整份课表算一次，不给每一天重算）。
      */
-    fun isSectionOverlapping(c1: TimetableCourse, c2: TimetableCourse): Boolean {
-        return max(c1.startSection, c2.startSection) <= min(c1.endSection, c2.endSection)
-    }
-
-    /**
-     * 将按开始节次排好序的课程划分为多个互不相交的连通块。
-     * 若后一门课的 startSection <= 当前块的最大 endSection，则属于同一连通块。
-     */
-    private fun buildOverlapClusters(sortedCourses: List<TimetableCourse>): List<List<TimetableCourse>> {
-        if (sortedCourses.isEmpty()) return emptyList()
-
-        val clusters = mutableListOf<MutableList<TimetableCourse>>()
-        var currentCluster = mutableListOf<TimetableCourse>()
-        var clusterMaxEnd = -1
-
-        for (course in sortedCourses) {
-            if (currentCluster.isEmpty()) {
-                currentCluster.add(course)
-                clusterMaxEnd = course.endSection
-            } else if (course.startSection <= clusterMaxEnd) {
-                // 重叠或紧密衔接处于同一连续时段
-                currentCluster.add(course)
-                clusterMaxEnd = max(clusterMaxEnd, course.endSection)
-            } else {
-                clusters.add(currentCluster)
-                currentCluster = mutableListOf(course)
-                clusterMaxEnd = course.endSection
-            }
-        }
-
-        if (currentCluster.isNotEmpty()) {
-            clusters.add(currentCluster)
-        }
-
-        return clusters
-    }
-
-    /**
-     * 贪心区间着色：为连通块内的课程分配互不碰撞的列索引（0 until totalCols）。
-     */
-    private fun assignColumnsToCluster(
-        cluster: List<TimetableCourse>,
+    fun cardsForWeek(
+        courses: List<Course>,
         week: Int,
-    ): List<WeekCourseCardModel> {
-        if (cluster.isEmpty()) return emptyList()
-
-        // trackEndSections[col] 记录当前列轨道上最后一门课的 endSection
-        val trackEndSections = mutableListOf<Int>()
-        val assignedColIndices = mutableListOf<Int>()
-
-        for (course in cluster) {
-            var placedCol = -1
-            for (col in trackEndSections.indices) {
-                if (trackEndSections[col] < course.startSection) {
-                    placedCol = col
-                    trackEndSections[col] = course.endSection
-                    break
-                }
-            }
-            if (placedCol == -1) {
-                placedCol = trackEndSections.size
-                trackEndSections.add(course.endSection)
-            }
-            assignedColIndices.add(placedCol)
-        }
-
-        val totalCols = max(1, trackEndSections.size)
-
-        return cluster.mapIndexed { index, course ->
-            val colIndex = assignedColIndices[index]
-            val isCurrentWeek = course.isActiveInWeek(week)
-            val hasActualOverlap = cluster.any { other ->
-                other != course && isSectionOverlapping(course, other)
-            }
-            val isConflicting = hasActualOverlap
-
-            val displayColor = if (isCurrentWeek) course.color else NON_CURRENT_WEEK_COLOR_HEX
-            val opacity = when {
-                !isCurrentWeek -> NON_CURRENT_WEEK_OPACITY
-                isConflicting -> CONFLICT_COURSE_OPACITY
-                else -> 1.0f
-            }
-
-            WeekCourseCardModel(
-                course = course,
-                dayOfWeek = course.dayOfWeek,
-                startSection = course.startSection,
-                endSection = course.endSection,
-                sectionSpan = course.sectionCount,
-                isCurrentWeek = isCurrentWeek,
-                isConflicting = isConflicting,
-                colIndex = colIndex,
-                totalCols = totalCols,
-                displayColor = displayColor,
-                opacity = opacity,
+        style: WeekViewStyle,
+        visibleDays: List<Int> = (1..7).toList(),
+    ): Map<Int, List<WeekCardModel>> {
+        val conflicts = conflictMap(courses, week)
+        return visibleDays.associateWith { dayOfWeek ->
+            val dayCourses = coursesForDay(
+                allCourses = courses,
+                week = week,
+                dayOfWeek = dayOfWeek,
+                showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
             )
+            displayCards(dayCourses, week, style, conflicts)
         }
     }
+
+    /** 卡面透明度（Dart `courseDisplayOpacity`）。 */
+    fun courseDisplayOpacity(
+        isCurrentWeek: Boolean,
+        isConflicting: Boolean,
+        conflictOpacity: Float,
+    ): Float = when {
+        !isCurrentWeek -> NON_CURRENT_WEEK_OPACITY
+        isConflicting -> conflictOpacity
+        else -> 1f
+    }
+
+    /** 左上角小字（Dart `resolveCompactOverlineText`）。 */
+    fun resolveOverline(
+        isCurrentWeek: Boolean,
+        isConflicting: Boolean,
+        showConflictBadge: Boolean,
+    ): WeekCardOverline? = when {
+        !isCurrentWeek -> WeekCardOverline.NON_CURRENT_WEEK
+        isConflicting && showConflictBadge -> WeekCardOverline.CONFLICT
+        else -> null
+    }
+
+    /** 右上角角标（Dart `resolveCompactBadgeText`；周视图没有「正在上课」）。 */
+    fun resolveBadge(
+        isConflicting: Boolean,
+        showConflictBadge: Boolean,
+    ): WeekCardBadge? = if (isConflicting && showConflictBadge) WeekCardBadge.CONFLICT else null
+
+    /** 当天是否有本周课与 [target] 节次重叠（有则压掉非本周的 [target]）。 */
+    fun hasCurrentWeekOverlap(courses: List<Course>, target: Course, week: Int): Boolean =
+        courses.any { course ->
+            course.id != target.id &&
+                course.isInWeek(week) &&
+                !(course.endSection < target.startSection || target.endSection < course.startSection)
+        }
 
     /**
-     * 构建包含 7 天完整信息的周日列列表。
+     * 重叠的非本周课里只留「离本周最近」的那张（同距再比起止周与 id）。
+     *
+     * 判据逐条照 `isPreferredNonCurrentCourse`（`day_course_display_logic.dart:237`）。
      */
-    fun buildWeekDayColumns(
-        coursesByDay: Map<Int, List<WeekCourseCardModel>>,
-        todayDayOfWeek: Int? = null,
-    ): List<WeekDayColumn> {
-        return (1..7).map { day ->
-            WeekDayColumn(
-                dayOfWeek = day,
-                dayName = TimetableStrings.formatWeekday(day),
-                isToday = (day == todayDayOfWeek),
-                courses = coursesByDay[day] ?: emptyList(),
+    fun isPreferredNonCurrentCourse(courses: List<Course>, target: Course, week: Int): Boolean {
+        val overlapping = courses
+            .filter { course ->
+                !course.isInWeek(week) &&
+                    !(course.endSection < target.startSection || target.endSection < course.startSection)
+            }
+            .sortedWith(
+                compareBy<Course>(
+                    { distanceToNearestActiveWeek(it, week) },
+                    { it.startWeek },
+                    { it.endWeek },
+                    { it.id },
+                ),
             )
-        }
+        return overlapping.isNotEmpty() && overlapping.first().id == target.id
     }
+
+    /** 从 [week] 出发到最近上课周的周距；60 周内找不到记 999（Dart 同口径）。 */
+    fun distanceToNearestActiveWeek(course: Course, week: Int): Int {
+        for (offset in 0..60) {
+            val previousWeek = week - offset
+            if (previousWeek >= 1 && course.isInWeek(previousWeek)) return offset
+            val nextWeek = week + offset
+            if (offset > 0 && course.isInWeek(nextWeek)) return offset
+        }
+        return 999
+    }
+
+    /** 当天课程的稳定排序（Dart `compareDayCourseDisplayItems`）。 */
+    private fun dayCourseComparator(week: Int): Comparator<Course> =
+        compareBy<Course>(
+            { it.startSection },
+            { if (it.isInWeek(week)) 1 else 0 },
+            { it.endSection },
+            { it.id },
+        )
 }
