@@ -31,6 +31,8 @@ import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
 import com.mutx163.qingyu.app.IcsExportHost
+import com.mutx163.qingyu.app.LiveDisplayHost
+import com.mutx163.qingyu.app.LiveReminderTimingHost
 import com.mutx163.qingyu.app.LiveTestingFixtureHost
 import com.mutx163.qingyu.app.MemoryStatsHost
 import com.mutx163.qingyu.app.PerfReportHost
@@ -90,9 +92,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginWebState
-import com.mutx163.qingyu.pages.live.DisplaySettingsPage
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
-import com.mutx163.qingyu.pages.live.LiveReminderTimingPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.settings.BingGalleryState
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
@@ -1258,11 +1258,14 @@ fun ShellPageContent(
         "i2.showcase" -> MiuixShowcasePage(onBack = onBack)
 
         // ── P3-J 实时活动与天气 ──────────────────────────────────────
-        // j.live 现在指向**忠实重建的显示设置页**（原 LiveSettingsPage 是错位的演示壳，已弃用）。
-        "j.live" -> DisplaySettingsPage(forDuringEnd = false, onBack = onBack)
-        "j.displayBefore" -> DisplaySettingsPage(forDuringEnd = false, onBack = onBack)
-        "j.displayDuring" -> DisplaySettingsPage(forDuringEnd = true, onBack = onBack)
-        "j.reminderTiming" -> LiveReminderTimingPage(onBack = onBack)
+        // 2026-10-29 F01：这三条原先调**状态化重载**，`initialState` 恒为默认值、
+        // 三个回调（勿扰权限 / 速览起停）全是空实现 ⇒ 显示设置改了不落盘、退出去就没了。
+        // 现在换真宿主：读盘 → 渲染 → 写补丁（两档键组由宿主按 forDuringEnd 选）。
+        "j.live" -> LiveDisplayHost(forDuringEnd = false, onBack = onBack)
+        "j.displayBefore" -> LiveDisplayHost(forDuringEnd = false, onBack = onBack)
+        "j.displayDuring" -> LiveDisplayHost(forDuringEnd = true, onBack = onBack)
+        // 2026-10-29 F01：原先 `onPersist` 是默认空实现 ⇒ 提醒时机改了不落盘。
+        "j.reminderTiming" -> LiveReminderTimingHost(onBack = onBack)
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         // 走**状态化重载**而不是零参重载：零参重载的探测回调恒返回「未开启」，
         // 那样 L4 只看得到一种状态，「已开启（绿勾 + 整行不可点）」那一支永远对不上。
