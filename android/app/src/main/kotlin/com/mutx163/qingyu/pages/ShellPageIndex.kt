@@ -28,6 +28,8 @@ import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
 import com.mutx163.qingyu.app.SettingsHost
+import com.mutx163.qingyu.app.SettingsSemesterHost
+import com.mutx163.qingyu.app.SettingsTimetableHubHost
 import com.mutx163.qingyu.app.WeatherSettingsHost
 import com.mutx163.qingyu.weather.JdkWeatherHttp
 import com.mutx163.qingyu.weather.WeatherPreferences
@@ -299,8 +301,22 @@ fun ShellPageContent(
         "a.update" -> AboutUpdateHostPage(onBack = onBack)
 
         // ── P3-B 设置族（24 屏共用一个渲染层）─────────────────────────
-        "b.settingsHome" -> SettingsScreen(SettingsTimetablePage.spec(SettingsTimetableState()), onBack)
-        "b.semester" -> SettingsScreen(SettingsTimetablePage.semesterSpec(SettingsTimetableState()), onBack)
+        // 2026-10-29：首页那张「第 N 周 / 共 M 周 + 开学日期」摘要卡改为读真仓储
+        // （原来喂空构造 state ⇒ 永远「第 1 周 / 共 20 周 / 未设置」，与子页真相矛盾）。
+        // 其余行仍是演示数据，归 S2 其余 16 页。
+        "b.settingsHome" -> SettingsTimetableHubHost(
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        // 2026-10-29 学期设置接真宿主：原先用**空构造 state** 渲染，三行永远长成
+        // 「设置开学日期 / 20 周 / 同步当前周(禁用)」，而 SHEET / RUN_NOW 在壳里没有落点
+        // ⇒ 用户点了没反应，也永远看不到自己真实的开学日期。宿主见 `SettingsSemesterHost`。
+        "b.semester" -> SettingsSemesterHost(
+            repository = wiring.timetable,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
         // Phase 3.5 设置族第一刀：下面 4 页改用**真宿主**（真数据 + 真写回 + 真导航）。
         // 其余设置页仍是演示数据 —— 每接一页，就把它的 spec id 加进
         // `SettingsPageBridge.SUPPORTED_PAGE_IDS`，并在这里换成分派。
