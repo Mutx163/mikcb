@@ -35,12 +35,11 @@ android {
         buildConfig = true
     }
 
-    // JVM target 17（2026-10-27 随 miuix 0.9.4 从 1.8 抬升）：
-    // 0.9.4 的产物按 Java 11 字节码编译，Kotlin 在 1.8 目标下无法内联其 inline 函数
-    // （INLINE_FROM_HIGHER_PLATFORM）。AGP 9 + Gradle 9 本身也以 17 为基线。
+    // JVM target 21（2026-10-28：接 miuix-nav 需要 Java21 字节码；Kotlin 与 Java 均 21，
+    // Gradle 守护/工具链也是 JDK21，CI 同步 setup-java 21）。
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
 
@@ -422,6 +421,10 @@ dependencies {
     implementation "top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"
     implementation "top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"
     implementation "top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"
+    // miuix-nav：官方导航运行时（NavDisplay + 返回栈 + 转场），页面跳转动画只能用它（不自研）。
+    // 与 miuix-ui 同版本 0.9.4。其产物是 Java21 字节码、entry DSL 是 inline，
+    // 故 :app 的 Kotlin 目标必须是 21（见根 android/build.gradle 的 subprojects 特殊分支）。
+    implementation "top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion"
 
     // Phase 3 页面开发壳：与 composeP1 同一套依赖（页面源码共用）。
 

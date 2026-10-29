@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +43,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -72,9 +78,17 @@ fun TaskListPage(
     onToggleTask: (CourseTask) -> Unit,
     onDeleteTask: (CourseTask) -> Unit,
     onViewCourse: ((CourseTask) -> Unit)? = null,
+    // 2026-10-28 补口：课程筛选弹层的候选 + 选中回调（此前 onCourseFilterClick 是空实现，
+    // 点「课程筛选」卡片没反应）。候选由 controller.courseOptions() 生成，走同一套 id 口径。
+    courseFilterOptions: List<TaskCourseOption> = emptyList(),
+    onCourseFilterPicked: ((String?) -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
+
+    // 课程筛选弹层与「删除确认」对话框的开关（都是页内交互，不需要宿主参与）。
+    var showCourseFilter by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<CourseTask?>(null) }
 
     // 顶栏折叠行为：与 Dart 侧 HyperosSubpage（overlayHeader + collapsibleLargeTitle
     // 均为默认 true）的可折叠大标题一致。必须同时传给 TopAppBar 和内容的 nestedScroll。
@@ -140,7 +154,12 @@ fun TaskListPage(
                         QingyuCard(
                             modifier = Modifier.fillMaxWidth(),
                             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                            onClick = onCourseFilterClick,
+                            onClick = {
+                                onCourseFilterClick()
+                                if (onCourseFilterPicked != null && courseFilterOptions.isNotEmpty()) {
+                                    showCourseFilter = true
+                                }
+                            },
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -226,7 +245,7 @@ fun TaskListPage(
                                                 item = item,
                                                 onToggle = { onToggleTask(item.task) },
                                                 onEdit = { onEditTask(item.task) },
-                                                onDelete = { onDeleteTask(item.task) },
+                                                onDelete = { pendingDelete = item.task },
                                                 onViewCourse = if (item.hasCourse && onViewCourse != null) {
                                                     { onViewCourse(item.task) }
                                                 } else null,
@@ -278,6 +297,56 @@ fun TaskListPage(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // 课程筛选弹层（复用 TaskPickerSheets 的通用选择层，标题改成「课程筛选」）。
+    TaskCoursePickerSheet(
+        show = showCourseFilter,
+        options = courseFilterOptions,
+        title = TaskStrings.taskCourseFilter,
+        onPick = { picked ->
+            showCourseFilter = false
+            onCourseFilterPicked?.invoke(picked)
+        },
+    )
+
+    // 删除确认对话框（对齐 Dart `_confirmDelete` 的 showHyperosConfirmDialog）。
+    pendingDelete?.let { task ->
+        OverlayDialog(
+            show = true,
+            title = TaskStrings.taskDelete,
+            onDismissRequest = { pendingDelete = null },
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = TaskStrings.taskDeleteConfirm,
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.primaryText(dark)),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = TaskStrings.cancelAction,
+                        onClick = { pendingDelete = null },
+                    )
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = TaskStrings.deleteAction,
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
+                            color = Color(QingyuTheme.error(dark)),
+                        ),
+                        onClick = {
+                            val target = pendingDelete
+                            pendingDelete = null
+                            if (target != null) onDeleteTask(target)
+                        },
+                    )
                 }
             }
         }

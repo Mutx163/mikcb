@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -36,6 +37,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.SelectAll
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.imePadding
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -90,6 +92,8 @@ fun AddTaskPage(
     // task-18：两个子弹层由页面自己持有开关（判据仍在宿主的 reducer 里）。
     var showCoursePicker by remember { mutableStateOf(false) }
     var showDueDatePicker by remember { mutableStateOf(false) }
+    // 删除确认（仅编辑态）：对齐 Dart `_confirmDelete` 的 showHyperosConfirmDialog。
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     TaskCoursePickerSheet(
         show = showCoursePicker,
@@ -134,7 +138,7 @@ fun AddTaskPage(
                     },
                     actions = {
                         if (viewState.isEditing && onDelete != null) {
-                            IconButton(onClick = onDelete) {
+                            IconButton(onClick = { showDeleteConfirm = true }) {
                                 Icon(
                                     imageVector = MiuixIcons.Delete,
                                     contentDescription = TaskStrings.taskDelete,
@@ -353,6 +357,43 @@ fun AddTaskPage(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    if (showDeleteConfirm && onDelete != null) {
+        OverlayDialog(
+            show = true,
+            title = TaskStrings.taskDelete,
+            onDismissRequest = { showDeleteConfirm = false },
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = TaskStrings.taskDeleteConfirm,
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.primaryText(dark)),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = TaskStrings.cancelAction,
+                        onClick = { showDeleteConfirm = false },
+                    )
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = TaskStrings.deleteAction,
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
+                            color = Color(QingyuTheme.error(dark)),
+                        ),
+                        onClick = {
+                            showDeleteConfirm = false
+                            onDelete?.invoke()
+                        },
+                    )
                 }
             }
         }

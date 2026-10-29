@@ -113,6 +113,14 @@ class ShellWiring(context: Context) {
     var pendingTaskCourse: Course? = null
 
     /**
+     * 从任务清单点某条任务进入编辑页时要带进去的对象；null = 新建（T1 收尾 · 2026-10-28）。
+     *
+     * 与 [pendingTaskCourse] 互斥使用：进「编辑任务」时用本字段，进「添加任务」时清空它。
+     * `d2.addTask` 分支据此选择「载入已有任务」还是「预选课程新建」。
+     */
+    var pendingTaskForEdit: com.mutx163.qingyu.core.CourseTask? = null
+
+    /**
      * 从日程列表点某条日程进入编辑页时要带进去的对象；null = 新建。
      *
      * 与 [pendingEditCourse] 同属「跨子树传一次、用完即清」的意图载体：日程槽位（或索引里的
@@ -336,6 +344,9 @@ fun TimetableWithCourseActions(
                     }
                     is CourseActionOutcome.OpenAddTask -> {
                         wiring.pendingTaskCourse = outcome.course
+                        // 从课程加作业是「新建」，必须清掉可能残留的「编辑目标」，
+                        // 否则会误把上一次没保存的编辑对象载进表单。
+                        wiring.pendingTaskForEdit = null
                         actionTarget = null
                         onNavigate("d2.addTask")
                     }

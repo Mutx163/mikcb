@@ -76,7 +76,14 @@ subprojects { subproject ->
 subprojects { subproject ->
     subproject.plugins.withId('org.jetbrains.kotlin.android') {
         subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
-            task.compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            // 2026-10-28：:app 需要 JVM21 —— miuix-nav 的 inline `entry<T>` 是 Java21 字节码，
+            // 17 目标下无法内联。只把 :app 抬到 21；其余子项目（含 pub 缓存里同时有
+            // Java+Kotlin 的 file_picker 等插件）继续钉 17，避免它们 Java17/Kotlin21 不一致。
+            task.compilerOptions.jvmTarget.set(
+                subproject.name == 'app'
+                    ? org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+                    : org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+            )
         }
     }
 }

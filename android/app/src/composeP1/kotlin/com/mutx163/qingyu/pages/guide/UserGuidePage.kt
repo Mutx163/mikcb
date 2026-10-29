@@ -617,24 +617,16 @@ private fun PersonalizePage(
                 Column {
                     GuideGroupTitle(GuideStrings.guidePersonalizeMenuStyleTitle.zh, dark)
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MenuStylePreview(
-                            label = GuideStrings.homeMenuStyleList.zh,
-                            grid = false,
-                            selected = !settings.homeMenuGrid,
-                            dark = dark,
-                            onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(false)) },
-                            modifier = Modifier.weight(1f),
-                        )
-                        MenuStylePreview(
-                            label = GuideStrings.homeMenuStyleGrid.zh,
-                            grid = true,
-                            selected = settings.homeMenuGrid,
-                            dark = dark,
-                            onClick = { onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(true)) },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    TabRow(
+                        tabs = listOf(
+                            GuideStrings.homeMenuStyleList.zh,
+                            GuideStrings.homeMenuStyleGrid.zh,
+                        ),
+                        selectedTabIndex = if (settings.homeMenuGrid) 1 else 0,
+                        onTabSelected = { index ->
+                            onSettingsPatch(GuideSettingsPatch.HomeMenuGrid(index == 1))
+                        },
+                    )
                 }
             }
         }
@@ -682,14 +674,17 @@ private fun PersonalizePage(
                 Column {
                     GuideGroupTitle(GuideStrings.guidePersonalizeSeedColorTitle.zh, dark)
                     Spacer(Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(seedOptions) { option ->
-                            ThemeSwatch(
-                                hex = option.hex,
-                                selected = option.hex.equals(settings.seedHex, ignoreCase = true),
-                                dark = dark,
-                                onClick = { onSettingsPatch(GuideSettingsPatch.SeedColor(option.hex)) },
-                            )
+                    seedOptions.chunked(6).forEachIndexed { rowIdx, rowOptions ->
+                        if (rowIdx > 0) Spacer(Modifier.height(12.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            rowOptions.forEach { option ->
+                                ThemeSwatch(
+                                    hex = option.hex,
+                                    selected = option.hex.equals(settings.seedHex, ignoreCase = true),
+                                    dark = dark,
+                                    onClick = { onSettingsPatch(GuideSettingsPatch.SeedColor(option.hex)) },
+                                )
+                            }
                         }
                     }
                 }
@@ -952,6 +947,7 @@ private fun GuideBottomBar(
                     label = if (isPrivacyPage) GuideStrings.exitAppAction.zh else GuideStrings.guidePrevButton.zh,
                     dark = dark,
                     onClick = if (isPrivacyPage) onExit else onPrev,
+                    modifier = Modifier.weight(1f),
                 )
             }
             Button(
@@ -980,9 +976,11 @@ private fun GuideSecondaryButton(
     label: String,
     dark: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
+        modifier = modifier,
         colors = ButtonDefaults.buttonColors(Color(QingyuTheme.card(dark))),
     ) {
         Text(

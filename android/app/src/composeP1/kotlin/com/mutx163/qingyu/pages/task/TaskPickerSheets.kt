@@ -70,6 +70,8 @@ fun TaskCoursePickerSheet(
     show: Boolean,
     options: List<TaskCourseOption>,
     onPick: (String?) -> Unit,
+    /** 弹层标题：表单里是「来源课程」；清单页筛选复用同一弹层时传「课程筛选」。 */
+    title: String = TaskStrings.taskCourseLabel,
 ) {
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
     val colors = MiuixTheme.colorScheme
@@ -78,7 +80,7 @@ fun TaskCoursePickerSheet(
 
     OverlayBottomSheet(
         show = show,
-        title = TaskStrings.taskCourseLabel,
+        title = title,
         onDismissRequest = { onPick(null) },
     ) {
         // 弹层内部的短列表不承载页面级滚动，所以不用 `QingyuPageList`

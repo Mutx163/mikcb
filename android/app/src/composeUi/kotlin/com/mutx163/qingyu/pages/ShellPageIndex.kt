@@ -166,6 +166,8 @@ import com.mutx163.qingyu.pages.task.TaskDateFilter
 import com.mutx163.qingyu.pages.task.TaskListViewState
 import com.mutx163.qingyu.pages.task.TaskListController
 import com.mutx163.qingyu.pages.task.TaskListPage
+import com.mutx163.qingyu.pages.task.TaskFilterLogic
+import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementModel
@@ -588,6 +590,7 @@ fun ShellPageContent(
         )
         "d2.taskList" -> {
             val repository = wiring.timetable
+            val shellContext = LocalContext.current
             // observe 回调里 tick++ 无条件触发重组：勾选/删除任务后会
             // notifyStateChanged，列表据此即时刷新。
             var tick by remember(repository) { mutableStateOf(0) }
@@ -602,32 +605,69 @@ fun ShellPageContent(
                 },
                 onBack = onBack,
                 onDateFilterChange = { taskController.setDateFilter(it); tick++ },
-                // TODO(接壳): 课程筛选弹层尚未接（controller.courseOptions() 已就绪）。
+                // 课程筛选弹层：候选来自 controller.courseOptions()，选中回写 controller。
                 onCourseFilterClick = {},
-                onAddTask = { wiring.pendingTaskCourse = null; onOpenPage("d2.addTask") },
-                // TODO(接壳): 编辑既有任务需 AddTask 表单支持「载入已有任务」，暂留空。
-                onEditTask = {},
-                onToggleTask = { taskController.toggleTask(it) },
-                onDeleteTask = { taskController.deleteTask(it) },
+                courseFilterOptions = taskController.courseOptions(),
+                onCourseFilterPicked = { picked -> taskController.setCourseFilter(picked); tick++ },
+                onAddTask = {
+                    wiring.pendingTaskForEdit = null
+                    wiring.pendingTaskCourse = null
+                    onOpenPage("d2.addTask")
+                },
+                // 点任务行 → 带这条任务进「编辑任务」表单。
+                onEditTask = { task ->
+                    wiring.pendingTaskForEdit = task
+                    wiring.pendingTaskCourse = null
+                    onOpenPage("d2.addTask")
+                },
+                // 勾选 / 删除落盘失败会回滚并抛异常：必须报出来，否则勾选框弹回去、用户零提示。
+                onToggleTask = { task ->
+                    runCatching { taskController.toggleTask(task) }
+                        .onFailure {
+                            Toast.makeText(shellContext, TaskStrings.saveFailed, Toast.LENGTH_SHORT).show()
+                        }
+                },
+                onDeleteTask = { task ->
+                    runCatching { taskController.deleteTask(task) }
+                        .onFailure {
+                            Toast.makeText(shellContext, TaskStrings.saveFailed, Toast.LENGTH_SHORT).show()
+                        }
+                },
+                // 课程直达：带这门课进课程编辑页（与课程总览点课程同一落点 d1.addCourse）。
+                onViewCourse = { task ->
+                    val course = task.courseId?.let { id ->
+                        wiring.timetable.snapshot.courses.firstOrNull { it.id == id }
+                    }
+                    if (course != null) {
+                        wiring.pendingEditCourse = course
+                        wiring.pendingEditGroup = null
+                        onOpenPage("d1.addCourse")
+                    }
+                },
             )
         }
-        // T1 收尾：作业表单接上真状态机。
-        // 之前这里是 `AddTaskViewState(isEditing = false, title = "")` 写死 + 全部回调空 `{}`
-        // ⇒ 从课程操作弹层点「作业」进来，课程不会被预选，表单也不能输入/保存。
-        // 现在：预选课程（+ 那节课的发生日期作为默认到期日）由 `AddTaskFormReducer.initial`
-        // 算好，回调接到同一个状态机上，保存真写 `TimetableCourseService.addTask`。
+        // T1 收尾：作业表单接上真状态机（新建 + 编辑两路）。
+        // 新建：来自课程操作弹层「作业」时预选课程，纯新建从「+」进入。
+        // 编辑：清单页点任务行 → pendingTaskForEdit 带着原任务进来，表单载入原值、保存走 updateTask。
         "d2.addTask" -> {
             val taskSnapshot = wiring.timetable.snapshot
+            val editingTask = wiring.pendingTaskForEdit
             val preselectedCourse = wiring.pendingTaskCourse
-            var taskForm by remember(preselectedCourse?.id) {
+            val shellContext = LocalContext.current
+            var taskForm by remember(editingTask?.id, preselectedCourse?.id) {
                 mutableStateOf(
-                    AddTaskFormReducer.initial(
-                        preselectedCourse = preselectedCourse,
-                        sourceWeek = taskSnapshot.currentWeek,
-                        courseOccurrenceDate = preselectedCourse?.let {
-                            wiring.timetable.dateForCourseOccurrence(it, taskSnapshot.currentWeek)
-                        },
-                    ),
+                    if (editingTask != null) {
+                        // 编辑既有任务：载入原任务的全部字段（对齐 Dart AddTaskScreen(task:)）。
+                        AddTaskFormReducer.initialFromTask(editingTask, taskSnapshot.courses)
+                    } else {
+                        AddTaskFormReducer.initial(
+                            preselectedCourse = preselectedCourse,
+                            sourceWeek = taskSnapshot.currentWeek,
+                            courseOccurrenceDate = preselectedCourse?.let {
+                                wiring.timetable.dateForCourseOccurrence(it, taskSnapshot.currentWeek)
+                            },
+                        )
+                    },
                 )
             }
             AddTaskPage(
@@ -636,8 +676,6 @@ fun ShellPageContent(
                 onTitleChange = { taskForm = AddTaskFormReducer.withTitle(taskForm, it) },
                 onNoteChange = { taskForm = AddTaskFormReducer.withNote(taskForm, it) },
                 // task-18：两个子弹层的**候选数据 + 处理函数**（弹层由页面自己弹）。
-                // 页面用「回调是否为 null」判断弹不弹：不接就维持「点了不动」的旧行为，
-                // **而不是弹一个空弹层**——把死入口伪装成活入口比不弹更糟。
                 courseOptions = AddTaskFormReducer.coursePickerOptions(
                     wiring.timetable.snapshot.courses,
                     taskForm.courseId,
@@ -655,17 +693,50 @@ fun ShellPageContent(
                 onHasDueDateChange = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, it) },
                 onPickDueDateClick = {},
                 onCompletedChange = { taskForm = AddTaskFormReducer.withCompleted(taskForm, it) },
+                // 编辑态才显示删除按钮；删除前页面自己弹确认框（对齐 Dart _confirmDelete）。
+                onDelete = if (editingTask != null) {
+                    {
+                        runCatching {
+                            TimetableCourseService.deleteTask(wiring.timetable, editingTask.id)
+                        }.onSuccess {
+                            wiring.pendingTaskForEdit = null
+                            onBack()
+                        }.onFailure {
+                            Toast.makeText(shellContext, TaskStrings.saveFailed, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    null
+                },
                 onSave = {
                     val titleError = AddTaskFormReducer.validate(taskForm)
                     if (titleError != null) {
                         taskForm = taskForm.copy(titleError = titleError)
                     } else {
-                        TimetableCourseService.addTask(
-                            wiring.timetable,
-                            AddTaskFormReducer.buildTask(taskForm),
-                        )
-                        wiring.pendingTaskCourse = null
-                        onBack()
+                        runCatching {
+                            if (editingTask != null) {
+                                TimetableCourseService.updateTask(
+                                    wiring.timetable,
+                                    AddTaskFormReducer.buildTask(taskForm, existingTask = editingTask),
+                                )
+                            } else {
+                                TimetableCourseService.addTask(
+                                    wiring.timetable,
+                                    AddTaskFormReducer.buildTask(taskForm),
+                                )
+                            }
+                        }.onSuccess {
+                            wiring.pendingTaskForEdit = null
+                            wiring.pendingTaskCourse = null
+                            onBack()
+                        }.onFailure { error ->
+                            // 与 Dart 一致：标题必填 / 关联课程不存在 / 落盘失败分三种说法。
+                            Toast.makeText(
+                                shellContext,
+                                TaskFilterLogic.mapSaveError(error),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
                     }
                 },
             )

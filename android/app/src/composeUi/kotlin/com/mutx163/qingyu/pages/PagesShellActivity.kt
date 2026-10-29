@@ -30,6 +30,10 @@ import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TimetableHost
 import java.time.LocalDate
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.core.navBackStackOf
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -155,21 +159,41 @@ class PagesShellActivity : ComponentActivity() {
 
 @Composable
 private fun PagesShell() {
-    var slot by remember { mutableStateOf(DockSlot.TIMETABLE) }
-
-    // 索引里点开的页面。null = 没开页面层，显示当前槽位。
-    var openPageId by remember { mutableStateOf<String?>(null) }
-
     // Phase 3.5 接线层：壳自己的存储 + 课表仓储。
-    // 在这之前槽位喂的是演示数据、回调是空的（137 处 `{}`），所以「点了没反应」。
     val wiring = rememberShellWiring()
 
-    // dock 结构不是导航栈：非主屏时系统返回回课表主屏，而不是退出壳。
-    BackHandler(enabled = slot != DockSlot.TIMETABLE) { slot = DockSlot.TIMETABLE }
+    // 页面层用 miuix-nav 的返回栈（唯一合规做法，不自研转场）。栈底是 [ShellRoute.Dock]
+    // （底部四槽主屏），打开一页 push 一层、返回 pop 一层；切槽 = 替换栈底那条路由。
+    // 所有转场由 NavDisplay（NavTransitions.MiuixDefault + NavDisplayEffects.Default）负责，
+    // 不写一行自研动画。
+    val backStack = remember { navBackStackOf(ShellRoute.Dock(DockSlot.TIMETABLE.id)) }
 
-    // 页面层盖在槽位之上，返回**先**关页面层、回到索引，再往下才是回主屏。
-    // 注册在槽位那条之后，所以同时满足条件时是这一条先吃掉返回键。
-    BackHandler(enabled = openPageId != null) { openPageId = null }
+    fun popPage() {
+        if (backStack.size > 1) backStack.removeLastOrNull()
+    }
+
+    fun pushPage(id: String) {
+        val route = ShellRoute.Page(id)
+        // 幂等：同一页已在栈里就不再压（重复 contentKey 会被运行时拒绝，也会让返回分叉）。
+        if (route !in backStack) backStack.add(route)
+    }
+
+    // 栈顶路由：是 Dock 则停在主屏某个槽；是 Page 则压着页面层。
+    val topRoute = backStack.lastOrNull()
+    val currentSlot = (topRoute as? ShellRoute.Dock)
+        ?.let { r -> DockSlot.entries.firstOrNull { it.id == r.slotId } }
+        ?: DockSlot.TIMETABLE
+    val atRoot = topRoute is ShellRoute.Dock
+
+    // 切槽 = 替换栈底那条 Dock 路由（过渡交给 NavDisplay）。压着页面时坞不显示，走不到这。
+    fun selectSlot(newSlot: DockSlot) {
+        if (backStack.size == 1) backStack[0] = ShellRoute.Dock(newSlot.id)
+    }
+
+    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且非课表槽时回课表主屏。
+    BackHandler(enabled = atRoot && currentSlot != DockSlot.TIMETABLE) {
+        selectSlot(DockSlot.TIMETABLE)
+    }
 
     // 玻璃的背景采样源：整个内容区先被录进这个 layer，底栏再拿它当 backdrop。
     // 必须挂在**内容**上、而不是包住整个 Column —— 包住就会把底栏自己也录进去，
@@ -186,82 +210,89 @@ private fun PagesShell() {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(backdrop),
-        ) {
-            val pageId = openPageId
-            if (pageId != null) {
-                // 页面层占满整屏：页面要的是整块屏，不是槽位那点高度。
-                ShellPageContent(
-                    pageId = pageId,
-                    onBack = { openPageId = null },
-                    wiring = wiring,
-                    // 页面内部「推新页」：路由字符串 → 壳页面 id，映射表在 ShellWiring.kt。
-                    // 映射不到时什么都不做（不崩、不猜）。
-                    onOpenPage = { target -> openPageId = target },
-                )
-            } else {
-                when (slot) {
-                    // Phase 3.5：课表槽位改用**真宿主**——真数据（壳自己的存档）+ 真回调。
-                    // T1（`8866b3b5`）：点课程改为先弹操作层，不再直接进编辑页。
-                    // 与页面层的 `c1.week` 共用同一份接线（`TimetableWithCourseActions`），
-                    // 免得两个入口行为漂移。
-                    DockSlot.TIMETABLE -> TimetableWithCourseActions(
-                        wiring = wiring,
-                        onNavigate = { target -> openPageId = target },
-                    )
-                    DockSlot.SCHEDULE -> ScheduleListHost(
-                        repository = wiring.timetable,
-                        todayIso = LocalDate.now().toString(),
-                        onBack = { slot = DockSlot.TIMETABLE },
-                        onAdd = {
-                            wiring.clearScheduleIntent()
-                            wiring.pendingScheduleInitialDate = LocalDate.now().toString()
-                            openPageId = "d2.addSchedule"
-                        },
-                        onEdit = { item ->
-                            wiring.pendingScheduleEdit = item
-                            wiring.pendingScheduleOccurrenceDate = null
-                            openPageId = "d2.addSchedule"
-                        },
-                        onDelete = { item -> wiring.deleteScheduleItem(item, null) },
-                    )
-                    DockSlot.TASK -> TaskListPage(
-                        viewState = shellSampleTaskViewState(),
-                        onBack = { slot = DockSlot.TIMETABLE },
-                        onDateFilterChange = { },
-                        onCourseFilterClick = { },
-                        onAddTask = { openPageId = "d2.addTask" },
-                        onEditTask = { openPageId = "d2.addTask" },
-                        onToggleTask = { },
-                        onDeleteTask = { },
-                    )
-                    // 设置主槽位：直接渲染设置主页，点击子项自然跳转子页面。
-                    DockSlot.SETTINGS -> ShellPageContent(
-                        pageId = "b.settingsHome",
-                        onBack = { slot = DockSlot.TIMETABLE },
-                        wiring = wiring,
-                        onOpenPage = { target -> openPageId = target },
-                    )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(backdrop),
+            ) {
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { popPage() },
+                    transition = NavTransitions.MiuixDefault,
+                    effects = NavDisplayEffects.Default,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    // 栈底：底部四槽主屏。切槽已经过「替换这条路由」，转场由 NavDisplay 做。
+                    entry<ShellRoute.Dock> { route ->
+                        val dockSlot = DockSlot.entries.firstOrNull { it.id == route.slotId }
+                            ?: DockSlot.TIMETABLE
+                        when (dockSlot) {
+                            // Phase 3.5：课表槽位改用**真宿主**——真数据 + 真回调。
+                            DockSlot.TIMETABLE -> TimetableWithCourseActions(
+                                wiring = wiring,
+                                onNavigate = { target -> pushPage(target) },
+                            )
+                            DockSlot.SCHEDULE -> ScheduleListHost(
+                                repository = wiring.timetable,
+                                todayIso = LocalDate.now().toString(),
+                                onBack = { selectSlot(DockSlot.TIMETABLE) },
+                                onAdd = {
+                                    wiring.clearScheduleIntent()
+                                    wiring.pendingScheduleInitialDate = LocalDate.now().toString()
+                                    pushPage("d2.addSchedule")
+                                },
+                                onEdit = { item ->
+                                    wiring.pendingScheduleEdit = item
+                                    wiring.pendingScheduleOccurrenceDate = null
+                                    pushPage("d2.addSchedule")
+                                },
+                                onDelete = { item -> wiring.deleteScheduleItem(item, null) },
+                            )
+                            DockSlot.TASK -> TaskListPage(
+                                viewState = shellSampleTaskViewState(),
+                                onBack = { selectSlot(DockSlot.TIMETABLE) },
+                                onDateFilterChange = { },
+                                onCourseFilterClick = { },
+                                onAddTask = { pushPage("d2.addTask") },
+                                onEditTask = { pushPage("d2.addTask") },
+                                onToggleTask = { },
+                                onDeleteTask = { },
+                            )
+                            // 设置主槽位：直接渲染设置主页，点击子项自然 push 子页面。
+                            DockSlot.SETTINGS -> ShellPageContent(
+                                pageId = "b.settingsHome",
+                                onBack = { selectSlot(DockSlot.TIMETABLE) },
+                                wiring = wiring,
+                                onOpenPage = { target -> pushPage(target) },
+                            )
+                        }
+                    }
+                    // 页面层：任意目录 id 的一层。返回 = 弹掉这层，回到它下面那一页/主屏。
+                    entry<ShellRoute.Page> { route ->
+                        ShellPageContent(
+                            pageId = route.id,
+                            onBack = { popPage() },
+                            wiring = wiring,
+                            // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
+                            onOpenPage = { target -> pushPage(target) },
+                        )
+                    }
                 }
             }
-        }
 
-        // 页面层打开时收起 dock：页面的底部操作区不能被 dock 压住，
-        // 而且此时点 dock 会让「返回」语义分叉（到底退页面还是换槽位）。
-        if (openPageId == null) {
-            GlassDockNavigationBar(
-                items = dockItems,
-                selectedIndex = slot.ordinal,
-                onSelect = { index -> slot = DockSlot.entries[index] },
-                // 设备不支持 runtime shader 时别把 backdrop 传进去：
-                // 传了也画不出模糊，反而会多录一层、白费一次采样。
-                backdrop = if (glassAvailable) backdrop else null,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
+            // 只在栈底（没压页面）时显示玻璃坞：页面层占满整屏，底部操作区不能被坞压住；
+            // 压着页面时点坞也会让「返回」语义分叉。
+            if (atRoot) {
+                GlassDockNavigationBar(
+                    items = dockItems,
+                    selectedIndex = currentSlot.ordinal,
+                    onSelect = { index -> selectSlot(DockSlot.entries[index]) },
+                    // 设备不支持 runtime shader 时别把 backdrop 传进去：
+                    // 传了也画不出模糊，反而会多录一层、白费一次采样。
+                    backdrop = if (glassAvailable) backdrop else null,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
         }
     }
 }
@@ -286,12 +317,12 @@ private val dockItems: List<GlassDockItem>
         GlassDockItem(icon = MiuixIcons.Settings, label = DockSlot.SETTINGS.label),
     )
 
-/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。 */
-private enum class DockSlot(val label: String) {
-    TIMETABLE("课表"),
-    SCHEDULE("日程"),
-    TASK("任务"),
-    SETTINGS("设置"),
+/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。[id] 是路由里用的稳定短串。 */
+private enum class DockSlot(val id: String, val label: String) {
+    TIMETABLE("timetable", "课表"),
+    SCHEDULE("schedule", "日程"),
+    TASK("task", "任务"),
+    SETTINGS("settings", "设置"),
 }
 
 /*

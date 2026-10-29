@@ -232,6 +232,36 @@ object AddTaskFormReducer {
     }
 
     /**
+     * 编辑既有作业时的初始状态（对齐 Dart `add_task_screen.dart:98-125` 的 `initState`，
+     * 其中 `widget.task != null` 分支）。
+     *
+     * 逐条对齐：
+     * - 标题：Dart `:142-147`——有标题用标题；空标题退回「课程作业」兜底（编辑态不预填课程默认名，
+     *   因为用户看到的应是原样，而不是又猜一个默认值）。
+     * - 备注 / 课程 / 周次 / 到期日 / 完成态：全部沿用原任务（`:103-107`、`:118-124`）。
+     * - 抢焦点：编辑态**不抢**（`TaskFormDefaults.shouldAutofocusTitle(isEditing = true)`）。
+     *
+     * @param courses 课表课程（用于把 `task.courseId` 解析成「来源课程」显示名）。
+     */
+    fun initialFromTask(task: CourseTask, courses: List<Course>): AddTaskViewState {
+        val course = task.courseId?.let { id -> courses.firstOrNull { it.id == id } }
+        val dueDate = task.dueDate
+        return AddTaskViewState(
+            isEditing = true,
+            title = task.title.ifBlank { TaskStrings.taskHomeworkDefaultTitle },
+            note = task.note.orEmpty(),
+            courseId = task.courseId,
+            sourceWeek = task.sourceWeek,
+            selectedCourseName = course?.name ?: TaskStrings.taskNoCourse,
+            hasDueDate = dueDate != null,
+            dueDate = dueDate,
+            dueDateFormatted = TaskFormLogic.formatDate(dueDate),
+            isCompleted = task.isCompleted,
+            shouldAutofocusTitle = false,
+        )
+    }
+
+    /**
      * 由表单状态构建作业实体（交给宿主 `TimetableCourseService.addTask` 落库）。
      *
      * @throws IllegalArgumentException 标题为空（与 `TaskFormLogic.buildTask` 同口径）。
