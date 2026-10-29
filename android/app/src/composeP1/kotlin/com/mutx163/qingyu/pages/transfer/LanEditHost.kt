@@ -26,6 +26,7 @@ import com.mutx163.qingyu.share.LanEditSession
 import com.mutx163.qingyu.transfer.lan.LanEditApiRouter
 import com.mutx163.qingyu.transfer.lan.LanEditHttpServer
 import com.mutx163.qingyu.transfer.lan.LanEditRepositoryHost
+import com.mutx163.qingyu.transfer.lan.LanEditStaticAssets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -249,7 +250,12 @@ object LanEditServiceRuntime {
                     host = LanEditRepositoryHost(repository),
                     session = newSession,
                 )
-                val newServer = LanEditHttpServer(router = router)
+                val newServer = LanEditHttpServer(
+                    router = router,
+                    // 控制台页面与静态资源：不传这一项，电脑浏览器打开地址就是一片空白
+                    // （`/` 落到路由层是 404，而 `/api/v1/*` 全通，现象上很难反推）。
+                    staticAssets = LanEditStaticAssets { assetPath -> readFlutterAsset(context, assetPath) },
+                )
                 newServer.start()
                 startedServer = newServer
                 server = newServer
@@ -336,5 +342,27 @@ object LanEditServiceRuntime {
             }
         }
         return LanAddressScoring.pickPreferredLanIPv4(candidates)
+    }
+
+    /**
+     * 读一个 Flutter 资源（Dart 侧 `rootBundle.load('assets/lan_edit/index.html')` 的对应物）。
+     *
+     * ## 为什么要试两个前缀
+     *
+     * Flutter 把 Dart 的 `assets/` 打进 APK 的 `flutter_assets/` 目录下，所以正常情况要用
+     * `flutter_assets/assets/lan_edit/index.html`。但纯 Compose 的构建变体（不跑 Flutter 资源链）
+     * 如果直接把仓库里的 `assets/` 拷进 APK，路径就是不带前缀的那一个。
+     * 两种都试一次，代价是失败分支多读一次目录，比「某个变体上页面永远是空白」便宜得多。
+     *
+     * @return null = 两处都没有（调用方回 404，与「页面没打包进去」这个事实一致）。
+     */
+    private fun readFlutterAsset(context: Context, assetPath: String): ByteArray? {
+        for (candidate in listOf("flutter_assets/$assetPath", assetPath)) {
+            val bytes = runCatching {
+                context.assets.open(candidate).use { it.readBytes() }
+            }.getOrNull()
+            if (bytes != null && bytes.isNotEmpty()) return bytes
+        }
+        return null
     }
 }

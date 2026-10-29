@@ -31,8 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  *   keep-alive，但那要完整的连接复用状态机（还要处理流水线请求与半关连接），
  *   局域网编辑一次页面加载几个请求，新开连接的开销可以忽略，少一个状态机就少一类走私面。
  * - **不支持 `Transfer-Encoding: chunked`**：明确 400，不半信半疑地读长度。
- * - **不做静态资源服务**（Dart 从 Flutter asset 里发 index.html / app.js / css）：
- *   那是 Android 侧 `assets/` 与 `WebView`/浏览器壳的接线问题，属接线方，见 WIRING-NOTE。
+ * - **静态资源是可选的注入件**（[staticAssets]）：本类自己去读 Flutter asset 需要
+ *   `android.content.res.AssetManager`，那会让 `transfer/lan` 不再是纯 Kotlin，
+ *   全队 L0 都会丢掉这一整层目录（见 `LanEditStaticAssets` 的说明）。
+ *   所以由接线方注入 `LanEditStaticAssets`；**装配漏了它 ⇒ 浏览器打开地址一片空白**
+ *   （`/` 落到路由层是 404，而接口前缀下的请求全部正常，很难从现象反推）。
  *
  * 线程模型：1 个接受线程 + 一个有界工作池（上限 [LanEditHttpLimits.MAX_CONCURRENT_REQUESTS]
  * + 少量余量）。池满时新连接直接回 503，而不是无限堆线程——手机扛不住。
@@ -41,6 +44,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 class LanEditHttpServer(
     private val router: LanEditApiRouter,
     private val audit: LanEditAuditSink = LanEditAuditNoop,
+    /**
+     * 控制台页面与静态资源的来源（2026-10-29 F03 接线补件）。
+     *
+     * null = 只服务 API（旧行为）。**不传的后果是真机上电脑浏览器打开地址一片空白**：
+     * 浏览器请求 `/` 落到路由层就是 404，而接口前缀下的请求全部正常，看起来像「服务器通了但页面没做」。
+     * 生产装配见 `composeP1` 的 `LanEditHost`；测试里可以注入假资源。
+     */
+    private val staticAssets: LanEditStaticAssets? = null,
     private val bindAddress: InetAddress = InetAddress.getByName("0.0.0.0"),
     private val requestedPort: Int = 0,
     /**
@@ -218,7 +229,14 @@ class LanEditHttpServer(
                 return
             }
             entered = true
-            val response = router.route(request)
+            // 页面与子资源走静态分发，其余走 API 路由（Dart `_handleRequest` 的同一分支）。
+            // 判据抽在 `isStaticAssetRequest` 里并有单测：这条写错会表现成「API 全 404」
+            // 或「接口路径被当成页面」，两种都很难从现象反推。
+            val response = if (staticAssets != null && isStaticAssetRequest(request.method, request.path)) {
+                staticAssets.serve(request.path)
+            } else {
+                router.route(request)
+            }
             writeQuietly(socket, response)
         } catch (error: LanEditHttpException) {
             writeQuietly(
