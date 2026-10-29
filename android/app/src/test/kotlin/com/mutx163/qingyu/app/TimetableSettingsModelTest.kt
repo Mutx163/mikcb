@@ -656,6 +656,8 @@ class TimetableSettingsModelTest {
             // 读侧永远 floating，所以往返值只能取 FLOATING。
             timetableBackToCurrentWeekButtonStyle = BackToCurrentWeekButtonStyle.FLOATING,
             timetableFloatingBackToCurrentWeekButtonOpacity = 0.8,
+            // 设置→诊断页的「记录应用日志」开关：非默认值才验得出 toJsonPatch 漏写。
+            liveEnableLocalDiagnostics = true,
         )
 
         store.save(original)
@@ -745,6 +747,51 @@ class TimetableSettingsModelTest {
         val patch = TimetableSettingsModel().toJsonPatch()
         assertEquals(TimetableSettingsModel.OWNED_KEYS.toSet(), patch.keys)
         assertEquals(TimetableSettingsModel.OWNED_KEYS.size, patch.size)
+    }
+
+    // ---------- 设置→诊断：记录应用日志开关 ----------
+
+    /**
+     * `liveEnableLocalDiagnostics`（`timetable_settings.dart:1602-1603`）四处齐：
+     * 字段 / `toJsonPatch` / `OWNED_KEYS` / `fromJson`。
+     *
+     * 读口径 `lenientBool(...) ?? false`：缺键与坏类型都必须回落 false
+     * （诊断页开关默认关，画成开就会让用户以为日志已经在记）。
+     */
+    @Test
+    fun liveEnableLocalDiagnosticsDefaultsToFalseAndReadsDiskValue() {
+        assertFalse(TimetableSettingsModel().liveEnableLocalDiagnostics)
+        assertFalse(TimetableSettingsModel.fromJson(emptyMap()).liveEnableLocalDiagnostics)
+        // Dart lenientBool（`lenient_json_readers.dart:43-51`）只认真 bool 与
+        // 'true'/'false' 字符串；数字 1 / 'yes' 一律按缺键处理。
+        assertFalse(
+            TimetableSettingsModel
+                .fromJson(mapOf("liveEnableLocalDiagnostics" to 1))
+                .liveEnableLocalDiagnostics,
+        )
+        assertFalse(
+            TimetableSettingsModel
+                .fromJson(mapOf("liveEnableLocalDiagnostics" to "yes"))
+                .liveEnableLocalDiagnostics,
+        )
+        assertTrue(
+            TimetableSettingsModel
+                .fromJson(mapOf("liveEnableLocalDiagnostics" to true))
+                .liveEnableLocalDiagnostics,
+        )
+        // 字符串 'true' 在 Dart 侧也是真值（跨端类型漂移的救回口径）。
+        assertTrue(
+            TimetableSettingsModel
+                .fromJson(mapOf("liveEnableLocalDiagnostics" to "true"))
+                .liveEnableLocalDiagnostics,
+        )
+        // 键名逐字对拍（JSON 里同名）。
+        assertTrue(TimetableSettingsModel.OWNED_KEYS.contains("liveEnableLocalDiagnostics"))
+        assertEquals(
+            true,
+            TimetableSettingsModel(liveEnableLocalDiagnostics = true)
+                .toJsonPatch()["liveEnableLocalDiagnostics"],
+        )
     }
 
     // ---------- 坏值留档 ----------
