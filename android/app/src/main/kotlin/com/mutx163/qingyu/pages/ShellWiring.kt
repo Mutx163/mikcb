@@ -217,6 +217,16 @@ class ShellWiring(context: Context) {
     var pendingEditGroup: CourseGroup? = null
 
     /**
+     * 「作业行 → 查看课程」时要带进加课页的**来源周次**（2026-10-29 任务族复刻收口）。
+     *
+     * Dart 侧 `task_list_screen.dart:346-357` 是
+     * `AddCourseScreen(course: course, initialWeek: task.sourceWeek)`：点作业行的「查看课程」
+     * 不只看那门课，还要把课程周次区间的**起点定位到这条作业的来源周**。
+     * 与 [pendingEditCourse] 同属「跨子树传一次、用完即清」的意图载体（见 [clearAddCourseIntent]）。
+     */
+    var pendingEditWeek: Int? = null
+
+    /**
      * 从课程操作弹层点「加作业」时要带进作业页的预选课程（T1）。
      *
      * 与 [pendingEditCourse] 同生命周期：都是「跨子树传一次、用完即清」的意图载体。
@@ -274,6 +284,7 @@ class ShellWiring(context: Context) {
         pendingAddCourseSeed = null
         pendingEditCourse = null
         pendingEditGroup = null
+        pendingEditWeek = null
     }
 
     /**
@@ -720,19 +731,29 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
 }
 
 /**
- * 顶栏右上角「更多」菜单条目 id → 壳页面 id。
+ * 菜单/索引条目 id → 壳页面 id。
  *
  * ## 为什么单独一张表
  *
- * 菜单条目 id 沿用 Dart `HomeGridMenu.defaultActions` 的稳定主键（`overview` /
- * `statistics` / `addCourse` / `exams` / `tasks` / `importCourses` / `settings` /
- * `support`），与 `shellPageIdForRoute` 的 Dart 路由字符串是**两套命名空间**。
+ * 菜单条目 id 沿用 Dart `HomeGridMenu.defaultActions` 与 `kHomeMenuCatalog`
+ * （`lib/widgets/home_menu_catalog.dart`）的稳定主键（`overview` / `statistics` /
+ * `addCourse` / `exams` / `tasks` / `importCourses` / `settings` / `support` …），
+ * 与 `shellPageIdForRoute` 的 Dart 路由字符串是**两套命名空间**。
  * 页面层只回传 id（不认路由），点哪一项推到哪一页由这张表决定。
  *
- * 映射不到时返回 null，调用方什么都不做（不崩、不猜）。将来「全部功能」页接进来时，
- * 在这里补条目即可。
+ * ## 两个消费者，一张表（2026-10-29 F02 收口）
+ *
+ * 1. 课表页顶栏右上角「更多」菜单（`MoreMenu`）——原本只有 9 条；
+ * 2. 「全部功能」索引页（`i.more` / `i.moreSearch`，39 条）——2026-10-29 之前
+ *    它的 `onOpenFeature` 是空 lambda，**整页点了没反应**。现在两条入口共用本表：
+ *    在 `MoreFeaturesModel`（纯 Kotlin）里新增条目后，**必须**在这里补一行，
+ *    否则 `MoreFeaturesNavigationGuardTest` 会红。
+ *
+ * 映射不到时返回 null，调用方什么都不做（不崩、不猜）。
+ * 表里的目标 id 必须在 `ShellPageCatalog` 里存在且可进入（同一条守卫会查）。
  */
 fun shellTimetableMenuPageId(id: String): String? = when (id) {
+    // —— 顶栏「更多」菜单原有的 9 条 ——
     "overview" -> "d1.overview"
     "statistics" -> "e.statistics"
     "addCourse" -> "d1.addCourse"
@@ -743,6 +764,49 @@ fun shellTimetableMenuPageId(id: String): String? = when (id) {
     "support" -> "a.support"
     // 首页/更多菜单里的「版本更新」→ 版本更新页（1:1 复刻批次交付）。
     "update" -> "a.update"
+
+    // —— 课表内容（MoreFeaturesModel `timetable_content` 分组）——
+    "profiles" -> "c1.profiles"
+    "timeSchemes" -> "d3.timeSchemes"
+    "locationTimeMatch" -> "d3.locationMatch"
+    "scheduleDateRule" -> "d2.dateRule"
+    "scheduleList" -> "d2.scheduleList"
+    "courseConflict" -> "k.conflict"
+    "monthView" -> "c2.month"
+    "pickupCode" -> "g3.pickupCodes"
+
+    // —— 外观显示（`timetable_appearance`）——
+    "appearanceEditor" -> "b.appearanceEditor"
+    "appearanceSettings" -> "b.appearance"
+    "timetablePageSettings" -> "b.timetablePage"
+    "courseCardSettings" -> "b.courseCard"
+    "weatherSettings" -> "b.weather"
+    "holidaySettings" -> "b.holiday"
+
+    // —— 通知与桌面（`notification_desktop`）——
+    "liveSettings" -> "b.live"
+    "homeWidgetSettings" -> "b.homeWidget"
+
+    // —— 应用偏好（`app_preferences`）——
+    "homeNavigation" -> "b.homeNavigation"
+    "generalSettings" -> "b.general"
+    "statisticsSettings" -> "e.statisticsSettings"
+
+    // —— 数据同步（`data_sync`）——
+    "icsExport" -> "g3.icsExport"
+    "dataTransfer" -> "g3.dataTransfer"
+    "cloudSync" -> "f.cloudSync"
+    "lanEdit" -> "g3.lanEdit"
+    "coupleTimetable" -> "f.couple"
+
+    // —— 关于支持（`about_support`）——
+    "aboutApp" -> "a.about"
+    "userGuide" -> "i.userGuide"
+    "diagnosticsSettings" -> "b.diagnostics"
+    "changelog" -> "a.changelog"
+    "feedback" -> "k.feedback"
+    "openSourceLicenses" -> "a.licenses"
+    "memoryStats" -> "h.memory"
     else -> null
 }
 

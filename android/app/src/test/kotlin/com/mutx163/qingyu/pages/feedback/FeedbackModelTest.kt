@@ -229,6 +229,113 @@ class FeedbackModelTest {
         )
     }
 
+    // ---------- 提示语时机（Dart 的顺序：先说「正在打开」，再说结果） ----------
+
+    @Test
+    fun `微信渠道顺序是复制名称再提示再拉起`() {
+        val events = mutableListOf<String>()
+        val outcome = runFeedbackOpenPlan(
+            plan = feedbackOpenPlanFor(buildFeedbackPageView().channels.first { it.id == "wechat" }),
+            launch = { url ->
+                events += "launch:$url"
+                true
+            },
+            copy = { value -> events += "copy:$value" },
+            notify = { message -> events += "notify:$message" },
+        )
+        // 拉起成功的口径：先复制名称（微信里要粘贴），再提示（此时本 App 还在前台），
+        // 最后才把微信拉起来；成功**不再**复制回落值。
+        assertEquals(
+            listOf(
+                "copy:轻屿课表",
+                "notify:已复制公众号名称，请到微信中粘贴搜索",
+                "launch:weixin://",
+            ),
+            events,
+        )
+        assertEquals(FeedbackOpenOutcome.Opened("weixin://"), outcome)
+    }
+
+    @Test
+    fun `全部失败时先提示正在打开再提示已复制`() {
+        val events = mutableListOf<String>()
+        runFeedbackOpenPlan(
+            plan = feedbackOpenPlanFor(buildFeedbackPageView().channels.first { it.id == "qq" }),
+            launch = { false },
+            copy = { value -> events += "copy:$value" },
+            notify = { message -> events += "notify:$message" },
+        )
+        assertEquals(
+            listOf(
+                "notify:正在打开……",
+                "copy:1077077989",
+                "notify:无法打开，已复制相关信息",
+            ),
+            events,
+        )
+    }
+
+    // ---------- scheme 白名单（与 MainActivity 的 launch_url 同口径） ----------
+
+    @Test
+    fun `反馈渠道用到的URL都在白名单内`() {
+        for (channel in buildFeedbackPageView().channels) {
+            for (url in channel.urls) {
+                assertTrue("渠道 ${channel.id} 的 URL 不在白名单：$url", FeedbackLaunchRules.isAllowed(url))
+            }
+        }
+    }
+
+    @Test
+    fun `危险scheme一律拒绝`() {
+        val blocked = listOf(
+            "javascript:alert(1)",
+            "file:///sdcard/x.txt",
+            "content://com.other/secret",
+            "data:text/html,<b>x</b>",
+            "intent://scan/#Intent;end",
+            "",
+            "根本就没有冒号",
+            "weixin", // 没有 ://，不是可拉起地址
+        )
+        for (url in blocked) {
+            assertTrue("本该拒绝：$url", !FeedbackLaunchRules.isAllowed(url))
+        }
+        assertEquals("weixin", FeedbackLaunchRules.schemeOf("weixin://"))
+        assertEquals("https", FeedbackLaunchRules.schemeOf("HTTPS://github.com/a"))
+    }
+
+    /**
+     * 与 `MainActivity` 的 `ALLOWED_LAUNCH_SCHEMES` 逐字对拍。
+     *
+     * 两条通道（Flutter 的 `launch_url` 与 Compose 宿主的直连 Intent）必须同口径：
+     * 一边放宽/收紧而另一边没跟上，用户看到的就是「点了没反应」或「白名单形同虚设」。
+     * 这条守卫读源码文本（反射拿不到 private const 的值语义上的同源关系）。
+     */
+    @Test
+    fun `白名单与MainActivity逐字一致`() {
+        val candidates = listOf(
+            File("android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
+            File("app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
+            File("../android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
+            File("../../android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt"),
+        )
+        val file = candidates.firstOrNull { it.isFile }
+            ?: error("找不到 MainActivity.kt，工作目录=${File(".").absolutePath}")
+        val text = file.readText(Charsets.UTF_8)
+        val block = Regex(
+            """ALLOWED_LAUNCH_SCHEMES\s*=\s*setOf\(([^)]*)\)""",
+        ).find(text)?.groupValues?.get(1)
+            ?: error("MainActivity.kt 里没找到 ALLOWED_LAUNCH_SCHEMES（守卫不许静默跳过）")
+        val declared = Regex(""""([a-z]+)"""").findAll(block).map { it.groupValues[1] }.toSet()
+        assertTrue("MainActivity 的白名单解析为空，正则可能失效", declared.size >= 5)
+        assertEquals(
+            "MainActivity 的 ALLOWED_LAUNCH_SCHEMES 与 FeedbackLaunchRules.allowedSchemes 不一致",
+            declared,
+            FeedbackLaunchRules.allowedSchemes,
+        )
+    }
+
     // ---------- ARB 逐字对拍 ----------
 
     private fun arbString(key: String): String {

@@ -1,6 +1,12 @@
 package com.mutx163.qingyu.pages
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -46,6 +52,7 @@ import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.app.TimetablePageSettingsHost
 import com.mutx163.qingyu.app.ScheduleDateRuleHost
 import com.mutx163.qingyu.app.ScheduleListHost
+import com.mutx163.qingyu.app.TaskListHost
 import com.mutx163.qingyu.app.TimeSchemeEditorHost
 import com.mutx163.qingyu.app.TimeSchemeManagementHost
 import com.mutx163.qingyu.app.TimetableHostLogic
@@ -69,7 +76,11 @@ import com.mutx163.qingyu.pages.exam.AddExamViewState
 import com.mutx163.qingyu.pages.exam.ExamListLogic
 import com.mutx163.qingyu.pages.exam.ExamListPage
 import com.mutx163.qingyu.pages.feedback.FeedbackPage
+import com.mutx163.qingyu.pages.feedback.FeedbackLaunchRules
+import com.mutx163.qingyu.pages.feedback.feedbackOpenPlanFor
+import com.mutx163.qingyu.pages.feedback.runFeedbackOpenPlan
 import com.mutx163.qingyu.pages.guide.HyperosShowcasePage
+import com.mutx163.qingyu.pages.guide.MoreFeaturesModel
 import com.mutx163.qingyu.pages.guide.MoreFeaturesPage
 import com.mutx163.qingyu.pages.guide.MoreFeaturesSearchOverlay
 import com.mutx163.qingyu.pages.guide.GuideSettingsMapping
@@ -156,10 +167,8 @@ import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.pages.task.AddTaskPage
 import com.mutx163.qingyu.pages.task.AddTaskViewState
-import com.mutx163.qingyu.pages.task.TaskDateFilter
-import com.mutx163.qingyu.pages.task.TaskListViewState
-import com.mutx163.qingyu.pages.task.TaskListController
-import com.mutx163.qingyu.pages.task.TaskListPage
+// 2026-10-29：任务清单渲染改走宿主 `app/TaskHost.kt`（`TaskListHost`），本文件不再直接引用
+// `TaskListPage` / `TaskListController` / `TaskListViewState` / `TaskDateFilter`。
 import com.mutx163.qingyu.pages.task.TaskFilterLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
@@ -515,6 +524,9 @@ fun ShellPageContent(
                 onOpenCourse = { courseId ->
                     wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
                     wiring.pendingAddCourseSeed = null
+                    // 这一路是「从周视图看这门课」，不带来源周次（Dart 同款调用不传 initialWeek）。
+                    // 清空是防止上一条「作业 → 查看课程」留下的周次串到这一次打开里。
+                    wiring.pendingEditWeek = null
                     onOpenPage("d1.addCourse")
                 },
             )
@@ -530,6 +542,9 @@ fun ShellPageContent(
                 // 组编辑：课程总览点某个课程组进来时带整组（Dart `AddCourseScreen(courseGroup:)`），
                 // 让「改名 / 改整组课次」走 updateCourseGroup，而不是只改单门课。
                 courseGroup = wiring.pendingEditGroup,
+                // 「作业 → 查看课程」带进来的来源周次（Dart `AddCourseScreen(initialWeek: task.sourceWeek)`）。
+                // 其余入口为 null，行为与之前一致。
+                initialWeek = wiring.pendingEditWeek,
                 initialDayOfWeek = wiring.pendingAddCourseSeed?.first,
                 initialStartSection = wiring.pendingAddCourseSeed?.second,
                 availableWeeks = (1..snapshot.settings.semesterWeekCount.coerceAtLeast(1)).toList(),
@@ -623,64 +638,36 @@ fun ShellPageContent(
             todayIso = LocalDate.now().toString(),
             onBack = onBack,
         )
-        "d2.taskList" -> {
-            val repository = wiring.timetable
-            val shellContext = LocalContext.current
-            // observe 回调里 tick++ 无条件触发重组：勾选/删除任务后会
-            // notifyStateChanged，列表据此即时刷新。
-            var tick by remember(repository) { mutableStateOf(0) }
-            DisposableEffect(repository) {
-                val subscription = repository.observe { tick++ }
-                onDispose { subscription.close() }
-            }
-            val taskController = remember(repository) { TaskListController(repository) }
-            TaskListPage(
-                viewState = remember(tick, taskController.dateFilter, taskController.courseFilter) {
-                    taskController.viewState()
-                },
-                onBack = onBack,
-                onDateFilterChange = { taskController.setDateFilter(it); tick++ },
-                // 课程筛选弹层：候选来自 controller.courseOptions()，选中回写 controller。
-                onCourseFilterClick = {},
-                courseFilterOptions = taskController.courseOptions(),
-                onCourseFilterPicked = { picked -> taskController.setCourseFilter(picked); tick++ },
-                onAddTask = {
-                    wiring.pendingTaskForEdit = null
-                    wiring.pendingTaskCourse = null
-                    onOpenPage("d2.addTask")
-                },
-                // 点任务行 → 带这条任务进「编辑任务」表单。
-                onEditTask = { task ->
-                    wiring.pendingTaskForEdit = task
-                    wiring.pendingTaskCourse = null
-                    onOpenPage("d2.addTask")
-                },
-                // 勾选 / 删除落盘失败会回滚并抛异常：必须报出来，否则勾选框弹回去、用户零提示。
-                onToggleTask = { task ->
-                    runCatching { taskController.toggleTask(task) }
-                        .onFailure {
-                            Toast.makeText(shellContext, TaskStrings.saveFailed, Toast.LENGTH_SHORT).show()
-                        }
-                },
-                onDeleteTask = { task ->
-                    runCatching { taskController.deleteTask(task) }
-                        .onFailure {
-                            Toast.makeText(shellContext, TaskStrings.saveFailed, Toast.LENGTH_SHORT).show()
-                        }
-                },
-                // 课程直达：带这门课进课程编辑页（与课程总览点课程同一落点 d1.addCourse）。
-                onViewCourse = { task ->
-                    val course = task.courseId?.let { id ->
-                        wiring.timetable.snapshot.courses.firstOrNull { it.id == id }
-                    }
-                    if (course != null) {
-                        wiring.pendingEditCourse = course
-                        wiring.pendingEditGroup = null
-                        onOpenPage("d1.addCourse")
-                    }
-                },
-            )
-        }
+        // 任务清单：宿主抽到 `app/TaskHost.kt`（`TaskListHost`），与底栏「任务」tab 复用同一份接线。
+        //
+        // 为什么要抽：这个页面有**两个渲染点**——本路由与 `PagesShellActivity` 的 `DockSlot.TASK`。
+        // 抽出前，本路由是真数据、底栏那个还在喂 `shellSampleTaskViewState()`（演示空态 + 5 个空回调），
+        // 于是「从路由进去能用、从底栏进去是死的」。两份各写一遍接线必然再次漂移。
+        "d2.taskList" -> TaskListHost(
+            repository = wiring.timetable,
+            onBack = onBack,
+            onOpenAddTask = {
+                wiring.pendingTaskForEdit = null
+                wiring.pendingTaskCourse = null
+                onOpenPage("d2.addTask")
+            },
+            // 点任务行 → 带这条任务进「编辑任务」表单。
+            onOpenEditTask = { task ->
+                wiring.pendingTaskForEdit = task
+                wiring.pendingTaskCourse = null
+                onOpenPage("d2.addTask")
+            },
+            // 课程直达：带这门课进课程编辑页（与课程总览点课程同一落点 d1.addCourse）。
+            // 2026-10-29：补上来源周次——Dart `task_list_screen.dart:346-357` 传的是
+            // `AddCourseScreen(course: course, initialWeek: task.sourceWeek)`，
+            // 少这一条则打开后周次区间落在默认值上，看不到这条作业的来源周。
+            onOpenCourse = { course, sourceWeek ->
+                wiring.pendingEditCourse = course
+                wiring.pendingEditGroup = null
+                wiring.pendingEditWeek = sourceWeek
+                onOpenPage("d1.addCourse")
+            },
+        )
         // T1 收尾：作业表单接上真状态机（新建 + 编辑两路）。
         // 新建：来自课程操作弹层「作业」时预选课程，纯新建从「+」进入。
         // 编辑：清单页点任务行 → pendingTaskForEdit 带着原任务进来，表单载入原值、保存走 updateTask。
@@ -724,9 +711,10 @@ fun ShellPageContent(
                 },
                 onDueDatePicked = { date -> taskForm = AddTaskFormReducer.withDueDate(taskForm, date) },
                 onDueDateCleared = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, false) },
-                onPickCourseClick = {},
+                // 2026-10-29：原先还传过 `onPickCourseClick = {}` / `onPickDueDateClick = {}`。
+                // 两个弹层都是页面内部行为（候选与结果走 `courseOptions` / `onDueDatePicked` 等），
+                // 那两个参数只剩空实现，已从页面 API 删除，这里不再传。
                 onHasDueDateChange = { taskForm = AddTaskFormReducer.withHasDueDate(taskForm, it) },
-                onPickDueDateClick = {},
                 onCompletedChange = { taskForm = AddTaskFormReducer.withCompleted(taskForm, it) },
                 // 编辑态才显示删除按钮；删除前页面自己弹确认框（对齐 Dart _confirmDelete）。
                 onDelete = if (editingTask != null) {
@@ -1247,10 +1235,23 @@ fun ShellPageContent(
                 onFinishGuide = { onBack() },
             )
         }
-        "i.more" -> MoreFeaturesWithSearch(onBack = onBack)
+        // 「全部功能」索引页：39 行每行都要能跳到对应页（F02 接线，2026-10-29）。
+        // 目标页由 `shellTimetableMenuPageId`（条目 id → 壳页面 id）翻译，
+        // 与顶栏「更多」菜单**共用同一张表**；表里没条目时由
+        // `MoreFeaturesNavigationGuardTest` 先红，不靠人记。
+        "i.more" -> MoreFeaturesWithSearch(
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+            repository = wiring.timetable,
+        )
+        // 独立路由进来的搜索浮层（同一组件的另一种入口）：选中 = 关浮层 + 跳页。
+        // 两步都要，少一步就是「选了没反应」——这是本批要修的半接点之一。
         "i.moreSearch" -> MoreFeaturesSearchOverlay(
             onDismiss = onBack,
-            onSelectFeature = {},
+            onSelectFeature = { featureId ->
+                shellTimetableMenuPageId(featureId)?.let(onOpenPage)
+                onBack()
+            },
         )
         "i.hyperosShowcase" -> HyperosShowcasePage(onBack = onBack)
 
@@ -1328,11 +1329,36 @@ fun ShellPageContent(
                     wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
                     wiring.pendingEditGroup = null
                     wiring.pendingAddCourseSeed = null
+                    // 冲突页这一路同样不带来源周次，清掉上一条路径可能留下的意图。
+                    wiring.pendingEditWeek = null
                     onOpenPage("d1.addCourse")
                 },
             )
         }
-        "k.feedback" -> FeedbackPage(onBack = onBack)
+        // 问题反馈页：点渠道行 / 点右侧复制按钮**真的做事**（F02，2026-10-29）。
+        // 原先只传 onBack，两个回调是 FeedbackPage 的默认空实现 ⇒ 五行渠道全死。
+        // 动作拆在 `runFeedbackOpenPlan`（main，纯 Kotlin，顺序有单测）里，
+        // 这里只提供三件宿主能力：ACTION_VIEW 拉起、写剪贴板、Toast 回执。
+        "k.feedback" -> {
+            val context = LocalContext.current
+            FeedbackPage(
+                onBack = onBack,
+                onOpenChannel = { channel ->
+                    runFeedbackOpenPlan(
+                        plan = feedbackOpenPlanFor(channel),
+                        launch = { url -> FeedbackChannelHost.open(context, url) },
+                        copy = { value -> FeedbackChannelHost.copy(context, value) },
+                        notify = { message -> FeedbackChannelHost.toast(context, message) },
+                    )
+                    Unit
+                },
+                onCopyChannel = { channel ->
+                    FeedbackChannelHost.copy(context, channel.copyValue)
+                    FeedbackChannelHost.toast(context, channel.copyToast)
+                    Unit
+                },
+            )
+        }
 
         // 目录里登记了、分派里没接：**宁可明确报错，也不要静默显示空白**
         else -> ShellMissingPage(pageId = pageId, onBack = onBack)
@@ -1379,20 +1405,60 @@ private fun SettingsWeekPreviewSlot(wiring: ShellWiring) {
  * 「全部功能」页 + 它自己的搜索浮层。
  *
  * 搜索浮层是同一页的组件（不是独立路由），所以在这里持有它的开关状态：
- * 点搜索胶囊 → 浮层盖上来；浮层里选一项 → 关掉浮层回目录。
+ * 点搜索胶囊 → 浮层盖上来；浮层里选一项 → 关掉浮层，**并且跳到那一页**。
+ *
+ * ## 两个入口，一个动作（F02 接线，2026-10-29）
+ *
+ * - 页内每行 `onOpenFeature`：条目 id → `shellTimetableMenuPageId` → `onOpenPage`；
+ * - 浮层 `onSelectFeature`：同上，只是先关浮层再跳（浮层不关会盖住目标页）。
+ *
+ * 原先两处都是空 lambda / 只关浮层，于是「全部功能」39 行**全部点了没反应**——
+ * 而这一页存在的意义就是「某个入口被我删了，来这儿找回来」。
+ *
+ * ## 副标题是「当前值」，必须读真仓储
+ *
+ * 条目副标题在 Dart 侧是「当前课表名 / 当前作息名」（`more_features_screen.dart:308-311`
+ * 的 `activeProfileName` / `activeTimeSchemeName`），不是描述。所以这里订阅课表仓储：
+ * 切了档案、改了作息名再进来，副标题跟着变——静态字符串会当场变成假信息。
  */
 @Composable
-private fun MoreFeaturesWithSearch(onBack: () -> Unit) {
+private fun MoreFeaturesWithSearch(
+    onBack: () -> Unit,
+    onOpenPage: (String) -> Unit,
+    repository: com.mutx163.qingyu.app.TimetableRepository,
+) {
     var searchOpen by remember { mutableStateOf(false) }
+    val snapshot = remember(repository) { mutableStateOf(repository.snapshot) }
+    DisposableEffect(repository) {
+        val subscription = repository.observe { snapshot.value = it }
+        onDispose { subscription.close() }
+    }
+    val current = snapshot.value
+    val activeProfileName = current.profiles.firstOrNull { it.id == current.activeProfileId }?.name
+    val activeTimeSchemeName = current.timeSchemes.firstOrNull { it.id == current.activeTimeSchemeId }?.name
+    val groups = MoreFeaturesModel.buildDefaultFeatureGroups(
+        activeProfileName = activeProfileName,
+        activeTimeSchemeName = activeTimeSchemeName,
+    )
+    val openFeature: (String) -> Unit = { featureId ->
+        shellTimetableMenuPageId(featureId)?.let(onOpenPage)
+    }
+
     MoreFeaturesPage(
+        activeProfileName = activeProfileName,
+        activeTimeSchemeName = activeTimeSchemeName,
         onBack = onBack,
         onOpenSearch = { searchOpen = true },
-        onOpenFeature = {},
+        onOpenFeature = openFeature,
     )
     if (searchOpen) {
         MoreFeaturesSearchOverlay(
+            groups = groups,
             onDismiss = { searchOpen = false },
-            onSelectFeature = { searchOpen = false },
+            onSelectFeature = { featureId ->
+                searchOpen = false
+                openFeature(featureId)
+            },
         )
     }
 }
@@ -1486,13 +1552,79 @@ private fun clockText(minutesOfDay: Int): String {
     return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 }
 
-/** 任务列表空态：先看版式骨架，示例条目等 CourseTask 样例批补。 */
-internal fun shellSampleTaskViewState(): TaskListViewState = TaskListViewState(
-    dateFilter = TaskDateFilter.ALL,
-    courseFilter = null,
-    selectedCourseLabel = "全部课程",
-    sections = emptyList(),
-    emptyTitle = "暂无任务",
-    undatedHiddenCount = 0,
-    totalTasksCount = 0,
-)
+// 2026-10-29：`shellSampleTaskViewState()` 已删除。
+//
+// 它是「任务清单空态示例」，被底栏 `DockSlot.TASK` 当数据源用了很久 —— 于是从底栏进任务 tab
+// 永远空列表、任何点击都没反应，而路由 `d2.taskList` 早就是真数据（同页两个入口两套命运）。
+// 留着这个函数等于给下一次「先接个假的凑合」留下抓手，故直接删掉；真数据走
+// `app/TaskHost.kt` 的 `TaskListHost`。守卫见 `TaskWiringGuardTest`。
+
+/**
+ * 问题反馈页的**宿主三件套**：拉起外部应用 / 写剪贴板 / Toast 回执。
+ *
+ * ## 为什么不放在页面里
+ *
+ * `FeedbackPage`（composeP1）只负责画五行渠道并回调，`runFeedbackOpenPlan`
+ * （main，纯 Kotlin）负责「按什么顺序做」。真正碰 Android 的三件事只有宿主能做，
+ * 而且必须**在这一层**：Compose 页面不 import `android.content.*`，
+ * 模型层进 JVM 单测 classpath 也不能 import。
+ *
+ * ## 与 Dart 的口径
+ *
+ * 对齐 `MainActivity` 的 `launch_url` 通道（`ACTION_VIEW` + `FLAG_ACTIVITY_NEW_TASK`）：
+ * 不走 `url_launcher` 是历史结论——在 MIUI/OEM ROM 上 `url_launcher` 会有「返回 true
+ * 但没跳走」的假成功，而直连 Intent 失败会抛 `ActivityNotFoundException`，判得准。
+ *
+ * 白名单在 [FeedbackLaunchRules]（main，可单测）：不在白名单的 scheme 一律当作
+ * **打不开**，交给模型层回落复制，绝不放行 `javascript:` / `file:` / `content:`。
+ */
+private object FeedbackChannelHost {
+
+    private const val TAG = "FeedbackChannelHost"
+
+    /** 拉起一条候选 URL；返回 true 只代表系统接了这次 Intent。 */
+    fun open(context: Context, url: String): Boolean {
+        if (!FeedbackLaunchRules.isAllowed(url)) {
+            Log.w(TAG, "open: 白名单外的 scheme，已拒绝：$url")
+            return false
+        }
+        val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        return try {
+            context.startActivity(intent)
+            true
+        } catch (error: ActivityNotFoundException) {
+            Log.w(TAG, "open: 没有应用能打开 $url", error)
+            false
+        } catch (error: SecurityException) {
+            Log.w(TAG, "open: 权限被拒 $url", error)
+            false
+        } catch (error: IllegalArgumentException) {
+            Log.w(TAG, "open: Intent 非法 $url", error)
+            false
+        } catch (error: Exception) {
+            Log.e(TAG, "open: 未知失败 $url", error)
+            false
+        }
+    }
+
+    /** 写系统剪贴板（Android 10+ 只在应用在前台时可见，这正是需要的场景）。 */
+    fun copy(context: Context, value: String) {
+        if (value.isEmpty()) return
+        val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        if (manager == null) {
+            Log.w(TAG, "copy: 拿不到 ClipboardManager")
+            return
+        }
+        runCatching { manager.setPrimaryClip(ClipData.newPlainText("轻屿课表", value)) }
+            .onFailure { Log.w(TAG, "copy: 写剪贴板失败", it) }
+    }
+
+    /** 短 Toast 回执（只有一句话，不弹对话框——反馈页不宜打断用户）。 */
+    fun toast(context: Context, message: String) {
+        if (message.isEmpty()) return
+        runCatching { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
+    }
+}

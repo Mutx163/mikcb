@@ -222,32 +222,85 @@ sealed interface FeedbackOpenOutcome {
 }
 
 /**
- * `_openChannel` 的纯函数版本：
+ * `_openChannel` 的纯函数版本。
  *
- * 1. [FeedbackOpenPlan.preCopy] 非空时先复制一次（微信公众号）；
- * 2. 按顺序尝试 [FeedbackOpenPlan.urls]，**空串跳过**、不调用 [launch]；
- * 3. 任一 [launch] 返回 true 即返回 [FeedbackOpenOutcome.Opened]，**不再复制**；
- * 4. 全部失败：复制 [FeedbackOpenPlan.fallbackCopyValue] 并返回
- *    [FeedbackOpenOutcome.CopiedFallback]（含失败提示语）。
+ * 顺序**逐条对齐 Dart**（`lib/screens/feedback_screen.dart:195-250`）：
  *
- * [launch] / [copy] 由宿主注入（真实实现走 `launch_url` 通道与剪贴板），
- * 所以这段逻辑可测、可复用到 Android/iOS 之外的场景。
+ * 1. [FeedbackOpenPlan.preCopy] 非空时先复制一次（微信公众号：先复制名称再唤微信）；
+ * 2. 说一句「正在打开……」（微信渠道是「已复制公众号名称，请到微信中粘贴搜索」）——
+ *    **必须在拉起外部应用之前说**，因为拉起成功后本 App 就退到后台，Toast 晚说等于没说；
+ * 3. 按顺序尝试 [FeedbackOpenPlan.urls]，**空串跳过**、不调用 [launch]；
+ * 4. 任一 [launch] 返回 true 即返回 [FeedbackOpenOutcome.Opened]，**不再复制**
+ *    （Dart 侧注释明确：成功时污染剪贴板会误导用户）；
+ * 5. 全部失败：复制 [FeedbackOpenPlan.fallbackCopyValue]，再给一句黄色提示
+ *    （[FeedbackOpenPlan.failureToast]）。
+ *
+ * [launch] / [copy] / [notify] 由宿主注入（真实实现是 ACTION_VIEW + 剪贴板 + Toast），
+ * 所以「做事的顺序」本身也能在 JVM 单测里断言，不需要真机。
  */
 fun runFeedbackOpenPlan(
     plan: FeedbackOpenPlan,
     launch: (String) -> Boolean,
     copy: (String) -> Unit = {},
+    notify: (String) -> Unit = {},
 ): FeedbackOpenOutcome {
     plan.preCopy?.let { copy(it) }
+    notify(plan.openingToast)
     for (url in plan.urls) {
         if (url.isEmpty()) continue
         if (launch(url)) return FeedbackOpenOutcome.Opened(url)
     }
     copy(plan.fallbackCopyValue)
+    notify(plan.failureToast)
     return FeedbackOpenOutcome.CopiedFallback(
         value = plan.fallbackCopyValue,
         toast = plan.failureToast,
     )
+}
+
+/**
+ * `launch_url` 通道的 **scheme 白名单**（反馈渠道只允许这几类）。
+ *
+ * 来源：`MainActivity` 的 `ALLOWED_LAUNCH_SCHEMES`（2026-10-29 同值抄写）。
+ * 为什么要在这里再写一份：Compose 页面不走 MethodChannel，宿主直接 `startActivity`，
+ * 若没有这道判据，「用户从仓库复制来的奇怪链接」就能被直接拉起。
+ * `FeedbackLaunchRulesTest` 会拿这份与 `MainActivity` 的常量逐字对拍——
+ * **两边只许同改，不许各说各的**（对不上就是「点了没反应」或「白名单形同虚设」）。
+ *
+ * 判据放在 main 源集的纯 Kotlin 里（不 import `android.net.Uri`），
+ * 所以 L0 模块单测能直接断言，不需要真机。
+ */
+object FeedbackLaunchRules {
+
+    /** 允许拉起的 URL scheme（小写）。`mailto` 不在其中：本页没有邮件渠道。 */
+    val allowedSchemes: Set<String> = setOf(
+        "https", "http", "coolmarket", "xhsdiscover", "mqqopensdkapi", "mqqapi", "weixin",
+    )
+
+    /**
+     * 取 scheme（小写）；没有 `://` 或形如 `javascript:alert(1)` 的一律返回 null。
+     *
+     * 不做到 RFC 级解析：反馈渠道的候选 URL 全是仓库里写死的常量，
+     * 这里只判「第一个冒号之前是不是一个合法 scheme」，多一点宽容都可能被钻空子。
+     */
+    fun schemeOf(url: String): String? {
+        val trimmed = url.trim()
+        val colon = trimmed.indexOf(':')
+        if (colon <= 0) return null
+        val scheme = trimmed.substring(0, colon).lowercase()
+        if (!scheme.matches(Regex("^[a-z][a-z0-9+.\\-]*$"))) return null
+        // 只有 scheme:// 形式才认（`weixin://`、`https://…`、`mqqopensdkapi://…`）。
+        // 大小写不敏感：`HTTPS://…` 与 `https://…` 是同一件事。
+        if (colon + 2 >= trimmed.length) return null
+        if (!trimmed.substring(colon + 1, colon + 3).equals("//")) return null
+        return scheme
+    }
+
+    /** 这一条 URL 是否允许交给系统拉起。 */
+    fun isAllowed(url: String): Boolean {
+        val scheme = schemeOf(url) ?: return false
+        return scheme in allowedSchemes
+    }
 }
 
 /**
