@@ -312,7 +312,8 @@ fun LocationTimeGroupEditorPage(
                                 ArrowPreference(
                                     title = LocationTimeMatchStrings.noBuildingSuggestions.zh,
                                     summary = null,
-                                    onClick = {},
+                                    onClick = null,
+                                    enabled = false,
                                 )
                             }
                         } else {

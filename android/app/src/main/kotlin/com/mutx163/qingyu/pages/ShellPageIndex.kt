@@ -73,10 +73,16 @@ import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
+import com.mutx163.qingyu.pages.exam.AddExamFormReducer
+import com.mutx163.qingyu.pages.exam.AddExamLogic
 import com.mutx163.qingyu.pages.exam.AddExamPage
-import com.mutx163.qingyu.pages.exam.AddExamViewState
+import com.mutx163.qingyu.pages.exam.ExamCoursePickerSheet
+import com.mutx163.qingyu.pages.exam.ExamDatePickerSheet
 import com.mutx163.qingyu.pages.exam.ExamListLogic
 import com.mutx163.qingyu.pages.exam.ExamListPage
+import com.mutx163.qingyu.pages.exam.ExamReminderPickerSheet
+import com.mutx163.qingyu.pages.exam.ExamStrings
+import com.mutx163.qingyu.pages.exam.ExamTimePickerSheet
 import com.mutx163.qingyu.pages.feedback.FeedbackPage
 import com.mutx163.qingyu.pages.feedback.FeedbackLaunchRules
 import com.mutx163.qingyu.pages.feedback.feedbackOpenPlanFor
@@ -178,8 +184,7 @@ import com.mutx163.qingyu.pages.task.AddTaskViewState
 // `TaskListPage` / `TaskListController` / `TaskListViewState` / `TaskDateFilter`。
 import com.mutx163.qingyu.pages.task.TaskFilterLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
-import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
-import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
+import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchHost
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.toastOrNull
@@ -845,37 +850,188 @@ fun ShellPageContent(
                 )
             }
         }
-        "d3.locationMatch" -> LocationTimeMatchPage(
-            model = LocationTimeMatchModel(),
-            onBack = onBack,
-            onCreateGroup = {},
-            onEditGroup = {},
-            onDeleteGroup = {},
-            onToggleGroup = { _, _ -> },
-            onApplyActive = {},
-        )
-        "d3.addExam" -> AddExamPage(
-            viewState = AddExamViewState(isEditing = false),
-            selectedCourse = null,
-            courseGroupsEmpty = false,
-            dateDisplayText = "",
-            locationHintText = "",
-            onBack = onBack,
-            onSave = {},
-            onDelete = {},
-            onNameChange = {},
-            onPickCourse = {},
-            onPickDate = {},
-            onPickStartTime = {},
-            onPickEndTime = {},
-            onLocationChange = {},
-            onSeatChange = {},
-            onNoteChange = {},
-            onReminderPresetChange = {},
-            onAddCustomReminder = {},
-            onEditCustomReminder = {},
-            onRemoveCustomReminder = {},
-        )
+        // ── F10（2026-10-29）：地点作息匹配接真宿主 ───────────────────
+        // 原先 `LocationTimeMatchModel()` 空模型 + 五个空回调 ⇒ 永远空列表、点哪都没反应。
+        // 现在分组读仓储快照、增删改开关整份写回 `location_time_groups`
+        //（`TimetableRepository.updateLocationTimeGroups`），编辑子页在同一宿主内切换。
+        // ⚠️ 「重新匹配当前课表」的落地入口（Dart `TimetableLocationRuleService.applyToActiveProfile`）
+        //    Kotlin 侧还不存在 ⇒ 传 null，宿主按 §1.2 给一句实话（ARB `aboutUnavailable`），
+        //    **不是**空 lambda、也不假装成功。
+        "d3.locationMatch" -> {
+            val snapshot = wiring.timetable.snapshot
+            LocationTimeMatchHost(
+                groups = snapshot.locationTimeGroups,
+                // 模板 id → 名字，保持快照里的原顺序（编辑页默认选第一套）。
+                schemeNames = snapshot.timeSchemes.associate { it.id to it.name },
+                // 课表地点候选（去重、去空白），给编辑页的楼栋关键词挑选用。
+                availableLocations = snapshot.courses
+                    .map { it.location.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct(),
+                onBack = onBack,
+                onSaveGroups = { groups ->
+                    // 落盘失败会抛错，宿主据此不回显、给「保存失败」——不能吞掉异常。
+                    wiring.timetable.updateLocationTimeGroups(groups)
+                },
+                onApplyActive = null,
+            )
+        }
+        // ── F10（2026-10-29）：加考试页接真状态机 ─────────────────────
+        // 之前这一屏是 `AddExamViewState(isEditing = false)` 写死 + 14 个空回调：
+        // 整页静态图，而且 `isEditing` 恒 false ⇒「编辑既有考试」这条路根本不存在。
+        // 现在表单状态由 `AddExamFormReducer`（纯函数、JVM 可测）驱动，
+        // 写库走 `TimetableExamService`（`f70604b0` 已交付，`d3.examList` 的删除也用它）。
+        // ⚠️ 提醒只做到「存得住、回显得出来」：通知换通道排在 Phase 4，本批不假装会响。
+        "d3.addExam" -> {
+            val snapshot = wiring.timetable.snapshot
+            val editingExam = wiring.pendingEditExam
+            var examForm by remember(editingExam?.id) {
+                mutableStateOf(AddExamFormReducer.initial(editingExam))
+            }
+            // 四个弹层的开合：页面只暴露回调、不假装自己有选择器（见 AddExamPage KDoc）。
+            var datePickerOpen by remember { mutableStateOf(false) }
+            var startPickerOpen by remember { mutableStateOf(false) }
+            var endPickerOpen by remember { mutableStateOf(false) }
+            var coursePickerOpen by remember { mutableStateOf(false) }
+            var reminderPickerOpen by remember { mutableStateOf(false) }
+            // 正在改的那一条自定义提醒（分钟）；null = 新增
+            var reminderEditing by remember { mutableStateOf<Int?>(null) }
+
+            val selectedCourse = AddExamFormReducer.selectedCourse(examForm, snapshot.courses)
+            AddExamPage(
+                viewState = examForm,
+                selectedCourse = selectedCourse,
+                courseGroupsEmpty = AddExamFormReducer.courseGroupsEmpty(snapshot.courses),
+                dateDisplayText = AddExamFormReducer.dateDisplay(
+                    state = examForm,
+                    semesterStart = snapshot.settings.semesterStartDate,
+                    semesterWeekCount = snapshot.settings.semesterWeekCount,
+                ),
+                locationHintText = AddExamLogic.locationHint(selectedCourse),
+                onBack = onBack,
+                onSave = {
+                    val checked = AddExamFormReducer.validate(examForm)
+                    examForm = checked.state
+                    if (checked.blocker == null) {
+                        runCatching {
+                            val exam = AddExamFormReducer.buildExam(
+                                state = checked.state,
+                                existing = editingExam,
+                                now = LocalDateTime.now(),
+                            )
+                            val service = TimetableExamService(CoursePortExamAdapter(wiring.timetable))
+                            if (editingExam != null) service.updateExam(exam) else service.addExam(exam)
+                        }.onSuccess {
+                            wiring.pendingEditExam = null
+                            onBack()
+                        }.onFailure {
+                            // Dart `add_exam_screen.dart:1089-1103`：落盘失败弹「保存失败」
+                            // 并且**不关页面**（填好的内容还在，用户能立刻重试）。
+                            // 这里用页内错误条而不是系统 toast —— 与这一页其余校验失败同一个出口。
+                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.zh)
+                        }
+                    }
+                },
+                onDelete = {
+                    // 只有编辑态才显示删除按钮（页面按 viewState.isEditing 决定），
+                    // 删除前的确认框也由页面自己弹。
+                    editingExam?.let { target ->
+                        runCatching {
+                            TimetableExamService(CoursePortExamAdapter(wiring.timetable))
+                                .deleteExam(target.id)
+                        }.onSuccess {
+                            wiring.pendingEditExam = null
+                            onBack()
+                        }.onFailure {
+                            examForm = examForm.copy(toastMessage = ExamStrings.saveFailed.zh)
+                        }
+                    }
+                },
+                onNameChange = { examForm = AddExamFormReducer.withName(examForm, it) },
+                onPickCourse = { if (snapshot.courses.isNotEmpty()) coursePickerOpen = true },
+                onPickDate = { datePickerOpen = true },
+                onPickStartTime = { startPickerOpen = true },
+                onPickEndTime = { endPickerOpen = true },
+                onLocationChange = { examForm = AddExamFormReducer.withLocation(examForm, it) },
+                onSeatChange = { examForm = AddExamFormReducer.withSeat(examForm, it) },
+                onNoteChange = { examForm = AddExamFormReducer.withNote(examForm, it) },
+                onReminderPresetChange = {
+                    examForm = AddExamFormReducer.withReminderPreset(examForm, it)
+                },
+                onAddCustomReminder = {
+                    reminderEditing = null
+                    reminderPickerOpen = true
+                },
+                onEditCustomReminder = { minutes ->
+                    reminderEditing = minutes
+                    reminderPickerOpen = true
+                },
+                onRemoveCustomReminder = {
+                    examForm = AddExamFormReducer.withCustomReminderRemoved(examForm, it)
+                },
+            )
+
+            ExamCoursePickerSheet(
+                show = coursePickerOpen,
+                options = AddExamFormReducer.coursePickerOptions(
+                    snapshot.courses,
+                    examForm.selectedCourseId,
+                ),
+                onPick = { courseId ->
+                    coursePickerOpen = false
+                    examForm = AddExamFormReducer.withCourse(
+                        examForm,
+                        snapshot.courses.firstOrNull { it.id == courseId },
+                    )
+                },
+                onDismiss = { coursePickerOpen = false },
+            )
+            ExamDatePickerSheet(
+                show = datePickerOpen,
+                semesterStart = snapshot.settings.semesterStartDate,
+                totalWeeks = snapshot.settings.semesterWeekCount,
+                // 没点过日期就不预选（Dart `:700-703`）
+                selectedDate = examForm.selectedDate.takeIf { examForm.hasSelectedDate },
+                onPick = { date ->
+                    datePickerOpen = false
+                    examForm = AddExamFormReducer.withDate(examForm, date)
+                },
+                onDismiss = { datePickerOpen = false },
+            )
+            ExamTimePickerSheet(
+                show = startPickerOpen,
+                title = ExamStrings.examStartTimeLabel.zh,
+                initial = examForm.startTime,
+                onPick = { value ->
+                    startPickerOpen = false
+                    examForm = AddExamFormReducer.withStartTime(examForm, value)
+                },
+                onDismiss = { startPickerOpen = false },
+            )
+            ExamTimePickerSheet(
+                show = endPickerOpen,
+                title = ExamStrings.examEndTimeLabel.zh,
+                initial = examForm.endTime,
+                onPick = { value ->
+                    endPickerOpen = false
+                    examForm = AddExamFormReducer.withEndTime(examForm, value)
+                },
+                onDismiss = { endPickerOpen = false },
+            )
+            ExamReminderPickerSheet(
+                show = reminderPickerOpen,
+                initialMinutes = reminderEditing,
+                onPick = { totalMinutes ->
+                    reminderPickerOpen = false
+                    examForm = AddExamFormReducer.withCustomReminderAdded(
+                        state = examForm,
+                        totalMinutes = totalMinutes,
+                        replacingMinutes = reminderEditing,
+                    )
+                },
+                onDismiss = { reminderPickerOpen = false },
+            )
+        }
         "d3.examList" -> {
             val repository = wiring.timetable
             // 快照 TimetableSnapshot 不含 exams，故用 tick 无条件触发重组：
@@ -898,8 +1054,17 @@ fun ShellPageContent(
                     )
                 },
                 onBack = onBack,
-                onAddExam = { onOpenPage("d3.addExam") },
-                onOpenExam = { onOpenPage("d3.addExam") },
+                onAddExam = {
+                    // 「+」是纯新建：必须清掉上一次「点考试进编辑」留下的意图，
+                    // 否则会带着旧考试的表单打开（与课程页 `clearAddCourseIntent` 同一条纪律）。
+                    wiring.pendingEditExam = null
+                    onOpenPage("d3.addExam")
+                },
+                onOpenExam = { exam ->
+                    // F10：以前这里不传 id ⇒ 点进去永远是空白新建表单。现在带对象进编辑态。
+                    wiring.pendingEditExam = exam
+                    onOpenPage("d3.addExam")
+                },
                 onDeleteExam = { examService.deleteExam(it.id) },
             )
         }

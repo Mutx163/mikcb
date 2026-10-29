@@ -52,6 +52,19 @@ object LocationTimeMatchStrings {
         "将匹配：{group} · {scheme}，关键词 {keyword}",
     )
     val applyActive = ArbText("locationTimeMatchApplyActive", "重新匹配当前课表")
+
+    /**
+     * 「重新匹配当前课表」**能力层未接入**时给的一句实话。
+     *
+     * 复用 ARB 里已有的 `aboutUnavailable`（"不可用"）——清单 §1.2 点名的正是这个先例
+     * （`b.general` 的「立即试一次」在能力未到位时就取它）。
+     *
+     * **故意不新造键**：新键要六份 ARB 同步 + 重新 `gen-l10n`，那会把别批次正在改的
+     * `lib/l10n/app_localizations*.dart` 卷进这次提交。等真正的
+     * `TimetableLocationRuleService.applyToActiveProfile` 入口在 Kotlin 侧落地，
+     * 这条和宿主里那个分支一起删掉。
+     */
+    val applyUnavailable = ArbText("aboutUnavailable", "不可用")
     val applyTitle = ArbText("locationTimeMatchApplyTitle", "重新匹配当前课表？")
     val applyMessage = ArbText(
         "locationTimeMatchApplyMessage",
@@ -80,6 +93,8 @@ object LocationTimeMatchStrings {
         "确定删除匹配规则 {name}？自动匹配的课程将恢复默认作息，手动指定的课程不受影响。",
     )
     val deleted = ArbText("locationTimeMatchDeleted", "已删除地点组")
+    /** 删除落盘失败（Dart `_deleteGroup:345-352` 用的通用 `l10n.deleteFailed`）。 */
+    val deleteFailed = ArbText("deleteFailed", "删除失败")
 
     // ── 编辑页表单项 ──
     val groupNameLabel = ArbText("locationTimeMatchGroupNameLabel", "地点组名称")
@@ -162,6 +177,7 @@ object LocationTimeMatchStrings {
             deleteTitle,
             deleteMessage,
             deleted,
+            deleteFailed,
             groupNameLabel,
             groupNameHint,
             boundSchemeLabel,
@@ -193,6 +209,7 @@ object LocationTimeMatchStrings {
             keywordRequired,
             saved,
             saveFailed,
+            applyUnavailable,
             matchedSchemeHint,
             saveAction,
             cancelAction,

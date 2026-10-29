@@ -311,6 +311,27 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         notifyStateChanged()
     }
 
+    // ---------- 地点作息分组 ----------
+
+    /**
+     * 整份替换地点作息分组（顶层 key `location_time_groups`，与 Dart
+     * `storage_service.dart` 同名，**不属于单个档案**）。
+     *
+     * 与 [updateScheduleDateRules] 同语义：**先落盘、成功才改内存并通知**；落盘抛错时内存与
+     * 监听者都不动 ⇒ 界面不会出现「显示已保存、盘上还是旧数据」的假成功
+     * （`d3.locationMatch` 的宿主正是靠这个契约决定要不要回显）。
+     *
+     * 出处：`lib/services/timetable_location_rule_service.dart:174-260` 的
+     * `createGroup` / `updateGroup` / `deleteGroup` / `setGroupEnabled` 四个入口最终都落到
+     * 「整份数组写回 `location_time_groups`」这一笔上；批次 F10 只搬这一笔，
+     * 分组增删改的判据在 `pages/time_scheme/LocationTimeGroupController`（纯 Kotlin、JVM 可测）。
+     */
+    fun updateLocationTimeGroups(groups: List<LocationTimeGroup>) {
+        store.saveLocationTimeGroups(groups)
+        loadedLocationTimeGroups = groups
+        notifyStateChanged()
+    }
+
     // ---------- 时间模板（作息）写入口 ----------
 
     /**

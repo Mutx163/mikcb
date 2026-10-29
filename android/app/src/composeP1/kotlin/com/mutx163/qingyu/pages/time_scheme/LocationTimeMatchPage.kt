@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.time_scheme
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -232,7 +233,8 @@ private fun GroupCardView(
                 title = card.title,
                 summary = card.subtitle,
             )
-            // 下面两行：编辑 / 删除（Dart 卡内是「编辑地点组」与删除动作两行）
+            // 下面两行：编辑 / 删除（Dart `_buildGroupCard` 用 `editAction` / `deleteAction`
+            // 两个通用动作词，不是分区标题 `editGroup` / `deleteTitle`；且都要能点）。
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -241,7 +243,7 @@ private fun GroupCardView(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = LocationTimeMatchStrings.editGroup.zh,
+                    text = LocationTimeMatchStrings.editAction.zh,
                     style = MiuixTheme.textStyles.body2,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -249,14 +251,18 @@ private fun GroupCardView(
                     color = Color(QingyuTheme.primary(dark = dark)),
                     modifier = Modifier
                         .weight(1f)
+                        .clickable(onClick = onEdit)
                         .padding(vertical = 2.dp),
                 )
                 Text(
-                    text = LocationTimeMatchStrings.deleteTitle.zh,
+                    text = LocationTimeMatchStrings.deleteAction.zh,
                     style = MiuixTheme.textStyles.body2,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = Color(QingyuTheme.error(dark)),
+                    modifier = Modifier
+                        .clickable(onClick = onDelete)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
         }

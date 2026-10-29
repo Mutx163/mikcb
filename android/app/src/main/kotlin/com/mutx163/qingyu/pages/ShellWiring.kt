@@ -242,6 +242,15 @@ class ShellWiring(context: Context) {
     var pendingTaskForEdit: com.mutx163.qingyu.core.CourseTask? = null
 
     /**
+     * 从考试列表点某场考试进入编辑页时要带进去的对象；null = 新建（F10 · 2026-10-29）。
+     *
+     * 与 [pendingTaskForEdit] 同一范式：`d3.examList` 写、`d3.addExam` 读，用完即清。
+     * 没有它，`d3.addExam` 只可能是「新建」——清单 §二 F10 记的
+     * 「`isEditing` 永远是 false ⇒ 编辑既有考试这条路根本不存在」正是缺这一条。
+     */
+    var pendingEditExam: com.mutx163.qingyu.core.Exam? = null
+
+    /**
      * 从日程列表点某条日程进入编辑页时要带进去的对象；null = 新建。
      *
      * 与 [pendingEditCourse] 同属「跨子树传一次、用完即清」的意图载体：日程槽位（或索引里的
