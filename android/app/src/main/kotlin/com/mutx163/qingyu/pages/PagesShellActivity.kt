@@ -27,6 +27,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.task.TaskListPage
@@ -116,6 +117,13 @@ class PagesShellActivity : ComponentActivity() {
         // 透明即可。页面侧的内缩不在这里补——课表页已有 statusBarsPadding()、
         // 底部 dock 已有 navigationBarsPadding()，在这里再加会让顶部空白翻倍。
         applyShellSystemBars(isDark = isNightMode())
+
+        // 帧性能探针（性能报告页 h.perfReport 的数据源）：窗口已就绪，挂上逐帧 FrameMetrics 采集。
+        // 正式包里 `isEnabled` 判 false ⇒ 空操作，报表页如实显示 Dart 同款「Probe is not installed」
+        // 文案，不伪造数据。`markStartup` 记下「壳挂载完成」这一刻，启动分段里才有基线。
+        // 换页打点在 `ShellPageContent`（只有那里知道当前页 id），这里是「装 + 挂窗口」。
+        PerfProbe.attach(this)
+        PerfProbe.markStartup("shellAttach")
 
         setContent {
             val dark = isSystemInDarkTheme()
