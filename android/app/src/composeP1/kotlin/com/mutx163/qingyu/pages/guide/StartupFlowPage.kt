@@ -112,6 +112,12 @@ fun StartupFlowPage(
                             stateMachine.setOpeningOldApp(true)
                             currentState = stateMachine.state
                             onOpenOldApp()
+                            // 立刻复位「正在打开」：宿主那一步是同步的（`startActivity` 发完就返回），
+                            // Dart 原件也是在 await 之后 setState 复位（`startup_flow_screens.dart:181-192`）。
+                            // 不复位的话按钮会**永久**停在「正在打开旧版……」——用户从旧版回来时
+                            // 会看到「正在打开」和「未能打开旧版应用」两句互相矛盾的话。
+                            stateMachine.setOpeningOldApp(false)
+                            currentState = stateMachine.state
                         },
                         onGoImport = {
                             stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)

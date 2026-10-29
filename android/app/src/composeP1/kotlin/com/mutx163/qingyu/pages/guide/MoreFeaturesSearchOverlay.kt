@@ -165,10 +165,11 @@ fun MoreFeaturesSearchOverlay(
                                         SearchResultRow(
                                             item = item,
                                             query = searchQuery,
-                                            onClick = {
-                                                onSelectFeature(item.id)
-                                                onDismiss()
-                                            }
+                                            // 只回调「选中了哪一条」，**不**顺带调 onDismiss：
+                                            // 关浮层与跳页的先后由宿主决定（Dart `_openSearchResult`
+                                            // 是先摘浮层再 open）。这里若再调一次 onDismiss，
+                                            // 壳里那条「onDismiss = 退栈」会把刚推上去的目标页一起弹掉。
+                                            onClick = { onSelectFeature(item.id) }
                                         )
                                     }
                                 }

@@ -54,9 +54,10 @@ class DiagnosticsWiringGuardTest {
     fun `受管页面必须由真宿主渲染`() {
         val blocks = branchBlocks()
         val wrong = MANAGED.entries
-            .filter { (id, host) -> blocks[id]?.contains(host) != true }
-            .map { (id, host) ->
-                "$id 的分支里没有 $host —— 说明它还直接拼渲染层，数据和回调很可能又是空壳"
+            .flatMap { (id, symbols) ->
+                val code = codeOf(blocks[id].orEmpty())
+                symbols.filter { it !in code }
+                    .map { "$id 的分支（去注释后）里没有 $it —— 说明它还直接拼渲染层，数据和回调很可能又是空壳" }
             }
             .sorted()
         assertEquals(
@@ -71,7 +72,7 @@ class DiagnosticsWiringGuardTest {
         val blocks = branchBlocks()
         val offences = mutableListOf<String>()
         for ((id, _) in MANAGED) {
-            val body = blocks[id] ?: continue
+            val body = codeOf(blocks[id].orEmpty())
             for ((pattern, why) in FORBIDDEN) {
                 if (pattern.containsMatchIn(body)) {
                     offences += "$id：$why（命中 ${pattern.pattern}）"
@@ -122,6 +123,17 @@ class DiagnosticsWiringGuardTest {
     }
 
     /**
+     * 去掉注释后的代码文本。
+     *
+     * 为什么需要：宿主符号原先用**纯文本包含**判断，在注释里写一次宿主名
+     * 就能让守卫变绿（2026-10-29 二轮质量审核实测的绕过通道之一）。
+     * 判据只看代码——注释里提到宿主不算接线。
+     */
+    private fun codeOf(body: String): String =
+        body.replace(Regex("""/\*[\s\S]*?\*/"""), " ")
+            .replace(Regex("""//[^\n]*"""), " ")
+
+    /**
      * 从工作目录向上找仓库根，再定位分派层源码。
      *
      * 与 `ShellPageDispatchCoverageTest.dispatchSource()` 同一套做法：L0 脚本与
@@ -151,22 +163,38 @@ class DiagnosticsWiringGuardTest {
     private companion object {
 
         /**
-         * 受管页面：页面 id → 该分支里**必须出现**的宿主符号。
+         * 受管页面：页面 id → 该分支里**必须出现**的符号（宿主名，可多条）。
          *
          * 2026-10-29 起纳入诊断族五页（本轮接线的对象）。这三行注释是给出征/收摊时的
          * 读数口径：以后每接一页真宿主，就往这里加一行；页面被删，就删这一行。
+         *
+         * 2026-10-29 二轮质量审核加固：
+         * - 判据改成「**去注释后**的代码里必须出现」——原先注释里写一遍宿主名就能骗过守卫；
+         * - `= null` 判据开了 `MULTILINE`，原先只有落在分支体末尾的 null 才会被抓；
+         * - 值从单字符串改成列表，接一页真宿主时可以同时钉住「宿主 + 关键回调落点」。
          */
-        val MANAGED: Map<String, String> = linkedMapOf(
+        val MANAGED: Map<String, List<String>> = linkedMapOf(
             // 设置 → 诊断：四行（应用日志 / 记录开关 / 内存状态 / 设置快照）
-            "b.diagnostics" to "DiagnosticsSettingsHost",
+            "b.diagnostics" to listOf("DiagnosticsSettingsHost"),
             // 应用日志查看器：真文件 + 9 个交互
-            "h.log" to "DiagnosticsLogHost",
+            "h.log" to listOf("DiagnosticsLogHost"),
             // 内存统计：真采集 + 自动刷新 + 跳性能报告
-            "h.memory" to "MemoryStatsHost",
+            "h.memory" to listOf("MemoryStatsHost"),
             // 性能报告：帧探针 + 台账
-            "h.perfReport" to "PerfReportHost",
+            "h.perfReport" to listOf("PerfReportHost"),
             // 临时测试夹具：仓储真读写
-            "h.fixture" to "LiveTestingFixtureHost",
+            "h.fixture" to listOf("LiveTestingFixtureHost"),
+
+            // ── 2026-10-29 二轮审核补登记（F02 / F11 收口时自查发现「修好的接线没人守」）──
+            // 反馈页：五条渠道真打开 / 真复制（宿主三件套都在 FeedbackChannelHost 里）
+            "k.feedback" to listOf("FeedbackChannelHost", "runFeedbackOpenPlan"),
+            // 全部功能：39 行每行都要跳页（宿主是同文件里的 MoreFeaturesWithSearch；
+            // 表在同文件更下方，本守卫只看分支体，所以只钉宿主名）
+            "i.more" to listOf("MoreFeaturesWithSearch"),
+            // 搜索浮层独立路由：选中 = 先退浮层再跳页，两步都在这一个回调里
+            "i.moreSearch" to listOf("shellTimetableMenuPageId"),
+            // 启动引导：开学日期/周数/当前周落盘 + 引导完成标记（宿主 StartupFlowHost）
+            "i.startup" to listOf("StartupFlowHost"),
         )
 
         /**
@@ -178,7 +206,7 @@ class DiagnosticsWiringGuardTest {
         val FORBIDDEN: List<Pair<Regex, String>> = listOf(
             Regex("""=\s*\{\s*}""") to "空回调 `= {}`",
             Regex("""\bemptyList\(\s*\)""") to "空列表 `emptyList()`",
-            Regex("""\bnull\b\s*,?\s*$|snapshot\s*=\s*null""") to "空快照 `snapshot = null`",
+            Regex("""\bnull\b\s*,?\s*$|snapshot\s*=\s*null""", RegexOption.MULTILINE) to "空快照 `snapshot = null`",
             Regex("""DiagnosticsLogSnapshot\.EMPTY""") to "常量空快照 `DiagnosticsLogSnapshot.EMPTY`",
             Regex("""SettingsPageState\(\s*\)""") to "空构造 state `SettingsPageState()`",
         )
