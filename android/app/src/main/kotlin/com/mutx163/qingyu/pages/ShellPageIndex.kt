@@ -130,8 +130,6 @@ import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
-import com.mutx163.qingyu.pages.settings.SettingsTimetablePage
-import com.mutx163.qingyu.pages.settings.SettingsTimetableState
 import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage

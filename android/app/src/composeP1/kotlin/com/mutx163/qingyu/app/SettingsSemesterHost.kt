@@ -103,7 +103,11 @@ fun SettingsSemesterHost(
      * 这里再兜一次是为了防止将来渲染层改动把禁用态弄丢。
      */
     fun syncCurrentWeek(showTip: Boolean) {
-        val settings = snapshot.settings
+        // ⚠️ 读写一律取 `repository.snapshot`（内存现值），**不要**取上面那个 compose state：
+        // 后者要等 observe 回调触发重组后才更新，改完日期紧接着同步时会读到**旧日期**，
+        // 算出来的周次就差一整段。仓储的 snapshot 是现算的（`loadedSettings` + 当前周），
+        // `updateSettings` 又先改内存再通知，所以这里拿到的必然是刚写进去的那份。
+        val settings = repository.snapshot.settings
         val start = settings.semesterStartDate ?: return
         val week = SemesterSettingsLogic.weekForNow(
             now = LocalDateTime.now(),
@@ -122,7 +126,7 @@ fun SettingsSemesterHost(
 
     /** 选完开学日期：落盘 → 按新日期对齐当前周 → 提示（Dart `:772-803`）。 */
     fun applyStartDate(date: LocalDate) {
-        val settings = snapshot.settings
+        val settings = repository.snapshot.settings
         val next = settings.copy(semesterStartDate = SemesterSettingsLogic.startDateTime(date))
         if (runCatching { repository.updateSettings(next) }.isFailure) {
             notify(SettingsStringsExt2.saveFailed.zh)
@@ -134,14 +138,17 @@ fun SettingsSemesterHost(
 
     /** 选完学期周数：与当前值相同 ⇒ 什么都不做；改小后当前周回拨且**不**提示（Dart `:826-861`）。 */
     fun applyWeekCount(count: Int) {
-        val settings = snapshot.settings
+        val settings = repository.snapshot.settings
         if (count == settings.semesterWeekCount) return
         if (runCatching { repository.updateSettings(settings.copy(semesterWeekCount = count)) }.isFailure) {
             notify(SettingsStringsExt2.saveFailed.zh)
             return
         }
-        // 用刚写进去的周数判断（snapshot 可能还没重组），回拨目标就是新周数。
-        SemesterSettingsLogic.weekToFollowAfterWeekCountChange(snapshot.currentWeek, count)?.let { week ->
+        // 用刚写进去的周数判断（同样取仓储现值，别取还没重组的 compose state）。
+        SemesterSettingsLogic.weekToFollowAfterWeekCountChange(
+            currentWeek = repository.snapshot.currentWeek,
+            newWeekCount = count,
+        )?.let { week ->
             if (runCatching { repository.setCurrentWeek(week) }.isFailure) {
                 notify(SettingsStringsExt2.saveFailed.zh)
             }
