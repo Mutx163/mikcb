@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,23 +25,26 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
+import com.mutx163.qingyu.app.DiagnosticsLogHost
+import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
+import com.mutx163.qingyu.app.LiveTestingFixtureHost
+import com.mutx163.qingyu.app.MemoryStatsHost
+import com.mutx163.qingyu.app.PerfReportHost
 import com.mutx163.qingyu.app.SettingsHolidayAdvancedHost
 import com.mutx163.qingyu.app.SettingsHolidayHost
 import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.app.SettingsSemesterHost
 import com.mutx163.qingyu.app.SettingsTimetableHubHost
 import com.mutx163.qingyu.app.WeatherSettingsHost
-import com.mutx163.qingyu.weather.JdkWeatherHttp
-import com.mutx163.qingyu.weather.WeatherPreferences
-import com.mutx163.qingyu.weather.WeatherProvider
-import com.mutx163.qingyu.weather.WeatherService
-import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
+import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.app.TimetablePageSettingsHost
 import com.mutx163.qingyu.app.ScheduleDateRuleHost
 import com.mutx163.qingyu.app.ScheduleListHost
+import com.mutx163.qingyu.app.TimeSchemeEditorHost
+import com.mutx163.qingyu.app.TimeSchemeManagementHost
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
@@ -57,16 +61,6 @@ import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
-import com.mutx163.qingyu.infra.DiagnosticsLogSnapshot
-import com.mutx163.qingyu.pages.diagnostics.DiagnosticsLogViewport
-import com.mutx163.qingyu.pages.diagnostics.LiveDiagnosticsLogPage
-import com.mutx163.qingyu.pages.diagnostics.LiveTestingFixturePage
-import com.mutx163.qingyu.pages.diagnostics.MemoryStatsPage
-import com.mutx163.qingyu.pages.diagnostics.PerfReportPage
-import com.mutx163.qingyu.pages.diagnostics.buildDiagnosticsLogViewState
-import com.mutx163.qingyu.pages.diagnostics.buildLiveFixtureViewState
-import com.mutx163.qingyu.pages.diagnostics.buildMemoryStatsViewState
-import com.mutx163.qingyu.pages.diagnostics.buildPerfReportViewState
 import com.mutx163.qingyu.pages.exam.AddExamPage
 import com.mutx163.qingyu.pages.exam.AddExamViewState
 import com.mutx163.qingyu.pages.exam.ExamListLogic
@@ -154,11 +148,13 @@ import com.mutx163.qingyu.pages.sync.CloudSyncPage
 import com.mutx163.qingyu.pages.sync.CloudSyncStatusSource
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsHost
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
+import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsPage
 import com.mutx163.qingyu.pages.sync.WebdavConnectSheet
 import com.mutx163.qingyu.platform.AppLocalSnapshotStore
 import com.mutx163.qingyu.platform.KeystoreSecretCipher
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.WebdavConfigStoreImpl
+import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.pages.task.AddTaskPage
 import com.mutx163.qingyu.pages.task.AddTaskViewState
@@ -170,8 +166,6 @@ import com.mutx163.qingyu.pages.task.TaskFilterLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchModel
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchPage
-import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementModel
-import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementPage
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.toastOrNull
@@ -250,22 +244,18 @@ fun ShellPageContent(
     /** 页面内部要「推一个新页」时用它（路由字符串 → 壳页面 id 由 [shellPageIdForRoute] 负责）。 */
     onOpenPage: (String) -> Unit = {},
 ) {
-    // 单一天气 provider（设备级状态：开关/城市/预报缓存）。跨页共享：设置页、选城页、
-    // 以及后续卡片显示都读它，改城市后各处跟着变（对齐 Dart 把 WeatherProvider 挂在 Navigator 之上）。
-    val context = LocalContext.current
-    val weatherProvider = remember(wiring, context) {
-        val service = WeatherService(JdkWeatherHttp())
-        WeatherProvider(
-            service = service,
-            preferences = WeatherPreferences(PrefsKeyValueStore(context)),
-            locationSource = AndroidWeatherLocationSource(
-                context = context,
-                reverseGeocode = { lat, lon -> service.reverseGeocode(lat, lon) },
-                networkGeocode = { service.networkGeocode() },
-            ),
-        )
-    }
+    // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
+    // `ShellWiring.weather`（`by lazy`），不再在这里 `remember` 一份 —— 因为**底部坞**那条
+    // 课表入口（`PagesShellActivity` 的 `DockSlot.TIMETABLE`）也要用它（弹层的天气行），
+    // 两处各造一份会变成「两个城市、两份缓存」。跨页共享语义不变：
+    // 设置页、选城页、课表弹层读的都是同一个实例（对齐 Dart 把 WeatherProvider 挂在 Navigator 之上）。
+    val weatherProvider = wiring.weather
     // 把「推页」回调装进 CompositionLocal，供各设置页的 `SettingsScreen` 使用（见上方 KDoc）。
+    // 帧性能台账的换页打点：Dart 侧由 `NavigatorObserver` 自动得到同一件事，壳里没有观察者，
+    // 所以在**唯一知道当前页 id** 的这里报一次。`LaunchedEffect(pageId)` 而不是 `SideEffect`：
+    // `PerfProbeCore.beginPage` 会「收掉上一段、开一段新的」，每帧重组都调会把一次停留
+    // 切成无数个 0 帧片段。正式包里这条是空操作（探针未安装）。
+    LaunchedEffect(pageId) { PerfProbe.beginPage(pageId) }
     CompositionLocalProvider(LocalShellOpenPage provides onOpenPage) {
     // 传输包跨路由暂存：「二维码发送」与「扫码接收」是两个独立路由，而发送载荷只有数据备份页
     // 才算得出来（要读仓储）。挂在 `when` 之上，切路由才不会丢（2026-10-29 接线）。
@@ -403,14 +393,27 @@ fun ShellPageContent(
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
-        "b.diagnostics" -> SettingsScreen(SettingsDiagnosticsPage.spec(SettingsPageState()), onBack)
+        // 2026-10-29 接真宿主：原先 `SettingsScreen(SettingsDiagnosticsPage.spec(SettingsPageState()), onBack)`
+        // 用空 state 渲染 ⇒ 开关恒 false 且写不落盘、`showMemoryStats = null` 让后两行永久消失、
+        // 应用日志行没有 onAction。宿主见 `composeP1: app/DiagnosticsSettingsHost.kt`。
+        "b.diagnostics" -> DiagnosticsSettingsHost(
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
         "b.glassDock" -> GlassDockEditorHost(store = wiring.settingsModel, onBack = onBack)
         "b.glassDockIcon" -> SettingsScreen(SettingsGlassDockIconEditorPage.spec(SettingsPageState()), onBack)
         "b.reset" -> SettingsScreen(SettingsResetPage.spec(SettingsPageState()), onBack)
 
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────
         // T1：与底部坞的课表槽位共用同一份接线（含课程操作弹层），两个入口行为一致。
-        "c1.week" -> TimetableWithCourseActions(wiring = wiring, onNavigate = onOpenPage)
+        // `weatherProvider` 必须显式传：弹层「天气」行的数据只在壳里（设备级 provider），
+        // 漏传就是「设置里开了天气、弹层里没有那一行」。
+        "c1.week" -> TimetableWithCourseActions(
+            wiring = wiring,
+            onNavigate = onOpenPage,
+            weatherProvider = weatherProvider,
+        )
         "c1.profiles" -> {
             val repository = wiring.timetable
             // 订阅照仓储 KDoc：先读 snapshot 拿初值，再 observe（与 TimetableWithCourseActions 同一套）。
@@ -777,15 +780,37 @@ fun ShellPageContent(
         }
 
         // ── P3-D3 作息与考试 ──────────────────────────────────────────
-        "d3.timeSchemes" -> TimeSchemeManagementPage(
-            model = TimeSchemeManagementModel(),
+        // 2026-10-29（P35-TS 收口）：这一屏原先喂空模型 + 七个空回调 ⇒ 打开永远空列表、
+        // 任何动作都无处落盘（审核见 `docs/plans/2026-10-29-compose-time-scheme-audit.md`）。
+        // 现在换成真宿主：读仓储快照、动作落到仓储写入口、六个弹层由宿主状态机驱动。
+        "d3.timeSchemes" -> TimeSchemeManagementHost(
+            repository = wiring.timetable,
             onBack = onBack,
-            onCreate = {},
-            onOpenScheme = {},
-            onMenuAction = { _, _ -> },
-            onOpenLocationEntry = {},
-            onOpenDateRules = {},
+            onOpenEditor = { schemeId ->
+                // 编辑器是独立壳路由：id 走一次性意图，页面 id 走路由串（与其余子页同构）。
+                wiring.pendingTimeSchemeEditId = schemeId
+                onOpenPage("d3.timeSchemeEditor")
+            },
+            onOpenLocationEntry = { onOpenPage("d3.locationMatch") },
+            onOpenDateRules = { onOpenPage("d2.dateRule") },
         )
+        // 时间模板「编辑节次」子页（`d3.timeSchemeEditor`）：没有任何模板 id 时直接退回，
+        // 不渲染一个「不知道在编辑哪一套」的空壳。
+        "d3.timeSchemeEditor" -> {
+            val editingId = wiring.pendingTimeSchemeEditId
+            if (editingId == null) {
+                LaunchedEffect(Unit) { onBack() }
+            } else {
+                TimeSchemeEditorHost(
+                    repository = wiring.timetable,
+                    schemeId = editingId,
+                    onBack = {
+                        wiring.pendingTimeSchemeEditId = null
+                        onBack()
+                    },
+                )
+            }
+        }
         "d3.locationMatch" -> LocationTimeMatchPage(
             model = LocationTimeMatchModel(),
             onBack = onBack,
@@ -1185,59 +1210,17 @@ fun ShellPageContent(
         )
 
         // ── P3-H 诊断与测试夹具 ──────────────────────────────────────
-        "h.log" -> LiveDiagnosticsLogPage(
-            viewState = buildDiagnosticsLogViewState(
-                title = "实时诊断日志",
-                parsed = DiagnosticsLogSnapshot.EMPTY,
-                viewport = DiagnosticsLogViewport(),
-            ),
+        // 2026-10-29 接真宿主（审核结论见 `docs/plans/2026-10-29-diagnostics-family-audit.md`）：
+        // 这一族原先四页全部喂空数据、19 个交互是空 lambda ⇒ 页面在、功能没接。
+        // 现在数据来自真文件 / 真采集 / 真仓储，交互落到真实现。
+        "h.log" -> DiagnosticsLogHost(onBack = onBack)
+        "h.memory" -> MemoryStatsHost(
             onBack = onBack,
-            onSelectLevel = {},
-            onLoadEarlier = {},
-            onToggleEntry = {},
-            onToggleDeviceInfo = {},
-            onViewModeChange = {},
-            onTimeSortChange = {},
-            onCopy = {},
-            onExport = {},
-            onClear = {},
+            // 内存统计页里的「查看性能报告」：走壳内推页，不要在本页内嵌。
+            onOpenPerfReport = { onOpenPage("h.perfReport") },
         )
-        "h.memory" -> MemoryStatsPage(
-            viewState = buildMemoryStatsViewState(
-                snapshot = null,
-                autoRefreshEnabled = false,
-                refreshIntervalSeconds = 0,
-                lastRefreshedAt = null,
-            ),
-            onBack = onBack,
-            onRefresh = {},
-            onCopyJson = {},
-            onToggleAutoRefresh = {},
-            onOpenPerfReport = {},
-        )
-        "h.perfReport" -> PerfReportPage(
-            viewState = buildPerfReportViewState(snapshot = null),
-            onBack = onBack,
-            onRefresh = {},
-            onExport = {},
-            onClearLedger = {},
-            onToggleRaw = {},
-            onCopyTextReport = {},
-            onCopyJson = {},
-        )
-        "h.fixture" -> LiveTestingFixturePage(
-            viewState = buildLiveFixtureViewState(
-                sections = emptyList(),
-                courses = emptyList(),
-                activeSchemeName = null,
-                now = LocalDateTime.now(),
-            ),
-            onBack = onBack,
-            onInstall = {},
-            onClear = {},
-            onSelectLead = {},
-            onTriggerSection = { _, _ -> },
-        )
+        "h.perfReport" -> PerfReportHost(onBack = onBack)
+        "h.fixture" -> LiveTestingFixtureHost(repository = wiring.timetable, onBack = onBack)
 
         // ── P3-I 引导与展示 ──────────────────────────────────────────
         "i.startup" -> StartupFlowPage(onBack = onBack)
