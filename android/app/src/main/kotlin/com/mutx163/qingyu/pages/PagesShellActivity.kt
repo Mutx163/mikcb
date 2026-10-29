@@ -30,8 +30,8 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.pages.shell.GlassDockItem
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
-import com.mutx163.qingyu.pages.task.TaskListPage
 import com.mutx163.qingyu.app.ScheduleListHost
+import com.mutx163.qingyu.app.TaskListHost
 import com.mutx163.qingyu.app.TimetableHost
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -299,15 +299,28 @@ private fun PagesShell() {
                                 },
                                 onDelete = { item -> wiring.deleteScheduleItem(item, null) },
                             )
-                            DockSlot.TASK -> TaskListPage(
-                                viewState = shellSampleTaskViewState(),
+                            // 任务槽位：2026-10-29 前这里喂的是 `shellSampleTaskViewState()`
+                            // （演示空态）+ 5 个空回调 ⇒ 从底栏进任务 tab 是**死页**，
+                            // 而路由 `d2.taskList` 早就是真数据。现在两边共用 `TaskListHost`。
+                            DockSlot.TASK -> TaskListHost(
+                                repository = wiring.timetable,
                                 onBack = { selectSlot(DockSlot.TIMETABLE) },
-                                onDateFilterChange = { },
-                                onCourseFilterClick = { },
-                                onAddTask = { pushPage("d2.addTask") },
-                                onEditTask = { pushPage("d2.addTask") },
-                                onToggleTask = { },
-                                onDeleteTask = { },
+                                onOpenAddTask = {
+                                    wiring.pendingTaskForEdit = null
+                                    wiring.pendingTaskCourse = null
+                                    pushPage("d2.addTask")
+                                },
+                                onOpenEditTask = { task ->
+                                    wiring.pendingTaskForEdit = task
+                                    wiring.pendingTaskCourse = null
+                                    pushPage("d2.addTask")
+                                },
+                                onOpenCourse = { course, sourceWeek ->
+                                    wiring.pendingEditCourse = course
+                                    wiring.pendingEditGroup = null
+                                    wiring.pendingEditWeek = sourceWeek
+                                    pushPage("d1.addCourse")
+                                },
                             )
                             // 设置主槽位：直接渲染设置主页，点击子项自然 push 子页面。
                             DockSlot.SETTINGS -> ShellPageContent(

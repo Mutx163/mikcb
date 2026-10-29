@@ -36,7 +36,11 @@ class AddTaskFormReducerTest {
         assertEquals("c1", state.courseId)
         assertEquals("高等数学", state.selectedCourseName)
         assertEquals(3L, state.sourceWeek)
-        assertEquals("", state.title)
+        // 2026-10-29 复刻审核改的：这一行原先是 `assertEquals("", state.title)`，与 Dart 不符。
+        // 真值 `add_task_screen.dart:142-148`：从课程进入时标题预填「那门课那一周的节次备注」，
+        // 没有备注则退成 `taskHomeworkDefaultTitle`（课程作业）。本 case 的课程没有备注 ⇒ 兜底值。
+        // 三条规则的完整契约见 `pages/task/AddTaskInitialTitleTest.kt`。
+        assertEquals(TaskStrings.taskHomeworkDefaultTitle, state.title)
         assertFalse("从课程进入不该抢焦点（键盘会遮住半屏）", state.shouldAutofocusTitle)
     }
 

@@ -81,9 +81,24 @@ object AddTaskFormReducer {
             isEditing = isEditing,
             today = today,
         )
+        // 标题初值（逐字对齐 Dart `add_task_screen.dart:142-148`）：
+        //   编辑既有任务 → 原标题；从课程加作业 → 该课**这一周的节次备注**（trim 后）；
+        //   否则 → 「课程作业」；纯新建 → 空串。
+        //
+        // 2026-10-29 复刻审核抓到：这一条此前**漏了**，Compose 一律从空标题开始。于是
+        // 用户从课程面板点「作业」进来时，Dart 那边标题/备注/到期日都已填好、点保存就完；
+        // Compose 这边标题空着、保存按钮还是灰的，看起来像「点了没反应」。
+        // 注意 Dart 用的是 `?.trimmedText ?? 兜底`：备注存在但文本为空（只勾了「有作业」）时
+        // **不**回落，标题就是空串——这里照抄，别"顺手改好"。
+        val initialTitle = preselectedCourse
+            ?.let { course ->
+                course.sessionNoteForWeek(sourceWeek ?: 0)?.trimmedText
+                    ?: TaskStrings.taskHomeworkDefaultTitle
+            }
+            ?: ""
         return AddTaskViewState(
             isEditing = isEditing,
-            title = "",
+            title = initialTitle,
             courseId = preselectedCourse?.id,
             sourceWeek = if (preselectedCourse == null) null else sourceWeek?.toLong(),
             selectedCourseName = preselectedCourse?.name ?: TaskStrings.taskNoCourse,
