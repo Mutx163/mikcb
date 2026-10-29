@@ -190,7 +190,15 @@ fun AddTaskPage(
                                 )
                             }
                         }
-                        IconButton(onClick = onSave, enabled = viewState.canSave) {
+                        // 2026-10-29 复核更正（V1）：这里原先 `enabled = viewState.canSave`，
+                        // 把 Dart 的**报错路径整条封死**了。Dart `add_task_screen.dart:175-179`
+                        // 的保存键**没有禁用态**：标题空着点下去，`_save()` 走
+                        // `_formKey.currentState!.validate()` → 标题框下出现
+                        // `helper: field.errorText`＝「请输入任务标题」（`:195-206`）。
+                        // 禁用键只能让用户看到「点不动」，永远等不到那句话，也看不出缺了什么。
+                        // 现在恒可点：空标题点它 ⇒ 壳里的 `AddTaskFormReducer.validate` 落
+                        // `titleError`，框下红字出现。
+                        IconButton(onClick = onSave) {
                             // B10：Dart 是 `Icons.check_rounded`（`:176`）。
                             // `MiuixIcons.SelectAll`（勾 + 两条横线）语义是「全选」，不对。
                             // 改 `MiuixIcons.Ok`（`icon/extended/Ok.kt:15`，= Regular 权重）：
@@ -201,11 +209,7 @@ fun AddTaskPage(
                             Icon(
                                 imageVector = MiuixIcons.Ok,
                                 contentDescription = TaskStrings.saveTask,
-                                tint = if (viewState.canSave) {
-                                    Color(QingyuTheme.actionIcon(dark))
-                                } else {
-                                    Color(QingyuTheme.actionIcon(dark)).copy(alpha = 0.4f)
-                                },
+                                tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
                     },
@@ -237,12 +241,17 @@ fun AddTaskPage(
                         QingyuCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 // B1：卡头标题。Dart 卡头 = 内边距 LTRB(16,16,16,0)
-                                // （`hyperos_controls.dart:122-124`）+ 字号 20 / w400 / primaryText
-                                // （`hyperos_theme.dart:512-520` typography.title）。miuix 的
-                                // `title3` 正是 20sp 常规档，别再自己拼字号。
+                                // （`hyperos_controls.dart:122-124`）+ 字号 **17 / w400** / primaryText
+                                // （`hyperos_theme.dart:512-520` 的 `HyperosTypography.title`
+                                //   → `HyperosTokens.titleSize` → `HyperosMiuixSpec.preferenceTitleSize`
+                                //   = 17.0，`hyperos_miuix_spec.dart:80`）。miuix 的 `main` 就是 17sp 常规档。
+                                //
+                                // 2026-10-29 复核更正（V2）：这里原先写 `title3`（20sp）并声称 Dart 卡头
+                                // 是 20sp —— 那是把 `HyperosMiuixNestedHeader.titleSize`（毛玻璃子页的
+                                // 居中大标题）当成了 `HyperosTokens.titleSize`。差 3sp，偏大一眼可见。
                                 Text(
                                     text = TaskStrings.taskListTitle,
-                                    style = MiuixTheme.textStyles.title3,
+                                    style = MiuixTheme.textStyles.main,
                                     color = Color(QingyuTheme.primaryText(dark)),
                                     modifier = Modifier.padding(
                                         start = 16.dp,

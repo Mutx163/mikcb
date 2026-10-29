@@ -99,6 +99,34 @@
 
 ---
 
+## 二·五、第二轮：对抗复核抓到的缺口（三条已修 + 三条登记）
+
+三个泳道各自报了「已改」，但**自己给自己判分**不算数。第二轮由一条**只读复核泳道**
+（`verifier`，不写任何文件）拿着解包出来的 miuix 0.9.4 源码逐个符号核对，抓出三条
+**用户看得出来、三个泳道都没发现**的缺口：
+
+| # | 缺口 | 根因 | 处置 |
+|---|---|---|---|
+| **V1** | **保存键的禁用态把 Dart 的报错路径整条封死** | `AddTaskPage.kt` 写的是 `IconButton(enabled = viewState.canSave)` + 40% 透明。Dart `add_task_screen.dart:175-179` 的保存键**没有禁用态**：空标题点下去 → `_formKey.validate()` → 标题框下出现「请输入任务标题」（`:195-206`）。禁用键只让用户看到「点不动」，永远等不到那句话 | ✅ 已修：恒可点；空标题点它 ⇒ `AddTaskFormReducer.validate` 落 `titleError` ⇒ 框下红字 |
+| **V2** | **卡头字号 20sp vs Dart 17sp** | 文件注释声称「Dart 卡头 20sp」是**读错 token**：`HyperosTypography.title` 用的 `HyperosTokens.titleSize` → `HyperosMiuixSpec.preferenceTitleSize = 17.0`（`hyperos_theme.dart:512-520`、`hyperos_miuix_spec.dart:80`）；20 那个是 `HyperosMiuixNestedHeader.titleSize`（毛玻璃子页的居中大标题） | ✅ 已修：`title3`(20sp) → `main`(17sp)，并更正注释 |
+| **V3** | **课程筛选弹层「取消」被当成「选全部」** | 弹层取消走 `onDismissRequest = { onPick(null) }`，而列表页把 `null` 原样转给宿主 ⇒ `setCourseFilter(null)`＝全部课程。于是「挑了一门课 → 再开弹层随手点掉」会把筛选**静默重置**。Dart `task_list_screen.dart:313-318` 是 `selected == null → return`（取消不改） | ✅ 已修：列表页只在非 `null` 时回写 |
+| V4 | 侧滑删除 | 见 §六.2 第 1 条（miuix 无组件，需拍板） | 登记 |
+| V5 | 到期日弹层的形状与出口数（Dart 是月历 + 居中小卡片滚轮、滚轮层只有取消/确认；Compose 是底部弹层滚轮 + 多一条「无截止日期」） | 见 §六.2 第 2 条 | 登记 |
+| V6 | 弹层手感：Dart 选课弹层传 `enableDrag: false`（`add_task_screen.dart:291`、`task_list_screen.dart:293`），Compose `OverlayBottomSheet` 有拖柄且可下滑关闭；Dart 选项区是 `ClampingScrollPhysics`，Compose 加了 `overScrollVertical() + scrollEndHaptic()` | miuix 的 `OverlayBottomSheet` 只有 `allowDismiss`（`overlay/OverlayBottomSheet.kt:62`），**没有**「禁拖但保留点空白关闭」这一档；关掉 `allowDismiss` 会把 Dart 允许的「点遮罩关闭」一起砍掉 | 登记（差异只在手感，不影响选到什么） |
+
+**复核同时确认没问题的**（省掉重复检查）：分段控件选 contour 是对的（`hyperos_tab_row.dart:36,104`）；
+列表页版式 10/16/16/12 逐值对 Dart；行内边距 (16,13) 与「分组不画分隔线」对 Dart；
+三段顺序与标题、空态版式（32/48、图标 48、按钮前 20）逐值对上；
+表单四行 + 自动聚焦判据 + 键盘流转 + 卡间距对 Dart；
+三列滚轮的年/月/日范围与「改年月把日收进当月」对 Dart `miuix_date_picker_sheet.dart:217-234`；
+选课程层的选中态（只有行尾勾、`highlightSelectedText` 未传）对 Dart `tiles.dart:554,607,656-661`。
+
+**复核未能确认的（如实登记，别当已核）**：`BasicComponent` 自身的最小行高（Dart 是 72dp，
+Kotlin 未显式传，两三行内容时通常不触发但可能差几 dp）；`TaskStrings.datePickerYear/Month/Day`
+三个词在 `app_zh.arb` 里**没有对应键**（`TaskStrings.kt:61-67` 自己写了这条欠账，本轮沿用未新增欠账）。
+
+---
+
 ## 三、写作用域（一人一文件，互不重叠）
 
 | 泳道 | 文件（唯一写者） | 内容 |

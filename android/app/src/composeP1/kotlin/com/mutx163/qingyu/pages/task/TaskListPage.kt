@@ -264,7 +264,15 @@ fun TaskListPage(
         title = TaskStrings.taskCourseFilter,
         onPick = { picked ->
             showCourseFilter = false
-            onCourseFilterPicked?.invoke(picked)
+            // 2026-10-29 复核更正（V3）：弹层的取消出口也走这里（点空白 / 系统返回 ⇒
+            // `TaskPickerSheets` 里 `onDismissRequest = { onPick(null) }`）。原先把 `null` 也转给
+            // 宿主 ⇒ `TaskListController.setCourseFilter(null)`＝「全部课程」，
+            // 于是「挑了一门课 → 再开一次弹层随手点掉」会把筛选**静默重置**。
+            // Dart `task_list_screen.dart:313-318` 是 `if (!mounted || selected == null) return;`
+            // ——取消就是不改。只在真的选中某一项时才回写。
+            if (picked != null) {
+                onCourseFilterPicked?.invoke(picked)
+            }
         },
     )
 
