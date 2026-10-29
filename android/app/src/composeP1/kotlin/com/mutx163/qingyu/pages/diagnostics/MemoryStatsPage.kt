@@ -2,14 +2,19 @@ package com.mutx163.qingyu.pages.diagnostics
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,12 +98,18 @@ fun MemoryStatsPage(
         title = MemoryStatsStrings.pageTitle,
         onBack = onBack,
         actions = {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = MiuixIcons.Refresh,
-                    contentDescription = MemoryStatsStrings.refreshTooltip,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                )
+            // Dart `:181-185`：加载中图标换成沙漏且**禁用**（`onPressed: _loading ? null : …`）。
+            // miuix 没有沙漏图标，这里用同一处旋转进度替代「正在读」的语义，禁用条件照抄。
+            IconButton(onClick = onRefresh, enabled = !viewState.isLoading) {
+                if (viewState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(
+                        imageVector = MiuixIcons.Refresh,
+                        contentDescription = MemoryStatsStrings.refreshTooltip,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
             }
             IconButton(onClick = onCopyJson, enabled = viewState.hasSnapshot) {
                 Icon(
@@ -167,14 +180,12 @@ fun MemoryStatsPage(
                         dark = dark,
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                    // Dart `:242-254` 的 Perf Report 行；取值直接复用模型层的 samplingRows，
+                    // 不在渲染层现拼一行（否则标题/副标题/语义色会和模型漂移）。
                     MemoryRowItem(
-                        row = MemoryRowView(
-                            row = MemoryStatsRow.PERF_REPORT,
-                            title = MemoryStatsStrings.perfReportTitle,
-                            details = "",
-                            subtitle = MemoryStatsStrings.perfReportSubtitle,
-                        ),
+                        row = viewState.samplingRows.first { it.row == MemoryStatsRow.PERF_REPORT },
                         onClick = onOpenPerfReport,
+                        pressure = viewState.pressure,
                         dark = dark,
                     )
                 }
@@ -193,7 +204,12 @@ fun MemoryStatsPage(
                         if (index > 0) {
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
-                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+                        MemoryRowItem(
+                            row = row,
+                            onClick = { openSheet = sheetOf(row.row) },
+                            pressure = viewState.pressure,
+                            dark = dark,
+                        )
                     }
                 }
             }
@@ -219,7 +235,12 @@ fun MemoryStatsPage(
                         if (index > 0) {
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
-                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+                        MemoryRowItem(
+                            row = row,
+                            onClick = { openSheet = sheetOf(row.row) },
+                            pressure = viewState.pressure,
+                            dark = dark,
+                        )
                     }
                 }
             }
@@ -237,7 +258,20 @@ fun MemoryStatsPage(
                         if (index > 0) {
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         }
-                        MemoryRowItem(row = row, onClick = { openSheet = sheetOf(row.row) }, dark = dark)
+                        // Dart `:510-519`：「复制 / 查看原始 JSON」行没有快照时 onTap 为 null（不可点），
+                        // 并且 `onLongPress: copyJson` —— 长按直接复制，不用先开弹层。
+                        val isRawJson = row.row == MemoryStatsRow.RAW_JSON
+                        MemoryRowItem(
+                            row = row,
+                            onClick = if (isRawJson && !viewState.hasSnapshot) {
+                                null
+                            } else {
+                                { openSheet = sheetOf(row.row) }
+                            },
+                            onLongPress = if (isRawJson && viewState.hasSnapshot) onCopyJson else null,
+                            pressure = viewState.pressure,
+                            dark = dark,
+                        )
                     }
                 }
             }
@@ -368,13 +402,23 @@ private fun MemorySwitchRow(
 @Composable
 private fun MemoryRowItem(
     row: MemoryRowView,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
+    pressure: MemoryPressure,
     dark: Boolean,
+    onLongPress: (() -> Unit)? = null,
 ) {
+    val clickModifier = when {
+        onClick != null && onLongPress != null -> Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongPress,
+        )
+        onClick != null -> Modifier.clickable(onClick = onClick)
+        else -> Modifier
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(clickModifier)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -382,7 +426,8 @@ private fun MemoryRowItem(
         Icon(
             imageVector = iconOf(row.row),
             contentDescription = null,
-            tint = Color(QingyuTheme.actionIcon(dark)),
+            // Dart 每行都有自己的 `iconAccent`；此前一律用同一个灰蓝色，语义色全丢。
+            tint = accentColor(row.accent, pressure, dark),
             modifier = Modifier.size(20.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
@@ -455,172 +500,284 @@ private fun MemoryHintBanner(
     }
 }
 
-/** 弹层内容：按 sheet 里填了哪块字段分别铺开。 */
+/**
+ * 弹层正文的高度上限（Dart 各处 `MediaQuery.sizeOf(sheetContext).height * 0.62/0.68/0.72`）。
+ *
+ * 对应关系：键值表 `:683` 0.62、分类/进程/历史/memoryStats `:766/:835/:875/:803` 0.68、
+ * 原始 JSON `:935` 0.72。
+ */
+private fun sheetMaxHeightFraction(sheet: MemoryStatsSheet): Float = when (sheet.sheet) {
+    MemorySheet.RAW_JSON -> 0.72f
+    MemorySheet.PSS_BREAKDOWN,
+    MemorySheet.PROCESS_LIST,
+    MemorySheet.HISTORY,
+    MemorySheet.MEMORY_STATS,
+    -> 0.68f
+    else -> 0.62f
+}
+
+/** 弹层内容：按 sheet 里填了哪块字段分别铺开（结构与 Dart `_showXxxSheet` 一一对应）。 */
 @Composable
 private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
-    Column(
+    // Dart 每个弹层正文都是「限高 + 可滚动」（`SingleChildScrollView` + `ConstrainedBox`）。
+    // 这里用 LazyColumn 做弹层**内部**滚动（与 `TimeSchemeQuickGenerateSheet` /
+    // `DataTransferPage` 的既有做法一致）；它不承担页面主滚动，主滚动仍是 QingyuPageList。
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * sheetMaxHeightFraction(sheet)).dp
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .heightIn(max = maxHeight),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         sheet.description?.let { description ->
-            Text(
-                text = description,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-        }
-
-        sheet.emptyText?.let { empty ->
-            Text(
-                text = empty,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                textAlign = TextAlign.Start,
-            )
-        }
-
-        if (sheet.rows.isNotEmpty()) {
-            sheet.rows.forEach { row ->
-                MemoryKvLine(label = row.label, value = row.value, dark = dark)
-            }
-        }
-
-        sheet.cleanableSummary?.let { summary ->
-            Text(
-                text = summary,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-        }
-        sheet.bullets.forEach { bullet ->
-            Row {
-                Text(text = "· ", style = MiuixTheme.textStyles.footnote1, color = Color(QingyuTheme.secondaryText(dark)))
+            item(key = "description") {
                 Text(
-                    text = bullet,
+                    text = description,
                     style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-            }
-        }
-
-        sheet.breakdown.forEach { row ->
-            Column(
-                modifier = Modifier.padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = row.label,
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "${row.pssText} · ${row.ratioText}",
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
-                }
-                Text(
-                    text = row.cleanableLabel,
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = cleanableColor(row.cleanable, dark),
-                )
-                if (row.meaning.isNotEmpty()) {
-                    Text(
-                        text = row.meaning,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                }
-            }
-        }
-
-        sheet.processes.forEach { process ->
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = process.name,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-                Text(
-                    // Dart：`pid=$pid  PSS=$pss  privateDirty=$privateDirty` + 主进程 / 疑似超级岛相关
-                    text = "pid=${process.pidText}  PSS=${process.pssText}  " +
-                        "privateDirty=${process.privateDirtyText}" +
-                        (if (process.isMainProcess) "  ·主进程" else "") +
-                        (if (process.likelyLiveIsland) "  ·疑似超级岛相关" else ""),
-                    style = MiuixTheme.textStyles.footnote2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
         }
 
+        sheet.emptyText?.let { empty ->
+            item(key = "empty") {
+                Text(
+                    text = empty,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    textAlign = TextAlign.Start,
+                )
+            }
+        }
+
+        // 键值表：Dart `_KvTable` 是「左定宽 128 + 分隔线」，不是每行一块底色。
+        if (sheet.rows.isNotEmpty()) {
+            item(key = "kv-rows") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    sheet.rows.forEachIndexed { index, row ->
+                        if (index > 0) HorizontalDivider()
+                        MemoryKvLine(label = row.label, value = row.value, dark = dark)
+                    }
+                }
+            }
+        }
+
+        // 分析弹层：粗估 → 口径说明（Dart `:712-721`）→ 要点或空态。
+        sheet.cleanableSummary?.let { summary ->
+            item(key = "cleanable-summary") {
+                Text(
+                    text = summary,
+                    style = MiuixTheme.textStyles.body2,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(QingyuTheme.primaryText(dark)),
+                )
+            }
+        }
+        sheet.cleanableNote?.let { note ->
+            item(key = "cleanable-note") {
+                Text(
+                    text = note,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+            }
+        }
+        if (sheet.bullets.isNotEmpty()) {
+            item(key = "bullets") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    sheet.bullets.forEach { bullet ->
+                        Row {
+                            Text(
+                                text = "· ",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                            Text(
+                                text = bullet,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (sheet.breakdown.isNotEmpty()) {
+            item(key = "breakdown") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    sheet.breakdown.forEachIndexed { index, row ->
+                        if (index > 0) HorizontalDivider()
+                        MemoryBreakdownItem(row = row, dark = dark)
+                    }
+                }
+            }
+        }
+
+        if (sheet.processes.isNotEmpty()) {
+            item(key = "processes") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    sheet.processes.forEachIndexed { index, process ->
+                        if (index > 0) HorizontalDivider()
+                        MemoryProcessItem(process = process, dark = dark)
+                    }
+                }
+            }
+        }
+
         sheet.historySummary?.let { summary ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
+            item(key = "history-summary") {
                 Text(
                     text = summary,
                     style = MiuixTheme.textStyles.footnote1,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
-            sheet.history.forEach { row ->
+            itemsIndexed(sheet.history) { index, row ->
                 Text(
-                    // Dart：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`
+                    // Dart `:910`：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`
                     text = "${row.timeText}  [${row.stateLabel}]  PSS ${row.pssText}  " +
                         "堆 ${row.heapRatioText}  ${row.liveLabel}  压力 ${row.pressureLevel}",
                     style = MiuixTheme.textStyles.footnote2,
+                    fontFamily = FontFamily.Monospace,
                     color = Color(QingyuTheme.primaryText(dark)),
+                    modifier = Modifier.padding(bottom = if (index == sheet.history.lastIndex) 0.dp else 8.dp),
                 )
             }
         }
 
         sheet.bodyText?.let { body ->
+            item(key = "body") {
+                // memoryStats / 原始 JSON 都是「等宽原文」（Dart `fontFamily: 'monospace'`）。
+                Text(
+                    text = body,
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color(QingyuTheme.primaryText(dark)),
+                )
+            }
+        }
+    }
+}
+
+/** PSS 分类的一行（Dart `_BreakdownRow`：名称 + `PSS · 占比` + 可清性标签 + 释义）。 */
+@Composable
+private fun MemoryBreakdownItem(row: MemoryBreakdownRow, dark: Boolean) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                text = body,
-                style = MiuixTheme.textStyles.footnote2,
+                text = row.label,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.primaryText(dark)),
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "${row.pssText} · ${row.ratioText}",
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+        }
+        // Dart `HyperosTag`：底色是同色 12% 透明，文字用语义色。
+        Text(
+            text = row.cleanableLabel,
+            style = MiuixTheme.textStyles.footnote2,
+            color = cleanableColor(row.cleanable, dark),
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(cleanableColor(row.cleanable, dark).copy(alpha = 0.12f))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+        )
+        if (row.meaning.isNotEmpty()) {
+            Text(
+                text = row.meaning,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
     }
 }
 
-/** 弹层里的键值行（Dart `_KvTable` 的一行）。 */
+/** 进程列表的一行（Dart `_ProcessRow`）。 */
+@Composable
+private fun MemoryProcessItem(process: MemoryProcessRow, dark: Boolean) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = process.name,
+            style = MiuixTheme.textStyles.body2,
+            color = Color(QingyuTheme.primaryText(dark)),
+        )
+        Text(
+            // Dart `:1048-1050`：`pid=$pid  PSS=$pss  privateDirty=$privateDirty` + 两个标记。
+            text = "pid=${process.pidText}  PSS=${process.pssText}  " +
+                "privateDirty=${process.privateDirtyText}" +
+                (if (process.isMainProcess) "  ·主进程" else "") +
+                (if (process.likelyLiveIsland) "  ·疑似超级岛相关" else ""),
+            style = MiuixTheme.textStyles.footnote2,
+            fontFamily = FontFamily.Monospace,
+            color = Color(QingyuTheme.secondaryText(dark)),
+        )
+    }
+}
+
+/** 弹层里的键值行（Dart `_KvTable` 的一行：左定宽 128 + 12 间隔 + 右值）。 */
 @Composable
 private fun MemoryKvLine(label: String, value: String, dark: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(QingyuTheme.rowHighlight(dark)))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = label,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.width(128.dp),
         )
         Text(
             text = value,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Medium,
             color = Color(QingyuTheme.primaryText(dark)),
+            modifier = Modifier.weight(1f),
         )
     }
 }
+
+/**
+ * 行首图标语义色（Dart 每行的 `iconAccent`）。
+ *
+ * Dart 用的是 `HyperosIconColors.*` 彩豆 token，Compose 侧对应 [QingyuIconColors] 同名量。
+ * [MemoryRowAccent.PRESSURE] 走 `_pressureColor`，只有分析行用。
+ */
+private fun accentColor(accent: MemoryRowAccent, pressure: MemoryPressure, dark: Boolean): Color =
+    when (accent) {
+        MemoryRowAccent.BLUE -> Color(QingyuIconColors.BLUE)
+        MemoryRowAccent.GREEN -> Color(QingyuIconColors.GREEN)
+        MemoryRowAccent.ORANGE -> Color(QingyuIconColors.ORANGE)
+        MemoryRowAccent.PURPLE -> Color(QingyuIconColors.PURPLE)
+        MemoryRowAccent.TEAL -> Color(QingyuIconColors.TEAL)
+        MemoryRowAccent.RED -> Color(QingyuIconColors.RED)
+        MemoryRowAccent.YELLOW -> Color(QingyuIconColors.YELLOW)
+        MemoryRowAccent.INDIGO -> Color(QingyuIconColors.INDIGO)
+        MemoryRowAccent.CYAN -> Color(QingyuIconColors.CYAN)
+        MemoryRowAccent.PRESSURE -> pressureColor(pressure, dark)
+    }
 
 /**
  * 压力语义色（Dart `_pressureColor`，`memory_stats_screen.dart:953-960`）。

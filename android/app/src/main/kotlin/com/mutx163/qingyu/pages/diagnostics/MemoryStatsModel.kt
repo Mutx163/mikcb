@@ -111,6 +111,28 @@ enum class MemoryCleanability(val label: String) {
     }
 }
 
+/**
+ * 行首图标的**语义彩色**（Dart 每行 `HyperosListTile.iconAccent`）。
+ *
+ * Dart 源里每行都显式指定了 `HyperosIconColors.*`；Compose 侧此前一律用同一个
+ * `actionIcon` 灰蓝色，等于把 Dart 的语义色全丢了，真机上一眼看得出「没有层次」。
+ * 这里只给语义（BLUE/…/PRESSURE），具体 ARGB 由渲染层取 `QingyuIconColors` token。
+ */
+enum class MemoryRowAccent {
+    BLUE,
+    GREEN,
+    ORANGE,
+    PURPLE,
+    TEAL,
+    RED,
+    YELLOW,
+    INDIGO,
+    CYAN,
+
+    /** 「跟随内存压力」：Dart `_pressureColor(pressureLevel)`（分析行）。 */
+    PRESSURE,
+}
+
 /** 页内每个可跳转的行（渲染层据此选图标与打开哪个弹层）。 */
 enum class MemoryStatsRow {
     AUTO_REFRESH,
@@ -149,12 +171,13 @@ enum class MemorySheet {
     FAIR_MEMORY,
 }
 
-/** 列表行：标题 + 右侧取值 + 可选副标题。 */
+/** 列表行：标题 + 右侧取值 + 可选副标题 + 行首图标语义色。 */
 data class MemoryRowView(
     val row: MemoryStatsRow,
     val title: String,
     val details: String,
     val subtitle: String? = null,
+    val accent: MemoryRowAccent = MemoryRowAccent.BLUE,
 )
 
 /** 弹层里的一行键值。 */
@@ -202,6 +225,14 @@ data class MemoryStatsSheet(
     val historySummary: String? = null,
     val bullets: List<String> = emptyList(),
     val cleanableSummary: String? = null,
+
+    /**
+     * 分析弹层里「可节约粗估」下面那行说明
+     * （Dart `_showAnalysisSheet` `:715-721` 的 `cleanable['note']`）。
+     *
+     * 此前模型层把这条丢了，导致分析弹层少了 Dart 上的一句口径说明。
+     */
+    val cleanableNote: String? = null,
     val bodyText: String? = null,
     val emptyText: String? = null,
 )
@@ -238,6 +269,9 @@ internal object MemoryStatsStrings {
     const val pageTitle = "内存统计"
     const val refreshTooltip = "立即刷新"
     const val copyJsonTooltip = "复制 JSON"
+
+    /** Dart `_MemoryStatsScreenState.copyJson` 的成功提示（`showAppToast`，`:170-173`）。 */
+    const val copiedJsonToast = "已复制内存快照 JSON"
 
     const val overviewSection = "运行概览"
     const val samplingSection = "采样控制"
@@ -326,16 +360,16 @@ fun buildMemoryStatsViewState(
         MemoryStatsStrings.background
     }
     // 快照自带 pressureLabel 时优先用它（分类规则在 Collector 里老化，页面只负责显示）。
-    val pressureLabel = root.stringAt("pressureLabel") ?: pressure.label
+    // 快照缺这个键时 Dart 给的是破折号（`snapshot?['pressureLabel'] ?? '—'`），
+    // **不是**按 pressureLevel 回算的「正常」——否则空态会凭空出现一个「压力 正常」。
+    val pressureLabel = root.stringAt("pressureLabel") ?: MemoryStatsStrings.dash
+
+    // Dart `:202` 的副标题是**无条件拼出来的**：没有快照时也照样渲染
+    // 「压力 — · 后台 · 峰值 —」，不是整行换成破折号。
+    val summarySubtitle = "压力 $pressureLabel · $appStateLabel · 峰值 $peakPssText"
 
     val refreshedText = lastRefreshedAt?.let { MemoryStatsFormat.formatClock(it) }
         ?: MemoryStatsStrings.neverRefreshed
-
-    val summarySubtitle = if (!ready) {
-        MemoryStatsStrings.dash
-    } else {
-        "压力 $pressureLabel · $appStateLabel · 峰值 $peakPssText"
-    }
 
     val refreshDescription = "统计主进程与同 UID 的其它进程（含超级岛服务）。" +
         "数据每 $refreshIntervalSeconds 秒更新一次，可在下方关闭自动采样。最近刷新：$refreshedText"
@@ -352,35 +386,43 @@ fun buildMemoryStatsViewState(
             title = MemoryStatsStrings.autoRefreshTitle,
             details = "",
             subtitle = autoRefreshSubtitle,
+            accent = MemoryRowAccent.BLUE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.PERF_REPORT,
             title = MemoryStatsStrings.perfReportTitle,
             details = "",
             subtitle = MemoryStatsStrings.perfReportSubtitle,
+            accent = MemoryRowAccent.TEAL,
         ),
     )
 
+    // 行首图标语义色逐行照抄 Dart `memory_stats_screen.dart:261-552` 的 `iconAccent`。
     val compositionRows = listOf(
         MemoryRowView(
             row = MemoryStatsRow.JAVA_HEAP,
             title = MemoryStatsStrings.javaHeapTitle,
             details = MemoryStatsFormat.formatPercent(heapUsage),
+            // Dart `:263-265`：堆使用率 ≥ 0.85 转红，否则蓝。
+            accent = if (heapUsage >= 0.85) MemoryRowAccent.RED else MemoryRowAccent.BLUE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.PSS_BREAKDOWN,
             title = MemoryStatsStrings.breakdownTitle,
             details = totalPssText,
+            accent = MemoryRowAccent.INDIGO,
         ),
         MemoryRowView(
             row = MemoryStatsRow.DEBUG_MEMORY,
             title = MemoryStatsStrings.debugMemoryTitle,
             details = MemoryStatsFormat.formatKb(debugMemory.longAt("totalPssKb")),
+            accent = MemoryRowAccent.CYAN,
         ),
         MemoryRowView(
             row = MemoryStatsRow.IMAGE_CACHE,
             title = MemoryStatsStrings.imageCacheTitle,
             details = MemoryStatsFormat.formatBytes(imageCache.longAt("currentSizeBytes")),
+            accent = MemoryRowAccent.PURPLE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.SYSTEM_MEMORY,
@@ -390,6 +432,7 @@ fun buildMemoryStatsViewState(
             } else {
                 MemoryStatsStrings.normalMemory
             },
+            accent = MemoryRowAccent.TEAL,
         ),
     )
 
@@ -398,6 +441,7 @@ fun buildMemoryStatsViewState(
             row = MemoryStatsRow.APP_OVERVIEW,
             title = MemoryStatsStrings.appOverviewTitle,
             details = "${app.longAt("processCount") ?: MemoryStatsStrings.dash} 个进程",
+            accent = MemoryRowAccent.BLUE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.BACKGROUND_SAMPLING,
@@ -407,6 +451,7 @@ fun buildMemoryStatsViewState(
             } else {
                 MemoryStatsStrings.foreground
             },
+            accent = MemoryRowAccent.ORANGE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.LIVE_ISLAND,
@@ -416,11 +461,18 @@ fun buildMemoryStatsViewState(
             } else {
                 MemoryStatsStrings.liveIslandStopped
             },
+            // Dart `:450-452`：在跑 → 绿；未运行 → 靛蓝。
+            accent = if (liveIsland.flagAt("serviceRunning")) {
+                MemoryRowAccent.GREEN
+            } else {
+                MemoryRowAccent.INDIGO
+            },
         ),
         MemoryRowView(
             row = MemoryStatsRow.PROCESS_LIST,
             title = MemoryStatsStrings.processListTitle,
             details = "${processes.size} 个",
+            accent = MemoryRowAccent.CYAN,
         ),
     )
 
@@ -429,26 +481,32 @@ fun buildMemoryStatsViewState(
             row = MemoryStatsRow.ANALYSIS,
             title = analysis.stringAt("headline") ?: MemoryStatsStrings.analysisFallbackTitle,
             details = analysis.stringAt("severityLabel") ?: MemoryStatsStrings.analysisNoConclusion,
+            // Dart `:486`：分析行跟随内存压力色。
+            accent = MemoryRowAccent.PRESSURE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.HISTORY,
             title = MemoryStatsStrings.historyTitle,
             details = "${history.size} 条",
+            accent = MemoryRowAccent.PURPLE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.MEMORY_STATS,
             title = MemoryStatsStrings.memoryStatsTitle,
             details = "${memoryStats.size} 项",
+            accent = MemoryRowAccent.TEAL,
         ),
         MemoryRowView(
             row = MemoryStatsRow.RAW_JSON,
             title = MemoryStatsStrings.rawJsonTitle,
             details = if (ready) MemoryStatsStrings.fullSnapshot else MemoryStatsStrings.noSnapshot,
+            accent = MemoryRowAccent.ORANGE,
         ),
         MemoryRowView(
             row = MemoryStatsRow.FAIR_MEMORY,
             title = MemoryStatsStrings.fairMemoryTitle,
             details = MemoryStatsFormat.formatEpochMillis(fairMemory.longAt("lastKillAtMillis")),
+            accent = MemoryRowAccent.RED,
         ),
     )
 
@@ -733,6 +791,8 @@ private fun buildSheetMap(
         cleanableSummary = "可节约粗估：易清 ${cleanable.longAt("easyMb") ?: 0} MB · " +
             "中等 ${cleanable.longAt("mediumMb") ?: 0} MB · " +
             "难清 ${cleanable.longAt("hardMb") ?: 0} MB",
+        // Dart `:715-721`：粗估下面还有一行 `cleanable['note']`（口径说明），有才显示。
+        cleanableNote = cleanable.stringAt("note"),
         bullets = bullets,
         emptyText = if (bullets.isEmpty()) "暂无分析结论，请刷新。" else null,
     )
@@ -740,10 +800,12 @@ private fun buildSheetMap(
     val historyRows = history.asReversed().take(MAX_HISTORY_ROWS).map { sample ->
         MemoryHistoryRow(
             timeText = MemoryStatsFormat.formatEpochMillis(sample.longAt("atMillis")),
-            stateLabel = if (sample.flagAt("appInForeground")) {
-                MemoryStatsStrings.foreground
-            } else {
+            // Dart `:904-906` 判的是 `== false` 而不是 `!= true`：键缺失时归「前台」。
+            // Collector `:326` 一定写这个键，但口径要对齐，不能凭「缺失=后台」蒙。
+            stateLabel = if (sample.isFalse("appInForeground")) {
                 MemoryStatsStrings.background
+            } else {
+                MemoryStatsStrings.foreground
             },
             pssText = kb(sample.longAt("totalPssKb")),
             heapRatioText = MemoryStatsFormat.formatPercent(sample.doubleAt("javaHeapUsageRatio")),
@@ -760,7 +822,8 @@ private fun buildSheetMap(
         title = MemoryStatsStrings.historyTitle,
         description = "最多保留 240 点；这里展示最近 20 条，完整数据请复制 JSON。",
         history = historyRows,
-        historySummary = "共 ${history.size} 点 · 最早→最晚",
+        // Dart `:883-889`：「共 N 点」只在有点时出现；空态只留那句提示。
+        historySummary = if (historyRows.isEmpty()) null else "共 ${history.size} 点 · 最早→最晚",
         emptyText = if (history.isEmpty()) {
             "采样尚未积累。可先回桌面 1～2 分钟再回来，查看后台 PSS。"
         } else {
@@ -826,6 +889,20 @@ private fun buildSheetMap(
 
 /** 采样历史一次最多展示多少条（Dart `history.reversed().take(20)`）。 */
 const val MAX_HISTORY_ROWS = 20
+
+/**
+ * 页内自动刷新档位（秒）。
+ *
+ * 出处：`lib/screens/memory_stats_screen.dart:24`
+ * `static const Duration _autoRefreshInterval = Duration(seconds: 3);`
+ * —— `:40` 的 `Timer.periodic(_autoRefreshInterval, …)` 与 `:208`/`:239` 的界面文案
+ * 「每 N 秒」全用这一个常量。Compose 宿主也必须用同一个值，不能自己改成 5 秒或 1 秒。
+ *
+ * 注意它与**原生采集器**的采样间隔不是一件事：`MemoryStatsCollector` 自己是
+ * 前台 15s / 后台 30s 记一条会话历史（`:31-32`），页面 3 秒一次只是重新读一遍快照。
+ */
+const val DEFAULT_REFRESH_INTERVAL_SECONDS = 3
+
 
 /**
  * 快照 → 缩进 JSON（对齐 Dart `JsonEncoder.withIndent('  ')`）。
@@ -902,3 +979,20 @@ internal fun Map<*, *>.stringAt(key: String): String? =
     this[key]?.toString()?.takeIf { it.isNotEmpty() }
 
 internal fun Map<*, *>.flagAt(key: String): Boolean = this[key] == true
+
+/** Dart 里少数几处写的是 `value == false`（键缺失走 else）而非 `!= true` 的判定。 */
+internal fun Map<*, *>.isFalse(key: String): Boolean = this[key] == false
+
+/**
+ * 从原生快照里取错误文案（Dart `memory_stats_screen.dart:80`
+ * `_errorText = snapshot['error']?.toString()`）。
+ *
+ * 原生 `MemoryStatsCollector.buildSnapshot()` 正常时不写 `error` 键；
+ * Dart 的 `MemoryStatsService.fetchSnapshot` 在 MethodChannel 抛错时会塞
+ * `{'supported': false, 'error': …}`，或把 `error` 合进快照。
+ * Compose 宿主直接调 `buildSnapshot`，所以「快照里带 error」只可能来自它自己
+ * 拼的兜底 map —— 但页面口径要一致：**快照里出现 error 就要显示，且不当空态**。
+ */
+fun memorySnapshotError(snapshot: Map<String, Any?>?): String? =
+    snapshot?.get("error")?.toString()?.takeIf { it.isNotEmpty() }
+

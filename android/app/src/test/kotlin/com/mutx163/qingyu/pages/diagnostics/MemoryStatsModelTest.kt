@@ -360,9 +360,121 @@ class MemoryStatsModelTest {
         assertFalse(state.hasSnapshot)
         assertTrue(state.isEmptyState)
         assertEquals("—", state.summaryText)
-        assertEquals("—", state.summarySubtitle)
+        // Dart `:202` 的副标题是无条件拼的：没有快照时照样是「压力 — · 后台 · 峰值 —」。
+        // 旧实现这里返回整行破折号，与 Dart 不一致（空态下少了两段信息槽位）。
+        assertEquals("压力 — · 后台 · 峰值 —", state.summarySubtitle)
         assertEquals("暂无快照", state.toolRows.first { it.row == MemoryStatsRow.RAW_JSON }.details)
         assertEquals("暂无进程数据", state.sheets[MemorySheet.PROCESS_LIST]?.emptyText)
+    }
+
+    @Test
+    fun `压力标签缺失时用破折号而不是回算成正常`() {
+        val noLabel = LinkedHashMap(sampleSnapshot()).also { it.remove("pressureLabel") }
+        val state = buildState(snapshot = noLabel)
+
+        // Dart `snapshot?['pressureLabel'] ?? '—'`：缺键就是破折号，
+        // 不能拿 pressureLevel 回算一个「正常」出来（那样空态会凭空生出结论）。
+        assertEquals("压力 — · 前台 · 峰值 20.00 MB", state.summarySubtitle)
+        // 压力等级本身仍用于图标配色，这条不受影响。
+        assertEquals(MemoryPressure.HIGH, state.pressure)
+    }
+
+    @Test
+    fun `自动刷新档位就是 Dart 的 3 秒`() {
+        // 出处 `lib/screens/memory_stats_screen.dart:24`
+        // `static const Duration _autoRefreshInterval = Duration(seconds: 3);`
+        assertEquals(3, DEFAULT_REFRESH_INTERVAL_SECONDS)
+        val state = buildState()
+        assertEquals("每 3 秒采样一次", state.samplingRows[0].subtitle)
+    }
+
+    @Test
+    fun `行首语义色逐行对齐 Dart 的 iconAccent`() {
+        val state = buildState()
+        val accents = (
+            state.samplingRows + state.compositionRows +
+                state.environmentRows + state.toolRows
+            ).associate { it.row to it.accent }
+
+        assertEquals(MemoryRowAccent.BLUE, accents[MemoryStatsRow.AUTO_REFRESH])
+        assertEquals(MemoryRowAccent.TEAL, accents[MemoryStatsRow.PERF_REPORT])
+        assertEquals(MemoryRowAccent.BLUE, accents[MemoryStatsRow.JAVA_HEAP])
+        assertEquals(MemoryRowAccent.INDIGO, accents[MemoryStatsRow.PSS_BREAKDOWN])
+        assertEquals(MemoryRowAccent.CYAN, accents[MemoryStatsRow.DEBUG_MEMORY])
+        assertEquals(MemoryRowAccent.PURPLE, accents[MemoryStatsRow.IMAGE_CACHE])
+        assertEquals(MemoryRowAccent.TEAL, accents[MemoryStatsRow.SYSTEM_MEMORY])
+        assertEquals(MemoryRowAccent.BLUE, accents[MemoryStatsRow.APP_OVERVIEW])
+        assertEquals(MemoryRowAccent.ORANGE, accents[MemoryStatsRow.BACKGROUND_SAMPLING])
+        assertEquals(MemoryRowAccent.GREEN, accents[MemoryStatsRow.LIVE_ISLAND])
+        assertEquals(MemoryRowAccent.CYAN, accents[MemoryStatsRow.PROCESS_LIST])
+        assertEquals(MemoryRowAccent.PRESSURE, accents[MemoryStatsRow.ANALYSIS])
+        assertEquals(MemoryRowAccent.PURPLE, accents[MemoryStatsRow.HISTORY])
+        assertEquals(MemoryRowAccent.TEAL, accents[MemoryStatsRow.MEMORY_STATS])
+        assertEquals(MemoryRowAccent.ORANGE, accents[MemoryStatsRow.RAW_JSON])
+        assertEquals(MemoryRowAccent.RED, accents[MemoryStatsRow.FAIR_MEMORY])
+    }
+
+    @Test
+    fun `Java 堆行在接近 OOM 时转红`() {
+        // Dart `:263-265`：`heapUsage >= 0.85 ? red : blue`。
+        val nearOom = sampleSnapshot().also {
+            @Suppress("UNCHECKED_CAST")
+            val heap = it["javaHeap"] as MutableMap<String, Any?>
+            heap["usageRatio"] = 0.86
+            heap["nearOom"] = true
+        }
+        val state = buildState(snapshot = nearOom)
+        val javaHeap = state.compositionRows.first { it.row == MemoryStatsRow.JAVA_HEAP }
+
+        assertEquals(MemoryRowAccent.RED, javaHeap.accent)
+        assertEquals("86.0%", javaHeap.details)
+    }
+
+    @Test
+    fun `超级岛未运行时图标取靛蓝`() {
+        val stopped = sampleSnapshot().also {
+            @Suppress("UNCHECKED_CAST")
+            val island = it["liveIsland"] as MutableMap<String, Any?>
+            island["serviceRunning"] = false
+        }
+        val state = buildState(snapshot = stopped)
+        val row = state.environmentRows.first { it.row == MemoryStatsRow.LIVE_ISLAND }
+
+        assertEquals(MemoryRowAccent.INDIGO, row.accent)
+        assertEquals("未运行", row.details)
+    }
+
+    @Test
+    fun `分析弹层把可清性口径说明也带出来`() {
+        val sheet = buildState().sheets.getValue(MemorySheet.ANALYSIS)
+
+        // Dart `_showAnalysisSheet:715-721`：粗估下面还有一行 `cleanable['note']`。
+        assertEquals("easy≈图片缓存等", sheet.cleanableNote)
+    }
+
+    @Test
+    fun `分析弹层没有口径说明时不硬造一行`() {
+        val noNote = sampleSnapshot().also {
+            @Suppress("UNCHECKED_CAST")
+            val analysis = it["analysis"] as MutableMap<String, Any?>
+            @Suppress("UNCHECKED_CAST")
+            val cleanable = analysis["cleanableEstimate"] as MutableMap<String, Any?>
+            cleanable.remove("note")
+        }
+        val sheet = buildState(snapshot = noNote).sheets.getValue(MemorySheet.ANALYSIS)
+
+        assertNull(sheet.cleanableNote)
+        assertEquals("可节约粗估：易清 1 MB · 中等 2 MB · 难清 3 MB", sheet.cleanableSummary)
+    }
+
+    @Test
+    fun `采样历史没有点时只留那句提示`() {
+        val noHistory = LinkedHashMap(sampleSnapshot()).also { it["history"] = emptyList<Any?>() }
+        val sheet = buildState(snapshot = noHistory).sheets.getValue(MemorySheet.HISTORY)
+
+        // Dart `:878-889`：空态只显示提示句，不再多一行「共 0 点 · 最早→最晚」。
+        assertNull(sheet.historySummary)
+        assertEquals("采样尚未积累。可先回桌面 1～2 分钟再回来，查看后台 PSS。", sheet.emptyText)
     }
 
     @Test
@@ -514,5 +626,34 @@ class MemoryStatsModelTest {
         assertTrue(state.isLoading)
         assertNull(state.errorText)
         assertEquals("正在读取当前内存快照…", state.loadingHint)
+    }
+
+    @Test
+    fun `快照里带 error 时提取成错误文案`() {
+        // Dart `:80`：`_errorText = snapshot['error']?.toString()`。
+        assertEquals(
+            "PlatformException(读取失败)",
+            memorySnapshotError(linkedMapOf<String, Any?>("error" to "PlatformException(读取失败)")),
+        )
+        // 没有 error 键 / 空串 / 快照本身为 null 都是「没错误」。
+        assertNull(memorySnapshotError(linkedMapOf<String, Any?>("supported" to true)))
+        assertNull(memorySnapshotError(linkedMapOf<String, Any?>("error" to "")))
+        assertNull(memorySnapshotError(null))
+    }
+
+    @Test
+    fun `历史行的前后台判定按 Dart 的等假口径`() {
+        // Dart `:904-906` 写的是 `sample['appInForeground'] == false ? '后台' : '前台'`，
+        // 键缺失时会落到「前台」——与 `!= true` 的直觉写法不同，这里钉住它。
+        val missingFlag = sampleSnapshot().also {
+            @Suppress("UNCHECKED_CAST")
+            val sample = (it["history"] as List<MutableMap<String, Any?>>).single()
+            sample.remove("appInForeground")
+        }
+        val row = buildState(snapshot = missingFlag)
+            .sheets.getValue(MemorySheet.HISTORY)
+            .history.single()
+
+        assertEquals("前台", row.stateLabel)
     }
 }
