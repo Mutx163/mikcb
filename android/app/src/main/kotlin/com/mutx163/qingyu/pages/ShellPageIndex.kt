@@ -193,9 +193,8 @@ import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
 import com.mutx163.qingyu.pages.timetable.month.MonthViewHost
 import com.mutx163.qingyu.pages.transfer.DataTransferHost
-import com.mutx163.qingyu.pages.transfer.LanEditModel
-import com.mutx163.qingyu.pages.transfer.LanEditPage
-import com.mutx163.qingyu.pages.transfer.PickupCodesPage
+import com.mutx163.qingyu.pages.transfer.LanEditHost
+import com.mutx163.qingyu.pages.transfer.PickupCodesHost
 import com.mutx163.qingyu.pages.transfer.QrTransferSendHost
 import com.mutx163.qingyu.pages.transfer.QrTransferScanHost
 import com.mutx163.qingyu.pages.transfer.QrTransferSendSession
@@ -1215,16 +1214,15 @@ fun ShellPageContent(
         // （profiles 没喂）、日期点了不动、导出/分享/保存/同步/移除一个都不通。
         // 现在交给 `IcsExportHost`：真档案 + 真事件收集（课程/考试/日程）+ 真分享/SAF/系统日历。
         "g3.icsExport" -> IcsExportHost(wiring = wiring, onBack = onBack)
-        "g3.lanEdit" -> LanEditPage(
-            model = LanEditModel(),
+        // 2026-10-29 F03 接壳：此前 `g3.lanEdit` 喂的是**新建的空模型** + 3 个空回调
+        // （开关不启服务、地址永远是「未检测到局域网 IP」、复制点了没反应），
+        // `g3.pickupCodes` 的 7 条入口 `onEntryClick` 也是空的。现在两个都由宿主接手：
+        // - `LanEditHost`：真 HTTP 服务 + 真 PIN/端口/客户端数 + 前台服务 + 剪贴板 + 「离开后保持开启」；
+        // - `PickupCodesHost`：真 `Intent` 多级回退（直达 → 拉起 App → 网页兜底）+ 已安装探测。
+        "g3.lanEdit" -> LanEditHost(wiring = wiring, onBack = onBack)
+        "g3.pickupCodes" -> PickupCodesHost(
             onBack = onBack,
-            onToggleRunning = {},
-            onCopyAddress = {},
-            onKeepAliveChange = {},
-        )
-        "g3.pickupCodes" -> PickupCodesPage(
-            onBack = onBack,
-            onEntryClick = {},
+            hapticsEnabled = wiring.enableHaptics,
         )
 
         // ── P3-H 诊断与测试夹具 ──────────────────────────────────────

@@ -23,6 +23,17 @@ package com.mutx163.qingyu.pages.transfer
  */
 object PickupCodesModel {
 
+    /**
+     * 一条直达链接：URI + 可选的目标包名（Dart `PickupCodeLink`）。
+     *
+     * 包名不是必填：`cainiao://` 这类私有 scheme 在多数机型上要靠 `setPackage`
+     * 才不会被别的 App 抢走；https 兜底链接不需要限定。
+     */
+    data class Link(
+        val uri: String,
+        val packageName: String? = null,
+    )
+
     /** 一个固定入口（数据照 QuickJump 的 ENTRIES 抄下来，只做数据）。 */
     data class Preset(
         /** ARB 标题键（`pickupCodePreset*`）。 */
@@ -33,6 +44,14 @@ object PickupCodesModel {
         val icon: String,
         /** 分组：身份码在前，查件在后（去柜子跟前第一件事是出示码）。 */
         val group: Group,
+        /** 按书写顺序逐条尝试的直达链接（Dart `links`）。 */
+        val links: List<Link> = emptyList(),
+        /** 直达全失败后逐个拉起的官方 App 包名（Dart `appPackages`）。 */
+        val appPackages: List<String> = emptyList(),
+        /** 最后才用的网页兜底；null = 没有兜底。 */
+        val webUri: String? = null,
+        /** 是否强制新开目标页（QuickJump 用它修「淘宝在后台时跳不动」的机型）。 */
+        val clearTask: Boolean = false,
     ) {
         val title: String get() = TransferExtStrings.valueOf(titleKey)?.zh ?: titleKey
         val hint: String get() = TransferExtStrings.valueOf(hintKey)?.zh ?: hintKey
@@ -45,16 +64,162 @@ object PickupCodesModel {
      *
      * 这个顺序**有意义**：列表按「一天里最可能用到的」从上往下排。
      * 单测钉住顺序，防止有人「整理」时按字母排。
+     *
+     * 链接、包名、网页兜底同样逐字照抄 Dart —— 这些不是「可选优化」，
+     * 是「点了有没有反应」的全部内容；随手改一个百分号编码，淘宝那条就永远打不开。
      */
     val presets: List<Preset> = listOf(
-        Preset("pickupCodePresetCainiao", "pickupCodePresetCainiaoHint", "qrCode", Group.IDENTITY),
-        Preset("pickupCodePresetTaobao", "pickupCodePresetTaobaoHint", "qrCode", Group.IDENTITY),
-        Preset("pickupCodePresetPinduoduo", "pickupCodePresetPinduoduoHint", "qrCode", Group.IDENTITY),
-        Preset("pickupCodePresetTaobaoParcels", "pickupCodePresetTaobaoParcelsHint", "parcel", Group.PARCELS),
-        Preset("pickupCodePresetPinduoduoParcels", "pickupCodePresetPinduoduoParcelsHint", "parcel", Group.PARCELS),
-        Preset("pickupCodePresetJdParcels", "pickupCodePresetJdParcelsHint", "parcel", Group.PARCELS),
-        Preset("pickupCodePresetDouyinParcels", "pickupCodePresetDouyinParcelsHint", "parcel", Group.PARCELS),
+        Preset(
+            titleKey = "pickupCodePresetCainiao",
+            hintKey = "pickupCodePresetCainiaoHint",
+            icon = "qrCode",
+            group = Group.IDENTITY,
+            links = listOf(
+                Link("cainiao://desktop/station_code", "com.cainiao.wireless"),
+                Link("cainiao://client.main", "com.cainiao.wireless"),
+            ),
+            appPackages = listOf("com.cainiao.wireless"),
+            webUri = "https://market.m.taobao.com/app/cn-yz/multi-activity/authCode.html" +
+                "?bizEntry=ALIPAY_GUOGUO",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetTaobao",
+            hintKey = "pickupCodePresetTaobaoHint",
+            icon = "qrCode",
+            group = Group.IDENTITY,
+            links = listOf(
+                Link(
+                    "taobao://m.taobao.com/tbopen/index.html?h5Url=" +
+                        "https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Funiapp%2F" +
+                        "1011717%2Flast-mile-fe%2Fend-collect-platform%2Fidentity-code" +
+                        "%3Fx-ssr%3Dtrue",
+                    "com.taobao.taobao",
+                ),
+                Link(
+                    "tbopen://m.taobao.com/tbopen/index.html?h5Url=" +
+                        "https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Funiapp%2F" +
+                        "1011717%2Flast-mile-fe%2Fend-collect-platform%2Fidentity-code" +
+                        "%3Fx-ssr%3Dtrue",
+                    "com.taobao.taobao",
+                ),
+            ),
+            appPackages = listOf("com.taobao.taobao"),
+            webUri = "https://pages-fast.m.taobao.com/wow/z/uniapp/1011717/last-mile-fe/" +
+                "end-collect-platform/identity-code?x-ssr=true",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetPinduoduo",
+            hintKey = "pickupCodePresetPinduoduoHint",
+            icon = "qrCode",
+            group = Group.IDENTITY,
+            links = listOf(
+                Link(
+                    "pinduoduo://com.xunmeng.pinduoduo/mdkd/package?tab=ID_CODE" +
+                        "&entry_source=11&refer_page_name=login&refer_page_sn=10169",
+                    "com.xunmeng.pinduoduo",
+                ),
+                Link(
+                    "pinduoduo://com.xunmeng.pinduoduo/mdkd/package?tab=ID_CODE" +
+                        "&entry_source=11",
+                    "com.xunmeng.pinduoduo",
+                ),
+                Link("pinduoduo://com.xunmeng.pinduoduo/mdkd/package", "com.xunmeng.pinduoduo"),
+            ),
+            appPackages = listOf("com.xunmeng.pinduoduo"),
+            webUri = "https://m.pinduoduo.net/mdkd/package?entry_source=18" +
+                "&extra_params=from_wx_jump%3D1&p_channel=0",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetTaobaoParcels",
+            hintKey = "pickupCodePresetTaobaoParcelsHint",
+            icon = "parcel",
+            group = Group.PARCELS,
+            links = listOf(
+                Link(
+                    "taobao://m.taobao.com/tbopen/index.html?h5Url=" +
+                        "https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Funiapp%2F" +
+                        "1100333%2Flast-mile-fe%2Fm-end-school-tab%2Fhome",
+                    "com.taobao.taobao",
+                ),
+                Link(
+                    "tbopen://m.taobao.com/tbopen/index.html?h5Url=" +
+                        "https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Funiapp%2F" +
+                        "1100333%2Flast-mile-fe%2Fm-end-school-tab%2Fhome",
+                    "com.taobao.taobao",
+                ),
+            ),
+            appPackages = listOf("com.taobao.taobao"),
+            webUri = "https://pages-fast.m.taobao.com/wow/z/uniapp/1100333/last-mile-fe/" +
+                "m-end-school-tab/home",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetPinduoduoParcels",
+            hintKey = "pickupCodePresetPinduoduoParcelsHint",
+            icon = "parcel",
+            group = Group.PARCELS,
+            links = listOf(Link("pinduoduo://com.xunmeng.pinduoduo/mdkd/package", "com.xunmeng.pinduoduo")),
+            appPackages = listOf("com.xunmeng.pinduoduo"),
+            webUri = "https://m.pinduoduo.net/mdkd/package?entry_source=18" +
+                "&extra_params=from_wx_jump%3D1&p_channel=0",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetJdParcels",
+            hintKey = "pickupCodePresetJdParcelsHint",
+            icon = "parcel",
+            group = Group.PARCELS,
+            links = listOf(
+                Link(
+                    "openjd://virtual?params=%7B%22category%22%3A%22jump%22%2C" +
+                        "%22des%22%3A%22orderlist%22%7D",
+                    "com.jingdong.app.mall",
+                ),
+            ),
+            appPackages = listOf("com.jingdong.app.mall"),
+            webUri = "https://order.jd.com/center/list.action",
+        ),
+        Preset(
+            titleKey = "pickupCodePresetDouyinParcels",
+            hintKey = "pickupCodePresetDouyinParcelsHint",
+            icon = "parcel",
+            group = Group.PARCELS,
+            links = listOf(
+                Link("snssdk1128://ecom_order_list", "com.ss.android.ugc.aweme"),
+                Link("snssdk1128://wallet", "com.ss.android.ugc.aweme"),
+                Link("snssdk2329://ecom_order_list", "com.ss.android.ugc.aweme.lite"),
+                Link("snssdk2329://wallet", "com.ss.android.ugc.aweme.lite"),
+            ),
+            appPackages = listOf("com.ss.android.ugc.aweme", "com.ss.android.ugc.aweme.lite"),
+            // 抖音没有公开的「待取快递」网页入口（电商页要求登录 App 内账号，
+            // 网页会落到商城首页）。兜底用订单列表页，至少比「点了没反应」强（Dart 原文）。
+            webUri = "https://haohuo.jinritemai.com/views/order/list",
+        ),
     )
+
+    /**
+     * 全部入口需要探测的包名（去重，保持首次出现顺序）。
+     *
+     * 给「一次查完装没装」用（Dart `pickupCodeAllPackages`）：逐个入口各查一遍同一批包名
+     * 会在按了七下之后把 `PackageManager` 查七遍。
+     */
+    fun allPackages(): List<String> {
+        val result = LinkedHashSet<String>()
+        for (preset in presets) {
+            result.addAll(preset.appPackages)
+        }
+        return result.toList()
+    }
+
+    /**
+     * 某个包名装没装（渲染层「未安装」那行灰字用它）。
+     *
+     * `installed` 为 null = 还没查到 / 查不到 ⇒ **当作已安装**：宁可少显示一句提示，
+     * 也不能把「能点、点了就跳过去」的入口标成「未安装」（Android 11+ 包可见性没配好时
+     * 查询会一律返回 false，那时候照实显示会变成七个入口全标未安装）。
+     */
+    fun isInstalled(preset: Preset, installed: Set<String>?): Boolean {
+        if (installed == null) return true
+        return preset.appPackages.any { installed.contains(it) }
+    }
 
     val title: String get() = TransferExtStrings.pickupCodeTitle.zh
 
@@ -77,6 +242,15 @@ object PickupCodesModel {
     const val REASON_INVALID_PACKAGE = "invalid_package"
     const val REASON_TIMEOUT = "timeout"
     const val REASON_UNSUPPORTED = "unsupported"
+
+    /**
+     * 「一个原因码都没有」时的兜底值。
+     *
+     * 这条是给 [reasonText] 用的：全部尝试都没留下原因码（例如入口一条链接都没配）时，
+     * 界面仍要念出「未知原因」，不能把冒号后面留空。Dart 的 `_reasonLabel` 接的是可空值，
+     * 落到 `_ =>` 兜底；这里显式给一个常量，避免调用方各写一份 `?:`。
+     */
+    const val REASON_UNKNOWN_FALLBACK = "unknown"
 
     /**
      * 原因码 → 屏上文字。
