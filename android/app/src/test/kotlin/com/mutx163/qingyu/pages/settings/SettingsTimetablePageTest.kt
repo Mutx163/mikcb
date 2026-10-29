@@ -433,6 +433,18 @@ class SettingsTimetablePageTest {
     }
 
     @Test
+    fun `学期设置三行的动作必须与宿主认的三种一致`() {
+        // 宿主（composeP1 `SettingsSemesterHost`）按 `动作 + 行 id` 分派：
+        // 前两行 SHEET（弹日期 / 弹周数），第三行 RUN_NOW（同步当前周）。
+        // 这里钉住动作与行 id——任一侧改了名字而另一侧没跟上，页面就会「点了没反应」，
+        // 而那条路径在 JVM 侧没有渲染测试可抓，只能靠这两条契约测试各钉一半。
+        val page = SettingsTimetablePage.semesterSpec(SettingsTimetableState())
+        assertEquals(SettingsAction.SHEET, page.row(SemesterSettingsLogic.ROW_START_DATE).action)
+        assertEquals(SettingsAction.SHEET, page.row(SemesterSettingsLogic.ROW_WEEK_COUNT).action)
+        assertEquals(SettingsAction.RUN_NOW, page.row(SemesterSettingsLogic.ROW_SYNC_WEEK).action)
+    }
+
+    @Test
     fun `没开学日期时首行动作变成设置开学日期`() {
         // :701-703 `semesterStartDate == null ? setSemesterStartDateAction : semesterStartDateAction`
         val page = SettingsTimetablePage.semesterSpec(

@@ -45,10 +45,25 @@ class SettingsRouteWiringGuardTest {
         return dir.listFiles { f -> f.isFile && f.extension == "kt" }!!.toList()
     }
 
+    /**
+     * 壳路由表的源码文本。
+     *
+     * 2026-10-29 起壳的源集正在合并：`composeUi/kotlin/.../pages/` 的文件被搬进
+     * `main/kotlin/.../pages/`（同一份 `ShellWiring.kt` 两种布局下都可能存在）。
+     * 所以这里按候选顺序找，**找到就用、都不在仍判失败**——守卫不许因为「路径变了」静默跳过。
+     */
     private fun shellWiringSource(): String {
-        val file = File(androidSrc(), "composeUi/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt")
-        assertTrue("壳路由表文件不存在：${file.path}", file.isFile)
-        return file.readText()
+        val candidates = listOf(
+            "composeUi/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
+            "main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
+        )
+        val file = candidates.map { File(androidSrc(), it) }.firstOrNull { it.isFile }
+        assertTrue(
+            "壳路由表文件不存在，试过：\n" +
+                candidates.joinToString("\n") { "  android/app/src/$it" },
+            file != null,
+        )
+        return file!!.readText()
     }
 
     /** 页面里声明的所有导航目标：`ROUTE_*` 常量值 + 以 `/` 开头的 `actionTarget` 字面量。 */
