@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.BuildConfig
+import com.mutx163.qingyu.MemoryStatsCollector
 import com.mutx163.qingyu.pages.settings.SemesterSettingsLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
@@ -384,10 +386,21 @@ fun SettingsTimetableHubHost(
         onDispose { subscription.close() }
     }
 
+    // 开发者工具整组的可见性（Dart `timetable_settings_screen.dart:1052-1070`）：
+    //   诊断构建（包名 .debug / .profile）⇒ 六行（含「内存状态」「实时活动夹具」）；
+    //   正式发布包 ⇒ 整组隐藏；其余（debug 包但非 dev flavor）⇒ 只留组件展示 / 调试叠层。
+    // 壳里原来这两处都用默认 false ⇒ 永远走「其余」分支，**内存状态与夹具入口在壳里从未出现过**，
+    // 而这两行正是诊断族的两个真实入口。Kotlin 侧判定是同步的，不必像 Dart 那样等 FutureBuilder。
+    val context = LocalContext.current
+    val diagnosticsBuild = MemoryStatsCollector.isDiagnosticsPackage(context)
+    val releaseBuild = !BuildConfig.DEBUG
     val state = SemesterSettingsLogic.stateOf(
         currentWeek = snapshot.currentWeek,
         semesterWeekCount = snapshot.settings.semesterWeekCount,
         startDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+    ).copy(
+        releaseBuild = releaseBuild,
+        diagnosticsBuild = diagnosticsBuild,
     )
 
     SettingsPageScreen(

@@ -2,6 +2,7 @@ package com.mutx163.qingyu
 
 import android.app.Application
 import android.content.Context
+import com.mutx163.qingyu.infra.AppLogStore
 import com.umeng.commonsdk.UMConfigure
 
 class UmengApplication : Application() {
@@ -15,6 +16,10 @@ class UmengApplication : Application() {
         WidgetThemeWatcher.initialize(this)
         // 调试版 / 性能版：启动内存会话采样（正式版 no-op）。
         MemoryStatsCollector.initializeIfAllowed(this)
+        // 应用日志写入层（诊断族的日志查看器、设置快照行都靠它落盘）。
+        // 与 Flutter 侧 `AppLogService` **同一个文件、同一个格式**：`filesDir/logs/app_runtime.log`，
+        // 所以在迁移期两边写的东西能互相读到；未初始化时 append 返回 false，不会崩、不会打断业务。
+        AppLogStore.initialize(this)
 
         BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
 
