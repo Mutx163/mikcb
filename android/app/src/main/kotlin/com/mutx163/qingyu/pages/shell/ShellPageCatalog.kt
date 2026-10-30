@@ -252,10 +252,18 @@ object ShellPageCatalog {
             code = "P3-G2",
             title = "导入 · 仓库适配",
             pages = listOf(
-                page("P3-G2", "schoolAdapters", "学校适配器列表", ShellPageDataKind.DEMO),
-                page("P3-G2", "adapterDetail", "适配器详情", ShellPageDataKind.DEMO),
+                // 2026-10-30 F08-8b：前两页从 DEMO 转 DIRECT —— 数据源换成真适配仓
+                // （`index/root_index.yaml` → `resources/<学校>/adapters.yaml`），
+                // 演示学校/适配器常量已从壳里删除，页面上不再有「示例学校」。
+                // 但 webLogin 保留 DEMO 标记与说明：登录地址是真的，
+                // 登录之后的脚本抓课表还没移植（属 8c），别当成已经能导课。
+                page("P3-G2", "schoolAdapters", "学校适配器列表", ShellPageDataKind.DIRECT),
+                page("P3-G2", "adapterDetail", "适配器详情", ShellPageDataKind.DIRECT),
                 page("P3-G2", "warehouseImport", "仓库课程导入", ShellPageDataKind.DIRECT),
-                page("P3-G2", "webLogin", "教务网页登录（占位）", ShellPageDataKind.DEMO),
+                page(
+                    "P3-G2", "webLogin", "教务网页登录", ShellPageDataKind.DEMO,
+                    note = "登录地址真（适配器 import_url）；登录后的抓课表未移植（F08-8c）",
+                ),
                 page("P3-G2", "customDebug", "自定义调试", ShellPageDataKind.DIRECT),
                 page("P3-G2", "aiImageImport", "AI 识图导入", ShellPageDataKind.DIRECT),
             ),

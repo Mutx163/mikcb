@@ -117,6 +117,13 @@ data class WarehouseAdapterEntry(
     val schoolCode: String = "",
     val parserType: String = "",
     val updated: String = "",
+    /**
+     * 适配器脚本的 SHA-256（`adapters.yaml` 的 `sha256` 键）。
+     *
+     * UI 不读它；留着是因为**脚本完整性校验**是导入执行链路的事（脚本从仓库拉下来要验签），
+     * 而那一层还没移植到 Kotlin。先把值解析出来，别让下一个接手的会话再去改数据类。
+     */
+    val sha256: String = "",
 ) {
     val adapterName: String get() = name.ifEmpty { id }
 }

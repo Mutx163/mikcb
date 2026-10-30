@@ -30,6 +30,7 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -57,6 +58,15 @@ fun WarehouseSchoolAdaptersPage(
     onRecordAdapter: (WarehouseAdapterEntry) -> Unit = {},
     onViewAdapterDetail: (WarehouseAdapterEntry) -> Unit = {},
     onQuickImportAdapter: (WarehouseAdapterEntry) -> Unit = {},
+    /**
+     * 这一屏当前处于什么相位（8b 接真数据源时新增）。
+     *
+     * 默认 [WarehouseListPhase.Idle]：还没接数据层的调用点传空列表，行为与改动前一致
+     * （空列表 = 「暂时无法读取适配器列表」）。宿主接了真仓库后必须传 Loading / Failed，
+     * 否则「还在请求」和「请求失败」都会显示成同一句空态，用户不知道该不该等。
+     */
+    phase: WarehouseListPhase = WarehouseListPhase.Idle,
+    onRetry: () -> Unit = onRefresh,
 ) {
     // Dart warehouse_school_adapters_screen.dart 的 HyperosSubpage 标题是学校名 Text ⇒ 可折叠大标题。
     // 骨架 / 顶栏 / 返回键走共享套件（R1），页面级滚动走 QingyuPageList（R2）。
@@ -129,12 +139,29 @@ fun WarehouseSchoolAdaptersPage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
+                            if (phase == WarehouseListPhase.Loading) {
+                                // 请求还在路上：转圈，不写「读不到」——那会把「等一下」说成「坏了」。
+                                CircularProgressIndicator()
+                            } else {
+                                Text(
+                                    text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                                if (phase == WarehouseListPhase.Failed) {
+                                    // 真失败才给重试；Idle 是「调用方没接数据层」，给重试按钮没有意义。
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = onRetry,
+                                        content = { Text(text = WarehouseStrings.reloadAction.zh) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                            contentColor = MiuixTheme.colorScheme.primary,
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
                 }

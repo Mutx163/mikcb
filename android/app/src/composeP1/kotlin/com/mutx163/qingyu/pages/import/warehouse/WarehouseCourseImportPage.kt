@@ -33,6 +33,7 @@ import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -65,6 +66,14 @@ fun WarehouseCourseImportPage(
     onFeedbackClick: () -> Unit = {},
     onCustomDebugClick: () -> Unit = {},
     onExecutionLogClick: () -> Unit = {},
+    /**
+     * 这一屏当前处于什么相位（8b 接真数据源时新增）。
+     *
+     * 默认 [WarehouseListPhase.Idle]：没接数据层的调用点传空列表 ⇒ 空态文案与改动前一致。
+     * 宿主接了真仓库后必须传 Loading / Failed，否则「正在拉学校清单」会被说成「暂无可用学校」。
+     */
+    phase: WarehouseListPhase = WarehouseListPhase.Idle,
+    onRetry: () -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -194,7 +203,7 @@ fun WarehouseCourseImportPage(
 
             // 搜索结果或按字母分组的学校列表
             if (sections.isEmpty()) {
-                // 空状态
+                // 空状态：三种相位说三句不同的话（拉取中 / 拉取失败 / 真没有）
                 item(key = "empty") {
                     Box(
                         modifier = Modifier
@@ -203,28 +212,48 @@ fun WarehouseCourseImportPage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = if (isSearching) WarehouseStrings.noMatchingSchools.zh else WarehouseStrings.noAvailableSchools.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                            if (isSearching) {
-                                Spacer(modifier = Modifier.height(6.dp))
+                            if (phase == WarehouseListPhase.Loading) {
+                                CircularProgressIndicator()
+                            } else {
                                 Text(
-                                    text = WarehouseStrings.searchSchoolSuggestion.zh,
-                                    style = MiuixTheme.textStyles.footnote1,
+                                    text = when {
+                                        phase == WarehouseListPhase.Failed ->
+                                            WarehouseStrings.warehouseRootLoadFailedTitle.zh
+
+                                        isSearching -> WarehouseStrings.noMatchingSchools.zh
+                                        else -> WarehouseStrings.noAvailableSchools.zh
+                                    },
+                                    style = MiuixTheme.textStyles.body1,
+                                    fontWeight = FontWeight.Medium,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = onFeedbackClick,
-                                    content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.primary,
-                                    ),
-                                )
+                                if (phase == WarehouseListPhase.Failed) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = onRetry,
+                                        content = { Text(text = WarehouseStrings.reloadAction.zh) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                            contentColor = MiuixTheme.colorScheme.primary,
+                                        ),
+                                    )
+                                } else if (isSearching) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = WarehouseStrings.searchSchoolSuggestion.zh,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = onFeedbackClick,
+                                        content = { Text(text = WarehouseStrings.warehouseFeedbackMissingSchoolTitle.zh) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            color = MiuixTheme.colorScheme.surfaceVariant,
+                                            contentColor = MiuixTheme.colorScheme.primary,
+                                        ),
+                                    )
+                                }
                             }
                         }
                     }
