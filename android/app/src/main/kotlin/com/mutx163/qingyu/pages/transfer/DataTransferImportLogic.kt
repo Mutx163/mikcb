@@ -4,6 +4,7 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.DartFormatException
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
@@ -12,19 +13,25 @@ import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferChannel
 import com.mutx163.qingyu.share.TransferScope
-import com.mutx163.qingyu.share.carriesSettings
 import com.mutx163.qingyu.sync.validateTransferPackageJson
 
 /**
- * 数据备份与迁移页的**导入侧**模型层：解析包 → 差分摘要 → 预览弹窗正文。
+ * 数据备份与迁移页的**导入侧**模型层：解析包 → 预览弹窗正文。
  *
- * ## 三段各自的判据源
+ * ## 两段各自的判据源
  *
  * | 本文件 | Dart 出处 |
  * | --- | --- |
  * | [DataTransferImportLogic.parse] | `TransferPackage.decode` / `fromJson`（`lib/services/transfer_package.dart`），外加 `validateJson` 那道前置门 |
- * | [DataTransferImportLogic.diffSummaries] | `TransferDiffService.compare`（`lib/services/transfer_diff_service.dart:150-203`） |
  * | [DataTransferImportLogic.previewMessage] | `showTransferPreviewDialog`（`lib/screens/transfer_preview_dialog.dart:18-34`） |
+ *
+ * ## 差分不在这里了（2026-10-30 · F16）
+ *
+ * 差异计算搬到了 [DataTransferDiffLogic]：它比的是**仓储真内容 vs 入包模型**
+ * （按 scope 选基线、按 (档案 id, 实体 id) 配对、removed 按 mode + scope 判据）。
+ * 原来那个「比对两份包文本」的 `diffSummaries` 连同它的三个已知差异（不做模型归一化 /
+ * removed 恒统计 / 基线固定按 `current_timetable` 打包）一并在同一次改动里删掉——
+ * 同一个数字留两份实现，早晚有一份被误用。
  *
  * ## 为什么 parse 先校验再解析
  *
@@ -44,18 +51,7 @@ import com.mutx163.qingyu.sync.validateTransferPackageJson
  *
  * ## 与 Dart 的已知差异（逐条一行，都有理由）
  *
- * 1. `diffSummaries` 比对的是**两份包文本**，Dart 比对的是「真实仓储内容 vs 入包内容」，
- *    且 `compare()` 只在 `mode == overwrite && !scope.overwriteUsesMergeSemantics`
- *    时才统计 removed。本函数的签名里没有 mode，因此 **removed 恒定统计**（页面要么
- *    把 overwrite 那侧的 removed 直接展示、要么由宿主自己归零）。这是近似，不是等价。
- * 2. Dart 的实体比对先经模型 `fromJson` 再比 `toJson()`（模型归一化后的形状）；
- *    这里比的是两份 JSON 里各自的原始实体 Map，用「递归键排序后的 JSON」做相等判据
- *    （Dart `_sameJson` 用的就是这套 canonicalize）。对**本应用自己产的包**两者等价；
- *    对手写/第三方包，若同一事实用不同键序或多余键表达，本实现判「updated」。
- * 3. Dart 的 `settings` 行只在 `incoming.scope.carriesSettings && 两侧 settings 非空`
- *    时才进 `summaries`，未进时由 `allSummaries` 的 `orElse` 补出 `+0 / ~0 / -0`。
- *    本实现直接按同一判据算 0/0/0 或 0/1/0，所以**行数恒定 8 行**（预览弹窗要求无条件全输出）。
- * 4. `parse` 的 `Invalid` 码在模型层抛错时未必与 Dart 逐字相同：Dart 在 `_parseList`
+ * 1. `parse` 的 `Invalid` 码在模型层抛错时未必与 Dart 逐字相同：Dart 在 `_parseList`
  *    里把模型 parse 异常包成 `transfer_${kind}_invalid`，本实现按校验器已过的前提
  *    直接调模型 `fromJson`，异常消息是形状码就原样透出，否则落到
  *    `transfer_package_parse_failed`（本仓新增码，界面上会落到「发生未知错误」）。
@@ -95,6 +91,14 @@ data class TransferImportPlan(
     val exams: List<Exam>,
     val scheduleItems: List<ScheduleItem>,
     val scheduleDateRules: List<ScheduleDateRule>,
+    /**
+     * 地点作息分组（顶层 key `locationTimeGroups`）。
+     *
+     * 2026-10-30 修：导出侧原先恒写空列表，导入侧也不解析 ⇒ 这条通道**双向**丢数据。
+     * 现在两侧都通：导出按 `snapshot.locationTimeGroups` 写，这里按 id 解析，
+     * 宿主再经 `repository.updateLocationTimeGroups` 落盘。
+     */
+    val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
 )
 
 sealed interface TransferImportParseResult {
@@ -108,22 +112,6 @@ sealed interface TransferImportParseResult {
 }
 
 object DataTransferImportLogic {
-
-    // ── 差分的八个类别（顺序 = Dart `TransferDiff.allKinds`，逐字冻结） ──
-
-    /** `(kind.value, 包里对应的 JSON 键)`，顺序即预览弹窗的行序。 */
-    private val DIFF_KINDS: List<Pair<String, String>> = listOf(
-        "courses" to "courses",
-        "exams" to "exams",
-        "time_rules" to "scheduleDateRules",
-        "locations" to "locationTimeGroups",
-        "tasks" to "tasks",
-        "schedule_items" to "scheduleItems",
-        "time_schemes" to "timeSchemes",
-    )
-
-    /** 这四类实体在包里有两种摆法：顶层一份 + 每张档案内部一份（Dart `_flatten`）。 */
-    private val PROFILE_NESTED_KEYS = setOf("courses", "exams", "tasks", "scheduleItems")
 
     /**
      * 解析一个包文本。
@@ -156,6 +144,12 @@ object DataTransferImportLogic {
                 mapList("time_scheme", root["timeSchemes"]) { TimeScheme.fromJson(it) }
             val scheduleDateRules =
                 mapList("time_rule", root["scheduleDateRules"]) { ScheduleDateRule.fromJson(it) }
+            // 地点作息分组：与 Dart `FullAppDataBackup.locationTimeGroups` 同键名。
+            // 2026-10-30 修：不解析 = 导入侧静默丢弃（审核 P0：导出导入双向全丢）。
+            val locationTimeGroups =
+                mapList("location_time_group", root["locationTimeGroups"]) {
+                    LocationTimeGroup.fromJson(it)
+                }
             val settings = asJsonMap(root["settings"])?.let {
                 TimetableSettings.fromJson(it)
             }
@@ -171,6 +165,7 @@ object DataTransferImportLogic {
                 exams = exams,
                 scheduleItems = scheduleItems,
                 scheduleDateRules = scheduleDateRules,
+                locationTimeGroups = locationTimeGroups,
             )
             val info = TransferImportPackageInfo(
                 scope = scope,
@@ -186,34 +181,6 @@ object DataTransferImportLogic {
         } catch (error: Exception) {
             TransferImportParseResult.Invalid(codeOf(error))
         }
-    }
-
-    /**
-     * 8 类差分（顺序 = `courses / exams / time_rules / locations / tasks /
-     * schedule_items / time_schemes / settings`），按 id 匹配。
-     *
-     * 判据：
-     * - incoming 有、current 无 → added；
-     * - 两侧都有但规范化 JSON 不同 → updated；
-     * - current 有、incoming 无 → removed；
-     * - `settings` 没有 id：两侧相等 → `0/0/0`，不等 → `0/1/0`（且只在 incoming 的
-     *   scope 会携带设置时才算，判据同 Dart）。
-     *
-     * 行数**恒定 8 行**（含 `+0 / ~0 / -0`），因为预览弹窗的契约是「全输出」——
-     * 少一行用户就会以为那一类数据「不会被动」。
-     *
-     * ⚠️ 与 Dart 的差异见文件头「已知差异 1/2」：这里比的是两份包文本，
-     * 且 removed 无条件统计（Dart 只在覆盖式导入且 scope 不是 merge 语义时统计）。
-     */
-    fun diffSummaries(currentJson: String, incomingJson: String): List<TransferDiffSummary> {
-        val current = decodeRoot(currentJson) ?: emptyMap()
-        val incoming = decodeRoot(incomingJson) ?: emptyMap()
-        val summaries = ArrayList<TransferDiffSummary>(DIFF_KINDS.size + 1)
-        for ((kind, jsonKey) in DIFF_KINDS) {
-            summaries.add(compareEntities(kind, current, incoming, jsonKey))
-        }
-        summaries.add(settingsSummary(current, incoming))
-        return summaries
     }
 
     /**
@@ -258,132 +225,7 @@ object DataTransferImportLogic {
         return blocks.joinToString("\n\n")
     }
 
-    // ---------- 内部：差分的实体抽取与比对 ----------
-
-    /** 一条参与比对的实体：出现在哪张档案里（null = 包级）、id 是什么、规范化 JSON 长什么样。 */
-    private data class DiffEntity(
-        val profileId: String?,
-        val id: String,
-        val normalizedJson: String,
-    ) {
-        /** Dart `_TransferEntity.key`：`jsonEncode([profileId, id])` 的等价物。 */
-        val key: String get() = "${profileId ?: ""}\u0000$id"
-    }
-
-    private fun compareEntities(
-        kind: String,
-        current: Map<String, Any?>,
-        incoming: Map<String, Any?>,
-        jsonKey: String,
-    ): TransferDiffSummary {
-        val currentEntities = entitiesOf(current, jsonKey)
-        val incomingEntities = entitiesOf(incoming, jsonKey)
-        val currentById = currentEntities.associateBy { it.key }
-        val incomingById = incomingEntities.associateBy { it.key }
-        var added = 0
-        var updated = 0
-        var removed = 0
-        for (entity in incomingEntities) {
-            val before = currentById[entity.key]
-            if (before == null) {
-                added++
-            } else if (before.normalizedJson != entity.normalizedJson) {
-                updated++
-            }
-        }
-        for (entity in currentEntities) {
-            if (!incomingById.containsKey(entity.key)) removed++
-        }
-        return TransferDiffSummary(kind = kind, added = added, updated = updated, removed = removed)
-    }
-
-    private fun entitiesOf(root: Map<String, Any?>, jsonKey: String): List<DiffEntity> {
-        val out = mutableListOf<DiffEntity>()
-        if (jsonKey in PROFILE_NESTED_KEYS) {
-            val profiles = root["profiles"] as? List<*> ?: emptyList<Any?>()
-            for (profile in profiles) {
-                if (profile !is Map<*, *>) continue
-                val profileId = profile["id"]?.toString()
-                val items = profile[jsonKey] as? List<*> ?: emptyList<Any?>()
-                for (item in items) {
-                    if (item !is Map<*, *>) continue
-                    out += DiffEntity(profileId, idOf(item), canonicalJson(item))
-                }
-            }
-        }
-        val topLevel = root[jsonKey] as? List<*> ?: emptyList<Any?>()
-        for (item in topLevel) {
-            if (item !is Map<*, *>) continue
-            out += DiffEntity(null, idOf(item), canonicalJson(item))
-        }
-        return out
-    }
-
-    /**
-     * `settings` 那一行。Dart `TransferDiffService.compare` 的判据：
-     * `incoming.scope.carriesSettings` 且两侧都能取到 settings 才比，否则 0/0/0。
-     *
-     * 取 settings 的顺序也照 Dart `_settingsFor`：先看顶层，再退「只有一张档案」时
-     * 那张档案里的 settings。
-     */
-    private fun settingsSummary(
-        current: Map<String, Any?>,
-        incoming: Map<String, Any?>,
-    ): TransferDiffSummary {
-        val incomingScope = (incoming["scope"] as? String)?.let { raw ->
-            try {
-                TransferScope.fromValue(raw)
-            } catch (_: Exception) {
-                null
-            }
-        }
-        val currentSettings = settingsOf(current)
-        val incomingSettings = settingsOf(incoming)
-        val differs = incomingScope?.carriesSettings == true &&
-            currentSettings != null &&
-            incomingSettings != null &&
-            canonicalJson(currentSettings) != canonicalJson(incomingSettings)
-        return TransferDiffSummary(
-            kind = "settings",
-            added = 0,
-            updated = if (differs) 1 else 0,
-            removed = 0,
-        )
-    }
-
-    private fun settingsOf(root: Map<String, Any?>): Map<*, *>? {
-        (root["settings"] as? Map<*, *>)?.let { return it }
-        val profiles = root["profiles"] as? List<*> ?: return null
-        if (profiles.size != 1) return null
-        return (profiles.first() as? Map<*, *>)?.get("settings") as? Map<*, *>
-    }
-
-    private fun idOf(item: Map<*, *>): String = when (val raw = item["id"]) {
-        null -> ""
-        is String -> raw.trim()
-        else -> raw.toString().trim()
-    }
-
-    // ---------- 内部：规范化 JSON 与解析辅助 ----------
-
-    /**
-     * Dart `_canonicalize`：Map 按键名排序、List 逐项递归、其余原样。
-     * 排序后再 `MiniJson.encode`，键序不同但内容相同的两份实体就判相等。
-     */
-    private fun canonical(value: Any?): Any? = when (value) {
-        is Map<*, *> -> {
-            val sorted = value.entries
-                .map { it.key.toString() to canonical(it.value) }
-                .sortedBy { it.first }
-            val out = LinkedHashMap<String, Any?>()
-            for ((key, item) in sorted) out[key] = item
-            out
-        }
-        is List<*> -> value.map { canonical(it) }
-        else -> value
-    }
-
-    private fun canonicalJson(map: Map<*, *>): String = MiniJson.encode(canonical(map))
+    // ---------- 内部：解析辅助 ----------
 
     private fun decodeRoot(content: String): Map<String, Any?>? = asJsonMap(
         try {

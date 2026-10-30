@@ -9,10 +9,13 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * 导入侧模型层单测：解析（含失败码）/ 8 类差分 / 预览弹窗正文。
+ * 导入侧模型层单测：解析（含失败码）/ 预览弹窗正文。
+ *
+ * 差异计算已搬到 `DataTransferDiffLogic`（2026-10-30 · F16），它的用例在
+ * `DataTransferDiffLogicTest`；这里只钉「包怎么解析」与「预览正文长什么样」。
  *
  * 期望值全部手写：包体是手敲的 JSON（不是从 [DataTransferPackageLogic] 打出来的），
- * 差分是手数的增改删，正文是手拼的换行。任何一处被实现「顺手改好看了」，这里就红。
+ * 正文是手拼的换行。任何一处被实现「顺手改好看了」，这里就红。
  */
 class DataTransferImportLogicTest {
 
@@ -145,89 +148,6 @@ class DataTransferImportLogicTest {
             """"teacher":"张老师",""",
         )
         assertEquals("transfer_course_location_required", invalidCode(DataTransferImportLogic.parse(broken)))
-    }
-
-    // ---------- 差分 ----------
-
-    /**
-     * 手数的增删改：
-     * - 课程：c1 改名（updated）、新增 c3（added）、丢掉 c2（removed）→ +1/1/1
-     * - 作业：新增 t2 → +1/0/0
-     * - 其它四类（考试 / 日期规则 / 位置分组 / 日程 / 作息）没动 → 0/0/0
-     * - 设置：incoming 是 `current_timetable`（carriesSettings）且两侧都有、内容不同 → 0/1/0
-     */
-    @Test
-    fun `八类差分的顺序与增改删计数按 Dart 口径`() {
-        val current = """{"scope":"current_timetable",""" +
-            """"settings":{"semesterWeekCount":16},""" +
-            """"courses":[{"id":"c1","name":"甲"},{"id":"c2","name":"乙"}],""" +
-            """"tasks":[{"id":"t1","title":"作业"}],""" +
-            """"scheduleItems":[],"exams":[],"scheduleDateRules":[],"timeSchemes":[],""" +
-            """"locationTimeGroups":[],"profiles":[]}"""
-        val incoming = """{"scope":"current_timetable",""" +
-            """"settings":{"semesterWeekCount":18},""" +
-            """"courses":[{"id":"c1","name":"甲改"},{"id":"c3","name":"丙"}],""" +
-            """"tasks":[{"id":"t1","title":"作业"},{"id":"t2","title":"新作业"}],""" +
-            """"scheduleItems":[],"exams":[],"scheduleDateRules":[],"timeSchemes":[],""" +
-            """"locationTimeGroups":[],"profiles":[]}"""
-
-        val summaries = DataTransferImportLogic.diffSummaries(current, incoming)
-        assertEquals(
-            listOf(
-                "courses", "exams", "time_rules", "locations",
-                "tasks", "schedule_items", "time_schemes", "settings",
-            ),
-            summaries.map { it.kind },
-        )
-        assertEquals(
-            listOf(
-                Triple(1, 1, 1), // courses
-                Triple(0, 0, 0), // exams
-                Triple(0, 0, 0), // time_rules
-                Triple(0, 0, 0), // locations
-                Triple(1, 0, 0), // tasks
-                Triple(0, 0, 0), // schedule_items
-                Triple(0, 0, 0), // time_schemes
-                Triple(0, 1, 0), // settings
-            ),
-            summaries.map { Triple(it.added, it.updated, it.removed) },
-        )
-    }
-
-    @Test
-    fun `同一份包自比是八个零行`() {
-        val summaries = DataTransferImportLogic.diffSummaries(singleProfilePackage, singleProfilePackage)
-        assertEquals(8, summaries.size)
-        assertTrue(
-            "自比必须全零，实际 $summaries",
-            summaries.all { it.added == 0 && it.updated == 0 && it.removed == 0 },
-        )
-    }
-
-    @Test
-    fun `键序不同但内容相同的实体不算改动`() {
-        val current = """{"scope":"selected_courses","courses":[{"id":"c1","name":"甲",""" +
-            """"teacher":"张"}],"profiles":[]}"""
-        val incoming = """{"scope":"selected_courses","courses":[{"teacher":"张","name":"甲",""" +
-            """"id":"c1"}],"profiles":[]}"""
-        val summaries = DataTransferImportLogic.diffSummaries(current, incoming)
-        val courses = summaries.first { it.kind == "courses" }
-        assertEquals(0, courses.added)
-        assertEquals(0, courses.updated)
-        assertEquals(0, courses.removed)
-    }
-
-    /**
-     * 局部范围的包不带设置：即使 incoming 顶部有 `settings` 字段，
-     * `scope=selected_courses` 不 carriesSettings ⇒ 设置行恒 `0/0/0`（Dart 同判据）。
-     */
-    @Test
-    fun `局部范围的包不算设置变更`() {
-        val current = """{"scope":"selected_courses","settings":{"semesterWeekCount":16}}"""
-        val incoming = """{"scope":"selected_courses","settings":{"semesterWeekCount":18}}"""
-        val settings = DataTransferImportLogic.diffSummaries(current, incoming)
-            .first { it.kind == "settings" }
-        assertEquals(Triple(0, 0, 0), Triple(settings.added, settings.updated, settings.removed))
     }
 
     // ---------- 预览正文 ----------

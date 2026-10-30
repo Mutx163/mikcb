@@ -27,6 +27,7 @@ import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.platform.AndroidTransferDocumentAdapter
 import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
 import com.mutx163.qingyu.share.TransferApplyMode
@@ -119,21 +120,29 @@ fun DataTransferHost(
                 showToast(TransferServiceMessages.localize(parsed.code))
 
             is TransferImportParseResult.Valid -> {
-                // 预览的 diff 基线 = 当前课表按同 channel 打出来的包（Dart 也是现采 current）。
-                val currentJson = (
-                    DataTransferPackageLogic.build(
-                        snapshot = snapshot,
-                        request = TransferPackageRequest(
-                            scope = TransferScope.CURRENT_TIMETABLE,
-                            channel = channel,
-                            packageId = TransferEnvelope.newPackageId(),
-                            now = LocalDateTime.now(),
-                        ),
-                    ) as? TransferPackageResult.Success
-                    )?.json.orEmpty()
-                val overwrite = DataTransferImportLogic.diffSummaries(currentJson, text)
-                // 合并模式不删：把 removed 归零，正是「合并预览」与「覆盖预览」的核心差别。
-                val merge = overwrite.map { it.copy(removed = 0) }
+                // 差异基线 = **仓储真内容**（活动档案的课程/作业/考试/日程/设置/当前周），
+                // 不是「按 CURRENT_TIMETABLE 现打一份包再比文本」：后者对全量包会把档案内
+                // 实体全判新增、本机顶层实体全判删除（见 DataTransferDiffLogic 类注释）。
+                val diffCurrent = TransferDiffCurrent.ofSnapshot(
+                    snapshot = snapshot,
+                    tasks = repository.tasks,
+                    exams = repository.exams,
+                )
+                // 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode）：不把这条
+                // 点了必然失败的按钮摆给用户，正文里也就不给 merge 那一段。
+                val canMerge = !DataTransferApplyLogic.isFullBackupPlan(parsed.plan)
+                val overwrite = DataTransferDiffLogic
+                    .compare(diffCurrent, parsed.plan, parsed.info.scope, TransferApplyMode.OVERWRITE)
+                    .toSummaries()
+                // 合并那一份**单独算**（Dart `data_transfer_screen.dart:599-605` 两次 preview）：
+                // 合并不报删除、覆盖只在非合并语义的 scope 上报删除，不是「把删除清零」。
+                val merge = if (canMerge) {
+                    DataTransferDiffLogic
+                        .compare(diffCurrent, parsed.plan, parsed.info.scope, TransferApplyMode.MERGE)
+                        .toSummaries()
+                } else {
+                    null
+                }
                 pendingImport = PendingImport(info = parsed.info, plan = parsed.plan)
                 previewContent = TransferPreviewContent(
                     title = TransferStrings.selectImportModeTitle.zh,
@@ -263,6 +272,9 @@ fun DataTransferHost(
         // 预览弹窗（Dart `showTransferPreviewDialog`）：选完模式才落盘。
         TransferPreviewDialog(
             content = previewContent,
+            // 全量包不支持合并（见 DataTransferApplyLogic.rejectionCode）：不把这条
+            // 点了必然失败的按钮摆给用户。旧版摆了，点了弹「发生未知错误」。
+            canMerge = pendingImport?.let { !DataTransferApplyLogic.isFullBackupPlan(it.plan) } ?: true,
             onChoose = { mode ->
                 val pending = pendingImport
                 previewContent = null
@@ -398,10 +410,14 @@ private fun prepareQrPayload(
  *
  * 写入范围**逐条对应**撤销快照抓的范围，撤销才可能完整：
  * - 全量包（覆盖）→ `replaceAllProfiles`；
- * - 单课表包（覆盖 / 合并）→ `replaceActiveProfileContent` + 设置 + 当前周。
+ * - 单课表包（覆盖 / 合并）→ `replaceActiveProfileContent` + 设置 + 当前周；
+ * - `time_template` 包 → 只补时间模板，内容块整块跳过
+ *   （[DataTransferApplyLogic.TransferApplyWrites.writesActiveProfileContent]）。
  *
- * `tasks` / `exams` 一律**不写回**（保留当前档案里的）：这是台账 §9.4 ③ 的已知缺口，
- * 与 `LanEditRepositoryHost.importProfileBackupJson` 的口径一致（审核文档 §六·5）。
+ * 「覆盖」不等于「整份替换」：4 个局部 scope（`selected_courses` / `selected_course` /
+ * `week_timetable` / `time_template`）在 Dart 里只更新包边界内的实体，边界外保留
+ * （`unified_transfer_service.dart:666-676`），判据集中在
+ * [DataTransferApplyLogic.planWrites]，宿主不再自己判断。
  */
 private fun applyImport(
     repository: TimetableRepository,
@@ -415,6 +431,10 @@ private fun applyImport(
             kind = TransferUndoScope.FULL_PROFILES,
             profiles = before.profiles,
             activeProfileId = before.activeProfileId,
+            settings = before.settings,
+            currentWeek = before.currentWeek,
+            scheduleDateRules = before.scheduleDateRules,
+            locationTimeGroups = before.locationTimeGroups,
         )
 
         TransferUndoScope.ACTIVE_PROFILE_CONTENT -> TransferUndoSnapshot(
@@ -422,26 +442,59 @@ private fun applyImport(
             courses = before.courses,
             tasks = repository.tasks,
             exams = repository.exams,
+            scheduleItems = before.scheduleItems,
             settings = before.settings,
             currentWeek = before.currentWeek,
+            scheduleDateRules = before.scheduleDateRules,
+            locationTimeGroups = before.locationTimeGroups,
         )
     }
     return runCatching {
-        if (DataTransferApplyLogic.isFullBackupPlan(plan)) {
-            repository.replaceAllProfiles(plan.profiles, plan.activeProfileId)
-        } else {
-            val courses = if (mode == TransferApplyMode.MERGE) {
-                DataTransferApplyLogic.mergeCourses(before.courses, plan.courses)
-            } else {
-                plan.courses
-            }
-            repository.replaceActiveProfileContent(
-                courses = courses,
+        // ① 先补时间模板表：包里带了模板而本机没有（跨设备导入的常态）时，
+        //    这里新建并拿到「包 id → 本机 id」映射，下面的写入按映射改写引用。
+        val schemeIdMap = reconcileTimeSchemes(repository, plan.timeSchemes)
+        // ② 「要写哪几块」全部由模型层一次算好（2026-10-29 二轮修复：旧版在这里
+        //    手写写入范围，漏了作业 / 考试 / 日程条目 / 时间模板 / 日程规则）。
+        val writes = DataTransferApplyLogic.planWrites(
+            plan = plan,
+            mode = mode,
+            current = DataTransferApplyLogic.TransferCurrentContent(
+                courses = before.courses,
                 tasks = repository.tasks,
                 exams = repository.exams,
+                scheduleItems = before.scheduleItems,
+            ),
+            // scope 决定「覆盖」的边界：局部 scope 只更新包内实体（Dart 同判据），
+            // time_template 连内容块都不碰——写作用域与 [writes] 一一对应。
+            scope = pending.info.scope,
+            schemeIdMap = schemeIdMap,
+        )
+        if (writes.isFullBackup) {
+            repository.replaceAllProfiles(writes.profiles, writes.activeProfileId)
+            // 全量包里的全局设置（活动作息 / 学期周数 / 开学日）单独写：档案表不带它。
+            writes.settings?.let(repository::updateSettings)
+        } else if (writes.writesActiveProfileContent) {
+            repository.replaceActiveProfileContent(
+                courses = writes.courses,
+                tasks = writes.tasks,
+                exams = writes.exams,
             )
-            plan.settings?.let(repository::updateSettings)
-            plan.currentWeek?.let(repository::setCurrentWeek)
+            if (writes.scheduleItems.isNotEmpty()) {
+                repository.scheduleItems = writes.scheduleItems
+            }
+            writes.settings?.let(repository::updateSettings)
+            writes.currentWeek?.let(repository::setCurrentWeek)
+            // 日程条目 / 设置 / 当前周一次落盘（上面的 setter 只改内存）。
+            repository.persistActiveProfileState()
+        }
+        // ③ 日程规则：整份替换（包没带就保持本机不动）。
+        if (writes.scheduleDateRules.isNotEmpty()) {
+            repository.updateScheduleDateRules(writes.scheduleDateRules)
+        }
+        // ③' 地点作息分组：同一约定——包没带就保持本机不动。
+        // 2026-10-30 修（审核 P0）：这块原先导出恒空、导入不认，等于双向全丢。
+        if (writes.locationTimeGroups.isNotEmpty()) {
+            repository.updateLocationTimeGroups(writes.locationTimeGroups)
         }
         ApplyOutcome.Applied(
             token = TransferUndoToken(
@@ -456,13 +509,48 @@ private fun applyImport(
     }
 }
 
+/**
+ * 把包里带的时间模板补进本机模板表，返回「包 id → 本机 id」映射。
+ *
+ * 三条判据（对齐 Dart `_mergeTimeSchemes` 的口径）：
+ * 1. **id 已存在**：名称 / 节次表有差异才更新，id 不变 ⇒ 引用不用改；
+ * 2. **id 不存在**：新建一套，拿到新 id ⇒ 引用要按映射改写；
+ * 3. 更新被仓储拒（节次表非法、或收窄到低于已用节次）：保留本机那套、不动映射
+ *    ——宁可变回默认作息，也不要往模板表里塞一套坏数据。
+ *
+ * 只调用仓储既有方法（`updateTimeScheme` / `createTimeScheme`），不碰落盘细节；
+ * 单套失败不抛（模板是配角，不该让整次导入失败）。
+ */
+private fun reconcileTimeSchemes(
+    repository: TimetableRepository,
+    incoming: List<TimeScheme>,
+): Map<String, String> {
+    if (incoming.isEmpty()) return emptyMap()
+    val existingById = repository.snapshot.timeSchemes.associateBy { it.id }
+    val mapping = LinkedHashMap<String, String>(incoming.size)
+    for (scheme in incoming) {
+        val local = existingById[scheme.id]
+        if (local == null) {
+            val created = runCatching {
+                repository.createTimeScheme(scheme.name, scheme.sections)
+            }.getOrNull()
+            if (created != null) mapping[scheme.id] = created.id
+        } else if (local.name != scheme.name || local.sections != scheme.sections) {
+            runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+        }
+    }
+    return mapping
+}
+
 /** 撤销一份导入：按快照种类整份写回（Dart `undoToken`）。 */
 private fun undoImport(repository: TimetableRepository, token: TransferUndoToken): Boolean =
     runCatching {
         val snapshot = token.snapshot
         when (snapshot.kind) {
-            TransferUndoScope.FULL_PROFILES ->
+            TransferUndoScope.FULL_PROFILES -> {
                 repository.replaceAllProfiles(snapshot.profiles, snapshot.activeProfileId)
+                snapshot.settings?.let(repository::updateSettings)
+            }
 
             TransferUndoScope.ACTIVE_PROFILE_CONTENT -> {
                 repository.replaceActiveProfileContent(
@@ -470,10 +558,18 @@ private fun undoImport(repository: TimetableRepository, token: TransferUndoToken
                     tasks = snapshot.tasks,
                     exams = snapshot.exams,
                 )
+                if (snapshot.scheduleItems.isNotEmpty()) {
+                    repository.scheduleItems = snapshot.scheduleItems
+                }
                 snapshot.settings?.let(repository::updateSettings)
                 repository.setCurrentWeek(snapshot.currentWeek)
+                repository.persistActiveProfileState()
             }
         }
+        // 本次导入动过日程规则才还原（null = 没动过，别把本机规则抹了）。
+        snapshot.scheduleDateRules?.let(repository::updateScheduleDateRules)
+        // 地点作息分组同理：导入会写它，撤销就得能一起回到原样。
+        snapshot.locationTimeGroups?.let(repository::updateLocationTimeGroups)
     }.isSuccess
 
 /** 当前作息的有效节数（`TimetableSettings` 没有 `sectionCount`，取活动模板，再回落设置里的节次表）。 */
@@ -540,6 +636,9 @@ private data class TransferToastState(
  *
  * 用 Compose 浮层而不是 `android.widget.Toast`：系统 Toast 挂不了动作按钮，
  * 而 Dart 的「撤销」正挂在提示尾部；且 Dart 那个提示本来就是自绘胶囊，不是系统 Toast。
+ *
+ * 样式本体在共享件 [AppToastCapsule]（情侣课表页也用同一颗，见
+ * `CoupleTimetableSettingsHost`），这里只把「可能为 null 的一次性状态」翻成它。
  */
 @Composable
 private fun TransferToastCapsule(
@@ -548,39 +647,13 @@ private fun TransferToastCapsule(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (state == null) return
-    LaunchedEffect(state) {
-        delay(TOAST_DURATION_MILLIS)
-        onDismiss()
-    }
-    QingyuCard(
-        modifier = modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        insideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 12.dp, bottom = 12.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = state.message,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.primaryText(dark)),
-                modifier = Modifier.weight(1f),
-            )
-            if (state.actionLabel != null) {
-                TextButton(
-                    text = state.actionLabel,
-                    onClick = {
-                        onDismiss()
-                        state.onAction?.invoke()
-                    },
-                )
-            }
-        }
-    }
+    val current = state ?: return
+    AppToastCapsule(
+        message = current.message,
+        dark = dark,
+        modifier = modifier,
+        actionLabel = current.actionLabel,
+        onAction = current.onAction,
+        onDismiss = onDismiss,
+    )
 }
-
-/** Dart `HyperosMiuixSnackbar.durationShortMs` = 2000（`app_toast.dart:6-8`）。 */
-private const val TOAST_DURATION_MILLIS = 2000L

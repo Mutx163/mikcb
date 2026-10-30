@@ -239,6 +239,8 @@ class DataTransferModelTest {
 
     // ── 预览弹窗 ──
 
+    // diffSummaryLine / diffSummary 是**在用的**：DataTransferImportLogic.previewMessage
+    // 拼预览正文靠它们（Dart 正文里 merge:/overwrite: 两段各是一串这样的行）。
     @Test
     fun `单个实体的差异摘要按 新增 更新 删除 三段拼`() {
         assertEquals(
@@ -261,41 +263,6 @@ class DataTransferModelTest {
     }
 
     @Test
-    fun `预览弹窗正文包含通道 scope 与传输号`() {
-        val content = DataTransferLogic.previewContent(
-            channel = "file",
-            scope = "current_timetable",
-            transferId = "transfer-1-2",
-            overwrite = listOf(TransferDiffSummary("course", 2, 1, 0)),
-        )
-        assertEquals("选择导入方式", content.title)
-        assertEquals(
-            listOf(
-                "你可以覆盖当前课表，或者把备份导入成一个新的独立课表",
-                "channel=file",
-                "scope=current_timetable",
-                "transferId=transfer-1-2",
-                "course: +2 / ~1 / -0",
-            ),
-            content.message.split("\n\n"),
-        )
-    }
-
-    @Test
-    fun `同时给了两种模式时先 merge 再 overwrite`() {
-        val content = DataTransferLogic.previewContent(
-            channel = "qr",
-            scope = "current_timetable",
-            transferId = "transfer-9-9",
-            overwrite = listOf(TransferDiffSummary("course", 2, 0, 0)),
-            merge = listOf(TransferDiffSummary("course", 0, 1, 0)),
-        )
-        val blocks = content.message.split("\n\n")
-        assertEquals("merge:\ncourse: +0 / ~1 / -0", blocks[4])
-        assertEquals("overwrite:\ncourse: +2 / ~0 / -0", blocks[5])
-    }
-
-    @Test
     fun `预览弹窗三个动作的顺序与结果`() {
         val actions = DataTransferLogic.previewActions()
         assertEquals(
@@ -305,5 +272,16 @@ class DataTransferModelTest {
         assertNull(actions[0].mode)
         assertEquals(TransferApplyMode.MERGE, actions[1].mode)
         assertEquals(TransferApplyMode.OVERWRITE, actions[2].mode)
+    }
+
+    @Test
+    fun `全量包不给合并动作 免得点出未知错误`() {
+        // Kotlin 侧没有全量包的逐实体合并（rejectionCode 明确拒绝）。旧版仍然把
+        // 「合并更改」摆出来，点了弹「发生未知错误」。现在全量包只给两个动作。
+        val actions = DataTransferLogic.previewActions(canMerge = false)
+        assertEquals(listOf("取消", "覆盖当前课表"), actions.map { it.label })
+        assertNull(actions[0].mode)
+        assertEquals(TransferApplyMode.OVERWRITE, actions[1].mode)
+        assertTrue("全量包的动作里不该再有 MERGE", actions.none { it.mode == TransferApplyMode.MERGE })
     }
 }

@@ -286,7 +286,14 @@ object DataTransferLogic {
         )
     }
 
-    /** 单行差异摘要（Dart `formatSummary`：`kind: +a / ~u / -r`）。 */
+    /**
+     * 单行差异摘要（Dart `formatSummary`：`kind: +a / ~u / -r`）。
+     *
+     * ⚠️ 这两个函数是**在用的**：[DataTransferImportLogic.previewMessage] 拼预览正文
+     * 就是靠它们（Dart 的正文里 `merge:` / `overwrite:` 两段各是一串这样的行）。
+     * 2026-10-29 二轮清理时曾误以为它们只被已删的 `previewContent` 用着——
+     * 删掉会直接编不过，别再来一次。
+     */
     fun diffSummaryLine(summary: TransferDiffSummary): String =
         "${summary.kind}: +${summary.added} / ~${summary.updated} / -${summary.removed}"
 
@@ -295,45 +302,25 @@ object DataTransferLogic {
         lines.joinToString("\n") { diffSummaryLine(it) }
 
     /**
-     * 导入预览弹窗正文（Dart `showTransferPreviewDialog`：18-34）。
+     * 预览弹窗的动作（Dart `transfer_preview_dialog.dart:41-53`）：取消 / 合并 / 覆盖
+     * （覆盖为主操作）。
      *
-     * 固定四行（说明句 / channel / scope / transferId），再按是否有 merge 备选
-     * 决定挂一份还是两份差异摘要。块之间用空行分隔。
+     * @param canMerge false ⇒ 不显示「合并更改」。只给全量备份用：Kotlin 侧没有
+     *   逐实体合并服务（[DataTransferApplyLogic.rejectionCode] 明确拒绝），把这条
+     *   点了必然失败的按钮摆出来只会让用户看到一句「发生未知错误」。
      */
-    fun previewContent(
-        channel: String,
-        scope: String,
-        transferId: String,
-        overwrite: List<TransferDiffSummary>,
-        merge: List<TransferDiffSummary>? = null,
-    ): TransferPreviewContent {
-        val blocks = mutableListOf(
-            TransferStrings.selectImportModeMessage.zh,
-            "channel=$channel",
-            "scope=$scope",
-            "transferId=$transferId",
-        )
-        if (merge != null) {
-            blocks += "merge:\n${diffSummary(merge)}"
-            blocks += "overwrite:\n${diffSummary(overwrite)}"
-        } else {
-            blocks += diffSummary(overwrite)
+    fun previewActions(canMerge: Boolean = true): List<TransferPreviewAction> = buildList {
+        add(TransferPreviewAction(TransferStrings.cancelAction.zh, null))
+        if (canMerge) {
+            add(TransferPreviewAction(TransferStrings.selectImportModeMerge.zh, TransferApplyMode.MERGE))
         }
-        return TransferPreviewContent(
-            title = TransferStrings.selectImportModeTitle.zh,
-            message = blocks.joinToString("\n\n"),
+        add(
+            TransferPreviewAction(
+                TransferStrings.replaceCurrentTimetable.zh,
+                TransferApplyMode.OVERWRITE,
+            ),
         )
     }
-
-    /** 预览弹窗的三个动作（Dart 41-53）：取消 / 合并 / 覆盖（覆盖为主操作）。 */
-    fun previewActions(): List<TransferPreviewAction> = listOf(
-        TransferPreviewAction(TransferStrings.cancelAction.zh, null),
-        TransferPreviewAction(TransferStrings.selectImportModeMerge.zh, TransferApplyMode.MERGE),
-        TransferPreviewAction(
-            TransferStrings.replaceCurrentTimetable.zh,
-            TransferApplyMode.OVERWRITE,
-        ),
-    )
 }
 
 /**
@@ -353,22 +340,4 @@ data class DataTransferViewState(
     val overviewRows: List<TransferOverviewRow>
         get() = DataTransferLogic.overviewRows(overview)
 
-    /** 导出当前课表的分享主题（Dart 273-278：有课表名时带名字）。 */
-    val profileShareSubject: String
-        get() = activeProfileName?.let {
-            TransferStrings.dataTransferProfileShareSubjectNamed.filled("profileName", it)
-        } ?: TransferStrings.dataTransferProfileShareSubject.zh
-
-    /**
-     * 导出 / 导入按钮的文案。
-     *
-     * Dart 这里原本还有「忙碌文案」（`_isExporting ? '${fullExportTitle}...' : exportCurrentTimetable`，
-     * `data_transfer_screen.dart:62-64` 与 `:99-101`），但那是**永远上不了屏的死字面量**：
-     * `HyperosButton` 在 `loading: true` 时把整个标签换成 18×18 的转圈
-     * （`hyperos_controls.dart:745-753`）⇒ 「完整导出...」「完整导入...」不会出现在任何真机上。
-     * 所以这里只保留正常文案，忙碌只体现为转圈（2026-10-29 审核口径）。
-     */
-    val exportCurrentLabel: String get() = TransferStrings.exportCurrentTimetable.zh
-
-    val importLabel: String get() = TransferStrings.chooseFileAndImport.zh
 }
