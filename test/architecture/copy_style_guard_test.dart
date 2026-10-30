@@ -69,6 +69,14 @@ void main() {
   // 死键 corpus 与 CLI 同源（deadKeyCorpus = Dart(lib/) + Kotlin(android/app/src)），
   // 否则只被 Kotlin 引用的键会被守卫判成死键，与 CLI 口径打架。
   final deadCorpus = deadKeyCorpus(GuardSource.resolve);
+  // 死键判据要把 ~18MB 原文逐个键扫一遍（实测 34s）。这里**只算一次**给下面两个
+  // 用例共用：原来 test 3 / test 4 各算一遍 = 68s，而 pre-commit 钩子跑
+  // `flutter test test/architecture/` 时的超时余量本来就紧，重复计算是最容易
+  // 被当成 flaky、再被 `--no-verify` 绕过去的那条路径。
+  final dead = findDeadKeys(
+    template: arbByLocale['zh']!,
+    codeCorpus: deadCorpus,
+  );
 
   test('行内文案不得新增超宽（存量已冻结在基线里）', () {
     final violations = findViolations(
@@ -134,10 +142,6 @@ void main() {
 
   test('死键只减不增（删了渲染就顺手删键）', () {
     final template = arbByLocale['zh']!;
-    final dead = findDeadKeys(
-      template: template,
-      codeCorpus: deadCorpus,
-    );
     final frozen = _loadIds(_deadBaselinePath);
     final added = dead.difference(frozen).toList()..sort();
 
@@ -181,11 +185,6 @@ void main() {
       arbByLocale: arbByLocale,
     );
     final current = violations.map(violationId).toSet();
-    final template = arbByLocale['zh']!;
-    final dead = findDeadKeys(
-      template: template,
-      codeCorpus: deadCorpus,
-    );
 
     final staleWidths =
         (_loadIds(_baselinePath).difference(current).toList()..sort());
