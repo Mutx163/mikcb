@@ -66,8 +66,10 @@ import com.mutx163.qingyu.course.TimetableExamService
 import com.mutx163.qingyu.pages.about.AboutStaticPage
 import com.mutx163.qingyu.pages.about.AboutUpdateHostPage
 import com.mutx163.qingyu.pages.about.ChangelogPage
+import com.mutx163.qingyu.pages.about.ContributorsHostPage
 import com.mutx163.qingyu.pages.about.ContributorsPage
 import com.mutx163.qingyu.pages.about.OpenSourceLicensesHost
+import com.mutx163.qingyu.pages.about.SupportCreatorHostPage
 import com.mutx163.qingyu.pages.about.SupportCreatorPage
 import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
@@ -291,22 +293,12 @@ fun ShellPageContent(
         "a.changelog" -> ChangelogPage(onBack = onBack)
         // 2026-10-28 补口：接真实许可证数据（读 APK 内 NOTICES.Z）+ 页内详情导航。
         "a.licenses" -> OpenSourceLicensesHost(onBack = onBack)
-        "a.support" -> SupportCreatorPage(
-            donorData = null,
-            onBack = onBack,
-            onReload = {},
-            isLoading = false,
-            loadError = null,
-        )
-        // 2026-10-28 新增：代码贡献者页（此前整页缺失、入口点了没反应）。
-        // 适配者名单待仓储服务接线后由宿主喂真数据；现在显示 Flutter 同款空态。
-        "a.contributors" -> ContributorsPage(
-            maintainers = emptyList(),
-            isLoading = false,
-            error = null,
-            onBack = onBack,
-            onReload = {},
-        )
+        // 2026-10-29（F09）：此前 `donorData = null, onReload = {}` ⇒ 名单恒空、刷新点了没反应。
+        // 现在宿主自己拉（官方 raw 主 / GitCode 直连备），失败显示真原因 + 可重试。
+        "a.support" -> SupportCreatorHostPage(onBack = onBack)
+        // 2026-10-29（F09）：此前 `maintainers = emptyList(), onReload = {}` ⇒ 恒空态。
+        // 现在读 root_index + 每校 adapters.yaml，缓存优先并标注缓存时间，失败可重试。
+        "a.contributors" -> ContributorsHostPage(onBack = onBack)
         // 版本更新页（`a.update`）：由「版本更新页 1:1 复刻」批次交付。
         // 宿主装配层（真实检查更新 / 系统下载 / 设置读写 / 镜像测速）在 AboutUpdateHostPage。
         "a.update" -> AboutUpdateHostPage(onBack = onBack)
