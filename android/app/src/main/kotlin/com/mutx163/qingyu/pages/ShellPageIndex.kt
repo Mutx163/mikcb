@@ -164,6 +164,9 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionPage
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsPage
+import com.mutx163.qingyu.pages.statistics.StatisticsShareText
+import com.mutx163.qingyu.pages.statistics.shareStatisticsText
+import com.mutx163.qingyu.pages.sync.CloudBackupDetailHost
 import com.mutx163.qingyu.pages.sync.CloudBackupListPage
 import com.mutx163.qingyu.pages.sync.CloudBackupListViewState
 import com.mutx163.qingyu.pages.sync.CloudSyncController
@@ -1063,6 +1066,7 @@ fun ShellPageContent(
 
         // ── P3-E 统计族 ───────────────────────────────────────────────
         "e.statistics" -> {
+            val context = LocalContext.current
             val repository = wiring.timetable
             var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
             DisposableEffect(repository) {
@@ -1088,11 +1092,18 @@ fun ShellPageContent(
                 // tab 0 = 学期视图（`CourseStatisticsPage.kt:170` `selectedTabIndex == 0 && semester != null`）
                 onTabSelected = { index -> semesterView = index == 0 },
                 onOpenSettings = { onOpenPage("e.statisticsSettings") },
-                // ⚠️ **链缺口**（交付方核实）：Kotlin 侧没有「统计图导出并分享」的实现
-                // （Dart 走 `StatisticsShareService.exportAndShare`：光栅化 + 系统分享），
-                // 而仓库里现有的分享适配器只管**日历/文件**，不是画图。
-                // ⇒ 这里**有意留空**并记录为待办；**不塞假动作**让它看起来接完了。
-                onOpenShare = {},
+                // 2026-10-30（F12）：此前这里是空 lambda ⇒ 分享图标点了没反应。
+                // 现在接**真文本分享**：正文由 `StatisticsShareText` 用真统计数据拼，
+                // 走系统分享面板。**图片导出（Dart 的光栅化 PNG）本批没做**——
+                // 它要离屏渲染 + FileProvider 授权（manifest 属 Lead），缺口记在
+                // `claims/F12-half-close.md`；这里不生成空图冒充「已导出图片」。
+                onOpenShare = {
+                    shareStatisticsText(
+                        context = context,
+                        text = StatisticsShareText.build(feedState),
+                        subject = StatisticsShareText.subject(),
+                    )
+                },
                 onWeekChanged = { week -> selectedWeek = week },
                 onOpenAnalysis = { module ->
                     wiring.pendingAnalysisModule = module
@@ -1201,17 +1212,23 @@ fun ShellPageContent(
                 )
             }
             var showConnect by remember { mutableStateOf(false) }
+            // 2026-10-30（F12）：正在看详情的那条备份（null = 不展示弹层）。
+            var openBackupId by remember { mutableStateOf<String?>(null) }
             CloudSyncPage(
                 controller = controller,
                 onBack = onBack,
                 onConnect = { showConnect = true },
-                // ⚠️ 备份详情/恢复 sheet 本批不做 ⇒ 点某条备份**只会提示、不会打开详情**。
-                // 按「不许假装」的标准，这里给一句诚实的提示而不是空 lambda（空 lambda
-                // 会让用户以为是自己点歪了）。真正的详情 sheet 是下一批。
-                onOpenBackup = {
-                    Toast.makeText(context, "备份详情尚未开放", Toast.LENGTH_SHORT).show()
-                },
+                // 2026-10-30（F12）：此前点某条备份只弹一句「备份详情尚未开放」——假入口。
+                // 现在打开真详情弹层（设备 / 来源 / 内容 + 恢复 + 删除），
+                // 恢复与删除都落到 `CloudSyncController` 的真动作上。
+                onOpenBackup = { entryId -> openBackupId = entryId },
                 onViewAllBackups = { onOpenPage("f.backupList") },
+            )
+            // 详情弹层（f.cloudSync 与 f.backupList 共用同一个宿主，只是列表来源不同）。
+            CloudBackupDetailHost(
+                controller = controller,
+                entryId = openBackupId,
+                onDismiss = { openBackupId = null },
             )
             if (showConnect) {
                 WebdavConnectSheet(
@@ -1246,12 +1263,17 @@ fun ShellPageContent(
                     deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
                 )
             }
+            var openBackupId by remember { mutableStateOf<String?>(null) }
             CloudBackupListPage(
                 controller = controller,
                 onBack = onBack,
-                onOpenBackup = {
-                    Toast.makeText(context, "备份详情尚未开放", Toast.LENGTH_SHORT).show()
-                },
+                // 2026-10-30（F12）：同 f.cloudSync，占位提示换成真详情弹层。
+                onOpenBackup = { entryId -> openBackupId = entryId },
+            )
+            CloudBackupDetailHost(
+                controller = controller,
+                entryId = openBackupId,
+                onDismiss = { openBackupId = null },
             )
         }
         // 2026-10-29（C1 收口）：这一屏原先喂 `binding = null` + 默认配置 + 三个空回调
