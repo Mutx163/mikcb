@@ -144,7 +144,9 @@ fun LiveDisplayHost(
                 ImagePickOutcome.TooLarge -> showToast(
                     ImportStrings.importFileTooLarge.filled(
                         "size",
-                        ImportSharedModel.formatByteBudget(ExternalImportReader.MAX_IMPORT_BYTES),
+                        // 与真正生效的上限用同一个常量：提示里写 20 MB、实际按别的数卡人，
+                        // 用户会以为「明明没超」。
+                        ImportSharedModel.formatByteBudget(LiveImagePickLogic.MAX_BYTES),
                     ),
                 )
                 ImagePickOutcome.Failed -> showToast(IMAGE_PICK_FAILED_MESSAGE)
