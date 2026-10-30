@@ -1094,10 +1094,12 @@ fun ShellPageContent(
                 onTabSelected = { index -> semesterView = index == 0 },
                 onOpenSettings = { onOpenPage("e.statisticsSettings") },
                 // 2026-10-30（F12）：此前这里是空 lambda ⇒ 分享图标点了没反应。
-                // 现在接**真文本分享**：正文由 `StatisticsShareText` 用真统计数据拼，
-                // 走系统分享面板。**图片导出（Dart 的光栅化 PNG）本批没做**——
-                // 它要离屏渲染 + FileProvider 授权（manifest 属 Lead），缺口记在
-                // `claims/F12-half-close.md`；这里不生成空图冒充「已导出图片」。
+                // F15 起 `shareStatisticsText` 是**成果图优先、发不出图退回纯文本**：
+                //   · 图：离屏光栅化成 PNG → 写进 cacheDir/transfer-share/
+                //     （已在 `res/xml/file_paths.xml` 登记）→ FileProvider 分享；
+                //   · 文：正文由 `StatisticsShareText` 用真统计快照拼，走系统分享面板。
+                // 空正文 / 光栅化失败 / 落盘失败 / provider 不可用，任一失败都退回纯文本，
+                // **不生成空图冒充「已导出图片」**。
                 onOpenShare = {
                     shareStatisticsText(
                         context = context,
