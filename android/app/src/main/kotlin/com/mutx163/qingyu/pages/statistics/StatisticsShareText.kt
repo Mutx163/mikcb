@@ -11,19 +11,28 @@ import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
  * 按清单 §二 F12 的要求，要么接真产物的分享，要么给一句实话——本文件选择**接真**，
  * 但没有照搬 Dart 的形态，原因见下。
  *
- * ## 与 Dart 的差异（有意，且必须说清楚）
+ * ## 本文件只负责「正文」，图片在 F15 已补上
  *
  * Dart `StatisticsShareService.exportAndShare` 是「把导出文档**光栅化成 PNG**，
- * 再连正文一起交给系统分享」（`statistics_share_service.dart:62-108`）。Kotlin 侧要复刻
- * 那条路需要：离屏 Compose 渲染 → Bitmap → 落盘 → `FileProvider` 授权（manifest 未注册，
- * 属 Lead 专属）→ `ACTION_SEND`。这条链本批不做（A 级批次，清单自己写着「改动最小、
- * 最忌回归」），**所以这里只做文本分享**：
+ * 再连正文一起交给系统分享」（`statistics_share_service.dart:62-108`）。
+ * F12 只做了文本那一半；**F15（2026-10-30）已把图补齐**：
  *
+ * - 文件名 / 落盘路径 / MIME / 卡片排版这些纯逻辑在 `StatisticsShareImageModel`；
+ * - 「该不该出图」的决策在 `StatisticsShareImageDecision`；
+ * - 离屏光栅化在 `StatisticsShareImageRender`（composeP1）；
+ * - 真正发 `ACTION_SEND` 的在 `StatisticsShareIntent`——它优先发图，
+ *   发不出去才退回本文件算的这段正文。
+ *
+ * 也就是说这里不再是「唯一的分享产物」，而是**文本降级路径 + 图片正文的来源**：
+ * 图片上画的就是这里 `build()` 出来的那几行，所以两边的字永远同源。
+ *
+ * 仍然成立的三条：
  * - 分享的是**真数据**（真统计快照算出来的指标，不是占位数字）；
  * - 走系统分享面板，用户能真的发出去；
- * - **不假装**是图片：不生成假的空图片，也不在界面上写「已导出图片」。
+ * - **不假装**是图片：这里不自造「已导出」字样，也不生成假的空图片。
  *
- * 图片导出的缺口记在认领文件 `claims/F12-half-close.md` 的「未做」里，交下一批。
+ * Dart 导出文档里还差的那些段（品牌 logo 图、成就网格、数据故事、日分布 / 性质占比、
+ * 课程排行、导出模块选择弹层）记在认领文件 `claims/F15-statistics-share-image.md` 的「未做」。
  *
  * ## 为什么这段文本不是「新文案」
  *

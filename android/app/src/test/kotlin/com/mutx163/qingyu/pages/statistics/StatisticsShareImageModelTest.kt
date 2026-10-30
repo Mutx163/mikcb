@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.statistics
 
 import com.mutx163.qingyu.share.TransferShareContract
 import java.io.File
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -16,11 +17,13 @@ import org.junit.Test
  *
  * - 文件名形状：Dart `statistics_share_service.dart:96`
  *   `'${tempDirectory.path}/statistics_export_$timestamp.png'`（前缀 + 毫秒时间戳 + `.png`）；
- * - 落盘目录：`res/xml/file_paths.xml` 的 `<cache-path>` 白名单——**直接读那份 XML 对拍**，
- *   不只看 [TransferShareContract]（那层自己也有对拍单测，两道一起才叫「登记过」）；
+ * - 落盘目录：`res/xml/file_paths.xml` 里**真正生效的** `<cache-path>` 元素
+ *   （不是那份文件注释里提到的字样——2026-10-30 对抗审核实测：只 `contains` 字符串时，
+ *   把元素删掉、注释留着，本测试仍然全绿，等于没守）；
  * - 宽度区间：Dart `:88` `mediaQuery.size.width.clamp(320.0, 420.0)`；
  * - MIME：Dart `:104-108` `XFile(path, mimeType: 'image/png')`；
- * - 「空正文不许生成空图」是清单 §一 1.2 的红线（假成功比没反应更糟），人推得出。
+ * - 「空正文不许生成空图」「发不出图就退回纯文本」是清单 §一 1.2 的红线
+ *   （假成功比没反应更糟），人推得出。
  */
 class StatisticsShareImageModelTest {
 
@@ -37,7 +40,7 @@ class StatisticsShareImageModelTest {
     @Test
     fun `两次导出的文件名不同_不会互相覆盖`() {
         assertFalse(
-            "同一毫秒才会同名；不同毫秒必须不同名",
+            "不同毫秒必须不同名，否则上一张分享图被覆盖，接收方点开旧消息拿到新图",
             StatisticsShareImageModel.fileName(1L) == StatisticsShareImageModel.fileName(2L),
         )
     }
@@ -53,12 +56,27 @@ class StatisticsShareImageModelTest {
 
         // ② 再直接读一次真实的 file_paths.xml：目录**真在**白名单里。
         //    只看常量的话，两边一起改错（或 XML 那条被删）本测试会一起绿——那就成了摆设。
-        val xml = filePathsXml()
+        //
+        //    ⚠️ 这一条必须是**元素级**匹配：那份 XML 的注释里逐字写着
+        //    `path="transfer-share/"`（在解释 name 与 path 的区别），
+        //    字符串 contains 会被注释喂饱，元素真被删掉也不会红（2026-10-30 对抗审核实测）。
         val dirName = relative.substringBeforeLast('/')
+        val elements = cachePathElements(filePathsXml())
         assertTrue(
-            "cacheDir/$dirName/ 不在 res/xml/file_paths.xml 的 <cache-path path=\"…\"> 白名单里，" +
-                "FileProvider.getUriForFile 会在运行期抛 IllegalArgumentException。\n$xml",
-            xml.contains("path=\"$dirName/\""),
+            "file_paths.xml 里一个 <cache-path> 元素都没解析出来（解析坏了？这等于守卫空转）",
+            elements.isNotEmpty(),
+        )
+        val registered = elements.any { element ->
+            Regex("\\bname\\s*=\\s*\"${Regex.escape(TransferShareContract.PROVIDER_PATH_NAME)}\"")
+                .containsMatchIn(element) &&
+                Regex("\\bpath\\s*=\\s*\"${Regex.escape(dirName)}/\"")
+                    .containsMatchIn(element)
+        }
+        assertTrue(
+            "cacheDir/$dirName/ 没有对应的 <cache-path> 元素（注释里出现不算），" +
+                "FileProvider.getUriForFile 会在运行期抛 IllegalArgumentException。\n" +
+                "解析到的元素：$elements",
+            registered,
         )
     }
 
@@ -147,7 +165,7 @@ class StatisticsShareImageModelTest {
         assertEquals(listOf("A", "B", "C"), StatisticsShareImageModel.cardLines("A\n\nB\n   \nC\n"))
     }
 
-    // ------------------------------------------------------------------ 诚实边界
+    // ------------------------------------------------------------------ 诚实边界：不生成空图
 
     @Test
     fun `空正文不生成空图`() {
@@ -166,7 +184,6 @@ class StatisticsShareImageModelTest {
     fun `payload把文件名_路径_MIME_正文_卡片串在一起`() {
         val text = "统计\n来自轻屿课表的学期统计\n课程门数：12"
         val payload = StatisticsShareImageModel.payload(text, subject = "学期统计", epochMillis = 42L)!!
-
         assertEquals("statistics_export_42.png", payload.fileName)
         assertTrue(payload.cacheRelativePath.endsWith(payload.fileName))
         assertEquals("image/png", payload.mimeType)
@@ -177,7 +194,119 @@ class StatisticsShareImageModelTest {
         assertEquals(listOf("课程门数" to "12"), payload.card.rows.map { it.label to it.value })
     }
 
+    // ------------------------------------------------------------------ 发图还是降级：决策
+
+    @Test
+    fun `四步都成功时发图_载荷与Uri原样带走`() {
+        val payload = payloadOf()
+        val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
+        val decision = StatisticsShareImageDecision.decide(
+            payload = payload,
+            png = png,
+            writeSucceeded = true,
+            uri = "content://com.mutx163.qingyu.fileprovider/transfer_share/x.png",
+        )
+        val image = decision as StatisticsShareImageDecision.Decision.ShareImage
+        assertEquals(payload, image.payload)
+        assertArrayEquals(png, image.png)
+        assertEquals("content://com.mutx163.qingyu.fileprovider/transfer_share/x.png", image.uri)
+    }
+
+    @Test
+    fun `空正文降级成纯文本_哪怕后面几步都成功`() {
+        val decision = StatisticsShareImageDecision.decide(
+            payload = null,
+            png = byteArrayOf(1, 2, 3),
+            writeSucceeded = true,
+            uri = "content://x/y.png",
+        )
+        assertEquals(
+            StatisticsShareImageDecision.FallbackReason.EMPTY_CONTENT,
+            (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+        )
+    }
+
+    @Test
+    fun `光栅化失败降级成纯文本`() {
+        val decision = StatisticsShareImageDecision.decide(
+            payload = payloadOf(),
+            png = null,
+            writeSucceeded = true,
+            uri = "content://x/y.png",
+        )
+        assertEquals(
+            StatisticsShareImageDecision.FallbackReason.RASTERIZE_FAILED,
+            (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+        )
+    }
+
+    @Test
+    fun `零字节PNG也算光栅化失败_不把空文件发出去`() {
+        val decision = StatisticsShareImageDecision.decide(
+            payload = payloadOf(),
+            png = ByteArray(0),
+            writeSucceeded = true,
+            uri = "content://x/y.png",
+        )
+        assertEquals(
+            StatisticsShareImageDecision.FallbackReason.RASTERIZE_FAILED,
+            (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+        )
+    }
+
+    @Test
+    fun `写盘失败降级成纯文本`() {
+        val decision = StatisticsShareImageDecision.decide(
+            payload = payloadOf(),
+            png = byteArrayOf(1),
+            writeSucceeded = false,
+            uri = "content://x/y.png",
+        )
+        assertEquals(
+            StatisticsShareImageDecision.FallbackReason.WRITE_FAILED,
+            (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+        )
+    }
+
+    @Test
+    fun `provider不可用时降级成纯文本`() {
+        listOf(null, "", "   ").forEach { uri ->
+            val decision = StatisticsShareImageDecision.decide(
+                payload = payloadOf(),
+                png = byteArrayOf(1),
+                writeSucceeded = true,
+                uri = uri,
+            )
+            assertEquals(
+                "uri=$uri 时必须判成 provider 不可用（发不出图就退回纯文本）",
+                StatisticsShareImageDecision.FallbackReason.PROVIDER_UNAVAILABLE,
+                (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+            )
+        }
+    }
+
+    @Test
+    fun `决策顺序与真实链路一致_空正文优先于后面所有失败`() {
+        // 空正文 + 光栅化也失败：必须报「没有内容」，不是「画不出来」——
+        // 否则排障时会被指去看渲染，而真正原因是没有内容。
+        val decision = StatisticsShareImageDecision.decide(
+            payload = null,
+            png = null,
+            writeSucceeded = false,
+            uri = null,
+        )
+        assertEquals(
+            StatisticsShareImageDecision.FallbackReason.EMPTY_CONTENT,
+            (decision as StatisticsShareImageDecision.Decision.FallbackToText).reason,
+        )
+    }
+
     // ------------------------------------------------------------------ 工具
+
+    private fun payloadOf(
+        text: String = "统计\n来自轻屿课表的学期统计\n课程门数：12",
+    ): StatisticsShareImageModel.Payload =
+        StatisticsShareImageModel.payload(text, subject = "学期统计", epochMillis = 7L)!!
 
     /**
      * 读真实的 `res/xml/file_paths.xml`（从工作目录向上找仓库根，兼容 Gradle 与 IDE）。
@@ -194,4 +323,17 @@ class StatisticsShareImageModelTest {
         }
         throw AssertionError("找不到 $relative（工作目录 ${File("").absolutePath}）")
     }
+
+    /**
+     * 取出**真正生效的** `<cache-path … />` 元素（先剥掉 XML 注释）。
+     *
+     * 为什么必须先剥注释：`file_paths.xml` 的注释里逐字写着
+     * `name="transfer_share" path="transfer-share/"`（在解释 name 与 path 的区别），
+     * 直接对全文 `contains` 会被注释喂饱——元素删掉也照样绿。
+     */
+    private fun cachePathElements(xml: String): List<String> =
+        Regex("""<cache-path\b[^>]*/>""")
+            .findAll(Regex("""<!--[\s\S]*?-->""").replace(xml, " "))
+            .map { it.value }
+            .toList()
 }

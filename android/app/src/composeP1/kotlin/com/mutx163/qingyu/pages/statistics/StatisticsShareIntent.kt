@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.statistics
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.core.content.FileProvider
 import java.io.File
@@ -12,31 +13,39 @@ import java.io.File
  *
  * ## 为什么单独一个文件
  *
- * `StatisticsShareText` / `StatisticsShareImageModel`（main 层）只算内容与契约、零 Android 依赖，
- * 能进 JVM 单测；真正发 `ACTION_SEND` 需要 `Context`，按本仓约定这类胶水放 composeP1 的渲染侧，
- * 不污染模型层（main 对全变体编译，import android.* 会让模型层进不了 L0）。
+ * `StatisticsShareText` / `StatisticsShareImageModel` / `StatisticsShareImageDecision`（main 层）
+ * 只算内容、契约与判断，零 Android 依赖，能进 JVM 单测；真正发 `ACTION_SEND` 需要 `Context`，
+ * 按本仓约定这类胶水放 composeP1 的渲染侧，不污染模型层
+ * （main 对全变体编译，import android.* 会让模型层进不了 L0）。
  *
- * ## 与 Dart 的差异（F15 之后只剩一条）
+ * ## 这一版的分工（对抗审核 P2 之后）
  *
- * Dart `StatisticsShareService.exportAndShare` 分享的是**PNG 图片 + 正文**。F12 那一版只发文本
- * （文件里写着「图片导出没做」）；F15 把图补上：文件名 / 落盘路径 / MIME / 卡片内容由
- * [StatisticsShareImageModel] 算（纯逻辑 + 单测），像素由 [StatisticsShareImageRender] 离屏画，
- * 这里负责落盘 → `FileProvider` → `ACTION_SEND`（`image/png` + `EXTRA_STREAM` + `EXTRA_TEXT`）。
+ * 本文件**只搬砖**，不再自己判断「该不该发图」：
  *
- * `EXTRA_TEXT` / `EXTRA_SUBJECT` 都留着，与 Dart 的 `ShareParams(subject:, text:)` 同形：
- * 只塞图片时，某些接收方（剪贴板类、部分输入法）拿到图却没有可编辑的正文。
+ * | 环节 | 在哪 |
+ * |---|---|
+ * | 文件名 / 落盘路径 / MIME / 卡片排版 | [StatisticsShareImageModel]（纯逻辑，有单测） |
+ * | 「该发图还是退回纯文本」 | [StatisticsShareImageDecision]（纯逻辑，有单测） |
+ * | 离屏画成 PNG 字节 | [StatisticsShareImageRender] |
+ * | 写盘 / `FileProvider` / `ACTION_SEND` | 本文件 |
  *
- * 仍然存在的差距（不是本文件的事，写在这里免得被当成漏了）：Dart 的导出文档里还有
- * 品牌条（logo + 二维码）、成就网格、数据故事、日分布/性质占比图、课程排行，
- * 以及「导出模块选择」弹层。那些要模型层的图表数据，见认领文件
- * `claims/F15-statistics-share-image.md` 的「未做」。
+ * 这样排是因为原来五个 `return false` 全在这里、吃 `Context`、L0 跑不到，
+ * 于是「发不出图就退回纯文本、绝不假装成功」这条承诺**一条用例都没有**。
+ *
+ * ## 与 Dart 的差异（F15 之后只剩「文档内容还不够全」这一条）
+ *
+ * Dart `StatisticsShareService.exportAndShare` 分享的是**PNG 图片 + 正文**；
+ * 这里也是图 + 正文（`EXTRA_STREAM` + `EXTRA_TEXT` + `EXTRA_SUBJECT`，与
+ * `ShareParams(files:, subject:, text:)` 同形）。差的只是文档内容本身：
+ * Dart 那张图里有品牌 logo、成就、数据故事、图表、课程排行，这里只有标题 + 正文句
+ * + 指标行 + 品牌条（应用名 / 一句话 / 网址 / 二维码）。补齐路径见认领文件
+ * `claims/F15-statistics-share-image.md` 的「未做」——它要壳把 `SemesterStats` 交出来。
  *
  * ## 失败一律降级成纯文本，绝不假装
  *
- * 光栅化、落盘、`FileProvider` 三步任何一步失败（磁盘满、provider 不可用、
- * `file_paths.xml` 没覆盖那个子目录）都**不抛给用户**，而是退回 F12 那套纯文本分享——
- * 内容仍然是真数据，只是没有 PNG 附件。**绝不在界面上写「已导出图片」**，
- * 也绝不生成空图冒充成功（空卡片在 [StatisticsShareImageModel.payload] 就被拦成 null）。
+ * 光栅化、落盘、`FileProvider` 三步任何一步失败都不抛给用户，而是退回 F12 那套纯文本分享
+ * （内容仍然是真数据，只是没有 PNG 附件）。**绝不在界面上写「已导出图片」**，
+ * 也绝不生成空图冒充成功（空正文在 [StatisticsShareImageModel.payload] 就被拦成 null）。
  *
  * 与 `DiagnosticsLogHost.shareLogText` 同一套「能发附件就发附件、发不了就发正文」的口径。
  */
@@ -57,6 +66,9 @@ fun shareStatisticsText(context: Context, text: String, subject: String) {
 /**
  * 尝试分享成果图。
  *
+ * 判断「发图还是降级」全交给 [StatisticsShareImageDecision]；这里只把四步的真实结果
+ * （载荷 / PNG / 写盘 / Uri）交给它，再照它的判决做事。
+ *
  * @return 是否**真的**拉起过带 PNG 附件的分享面板；false = 调用方应降级成纯文本分享。
  */
 internal fun shareStatisticsImage(context: Context, text: String, subject: String): Boolean {
@@ -64,47 +76,72 @@ internal fun shareStatisticsImage(context: Context, text: String, subject: Strin
         text = text,
         subject = subject,
         epochMillis = System.currentTimeMillis(),
-    ) ?: run {
-        // 没有真内容（空正文）⇒ 不生成空图。这不是错误，是「别假装导出了图」。
-        Log.w(LOG_TAG, "统计分享正文为空，跳过图片导出（不生成空图）")
-        return false
+    )
+    val png = payload?.let {
+        StatisticsShareImageRender.renderPng(context, it.card, exportWidthDp(context))
     }
-
-    val png = StatisticsShareImageRender.renderPng(context, payload.card, exportWidthDp(context))
-        ?: run {
-            Log.w(LOG_TAG, "光栅化失败，降级成纯文本分享")
-            return false
-        }
-
-    val file = runCatching {
-        File(context.cacheDir, payload.cacheRelativePath).apply {
-            parentFile?.mkdirs()
-            writeBytes(png)
-        }
-    }.getOrElse {
-        Log.w(LOG_TAG, "分享图落盘失败，降级成纯文本分享", it)
-        return false
+    val file = if (payload != null && png != null) {
+        writeSharePng(context, payload.cacheRelativePath, png)
+    } else {
+        null
     }
+    val uri = file?.let { resolveShareUri(context, it) }
 
-    val uri = runCatching {
-        FileProvider.getUriForFile(
-            context,
-            StatisticsShareImageModel.providerAuthority(context.packageName),
-            file,
+    return when (
+        val decision = StatisticsShareImageDecision.decide(
+            payload = payload,
+            png = png,
+            writeSucceeded = file != null,
+            uri = uri,
         )
-    }.getOrElse {
-        // 典型原因：manifest 没注册 provider，或 file_paths.xml 没覆盖那个子目录。
-        Log.w(LOG_TAG, "FileProvider 不可用（${file.path}），降级成纯文本分享", it)
-        return false
-    }
+    ) {
+        is StatisticsShareImageDecision.Decision.FallbackToText -> {
+            Log.w(LOG_TAG, "这次不发图，降级成纯文本分享：${decision.reason}")
+            false
+        }
 
+        is StatisticsShareImageDecision.Decision.ShareImage ->
+            launchImageShare(context, decision.payload, decision.uri)
+    }
+}
+
+// ---------------------------------------------------------------------- 搬砖
+
+/** 把 PNG 写进 `cacheDir` 的**已登记**子目录；失败回 null（不抛、不吞原因）。 */
+private fun writeSharePng(context: Context, relativePath: String, png: ByteArray): File? = runCatching {
+    File(context.cacheDir, relativePath).apply {
+        parentFile?.mkdirs()
+        writeBytes(png)
+    }
+}.onFailure {
+    Log.w(LOG_TAG, "分享图落盘失败（$relativePath）", it)
+}.getOrNull()
+
+/** 换成 `FileProvider` 的 content Uri；provider 没注册 / 白名单没覆盖时回 null。 */
+private fun resolveShareUri(context: Context, file: File): String? = runCatching {
+    FileProvider.getUriForFile(
+        context,
+        StatisticsShareImageModel.providerAuthority(context.packageName),
+        file,
+    ).toString()
+}.onFailure {
+    Log.w(LOG_TAG, "FileProvider 不可用（${file.path}）", it)
+}.getOrNull()
+
+/** 拉起系统分享面板；没有能接图的应用回 false（调用方再退回纯文本）。 */
+private fun launchImageShare(
+    context: Context,
+    payload: StatisticsShareImageModel.Payload,
+    uri: String,
+): Boolean {
+    val contentUri = Uri.parse(uri)
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = payload.mimeType
-        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_STREAM, contentUri)
         putExtra(Intent.EXTRA_SUBJECT, payload.subject)
         putExtra(Intent.EXTRA_TEXT, payload.text)
         // ClipData 不是可选装饰：没有它，部分接收方拿不到读权限，图会显示成空白/裂图。
-        clipData = ClipData.newUri(context.contentResolver, payload.clipLabel, uri)
+        clipData = ClipData.newUri(context.contentResolver, payload.clipLabel, contentUri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
@@ -138,7 +175,7 @@ private fun shareStatisticsTextOnly(context: Context, text: String, subject: Str
  * 导出宽度：把当前可用宽度收进 320~420dp（Dart `mediaQuery.size.width.clamp(320, 420)` 同口径）。
  *
  * `screenWidthDp` 在非 Activity context 上可能是 0，所以退回按像素/密度算——
- * 0 会让整张图缩成 1px 宽，比拿不到精确窗口宽度糟得多。
+ * 0 会让整张图缩成 1px 宽，比拿不到精确窗口宽度糟糕得多。
  */
 private fun exportWidthDp(context: Context): Float {
     val resources = context.resources
