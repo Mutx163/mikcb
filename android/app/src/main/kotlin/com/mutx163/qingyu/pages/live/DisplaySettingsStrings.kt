@@ -175,8 +175,19 @@ object DisplaySettingsStrings {
     val quickActionPriorityOnly = ArbText("liveBeforeClassQuickActionPriorityOnly", "仅放行优先通知")
     val quickActionBoth = ArbText("liveBeforeClassQuickActionBoth", "静音和免打扰")
 
+    // ── 选图与系统权限的失败提示 ──
+    // 2026-10-29 质量审核：这两句原先硬编码在 `composeP1/app/LiveDisplayHost.kt`
+    // （渲染层中文字面量，进不了 ARB 也就没有多语言），搬来此处参与 Parity 对拍。
+    val imagePickFailed = ArbText("liveImagePickFailed", "图片读取失败，请换一张再试")
+    val doNotDisturbAccessUnavailable = ArbText(
+        "liveDoNotDisturbAccessUnavailable",
+        "这台设备没有勿扰权限设置页，请到系统设置里手动授权",
+    )
+
     /** 所有对接 ARB 的文案集合（用于 Parity 测试机械对拍）。 */
     val allTexts: List<ArbText> = listOf(
+        imagePickFailed,
+        doNotDisturbAccessUnavailable,
         displayContentTitle,
         showCourseNameTitle,
         preferShortNameTitle,
