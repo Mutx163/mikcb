@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
@@ -146,6 +147,7 @@ fun TimeSchemeNameSheet(
 ) {
     val current = sheet
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
         title = current?.title,
         onDismissRequest = onDismiss,
@@ -189,6 +191,7 @@ fun TimeSchemeDeleteSheet(
     val dark = isSystemInDarkTheme()
     val current = check
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
         title = current?.title,
         summary = current?.message,
@@ -240,6 +243,7 @@ fun TimeSchemeDeleteBlockedSheet(
     val dark = isSystemInDarkTheme()
     val current = check
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
         title = current?.title,
         onDismissRequest = onCancel,
@@ -305,6 +309,7 @@ fun TimeSchemeUsageSheet(
     val dark = isSystemInDarkTheme()
     val current = view
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
         title = current?.title,
         onDismissRequest = onClose,
@@ -407,6 +412,7 @@ fun TimeSchemeShareSheetDialog(
 ) {
     val current = sheet
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
         title = current?.title,
         onDismissRequest = onDismiss,

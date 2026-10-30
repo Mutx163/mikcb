@@ -30,6 +30,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSectionTitle
@@ -220,6 +221,7 @@ fun ExamListPage(
     val target = pendingDelete
     if (target != null) {
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = ExamStrings.deleteExam.zh,
             summary = ExamStrings.deleteExamConfirm.filled("name", target.name),

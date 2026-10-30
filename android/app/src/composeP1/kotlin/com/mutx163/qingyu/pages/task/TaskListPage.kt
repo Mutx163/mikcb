@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.QingyuCard
@@ -279,6 +280,7 @@ fun TaskListPage(
     // 删除确认对话框（对齐 Dart `_confirmDelete` 的 showHyperosConfirmDialog，`:364-373`）。
     pendingDelete?.let { task ->
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = TaskStrings.taskDelete,
             onDismissRequest = { pendingDelete = null },

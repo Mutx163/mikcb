@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.theme.QingyuFixedTokens
@@ -704,6 +705,7 @@ private fun ShowcaseFeedbackSection(
 
         // 弹窗对话框实体
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = state.isBasicDialogOpen,
             title = ShowcaseStrings.feedbackDialogTitle.zh,
             summary = ShowcaseStrings.feedbackDialogMessage.zh,
@@ -718,6 +720,7 @@ private fun ShowcaseFeedbackSection(
         }
 
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = state.isConfirmDialogOpen,
             title = ShowcaseStrings.feedbackConfirmTitle.zh,
             summary = ShowcaseStrings.feedbackConfirmMessage.zh,

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -534,6 +535,7 @@ fun AddCoursePage(
 
     if (confirmDiscard) {
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = AddCourseStrings.courseFormDiscardTitle.zh,
             summary = AddCourseStrings.courseFormDiscardMessage.zh,
@@ -570,6 +572,7 @@ fun AddCoursePage(
     if (confirmDelete && isEditing) {
         val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = AddCourseStrings.deleteCourseTitle.zh,
             summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
@@ -754,6 +757,7 @@ private fun AddCourseWeekPickerDialog(
     onConfirm: (AddCourseWeekDraft) -> Unit,
 ) {
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = AddCourseStrings.weekPickerTitle.zh,
         onDismissRequest = onDismiss,

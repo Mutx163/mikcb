@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
@@ -289,6 +290,7 @@ fun IcsExportPage(
 
     // ── 导出成功后的二选一（Dart `_buildExportActionMenu`） ──
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = viewState.exportActionMenuVisible,
         title = ExportStrings.icsExportButton.zh,
         onDismissRequest = onDismissExportMenu,
@@ -308,6 +310,7 @@ fun IcsExportPage(
 
     // ── 同步前的一次性说明（Dart `_calendarSyncNoticePrefsKey`：确认过就不再问） ──
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = syncNoticeVisible,
         title = ExportStrings.icsExportSyncCalendarTitle.zh,
         onDismissRequest = onDismissSyncNotice,
@@ -331,6 +334,7 @@ fun IcsExportPage(
 
     // ── 移除已同步日程的确认（Dart `_removeFromSystemCalendar` 每次都问） ──
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = removeConfirmVisible,
         title = ExportStrings.icsExportRemoveCalendarTitle.zh,
         onDismissRequest = onDismissRemoveConfirm,

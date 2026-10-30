@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -211,6 +212,7 @@ fun LocationTimeMatchHost(
     // 与 `TimeSchemeDeleteSheet` 同姿势：弹层实例常驻、`show` 控制显隐，
     // 关闭时才有退出动画；内容用非空判断守住。
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = deleting != null,
         title = deleting?.let { LocationTimeMatchStrings.deleteTitle.zh },
         summary = deleting?.let {

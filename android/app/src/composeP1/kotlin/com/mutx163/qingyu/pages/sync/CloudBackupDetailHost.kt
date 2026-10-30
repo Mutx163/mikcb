@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
@@ -96,6 +97,7 @@ fun CloudBackupDetailHost(
 
     if (confirmDelete) {
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = SyncStrings.cloudBackupDeleteTitle.zh,
             onDismissRequest = { confirmDelete = false },

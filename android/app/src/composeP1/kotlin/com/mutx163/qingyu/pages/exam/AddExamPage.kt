@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
@@ -427,6 +428,7 @@ fun AddExamPage(
 
     if (confirmDelete) {
         OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = ExamStrings.deleteExam.zh,
             summary = ExamStrings.deleteExamConfirm.filled("name", viewState.name),

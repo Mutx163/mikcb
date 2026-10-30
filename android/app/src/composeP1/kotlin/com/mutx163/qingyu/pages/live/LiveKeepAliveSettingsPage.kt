@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
@@ -330,6 +331,7 @@ private fun LiveKeepAliveConfirmDialog(
     onConfirm: () -> Unit,
 ) {
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = show,
         title = LiveKeepAliveStrings.keepAliveConfirmTitle.zh,
         summary = LiveKeepAliveStrings.keepAliveConfirmBody.zh,

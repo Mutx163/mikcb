@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
@@ -41,7 +42,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -351,9 +351,13 @@ private fun CoursePickerSheet(
     onConfirm: () -> Unit,
 ) {
     val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.52f).dp
-    OverlayBottomSheet(
+    // 底部是通栏 `TransferButton(fillMaxWidth)` ⇒ 走套件的 16dp 框架内边距；
+    // 列表自己有 LazyColumn ⇒ `contentScrolls = true`，底部让位补在按钮**之后**
+    //（塞进列表会在按钮上方造一截空白）。
+    QingyuSheet(
         show = show,
         title = TransferStrings.qrTransferShareSelectedCourses.zh,
+        contentScrolls = true,
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -392,6 +396,9 @@ private fun CoursePickerSheet(
                 modifier = Modifier.fillMaxWidth(),
                 fillWidth = true,
             )
+            // 底部让位（系统手势区 + 16dp）：套件只在「内容自己不滚」时替我们补，
+            // 这里内容自己滚，所以补在最后一块固定件之后。
+            Spacer(modifier = Modifier.height(bottomInset))
         }
     }
 }
@@ -463,6 +470,7 @@ private val TransferCardInsideMargin = PaddingValues(start = 16.dp, top = 16.dp,
 @Composable
 fun TransferPreviewDialog(
     content: TransferPreviewContent?,
+    canMerge: Boolean = true,
     onChoose: (TransferApplyMode?) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
@@ -482,7 +490,7 @@ fun TransferPreviewDialog(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            for (action in DataTransferLogic.previewActions()) {
+            for (action in DataTransferLogic.previewActions(canMerge)) {
                 TransferButton(
                     label = action.label,
                     onClick = { onChoose(action.mode) },

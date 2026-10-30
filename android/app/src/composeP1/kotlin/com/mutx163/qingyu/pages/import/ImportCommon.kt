@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -454,6 +455,7 @@ fun ImportReplaceExistingDialog(
 ) {
     val dark = isSystemInDarkTheme()
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = show,
         title = title,
         onDismissRequest = onCancel,
@@ -506,6 +508,7 @@ fun ImportSpreadsheetWarningsDialog(
 ) {
     val dark = isSystemInDarkTheme()
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = show,
         title = ImportStrings.spreadsheetImportWarningsTitle.zh,
         onDismissRequest = onDismiss,
@@ -604,6 +607,7 @@ fun ImportPreviewDialog(
     }
 
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = ImportStrings.importReplaceExistingTitle.zh,
         onDismissRequest = onCancel,
@@ -766,6 +770,7 @@ fun ImportCapacityDialog(
     if (!show) return
     val dark = isSystemInDarkTheme()
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = ImportStrings.courseImportSectionCountInsufficientTitle.zh,
         onDismissRequest = onCancel,
@@ -810,6 +815,7 @@ fun ImportColorGroupDialog(
 ) {
     if (!show) return
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = ImportStrings.importRandomColorGroupTitle.zh,
         onDismissRequest = onDismiss,
