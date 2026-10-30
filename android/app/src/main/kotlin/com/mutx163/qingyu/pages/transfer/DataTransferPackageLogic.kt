@@ -54,11 +54,12 @@ import java.time.LocalDateTime
  *    `item.expandInstances(fromDate, toDate).any(window.containsDate)`；Kotlin
  *    `ScheduleItem` 没有 `expandInstances`，这里按 `occursOn(day)` 逐日走窗口
  *    （同一天序、同一 `containsDate` 判据），语义一致但实现不同。
- * 3. **`locationTimeGroups` 恒为空**：[TimetableSnapshot] 没有位置-作息分组字段
- *    （Dart `provider.locationTimeGroups`），本批不臆造该数据；受它影响的
- *    「按地点匹配作息」分支（Dart `_selectScopedMetadata` 里的 `LocationTimeMatchLogic`）
- *    在本实现中缺省为「不加分组相关作息 id」，只保留课程覆盖 id / 默认作息 id /
- *    日期规则引用 id 三条来源。
+ * 3. ~~**`locationTimeGroups` 恒为空**~~ **已修（2026-10-30）**：这条差异的前提是错的。
+ *    [TimetableSnapshot] 早就有 `locationTimeGroups`（`TimetableRepository.kt:45`），
+ *    原先恒写空列表是**导出侧丢数据**，不是刻意差异。现在按 `snapshot.locationTimeGroups`
+ *    原样写出（与 Dart `provider.locationTimeGroups` 同源），包内键名 `locationTimeGroups`。
+ *    受它影响的「按地点匹配作息」分支（Dart `_selectScopedMetadata` 里的
+ *    `LocationTimeMatchLogic`）因此才拿得到分组。
  * 4. **设置只落 core 子集**：`core/TimetableSettings.toJson()` 只有
  *    `sections` / `activeTimeSchemeId` / `semesterWeekCount` / `semesterStartDate`
  *    （+`semesterStartDateText`）五个键；Dart 是 250+ 键。所以导出的
@@ -270,8 +271,11 @@ object DataTransferPackageLogic {
             } else {
                 metadata.scheduleDateRules.map { it.toJson() }
             },
-            // TimetableSnapshot 无位置-作息分组，恒空（类注释「已知差异 3」）。
-            locationTimeGroupsJson = emptyList(),
+            // 地点作息分组（顶层键 `locationTimeGroups`，Dart `FullAppDataBackup` 同键名）。
+            // 2026-10-30 修（审核 P0）：原先恒写空列表，理由是「TimetableSnapshot 没有该字段」——
+            // 但 `TimetableRepository.kt:45` 早就有 `locationTimeGroups`（`9c2ec06a` 引入，早于本文件）。
+            // 结果导出侧静默丢数据：跨设备导入后「按地点匹配作息」全失效，且包内无痕迹。
+            locationTimeGroupsJson = snapshot.locationTimeGroups.map { it.toJsonMap() },
             profilesJson = if (isFullBackup) {
                 snapshot.profiles.map { it.toJson() }
             } else {
