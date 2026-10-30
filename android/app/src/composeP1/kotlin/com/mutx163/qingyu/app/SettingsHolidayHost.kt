@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.calendar.HolidayProvider
 import com.mutx163.qingyu.calendar.HolidayType
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.pages.settings.HolidayEditorLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsHolidayPage
@@ -47,7 +48,6 @@ import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -360,10 +360,18 @@ private fun HolidayEditorSheet(
         DateField.END -> s.customHolidayEndDate.zh
     }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = visible,
         title = title,
         onDismissRequest = onDismiss,
+        // ⚠️ 表单页里有**自己的** `LazyColumn`（字段区 380dp 内部滚动），滚轮页没有滚动。
+        // 所以这里必须 `contentScrolls = true`：套件在不滚动的默认档下会自己套一层
+        // `verticalScroll`，把这颗 LazyColumn 套进去就是嵌套滚动（同一支弹层两种页，
+        // 只能取「有滚动」的那一档）。代价是底部让位要自己补，见下面的 Spacer。
+        contentScrolls = true,
+        // 左右 16 由套件给：内容根是两个 `fillMaxWidth` 的 Column，自己没有横向内边距
+        // （`TextField` / `BasicComponent` 那 16 是控件内部留白，不是布局内缩）。
+        contentPadsHorizontally = false,
     ) {
         if (field == null) {
             HolidayEditorForm(
@@ -379,6 +387,7 @@ private fun HolidayEditorSheet(
                 onCancel = onDismiss,
                 onSave = { onConfirm(name, startDate, endDate, type) },
                 errorColor = Color(QingyuTheme.error(dark)),
+                errorContentColor = Color(QingyuTheme.onError(dark)),
             )
         } else {
             HolidayDateWheelPage(
@@ -398,6 +407,10 @@ private fun HolidayEditorSheet(
                 onConfirm = { confirmPicker() },
             )
         }
+        // 底部让位（系统手势区 + 16dp）补在**内容末尾**：套件只在 `contentScrolls = false`
+        // 时替我们补，这里自己补一份；补在内容里而不是垫在滚动视口外面（Dart
+        // `scrollableBottomGap` 的同一条：垫在外面会留一截永远空的板）。
+        Spacer(modifier = Modifier.height(bottomInset))
     }
 }
 
@@ -425,6 +438,7 @@ private fun HolidayEditorForm(
     onCancel: () -> Unit,
     onSave: () -> Unit,
     errorColor: Color,
+    errorContentColor: Color,
 ) {
     val s = SettingsStringsExt3
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -484,12 +498,18 @@ private fun HolidayEditorForm(
                     if (onDelete != null) {
                         Spacer(modifier = Modifier.height(16.dp))
                         // Dart `:248-258`：编辑态才有删除按钮，destructive 配色。
+                        // ⚠️ `color` 是**底色**、`contentColor` 才是字色：只给 `color` 会让字
+                        // 落在默认的 `onSecondaryVariant` 灰上（红底灰字，对比度坏）。
+                        // Dart `HyperosButtonVariant.destructive` = 红底 + `onError` 字。
                         Button(
                             onClick = onDelete,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
-                            colors = ButtonDefaults.buttonColors(color = errorColor),
+                            colors = ButtonDefaults.buttonColors(
+                                color = errorColor,
+                                contentColor = errorContentColor,
+                            ),
                         ) {
                             Text(text = s.customHolidayDelete.zh)
                         }
@@ -520,7 +540,6 @@ private fun HolidayEditorForm(
                 Text(text = s.saveAction.zh)
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -619,7 +638,6 @@ private fun HolidayDateWheelPage(
                 Text(text = TaskStrings.confirmAction)
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -637,10 +655,13 @@ private fun HolidayDeleteConfirmSheet(
 ) {
     val dark = isSystemInDarkTheme()
     val s = SettingsStringsExt3
-    OverlayBottomSheet(
+    QingyuSheet(
         show = visible,
         title = s.customHolidayDelete.zh,
         onDismissRequest = onDismiss,
+        // 内容里每一行（说明句 + 按钮行）自己都垫了左右 16，没有通栏元素 ⇒ 框架侧横向归零，
+        // 单边仍是 Dart 那个 16（Dart 这层一个横向 padding 都没写，全靠 `HyperosSheetFrame`）。
+        contentPadsHorizontally = true,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -663,12 +684,15 @@ private fun HolidayDeleteConfirmSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(color = Color(QingyuTheme.error(dark))),
+                    // 同上：`color` 是底色、字色要显式给 `onError`，否则是红底灰字。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.error(dark)),
+                        contentColor = Color(QingyuTheme.onError(dark)),
+                    ),
                 ) {
                     Text(text = s.deleteAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

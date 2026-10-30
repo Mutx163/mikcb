@@ -408,7 +408,9 @@ fun AddTaskPage(
                         modifier = Modifier.weight(1f),
                         text = TaskStrings.deleteAction,
                         colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
-                            color = Color(QingyuTheme.error(dark)),
+                            // 危险色只染**字**：`color` 是底色，传错会变成「红底 + 默认灰字」
+                            //（对比度坏，也不是 Dart `destructive` 变体的观感）。
+                            textColor = Color(QingyuTheme.error(dark)),
                         ),
                         onClick = {
                             showDeleteConfirm = false

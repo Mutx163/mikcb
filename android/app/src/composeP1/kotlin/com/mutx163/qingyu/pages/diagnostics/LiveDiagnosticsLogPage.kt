@@ -34,14 +34,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -63,7 +66,6 @@ import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -245,10 +247,12 @@ fun LiveDiagnosticsLogPage(
         }
     }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = showOptions,
         title = DiagnosticsStrings.diagnosticsDisplayOptionsTitle.zh,
         onDismissRequest = { showOptions = false },
+        // 内容自带 16dp（TabRow 的分段控件需要离面板边 16）：套件侧边距归零，避免叠成 32。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -295,6 +299,11 @@ fun LiveDiagnosticsLogPage(
         show = showClearConfirm,
         title = DiagnosticsStrings.appLogsClearAction.zh,
         onDismissRequest = { showClearConfirm = false },
+        // 内容自己写了左右 8dp；miuix 对话框默认 insideMargin 是 (24,24) ⇒ 合起来单边 32dp。
+        // 横向给 8dp：8（框架）+ 8（内容）= **16dp**，正好是本仓 Dart 对话框的口径
+        //（`docs/reference/changelog-2026-07-30-sheet-fixes.md`：`EdgeInsets.fromLTRB(16,16,16,16)`）。
+        // 纵向仍用 miuix 默认 24（Dart 是 16）—— 纵向逐内容核对未做，记在审核报告 §五，不在这一批改。
+        insideMargin = DpSize(8.dp, 24.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -312,6 +321,9 @@ fun LiveDiagnosticsLogPage(
                     onClear()
                 },
                 modifier = Modifier.weight(1f),
+                // 「确定」是出口：miuix `Button` 不传 colors 是 secondaryVariant 灰底，
+                // 与 Dart 主按钮（强调色）不一致。
+                colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(text = DiagnosticsStrings.confirmAction.zh)
             }

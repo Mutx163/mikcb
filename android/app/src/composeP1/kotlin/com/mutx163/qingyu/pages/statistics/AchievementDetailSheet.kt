@@ -25,13 +25,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -65,10 +66,12 @@ fun AchievementDetailSheet(
         Color(QingyuTheme.secondaryText(dark))
     }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = achievement.name,
         onDismissRequest = onDismiss,
+        // 正文自带 16dp ⇒ 套件侧边距归零，避免叠成 32。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -220,9 +223,12 @@ fun AchievementDetailSheet(
             Spacer(Modifier.height(20.dp))
 
             // ── 确认按钮（知道了） ──
+            // Dart `achievement_badge.dart:312-316` 是 `HyperosButton(expand: true)`（不传 variant
+            // ⇒ primary）；miuix `Button` 不传 colors 是 secondaryVariant 灰底。
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(achievement.confirmLabel)
             }

@@ -46,6 +46,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,7 +66,6 @@ import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Update
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -350,10 +350,13 @@ private fun HeroMetaDivider() {
 @Composable
 private fun AboutInfoSheet(entry: AboutInfoEntry, onDismiss: () -> Unit) {
     val dark = isSystemInDarkTheme()
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = entry.title,
         onDismissRequest = onDismiss,
+        // 内容那 4dp 只是面板内的微调，不足以顶掉套件的 16dp 口径：置 true 会把正文贴到
+        // 面板边缘（单边只剩 4dp）。保持 false ⇒ 单边 16 + 4 = 20dp（Dart `HyperosSheetFrame` 是 16）。
+        contentPadsHorizontally = false,
     ) {
         Column(
             modifier = Modifier
@@ -391,10 +394,12 @@ private fun AboutRepositorySheet(
     onCopyAddress: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = AboutRepositoryStrings.sheetTitle,
         onDismissRequest = onDismiss,
+        // 同 AboutInfoSheet：内容只有 4dp 微调，套件的 16dp 侧边距保留。
+        contentPadsHorizontally = false,
     ) {
         Column(
             modifier = Modifier
@@ -416,7 +421,9 @@ private fun AboutRepositorySheet(
             Button(
                 onClick = onOpenMainRepo,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(),
+                // Dart `_showRepositorySheet` 里这颗是 `HyperosButton(...)` 默认（primary）；
+                // `buttonColors()` 是 secondaryVariant 灰底，主操作会看起来点不动。
+                colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(AboutRepositoryStrings.openGitHubAction)
             }

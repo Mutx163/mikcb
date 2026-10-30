@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
@@ -45,7 +46,6 @@ import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Promotions
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tasks
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -67,7 +67,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 右上角「更多」菜单（跟设置的 `homeMenuStyle` 分流，与 Flutter 一致）
  *
- * * `GRID`（八宫格）：点「更多」弹底部弹层（`OverlayBottomSheet`），4 列图标瓷贴；
+ * * `GRID`（八宫格）：点「更多」弹底部弹层（`QingyuSheet`），4 列图标瓷贴；
  * * `LIST`（列表）：点「更多」在按钮正下方弹出锚定列表弹层（miuix 自带
  *   `OverlayListPopup`，带弹簧淡入、放不下自动翻到上方）。这是 Dart
  *   `homeMenuController.showTopActionsSheet` 的两条分支，默认档位就是 list。
@@ -267,8 +267,8 @@ object TimetableMenuDefaults {
 /**
  * 「更多」底部菜单：4 列图标瓷贴，点一项回传 id 并收起。
  *
- * 容器与课程操作弹层同口径（`OverlayBottomSheet`）——同一 App 的底部弹层都长这样，
- * 用户不需要为不同弹层重新建立预期。
+ * 容器与课程操作弹层同口径（`QingyuSheet`：16dp 侧边距 + 底部让出手势区）——同一 App 的
+ * 底部弹层都长这样，用户不需要为不同弹层重新建立预期。
  */
 @Composable
 private fun TimetableHomeMenuSheet(
@@ -279,10 +279,12 @@ private fun TimetableHomeMenuSheet(
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit,
 ) {
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = TimetableStrings.moreTooltip.zh,
         onDismissRequest = onDismiss,
+        // 瓷贴网格自带 4dp 微调（不足以顶掉套件 16dp）：保持套件侧边距 ⇒ 单边 20dp。
+        contentPadsHorizontally = false,
     ) {
         Column(
             modifier = Modifier

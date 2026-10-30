@@ -302,7 +302,8 @@ fun TaskListPage(
                         modifier = Modifier.weight(1f),
                         text = TaskStrings.deleteAction,
                         colors = ButtonDefaults.textButtonColors(
-                            color = Color(QingyuTheme.error(dark)),
+                            // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
+                            textColor = Color(QingyuTheme.error(dark)),
                         ),
                         onClick = {
                             val target = pendingDelete

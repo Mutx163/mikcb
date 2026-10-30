@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.calendar.ScheduleDateRuleLogic
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeAction
@@ -42,10 +43,10 @@ import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageSheet
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeUsageView
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeSectionEdit
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -527,10 +528,13 @@ private fun SchemeTimePickerSheet(
     var hour by remember(show, initial) { mutableIntStateOf(parsed.first) }
     var minuteIndex by remember(show, initial) { mutableIntStateOf(parsed.second / MINUTE_STEP) }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
+        // 内容根 Column 自己给了左右 16（两列滚轮 + 按钮行都不通栏）⇒ 框架侧横向归零，
+        // 单边就是 Dart 那个 16，不再叠成 32。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -580,11 +584,13 @@ private fun SchemeTimePickerSheet(
                         val minute = (minuteIndex * MINUTE_STEP).toString().padStart(2, '0')
                         onConfirm("${hour.toString().padStart(2, '0')}:$minute")
                     },
+                    // 弹层的主出口（不是取消）⇒ 强调色；默认 `buttonColors()` 是灰的
+                    // `secondaryVariant`，读起来像禁用（Dart 用 primary 变体）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = TimeSchemeManagementStrings.saveAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

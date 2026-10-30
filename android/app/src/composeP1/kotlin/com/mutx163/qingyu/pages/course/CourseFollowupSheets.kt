@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -56,7 +57,6 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Pause
 import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Remove
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -103,8 +103,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 /**
  * 弹层容器（Dart `_FollowupSheetContainer` `:852-864`：`HyperosSheetFrame` + 四边内缩）。
  *
- * 官方 `OverlayBottomSheet` 自带的 `insideMargin` 横向已经是 24dp（`BottomSheetDefaults`），
- * 这里只补 4dp（与 `TaskPickerSheets` 同口径）和底部留白，避免横向缩进翻倍。
+ * 左右 16dp、底部让出手势区 + 16、限高与滚动**全部由 [QingyuSheet] 套件统一给**
+ *（口径来源见那支文件的 KDoc：miuix 默认 24 侧边距 + 只让键盘不让手势条，两处都跟
+ * Dart 不一样）。本函数只保留「内容成一个 Column」这一件事。
  */
 @Composable
 private fun FollowupSheet(
@@ -112,17 +113,8 @@ private fun FollowupSheet(
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    OverlayBottomSheet(
-        show = show,
-        onDismissRequest = onDismiss,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .padding(bottom = 20.dp),
-            content = content,
-        )
+    QingyuSheet(show = show, onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth(), content = content)
     }
 }
 
@@ -382,18 +374,21 @@ private fun FollowupPickerSheet(
     val primaryText = Color(QingyuTheme.primaryText(dark))
     val accent = MiuixTheme.colorScheme.primary
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = title,
+        // 内容自己有 LazyColumn ⇒ 滚动与底部让位都归它：套件不再套 verticalScroll
+        //（否则嵌套滚动会崩），让位值由 `bottomInset` 塞进列表的 contentPadding。
+        contentScrolls = true,
         onDismissRequest = onDismiss,
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 380.dp)
-                .padding(horizontal = 4.dp)
                 .scrollEndHaptic()
                 .overScrollVertical(),
+            contentPadding = PaddingValues(bottom = bottomInset),
         ) {
             items(options) { option ->
                 Row(
@@ -442,17 +437,12 @@ private fun FollowupLocationSheet(
     val dark = isSystemInDarkTheme()
     val secondaryText = Color(QingyuTheme.secondaryText(dark))
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .padding(bottom = 20.dp),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             TextField(
                 value = text,
                 onValueChange = { text = it },
@@ -644,7 +634,10 @@ fun CourseDeleteConfirmSheet(
                 text = CourseFollowupStrings.deleteAction.zh,
                 onClick = onConfirm,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColors(color = destructive),
+                // 危险色只染**字**（Dart `HyperosFrostedSheetButtonVariant.destructive`：
+                // 底色仍是中性磨砂、只有文字变红）。把 `color` 传成错误色会得到
+                // 「整颗红底 + 默认灰字」，既不是 Dart 的观感，对比度也不够。
+                colors = ButtonDefaults.textButtonColors(textColor = destructive),
             )
         }
     }
@@ -700,15 +693,17 @@ fun CourseRescheduleSheet(
         sectionTimes = sectionTimes,
     )
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
+        // 正文里有自己的 LazyColumn（限高 480 自己滚）⇒ 套件不再套 verticalScroll
+        //（否则嵌套滚动崩）；底部让位由本层垫在固定按钮下面。
+        contentScrolls = true,
         onDismissRequest = onDismiss,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-                .padding(bottom = 16.dp),
+                .padding(bottom = bottomInset),
         ) {
             // 正文可滚（官方手感：末端轻震 + 过度滚动），底部按钮固定在列表外
             LazyColumn(

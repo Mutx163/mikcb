@@ -12,12 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -51,10 +51,13 @@ fun CloudBackupDetailSheet(
 ) {
     val dark = isSystemInDarkTheme()
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = view.title,
         onDismissRequest = onDismissRequest,
+        // 内容左右自留 4dp（与页面口径的「16 + 4」一致，正文/按钮都不自带横向内边距），
+        // 所以框架侧照旧给 16dp：单边合计 20dp，不是 miuix 默认 24 的 28。
+        contentPadsHorizontally = false,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
             DetailLine(view.deviceLine, dark)

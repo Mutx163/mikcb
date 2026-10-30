@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.course
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,14 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +37,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -63,7 +61,6 @@ import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.icon.extended.Timer
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -140,7 +137,7 @@ fun CourseActionSheet(
         }
     }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         // ⚠️ 「有没有子弹层」也算进父弹层的可见性判据：同一层级里只该有一层底栏。
         // 开子弹层时先把父弹层藏起来，屏幕上就只剩一层（Dart `_dismissThen`
         // `:532-556` 也是「先收课程弹层、退场结束再开子弹层」）。
@@ -150,17 +147,17 @@ fun CourseActionSheet(
         // 所以子弹层一取消就原地回到课程弹层。取舍：保住「只有一层底栏」的观感，
         // 又不用为一次取消重走「点课卡」。
         show = course != null && stage == CourseSheetStage.NONE,
+        // 限高 80% 屏高（Dart `:168-171`）+ 滚动 + 底部让出手势区，三件事都由套件给
+        //（见 `QingyuSheet` KDoc 的 S1 / S2；内容**不**自己滚动，所以 contentScrolls 走默认 false，
+        // 套件会把「系统手势区 + 16」垫在滚动内容末尾，而不是垫在视口外面）。
+        maxHeightFraction = SHEET_MAX_HEIGHT_FRACTION,
+        // 换课后滚回顶部（Dart `_selectCourse` `:146-150`）要操作**可见的那个**滚动状态，
+        // 所以传进来；套件不传时会自己记一个，那就滚不动了。
+        scrollState = scrollState,
         onDismissRequest = onDismiss,
     ) {
-        if (course == null || section == null) return@OverlayBottomSheet
-        val maxHeight = (LocalConfiguration.current.screenHeightDp * SHEET_MAX_HEIGHT_FRACTION).dp
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = maxHeight)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 4.dp),
-        ) {
+        if (course == null || section == null) return@QingyuSheet
+        Column(modifier = Modifier.fillMaxWidth()) {
             SheetHeaderBlock(
                 section = section,
                 dark = dark,
@@ -213,7 +210,6 @@ fun CourseActionSheet(
                     onDelete = { stage = CourseSheetStage.DELETE_SCOPE },
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 
@@ -306,6 +302,7 @@ private enum class CourseSheetStage { NONE, DELETE_SCOPE, DELETE_CONFIRM, SUSPEN
 
 /** Dart `MediaQuery.sizeOf(context).height * 0.8`（`:168-171`）。 */
 private const val SHEET_MAX_HEIGHT_FRACTION = 0.8f
+
 
 /** 头部块的课程色图标尺寸与圆角（Dart `:711-720`：48 / 圆角 14 / 图标 24）。 */
 private val HEADER_BADGE_SIZE = 48.dp
@@ -684,6 +681,14 @@ private fun entryColor(
  * 动作区（Dart `:871-917`）：编辑整宽主按钮 + 第二排「调课 / 停课·恢复 / 删除」。
  *
  * 只读课整块不渲染（由模型 `showActions` 决定，调用点已判）；调课在本周没课时置灰。
+ *
+ * ## 三处配色/尺寸必须按 Dart，不能用 miuix 默认值
+ *
+ * | 按钮 | Dart | miuix 默认（错的） | 这里 |
+ * |---|---|---|---|
+ * | 编辑 | `HyperosButton`，**primary 变体**（强调色实心） | `buttonColors()` = `secondaryVariant` 灰 | [ButtonDefaults.buttonColorsPrimary] |
+ * | 删除 | `HyperosFrostedSheetButton(variant = destructive)`：**底色仍是中性**，只有**字**是危险色 | `textButtonColors(color = 错误色)` = 整颗红底 + 灰字（对比度坏） | `textButtonColors(textColor = 危险色)` |
+ * | 三个次按钮 | 等宽 `Expanded` + 8dp 间距 | 同上 | 同 miuix 默认（58/40/16 与 Dart `HyperosMiuixButton` 逐值一致） |
  */
 @Composable
 private fun CourseActionButtons(
@@ -698,6 +703,9 @@ private fun CourseActionButtons(
         Button(
             onClick = onEdit,
             modifier = Modifier.fillMaxWidth(),
+            // 主操作是**强调色实心**（Dart `HyperosButtonVariant.primary`）。
+            // 用默认 `buttonColors()` 会得到 grey secondary 底 —— 主按钮读起来像禁用。
+            colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
             Text(text = CourseActionStrings.courseActionEditPrimary.zh)
         }
@@ -720,7 +728,9 @@ private fun CourseActionButtons(
             TextButton(
                 modifier = Modifier.weight(1f),
                 text = CourseActionStrings.courseActionDeleteSecondary.zh,
-                colors = ButtonDefaults.textButtonColors(color = destructive),
+                // 危险色只染字：把 `color` 传成错误色会得到「整颗红底 + 灰字」，
+                // 那既不是 Dart 的观感（磨砂中性底 + 红字），对比度也不够。
+                colors = ButtonDefaults.textButtonColors(textColor = destructive),
                 onClick = onDelete,
             )
         }

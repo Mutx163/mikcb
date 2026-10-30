@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,8 +26,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
@@ -34,7 +37,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -51,8 +53,8 @@ import java.time.LocalDateTime
  *
  * | 弹层 | Dart 出处 | Dart 长什么样 | 这里怎么实现 |
  * |---|---|---|---|
- * | 选课程 | `add_task_screen.dart:282-347`（`showHyperosSheet` + `HyperosSheet(title:)` + `HyperosChoiceGroup`，首项「无关联课程」、按课名分组升序） | 选项行 `HyperosChoiceTile`：`variant: dialog`，行高 ≥ 56、内边距 `(16,13,16,13)`、**选中 = 行尾 22dp 勾**（`tiles.dart:656-661` → `indicators.dart:168-176`），行间分隔线左缩进 16（`tiles.dart:687-690`）；选项区最高 **屏高 × 0.64**（`:301-304`） | `OverlayBottomSheet` + `LazyColumn(heightIn(max = 屏高×0.64))` + 同款行距 / 勾图标 / 分隔线 |
- * | 选日期 | `add_task_screen.dart:349-365` → `showMiuixDatePickerSheet`（`lib/widgets/miuix_date_picker_sheet.dart`） | **月历** `MiuixDatePicker`（`:166-180`），点月历标题才弹**年 / 月 / 日三列滚轮**（`_YearMonthWheelDialog` `:325-367`，行文案 `'$value年' '/月' '/日'`）；范围 2020-01-01 ~ 2035-12-31、初值 `当前值 ?: 今天`（`:354-356`） | `OverlayBottomSheet` + 官方 `basic.NumberPicker` 三列滚轮（同族先例 `SettingsHolidayHost.kt:575-599`、`SettingsSemesterHost.kt:249-274`） |
+ * | 选课程 | `add_task_screen.dart:282-347`（`showHyperosSheet` + `HyperosSheet(title:)` + `HyperosChoiceGroup`，首项「无关联课程」、按课名分组升序） | 选项行 `HyperosChoiceTile`：`variant: dialog`，行高 ≥ 56、内边距 `(16,13,16,13)`、**选中 = 行尾 22dp 勾**（`tiles.dart:656-661` → `indicators.dart:168-176`），行间分隔线左缩进 16（`tiles.dart:687-690`）；选项区最高 **屏高 × 0.64**（`:301-304`） | `QingyuSheet` + `LazyColumn(heightIn(max = 屏高×0.64))` + 同款行距 / 勾图标 / 分隔线 |
+ * | 选日期 | `add_task_screen.dart:349-365` → `showMiuixDatePickerSheet`（`lib/widgets/miuix_date_picker_sheet.dart`） | **月历** `MiuixDatePicker`（`:166-180`），点月历标题才弹**年 / 月 / 日三列滚轮**（`_YearMonthWheelDialog` `:325-367`，行文案 `'$value年' '/月' '/日'`）；范围 2020-01-01 ~ 2035-12-31、初值 `当前值 ?: 今天`（`:354-356`） | `QingyuSheet` + 官方 `basic.NumberPicker` 三列滚轮（同族先例 `SettingsHolidayHost.kt:575-599`、`SettingsSemesterHost.kt:249-274`） |
  *
  * ⚠️ **月历那一层没有搬**：Kotlin 侧 miuix 0.9.4 没有 `DatePicker`，自绘月历属于 MIUIX-FIRST
  * 标准里的例外（要用户拍板 + 登记），所以这里只保留 Dart 里同样由滚轮承担的那一半 ——
@@ -90,10 +92,14 @@ fun TaskCoursePickerSheet(
     // 同款写法见 `DataTransferPage.CoursePickerSheet`（`LazyColumn(heightIn(max = …))`）。
     val maxListHeight = (LocalConfiguration.current.screenHeightDp * SHEET_MAX_HEIGHT_FRACTION).dp
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = { onPick(null) },
+        // ⚠️ 正文里有 LazyColumn：必须走 contentScrolls = true，否则套件在外面再套一层
+        // verticalScroll，两个竖向滚动容器嵌套。
+        // 行内的 16dp 是选项行自己的（Dart 同样在 16dp 面板边距里再缩进 16），所以框架侧边距保留。
+        contentScrolls = true,
     ) {
         // 弹层内部的短列表不承载页面级滚动，所以不用 `QingyuPageList`
         //（它带页面级滚动条，且要求 Scaffold 的 innerPadding）；
@@ -104,6 +110,9 @@ fun TaskCoursePickerSheet(
                 .heightIn(max = maxListHeight)
                 .scrollEndHaptic()
                 .overScrollVertical(),
+            // 底部让位 = 系统手势区 + 16，必须落在**滚动内容**的 contentPadding 里
+            //（原来那个 `item { Spacer(8.dp) }` 的贴底呼吸已被它取代）。
+            contentPadding = PaddingValues(bottom = bottomInset),
         ) {
             itemsIndexed(options) { index, option ->
                 // Dart 选项行：`HyperosChoiceTile(variant: dialog)`（`tiles.dart:630-693`）。
@@ -149,7 +158,6 @@ fun TaskCoursePickerSheet(
                     )
                 }
             }
-            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
     }
 }
@@ -192,10 +200,12 @@ fun TaskDueDatePickerSheet(
     val maxDay = daysInMonth(year, month)
     val safeDay = day.coerceAtMost(maxDay)
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = TaskStrings.taskDueDateLabel,
         onDismissRequest = onDismiss,
+        // 正文自带 16dp（滚轮三列与按钮都要离面板边 16）⇒ 套件侧边距归零，避免叠成 32。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -263,6 +273,9 @@ fun TaskDueDatePickerSheet(
                         // Dart `:362` `CourseTask.dateOnly(selected)` ⇒ 只取日期、时分归零。
                         onPick(LocalDateTime.of(year, month, safeDay, 0, 0))
                     },
+                    // 「确认」是出口：Dart `miuix_date_picker_sheet.dart:195-200` 那颗不传 variant
+                    //（= primary），取消那颗才是 secondary。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = PICKER_CONFIRM_LABEL)
                 }
@@ -271,12 +284,13 @@ fun TaskDueDatePickerSheet(
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
                 text = TaskStrings.taskNoDueDate,
-                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
-                    color = colors.primary,
+                // `textButtonColors(color = …)` 是**底色**位 ⇒ 主色底 + 灰字；
+                // 本仓口径是中性底 + 主色字（Dart `HyperosButtonVariant.text`）。
+                colors = ButtonDefaults.textButtonColors(
+                    textColor = colors.primary,
                 ),
                 onClick = onClear,
             )
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

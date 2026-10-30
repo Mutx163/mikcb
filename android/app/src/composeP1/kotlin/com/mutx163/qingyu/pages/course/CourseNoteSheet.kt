@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,7 +18,6 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,11 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -44,7 +41,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Notes
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -142,21 +138,22 @@ fun CourseNoteSheet(
         }
     }
 
-    // 限高上限：屏高 × 0.88（Dart `:209-212` 的上界），键盘高度交给 imePadding。
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * SHEET_MAX_HEIGHT_RATIO).dp
-
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show && course != null,
+        // 内容自己给左右 16 + 顶部 16，所以框架侧横向内边距归零（否则单边 24+16 = 40，
+        // 内容会被挤成中间窄条）。底部让位与键盘让位由套件统一处理。
+        contentPadsHorizontally = true,
+        // 限高上限：屏高 × 0.88（Dart `:209-212` 的上界）。
+        maxHeightFraction = SHEET_MAX_HEIGHT_RATIO,
+        // 聚焦后滚进可视区要操作**可见的那个**滚动状态，所以传进去。
+        scrollState = scrollState,
         onDismissRequest = onDismiss,
     ) {
-        if (course == null) return@OverlayBottomSheet
+        if (course == null) return@QingyuSheet
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .imePadding()
-                .heightIn(max = maxHeight)
-                .verticalScroll(scrollState)
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp),
         ) {
             // ── 头部：44dp 圆角色块 + 标题 + 副标题（Dart `:231-268`）──
@@ -281,7 +278,6 @@ fun CourseNoteSheet(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

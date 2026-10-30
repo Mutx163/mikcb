@@ -31,12 +31,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -63,7 +65,6 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -279,13 +280,18 @@ fun MemoryStatsPage(
     }
 
     val sheet = openSheet?.let { viewState.sheets[it] }
-    OverlayBottomSheet(
+    QingyuSheet(
         show = sheet != null,
         title = sheet?.title,
         onDismissRequest = { openSheet = null },
+        // 正文自己带 16dp（LazyColumn 的 contentPadding）⇒ 套件侧边距归零，避免叠成 32。
+        contentPadsHorizontally = true,
+        // 正文是 LazyColumn（自己管滚动）：套件不能再套 verticalScroll（嵌套滚动）。
+        // 底部让位因此由正文自己落实 —— 见 [MemorySheetBody] 的 bottomInset 参数。
+        contentScrolls = true,
     ) {
         if (sheet != null) {
-            MemorySheetBody(sheet = sheet, dark = dark)
+            MemorySheetBody(sheet = sheet, dark = dark, bottomInset = bottomInset)
         }
     }
 }
@@ -518,7 +524,7 @@ private fun sheetMaxHeightFraction(sheet: MemoryStatsSheet): Float = when (sheet
 
 /** 弹层内容：按 sheet 里填了哪块字段分别铺开（结构与 Dart `_showXxxSheet` 一一对应）。 */
 @Composable
-private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
+private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset: Dp) {
     // Dart 每个弹层正文都是「限高 + 可滚动」（`SingleChildScrollView` + `ConstrainedBox`）。
     // 这里用 LazyColumn 做弹层**内部**滚动（与 `TimeSchemeQuickGenerateSheet` /
     // `DataTransferPage` 的既有做法一致）；它不承担页面主滚动，主滚动仍是 QingyuPageList。
@@ -527,7 +533,15 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = maxHeight),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        // 底部 = 原有 8dp + 套件给的让位（系统手势区 + 16）：让位必须落在**滚动内容**里，
+        // 垫在滚动视口外面时那一截会永远空着（见 `QingyuSheet` KDoc 的 S2）。
+        // 限高仍是业务判据（每个 sheet 的比例不同），所以没有上提成套件的 maxHeightFraction。
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 8.dp,
+            end = 16.dp,
+            bottom = 8.dp + bottomInset,
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         sheet.description?.let { description ->

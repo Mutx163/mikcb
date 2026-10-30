@@ -47,6 +47,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -73,7 +73,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 本轮补上的关键件
  *
  * 1. 二维码从 `flutter_assets/assets/donate/{wechatpay,alipay}.png` 真读（此前是占位文字）；
- * 2. 点击二维码弹出放大弹层（[OverlayBottomSheet]）；
+ * 2. 点击二维码弹出放大弹层（[QingyuSheet]）；
  * 3. 保存到相册走 MediaStore（minSdk 33，直接插 `Pictures/qingyu`）；
  * 4. 头图有应用图标 + 「运行中」徽标。
  *
@@ -303,10 +303,12 @@ fun SupportCreatorPage(
     }
 
     if (previewOpen) {
-        OverlayBottomSheet(
+        QingyuSheet(
             show = true,
             title = SupportCreatorStrings.scanTitleFor(method),
             onDismissRequest = { previewOpen = false },
+            // 内容自带 4dp 微调（不足以顶掉套件 16dp）：保持套件侧边距 ⇒ 单边 20dp。
+            contentPadsHorizontally = false,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),

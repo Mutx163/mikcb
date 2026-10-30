@@ -232,7 +232,8 @@ fun LocationTimeMatchHost(
                 TextButton(
                     modifier = Modifier.weight(1f),
                     text = LocationTimeMatchStrings.deleteAction.zh,
-                    colors = ButtonDefaults.textButtonColors(color = Color(QingyuTheme.error(dark))),
+                    // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
+                    colors = ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark))),
                     onClick = {
                         pendingDelete = null
                         when (val result = controller.delete(deleting.id)) {

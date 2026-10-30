@@ -31,12 +31,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -53,7 +53,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *
  * | 弹层 | Dart 来源 | 容器 | 为什么是这个容器 |
  * |---|---|---|---|
- * | `TimeSchemeMenuSheet` | `_openSchemeMenu`（:286-345）的条目顺序与出现条件 | `OverlayBottomSheet` | Dart 是锚点变形菜单（`HyperosAnchorMenuPopup`），需要按钮的窗口坐标；渲染层拿不到锚点坐标（那是宿主的事），所以退成官方底部动作表——同样是「从下方来的一列动作」，且不新造菜单组件 |
+ * | `TimeSchemeMenuSheet` | `_openSchemeMenu`（:286-345）的条目顺序与出现条件 | `QingyuSheet`（共享底部弹层封装） | Dart 是锚点变形菜单（`HyperosAnchorMenuPopup`），需要按钮的窗口坐标；渲染层拿不到锚点坐标（那是宿主的事），所以退成官方底部动作表——同样是「从下方来的一列动作」，且不新造菜单组件 |
  * | `TimeSchemeNameSheet` | `_createScheme`（:571-612）/ `_renameScheme`（:614-658） | `OverlayDialog` | Dart `showAppTextInputDialog` 是居中对话框（标题 + 输入框 + 两个动作） |
  * | `TimeSchemeDeleteSheet` | `_deleteScheme`（:660-719）的确认框 | `OverlayDialog` | Dart `showHyperosConfirmDialog` 是居中对话框 |
  * | `TimeSchemeDeleteBlockedSheet` | `_explainDeleteBlocked`（:725-812） | `OverlayDialog` | 同上（`showHyperosDialog`），正文是占用清单，不是动作表 |
@@ -91,11 +91,13 @@ fun TimeSchemeMenuSheet(
     onAction: (TimeSchemeAction) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    OverlayBottomSheet(
+    QingyuSheet(
         show = state != null,
         // 用模板名当弹层标题：菜单里 7 个动作都作用于这一套模板，标题是唯一的上下文。
         title = state?.schemeName,
         onDismissRequest = onDismiss,
+        // 内容自己给了 16dp（下面那个 Column），所以框架侧横向归零，避免叠成 32。
+        contentPadsHorizontally = true,
     ) {
         val items = state?.items.orEmpty()
         Column(
@@ -107,10 +109,13 @@ fun TimeSchemeMenuSheet(
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = item.label,
-                    // 删除是唯一 destructive 项（Dart `destructive: true`）：红字，但**照常可点**
-                    // ——点它只会开对话框（有引用时说明是什么挡住了），禁掉会读成「红字却点不动」。
+                    // 删除是唯一 destructive 项（Dart `destructive: true`）：中性底 + 红字，
+                    // 但**照常可点**——点它只会开对话框（有引用时说明是什么挡住了），
+                    // 禁掉会读成「红字却点不动」。
+                    // 注意 `textButtonColors(color = …)` 的 `color` 是**底色**（会得到整颗红底 +
+                    // 默认灰字，对比度坏）；Dart 口径是中性的底 + 危险色的字 ⇒ 用 `textColor`。
                     colors = if (item.action == TimeSchemeAction.DELETE) {
-                        ButtonDefaults.textButtonColors(color = Color(QingyuTheme.error(dark)))
+                        ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
                     } else {
                         ButtonDefaults.textButtonColors()
                     },
@@ -123,7 +128,6 @@ fun TimeSchemeMenuSheet(
                 text = TimeSchemeManagementStrings.cancelAction.zh,
                 onClick = onDismiss,
             )
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -469,8 +473,10 @@ private fun DialogActionRow(
         TextButton(
             modifier = Modifier.weight(1f),
             text = confirmLabel,
+            // `destructive` 是「中性底 + 危险色的字」：`textButtonColors(color = …)` 的 `color`
+            // 是**底色**（红底 + 默认灰字），所以这里必须用 `textColor`。
             colors = if (destructive) {
-                ButtonDefaults.textButtonColors(color = Color(QingyuTheme.error(dark)))
+                ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
             } else {
                 ButtonDefaults.textButtonColorsPrimary()
             },

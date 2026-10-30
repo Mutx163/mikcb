@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.MemoryStatsCollector
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.pages.settings.SemesterSettingsLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
@@ -29,10 +30,10 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePage
 import com.mutx163.qingyu.pages.task.TaskStrings
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -230,10 +231,13 @@ private fun SemesterStartDateSheet(
     val maxDay = SemesterSettingsLogic.daysInMonth(year, month)
     val safeDay = day.coerceAtMost(maxDay)
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = SettingsStringsExt2.semesterStartDateLabel.zh,
         onDismissRequest = onDismiss,
+        // 内容根 Column 自己给了左右 16（里面没有通栏元素）⇒ 框架侧横向归零，
+        // 单边就是 Dart 那个 16（`hyperosMiuixBottomSheetInsideMargin`），不再叠成 32。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -286,11 +290,13 @@ private fun SemesterStartDateSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(LocalDate.of(year, month, safeDay)) },
+                    // 弹层的主出口（不是取消）⇒ 强调色。默认 `buttonColors()` 是灰的
+                    // `secondaryVariant`，读起来像禁用（Dart 用 `HyperosButtonVariant.primary`）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = TaskStrings.confirmAction)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -310,10 +316,12 @@ private fun SemesterWeekCountSheet(
 ) {
     var count by remember(show, initial) { mutableIntStateOf(initial) }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = SettingsStringsExt2.selectSemesterWeekCountTitle.zh,
         onDismissRequest = onDismiss,
+        // 与开学日期弹层同一个口径（见上）。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier
@@ -345,11 +353,12 @@ private fun SemesterWeekCountSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(count) },
+                    // 弹层主出口 ⇒ 强调色（同上）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = TaskStrings.confirmAction)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

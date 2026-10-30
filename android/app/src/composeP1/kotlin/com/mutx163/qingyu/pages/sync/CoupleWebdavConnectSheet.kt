@@ -18,13 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -70,10 +70,12 @@ fun CoupleWebdavConnectSheet(
     val credentialsFilled = username.trim().isNotEmpty() && password.isNotEmpty()
     val busy = testing || connecting
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = texts.title,
         onDismissRequest = onDismissRequest,
+        // 同 [CloudBackupDetailSheet]：内容自留 4dp，框架侧仍给 16dp（合计 20dp，对齐页面口径）。
+        contentPadsHorizontally = false,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
             Text(
@@ -166,7 +168,6 @@ fun CoupleWebdavConnectSheet(
                     Text(text = texts.confirmLabel)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.BreakOverrideRule
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
@@ -32,7 +33,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *
  * | Dart | 这里 |
  * |---|---|
- * | `showTimeSchemeQuickGenerateSheet` + `HyperosSheetFrame(floating)` 外壳 `:55-65`、`:146-157` | 官方 [OverlayBottomSheet]（同一个「底部浮层 + 标题」角色） |
+ * | `showTimeSchemeQuickGenerateSheet` + `HyperosSheetFrame(floating)` 外壳 `:55-65`、`:146-157` | 共享 [QingyuSheet]（官方 `OverlayBottomSheet` 的封装：统一 16dp 横向内边距与底部手势区让位） |
  * | 五个数字输入框（上午/下午/晚上节数、单节课时长、小课间时长）`:164-229`、`_buildNumberField` `:278-284` | [NumberField]：miuix `TextField` + 数字键盘（**不改成滚轮**：Dart 就是文本输入框，滚轮会把 6 个字段摊成 6 个 180dp 高的滚轮） |
  * | 三个起始时间 `HyperosPickerField` `:169-219`、`_buildTimeTile` `:286-299` + `showMiuixTimePickerSheet` | [TimePickerField]（行样式）+ 本弹层内**第二页**「时 0-23 / 分 0-59 步长 5」两列官方 `NumberPicker` |
  * | 「大课间规则」标题 + 增删行 `:231-247`、`_buildBreakOverrideRows` `:301-347`、`_addBreakOverride` `:430-436` | 同一套：每行「第几节后 / 休息时长 分钟 / 删除」，空态给 `noLargeBreakRulesHint` |
@@ -214,10 +214,15 @@ fun TimeSchemeQuickGenerateSheet(
     val title = timeField?.let { timeFieldLabel(it) }
         ?: TimeSchemeManagementStrings.quickGenerateTimeSchemeTitle.zh
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = visible,
         title = title,
         onDismissRequest = onDismiss,
+        // 内容自己就有 `LazyColumn`（字段区在内部滚）：框架侧再套一层 `verticalScroll`
+        // 会变成嵌套滚动、直接崩，所以滚动归内容，底部让位也由内容自己补（见本 lambda 末尾）。
+        // 横向同理：内容刻意不留统一内边距（见 [QuickGenerateForm] 的 KDoc），框架侧给 16dp。
+        contentPadsHorizontally = false,
+        contentScrolls = true,
     ) {
         val field = timeField
         if (field == null) {
@@ -264,6 +269,9 @@ fun TimeSchemeQuickGenerateSheet(
                 onConfirm = ::confirmTimePicker,
             )
         }
+        // S2：底部让位（系统手势区 + 16dp 呼吸）。放在**内容**末尾、两个固定按钮之下：
+        // 表单页那行按钮不在滚动区里，垫在滚动视口外只会得到一条永远空着的板。
+        Spacer(Modifier.height(bottomInset))
     }
 }
 
@@ -438,7 +446,6 @@ private fun QuickGenerateForm(
                 Text(text = TimeSchemeManagementStrings.generateAction.zh)
             }
         }
-        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -511,7 +518,6 @@ private fun QuickGenerateTimePickerPage(
                 Text(text = TimeSchemeManagementStrings.confirmAction.zh)
             }
         }
-        Spacer(Modifier.height(16.dp))
     }
 }
 

@@ -3,7 +3,6 @@ package com.mutx163.qingyu.app
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,10 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
 import com.mutx163.qingyu.pages.settings.AppearanceEditorPreviewStrings
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
@@ -36,7 +32,6 @@ import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import java.time.LocalDate
 
 /**
@@ -65,13 +60,14 @@ import java.time.LocalDate
  *
  * ## 两个面板（`:777-919`）
  *
- * 官方 `OverlayBottomSheet`（`top.yukonga.miuix.kmp.overlay`）。面板内容最多占屏高
- * **50%**（Dart `_materialSheetMaxHeightFactor = 0.5`，`:116-120`；壁纸面板同口径，
- * `:839-841`），超出部分由面板内部自己滚——面板存在的意义就是「改一处、看预览」，
- * 长高到盖住卡片就失去意义了。
+ * 两块面板都走共享套件 [QingyuSheet]（不是裸 `OverlayBottomSheet`）：左右 16 的内缩与
+ * 底部「手势区 + 16」的让位口径由套件统一给，两个面板的数字不会各走各的。
+ * 面板内容最多占屏高 **50%**（Dart `_materialSheetMaxHeightFactor = 0.5`，`:116-120`；
+ * 壁纸面板同口径，`:839-841`），超出部分由面板内部自己滚——面板存在的意义就是
+ * 「改一处、看预览」，长高到盖住卡片就失去意义了。
  *
  * 面板打开期间上下 chrome **保持常显、位置不动**（2026-09-19 口径，`:780-782`）：
- * 它们是页面那一层的常驻子节点，`OverlayBottomSheet` 的遮罩只会把它们压暗、接走点击。
+ * 它们是页面那一层的常驻子节点，弹层的遮罩只会把它们压暗、接走点击。
  *
  * ## 预览（`:1761-1783`）
  *
@@ -268,10 +264,6 @@ fun AppearanceEditorHost(
         }
     }
 
-    // 面板内容最多半屏（Dart `:116-120` / `:839-841`）。
-    val sheetMaxHeight =
-        (LocalConfiguration.current.screenHeightDp * APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR).dp
-
     AppearanceEditorScreen(
         // 初值跟首页当前视图走（Dart `:203-204`）：三者一致，进页那一帧才不会闪跳。
         initialDayView = appearance.previewDayView,
@@ -299,22 +291,27 @@ fun AppearanceEditorHost(
         },
     )
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = materialSheet,
         // 不传 title：面板正文顶上那行「通用 / 课程卡片」翻页胶囊**就是**标题
         // （MaterialSheetBody 的 KDoc 同一条口径）。
         //
-        // 左右内缩 16：Dart 侧弹层 `hyperosMiuixBottomSheetInsideMargin = 16`
-        // （`settings_appearance_editor.dart:353-357` 那段注释：壁纸/材质两块都**不再**
-        // 自己留左右内缩，弹窗面板的 16 已经给了）。官方默认 24，不传就会多缩 8。
-        // 纵向 0：上下留白由面板自己的把手条与滚动内容带（Dart 同一处口径）。
-        insideMargin = DpSize(16.dp, 0.dp),
+        // 左右内缩不再在这里传：miuix 默认 24、Dart 口径 16（`hyperosMiuixBottomSheetInsideMargin`），
+        // 这个差由 [QingyuSheet] 统一给（内容自己没有横向内边距 ⇒ 走默认 `false`，
+        // 框架侧给 16）。同样，底部「手势区 + 16」也由正文自己带
+        // （`MaterialSheetBody` 内部算，Dart `scrollableBottomGap`），这里不要另垫。
         onDismissRequest = { materialSheet = false },
+        // ⚠️ 正文里有**自己的**滚动（`HorizontalPager` + 每页一个 `SettingsNodeList`），
+        // 而且 pager 带 `weight(1f)`：套件若再套 `verticalScroll` 就是嵌套滚动（weight 在
+        // 无穷高约束里直接崩）。所以必须 `contentScrolls = true`。
+        contentScrolls = true,
+        // 面板内容最多占屏高 50%（Dart `_materialSheetMaxHeightFactor = 0.5`，`:116-120`）。
+        // 以前是在调用点算 `screenHeightDp * 0.5`，现在照原值交给套件（`:839-841` 壁纸面板同口径）。
+        maxHeightFraction = APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR,
     ) {
         MaterialSheetBody(
             state = appearance,
             onAction = { action, target, rowId -> handleAction(action, target, rowId) },
-            modifier = Modifier.heightIn(max = sheetMaxHeight),
             // ⚠️ 不要传 `bottom = 24.dp`：面板底部留白是「手势区 + 16」且由滚动内容自带
             // （Dart `scrollableBottomGap: true`，见 `settings_appearance_editor.dart:890-894`），
             // 再叠一层 24 就是「手势区 + 40」。
@@ -323,11 +320,14 @@ fun AppearanceEditorHost(
         )
     }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = wallpaperSheet,
-        // 内缩口径同材质面板（两个弹层的数字必须一致，否则并排看会一宽一窄）。
-        insideMargin = DpSize(16.dp, 0.dp),
+        // 内缩口径同材质面板（两个弹层的数字必须一致，否则并排看会一宽一窄）——
+        // 两者都交给 [QingyuSheet] 默认那 16。
         onDismissRequest = { wallpaperSheet = false },
+        // 同材质面板：壁纸面板正文也是 pager + 每页列表，`weight(1f)` 带自己的滚动。
+        contentScrolls = true,
+        maxHeightFraction = APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR,
     ) {
         WallpaperSheetBody(
             state = appearance,
@@ -335,7 +335,6 @@ fun AppearanceEditorHost(
             // 「最近使用」的选择态：壁纸键集合与当前壁纸都从同一份状态推出来；
             // `armedKey`（移除确认）属于缩略图条自己的界面态，见类注释「已知差异」第 3 条。
             selection = SelectionPageState(backdrop = backdropFlowState(appearance)),
-            modifier = Modifier.heightIn(max = sheetMaxHeight),
             // 底部留白由**滚动内容**自己带（Dart `scrollableBottomGap`：系统手势区 + 16，
             // `miui_bottom_sheet.dart:448-458`）。宿主不垫：垫在视口外面会让内容永远滚不进去。
             contentPadding = wallpaperSheetBottomGap(),
