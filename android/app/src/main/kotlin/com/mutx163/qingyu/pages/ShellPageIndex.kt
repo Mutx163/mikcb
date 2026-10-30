@@ -1103,7 +1103,10 @@ fun ShellPageContent(
                 onOpenShare = {
                     shareStatisticsText(
                         context = context,
-                        text = StatisticsShareText.build(feedState),
+                        // `StatisticsShareText.build` 要的是页面视图状态（`CourseStatisticsViewState`），
+                        // 而 `feedState` 是 feed 整体（含 home/analysis/session 三份）——
+                        // 统计主页那份是 `feedState.home`（与本分支 `viewState = feedState.home` 同源）。
+                        text = StatisticsShareText.build(feedState.home),
                         subject = StatisticsShareText.subject(),
                     )
                 },
