@@ -644,16 +644,76 @@ Map<String, String> loadSources(String Function(String) resolve) {
   return sources;
 }
 
+/// 读 `android/app/src/` 下的 Kotlin 源码（`main` / `composeP1` / 各变体 / 测试集）。
+///
+/// Compose 迁移之后，大量 ARB 键**只被 Kotlin 读**（页面在
+/// `pages/**/*.kt` 里取 `strings.xxx`）。死键判据只扫 Dart 的话，这些键
+/// 会被一律判成「死键」，棘轮里就掺进一堆假阳性——真死键反而淹在里面。
+///
+/// 这里按 §十一 F13 的写作用域取整个 `android/app/src/**/*.kt`：不区分源集，
+/// 因为「编译单元里有没有人引用」与它属于哪个 source set 无关。
+/// 返回 `仓库相对路径 -> 内容`。
+Map<String, String> loadKotlinSources(String Function(String) resolve) {
+  const anchor = 'android/app/src';
+  final sources = <String, String>{};
+  final root = Directory(resolve(anchor));
+  if (!root.existsSync()) {
+    throw StateError('找不到 $anchor/：${root.path}');
+  }
+  for (final entity in root.listSync(recursive: true)) {
+    if (entity is! File || !entity.path.endsWith('.kt')) {
+      continue;
+    }
+    final rel = entity.path.replaceAll(r'\', '/');
+    // 生成的构建产物即便落在 src/ 下也不算「人在用」。
+    if (rel.contains('/build/')) {
+      continue;
+    }
+    sources[_repoRelativeUnder(rel, anchor, resolve)] = entity.readAsStringSync();
+  }
+  return sources;
+}
+
+/// 死键判据的 code corpus：Dart 源码 + Kotlin 源码。
+///
+/// **判据的唯一入口**——CLI（`tool/copy_style_lint.dart`）与守卫
+/// （`test/architecture/copy_style_guard_test.dart`）都必须走这里，
+/// 否则两边的口径会漂（一边把 Kotlin 算进去、另一边不算）。
+///
+/// 2026-10-30 F13 之前只拼 Dart：基线 542 条里有 71 条其实被
+/// `android/app/src/**/*.kt` 真引用（66 条老账 + F01 新增 5 条），
+/// **棘轮是软的**——真死键被假阳性淹着。扩 corpus 后判据不变，
+/// 只是不再冤枉 Kotlin 侧的引用。
+String deadKeyCorpus(String Function(String) resolve) {
+  final dart = loadSources(resolve).values.join('\n');
+  final kotlin = loadKotlinSources(resolve).values.join('\n');
+  return '$dart\n$kotlin';
+}
+
 /// 把 listSync 产出的路径折算成 `lib/...` 形式的仓库相对路径。
-String _repoRelative(String anyPath, String Function(String) resolve) {
+String _repoRelative(String anyPath, String Function(String) resolve) =>
+    _repoRelativeUnder(anyPath, 'lib', resolve);
+
+/// 把 listSync 产出的路径折算成 `<anchor>/...` 形式的仓库相对路径。
+///
+/// `listSync` 在快照模式给绝对路径（快照根 + 仓库相对），所以要按 `/<anchor>/`
+/// 切一刀 rebase 回仓库相对；调用方（基线比较）一律用仓库相对路径，
+/// 否则两种模式下的集合比较不成立。
+String _repoRelativeUnder(
+  String anyPath,
+  String anchor,
+  String Function(String) resolve,
+) {
   final normalized = anyPath.replaceAll(r'\', '/');
-  final probe = resolve('lib').replaceAll(r'\', '/');
-  final index = normalized.indexOf('/lib/');
+  final probe = resolve(anchor).replaceAll(r'\', '/');
+  final index = normalized.indexOf('/$anchor/');
   if (index >= 0) {
     return normalized.substring(index + 1);
   }
-  final libIndex = probe.endsWith('/lib') ? probe.length - 4 : probe.length;
-  return normalized.length > libIndex
-      ? 'lib${normalized.substring(libIndex)}'
+  final anchorIndex = probe.endsWith('/$anchor')
+      ? probe.length - anchor.length
+      : probe.length;
+  return normalized.length > anchorIndex
+      ? '$anchor${normalized.substring(anchorIndex)}'
       : normalized;
 }

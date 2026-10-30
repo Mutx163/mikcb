@@ -50,6 +50,9 @@ void main(List<String> args) {
 
   final arbByLocale = loadArbs(_identity);
   final sources = loadSources(_identity);
+  // 死键 corpus 与守卫同源（`deadKeyCorpus` = Dart + Kotlin），
+  // 否则 CLI 会把只被 Kotlin 引用的键报成死键、与守卫口径打架。
+  final deadCorpus = deadKeyCorpus(_identity);
   final violations = findViolations(
     sources: sources,
     arbByLocale: arbByLocale,
@@ -68,7 +71,7 @@ void main(List<String> args) {
     final template = arbByLocale['zh']!;
     final dead = findDeadKeys(
       template: template,
-      codeCorpus: sources.values.join('\n'),
+      codeCorpus: deadCorpus,
     ).toList()
       ..sort();
     _writeDeadBaseline(dead);
@@ -123,7 +126,7 @@ void main(List<String> args) {
     final template = arbByLocale['zh']!;
     final dead = findDeadKeys(
       template: template,
-      codeCorpus: sources.values.join('\n'),
+      codeCorpus: deadCorpus,
     );
     final deadBaseline = _loadDeadBaseline();
     final added = dead.difference(deadBaseline).toList()..sort();
@@ -180,7 +183,7 @@ void main(List<String> args) {
 
 void _writeDeadBaseline(List<String> keys) {
   final buffer = StringBuffer()
-    ..writeln('# 死键：ARB 里有、但 lib/ 与 test/ 的代码从不引用（只减不增）')
+    ..writeln('# 死键：ARB 里有、但 Dart(lib/) 与 Kotlin(android/app/src) 的代码从不引用（只减不增）')
     ..writeln('#')
     ..writeln('# 一行一个键名，按字典序。')
     ..writeln('# 判据见 tool/copy_style_rules.dart 的 findDeadKeys；守卫是')

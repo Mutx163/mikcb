@@ -66,6 +66,9 @@ Set<String> _loadIds(String path) {
 void main() {
   final arbByLocale = loadArbs(GuardSource.resolve);
   final sources = loadSources(GuardSource.resolve);
+  // 死键 corpus 与 CLI 同源（deadKeyCorpus = Dart(lib/) + Kotlin(android/app/src)），
+  // 否则只被 Kotlin 引用的键会被守卫判成死键，与 CLI 口径打架。
+  final deadCorpus = deadKeyCorpus(GuardSource.resolve);
 
   test('行内文案不得新增超宽（存量已冻结在基线里）', () {
     final violations = findViolations(
@@ -133,7 +136,7 @@ void main() {
     final template = arbByLocale['zh']!;
     final dead = findDeadKeys(
       template: template,
-      codeCorpus: sources.values.join('\n'),
+      codeCorpus: deadCorpus,
     );
     final frozen = _loadIds(_deadBaselinePath);
     final added = dead.difference(frozen).toList()..sort();
@@ -181,7 +184,7 @@ void main() {
     final template = arbByLocale['zh']!;
     final dead = findDeadKeys(
       template: template,
-      codeCorpus: sources.values.join('\n'),
+      codeCorpus: deadCorpus,
     );
 
     final staleWidths =

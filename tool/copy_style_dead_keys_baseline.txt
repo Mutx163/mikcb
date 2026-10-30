@@ -1,4 +1,4 @@
-# 死键：ARB 里有、但 lib/ 与 test/ 的代码从不引用（只减不增）
+# 死键：ARB 里有、但 Dart(lib/) 与 Kotlin(android/app/src) 的代码从不引用（只减不增）
 #
 # 一行一个键名，按字典序。
 # 判据见 tool/copy_style_rules.dart 的 findDeadKeys；守卫是
@@ -9,8 +9,28 @@
 # 2026-10-21 立基线：539 条，横跨三轮 UI 重构（forui 迁移 /
 # 设置页重排 / 入口目录化）。清理按前缀逐族做，一族的键一起删、
 # 六份 ARB 同步删，跑 gen-l10n 后确认 dart analyze 干净。
+#
+# 2026-10-30 F13：判据的 corpus 已扩到 `android/app/src/**/*.kt`（见
+# copy_style_rules.dart 的 deadKeyCorpus —— CLI 与守卫共用同一个入口）。
+# 原先以「只被 Kotlin 消费」为由冻结的 5 条例外——
+#   liveImagePickFailed / liveDoNotDisturbAccessUnavailable（LiveDisplayHost.kt）
+#   datePickerYear / datePickerMonth / datePickerDay（日期滚轮后缀）
+# ——连同其余 54 条同样只被 Kotlin 引用的键一起**从基线删除**：542 → 483。
+# 删掉的 59 条不是「放宽守卫」，是判据扩面的必然结果：它们是假阳性。
+# 留下的 483 条才是判据口径下的真死键。注意其中 7 条（cloudSyncLastError /
+# courseActionSuspend / dayTimetableTitle / examOverviewCountdown / holidayDataYear /
+# setSemesterStartDate / supportConfirmed）在 Kotlin 里只是**别的标识符的子串**
+# （如 courseActionSuspend ⊂ courseActionSuspendSecondary），判据的词边界规则
+# 把它们正确判死——这正是「真死键不许被假阳性淹没」要保住的那部分。
+# 例外（2026-10-30 F13，注明原因）：`themeImportSuccess` 这一条留着是**故意**的，不是漏删。
+# 它的 Kotlin 引用此刻只在 F05 的**未提交**文件里 ——
+#   composeP1/app/SettingsHost.kt:318         toast(SettingsStrings.themeImportSuccess.zh)
+#   main/pages/settings/SettingsStrings.kt:132 val themeImportSuccess = ArbText(...)
+# 而提交快照（pre-commit 钩子 / CI）判定的是「这次提交里有什么」：那两个文件还没提交，
+# 在快照世界里它确实没人引用，删掉会让**每个** commit 的钩子变红（那是把别人的提交堵死）。
+# ⇒ 等那两个文件提交后，本行必须删掉。那之后工作区模式会报「过期项」，
+#   按纪律删掉这一行即可（这就是棘轮：不是删不掉，是还没到时候）。
 aboutAdvancedOptionsSubtitle
-aboutCheckingLatestVersion
 aboutClearAndRecollectAction
 aboutCurrentCustomMirrorHint
 aboutCurrentCustomMirrorTitle
@@ -23,13 +43,10 @@ aboutDownloadMethodSubtitle
 aboutDownloadMethodTitle
 aboutEntrySubtitle
 aboutExportDiagnosticsAction
-aboutLatestVersionLabel
 aboutMirrorDisabledHint
 aboutMirrorDownloadHint
 aboutMirrorModeHintCurrent
 aboutMirrorModeHintRecommended
-aboutMirrorPrefixInvalid
-aboutMirrorSaved
 aboutMirrorSectionMirrorHint
 aboutMirrorSectionOriginalHint
 aboutOpenSourceLicensesExtraNote
@@ -40,17 +57,13 @@ aboutPrereleaseChannel
 aboutProbeCurrentFastest
 aboutProbeNoMirrorFound
 aboutProbeRecommendSwitch
-aboutReadVersionFailedHint
 aboutRecentProbeResultsTitle
 aboutReleaseNotesSubtitle
 aboutSupportSectionTitle
 aboutSwitchToRecommendedAction
-aboutUnavailable
-aboutUpdateNoUpdateHint
 aboutUpdateNowAndroidSubtitle
 aboutUpdateNowOtherSubtitle
 aboutUpdateNowTitle
-aboutUpdateStatusTitle
 aboutUseSystemDownloaderAction
 aboutVersionChannelLabel
 addCourseSheetSubtitle
@@ -71,7 +84,6 @@ appLogsRecordingEnabled
 appUpdateMirrorPresetGhproxyCn
 appearanceTextColorsSectionSubtitle
 backToSchemeList
-beforeClassQuickActionSubtitle
 brightnessLabel
 chooseImportMethodSubtitle
 chromeGlassMaterialHint
@@ -120,7 +132,6 @@ copyQqGroupId
 copyXiaohongshuId
 coupleTimetableColorsSubtitle
 coupleTimetableIntro
-coupleTimetableLastImportedAt
 coupleTimetableLegendFree
 coupleTimetableNotBoundMessage
 coupleTimetableOpenOverlay
@@ -146,9 +157,6 @@ courseImportFirstWeekShifted
 courseImportTermStartDateTitle
 courseLocationFieldLabel
 courseNormalSectionTitle
-courseNoteDoneEditingAction
-courseNoteTabThisSession
-courseNoteTabWholeCourse
 courseTimeSummary
 courseWeekCustomDescription
 courseWeekEvenModeSuffix
@@ -168,18 +176,14 @@ customHolidayDateRange
 customPaletteColor
 customWeekLabel
 dailyUsageSectionTitle
-dataTransferEntrySubtitle
-dayTaskBandEmptyCourses
 dayTimetableTitle
 debugCopiedJson
 debugRecordFormulaSubtitle
 deleteActionShort
 detailAction
 diagnosticsContentTitle
-diagnosticsLogTitleFallback
 diagnosticsRawFilteredHint
 diagnosticsRecentLogsTitle
-diagnosticsShowingCount
 diagnosticsStreamingHint
 diagnosticsUnknownCategory
 displayModeTitle
@@ -209,8 +213,6 @@ frostedBlurEnabledTitle
 frostedSheetPreviewDemoTitle
 frostedSheetPreviewOpenAction
 frostedSheetPreviewShowTitle
-fullExportSubtitle
-fullImportSubtitle
 glassDockButtonBackToWeekLabel
 glassDockEntriesSectionTitle
 glassDockInsetClearanceLabel
@@ -302,17 +304,13 @@ hueLabel
 hyperosShowcaseMenuCopy
 hyperosShowcaseMenuDelete
 hyperosShowcaseMenuShare
-icsExportDateRangeInvalid
-icsExportSharing
 importConfirmSemesterMappingSubtitleAi
 importMethodAiFooter
 importMethodIcsFooter
 importMethodSpreadsheetFooter
 importMethodWarehouseFooter
 jsonLabelShort
-lanEditCopyAddress
 lanEditEntrySubtitle
-lanEditIntro
 layoutAutoFitHeightSubtitle
 layoutBackToCurrentWeekButtonOpacityLabel
 layoutBackToCurrentWeekButtonOpacitySubtitle
@@ -354,15 +352,10 @@ liquidGlassScopeSelectSheetSubtitle
 liquidGlassScopeSelectSheetTitle
 liquidGlassScopeSheetDialogSubtitle
 liquidGlassScopeSheetDialogTitle
-liveBeforeClassDisplayEntryTitle
 liveDisplayContentSubtitle
 liveDisplayModeSubtitle
-liveDisplaySummaryCountdown
-liveDuringEndDisplayEntryTitle
 liveGuideEntrySubtitle
 liveGuideEntryTitle
-liveIslandPreviewSampleNextClass
-liveIslandPreviewSampleNote
 liveKeepAliveEntrySubtitle
 liveKeepAliveEntryTitle
 liveMiuiLabelSizePreview
@@ -382,14 +375,6 @@ liveTestingTitle
 liveTimeThresholdSubtitle
 localDebugMaintainer
 localScriptLabel
-locationTimeMatchEmpty
-locationTimeMatchEntrySubtitle
-locationTimeMatchKeywordTooShort
-locationTimeMatchPreviewHint
-locationTimeMatchPreviewLabel
-locationTimeMatchPreviewNoMatch
-locationTimeMatchPreviewResult
-locationTimeMatchWeekAxisNote
 locationUnset
 macroReplayClickNotFound
 macroReplayEmptyClickSelector
@@ -413,8 +398,6 @@ pageTransitionSpeedSubtitle
 pickSemesterWeekCountSubtitle
 pickSemesterWeekCountTitle
 profileTimeSchemeName
-qrTransferFullBackupWarning
-qrTransferImportFullBackup
 quickActionAutoStartSubtitle
 quickActionBatterySubtitle
 quickActionBatteryTitle
@@ -440,10 +423,7 @@ saturationLabel
 scheduleAppearanceSectionSubtitle
 scheduleColorLabel
 scheduleDateLabel
-scheduleDateRuleEmpty
 scheduleDateRuleNote
-scheduleEndDateLabel
-scheduleEndTimeLabel
 scheduleEntryPeopleSectionTitle
 scheduleEntryTimeSchemeSectionSubtitle
 scheduleEntryTimeSchemeSectionTitle
@@ -452,8 +432,6 @@ scheduleEntryTimeSectionTitle
 scheduleInfoSectionSubtitle
 scheduleRepeatEndRequired
 scheduleSingleDayHint
-scheduleStartDateLabel
-scheduleStartTimeLabel
 scheduleTimeSectionSubtitle
 scheduledCountLabel
 scheduledCountWithConflictHint
@@ -478,8 +456,6 @@ startUsingSubtitle
 statisticsCompareDetailTitle
 statisticsCompareNone
 statisticsCompareWeek
-statisticsComparisonLastWeek
-statisticsComparisonVsAverage
 statisticsCourseCountRatio
 statisticsExportFormatImage
 statisticsExportFormatPdf
@@ -488,10 +464,8 @@ statisticsExportGithubHint
 statisticsExportQrScanHint
 statisticsMoreGroupPeople
 statisticsMoreGroupTrend
-statisticsOverview
 statisticsSectionCountRatio
 statisticsWeekDailyHint
-statisticsWeeklyCourses
 supportBackerCount
 supportConfirmed
 supportCreatorTitle
@@ -501,9 +475,6 @@ supportMarqueeTail
 supportMarqueeThanks
 supportMonthlyGoalLabel
 suspendedStatusLabel
-taskDeleted
-taskSaved
-taskUpdated
 teacherUnset
 textColorLowContrastWarning
 textColorSubtitle
@@ -530,10 +501,8 @@ timeSchemeUsageCourseRefPrefix
 timetableBackgroundColorSectionSubtitle
 timetableBackgroundPreview
 timetableManagementSectionTitle
-timetableNameLabel
 timetableProfilesEntrySubtitle
 unnamedTimeScheme
-unnamedTimetableProfile
 userGuideEntrySubtitle
 viewGuideSubtitle
 viewGuideTitle
@@ -541,7 +510,6 @@ viewLargeImage
 wallpaperPositionPickerDragHint
 warehouseLoginHintImport
 warehouseLoginHintLocalDebug
-weatherCitySearchFailed
 weatherStatusLoading
 weekCountItem
 weekSettingsTitle
