@@ -55,8 +55,13 @@ data class LanEditSpreadsheetParse(
  *
  * ## 明确不做的（诚实清单）
  *
- * - `previewTransferJson` / `applyTransferJson` 返回 null（→ 501）：Kotlin 侧还没有
- *   传输包的 diff/预览与应用服务，`pages/transfer` 只有渲染层模型。等那层落地再接。
+ * - **局部传输的 diff/预览与应用已接线**（2026-10-30，批次 F17）：`previewTransferJson` /
+ *   `applyTransferJson` 交给 [LanTransferApplier]（纯逻辑 [LanTransferLogic] + 仓储写入）。
+ *   仍未做的三件：① **撤销点**（Dart `TransferUndoService` 那套）没有，
+ *   `applyTransferJson` 的 `transferId` 恒为 `null`；② 设置只应用 Kotlin 已移植的
+ *   时间/周次子集（`TimetableSettings` 的边界说明）；③ 地点分组改变后**不重算**课程钟点
+ *   （Dart `replaceLocationTimeGroups(resync: true)` 的对应物在仓储层还没有）。
+ *   调色板同步：局域网课程颜色按 `normalizeLanCourseColor` 收窄到 `#RRGGBB`（防 HTML 注入面）。
  * - **多档案整份恢复不支持**：备份里 `profiles` 非空时明确抛
  *   `profile_backup_profiles_unsupported`，而不是静默只恢复活动档案
  *   （那会无声吞掉用户其它课表）。要支持得给仓储加「替换整份档案表」的入口，
@@ -71,6 +76,9 @@ class LanEditRepositoryHost(
         throw UnsupportedOperationException("spreadsheet_import_unsupported")
     },
 ) : LanEditHost {
+
+    /** 传输包预览/应用的执行层（无状态，只持仓储引用）。 */
+    private val applier = LanTransferApplier(repository)
 
     /**
      * 仓储在构造时就装载完毕（`TimetableRepository.init { reload() }`），
@@ -277,12 +285,22 @@ class LanEditRepositoryHost(
     }
 
     // -----------------------------------------------------------------------
-    // B 组：传输包预览 / 应用（Kotlin 侧还没有服务 → 501）
+    // B 组：传输包预览 / 应用（批次 F17 接线；逻辑见 LanTransferLogic / LanTransferApplier）
     // -----------------------------------------------------------------------
 
-    override fun previewTransferJson(content: String): Map<String, Any?>? = null
+    /**
+     * Dart `LanEditProviderHost.previewTransferJson`：回 merge / overwrite 两套差异。
+     * 结构不合法（含整份备份、`all_data`、带 profiles 的包）抛 [FormatException]，
+     * 由路由层折成 400 `invalid_request`。
+     */
+    override fun previewTransferJson(content: String): Map<String, Any?> = applier.preview(content)
 
-    override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>? = null
+    /**
+     * Dart `LanEditProviderHost.applyTransferJson`：**先校验后落盘**，失败回 `applied: false`。
+     * `transferId`（Dart 的撤销点 id）Kotlin 侧还没有，恒为 `null`。
+     */
+    override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?> =
+        applier.apply(content, mode)
 
     // -----------------------------------------------------------------------
     // 内部

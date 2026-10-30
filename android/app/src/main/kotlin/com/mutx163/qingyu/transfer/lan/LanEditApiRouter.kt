@@ -819,7 +819,14 @@ class LanEditApiRouter(
                 "transfer_content_and_mode_required",
             )
         }
-        val result = host.applyTransferJson(content, mode)
+        val result = try {
+            host.applyTransferJson(content, mode)
+        } catch (error: FormatException) {
+            // Dart `_handleTransferApply` 的 `on FormatException` 分支：包不合法是
+            // 请求本身的问题（400），不是服务器错误。没有这一段的话，F17 接线之后
+            // 坏包会一路冒到兜底 500，与 Dart 口径不一致。
+            return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
+        }
         if (result == null) {
             return LanEditHttpResponse.error(
                 501,

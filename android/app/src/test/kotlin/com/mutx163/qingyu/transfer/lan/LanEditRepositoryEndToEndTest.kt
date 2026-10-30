@@ -4,9 +4,13 @@ import com.mutx163.qingyu.app.InMemoryKeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.LanEditSession
+import com.mutx163.qingyu.share.TransferChannel
+import com.mutx163.qingyu.share.TransferScope
+import com.mutx163.qingyu.sync.buildTransferPackageJson
 import com.mutx163.qingyu.sync.validateTransferPackageJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -129,26 +133,71 @@ class LanEditRepositoryEndToEndTest {
     }
 
     @Test
-    fun `import_apply 与 import_preview 在没有服务时真往返 501`() {
+    fun `import_preview 与 import_apply 走真 HTTP 返回真实结果并落到盘上`() {
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
         val session = session()
 
         withServer(repository, session) { port ->
-            val apply = parseResponse(
-                exchange(
-                    port,
-                    post(port, "/api/v1/import/apply", """{"content":"{}","mode":"merge","profileId":"p1"}""", session.token),
-                ),
-            )
-            assertEquals(501, apply.status)
-            assertTrue(apply.body.contains("transfer_apply_not_supported"))
+            val content = transferPackage(listOf(course("c9", "外来课程")))
 
+            // 1) 预览：200 + 两套差异，且不许动盘
+            val preview = parseResponse(
+                exchange(port, post(port, "/api/v1/import/preview", content, session.token)),
+            )
+            assertEquals("预览不能再回 501：${preview.body}", 200, preview.status)
+            assertTrue(preview.body.contains("\"mergeDiff\""))
+            assertTrue(preview.body.contains("\"overwriteDiff\""))
+            assertTrue(
+                "channel 必须被覆写成 lan：${preview.body}",
+                preview.body.contains("\"channel\":\"lan\""),
+            )
+            assertEquals("预览不许动盘", before, store.rawSnapshot())
+
+            // 2) 应用：200 + applied:true，课真的落盘
+            val body = MiniJson.encode(
+                mapOf("content" to content, "mode" to "merge", "profileId" to "p1"),
+            )
+            val applied = parseResponse(
+                exchange(port, post(port, "/api/v1/import/apply", body, session.token)),
+            )
+            assertEquals(200, applied.status)
+            assertTrue("应用结果要说明成没成：${applied.body}", applied.body.contains("\"applied\":true"))
+            assertTrue(
+                "撤销点尚未移植，transferId 必须是 null：${applied.body}",
+                applied.body.contains("\"transferId\":null"),
+            )
+            assertTrue(repository.courses.any { it.id == "c9" })
+            assertTrue(store.rawSnapshot().values.joinToString("\n").contains("外来课程"))
+        }
+    }
+
+    @Test
+    fun `import_apply 与 import_preview 收到坏包真往返 400 且盘上一字未变`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
+        val session = session()
+
+        withServer(repository, session) { port ->
             val preview = parseResponse(
                 exchange(port, post(port, "/api/v1/import/preview", """{"a":1}""", session.token)),
             )
-            assertEquals(501, preview.status)
-            assertTrue(preview.body.contains("transfer_preview_not_supported"))
+            assertEquals(400, preview.status)
+            assertTrue(preview.body.contains("transfer_package_type_invalid"))
+
+            val body = MiniJson.encode(
+                mapOf("content" to "{}", "mode" to "merge", "profileId" to "p1"),
+            )
+            val applied = parseResponse(
+                exchange(port, post(port, "/api/v1/import/apply", body, session.token)),
+            )
+            assertEquals("坏包是请求问题（400），不是服务器错误", 400, applied.status)
+            assertTrue(applied.body.contains("transfer_package_type_invalid"))
+            assertEquals("被拒的导入盘上一字未变", before, store.rawSnapshot())
         }
     }
 
@@ -244,6 +293,19 @@ class LanEditRepositoryEndToEndTest {
         endSection = 2,
         startTime = "08:00",
         endTime = "09:40",
+    )
+
+    /** 一份过全部结构门的 current_timetable 传输包（settings / currentWeek 都在场）。 */
+    private fun transferPackage(courses: List<Course>): String = MiniJson.encode(
+        buildTransferPackageJson(
+            packageId = "transfer-e2e-1",
+            scope = TransferScope.CURRENT_TIMETABLE,
+            exportedAtIso = "2026-10-30T09:00:00.000",
+            channel = TransferChannel.LAN,
+            currentWeek = 7,
+            settingsJson = TimetableSettings.defaults().toJson(),
+            coursesJson = courses.map { it.toJson() },
+        ),
     )
 
     private fun get(port: Int, path: String, token: String): String =

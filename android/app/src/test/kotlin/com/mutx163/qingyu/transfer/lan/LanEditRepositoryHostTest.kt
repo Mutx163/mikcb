@@ -271,13 +271,26 @@ class LanEditRepositoryHostTest {
     }
 
     @Test
-    fun `传输包预览与应用暂不支持时明确报 501 而不是假成功`() {
-        val (repository, _) = repositoryWith()
+    fun `传输包预览与应用已接线 返回真实结果而不是 501`() {
+        val (repository, store) = repositoryWith(course("c1", "高等数学"))
         val host = LanEditRepositoryHost(repository)
-        assertEquals(null, host.previewTransferJson("{}"))
-        assertEquals(
-            null,
-            host.applyTransferJson("{}", com.mutx163.qingyu.share.TransferApplyMode.MERGE),
+        val content = fullPackage(courses = "[${courseJson("c9", "外来课程")}]")
+
+        val before = store.rawSnapshot()
+        val preview = host.previewTransferJson(content)
+        assertNotNull("F17 之后预览必须回真实差异，而不是 null（→501）", preview)
+        assertEquals("transfer-test-1", preview!!["transferId"])
+        assertEquals("预览不许动盘", before, store.rawSnapshot())
+
+        val applied = host.applyTransferJson(
+            content,
+            com.mutx163.qingyu.share.TransferApplyMode.MERGE,
+        )
+        assertEquals(true, applied["applied"])
+        assertTrue("外来课必须真的进仓储", repository.courses.any { it.id == "c9" })
+        assertTrue(
+            "外来课必须真的落到盘上",
+            store.rawSnapshot().values.joinToString("\n").contains("外来课程"),
         )
     }
 
