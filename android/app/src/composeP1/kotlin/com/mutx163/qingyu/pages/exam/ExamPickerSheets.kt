@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,8 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
@@ -36,7 +39,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -55,7 +57,7 @@ import java.time.LocalDateTime
  * |---|---|---|---|
  * | 考试日期 | `add_exam_screen.dart:655-800` | `HyperosSheet`：**周次列表**（行「第 N 周」+「本周」副标题）+ 一行 7 个星期按钮；另有一个次要按钮「使用日历选择」打开 `showMiuixDatePickerSheet` 月历 | 同一结构的前半段：周次列表 + 7 个星期按钮（判据全走模型层 `AddExamLogic.initialWeekForPicker` / `isCurrentWeek` / `dateForWeekAndDay`）。**月历那一层没有搬**：Kotlin 侧 miuix 0.9.4 没有 `DatePicker`，自绘月历属 MIUIX-FIRST 例外（要用户拍板 + 登记），所以当学期开始日缺失（无法按周算）时退回年 / 月 / 日三列滚轮，而不是装一个月历 |
  * | 开始 / 结束时间 | `add_exam_screen.dart:820+` → `showMiuixTimePickerSheet` | 时 / 分双列滚轮 + 确认 | 同款：`basic.NumberPicker` 双列（同族先例 `SettingsHost.kt:352`、`TimeSchemeHost.kt:519`） |
- * | 关联课程 | `add_exam_screen.dart:283-303` → `showCourseTemplatePickerSheet` | 底部弹层，按课名分组、名称升序，选中行尾有勾 | 同款：`OverlayBottomSheet` + `LazyColumn(heightIn(max = 屏高×0.64))`，选项由 `AddExamFormReducer.coursePickerOptions` 生成 |
+ * | 关联课程 | `add_exam_screen.dart:283-303` → `showCourseTemplatePickerSheet` | 底部弹层，按课名分组、名称升序，选中行尾有勾 | 同款：`QingyuSheet` + `LazyColumn(heightIn(max = 屏高×0.64))`，选项由 `AddExamFormReducer.coursePickerOptions` 生成 |
  * | 自定义提醒 | `showExamReminderOffsetPickerSheet`（`lib/widgets/exam_reminder_offset_picker_sheet.dart`） | 天 / 小时 / 分钟三列滚轮，上限 30 天 23 小时 59 分 | 同款：三列滚轮，初值与合成走模型层 `decomposeReminderTotal` / `reminderTotalMinutes` |
  *
  * 一律不在这里做业务计算：初值、越界钳制、日期换算全部来自 [AddExamLogic] / [AddExamFormReducer]。
@@ -113,10 +115,17 @@ fun ExamDatePickerSheet(
     val weekLabel = ExamStrings.weekLabel.zh
     val thisWeek = ExamStrings.thisWeekLabel.zh
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = ExamStrings.examDateWeekPickerTitle.zh,
         onDismissRequest = onDismiss,
+        // 内容每一块（说明字、周次行、星期按钮行、取消/确认行）都自己垫了左右 16，
+        // 没有通栏元素 ⇒ 框架侧横向归零，单边仍是 Dart 那个 16
+        //（`hyperosMiuixBottomSheetInsideMargin`），不再叠成 32。
+        contentPadsHorizontally = true,
+        // 正文里有 LazyColumn（周次列表）：套件不能再套一层 verticalScroll（嵌套滚动）。
+        // 底部让位因此由本文件落实 —— 见取消/确认行之后那个 `Spacer(bottomInset)`。
+        contentScrolls = true,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -227,11 +236,16 @@ fun ExamDatePickerSheet(
                             onPick(AddExamLogic.dateForWeekAndDay(semesterStart, week, picked))
                         }
                     },
+                    // 「确认」是出口：Dart 那颗主按钮是 primary 变体（强调色），
+                    // 默认 `buttonColors()` 是灰的 secondary 口径。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = ExamStrings.confirmAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            // 底部让位（系统手势区 + 16）垫在**最后一块固定件之后**：本弹层滚动的是中间的
+            // 周次列表，若塞进列表的 contentPadding 会在按钮行上方留一截空白。
+            Spacer(modifier = Modifier.height(bottomInset))
         }
     }
 }
@@ -269,10 +283,15 @@ private fun ExamCalendarWheelSheet(
     val maxDay = LocalDate.of(year, month, 1).lengthOfMonth()
     val safeDay = day.coerceAtMost(maxDay)
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = ExamStrings.examDateWeekPickerTitle.zh,
         onDismissRequest = onDismiss,
+        // 内容根 `Column` 自己给了左右 16（三列滚轮与按钮行都不通栏）⇒ 框架侧横向归零，
+        // 单边就是 Dart 那个 16，不再叠成 32。
+        contentPadsHorizontally = true,
+        // 正文只有 NumberPicker 滚轮（固定高 180dp），没有竖向可滚动容器
+        // ⇒ contentScrolls 保持 false，由套件套滚动并自动补底部让位。
     ) {
         Column(
             modifier = Modifier
@@ -294,7 +313,7 @@ private fun ExamCalendarWheelSheet(
                         )
                     },
                     range = minYear..maxYear,
-                    label = { "$it 年" },
+                    label = { "$it ${ExamStrings.datePickerYear.zh}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1.2f),
                 )
@@ -308,7 +327,7 @@ private fun ExamCalendarWheelSheet(
                     },
                     range = 1..12,
                     wrapAround = true,
-                    label = { "$it 月" },
+                    label = { "$it ${ExamStrings.datePickerMonth.zh}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -317,7 +336,7 @@ private fun ExamCalendarWheelSheet(
                     onValueChange = { day = it },
                     range = 1..maxDay,
                     wrapAround = true,
-                    label = { "$it 日" },
+                    label = { "$it ${ExamStrings.datePickerDay.zh}" },
                     textStyle = MiuixTheme.textStyles.title3,
                     modifier = Modifier.weight(1f),
                 )
@@ -335,11 +354,12 @@ private fun ExamCalendarWheelSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onPick(LocalDateTime.of(year, month, safeDay, 0, 0)) },
+                    // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = ExamStrings.confirmAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -365,10 +385,14 @@ fun ExamTimePickerSheet(
     var hour by remember(show, normalized) { mutableIntStateOf(baseHour) }
     var minute by remember(show, normalized) { mutableIntStateOf(baseMinute) }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
+        // 内容根 `Column` 自己给了左右 16（时/分两列与按钮行都不通栏）⇒ 框架侧横向归零。
+        contentPadsHorizontally = true,
+        // 只有两列 NumberPicker（固定高 180dp），没有竖向可滚动容器
+        // ⇒ contentScrolls 保持 false，由套件套滚动并补底部让位。
     ) {
         Column(
             modifier = Modifier
@@ -418,11 +442,12 @@ fun ExamTimePickerSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onPick("%02d:%02d".format(hour, minute)) },
+                    // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = ExamStrings.confirmAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -436,10 +461,18 @@ fun ExamCoursePickerSheet(
     onDismiss: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = ExamStrings.linkCourse.zh,
         onDismissRequest = onDismiss,
+        // 正文根是 LazyColumn、自己没有横向内边距：行的 16 是**列表行的内缩**
+        // （触摸区通栏、文字缩进 16），不是内容根的主边距 ⇒ 框架侧照旧给 16dp。
+        // Dart 同款行也是 16（`settingsRowPadding`）+ `insideMargin` 16 = 单边 32，
+        // 与 `TaskPickerSheets` 的选课程弹层同一口径。
+        contentPadsHorizontally = false,
+        // 正文是 LazyColumn（自己管滚动）：套件不能再套 verticalScroll（嵌套滚动）。
+        // 底部让位因此由列表的 contentPadding 落实（见下）。
+        contentScrolls = true,
     ) {
         // 同上：弹层内短列表不用 `QingyuPageList`，但滚动三件套（末端轻震 + 过度滚动）照官方配方。
         LazyColumn(
@@ -449,6 +482,9 @@ fun ExamCoursePickerSheet(
                 .heightIn(max = (LocalScreenHeight() * 0.64f).dp)
                 .scrollEndHaptic()
                 .overScrollVertical(),
+            // 列表是最后一块 ⇒ 底部让位（手势区 + 16）塞进列表 contentPadding；
+            // 原来那个 `Spacer(8.dp)` 贴底呼吸已被它取代。
+            contentPadding = PaddingValues(bottom = bottomInset),
         ) {
             items(options) { option ->
                 Row(
@@ -491,7 +527,6 @@ fun ExamCoursePickerSheet(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -513,10 +548,14 @@ fun ExamReminderPickerSheet(
     var hours by remember(show, initialMinutes) { mutableIntStateOf(parts.hours) }
     var minutes by remember(show, initialMinutes) { mutableIntStateOf(parts.minutes) }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = show,
         title = ExamStrings.examReminderAddCustomTitle.zh,
         onDismissRequest = onDismiss,
+        // 内容根 `Column` 自己给了左右 16（说明句、三列滚轮、按钮行都不通栏）⇒ 框架侧横向归零。
+        contentPadsHorizontally = true,
+        // 只有三列 NumberPicker（固定高 180dp），没有竖向可滚动容器
+        // ⇒ contentScrolls 保持 false，由套件套滚动并补底部让位。
     ) {
         Column(
             modifier = Modifier
@@ -581,11 +620,12 @@ fun ExamReminderPickerSheet(
                             ),
                         )
                     },
+                    // 出口按钮走强调色（Dart 主按钮是 primary 变体，默认 `buttonColors()` 是灰的）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = ExamStrings.confirmAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -597,6 +637,12 @@ private fun LocalScreenHeight(): Float {
     return configuration.screenHeightDp.toFloat()
 }
 
-/** 星期按钮的文字（Dart `l10n.weekdayMon` 是「周一」，按钮上只放「一」）。 */
+/**
+ * 星期按钮的文字：只放一个字（ARB `weekdayShortMonday..Sunday`）。
+ *
+ * 2026-10-29 质量审核：原实现是 `weekdayLabel(dayOfWeek).removePrefix("周")`——
+ * 从「周一」里用硬编码的「周」去截，等于在渲染层写中文，既过不了 i18n 棘轮，
+ * 在非中文语言下也会截错（英文星期名根本没有「周」前缀）。改为直接读 ARB 短名。
+ */
 private fun weekdayShort(dayOfWeek: Int): String =
-    ExamStrings.weekdayLabel(dayOfWeek).removePrefix("周")
+    ExamStrings.weekdayShortLabel(dayOfWeek)
