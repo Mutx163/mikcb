@@ -106,6 +106,15 @@ class CloudSyncController(
         deviceLabel = deviceLabelDraft,
     )
 
+    /**
+     * 最近一次错误的**原始码**（不是本地化后的句子）。
+     *
+     * `SyncResultToasts.forRestore/forDeleteBackup` 要的是码、再各自本地化一遍；
+     * 给它 `cloudSyncViewState().status.lastErrorText`（已是人话）会二次包装成
+     * 「恢复失败：恢复失败：…」。`status` 本身是私有状态，所以这里只开一个只读口。
+     */
+    val lastErrorCode: String? get() = status.lastErrorCode
+
     fun backupListViewState(): CloudBackupListViewState = CloudBackupListLogic.buildListViewState(
         entries = backupEntries,
         isLoading = loadingBackups,
@@ -273,6 +282,41 @@ class CloudSyncController(
                 notifyChanged()
                 SyncResultKind.FAILED
             }
+        }
+    }
+
+    /**
+     * 按 entryId 取远端备份条目（详情弹层要拿设备名/来源/内容摘要去渲染）。
+     *
+     * 为什么需要它：`backupEntries` 是私有状态，渲染层只拿到已格式化的 `rows`
+     * （title/subtitle/details），拼不出 Dart `showCloudBackupDetailSheet` 那三行
+     * 「设备 / 来源 / 内容」。**不新造一份派生逻辑**——三行由
+     * `CloudBackupListLogic.buildDetail` 从条目本体算，渲染层只负责画。
+     */
+    fun backupEntry(entryId: String): CloudBackupEntryModel? =
+        backupEntries.firstOrNull { it.id == entryId }
+
+    /**
+     * 删除某条远端备份（Dart `_deleteBackup`，`cloud_backup_list_screen.dart:218`）。
+     *
+     * 与 [openBackup] 同一套查找口径（`remoteFiles.firstOrNull { it.fileName == entryId }`）：
+     * 列表行的 `entryId` 就是远端文件名，两个动作不能各用一套匹配方式，否则会出现
+     * 「能恢复但删不掉」这种只有真连过 WebDAV 才看得见的错位。
+     *
+     * 成功 → 刷新列表并回 [SyncResultKind.BACKUP_DELETED]；失败 → 记错误码回 `FAILED`。
+     */
+    fun deleteBackup(entryId: String): SyncResultKind {
+        val active = transport ?: return SyncResultKind.FAILED
+        val file = remoteFiles.firstOrNull { it.fileName == entryId }
+            ?: return SyncResultKind.FAILED
+        val result = active.deleteRemoteFile(file.remotePath)
+        return if (result.isFailed) {
+            status = status.copy(lastErrorCode = result.errorMessage ?: "delete_failed")
+            notifyChanged()
+            SyncResultKind.FAILED
+        } else {
+            refreshBackups()
+            SyncResultKind.BACKUP_DELETED
         }
     }
 

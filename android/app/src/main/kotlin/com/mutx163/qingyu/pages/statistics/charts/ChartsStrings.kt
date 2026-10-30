@@ -178,6 +178,15 @@ object ChartsStrings {
     val statisticsExportRankingMore = ChartText("statisticsExportRankingMore", "另有 {count} 门课程未展示")
     val statisticsExportBrandTagline = ChartText("statisticsExportBrandTagline", "把课程信息做成系统体验")
     val statisticsShareTitle = ChartText("statisticsShareTitle", "我的学期统计")
+
+    /**
+     * 分享正文（ARB `statisticsShareText`：`来自轻屿课表的学期统计`）。
+     *
+     * Dart 分享的是「图片 + 这段正文」（`statistics_share_service.dart:104-108`）。
+     * Compose 侧目前只做**文本分享**（说明见 `StatisticsShareText`），正文就用这一句，
+     * 不另造文案。
+     */
+    val statisticsShareText = ChartText("statisticsShareText", "来自轻屿课表的学期统计")
     val timetableAppName = ChartText("timetableAppName", "轻屿课表")
 
     // ── 星期名（图表轴 / 排行详情 / 故事正文） ──
@@ -326,7 +335,7 @@ object ChartsStrings {
         statisticsExportTitle, statisticsExportAction, statisticsExportSelectModuleHint,
         statisticsExportModulesSection, statisticsExportModuleOverview,
         statisticsExportRankingMore, statisticsExportBrandTagline,
-        statisticsShareTitle, timetableAppName,
+        statisticsShareTitle, statisticsShareText, timetableAppName,
         weekdayMon, weekdayTue, weekdayWed, weekdayThu, weekdayFri, weekdaySat, weekdaySun,
         weekdayShortMonday, weekdayShortTuesday, weekdayShortWednesday,
         weekdayShortThursday, weekdayShortFriday, weekdayShortSaturday, weekdayShortSunday,
