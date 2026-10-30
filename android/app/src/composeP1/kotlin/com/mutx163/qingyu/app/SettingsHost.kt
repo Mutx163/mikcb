@@ -28,8 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshModel
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSchedule
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSettingsLogic
@@ -58,7 +60,6 @@ import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.CoroutineScope
@@ -468,9 +469,11 @@ private fun AutoRefreshDailyTimeSheet(
     var hour by remember(initial) { mutableIntStateOf(initial / 60) }
     var minute by remember(initial) { mutableIntStateOf(initial % 60) }
 
-    OverlayBottomSheet(
+    QingyuSheet(
         show = true,
         title = SettingsStrings.courseAutoRefreshDailyTimeTitle.zh,
+        // 内容根是 `Column(padding(horizontal = 16.dp))` ⇒ 框架侧横向归零，单边仍是 16。
+        contentPadsHorizontally = true,
         onDismissRequest = onDismiss,
     ) {
         Column(
@@ -545,6 +548,7 @@ private fun AutoRefreshDailyTimeSheet(
 @Composable
 private fun AutoRefreshRunNowNotice(onDismiss: () -> Unit) {
     OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = SettingsStrings.courseAutoRefreshTryNowTitle.zh,
         onDismissRequest = onDismiss,

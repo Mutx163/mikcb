@@ -7,5 +7,3 @@
 # 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
 # 只改自己域的文件，别跑全量重生成（多 Agent 并行时会互相踩）。
 
-app/SettingsHost.kt|S1|第 1437 行直接调 OverlayBottomSheet
-app/SettingsHost.kt|S1|第 789 行直接调 OverlayBottomSheet
