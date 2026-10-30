@@ -56,7 +56,6 @@ import com.mutx163.qingyu.app.ScheduleListHost
 import com.mutx163.qingyu.app.TaskListHost
 import com.mutx163.qingyu.app.TimeSchemeEditorHost
 import com.mutx163.qingyu.app.TimeSchemeManagementHost
-import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
@@ -108,21 +107,19 @@ import com.mutx163.qingyu.pages.import.ImportEntryHost
 import com.mutx163.qingyu.pages.import.ImportShellBridge
 import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailHost
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailPage
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterEntry
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseCourseImportPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseShellState
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersPage
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginWebState
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
-import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
-import com.mutx163.qingyu.pages.settings.BingGalleryHost
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
+import com.mutx163.qingyu.pages.settings.BingGalleryHost
 import com.mutx163.qingyu.pages.settings.GlassDockEditorState
 import com.mutx163.qingyu.pages.settings.MaterialSheetPages
 import com.mutx163.qingyu.pages.settings.RecentWallpaperState
@@ -162,7 +159,6 @@ import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisPage
 import com.mutx163.qingyu.pages.statistics.StatisticsFeed
-import com.mutx163.qingyu.pages.statistics.StatisticsStrings
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionPage
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
@@ -199,11 +195,9 @@ import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
-import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
-import com.mutx163.qingyu.pages.timetable.day.dayViewPageDataOf
 import com.mutx163.qingyu.pages.timetable.month.MonthViewHost
 import com.mutx163.qingyu.pages.transfer.DataTransferHost
 import com.mutx163.qingyu.pages.transfer.LanEditHost
@@ -291,12 +285,6 @@ fun ShellPageContent(
     // 导入三页的跨路由暂存（2026-10-29 F07）：子页成功落盘后要能让入口页也自关，
     // 对应 Dart 的 `Navigator.pop(true)` + 入口页 `_openImportPage` 的关单规则。
     val importBridge = remember { ImportShellBridge() }
-    // 教务适配族三页的跨路由暂存（2026-10-30 F08-8b）：壳的 `onOpenPage(pageId)` 不带参数，
-    // 选中哪所学校 / 哪个适配器放在这里，下一页从这取（与 `ImportShellBridge` 同一个做法）。
-    val warehouseState = remember { WarehouseShellState() }
-    // 本机偏好：自定义登录地址（`warehouse_custom_import_url_<id>`）与最近使用的学校
-    // （`warehouse_recent_school_ids`），键名与 Dart 的 `WarehouseImportPreferencesService` 逐字一致。
-    val warehousePrefs = remember(wiring) { WarehouseImportPrefs(PrefsKeyValueStore(wiring.context)) }
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
@@ -471,16 +459,7 @@ fun ShellPageContent(
         )
         "b.glassDock" -> GlassDockEditorHost(store = wiring.settingsModel, onBack = onBack)
         "b.glassDockIcon" -> SettingsScreen(SettingsGlassDockIconEditorPage.spec(SettingsPageState()), onBack)
-        // 2026-10-30（F06 第一步）恢复默认：原先 `SettingsScreen(…spec(SettingsPageState()))`
-        // 传的是**空构造 state** ⇒ 五个作用域行点了没反应（而它们是破坏性动作，最该有确认）。
-        // 改用真宿主：读真设置、RESET_SCOPE 弹二次确认（`SettingsHost.pendingReset`）、
-        // 确认后经 `SettingsActionDispatcher.applyResetScope` 写回并落盘。
-        "b.reset" -> SettingsHost(
-            pageId = SettingsResetPage.ID,
-            store = wiring.settingsModel,
-            onBack = onBack,
-            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-        )
+        "b.reset" -> SettingsScreen(SettingsResetPage.spec(SettingsPageState()), onBack)
 
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────
         // T1：与底部坞的课表槽位共用同一份接线（含课程操作弹层），两个入口行为一致。
@@ -559,24 +538,9 @@ fun ShellPageContent(
                 onDispose { subscription.close() }
             }
             val appSettings = wiring.settingsModel.load()
-            // 点星期栏「周五」进来的那一天：一次性意图，读完立刻清空
-            // （2026-10-30 修 P0-2：原先这里恒取 `LocalDate.now()`，点哪天都落到今天）。
-            val dayIntent = remember {
-                wiring.pendingDayViewDayOfWeek.also { wiring.pendingDayViewDayOfWeek = null }
-            }
-            // 可见星期几与学期周数：原先壳一个都没传，页面只好用「7 天 × 30 周」硬默认，
-            // 于是隐藏周末的设置在这里不生效、翻页也能翻到学期之外（P1-14）。
-            val displayPrefs = remember(appSettings) {
-                TimetableHostDisplayPrefs.fromSettings(appSettings)
-            }
-            val visibleDays = remember(displayPrefs.hideWeekends) {
-                TimetableHostLogic.visibleDayNumbers(displayPrefs.hideWeekends)
-            }
             DayViewPage(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
-                initialDayOfWeek = dayIntent,
-                visibleDays = visibleDays,
-                totalWeeks = snapshot.settings.semesterWeekCount.coerceAtLeast(1),
+                initialDayOfWeek = LocalDate.now().dayOfWeek.value,
                 homeTitleStyle = appSettings.homeTitleStyle,
                 homeMenuStyle = appSettings.homeMenuStyle,
                 profileName = TimetableHostLogic.resolveProfileName(
@@ -585,22 +549,24 @@ fun ShellPageContent(
                 ),
                 homeMenuItems = TimetableMenuDefaults.entries(),
                 onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
-                // 数据装配交给模型层唯一实现（课程筛选/日程/考试/待办带/摘要卡全在里面）。
-                // 2026-10-30：壳原先自己拼 `DayViewPageData`——日程条目不构造、`scheduleCount`
-                // 写死 0、日期标题拼成「第 3 周 · 周1」，这正是 P1-1/P1-3/P1-4/P1-5 的病根。
                 dataProvider = { week, dayOfWeek ->
-                    dayViewPageDataOf(
-                        DayViewDataAssembler.build(
+                    val dayCourses = snapshot.courses.filter { c ->
+                        c.dayOfWeek == dayOfWeek && c.isActiveInWeek(week)
+                    }
+                    DayViewPageData(
+                        summaryState = DayViewSummaryLogic.buildSummaryState(
                             week = week,
-                            dayOfWeek = dayOfWeek,
-                            courses = snapshot.courses,
-                            settings = snapshot.settings,
-                            currentWeek = snapshot.currentWeek,
-                            scheduleItems = snapshot.scheduleItems,
-                            exams = repository.exams,
-                            tasks = repository.tasks,
-                            showNonCurrentWeekCourses = appSettings.timetableShowNonCurrentWeekCourses,
+                            dateLabel = "第 $week 周 · 周$dayOfWeek",
+                            isToday = week == snapshot.currentWeek && dayOfWeek == LocalDate.now().dayOfWeek.value,
+                            courseCount = dayCourses.size,
+                            scheduleCount = 0,
                         ),
+                        agendaEntries = dayCourses.map { course ->
+                            DayAgendaEntry.CourseEntry(
+                                course = course,
+                                isCurrentWeekCourse = true,
+                            )
+                        },
                     )
                 },
                 onCloseToWeekView = onBack,
@@ -612,37 +578,6 @@ fun ShellPageContent(
                     wiring.pendingEditWeek = null
                     onOpenPage("d1.addCourse")
                 },
-                // ── 能力型回调（P0-1）：`null` = 本页没有这项能力 ⇒ 入口不渲染 ──
-                // 原先页面把这两颗胶囊画出来、壳不传回调 ⇒ 点了没反应。
-                onOpenCourseNotes = { courseId ->
-                    // 备注在课程编辑页里（Dart 的备注弹层与编辑页同源）；带 courseId 进去。
-                    snapshot.courses.firstOrNull { it.id == courseId }?.let { course ->
-                        wiring.pendingEditCourse = course
-                        wiring.pendingAddCourseSeed = null
-                        wiring.pendingEditWeek = null
-                        onOpenPage("d1.addCourse")
-                    }
-                },
-                onOpenCourseTask = { courseId ->
-                    // 「记作业」= 带着课程去新建任务（Dart `_openTaskEditor(course:)`）。
-                    snapshot.courses.firstOrNull { it.id == courseId }?.let { course ->
-                        wiring.pendingTaskCourse = course
-                        onOpenPage("d2.addTask")
-                    }
-                },
-                onOpenExam = { onOpenPage("d3.examList") },
-                onOpenSchedule = { scheduleId ->
-                    snapshot.scheduleItems.firstOrNull { it.id == scheduleId }?.let { item ->
-                        // 仓储模型 → 编辑页 UI 模型：与周视图日程卡同一转换点，不另写一套。
-                        wiring.pendingScheduleEdit = ScheduleItemBridge.toUiData(item)
-                        onOpenPage("d2.addSchedule")
-                    }
-                },
-                onOpenTask = { task ->
-                    wiring.pendingTaskForEdit = task
-                    onOpenPage("d2.addTask")
-                },
-                onViewAllOverdue = { onOpenPage("d2.taskList") },
             )
         }
 
@@ -1166,10 +1101,7 @@ fun ShellPageContent(
                 onOpenShare = {
                     shareStatisticsText(
                         context = context,
-                        // `StatisticsShareText.build` 要的是页面视图状态（`CourseStatisticsViewState`），
-                        // 而 `feedState` 是 feed 整体（含 home/analysis/session 三份）——
-                        // 统计主页那份是 `feedState.home`（与本分支 `viewState = feedState.home` 同源）。
-                        text = StatisticsShareText.build(feedState.home),
+                        text = StatisticsShareText.build(feedState),
                         subject = StatisticsShareText.subject(),
                     )
                 },
@@ -1196,34 +1128,22 @@ fun ShellPageContent(
                 // 「已到点」也算已到点、顺延一周）；标题/正文对齐 `:36` / `:38-71`。
                 // 统计数字**不重算**——复用已交付的 `statistics/StatisticsService`。
                 onWeeklyReportToggle = { enabled ->
-                    // 2026-10-30 修 P2-8：调度/取消都可能抛（权限被撤、AlarmManager 被系统限制、
-                    // 机型 ROM 拦截）——原先没有 runCatching，失败既不改界面也不告诉用户，
-                    // 用户以为「已开启」，实际永远不会推送。现在失败给一句实话。
-                    val ok = runCatching {
-                        if (enabled) {
-                            val now = LocalDateTime.now()
-                            val snap = wiring.timetable.snapshot
-                            WeeklyReportScheduler.scheduleNext(
-                                context = wiring.context,
-                                enabled = true,
-                                fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(now),
-                                title = WeeklyReportScheduleLogic.buildTitle(),
-                                body = WeeklyReportScheduleLogic.buildBody(
-                                    courses = snap.courses,
-                                    currentWeek = snap.currentWeek,
-                                    semesterWeekCount = snap.settings.semesterWeekCount,
-                                ),
-                            )
-                        } else {
-                            WeeklyReportScheduler.cancel(wiring.context)
-                        }
-                    }.isSuccess
-                    if (!ok) {
-                        Toast.makeText(
-                            wiring.context,
-                            StatisticsStrings.saveFailed.zh,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                    if (enabled) {
+                        val now = LocalDateTime.now()
+                        val snap = wiring.timetable.snapshot
+                        WeeklyReportScheduler.scheduleNext(
+                            context = wiring.context,
+                            enabled = true,
+                            fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(now),
+                            title = WeeklyReportScheduleLogic.buildTitle(),
+                            body = WeeklyReportScheduleLogic.buildBody(
+                                courses = snap.courses,
+                                currentWeek = snap.currentWeek,
+                                semesterWeekCount = snap.settings.semesterWeekCount,
+                            ),
+                        )
+                    } else {
+                        WeeklyReportScheduler.cancel(wiring.context)
                     }
                 },
             )
@@ -1247,17 +1167,9 @@ fun ShellPageContent(
                     courseCount = feedState.courseCount,
                 ),
                 onBack = onBack,
-                // 排行页点课程名 → 进该课编辑（2026-10-30 修 P1-3：此前壳不传，页面按
-                // 「无落点就不画 clickable」处理 ⇒ 那一列是「照片上的按钮」）。
-                // 按课名找回实体再走 `d1.addCourse` 的编辑路径，与周视图点课同一落点。
-                onOpenCourse = { courseName ->
-                    snapshot.courses.firstOrNull { it.name == courseName }?.let { course ->
-                        wiring.pendingEditCourse = course
-                        wiring.pendingAddCourseSeed = null
-                        wiring.pendingEditWeek = null
-                        onOpenPage("d1.addCourse")
-                    }
-                },
+                // ⚠️ 页面签名里 `onOpenCourse` 的默认实现就是空的（普查第 6 个盲区：
+                // 「只扫显式空回调」扫不到签名默认值）⇒ 点课程名进该课明细**尚不可用**。
+                // 有意不在这里塞一个空 lambda 冒充「已接」，等明细页选中态可复用后再接。
             )
         }
         "e.session" -> {
@@ -1397,48 +1309,30 @@ fun ShellPageContent(
         )
 
         // ── P3-G2 导入 · 仓库适配 ────────────────────────────────────
-        // 2026-10-30 F08-8b 接壳：此前是「`SHELL_DEMO_SCHOOL` + `adapters = emptyList()`」与
-        // 「两个演示对象」——学校进不来、适配器恒空。现在数据源是**真适配仓**
-        // （`index/root_index.yaml` / `resources/<学校>/adapters.yaml`，解析见
-        // `WarehouseRepositoryFeed.kt`），三页共用 [WarehouseShellState] 传选中项。
-        // ⚠️ 诚实边界：登录之后的「脚本抓课表」还没移植（宏/脚本引擎属 8c），
-        // 详见 `WarehouseImportHosts.kt` 的 KDoc；那三个未就绪的动作点下去给一句实话。
-        "g2.schoolAdapters" -> WarehouseSchoolAdaptersHost(
-            state = warehouseState,
+        "g2.schoolAdapters" -> WarehouseSchoolAdaptersPage(
+            school = SHELL_DEMO_SCHOOL,
+            adapters = emptyList(),
             onBack = onBack,
-            onOpenPage = onOpenPage,
         )
-        "g2.adapterDetail" -> WarehouseAdapterDetailHost(
-            state = warehouseState,
-            prefs = warehousePrefs,
+        "g2.adapterDetail" -> WarehouseAdapterDetailPage(
+            school = SHELL_DEMO_SCHOOL,
+            adapter = SHELL_DEMO_ADAPTER,
             onBack = onBack,
-            onOpenPage = onOpenPage,
         )
-        "g2.warehouseImport" -> WarehouseImportPickerHost(
-            state = warehouseState,
-            prefs = warehousePrefs,
-            onBack = onBack,
-            onOpenPage = onOpenPage,
-        )
+        "g2.warehouseImport" -> WarehouseCourseImportPage(onBack = onBack)
         "g2.webLogin" -> {
             // I2（`383df743`）：以前这里传的是空 `sessionState`，`currentUrl` 为空 ⇒
             // 宿主按设计「空地址不加载任何东西」⇒ **白屏**。所以必须给一个可加载地址。
             //
-            // F08-8b：地址改成**所选适配器的 `import_url`**（用户手填的自定义地址优先）——
-            // 这条地址来自适配仓的 `adapters.yaml`，是真的教务登录页。
-            // 只有在壳的页面清单里**直接点进来**（没选过学校/适配器）时才退回占位地址：
-            // `example.com` 是 IANA 保留示例域，永远可解析且不指向任何真实学校站点。
-            val loginUrl = warehouseState.adapter
-                ?.let { adapter ->
-                    warehousePrefs.customImportUrl(adapter.id) ?: adapter.importUrl
-                }
-                ?.takeIf { it.isNotBlank() }
-                ?: SHELL_DEMO_LOGIN_URL
-            var webLoginState by remember(pageId, loginUrl) {
-                mutableStateOf(WarehouseWebLoginSessionState(currentUrl = loginUrl))
+            // ⚠️ `SHELL_DEMO_LOGIN_URL` 只是**开发壳的占位地址**：`WarehouseSchoolEntry`
+            // 目前**没有 URL 字段**（学校条目只带名字与适配器标识），真正的教务地址要等
+            // 那个字段落地后从条目里取。用 `example.com` 是因为它是 IANA 保留的示例域、
+            // 永远可解析，不会指向任何真实学校站点。
+            var webLoginState by remember {
+                mutableStateOf(WarehouseWebLoginSessionState(currentUrl = SHELL_DEMO_LOGIN_URL))
             }
             WarehouseWebLoginPage(
-                title = warehouseState.school?.name ?: WarehouseStrings.webLoginImport.zh,
+                title = SHELL_DEMO_SCHOOL.name,
                 sessionState = webLoginState,
                 onBack = onBack,
                 onWebProgress = { progress ->
@@ -1587,15 +1481,13 @@ fun ShellPageContent(
             onOpenPage = onOpenPage,
             repository = wiring.timetable,
         )
-        // 独立路由进来的搜索浮层（同一组件的另一种入口）。
-        // **先退浮层、再推目标页**（Dart `_openSearchResult` 同序：先摘浮层再 open）。
-        // 顺序反了就是「推上去马上被弹掉」——用户选了一条搜索结果，却回到浮层下面那一页。
-        // 浮层组件本身不再替宿主调 onDismiss（见 MoreFeaturesSearchOverlay 的注释），否则会二次退栈。
+        // 独立路由进来的搜索浮层（同一组件的另一种入口）：选中 = 关浮层 + 跳页。
+        // 两步都要，少一步就是「选了没反应」——这是本批要修的半接点之一。
         "i.moreSearch" -> MoreFeaturesSearchOverlay(
             onDismiss = onBack,
             onSelectFeature = { featureId ->
-                onBack()
                 shellTimetableMenuPageId(featureId)?.let(onOpenPage)
+                onBack()
             },
         )
         "i.hyperosShowcase" -> HyperosShowcasePage(onBack = onBack)
@@ -1965,25 +1857,39 @@ private fun ShellMissingPage(pageId: String, onBack: () -> Unit) {
 // 演示数据（索引行上标「演示数据」的那些）
 // ────────────────────────────────────────────────────────────────────────
 
+/** 壳里的示例学校/适配器：让「学校适配器」与「适配器详情」有东西可看，值一律写「示例」。 */
+private val SHELL_DEMO_SCHOOL = WarehouseSchoolEntry(
+    id = "shell-demo-school",
+    name = "示例学校",
+    initial = "示",
+    code = "00000",
+)
+
 /**
- * 教务登录页在**开发壳**里的占位地址（I2，2026-10-28；F08-8b 收窄用途）。
+ * 教务登录页在**开发壳**里的占位地址（I2，2026-10-28）。
  *
- * ## 现在什么时候才会用到它
+ * ## 为什么需要它
  *
- * F08-8b 起，`g2.webLogin` 的地址取**所选适配器的 `import_url`**（用户手填的自定义地址优先），
- * 那才是真的教务登录页。本常量只剩一个用途：从壳的页面清单**直接点进**登录页
- * （没选过学校、也没选过适配器）时，总得有个可加载地址，否则宿主按设计「空地址不加载」
- * ⇒ **白屏**。
+ * `WarehouseWebLoginHost` 按设计「`currentUrl` 为空就不加载任何地址」——这是对的
+ * （避免加载一个未知页面），但壳里如果传空状态，用户看到的就是**白屏**。
  *
  * ## 为什么是 `example.com`
  *
- * 它是 IANA 保留的示例域，**永远可解析、且不指向任何真实学校站点**——
- * 不会误导成「这就是那所学校的登录页」。
+ * `WarehouseSchoolEntry` **目前没有 URL 字段**（学校条目只带名字与适配器标识），
+ * 所以拿不到真实教务地址。选 `example.com` 的理由：它是 IANA 保留的示例域，
+ * **永远可解析、且不指向任何真实学校站点**——不会误导成「这就是那所学校的登录页」。
  *
- * ⚠️ 8c 要做的「登录后提取 Cookie / 触发抓取」做完后，这条直达路径应当改成
- * 「先选学校与适配器」（或直接复用上次选择），届时这个常量可以删掉。
+ * ⚠️ 真正的地址要等 `WarehouseSchoolEntry` 加上 URL 字段后从条目里取；
+ * 在那之前，本常量只用于验证「WebView 能加载网页」这条链路本身。
  */
 private const val SHELL_DEMO_LOGIN_URL = "https://example.com/"
+
+private val SHELL_DEMO_ADAPTER = WarehouseAdapterEntry(
+    id = "shell-demo-adapter",
+    name = "示例适配器",
+    script = "",
+    description = "壳内演示条目：不对应任何真实教务系统",
+)
 
 /** `mm:ss` → 起点算出来的 `HH:mm`。日视图与课程表单共用的一小段换算。 */
 private fun clockText(minutesOfDay: Int): String {
