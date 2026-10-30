@@ -34,6 +34,18 @@ import org.junit.Test
  * ## 加新受管页面
  *
  * 只往 [MANAGED] 加一行（页面 id → 必须出现的宿主符号）。判据通用，不用改代码。
+ *
+ * ## 2026-10-30（F14）：从 9 条扩到 65 条
+ *
+ * 建立时只守了诊断族等 9 条；§十 复核指出「其余已接线的 20 多条没人守，随时能被改回空回调」。
+ * 本轮把 [MANAGED] 扩到**当时已交付且已干净的全部路由**：
+ * 87 条分派分支 − 15 条命中 [FORBIDDEN] 的在途/未收口路由 − 7 条 F06 / F08 尚未交付的路由 = **65 条**。
+ *
+ * 没纳入的那 22 条**不是遗漏**，逐条原因写在 [MANAGED] 的注释里。纳入它们会让守卫必红，
+ * 等于逼下一个人把断言删掉（§十一 F14 红线）。
+ *
+ * 类名带 `Diagnostics` 是历史（它出生于诊断族审计），**有意没改名**：§十.3 与台账按这个名字
+ * 引用它，改名要连那些引用一起动。看覆盖面请读 [MANAGED]，不要看类名。
  */
 class DiagnosticsWiringGuardTest {
 
@@ -195,6 +207,90 @@ class DiagnosticsWiringGuardTest {
             "i.moreSearch" to listOf("shellTimetableMenuPageId"),
             // 启动引导：开学日期/周数/当前周落盘 + 引导完成标记（宿主 StartupFlowHost）
             "i.startup" to listOf("StartupFlowHost"),
+
+            // ── 2026-10-30 F14 扩面：把「已交付且已干净」的路由全部纳入 ──────────
+            // 口径（2026-10-30 11:40 Lead 复算 + 本批独立复扫）：
+            //   干净 = 分支体去注释后不命中 [FORBIDDEN]；已交付 = 真宿主 / 真仓储 / 真桥接。
+            // 未纳入（命中 [FORBIDDEN]，纳入必红）：
+            //   b.live / b.liveSelfCheck / b.glassDockIcon（F06 在途，SettingsPageState()）
+            //   g2.webLogin（F08 在途，onWebBridgeMessage = { }）
+            //   c2.month / c3.day / d2.scheduleList / d2.taskList / d2.addTask /
+            //   d3.timeSchemeEditor / d3.locationMatch / d3.addExam / d3.examList /
+            //   e.analysis / k.conflict（这些分支里的 `wiring.pendingX = null` 是**一次性意图
+            //   清空**，本意不是空数据，但它落在 FORBIDDEN 的「末尾 null」判据上；属在途/未收口，
+            //   明细见认领文件 F14 的备注。要纳入得先单独讨论判据，不许顺手放宽。）
+            // 未纳入（未交付，F06 / F08 正在做）：b.homeWidget / b.reset /
+            //   g2.schoolAdapters / g2.adapterDetail / g2.warehouseImport /
+            //   g2.customDebug / g2.aiImageImport
+            // -- a --
+            "a.about" to listOf("AboutStaticPage"),
+            "a.changelog" to listOf("ChangelogPage"),
+            "a.licenses" to listOf("OpenSourceLicensesHost"),
+            "a.support" to listOf("SupportCreatorHostPage"),
+            "a.contributors" to listOf("ContributorsHostPage"),
+            "a.update" to listOf("AboutUpdateHostPage"),
+            // -- b --
+            "b.settingsHome" to listOf("SettingsTimetableHubHost"),
+            "b.semester" to listOf("SettingsSemesterHost"),
+            "b.general" to listOf("SettingsHost", "wiring.settingsModel"),
+            "b.appearance" to listOf("SettingsHost", "SettingsAppearancePage.ID"),
+            "b.theme" to listOf("SettingsHost", "SettingsThemeManagePage.ID"),
+            "b.appearanceEditor" to listOf("AppearanceEditorHost"),
+            "b.materialGeneral" to listOf("AppearanceEditorHost", "MaterialSheetPages.GENERAL"),
+            "b.materialCourseCard" to listOf("AppearanceEditorHost", "MaterialSheetPages.COURSE_CARD"),
+            "b.backdropFlow" to listOf("AppearanceEditorHost", "WallpaperSheetPages.PICKER"),
+            "b.recentWallpaper" to listOf("AppearanceEditorHost", "WallpaperSheetPages.PICKER"),
+            "b.bingGallery" to listOf("BingGalleryHost"),
+            "b.homeNavigation" to listOf("HomeNavigationHost"),
+            "b.homeMenuEditor" to listOf("HomeMenuEditorHost"),
+            "b.courseCard" to listOf("SettingsHost", "SettingsCourseCardPage.ID"),
+            "b.timetablePage" to listOf("TimetablePageSettingsHost"),
+            "b.holiday" to listOf("SettingsHolidayHost"),
+            "b.holidayAdvanced" to listOf("SettingsHolidayAdvancedHost"),
+            "b.weather" to listOf("WeatherSettingsHost"),
+            "b.glassDock" to listOf("GlassDockEditorHost"),
+            // -- c1 --
+            "c1.week" to listOf("TimetableWithCourseActions"),
+            "c1.profiles" to listOf("TimetableProfilesPage", "TimetableProfilesController"),
+            // -- d1 --
+            "d1.addCourse" to listOf("AddCoursePage", "wiring.pendingEditCourse"),
+            "d1.overview" to listOf("CourseOverviewHost"),
+            // -- d2 --
+            "d2.addSchedule" to listOf("AddScheduleItemPage", "wiring.saveScheduleItem"),
+            "d2.dateRule" to listOf("ScheduleDateRuleHost"),
+            // -- d3 --
+            "d3.timeSchemes" to listOf("TimeSchemeManagementHost"),
+            // -- e --
+            "e.statistics" to listOf("CourseStatisticsPage", "StatisticsFeed"),
+            "e.statisticsSettings" to listOf("StatisticsSettingsPage", "StatisticsSettingsLogic.buildViewState"),
+            "e.session" to listOf("StatisticsSessionPage", "StatisticsFeed"),
+            // -- f --
+            "f.cloudSync" to listOf("CloudSyncController", "CloudBackupDetailHost"),
+            "f.backupList" to listOf("CloudBackupListPage", "CloudBackupDetailHost"),
+            "f.couple" to listOf("CoupleTimetableSettingsHost"),
+            // -- g1 --
+            "g1.importEntry" to listOf("ImportEntryHost"),
+            "g1.icsImport" to listOf("IcsImportHost"),
+            "g1.spreadsheetImport" to listOf("SpreadsheetImportHost"),
+            // -- g3 --
+            "g3.dataTransfer" to listOf("DataTransferHost"),
+            "g3.qrSend" to listOf("QrTransferSendHost", "transferBridge.outboundPayload"),
+            "g3.qrScan" to listOf("QrTransferScanHost", "transferBridge.inboundBytes"),
+            "g3.icsExport" to listOf("IcsExportHost"),
+            "g3.lanEdit" to listOf("LanEditHost"),
+            "g3.pickupCodes" to listOf("PickupCodesHost"),
+            // -- i --
+            "i.userGuide" to listOf("UserGuidePage", "GuidePermissionProbe.probe"),
+            "i.hyperosShowcase" to listOf("HyperosShowcasePage"),
+            // -- i2 --
+            "i2.showcase" to listOf("MiuixShowcasePage"),
+            // -- j --
+            "j.live" to listOf("LiveDisplayHost"),
+            "j.displayBefore" to listOf("LiveDisplayHost"),
+            "j.displayDuring" to listOf("LiveDisplayHost", "forDuringEnd = true"),
+            "j.reminderTiming" to listOf("LiveReminderTimingHost"),
+            "j.keepAlive" to listOf("LiveKeepAliveSettingsPage", "native_runtime_prefs"),
+            "j.weatherCity" to listOf("WeatherCityPickerHost"),
         )
 
         /**
