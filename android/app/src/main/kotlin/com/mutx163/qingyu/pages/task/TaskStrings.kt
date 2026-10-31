@@ -1,7 +1,12 @@
 package com.mutx163.qingyu.pages.task
 
 /**
- * 任务模块文案常量（逐字对齐 `lib/l10n/app_zh.arb`，通过单元测试逐条对拍）。
+ * 任务模块文案常量（逐字对齐 `lib/l10n/app_zh.arb`）。
+ *
+ * 对拍：`test/.../pages/task/TaskStringsParityTest.kt`（2026-10-29 补。
+ * 此前本注释就写着「通过单元测试逐条对拍」，但仓里并没有 task 的 parity 测试——
+ * 审核 misc-wiring P2-2 记的正是这条「注释说了一件没有的事」）。
+ * 新增文案时**同时**把它加进那张对照表，否则新的字没有任何测试钉住。
  */
 object TaskStrings {
     const val taskListTitle = "任务清单"
@@ -58,10 +63,13 @@ object TaskStrings {
     // ── 日期选择器（`TaskPickerSheets` 用）──
     // 「取消」沿用上面的 [cancelAction]（与 ARB `cancelAction` 同值）。
     const val confirmAction = "确认"          // 与 ARB `confirmAction` 同值
-    // ⚠️ 下面三个在 `lib/l10n/app_zh.arb` 里**没有**独立键（已 grep 确认）。
-    // 按「文案不许自拟」的原则本应等 ARB 补键；但它们是日期选择器的**量纲标签**
-    // （年/月/日），与系统日期控件同义，且 TaskStrings 无 parity 测试枚举，故先在此登记。
-    // ARB 补键后应改为对拍。
+    // 日期量纲标签（任务页滚轮用）。
+    // 2026-10-30：ARB 已补键 `datePickerYear` / `datePickerMonth` / `datePickerDay`
+    // （六份 ARB 同步），因此不再是「ARB 里没有的野生字符串」——
+    // `TaskStringsParityTest.日期量纲标签与 ARB 逐字一致` 会拿这里的值跟 ARB 逐字比对。
+    // 本文件是纯常量对象（任务域各处把 `TaskStrings.xxx` 当 String 直接拼），
+    // 所以保持 `const val` 形态，不改成 ArbText（那会强迫 12 处调用点都加 `.zh`）。
+    // 考试页的日期滚轮（`ExamPickerSheets`）用同一组 ARB 键，两处同源。
     const val datePickerYear = "年"
     const val datePickerMonth = "月"
     const val datePickerDay = "日"

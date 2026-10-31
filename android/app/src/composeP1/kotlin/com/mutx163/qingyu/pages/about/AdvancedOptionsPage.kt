@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,13 +28,16 @@ import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 import com.mutx163.qingyu.infra.AppUpdateDownloadSource
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -60,12 +67,42 @@ fun AdvancedOptionsPage(
     onUseSystemDownloaderChange: (Boolean) -> Unit = {},
     onMirrorPresetChange: (MirrorPreset) -> Unit = {},
     onProbeMirrors: () -> Unit = {},
-    onEditMirrorUrl: () -> Unit = {},
+    /**
+     * 自定义镜像地址提交（Dart `_editMirrorUrlPrefix`，`about_screen.dart:2259-2288`）。
+     *
+     * 弹窗在本页（渲染层），落盘在宿主：宿主收原始文本，自己归一化 + 写设置 + 决定提示。
+     * 空串 = 清空自定义地址（回落默认镜像）。
+     */
+    onMirrorPrefixSubmit: (String) -> Unit = {},
     onOpenDiagnostics: () -> Unit = {},
 ) {
     val recommended = resolveRecommendedMirrorPreset(probeStates)
     val channel = settings.downloadChannel
     val customPrefix = settings.mirrorUrlPrefix
+
+    // 镜像地址编辑弹窗（Dart 用 `showAppTextInputDialog`，这里用官方 OverlayDialog + TextField）。
+    var editingMirror by remember { mutableStateOf(false) }
+    var mirrorDraft by remember { mutableStateOf("") }
+    var mirrorError by remember { mutableStateOf<String?>(null) }
+
+    fun openMirrorEditor() {
+        mirrorDraft = settings.mirrorUrlPrefix
+        mirrorError = null
+        editingMirror = true
+    }
+
+    fun submitMirror() {
+        val raw = mirrorDraft.trim()
+        // Dart 侧只在「用到」时才归一化，非法值会被静默当成自定义前缀；
+        // 这里在入口就拦住（ARB 已有 `aboutMirrorPrefixInvalid` 这条文案），
+        // 空串仍然允许——它表示「清掉自定义地址，回默认镜像」。
+        if (raw.isNotEmpty() && normalizeMirrorUrlPrefix(raw) == null) {
+            mirrorError = AboutUpdatePageStrings.mirrorPrefixInvalid
+            return
+        }
+        editingMirror = false
+        onMirrorPrefixSubmit(raw)
+    }
 
     QingyuPageScaffold(title = AboutUpdatePageStrings.advancedOptionsTitle, onBack = onBack) {
         QingyuPageList(
@@ -186,7 +223,7 @@ fun AdvancedOptionsPage(
                             } else {
                                 AboutUpdatePageStrings.setCustomMirrorAction
                             },
-                            onClick = onEditMirrorUrl,
+                            onClick = { openMirrorEditor() },
                         )
                     }
                 }
@@ -200,6 +237,56 @@ fun AdvancedOptionsPage(
                         title = AboutUpdatePageStrings.viewPhoneLogsAction,
                         onClick = onOpenDiagnostics,
                     )
+                }
+            }
+        }
+    }
+
+    // 镜像地址输入弹窗（Dart `showAppTextInputDialog`，`:2259-2272`）。
+    OverlayDialog(
+        show = editingMirror,
+        title = AboutUpdatePageStrings.setMirrorSourceTitle,
+        onDismissRequest = { editingMirror = false },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TextField(
+                value = mirrorDraft,
+                onValueChange = {
+                    mirrorDraft = it
+                    mirrorError = null
+                },
+                label = AboutUpdatePageStrings.mirrorPrefixLabel,
+                useLabelAsPlaceholder = true,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = mirrorError ?: AboutUpdatePageStrings.mirrorPresetCustomDescription,
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (mirrorError != null) {
+                    MiuixTheme.colorScheme.error
+                } else {
+                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Button(
+                    onClick = { editingMirror = false },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = AboutUpdatePageStrings.cancelAction)
+                }
+                Button(
+                    onClick = { submitMirror() },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = AboutUpdatePageStrings.confirmAction)
                 }
             }
         }

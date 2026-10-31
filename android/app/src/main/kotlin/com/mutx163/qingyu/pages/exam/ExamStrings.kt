@@ -109,6 +109,22 @@ object ExamStrings {
     val weekdaySat = ArbText("weekdaySat", "周六")
     val weekdaySun = ArbText("weekdaySun", "周日")
 
+    // 星期短名（按钮上只放一个字，ARB `weekdayShortMonday..Sunday`）。
+    // 2026-10-29 质量审核：`ExamPickerSheets` 原先用 `weekdayLabel(..).removePrefix("周")`
+    // 现拼短名，等于在渲染层硬编码中文「周」；改成直接读 ARB 短名。
+    val weekdayShortMon = ArbText("weekdayShortMonday", "一")
+    val weekdayShortTue = ArbText("weekdayShortTuesday", "二")
+    val weekdayShortWed = ArbText("weekdayShortWednesday", "三")
+    val weekdayShortThu = ArbText("weekdayShortThursday", "四")
+    val weekdayShortFri = ArbText("weekdayShortFriday", "五")
+    val weekdayShortSat = ArbText("weekdayShortSaturday", "六")
+    val weekdayShortSun = ArbText("weekdayShortSunday", "日")
+
+    // 日期滚轮的年 / 月 / 日后缀（`ExamPickerSheets` 的三列滚轮）。
+    val datePickerYear = ArbText("datePickerYear", "年")
+    val datePickerMonth = ArbText("datePickerMonth", "月")
+    val datePickerDay = ArbText("datePickerDay", "日")
+
     // 通用按钮 / 提示
     val weekLabel = ArbText("weekLabel", "第 {week} 周")
     val cancelAction = ArbText("cancelAction", "取消")
@@ -190,6 +206,16 @@ object ExamStrings {
             weekdayFri,
             weekdaySat,
             weekdaySun,
+            weekdayShortMon,
+            weekdayShortTue,
+            weekdayShortWed,
+            weekdayShortThu,
+            weekdayShortFri,
+            weekdayShortSat,
+            weekdayShortSun,
+            datePickerYear,
+            datePickerMonth,
+            datePickerDay,
             weekLabel,
             cancelAction,
             deleteAction,
@@ -207,6 +233,18 @@ object ExamStrings {
         5 -> weekdayFri.zh
         6 -> weekdaySat.zh
         7 -> weekdaySun.zh
+        else -> ""
+    }
+
+    /** 星期短名（1=周一 … 7=周日，越界返回空串）。取 ARB `weekdayShortMonday..Sunday`。 */
+    fun weekdayShortLabel(weekday: Int): String = when (weekday) {
+        1 -> weekdayShortMon.zh
+        2 -> weekdayShortTue.zh
+        3 -> weekdayShortWed.zh
+        4 -> weekdayShortThu.zh
+        5 -> weekdayShortFri.zh
+        6 -> weekdayShortSat.zh
+        7 -> weekdayShortSun.zh
         else -> ""
     }
 

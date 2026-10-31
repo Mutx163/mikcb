@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -274,8 +275,19 @@ fun DiagnosticsLogHost(
     fun copyLogs() {
         val text = buildDiagnosticsFullLogText(feed.parsed, selectedLevel)
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        clipboard?.setPrimaryClip(ClipData.newPlainText(CLIP_LABEL, text))
-        toast(context, DiagnosticsStrings.appLogsCopied.zh)
+        // 只有真写进剪贴板才提示「已复制」。Dart `_copyLogs`（:970-981）是 `await
+        // Clipboard.setData(...)` 成功之后才 toast；这里原来是「写了就报成功」，
+        // clipboard 为 null（少见但可能：策略机型/系统服务缺失）时会骗用户。
+        val copied = clipboard != null && runCatching {
+            clipboard.setPrimaryClip(ClipData.newPlainText(CLIP_LABEL, text))
+        }.isSuccess
+        if (copied) {
+            toast(context, DiagnosticsStrings.appLogsCopied.zh)
+        } else {
+            // 失败路径的专用文案还没有 ARB 键（已记「ARB 新增请求」）；
+            // 宁可「只留 logcat」也不假装复制成功。
+            Log.w(LOG_TAG, "copy clipped logs failed: clipboard unavailable")
+        }
     }
 
     fun exportLogs() {
@@ -291,7 +303,7 @@ fun DiagnosticsLogHost(
         isExporting = true
         scope.launch {
             val fileName = LogViewerEntryLogic.exportFileName(source, System.currentTimeMillis())
-            withContext(Dispatchers.IO) {
+            val shared = withContext(Dispatchers.IO) {
                 shareLogText(
                     context = context,
                     text = text,
@@ -299,6 +311,12 @@ fun DiagnosticsLogHost(
                     shareText = config.shareText,
                     shareSubject = config.shareSubject,
                 )
+            }
+            // `shareLogText` 明确返回「是否拉起过分享面板」（见其 KDoc）。原来把这个
+            // 返回值整个丢掉：系统没有可用分享目标时用户什么都看不到，像是按钮失灵。
+            if (!shared) {
+                // 失败文案同样缺 ARB 键（已记「ARB 新增请求」），先留 logcat。
+                Log.w(LOG_TAG, "share chooser not launched for $fileName")
             }
             isExporting = false
         }
@@ -371,6 +389,9 @@ private const val KEY_ACTIVE_PROFILE_ID = "active_timetable_profile_id"
 private const val POLL_INTERVAL_MILLIS = 1_000L
 
 private const val CLIP_LABEL = "mikcb-app-logs"
+
+/** logcat 标签（失败路径没有 ARB 文案时的唯一留痕，别删）。 */
+private const val LOG_TAG = "[diagnostics-log]"
 
 /**
  * 日志导出临时副本的子目录名（相对 `cacheDir`）。

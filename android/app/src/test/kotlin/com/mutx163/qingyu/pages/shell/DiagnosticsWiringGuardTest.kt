@@ -41,6 +41,10 @@ import org.junit.Test
  * 本轮把 [MANAGED] 扩到**当时已交付且已干净的全部路由**：
  * 87 条分派分支 − 15 条命中 [FORBIDDEN] 的在途/未收口路由 − 7 条 F06 / F08 尚未交付的路由 = **65 条**。
  *
+ * ## 2026-10-31（F20）：65 → 66 条
+ *
+ * `b.homeWidget` 由空构造 state 换成 [HomeWidgetHost]，从「未交付」名单转入受管清单。
+ *
  * 没纳入的那 22 条**不是遗漏**，逐条原因写在 [MANAGED] 的注释里。纳入它们会让守卫必红，
  * 等于逼下一个人把断言删掉（§十一 F14 红线）。
  *
@@ -219,7 +223,7 @@ class DiagnosticsWiringGuardTest {
             //   e.analysis / k.conflict（这些分支里的 `wiring.pendingX = null` 是**一次性意图
             //   清空**，本意不是空数据，但它落在 FORBIDDEN 的「末尾 null」判据上；属在途/未收口，
             //   明细见认领文件 F14 的备注。要纳入得先单独讨论判据，不许顺手放宽。）
-            // 未纳入（未交付，F06 / F08 正在做）：b.homeWidget / b.reset /
+            // 未纳入（未交付，F06/F08 正在做）：
             //   g2.schoolAdapters / g2.adapterDetail / g2.warehouseImport /
             //   g2.customDebug / g2.aiImageImport
             // -- a --
@@ -242,6 +246,9 @@ class DiagnosticsWiringGuardTest {
             "b.recentWallpaper" to listOf("AppearanceEditorHost", "WallpaperSheetPages.PICKER"),
             "b.bingGallery" to listOf("BingGalleryHost"),
             "b.homeNavigation" to listOf("HomeNavigationHost"),
+            // 2026-10-31 F20：桌面小组件页从空构造 state 换成真宿主（读设置模型 +
+            // 原生渲染 10 卡预览 + 桌面真实卡片绑定 + 添加到桌面 / 精确闹钟授权）。
+            "b.homeWidget" to listOf("HomeWidgetHost"),
             "b.homeMenuEditor" to listOf("HomeMenuEditorHost"),
             "b.courseCard" to listOf("SettingsHost", "SettingsCourseCardPage.ID"),
             "b.timetablePage" to listOf("TimetablePageSettingsHost"),

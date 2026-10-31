@@ -69,6 +69,14 @@ class AboutUpdatePageStringsArbTest {
             "aboutSystemDownloaderFailed" to AboutUpdatePageStrings.systemDownloaderFailed,
             "aboutMirrorSaved" to AboutUpdatePageStrings.mirrorSaved,
             "aboutMirrorPrefixInvalid" to AboutUpdatePageStrings.mirrorPrefixInvalid,
+            // 2026-10-29 修「镜像地址编辑只弹 toast」时补的 5 条：全部是**已有** ARB 键的移植，
+            // 不是新文案。`serviceMsg*` 属于 Dart 的 service message 表，Kotlin 侧还没有那张表，
+            // 所以先按原键名逐字抄进本族 strings（等那张表移植过来后改成查表）。
+            "cancelAction" to AboutUpdatePageStrings.cancelAction,
+            "confirmAction" to AboutUpdatePageStrings.confirmAction,
+            "serviceMsgUpdateDownloadHashMismatch" to AboutUpdatePageStrings.hashMismatch,
+            "serviceMsgUpdateSha256UnverifiedRefused" to AboutUpdatePageStrings.sha256Unverified,
+            "serviceMsgUpdateOpenInstallerFailed" to AboutUpdatePageStrings.openInstallerFailedTemplate,
         )
         val mismatches = mutableListOf<String>()
         for ((key, actual) in pairs) {

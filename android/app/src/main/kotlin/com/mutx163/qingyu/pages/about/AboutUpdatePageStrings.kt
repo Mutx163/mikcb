@@ -196,4 +196,41 @@ object AboutUpdatePageStrings {
 
     /** aboutMirrorPrefixInvalid */
     const val mirrorPrefixInvalid = "镜像源格式不正确，请输入完整的 http 或 https 地址"
+
+    /**
+     * `cancelAction`（`app_zh.arb:492`）：镜像地址编辑弹窗的「取消」。
+     * 与全站同一个键，不新造文案。
+     */
+    const val cancelAction = "取消"
+
+    /** `confirmAction`（`app_zh.arb:493`）：镜像地址编辑弹窗的「确认」。 */
+    const val confirmAction = "确认"
+
+    /**
+     * `serviceMsgUpdateDownloadHashMismatch`（`app_zh.arb:4920`）。
+     *
+     * 摘要不一致时**拒绝安装**的提示（Dart 错误码 `update_download_hash_mismatch`）。
+     * 这条属于 Dart 的 service message 表，Kotlin 侧还没有那张表，所以先按原键名
+     * 抄进本族 strings；等 `ServiceMessageStrings` 移植过来后改成查表。
+     */
+    const val hashMismatch = "安装包校验失败，为防止安装被篡改的文件已取消本次更新"
+
+    /**
+     * `serviceMsgUpdateSha256UnverifiedRefused`（`app_zh.arb:4921`）。
+     *
+     * 元数据声明了摘要、本地却算不出来（读不到文件）时的提示：同样拒绝安装，
+     * **不**降级成「没摘要就当没要求」。
+     */
+    const val sha256Unverified = "安装包完整性校验失败，已取消更新，请前往发布页下载"
+
+    /**
+     * `serviceMsgUpdateOpenInstallerFailed`（`app_zh.arb:4931`），占位符 `{detail}`。
+     *
+     * 安装器拉不起来时告诉用户为什么（Dart 错误码 `update_open_installer_failed`）。
+     */
+    const val openInstallerFailedTemplate = "打开安装包失败：{detail}"
+
+    /** 填充 [openInstallerFailedTemplate] 的 `{detail}`。 */
+    fun openInstallerFailed(detail: String): String =
+        openInstallerFailedTemplate.replace("{detail}", detail)
 }

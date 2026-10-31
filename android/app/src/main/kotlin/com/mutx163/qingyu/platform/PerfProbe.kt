@@ -62,17 +62,18 @@ import java.time.format.DateTimeFormatter
  * 都不成立 ⇒ [attach] 直接返回 false、[PerfProbeCore] 保持未安装，报表页走 Dart 同款
  * 「Probe is not installed in this build.」文案 —— **不是**用空数据糊住。
  *
- * ## 挂载点（壳里要加的那一行）
+ * ## 挂载点（已接线，不要再重复加）
  *
  * ```kotlin
- * // PagesShellActivity.onCreate(...) 里，setContent 之前：
+ * // PagesShellActivity.onCreate(...) 里，setContent 之前（已落地）：
  * PerfProbe.attach(this)          // 装上帧采集 + 窗口监听；正式包里是空操作
- * // 每次换页时（shellPageId 确定的那一处）：
+ * // 每次换页时（ShellPageIndex 的 LaunchedEffect(pageId)，已落地）：
  * PerfProbe.beginPage(pageId)     // 例如 "b.general" / "h.perfReport"
  * ```
  *
- * 没有这一行也能跑：`PerfReportHost` 首次打开时会自己 [attach] 一次，只是开始计量的时刻
- * 变成「第一次进性能报告页」，前面的页面不会有数据。
+ * 两处接线在 HEAD 里都已存在（`PagesShellActivity.kt:125`、`ShellPageIndex.kt:258`）。
+ * 少一处也能跑（`PerfReportHost` 首次打开时会自己 [attach] 一次），但开始计量的时刻会变成
+ * 「第一次进性能报告页」，且换页不给 id 时整段都记到 `boot` 行。
  */
 object PerfProbe {
     private const val TAG = "[perf-probe]"

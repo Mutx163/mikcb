@@ -82,6 +82,17 @@ object DiagnosticLogMessages {
     const val LOG_LIVE_UPDATE_REFRESH_WORKER_FAILED = "超级岛刷新 Worker 失败"
     const val LOG_POST_FALLBACK_NOTIFICATION_FAILED = "发送降级普通通知失败"
 
+    // 应用内更新（检查 / 下载 / 验签 / 安装）：只进 logcat 与本地诊断日志，不上屏。
+    // 2026-10-29 质量审核从 `composeP1/pages/about/AboutUpdateHost.kt` 搬来——渲染层源集的
+    // 中文字面量受 i18n 棘轮计数约束，而这类内部日志本就该集中在当前文件（同 `MainActivity`
+    // 引用 `LOG_RESOLVE_IMPORT_DISPLAY_NAME_FAILED` 的惯例）。
+    const val LOG_UPDATE_CHECK_FAILED = "检查更新失败：GitHub releases 响应不可用或无法解析"
+    const val LOG_UPDATE_DOWNLOAD_ENQUEUE_FAILED = "下载入队失败：系统下载器不可用"
+    const val LOG_UPDATE_DOWNLOAD_FAILED = "下载失败：系统下载器报失败状态"
+    const val LOG_UPDATE_HASH_MISMATCH = "下载完成但 SHA-256 不一致，已删除安装包并拒绝安装"
+    const val LOG_UPDATE_SHA_UNVERIFIED = "下载完成但无法计算 SHA-256，已删除安装包并拒绝安装"
+    const val LOG_UPDATE_INSTALLER_FAILED = "安装器未能拉起"
+
     // 金标联盟公平运行内存
     const val FAIR_MEMORY_EVENT_RECEIVED = "收到公平运行内存广播"
     const val FAIR_MEMORY_HANDLE_FAILED = "处理公平运行内存广播失败"

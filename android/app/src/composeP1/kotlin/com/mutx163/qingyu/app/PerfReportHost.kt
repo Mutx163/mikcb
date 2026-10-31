@@ -53,11 +53,13 @@ import kotlinx.coroutines.delay
  *
  * ## 探针挂载
  *
- * 首次组合时 `attach(context)` 一次（幂等）。正式包里它返回 false，页面因此走
- * Dart 同款「Probe is not installed in this build.」说明文案，不会用空数据糊住。
+ * 首次组合时 `attach(context)` 一次（幂等）——这是**兜底**：壳在 Activity 起来时就已
+ * `PerfProbe.attach(this)`（`PagesShellActivity.kt:125`），并每次换页
+ * `PerfProbe.beginPage(pageId)`（`ShellPageIndex.kt` 的 `LaunchedEffect(pageId)`），
+ * 所以「其它页面」的帧与 CPU/RSS 也记在各自页名下，不会全堆进 `boot` 行。
  *
- * 但要让**其它页面**也有数据，还需要壳在 Activity 起来时就装上、并在切页时告知页面 id
- * （见 `platform/PerfProbe.kt` 类注释里的两行接线说明；`ShellPageIndex.kt` 属 Lead）。
+ * 正式包里 [PerfProbe.attach] 返回 false，页面因此走 Dart 同款
+ * 「Probe is not installed in this build.」说明文案，不会用空数据糊住。
  */
 @Composable
 fun PerfReportHost(onBack: () -> Unit) {
