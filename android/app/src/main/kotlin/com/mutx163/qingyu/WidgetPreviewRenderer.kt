@@ -31,7 +31,10 @@ internal object WidgetPreviewRenderer {
     /**
      * 渲染一张预览图，返回 PNG 字节；类型不认识或布局解析失败时返回 null。
      *
-     * 只能在主线程调用：inflate 出来的 View 要在同一线程完成测量/布局/绘制。
+     * 必须在**同一个线程**里完成全部步骤（inflate → measure → layout → draw → PNG）：
+     * 出图拿到的 View 没 attach 到任何窗口，所以不要求主线程，但也不能跨线程分步做。
+     * 两条调用方都不在主线程上跑：Flutter 通道那条走 `widgetPreviewExecutor`，
+     * Compose 侧走 IO 调度器（一页 4×4 卡要上百毫秒，放主线程就是掉帧）。
      */
     /**
      * 渲染结果。
@@ -50,7 +53,24 @@ internal object WidgetPreviewRenderer {
         val heightDp: Float,
     )
 
+    /**
+     * @param settingsJson 宿主正在编辑的设置 JSON（[WidgetPreviewSession.settingsJsonOverride]）。
+     *   传了就在本次渲染里覆盖 profile 内嵌的 `settings`；不传 = 沿用 profile（Flutter
+     *   通道 `renderWidgetPreview` 那条旧路径），语义与加这个参数之前完全一致。
+     */
     fun render(
+        context: Context,
+        widgetType: String,
+        widthDp: Int,
+        heightDp: Int,
+        nightMode: Boolean,
+        languageTag: String?,
+        settingsJson: String? = null,
+    ): Result? = WidgetPreviewSession.run(widthDp, heightDp, nightMode, settingsJson) {
+        renderInSession(context, widgetType, widthDp, heightDp, nightMode, languageTag)
+    }
+
+    private fun renderInSession(
         context: Context,
         widgetType: String,
         widthDp: Int,

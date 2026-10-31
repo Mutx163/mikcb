@@ -495,7 +495,9 @@ class SettingsHomeWidgetPageTest {
         // settings_home_widget.dart:425 + :487-490；格位表见 home_widget_service.dart:115-126
         val page = spec()
         val preview = page.flatten().filterIsInstance<SettingsInline>().single()
-        assertEquals(InlineKind.PREVIEW_CARD, preview.kind)
+        // 2026-10-31 F20：预览块从占位小卡（PREVIEW_CARD）换成原生位图轮播
+        // （WIDGET_PREVIEW），渲染见 HomeWidgetPreviewCarousel.kt。
+        assertEquals(InlineKind.WIDGET_PREVIEW, preview.kind)
         assertEquals("homeWidgetPreviewTitle", preview.labelKey)
         assertEquals("效果预览", preview.label)
         assertEquals(

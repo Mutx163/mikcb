@@ -43,8 +43,8 @@ import java.util.Locale
  * ## 本批覆盖范围
  *
  * 覆盖 `pages/settings/SettingsPageState.kt` 的全部 45 个字段所需键 + `enableHolidayMarking`
- * （`SettingsTimetableState` 要），共 [OWNED_KEYS] 条。未覆盖的（超级岛 / 首页导航与菜单 /
- * 壁纸 / 玻璃材质调参 / 小组件 / 节假日 / 更新镜像 / 提醒）见认领文件
+ * （`SettingsTimetableState` 要）+ 桌面小组件 10 键（`timetable_settings.dart:786-795`），
+ * 共 [OWNED_KEYS] 条。未覆盖的（超级岛 / 节假日 / 更新镜像 / 提醒）见认领文件
  * `.agents/compose-phase3/claims/P35-settings-model.md` 的覆盖率表。
  */
 data class TimetableSettingsModel(
@@ -182,6 +182,37 @@ data class TimetableSettingsModel(
         BackToCurrentWeekButtonStyle.FLOATING,
     /** `timetableFloatingBackToCurrentWeekButtonOpacity`（:1517，缺键 0.96，clamp 0.55~1.0）。 */
     val timetableFloatingBackToCurrentWeekButtonOpacity: Double = 0.96,
+
+    // ---------- 桌面小组件（`timetable_settings.dart:786-795` 构造默认 / `:1444-1461` 读侧） ----------
+    /**
+     * `widgetBackgroundStyle`（:786，构造默认 `WidgetBackgroundStyle.solid`）。
+     *
+     * 落盘串见 `timetable_settings_extensions.dart:31-36`：`glass` / `solid` / `gradient`。
+     * 读侧走 `X.fromValue` 语义——缺键与未知串一律回落 [DEFAULT_WIDGET_BACKGROUND_STYLE]。
+     */
+    val widgetBackgroundStyle: String = DEFAULT_WIDGET_BACKGROUND_STYLE,
+    /** `widgetCourseAccentMode`（:787 `barAndText`；落盘串 `widget_course_accent.dart:23-30`）。 */
+    val widgetCourseAccentMode: String = DEFAULT_WIDGET_COURSE_ACCENT_MODE,
+    /** `widgetShowLocation`（:788，缺键 true）。 */
+    val widgetShowLocation: Boolean = true,
+    /** `widgetShowCountdown`（:789，缺键 true）；false 时倒计时整块连同提前量/样式两行一起消失。 */
+    val widgetShowCountdown: Boolean = true,
+    /** `widgetHideCompletedCourses`（:790，缺键 false）。 */
+    val widgetHideCompletedCourses: Boolean = false,
+    /** `widgetShowTomorrowCourses`（:791，缺键 true）。 */
+    val widgetShowTomorrowCourses: Boolean = true,
+    /**
+     * `widgetHeightAdjustment`（:792，读侧 `lenientDouble(...) ?? -11`，**Dart 不夹**）。
+     *
+     * 这是**绝对档位**；滑杆读数是相对它的偏移（`settings_home_widget.dart:344-359`）。
+     */
+    val widgetHeightAdjustment: Double = DEFAULT_WIDGET_HEIGHT_ADJUSTMENT,
+    /** `widgetCornerRadius`（:793，读侧 `lenientDouble(...) ?? 22`，**Dart 不夹**）。 */
+    val widgetCornerRadius: Double = DEFAULT_WIDGET_CORNER_RADIUS,
+    /** `widgetCountdownLeadMinutes`（:794，读侧 `lenientInt(...) ?? 20`，**Dart 不夹**；0 = 始终显示）。 */
+    val widgetCountdownLeadMinutes: Int = DEFAULT_WIDGET_COUNTDOWN_LEAD_MINUTES,
+    /** `widgetCountdownTextStyle`（:795 `LiveCountdownTextStyle.smart`；12 档落盘串见 extensions:153-167）。 */
+    val widgetCountdownTextStyle: String = DEFAULT_WIDGET_COUNTDOWN_TEXT_STYLE,
 
     /**
      * `liveEnableLocalDiagnostics`（`timetable_settings.dart:517 / :851 / :1602-1603`）：
@@ -355,6 +386,17 @@ data class TimetableSettingsModel(
         "timetableBackToCurrentWeekButtonStyle" to timetableBackToCurrentWeekButtonStyle.value,
         "timetableFloatingBackToCurrentWeekButtonOpacity" to
             timetableFloatingBackToCurrentWeekButtonOpacity,
+        // ---------- 桌面小组件（写侧口径：`timetable_settings.dart:1103-1112`） ----------
+        "widgetBackgroundStyle" to widgetBackgroundStyle,
+        "widgetCourseAccentMode" to widgetCourseAccentMode,
+        "widgetShowLocation" to widgetShowLocation,
+        "widgetShowCountdown" to widgetShowCountdown,
+        "widgetHideCompletedCourses" to widgetHideCompletedCourses,
+        "widgetShowTomorrowCourses" to widgetShowTomorrowCourses,
+        "widgetHeightAdjustment" to widgetHeightAdjustment,
+        "widgetCornerRadius" to widgetCornerRadius,
+        "widgetCountdownLeadMinutes" to widgetCountdownLeadMinutes,
+        "widgetCountdownTextStyle" to widgetCountdownTextStyle,
         "liveEnableLocalDiagnostics" to liveEnableLocalDiagnostics,
         // ---------- 首页壁纸（写侧口径：`timetable_settings.dart:1224-1232`） ----------
         "homePageWallpaperPath" to homePageWallpaperPath,
@@ -477,6 +519,73 @@ data class TimetableSettingsModel(
             else -> HOME_BAND_LIQUID
         }
 
+        // ---------- 桌面小组件（`timetable_settings.dart:786-795` / `:1444-1461`） ----------
+        //
+        // 这些常量是**唯一一份**：`SettingsActionDispatcher`（在 `app/`，不能 import
+        // `pages.settings`）与 `pages/settings` 的桥/测试都引用这里，谁都不许再抄一份
+        // -11 / 22 / [1,5,10,…] 之类的字面量。
+
+        /** `WidgetBackgroundStyle` 的三档落盘串（`timetable_settings_extensions.dart:31-36`）。 */
+        val WIDGET_BACKGROUND_STYLES: List<String> = listOf("glass", "solid", "gradient")
+
+        /** `WidgetCourseAccentMode` 的三档落盘串（`widget_course_accent.dart:23-30`）。 */
+        val WIDGET_COURSE_ACCENT_MODES: List<String> = listOf("off", "bar", "bar_and_text")
+
+        /**
+         * `LiveCountdownTextStyle` 的十二档落盘串（`timetable_settings_extensions.dart:153-167`）。
+         *
+         * 顺序与 Dart 枚举一致（下拉顺序依赖它），**不要重排**。
+         */
+        val WIDGET_COUNTDOWN_TEXT_STYLES: List<String> = listOf(
+            "smart",
+            "smart_min_s",
+            "minute_second_cn",
+            "minute_second_colon",
+            "minute_second_min_s",
+            "minute_second_min_slash_s",
+            "minute_only_cn",
+            "minute_only_min",
+            "minute_only_slash",
+            "second_only_cn",
+            "second_only_short",
+            "second_only_slash",
+        )
+
+        /** 三个字符串枚举的读侧回落值（Dart `X.fromValue(null)` 的 `orElse`）。 */
+        const val DEFAULT_WIDGET_BACKGROUND_STYLE = "solid" // :786
+        const val DEFAULT_WIDGET_COURSE_ACCENT_MODE = "bar_and_text" // :787
+        const val DEFAULT_WIDGET_COUNTDOWN_TEXT_STYLE = "smart" // :795
+
+        /** 卡片高度的默认档存储值（`:792` `-11`；滑杆读数是相对它的偏移）。 */
+        const val DEFAULT_WIDGET_HEIGHT_ADJUSTMENT = -11.0
+
+        /** 高度滑杆偏移范围（`settings_home_widget.dart:352-354`：-16~+16，32 档）。 */
+        const val WIDGET_HEIGHT_OFFSET_MIN = -16.0
+        const val WIDGET_HEIGHT_OFFSET_MAX = 16.0
+
+        /** 卡片圆角默认值与可调范围（`:793` = 22；滑杆 `:368-370` = 默认 ±14）。 */
+        const val DEFAULT_WIDGET_CORNER_RADIUS = 22.0
+        const val WIDGET_CORNER_RADIUS_MIN = 8.0
+        const val WIDGET_CORNER_RADIUS_MAX = 36.0
+
+        /** 倒计时提前量默认档（`:794` = 20 分钟）。 */
+        const val DEFAULT_WIDGET_COUNTDOWN_LEAD_MINUTES = 20
+
+        /**
+         * 倒计时提前量的九档分钟（`settings_home_widget.dart:310`
+         * `const [1, 5, 10, 15, 20, 30, 40, 50, 60]`）；另允许 `0` = 始终显示（下拉首项）。
+         */
+        val WIDGET_COUNTDOWN_LEAD_MINUTES: List<Int> = listOf(1, 5, 10, 15, 20, 30, 40, 50, 60)
+
+        /**
+         * `X.fromValue` 语义：只收 [allowed] 里的串，其余（含 null）回落 [fallback]。
+         *
+         * Dart `WidgetBackgroundStyleX.fromValue` / `LiveCountdownTextStyleX.fromValue`
+         * 都是 `values.firstWhere(value == v, orElse: 默认)`——不做大小写/去空白归一。
+         */
+        fun widgetEnumOrDefault(raw: String?, allowed: List<String>, fallback: String): String =
+            if (raw != null && raw in allowed) raw else fallback
+
         /** 本模型拥有并负责回写的键。 */
         val OWNED_KEYS: List<String> = listOf(
             "appLocaleTag",
@@ -554,6 +663,17 @@ data class TimetableSettingsModel(
             "glassDockShowAddButton",
             "timetableBackToCurrentWeekButtonStyle",
             "timetableFloatingBackToCurrentWeekButtonOpacity",
+            // 桌面小组件（`timetable_settings.dart:1103-1112` / 读侧 `:1444-1461`）
+            "widgetBackgroundStyle",
+            "widgetCourseAccentMode",
+            "widgetShowLocation",
+            "widgetShowCountdown",
+            "widgetHideCompletedCourses",
+            "widgetShowTomorrowCourses",
+            "widgetHeightAdjustment",
+            "widgetCornerRadius",
+            "widgetCountdownLeadMinutes",
+            "widgetCountdownTextStyle",
             "liveEnableLocalDiagnostics",
             // 首页壁纸（`timetable_settings.dart:559-594` + `:746`）
             "homePageWallpaperPath",
@@ -751,6 +871,38 @@ data class TimetableSettingsModel(
                     (LenientJson.double(json["timetableFloatingBackToCurrentWeekButtonOpacity"])
                         ?: 0.96)
                         .coerceIn(0.55, 1.0),
+                // ---------- 桌面小组件（`timetable_settings.dart:1444-1461`） ----------
+                // 三个字符串枚举走 `X.fromValue` 语义：缺键/未知串回落默认（不是报错、不是保留旧值）。
+                widgetBackgroundStyle = widgetEnumOrDefault(
+                    LenientJson.string(json["widgetBackgroundStyle"]),
+                    WIDGET_BACKGROUND_STYLES,
+                    DEFAULT_WIDGET_BACKGROUND_STYLE,
+                ),
+                widgetCourseAccentMode = widgetEnumOrDefault(
+                    LenientJson.string(json["widgetCourseAccentMode"]),
+                    WIDGET_COURSE_ACCENT_MODES,
+                    DEFAULT_WIDGET_COURSE_ACCENT_MODE,
+                ),
+                widgetShowLocation = LenientJson.bool(json["widgetShowLocation"]) ?: true,
+                widgetShowCountdown = LenientJson.bool(json["widgetShowCountdown"]) ?: true,
+                widgetHideCompletedCourses =
+                    LenientJson.bool(json["widgetHideCompletedCourses"]) ?: false,
+                widgetShowTomorrowCourses =
+                    LenientJson.bool(json["widgetShowTomorrowCourses"]) ?: true,
+                // 两个 double 读侧**不夹**（Dart 就是 `?? -11` / `?? 22`）：夹在滑杆与分派器侧。
+                widgetHeightAdjustment = LenientJson.double(json["widgetHeightAdjustment"])
+                    ?: DEFAULT_WIDGET_HEIGHT_ADJUSTMENT,
+                widgetCornerRadius = LenientJson.double(json["widgetCornerRadius"])
+                    ?: DEFAULT_WIDGET_CORNER_RADIUS,
+                // int 同样不夹（`?? 20`）；0 是合法档位（始终显示），所以不能用「非空即收」以外的判断。
+                widgetCountdownLeadMinutes =
+                    (LenientJson.int(json["widgetCountdownLeadMinutes"])
+                        ?: DEFAULT_WIDGET_COUNTDOWN_LEAD_MINUTES.toLong()).toInt(),
+                widgetCountdownTextStyle = widgetEnumOrDefault(
+                    LenientJson.string(json["widgetCountdownTextStyle"]),
+                    WIDGET_COUNTDOWN_TEXT_STYLES,
+                    DEFAULT_WIDGET_COUNTDOWN_TEXT_STYLE,
+                ),
                 liveEnableLocalDiagnostics =
                     LenientJson.bool(json["liveEnableLocalDiagnostics"]) ?: false,
                 // ---------- 首页壁纸（`timetable_settings.dart:1706-1720` + `:1852-1853`） ----------
@@ -897,9 +1049,23 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
     /** 读；盘上不是 JSON 对象时由 [TimetableStore.loadSettingsJson] 留档 + 删 key，返回默认值。 */
     fun load(): TimetableSettingsModel = TimetableSettingsModel.fromJson(store.loadSettingsJson())
 
-    /** 合并写：只覆盖本模型拥有的键，其余键原样保留。 */
+    /**
+     * 合并写：只覆盖本模型拥有的键，其余键原样保留。
+     *
+     * ## 为什么还要写第二处（active profile 内嵌 settings）
+     *
+     * 桌面小组件的卡片渲染读的是 **active profile 内嵌的 `settings` 对象**
+     * （`TodayWidgetSupport.buildSnapshotFromFlutterState` 的
+     * `profile.optJSONObject("settings")`），不是顶层 `timetable_settings`。
+     * Dart 的 `TimetableProvider.updateTimetableSettings` 也把整份 settings 写回档案
+     * （`lib/providers/timetable_provider.dart:3036-3070` → `_persistActiveProfileState`），
+     * 两条通路读同一份值。
+     * 只写顶层 = 设置页看着改了、桌面卡片纹丝不动，所以这里两处一起写。
+     */
     fun save(model: TimetableSettingsModel) {
-        store.saveSettingsPatch(model.toJsonPatch())
+        val patch = model.toJsonPatch()
+        store.saveSettingsPatch(patch)
+        store.saveSettingsPatchToActiveProfile(patch)
     }
 }
 

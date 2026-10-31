@@ -193,6 +193,34 @@ object SettingsActionDispatcher {
     const val ROW_MENU_MOVE = "menu.move"
     const val ROW_MENU_RESET = "menu.reset"
 
+    // ---------------------------------------------------- 桌面小组件（settings-home-widget）
+    // rowId 与 `pages/settings/SettingsHomeWidgetPage.kt` 的 spec 逐字一致；传值约定同其它页：
+    // 三个下拉传 option id（都是**落盘串**，合法值表见 `TimetableSettingsModel.WIDGET_*`）、
+    // 四个开关不带 target（取反），两个滑杆传数字字符串（高度是**相对默认档的偏移**），
+    // 倒计时提前量传档位串（"0" = 始终显示，其余见 `WIDGET_COUNTDOWN_LEAD_MINUTES`）。
+    const val ROW_HOME_WIDGET_BACKGROUND_STYLE = "homeWidget.backgroundStyle"
+    const val ROW_HOME_WIDGET_COURSE_ACCENT = "homeWidget.courseAccent"
+    const val ROW_HOME_WIDGET_SHOW_LOCATION = "homeWidget.showLocation"
+    const val ROW_HOME_WIDGET_SHOW_COUNTDOWN = "homeWidget.showCountdown"
+    const val ROW_HOME_WIDGET_HIDE_COMPLETED = "homeWidget.hideCompleted"
+    const val ROW_HOME_WIDGET_SHOW_TOMORROW = "homeWidget.showTomorrow"
+    const val ROW_HOME_WIDGET_COUNTDOWN_LEAD = "homeWidget.countdownLead"
+    const val ROW_HOME_WIDGET_COUNTDOWN_STYLE = "homeWidget.countdownStyle"
+    const val ROW_HOME_WIDGET_HEIGHT_ADJUST = "homeWidget.heightAdjust"
+    const val ROW_HOME_WIDGET_CORNER_RADIUS = "homeWidget.cornerRadius"
+
+    /**
+     * 「添加到桌面」与「去授权精确闹钟」两个 **RUN_NOW** 动作
+     * （`settings_home_widget.dart:405-499` 预览区块的按钮 / `:1036-1065` 的权限引导条）。
+     *
+     * 它们**不写设置**：真正的 AppWidget 绑定 / 系统授权页跳转由宿主执行。
+     * 这里登记常量是为了让宿主与页面共用同一份字面量；万一宿主漏接、页面把它当
+     * WRITE_SETTING 发过来，分派器会给出「这是 RUN_NOW 行、不是设置行」的明确
+     * Ignored 理由，而不是落到 else 分支变成一句含糊的「未识别 rowId」。
+     */
+    const val ROW_HOME_WIDGET_PREVIEW_ADD = "homeWidget.preview.add"
+    const val ROW_HOME_WIDGET_ALARM_GRANT = "homeWidget.preview.alarmBanner"
+
     /** 主题管理页控制卡（`SettingsInline.id`）与它两个按钮的行 id。 */
     const val ROW_THEME_CURRENT = "theme.current"
 
@@ -281,6 +309,15 @@ object SettingsActionDispatcher {
 
     /** 首页与导航作用域（`settings_reset.dart:29-30` 的 `homeNavigation`）。 */
     const val SCOPE_HOME_NAVIGATION = "homeNavigation"
+
+    /**
+     * 桌面小组件作用域（`settings_reset.dart` 的 `SettingsResetScope.homeWidget`，
+     * 恢复分支 `:175-189`）。
+     *
+     * 值必须与 `pages/settings/SettingsHomeWidgetPage.RESET_SCOPE_HOME_WIDGET` 逐字一致
+     * （那侧同名常量写的是 `"homeWidget"`）。
+     */
+    const val SCOPE_HOME_WIDGET = "homeWidget"
 
     /**
      * Dart `TimetableSettings` 的**构造**默认种子色（`timetable_settings.dart:889`）。
@@ -398,6 +435,22 @@ object SettingsActionDispatcher {
             // 材质面板里那颗「恢复默认」：**只清液态调参**，不动整体材质
             // （`settings_appearance_editor.dart:1058-1085`，按钮旁边那句说明就是它的范围）。
             SCOPE_LIQUID_GLASS -> resetLiquidGlassTuning(model)
+
+            // 桌面小组件：本页 10 个可调项全部回到构造默认（`settings_reset.dart:175-189`）。
+            // 逐字段列出、不整体替换——课程数据与别的页设置一个都不能动。
+            SCOPE_HOME_WIDGET -> model.copy(
+                widgetBackgroundStyle = TimetableSettingsModel.DEFAULT_WIDGET_BACKGROUND_STYLE,
+                widgetCourseAccentMode = TimetableSettingsModel.DEFAULT_WIDGET_COURSE_ACCENT_MODE,
+                widgetShowLocation = true,
+                widgetShowCountdown = true,
+                widgetHideCompletedCourses = false,
+                widgetShowTomorrowCourses = true,
+                widgetCountdownLeadMinutes =
+                TimetableSettingsModel.DEFAULT_WIDGET_COUNTDOWN_LEAD_MINUTES,
+                widgetCountdownTextStyle = TimetableSettingsModel.DEFAULT_WIDGET_COUNTDOWN_TEXT_STYLE,
+                widgetHeightAdjustment = TimetableSettingsModel.DEFAULT_WIDGET_HEIGHT_ADJUSTMENT,
+                widgetCornerRadius = TimetableSettingsModel.DEFAULT_WIDGET_CORNER_RADIUS,
+            )
 
             else -> null
         }
@@ -656,6 +709,91 @@ object SettingsActionDispatcher {
                 ),
             )
 
+            // ---------------------------------------------------- 桌面小组件
+            // 三个下拉的 option id 就是落盘串（`SettingsHomeWidgetPage.backgroundStyleOptions`
+            // 等处逐字用的是 `timetable_settings_extensions.dart` 的 value），所以只做白名单校验。
+            ROW_HOME_WIDGET_BACKGROUND_STYLE -> {
+                val style = target?.takeIf {
+                    it in TimetableSettingsModel.WIDGET_BACKGROUND_STYLES
+                } ?: return ignored(kind, target, rowId, "小组件背景样式不认识：$target")
+                model.copy(widgetBackgroundStyle = style)
+            }
+
+            ROW_HOME_WIDGET_COURSE_ACCENT -> {
+                val mode = target?.takeIf {
+                    it in TimetableSettingsModel.WIDGET_COURSE_ACCENT_MODES
+                } ?: return ignored(kind, target, rowId, "小组件课程颜色档不认识：$target")
+                model.copy(widgetCourseAccentMode = mode)
+            }
+
+            // 四个开关：渲染层不带新值 ⇒ 取反当前值（与其它开关行同一条约定）。
+            ROW_HOME_WIDGET_SHOW_LOCATION ->
+                model.copy(widgetShowLocation = !model.widgetShowLocation)
+
+            ROW_HOME_WIDGET_SHOW_COUNTDOWN ->
+                model.copy(widgetShowCountdown = !model.widgetShowCountdown)
+
+            ROW_HOME_WIDGET_HIDE_COMPLETED ->
+                model.copy(widgetHideCompletedCourses = !model.widgetHideCompletedCourses)
+
+            ROW_HOME_WIDGET_SHOW_TOMORROW ->
+                model.copy(widgetShowTomorrowCourses = !model.widgetShowTomorrowCourses)
+
+            // 提前量：`0` = 始终显示，其余必须是九档之一（`settings_home_widget.dart:306-319`）。
+            // 不在这十档的值不写盘——Dart 的下拉只可能给出这几项，给出了别的就是接线错了。
+            ROW_HOME_WIDGET_COUNTDOWN_LEAD -> {
+                val minutes = target?.trim()?.toIntOrNull()
+                    ?: return ignored(kind, target, rowId, "倒计时提前量不是整数：$target")
+                val known = minutes == 0 ||
+                    minutes in TimetableSettingsModel.WIDGET_COUNTDOWN_LEAD_MINUTES
+                if (!known) {
+                    return ignored(kind, target, rowId, "倒计时提前量不在档位上：$target")
+                }
+                model.copy(widgetCountdownLeadMinutes = minutes)
+            }
+
+            ROW_HOME_WIDGET_COUNTDOWN_STYLE -> {
+                val style = target?.takeIf {
+                    it in TimetableSettingsModel.WIDGET_COUNTDOWN_TEXT_STYLES
+                } ?: return ignored(kind, target, rowId, "倒计时文字样式不认识：$target")
+                model.copy(widgetCountdownTextStyle = style)
+            }
+
+            // 高度：滑杆读数是**相对默认档（-11）的偏移**（`settings_home_widget.dart:344-359`），
+            // 落盘是绝对档位。偏移先夹到 -16~+16（`:352-354`），再加默认档。
+            ROW_HOME_WIDGET_HEIGHT_ADJUST -> {
+                val offset = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "卡片高度偏移不是数字")
+                model.copy(
+                    widgetHeightAdjustment = TimetableSettingsModel.DEFAULT_WIDGET_HEIGHT_ADJUSTMENT +
+                        offset.coerceIn(
+                            TimetableSettingsModel.WIDGET_HEIGHT_OFFSET_MIN,
+                            TimetableSettingsModel.WIDGET_HEIGHT_OFFSET_MAX,
+                        ),
+                )
+            }
+
+            // 圆角：滑杆读数是**绝对值**，夹到 8~36（默认 22 ±14，`:368-370`）。
+            ROW_HOME_WIDGET_CORNER_RADIUS -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "卡片圆角不是数字")
+                model.copy(
+                    widgetCornerRadius = value.coerceIn(
+                        TimetableSettingsModel.WIDGET_CORNER_RADIUS_MIN,
+                        TimetableSettingsModel.WIDGET_CORNER_RADIUS_MAX,
+                    ),
+                )
+            }
+
+            // 两个 RUN_NOW 行（添加到桌面 / 授权精确闹钟）：**不写设置**，动作本身由宿主执行。
+            // 这里明确 Ignored 并写清理由，避免宿主漏接时无声失败。
+            ROW_HOME_WIDGET_PREVIEW_ADD, ROW_HOME_WIDGET_ALARM_GRANT -> return ignored(
+                kind,
+                target,
+                rowId,
+                "该行是 RUN_NOW 动作（添加到桌面 / 授权精确闹钟），由宿主执行，不写设置",
+            )
+
             // ---------------------------------------------------- 外观编辑页：材质（通用页）
             // 总闸两档（`glass_mode_choice.dart:22-40` 的 `applyGlassModeChoice`）：
             // 实体 = 关模糊；液态 = 开模糊**且**顺手打开玻璃坞那把唯一的例外开关。
@@ -904,6 +1042,183 @@ object SettingsActionDispatcher {
             val raw = config[field.key] ?: return@any false
             val checkpointValue = field.lenientValue(raw) ?: return@any false
             field.read(model).toString() != checkpointValue.toString()
+        }
+    }
+
+    // ================================================== 主题配置：导出 / 导入 / 已存主题
+    //
+    // 2026-10-29 补口（一轮审核 P0）：主题管理页的「导出主题 / 导入主题 / 保存当前主题 / 已存主题
+    // 更多操作」四处**点了没反应**——分派器把动作翻成 `ClipboardExport` / `ShowDialog` / `ShowSheet`
+    // 之后没有任何消费者。本段把「一条主题配置长什么样」收敛成唯一一份读写口径，
+    // 弹层与剪贴板由 `SettingsHost` 消费（见 `SettingsHost.handleIntent`）。
+
+    /**
+     * Dart `ThemeConfig.version` 的默认值（`lib/models/timetable_settings.dart:101` `this.version = 2`）。
+     *
+     * 导出必须带这个键：Dart 的导入侧 `_importTheme` 用 `config.version == 2` 判「要不要校验两个必填色」
+     * （`settings_appearance.dart:842-846`），缺 `v` 会被当成 v1 老格式放行。
+     */
+    const val THEME_CONFIG_VERSION = 2
+
+    /** 已存主题行的行 id 前缀（[com.mutx163.qingyu.pages.settings.SettingsThemeManagePage] 的 `theme.saved.<id>`）。 */
+    const val ROW_SAVED_THEME_PREFIX = "theme.saved."
+
+    /** 已存主题条目的四个键（Dart `SavedTheme.toJson`，`timetable_settings.dart:39-44`）。 */
+    const val SAVED_THEME_KEY_ID = "id"
+    const val SAVED_THEME_KEY_NAME = "name"
+    const val SAVED_THEME_KEY_THEME_DATA = "themeData"
+    const val SAVED_THEME_KEY_CREATED_AT = "createdAt"
+
+    /**
+     * 当前设置 → 一份主题配置（Dart `ThemeConfig.fromSettings(...).toJson()`，短键）。
+     *
+     * 与 [applyThemeCheckpoint] / [hasThemeModifications] 共用同一张 [THEME_CHECKPOINT_FIELDS]，
+     * 所以「导出的键」与「写回的键」不可能是两套。值为 `null` 的字段**不写键**
+     * （Dart `toJson` 的 `if (x != null)` 同口径）。
+     */
+    fun themeConfigOf(model: TimetableSettingsModel): Map<String, Any?> = buildMap {
+        put("v", THEME_CONFIG_VERSION)
+        THEME_CHECKPOINT_FIELDS.forEach { field ->
+            field.read(model)?.let { put(field.key, it) }
+        }
+    }
+
+    /** 一份主题配置 → 新设置（导入 / 应用已存主题共用；未识别的键安静忽略）。 */
+    fun applyThemeConfig(
+        model: TimetableSettingsModel,
+        config: Map<String, Any?>,
+    ): TimetableSettingsModel = applyThemeCheckpoint(model, config)
+
+    /**
+     * Dart `_importTheme` 的结构校验（`settings_appearance.dart:841-847`）。
+     *
+     * - `v == 2` ⇒ 必须同时有 `seed` 与 `ccl`，否则按「剪贴板内容格式错误」拒绝；
+     * - 其余版本（v1 / 缺 `v`）⇒ 放行，靠 [applyThemeConfig] 的宽松读逐键生效。
+     */
+    fun themeConfigIsUsable(config: Map<String, Any?>): Boolean {
+        val version = LenientJson.int(config["v"]) ?: 1L
+        if (version != THEME_CONFIG_VERSION.toLong()) return true
+        return LenientJson.string(config["seed"]) != null &&
+            LenientJson.string(config["ccl"]) != null
+    }
+
+    /**
+     * 「保存当前主题」（Dart `_themeService.saveTheme`，`timetable_theme_service.dart:69-83`）。
+     *
+     * @param id `DateTime.now().millisecondsSinceEpoch.toString()`（宿主给，便于测试钉死）。
+     * @param createdAtIso `DateTime.now().toIso8601String()`（宿主给）。
+     * @return `null` = 名字为空（不写盘、由调用方提示）。
+     */
+    fun saveTheme(
+        model: TimetableSettingsModel,
+        name: String,
+        id: String,
+        createdAtIso: String,
+    ): TimetableSettingsModel? {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return null
+        val entry = mapOf(
+            SAVED_THEME_KEY_ID to id,
+            SAVED_THEME_KEY_NAME to trimmed,
+            SAVED_THEME_KEY_THEME_DATA to themeConfigOf(model),
+            SAVED_THEME_KEY_CREATED_AT to createdAtIso,
+        )
+        return model.copy(savedThemes = model.savedThemes + entry)
+    }
+
+    /**
+     * 应用一份已存主题（Dart `_applySavedTheme` → `_applyThemeWithUndo(config, themeName)`）：
+     * 18 个字段写回 + 把检查点换成这份主题（名字与快照都换）。
+     *
+     * @return `null` = 该 id 不在列表里（列表已被别处改掉）。
+     */
+    fun applySavedTheme(model: TimetableSettingsModel, id: String): TimetableSettingsModel? {
+        val entry = model.savedThemes.firstOrNull { it[SAVED_THEME_KEY_ID] == id } ?: return null
+        val config = entry[SAVED_THEME_KEY_THEME_DATA] as? Map<*, *> ?: return null
+        val normalized = config.entries.mapNotNull { (k, v) -> (k as? String)?.let { it to v } }.toMap()
+        val name = entry[SAVED_THEME_KEY_NAME] as? String ?: return null
+        return applyThemeCheckpoint(model, normalized).copy(
+            themeCheckpointName = name,
+            themeCheckpointConfig = normalized,
+        )
+    }
+
+    /** 重命名（Dart `renameTheme`）：id / 配置 / 创建时间原样保留，只换名字。空名 ⇒ null。 */
+    fun renameSavedTheme(
+        model: TimetableSettingsModel,
+        id: String,
+        newName: String,
+    ): TimetableSettingsModel? {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return null
+        if (model.savedThemes.none { it[SAVED_THEME_KEY_ID] == id }) return null
+        return model.copy(
+            savedThemes = model.savedThemes.map { entry ->
+                if (entry[SAVED_THEME_KEY_ID] == id) entry + (SAVED_THEME_KEY_NAME to trimmed) else entry
+            },
+        )
+    }
+
+    /**
+     * 复制（Dart `_duplicateTheme`）：把源条目的 `themeData` 再存一份。
+     *
+     * 名字由调用方给（Dart 取 ARB `themeDuplicateCopyName` = `{name} 副本`），分派器不碰文案。
+     * Dart 不做重名去重（同名的副本可以有两条），这里也**不**偷偷加序号。
+     */
+    fun duplicateSavedTheme(
+        model: TimetableSettingsModel,
+        sourceId: String,
+        newId: String,
+        newName: String,
+        createdAtIso: String,
+    ): TimetableSettingsModel? {
+        val source = model.savedThemes.firstOrNull { it[SAVED_THEME_KEY_ID] == sourceId } ?: return null
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return null
+        val copy = mapOf(
+            SAVED_THEME_KEY_ID to newId,
+            SAVED_THEME_KEY_NAME to trimmed,
+            SAVED_THEME_KEY_THEME_DATA to source[SAVED_THEME_KEY_THEME_DATA],
+            SAVED_THEME_KEY_CREATED_AT to createdAtIso,
+        )
+        return model.copy(savedThemes = model.savedThemes + copy)
+    }
+
+    /** 删除（Dart `deleteTheme`）：按 id 移除；id 不存在 ⇒ null（调用方据此不提示成功）。 */
+    fun deleteSavedTheme(model: TimetableSettingsModel, id: String): TimetableSettingsModel? {
+        if (model.savedThemes.none { it[SAVED_THEME_KEY_ID] == id }) return null
+        return model.copy(
+            savedThemes = model.savedThemes.filterNot { it[SAVED_THEME_KEY_ID] == id },
+        )
+    }
+
+    /** `theme.saved.<id>` → id；不是这个形态返回 null。 */
+    fun savedThemeIdOf(rowId: String): String? =
+        rowId.takeIf { it.startsWith(ROW_SAVED_THEME_PREFIX) }
+            ?.removePrefix(ROW_SAVED_THEME_PREFIX)
+            ?.takeIf { it.isNotBlank() }
+
+    /**
+     * 落盘**读回校验**：本次改动过的键，盘上是不是新值。
+     *
+     * 为什么需要：`TimetableSettingsModelStore.save` 返回 `Unit`，而
+     * `KeyValueStore.putString` 把 `SharedPreferences.commit()` 的 `Boolean` 丢了
+     * （`platform/PrefsKeyValueStore.kt:90-92`）⇒ 写失败既不抛异常也不返回 false，
+     * 宿主原来的「写失败提示」分支永远进不去（一轮审核 P1）。
+     *
+     * 只比**改动过的键**（前后 patch 相等就跳过）；两侧都取模型自己的 `toJsonPatch()`，
+     * **不**拿盘上原始 JSON 直接比类型——JSON 解析会把 `Int` 变 `Long`，整体相等会假红。
+     */
+    fun persistLanded(
+        before: TimetableSettingsModel,
+        after: TimetableSettingsModel,
+        disk: TimetableSettingsModel,
+    ): Boolean {
+        val beforePatch = before.toJsonPatch()
+        val afterPatch = after.toJsonPatch()
+        val diskPatch = disk.toJsonPatch()
+        return afterPatch.all { (key, newValue) ->
+            beforePatch[key] == newValue || diskPatch[key] == newValue
         }
     }
 

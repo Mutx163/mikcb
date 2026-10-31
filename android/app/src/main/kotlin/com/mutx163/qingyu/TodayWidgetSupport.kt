@@ -173,6 +173,12 @@ object TodayWidgetSupport {
     const val EXTRA_WIDGET_LAUNCH = "widget_launch"
     const val EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID = "widget_launch_app_widget_id"
 
+    /**
+     * 「跟随当前课表」的快照：先实时算，算不出来才用 Flutter 同步过来的静态快照。
+     *
+     * 预览会话里实时算这一步会读到宿主给的设置覆盖（[WidgetPreviewSession.mergedSettings]），
+     * 所以设置页出图时不需要先落盘同步 profile——这正是 F20-B 要让预览「改了立刻见」的地方。
+     */
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
         // Prefer real-time computed snapshot (state reflects current time).
         // The stored snapshot from Flutter has a stale `state` that doesn't
@@ -200,6 +206,16 @@ object TodayWidgetSupport {
      * （删除/TA 解绑）时回落「跟随当前课表」。统计/考试卡片不走这里，恒跟当前课表。
      */
     fun readSnapshotForWidget(context: Context, appWidgetId: Int): TodayWidgetSnapshotInfo? {
+        // 预览会话（设置页「效果预览」，id 恒为 [WidgetPreviewSession.PREVIEW_APP_WIDGET_ID]）：
+        // 它没有绑定、也不该去读「某张卡的专属快照」——那条路在预览里是空的（id 0 没人
+        // 同步过），于是预览会一路掉到静态快照上，永远显示同一份旧数据。这里直接把
+        // 「按宿主给的设置实时算」放到最前面，算不出来才回落 [readSnapshot]。
+        if (appWidgetId == WidgetPreviewSession.PREVIEW_APP_WIDGET_ID &&
+            WidgetPreviewSession.isActive
+        ) {
+            buildSnapshotFromFlutterState(context)?.let { return it }
+            return readSnapshot(context)
+        }
         val boundProfileId = WidgetBindingStore.getBoundProfileId(context, appWidgetId)
         if (boundProfileId != null) {
             if (boundProfileId == WidgetBindingStore.COUPLE_MERGED_BINDING_ID) {
@@ -259,7 +275,10 @@ object TodayWidgetSupport {
         profileJson: JSONObject? = null,
     ): TodayWidgetSnapshotInfo? {
         val profile = profileJson ?: readActiveProfileJson(context) ?: return null
-        val settingsJson = profile.optJSONObject("settings") ?: JSONObject()
+        // 预览会话内把宿主正在编辑的设置合并进来（F20-B）：设置页改了圆角/背景/显示项
+        // 但还没同步进 profile 时，预览会一直显示上一档。合并而不是整份替换——
+        // 理由见 [WidgetPreviewSession.mergedSettings] 的注释。
+        val settingsJson = WidgetPreviewSession.mergedSettings(profile.optJSONObject("settings"))
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
         val todayDateStr = widgetFormatDate(
             year = nowCalendar.get(Calendar.YEAR),

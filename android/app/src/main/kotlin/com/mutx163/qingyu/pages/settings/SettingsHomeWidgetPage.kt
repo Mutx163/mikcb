@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
  * | Flutter（行号见 Dart 源） | 本模型 | 官方 Miuix 对应物 |
  * |---|---|---|
  * | `HyperosSubpage(title: homeWidgetSettingsTitle)`（:197-204） | `titleKey/title` | `basic.TopAppBar` |
- * | `_buildPreviewSection`（:405-499） | `SettingsInline(PREVIEW_CARD)` | 官方无对应物：原生渲染的卡片位图 |
+ * | `_buildPreviewSection`（:405-499） | `SettingsInline(WIDGET_PREVIEW)` | 官方无对应物：原生渲染的卡片位图 |
  * | `HyperosHintBanner`（精确闹钟，:1036-1065） | `SettingsInline(CONTROL_CARD)` | 官方无对应物：引导条 |
  * | `HyperosSectionLabel(今日课程组件)`（:229） | `homeWidget.todayCourse.label` | preference category |
  * | `HyperosSelectTile<WidgetBackgroundStyle>`（:232-241） | `homeWidget.backgroundStyle` | `MiuixOverlayDropdownPreference` |
@@ -223,6 +223,11 @@ object SettingsHomeWidgetPage {
                         max = HEIGHT_OFFSET_MAX,
                         divisions = HEIGHT_OFFSET_DIVISIONS,
                         defaultValue = 0.0,
+                        // 只有「卡片高度」这一根滑杆能点开数值输入框（Dart :355
+                        // `dialogHelper: l10n.homeWidgetHeightAdjustHint`）；圆角那根
+                        // 原版没给 helper，也就没有弹框，保持不填。
+                        dialogHelperKey = SettingsStringsExt2.homeWidgetHeightAdjustHint.key,
+                        dialogHelper = SettingsStringsExt2.homeWidgetHeightAdjustHint.zh,
                     ),
                     sliderValue = heightOffset(state.heightAdjustment),
                     action = SettingsAction.WRITE_SETTING,
@@ -295,9 +300,10 @@ object SettingsHomeWidgetPage {
     private fun previewNodes(state: SettingsHomeWidgetState): List<SettingsNode> {
         val carousel = SettingsInline(
             id = "homeWidget.preview",
-            kind = InlineKind.PREVIEW_CARD,
+            kind = InlineKind.WIDGET_PREVIEW,
             note = "效果预览轮播（:405-499）：官方没有「原生小组件位图预览」控件，" +
-                "十张卡片按 ${PREVIEW_TARGETS.size} 个格位由原生渲染后回传 PNG",
+                "十张卡片按 ${PREVIEW_TARGETS.size} 个格位由原生渲染后回传 PNG，" +
+                "渲染层见 HomeWidgetPreviewCarousel.kt",
             labelKey = SettingsStringsExt2.homeWidgetPreviewTitle.key,
             label = SettingsStringsExt2.homeWidgetPreviewTitle.zh,
             texts = listOf(

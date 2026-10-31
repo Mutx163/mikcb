@@ -108,8 +108,59 @@ class TimetableStore(
 
     /** 写全量档案数组并盖 schema 版本章（Dart `_writeProfilesWithoutLock:1216-1226`）。 */
     fun saveProfiles(profiles: List<TimetableProfile>) {
-        store.putString(KEY_PROFILES, MiniJson.encode(profiles.map { it.toJson() }))
+        // ⚠️ `TimetableProfile.toJson()` 里的 `settings` 只有 core 4 键
+        // （`TimetableSettings.toJson`），而盘上每份档案的 `settings` 是**完整**的
+        // 250+ 键对象（Dart 每个档案内嵌整份 `TimetableSettings`）。直接整体重写会把
+        // 其余键（含桌面小组件那 10 个）从档案里冲掉 ⇒ 桌面卡片读到的设置全部回默认。
+        // 所以按 id 取旧 `settings` 铺底、再用新值覆盖（同键以新值为准），其余键保留。
+        // 读不到旧数据（首次写入 / 坏 JSON）时行为与之前完全一致。
+        val previousSettings = previousEmbeddedSettingsById()
+        val payload = profiles.map { profile ->
+            val json = profile.toJson()
+            val old = previousSettings[profile.id]
+            if (old == null) {
+                json
+            } else {
+                val merged = LinkedHashMap<String, Any?>(old)
+                val fresh = json["settings"]
+                if (fresh is Map<*, *>) {
+                    for ((key, value) in fresh) {
+                        if (key is String) merged[key] = value
+                    }
+                }
+                val out = LinkedHashMap(json)
+                out["settings"] = merged
+                out
+            }
+        }
+        store.putString(KEY_PROFILES, MiniJson.encode(payload))
         stampProfilesSchemaVersion()
+    }
+
+    /**
+     * 盘上每份档案**内嵌**的 `settings` 原始对象（id → 键值表）。
+     *
+     * 只用于 [saveProfiles] 的「铺底」；整份不是数组、条目不是对象、没有字符串 id
+     * 一律跳过（与 [loadProfiles] 的宽松口径一致，读不懂就当没有旧值）。
+     */
+    private fun previousEmbeddedSettingsById(): Map<String, Map<String, Any?>> {
+        val raw = store.getString(KEY_PROFILES)
+        if (raw.isNullOrEmpty()) return emptyMap()
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*>) return emptyMap()
+        val out = LinkedHashMap<String, Map<String, Any?>>()
+        for (item in decoded) {
+            if (item !is Map<*, *>) continue
+            val id = item["id"] as? String ?: continue
+            val settings = item["settings"]
+            if (settings !is Map<*, *>) continue
+            val copy = LinkedHashMap<String, Any?>()
+            for ((key, value) in settings) {
+                if (key is String) copy[key] = value
+            }
+            out[id] = copy
+        }
+        return out
     }
 
     /** 写后盖章（幂等）：盘上值已是 1 就不写，避免每次保存的写放大（Dart :1228-1235）。 */
@@ -195,6 +246,76 @@ class TimetableStore(
      */
     fun saveSettings(settings: TimetableSettings) {
         saveSettingsPatch(settings.toJson())
+    }
+
+    /**
+     * 把 [patch] 合并进**当前档案内嵌的 `settings`**（`timetable_profiles[i].settings`）。
+     *
+     * ## 为什么需要这一处
+     *
+     * 桌面小组件（今日课程卡 / 统计卡 / 考试卡）的渲染读的是 **active profile 内嵌的
+     * `settings` 对象**（`TodayWidgetSupport.buildSnapshotFromFlutterState` 的
+     * `profile.optJSONObject("settings")`，`TodayWidgetSupport.kt:262`），
+     * 不是顶层 `timetable_settings`。Dart 的 `updateTimetableSettings` 会把整份 settings
+     * 写回档案（`lib/providers/timetable_provider.dart:3036-3070` →
+     * `_persistActiveProfileState`）。
+     * 只写顶层 = 设置页看着改了、桌面卡片纹丝不动。
+     *
+     * ## 口径（与 Dart 保存路径对齐）
+     *
+     * - 目标档案：`active_timetable_profile_id` 命中的那份；**找不到（或没有 active id）
+     *   时用数组第一个档案对象**（Dart 的 `_persistActiveProfileState` 写的就是 active）。
+     * - 只动那份档案的 `settings`：其它档案、其它键（courses / exams / id / name …）原样保留。
+     * - **解析失败什么都不做**（不删数据、不留档）——这份数据仍可能被 Dart 侧读走，
+     *   这里没有「损坏自愈」的语义。
+     */
+    fun saveSettingsPatchToActiveProfile(patch: Map<String, Any?>) {
+        if (patch.isEmpty()) return
+        val raw = store.getString(KEY_PROFILES)
+        if (raw.isNullOrEmpty()) return
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*> || decoded.isEmpty()) return
+
+        // 逐条转成可变副本：MiniJson 解出来的 map 只保证是 LinkedHashMap，
+        // 但就地改「别人传进来的树」不是本层的风格，也不该依赖可变性假设。
+        val items = decoded.map { item ->
+            if (item is Map<*, *>) {
+                val copy = LinkedHashMap<String, Any?>()
+                for ((key, value) in item) {
+                    if (key is String) copy[key] = value
+                }
+                copy
+            } else {
+                item
+            }
+        }
+        val activeId = loadActiveProfileId()
+        val activeIndex = if (activeId == null) {
+            -1
+        } else {
+            items.indexOfFirst { it is Map<*, *> && it["id"] == activeId }
+        }
+        val targetIndex = if (activeIndex >= 0) {
+            activeIndex
+        } else {
+            items.indexOfFirst { it is Map<*, *> }
+        }
+        if (targetIndex < 0) return
+        @Suppress("UNCHECKED_CAST")
+        val target = items[targetIndex] as LinkedHashMap<String, Any?>
+
+        val merged = LinkedHashMap<String, Any?>()
+        val oldSettings = target["settings"]
+        if (oldSettings is Map<*, *>) {
+            for ((key, value) in oldSettings) {
+                if (key is String) merged[key] = value
+            }
+        }
+        merged.putAll(patch)
+        target["settings"] = merged
+
+        store.putString(KEY_PROFILES, MiniJson.encode(items))
+        stampProfilesSchemaVersion()
     }
 
     // ---------- current_week ----------

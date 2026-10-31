@@ -135,14 +135,20 @@ object StatsWidgetSupport {
      * 无需 Dart 侧扩协议；无档案时回退到默认值。
      */
     fun readChrome(context: Context): StatsWidgetChrome {
-        val settings = TodayWidgetSupport.readActiveProfileRawJson(context)
-            ?.let { raw ->
-                try {
-                    JSONObject(raw).optJSONObject("settings")
-                } catch (_: Exception) {
-                    null
+        // 预览会话里换成宿主正在编辑的那份设置（F20-B）：统计卡与今日课程卡共用
+        // 背景/圆角/高度三个外观键，设置页改了还没落盘时，这里必须读到新值，
+        // 否则「统计 2×2」的预览会一直是上一档圆角。非预览路径下这个方法原样返回
+        // profile 的设置（合并层在没有覆盖时只是副本）。
+        val settings = WidgetPreviewSession.mergedSettings(
+            TodayWidgetSupport.readActiveProfileRawJson(context)
+                ?.let { raw ->
+                    try {
+                        JSONObject(raw).optJSONObject("settings")
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
-            } ?: JSONObject()
+        )
         return StatsWidgetChrome(
             backgroundStyle = settings.optString("widgetBackgroundStyle", DEFAULT_CHROME.backgroundStyle),
             cornerRadius = settings.optDouble("widgetCornerRadius", DEFAULT_CHROME.cornerRadius.toDouble()).toInt(),

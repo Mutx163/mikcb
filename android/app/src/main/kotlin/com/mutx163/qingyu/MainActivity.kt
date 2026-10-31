@@ -14,11 +14,9 @@ import android.Manifest
 // 而 Java 会。漏了它就是 `Unresolved reference 'Activity'` 编译失败。
 import android.app.Activity
 import android.app.ActivityManager
-import android.app.AlarmManager
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ContentResolver
@@ -1136,9 +1134,7 @@ class MainActivity : FlutterActivity() {
                         if (appWidgetId == null) {
                             result.error("INVALID_ARGUMENTS", "Missing appWidgetId", null)
                         } else {
-                            WidgetBindingStore.setBoundProfileId(applicationContext, appWidgetId, profileId)
-                            TodayWidgetSupport.updateAll(applicationContext)
-                            HomeWidgetStorage.rescheduleRefresh(applicationContext)
+                            WidgetSystemActions.setWidgetBinding(applicationContext, appWidgetId, profileId)
                             result.success(true)
                         }
                     }
@@ -1170,7 +1166,7 @@ class MainActivity : FlutterActivity() {
                     }
                     "rescheduleRefresh" -> {
                         // 授权状态变化后按最新权限档位重排小组件刷新闹钟。
-                        HomeWidgetStorage.rescheduleRefresh(applicationContext)
+                        WidgetSystemActions.rescheduleRefresh(applicationContext)
                         result.success(true)
                     }
                     "scheduleRefresh" -> {
@@ -1735,89 +1731,30 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun listTodayWidgetInstances(): List<Map<String, Any?>> {
-        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
-            ?: return emptyList()
-        val bindings = WidgetBindingStore.allBindings(this)
-        val instances = mutableListOf<Map<String, Any?>>()
-        for ((widgetType, providerClass) in WidgetProviderCatalog.todaySeries) {
-            val ids = appWidgetManager.getAppWidgetIds(ComponentName(this, providerClass))
-            for (appWidgetId in ids) {
-                instances.add(
-                    mapOf(
-                        "appWidgetId" to appWidgetId,
-                        "widgetType" to widgetType,
-                        "boundProfileId" to bindings[appWidgetId],
-                    )
-                )
-            }
+    /**
+     * 小组件的系统能力全部下沉到 [WidgetSystemActions]（F20-B）：
+     * Compose 设置页与 Flutter 通道共用同一份实现，返回值串不会分叉。
+     * 这里保留同名私有方法只是为了通道回调读起来不变。
+     */
+    private fun listTodayWidgetInstances(): List<Map<String, Any?>> =
+        WidgetSystemActions.listTodayWidgetInstances(this).map { instance ->
+            mapOf(
+                "appWidgetId" to instance.appWidgetId,
+                "widgetType" to instance.widgetType,
+                "boundProfileId" to instance.boundProfileId,
+            )
         }
-        return instances
-    }
 
-    private fun canRequestPinWidget(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return false
-        }
-        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
-        return appWidgetManager?.isRequestPinAppWidgetSupported == true
-    }
+    private fun canRequestPinWidget(): Boolean = WidgetSystemActions.canRequestPinWidget(this)
 
-    private fun requestPinWidget(widgetType: String): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return "unsupported"
-        }
-        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
-            ?: return "unsupported"
-        if (!appWidgetManager.isRequestPinAppWidgetSupported) {
-            return "unsupported"
-        }
-        val provider = resolveWidgetProvider(widgetType) ?: return "invalid_widget_type"
-        return if (appWidgetManager.requestPinAppWidget(provider, null, null)) {
-            "requested"
-        } else {
-            "failed"
-        }
-    }
+    private fun requestPinWidget(widgetType: String): String =
+        WidgetSystemActions.requestPinWidget(this, widgetType)
 
     /** Android 12+ 需要用户在系统里授予「闹钟和提醒」权限才能精确闹钟。 */
-    private fun canScheduleExactAlarms(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return true
-        }
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-            ?: return true
-        return alarmManager.canScheduleExactAlarms()
-    }
+    private fun canScheduleExactAlarms(): Boolean = WidgetSystemActions.canScheduleExactAlarms(this)
 
-    /**
-     * 跳转系统「闹钟和提醒」授权页。
-     *
-     * 返回状态字符串：launched 已跳授权页；fallback ROM 未处理该 action，
-     * 已回退应用详情页（含闹钟和提醒开关）；not_required S 以下无需授权。
-     */
-    private fun requestScheduleExactAlarm(): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return "not_required"
-        }
-        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-            data = Uri.parse("package:$packageName")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        return try {
-            startActivity(intent)
-            "launched"
-        } catch (_: ActivityNotFoundException) {
-            // 个别 ROM 未处理该 action 时退回应用详情页（含闹钟和提醒开关）。
-            openAppDetailsSettings()
-            "fallback"
-        }
-    }
-
-    private fun resolveWidgetProvider(widgetType: String): ComponentName? {
-        val providerClass = WidgetProviderCatalog.providerClass(widgetType) ?: return null
-        return ComponentName(this, providerClass)
-    }
+    private fun requestScheduleExactAlarm(): String =
+        WidgetSystemActions.requestScheduleExactAlarm(this)
 
     private fun enqueueSystemDownload(
         url: String,

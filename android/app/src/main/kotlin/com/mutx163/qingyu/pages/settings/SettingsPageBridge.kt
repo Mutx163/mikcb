@@ -70,12 +70,27 @@ object SettingsPageBridge {
         SettingsAction.RECOLOR_SHEET -> SettingsActionKind.RECOLOR_SHEET
     }
 
-    /** 页 id → spec；不在本刀的 4 页里返回 null（壳据此决定要不要渲染）。 */
+    /**
+     * 页 id → spec；不认识的 id 返回 `null`（壳据此决定要不要渲染）。
+     *
+     * 2026-10-30（F06 登记）：原先只认 4 页，其余设置页只能由壳自己
+     * `SettingsScreen(XxxPage.spec(SettingsPageState()))` 渲染 —— 传的是**空构造 state**，
+     * 于是屏上是默认值、开关点了写不进去。现在把 `b.reset` / `b.glassDockIcon` /
+     * `b.live` / `b.liveSelfCheck` 一并登记，让它们能走 `SettingsHost`（真读 + 真写）。
+     *
+     * ⚠️ 登记 ≠ 接线完成：写路径还取决于 `SettingsActionDispatcher` 是否认这些页的
+     * rowId（见各页分支注释与 `claims/F06-settings-components.md`）。
+     */
     fun specFor(pageId: String, state: SettingsPageState): SettingsPageSpec? = when (pageId) {
         SettingsGeneralPage.ID -> SettingsGeneralPage.spec(state)
         SettingsAppearancePage.ID -> SettingsAppearancePage.spec(state)
         SettingsThemeManagePage.ID -> SettingsThemeManagePage.spec(state)
         SettingsCourseCardPage.ID -> SettingsCourseCardPage.spec(state)
+        // `b.reset`：五个作用域行是 RESET_SCOPE（宿主已有二次确认弹窗 `pendingReset`）。
+        SettingsResetPage.ID -> SettingsResetPage.spec(state)
+        SettingsGlassDockIconEditorPage.ID -> SettingsGlassDockIconEditorPage.spec(state)
+        SettingsLivePage.ID -> SettingsLivePage.spec(state)
+        SettingsLiveSelfCheckPage.ID -> SettingsLiveSelfCheckPage.spec(state)
         else -> null
     }
 
@@ -156,6 +171,51 @@ object SettingsPageBridge {
         // 参数叫 debugBuild（与另两个映射一致），状态字段叫 diagnosticsBuild——
         // 同一件事（调试/性能构建可见调试条目），语义相同、名字不同。
         diagnosticsBuild = debugBuild,
+    )
+
+    /**
+     * 设置模型 → 桌面小组件页状态（`SettingsHomeWidgetPage.spec` 的唯一输入）。
+     *
+     * ## 逐字段直译，不做任何再解释
+     *
+     * 四个字符串/枚举键原样给**落盘串**（`solid` / `bar_and_text` / `smart` …），
+     * 页面自己拿这些串做下拉选中项；10 个字段的行号见 `timetable_settings.dart:786-795`，
+     * 读侧口径见同文件 `:1444-1461`（模型层已按 `fromValue` / `lenientXxx` 归好默认值）。
+     *
+     * ⚠️ `heightAdjustment` 给的是**存储值**（默认 -11 的绝对值），不是滑杆偏移：
+     * 页面用 `storedHeightFromOffset` / `heightOffset` 在两种读数之间换算
+     * （`settings_home_widget.dart:344-359`）。这里若先减 11，页面的滑杆会停到 -22 的格子上。
+     *
+     * ## 四个「模型里没有」的输入
+     *
+     * `widgetInstances` / `profiles` / `partnerProfile` / `exactAlarmGranted` 都来自宿主
+     * （桌面卡片绑定表、课表仓储、系统精确闹钟权限），不在 `timetable_settings` 里，
+     * 所以由调用方传入：默认空表 / null = 宿主还没接上，页面按「没有卡片」「权限未知」
+     * 渲染（`exactAlarmGranted = null` 时权限横幅不出现，避免首帧闪烁，
+     * `settings_home_widget.dart:64-66`）。
+     */
+    fun toHomeWidgetState(
+        model: TimetableSettingsModel,
+        widgetInstances: List<HomeWidgetInstanceSpec> = emptyList(),
+        profiles: List<ProfileSpec> = emptyList(),
+        partnerProfile: ProfileSpec? = null,
+        exactAlarmGranted: Boolean? = null,
+    ): SettingsHomeWidgetState = SettingsHomeWidgetState(
+        backgroundStyle = model.widgetBackgroundStyle,
+        courseAccentMode = model.widgetCourseAccentMode,
+        showLocation = model.widgetShowLocation,
+        showCountdown = model.widgetShowCountdown,
+        hideCompletedCourses = model.widgetHideCompletedCourses,
+        showTomorrowCourses = model.widgetShowTomorrowCourses,
+        // 存储值直给（页面自己减 -11 得偏移）。
+        heightAdjustment = model.widgetHeightAdjustment,
+        cornerRadius = model.widgetCornerRadius,
+        countdownLeadMinutes = model.widgetCountdownLeadMinutes,
+        countdownTextStyle = model.widgetCountdownTextStyle,
+        widgetInstances = widgetInstances,
+        profiles = profiles,
+        partnerProfile = partnerProfile,
+        exactAlarmGranted = exactAlarmGranted,
     )
 
     /**
@@ -406,12 +466,17 @@ object SettingsPageBridge {
         val themeData = raw["themeData"] as? Map<*, *> ?: return emptyList()
         fun color(key: String): String? =
             (themeData[key] as? String)?.takeIf { it.isNotBlank() }
+        // ⚠️ `themeData` 是 **ThemeConfig.toJson 的短键**（`seed` / `ccl` / `cdl` / `wbl` / `wal`，
+        // `lib/models/timetable_settings.dart:123-144`），不是设置模型的长键名。
+        // 2026-10-29 修（一轮审核）：这里原先按长键（`seedColor` / `courseCardTitleColorLight`…）取，
+        // 键名对不上 ⇒ 已存主题行的四个色点**永远是空的**。Dart `previewColors`
+        // 读的是 ThemeConfig 的 getter（`timetable_settings.dart:263-278`），本质就是这几个短键。
         return listOfNotNull(
-            color("seedColor"),
-            color("courseCardTitleColorLight"),
-            color("courseCardDetailColorLight"),
-            color("weekdayBarFontColorLight"),
-            color("weekdayBarAccentColorLight"),
+            color("seed"),
+            color("ccl"),
+            color("cdl"),
+            color("wbl"),
+            color("wal"),
         ).take(4)
     }
 }
