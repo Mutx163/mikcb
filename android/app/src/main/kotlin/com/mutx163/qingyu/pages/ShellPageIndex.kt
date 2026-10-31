@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -45,6 +46,8 @@ import com.mutx163.qingyu.app.HomeWidgetHost
 import com.mutx163.qingyu.app.IcsExportHost
 import com.mutx163.qingyu.app.LiveDisplayHost
 import com.mutx163.qingyu.app.LiveReminderTimingHost
+import com.mutx163.qingyu.app.LiveSelfCheckHost
+import com.mutx163.qingyu.app.LiveSettingsPageHost
 import com.mutx163.qingyu.app.LiveTestingFixtureHost
 import com.mutx163.qingyu.app.MemoryStatsHost
 import com.mutx163.qingyu.app.PerfReportHost
@@ -64,6 +67,10 @@ import com.mutx163.qingyu.app.TimeSchemeManagementHost
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuPageCardMargin
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
@@ -115,15 +122,9 @@ import com.mutx163.qingyu.pages.import.ImportEntryHost
 import com.mutx163.qingyu.pages.import.ImportShellBridge
 import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterEntry
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCourseImportPage
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolEntry
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginWebState
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
@@ -146,8 +147,6 @@ import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorState
 import com.mutx163.qingyu.pages.settings.SettingsHomeNavigationPage
 import com.mutx163.qingyu.pages.settings.SettingsHomeNavigationState
-import com.mutx163.qingyu.pages.settings.SettingsLivePage
-import com.mutx163.qingyu.pages.settings.SettingsLiveSelfCheckPage
 import com.mutx163.qingyu.pages.settings.SettingsMaterialCourseCardPage
 import com.mutx163.qingyu.pages.settings.SettingsMaterialGeneralPage
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
@@ -158,6 +157,7 @@ import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
+import com.mutx163.qingyu.pages.shell.ShellPageCatalog
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
 import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.statistics.CourseStatisticsLogic
@@ -442,14 +442,23 @@ fun ShellPageContent(
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
             preview = { SettingsWeekPreviewSlot(wiring) },
         )
-        "b.live" -> SettingsPageScreen(
-            spec = SettingsLivePage.spec(SettingsPageState()),
+        // 2026-10-31 F23：这一屏原先 `SettingsLivePage.spec(SettingsPageState())` —— `data` 走默认
+        // 构造，两行摘要（上课前显示 / 课中显示）恒为默认值。改真宿主：从 `LiveDisplayStore`
+        // 读 `timetable_settings` 的两档显示设置（与「显示设置」子页同一个源），本页只读不写。
+        "b.live" -> LiveSettingsPageHost(
             onBack = onBack,
-            // 入口页 5 行都走 NAVIGATE：把 actionTarget（路由形态）映射成壳页面 id 再推页。
-            // 原来这里是 no-op 的 SettingsScreen，导致整页点了全无反应。
-            onAction = { _, target, _ -> target?.let { shellPageIdForRoute(it)?.let(onOpenPage) } },
+            onOpenPage = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
-        "b.liveSelfCheck" -> SettingsScreen(SettingsLiveSelfCheckPage.spec(SettingsPageState()), onBack)
+        // 2026-10-31 F23：这一屏原先 `SettingsLiveSelfCheckPage.spec(SettingsPageState())` ——
+        // 19 个字段全走默认值，8 块原生诊断卡永远不出现，本地日志卡三颗按钮因为
+        // `controlCardWiring` 白名单没有对应键而「看着能点、点了没反应」。改真宿主：
+        // 每秒读一次 `LiveUpdateService.buildDebugStatus`（指纹去重，不变就不重建），
+        // 三颗按钮分别落 `AppLogStore` 清空 / `h.log` 日志查看器 / 诚实不可用提示。
+        "b.liveSelfCheck" -> LiveSelfCheckHost(
+            // 宿主里跳的是壳的页面 id（`"h.log"`），不需要过 `shellPageIdForRoute` 转译。
+            onOpenPage = onOpenPage,
+            onBack = onBack,
+        )
         // 2026-10-29 节假日两页接真宿主（此前是 `SettingsScreen(SettingsHolidayPage.spec(SettingsPageState()))`：
         // 入参是**默认构造**的 state，屏上永远「开关开、两个列表空、年份空」，开关写不落盘，
         // 添加 / 长按删除 / 检查更新也都没有落点）。数据源 `wiring.holiday` 与月视图、小组件共用一份。
@@ -1519,53 +1528,27 @@ fun ShellPageContent(
         )
 
         // ── P3-G2 导入 · 仓库适配 ────────────────────────────────────
-        "g2.schoolAdapters" -> WarehouseSchoolAdaptersPage(
-            school = SHELL_DEMO_SCHOOL,
-            adapters = emptyList(),
+        // 2026-10-31 F23：壳侧**没有**学校列表数据源 ⇒ 三页一律不编数据，只显示诚实空态。
+        // 「示例学校 / 示例适配器 / example.com」三个常量已删；真数据属 F08-8c。
+        "g2.schoolAdapters" -> ShellWarehouseEmptyPage(
+            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
+            message = WarehouseStrings.noAvailableSchools.zh,
             onBack = onBack,
         )
-        "g2.adapterDetail" -> WarehouseAdapterDetailPage(
-            school = SHELL_DEMO_SCHOOL,
-            adapter = SHELL_DEMO_ADAPTER,
+        "g2.adapterDetail" -> ShellWarehouseEmptyPage(
+            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
+            message = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
             onBack = onBack,
         )
         "g2.warehouseImport" -> WarehouseCourseImportPage(onBack = onBack)
-        "g2.webLogin" -> {
-            // I2（`383df743`）：以前这里传的是空 `sessionState`，`currentUrl` 为空 ⇒
-            // 宿主按设计「空地址不加载任何东西」⇒ **白屏**。所以必须给一个可加载地址。
-            //
-            // ⚠️ `SHELL_DEMO_LOGIN_URL` 只是**开发壳的占位地址**：`WarehouseSchoolEntry`
-            // 目前**没有 URL 字段**（学校条目只带名字与适配器标识），真正的教务地址要等
-            // 那个字段落地后从条目里取。用 `example.com` 是因为它是 IANA 保留的示例域、
-            // 永远可解析，不会指向任何真实学校站点。
-            var webLoginState by remember {
-                mutableStateOf(WarehouseWebLoginSessionState(currentUrl = SHELL_DEMO_LOGIN_URL))
-            }
-            WarehouseWebLoginPage(
-                title = SHELL_DEMO_SCHOOL.name,
-                sessionState = webLoginState,
-                onBack = onBack,
-                onWebProgress = { progress ->
-                    webLoginState = webLoginState.withStage(
-                        WarehouseWebLoginWebState.stageForProgress(progress),
-                    )
-                },
-                onWebPageStarted = { url -> webLoginState = webLoginState.copy(currentUrl = url) },
-                onWebPageFinished = { url -> webLoginState = webLoginState.copy(currentUrl = url) },
-                onWebError = { error ->
-                    webLoginState = webLoginState.withStage(
-                        newStage = WarehouseWebLoginWebState.stageForError(),
-                        // ⚠️ 已知缺口：`importCleartextBlockedHint` 在 ARB 里有、但 `WarehouseStrings.kt`
-                        // 里没有对应成员（那个文件不在本批写作用域）⇒ 这里取不到中文文案，
-                        // 回落到系统原文。**不是漏写，是缺件**；补 ARB 成员后把 `null` 换掉即可。
-                        error = WarehouseWebLoginWebState.errorText(error) { null },
-                    )
-                },
-                // 已过消息门禁（UI 类消息只在导入执行期放行，见交付方的源码级守卫）。
-                // 真正「收到消息后做什么」属导入执行链路，另一个批次。
-                onWebBridgeMessage = { /* 导入执行链路未接，见 I2 认领文件 §7 */ },
-            )
-        }
+        // I2（`383df743`）时代这里挂的是 WebView 状态机 + `https://example.com/` 占位地址，
+        // 唯一目的就是「让 WebView 有东西可加载」。既然 `WarehouseSchoolEntry` 还没有 URL 字段、
+        // 壳里拿不到任何真实教务地址，就**不该开一个假页面**——直接显示「未找到有效的教务登录地址」。
+        "g2.webLogin" -> ShellWarehouseEmptyPage(
+            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
+            message = WarehouseStrings.noValidWarehouseLoginUrl.zh,
+            onBack = onBack,
+        )
         "g2.customDebug" -> WarehouseCustomDebugPage(onBack = onBack)
         "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
 
@@ -2064,42 +2047,45 @@ private fun ShellMissingPage(pageId: String, onBack: () -> Unit) {
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// 演示数据（索引行上标「演示数据」的那些）
+// 仓库适配三页（g2.schoolAdapters / g2.adapterDetail / g2.webLogin）的诚实空态
 // ────────────────────────────────────────────────────────────────────────
 
-/** 壳里的示例学校/适配器：让「学校适配器」与「适配器详情」有东西可看，值一律写「示例」。 */
-private val SHELL_DEMO_SCHOOL = WarehouseSchoolEntry(
-    id = "shell-demo-school",
-    name = "示例学校",
-    initial = "示",
-    code = "00000",
-)
-
 /**
- * 教务登录页在**开发壳**里的占位地址（I2，2026-10-28）。
+ * 2026-10-31 F23：壳侧**没有**学校列表数据源，这三页不再喂「示例学校 / 示例适配器 / example.com」，
+ * 只显示一句空态文案；文案键全部取自既有的 `WarehouseStrings`（本轮不新增 ARB 键）。
  *
- * ## 为什么需要它
- *
- * `WarehouseWebLoginHost` 按设计「`currentUrl` 为空就不加载任何地址」——这是对的
- * （避免加载一个未知页面），但壳里如果传空状态，用户看到的就是**白屏**。
- *
- * ## 为什么是 `example.com`
- *
- * `WarehouseSchoolEntry` **目前没有 URL 字段**（学校条目只带名字与适配器标识），
- * 所以拿不到真实教务地址。选 `example.com` 的理由：它是 IANA 保留的示例域，
- * **永远可解析、且不指向任何真实学校站点**——不会误导成「这就是那所学校的登录页」。
- *
- * ⚠️ 真正的地址要等 `WarehouseSchoolEntry` 加上 URL 字段后从条目里取；
- * 在那之前，本常量只用于验证「WebView 能加载网页」这条链路本身。
+ * 为什么不直接复用三个页面类：它们都要求非空入参（学校名当顶栏标题、适配器详情整页渲染、
+ * 登录页要有可加载地址），传空数据只会得到空白顶栏或白屏——那比空态更不诚实。
+ * 骨架 / 列表 / 卡片走共享套件（R1/R2/R3），不自拼 UI。
  */
-private const val SHELL_DEMO_LOGIN_URL = "https://example.com/"
-
-private val SHELL_DEMO_ADAPTER = WarehouseAdapterEntry(
-    id = "shell-demo-adapter",
-    name = "示例适配器",
-    script = "",
-    description = "壳内演示条目：不对应任何真实教务系统",
-)
+@Composable
+private fun ShellWarehouseEmptyPage(
+    title: String,
+    message: String,
+    onBack: () -> Unit,
+) {
+    QingyuPageScaffold(title = title, onBack = onBack) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+        ) {
+            item(key = "empty") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin, vertical = 12.dp),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Text(
+                        text = message,
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+        }
+    }
+}
 
 /** `mm:ss` → 起点算出来的 `HH:mm`。日视图与课程表单共用的一小段换算。 */
 private fun clockText(minutesOfDay: Int): String {

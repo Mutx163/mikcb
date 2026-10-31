@@ -1253,6 +1253,30 @@ private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = 
     "homeWidgetExactAlarmGrantAction" -> SettingsAction.RUN_NOW to
         SettingsActionDispatcher.ROW_HOME_WIDGET_ALARM_GRANT
 
+    // 「实时活动自检」页（b.liveSelfCheck，2026-10-31 F23）。这三个键原先不在白名单里，
+    // 于是 `SettingsInlineText` 拿到 null wiring ⇒ onClick 为 null ⇒ **看着能点、点了没反应**
+    // （认领文件 F23 §2 实测）。rowId 由宿主 `LiveSelfCheckHost` 自己的常量认领，
+    // 不进 `SettingsActionDispatcher`（先例 `SettingsHolidayAdvancedHost.kt:23`）：
+    // - 清空日志 → `AppLogStore.clear()` + `clearNative()`；
+    // - 查看手机日志 → `onOpenPage("h.log")`；
+    // - 更多测试者选项 → 诚实提示 `aboutUnavailable`（Kotlin 侧没有这个页面）。
+    // 清空进行中的「正在清空…」不登记（那一瞬间按钮本就该无动作）。
+    "liveTestingClearLogsAction" -> SettingsAction.RUN_NOW to
+        "liveSelfCheck.card.localLogs.clear"
+
+    "liveTestingViewPhoneLogsAction" -> SettingsAction.RUN_NOW to
+        "liveSelfCheck.card.localLogs.view"
+
+    "liveTestingMoreTesterOptionsAction" -> SettingsAction.RUN_NOW to
+        "liveSelfCheck.card.localLogs.more"
+
+    // 上岛状态卡「刷新诊断」：宿主收到 rowId 后立刻重读一次 `buildDebugStatus`。
+    // 顺带登记「正在刷新…」那一个键——首次读取失败时它会一直留在按钮上，
+    // 不登记就成了一条新的「看着能点、点了没反应」。
+    "liveTestingRefreshAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.island.refresh"
+
+    "liveTestingRefreshing" -> SettingsAction.RUN_NOW to "liveSelfCheck.island.refresh"
+
     else -> null
 }
 

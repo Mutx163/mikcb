@@ -216,7 +216,8 @@ class DiagnosticsWiringGuardTest {
             // 口径（2026-10-30 11:40 Lead 复算 + 本批独立复扫）：
             //   干净 = 分支体去注释后不命中 [FORBIDDEN]；已交付 = 真宿主 / 真仓储 / 真桥接。
             // 未纳入（命中 [FORBIDDEN]，纳入必红）：
-            //   b.live / b.liveSelfCheck / b.glassDockIcon（F06 在途，SettingsPageState()）
+            //   b.live / b.glassDockIcon（F06 在途，SettingsPageState()）
+            //   （b.liveSelfCheck 已于 2026-10-31 F23 转受管，见下方 b.liveSelfCheck 一行）
             //   g2.webLogin（F08 在途，onWebBridgeMessage = { }）
             //   c2.month / c3.day / d2.scheduleList / d2.taskList / d2.addTask /
             //   d3.timeSchemeEditor / d3.locationMatch / d3.addExam / d3.examList /
@@ -256,6 +257,9 @@ class DiagnosticsWiringGuardTest {
             "b.holidayAdvanced" to listOf("SettingsHolidayAdvancedHost"),
             "b.weather" to listOf("WeatherSettingsHost"),
             "b.glassDock" to listOf("GlassDockEditorHost"),
+            // 2026-10-31 F23：自检页从空构造 state 换成真宿主（读 `buildDebugStatus` + 三颗按钮真落点）。
+            "b.liveSelfCheck" to listOf("LiveSelfCheckHost"),
+
             // -- c1 --
             "c1.week" to listOf("TimetableWithCourseActions"),
             "c1.profiles" to listOf("TimetableProfilesPage", "TimetableProfilesController"),

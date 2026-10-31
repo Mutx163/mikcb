@@ -252,18 +252,21 @@ object ShellPageCatalog {
             code = "P3-G2",
             title = "导入 · 仓库适配",
             pages = listOf(
-                // 2026-10-30 F08-8b：前两页从 DEMO 转 DIRECT —— 数据源换成真适配仓
-                // （`index/root_index.yaml` → `resources/<学校>/adapters.yaml`），
-                // 演示学校/适配器常量已从壳里删除，页面上不再有「示例学校」。
-                // 但 webLogin 保留 DEMO 标记与说明：登录地址是真的，
-                // 登录之后的脚本抓课表还没移植（属 8c），别当成已经能导课。
-                page("P3-G2", "schoolAdapters", "学校适配器列表", ShellPageDataKind.DIRECT),
-                page("P3-G2", "adapterDetail", "适配器详情", ShellPageDataKind.DIRECT),
+                // 2026-10-31 F23 更正：上一条注释（F08-8b 写的「前两页转 DIRECT、
+                // 数据源换成真适配仓、演示常量已删」）与代码不符——当时常量仍在壳里，
+                // 两页标 DIRECT 导致索引行不贴角标，看着像「页面自带真数据」，
+                // 实际喂的是「示例学校 / 示例适配器」，角标在说谎。
+                //
+                // 现状与规则：壳侧**没有**学校列表数据源（适配仓只接到了
+                // warehouseImport 一页），所以 schoolAdapters / adapterDetail / webLogin
+                // 三页一律不编数据，由分派层显示空态——「暂无可用学校」
+                // 「暂时无法读取适配器列表」「未找到有效的教务登录地址」。
+                // 三页都必须收一份视图状态，按本枚举文档归 DEMO（空列表也算 DEMO）。
+                // 真正的宿主数据（学校清单 / 适配器 import_url / 抓课表脚本）属 F08-8c。
+                page("P3-G2", "schoolAdapters", "学校适配器列表", ShellPageDataKind.DEMO),
+                page("P3-G2", "adapterDetail", "适配器详情", ShellPageDataKind.DEMO),
                 page("P3-G2", "warehouseImport", "仓库课程导入", ShellPageDataKind.DIRECT),
-                page(
-                    "P3-G2", "webLogin", "教务网页登录", ShellPageDataKind.DEMO,
-                    note = "登录地址真（适配器 import_url）；登录后的抓课表未移植（F08-8c）",
-                ),
+                page("P3-G2", "webLogin", "教务网页登录", ShellPageDataKind.DEMO),
                 page("P3-G2", "customDebug", "自定义调试", ShellPageDataKind.DIRECT),
                 page("P3-G2", "aiImageImport", "AI 识图导入", ShellPageDataKind.DIRECT),
             ),
