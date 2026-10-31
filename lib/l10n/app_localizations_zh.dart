@@ -3111,6 +3111,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weekdayShortSunday => '日';
 
   @override
+  String get datePickerYear => '年';
+
+  @override
+  String get datePickerMonth => '月';
+
+  @override
+  String get datePickerDay => '日';
+
+  @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
     return '周 $weekday $startSection～$endSection 节';
   }
@@ -7460,6 +7469,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveBeforeClassQuickActionBoth => '静音和免打扰';
 
   @override
+  String get liveImagePickFailed => '图片读取失败，请换一张再试';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable => '这台设备没有勿扰权限设置页，请到系统设置里手动授权';
+
+  @override
   String get courseCardVerticalAlignTop => '顶部对齐';
 
   @override
@@ -11241,6 +11256,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String monthOverviewMoreDays(int count) {
+    return '还有 $count 天';
+  }
+
+  @override
   String get monthViewEmptyMonthHint => '先加一节课，日历上就会显示圆点';
 
   @override
@@ -14658,6 +14678,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weekdayShortSunday => '日';
+
+  @override
+  String get datePickerYear => '年';
+
+  @override
+  String get datePickerMonth => '月';
+
+  @override
+  String get datePickerDay => '日';
 
   @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
@@ -19008,6 +19037,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveBeforeClassQuickActionBoth => '靜音和免打擾';
 
   @override
+  String get liveImagePickFailed => '圖片讀取失敗，請換一張再試';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable => '這台裝置沒有勿擾權限設定頁，請到系統設定裡手動授權';
+
+  @override
   String get courseCardVerticalAlignTop => '頂部對齊';
 
   @override
@@ -22829,6 +22864,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String monthOverviewMoreDays(int count) {
+    return '還有 $count 天';
+  }
+
+  @override
   String get monthViewEmptyMonthHint => '先加一節課，日曆上就會顯示圓點';
 
   @override
@@ -26246,6 +26286,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weekdayShortSunday => '日';
+
+  @override
+  String get datePickerYear => '年';
+
+  @override
+  String get datePickerMonth => '月';
+
+  @override
+  String get datePickerDay => '日';
 
   @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
@@ -30596,6 +30645,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveBeforeClassQuickActionBoth => '靜音和免打擾';
 
   @override
+  String get liveImagePickFailed => '圖片讀取失敗，請換一張再試';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable => '這台裝置沒有勿擾權限設定頁，請到系統設定裡手動授權';
+
+  @override
   String get courseCardVerticalAlignTop => '頂部對齊';
 
   @override
@@ -34415,6 +34470,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String monthOverviewScheduledDays(int count) {
     return '有安排 $count 天';
+  }
+
+  @override
+  String monthOverviewMoreDays(int count) {
+    return '還有 $count 天';
   }
 
   @override

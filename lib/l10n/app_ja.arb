@@ -1618,6 +1618,9 @@
   "weekdayShortFriday": "金",
   "weekdayShortSaturday": "土",
   "weekdayShortSunday": "日",
+  "datePickerYear": "年",
+  "datePickerMonth": "月",
+  "datePickerDay": "日",
   "weekdaySectionRange": "{weekday}曜{startSection}-{endSection}時限",
   "@weekdaySectionRange": {
     "placeholders": {
@@ -4099,6 +4102,8 @@
   "liveBeforeClassQuickActionDoNotDisturb": "Turn on Do Not Disturb",
   "liveBeforeClassQuickActionPriorityOnly": "優先連絡のみ許可",
   "liveBeforeClassQuickActionBoth": "サイレントとおやすみモード",
+  "liveImagePickFailed": "画像を読み込めませんでした。別の画像でお試しください。",
+  "liveDoNotDisturbAccessUnavailable": "この端末にはおやすみモードの権限設定画面がありません。システム設定から手動で許可してください。",
   "courseCardVerticalAlignTop": "Top",
   "courseCardVerticalAlignCenter": "Center",
   "courseCardVerticalAlignBottom": "Bottom",
@@ -6609,6 +6614,14 @@
   "monthOverviewTitle": "今月のまとめ",
   "monthOverviewDaysTitle": "予定のある日",
   "monthOverviewScheduledDays": "予定のある日 {count} 日",
+  "monthOverviewMoreDays": "残り {count} 日",
+  "@monthOverviewMoreDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "monthViewEmptyMonthHint": "授業を追加すると、カレンダーに点が表示されます",
   "monthViewAgendaAddCourse": "授業を追加",
   "monthViewYearSegment": "{year}年",

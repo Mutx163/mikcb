@@ -541,7 +541,7 @@ String localizeServiceMessage(
       // 比手写六份新译文稳）。等文案口径 revisiting 时应新增一个专用键
       // serviceMsgUnknownCode，并把这条兜底的注释一并收窄。
       if (_looksLikeInternalCode(resolvedCode)) {
-        // 走 appDebugLog 而不是 print：它的 tag 不在 forensicTags 白名单里，
+        // 走 appDebugLog 而不是 print：它的 tag 不在 releaseForensicTags 白名单里，
         // 所以正式包会被 `if (!kDebugMode && ...) return` 剥掉；而裸 print
         // 不受 kDebugMode 约束，会一直进 logcat。
         appDebugLog('ServiceMessageLocalizer', 'unmapped code: $resolvedCode');

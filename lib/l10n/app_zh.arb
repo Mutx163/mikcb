@@ -1773,6 +1773,9 @@
   "weekdayShortFriday": "五",
   "weekdayShortSaturday": "六",
   "weekdayShortSunday": "日",
+  "datePickerYear": "年",
+  "datePickerMonth": "月",
+  "datePickerDay": "日",
   "weekdaySectionRange": "周 {weekday} {startSection}～{endSection} 节",
   "@weekdaySectionRange": {
     "placeholders": {
@@ -4495,6 +4498,8 @@
   "liveBeforeClassQuickActionDoNotDisturb": "打开免打扰",
   "liveBeforeClassQuickActionPriorityOnly": "仅放行优先通知",
   "liveBeforeClassQuickActionBoth": "静音和免打扰",
+  "liveImagePickFailed": "图片读取失败，请换一张再试",
+  "liveDoNotDisturbAccessUnavailable": "这台设备没有勿扰权限设置页，请到系统设置里手动授权",
   "courseCardVerticalAlignTop": "顶部对齐",
   "courseCardVerticalAlignCenter": "垂直居中",
   "courseCardVerticalAlignBottom": "底部对齐",
@@ -6880,6 +6885,14 @@
   "monthOverviewTitle": "本月概览",
   "monthOverviewDaysTitle": "本月有安排的日子",
   "monthOverviewScheduledDays": "有安排 {count} 天",
+  "monthOverviewMoreDays": "还有 {count} 天",
+  "@monthOverviewMoreDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "monthViewEmptyMonthHint": "先加一节课，日历上就会显示圆点",
   "monthViewAgendaAddCourse": "加课",
   "@monthOverviewScheduledDays": {

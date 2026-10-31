@@ -3296,6 +3296,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekdayShortSunday => 'Sun';
 
   @override
+  String get datePickerYear => 'Year';
+
+  @override
+  String get datePickerMonth => 'Month';
+
+  @override
+  String get datePickerDay => 'Day';
+
+  @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
     return '$weekday $startSection-$endSection';
   }
@@ -7878,6 +7887,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveBeforeClassQuickActionBoth => 'Silent + Do Not Disturb';
 
   @override
+  String get liveImagePickFailed =>
+      'Could not read the image. Please try another one.';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable =>
+      'This device has no Do Not Disturb access page. Please grant it manually in system settings.';
+
+  @override
   String get courseCardVerticalAlignTop => 'Top';
 
   @override
@@ -11897,6 +11914,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String monthOverviewScheduledDays(int count) {
     return '$count days with plans';
+  }
+
+  @override
+  String monthOverviewMoreDays(int count) {
+    return '$count more days';
   }
 
   @override

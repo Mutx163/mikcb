@@ -3185,6 +3185,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weekdayShortSunday => '일';
 
   @override
+  String get datePickerYear => '년';
+
+  @override
+  String get datePickerMonth => '월';
+
+  @override
+  String get datePickerDay => '일';
+
+  @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
     return '$weekday요일 $startSection-$endSection교시';
   }
@@ -7632,6 +7641,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveBeforeClassQuickActionBoth => '무음과 방해 금지';
 
   @override
+  String get liveImagePickFailed => '이미지를 읽지 못했습니다. 다른 이미지를 선택해 주세요.';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable =>
+      '이 기기에는 방해 금지 권한 설정 화면이 없습니다. 시스템 설정에서 직접 허용해 주세요.';
+
+  @override
   String get courseCardVerticalAlignTop => 'Top';
 
   @override
@@ -11605,6 +11621,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String monthOverviewScheduledDays(int count) {
     return '일정 있는 날 $count일';
+  }
+
+  @override
+  String monthOverviewMoreDays(int count) {
+    return '$count일 더';
   }
 
   @override

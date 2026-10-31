@@ -1618,6 +1618,9 @@
   "weekdayShortFriday": "금",
   "weekdayShortSaturday": "토",
   "weekdayShortSunday": "일",
+  "datePickerYear": "년",
+  "datePickerMonth": "월",
+  "datePickerDay": "일",
   "weekdaySectionRange": "{weekday}요일 {startSection}-{endSection}교시",
   "@weekdaySectionRange": {
     "placeholders": {
@@ -4149,6 +4152,8 @@
   "liveBeforeClassQuickActionDoNotDisturb": "Turn on Do Not Disturb",
   "liveBeforeClassQuickActionPriorityOnly": "중요 연락만 허용",
   "liveBeforeClassQuickActionBoth": "무음과 방해 금지",
+  "liveImagePickFailed": "이미지를 읽지 못했습니다. 다른 이미지를 선택해 주세요.",
+  "liveDoNotDisturbAccessUnavailable": "이 기기에는 방해 금지 권한 설정 화면이 없습니다. 시스템 설정에서 직접 허용해 주세요.",
   "courseCardVerticalAlignTop": "Top",
   "courseCardVerticalAlignCenter": "Center",
   "courseCardVerticalAlignBottom": "Bottom",
@@ -6770,6 +6775,14 @@
   "monthOverviewTitle": "이번 달 요약",
   "monthOverviewDaysTitle": "일정 있는 날",
   "monthOverviewScheduledDays": "일정 있는 날 {count}일",
+  "monthOverviewMoreDays": "{count}일 더",
+  "@monthOverviewMoreDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "monthViewEmptyMonthHint": "수업을 추가하면 달력에 점이 표시됩니다",
   "monthViewAgendaAddCourse": "수업 추가",
   "monthViewYearSegment": "{year}년",

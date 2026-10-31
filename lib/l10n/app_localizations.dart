@@ -5788,6 +5788,24 @@ abstract class AppLocalizations {
   /// **'日'**
   String get weekdayShortSunday;
 
+  /// No description provided for @datePickerYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'年'**
+  String get datePickerYear;
+
+  /// No description provided for @datePickerMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'月'**
+  String get datePickerMonth;
+
+  /// No description provided for @datePickerDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'日'**
+  String get datePickerDay;
+
   /// No description provided for @weekdaySectionRange.
   ///
   /// In zh, this message translates to:
@@ -13652,6 +13670,18 @@ abstract class AppLocalizations {
   /// **'静音和免打扰'**
   String get liveBeforeClassQuickActionBoth;
 
+  /// No description provided for @liveImagePickFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片读取失败，请换一张再试'**
+  String get liveImagePickFailed;
+
+  /// No description provided for @liveDoNotDisturbAccessUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台设备没有勿扰权限设置页，请到系统设置里手动授权'**
+  String get liveDoNotDisturbAccessUnavailable;
+
   /// No description provided for @courseCardVerticalAlignTop.
   ///
   /// In zh, this message translates to:
@@ -20483,6 +20513,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'有安排 {count} 天'**
   String monthOverviewScheduledDays(int count);
+
+  /// No description provided for @monthOverviewMoreDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 天'**
+  String monthOverviewMoreDays(int count);
 
   /// No description provided for @monthViewEmptyMonthHint.
   ///

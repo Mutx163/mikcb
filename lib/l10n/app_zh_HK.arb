@@ -1617,6 +1617,9 @@
   "weekdayShortFriday": "五",
   "weekdayShortSaturday": "六",
   "weekdayShortSunday": "日",
+  "datePickerYear": "年",
+  "datePickerMonth": "月",
+  "datePickerDay": "日",
   "weekdaySectionRange": "週{weekday} {startSection}-{endSection}節",
   "@weekdaySectionRange": {
     "placeholders": {
@@ -4149,6 +4152,8 @@
   "liveBeforeClassQuickActionDoNotDisturb": "打開免打擾",
   "liveBeforeClassQuickActionPriorityOnly": "僅放行優先通知",
   "liveBeforeClassQuickActionBoth": "靜音和免打擾",
+  "liveImagePickFailed": "圖片讀取失敗，請換一張再試",
+  "liveDoNotDisturbAccessUnavailable": "這台裝置沒有勿擾權限設定頁，請到系統設定裡手動授權",
   "courseCardVerticalAlignTop": "頂部對齊",
   "courseCardVerticalAlignCenter": "垂直居中",
   "courseCardVerticalAlignBottom": "底部對齊",
@@ -6770,6 +6775,14 @@
   "monthOverviewTitle": "本月概覽",
   "monthOverviewDaysTitle": "本月有安排的日子",
   "monthOverviewScheduledDays": "有安排 {count} 天",
+  "monthOverviewMoreDays": "還有 {count} 天",
+  "@monthOverviewMoreDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "monthViewEmptyMonthHint": "先加一節課，日曆上就會顯示圓點",
   "monthViewAgendaAddCourse": "加課",
   "monthViewYearSegment": "{year}年",

@@ -3169,6 +3169,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weekdayShortSunday => '日';
 
   @override
+  String get datePickerYear => '年';
+
+  @override
+  String get datePickerMonth => '月';
+
+  @override
+  String get datePickerDay => '日';
+
+  @override
   String weekdaySectionRange(String weekday, int startSection, int endSection) {
     return '$weekday曜$startSection-$endSection時限';
   }
@@ -7591,6 +7600,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveBeforeClassQuickActionBoth => 'サイレントとおやすみモード';
 
   @override
+  String get liveImagePickFailed => '画像を読み込めませんでした。別の画像でお試しください。';
+
+  @override
+  String get liveDoNotDisturbAccessUnavailable =>
+      'この端末にはおやすみモードの権限設定画面がありません。システム設定から手動で許可してください。';
+
+  @override
   String get courseCardVerticalAlignTop => 'Top';
 
   @override
@@ -11561,6 +11577,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String monthOverviewScheduledDays(int count) {
     return '予定のある日 $count 日';
+  }
+
+  @override
+  String monthOverviewMoreDays(int count) {
+    return '残り $count 日';
   }
 
   @override
