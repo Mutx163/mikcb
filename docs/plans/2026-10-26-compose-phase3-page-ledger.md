@@ -951,7 +951,10 @@ L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。
 | 地点时间匹配编辑页 | ✅ 交付（Phase 3 遗留） | `7e8a9d32` |
 
 **仍未做（诚实清单）**：① **一页都没真机对照**（壳里 78 条可点，入口齐了，就差用户走一遍）；
-② 局域网 `import/apply` 保持 501（缺传输包应用服务，唯一真缺的能力）；③ 备份里 tasks/exams 写回与
+② ~~局域网 `import/apply` 保持 501~~ → **已接真应用**（`378b801f`，2026-10-30：`transfer/lan/LanTransferLogic.kt`
++ `LanTransferApplier.kt`，本机实跑 354 例 L0 绿；2026-11-01 复核）。该端点剩余的缺口已换成两条：
+「导入后没有撤销点（`transferId` 恒 null）」「设置只应用已移植子集」，
+见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；③ 备份里 tasks/exams 写回与
 多档案恢复等仓储原子入口（`task-14`）；④ 相机真依赖未加（`build.gradle` 是 Lead 区，需拍板）；
 ⑤ 毛玻璃页面层 / `fontWeight` / 余 26 个文件裸 `Card(` 未动。
 

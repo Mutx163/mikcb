@@ -40,12 +40,12 @@
 | `GET/PATCH/DELETE /api/v1/courses/{id}` | 200 / 400 / 404 |
 | `POST /api/v1/courses/batch-delete` | 200 `{deletedCount}` / 400 `ids_required` |
 | `POST /api/v1/week-expression/parse` | 200 `{weeks, warnings}` / 400 `expression_required` |
-| `POST /api/v1/import/preview` | 200 预览 / 400 `backup_content_required` / 501 `transfer_preview_not_supported`（Kotlin 侧还没有预览服务） |
+| `POST /api/v1/import/preview` | 200 预览 / 400 `backup_content_required` / 501 `transfer_preview_not_supported`（仅当 host 未实现预览时；当前 `LanEditRepositoryHost` 已实现） |
 | `GET /api/v1/profile/active` | 200 整份备份（传输包 JSON 对象，`scope=current_timetable`、`channel=lan`） |
 | `PUT /api/v1/profile/active` | 200 `{imported:true}` / 400（校验不过，**一个字节都不写**） |
 | `PUT /api/v1/courses/group` | 200 `{courses:[…]}`（按课名整组替换）/ 400 `at_least_one_schedule_slot`·`course_name_required`·`invalid_slot_entry` |
 | `POST /api/v1/import/spreadsheet` | 200 `{importedCount, warnings, format}` / 400 `content_base64_required`·`content_base64_invalid` |
-| `POST /api/v1/import/apply` | 200 应用结果 / 400 `transfer_content_and_mode_required` / 501 `transfer_apply_not_supported` |
+| `POST /api/v1/import/apply` | 200 应用结果 / 400 `transfer_content_and_mode_required` · 坏包 `400 invalid_request` / 501 `transfer_apply_not_supported`（仅当 host 未实现应用时；当前已实现） |
 | `POST /api/v1/import/merge` | **409 `transfer_preview_required`**（Dart 里这条端点就是故意拒的，照抄，不实现合并导入） |
 
 横切规则：跨源 403、Bearer 令牌、`Content-Type: application/json` 强制、请求体 5 MiB 上限、
@@ -137,11 +137,11 @@ Kotlin 侧要发的是 Android `assets/lan_edit/**`（需把这些前端产物�
 | # | 端点 | 现状 |
 |---|---|---|
 | 1 | `GET /api/v1/profile/active` | ✅ 导出当前课表的传输包（用 `sync/buildTransferPackageJson`，不自拼 JSON） |
-| 2 | `PUT /api/v1/profile/active` | ✅ 导入（先校验后落盘）。⚠️ 与 Dart 有一处**有意差异**：Dart 在 host 具备传输包能力时这条回 409（强制先 preview 再 apply），Kotlin 侧还没有 apply 服务，所以走 legacy 导入；等 apply 落地后应改成 409 |
+| 2 | `PUT /api/v1/profile/active` | ✅ 导入（先校验后落盘）。⚠️ 与 Dart 有一处**尚未跟上的差异**：Dart 在 host 具备传输包能力时这条回 409（强制先 preview 再 apply）；Kotlin 侧 apply **已于 `378b801f` 落地**，但这条仍走 legacy 导入，**应改成 409**（未做，属已知差异） |
 | 3 | `PUT /api/v1/courses/group` | ✅ 走 `TimetableCourseService.updateGroup` |
 | 4 | `POST /api/v1/import/spreadsheet` | ✅ 解析器由接线方注入，落盘逐门 `addCourse` |
 | 5 | `POST /api/v1/import/merge` | ✅ **照 Dart 只回 409**，不实现合并导入 |
-| 6 | `POST /api/v1/import/apply` | ❌ 501：Kotlin 侧没有传输包 diff/应用服务（`pages/transfer` 只有渲染层模型）。这是**唯一还缺的能力**，需要单开一批做 `applyTransferJson` |
+| 6 | `POST /api/v1/import/apply` | ✅ **已交付**（`378b801f`）：先校验后落盘，走 `transfer/lan/LanTransferLogic` + `LanTransferApplier`。仍缺：撤销点（`transferId` 恒 null）、设置只应用已移植子集 |
 
 ### B. 有意的行为差异（不是漏，是有取舍）
 

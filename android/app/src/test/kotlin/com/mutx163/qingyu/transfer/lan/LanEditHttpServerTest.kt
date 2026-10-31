@@ -332,12 +332,9 @@ class LanEditHttpServerTest {
             assertEquals(200, parseResponse(exchange(port, "GET /api/v1/health HTTP/1.1\r\nHost: h\r\n\r\n")).status)
 
             expired.set(true)
-            val deadline = System.currentTimeMillis() + 5_000
-            while (server.isRunning && System.currentTimeMillis() < deadline) {
-                Thread.sleep(20)
-            }
+            val stopEntry = awaitStopAudit(audit)
             assertFalse("会话过期后看门狗必须停服", server.isRunning)
-            assertEquals("idle_timeout", audit.snapshot().last().extras["reason"])
+            assertEquals("idle_timeout", stopEntry.extras["reason"])
         } finally {
             server.stop("test_cleanup")
         }
@@ -375,12 +372,9 @@ class LanEditHttpServerTest {
         )
         server.start()
         try {
-            val deadline = System.currentTimeMillis() + 5_000
-            while (server.isRunning && System.currentTimeMillis() < deadline) {
-                Thread.sleep(20)
-            }
+            val stopEntry = awaitStopAudit(audit)
             assertFalse("会话早已过期，默认就该自动停服", server.isRunning)
-            assertEquals("idle_timeout", audit.snapshot().last().extras["reason"])
+            assertEquals("idle_timeout", stopEntry.extras["reason"])
         } finally {
             server.stop("test_cleanup")
         }
@@ -506,6 +500,29 @@ class LanEditHttpServerTest {
         "startTime" to "",
         "endTime" to "",
     )
+
+    /**
+     * 等到审计里出现「停服」那条（带停服原因），再拿它断言。
+     *
+     * **为什么不能轮询 `isRunning`**：`stop()` 先 `running.getAndSet(false)`，再关监听套接字、
+     * 收工作池，**最后**才写 `lan_edit_session_stopped` 审计。两个观察点天然不同步，
+     * 轮询 `isRunning` 会撞进「已停但审计还没落」的窗口 —— 2026-11-01 实测：
+     * 同一份代码连跑两次红（`expected:<idle_timeout> but was:<null>`，`last()` 拿到的是
+     * `lan_edit_session_started`），随后两次又全绿，是测试自身的 flaky，不是功能坏。
+     * 这里的被测行为本来就是「看门狗把原因写进审计」，所以等审计才是正确判据；
+     * 「已经停了」在拿到审计之后另行断言（那时 `stop()` 已走完）。
+     */
+    private fun awaitStopAudit(
+        audit: LanEditAuditRingBuffer,
+        timeoutMillis: Long = 5_000,
+    ): LanEditAuditEntry {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (System.currentTimeMillis() < deadline) {
+            audit.snapshot().lastOrNull { it.category == "lan_edit_session_stopped" }?.let { return it }
+            Thread.sleep(20)
+        }
+        throw AssertionError("${timeoutMillis}ms 内没等到 lan_edit_session_stopped：${audit.categories()}")
+    }
 
     /** 开一个真 socket，发原始请求文本（发完半关写端），读到 EOF。 */
     private fun exchange(port: Int, request: String): String {

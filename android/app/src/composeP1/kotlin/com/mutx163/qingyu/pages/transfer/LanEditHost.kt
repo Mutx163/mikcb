@@ -61,12 +61,13 @@ import java.net.NetworkInterface
  *
  * ## 诚实边界（不假装能跑的部分）
  *
- * 1. `LanEditHttpServer` **不做静态资源服务**（Dart 从 Flutter asset 里发
- *    `index.html` / `app.js`）⇒ 电脑浏览器打开 `http://<ip>:<port>` 现在拿到的是
- *    404/JSON，**不是控制台界面**。补这一段要改 `main: transfer/lan/`（不在本批写作用域，
- *    补丁写在认领文件「共享件改动待合入」里）。
- * 2. `import/apply` 两个端点仍回 501（缺传输包应用服务，台账 §9.4 ② 自认「唯一真缺的能力」），
- *    本条不在本批范围。
+ * 1. 静态资源**已接线**（`staticAssets = LanEditStaticAssets { …readFlutterAsset… }`）：
+ *    控制台页面由 `transfer/lan/LanEditStaticAssets.kt` 从 Flutter asset 发，装配漏了这一项
+ *    浏览器就是一片空白。**但「浏览器真能打开」没在真机上验过**，仍归用户验收。
+ * 2. `import/apply` **不再是 501**：`378b801f`（2026-10-30）接上了真应用
+ *    （`transfer/lan/LanTransferLogic.kt` 算差异 + `LanTransferApplier.kt` 写仓储）。
+ *    仍缺的两条是「导入后没有撤销点（`transferId` 恒 null）」与「设置只应用已移植子集」，
+ *    详见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做。
  * 3. 真机没对照过：端口是否真能连、通知栏常驻、关掉后是否真的打不开，全部归用户验收。
  */
 @Composable
