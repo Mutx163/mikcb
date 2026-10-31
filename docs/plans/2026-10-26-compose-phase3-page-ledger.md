@@ -1008,14 +1008,14 @@ L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。
 |---|---|---|
 | 1 | **F20 桌面小组件设置页已交付**：`b.homeWidget` 从喂空构造 `SettingsHomeWidgetState()` 换成 `HomeWidgetHost`（10 项设置真读真写 + 桌面卡片真绑定 + 添加到桌面 / 精确闹钟授权）。 | 认领文件 `.agents/compose-phase3/claims/F20-home-widget.md` 状态行（2026-10-31 18:40）；提交 `88c22e34` |
 | 2 | **F06 只剩 2 页仍传空构造 `SettingsPageState()`**：`b.live`（`ShellPageIndex.kt:445-446`）与 `b.liveSelfCheck`（`ShellPageIndex.kt:452`）。 | 直接读该文件当前工作区内容 |
-| 3 | `b.reset`、`b.glassDockIcon` 已从 `SettingsScreen(... spec(SettingsPageState()))` 换成 `SettingsHost` 真宿主，**但尚未提交**（工作区 `M ShellPageIndex.kt`）。 | `git diff -- android/.../ShellPageIndex.kt`（F22 核实于本节落笔时） |
+| 3 | `b.reset`、`b.glassDockIcon` 已从 `SettingsScreen(... spec(SettingsPageState()))` 换成 `SettingsHost` 真宿主（`ShellPageIndex.kt:481` / `:487`），**已落库**。 | 提交 `2a07498d`（2026-10-31 复核：`git diff 2a07498d HEAD -- ShellPageIndex.kt` 为空，即 HEAD 已是该版本） |
 | 4 | **P0-7「更多壁纸」入口点了没反应**：`SettingsBackdropFlowPage.BING_GALLERY_TARGET = "bingWallpaperGallery"`（`SettingsBackdropFlowPage.kt:182`）在 `ShellWiring.kt` 的路由表里**无登记**（HEAD 上 `grep -c bingWallpaperGallery` = 0）。 | `docs/plans/2026-10-30-refactor-review/README.md:65` 与 `:87`；F22 本地复核同结论 |
 | 5 | **全仓 87 条可进入路由；真机逐页对照 0 页**（46 页「代码上真」但无一页被用户在真机上确认）。 | 口径来源 `docs/plans/2026-10-29-page-coverage-census.md:12`（87 条分派分支）；未对照的自认见 `docs/plans/2026-10-29-remaining-pages-tasklist.md:598` |
 | 6 | **收口提交仍在进行中**：`android/**` 的已完工改动由 F21 独占提交，本节落笔时未收口。 | `.agents/compose-phase3/claims/F21-settlement-commit.md` 状态行 |
 
-**F22 未能核实、因此没有写进上表的**：F21 最终提交了几笔、各自覆盖哪些文件；
-`b.reset` / `b.glassDockIcon` 换宿主后是否真的落库（只能看到工作区差异，看不到提交）；
-87 条路由里每页当前的真实数据源状态（只能引用 10-29 的普查结论，未逐页重扫）。
+**F22 未能核实、因此没有写进上表的**：F21 最终提交了几笔、各自覆盖哪些文件（认领文件仍写「进行中」）；
+87 条路由里每页当前的真实数据源状态（只能引用 10-29 的普查结论，未逐页重扫）；
+工作区里剩下的 `android/**` 改动属于哪条泳道、何时收口。
 
 ---
 
