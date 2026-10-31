@@ -25,9 +25,14 @@ BASELINE = (
 )
 LITERAL_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
+# 与 CjkLiteralGateTest.LOG_CALL 逐字一致：`Log.*(...)` 的中文是开发者日志、不上屏，整行跳过。
+LOG_CALL = re.compile(r"\bLog\.[vdiwe]\s*\(")
+
 
 def count_line(line: str) -> int:
     if line.lstrip().startswith(("*", "//", "/*")):
+        return 0
+    if LOG_CALL.search(line):
         return 0
     n = 0
     for m in LITERAL_RE.finditer(line):

@@ -20,6 +20,15 @@ class CjkLiteralGateTest {
 
     private val literalRegex = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"")
 
+    /**
+     * 「这一行是日志调用」的判据：`android.util.Log` 的六个级别方法。
+     *
+     * 与 `scripts/i18n-cjk-baseline.py` 的 `LOG_CALL` **逐字一致**（两侧不同步基线会漂移）。
+     * 只认 `Log.x(` 形态，不误伤 `SampleLog`、`dialog.`、字符串里的 `"Log.w("`——
+     * 后面这条靠 `\bLog\.` 的词边界挡住。
+     */
+    private val LOG_CALL = Regex("\\bLog\\.[vdiwe]\\s*\\(")
+
     @Test
     fun `扫描器必须真的扫到渲染层源文件`() {
         val files = renderFiles()
@@ -83,6 +92,25 @@ class CjkLiteralGateTest {
         )
     }
 
+    /** 判据自检：日志行的中文不算，屏上文案照数。 */
+    @Test
+    fun logMessagesAreNotCountedAsScreenCopy() {
+        assertTrue(
+            "Log 里的中文是开发者日志，不该算成 i18n 债务",
+            cjkLiteralsIn("""        Log.w(LOG_TAG, "分享图落盘失败")""").isEmpty(),
+        )
+        assertTrue(
+            "Log 出现在 lambda 里（`{ Log.w(...) }`）也要认出来",
+            cjkLiteralsIn("""        .onFailure { Log.w(LOG_TAG, "删不掉被淘汰的壁纸") }""").isEmpty(),
+        )
+        assertTrue(
+            "Toast / Text 上的中文仍然必须被数到，日志豁免不能顺带放宽判据",
+            cjkLiteralsIn(
+                """        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT)""",
+            ).isNotEmpty(),
+        )
+    }
+
     // ── 扫描规则（与 scripts/i18n-cjk-baseline.py 保持一致）──
 
     private fun renderFiles(): List<File> {
@@ -99,6 +127,13 @@ class CjkLiteralGateTest {
             line.trimStart().startsWith("//") ||
             line.trimStart().startsWith("/*")
         ) {
+            return emptyList()
+        }
+        // `Log.*(...)` 的中文是**给开发者看的日志**，永远不上屏，不需要走 i18n。
+        // 2026-10-31：本门禁原先连它一起数，导致 `BingGalleryHost.kt`（2 条 `Log.e/Log.w`）
+        // 与 `StatisticsShareIntent.kt`（4 条 `Log.w`）被判成「i18n 回退」而长期红着，
+        // 逼人去把日志文案塞进 ARB —— 那是把工具用反了。判据改成「日志行整行跳过」。
+        if (LOG_CALL.containsMatchIn(line)) {
             return emptyList()
         }
         return literalRegex.findAll(line)
