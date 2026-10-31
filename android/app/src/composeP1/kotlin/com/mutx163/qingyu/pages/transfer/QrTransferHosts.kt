@@ -91,6 +91,11 @@ fun QrTransferSendHost(
     onBack: () -> Unit,
     onStop: () -> Unit,
     active: Boolean = true,
+    /**
+     * 顶栏标题（Dart 按发送范围给：`qrTransferSendCurrent` / `qrTransferSendAll`）。
+     * 由壳从 `TransferShellBridge.outboundTitle` 传进来；null = 沿用分组标题兜底。
+     */
+    title: String? = null,
 ) {
     var elapsedMillis by remember(session) { mutableStateOf(0L) }
 
@@ -113,6 +118,7 @@ fun QrTransferSendHost(
         onBack = onBack,
         onStop = onStop,
         qrSlot = { QrSendQrSlot(session = session, elapsedMillis = elapsedMillis, modifier = Modifier.fillMaxSize()) },
+        title = title ?: model.title,
     )
 }
 

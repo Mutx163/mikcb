@@ -1,8 +1,11 @@
 package com.mutx163.qingyu.pages.sync
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -10,8 +13,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.pages.ShellWiring
+import com.mutx163.qingyu.pages.transfer.AppToastCapsule
+import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
 import com.mutx163.qingyu.platform.CoupleConfigStoreImpl
 import com.mutx163.qingyu.platform.CouplePartnerPortImpl
 import com.mutx163.qingyu.platform.CoupleTransferAdapter
@@ -30,21 +41,29 @@ import kotlinx.coroutines.withContext
  * 更实际的理由是**并发写冲突**：那张表同时被别的批次改（作息/时间模板等），
  * 在这里单开一个文件，索引里只留一行调用，冲突面最小。
  *
- * ## 它负责的四件事
+ * ## 它负责的五件事
  *
  * 1. **造控制器**：`CoupleTimetableSettingsController`（纯 Kotlin，动作与状态判据都在那边）；
  * 2. **订阅**：控制器每次状态变化 `revision + 1`，这里当 `remember` 的 key 触发重组；
- * 3. **线程**：控制器里的动作是同步阻塞的（transport 是 JDK HTTP），这里统一丢到
- *    `Dispatchers.IO`，结果回主线程再弹 Toast —— 旧壳把阻塞调用直接放点击回调里，会卡整屏；
- * 4. **系统交互**：导入走 SAF「打开文档」、导出走 SAF「保存到…」（本仓没有声明 FileProvider，
- *    分享文件那条路走不通，理由见 [CoupleTransferAdapter] 的 KDoc）。
+ * 3. **回前台重读**：`ON_RESUME → controller.refresh()`（别处改过绑定后回到本页能看见）。
+ *    旧版只在构造时读一次，从「导入批次」回来还是旧数据；
+ * 4. **线程**：控制器里的动作是同步阻塞的（transport 是 JDK HTTP），这里统一丢到
+ *    `Dispatchers.IO`，结果回主线程再提示；
+ * 5. **系统交互**：导入走 SAF「打开文档」、导出**优先系统分享面板**（Dart 同款），
+ *    分享面板起不来时才退回 SAF「保存到…」。
  *
- * ## 与 Dart 的一处已知差异（诚实清单）
+ * ## 2026-10-29 二轮修复（P1）
  *
- * Dart 的「导出我的课表给对方」是**系统分享面板**（`share_plus` 发文件 + 分享文案）。
- * 本仓 `AndroidManifest.xml` 没有 `FileProvider` 声明，分享文件必然在 `getUriForFile`
- * 那一步失败；补那套声明属于打包决策。所以这里退一步：**让用户自己选保存位置**，
- * 存完用 ARB 里现成那句分享文案提示「发给对方后怎么导入」。行为差异记在审核文档里。
+ * 旧版导出只走 SAF「保存到…」，理由是「本仓 `AndroidManifest.xml` 没有 `FileProvider`
+ * 声明，分享文件必然失败」。**这条理由在当天的 `7c8d11b6` 之后就不成立了**：
+ * 该提交给 manifest 注册了 `${applicationId}.fileprovider`（见 `AndroidManifest.xml`
+ * 的 `<provider>` 段与 `res/xml/file_paths.xml` 的 `transfer_share` 路径）。
+ * 所以现在按 Dart 的口径走系统分享面板，SAF 只作兜底——不让用户的导出凭空消失。
+ *
+ * ## 提示样式
+ *
+ * 用同族的共享件 [AppToastCapsule]（Dart `showAppToast` 的自绘胶囊），不再用系统
+ * `android.widget.Toast`：Dart 侧两页都是应用内胶囊，系统 Toast 位置与样式都不同。
  */
 @Composable
 fun CoupleTimetableSettingsHost(
@@ -52,6 +71,7 @@ fun CoupleTimetableSettingsHost(
     onBack: () -> Unit,
 ) {
     val appContext = LocalContext.current.applicationContext
+    val dark = isSystemInDarkTheme()
     val prefs = remember(appContext) { PrefsKeyValueStore(appContext) }
     val configStore = remember(prefs) {
         CoupleConfigStoreImpl(
@@ -62,9 +82,15 @@ fun CoupleTimetableSettingsHost(
     }
     val partnerPort = remember(wiring, prefs) { CouplePartnerPortImpl(wiring.timetable, prefs) }
     val transfer = remember(appContext) { CoupleTransferAdapter(appContext) }
+    val shareAdapter = remember(appContext) { AndroidTransferShareAdapter(appContext) }
 
-    // 导出两段式：先生成正文 → 让用户选保存位置（SAF）→ 结果回调里再写。
-    // 正文只经这一格状态在「点击」与「回调」之间传递，不落临时文件。
+    // 应用内提示（一次一条，2 秒自动消失）。null = 不显示。
+    var toast by remember { mutableStateOf<String?>(null) }
+    fun notify(message: String) {
+        toast = message
+    }
+
+    // 导出两段式保底：分享面板起不来时，正文经这一格交给 SAF 回调。
     val pendingExport = remember { mutableStateOf<String?>(null) }
     val saveDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(CoupleTransferAdapter.MIME_JSON),
@@ -73,13 +99,11 @@ fun CoupleTimetableSettingsHost(
         pendingExport.value = null
         if (uri == null || content == null) return@rememberLauncherForActivityResult
         val ok = transfer.writeUtf8(uri, content)
-        Toast.makeText(
-            appContext,
+        notify(
             // 存成功就把「发给对方后怎么用」直接说出来（ARB 里现成那句分享文案）；
             // 存失败绝不假装成功。
             if (ok) CoupleStrings.coupleTimetableShareText.zh else CoupleStrings.saveFailed.zh,
-            Toast.LENGTH_LONG,
-        ).show()
+        )
     }
 
     val controller = remember(configStore, partnerPort, transfer) {
@@ -87,9 +111,20 @@ fun CoupleTimetableSettingsHost(
             configStore = configStore,
             partnerPort = partnerPort,
             exportSink = { content, fileName ->
-                pendingExport.value = content
-                saveDocLauncher.launch(fileName)
-                true
+                // Dart `_exportForPartner` 走 share_plus（系统分享面板）。
+                val outcome = shareAdapter.share(
+                    fileName = fileName,
+                    content = content,
+                    shareText = CoupleStrings.coupleTimetableShareText.zh,
+                    shareSubject = CoupleStrings.coupleTimetableShareSubject.zh,
+                )
+                if (outcome is AndroidTransferShareAdapter.Outcome.Launched) {
+                    true
+                } else {
+                    // provider 不可用 / 没有可接收的应用 / 拉起失败 ⇒ 退回「保存到…」。
+                    pendingExport.value = content
+                    runCatching { saveDocLauncher.launch(fileName) }.isSuccess
+                }
             },
         )
     }
@@ -101,6 +136,18 @@ fun CoupleTimetableSettingsHost(
         onDispose { controller.removeListener(listener) }
     }
 
+    // 回前台重读：别处（导入批次 / 云同步恢复）改过绑定后，本页不该还停在旧值。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, controller) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                controller.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val scope = rememberCoroutineScope()
     val openDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -109,15 +156,11 @@ fun CoupleTimetableSettingsHost(
         scope.launch {
             val text = withContext(Dispatchers.IO) { transfer.readUtf8(uri) }
             if (text == null) {
-                Toast.makeText(
-                    appContext,
-                    CoupleStrings.importFileReadFailed.zh,
-                    Toast.LENGTH_SHORT,
-                ).show()
+                notify(CoupleStrings.importFileReadFailed.zh)
                 return@launch
             }
             val result = withContext(Dispatchers.IO) { controller.importFromContent(text) }
-            Toast.makeText(appContext, result.message, Toast.LENGTH_LONG).show()
+            notify(result.message)
         }
     }
 
@@ -128,51 +171,59 @@ fun CoupleTimetableSettingsHost(
     val viewState = remember(revision) { controller.viewState() }
     val config = remember(revision) { configStore.loadConfig() }
 
-    CoupleTimetableSettingsPage(
-        viewState = viewState,
-        onBack = onBack,
-        onAction = { actionId ->
-            when (actionId) {
-                CoupleTimetableSettingsLogic.WEBDAV_CONNECT -> showConnectSheet = true
-                CoupleTimetableSettingsLogic.WEBDAV_PULL -> scope.launch {
-                    val result = withContext(Dispatchers.IO) { controller.pullNow() }
-                    Toast.makeText(appContext, result.message, Toast.LENGTH_LONG).show()
-                }
-                CoupleTimetableSettingsLogic.WEBDAV_UPLOAD -> scope.launch {
-                    val result = withContext(Dispatchers.IO) { controller.uploadMine() }
-                    Toast.makeText(appContext, result.message, Toast.LENGTH_LONG).show()
-                }
-                CoupleTimetableSettingsLogic.WEBDAV_DISCONNECT -> scope.launch {
-                    val result = withContext(Dispatchers.IO) { controller.disconnect() }
-                    // Dart 断开成功不弹提示；只有失败（保存失败）才说话。
-                    result?.let { Toast.makeText(appContext, it.message, Toast.LENGTH_LONG).show() }
-                }
-                // 导出只组包 + 拉起「保存到…」，不跑网络，留主线程（要 startActivity）。
-                CoupleTimetableSettingsLogic.COUPLE_EXPORT -> {
-                    controller.exportMine()?.let {
-                        Toast.makeText(appContext, it.message, Toast.LENGTH_LONG).show()
+    Box(modifier = Modifier.fillMaxSize()) {
+        CoupleTimetableSettingsPage(
+            viewState = viewState,
+            onBack = onBack,
+            onAction = { actionId ->
+                when (actionId) {
+                    CoupleTimetableSettingsLogic.WEBDAV_CONNECT -> showConnectSheet = true
+                    CoupleTimetableSettingsLogic.WEBDAV_PULL -> scope.launch {
+                        val result = withContext(Dispatchers.IO) { controller.pullNow() }
+                        notify(result.message)
+                    }
+                    CoupleTimetableSettingsLogic.WEBDAV_UPLOAD -> scope.launch {
+                        val result = withContext(Dispatchers.IO) { controller.uploadMine() }
+                        notify(result.message)
+                    }
+                    CoupleTimetableSettingsLogic.WEBDAV_DISCONNECT -> scope.launch {
+                        val result = withContext(Dispatchers.IO) { controller.disconnect() }
+                        // Dart 断开成功不弹提示；只有失败（保存失败）才说话。
+                        result?.let { notify(it.message) }
+                    }
+                    // 导出只组包 + 拉起分享面板，不跑网络，留主线程（要 startActivity）。
+                    CoupleTimetableSettingsLogic.COUPLE_EXPORT -> {
+                        controller.exportMine()?.let { notify(it.message) }
+                    }
+                    CoupleTimetableSettingsLogic.COUPLE_IMPORT -> {
+                        openDocLauncher.launch(CoupleTransferAdapter.OPEN_MIME_TYPES)
+                    }
+                    CoupleTimetableSettingsLogic.COUPLE_UNLINK -> scope.launch {
+                        val result = withContext(Dispatchers.IO) { controller.unlink() }
+                        notify(result.message)
                     }
                 }
-                CoupleTimetableSettingsLogic.COUPLE_IMPORT -> {
-                    openDocLauncher.launch(CoupleTransferAdapter.OPEN_MIME_TYPES)
-                }
-                CoupleTimetableSettingsLogic.COUPLE_UNLINK -> scope.launch {
-                    val result = withContext(Dispatchers.IO) { controller.unlink() }
-                    Toast.makeText(appContext, result.message, Toast.LENGTH_LONG).show()
-                }
-            }
-        },
-        onShiftWeekOffset = { delta ->
-            controller.shiftWeekOffset(delta)?.let {
-                Toast.makeText(appContext, it.message, Toast.LENGTH_SHORT).show()
-            }
-        },
-        onPickColor = { rowIndex, hex ->
-            controller.pickColor(rowIndex, hex)?.let {
-                Toast.makeText(appContext, it.message, Toast.LENGTH_SHORT).show()
-            }
-        },
-    )
+            },
+            onShiftWeekOffset = { delta ->
+                controller.shiftWeekOffset(delta)?.let { notify(it.message) }
+            },
+            onPickColor = { rowIndex, hex ->
+                controller.pickColor(rowIndex, hex)?.let { notify(it.message) }
+            },
+        )
+
+        val currentToast = toast
+        if (currentToast != null) {
+            AppToastCapsule(
+                message = currentToast,
+                dark = dark,
+                onDismiss = { toast = null },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 32.dp),
+            )
+        }
+    }
 
     if (showConnectSheet) {
         CoupleWebdavConnectSheet(
@@ -189,15 +240,13 @@ fun CoupleTimetableSettingsHost(
                         controller.testConnection(username, password)
                     }
                     sheetTesting = false
-                    Toast.makeText(
-                        appContext,
+                    notify(
                         if (ok) {
                             viewState.webdavSheetTexts.testSuccess
                         } else {
                             viewState.webdavSheetTexts.testFailed
                         },
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    )
                 }
             },
             onConfirm = { username, password, mySlot ->
@@ -209,15 +258,9 @@ fun CoupleTimetableSettingsHost(
                     sheetConnecting = false
                     if (outcome.ok) {
                         showConnectSheet = false
-                        outcome.pullToast?.let {
-                            Toast.makeText(appContext, it.message, Toast.LENGTH_LONG).show()
-                        }
+                        outcome.pullToast?.let { notify(it.message) }
                     } else {
-                        Toast.makeText(
-                            appContext,
-                            viewState.webdavSheetTexts.testFailed,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        notify(viewState.webdavSheetTexts.testFailed)
                     }
                 }
             },

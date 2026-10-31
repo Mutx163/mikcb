@@ -99,6 +99,10 @@ object CoupleStrings {
         "coupleTimetableShareText",
         "这是我的课表，导入到轻屿课表的情侣课表即可一起查看",
     )
+    val coupleTimetableShareSubject = ArbText(
+        "coupleTimetableShareSubject",
+        "轻屿课表 · 情侣课表分享",
+    )
 
     // ── 单档包解析错误码（Dart `parseBackupJson` 抛的那三个） ──
     val partnerImportRequiresSingleProfile = ArbText(
@@ -198,6 +202,7 @@ object CoupleStrings {
             cloudSyncPasswordHint,
             cloudSyncTestConnection,
             coupleTimetableShareText,
+            coupleTimetableShareSubject,
             partnerImportRequiresSingleProfile,
             serviceMsgUnrecognizedMikcbDataFile,
             serviceMsgMissingSettingsData,

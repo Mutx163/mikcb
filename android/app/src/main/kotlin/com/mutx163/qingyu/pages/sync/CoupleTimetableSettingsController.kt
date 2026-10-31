@@ -88,17 +88,18 @@ class CoupleTimetableSettingsController(
 
     // ── 读 ──
 
-    /** 重新从存储读一遍（省电/回前台时用；壳里目前只在构造时读）。 */
+    /**
+     * 重新从存储读一遍。
+     *
+     * 壳体在 `Lifecycle.Event.ON_RESUME` 调它（`CoupleTimetableSettingsHost`）：
+     * 别处改过绑定 / 坚果云配置（导入批次、云同步恢复）后回到本页能看见新值。
+     */
     fun refresh() {
         binding = partnerPort.loadBinding()
         config = configStore.loadConfig()
         hasPassword = configStore.hasStoredPassword()
         notifyChanged()
     }
-
-    fun isBusy(): Boolean = busy != CoupleBusyState()
-
-    fun sheetTexts(): CoupleWebdavSheetTexts = CoupleTimetableSettingsLogic.sheetTexts()
 
     fun viewState(): CoupleTimetableSettingsViewState {
         val myWeek = partnerPort.currentWeek()

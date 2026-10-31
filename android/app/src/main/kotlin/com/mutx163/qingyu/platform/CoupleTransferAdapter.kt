@@ -16,15 +16,22 @@ import java.io.IOException
  * **读一段 UTF-8 文本**、**写一段 UTF-8 文本**——把它接进备份那套枚举里，
  * 会让「情侣导入失败」和「备份恢复失败」共用一套分类，读代码的人分不清是谁的业务。
  *
- * ## 为什么用 SAF 而不是分享面板
+ * ## 为什么导出不再「只用 SAF」（2026-10-29 二轮修正）
  *
- * Dart 原版（`couple_timetable_settings_screen.dart:595-698`）用 `FilePicker` 选文件、
- * 用 `share_plus` 把导出的文件发给对方。Android 侧要「分享文件」必须有一个
- * `FileProvider` + `file_paths.xml` 的声明，本仓 `AndroidManifest.xml` 里**没有**
- * （`AndroidShareAdapter` 至今零调用方，ICS 导出也没接）——补那套声明属于壳的打包决策，
- * 不是这一页能单方面拍的。所以这里走 **SAF**：导出 = 让用户选一个保存位置
- * （`ACTION_CREATE_DOCUMENT`），导入 = 让用户选文件（`ACTION_OPEN_DOCUMENT`）。
- * 行为差异（分享面板 vs 保存对话框）记在审核文档里，不假装成一样。
+ * 这一节原来写的是「本仓 `AndroidManifest.xml` 里**没有** `FileProvider` 声明，
+ * 所以分享文件必然失败，只能退到 SAF」。**那句话现在已经过期**：
+ * `7c8d11b6`（2026-10-29 19:04）给 manifest 注册了
+ * `${applicationId}.fileprovider`，`res/xml/file_paths.xml` 也声明了
+ * `transfer_share → cacheDir/transfer-share/`，分享文件这条路已经通了。
+ *
+ * 所以现在导出**优先走系统分享面板**（`AndroidTransferShareAdapter`，与 Dart 的
+ * `share_plus` 同口径），本类只剩两件事：
+ * 1. **导入**：`ACTION_OPEN_DOCUMENT` 读 UTF-8（[readUtf8]）；
+ * 2. **导出兜底**：分享面板起不来（provider 异常 / 没有可接收的应用）时，
+ *    退回 `ACTION_CREATE_DOCUMENT` 让用户自己选保存位置（[writeUtf8]）。
+ *
+ * 保留 SAF 兜底而不是直接删掉：宁可多一条「一定能存下来」的路，也不要在
+ * 分享失败的机型上把用户导出的数据弄丢。
  *
  * ## 诚实边界
  *

@@ -51,6 +51,7 @@ import com.mutx163.qingyu.share.camera.BarcodeScanResult
 import com.mutx163.qingyu.share.camera.PermissionAction
 import com.mutx163.qingyu.share.camera.PermissionState
 import com.mutx163.qingyu.share.camera.ScanPipeline
+import com.mutx163.qingyu.theme.QingyuTheme
 import java.util.concurrent.Executors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -247,7 +248,9 @@ private fun PermissionHint(
         Text(
             text = message,
             style = MiuixTheme.textStyles.body2,
-            color = Color(if (dark) 0xFFB0B0B8.toInt() else 0xFF5A5A62.toInt()),
+            // 原本写死两张灰（0xFFB0B0B8 / 0xFF5A5A62）：换主题色或深色模式下与
+            // 周围字色不一致，且样式守卫抓不到 `Color(if (...)` 这种形态。
+            color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
 }

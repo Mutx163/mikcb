@@ -63,6 +63,16 @@ fun QrTransferSendPage(
     onBack: () -> Unit,
     onStop: () -> Unit,
     qrSlot: @Composable () -> Unit,
+    /**
+     * 顶栏标题。Dart 是**按范围**传进来的
+     * （`data_transfer_screen.dart:474-477` 传 `qrTransferSendCurrent`、
+     * `:490-493` 传 `qrTransferSendAll`，`:517` 交给 `QrTransferSendScreen(title:)`，
+     * 屏幕 `:264` 直接上顶栏）。
+     *
+     * 默认值 = 旧行为（分组标题），只是兜底：壳里必须传
+     * `TransferShellBridge.outboundTitle`，否则两种发送范围看起来一模一样。
+     */
+    title: String = model.title,
 ) {
     val dark = isSystemInDarkTheme()
 
@@ -74,14 +84,14 @@ fun QrTransferSendPage(
             containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
             topBar = {
                 TopAppBar(
-                    title = model.title,
-                    largeTitle = model.title,
+                    title = title,
+                    largeTitle = title,
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
-                                contentDescription = model.title,
+                                contentDescription = title,
                                 tint = Color(QingyuTheme.actionIcon(dark)),
                             )
                         }
