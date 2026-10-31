@@ -742,6 +742,9 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     "/settings/theme" -> "b.theme"
     "/settings/course-card" -> "b.courseCard"
     "/settings/appearance-editor" -> "b.appearanceEditor"
+    // 外观编辑页「每日壁纸」行的去向。串取自 `SettingsBackdropFlowPage.BING_GALLERY_TARGET`，
+    // **没有前导 `/`**——它是页内目标 id 不是路由串，别顺手改成 `/settings/...`（那要同时改 Dart 侧）。
+    "bingWallpaperGallery" -> "b.bingGallery"
     "/settings/semester" -> "b.semester"
     "/settings/time-schemes" -> "d3.timeSchemes"
     // 时间模板「编辑节次」子页（P35-TS）：列表页点卡片按钮 / 新建成功后推这一页，
