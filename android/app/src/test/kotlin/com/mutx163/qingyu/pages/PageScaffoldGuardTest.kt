@@ -506,6 +506,15 @@ class PageScaffoldGuardTest {
             if (rel.startsWith("about/PagesCommon")) return@filter false
             val text = read(rel)
             if ("innerPadding" !in text) return@filter false
+            // 把 `innerPadding` 原样转发给共享列表组件的页面**不该**再自己加一次：
+            // `QingyuPageList` 内部已经算过手势条高度
+            // （`components/QingyuPageList.kt:85`：`innerPadding.calculateBottomPadding()
+            // + contentPadding.calculateBottomPadding()`），再相加就是重复。
+            // 2026-10-30 实测误报：`task/TaskListPage.kt` 只把 innerPadding 传给
+            // `QingyuPageList`，守卫却判它「没把手势条算进去」，会把正确写法逼成错误写法。
+            val delegatesToSharedList =
+                "QingyuPageList(" in text && "innerPadding = innerPadding" in text
+            if (delegatesToSharedList) return@filter false
             "calculateBottomPadding()" !in text
         }
         assertTrue(

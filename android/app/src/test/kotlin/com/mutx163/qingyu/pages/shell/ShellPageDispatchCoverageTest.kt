@@ -146,16 +146,23 @@ class ShellPageDispatchCoverageTest {
      * 的工作目录不同，所以按「向上找标志文件」而不是写死相对路径。
      */
     private fun dispatchSource(): File {
-        val relative = "android/app/src/composeUi/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt"
+        // 2026-10-29：壳的源集从 `composeUi/kotlin` 并进 `main/kotlin`（迁移期收尾）。
+        // 这里按候选顺序找，找到就用；**都不在仍判失败**——守卫不许因为「路径变了」静默跳过。
+        val candidates = listOf(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt",
+            "android/app/src/composeUi/kotlin/com/mutx163/qingyu/pages/ShellPageIndex.kt",
+        )
         var dir: File? = File("").absoluteFile
         repeat(8) {
-            val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate
+            for (relative in candidates) {
+                val candidate = File(dir, relative)
+                if (candidate.isFile) return candidate
+            }
             dir = dir?.parentFile
         }
         error(
-            "找不到 ShellPageIndex.kt（工作目录 ${File("").absolutePath}）；" +
-                "路径若已移动，请同步本测试的 relative 常量",
+            "找不到 ShellPageIndex.kt（工作目录 ${File("").absolutePath}）；试过：\n" +
+                candidates.joinToString("\n") { "  $it" },
         )
     }
 
