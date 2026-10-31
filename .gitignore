@@ -113,6 +113,13 @@ analyze_*.txt
 # 临时诊断用例（下划线前缀：量尺寸 / 复现现场，用完即删，不入库）
 test/**/_debug_*_test.dart
 
+# golden 失败时 flutter_test 自动落的对照图（可随时重跑再生，不入库）
+test/**/failures/
+
+# 本地一次性巡检/补丁脚本（下划线前缀，同 _debug_ 约定，不入库）
+scripts/_*
+scripts/__pycache__/
+
 # 一次性工作记录与审查脚本
 docs/reference/changelog-2026-07-29-worktree.md
 tool/audit_output.json
