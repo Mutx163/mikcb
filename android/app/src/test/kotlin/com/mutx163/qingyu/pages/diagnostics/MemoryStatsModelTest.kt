@@ -261,16 +261,13 @@ class MemoryStatsModelTest {
             ),
         ),
         "memoryStats" to linkedMapOf("summary.total-pss" to "10240"),
-        // 这两块 Dart 侧由 Flutter 补进来（原生 Collector 没有）；缺失时按 — 渲染。
-        "dartVm" to linkedMapOf(
-            "currentRssBytes" to 104857600L,
-            "maxRssBytes" to 209715200L,
-        ),
-        "flutterImageCache" to linkedMapOf(
+        // 图片缓存：Compose 壳读采集器的 imageCache 块（真实 LruCache），
+        // 不再是 Dart 时代的 dartVm / flutterImageCache（Flutter 运行时专属，Compose 里恒为 —）。
+        "imageCache" to linkedMapOf(
             "currentSizeBytes" to 262144L,
-            "maximumSizeBytes" to 1048576L,
-            "liveImageCount" to 3,
-            "pendingImageCount" to 1,
+            "maxSizeBytes" to 16777216L,
+            "entryCount" to 3L,
+            "source" to "AndroidImageLoader",
         ),
     )
 
@@ -327,6 +324,36 @@ class MemoryStatsModelTest {
         assertEquals("8.00 MB", byRow.getValue(MemoryStatsRow.DEBUG_MEMORY).details)
         assertEquals("256.0 KB", byRow.getValue(MemoryStatsRow.IMAGE_CACHE).details)
         assertEquals("正常", byRow.getValue(MemoryStatsRow.SYSTEM_MEMORY).details)
+    }
+
+    @Test
+    fun `图片缓存弹层读采集器的 imageCache 块而不是 Flutter 运行时`() {
+        val sheet = buildState().sheets.getValue(MemorySheet.IMAGE_CACHE)
+        val byLabel = sheet.rows.associate { it.label to it.value }
+
+        assertEquals("图片缓存", sheet.title)
+        assertEquals("AndroidImageLoader", byLabel.getValue("来源"))
+        assertEquals("256.0 KB / 16.00 MB", byLabel.getValue("占用 / 上限"))
+        assertEquals("3 条", byLabel.getValue("缓存条目数"))
+        // 旧版这里放着 Dart RSS / Dart max RSS 两行（读 dartVm，Compose 里恒为 —）。
+        assertTrue(byLabel.keys.none { it.contains("Dart") || it.contains("Flutter") })
+    }
+
+    @Test
+    fun `页面可见文案里不再出现 Flutter 运行时指标`() {
+        // 这一页在 Compose 壳里运行，没有任何 Flutter 运行时；再出现「Dart / Flutter 图片缓存」
+        // 这类字眼就是把一个已经不存在的对象挂给用户看（2026-10-31 用户实测反馈）。
+        val visible = listOf(
+            MemoryStatsStrings.imageCacheTitle,
+            MemoryStatsStrings.imageCacheDescription,
+            MemoryStatsStrings.imageCacheSourceLabel,
+            MemoryStatsStrings.imageCacheUsageLabel,
+            MemoryStatsStrings.imageCacheEntryLabel,
+        )
+        for (text in visible) {
+            assertFalse("可见文案不应含 Flutter 运行时字眼：$text", text.contains("Flutter"))
+            assertFalse("可见文案不应含 Flutter 运行时字眼：$text", text.contains("Dart"))
+        }
     }
 
     @Test
@@ -552,6 +579,8 @@ class MemoryStatsModelTest {
         assertEquals("1234", process.pidText)
         assertEquals("10.00 MB", process.pssText)
         assertTrue(process.isMainProcess)
+        // 渲染层只画 detailLine（文案组装在模型层，页面不含中文字面量）。
+        assertEquals("pid=1234  PSS=10.00 MB  privateDirty=4.00 MB  ·主进程", process.detailLine)
 
         val historySheet = state.sheets.getValue(MemorySheet.HISTORY)
         assertEquals("共 1 点 · 最早→最晚", historySheet.historySummary)
@@ -563,6 +592,11 @@ class MemoryStatsModelTest {
         assertEquals("25.0%", row.heapRatioText)
         assertEquals("岛开", row.liveLabel)
         assertEquals("high", row.pressureLevel)
+        // 渲染层只画 lineText（文案组装在模型层，页面不含中文字面量）。
+        assertEquals(
+            "09-09 09:46:40  [后台]  PSS 10.00 MB  堆 25.0%  岛开  压力 high",
+            row.lineText,
+        )
     }
 
     @Test

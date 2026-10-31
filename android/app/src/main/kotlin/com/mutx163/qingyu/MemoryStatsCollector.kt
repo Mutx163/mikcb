@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import com.mutx163.qingyu.platform.AndroidImageLoader
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -228,6 +229,12 @@ object MemoryStatsCollector {
             stats = memoryStatsMap,
             totalPssKb = totalPssKb,
         )
+        // 图片缓存：Compose 壳里真实的图片内存缓存（`AndroidImageLoader` 的 LruCache）。
+        // 迁移前这行写死 0，分析结论因此永远说「图片缓存为 0」——那是拿 Flutter 运行时的
+        // 旧口径在描述一个已经不存在的对象（Dart 侧图片缓存随引擎走，Kotlin 侧一直是另一个）。
+        val imageCacheBytes = AndroidImageLoader.shared.memoryCacheBytes().toLong()
+        val imageCacheMaxBytes = AndroidImageLoader.shared.memoryCacheMaxBytes().toLong()
+        val imageCacheEntryCount = AndroidImageLoader.shared.memoryCacheEntryCount()
         val analysis = buildAnalysisHints(
             totalPssKb = totalPssKb,
             javaHeapUsageRatio = javaHeapUsageRatio,
@@ -235,7 +242,7 @@ object MemoryStatsCollector {
             privateOtherPssKb = (breakdown["privateOther"] as? Map<*, *>)?.get("pssKb") as? Number,
             nativePssKb = (breakdown["nativeHeap"] as? Map<*, *>)?.get("pssKb") as? Number,
             systemPssKb = (breakdown["system"] as? Map<*, *>)?.get("pssKb") as? Number,
-            imageCacheBytes = 0L,
+            imageCacheBytes = imageCacheBytes,
             liveServiceRunning = liveServiceRunning,
             isDebugPackage = isDiagnosticsPackage(appContext),
         )
@@ -294,6 +301,15 @@ object MemoryStatsCollector {
                 "totalMemBytes" to memoryInfo.totalMem,
                 "thresholdBytes" to memoryInfo.threshold,
                 "sdkInt" to Build.VERSION.SDK_INT,
+            ),
+            // 图片缓存：Compose 侧的 `AndroidImageLoader` 内存缓存（不再是 Flutter 引擎的图片缓存）。
+            // 页面「内存构成 → 图片缓存」与概览弹层的口径都读这一块，不再读 Dart 时代补进来的
+            // `dartVm` / `flutterImageCache`。
+            "imageCache" to linkedMapOf(
+                "currentSizeBytes" to imageCacheBytes,
+                "maxSizeBytes" to imageCacheMaxBytes,
+                "entryCount" to imageCacheEntryCount,
+                "source" to "AndroidImageLoader",
             ),
             "liveIsland" to linkedMapOf(
                 "serviceRunning" to liveServiceRunning,
@@ -515,7 +531,7 @@ object MemoryStatsCollector {
                 label = "Native 堆",
                 pssKb = nativeHeap,
                 cleanable = "hard",
-                meaning = "C/C++ 堆：Flutter Engine、Skia、编解码、部分 SDK。难用应用层 GC 直接清掉。",
+                meaning = "C/C++ 堆：Skia、编解码器、原生库与部分 SDK。难用应用层 GC 直接清掉。",
             ),
             "graphics" to row(
                 key = "graphics",
@@ -543,7 +559,8 @@ object MemoryStatsCollector {
                 label = "Private Other 其它私有",
                 pssKb = privateOther,
                 cleanable = "hard",
-                meaning = "未归入上述类的私有映射：引擎内部、匿名共享、部分图形/IO 缓冲。往往是 Flutter 大头之一。",
+                meaning = "未归入上述类的私有映射：原生运行时内部、匿名共享、部分图形/IO 缓冲。" +
+                    "往往是原生运行时与匿名映射的大头。",
             ),
             "system" to row(
                 key = "system",
@@ -607,7 +624,7 @@ object MemoryStatsCollector {
         }
         if (otherMb >= 150) {
             bullets.add(
-                "Private Other 约 ${"%.0f".format(otherMb)} MB，通常是 Flutter Engine / 匿名映射大头，" +
+                "Private Other 约 ${"%.0f".format(otherMb)} MB，通常是原生运行时 / 匿名映射大头，" +
                     "难用「清图片缓存」直接砍掉。",
             )
         }
@@ -618,23 +635,28 @@ object MemoryStatsCollector {
         }
         if (graphicsMb >= 40) {
             bullets.add(
-                "Graphics 约 ${"%.0f".format(graphicsMb)} MB：重点怀疑全屏壁纸、多层 BackdropFilter 毛玻璃、" +
+                "Graphics 约 ${"%.0f".format(graphicsMb)} MB：重点怀疑全屏壁纸、多层毛玻璃、" +
                     "复杂课表重绘与截屏模糊管线。",
             )
         }
         if (nativeMb >= 40) {
             bullets.add(
-                "Native 约 ${"%.0f".format(nativeMb)} MB：引擎/Skia/插件原生堆，属中长期优化项。",
+                "Native 约 ${"%.0f".format(nativeMb)} MB：Skia/原生库/插件堆，属中长期优化项。",
             )
         }
-        if (imageCacheBytes <= 0L) {
+        if (imageCacheBytes > 0L) {
             bullets.add(
-                "Flutter 图片缓存当前为 0：公平内存 TRIM 的「清图」几乎省不了 PSS；" +
+                "图片缓存约 ${"%.1f".format(imageCacheBytes / 1024.0 / 1024.0)} MB：" +
+                    "清掉它（或减少壁纸/画廊同时可见的张数）能直接省下这部分 PSS。",
+            )
+        } else {
+            bullets.add(
+                "图片缓存当前为空：公平内存 TRIM 的「清图」几乎省不了 PSS；" +
                     "真正可抠的是壁纸解码尺寸、模糊层数、页面常驻。",
             )
         }
         if (!liveServiceRunning) {
-            bullets.add("超级岛服务此刻未运行：以上占用主要来自主界面/引擎，不是 LiveUpdateService。")
+            bullets.add("超级岛服务此刻未运行：以上占用主要来自主界面与渲染管线，不是 LiveUpdateService。")
         } else {
             bullets.add("超级岛服务正在运行：总 PSS 已包含前台服务同 UID 开销。")
         }
@@ -649,10 +671,11 @@ object MemoryStatsCollector {
             "headline" to "约 ${"%.0f".format(totalMb)} MB · $severityLabel",
             "bullets" to bullets,
             "cleanableEstimate" to linkedMapOf(
-                "easyMb" to 0,
+                // easy 档就是图片缓存这一份真数（此前写死 0，等于宣称「没有可清的」）。
+                "easyMb" to (imageCacheBytes / 1024L / 1024L).toInt().coerceAtLeast(0),
                 "mediumMb" to (graphicsMb * 0.25).toInt().coerceAtLeast(0),
                 "hardMb" to (otherMb + systemMb + nativeMb * 0.3).toInt().coerceAtLeast(0),
-                "note" to "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈引擎与系统分摊（难清）。估算仅供参考。",
+                "note" to "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈原生运行时与系统分摊（难清）。估算仅供参考。",
             ),
         )
     }

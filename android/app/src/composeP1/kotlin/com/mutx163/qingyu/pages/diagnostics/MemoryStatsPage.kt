@@ -1,15 +1,17 @@
 package com.mutx163.qingyu.pages.diagnostics
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,20 +35,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -65,22 +69,47 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 内存统计页 · Compose 渲染层（Phase 3）。
+ * 内存统计页 · Compose 渲染层（Phase 3.5 观感重构版）。
  *
  * 对应 Flutter `lib/screens/memory_stats_screen.dart`：
  * - 顶栏：返回 + 「内存统计」+ 立即刷新 / 复制 JSON；
- * - 运行概览：总 PSS 概览卡（点开应用总览弹层）+ 采样口径说明；
+ * - 运行概览：整包总 PSS 概览卡（点开应用总览弹层）+ 采样口径说明；
  * - 采样控制：自动刷新开关（含 Perf Report 入口）；
  * - 内存构成：Java 堆 / PSS 分类 / Debug.MemoryInfo / 图片缓存 / 系统内存；
  * - 运行环境：应用总览 / 前后台采样 / 超级岛服务 / 整包进程列表；
  * - 诊断工具：自动分析 / 采样历史 / memoryStats / 原始 JSON / 公平内存事件。
  *
- * 所有取值与文案来自 [MemoryStatsViewState]（模型层算好），本文件只负责布局与回调；
- * 弹层显隐是纯 UI 状态。骨架与滚动容器照 `docs/reference/compose-page-style-rules.md` §三
- * 的标准配方（[QingyuPageScaffold] + [QingyuPageList] + [QingyuCard] + [QingyuSectionTitle]）。
+ * ## 这一版按什么重构
+ *
+ * 2026-10-31：用户反馈「参数怎么都是统计 Flutter 的，现在都不是 Flutter 了」，并给了
+ * 「视觉与组件按最新官方 demo 配方重写整页观感」。所以本次两件事一起做：
+ *
+ * 1. **去掉 Flutter 运行时指标**：原「Dart / Flutter 图片缓存」行与弹层里的
+ *    `Dart RSS` / `Dart max RSS` 读的是 `dartVm` / `flutterImageCache`——那是 Flutter
+ *    引擎通过通道补进快照的，Compose 壳里恒为 `—`。现在改读采集器新增的 `imageCache`
+ *    块（[com.mutx163.qingyu.platform.AndroidImageLoader] 的真实 LruCache）。
+ * 2. **观感换成官方 demo 配方**：一个分组 = 一个 `item`（`QingyuSectionTitle` → `QingyuCard`
+ *    → 组内多行），卡片用设置组圆角 24dp，行用官方 `SwitchPreference` / `ArrowPreference`
+ *    （行内 16dp、行尾读数 + 右箭头、官方按压反馈），而不是手搓 `Row`。
+ *    出处：`docs/reference/miuix-demo/CHEATSHEET-Demo范例.md` §3.4 分组节奏表、
+ *    `docs/reference/compose-page-style-rules.md` §三 标准配方。
+ *
+ * 取值与文案全部来自 [MemoryStatsViewState]（模型层算好），本文件只负责布局与回调；
+ * 弹层显隐是纯 UI 状态。
+ *
+ * ## 与 Dart 的两处有意差异
+ *
+ * - **没有 Flutter 指标**（见上）；
+ * - **原始 JSON 行的长按复制**：官方 `ArrowPreference` 没有长按回调（0.9.4
+ *   `ArrowPreference.kt:49-62` 形参表只有 `onClick`），所以这一行照同族先例
+ *   （`pages/task/TaskListPage.kt` 的 `TaskRowItem`、`pages/settings/SettingsPageRenderers.kt`
+ *   的 `LongPressArrowRow`）用官方 `BasicComponent` + 外层 `combinedClickable`，
+ *   外观仍是「行尾读数 + 右箭头」，**不是自研控件**。
  */
 @Composable
 fun MemoryStatsPage(
@@ -124,30 +153,25 @@ fun MemoryStatsPage(
         QingyuPageList(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = QingyuSectionGap),
         ) {
             // ── 运行概览 ──
-            item(key = "overview-title") { QingyuSectionTitle(MemoryStatsStrings.overviewSection) }
-            item(key = "overview-card") {
+            item(key = "overview") {
+                QingyuSectionTitle(MemoryStatsStrings.overviewSection)
                 MemorySummaryCard(
                     viewState = viewState,
                     onClick = { openSheet = MemorySheet.OVERVIEW },
                     dark = dark,
                 )
-            }
-            item(key = "refresh-desc") {
-                Text(
+                SectionNote(
                     text = viewState.refreshDescription,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
-                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+                    dark = dark,
+                    withBottomGap = true,
                 )
             }
 
             if (viewState.isLoading && !viewState.hasSnapshot) {
-                item(key = "loading-hint") {
+                item(key = "loading") {
                     MemoryHintBanner(
                         text = viewState.loadingHint,
                         isError = false,
@@ -157,121 +181,111 @@ fun MemoryStatsPage(
                 }
             }
             viewState.errorText?.let { error ->
-                item(key = "error-hint") {
+                item(key = "error") {
                     MemoryHintBanner(text = error, isError = true, showProgress = false, dark = dark)
                 }
             }
 
             // ── 采样控制 ──
-            item(key = "sampling-title") { QingyuSectionTitle(MemoryStatsStrings.samplingSection) }
-            item(key = "sampling-card") {
+            item(key = "sampling") {
+                QingyuSectionTitle(MemoryStatsStrings.samplingSection)
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.groupCard(withBottomGap = true),
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
-                    MemorySwitchRow(
-                        title = MemoryStatsStrings.autoRefreshTitle,
-                        subtitle = viewState.samplingRows
-                            .first { it.row == MemoryStatsRow.AUTO_REFRESH }
-                            .subtitle.orEmpty(),
+                    val autoRefreshRow = viewState.samplingRows
+                        .first { it.row == MemoryStatsRow.AUTO_REFRESH }
+                    SwitchPreference(
+                        title = autoRefreshRow.title,
+                        summary = autoRefreshRow.subtitle,
                         checked = viewState.autoRefreshEnabled,
                         onCheckedChange = onToggleAutoRefresh,
-                        dark = dark,
+                        startAction = {
+                            MemoryStartIcon(
+                                icon = MiuixIcons.Refresh,
+                                tint = accentColor(autoRefreshRow.accent, viewState.pressure, dark),
+                            )
+                        },
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                    GroupDivider(dark = dark)
                     // Dart `:242-254` 的 Perf Report 行；取值直接复用模型层的 samplingRows，
                     // 不在渲染层现拼一行（否则标题/副标题/语义色会和模型漂移）。
-                    MemoryRowItem(
+                    MemoryPreferenceRow(
                         row = viewState.samplingRows.first { it.row == MemoryStatsRow.PERF_REPORT },
-                        onClick = onOpenPerfReport,
                         pressure = viewState.pressure,
                         dark = dark,
+                        onClick = onOpenPerfReport,
                     )
                 }
             }
 
             // ── 内存构成 ──
-            item(key = "composition-title") { QingyuSectionTitle(MemoryStatsStrings.compositionSection) }
-            item(key = "composition-card") {
+            item(key = "composition") {
+                QingyuSectionTitle(MemoryStatsStrings.compositionSection)
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.groupCard(withBottomGap = false),
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.compositionRows.forEachIndexed { index, row ->
-                        if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        }
-                        MemoryRowItem(
+                        if (index > 0) GroupDivider(dark = dark)
+                        MemoryPreferenceRow(
                             row = row,
-                            onClick = { openSheet = sheetOf(row.row) },
                             pressure = viewState.pressure,
                             dark = dark,
+                            onClick = { openSheet = sheetOf(row.row) },
                         )
                     }
                 }
-            }
-            item(key = "composition-desc") {
-                Text(
+                SectionNote(
                     text = MemoryStatsStrings.compositionDescription,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(horizontal = QingyuPageCardMargin + 16.dp),
+                    dark = dark,
+                    withBottomGap = true,
                 )
             }
 
             // ── 运行环境 ──
-            item(key = "environment-title") { QingyuSectionTitle(MemoryStatsStrings.environmentSection) }
-            item(key = "environment-card") {
+            item(key = "environment") {
+                QingyuSectionTitle(MemoryStatsStrings.environmentSection)
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.groupCard(withBottomGap = true),
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.environmentRows.forEachIndexed { index, row ->
-                        if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        }
-                        MemoryRowItem(
+                        if (index > 0) GroupDivider(dark = dark)
+                        MemoryPreferenceRow(
                             row = row,
-                            onClick = { openSheet = sheetOf(row.row) },
                             pressure = viewState.pressure,
                             dark = dark,
+                            onClick = { openSheet = sheetOf(row.row) },
                         )
                     }
                 }
             }
 
             // ── 诊断工具 ──
-            item(key = "tools-title") { QingyuSectionTitle(MemoryStatsStrings.toolsSection) }
-            item(key = "tools-card") {
+            item(key = "tools") {
+                QingyuSectionTitle(MemoryStatsStrings.toolsSection)
                 QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.groupCard(withBottomGap = true),
+                    cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.toolRows.forEachIndexed { index, row ->
-                        if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        }
+                        if (index > 0) GroupDivider(dark = dark)
                         // Dart `:510-519`：「复制 / 查看原始 JSON」行没有快照时 onTap 为 null（不可点），
                         // 并且 `onLongPress: copyJson` —— 长按直接复制，不用先开弹层。
                         val isRawJson = row.row == MemoryStatsRow.RAW_JSON
-                        MemoryRowItem(
+                        val actionable = !isRawJson || viewState.hasSnapshot
+                        MemoryPreferenceRow(
                             row = row,
-                            onClick = if (isRawJson && !viewState.hasSnapshot) {
-                                null
-                            } else {
-                                { openSheet = sheetOf(row.row) }
-                            },
-                            onLongPress = if (isRawJson && viewState.hasSnapshot) onCopyJson else null,
                             pressure = viewState.pressure,
                             dark = dark,
+                            enabled = actionable,
+                            onClick = if (actionable) {
+                                { openSheet = sheetOf(row.row) }
+                            } else {
+                                null
+                            },
+                            onLongPress = if (isRawJson && viewState.hasSnapshot) onCopyJson else null,
                         )
                     }
                 }
@@ -289,6 +303,9 @@ fun MemoryStatsPage(
         // 正文是 LazyColumn（自己管滚动）：套件不能再套 verticalScroll（嵌套滚动）。
         // 底部让位因此由正文自己落实 —— 见 [MemorySheetBody] 的 bottomInset 参数。
         contentScrolls = true,
+        // Dart 每个弹层的限高比例不同（0.62 / 0.68 / 0.72）⇒ 走套件现成的限高参数，
+        // 不在正文里再写一层 `heightIn`（两处限高会打架，且套件这边更清楚让位的落点）。
+        maxHeightFraction = sheet?.let { sheetMaxHeightFraction(it) },
     ) {
         if (sheet != null) {
             MemorySheetBody(sheet = sheet, dark = dark, bottomInset = bottomInset)
@@ -316,6 +333,40 @@ private fun sheetOf(row: MemoryStatsRow): MemorySheet = when (row) {
     MemoryStatsRow.PERF_REPORT -> MemorySheet.OVERVIEW
 }
 
+/**
+ * 分组卡的外边距：官方节奏表里「Card 外边距 12 + 下 12」。
+ *
+ * 与 `SmallTitle` 自带的 28dp 对齐（12 + Preference 自带 16），所以这里只加横向 12，
+ * 不在 `QingyuPageList.contentPadding` 里再加左右边距（否则滚动条贴不到屏幕边）。
+ */
+private fun Modifier.groupCard(withBottomGap: Boolean): Modifier =
+    fillMaxWidth()
+        .padding(horizontal = QingyuPageCardMargin)
+        .then(if (withBottomGap) Modifier.padding(bottom = QingyuSectionGap) else Modifier)
+
+/** 组内分隔线：官方口径是左起 16dp（让出行的图标列，与分组标题左缘对齐）。 */
+@Composable
+private fun GroupDivider(dark: Boolean) {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 16.dp),
+        color = Color(QingyuTheme.dividerLine(dark)),
+    )
+}
+
+/** 分组卡下面的一句灰字（Dart `HyperosSectionDescription`）：整宽段落，允许折行。 */
+@Composable
+private fun SectionNote(text: String, dark: Boolean, withBottomGap: Boolean) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote1,
+        color = Color(QingyuTheme.secondaryText(dark)),
+        modifier = Modifier
+            // 与分组标题的 28dp 轴线对齐（Card 外边距 12 + 行内 16）。
+            .padding(horizontal = QingyuPageCardMargin + 16.dp)
+            .then(if (withBottomGap) Modifier.padding(bottom = QingyuSectionGap) else Modifier),
+    )
+}
+
 /** 运行概览卡：大数字总 PSS + 压力/前后台/峰值三段副标题。 */
 @Composable
 private fun MemorySummaryCard(
@@ -324,16 +375,15 @@ private fun MemorySummaryCard(
     dark: Boolean,
 ) {
     QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = QingyuPageCardMargin),
-        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        modifier = Modifier.groupCard(withBottomGap = false),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
         onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(
                 imageVector = MiuixIcons.Stopwatch,
@@ -365,104 +415,112 @@ private fun MemorySummaryCard(
     }
 }
 
-/** 开关行（Dart `HyperosSwitchTile`）。 */
+/**
+ * 一行设置项（Dart `HyperosListTile`）：图标 + 标题 + 可选副标题 + 行尾读数 + 右箭头。
+ *
+ * 默认走官方 [ArrowPreference]（行内 16dp、行尾读数、右箭头、官方按压反馈，全部免费）；
+ * 只有需要长按的那一行（原始 JSON）才降级到 [BasicComponent] + 外层 `combinedClickable`，
+ * 因为官方 [ArrowPreference] 没有长按回调（0.9.4 `:49-62`）。
+ */
 @Composable
-private fun MemorySwitchRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+private fun MemoryPreferenceRow(
+    row: MemoryRowView,
+    pressure: MemoryPressure,
     dark: Boolean,
+    onClick: (() -> Unit)? = null,
+    onLongPress: (() -> Unit)? = null,
+    enabled: Boolean = true,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Refresh,
-            contentDescription = null,
-            tint = Color(QingyuTheme.actionIcon(dark)),
-            modifier = Modifier.size(20.dp),
+    if (onLongPress == null) {
+        ArrowPreference(
+            title = row.title,
+            summary = row.subtitle,
+            onClick = onClick,
+            enabled = enabled,
+            startAction = {
+                MemoryStartIcon(
+                    icon = iconOf(row.row),
+                    tint = accentColor(row.accent, pressure, dark),
+                )
+            },
+            endActions = {
+                if (row.details.isNotEmpty()) TrailingText(row.details)
+            },
         )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(QingyuTheme.primaryText(dark)),
+        return
+    }
+
+    val interaction = remember { MutableInteractionSource() }
+    BasicComponent(
+        modifier = Modifier.combinedClickable(
+            interactionSource = interaction,
+            indication = LocalIndication.current,
+            enabled = enabled,
+            onClick = { onClick?.invoke() },
+            onLongClick = onLongPress,
+        ),
+        title = row.title,
+        summary = row.subtitle,
+        startAction = {
+            MemoryStartIcon(
+                icon = iconOf(row.row),
+                tint = accentColor(row.accent, pressure, dark),
             )
-            Text(
-                text = subtitle,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        },
+        endActions = {
+            if (row.details.isNotEmpty()) TrailingText(row.details)
+            ArrowEndAction(enabled = enabled)
+        },
+        enabled = enabled,
+        interactionSource = interaction,
+    )
+}
+
+/** 行首图标：官方 demo 的 `startAction` 写法（图标 + 右侧 8dp 呼吸）。 */
+@Composable
+private fun MemoryStartIcon(icon: ImageVector, tint: Color) {
+    Box(modifier = Modifier.padding(end = 8.dp)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            // 官方 demo 的 `Icon` 走默认 24dp；这里跟着 demo，不再自定字号/尺寸。
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
-/** 列表行（Dart `HyperosListTile`）：图标 + 标题 + 右侧取值 + 可选副标题。 */
+/** 行尾读数：与官方 demo 的 `endActions` 文本同口径（body2 字阶 + 次要色）。 */
 @Composable
-private fun MemoryRowItem(
-    row: MemoryRowView,
-    onClick: (() -> Unit)?,
-    pressure: MemoryPressure,
-    dark: Boolean,
-    onLongPress: (() -> Unit)? = null,
-) {
-    val clickModifier = when {
-        onClick != null && onLongPress != null -> Modifier.combinedClickable(
-            onClick = onClick,
-            onLongClick = onLongPress,
-        )
-        onClick != null -> Modifier.clickable(onClick = onClick)
-        else -> Modifier
-    }
-    Row(
+private fun TrailingText(text: String) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.body2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/**
+ * 行尾右箭头：与官方 `ArrowPreference` 的 `ArrowPreferenceEndAction` 同尺寸同色
+ * （10×16dp、`onSurfaceVariantActions` / 禁用 `disabledOnSecondaryVariant`）。
+ * 官方那个是 `private`，长按行只能按同样口径画一次（同 `SettingsPageRenderers` 的先例）。
+ */
+@Composable
+private fun RowScope.ArrowEndAction(enabled: Boolean) {
+    Icon(
+        imageVector = MiuixIcons.Basic.ArrowRight,
+        contentDescription = null,
+        tint = if (enabled) {
+            MiuixTheme.colorScheme.onSurfaceVariantActions
+        } else {
+            MiuixTheme.colorScheme.disabledOnSecondaryVariant
+        },
         modifier = Modifier
-            .fillMaxWidth()
-            .then(clickModifier)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(
-            imageVector = iconOf(row.row),
-            contentDescription = null,
-            // Dart 每行都有自己的 `iconAccent`；此前一律用同一个灰蓝色，语义色全丢。
-            tint = accentColor(row.accent, pressure, dark),
-            modifier = Modifier.size(20.dp),
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = row.title,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(QingyuTheme.primaryText(dark)),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            row.subtitle?.let { subtitle ->
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-        }
-        if (row.details.isNotEmpty()) {
-            Text(
-                text = row.details,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+            .align(Alignment.CenterVertically)
+            .size(width = 10.dp, height = 16.dp),
+    )
 }
 
 /** 提示条：加载中 / 错误（Dart `HyperosHintBanner`）。 */
@@ -474,10 +532,9 @@ private fun MemoryHintBanner(
     dark: Boolean,
 ) {
     QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = QingyuPageCardMargin),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        modifier = Modifier.groupCard(withBottomGap = true),
+        cornerRadius = QingyuCardDefaults.Corner,
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -510,7 +567,7 @@ private fun MemoryHintBanner(
  * 弹层正文的高度上限（Dart 各处 `MediaQuery.sizeOf(sheetContext).height * 0.62/0.68/0.72`）。
  *
  * 对应关系：键值表 `:683` 0.62、分类/进程/历史/memoryStats `:766/:835/:875/:803` 0.68、
- * 原始 JSON `:935` 0.72。
+ * 原始 JSON `:935` 0.72。现在交给 [QingyuSheet] 的 `maxHeightFraction`（套件先有这参数）。
  */
 private fun sheetMaxHeightFraction(sheet: MemoryStatsSheet): Float = when (sheet.sheet) {
     MemorySheet.RAW_JSON -> 0.72f
@@ -526,16 +583,12 @@ private fun sheetMaxHeightFraction(sheet: MemoryStatsSheet): Float = when (sheet
 @Composable
 private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset: Dp) {
     // Dart 每个弹层正文都是「限高 + 可滚动」（`SingleChildScrollView` + `ConstrainedBox`）。
-    // 这里用 LazyColumn 做弹层**内部**滚动（与 `TimeSchemeQuickGenerateSheet` /
-    // `DataTransferPage` 的既有做法一致）；它不承担页面主滚动，主滚动仍是 QingyuPageList。
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * sheetMaxHeightFraction(sheet)).dp
+    // 限高已交给 [QingyuSheet] 的 maxHeightFraction；这里用 LazyColumn 只承担**内部滚动**，
+    // 不承担页面主滚动（主滚动仍是 QingyuPageList）——这是样式规则 R2 的弹层豁免口径。
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = maxHeight),
+        modifier = Modifier.fillMaxWidth(),
         // 底部 = 原有 8dp + 套件给的让位（系统手势区 + 16）：让位必须落在**滚动内容**里，
         // 垫在滚动视口外面时那一截会永远空着（见 `QingyuSheet` KDoc 的 S2）。
-        // 限高仍是业务判据（每个 sheet 的比例不同），所以没有上提成套件的 maxHeightFraction。
         contentPadding = PaddingValues(
             start = 16.dp,
             top = 8.dp,
@@ -650,9 +703,8 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
             }
             itemsIndexed(sheet.history) { index, row ->
                 Text(
-                    // Dart `:910`：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`
-                    text = "${row.timeText}  [${row.stateLabel}]  PSS ${row.pssText}  " +
-                        "堆 ${row.heapRatioText}  ${row.liveLabel}  压力 ${row.pressureLevel}",
+                    // 行文本由模型层的 `MemoryHistoryRow.lineText` 拼好（文案不落渲染层）。
+                    text = row.lineText,
                     style = MiuixTheme.textStyles.footnote2,
                     fontFamily = FontFamily.Monospace,
                     color = Color(QingyuTheme.primaryText(dark)),
@@ -735,11 +787,8 @@ private fun MemoryProcessItem(process: MemoryProcessRow, dark: Boolean) {
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Text(
-            // Dart `:1048-1050`：`pid=$pid  PSS=$pss  privateDirty=$privateDirty` + 两个标记。
-            text = "pid=${process.pidText}  PSS=${process.pssText}  " +
-                "privateDirty=${process.privateDirtyText}" +
-                (if (process.isMainProcess) "  ·主进程" else "") +
-                (if (process.likelyLiveIsland) "  ·疑似超级岛相关" else ""),
+            // 行文本由模型层的 `MemoryProcessRow.detailLine` 拼好（文案不落渲染层）。
+            text = process.detailLine,
             style = MiuixTheme.textStyles.footnote2,
             fontFamily = FontFamily.Monospace,
             color = Color(QingyuTheme.secondaryText(dark)),
@@ -798,8 +847,6 @@ private fun accentColor(accent: MemoryRowAccent, pressure: MemoryPressure, dark:
  *
  * Dart 用的是**图标彩豆 token**（`HyperosIconColors.red/orange/yellow/green`），
  * 不是写死的十六进制；所以这里走 [QingyuIconColors] 同名 token。
- * （此前 Compose 侧写死的 0xFFFF9F0A / 0xFFFFD60A 与 Dart token 值并不一致，
- * 属于实现漂移，本次一并按 Dart 校正。）
  */
 private fun pressureColor(pressure: MemoryPressure, dark: Boolean): Color = when (pressure) {
     MemoryPressure.CRITICAL -> Color(QingyuTheme.error(dark))

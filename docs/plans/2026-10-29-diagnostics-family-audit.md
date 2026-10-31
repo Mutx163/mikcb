@@ -82,6 +82,12 @@ Dart 侧一共 7 个入口：
 UI 补齐：行首图标语义色（16 行原本一律灰蓝）、弹层限高 + 内部滚动（长内容原本被顶出屏幕）、
 键值表 128dp 定宽、可清性标签 12% 底色、等宽原文、错误态红条、无快照时禁用。
 `dartVm` / `flutterImageCache` 两行**不编数字**（原生采集器不产出该键），按 `—` 渲染并用测试钉死。
+**2026-10-31 更新（后续批次）**：这两行已**整体删除**——它们是 Flutter 引擎专属指标，
+Compose 壳里永远是 `—`，等于把不存在的对象常驻在页面上。现改读采集器新增的 `imageCache`
+块（`AndroidImageLoader` 真实 LruCache：占用 / 上限 / 条目数），采集器里的 Flutter 归因文案
+同时中性化；整页观感也按官方 demo 配方重写（设置组圆角 + `SwitchPreference` / `ArrowPreference`
++ 套件限高）。详见 `.agents/notes/implemented/compose-phase35-diagnostics-memory-stats.md`
+的 2026-10-31 追加节。
 
 ### 4.4 性能报告（`perf_report_screen.dart` 305 行 + 台账 614 行）
 

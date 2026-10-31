@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.diagnostics
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -30,11 +31,11 @@ import java.util.TimeZone
  * 2. [collectorKeyTableMatchesModelReads] 直接扫采集器源码，确认模型读的每个 key
  *    在采集器里确实存在（有人在那边改名 → 这里红）。
  *
- * ## 明确不覆盖的部分（Dart 独有，Compose 壳里没有）
+ * ## 明确不覆盖的部分
  *
- * `dartVm` / `flutterImageCache` 是 Dart `MemoryStatsService.fetchSnapshot:82-94`
- * 从 Flutter 运行时补进来的，原生采集器**不产出**这两个键；页面按 `—` 渲染即可，
- * 见 [imageCacheRowIsDashWithoutFlutterRuntime]。
+ * `dartVm` / `flutterImageCache` 是 Dart `MemoryStatsService.fetchSnapshot:82-94` 从 Flutter
+ * 运行时补进来的，采集器**不产出**这两个键；2026-10-31 起页面也不再读它们，改读采集器的
+ * `imageCache` 块（`AndroidImageLoader` 的真实 LruCache），见 [imageCacheRowUsesComposeLoaderBlock]。
  */
 class MemoryStatsCollectorKeyCompatTest {
 
@@ -146,7 +147,7 @@ class MemoryStatsCollectorKeyCompatTest {
                 "easyMb" to 0,
                 "mediumMb" to 20,
                 "hardMb" to 219,
-                "note" to "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈引擎与系统分摊（难清）。估算仅供参考。",
+                "note" to "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈原生运行时与系统分摊（难清）。估算仅供参考。",
             ),
         ),
         "system" to linkedMapOf(
@@ -157,6 +158,13 @@ class MemoryStatsCollectorKeyCompatTest {
             "totalMemBytes" to 8_589_934_592L,
             "thresholdBytes" to 268_435_456L,
             "sdkInt" to 34,
+        ),
+        // 采集器新增块：Compose 图片加载器的真实 LruCache（取代 Flutter 运行时的图片缓存）。
+        "imageCache" to linkedMapOf(
+            "currentSizeBytes" to 1_048_576L,
+            "maxSizeBytes" to 16_777_216L,
+            "entryCount" to 2,
+            "source" to "AndroidImageLoader",
         ),
         "liveIsland" to linkedMapOf(
             "serviceRunning" to true,
@@ -346,7 +354,7 @@ class MemoryStatsCollectorKeyCompatTest {
 
         assertEquals("可节约粗估：易清 0 MB · 中等 20 MB · 难清 219 MB", sheet.cleanableSummary)
         assertEquals(
-            "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈引擎与系统分摊（难清）。估算仅供参考。",
+            "easy≈图片缓存等；medium≈图形/壁纸/模糊；hard≈原生运行时与系统分摊（难清）。估算仅供参考。",
             sheet.cleanableNote,
         )
         assertEquals(2, sheet.bullets.size)
@@ -387,19 +395,42 @@ class MemoryStatsCollectorKeyCompatTest {
     }
 
     /**
-     * Dart 独有的两块（Flutter 运行时）在 Compose 壳里没有来源：按 `—` 渲染，**不编数字**。
+     * 图片缓存行读的是采集器的 `imageCache` 块（Compose 图片加载器），
+     * 而不是 Flutter 运行时补进来的 `dartVm` / `flutterImageCache`。
      */
     @Test
-    fun imageCacheRowIsDashWithoutFlutterRuntime() {
+    fun imageCacheRowUsesComposeLoaderBlock() {
         val state = buildState()
         val imageCache = state.compositionRows.first { it.row == MemoryStatsRow.IMAGE_CACHE }
 
-        assertEquals("—", imageCache.details)
+        assertEquals("1.00 MB", imageCache.details)
         val sheetRows = state.sheets.getValue(MemorySheet.IMAGE_CACHE).rows.associate { it.label to it.value }
-        assertEquals("—", sheetRows.getValue("Dart RSS"))
-        assertEquals("—", sheetRows.getValue("Dart max RSS"))
-        assertEquals("0 / 0", sheetRows.getValue("图片条目 live / pending"))
+        assertEquals("AndroidImageLoader", sheetRows.getValue("来源"))
+        assertEquals("1.00 MB / 16.00 MB", sheetRows.getValue("占用 / 上限"))
+        assertEquals("2 条", sheetRows.getValue("缓存条目数"))
         assertNull(memorySnapshotError(collectorSnapshotFixture()))
+    }
+
+    /**
+     * 反向守卫：采集器源码里不再有 Flutter 运行时专属的 key。
+     *
+     * 这是 2026-10-31 用户实测反馈的机器化拦网——「内存统计页的参数怎么都是统计 Flutter 的」。
+     * 谁把 `dartVm` / `flutterImageCache` 加回采集器（或把这两个 key 塞进模型读取），这条先红。
+     * 用户可见字符串里也不许再出现 `Flutter`（注释不拦，源码里只有字符串会被扫到）。
+     */
+    @Test
+    fun collectorHasNoFlutterRuntimeKeys() {
+        val source = collectorSource()
+        assumeTrue("未定位到 MemoryStatsCollector.kt，跳过", source != null)
+        val text = source!!.readText(Charsets.UTF_8)
+
+        assertFalse("采集器里不该再产出 dartVm", text.contains("\"dartVm\""))
+        assertFalse("采集器里不该再产出 flutterImageCache", text.contains("\"flutterImageCache\""))
+        // 只扫字符串字面量（`"..."`），注释里的历史说明不拦。
+        val literals = Regex("\"((?:[^\"\\\\]|\\\\.)*)\"").findAll(text).map { it.groupValues[1] }
+        for (literal in literals) {
+            assertFalse("用户可见文案里不该再出现 Flutter：$literal", literal.contains("Flutter"))
+        }
     }
 
     // ==========================================
@@ -407,7 +438,8 @@ class MemoryStatsCollectorKeyCompatTest {
     // ==========================================
 
     /**
-     * 模型层会读的 key（不含 Dart 独有的 `dartVm` / `flutterImageCache`）。
+     * 模型层会读的 key（**不含** `dartVm` / `flutterImageCache`：那两个是 Flutter 运行时专属，
+     * 页面已改为读 `imageCache` 块）。
      *
      * 这张表是「模型要什么」的清单；[collectorKeyTableMatchesModelReads] 负责证明
      * 「采集器确实给什么」。
@@ -417,6 +449,8 @@ class MemoryStatsCollectorKeyCompatTest {
         "uptimeMillis", "packageName", "pressureLevel", "pressureLabel", "appInForeground",
         "app", "javaHeap", "debugMemoryInfo", "system", "liveIsland", "fairMemory",
         "backgroundStats", "pssBreakdown", "analysis", "memoryStats", "processes", "history",
+        // imageCache（Compose 图片加载器，取代 Flutter 运行时的 dartVm / flutterImageCache）
+        "imageCache", "currentSizeBytes", "maxSizeBytes", "entryCount", "source",
         // app
         "totalPssKb", "selfPssKb", "processSumPssKb", "totalPrivateDirtyKb", "peakTotalPssKb",
         "peakJavaHeapAllocKb", "sampleCount", "foregroundSampleCount", "backgroundSampleCount",

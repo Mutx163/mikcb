@@ -9,12 +9,17 @@ import java.util.Locale
  * 内存统计页（公平运行内存 / 全应用内存）的纯 Kotlin 模型
  * （源：`lib/screens/memory_stats_screen.dart` + `lib/services/memory_stats_service.dart`）。
  *
- * 不 import Compose / Android，JVM 单测直接跑。快照数据来自 Phase 2 的
+ * 不 import Compose / Android，JVM 单测直接跑。快照数据来自原生采集器
  * `MemoryStatsCollector.buildSnapshot()`（`Map<String, Any?>`），本层只做
  * 「怎么算、怎么说」：单位换算、三分段概览、各行取值、各弹层键值行。
  *
- * 注意：Dart 侧快照里的 `dartVm` / `flutterImageCache` 由 Flutter 补进来，
- * 原生 Collector 没有这两个键——缺失时按 Dart 的 `formatBytes(null) = —` 渲染。
+ * ## 与 Dart 原版的一处刻意不同：没有 Flutter 运行时指标
+ *
+ * Dart 页面的「图片缓存」行读的是 `dartVm` / `flutterImageCache`——那是 Flutter 引擎
+ * 通过平台通道补进快照的（`memory_stats_service.dart:82-94`）。Compose 壳里已经没有
+ * Flutter 运行时，继续显示那两行只会恒为 `—`，等于在页面上挂着两个永远没有数的技术字段。
+ * 所以这里改成读采集器产出的 `imageCache` 块（Compose 图片加载器 `AndroidImageLoader`
+ * 的真实 LruCache：占用 / 上限 / 条目数）。
  */
 
 /** 单位换算与时间格式（Dart `MemoryStatsService` 的四个静态格式化函数）。 */
@@ -201,7 +206,18 @@ data class MemoryProcessRow(
     val privateDirtyText: String,
     val isMainProcess: Boolean,
     val likelyLiveIsland: Boolean,
-)
+) {
+    /**
+     * 行尾那行等宽详情（Dart `:1048-1050` 的字符串拼接）。
+     *
+     * 放在模型层而不是渲染层：页面只负责画，文案与「哪些标记要加」都在这里，
+     * 免得渲染层又长出一段中文字面量（`CjkLiteralGateTest` 也会因此变色）。
+     */
+    val detailLine: String
+        get() = "pid=$pidText  PSS=$pssText  privateDirty=$privateDirtyText" +
+            (if (isMainProcess) "  ·主进程" else "") +
+            (if (likelyLiveIsland) "  ·疑似超级岛相关" else "")
+}
 
 /** 采样历史的一行（Dart `_showHistorySheet` 里的单行文本）。 */
 data class MemoryHistoryRow(
@@ -211,7 +227,11 @@ data class MemoryHistoryRow(
     val heapRatioText: String,
     val liveLabel: String,
     val pressureLevel: String,
-)
+) {
+    /** Dart `:910`：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`。 */
+    val lineText: String
+        get() = "$timeText  [$stateLabel]  PSS $pssText  堆 $heapRatioText  $liveLabel  压力 $pressureLevel"
+}
 
 /** 一个弹层的展示模型；不同弹层用不同字段（键值 / 分类 / 进程 / 历史 / 纯文本）。 */
 data class MemoryStatsSheet(
@@ -273,6 +293,14 @@ internal object MemoryStatsStrings {
     /** Dart `_MemoryStatsScreenState.copyJson` 的成功提示（`showAppToast`，`:170-173`）。 */
     const val copiedJsonToast = "已复制内存快照 JSON"
 
+    /**
+     * 剪贴板不可用时的提示。
+     *
+     * Dart 那边 `Clipboard.setData` 从不失败（平台实现自己兜底），Compose 宿主是直接拿
+     * `ClipboardManager`，可能为 null。**不能照样弹「已复制」**——那是在骗用户。
+     */
+    const val copiedJsonFailedToast = "复制失败：系统剪贴板不可用"
+
     const val overviewSection = "运行概览"
     const val samplingSection = "采样控制"
     const val compositionSection = "内存构成"
@@ -290,7 +318,18 @@ internal object MemoryStatsStrings {
     const val javaHeapTitle = "Java 堆"
     const val breakdownTitle = "PSS 分类与可清性"
     const val debugMemoryTitle = "当前进程 Debug.MemoryInfo"
-    const val imageCacheTitle = "Dart / Flutter 图片缓存"
+
+    /**
+     * 「图片缓存」——Compose 图片加载器的内存缓存。
+     *
+     * 不是 Dart 的 `Dart / Flutter 图片缓存`：那两行读 `dartVm` / `flutterImageCache`，
+     * 在 Compose 壳里恒为 `—`。现在读采集器的 `imageCache` 块（真实 LruCache）。
+     */
+    const val imageCacheTitle = "图片缓存"
+    const val imageCacheDescription = "应用内网络图片（Bing 壁纸等）解码后的内存缓存，由图片加载器统一管理。"
+    const val imageCacheSourceLabel = "来源"
+    const val imageCacheUsageLabel = "占用 / 上限"
+    const val imageCacheEntryLabel = "缓存条目数"
     const val systemMemoryTitle = "系统内存"
     const val lowMemory = "低内存"
     const val normalMemory = "正常"
@@ -314,7 +353,6 @@ internal object MemoryStatsStrings {
     const val fullSnapshot = "完整快照"
     const val fairMemoryTitle = "公平运行内存事件"
 
-    const val dashboardDash = "—"
     const val dash = "—"
     const val yes = "是"
     const val no = "否"
@@ -339,8 +377,7 @@ fun buildMemoryStatsViewState(
     val system = root.mapAt("system")
     val liveIsland = root.mapAt("liveIsland")
     val fairMemory = root.mapAt("fairMemory")
-    val dartVm = root.mapAt("dartVm")
-    val imageCache = root.mapAt("flutterImageCache")
+    val imageCache = root.mapAt("imageCache")
     val processes = root.mapsAt("processes")
     val history = root.mapsAt("history")
     val backgroundStats = root.mapAt("backgroundStats")
@@ -519,7 +556,6 @@ fun buildMemoryStatsViewState(
         system = system,
         liveIsland = liveIsland,
         fairMemory = fairMemory,
-        dartVm = dartVm,
         imageCache = imageCache,
         processes = processes,
         history = history,
@@ -562,7 +598,6 @@ private fun buildSheetMap(
     system: Map<*, *>,
     liveIsland: Map<*, *>,
     fairMemory: Map<*, *>,
-    dartVm: Map<*, *>,
     imageCache: Map<*, *>,
     processes: List<Map<*, *>>,
     history: List<Map<*, *>>,
@@ -692,14 +727,20 @@ private fun buildSheetMap(
     val imageCacheSheet = MemoryStatsSheet(
         sheet = MemorySheet.IMAGE_CACHE,
         title = MemoryStatsStrings.imageCacheTitle,
+        description = MemoryStatsStrings.imageCacheDescription,
         rows = listOf(
-            MemoryKvRow("Dart RSS", bytes(dartVm.longAt("currentRssBytes"))),
-            MemoryKvRow("Dart max RSS", bytes(dartVm.longAt("maxRssBytes"))),
-            MemoryKvRow("图片缓存占用", bytes(imageCache.longAt("currentSizeBytes"))),
-            MemoryKvRow("图片缓存上限", bytes(imageCache.longAt("maximumSizeBytes"))),
             MemoryKvRow(
-                "图片条目 live / pending",
-                "${imageCache.longAt("liveImageCount") ?: 0} / ${imageCache.longAt("pendingImageCount") ?: 0}",
+                MemoryStatsStrings.imageCacheUsageLabel,
+                "${bytes(imageCache.longAt("currentSizeBytes"))} / " +
+                    "${bytes(imageCache.longAt("maxSizeBytes"))}",
+            ),
+            MemoryKvRow(
+                MemoryStatsStrings.imageCacheEntryLabel,
+                "${imageCache.longAt("entryCount") ?: 0} 条",
+            ),
+            MemoryKvRow(
+                MemoryStatsStrings.imageCacheSourceLabel,
+                imageCache.stringAt("source") ?: MemoryStatsStrings.dash,
             ),
         ),
     )

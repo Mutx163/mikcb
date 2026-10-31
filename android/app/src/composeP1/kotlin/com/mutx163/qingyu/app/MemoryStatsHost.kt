@@ -41,7 +41,8 @@ import java.time.LocalTime
  * generatedAtMillis / uptimeMillis / packageName / diagnosticsPackage
  * pressureLevel / pressureLabel / appState / appInForeground
  * app{totalPssKb, peakTotalPssKb, sampleCount, …}    javaHeap{allocBytes, usageRatio, nearOom, …}
- * debugMemoryInfo{…}   system{…}   liveIsland{…}   fairMemory{…}
+ * debugMemoryInfo{…}   system{…}   imageCache{currentSizeBytes, maxSizeBytes, entryCount}
+ * liveIsland{…}   fairMemory{…}
  * backgroundStats{…}   pssBreakdown{ordered, …}   analysis{bullets, cleanableEstimate, …}
  * memoryStats{…}   processes[…]   history[…]
  * ```
@@ -69,12 +70,15 @@ import java.time.LocalTime
  * 完成后再把结果写回 Compose 状态。Dart 侧那次调用其实跑在 platform 主线程上，
  * 这里换个线程只是去掉卡顿，取数口径完全一样。
  *
+ * ## 与 Dart 的一处刻意不同：没有 Flutter 运行时指标
+ *
+ * Dart 页面的「图片缓存」行读 `dartVm` / `flutterImageCache`（由 `MemoryStatsService.fetchSnapshot`
+ * 从 Flutter 运行时补进快照，`:82-94`）。Compose 壳里没有 Flutter 运行时，那两行曾经恒为 `—`。
+ * 2026-10-31 起页面改读采集器的 `imageCache` 块（[com.mutx163.qingyu.platform.AndroidImageLoader]
+ * 的真实 LruCache，占用 / 上限 / 条目数），页面上不再有永远没有数的 Flutter 字段。
+ *
  * ## 诚实边界
  *
- * - `dartVm` / `flutterImageCache` 两个键（Dart RSS、Flutter 图片缓存）在 Dart 侧由
- *   `MemoryStatsService.fetchSnapshot` 从 Flutter 运行时补进来（`:82-94`），
- *   Compose 壳里没有 Flutter 运行时可以问，所以这两行按 `—` 渲染 —— 模型层 KDoc
- *   已约定「缺失按 `formatBytes(null) = ——`」，**不编数字**。
  * - 原生采集器只在 `.debug` / `.profile` 包启动会话采样（`MemoryStatsCollector:65-68`），
  *   正式包里「会话采样历史」会是空的；这是采集器的既定口径，本页不改它。
  */
@@ -129,7 +133,12 @@ fun MemoryStatsHost(
         val current = snapshot ?: return
         val text = memorySnapshotJson(current)
         val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        manager?.setPrimaryClip(ClipData.newPlainText(MemoryStatsStrings.pageTitle, text))
+        if (manager == null) {
+            // 拿不到剪贴板就明说，不弹「已复制」——那是骗用户。
+            Toast.makeText(context, MemoryStatsStrings.copiedJsonFailedToast, Toast.LENGTH_SHORT).show()
+            return
+        }
+        manager.setPrimaryClip(ClipData.newPlainText(MemoryStatsStrings.pageTitle, text))
         Toast.makeText(context, MemoryStatsStrings.copiedJsonToast, Toast.LENGTH_SHORT).show()
     }
 

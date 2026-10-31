@@ -10,7 +10,6 @@ com/mutx163/qingyu/pages/showcase/MiuixShowcasePage.kt:7
 com/mutx163/qingyu/pages/guide/StartupFlowPage.kt:6
 com/mutx163/qingyu/pages/import/warehouse/AiImageCourseImportPage.kt:5
 com/mutx163/qingyu/pages/import/warehouse/WarehouseAdapterDetailPage.kt:5
-com/mutx163/qingyu/pages/diagnostics/MemoryStatsPage.kt:3
 com/mutx163/qingyu/pages/import/ImportCommon.kt:2
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCourseImportPage.kt:2
 com/mutx163/qingyu/pages/import/warehouse/WarehouseCustomDebugPage.kt:2

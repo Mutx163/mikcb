@@ -83,6 +83,20 @@ class AndroidImageLoader(
         cache.evictAll()
     }
 
+    /**
+     * 内存缓存**当前占用**（字节）。
+     *
+     * 口径：`LruCache.size()` 返回的是 `sizeOf` 之和，而本类的 `sizeOf` 就是
+     * `Bitmap.byteCount`，所以这里直接是字节数。
+     */
+    fun memoryCacheBytes(): Int = cache.size()
+
+    /** 内存缓存条目数（`snapshot()` 是 LruCache 提供的一致性读快照）。 */
+    fun memoryCacheEntryCount(): Int = cache.snapshot().size
+
+    /** 内存缓存上限（字节），即构造时给的 [maxCacheBytes]。 */
+    fun memoryCacheMaxBytes(): Int = maxCacheBytes
+
     /** 关闭后台线程池（宿主退出时调用）。 */
     fun shutdown() {
         executor.shutdown()
