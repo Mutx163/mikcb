@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -131,6 +132,10 @@ data class GlassDockItem(
  * @param onSelect 点选回调；**点当前项也会回调**，是否忽略由调用方决定。
  * @param backdrop 背景采样源（宿主用 `Modifier.layerBackdrop` 提供）。
  *   为空时走第 ④ 层降级。
+ * @param trailingContent 药丸**右侧的独立圆钮**（Flutter 玻璃坞那个「加课」按钮，
+ *   `settings.glassDockShowAddButton` 打开时才有）。放在这里而不是宿主里各画一份：
+ *   底部避让（手势条内缩）、居中与左右留白只有一处口径，宿主各写一遍必然漂。
+ *   为空时药丸照旧居中、宽度上限仍是 [maxWidthDp]。
  */
 @Composable
 fun GlassDockNavigationBar(
@@ -140,9 +145,16 @@ fun GlassDockNavigationBar(
     backdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
-    val safeIndex = selectedIndex.coerceIn(0, items.lastIndex)
+    // `selectedIndex == -1` 是**合法状态**，不是越界：当前主屏内容不在底栏排列里时
+    // （例如用户把「日课表」从底栏删了、却仍停在日视图），Dart 整栏不亮、不画指示器
+    // （`soft_glass_tab_bar.dart:225,343`）。钳成 0 会硬亮一格**根本没打开**的视图，
+    // 用户以为点错了（2026-10-31 审核 P1-4）。拖拽/动画仍需要一个数值起点，所以
+    // `safeIndex` 只给内部用，屏上表现由 [hasSelection] 决定。
+    val hasSelection = selectedIndex in items.indices
+    val safeIndex = if (hasSelection) selectedIndex else 0
     val colors = MiuixTheme.colorScheme
     val accentColor = colors.primary
     val tabContentColor = colors.onBackground
@@ -166,7 +178,25 @@ fun GlassDockNavigationBar(
     val combinedBackdrop = backdrop?.let { rememberCombinedBackdrop(it, tabsBackdrop) }
 
     var totalWidthPx by remember { mutableFloatStateOf(0f) }
-    var tabWidthPx by remember { mutableFloatStateOf(0f) }
+
+    // 槽宽 = 栏宽 + 槽数派生，**不能**只在 `onSizeChanged` 里算一次并存起来。
+    // 2026-10-28 审计 E6：底栏槽位现在可由用户在设置里增删（`glassDockActions`），
+    // 「槽数变了、栏宽没变」是常规路径（3 槽 ↔ 4 槽，栏宽都受 maxWidthDp 夹住）；
+    // 旧写法此时仍用上一次的槽宽，指示器会停在栏中间，点哪一格都错位。
+    val contentPaddingPx = with(density) { GlassDockGeometry.GlassContentPaddingDp.dp.toPx() }
+    val tabWidthPx by remember(tabsCount, contentPaddingPx) {
+        derivedStateOf {
+            if (totalWidthPx <= 0f) {
+                0f
+            } else {
+                GlassDockGeometry.glassSlotWidthPx(
+                    containerWidthPx = totalWidthPx,
+                    itemCount = tabsCount,
+                    paddingPx = contentPaddingPx,
+                )
+            }
+        }
+    }
 
     // 拖拽越界时的橡皮筋位移：手指拖出栏外，整块玻璃跟着偏一点（最多 4dp）再弹回。
     val offsetAnimation = remember { Animatable(0f) }
@@ -311,7 +341,7 @@ fun GlassDockNavigationBar(
             Column(
                 modifier = Modifier
                     .semantics(mergeDescendants = true) {
-                        selected = index == currentIndex
+                        selected = hasSelection && index == currentIndex
                         role = Role.Tab
                         // 只在**没有可见文字**时才回退到 contentDescription：
                         // mergeDescendants 会把子 Text 合并进来，两样都给读屏就念两遍
@@ -344,7 +374,7 @@ fun GlassDockNavigationBar(
                     Text(
                         text = label,
                         style = labelStyle,
-                        fontWeight = if (index == currentIndex) {
+                        fontWeight = if (hasSelection && index == currentIndex) {
                             FontWeight.SemiBold
                         } else {
                             FontWeight.Normal
@@ -357,8 +387,13 @@ fun GlassDockNavigationBar(
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        Box(
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        // 宽屏（≥ 428dp）时 `maxWidthDp` 生效，药丸不能再贴着左边留一大片空白
+        // —— 2026-10-28 审计 E5（480dp 屏右侧空 76dp）。Column 默认横向对齐是 Start。
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
             modifier = Modifier
                 .padding(
                     bottom = if (navBarBottomPadding != 0.dp) {
@@ -371,8 +406,14 @@ fun GlassDockNavigationBar(
                 )
                 .widthIn(max = maxWidthDp.dp)
                 .fillMaxWidth(),
-            contentAlignment = Alignment.CenterStart,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Box(
+                // 药丸吃掉剩余宽度；圆钮出现时自动让出「按钮宽 + 8dp 间距」，
+                // 而不是把整组推出屏幕（窄屏 5 槽 + 圆钮的实测宽度就是这么来的）。
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart,
+            ) {
             // ── ① 外壳胶囊 ──
             //
             // ⚠️ 这一层与 ③ 指示器在 demo 里是**同一个 Box 的直接子节点**，中间不再包
@@ -384,17 +425,11 @@ fun GlassDockNavigationBar(
                     modifier = Modifier
                         .selectableGroup()
                         .onSizeChanged { coords ->
-                            totalWidthPx = coords.width.toFloat()
-                            // 两侧各让出一个内边距。少减一侧（写成 `- 4`）每格就偏大
+                            // 只记栏宽：槽宽由它 + 槽数派生（见上方 `tabWidthPx`）。
+                            // 两侧各让出一个内边距；少减一侧（写成 `- 4`）每格就偏大
                             // 4/n dp，末格的右边界会正好压在玻璃边缘上（一点余量不留），
                             // 按下放大立刻从那儿顶出去。
-                            tabWidthPx = GlassDockGeometry.glassSlotWidthPx(
-                                containerWidthPx = totalWidthPx,
-                                itemCount = tabsCount,
-                                paddingPx = with(density) {
-                                    GlassDockGeometry.GlassContentPaddingDp.dp.toPx()
-                                },
-                            )
+                            totalWidthPx = coords.width.toFloat()
                         }
                         .graphicsLayer { translationX = panelOffset }
                         .dropShadow(
@@ -542,7 +577,8 @@ fun GlassDockNavigationBar(
             // 用 `(W - 2×padding)/n` 给出步进（`GlassDockGeometry.glassSlotWidthPx`）。
             // 与 [GlassDockGeometry.GlassInnerHeightDp] 无关 —— 那个是竖直方向。
             // 要再动这里，先看 demo 的同一段。
-            if (tabWidthPx > 0f) {
+            // 无选中态（-1）连指示器都不画：留一块空白比亮错一格诚实。
+            if (hasSelection && tabWidthPx > 0f) {
                 val tabWidthDp = with(density) { tabWidthPx.toDp() }
                 Box(
                     modifier = Modifier
@@ -636,6 +672,13 @@ fun GlassDockNavigationBar(
                         .height(GlassDockGeometry.GlassInnerHeightDp.dp)
                         .width(tabWidthDp),
                 )
+            }
+            }
+            // ── ④ 右侧独立圆钮（Flutter 玻璃坞的「加课」按钮）──
+            // 只有宿主传了才画；间距 8dp 与 Dart 一致（`timetable_glass_dock.dart:124-135`）。
+            if (trailingContent != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                trailingContent()
             }
         }
     }

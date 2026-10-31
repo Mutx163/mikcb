@@ -37,7 +37,9 @@ import com.mutx163.qingyu.pages.import.CourseAutoRefreshStore
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.schedule.ScheduleItemData
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
-import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.shell.HomeMenuNavModel
+import com.mutx163.qingyu.pages.shell.HomeNavIcons
+import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
 import com.mutx163.qingyu.pages.timetable.WeekAgendaKind
 import com.mutx163.qingyu.platform.AndroidWeatherLocationSource
@@ -234,6 +236,15 @@ class ShellWiring(context: Context) {
     var pendingTaskCourse: Course? = null
 
     /**
+     * 从日视图课卡的「作业」胶囊进来时要带的**来源周**
+     *（Dart `taskForm(initialCourse:, initialWeek: week)`，`day_view_course_agenda_card.dart:174-183`）。
+     *
+     * 不传时 `d2.addTask` 退回仓储当前周；跨周查看日视图（翻到第 5 周）时来源周会记成
+     * 「今天这一周」，作业与那节课就对不上了。与 [pendingTaskCourse] 同生命周期。
+     */
+    var pendingTaskWeek: Int? = null
+
+    /**
      * 从任务清单点某条任务进入编辑页时要带进去的对象；null = 新建（T1 收尾 · 2026-10-28）。
      *
      * 与 [pendingTaskCourse] 互斥使用：进「编辑任务」时用本字段，进「添加任务」时清空它。
@@ -263,6 +274,30 @@ class ShellWiring(context: Context) {
 
     /** 新建日程时的默认日期（`yyyy-MM-dd`）；null 时页面自己取今天。 */
     var pendingScheduleInitialDate: String? = null
+
+    /**
+     * 从星期栏点进日视图时要打开的那一天（1..7）；`null` = 没有具体意图。
+     *
+     * 2026-10-30 修 P0-2：此前 `c3.day` 的 `initialDayOfWeek` 恒取 `LocalDate.now()`，
+     * 点「周五」进去看到的永远是**今天**。现在由星期栏写入、日视图读完立即清空
+     * （一次性意图，不该约束之后的翻页）。
+     */
+    var pendingDayViewDayOfWeek: Int? = null
+
+    /**
+     * 取出并**清空**「点哪天进日视图」的意图。
+     *
+     * 必须原子地读一次就清：`c3.day` 分支每次进入都会重组多次，用裸读会让同一次
+     * 打开多轮读取都拿到同一个值（看着没问题），但下一次**从底栏或菜单**进日视图时
+     * 就会沿用上次点的那天 —— Dart 侧是 `Navigator` 带参数的一次性传参，没有这个残留。
+     *
+     * @return 1..7；没有意图时 null（页面自己落今天）。
+     */
+    fun consumeDayViewDayOfWeek(): Int? {
+        val value = pendingDayViewDayOfWeek
+        pendingDayViewDayOfWeek = null
+        return value
+    }
 
     fun clearScheduleIntent() {
         pendingScheduleEdit = null
@@ -544,9 +579,13 @@ fun TimetableWithCourseActions(
         onOpenCourse = { course -> actionTarget = course },
         onWeekChanged = { repository.setCurrentWeek(it) },
         // 点星期栏某一天 → 日视图（Dart `TimetableDayViewPart` 的入口）。
-        // ⚠️ 已知缺口：`c3.day` 宿主目前不接收「要打开哪一天」，进去落在今天；
-        // 传 day 的重载在日视图接线批次里补（见 `docs/plans/2026-10-29-compose-week-view-audit.md` §六 P2）。
-        onOpenDay = { _ -> onNavigate("c3.day") },
+        // 把「点的是哪一天」经 `pendingDayViewDayOfWeek` 带进去：日视图的
+        // `initialDayOfWeek` 是显式意图，不传才回落今天（2026-10-30 修 P0-2：
+        // 原先这里丢掉参数且宿主恒取 `LocalDate.now()`，点周五看到的是今天）。
+        onOpenDay = { dayOfWeek ->
+            wiring.pendingDayViewDayOfWeek = dayOfWeek
+            onNavigate("c3.day")
+        },
         // 周网格里的考试 / 日程卡：Dart 侧考试卡 → 考试页、日程卡 → 日程编辑页
         // （`week_grid_agenda_card.dart` 的 closedBuilder/openBuilder 同一条路）。
         // 这里按 id 找回实体再带进目标页；找不到就退到列表页，不让点击变哑。
@@ -578,8 +617,11 @@ fun TimetableWithCourseActions(
         // 验收路径（杀进程重开 / 离开再回课表）都拿得到新值；「课表页正开着时后台改设置」
         // 不会自刷，但本 App 里不存在这种同屏场景。
         settingsModel = settingsModel,
-        // 顶栏右上角「更多」菜单：8 个默认条目 → 壳页面 id（见 shellTimetableMenuPageId）。
-        homeMenuItems = TimetableMenuDefaults.entries(),
+        // 顶栏右上角「更多」菜单：**用户存档的排列**（`homeGridMenuActions`），
+        // 空表 / 只剩钉住项时回退 Dart 默认八项；条目 id → 壳页面 id 见
+        // `shellTimetableMenuPageId`。2026-10-31 之前这里喂的是固定八项，
+        // 「自定义八宫格按钮」改了没有任何效果。
+        homeMenuItems = homeTopMenuItems(settingsModel),
         onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onNavigate) },
     )
 
@@ -740,6 +782,21 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
 }
 
 /**
+ * 顶栏右上角「更多」菜单的条目：**用户存档的排列**（`homeGridMenuActions`）。
+ *
+ * Dart `resolveHomeGridMenuEntries`（`lib/widgets/home_menu_catalog.dart:499-533`）：
+ * 丢掉目录里没有的 id、去重保序、空表或只剩钉住项时回退 `HomeGridMenu.defaultActions`
+ * 那 8 项。取舍规则在 [HomeMenuNavModel]（纯 Kotlin，L0 单测钉住），这里只负责
+ * 「id 有没有去处」与「id → 文案 / 图标」两件事。
+ *
+ * 2026-10-31 之前这个菜单写死 8 项：设置里「自定义八宫格按钮」改完，首页一点都不变。
+ */
+fun homeTopMenuItems(settings: TimetableSettingsModel): List<TimetableMenuItem> =
+    HomeMenuNavModel.resolveIds(settings.homeGridMenuActions) { id ->
+        shellTimetableMenuPageId(id) != null
+    }.map { HomeNavIcons.menuItem(it) }
+
+/**
  * 菜单/索引条目 id → 壳页面 id。
  *
  * ## 为什么单独一张表
@@ -771,6 +828,15 @@ fun shellTimetableMenuPageId(id: String): String? = when (id) {
     "importCourses" -> "g1.importEntry"
     "settings" -> "b.settingsHome"
     "support" -> "a.support"
+    // —— 2026-10-31 补齐：这四项在目录/底栏编辑器里都能选，但此前映射表里没有，
+    //    选了之后底栏或菜单点了没反应（被解析层当成「没有去处」丢掉）。
+    "addExam" -> "d3.addExam"
+    "addTask" -> "d2.addTask"
+    "addScheduleItem" -> "d2.addSchedule"
+    // 「全部功能」索引：classic 形态没有底栏，它同时也是回到设置的一条退路。
+    "more" -> "i.more"
+    // 快速切课表：壳里没有独立快切弹层，与顶栏点标题同口径推课表管理页。
+    "quickSwitchTimetable" -> "c1.profiles"
     // 首页/更多菜单里的「版本更新」→ 版本更新页（1:1 复刻批次交付）。
     "update" -> "a.update"
 

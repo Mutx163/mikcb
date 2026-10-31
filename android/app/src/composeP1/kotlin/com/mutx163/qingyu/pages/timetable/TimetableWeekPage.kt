@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ import androidx.compose.ui.window.Dialog
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
@@ -114,6 +116,26 @@ fun TimetableWeekPage(
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
+    /**
+     * 页面**最底层**的背景槽（首页壁纸，`HomeWallpaperBackdrop`）。
+     *
+     * 非空时页面底色改透明、把这层画在内容下面 —— 对应 Dart `TimetableHomeStack`
+     * 的层次（壁纸 → 状态栏遮罩 → 内容）：有壁纸时 `scaffoldBackgroundColor` 也是
+     * `Colors.transparent`（`lib/ui/home/home_chrome_spec.dart:126-128`）。
+     *
+     * 为空时行为与旧版完全一致（不透明主题底）。壁纸数据由宿主 `TimetableHost`
+     * 从用户存档建快照后传进来，本页不读设置。
+     */
+    backdrop: (@Composable BoxScope.() -> Unit)? = null,
+    /**
+     * 壁纸上的顶栏墨色：`Light` = 浅墨（深色壁纸）、`Dark` = 深墨（浅色壁纸）、
+     * `null` = 没有壁纸 ⇒ 走主题墨色（旧行为）。
+     *
+     * 判据不在这里算：宿主用壁纸顶部亮度过
+     * [com.mutx163.qingyu.pages.shell.HomeBackgroundModel] 的 `chromeInkPolarity`
+     * （阈值与 Dart `homePageChromeForegroundForLuminance` 一致，0.45）。
+     */
+    chromeInk: HomeInkPolarity? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -151,9 +173,13 @@ fun TimetableWeekPage(
         realCurrentWeek != browsingWeek
 
     Scaffold(
-        containerColor = scaffoldBg,
+        // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
+        containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+        // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
+        backdrop?.invoke(this)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -169,6 +195,7 @@ fun TimetableWeekPage(
             // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
             TimetableTopBar(
                 brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                inkPolarity = chromeInk,
                 profileName = profileName,
                 onTitleClick = onSwitchProfileClick,
                 homeMenuStyle = homeMenuStyle,
@@ -233,6 +260,7 @@ fun TimetableWeekPage(
                     }
                 }
             }
+        }
         }
     }
 

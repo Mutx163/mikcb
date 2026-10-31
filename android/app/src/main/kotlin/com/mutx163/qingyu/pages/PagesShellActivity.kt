@@ -13,8 +13,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,17 +27,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.app.HomeNavigationForm
+import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.platform.PerfProbe
-import com.mutx163.qingyu.pages.shell.GlassDockItem
+import com.mutx163.qingyu.pages.shell.GlassDockGeometry
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
-import com.mutx163.qingyu.app.ScheduleListHost
-import com.mutx163.qingyu.app.TaskListHost
-import com.mutx163.qingyu.app.TimetableHost
-import java.time.LocalDate
+import com.mutx163.qingyu.pages.shell.HomeDockNavModel
+import com.mutx163.qingyu.pages.shell.HomeNavIcons
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
@@ -49,41 +56,35 @@ import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ListView
-import top.yukonga.miuix.kmp.icon.extended.Months
-import top.yukonga.miuix.kmp.icon.extended.Notes
-import top.yukonga.miuix.kmp.icon.extended.Tasks
-import top.yukonga.miuix.kmp.icon.extended.Settings
 
 /**
- * Compose 迁移 Phase 3 · 页面开发壳（composeUi 变体专属）。
+ * Compose 迁移 · 页面壳（dev 变体的入口 Activity，包名带 `.ui` 后缀，与正式版并存）。
  *
- * ## 结构按原 App 骨架排版（2026-10-27 起，替代早期的「示例菜单」）
+ * ## 结构（2026-10-31 起：底栏由**用户存档**决定，不再写死四个槽位）
  *
- * 主屏 = 课表周视图；底部 dock 三个槽位：课表 / 日程 / 任务——与正式 App 的
- * 「课表主屏 + 玻璃坞内嵌页」同构（玻璃/壁纸效果不在壳里复刻，那属于样式批次）。
- * 带 `.ui` 包名后缀，与正式版/调试版并存，**不会覆盖手机上的正式版**。
+ * 主屏 = 某个底栏条目对应的内容：`week` / `day` / `monthView` 是三个课表视图，
+ * 其余条目（`tasks` / `scheduleList` / `settings` / `statistics` …）渲染成对应页面，
+ * **底栏保持可见**——与 Flutter「玻璃坞内嵌页」（`kInlineDockPages`）同构：
+ * 点底栏换内容、返回回周视图。打开底栏以外的页面才 push 一层、底栏让位。
  *
- * ## 数据是示例值，不是真实数据
+ * 条目集合、顺序、上限（5 个）、圆钮加课、`classic` 无坞形态、冷启动恢复的视图档
+ * 全部来自用户存档（`glassDockActions` / `glassDockShowAddButton` /
+ * `glassDockButtonEntryId` / `homeNavigationForm` / `timetableHomeViewMode`），
+ * 解析规则在 [com.mutx163.qingyu.pages.shell.HomeDockNavModel]（纯 Kotlin，L0 单测钉住）。
+ * 2026-10-31 之前这四项写死为「课表 / 日程 / 任务 / 索引」，设置里改底栏没有任何效果。
  *
- * 本壳读不到正式版的 FlutterSharedPreferences。日程页喂示例条目只为核对版式与
- * 文案；任务页/课表是空态骨架，示例条目与真实数据接线属于后续批次。
+ * ## 数据
  *
- * ## 接线进度（2026-10-27 晚）
+ * 壳读写的是**自己那份** `FlutterSharedPreferences`（包名隔离），格式与正式版同一套冻结
+ * 格式，但内容不共享。因此壳里看到的是壳自己的数据，不是手机上正式版的课表。
  *
- * 三个槽位（课表周视图 / 日程列表 / 任务列表）与之前**完全一样**，一个字都没动。
+ * ## 索引页（旁路）
  *
- * 第四槽位「索引」是**旁路**：原来的三个槽位没覆盖到的 75 个页面，在索引里点一行
- * 就进得去，返回回到索引。没有它，那 75 个页面在真机上一个都点不到，
- * L4 逐页对照就无从做起。目录（[com.mutx163.qingyu.pages.shell.ShellPageCatalog]）
- * 与分派（[ShellPageContent]）分开：加一页只改这两处，不碰槽位逻辑。
- *
- * 索引里每条都标了数据来路：
+ * 目录（[com.mutx163.qingyu.pages.shell.ShellPageCatalog]）与分派（[ShellPageContent]）
+ * 分开：加一页只改这两处，不碰导航逻辑。索引里每条都标了数据来路：
  * - 无标记：页面自带默认值，直接进；
- * - 「演示数据」：壳读不到正式版数据，喂的是示例值，只看版式与文案；
- * - 「暂不可用」：缺宿主能力（二维码发送/扫码要拍照与编解码，仓库里没有），
- *   宁可不给入口，也不造个假实现骗人点。
+ * - 「演示数据」：壳里喂的是示例值，只看版式与文案；
+ * - 「暂不可用」：缺宿主能力，宁可不给入口，也不造假实现。
  */
 class PagesShellActivity : ComponentActivity() {
 
@@ -181,11 +182,36 @@ private fun PagesShell() {
     // Phase 3.5 接线层：壳自己的存储 + 课表仓储。
     val wiring = rememberShellWiring()
 
-    // ── 两个「运行期偏好」：改了当场生效，不用重启（Dart 是同一个形态）───────────
-    // 1) 震动总开关：关掉时把 `LocalHapticFeedback` 换成空实现。
-    //    这样 miuix 组件自带的触感（滚轮、滚到尽头、按压反馈）自动跟着静音，
-    //    不用在几十个调用点各判一次开关（Dart 侧是全局门 + 各点直读）。
-    // 2) 页面转场速度：只缩放官方转场的**时长**，几何仍用 MiuixDefault（自研转场是禁区）。
+    // ── 用户设置（底栏排列 / 底栏形态 / 圆钮 / 首页视图档）──────────────────────
+    // 设置存储没有变更通道（`TimetableSettingsModelStore` 只有 load / save），旧做法是
+    // 「每次重组 load 一遍」。这里读一次进 state，并在**回到主屏**时重读：设置页改完
+    // 返回后立刻生效，滚动、动画的每一帧又不用重新解析一遍 JSON。
+    var settingsModel by remember(wiring) { mutableStateOf(wiring.settingsModel.load()) }
+
+    // 底栏条目：**由用户存档决定**，不再写死「课表 / 日程 / 任务 / 设置」。
+    // Dart `resolveGlassDockActionIds`（`home_menu_catalog.dart:536-556`）同一口径：
+    // 空表回退 `HomeDockMenu.defaultActions` = 日课表 / 周课表 / 任务。
+    // 「有没有去处」传的是壳的页面映射表：本仓还没移植的目录条目（如 courseRecolor
+    // 的颜色重设弹层）在这里被丢掉，宁可不放进底栏，也不给一个点了没反应的按钮。
+    val dockIds = remember(settingsModel) {
+        val resolved = HomeDockNavModel.resolveIds(settingsModel.glassDockActions) { id ->
+            rootPageIdFor(id) != null
+        }
+        // 开发壳的「页面索引」入口（L4 逐页对照用，见 [HomeDockNavModel.DEV_INDEX_ID]）：
+        // **只在用户没自定义过底栏时**追加到末尾；用户动过底栏就完全按存档来。
+        if (settingsModel.glassDockActions.isEmpty() && resolved.size < HomeDockNavModel.MAX_SLOTS) {
+            resolved + HomeDockNavModel.DEV_INDEX_ID
+        } else {
+            resolved
+        }
+    }
+    // 底栏形态：`classic` 是 Dart 的「不挂玻璃坞」档（`home_chrome_spec.dart:78-80`：
+    // `glassDockForm = homeNavigationForm == glassDock`，非坞档直接返回 `dockContent`，
+    // 坞层连建都不建）。这里照做：classic 不画底栏。回到设置的路径两边也一致——
+    // 顶栏右上角「更多」菜单（默认含「设置」）。
+    val showDock = settingsModel.homeNavigationForm == HomeNavigationForm.GLASS_DOCK
+
+    // ── 两个「运行期偏好」：改了当场生效，不用重启（Dart 是同一个形态）───────────────
     val systemHaptics = LocalHapticFeedback.current
     val shellHaptics: HapticFeedback =
         if (wiring.enableHaptics) systemHaptics else NoopHapticFeedback
@@ -194,10 +220,16 @@ private fun PagesShell() {
     }
 
     // 页面层用 miuix-nav 的返回栈（唯一合规做法，不自研转场）。栈底是 [ShellRoute.Dock]
-    // （底部四槽主屏），打开一页 push 一层、返回 pop 一层；切槽 = 替换栈底那条路由。
-    // 所有转场由 NavDisplay（NavTransitions.MiuixDefault + NavDisplayEffects.Default）负责，
-    // 不写一行自研动画。
-    val backStack = remember { navBackStackOf(ShellRoute.Dock(DockSlot.TIMETABLE.id)) }
+    // （主屏：某个底栏条目/视图），打开一页 push 一层、返回 pop 一层；切底栏 = 替换栈底
+    // 那条路由。所有转场由 NavDisplay（NavTransitions.MiuixDefault + NavDisplayEffects.Default）
+    // 负责，不写一行自研动画。
+    //
+    // 首屏停在哪个视图由存档决定（Dart `timetableHomeViewMode`，冷启动恢复上次停留的
+    // 周 / 日 / 月）—— 这是此前同样没接上的一个死键。
+    val initialRootId = remember(wiring) {
+        rootItemIdForView(wiring.settingsModel.load().timetableHomeViewMode)
+    }
+    val backStack = remember { navBackStackOf(ShellRoute.Dock(initialRootId)) }
 
     fun popPage() {
         if (backStack.size > 1) backStack.removeLastOrNull()
@@ -205,25 +237,55 @@ private fun PagesShell() {
 
     fun pushPage(id: String) {
         val route = ShellRoute.Page(id)
-        // 幂等：同一页已在栈里就不再压（重复 contentKey 会被运行时拒绝，也会让返回分叉）。
-        if (route !in backStack) backStack.add(route)
+        // 幂等 + 环状导航：同一页已在栈里时**弹回那一层**，而不是什么都不做。
+        // 2026-10-31 审核 P2-1：旧写法 `if (route !in backStack) add` 让
+        // 「A 页 → B 页 → 又点 A」静默无反应（用户点了没动静，只能猜）。
+        val existing = backStack.indexOf(route)
+        if (existing >= 0) {
+            while (backStack.size > existing + 1) backStack.removeLastOrNull()
+            return
+        }
+        backStack.add(route)
     }
 
-    // 栈顶路由：是 Dock 则停在主屏某个槽；是 Page 则压着页面层。
+    /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
+    fun selectRoot(itemId: String) {
+        if (backStack.size == 1) backStack[0] = ShellRoute.Dock(itemId)
+        // 视图档写回存档（Dart `timetableHomeViewMode` 同样是「切了就存」）。
+        val mode = homeViewModeOf(itemId) ?: return
+        if (settingsModel.timetableHomeViewMode == mode) return
+        val next = settingsModel.copy(timetableHomeViewMode = mode)
+        settingsModel = next
+        runCatching { wiring.settingsModel.save(next) }
+    }
+
+    /** 圆钮（右侧独立按钮）：Dart `handleRoundButtonTap`（`home_menu_controller.dart:306-333`）。 */
+    fun handleRoundButton() {
+        val action = HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
+        val target = if (action == HomeDockNavModel.ACTION_ADD_COURSE) null else rootPageIdFor(action)
+        if (target == null) {
+            // 加课：清掉可能残留的「编辑目标」，否则会把上一门课载进新建表单。
+            wiring.pendingAddCourseSeed = null
+            wiring.pendingEditCourse = null
+            pushPage("d1.addCourse")
+        } else {
+            pushPage(target)
+        }
+    }
+
+    // 栈顶路由：是 Dock 则停在主屏某个条目；是 Page 则压着页面层。
     val topRoute = backStack.lastOrNull()
-    val currentSlot = (topRoute as? ShellRoute.Dock)
-        ?.let { r -> DockSlot.entries.firstOrNull { it.id == r.slotId } }
-        ?: DockSlot.TIMETABLE
+    val currentRootId = (topRoute as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK
     val atRoot = topRoute is ShellRoute.Dock
 
-    // 切槽 = 替换栈底那条 Dock 路由（过渡交给 NavDisplay）。压着页面时坞不显示，走不到这。
-    fun selectSlot(newSlot: DockSlot) {
-        if (backStack.size == 1) backStack[0] = ShellRoute.Dock(newSlot.id)
+    // 回到主屏时重读设置：设置页里改完底栏排列 / 形态，返回主屏立刻是新的。
+    LaunchedEffect(atRoot) {
+        if (atRoot) settingsModel = wiring.settingsModel.load()
     }
 
-    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且非课表槽时回课表主屏。
-    BackHandler(enabled = atRoot && currentSlot != DockSlot.TIMETABLE) {
-        selectSlot(DockSlot.TIMETABLE)
+    // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且不在周视图时回周视图。
+    BackHandler(enabled = atRoot && currentRootId != ROOT_WEEK) {
+        selectRoot(ROOT_WEEK)
     }
 
     // 玻璃的背景采样源：整个内容区先被录进这个 layer，底栏再拿它当 backdrop。
@@ -233,10 +295,11 @@ private fun PagesShell() {
     // ⚠️ 录制有成本：miuix 的 `LayerBackdropNode.draw()` 实际是
     // `drawContent(); recordLayer { onDraw() }` —— 内容每重绘一帧（滚动、转场、任何动画），
     // 都会先在屏幕上画一遍、再把整屏录进一张离屏 GraphicsLayer。所以只在
-    // **栈底 + 设备支持 runtime shader** 时才挂：压着页面时底栏不显示（`atRoot=false`），
-    // 没有任何东西采样它，那段录制是纯浪费（2026-10-29 审计第 1 条）。
+    // **栈底 + 有底栏 + 设备支持 runtime shader** 时才挂：压着页面时底栏不显示
+    // （`atRoot=false`），没有任何东西采样它，那段录制是纯浪费（2026-10-29 审计第 1 条）。
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
+    val recordBackdrop = atRoot && showDock && glassAvailable
 
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
@@ -255,11 +318,7 @@ private fun PagesShell() {
                     // 只有栈底且能画模糊时才录制（理由见上方 `backdrop` 的注释）。
                     // 压着页面时不录制，回栈底那一帧由新的内容重绘重新录一次。
                     .then(
-                        if (atRoot && glassAvailable) {
-                            Modifier.layerBackdrop(backdrop)
-                        } else {
-                            Modifier
-                        },
+                        if (recordBackdrop) Modifier.layerBackdrop(backdrop) else Modifier,
                     ),
             ) {
                 NavDisplay(
@@ -270,62 +329,21 @@ private fun PagesShell() {
                     effects = NavDisplayEffects.Default,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    // 栈底：底部四槽主屏。切槽已经过「替换这条路由」，转场由 NavDisplay 做。
+                    // 栈底：主屏。**内容由底栏条目 id 决定**（不再是四个写死的槽位）：
+                    // `week`/`day`/`monthView` → 周 / 日 / 月视图；其余条目 → 对应页面。
+                    // 与 Dart「内嵌页」同构：底栏保持可见，返回回到周视图。
                     entry<ShellRoute.Dock> { route ->
-                        val dockSlot = DockSlot.entries.firstOrNull { it.id == route.slotId }
-                            ?: DockSlot.TIMETABLE
-                        when (dockSlot) {
-                            // Phase 3.5：课表槽位改用**真宿主**——真数据 + 真回调。
-                            // `weather` 与页面层 `c1.week` 共用 `ShellWiring` 里那一份实例
-                            // （弹层天气行要它；两个入口传同一份，才不会一处有天气一处没有）。
-                            DockSlot.TIMETABLE -> TimetableWithCourseActions(
-                                wiring = wiring,
-                                onNavigate = { target -> pushPage(target) },
-                                weatherProvider = wiring.weather,
+                        if (route.itemId == HomeDockNavModel.DEV_INDEX_ID) {
+                            // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
+                            // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
+                            ShellPageIndexScreen(
+                                onOpenPage = { target -> pushPage(target) },
+                                onBack = { selectRoot(ROOT_WEEK) },
                             )
-                            DockSlot.SCHEDULE -> ScheduleListHost(
-                                repository = wiring.timetable,
-                                todayIso = LocalDate.now().toString(),
-                                onBack = { selectSlot(DockSlot.TIMETABLE) },
-                                onAdd = {
-                                    wiring.clearScheduleIntent()
-                                    wiring.pendingScheduleInitialDate = LocalDate.now().toString()
-                                    pushPage("d2.addSchedule")
-                                },
-                                onEdit = { item ->
-                                    wiring.pendingScheduleEdit = item
-                                    wiring.pendingScheduleOccurrenceDate = null
-                                    pushPage("d2.addSchedule")
-                                },
-                                onDelete = { item -> wiring.deleteScheduleItem(item, null) },
-                            )
-                            // 任务槽位：2026-10-29 前这里喂的是 `shellSampleTaskViewState()`
-                            // （演示空态）+ 5 个空回调 ⇒ 从底栏进任务 tab 是**死页**，
-                            // 而路由 `d2.taskList` 早就是真数据。现在两边共用 `TaskListHost`。
-                            DockSlot.TASK -> TaskListHost(
-                                repository = wiring.timetable,
-                                onBack = { selectSlot(DockSlot.TIMETABLE) },
-                                onOpenAddTask = {
-                                    wiring.pendingTaskForEdit = null
-                                    wiring.pendingTaskCourse = null
-                                    pushPage("d2.addTask")
-                                },
-                                onOpenEditTask = { task ->
-                                    wiring.pendingTaskForEdit = task
-                                    wiring.pendingTaskCourse = null
-                                    pushPage("d2.addTask")
-                                },
-                                onOpenCourse = { course, sourceWeek ->
-                                    wiring.pendingEditCourse = course
-                                    wiring.pendingEditGroup = null
-                                    wiring.pendingEditWeek = sourceWeek
-                                    pushPage("d1.addCourse")
-                                },
-                            )
-                            // 设置主槽位：直接渲染设置主页，点击子项自然 push 子页面。
-                            DockSlot.SETTINGS -> ShellPageContent(
-                                pageId = "b.settingsHome",
-                                onBack = { selectSlot(DockSlot.TIMETABLE) },
+                        } else {
+                            ShellPageContent(
+                                pageId = rootPageIdFor(route.itemId) ?: ROOT_WEEK_PAGE_ID,
+                                onBack = { selectRoot(ROOT_WEEK) },
                                 wiring = wiring,
                                 onOpenPage = { target -> pushPage(target) },
                             )
@@ -344,17 +362,30 @@ private fun PagesShell() {
                 }
             }
 
-            // 只在栈底（没压页面）时显示玻璃坞：页面层占满整屏，底部操作区不能被坞压住；
-            // 压着页面时点坞也会让「返回」语义分叉。
-            if (atRoot) {
+            // 玻璃坞只在栈底显示（压着页面时它会压住页面底部操作区，且点它会分叉返回语义）。
+            // classic 形态不画（Dart `homeNavigationForm == classic` ⇒ 没有坞层）。
+            if (atRoot && showDock) {
+                val roundActionId =
+                    HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
                 GlassDockNavigationBar(
-                    items = dockItems,
-                    selectedIndex = currentSlot.ordinal,
-                    onSelect = { index -> selectSlot(DockSlot.entries[index]) },
+                    items = dockIds.map { HomeNavIcons.dockItem(it) },
+                    selectedIndex = HomeDockNavModel.selectedIndex(dockIds, currentRootId),
+                    onSelect = { index -> selectRoot(dockIds[index]) },
                     // 设备不支持 runtime shader 时别把 backdrop 传进去：
                     // 传了也画不出模糊，反而会多录一层、白费一次采样。
                     backdrop = if (glassAvailable) backdrop else null,
                     modifier = Modifier.align(Alignment.BottomCenter),
+                    trailingContent = if (settingsModel.glassDockShowAddButton) {
+                        {
+                            GlassDockRoundButton(
+                                icon = HomeNavIcons.iconOf(roundActionId),
+                                contentDescription = HomeNavIcons.labelOf(roundActionId),
+                                onClick = { handleRoundButton() },
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -362,25 +393,72 @@ private fun PagesShell() {
     }
 }
 
+/** 栈底默认条目：周视图（Dart `TimetableHomeViewMode.week`）。 */
+private const val ROOT_WEEK = "week"
+
+/** 周视图对应的壳页面 id（`ShellPageIndex` 的 `c1.week` = 真宿主 `TimetableWithCourseActions`）。 */
+private const val ROOT_WEEK_PAGE_ID = "c1.week"
+
 /**
- * 四个槽位的图标。
+ * 底栏条目 id → 壳页面 id。
  *
- * 选型理由：课表=日历格（`Months`）、日程=清单（`ListView`）、任务=勾选（`Tasks`）、
- * 索引=笔记/目录（`Notes`）——前三个与 Flutter 版玻璃坞的图标语义对齐；
- * 名字都取自 `miuix-icons` 的 extended 组，已确认存在（见 `MiuixIcons` 扩展属性）。
+ * 与 `shellTimetableMenuPageId` 的关系：它是「菜单/目录条目 → 页面」的全量表，
+ * 这里只多出**三个视图动作**（`week` / `day` / `monthView` 里的前两个不由目录驱动），
+ * 其余一律转交那张表，避免二份路由口径。
  *
- * 第四个是迁移期专用：正式 App 的玻璃坞只有三个槽位，这里多出来的是
- * 「其余 75 页怎么点到」的入口，给完之后随页面接线一起拆。
+ * 返回 null = 本仓还没有这一项的去处（`courseRecolor` 的颜色重设弹层、
+ * `shareTimetable` 的分享面板都还没移植），底栏解析时会被丢弃。
  */
-private val dockItems: List<GlassDockItem>
-    @Composable get() = listOf(
-        // 不再传 contentDescription：有 label 时读屏只该念可见文字，两样都给会念两遍
-        // （详见 GlassDockNavigationBar 里那处 semantics 的注释）。
-        GlassDockItem(icon = MiuixIcons.Months, label = DockSlot.TIMETABLE.label),
-        GlassDockItem(icon = MiuixIcons.ListView, label = DockSlot.SCHEDULE.label),
-        GlassDockItem(icon = MiuixIcons.Tasks, label = DockSlot.TASK.label),
-        GlassDockItem(icon = MiuixIcons.Settings, label = DockSlot.SETTINGS.label),
-    )
+private fun rootPageIdFor(itemId: String): String? = when (itemId) {
+    ROOT_WEEK -> ROOT_WEEK_PAGE_ID
+    HomeDockNavModel.ACTION_DAY -> "c3.day"
+    else -> shellTimetableMenuPageId(itemId)
+}
+
+/** 条目 id → 存档里的视图档；不是视图动作时返回 null（不写 `timetableHomeViewMode`）。 */
+private fun homeViewModeOf(itemId: String): TimetableHomeViewMode? = when (itemId) {
+    ROOT_WEEK -> TimetableHomeViewMode.WEEK
+    HomeDockNavModel.ACTION_DAY -> TimetableHomeViewMode.DAY
+    "monthView" -> TimetableHomeViewMode.MONTH
+    else -> null
+}
+
+/** 冷启动时按存档的视图档选栈底条目（Dart `timetableHomeViewMode` 的恢复）。 */
+private fun rootItemIdForView(mode: TimetableHomeViewMode): String = when (mode) {
+    TimetableHomeViewMode.WEEK -> ROOT_WEEK
+    TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
+    TimetableHomeViewMode.MONTH -> "monthView"
+}
+
+/**
+ * 玻璃坞右侧的独立圆钮（Flutter `glassDockShowAddButton` 那个「加课」按钮）。
+ *
+ * 用官方 [FloatingActionButton]（miuix 基础件）而不是自绘一块玻璃：本仓对「自研形状/
+ * 动画」有禁令，而官方这颗按钮的按压反馈、阴影、无障碍语义都是现成的。
+ * 直径与药丸同高（[GlassDockGeometry.HeightDp]），右侧留 8dp 由底栏负责。
+ */
+@Composable
+private fun GlassDockRoundButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MiuixTheme.colorScheme.primary,
+        shadowElevation = 6.dp,
+        minWidth = GlassDockGeometry.HeightDp.dp,
+        minHeight = GlassDockGeometry.HeightDp.dp,
+    ) {
+        Icon(
+            imageVector = icon,
+            // 有可见文字的场景不存在（圆钮只有图标），所以这里必须给语义名。
+            contentDescription = contentDescription,
+            tint = MiuixTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(24.dp),
+        )
+    }
+}
 
 /**
  * 给官方转场预设套一层**时长缩放**：几何一点不改，只把「程序化整步」那一档
@@ -439,15 +517,3 @@ private const val OFFICIAL_PROGRAMMATIC_DURATION_MILLIS = 500
 private object NoopHapticFeedback : HapticFeedback {
     override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
 }
-
-/** dock 槽位：课表 / 日程 / 任务 / 设置 四大常驻入口。[id] 是路由里用的稳定短串。 */private enum class DockSlot(val id: String, val label: String) {
-    TIMETABLE("timetable", "课表"),
-    SCHEDULE("schedule", "日程"),
-    TASK("task", "任务"),
-    SETTINGS("settings", "设置"),
-}
-
-/*
- * 课表槽位占位页已于 2026-10-27 18:40 移除：P3-C1 的 `pages/timetable/` 已挂进
- * composeUi 源集并取得 L1 绿，槽位换回 `TimetableWeekPage()`。
- */

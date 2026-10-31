@@ -5,9 +5,10 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
 /**
  * 壳页面层的路由 —— miuix-nav 返回栈里的「键」。
  *
- * - [Dock]：栈底那一层，底部四槽的主屏；[slotId] 记录当前是哪个槽
- *   （`timetable` / `schedule` / `task` / `settings`）。切槽 = 替换这条路由，
- *   转场交给 NavDisplay，不自己写动画。
+ * - [Dock]：栈底那一层，主屏；[itemId] 是当前停在哪个**底栏条目**
+ *   （`week` / `day` / `tasks` / `settings` / `monthView` …，取值来自用户的
+ *   `glassDockActions` 存档）。切条目 = 替换这条路由，转场交给 NavDisplay，
+ *   不自己写动画。
  * - [Page]：从索引点开的、或页面内部推开的任意一页；[id] 即 [ShellPageContent]
  *   认识的目录 id（`a.about` / `b.general` / `c1.week` …）。
  *
@@ -19,8 +20,13 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
  */
 sealed interface ShellRoute : NavKey {
 
-    /** 栈底的主屏（底部四槽），[slotId] 指当前槽。 */
-    data class Dock(val slotId: String) : ShellRoute
+    /**
+     * 栈底的主屏，[itemId] 指当前停的底栏条目。
+     *
+     * 2026-10-31 之前这里叫 `slotId`、只认四个写死的槽位（timetable/schedule/task/
+     * settings）；底栏改为读用户存档后条目集合是可变的，「槽位」这个词不再成立。
+     */
+    data class Dock(val itemId: String) : ShellRoute
 
     /** 页面层的一页，[id] 即目录 id。 */
     data class Page(val id: String) : ShellRoute

@@ -6,6 +6,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.shell.HomeInkPolarity
+import com.mutx163.qingyu.pages.shell.HomeWallpaperBackdrop
+import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
@@ -99,6 +107,37 @@ fun TimetableHost(
     // 只在数据变化时取一次「此刻」：考试过期判定随它走，但不该每帧变。
     val now = remember(snapshot) { LocalDateTime.now() }
 
+    // ── 首页壁纸背景（Dart `lib/utils/home_page_background.dart` 那整条链）──
+    // 快照只在「设置 / 明暗 / 视口宽」变化时重建：取景倍数、对齐、模糊强度、解码宽度
+    // 全部已在模型层收口（`HomeBackgroundModel.snapshotOf`），渲染层不再二次夹。
+    // 没设壁纸时快照 `hasWallpaper == false`，组件只铺页面底色 —— 与旧版观感一致。
+    val isDarkTheme = isSystemInDarkTheme()
+    val viewportWidthPx = with(LocalDensity.current) {
+        LocalConfiguration.current.screenWidthDp.dp.roundToPx()
+    }
+    val backdropSnapshot = remember(settingsModel, isDarkTheme, viewportWidthPx) {
+        settingsModel?.let { model ->
+            HomeBackgroundModel.snapshotOf(
+                settings = model,
+                isDark = isDarkTheme,
+                viewportWidthPx = viewportWidthPx,
+                themeFallbackArgb = QingyuTheme.scaffoldBackground(dark = isDarkTheme),
+            )
+        }
+    }
+    // 壁纸「顶部那条带」的平均亮度（0..1）：顶栏墨色的唯一判据。
+    // 换壁纸 / 换解码宽时先复位成 null（= 亮度未知 ⇒ 走主题墨色），避免拿上一张图的
+    // 亮度去决定这张图上的字色（深底白字印在浅壁纸上一闪）。
+    var wallpaperLuminance by remember(backdropSnapshot?.wallpaperPath) {
+        mutableStateOf<Double?>(null)
+    }
+    // 只有「真有壁纸」才谈「壁纸上的墨色」；没壁纸 = 主题墨色（null）。
+    val chromeInk: HomeInkPolarity? = if (backdropSnapshot?.hasWallpaper == true) {
+        HomeBackgroundModel.chromeInkPolarity(wallpaperLuminance)
+    } else {
+        null
+    }
+
     TimetableWeekPage(
         courses = snapshot.courses,
         timeScheme = TimetableHostLogic.resolveActiveTimeScheme(
@@ -133,5 +172,16 @@ fun TimetableHost(
         homeMenuStyle = settingsModel?.homeMenuStyle ?: HomeMenuStyle.LIST,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,
+        // 壁纸层：页面画在内容最底下，并据此把底色改透明。
+        backdrop = backdropSnapshot?.let { snapshot ->
+            {
+                HomeWallpaperBackdrop(
+                    snapshot = snapshot,
+                    onInkLuminance = { luminance -> wallpaperLuminance = luminance },
+                )
+            }
+        },
+        // 壁纸上的顶栏墨色（深壁纸 ⇒ 浅墨）。null = 没壁纸 / 亮度还没测出来 ⇒ 主题墨色。
+        chromeInk = chromeInk,
     )
 }

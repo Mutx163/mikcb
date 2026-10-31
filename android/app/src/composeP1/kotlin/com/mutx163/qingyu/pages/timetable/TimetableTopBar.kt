@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
@@ -94,6 +95,13 @@ fun TimetableTopBar(
     modifier: Modifier = Modifier,
     title: String = TimetableStrings.appTitle.zh,
     brand: Boolean = false,
+    /**
+     * 壁纸上的墨色（`HomeInkPolarity.Light` = 深色壁纸 ⇒ 浅墨）。
+     * `null` = 没有壁纸 ⇒ 主题墨色，与旧版一致。
+     *
+     * 只影响本行的文字与图标；判据在宿主侧（壁纸顶部亮度 → `chromeInkPolarity`）。
+     */
+    inkPolarity: HomeInkPolarity? = null,
     profileName: String? = null,
     onTitleClick: (() -> Unit)? = null,
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
@@ -101,8 +109,16 @@ fun TimetableTopBar(
     onMenuSelect: (String) -> Unit = {},
 ) {
     val dark = isSystemInDarkTheme()
-    val primaryText = Color(QingyuTheme.primaryText(dark))
-    val secondaryText = Color(QingyuTheme.secondaryText(dark))
+    // 压在壁纸上时，墨色跟**壁纸明暗**走（Dart `homePageChromeForegroundForLuminance`：
+    // 深色壁纸用浅墨、浅色壁纸用深墨，阈值 0.45）。实现上直接复用主题的两套文字色
+    // （深色档 = 近白、浅色档 = 近黑），渲染层不写颜色字面量（守 R5）。
+    val inkDark = when (inkPolarity) {
+        HomeInkPolarity.Light -> true
+        HomeInkPolarity.Dark -> false
+        null -> dark
+    }
+    val primaryText = Color(QingyuTheme.primaryText(inkDark))
+    val secondaryText = Color(QingyuTheme.secondaryText(inkDark))
     val accent = Color(QingyuTheme.primary(dark = dark))
 
     var showMenu by remember { mutableStateOf(false) }

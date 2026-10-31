@@ -56,6 +56,16 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - `演示数据`：页面需要一份视图状态，壳里喂的是空列表/示例条目——**别当真实数据**；
  * - `暂不可用`：进不去，行下方直接写缺什么（缺渲染层 / 缺相机 / 缺二维码编码器）。
  */
+/**
+ * 索引页标题。
+ *
+ * 同时被开发壳底栏那个「索引」槽位用（`PagesShellActivity` 的 `DEV_INDEX_ID`）——
+ * 同一句话只写一处，改文案不会出现「页里叫 A、底栏叫 B」。
+ * 全仓唯一的中文入口字面量就这一处（该文件在 `src/main`，不在 `composeP1`
+ * 渲染层的 i18n 棘轮扫描范围内；正式包随开发壳一起删）。
+ */
+const val SHELL_PAGE_INDEX_TITLE = "页面索引"
+
 @Composable
 fun ShellPageIndexScreen(
     onOpenPage: (String) -> Unit,
@@ -72,7 +82,7 @@ fun ShellPageIndexScreen(
     Scaffold(containerColor = scaffoldBg) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize()) {
             TopAppBar(
-                title = "页面索引",
+                title = SHELL_PAGE_INDEX_TITLE,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
