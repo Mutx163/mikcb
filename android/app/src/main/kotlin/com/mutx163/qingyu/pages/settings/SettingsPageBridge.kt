@@ -80,8 +80,18 @@ object SettingsPageBridge {
      *
      * ⚠️ 登记 ≠ 接线完成：写路径还取决于 `SettingsActionDispatcher` 是否认这些页的
      * rowId（见各页分支注释与 `claims/F06-settings-components.md`）。
+     *
+     * `liveData` 只有 `b.live` 用得上：那页的摘要行由 `LivePageData` 决定，`state` 通篇
+     * 未使用。**默认值是空构造 = 屏上仍是默认摘要**——真要给 `b.live` 接真值，
+     * 调用方必须自己从 `LiveDisplayStore` 读出来后传进来（壳里 `b.live` 走的是
+     * `composeP1: app/LiveSettingsPageHost.kt`，不经过这里；本参数是给
+     * `SettingsHost` 将来统一托管该页时用的入口）。
      */
-    fun specFor(pageId: String, state: SettingsPageState): SettingsPageSpec? = when (pageId) {
+    fun specFor(
+        pageId: String,
+        state: SettingsPageState,
+        liveData: LivePageData = LivePageData(),
+    ): SettingsPageSpec? = when (pageId) {
         SettingsGeneralPage.ID -> SettingsGeneralPage.spec(state)
         SettingsAppearancePage.ID -> SettingsAppearancePage.spec(state)
         SettingsThemeManagePage.ID -> SettingsThemeManagePage.spec(state)
@@ -89,7 +99,7 @@ object SettingsPageBridge {
         // `b.reset`：五个作用域行是 RESET_SCOPE（宿主已有二次确认弹窗 `pendingReset`）。
         SettingsResetPage.ID -> SettingsResetPage.spec(state)
         SettingsGlassDockIconEditorPage.ID -> SettingsGlassDockIconEditorPage.spec(state)
-        SettingsLivePage.ID -> SettingsLivePage.spec(state)
+        SettingsLivePage.ID -> SettingsLivePage.spec(state, liveData)
         SettingsLiveSelfCheckPage.ID -> SettingsLiveSelfCheckPage.spec(state)
         else -> null
     }
