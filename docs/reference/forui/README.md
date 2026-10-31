@@ -1,28 +1,23 @@
-# Forui 文档镜像（AI 参考）
+# Forui 历史参考（项目已不再使用 Forui）
 
-本目录存放 [Forui 官方文档](https://forui.dev/docs) 的本地镜像，供 AI 与离线查阅。
+> **项目从 miuix + Compose 路线开始就不再使用 Forui**（`forui: ^0.23.0` 已于提交 `2b19a896` 移除，
+> `pubspec.yaml` / `pubspec.lock` 里现在 0 处）。本目录保留的只是**历史参考**，
+> 不是当下写页面该看的东西。**写新的 Compose 页面请读
+> [`docs/reference/compose-page-style-rules.md`](../compose-page-style-rules.md)。**
 
 ## 文件
 
-| 文件 | 说明 | 在线源 |
-|------|------|--------|
-| `llms.txt` | 文档索引（标题 + 描述 + 链接） | https://forui.dev/docs/llms.txt |
-| `llms-full.txt` | **全量**文档正文（Markdown，含代码示例与 API） | https://forui.dev/docs/llms-full.txt |
-| `mikcb-settings-screen-layout.md` | mikcb 项目内 Forui 设置页/表单页布局约定 | 源自 `.trellis/spec/flutter/settings-screen-layout.md` |
+| 文件 | 说明 |
+|------|------|
+| `mikcb-settings-screen-layout.md` | mikcb 项目内 Forui 时代设置页/表单页的布局约定（源自 `.trellis/spec/flutter/settings-screen-layout.md`）。**这是本目录唯一一份我们自己写的内容**，其中「不要在分组卡片里再套卡片」这条仍然适用 |
 
-## 使用建议
+## 官方文档镜像已删除（2026-10-31）
 
-- 查 Forui 组件 API、主题、Sheet/Dialog 等：**优先读 `llms-full.txt`**。
-- 快速定位某一页：**先读 `llms.txt` 索引**。
-- 改 mikcb 设置页、表单页、Bottom Sheet：**同时参考 `mikcb-settings-screen-layout.md`**。
-
-## 更新
-
-Forui 文档会随版本更新。需要刷新时：
+原先这里还有 `llms.txt` / `llms-full.txt`（Forui 官方文档的本地镜像，共 456 KB）。
+项目已不用 Forui，且这两份是纯第三方文本、随时可从上游重新拉取，因此清掉，为仓库减重。
+需要时按原样重新拉：
 
 ```powershell
-curl.exe -sL "https://forui.dev/docs/llms.txt" -o docs/reference/forui/llms.txt
+curl.exe -sL "https://forui.dev/docs/llms.txt"      -o docs/reference/forui/llms.txt
 curl.exe -sL "https://forui.dev/docs/llms-full.txt" -o docs/reference/forui/llms-full.txt
 ```
-
-当前项目已移除 `forui` 依赖（历史版本 `forui: ^0.23.0`，见提交 2b19a896）；本目录仅保留文档镜像供离线查阅。
