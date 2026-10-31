@@ -1,49 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/month_grid_collapse.dart';
-import '../../../utils/card_surface_ink.dart';
+import 'month_metrics.dart';
 
-/// **日期表格的拖拽把手**（2026-10-21 第二轮修正，第三轮修可读性）。
+/// **日历卡的拖拽把手**：卡底正中那根 5dp 小横条（2026-10-21 立，两轮改位置）。
 ///
-/// ## 归属修正（这是本类最重要的一件事）
+/// ## 位置沿革（两次都是用户指的）
 ///
-/// 用户口径：「那个拉杆，不应该是下面弹窗拉杆，拉杆的内容，应该是反向的，
-/// 内容应该是顶上的日期表格」。
+/// | 时间 | 位置 | 用户口径 |
+/// |---|---|---|
+/// | 2026-10-21 | 网格与信息板之间的夹缝（画在壁纸上） | 无（首版） |
+/// | 2026-10-23 上午 | 白色信息区**顶部** | 「拉杆改到下面的白色区域里面去」 |
+/// | 2026-10-23 下午 | **日历白卡**内部、卡底正中 | 「拉杆区域像小米日历这样」 |
 ///
-/// 首版把这根横条放在**条目面板的实底容器内部**，读起来就是「底部弹窗的
-/// 拖拽把手」（iOS bottom sheet 的既有心智：拉杆属于那个从下面升起的面板）。
-/// 但这里被拖动的其实是**上面的日期表格** —— 上滑收的是日历、下滑放的是日历，
-/// 下方条目只是跟着让位。把把手放在弹窗里，手势归属就讲反了。
+/// 第三次是最终形态：小米日历那根条的语义是「**这张卡**可以往上收」，
+/// 而它属于上半那张日历卡。信息区改成独立卡片之后，拉杆若留在信息区顶部就会
+/// 读成"信息列表的把手"，归属又错了 —— 所以跟着日历卡走。
 ///
-/// 所以现在：把手画在**日期表格的下沿**、属于表格这一侧（由网格外层的
-/// Column 直接摆放，不在面板的 Container 里），视觉上贴着表格底边，
-/// 读作「这张表格可以往上收」。
+/// ## 归属（拖动时收放的是上面的表格）
 ///
-/// ## 可读性修正（2026-10-21 专业评审 P0-3）
+/// 上滑收日历、下滑放日历，下方信息卡只是跟着让位。`onDrag*` 全部由页面接到
+/// 网格收放控制器（`_beginGridDrag` 等），与本组件的位置无关。
 ///
-/// 拉杆是全页唯一教用户「这张表可以上滑」的控件，实测却只有 **1.22:1** ——
-/// 等于没有。两个原因叠在一起：
+/// ## 命中区比视觉大得多
 ///
-/// 1. 旧实现取整屏主体带的墨色再乘 **0.32** alpha。主体带平均 0.356 判成深墨，
-///    而拉杆实际压着的那段水面只有 0.09 —— 深墨 32% 压上去就没了；
-/// 2. 柔和的观感是拿对比度换的，而这个控件本来就没有多余的对比度可换。
-///
-/// 现在：① 判据换成**拉杆自己那段**壁纸的亮度（由页面按它的屏幕位置采样）；
-/// ② 用满 alpha 的黑/白两档 —— 黑白对任一亮度的对比度都不低于 ~4.1:1，
-/// 不需要再靠半透明"柔和"；③ 视觉上仍是一条 5dp 的细条，观感不变。
-///
-/// ## 它为什么必须可拖
-///
-/// 下方条目列表自己需要纵向滚动，而收放网格也是纵向 —— 两者方向相同，只能在
-/// **明确的把手**上区分：把手上拖 = 收放表格，列表上拖 = 滚列表。
-/// 命中区比视觉大得多（[hitHeight] vs [barHeight]），手指不必精准点在 5px 上。
+/// 视觉 60×5，命中高 [hitHeight]（24）—— 手指不可能精准点在 5dp 上。
+/// 卡片底部另留 [MonthMetrics.calendarHandleHeight] 的空白，让这根条不贴着
+/// 卡边（贴着会被圆角切掉一半，读起来像渲染错误）。
 class MonthGridHandle extends StatelessWidget {
   const MonthGridHandle({
     required this.onDragStart,
     required this.onDragUpdate,
     required this.onDragEnd,
-    required this.inkColor,
-    this.wallpaperLuminance,
+    required this.barColor,
     super.key,
   });
 
@@ -51,17 +40,12 @@ class MonthGridHandle extends StatelessWidget {
   final ValueChanged<DragUpdateDetails> onDragUpdate;
   final ValueChanged<DragEndDetails> onDragEnd;
 
-  /// 拉杆颜色基色。画在**表格外沿**（壁纸 / 玻璃带上），所以用顶栏那套
-  /// 按壁纸亮度判好的墨色，而不是面板内卡面的墨色。
+  /// 拉杆那条细条的颜色。
   ///
-  /// [wallpaperLuminance] 为 null 时原样用它（没有壁纸 / 还没采到的兜底）。
-  final Color inkColor;
-
-  /// **拉杆正下方那段**壁纸的亮度（页面按它的屏幕位置采样）。
-  ///
-  /// 给了就按它自行判黑白，不再用整屏带判出的 [inkColor] —— 两者可以差很远
-  /// （实测主体带 0.356 判深墨，拉杆那段只有 0.09，深墨直接消失）。
-  final double? wallpaperLuminance;
+  /// 2026-10-23 起把手压在**白色日历卡**上（不画在壁纸上），所以颜色由调用方
+  /// 从**卡片墨色**取半透明档传入 —— 与卡内文字同源。旧口径（按壁纸亮度判
+  /// 满 alpha 黑白）是为"画在照片上"服务的，卡一变白就不适用了。
+  final Color barColor;
 
   /// 视觉高度（用户截图里那根细条）。
   static const double barHeight = 5;
@@ -72,24 +56,8 @@ class MonthGridHandle extends StatelessWidget {
   /// 手势命中高度：比视觉高得多，手指不必精准点在 5px 上。
   static const double hitHeight = 24;
 
-  /// 整块高度（表格下方、面板上方那一条）。
+  /// 整块高度（卡底那一条）。
   static const double extent = hitHeight;
-
-  /// 拉杆最终画出来的颜色。
-  ///
-  /// [wallpaperLuminance] 有值时按它判黑白（满 alpha），否则退回 [inkColor]。
-  /// 抽成静态纯函数是为了能单测：这是「功能存在但用户不知道」那类缺陷的
-  /// 唯一判据。
-  static Color resolveBarColor({
-    required Color inkColor,
-    required double? wallpaperLuminance,
-  }) {
-    final luminance = wallpaperLuminance;
-    if (luminance == null) {
-      return inkColor.withValues(alpha: 0.32);
-    }
-    return bestCardInkForLuminance(luminance);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,12 +73,7 @@ class MonthGridHandle extends StatelessWidget {
             width: barWidth,
             height: barHeight,
             decoration: BoxDecoration(
-              // 满 alpha 的黑/白：拉杆压在纹理复杂的照片上，对比度本来就不多，
-              // 再乘一个 alpha 就没了（旧实现实测 1.22:1）。
-              color: resolveBarColor(
-                inkColor: inkColor,
-                wallpaperLuminance: wallpaperLuminance,
-              ),
+              color: barColor,
               borderRadius: BorderRadius.circular(barHeight / 2),
             ),
           ),

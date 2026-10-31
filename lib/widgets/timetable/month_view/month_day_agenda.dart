@@ -5,25 +5,31 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../utils/hex_color.dart';
 import '../day_view/day_view_agenda_surface.dart';
+import 'month_day_cell.dart';
 import 'month_metrics.dart';
+import 'month_panel_surface.dart';
 
 /// 月视图选中日的当日议程（课程 + 考试 + 日程混排）。
 ///
-/// 视觉与**日视图议程卡同一套**：每行就是一张 [DayViewAgendaSurface]，
-/// 圆角与日视图一致（20）。用户口径（2026-10-20）：「月视图应该跟周视图、
-/// 日视图保持一致风格」——所以不是自己画一套行样式，而是复用日视图那层。
+/// ## 2026-10-23 第二轮：标题进卡，卡一律实底
 ///
-/// ## 材质例外：这里一律实体（2026-10-21）
+/// 用户对着真机截图说「整体看起来非常诡异」—— 拆出来两条原因，都在这一层：
 ///
-/// 用户口径：「下面的信息区域，为什么每一个卡片，在白色的背景下，还能显示出
-/// 壁纸来，这不合理」。
+/// 1. **日期标题浮在壁纸上**。旧实现把「10月24日」画在卡**外面**、直接压在
+///    壁纸上；用户那张壁纸是高饱和彩色斜带，深色标题压上去对比度很低，
+///    看起来像一段没对齐的散字。小米日历没有这种东西 —— 它的信息区每一块
+///    都是**带标题的卡**。
+/// 2. **卡片是玻璃的**。上一轮为了"跟课程卡材质走"去掉了 `forceSolid`，
+///    结果卡片半透明、把满屏彩色壁纸透出来，读起来像"一块模糊的洞"，
+///    而不是卡。用户截图里小米日历的卡是**实心白**。
 ///
-/// 根因：玻璃卡在 `CourseSurface` 里是 `BackdropFilter`，采的是**屏级
-/// backdrop**（壁纸），而不是"父容器画的白色"—— 父容器不透明也拦不住它。
-/// 于是卡片里能看见壁纸纹理，而它明明躺在一块白色面板上。
+/// 于是现在：**一块卡包住「标题 + 若干行」**，卡是实底白；每行仍各自可点。
 ///
-/// 所以本族的卡片**强制实体材质**（`forceSolid: true`）。这是"容器决定材质"
-/// 的正当例外：玻璃的意义是透出背景，而这里的背景是面板，不是壁纸。
+/// ## 为什么信息卡与上半日历卡必须同一档实底
+///
+/// 两者现在共用 `monthInfoCardFill`（= `surface`）。上半那张日历卡是实底，
+/// 下半若是玻璃，同一屏就有两种材质 —— 那正是用户 2026-10-20 说过的
+/// 「月视图应该跟周视图、日视图保持一致风格」的反面。
 class MonthDayAgenda extends StatelessWidget {
   const MonthDayAgenda({
     super.key,
@@ -31,8 +37,7 @@ class MonthDayAgenda extends StatelessWidget {
     required this.settings,
     required this.rows,
     required this.onRowTap,
-    this.radius = 20,
-    this.inkColor,
+    this.radius = MonthMetrics.cardRadius,
     this.onAddCourse,
   });
 
@@ -41,9 +46,6 @@ class MonthDayAgenda extends StatelessWidget {
   final List<MonthAgendaRow> rows;
   final ValueChanged<MonthAgendaRow> onRowTap;
   final double radius;
-
-  /// 壁纸上的判定墨色；null 时跟主题走。
-  final Color? inkColor;
 
   /// 空态卡里的「加课」入口。null = 不显示入口（只留说明文字）。
   ///
@@ -54,93 +56,99 @@ class MonthDayAgenda extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final ink = inkColor ?? colorScheme.onSurface;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          // 与「本月概览」等分区标题共用同一套间距与字阶（见 MonthMetrics）。
-          padding: const EdgeInsets.fromLTRB(
-            2,
-            MonthMetrics.sectionGap,
-            2,
-            MonthMetrics.sectionTitleGap,
-          ),
-          child: Text(
-            l10n.monthViewAgendaTitle(date.month, date.day),
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: MonthType.title,
-              fontWeight: FontWeight.w700,
-              color: ink.withValues(alpha: 0.82),
+    // 卡内墨色：卡是实底白，所以按**卡面**判。
+    final cardInk = monthInfoCardInk(
+      context: context,
+      settings: settings,
+      cardFill: monthInfoCardFill(context),
+    );
+    final mutedInk = cardInk.withValues(alpha: MonthInk.secondary);
+
+    return DayViewAgendaSurface(
+      settings: settings,
+      color: monthInfoCardFill(context),
+      radius: radius,
+      // ⚠️ **必须实底**。玻璃卡采的是屏级 backdrop（壁纸），父容器不透明也拦不住；
+      // 在用户那种高饱和壁纸上，半透明卡读起来就是"一块模糊的洞"而不是卡
+      //（2026-10-23 真机截图，用户报"非常诡异"）。
+      forceSolid: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 标题在**卡内**：与小米日历那块「霜降 / 九月十四」同一种结构。
+            Text(
+              l10n.monthViewAgendaTitle(date.month, date.day),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: MonthType.title,
+                fontWeight: FontWeight.w700,
+                color: cardInk,
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            if (rows.isEmpty)
+              _EmptyDayBody(
+                l10n: l10n,
+                ink: cardInk,
+                mutedInk: mutedInk,
+                onAddCourse: onAddCourse,
+              )
+            else
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0) const SizedBox(height: MonthMetrics.rowGap),
+                _AgendaRow(
+                  row: rows[i],
+                  inkColor: cardInk,
+                  onTap: () => onRowTap(rows[i]),
+                ),
+              ],
+          ],
         ),
-        if (rows.isEmpty)
-          // 空态也做成卡：与「有内容」时同一个容器语言，不再是一句浮在
-          // 纯色页上的灰字。
-          DayViewAgendaSurface(
-            settings: settings,
-            color: _cardFill(context),
-            radius: radius,
-            // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），
-            // 而它躺在白色面板上（见类注释）。
-            forceSolid: true,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.monthViewAgendaEmpty,
-                    style: TextStyle(
-                      fontSize: MonthType.body,
-                      color: ink.withValues(alpha: 0.62),
-                    ),
-                  ),
-                  if (onAddCourse != null) ...[
-                    const SizedBox(height: 12),
-                    _AddCourseAction(
-                      label: l10n.monthViewAgendaAddCourse,
-                      ink: ink,
-                      onTap: onAddCourse!,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          )
-        else
-          for (final row in rows)
-            Padding(
-              padding: const EdgeInsets.only(bottom: MonthMetrics.itemGap),
-              child: _AgendaRowTile(
-                row: row,
-                settings: settings,
-                radius: radius,
-                inkColor: ink,
-                onTap: () => onRowTap(row),
-              ),
-            ),
+      ),
+    );
+  }
+}
+
+/// 选中日什么都没有：一句说明 + 一个加课入口（都在卡内，不再另起一张卡）。
+class _EmptyDayBody extends StatelessWidget {
+  const _EmptyDayBody({
+    required this.l10n,
+    required this.ink,
+    required this.mutedInk,
+    required this.onAddCourse,
+  });
+
+  final AppLocalizations l10n;
+  final Color ink;
+  final Color mutedInk;
+  final VoidCallback? onAddCourse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.monthViewAgendaEmpty,
+          style: TextStyle(fontSize: MonthType.body, color: mutedInk),
+        ),
+        if (onAddCourse != null) ...[
+          const SizedBox(height: 12),
+          _AddCourseAction(
+            label: l10n.monthViewAgendaAddCourse,
+            ink: ink,
+            onTap: onAddCourse!,
+          ),
+        ],
       ],
     );
   }
 }
 
-/// 面板内卡片的底色：与「本月概览」「本月有安排的日子」**同族同色**。
-///
-/// 旧实现在同一个面板里用了两种底色（议程卡 `surface` / 预览卡
-/// `surfaceContainerHighest`）：一张白一张灰，同一屏两种语言，读起来像两块界面
-/// 拼在一起（2026-10-21 专业评审）。统一到这里。
-Color _cardFill(BuildContext context) {
-  final colorScheme = Theme.of(context).colorScheme;
-  return Theme.of(context).brightness == Brightness.dark
-      ? colorScheme.surface
-      : colorScheme.surfaceContainerHighest;
-}
-
-/// 空态卡里的「加课」小按钮（描边胶囊，不抢卡内文字）。
+/// 卡内的加课小按钮（描边胶囊，不抢卡内其它行）。
 class _AddCourseAction extends StatelessWidget {
   const _AddCourseAction({
     required this.label,
@@ -163,12 +171,16 @@ class _AddCourseAction extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: ink.withValues(alpha: 0.18)),
+            border: Border.all(color: ink.withValues(alpha: MonthInk.hairline)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, size: 15, color: ink.withValues(alpha: 0.7)),
+              Icon(
+                Icons.add_rounded,
+                size: 15,
+                color: ink.withValues(alpha: MonthInk.secondary),
+              ),
               const SizedBox(width: 4),
               Text(
                 label,
@@ -176,7 +188,7 @@ class _AddCourseAction extends StatelessWidget {
                 style: TextStyle(
                   fontSize: MonthType.body,
                   fontWeight: FontWeight.w600,
-                  color: ink.withValues(alpha: 0.8),
+                  color: ink.withValues(alpha: MonthInk.secondary),
                 ),
               ),
             ],
@@ -187,118 +199,103 @@ class _AddCourseAction extends StatelessWidget {
   }
 }
 
-
-class _AgendaRowTile extends StatelessWidget {
-  const _AgendaRowTile({
+/// 卡内的一行议程：色条 + 时间 + 标题/副标题 + 箭头。
+///
+/// ⚠️ 它**不再是一张卡**（卡由外面那层提供）：所以这里只画水波纹与内容，
+/// 自带一个 `InkWell` 保证每行仍可独立点击。
+class _AgendaRow extends StatelessWidget {
+  const _AgendaRow({
     required this.row,
-    required this.settings,
-    required this.radius,
     required this.inkColor,
     required this.onTap,
   });
 
   final MonthAgendaRow row;
-  final TimetableSettings settings;
-  final double radius;
   final Color inkColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // 行首竖条：考试固定红、其余用课程/日程自身色（与网格圆点同一套语义色）。
+    // 行首竖条：考试固定红、其余用课程/日程自身色（与网格色带同一套语义色）。
     final accent = row.kind == MonthAgendaRowKind.exam
         ? monthExamAccent(colorScheme)
         : parseHexColorOrFallback(row.colorHex, fallback: colorScheme.primary);
-    final cardColor = Theme.of(context).brightness == Brightness.dark
-        ? colorScheme.surface
-        : colorScheme.surfaceContainerHighest;
 
-    return DayViewAgendaSurface(
-      settings: settings,
-      color: cardColor,
-      radius: radius,
-      // 面板内一律实体：玻璃会透出屏级 backdrop（壁纸），
-      // 而它躺在白色面板上（见 MonthDayAgenda 类注释）。
-      forceSolid: true,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 3,
-              height: 30,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 44,
-              child: Text(
-                row.clockText ?? '--:--',
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: MonthType.caption,
-                  fontWeight: FontWeight.w600,
-                  color: inkColor.withValues(alpha: 0.66),
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    row.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: MonthType.title,
-                      fontWeight: FontWeight.w600,
-                      color: inkColor,
-                    ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 44,
+                child: Text(
+                  row.clockText ?? '--:--',
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: MonthType.caption,
+                    fontWeight: FontWeight.w600,
+                    color: inkColor.withValues(alpha: MonthInk.secondary),
                   ),
-                  if (row.subtitle != null && row.subtitle!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        row.subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: MonthType.body,
-                          color: inkColor.withValues(alpha: 0.66),
-                        ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: MonthType.title,
+                        fontWeight: FontWeight.w600,
+                        color: inkColor,
                       ),
                     ),
-                ],
+                    if (row.subtitle != null && row.subtitle!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          row.subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: MonthType.body,
+                            color: inkColor.withValues(alpha: MonthInk.secondary),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: inkColor.withValues(alpha: 0.38),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: inkColor.withValues(alpha: MonthInk.tertiary),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// 考试在议程行里的强调色（与网格考试圆点同色系）。
-Color monthExamAccent(ColorScheme colorScheme) {
-  return colorScheme.brightness == Brightness.dark
-      ? const Color(0xFFFF6B6B)
-      : const Color(0xFFE5484D);
-}
-
-/// 未选中日期时的底部内容在 [MonthPanelOverview]（本月概览 + 有安排的日子）。
-///
-/// 这里曾经是一个 `MonthAgendaPlaceholder`：一句「点任意一天查看安排」。
-/// 用户在 2026-10-21 要求删掉那句话 —— 它既没回答问题（这个月到底有多少事），
-/// 又把整块下半屏留成空白。现在换成有数据的概览，见 `month_panel_overview.dart`。
+/// 考试在议程行里的强调色（与网格考试标记同色系）。
+Color monthExamAccent(ColorScheme colorScheme) =>
+    monthExamDotColor(colorScheme);

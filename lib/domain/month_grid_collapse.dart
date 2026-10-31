@@ -18,16 +18,35 @@
 ///
 /// ## 两个独立量
 ///
-/// * [kMonthGridRowCount]：网格**永远** 6 行（用户明确要求，不随月份变 4~6）；
+/// * [kMonthGridRowCount]：网格的**最大**行数 6（固定 42 格口径）。实际画几行
+///   由 `MonthGridData.rowsInMonth` 给（4~6），见下面那条 2026-10-25 的说明；
 /// * `t`（展开进度 0..1）：0 = 完全收起（只剩一行），1 = 完全展开。
 ///
 /// 渲染在 `MonthGrid` / 页面里，本文只放判据 —— 「保留哪一行」「两个位移各多少」
 /// 「拖多少算翻面」都有明确期望值，埋在 widget 里就只能靠肉眼看。
+///
+/// ## 2026-10-25：行数从「恒 6」改成「按月份 4~6」
+///
+/// 旧口径是**永远 6 行**（用户 2026-10-21 明确要求"永远显示六行日期"）。实测下来
+/// 那条要求带来了一个它自己没预料的代价：约一半的月份尾部会多出**一整行纯邻月
+/// 补位格**（2026 年 10 月跨 5 行，第 6 行八个数字全是 11 月的灰号），白占约
+/// 45dp，还把一片灰数字放在视觉重心下方。
+///
+/// 用户 2026-10-25 看到真机后选了「接受翻月时卡片高度变化」，换掉"纹丝不动"
+/// 这条旧保证。所以现在：**行数由数据给**，下面几个函数都收 `rowCount`。
+///
+/// ⚠️ `rowCount` 一律是**可选参数、默认 [kMonthGridRowCount]**：这样存量调用点
+/// 与存量领域测试不用改，而新路径显式传真实行数。默认值不是"正确值"，只是
+/// "没传时的历史行为"。
 library;
 
 import 'dart:math' as math;
 
-/// 网格固定 6 行（见 `MonthViewLogic.monthGridDates` 的 42 格口径）。
+/// 网格的**最大**行数：固定 42 格口径（见 `MonthViewLogic.monthGridDates`）。
+///
+/// ⚠️ 2026-10-25 起它不再等于"实际画几行" —— 实际行数由
+/// `MonthGridData.rowsInMonth` 给（4~6）。这个名字保留为**上限**与"没传
+/// rowCount 时的默认值"，两个含义都写在 [monthGridLayout] 的 `rowCount` 参数上。
 const int kMonthGridRowCount = 6;
 
 /// 一行 7 天。
@@ -102,15 +121,19 @@ int monthGridRowToKeep({
 
 /// 展开进度 [t]（0..1，0 = 收起）下**网格窗口**应露出几行（表头除外）。
 ///
-/// 注意这是**窗口**的行数，不是网格内容的行数 —— 内容永远是 6 行（用户口径），
+/// 注意这是**窗口**的行数，不是网格内容的行数 —— 内容是 [rowCount] 行，
 /// 收起只是窗口变小：上面几行被顶出窗口、下面几行被面板盖住。
 ///
-/// **行数线性插值而不是总高插值**：直接插总高会让 6 行同时缩放，看起来像
+/// **行数线性插值而不是总高插值**：直接插总高会让整块同时缩放，看起来像
 /// 「整块被压扁」。越界的 [t] 钳回 0..1。
-double monthGridVisibleRows(double t) {
+///
+/// [rowCount] 是这批日期实际要画的行数（`MonthGridData.rowsInMonth`）。
+/// 默认 [kMonthGridRowCount] = 存量行为（恒 6 行）。
+double monthGridVisibleRows(double t, {int rowCount = kMonthGridRowCount}) {
   final clamped = t.clamp(0.0, 1.0);
+  final rows = rowCount.clamp(kMonthGridCollapsedRows, kMonthGridRowCount);
   return kMonthGridCollapsedRows +
-      (kMonthGridRowCount - kMonthGridCollapsedRows) * clamped;
+      (rows - kMonthGridCollapsedRows) * clamped;
 }
 
 /// 收起 / 展开动画的松手吸附目标（0 = 收起、1 = 展开）。
@@ -157,14 +180,16 @@ double monthGridRowHeight({
   required double weekLabelWidth,
   required double minRowHeight,
   required double maxRowHeight,
+  int rowCount = kMonthGridRowCount,
 }) {
   final horizontalBudget =
       availableWidth -
       horizontalPadding * 2 -
       (weekNumberColumnVisible ? weekLabelWidth : 0);
   final squareRowHeight = horizontalBudget / kMonthGridDaysPerRow;
+  final rows = rowCount.clamp(kMonthGridCollapsedRows, kMonthGridRowCount);
   return math
-      .min(availableForGrid / kMonthGridRowCount, squareRowHeight)
+      .min(availableForGrid / rows, squareRowHeight)
       .clamp(minRowHeight, maxRowHeight);
 }
 
@@ -220,8 +245,12 @@ class MonthGridLayout {
 /// * 网格窗口从「表头 + 6 行」缩到「表头 + 1 行」；
 /// * 面板高度从 0 长到「可用高 - 收起后网格窗口高」，把网格下方的行盖掉。
 ///
-/// 行高按**始终 6 行**的可用空间算：网格永远显示六行，收起只缩小窗口，
-/// 行高本身不能跟着变（否则收起时格子会突然变高，读起来像「字放大了」）。
+/// 行高按 [rowCount] 行的可用空间算：收起只缩小窗口，行高本身不能跟着变
+/// （否则收起时格子会突然变高，读起来像「字放大了」）。
+///
+/// [rowCount] = 这批日期实际要画的行数（`MonthGridData.rowsInMonth`，4~6）。
+/// **默认 [kMonthGridRowCount]** = 存量行为（恒 6 行）—— 默认值不是"正确值"，
+/// 只是"没传时的历史行为"，新调用点都该显式传。
 MonthGridLayout monthGridLayout({
   required double t,
   required double availableHeight,
@@ -235,16 +264,18 @@ MonthGridLayout monthGridLayout({
   required int keptRow,
   double handleHeight = 0,
   double topPadding = 0,
+  int rowCount = kMonthGridRowCount,
 }) {
   final progress = t.clamp(0.0, 1.0);
-  final visibleRows = monthGridVisibleRows(progress);
+  final rows = rowCount.clamp(kMonthGridCollapsedRows, kMonthGridRowCount);
+  final visibleRows = monthGridVisibleRows(progress, rowCount: rows);
 
   // 行高只能用「扣掉上内边距、把手、面板下限之后」的高度：这些都占同一块
-  // 可用高度，少扣一个算出的行高就偏大，6 行必然放不下（溢出就是这么来的）。
+  // 可用高度，少扣一个算出的行高就偏大，放不下必然溢出。
   //
-  // `minRowHeight` 在这里**不参与下限钳制**：屏幕矮到连 6 × minRowHeight 都放
-  // 不下时，宁可格子比"可读下限"还矮，也不能让网格溢出（溢出 = 底部内容被裁掉
-  // 且控制台报错）。真机矮屏（横屏 / 分屏）会走这条路。
+  // `minRowHeight` 在这里**不参与下限钳制**：屏幕矮到连 rows × minRowHeight
+  // 都放不下时，宁可格子比"可读下限"还矮，也不能让网格溢出（溢出 = 底部内容
+  // 被裁掉且控制台报错）。真机矮屏（横屏 / 分屏）会走这条路。
   final double gridSpaceForRows = math.max(
     0,
     availableHeight -
@@ -262,9 +293,10 @@ MonthGridLayout monthGridLayout({
       weekLabelWidth: weekLabelWidth,
       minRowHeight: minRowHeight,
       maxRowHeight: maxRowHeight,
+      rowCount: rows,
     ),
-    // 硬上限：6 行 + 表头必须塞进「可用高度 - 内边距 - 把手 - 面板下限」。
-    gridSpaceForRows / kMonthGridRowCount,
+    // 硬上限：rows 行 + 表头必须塞进「可用高度 - 内边距 - 把手 - 面板下限」。
+    gridSpaceForRows / rows,
   );
 
   // gridHeight **包含**页面那层上内边距：调用方会把网格包在一个

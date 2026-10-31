@@ -77,7 +77,14 @@ void handleTimetableDockTap(
           settings.timetableLastViewedDayOfWeek,
         ),
         settings: settings,
-        animate: false,
+        // 底栏切到日课表也播展开动画（2026-10-21 用户口径：「在底栏点击切换
+        // 两个视图，也应该加载动画」）。
+        //
+        // 这里原来是 `animate: false`（闪现直切）：那时的展开是「整块面板被
+        // 裁成一条窄窗再横向拉宽」，从底栏点进来时没有「那一格」作为起点参照，
+        // 比直接切换更怪。现在转场是**卡片对卡片**，起点是每张课在网格里的
+        // 真实格位，与触发方式无关 —— 从底栏进来同样读得出「这几张卡在长大」。
+        animate: true,
       ));
     case kGlassDockActionWeek:
       if (!host.isDayView) {
@@ -88,8 +95,8 @@ void handleTimetableDockTap(
         }
         return;
       }
-      // 闪现收起：closeDayView 内部完成震动、状态清理与持久化。
-      unawaited(host.closeDayView(settings, animate: false));
+      // 收回周课表同样播收起动画（理由同上一条）。
+      unawaited(host.closeDayView(settings, animate: true));
     default:
       // 内嵌优先：注册过的页面在首页栈内切换，玻璃坞保持悬浮；未登记
       // 的走普通推入。再点当前内嵌页与 日/周 Tab 同口径无动作，其余均

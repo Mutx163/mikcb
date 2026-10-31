@@ -10,16 +10,13 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../ui/hyperos/hyperos_motion.dart';
-import '../utils/month_cell_ink.dart';
 import '../utils/page_wallpaper_luminance.dart';
+import '../widgets/timetable/month_view/month_calendar_card.dart';
 import '../widgets/timetable/month_view/month_day_agenda.dart';
-import '../widgets/timetable/month_view/month_day_cell.dart';
 import '../widgets/timetable/month_view/month_grid.dart';
-import '../widgets/timetable/month_view/month_grid_handle.dart';
 import '../widgets/timetable/month_view/month_metrics.dart';
 import '../widgets/timetable/month_view/month_panel_drag_area.dart';
 import '../widgets/timetable/month_view/month_panel_overview.dart';
-import '../widgets/timetable/month_view/month_panel_top_curve.dart';
 import '../widgets/timetable/month_view/month_view_toolbar.dart';
 import '../widgets/timetable/timetable_page_chrome_shell.dart';
 import 'add_course_screen.dart';
@@ -255,37 +252,16 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     return TimetablePageChromeShell(
       topLuminance: luminance?.top,
       bodyLuminance: luminance?.body,
-      toolbarHeight: kMonthViewToolbarHeight,
-      // 工具行做成**独立 widget**（而不是页面里的一个方法）：它的墨色来自
-      // `HomePageChromeInk` 作用域（外壳按壁纸亮度判好的极性），只有在外壳
-      // 内部 build 才读得到；在页面 build 里读只会拿到 null 并回落主题色，
-      // 深色壁纸上就成了看不见的字。
-      toolbar: MonthViewToolbar(
-        year: _focusedYear,
-        month: _focusedMonth,
-        isCurrentMonth: _isCurrentMonth,
-        onPreviousMonth: () => _shiftMonth(-1),
-        onNextMonth: () => _shiftMonth(1),
-        onBackToCurrentMonth: _backToCurrentMonth,
-        // 标题跟着手指连续滑动：滑到一半能看到两个月份各露一半，
-        // 而不是"松手才换"（2026-10-21 重新设计）。
-        pageListenable: _pager,
-        pageOf: () {
-          // ⚠️ `PageController.page` 在 PageView 尚未构建时会**断言失败**
-          //（"PageController.page cannot be accessed before a PageView is built
-          // with it"）。工具行比网格先构建，所以这里必须先判 hasClients ——
-          // 否则进页面直接崩（本仓 2026-10-21 实测）。
-          final pager = _pager;
-          if (pager == null || !pager.hasClients) {
-            return _pageFor(_focusedYear, _focusedMonth).toDouble();
-          }
-          return pager.page ?? _pageFor(_focusedYear, _focusedMonth).toDouble();
-        },
-        monthOfPage: (page) {
-          final (year, month) = _monthForPage(page);
-          return (year: year, month: month);
-        },
-      ),
+      // ⚠️ toolbar 传 null（月度导航 2026-10-23 已移进日历卡）。
+      //
+      // 用户口径：「顶部的 2026年10月，左右按钮，回今日区域，看看这些能不能和
+      // 下面的日期做一下整体化」。导航原先住在满宽玻璃带里、与下面那张
+      // 8dp 外沿 / 24 圆角的日历白卡之间隔着一圈壁纸 —— 而它控制的正是那张卡。
+      // 现在它是**卡顶的一行**（见 `MonthCalendarCard.navigator`）。
+      //
+      // 玻璃带因此回到它本职：只盖"软件名 + 右上角菜单"那一行，
+      // 竖向左沿由四条（0/6/8/22）收成一条（22）。
+      toolbarHeight: 0,
       // 卡片相对屏幕一动，预糊纹理就必须重取景（否则玻璃里那层背景跟着卡片
       // 走，读起来是"玻璃内部背景不动"）。这里有**两条**运动源，必须都接：
       // 横向翻月（PageController）+ 纵向收起/展开（网格动画控制器）。
@@ -343,13 +319,6 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     final selectedInThisMonth =
         selected != null && selected.year == year && selected.month == month;
 
-    // 卡片判墨：按**卡面实际亮度**（卡底色压壁纸），与日视图摘要卡同一函数。
-    final ink = monthPageInkOverWallpaper(
-      context: context,
-      settings: settings,
-      wallpaperBodyLuminance: bodyLuminance,
-    );
-
     // ⚠️ 本次重构的核心：**不再是「一个滚动视图把网格和议程串起来」**，
     // 而是「网格在上、面板在下」两段式。用户口径（2026-10-21 截图）：
     //   上滑 → 上面几行向上收起、下面几行被下面的东西盖起来、底部出现拉杆；
@@ -388,11 +357,45 @@ class _MonthViewScreenState extends State<MonthViewScreen>
           constraints: constraints,
           settings: settings,
           keptRow: keptRow,
+          rowCount: grid.rowsInMonth,
         ).rowHeight;
+
+        // 卡顶导航行：**只建一次**，作为 `AnimatedBuilder` 之外的稳定节点。
+        //
+        // 它是 `MonthViewToolbar`（自己订阅 `_pager` 做连续滑动），不需要跟着
+        // 网格收放动画重建 —— 每帧重建会让这条 40dp 的行参与那类无谓工作
+        //（见类注释「为什么收的是动画」）。
+        final navRow = MonthViewToolbar(
+          year: _focusedYear,
+          month: _focusedMonth,
+          isCurrentMonth: _isCurrentMonth,
+          onPreviousMonth: () => _shiftMonth(-1),
+          onNextMonth: () => _shiftMonth(1),
+          onBackToCurrentMonth: _backToCurrentMonth,
+          // 标题跟着手指连续滑动：滑到一半能看到两个月份各露一半，
+          // 而不是"松手才换"（2026-10-21 重新设计）。
+          pageListenable: _pager,
+          pageOf: () {
+            // ⚠️ `PageController.page` 在 PageView 尚未构建时会**断言失败**
+            //（"PageController.page cannot be accessed before a PageView is built
+            // with it"）。导航行比网格先构建，所以这里必须先判 hasClients ——
+            // 否则进页面直接崩（本仓 2026-10-21 实测）。
+            final pager = _pager;
+            if (pager == null || !pager.hasClients) {
+              return _pageFor(_focusedYear, _focusedMonth).toDouble();
+            }
+            return pager.page ??
+                _pageFor(_focusedYear, _focusedMonth).toDouble();
+          },
+          monthOfPage: (page) {
+            final (year, month) = _monthForPage(page);
+            return (year: year, month: month);
+          },
+        );
 
         return Column(
           children: [
-            // ── 上半：月份网格（左右翻月 + 上下收放）──
+            // ── 上半：日历白卡（左右翻月 + 上下收放 + 卡底拉杆）──
             //
             // 动画只改这一层的**高度**：`layout.gridHeight` 随进度从「表头+6 行」
             // 缩到「表头+1 行」。里面的 PageView 与 42 格是稳定 child，
@@ -401,88 +404,87 @@ class _MonthViewScreenState extends State<MonthViewScreen>
             // ⚠️ 必须给 PageView 一个**明确高度**：它在 Column 里没有约束，
             // 而高度正是「收起」要动的东西。
             //
-            // 纵向手势由网格自己接（它只包住网格，不包面板）；横向交给 PageView。
+            // 纵向手势由网格自己接（它只包住网格，不包信息区）；横向交给 PageView。
             // 两者方向正交，同一手势里不会互相抢。
-            AnimatedBuilder(
-              animation: _gridExpand,
-              child: GestureDetector(
-                behavior: HitTestBehavior.deferToChild,
-                onVerticalDragStart: (_) => _beginGridDrag(),
-                onVerticalDragUpdate: _updateGridDrag,
-                onVerticalDragEnd: _endGridDrag,
-                child: PageView.builder(
-                  controller: _pager,
-                  itemCount: _pageCount,
-                  onPageChanged: (page) {
-                    final (y, m) = _monthForPage(page);
-                    if (y == _focusedYear && m == _focusedMonth) {
-                      return;
-                    }
-                    setState(() {
-                      _focusedYear = y;
-                      _focusedMonth = m;
-                    });
-                  },
-                  itemBuilder: (context, page) {
-                    final (y, m) = _monthForPage(page);
-                    return _buildGridPage(
-                      context: context,
-                      provider: provider,
-                      settings: settings,
-                      year: y,
-                      month: m,
-                      bodyLuminance: bodyLuminance,
-                      constraints: constraints,
-                    );
-                  },
-                ),
-              ),
-              builder: (context, child) {
-                final layout = _layoutFor(
-                  t: _gridExpand.value,
-                  constraints: constraints,
-                  settings: settings,
-                  keptRow: keptRow,
-                );
-                return SizedBox(height: layout.gridHeight, child: child);
-              },
-            ),
-            // ── 中间：表格的把手（属于上面那张表格，不属于下面那个面板）──
             //
-            // 归属很重要（用户 2026-10-21 修正）：这根横条被拖动时收放的是
-            // **上面的日期表格**，所以它画在表格下沿、在面板容器**之外**。
-            // 放进面板里就会读成"底部弹窗的拖拽把手"（iOS bottom sheet 的
-            // 既有心智）—— 那把手势归属讲反了。
-            MonthGridHandle(
-              inkColor: ink,
-              // 拉杆画在**壁纸上**（不在卡面上），它是全页唯一教用户「这张表
-              // 可以上滑」的控件。旧实现拿整屏带的墨色再乘 0.32 alpha，真机
-              // 实测只有 **1.22:1** —— 等于没有。这里把「拉杆自己那段」的壁纸
-              // 亮度交给它，由它按对比度判满 alpha 的黑/白。
-              wallpaperLuminance: _handleLuminance(
-                context: context,
-                constraints: constraints,
-                settings: settings,
-                keptRow: keptRow,
+            // 2026-10-23：外面多了一层 `MonthCalendarCard`（白底圆角 + 卡底拉杆），
+            // 用户口径是小米日历那种「表格是一张卡、拉杆在卡底」。
+            //
+            // ⚠️ **高度账**：卡片 = 表格窗口 + 卡底那条拉杆。所以 `SizedBox` 的
+            // 高度是 `gridHeight + MonthCalendarCard.chromeHeight` —— 少了后面
+            // 这一项，卡片内部的 Column 直接 `RenderFlex overflowed`
+            //（2026-10-23 实测）。同一个常量也在 `_layoutFor` 的 handleHeight 里用。
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: MonthMetrics.cardInset,
               ),
-              onDragStart: _beginGridDrag,
-              onDragUpdate: _updateGridDrag,
-              onDragEnd: _endGridDrag,
+              child: AnimatedBuilder(
+                animation: _gridExpand,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.deferToChild,
+                  onVerticalDragStart: (_) => _beginGridDrag(),
+                  onVerticalDragUpdate: _updateGridDrag,
+                  onVerticalDragEnd: _endGridDrag,
+                  child: PageView.builder(
+                    controller: _pager,
+                    itemCount: _pageCount,
+                    onPageChanged: (page) {
+                      final (y, m) = _monthForPage(page);
+                      if (y == _focusedYear && m == _focusedMonth) {
+                        return;
+                      }
+                      setState(() {
+                        _focusedYear = y;
+                        _focusedMonth = m;
+                      });
+                    },
+                    itemBuilder: (context, page) {
+                      final (y, m) = _monthForPage(page);
+                      return _buildGridPage(
+                        context: context,
+                        provider: provider,
+                        settings: settings,
+                        year: y,
+                        month: m,
+                        constraints: constraints,
+                      );
+                    },
+                  ),
+                ),
+                builder: (context, child) {
+                  final layout = _layoutFor(
+                    t: _gridExpand.value,
+                    constraints: constraints,
+                    settings: settings,
+                    keptRow: keptRow,
+                    rowCount: grid.rowsInMonth,
+                  );
+                  return SizedBox(
+                    // 表格窗口 + 卡底拉杆 + 卡顶导航行（同一本账，见类注释）。
+                    height: layout.gridHeight + MonthCalendarCard.cardChrome,
+                    child: MonthCalendarCard(
+                      navigator: navRow,
+                      onDragStart: _beginGridDrag,
+                      onDragUpdate: _updateGridDrag,
+                      onDragEnd: _endGridDrag,
+                      // 上边距用卡片默认值（`MonthMetrics.cardPadding` = 14）；
+                      // 高度账那一侧由 `monthGridLayout(topPadding:)` 算同一段。
+                      child: child!,
+                    ),
+                  );
+                },
+              ),
             ),
-            // ── 下半：条目面板（自身只纵向滚动，不参与收放）──
+            // ── 下半：信息区（一列独立卡，直接浮在壁纸上）──
+            //
+            // 2026-10-23：不再是一整块通栏白板（用户口径「单独的卡片，而不是
+            // 一个整体大卡片」）。卡片之间的缝里露出壁纸，与上半那张日历卡
+            // 读作同一套。
             Expanded(
-              child: _buildAgendaPanel(
+              child: _buildInfoArea(
                 context: context,
                 provider: provider,
                 settings: settings,
-                // ⚠️ 这里**不能**传上面那个按壁纸亮度判出来的 `ink`。
-                //
-                // 那个 ink 回答的是「字压在**壁纸**上该用黑还是白」。面板是
-                // 一块**不透明白底**，壁纸在它下面根本看不见 —— 拿壁纸的
-                // 明暗去判面板里的字，暗壁纸会算出白字，于是「10月22日」
-                // 这行标题白字压白底、直接消失（用户 2026-10-21 截图实测）。
-                //
-                // 面板内的字一律跟主题走（`colorScheme.onSurface`）。
                 now: now,
                 selectedInThisMonth: selectedInThisMonth,
                 selected: selected,
@@ -499,11 +501,16 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   ///
   /// 抽成方法是为了让「展开态算一次拿行高」与「动画帧里算窗口高」走**同一个**
   /// 函数：两处各写一遍就会漂，而漂的症状是收起后仍露出半格（本仓踩过）。
+  ///
+  /// [rowCount] 是**这一页**实际要画的行数（`MonthGridData.rowsInMonth`，4~6）。
+  /// 它必须跟着"哪一页"走：PageView 会同时构建相邻页，而相邻月的行数可能不同
+  /// （5 行月挨着 6 行月），共用一份就会让其中一页的窗口高错一整行。
   MonthGridLayout _layoutFor({
     required double t,
     required BoxConstraints constraints,
     required TimetableSettings settings,
     required int keptRow,
+    required int rowCount,
   }) {
     return monthGridLayout(
       t: t,
@@ -517,15 +524,22 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       minRowHeight: MonthGrid.minRowHeight,
       maxRowHeight: MonthGrid.maxRowHeight,
       keptRow: keptRow,
-      // 把手夹在网格与面板之间，必须从可用高度里扣掉 —— 否则面板会被
-      // 挤出屏幕（Expanded 只吃剩下的空间）。
-      handleHeight: MonthGridHandle.extent,
-      // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出 8px。
+      // 本页真实行数：尾部整行都是邻月补位格时不画那一行，行高与窗口高
+      // 都按真实行数分摊（2026-10-25，见 `MonthGridData.rowsInMonth`）。
+      rowCount: rowCount,
+      // 卡内**非表格**的开销（导航行 + 分隔线 + 卡底拉杆）要一次性全扣掉，
+      // 否则网格 6 行放不下、溢出。
+      //
+      // ⚠️ 用 `MonthCalendarCard.cardChrome` 这一个常量，**不要**在这里再拼
+      // `navHeight + chromeHeight`：2026-10-23 导航搬进卡后只扣了拉杆那段，
+      // 立刻在真机/测试里 `RenderFlex overflowed by 41 pixels`（40 + 1）。
+      handleHeight: MonthCalendarCard.cardChrome,
+      // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出。
       topPadding: kMonthPageVerticalPadding,
     );
   }
 
-  /// 上半那一页的网格（不含面板）。
+  /// 上半那一页的网格（不含信息区）。
   ///
   /// ⚠️ **版面必须按这一页自己的保留行算**，不能用外层那份 `layout`：外层那份是
   /// 按「当前聚焦月」的保留行算出来的，横向翻到相邻月时（PageView 会同时构建
@@ -537,7 +551,6 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     required TimetableSettings settings,
     required int year,
     required int month,
-    required double? bodyLuminance,
     required BoxConstraints constraints,
   }) {
     final grid = _cache.grid(
@@ -549,11 +562,6 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       exams: provider.exams,
       settings: settings,
       holidayData: provider.holidayData,
-    );
-    final ink = monthPageInkOverWallpaper(
-      context: context,
-      settings: settings,
-      wallpaperBodyLuminance: bodyLuminance,
     );
     final selected = _selectedDate;
     final selectedInThisMonth =
@@ -577,92 +585,83 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       constraints: constraints,
       settings: settings,
       keptRow: keptRow,
+      rowCount: grid.rowsInMonth,
     );
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MonthGrid.horizontalPadding,
-        kMonthPageVerticalPadding,
-        MonthGrid.horizontalPadding,
-        0,
-      ),
-      child: MonthGrid(
-        grid: grid,
-        settings: settings,
-        selectedDate: selectedInThisMonth ? selected : null,
-        rowHeight: layout.rowHeight,
-        inkColor: ink,
-        // 传**动画**而不是当前值：网格内部自己订阅，42 格因此不参与逐帧重建
-        // （这是这次提速的另一半，见 `MonthGrid` 的类注释）。
-        progress: _gridExpand,
-        keptRowIndex: keptRow,
-        // 逐行判墨：42 个格子必须各用**自己那一行**的壁纸亮度（见 P0-1）。
-        rowLuminances: _rowLuminances(
-          context: context,
-          constraints: constraints,
-          settings: settings,
-        ),
-        onDayTap: (date) {
+    // 网格自己的左右内边距由 `MonthCalendarCard` 那层负责（`gridInnerPadding`），
+    // 这里**不要再加** —— 两层叠加会把格子挤窄，算出的"正方形行高"跟着偏。
+    return MonthGrid(
+      grid: grid,
+      selectedDate: selectedInThisMonth ? selected : null,
+      rowHeight: layout.rowHeight,
+      // 传**动画**而不是当前值：网格内部自己订阅，42 格因此不参与逐帧重建
+      // （这是这次提速的另一半，见 `MonthGrid` 的类注释）。
+      progress: _gridExpand,
+      keptRowIndex: keptRow,
+      onDayTap: (date) {
+        // ── 点到月份外的补位格：翻到那个月再选中它 ──
+        //
+        // 旧实现把 `_selectedDate` 设成邻月的日期，而下半屏的判据是
+        // `selectedInThisMonth`（year/month 都要对上）—— 于是点下去
+        // **什么都不发生**：下半屏仍是本月概览，格子也不高亮，看起来像
+        // 点了个死按钮（2026-10-22 实测：点 9/28 → 议程 0、概览 1）。
+        //
+        // 用户的意图显然是「我想看那天」，所以现在把它翻过去：先切月，
+        // 再选中。`_focusedYear/_focusedMonth` 由 `onPageChanged` 维护，
+        // 这里提前设是为了让同一帧就算出正确的 `selectedInThisMonth`。
+        if (date.year != year || date.month != month) {
           setState(() {
-            // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
-            _selectedDate = selectedInThisMonth && _selectedDate == date
-                ? null
-                : date;
+            _focusedYear = date.year;
+            _focusedMonth = date.month;
+            _selectedDate = date;
           });
-        },
-      ),
+          _pager?.animateToPage(
+            _pageFor(date.year, date.month),
+            duration: 260.scaledMs,
+            curve: Curves.easeOutCubic,
+          );
+          return;
+        }
+        setState(() {
+          // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
+          _selectedDate = selectedInThisMonth && _selectedDate == date
+              ? null
+              : date;
+        });
+        _resetPanelScroll();
+      },
     );
   }
 
-  /// 网格 6 行各自背后那段壁纸的亮度。
+  /// 下半的信息区：一列**独立的卡**，直接浮在壁纸上（2026-10-23）。
   ///
-  /// ## 为什么不用「整屏一个数」
+  /// ## 为什么不再是一块白板
   ///
-  /// 旧实现按壁纸主体带（屏幕 22%~72%）的平均亮度判墨，42 格共用。真机上同一
-  /// 屏壁纸自上而下的卡面亮度跨 **0.56 → 0.23**，同一个黑字在 42 格上的对比度
-  /// 因此从 12:1 摆到 5:1，而月外日期（再叠两层弱化）落到 **1.97:1** —— 那一整行
-  /// 物理上不可读（2026-10-21 专业评审实测）。
+  /// 用户口径：「下面的信息区域也改成这样，单独的卡片，而不是一个整体大卡片」，
+  /// 并给了小米日历的截图 —— 那边信息区是一张张分开的白卡，卡与卡之间露出壁纸。
   ///
-  /// ## 网格顶边怎么定位
+  /// 旧版式是一整块通栏白板（`ClipPath` + `ColoredBox` + 顶弧），卡都画在板**里
+  /// 面**。它带来三个连锁问题：
   ///
-  /// 用「屏幕高 − 正文可用高」反推，**不是**把状态栏 + 标题行 + 工具行加起来：
-  /// 玻璃带那条 4dp 的缝只在带子真的画的时候才存在，加法学不准（差几 dp 就
-  /// 会把一整行判到隔壁亮度上）。`constraints.maxHeight` 是正文那个
-  /// `Expanded` 的高度，两者相减正好是正文顶边在屏幕上的绝对 y。
+  /// 1. 上半是 42 张碎卡、下半是一整块板 —— 两种语言；
+  /// 2. 板内的卡必须 `forceSolid`（玻璃会透出屏级壁纸纹理，板拦不住）；
+  /// 3. 板底还要一条渐隐带盖住被药丸切开的内容。
   ///
-  /// 返回空列表表示「拿不到剖面」：网格随之退回整屏带口径（改动前的行为）。
-  List<double?> _rowLuminances({
-    required BuildContext context,
-    required BoxConstraints constraints,
-    required TimetableSettings settings,
-  }) {
-    final profile = _luminance.value?.profile;
-    if (profile == null || profile.isEmpty) {
-      return const <double?>[];
-    }
-    final screenHeight = MediaQuery.maybeSizeOf(context)?.height;
-    if (screenHeight == null || screenHeight <= 0) {
-      return const <double?>[];
-    }
-    // 正文顶边 = 屏幕高 − 正文高。`constraints.maxHeight` 是整个「网格 + 拉杆 +
-    // 面板」Column 的可用高度，它的顶边就是正文顶边。
-    final gridTopOnScreen = screenHeight - constraints.maxHeight;
-    return monthRowLuminances(
-      profile: profile,
-      screenHeight: screenHeight,
-      gridTopOnScreen: gridTopOnScreen,
-      headerHeight: MonthGrid.headerHeight,
-      rowHeight: _gridRowHeight,
-      rowCount: kMonthGridRowCount,
-      topPadding: kMonthPageVerticalPadding,
-    );
-  }
-
-  /// 下半的条目面板：一块实底平面 + 可纵向滚动的列表。
+  /// 现在三条一起消失：卡片直接浮在壁纸上，靠 `itemGap` 的缝 + 圆角区分。
   ///
-  /// **不持有拉杆**：那是上面那张日期表格的把手（见调用处的 `MonthGridHandle`）。
-  /// 面板在这里的职责只有两件 —— 盖住网格下方的行、以及自己纵向滚动。
-  Widget _buildAgendaPanel({
+  /// ## ⚠️ 材质必须是**实底**（2026-10-23 第二轮修正）
+  ///
+  /// 上一版本轮内曾把 `forceSolid` 去掉（理由：卡浮在壁纸上，玻璃采到的正是
+  /// 它该透的那层背景）。真机上那是一个错误 —— 用户的壁纸是高饱和彩色斜带，
+  /// 半透明卡把壁纸透进来，读起来是"一块模糊的洞"而不是卡；下半因此和上半那张
+  /// 实底日历卡成了两种材质。现在信息卡**一律实底**，与日历卡同一档。
+  ///
+  /// ## 手势：仍然「任意位置上下滑动 = 收放日历」
+  ///
+  /// 板没了，但 [MonthPanelDragArea] 还在 —— 它包住整个可滚动区域，纵向拖拽
+  /// 先收日历、收到底再滚列表。用户 2026-10-21 晚的口径（「底部信息区域，应该
+  /// 支持在任意位置上下滑动」）必须保留。
+  Widget _buildInfoArea({
     required BuildContext context,
     required TimetableProvider provider,
     required TimetableSettings settings,
@@ -671,10 +670,6 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     required DateTime? selected,
     required MonthGridData grid,
   }) {
-    // 面板是实底白卡，字跟**主题**走（不跟壁纸）。
-    // 详见调用处那段注释：拿壁纸明暗判面板内的字，暗壁纸会判出白字 → 白底上看不见。
-    final ink = Theme.of(context).colorScheme.onSurface;
-    final panelColor = Theme.of(context).colorScheme.surface;
     final rows = selectedInThisMonth && selected != null
         ? MonthViewLogic.buildDayAgenda(
             date: selected,
@@ -687,155 +682,130 @@ class _MonthViewScreenState extends State<MonthViewScreen>
           )
         : const <MonthAgendaRow>[];
 
-    // ⚠️ 上沿那圈弧属于**上面的表格**，不属于这块面板。
-    //
-    // 用户口径（2026-10-21）：「整个拉杆区域，左右不是有那个圆角吗，他应该是
-    // 向上弯的，容器应该是上面的表格，而不是的信息区域」。
-    //
-    // 首版写的是 `BorderRadius.vertical(top: 16)` —— 那是"下面这块板子从下面
-    // 升上来、自己有圆角"的语言（bottom sheet 的心智）。改成用
-    // [MonthPanelTopCurveClipper] 画一段**向上凸**的弧：白底从表格下沿开始、
-    // 两角向外张开兜住表格，读起来是"表格的白色托底"。
-    return ClipPath(
-      clipper: const MonthPanelTopCurveClipper(cornerRadius: 28),
-      child: ColoredBox(
-        // 面板是**实底**：它要把网格下方的行盖住（用户口径「下面两行往上逐渐
-        // 被下面的东西盖起来」）。用透明就盖不住。
-        color: panelColor,
-        // ── 整个面板任意位置都能上下拖动来收放日期表格 ──
-        //
-        // 用户口径（2026-10-21 晚）：「底部信息区域，应该支持在任意位置上下滑动，
-        // 可以操作日期表格的上下收起展开」。
-        //
-        // 列表自己也要纵向滚动、两者同向，**不能靠手势竞技场分工**（只会有一个
-        // 赢家：要么列表永远滚不动、要么面板永远收不起来）。这里改成单一手势源
-        // + 分流：纵向拖拽全由 [MonthPanelDragArea] 接管，网格先吃到边界再喂列表、
-        // 到边界后同一次手势里无缝接着收放表格。详见该组件的类注释。
-        child: MonthPanelDragArea(
-          scrollController: _panelScroll,
-          dragState: _panelDrag,
-          // ⚠️ 列表的**用户滚动必须关掉**（这一行是本轮的核心）。
+    // ⚠️ 这里**不再**需要「卡外文字」的墨色：2026-10-23 起信息区每张卡都自带
+    // 标题，所有文字都在卡内，按卡面判墨（见 `monthInfoCardInk`）——
+    // 直接压在壁纸上的散字已经没有了，那正是用户说"非常诡异"的一半原因。
+
+    // 玻璃坞内嵌宿主的底部余量：滚到底时最后一张卡不被药丸压住。
+    final bottomRelief =
+        MonthMetrics.panelBottomInset + GlassDockScrollReliefScope.insetOf(context);
+
+    // ⚠️ 议程卡**必须懒建**：`selected` 在"没选中任何一天"时是 null，而
+    // `selected!` 会当场抛 `Null check operator used on a null value`
+    //（2026-10-25 实测：概览态整页白屏）。所以这里是函数而不是实例。
+    Widget buildAgenda() => MonthDayAgenda(
+      date: selected!,
+      settings: settings,
+      rows: rows,
+      onRowTap: (row) => _openAgendaRow(context, row),
+      // 选中日什么都没有时，空态卡里给一个加课入口（带这天 +
+      // 星期几进表单）：这正是用户最想"补点什么"的时刻。
+      onAddCourse: () => _openAddCourseForDate(context, selected, settings),
+    );
+
+    final overview = MonthPanelOverview(
+      grid: grid,
+      settings: settings,
+      // 「本月有安排的日子」从今天往后排（跨过月末回月首），
+      // 排序口径见 `MonthViewLogic.scheduledDaysOfMonth`。
+      upcoming: MonthViewLogic.scheduledDaysOfMonth(grid, today: now),
+      // ⚠️ 填满模式：收起日历后信息区变高，列表要**跟着多列几行**，
+      // 而不是把那块高度留成空白（旧实现固定 3 行，收起态实测空 304px
+      // = 35.7% 屏高，用户看到的是"上面收起来了、下面什么也没多给我"）。
+      fillHeight: true,
+      onDayTap: (date) {
+        setState(() => _selectedDate = date);
+        _resetPanelScroll();
+      },
+    );
+
+    return MonthPanelDragArea(
+      scrollController: _panelScroll,
+      dragState: _panelDrag,
+      // ⚠️ 列表的**用户滚动必须关掉**（2026-10-21 第三轮的核心）。
+      //
+      // 让 Scrollable 自己滚，它会在"网格收起、列表变高"的瞬间把
+      // maxScrollExtent 缩到 0，然后判定不可滚动、当场 goBallistic 结束
+      // 整次拖动 —— 实测轨迹 61 → 36 → 11 → 0，同一帧发出 ScrollEndNotification，
+      // 此后指针怎么动都不再被处理，网格停在半收起、抬手弹回全展开。
+      // 这不是参数问题，是机制冲突。
+      //
+      // 现在位移由 MonthPanelDragArea 算好、jumpTo 落进来：一个指针源驱动
+      // 两块内容，一体化是结构保证的（惯性由它在抬手时补）。
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // ── 概览态：内容**填满**可用高度，不做滚动 ──
           //
-          // 让 Scrollable 自己滚，它会在"网格收起、面板变高"的瞬间把
-          // maxScrollExtent 缩到 0，然后判定不可滚动、当场 goBallistic 结束
-          // 整次拖动 —— 实测轨迹 61 → 36 → 11 → 0，同一帧发出
-          // ScrollEndNotification，此后指针怎么动都不再被处理，网格停在半收起、
-          // 抬手弹回全展开。这不是参数问题，是机制冲突。
+          // 概览态的内容是"概览卡 + 有安排的日子"，行数由可用高度反推
+          // （见 `MonthPanelOverview.fillHeight`），所以它天然不会溢出，
+          // 也就不需要滚动视图。包一层 `SizedBox` 把高度**明确**给下去 ——
+          // 里面那个 `Expanded` 在无界高度下会直接抛。
+          if (!selectedInThisMonth) {
+            final inner = constraints.maxHeight -
+                MonthMetrics.itemGap -
+                bottomRelief;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                MonthMetrics.cardInset,
+                MonthMetrics.itemGap,
+                MonthMetrics.cardInset,
+                bottomRelief,
+              ),
+              child: SizedBox(
+                height: inner < 0 ? 0 : inner,
+                child: overview,
+              ),
+            );
+          }
+
+          // ── 议程态：自然高度 + 可滚动 ──
           //
-          // 现在位移由 MonthPanelDragArea 算好、jumpTo 落进来：一个指针源驱动
-          // 两块内容，一体化是结构保证的（惯性由它在抬手时补）。
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                controller: _panelScroll,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  // 左右内边距由**唯一左轴**推出来（见 MonthMetrics）：旧值是 6，
-                  // 于是分区标题落在 6+4=10dp、卡片填充落在 6dp、网格卡片落在
-                  // 11.5dp —— 一屏四条左边线。现在全部落在 axisInset=14 附近。
-                  MonthMetrics.panelInset,
-                  0,
-                  MonthMetrics.panelInset,
-                  // 玻璃坞内嵌宿主的底部余量：滚到底时列表不被药丸压住。
-                  MonthMetrics.panelBottomFade +
-                      GlassDockScrollReliefScope.insetOf(context),
-                ),
-                child: selectedInThisMonth
-                    ? MonthDayAgenda(
-                        date: selected!,
-                        settings: settings,
-                        inkColor: ink,
-                        rows: rows,
-                        onRowTap: (row) => _openAgendaRow(context, row),
-                        // 选中日什么都没有时，空态卡里给一个加课入口（带这天 +
-                        // 星期几进表单）：这正是用户最想"补点什么"的时刻。
-                        onAddCourse: () =>
-                            _openAddCourseForDate(context, selected, settings),
-                      )
-                    : MonthPanelOverview(
-                        grid: grid,
-                        settings: settings,
-                        inkColor: ink,
-                        // 「本月有安排的日子」从今天往后排（跨过月末回月首），
-                        // 排序口径见 `MonthViewLogic.scheduledDaysOfMonth`。
-                        upcoming: MonthViewLogic.scheduledDaysOfMonth(
-                          grid,
-                          today: now,
-                        ),
-                        onDayTap: (date) =>
-                            setState(() => _selectedDate = date),
-                      ),
-              ),
-              // 底部渐隐：玻璃坞药丸悬在面板上方，不处理时列表项会被它从中间
-              // 切开 —— 「1月9日」下面那行被切掉一半，读起来是渲染错误
-              //（2026-10-21 真机截图）。一条从面板底色到透明的短渐变让内容
-              // **淡出**，而不是**被切断**。
-              //
-              // ⚠️ 必须放在 Stack 里、且 `IgnorePointer`：它只是视觉层，
-              // 不能吃掉面板那条「任意位置都能上下拖」的手势。
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: MonthMetrics.panelBottomFade,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          panelColor.withValues(alpha: 0),
-                          panelColor,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+          // 选中日可能有十几节课，高度是不可预知的，所以这一支保持滚动。
+          // 它不能走"填满"那条路：把内容撑满反而会让短议程被拉出一堆空白。
+          return SingleChildScrollView(
+            controller: _panelScroll,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              // 左右内边距 = 卡片外沿，与上半那张日历卡同一条线（见 MonthMetrics）。
+              MonthMetrics.cardInset,
+              // 卡与日历卡之间那道缝：露出壁纸，"两张卡"才成立。
+              MonthMetrics.itemGap,
+              MonthMetrics.cardInset,
+              bottomRelief,
+            ),
+            child: buildAgenda(),
+          );
+        },
       ),
     );
   }
 
-  /// 拉杆（表格把手）位置那段壁纸的亮度。
+  /// 选中日变化后，把下半信息区的列表**滚回顶部**。
   ///
-  /// 拉杆画在网格窗口的下沿、面板上沿之间那条 24dp 的带子里。它的 y 随展开进度
-  /// 变（收起时跟着上移），所以按**当前版面**算：
-  /// 网格窗口高 = `monthGridLayout(...).gridHeight`，拉杆就在它下面。
+  /// ## 为什么必须显式做（2026-10-22 实测）
   ///
-  /// 拿不到剖面 / 没有壁纸时返回 null，拉杆随之回落到传进来的整屏带墨色
-  /// （改动前的行为）。
-  double? _handleLuminance({
-    required BuildContext context,
-    required BoxConstraints constraints,
-    required TimetableSettings settings,
-    required int keptRow,
-  }) {
-    final profile = _luminance.value?.profile;
-    if (profile == null || profile.isEmpty) {
-      return null;
+  /// 面板是「同一个 `SingleChildScrollView` + 同一个 `ScrollController`，只换
+  /// child」：概览态 → 议程态换的是 `MonthPanelOverview ⇄ MonthDayAgenda`。
+  /// 于是**滚动位置会被带进新内容**：在概览里滚到 240dp 再点某一天，如果那天的
+  /// 议程够长（实测 14 节课，max 663dp），面板就停在 240dp —— "10月22日"这个
+  /// 标题已经在屏幕外，当天议程从半截开始，用户看到的是一堆不知道属于哪天的课。
+  ///
+  /// 内容变短时 Flutter 会把 offset 自动钳回 0，所以这个 bug **只在"新内容也够
+  /// 长"时暴露** —— 平时点一个只有两节课的日子看不出来，容易漏。
+  ///
+  /// 放在 `setState` 之后、同一帧内执行：新 child 还没布局，直接 `jumpTo(0)`
+  /// 会被随后的布局覆盖。`hasClients` 之外的 `position` 也可能还没建立，所以
+  /// 用**下一帧**再落一次（`addPostFrameCallback`），两处都做是保守的：
+  /// 有 clients 时当帧生效，没有时由下一帧兜住。
+  void _resetPanelScroll() {
+    if (_panelScroll.hasClients) {
+      _panelScroll.jumpTo(0);
     }
-    final screenHeight = MediaQuery.maybeSizeOf(context)?.height;
-    if (screenHeight == null || screenHeight <= 0) {
-      return null;
-    }
-    final bodyTop = screenHeight - constraints.maxHeight;
-    final layout = _layoutFor(
-      t: _gridExpand.value,
-      constraints: constraints,
-      settings: settings,
-      keptRow: keptRow,
-    );
-    final handleTop = bodyTop + layout.gridHeight;
-    return monthBandLuminance(
-      profile,
-      screenHeight,
-      top: handleTop,
-      bottom: handleTop + MonthGridHandle.extent,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _panelScroll.hasClients && _panelScroll.offset != 0) {
+        _panelScroll.jumpTo(0);
+      }
+    });
   }
 
   /// 网格还能不能继续往这个方向收放。
@@ -970,5 +940,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
     }
   }
 
-  /// 页面上下内边距（与首页课程网格的留白接近）。
-  static const double kMonthPageVerticalPadding = 8;}
+  /// 日历卡**内部**的上边距（表头上方那一点呼吸）。
+  ///
+  /// 旧实现叫 `kMonthPageVerticalPadding = 8`，那是"网格直接铺在页面上"时的
+  /// 页面内边距。现在它成了卡片内边距：8dp 在 24 圆角的白卡里等于表头贴着
+  /// 卡顶，读起来像内容溢出（2026-10-23 真机截图）。取 14 与卡片左右内边距同值。
+  ///
+  /// ⚠️ 它与 `monthGridLayout(topPadding:)` 是**同一个数**（那笔账算的是
+  /// 网格窗口高度里含多少上边距），两处必须一起改。
+  static const double kMonthPageVerticalPadding = 14;
+}

@@ -114,25 +114,51 @@ void main() {
     final weekTabX = tester.getCenter(find.text('周课表').first).dx;
     expect(dayTabX, lessThan(weekTabX), reason: '日课表应位于周课表左侧');
 
-    // 切日视图（玻璃坞：底栏闪现直切——animate:false，首帧即完整就位，
-    // 无锚点缩放槽；日期栏路径才保留锚点展开动画）。
+    // 切日视图（玻璃坞：**现在也播展开动画**）。
+    //
+    // 2026-10-21 用户口径：「在底栏点击切换两个视图，也应该加载动画」。这条
+    // 路径原来是 `animate: false` 的闪现直切，断言写的是「首帧即铺满、不存在
+    // 缩放中的 Align 槽」。改成播动画后，那两条断言的**前件**（直切）已经
+    // 不成立，所以断言跟着改成新行为：
+    //
+    // - 首帧**不要求**面板已经就位（动画刚开始）；
+    // - 仍然要求「存在于缩放中的 Align 槽」（= 确实在播锚点转场，不是直切）；
+    // - 转场结束后要求铺满（Align 槽消失）。
+    //
+    // 测试本来的意图 —— 「有壁纸时切视图不炸、玻璃不塌、最终状态正确」——
+    // 一条都没丢。
     await tester.tap(find.text('日课表').first);
     await tester.pump();
     expect(tester.takeException(), isNull, reason: '切日视图（有壁纸）不应有异常');
+    // ⚠️ 用「多帧推进」而不是一次 `pump(600ms)`：动画控制器的 ticker 第一次
+    // tick 的 elapsed 恒为 0，单次大跨度 pump 只走一帧、进度不动（实测
+    // widthFactor 卡在 0.2 = progress≈0）。这里按 60ms 步进推 12 帧。
+    var sawScaleSlot = false;
+    for (var i = 0; i < 12; i++) {
+      if (find.byWidgetPredicate((w) =>
+              w is Align && w.widthFactor != null && w.widthFactor! < 0.9)
+          .evaluate()
+          .isNotEmpty) {
+        sawScaleSlot = true;
+      }
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    // 转场中途确有锚点缩放槽（证明走的是动画路径，不是闪现直切）。
+    expect(sawScaleSlot, isTrue,
+        reason: '玻璃坞切日视图应播放锚点展开动画（过程中存在缩放中的 Align 槽）');
+    // 动画结束：面板就位、缩放槽消失。
     expect(
       find.byKey(const ValueKey('timetable-day-view-panel')),
       findsOneWidget,
       reason: '日视图面板应显示',
     );
-    // 闪现直切：首帧即铺满全宽（不存在缩放中的 Align 槽）。
     expect(
       find.byWidgetPredicate(
         (w) => w is Align && w.widthFactor != null && w.widthFactor! < 0.9,
       ),
       findsNothing,
-      reason: '玻璃坞切日视图应闪现直切（首帧无缩放中的 Align 槽）',
+      reason: '展开动画结束后缩放槽应消失（面板铺满）',
     );
-    await tester.pump(const Duration(milliseconds: 600));
     expect(currentIndicatorIndex(), 0, reason: '日视图下指示器应在日课表 Tab');
 
     // 日视图自带顶部信息栏：显示星期几（不是空白栏）

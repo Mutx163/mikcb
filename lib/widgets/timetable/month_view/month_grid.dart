@@ -3,27 +3,35 @@ import 'package:flutter/material.dart';
 import '../../../domain/month_grid_collapse.dart';
 import '../../../domain/month_view_logic.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../models/timetable_settings.dart';
 import 'month_day_cell.dart';
 import 'month_metrics.dart';
 
-/// 月历网格：星期表头 + 6 行 × 7 列日期格 + 每行学期周次行标。
+/// 月历网格：星期表头 + 4~6 行 × 7 列日期格 + 每行学期周次行标。
 ///
 /// 纯展示部件：数据由 [MonthGridData] 带进来，本部件不取数、不读 provider。
-/// 固定 42 格（见 [MonthViewLogic.monthGridDates]）——行数不随月份在 4~6 之间
-/// 变化，翻月时整页高度纹丝不动。
+/// 格子数据恒为 42 个（见 [MonthViewLogic.monthGridDates]），但**只画需要的
+/// 行数** —— 尾部若整行都是邻月补位格就不画（`MonthGridData.rowsInMonth`）。
 ///
-/// 视觉与周视图/日视图同一套：格子是 [MonthDayCell]（玻璃/实底课程卡材质），
-/// 表头与行标用壁纸上的判定墨色（[inkColor]），不用设置页那套固定灰。
+/// ## 2026-10-25：行数不再恒 6
 ///
-/// ## 判墨按行（2026-10-21 专业评审 P0-1）
+/// 旧口径是"永远显示六行"（用户 2026-10-21 要求），换来的是"翻月时整页高度
+/// 纹丝不动"。真机上那条保证的代价太大：约一半的月份尾部多出一整行纯灰的
+/// 邻月数字（2026 年 10 月的第 6 行 `2 3 4 5 6 7 8` 全是 11 月），白占约
+/// 45dp 且正落在视觉重心下方，读起来像"表格没画完"。
 ///
-/// 一屏壁纸自上而下的亮度可以差 2.5 倍（实测 0.56 → 0.23），所以每个格子必须
-/// 用**它自己那一行**的亮度判墨，不能整屏一个数。剖面由页面算好、按行传进来
-/// （[rowLuminances]）；拿不到时（还没采到 / 没有壁纸）退回 [inkColor]——
-/// 那是整屏带口径，与改动前逐字相同。
+/// 用户 2026-10-25 明确选了「接受翻月时卡片高度变化」，于是改成按月份自适应。
+/// 行高仍由调用方按行数统一算好传进来（[rowHeight]），本部件不自己算。
 ///
-/// 表头与周次轨**不按行**：它们贴在网格上沿、只有一行字高，整带口径本来就成立。
+/// ## 2026-10-23：格子不再带卡片材质，也不再按壁纸判墨
+///
+/// 这一层现在整个躺在一张**白色日历卡**里（`MonthCalendarCard`），所以：
+///
+/// * 格子只画内容（日号 + 色带 + 角标），材质由卡提供；
+/// * 墨色按**主题**判（`colorScheme.onSurface`），不再按壁纸逐行亮度 ——
+///   2026-10-21 那套 `rowLuminances` 是为"格子直接压在壁纸上"设计的，卡一变白
+///   它就失效了（拿壁纸亮度去判白卡上的字，暗壁纸会算出白字 → 白压白）。
+///
+/// 表头与周次轨同理：它们也在白卡里。
 ///
 /// ## 收起 / 展开（2026-10-20）
 ///
@@ -41,42 +49,24 @@ import 'month_metrics.dart';
 ///
 /// 现在订阅动画的责任落在本部件内部：[AnimatedBuilder] 的 `child` 是那 42 格
 /// （只建一次），动画帧里只重建「裁剪窗口 + 上移量」这几个叶子 widget。
-/// 42 格与表头**不参与**逐帧重建 —— 点选态由 `setState` 触发的正常重建负责，
-/// 不依赖这个动画。
 class MonthGrid extends StatelessWidget {
   const MonthGrid({
     super.key,
     required this.grid,
-    required this.settings,
     required this.selectedDate,
     required this.onDayTap,
     required this.rowHeight,
-    required this.inkColor,
-    this.showWeekNumbers = true,
     required this.progress,
+    this.showWeekNumbers = true,
     this.keptRowIndex = 0,
-    this.rowLuminances = const <double?>[],
   });
 
   final MonthGridData grid;
-  final TimetableSettings settings;
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDayTap;
 
   /// 单行高度（已由调用方按可用空间算好，并钳在可读区间内）。
   final double rowHeight;
-
-  /// 壁纸上的判定墨色（表头/行标用；格子只在没有逐行数据时回落用它）。
-  final Color inkColor;
-
-  /// 每一行背后那段壁纸的亮度（长度 6，元素可为 null）。空 = 没有逐行数据。
-  ///
-  /// 由页面用 `monthRowLuminances` 算好传入 —— 42 个格子必须按行判墨，
-  /// 整屏一个数会错掉一头（见类注释 P0-1）。
-  final List<double?> rowLuminances;
-
-  /// 是否显示每行的学期周次行标（「第 N 周」）。学期未配置时内部自动隐藏。
-  final bool showWeekNumbers;
 
   /// 展开进度：1 = 全展开（默认，逐字维持旧行为）、0 = 只留一周、
   /// 中间值 = 拖拽中的连续裁剪。
@@ -88,7 +78,10 @@ class MonthGrid extends StatelessWidget {
   /// 收起态保留的行（0 基）。判据在 `monthGridRowToKeep`，由页面算好传入。
   final int keptRowIndex;
 
-  /// 行高可读下限：再矮日期数字与圆点会挤在一起。
+  /// 是否显示每行的学期周次行标（「第 N 周」）。学期未配置时内部自动隐藏。
+  final bool showWeekNumbers;
+
+  /// 行高可读下限：再矮日期数字与色带会挤在一起。
   static const double minRowHeight = 44;
 
   /// 行高舒适上限：屏幕很高时别把格子拉成大方块（一行 7 格，拉太高显空）。
@@ -122,7 +115,19 @@ class MonthGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final mutedInk = inkColor.withValues(alpha: 0.72);
+    final colorScheme = Theme.of(context).colorScheme;
+    // 表头与周次轨：压在白卡上，跟主题走。
+    //
+    // 表头用 [MonthInk.tertiary]（对比度 3.79:1）—— 旧实现这里是 0.62，与
+    // 副行、注脚、箭头挤在五个几乎一样的档位上，语义没分级（见 MonthInk 注释）。
+    final mutedInk = colorScheme.onSurface.withValues(
+      alpha: MonthInk.tertiary,
+    );
+
+    // 本批日期实际要画几行（4~6）。2026-10-25 之前恒 6 行，尾部常多出一整行
+    // 纯邻月补位格（2026 年 10 月的第 6 行八个数字全是 11 月），白占一行高度。
+    // 判据在 `MonthGridData.rowsInMonth`。
+    final rowCount = grid.rowsInMonth;
 
     // 周次行标列：只在真的能算出周次时占位（学期未配置时整列收起，
     // 否则左边会挂一条毫无意义的空白）。
@@ -158,8 +163,17 @@ class MonthGrid extends StatelessWidget {
                     style: TextStyle(
                       fontSize: MonthType.caption,
                       fontWeight: FontWeight.w600,
+                      // 周末表头比工作日**重一档**（secondary vs tertiary），
+                      // 而不是旧实现那种"同色再压一个 0.72"—— 旧写法在五个
+                      // 几乎一样的档位里又加了一档，肉眼分不出，周末列因此
+                      // 没有边界（用户扫读时找不到"一周从哪儿开始"）。
+                      //
+                      // ⚠️ 两者都取 [MonthInk] 里已有的档：新增一个 alpha 就是
+                      // 把刚收敛好的档位重新打散。
                       color: i >= 5
-                          ? mutedInk.withValues(alpha: 0.72)
+                          ? colorScheme.onSurface.withValues(
+                              alpha: MonthInk.secondary,
+                            )
                           : mutedInk,
                     ),
                   ),
@@ -170,7 +184,7 @@ class MonthGrid extends StatelessWidget {
       ),
     );
     final rows = [
-      for (var row = 0; row < 6; row++)
+      for (var row = 0; row < rowCount; row++)
         _buildWeekRow(context, row, weekNumberColumnVisible, mutedInk),
     ];
 
@@ -181,16 +195,13 @@ class MonthGrid extends StatelessWidget {
     // 窗口高度按「表头 + 1 行」算，可内容整体上移把表头推出了窗口 —— 露出来的
     // 自然是被推走那一块后面的上一行下半截。表头是固定表头，不参与滚动。
     //
-    // 现在按用户口径（2026-10-21 截图）实现「上下同时收」：窗口变矮、内容上移，
-    // 保留行上方的行**走出窗口上沿**，保留行下方的行**被下方面板盖住**。
-    // 两者叠加，保留行最后停在窗口最上沿、紧贴面板拉杆。
-    //
-    // 42 格始终在树上（InkWell 状态与 widget key 不丢）；Transform.translate
+    // 画出来的格子始终在树上（InkWell 状态与 widget key 不丢）；Transform.translate
     // 会连带命中测试一起移，保留行的格子照常可点。
-    final keptRow = keptRowIndex.clamp(
-      0,
-      (grid.days.length - 1) ~/ kMonthGridDaysPerRow,
-    );
+    //
+    // ⚠️ 上界用 `rowCount - 1` 而**不是**「42 格的最后一行」：收起态要保留的
+    // 行若落在被裁掉的那一行（比如 5 行月的 keptRow 被算成 4 以上），窗口会
+    // 对着一行根本没画出来的内容 —— 症状是收起来后一片空白。
+    final keptRow = keptRowIndex.clamp(0, rowCount - 1);
 
     // ── 性能的关键：42 格作为 `child` 交给 AnimatedBuilder ──
     //
@@ -202,11 +213,8 @@ class MonthGrid extends StatelessWidget {
     // `t >= 1` 分叉成「展开态返回裸 child / 收起态返回 ClipRect」。那样 t 一
     // 越过 1 子树深度就变了，Flutter 按位置复用元素 ⇒ 整棵 42 格销毁重建。
     // 交替拖动（t 在 0.93 与 1.00 之间来回）实测 **504 格/帧**，比优化前更差。
-    // 同一条纪律在 `timetable_home_dock_shell.dart`（内嵌页）与 `5bd7c625`
-    // （首页栈）各吃过一次。
     //
-    // 所以裁剪层**恒在**。代价是展开态多一层 ClipRect + 一次 Transform，
-    // 与「每帧重建 42 个玻璃卡」完全不是一个量级。
+    // 所以裁剪层**恒在**。代价是展开态多一层 ClipRect + 一次 Transform。
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -217,7 +225,9 @@ class MonthGrid extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: rows),
           builder: (context, child) {
             final t = progress.value;
-            final visibleRows = monthGridVisibleRows(t);
+            // 窗口行数按**这一页真实要画的行数**插值（4~6），不是恒 6 —— 否则
+            // 5 行月的窗口会比内容高一整行，收起态露出的是空白。
+            final visibleRows = monthGridVisibleRows(t, rowCount: rowCount);
             // 内容上移量：收起时把保留行顶到窗口顶端，展开时归零。
             final rowOffset = monthGridScrollOffset(
               keptRow: keptRow,
@@ -260,7 +270,6 @@ class MonthGrid extends StatelessWidget {
       orElse: () => rowDays.first,
     );
     final weekLabel = anchor.weekIndex;
-    final rowLuminance = row < rowLuminances.length ? rowLuminances[row] : null;
     return SizedBox(
       height: rowHeight,
       child: Row(
@@ -292,7 +301,10 @@ class MonthGrid extends StatelessWidget {
                               fontSize: MonthType.rail,
                               height: 1.15,
                               fontWeight: FontWeight.w600,
-                              color: mutedInk.withValues(alpha: 0.8),
+                              // 旧实现是 `mutedInk.withValues(alpha: 0.8)` —— 又
+                              // 一个只差 0.02 的档位（见 [MonthInk] 的注释）。
+                              // 周次轨就是 tertiary 这一档，不再另压。
+                              color: mutedInk,
                             ),
                           ),
                         ),
@@ -302,18 +314,15 @@ class MonthGrid extends StatelessWidget {
           for (final day in rowDays)
             Expanded(
               child: Padding(
-                // 格间留白：卡片之间要透气（周网格课程卡同样是「留缝」而非贴边）。
+                // 格间留白：格子之间要透气。
                 padding: const EdgeInsets.all(MonthMetrics.cellGap),
                 // 每格独立重绘层：翻月/选中只脏一两格，静态格不跟着重画。
                 child: RepaintBoundary(
                   child: MonthDayCell(
                     entry: day,
-                    settings: settings,
                     isToday: day.date == grid.today,
                     isSelected:
                         selectedDate != null && day.date == selectedDate,
-                    rowLuminance: rowLuminance,
-                    inkOverride: inkColor,
                     onTap: () => onDayTap(day.date),
                   ),
                 ),

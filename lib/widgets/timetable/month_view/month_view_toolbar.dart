@@ -1,39 +1,39 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../timetable_page_chrome_shell.dart';
 import 'month_metrics.dart';
 
-/// 月视图工具行的高度（逻辑 px）。玻璃带的几何按它算，写歪了带底与工具行
-/// 错开几像素，读成一条横贯屏幕的缝（见 [MonthViewToolbar]）。
+/// 月视图导航行的历史名字（**已迁到卡内**，2026-10-23）。
 ///
-/// **必须与周/日视图的星期栏（`TimetableWeekdayHeader.height` = 40）同高**：
-/// 顶栏总高 = 标题行 44 + 这一行。曾经取 48（IconButton 的默认点击尺寸），
-/// 结果月视图顶栏比周/日视图高出 8px —— 用户 2026-10-20 实测提出
-/// 「为什么和日视图周视图的顶栏不一样高」。本行所有控件都按 40 设计。
+/// 它原本是"外壳工具行"的高度。导航搬进 `MonthCalendarCard` 之后，页面不再
+/// 用它算顶栏几何（玻璃带只剩标题行），但**值仍然是 40** ——
+/// 与周/日视图的星期栏同高，三个视图的顶栏才不会分家
+/// （用户 2026-10-20 报过「为什么和日视图周视图的顶栏不一样高」）。
 ///
-/// 常量住在 widgets 层而不是页面里：页面（screens 层）与工具行（widgets 层）
-/// 必须取同一个值，而 widgets **不许 import screens**（依赖守卫会拦）。
-const double kMonthViewToolbarHeight = 40;
+/// 保留这个名字只为一件事：既有契约测试按它钉住"40"这条口径。
+/// 新的调用方请用 `MonthMetrics.calendarNavHeight` / `MonthCalendarCard.navHeight`。
+const double kMonthViewToolbarHeight = MonthMetrics.calendarNavHeight;
 
 /// 月视图的**月份切换行**：`‹  2026年10月  ›`（非本月时尾部再加「今天」）。
 ///
-/// ## 重新设计（2026-10-21）
+/// ## 2026-10-23：从"玻璃带上的一条工具行"改成"日历卡的表头"
 ///
-/// 用户口径：「月视图顶部那个月份显示，左右切换到那部分，重新设计一下」。
+/// 用户口径：「顶部的 2026年10月，左右按钮，回今日区域，看看这些能不能和下面的
+/// 日期做一下整体化」。
 ///
-/// 旧版是「两个默认 `IconButton` + 一行 16px 文字」，三个问题：
+/// 它原先住在满宽玻璃带里，与下面那张 8dp 外沿 + 24 圆角的日历白卡之间隔着一圈
+/// 壁纸。而它控制的正是那张卡 —— 读起来是"上面的仪表盘在遥控下面的表格"。
+/// 现在它被摆进 `MonthCalendarCard` 的卡顶，成为卡的一部分：
 ///
-/// 1. **文字与滑动无关**：左右滑时标题瞬间跳变，滚动过程中看不出正在翻向
-///    哪个月，读起来像"卡一下才换"；
-/// 2. **按钮不像按钮**：两个 chevron 裸贴在玻璃带上，没有可点击的观感；
-/// 3. **尾部靠补等宽 `SizedBox` 对齐**：换文案长度时标题会偏。
+/// * 左右内边距与卡内内容同一条轴（[MonthMetrics.cardPadding]），
+/// * 墨色跟**卡面**走（不再走 `HomePageChromeInk` 的壁纸极性 —— 卡是白的），
+/// * 箭头不再是"圆底按钮"，改成**无底**的点击区：卡内已经有明确边界，
+///   再叠一圈圆底会在白卡上画出一排灰点。
 ///
-/// 新版：
+/// ## 保留的设计（2026-10-21 的成果，不要回退）
 ///
-/// * 标题**跟着手指连续滑动**（读 [pageListenable]），滑到一半能看到两个月份
-///   各露一半，翻页不再是突变；
-/// * 两个箭头是 40×40 的**圆形浅底**按钮（与行高齐平），按下有明确反馈；
+/// * 标题**跟着手指连续滑动**（读 [pageListenable]）：滑到一半能看到两个月份
+///   各露一半，翻页不是突变；
 /// * 尾部是**固定宽度槽位**：本月空着、非本月放「今天」药丸 —— 标题可用宽度
 ///   恒定，永远居中。
 class MonthViewToolbar extends StatelessWidget {
@@ -73,31 +73,31 @@ class MonthViewToolbar extends StatelessWidget {
   /// 页码 → (年, 月)。
   final ({int year, int month}) Function(int page)? monthOfPage;
 
-  /// 工具行高度。与调用方给外壳的 `toolbarHeight` 必须同值。
-  static const double height = kMonthViewToolbarHeight;
+  /// 导航行高度。与 `MonthCalendarCard.navHeight` 必须同值。
+  static const double height = MonthMetrics.calendarNavHeight;
 
-  /// 左右箭头的命中尺寸（正方形，与行高齐平）。
-  static const double arrowSize = kMonthViewToolbarHeight;
+  /// 左右箭头的**命中**尺寸（正方形）。
+  ///
+  /// 视觉图标只有 20，但命中区 40 —— 卡内导航不需要圆形底，同时不能缩小
+  /// 可点范围（手指点 20dp 的图标很容易点空）。
+  static const double arrowSize = 40;
 
   /// 尾部槽位宽度：「今天」药丸与箭头同宽，本月空着时也不会让标题偏移。
-  static const double trailingSlotWidth = 60;
+  static const double trailingSlotWidth = 56;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // 作用域里没有时回落主题墨色：无壁纸的纯色页上这就是正确值。
-    final ink =
-        HomePageChromeInk.foregroundOf(context) ??
-        Theme.of(context).colorScheme.onSurface;
-    // mutedOf 自带回落（onSurfaceVariant），不需要再给 ??。
-    final muted = HomePageChromeInk.mutedOf(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    // ⚠️ 卡内墨色：**跟卡面走**，不走 `HomePageChromeInk`。
+    // 那个作用域回答的是"字压在壁纸上该黑还是白"，而这一行现在躺在白卡里 ——
+    // 暗壁纸下它会给出白字，白压白直接看不见（2026-10-21 同族事故）。
+    final ink = colorScheme.onSurface;
+    final muted = ink.withValues(alpha: MonthInk.tertiary);
 
     return Padding(
-      // 工具行左右对称内缩：旧实现左边 0.9dp / 右边 5.2dp（真机实测），
-      // 整行看着是歪的。见 [MonthMetrics.toolbarInset] 的取值说明。
-      padding: const EdgeInsets.symmetric(
-        horizontal: MonthMetrics.toolbarInset,
-      ),
+      // 与卡内内容同一条左轴（22 = 卡外沿 8 + 卡内边距 14）。
+      padding: const EdgeInsets.symmetric(horizontal: MonthMetrics.cardPadding),
       child: Row(
         children: [
           _ArrowButton(
@@ -129,11 +129,13 @@ class MonthViewToolbar extends StatelessWidget {
             width: trailingSlotWidth,
             child: isCurrentMonth
                 ? null
-                : Center(child: _TodayPill(
-                    label: l10n.monthViewBackToCurrentMonthShort,
-                    ink: ink,
-                    onTap: onBackToCurrentMonth,
-                  )),
+                : Center(
+                    child: _TodayPill(
+                      label: l10n.monthViewBackToCurrentMonthShort,
+                      ink: ink,
+                      onTap: onBackToCurrentMonth,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -141,11 +143,13 @@ class MonthViewToolbar extends StatelessWidget {
   }
 }
 
-/// 圆形浅底箭头按钮。
+/// 卡内箭头：**无底**的可点图标。
 ///
-/// 用 [InkResponse] 而不是 `IconButton`：后者的水波纹是矩形，在一个只有 40 高
-/// 的行里看着像"一块方形亮斑"。这里给圆形 + 极淡静态底，静止时干净、
-/// 按下有明确反馈。
+/// 旧版是 40dp 的圆形浅底。进了白卡之后，卡本身已经是一块明确的容器，
+/// 再给箭头垫一圈灰底会在白卡顶部画出一排"灰点"，把卡切碎 ——
+/// 小米日历 / 系统日历在这一行都是裸箭头。
+///
+/// 命中区仍是 40×40（`SizedBox`），只是视觉不再有底色。
 class _ArrowButton extends StatelessWidget {
   const _ArrowButton({
     required this.icon,
@@ -171,13 +175,11 @@ class _ArrowButton extends StatelessWidget {
           child: InkResponse(
             onTap: onTap,
             radius: MonthViewToolbar.arrowSize / 2,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                // 6% 的墨色：看得见"这里能按"，又不抢标题。
-                color: ink.withValues(alpha: 0.06),
-              ),
-              child: Icon(icon, size: 22, color: ink),
+            child: Icon(
+              icon,
+              size: 20,
+              // 比正文淡一档：箭头是导航，不该和月份标题抢注意力。
+              color: ink.withValues(alpha: MonthInk.tertiary),
             ),
           ),
         ),
@@ -257,7 +259,9 @@ class _MonthTitle extends StatelessWidget {
                     offset: Offset(w * (1 - frac), 0),
                     child: SizedBox(
                       width: w,
-                      child: Center(child: _labelText(l10n, next.year, next.month)),
+                      child: Center(
+                        child: _labelText(l10n, next.year, next.month),
+                      ),
                     ),
                   ),
                 ],
@@ -274,16 +278,6 @@ class _MonthTitle extends StatelessWidget {
   /// 系统日历的通行做法 —— 一眼要读的是"哪个月"，年份只是上下文。
   /// 两段都来自 l10n（`monthViewYearSegment` / `monthViewMonthSegment`），
   /// 语序与后缀由各语言自己决定：中文「2026年 / 10月」、英文「2026/ / 10」。
-  ///
-  /// 2026-10-21 修：原先这里写死 `'$y年'` / `'$m月'`，英日韩用户看到的是中文。
-  /// 那是 `9a1c2c00` 重排标题行时引入的——同批还把 `monthViewHeaderTitle`
-  /// 变成了没人引用的孤儿键（本该由它承载整句，但两段颜色不同，必须拆开，
-  /// 而 `{year}年{month}月` 这种模板在运行时切不出「哪半截是年份」，
-  /// 所以改成两段各一个键）。
-  ///
-  /// 字号改走 [MonthType]（2026-10-21 专业评审 P1）：旧值是 13 / 17，与页面里
-  /// 其它 9 级字号之间没有模数关系；现在年份取 `monthYear`(13)、月份取
-  /// `monthTitle`(17)，两者都登记在字阶表里，不再有第三个散落的数值。
   Widget _labelText(AppLocalizations l10n, int y, int m) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -294,7 +288,7 @@ class _MonthTitle extends StatelessWidget {
           l10n.monthViewYearSegment(y),
           maxLines: 1,
           style: TextStyle(
-            fontSize: MonthType.monthYear,
+            fontSize: MonthType.body,
             fontWeight: FontWeight.w600,
             color: muted,
             letterSpacing: 0.1,
@@ -305,7 +299,7 @@ class _MonthTitle extends StatelessWidget {
           l10n.monthViewMonthSegment(m),
           maxLines: 1,
           style: TextStyle(
-            fontSize: MonthType.monthTitle,
+            fontSize: MonthType.display,
             fontWeight: FontWeight.w700,
             color: ink,
             letterSpacing: 0.2,
@@ -339,7 +333,8 @@ class _TodayPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
-            color: ink.withValues(alpha: 0.08),
+            // 卡内墨色的 8%：白卡上这只药丸要"能按"，但不能像第二个按钮组。
+            color: ink.withValues(alpha: MonthInk.fill),
           ),
           child: Text(
             label,

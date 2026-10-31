@@ -152,10 +152,9 @@ class _MonthPanelDragAreaState extends State<MonthPanelDragArea> {
   /// 本次手势里列表是否被驱动过（决定抬手要不要给它惯性）。
   bool _listTouched = false;
 
-  ScrollPosition? get _position =>
-      widget.scrollController.hasClients
-          ? widget.scrollController.position
-          : null;
+  ScrollPosition? get _position => widget.scrollController.hasClients
+      ? widget.scrollController.position
+      : null;
 
   /// 列表此刻还能不能在这个方向上滚。
   bool _listCanScroll(double dy) {
@@ -175,9 +174,18 @@ class _MonthPanelDragAreaState extends State<MonthPanelDragArea> {
 
   void _onPointerDown(PointerDownEvent event) {
     // 按下即接管：正在跑的惯性立刻停住（用户伸手就是要自己控）。
-    widget.scrollController.jumpTo(
-      widget.scrollController.hasClients ? widget.scrollController.offset : 0,
-    );
+    //
+    // ⚠️ 必须判 `hasClients`：**概览态没有滚动视图**（内容按可用高度算好、
+    // 正好填满，没什么可滚的，见 `month_view_screen._buildInfoArea`）。
+    // 无条件 `jumpTo` 会在那种树上直接断言失败
+    //（`ScrollController not attached to any scroll views`，2026-10-25
+    // 收起态实测：手指一碰就抛）。
+    //
+    // 没有滚动视图时这条接管本来就是空操作：`_listCanScroll` 也返回 false，
+    // 位移因此全部交给网格收放 —— 正是概览态想要的。
+    if (widget.scrollController.hasClients) {
+      widget.scrollController.jumpTo(widget.scrollController.offset);
+    }
     widget.dragState.beginGesture();
     _listTouched = false;
     _lastY = event.position.dy;
