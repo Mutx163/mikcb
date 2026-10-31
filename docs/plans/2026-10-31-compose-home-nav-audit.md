@@ -83,6 +83,19 @@
 - `pushPage` 环状导航：A→B→A 以前静默无反应，现在弹回那一层。
 - `TaskWiringGuardTest` 重写：底栏不再自带槽位渲染，「两个渲染点」这个前提被结构消灭，守卫改钉「主屏只能走 `ShellPageContent` + `rootPageIdFor`，不许直接构造页面宿主」。
 
+### F. 提交范围（共享工作区口径，必须看）
+
+本批提交 `4d6621ac`。有两条泳道同时在改同一批文件，为了避免把别人的半成品打进提交，
+**有两处本批改动留在工作区、没有进这个提交**：
+
+| 位置 | 本批改了什么 | 为什么没提交 |
+|---|---|---|
+| `ShellPageIndex.kt` | 月视图菜单改读 `homeTopMenuItems`；`c3.day` 分支整体重写（§二 C） | 该文件同时承载 F20 小组件设置页接线；`c3.day` 还依赖别条泳道未跟踪的 `DayViewDataAssembler.kt` / `dayViewPageDataOf`，单独提交会让 HEAD 编不过 |
+| `TimetableHost.kt` | 壁纸快照 + 墨色 | 已提交的是「HEAD + 本批壁纸接线」版本；工作区里多出来的假期判定/课卡天气行属别条泳道（依赖未跟踪的 `WeekHolidayMarking.kt`） |
+
+→ **日视图那条 P0 修复（点周五看今天）当前只在工作区生效**，等日视图泳道提交时一并落库；
+同步见 `.agents/compose-phase3/claims/LEAD-home-nav-refactor.md`。
+
 ---
 
 ## 三、逐项对照（Dart 行为 → 现状 → 判定）
@@ -148,10 +161,15 @@ OK (115 tests)
 
 ```
 pwsh -File scripts/safe-gradle.ps1 :app:compileDevDebugKotlin
-BUILD SUCCESSFUL in 3m 7s
+BUILD SUCCESSFUL in 3m 7s          ← 本批代码在树里第一次真编（含壁纸接线）
+...
+> Task :app:compileDevDebugKotlin UP-TO-DATE
+BUILD SUCCESSFUL in 4s             ← 收尾复核（同树已编过，无红）
 ```
 
-（本轮第一次 L1 是红的：`onOpenSchedule` 参数个数、`DayViewDataAssembler` 里一处未限定调用；修完复跑才绿，两次都在本条留痕。）
+（本轮第一次 L1 是红的：`onOpenSchedule` 参数个数、`DayViewDataAssembler` 里一处未限定调用；修完复跑才绿。
+期间还撞到过两条别的泳道的瞬时红：`HomeWidgetPreviewCarousel` 的 API 名、`DayViewPage` 少一行 `QingyuCard` import
+——后者让全仓编不过，已顺手补上，两次都在本条留痕。）
 
 ### 5.3 样式守卫（棘轮）
 
