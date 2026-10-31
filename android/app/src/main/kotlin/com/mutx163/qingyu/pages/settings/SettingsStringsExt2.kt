@@ -75,6 +75,32 @@ object SettingsStringsExt2 {
     val homeWidgetExactAlarmBannerTitle = ArbText("homeWidgetExactAlarmBannerTitle", "精确闹钟权限未授予")
     val homeWidgetExactAlarmBannerText = ArbText("homeWidgetExactAlarmBannerText", "缺少闹钟权限，卡片刷新可能延迟")
     val homeWidgetExactAlarmGrantAction = ArbText("homeWidgetExactAlarmGrantAction", "去授权")
+    // 系统动作结果提示（F20 宿主：pin / 授权页 / 绑定失败的 Toast，文案照 ARB 逐字）。
+    val homeWidgetPinRequested = ArbText(
+        "homeWidgetPinRequested",
+        "已发起 {label} 添加请求，请在系统弹窗中确认添加",
+    )
+    val homeWidgetPinUnsupportedManual = ArbText(
+        "homeWidgetPinUnsupportedManual",
+        "系统桌面不支持应用内添加组件，请长按桌面通过小组件菜单添加 {label}",
+    )
+    val homeWidgetInvalidType = ArbText("homeWidgetInvalidType", "小组件类型无效，请稍后重试")
+    val homeWidgetPinFailedManual = ArbText(
+        "homeWidgetPinFailedManual",
+        "添加失败，请长按桌面通过小组件菜单添加 {label}",
+    )
+    val homeWidgetBindingSaveFailed = ArbText(
+        "homeWidgetBindingSaveFailed",
+        "保存卡片绑定失败，请稍后重试",
+    )
+    val homeWidgetExactAlarmOpenFailed = ArbText(
+        "homeWidgetExactAlarmOpenFailed",
+        "打开授权页失败，请前往系统设置开启闹钟和提醒权限",
+    )
+    val homeWidgetExactAlarmFallbackHint = ArbText(
+        "homeWidgetExactAlarmFallbackHint",
+        "已打开应用设置，请开启闹钟和提醒权限",
+    )
     val homeWidgetTargetCompact22 = ArbText("homeWidgetTargetCompact22", "主卡 2×2")
     val homeWidgetTargetMiniList22 = ArbText("homeWidgetTargetMiniList22", "迷你列表 2×2")
     val homeWidgetTargetMedium24 = ArbText("homeWidgetTargetMedium24", "概览 2×4")
@@ -241,7 +267,8 @@ object SettingsStringsExt2 {
         liveCountdownTextStyleMinuteSecondMinSlashS, liveCountdownTextStyleMinuteOnlyCn, liveCountdownTextStyleMinuteOnlyMin, liveCountdownTextStyleMinuteOnlySlash, liveCountdownTextStyleSecondOnlyCn, liveCountdownTextStyleSecondOnlyShort,
         liveCountdownTextStyleSecondOnlySlash, homeWidgetAppearanceTitle, homeWidgetHeightAdjustTitle, homeWidgetHeightAdjustHint, homeWidgetCornerRadiusTitle, defaultLabel,
         higherByValue, lowerByValue, homeWidgetBindingSectionTitle, homeWidgetBindingFollowActive, homeWidgetBindingCoupleMerged, homeWidgetBindingEmpty,
-        homeWidgetExactAlarmBannerTitle, homeWidgetExactAlarmBannerText, homeWidgetExactAlarmGrantAction, homeWidgetTargetCompact22, homeWidgetTargetMiniList22, homeWidgetTargetMedium24,
+        homeWidgetExactAlarmBannerTitle, homeWidgetExactAlarmBannerText, homeWidgetExactAlarmGrantAction, homeWidgetPinRequested, homeWidgetPinUnsupportedManual,
+        homeWidgetInvalidType, homeWidgetPinFailedManual, homeWidgetBindingSaveFailed, homeWidgetExactAlarmOpenFailed, homeWidgetExactAlarmFallbackHint, homeWidgetTargetCompact22, homeWidgetTargetMiniList22, homeWidgetTargetMedium24,
         homeWidgetTargetLarge44, homeWidgetTargetStats22, homeWidgetTargetStats24, homeWidgetTargetStatsStrip41, homeWidgetTargetTodayStrip41, homeWidgetTargetExamCard22,
         homeWidgetTargetTodayWide42, homeNavigationTitle, homeNavigationFormLabel, homeNavigationFormClassic, homeNavigationFormClassicSubtitle, homeNavigationFormGlassDock,
         homeNavigationFormGlassDockSubtitle, glassDockCustomizeSectionTitle, glassDockShowAddButtonTitle, glassDockShowAddButtonSubtitle, glassDockCustomizeTitle, glassDockRoundActionLabel,

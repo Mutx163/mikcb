@@ -244,6 +244,16 @@ object SettingsThemeManagePage {
 
     const val ID = "settings-theme"
 
+    /**
+     * 「我的主题」区块里那三行的行 id（导出 / 导入 / 保存当前主题）。
+     *
+     * 2026-10-29 补口：宿主 `SettingsHost.handleIntent` 要按 rowId 认「保存当前主题」这一行
+     * 该弹哪个对话框，所以 id 必须有唯一出处——页面模型定义、宿主引用，不许两边各写一串字面量。
+     */
+    const val ROW_EXPORT = "theme.export"
+    const val ROW_IMPORT = "theme.import"
+    const val ROW_SAVE_CURRENT = "theme.save"
+
     fun spec(state: SettingsPageState): SettingsPageSpec {
         val nodes = mutableListOf<SettingsNode>()
 
@@ -294,19 +304,19 @@ object SettingsThemeManagePage {
             id = "theme.actions",
             children = listOf(
                 settingsRow(
-                    id = "theme.export",
+                    id = ROW_EXPORT,
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStrings.themeExport,
                     action = SettingsAction.CLIPBOARD_EXPORT,
                 ),
                 settingsRow(
-                    id = "theme.import",
+                    id = ROW_IMPORT,
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStrings.themeImport,
                     action = SettingsAction.CLIPBOARD_IMPORT,
                 ),
                 settingsRow(
-                    id = "theme.save",
+                    id = ROW_SAVE_CURRENT,
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStrings.themeSaveCurrent,
                     action = SettingsAction.DIALOG,

@@ -23,8 +23,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,6 +39,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
@@ -55,13 +60,37 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
+import top.yukonga.miuix.kmp.icon.extended.Alarm
+import top.yukonga.miuix.kmp.icon.extended.Background
+import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.CloudFill
+import top.yukonga.miuix.kmp.icon.extended.ConvertFile
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Layers
+import top.yukonga.miuix.kmp.icon.extended.Link
+import top.yukonga.miuix.kmp.icon.extended.ListView
 import top.yukonga.miuix.kmp.icon.extended.Location
+import top.yukonga.miuix.kmp.icon.extended.Months
+import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Pin
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Report
+import top.yukonga.miuix.kmp.icon.extended.Show
+import top.yukonga.miuix.kmp.icon.extended.Sidebar
+import top.yukonga.miuix.kmp.icon.extended.Stopwatch
+import top.yukonga.miuix.kmp.icon.extended.Theme
+import top.yukonga.miuix.kmp.icon.extended.Timer
+import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.icon.extended.Weeks
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -265,8 +294,16 @@ internal fun SettingsNodeView(
     }
 }
 
+/**
+ * 分组小标题（`HyperosSectionLabel`）。
+ *
+ * 2026-10-31（F20-B）从 `private` 放宽到 `internal`：桌面小组件的预览轮播有自己的
+ * 复合区块（`HomeWidgetPreviewCarousel.WidgetPreviewSection`），顶部要用的正是**同一条**
+ * 轴线与字阶。让它自己再抄一份样式，两处迟早会分叉（一处 13sp 一处 12sp、
+ * 一处内缩 16 一处 14），所以开放同一个实现，而不是复制。
+ */
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     Text(
         text = text,
         modifier = Modifier
@@ -620,8 +657,10 @@ private fun SummaryCardRow(
 }
 
 /**
- * 行首彩色图标徽章（Flutter `settingsIconBadge` 的对应物）：28dp 圆角方块 + 白色图标。
+ * 行首彩色图标徽章（Flutter `HyperosIconBadge` 的对应物）：26dp 圆角方块 + 14dp 白色图标。
  *
+ * 尺寸/圆角逐字对齐 `hyperos_tokens.dart:63-65`（`iconBadgeSize=26`、`iconGlyphSize=14`、
+ * `iconBadgeRadius=26*7/26=7`）——设置页每一行前面的彩色小方块就是它。
  * 官方 preference 族的 `startAction` 插槽正好承载这一块；颜色由模型给（`tintHex`），
  * 缺省退回主题主色。图标名走 [miuixIconByName] 映射，未知名退回 Info。
  */
@@ -630,8 +669,8 @@ private fun SettingsLeadingBadge(icon: SettingsRowIcon) {
     val tint = parseHexColor(icon.tintHex) ?: MiuixTheme.colorScheme.primary
     Box(
         modifier = Modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .size(26.dp)
+            .clip(RoundedCornerShape(7.dp))
             .background(tint),
         contentAlignment = Alignment.Center,
     ) {
@@ -639,15 +678,45 @@ private fun SettingsLeadingBadge(icon: SettingsRowIcon) {
             imageVector = miuixIconByName(icon.name),
             contentDescription = null,
             tint = Color.White,
-            modifier = Modifier.size(17.dp),
+            modifier = Modifier.size(14.dp),
         )
     }
 }
 
+/**
+ * 模型里的图标名 → miuix 官方图标。
+ *
+ * 名字与 Flutter 侧 `MiuixIcons.extended.byName('layers')` 的字符串**逐字一致**
+ * （见 `timetable_settings_screen.dart` 各行 `settingsIconBadge(...)`）。
+ * 认不出的名字退回 Info；新增图标时**两边一起加**，并有守卫测试扫源码防漏。
+ */
 private fun miuixIconByName(name: String): ImageVector = when (name) {
     "pin" -> MiuixIcons.Pin
     "location" -> MiuixIcons.Location
     "refresh" -> MiuixIcons.Refresh
+    "layers" -> MiuixIcons.Layers
+    "timer" -> MiuixIcons.Timer
+    "favorites" -> MiuixIcons.Favorites
+    "favoritesFill" -> MiuixIcons.FavoritesFill
+    "gridView" -> MiuixIcons.GridView
+    "months" -> MiuixIcons.Months
+    "weeks" -> MiuixIcons.Weeks
+    "cloudFill" -> MiuixIcons.CloudFill
+    "alarm" -> MiuixIcons.Alarm
+    "home" -> MiuixIcons.Home
+    "theme" -> MiuixIcons.Theme
+    "sidebar" -> MiuixIcons.Sidebar
+    "tune" -> MiuixIcons.Tune
+    "convertFile" -> MiuixIcons.ConvertFile
+    "backup" -> MiuixIcons.Backup
+    "link" -> MiuixIcons.Link
+    "notes" -> MiuixIcons.Notes
+    "report" -> MiuixIcons.Report
+    "info" -> MiuixIcons.Info
+    "background" -> MiuixIcons.Background
+    "stopwatch" -> MiuixIcons.Stopwatch
+    "listView" -> MiuixIcons.ListView
+    "show" -> MiuixIcons.Show
     else -> MiuixIcons.Info
 }
 
@@ -683,6 +752,11 @@ private fun SliderRow(
 ) {
     val spec = row.slider ?: return
     val value = row.sliderValue ?: spec.defaultValue
+    // 「点开数值输入框」：Dart `HyperosSliderTile.tapToEdit` 默认 true（:491-660），
+    // 点行或数值 → `showHyperosSliderValueDialog`（:339-395）→ 确认后 `onChanged`。
+    // 只有模型给了 `dialogHelper` 的行才开这个入口：没给的（全站其它滑杆）保持
+    // `onClick = null`，官方组件因此既不画行尾箭头、点行也没反应——与改动前完全一致。
+    var editing by remember(row.id) { mutableStateOf(false) }
     SliderPreference(
         value = value.toFloat(),
         onValueChange = { changed ->
@@ -696,6 +770,9 @@ private fun SliderRow(
         summary = row.subtitle,
         valueText = row.value,
         enabled = row.enabled,
+        // `onClick != null` 时官方组件会在行尾补一个箭头（`SliderPreference.kt:112`
+        // `val showArrow = onClick != null`），观感等同 Dart 的 `HyperosChevron`。
+        onClick = spec.dialogHelper?.let { { editing = true } },
         valueRange = spec.min.toFloat()..spec.max.toFloat(),
         steps = (spec.divisions - 1).coerceAtLeast(0),
         // 建议点位原样交给官方组件（它自己画刻点并按 `magnetThreshold` 吸附）：
@@ -704,6 +781,113 @@ private fun SliderRow(
         showKeyPoints = spec.showKeyPoints && !spec.keyPoints.isNullOrEmpty(),
         keyPoints = spec.keyPoints?.map { it.toFloat() },
     )
+    val helper = spec.dialogHelper
+    if (editing && helper != null) {
+        SliderValueDialog(
+            title = row.title,
+            helper = helper,
+            initialValue = value,
+            min = spec.min,
+            max = spec.max,
+            divisions = spec.divisions,
+            onDismiss = { editing = false },
+            onConfirm = { changed ->
+                editing = false
+                // 与拖动滑杆**同一条**写入口：同一个值串格式、同一个 rowId。
+                onAction(SettingsAction.WRITE_SETTING, changed.toString(), row.id)
+            },
+        )
+    }
+}
+
+/**
+ * 滑杆的数值输入弹框（Dart `showHyperosSliderValueDialog` →
+ * `_HyperosSliderValueSheetBody`，`lib/ui/hyperos/hyperos_controls.dart:339-470`）。
+ *
+ * 与 Dart 的形态差异（有意，且都只为「不新造界面方言」）：
+ * - Dart 是 `HyperosSheetFrame(chrome: floating)` 的浮动面板；这里用官方 [OverlayDialog]——
+ *   miuix 0.9.4 的 sheet 家族要走 `show` + 自定义 chrome，为一个数字输入框拉一套
+ *   面板容器得不偿失，且设置页其它弹框（`SettingsHost` 的说明框）也都用 OverlayDialog；
+ * - Dart `autofocus: true`（进来即弹键盘）；这里不抢焦点：Compose 侧自动弹键盘会让
+ *   系统返回手势先收键盘、用户得点两次才关得掉弹框，收益不如代价。
+ *
+ * 校验口径与 Dart 一致：解析不出数字就停在原地并显示提示语（Dart `_errorText`），
+ * 能解析则按 [SettingsSliderValueLogic.normalize] 吸附档位 + 夹到区间。
+ */
+@Composable
+private fun SliderValueDialog(
+    title: String,
+    helper: String,
+    initialValue: Double,
+    min: Double,
+    max: Double,
+    divisions: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit,
+) {
+    var text by remember {
+        mutableStateOf(SettingsSliderValueLogic.inputText(initialValue, min, max, divisions))
+    }
+    var invalid by remember { mutableStateOf(false) }
+    OverlayDialog(
+        show = true,
+        title = title,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    invalid = false
+                },
+                modifier = Modifier.fillMaxWidth(),
+                // Dart `TextInputType.numberWithOptions(decimal: true)`：小数键盘。
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+            )
+            Text(
+                // Dart 解析失败时把 `helper` 塞进 `_errorText`，文案不变、只是变红。
+                text = helper,
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (invalid) {
+                    MiuixTheme.colorScheme.error
+                } else {
+                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = SettingsStringsExt4.cancelAction.zh)
+                }
+                Button(
+                    onClick = {
+                        val parsed = text.trim().toDoubleOrNull()
+                        if (parsed == null) {
+                            invalid = true
+                        } else {
+                            val changed = SettingsSliderValueLogic.normalize(parsed, min, max, divisions)
+                            // Dart：`if (result == null || result == value) return;`
+                            // ——输入等于当前值就只关框，不产生一次无意义的写盘。
+                            if (changed == initialValue) onDismiss() else onConfirm(changed)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = SettingsStrings.confirmAction.zh)
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -757,8 +941,7 @@ private fun SegmentedRow(
 
 /** 行尾读数（`HyperosSliderTile.valueLabel` / `HyperosNavTile.details` 同一槽位）。 */
 @Composable
-private fun RowScope.TrailingText(text: String?) {
-    if (text.isNullOrEmpty()) return
+private fun RowScope.TrailingText(text: String?) {    if (text.isNullOrEmpty()) return
     Text(
         text = text,
         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -813,6 +996,10 @@ private fun SettingsInlineView(
         InlineKind.FONT_PREVIEW -> FontPreview(node = node)
         InlineKind.COLOR_CHIP_GROUP -> ColorChipGroup(node = node, onAction = onAction)
         InlineKind.CONTROL_CARD -> ControlCard(node = node, onAction = onAction)
+        // 桌面小组件「效果预览」：十张真实卡片位图的横向轮播
+        // （`settings_home_widget.dart:405-499`）。它与 PREVIEW_CARD 完全不是一套管线，
+        // 所以单独一个 kind、单独一个组件。
+        InlineKind.WIDGET_PREVIEW -> WidgetPreviewSection(node = node)
     }
 }
 
@@ -1058,6 +1245,13 @@ private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = 
     "customHolidayAdd" -> SettingsAction.SHEET to "holiday.card.add"
 
     "holidayCheckUpdate" -> SettingsAction.RUN_NOW to "holidayAdvanced.card.refresh"
+
+    // 小组件页「精确闹钟未授权」引导条上的「去授权」（2026-10-31，F20-B）。
+    // Dart :1043-1059 的 `HyperosButton(onPressed: _requestExactAlarmPermission)`；
+    // 动作语义是 RUN_NOW（宿主按 rowId 走 `WidgetSystemActions.requestScheduleExactAlarm`），
+    // 不走 WRITE_SETTING —— 分派器对这两行只回纯意图，不写设置。
+    "homeWidgetExactAlarmGrantAction" -> SettingsAction.RUN_NOW to
+        SettingsActionDispatcher.ROW_HOME_WIDGET_ALARM_GRANT
 
     else -> null
 }

@@ -100,6 +100,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.profiles",
+                    icon = SettingsRowIcon("layers", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.timetableManagement,
                     // 没有激活课表时不给行尾（:413-421）；名字是用户数据，键留空
@@ -109,6 +110,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.timeScheme",
+                    icon = SettingsRowIcon("timer", "#14B8A6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.timeSchemeEntryTitle,
                     // 未选择时行尾是 ARB 文案，选了就是模板名（用户数据，键留空）
@@ -119,6 +121,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.holiday",
+                    icon = SettingsRowIcon("favorites", "#F5A623"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.holidaySettingsEntryTitle,
                     details = if (state.holidayMarkingEnabled) {
@@ -139,6 +142,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.courseCard",
+                    icon = SettingsRowIcon("gridView", "#8B5CF6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStrings.courseCardSettingsTitle,
                     action = SettingsAction.NAVIGATE,
@@ -146,6 +150,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.pageSettings",
+                    icon = SettingsRowIcon("months", "#FF6B00"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.timetablePageSettingsTitle,
                     action = SettingsAction.NAVIGATE,
@@ -153,6 +158,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.weather",
+                    icon = SettingsRowIcon("cloudFill", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.weatherSettingsEntryTitle,
                     // 城市名是用户数据（键留空），未设置时给 ARB 文案
@@ -171,6 +177,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.live",
+                    icon = SettingsRowIcon("alarm", "#FF6B00"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.liveSettingsTitle,
                     details = liveTrailingOf(
@@ -182,6 +189,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.homeWidget",
+                    icon = SettingsRowIcon("home", "#10C550"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.homeWidgetEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -197,6 +205,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.appearance",
+                    icon = SettingsRowIcon("theme", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.appearanceEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -204,6 +213,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.homeNavigation",
+                    icon = SettingsRowIcon("sidebar", "#14B8A6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.homeNavigationTitle,
                     action = SettingsAction.NAVIGATE,
@@ -211,6 +221,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.general",
+                    icon = SettingsRowIcon("tune", "#6366F1"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStrings.generalSettingsTitle,
                     action = SettingsAction.NAVIGATE,
@@ -226,6 +237,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.dataTransfer",
+                    icon = SettingsRowIcon("convertFile", "#10C550"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.dataTransferEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -233,6 +245,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.cloudSync",
+                    icon = SettingsRowIcon("backup", "#06B6D4"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.cloudSyncEntryTitle,
                     // 云同步行尾是算出来的状态串（键来自枚举，见 CloudSyncTrailing）
@@ -242,6 +255,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.lanEdit",
+                    icon = SettingsRowIcon("link", "#6366F1"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.lanEditEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -249,6 +263,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.coupleTimetable",
+                    icon = SettingsRowIcon("favoritesFill", "#8B5CF6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.coupleTimetableEntryTitle,
                     details = if (state.partnerBound) {
@@ -269,6 +284,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.about",
+                    icon = SettingsRowIcon("info", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.aboutEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -276,6 +292,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.userGuide",
+                    icon = SettingsRowIcon("notes", "#06B6D4"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.userGuideEntryTitle,
                     action = SettingsAction.NAVIGATE,
@@ -283,6 +300,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.diagnostics",
+                    icon = SettingsRowIcon("report", "#14B8A6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.diagnosticsEntryTitle,
                     details = SettingsStringsExt2.diagnosticsEntrySubtitle,
@@ -320,6 +338,7 @@ object SettingsTimetablePage {
             children = listOf(
                 settingsRow(
                     id = "timetable.semester.startDate",
+                    icon = SettingsRowIcon("months", "#3482FF"),
                     component = MiuixRowComponent.ARROW,
                     // 没设过 → 「设置开学日期」；设过 → 「开学日期」（:701-703）
                     title = if (hasStart) {
@@ -335,6 +354,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.semester.weekCount",
+                    icon = SettingsRowIcon("weeks", "#6366F1"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.selectSemesterWeekCountTitle,
                     details = weekCountLabel(state.semesterWeekCount),
@@ -342,6 +362,7 @@ object SettingsTimetablePage {
                 ),
                 settingsRow(
                     id = "timetable.semester.syncWeek",
+                    icon = SettingsRowIcon("refresh", "#14B8A6"),
                     component = MiuixRowComponent.ARROW,
                     title = SettingsStringsExt2.syncCurrentWeekAction,
                     details = if (hasStart) null else SettingsStringsExt2.syncCurrentWeekNeedsStartDate,
@@ -518,6 +539,7 @@ object SettingsTimetablePage {
         if (visibility == DeveloperToolsVisibility.FULL) {
             rows += settingsRow(
                 id = "timetable.memoryStats",
+                icon = SettingsRowIcon("background", "#FF6B00"),
                 component = MiuixRowComponent.ARROW,
                 title = SettingsStringsExt2.memoryStatsEntryTitle,
                 action = SettingsAction.NAVIGATE,
@@ -525,6 +547,7 @@ object SettingsTimetablePage {
             )
             rows += settingsRow(
                 id = "timetable.liveTestingFixture",
+                icon = SettingsRowIcon("stopwatch", "#6366F1"),
                 component = MiuixRowComponent.ARROW,
                 title = SettingsStringsExt2.liveTestingFixtureEntryTitle,
                 action = SettingsAction.NAVIGATE,
@@ -533,6 +556,7 @@ object SettingsTimetablePage {
         }
         rows += settingsRow(
             id = "timetable.miuixShowcase",
+            icon = SettingsRowIcon("listView", "#06B6D4"),
             component = MiuixRowComponent.ARROW,
             title = SettingsStringsExt2.miuixShowcaseEntryTitle,
             details = SettingsStringsExt2.miuixShowcaseEntrySubtitle,
@@ -541,6 +565,7 @@ object SettingsTimetablePage {
         )
         rows += settingsRow(
             id = "timetable.debugOverlay",
+            icon = SettingsRowIcon("show", "#FA382E"),
             component = MiuixRowComponent.SWITCH,
             title = SettingsStringsExt2.debugUiOverlayToggleTitle,
             switchValue = state.debugOverlayVisible,
@@ -548,6 +573,7 @@ object SettingsTimetablePage {
         )
         rows += settingsRow(
             id = "timetable.debugPanel",
+            icon = SettingsRowIcon("notes", "#FF6B00"),
             component = MiuixRowComponent.ARROW,
             title = SettingsStringsExt2.debugUiOverlayOpenPanelTitle,
             action = SettingsAction.DIALOG,

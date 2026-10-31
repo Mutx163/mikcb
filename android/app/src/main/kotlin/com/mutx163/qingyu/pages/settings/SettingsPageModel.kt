@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.pages.settings
 
+import java.util.Locale
+
 /**
  * 设置族页面结构模型的**词汇表**（纯 Kotlin，不 import Compose / Miuix）。
  *
@@ -157,7 +159,93 @@ data class SettingsSliderSpec(
     val showKeyPoints: Boolean = false,
     /** 建议点位的刻度值（与 [min]/[max] 同一坐标系）；null = 不画点。 */
     val keyPoints: List<Double>? = null,
+    /**
+     * 点开数值输入框时显示的提示语 ARB 键（Dart `HyperosSliderTile.dialogHelper`）。
+     *
+     * null = **整行没有「点开输入」这回事**：渲染层不给官方 `SliderPreference` 传 `onClick`，
+     * 于是行尾不出现箭头、点行也没有反应——与加这两个字段之前完全一样。所以默认值
+     * 保证了其它页面的滑杆行为零变化。
+     *
+     * 出处：`lib/ui/hyperos/hyperos_controls.dart:491-660`（`tapToEdit` 默认 true，
+     * 点行/数值 → `showHyperosSliderValueDialog`，确认后 `onChanged(result)`）。
+     */
+    val dialogHelperKey: String? = null,
+    /** 提示语的渲染值（模板语言 zh），与 [dialogHelperKey] 成对。 */
+    val dialogHelper: String? = null,
 )
+
+/**
+ * 滑杆数值输入框的**读数口径**（逐行搬运 Dart `_hyperosSliderInputText` /
+ * `_hyperosSliderPrecision` / `_hyperosNormalizeSliderValue`，
+ * `lib/ui/hyperos/hyperos_controls.dart:281-337`）。
+ *
+ * 为什么放在模型层（这里）而不是渲染层：这三段是**纯数值逻辑**，与 Compose 无关，
+ * 放在 main 源集才能被 JVM 单测直接覆盖；渲染层只负责把结果画出来。
+ *
+ * `divisions` 表示「把 min..max 等分成几档」，与官方 `SliderPreference(steps = divisions-1)`
+ * 同一口径——输入框里的值必须吸附到与拖动完全相同的档位上，否则「拖到 32、输入 32.4
+ * 显示 32.4」会当场对不上。
+ */
+object SettingsSliderValueLogic {
+
+    /** 没有 divisions 时的显示精度（Dart `_hyperosSliderPrecision` 的 `return 2`）。 */
+    const val FALLBACK_PRECISION = 2
+
+    /**
+     * 显示/吸附精度：把一档的步长写成小数，取它有效的小数位数（上限 4）。
+     *
+     * `divisions <= 0` 或区间非法时回落到 [FALLBACK_PRECISION]（Dart 同）。
+     */
+    fun precision(min: Double, max: Double, divisions: Int): Int {
+        if (divisions <= 0 || max <= min) return FALLBACK_PRECISION
+        val step = (max - min) / divisions
+        val stepText = fixed(step, 6)
+        val dot = stepText.indexOf('.')
+        if (dot < 0) return 0
+        // 去掉尾部的 0 之后还剩几位小数（Dart 用 `replaceFirst(RegExp(r'0+$'))`）。
+        val digits = stepText.trimEnd('0').length - dot - 1
+        return digits.coerceIn(0, 4)
+    }
+
+    /** 输入框里的初始文案（Dart `_hyperosSliderInputText`）：整数就不带小数点，也不会出现二进制尾巴。 */
+    fun inputText(value: Double, min: Double, max: Double, divisions: Int): String {
+        val precision = precision(min, max, divisions)
+        if (precision <= 0 || value == roundDouble(value)) return roundToLong(value).toString()
+        val fixedText = fixed(value, precision)
+        if (!fixedText.contains('.')) return fixedText
+        return fixedText.trimEnd('0').trimEnd('.')
+    }
+
+    /**
+     * 用户输入 → 真正落盘的值：先按档位吸附，再夹进 [min]..[max]。
+     *
+     * Dart `_hyperosNormalizeSliderValue` 的顺序是「先 clamp 再吸附再按精度取整再 clamp」，
+     * 这里照抄同一顺序——先钳后吸附与先吸附后钳在正常区间内结果相同，但在边界上
+     * 能避免出现 `max + step/2` 这种越界值。
+     */
+    fun normalize(raw: Double, min: Double, max: Double, divisions: Int): Double {
+        val lo = minOf(min, max)
+        val hi = maxOf(min, max)
+        val clamped = raw.coerceIn(lo, hi)
+        if (divisions <= 0 || hi <= lo) {
+            return roundToPrecision(clamped, precision(lo, hi, 0))
+        }
+        val step = (hi - lo) / divisions
+        val snapped = roundToLong((clamped - lo) / step) * step + lo
+        return roundToPrecision(snapped, precision(lo, hi, divisions)).coerceIn(lo, hi)
+    }
+
+    /** 定点格式化（Dart `toStringAsFixed`）；`Locale.ROOT` 保证小数点不随系统语言变。 */
+    private fun fixed(value: Double, precision: Int): String =
+        "%.${precision}f".format(Locale.ROOT, value)
+
+    private fun roundToPrecision(value: Double, precision: Int): Double =
+        fixed(value, precision).toDouble()
+
+    private fun roundToLong(value: Double): Long = kotlin.math.round(value).toLong()
+
+    private fun roundDouble(value: Double): Double = roundToLong(value).toDouble()
+}
 
 /** 页面结构树的节点。 */
 sealed interface SettingsNode {
@@ -299,6 +387,17 @@ enum class InlineKind {
 
     /** 带标题/副标题/按钮的控制卡（`HyperosControlCard`）。 */
     CONTROL_CARD,
+
+    /**
+     * 桌面小组件的**原生位图轮播**（`settings_home_widget.dart:405-499`）。
+     *
+     * 与 [PREVIEW_CARD] 的区别：那张卡是 Compose 重画的微缩预览；这一块是十张
+     * **真实卡片**的位图（原生 inflate 同一份 RemoteViews 后出 PNG），带分页、
+     * 指示点、卡片名、尺寸读数与「添加到桌面」（`HomeWidgetPreviewCarousel.kt`）。
+     * 单独一个 kind 而不是复用 PREVIEW_CARD：两者渲染管线完全不同，
+     * 混用会让「预览卡」这一处改动同时影响两个页面。
+     */
+    WIDGET_PREVIEW,
 }
 
 /**

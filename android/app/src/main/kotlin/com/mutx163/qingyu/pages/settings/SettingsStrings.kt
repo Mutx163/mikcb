@@ -123,6 +123,43 @@ object SettingsStrings {
     val themeSaved = ArbText("themeSaved", "我的主题")
     val themeMoreActions = ArbText("themeMoreActions", "更多操作")
 
+    // 2026-10-29 补口（一轮审核 P0）：主题管理页四处死控件接活后，弹层与提示要用到的文案。
+    // 键与值都**已在** `app_zh.arb` 里（`themeExportSuccess` / `themeImportSuccess` /
+    // `themeImportFailed` / `themeApply` / `themeDelete` / `themeRename` / `themeDuplicate` /
+    // `themeDuplicateCopyName` / `themeDeleteConfirmMessage` / `themeNameHint`），
+    // 这里只是把 Kotlin 侧句柄补齐，**不动 ARB**。
+    val themeExportSuccess = ArbText("themeExportSuccess", "主题已复制到剪贴板")
+    val themeImportSuccess = ArbText("themeImportSuccess", "主题已导入")
+    val themeImportFailed = ArbText("themeImportFailed", "剪贴板内容格式错误")
+    val themeApply = ArbText("themeApply", "应用")
+    val themeDelete = ArbText("themeDelete", "删除")
+    val themeRename = ArbText("themeRename", "重命名")
+    val themeDuplicate = ArbText("themeDuplicate", "复制")
+    val themeDuplicateCopyName = ArbText("themeDuplicateCopyName", "{name} 副本")
+    val themeDeleteConfirmMessage = ArbText("themeDeleteConfirmMessage", "确定删除主题 {name}？")
+    val themeNameHint = ArbText("themeNameHint", "输入主题名称")
+    val themeChanged = ArbText("themeChanged", "已切换到 {themeName}")
+    val themeUndo = ArbText("themeUndo", "撤销")
+
+    // 周视图缩略预览（`SettingsWeekPreview.kt`）的星期短名与空态。
+    // 这三个字一组的短名 `app_zh.arb:1769-1775` 早就有了，只是 Kotlin 侧一直没有句柄
+    // —— 渲染层就此自己写死了「一」..「日」（一轮审核 D3 缺陷），这里补齐。
+    val weekdayShortMonday = ArbText("weekdayShortMonday", "一")
+    val weekdayShortTuesday = ArbText("weekdayShortTuesday", "二")
+    val weekdayShortWednesday = ArbText("weekdayShortWednesday", "三")
+    val weekdayShortThursday = ArbText("weekdayShortThursday", "四")
+    val weekdayShortFriday = ArbText("weekdayShortFriday", "五")
+    val weekdayShortSaturday = ArbText("weekdayShortSaturday", "六")
+    val weekdayShortSunday = ArbText("weekdayShortSunday", "日")
+
+    /**
+     * 周视图缩略预览的空态（本页自绘的那块「本周没有排课」）。
+     *
+     * 复用 ARB 已有的 `dayViewEmptyTitle`（"暂无课程"）：**不新增 ARB 键**
+     * （新键要六份同步 + `gen-l10n`，属 Lead 统一动作）。值逐字等于 ARB。
+     */
+    val weekPreviewEmpty = ArbText("dayViewEmptyTitle", "暂无课程")
+
     // ------------------------------------------------------------ 课程卡片页
 
     val courseCardSettingsTitle = ArbText("courseCardSettingsTitle", "课程卡片")

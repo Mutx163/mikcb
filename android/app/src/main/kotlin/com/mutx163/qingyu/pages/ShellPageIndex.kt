@@ -41,6 +41,7 @@ import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
 import com.mutx163.qingyu.app.HomeNavigationHost
+import com.mutx163.qingyu.app.HomeWidgetHost
 import com.mutx163.qingyu.app.IcsExportHost
 import com.mutx163.qingyu.app.LiveDisplayHost
 import com.mutx163.qingyu.app.LiveReminderTimingHost
@@ -145,8 +146,6 @@ import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorPage
 import com.mutx163.qingyu.pages.settings.SettingsHomeMenuEditorState
 import com.mutx163.qingyu.pages.settings.SettingsHomeNavigationPage
 import com.mutx163.qingyu.pages.settings.SettingsHomeNavigationState
-import com.mutx163.qingyu.pages.settings.SettingsHomeWidgetPage
-import com.mutx163.qingyu.pages.settings.SettingsHomeWidgetState
 import com.mutx163.qingyu.pages.settings.SettingsLivePage
 import com.mutx163.qingyu.pages.settings.SettingsLiveSelfCheckPage
 import com.mutx163.qingyu.pages.settings.SettingsMaterialCourseCardPage
@@ -411,7 +410,14 @@ fun ShellPageContent(
         // 2026-10-30 F05 收尾：这一页原先走空 state（永远「加载中」、点哪都没下文），
         // 换成真宿主：拉 Bing 每日壁纸清单 + 缩略图 + 点一张下载落盘并写设置。
         "b.bingGallery" -> BingGalleryHost(store = wiring.settingsModel, onBack = onBack)
-        "b.homeWidget" -> SettingsScreen(SettingsHomeWidgetPage.spec(SettingsHomeWidgetState()), onBack)
+        // 2026-10-31 F20 接线：这一页原先喂空构造 state——屏上恒默认值、6 个开关
+        // 点了不落盘、预览区是两张占位小卡。换成真宿主：读设置模型 + 原生渲染的
+        // 10 卡预览轮播 + 桌面真实卡片绑定 + 添加到桌面 / 精确闹钟授权。
+        "b.homeWidget" -> HomeWidgetHost(
+            store = wiring.settingsModel,
+            repository = wiring.timetable,
+            onBack = onBack,
+        )
         // 2026-10-28 S2 接线：这两页原先走 no-op SettingsScreen（写死默认状态、点了不动），
         // 改成真宿主：读 TimetableSettingsModel、控件改动经分派器写回并合并落盘。
         "b.homeNavigation" -> HomeNavigationHost(
@@ -472,8 +478,18 @@ fun ShellPageContent(
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
         "b.glassDock" -> GlassDockEditorHost(store = wiring.settingsModel, onBack = onBack)
-        "b.glassDockIcon" -> SettingsScreen(SettingsGlassDockIconEditorPage.spec(SettingsPageState()), onBack)
-        "b.reset" -> SettingsScreen(SettingsResetPage.spec(SettingsPageState()), onBack)
+        "b.glassDockIcon" -> SettingsHost(
+            pageId = SettingsGlassDockIconEditorPage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
+        "b.reset" -> SettingsHost(
+            pageId = SettingsResetPage.ID,
+            store = wiring.settingsModel,
+            onBack = onBack,
+            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+        )
 
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────
         // T1：与底部坞的课表槽位共用同一份接线（含课程操作弹层），两个入口行为一致。

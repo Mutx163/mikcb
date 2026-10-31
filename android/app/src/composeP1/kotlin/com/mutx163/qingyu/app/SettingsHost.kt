@@ -52,14 +52,23 @@ import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
 import com.mutx163.qingyu.pages.settings.SettingsRow
 import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt1
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
+import com.mutx163.qingyu.core.MiniJson
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.CoroutineScope
@@ -112,9 +121,11 @@ import java.util.Locale
  * @param store 设置模型的读写入口（壳里由 `PrefsKeyValueStore` 构造）。
  * @param onBack 返回；null = 无返回键（与 `SettingsPageScreen` 的语义一致）。
  * @param onNavigate 推页（`NAVIGATE` 意图的路由）。
- * @param onIntent 其余界面意图（弹层 / 剪贴板 / 恢复默认确认 / RUN_NOW 等），由壳执行。
+ * @param onIntent 其余界面意图的**覆盖实现**；不传（默认 `null`）走本宿主内置的消费端
+ *   [handleIntent]（剪贴板导出/导入、保存主题对话框、已存主题动作表、重新配色说明）。
+ *   壳只有在想自己接管这些弹层时才传——**默认值不再是空实现**（2026-10-29 补口）。
  * @param onRequestColor 选色：壳弹官方 `ColorPicker`，选完调 `commit(hex)`。
- *   不传 = 该行的选色不弹（no-op），不会崩。
+ *   不传 = 宿主自带的 RGB 弹窗（见 [SettingsColorPickerDialog]），不会静默。
  */
 @Composable
 fun SettingsHost(
@@ -122,7 +133,7 @@ fun SettingsHost(
     store: TimetableSettingsModelStore,
     onBack: (() -> Unit)? = null,
     onNavigate: (route: String) -> Unit = {},
-    onIntent: (SettingsDispatch) -> Unit = {},
+    onIntent: ((SettingsDispatch) -> Unit)? = null,
     /** 传 null 时宿主自带一个 RGB 选色弹窗；壳想接官方选色器时再传实现。 */
     onRequestColor: ((rowId: String, currentHex: String, commit: (String) -> Unit) -> Unit)? = null,
     /** 顶部预览槽（课程卡片 / 课表页面两页的 4:6 分栏用）；null = 该页无预览。 */
@@ -155,6 +166,25 @@ fun SettingsHost(
     var schedule by remember(autoRefreshStore) { mutableStateOf(autoRefreshStore?.load()) }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    /**
+     * 主题管理页的弹层状态（保存 / 重命名 / 删除确认 / 已存主题动作表）。
+     *
+     * 四种形态共用一个 sealed 层，弹层本体见文件末尾的 [SettingsThemeDialogHost]。
+     * Dart 对应物：`_showSaveThemeDialog` / `_showRenameDialog` /
+     * `showThemeDeleteConfirmDialog` / `showSavedThemeActionSheet`（`settings_appearance.dart:612-620`）。
+     */
+    var themeDialog by remember { mutableStateOf<ThemeDialogState?>(null) }
+
+    /** 「能力还没接」的诚实说明框（重新配色等）；null = 不显示。 */
+    var notice by remember { mutableStateOf<SettingsNotice?>(null) }
+
+    /** 一次提示（Dart `showAppToast` / `showThemeFeedbackToast` 的对应物，宿主用系统 Toast）。 */
+    fun toast(message: String) {
+        if (message.isBlank()) return
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
 
     // 「上次 X / 下次约 Y」两段标签（`course_auto_refresh_settings.dart:226-240`）。
     //
@@ -190,7 +220,14 @@ fun SettingsHost(
             .map { it.id }
             .toSet()
     }
-    val writer = remember(store) { DebouncedSettingsWriter(store, scope) }
+    val writer = remember(store) {
+        DebouncedSettingsWriter(store, scope) {
+            // 滑杆那一档没落盘：内存拉回盘上真值 + 提示（Dart `resetDraft` + `saveFailed`）。
+            model = runCatching { store.load() }.getOrNull() ?: model
+            Log.e(LOG_TAG, "debounced settings save did not land")
+            toast(SettingsStringsExt2.saveFailed.zh)
+        }
+    }
     // 离开本页：把防抖里欠着的那一档补写掉（Dart `dispose()` 同口径）。
     DisposableEffect(writer) { onDispose { writer.flush() } }
 
@@ -204,7 +241,198 @@ fun SettingsHost(
         }
     }
 
-    // 设置模型这条写路径只有一条：算新模型 → 落盘 → 更新状态（界面跟着重组）。
+    // 设置模型这条写路径只有一条：算新模型 → 落盘 → **读回校验** → 更新状态。
+    //
+    // 读回校验（2026-10-29 补口，一轮审核 P1）：`KeyValueStore.putX` 把
+    // `SharedPreferences.commit()` 的返回值丢了（`PrefsKeyValueStore.kt:90-92`），
+    // 所以「写盘失败」既不抛异常、也不返回 false —— 宿主原来那个
+    // `runCatching { store.save(...) }.onFailure { notify }` 永远进不去。改成写完
+    // 回读一遍、只比**本次改动过的键**：不一致 = 盘上还是旧值，此时把内存也拉回
+    // 盘上的真值并提示（Dart `settings_general.dart:155-163` 的
+    // `reportSettingsPersistFailure(resetDraft)` 同一语义：草稿回到存档真值）。
+    fun commitModel(next: TimetableSettingsModel) {
+        val before = model
+        val persisted = saveVerified(store, before, next)
+        model = if (persisted) next else runCatching { store.load() }.getOrNull() ?: before
+        if (!persisted) {
+            Log.e(LOG_TAG, "settings save did not land: page=$pageId")
+            toast(SettingsStringsExt2.saveFailed.zh)
+        }
+    }
+
+    // ================================================================ 意图消费端
+    //
+    // 2026-10-29 补口（一轮审核 P0）：`SHEET` / `DIALOG` / `CLIPBOARD_EXPORT` /
+    // `CLIPBOARD_IMPORT` / `RECOLOR_SHEET` 以前全部落到 `onIntent`，而它的默认值是 `{}`、
+    // 壳一处都没传 ⇒ 主题管理页四处 + 课卡「重新配色」**点了完全没反应**。
+    // 现在默认值改成 `null`，不传就走下面这套内置实现；壳想自己接管时再传 `onIntent`。
+    //
+    // ⚠️ 顺序有讲究：这些是 `@Composable` 体内的**局部函数**，Kotlin 不允许前向引用，
+    // 所以 `deliverIntent`（调用 `handleIntent`）必须排在 `handleIntent` **之后**。
+    // 2026-10-29 L1 就因此红过一次（`Unresolved reference 'handleIntent'`）。
+
+    fun clipboardManager(): ClipboardManager? =
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+
+    /** 「导出主题」：当前设置 → 主题配置 JSON → 剪贴板（Dart `_exportTheme`，`:823-838`）。 */
+    fun exportTheme() {
+        val json = MiniJson.encode(SettingsActionDispatcher.themeConfigOf(model))
+        val manager = clipboardManager()
+        if (manager == null) {
+            Log.e(LOG_TAG, "clipboard unavailable: export theme")
+            toast(SettingsStringsExt2.saveFailed.zh)
+            return
+        }
+        manager.setPrimaryClip(ClipData.newPlainText(CLIPBOARD_LABEL_THEME, json))
+        toast(SettingsStrings.themeExportSuccess.zh)
+    }
+
+    /**
+     * 「导入主题」：剪贴板 → 结构校验 → 写回 + 换检查点（Dart `_importTheme`，`:845-880`）。
+     *
+     * 三种失败都归到同一句 `themeImportFailed`（与 Dart 同口径）：剪贴板为空 / 不是 JSON 对象 /
+     * v2 缺 `seed` 或 `ccl`。**不**部分应用——宁可一句「格式错误」，也不留半套主题。
+     */
+    fun importTheme() {
+        val raw = clipboardManager()?.primaryClip
+            ?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)
+            ?.coerceToText(context)
+            ?.toString()
+        val parsed = raw?.let { MiniJson.tryParse(it) } as? Map<*, *>
+        val config: Map<String, Any?>? = parsed
+            ?.entries
+            ?.mapNotNull { (key, value) -> (key as? String)?.let { it to value } }
+            ?.toMap()
+        if (config == null || !SettingsActionDispatcher.themeConfigIsUsable(config)) {
+            toast(SettingsStrings.themeImportFailed.zh)
+            return
+        }
+        // Dart 导入成功也把检查点换成这份配置
+        // （`_applyThemeWithUndo(config, themeName: l10n.themeImport)`）。
+        commitModel(
+            SettingsActionDispatcher.applyThemeConfig(model, config).copy(
+                themeCheckpointName = SettingsStrings.themeImport.zh,
+                themeCheckpointConfig = config,
+            ),
+        )
+        toast(SettingsStrings.themeImportSuccess.zh)
+    }
+
+    /** 已存主题的名字（行 id → 列表里的 name）；找不到返回空串。 */
+    fun savedThemeName(id: String): String =
+        model.savedThemes
+            .firstOrNull { it[SettingsActionDispatcher.SAVED_THEME_KEY_ID] == id }
+            ?.get(SettingsActionDispatcher.SAVED_THEME_KEY_NAME) as? String ?: ""
+
+    /** 已存主题的四种动作（Dart `showSavedThemeActionSheet` + 四个 handler，`:612-700`）。 */
+    fun runSavedThemeAction(action: ThemeRowAction, id: String) {
+        val name = savedThemeName(id)
+        when (action) {
+            ThemeRowAction.APPLY -> {
+                val previous = model
+                val next = SettingsActionDispatcher.applySavedTheme(model, id)
+                if (next == null) {
+                    Log.w(LOG_TAG, "saved theme not found: $id")
+                    return
+                }
+                commitModel(next)
+                // Dart `_applyThemeWithUndo` 弹「已切换到 X + 撤销」；撤销在这里用同一个对话框承载。
+                notice = SettingsNotice(
+                    title = SettingsStrings.themeApply.zh,
+                    body = SettingsStrings.themeChanged.filled("themeName", name),
+                    undoLabel = SettingsStrings.themeUndo.zh,
+                    onUndo = { commitModel(previous) },
+                )
+            }
+
+            ThemeRowAction.RENAME ->
+                themeDialog = ThemeDialogState(ThemeDialogMode.RENAME, id, name)
+
+            ThemeRowAction.DUPLICATE -> {
+                val next = SettingsActionDispatcher.duplicateSavedTheme(
+                    model = model,
+                    sourceId = id,
+                    newId = themeEntryId(System.currentTimeMillis()),
+                    newName = SettingsStrings.themeDuplicateCopyName.filled("name", name),
+                    createdAtIso = LocalDateTime.now().toString(),
+                )
+                if (next == null) {
+                    Log.w(LOG_TAG, "duplicate saved theme failed: $id")
+                    return
+                }
+                commitModel(next)
+            }
+
+            ThemeRowAction.DELETE ->
+                themeDialog = ThemeDialogState(ThemeDialogMode.DELETE, id, name)
+        }
+    }
+
+    /** 内置意图消费：五种此前「意图被丢弃」的动作都在这里有落点。 */
+    fun handleIntent(dispatch: SettingsDispatch) {
+        when (dispatch) {
+            is SettingsDispatch.ClipboardExport -> exportTheme()
+
+            is SettingsDispatch.ClipboardImport -> importTheme()
+
+            is SettingsDispatch.ShowDialog ->
+                if (dispatch.rowId == SettingsActionDispatcher.ROW_THEME_CURRENT_SAVE ||
+                    dispatch.rowId == SettingsThemeManagePage.ROW_SAVE_CURRENT
+                ) {
+                    themeDialog = ThemeDialogState(ThemeDialogMode.SAVE_CURRENT)
+                } else {
+                    // 其它弹层不在本宿主范围：留痕 + 一句实话，不假装成功。
+                    Log.w(LOG_TAG, "unhandled dialog: rowId=${dispatch.rowId}")
+                    toast(SettingsStrings.aboutUnavailable.zh)
+                }
+
+            is SettingsDispatch.ShowSheet -> {
+                val id = SettingsActionDispatcher.savedThemeIdOf(dispatch.rowId)
+                if (id != null) {
+                    themeDialog = ThemeDialogState(ThemeDialogMode.ACTIONS, id, savedThemeName(id))
+                } else {
+                    Log.w(LOG_TAG, "unhandled sheet: rowId=${dispatch.rowId}")
+                    toast(SettingsStrings.aboutUnavailable.zh)
+                }
+            }
+
+            // 课表重新配色：完整复刻要 Dart 那 479 行弹层 + 配色历史服务 + 调色板
+            // （`lib/widgets/course_recolor_sheet.dart` / `course_recolor_history_service.dart`），
+            // 属独立批次。这里**不假装能跑**：给一句「不可用」，而不是点了没反应。
+            is SettingsDispatch.ShowRecolorSheet -> notice = SettingsNotice(
+                title = SettingsStrings.courseRecolorTileTitle.zh,
+                body = SettingsStrings.aboutUnavailable.zh,
+            )
+
+            is SettingsDispatch.Ignored -> Log.w(
+                LOG_TAG,
+                "ignored: rowId=${dispatch.rowId} target=${dispatch.target} reason=${dispatch.reason}",
+            )
+
+            // 这些在 onRowAction 里已就地处理（写 / 导航 / 恢复默认确认 / 选色器）。
+            is SettingsDispatch.Write,
+            is SettingsDispatch.Navigate,
+            is SettingsDispatch.ShowColorPicker,
+            is SettingsDispatch.ShowMaterialPanel,
+            is SettingsDispatch.ConfirmReset,
+            -> Unit
+
+            is SettingsDispatch.RunNow -> Log.w(LOG_TAG, "unhandled run-now: rowId=${dispatch.rowId}")
+        }
+    }
+
+    /**
+     * 意图出口：壳传了 [onIntent] 就交给壳，没传就由本宿主消费（[handleIntent]）。
+     *
+     * 必须定义在 [handleIntent] 之后——本文件里的这些都是 `@Composable` 体内的局部函数，
+     * Kotlin 不允许前向引用。
+     */
+    fun deliverIntent(dispatch: SettingsDispatch) {
+        val override = onIntent
+        if (override != null) override(dispatch) else handleIntent(dispatch)
+    }
+
     fun commitWrite(target: String?, rowId: String) {
         when (
             val result = SettingsActionDispatcher.dispatch(
@@ -215,18 +443,19 @@ fun SettingsHost(
             )
         ) {
             is SettingsDispatch.Write -> {
-                model = result.model
                 notifyRuntimePrefs(rowId, result.model)
                 if (rowId in sliderRowIds) {
+                    // 拖动中只改内存，250ms 后一次落盘（落盘失败由 writer 回读后纠正）。
+                    model = result.model
                     writer.schedule(result.model)
                 } else {
                     // 先补写防抖里欠着的那一档，避免旧值后落地把新值盖回去。
                     writer.flush()
-                    store.save(result.model)
+                    commitModel(result.model)
                 }
             }
             else -> {
-                // 「没写」也要留痕：壳不接 onIntent 时这里以前是彻底静默的，排查时什么都看不到。
+                // 「没写」也要留痕，再交给消费端（默认 [handleIntent]）。
                 if (result is SettingsDispatch.Ignored) {
                     Log.w(
                         LOG_TAG,
@@ -234,7 +463,7 @@ fun SettingsHost(
                             "reason=${result.reason}",
                     )
                 }
-                onIntent(result)
+                deliverIntent(result)
             }
         }
     }
@@ -243,8 +472,7 @@ fun SettingsHost(
     fun applyReset(scope: String) {
         SettingsActionDispatcher.applyResetScope(model, scope)?.let { next ->
             writer.flush()
-            store.save(next)
-            model = next
+            commitModel(next)
         }
     }
 
@@ -295,7 +523,7 @@ fun SettingsHost(
             SettingsActionKind.COLOR_PICKER -> {
                 val current = SettingsPageBridge.currentColorHex(model, rowId)
                 when {
-                    current == null -> onIntent(
+                    current == null -> deliverIntent(
                         SettingsDispatch.Ignored(
                             kind = kind,
                             target = target,
@@ -311,8 +539,8 @@ fun SettingsHost(
                 }
             }
 
-            // 剪贴板 / 对话框 / 底部弹层 / 立刻更新等仍交给壳（见诚实清单）。
-            else -> onIntent(
+            // 剪贴板 / 对话框 / 底部弹层 / 立刻更新等：壳接管则给壳，否则走内置消费端。
+            else -> deliverIntent(
                 SettingsActionDispatcher.dispatch(kind, target, rowId, model),
             )
         }
@@ -379,6 +607,67 @@ fun SettingsHost(
         if (showRunNowNotice) {
             AutoRefreshRunNowNotice(onDismiss = { showRunNowNotice = false })
         }
+
+        // ---- 主题管理页的四类弹层（2026-10-29 补口：此前这四个动作**全无落点**）----
+        themeDialog?.let { dialog ->
+            SettingsThemeDialogHost(
+                state = dialog,
+                onDismiss = { themeDialog = null },
+                onSaveCurrent = { name ->
+                    themeDialog = null
+                    val next = SettingsActionDispatcher.saveTheme(
+                        model = model,
+                        name = name,
+                        id = themeEntryId(System.currentTimeMillis()),
+                        createdAtIso = LocalDateTime.now().toString(),
+                    )
+                    if (next == null) {
+                        // 名字为空：不写盘、不假装成功（确认按钮本来就是禁用的，这里再兜一层）。
+                        Log.w(LOG_TAG, "save theme rejected: blank name")
+                    } else {
+                        commitModel(next)
+                    }
+                },
+                onRename = { id, name ->
+                    themeDialog = null
+                    val next = SettingsActionDispatcher.renameSavedTheme(model, id, name)
+                    if (next == null) {
+                        Log.w(LOG_TAG, "rename theme failed: id=$id")
+                        toast(SettingsStringsExt2.saveFailed.zh)
+                    } else {
+                        commitModel(next)
+                    }
+                },
+                onDelete = { id ->
+                    themeDialog = null
+                    val deletedName = savedThemeName(id)
+                    val next = SettingsActionDispatcher.deleteSavedTheme(model, id)
+                    if (next == null) {
+                        Log.w(LOG_TAG, "delete theme failed: id=$id")
+                        toast(SettingsStringsExt2.saveFailed.zh)
+                    } else {
+                        // 删掉的正是「当前主题」那一份 ⇒ 检查点一起清掉，否则「当前主题」卡片
+                        // 会指着一份已经不存在的存档（Dart 侧 `deleteTheme` 后也不会再选中它）。
+                        val cleared = if (deletedName.isNotEmpty() &&
+                            next.themeCheckpointName == deletedName
+                        ) {
+                            next.copy(themeCheckpointName = null, themeCheckpointConfig = null)
+                        } else {
+                            next
+                        }
+                        commitModel(cleared)
+                    }
+                },
+                onAction = { action, id -> themeDialog = null; runSavedThemeAction(action, id) },
+            )
+        }
+
+        notice?.let { current ->
+            SettingsNoticeDialog(
+                notice = current,
+                onDismiss = { notice = null },
+            )
+        }
     }
 }
 
@@ -422,13 +711,37 @@ private const val LOG_TAG = "SettingsHost"
  * 而滑杆的 `onValueChange` 每个像素都会回调一次 —— 不做防抖就是主线程上每帧
  * 一次「读-合并-序列化-写盘」。
  */
+/**
+ * 落盘 + **读回校验**：返回「这次改动真的进盘了」。
+ *
+ * 单一实现，宿主与本文件里另外三个（导航 / 两个编辑器）写路径共用——写盘失败时
+ * 一律**不改内存模型**（界面停在旧值），不制造「看起来改了」的假象。
+ */
+private fun saveVerified(
+    store: TimetableSettingsModelStore,
+    before: TimetableSettingsModel,
+    next: TimetableSettingsModel,
+): Boolean {
+    store.save(next)
+    val disk = runCatching { store.load() }.getOrNull() ?: return false
+    return SettingsActionDispatcher.persistLanded(before, next, disk)
+}
+
 private class DebouncedSettingsWriter(
     private val store: TimetableSettingsModelStore,
     private val scope: CoroutineScope,
+    /**
+     * 防抖那一档**写失败**时的回调（2026-10-29 补口）：
+     * 宿主据此把内存模型拉回盘上真值并提示，与 Dart 的 `resetDraft` 同语义。
+     */
+    private val onWriteFailed: () -> Unit = {},
 ) {
 
     private var pending: TimetableSettingsModel? = null
     private var job: Job? = null
+
+    /** 上一次成功落盘的模型；读回校验的「改动前」基准（null = 还没写过，flush 时现读盘）。 */
+    private var lastLanded: TimetableSettingsModel? = null
 
     fun schedule(next: TimetableSettingsModel) {
         pending = next
@@ -444,7 +757,12 @@ private class DebouncedSettingsWriter(
         job = null
         val next = pending ?: return
         pending = null
-        store.save(next)
+        val before = lastLanded ?: store.load()
+        if (saveVerified(store, before, next)) {
+            lastLanded = next
+        } else {
+            onWriteFailed()
+        }
     }
 
     companion object {
@@ -472,7 +790,8 @@ private fun AutoRefreshDailyTimeSheet(
     QingyuSheet(
         show = true,
         title = SettingsStrings.courseAutoRefreshDailyTimeTitle.zh,
-        // 内容根是 `Column(padding(horizontal = 16.dp))` ⇒ 框架侧横向归零，单边仍是 16。
+        // 内容根是 `Column(padding(horizontal = 16.dp))` ⇒ 框架侧横向归零，单边仍是 16
+        //（不然 24 + 16 = 40）。
         contentPadsHorizontally = true,
         onDismissRequest = onDismiss,
     ) {
@@ -781,15 +1100,19 @@ fun HomeNavigationHost(
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
     fun apply(newModel: TimetableSettingsModel) {
-        store.save(newModel)
-        model = newModel
+        // 与 SettingsHost 同一条写路径：写完读回校验，没落盘就不改内存（界面停在旧值）。
+        if (saveVerified(store, model, newModel)) {
+            model = newModel
+        } else {
+            Log.e(LOG_TAG, "home navigation save did not land")
+        }
     }
     val state = SettingsPageBridge.toHomeNavigationState(model)
     SettingsPageScreen(
         spec = SettingsHomeNavigationPage.spec(state),
         onBack = onBack,
         onAction = { action, target, rowId ->
-            when (SettingsPageBridge.toKind(action)) {
+            when (val kind = SettingsPageBridge.toKind(action)) {
                 SettingsActionKind.WRITE_SETTING -> {
                     val result = SettingsActionDispatcher.dispatch(
                         SettingsActionKind.WRITE_SETTING,
@@ -808,7 +1131,8 @@ fun HomeNavigationHost(
                     }
                 }
 
-                else -> Unit
+                // 「没写 / 没导航」也要留痕：静默分支排查时什么都看不到（与 SettingsHost 同口径）。
+                else -> Log.w(LOG_TAG, "unhandled home-navigation action: $kind rowId=$rowId")
             }
         },
     )
@@ -853,8 +1177,11 @@ fun TimetablePageSettingsHost(
             )
         ) {
             is SettingsDispatch.Write -> {
-                store.save(result.model)
-                model = result.model
+                if (saveVerified(store, model, result.model)) {
+                    model = result.model
+                } else {
+                    Log.e(LOG_TAG, "timetable page settings save did not land")
+                }
             }
             else -> Unit
         }
@@ -865,10 +1192,11 @@ fun TimetablePageSettingsHost(
         preview = preview,
         onBack = onBack,
         onAction = { action, target, rowId ->
-            when (SettingsPageBridge.toKind(action)) {
+            when (val kind = SettingsPageBridge.toKind(action)) {
                 SettingsActionKind.WRITE_SETTING -> commitWrite(target, rowId)
                 SettingsActionKind.NAVIGATE -> target?.let(onNavigate)
-                else -> Unit
+                // 本页当前没有弹层/剪贴板行；真出现时留痕，别让「点了没反应」无从查起。
+                else -> Log.w(LOG_TAG, "unhandled timetable-page action: $kind rowId=$rowId")
             }
         },
     )
@@ -913,8 +1241,11 @@ fun GlassDockEditorHost(
             base,
         )
         if (result is SettingsDispatch.Write) {
-            store.save(result.model)
-            model = result.model
+            if (saveVerified(store, model, result.model)) {
+                model = result.model
+            } else {
+                Log.e(LOG_TAG, "glass dock editor save did not land")
+            }
         }
     }
     GlassDockEditorScreen(
@@ -950,8 +1281,11 @@ fun HomeMenuEditorHost(
             base,
         )
         if (result is SettingsDispatch.Write) {
-            store.save(result.model)
-            model = result.model
+            if (saveVerified(store, model, result.model)) {
+                model = result.model
+            } else {
+                Log.e(LOG_TAG, "home menu editor save did not land")
+            }
         }
     }
     HomeMenuEditorScreen(
@@ -962,4 +1296,230 @@ fun HomeMenuEditorHost(
         onMove = { from, to -> write(SettingsActionDispatcher.ROW_MENU_MOVE, "$from:$to") },
         onReset = { write(SettingsActionDispatcher.ROW_MENU_RESET, null) },
     )
+}
+
+// ============================================================================
+// 主题管理页的四类弹层 + 「能力未接」说明框 + 落盘读回校验
+// （2026-10-29 补口，一轮审核 P0/P1；此前这四类动作的意图对象全仓 0 消费者）
+// ============================================================================
+
+/** 剪贴板里主题 JSON 的标签（Android 10+ 会在系统提示里显示它，属于系统 UI 我们的部分）。 */
+private const val CLIPBOARD_LABEL_THEME = "qingyu-theme"
+
+/** 主题条目的 id：Dart `DateTime.now().millisecondsSinceEpoch.toString()`（`timetable_theme_service.dart:73`）。 */
+internal fun themeEntryId(epochMillis: Long): String = epochMillis.toString()
+
+/** 主题弹层的四种形态（Dart 那边是四个独立函数）。 */
+internal enum class ThemeDialogMode {
+    /** 「保存当前主题」：输入名字 → 追加一条已存主题（Dart `_showSaveThemeDialog`）。 */
+    SAVE_CURRENT,
+
+    /** 重命名（Dart `_showRenameDialog`）。 */
+    RENAME,
+
+    /** 删除确认（Dart `showThemeDeleteConfirmDialog`）。 */
+    DELETE,
+
+    /** 已存主题的动作表：应用 / 重命名 / 复制 / 删除（Dart `showSavedThemeActionSheet`）。 */
+    ACTIONS,
+}
+
+/** 已存主题动作表里的四项。 */
+internal enum class ThemeRowAction { APPLY, RENAME, DUPLICATE, DELETE }
+
+internal data class ThemeDialogState(
+    val mode: ThemeDialogMode,
+    /** 目标已存主题 id；`SAVE_CURRENT` 时为 null。 */
+    val themeId: String? = null,
+    /** 已存主题的名字（弹层标题/删除正文要用）。 */
+    val themeName: String = "",
+)
+
+/**
+ * 一个「说明框」：标题 + 正文 +（可选）撤销按钮。
+ *
+ * 三种用法：能力未接的诚实说明（重新配色）、应用主题后的「已切换到 X + 撤销」。
+ */
+internal data class SettingsNotice(
+    val title: String,
+    val body: String,
+    val undoLabel: String? = null,
+    val onUndo: (() -> Unit)? = null,
+)
+
+/**
+ * 主题管理页的弹层宿主：把 [ThemeDialogState] 四种形态渲染成官方弹层。
+ *
+ * 形态逐条照 Dart（`settings_appearance.dart` + `lib/widgets/theme_manage_sheets.dart`）：
+ * 保存/重命名 = 单行输入框 + 取消/确认（名字为空时确认禁用，不给「存了个空名」的机会）；
+ * 删除 = 确认框（`themeDeleteConfirmMessage` 带主题名）；
+ * 动作表 = 底部四行（应用 / 重命名 / 复制 / 删除）。
+ */
+@Composable
+internal fun SettingsThemeDialogHost(
+    state: ThemeDialogState,
+    onDismiss: () -> Unit,
+    onSaveCurrent: (name: String) -> Unit,
+    onRename: (id: String, name: String) -> Unit,
+    onDelete: (id: String) -> Unit,
+    onAction: (ThemeRowAction, id: String) -> Unit,
+) {
+    when (state.mode) {
+        ThemeDialogMode.SAVE_CURRENT, ThemeDialogMode.RENAME -> {
+            val initial = if (state.mode == ThemeDialogMode.RENAME) state.themeName else ""
+            var text by remember(state) { mutableStateOf(initial) }
+            OverlayDialog(
+                insideMargin = DpSize(16.dp, 16.dp),
+                show = true,
+                title = if (state.mode == ThemeDialogMode.RENAME) {
+                    SettingsStrings.themeRename.zh
+                } else {
+                    SettingsStrings.themeSaveCurrent.zh
+                },
+                onDismissRequest = onDismiss,
+            ) {
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = SettingsStrings.themeNameHint.zh,
+                    useLabelAsPlaceholder = true,
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = SettingsStringsExt4.cancelAction.zh,
+                        onClick = onDismiss,
+                    )
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        // 空名字点不动：Dart 的保存对话框同样不给提交空名。
+                        enabled = text.isNotBlank(),
+                        onClick = {
+                            val id = state.themeId
+                            if (state.mode == ThemeDialogMode.RENAME && id != null) {
+                                onRename(id, text)
+                            } else {
+                                onSaveCurrent(text)
+                            }
+                        },
+                    ) {
+                        Text(text = SettingsStrings.confirmAction.zh)
+                    }
+                }
+            }
+        }
+
+        ThemeDialogMode.DELETE -> OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
+            show = true,
+            title = SettingsStrings.themeDelete.zh,
+            summary = SettingsStrings.themeDeleteConfirmMessage.filled("name", state.themeName),
+            onDismissRequest = onDismiss,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = SettingsStringsExt4.cancelAction.zh,
+                    onClick = onDismiss,
+                )
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { state.themeId?.let(onDelete) },
+                ) {
+                    Text(text = SettingsStrings.themeDelete.zh)
+                }
+            }
+        }
+
+        // 内容根是 `Column(padding(horizontal = 16.dp, …))` ⇒ 框架侧横向归零（单边仍是 16）。
+        ThemeDialogMode.ACTIONS -> QingyuSheet(
+            show = true,
+            // 标题是用户数据（主题名），不来自 ARB。
+            title = state.themeName,
+            contentPadsHorizontally = true,
+            onDismissRequest = onDismiss,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ThemeActionRow(SettingsStrings.themeApply.zh) {
+                    state.themeId?.let { onAction(ThemeRowAction.APPLY, it) }
+                }
+                ThemeActionRow(SettingsStrings.themeRename.zh) {
+                    state.themeId?.let { onAction(ThemeRowAction.RENAME, it) }
+                }
+                ThemeActionRow(SettingsStrings.themeDuplicate.zh) {
+                    state.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
+                }
+                ThemeActionRow(SettingsStrings.themeDelete.zh) {
+                    state.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeActionRow(label: String, onClick: () -> Unit) {
+    Button(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Text(text = label, style = MiuixTheme.textStyles.button)
+    }
+}
+
+/**
+ * 「说明框」：标题 + 正文，可选一个撤销按钮。
+ *
+ * 与 [AutoRefreshRunNowNotice] 同一套（`OverlayDialog` + 正文取 ARB），
+ * 区别只在多了 [SettingsNotice.onUndo] 这条撤销通路。
+ */
+@Composable
+private fun SettingsNoticeDialog(notice: SettingsNotice, onDismiss: () -> Unit) {
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = true,
+        title = notice.title,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = notice.body,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                val undo = notice.onUndo
+                val undoLabel = notice.undoLabel
+                if (undo != null && undoLabel != null) {
+                    TextButton(
+                        text = undoLabel,
+                        onClick = {
+                            undo()
+                            onDismiss()
+                        },
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Button(onClick = onDismiss) {
+                    Text(text = SettingsStrings.confirmAction.zh)
+                }
+            }
+        }
+    }
 }

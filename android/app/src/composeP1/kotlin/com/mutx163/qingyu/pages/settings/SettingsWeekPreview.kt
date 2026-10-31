@@ -60,7 +60,18 @@ fun SettingsWeekPreview(
 ) {
     val dark = isSystemInDarkTheme()
     val visibleDays = listOf(1, 2, 3, 4, 5, 6, 7)
-    val dayLabels = listOf("一", "二", "三", "四", "五", "六", "日")
+    // 星期短名走 ARB（`weekdayShortMonday`..`weekdayShortSunday`）。
+    // 2026-10-29 修（一轮审核 D3）：这里以前写死 `listOf("一", …, "日")`——渲染层中文字面量，
+    // 换语言/换表都不跟着变；ARB 里本来就有这七个键。
+    val dayLabels = listOf(
+        SettingsStrings.weekdayShortMonday.zh,
+        SettingsStrings.weekdayShortTuesday.zh,
+        SettingsStrings.weekdayShortWednesday.zh,
+        SettingsStrings.weekdayShortThursday.zh,
+        SettingsStrings.weekdayShortFriday.zh,
+        SettingsStrings.weekdayShortSaturday.zh,
+        SettingsStrings.weekdayShortSunday.zh,
+    )
     val sections = timeScheme?.sections?.takeIf { it.isNotEmpty() } ?: settings.sections
     val sectionCount = sections.size.coerceIn(1, 14)
     val weekCourses = remember(courses, currentWeek) {
@@ -141,7 +152,9 @@ fun SettingsWeekPreview(
 
                 if (weekCourses.isEmpty()) {
                     Text(
-                        text = "本周没有排课",
+                        // 2026-10-29：原来写死「本周没有排课」（ARB 里根本没有这句），
+                        // 改用 ARB 已有的 `dayViewEmptyTitle`（"暂无课程"）。
+                        text = SettingsStrings.weekPreviewEmpty.zh,
                         modifier = Modifier.align(Alignment.Center),
                         style = MiuixTheme.textStyles.footnote2,
                         color = labelColor,

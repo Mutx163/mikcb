@@ -32,14 +32,9 @@
 # setSemesterStartDate / supportConfirmed）在 Kotlin 里只是**别的标识符的子串**
 # （如 courseActionSuspend ⊂ courseActionSuspendSecondary），判据的词边界规则
 # 把它们正确判死——这正是「真死键不许被假阳性淹没」要保住的那部分。
-# 例外（2026-10-30 F13，注明原因）：`themeImportSuccess` 这一条留着是**故意**的，不是漏删。
-# 它的 Kotlin 引用此刻只在 F05 的**未提交**文件里 ——
-#   composeP1/app/SettingsHost.kt:318         toast(SettingsStrings.themeImportSuccess.zh)
-#   main/pages/settings/SettingsStrings.kt:132 val themeImportSuccess = ArbText(...)
-# 而提交快照（pre-commit 钩子 / CI）判定的是「这次提交里有什么」：那两个文件还没提交，
-# 在快照世界里它确实没人引用，删掉会让**每个** commit 的钩子变红（那是把别人的提交堵死）。
-# ⇒ 等那两个文件提交后，本行必须删掉。那之后工作区模式会报「过期项」，
-#   按纪律删掉这一行即可（这就是棘轮：不是删不掉，是还没到时候）。
+# 已回收（2026-10-31 F21）：`themeImportSuccess` 的临时例外已到期——
+# F05 的 `SettingsHost.kt` / `SettingsStrings.kt` 已随「设置页 P0 补口」提交落库，
+# 该键在 Kotlin 侧真有引用了，基线行按纪律删除（只降不升）。
 aboutAdvancedOptionsSubtitle
 aboutClearAndRecollectAction
 aboutCurrentCustomMirrorHint
@@ -489,7 +484,6 @@ teacherUnset
 textColorLowContrastWarning
 textColorSubtitle
 textColorTitle
-themeImportSuccess
 themePresetBlue
 themePresetDarkMinimal
 themePresetEyeCare
