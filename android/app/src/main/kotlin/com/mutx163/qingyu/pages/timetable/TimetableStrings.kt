@@ -92,6 +92,17 @@ object TimetableStrings {
     val selectWeekTitle = ArbText("selectWeekTitle", "选择周次")
     val closeAction = ArbText("closeAction", "关闭")
 
+    /** 周次弹层说明行「共 N 周」（Dart `l10n.availableWeeksCount`，`week_selector_picker_sheet.dart:44`）。 */
+    val availableWeeksCount = ArbText("availableWeeksCount", "共 {count} 周")
+
+    /** 周次弹层里的一格「第 N 周」（Dart `l10n.goToWeekLabel`，`:96`）。 */
+    val goToWeekLabel = ArbText("goToWeekLabel", "第 {week} 周")
+
+    fun availableWeeks(count: Int): String =
+        availableWeeksCount.filled("count", count.toString())
+
+    fun goToWeek(week: Int): String = goToWeekLabel.filled("week", week.toString())
+
     /** 课卡「开始 / 结束」时间行（Dart `course_card.dart` `classStartsAtLabel`）。 */
     val classStartsAtLabel = ArbText("classStartsAtLabel", "{time} 开始")
     val classEndsAtLabel = ArbText("classEndsAtLabel", "{time} 结束")
@@ -99,6 +110,32 @@ object TimetableStrings {
     /** 周网格里的考试 / 日程徽标（Dart `week_grid_agenda_card.dart`）。 */
     val examBadgeLabel = ArbText("examBadgeLabel", "考试")
     val scheduleBadgeLabel = ArbText("scheduleBadgeLabel", "日程")
+
+    /**
+     * 课卡右上角「假期 / 停课」角标（Dart `course_card.dart:_buildBadgeRow`，
+     * `:622-639`：`l10n.holidayBadgeLabel` / `l10n.suspendedBadgeLabel`）。
+     *
+     * 2026-10-29 二轮审核：Compose 课卡只有「冲突」一枚角标，假/停两枚从来没画过。
+     */
+    val holidayBadgeLabel = ArbText("holidayBadgeLabel", "假")
+    val suspendedBadgeLabel = ArbText("suspendedBadgeLabel", "停")
+
+    /**
+     * 课卡作业角标的无障碍描述（ARB `courseTaskAction` = 「作业」）。
+     *
+     * 与 `DayViewStrings.courseTaskAction` 同源同键：两个字面同一句 ARB 原文，
+     * 周视图与日视图各自引用自己域的对象，避免跨域 import 与重复维护。
+     */
+    val courseTaskAction = ArbText("courseTaskAction", "作业")
+
+    /**
+     * 课卡天气行的片段（Dart `CourseWeatherDisplay`）。
+     *
+     * 复用 ARB 里既有的三条模板（`weatherTemperatureValue` 等），不另拟说法。
+     */
+    val weatherTemperatureValue = ArbText("weatherTemperatureValue", "{temperature}°")
+    val weatherProbabilityValue = ArbText("weatherProbabilityValue", "{probability}%")
+    val weatherSummarySeparator = ArbText("weatherSummarySeparator", " · ")
 
     /** 课卡周次行（Dart `l10n/course_week_localizations.dart`）。 */
     val oddWeeksFilter = ArbText("oddWeeksFilter", "单周")
@@ -159,6 +196,36 @@ object TimetableStrings {
 
     /** 课卡结束时间行（Dart `l10n.classEndsAtLabel`）。 */
     fun formatClassEndsAt(time: String): String = classEndsAtLabel.filled("time", time)
+
+    /**
+     * 课卡天气一行：`小雨 · 23° · 60%`（Dart `CourseWeatherDisplay` 的紧凑口径）。
+     *
+     * 片段顺序与开关一一对应（现象 / 温度 / 降水概率），任一段为空就不出现，
+     * 中间用 ARB `weatherSummarySeparator`（` · `）连接。
+     *
+     * @param phenomenon 天气现象中文名（由宿主从 ARB `weatherXxx` 取，见 `WeatherStrings.categoryLabel`）
+     * @param temperatureC 温度（摄氏度整数）
+     * @param probability 降水概率百分比；为 null 或开关关闭时不出现
+     */
+    fun formatWeatherLine(
+        phenomenon: String?,
+        temperatureC: Int?,
+        probability: Int?,
+        showPhenomenon: Boolean = true,
+        showTemperature: Boolean = true,
+        showProbability: Boolean = false,
+    ): String? {
+        val parts = mutableListOf<String>()
+        if (showPhenomenon) phenomenon?.trim()?.takeIf { it.isNotEmpty() }?.let { parts += it }
+        if (showTemperature && temperatureC != null) {
+            parts += weatherTemperatureValue.filled("temperature", temperatureC.toString())
+        }
+        if (showProbability && probability != null) {
+            parts += weatherProbabilityValue.filled("probability", probability.toString())
+        }
+        if (parts.isEmpty()) return null
+        return parts.joinToString(weatherSummarySeparator.zh)
+    }
 
     /**
      * 课程周次文案（Dart `courseWeekDescription`，`lib/l10n/course_week_localizations.dart:27`）。
@@ -262,6 +329,8 @@ object TimetableStrings {
             currentWeekCompact,
             selectWeekTitle,
             closeAction,
+            availableWeeksCount,
+            goToWeekLabel,
             classStartsAtLabel,
             classEndsAtLabel,
             examBadgeLabel,
@@ -271,6 +340,12 @@ object TimetableStrings {
             weekListSeparator,
             courseWeekListLabel,
             courseWeekRangeLabel,
+            holidayBadgeLabel,
+            suspendedBadgeLabel,
+            courseTaskAction,
+            weatherTemperatureValue,
+            weatherProbabilityValue,
+            weatherSummarySeparator,
         )
     }
 }

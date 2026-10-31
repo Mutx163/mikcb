@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.timetable
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -16,12 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,17 +29,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
-import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -55,15 +49,12 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 /**
  * 课表周视图完整页面（对应 Flutter `lib/screens/timetable_screen.dart` 的周视图部分）。
@@ -102,6 +93,19 @@ fun TimetableWeekPage(
     todayDate: LocalDate = now.toLocalDate(),
     onCourseClick: (Course) -> Unit = {},
     onAgendaClick: (WeekAgendaCardModel) -> Unit = {},
+    /**
+     * 某周某天是否假期（Dart `timetable_day_column.dart:76` `provider.isHoliday(date)`）。
+     *
+     * 2026-10-29 二轮修复：以前 `TimetableWeekGrid.holidayForDay` 全仓没有调用方，
+     * 恒 `{ false }` ⇒ 假期课卡既不压淡、也没有「假」角标。
+     */
+    holidayOf: (week: Int, dayOfWeek: Int) -> Boolean = { _, _ -> false },
+    /**
+     * 某天某节课的天气一行（Dart `weather: callbacks.weather(item, date)`）。
+     *
+     * 为 null（宿主没接天气）或返回 null（设置关 / 没数据）时卡面不出现天气行。
+     */
+    weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = null,
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit = { _, _ -> },
     onDayClick: (dayOfWeek: Int) -> Unit = {},
     onSwitchProfileClick: () -> Unit = {},
@@ -136,7 +140,10 @@ fun TimetableWeekPage(
 
     val sectionTimes: List<SectionTime> = timeScheme?.sections?.takeIf { it.isNotEmpty() }
         ?: settings.sections
-    val sectionCount = sectionTimes.size.coerceAtLeast(12)
+    // 节数口径：Dart `settings.sectionCount => sections.length`
+    //（`lib/models/timetable_settings.dart:2479`，周网格 `List.generate(settings.sectionCount)`）。
+    // 旧实现写成 `coerceAtLeast(12)`，用户把作息表配成 10 节时 Compose 仍画 12 行、Dart 只画 10 行。
+    val sectionCount = sectionTimes.size
     val semesterStart = settings.semesterStartDate?.toLocalDate()
     val realCurrentWeek = currentSemesterWeek(semesterStart, totalWeeks, todayDate)
     val showBackToCurrentWeek = style.showBackToCurrentWeek &&
@@ -188,6 +195,8 @@ fun TimetableWeekPage(
                         scheduleItems = scheduleItems,
                         now = now,
                         bottomInset = innerPadding.calculateBottomPadding(),
+                        holidayOf = holidayOf,
+                        weatherOf = weatherOf,
                         onCourseClick = onCourseClick,
                         onAgendaClick = onAgendaClick,
                         onLongPressEmptySlot = onLongPressEmptySlot,
@@ -210,7 +219,11 @@ fun TimetableWeekPage(
                         },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp),
+                            .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
+                            // Dart 把 `timetableFloatingBackToCurrentWeekButtonOpacity`
+                            // 乘在整颗浮钮上（`timetable_back_to_current_week_button.dart:40-82`）。
+                            // 以前这个设置映射进了 WeekViewStyle 却没人读，改了不起作用。
+                            .alpha(style.backToCurrentWeekOpacity),
                         colors = ButtonDefaults.buttonColors(),
                     ) {
                         Text(
@@ -223,87 +236,25 @@ fun TimetableWeekPage(
         }
     }
 
-    // ── 周次选择弹窗（点星期栏左端「8 周」打开）──
-    if (showWeekSelectorDialog) {
-        Dialog(onDismissRequest = { showWeekSelectorDialog = false }) {
-            QingyuCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = TimetableStrings.selectWeekTitle.zh,
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor,
-                        )
-                        IconButton(onClick = { showWeekSelectorDialog = false }) {
-                            Icon(
-                                imageVector = MiuixIcons.Close,
-                                contentDescription = TimetableStrings.closeAction.zh,
-                                modifier = Modifier.size(18.dp),
-                                tint = subTextColor,
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(5),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.height(220.dp),
-                    ) {
-                        items(pageCount) { idx ->
-                            val targetWeek = idx + 1
-                            val isRealCurrentWeek = targetWeek == realCurrentWeek
-                            val isSelectedWeek = targetWeek == browsingWeek
-                            val itemBg = when {
-                                isSelectedWeek -> accentColor
-                                isRealCurrentWeek -> accentColor.copy(alpha = 0.16f)
-                                else -> Color(QingyuTheme.card(dark))
-                            }
-                            val itemTextColor = when {
-                                isSelectedWeek -> Color.White
-                                isRealCurrentWeek -> accentColor
-                                else -> textColor
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(itemBg)
-                                    .clickable {
-                                        showWeekSelectorDialog = false
-                                        coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                                    }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = "$targetWeek",
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    fontWeight = if (isSelectedWeek || isRealCurrentWeek) {
-                                        FontWeight.Bold
-                                    } else {
-                                        FontWeight.Medium
-                                    },
-                                    color = itemTextColor,
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
-                    }
-                }
+    // ── 周次选择弹层（点星期栏左端「8 周」打开）──
+    // Dart `week_selector_picker_sheet.dart`：底部弹层 + 4 列网格 + 「第 N 周」+ 说明行 + 回本周。
+    // 旧实现是居中 Dialog + 5 列 + 只写数字 + 固定 220dp 高（用户口径「看起来非常奇怪」），
+    // 逐条对照后重写，见 `WeekSelectorSheet.kt` 的 KDoc 对照表。
+    WeekSelectorSheet(
+        show = showWeekSelectorDialog,
+        // 可选周次 = 1..总周数（Dart `settings.availableWeeks` 即 startWeek..endWeek，
+        // 学期周数在宿主侧已经钳过，这里不再二次过滤）。
+        availableWeeks = (1..pageCount).toList(),
+        visibleWeek = browsingWeek,
+        currentSemesterWeek = realCurrentWeek,
+        onDismiss = { showWeekSelectorDialog = false },
+        onSelect = { week ->
+            showWeekSelectorDialog = false
+            coroutineScope.launch {
+                pagerState.animateScrollToPage((week - 1).coerceIn(0, pageCount - 1))
             }
-        }
-    }
+        },
+    )
 }
 
 /**
@@ -326,14 +277,22 @@ private fun WeekPageContent(
     scheduleItems: List<ScheduleItem>,
     now: LocalDateTime,
     bottomInset: Dp,
+    holidayOf: (week: Int, dayOfWeek: Int) -> Boolean,
+    weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)?,
     onCourseClick: (Course) -> Unit,
     onAgendaClick: (WeekAgendaCardModel) -> Unit,
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit,
     onDayClick: (dayOfWeek: Int) -> Unit,
     onWeekTitleClick: () -> Unit,
 ) {
-    val cardsByDay = remember(courses, pageWeek, style, visibleDays) {
-        WeekGridCourseMapping.cardsForWeek(courses, pageWeek, style, visibleDays)
+    val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf) {
+        WeekGridCourseMapping.cardsForWeek(
+            courses = courses,
+            week = pageWeek,
+            style = style,
+            visibleDays = visibleDays,
+            weatherOf = weatherOf,
+        )
     }
     val agendaByDay = remember(exams, scheduleItems, pageWeek, style, visibleDays, semesterStart) {
         buildAgendaByDay(
@@ -396,6 +355,8 @@ private fun WeekPageContent(
                         sectionCount = sectionCount,
                         sectionHeight = sectionHeight,
                         style = style,
+                        // 之前这个参数没人传（恒 { false }），假期压淡与「假」角标永远不出现。
+                        holidayForDay = { dayOfWeek -> holidayOf(pageWeek, dayOfWeek) },
                         onCourseClick = onCourseClick,
                         onAgendaClick = onAgendaClick,
                         onLongPressEmptySlot = onLongPressEmptySlot,
@@ -414,11 +375,8 @@ private const val WEEKDAY_HEADER_HEIGHT_DP = 40f
 private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
 
 /** 某周某天的真实日期（Dart `timetable_weekday_header.dart:_dateForWeekDay`）。 */
-fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalDate? {
-    val start = semesterStart ?: return null
-    val monday = start.minusDays((start.dayOfWeek.value - 1).toLong())
-    return monday.plusDays(((week - 1) * 7 + (dayOfWeek - 1)).toLong())
-}
+fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalDate? =
+    TimetableDateLogic.dateForWeekDay(semesterStart, week, dayOfWeek)
 
 /**
  * 按开学日算出的「真实当前周」；学期未配置或超出周数范围返回 null。
@@ -426,14 +384,8 @@ fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalD
  * 对齐 Dart `_resolveCurrentSemesterWeek`：开学日先归一化到周一，
  * `(今天 - 周一)/7 + 1`，越界即 null（此时「回本周」浮钮不出现）。
  */
-fun currentSemesterWeek(semesterStart: LocalDate?, totalWeeks: Int, today: LocalDate): Int? {
-    val start = semesterStart ?: return null
-    val monday = start.minusDays((start.dayOfWeek.value - 1).toLong())
-    val days = ChronoUnit.DAYS.between(monday, today)
-    val week = (days / 7).toInt() + 1
-    if (week < 1 || week > totalWeeks) return null
-    return week
-}
+fun currentSemesterWeek(semesterStart: LocalDate?, totalWeeks: Int, today: LocalDate): Int? =
+    TimetableDateLogic.currentSemesterWeek(semesterStart, totalWeeks, today)
 
 /**
  * 整周的考试/日程落格（Dart `_agendaEntriesFor`）：逐天算日期再映射节次。
