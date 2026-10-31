@@ -2,25 +2,37 @@ package com.mutx163.qingyu.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.shell.HomeWallpaperBackdrop
 import com.mutx163.qingyu.theme.QingyuTheme
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.calendar.HolidayData
+import com.mutx163.qingyu.calendar.HolidayPreferences
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.clampCurrentWeekToSettings
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
 import com.mutx163.qingyu.pages.timetable.WeekAgendaCardModel
+import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
+import com.mutx163.qingyu.pages.timetable.TimetableStrings
+import com.mutx163.qingyu.pages.timetable.WeekHolidayMarking
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
+import com.mutx163.qingyu.pages.weather.WeatherStrings
+import com.mutx163.qingyu.weather.WeatherProvider
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -71,6 +83,9 @@ fun TimetableHost(
     // 顶栏「轻屿课表」+ 右上角「更多」菜单：条目与选中回调由壳注入（页面不认识路由）。
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
+    // 天气：设备级 provider 只在壳里（`ShellWiring` 那一份）。不传 = 课卡不出现天气行
+    //（Dart `weatherShowOnWeekCard` 默认开，但没有数据时同样不画）。
+    weatherProvider: WeatherProvider? = null,
 ) {
     // 首帧直接用仓储当前快照，避免「先画空网格再跳成有课」的闪一下。
     // ⚠️ 这不是优化，是**接口语义**：`TimetableRepository.observe` 只在**后续变更**时回调，
@@ -106,6 +121,79 @@ fun TimetableHost(
     val scheduleItems = snapshot.scheduleItems
     // 只在数据变化时取一次「此刻」：考试过期判定随它走，但不该每帧变。
     val now = remember(snapshot) { LocalDateTime.now() }
+
+    // ── 假期判定（P1-7）──
+    // Dart 周网格每列都问 `provider.isHoliday(date)`（`timetable_day_column.dart:76`）。
+    // 数据在 HolidayPreferences（官方年度缓存 + 自定义条目），与 IcsExportHost 同一来源。
+    val appContext = LocalContext.current.applicationContext
+    val holidayPrefs = remember(appContext) { HolidayPreferences(PrefsKeyValueStore(appContext)) }
+    val holidayMarkingEnabled = settingsModel?.enableHolidayMarking ?: true
+    val holidayOfficialByYear = remember(holidayPrefs) { mutableMapOf<Int, HolidayData?>() }
+    val customHolidays = remember(holidayPrefs) {
+        runCatching { holidayPrefs.loadCustomHolidays() }.getOrNull().orEmpty()
+    }
+    val semesterStart = settings.semesterStartDate?.toLocalDate()
+    val holidayOf: (week: Int, dayOfWeek: Int) -> Boolean = { week, dayOfWeek ->
+        val date: LocalDate? = TimetableDateLogic.dateForWeekDay(semesterStart, week, dayOfWeek)
+        if (date == null) {
+            false
+        } else {
+            val official = holidayOfficialByYear.getOrPut(date.year) {
+                runCatching { holidayPrefs.loadYear(date.year) }.getOrNull()
+            }
+            WeekHolidayMarking.isHoliday(
+                date = date,
+                official = official,
+                custom = customHolidays,
+                overrideEnabled = false, // `holidayOverrideEnabled` 尚未进 TimetableSettingsModel
+                markingEnabled = holidayMarkingEnabled,
+            )
+        }
+    }
+
+    // ── 天气（P1-11 课卡天气行；provider 是 addListener 那套，用计数触发重组）──
+    var weatherTick by remember(weatherProvider) { mutableIntStateOf(0) }
+    DisposableEffect(weatherProvider) {
+        val provider = weatherProvider
+        if (provider == null) {
+            onDispose { }
+        } else {
+            val listener: () -> Unit = { weatherTick += 1 }
+            provider.addListener(listener)
+            onDispose { provider.removeListener(listener) }
+        }
+    }
+    val weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = remember(
+        weatherProvider, weatherTick, settingsModel, settings, snapshot,
+    ) {
+        val provider = weatherProvider
+        if (provider == null || settingsModel?.weatherShowOnWeekCard == false) {
+            null
+        } else {
+            val showPhenomenon = settingsModel?.weatherShowPhenomenon ?: true
+            val showTemperature = settingsModel?.weatherShowTemperature ?: true
+            val showProbability = settingsModel?.weatherShowProbability ?: false
+            val start = settings.semesterStartDate?.toLocalDate()
+            val lookup: (Int, Int, Course) -> String? = { week, dayOfWeek, course ->
+                val date = TimetableDateLogic.dateForWeekDay(start, week, dayOfWeek)
+                val occurrence = repository.dateForCourseOccurrence(course, week)
+                when {
+                    date == null || occurrence == null -> null
+                    else -> provider.summaryForCourse(occurrence, course.startTime, course.endTime)?.let { summary ->
+                        TimetableStrings.formatWeatherLine(
+                            phenomenon = WeatherStrings.categoryLabel(summary.category),
+                            temperatureC = summary.temperatureC,
+                            probability = summary.precipitationProbability,
+                            showPhenomenon = showPhenomenon,
+                            showTemperature = showTemperature,
+                            showProbability = showProbability,
+                        )
+                    }
+                }
+            }
+            lookup
+        }
+    }
 
     // ── 首页壁纸背景（Dart `lib/utils/home_page_background.dart` 那整条链）──
     // 快照只在「设置 / 明暗 / 视口宽」变化时重建：取景倍数、对齐、模糊强度、解码宽度
@@ -158,6 +246,8 @@ fun TimetableHost(
         scheduleItems = scheduleItems,
         now = now,
         onCourseClick = onOpenCourse,
+        holidayOf = holidayOf,
+        weatherOf = weatherOf,
         // 长按空白格加课：Dart 判据是「开关打开 + 这一格要有跨度」
         // （`timetable_empty_slot_layer.dart:46`），开关本身由 style 下传，页面只在
         // 开关开着时才装长按手势。

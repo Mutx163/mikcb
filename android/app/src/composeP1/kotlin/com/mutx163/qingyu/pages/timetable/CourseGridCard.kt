@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.timetable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,7 +30,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -118,6 +125,7 @@ fun CourseGridCard(
     isHoliday: Boolean = false,
 ) {
     val course = model.course
+    val dark = isSystemInDarkTheme()
     val rawColor = parseHexColor(model.colorHex ?: course.color, fallback = Color(0xFF2196F3))
     // 卡面透明度：Dart 的 `surfaceOpacity` 是冲突/非本周的压淡系数，直接乘在填充上。
     val fillAlpha = when (style.surfaceStyle) {
@@ -127,9 +135,25 @@ fun CourseGridCard(
         WeekCardSurface.GAUSSIAN -> 0.55f * model.opacity
     }
     val fill = rawColor.copy(alpha = fillAlpha.coerceIn(0.08f, 1f))
-    val ink = course.textColor?.let { parseHexColor(it, fallback = calculateInk(rawColor)) }
-        ?: calculateInk(rawColor)
-    val detailInk = ink.copy(alpha = 0.85f)
+    // ── 墨色：设置里的「课卡标题色 / 详情色」（2026-10-29 二轮修复 P1-11）──
+    // 判据在模型层 CourseCardInk（Dart `course_color_palette.dart:352-408`）：
+    // 用户色与卡面对比度 ≥ 2.0 才采用，否则回落到白/近黑里对比度更高的一档；
+    // 详情墨再把明暗极性对齐标题墨、统一 0.7 alpha。
+    // 以前这里用 `calculateInk(rawColor)` 自算，于是那四个设置**改了没反应**。
+    // 用户自己给课程挑的字色（`course.textColor`）优先于设置默认值——Dart 同序。
+    val preferredTitleArgb = course.textColor?.let(::parseArgbOrNull)
+        ?: parseArgbOrNull(if (dark) style.cardTitleColorDark else style.cardTitleColorLight)
+    val preferredDetailArgb = parseArgbOrNull(
+        if (dark) style.cardDetailColorDark else style.cardDetailColorLight,
+    )
+    val cardArgb = rawColor.toArgb()
+    val ink = Color(CourseCardInk.resolveTitleInk(preferredTitleArgb, cardArgb))
+    val (detailArgb, detailAlpha) = CourseCardInk.resolveDetailInk(
+        preferred = preferredDetailArgb,
+        resolvedTitleInk = ink.toArgb(),
+        cardColor = cardArgb,
+    )
+    val detailInk = Color(detailArgb).copy(alpha = detailAlpha)
 
     val titleFontSize = style.cardTitleFontSize
     val detailFontSize = WeekCardMetrics.detailFontSize(titleFontSize)
@@ -275,6 +299,13 @@ fun CourseGridCard(
                     maxLines = 2,
                 )
             }
+            // ── 天气一行（Dart `weather:` → `CourseWeatherDisplay`；受
+            //    `weatherShowOnWeekCard` 与现象/温度/概率三开关控制）──
+            val weatherText = model.weatherText
+            if (weatherText != null) {
+                hasAnyField = true
+                CardDetailLine(weatherText, detailFontSize, detailInk, textAlign)
+            }
             // Dart 的兜底：七个字段全关也必须有课名，否则卡上只剩留白。
             if (!hasAnyField) {
                 Text(
@@ -290,24 +321,61 @@ fun CourseGridCard(
             }
         }
 
-        // ── 右上角角标（冲突），Dart `topRightBadgeText` ──
-        if (model.badge == WeekCardBadge.CONFLICT) {
+        // ── 右上角角标：假 / 停 / 冲突 **一行多枚**（Dart `course_card.dart:_buildBadgeRow`，
+        //    `:450-464`：showHoliday / showSuspended / customBadgeText 可以并排出现）──
+        // 一审漏了两件事：①假期角标从来没画（`holidayForDay` 是死参数）；②停课只有压淡、
+        // 没有「停」字。这里按 Dart 的顺序与优先级补齐：假期优先于停课
+        //（`showSuspended: isSuspended && !isHoliday`，`:461`）。
+        val badges = buildList {
+            if (isHoliday) add(TimetableStrings.holidayBadgeLabel.zh)
+            if (model.isSuspended && !isHoliday) add(TimetableStrings.suspendedBadgeLabel.zh)
+            if (model.badge == WeekCardBadge.CONFLICT) add(TimetableStrings.conflictLabel.zh)
+        }
+        if (badges.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 2.dp, end = 2.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(ink.copy(alpha = 0.22f))
-                    .padding(horizontal = 3.dp, vertical = 1.dp),
+                    .padding(top = 2.dp, end = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = TimetableStrings.conflictLabel.zh,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontSize = overlineFontSize.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ink,
-                    maxLines = 1,
+                badges.forEach { label ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(ink.copy(alpha = 0.22f))
+                            .padding(horizontal = 3.dp, vertical = 1.dp),
+                    ) {
+                        Text(
+                            text = label,
+                            style = MiuixTheme.textStyles.footnote2,
+                            fontSize = overlineFontSize.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ink,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+
+        // ── 左上角「本周有作业」小红点（Dart `showHomeworkIndicator`，
+        //    `course_card.dart:443-449` 的 `_buildHomeworkIndicator(size: 15, iconSize: 9)`）──
+        if (model.hasHomework) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 4.dp, start = 4.dp)
+                    .size(15.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.95f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Tasks,
+                    contentDescription = TimetableStrings.courseTaskAction.zh,
+                    modifier = Modifier.size(9.dp),
+                    tint = Color(QingyuTheme.destructive()),
                 )
             }
         }
@@ -334,4 +402,13 @@ private fun CardDetailLine(
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
+}
+
+/** `#RRGGBB` / `RRGGBB` → ARGB int；解析不出返回 null（交给对比度守卫回落自动墨）。 */
+private fun parseArgbOrNull(hex: String?): Int? {
+    val text = hex?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    return runCatching {
+        android.graphics.Color.parseColor(if (text.startsWith("#")) text else "#$text")
+    }.getOrNull()
 }

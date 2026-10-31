@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.imePadding
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 
@@ -320,33 +321,22 @@ fun AddScheduleItemPage(
                 item(key = "enabled") {
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = QingyuPageCardMargin),
-                        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        insideMargin = PaddingValues(0.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Column {
-                                Text(
-                                    text = ScheduleStrings.scheduleEnabledTitle.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(QingyuTheme.primaryText(dark)),
-                                )
-                                if (!enabled) {
-                                    Text(
-                                        text = ScheduleStrings.scheduleDisabledSubtitle.zh,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
-                                    )
-                                }
-                            }
-                            MiuixActionButton(
-                                text = if (enabled) "已启用" else "已暂停",
-                                onClick = { enabled = !enabled },
-                            )
-                        }
+                        // 对齐 Dart `add_schedule_item_screen.dart:468-478` 的 `HyperosSwitchTile`：
+                        // 标题 +（关时）副标题 + 右侧开关，整行可点。
+                        //
+                        // 2026-10-29 修（审核 misc-wiring P1-6）：这里原来是「文字 + 一颗会变字的按钮」，
+                        // 按钮文案 `已启用` / `已暂停` 是**渲染层写死的中文**，ARB 里根本没有这两个词；
+                        // 且 Dart 是开关、Compose 是按钮 ⇒ 同一功能两岸长得不一样。
+                        // 现改回官方 `SwitchPreference`，文案全部来自
+                        // `ScheduleStrings.scheduleEnabledTitle` / `scheduleDisabledSubtitle`。
+                        SwitchPreference(
+                            title = ScheduleStrings.scheduleEnabledTitle.zh,
+                            summary = if (enabled) null else ScheduleStrings.scheduleDisabledSubtitle.zh,
+                            checked = enabled,
+                            onCheckedChange = { enabled = it },
+                        )
                     }
                 }
 

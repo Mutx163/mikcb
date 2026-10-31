@@ -43,6 +43,7 @@ import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 /**
  * 作息时间表自动切换日期规则页 · Compose 渲染层（Phase 3）。
@@ -423,21 +424,16 @@ private fun RuleEditorDialog(
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = ScheduleStrings.scheduleDateRuleEnabled.zh,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-                MiuixActionButton(
-                    text = if (enabled) "已启用" else "已停用",
-                    onClick = { enabled = !enabled },
-                )
-            }
+            // 2026-10-29 修（审核 misc-wiring P1-7）：原来是「文字 + 一颗会变字的按钮」，
+            // 按钮文案 `已启用` / `已停用` 是渲染层写死的中文，ARB 里没有这两个词；
+            // 而 Dart `schedule_date_rule_screen.dart:328-333` 用的是带 label 的开关
+            // （`_DateRuleSwitchField`：左侧文案 + 右侧 `HyperosSwitch`，整行可点）。
+            // 现改回官方 `SwitchPreference`，文案走 `ScheduleStrings.scheduleDateRuleEnabled`（="启用"）。
+            SwitchPreference(
+                title = ScheduleStrings.scheduleDateRuleEnabled.zh,
+                checked = enabled,
+                onCheckedChange = { enabled = it },
+            )
 
             HorizontalDivider(modifier = Modifier.fillMaxWidth())
 
