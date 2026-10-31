@@ -16,18 +16,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlin.math.roundToInt
 
 /**
@@ -77,12 +82,13 @@ import kotlin.math.roundToInt
  * ## 与 Dart 的差异（诚实清单）
  *
  * 1. **模糊是实时算的，不是烤图**：Dart 用 `PreblurredWallpaperBackdrop` 预先把模糊烤成
- *    位图（滚动时只贴图）；这里用 `Modifier.blur`（`RenderEffect`，minSdk 33 可用）。
- *    观感接近，但首帧要等解码、且大图每帧都要过一遍 GPU 模糊。性能未在真机上量过。
- * 2. **sigma → 半径换了单位**：Dart 的 sigma 是高斯标准差（逻辑像素），Compose 吃的是
- *    `RenderEffect` 半径。换算写在 [HomeBackgroundModel.blurRadiusDpForSigma]，公式依据
- *    是 Android 的 `ConvertRadiusToSigma`；**没有真机逐档对照过**，若用户觉得模糊强弱与
- *    设置页读数对不上，先动这一个函数。
+ *    位图（滚动时只贴图）；这里用 **miuix-blur** 的实时高斯管线（`layerBackdrop` 采样 +
+ *    `drawBackdrop` 模糊）。观感接近，但首帧要等解码，且整屏每帧都要重录一遍采样层再糊一次。
+ *    性能未在真机上量过（Dart 就是为了这个才改成烤图的）。
+ * 2. **sigma → 半径换了单位**：Dart 的 sigma 是高斯标准差（逻辑像素），miuix-blur 吃的是
+ *    半径（像素，内部 `sigma = radius × 0.45`）。换算写在
+ *    [HomeBackgroundModel.blurRadiusPxForSigma]；**没有真机逐档对照过**，若用户觉得模糊强弱
+ *    与设置页读数对不上，先动这一个函数。
  * 3. **镜像档 EXIF 方向没处理**（2/4/5/7 按不旋转画）；旋转档 3/6/8 已补。
  * 4. **玻璃卡片看到的「屏幕上那张壁纸」还没接**：Dart 会把壁纸的模糊量折进卡片/玻璃带的
  *    预模糊，这里没有预模糊管线，所以玻璃下面的模糊是各自算的。属另一批。
@@ -170,53 +176,87 @@ fun HomeWallpaperBackdrop(
     ) {
         val image = wallpaper
         if (image != null) {
-            // 模糊包在**绘制之外**（Dart 同口径：`home_page_background.dart:547-566` 的注释
-            // 说模糊量是「屏幕上的像素」，包在里面的话放大到 4 倍时糊度会跟着放大）。
-            val blurDp = HomeBackgroundModel.blurRadiusDpForSigma(snapshot.blurSigma)
-            val blurModifier = if (blurDp > 0.0) {
-                Modifier.blur(
-                    radius = blurDp.toFloat().dp,
-                    edgeTreatment = BlurredEdgeTreatment.Unbounded,
-                )
-            } else {
-                Modifier
-            }
             // 跟周翻页滑动时，左右各补一份同一张图：只平移不补画，滑到一半会露底色
             // （Dart `:657-707` 把整屏壁纸当一条长条平移，每页画同一张）。
             // 偏移表在组合期算好，别放进每帧的 draw 里再分配一次 List。
             val pageOffsets = snapshot.stripPageOffsets(weekPageOffset)
-            Canvas(modifier = Modifier.fillMaxSize().then(blurModifier)) {
-                val viewportWidth = size.width.roundToInt()
-                val viewportHeight = size.height.roundToInt()
-                val rect = HomeBackgroundModel.drawRect(
-                    imageWidth = image.width,
-                    imageHeight = image.height,
-                    viewportWidth = viewportWidth,
-                    viewportHeight = viewportHeight,
-                    scale = snapshot.scale,
-                    alignX = snapshot.alignX,
-                    alignY = snapshot.alignY,
-                ) ?: return@Canvas
-                val dstSize = IntSize(
-                    width = rect.width.roundToInt().coerceAtLeast(1),
-                    height = rect.height.roundToInt().coerceAtLeast(1),
-                )
-                val baseLeft = rect.left.roundToInt()
-                val baseTop = rect.top.roundToInt()
-                for (pageOffset in pageOffsets) {
-                    drawImage(
-                        image = image,
-                        dstOffset = IntOffset(
-                            x = (baseLeft + pageOffset * viewportWidth).roundToInt(),
-                            y = baseTop,
+            // 模糊量是「屏幕上的像素」（Dart `home_page_background.dart:547-566`）：半径按 sigma
+            // 直接算成 px，**不**乘取景倍数——用户把缩放拖到 4 倍也不会跟着变糊。
+            val blurRadiusPx =
+                HomeBackgroundModel.blurRadiusPxForSigma(snapshot.blurSigma, LocalDensity.current.density)
+            if (blurRadiusPx > 0.0) {
+                // 模糊走 **miuix-blur**（MIUIX-FIRST 铁律：模糊用官方能力，不自己造效果）。
+                // 官方管线是两件套：
+                //   ① `Modifier.layerBackdrop` 把「要糊的东西」（壁纸条）录进一张采样层；
+                //   ② `Modifier.drawBackdrop` 把采样层按 miuix 的高斯链糊出来、铺在自己的位置。
+                // ① 那一格只负责录制、**不上屏**（空内容 + 那个 modifier），屏幕上看到的是 ②。
+                // 底栏玻璃（`GlassDockNavigationBar`）用的是同一条管线。
+                val sampleLayer = rememberGraphicsLayer()
+                val sampleBackdrop = rememberLayerBackdrop(graphicsLayer = sampleLayer) {
+                    drawWallpaperStrip(image, snapshot, pageOffsets)
+                }
+                Box(modifier = Modifier.fillMaxSize().layerBackdrop(sampleBackdrop))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .drawBackdrop(
+                            backdrop = sampleBackdrop,
+                            shape = { RectangleShape },
+                            effects = { blur(blurRadiusPx.toFloat()) },
                         ),
-                        dstSize = dstSize,
-                        filterQuality = FilterQuality.Medium,
-                    )
+                )
+            } else {
+                // 0 档 = 不模糊：原图直出，别让 miuix 白跑一趟采样 + 高斯链。
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawWallpaperStrip(image, snapshot, pageOffsets)
                 }
             }
         }
         content()
+    }
+}
+
+/**
+ * 把壁纸条画进当前 [DrawScope]。
+ *
+ * 屏幕直画（0 档）与采样层录制（模糊档）用的是**同一份画法**：写两遍必然漂
+ * （改了一处忘了另一处，模糊档和清晰档的取景就不一样了）。
+ *
+ * `cover` 矩形与取景对齐由 [HomeBackgroundModel.drawRect] 算，这里只负责落笔；
+ * [pageOffsets] 是跟周翻页时的水平平移量（只有 0 时 = 静止）。
+ */
+private fun DrawScope.drawWallpaperStrip(
+    image: ImageBitmap,
+    snapshot: HomeBackdropSnapshot,
+    pageOffsets: List<Float>,
+) {
+    val viewportWidth = size.width.roundToInt()
+    val viewportHeight = size.height.roundToInt()
+    val rect = HomeBackgroundModel.drawRect(
+        imageWidth = image.width,
+        imageHeight = image.height,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight,
+        scale = snapshot.scale,
+        alignX = snapshot.alignX,
+        alignY = snapshot.alignY,
+    ) ?: return
+    val dstSize = IntSize(
+        width = rect.width.roundToInt().coerceAtLeast(1),
+        height = rect.height.roundToInt().coerceAtLeast(1),
+    )
+    val baseLeft = rect.left.roundToInt()
+    val baseTop = rect.top.roundToInt()
+    for (pageOffset in pageOffsets) {
+        drawImage(
+            image = image,
+            dstOffset = IntOffset(
+                x = (baseLeft + pageOffset * viewportWidth).roundToInt(),
+                y = baseTop,
+            ),
+            dstSize = dstSize,
+            filterQuality = FilterQuality.Medium,
+        )
     }
 }
 

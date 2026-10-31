@@ -236,17 +236,22 @@ object HomeBackgroundModel {
     const val BODY_BAND_TO = 0.72
 
     /**
-     * `RenderEffect` 的 blur **半径**换算成 sigma 的斜率（Android
-     * `SkBlurMaskFilter::ConvertRadiusToSigma` 口径：`sigma = radius × 0.57735 + 0.5`）。
+     * miuix-blur 的 blur **半径**换算成 sigma 的斜率。
+     *
+     * 出处：`top.yukonga.miuix.kmp.blur` 内部 `BLUR_RADIUS_TO_SIGMA = 0.45f`
+     * （`blur/internal/BlurEffect.kt:22`，`BackdropEffects.blur` 直接乘它）。
      *
      * 为什么需要这一条：Dart 的 `ImageFilter.blur(sigmaX:)` 直接吃 **sigma**（逻辑像素），
-     * 而 Compose `Modifier.blur(radius: Dp)` 最终交给 `RenderEffect.createBlurEffect`，
-     * 它吃的是 **半径**。直接把 sigma 当半径传，糊度会偏大约 1.7 倍，设置页读数与屏幕观感对不上。
+     * 而 miuix 的 `blur(radiusX)` 吃的是 **半径**（像素）。把 sigma 当半径传，糊度会
+     * 偏小约 2.2 倍，设置页读数与屏幕观感对不上。
      */
-    const val BLUR_SIGMA_PER_RADIUS = 0.57735
+    const val MIUIX_BLUR_SIGMA_PER_RADIUS = 0.45
 
-    /** 上面那条换算式里的常数项（半径 = 0 时 sigma = 0.5，这里没地方吸收，所以换算时反解）。 */
-    const val BLUR_SIGMA_RADIUS_OFFSET = 0.5
+    /**
+     * sigma 到这个值以下一律按「不模糊」处理（Dart 侧 0 档 = 原图直出，别为看不见的模糊
+     * 白跑一遍采样 + 高斯链）。
+     */
+    const val BLUR_SIGMA_MIN_EFFECTIVE = 0.5
 
     // ───────────── 数值收口 ─────────────
 
@@ -361,15 +366,21 @@ object HomeBackgroundModel {
     }
 
     /**
-     * Dart 侧 `ImageFilter.blur(sigma)` 的 sigma（逻辑像素）→ Compose
-     * `Modifier.blur(radius: Dp)` 该传的半径（dp）。
+     * Dart 侧 `ImageFilter.blur(sigma)` 的 sigma（逻辑像素）→ miuix-blur
+     * `blur(radiusX)` 该传的半径（**像素**，不是 dp）。
      *
-     * 见 [BLUR_SIGMA_PER_RADIUS]。sigma ≤ 0.5 时半径取 0（该档等价于不模糊）。
+     * 半径 = sigma ÷ [MIUIX_BLUR_SIGMA_PER_RADIUS] × 屏幕密度（sigma 是逻辑像素，
+     * miuix 的半径是物理像素）。sigma ≤ [BLUR_SIGMA_MIN_EFFECTIVE] 时返回 0（= 走原图）。
+     *
+     * **别拿旧的 Compose 口径来套**：`Modifier.blur` 的半径是 dp、且
+     * `sigma = radius × 0.57735 + 0.5`；同一个 sigma 下 miuix 要的半径更大，
+     * 两套混用会变成「设置里拉到最大，屏幕上几乎没糊」。
      */
-    fun blurRadiusDpForSigma(sigma: Double): Double {
+    fun blurRadiusPxForSigma(sigma: Double, density: Float): Double {
         val clamped = clampBlurSigma(sigma)
-        val radius = (clamped - BLUR_SIGMA_RADIUS_OFFSET) / BLUR_SIGMA_PER_RADIUS
-        return if (radius <= 0.0) 0.0 else radius
+        if (clamped <= BLUR_SIGMA_MIN_EFFECTIVE) return 0.0
+        val scale = density.coerceAtLeast(0f).toDouble()
+        return clamped / MIUIX_BLUR_SIGMA_PER_RADIUS * scale
     }
 
     /**

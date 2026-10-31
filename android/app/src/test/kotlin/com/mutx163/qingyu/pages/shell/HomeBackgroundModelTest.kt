@@ -176,18 +176,26 @@ class HomeBackgroundModelTest {
     // ───────────────────────── 模糊 ─────────────────────────
 
     @Test
-    fun `blurRadiusDpForSigma 按 RenderEffect 的半径口径反解`() {
-        // sigma = 0.5 + 0.57735 ⇒ 半径 = (sigma-0.5)/0.57735 = 1.0（手挑的数，正好整除）。
-        assertEquals(1.0, HomeBackgroundModel.blurRadiusDpForSigma(1.07735), 1e-9)
-        // sigma ≤ 0.5 这一段反解出来是负数，落地成 0（等价不模糊）。
-        assertEquals(0.0, HomeBackgroundModel.blurRadiusDpForSigma(0.0), 1e-9)
-        assertEquals(0.0, HomeBackgroundModel.blurRadiusDpForSigma(0.5), 1e-9)
-        // 上限 24：半径 = (24-0.5)/0.57735 ≈ 40.7032。
-        assertEquals(40.7032, HomeBackgroundModel.blurRadiusDpForSigma(24.0), 1e-3)
+    fun `blurRadiusPxForSigma 按 miuix-blur 的半径口径换算`() {
+        // miuix 内部 sigma = radius × 0.45 ⇒ radius = sigma / 0.45，再乘屏幕密度才是 px。
+        // 手挑的数：sigma 0.9 / 0.45 = 半径 2.0；密度 2 ⇒ 4.0 px。
+        assertEquals(4.0, HomeBackgroundModel.blurRadiusPxForSigma(0.9, 2.0f), 1e-9)
+        assertEquals(2.0, HomeBackgroundModel.blurRadiusPxForSigma(0.9, 1.0f), 1e-9)
+        // sigma ≤ 0.5 一律 0：走原图，不让 miuix 白跑一遍采样。
+        assertEquals(0.0, HomeBackgroundModel.blurRadiusPxForSigma(0.0, 3.0f), 1e-9)
+        assertEquals(0.0, HomeBackgroundModel.blurRadiusPxForSigma(0.5, 3.0f), 1e-9)
+        // 上限 24、密度 3.5 ⇒ 24 / 0.45 × 3.5 ≈ 186.6667 px。
+        assertEquals(186.6667, HomeBackgroundModel.blurRadiusPxForSigma(24.0, 3.5f), 1e-3)
         // 越界值先夹到 24，再换算 ⇒ 与 24 完全相同。
         assertEquals(
-            HomeBackgroundModel.blurRadiusDpForSigma(24.0),
-            HomeBackgroundModel.blurRadiusDpForSigma(99.0),
+            HomeBackgroundModel.blurRadiusPxForSigma(24.0, 3.0f),
+            HomeBackgroundModel.blurRadiusPxForSigma(99.0, 3.0f),
+            1e-9,
+        )
+        // 咬合探针：密度这一步漏掉（或乘成 dp）时，下面这条会红。
+        assertEquals(
+            HomeBackgroundModel.blurRadiusPxForSigma(0.9, 1.0f) * 2,
+            HomeBackgroundModel.blurRadiusPxForSigma(0.9, 2.0f),
             1e-9,
         )
     }
