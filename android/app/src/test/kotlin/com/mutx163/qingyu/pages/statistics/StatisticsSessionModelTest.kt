@@ -119,6 +119,42 @@ class StatisticsSessionModelTest {
         assertEquals(1, rows[2].count)
     }
 
+    // ── 3b. 提醒数据拿不到时不画那一行（审核 misc-wiring P1-4 的回归网）──
+    //
+    // Kotlin 侧 `core/TimetableSettings` 至今没有 `classReminders` 字段，所以
+    // `stats.reminderSessions` 恒为 0：照旧画第三行等于在屏上写「提醒 0/N」——
+    // 用户会以为「我一节课都没设提醒」，而真相是这份数据还没接。
+    // 拿不到就不画（宁缺勿假）。下面三条把「画/不画」两个方向都钉住，
+    // 免得以后有人为了「三行才对」把假读数加回来。
+
+    @Test
+    fun `提醒数据拿不到时只剩两行`() {
+        val stats = statsOf(
+            session(phase = CourseSessionPhase.DONE, note = "有笔记", homework = true, reminder = true),
+        )
+        val rows = StatisticsSessionModel.coverageRows(stats, reminderDataAvailable = false)
+
+        assertEquals("拿不到提醒数据时不应画第三行", 2, rows.size)
+        assertEquals("有备注", rows[0].label)
+        assertEquals("有作业", rows[1].label)
+        assertTrue(
+            "不应出现「设过提醒」这一行：${rows.map { it.label }}",
+            rows.none { it.label == "设过提醒" },
+        )
+    }
+
+    @Test
+    fun `提醒数据可用时三行都在`() {
+        val stats = statsOf(
+            session(phase = CourseSessionPhase.DONE, note = "有笔记", homework = true, reminder = true),
+        )
+        val rows = StatisticsSessionModel.coverageRows(stats, reminderDataAvailable = true)
+
+        assertEquals(3, rows.size)
+        assertEquals("设过提醒", rows[2].label)
+        assertEquals(1, rows[2].count)
+    }
+
     @Test
     fun `覆盖行分母是全部课次含停课与假期`() {
         // Dart 的坑：分母若用 plannedSessions（不含停课/假期），能构造出 3/1 这种超过 100%。

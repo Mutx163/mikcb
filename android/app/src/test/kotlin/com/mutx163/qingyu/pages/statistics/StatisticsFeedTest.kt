@@ -577,4 +577,40 @@ class StatisticsFeedTest {
         previousSelection = previousSelection,
         selectedWeek = selectedWeek,
     )
+
+    // ── 9b. 提醒数据拿不到就不画那一行（审核 misc-wiring P1-4 的回归网）──
+    //
+    // Kotlin 侧 `core/TimetableSettings` 至今没有 `classReminders` 字段，所以
+    // `stats.reminderSessions` 恒为 0。照旧画第三行等于在屏上写「提醒 0/N」：
+    // 用户会以为「我一节课都没设提醒」，而真相是这份数据还没接。
+    // 拿不到就不画（宁缺勿假）；壳将来传了真键集，三行自动回来。
+
+    @Test
+    fun `壳没传提醒键时覆盖卡只有两行`() {
+        val course = course(id = "c1", name = "线性代数")
+        val snap = snapshot(
+            courses = listOf(course),
+            profiles = listOf(profileFixture(id = "p1", name = "课表 1", courses = listOf(course))),
+            activeProfileId = "p1",
+        )
+        val input = StatisticsFeed.Input.fromSnapshot(snap)
+
+        val byDefault = StatisticsFeed.feed(input = input, now = NOW)
+        assertEquals(
+            "默认（拿不到提醒数据）不应画「设过提醒」那一行",
+            2,
+            byDefault.session.coverageRows.size,
+        )
+
+        val withKeys = StatisticsFeed.feed(
+            input = input,
+            now = NOW,
+            reminderKeys = setOf("c1|2026-09-16"),
+        )
+        assertEquals(
+            "传入真键集后应恢复三行",
+            3,
+            withKeys.session.coverageRows.size,
+        )
+    }
 }

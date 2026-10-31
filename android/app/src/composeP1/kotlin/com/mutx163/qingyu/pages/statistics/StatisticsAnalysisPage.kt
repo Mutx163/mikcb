@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,13 +57,19 @@ import top.yukonga.miuix.kmp.icon.extended.TopDownloads
  *
  * @param viewState 已算好的读数（渲染层不做业务计算）
  * @param onBack 返回
- * @param onOpenCourse 排行页点课程名 → 进课程编辑
+ * @param onOpenCourse 排行页点课程名 → 进课程编辑。
+ *   **`null` = 还没接落点**（审核 misc-wiring P1-3）。此时排版**不可点**——
+ *   2026-10-29 之前这里是默认空 lambda，行看着能点、点了没反应，属 rubric 判 P0 的
+ *   「点了没反应」。现在改成「没有落点就没有可点性」：壳一旦传入真处理函数，
+ *   排行行自动变可点；不传则保持纯展示。Dart 原件
+ *   （`lib/screens/statistics_analysis_screen.dart:132` → `:190 _openCourseEdit`）
+ *   是「按课名找课程 → 打开该课编辑页」。
  */
 @Composable
 fun StatisticsAnalysisPage(
     viewState: StatisticsAnalysisViewState,
     onBack: () -> Unit,
-    onOpenCourse: (String) -> Unit = {},
+    onOpenCourse: ((String) -> Unit)? = null,
 ) {
     // 顶栏 / 返回键 / 折叠行为 / 页面主题桥统一走共享骨架（规则 R1）。
     // 骨架内部自己持有 ScrollBehavior 并交给下面的 QingyuPageList，
@@ -111,7 +118,7 @@ fun StatisticsAnalysisPage(
 private fun AnalysisCard(
     cell: AnalysisCell.Card,
     viewState: StatisticsAnalysisViewState,
-    onOpenCourse: (String) -> Unit,
+    onOpenCourse: ((String) -> Unit)?,
 ) {
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
@@ -270,21 +277,32 @@ private fun TeacherRows(viewState: StatisticsAnalysisViewState) {
 }
 
 @Composable
-private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: (String) -> Unit) {
+private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((String) -> Unit)?) {
     val dark = isSystemInDarkTheme()
     if (viewState.rankingRows.isEmpty()) {
         MutedLine(viewState.emptyTitle)
         return
     }
     for ((index, row) in viewState.rankingRows.withIndex()) {
+        // 有落点才可点（P1-3）：`onOpenCourse == null` 时不加 `clickable`，
+        // 排版保持纯展示——不做一个「按下去什么都不发生」的假热区。
+        val rowModifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (index == 0) Color(QingyuTheme.rowHighlight(dark)) else Color.Transparent,
+            )
+            .then(
+                if (onOpenCourse != null) {
+                    // Dart `CourseRanking(onCourseTap:)`：点行按课名进该课编辑页。
+                    Modifier.clickable { onOpenCourse(row.first) }
+                } else {
+                    Modifier
+                },
+            )
+            .padding(horizontal = 6.dp, vertical = 8.dp)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(
-                    if (index == 0) Color(QingyuTheme.rowHighlight(dark)) else Color.Transparent,
-                )
-                .padding(horizontal = 6.dp, vertical = 8.dp),
+            modifier = rowModifier,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {

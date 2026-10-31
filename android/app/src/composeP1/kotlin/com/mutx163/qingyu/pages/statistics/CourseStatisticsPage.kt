@@ -107,7 +107,14 @@ fun CourseStatisticsPage(
     onBack: () -> Unit,
     onTabSelected: (Int) -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenShare: () -> Unit,
+    /**
+     * 分享统计成果图；`null` = 本端还没有这项能力（当前 Kotlin 侧缺「光栅化 + 系统分享」）。
+     *
+     * 2026-10-30 质量审核 P0-4：原先壳传 `onOpenShare = {}`，图标照常显示、点了什么都不发生。
+     * 按本仓既定口径（`CourseActionSheetModel` 对「单节课提醒」一行同款）：
+     * **与其画一个点了没反应的入口，不如诚实地不画**。
+     */
+    onOpenShare: (() -> Unit)? = null,
     onWeekChanged: (Int) -> Unit,
     onOpenAnalysis: (StatisticsAnalysisModule) -> Unit,
     onOpenSessions: () -> Unit,
@@ -131,12 +138,14 @@ fun CourseStatisticsPage(
                         tint = Color(QingyuTheme.actionIcon(dark)),
                     )
                 }
-                IconButton(onClick = { if (!isExporting) onOpenShare() }) {
-                    Icon(
-                        imageVector = MiuixIcons.Share,
-                        contentDescription = StatisticsStrings.statisticsShareLabel.zh,
-                        tint = Color(QingyuTheme.actionIcon(dark)),
-                    )
+                if (onOpenShare != null) {
+                    IconButton(onClick = { if (!isExporting) onOpenShare.invoke() }) {
+                        Icon(
+                            imageVector = MiuixIcons.Share,
+                            contentDescription = StatisticsStrings.statisticsShareLabel.zh,
+                            tint = Color(QingyuTheme.actionIcon(dark)),
+                        )
+                    }
                 }
             }
         },

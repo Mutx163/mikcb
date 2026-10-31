@@ -205,15 +205,17 @@ object StatisticsFeed {
      *   （收敛逻辑在 [StatisticsSessionModel.resolveSelection]，这里不另写一份）。
      * @param now 注入时钟（「已过 / 今天 / 未到」的唯一判据来源）。
      * @param reminderKeys 已设置的单节课提醒键，格式 `courseId|yyyy-MM-dd`。
-     *   快照里**没有**这份数据（诚实清单第 1 条），默认空集 → 提醒计数为 0；
-     *   将来通知族接上后从这里注入，不必改本类形状。
+     *   **`null` = 拿不到这份数据**（Kotlin 侧 `core/TimetableSettings` 至今没有
+     *   `classReminders` 字段），此时覆盖卡**不画「设过提醒」那一行**，
+     *   而不是画一个恒 0 的假读数（审核 misc-wiring P1-4）。
+     *   将来设置/通知族把字段移植过来后，由调用方传真键集即可，本类形状不用改。
      * @param isHoliday 节假日判定；快照不含节假日表，默认不判。
      */
     fun sessionViewState(
         input: Input,
         now: LocalDateTime,
         previousSelection: String? = null,
-        reminderKeys: Set<String> = emptySet(),
+        reminderKeys: Set<String>? = null,
         isHoliday: ((LocalDateTime) -> Boolean)? = null,
     ): StatisticsSessionViewState {
         val groups = input.courseGroups
@@ -231,11 +233,12 @@ object StatisticsFeed {
                         exams = input.exams,
                         now = now,
                         isHoliday = isHoliday,
-                        reminderKeys = reminderKeys,
+                        reminderKeys = reminderKeys ?: emptySet(),
                     )
                 }
             },
             dateTextOf = ::sessionDateText,
+            reminderDataAvailable = reminderKeys != null,
         )
     }
 
@@ -272,6 +275,7 @@ object StatisticsFeed {
      *
      * 两份状态必须来自**同一份输入**，否则「主页说 3 门课、明细页只有一个可选」
      * 这类不一致会天天出现（它们以前各自被喂一份写死常量，正是这个病）。
+     * @param reminderKeys 见 [sessionViewState]：`null` = 拿不到提醒数据（不画那一行假读数）。
      */
     fun feed(
         input: Input,
@@ -279,7 +283,7 @@ object StatisticsFeed {
         previousSelection: String? = null,
         selectedWeek: Int? = null,
         semesterView: Boolean = true,
-        reminderKeys: Set<String> = emptySet(),
+        reminderKeys: Set<String>? = null,
         isHoliday: ((LocalDateTime) -> Boolean)? = null,
     ): StatisticsFeedState = StatisticsFeedState(
         session = sessionViewState(

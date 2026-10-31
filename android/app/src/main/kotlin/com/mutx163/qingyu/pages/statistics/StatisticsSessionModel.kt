@@ -99,17 +99,35 @@ object StatisticsSessionModel {
     )
 
     /**
-     * 记录覆盖三行（Dart `SessionCoverageCard`：有备注 / 有作业 / 设过提醒）。
+     * 记录覆盖行（Dart `SessionCoverageCard`：有备注 / 有作业 / 设过提醒）。
      *
      * 分母固定为**全部课次**（含停课与假期），见类注释里那条「3/1」的坑。
+     *
+     * @param reminderDataAvailable 「单节课提醒」这份数据到底拿不拿得到。
+     *   2026-10-29 修（审核 misc-wiring P1-4）：Kotlin 侧 `core/TimetableSettings` 至今
+     *   **没有** `classReminders` 字段（`grep -rn classReminders` 全仓只命中
+     *   `StatisticsFeed` 的一句注释），所以 `stats.reminderSessions` 恒为 0。
+     *   照旧画第三行等于在屏上写「提醒 0/N」——用户会以为「我一节课都没设提醒」，
+     *   而真相是**我们还没接这份数据**。拿不到就**不画这一行**（宁缺勿假），
+     *   等设置族把字段移植过来、由 [viewState] 传入真键集后自动恢复。
      */
-    fun coverageRows(stats: CourseSessionStats): List<CoverageRow> {
+    fun coverageRows(
+        stats: CourseSessionStats,
+        reminderDataAvailable: Boolean = true,
+    ): List<CoverageRow> {
         val total = stats.sessions.size
-        return listOf(
+        val rows = mutableListOf(
             coverageRow(StatisticsExtStrings.statisticsSessionCoverageNote.zh, stats.notedSessions, total),
             coverageRow(StatisticsExtStrings.statisticsSessionCoverageHomework.zh, stats.homeworkSessions, total),
-            coverageRow(StatisticsExtStrings.statisticsSessionCoverageReminder.zh, stats.reminderSessions, total),
         )
+        if (reminderDataAvailable) {
+            rows += coverageRow(
+                StatisticsExtStrings.statisticsSessionCoverageReminder.zh,
+                stats.reminderSessions,
+                total,
+            )
+        }
+        return rows
     }
 
     private fun coverageRow(label: String, count: Int, total: Int): CoverageRow {
@@ -193,12 +211,14 @@ object StatisticsSessionModel {
      *
      * @param statsOf 按课程名取该课的课次统计（算数在 `CourseSessionStatsCalculator`，不在这里）。
      * @param dateTextOf 把课次格式化成屏上日期文本；没有日期轴时返回 null。
+     * @param reminderDataAvailable 「单节课提醒」数据是否可用（见 [coverageRows] 的说明）。
      */
     fun viewState(
         courseNames: List<String>,
         previousSelection: String?,
         statsOf: (String) -> CourseSessionStats?,
         dateTextOf: (CourseSession) -> String?,
+        reminderDataAvailable: Boolean = true,
     ): StatisticsSessionViewState {
         val selected = resolveSelection(courseNames, previousSelection)
         val stats = selected?.let(statsOf)
@@ -209,7 +229,7 @@ object StatisticsSessionModel {
             selectedCourse = selected,
             stats = stats,
             summaryMetrics = stats?.let { summaryMetrics(it) } ?: emptyList(),
-            coverageRows = stats?.let { coverageRows(it) } ?: emptyList(),
+            coverageRows = stats?.let { coverageRows(it, reminderDataAvailable) } ?: emptyList(),
             sessionRows = stats?.let { sessionRows(it, dateTextOf) } ?: emptyList(),
             noCalendarHint = stats?.let { noCalendarHint(it.hasCalendar) },
             emptyTitle = StatisticsExtStrings.statisticsNoData.zh,
