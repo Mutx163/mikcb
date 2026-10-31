@@ -15,9 +15,18 @@ enum class WeekCardBadge { CONFLICT }
 /**
  * 周视图一张课卡的展示模型（纯数据，渲染层只管画）。
  *
- * 与 `day_course_display_logic.dart` 的 `DayCourseDisplayItem` 同义：周视图不接
- * 情侣叠加，也**不标「正在上课」**（Dart 周网格传的 `currentCourseIds` 是空集，
- * 只有日视图才标），所以这里没有 `isCurrentCourse` / `coupleKind` 两档。
+ * 与 `day_course_display_logic.dart` 的 `DayCourseDisplayItem` 同义。
+ *
+ * ## 「正在上课」为什么不做（这是 Dart 的原样，不是缺口）
+ *
+ * 2026-10-29 二轮复核（反证）：Dart 的日列确实有 `isHighlighted: item.isCurrentCourse`
+ * （`timetable_day_column.dart:148`），但**周网格**调 `buildDisplayItems` 时没有传
+ * `currentCourseIds`（`timetable_week_grid.dart:130-136`），而形参默认是
+ * `const <String>{}`（`timetable_screen.dart:1212`）⇒ 周视图的 `isCurrentCourse`
+ * **恒为 false**。所以 Compose 周视图不高亮「正在上课」与 Dart 一致；
+ * 一审把它记成 P1 是误判，已在报告「二轮验真」里改正。
+ * 日视图那边是真的要标（
+ * `timetable_day_view_part.dart:592-599` 传了 currentCourseIds）。
  */
 data class WeekCardModel(
     val course: Course,
@@ -30,6 +39,16 @@ data class WeekCardModel(
     val opacity: Float,
     /** 统一课卡色（设置开了「统一卡片颜色」时非空；空则用课程自己的 color）。 */
     val colorHex: String?,
+    /**
+     * 这一周是否有作业（Dart `showHomeworkIndicator: item.course.hasHomeworkInWeek(week)`，
+     * `timetable_day_column.dart:146-147`）⇒ 卡面左上角白底小红点。
+     */
+    val hasHomework: Boolean = false,
+    /**
+     * 这一节次的天气一行（Dart `weather: callbacks.weather(item, date)`，
+     * `timetable_day_column.dart:164`）。天气没开 / 没数据时为 null。
+     */
+    val weatherText: String? = null,
 ) {
     val sectionSpan: Int get() = course.sectionCount
 }
@@ -91,6 +110,22 @@ object WeekGridCourseMapping {
             .sortedWith(dayCourseComparator(week))
 
     /**
+     * 某一天**真正要画出来**的课程：先滤掉被本周课压住的非本周课，再按日课排序。
+     *
+     * Dart `buildDayCourseDisplayItems`（`day_course_display_logic.dart:68-101`）的
+     * 剪枝那一步；周视图与日视图必须同一口径，否则「显示非本周课程」开着时，
+     * 同一个坑位在两个视图里画不同的课。
+     */
+    fun visibleDayCourses(dayCourses: List<Course>, week: Int): List<Course> =
+        dayCourses
+            .filter { course ->
+                if (course.isInWeek(week)) return@filter true
+                if (hasCurrentWeekOverlap(dayCourses, course, week)) return@filter false
+                isPreferredNonCurrentCourse(dayCourses, course, week)
+            }
+            .sortedWith(dayCourseComparator(week))
+
+    /**
      * 把某一天的课程收成卡片模型（Dart `buildDayCourseDisplayItems`，
      * `day_course_display_logic.dart:96`）：先滤掉被本周课压住的非本周课，
      * 再排序、算透明度与角标。
@@ -100,15 +135,11 @@ object WeekGridCourseMapping {
         week: Int,
         style: WeekViewStyle,
         conflicts: Map<String, Set<String>>,
+        weatherOf: ((Course) -> String?)? = null,
     ): List<WeekCardModel> {
-        val visible = dayCourses.filter { course ->
-            if (course.isInWeek(week)) return@filter true
-            if (hasCurrentWeekOverlap(dayCourses, course, week)) return@filter false
-            isPreferredNonCurrentCourse(dayCourses, course, week)
-        }
+        val visible = visibleDayCourses(dayCourses, week)
 
         return visible
-            .sortedWith(dayCourseComparator(week))
             .map { course ->
                 val isCurrentWeek = course.isInWeek(week)
                 val isConflicting = conflicts[course.id]?.isNotEmpty() == true
@@ -132,6 +163,8 @@ object WeekGridCourseMapping {
                         conflictOpacity = style.conflictCourseOpacity,
                     ),
                     colorHex = style.unifiedCardColorHex,
+                    hasHomework = course.hasHomeworkInWeek(week),
+                    weatherText = weatherOf?.invoke(course),
                 )
             }
     }
@@ -147,6 +180,7 @@ object WeekGridCourseMapping {
         week: Int,
         style: WeekViewStyle,
         visibleDays: List<Int> = (1..7).toList(),
+        weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = null,
     ): Map<Int, List<WeekCardModel>> {
         val conflicts = conflictMap(courses, week)
         return visibleDays.associateWith { dayOfWeek ->
@@ -156,7 +190,13 @@ object WeekGridCourseMapping {
                 dayOfWeek = dayOfWeek,
                 showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
             )
-            displayCards(dayCourses, week, style, conflicts)
+            displayCards(
+                dayCourses = dayCourses,
+                week = week,
+                style = style,
+                conflicts = conflicts,
+                weatherOf = weatherOf?.let { resolve -> { course -> resolve(week, dayOfWeek, course) } },
+            )
         }
     }
 

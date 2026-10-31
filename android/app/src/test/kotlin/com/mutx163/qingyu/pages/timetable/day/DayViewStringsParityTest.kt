@@ -18,13 +18,33 @@ class DayViewStringsParityTest {
     @Test
     fun `每一处屏上文案都与 app_zh_arb 逐字一致`() {
         val texts = DayViewStrings.allTexts
-        assertTrue("文案条数不应少于 40 条，当前 ${texts.size}", texts.size >= 40)
+        // 2026-10-31 审核：门槛原写 `>= 40`，而当时声明了 50 条——新加两条没进 allTexts
+        // 也能照样绿（逐字对拍只遍历 allTexts）。门槛按「声明条数」卡死，见下一条用例。
+        assertTrue("文案条数不应少于 49 条，当前 ${texts.size}", texts.size >= 49)
 
         for (item in texts) {
             val template = arbMap[item.key]
             assertTrue("ARB(app_zh.arb) 中缺少键 `${item.key}`", template != null)
             assertMatchesArb(item.key, item.zh, template!!)
         }
+    }
+
+    @Test
+    fun `allTexts 必须收录本对象的每一条 ArbText 声明`() {
+        // 防的是「新增了 ArbText、忘了登记 allTexts」——那时上面那条逐字对拍
+        // 根本不会看它，文案错了也全绿（2026-10-31 审核 P0）。
+        val source = readRepoFile(
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewStrings.kt",
+        )
+        val declared = Regex("""ArbText\(\s*"([^"]+)"\s*,""").findAll(source)
+            .map { it.groupValues[1] }
+            .toSet()
+        val listed = DayViewStrings.allTexts.map { it.key }
+        val missing = declared - listed.toSet()
+        val extra = listed.toSet() - declared
+        assertTrue("DayViewStrings 声明了但没进 allTexts（逐字对拍漏检）：$missing", missing.isEmpty())
+        assertTrue("allTexts 里有 DayViewStrings 不存在的键：$extra", extra.isEmpty())
+        assertEquals("allTexts 条数与声明条数不一致", declared.size, listed.size)
     }
 
     @Test
@@ -76,6 +96,16 @@ class DayViewStringsParityTest {
             )
             cursor = idx + segment.length
         }
+    }
+
+    private fun readRepoFile(relative: String): String {
+        var dir: File? = File("").absoluteFile
+        repeat(8) {
+            val candidate = File(dir, relative)
+            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
+            dir = dir?.parentFile
+        }
+        error("找不到 $relative（工作目录 ${File("").absolutePath}）")
     }
 
     private fun loadArbZh(): Map<String, String> {

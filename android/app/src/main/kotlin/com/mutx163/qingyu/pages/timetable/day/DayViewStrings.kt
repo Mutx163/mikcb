@@ -28,6 +28,8 @@ object DayViewStrings {
     // ── 顶部摘要卡与页面导航 ──
     val todayTimetableTitle = ArbText("todayTimetableTitle", "今日课表")
     val backToWeekViewAction = ArbText("backToWeekViewAction", "返回周视图")
+    /** 底部「回今日」浮钮（Dart `timetable_back_to_today_button.dart:65`）。 */
+    val backToTodayAction = ArbText("backToTodayAction", "回今日")
     val weekLabel = ArbText("weekLabel", "第 {week} 周")
     val courseCountSummary = ArbText("courseCountSummary", "{count} 门课")
     val scheduleCountSummary = ArbText("scheduleCountSummary", "日程 {count} 项")
@@ -64,6 +66,23 @@ object DayViewStrings {
     val examCountdownToday = ArbText("examCountdownToday", "今天")
     val examCountdownDays = ArbText("examCountdownDays", "{days} 天后")
 
+    /**
+     * 考场座位号前缀（ARB `examSeatLabel` = 「座位号」）。
+     *
+     * Dart 用法：`exam_list_screen.dart:320 '${l10n.examSeatLabel} $seat'`。
+     * 2026-10-29 二轮审核发现渲染层直接写死了「座位: 」（`DayViewExamCard.kt`），
+     * 既绕过 strings 层，文案也与 ARB 不是同一句。
+     */
+    val examSeatLabel = ArbText("examSeatLabel", "座位号")
+
+    /**
+     * 摘要卡大字日期标题（ARB `monthViewAgendaTitle` = 「{month}月{day}日」）。
+     *
+     * Dart `_formatDayViewSummaryDate` 用 `DateFormat.MMMd(localeName)`，
+     * 中文环境下正是「10月27日」这一形态；键复用 month 域同一条，不另拟说法。
+     */
+    val monthViewAgendaTitle = ArbText("monthViewAgendaTitle", "{month}月{day}日")
+
     // ── 待办带 ──
     val taskOverdueSection = ArbText("taskOverdueSection", "已逾期")
     val taskCompletedSection = ArbText("taskCompletedSection", "已完成")
@@ -86,6 +105,24 @@ object DayViewStrings {
     // ── 纯函数格式化 ──
 
     fun weekLabel(week: Int): String = weekLabel.filled("week", week.toString())
+
+    /**
+     * 摘要卡大字日期标题：「10月27日 周二」。
+     *
+     * 与 Dart `_formatDayViewSummaryDate`（`timetable_day_view_part.dart:585-591`）
+     * 逐字同构：`DateFormat.MMMd` + 空格 + 星期名。
+     */
+    fun dateWithWeekday(month: Int, day: Int, dayOfWeek: Int): String {
+        val datePart = monthViewAgendaTitle.filled(
+            "month" to month.toString(),
+            "day" to day.toString(),
+        )
+        val weekday = weekdayLabel(dayOfWeek)
+        return if (weekday.isEmpty()) datePart else "$datePart $weekday"
+    }
+
+    /** 座位号一行：「座位号 3-12」（Dart `'${l10n.examSeatLabel} $seat'`）。 */
+    fun seatLabel(seat: String): String = "${examSeatLabel.zh} $seat"
 
     fun weekdayLabel(dayOfWeek: Int): String = when (dayOfWeek) {
         1 -> weekdayMon.zh
@@ -180,6 +217,11 @@ object DayViewStrings {
             examBadgeLabel,
             examCountdownToday,
             examCountdownDays,
+            // 2026-10-31 审核：这两条此前**没进 allTexts** ⇒ 逐字对拍完全漏检
+            //（测试只遍历 allTexts）。加进来以后与 ARB 不一致会立刻红。
+            examSeatLabel,
+            monthViewAgendaTitle,
+            backToTodayAction,
             taskOverdueSection,
             taskCompletedSection,
             taskHomeworkDefaultTitle,

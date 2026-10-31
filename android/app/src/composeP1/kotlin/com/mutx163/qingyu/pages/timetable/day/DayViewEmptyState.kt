@@ -35,11 +35,10 @@ fun DayViewEmptyState(
     val titleColor = Color(QingyuTheme.primaryText(dark))
     val subtitleColor = Color(QingyuTheme.secondaryText(dark))
 
-    val subtitle = if (dayOfWeek != null && dayOfWeek in 1..7) {
-        "${DayViewStrings.weekLabel(week)} · ${DayViewStrings.weekdayLabel(dayOfWeek)}"
-    } else {
-        DayViewStrings.weekLabel(week)
-    }
+    // Dart `day_view_empty_state.dart:64-66`：副标题只有「第 N 周」一条。
+    // 2026-10-31 审核：这里曾拼成「第 N 周 · 周X」，而上一行的摘要卡已经写着日期与星期，
+    // 屏上等于同一句念两遍；`dayOfWeek` 参数保留只为调用方签名稳定。
+    val subtitle = DayViewStrings.weekLabel(week)
 
     Box(
         modifier = modifier

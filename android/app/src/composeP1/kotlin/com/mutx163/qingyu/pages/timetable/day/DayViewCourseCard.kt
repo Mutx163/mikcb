@@ -57,11 +57,14 @@ fun DayViewCourseCard(
     entry: DayAgendaEntry.CourseEntry,
     week: Int,
     progress: DayAgendaProgress? = null,
-    onTap: () -> Unit,
-    onOpenNotes: () -> Unit,
-    onOpenTask: () -> Unit,
+    // 能力型：null ⇒ 该入口不渲染（壳未接线时不画死按钮）
+    onTap: (() -> Unit)? = null,
+    onOpenNotes: (() -> Unit)? = null,
+    onOpenTask: (() -> Unit)? = null,
     hasTask: Boolean = false,
     weatherInfo: String? = null,
+    /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。关掉只藏角标，边框仍在。 */
+    showConflictBadge: Boolean = true,
     radius: Dp = 16.dp,
     modifier: Modifier = Modifier,
 ) {
@@ -86,7 +89,7 @@ fun DayViewCourseCard(
             .clip(shape)
             .background(cardColor)
             .then(borderModifier)
-            .clickable(onClick = onTap),
+            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         // 进行中状态 600ms 动态进度背景填充
         if (progress != null) {
@@ -162,8 +165,9 @@ fun DayViewCourseCard(
                         )
                     }
 
-                    // 冲突徽标
-                    if (entry.isConflicting) {
+                    // 冲突徽标（Dart `buildDayCourseDisplayItems` 的 `showConflictBadge` 开关；
+                    // 关掉只藏角标，冲突边框仍保留）
+                    if (entry.isConflicting && showConflictBadge) {
                         DayAgendaBadge(
                             text = DayViewStrings.conflictLabel.zh,
                             textColor = Color.White,
@@ -206,18 +210,28 @@ fun DayViewCourseCard(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // 右侧操作：记作业与备注
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DayAgendaTaskAction(
-                        ink = ink,
-                        onPressed = onOpenTask,
-                        hasTask = hasTask,
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    DayAgendaNoteAction(
-                        ink = ink,
-                        onPressed = onOpenNotes,
-                    )
+                // 右侧操作：记作业与备注。
+                // 壳没接线（回调为 null）时**整块不渲染**——审核 P0-1 就是这两个胶囊
+                // 画在屏上、点下去什么都不发生。
+                if (onOpenTask != null || onOpenNotes != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (onOpenTask != null) {
+                            DayAgendaTaskAction(
+                                ink = ink,
+                                onPressed = onOpenTask,
+                                hasTask = hasTask,
+                            )
+                        }
+                        if (onOpenTask != null && onOpenNotes != null) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                        }
+                        if (onOpenNotes != null) {
+                            DayAgendaNoteAction(
+                                ink = ink,
+                                onPressed = onOpenNotes,
+                            )
+                        }
+                    }
                 }
             }
 

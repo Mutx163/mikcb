@@ -50,9 +50,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun DayViewTaskBandCard(
     data: DayTaskBandData,
-    onToggleTask: (CourseTask) -> Unit,
-    onEditTask: (CourseTask) -> Unit,
-    onViewAllOverdue: () -> Unit,
+    // 能力型：null ⇒ 对应交互不渲染
+    onToggleTask: ((CourseTask) -> Unit)? = null,
+    onEditTask: ((CourseTask) -> Unit)? = null,
+    onViewAllOverdue: (() -> Unit)? = null,
     courseResolver: (CourseTask) -> Course? = { null },
     modifier: Modifier = Modifier,
 ) {
@@ -92,8 +93,8 @@ fun DayViewTaskBandCard(
                         primaryColor = destructiveColor,
                         secondaryColor = secondaryTextColor,
                         actionColor = actionIconColor,
-                        onToggle = { onToggleTask(row.task) },
-                        onEdit = { onEditTask(row.task) },
+                        onToggle = taskRowAction(onToggleTask, row.task),
+                        onEdit = taskRowAction(onEditTask, row.task),
                     )
                 }
 
@@ -103,7 +104,7 @@ fun DayViewTaskBandCard(
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .clickable(onClick = onViewAllOverdue)
+                            .then(if (onViewAllOverdue != null) Modifier.clickable(onClick = onViewAllOverdue) else Modifier)
                             .padding(horizontal = 4.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -141,8 +142,8 @@ fun DayViewTaskBandCard(
                         primaryColor = primaryTextColor,
                         secondaryColor = secondaryTextColor,
                         actionColor = actionIconColor,
-                        onToggle = { onToggleTask(row.task) },
-                        onEdit = { onEditTask(row.task) },
+                        onToggle = taskRowAction(onToggleTask, row.task),
+                        onEdit = taskRowAction(onEditTask, row.task),
                     )
                 }
 
@@ -172,8 +173,8 @@ fun DayViewTaskBandCard(
                         primaryColor = secondaryTextColor,
                         secondaryColor = secondaryTextColor.copy(alpha = 0.7f),
                         actionColor = actionIconColor.copy(alpha = 0.5f),
-                        onToggle = { onToggleTask(row.task) },
-                        onEdit = { onEditTask(row.task) },
+                        onToggle = taskRowAction(onToggleTask, row.task),
+                        onEdit = taskRowAction(onEditTask, row.task),
                     )
                 }
             }
@@ -192,8 +193,9 @@ private fun TaskBandItemRow(
     primaryColor: Color,
     secondaryColor: Color,
     actionColor: Color,
-    onToggle: () -> Unit,
-    onEdit: () -> Unit,
+    // 能力型：null ⇒ 该交互不渲染（不画点了没反应的复选框 / 箭头）
+    onToggle: (() -> Unit)?,
+    onEdit: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val isCompleted = row.kind == DayTaskBandKind.COMPLETED
@@ -204,16 +206,18 @@ private fun TaskBandItemRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onEdit)
+            .then(if (onEdit != null) Modifier.clickable(onClick = onEdit) else Modifier)
             .padding(vertical = 5.dp, horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 复选框
-        Checkbox(
-            state = if (isCompleted) ToggleableState.On else ToggleableState.Off,
-            onClick = onToggle,
-        )
+        // 复选框：没有落点就不画（画出来只会变成点了不动的假控件）
+        if (onToggle != null) {
+            Checkbox(
+                state = if (isCompleted) ToggleableState.On else ToggleableState.Off,
+                onClick = onToggle,
+            )
+        }
 
         // 标题与来源课程描述
         Column(modifier = Modifier.weight(1f)) {
@@ -259,12 +263,25 @@ private fun TaskBandItemRow(
             }
         }
 
-        // 尾部箭头指示器
-        Icon(
-            imageVector = MiuixIcons.ChevronForward,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = actionColor,
-        )
+        // 尾部箭头指示器：只在「点得动」时才画
+        if (onEdit != null) {
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = actionColor,
+            )
+        }
     }
 }
+
+/**
+ * 把「(CourseTask) -> Unit 的可空能力」绑到某一行任务上。
+ *
+ * 返回 null 表示这项交互没接线 ⇒ 调用方不渲染对应控件（不画点了没反应的勾选框/箭头）。
+ * 单独抽成函数是为了让 `?.let { }` 的类型推断有明确目标，避免 `() -> Unit?` 歧义。
+ */
+private fun taskRowAction(
+    action: ((com.mutx163.qingyu.core.CourseTask) -> Unit)?,
+    task: com.mutx163.qingyu.core.CourseTask,
+): (() -> Unit)? = action?.let { invoke -> { invoke(task) } }

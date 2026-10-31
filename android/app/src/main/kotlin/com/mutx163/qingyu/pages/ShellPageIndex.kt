@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,6 +33,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
+import com.mutx163.qingyu.app.CourseActionDispatcher
+import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
 import com.mutx163.qingyu.app.AppearanceEditorHost
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.DiagnosticsSettingsHost
@@ -60,6 +64,8 @@ import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.course.CoursePortExamAdapter
 import com.mutx163.qingyu.course.TimetableCourseService
 import com.mutx163.qingyu.course.TimetableExamService
@@ -75,6 +81,7 @@ import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
+import com.mutx163.qingyu.pages.course.CourseNoteSheet
 import com.mutx163.qingyu.pages.exam.AddExamFormReducer
 import com.mutx163.qingyu.pages.exam.AddExamLogic
 import com.mutx163.qingyu.pages.exam.AddExamPage
@@ -118,6 +125,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginSessionState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginWebState
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
+import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.BingGalleryHost
 import com.mutx163.qingyu.pages.settings.GlassDockEditorState
@@ -188,12 +196,18 @@ import com.mutx163.qingyu.pages.task.AddTaskViewState
 // `TaskListPage` / `TaskListController` / `TaskListViewState` / `TaskDateFilter`。
 import com.mutx163.qingyu.pages.task.TaskFilterLogic
 import com.mutx163.qingyu.pages.task.TaskStrings
+import com.mutx163.qingyu.pages.task.TaskListController
 import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchHost
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
+import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
+import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
+import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
+import com.mutx163.qingyu.pages.timetable.day.DayViewWeather
+import com.mutx163.qingyu.pages.timetable.day.dayViewPageDataOf
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
@@ -538,47 +552,211 @@ fun ShellPageContent(
                 onDispose { subscription.close() }
             }
             val appSettings = wiring.settingsModel.load()
+            // 「点星期栏某一天」是**单次意图**：`ShellWiring.onOpenDay` 写进
+            // `pendingDayViewDayOfWeek`，这里读一次就清。读完不清会让下一次从底栏或
+            // 菜单进日视图时沿用上一次点的那天；恒取 `LocalDate.now()` 则是 P0-2 本身
+            // （点「周五」进去看的是今天）。null = 没有具体意图 ⇒ 页面自己落今天。
+            val dayIntent = remember { wiring.consumeDayViewDayOfWeek() }
+            val displayPrefs = remember(appSettings) {
+                TimetableHostDisplayPrefs.fromSettings(appSettings)
+            }
+            val visibleDays = remember(displayPrefs.hideWeekends) {
+                TimetableHostLogic.visibleDayNumbers(displayPrefs.hideWeekends)
+            }
+            // 天气 provider 不是 Compose 可观察的（`addListener` 那套）：用计数把
+            // 「预报到了 / 城市变了」转成重组；日卡天气行是否真的出现还由
+            // `weatherShowOnDayCard` 决定（`DayViewWeather.lineProvider` 内判定）。
+            var weatherTick by remember(weatherProvider) { mutableIntStateOf(0) }
+            DisposableEffect(weatherProvider) {
+                // 退订必须用**同一个** lambda 引用，否则监听器会漏在 provider 里。
+                val listener: () -> Unit = { weatherTick += 1 }
+                weatherProvider.addListener(listener)
+                onDispose { weatherProvider.removeListener(listener) }
+            }
+            val weatherOf = remember(weatherTick, appSettings.weatherShowOnDayCard) {
+                DayViewWeather.lineProvider(appSettings, weatherProvider)
+            }
+            // 课卡「备注」胶囊：Dart 打开的是**单节备注弹层**（`showCourseNoteSheet`），
+            // 不是课程编辑表单；这里用弹层状态承载，弹层由页面外的 `CourseNoteSheet` 渲染。
+            var noteTarget by remember { mutableStateOf<Pair<Course, Int>?>(null) }
+            val shellContext = LocalContext.current
+            val taskController = remember(repository) { TaskListController(repository) }
+            Box(modifier = Modifier.fillMaxSize()) {
             DayViewPage(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
-                initialDayOfWeek = LocalDate.now().dayOfWeek.value,
+                initialDayOfWeek = dayIntent,
+                visibleDays = visibleDays,
+                // 学期周数必须下传：页面默认 30 周，不传就能翻到学期之外。
+                totalWeeks = snapshot.settings.semesterWeekCount,
+                // ── 顶部星期条（2026-10-31 审核 P1-1）：日期、今天标记、考试/日程圆点、
+                // 点某天换日、点周次开选择器都要这三样数据。不传时页面只能整条不画。
+                semesterStartDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+                realCurrentWeek = snapshot.currentWeek,
+                weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
+                // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
+                showConflictBadge = appSettings.showConflictBadgeOnTimetable,
+                hasExamOnDate = { date ->
+                    repository.exams.any { exam ->
+                        CourseTask.dateOnly(exam.dateTime).toLocalDate() == date
+                    }
+                },
+                hasScheduleOnDate = { date ->
+                    snapshot.scheduleItems.any { item -> item.occursOn(date.atStartOfDay()) }
+                },
                 homeTitleStyle = appSettings.homeTitleStyle,
                 homeMenuStyle = appSettings.homeMenuStyle,
                 profileName = TimetableHostLogic.resolveProfileName(
                     profiles = snapshot.profiles,
                     activeProfileId = snapshot.activeProfileId,
                 ),
-                homeMenuItems = TimetableMenuDefaults.entries(),
+                homeMenuItems = homeTopMenuItems(appSettings),
                 onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
+                // 数据装配**只在模型层一份**（`DayViewDataAssembler` + `dayViewPageDataOf`）。
+                // 旧写法在壳里手拼 `DayViewPageData`：日程条目不构造、日程计数写死成 0、
+                // 日期标题自造中文（「第 N 周 · 周X」）、考试与待办全丢。
                 dataProvider = { week, dayOfWeek ->
-                    val dayCourses = snapshot.courses.filter { c ->
-                        c.dayOfWeek == dayOfWeek && c.isActiveInWeek(week)
-                    }
-                    DayViewPageData(
-                        summaryState = DayViewSummaryLogic.buildSummaryState(
+                    dayViewPageDataOf(
+                        DayViewDataAssembler.build(
                             week = week,
-                            dateLabel = "第 $week 周 · 周$dayOfWeek",
-                            isToday = week == snapshot.currentWeek && dayOfWeek == LocalDate.now().dayOfWeek.value,
-                            courseCount = dayCourses.size,
-                            scheduleCount = 0,
+                            dayOfWeek = dayOfWeek,
+                            courses = snapshot.courses,
+                            settings = snapshot.settings,
+                            currentWeek = snapshot.currentWeek,
+                            scheduleItems = snapshot.scheduleItems,
+                            exams = repository.exams,
+                            tasks = repository.tasks,
+                            showNonCurrentWeekCourses =
+                                appSettings.timetableShowNonCurrentWeekCourses,
+                            // 日卡天气行：只在「日视图课卡显示天气」开着且有 provider 时返回非空。
+                            weatherOf = weatherOf,
                         ),
-                        agendaEntries = dayCourses.map { course ->
-                            DayAgendaEntry.CourseEntry(
-                                course = course,
-                                isCurrentWeekCourse = true,
-                            )
-                        },
                     )
                 },
                 onCloseToWeekView = onBack,
+                // 待办带里「关联课程」的名字与颜色（Dart `provider.getCourseForTask`）。
+                courseResolver = { task ->
+                    snapshot.courses.firstOrNull { it.id == task.courseId }
+                },
                 onOpenCourse = { courseId ->
-                    wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
+                    val target = snapshot.courses.firstOrNull { it.id == courseId }
+                    wiring.pendingEditCourse = target
                     wiring.pendingAddCourseSeed = null
                     // 这一路是「从周视图看这门课」，不带来源周次（Dart 同款调用不传 initialWeek）。
                     // 清空是防止上一条「作业 → 查看课程」留下的周次串到这一次打开里。
                     wiring.pendingEditWeek = null
+                    // 整组上下文：Dart `courseForm(courseGroup: provider.courseGroupForCourse(course), ...)`
+                    //（同名课次编为一组），丢了它「改名 / 删整组」会退化成只改这一节。
+                    val siblings = target?.let { picked ->
+                        snapshot.courses.filter { it.name == picked.name }
+                    }
+                    wiring.pendingEditGroup = if (target == null || siblings.isNullOrEmpty()) {
+                        null
+                    } else {
+                        com.mutx163.qingyu.pages.course.CourseGroup(
+                            name = target.name,
+                            courses = siblings,
+                        )
+                    }
                     onOpenPage("d1.addCourse")
                 },
+                // 日程卡 / 考试卡：Dart 分别去日程编辑页与考试列表页。壳里两条路都通，
+                // 接上就不再有「卡片点了没反应」（不传回调时页面会直接把入口藏起来）。
+                onOpenSchedule = { scheduleId, occurrenceDate ->
+                    val item = snapshot.scheduleItems.firstOrNull { it.id == scheduleId }
+                    if (item == null) {
+                        onOpenPage("d2.scheduleList")
+                    } else {
+                        wiring.clearScheduleIntent()
+                        wiring.pendingScheduleEdit = ScheduleItemBridge.toUiData(item)
+                        // 跨天重复日程要带上是哪一天的那一次（Dart `occurrenceDate`，
+                        // 与周网格点日程卡同一条口径）。
+                        wiring.pendingScheduleOccurrenceDate =
+                            occurrenceDate?.toLocalDate()?.toString()
+                        onOpenPage("d2.addSchedule")
+                    }
+                },
+                // 考试卡：Dart `examForm(exam: exam)`——直接开**这一场考试**的编辑页，
+                // 不是考试列表（2026-10-31 审核 P1-4）。
+                onOpenExam = { examId ->
+                    val exam = repository.exams.firstOrNull { it.id == examId }
+                    if (exam == null) {
+                        onOpenPage("d3.examList")
+                    } else {
+                        wiring.pendingEditExam = exam
+                        onOpenPage("d3.addExam")
+                    }
+                },
+                // 课卡「备注」：单节备注弹层（Dart `showCourseNoteSheet(course:, week:)`）。
+                onOpenCourseNotes = { courseId, week ->
+                    val course = snapshot.courses.firstOrNull { it.id == courseId }
+                    if (course != null) noteTarget = course to week
+                },
+                // 课卡「作业」：带课程 + **当前查看周**进作业表单（Dart `initialWeek: week`）。
+                onOpenCourseTask = { courseId, week ->
+                    val course = snapshot.courses.firstOrNull { it.id == courseId }
+                    wiring.pendingTaskForEdit = null
+                    wiring.pendingTaskCourse = course
+                    wiring.pendingTaskWeek = if (course == null) null else week
+                    onOpenPage("d2.addTask")
+                },
+                // 待办行 → 编辑表单。
+                onOpenTask = { task ->
+                    wiring.pendingTaskForEdit = task
+                    wiring.pendingTaskCourse = null
+                    wiring.pendingTaskWeek = null
+                    onOpenPage("d2.addTask")
+                },
+                // 勾选待办：落盘失败会抛错，必须报出来（Dart `toggleTaskFromBand` 同口径），
+                // 否则勾选框弹回去、用户零提示（2026-10-31 审核 P1-9）。
+                onToggleTask = { task ->
+                    runCatching { taskController.toggleTask(task) }
+                        .onFailure {
+                            Toast.makeText(
+                                shellContext,
+                                DayViewStrings.saveFailed.zh,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                },
+                // 「还有 N 项逾期 ›」→ 任务清单（Dart `pushHomeMenuPage(context, homePage('taskListPage'))`）。
+                onViewAllOverdue = { onOpenPage("d2.taskList") },
+                // 翻页落定后把仓储当前周同步过去：否则退出日视图回到周视图还停在老周
+                //（Dart `settlePage` → `jumpToWeek(animatePage:false)` 同义）。
+                onPageChanged = { week, _ ->
+                    if (snapshot.currentWeek != week) repository.setCurrentWeek(week)
+                },
             )
+            // 单节备注弹层（Dart 日课卡「备注」胶囊的落点）。
+            val editingNotes = noteTarget
+            CourseNoteSheet(
+                show = editingNotes != null,
+                course = editingNotes?.first,
+                week = editingNotes?.second ?: snapshot.currentWeek,
+                readOnly = false,
+                onDismiss = { noteTarget = null },
+                onSave = { wholeNote, sessionNote ->
+                    val target = noteTarget
+                    noteTarget = null
+                    if (target != null) {
+                        runCatching {
+                            CourseActionDispatcher.saveCourseNotes(
+                                port = repository,
+                                courseId = target.first.id,
+                                week = target.second,
+                                wholeNote = wholeNote,
+                                sessionNoteText = sessionNote,
+                            )
+                        }.onFailure {
+                            Toast.makeText(
+                                shellContext,
+                                DayViewStrings.saveFailed.zh,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
+            )
+            }
         }
 
         // ── P3-D1 课程表单与概览 ───────────────────────────────────────
@@ -724,8 +902,11 @@ fun ShellPageContent(
             val taskSnapshot = wiring.timetable.snapshot
             val editingTask = wiring.pendingTaskForEdit
             val preselectedCourse = wiring.pendingTaskCourse
+            // 日视图「作业」胶囊带的来源周（Dart `taskForm(initialWeek: week)`）；
+            // 其余入口为 null ⇒ 退回仓储当前周，行为与之前一致。
+            val sourceWeek = wiring.pendingTaskWeek ?: taskSnapshot.currentWeek
             val shellContext = LocalContext.current
-            var taskForm by remember(editingTask?.id, preselectedCourse?.id) {
+            var taskForm by remember(editingTask?.id, preselectedCourse?.id, sourceWeek) {
                 mutableStateOf(
                     if (editingTask != null) {
                         // 编辑既有任务：载入原任务的全部字段（对齐 Dart AddTaskScreen(task:)）。
@@ -733,9 +914,9 @@ fun ShellPageContent(
                     } else {
                         AddTaskFormReducer.initial(
                             preselectedCourse = preselectedCourse,
-                            sourceWeek = taskSnapshot.currentWeek,
+                            sourceWeek = sourceWeek,
                             courseOccurrenceDate = preselectedCourse?.let {
-                                wiring.timetable.dateForCourseOccurrence(it, taskSnapshot.currentWeek)
+                                wiring.timetable.dateForCourseOccurrence(it, sourceWeek)
                             },
                         )
                     },
@@ -743,7 +924,14 @@ fun ShellPageContent(
             }
             AddTaskPage(
                 viewState = taskForm,
-                onBack = onBack,
+                // 返回 / 保存都要清一次性意图：否则「从日视图第 5 周记作业」取消后再从
+                // 任务清单点新建，来源周还停在第 5 周（2026-10-31 审核 P2-8）。
+                onBack = {
+                    wiring.pendingTaskForEdit = null
+                    wiring.pendingTaskCourse = null
+                    wiring.pendingTaskWeek = null
+                    onBack()
+                },
                 onTitleChange = { taskForm = AddTaskFormReducer.withTitle(taskForm, it) },
                 onNoteChange = { taskForm = AddTaskFormReducer.withNote(taskForm, it) },
                 // task-18：两个子弹层的**候选数据 + 处理函数**（弹层由页面自己弹）。
@@ -800,6 +988,7 @@ fun ShellPageContent(
                         }.onSuccess {
                             wiring.pendingTaskForEdit = null
                             wiring.pendingTaskCourse = null
+                            wiring.pendingTaskWeek = null
                             onBack()
                         }.onFailure { error ->
                             // 与 Dart 一致：标题必填 / 关联课程不存在 / 落盘失败分三种说法。

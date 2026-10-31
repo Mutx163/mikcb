@@ -142,7 +142,8 @@ fun DayAgendaHomeworkDot(
     ) {
         Icon(
             imageVector = MiuixIcons.Tasks,
-            contentDescription = "作业",
+            // ARB `courseTaskAction` =「作业」，不再写死字面量（CJK 门禁账）
+            contentDescription = DayViewStrings.courseTaskAction.zh,
             modifier = Modifier.size(11.dp),
             tint = iconColor,
         )

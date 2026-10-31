@@ -51,7 +51,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun DayViewScheduleCard(
     entry: DayAgendaEntry.ScheduleEntry,
     progress: DayAgendaProgress? = null,
-    onTap: () -> Unit,
+    onTap: (() -> Unit)? = null,
     radius: Dp = 16.dp,
     modifier: Modifier = Modifier,
 ) {
@@ -59,16 +59,17 @@ fun DayViewScheduleCard(
     val cardColor = baseColor.copy(alpha = 0.95f)
     val ink = calculateCardInk(baseColor)
     val shape = RoundedCornerShape(radius)
-    val isCrossDay = entry.continuesFromPreviousDay ||
-        entry.continuesToNextDay ||
-        DayAgendaLogic.isCrossDaySchedule(entry.scheduleItem)
+    // 跨日徽标只看**这一次发生**的区间：Dart 用物化后的 `effectiveItem`
+    //（`timetable_day_agenda_models.dart:84-93`，重复日程物化成当天起止），所以
+    // 重复系列本身跨月并不等于这一次跨日。`continuesFrom/To` 正是按目标日算出来的。
+    val isCrossDay = entry.continuesFromPreviousDay || entry.continuesToNextDay
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(cardColor)
-            .clickable(onClick = onTap),
+            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         // 进行中状态 600ms 动态进度背景填充
         if (progress != null) {

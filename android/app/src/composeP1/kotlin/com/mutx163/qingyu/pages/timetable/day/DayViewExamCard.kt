@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun DayViewExamCard(
     entry: DayAgendaEntry.ExamEntry,
-    onTap: () -> Unit,
+    onTap: (() -> Unit)? = null,
     radius: Dp = 16.dp,
     modifier: Modifier = Modifier,
 ) {
@@ -65,7 +65,7 @@ fun DayViewExamCard(
             .fillMaxWidth()
             .clip(shape)
             .background(cardColor)
-            .clickable(onClick = onTap),
+            .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         Column(
             modifier = Modifier
@@ -150,7 +150,9 @@ fun DayViewExamCard(
                 if (location.isNotEmpty()) append(location)
                 if (seat.isNotEmpty()) {
                     if (isNotEmpty()) append(" · ")
-                    append("座位: $seat")
+                    // ARB `examSeatLabel` =「座位号」；Dart 用法是同一条
+                    //（`exam_list_screen.dart:320 '${l10n.examSeatLabel} $seat'`）。
+                    append(DayViewStrings.seatLabel(seat))
                 }
             }
             if (locationAndSeat.isNotEmpty()) {

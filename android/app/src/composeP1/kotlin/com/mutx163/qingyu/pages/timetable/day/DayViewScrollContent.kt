@@ -43,15 +43,20 @@ fun DayViewScrollContent(
     progressMap: Map<String, DayAgendaProgress> = emptyMap(),
     courseTaskPresenceMap: Map<String, Boolean> = emptyMap(),
     onCloseToWeekView: () -> Unit,
-    onOpenCourse: (courseId: String) -> Unit = {},
-    onOpenCourseNotes: (courseId: String) -> Unit = {},
-    onOpenCourseTask: (courseId: String) -> Unit = {},
-    onOpenSchedule: (scheduleId: String) -> Unit = {},
-    onOpenExam: (examId: String) -> Unit = {},
-    onOpenTask: (task: CourseTask) -> Unit = {},
-    onToggleTask: (task: CourseTask) -> Unit = {},
-    onViewAllOverdue: () -> Unit = {},
+    // 能力型回调：null = 壳还没接线 ⇒ 对应入口**不渲染**（不画点了没反应的按钮）。
+    // 见 DayViewPage 的 KDoc「能力型回调：null 不等于空 lambda」。
+    onOpenCourse: ((courseId: String) -> Unit)? = null,
+    onOpenCourseNotes: ((courseId: String, week: Int) -> Unit)? = null,
+    onOpenCourseTask: ((courseId: String, week: Int) -> Unit)? = null,
+    onOpenSchedule: ((scheduleId: String, occurrenceDate: java.time.LocalDateTime?) -> Unit)? = null,
+    onOpenExam: ((examId: String) -> Unit)? = null,
+    onOpenTask: ((task: CourseTask) -> Unit)? = null,
+    onToggleTask: ((task: CourseTask) -> Unit)? = null,
+    onViewAllOverdue: (() -> Unit)? = null,
     courseResolver: (CourseTask) -> Course? = { null },
+    weatherLines: Map<String, String> = emptyMap(),
+    /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。 */
+    showConflictBadge: Boolean = true,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
@@ -99,10 +104,17 @@ fun DayViewScrollContent(
         // ── 空态卡片（无课程且无日程且无待办时展示） ──
         if (agendaEntries.isEmpty() && (taskBandData == null || taskBandData.isEmpty)) {
             item(key = "day-empty-state-item") {
-                DayViewEmptyState(
-                    week = summaryState.week,
-                    dayOfWeek = dayOfWeek,
-                )
+                // Dart 是 `SliverFillRemaining(hasScrollBody: false)` ⇒ 空态在可视区里垂直居中；
+                // 直接当普通 item 摆会贴在摘要卡下面（2026-10-31 审核 P2-7）。
+                Box(
+                    modifier = Modifier.fillParentMaxHeight(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    DayViewEmptyState(
+                        week = summaryState.week,
+                        dayOfWeek = dayOfWeek,
+                    )
+                }
             }
         } else {
             // ── 议程列表（各卡片按时间稳定排序） ──
@@ -112,14 +124,19 @@ fun DayViewScrollContent(
             ) { entry ->
                 when (entry) {
                     is DayAgendaEntry.CourseEntry -> {
+                        // 备注 / 记作业都要带**这一页的周次**（Dart 两处调用都以当前查看周为上下文），
+                        // 不是仓储当前周：翻到第 5 周再点，写进去的必须是第 5 周。
+                        val viewedWeek = summaryState.week
                         DayViewCourseCard(
                             entry = entry,
-                            week = summaryState.week,
+                            week = viewedWeek,
                             progress = progressMap[entry.id],
-                            onTap = { onOpenCourse(entry.course.id) },
-                            onOpenNotes = { onOpenCourseNotes(entry.course.id) },
-                            onOpenTask = { onOpenCourseTask(entry.course.id) },
+                            onTap = onOpenCourse?.let { open -> { open(entry.course.id) } },
+                            onOpenNotes = onOpenCourseNotes?.let { open -> { open(entry.course.id, viewedWeek) } },
+                            onOpenTask = onOpenCourseTask?.let { open -> { open(entry.course.id, viewedWeek) } },
                             hasTask = courseTaskPresenceMap[entry.course.id] == true,
+                            weatherInfo = weatherLines[entry.id],
+                            showConflictBadge = showConflictBadge,
                         )
                     }
 
@@ -127,14 +144,16 @@ fun DayViewScrollContent(
                         DayViewScheduleCard(
                             entry = entry,
                             progress = progressMap[entry.id],
-                            onTap = { onOpenSchedule(entry.scheduleItem.id) },
+                            onTap = onOpenSchedule?.let { open ->
+                                { open(entry.scheduleItem.id, entry.occurrenceDate) }
+                            },
                         )
                     }
 
                     is DayAgendaEntry.ExamEntry -> {
                         DayViewExamCard(
                             entry = entry,
-                            onTap = { onOpenExam(entry.exam.id) },
+                            onTap = onOpenExam?.let { open -> { open(entry.exam.id) } },
                         )
                     }
                 }
