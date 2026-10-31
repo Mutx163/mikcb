@@ -1,8 +1,12 @@
 # Compose 迁移 · Phase 3.5 可并行批次表（供多会话领取）
 
-> 状态：**生效中**（2026-10-28 建立）
-> 上游：[Phase 3.5 接线与装配计划](2026-10-28-compose-phase35-wiring-plan.md) · [数据契约](2026-10-26-data-contract.md) · [Phase 3 页面台账](2026-10-26-compose-phase3-page-ledger.md)
-> 用途：让**多个独立会话**（Cursor / Claude Code / DSH 子代理）同时干活而不互相撞车。
+> ⚠️ **【重要重定向：本文档已全部并入统一总表】**  
+> 本文件的碎片小批次（B1~B5 已交付，B6 已升级为【包 I1】），为避免多会话选活冲突，任务清单已全量统一收敛至：  
+> 👉 [**全景直通派工大表（2026-10-28-compose-master-dispatch-table.md）**](2026-10-28-compose-master-dispatch-table.md)  
+> **所有 Agent 请统一前往上述全景大表认领最新工作包，切勿在本文档重复认领！**
+
+> 状态：**已并入总表归档**
+> 上游：[全景直通派工大表](2026-10-28-compose-master-dispatch-table.md) · [Phase 3.5 接线计划](2026-10-28-compose-phase35-wiring-plan.md)
 
 ---
 

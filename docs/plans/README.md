@@ -7,16 +7,18 @@
 
 ## 🔴 进行中：Flutter → Jetpack Compose 迁移（2026-10-26 起）
 
-> **接手页面重构的 agent 从这里进** →
-> [Phase 3 页面进度与认领台账](2026-10-26-compose-phase3-page-ledger.md)
-> 批次划分、页面清单、互斥写作用域、五条完成门槛都在里面。
+> **接手重构与接线的 agent 从这里进** →
+> [**全景直通派工大表**](2026-10-28-compose-master-dispatch-table.md)
+> 覆盖 7 大业务域与 10 个端到端工作包，做完本表即彻底达到 Flutter 生产水平。
 > 认领状态在本机 `.agents/compose-phase3/claims/`：**有文件的批次 = 有人在做，别碰**；
 > 领用 = 新建 `claims/<批次号>.md`（文件即锁，新建成功才算领到）。
 > 仓库根 `AGENTS.md` 的「Compose 迁移」节也指向这里。
 
 | 文档 | 作用 |
 |---|---|
-| [**页面进度与认领台账**](2026-10-26-compose-phase3-page-ledger.md) | 谁在做哪一页 / 怎么领 / 交付门槛（**Phase 3 入口**） |
+| [**全景直通派工大表**](2026-10-28-compose-master-dispatch-table.md) | **当前主入口**：直通 Flutter 水平的 10 个端到端工作包与派工看板 |
+| [**Phase 3.5 接线装配计划**](2026-10-28-compose-phase35-wiring-plan.md) | 真实数据持久化（L1~L5）分层架构与演示数据清零标准 |
+| [页面进度与认领台账](2026-10-26-compose-phase3-page-ledger.md) | 存量 78 屏 UI 迁移记录（Phase 3 归档） |
 | [迁移计划](2026-10-26-compose-migration-plan.md) | 总体方案、六条硬约束、五个阶段、回退方案、被否掉的方案 |
 | [执行规格（doublecheck spec）](2026-10-26-compose-migration-spec.md) | Goal / Scope / 验收标准 / 红线，开工前必读 |
 | [数据契约](2026-10-26-data-contract.md) | 盘上格式冻结：prefs key 的逐字段 schema（Phase 0 产出） |

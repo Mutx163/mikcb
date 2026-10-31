@@ -245,8 +245,13 @@ pwsh -File scripts/compose-style-lint.ps1 -Domain transfer
    对 4 个 scope 有不同语义；Kotlin 侧是「两份包文本按 id 比对」。所以预览弹窗里的 `+a / ~u / -r`
    **可能与 Flutter 正式版数字不同**（合并模式一律按 `removed=0` 处理）。
 4. **合并模式不支持全量包**：Dart 能逐实体合并，Kotlin 侧明确拒绝并保持数据不动（宁可不动，也不猜着写）。
-5. **`tasks` / `exams` / `scheduleItems` / `scheduleDateRules` 导入不写回**：仓储缺批量入口（台账 §9.4 ③）。
-   导出会带上这些数据，导入会丢弃——这条与 Dart 正式版行为**不同**，是已知缺口。
+5. ~~**`tasks` / `exams` / `scheduleItems` / `scheduleDateRules` 导入不写回**~~ **已于二轮修复（2026-10-29 晚）**。
+   ⚠️ 原文的缺口清单**漏了 `timeSchemes`（时间模板）**——它同样「导出带、导入丢」，而且后果最重：
+   课程上的 `timeSchemeIdOverride` 与设置里的 `activeTimeSchemeId` 会指向不存在的模板。
+   现在 `DataTransferApplyLogic.planWrites()` 一次算全写入范围（五类数据全在），
+   宿主按它落盘、时间模板走「id 已存在则更新、不存在则新建 + 改写引用」，
+   单测 `DataTransferRoundTripTest` 钉住「导出 → 解析 → 计划」三段落数据不丢。
+   仍未覆盖：`locationTimeGroups`（`TimetableSnapshot` 没有该字段，编制层缺口，见第 11 条）。
 6. **撤销只活在内存**：杀进程即失效（Dart 的 undo token 也是内存态 + 容量上限，但通过服务层统一管理）。
    撤销窗口照抄 Dart 的 **2 秒**（`HyperosMiuixSnackbar.durationShortMs`），真机上够不够用需用户看了再说。
 7. **按 scope 的细粒度导出仍有风险**：本周课表 / 勾选课程走的是 `TransferScopeWindow` + id 过滤，

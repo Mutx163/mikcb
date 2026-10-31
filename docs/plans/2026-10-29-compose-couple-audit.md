@@ -256,7 +256,7 @@
 
 | # | 差异 | 原因 |
 |---|---|---|
-| 1 | **导出**用 SAF「保存到…」，不是系统分享面板 | 本仓 `AndroidManifest.xml` 没有 `FileProvider` 声明，分享文件必然在 `getUriForFile` 失败；补那套属打包决策。存成功后用 ARB 里现成的分享文案提示「发给对方后怎么导入」 |
+| 1 | ~~**导出**用 SAF「保存到…」，不是系统分享面板~~ **已于二轮修复（2026-10-29 晚）** | 原文写的理由「本仓 `AndroidManifest.xml` 没有 `FileProvider` 声明」**当时就已过期**：`7c8d11b6`（19:04）已注册 `${applicationId}.fileprovider` 与 `res/xml/file_paths.xml` 的 `transfer_share`，比本文档所属提交 `02698142`（19:07）早 3 分钟。现在导出走 `AndroidTransferShareAdapter`（系统分享面板，Dart `share_plus` 同口径），SAF 只作兜底 |
 | 2 | **非 JSON 远端文件**的提示是「发生未知错误」 | Dart `service_message_localizer.dart` 没登记 `couple_webdav_partner_file_not_json`，走 default 兜底。照抄，不擅自改文案 |
 | 3 | **次要按钮**用 tonal 填充，不是 `TextButton` | 官方 `TextButtonColors` 与 `ButtonColors` 是两个类型（编不过），且 `TextButton` 只收 `text: String`、塞不进「转圈 + 文案」 |
 | 4 | 拉取**不经** `CoupleSyncCoordinator` | 那个协调器把 404/空归成 `couple_webdav_pull_failed`，与 Dart 的 `couple_webdav_partner_file_missing` 不一致；控制器直连传输层以保真 |
