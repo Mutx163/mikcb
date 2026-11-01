@@ -12,9 +12,9 @@ import org.junit.Test
  * ## 它防的是哪一类事故
  *
  * 设置里 156 格图标选得好好的、也落盘了，首页圆钮却永远画默认加号：
- * 宿主（`PagesShellActivity.kt`）拿的是 `HomeNavIcons.iconOf(roundActionId)`，
- * 从头到尾没读过 `glassDockButtonIconName`。「设置写了没人读」不会让编译失败，
- * 模型层单测也全绿——错的只有渲染点少接一根线。
+ * 坞（`HomeGlassDock.kt`，2026-11-01 之前住在 `PagesShellActivity.kt`）拿的是
+ * `HomeNavIcons.iconOf(roundActionId)`，从头到尾没读过 `glassDockButtonIconName`。
+ * 「设置写了没人读」不会让编译失败，模型层单测也全绿——错的只有渲染点少接一根线。
  *
  * ## 为什么读源码文本
  *
@@ -41,24 +41,26 @@ class GlassDockRoundButtonIconWiringGuardTest {
 
     @Test
     fun `宿主把设置里的图标名交给圆钮`() {
-        val activity = source(ACTIVITY)
+        // 2026-11-01 底栏搬进页面层：坞（含圆钮）由 `HomeGlassDock.kt` 画，
+        // 壳不再自己拼这一块 —— 判据跟着搬到新文件，盯的还是同一件事。
+        val dock = source(DOCK)
         assertTrue(
-            "PagesShellActivity 的圆钮块没有把 `settingsModel.glassDockButtonIconName` " +
+            "HomeGlassDock 的圆钮块没有把 `settingsModel.glassDockButtonIconName` " +
                 "交给 `glassDockRoundButtonIcon(...)`——设置里选的图标就又被丢掉了",
-            roundButtonUsesChosenIcon(activity),
+            roundButtonUsesChosenIcon(dock),
         )
         // 反向探针：把传参删掉，判据必须红。
         assertFalse(
             "咬合探针失效：删掉 `glassDockButtonIconName` 后判据仍为真",
             roundButtonUsesChosenIcon(
-                activity.replace("settingsModel.glassDockButtonIconName", "null"),
+                dock.replace("settingsModel.glassDockButtonIconName", "null"),
             ),
         )
         // 反向探针 2：绕开统一解析、退回只查目录图标，判据必须红。
         assertFalse(
             "咬合探针失效：把 `glassDockRoundButtonIcon(` 换成 `HomeNavIcons.iconOf(` 后判据仍为真",
             roundButtonUsesChosenIcon(
-                activity.replace("glassDockRoundButtonIcon(", "HomeNavIcons.iconOf("),
+                dock.replace("glassDockRoundButtonIcon(", "HomeNavIcons.iconOf("),
             ),
         )
     }
@@ -150,15 +152,15 @@ class GlassDockRoundButtonIconWiringGuardTest {
 
     @Test
     fun `守卫本身没有空转`() {
-        val activity = source(ACTIVITY)
+        val dock = source(DOCK)
         val bar = stripLineComments(source(NAV_BAR))
         val block = roundIconResolution(bar)
         // 文本定位一旦因格式化失效，上面几条「零违规」会全部变绿——比没有守卫更糟。
-        assertTrue("解析出的宿主圆钮块太短（${roundButtonBlock(activity).length} 字符）",
-            roundButtonBlock(activity).length >= 80)
+        assertTrue("解析出的坞圆钮块太短（${roundButtonBlock(dock).length} 字符）",
+            roundButtonBlock(dock).length >= 80)
         assertTrue("解析出的图标解析函数太短（${block.length} 字符）",
             block.length >= 80)
-        assertTrue("圆钮块里找不到 roundActionId", roundButtonBlock(activity).contains("roundActionId"))
+        assertTrue("圆钮块里找不到 roundActionId", roundButtonBlock(dock).contains("roundActionId"))
     }
 
     // ------------------------------------------------------------------ 判据
@@ -242,6 +244,10 @@ class GlassDockRoundButtonIconWiringGuardTest {
     private companion object {
         const val ACTIVITY =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/PagesShellActivity.kt"
+
+        /** 坞（药丸 + 圆钮）的渲染点；2026-11-01 从壳搬到这里。 */
+        const val DOCK =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/shell/HomeGlassDock.kt"
         const val NAV_BAR =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/shell/GlassDockNavigationBar.kt"
         const val VECTORS =

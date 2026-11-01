@@ -13,7 +13,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -28,28 +27,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageTheme
-import com.mutx163.qingyu.app.HomeNavigationForm
 import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.platform.PerfProbe
-import com.mutx163.qingyu.pages.shell.GlassDockGeometry
-import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
-import com.mutx163.qingyu.pages.shell.HomeNavIcons
-import com.mutx163.qingyu.pages.shell.glassDockRoundButtonIcon
-import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
+import com.mutx163.qingyu.pages.shell.HomeGlassDock
+import com.mutx163.qingyu.pages.shell.homeDockVisible
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
@@ -195,28 +185,13 @@ private fun PagesShell() {
     // 返回后立刻生效，滚动、动画的每一帧又不用重新解析一遍 JSON。
     var settingsModel by remember(wiring) { mutableStateOf(wiring.settingsModel.load()) }
 
-    // 底栏条目：**由用户存档决定**，不再写死「课表 / 日程 / 任务 / 设置」。
-    // Dart `resolveGlassDockActionIds`（`home_menu_catalog.dart:536-556`）同一口径：
-    // 空表回退 `HomeDockMenu.defaultActions` = 日课表 / 周课表 / 任务。
-    // 「有没有去处」传的是壳的页面映射表：本仓还没移植的目录条目（如 courseRecolor
-    // 的颜色重设弹层）在这里被丢掉，宁可不放进底栏，也不给一个点了没反应的按钮。
-    val dockIds = remember(settingsModel) {
-        val resolved = HomeDockNavModel.resolveIds(settingsModel.glassDockActions) { id ->
-            rootPageIdFor(id) != null
-        }
-        // 开发壳的「页面索引」入口（L4 逐页对照用，见 [HomeDockNavModel.DEV_INDEX_ID]）：
-        // **只在用户没自定义过底栏时**追加到末尾；用户动过底栏就完全按存档来。
-        if (settingsModel.glassDockActions.isEmpty() && resolved.size < HomeDockNavModel.MAX_SLOTS) {
-            resolved + HomeDockNavModel.DEV_INDEX_ID
-        } else {
-            resolved
-        }
-    }
+    // 底栏条目排列 / 图标 / 圆钮的解析**不在这里**：坞由栈底条目自己画（见 `HomeGlassDock`），
+    // 排列解析与渲染同处一处，壳只负责告诉它「当前是哪个条目」和「哪个 id 有去处」。
+    //
     // 底栏形态：`classic` 是 Dart 的「不挂玻璃坞」档（`home_chrome_spec.dart:78-80`：
     // `glassDockForm = homeNavigationForm == glassDock`，非坞档直接返回 `dockContent`，
-    // 坞层连建都不建）。这里照做：classic 不画底栏。回到设置的路径两边也一致——
-    // 顶栏右上角「更多」菜单（默认含「设置」）。
-    val showDock = settingsModel.homeNavigationForm == HomeNavigationForm.GLASS_DOCK
+    // 坞层连建都不建）。这里照做：classic 不画底栏，也不录它的采样层。
+    val showDock = homeDockVisible(settingsModel)
 
     // ── 两个「运行期偏好」：改了当场生效，不用重启（Dart 是同一个形态）───────────────
     val systemHaptics = LocalHapticFeedback.current
@@ -335,32 +310,18 @@ private fun PagesShell() {
         selectRoot(ROOT_WEEK)
     }
 
-    // 玻璃的背景采样源：整个内容区先被录进这个 layer，底栏再拿它当 backdrop。
-    // 必须挂在**内容**上、而不是包住整个 Column —— 包住就会把底栏自己也录进去，
-    // 底栏于是拿「含自己」的图去算模糊，展开动画里明暗会来回颤。
+    // 玻璃的背景采样源：**栈底条目的页面内容**先被录进这个 layer，坞再拿它当 backdrop。
+    // 必须挂在页面内容上、而不是包住底栏自己 —— 包住就会把坞自己也录进去，
+    // 坞于是拿「含自己」的图去算模糊，动画里明暗会来回颤（与搬层前的纪律同一条）。
     //
     // ⚠️ 录制有成本：miuix 的 `LayerBackdropNode.draw()` 实际是
     // `drawContent(); recordLayer { onDraw() }` —— 内容每重绘一帧（滚动、转场、任何动画），
     // 都会先在屏幕上画一遍、再把整屏录进一张离屏 GraphicsLayer。所以只在
-    // **栈底 + 有底栏 + 设备支持 runtime shader** 时才挂：压着页面时底栏不显示
-    // （`atRoot=false`），没有任何东西采样它，那段录制是纯浪费（2026-10-29 审计第 1 条）。
+    // **有坞 + 设备支持 runtime shader** 时才挂；坞搬进栈底条目之后，压着页面时坞不再
+    // 绘制（栈底条目不再重绘），这段录制也随之停下。
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
-    val recordBackdrop = atRoot && showDock && glassAvailable
-
-    // 底栏材质（2026-11-01）：总闸 / 「作用范围 → 玻璃坞」/ 八根旋钮终于落到坞上。
-    // 与周视图共用同一份纯推导（`SettingsMaterialModel.renderSpecOf`），不在这里
-    // 另判 `frostedBlurEnabled`；明暗变了要重算（深色档 + 深色配方）。
-    val isDarkTheme = isSystemInDarkTheme()
-    val hasBackdrop = !settingsModel.homePageWallpaperPath.isNullOrEmpty() ||
-        !settingsModel.homePageBackgroundImagePath.isNullOrEmpty()
-    val dockMaterial = remember(settingsModel, isDarkTheme, hasBackdrop) {
-        SettingsMaterialModel.renderSpecOf(
-            model = settingsModel,
-            isDark = isDarkTheme,
-            hasBackdrop = hasBackdrop,
-        )
-    }
+    val recordBackdrop = showDock && glassAvailable
 
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
@@ -373,89 +334,75 @@ private fun PagesShell() {
     // 震动总开关的落点：整棵页面树都挂在它下面（含玻璃坞与两个入口页）。
     CompositionLocalProvider(LocalHapticFeedback provides shellHaptics) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 只有栈底且能画模糊时才录制（理由见上方 `backdrop` 的注释）。
-                    // 压着页面时不录制，回栈底那一帧由新的内容重绘重新录一次。
-                    .then(
-                        if (recordBackdrop) Modifier.layerBackdrop(backdrop) else Modifier,
-                    ),
+            NavDisplay(
+                backStack = backStack,
+                onBack = { popPage() },
+                // 官方预设 + 按用户倍率缩放过的时长（见 [scaledToUserSpeed]）。
+                transition = pageTransition,
+                effects = NavDisplayEffects.Default,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                NavDisplay(
-                    backStack = backStack,
-                    onBack = { popPage() },
-                    // 官方预设 + 按用户倍率缩放过的时长（见 [scaledToUserSpeed]）。
-                    transition = pageTransition,
-                    effects = NavDisplayEffects.Default,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    // 栈底：主屏。**内容由底栏条目 id 决定**（不再是四个写死的槽位）：
-                    // `week`/`day`/`monthView` → 周 / 日 / 月视图；其余条目 → 对应页面。
-                    // 与 Dart「内嵌页」同构：底栏保持可见，返回回到周视图。
-                    entry<ShellRoute.Dock> { route ->
-                        if (route.itemId == HomeDockNavModel.DEV_INDEX_ID) {
-                            // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
-                            // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
-                            ShellPageIndexScreen(
-                                onOpenPage = { target -> pushPage(target) },
-                                onBack = { selectRoot(ROOT_WEEK) },
-                            )
-                        } else {
-                            ShellPageContent(
-                                pageId = rootPageIdFor(route.itemId) ?: ROOT_WEEK_PAGE_ID,
-                                onBack = { selectRoot(ROOT_WEEK) },
-                                wiring = wiring,
-                                onOpenPage = { target -> pushPage(target) },
-                            )
+                // 栈底：主屏 = **页面内容 + 玻璃坞**。坞由这一层自己画（2026-11-01 搬层），
+                // 于是它与首页同属一棵子树：页面推入 / 缩放时坞跟着一起动，而不是整块消失；
+                // 外观编辑页的缩尺预览卡也画这同一个组件，卡片里从此有坞。
+                //
+                // 内容由底栏条目 id 决定：`week`/`day`/`monthView` → 周 / 日 / 月视图；
+                // 内嵌页（Dart `inlineDockPages`）→ 对应页面，坞常驻；返回回到周视图。
+                entry<ShellRoute.Dock> { route ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                // 只有真要采样的那一档才录制（理由见上方 `backdrop` 注释）。
+                                .then(
+                                    if (recordBackdrop) {
+                                        Modifier.layerBackdrop(backdrop)
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        ) {
+                            if (route.itemId == HomeDockNavModel.DEV_INDEX_ID) {
+                                // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
+                                // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
+                                ShellPageIndexScreen(
+                                    onOpenPage = { target -> pushPage(target) },
+                                    onBack = { selectRoot(ROOT_WEEK) },
+                                )
+                            } else {
+                                ShellPageContent(
+                                    pageId = rootPageIdFor(route.itemId) ?: ROOT_WEEK_PAGE_ID,
+                                    onBack = { selectRoot(ROOT_WEEK) },
+                                    wiring = wiring,
+                                    onOpenPage = { target -> pushPage(target) },
+                                )
+                            }
                         }
-                    }
-                    // 页面层：任意目录 id 的一层。返回 = 弹掉这层，回到它下面那一页/主屏。
-                    entry<ShellRoute.Page> { route ->
-                        ShellPageContent(
-                            pageId = route.id,
-                            onBack = { popPage() },
-                            wiring = wiring,
-                            // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
-                            onOpenPage = { target -> pushPage(target) },
+                        HomeGlassDock(
+                            settingsModel = settingsModel,
+                            selectedId = route.itemId,
+                            // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
+                            isNavigable = { id -> rootPageIdFor(id) != null },
+                            onSelect = { id -> selectRoot(id) },
+                            onRoundButton = { handleRoundButton() },
+                            // 设备不支持 runtime shader 时别把 backdrop 传进去：
+                            // 传了也画不出模糊，反而会多录一层、白费一次采样。
+                            backdrop = if (glassAvailable) backdrop else null,
+                            modifier = Modifier.align(Alignment.BottomCenter),
                         )
                     }
                 }
-            }
-
-            // 玻璃坞只在栈底显示（压着页面时它会压住页面底部操作区，且点它会分叉返回语义）。
-            // classic 形态不画（Dart `homeNavigationForm == classic` ⇒ 没有坞层）。
-            if (atRoot && showDock) {
-                val roundActionId =
-                    HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
-                GlassDockNavigationBar(
-                    items = dockIds.map { HomeNavIcons.dockItem(it) },
-                    selectedIndex = HomeDockNavModel.selectedIndex(dockIds, currentRootId),
-                    onSelect = { index -> selectRoot(dockIds[index]) },
-                    // 设备不支持 runtime shader 时别把 backdrop 传进去：
-                    // 传了也画不出模糊，反而会多录一层、白费一次采样。
-                    backdrop = if (glassAvailable) backdrop else null,
-                    material = dockMaterial,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    trailingContent = if (settingsModel.glassDockShowAddButton) {
-                        {
-                            GlassDockRoundButton(
-                                // 用户挑的图标名优先；没挑 / 名字已撤 / 矢量表缺项时
-                                // 回退到圆钮绑定动作的目录图标（缺省动作 = 加课 = 加号）。
-                                // 解析规则只在 `glassDockRoundButtonIcon` 一处，宿主与
-                                // 渲染层不各写一份默认值。
-                                icon = glassDockRoundButtonIcon(
-                                    chosenName = settingsModel.glassDockButtonIconName,
-                                    roundActionId = roundActionId,
-                                ),
-                                contentDescription = HomeNavIcons.labelOf(roundActionId),
-                                onClick = { handleRoundButton() },
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                )
+                // 页面层：任意目录 id 的一层。返回 = 弹掉这层，回到它下面那一页/主屏。
+                // 它**盖住**栈底条目（含坞）—— 与 Dart 推入路由页同口径。
+                entry<ShellRoute.Page> { route ->
+                    ShellPageContent(
+                        pageId = route.id,
+                        onBack = { popPage() },
+                        wiring = wiring,
+                        // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
+                        onOpenPage = { target -> pushPage(target) },
+                    )
+                }
             }
         }
     }
@@ -497,36 +444,6 @@ private fun rootItemIdForView(mode: TimetableHomeViewMode): String = when (mode)
     TimetableHomeViewMode.WEEK -> ROOT_WEEK
     TimetableHomeViewMode.DAY -> HomeDockNavModel.ACTION_DAY
     TimetableHomeViewMode.MONTH -> "monthView"
-}
-
-/**
- * 玻璃坞右侧的独立圆钮（Flutter `glassDockShowAddButton` 那个「加课」按钮）。
- *
- * 用官方 [FloatingActionButton]（miuix 基础件）而不是自绘一块玻璃：本仓对「自研形状/
- * 动画」有禁令，而官方这颗按钮的按压反馈、阴影、无障碍语义都是现成的。
- * 直径与药丸同高（[GlassDockGeometry.HeightDp]），右侧留 8dp 由底栏负责。
- */
-@Composable
-private fun GlassDockRoundButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    FloatingActionButton(
-        onClick = onClick,
-        containerColor = MiuixTheme.colorScheme.primary,
-        shadowElevation = 6.dp,
-        minWidth = GlassDockGeometry.HeightDp.dp,
-        minHeight = GlassDockGeometry.HeightDp.dp,
-    ) {
-        Icon(
-            imageVector = icon,
-            // 有可见文字的场景不存在（圆钮只有图标），所以这里必须给语义名。
-            contentDescription = contentDescription,
-            tint = MiuixTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(24.dp),
-        )
-    }
 }
 
 /**

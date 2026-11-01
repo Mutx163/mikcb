@@ -5,7 +5,9 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.core.MiniJson
@@ -46,6 +50,10 @@ import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.backdropFlowState
 import com.mutx163.qingyu.pages.settings.parseWallpaperSheetTarget
 import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
+import com.mutx163.qingyu.pages.shell.HomeDockNavModel
+import com.mutx163.qingyu.pages.shell.HomeGlassDock
+import com.mutx163.qingyu.pages.shell.homeDockVisible
+import com.mutx163.qingyu.pages.shellTimetableMenuPageId
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
@@ -55,6 +63,9 @@ import com.mutx163.qingyu.weather.BingAutoApplyDecision
 import com.mutx163.qingyu.weather.DailyApplyOutcome
 import com.mutx163.qingyu.weather.DailyWallpaperMapper
 import com.mutx163.qingyu.weather.WallpaperTargetSize
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -136,10 +147,10 @@ import kotlinx.coroutines.withContext
  * 3. **壁纸「文件已丢失」警示仍由接线层填**：[SelectionPageState.fileMissing] 需要
  *    真实路径探测（Dart `homePageImageProvider`，`:873-881`），本宿主没有算它，
  *    所以那条警示行目前永远不出现。缩略图条本身已由 `WallpaperSheetBody` 绘制。
- * 4. **预览里没有壳的玻璃底栏**：Dart 的缩尺卡是「整个首页」，含底部坞；Kotlin 的玻璃
- *    底栏由壳（`PagesShellActivity`）画、不在页面层，所以 `TimetableHost` 这份预览只到
- *    课表页本身，顶部菜单条目也按空列表渲染。等底栏/菜单搬进共享渲染层后，预览要跟着
- *    补上（否则卡片比真实首页少一条底栏）。
+ * 4. **预览里的坞是「同组件、不同实例」**（2026-11-01 起卡片里有坞了）：坞由
+ *    [HomeGlassDock] 画，与壳的栈底条目是同一份实现、同一份设置，所以排列 / 高亮 /
+ *    圆钮 / 材质逐项一致；但它不是真机那一颗坞（各自一层玻璃采样），观感上允许有
+ *    采样源差异。顶部菜单条目仍按空列表渲染（壳没把菜单注进预览）。
  *
  * @param store 设置模型读写（壳里 `wiring.settingsModel`）；与课表仓储共用同一个
  *   `timetable_settings` 键、各自合并写，互不覆盖。
@@ -770,13 +781,14 @@ fun AppearanceEditorHost(
 }
 
 /**
- * 卡片里那份**真课表页**：周 = [TimetableHost]（内部即 `TimetableWeekPage` 的逐参喂法），
- * 日 = [DayViewPage]。
+ * 卡片里那份**真首页**：课表页（周 = [TimetableHost]，日 = [DayViewPreview]）+ 玻璃坞。
  *
  * 为什么周视图不自己再抄一份 `TimetableWeekPage(...)` 的参数：那份喂法已经在
  * [TimetableHost] 里（设置 → 风格的映射、时间模板解析、当前周钳制、考试/日程、标题与
  * 菜单样式），抄第二份的唯一结果是两边迟早漂。日视图在壳里也只有一处喂法
  * （`ShellPageIndex` 的 `c3.day`），这里与它逐字同形。
+ *
+ * 坞走 [HomeGlassDock]（壳的栈底条目用的是同一个组件）—— 卡片与真机首页不会各画一份坞。
  *
  * 预览读的是**草稿** [settingsModel] ⇒ 面板里改材质/显示偏好，卡片当场跟着变。
  */
@@ -786,20 +798,66 @@ private fun TimetablePreviewPage(
     repository: TimetableRepository,
     settingsModel: TimetableSettingsModel,
 ) {
-    if (!dayView) {
-        TimetableHost(
-            repository = repository,
-            // 点击在页面壳那一层就被全部吞掉（`Modifier.consumeAllPointerEvents`），
-            // 这两个回调永远不会被调用；给空实现是为了让「预览不可操作」这件事只有一处真源。
-            onOpenAddCourse = { _, _ -> },
-            onOpenCourse = {},
+    // 预览卡 = **整个首页**：课表页（周 / 日）+ 玻璃坞。
+    //
+    // 坞走 [HomeGlassDock] —— 与壳的栈底条目**同一份实现**，所以卡片里的坞与真机首页逐参一致
+    // （条目排列 / 高亮 / 圆钮图标 / 材质都读同一份草稿设置；拖材质滑杆卡片当场跟着变）。
+    // 2026-11-01 之前卡片里没有坞：坞画在壳层、不在页面树里，这是用户报的「预览里没底栏」。
+    Box(modifier = Modifier.fillMaxSize()) {
+        val glassAvailable = isRuntimeShaderSupported()
+        val dockBackdrop = rememberLayerBackdrop()
+        // 坞要采样它底下的页面内容；没坞（classic 形态）/ 无 runtime shader 时不录
+        // —— 与壳里 `recordBackdrop` 同一条纪律（录制 = 整屏离屏重绘一次）。
+        val recordDockBackdrop = homeDockVisible(settingsModel) && glassAvailable
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (recordDockBackdrop) Modifier.layerBackdrop(dockBackdrop) else Modifier,
+                ),
+        ) {
+            if (dayView) {
+                DayViewPreview(repository = repository, settingsModel = settingsModel)
+            } else {
+                TimetableHost(
+                    repository = repository,
+                    // 点击在页面壳那一层就被全部吞掉（`Modifier.consumeAllPointerEvents`），
+                    // 这两个回调永远不会被调用；给空实现是为了让「预览不可操作」这件事只有一处真源。
+                    onOpenAddCourse = { _, _ -> },
+                    onOpenCourse = {},
+                    settingsModel = settingsModel,
+                )
+            }
+        }
+        HomeGlassDock(
             settingsModel = settingsModel,
+            // 高亮跟着预览当前停的视图走：卡片就是「首页」，坞亮的自然是首页当前那一格。
+            selectedId = if (dayView) {
+                HomeDockNavModel.ACTION_DAY
+            } else {
+                HomeDockNavModel.ACTION_WEEK
+            },
+            // 「这个 id 点得开吗」用与壳同一张映射表（预览不交互，只为条目取舍与真机一致）。
+            isNavigable = { id -> shellTimetableMenuPageId(id) != null },
+            onSelect = {},
+            onRoundButton = {},
+            backdrop = if (glassAvailable) dockBackdrop else null,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
-        return
     }
+}
 
-    // 日视图要的是一份快照（周视图那份订阅在 TimetableHost 内部）。先读当前值再订阅，
-    // 与仓储的通知语义一致：`observe` 只推后续变更，不会补推当前值。
+/**
+ * 预览卡里的**日视图**：与壳的「日视图」页（`ShellPageIndex` 的 `c3.day`）逐字同形。
+ *
+ * 日视图要的是一份快照（周视图那份订阅在 `TimetableHost` 内部）：先读当前值再订阅，
+ * 与仓储的通知语义一致（`observe` 只推后续变更，不会补推当前值）。
+ */
+@Composable
+private fun DayViewPreview(
+    repository: TimetableRepository,
+    settingsModel: TimetableSettingsModel,
+) {
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
         val subscription = repository.observe { updated -> snapshot = updated }

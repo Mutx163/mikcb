@@ -113,8 +113,9 @@ class TaskWiringGuardTest {
             rootBranch.length >= 200,
         )
         assertTrue(
-            "底栏条目来源必须由 HomeDockNavModel 解析（读用户存档），找不到解析调用",
-            activity.contains("HomeDockNavModel.resolveIds("),
+            "底栏条目来源必须由 HomeDockNavModel 解析（读用户存档），找不到解析调用" +
+                "（2026-11-01 起坞由 shell/HomeGlassDock.kt 画，解析也搬去了那里）",
+            source("shell/HomeGlassDock.kt").contains("HomeDockNavModel.resolveIds("),
         )
     }
 
@@ -129,6 +130,7 @@ class TaskWiringGuardTest {
     private fun source(name: String): String {
         val candidates = listOf(
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/$name",
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/$name",
             "android/app/src/composeUi/kotlin/com/mutx163/qingyu/pages/$name",
         )
         var dir: File? = File("").absoluteFile
