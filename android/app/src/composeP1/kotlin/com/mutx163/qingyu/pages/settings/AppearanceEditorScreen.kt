@@ -63,11 +63,18 @@ import kotlinx.coroutines.launch
  * 原生尺度排版、只在外层做 `graphicsLayer` 缩放**（实现集中在
  * `AppearanceEditorPreviewStage`）：
  *
- * * 卡片里的课表页拿到的约束是 `requiredSize(整屏尺寸)` —— 它按**整屏 1:1** 排版，
+ * * 卡片里的课表页拿到的约束是**固定的整屏尺寸**（预览舞台里的自定义布局给
+ *   `Constraints.fixed(整屏)`，不是 `requiredSize`）—— 它按**整屏 1:1** 排版，
  *   与真实课表页逐参一致，不另排一套「小屏布局」；
  * * 缩放在绘制层完成（`graphicsLayer(scaleX, scaleY, origin = (0,0))`），不改变
  *   子树里任何一次 layout/measure，于是「原样缩小」这件事成立；
  * * 外层 `clip` 到屏幕圆角 × 缩放比的圆角矩形，多余部分被裁掉。
+ *
+ * ⚠️ 为什么不用 `requiredSize`：页面比卡片大，`requiredSize` 在内容超出父约束时会
+ * 「上报收缩后的尺寸 + 把内容居中」（`Placeable.apparentToRealOffset`）。居中量正好
+ * 等于卡片在屏幕上的偏移 ⇒ 预览里只剩整页右下角一块（2026-11-01 真机事故，详见
+ * `AppearanceEditorPreviewStage.fullScreenPageScaled` 的注释）。整页必须钉在卡片
+ * 左上角再缩放。
  *
  * 这就是 Dart 类注释里「直接用首页那份代码、观感一致」在 Compose 里的对应做法；
  * 也不是自研控件：`graphicsLayer` / `clip` 都是官方 Compose 绘制原语，卡片本身没有

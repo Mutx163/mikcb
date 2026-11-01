@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -130,6 +131,13 @@ internal fun AppearanceEditorPreviewStage(
  *
  * 缩放在**绘制层**完成（`graphicsLayer`），不改子树任何一次 layout/measure ——
  * 这是「原样缩小」而不是「另排一套小屏布局」的根（外壳拿到的约束仍是整屏尺寸）。
+ *
+ * ⚠️ **不能用 `Modifier.requiredSize(整屏)` 再套 `graphicsLayer`**（2026-11-01 真机
+ * 事故）：整屏页面比卡片大，`requiredSize` 遇到「内容超出父约束」时会把**上报尺寸
+ * 收缩到父约束**、并把超出的内容**居中**（Compose 的 `Placeable.apparentToRealOffset`）。
+ * 居中量 = (卡片 − 整屏) / 2，而卡片本身就是略缩并居中于屏幕的 —— 两者相消后页面左上角
+ * 正好落回**屏幕**左上角，卡片这个窗口只看见页面右下角一块：标题行 / 星期栏 / 时间列 /
+ * 左侧几列全被裁掉，「回本周」浮钮跑到卡片左半边。见 [fullScreenPageScaled]。
  */
 @Composable
 private fun ScaledFullScreenPage(
@@ -139,18 +147,42 @@ private fun ScaledFullScreenPage(
     content: @Composable () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .requiredSize(width = screenWidth, height = screenHeight)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    transformOrigin = TransformOrigin(0f, 0f)
-                },
-        ) {
+        Box(modifier = Modifier.fullScreenPageScaled(scale, screenWidth, screenHeight)) {
             content()
         }
     }
+}
+
+/**
+ * 让内容按整屏尺寸 1:1 排版、再按 [scale] 缩进父容器，并**钉在父容器左上角**。
+ *
+ * 这里必须是自定义布局，不能用 `requiredSize`：
+ *
+ * * 内容（整屏 400×866dp）比父容器（卡片约 284×614dp）大；
+ * * `requiredSize` 的语义是「父约束不生效」，但父布局只看到**收缩后**的尺寸，超出的
+ *   那一截被**居中**（`Placeable.apparentToRealOffset`）；
+ * * 于是页面的左上角被推出去 (卡片 − 整屏)/2 —— 数值上恰好等于卡片自身在屏幕上的偏移，
+ *   看起来就是「预览里显示的是整页的右下角一块」。
+ *
+ * 改用 `layout`：内容仍拿固定的整屏约束（保证 1:1 排版），但**原样上报父给尺寸**、
+ * 页面 `place(0, 0)`。上报更大的尺寸会重新触发上面那套收缩 + 居中，所以这里绝不能
+ * 报页面尺寸。
+ */
+private fun Modifier.fullScreenPageScaled(
+    scale: Float,
+    screenWidth: Dp,
+    screenHeight: Dp,
+): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(
+        Constraints.fixed(screenWidth.roundToPx(), screenHeight.roundToPx()),
+    )
+    layout(constraints.maxWidth, constraints.maxHeight) {
+        placeable.place(0, 0)
+    }
+}.graphicsLayer {
+    scaleX = scale
+    scaleY = scale
+    transformOrigin = TransformOrigin(0f, 0f)
 }
 
 /**
@@ -260,13 +292,10 @@ private fun MiniAppearanceEditorPage(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
+                // 与 [ScaledFullScreenPage] 同一条：整屏 1:1 排版、钉在卡片左上角再缩放
+                // （不能用 `requiredSize`，它会把超出卡片的内容居中，见 [fullScreenPageScaled]）。
                 modifier = Modifier
-                    .requiredSize(width = screenWidth, height = screenHeight)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        transformOrigin = TransformOrigin(0f, 0f)
-                    }
+                    .fullScreenPageScaled(scale, screenWidth, screenHeight)
                     .background(AppearanceEditorScrim),
             ) {
                 AppearanceEditorTopChrome(
