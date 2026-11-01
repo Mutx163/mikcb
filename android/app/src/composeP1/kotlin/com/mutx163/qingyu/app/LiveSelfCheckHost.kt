@@ -1,6 +1,9 @@
 package com.mutx163.qingyu.app
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,10 +16,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.LiveUpdateService
+import com.mutx163.qingyu.UmengApplication
+import com.mutx163.qingyu.UmengDiagnosticReporter
+import com.mutx163.qingyu.core.LenientJson
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.infra.AppLogStore
+import com.mutx163.qingyu.infra.redactedLiveDebugSnapshot
+import com.mutx163.qingyu.pages.diagnostics.AppLogSource
 import com.mutx163.qingyu.pages.diagnostics.DiagnosticsStrings
+import com.mutx163.qingyu.pages.diagnostics.LogViewerEntryLogic
 import com.mutx163.qingyu.pages.diagnostics.perfSnapshotJsonText
 import com.mutx163.qingyu.pages.settings.LiveDebugRow
 import com.mutx163.qingyu.pages.settings.LiveDebugSection
@@ -25,11 +34,14 @@ import com.mutx163.qingyu.pages.settings.SettingsLiveSelfCheckPage
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt3
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,6 +60,33 @@ private const val ROW_ISLAND_REFRESH = "liveSelfCheck.island.refresh"
 
 /** 上岛状态卡「自动刷新」开关的节点 id（`SettingsLiveSelfCheckPage.autoRefreshRow`）。 */
 private const val ROW_ISLAND_AUTO_REFRESH = "liveSelfCheck.island.autoRefresh"
+
+/** 上岛状态卡「导出并分享日志」的节点 rowId（`islandStatusButtons` 的第二个）。 */
+private const val ROW_ISLAND_EXPORT = "liveSelfCheck.island.export"
+
+/** 假期覆盖开关的节点 id（`SettingsLiveSelfCheckPage.holidaySwitchRow`）。 */
+private const val ROW_HOLIDAY_SWITCH = "liveSelfCheck.holidaySwitch"
+
+/** 测试通知卡「开始测试 / 取消测试」（同一个按钮，文案随 `sessionActive` 翻转）。 */
+private const val ROW_NOTIFICATION_START = "liveSelfCheck.notification.start"
+private const val ROW_NOTIFICATION_CANCEL = "liveSelfCheck.notification.cancel"
+
+/** 测试通知卡「选课测试 / 停止测试」。 */
+private const val ROW_NOTIFICATION_COURSE_TEST = "liveSelfCheck.notification.courseTest"
+private const val ROW_NOTIFICATION_COURSE_TEST_STOP = "liveSelfCheck.notification.courseTestStop"
+
+/** 测试通知卡「崩溃测试 / 异常卡顿测试」（仅 debug 构建渲染）。 */
+private const val ROW_NOTIFICATION_CRASH = "liveSelfCheck.notification.crashTest"
+private const val ROW_NOTIFICATION_ANR = "liveSelfCheck.notification.anrTest"
+
+/** `timetable_settings` 里的假期覆盖键（Dart `TimetableSettings.toJson` 同名）。 */
+private const val KEY_HOLIDAY_OVERRIDE = "holidayOverrideEnabled"
+
+/** 崩溃 / 卡顿测试先弹提示再触发，给 toast 留出上屏时间（Dart `:1332` 的 300ms）。 */
+private const val TEST_TRIGGER_DELAY_MILLIS = 300L
+
+/** logcat 标签：失败路径没有 ARB 文案时的唯一留痕（与日志查看器同口径）。 */
+private const val LOG_TAG = "[live-self-check]"
 
 /** 应用日志查看器的路由（壳里 `"h.log" -> DiagnosticsLogHost(...)`）。 */
 private const val LOG_VIEWER_PAGE_ID = "h.log"
@@ -80,22 +119,31 @@ private const val KEY_GENERATED_AT = "generatedAtMillis"
  * [perfSnapshotJsonText]，`refreshedAtText` 取 `generatedAtMillis`，
  * `semesterUnset` 读 `timetable_settings.semesterStartDate`。
  *
- * **没有 Kotlin 来源、保持默认值的 4 个**（不编数据）：
- * `holidayOverrideEnabled` / `timeCorrectionSeconds` / `sessionActive` / `courseTestLabel`；
+ * **没有 Kotlin 来源、保持默认值的 3 个**（不编数据）：
+ * `timeCorrectionSeconds` / `sessionActive` / `courseTestLabel`；
  * `holidayBlocksIsland` 需要 Dart 侧的假期判定，同样保持默认。
+ * `holidayOverrideEnabled` 本轮已接真源（见下表）。
  *
  * ## 交互落点
  *
- * | 按钮 | 落点 |
+ * | 按钮 / 开关 | 落点 |
  * |---|---|
  * | 清空日志 | `AppLogStore.clear()` + `clearNative()`，两者都成功才提示「已清空」 |
  * | 查看手机日志 | `onOpenPage("h.log")` |
  * | 更多测试者选项 | 诚实提示 `aboutUnavailable`（Kotlin 侧没有这个页面） |
  * | 刷新诊断 | 立刻重读一次 `buildDebugStatus` |
+ * | 导出并分享日志 | `UmengDiagnosticReporter.exportLiveDiagnosticsFile` + 复用日志查看器的 [shareLogText]；拿不到文件时按 Dart 口径回退到**脱敏后的诊断快照** |
  * | 自动刷新开关 | 宿主本地状态（Dart `_autoRefreshEnabled` 也是本地态） |
+ * | 假期覆盖开关 | 合并写 `timetable_settings.holidayOverrideEnabled`（顶层 + active profile 内嵌，与 `TimetableSettingsModelStore.save` 同一条路），读回校验失败就拨回并提示 |
+ * | 崩溃测试 / 异常卡顿测试 | 真触发（动作与 `MainActivity` 的 `triggerTestCrash` / `triggerTestAnr` 通道分支一致）；release 下按钮本就不渲染 |
+ * | 开始 / 取消测试、选课测试、停止选课测试 | 诚实提示 `aboutUnavailable`：Kotlin 侧没有测试夹具会话与强制起岛管线 |
  *
- * 测试通知卡的按钮（开始/取消测试、课中测试、崩溃 / 卡顿）没有数据来源，
- * 本轮不接线——它们仍会落到分派器的未知 rowId，不会假装成功。
+ * ## 已知边界（如实）
+ *
+ * - 假期覆盖开关只落盘：Compose 壳里没有「课表快照同步」（`syncScheduleSnapshot`
+ *   仍只有 Dart 侧在调），所以原生实时服务这一轮不会立刻按新值重算；等 Kotlin 侧有
+ *   快照同步后再补。Flutter 主壳读到的是同一份 prefs，值本身是真的。
+ * - 分享面板拉不起来时只有 logcat（与日志查看器同口径），没有对应 ARB 键，不假装成功。
  */
 @Composable
 fun LiveSelfCheckHost(
@@ -118,9 +166,18 @@ fun LiveSelfCheckHost(
     var refreshedAtText by remember { mutableStateOf<String?>(null) }
     var autoRefreshEnabled by remember { mutableStateOf(true) }
     var clearingDiagnostics by remember { mutableStateOf(false) }
+    var exportingDiagnostics by remember { mutableStateOf(false) }
+    var holidayOverrideEnabled by remember { mutableStateOf(false) }
 
     // 刷新按钮 → 自增一次，让下面的轮询 effect 立刻重跑一轮。
     var reloadTick by remember { mutableIntStateOf(0) }
+
+    // 假期覆盖是盘上的真值（Dart `initState` 也只读一次）。
+    LaunchedEffect(timetableStore) {
+        holidayOverrideEnabled = withContext(Dispatchers.IO) {
+            readHolidayOverride(timetableStore)
+        }
+    }
 
     LaunchedEffect(autoRefreshEnabled, reloadTick) {
         var lastFingerprint: String? = null
@@ -177,13 +234,107 @@ fun LiveSelfCheckHost(
         }
     }
 
+    fun exportDiagnostics() {
+        if (exportingDiagnostics) {
+            return
+        }
+        exportingDiagnostics = true
+        scope.launch {
+            val outcome = try {
+                withContext(Dispatchers.IO) { shareLiveDiagnostics(context) }
+            } finally {
+                // 任何路径都必须复位：Dart `_exportLiveDiagnostics` 的 finally 同口径。
+                // 不复位的话按钮会永久停在「导出中」，再点又被开头的守卫静默吞掉。
+                exportingDiagnostics = false
+            }
+            when (outcome) {
+                DiagnosticsExportOutcome.SHARED -> Unit
+                DiagnosticsExportOutcome.NOTHING_TO_EXPORT ->
+                    showToast(context, DiagnosticsStrings.liveDiagnosticsNothingToExport.zh)
+                // 没有「分享面板拉不起来」的 ARB 键（与日志查看器同一处缺口），
+                // 宁可只留 logcat，也不弹一句假的「已导出」。
+                DiagnosticsExportOutcome.SHARE_NOT_LAUNCHED ->
+                    Log.w(LOG_TAG, "share chooser not launched for live diagnostics")
+            }
+        }
+    }
+
+    /**
+     * 假期覆盖开关。
+     *
+     * 真值在 `timetable_settings.holidayOverrideEnabled`（Dart `TimetableSettings`
+     * 同名键）。写法和设置族完全一致：顶层 + active profile 内嵌两处一起合并写
+     * （`TimetableSettingsModelStore.save` 的同一对调用），盘上其余键原样保留。
+     *
+     * 写入口没有失败返回值（`commit()` 的 Boolean 被 `KeyValueStore` 丢掉），
+     * 所以**读回校验**：没落进去就拨回原值并提示，不把「没存上」画成「已开启」。
+     */
+    fun setHolidayOverride(enabled: Boolean) {
+        val previous = holidayOverrideEnabled
+        holidayOverrideEnabled = enabled
+        scope.launch {
+            val landed = withContext(Dispatchers.IO) {
+                writeHolidayOverride(timetableStore, enabled)
+            }
+            // 只有「这次点击仍是最新一次」时才回滚，避免慢写的旧请求盖掉新点击。
+            if (!landed && holidayOverrideEnabled == enabled) {
+                holidayOverrideEnabled = previous
+                showToast(context, SettingsStringsExt2.saveFailed.zh)
+            }
+        }
+    }
+
+    /**
+     * 崩溃测试：动作与 `MainActivity` 的 `triggerTestCrash` 通道分支**逐条一致**
+     * （那是全仓唯一实现；它不是可复用的 Kotlin 入口，本文件不另造一套行为）。
+     *
+     * 先弹警告再触发（Dart `:1327-1336` 的 300ms）。用 `Handler.post` 而不是在协程里
+     * 直接 throw：异常必须落到主线程未捕获处理器，才能被 U-APM 当成真实崩溃收走。
+     */
+    fun triggerTestCrash() {
+        if (!BuildConfig.DEBUG) {
+            // 页面本来就只在 debug 渲染这两颗按钮；通道层也有一道同样的门。
+            showToast(context, SettingsStrings.aboutUnavailable.zh)
+            return
+        }
+        showToast(context, SettingsStringsExt3.liveTestingCrashSoon.zh)
+        scope.launch {
+            delay(TEST_TRIGGER_DELAY_MILLIS)
+            UmengApplication.initializeAnalyticsIfNeeded(context.applicationContext)
+            Handler(Looper.getMainLooper()).post {
+                throw RuntimeException("Manual Umeng U-APM test crash")
+            }
+        }
+    }
+
+    /** 异常卡顿测试：同上（`MainActivity.triggerTestAnr`：主线程睡 30 秒）。 */
+    fun triggerTestAnr() {
+        if (!BuildConfig.DEBUG) {
+            showToast(context, SettingsStrings.aboutUnavailable.zh)
+            return
+        }
+        showToast(context, SettingsStringsExt3.liveTestingAnrSoon.zh)
+        scope.launch {
+            delay(TEST_TRIGGER_DELAY_MILLIS)
+            UmengApplication.initializeAnalyticsIfNeeded(context.applicationContext)
+            Handler(Looper.getMainLooper()).post {
+                try {
+                    Thread.sleep(30_000L)
+                } catch (_: InterruptedException) {
+                }
+            }
+        }
+    }
+
     val data = LiveSelfCheckData(
         isReleaseBuild = !BuildConfig.DEBUG,
+        holidayOverrideEnabled = holidayOverrideEnabled,
         semesterUnset = semesterUnset,
         serviceRunning = serviceRunning,
         notIslandReason = notIslandReason,
         statusText = statusText,
         loadingDebugStatus = !debugLoaded,
+        exportingDiagnostics = exportingDiagnostics,
         clearingDiagnostics = clearingDiagnostics,
         autoRefreshEnabled = autoRefreshEnabled,
         refreshedAtText = refreshedAtText,
@@ -203,9 +354,112 @@ fun LiveSelfCheckHost(
                 ROW_LOCAL_LOGS_MORE -> showToast(context, SettingsStrings.aboutUnavailable.zh)
                 ROW_ISLAND_REFRESH -> reloadTick += 1
                 ROW_ISLAND_AUTO_REFRESH -> autoRefreshEnabled = !autoRefreshEnabled
+                ROW_ISLAND_EXPORT -> exportDiagnostics()
+                ROW_HOLIDAY_SWITCH -> setHolidayOverride(!holidayOverrideEnabled)
+                // 测试夹具会话（开始/取消测试）与强制起岛管线（选课测试）只有 Dart 侧
+                // 的 `TimetableProvider` / `live_testing_trigger.dart` 有；原生
+                // `LiveUpdateService` / `LiveUpdateScheduler` 里没有可用入口。
+                ROW_NOTIFICATION_START,
+                ROW_NOTIFICATION_CANCEL,
+                ROW_NOTIFICATION_COURSE_TEST,
+                ROW_NOTIFICATION_COURSE_TEST_STOP,
+                -> showToast(context, SettingsStrings.aboutUnavailable.zh)
+
+                ROW_NOTIFICATION_CRASH -> triggerTestCrash()
+                ROW_NOTIFICATION_ANR -> triggerTestAnr()
             }
         },
     )
+}
+
+/** 假期覆盖的真值：`timetable_settings.holidayOverrideEnabled`（缺键 / 坏值按 false）。 */
+private fun readHolidayOverride(store: TimetableStore): Boolean =
+    LenientJson.bool(store.loadSettingsJson()[KEY_HOLIDAY_OVERRIDE]) ?: false
+
+/**
+ * 合并写两处（顶层 + active profile 内嵌），再**读回校验**。
+ *
+ * 与 `TimetableSettingsModelStore.save` 同一条路：桌面卡片读的是 profile 内嵌那份，
+ * 只写顶层会出现「设置页改了、卡片不动」。写入口没有失败返回值（`commit()` 的
+ * Boolean 被 `KeyValueStore` 丢掉），所以只能靠读回判真假。
+ */
+private fun writeHolidayOverride(store: TimetableStore, enabled: Boolean): Boolean =
+    runCatching {
+        val patch = mapOf<String, Any?>(KEY_HOLIDAY_OVERRIDE to enabled)
+        store.saveSettingsPatch(patch)
+        store.saveSettingsPatchToActiveProfile(patch)
+        readHolidayOverride(store) == enabled
+    }.getOrDefault(false)
+
+/** 「导出并分享日志」的三种结局（宿主据此决定提示什么）。 */
+private enum class DiagnosticsExportOutcome {
+    SHARED,
+    NOTHING_TO_EXPORT,
+    SHARE_NOT_LAUNCHED,
+}
+
+/**
+ * 「导出并分享日志」的真实现（Dart `_exportLiveDiagnostics` 的等价物）。
+ *
+ * 1. `UmengDiagnosticReporter.exportLiveDiagnosticsFile`：Dart 那个平台通道方法在
+ *    原生侧的同一份实现；
+ * 2. 拿不到文件时回退到**脱敏后**的诊断快照（Dart `_exportCurrentDebugSnapshot`，
+ *    隐私审查 2026-10-09 发现 1）——复用同一份 `redactedLiveDebugSnapshot`，
+ *    不自己再写一套脱敏规则；
+ * 3. 分享统一走日志查看器的 [shareLogText]，不另造分享面板。
+ *
+ * 必须在 IO 线程调用（写文件、读 SharedPreferences）。
+ */
+private fun shareLiveDiagnostics(context: Context): DiagnosticsExportOutcome {
+    val config = LogViewerEntryLogic.configFor(AppLogSource.LIVE)
+    val exportedText = UmengDiagnosticReporter.exportLiveDiagnosticsFile(context)
+        ?.takeIf { it.isNotBlank() }
+        ?.let { path -> runCatching { File(path).readText() }.getOrNull() }
+    if (!exportedText.isNullOrBlank()) {
+        return shareTextFile(
+            context = context,
+            text = exportedText,
+            fileName = LogViewerEntryLogic.exportFileName(
+                AppLogSource.LIVE,
+                System.currentTimeMillis(),
+            ),
+            shareText = config.shareText,
+            shareSubject = config.shareSubject,
+        )
+    }
+
+    // 原生导出拿不到（记录开关关着 / 文件不存在）→ 与 Dart 一样退回当前诊断快照。
+    // 快照里有课程名 / 教室等个人字段，**必须**先脱敏再出门。
+    val snapshot = runCatching { LiveUpdateService.buildDebugStatus(context) }.getOrNull()
+        ?: return DiagnosticsExportOutcome.NOTHING_TO_EXPORT
+    @Suppress("UNCHECKED_CAST")
+    val redacted = redactedLiveDebugSnapshot(snapshot as Map<Any?, Any?>)
+    val payload = linkedMapOf<String, Any?>(
+        "exportedAtMillis" to System.currentTimeMillis(),
+        "source" to "live_testing_screen_snapshot",
+        "debugStatus" to redacted,
+    )
+    return shareTextFile(
+        context = context,
+        text = perfSnapshotJsonText(payload),
+        fileName = "mikcb-live-debug-snapshot-${System.currentTimeMillis()}.json",
+        shareText = SettingsStringsExt3.liveDiagnosticsSnapshotShareText.zh,
+        shareSubject = SettingsStringsExt3.liveDiagnosticsSnapshotShareSubject.zh,
+    )
+}
+
+private fun shareTextFile(
+    context: Context,
+    text: String,
+    fileName: String,
+    shareText: String,
+    shareSubject: String,
+): DiagnosticsExportOutcome = if (
+    shareLogText(context, text, fileName, shareText, shareSubject)
+) {
+    DiagnosticsExportOutcome.SHARED
+} else {
+    DiagnosticsExportOutcome.SHARE_NOT_LAUNCHED
 }
 
 /**

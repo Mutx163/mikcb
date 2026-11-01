@@ -1277,6 +1277,31 @@ private fun controlCardWiring(textKey: String): Pair<SettingsAction, String>? = 
 
     "liveTestingRefreshing" -> SettingsAction.RUN_NOW to "liveSelfCheck.island.refresh"
 
+    // 2026-11-01 F24：自检页剩余控件收口。同样由宿主常量认领 rowId，不进分派器。
+    // - 导出并分享日志：主路径调原生 `UmengDiagnosticReporter.exportLiveDiagnosticsFile`，
+    //   拿不到文件时回退到脱敏诊断快照（Dart `settings_live.dart:330-382` 同口径）；
+    // - 测试通知四颗：崩溃 / 卡顿按 `MainActivity` 的 UMENG 通道分支搬运，真触发；
+    //   开始/取消测试与选课测试原生侧没有入口 ⇒ 诚实提示不可用。
+    // 「导出中」也登记到同一个 rowId：控制卡没有 busy 态，不登记就是又一颗点不动的死按钮；
+    // 宿主开头有 `if (exportingDiagnostics) return`，重复点击是安全空操作。
+    "liveTestingExportAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.island.export"
+
+    "liveTestingExporting" -> SettingsAction.RUN_NOW to "liveSelfCheck.island.export"
+
+    "liveTestingStartAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.notification.start"
+
+    "liveTestingCancelAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.notification.cancel"
+
+    "liveTestingCourseTestAction" -> SettingsAction.RUN_NOW to
+        "liveSelfCheck.notification.courseTest"
+
+    "liveTestingCourseTestStopAction" -> SettingsAction.RUN_NOW to
+        "liveSelfCheck.notification.courseTestStop"
+
+    "liveTestingCrashAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.notification.crashTest"
+
+    "liveTestingAnrAction" -> SettingsAction.RUN_NOW to "liveSelfCheck.notification.anrTest"
+
     else -> null
 }
 

@@ -411,9 +411,13 @@ private const val LOG_SHARE_DIR_NAME = "log-share"
  * `IllegalArgumentException`；此时把整份日志当纯文本放进 [Intent.EXTRA_TEXT]，
  * 用户仍然拿得到内容，只是没有 `.log` 附件。不自研分享面板。
  *
+ * `internal`（不是 private）：同一模块的「实时活动自检」宿主
+ * （`LiveSelfCheckHost.kt`）的「导出并分享日志」与这里共用**同一份**分享实现，
+ * 不再各抄一条。可见性之外没有任何改动，查看器的行为逐字不变。
+ *
  * @return 是否成功拉起过分享面板。
  */
-private fun shareLogText(
+internal fun shareLogText(
     context: Context,
     text: String,
     fileName: String,
