@@ -1,7 +1,7 @@
 # Compose 迁移 · Phase 3 页面进度与认领台账
 
 > ⚠️ **【历史归档：Phase 3 页面搬运已于 2026-10-27 全部完工】**  
-> 全仓 78 屏 UI 迁移已 100% 完成。当前已进入 Phase 3.5 接线装配阶段。  
+> 全仓 78 屏 UI 迁移已 100% 完成（**当时的页面单元口径**；2026-11-01 索引口径为 88 条 / 87 条可进入，见派工大表 §1.1）。当前已进入 Phase 3.5 接线装配阶段。  
 > 最新唯一派工总表请前往：👉 [**全景直通派工大表（2026-10-28-compose-master-dispatch-table.md）**](2026-10-28-compose-master-dispatch-table.md)  
 > 
 > 状态：**已完工归档**（2026-10-26 建立，2026-10-27 完工）
@@ -573,6 +573,8 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 留作下一批，本批给的是结构一致的骨架/列表；
 ② 相机扫码、局域网真实收发热都没有真机证据。
 
+> 上表是 Phase 3 **页面搬运**批次的快照。此后的**接线批次**不在上表：F23（2026-10-31，设置族收尾 + 壁纸死路由）见 §9.9；F24（2026-11-01，并行硬化，进行中）见 §9.10。
+
 ### 9.1 本轮五个批次的过程记录（写给后来者）
 
 2026-10-27 18:30 领五个批次、21:08 全部交付。**四名队友中三人零产出或近乎零产出**，
@@ -651,7 +653,7 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 （`MonthGridHandle`），实测对上了。L0 **79 例**。
 
 **壳路由是这一轮真正的解锁点**：`composeUi` 壳原本只有课表/日程/任务三个槽位、
-不读 Intent、深链是 Flutter debug 专属，**82 个页面单元只有 3 个点得到**——L4「逐页对照」
+不读 Intent、深链是 Flutter debug 专属，**82 个页面单元只有 3 个点得到**（当时口径；2026-11-01 复核为 88 条目录 / 87 条可进入，见 §9.5）——L4「逐页对照」
 在接线前物理上做不了。现在底部玻璃坞第 4 个槽位「索引」= 按批次分组的页面目录：
 **可进 75 条（16 零参 + 59 演示数据）、暂不可用 6 条、常驻 1**，四个数字被
 `ShellPageCatalogTest` 钉住（改口径必须同时改测试与 L4 清单，是显式决定）。
@@ -757,7 +759,7 @@ Composable（由一个通用 `SettingsPageScreen(spec)` 渲染），于是「没
 
 `composeUi` 的 `PagesShellActivity` 只有 `DockSlot`（课表/日程/任务）三个值，没有路由状态、
 不读 Intent；manifest 的 mime/scheme 过滤全挂在 `enabled=false` 的 `MainActivity` 上，
-深链又是 Flutter debug 专属（release 直接 return）。所以**82 个页面单元里只有 3 个点得到**，
+深链又是 Flutter debug 专属（release 直接 return）。所以**82 个页面单元里只有 3 个点得到**（当时口径；现为 87 条可进入，见 §9.5），
 L4「逐页对照」在接线前物理上做不了。交给 `l4-recon` 做 task-6（页索引 + 分派，壳属 Lead 区，
 本次点名授权），并要求「接进去就崩的页面宁可标暂不可用，也不要给一个闪退入口」。
 
@@ -883,11 +885,11 @@ T1 的 `pages/task/`、S1/S2 的 `main/.../app/` 侧不受影响。
 它改成「每落一个文件立刻跑一次 L0」后解决。
 ⇒ 共享模型层目录里的文件，**写盘即生效于全队**，中间态必须可编译。
 
-**仍未做（诚实清单）**：① 一页都没真机对照（现在 78 条可点，入口齐了，**就差用户在手机上走一遍**）；
+**仍未做（诚实清单）**：① 一页都没真机对照（现在 78 条可点——**当时口径；2026-11-01 复核为 87，见 §9.5**，入口齐了，**就差用户在手机上走一遍**）；
 ② WebDAV / WebView 都只到「JVM 真 HTTP 单测」/「L1 编译」，**没有一页接过界面**——
 WebView 的接线被 `WarehouseWebLoginPage.kt`（别人未提交）挡着，WebDAV 还没定接到哪一屏；
 ③ 局域网收发与相机扫码**尚未开工**（相机要新依赖，属 build.gradle = Lead 区）；
-④ 毛玻璃页面层 / `fontWeight` / 余 26 个文件裸 `Card(` 未动。
+④ 毛玻璃页面层 / `fontWeight` / 余 26 个文件裸 `Card(` 未动（2026-11-01 复核：裸 `Card(` 实为 **26 处 / 2 文件**，原文「26 个文件」是笔误）。
 
 ### 9.5 Phase 3.5 接线与装配（2026-10-28 白天，用户口径「让按钮真的有反应」）
 
@@ -937,26 +939,27 @@ WebView 的接线被 `WarehouseWebLoginPage.kt`（别人未提交）挡着，Web
 | 壳路由 | `main/.../pages/ShellWiring.kt`（`pendingTimeSchemeEditId` + `/settings/time-schemes/editor`）、`ShellPageIndex.kt` | 小改 |
 
 L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。**真机未对照**。
-未接：分享（I3/C2 缺传输包与 `FileProvider`）、地点匹配页本身仍是演示数据（`P35-B2` 余量）。
+未接：分享（时间模板的 `.mikcb` 传输包构建未接；`FileProvider` 本身已在 manifest 注册，`AndroidManifest.xml:137-151`）、地点匹配页本身仍是演示数据（`P35-B2` 余量）。
 
 **能力缺口进展**
 
 | 能力 | 状态 | 提交 |
 |---|---|---|
-| WebDAV 真收发传输层 | ✅ 交付（**未接线到界面**） | `c339330d` + 收口 `7861a503` |
-| 教务网页登录 WebView 宿主 | ✅ 交付（**接线仍被挡**：目标文件有他人未提交改动） | `ca94d1a6` |
-| 局域网编辑 HTTP 服务端 | ✅ A/B 组端点全部接在仓储上 | `751b6411` `7e83433c` `090aa000` |
+| WebDAV 真收发传输层 | ✅ **已接线到界面**：`CloudSyncController` 用真 `WebdavRemoteTransport` 驱动 `f.cloudSync` / `f.backupList`（`ShellPageIndex.kt:1419-1487`、`CloudSyncController.kt:46-50`） | `c339330d` + 收口 `7861a503` |
+| 教务网页登录 WebView 宿主 | ✅ 交付：真 WebView 已接进 `WarehouseWebLoginPage.kt:249-251`；壳侧 `g2.webLogin` 因**没有学校列表/真实 `import_url` 数据源**显示诚实空态（F23 `e8b5a06f`，`ShellPageIndex.kt:1543-1549`），不是「被未提交改动挡住」 | `ca94d1a6` |
+| 局域网编辑 HTTP 服务端 | ✅ A/B 组端点全部接在仓储上；`import/preview` 与 `import/apply` 已接真应用（`378b801f`，见下方 ②） | `751b6411` `7e83433c` `090aa000` `378b801f` |
 | 二维码生成器 | ✅ 交付（与 Dart `qr` 3.0.2 现场生成的矩阵逐位对拍） | `2a77c08f` |
-| 相机扫码（可测层） | ✅ 交付（依赖需求清单待 Lead 拍板） | `9cc5b2e9` |
+| 相机扫码（可测层） | ✅ 交付；CameraX `1.6.1` + MLKit `17.3.0` 已进构建（`android/app/build.gradle:363-368`），`QrCameraHost.kt` 经 `QrTransferHosts.kt:162` 注入 `g3.qrScan`（`ShellPageIndex.kt:1578`）。真机取景仍未验 | `9cc5b2e9` |
 | 地点时间匹配编辑页 | ✅ 交付（Phase 3 遗留） | `7e8a9d32` |
 
-**仍未做（诚实清单）**：① **一页都没真机对照**（壳里 78 条可点，入口齐了，就差用户走一遍）；
+**仍未做（诚实清单，2026-11-01 复核）**：① **一页都没真机对照**（壳里 **87** 条可点，入口齐了，就差用户走一遍；口径见 `ShellPageCatalogTest.kt:36-45`，旧写的 78 已过期）；
 ② ~~局域网 `import/apply` 保持 501~~ → **已接真应用**（`378b801f`，2026-10-30：`transfer/lan/LanTransferLogic.kt`
 + `LanTransferApplier.kt`，本机实跑 354 例 L0 绿；2026-11-01 复核）。该端点剩余的缺口已换成两条：
 「导入后没有撤销点（`transferId` 恒 null）」「设置只应用已移植子集」，
-见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；③ 备份里 tasks/exams 写回与
-多档案恢复等仓储原子入口（`task-14`）；④ 相机真依赖未加（`build.gradle` 是 Lead 区，需拍板）；
-⑤ 毛玻璃页面层 / `fontWeight` / 余 26 个文件裸 `Card(` 未动。
+见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；
+③ 备份写回**只解决了一半**：仓储原子入口已交付（`TimetableRepository.kt:197` `replaceActiveProfileContent(courses, tasks, exams)`、`:236` `replaceAllProfiles`），文件导入确实写回 tasks/exams（`DataTransferHost.kt:473-480`）；**WebDAV 云端恢复仍只下载快照、不写回仓储**（`CloudSyncCoordinator.kt:25-27` 自认归 task-14），局域网多档案包明确拒绝而非恢复（`LanTransferLogic.kt:109`）；
+④ ~~相机真依赖未加~~ → **已加**（`android/app/build.gradle:363-368`：CameraX `1.6.1` + MLKit `17.3.0`）；真机取景仍未验；
+⑤ 毛玻璃页面层 / `fontWeight` / 裸 `Card(` 未动：`layerBackdrop` 仅 4 处（玻璃坞、首页壁纸、展示册、壳采样），**截至 HEAD 页面顶栏/弹层未接**（F24 E 线在途，见 §9.10）；页面层仍有 311 处硬写 `fontWeight`；裸 `Card(` 为 **26 处 / 2 文件**（`showcase/MiuixShowcaseSubpages.kt` 25、`timetable/WeekSelectorSheet.kt` 1），原文「26 个文件」是笔误。
 
 **这一轮反复踩到的结构性问题（建议专门收一次）**：
 `app/` `share/` `sync/` `transfer/` 这些共享模型目录**被每次 L0 与 Gradle 编译无条件收录**，
@@ -1010,12 +1013,47 @@ L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。
 | 2 | **F06 只剩 2 页仍传空构造 `SettingsPageState()`**：`b.live`（`ShellPageIndex.kt:445-446`）与 `b.liveSelfCheck`（`ShellPageIndex.kt:452`）。 | 直接读该文件当前工作区内容 |
 | 3 | `b.reset`、`b.glassDockIcon` 已从 `SettingsScreen(... spec(SettingsPageState()))` 换成 `SettingsHost` 真宿主（`ShellPageIndex.kt:481` / `:487`），**已落库**。 | 提交 `2a07498d`（2026-10-31 复核：`git diff 2a07498d HEAD -- ShellPageIndex.kt` 为空，即 HEAD 已是该版本） |
 | 4 | **P0-7「更多壁纸」入口点了没反应**：`SettingsBackdropFlowPage.BING_GALLERY_TARGET = "bingWallpaperGallery"`（`SettingsBackdropFlowPage.kt:182`）在 `ShellWiring.kt` 的路由表里**无登记**（HEAD 上 `grep -c bingWallpaperGallery` = 0）。 | `docs/plans/2026-10-30-refactor-review/README.md:65` 与 `:87`；F22 本地复核同结论 |
-| 5 | **全仓 87 条可进入路由；真机逐页对照 0 页**（46 页「代码上真」但无一页被用户在真机上确认）。 | 口径来源 `docs/plans/2026-10-29-page-coverage-census.md:12`（87 条分派分支）；未对照的自认见 `docs/plans/2026-10-29-remaining-pages-tasklist.md:598` |
+| 5 | **全仓 87 条可进入路由；真机逐页对照 0 页**（46 页「代码上真」但无一页被用户在真机上确认）。 | 口径来源 `docs/plans/2026-10-29-page-coverage-census.md:10-11`（88 条目录 / 87 条分派分支）；未对照的自认见 `docs/plans/2026-10-29-remaining-pages-tasklist.md:597` |
 | 6 | **收口提交仍在进行中**：`android/**` 的已完工改动由 F21 独占提交，本节落笔时未收口。 | `.agents/compose-phase3/claims/F21-settlement-commit.md` 状态行 |
 
 **F22 未能核实、因此没有写进上表的**：F21 最终提交了几笔、各自覆盖哪些文件（认领文件仍写「进行中」）；
 87 条路由里每页当前的真实数据源状态（只能引用 10-29 的普查结论，未逐页重扫）；
 工作区里剩下的 `android/**` 改动属于哪条泳道、何时收口。
+
+### 9.9 2026-10-31 F23 交付快照（设置族收尾 + 壁纸死路由）
+
+F23 认领文件：`.agents/compose-phase3/claims/F23-settings-tail-and-gallery.md`（状态**已交付**，2026-10-31 22:1x）。5 笔提交，工作区干净。本节只记核实到的事实：
+
+| 提交 | 事实 | 证据 / 落点 |
+|---|---|---|
+| `06975048` | 桥接层给 `b.live` 开 `liveData` 入口：`SettingsPageBridge.specFor` 增加默认参数 `liveData: LivePageData = LivePageData()`；默认值仍是空构造（现有行为不变），真接线方自己读 `LiveDisplayStore` 再传。新增 `SettingsLivePageBridgeDataTest` 契约测试（自定义档摘要必须原样落到两行）。 | `SettingsPageBridge.kt`；`SettingsLivePageBridgeDataTest.kt` |
+| `e8b5a06f` | 实时活动两屏接真宿主：新建 `LiveSelfCheckHost.kt` / `LiveSettingsPageHost.kt`；`b.live` 从 `LiveDisplayStore` 读两档显示设置，`b.liveSelfCheck` 每秒读 `LiveUpdateService.buildDebugStatus`（指纹去重）并接五条落点，白名单补 5 键。仓库适配三页（`g2.schoolAdapters` / `g2.adapterDetail` / `g2.webLogin`）改诚实空态，删除「示例学校 / 示例适配器 / example.com」三个常量；`ShellPageCatalog` 前两页 DIRECT→DEMO；`DiagnosticsWiringGuardTest` 把 `b.liveSelfCheck` 转入受管。 | `ShellPageIndex.kt:445-464`、`:1532-1549`；`ShellPageCatalog.kt:252-276` |
+| `30603bc6` | 补 `bingWallpaperGallery` 死路由：`shellPageIdForRoute` 增加 `"bingWallpaperGallery" -> "b.bingGallery"`；`SettingsRouteWiringGuardTest` 改为递归扫 `main` / `composeP1` 两源集、判据收紧并剔注释，新增两条判据自检（含「注释掉的路由不算落点」）。 | `ShellWiring.kt`；`SettingsRouteWiringGuardTest.kt` |
+| `1c6428d1` | 壁纸「调整位置」不再静默：取景页未移植前，由 `WallpaperSheetBody.handleAction` 认领该行并提示「不可用」（复用 `aboutUnavailable`），不新增 ARB 键。 | `WallpaperSheetBody.kt` |
+| `370930ce` | CJK 门禁不再把 `Log.v/d/i/w/e` 里的中文算作上屏文案（Kotlin 侧与 `scripts/i18n-cjk-baseline.py` 逐字一致）；基线重生成后逐字未变；新增判据自检。 | `CjkLiteralGateTest.kt`；`scripts/i18n-cjk-baseline.py` |
+
+验收（认领文件记录，agent 侧）：L0 `pages/settings` **753 例**；L1 `:app:compileDevDebugKotlin` BUILD SUCCESSFUL；L2 `:app:testDevDebugUnitTest` 全绿；样式闸门 `-Domain settings` 0 违规；5 条咬合探针（删/改 → 红 → 还原 → 绿）。**真机对照 0 页，仍归用户。**
+
+**F23 顺带结清的两条 F22 旧账**：§9.8 第 2 条（`b.live` / `b.liveSelfCheck` 仍传空构造 `SettingsPageState()`）由 `e8b5a06f` 解决；§9.8 第 4 条（`bingWallpaperGallery` 在 `ShellWiring` 无登记）由 `30603bc6` 解决。§9.8 其余行是 2026-10-31 当时事实，不回改。
+
+**F23 明确遗留**：`liveTestingExportAction`（导出并分享日志）仍是死按钮；自检页测试通知卡的四个按钮无 Kotlin 数据源；壁纸拖动取景页未移植（现在只给诚实提示）；`b.reset` 四条缺陷另批；CJK 门禁扩到 `main` 源集另批。
+
+### 9.10 2026-11-01 F24 并行硬化（**进行中**，占位记录）
+
+F24 认领文件：`.agents/compose-phase3/claims/F24-parallel-hardening.md`（状态：**进行中**）。8 条工作线并行、写作用域互不重叠；壳与跨族共享件（`ShellPageIndex.kt` / `ShellWiring.kt` / `SettingsPageRenderers.kt` / `SettingsPageBridge.kt`）由 Lead 单写，子代理只交 snippet。
+
+| # | 工作线 | 在做什么 | 状态 |
+|---|---|---|---|
+| A | `b.reset` 四条缺陷 | ①确认弹窗正文只覆盖 3 个作用域，课表页 / 桌面小组件走了外观口径；②首页导航收到 `RESET_SCOPE` 直接应用、无二次确认；③确认按钮文案用了「重置」而非登记的「恢复默认设置」；④`DONE_MESSAGE_KEY` 从不弹 | 进行中 |
+| B | 自检页剩余按钮 | 导出并分享日志、测试通知四颗按钮、假期开关闭环 | 进行中 |
+| C | 壁纸取景页 | 移植 `backdrop.image.adjust` 的真拖动取景；落地后删掉 `1c6428d1` 的「不可用」提示分支 | 进行中 |
+| D | CJK 门禁扩到 `main` 源集 | 当前 `CjkLiteralGateTest` 只扫 `composeP1/kotlin`，`src/main/kotlin` 整目录是盲区；扩了要整目录立基线 | 进行中 |
+| E | 共享骨架毛玻璃与宽屏 | `QingyuPageScaffold` 顶栏接 miuix-blur；宽屏 `AdaptiveTopAppBar` / `NavigationRail` 调研 | 进行中 |
+| F | 壳里假数据 / 死控件普查 | **只读**第二轮普查，不改任何文件 | 进行中 |
+| G | 文档同步 | 派工大表 §五 与本节 §9.9 / §9.10 的核实修订（本批本条） | 进行中 |
+| H | 样式债清理 | 选一个域把 R1–R6 棘轮欠账清零 | 进行中 |
+
+**口径**：本节只是占位，**不声明任何一条已完成**。八条都交付后，由 Lead 在本节补提交号与验收数字；真机逐页对照仍归用户。
 
 ---
 

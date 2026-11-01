@@ -310,7 +310,7 @@ $ git show HEAD:android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timeta
 - 课卡缺作业指示点与单节提醒铃铛。**修法**：`WeekCardModel` 加 `hasHomework` / 提醒字段并下传（工作树只做了作业点，铃铛无数据源）。
 - 「正在上课」高亮永不出现：`isHighlighted` 无调用方。**修法**：宿主按当前节次/时间算 `isCurrentCourse` 传入。
 - 三个设置项改了无可见效果：`backToCurrentWeekOpacity` / `showWeatherOnCard` / `cardTitleColor{Light,Dark}` / `cardDetailColor{Light,Dark}` 渲染层 0 读。**修法**：接线或从 `WeekViewStyle` 删除并注明（工作树已做 ①②③）。
-- 日视图课卡天气行参数 `weatherInfo` 无调用方。**修法**：宿主把天气 provider 按节次喂进 `DayViewPageData`（工作树只交付了 `DayViewWeather`，**仍未接线**）。
+- 日视图课卡天气行参数 `weatherInfo` 无调用方。**修法**：宿主把天气 provider 按节次喂进 `DayViewPageData`（工作树只交付了 `DayViewWeather`，**当时仍未接线**；2026-11-01 复核：壳已传 `weatherOf`，`ShellPageIndex.kt:601-656`）。
 - 日视图恒可翻 30 周 × 7 天。**修法**：壳传 `totalWeeks = semesterWeekCount`、`visibleDays = visibleDayNumbers(hideWeekends)`（工作树已做）。
 - 考试卡「座位: 」中文硬编码且与 ARB 不符。**修法**：走 `DayViewStrings.seatLabel()`（工作树已做）。
 

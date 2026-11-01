@@ -11,7 +11,7 @@
 ## 零、开工前 30 秒（照做，别跳）
 
 1. **先看认领区** `.agents/compose-phase3/claims/`：**有文件的批次 = 有人在做，别碰**。
-   本表「当前状态」列是 2026-10-28 的快照，认领前一律以认领区为准。
+   本表「当前状态」列已于 2026-11-01 按代码复核刷新（原为 2026-10-28 快照），但认领前仍一律以认领区为准。
 2. **只在 §二 给的写作用域里写文件**（写作 `源集: 相对路径`，源集根见 §二 表头）。
    标 **[Lead]** 的路径属 Lead 专属，泳道不得改。
 3. **交付证据按 §三 的门槛走**：L0 模块单测 → L1 编译 → 需要时 L2 单测；
@@ -32,10 +32,10 @@
 
 | 说法 | 真实口径 | 出处 |
 |---|---|---|
-| 「78 屏」 | **索引里可进入的条目数 = 78**（此外暂不可用 3、常驻 1，合计 82，四个数字被 JVM 测试钉住）；**不是**页面文件数 | `2026-10-27-compose-phase3-l4-checklist.md` |
-| 页面文件 | `composeP1/.../pages/` 下 `*Page.kt` **56** 个、`.kt` 共 **101** 个 | 实测（2026-10-28） |
+| 「87 条可进入」 | **索引里可进入的条目数 = 87**（暂不可用 **0**、常驻 1，合计 **88**，四个数字被 JVM 测试钉住）；**不是**页面文件数。旧口径「82 / 78 / 3」已过期 | `ShellPageCatalogTest.kt:36-45`（2026-11-01 复核） |
+| 页面文件 | `composeP1/.../pages/` 下 `*Page.kt` **62** 个、`.kt` 共 **149** 个（口径 = 已提交的 HEAD `370930ce`；未提交的在途文件不计） | 实测（2026-11-01） |
 | 小组件 | **10 个** `appwidget-provider`：10 份 `widget_*_info.xml` ↔ manifest 里 10 个 receiver（第 11 处 `APPWIDGET_UPDATE` 是刷新广播，不是 Provider） | `AndroidManifest.xml` |
-| 还进不去的 3 条 | 二维码发送、二维码扫码（缺宿主槽位与实现）、月视图（缺壳侧月网格数据源） | l4-checklist 缺口表 |
+| 原「还进不去」的 3 条 | **现均已可进入**：二维码发送（`ShellPageIndex.kt:1564`）、二维码扫码（`:1578`）、月视图（`:545`）都已接分派；目录 `UNAVAILABLE = 0` | `ShellPageCatalogTest.kt:41` |
 | 相机依赖 | CameraX `1.6.1` + MLKit `barcode-scanning:17.3.0` **已进**两个 compose 变体（`0b97f20c`）——台账 §9.4「相机真依赖未加」**已过期** | `android/app/build.gradle` |
 
 ### 1.2 七个业务域、十三个工作包
@@ -66,19 +66,19 @@
 （`main` = 全变体可见；`composeP1` = 仅 compose 变体；`test` = 只能引用 `main`；`composeUi` = 壳）。
 仓库根下的 `android/app/build.gradle`、`android/app/src/main/AndroidManifest.xml` 均属 **[Lead]**。
 
-| 包 | 覆盖功能与页面 | 写作用域（真实路径，可直接核对） | 当前状态（2026-10-28） |
+| 包 | 覆盖功能与页面 | 写作用域（真实路径，可直接核对） | 当前状态（2026-11-01 复核；原为 2026-10-28 快照） |
 |---|---|---|---|
-| **T1** | 课程操作弹层：首页点课呼出 6 个动作（编辑/删除/…）。壳 KDoc 诚实清单第 ① 条自己写明「建议单列一批」 | `composeP1: pages/course/`、`composeP1: pages/timetable/`（仅新增回调）＋ **[Lead]** 壳挂接 | **【可立即认领】**：宿主层与收口已交付（`c374ca64`/`78abfc53`），**只剩弹层渲染层** |
-| **T2** | `TimetableProfilesPage`：切换活动课表、新建、重命名、删除 | `composeP1: pages/timetable/`、`main: pages/timetable/TimetableProfilesModel.kt`＋ **[Lead]** 壳路由。仓储已带 `profiles`/`activeProfileId`，**不必动 `main: app/`** | **【可立即认领·仅页内动作】** |
-| **S1** | 课表显示偏好：隐藏周末、节次行高、时间列宽、长按空档加课。现状：壳用的是宿主默认值，**不是**读用户存档 | `main: app/TimetableSettingsModel.kt`（**仅追加**显示偏好键）、`composeP1: app/TimetableHost.kt`、`main: pages/settings/`、`composeP1: pages/settings/` | **【等前置收口】**：设置模型批次（`P35-settings-model`）在改同一个文件，必须**串行**。注：4 键里「长按加课」已在模型内，缺的是另 3 键；`core/TimetableSettings.kt` 只是四键子集 |
-| **S2** | 设置族其余页面：`ShellPageIndex` 的 `b.*` 页面 id 共 **25** 个，已接真宿主 **4** 个（`SettingsPageBridge.SUPPORTED_PAGE_IDS`），其余仍是演示数据（其中 `b.weather`/`b.diagnostics`/`b.live` 等严格说不是设置页，归 §五 的未覆盖清单） | `main: app/SettingsActionDispatcher.kt`、`composeP1: app/SettingsHost.kt`、`main: pages/settings/`、`composeP1: pages/settings/` | **【进行中】**：认领区 `P35-settings-*` 系列在跑（第一刀 4 页 `43272737`），**别重复认领** |
-| **I1**<br>*(原 B6)* | 扫码取景：相机预览槽位 + 解码。二维码**生成**已交付（`2a77c08f`）；`QrTransferScanPage` 本身是槽位参数页面（`cameraSlot: @Composable () -> Unit`） | `composeP1: pages/transfer/`、`test: pages/transfer/` ＋ **[Lead]** 壳注入 `cameraSlot`。**注意：没有 `transfer/camera/` 这个目录** | **【进行中】**：`P35-B6`（2026-10-28 13:31 开工，已落地 `QrCameraHost.kt`/`QrScanSessionCoordinator.kt`） |
-| **I2** | 教务导入 WebView 桥接：网页登录、Cookie 保持、触发已有抓取适配器 | `composeP1: pages/import/warehouse/`、`main: pages/import/warehouse/`、`main: platform/` ＋ **[Lead]** 壳 | **【待接线】**：宿主已交付（`ca94d1a6`），接界面被「他人未提交改动」挡着（台账 §9.5） |
-| **I3** | `IcsExportPage`：生成 `.ics` 并通过系统分享导出 | `composeP1: pages/export/`、`main: platform/`（需**新建**分享/文件适配器，如 `AndroidShareAdapter.kt`）＋ **[Lead]** 壳 Activity 注册 `FileProvider` 与分享 Intent | **【可认领·仅渲染层+适配器】**：全仓目前 `FileProvider` **0** 处、`createChooser` **0** 处；manifest 与壳 Activity 属 **[Lead]** |
-| **C1** | `CloudSyncPage`、`CoupleTimetableSettingsPage`：WebDAV 备份/恢复真收发 | `main: sync/`（**已交付** `c339330d`）、`composeP1: pages/sync/`、`main: pages/sync/` ＋ **[Lead]** 壳接线 | **【等收回认领后开工】**：`pages/sync/` 被 `P3-F` 独占声明（该文件最后更新 2026-10-27 13:37，**已超 24h**，可按 §六 申请回收）。剩余=**接线到界面**，传输层不用重写 |
-| **C2** | 备份还原页：SAF 选文件、导入/导出全量 JSON | `main: platform/`（SAF 适配器）、`composeP1: pages/sync/` ＋ **[Lead]** 壳 Activity 注册 `registerForActivityResult` | **【可认领·仅解析层+适配器】**：全仓仅 1 处 `ActivityResultContracts`（在 I1 新文件里），SAF 入口尚不存在 |
-| **ST1** | `StatisticsSessionPage`（+ 统计族 5 页 / 10 个图表件）：换掉假数据，读真实课表 | `composeP1: pages/statistics/`、`main: pages/statistics/`（模型层**已存在**）＋ **[Lead]** 壳喂数与二级页路由 | **【可认领·仅接线】**：渲染层与模型层均已交付，缺的是数据源。<br>⚠️ **2026-10-28 定位到具体位置**（只读普查 `_CENSUS-dead-entries.md`）：壳 `ShellPageIndex.kt` 仍喂 `courses = emptyList()`（`:532` / `:545` / `:787`），`e.session` 也是 `courseNames = emptyList()`。<br>⚠️ `4ab773e0`（「统计族改读真实课表快照」）**只改了模型层**（`CourseStatisticsModel` / `StatisticsFeed`），**没动壳** ⇒ 用户打开统计看到的仍是空页。**别把该提交读成已完工。** |
-| **W1** | 课表变更后广播唤醒桌面小组件与实时活动刷新 | `main: *.kt`（**根包**：`TodayWidgetSupport.kt`、`WidgetRefreshWorker.kt`、`HomeWidgetRefreshReceiver.kt`、`WidgetBindingStore.kt`、`WidgetProviderCatalog.kt`）、`main: app/`（事件源） | **【后置依赖】**：等 T1/T2 的仓储事件源稳定。注：本行只覆盖桌面小组件与刷新广播；**超级岛判据未定**（`P3-L` 仍 ⏸ 待拍板） |
+| **T1** | 课程操作弹层：首页点课呼出 6 个动作（编辑/删除/…）。壳 KDoc 诚实清单第 ① 条自己写明「建议单列一批」 | `composeP1: pages/course/`、`composeP1: pages/timetable/`（仅新增回调）＋ **[Lead]** 壳挂接 | **已接线（真机未验）**：弹层按 Dart 原版复刻并接真仓储与课程动作（`962a534b`；壳侧 `ShellPageIndex.kt:507` `TimetableWithCourseActions`，渲染层 `pages/course/CourseActionSheet.kt`）。原文「可立即认领、只剩渲染层」已过期 |
+| **T2** | `TimetableProfilesPage`：切换活动课表、新建、重命名、删除 | `composeP1: pages/timetable/`、`main: pages/timetable/TimetableProfilesModel.kt`＋ **[Lead]** 壳路由。仓储已带 `profiles`/`activeProfileId`，**不必动 `main: app/`** | **已接线（真机未验）**：`TimetableProfilesController` 驱动新建/切换/重命名/复制/删除（`ShellPageIndex.kt:512-538`；`TimetableProfilesController.kt:53`）。原文「可立即认领·仅页内动作」已过期 |
+| **S1** | 课表显示偏好：隐藏周末、节次行高、时间列宽、长按空档加课 | `main: app/TimetableSettingsModel.kt`（**仅追加**显示偏好键）、`composeP1: app/TimetableHost.kt`、`main: pages/settings/`、`composeP1: pages/settings/` | **已接线（真机未验）**：4 键均已在设置模型（`TimetableSettingsModel.kt:112-143`：`sectionHeight` / `timetableTimeColumnWidthMode` / `timetableHideWeekends` / `longPressEmptySlotToAddCourseEnabled`）；隐藏周末已进周视图片段（`ShellPageIndex.kt:588-589`），行高与时间列宽由 `TimetableHostLogic.kt:101-108`、`SettingsTimetablePageSettingsPage.kt:226-279` 承接。原文「壳用默认值、缺另 3 键」已过期 |
+| **S2** | 设置族其余页面：`ShellPageIndex` 的 `b.*` 页面 id 共 **25** 个（`b.weather`/`b.diagnostics`/`b.live` 等严格说不是设置页，归 §五 的未覆盖清单） | `main: app/SettingsActionDispatcher.kt`、`composeP1: app/SettingsHost.kt`、`main: pages/settings/`、`composeP1: pages/settings/` | **已接线（真机未验）**：`b.*` 25 条全部分派到宿主（`ShellPageIndex.kt:325-500`）；`SettingsPageBridge.specFor` 支持 8 个页 id（`SettingsPageBridge.kt:90-105`，`SUPPORTED_PAGE_IDS` 常量仍只列 4 个），其余由 `HomeWidgetHost` / `LiveSelfCheckHost` / `WeatherSettingsHost` 等专用宿主接管（`88c22e34`、`e8b5a06f`）。原文「已接 4 个、其余演示数据」已过期 |
+| **I1**<br>*(原 B6)* | 扫码取景：相机预览槽位 + 解码。二维码**生成**已交付（`2a77c08f`）；`QrTransferScanPage` 本身是槽位参数页面（`cameraSlot: @Composable () -> Unit`） | `composeP1: pages/transfer/`、`test: pages/transfer/` ＋ **[Lead]** 壳注入 `cameraSlot`。**注意：没有 `transfer/camera/` 这个目录** | **已接线·真机未验**：可测层与相机宿主已落地（`QrCameraHost.kt` / `QrScanSessionCoordinator.kt`），`cameraSlot` 已由 `QrTransferHosts.kt:162` 注入；CameraX `1.6.1` + MLKit `17.3.0` 已进构建（`android/app/build.gradle:363-368`）。真机取景/解码仍是唯一未验项 |
+| **I2** | 教务导入 WebView 桥接：网页登录、Cookie 保持、触发已有抓取适配器 | `composeP1: pages/import/warehouse/`、`main: pages/import/warehouse/`、`main: platform/` ＋ **[Lead]** 壳 | **WebView 层已交付（真机未验）**：真 WebView 宿主 `WarehouseWebViewHost.kt` 已接进 `WarehouseWebLoginPage.kt:249-251`；壳侧 `g2.webLogin` 因**没有学校列表/真实 `import_url` 数据源**而显示诚实空态（`ShellPageIndex.kt:1543-1549`，F23 `e8b5a06f`），不是「被他人未提交改动挡住」。登录后的抓课表脚本仍未接（F08-8c） |
+| **I3** | `IcsExportPage`：生成 `.ics` 并通过系统分享导出 | `composeP1: pages/export/`、`main: platform/`（需**新建**分享/文件适配器，如 `AndroidShareAdapter.kt`）＋ **[Lead]** 壳 Activity 注册 `FileProvider` 与分享 Intent | **已交付（真机未验）**：`FileProvider` 已在 manifest 注册（`AndroidManifest.xml:137-151`），分享/SAF 走 `AndroidShareAdapter.kt:123`、`IcsExportHost.kt:278`；`createChooser` 已在 `AndroidShareAdapter` / `AndroidTransferShareAdapter` / 诊断导出等多处。原文「FileProvider 0 处、createChooser 0 处」已过期 |
+| **C1** | `CloudSyncPage`、`CoupleTimetableSettingsPage`：WebDAV 备份/恢复真收发 | `main: sync/`（**已交付** `c339330d`）、`composeP1: pages/sync/`、`main: pages/sync/` ＋ **[Lead]** 壳接线 | **已接线（真机未验）**：`CloudSyncController` 用真 `WebdavRemoteTransport` 驱动 `f.cloudSync` / `f.backupList`（`ShellPageIndex.kt:1419-1487`；`CloudSyncController.kt:46-50`），上传/下载/删除/恢复均有落点。剩余：恢复只下载快照、不写回仓储（见 §五 task-14 行） |
+| **C2** | 备份还原页：SAF 选文件、导入/导出全量 JSON | `main: platform/`（SAF 适配器）、`composeP1: pages/sync/` ＋ **[Lead]** 壳 Activity 注册 `registerForActivityResult` | **已交付（真机未验）**：SAF 导入/导出适配器在（`AndroidSafBackupAdapter.kt`、`AndroidTransferDocumentAdapter.kt`），传输页走 `DataTransferHost.kt:207` `OpenDocument`；全仓 `ActivityResultContracts` 现为 **25** 处。原文「仅 1 处、SAF 入口尚不存在」已过期 |
+| **ST1** | `StatisticsSessionPage`（+ 统计族 5 页 / 10 个图表件）：换掉假数据，读真实课表 | `composeP1: pages/statistics/`、`main: pages/statistics/`（模型层**已存在**）＋ **[Lead]** 壳喂数与二级页路由 | **已接线（真机未验）**：统计主页/设置/分析/单节均读真实仓储快照（`ShellPageIndex.kt:1283-1410`，`StatisticsFeed.Input.fromSnapshot`）；分享走真成果图（F15）。原文「壳仍喂 `courses = emptyList()`、打开统计看到空页」已过期。<br>剩余：`e.analysis` 点课程进该课明细仍无落点（`ShellPageIndex.kt:1389-1390` 注释自认） |
+| **W1** | 课表变更后广播唤醒桌面小组件与实时活动刷新 | `main: *.kt`（**根包**：`TodayWidgetSupport.kt`、`WidgetRefreshWorker.kt`、`HomeWidgetRefreshReceiver.kt`、`WidgetBindingStore.kt`、`WidgetProviderCatalog.kt`）、`main: app/`（事件源） | **桥接层已交付、生产未订阅（真机未验）**：`WidgetRefreshBridge.kt` 已有判据与单测（`73c8c73e` 挪到根包），但全仓生产代码里没有 `WidgetRefreshBridge(` 的构造点 ⇒ 课表变更还不会主动唤醒小组件。注：本行只覆盖桌面小组件与刷新广播；**超级岛判据未定**（`P3-L` 仍 ⏸ 待拍板） |
 | **R1** | 主 `MainActivity` 从 `FlutterActivity` 切到 Compose 入口，保留回退 | **[Lead]** `main: MainActivity.kt`、`composeUi: pages/`、`android/app/build.gradle` | **【Lead 专属】**：等 I/C/W 组收口 |
 | **R2** | 摘 Flutter 依赖、出正式包 | **[Lead]** 根构建配置 ＋ 用户（`flutter build` / `assemble*` 归用户跑） | **【Lead 专属·最后一步】**：**前置条件未满足**——接线计划的回退窗口到 Phase 5 才关，`lib/**` 在此之前是只读对照物，**不删**；「删 lib/、Flutter 插件与构建脚本」不能排在切壳同一天 |
 
@@ -110,8 +110,8 @@
 
 | 波次 | 包 | 说明 |
 |---|---|---|
-| **Wave 1** | I1（进行中）、T1、C1（等 `P3-F` 回收）、I3 | I1 与 I3 都要动壳 Activity 注册 → **两件壳侧改动一次报 Lead 一起做**，别各自改壳 |
-| **Wave 2** | T2、S1、I2、S2（持续在跑）、C2、ST1 | S1 必须等设置模型批次收口；S1 与 S2 同泳道，别并行 |
+| **Wave 1** | I1（真机未验）、T1 ✅、C1 ✅、I3 ✅ | I1 与 I3 都要动壳 Activity 注册 → **两件壳侧改动一次报 Lead 一起做**，别各自改壳。2026-11-01 复核：T1/C1/I3 已接线，I1 只剩真机取景 |
+| **Wave 2** | T2 ✅、S1 ✅、I2（WebView 已交付，壳侧待学校数据源）、S2 ✅、C2 ✅、ST1 ✅ | S1 必须等设置模型批次收口；S1 与 S2 同泳道，别并行。2026-11-01 复核：以上均已接线，剩余是 I2 的学校数据源与逐页真机对照 |
 | **Wave 3** | W1 | 依赖 Wave 1/2 的仓储事件源 |
 | **Wave 4** | R1、R2 | Lead + 用户；R2 的删除动作等 Phase 5 回退窗口关闭 |
 
@@ -121,17 +121,17 @@
 
 ## 五、本表覆盖不到的（**别以为勾完本表就完工**）
 
-| 缺口 | 现状 |
+| 缺口 | 现状（2026-11-01 逐条核实） |
 |---|---|
-| 局域网编辑收发 | `GAP-lan` 在跑；`LanEditApiRouter` 的 B 组/`apply` 仍回 **501**（台账 §9.4 ② 自认「唯一真缺的能力」） |
-| 备份里 `tasks`/`exams` 写回、多档案恢复等**仓储原子入口** | 台账 §9.4 ③（`task-14`），**表内无任何一行覆盖** |
-| 网络图片加载层 | `P35-B4` 已交付 `platform/AndroidImageLoader.kt`，接线随各页做 |
-| 诊断族、考试、日程、任务、冲突、天气、引导、关于·更新日志 | 页面在、真数据未接，13 行无一行覆盖 |
-| 前台服务与保活 | `LanEditForegroundService`/`KeepAlive*` 等原生件在，接线未列行 |
-| 通知换通道 | 接线计划排在 Phase 4，不在本表 |
-| 超级岛（实时活动） | `P3-L` ⏸ 待拍板（RemoteViews vs Compose Glance），**本表无验收判据**（W1 的验收句里没有岛） |
-| 真机逐页对照 / 毛玻璃 / `fontWeight` / 余 26 个裸 `Card(` | 台账 §9.4 ①⑤：**一页都没真机对照过** |
-| 壳里现存的演示数据 | 示例学校、示例适配器（学校适配器页）、示例日程（日程页）、示例任务（任务页）——**没有任何一行覆盖它们**，所以现在不能说「演示数据已全部清零」 |
+| 局域网编辑收发 | **已解决（`378b801f`，2026-10-30）**：`LanEditRepositoryHost.previewTransferJson` / `applyTransferJson` 交给 `LanTransferApplier`（`LanEditRepositoryHost.kt:288-303`），真实写仓储；`LanEditApiRouter` 里的 501 只剩「host 不支持」兜底（`LanEditApiRouter.kt:108-109`、`:799-800`），真实宿主已实现。剩余两条：「导入后没有撤销点（`transferId` 恒 null）」「设置只应用已移植子集」，见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做 |
+| 备份里 `tasks`/`exams` 写回、多档案恢复等**仓储原子入口** | **部分解决**：仓储两个原子入口已交付——`replaceActiveProfileContent(courses, tasks, exams)`（`TimetableRepository.kt:197`）与 `replaceAllProfiles(...)`（`:236`）；文件导入确实写回 tasks/exams（`DataTransferHost.kt:473-480`）。**仍未解决**：WebDAV 云端恢复只下载并落盘快照，**不写回仓储**（`CloudSyncCoordinator.kt:25-27` 自认归 task-14）；局域网多档案包被明确拒绝而不是恢复（`LanTransferLogic.kt:109`） |
+| 网络图片加载层 | **已交付并已接线**：`platform/AndroidImageLoader.kt` 在 Bing 画廊缩略图（`BingGalleryHost.kt:419`）、最近壁纸（`RecentWallpaperStrip.kt:392-395`）、内存统计（`MemoryStatsCollector.kt:232-237`）都有真实调用。「层在、零接线」的说法已不成立；其余页面按需接入 |
+| 诊断族、考试、日程、任务、冲突、天气、引导、关于·更新日志 | **已由多批接线（2026-10-29 ~ 10-31）**：诊断 `ShellPageIndex.kt:484`/`:1608-1615`；考试 `:1095-1120`/`:1245-1280`（真仓储 + `TimetableExamService`）；日程 `:851-897`；任务 `:898-925`；冲突 `:1748-1760`；天气 `:283-287`/`:475-478`/`:1739`；引导 `:1622-1668`/`:1672`/`:1877-1905`；关于·更新日志 `:305-320`（`ChangelogPage` 读 APK 内 assets）。剩余：`e.analysis` 点课程进该课明细仍无落点（`:1389-1390` 注释自认） |
+| 前台服务与保活 | **已接线，但本表仍无任何一行覆盖**：局域网前台服务由 `LanEditHost.kt:309-321` 启停；保活页 `j.keepAlive` 已接真状态/开关（`ShellPageIndex.kt:1706-1726`）。「接线未列行」这半句仍成立，指的是派工表覆盖面，不是代码状态 |
+| 通知换通道 | **仍成立**：接线计划排在 Phase 4，不在本表；考试提醒页注释也自认「本批不假装会响」（`ShellPageIndex.kt:1094`） |
+| 超级岛（实时活动） | **仍成立**：`P3-L` ⏸ 待拍板（RemoteViews vs Compose Glance；台账 §5 `:300-302`、`:565`），**本表无验收判据**（W1 的验收句里没有岛）。原生 `LiveUpdateService` 在，但展示层方案未定 |
+| 真机逐页对照 / 毛玻璃 / `fontWeight` / 裸 `Card(` | **四项分开看**：① 真机对照 **0 页仍成立**（台账 §9.8 第 5 条；F23 认领文件也写「真机对照归用户」）。② 毛玻璃：`layerBackdrop` 全仓 4 处（玻璃坞 `GlassDockNavigationBar.kt:521`、首页壁纸 `HomeWallpaperBackdrop.kt:198`、展示册 `MiuixShowcaseSubpages.kt:978`、壳采样 `PagesShellActivity.kt:321`）；**截至 HEAD 页面顶栏/弹层仍未接**（HEAD 的 `QingyuPageScaffold.kt` 无任何 blur 引用）——F24 E 线正在把顶栏接上，属**进行中**、未提交，别当成已完成。③ `fontWeight`：页面层仍有 **311 处**硬写（`grep -rn 'fontWeight\s*=' composeP1/.../pages`），未动仍成立。④ 裸 `Card(`：**26 处 / 2 文件**（`showcase/MiuixShowcaseSubpages.kt` 25、`timetable/WeekSelectorSheet.kt` 1）；原文「26 个文件」是笔误 |
+| 壳里现存的演示数据 | **所列四类已清**：示例学校 / 示例适配器 / `example.com` 三个常量由 F23 删除（`e8b5a06f`，`ShellPageIndex.kt:1532-1549`）；示例日程与示例任务更早已删（`:848`、`:2098-2101`）。目录里约 60 条仍标 `DEMO`，但按枚举定义那是「页面需要一份视图状态」，不等于壳在编假数据（`ShellPageCatalog.kt:21-23`）；`b.*` 25 条均已分派到真宿主（`:325-500`） |
 
 ---
 
@@ -159,5 +159,6 @@
 
 ## 变更记录
 
+- **2026-11-01 复核修订（文档追代码）**：§1.1 索引口径由 78/3/82 改为 **87 可进入 / 0 暂不可用 / 1 常驻 / 合计 88**（`ShellPageCatalogTest.kt:36-45`），页面文件由 56/101 改为 **62/149**（实测）；§二 把 T1/T2/S1/S2/I1/I2/I3/C1/C2/ST1/W1 的状态从 10-28 快照更新为 11-01 代码实况（均标「真机未验」）；§五 **逐行核实**：局域网 `apply` 已由 `378b801f` 解决、网络图片层已接线、八个页面族已接真数据、壳内四类示例数据已清；task-14 改为「部分解决」并点明云端恢复仍不写回；**仍成立**的条目保留并补证据（通知换通道、超级岛判据、真机对照 0 页、页面顶栏毛玻璃、`fontWeight`、裸 `Card(`）；毛玻璃/`fontWeight`/裸 `Card(` 仍成立，裸 `Card(` 更正为 **26 处 / 2 文件**。
 - **2026-10-28 复核修订**（本次）：总包数 10 → **13**（原表实为 13 行、路线图只排了 9 个）；ST1 补进流程图；S2/C2 补进波次；写作用域由 `...` 省略写法改为**可核对的真实路径**（并修掉 3 处错路径：I1 的 `transfer/camera/` 不存在、I2 少一层 `pages/`、W1 的 `TodayWidgetSupport.kt` 在根包而非 `app/`）；「当前状态」按认领区刷新（I1/T1/T2/C1/I2/S1 均已有人在跑或能力层已交付，不再标「可立即认领」）；新增 §三 agent/真机**双列门槛**；新增 §五**未覆盖清单**；「勾完即演示数据清零 / 1:1 对齐 Flutter」改为「勾完本表 ≠ 完工，还差 §五」。
 - 修订依据：`2026-10-26-compose-phase3-page-ledger.md` §9.4/§9.5、`.agents/compose-phase3/claims/*`、`2026-10-27-compose-phase3-l4-checklist.md`、`2026-10-28-compose-phase35-wiring-plan.md`，以及 2026-10-28 对仓库的实测核对。

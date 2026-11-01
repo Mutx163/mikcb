@@ -215,8 +215,7 @@ L1/L2 必须走 `scripts/safe-gradle.ps1`，**裸跑 `./gradlew` 违规**。
   3. `onCopyAddress` → `ClipboardManager` + Toast；
   4. 取件码：找到 Dart 侧它读什么（多半是某个 settings 或本地表），没有真数据就**空态要写明为什么空**，
      `onEntryClick` 要么接真页、要么给一句实话，**不许留空 lambda**。
-- **已知缺口（照实写进认领文件，不要顺手承诺）**：局域网 `import/apply` 端点仍回 **501**
-  （缺传输包应用服务，台账 §9.4 ② 自认「唯一真缺的能力」）——**这一条不在本批范围内**。
+- **已知缺口**：~~局域网 `import/apply` 端点仍回 **501**~~ —— **已由 `378b801f`（2026-10-30）接上真应用**（`LanTransferLogic.kt` / `LanTransferApplier.kt`），本批不再包含它；剩余缺口是「导入后没有撤销点（`transferId` 恒 null）」与「设置只应用已移植子集」。
 - **agent 可自证**：L0 `-Module "pages/transfer"` + L1；开关状态与地址拼接要有纯逻辑单测。
 - **用户真机验收**：开着局域网编辑，另一台设备浏览器能打开；关掉后打不开；地址复制进剪贴板。
 
@@ -299,7 +298,7 @@ L1/L2 必须走 `scripts/safe-gradle.ps1`，**裸跑 `./gradlew` 违规**。
      `managedImageStorage` 对应物；
   3. 「调整位置」行缺宿主页（点了不发请求，也就不会假成功）；
   4. 图库「每天自动更换」缺台账真源 ⇒ 该行按只读「不可用」渲染；
-  5. 顶部渐变模糊带未接线（全仓 miuix-blur 真实页面 0 处，属独立批次）；
+  5. 顶部渐变模糊带未接线（2026-11-01 复核：`layerBackdrop` 全仓 4 处，**页面顶栏仍未接**，属独立批次——F24 E 线在查）；
   6. **真机未验**：屏幕几何、预览是否随改随变、两个面板手感，等用户真机确认。
 
 > 详细逐条对拍与「已知差异」见 `docs/plans/2026-10-29-compose-appearance-editor-audit.md`
@@ -593,12 +592,12 @@ L1/L2 必须走 `scripts/safe-gradle.ps1`，**裸跑 `./gradlew` 违规**。
 ## 六、这份清单没覆盖的（别当成已经没事了）
 
 - **真正的缺口不在「页面死」，在「能力没移植」**：`WarehouseRepositoryService`、`SupportCreatorService`、
-  `LanEdit` 的 `import/apply`（端点仍回 **501**）、通知换通道（排 Phase 4）、超级岛判据（`P3-L` 仍 ⏸ 待拍板）。
+  ~~`LanEdit` 的 `import/apply`（端点仍回 **501**）~~（已由 `378b801f` 解决）、通知换通道（排 Phase 4）、超级岛判据（`P3-L` 仍 ⏸ 待拍板）。
   本清单把这些包在 C 级批次里，但**能不能真做完取决于这几块**。
 - **一页都没真机对照过**（台账 §9.5 自认）：87 页里 46 页「代码上真」，但**没有一页被用户在真机上确认过**。
   这条不解决，本清单交付完也只是「应该能用」。
-- **演示数据仍散落在壳里**：`SHELL_DEMO_SCHOOL` / `SHELL_DEMO_ADAPTER` / `SHELL_DEMO_LOGIN_URL`
-  （F08 会清）。清完要回来把这三个常量删掉，否则下一个人会以为它们还有用。
+- ~~**演示数据仍散落在壳里**：`SHELL_DEMO_SCHOOL` / `SHELL_DEMO_ADAPTER` / `SHELL_DEMO_LOGIN_URL`
+  （F08 会清）~~ → **已清（F23 `e8b5a06f`）**：三个常量已删，`g2.schoolAdapters` / `g2.adapterDetail` / `g2.webLogin` 改为诚实空态。
 
 ---
 
@@ -619,7 +618,7 @@ L1/L2 必须走 `scripts/safe-gradle.ps1`，**裸跑 `./gradlew` 违规**。
 | 8 | F12 | 4 | ✅ 已交付（`c3.day` 由他人代修） | `F12-half-close.md` | — |
 | 9 | F03 | 2 | ✅ 已交付（页面已真；账目 10-31 结清） | `F03-pickup-lan.md` | — |
 | 10 | F05 | 6 | ✅ 已交付 | `F05-settings-material.md` / `F05-appearance-editor.md` | 与 F06 互斥 |
-| 11 | F06 | 5 | 🔄 剩 2 页：`b.live` / `b.liveSelfCheck` | `F06-settings-components.md` | 与 F05 互斥 |
+| 11 | F06 | 5 | ✅ 已交付（剩余两页 `b.live` / `b.liveSelfCheck` 由 F23 `e8b5a06f` 接真宿主） | `F06-settings-components.md` | 与 F05 互斥 |
 | 12 | F08 | 6 | ✅ 已交付（L2 待补跑） | `F08-warehouse.md` | 与 F07 共存时 `platform/` 只读 |
 | 13 | F13 | — | ✅ 已交付 | `F13-copy-style-kotlin-corpus.md` | 无 |
 | 14 | F14 | — | ✅ 已交付 | `F14-wiring-guard-expand.md` | 无 |
@@ -630,9 +629,9 @@ L1/L2 必须走 `scripts/safe-gradle.ps1`，**裸跑 `./gradlew` 违规**。
 | 19 | F19 | — | 🔒 等前置 | `F19-final-gate.md` | **前置 F06**（原列的 F08 已交付，不再是前置） |
 | 20 | F20 | 1 | ✅ 已交付（认领 2026-10-31 18:40） | `F20-home-widget.md` | — |
 
-> **F01~F17 与 F20 已全部交付**，别再重复领。还开着的只有：F06 的两页
-> （`b.live` / `b.liveSelfCheck`，见认领文件），以及等 F06 的 F18 / F19。
-> 新接单的会话从这三处挑，不要按老表去抢「待领」的 F13~F17。
+> **F01~F17 与 F20 已全部交付，F06 的两页也已由 F23 `e8b5a06f` 接真宿主**，别再重复领。
+> 2026-11-01 复核：F18 / F19 的前置 F06 已满足；另有 F21（收口提交）、F22（账目收口）、F23（设置族收尾，已交付）、
+> F24（并行硬化，进行中）四个批次，见 `.agents/compose-phase3/claims/`，**不在这张页面队列表里**。
 
 **「可用」的判定**（三者全满足才算可抢）：
 

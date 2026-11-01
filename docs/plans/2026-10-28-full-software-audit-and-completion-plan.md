@@ -39,25 +39,25 @@
 
 ## 三、真实缺口清单（四类，按性质分）
 
-### A 类：能力已交付，但**壳接线未落地 / 未提交**（性价比最高，多数只差一步）
+### A 类：能力已交付，壳接线状态（**2026-11-01 复核**；原表是 10-28 的待办）
 
 | # | 项 | 现状证据 | 动作 |
 |---|---|---|---|
-| A1 | **T1 课程操作弹层** | 分派器 + `CourseActionSheet.kt` 已交付（`8866b3b5`），但壳里 `CourseActionSheet(` 命中 **0** | 按 `T1-course-action-sheet.md` 的 diff 把弹层挂到 `c1.week` |
-| A2 | **S2 设置族其余 20 路由** | `SettingsPageBridge.SUPPORTED_PAGE_IDS` 只有 4 个；其余 20 条走裸 `SettingsScreen` | 扩 `SUPPORTED_PAGE_IDS` + 路由换 `SettingsHost`（S2 在跑，需先确认其进度） |
-| A3 | **I3 ICS 导出** | 模型/序列化已交付；`AndroidManifest` 里 `FileProvider` **0 处** | Lead 补 manifest + 壳分享 Intent 注册 |
-| A4 | **壳接线整体落库** | `ShellPageIndex/ShellWiring/PagesShellActivity` 三文件含他人未提交改动 | **等工作区收敛后**，按路径限定分批提交（不能混别人的） |
-| A5 | 演示/示例数据 | 壳内 `演示/示例/demoData` 标记约 **34 处**；`emptyList()` 写死 `:657/658`（考试）、`:901`（学校适配器）等 | 随各域接线逐个换真数据源 |
+| A1 | **T1 课程操作弹层** ✅ | 已挂到 `c1.week`（`962a534b`；壳侧 `ShellPageIndex.kt:507` `TimetableWithCourseActions`，渲染层 `CourseActionSheet.kt`） | 已交付，真机未验 |
+| A2 | **S2 设置族其余 20 路由** ✅ | `b.*` 25 条已全部分派到宿主（`ShellPageIndex.kt:325-500`）；`SettingsPageBridge.specFor` 支持 8 个页 id（`SettingsPageBridge.kt:90-105`） | 已交付，真机未验 |
+| A3 | **I3 ICS 导出** ✅ | `FileProvider` 已在 manifest 注册（`AndroidManifest.xml:137-151`），分享/SAF 走 `AndroidShareAdapter.kt:123`、`IcsExportHost.kt:278` | 已交付，真机未验 |
+| A4 | **壳接线整体落库** ✅ | F21 已收口（2026-10-31 21:23）；F23 五笔已落库（`06975048`…`370930ce`） | — |
+| A5 | 演示/示例数据 ✅ | 壳内示例学校/适配器/`example.com` 由 F23 删除（`e8b5a06f`，`ShellPageIndex.kt:1532-1549`）；示例日程/任务更早删除（`:848`/`:2098-2101`） | 已清；目录里的 `DEMO` 标记表示「页面需要视图状态」，不等于假数据 |
 
 ### B 类：**真缺的能力**（底层就没有，接线填不上）
 
 | # | 项 | 证据 | 归属 |
 |---|---|---|---|
-| B1 | **考试族写服务** ✅ *服务已交付* | `TimetableCourseService` 无 `addExam/updateExam/deleteExam`；壳喂 `exams = emptyList()` → **已补 `TimetableExamService` + 11 例测试（`f70604b0`）**；壳 `d3.examList` 已接线（`0f160480`），`d3.addExam` 表单待接 | 主表外 / 需新开包 |
+| B1 | **考试族写服务** ✅ *服务已交付* | `TimetableCourseService` 无 `addExam/updateExam/deleteExam`；壳喂 `exams = emptyList()` → **已补 `TimetableExamService` + 11 例测试（`f70604b0`）**；壳 `d3.examList` 已接线（`0f160480`），`d3.addExam` 表单也已接真状态机（`ShellPageIndex.kt:1095-1120`，F10） | 主表外 / 需新开包 |
 | B2 | **任务清单控制器** ✅ *控制器已交付* | `pages/task/` 无 TaskList 控制器/宿主（`addTask/deleteTask` 有，缺装配层）→ **已补 `TaskListController` + 7 例测试（`4efc79f4`）**；壳 `d2.taskList` 已接线（`fc2c4520`）| A4 普查"A4 任务清单" |
-| B3 | **统计分享（导出+光栅化+系统分享）** | Kotlin 侧无 `StatisticsShareService` 对应物（`ST1-statistics-wiring.md` §2） | 并入 I3 能力面 |
-| B4 | **局域网 `import/apply`** | `LanEditApiRouter` 仍 9 处 `501`（唯一"真缺的能力"） | `GAP-lan` |
-| B5 | **备份 tasks/exams 写回、多档案恢复** | 台账 §9.4 ③（task-14） | 仓储原子入口 |
+| B3 | **统计分享（导出+光栅化+系统分享）** ✅ | F15 已交付：真 PNG 成果图，发不出图才退回纯文本（`StatisticsShareIntent.kt`；壳侧 `ShellPageIndex.kt:1317-1332`） | 已完成 |
+| B4 | **局域网 `import/apply`** ✅ | 已由 `378b801f`（2026-10-30）接真应用；`LanEditApiRouter` 的 501 只剩「host 不支持」兜底 | 剩余：无撤销点（`transferId` 恒 null）/ 设置只应用已移植子集 |
+| B5 | **备份 tasks/exams 写回、多档案恢复** ⚠️ 部分 | 仓储原子入口已交付（`TimetableRepository.kt:197` / `:236`），文件导入写回 tasks/exams（`DataTransferHost.kt:473-480`）；**WebDAV 云端恢复仍不写回仓储**（`CloudSyncCoordinator.kt:25-27`） | 剩余属 task-14 |
 | B6 | 全局：前台服务/保活、通知换通道、超级岛 | 原生件在、接线未列行 / 判据未拍板 | Phase 4 |
 
 ### C 类：**只能由用户真机验证**（agent 无论如何声明不了"能用"）

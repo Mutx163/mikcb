@@ -260,7 +260,7 @@
 | 学校适配器列表（`warehouse_school_adapters_page`） | 壳里：❌<br>正式版：导入 → 学校适配 → 选学校 | ① 适配器卡片（名称/来源/是否已录脚本）<br>② 下拉刷新<br>③ 空列表文案<br>④ 「录制/导入/详情」三个动作的入口位置 | 中 |
 | 适配器详情（`warehouse_adapter_detail_page`） | 壳里：❌<br>正式版：同上 → 详情 | ① 登录地址/脚本地址两行 + 复制按钮<br>② 自定义导入地址的保存/清除<br>③ 复制后提示条 | 中 |
 | 仓库课程导入（`warehouse_course_import_page`） | 壳里：❌<br>正式版：导入 → 学校适配（主页面） | ① 学校搜索 + 最近使用<br>② 「快速导入」按钮在没录制过宏时应禁用并说明<br>③ 执行日志入口<br>④ 自定义调试入口 | 中 |
-| 网页登录（`warehouse_web_login_page`） | 壳里：❌<br>正式版：仓库导入 → 登录 | **⚠️ 这一页是占位**：Compose 侧没有真正的 WebView（全仓 0 处 `AndroidView`），网页区只有一块「视口占位与引导」——看到空白属预期（§4.1）<br>① 顶部栏（返回/重载/桌面模式/更多）<br>② 自动填充提示与保存登录提示<br>③ 宏录制按钮的录音态 | **高** |
+| 网页登录（`warehouse_web_login_page`） | 壳里：❌<br>正式版：仓库导入 → 登录 | **2026-11-01 复核：占位已换成真 WebView**（`WarehouseWebViewHost.kt`，`WarehouseWebLoginPage.kt:249-251`），全仓不再是「0 处 `AndroidView`」；但壳里的 `g2.webLogin` 因**没有学校列表/真实 `import_url` 数据源**仍显示诚实空态（`ShellPageIndex.kt:1543-1549`）。<br>① 顶部栏（返回/重载/桌面模式/更多）<br>② 自动填充提示与保存登录提示<br>③ 宏录制按钮的录音态 | **高** |
 | 自定义调试（`warehouse_custom_debug_page`） | 壳里：❌<br>正式版：仓库导入 → 自定义调试 | ① 记录列表与「运行/保存/删除」<br>② 空列表文案<br>③ 运行结果输出区 | 中 |
 | AI 图片导入（`ai_image_course_import_screen`） | 壳里：❌<br>正式版：导入 → AI 识图 | ① 提示词复制/查看弹层<br>② 从剪贴板粘贴 → 解析结果<br>③ 解析失败提示 | 中 |
 
@@ -373,7 +373,7 @@
 |---|---|---|---|
 | 1 | 统计的六张分析卡只有「卡片标题 + 读数行」，没有折线/热力图/排行条 | 统计分析页 | `lib/widgets/statistics/` 22 件图表未迁；本批只做了结构一致的骨架。**⚠️ 另一泳道正在补真图表，随时可能变** |
 | 2 | 模糊展示里拖滑杆，只是预览块变浅/变深，背景不会真的模糊 | Miuix 展示册 → 模糊 | 渲染层用「主色 + 透明度」冒充毛玻璃（`MiuixShowcaseSubpages.kt:935-951`），而文案写着「背景捕获 + 高斯模糊」（`ShowcaseStrings.kt:143`）——**文案是虚标的** |
-| 3 | 网页登录页中间一块空白 | 仓库导入 → 登录 | 全仓 0 处 `AndroidView`，没有真正的 WebView，只有「视口占位与引导」 |
+| 3 | 网页登录页中间一块空白 | 仓库导入 → 登录 | **2026-11-01 复核：WebView 已接**（`WarehouseWebViewHost.kt`；全仓不再是 0 处 `AndroidView`）；壳里仍可能因无学校数据源显示空态，这是诚实空态而非占位 |
 | 4 | 成就徽章点不动，没有详情弹窗 | 统计主页 → 成就 | Dart 的 `showAchievementDetailSheet` 未迁 |
 | 5 | 统计的「周视图」只有课程门数/本周课时与周次切换 | 统计主页 → 周页签 | `week_stats_view.dart`（490 行）未 1:1 迁移 |
 | 6 | 地点时间匹配的编辑页是空的/进不去 | 地点时间匹配 → 编辑 | 约 760 行编辑页留下一批未做 |
@@ -406,7 +406,7 @@
 | 3 | 局域网真实收发 | `share/LanEditSession.kt` 只做 PIN/token/超时，头注释写明「**不含 HTTP 收发**」；`LanEditForegroundService` 只负责通知栏 | 开关能点、地址能显示，但电脑连不上 |
 | 4 | 云端 WebDAV 收发 | `main/.../sync/` 8 个文件全是纯逻辑，没有 HTTP 客户端 | 「连接」必然失败 |
 | 5 | 网络图片（Bing 壁纸、打赏二维码） | 没有图片加载/网络层 | 图位置空白或转圈 |
-| 6 | 毛玻璃（页面层） | `miuix-blur` 依赖已引，但**只有壳的底栏在用**（`layerBackdrop` 1 处）；页面顶栏/弹层没接 | 顶栏和弹层是纯色，不是玻璃 |
+| 6 | 毛玻璃（页面层） | **2026-11-01 复核：`layerBackdrop` 全仓 4 处**（玻璃坞 `GlassDockNavigationBar.kt:521`、首页壁纸 `HomeWallpaperBackdrop.kt:198`、展示册 `MiuixShowcaseSubpages.kt:978`、壳采样 `PagesShellActivity.kt:321`）；**页面顶栏/弹层仍未接** | 顶栏和弹层是纯色，不是玻璃 |
 | 7 | 隐私/通知权限的运行时申请 | 页面只有「开关」与状态文案，没有申请逻辑 | 点开关无系统弹窗 |
 
 ### 4.4 刻意改过的交互（有记录的取舍）
