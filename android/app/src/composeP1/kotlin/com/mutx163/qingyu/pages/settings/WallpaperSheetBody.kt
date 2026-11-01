@@ -52,14 +52,24 @@ object WallpaperSheetPages {
  * | `backdrop.recent.select:<key>` | 切回该条（连取景一起还原）并补记一条历史 | `:294-316` |
  * | `backdrop.recent.confirmDelete:<key>` | 摘条目 + 落盘 + **排进** `RECENT_WALLPAPER_UNDO_WINDOW_MS` 之后的删文件队列 | `:325-354` |
  * | `backdrop.recent.undoRemove:<key>` | 整份历史原样放回，并把该文件从待删队列里摘掉 | `:356-378` |
+ * | `backdrop.image.clear` | 只清设置（路径 + 取景），**不删文件**——图可能还在历史里 | `:458-470` |
+ * | `backdrop.bing.autoApply` | 按台账现值**取反**并落盘；打开时立刻换一次、四种结局各一句提示 | `:537-642` |
+ *
+ * 后两条在模型里 `actionTarget = null`（只有 rowId），面板用
+ * [WallpaperSheetActionTargets.resolveTarget] 补出稳定串；这也是「清除 / 自动换」
+ * 从死按钮变成可接线接收方的关键一步。
  */
 object WallpaperSheetTargets {
 
+    // 全部指向 main 源集的唯一串表 `WallpaperSheetActionTargets`：这里不再写第二份
+    // 字面量。两边各写一份是「模型发了、壳认不出」这类死按钮最常见的来源。
+    // `const val` 引用另一个 `const val` 仍是编译期常量，可以继续用在 when / 注解里。
+
     /** 「选择图片」行（模型 `backdrop.image.pick`，Dart `:903-909`）。 */
-    const val ROW_PICK = "backdrop.image.pick"
+    const val ROW_PICK = WallpaperSheetActionTargets.ROW_PICK
 
     /** 「图片文件已丢失」警示行：点它同样回到选图（模型 `backdrop.image.missing`，Dart `:892-895`）。 */
-    const val ROW_MISSING = "backdrop.image.missing"
+    const val ROW_MISSING = WallpaperSheetActionTargets.ROW_MISSING
 
     /**
      * 「调整位置」行（模型 `backdrop.image.adjust`，Dart `:919-925`）。
@@ -68,33 +78,36 @@ object WallpaperSheetTargets {
      * `WallpaperPositionPickerHost`（`WallpaperPositionPickerPage.kt`）。面板**不做**
      * 任何拦截 —— 以前这里弹「不可用」的分支已随取景页落地删除。
      */
-    const val ROW_ADJUST = "backdrop.image.adjust"
+    const val ROW_ADJUST = WallpaperSheetActionTargets.ROW_ADJUST
 
     /** 「清除图片」行（模型 `backdrop.image.clear`，Dart `:927-933`）。 */
-    const val ROW_CLEAR = "backdrop.image.clear"
+    const val ROW_CLEAR = WallpaperSheetActionTargets.ROW_CLEAR
 
     /** 「最近使用」整段的 rowId（条上的点击 / 移除都挂它）。 */
-    const val ROW_RECENT = "backdrop.recent"
+    const val ROW_RECENT = WallpaperSheetActionTargets.ROW_RECENT
+
+    /** 「每天自动更换」开关（模型行 id `backdrop.bing.autoApply`）。 */
+    const val AUTO_APPLY_TOGGLE = WallpaperSheetActionTargets.AUTO_APPLY_TOGGLE
 
     /** 选完图之后带回来的那张（`content://` URI，数据侧负责收进受管目录）。 */
-    const val PICKED_PREFIX = "backdrop.image.picked:"
+    const val PICKED_PREFIX = WallpaperSheetActionTargets.PICKED_PREFIX
 
     /** 切回「最近使用」里的某一条。 */
-    const val RECENT_SELECT_PREFIX = "backdrop.recent.select:"
+    const val RECENT_SELECT_PREFIX = WallpaperSheetActionTargets.SELECT_PREFIX
 
     /** 确认删除某一条（与模型 `backdrop.recent.confirmDelete:<key>` 逐字一致）。 */
-    const val RECENT_CONFIRM_DELETE_PREFIX = "backdrop.recent.confirmDelete:"
+    const val RECENT_CONFIRM_DELETE_PREFIX = WallpaperSheetActionTargets.CONFIRM_DELETE_PREFIX
 
     /** 撤销最近一次删除。 */
-    const val RECENT_UNDO_PREFIX = "backdrop.recent.undoRemove:"
+    const val RECENT_UNDO_PREFIX = WallpaperSheetActionTargets.UNDO_REMOVE_PREFIX
 
-    fun picked(uri: String): String = PICKED_PREFIX + uri
+    fun picked(uri: String): String = WallpaperSheetActionTargets.picked(uri)
 
-    fun recentSelect(key: String): String = RECENT_SELECT_PREFIX + key
+    fun recentSelect(key: String): String = WallpaperSheetActionTargets.select(key)
 
-    fun recentConfirmDelete(key: String): String = RECENT_CONFIRM_DELETE_PREFIX + key
+    fun recentConfirmDelete(key: String): String = WallpaperSheetActionTargets.confirmDelete(key)
 
-    fun recentUndo(key: String): String = RECENT_UNDO_PREFIX + key
+    fun recentUndo(key: String): String = WallpaperSheetActionTargets.undoRemove(key)
 }
 
 /**
@@ -102,11 +115,12 @@ object WallpaperSheetTargets {
  *
  * 认不出来时**不许画成能点的开关**：Dart 那颗开关的真源是 `BingWallpaperStore`
  * 台账，它不走草稿、也不走宿主 `setState`（`settings_home_backdrop_flow.dart:501-526`，
- * 2026-10-06 实报「点了一下没反应」）。Kotlin 侧台账接线还没到位，
- * [BackdropFlowState.bingAutoApplyEnabled] 现在只能是出厂值 false —— 再画成可点的开关，
- * 就是「点了没反应」那个坑原样复刻。所以默认 [UNKNOWN]：行照渲染、但禁用并把
- * 说明换成 ARB 已有的「不可用」（`SettingsStrings.aboutUnavailable`），
- * 等数据侧把台账接上，宿主显式传 [LEDGER] 才恢复可点。
+ * 2026-10-06 实报「点了一下没反应」）。[BackdropFlowState.bingAutoApplyEnabled] 现在
+ * 仍是出厂值 false，所以默认 [UNKNOWN]：行照渲染、但禁用并把说明换成 ARB 已有的
+ * 「不可用」（`SettingsStrings.aboutUnavailable`）。
+ *
+ * 台账一旦接上，宿主给 [WallpaperSheetBody] 传 `autoApplySnapshot` 即可 ——
+ * 那一路会把开关值改成台账里的真实值、恢复可点（等价于显式传 [LEDGER]）。
  */
 enum class WallpaperAutoApplySource {
     /** 真源已接（`BingWallpaperStore` 的台账），开关可点。 */
@@ -167,6 +181,11 @@ enum class WallpaperAutoApplySource {
  *   渲染层不摸盘）；[SelectionPageState.armedKey] 由面板自己持有 —— 移除确认是缩略图条
  *   的界面态，只有画条的这一层能改。传 null = 没有失效路径。
  * @param autoApplySource 「每天自动更换」的真源认不认得出，见 [WallpaperAutoApplySource]。
+ * @param autoApplySnapshot 台账快照（开关值 + 下载台账）。**传了它就等于真源已接**：
+ *   开关值改用 [WallpaperAutoApplySnapshot.enabled] 并恢复可点，`autoApplySource`
+ *   被忽略。宿主通常监听台账通知后传新快照，别指望 `state` 带得动它
+ *   （Dart 那颗开关自己挂 `ValueListenableBuilder` 的理由，`:501-526`）。
+ *   传 null = 没接，走 [autoApplySource] 的旧口径（默认禁用 + 「不可用」）。
  * @param contentPadding 滚动内容的额外留白：底部给 [wallpaperSheetBottomGap]，
  *   默认 0（**不要**在这里垫 24，理由见上）。
  * @param initialPage 打开时停在第几页。
@@ -177,6 +196,7 @@ fun WallpaperSheetBody(
     onAction: (action: SettingsAction, target: String?, rowId: String) -> Unit,
     selection: SelectionPageState? = null,
     autoApplySource: WallpaperAutoApplySource = WallpaperAutoApplySource.UNKNOWN,
+    autoApplySnapshot: WallpaperAutoApplySnapshot? = null,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialPage: Int = WallpaperSheetPages.PICKER,
@@ -276,10 +296,14 @@ fun WallpaperSheetBody(
      * 1. 选图那两条**由面板自己开系统相册**（Dart 里这两条也是流程自己的闭包
      *    `onPick`，`:456` / `:894`）。为什么不能纯转出去：相册选择器必须挂在
      *    ActivityResult 注册表上，那是**这一层**的资格，不是分派器（纯 Kotlin）的。
-     * 2. 其余一律原样转给宿主 —— 包括「调整位置」：它现在是 `NAVIGATE` +
+     * 2. 其余一律转给宿主 —— 包括「调整位置」：它现在是 `NAVIGATE` +
      *    `backdrop.image.adjust`，由壳映射到 `WallpaperPositionPickerHost`
      *    （取景页，`WallpaperPositionPickerPage.kt`）。2026-10-31 之前这里给的是
      *    「不可用」Toast，取景页落地后已删掉那条分支。
+     *
+     * ⚠️ **target 先过 [WallpaperSheetActionTargets.resolveTarget]**：模型里「清除图片」
+     * 与「自动换开关」两行的 `actionTarget` 是 null，渲染层只会发 rowId。不补出稳定串，
+     * 壳 / 分派器就认不出这两行 —— 用户看到的就是「点了没反应」的死按钮。
      */
     val handleAction: (SettingsAction, String?, String) -> Unit =
         { action, target, rowId ->
@@ -291,7 +315,11 @@ fun WallpaperSheetBody(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                 )
             } else {
-                onAction(action, target, rowId)
+                onAction(
+                    action,
+                    WallpaperSheetActionTargets.resolveTarget(rowId, target),
+                    rowId,
+                )
             }
         }
 
@@ -320,7 +348,18 @@ fun WallpaperSheetBody(
             modifier = Modifier.weight(1f),
         ) { index ->
             WallpaperPageList(
-                nodes = wallpaperPageNodes(state, pageSelection, index, autoApplySource),
+                // 台账快照一旦给了，真源就是它（开关值 + 可点），不再看 autoApplySource。
+                nodes = wallpaperPageNodes(
+                    state = state,
+                    selection = pageSelection,
+                    index = index,
+                    autoApplySource = if (autoApplySnapshot != null) {
+                        WallpaperAutoApplySource.LEDGER
+                    } else {
+                        autoApplySource
+                    },
+                    autoApplySnapshot = autoApplySnapshot,
+                ),
                 onAction = handleAction,
                 contentPadding = contentPadding,
                 // 只有第一页有「最近使用」那一段（`:2189-2204`）。
@@ -340,7 +379,7 @@ private const val RECENT_CONFIRM_DELETE_ROW_ID = "backdrop.recent.confirmDelete"
 private const val RECENT_CONFIRM_CANCEL_ROW_ID = "backdrop.recent.cancelDelete"
 
 /** 「每天自动更换」那一行的 id（`SettingsBackdropFlowPage` 的 `backdrop.bing.autoApply`）。 */
-private const val BING_AUTO_APPLY_ROW_ID = "backdrop.bing.autoApply"
+private const val BING_AUTO_APPLY_ROW_ID = WallpaperSheetActionTargets.AUTO_APPLY_TOGGLE
 
 /**
  * 一页的节点树。
@@ -354,13 +393,48 @@ internal fun wallpaperPageNodes(
     selection: SelectionPageState,
     index: Int,
     autoApplySource: WallpaperAutoApplySource = WallpaperAutoApplySource.UNKNOWN,
+    autoApplySnapshot: WallpaperAutoApplySnapshot? = null,
 ): List<SettingsNode> {
     val backdrop = backdropFlowState(state)
     return when (index) {
         WallpaperSheetPages.SETTINGS -> SettingsBackdropFlowPage.settingsPage(backdrop).nodes
-        else -> applyAutoApplySource(
-            SettingsBackdropFlowPage.selectionPage(backdrop, selection).nodes,
-            autoApplySource,
+        else -> {
+            val nodes = SettingsBackdropFlowPage.selectionPage(backdrop, selection).nodes
+            // 台账快照优先：有它就用真实开关值，否则走旧的「认不出来就禁用」口径。
+            if (autoApplySnapshot != null) {
+                applyAutoApplyState(nodes, autoApplySnapshot)
+            } else {
+                applyAutoApplySource(nodes, autoApplySource)
+            }
+        }
+    }
+}
+
+/**
+ * 台账已接上时，把「每天自动更换」那一行改成**真实开关值且可点**。
+ *
+ * 真源是 [WallpaperAutoApplySnapshot]（宿主从 `BingWallpaperStore` 台账读出，并在
+ * 台账通知时传新快照）。面板只改这一行，其余节点原样。
+ */
+private fun applyAutoApplyState(
+    nodes: List<SettingsNode>,
+    snapshot: WallpaperAutoApplySnapshot,
+): List<SettingsNode> = nodes.map { node ->
+    if (node !is SettingsGroup) {
+        node
+    } else {
+        SettingsGroup(
+            id = node.id,
+            children = node.children.map { child ->
+                if (child is SettingsRow && child.id == BING_AUTO_APPLY_ROW_ID) {
+                    child.copy(
+                        switchValue = snapshot.enabled,
+                        enabled = true,
+                    )
+                } else {
+                    child
+                }
+            },
         )
     }
 }
