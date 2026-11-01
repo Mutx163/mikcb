@@ -14,6 +14,9 @@ class UmengApplication : Application() {
         // 系统深浅模式换档后重画桌面卡片：平台不会把这种变化回调给卡片 Provider，
         // 不补这一步会出现「浅底 + 浅字」的错位卡片。见 WidgetThemeWatcher。
         WidgetThemeWatcher.initialize(this)
+        // 课表内容变化后唤醒桌面小组件与统计卡片：判据在 WidgetRefreshBridge，
+        // 这里只负责在进程级订阅存储变更（此前全仓无生产调用点，改完课表要等最长 15 分钟）。
+        WidgetRefreshHost.initialize(this)
         // 调试版 / 性能版：启动内存会话采样（正式版 no-op）。
         MemoryStatsCollector.initializeIfAllowed(this)
         // 应用日志写入层（诊断族的日志查看器、设置快照行都靠它落盘）。
