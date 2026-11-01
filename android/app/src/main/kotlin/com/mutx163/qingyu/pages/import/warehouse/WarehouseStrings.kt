@@ -118,16 +118,20 @@ object WarehouseStrings {
     val importCourseRecordsDropped = WarehouseArbText("importCourseRecordsDropped", "共收到 {imported} 门课程，其中 {dropped} 门数据有误未能导入")
     val importCourseWeeksTrimmed = WarehouseArbText("importCourseWeeksTrimmed", "另有 {count} 门课的部分周次没能识别，请对照教务系统核对")
     val importFileTooLarge = WarehouseArbText("importFileTooLarge", "文件超出大小上限 {size}，请选择较小的文件")
+    val importFailedStatus = WarehouseArbText("importFailedStatus", "导入失败")
     val importFromFileAction = WarehouseArbText("importFromFileAction", "从文件导入")
     val importMethodAiTitle = WarehouseArbText("importMethodAiTitle", "识图导入")
     val importMethodWarehouseTitle = WarehouseArbText("importMethodWarehouseTitle", "教务系统导入")
     val importNoCourseChanges = WarehouseArbText("importNoCourseChanges", "没有需要新增或更新的课程")
+    val importOverwriteCount = WarehouseArbText("importOverwriteCount", "已覆盖导入 {count} 条课程")
     val importReplaceExistingTitle = WarehouseArbText("importReplaceExistingTitle", "导入课程")
     val importUpdatedCount = WarehouseArbText("importUpdatedCount", "已更新课表：新增或更新 {count} 条课程")
     val importUrlLabel = WarehouseArbText("importUrlLabel", "教务网址")
     val importingAction = WarehouseArbText("importingAction", "导入中……")
     val injectingAdapterScript = WarehouseArbText("injectingAdapterScript", "正在注入适配器脚本")
     val injectingLocalDebugScript = WarehouseArbText("injectingLocalDebugScript", "正在注入本地调试脚本")
+    val invalidCourseDataFormat = WarehouseArbText("invalidCourseDataFormat", "课程数据格式不正确")
+    val noImportableCoursesFromScript = WarehouseArbText("noImportableCoursesFromScript", "脚本未返回可导入课程")
     val inputRequiredTitle = WarehouseArbText("inputRequiredTitle", "需要输入")
     val invalidImportUrl = WarehouseArbText("invalidImportUrl", "请输入有效的教务网址")
     val laterAction = WarehouseArbText("laterAction", "稍后再说")
@@ -310,10 +314,12 @@ object WarehouseStrings {
         importCourseRecordsDropped,
         importCourseWeeksTrimmed,
         importFileTooLarge,
+        importFailedStatus,
         importFromFileAction,
         importMethodAiTitle,
         importMethodWarehouseTitle,
         importNoCourseChanges,
+        importOverwriteCount,
         importReplaceExistingTitle,
         importUpdatedCount,
         importUrlLabel,
@@ -321,8 +327,10 @@ object WarehouseStrings {
         injectingAdapterScript,
         injectingLocalDebugScript,
         inputRequiredTitle,
+        invalidCourseDataFormat,
         invalidImportUrl,
         laterAction,
+        noImportableCoursesFromScript,
         localDebugModeScriptStatus,
         loginEntryLabel,
         maintainerLabel,

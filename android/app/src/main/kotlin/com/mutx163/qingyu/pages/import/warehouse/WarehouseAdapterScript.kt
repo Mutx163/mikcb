@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import com.mutx163.qingyu.core.MiniJson
 import java.security.MessageDigest
 
 /**
@@ -220,20 +221,43 @@ fun warehouseImportScriptWrapper(script: String, confirmText: String): String {
 }
 
 /**
+ * 网页发来的 `requestId` 是否可信（可安全拼进 JS）。
+ *
+ * 不可信输入直接拼进 JS 会变成脚本注入（网页可以伪造一条 message 让原生把它当代码执行）。
+ * 只放行 `[A-Za-z0-9_-]` 且长度 1~128 的 id；
+ * [warehouseBridgeResolveScript] 与桥接降级回答共用这一份判据。
+ */
+fun isSafeWarehouseBridgeRequestId(requestId: String?): Boolean {
+    val id = requestId?.trim().orEmpty()
+    if (id.isEmpty() || id.length > 128) return false
+    return id.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-' }
+}
+
+/**
+ * 从桥接消息里取 `courses` 的载荷（`saveImportedCourses` 发来的课程数组 JSON 文本）。
+ *
+ * 只接受 `type == "courses"` 且 `payload` 是字符串的消息；其余一律 null。
+ * 是否该在当下处理（导入执行期）由调用方判断——本函数只做解包。
+ */
+fun warehouseBridgeCoursesPayload(raw: String?): String? {
+    val text = raw?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    val parsed = MiniJson.tryParse(text) as? Map<*, *> ?: return null
+    if (parsed["type"] != "courses") return null
+    return parsed["payload"] as? String
+}
+
+/**
  * 让网页侧的 `await AndroidBridgePromise.xxx(...)` 拿到原生结果。
  *
- * 网页发来的 `requestId` 是不可信输入；直接拼进 JS 会变成脚本注入（网页可以伪造一条 message
- * 让原生把它当代码执行）。所以**只放行** `[A-Za-z0-9_-]` 且长度合理的 id，否则回空串
- * （调用方就当这次没有回答，不要执行任何东西）。
+ * 网页发来的 `requestId` 是不可信输入；只放行 [isSafeWarehouseBridgeRequestId]
+ * 认可的 id，否则回空串（调用方就当这次没有回答，不要执行任何东西）。
  *
  * @param jsonValue 已序列化的 JSON（字符串要带引号），作为 Promise 的 resolve 值。
  */
 fun warehouseBridgeResolveScript(requestId: String, jsonValue: String): String {
+    if (!isSafeWarehouseBridgeRequestId(requestId)) return ""
     val id = requestId.trim()
-    if (id.isEmpty() || id.length > 128) return ""
-    if (id.any { !(it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '_' || it == '-') }) {
-        return ""
-    }
     return "(window.__qingyuResolvers && window.__qingyuResolvers['$id']) ? " +
         "window.__qingyuResolvers['$id']($jsonValue) : undefined;"
 }

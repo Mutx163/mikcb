@@ -291,3 +291,59 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin -
 - 登录态探针/自动填充仍缺（见 §7 #2）；
 - `saveCourseConfig` / `savePresetTimeSlots` 需要落盘，未接；
 - 真机全未验。
+
+## 10. F32（2026-11-01）：抓回课程写入仓储 + 网页对话框降级
+
+### 现在的链路
+
+```text
+执行导入脚本 → 拉脚本 → 注入（包 AndroidBridge 垫片）
+  → 脚本 postMessage {type:'courses', payload:'[…]'}
+  → warehouseBridgeCoursesPayload 解包
+  → WarehouseCourseImportLogic.parse（对齐 Dart 的宽松解析）
+  → WarehouseCourseWriteBack.applyPayload
+  → TimetableRepository.replaceActiveProfileContent（一次落盘、一次通知）
+  → Toast：新增强调 / 覆盖 / 无变化 / 失败 / 丢弃条数
+```
+
+写回策略（[WarehouseCourseWriteBack.Mode]）：
+
+| 当前档案已有课 | 默认 |
+|---|---|
+| 没有 | `REPLACE` |
+| 有 | `MERGE`（绝不静默清空用户已有课表） |
+
+显式替换还没有入口（Dart 会弹「替换/合并」），`applyPayload` 的 `requestedMode` 是给
+后续原生弹窗预留的。解析后没有可导入课程时**不写盘**，避免一键清空。
+
+### 网页对话框降级（原生对话框未移植）
+
+| 网页调用 | 原生回答 | 说明 |
+|---|---|---|
+| `confirm` / `showAlert` | `true` | 对齐 Dart 宏回放：未录到的 confirm 默认确认 |
+| `prompt` | 脚本自带 `defaultValue` | 用户看不到输入框，只是不挂起 |
+| `singleSelection` | 脚本自带 `selectedIndex`（缺省 0） | 同上 |
+| `saveCourseConfig` / `savePresetTimeSlots` | `false` | 诚实不可用：配置没落盘 |
+
+以上都记 `WarehouseWebLogin` 日志；`requestId` 与原有 resolve 共用同一份白名单校验。
+
+### 壳侧必须补的一个参数（本泳道不改 `ShellPageIndex.kt`）
+
+```kotlin
+"g2.webLogin" -> WarehouseWebLoginHost(
+    state = warehouseState,
+    prefs = warehousePrefs,
+    repository = wiring.timetable,   // ← F32 新增，不传则抓回的课不落库
+    onBack = onBack,
+    onOpenPage = onOpenPage,
+)
+```
+
+### 仍未接（诚实清单）
+
+- 「替换 / 合并」与「开学日 / 周次映射」弹窗：当前周次按脚本原值写入，不做 `firstCourseWeek` 平移；
+- 原生 confirm / prompt / 单选界面：现在只有确定性降级回答；
+- `saveCourseConfig` / `savePresetTimeSlots` 落盘：现在回答 `false`；
+- 宏录制/快捷导入、登录态探针/自动填充：仍未移植；
+- 真机全未验：只能声明「L0 单测通过」。
+

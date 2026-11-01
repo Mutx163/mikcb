@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.UUID
 
 /**
  * `g2.webLogin` 的**真宿主**（F28，补派工大表 I2 的最后一段壳侧缺口）。
@@ -45,14 +47,17 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 真 WebView | [WarehouseWebLoginPage] → [WarehouseWebViewHost] |
  * | 加载进度 / 错误上屏 | [WarehouseWebLoginWebState]（错误文案优先取 ARB） |
  * | 「执行导入脚本」 | 拉脚本（[WarehouseRepositoryService.loadAdapterScript]，含 SHA-256 校验）→ 包桥接垫片 → 注入 |
- * | 桥接消息 | 已由页面过了 §6.2 门禁；这里只记类型日志 |
+ * | 脚本回传 `courses` | [WarehouseCourseImportLogic] 解析 → [WarehouseCourseWriteBack] 走仓储原子入口写回当前档案 |
+ * | 网页 `confirm` / `prompt` / 单选 | [warehouseBridgeFallbackAnswer] 给确定默认值并注入回网页，避免脚本永远挂起 |
+ * | 桥接消息 | 已由页面过了 §6.2 门禁；这里按类型分发 |
  *
  * ## 诚实边界（别删）
  *
- * 1. **没有写回课表**：脚本回传的 `courses` 消息到这里只记日志；写课表要 `TimetableRepository`，
- *    不在本泳道作用域，属上层接线。
- * 2. **没有原生对话框**：脚本调 `AndroidBridgePromise.showAlert/showPrompt/showSingleSelection/...`
- *    会一直等原生回话；回答要上层用 [warehouseBridgeResolveScript] 注入（对话框 UI 未接）。
+ * 1. **抓回来的课直接写当前档案**：没有 Dart 的「替换/合并」弹窗与开学日/周次映射弹窗；
+ *    默认策略是「空表替换、非空合并」（见 [WarehouseCourseWriteBack]）。周次按脚本原值写入，
+ *    不做 `firstCourseWeek` 平移。
+ * 2. **没有原生对话框**：`prompt` / 单选用脚本自带默认值回答，`saveCourseConfig` /
+ *    `savePresetTimeSlots` 诚实返回 `false`；用户无法在原生界面里改选择。
  * 3. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
  *    与 i2-webview 认领文件里列的缺件一致。
  * 4. 宏录制/快捷导入仍未移植，按钮给「不可用」实话。
@@ -64,6 +69,8 @@ private const val LOG_TAG = "WarehouseWebLogin"
 /**
  * @param state 选校/适配器暂存（壳里 `remember { WarehouseShellState() }`）
  * @param prefs 自定义登录地址（键名与 Dart 逐字一致）
+ * @param repository 脚本抓回的课表写到哪；**壳必须传 `wiring.timetable`**。
+ *   为 null 时用户会看到「不可用」提示（不要拿假成功糊弄）。
  * @param onOpenPage 壳的导航入口；没有选中适配器时退回选校页
  */
 @Composable
@@ -72,6 +79,7 @@ fun WarehouseWebLoginHost(
     prefs: WarehouseImportPrefs,
     onBack: () -> Unit,
     onOpenPage: (String) -> Unit,
+    repository: TimetableRepository? = null,
     fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
 ) {
     val context = LocalContext.current
@@ -101,6 +109,9 @@ fun WarehouseWebLoginHost(
         mutableStateOf(initialWarehouseWebLoginSession(target))
     }
     var isExecuting by remember { mutableStateOf(false) }
+    // 脚本执行期窗口：注入成功到 complete/error/网页跳转之间。
+    // 回传的 courses 与对话框回答只在这个窗口内处理——不然任意网页都能塞一份假课表。
+    var scriptActive by remember(target.loginUrl) { mutableStateOf(false) }
 
     fun executeImportScript() {
         if (isExecuting) return
@@ -132,9 +143,11 @@ fun WarehouseWebLoginHost(
                                 ),
                             )
                             session = session.withStage(WarehouseWebLoginStage.EXECUTING)
+                            scriptActive = true
                         }
 
                         is WarehouseLoad.Failed -> {
+                            scriptActive = false
                             Log.w(
                                 LOG_TAG,
                                 "adapter script load failed code=${loaded.code} attempts=${loaded.attempts}",
@@ -156,6 +169,162 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    fun showToasts(messages: List<String>) {
+        for (message in messages) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** 把写回结果翻成用户能看懂的几句话（全部取 ARB 原文，不在代码里硬写中文）。 */
+    fun messagesFor(result: WarehouseCourseWriteBack.PayloadResult): List<String> {
+        val messages = mutableListOf<String>()
+        when (result) {
+            is WarehouseCourseWriteBack.PayloadResult.InvalidFormat ->
+                messages.add(WarehouseStrings.invalidCourseDataFormat.zh)
+
+            is WarehouseCourseWriteBack.PayloadResult.NoImportableCourses -> {
+                messages.add(WarehouseStrings.noImportableCoursesFromScript.zh)
+                if (result.droppedCount > 0) {
+                    messages.add(
+                        WarehouseStrings.importCourseRecordsDropped.filled(
+                            "imported" to result.receivedCount.toString(),
+                            "dropped" to result.droppedCount.toString(),
+                        ),
+                    )
+                }
+            }
+
+            is WarehouseCourseWriteBack.PayloadResult.Failed -> {
+                Log.e(LOG_TAG, "course write-back failed: ${result.cause?.javaClass?.simpleName}")
+                messages.add(WarehouseStrings.importFailedStatus.zh)
+            }
+
+            is WarehouseCourseWriteBack.PayloadResult.Done -> {
+                val outcome = result.outcome
+                when {
+                    outcome.importedCount == 0 -> messages.add(WarehouseStrings.importNoCourseChanges.zh)
+                    outcome.mode == WarehouseCourseWriteBack.Mode.REPLACE ->
+                        messages.add(
+                            WarehouseStrings.importOverwriteCount.filled(
+                                "count" to outcome.importedCount.toString(),
+                            ),
+                        )
+
+                    else -> messages.add(
+                        WarehouseStrings.importUpdatedCount.filled(
+                            "count" to outcome.importedCount.toString(),
+                        ),
+                    )
+                }
+                if (outcome.droppedCount > 0) {
+                    messages.add(
+                        WarehouseStrings.importCourseRecordsDropped.filled(
+                            "imported" to result.receivedCount.toString(),
+                            "dropped" to outcome.droppedCount.toString(),
+                        ),
+                    )
+                }
+                if (outcome.weeksTrimmedCount > 0) {
+                    messages.add(
+                        WarehouseStrings.importCourseWeeksTrimmed.filled(
+                            "count" to outcome.weeksTrimmedCount.toString(),
+                        ),
+                    )
+                }
+            }
+        }
+        return messages
+    }
+
+    fun handleCoursesMessage(raw: String) {
+        val payload = warehouseBridgeCoursesPayload(raw)
+        if (payload == null) {
+            Log.w(LOG_TAG, "courses message without payload")
+            return
+        }
+        val repo = repository
+        if (repo == null) {
+            // 壳没传仓储：不许假装导入成功。
+            Log.w(LOG_TAG, "courses received but repository is not wired")
+            showToasts(listOf(WarehouseStrings.importFailedStatus.zh))
+            return
+        }
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                WarehouseCourseWriteBack.applyPayload(
+                    repository = repo,
+                    payload = payload,
+                    unknownTeacher = WarehouseStrings.unknownTeacher.zh,
+                    unknownLocation = WarehouseStrings.unknownLocation.zh,
+                    idFactory = { UUID.randomUUID().toString() },
+                )
+            }
+            Log.i(
+                LOG_TAG,
+                "courses write-back result=${result.javaClass.simpleName}",
+            )
+            showToasts(messagesFor(result))
+        }
+    }
+
+    /**
+     * 网页对话框降级：给一个确定的默认回答，避免脚本的 Promise 永远悬着。
+     * 原生对话框还没移植，所以这里只保证「不挂起 + 有日志」，不代表用户真的做了选择。
+     */
+    fun handleDialogFallback(raw: String) {
+        val answer = warehouseBridgeFallbackAnswer(raw)
+        if (answer == null) {
+            Log.w(LOG_TAG, "bridge dialog ignored: unsafe requestId or unknown type")
+            return
+        }
+        val script = warehouseBridgeResolveScript(answer.requestId, answer.jsonValue)
+        if (script.isEmpty()) return
+        controller.injectJavaScript(script)
+        Log.i(
+            LOG_TAG,
+            "bridge dialog ${answer.kind.messageType} answered with fallback value",
+        )
+    }
+
+    fun handleBridgeMessage(raw: String) {
+        val type = warehouseBridgeMessageType(raw)
+        when (type) {
+            "courses" -> {
+                if (scriptActive) {
+                    handleCoursesMessage(raw)
+                } else {
+                    Log.w(LOG_TAG, "courses message dropped outside import execution")
+                }
+            }
+
+            "confirm",
+            "prompt",
+            "singleSelection",
+            "saveCourseConfig",
+            "savePresetTimeSlots",
+            -> {
+                if (scriptActive) {
+                    handleDialogFallback(raw)
+                } else {
+                    Log.w(LOG_TAG, "dialog message dropped outside import execution: $type")
+                }
+            }
+
+            "complete" -> {
+                scriptActive = false
+                Log.i(LOG_TAG, "bridge complete")
+            }
+
+            "error" -> {
+                scriptActive = false
+                Log.w(LOG_TAG, "bridge error reported by adapter script")
+                showToasts(listOf(WarehouseStrings.courseImportScriptFailed.zh))
+            }
+
+            else -> Log.i(LOG_TAG, "bridge message type=$type")
+        }
+    }
+
     WarehouseWebLoginPage(
         title = school.name,
         sessionState = session,
@@ -165,6 +334,8 @@ fun WarehouseWebLoginHost(
             session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))
         },
         onWebPageStarted = { url ->
+            // 新导航会重建 JS 上下文：上一轮的脚本窗口随之结束。
+            scriptActive = false
             session = session.copy(
                 currentUrl = url,
                 stage = WarehouseWebLoginStage.LOADING,
@@ -200,9 +371,8 @@ fun WarehouseWebLoginHost(
         },
         onWebBridgeMessage = { raw ->
             // 能走到这里的消息已经过页面的 §6.2 门禁（UI 类消息只在 EXECUTING 放行）。
-            // 数据回传（courses / saveCourseConfig / ...）要写进课表，属上层接线；
-            // 这里只记类型，不记正文（课表数据里有学号/课表内容，不进日志）。
-            Log.i(LOG_TAG, "bridge message type=${warehouseBridgeMessageType(raw)}")
+            // 数据回传（courses）与对话框降级在这里分发；正文不进日志（课表里有学号/课表内容）。
+            handleBridgeMessage(raw)
         },
         onMoreOptions = {
             val url = controller.liveUrl() ?: session.currentUrl
