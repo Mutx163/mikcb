@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -60,6 +61,11 @@ fun TimetableWeekGrid(
     onLongPressEmptySlot: ((dayOfWeek: Int, section: Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
     material: HomeMaterialRenderSpec? = null,
+    /**
+     * 课卡液态档的背景采样源（整页共享，见 `TimetableWeekPage.cardGlassBackdrop`）。
+     * null = 各卡走原有透明度填充；非空时所有卡片采同一层，不额外建录像带。
+     */
+    cardGlassBackdrop: Backdrop? = null,
 ) {
     val totalHeight = sectionHeight * sectionCount
     val dayCount = visibleDays.size.coerceAtLeast(1)
@@ -118,6 +124,7 @@ fun TimetableWeekGrid(
                                 isHoliday = holidayForDay(dayOfWeek),
                                 onClick = { onCourseClick(card.course) },
                                 material = material,
+                                glassBackdrop = cardGlassBackdrop,
                             )
                         }
                     }

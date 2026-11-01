@@ -59,6 +59,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
@@ -155,8 +156,8 @@ fun TimetableWeekPage(
      */
     material: HomeMaterialRenderSpec? = null,
     /**
-     * 当前有没有可用壁纸。顶栏玻璃带只有在壁纸之上才值得采样（没有壁纸时
-     * Dart `homePageHeaderUsesFrostedChrome` 恒 false，实心条即可）。
+     * 当前有没有可用壁纸。顶栏玻璃带与课卡液态档都只有在壁纸之上才值得采样
+     * （没有壁纸时 Dart `homePageHeaderUsesFrostedChrome` 恒 false、课卡也一律回落实体）。
      */
     hasBackdrop: Boolean = false,
     /**
@@ -193,17 +194,25 @@ fun TimetableWeekPage(
     // Dart 这条带是「标题行 + 星期栏」共用的一条连续玻璃（`home_page_region_blur.dart`
     // 的 `HomePageChromeGlassFill`）；本页把同一份 modifier 套给这两块。
     //
-    // 三步接线的第 ① 步：把壁纸层录进 `bandBackdrop`（记录 ≠ 上屏，原内容照常画）；
+    // 三步接线的第 ① 步：把壁纸层录进 `pageBackdrop`（记录 ≠ 上屏，原内容照常画）；
     // 第 ② 步在带子上 `drawBackdrop` 采样 + 高斯 + 染色。只有「液态 + 真有壁纸 +
     // 设备支持 RuntimeShader」三件事同时成立才录，否则省掉整层采样。
+    // 课卡玻璃（下面 `cardGlassActive`）复用同一层录像带。
     val density = LocalDensity.current
-    val bandBackdrop = rememberLayerBackdrop()
-    val bandSpec = material
-    val bandSurface = bandSpec?.band
+    // ── 整页只有**一层**壁纸录像带 ──
+    // 顶栏玻璃带与周网格课程卡片都从它采样。卡片数量多（一屏 20~50 张），
+    // 一张卡建一层录像带会把整屏复制几十份；Dart 也是同一结论
+    // （`course_surface.dart:197-208`：一屏一张预糊位图，多卡共用）。
+    val pageBackdrop = rememberLayerBackdrop()
+    // 课卡的**共享预糊层**：整屏只糊这一趟，卡片各自从这张图里取自己那一块
+    // （Dart `PreblurredWallpaperCache` 的 Compose 等价物）。
+    val cardGlassBackdrop = rememberLayerBackdrop()
+    val materialSpec = material
+    val bandSurface = materialSpec?.band
     val bandBlurActive = bandSurface == SurfaceMaterialState.LIQUID_GLASS &&
         hasBackdrop && isRuntimeShaderSupported()
     val bandTint = MiuixTheme.colorScheme.surface.copy(
-        alpha = bandSpec?.liquidTintAlpha ?: 1f,
+        alpha = materialSpec?.liquidTintAlpha ?: 1f,
     )
     val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
     // 玻璃带按 `material.band` 分三档：OFF 不画；SOLID 不透明页面底色（有壁纸时
@@ -213,13 +222,13 @@ fun TimetableWeekPage(
     // 标题行与星期栏**共用这一份 modifier**（Dart 那条带就是两块连着的），
     // 否则实体档下会看到「标题实心、星期栏透壁纸」的一道接缝。
     val bandModifier = when {
-        bandSpec == null -> Modifier
+        materialSpec == null -> Modifier
         bandSurface == SurfaceMaterialState.OFF -> Modifier
         bandBlurActive -> Modifier.drawBackdrop(
-            backdrop = bandBackdrop,
+            backdrop = pageBackdrop,
             shape = { RectangleShape },
             effects = {
-                blur(with(density) { bandSpec.liquidBlurSigma.dp.toPx() })
+                blur(with(density) { materialSpec.liquidBlurSigma.dp.toPx() })
                 // `vibrancy()` = 官方 `colorControls(saturation = 1.5)`：
                 // 少了它玻璃会发灰（见 miuix demo 的 LiquidGlass 四层结构）。
                 vibrancy()
@@ -227,6 +236,28 @@ fun TimetableWeekPage(
             onDrawSurface = { drawRect(bandTint) },
         )
         else -> Modifier.background(bandSolidColor)
+    }
+
+    // ── 课卡液态档（2026-11-01）──
+    // 门控与顶栏带同构：液态档 + 真有壁纸 + 设备支持 runtime shader。模型层已把
+    // 「无壁纸 / 模糊总闸关 / 用户选实体或高斯」降成非液态，这里再挡一次系统能力；
+    // 三件事缺一件就**退回各卡原有的透明度填充**（`CourseGridCard` 的 `background(fill)`）。
+    val cardGlassActive = materialSpec?.courseCard == SurfaceMaterialState.LIQUID_GLASS &&
+        hasBackdrop && isRuntimeShaderSupported()
+    val cardBlurSigmaPx = with(density) {
+        (materialSpec?.courseCardBlurSigma ?: 0f).dp.toPx()
+    }
+    // σ = 0 是**有效的清档**（Dart 清澈档，`preblurred_wallpaper_glass.dart:493-498`）：
+    // 背景原样透出、不跑高斯，所以连预糊那一趟也省掉。
+    val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
+    // 录像带只在**真有人采**时才挂：顶栏带要采，或课卡液态档要采。否则整屏录制
+    // 是纯浪费（`PagesShellActivity.kt:296-300` 同一条纪律）。
+    val pageBackdropActive = bandBlurActive || cardGlassActive
+    // 卡片采哪一层：σ > 0 采共享预糊层；σ = 0（清澈档）直接采原壁纸录像层。
+    val cardGlassSource: Backdrop? = when {
+        !cardGlassActive -> null
+        cardPreblurActive -> cardGlassBackdrop
+        else -> pageBackdrop
     }
 
     val sectionTimes: List<SectionTime> = timeScheme?.sections?.takeIf { it.isNotEmpty() }
@@ -248,17 +279,43 @@ fun TimetableWeekPage(
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
-        // 顶栏玻璃带要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
+        // 顶栏玻璃带与课卡玻璃都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
         if (backdrop != null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (bandBlurActive) Modifier.layerBackdrop(bandBackdrop) else Modifier,
+                        if (pageBackdropActive) {
+                            Modifier.layerBackdrop(pageBackdrop)
+                        } else {
+                            Modifier
+                        },
                     ),
             ) {
                 backdrop.invoke(this)
             }
+        }
+        // ── 课卡的共享预糊层：整屏只糊**这一趟** ──
+        // `alpha(0f)` = 这一层不上屏，唯一作用是把自己录进 `cardGlassBackdrop`
+        // （与玻璃坞 ② 层「图标折射副本」同一手法）。它画在壁纸录像层之后，
+        // 才采得到这一帧的壁纸。所有卡片随后都只从这张图里取自己那块：
+        // 一屏 20~50 张卡共用一次高斯，而不是每卡一次实时模糊。
+        if (cardPreblurActive) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(0f)
+                    .layerBackdrop(cardGlassBackdrop)
+                    .drawBackdrop(
+                        backdrop = pageBackdrop,
+                        shape = { RectangleShape },
+                        effects = {
+                            blur(cardBlurSigmaPx)
+                            // 与顶栏带同一条：少了它玻璃会发灰。
+                            vibrancy()
+                        },
+                    ),
+            )
         }
         Column(
             modifier = Modifier
@@ -313,6 +370,7 @@ fun TimetableWeekPage(
                         onWeekTitleClick = { showWeekSelectorDialog = true },
                         material = material,
                         bandModifier = bandModifier,
+                        cardGlassBackdrop = cardGlassSource,
                     )
                 }
 
@@ -398,6 +456,12 @@ private fun WeekPageContent(
     onWeekTitleClick: () -> Unit,
     material: HomeMaterialRenderSpec? = null,
     bandModifier: Modifier = Modifier,
+    /**
+     * 课卡液态档的背景采样源（整页共享）。null = 走各卡原有的透明度填充。
+     * 非空时它要么是「整屏预糊层」（σ > 0），要么是原壁纸录像层（清澈档 σ = 0），
+     * 由 [TimetableWeekPage] 一次性算好，这里只往下透传。
+     */
+    cardGlassBackdrop: Backdrop? = null,
 ) {
     val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf) {
         WeekGridCourseMapping.cardsForWeek(
@@ -479,6 +543,7 @@ private fun WeekPageContent(
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         modifier = Modifier.weight(1f),
                         material = material,
+                        cardGlassBackdrop = cardGlassBackdrop,
                     )
                 }
             }

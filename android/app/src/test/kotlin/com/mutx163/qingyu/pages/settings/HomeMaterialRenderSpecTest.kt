@@ -153,6 +153,44 @@ class HomeMaterialRenderSpecTest {
     }
 
     @Test
+    fun `课卡预糊不吃深色配方的模糊上浮`() {
+        // 课卡的 sigma 喂的是**整屏一张预糊位图**，按一个值只烤一次；
+        // 深色配方的 ×1.3 是逐帧光照适配，烤进图里等于永远不生效
+        //（`course_glass_tuning.dart:165-170`、`preblurred_wallpaper_glass.dart:489-492`）。
+        val result = spec(
+            model(
+                lightTuning = LiquidGlassTuningModel(blurSigma = 8.0),
+                cardTuning = LiquidGlassTuningModel(blurSigma = 10.0),
+                darkBoost = true,
+            ),
+            isDark = true,
+        )
+        // 对照：全局那一路仍走实时模糊，照吃 ×1.3（8 × 1.3 = 10.4）。
+        assertEquals(10.4f, result.liquidBlurSigma, 1e-6f)
+        assertEquals(10.0f, result.courseCardBlurSigma, 1e-6f)
+    }
+
+    @Test
+    fun `课卡预糊按出图上限 24 收口`() {
+        // 卡片磨砂滑杆的上限是 `kPreblurMaxSigma = 24`（`preblurred_wallpaper_glass.dart:433`），
+        // 不是全局实时模糊的 40；出图侧本来就会夹，模型这里同口径才不会显示一个到不了的档。
+        val result = spec(
+            model(cardTuning = LiquidGlassTuningModel(blurSigma = 40.0)),
+        )
+        assertEquals(24.0f, result.courseCardBlurSigma, 1e-6f)
+    }
+
+    @Test
+    fun `课卡染色照吃深色 0点85 系数`() {
+        // 与磨砂相反：染色是逐帧叠上去的，深色配方照吃（`liquid_glass_tuning.dart:697`）。
+        val result = spec(
+            model(cardTuning = LiquidGlassTuningModel(tintAlpha = 0.4)),
+            isDark = true,
+        )
+        assertEquals(0.4f * 0.85f, result.courseCardTintAlpha, 1e-6f)
+    }
+
+    @Test
     fun `深色独立档生效时取深色参数并乘深色染色系数`() {
         val result = spec(
             model(

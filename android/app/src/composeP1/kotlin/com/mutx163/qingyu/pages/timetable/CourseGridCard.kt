@@ -35,6 +35,8 @@ import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -111,8 +113,11 @@ fun calculateInk(backgroundColor: Color): Color {
  *
  * - 天气行（`CourseWeatherDisplay`）：Compose 侧天气数据还没接进课表宿主，见
  *   `docs/plans/2026-10-29-compose-week-view-audit.md` 的 P1-1（课卡天气行）；
- * - 高斯/液态玻璃卡面：没有壁纸与预糊位图管线时两者都会退化成半透明实体，
- *   这里按 [WeekCardSurface.TRANSLUCENT] 的降级口径画（与 Dart 无壁纸时一致）；
+ * - 高斯/液态玻璃卡面的**降级**：没有壁纸、模糊总闸关或设备不支持 runtime shader 时，
+ *   两档都退化成半透明实体（与 Dart 无壁纸时一致）。**液态档已接真采样与模糊**（2026-11-01）：
+ *   卡片从整页共享的预糊层取背景（见 [glassBackdrop]），不是每卡一次实时模糊；
+ *   但 Dart 那套折射着色器（`CourseSurface._buildRefraction` 的 `lens`）还没接 ——
+ *   这里的液态档 = 真背景 + 高斯 + 课色染色，缺的是边缘折射与色散；
  * - 每行的 flex 比例（Dart 用 `flex: 4/2/3` 分配高度）：这里用 maxLines + 省略号，
  *   视觉接近，但「格子很高时各行按比例拉长」这层没有。
  */
@@ -133,6 +138,15 @@ fun CourseGridCard(
      * 全都只落盘不上屏 —— 因为这里只读 `style.surfaceStyle`，而它不含总闸与无壁纸降级。
      */
     material: HomeMaterialRenderSpec? = null,
+    /**
+     * 液态档的**整页共享**背景采样源（`TimetableWeekPage.cardGlassBackdrop`）。
+     *
+     * 非空 = 宿主已建好一层壁纸录像（σ > 0 时还叠了一层「整屏预糊」），
+     * 所有卡片都从这一层取自己那块像素；null = 保留原有的透明度填充。
+     * 一屏 20~50 张卡**共用一层**，不给每张卡建采样层（Dart
+     * `course_surface.dart:197-208` 同一条性能口径）。
+     */
+    glassBackdrop: Backdrop? = null,
 ) {
     val course = model.course
     val dark = isSystemInDarkTheme()
@@ -202,13 +216,37 @@ fun CourseGridCard(
         Modifier
     }
 
+    // ── 液态档：真背景采样（2026-11-01）──
+    // 只有「宿主给了共享采样层 + 生效档确实是液态」才走这条路；其余一律回落到
+    // 下面的 `.background(fill)`（无壁纸 / 总闸关 / 无 shader / 实体 / 高斯档）。
+    //
+    // 采样层由宿主建好并**整页共用**；这里每张卡只付一次矩形采样，高斯已经在共享
+    // 层里糊过一次 —— **不是**每卡一次实时模糊（那正是 Dart 注释里把课表拖到
+    // 十几帧的元凶）。成本不随卡片数量线性涨。
+    val cardBackdrop = glassBackdrop?.takeIf {
+        material?.courseCard == SurfaceMaterialState.LIQUID_GLASS
+    }
+    // 课色染在模糊后的背景上：`fill` 的 alpha 就是 `courseCardTintAlpha`（× 压暗），
+    // 与 Dart `CourseSurface.washAlpha` 同口径（见上方 [fillAlpha] 的三档）。
+    val surfaceModifier = if (cardBackdrop != null) {
+        Modifier.drawBackdrop(
+            backdrop = cardBackdrop,
+            shape = { shape },
+            // 共享层已经糊过；这里只取像素，空效果链。
+            effects = {},
+            onDrawSurface = { drawRect(fill) },
+        )
+    } else {
+        Modifier.background(fill)
+    }
+
     Box(
         modifier = modifier
             .padding(style.cardInsetDp.dp)
             .fillMaxSize()
             .alpha(dim)
             .clip(shape)
-            .background(fill)
+            .then(surfaceModifier)
             .then(borderModifier)
             .clickable(onClick = onClick),
     ) {

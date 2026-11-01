@@ -303,6 +303,10 @@ data class MaterialPanelState(
  * 深色**恒**乘 `tintAlphaScale = 0.85`；`darkGlassBoostEnabled` 打开时再乘
  * `blurSigmaScale = 1.3`、`rimStrengthScale = 0.6`；浅色恒等。
  *
+ * ⚠️ [courseCardBlurSigma] 是**唯一不吃深色配方**的字段：它喂的是整屏预糊位图，
+ * 一张图只按一个 sigma 烤一次（Dart `course_glass_tuning.dart:165-170`），且量程止于
+ * `kPreblurMaxSigma = 24` 而不是全局的 40。改它之前先读 `renderSpecOf` 里那段注释。
+ *
  * @param band 顶栏玻璃带。没有壁纸时解析成 [SurfaceMaterialState.SOLID]（Dart
  *   `homePageHeaderUsesFrostedChrome` 在无壁纸时恒 false），关掉总开关时是
  *   [SurfaceMaterialState.OFF]（整条不画）。
@@ -483,8 +487,15 @@ object SettingsMaterialModel {
                 .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION_BAND).toFloat(),
             liquidRimStrength = (global.rimStrength * rimScale).coerceIn(0.0, 1.0).toFloat(),
             courseCardTintAlpha = (card.tintAlpha * tintScale).coerceIn(0.0, 1.0).toFloat(),
-            courseCardBlurSigma = (card.blurSigma * blurScale)
-                .coerceIn(0.0, LiquidGlassTuningModel.MAX_BLUR_SIGMA).toFloat(),
+            // 课卡的磨砂喂的是**整屏一张预糊位图**，不是逐帧实时模糊：
+            // * 不吃深色配方的 ×1.3 —— 位图按一个 sigma 只烤一次，×1.3 是逐帧光照
+            //   适配，烤进图里等于把它锁死（Dart `course_glass_tuning.dart:165-170`、
+            //   `preblurred_wallpaper_glass.dart:489-492`）；
+            // * 量程是**卡片自己的** `kPreblurMaxSigma`（`preblurred_wallpaper_glass.dart:504-508`），
+            //   不是全局实时模糊的 40。超过 24 的部分在出图侧本来就会被夹掉。
+            courseCardBlurSigma = card.blurSigma
+                .coerceIn(0.0, LiquidGlassTuning.PREBLUR_MAX_SIGMA)
+                .toFloat(),
         )
     }
 
