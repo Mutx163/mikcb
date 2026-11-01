@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 
 /**
@@ -65,6 +66,11 @@ import top.yukonga.miuix.kmp.icon.extended.TopDownloads
  *   排行行自动变可点；不传则保持纯展示。Dart 原件
  *   （`lib/screens/statistics_analysis_screen.dart:132` → `:190 _openCourseEdit`）
  *   是「按课名找课程 → 打开该课编辑页」。
+ *
+ *   即使传了回调，也只有**当前课表里找得到同名课程**的行才可点（
+ *   [StatisticsAnalysisViewState.rankingOpenableNames]，由
+ *   `StatisticsRankingLinkModel.openableNames` 算出）；找不到的课名 Dart 会静默不动作，
+ *   这里提前降级为纯展示，并给可点行加行尾箭头。落点怎么接见认领文件 F30。
  */
 @Composable
 fun StatisticsAnalysisPage(
@@ -284,8 +290,14 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((
         return
     }
     for ((index, row) in viewState.rankingRows.withIndex()) {
-        // 有落点才可点（P1-3）：`onOpenCourse == null` 时不加 `clickable`，
-        // 排版保持纯展示——不做一个「按下去什么都不发生」的假热区。
+        // 逐行判定可点性（P1-3 + F30），两个条件缺一不可：
+        //   1. 壳确实给了落点回调（`onOpenCourse != null`）；
+        //   2. 这一行的课名在**当前课表**里找得到（`rankingOpenableNames`）。
+        // Dart `_openCourseEdit` 对找不到的课名是静默 `return`（点了什么都不发生）；
+        // 这里把这种行提前降级为纯展示——不留「按下去没反应」的假热区。
+        // 有落点时才画行尾箭头，让「这行能点」在视觉上可见。
+        val openCourse = onOpenCourse
+        val canOpen = openCourse != null && row.first in viewState.rankingOpenableNames
         val rowModifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
@@ -293,9 +305,11 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((
                 if (index == 0) Color(QingyuTheme.rowHighlight(dark)) else Color.Transparent,
             )
             .then(
-                if (onOpenCourse != null) {
+                if (canOpen && openCourse != null) {
                     // Dart `CourseRanking(onCourseTap:)`：点行按课名进该课编辑页。
-                    Modifier.clickable { onOpenCourse(row.first) }
+                    // Dart 中间还有一步「展开详情 → 编辑课程」，本页骨架未迁展开区，
+                    // 直接到同一落点（课程编辑页），见认领文件 F30。
+                    Modifier.clickable { openCourse(row.first) }
                 } else {
                     Modifier
                 },
@@ -327,6 +341,14 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((
                 style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
+            if (canOpen) {
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = null,
+                    tint = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
         if (index < viewState.rankingRows.lastIndex) {
             top.yukonga.miuix.kmp.basic.HorizontalDivider(

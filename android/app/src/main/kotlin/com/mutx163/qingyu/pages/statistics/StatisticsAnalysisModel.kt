@@ -161,6 +161,15 @@ object StatisticsAnalysisModel {
         // ── 课程排行（第一项是课程名，第二项是课时）──
         val rankingRows: List<Pair<String, String>> = emptyList(),
 
+        /**
+         * 排行里**确实能打开课程编辑页**的课名（当前课表里存在同名课程）。
+         *
+         * 渲染层逐行判定可点性；由 [StatisticsRankingLinkModel.openableNames] 算出。
+         * Dart 对「课名已不存在」的行是静默 `return`，这里把「不可点」提前暴露给排版，
+         * 而不是留一个按下去没反应的热区。
+         */
+        val rankingOpenableNames: Set<String> = emptySet(),
+
         // ── 课表对比 ──
         val compareRows: List<Pair<String, String>> = emptyList(),
     ) {
@@ -185,6 +194,7 @@ object StatisticsAnalysisModel {
         venueRows: List<Pair<String, String>> = emptyList(),
         teacherRows: List<Pair<String, String>> = emptyList(),
         rankingRows: List<Pair<String, String>> = emptyList(),
+        rankingOpenableNames: Set<String> = emptySet(),
         compareRows: List<Pair<String, String>> = emptyList(),
     ): StatisticsAnalysisViewState = StatisticsAnalysisViewState(
         title = title(module),
@@ -197,6 +207,7 @@ object StatisticsAnalysisModel {
         venueRows = venueRows,
         teacherRows = teacherRows,
         rankingRows = rankingRows,
+        rankingOpenableNames = rankingOpenableNames,
         compareRows = compareRows,
     )
 
@@ -298,13 +309,21 @@ object StatisticsAnalysisModel {
             StatisticsAnalysisModule.RANKING -> {
                 val semester = StatisticsService.calculateSemester(stubs, week, weekCount)
                 val unit = ChartsStrings.statisticsSectionsUnit.zh
+                val rows = CourseRankingModel.build(semester.courseRanking)
                 viewState(
                     module = module,
                     courseCount = courses.size,
                     hasOtherProfiles = hasOtherProfiles,
-                    rankingRows = CourseRankingModel.build(semester.courseRanking).map { row ->
+                    rankingRows = rows.map { row ->
                         row.name to "${row.totalSections} $unit"
                     },
+                    // 落点可点性：排行里的课名必须在**当前课表**里找得到（Dart
+                    // `_openCourseEdit` 找不到就静默 return）。判定与真正的落点解析共用
+                    // `StatisticsRankingLinkModel`，不允许渲染层/壳各判一套。
+                    rankingOpenableNames = StatisticsRankingLinkModel.openableNames(
+                        courses = courses,
+                        rankingNames = rows.map { it.name },
+                    ),
                 )
             }
 
