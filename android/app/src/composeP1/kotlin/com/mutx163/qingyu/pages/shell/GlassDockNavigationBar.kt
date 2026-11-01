@@ -69,6 +69,7 @@ import com.mutx163.qingyu.components.liquid.innerShadow
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.components.liquid.vibrancy
+import com.mutx163.qingyu.pages.settings.GlassDockIconVectors
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.LiquidGlassTuning
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
@@ -102,6 +103,39 @@ data class GlassDockItem(
     val label: String?,
     val contentDescription: String? = null,
 )
+
+/**
+ * 圆钮（药丸右侧独立按钮）该画哪个图标。
+ *
+ * ## 取值顺序（Dart `timetable_home_page_assembly.dart:363-381` 同口径）
+ *
+ * 1. 用户在「圆钮图标」里挑的名字（`settings.glassDockButtonIconName`）→
+ *    [GlassDockIconVectors.byName]；
+ * 2. 名字为空 / 未知 / 矢量表缺项 → [HomeNavIcons.iconOf] 给圆钮**绑定动作**的目录图标。
+ *
+ * 圆钮默认绑定 `addCourse`，所以「没自定义」时画的就是那个默认加号（
+ * `glassDockButtonEntryId` 缺省值）。把圆钮改成别的动作（如「概览」）时，
+ * 第 2 步回退的是该动作自己的图标，不会画成加号误导用户。
+ *
+ * ## 为什么回退也放这里
+ *
+ * 宿主同时决定「点下去做什么」与「画什么」。两处的默认值一旦各写一份、日后分叉，
+ * 就会出现按钮画着 A、点下去做 B。**也不在这里复制图标表**：名字 → 矢量只经
+ * [GlassDockIconVectors.byName]，与设置挑选页共用同一份键表（156 项）。
+ *
+ * @param chosenName `TimetableSettingsModel.glassDockButtonIconName`；null = 用户没自定义。
+ * @param roundActionId `HomeDockNavModel.roundButtonAction(...)` 的结果（缺省 `addCourse`）。
+ */
+fun glassDockRoundButtonIcon(
+    chosenName: String?,
+    roundActionId: String,
+): ImageVector {
+    val custom = chosenName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { GlassDockIconVectors.byName(it) }
+    return custom ?: HomeNavIcons.iconOf(roundActionId)
+}
 
 /**
  * **液态玻璃底部导航栏**——四层结构，照官方 demo 的

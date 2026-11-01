@@ -39,6 +39,7 @@ import com.mutx163.qingyu.pages.shell.GlassDockGeometry
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
+import com.mutx163.qingyu.pages.shell.glassDockRoundButtonIcon
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -312,7 +313,10 @@ private fun PagesShell() {
     val currentRootId = (topRoute as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK
     val atRoot = topRoute is ShellRoute.Dock
 
-    // 回到主屏时重读设置：设置页里改完底栏排列 / 形态，返回主屏立刻是新的。
+    // 回到主屏时重读设置：设置页里改完底栏排列 / 形态 / 圆钮图标，返回主屏立刻是新的。
+    // 设置页与图标挑选页都压在这个返回栈里（`ShellRoute.Page`）：push 时 `atRoot` 变 false，
+    // pop 回栈底时再变 true，本效果于是重跑一次 `load()`。少了这一步，`glassDockButtonIconName`
+    // 只在进程重启后才生效。
     LaunchedEffect(atRoot) {
         if (atRoot) settingsModel = wiring.settingsModel.load()
     }
@@ -427,7 +431,14 @@ private fun PagesShell() {
                     trailingContent = if (settingsModel.glassDockShowAddButton) {
                         {
                             GlassDockRoundButton(
-                                icon = HomeNavIcons.iconOf(roundActionId),
+                                // 用户挑的图标名优先；没挑 / 名字已撤 / 矢量表缺项时
+                                // 回退到圆钮绑定动作的目录图标（缺省动作 = 加课 = 加号）。
+                                // 解析规则只在 `glassDockRoundButtonIcon` 一处，宿主与
+                                // 渲染层不各写一份默认值。
+                                icon = glassDockRoundButtonIcon(
+                                    chosenName = settingsModel.glassDockButtonIconName,
+                                    roundActionId = roundActionId,
+                                ),
                                 contentDescription = HomeNavIcons.labelOf(roundActionId),
                                 onClick = { handleRoundButton() },
                             )
