@@ -14,11 +14,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import top.yukonga.miuix.kmp.blur.Backdrop
 
 /**
  * 单日内容滚动壳（Day View Scroll Content）。
@@ -57,13 +60,30 @@ fun DayViewScrollContent(
     weatherLines: Map<String, String> = emptyMap(),
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。 */
     showConflictBadge: Boolean = true,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf`）。整页一份，逐卡下传。
+     * null = 老行为（各卡原有的实体填充）。
+     */
+    material: HomeMaterialRenderSpec? = null,
+    /**
+     * 液态档的**整页共享**背景采样源（`DayViewPage` 建好后整页共用一层）。
+     * 非空且生效档为液态时各卡才真采样，否则退回实底填充。
+     */
+    glassBackdrop: Backdrop? = null,
+    /**
+     * 底部系统手势区高度（dp）。
+     *
+     * 页面自 2026-11-01 起不再吃 Scaffold 的底部内边距（视口要铺到屏幕最底，
+     * 卡片从手势条底下穿过去），所以这里自己补上，让最后一张卡仍停在手势条上方。
+     */
+    bottomInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
         start = 14.dp,
         end = 14.dp,
         top = 8.dp,
-        bottom = 64.dp, // 底部留出悬浮底坞与避让余量
+        bottom = 64.dp + bottomInset, // 底部留出悬浮底坞与避让余量
     ),
 ) {
     LazyColumn(
@@ -83,6 +103,8 @@ fun DayViewScrollContent(
                 DayViewSummaryCard(
                     state = summaryState,
                     onClose = onCloseToWeekView,
+                    material = material,
+                    glassBackdrop = glassBackdrop,
                 )
             }
         }
@@ -96,6 +118,8 @@ fun DayViewScrollContent(
                     onEditTask = onOpenTask,
                     onViewAllOverdue = onViewAllOverdue,
                     courseResolver = courseResolver,
+                    material = material,
+                    glassBackdrop = glassBackdrop,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -137,6 +161,8 @@ fun DayViewScrollContent(
                             hasTask = courseTaskPresenceMap[entry.course.id] == true,
                             weatherInfo = weatherLines[entry.id],
                             showConflictBadge = showConflictBadge,
+                            material = material,
+                            glassBackdrop = glassBackdrop,
                         )
                     }
 
@@ -147,6 +173,8 @@ fun DayViewScrollContent(
                             onTap = onOpenSchedule?.let { open ->
                                 { open(entry.scheduleItem.id, entry.occurrenceDate) }
                             },
+                            material = material,
+                            glassBackdrop = glassBackdrop,
                         )
                     }
 
@@ -154,6 +182,8 @@ fun DayViewScrollContent(
                         DayViewExamCard(
                             entry = entry,
                             onTap = onOpenExam?.let { open -> { open(entry.exam.id) } },
+                            material = material,
+                            glassBackdrop = glassBackdrop,
                         )
                     }
                 }

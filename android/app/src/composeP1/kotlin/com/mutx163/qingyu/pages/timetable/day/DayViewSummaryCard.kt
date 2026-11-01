@@ -25,13 +25,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -50,12 +54,43 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun DayViewSummaryCard(
     state: DayViewSummaryState,
     onClose: () -> Unit,
+    /** 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为（主题实底卡）。 */
+    material: HomeMaterialRenderSpec? = null,
+    /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
+    glassBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
 
+    // ── 摘要卡与下面的议程卡**同材质**（2026-11-01）──
+    // Dart `day_view_summary_card.dart:126-133` 记着用户口径：「日视图顶部的日期卡片……
+    // 也要跟日视图的课程卡片是一样的材质，选什么就是什么，不要第二种」。
+    // 所以这里不另判一档，直接走议程卡那套（[dayAgendaSurfaceAlpha] + [dayAgendaSurface]）。
+    val shape = RoundedCornerShape(QingyuCardDefaults.Corner)
+    val glass = dayAgendaGlassBackdrop(material, glassBackdrop)
+    val fillAlpha = dayAgendaSurfaceAlpha(material, 1f).coerceIn(0.08f, 1f)
+    val translucent = glass != null || fillAlpha < 1f
+
     QingyuCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (translucent) {
+                    Modifier.dayAgendaSurface(
+                        glassBackdrop = glass,
+                        shape = shape,
+                        fill = MiuixTheme.colorScheme.surface.copy(alpha = fillAlpha),
+                    )
+                } else {
+                    Modifier
+                },
+            ),
+        // 卡面自己画（上面那条 modifier），卡片本体的底色让开；不透明档保持官方默认配色。
+        colors = if (translucent) {
+            CardDefaults.defaultColors(color = Color.Transparent)
+        } else {
+            CardDefaults.defaultColors()
+        },
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

@@ -31,9 +31,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Background
@@ -66,6 +68,16 @@ fun DayViewCourseCard(
     /** 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。关掉只藏角标，边框仍在。 */
     showConflictBadge: Boolean = true,
     radius: Dp = 16.dp,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf` 的唯一出口）。null = 老行为
+     * （卡面恒为实体课色）。
+     */
+    material: HomeMaterialRenderSpec? = null,
+    /**
+     * 液态档的**整页共享**背景采样源（`DayViewPage` 建好后整页共用）。
+     * 非空且生效档为液态时才真采样，否则退回卡色填充（见 [dayAgendaSurface]）。
+     */
+    glassBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -73,7 +85,10 @@ fun DayViewCourseCard(
     val isSuspended = entry.course.isSuspendedInWeek(week)
     val baseCardColor = if (!entry.isCurrentWeekCourse) Color(0xFF94A3B8) else rawColor
     val cardAlpha = if (isSuspended) 0.84f else if (!entry.isCurrentWeekCourse) 0.62f else 1f
-    val cardColor = baseCardColor.copy(alpha = cardAlpha)
+    // 卡面档位（实体 / 高斯降级 / 液态染色）与周网格课卡同一条口径，见 [dayAgendaSurfaceAlpha]。
+    val cardColor = baseCardColor.copy(
+        alpha = dayAgendaSurfaceAlpha(material, cardAlpha).coerceIn(0.08f, 1f),
+    )
     val ink = calculateCardInk(baseCardColor)
 
     val shape = RoundedCornerShape(radius)
@@ -87,7 +102,11 @@ fun DayViewCourseCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(cardColor)
+            .dayAgendaSurface(
+                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                shape = shape,
+                fill = cardColor,
+            )
             .then(borderModifier)
             .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {

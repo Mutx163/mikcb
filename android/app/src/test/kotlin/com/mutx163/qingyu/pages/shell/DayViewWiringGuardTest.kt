@@ -135,6 +135,32 @@ class DayViewWiringGuardTest {
     }
 
     @Test
+    fun `日视图必须接上首页壁纸与材质`() {
+        val branch = branchBody("c3.day")
+        // 2026-11-01：日视图原先是一块不透明主题底 —— 周视图有壁纸、玻璃带、液态卡，
+        // 一切到日视图全没了。这五个实参就是那条链接进来的入口；少一个，对应的那一层
+        // 就静默消失（页面全有默认值，编译不会报错）。
+        for (expected in listOf(
+            "backdrop =",
+            "chromeInk =",
+            "material =",
+            "hasBackdrop =",
+            "pageColorArgb =",
+        )) {
+            assertTrue(
+                "`c3.day` 分支没有传 `$expected`：日视图会退回不透明主题底，" +
+                    "壁纸 / 顶栏玻璃带 / 议程卡液态档整条链断在这里。",
+                expected in branch,
+            )
+        }
+        assertTrue(
+            "`c3.day` 分支没有走 `rememberHomeBackdropChrome(`：壁纸快照、材质快照、" +
+                "顶栏墨色必须在那一份推导里算，别在壳里另写一遍。",
+            "rememberHomeBackdropChrome(" in branch,
+        )
+    }
+
+    @Test
     fun `星期栏点击必须写入意图`() {
         val wiring = readSource("android/app/src/main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt")
         assertTrue(

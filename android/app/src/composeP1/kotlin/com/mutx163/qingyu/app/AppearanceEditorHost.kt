@@ -818,11 +818,20 @@ private fun TimetablePreviewPage(
     val today = LocalDate.now()
     val todayOfWeek = today.dayOfWeek.value
 
+    // 预览里的壁纸 / 材质：与真页面同一条推导（草稿模型 ⇒ 卡片当场跟着变）。
+    val homeChrome = rememberHomeBackdropChrome(settingsModel)
+
     DayViewPage(
         initialWeek = snapshot.currentWeek.coerceAtLeast(1),
         initialDayOfWeek = initialDayOfWeek,
         visibleDays = visibleDays,
         totalWeeks = snapshot.settings.semesterWeekCount,
+        // 壁纸层 + 材质快照 + 顶栏墨色（与壳里的 `c3.day` 同一份）。
+        backdrop = homeChrome.backdrop,
+        chromeInk = homeChrome.chromeInk,
+        material = homeChrome.material,
+        hasBackdrop = homeChrome.hasBackdrop,
+        pageColorArgb = homeChrome.pageColorArgb,
         dataProvider = { week, dayOfWeek ->
             // 与壳的日视图页同一套数据形状（`ShellPageIndex` 的 `c3.day`）：课程按周过滤、
             // 日程/考试那几块在壳里也还没接，预览保持同形。

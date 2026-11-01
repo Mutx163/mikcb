@@ -25,9 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -47,11 +49,18 @@ fun DayViewExamCard(
     entry: DayAgendaEntry.ExamEntry,
     onTap: (() -> Unit)? = null,
     radius: Dp = 16.dp,
+    /** 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为（实体警示红）。 */
+    material: HomeMaterialRenderSpec? = null,
+    /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
+    glassBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     val errorColor = Color(QingyuTheme.error(dark))
-    val cardColor = errorColor.copy(alpha = 0.95f)
+    // 与日程卡 / 周网格课卡同一条档位口径（见 [dayAgendaSurfaceAlpha]）。
+    val cardColor = errorColor.copy(
+        alpha = dayAgendaSurfaceAlpha(material, 0.95f).coerceIn(0.08f, 1f),
+    )
     val ink = Color.White
     val shape = RoundedCornerShape(radius)
 
@@ -65,7 +74,11 @@ fun DayViewExamCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(cardColor)
+            .dayAgendaSurface(
+                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                shape = shape,
+                fill = cardColor,
+            )
             .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         Column(

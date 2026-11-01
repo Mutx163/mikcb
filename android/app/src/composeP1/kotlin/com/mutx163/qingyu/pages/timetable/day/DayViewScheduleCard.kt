@@ -30,8 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Location
@@ -54,10 +56,18 @@ fun DayViewScheduleCard(
     progress: DayAgendaProgress? = null,
     onTap: (() -> Unit)? = null,
     radius: Dp = 16.dp,
+    /** 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为（实体日程色）。 */
+    material: HomeMaterialRenderSpec? = null,
+    /** 液态档的整页共享背景采样源（见 [dayAgendaSurface]）。 */
+    glassBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
     val baseColor = parseHexColorOrFallback(entry.scheduleItem.color, fallback = Color(0xFF5B9CF6))
-    val cardColor = baseColor.copy(alpha = 0.95f)
+    // 卡面档位与周网格课卡同一条口径（见 [dayAgendaSurfaceAlpha]）：实体 0.95、
+    // 高斯降级 0.55×、液态走卡片自己的染色旋钮。
+    val cardColor = baseColor.copy(
+        alpha = dayAgendaSurfaceAlpha(material, 0.95f).coerceIn(0.08f, 1f),
+    )
     val ink = calculateCardInk(baseColor)
     val shape = RoundedCornerShape(radius)
     // 跨日徽标只看**这一次发生**的区间：Dart 用物化后的 `effectiveItem`
@@ -69,7 +79,11 @@ fun DayViewScheduleCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(cardColor)
+            .dayAgendaSurface(
+                glassBackdrop = dayAgendaGlassBackdrop(material, glassBackdrop),
+                shape = shape,
+                fill = cardColor,
+            )
             .then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier),
     ) {
         // 进行中状态 600ms 动态进度背景填充
