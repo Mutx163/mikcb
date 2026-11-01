@@ -309,7 +309,15 @@ dependencies {
     implementation 'androidx.core:core-splashscreen:1.0.1'
     implementation 'com.umeng.umsdk:common:9.6.3'
     implementation 'com.umeng.umsdk:asms:1.8.0'
-    implementation 'com.umeng.umsdk:apm:1.5.2'
+    // U-APM 1.5.2 → 2.1.0（2026-11-01，为 16KB 页对齐）：1.x 的
+    // jni/arm64-v8a/libcrashsdk.so 是 4KB 页对齐（readelf -l 的 LOAD p_align=0x1000），
+    // 在 16KB 页设备上加载失败，且 Google Play 自 2025-11-01 起要求 targetSdk 35+ 的
+    // 更新必须支持 16KB。2.0.0 起换成 libucrash / libucrash-core / libumonitor，
+    // 三者 p_align 均为 0x4000（llvm-strip 后仍是），arm64 体积 648KB → 403KB。
+    // 应用侧只调 common 的 UMConfigure，不碰 apm 的 Java API，故仅换版本号。
+    // 注意 2.x 的 AAR 清单多一个 :u_heap 进程的 UMonitorService（内存泄漏监控），
+    // 不调用对应开关时不会启动。
+    implementation 'com.umeng.umsdk:apm:2.1.0'
     implementation 'com.umeng.umsdk:uyumao:1.1.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'androidx.work:work-runtime-ktx:2.10.1'
