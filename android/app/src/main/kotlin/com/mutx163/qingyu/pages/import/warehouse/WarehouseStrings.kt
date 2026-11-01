@@ -113,6 +113,7 @@ object WarehouseStrings {
     val homeWidgetDescriptionTitle = WarehouseArbText("homeWidgetDescriptionTitle", "说明")
     val importAiReplaceMessage = WarehouseArbText("importAiReplaceMessage", "是否使用解析结果替换现有课程？此操作将同时清空自习等独立日程。")
     val importAiResultTitle = WarehouseArbText("importAiResultTitle", "导入 AI 解析结果")
+    val importCleartextBlockedHint = WarehouseArbText("importCleartextBlockedHint", "该站点暂不支持 HTTPS 访问且未在明文白名单内，无法在此打开")
     val importConfirmSemesterMappingTitle = WarehouseArbText("importConfirmSemesterMappingTitle", "确认开学日期和周次对应")
     val importCourseRecordsDropped = WarehouseArbText("importCourseRecordsDropped", "共收到 {imported} 门课程，其中 {dropped} 门数据有误未能导入")
     val importCourseWeeksTrimmed = WarehouseArbText("importCourseWeeksTrimmed", "另有 {count} 门课的部分周次没能识别，请对照教务系统核对")
@@ -304,6 +305,7 @@ object WarehouseStrings {
         homeWidgetDescriptionTitle,
         importAiReplaceMessage,
         importAiResultTitle,
+        importCleartextBlockedHint,
         importConfirmSemesterMappingTitle,
         importCourseRecordsDropped,
         importCourseWeeksTrimmed,

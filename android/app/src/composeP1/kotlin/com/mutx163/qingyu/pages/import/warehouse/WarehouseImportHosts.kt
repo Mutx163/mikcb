@@ -246,7 +246,7 @@ fun WarehouseAdapterDetailHost(
                 // 仓库条目本身没有 import_url 时不许「复制成功」骗用户。
                 Toast.makeText(context, SettingsStrings.aboutUnavailable.zh, Toast.LENGTH_SHORT).show()
             } else {
-                copyToClipboard(context, "warehouse-login-url", text)
+                copyTextToClipboard(context, "warehouse-login-url", text)
                 Toast.makeText(context, WarehouseStrings.copiedImportLoginUrl.zh, Toast.LENGTH_SHORT).show()
             }
         },
@@ -258,7 +258,7 @@ fun WarehouseAdapterDetailHost(
                     WarehouseRepositorySource.DEFAULT,
                     adapter.script,
                 )
-                copyToClipboard(context, "warehouse-script-url", rawUrl)
+                copyTextToClipboard(context, "warehouse-script-url", rawUrl)
                 Toast.makeText(context, WarehouseStrings.copiedScriptRawUrl.zh, Toast.LENGTH_SHORT).show()
             }
         },
@@ -277,12 +277,12 @@ fun WarehouseAdapterDetailHost(
  * 还要过死键基线，代价与收益不成比例）。**先例**：`SettingsHost` 对未移植的弹层
  * 就是这么说的（"点下去给一句实话"）。真实原因进 `Log.w`，不往用户脸上堆行话。
  */
-private fun toastUnavailable(context: Context, reason: String) {
+internal fun toastUnavailable(context: Context, reason: String) {
     Log.w(LOG_TAG, reason)
     Toast.makeText(context, SettingsStrings.aboutUnavailable.zh, Toast.LENGTH_SHORT).show()
 }
 
-private fun copyToClipboard(context: Context, label: String, text: String) {
+internal fun copyTextToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }

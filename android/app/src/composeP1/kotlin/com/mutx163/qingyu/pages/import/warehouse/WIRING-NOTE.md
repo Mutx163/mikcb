@@ -241,3 +241,53 @@ pwsh -NoProfile -File scripts/safe-gradle.ps1 :app:compileComposeUiDebugKotlin -
 
 本泳道交付时这两条的实测结果见认领文件 `.agents/compose-phase3/claims/GAP-webview.md`。
 **真机逐页对照（L4）没有做**——设备铁律：未经用户明确允许不碰真机。
+
+## 9. F28（2026-11-01）：`g2.webLogin` 学校/登录地址数据源收尾
+
+### 现在的链路
+
+`g2.warehouseImport`（选校）→ `g2.schoolAdapters`（选适配器）→ `g2.webLogin`：
+
+- 学校清单来自仓库 `index/root_index.yaml`（`WarehouseRepositoryService.loadRootIndex()`，真网络，
+  GitHub raw 为主、GitCode/镜像回退）；**没有打包进 assets**，断网时是失败态 + 重试，不是旧缓存。
+- 适配器清单来自 `resources/<学校>/adapters.yaml`，`import_url` 已经解析进模型。
+- `g2.webLogin` 的新宿主 `WarehouseWebLoginHost.kt` 用
+  `resolveWarehouseWebLoginTarget(adapter, prefs.customImportUrl(adapter.id))` 决定地址：
+  用户自定义覆盖 > 仓库 `import_url`；两者都不合法时显示诚实空态（不加载空白 WebView）。
+- 「执行导入脚本」会 `WarehouseRepositoryService.loadAdapterScript(...)` 真拉脚本（含 SHA-256 校验，
+  上游当前没有 `sha256` 键时跳过），包 `warehouseImportScriptWrapper(...)` 垫片后注入 WebView。
+
+### 壳侧还需 Lead 落的一行（本泳道不改 `ShellPageIndex.kt`）
+
+把：
+
+```kotlin
+// ShellPageIndex.kt 当前（F23 空态）
+"g2.webLogin" -> ShellWarehouseEmptyPage(
+    title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
+    message = WarehouseStrings.noValidWarehouseLoginUrl.zh,
+    onBack = onBack,
+)
+```
+
+改成（并补 import `...warehouse.WarehouseWebLoginHost`）：
+
+```kotlin
+"g2.webLogin" -> WarehouseWebLoginHost(
+    state = warehouseState,
+    prefs = warehousePrefs,
+    onBack = onBack,
+    onOpenPage = onOpenPage,
+)
+```
+
+`warehouseState` / `warehousePrefs` 在 `ShellPageIndex.kt` 里已经存在（三页列表宿主在用）。
+
+### 仍未接（诚实清单）
+
+- 脚本回传的 `courses` 只记日志：写课表需要 `TimetableRepository`，属上层接线；
+- 桥接对话框（confirm/prompt/单选框）没有原生 UI；原生回答可用
+  `warehouseBridgeResolveScript(requestId, jsonValue)` 注入，对话框由上层做；
+- 登录态探针/自动填充仍缺（见 §7 #2）；
+- `saveCourseConfig` / `savePresetTimeSlots` 需要落盘，未接；
+- 真机全未验。

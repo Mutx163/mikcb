@@ -28,6 +28,18 @@ object WarehouseFeedCodes {
 
     /** 全部候选都失败，且没走镜像。 */
     const val FETCH_FAILED_GITHUB = "warehouse_fetch_failed_github"
+
+    /** 脚本声明的 SHA-256 与下载内容不一致（与 Dart `warehouse_script_checksum_failed` 同名）。 */
+    const val SCRIPT_CHECKSUM_FAILED = "warehouse_script_checksum_failed"
+
+    /**
+     * 脚本正文为空。Dart 在 UI 层用 `courseImportScriptFailed` 提示，没有独立服务码；
+     * 这里给一个码是为了让「注入空脚本」在数据层就被拦住（Kotlin 侧护栏）。
+     */
+    const val SCRIPT_EMPTY = "warehouse_script_empty"
+
+    /** 适配器缺 `asset_js_path`、或学校缺 `resource_folder`，拼不出脚本地址。 */
+    const val SCRIPT_PATH_MISSING = "warehouse_script_path_missing"
 }
 
 /**

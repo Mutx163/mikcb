@@ -78,6 +78,34 @@ class WarehouseRepositoryService(
             parseWarehouseAdaptersIndex(content, school)
         }
 
+    /**
+     * 适配器脚本正文（`resources/<resourceFolder>/<asset_js_path>`）。
+     *
+     * 与两个索引走**同一条候选链**（GitCode 信封 / GitHub raw 回退 / 镜像），失败码也共用；
+     * 额外两道校验：
+     * - 正文空白 ⇒ [WarehouseFeedCodes.SCRIPT_EMPTY]（空脚本注入 WebView 只会白等超时）；
+     * - 索引声明了 `sha256` ⇒ 正文必须匹配（[verifyWarehouseScriptSha256]），否则
+     *   [WarehouseFeedCodes.SCRIPT_CHECKSUM_FAILED]，**不再换候选**——换了也是同一份内容。
+     */
+    fun loadAdapterScript(
+        school: WarehouseSchoolEntry,
+        adapter: WarehouseAdapterEntry,
+    ): WarehouseLoad<String> {
+        val relativePath = warehouseAdapterScriptPath(school, adapter)
+        if (relativePath.isEmpty()) {
+            return WarehouseLoad.Failed(code = WarehouseFeedCodes.SCRIPT_PATH_MISSING, attempts = 0)
+        }
+        return load(relativePath) { content ->
+            if (content.isBlank()) {
+                throw WarehouseFeedException(WarehouseFeedCodes.SCRIPT_EMPTY, adapter.id)
+            }
+            if (!verifyWarehouseScriptSha256(content.toByteArray(Charsets.UTF_8), adapter.sha256)) {
+                throw WarehouseFeedException(WarehouseFeedCodes.SCRIPT_CHECKSUM_FAILED, adapter.id)
+            }
+            content
+        }
+    }
+
     /** 候选链（公开给单测与日志用；真实拉取走 [load]）。 */
     fun candidateUrlsFor(relativePath: String): List<String> =
         WarehouseRepositoryUrls.candidateUrls(source, relativePath, mirrorUrlPrefix)
