@@ -77,6 +77,13 @@ object TimetableStrings {
     val homeMenuSettingsTitle = ArbText("homeMenuSettingsTitle", "课表设置")
     val homeMenuCoffeeTitle = ArbText("homeMenuCoffeeTitle", "请喝咖啡")
 
+    // ── 「添加」行的二级列表（Dart `kAddCourseSubmenu`，`home_top_menu.dart:88-96`）──
+    // 列表档菜单里「添加」不是直接跳转，而是展开成这三项。文案复用三宫格添加弹层
+    // 已有的 ARB 键，不另拟说法（Dart 同口径）。
+    val addCourseTitle = ArbText("addCourseTitle", "添加课程")
+    val addScheduleAction = ArbText("addScheduleAction", "添加日程")
+    val addExam = ArbText("addExam", "添加考试")
+
     // ── 星期几名称 ──
     val weekdayMon = ArbText("weekdayMon", "周一")
     val weekdayTue = ArbText("weekdayTue", "周二")
@@ -319,6 +326,9 @@ object TimetableStrings {
             homeMenuImportTitle,
             homeMenuSettingsTitle,
             homeMenuCoffeeTitle,
+            addCourseTitle,
+            addScheduleAction,
+            addExam,
             weekdayMon,
             weekdayTue,
             weekdayWed,

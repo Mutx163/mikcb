@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.shell
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.mutx163.qingyu.pages.SHELL_PAGE_INDEX_TITLE
 import com.mutx163.qingyu.pages.settings.SettingsGlassDockEditorPage
+import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -73,11 +74,17 @@ object HomeNavIcons {
         label = labelOf(id),
     )
 
-    /** 「更多」菜单一个条目（`TimetableMenuItem` 只描述界面，不认路由）。 */
+    /**
+     * 「更多」菜单一个条目（`TimetableMenuItem` 只描述界面，不认路由）。
+     *
+     * 二级子项（列表档里「添加」展开的课程 / 日程 / 考试三选）由
+     * [TimetableMenuDefaults.childrenOf] 一处给出 —— 这里只按 id 取，不另写一份表。
+     */
     fun menuItem(id: String): TimetableMenuItem = TimetableMenuItem(
         id = id,
         label = labelOf(id),
         icon = iconOf(id),
+        children = TimetableMenuDefaults.childrenOf(id),
     )
 
     /**

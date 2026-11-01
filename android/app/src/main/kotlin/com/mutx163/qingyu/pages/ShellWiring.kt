@@ -844,6 +844,13 @@ fun shellTimetableMenuPageId(id: String): String? = when (id) {
     "addExam" -> "d3.addExam"
     "addTask" -> "d2.addTask"
     "addScheduleItem" -> "d2.addSchedule"
+    // —— 2026-11-01：「添加」行的二级列表（Dart `kAddCourseSubmenu*` 的三个 id）——
+    // 列表档菜单里「添加」展开成课程 / 日程 / 考试三选，子项 id 沿用 Dart 的
+    // `addCourse:course|schedule|exam`。父行 `addCourse` 只作展开开关，不再直接
+    // 回传（它下面那条 `"addCourse" -> "d1.addCourse"` 仍是八宫格瓷贴的去处）。
+    "addCourse:course" -> "d1.addCourse"
+    "addCourse:schedule" -> "d2.addSchedule"
+    "addCourse:exam" -> "d3.addExam"
     // 「全部功能」索引：classic 形态没有底栏，它同时也是回到设置的一条退路。
     "more" -> "i.more"
     // 快速切课表：壳里没有独立快切弹层，与顶栏点标题同口径推课表管理页。
