@@ -190,6 +190,86 @@ class HomeMaterialRenderSpecTest {
         assertEquals(0.4f * 0.85f, result.courseCardTintAlpha, 1e-6f)
     }
 
+    // -------------------------------------------------------- 折射（2026-11-01）
+
+    @Test
+    fun `色散旋钮逐数透传 深色 standard 配方收 0点7`() {
+        // 浅色：逐数透传，喂 `lens(chromaticAberration = …)`。
+        assertEquals(
+            0.4f,
+            spec(model(lightTuning = LiquidGlassTuningModel(dispersion = 0.4))).liquidDispersion,
+            1e-6f,
+        )
+        // 深色 + standard（`darkGlassBoostEnabled`）：×0.7（`LiquidGlassDarkRecipe.dispersionScale`，:714）。
+        assertEquals(
+            0.4f * 0.7f,
+            spec(
+                model(lightTuning = LiquidGlassTuningModel(dispersion = 0.4), darkBoost = true),
+                isDark = true,
+            ).liquidDispersion,
+            1e-6f,
+        )
+        // 深色 + legacy（开关关）：色散不动（:697-703）。
+        assertEquals(
+            0.4f,
+            spec(
+                model(lightTuning = LiquidGlassTuningModel(dispersion = 0.4), darkBoost = false),
+                isDark = true,
+            ).liquidDispersion,
+            1e-6f,
+        )
+    }
+
+    @Test
+    fun `课卡折射与作用带取卡片自己那套参数`() {
+        // 卡片有自己一套 `CourseGlassTuning`（`course_glass_tuning.dart:5-23`）：
+        // 顶栏带 / 玻璃坞读全局那份，卡片读它自己那份，两边不许混。
+        val result = spec(
+            model(
+                lightTuning = LiquidGlassTuningModel(refraction = 12.0, refractionBand = 16.0),
+                cardTuning = LiquidGlassTuningModel(refraction = 4.0, refractionBand = 6.0),
+            ),
+        )
+        assertEquals(12.0f, result.liquidRefraction, 1e-6f)
+        assertEquals(16.0f, result.liquidRefractionBand, 1e-6f)
+        assertEquals(4.0f, result.courseCardRefraction, 1e-6f)
+        assertEquals(6.0f, result.courseCardRefractionBand, 1e-6f)
+    }
+
+    @Test
+    fun `课卡折射与作用带按滑杆区间收口`() {
+        // 折射 0..20、作用带 1..24（`liquid_glass_tuning.dart:457-474` 那一批常量，
+        // 卡片直接引用它们）。旧存档 / 手改 JSON 顶出区间时不许把几何算飞。
+        val result = spec(
+            model(cardTuning = LiquidGlassTuningModel(refraction = 40.0, refractionBand = 40.0)),
+        )
+        assertEquals(20.0f, result.courseCardRefraction, 1e-6f)
+        assertEquals(24.0f, result.courseCardRefractionBand, 1e-6f)
+    }
+
+    @Test
+    fun `课卡色散取卡片自己那套并照吃深色配方`() {
+        val result = spec(
+            model(
+                lightTuning = LiquidGlassTuningModel(dispersion = 0.8),
+                cardTuning = LiquidGlassTuningModel(dispersion = 0.5),
+                darkBoost = true,
+            ),
+            isDark = true,
+        )
+        assertEquals(0.8f * 0.7f, result.liquidDispersion, 1e-6f)
+        assertEquals(0.5f * 0.7f, result.courseCardDispersion, 1e-6f)
+    }
+
+    @Test
+    fun `顶栏玻璃带的外溢量随作用带加宽且有 8 的下限`() {
+        // 上 / 左 / 右三条边要推到屏幕外，才只有底边在折射（Dart 同口径）。
+        // 下限 8 顶住窄作用带；宽作用带按「作用带 + 1」跟着走。
+        assertEquals(8f, SettingsMaterialModel.bandGlassOverdrawDp(1f), 1e-6f)
+        assertEquals(12f, SettingsMaterialModel.bandGlassOverdrawDp(11f), 1e-6f)
+        assertEquals(25f, SettingsMaterialModel.bandGlassOverdrawDp(24f), 1e-6f)
+    }
+
     @Test
     fun `深色独立档生效时取深色参数并乘深色染色系数`() {
         val result = spec(

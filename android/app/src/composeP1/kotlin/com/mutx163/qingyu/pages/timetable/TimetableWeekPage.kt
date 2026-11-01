@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,20 +40,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
@@ -244,28 +252,38 @@ fun TimetableWeekPage(
         alpha = materialSpec?.liquidTintAlpha ?: 1f,
     )
     val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
+    // ── 玻璃带的折射参数（2026-11-01 补）──
+    // 三根都来自**全局液态调参**（`material.band` 与玻璃坞共用同一份 `liquidGlassTuning`，
+    // 与卡片那套刻意分开，见 `HomeMaterialRenderSpec` 的类注释）。
+    //
+    // 2026-11-01 之前这里只有 `blur()` + `vibrancy()`，**没有 `lens()`** —— 所以材质面板里
+    // 「折射强度」「作用带宽度」两根滑杆拖到哪、屏幕上都一模一样（用户报的就是这条）。
+    val bandBlurSigmaPx = with(density) { (materialSpec?.liquidBlurSigma ?: 0f).dp.toPx() }
+    val bandRefractionPx = with(density) { (materialSpec?.liquidRefraction ?: 0f).dp.toPx() }
+    val bandRefractionBandPx = with(density) {
+        (materialSpec?.liquidRefractionBand ?: 0f).dp.toPx()
+    }
+    val bandDispersion = materialSpec?.liquidDispersion ?: 0f
+    // 形状边界要往屏幕外推多少（逻辑 dp，只算作用带那一份）：取值理由见
+    // `SettingsMaterialModel.bandGlassOverdrawDp`。左右还要再叠上安全区，
+    // 那一步要 `innerPadding`，所以在 Scaffold 内容里算（见下方 bandOverdrawPx）。
+    val bandOverdrawBaseDp = SettingsMaterialModel.bandGlassOverdrawDp(
+        materialSpec?.liquidRefractionBand ?: 0f,
+    )
+    // 带子自身的尺寸：玻璃节点比它大一圈、还要摆到负偏移上，几何必须按实际尺寸算。
+    // `bandBlurActive` 打开前那几帧量不到（`IntSize.Zero`），那时走实体条。
+    var bandSize by remember { mutableStateOf(IntSize.Zero) }
+    // 形状必须是 `CornerBasedShape`：`lens()` 靠它取四角半径（`LiquidLens.kt` 的
+    // `roundedRectCornerRadii`），传 `RectangleShape` 会整段 return、一点折射都没有。
+    // 0dp 圆角与直角同形，所以观感不变。
+    val bandGlassShape = remember { RoundedCornerShape(0.dp) }
+
     // 玻璃带按 `material.band` 分三档：OFF 不画；SOLID 不透明页面底色（有壁纸时
     // 盖住壁纸，Dart `homePageHeaderUsesFrostedChrome` 的实体分支）；LIQUID 走
-    // miuix 高斯 + 主题底染色，模糊量与染色都来自材质面板那八根旋钮。
+    // miuix 高斯 + 主题底染色 + 折射，模糊 / 染色 / 折射都来自材质面板那八根旋钮。
     //
-    // 标题行、星期栏、状态栏**共用这一个 modifier**：带子只挂一次，
-    // 一个节点 = 一次采样 + 一次高斯 + 一次染色，交界不会出现第二份模糊核。
-    val bandModifier = when {
-        materialSpec == null -> Modifier
-        bandSurface == SurfaceMaterialState.OFF -> Modifier
-        bandBlurActive -> Modifier.drawBackdrop(
-            backdrop = pageBackdrop,
-            shape = { RectangleShape },
-            effects = {
-                blur(with(density) { materialSpec.liquidBlurSigma.dp.toPx() })
-                // `vibrancy()` = 官方 `colorControls(saturation = 1.5)`：
-                // 少了它玻璃会发灰（见 miuix demo 的 LiquidGlass 四层结构）。
-                vibrancy()
-            },
-            onDrawSurface = { drawRect(bandTint) },
-        )
-        else -> Modifier.background(bandSolidColor)
-    }
+    // 标题行、星期栏、状态栏**共用这一个玻璃节点**：带子只挂一次，
+    // 一个节点 = 一次采样 + 一次高斯 + 一次折射 + 一次染色，交界不会出现第二份模糊核。
 
     // ── 状态栏图标 / 文字的明暗（2026-11-01）──
     // 玻璃带盖住状态栏之后，系统图标原本只在「主题明暗」变化时被 Activity 设一次
@@ -380,15 +398,74 @@ fun TimetableWeekPage(
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 ),
         ) {
+            // 玻璃节点是**带子盒子的孩子**，而带子盒子被左右安全区内缩过（下面 Column 的
+            // `padding(start/end)`）。横屏挖孔时只推「作用带 + 1」还压不住屏幕边 ——
+            // 形状的左 / 右边界会落进可见区，读成一条竖折射边。把安全区一起加进外溢量，
+            // 形状边界才真的出屏（Dart 那条带是 `Positioned(left: 0, right: 0)` 的全宽层，
+            // 天然没有这问题；Compose 这边靠这一项补平）。
+            val bandOverdrawPx = with(density) {
+                (bandOverdrawBaseDp.dp + maxOf(
+                    innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                )).toPx()
+            }
             // ── 顶栏玻璃带：状态栏 + 标题行 + 星期栏 = 同一条带 ──
-            // 只在这一处套 `bandModifier`（液体档 = 一次 `drawBackdrop`），三块内容
-            // 都画在同一个节点里：一次采样、一次高斯、一次染色。以前标题行与每一页
-            // 的星期栏各挂一次，两个相邻矩形各自截断模糊核、染色在交界叠加 ⇒ 台阶。
+            // 三块内容装在同一个盒子里，玻璃只在**一个**节点上挂一次：
+            // 一次采样、一次高斯、一次折射、一次染色。以前标题行与每一页的星期栏
+            // 各挂一次，两个相邻矩形各自截断模糊核、染色在交界叠加 ⇒ 台阶。
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(bandModifier),
+                    .onSizeChanged { bandSize = it },
             ) {
+                when {
+                    // 没传材质（老行为）/ 顶栏总开关关掉：整条不画，也不画实体条。
+                    materialSpec == null || bandSurface == SurfaceMaterialState.OFF -> Unit
+
+                    // 液态档：玻璃节点画到盒子之外（上 / 左 / 右三条边推出屏幕），
+                    // 只有底边留在可见区里 —— 折射 / 作用带宽度这两根滑杆就作用在这条边上。
+                    bandBlurActive && bandSize != IntSize.Zero -> Box(
+                        modifier = Modifier
+                            .bandGlassOverhang(
+                                bandSize = bandSize,
+                                overdrawXPx = bandOverdrawPx,
+                                overdrawPx = bandOverdrawPx,
+                            )
+                            .drawBackdrop(
+                                backdrop = pageBackdrop,
+                                shape = { bandGlassShape },
+                                effects = {
+                                    // 折射朝形状外采样：先把采样层按位移量撑起来。
+                                    // ⚠️ 必须在 blur() 读 padding 之前抬（同玻璃坞）——
+                                    // 事后抬会让 miuix 把整段 effects 重跑一遍。
+                                    padding = maxOf(padding, bandRefractionPx)
+                                    // `vibrancy()` = 官方 `colorControls(saturation = 1.5)`：
+                                    // 少了它玻璃会发灰（见 miuix demo 的 LiquidGlass 四层结构）。
+                                    vibrancy()
+                                    blur(bandBlurSigmaPx)
+                                    // 折射：作用带宽度 / 位移量 / 色散，三根都来自全局调参。
+                                    // 两项任一为 0 时 `lens()` 自己 return（清档 = 不折射）。
+                                    if (bandRefractionBandPx > 0f && bandRefractionPx > 0f) {
+                                        lens(
+                                            refractionHeight = bandRefractionBandPx,
+                                            refractionAmount = bandRefractionPx,
+                                            chromaticAberration = bandDispersion,
+                                        )
+                                    }
+                                },
+                                onDrawSurface = { drawRect(bandTint) },
+                            ),
+                    )
+
+                    // 实体档（用户选的）/ 玻璃还没量到尺寸那几帧 / 无 shader 后端：
+                    // 不透明页面底色条。**不是**半透明水洗 —— 那谁都没选过。
+                    else -> Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(bandSolidColor),
+                    )
+                }
+
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // 状态栏区域留白：带子画到屏幕最顶，内容仍停在状态栏下面。
                     Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
@@ -609,6 +686,44 @@ private fun WeekPageContent(
 
 /** 周网格底部避让：手势条之上再留 64dp 给浮坞。 */
 private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
+
+/**
+ * 把玻璃节点摆到盒子之外：尺寸 = [bandSize] 加两侧 [overdrawXPx]、加顶部 [overdrawPx]，
+ * 左上角落在 (-[overdrawXPx], -[overdrawPx])，**父布局仍按 [bandSize] 排**（节点报 0 增量）。
+ *
+ * ## 为什么非推不可
+ *
+ * `lens()`（`components/liquid/LiquidLens.kt`）只在**形状边界**附近把采样点朝外推。
+ * 带子的上 / 左 / 右三条边正好压在屏幕边上（y = 0、x = 0、x = 屏宽），朝外推就落到
+ * 可采内容之外，那几像素会读成「没有背景」——真机是一条淡竖边。把这三条边推到屏幕外
+ * 之后，可见区里离边界的深度处处 ≥ 作用带，着色器直接走 `-sd >= refractionHeight`
+ * 的提前返回，**只有底边在折射**。
+ *
+ * Dart 同病同治（`home_page_region_blur.dart:34-133` 的 `homePageChromeGlassEdgeOverdraw` /
+ * `homePageChromeGlassVerticalOverhang`），取值理由见
+ * [com.mutx163.qingyu.pages.settings.SettingsMaterialModel.bandGlassOverdrawDp]。
+ *
+ * 用 `layout` 而不是 `offset`：`offset` 不改测量结果，盒子会跟着长高、把下面的网格顶下去。
+ */
+private fun Modifier.bandGlassOverhang(
+    bandSize: IntSize,
+    overdrawXPx: Float,
+    overdrawPx: Float,
+): Modifier = layout { measurable, _ ->
+    // 入参是 px 浮点（由 dp 换算而来），布局约束只吃整数像素 —— 这里一次性取整，
+    // 免得调用方各自 `roundToInt` 出现两份口径。
+    val overdrawX = overdrawXPx.roundToInt()
+    val overdrawY = overdrawPx.roundToInt()
+    val placeable = measurable.measure(
+        Constraints.fixed(
+            width = bandSize.width + overdrawX * 2,
+            height = bandSize.height + overdrawY,
+        ),
+    )
+    layout(0, 0) {
+        placeable.place(-overdrawX, -overdrawY)
+    }
+}
 
 /** 某周某天的真实日期（Dart `timetable_weekday_header.dart:_dateForWeekDay`）。 */
 fun dateForWeekDay(semesterStart: LocalDate?, week: Int, dayOfWeek: Int): LocalDate? =

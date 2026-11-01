@@ -23,12 +23,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
@@ -115,10 +117,16 @@ fun calculateInk(backgroundColor: Color): Color {
  * - 天气行（`CourseWeatherDisplay`）：Compose 侧天气数据还没接进课表宿主，见
  *   `docs/plans/2026-10-29-compose-week-view-audit.md` 的 P1-1（课卡天气行）；
  * - 高斯/液态玻璃卡面的**降级**：没有壁纸、模糊总闸关或设备不支持 runtime shader 时，
- *   两档都退化成半透明实体（与 Dart 无壁纸时一致）。**液态档已接真采样与模糊**（2026-11-01）：
- *   卡片从整页共享的预糊层取背景（见 [glassBackdrop]），不是每卡一次实时模糊；
- *   但 Dart 那套折射着色器（`CourseSurface._buildRefraction` 的 `lens`）还没接 ——
- *   这里的液态档 = 真背景 + 高斯 + 课色染色，缺的是边缘折射与色散；
+ *   两档都退化成半透明实体（与 Dart 无壁纸时一致）。**液态档已接真采样 + 模糊 + 折射**
+ *   （折射 2026-11-01 补）：卡片从整页共享的预糊层取背景（见 [glassBackdrop]），
+ *   不是每卡一次实时模糊；边缘折射与色散走 miuix `lens()`，参数取**卡片自己那套**
+ *   （`courseCardRefraction` / `courseCardRefractionBand` / `courseCardDispersion`）。
+ *   **仍未接**（官方 API 没有对应物，不是遗忘）：
+ *   `refractionEdgePow` —— miuix 镜片的截面写死是圆弧（`LiquidLens.kt` 的 `circleMap`），
+ *   没有「圆弧之上的陡缓指数」这根旋钮，只有默认值 2.5 恰好等于圆弧那一点能对上；
+ *   边缘高光 `rimStrength` / `rimWidth` —— miuix 的边光是 `drawBackdrop(highlight = …)`
+ *   的 BloomStroke，与 Dart 着色器里那条「峰在带内的整圈均匀鼓包」不是同一个机制，
+ *   接它是一次独立的观感决定（会多出一条带光来向的白描边）；
  * - 每行的 flex 比例（Dart 用 `flex: 4/2/3` 分配高度）：这里用 maxLines + 省略号，
  *   视觉接近，但「格子很高时各行按比例拉长」这层没有。
  */
@@ -227,14 +235,40 @@ fun CourseGridCard(
     val cardBackdrop = glassBackdrop?.takeIf {
         material?.courseCard == SurfaceMaterialState.LIQUID_GLASS
     }
+    // ── 液态档的折射参数（2026-11-01 补）──
+    // 取**卡片自己那套** `courseCardGlassTuning`，与顶栏带的全局调参刻意分开
+    //（`HomeMaterialRenderSpec` 类注释：调一处不许两处都变）。
+    val density = LocalDensity.current
+    val cardRefractionPx = with(density) {
+        (material?.courseCardRefraction ?: 0f).dp.toPx()
+    }
+    val cardRefractionBandPx = with(density) {
+        (material?.courseCardRefractionBand ?: 0f).dp.toPx()
+    }
+    val cardDispersion = material?.courseCardDispersion ?: 0f
     // 课色染在模糊后的背景上：`fill` 的 alpha 就是 `courseCardTintAlpha`（× 压暗），
     // 与 Dart `CourseSurface.washAlpha` 同口径（见上方 [fillAlpha] 的三档）。
     val surfaceModifier = if (cardBackdrop != null) {
         Modifier.drawBackdrop(
             backdrop = cardBackdrop,
             shape = { shape },
-            // 共享层已经糊过；这里只取像素，空效果链。
-            effects = {},
+            // 磨砂在**整页共享的那一层**里糊过一次（见 `TimetableWeekPage` 的
+            // `cardGlassBackdrop`）；折射则必须在这里、按**每张卡自己的圆角形状**做：
+            // 共享层是一整块全屏矩形，在那儿折射只会弯屏幕的四条边，弯不到任何一张卡的边。
+            // Dart 同结构 —— 预糊位图共享、折射逐卡跑（`course_surface.dart:209-259`）。
+            effects = {
+                // 折射朝卡外采样：先按位移量把采样层撑起来。
+                // ⚠️ 必须在任何读 padding 的效果之前抬（同玻璃坞）。
+                padding = maxOf(padding, cardRefractionPx)
+                // 两根滑杆任一为 0 时 `lens()` 自己 return（清档 = 不折射）。
+                if (cardRefractionBandPx > 0f && cardRefractionPx > 0f) {
+                    lens(
+                        refractionHeight = cardRefractionBandPx,
+                        refractionAmount = cardRefractionPx,
+                        chromaticAberration = cardDispersion,
+                    )
+                }
+            },
             onDrawSurface = { drawRect(fill) },
         )
     } else {

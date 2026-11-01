@@ -296,16 +296,21 @@ data class MaterialPanelState(
  * | [band] | `homePageHeaderBlurEnabled` + `homeBandGlassMaterial` + `frostedBlurEnabled`（[SettingsMaterialModel.homeBandSurfaceMaterial]） |
  * | [dock] | `frostedBlurEnabled` + `liquidGlassDockEnabled`（[SettingsMaterialModel.dockSurfaceMaterial]） |
  * | [courseCard] | `courseCardSurfaceStyle` + `frostedBlurEnabled` + 有没有可用壁纸（[SettingsMaterialModel.courseCardSurfaceMaterial]） |
- * | [liquidTintAlpha] / [liquidBlurSigma] / [liquidRefraction] / [liquidRefractionBand] / [liquidRimStrength] | `liquidGlassTuning`（深色独立时取 `liquidGlassTuningDark`，再套深色配方） |
- * | [courseCardTintAlpha] / [courseCardBlurSigma] | `courseCardGlassTuning`（卡片自己那套，刻意与全局分开） |
+ * | [liquidTintAlpha] / [liquidBlurSigma] / [liquidRefraction] / [liquidRefractionBand] / [liquidRimStrength] / [liquidDispersion] | `liquidGlassTuning`（深色独立时取 `liquidGlassTuningDark`，再套深色配方） |
+ * | [courseCardTintAlpha] / [courseCardBlurSigma] / [courseCardRefraction] / [courseCardRefractionBand] / [courseCardDispersion] | `courseCardGlassTuning`（卡片自己那套，刻意与全局分开） |
  *
- * 深色配方与 Dart `LiquidGlassDarkRecipe`（`liquid_glass_tuning.dart:676-740`）同口径：
+ * 深色配方与 Dart `LiquidGlassDarkRecipe`（`liquid_glass_tuning.dart:676-748`）同口径：
  * 深色**恒**乘 `tintAlphaScale = 0.85`；`darkGlassBoostEnabled` 打开时再乘
- * `blurSigmaScale = 1.3`、`rimStrengthScale = 0.6`；浅色恒等。
+ * `blurSigmaScale = 1.3`、`rimStrengthScale = 0.6`、`dispersionScale = 0.7`；浅色恒等。
  *
  * ⚠️ [courseCardBlurSigma] 是**唯一不吃深色配方**的字段：它喂的是整屏预糊位图，
  * 一张图只按一个 sigma 烤一次（Dart `course_glass_tuning.dart:165-170`），且量程止于
  * `kPreblurMaxSigma = 24` 而不是全局的 40。改它之前先读 `renderSpecOf` 里那段注释。
+ *
+ * ⚠️ **卡片那三个折射字段（[courseCardRefraction] / [courseCardRefractionBand] /
+ * [courseCardDispersion]）刻意不与顶栏带共用**：Dart 给卡片单独一套 `CourseGlassTuning`
+ * （`course_glass_tuning.dart:5-23`），用户在「课程卡片」页拖的旋钮只影响卡片，
+ * 反之亦然。渲染层拿这两组值分别喂各自的 `lens()`，混用就是「调一处两处都变」。
  *
  * @param band 顶栏玻璃带。没有壁纸时解析成 [SurfaceMaterialState.SOLID]（Dart
  *   `homePageHeaderUsesFrostedChrome` 在无壁纸时恒 false），关掉总开关时是
@@ -322,8 +327,21 @@ data class HomeMaterialRenderSpec(
     val liquidRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
     val liquidRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
     val liquidRimStrength: Float = LiquidGlassTuning.DEFAULT_RIM_STRENGTH.toFloat(),
+    /**
+     * 色散强度（0–1），`liquidGlassTuning.dispersion` 套深色配方后的值。
+     *
+     * 喂 miuix `lens(chromaticAberration = …)`（`components/liquid/LiquidLens.kt`）；
+     * 0 = 走更便宜的无色散着色器。
+     */
+    val liquidDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
     val courseCardTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
     val courseCardBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
+    /** 课卡边缘折射位移（逻辑 px），取**卡片自己那套**的 `refraction`。 */
+    val courseCardRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
+    /** 课卡折射作用带宽度（逻辑 px），取卡片那套的 `refractionBand`。 */
+    val courseCardRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
+    /** 课卡色散强度（0–1），取卡片那套的 `dispersion` 并套深色配方。 */
+    val courseCardDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
 )
 
 /** 材质/表面的纯推导（`lib/models/surface_material.dart` + `glass_mode_choice.dart`）。 */
@@ -474,6 +492,7 @@ object SettingsMaterialModel {
         val tintScale = darkTintScale(isDark)
         val blurScale = darkBlurScale(isDark, model.darkGlassBoostEnabled)
         val rimScale = darkRimScale(isDark, model.darkGlassBoostEnabled)
+        val dispersionScale = darkDispersionScale(isDark, model.darkGlassBoostEnabled)
         return HomeMaterialRenderSpec(
             band = band,
             dock = dockSurfaceMaterial(panel),
@@ -486,6 +505,10 @@ object SettingsMaterialModel {
             liquidRefractionBand = global.refractionBand
                 .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION_BAND).toFloat(),
             liquidRimStrength = (global.rimStrength * rimScale).coerceIn(0.0, 1.0).toFloat(),
+            // 色散与边光同族：逐帧叠在背景上的光照适配，深色 standard 配方收 0.7
+            //（`LiquidGlassDarkRecipe.dispersionScale`，:714）。
+            liquidDispersion = (global.dispersion * dispersionScale)
+                .coerceIn(0.0, 1.0).toFloat(),
             courseCardTintAlpha = (card.tintAlpha * tintScale).coerceIn(0.0, 1.0).toFloat(),
             // 课卡的磨砂喂的是**整屏一张预糊位图**，不是逐帧实时模糊：
             // * 不吃深色配方的 ×1.3 —— 位图按一个 sigma 只烤一次，×1.3 是逐帧光照
@@ -496,6 +519,14 @@ object SettingsMaterialModel {
             courseCardBlurSigma = card.blurSigma
                 .coerceIn(0.0, LiquidGlassTuning.PREBLUR_MAX_SIGMA)
                 .toFloat(),
+            // 折射几何（位移 / 作用带）不吃深色配方（`LiquidGlassDarkRecipe` 类注释：
+            // 「几何通道不参与 —— 透镜形状与光照无关」），只有色散吃。
+            courseCardRefraction = card.refraction
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION).toFloat(),
+            courseCardRefractionBand = card.refractionBand
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION_BAND).toFloat(),
+            courseCardDispersion = (card.dispersion * dispersionScale)
+                .coerceIn(0.0, 1.0).toFloat(),
         )
     }
 
@@ -554,6 +585,34 @@ object SettingsMaterialModel {
     /** 深色配方的边光系数：standard 收 0.6，legacy 不动。 */
     fun darkRimScale(isDark: Boolean, darkBoost: Boolean): Double =
         if (isDark && darkBoost) 0.6 else 1.0
+
+    /** 深色配方的色散系数：standard 收 0.7（`LiquidGlassDarkRecipe.dispersionScale`），legacy 不动。 */
+    fun darkDispersionScale(isDark: Boolean, darkBoost: Boolean): Double =
+        if (isDark && darkBoost) 0.7 else 1.0
+
+    /**
+     * 首页玻璃带要往屏幕外推多少（逻辑 dp）——上 / 左 / 右三条边共用这一个量。
+     *
+     * ## 为什么必须推出去
+     *
+     * `lens()`（`components/liquid/LiquidLens.kt`）在**形状边界**朝外推采样点：带子左、
+     * 右、上三条边正好压在屏幕边（x=0 / x=W / y=0），朝外推就落到可采内容之外，
+     * 那几像素会读成「没有背景」——真机是一条淡竖边。Dart 同病同治：那条带左右各
+     * 推 `homePageChromeGlassEdgeOverdraw = 48`、上边推
+     * `max(8, max(作用带, 高光带宽) + 1)`（`home_page_region_blur.dart:34-133`），
+     * **只有下边留在可见区**，所以整条带只在底边折射。
+     *
+     * ## 取值
+     *
+     * `max(8, 作用带 + 1)`：可见区里离形状边界的深度一旦 ≥ 作用带，着色器
+     * 就 `-sd >= refractionHeight` 提前返回原样（不折射、不采样），所以只要把形状边推得
+     * 比作用带更远，那三条边在可见区里就完全没效果。+1 给抗锯齿留余量；下限 8 与 Dart
+     * 同值（作用带被调到最小时也留一点，免得边线压在屏幕上）。
+     *
+     * 形状是直角（圆角 0），所以不需要 Dart 那个 48 的圆角余量。
+     */
+    fun bandGlassOverdrawDp(refractionBandDp: Float): Float =
+        maxOf(8f, refractionBandDp + 1f)
 }
 
 /** 落盘模型（`app`）的液态参数 → 本包面板模型（字段一一对应，`liquid_glass_tuning.dart:476-498`）。 */
