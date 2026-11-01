@@ -278,6 +278,15 @@ private fun PagesShell() {
 
     /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
     fun selectRoot(itemId: String) {
+        // 目录页（外观编辑器 / 统计 / 考试…）不是主屏内容：**推一层**，底栏随之让位。
+        // 以前这里不分流，任何条目都替换栈底，于是把「外观编辑器」排进底栏后底栏一直压在
+        // 它上面（`atRoot` 恒 true）：既不参与页面的入场动画，页面上也多一条不属于它的坞
+        // （2026-11-01 用户报「底栏没跟着缩小、留在了原来的位置」）。
+        // 分流判据是纯逻辑，见 `HomeDockNavModel.rendersAsRoot`。
+        if (!HomeDockNavModel.rendersAsRoot(itemId)) {
+            rootPageIdFor(itemId)?.let { pushPage(it) }
+            return
+        }
         val mode = homeViewModeOf(itemId)
         // 当前视图档必须在改 `backStack` **之前**取（改完就拿到新值了）。
         val currentMode = homeViewModeOf(

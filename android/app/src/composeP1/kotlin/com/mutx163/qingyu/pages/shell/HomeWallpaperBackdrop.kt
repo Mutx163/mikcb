@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -141,8 +142,18 @@ fun HomeWallpaperBackdrop(
     val path = snapshot.wallpaperPath
     // gaplessPlayback 等价物：produceState 的 state 不随 key 重建，换壁纸时旧图先留着，
     // 新图解好再换上去（Dart `home_page_background.dart:544` 的同一件事）。
+    //
+    // ⚠️ 初值先**同步**查一次位图缓存（2026-11-01 修「进外观编辑页闪一下白」）：
+    // 同一张壁纸在首页早就解过、就躺在 [wallpaperBitmapCache] 里，但 `produceState` 的初值
+    // 是 null ⇒ 这一帧画的是 [HomeBackdropSnapshot.pageColorArgb]（浅色主题下就是近白），
+    // 解码结果要等一次 IO 往返才上来。外观编辑页的入场是「整屏缩成卡片」，
+    // 这一帧正好落在缩放过程中，读起来就是「页面一下子闪白」。
+    // 缓存命中时同步取到同一张图，首帧直接是壁纸，闪白消失；未命中时行为与原来一致。
+    val cachedWallpaper = remember(path, snapshot.decodeWidthPx) {
+        wallpaperFromCache(path, snapshot.decodeWidthPx)
+    }
     val wallpaper: ImageBitmap? by produceState<ImageBitmap?>(
-        initialValue = null,
+        initialValue = cachedWallpaper,
         key1 = path,
         key2 = snapshot.decodeWidthPx,
     ) {
@@ -261,6 +272,26 @@ private fun DrawScope.drawWallpaperStrip(
 }
 
 /**
+ * 位图缓存键：**同一张壁纸 + 同一个解码宽**才复用（见 [WALLPAPER_CACHE_BYTES]）。
+ *
+ * 组合期（[wallpaperFromCache]）与 IO 期（[decodeWallpaper]）都要用，抽成一处，
+ * 免得两边各拼一遍字符串、改了一处另一处就对不上。
+ */
+private fun wallpaperCacheKey(path: String, decodeWidthPx: Int): String = "$path|$decodeWidthPx"
+
+/**
+ * **同步**查一次位图缓存，命中就返回。
+ *
+ * 只给 [HomeWallpaperBackdrop] 的 `produceState` 当**初值**用：同一张壁纸在首页已经解过时，
+ * 首帧就能拿到图，不会先画一帧页底色（浅色主题下那一下就是「闪白」）。
+ * 未命中返回 null，走原来的异步解码路径。这里不碰磁盘，不会卡主线程。
+ */
+private fun wallpaperFromCache(path: String?, decodeWidthPx: Int): ImageBitmap? {
+    if (path.isNullOrEmpty()) return null
+    return wallpaperBitmapCache.get(wallpaperCacheKey(path, decodeWidthPx))?.asImageBitmap()
+}
+
+/**
  * 壁纸解码（后台线程调用）：先读尺寸算 2 的幂采样值，再按 EXIF 摆正。
  *
  * 命中缓存直接返回，不重复解码——首页每次重组都会走到这里，重解一张 1440 宽的 JPEG
@@ -268,7 +299,7 @@ private fun DrawScope.drawWallpaperStrip(
  */
 private fun decodeWallpaper(path: String, decodeWidthPx: Int): ImageBitmap? = runCatching {
     if (path.isEmpty()) return@runCatching null
-    val cacheKey = "$path|$decodeWidthPx"
+    val cacheKey = wallpaperCacheKey(path, decodeWidthPx)
     wallpaperBitmapCache.get(cacheKey)?.let { return@runCatching it.asImageBitmap() }
 
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

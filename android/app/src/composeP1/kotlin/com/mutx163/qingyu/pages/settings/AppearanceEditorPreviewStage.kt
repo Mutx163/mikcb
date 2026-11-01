@@ -26,12 +26,12 @@ import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 
 /**
- * 外观编辑页**预览区**的舞台：把真首页按整屏 1:1 排版、整体缩进卡片，并可选地
- * 在卡片里**真实重放**一次页面转场。
+ * 外观编辑页**预览区**的舞台：把真首页按整屏 1:1 排版、整体缩进卡片；可**选**在卡片里
+ * 重放一次页面转场（默认关，见 [APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED]）。
  *
- * ## 为什么是「真重放」而不是一段假动画
+ * ## 重放（默认关）是什么
  *
- * 重放用的是官方 `miuix-nav` 的 `NavDisplay`：
+ * 打开时重放的是官方 `miuix-nav` 的 `NavDisplay`：
  *
  * * 转场几何与全站其它页面**同一套**（`NavTransitions.MiuixDefault`）；
  * * 前缘圆角「洞」由官方 `NavDisplayEffects` 的 `cornerClipMode = Leading` 提供，
@@ -40,28 +40,36 @@ import top.yukonga.miuix.kmp.nav.transition.NavTransitions
  *   自己的暗底 + 官方 chrome（`AppearanceEditorTopChrome` / `AppearanceEditorBottomChrome`
  *   按同一缩放比排进整屏 1:1 的盒子里）。
  *
- * 所以卡片里发生的事与真机上页面进出**同源**：同一份官方转场、同一份真内容，
- * 只是整个舞台被缩到了卡片大小。不是把一段录好的动画贴上去。
+ * 它是**对照工具**：卡片里发生的事与真机页面进出同源（同一份官方转场、同一份真内容），
+ * 只是整体缩到了卡片大小。但它演示的是「官方滑动 + 旧的前缘圆角」，与 Dart 出货形态
+ * （直角、无洞）不一致；放在出货页里会被读成「预览里多出一个页面」（2026-11-01 用户反馈），
+ * 所以默认关闭，只在 L4 对照转场几何时打开。
  *
  * ## 与 Dart 的关系（先读，别误判）
  *
  * * Dart 本页的入场 / 退场是**缩放转场**（首页缩进卡片、退出再长回全屏），不是滑动；
  *   miuix-nav v1 没有缩放 / 共享元素预设，自动转场也无法按页覆盖（壳属于 Lead），
- *   所以 Kotlin 壳里这一页实际走的是官方滑动转场。本舞台演示的就是**这条真实路径**。
+ *   所以 Kotlin 壳里这一页实际走的是官方滑动转场。打开重放时演示的就是**这条真实路径**。
  * * Dart 出货态的「前缘圆角」是**关闭**的（[AppearanceEditorTransitionSpec.NOTCH_SHIPPED_ENABLED]
- *   = false，直角、没有洞）。演示默认把洞打开（[NOTCH_PREVIEW_ENABLED]），这样用户
- *   能看见「洞是怎么开的」；把那个常量改成 false 就与 Dart 出货观感一致。
- * * 演示只影响这一页的预览区：它有自己的返回栈与 `NavDisplay`，不碰壳的全站转场。
+ *   = false，直角、没有洞）；重放里把洞打开（[NOTCH_PREVIEW_ENABLED]）只为看清官方切口形态。
+ * * 重放只影响这一页的预览区：它有自己的返回栈与 `NavDisplay`，不碰壳的全站转场。
  *
  * ## 开关
  *
  * [APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED] 是总开关（[AppearanceEditorScreen] 的
- * `enableTransitionPreview` 参数默认取它）。关掉时预览区退回纯静态缩尺卡，不建
- * 嵌套 `NavDisplay`。
+ * `enableTransitionPreview` 参数默认取它）。关掉时预览区就是纯静态缩尺卡，不建嵌套 `NavDisplay`。
  */
 
-/** 预览区转场重放的总开关（编译期常量；关掉后不建嵌套 `NavDisplay`）。 */
-internal const val APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED = true
+/**
+ * 预览区转场重放的总开关（编译期常量；关掉后不建嵌套 `NavDisplay`）。
+ *
+ * **2026-11-01 起默认关**：用户真机看到「预览里又冒出一个编辑页、从右滑进来自动滑出去」，
+ * 读成 bug。重放演示的是**官方滑动转场 + 旧的前缘圆角「洞」**，而 Dart 出货态早就把洞
+ * 关掉了（[AppearanceEditorTransitionSpec.NOTCH_SHIPPED_ENABLED] = false），壳的真实转场
+ * 用户进页时已经亲眼看了一遍 —— 在预览里再演一次只会造成「两个页面」的错觉。
+ * 打开它只用于 L4 对照转场几何，不是出货形态。
+ */
+internal const val APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED = false
 
 /**
  * 进页后等多久开始重放（毫秒）。

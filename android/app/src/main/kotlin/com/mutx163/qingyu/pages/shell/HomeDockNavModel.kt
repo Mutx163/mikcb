@@ -87,6 +87,21 @@ object HomeDockNavModel {
     fun isRootCapable(id: String): Boolean = id in ROOT_CAPABLE_IDS
 
     /**
+     * 底栏条目点下去，是**替换主屏内容**（底栏保留）还是**推一层页面**（底栏让位）。
+     *
+     * 三类走前者：视图动作（`day` / `week`，切首页视图）、[ROOT_CAPABLE_IDS] 里那几个
+     * 真能当根内容渲染的宿主页、以及开发壳的页面索引（它自己就是栈底内容）。
+     * 其余目录页（外观编辑器、统计、考试……）一律推一层。
+     *
+     * 为什么要单独抽出来：壳里 `selectRoot` 原先**不分流**，任何底栏条目都直接替换栈底，
+     * 于是把「外观编辑器」排进底栏后，底栏会一直压在它上面（`atRoot` 仍为 true），
+     * 既不参与页面的入场动画、也不让位（2026-11-01 用户报「底栏没跟着缩小、留在原位」）。
+     * 这条判据是纯逻辑，单测可钉；壳只负责按结果调 `pushPage` / 换栈底。
+     */
+    fun rendersAsRoot(id: String): Boolean =
+        isViewAction(id) || isRootCapable(id) || id == DEV_INDEX_ID
+
+    /**
      * 解析底栏排列：去重保序 → 丢掉**没有去处**的 id → 截断到 [MAX_SLOTS]
      * → 空表回退 [DEFAULT_IDS]（回退值同样要过一遍谓词，避免把坏 id 塞回来）。
      *

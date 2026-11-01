@@ -122,6 +122,29 @@ class HomeNavModelTest {
         assertTrue(!HomeDockNavModel.isRootCapable("day"))
     }
 
+    /**
+     * 底栏条目 → 「替换主屏内容（底栏保留）」还是「推一层页面（底栏让位）」。
+     *
+     * 2026-11-01 用户报：把外观编辑器排进底栏后，底栏一直压在页面上、不参与页面入场动画。
+     * 根因就是壳里不分流（任何条目都替换栈底）。这条判据钉住分流口径。
+     */
+    @Test
+    fun `视图动作与内嵌宿主走根内容 其余目录页推页`() {
+        // 视图动作：切首页视图，底栏保留。
+        assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.ACTION_DAY))
+        assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.ACTION_WEEK))
+        // 真能当根内容渲染的宿主页。
+        assertTrue(HomeDockNavModel.rendersAsRoot("tasks"))
+        assertTrue(HomeDockNavModel.rendersAsRoot("scheduleList"))
+        assertTrue(HomeDockNavModel.rendersAsRoot("settings"))
+        // 开发壳的页面索引本身就在栈底。
+        assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.DEV_INDEX_ID))
+        // 其余目录页：推一层，底栏让位。
+        assertTrue(!HomeDockNavModel.rendersAsRoot("appearanceEditor"))
+        assertTrue(!HomeDockNavModel.rendersAsRoot("statistics"))
+        assertTrue(!HomeDockNavModel.rendersAsRoot("exams"))
+    }
+
     // ---------------------------------------------------------------- 更多菜单
 
     @Test
