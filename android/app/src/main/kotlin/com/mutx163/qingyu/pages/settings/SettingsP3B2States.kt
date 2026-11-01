@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.app.TimetableSettingsModel
+import com.mutx163.qingyu.app.TimetableSnapshot
+
 /**
  * P3-B-2 四页的输入状态（页面构建的**唯一输入**）。
  *
@@ -167,3 +170,74 @@ data class SettingsTimetableState(
     /** `BlackBoxOverlayPreferences.instance.visible`（:1132）：调试叠层开关当前态。 */
     val debugOverlayVisible: Boolean = false,
 )
+
+/**
+ * 设置首页（`b.settingsHome`，课表设置 hub）的**真值合成**。
+ *
+ * ## 为什么要有这一层
+ *
+ * 本页五行曾经拿 [SettingsTimetableState] 的构造默认值冒充真值（课表名空白、
+ * 时间模板恒「未选择」、节假日恒「已开启」、天气恒「未设置」、情侣恒「未绑定」），
+ * 子页改完回到这里**看不出来**——像真的，但没变回去。宿主
+ * （`composeP1: app/SettingsSemesterHost.kt` 的 `SettingsTimetableHubHost`）现在
+ * 从三处真源取数，交给本函数合成；函数本身零 Compose 依赖，JVM 单测直接钉住
+ * 「哪一行的值来自哪个字段」。
+ *
+ * ## 五个字段的真源（与 Dart `timetable_settings_screen.dart` 逐条对应）
+ *
+ * | 行 | 真源 | Dart |
+ * |---|---|---|
+ * | 课表名 | `snapshot.profiles` + `snapshot.activeProfileId` | `provider.activeProfile?.name`（:413） |
+ * | 时间模板 | `snapshot.timeSchemes` + `snapshot.activeTimeSchemeId` | `provider.activeTimeScheme?.name`（:433） |
+ * | 节假日 | `settings.enableHolidayMarking`（落盘 `timetable_settings` 的键） | `settings.enableHolidayMarking`（:447） |
+ * | 天气 | 调用方传进来的城市名（`WeatherProvider.location?.name`） | `weather?.location?.name`（:493） |
+ * | 情侣 | 调用方传进来的绑定态（`partner_timetable_binding` 键是否可解） | `provider.hasPartnerBinding`（:602） |
+ *
+ * 其余字段保持 [SettingsTimetableState] 的默认值（本批不在这五行的范围内）。
+ *
+ * @param settings 完整设置模型（[TimetableSettingsModel]）。**不能**用
+ *   `snapshot.settings` 代替：那是 `core.TimetableSettings` 的 4 键子集，
+ *   `enableHolidayMarking` 根本不在里面。
+ * @param weatherCityName null = 没有可用的天气 provider / 尚未选城 ⇒ 页面显示「未设置」。
+ *   调用方不得拿固定字符串冒充。
+ * @param partnerBound 绑定态必须由真实存储（`CouplePartnerPort.loadBinding()`）算出；
+ *   null / false 都显示「未绑定」，但只有「读到了绑定」才允许给 true。
+ */
+object SettingsTimetableHubLogic {
+
+    fun stateOf(
+        snapshot: TimetableSnapshot,
+        settings: TimetableSettingsModel,
+        weatherCityName: String? = null,
+        partnerBound: Boolean = false,
+    ): SettingsTimetableState {
+        // 档案名：仓储已经把悬空 id 回落成第一份（见 `TimetableRepository.activeProfile`），
+        // 这里再回落一次只是为了「快照被外部直接构造」时也不显示空气。
+        val activeProfileName = (
+            snapshot.profiles.firstOrNull { it.id == snapshot.activeProfileId }
+                ?: snapshot.profiles.firstOrNull()
+            )
+            ?.name
+            ?.takeIf { it.isNotBlank() }
+
+        // 时间模板：Dart `_getTimeSchemeById(settings.activeTimeSchemeId)` —— 只认 id，
+        // **不要**在 id 为空时偷偷挑第一套：那会把「未选择」显示成一套具体的模板。
+        val activeTimeSchemeName = snapshot.timeSchemes
+            .firstOrNull { it.id == snapshot.activeTimeSchemeId }
+            ?.name
+            ?.takeIf { it.isNotBlank() }
+
+        return SemesterSettingsLogic.stateOf(
+            currentWeek = snapshot.currentWeek,
+            semesterWeekCount = snapshot.settings.semesterWeekCount,
+            startDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+        ).copy(
+            activeProfileName = activeProfileName,
+            activeTimeSchemeName = activeTimeSchemeName,
+            // 开关真值：Dart 默认 true，但用户关过就是 false（不能写死 true）。
+            holidayMarkingEnabled = settings.enableHolidayMarking,
+            weatherCityName = weatherCityName?.takeIf { it.isNotBlank() },
+            partnerBound = partnerBound,
+        )
+    }
+}

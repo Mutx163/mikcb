@@ -13,9 +13,10 @@ import org.junit.Test
 /**
  * 课表页面设置（settings-timetable-page）的**写路径**：分派器认得这一页的 rowId。
  *
- * 这一批只接「本模型已拥有」的字段（密度组 + 浮钮不透明度）；背景/壁纸/字色待扩模型，
- * 背景色板会被宿主拦成 [SettingsActionDispatcher.ROW_TP_BG_CHIPS] 后 Ignored ——
- * 这里钉住「它绝不会写到课卡统一色上」（那是复用 rowId 的历史坑）。
+ * 2026-11-01 起扩展模型覆盖到背景组（背景色 / 背景图 / 随周次滑动 / 模糊）与三根
+ * 文字颜色；此前背景色板会被拦成 [SettingsActionDispatcher.ROW_TP_BG_CHIPS] 后 Ignored。
+ * 这里钉住两件事：**真的写进了本页字段**，且**绝不会写到课卡统一色上**
+ * （复用 rowId 是 2026-10 的历史坑）。
  */
 class SettingsTimetablePageWiringTest {
 
@@ -97,12 +98,12 @@ class SettingsTimetablePageWiringTest {
     }
 
     @Test
-    fun `背景色板被拦成本页常量后 Ignored，不会写成课卡统一色`() {
+    fun `背景色板写进本页背景色 不会写成课卡统一色`() {
         val base = model()
-        val d = write(SettingsActionDispatcher.ROW_TP_BG_CHIPS, "#123456", base)
-        assertTrue("背景色板应 Ignored，实际是 $d", d is SettingsDispatch.Ignored)
+        val next = written(write(SettingsActionDispatcher.ROW_TP_BG_CHIPS, "#123456", base))
+        assertEquals("#123456", next.timetablePageBackgroundColor)
         // 关键：它绝不能变成「写课卡统一色」（复用了 ROW_CARD_COLOR_CHIPS 的历史坑）。
-        assertTrue(d !is SettingsDispatch.Write)
+        assertEquals(base.timetableUnifiedCardColor, next.timetableUnifiedCardColor)
     }
 
     @Test

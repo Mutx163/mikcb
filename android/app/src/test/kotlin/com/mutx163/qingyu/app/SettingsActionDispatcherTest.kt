@@ -658,9 +658,11 @@ class SettingsActionDispatcherTest {
 
         assertTrue("色板色块必须可点（clickable）", chips.contains("clickable"))
         assertTrue(
-            "色块点击必须走 onAction 通路并带上色板 rowId",
-            chips.contains("onAction(") &&
-                chips.contains("SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS"),
+            // 2026-11-01 F25：色板不再写死课卡色 rowId，改为回传**这一组**的 `node.id`。
+            // 写死会让课表页背景色板也写成「课卡统一色」（真机实测），所以判据跟着改成
+            // 「必须经 onAction 且 rowId 来自节点」。
+            "色块点击必须走 onAction 通路并带上所在色板组的 rowId",
+            chips.contains("onAction(") && chips.contains("node.id"),
         )
         assertFalse("色板里不许自己写业务判据（比如直接改状态）", chips.contains("timetableUnifiedCardColor"))
 

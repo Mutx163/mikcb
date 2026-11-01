@@ -37,6 +37,15 @@ object SettingsBackdropFlowPage {
     /** 壁纸流程不产生独立页面 —— 它是被两个宿主嵌进去的一堆块。 */
     val PAGE_ID: String? = null
 
+    /**
+     * 「壁纸面板第一页（选图）」的**桥接页 id**。
+     *
+     * Dart 侧它不是独立页（见 [PAGE_ID]），但设置族桥 [SettingsPageBridge.specFor]
+     * 需要一个可寻址的键，让宿主/测试用同一个串要这份 spec。**与面板 spec 自身的
+     * id 不同**：返回的 spec id 仍是 [SettingsWallpaperSheetPage.ID]（两个页签共用）。
+     */
+    const val SELECTION_SPEC_ID = "settings-backdrop-flow"
+
     const val HOST_SETTINGS_ROW_INSET = 16.0
     const val HOST_SHEET_ROW_INSET = 0.0
     const val HOST_SETTINGS_ROWS_HAVE_CARD_BACKGROUND = true

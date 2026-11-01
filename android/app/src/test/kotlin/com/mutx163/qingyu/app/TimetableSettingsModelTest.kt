@@ -706,7 +706,7 @@ class TimetableSettingsModelTest {
                 "timetable_settings" to
                     """{"themeSeedColor":"#000000","homePageWeekdayBarBlurEnabled":true,
                        "liveShowCourseName":false,"widgetCornerRadius":22,
-                       "homePageBackgroundImagePath":"/img/legacy.jpg","deep":{"x":[1,2,3]}}""",
+                       "legacyUnknownFlag":true,"deep":{"x":[1,2,3]}}""",
             ),
         )
 
@@ -720,7 +720,9 @@ class TimetableSettingsModelTest {
         assertEquals(true, written["homePageWeekdayBarBlurEnabled"])
         assertEquals(false, written["liveShowCourseName"])
         assertEquals(22, (written["widgetCornerRadius"] as Number).toInt())
-        assertEquals("/img/legacy.jpg", written["homePageBackgroundImagePath"])
+        // 2026-11-01 F25：`homePageBackgroundImagePath` 已被本模型收进 OWNED_KEYS（外观编辑页
+        // 那批要用），不能再当「未知键」样本；换成一个确定没人拥有的键，免得这条退化成假绿。
+        assertEquals(true, written["legacyUnknownFlag"])
         assertEquals("""{"x":[1,2,3]}""", MiniJson.encode(written["deep"]))
         // 本模型确实改了它拥有的键。
         assertEquals("dark", written["appThemeMode"])

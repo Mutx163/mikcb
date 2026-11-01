@@ -1140,10 +1140,13 @@ private fun ColorChipGroup(
                             shape = RoundedCornerShape(QingyuShapes.ICON_BADGE_RADIUS.dp),
                         )
                         .clickable {
+                            // 2026-11-01 F25：回传**这一组**的 rowId（`node.id`），不再写死课卡色。
+                            // 写死会让课表页背景色板也写成「课卡统一色」——宿主里还留着一层
+                            // 从 ROW_CARD_COLOR_CHIPS 到 ROW_TP_BG_CHIPS 的翻译兜底，但那是补丁。
                             onAction(
                                 SettingsAction.WRITE_SETTING,
                                 hex,
-                                SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS,
+                                node.id,
                             )
                         },
                 )

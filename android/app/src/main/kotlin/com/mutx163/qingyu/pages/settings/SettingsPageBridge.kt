@@ -55,6 +55,36 @@ object SettingsPageBridge {
         SettingsCourseCardPage.ID,
     )
 
+    /**
+     * 「最近使用」页的桥接 id。
+     *
+     * 页面本体（`SettingsRecentWallpaperPage.kt`）把 id 直接写在 `spec()` 的返回值里，
+     * 没有导出常量；那边不在本批写作用域内，所以这里先用同一个串，
+     * 并由 `AppearanceEditorDataContractTest` 断言它与 `spec(...).id` 逐字一致
+     * ——两边谁改了都会红。
+     */
+    const val RECENT_WALLPAPER_SPEC_ID = "settings-recent-wallpaper"
+
+    /**
+     * 外观编辑家族（外观编辑整页 + 两个面板的四个页签）的**桥接页 id**。
+     *
+     * 这批页面不走 [SettingsHost] 的「列表 + 通用渲染层」：外观编辑是沉浸式整页，
+     * 两个面板是底部弹层，宿主分别是 `AppearanceEditorHost` / `MaterialSheetBody` /
+     * `WallpaperSheetBody`。但它们**同样需要「模型 → 页面 state」这一层**，否则
+     * 面板会退回出厂值。所以它们单独成一张表，[specFor] 认这些 id。
+     *
+     * ⚠️ 不并进 [SUPPORTED_PAGE_IDS]：那张表与 `SettingsHost` 的 4 页契约一一对应，
+     * `app/SettingsActionDispatcherTest` 把它钉成恰好 4 项；本批写作用域不允许改那条测试。
+     * 两条表各管各的，调用方按页面宿主选入口。
+     */
+    val APPEARANCE_PAGE_IDS: List<String> = listOf(
+        SettingsAppearanceEditorPage.ID,
+        SettingsMaterialGeneralPage.ID,
+        SettingsMaterialCourseCardPage.ID,
+        SettingsBackdropFlowPage.SELECTION_SPEC_ID,
+        RECENT_WALLPAPER_SPEC_ID,
+    )
+
     /** 页面动作 → 宿主动作（一一对应，未知值返回 null）。 */
     fun toKind(action: SettingsAction): SettingsActionKind = when (action) {
         SettingsAction.NAVIGATE -> SettingsActionKind.NAVIGATE
@@ -91,6 +121,17 @@ object SettingsPageBridge {
         pageId: String,
         state: SettingsPageState,
         liveData: LivePageData = LivePageData(),
+        /**
+         * 外观编辑家族的状态（[APPEARANCE_PAGE_IDS] 用）。
+         *
+         * 调用方必须从**同一份设置模型**推：
+         * `AppearanceEditorBridge.toState(model).material` / `.wallpaper`。
+         * 缺省值只是为了让 4 页旧调用点不改签名；给外观家族页传默认值 =
+         * 面板回到出厂值（与「传空 state」同一个病，不要这么调）。
+         */
+        material: MaterialPanelState = MaterialPanelState(),
+        backdrop: BackdropFlowState = BackdropFlowState(),
+        recent: RecentWallpaperState = RecentWallpaperState(),
     ): SettingsPageSpec? = when (pageId) {
         SettingsGeneralPage.ID -> SettingsGeneralPage.spec(state)
         SettingsAppearancePage.ID -> SettingsAppearancePage.spec(state)
@@ -101,6 +142,14 @@ object SettingsPageBridge {
         SettingsGlassDockIconEditorPage.ID -> SettingsGlassDockIconEditorPage.spec(state)
         SettingsLivePage.ID -> SettingsLivePage.spec(state, liveData)
         SettingsLiveSelfCheckPage.ID -> SettingsLiveSelfCheckPage.spec(state)
+        // 外观编辑家族（见 [APPEARANCE_PAGE_IDS]）：页面自身数据全部来自
+        // [AppearanceEditorBridge] 从同一份设置模型推出的 state。
+        SettingsAppearanceEditorPage.ID -> SettingsAppearanceEditorPage.spec(state, material)
+        SettingsMaterialGeneralPage.ID -> SettingsMaterialGeneralPage.spec(state, material)
+        SettingsMaterialCourseCardPage.ID -> SettingsMaterialCourseCardPage.spec(state, material)
+        SettingsBackdropFlowPage.SELECTION_SPEC_ID ->
+            SettingsBackdropFlowPage.selectionPage(backdrop)
+        RECENT_WALLPAPER_SPEC_ID -> SettingsRecentWallpaperSection.spec(recent)
         else -> null
     }
 
@@ -114,6 +163,10 @@ object SettingsPageBridge {
         SettingsActionDispatcher.ROW_CARD_TEXT_LIGHT_DETAIL -> model.courseCardDetailColorLight
         SettingsActionDispatcher.ROW_CARD_TEXT_DARK_TITLE -> model.courseCardTitleColorDark
         SettingsActionDispatcher.ROW_CARD_TEXT_DARK_DETAIL -> model.courseCardDetailColorDark
+        // 课表页面设置页的三根文字颜色（读的是浅色档，与页面状态同口径）。
+        SettingsActionDispatcher.ROW_TP_TEXT_WEEKDAY -> model.weekdayBarFontColorLight
+        SettingsActionDispatcher.ROW_TP_TEXT_WEEKDAY_ACCENT -> model.weekdayBarAccentColorLight
+        SettingsActionDispatcher.ROW_TP_TEXT_TIME_AXIS -> model.timeAxisFontColorLight
         else -> null
     }
 
@@ -395,10 +448,14 @@ object SettingsPageBridge {
     /**
      * 设置模型 → 「课表页面设置」页状态（`SettingsTimetablePageSettingsPage.spec` 的输入）。
      *
-     * 本页的状态有一批字段**本模型还不拥有**（背景色/壁纸/模糊/背景随周滑动、
-     * 以及单值的星期栏与时间轴字色——模型存的是明暗两套）。这些字段用页面默认值，
-     * 对应行也还没接写回（宿主会 Ignore，等背景/材质那一刀扩模型）。**已拥有的密度与
-     * 浮钮不透明度全部按模型真值喂**，所以这一片是真能存住的。
+     * 2026-11-01：背景这一组（纯色 / 背景图 / 随周次滑动 / 模糊）原先在桥里**写死默认**，
+     * 模型也还没有对应字段 ⇒ 屏上永远显示「未选择 / 关闭 / 0」。现在四个键都进了
+     * [TimetableSettingsModel]（`timetable_settings.dart:556-558`、`:1698-1704`），
+     * 这里逐键取真值。
+     *
+     * 背景图的解析口径照 Dart `resolveHomePageBackdropImagePath`
+     * （`home_page_background.dart:346-356`）：**新壁纸优先，旧字段只是回退**，
+     * 空串按「没有」处理。
      *
      * @param screenshotShareSupported 设备能力（Android 14 截屏回调）；默认 false =
      *   该行整行不出现，是保守口径（Dart 也是不支持就不显示）。
@@ -427,15 +484,53 @@ object SettingsPageBridge {
         sectionHeight = model.sectionHeight,
         courseCardGap = model.timetableCourseCardGap,
         backToCurrentWeekOpacity = model.timetableFloatingBackToCurrentWeekButtonOpacity,
-        // 以下八项本模型未拥有：给页面默认值（不会写回，宿主 Ignore）。
-        pageBackgroundColor = "#F8FAFC",
-        imagePath = null,
-        backdropFollowsWeekPager = false,
-        wallpaperBlurSigma = 0.0,
+        pageBackgroundColor = model.timetablePageBackgroundColor,
+        imagePath = resolveHomePageBackdropImagePath(model),
+        backdropFollowsWeekPager = model.homePageBackdropFollowsWeekPager,
+        wallpaperBlurSigma = model.homePageWallpaperBlurSigma,
         weekdayBarColor = model.weekdayBarFontColorLight,
         weekdayBarAccentColor = model.weekdayBarAccentColorLight,
         timeAxisColor = model.timeAxisFontColorLight,
     )
+
+    /**
+     * 首页背景图的有效路径（Dart `resolveHomePageBackdropImagePath`，
+     * `lib/utils/home_page_background.dart:346-356`）。
+     *
+     * 顺序不能反：新壁纸 [TimetableSettingsModel.homePageWallpaperPath] 优先，
+     * 旧字段 [TimetableSettingsModel.homePageBackgroundImagePath] 只在没有壁纸时兜底。
+     * 空串按「没有」处理（Dart 的 `isNotEmpty` 判据）。
+     */
+    fun resolveHomePageBackdropImagePath(model: TimetableSettingsModel): String? =
+        model.homePageWallpaperPath?.takeIf { it.isNotEmpty() }
+            ?: model.homePageBackgroundImagePath?.takeIf { it.isNotEmpty() }
+
+    /**
+     * 壁纸面板状态 → 壁纸流程块状态（[SettingsBackdropFlowPage] 的输入）。
+     *
+     * 两个页签（选图 / 设置）共用同一份输入，所以只做一次形状转换。
+     * `bingAutoApplyEnabled` **不在这里推**：它的真源是图库台账
+     * （`BingWallpaperStore`），不在 `timetable_settings` 里；宿主拿到台账值后自己覆盖，
+     * 缺省 false = 「不可用」，不会伪造一个能点的开关。
+     */
+    fun toBackdropFlowState(wallpaper: WallpaperPanelState): BackdropFlowState = BackdropFlowState(
+        imagePath = wallpaper.path,
+        history = wallpaper.history.map { it.key },
+        followsWeekPager = wallpaper.followsWeekPager,
+        blurSigma = wallpaper.blurSigma,
+    )
+
+    /**
+     * 壁纸面板状态 → 「最近使用」页状态。
+     *
+     * `armedKey` 是纯 widget 状态（长按后等确认的那一张），模型里没有，默认 null；
+     * 删除确认由宿主在交互过程中填。
+     */
+    fun toRecentWallpaperState(wallpaper: WallpaperPanelState): RecentWallpaperState =
+        RecentWallpaperState(
+            entries = wallpaper.history.map { it.key },
+            selectedKey = wallpaper.path,
+        )
 
     // ------------------------------------------------------------------ 内部
 

@@ -254,15 +254,46 @@ object SettingsActionDispatcher {
     const val ROW_TP_BACK_WEEK_OPACITY = "timetablePage.backToWeek.opacity"
 
     /**
-     * 课表背景色板。渲染层的 `ColorChipGroup` 复用了课卡色板的 rowId（历史原因），
-     * 本页宿主会把它拦成本常量；本模型**不拥有** `timetablePageBackgroundColor`，
-     * 所以写它只能 Ignored（等背景/材质那一刀扩模型后再接）。
+     * 课表背景色板（`SettingsInline.id`，不是 `SettingsRow`）。
+     *
+     * 本模型自 2026-11-01 起拥有 `timetablePageBackgroundColor`（Dart `:556`），
+     * 点一个色块 = `WRITE_SETTING` + `target = 色值 hex` + 本 rowId。
+     *
+     * ⚠️ 渲染层 `ColorChipGroup`（composeP1 `SettingsPageRenderers.kt:1142-1148`）目前
+     * 对**所有**色板组都回传 `ROW_CARD_COLOR_CHIPS`，所以课表页色板实际仍写到统一课卡色。
+     * 分派器这一支是对的，等渲染层改成回传 `node.id` 后即生效（登记给 Lead）。
      */
     const val ROW_TP_BG_CHIPS = "timetablePage.background.colorChips"
+
+    /** 课表页背景随周次滑动（与 [ROW_BACKDROP_FOLLOWS_WEEK_PAGER] 同一个设置，开关，取反）。 */
+    const val ROW_TP_BG_FOLLOWS_WEEK = "timetablePage.background.followsWeek"
+
+    /** 课表页壁纸模糊（与 [ROW_BACKDROP_BLUR] 同一个设置，滑杆，0~24 收口）。 */
+    const val ROW_TP_BG_BLUR = "timetablePage.background.blur"
+
+    /** 课表页「背景图片」行（SHEET，打开壁纸面板第一页）。 */
+    const val ROW_TP_BG_IMAGE = "timetablePage.background.image"
+
+    /** 课表页「最近使用」行（SHEET，打开壁纸面板第一页）。 */
+    const val ROW_TP_BG_RECENT = "timetablePage.background.recent"
+
+    /** 课表页三个选色行（`COLOR_PICKER`；写回是本文件 [writeSetting] 的三个 `*.textColors.*` 分支）。 */
+    const val ROW_TP_TEXT_WEEKDAY = "timetablePage.textColors.weekday"
+    const val ROW_TP_TEXT_WEEKDAY_ACCENT = "timetablePage.textColors.weekdayAccent"
+    const val ROW_TP_TEXT_TIME_AXIS = "timetablePage.textColors.timeAxis"
 
     /** 恢复默认的作用域名（`settings_reset.dart:17-23` 里的两个）。 */
     const val SCOPE_APPEARANCE = "appearance"
     const val SCOPE_COURSE_CARD = "courseCard"
+
+    /**
+     * 课表页面作用域（`settings_reset.dart:74-122`）。
+     *
+     * 与 `pages/settings/SettingsResetPage.SettingsResetScope.TIMETABLE_PAGE.arg` 逐字一致；
+     * 2026-11-01 前分派器**没有这个分支**，用户确认后 `applyResetScope` 返回 null、
+     * 宿主什么都不写——看着弹了确认框，实际一个字段都没恢复。
+     */
+    const val SCOPE_TIMETABLE_PAGE = "timetablePage"
 
     // ------------------------------------------------ 外观编辑页：材质（settings-material-*）
     // rowId 与 `pages/settings/SettingsMaterialPanels.kt` 逐字一致；传值约定同其它页：
@@ -297,6 +328,14 @@ object SettingsActionDispatcher {
 
     /** 壁纸高斯模糊 sigma（`widgets/wallpaper_blur_tile.dart:56-74`，滑杆，0~24 收口）。 */
     const val ROW_BACKDROP_BLUR = "backdrop.blur"
+
+    /**
+     * 「清除图片」行（`settings_home_backdrop_flow.dart:927-933`）。
+     *
+     * 只清设置里的两条路径，**不删文件**：图可能还在「最近使用」里，删文件由历史淘汰
+     * 负责（Dart 同口径）。写回口径见 [writeSetting] 的同名分支。
+     */
+    const val ROW_BACKDROP_IMAGE_CLEAR = "backdrop.image.clear"
 
     /**
      * 液态玻璃的「恢复默认」作用域名
@@ -416,6 +455,55 @@ object SettingsActionDispatcher {
                 themeSeedColor = RESET_THEME_SEED_COLOR,
                 // 材质那一档（`courseCardSurfaceStyle`）归本作用域（Dart `:154`）。
                 courseCardSurfaceStyle = CourseCardSurfaceStyle.SOLID,
+                // 2026-09-22 起材质轴整体从「课表页面」划到「外观」
+                // （`settings_reset.dart:128-157`）。三个可空 tuning 必须**清空**
+                // （Dart 用 clearXxx 标记，因为 copyWith 对 null 是「不改」语义）；
+                // 档位名也要回到标准，否则会出现「旋钮清了、档名停在自定义」。
+                liquidGlassTuning = null,
+                liquidGlassTuningDark = null,
+                courseCardGlassTuning = null,
+                courseCardGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_STANDARD,
+                frostedBlurEnabled = true,
+                liquidGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_STANDARD,
+                linkLiquidGlassTuning = true,
+                darkGlassBoostEnabled = true,
+                liquidGlassDockEnabled = true,
+                homeBandGlassMaterial = TimetableSettingsModel.DEFAULT_HOME_BAND_GLASS_MATERIAL,
+                homePageTimeColumnBlurEnabled = false,
+            )
+
+            // 课表页面页（含壁纸与背景区域，`settings_reset.dart:74-122`）。
+            // 材质轴 2026-09-22 起不在本作用域（划给外观），两个僵尸开关也不在这里。
+            // 壁纸指针必须真的清（Dart 的 clearHomePageWallpaperPath / clearHomePageBackgroundImagePath）：
+            // 否则「恢复默认」后背景还在，等于按声明的范围少清了两处。
+            SCOPE_TIMETABLE_PAGE -> model.copy(
+                timetableAutoFitSectionHeight = false,
+                timetableHideWeekends = false,
+                timetableShowNonCurrentWeekCourses = false,
+                longPressEmptySlotToAddCourseEnabled = false,
+                weekGridShowExams = true,
+                weekGridShowSchedules = true,
+                screenshotSharePromptEnabled = true,
+                timetableSectionTimeDisplayMode = SectionTimeDisplayMode.START_AND_END,
+                timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.NARROW,
+                sectionHeight = 68.0,
+                timetableCourseCardGap = TimetableSettingsModel.DEFAULT_COURSE_CARD_GAP,
+                timetableBackToCurrentWeekButtonStyle = BackToCurrentWeekButtonStyle.FLOATING,
+                timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
+                timetablePageBackgroundColor =
+                TimetableSettingsModel.DEFAULT_TIMETABLE_PAGE_BACKGROUND_COLOR,
+                homePageBackdropFollowsWeekPager = false,
+                homePageWallpaperBlurSigma = 0.0,
+                homePageBackgroundScope =
+                TimetableSettingsModel.DEFAULT_HOME_PAGE_BACKGROUND_SCOPE,
+                weekdayBarFontColorLight = TimetableSettingsModel.DEFAULT_WEEKDAY_BAR_FONT_LIGHT,
+                weekdayBarFontColorDark = TimetableSettingsModel.DEFAULT_WEEKDAY_BAR_FONT_DARK,
+                weekdayBarAccentColorLight = TimetableSettingsModel.DEFAULT_WEEKDAY_BAR_ACCENT_LIGHT,
+                weekdayBarAccentColorDark = TimetableSettingsModel.DEFAULT_WEEKDAY_BAR_ACCENT_DARK,
+                timeAxisFontColorLight = TimetableSettingsModel.DEFAULT_TIME_AXIS_FONT_LIGHT,
+                timeAxisFontColorDark = TimetableSettingsModel.DEFAULT_TIME_AXIS_FONT_DARK,
+                homePageWallpaperPath = null,
+                homePageBackgroundImagePath = null,
             )
 
             SCOPE_HOME_NAVIGATION -> model.copy(
@@ -891,6 +979,13 @@ object SettingsActionDispatcher {
                 )
             }
 
+            // 「清除图片」：两条路径一起清（新壁纸 + 旧背景图），取景参数保留
+            // （Dart `:458-470` 只清路径，历史里的取景还在，切回来时还原）。
+            ROW_BACKDROP_IMAGE_CLEAR -> model.copy(
+                homePageWallpaperPath = null,
+                homePageBackgroundImagePath = null,
+            )
+
             // ---------------------------------------------------- 课表页面设置
             ROW_TP_AUTO_FIT -> model.copy(
                 timetableAutoFitSectionHeight = !model.timetableAutoFitSectionHeight,
@@ -958,13 +1053,56 @@ object SettingsActionDispatcher {
                 )
             }
 
-            // 模型不拥有课表页背景色：明确 Ignored，别让它落到课卡字段上。
-            ROW_TP_BG_CHIPS -> return ignored(
+            // 课表背景色板（Dart `:337-349`）：点一个色块 = 写 `timetablePageBackgroundColor`。
+            // 读侧不校验是否在色板内（Dart 同口径），这里只校验色值格式。
+            ROW_TP_BG_CHIPS -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "timetable background color is not #RRGGBB: $target")
+                model.copy(timetablePageBackgroundColor = hex)
+            }
+
+            // 课表页与壁纸面板是**同一个设置的两个入口**（Dart 同一个 builder），
+            // 所以写回口径必须与 ROW_BACKDROP_* 逐字一致。
+            ROW_TP_BG_FOLLOWS_WEEK -> model.copy(
+                homePageBackdropFollowsWeekPager = !model.homePageBackdropFollowsWeekPager,
+            )
+
+            ROW_TP_BG_BLUR -> {
+                val value = parseDouble(target)
+                    ?: return ignored(kind, target, rowId, "wallpaper blur sigma is not a number")
+                model.copy(
+                    homePageWallpaperBlurSigma =
+                    TimetableSettingsModel.clampHomePageWallpaperBlurSigma(value),
+                )
+            }
+
+            // 两个 SHEET 行（选图 / 最近使用）：弹层与选图由宿主执行，这里不写设置。
+            ROW_TP_BG_IMAGE, ROW_TP_BG_RECENT -> return ignored(
                 kind,
                 target,
                 rowId,
-                "课表背景色不在本模型覆盖范围（背景/材质批次再补）",
+                "该行是 SHEET 动作（打开壁纸面板），由宿主执行，不写设置",
             )
+
+            // 课表页三根文字颜色（Dart `settings_timetable_page.dart:341-347` 的
+            // `_ColorSettingRow`）：选色器回投 WRITE_SETTING + target = 新色值。
+            ROW_TP_TEXT_WEEKDAY -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "weekday bar color is not #RRGGBB: $target")
+                model.copy(weekdayBarFontColorLight = hex)
+            }
+
+            ROW_TP_TEXT_WEEKDAY_ACCENT -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "weekday bar accent color is not #RRGGBB: $target")
+                model.copy(weekdayBarAccentColorLight = hex)
+            }
+
+            ROW_TP_TEXT_TIME_AXIS -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "time axis color is not #RRGGBB: $target")
+                model.copy(timeAxisFontColorLight = hex)
+            }
 
             else -> {
                 // 主题管理页的预设是 RADIO，渲染层不给 target，值只能从 rowId 后缀取。

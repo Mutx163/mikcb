@@ -270,6 +270,45 @@ data class TimetableSettingsModel(
     val courseCardGlassPreset: String = LIQUID_GLASS_PRESET_STANDARD,
     /** 课程卡片那八个参数（`:695` / `:933`）；null = 出厂卡片档。 */
     val courseCardGlassTuning: LiquidGlassTuningModel? = null,
+    /**
+     * 时间列（时间轴）是否走液态玻璃模糊（`:737` / 构造默认 `:938` = false / 读侧 `:1847-1848`）。
+     *
+     * 属「外观」恢复默认作用域（`settings_reset.dart:155`），控件在材质轴里。
+     */
+    val homePageTimeColumnBlurEnabled: Boolean = false,
+
+    // ---------- 课表页面背景（`timetable_settings.dart:556-558` / `:891-893` / `:1698-1704`） ----------
+    /**
+     * 课表页纯色背景（`:556` / 构造默认 `:891` `#F8FAFC` / 读侧 `:1698-1699`）。
+     *
+     * 色板写在 `SettingsTimetablePageSettingsPage.BACKGROUND_COLORS`；存量值可能是
+     * 旧存档 / 手改 JSON 里的任意色，读侧**不校验**是否在色板内（Dart 同口径）。
+     */
+    val timetablePageBackgroundColor: String = DEFAULT_TIMETABLE_PAGE_BACKGROUND_COLOR,
+    /**
+     * 背景填充形态（`:557` / 构造默认 `:892` `color` / 读侧 `:1700-1702`）。
+     *
+     * 落盘串 `color` / `image`（`HomePageBackgroundFillX.value` = 枚举名）。
+     * 未知值回落 `color`，与 Dart `fromValue` 的 `orElse` 一致。
+     */
+    val homePageBackgroundFill: HomePageBackgroundFill = HomePageBackgroundFill.COLOR,
+    /**
+     * 旧版背景图路径（`:558` / 构造默认 `:893` null / 读侧 `:1703-1704`）。
+     *
+     * ⚠️ 新版壁纸已经迁到 [homePageWallpaperPath]（`home_page_background.dart:346-356`
+     * 的 `resolveHomePageBackdropImagePath`：壁纸优先、本字段只是老存档的回退）。
+     * Dart 写侧**只在非 null 时写键**（`:1222-1223`）；本模型是合并写，要清掉旧键
+     * 必须显式写 null，所以这里照其它可空键的写法进 patch。
+     */
+    val homePageBackgroundImagePath: String? = null,
+    /**
+     * 背景透出范围位标志（`:595` / 构造默认 `:900`）。
+     *
+     * ⚠️ **Dart 已下线这个键**：读侧恒写默认值（`:1725`），写侧不再写（`:1233`
+     * 「homePageBackgroundScope 已下线」）。保留字段只为恢复默认作用域
+     * （`settings_reset.dart:112`）与诊断口径，**不参与序列化**（见 [toJsonPatch]）。
+     */
+    val homePageBackgroundScope: Int = DEFAULT_HOME_PAGE_BACKGROUND_SCOPE,
 
     // ---------- 首页壁纸（`timetable_settings.dart:559-594` + `:746`） ----------
     /** 壁纸路径（`:559` / 构造默认 `:894`；null = 没有壁纸）。 */
@@ -398,6 +437,11 @@ data class TimetableSettingsModel(
         "widgetCountdownLeadMinutes" to widgetCountdownLeadMinutes,
         "widgetCountdownTextStyle" to widgetCountdownTextStyle,
         "liveEnableLocalDiagnostics" to liveEnableLocalDiagnostics,
+        // ---------- 课表页面背景（写侧口径：`timetable_settings.dart:1220-1223`） ----------
+        // `homePageBackgroundScope` **不写**：Dart 已下线该键（`:1233`），只在读侧固定默认。
+        "timetablePageBackgroundColor" to timetablePageBackgroundColor,
+        "homePageBackgroundFill" to homePageBackgroundFill.value,
+        "homePageBackgroundImagePath" to homePageBackgroundImagePath,
         // ---------- 首页壁纸（写侧口径：`timetable_settings.dart:1224-1232`） ----------
         "homePageWallpaperPath" to homePageWallpaperPath,
         "homePageWallpaperAlignX" to homePageWallpaperAlignX,
@@ -419,6 +463,7 @@ data class TimetableSettingsModel(
         "courseCardGlassPreset" to courseCardGlassPreset,
         "homePageHeaderBlurEnabled" to homePageHeaderBlurEnabled,
         "homeBandGlassMaterial" to homeBandGlassMaterial,
+        "homePageTimeColumnBlurEnabled" to homePageTimeColumnBlurEnabled,
         "homePageBackdropFollowsWeekPager" to homePageBackdropFollowsWeekPager,
     )
 
@@ -450,6 +495,17 @@ data class TimetableSettingsModel(
 
         /** `themeSeedColor` 的**读侧**缺键默认（:1696，注意不是构造默认的 `#3482FF`）。 */
         const val DEFAULT_SEED_COLOR_FROM_JSON = "#2563EB"
+
+        /** `timetablePageBackgroundColor` 的构造默认与读侧缺键默认（`:891` / `:1699`）。 */
+        const val DEFAULT_TIMETABLE_PAGE_BACKGROUND_COLOR = "#F8FAFC"
+
+        /**
+         * `HomePageBackgroundScope.defaultValue`（`timetable_settings_enums.dart:111-121`）：
+         * 课表 1 | 星期栏 2 | 顶栏 4 | 状态栏 8 = 15。
+         *
+         * Dart 已下线这个键（读侧恒此值、写侧不写），保留常量只为恢复默认与诊断口径。
+         */
+        const val DEFAULT_HOME_PAGE_BACKGROUND_SCOPE = 15
 
         /** `timetableCourseCardGap` 的两种缺键默认（:1436-1440，按 spacingMode 选）。 */
         const val DEFAULT_COURSE_CARD_GAP = 1.25
@@ -675,6 +731,11 @@ data class TimetableSettingsModel(
             "widgetCountdownLeadMinutes",
             "widgetCountdownTextStyle",
             "liveEnableLocalDiagnostics",
+            // 课表页面背景（`timetable_settings.dart:1220-1223`；
+            // homePageBackgroundScope 已下线，不拥有）
+            "timetablePageBackgroundColor",
+            "homePageBackgroundFill",
+            "homePageBackgroundImagePath",
             // 首页壁纸（`timetable_settings.dart:559-594` + `:746`）
             "homePageWallpaperPath",
             "homePageWallpaperAlignX",
@@ -694,6 +755,7 @@ data class TimetableSettingsModel(
             "courseCardGlassPreset",
             "homePageHeaderBlurEnabled",
             "homeBandGlassMaterial",
+            "homePageTimeColumnBlurEnabled",
             "homePageBackdropFollowsWeekPager",
         )
 
@@ -905,6 +967,19 @@ data class TimetableSettingsModel(
                 ),
                 liveEnableLocalDiagnostics =
                     LenientJson.bool(json["liveEnableLocalDiagnostics"]) ?: false,
+                // ---------- 课表页面背景（`timetable_settings.dart:1698-1704`） ----------
+                timetablePageBackgroundColor =
+                    LenientJson.string(json["timetablePageBackgroundColor"])
+                        ?: DEFAULT_TIMETABLE_PAGE_BACKGROUND_COLOR,
+                homePageBackgroundFill = HomePageBackgroundFill.fromValue(
+                    LenientJson.string(json["homePageBackgroundFill"]),
+                ),
+                // 新旧两条路径都只是不透明字符串；哪个生效由「壁纸优先」的解析决定
+                // （`home_page_background.dart:346-356`）。
+                homePageBackgroundImagePath =
+                    LenientJson.string(json["homePageBackgroundImagePath"]),
+                // ⚠️ 读侧恒为默认值（`:1725`）：这个键 Dart 已下线，存档里的旧值不读。
+                homePageBackgroundScope = DEFAULT_HOME_PAGE_BACKGROUND_SCOPE,
                 // ---------- 首页壁纸（`timetable_settings.dart:1706-1720` + `:1852-1853`） ----------
                 // 路径只认字符串/null（Dart `lenientString` 会把非字符串 toString，这里同口径）。
                 homePageWallpaperPath = LenientJson.string(json["homePageWallpaperPath"]),
@@ -948,6 +1023,9 @@ data class TimetableSettingsModel(
                     tuning = parsedCourseCardGlassTuning,
                 ),
                 courseCardGlassTuning = parsedCourseCardGlassTuning,
+                // `:1847-1848`：缺键 false。
+                homePageTimeColumnBlurEnabled =
+                    LenientJson.bool(json["homePageTimeColumnBlurEnabled"]) ?: false,
             )
         }
 
@@ -1267,6 +1345,23 @@ enum class BackToCurrentWeekButtonStyle(val value: String) {
         fun fromValue(raw: String?): BackToCurrentWeekButtonStyle = FLOATING
     }
 }
+
+/**
+ * 首页背景填充形态（`timetable_settings_enums.dart:97-108`）。
+ *
+ * `value` 就是枚举名（Dart `HomePageBackgroundFillX.value` = `name`）：`color` / `image`。
+ * 未知值回落 [COLOR]（Dart `fromValue` 的 `orElse`）。
+ */
+enum class HomePageBackgroundFill(val value: String) {
+    COLOR("color"),
+    IMAGE("image");
+
+    companion object {
+        fun fromValue(raw: String?): HomePageBackgroundFill =
+            entries.firstOrNull { it.value == raw } ?: COLOR
+    }
+}
+
 /**
  * 液态玻璃的**八个观感参数**（`lib/models/liquid_glass_tuning.dart:201-451`）。
  *

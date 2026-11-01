@@ -1200,18 +1200,31 @@ fun HomeNavigationHost(
 }
 
 /**
- * 「课表页面设置」真宿主（S2 接线第二批）。
+ * 「课表页面设置」真宿主（S2 接线第二批；2026-11-01 背景 / 字色 / 恢复默认接通）。
  *
  * 与 [SettingsHost] 同一套「读模型 → 建 spec → 动作回分派 → 合并落盘」循环；差异是
  * spec 由 [SettingsTimetablePageSettingsPage.spec] 出，状态是页面私有的
  * `TimetablePageSettingsState`（不是共享的 `SettingsPageState`）。
  *
- * ## 背景色板的拦截（重要）
+ * ## 四类动作各自的落点
  *
- * 渲染层的 `ColorChipGroup` 历史原因固定发 `ROW_CARD_COLOR_CHIPS`（课卡统一色）。
- * 本页的背景色板复用了它，若直接分派会把「课表背景色」写成「课卡统一色」。
- * 所以这里把该 rowId 拦成 [SettingsActionDispatcher.ROW_TP_BG_CHIPS]（本模型不拥有
- * 背景色 ⇒ Ignored），宁可不写也不写错字段。
+ * - `WRITE_SETTING`：分派器写模型 → 读回校验 → 重组。开关取反、滑杆收口、
+ *   背景色合法化都在分派器里，本宿主不再写第二份。
+ * - `COLOR_PICKER`：三行页面字色。初值取 [SettingsPageBridge.currentColorHex]，
+ *   确认后仍走同一条 `WRITE_SETTING`（`ROW_TP_TEXT_*`），不另建写路径。
+ * - `RESET_SCOPE`：先弹确认框，确认后 [SettingsActionDispatcher.applyResetScope]。
+ *   作用域字段清单在分派器里（`SCOPE_TIMETABLE_PAGE`），本宿主不复制。
+ * - `SHEET`：壁纸选图 / 最近使用。面板宿主在 `b.backdropFlow` / `b.recentWallpaper`，
+ *   但本宿主只拿到 `onNavigate(route)`，壳的 `shellPageIdForRoute` 还没有这两条
+ *   出站路由（2026-11-01；ShellWiring 属 Lead 写作用域）。在那之前**如实告知不可用**，
+ *   不假装打开一个不存在的弹层。
+ *
+ * ## 背景色板的 rowId 翻译（重要）
+ *
+ * 渲染层的 `ColorChipGroup` 历史原因固定回传 `ROW_CARD_COLOR_CHIPS`（课卡统一色）。
+ * 本页唯一色板是「课表背景色」，所以这里把该 rowId 翻成
+ * [SettingsActionDispatcher.ROW_TP_BG_CHIPS]——**不是**写成课卡统一色。翻错一个字段
+ * 就是「点了色块，课卡全变色、背景没动」，这类写错比不写更糟。
  */
 @Composable
 fun TimetablePageSettingsHost(
@@ -1222,6 +1235,27 @@ fun TimetablePageSettingsHost(
     preview: (@Composable () -> Unit)? = null,
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
+    var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
+    var pendingColor by remember { mutableStateOf<ColorEdit?>(null) }
+    val context = LocalContext.current
+
+    fun toast(message: String) {
+        if (message.isNotBlank()) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** 算好的新模型 → 落盘 → **读回校验** → 更新状态；失败时回到盘上真值并提示。 */
+    fun commitModel(next: TimetableSettingsModel): Boolean {
+        val before = model
+        val persisted = saveVerified(store, before, next)
+        model = if (persisted) next else runCatching { store.load() }.getOrNull() ?: before
+        if (!persisted) {
+            Log.e(LOG_TAG, "timetable page settings save did not land")
+            toast(SettingsStringsExt2.saveFailed.zh)
+        }
+        return persisted
+    }
 
     fun commitWrite(target: String?, rowId: String) {
         val actual = if (rowId == SettingsActionDispatcher.ROW_CARD_COLOR_CHIPS) {
@@ -1237,30 +1271,98 @@ fun TimetablePageSettingsHost(
                 model = model,
             )
         ) {
-            is SettingsDispatch.Write -> {
-                if (saveVerified(store, model, result.model)) {
-                    model = result.model
-                } else {
-                    Log.e(LOG_TAG, "timetable page settings save did not land")
-                }
-            }
+            is SettingsDispatch.Write -> commitModel(result.model)
+            // 没写也要留痕：宿主不静默吞掉未知 rowId，排查时能按日志定位。
+            is SettingsDispatch.Ignored -> Log.w(
+                LOG_TAG,
+                "ignored timetable-page write: rowId=${result.rowId} " +
+                    "target=${result.target} reason=${result.reason}",
+            )
             else -> Unit
         }
     }
 
-    SettingsPageScreen(
-        spec = SettingsTimetablePageSettingsPage.spec(SettingsPageBridge.toTimetablePageState(model)),
-        preview = preview,
-        onBack = onBack,
-        onAction = { action, target, rowId ->
-            when (val kind = SettingsPageBridge.toKind(action)) {
-                SettingsActionKind.WRITE_SETTING -> commitWrite(target, rowId)
-                SettingsActionKind.NAVIGATE -> target?.let(onNavigate)
-                // 本页当前没有弹层/剪贴板行；真出现时留痕，别让「点了没反应」无从查起。
-                else -> Log.w(LOG_TAG, "unhandled timetable-page action: $kind rowId=$rowId")
-            }
-        },
-    )
+    fun applyReset(scope: SettingsResetScope) {
+        val next = SettingsActionDispatcher.applyResetScope(model, scope.arg)
+        if (next == null) {
+            // 作用域没实现就明说，不弹一个「确认后什么都没变」的假成功。
+            Log.w(LOG_TAG, "reset scope not implemented: ${scope.arg}")
+            toast(SettingsStrings.aboutUnavailable.zh)
+            return
+        }
+        if (commitModel(next)) {
+            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        SettingsPageScreen(
+            spec = SettingsTimetablePageSettingsPage.spec(
+                SettingsPageBridge.toTimetablePageState(model),
+            ),
+            preview = preview,
+            onBack = onBack,
+            onAction = { action, target, rowId ->
+                when (val kind = SettingsPageBridge.toKind(action)) {
+                    SettingsActionKind.WRITE_SETTING -> commitWrite(target, rowId)
+
+                    SettingsActionKind.NAVIGATE -> target?.let(onNavigate)
+
+                    // 三行页面字色：初值取桥（与页面状态同源），写回仍是分派器那条路。
+                    SettingsActionKind.COLOR_PICKER -> {
+                        val current = SettingsPageBridge.currentColorHex(model, rowId)
+                        if (current == null) {
+                            Log.w(LOG_TAG, "timetable-page color row unknown: rowId=$rowId")
+                            toast(SettingsStrings.aboutUnavailable.zh)
+                        } else {
+                            pendingColor = ColorEdit(rowId, current)
+                        }
+                    }
+
+                    // 恢复默认：先确认，确认后由分派器按作用域写回并落盘。
+                    SettingsActionKind.RESET_SCOPE -> target?.let { arg ->
+                        val parsed = SettingsResetScope.fromArg(arg)
+                        if (parsed == null) {
+                            Log.w(LOG_TAG, "unknown reset scope: $arg")
+                        } else {
+                            pendingReset = parsed
+                        }
+                    }
+
+                    // 壁纸选图 / 最近使用：面板宿主存在，但壳路由表还没有出站路由，
+                    // 只能如实说不可用（见类注释）。
+                    SettingsActionKind.SHEET -> {
+                        Log.w(LOG_TAG, "timetable-page sheet has no host yet: rowId=$rowId")
+                        toast(SettingsStrings.aboutUnavailable.zh)
+                    }
+
+                    else -> Log.w(LOG_TAG, "unhandled timetable-page action: $kind rowId=$rowId")
+                }
+            },
+        )
+
+        pendingReset?.let { scope ->
+            SettingsConfirmResetDialog(
+                scope = scope,
+                onDismiss = { pendingReset = null },
+                onConfirm = {
+                    pendingReset = null
+                    applyReset(scope)
+                },
+            )
+        }
+
+        pendingColor?.let { edit ->
+            SettingsColorPickerDialog(
+                initialHex = edit.hex,
+                onDismiss = { pendingColor = null },
+                onConfirm = { hex ->
+                    pendingColor = null
+                    commitWrite(hex, edit.rowId)
+                },
+            )
+        }
+    }
 }
 
 /** 编辑器「已启用」初始值：空表回退出厂默认，否则按当前值清洗脏/不可见 id（同 Dart 种子口径）。 */
