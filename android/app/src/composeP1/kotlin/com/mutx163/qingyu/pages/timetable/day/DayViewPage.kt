@@ -53,8 +53,10 @@ import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.shell.HomeFloatingMetrics
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.timetable.ApplyChromeStatusBarInk
+import com.mutx163.qingyu.pages.timetable.homeFloatingChipSurface
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
@@ -66,6 +68,7 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -253,6 +256,20 @@ fun DayViewPage(
      * null = 主题兜底色（老行为）。
      */
     pageColorArgb: Int? = null,
+    /**
+     * 「回今日」浮钮的底边距（从屏幕底端起，已含系统内边距）。
+     *
+     * 由宿主按**玻璃坞药丸的真实占用**算好传进来（`HomeFloatingMetrics`）：页面自己拿不到
+     * 坞的几何，以前写死的 `20dp` 直接落在药丸底下 —— 用户报的「按钮在导航栏底下」就是这一条。
+     *
+     * `null` = 宿主没接 ⇒ 退回旧口径（系统内边距 + 20dp）。
+     */
+    floatingButtonBottomInset: Dp? = null,
+    /**
+     * 可滚动内容的底部避让（从屏幕底端起，已含系统内边距）：玻璃坞形态 = 药丸占用，
+     * 经典形态 = 系统手势条。`null` = 退回 `innerPadding.bottom + 64dp`。
+     */
+    contentBottomInset: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -398,8 +415,16 @@ fun DayViewPage(
     }
     // σ = 0 是**有效的清档**（Dart 清澈档）：背景原样透出、不跑高斯，连预糊也省掉。
     val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
-    // 录像带只在真有人采时才挂：顶栏带要采，或议程卡液态档要采。
-    val pageBackdropActive = bandBlurActive || cardGlassActive
+    // ── 「回今日」浮钮的玻璃档（与周视图「回本周」同一条，见 `homeFloatingChipSurface`）──
+    // 跟的是**玻璃坞**那一档（作用范围 → 玻璃坞），不是课程卡片的材质。
+    val floatingGlassActive = (material?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+        material?.dock == SurfaceMaterialState.FROST) &&
+        hasBackdrop && isRuntimeShaderSupported()
+    // 浮钮只在「当前看的不是今天」时出现；不可见就不为它录整屏。
+    val showsBackToToday = !isCurrentPageToday
+    // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采，或浮钮真要玻璃。
+    val pageBackdropActive = bandBlurActive || cardGlassActive ||
+        (floatingGlassActive && showsBackToToday)
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
         cardPreblurActive -> cardGlassBackdrop
@@ -411,6 +436,14 @@ fun DayViewPage(
         containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
+        // 列表底部避让的账（Dart `_glassDockContentScrollInset` + `_backToTodayButtonScrollInset`）：
+        // 坞占用（或系统手势条）打底；「回今日」浮钮可见时再补「钮高 + 间隙」那一段，
+        // 让最后一张卡能滚到钮的上方。浮钮不可见时不为一颗看不见的按钮白留空白。
+        val listBottomInset = maxOf(
+            innerPadding.calculateBottomPadding() + 64.dp,
+            (contentBottomInset ?: 0.dp) +
+                if (showsBackToToday) HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP.dp else 0.dp,
+        )
         Box(modifier = Modifier.fillMaxSize()) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
         // 顶栏玻璃带与议程卡都要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
@@ -632,15 +665,23 @@ fun DayViewPage(
                             // 材质与整页共享采样层（见本函数上方那三段接线）。
                             material = material,
                             glassBackdrop = cardGlassSource,
-                            // 视口铺到屏幕最底，底部避让由列表自己补（页面不再吃 innerPadding）。
-                            bottomInset = innerPadding.calculateBottomPadding(),
+                            // 视口铺到屏幕最底，底部避让由页面统一定好（含坞与浮钮）。
+                            bottomInset = listBottomInset,
                         )
                     }
                 }
 
                 // 「回今日」浮钮（Dart `timetable_screen.dart:1556-1574`）：
                 // 翻到别的日期后一键回到今天；停在今天时不出现。
-                if (!isCurrentPageToday) {
+                if (showsBackToToday) {
+                    val todayButtonShape = RoundedCornerShape(BACK_TO_TODAY_HEIGHT_DP.dp / 2)
+                    val todayChipSurface = homeFloatingChipSurface(
+                        backdrop = if (floatingGlassActive) pageBackdrop else null,
+                        material = material,
+                        hasBackdrop = hasBackdrop,
+                        shape = todayButtonShape,
+                        solidColor = MiuixTheme.colorScheme.surface,
+                    )
                     BackToTodayButton(
                         onClick = {
                             scope.launch {
@@ -653,11 +694,15 @@ fun DayViewPage(
                                 )
                             }
                         },
+                        surface = todayChipSurface,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            // 浮钮不吃 Scaffold 的底部内边距（视口铺到屏幕最底），
-                            // 这里自己让开手势条，否则会被压在导航条上。
-                            .padding(bottom = innerPadding.calculateBottomPadding() + 20.dp),
+                            // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
+                            // 宿主没接时退回旧口径（系统内边距 + 20dp）。
+                            .padding(
+                                bottom = floatingButtonBottomInset
+                                    ?: (innerPadding.calculateBottomPadding() + 20.dp),
+                            ),
                     )
                 }
             }
@@ -691,20 +736,25 @@ fun DayViewPage(
  * 日视图底部居中的「回今日」浮钮。
  *
  * Dart `timetable_back_to_today_button.dart`：38dp 高、圆角 = 半高、左右 16dp、
- * 14sp / w700 / 主题强调色，磨砂胶囊底。这里用 [QingyuCard]（官方卡片的按压反馈）
- * 承载同一套尺寸与文案；Dart 那颗的磨砂底还没接（要采的话得给它单独一层采样，
- * 属另一批，别在这里顺手糊）。
+ * 14sp / w700 / 主题强调色，**磨砂胶囊底**（液态档是同一块玻璃 + 折射）。
+ * 这里用 [QingyuCard]（官方卡片的按压反馈）承载同一套尺寸与文案，卡面由
+ * [homeFloatingChipSurface] 画（玻璃 / 实底回落）—— 与周视图「回本周」同一份判据。
+ *
+ * @param surface 卡面 modifier（玻璃或实底），由调用方在 composition 里建好。
  */
 @Composable
 private fun BackToTodayButton(
     onClick: () -> Unit,
+    surface: Modifier,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     QingyuCard(
-        modifier = modifier.height(38.dp),
-        cornerRadius = 19.dp,
+        modifier = modifier.height(BACK_TO_TODAY_HEIGHT_DP.dp).then(surface),
+        cornerRadius = BACK_TO_TODAY_HEIGHT_DP.dp / 2,
         insideMargin = PaddingValues(horizontal = 16.dp),
+        // 卡面自己画（上面那条 modifier），卡片本体让开 —— 否则主题实底会把玻璃盖住。
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
         onClick = onClick,
     ) {
         Text(
@@ -714,5 +764,8 @@ private fun BackToTodayButton(
         )
     }
 }
+
+/** 「回今日」钮高（Dart `TimetableBackToTodayButton.height = 38`），圆角恒为其一半。 */
+private const val BACK_TO_TODAY_HEIGHT_DP = 38f
 
 

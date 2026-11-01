@@ -179,6 +179,16 @@ fun TimetableWeekPage(
      * 顶栏实心条上露出一截主题色，与页面底色对不上。
      */
     pageColorArgb: Int? = null,
+    /**
+     * 「回本周」浮钮的底边距（从屏幕底端起，已含系统内边距）。
+     *
+     * 由宿主按**玻璃坞药丸的真实占用**算好传进来（`HomeFloatingMetrics`）：页面自己
+     * 拿不到坞的几何，以前写死的 `72dp` 在水势导航下正好落在药丸里 —— 用户报的
+     * 「按钮在导航栏底下」就是这一条。
+     *
+     * `null` = 宿主没接 ⇒ 退回旧口径（系统内边距 + 72dp）。
+     */
+    floatingButtonBottomInset: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -316,9 +326,6 @@ fun TimetableWeekPage(
     // σ = 0 是**有效的清档**（Dart 清澈档，`preblurred_wallpaper_glass.dart:493-498`）：
     // 背景原样透出、不跑高斯，所以连预糊那一趟也省掉。
     val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
-    // 录像带只在**真有人采**时才挂：顶栏带要采，或课卡液态档要采。否则整屏录制
-    // 是纯浪费（`PagesShellActivity.kt:296-300` 同一条纪律）。
-    val pageBackdropActive = bandBlurActive || cardGlassActive
     // 卡片采哪一层：σ > 0 采共享预糊层；σ = 0（清澈档）直接采原壁纸录像层。
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
@@ -337,6 +344,19 @@ fun TimetableWeekPage(
     val showBackToCurrentWeek = style.showBackToCurrentWeek &&
         realCurrentWeek != null &&
         realCurrentWeek != browsingWeek
+
+    // ── 「回本周」浮钮的玻璃档（2026-11-01）──
+    // 与 Dart 同一条：浮钮跟的是**玻璃坞**那一档（作用范围 → 玻璃坞），不是课程卡片的
+    // 材质 —— 它是浮在首页上的控件，与底栏同一族。见 `homeFloatingChipSurface`。
+    val floatingGlassActive = materialSpec?.dock.let { dock ->
+        (dock == SurfaceMaterialState.LIQUID_GLASS || dock == SurfaceMaterialState.FROST) &&
+            hasBackdrop && isRuntimeShaderSupported()
+    }
+    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采，或浮钮真要玻璃。
+    // 否则整屏录制是纯浪费（`PagesShellActivity.kt:296-300` 同一条纪律）。
+    // 浮钮那一份只在它**真的可见**时才算 —— 不为一颗看不见的按钮录整屏。
+    val pageBackdropActive = bandBlurActive || cardGlassActive ||
+        (floatingGlassActive && showBackToCurrentWeek)
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -526,6 +546,19 @@ fun TimetableWeekPage(
 
                 // ── 「回本周」浮钮（Dart 浮钮唯一入口）──
                 if (showBackToCurrentWeek) {
+                    // Dart 把 `timetableFloatingBackToCurrentWeekButtonOpacity` 分别压在
+                    // **染色**与**内容**两层，而不是包住整块玻璃（`timetable_back_to_current_week_button.dart:40-82`）：
+                    // 包住会让采样失真。这里同口径。
+                    val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
+                    val buttonShape = RoundedCornerShape(ButtonDefaults.CornerRadius)
+                    val chipSurface = homeFloatingChipSurface(
+                        backdrop = if (floatingGlassActive) pageBackdrop else null,
+                        material = materialSpec,
+                        hasBackdrop = hasBackdrop,
+                        shape = buttonShape,
+                        solidColor = MiuixTheme.colorScheme.surface,
+                        tintAlphaScale = buttonOpacity,
+                    )
                     Button(
                         onClick = {
                             realCurrentWeek?.let { target ->
@@ -538,15 +571,23 @@ fun TimetableWeekPage(
                         },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = innerPadding.calculateBottomPadding() + 72.dp)
-                            // Dart 把 `timetableFloatingBackToCurrentWeekButtonOpacity`
-                            // 乘在整颗浮钮上（`timetable_back_to_current_week_button.dart:40-82`）。
-                            // 以前这个设置映射进了 WeekViewStyle 却没人读，改了不起作用。
-                            .alpha(style.backToCurrentWeekOpacity),
-                        colors = ButtonDefaults.buttonColors(),
+                            // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
+                            // 宿主没接时退回旧口径（系统内边距 + 72dp），不再自己猜坞的高度。
+                            .padding(
+                                bottom = floatingButtonBottomInset
+                                    ?: (innerPadding.calculateBottomPadding() + 72.dp),
+                            )
+                            .then(chipSurface),
+                        // 卡面交给上面那条 modifier 画（玻璃 / 实底），按钮本体让开；
+                        // 字色跟主题走（Dart 用 `onSurface`，图标才是强调色）。
+                        colors = ButtonDefaults.buttonColors(
+                            color = Color.Transparent,
+                            contentColor = Color(QingyuTheme.primaryText(dark)),
+                        ),
                     ) {
                         Text(
                             text = TimetableStrings.backToCurrentWeekAction.zh,
+                            modifier = Modifier.alpha(buttonOpacity),
                             style = MiuixTheme.textStyles.button,
                         )
                     }

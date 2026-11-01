@@ -40,6 +40,7 @@ import com.mutx163.qingyu.app.AppearanceEditorHost
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.rememberMonthHolidayState
 import com.mutx163.qingyu.app.rememberHomeBackdropChrome
+import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
@@ -659,6 +660,8 @@ fun ShellPageContent(
             // 不接这一层时，日视图是一块不透明主题底 —— 用户在周视图看到的壁纸与玻璃
             // 一带到日视图就没了。判据、快照、降级全在那一份里，这里只往下透传。
             val homeChrome = rememberHomeBackdropChrome(appSettings)
+            // 「回今日」浮钮与列表底部的避让：按玻璃坞药丸的真实占用算（见 `HomeFloatingMetrics`）。
+            val floatingInsets = rememberHomeFloatingInsets(appSettings)
             // 「点星期栏某一天」是**单次意图**：`ShellWiring.onOpenDay` 写进
             // `pendingDayViewDayOfWeek`，这里读一次就清。读完不清会让下一次从底栏或
             // 菜单进日视图时沿用上一次点的那天；恒取 `LocalDate.now()` 则是 P0-2 本身
@@ -724,6 +727,9 @@ fun ShellPageContent(
                 material = homeChrome.material,
                 hasBackdrop = homeChrome.hasBackdrop,
                 pageColorArgb = homeChrome.pageColorArgb,
+                // 浮钮与列表的底部避让（玻璃坞形态按药丸占用算，见 HomeFloatingMetrics）。
+                floatingButtonBottomInset = floatingInsets.buttonBottom,
+                contentBottomInset = floatingInsets.contentBottom,
                 // 数据装配**只在模型层一份**（`DayViewDataAssembler` + `dayViewPageDataOf`）。
                 // 旧写法在壳里手拼 `DayViewPageData`：日程条目不构造、日程计数写死成 0、
                 // 日期标题自造中文（「第 N 周 · 周X」）、考试与待办全丢。

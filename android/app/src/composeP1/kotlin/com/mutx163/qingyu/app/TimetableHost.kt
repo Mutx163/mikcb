@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.calendar.HolidayData
 import com.mutx163.qingyu.calendar.HolidayPreferences
@@ -190,6 +191,9 @@ fun TimetableHost(
     // 三样东西的推导只在 [rememberHomeBackdropChrome] 一份：日视图走同一条路，
     // 写两遍必然漂（2026-11-01 之前日视图就是纯色底，正是因为这里没有共用点）。
     val homeChrome = rememberHomeBackdropChrome(settingsModel)
+    // 「回本周」浮钮的底边距：按玻璃坞药丸的真实占用算（见 `HomeFloatingMetrics`）。
+    // 以前页面写死 72dp，手势导航下正好落在药丸里 —— 用户报的「按钮在导航栏底下」。
+    val floatingInsets = rememberHomeFloatingInsets(settingsModel)
 
     TimetableWeekPage(
         courses = snapshot.courses,
@@ -235,5 +239,7 @@ fun TimetableHost(
         material = homeChrome.material,
         hasBackdrop = homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,
+        // 浮钮避让（玻璃坞形态 = 药丸占用 + 12；经典形态 = 24 + 系统手势条）。
+        floatingButtonBottomInset = floatingInsets.buttonBottom,
     )
 }

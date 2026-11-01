@@ -53,6 +53,7 @@ import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
+import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.pages.shellTimetableMenuPageId
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
@@ -878,6 +879,8 @@ private fun DayViewPreview(
 
     // 预览里的壁纸 / 材质：与真页面同一条推导（草稿模型 ⇒ 卡片当场跟着变）。
     val homeChrome = rememberHomeBackdropChrome(settingsModel)
+    // 预览里的浮钮避让：与壳同一条（卡片里那颗坞就是同一个组件，占位也一样）。
+    val floatingInsets = rememberHomeFloatingInsets(settingsModel)
 
     DayViewPage(
         initialWeek = snapshot.currentWeek.coerceAtLeast(1),
@@ -890,6 +893,8 @@ private fun DayViewPreview(
         material = homeChrome.material,
         hasBackdrop = homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,
+        floatingButtonBottomInset = floatingInsets.buttonBottom,
+        contentBottomInset = floatingInsets.contentBottom,
         dataProvider = { week, dayOfWeek ->
             // 与壳的日视图页同一套数据形状（`ShellPageIndex` 的 `c3.day`）：课程按周过滤、
             // 日程/考试那几块在壳里也还没接，预览保持同形。

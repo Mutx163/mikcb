@@ -1,11 +1,17 @@
 package com.mutx163.qingyu.pages.shell
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeNavigationForm
 import com.mutx163.qingyu.app.TimetableSettingsModel
@@ -119,6 +125,41 @@ fun HomeGlassDock(
  */
 fun homeDockVisible(settingsModel: TimetableSettingsModel): Boolean =
     settingsModel.homeNavigationForm == HomeNavigationForm.GLASS_DOCK
+
+/**
+ * 首页里「贴着屏幕底」的两样东西该让到哪里：浮钮（回本周 / 回今日）与可滚动内容。
+ *
+ * 玻璃坞形态下按**药丸真实占用**算（底部内边距 + 药丸高 54），经典形态只让开系统
+ * 手势条。算术在 [HomeFloatingMetrics]（纯函数、有单测），这里只负责把
+ * `WindowInsets.navigationBars` 读出来。
+ *
+ * @param settingsModel 用户存档；`null` = 读不到设置 ⇒ 按经典形态算（不假设有坞）。
+ */
+data class HomeFloatingInsets(
+    /** 浮钮底边距（从屏幕底端起，已含系统内边距）。 */
+    val buttonBottom: Dp,
+    /** 可滚动内容底部避让（从屏幕底端起，已含系统内边距）。 */
+    val contentBottom: Dp,
+)
+
+@Composable
+fun rememberHomeFloatingInsets(settingsModel: TimetableSettingsModel?): HomeFloatingInsets {
+    val navBarBottomInset = WindowInsets.navigationBars
+        .only(WindowInsetsSides.Bottom)
+        .asPaddingValues()
+        .calculateBottomPadding()
+    val glassDock = settingsModel != null && homeDockVisible(settingsModel)
+    return remember(glassDock, navBarBottomInset) {
+        HomeFloatingInsets(
+            buttonBottom = HomeFloatingMetrics
+                .floatingButtonBottomDp(glassDock, navBarBottomInset.value)
+                .dp,
+            contentBottom = HomeFloatingMetrics
+                .contentBottomDp(glassDock, navBarBottomInset.value)
+                .dp,
+        )
+    }
+}
 
 /**
  * 玻璃坞右侧的独立圆钮（Flutter `glassDockShowAddButton` 那个「加课」按钮）。

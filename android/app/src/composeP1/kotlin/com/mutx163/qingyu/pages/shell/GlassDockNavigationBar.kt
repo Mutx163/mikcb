@@ -478,11 +478,11 @@ fun GlassDockNavigationBar(
         Row(
             modifier = Modifier
                 .padding(
-                    bottom = if (navBarBottomPadding != 0.dp) {
-                        8.dp + navBarBottomPadding
-                    } else {
-                        36.dp
-                    },
+                    // 底部内边距的口径在 HomeFloatingMetrics 一份：首页两颗浮钮要按
+                    // 「药丸占用」避让，不能在这里和页面各写一遍（写两遍必然漂）。
+                    bottom = HomeFloatingMetrics
+                        .dockBottomPaddingDp(navBarBottomPadding.value)
+                        .dp,
                     start = 24.dp,
                     end = 24.dp,
                 )

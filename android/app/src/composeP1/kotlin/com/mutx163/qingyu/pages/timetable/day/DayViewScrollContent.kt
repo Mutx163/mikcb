@@ -71,19 +71,20 @@ fun DayViewScrollContent(
      */
     glassBackdrop: Backdrop? = null,
     /**
-     * 底部系统手势区高度（dp）。
+     * 列表底部的**总**避让（dp，从屏幕底端起算）。
      *
-     * 页面自 2026-11-01 起不再吃 Scaffold 的底部内边距（视口要铺到屏幕最底，
-     * 卡片从手势条底下穿过去），所以这里自己补上，让最后一张卡仍停在手势条上方。
+     * 页面自 2026-11-01 起不再吃 Scaffold 的底部内边距（视口要铺到屏幕最底，卡片从手势条
+     * 底下穿过去），所以由页面把这笔账算好传进来：系统手势条 / 玻璃坞药丸占用 +（「回今日」
+     * 浮钮出现时）钮高与间隙。默认 64 是「没有坞、没有浮钮」时的呼吸余量。
      */
-    bottomInset: Dp = 0.dp,
+    bottomInset: Dp = 64.dp,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
         start = 14.dp,
         end = 14.dp,
         top = 8.dp,
-        bottom = 64.dp + bottomInset, // 底部留出悬浮底坞与避让余量
+        bottom = bottomInset,
     ),
 ) {
     LazyColumn(
