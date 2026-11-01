@@ -30,4 +30,18 @@ sealed interface ShellRoute : NavKey {
 
     /** 页面层的一页，[id] 即目录 id。 */
     data class Page(val id: String) : ShellRoute
+
+    /**
+     * 页面层的一页，但入场走**「首页缩放」档**：[id] 同 [Page.id]。
+     *
+     * 目前只有外观编辑页用它，与 Dart 的 `HomeMenuEntry.zoomTransition`
+     * （`lib/widgets/home_menu_catalog.dart:456-490`：`zoom` 参数目前仅外观编辑开启）
+     * 逐条对应。这一页**自己**就会把「整个首页」从整屏缩进预览卡
+     * （`AppearanceEditorScreen` 的入场），所以壳**不再叠一层侧滑** ——
+     * 叠上去正是用户 2026-11-01 报的「从右边滑进来，而不是首页缩放」。
+     *
+     * 转场用官方 `NavTransitions.None`（瞬时切换、零位移），不是自研动画：
+     * 位置变化全部来自页面自己的缩放入场，壳只负责「别插一脚」。
+     */
+    data class ZoomPage(val id: String) : ShellRoute
 }

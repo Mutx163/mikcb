@@ -103,8 +103,12 @@ grep -rniE "transformable|crop|pinch|zoom" docs/reference/miuix-demo --include='
 ## 当前落地状态（2026-10-28，已落地）
 
 - Compose 页面壳 `PagesShellActivity` 已接入 **miuix-nav 的 `NavDisplay`**：底部四槽与页面层
-  都放进返回栈（`ShellRoute = Dock(slotId) | Page(id)`），转场统一用
+  都放进返回栈（`ShellRoute = Dock(itemId) | Page(id) | ZoomPage(id)`），转场统一用
   `NavTransitions.MiuixDefault` + `NavDisplayEffects.Default` —— **没有一行自研动画**。
+  2026-11-01 补：外观编辑页走 `ZoomPage`，用官方 `NavTransitions.None`（瞬时切换）把
+  位移让给页面自己的缩放入场（Dart `HomeMenuEntry.zoomTransition` 同口径）——
+  仍然是官方预设 + 官方按路由 `entry(transition = …)`，**不需要登记例外**。
+  玻璃坞也由壳层搬进了栈底条目（`pages/shell/HomeGlassDock.kt`），与首页同属一棵子树。
 - 因 `miuix-nav` 0.9.4 是 Java21 字节码且 `entry<T>` 为 `inline`，`:app` 已整体迁到 JVM21：
   - 根 `android/build.gradle`：`subprojects` 里 `:app` → `JVM_21`，其余子项目仍 `JVM_17`。
   - `android/app/build.gradle`：`compileOptions` 21 + `miuix-nav` 依赖。

@@ -64,6 +64,13 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
  * **底栏保持可见**——与 Flutter「玻璃坞内嵌页」（`kInlineDockPages`）同构：
  * 点底栏换内容、返回回周视图。打开底栏以外的页面才 push 一层、底栏让位。
  *
+ * 推入的页面有两种转场（都是官方能力，壳不自研几何）：
+ * * 普通页走官方 `NavTransitions.MiuixDefault` 侧滑；
+ * * 「首页缩放」档（目前只有外观编辑页，Dart `HomeMenuEntry.zoomTransition` 同口径）走
+ *   官方 `NavTransitions.None` **瞬时切换** —— 那一页自己会把首页缩进预览卡，
+ *   壳叠一层侧滑就变成「新页从右边滑进来」了（2026-11-01 用户报的现象）。
+ *   见 [ShellRoute.ZoomPage] 与 `HomeDockNavModel.zoomsFromHome`。
+ *
  * 条目集合、顺序、上限（5 个）、圆钮加课、`classic` 无坞形态、冷启动恢复的视图档
  * 全部来自用户存档（`glassDockActions` / `glassDockShowAddButton` /
  * `glassDockButtonEntryId` / `homeNavigationForm` / `timetableHomeViewMode`），
@@ -217,9 +224,8 @@ private fun PagesShell() {
         if (backStack.size > 1) backStack.removeLastOrNull()
     }
 
-    fun pushPage(id: String) {
-        val route = ShellRoute.Page(id)
-        // 幂等 + 环状导航：同一页已在栈里时**弹回那一层**，而不是什么都不做。
+    /** 推一层页面：幂等 + 环状导航（同一页已在栈里时弹回那一层，而不是静默无反应）。 */
+    fun pushRoute(route: ShellRoute) {
         // 2026-10-31 审核 P2-1：旧写法 `if (route !in backStack) add` 让
         // 「A 页 → B 页 → 又点 A」静默无反应（用户点了没动静，只能猜）。
         val existing = backStack.indexOf(route)
@@ -228,6 +234,19 @@ private fun PagesShell() {
             return
         }
         backStack.add(route)
+    }
+
+    fun pushPage(id: String) {
+        pushRoute(ShellRoute.Page(id))
+    }
+
+    /**
+     * 推一层**「首页缩放」档**的页面（见 [ShellRoute.ZoomPage]）。
+     *
+     * 与 [pushPage] 只差路由类型：那一档的入场是瞬时切换，页面自己负责把首页缩进预览卡。
+     */
+    fun pushZoomPage(id: String) {
+        pushRoute(ShellRoute.ZoomPage(id))
     }
 
     // ── 视图档落盘：**必须离开点击所在的那一帧** ─────────────────────────────
@@ -259,7 +278,10 @@ private fun PagesShell() {
         // （2026-11-01 用户报「底栏没跟着缩小、留在了原来的位置」）。
         // 分流判据是纯逻辑，见 `HomeDockNavModel.rendersAsRoot`。
         if (!HomeDockNavModel.rendersAsRoot(itemId)) {
-            rootPageIdFor(itemId)?.let { pushPage(it) }
+            val target = rootPageIdFor(itemId) ?: return
+            // 「首页缩放」档（目前只有外观编辑页）：那一页自己把首页缩进预览卡，
+            // 壳用瞬时切换、不再叠侧滑（见 [ShellRoute.ZoomPage]）。
+            if (HomeDockNavModel.zoomsFromHome(target)) pushZoomPage(target) else pushPage(target)
             return
         }
         val mode = homeViewModeOf(itemId)
@@ -400,6 +422,17 @@ private fun PagesShell() {
                         onBack = { popPage() },
                         wiring = wiring,
                         // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
+                        onOpenPage = { target -> pushPage(target) },
+                    )
+                }
+                // 「首页缩放」档（目前只有外观编辑页）：官方 `NavTransitions.None` = 瞬时切换，
+                // 页面自己从整屏缩进预览卡（`AppearanceEditorScreen` 的入场）。
+                // 不写自研转场：这里只是**不插一脚**，几何全在页面内部。
+                entry<ShellRoute.ZoomPage>(transition = NavTransitions.None) { route ->
+                    ShellPageContent(
+                        pageId = route.id,
+                        onBack = { popPage() },
+                        wiring = wiring,
                         onOpenPage = { target -> pushPage(target) },
                     )
                 }

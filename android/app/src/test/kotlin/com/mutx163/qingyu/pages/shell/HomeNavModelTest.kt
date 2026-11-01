@@ -165,6 +165,20 @@ class HomeNavModelTest {
         assertTrue(!HomeDockNavModel.rendersAsRoot("generalSettings"))
     }
 
+    /**
+     * 「首页缩放」档：目前只有外观编辑页（Dart `HomeMenuEntry.zoomTransition` 同口径）。
+     *
+     * 这一档的页面自己会把整个首页缩进预览卡，所以壳必须**瞬时切换、不叠侧滑** ——
+     * 叠上去就是用户 2026-11-01 报的「从右边滑进来，而不是首页缩放」。
+     */
+    @Test
+    fun `只有外观编辑页走首页缩放档`() {
+        assertTrue(HomeDockNavModel.zoomsFromHome("b.appearanceEditor"))
+        assertTrue(!HomeDockNavModel.zoomsFromHome("b.appearance"))
+        assertTrue(!HomeDockNavModel.zoomsFromHome("b.general"))
+        assertTrue(!HomeDockNavModel.zoomsFromHome("e.statistics"))
+    }
+
     // ---------------------------------------------------------------- 更多菜单
 
     @Test

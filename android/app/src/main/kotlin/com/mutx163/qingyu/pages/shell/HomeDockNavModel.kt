@@ -149,6 +149,18 @@ object HomeDockNavModel {
         isViewAction(id) || isRootCapable(id) || id == DEV_INDEX_ID
 
     /**
+     * 从首页打开的页面里，**哪些走「首页缩放」档**（`ShellRoute.ZoomPage`）。
+     *
+     * 口径来自 Dart `HomeMenuEntry.zoomTransition`（`home_menu_catalog.dart:456-490`）：
+     * 目前**只有外观编辑页**开。它自己会把整个首页从整屏缩进预览卡，所以壳不能再叠
+     * 一层侧滑；其余页面照常走官方侧滑。
+     *
+     * 判据放在这里（纯逻辑、可单测）而不是壳里的私有常量：与 [rendersAsRoot] 同一族
+     * 「底栏条目 → 壳行为」的口径，改动时两处一起看得见。
+     */
+    fun zoomsFromHome(pageId: String): Boolean = pageId == "b.appearanceEditor"
+
+    /**
      * 解析底栏排列：去重保序 → 丢掉**没有去处**的 id → 截断到 [MAX_SLOTS]
      * → 空表回退 [DEFAULT_IDS]（回退值同样要过一遍谓词，避免把坏 id 塞回来）。
      *
