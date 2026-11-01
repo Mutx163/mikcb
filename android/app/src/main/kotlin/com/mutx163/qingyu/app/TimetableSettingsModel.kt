@@ -1145,6 +1145,30 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
         store.saveSettingsPatch(patch)
         store.saveSettingsPatchToActiveProfile(patch)
     }
+
+    /**
+     * 只落**视图档**一个键（日 / 周 / 月）。
+     *
+     * ## 为什么不复用 [save]
+     *
+     * [save] 会把 [TimetableSettingsModel.toJsonPatch] 里那 80+ 个键整份写一遍。壳在
+     * 底栏点一下「日/周」就调它 ⇒ 每次切视图都拿**点击那一刻的内存快照**去覆盖整份
+     * 设置。落盘已经被挪到后台线程（`PagesShellActivity.selectRoot`），只要后台写比
+     * 用户的下一次设置改动慢半拍，就会把刚改的那一项按旧值写回去。视图档只需要它
+     * 自己那一个键，那就只写那一个。
+     *
+     * ## 两个落点都写
+     *
+     * 与 [save] 和 Dart `persistHomeViewState`（`timetable_provider.dart:3012-3027`）
+     * 同口径：顶层 `timetable_settings` 是壳自己读的那份；active profile 内嵌的
+     * `settings` 保持跟 Dart 写路径一致（桌面小组件不读这个键，但它读同一个
+     * settings 对象，写侧口径分叉迟早会在别处咬人）。
+     */
+    fun saveHomeViewMode(mode: TimetableHomeViewMode) {
+        val patch = mapOf("timetableHomeViewMode" to mode.value)
+        store.saveSettingsPatch(patch)
+        store.saveSettingsPatchToActiveProfile(patch)
+    }
 }
 
 /** `AppThemeMode`（`timetable_settings_enums.dart:12`）。 */
