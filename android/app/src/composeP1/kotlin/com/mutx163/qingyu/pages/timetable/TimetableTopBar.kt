@@ -188,35 +188,33 @@ fun TimetableTopBar(
                 //   （官方 `CascadingListPopupLayout` 的 `PRIMARY_SHRUNK_SCALE`）；
                 //  * 菜单开着期间按钮保持按下态（官方 `holdDownState`）。
                 val selectState = rememberUpdatedState(onMenuSelect)
+                // ⚠️ **一个 `DropdownEntry` 装全部条目**，不是"一项一个 entry"：
+                // 官方 `CascadingPrimaryContent` 会在**每两个 entry 之间**插一条分隔线
+                // （`HorizontalDivider`，上下各 4dp）—— 拆成 8 个 entry 就变成 7 条
+                // 横线 + 每行都算首末行（上下 20dp 大内边距），菜单会被撑得又高又碎。
+                // 单组 = 只有最上一行与最下一行享受首末内边距，行距紧凑。
                 val entries = remember(menuItems) {
-                    menuItems.map { item ->
+                    listOf(
                         DropdownEntry(
-                            items = listOf(
+                            items = menuItems.map { item ->
                                 DropdownItem(
                                     text = item.label,
-                                    icon = { modifier -> Icon(
-                                        imageVector = item.icon,
-                                        contentDescription = null,
-                                        modifier = modifier,
-                                    ) },
                                     // children 非空 = 二级触发器：点它一级让位、二级弹出。
                                     children = item.children
                                         .takeIf { it.isNotEmpty() }
                                         ?.map { child ->
                                             DropdownItem(
                                                 text = child.label,
-                                                onClick = {
-                                                    selectState.value(child.id)
-                                                },
+                                                onClick = { selectState.value(child.id) },
                                             )
                                         },
                                     onClick = item.children
                                         .takeIf { it.isEmpty() }
                                         ?.let { { selectState.value(item.id) } },
-                                ),
-                            ),
-                        )
-                    }
+                                )
+                            },
+                        ),
+                    )
                 }
                 OverlayIconCascadingDropdownMenu(
                     entries = entries,
