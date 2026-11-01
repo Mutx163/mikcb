@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
@@ -29,8 +28,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -284,7 +285,7 @@ private fun HomeMenuMorphPanel(
             .clip(shape)
             .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
-        Column(
+        MenuRowsColumn(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .requiredWidth(panelWidthDp)
@@ -321,6 +322,47 @@ private fun HomeMenuMorphPanel(
                         if (row.hasSubmenu) onToggleSubmenu(row.id) else onSelect(row.id)
                     },
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 把每一行都拉满面板宽度，并按内容高度纵向堆叠。
+ *
+ * ## 为什么不能直接用 `Column`
+ *
+ * 官方 [DropdownImpl] 的行是**自适应宽度**的（它内部的 `Row` 没有 `fillMaxWidth`）。
+ * 官方弹层之所以铺满，是 `ListPopupColumn` 在**测量时**把子项约束成
+ * 「`minWidth = maxWidth` = 弹层宽」（`basic/ListPopup.kt` 的 `MeasurePolicy`
+ * 里那行 `childConstraints`）。直接用 `Column` 时行只按自身内容宽度排版、
+ * 全部贴在左边 —— 观感就是「菜单内容只在面板左半边、右边一大片空底」。
+ *
+ * ## 为什么不用官方 `ListPopupColumn`
+ *
+ * 它把宽度钳在 200~288dp，并且**只按前 8 项**估高（`MAX_ITEMS_FOR_HEIGHT = 8`）；
+ * 二级展开后有 11 行，会被它按 8 行的高度裁掉。所以这里只取它「强制子项等宽」
+ * 这一个动作，自己量一遍。
+ */
+@Composable
+private fun MenuRowsColumn(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Layout(content = content, modifier = modifier) { measurables, constraints ->
+        // 外面套了 `requiredWidth`，宽度一定是一个确定值。
+        val width = constraints.maxWidth
+        val placeables = measurables.map { measurable ->
+            measurable.measure(
+                Constraints(minWidth = width, maxWidth = width, minHeight = 0),
+            )
+        }
+        val height = placeables.sumOf { it.height }
+        layout(width, height) {
+            var y = 0
+            placeables.forEach { placeable ->
+                placeable.placeRelative(0, y)
+                y += placeable.height
             }
         }
     }
