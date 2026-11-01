@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,6 +55,10 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.highlight.LightPosition
+import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -348,9 +353,14 @@ private fun HomeMenuMorphPanel(
     // 玻璃：有采样源 + 设备支持 RuntimeShader 才画。两者缺一就退回实色，
     // 而不是"模糊空气"（那会得到一块脏灰）。
     val glassBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
-    val blurPx = with(density) { HomeMenuMorphModel.PANEL_BLUR_DP.dp.toPx() }
+    // 展开进度 → 玻璃三件套（薄→厚 / 透→实 / 收→满）由模型层一处插值。
+    val blurPx = with(density) { HomeMenuMorphModel.glassBlurDp(progress).dp.toPx() }
+    val tintAlpha = HomeMenuMorphModel.glassTintAlpha(progress)
+    val rimAlpha = HomeMenuMorphModel.rimAlphaScale(progress)
+    // 折射带也随进度张开一半：收起态是 40dp 小圆，整条折射带一上来就把它整个包住了。
     val refractionBandPx = with(density) {
-        HomeMenuMorphModel.PANEL_REFRACTION_BAND_DP.dp.toPx()
+        (HomeMenuMorphModel.PANEL_REFRACTION_BAND_DP *
+            (0.5f + 0.5f * progress.coerceIn(0f, 1f))).dp.toPx()
     }
     val refractionAmountPx = with(density) {
         HomeMenuMorphModel.PANEL_REFRACTION_AMOUNT_DP.dp.toPx()
@@ -381,13 +391,10 @@ private fun HomeMenuMorphPanel(
                                 refractionAmount = refractionAmountPx,
                             )
                         },
-                        onDrawSurface = {
-                            drawRect(
-                                containerColor.copy(
-                                    alpha = HomeMenuMorphModel.PANEL_GLASS_TINT_ALPHA,
-                                ),
-                            )
-                        },
+                        // 边缘光：玻璃的"厚边"高光，是它读起来像一块玻璃而不是一张
+                        // 半透明纸的关键。强度随展开进度收放（收起态收敛成一圈淡边）。
+                        highlight = { glassPanelSpecular.copy(alpha = rimAlpha) },
+                        onDrawSurface = { drawRect(containerColor.copy(alpha = tintAlpha)) },
                     )
                 } else {
                     Modifier.clip(shape).background(containerColor)
@@ -476,6 +483,33 @@ private fun MenuRowsColumn(
         }
     }
 }
+
+/**
+ * 面板玻璃的边缘光（specular）。
+ *
+ * 用官方 `BloomStroke`：`dualPeak = true` 让**对置两条边同时**有高光（读起来是一块
+ * 有厚度的玻璃，而不是只在一边反光的塑料片）。颜色只有 0.14 白，因为它是**叠加**
+ * 在玻璃边上的 —— 拉高会直接糊成白框。
+ */
+private val glassPanelSpecular: Highlight = Highlight(
+    width = 1.dp,
+    alpha = 1f,
+    style = BloomStroke(
+        color = Color.White.copy(alpha = 0.14f),
+        innerBlurRadius = 2.0.dp,
+        primaryLight = LightSource(
+            position = LightPosition(0.5f, -0.3f, -0.05f),
+            color = Color.White,
+            intensity = 1f,
+        ),
+        secondaryLight = LightSource(
+            position = LightPosition(0.5f, 0.8f, -0.5f),
+            color = Color.White,
+            intensity = 0.4f,
+        ),
+        dualPeak = true,
+    ),
+)
 
 /**
  * 一行菜单（渲染用的扁平表）。

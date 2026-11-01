@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable.month
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -9,6 +10,8 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.calendar.HolidayData
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import java.time.LocalDateTime
 
@@ -62,6 +65,14 @@ fun MonthViewHost(
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
+    /** 页面最底层的壁纸槽；由壳从 `rememberHomeBackdropChrome` 取（与周 / 日视图同源）。 */
+    backdrop: (@Composable BoxScope.() -> Unit)? = null,
+    /** 壁纸上的顶栏墨色。 */
+    chromeInk: HomeInkPolarity? = null,
+    /** 材质快照：决定顶栏玻璃带画不画。 */
+    material: HomeMaterialRenderSpec? = null,
+    hasBackdrop: Boolean = false,
+    pageColorArgb: Int? = null,
 ) {
     val clock = now ?: remember { LocalDateTime.now() }
 
@@ -103,5 +114,10 @@ fun MonthViewHost(
         homeMenuStyle = homeMenuStyle,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,
+        backdrop = backdrop,
+        chromeInk = chromeInk,
+        material = material,
+        hasBackdrop = hasBackdrop,
+        pageColorArgb = pageColorArgb,
     )
 }

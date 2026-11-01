@@ -586,6 +586,10 @@ fun ShellPageContent(
                 onDispose { subscription.close() }
             }
             val appSettings = wiring.settingsModel.load()
+            // 壁纸 / 材质 / 顶栏墨色：与周 / 日视图同一条推导（`rememberHomeBackdropChrome`
+            // 是唯一出口）。不接这一层时月视图没有壁纸、顶栏是一块不透明主题底 ——
+            // 用户从周视图切到月视图会看到壁纸"消失"。
+            val homeChrome = rememberHomeBackdropChrome(appSettings)
             // 2026-11-01 F26：节假日三路数据（provider 在 IO 线程初始化，失败退空态）。
             val holidayState = rememberMonthHolidayState(wiring.holiday)
             MonthViewHost(
@@ -597,6 +601,12 @@ fun ShellPageContent(
                 holidayData = holidayState.holidayData,
                 holidayOverrideEnabled = holidayState.overrideEnabled,
                 holidayMarkingEnabled = holidayState.markingEnabled,
+                // 壁纸层 + 材质快照 + 顶栏墨色（与周 / 日视图同一个推导出口）。
+                backdrop = homeChrome.backdrop,
+                chromeInk = homeChrome.chromeInk,
+                material = homeChrome.material,
+                hasBackdrop = homeChrome.hasBackdrop,
+                pageColorArgb = homeChrome.pageColorArgb,
                 onAddCourse = { date ->
                     wiring.pendingAddCourseSeed = Pair(date.dayOfWeek.value, 1)
                     wiring.pendingEditCourse = null

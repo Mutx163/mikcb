@@ -34,22 +34,57 @@ object HomeMenuMorphModel {
     /** 面板圆角，dp。40dp 宽时会被形状自动钳成正圆。 */
     const val PANEL_CORNER_RADIUS_DP = 24f
 
-    /** 面板玻璃的高斯半径，dp。与顶栏玻璃带 / 底栏玻璃坞同一量级。 */
-    const val PANEL_BLUR_DP = 12f
+    // ── 面板玻璃（展开进度 0→1 的分层，全部由 [glassBlurDp] / [glassTintAlpha] 插值）──
 
-    /** 边缘折射的作用带宽度，dp。 */
+    /** 收起态（= 那颗 40dp 圆钮）的高斯半径，dp：小圆不需要厚玻璃，糊多了会脏。 */
+    const val PANEL_BLUR_START_DP = 4f
+
+    /** 展开态的高斯半径，dp。与顶栏玻璃带 / 底栏玻璃坞同一量级。 */
+    const val PANEL_BLUR_END_DP = 14f
+
+    /** 边缘折射的作用带宽度，dp。展开后才长满。 */
     const val PANEL_REFRACTION_BAND_DP = 16f
 
     /** 边缘折射的最大位移量，dp。 */
     const val PANEL_REFRACTION_AMOUNT_DP = 26f
 
     /**
-     * 玻璃下面那层染色的不透明度。
+     * 玻璃下面那层染色的不透明度（收起态 / 展开态）。
      *
-     * 0 = 全透，文字会被背景吃掉；1 = 实色，玻璃等于没有。0.62 是"能看清字、
-     * 又看得出背景在动"的平衡点。
+     * 0 = 全透，文字会被背景吃掉；1 = 实色，玻璃等于没有。
+     * 展开态 0.62 是"能看清字、又看得出背景在动"的平衡点；
+     * 收起态更透（0.3），因为那颗圆钮本来就该是"一颗透亮的玻璃扣"。
      */
-    const val PANEL_GLASS_TINT_ALPHA = 0.62f
+    const val PANEL_GLASS_TINT_ALPHA_START = 0.3f
+    const val PANEL_GLASS_TINT_ALPHA_END = 0.62f
+
+    /**
+     * 收起态的边缘光强度倍率（展开态恒为 1，见渲染层把 progress 传给它）。
+     *
+     * 圆钮面积小，满强度的高光会糊成一圈白边；0.45 让它只在角上闪一下。
+     */
+    const val PANEL_RIM_ALPHA_START = 0.45f
+
+    /** 这一帧的高斯半径（dp）：收起态薄、展开态厚。 */
+    fun glassBlurDp(reveal: Float): Float = lerp(
+        PANEL_BLUR_START_DP,
+        PANEL_BLUR_END_DP,
+        clampReveal(reveal).coerceIn(0f, 1f),
+    )
+
+    /** 这一帧的染色不透明度：收起态更透。 */
+    fun glassTintAlpha(reveal: Float): Float = lerp(
+        PANEL_GLASS_TINT_ALPHA_START,
+        PANEL_GLASS_TINT_ALPHA_END,
+        clampReveal(reveal).coerceIn(0f, 1f),
+    )
+
+    /** 这一帧的边缘光强度倍率：收起态收敛，展开态满值。 */
+    fun rimAlphaScale(reveal: Float): Float = lerp(
+        PANEL_RIM_ALPHA_START,
+        1f,
+        clampReveal(reveal).coerceIn(0f, 1f),
+    )
 
     /**
      * 内容开始显形的进度点：`reveal` 低于它时菜单文字完全不画。

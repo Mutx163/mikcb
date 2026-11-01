@@ -4,11 +4,15 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -24,14 +28,26 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
+import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
+import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -87,6 +103,25 @@ fun MonthViewPage(
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
+    /**
+     * 页面**最底层**的背景槽（首页壁纸，`HomeWallpaperBackdrop`）。与周 / 日视图同一条
+     * 层次：非空时页面底色改透明、把这层画在内容下面；为空时行为与旧版一致。
+     */
+    backdrop: (@Composable BoxScope.() -> Unit)? = null,
+    /**
+     * 壁纸上的顶栏墨色：`Light` = 浅墨（深色壁纸）、`Dark` = 深墨（浅色壁纸）、
+     * `null` = 没有壁纸 ⇒ 主题墨色。判据在宿主侧（`HomeBackgroundModel.chromeInkPolarity`）。
+     */
+    chromeInk: HomeInkPolarity? = null,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为
+     * （顶栏不画玻璃带、页面用不透明主题底）。
+     */
+    material: HomeMaterialRenderSpec? = null,
+    /** 当前有没有可用壁纸；没有时液态档一律回落实体（模糊空气只会得到一块脏灰）。 */
+    hasBackdrop: Boolean = false,
+    /** 无壁纸 / 实体玻璃带用的页底色（ARGB，来自 `HomeBackdropSnapshot.pageColorArgb`）。 */
+    pageColorArgb: Int? = null,
 ) {
     // ── 状态：聚焦月 + 选中日 + 展开进度 ──
     //
@@ -114,6 +149,25 @@ fun MonthViewPage(
         MonthPanelModel.scheduledDays(grid, today)
     }
 
+    // ── 壁纸 + 顶栏玻璃带（2026-11-01 补，与周 / 日视图同一套）──
+    // 之前月视图没有这三层：壁纸不显示、顶栏是一块不透明主题底。用户从周视图
+    // 切到月视图会看到壁纸"消失"。
+    //   ① 把壁纸层录进 `pageBackdrop`（记录 ≠ 上屏，壁纸照常画）；
+    //   ② 顶栏带（状态栏 + 标题行）在带子上采样 + 高斯 + 折射 + 染色。
+    val density = LocalDensity.current
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    val scaffoldBg = Color(QingyuTheme.scaffoldBackground(dark))
+    val pageBackdrop = rememberLayerBackdrop()
+    // 玻璃带是否「液态档 + 真有壁纸 + 设备支持」：判据与渲染层同一份
+    //（`TimetableChromeBandGlass` 里那段 `when`）。这里留一份决定要不要挂录像层。
+    val bandBlurActive = material?.band == SurfaceMaterialState.LIQUID_GLASS &&
+        hasBackdrop && isRuntimeShaderSupported()
+    val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
+    val bandOverdrawBaseDp = SettingsMaterialModel.bandGlassOverdrawDp(
+        material?.liquidRefractionBand ?: 0f,
+    )
+    val pageBackdropActive = bandBlurActive
+
     // ── 拖拽接线：拉杆与面板共用同一份状态 ──
     val scope = rememberCoroutineScope()
     val dragState = remember {
@@ -129,24 +183,63 @@ fun MonthViewPage(
     }
 
     Scaffold(
-        containerColor = androidx.compose.ui.graphics.Color(
-            QingyuTheme.scaffoldBackground(androidx.compose.foundation.isSystemInDarkTheme()),
-        ),
+        // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
+        containerColor = if (backdrop == null) scaffoldBg else Color.Transparent,
     ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+        // 壁纸层在最底（与周 / 日视图同层次）。没有壁纸时这一行什么也不画。
+        if (backdrop != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (pageBackdropActive) Modifier.layerBackdrop(pageBackdrop)
+                        else Modifier,
+                    ),
+            ) {
+                backdrop.invoke(this)
+            }
+        }
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                // 左右吃安全区；顶部**刻意不吃** —— 玻璃带要从 y = 0（状态栏背后）开始，
+                // 由带子内部用等高的 Spacer 把标题行顶到状态栏下面（与周 / 日视图同口径）。
+                .padding(
+                    start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                ),
         ) {
-            // 顶栏「轻屿课表」+ 右上角「更多」菜单（Flutter 月视图走独立页外壳，顶部也是它）。
-            if (showTopBar) {
-                TimetableTopBar(
-                    brand = homeTitleStyle == HomeTitleStyle.BRAND,
-                    profileName = profileName,
-                    homeMenuStyle = homeMenuStyle,
-                    menuItems = homeMenuItems,
-                    onMenuSelect = onHomeMenuSelect,
-                )
+            // ── 顶栏玻璃带：状态栏 + 标题行 = 同一条带 ──
+            // 玻璃层是共享件（`TimetableChromeBandGlass`），与周 / 日视图同一条带；
+            // 外溢量还要叠上安全区，否则横屏挖孔时形状边界会落进可见区、读成一条竖折射边。
+            TimetableChromeBandGlass(
+                material = material,
+                hasBackdrop = hasBackdrop,
+                backdrop = pageBackdrop,
+                solidColor = bandSolidColor,
+                overdrawDp = bandOverdrawBaseDp.dp + maxOf(
+                    innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+                    innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+                ),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // 状态栏区域留白：带子画到屏幕最顶，内容仍停在状态栏下面。
+                    Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
+                    // 顶栏「轻屿课表」+ 右上角「更多」菜单。
+                    if (showTopBar) {
+                        TimetableTopBar(
+                            brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                            inkPolarity = chromeInk,
+                            profileName = profileName,
+                            homeMenuStyle = homeMenuStyle,
+                            menuItems = homeMenuItems,
+                            // 列表档「更多」面板画玻璃用；录像层没开就不传（面板退回实色）。
+                            backdrop = pageBackdrop.takeIf { pageBackdropActive },
+                            onMenuSelect = onHomeMenuSelect,
+                        )
+                    }
+                }
             }
             MonthViewBody(
                 grid = grid,
@@ -213,6 +306,7 @@ fun MonthViewPage(
                     }
                 },
             )
+        }
         }
     }
 }
