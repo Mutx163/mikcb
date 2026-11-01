@@ -4415,6 +4415,7 @@
   "syncErrorMissingBackupSnapshot": "备份缺失",
   "syncErrorCannotDeleteCurrentBackup": "不能删除当前备份",
   "syncErrorProviderNotReady": "课表尚未就绪",
+  "syncErrorNoLocalData": "本机还没有课表数据可同步",
   "syncErrorInsecureUrl": "仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用",
   "@syncErrorInsecureUrl": {
     "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"

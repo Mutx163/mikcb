@@ -2,8 +2,13 @@ package com.mutx163.qingyu.pages.sync
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 云同步 / 云备份两页的**控制器驱动入口**（C1 · 页面消费真实状态）。
@@ -55,6 +60,12 @@ fun CloudSyncPage(
 ) {
     val revision = rememberControllerRevision(controller)
     val viewState = remember(controller, revision) { controller.cloudSyncViewState() }
+    val scope = rememberCoroutineScope()
+
+    // 进页首次加载：已连接时拉一次远端备份列表（否则备份区恒空，像云端没有备份）。
+    LaunchedEffect(controller) {
+        withContext(Dispatchers.IO) { controller.refreshOnEnter() }
+    }
 
     CloudSyncPage(
         viewState = viewState,
@@ -69,8 +80,9 @@ fun CloudSyncPage(
         onDeviceLabelChange = { controller.onDeviceLabelChanged(it) },
         // 返回的 verdict 里 NEED_HTTP_CONFIRM / INVALID 需宿主弹框；默认 https 直接生效。
         onSaveAdvanced = { controller.saveAdvanced() },
-        onSyncNow = { controller.syncNow() },
-        onCreateBackup = { controller.createBackup() },
+        // 上传是同步阻塞的网络调用：必须离开主线程，否则真机上一份大课表会卡住界面。
+        onSyncNow = { scope.launch { withContext(Dispatchers.IO) { controller.syncNow() } } },
+        onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
         onOpenBackup = onOpenBackup,
         onViewAllBackups = onViewAllBackups,
         onMaxCountSelected = { controller.selectMaxCount(it) },
@@ -92,11 +104,17 @@ fun CloudBackupListPage(
 ) {
     val revision = rememberControllerRevision(controller)
     val viewState = remember(controller, revision) { controller.backupListViewState() }
+    val scope = rememberCoroutineScope()
+
+    // 同云同步页：进页首次加载，避免整页恒空。
+    LaunchedEffect(controller) {
+        withContext(Dispatchers.IO) { controller.refreshOnEnter() }
+    }
 
     CloudBackupListPage(
         viewState = viewState,
         onBack = onBack,
-        onCreateBackup = { controller.createBackup() },
+        onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
         onOpenBackup = onOpenBackup,
     )
 }

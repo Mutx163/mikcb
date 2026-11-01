@@ -7412,6 +7412,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get syncErrorProviderNotReady => 'Timetable is not ready';
 
   @override
+  String get syncErrorNoLocalData => 'この端末にはまだ同期できる時間割データがありません';
+
+  @override
   String get syncErrorInsecureUrl => 'HTTPS暗号化接続のみ対応しています。HTTP平文プロトコルは無効です。';
 
   @override

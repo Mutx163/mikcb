@@ -7452,6 +7452,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get syncErrorProviderNotReady => 'Timetable is not ready';
 
   @override
+  String get syncErrorNoLocalData => '이 기기에는 아직 동기화할 시간표 데이터가 없습니다';
+
+  @override
   String get syncErrorInsecureUrl =>
       'HTTPS 암호화 연결만 지원됩니다. HTTP 평문 프로토콜은 비활성화되었습니다.';
 

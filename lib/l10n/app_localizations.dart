@@ -13316,6 +13316,12 @@ abstract class AppLocalizations {
   /// **'课表尚未就绪'**
   String get syncErrorProviderNotReady;
 
+  /// No description provided for @syncErrorNoLocalData.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机还没有课表数据可同步'**
+  String get syncErrorNoLocalData;
+
   /// Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds
   ///
   /// In zh, this message translates to:

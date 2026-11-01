@@ -86,7 +86,8 @@ fun CloudBackupListPage(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = viewState.emptyText,
+                        // 拉取失败时换成「为什么空」（断网 / 密码失效），不把失败说成「还没有备份」。
+                        text = viewState.errorText ?: viewState.emptyText,
                         style = MiuixTheme.textStyles.body1,
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )

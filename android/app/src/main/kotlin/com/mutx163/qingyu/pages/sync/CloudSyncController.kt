@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import java.time.Instant
@@ -50,6 +51,17 @@ class CloudSyncController(
         { config, password -> createWebdavRemoteTransport(config, password) },
     private val deviceLabel: String = "",
     private val clock: () -> String = { OffsetDateTime.now().toString() },
+    /**
+     * 课表仓储（宿主注入）。注入了它，「立即备份 / 立即同步」才拿得到**当前课表的实时快照**，
+     * 「恢复」才会真的把快照写回课表；不注入则退回旧的本地快照文件路径（仅在单测 / 兼容时用）。
+     */
+    private val repository: TimetableRepository? = null,
+    /** 已存密码的读取缝：进程重启后进云页面可据此重建传输，不必让用户重新输密码。 */
+    private val passwordProvider: (() -> String?)? = null,
+    /** 覆盖默认的「生成上传字节」实现（单测可直接喂固定字节）。 */
+    private val snapshotProvider: (() -> SnapshotBuildResult)? = null,
+    /** 覆盖默认的「写回仓储」实现（单测可注入失败）。 */
+    private val snapshotApplier: ((ByteArray) -> SnapshotApplyResult)? = null,
 ) {
 
     var config: WebdavSyncConfig = store.loadConfig()
@@ -71,6 +83,24 @@ class CloudSyncController(
     private var loadingBackups: Boolean = false
     private var isCreatingBackup: Boolean = false
     private var transport: WebdavRemoteTransport? = null
+
+    /**
+     * 上传字节来源：优先用调用方注入的；否则若给了仓储，就从**当前课表**现组一份；
+     * 都没有才退回本地快照文件（旧路径）。
+     */
+    private val effectiveSnapshotProvider: (() -> SnapshotBuildResult)? =
+        snapshotProvider ?: repository?.let { repo ->
+            { TimetableSnapshotBridge.buildSnapshotBytes(repo, deviceIdOf(), clock()) }
+        }
+
+    /** 恢复落点：优先用调用方注入的；否则写回仓储；都没有则不额外写（旧路径）。 */
+    private val effectiveSnapshotApplier: ((ByteArray) -> SnapshotApplyResult)? =
+        snapshotApplier ?: repository?.let { repo ->
+            { bytes -> TimetableSnapshotBridge.applySnapshot(repo, bytes) }
+        }
+
+    /** 最近一次恢复前的课表快照（撤销用）；null = 没有可撤销的恢复。 */
+    private var lastRestoreRollback: ByteArray? = null
 
     // ── 可观察协议 ──
 
@@ -119,6 +149,7 @@ class CloudSyncController(
         entries = backupEntries,
         isLoading = loadingBackups,
         isCreatingBackup = isCreatingBackup,
+        errorCode = status.lastErrorCode,
     )
 
     // ── 配置编辑（全部委托既有纯逻辑，不重复判据） ──
@@ -213,6 +244,8 @@ class CloudSyncController(
         persist(CloudSyncLogic.buildConnectConfig(candidate, username))
         status = status.copy(lastErrorCode = null)
         notifyChanged()
+        // 连接成功就把备份列表拉回来：否则首次连接的这一页仍是空的，用户以为云端没备份。
+        refreshBackups()
         return CloudSyncConnectResult(true)
     }
 
@@ -223,11 +256,30 @@ class CloudSyncController(
         persist(CloudSyncLogic.buildDisconnectConfig(config))
         backupEntries = emptyList()
         remoteFiles = emptyList()
+        lastRestoreRollback = null
         status = CloudSyncStatusSource()
         notifyChanged()
     }
 
     // ── 真实收发动作 ──
+
+    /**
+     * 进页首次加载：已配置好账号时拉一次远端备份列表。
+     *
+     * 之前两页进页什么都不做，`backupEntries` 只在上传 / 下载 / 删除后才被填，
+     * 所以「刚进页面备份列表恒空」——看起来像云端没有备份。
+     *
+     * 未配置（没有用户名或拿不到密码）时**什么都不做**，不写错误码：
+     * 未连接是正常首屏状态，不是一次失败的同步。
+     */
+    fun refreshOnEnter() {
+        if (!hasActiveConnection()) return
+        if (loadingBackups) return
+        refreshBackups()
+    }
+
+    /** 是否已有可用连接（当前会话连过，或能从存档重建传输）。 */
+    fun hasActiveConnection(): Boolean = ensureTransport() != null
 
     /** 刷新远端备份列表（PROPFIND）。返回结局供页面判断错误码。 */
     fun refreshBackups(): ListBackupsOutcome {
@@ -256,11 +308,29 @@ class CloudSyncController(
     /** 立即备份：与同步同一套上传，只是结果提示不同。 */
     fun createBackup(): SyncResultKind = runUpload()
 
-    /** 打开（恢复）某条远端备份：强制以远端为准下载并落盘。 */
+    /**
+     * 打开（恢复）某条远端备份：强制以远端为准下载，**并写回课表仓储**。
+     *
+     * ## 修复了什么（P0）
+     *
+     * 之前下载成功只把字节写进本地快照文件，全仓没有代码把它写回课表：用户的课表
+     * 一点没变，界面却提示「已从云端恢复」。现在只有 [effectiveSnapshotApplier] 写回成功
+     * 才返回 [SyncResultKind.DOWNLOADED]；写回失败一律 [SyncResultKind.FAILED] 并带错误码。
+     *
+     * ## 撤销点
+     *
+     * 下载前先把**本机当前课表**组一份快照存进 [lastRestoreRollback]，成功后可调
+     * [undoLastRestore] 回退。注意：当前页面没有撤销入口（Toast 承载不了动作按钮），
+     * 见宿主接线报告。
+     */
     fun openBackup(entryId: String): SyncResultKind {
         val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
         val file = remoteFiles.firstOrNull { it.fileName == entryId }
             ?: return SyncResultKind.FAILED
+        // 撤销点：下载会先覆盖本地快照文件，所以必须在下载**之前**取当前课表。
+        val rollback = effectiveSnapshotProvider?.let { provider ->
+            (provider() as? SnapshotBuildResult.Success)?.bytes
+        }
         status = status.copy(isSyncing = true)
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
@@ -272,6 +342,11 @@ class CloudSyncController(
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
             SyncOpKind.OK -> {
+                if (!applyDownloadedSnapshot(outcome.bytes)) {
+                    notifyChanged()
+                    return SyncResultKind.FAILED
+                }
+                rollback?.let { lastRestoreRollback = it }
                 markSynced()
                 refreshBackups()
                 SyncResultKind.DOWNLOADED
@@ -281,6 +356,54 @@ class CloudSyncController(
                 status = status.copy(lastErrorCode = outcome.errorCode)
                 notifyChanged()
                 SyncResultKind.FAILED
+            }
+        }
+    }
+
+    /**
+     * 撤销最近一次恢复（把恢复前的课表快照写回去）。
+     *
+     * @return true = 已回退；false = 没有撤销点 / 写回失败（错误码见 [lastErrorCode]）。
+     */
+    fun undoLastRestore(): Boolean {
+        val rollback = lastRestoreRollback ?: return false
+        val applier = effectiveSnapshotApplier ?: return false
+        return when (val result = applier(rollback)) {
+            SnapshotApplyResult.Applied -> {
+                lastRestoreRollback = null
+                status = status.copy(lastErrorCode = null)
+                notifyChanged()
+                true
+            }
+            is SnapshotApplyResult.Invalid -> {
+                status = status.copy(lastErrorCode = result.errorCode)
+                notifyChanged()
+                false
+            }
+            is SnapshotApplyResult.Failed -> {
+                status = status.copy(lastErrorCode = result.errorCode)
+                notifyChanged()
+                false
+            }
+        }
+    }
+
+    /** 把下载到的字节写回课表。没有注入落点时退回「视为已应用」（仅单测 / 旧路径）。 */
+    private fun applyDownloadedSnapshot(bytes: ByteArray?): Boolean {
+        if (bytes == null) {
+            status = status.copy(lastErrorCode = "backup_not_found")
+            return false
+        }
+        val applier = effectiveSnapshotApplier ?: return true
+        return when (val result = applier(bytes)) {
+            SnapshotApplyResult.Applied -> true
+            is SnapshotApplyResult.Invalid -> {
+                status = status.copy(lastErrorCode = result.errorCode)
+                false
+            }
+            is SnapshotApplyResult.Failed -> {
+                status = status.copy(lastErrorCode = result.errorCode)
+                false
             }
         }
     }
@@ -306,7 +429,7 @@ class CloudSyncController(
      * 成功 → 刷新列表并回 [SyncResultKind.BACKUP_DELETED]；失败 → 记错误码回 `FAILED`。
      */
     fun deleteBackup(entryId: String): SyncResultKind {
-        val active = transport ?: return SyncResultKind.FAILED
+        val active = ensureTransport() ?: return SyncResultKind.FAILED
         val file = remoteFiles.firstOrNull { it.fileName == entryId }
             ?: return SyncResultKind.FAILED
         val result = active.deleteRemoteFile(file.remotePath)
@@ -330,7 +453,7 @@ class CloudSyncController(
 
     private fun runUpload(): SyncResultKind {
         val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
-        val bytes = snapshotStore.readSnapshot() ?: return SyncResultKind.FAILED
+        val bytes = currentSnapshotBytes() ?: return SyncResultKind.FAILED
         val exportedAtMicros = exportedAtMicrosOf(bytes)
         status = status.copy(isSyncing = true)
         isCreatingBackup = true
@@ -364,6 +487,37 @@ class CloudSyncController(
         persist(config.copyWith(lastSyncedAtIso = now))
     }
 
+    /**
+     * 取本次要上传的字节。
+     *
+     * 顺序：注入 / 仓储实时快照 → 本地快照文件（旧路径）。
+     * **没有数据时如实失败并给出错误码**（`no_local_user_data` / `missing_backup_snapshot`），
+     * 绝不产出一个空包把云端好数据顶掉。
+     */
+    private fun currentSnapshotBytes(): ByteArray? {
+        val provider = effectiveSnapshotProvider
+        if (provider == null) {
+            return snapshotStore.readSnapshot() ?: run {
+                status = status.copy(lastErrorCode = "missing_backup_snapshot")
+                notifyChanged()
+                null
+            }
+        }
+        return when (val result = provider()) {
+            is SnapshotBuildResult.Success -> result.bytes
+            SnapshotBuildResult.NoLocalData -> {
+                status = status.copy(lastErrorCode = "no_local_user_data")
+                notifyChanged()
+                null
+            }
+            is SnapshotBuildResult.Failure -> {
+                status = status.copy(lastErrorCode = result.errorCode)
+                notifyChanged()
+                null
+            }
+        }
+    }
+
     private fun persist(next: WebdavSyncConfig) {
         config = next
         baseUrlDraft = next.baseUrl
@@ -378,8 +532,23 @@ class CloudSyncController(
     }
 
     private fun coordinatorOrNull(): WebdavSyncCoordinator? {
-        val active = transport ?: return null
+        val active = ensureTransport() ?: return null
         return WebdavSyncCoordinator(active, snapshotStore)
+    }
+
+    /**
+     * 取当前传输；当前会话没连过时，尝试用**已存配置 + 已存密码**重建一次。
+     *
+     * 为什么需要它：进程重启后 `transport` 是空的，但配置与密码都还在盘上。不重建的话，
+     * 进页面拉备份 / 立即同步 / 删除都会报 `missing_credentials`，用户得重新登录一次
+     * 才会「突然正常」——看起来像功能坏了。读不到密码（密钥失效 / 没连过）就返回 null，
+     * 页面按未连接展示。
+     */
+    private fun ensureTransport(): WebdavRemoteTransport? {
+        transport?.let { return it }
+        if (config.username.isBlank()) return null
+        val password = passwordProvider?.invoke()?.takeIf { it.isNotEmpty() } ?: return null
+        return transportFactory(config, password)?.also { transport = it }
     }
 
     private fun cancelIfCoordinator() {

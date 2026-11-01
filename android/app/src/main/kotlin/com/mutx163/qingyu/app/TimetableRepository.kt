@@ -243,6 +243,64 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     /**
+     * **把一份云端 / 本地备份快照整份写回**（云同步「恢复」的落点）。**破坏性操作。**
+     *
+     * ## 为什么要这一个入口（而不是让调用方逐个调 setter）
+     *
+     * 一次恢复要动 6 个 key（档案 / 激活 id / 设置 / 当前周 / 作息表 / 日期规则 / 地点分组）。
+     * 逐个调现有写入口会 **6 次落盘 + 6 次通知**，界面会闪 6 下中间态；而且任何一步失败，
+     * 用户看到的就是「一半新一半旧」。本方法把顺序固定下来、只在最后通知一次。
+     *
+     * ## 口径（对齐 Dart `_applySnapshotData` 的课表族部分）
+     *
+     * - 全局设置与当前周**取自快照里的激活档案**：Dart 快照的顶层没有这两项，它们本就
+     *   内嵌在每个档案里（`TimetableProfile.settings` / `.currentWeek`）。
+     * - `activeProfileId` 悬空时回落第一份档案（与 [snapshot] 的读侧宽松口径一致）；
+     *   [profiles] 为空直接拒绝，**不写空包**（那等于把用户数据清空）。
+     * - 先全部落盘、成功后才改内存并 [notifyStateChanged] 一次；落盘中途抛错时内存与监听者
+     *   都不动（下次 `reload()` 会读到已落的那些 key —— 与 [replaceAllProfiles] 相同，
+     *   本层没有跨 key 事务）。
+     *
+     * **调用方义务**：备快照的信封 / 校验和 / 档案列表是否可信必须由调用方先校验完。
+     */
+    fun restoreFromCloudSnapshot(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        timeSchemes: List<TimeScheme>,
+        scheduleDateRules: List<ScheduleDateRule>,
+        locationTimeGroups: List<LocationTimeGroup>,
+        /** 快照里携带的全局设置（core 四键）；null = 取激活档案内嵌的那份。 */
+        settings: TimetableSettings? = null,
+    ) {
+        require(profiles.isNotEmpty()) { "restore snapshot must contain at least one profile" }
+        val resolvedActiveId = activeProfileId
+            ?.takeIf { id -> profiles.any { it.id == id } }
+            ?: profiles.first().id
+        val active = profiles.first { it.id == resolvedActiveId }
+        val restoredSettings = settings ?: active.settings
+        val restoredWeek = clampCurrentWeekToSettings(active.currentWeek, restoredSettings).toInt()
+
+        // 先落盘：全部成功后才改内存，失败时界面保持旧状态。
+        store.saveProfiles(profiles)
+        store.saveActiveProfileId(resolvedActiveId)
+        store.saveSettings(restoredSettings)
+        store.saveCurrentWeek(restoredWeek)
+        store.saveTimeSchemes(timeSchemes)
+        store.saveScheduleDateRules(scheduleDateRules)
+        store.saveLocationTimeGroups(locationTimeGroups)
+
+        loadedProfiles = profiles
+        loadedActiveProfileId = resolvedActiveId
+        loadedSettings = restoredSettings
+        loadedCurrentWeek = restoredWeek
+        loadedTimeSchemes = timeSchemes
+        loadedScheduleDateRules = scheduleDateRules
+        loadedLocationTimeGroups = locationTimeGroups
+        currentLiveCourseId = null
+        notifyStateChanged()
+    }
+
+    /**
      * 切当前周次（宿主 `onWeekChanged` 的落点）。
      *
      * 语义逐条对齐 Dart `_setCurrentWeekImpl`（`timetable_provider.dart:1853-1866`）：

@@ -118,7 +118,6 @@ classAlarmSkipUiSubtitle
 classAlarmSkipUiTitle
 classAlarmVariableSuffix
 cloudBackupManualProtectedSubtitle
-cloudBackupRestoreBody
 cloudBackupSectionSubtitle
 cloudSyncAccountSubtitle
 cloudSyncAccountTitle

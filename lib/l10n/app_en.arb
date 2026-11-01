@@ -4363,6 +4363,7 @@
   "syncErrorMissingBackupSnapshot": "Backup snapshot is missing",
   "syncErrorCannotDeleteCurrentBackup": "Cannot delete the current backup",
   "syncErrorProviderNotReady": "Timetable is not ready",
+  "syncErrorNoLocalData": "There is no timetable data on this device to sync yet",
   "syncErrorInsecureUrl": "Only HTTPS encrypted connections are supported; HTTP cleartext protocol is disabled.",
   "@syncErrorInsecureUrl": {
     "description": "Error shown when the WebDAV URL uses insecure HTTP protocol, which is blocked in release builds"

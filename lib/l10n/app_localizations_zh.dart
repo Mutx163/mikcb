@@ -7286,6 +7286,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncErrorProviderNotReady => '课表尚未就绪';
 
   @override
+  String get syncErrorNoLocalData => '本机还没有课表数据可同步';
+
+  @override
   String get syncErrorInsecureUrl => '仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用';
 
   @override
@@ -18852,6 +18855,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get syncErrorProviderNotReady => '課表尚未就緒';
+
+  @override
+  String get syncErrorNoLocalData => '本機還沒有課表資料可同步';
 
   @override
   String get syncErrorInsecureUrl => '僅支援 HTTPS 加密連線，HTTP 明文協定已被停用';
@@ -30460,6 +30466,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get syncErrorProviderNotReady => '課表尚未就緒';
+
+  @override
+  String get syncErrorNoLocalData => '本機還沒有課表資料可同步';
 
   @override
   String get syncErrorInsecureUrl => '僅支援 HTTPS 加密連線，HTTP 明文協定已被停用';

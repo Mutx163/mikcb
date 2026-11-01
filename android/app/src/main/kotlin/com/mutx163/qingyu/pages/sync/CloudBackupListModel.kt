@@ -104,6 +104,11 @@ data class CloudBackupListViewState(
     val title: String,
     val createLabel: String,
     val emptyText: String,
+    /**
+     * 拉取失败时给空列表换一句「为什么空」的文案；null = 正常空态（真的没有备份）。
+     * 没有它时断网 / 密码失效都会显示「还没有备份版本」，把失败说成了正常。
+     */
+    val errorText: String? = null,
 ) {
     val isEmpty: Boolean get() = rows.isEmpty()
 }
@@ -240,6 +245,7 @@ object CloudBackupListLogic {
         isLoading: Boolean,
         isCreatingBackup: Boolean,
         zone: ZoneId = ZoneId.systemDefault(),
+        errorCode: String? = null,
     ): CloudBackupListViewState = CloudBackupListViewState(
         isLoading = isLoading,
         isCreatingBackup = isCreatingBackup,
@@ -247,6 +253,8 @@ object CloudBackupListLogic {
         title = SyncStrings.cloudBackupSectionTitle.zh,
         createLabel = SyncStrings.cloudBackupCreateNow.zh,
         emptyText = SyncStrings.cloudBackupEmpty.zh,
+        // 只有「列表是空的」时才有意义：有数据时轮不到空态，不该盖住列表。
+        errorText = if (entries.isEmpty()) errorCode?.let { SyncStrings.localizeSyncError(it) } else null,
     )
 
     private fun pad2(value: Int): String = value.toString().padStart(2, '0')

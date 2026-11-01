@@ -74,26 +74,73 @@ fun CloudBackupDetailHost(
 
     var busy by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmRestore by remember { mutableStateOf(false) }
 
     fun toast(toast: SyncToast) {
         Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun restore() {
+        busy = true
+        scope.launch {
+            val kind = withContext(Dispatchers.IO) { controller.openBackup(entryId) }
+            busy = false
+            toast(SyncResultToasts.forRestore(kind == SyncResultKind.DOWNLOADED, controller.lastErrorCode))
+            onDismiss()
+        }
     }
 
     CloudBackupDetailSheet(
         view = view,
         busy = busy,
         onDismissRequest = { if (!busy) onDismiss() },
-        onRestore = {
-            busy = true
-            scope.launch {
-                val kind = withContext(Dispatchers.IO) { controller.openBackup(entryId) }
-                busy = false
-                toast(SyncResultToasts.forRestore(kind == SyncResultKind.DOWNLOADED, controller.lastErrorCode))
-                onDismiss()
-            }
-        },
+        // 恢复是**整份覆盖**且会丢本地未同步修改：先弹二次确认，点「恢复」才真的写回。
+        onRestore = { confirmRestore = true },
         onDelete = { confirmDelete = true },
     )
+
+    if (confirmRestore) {
+        OverlayDialog(
+            insideMargin = DpSize(16.dp, 16.dp),
+            show = true,
+            title = SyncStrings.cloudBackupRestoreTitle.zh,
+            onDismissRequest = { confirmRestore = false },
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = SyncStrings.cloudBackupRestoreBody.filled(
+                        "time",
+                        CloudBackupListLogic.formatEntryTime(entry),
+                    ),
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        text = SyncStrings.cancelAction.zh,
+                        onClick = { confirmRestore = false },
+                        enabled = !busy,
+                        colors = ButtonDefaults.textButtonColors(),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(
+                        onClick = {
+                            confirmRestore = false
+                            restore()
+                        },
+                        enabled = !busy,
+                        colors = ButtonDefaults.buttonColors(),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(SyncStrings.cloudBackupRestoreAction.zh)
+                    }
+                }
+            }
+        }
+    }
 
     if (confirmDelete) {
         OverlayDialog(

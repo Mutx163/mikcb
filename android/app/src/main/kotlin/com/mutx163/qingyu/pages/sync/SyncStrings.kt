@@ -120,6 +120,8 @@ object SyncStrings {
     val cloudBackupSummary = ArbText("cloudBackupSummary", "{profileCount} 个课表 · {courseCount} 门课程")
     val cloudBackupRestoreAction = ArbText("cloudBackupRestoreAction", "恢复")
     val cloudBackupRestoreTitle = ArbText("cloudBackupRestoreTitle", "恢复到此备份")
+    val cloudBackupRestoreBody =
+        ArbText("cloudBackupRestoreBody", "将恢复到 {time} 的课表，本地未同步的修改会丢失，是否继续？")
     val cloudBackupUploadAsCurrentTitle = ArbText("cloudBackupUploadAsCurrentTitle", "设为当前云端版本")
     val cloudBackupUploadAsCurrentBody = ArbText(
         "cloudBackupUploadAsCurrentBody",
@@ -169,6 +171,7 @@ object SyncStrings {
     val syncErrorCannotDeleteCurrentBackup =
         ArbText("syncErrorCannotDeleteCurrentBackup", "不能删除当前备份")
     val syncErrorProviderNotReady = ArbText("syncErrorProviderNotReady", "课表尚未就绪")
+    val syncErrorNoLocalData = ArbText("syncErrorNoLocalData", "本机还没有课表数据可同步")
     val syncErrorInsecureUrl =
         ArbText("syncErrorInsecureUrl", "仅支持 HTTPS 加密连接，HTTP 明文协议已被禁用")
     val syncErrorSyncFailed = ArbText("syncErrorSyncFailed", "同步失败")
@@ -192,6 +195,7 @@ object SyncStrings {
         "missing_backup_snapshot" -> syncErrorMissingBackupSnapshot.zh
         "cannot_delete_current_backup" -> syncErrorCannotDeleteCurrentBackup.zh
         "provider_not_ready" -> syncErrorProviderNotReady.zh
+        "no_local_user_data" -> syncErrorNoLocalData.zh
         "insecure_url_blocked" -> syncErrorInsecureUrl.zh
         else -> syncErrorSyncFailed.zh
     }
@@ -269,6 +273,7 @@ object SyncStrings {
             cloudBackupSummary,
             cloudBackupRestoreAction,
             cloudBackupRestoreTitle,
+            cloudBackupRestoreBody,
             cloudBackupUploadAsCurrentTitle,
             cloudBackupUploadAsCurrentBody,
             cloudBackupUploadAsCurrentYes,
@@ -309,6 +314,7 @@ object SyncStrings {
             syncErrorMissingBackupSnapshot,
             syncErrorCannotDeleteCurrentBackup,
             syncErrorProviderNotReady,
+            syncErrorNoLocalData,
             syncErrorInsecureUrl,
             syncErrorSyncFailed,
         )

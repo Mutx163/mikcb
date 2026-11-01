@@ -7698,6 +7698,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncErrorProviderNotReady => 'Timetable is not ready';
 
   @override
+  String get syncErrorNoLocalData =>
+      'There is no timetable data on this device to sync yet';
+
+  @override
   String get syncErrorInsecureUrl =>
       'Only HTTPS encrypted connections are supported; HTTP cleartext protocol is disabled.';
 
