@@ -97,6 +97,10 @@ fun HomeGlassDock(
         backdrop = backdrop,
         material = material,
         modifier = modifier,
+        // 只有「点开换主屏内容」的条目（视图动作 / 内嵌页）才挪选中指示器；
+        // 点开是推一层页面的条目（外观编辑器、表单页）主屏没换，指示器必须留在原格，
+        // 否则页面退回来底栏还亮着它（2026-11-01 用户报）。
+        isTab = { index -> HomeDockNavModel.rendersAsRoot(dockIds[index]) },
         trailingContent = if (settingsModel.glassDockShowAddButton) {
             {
                 GlassDockRoundButton(

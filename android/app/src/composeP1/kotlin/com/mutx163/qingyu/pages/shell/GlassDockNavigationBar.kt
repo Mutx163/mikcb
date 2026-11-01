@@ -174,6 +174,10 @@ fun glassDockRoundButtonIcon(
  *   `settings.glassDockShowAddButton` 打开时才有）。放在这里而不是宿主里各画一份：
  *   底部避让（手势条内缩）、居中与左右留白只有一处口径，宿主各写一遍必然漂。
  *   为空时药丸照旧居中、宽度上限仍是 [maxWidthDp]。
+ * @param isTab 这一格点下去会不会**换主屏内容**（= 选中指示器该不该跟过去）。
+ *   默认全部算 tab。底栏条目并非都能当主屏内容：点开是**推一层页面**的条目
+ *   （外观编辑器、加课这类表单页）主屏其实没换，指示器必须留在原来的视图上 ——
+ *   否则页面退回来以后，底栏还亮着那一格（2026-11-01 用户报的现象）。
  */
 @Composable
 fun GlassDockNavigationBar(
@@ -192,6 +196,7 @@ fun GlassDockNavigationBar(
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
     trailingContent: (@Composable () -> Unit)? = null,
+    isTab: (index: Int) -> Boolean = { true },
 ) {
     if (items.isEmpty()) return
     // `selectedIndex == -1` 是**合法状态**，不是越界：当前主屏内容不在底栏排列里时
@@ -295,6 +300,8 @@ fun GlassDockNavigationBar(
 
     var currentIndex by remember { mutableIntStateOf(safeIndex) }
     val onSelectUpdated by rememberUpdatedState(onSelect)
+    // 拖拽回调记得住旧 lambda：`isTab` 每帧可能换（条目表随设置变），必须取最新。
+    val isTabUpdated by rememberUpdatedState(isTab)
 
     /** 屏幕 x → 条目下标。与内容区那个 `4dp` 内边距同源。 */
     fun indexAt(positionX: Float): Int {
@@ -325,11 +332,17 @@ fun GlassDockNavigationBar(
             },
             onDragStopped = {
                 val targetIndex = targetValue.roundToInt().coerceIn(0, tabsCount - 1)
-                if (currentIndex != targetIndex) {
-                    currentIndex = targetIndex
+                if (isTabUpdated(targetIndex)) {
+                    if (currentIndex != targetIndex) {
+                        currentIndex = targetIndex
+                        onSelectUpdated(targetIndex)
+                    }
+                    updateValue(targetIndex.toFloat())
+                } else {
+                    // 推页条目：主屏没换，指示器弹回真正的选中格（否则页面退回来还亮着它）。
                     onSelectUpdated(targetIndex)
+                    updateValue(currentIndex.toFloat())
                 }
-                updateValue(targetIndex.toFloat())
                 animationScope.launch {
                     offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
                 }
@@ -362,7 +375,19 @@ fun GlassDockNavigationBar(
         }
     }
 
+    /**
+     * 点某一格。
+     *
+     * 推页条目（[isTab] 为 false）**不挪指示器** —— 主屏没换，选中态只能由外部
+     * `selectedIndex` 驱动（`LaunchedEffect(safeIndex)` 里同步并播动画）。
+     * 以前这里不问类型就地挪，退出外观编辑页后底栏还亮着那一格（2026-11-01 用户报）。
+     */
     fun activateTab(index: Int) {
+        if (!isTabUpdated(index)) {
+            onSelectUpdated(index)
+            dampedDrag.animateToValue(currentIndex.toFloat())
+            return
+        }
         if (currentIndex != index) {
             currentIndex = index
             onSelectUpdated(index)
