@@ -219,6 +219,9 @@ object HomeBackgroundModel {
     /** 浅色壁纸上的深墨（Dart `homePageChromeForegroundOnLight`，`:709-712`）。 */
     val ON_LIGHT_INK_ARGB: Int = 0xFF1A1A1A.toInt()
 
+    /** 深色壁纸上的浅墨（Dart `homePageChromeForegroundOnDark`，`:709-712`）。 */
+    val WHITE_ARGB: Int = 0xFFFFFFFF.toInt()
+
     /**
      * 顶栏 / 状态栏那条亮度带的竖直区间（Dart `home_page_background.dart:1355` 的
      * `band(0, 0.09)`，也就是 `bands.top`）。
@@ -328,6 +331,47 @@ object HomeBackgroundModel {
             width = width,
             height = height,
         )
+    }
+
+    /**
+     * 壁纸在 `cover` + 取景倍数 / 对齐下，**屏幕上真正可见的那块原图**（比例 0..1）。
+     *
+     * Dart `homePageWallpaperVisibleSourceRect`（`home_page_background.dart:1067-1111`）：
+     * 三档亮度带与逐行剖面都在**这块矩形里**取比例，而不是拿整张原图的行号。
+     * 用户把壁纸放大 2 倍并居中时，屏幕顶部那块壁纸其实来自原图的中上部；
+     * 按原图 0..9% 取样会量到画外像素（2026-11-01 审计发现）。
+     */
+    data class VisibleSourceRect(
+        val leftFraction: Double,
+        val topFraction: Double,
+        val widthFraction: Double,
+        val heightFraction: Double,
+    )
+
+    fun visibleSourceRect(
+        imageWidth: Int,
+        imageHeight: Int,
+        viewportWidth: Int,
+        viewportHeight: Int,
+        scale: Double,
+        alignX: Double,
+        alignY: Double,
+    ): VisibleSourceRect? {
+        val rect = drawRect(
+            imageWidth = imageWidth,
+            imageHeight = imageHeight,
+            viewportWidth = viewportWidth,
+            viewportHeight = viewportHeight,
+            scale = scale,
+            alignX = alignX,
+            alignY = alignY,
+        ) ?: return null
+        if (rect.width <= 0.0 || rect.height <= 0.0) return null
+        val left = (-rect.left / rect.width).coerceIn(0.0, 1.0)
+        val top = (-rect.top / rect.height).coerceIn(0.0, 1.0)
+        val width = (viewportWidth / rect.width).coerceIn(0.0, 1.0 - left)
+        val height = (viewportHeight / rect.height).coerceIn(0.0, 1.0 - top)
+        return VisibleSourceRect(left, top, width, height)
     }
 
     /**
@@ -502,9 +546,10 @@ object HomeBackgroundModel {
      * 压在壁纸上的墨色（Dart `homePageOverWallpaperInk`，`home_page_background.dart:763-799`）。
      *
      * * 没有壁纸 / 亮度未知 ⇒ 用配置色（没有配置色就用主题兜底）；
+     * * **没配置 / 就是内置默认色** ⇒ 按亮度直接翻黑 / 白（Dart `:794-798`）；
      * * 配置色**本身对比度够**（≥ 3:1）⇒ 原样保留（尊重用户在设置里挑的颜色）；
-     * * 不够 ⇒ 保持色相、朝白 / 朝黑逐 5% 推亮度，推到够为止（最多 20 步）；
-     * * 推不到位 ⇒ 按亮度直接翻黑 / 白（`< 0.45` 用白，否则用近黑）。
+     * * 不够 ⇒ 保持色相，**朝白和朝黑都推**（5% 一步，最多 20 步），取先到 3:1 的那侧；
+     * * 两侧都推不到 ⇒ 按亮度翻黑 / 白（深壁纸白、浅壁纸近黑）。
      *
      * 这条是「黑色壁纸上黑字」的根治：以前星期栏 / 时间列 / 空态都直接用主题或设置里的
      * 深色字，压在深壁纸上看不见（2026-11-01 用户报）。
@@ -513,33 +558,79 @@ object HomeBackgroundModel {
         configuredArgb: Int?,
         fallbackArgb: Int,
         wallpaperLuminance: Double?,
+        /**
+         * 这一项的**内置默认色**（设置里的「没改过」等价于这个值）。传了就按 Dart
+         * `homePageInkUsesBuiltInDefault`（`:740-750`）处理：默认色 = 直接翻黑 / 白，
+         * 不走进「保色相推亮度」那条 —— 否则深壁纸上的黑字会被推成中灰而不是纯白。
+         */
+        builtInDefaultArgb: Int? = null,
     ): Int {
         if (wallpaperLuminance == null) return configuredArgb ?: fallbackArgb
-        val base = configuredArgb ?: fallbackArgb
-        if (hasSufficientContrast(relativeLuminance(base), wallpaperLuminance)) return base
-        val target = if (wallpaperLuminance < CHROME_INK_FLIP_LUMINANCE) {
-            0xFFFFFFFF.toInt()
-        } else {
-            ON_LIGHT_INK_ARGB
+        val configured = configuredArgb?.takeIf { it != builtInDefaultArgb }
+        // 没配置 / 就是内置默认 ⇒ 按亮度翻黑 / 白（Dart `:794-798`）。
+        if (configured == null) return flipInkArgb(wallpaperLuminance)
+        if (hasSufficientContrast(relativeLuminance(configured), wallpaperLuminance)) {
+            return configured
         }
-        return pushTowardContrast(base, target, wallpaperLuminance) ?: target
+        // 两侧都试：先到 3:1 的那一侧胜出（Dart `:936-996`）。只朝一侧推会在中灰壁纸上
+        // 永远到不了 3:1（例：亮度 0.40 时白色最多 2.33:1），然后掉进一个更差的结果。
+        val toWhite = pushTowardContrast(configured, WHITE_ARGB, wallpaperLuminance)
+        val toBlack = pushTowardContrast(configured, ON_LIGHT_INK_ARGB, wallpaperLuminance)
+        return when {
+            toWhite != null && toBlack != null ->
+                if (toWhite.second <= toBlack.second) toWhite.first else toBlack.first
+            toWhite != null -> toWhite.first
+            toBlack != null -> toBlack.first
+            // 两侧都推不到（物理上不可能有 3:1）⇒ 按波段极性翻黑 / 白（Dart `:968`）。
+            else -> flipInkArgb(wallpaperLuminance)
+        }
+    }
+
+    /** 按亮度翻黑 / 白：深壁纸用白、浅壁纸用近黑（Dart `homePageChromeForegroundForLuminance`，`:709-727`）。 */
+    fun flipInkArgb(wallpaperLuminance: Double): Int =
+        if (wallpaperLuminance < CHROME_INK_FLIP_LUMINANCE) WHITE_ARGB else ON_LIGHT_INK_ARGB
+
+    /**
+     * 解析设置里的墨色：`#RRGGBB` 与 `#AARRGGBB` 都接受（8 位只取 RGB）。
+     *
+     * 比 [parseHexArgb] 宽松一位：设置页的规范化允许 9 字符（`#AARRGGBB`），
+     * 用严格 6 位解析会把这类用户挑的颜色静默换成主题色（2026-11-01 审计发现）。
+     */
+    fun parseInkArgb(value: String?): Int? {
+        val trimmed = value?.trim().orEmpty()
+        if (trimmed.isEmpty()) return null
+        val hex = trimmed.removePrefix("#")
+        val rgb = when (hex.length) {
+            6 -> hex
+            8 -> hex.substring(2)
+            else -> return null
+        }
+        if (!rgb.all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }) return null
+        return 0xFF000000.toInt() or rgb.toInt(16)
     }
 
     /**
      * 次级墨色：浅墨压到 0.72、深墨压到 0.70
      * （Dart `homePageOverWallpaperMutedInk`，`:999-1010`；判据是墨色自身亮度 > 0.55）。
+     *
+     * alpha **四舍五入**（0.72 → 184、0.70 → 179），与 Flutter `withValues().toARGB32()`
+     * 一致；截断会各差 1 个 LSB。
      */
     fun mutedInkOverWallpaperArgb(inkArgb: Int): Int {
         val alpha = if (relativeLuminance(inkArgb) > 0.55) 0.72f else 0.70f
-        return (inkArgb and 0x00FFFFFF) or (((alpha * 255f).toInt()) shl 24)
+        return (inkArgb and 0x00FFFFFF) or ((alpha * 255f).roundToInt() shl 24)
     }
 
-    /** 朝 [targetArgb] 逐 5% 推 [fromArgb]，第一次够对比度就返回（Dart `readableColorOnLuminance` 的简化）。 */
+    /**
+     * 朝 [targetArgb] 逐 5% 推 [fromArgb]：返回「第一次够对比度的颜色」与「走了几步」。
+     *
+     * 步数给两侧比较用（Dart 取步数少的那侧，`:968-991`）；20 步（= 5%）是上限。
+     */
     private fun pushTowardContrast(
         fromArgb: Int,
         targetArgb: Int,
         wallpaperLuminance: Double,
-    ): Int? {
+    ): Pair<Int, Int>? {
         val fromR = (fromArgb shr 16) and 0xFF
         val fromG = (fromArgb shr 8) and 0xFF
         val fromB = fromArgb and 0xFF
@@ -548,12 +639,12 @@ object HomeBackgroundModel {
         val toB = targetArgb and 0xFF
         for (step in 1..20) {
             val t = step / 20.0
-            val r = (fromR + (toR - fromR) * t).toInt().coerceIn(0, 255)
-            val g = (fromG + (toG - fromG) * t).toInt().coerceIn(0, 255)
-            val b = (fromB + (toB - fromB) * t).toInt().coerceIn(0, 255)
+            val r = (fromR + (toR - fromR) * t).roundToInt().coerceIn(0, 255)
+            val g = (fromG + (toG - fromG) * t).roundToInt().coerceIn(0, 255)
+            val b = (fromB + (toB - fromB) * t).roundToInt().coerceIn(0, 255)
             val candidate = 0xFF000000.toInt() or (r shl 16) or (g shl 8) or b
             if (hasSufficientContrast(relativeLuminance(candidate), wallpaperLuminance)) {
-                return candidate
+                return candidate to step
             }
         }
         return null
@@ -567,9 +658,17 @@ object HomeBackgroundModel {
      * 必须是这条曲线：直接拿 `(r+g+b)/3/255` 当亮度，中灰会偏高、暗部会严重高估，
      * 深色壁纸就被判成「亮」而上了深墨字——这正是 Dart 侧 2026-09-21 修掉的那个坑。
      */
-    fun srgbChannelToLinear(channel: Int): Double {
-        val c = channel.coerceIn(0, 255) / 255.0
-        return if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
+    fun srgbChannelToLinear(channel: Int): Double = SRGB_LINEAR_LUT[channel.coerceIn(0, 255)]
+
+    /**
+     * 8bit sRGB → 线性值查表（Dart 同款 `_srgbLinearizeLut`，`:1263-1277`）。
+     *
+     * 逐像素调 `pow()` 在整张壁纸上要几百万次；一张 256 项的表把这一步从「几十毫秒」
+     * 压到「几毫秒」（2026-11-01 审计：三带扫描在首帧同步路径里跑，必须有这张表）。
+     */
+    private val SRGB_LINEAR_LUT: DoubleArray = DoubleArray(256) { value ->
+        val c = value / 255.0
+        if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
     }
 
     /**
@@ -616,17 +715,29 @@ object HomeBackgroundModel {
         width: Int,
         fromRow: Int,
         toRow: Int,
+        fromColumn: Int = 0,
+        toColumn: Int = width,
+        rowStep: Int = 1,
+        columnStep: Int = 1,
     ): Double? {
         if (width <= 0 || fromRow < 0 || toRow <= fromRow) return null
+        val colFrom = fromColumn.coerceIn(0, width - 1)
+        val colTo = toColumn.coerceIn(colFrom + 1, width)
         if (argbPixels.size < toRow.toLong() * width) return null
+        val rowStride = rowStep.coerceAtLeast(1)
+        val columnStride = columnStep.coerceAtLeast(1)
         var total = 0.0
         var count = 0
-        for (row in fromRow until toRow) {
+        var row = fromRow
+        while (row < toRow) {
             val rowOffset = row * width
-            for (column in 0 until width) {
+            var column = colFrom
+            while (column < colTo) {
                 total += relativeLuminance(argbPixels[rowOffset + column])
                 count++
+                column += columnStride
             }
+            row += rowStride
         }
         return if (count == 0) null else total / count
     }
@@ -640,10 +751,23 @@ object HomeBackgroundModel {
         height: Int,
         fromFraction: Double,
         toFraction: Double,
+        fromColumn: Int = 0,
+        toColumn: Int = width,
+        rowStep: Int = 1,
+        columnStep: Int = 1,
     ): Double? {
         val rows = bandRows(height, fromFraction, toFraction)
         if (rows.isEmpty()) return null
-        return meanRelativeLuminance(argbPixels, width, rows.first, rows.last + 1)
+        return meanRelativeLuminance(
+            argbPixels = argbPixels,
+            width = width,
+            fromRow = rows.first,
+            toRow = rows.last + 1,
+            fromColumn = fromColumn,
+            toColumn = toColumn,
+            rowStep = rowStep,
+            columnStep = columnStep,
+        )
     }
 
     // ───────────── 来源（路径 / 底色） ─────────────

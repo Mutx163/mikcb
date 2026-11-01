@@ -181,10 +181,15 @@ private fun Modifier.fullScreenPageScaled(
     screenWidth: Dp,
     screenHeight: Dp,
 ): Modifier = layout { measurable, constraints ->
-    val placeable = measurable.measure(
-        Constraints.fixed(screenWidth.roundToPx(), screenHeight.roundToPx()),
-    )
-    layout(constraints.maxWidth, constraints.maxHeight) {
+    val pageWidthPx = screenWidth.roundToPx()
+    val pageHeightPx = screenHeight.roundToPx()
+    val placeable = measurable.measure(Constraints.fixed(pageWidthPx, pageHeightPx))
+    // 上报父给的尺寸；父约束无界时（例如将来被放进 LazyColumn）退回页面尺寸，
+    // 不能把 `Int.MAX_VALUE` 当节点尺寸报上去（2026-11-01 审计）。
+    layout(
+        width = if (constraints.hasBoundedWidth) constraints.maxWidth else pageWidthPx,
+        height = if (constraints.hasBoundedHeight) constraints.maxHeight else pageHeightPx,
+    ) {
         placeable.place(0, 0)
     }
 }.graphicsLayer {

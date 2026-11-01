@@ -53,6 +53,7 @@ import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
+import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.pages.shellTimetableMenuPageId
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
@@ -809,7 +810,8 @@ private fun TimetablePreviewPage(
         val dockBackdrop = rememberLayerBackdrop()
         // 坞要采样它底下的页面内容；没坞（classic 形态）/ 无 runtime shader 时不录
         // —— 与壳里 `recordBackdrop` 同一条纪律（录制 = 整屏离屏重绘一次）。
-        val recordDockBackdrop = homeDockVisible(settingsModel) && glassAvailable
+        // 同壳里那条：坞真的会采样才录（实体档时录了也没人用）。
+        val recordDockBackdrop = glassAvailable && rememberHomeDockUsesBackdrop(settingsModel)
         Box(
             modifier = Modifier
                 .fillMaxSize()

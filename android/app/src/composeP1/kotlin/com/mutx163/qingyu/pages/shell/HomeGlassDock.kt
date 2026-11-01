@@ -17,6 +17,7 @@ import com.mutx163.qingyu.app.HomeNavigationForm
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
+import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -118,6 +119,31 @@ fun HomeGlassDock(
             null
         },
     )
+}
+
+/**
+ * 坞**会不会真的采样背景**（= 调用方挂 `layerBackdrop` 是否值得）。
+ *
+ * 与 `GlassDockNavigationBar` 的 `isBlurActive` 同一判据：材质解析成实体档 / 关掉时，
+ * 坞根本不跑 `drawBackdrop`，但 `Modifier.layerBackdrop` 是「先上屏、再整屏录一遍」——
+ * 白挂一层就是每次重绘都多画一遍整页（外观编辑页拖材质滑杆时尤其明显，2026-11-01 审计）。
+ *
+ * 调用方还要自己再判 `isRuntimeShaderSupported()`：低版本机上坞一定会退化成实体档。
+ */
+@Composable
+fun rememberHomeDockUsesBackdrop(settingsModel: TimetableSettingsModel): Boolean {
+    if (!homeDockVisible(settingsModel)) return false
+    val isDark = isSystemInDarkTheme()
+    val hasBackdrop = !settingsModel.homePageWallpaperPath.isNullOrEmpty() ||
+        !settingsModel.homePageBackgroundImagePath.isNullOrEmpty()
+    return remember(settingsModel, isDark, hasBackdrop) {
+        val spec = SettingsMaterialModel.renderSpecOf(
+            model = settingsModel,
+            isDark = isDark,
+            hasBackdrop = hasBackdrop,
+        )
+        spec.dock != SurfaceMaterialState.SOLID && spec.dock != SurfaceMaterialState.OFF
+    }
 }
 
 /**

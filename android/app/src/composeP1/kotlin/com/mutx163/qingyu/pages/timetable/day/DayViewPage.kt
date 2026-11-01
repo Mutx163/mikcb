@@ -374,6 +374,10 @@ fun DayViewPage(
     // `pageBackdropActive`（要不要挂录像层）用，不参与画玻璃。
     val bandBlurActive = material?.band == SurfaceMaterialState.LIQUID_GLASS &&
         hasBackdrop && isRuntimeShaderSupported()
+    // 星期条背后是不是壁纸：没画带子（老行为 / OFF）或液态玻璃 ⇒ 是；实体档 ⇒ 否。
+    val bandOverWallpaper = material == null ||
+        material.band == SurfaceMaterialState.OFF ||
+        bandBlurActive
     val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
     // 形状边界要往屏幕外推多少（逻辑 dp，只算作用带那一份）：取值理由见
     // `SettingsMaterialModel.bandGlassOverdrawDp`。左右还要再叠上安全区，
@@ -529,8 +533,11 @@ fun DayViewPage(
                             semesterStartDate = semesterStartDate,
                             visibleDays = visibleDays,
                             style = weekdayStyle,
-                            // 星期条直接压在壁纸上：亮度带决定字色翻深/翻浅。
-                            wallpaperLuminance = wallpaperBands?.weekday,
+                            // 星期条压在**壁纸**上才谈壁纸墨色：实体档的带子是不透明的
+                            // 页底色条，底下没有壁纸（Dart `homePageWeekdayBarOverWallpaper`）。
+                            wallpaperLuminance = wallpaperBands?.weekday?.takeIf {
+                                bandOverWallpaper
+                            },
                             selectedDayOfWeek = currentTarget.dayOfWeek,
                             hasExamOnDate = hasExamOnDate,
                             hasScheduleOnDate = hasScheduleOnDate,

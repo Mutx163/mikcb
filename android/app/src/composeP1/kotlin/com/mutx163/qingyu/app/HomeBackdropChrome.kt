@@ -62,6 +62,9 @@ fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBack
     val viewportWidthPx = with(LocalDensity.current) {
         LocalConfiguration.current.screenWidthDp.dp.roundToPx()
     }
+    val viewportHeightPx = with(LocalDensity.current) {
+        LocalConfiguration.current.screenHeightDp.dp.roundToPx()
+    }
     val snapshot = remember(settingsModel, isDark, viewportWidthPx) {
         settingsModel?.let { model ->
             HomeBackgroundModel.snapshotOf(
@@ -92,9 +95,25 @@ fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBack
     // 异步量完再翻面 —— 用户看到的就是「所有字黑白闪一下」（2026-11-01 真机）。
     // 换壁纸 / 换解码宽时 key 变化 ⇒ 重新取新那张图的三档；新图还没量过则为 null
     //（按主题墨色兜底，等异步回调）。
-    var wallpaperBands by remember(snapshot?.wallpaperPath, snapshot?.decodeWidthPx) {
+    var wallpaperBands by remember(
+        snapshot?.wallpaperPath,
+        snapshot?.decodeWidthPx,
+        snapshot?.scale,
+        snapshot?.alignX,
+        snapshot?.alignY,
+        viewportWidthPx,
+        viewportHeightPx,
+    ) {
         mutableStateOf(
-            cachedWallpaperInkBands(snapshot?.wallpaperPath, snapshot?.decodeWidthPx ?: 0),
+            cachedWallpaperInkBands(
+                path = snapshot?.wallpaperPath,
+                decodeWidthPx = snapshot?.decodeWidthPx ?: 0,
+                viewportWidthPx = viewportWidthPx,
+                viewportHeightPx = viewportHeightPx,
+                scale = snapshot?.scale ?: 1.0,
+                alignX = snapshot?.alignX ?: 0.0,
+                alignY = snapshot?.alignY ?: 0.0,
+            ),
         )
     }
     // 只有「真有壁纸」才谈「壁纸上的墨色」；没壁纸 = 主题墨色（null）。

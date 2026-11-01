@@ -625,28 +625,91 @@ class HomeBackgroundModelTest {
     }
 
     @Test
-    fun `对比度不够的墨色会被推亮或推暗 而不是留在看不见的原色`() {
-        // 近黑墨压在深壁纸上：对比度不足，必须被推亮到看得见。
-        val nearBlack = 0xFF101010.toInt()
-        val pushed = HomeBackgroundModel.inkOverWallpaperArgb(nearBlack, nearBlack, 0.05)
-        assertTrue(
-            "近黑墨压在深壁纸上没有被推亮：$pushed",
-            HomeBackgroundModel.relativeLuminance(pushed) > HomeBackgroundModel.relativeLuminance(nearBlack),
+    fun `对比度不够时朝两侧推 中灰壁纸也能到 3 比 1`() {
+        // 浅灰墨（亮度约 0.52）压在 0.40 的中灰壁纸上：朝白最多只有 2.33:1，
+        // 必须改朝黑推才到得了 3:1（2026-11-01 审计：只朝一侧推会永远失败）。
+        val lightGrey = 0xFFC0C0C0.toInt()
+        val pushed = HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = lightGrey,
+            fallbackArgb = lightGrey,
+            wallpaperLuminance = 0.40,
         )
         assertTrue(
-            "推完仍不够 3:1 对比度",
+            "中灰壁纸上的浅灰墨没有被推到 3:1：$pushed",
             HomeBackgroundModel.hasSufficientContrast(
                 HomeBackgroundModel.relativeLuminance(pushed),
-                0.05,
+                0.40,
             ),
         )
+        // 不能退化成纯白（那正是只朝白推的旧实现会给出的结果，对比度只有 2.33）。
+        assertTrue("结果不应是纯白：$pushed", pushed != 0xFFFFFFFF.toInt())
+    }
+
+    @Test
+    fun `内置默认墨色按亮度直接翻黑或白 而不是推成中灰`() {
+        val black = 0xFF000000.toInt()
+        val white = 0xFFFFFFFF.toInt()
+        assertEquals(
+            white,
+            HomeBackgroundModel.inkOverWallpaperArgb(
+                configuredArgb = black,
+                fallbackArgb = black,
+                wallpaperLuminance = 0.02,
+                builtInDefaultArgb = black,
+            ),
+        )
+        assertEquals(
+            HomeBackgroundModel.ON_LIGHT_INK_ARGB,
+            HomeBackgroundModel.inkOverWallpaperArgb(
+                configuredArgb = white,
+                fallbackArgb = white,
+                wallpaperLuminance = 0.95,
+                builtInDefaultArgb = white,
+            ),
+        )
+    }
+
+    @Test
+    fun `墨色解析接受六位与八位两种写法`() {
+        assertEquals(0xFF112233.toInt(), HomeBackgroundModel.parseInkArgb("#112233"))
+        assertEquals(0xFF112233.toInt(), HomeBackgroundModel.parseInkArgb("112233"))
+        // 设置页的规范化允许 #AARRGGBB：丢掉 alpha、保留 RGB。
+        assertEquals(0xFF112233.toInt(), HomeBackgroundModel.parseInkArgb("#FF112233"))
+        assertNull(HomeBackgroundModel.parseInkArgb("#12345"))
+        assertNull(HomeBackgroundModel.parseInkArgb(null))
+    }
+
+    @Test
+    fun `可见取景矩形按 cover 与缩放对齐折算`() {
+        val full = HomeBackgroundModel.visibleSourceRect(
+            imageWidth = 1000, imageHeight = 2000,
+            viewportWidth = 1000, viewportHeight = 2000,
+            scale = 1.0, alignX = 0.0, alignY = 0.0,
+        )!!
+        assertEquals(0.0, full.leftFraction, 1e-9)
+        assertEquals(0.0, full.topFraction, 1e-9)
+        assertEquals(1.0, full.widthFraction, 1e-9)
+        assertEquals(1.0, full.heightFraction, 1e-9)
+
+        // 放大 2 倍、居中：屏幕上只看到原图中部的一半。
+        val zoomed = HomeBackgroundModel.visibleSourceRect(
+            imageWidth = 1000, imageHeight = 2000,
+            viewportWidth = 1000, viewportHeight = 2000,
+            scale = 2.0, alignX = 0.0, alignY = 0.0,
+        )!!
+        assertEquals(0.25, zoomed.leftFraction, 1e-9)
+        assertEquals(0.25, zoomed.topFraction, 1e-9)
+        assertEquals(0.5, zoomed.widthFraction, 1e-9)
+        assertEquals(0.5, zoomed.heightFraction, 1e-9)
     }
 
     @Test
     fun `次级墨色按墨色亮度选 0_72 与 0_70`() {
         val light = HomeBackgroundModel.mutedInkOverWallpaperArgb(0xFFFFFFFF.toInt())
         val dark = HomeBackgroundModel.mutedInkOverWallpaperArgb(0xFF101010.toInt())
-        assertEquals((0.72f * 255f).toInt(), (light ushr 24) and 0xFF)
-        assertEquals((0.70f * 255f).toInt(), (dark ushr 24) and 0xFF)
+        // 四舍五入，与 Flutter `withValues().toARGB32()` 一致：0.72→184(0xB8)、0.70→179(0xB3)。
+        assertEquals(0xB8, (light ushr 24) and 0xFF)
+        assertEquals(0xB3, (dark ushr 24) and 0xFF)
     }
+
 }

@@ -302,6 +302,8 @@ fun GlassDockNavigationBar(
     val onSelectUpdated by rememberUpdatedState(onSelect)
     // 拖拽回调记得住旧 lambda：`isTab` 每帧可能换（条目表随设置变），必须取最新。
     val isTabUpdated by rememberUpdatedState(isTab)
+    // 同理：`hasSelection` 也是组合期算的，释放回调里要用最新值。
+    val hasSelectionUpdated by rememberUpdatedState(hasSelection)
 
     /** 屏幕 x → 条目下标。与内容区那个 `4dp` 内边距同源。 */
     fun indexAt(positionX: Float): Int {
@@ -333,7 +335,10 @@ fun GlassDockNavigationBar(
             onDragStopped = {
                 val targetIndex = targetValue.roundToInt().coerceIn(0, tabsCount - 1)
                 if (isTabUpdated(targetIndex)) {
-                    if (currentIndex != targetIndex) {
+                    // `!hasSelection`：当前主屏内容不在底栏排列里（整栏不亮）时，
+                    // 点第一格也必须上报 —— 否则 `currentIndex` 初值就是 0，点它永远
+                    // 不触发（2026-11-01 审计发现的死点）。
+                    if (currentIndex != targetIndex || !hasSelectionUpdated) {
                         currentIndex = targetIndex
                         onSelectUpdated(targetIndex)
                     }
@@ -388,7 +393,7 @@ fun GlassDockNavigationBar(
             dampedDrag.animateToValue(currentIndex.toFloat())
             return
         }
-        if (currentIndex != index) {
+        if (currentIndex != index || !hasSelectionUpdated) {
             currentIndex = index
             onSelectUpdated(index)
         }

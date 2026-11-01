@@ -144,9 +144,9 @@ object WeekdayHeaderMetrics {
  *
  * ## 刻意没做的
  *
- * - **壁纸明暗自适应**（Dart 的 `homePageOverWallpaperInk` / `Accent` 的对比度推明度分支）：
- *   Compose 侧周视图还没有壁纸与预糊管线，走 Dart「无壁纸」那一条分支即可 ——
- *   `configured ?? themeFallback`（`lib/utils/home_page_background.dart:774-776`）。
+ * - ~~壁纸明暗自适应~~ **2026-11-01 已补**：`wallpaperLuminance` 非空时，字色 / 强调色走
+ *   `HomeBackgroundModel.inkOverWallpaperArgb`（Dart `homePageOverWallpaperInk` 同口径）；
+ *   无壁纸 / 亮度未知时仍是 `configured ?? themeFallback`（`:774-776`）。
  * - **日视图的三周叠放 / 跟手平移**（`:400-463`）：那是日视图的 pager 联动，
  *   由日视图页面自己组合，不在本组件职责内。
  * - **选中指示条的滑动形变**（`timetable_weekday_selection_indicator.dart`）：
@@ -199,16 +199,20 @@ fun TimetableWeekdayHeader(
     // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
     val weekdayInk = Color(
         HomeBackgroundModel.inkOverWallpaperArgb(
-            configuredArgb = HomeBackgroundModel.parseHexArgb(
+            configuredArgb = HomeBackgroundModel.parseInkArgb(
                 if (dark) style.weekdayFontColorDark else style.weekdayFontColorLight,
             ),
             fallbackArgb = MiuixTheme.colorScheme.onSurface.toArgb(),
             wallpaperLuminance = wallpaperLuminance,
+            // 设置里的出厂值（浅色 #000000 / 深色 #FFFFFF）与「没改过」等价：
+            // 压在壁纸上时按亮度**直接翻黑/白**，不是把黑字推成中灰（Dart `:740-750`）。
+            builtInDefaultArgb = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(),
         ),
     )
     val accentInk = Color(
         HomeBackgroundModel.inkOverWallpaperArgb(
-            configuredArgb = HomeBackgroundModel.parseHexArgb(
+            // 强调色是有色相的，不做「默认翻黑白」：对比度不够时保色相推亮度（Dart 同口径）。
+            configuredArgb = HomeBackgroundModel.parseInkArgb(
                 if (dark) style.weekdayAccentColorDark else style.weekdayAccentColorLight,
             ),
             fallbackArgb = MiuixTheme.colorScheme.primary.toArgb(),

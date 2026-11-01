@@ -56,6 +56,7 @@ import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
+import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import kotlin.math.roundToInt
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -506,6 +507,9 @@ private fun PagesShell(
 
     /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
     fun selectRoot(itemId: String) {
+        // 推入转场期间栈底条目仍在屏幕上（被滑入的页盖住一部分），坞会露出一条可点的边。
+        // 这时改主屏内容既看不到效果，还会把「没到过的视图」写进存档（2026-11-01 审计）。
+        if (backStack.size > 1) return
         // 目录页（外观编辑器 / 统计 / 考试…）不是主屏内容：**推一层**，底栏随之让位。
         // 以前这里不分流，任何条目都替换栈底，于是把「外观编辑器」排进底栏后底栏一直压在
         // 它上面（`atRoot` 恒 true）：既不参与页面的入场动画，页面上也多一条不属于它的坞
@@ -577,7 +581,9 @@ private fun PagesShell(
     // 绘制（栈底条目不再重绘），这段录制也随之停下。
     val backdrop = rememberLayerBackdrop()
     val glassAvailable = isRuntimeShaderSupported()
-    val recordBackdrop = showDock && glassAvailable
+    // 只有坞**真的会采样**（液态 / 磨砂档 + 设备支持）才挂录像层：实体档 / 关掉时
+    // 坞不跑 drawBackdrop，录像纯属每次重绘多画一遍整页（2026-11-01 审计）。
+    val recordBackdrop = glassAvailable && rememberHomeDockUsesBackdrop(settingsModel)
 
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，

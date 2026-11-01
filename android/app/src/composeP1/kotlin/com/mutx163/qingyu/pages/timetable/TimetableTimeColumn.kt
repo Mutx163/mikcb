@@ -132,11 +132,13 @@ fun TimetableTimeColumn(
     // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
     val timeAxisInk = Color(
         HomeBackgroundModel.inkOverWallpaperArgb(
-            configuredArgb = HomeBackgroundModel.parseHexArgb(
+            configuredArgb = HomeBackgroundModel.parseInkArgb(
                 if (dark) style.timeAxisColorDark else style.timeAxisColorLight,
             ),
             fallbackArgb = MiuixTheme.colorScheme.onSurface.toArgb(),
             wallpaperLuminance = wallpaperLuminance,
+            // 出厂值（浅色 #757575 / 深色 #FFFFFF）与「没改过」等价：直接翻黑/白。
+            builtInDefaultArgb = if (dark) 0xFFFFFFFF.toInt() else 0xFF757575.toInt(),
         ),
     )
     val mutedInk = timeAxisInk.secondaryInk()

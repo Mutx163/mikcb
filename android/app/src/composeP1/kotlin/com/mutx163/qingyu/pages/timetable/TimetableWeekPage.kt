@@ -265,6 +265,11 @@ fun TimetableWeekPage(
     // 下面 `pageBackdropActive`（决定要不要挂录像层）用，不参与画玻璃。
     val bandBlurActive = materialSpec?.band == SurfaceMaterialState.LIQUID_GLASS &&
         hasBackdrop && isRuntimeShaderSupported()
+    // 星期栏背后到底是不是壁纸：没画带子（老行为 / OFF）或是液态玻璃 ⇒ 是；
+    // 实体档 ⇒ 带子不透明，字压在页底色上，不该按壁纸亮度翻色。
+    val bandOverWallpaper = materialSpec == null ||
+        materialSpec.band == SurfaceMaterialState.OFF ||
+        bandBlurActive
     val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
     // 形状边界要往屏幕外推多少（逻辑 dp，只算作用带那一份）：取值理由见
     // `SettingsMaterialModel.bandGlassOverdrawDp`。左右还要再叠上安全区，
@@ -449,8 +454,13 @@ fun TimetableWeekPage(
                         semesterStartDate = semesterStart,
                         visibleDays = visibleDays,
                         style = style,
-                        // 星期栏直接压在壁纸上：亮度带决定字色该翻深还是翻浅。
-                        wallpaperLuminance = wallpaperBands?.weekday,
+                        // 星期栏压在**壁纸**上才谈壁纸墨色：实体档的带子是不透明的页底色条，
+                        // 底下根本没有壁纸（Dart `homePageWeekdayBarOverWallpaper`，
+                        // `home_page_region_blur.dart:332-347`）。以前无脑传会得到
+                        // 「浅色实心带 + 白色字」。
+                        wallpaperLuminance = wallpaperBands?.weekday?.takeIf {
+                            bandOverWallpaper
+                        },
                         timeColumnWidth = style.timeColumnWidthDp.dp,
                         hasExamOnDate = hasExamOnDate,
                         hasScheduleOnDate = hasScheduleOnDate,
