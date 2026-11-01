@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.pages.timetable
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -22,8 +25,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,12 +39,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.components.liquid.vibrancy
@@ -185,6 +193,26 @@ fun TimetableWeekPage(
     val browsingWeek = pagerState.currentPage + 1
     var showWeekSelectorDialog by remember { mutableStateOf(false) }
 
+    // ── 共享玻璃带上的星期栏跟哪一页（2026-11-01）──
+    // 星期栏从 pager 内部提出来之后不再跟手指滑动，但也不能每帧跟 `currentPage`：
+    // 那个值在滑过半页时就跳，左端「第 N 周」和日期会在拖动中来回改字。
+    // 口径见 `chromeDisplayedPage`（main 源集纯函数）：滚动/吸附中保持上一次落定的页，
+    // 完全停稳后才切到当前页。
+    var displayedPage by remember(pagerState) {
+        mutableIntStateOf(pagerState.currentPage)
+    }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
+            .collect { (page, scrolling) ->
+                val next = chromeDisplayedPage(
+                    currentPage = page,
+                    isScrollInProgress = scrolling,
+                    previousPage = displayedPage,
+                )
+                if (next != displayedPage) displayedPage = next
+            }
+    }
+
     val accentColor = Color(QingyuTheme.primary(dark = dark))
     val textColor = Color(QingyuTheme.primaryText(dark))
     val subTextColor = Color(QingyuTheme.secondaryText(dark))
@@ -192,7 +220,8 @@ fun TimetableWeekPage(
 
     // ── 首页顶栏玻璃带（2026-11-01）──
     // Dart 这条带是「标题行 + 星期栏」共用的一条连续玻璃（`home_page_region_blur.dart`
-    // 的 `HomePageChromeGlassFill`）；本页把同一份 modifier 套给这两块。
+    // 的 `HomePageChromeGlassFill`）。本页在 2026-11-01 把状态栏也并进来：
+    // 带子从屏幕 y = 0 画到星期栏底边，三块内容装在**同一个** Box 里。
     //
     // 三步接线的第 ① 步：把壁纸层录进 `pageBackdrop`（记录 ≠ 上屏，原内容照常画）；
     // 第 ② 步在带子上 `drawBackdrop` 采样 + 高斯 + 染色。只有「液态 + 真有壁纸 +
@@ -219,8 +248,8 @@ fun TimetableWeekPage(
     // 盖住壁纸，Dart `homePageHeaderUsesFrostedChrome` 的实体分支）；LIQUID 走
     // miuix 高斯 + 主题底染色，模糊量与染色都来自材质面板那八根旋钮。
     //
-    // 标题行与星期栏**共用这一份 modifier**（Dart 那条带就是两块连着的），
-    // 否则实体档下会看到「标题实心、星期栏透壁纸」的一道接缝。
+    // 标题行、星期栏、状态栏**共用这一个 modifier**：带子只挂一次，
+    // 一个节点 = 一次采样 + 一次高斯 + 一次染色，交界不会出现第二份模糊核。
     val bandModifier = when {
         materialSpec == null -> Modifier
         bandSurface == SurfaceMaterialState.OFF -> Modifier
@@ -236,6 +265,28 @@ fun TimetableWeekPage(
             onDrawSurface = { drawRect(bandTint) },
         )
         else -> Modifier.background(bandSolidColor)
+    }
+
+    // ── 状态栏图标 / 文字的明暗（2026-11-01）──
+    // 玻璃带盖住状态栏之后，系统图标原本只在「主题明暗」变化时被 Activity 设一次
+    // （`PagesShellActivity.applyShellSystemBars`），不知道壁纸是什么颜色。
+    // 这里沿用标题行同一条判据 [chromeInk]（宿主用壁纸顶部亮度算出来的）：
+    //   Light = 深色壁纸 ⇒ 浅墨 ⇒ 状态栏图标要浅色（isAppearanceLightStatusBars = false）
+    //   Dark  = 浅色壁纸 ⇒ 深墨 ⇒ 状态栏图标要深色（true）
+    // 没有壁纸 / 亮度还没量出来 ⇒ 跟系统明暗，与 Activity 的兜底一致。
+    val lightStatusBarIcons = when (chromeInk) {
+        HomeInkPolarity.Light -> false
+        HomeInkPolarity.Dark -> true
+        null -> !dark
+    }
+    ApplyStatusBarInk(lightIcons = lightStatusBarIcons, themeDark = dark)
+
+    // 星期栏的两枚圆点判据：提到共享带之后只算一次（以前每页各算一份）。
+    val hasExamOnDate: (LocalDate) -> Boolean = remember(exams, now) {
+        { date -> WeekAgendaLogic.hasExamOn(date, exams, now) }
+    }
+    val hasScheduleOnDate: (LocalDate) -> Boolean = remember(scheduleItems) {
+        { date -> WeekAgendaLogic.hasScheduleOn(date, scheduleItems) }
     }
 
     // ── 课卡液态档（2026-11-01）──
@@ -320,37 +371,65 @@ fun TimetableWeekPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                // 顶部吃 innerPadding（miuix Scaffold 的 contentWindowInsets 已含状态栏）；
-                // 底部刻意不吃——滚动视口要铺到屏幕最底，卡片从手势条底下穿过去
+                // 左右吃安全区；顶部**刻意不吃**——玻璃带要从 y = 0（状态栏背后）开始，
+                // 由带子内部用等高的 Spacer 把标题行顶到状态栏下面。
+                // 底部也刻意不吃——滚动视口要铺到屏幕最底，卡片从手势条底下穿过去
                 // （2026-10-28 用户反馈「卡片被手势条截断」就是这层多算了一次）。
                 .padding(
                     start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
-                    top = innerPadding.calculateTopPadding(),
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 ),
         ) {
-            // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
-            Box(modifier = Modifier.fillMaxWidth().then(bandModifier)) {
-                TimetableTopBar(
-                    brand = homeTitleStyle == HomeTitleStyle.BRAND,
-                    inkPolarity = chromeInk,
-                    profileName = profileName,
-                    onTitleClick = onSwitchProfileClick,
-                    homeMenuStyle = homeMenuStyle,
-                    menuItems = homeMenuItems,
-                    onMenuSelect = onHomeMenuSelect,
-                )
+            // ── 顶栏玻璃带：状态栏 + 标题行 + 星期栏 = 同一条带 ──
+            // 只在这一处套 `bandModifier`（液体档 = 一次 `drawBackdrop`），三块内容
+            // 都画在同一个节点里：一次采样、一次高斯、一次染色。以前标题行与每一页
+            // 的星期栏各挂一次，两个相邻矩形各自截断模糊核、染色在交界叠加 ⇒ 台阶。
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(bandModifier),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // 状态栏区域留白：带子画到屏幕最顶，内容仍停在状态栏下面。
+                    Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
+
+                    // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
+                    TimetableTopBar(
+                        brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                        inkPolarity = chromeInk,
+                        profileName = profileName,
+                        onTitleClick = onSwitchProfileClick,
+                        homeMenuStyle = homeMenuStyle,
+                        menuItems = homeMenuItems,
+                        onMenuSelect = onHomeMenuSelect,
+                    )
+
+                    // ── 星期栏：从 pager 里提出来，不跟横向翻页滑动 ──
+                    // 显示「落定后的那一页」；滑动过程中保持上一页（见 displayedPage）。
+                    TimetableWeekdayHeader(
+                        week = displayedPage + 1,
+                        currentWeek = currentWeek,
+                        todayDate = todayDate,
+                        semesterStartDate = semesterStart,
+                        visibleDays = visibleDays,
+                        style = style,
+                        timeColumnWidth = style.timeColumnWidthDp.dp,
+                        hasExamOnDate = hasExamOnDate,
+                        hasScheduleOnDate = hasScheduleOnDate,
+                        onDayClick = onDayClick,
+                        onWeekTitleClick = { showWeekSelectorDialog = true },
+                    )
+                }
             }
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
                     WeekPageContent(
                         pageWeek = page + 1,
-                        currentWeek = currentWeek,
-                        todayDate = todayDate,
                         semesterStart = semesterStart,
                         visibleDays = visibleDays,
                         courses = courses,
@@ -366,10 +445,7 @@ fun TimetableWeekPage(
                         onCourseClick = onCourseClick,
                         onAgendaClick = onAgendaClick,
                         onLongPressEmptySlot = onLongPressEmptySlot,
-                        onDayClick = onDayClick,
-                        onWeekTitleClick = { showWeekSelectorDialog = true },
                         material = material,
-                        bandModifier = bandModifier,
                         cardGlassBackdrop = cardGlassSource,
                     )
                 }
@@ -428,15 +504,14 @@ fun TimetableWeekPage(
 }
 
 /**
- * pager 里的一周：星期栏 + 可纵向滚动的时间列/网格。
+ * pager 里的一周：可纵向滚动的时间列 + 网格。
  *
+ * 星期栏已经提到共享玻璃带里（见 [TimetableWeekPage]），这里不再画栏、也不占栏高。
  * 节高在这里定：`weekSectionHeight` 要拿到实际可用高度才能算「自动充满」。
  */
 @Composable
 private fun WeekPageContent(
     pageWeek: Int,
-    currentWeek: Int,
-    todayDate: LocalDate,
     semesterStart: LocalDate?,
     visibleDays: List<Int>,
     courses: List<Course>,
@@ -452,10 +527,7 @@ private fun WeekPageContent(
     onCourseClick: (Course) -> Unit,
     onAgendaClick: (WeekAgendaCardModel) -> Unit,
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit,
-    onDayClick: (dayOfWeek: Int) -> Unit,
-    onWeekTitleClick: () -> Unit,
     material: HomeMaterialRenderSpec? = null,
-    bandModifier: Modifier = Modifier,
     /**
      * 课卡液态档的背景采样源（整页共享）。null = 走各卡原有的透明度填充。
      * 非空时它要么是「整屏预糊层」（σ > 0），要么是原壁纸录像层（清澈档 σ = 0），
@@ -485,74 +557,55 @@ private fun WeekPageContent(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 星期栏与标题行共用同一条玻璃带（Dart `HomePageChromeGlassFill` 盖的就是这两块）。
-        Box(modifier = Modifier.fillMaxWidth().then(bandModifier)) {
-            TimetableWeekdayHeader(
-                week = pageWeek,
-                currentWeek = currentWeek,
-                todayDate = todayDate,
-                semesterStartDate = semesterStart,
-                visibleDays = visibleDays,
-                style = style,
-                timeColumnWidth = style.timeColumnWidthDp.dp,
-                hasExamOnDate = { date -> WeekAgendaLogic.hasExamOn(date, exams, now) },
-                hasScheduleOnDate = { date -> WeekAgendaLogic.hasScheduleOn(date, scheduleItems) },
-                onDayClick = onDayClick,
-                onWeekTitleClick = onWeekTitleClick,
-            )
-        }
+    // 星期栏已经提到共享玻璃带里（见 [TimetableWeekPage]），这里只剩网格。
+    // `weekdayHeaderHeightDp = 0`：本 Box 的 maxHeight 已经不含星期栏，
+    // 再减一次 40 会把节高压扁（旧结构里栏在页内、却又减了一遍栏高）。
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val sectionHeight = weekSectionHeight(
+            style = style,
+            availableHeightDp = maxHeight.value,
+            weekdayHeaderHeightDp = 0f,
+            sectionCount = sectionCount,
+        ).dp
 
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val sectionHeight = weekSectionHeight(
-                style = style,
-                availableHeightDp = maxHeight.value,
-                weekdayHeaderHeightDp = WEEKDAY_HEADER_HEIGHT_DP,
-                sectionCount = sectionCount,
-            ).dp
-
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxWidth()
+                    // 底部留白 = 手势条高度 + 底坞避让余量（最后一行能滑到坞上方）。
+                    .padding(bottom = bottomInset + WEEK_GRID_BOTTOM_CLEARANCE_DP.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // 底部留白 = 手势条高度 + 底坞避让余量（最后一行能滑到坞上方）。
-                        .padding(bottom = bottomInset + WEEK_GRID_BOTTOM_CLEARANCE_DP.dp),
-                ) {
-                    TimetableTimeColumn(
-                        sectionCount = sectionCount,
-                        sectionTimes = sectionTimes,
-                        sectionHeight = sectionHeight,
-                        timeColumnWidth = style.timeColumnWidthDp.dp,
-                        style = style,
-                    )
-                    TimetableWeekGrid(
-                        cardsByDay = cardsByDay,
-                        agendaByDay = agendaByDay,
-                        visibleDays = visibleDays,
-                        sectionCount = sectionCount,
-                        sectionHeight = sectionHeight,
-                        style = style,
-                        // 之前这个参数没人传（恒 { false }），假期压淡与「假」角标永远不出现。
-                        holidayForDay = { dayOfWeek -> holidayOf(pageWeek, dayOfWeek) },
-                        onCourseClick = onCourseClick,
-                        onAgendaClick = onAgendaClick,
-                        onLongPressEmptySlot = onLongPressEmptySlot,
-                        modifier = Modifier.weight(1f),
-                        material = material,
-                        cardGlassBackdrop = cardGlassBackdrop,
-                    )
-                }
+                TimetableTimeColumn(
+                    sectionCount = sectionCount,
+                    sectionTimes = sectionTimes,
+                    sectionHeight = sectionHeight,
+                    timeColumnWidth = style.timeColumnWidthDp.dp,
+                    style = style,
+                )
+                TimetableWeekGrid(
+                    cardsByDay = cardsByDay,
+                    agendaByDay = agendaByDay,
+                    visibleDays = visibleDays,
+                    sectionCount = sectionCount,
+                    sectionHeight = sectionHeight,
+                    style = style,
+                    // 之前这个参数没人传（恒 { false }），假期压淡与「假」角标永远不出现。
+                    holidayForDay = { dayOfWeek -> holidayOf(pageWeek, dayOfWeek) },
+                    onCourseClick = onCourseClick,
+                    onAgendaClick = onAgendaClick,
+                    onLongPressEmptySlot = onLongPressEmptySlot,
+                    modifier = Modifier.weight(1f),
+                    material = material,
+                    cardGlassBackdrop = cardGlassBackdrop,
+                )
             }
         }
     }
 }
-
-/** 星期栏高度（Dart `TimetableWeekdayHeader.height = 40`）。 */
-private const val WEEKDAY_HEADER_HEIGHT_DP = 40f
 
 /** 周网格底部避让：手势条之上再留 64dp 给浮坞。 */
 private const val WEEK_GRID_BOTTOM_CLEARANCE_DP = 64f
@@ -601,4 +654,52 @@ fun buildAgendaByDay(
             showSchedules = style.showWeekGridSchedules,
         )
     }
+}
+
+/**
+ * 在本页停留期间把状态栏图标切成浅色 / 深色，离开时还原。
+ *
+ * 为什么是命令式：Compose 没有 `AnnotatedRegion<SystemUiOverlayStyle>` 的等价物，
+ * 系统栏外观的唯一入口是窗口的 insets controller。壳只在自己的明暗主题变化时设置
+ * 一次（`PagesShellActivity.applyShellSystemBars` / `ComposeP1Activity`），不区分
+ * 当前是哪一页、也不知道壁纸颜色 —— 所以首页要把「壁纸上的墨色」临时覆盖上去，
+ * 并在 `onDispose` 还原，否则去别的页面后状态栏会一直停在壁纸那一档。
+ *
+ * 做法与设置页 `AppearanceEditorScreen.ApplyLightSystemBarIcons` 相同（那一份是
+ * private，跨不了文件）；这里不另造机制。
+ *
+ * @param lightIcons 图标是否用深色（= 浅底）。
+ * @param themeDark 只作为「重新应用」的触发键：主题切换时 Activity 会按主题重设一次
+ *   系统栏，而有壁纸时 [lightIcons] 不随主题变，不重挂就会被覆盖回去。
+ */
+@Composable
+private fun ApplyStatusBarInk(lightIcons: Boolean, themeDark: Boolean) {
+    val view = LocalView.current
+    val context = LocalContext.current
+    DisposableEffect(view, lightIcons, themeDark) {
+        val window = context.findHostActivity()?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = lightIcons
+        onDispose {
+            if (controller != null && previous != null) {
+                controller.isAppearanceLightStatusBars = previous
+            }
+        }
+    }
+}
+
+/**
+ * 从 `LocalContext` 往上找宿主 `Activity`。
+ *
+ * 不能直接 `context as? Activity`：Activity 里的 Compose 上下文经常是
+ * `ContextThemeWrapper`（主题包了一层），直接转型会得到 null、系统栏一句话都设不上。
+ */
+private fun Context.findHostActivity(): Activity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }
