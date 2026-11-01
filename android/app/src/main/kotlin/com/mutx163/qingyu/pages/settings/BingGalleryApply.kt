@@ -330,6 +330,14 @@ object BingGalleryApplyPlanner {
         current: TimetableSettingsModel,
         path: String,
         nowMs: Long = System.currentTimeMillis(),
+        /**
+         * 盘上 `timetable_profiles` 的原始 JSON（其它档案在用图的唯一完整来源）。
+         *
+         * 缺省 `null` = 盘上没有这份 key（还没有多档案），按「没有别的课表」处理；
+         * **读不懂**（不是数组 / 档案 settings 不是对象）时一张都不删，
+         * 见 [WallpaperEvictionSources.planEviction]。
+         */
+        profilesJson: String? = null,
     ): BingGalleryApplyOutcome {
         // 去重置顶 + 封顶在 pushWallpaperHistory 里做，这里只负责写回设置模型
         val pushed = pushWallpaperHistory(
@@ -347,23 +355,34 @@ object BingGalleryApplyPlanner {
             homePageWallpaperScale = 1.0,
             wallpaperHistory = pushed.history.map { it.toRowModel() },
         )
-        val whitelist = deletionWhitelist(next, keep = path)
+        // 溢出回收分两层：本份设置（本页已知）+ **盘上所有档案**内嵌的壁纸路径。
+        // 别的课表正在用的图只存在于 `timetable_profiles` 原始 JSON
+        // （仓储快照的 `TimetableProfile.settings` 只有 core 4 键），少这一层就会把
+        // 别的课表正在用的图删掉、切过去时首页裂图。
+        val localWhitelist = deletionWhitelist(next, keep = path)
+        val plan = WallpaperEvictionSources.planEviction(
+            evictedPaths = pushed.evictedPaths.filterNot { it in localWhitelist },
+            profilesJson = profilesJson,
+            currentPath = next.homePageWallpaperPath,
+            draftPath = path,
+        )
         return BingGalleryApplyOutcome(
             settings = next,
-            filesToDelete = pushed.evictedPaths.filterNot { it in whitelist },
+            filesToDelete = plan.deletable,
+            profilesUnreadable = plan.profilesUnreadable,
         )
     }
 
     /**
-     * 溢出回收的白名单（Dart `_deleteEvicted` 的三路并集）：刚落盘的这张、当前壁纸、
-     * 以及历史里还留着的每一条。
+     * **本份设置**的溢出回收白名单（Dart `_deleteEvicted` 里属于本页的那几路）：
+     * 刚落盘的这张、当前壁纸、以及历史里还留着的每一条。
      *
      * 少写任何一路都会删掉正在用的图：自动换写下的那张**不在历史里**，只按历史当白名单
      * 会把当前壁纸删掉、首页当场裂图。
      *
-     * ⚠️ 只看「本份设置」：Dart 还能拿到**其它课表**正在用的壁纸路径（`protectedPaths`），
-     * 本仓这一层没有多课表视图，所以别的课表现用壁纸不在这张白名单里 —— 这是已知边界，
-     * 不是「已经正确处理」。等壁纸使用面扩到多课表时必须补。
+     * ⚠️ 这只是两层的**第一层**。别的课表正在用的壁纸不在本份设置里，必须由
+     * [WallpaperEvictionSources.planEviction] 从盘上档案 JSON 补（[settingsAfterApply]
+     * 就是这么接的）。单独拿本函数的结果去删文件 = 只护当前课表。
      */
     fun deletionWhitelist(settings: TimetableSettingsModel, keep: String?): Set<String> = buildSet {
         if (!keep.isNullOrBlank()) add(keep)
@@ -380,6 +399,11 @@ object BingGalleryApplyPlanner {
 data class BingGalleryApplyOutcome(
     val settings: TimetableSettingsModel,
     val filesToDelete: List<String>,
+    /**
+     * 档案 JSON 读不懂 ⇒ [filesToDelete] 必为空（宁可留图，不误删）。
+     * 给宿主一个显式信号去记日志，而不是静默跳过。
+     */
+    val profilesUnreadable: Boolean = false,
 )
 
 private fun WallpaperHistoryRowModel.toHistoryEntry(): WallpaperHistoryEntry = WallpaperHistoryEntry(

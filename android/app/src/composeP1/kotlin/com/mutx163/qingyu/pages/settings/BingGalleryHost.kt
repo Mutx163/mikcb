@@ -37,6 +37,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.platform.AndroidImageLoader
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.weather.BingWallpaperItem
 import com.mutx163.qingyu.weather.WallpaperTargetSize
 import java.io.File
@@ -81,8 +82,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 2. **没有「下载台账」prefs**：Dart 的 `BingWallpaperStore` 把「哪天哪档下过」记在盘上。
  *    这里用**文件名**当台账（同一天同一档位天然同名，见模型层 `fileName()`），
  *    因此「已下过」判据在换设备/换像素后失效，会重下一次（不会错用糊图）；
- * 3. **多课表保护不全**：溢出回收只按本份设置的白名单算（见
- *    [BingGalleryApplyPlanner.deletionWhitelist] 的注），别的课表正在用的壁纸不在保护范围内；
+ * 3. **多课表保护**：溢出回收的白名单由 [BingGalleryApplyPlanner.settingsAfterApply] 统一组装
+ *    ——本份设置（当前壁纸 + 历史）加**盘上所有档案**内嵌的壁纸路径
+ *    （[WallpaperEvictionSources] 从 `timetable_profiles` 原始 JSON 读）。档案读不懂时
+ *    一张都不删，只记日志；
  * 4. **落盘失败只记日志 + 一句「保存失败」**：与外观编辑页同一处理（那里也是 `Log.e`），
  *    不静默回滚。
  */
@@ -100,6 +103,8 @@ fun BingGalleryHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // 只读：溢出回收前拿盘上所有档案的壁纸路径（与外观编辑页同一份 prefs 口径）。
+    val profilesPrefs = remember(context) { PrefsKeyValueStore(context) }
     val source = dataSource ?: remember { BingGalleryDataSource() }
     val today = remember { LocalDate.now() }
 
@@ -194,18 +199,42 @@ fun BingGalleryHost(
 
                 is BingGalleryDownloadResult.Success -> {
                     val path = result.file.absolutePath
-                    val outcome = BingGalleryApplyPlanner.settingsAfterApply(store.load(), path)
+                    // 其它档案在用图的唯一完整来源：盘上 `timetable_profiles` 原始 JSON。
+                    // 读 prefs 本身失败时不会删任何文件（下面直接跳过回收）。
+                    val profilesRead = runCatching {
+                        profilesPrefs.getString(WallpaperEvictionSources.PROFILES_KEY)
+                    }
+                    val outcome = BingGalleryApplyPlanner.settingsAfterApply(
+                        current = store.load(),
+                        path = path,
+                        profilesJson = profilesRead.getOrNull(),
+                    )
                     val saved = runCatching { store.save(outcome.settings) }
                     if (saved.isFailure) {
                         Log.e(LOG_TAG, "保存壁纸设置失败，文件已在 $path", saved.exceptionOrNull())
                         toast(SettingsStringsExt2.saveFailed.zh)
                         return@launch
                     }
-                    // 溢出回收：删文件不阻塞交互，删不掉只记日志（不静默失败，但不至于弹错）
-                    withContext(Dispatchers.IO) {
-                        outcome.filesToDelete.forEach { evicted ->
-                            runCatching { File(evicted).delete() }
-                                .onFailure { Log.w(LOG_TAG, "删不掉被淘汰的壁纸：$evicted") }
+                    // 溢出回收：删文件不阻塞交互，删不掉只记日志（不静默失败，但不至于弹错）。
+                    // 档案读不到 / 读不懂时**一张都不删**：无法确认别的课表没在用，
+                    // 只记日志说明跳过原因（宁可留一张垃圾图，也不能删掉别人正在用的壁纸）。
+                    when {
+                        profilesRead.isFailure -> Log.w(
+                            LOG_TAG,
+                            "读不到档案设置，跳过溢出回收（宁可留图，不误删）",
+                            profilesRead.exceptionOrNull(),
+                        )
+
+                        outcome.profilesUnreadable -> Log.w(
+                            LOG_TAG,
+                            "档案设置读不懂，跳过溢出回收（宁可留图，不误删）",
+                        )
+
+                        else -> withContext(Dispatchers.IO) {
+                            outcome.filesToDelete.forEach { evicted ->
+                                runCatching { File(evicted).delete() }
+                                    .onFailure { Log.w(LOG_TAG, "删不掉被淘汰的壁纸：$evicted") }
+                            }
                         }
                     }
                     queued = null

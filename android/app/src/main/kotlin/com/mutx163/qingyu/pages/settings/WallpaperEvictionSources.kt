@@ -89,6 +89,8 @@ object WallpaperEvictionSources {
             // 非对象条目不是档案，也不可能带 settings；仓储的宽松解析同样丢弃它们。
             if (profile !is Map<*, *>) continue
             val settings = profile["settings"] ?: continue
+            // 没有 `settings` 的条目按模型口径等价于默认设置（`TimetableProfile.fromJson`
+            // 也是取值失败回落 defaults），即从未写过壁纸，不构成在用图。
             if (settings !is Map<*, *>) {
                 // 有条目的 settings 存在却读不懂 ⇒ 无法确认这份档案的壁纸。
                 readable = false
