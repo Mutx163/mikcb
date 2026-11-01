@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,8 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -42,7 +39,8 @@ import kotlinx.coroutines.delay
  * 顶部一行 chrome + 底部两颗圆钮。**没有滚动、没有设置列表**。
  *
  * Dart 原件：`lib/screens/settings/settings_appearance_editor.dart`（2649 行）。
- * 本文件只负责「几何 + 卡片 + 装配」，上下 chrome 在 [AppearanceEditorChrome]，
+ * 本文件负责「几何 + 卡片容器 + 装配」；卡片的缩尺与转场重放在
+ * `AppearanceEditorPreviewStage.kt`，上下 chrome 在 [AppearanceEditorChrome]，
  * 草稿 / 落盘 / 两个弹层在 `app/AppearanceEditorHost.kt`。
  *
  * ## 与 Dart「方案 A（烤图）」的等价物：活树缩放，而不是截图
@@ -50,7 +48,8 @@ import kotlinx.coroutines.delay
  * Dart 把真首页按整屏 1:1 渲染在页面底层，再由 `PreviewBakeBoundary` 录成一帧位图、
  * 卡片显示那张图（`:56-73` 的类注释写了为什么不是 `FittedBox` 活树直显：玻璃采样链
  * 在非原生尺度下坐标折算会漂）。Kotlin 侧没有那套玻璃烤图机制，这里用**同一棵树、
- * 原生尺度排版、只在外层做 `graphicsLayer` 缩放**：
+ * 原生尺度排版、只在外层做 `graphicsLayer` 缩放**（实现集中在
+ * `AppearanceEditorPreviewStage`）：
  *
  * * 卡片里的课表页拿到的约束是 `requiredSize(整屏尺寸)` —— 它按**整屏 1:1** 排版，
  *   与真实课表页逐参一致，不另排一套「小屏布局」；
@@ -88,7 +87,10 @@ import kotlinx.coroutines.delay
  * @param onMaterial 底部「材质」圆钮：宿主开材质面板。
  * @param previewReady 首帧预览是否已就绪；false 时显示加载罩。
  * @param preview 卡片内容槽：宿主在这里放**真课表页**（周 / 日由参数选）。
- *   **不要**在这里自己做缩放或裁剪，那两件事由本文件负责。
+ *   **不要**在这里自己做缩放或裁剪，那两件事由页面壳与预览舞台负责。
+ * @param enableTransitionPreview 预览区是否重放一次页面转场（见
+ *   `AppearanceEditorPreviewStage`）。默认取编译期开关
+ *   [APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED]；关掉就是纯静态缩尺卡。
  */
 @Composable
 fun AppearanceEditorScreen(
@@ -99,6 +101,7 @@ fun AppearanceEditorScreen(
     onMaterial: () -> Unit,
     modifier: Modifier = Modifier,
     previewReady: Boolean = true,
+    enableTransitionPreview: Boolean = APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED,
     preview: @Composable (dayView: Boolean) -> Unit,
 ) {
     // 状态栏图标：Dart 用 `AnnotatedRegion<SystemUiOverlayStyle>(value: light)`（`:1598-1600`），
@@ -171,22 +174,22 @@ fun AppearanceEditorScreen(
                     // 在没图时是 `SizedBox.expand()`，透出来的是暗底，`:1815-1817`）。
                     .background(AppearanceEditorScrim),
             ) {
-                Box(
-                    modifier = Modifier
-                        // 整屏 1:1 排版：这是「原样缩小」而不是「另排小屏布局」的根。
-                        .requiredSize(width = screenWidth, height = screenHeight)
-                        // 缩放在绘制层，layout 尺寸仍是整屏 ⇒ 子树里的每一次 measure
-                        // 都与真实课表页相同（理由见文件头）。
-                        .graphicsLayer {
-                            scaleX = geometry.scale
-                            scaleY = geometry.scale
-                            transformOrigin = TransformOrigin(0f, 0f)
-                        }
-                        // 预览不是第二个可操作首页：所有输入在这里被吃掉。
-                        .consumeAllPointerEvents(),
-                ) {
-                    preview(dayView)
-                }
+                // 缩尺首页 + 可选的真实转场重放（见 AppearanceEditorPreviewStage）：
+                // 整屏 1:1 排版、绘制层缩放、吞掉所有输入都在那个文件里。
+                //
+                // 演示只在**加载罩撤掉之后**跑：罩子盖着时重放没有意义，而且会与
+                // 遮罩层的淡出重叠。
+                AppearanceEditorPreviewStage(
+                    dayView = dayView,
+                    scale = geometry.scale,
+                    screenWidth = screenWidth,
+                    screenHeight = screenHeight,
+                    topInset = topInset,
+                    bottomInset = bottomInset,
+                    replayTransition = enableTransitionPreview && !coverMounted,
+                    modifier = Modifier.fillMaxSize(),
+                    preview = preview,
+                )
             }
 
             // ── 上下 chrome：位置固定，弹层打开期间不动 ─────────────────
@@ -283,7 +286,11 @@ private fun Context.findActivity(): Activity? {
     return null
 }
 
-// ─────────────────────────────────────────────── 几何（逐数照抄 Dart）
+// ─────────────────────────────────────────────── 几何（数值本体在纯模型里）
+//
+// 公式与常量都住在 `main/.../pages/settings/AppearanceEditorTransition.kt`，可以走
+// L0 JVM 单测逐数断言（`AppearanceEditorTransitionTest`）。这里只做 dp ↔ Float 的
+// 薄包装，免得 Compose 文件里再算第二份、两边迟早漂。
 
 /**
  * 屏幕圆角兜底值（逻辑像素）。
@@ -292,35 +299,24 @@ private fun Context.findActivity(): Activity? {
  * 拿不到时回落到 `kPageCornerRadiusFallbackDp = 28`
  * （`lib/models/page_corner_radius.dart:16`）。Kotlin 侧目前**没有**读屏幕圆角的
  * 平台层，所以先取同一个兜底值 —— 卡片圆角 = 这个值 × 缩放比（Dart `:1638-1642`）。
- * 将来补了平台读数，改这一处即可。
+ * 将来补了平台读数，改纯模型里那一个常量即可。
  */
-internal val APPEARANCE_EDITOR_SCREEN_CORNER_RADIUS_DP: Dp = 28.dp
+internal val APPEARANCE_EDITOR_SCREEN_CORNER_RADIUS_DP: Dp =
+    AppearanceEditorTransitionSpec.SCREEN_CORNER_FALLBACK_DP.dp
 
 /** 卡片浮影模糊半径：Dart `blurRadius: 32`（`:1838`）。 */
-internal val APPEARANCE_EDITOR_CARD_SHADOW_BLUR: Dp = 32.dp
+internal val APPEARANCE_EDITOR_CARD_SHADOW_BLUR: Dp =
+    AppearanceEditorTransitionSpec.CARD_SHADOW_BLUR_DP.dp
 
-/**
- * 卡片相对可用宽度的上限比例：Dart `_cardMaxWidthFactor = 0.86`（`:109-114`）。
- *
- * 2026-09-20 从 0.82 提到 0.86，配合「顶部收成一行、底部圆钮下移」——竖屏上高度
- * 通常才是限制项，这个系数只在宽/矮窗口上兜底。
- */
-internal const val APPEARANCE_EDITOR_CARD_MAX_WIDTH_FACTOR = 0.86f
-
-/** 顶部净空扣除项：Dart `topInset + 16 + 40 + 18`（`:1624`）。 */
-private val TopChromeReserve = 16.dp + 40.dp + 18.dp
-
-/** 底部净空扣除项：Dart `bottomInset + 24 + 56 + 8 + 18`（`:1625`）。 */
-private val BottomChromeReserve = 24.dp + 56.dp + 8.dp + 18.dp
-
-/** 卡片可用高度的下限：Dart `.clamp(120.0, double.infinity)`（`:1628`）。 */
-private val MinCardBandHeight = 120.dp
+/** 卡片相对可用宽度的上限比例：Dart `_cardMaxWidthFactor = 0.86`（`:109-114`）。 */
+internal const val APPEARANCE_EDITOR_CARD_MAX_WIDTH_FACTOR =
+    AppearanceEditorCardGeometrySpec.CARD_MAX_WIDTH_FACTOR
 
 /**
  * 卡片的落点几何（单位都是 dp / 无单位缩放比）。
  *
  * 字段与 Dart `LayoutBuilder` 里那批局部变量一一对应（`:1624-1650`），命名尽量贴原变量，
- * 免得两边对不上。
+ * 免得两边对不上。数值由 [appearanceEditorCardBox] 产出。
  */
 internal data class AppearanceEditorCardGeometry(
     /** 卡片相对整屏的缩放比（Dart `scale`，`:1632`）。 */
@@ -346,10 +342,9 @@ internal data class AppearanceEditorCardGeometry(
 /**
  * 按 Dart 的几何公式算出卡片矩形（`:1617-1650` 的 `LayoutBuilder` 逐行对应）。
  *
- * 之所以抽成纯函数：这页唯一「看得见的错」就是卡片偏了/大小不对，而这类几何数值
- * 应当能被逐数断言（不需要真机）：本函数不读 `BoxWithConstraintsScope`、不碰任何
- * Compose 组合，输入输出都是数值，将来补单测时不用重构。公式里**没有任何手工修正项**
- * —— Dart 明确撤掉了「视觉重心」偏移（`:1643-1646`：加过一版，结果卡片压到底部按钮净空里）。
+ * 真正的算式在纯模型 [appearanceEditorCardBox] 里（可 JVM 单测）；这里只把 dp 转成
+ * Float 再转回来。公式里**没有任何手工修正项** —— Dart 明确撤掉了「视觉重心」偏移
+ * （`:1643-1646`：加过一版，结果卡片压到底部按钮净空里）。
  *
  * @param areaWidth / areaHeight 整页可用区（`BoxWithConstraints` 的约束）。
  * @param screenWidth / screenHeight 整屏逻辑尺寸（Dart `media.size`）。
@@ -365,28 +360,24 @@ internal fun appearanceEditorCardGeometry(
     bottomInset: Dp,
     screenCornerRadius: Dp = APPEARANCE_EDITOR_SCREEN_CORNER_RADIUS_DP,
 ): AppearanceEditorCardGeometry {
-    val topReserve = topInset + TopChromeReserve
-    val bottomReserve = bottomInset + BottomChromeReserve
-    val availableHeight =
-        (areaHeight - topReserve - bottomReserve).coerceAtLeast(MinCardBandHeight)
-    val availableWidth = areaWidth * APPEARANCE_EDITOR_CARD_MAX_WIDTH_FACTOR
-    // 保持整屏宽高比、完整放下（不裁切）：取宽/高两个方向缩放比的较小者（`:1632-1635`）。
-    val widthScale = if (screenWidth.value > 0f) availableWidth.value / screenWidth.value else 0f
-    val heightScale = if (screenHeight.value > 0f) availableHeight.value / screenHeight.value else 0f
-    val scale = minOf(widthScale, heightScale)
-    val cardWidth = screenWidth * scale
-    val cardHeight = screenHeight * scale
-    val radius = minOf(screenCornerRadius * scale, cardHeight / 2f)
-    val cardCenterY = topReserve + availableHeight / 2f
+    val box = appearanceEditorCardBox(
+        areaWidthDp = areaWidth.value,
+        areaHeightDp = areaHeight.value,
+        screenWidthDp = screenWidth.value,
+        screenHeightDp = screenHeight.value,
+        topInsetDp = topInset.value,
+        bottomInsetDp = bottomInset.value,
+        screenCornerRadiusDp = screenCornerRadius.value,
+    )
     return AppearanceEditorCardGeometry(
-        scale = scale,
-        cardWidth = cardWidth,
-        cardHeight = cardHeight,
-        cardLeft = (areaWidth - cardWidth) / 2f,
-        cardTop = cardCenterY - cardHeight / 2f,
-        radius = radius,
-        topReserve = topReserve,
-        bottomReserve = bottomReserve,
-        availableHeight = availableHeight,
+        scale = box.scale,
+        cardWidth = box.cardWidthDp.dp,
+        cardHeight = box.cardHeightDp.dp,
+        cardLeft = box.cardLeftDp.dp,
+        cardTop = box.cardTopDp.dp,
+        radius = box.radiusDp.dp,
+        topReserve = box.topReserveDp.dp,
+        bottomReserve = box.bottomReserveDp.dp,
+        availableHeight = box.availableHeightDp.dp,
     )
 }

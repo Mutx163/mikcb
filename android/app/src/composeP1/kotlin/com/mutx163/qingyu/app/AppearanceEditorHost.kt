@@ -1,18 +1,24 @@
 package com.mutx163.qingyu.app
 
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
 import com.mutx163.qingyu.pages.settings.AppearanceEditorPreviewStrings
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
@@ -21,6 +27,7 @@ import com.mutx163.qingyu.pages.settings.MaterialSheetPages
 import com.mutx163.qingyu.pages.settings.SelectionPageState
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.WallpaperSheetBody
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.backdropFlowState
@@ -44,19 +51,26 @@ import java.time.LocalDate
  *
  * ## 编辑语义（`:729-740`、`:672-675`）
  *
- * * 本页与其它设置页一样**即时落盘**：面板里改一下，预览与磁盘同时变；
- * * 「完成」= 直接返回（改动已落盘）；
+ * * 本页与其它设置页一样**即时落盘**：面板里改一下，预览与磁盘同时变；没有任何字段
+ *   是「等到点完成才提交」的（「完成」不是提交按钮）；
+ * * 「完成」= 把欠着的最后一档写完、确认真的进盘，再返回；**写不进去就不退**并提示
+ *   `saveFailed`（见 [done] 的注释：这一点比 Dart 更严）；
  * * 「取消」= 把**进页那一刻的整份设置写回**再返回。不是「什么都不做」——因为改动
- *   早就落盘了，不做回滚的话按钮名与行为不符；
+ *   早就落盘了，不做回滚的话按钮名与行为不符；防抖里欠着的那一档**丢弃不写**；
  * * 系统返回 = 取消（`BackHandler` 只在两个面板都关着时接管；面板开着时交给官方
  *   `OverlayBottomSheet` 自己关）。
+ * * 落盘**每次都读回校验**：`store.save` 不抛异常也不返回失败（commit() 的布尔被丢了），
+ *   所以写完必须重新 `load()` 一次、只比这次改动过的键；没落地就把草稿拉回盘上真值
+ *   并提示 —— 不许出现「看着存了、其实没存」。
  *
  * ## 落盘节奏（`:622-631`）
  *
  * Dart 对滑杆给了 250ms 防抖、其余控件立即写。这里照做：滑杆行
  * （材质那三组八根旋钮、壁纸模糊）走 [APPEARANCE_EDITOR_SAVE_DEBOUNCE_MS] 防抖，
- * 其余立即写。**内存里的草稿永远立刻更新**（预览不延迟），防抖只影响写盘。
- * 离开本页 / 关面板时会把欠着的那一档补写掉，不会丢最后一格。
+ * 其余立即写。**内存里的草稿永远立刻更新**（预览不延迟），防抖只影响写盘；
+ * 取消 / 完成 / 推页 / 离开本页前会把欠着的那一档处理掉（取消是丢弃、其余是补写），
+ * 不会丢最后一格。写盘本身是同步的 `SharedPreferences.commit()`，同一线程上天然串行
+ * （Dart 那条 `_saveQueue` 在这里不需要另建一条队列）。
  *
  * ## 两个面板（`:777-919`）
  *
@@ -65,6 +79,12 @@ import java.time.LocalDate
  * 面板内容最多占屏高 **50%**（Dart `_materialSheetMaxHeightFactor = 0.5`，`:116-120`；
  * 壁纸面板同口径，`:839-841`），超出部分由面板内部自己滚——面板存在的意义就是
  * 「改一处、看预览」，长高到盖住卡片就失去意义了。
+ *
+ * 打开 / 收起全部由本宿主驱动（底部两颗圆钮 → [openWallpaper] / [openMaterial]；
+ * 弹层返回键 / 点空白 → `onDismissRequest`），并且**每次打开都重建正文**、停在调用方
+ * 指定的页签（Dart 每次开面板都是一条新弹层路由）。面板里要推整页的动作
+ * （「调整位置」「每日壁纸」）先收起弹层再推 —— 否则新页会被弹层遮罩压住点不到
+ * （Dart `_withHostSheetClosed`，`settings_home_backdrop_flow.dart:115-148`）。
  *
  * 面板打开期间上下 chrome **保持常显、位置不动**（2026-09-19 口径，`:780-782`）：
  * 它们是页面那一层的常驻子节点，弹层的遮罩只会把它们压暗、接走点击。
@@ -84,11 +104,13 @@ import java.time.LocalDate
  * 1. **加载罩不进树**：Dart 的罩子是给「烤图要等」用的（`:277-301`）。本仓预览是活树、
  *    首帧就有内容，所以这里传 `previewReady = true`。页面那一侧的三态门与 6 秒兜底
  *    都实现了，将来预览改成异步图源时把这里换成真实就绪信号即可；
- * 2. **落盘失败只记日志**：Dart 走 `reportSettingsPersistFailure` 弹轻提示（`:656-664`），
- *    壳里目前没有轻提示宿主，这里 `Log.e` 留痕，草稿仍留在内存里（不静默回滚）；
- * 3. **「最近使用」缩略图条还没有渲染层**：`SettingsPageRenderers.ControlCard` 目前只画
- *    `texts` 里的按钮、不画 `colors` 里的壁纸键（属于壁纸面板/渲染层的活）。所以
- *    [SelectionPageState.armedKey] 现在恒为 null，本宿主不伪造一个走不通的移除确认流程；
+ * 2. **「完成」写盘失败不退出**：见 [done]。Dart 是先 pop 再在 dispose 里补写
+ *    （`:586-592`），失败时页面已拆、`reportSettingsPersistFailure` 因 `!mounted`
+ *    直接吞掉，只留下一句没人看见的日志。这里改成先写、确认进盘才退；这是刻意比
+ *    Dart 更严的一处；
+ * 3. **壁纸「文件已丢失」警示仍由接线层填**：[SelectionPageState.fileMissing] 需要
+ *    真实路径探测（Dart `homePageImageProvider`，`:873-881`），本宿主没有算它，
+ *    所以那条警示行目前永远不出现。缩略图条本身已由 `WallpaperSheetBody` 绘制。
  * 4. **预览里没有壳的玻璃底栏**：Dart 的缩尺卡是「整个首页」，含底部坞；Kotlin 的玻璃
  *    底栏由壳（`PagesShellActivity`）画、不在页面层，所以 `TimetableHost` 这份预览只到
  *    课表页本身，顶部菜单条目也按空列表渲染。等底栏/菜单搬进共享渲染层后，预览要跟着
@@ -119,34 +141,92 @@ fun AppearanceEditorHost(
     initialMaterialPage: Int? = null,
     initialWallpaperPage: Int? = null,
 ) {
-    // 草稿：一进页就从盘上读一份；`openedWith` 是「取消」要回滚到的那份快照（`:179-182`）。
+    // 草稿：一进页就从盘上读一份。
     var model by remember(store) { mutableStateOf(store.load()) }
-    val openedWith = remember(store) { model }
+    // 「取消」要回滚到的那份进页快照（`:179-182`）。
+    //
+    // ⚠️ 必须是 `rememberSaveable`，不能用普通 `remember`：从壁纸/材质面板推「调整位置」
+    // 「每日壁纸」这类整页时，本页会被 NavDisplay 移出组合（被覆盖的条目不在可见窗口里，
+    // 状态靠条目自己的 saveable holder 保存）。普通 `remember` 回来时会重新初始化成
+    // 「回来那一刻」的值 ⇒ 取消只回滚回来之后的改动，推页前那几笔漏掉。
+    var openedWith by rememberSaveable(store, stateSaver = TimetableSettingsModelSaver) {
+        mutableStateOf(model)
+    }
+    // 深链接只消费一次：Dart `_pendingMaterialPage` 开过即清（`:243-247`、`:560`）。
+    // 同样要 saveable —— 否则推页回来时会重新触发一次「自动打开弹层」。
+    var deepLinkConsumed by rememberSaveable { mutableStateOf(false) }
+    // 最近一次**确认已落盘**的模型：读回校验的「改动前」基准（见 [writeVerified]）。
+    // 不需要 saveable：被移出组合后重新回来时，重新从盘上读就是正确的基准。
+    var landed by remember(store) { mutableStateOf(model) }
     // 面板要读的值全部从设置模型推出来（逐键同源在 AppearanceEditorBridge，单测在那边）。
     val appearance = remember(model) { AppearanceEditorBridge.toState(model) }
 
+    val context = LocalContext.current
+    // `_exiting`（`:132`、`:702-727`）：连点「取消 / 完成 / 返回」时只认第一次，
+    // 否则第二次会在已经退栈的页面上再退一层。
+    var exiting by remember { mutableStateOf(false) }
+
     var materialSheet by remember { mutableStateOf(false) }
     var materialInitialPageIndex by remember { mutableIntStateOf(MaterialSheetPages.GENERAL) }
+    // 弹层**每次打开**都重建正文（Dart 每次开面板都是新压一条弹层路由）：
+    // 页签停回调用方指定的那一页，上一次的「已发起移除」等界面态也不会带过来。
+    var materialSheetGeneration by remember { mutableIntStateOf(0) }
     var wallpaperSheet by remember { mutableStateOf(false) }
     var wallpaperInitialPageIndex by remember { mutableIntStateOf(WallpaperSheetPages.PICKER) }
+    var wallpaperSheetGeneration by remember { mutableIntStateOf(0) }
 
     // 欠写的那一档 + 防抖任务（见类注释「落盘节奏」）。
     var pendingSave by remember { mutableStateOf<TimetableSettingsModel?>(null) }
     var saveJob by remember { mutableStateOf<Job?>(null) }
     val scope = rememberCoroutineScope()
 
-    fun flushPendingSave() {
-        val next = pendingSave ?: return
-        pendingSave = null
-        // 合并写：只覆盖本模型拥有的键，不会顺手改掉课表仓储那份 core 4 键。
-        runCatching { store.save(next) }
-            .onFailure { Log.e(LOG_TAG, "appearance editor save failed, draft kept in memory", it) }
+    /** 一次提示（Dart `showAppToast` 的对应物；设置族宿主统一用系统 Toast）。 */
+    fun toast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    fun persistNow() {
+    /**
+     * 一次落盘 + **读回校验**，返回「这次改动真的进盘了」。
+     *
+     * 为什么不能只看 `store.save` 抛没抛：`PrefsKeyValueStore` 把
+     * `SharedPreferences.commit()` 的布尔丢了 ⇒ 写失败既不抛异常也不返回 false
+     * （`SettingsHost.saveVerified` 是同一条结论；那边是私有函数，这里按同口径再写一份，
+     * 不跨文件去碰别人的写作用域）。
+     *
+     * 失败时把草稿拉回**盘上真值**并提示（Dart `reportSettingsPersistFailure(resetDraft)`，
+     * `:656-664`）：界面不许停在「看着存了、其实没存」的状态。
+     */
+    fun writeVerified(next: TimetableSettingsModel): Boolean {
+        val result = runCatching {
+            store.save(next)
+            store.load()
+        }
+        val disk = result.getOrNull()
+        if (disk != null && SettingsActionDispatcher.persistLanded(landed, next, disk)) {
+            landed = next
+            return true
+        }
+        // 盘上那份就是「真正已生效」的值；读不到时退回本页已知的基准。
+        val actual = disk ?: landed
+        landed = actual
+        model = actual
+        Log.e(LOG_TAG, "appearance editor save did not land", result.exceptionOrNull())
+        toast(SettingsStringsExt2.saveFailed.zh)
+        return false
+    }
+
+    /** 把欠着的那一档写掉；没有欠档视为成功。 */
+    fun flushPendingSave(): Boolean {
+        val next = pendingSave ?: return true
+        pendingSave = null
+        return writeVerified(next)
+    }
+
+    /** 立刻写掉欠档（取消 / 完成 / 推页 / 离开本页前都用它）。 */
+    fun persistNow(): Boolean {
         saveJob?.cancel()
         saveJob = null
-        flushPendingSave()
+        return flushPendingSave()
     }
 
     fun commit(next: TimetableSettingsModel, debounce: Boolean) {
@@ -164,21 +244,62 @@ fun AppearanceEditorHost(
         }
     }
 
-    /** 取消：回滚到进页快照再返回（`:735-740`）。 */
+    /** 开材质面板并停在指定页（每次打开都从该页重建正文）。 */
+    fun openMaterial(page: Int) {
+        materialInitialPageIndex = page.coerceIn(0, MaterialSheetPages.COUNT - 1)
+        materialSheetGeneration++
+        // 一块弹层只有一个位置：开这块就把另一块关掉，不叠着开。
+        wallpaperSheet = false
+        materialSheet = true
+    }
+
+    /** 开壁纸面板并停在指定页（理由同 [openMaterial]）。 */
+    fun openWallpaper(page: Int) {
+        wallpaperInitialPageIndex = page.coerceIn(0, WallpaperSheetPages.COUNT - 1)
+        wallpaperSheetGeneration++
+        materialSheet = false
+        wallpaperSheet = true
+    }
+
+    /**
+     * 取消：回滚到进页快照再返回（`:735-740`）。
+     *
+     * 与「完成后不退出」不同，取消**无论如何都要离开**：用户已经决定放弃这一页的改动，
+     * 回滚写失败时提示一句就够（Dart `_popSelf` 同样不等回滚结果）。
+     */
     fun cancel() {
-        // 先把欠着的最后一档写掉，再整份覆盖成进页那份；顺序反了会让防抖里那一档后落地。
-        persistNow()
+        if (exiting) return
+        exiting = true
+        // Dart 取消时把防抖计时器直接 cancel（`:622-628` 之后走 `_updateDraft(_openedWith)`），
+        // 那一档草稿**不写**：盘上最终只应留下进页快照。
+        saveJob?.cancel()
+        saveJob = null
+        pendingSave = null
+        // 本页退出后弹层不能继续压在新页面上（`:679-727`）。
+        materialSheet = false
+        wallpaperSheet = false
         if (model != openedWith) {
             model = openedWith
-            runCatching { store.save(openedWith) }
-                .onFailure { Log.e(LOG_TAG, "appearance editor rollback save failed", it) }
+            writeVerified(openedWith)
         }
         onBack()
     }
 
-    /** 完成：保留改动并返回（`:672-675`）。 */
+    /**
+     * 完成：把欠档写完 + 返回（`:672-675`）。
+     *
+     * **写盘没落地就不退出**：Dart 是先 pop、在 dispose 里补写（`:586-592`），
+     * 失败提示此时页面已经拆掉、`mounted == false` 直接被吞掉 —— 用户看到的是
+     * 「点了完成、设置没存、也没有任何提示」。这里改成先验证再退出：
+     * 失败时留在本页、草稿拉回盘上真值并弹 `saveFailed`，可以让用户重试。
+     * 这是**刻意比 Dart 更严**的一处，不是漏搬。
+     */
     fun done() {
-        persistNow()
+        if (exiting) return
+        if (!persistNow()) return
+        exiting = true
+        materialSheet = false
+        wallpaperSheet = false
         onBack()
     }
 
@@ -215,6 +336,12 @@ fun AppearanceEditorHost(
             is SettingsDispatch.Navigate -> {
                 // 推页前先把欠着的写掉：新页读的是盘上那份设置。
                 persistNow()
+                // 弹层里的「调整位置 / 每日壁纸」要推整页：**先收起宿主弹层再推**
+                // （Dart `_withHostSheetClosed`，`settings_home_backdrop_flow.dart:115-148`）。
+                // 弹层留着的话，新页会被它的遮罩压在下面、点不到 —— 原件 2026-09-20
+                // 真机口径「页面在弹窗背后，什么都点不到」就是这件事。
+                materialSheet = false
+                wallpaperSheet = false
                 onNavigate(dispatch.route)
             }
 
@@ -246,20 +373,19 @@ fun AppearanceEditorHost(
     // 两块面板**互斥**：一块弹层一个位置，两个 initial* 同时非空时以材质优先（防守写法，
     // 正常调用不会同时给两个）。
     LaunchedEffect(initialMaterialPage, initialWallpaperPage) {
+        // 只消费一次（见 [deepLinkConsumed] 的声明）。
+        if (deepLinkConsumed) return@LaunchedEffect
         val materialPage = initialMaterialPage
         val wallpaperPage = initialWallpaperPage
         when {
             materialPage != null -> {
-                materialInitialPageIndex = materialPage.coerceIn(0, MaterialSheetPages.COUNT - 1)
-                wallpaperSheet = false
-                materialSheet = true
+                deepLinkConsumed = true
+                openMaterial(materialPage)
             }
 
             wallpaperPage != null -> {
-                wallpaperInitialPageIndex =
-                    wallpaperPage.coerceIn(0, WallpaperSheetPages.COUNT - 1)
-                materialSheet = false
-                wallpaperSheet = true
+                deepLinkConsumed = true
+                openWallpaper(wallpaperPage)
             }
         }
     }
@@ -271,14 +397,10 @@ fun AppearanceEditorHost(
         onDone = { done() },
         onAdjustWallpaper = {
             // 底部圆钮永远从「壁纸」那页开（Dart `_openWallpaperSheet` 不带页参数，`:777-807`）。
-            wallpaperInitialPageIndex = WallpaperSheetPages.PICKER
-            materialSheet = false
-            wallpaperSheet = true
+            openWallpaper(WallpaperSheetPages.PICKER)
         },
         onMaterial = {
-            materialInitialPageIndex = MaterialSheetPages.GENERAL
-            wallpaperSheet = false
-            materialSheet = true
+            openMaterial(MaterialSheetPages.GENERAL)
         },
         // 见类注释「已知差异」第 1 条。
         previewReady = true,
@@ -309,15 +431,19 @@ fun AppearanceEditorHost(
         // 以前是在调用点算 `screenHeightDp * 0.5`，现在照原值交给套件（`:839-841` 壁纸面板同口径）。
         maxHeightFraction = APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR,
     ) {
-        MaterialSheetBody(
-            state = appearance,
-            onAction = { action, target, rowId -> handleAction(action, target, rowId) },
-            // ⚠️ 不要传 `bottom = 24.dp`：面板底部留白是「手势区 + 16」且由滚动内容自带
-            // （Dart `scrollableBottomGap: true`，见 `settings_appearance_editor.dart:890-894`），
-            // 再叠一层 24 就是「手势区 + 40」。
-            contentPadding = PaddingValues(),
-            initialPage = materialInitialPageIndex,
-        )
+        // 每次打开换一个 key ⇒ 正文整块重建：页签从调用方指定的那一页起，
+        // 不会带着上一次打开时滑到的页 / 移除确认态（Dart 每次都是新弹层路由）。
+        key(materialSheetGeneration) {
+            MaterialSheetBody(
+                state = appearance,
+                onAction = { action, target, rowId -> handleAction(action, target, rowId) },
+                // ⚠️ 不要传 `bottom = 24.dp`：面板底部留白是「手势区 + 16」且由滚动内容自带
+                // （Dart `scrollableBottomGap: true`，见 `settings_appearance_editor.dart:890-894`），
+                // 再叠一层 24 就是「手势区 + 40」。
+                contentPadding = PaddingValues(),
+                initialPage = materialInitialPageIndex,
+            )
+        }
     }
 
     QingyuSheet(
@@ -329,17 +455,19 @@ fun AppearanceEditorHost(
         contentScrolls = true,
         maxHeightFraction = APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR,
     ) {
-        WallpaperSheetBody(
-            state = appearance,
-            onAction = { action, target, rowId -> handleAction(action, target, rowId) },
-            // 「最近使用」的选择态：壁纸键集合与当前壁纸都从同一份状态推出来；
-            // `armedKey`（移除确认）属于缩略图条自己的界面态，见类注释「已知差异」第 3 条。
-            selection = SelectionPageState(backdrop = backdropFlowState(appearance)),
-            // 底部留白由**滚动内容**自己带（Dart `scrollableBottomGap`：系统手势区 + 16，
-            // `miui_bottom_sheet.dart:448-458`）。宿主不垫：垫在视口外面会让内容永远滚不进去。
-            contentPadding = wallpaperSheetBottomGap(),
-            initialPage = wallpaperInitialPageIndex,
-        )
+        key(wallpaperSheetGeneration) {
+            WallpaperSheetBody(
+                state = appearance,
+                onAction = { action, target, rowId -> handleAction(action, target, rowId) },
+                // 「最近使用」的选择态：壁纸键集合与当前壁纸都从同一份状态推出来；
+                // `armedKey`（移除确认）属于缩略图条自己的界面态，见类注释「已知差异」第 3 条。
+                selection = SelectionPageState(backdrop = backdropFlowState(appearance)),
+                // 底部留白由**滚动内容**自己带（Dart `scrollableBottomGap`：系统手势区 + 16，
+                // `miui_bottom_sheet.dart:448-458`）。宿主不垫：垫在视口外面会让内容永远滚不进去。
+                contentPadding = wallpaperSheetBottomGap(),
+                initialPage = wallpaperInitialPageIndex,
+            )
+        }
     }
 }
 
@@ -445,6 +573,22 @@ private fun isDebouncedSliderRow(rowId: String): Boolean =
 
 /** Dart 滑杆防抖 250ms（`:624-627`）。 */
 private const val APPEARANCE_EDITOR_SAVE_DEBOUNCE_MS = 250L
+
+/**
+ * 进页快照的可保存形式：就是落盘用的那份 JSON patch。
+ *
+ * 只用来保住**本模型拥有的键**（取消时写回的也正是这些键），所以直接用
+ * [TimetableSettingsModel.toJsonPatch] 往返，不另造一套序列化。
+ * 需要它的原因：推整页时本页会被移出组合，普通 `remember` 的进页快照会丢。
+ */
+@Suppress("UNCHECKED_CAST")
+private val TimetableSettingsModelSaver: Saver<TimetableSettingsModel, String> = Saver(
+    save = { MiniJson.encode(it.toJsonPatch()) },
+    restore = { json ->
+        (MiniJson.tryParse(json) as? Map<String, Any?>)
+            ?.let { TimetableSettingsModel.fromJson(it) }
+    },
+)
 
 /** 两个面板的内容最多占屏高 50%（Dart `_materialSheetMaxHeightFactor = 0.5`，`:120`）。 */
 private const val APPEARANCE_EDITOR_SHEET_MAX_HEIGHT_FACTOR = 0.5f
