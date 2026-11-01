@@ -570,18 +570,19 @@ object SettingsActionDispatcher {
                 homePageBackgroundImagePath = null,
             )
 
+            // 与 Dart `settings_reset.dart:162-174` 逐字段对齐。
+            // ⚠️ `homeMenuStyle` / `homeGridMenuActions` **不纳入**：Dart 明确排除
+            // （`copyWith` 会把空表过一遍 `HomeGridMenu.normalize`，得到一张只有
+            // 「课表设置」一格的菜单，而不是出厂那套）；`glassDockShow{Day,Settings,Week}Tab`
+            // 是被 `glassDockActions` 取代的旧布尔键，Dart 也已移出任何作用域。
+            // 确认框文案只写「底栏与首页标题」，多清这几项就是按声明的范围多清。
             SCOPE_HOME_NAVIGATION -> model.copy(
                 homeNavigationForm = HomeNavigationForm.CLASSIC,
-                homeMenuStyle = HomeMenuStyle.LIST,
                 homeTitleStyle = HomeTitleStyle.CLASSIC,
                 glassDockActions = emptyList(),
                 glassDockShowAddButton = false,
                 glassDockButtonEntryId = TimetableSettingsModel.DEFAULT_GLASS_DOCK_BUTTON_ENTRY_ID,
                 glassDockButtonIconName = null,
-                glassDockShowDayTab = true,
-                glassDockShowSettingsTab = true,
-                glassDockShowWeekTab = true,
-                homeGridMenuActions = emptyList(),
             )
 
             // 材质面板里那颗「恢复默认」：**只清液态调参**，不动整体材质

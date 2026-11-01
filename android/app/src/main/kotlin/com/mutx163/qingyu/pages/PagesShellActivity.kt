@@ -1,7 +1,9 @@
 package com.mutx163.qingyu.pages
 
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.LocaleList
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -28,13 +30,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.DeviceFontFamilyName
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import com.mutx163.qingyu.LiveUpdateScheduler
+import com.mutx163.qingyu.app.AppFontMode
+import com.mutx163.qingyu.app.AppThemeMode
+import com.mutx163.qingyu.app.TimetableSettingsModel
+import com.mutx163.qingyu.app.TimetableSettingsModelStore
+import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.app.TimetableHomeViewMode
+import com.mutx163.qingyu.pages.live.LiveSnapshotBuilder
+import com.mutx163.qingyu.pages.live.LiveSnapshotSyncRegistry
+import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
 import kotlin.math.roundToInt
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -92,8 +108,30 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
  */
 class PagesShellActivity : ComponentActivity() {
 
+    /**
+     * 应用语言：在 Context 挂载前按存档里的 `appLocaleTag` 覆写配置语言。
+     *
+     * 只用 Android 原生路径（`LocaleList` + `createConfigurationContext`）——本工程没有
+     * appcompat，`AppCompatDelegate.setApplicationLocales` 不可用。
+     *
+     * ⚠️ 效果边界：壳的页面文案来自各页 `*Strings.zh` 常量（非 Android 资源），所以
+     * 这里只影响 `Locale.getDefault()` / 资源语言，**不会把界面文字换成外语**。
+     * 要真正多语言，得先把文案资源化（ARB），不在本文件的能力范围。
+     *
+     * 空串 = 跟随系统（不覆写）。
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(withAppLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 实时活动的设置只在 Compose 宿主落盘（`timetable_settings`），而原生岛读的是
+        // `LiveUpdateScheduler` 的 `snapshot_json`——两者之间原本没有桥，于是「改了显示
+        // 设置，岛毫无变化」。这里把同步器挂到进程级注册点，由 [LiveSnapshotSyncRegistry]
+        // 在每次显示设置 / 提醒时段落盘后调用（见 pages/live/LiveDisplayStore.kt）。
+        installLiveSnapshotSync(applicationContext)
 
         // 系统栏这件事有两层，缺任一层都会在屏幕上留黑条（2026-10-28 第二轮查清）：
         //
@@ -131,18 +169,55 @@ class PagesShellActivity : ComponentActivity() {
         PerfProbe.markStartup("shellAttach")
 
         setContent {
-            val dark = isSystemInDarkTheme()
-            SideEffect { applyShellSystemBars(isDark = dark) }
+            // ── 外观设置 → 主题桥 ──────────────────────────────────────────────
+            // 设置存储没有变更通道（只有 load / save），所以这里读一次进 state；
+            // `PagesShell` 在「回到主屏」时重读并回推（`onReloadSettings`），
+            // 外观页改完返回后立刻生效。
+            //
+            // 2026-11-01 之前这里只写 `QingyuPageTheme { PagesShell() }`：明暗恒取
+            // `isSystemInDarkTheme()`、字重恒 400、字体/字号/种子色/语言**没有任何消费方**
+            // ——外观页改了设置，界面纹丝不动。现在逐项接上：
+            // * `appThemeMode` → 解析出 `isDark`，同时由 QingyuPageTheme 覆写
+            //   `LocalConfiguration`，让 91 处页面级 `isSystemInDarkTheme()` 同口径；
+            // * `themeSeedColor` → 配色板的 primary / primaryVariant；
+            // * `appFontWeight` / `appFontMode` → 字阶字重与字族；
+            // * `appTextScale` → `LocalDensity.fontScale` 缩放；
+            // * `appLocaleTag` → `attachBaseContext`（仅启动时生效，见该方法注释）。
+            val wiring = rememberShellWiring()
+            var settingsModel by remember(wiring) {
+                mutableStateOf(wiring.settingsModel.load())
+            }
+            val appDark = resolveAppDark(
+                mode = settingsModel.appThemeMode,
+                systemDark = isSystemInDarkTheme(),
+            )
+            // 字族实例每次调用都是新对象；按字体档 remember 一下，免得字阶 remember 键抖动。
+            val fontFamily = remember(settingsModel.appFontMode) {
+                appFontFamily(settingsModel.appFontMode)
+            }
+            SideEffect { applyShellSystemBars(isDark = appDark) }
             // 壳的主题必须也走主题桥：无参 MiuixTheme{ } 的配色恒取官方默认亮色板，
             // 系统切深色后卡片仍是 #FFFFFF，而正文取的是 QingyuTheme 的深色白字
             // → 白字白底、内容不可读（页面层已由 QingyuPageTheme 兜住，壳这层是
             // 根因，此处一并修掉）。用 QingyuPageTheme 后页面里的同款包装成为
             // 重复但等价的一层，后续可逐页摘除。
-            QingyuPageTheme { PagesShell() }
+            QingyuPageTheme(
+                isDark = appDark,
+                seedColor = settingsModel.themeSeedColor,
+                userFontWeight = settingsModel.appFontWeight,
+                fontFamily = fontFamily,
+                textScale = settingsModel.appTextScale.toFloat(),
+            ) {
+                PagesShell(
+                    wiring = wiring,
+                    settingsModel = settingsModel,
+                    onReloadSettings = { settingsModel = it },
+                )
+            }
         }
     }
 
-    /** 当前资源配置是否为深色。仅作首帧兜底，组合内以 isSystemInDarkTheme() 为准。 */
+    /** 当前资源配置是否为深色。仅作首帧兜底，组合内以「主题模式 + 系统」解析出的明暗为准。 */
     private fun isNightMode(): Boolean =
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
@@ -181,16 +256,113 @@ class PagesShellActivity : ComponentActivity() {
     }
 }
 
-@Composable
-private fun PagesShell() {
-    // Phase 3.5 接线层：壳自己的存储 + 课表仓储。
-    val wiring = rememberShellWiring()
+/**
+ * 应用语言：按存档的 `appLocaleTag` 覆写配置语言。空串 = 跟随系统。
+ *
+ * 见 [PagesShellActivity.attachBaseContext] 的效果边界说明。
+ */
+private fun withAppLocale(base: Context): Context {
+    val tag = runCatching {
+        TimetableSettingsModelStore(
+            TimetableStore(PrefsKeyValueStore(base)),
+        ).load().appLocaleTag
+    }.getOrNull().orEmpty()
+    if (tag.isBlank()) return base
+    val locale = runCatching { LocaleList.forLanguageTags(tag)[0] }.getOrNull() ?: return base
+    Locale.setDefault(locale)
+    val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
+    return base.createConfigurationContext(config)
+}
 
-    // ── 用户设置（底栏排列 / 底栏形态 / 圆钮 / 首页视图档）──────────────────────
+/** 主题模式 + 系统明暗 → 壳的实际明暗。 */
+private fun resolveAppDark(mode: AppThemeMode, systemDark: Boolean): Boolean = when (mode) {
+    AppThemeMode.SYSTEM -> systemDark
+    AppThemeMode.LIGHT -> false
+    AppThemeMode.DARK -> true
+}
+
+/**
+ * 应用字体 → Compose 字族。`SYSTEM` 返回 null（不覆写，跟随系统默认）。
+ *
+ * 名称与 Dart `lib/ui/app_fonts.dart:137-163` 的 `fontFamily` 逐字一致（同一批系统字体）。
+ * Android 侧必须走 `Font(DeviceFontFamilyName(...))`：本工程用的是 KMP 版 Compose，
+ * `Font(deviceFontFamilyName: String)` 那个 Android 专属重载不存在，直接传 String 会
+ * 落到 `Font(resId: Int)` 而编译失败（2026-11-01 实测）。系统上没有该字体时 Compose
+ * 自动回落到默认，不会崩。
+ */
+private fun deviceFontFamily(name: String): FontFamily =
+    FontFamily(Font(DeviceFontFamilyName(name)))
+
+private fun appFontFamily(mode: AppFontMode): FontFamily? = when (mode) {
+    AppFontMode.SYSTEM -> null
+    AppFontMode.SANS_SERIF -> FontFamily.SansSerif
+    AppFontMode.SERIF -> FontFamily.Serif
+    AppFontMode.MONOSPACE -> FontFamily.Monospace
+    AppFontMode.MI_SANS -> deviceFontFamily("MiSans")
+    AppFontMode.HARMONY_OS -> deviceFontFamily("HarmonyOS Sans SC")
+    AppFontMode.OPPO_SANS -> deviceFontFamily("OPlus Sans SC 3.5")
+    AppFontMode.PING_FANG -> deviceFontFamily("PingFang SC")
+    AppFontMode.NOTO_SANS -> deviceFontFamily("Noto Sans CJK SC")
+    AppFontMode.SONG_TI -> deviceFontFamily("Songti SC")
+}
+
+/**
+ * 把「设置落盘 → 同步原生岛快照」的桥挂到进程级注册点。
+ *
+ * ## 怎么做
+ *
+ * 原生岛读的是 `LiveUpdateScheduler` 的 `snapshot_json`；本壳的显示设置页只写
+ * `timetable_settings`。两者的「settings」子树本是一份数据（Dart
+ * `buildLiveSnapshotSettingsJson` = `settings.toJson()` + 展开详情版本号），所以这里
+ * **不重建整份快照**（那需要课程 / 当前周 / 节假日，壳不拥有），而是读既有快照、
+ * 只替换 `settings` 子树（课程等原样保留），再交给 `LiveUpdateScheduler.syncSnapshot`。
+ *
+ * ## 边界（如实说明）
+ *
+ * 盘上还没有任何快照时（例如全新 dev 壳，原生侧从未被 Dart 同步过）**什么都不做**：
+ * 凭空造一份没有课程的快照只会把岛打成「空课表」。快照的首次建立仍由 Dart 侧的
+ * 课程同步负责；本桥负责的是「快照已存在时，设置改动也能传到岛」。
+ *
+ * prefs 名 / key 与 `LiveUpdateScheduler` 的私有常量同值（对方是 private，引用不到）。
+ */
+private fun installLiveSnapshotSync(context: Context) {
+    LiveSnapshotSyncRegistry.install(
+        LiveSnapshotSyncer { settingsJson ->
+            val prefs = context.getSharedPreferences(LIVE_SCHEDULER_PREFS, Context.MODE_PRIVATE)
+            val existing = prefs.getString(LIVE_SNAPSHOT_KEY, null)
+            val merged = LiveSnapshotBuilder.withSettings(existing, settingsJson)
+            if (merged != null) {
+                runCatching { LiveUpdateScheduler.syncSnapshot(context, merged) }
+            }
+        },
+    )
+}
+
+/** 与 `LiveUpdateScheduler.PREFS_NAME` 同值（对方 private）。 */
+private const val LIVE_SCHEDULER_PREFS = "live_update_scheduler"
+
+/** 与 `LiveUpdateScheduler.KEY_SNAPSHOT_JSON` 同值（对方 private）。 */
+private const val LIVE_SNAPSHOT_KEY = "snapshot_json"
+
+@Composable
+private fun PagesShell(
+    /** Phase 3.5 接线层：壳自己的存储 + 课表仓储（由 [PagesShellActivity] 组合级持有）。 */
+    wiring: ShellWiring,
+    /**
+     * 用户设置（底栏排列 / 形态 / 圆钮 / 首页视图档，以及外观项）。
+     *
+     * 状态提到 `setContent` 顶层持有——[QingyuPageTheme] 包在 `PagesShell` 外面，
+     * 只有在外层拿到它，主题 / 字重 / 字号才可能在设置变化时重组。
+     */
+    settingsModel: TimetableSettingsModel,
+    /** 回到主屏时重读设置后的回推（外层据此更新主题）。 */
+    onReloadSettings: (TimetableSettingsModel) -> Unit,
+) {
+    // ── 用户设置 ────────────────────────────────────────────────────────────
     // 设置存储没有变更通道（`TimetableSettingsModelStore` 只有 load / save），旧做法是
     // 「每次重组 load 一遍」。这里读一次进 state，并在**回到主屏**时重读：设置页改完
     // 返回后立刻生效，滚动、动画的每一帧又不用重新解析一遍 JSON。
-    var settingsModel by remember(wiring) { mutableStateOf(wiring.settingsModel.load()) }
+    // 状态本体已提到外层（见参数注释），这里只负责触发重读。
 
     // 底栏条目排列 / 图标 / 圆钮的解析**不在这里**：坞由栈底条目自己画（见 `HomeGlassDock`），
     // 排列解析与渲染同处一处，壳只负责告诉它「当前是哪个条目」和「哪个 id 有去处」。
@@ -324,7 +496,7 @@ private fun PagesShell() {
     // pop 回栈底时再变 true，本效果于是重跑一次 `load()`。少了这一步，`glassDockButtonIconName`
     // 只在进程重启后才生效。
     LaunchedEffect(atRoot) {
-        if (atRoot) settingsModel = wiring.settingsModel.load()
+        if (atRoot) onReloadSettings(wiring.settingsModel.load())
     }
 
     // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且不在周视图时回周视图。

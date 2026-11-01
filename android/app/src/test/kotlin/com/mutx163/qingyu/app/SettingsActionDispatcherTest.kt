@@ -1140,7 +1140,6 @@ class SettingsActionDispatcherTest {
             SettingsActionDispatcher.SCOPE_HOME_NAVIGATION,
         )!!
         assertEquals(HomeNavigationForm.CLASSIC, reset.homeNavigationForm)
-        assertEquals(HomeMenuStyle.LIST, reset.homeMenuStyle)
         assertEquals(HomeTitleStyle.CLASSIC, reset.homeTitleStyle)
         assertEquals(emptyList<String>(), reset.glassDockActions)
         assertFalse(reset.glassDockShowAddButton)
@@ -1149,10 +1148,13 @@ class SettingsActionDispatcherTest {
             reset.glassDockButtonEntryId,
         )
         assertNull(reset.glassDockButtonIconName)
-        assertTrue(reset.glassDockShowDayTab)
-        assertTrue(reset.glassDockShowSettingsTab)
-        assertTrue(reset.glassDockShowWeekTab)
-        assertEquals(emptyList<String>(), reset.homeGridMenuActions)
+        // 以下四项 **不纳入** 本作用域（Dart `settings_reset.dart:162-174` 明确排除）：
+        // 多清它们就是「按声明的范围多清」——确认框只写「底栏与首页标题」。
+        assertEquals(HomeMenuStyle.GRID, reset.homeMenuStyle)
+        assertFalse(reset.glassDockShowDayTab)
+        assertFalse(reset.glassDockShowSettingsTab)
+        assertFalse(reset.glassDockShowWeekTab)
+        assertEquals(listOf("overview", "settings"), reset.homeGridMenuActions)
     }
 
     @Test

@@ -56,6 +56,7 @@ class LiveDisplayStore(private val store: TimetableStore) {
             LiveDisplayCodec.beforeClassPatch(state)
         }
         store.saveSettingsPatch(patch)
+        syncNativeSnapshot()
     }
 
     /** 读「提醒时段」页当前值。 */
@@ -65,6 +66,17 @@ class LiveDisplayStore(private val store: TimetableStore) {
     /** 写「提醒时段」页；同样只覆盖本页拥有的键。 */
     fun saveReminderTiming(state: ReminderTimingState) {
         store.saveSettingsPatch(LiveDisplayCodec.reminderTimingPatch(state))
+        syncNativeSnapshot()
+    }
+
+    /**
+     * 落盘后把新设置同步给原生岛（见 [LiveSnapshotSyncRegistry]）。
+     *
+     * 读回**合并后**的整份设置再交出去：只拿本页补丁会把别页的 live* 键当成缺失。
+     * 未挂同步器（纯 JVM 单测 / 未启动壳）时是空操作。
+     */
+    private fun syncNativeSnapshot() {
+        LiveSnapshotSyncRegistry.syncIfInstalled(store.loadSettingsJson())
     }
 }
 

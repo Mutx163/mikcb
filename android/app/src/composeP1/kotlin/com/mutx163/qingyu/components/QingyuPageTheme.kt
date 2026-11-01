@@ -1,9 +1,14 @@
 package com.mutx163.qingyu.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Density
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.theme.QingyuTypography
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -13,7 +18,14 @@ import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
- * 页面级主题桥：把自家色板填进官方 [MiuixTheme]，并跟随系统深色。
+ * 页面级主题桥：把自家色板填进官方 [MiuixTheme]，并承载「外观设置」的几项映射：
+ * 明暗档（[isDark]）、主题种子色（[seedColor]）、应用字重 / 字族 / 字号（[rememberQingyuTextStyles]）。
+ *
+ * ## 明暗与「系统深色」的关系
+ *
+ * [isDark] 由外壳按「主题模式 + 系统」解析后传入，默认 `isSystemInDarkTheme()`。这里除了
+ * 交给 [ThemeController]，还会覆盖 `LocalConfiguration` 的 `uiMode` 深色位——页面里 91 处
+ * 直接调 `isSystemInDarkTheme()` 取色，覆盖后它们自动与主题档同口径，不必逐页改。
  *
  * ## 为什么需要它（一次真实缺陷）
  *
@@ -51,41 +63,82 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
  */
 @Composable
 fun QingyuPageTheme(
+    /** 明暗档：由外壳按「外观设置的主题模式 + 系统」解析后传入（默认跟随系统）。 */
+    isDark: Boolean = isSystemInDarkTheme(),
+    /** 主题种子色（`themeSeedColor` 的十六进制串）；null = 不派生，用固定蓝。 */
+    seedColor: String? = null,
     userFontWeight: Int = QingyuTypography.WEIGHT_DEFAULT,
     fontFamily: FontFamily? = null,
+    /** 应用字号倍率（`appTextScale`）：1.0 = 不变。 */
+    textScale: Float = 1f,
     content: @Composable () -> Unit,
 ) {
-    val dark = isSystemInDarkTheme()
     // 两份配色必须在 Composable 上下文里先算出来（`remember` 的 lambda 不是
     // @Composable 作用域，不能在里面调 @Composable 函数）。
-    val lightColors = qingyuLightColors()
-    val darkColors = qingyuDarkColors()
+    val lightColors = qingyuLightColors(seedColor)
+    val darkColors = qingyuDarkColors(seedColor)
     // 字阶同理：`rememberQingyuTextStyles` 是 @Composable，要在外面先取。
     val textStyles = rememberQingyuTextStyles(
         userFontWeight = userFontWeight,
         fontFamily = fontFamily,
     )
-    val controller = androidx.compose.runtime.remember(lightColors, darkColors, dark) {
+    val controller = androidx.compose.runtime.remember(lightColors, darkColors, isDark) {
         ThemeController(
             colorSchemeMode = ColorSchemeMode.System,
             lightColors = lightColors,
             darkColors = darkColors,
-            isDark = dark,
+            isDark = isDark,
         )
     }
-    // ⚠️ textStyles 必须显式传：
+
+    // ── 把「应用主题模式」广播给整棵子树 ─────────────────────────────────────
     //
-    // 官方 `MiuixTheme(controller = …, content = …)` 的 `textStyles` 默认值取的是
-    // `MiuixTheme.textStyles`，也就是**当前组合里的** LocalTextStyles。在页面这一层
-    // 那已经是我们自己注入过的（壳那层先注入），所以"不传"看起来也"能工作"——
-    // 但一旦有页面在更外层被单独使用（预览、测试、未来的独立宿主），就会静默回落到
-    // 官方默认字阶，用户字重与系统粗体当场失效。显式传是防这种静默回落。
-    MiuixTheme(controller = controller, textStyles = textStyles, content = content)
+    // 91 处页面代码直接调 `isSystemInDarkTheme()` 去取 `QingyuTheme.xxx(dark)`。若只把
+    // 官方 `MiuixTheme` 的明暗改掉、不覆盖 `LocalConfiguration`，会出现「卡片按深色、
+    // 正文按亮色」的错位。`isSystemInDarkTheme()` 读的就是 `LocalConfiguration.uiMode`
+    // （Compose 源码），所以在这里覆盖一次，全站取值口径就跟着 `isDark` 走，
+    // 不必逐页改那 91 处。
+    val baseConfig = LocalConfiguration.current
+    val effectiveConfig = androidx.compose.runtime.remember(baseConfig, isDark) {
+        withNightMode(baseConfig, isDark)
+    }
+
+    // 字号倍率：只缩放 `fontScale`（sp→px），不动 `density`（dp→px），
+    // 于是布局尺寸不变、只有文字按比例放大/缩小——与 Dart `appTextScale` 的口径一致。
+    val baseDensity = LocalDensity.current
+    val effectiveDensity = androidx.compose.runtime.remember(baseDensity, textScale) {
+        if (textScale == 1f) {
+            baseDensity
+        } else {
+            Density(baseDensity.density, baseDensity.fontScale * textScale)
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalConfiguration provides effectiveConfig,
+        LocalDensity provides effectiveDensity,
+    ) {
+        // ⚠️ textStyles 必须显式传：
+        //
+        // 官方 `MiuixTheme(controller = …, content = …)` 的 `textStyles` 默认值取的是
+        // `MiuixTheme.textStyles`，也就是**当前组合里的** LocalTextStyles。在页面这一层
+        // 那已经是我们自己注入过的（壳那层先注入），所以"不传"看起来也"能工作"——
+        // 但一旦有页面在更外层被单独使用（预览、测试、未来的独立宿主），就会静默回落到
+        // 官方默认字阶，用户字重与系统粗体当场失效。显式传是防这种静默回落。
+        MiuixTheme(controller = controller, textStyles = textStyles, content = content)
+    }
+}
+
+/** 复制一份配置，只把 `uiMode` 的深色位改成 [dark]（其余字段原样保留）。 */
+private fun withNightMode(base: Configuration, dark: Boolean): Configuration {
+    val mode = if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+    val uiMode = (base.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or mode
+    return Configuration(base).apply { this.uiMode = uiMode }
 }
 
 /** 亮色板：语义槽对齐 [QingyuTheme]，未列出的沿用官方默认值。 */
 @Composable
-private fun qingyuLightColors() = lightColorScheme(
+private fun qingyuLightColors(seedHex: String?) = lightColorScheme(
     // 页面底色（Scaffold containerColor 与 Card 的对比基线）
     background = Color(QingyuTheme.scaffoldBackground(dark = false)),
     onBackground = Color(QingyuTheme.primaryText(dark = false)),
@@ -100,9 +153,9 @@ private fun qingyuLightColors() = lightColorScheme(
     surfaceContainerHighest = Color(QingyuTheme.surfaceContainerHighest(dark = false)),
     onSurfaceVariantSummary = Color(QingyuTheme.secondaryText(dark = false)),
     onSurfaceVariantActions = Color(QingyuTheme.actionIcon(dark = false)),
-    primary = Color(QingyuTheme.primary(dark = false)),
+    primary = Color(QingyuTheme.primary(seedHex, dark = false)),
     onPrimary = Color(QingyuTheme.onAccent(dark = false)),
-    primaryVariant = Color(QingyuTheme.primary(dark = false)),
+    primaryVariant = Color(QingyuTheme.primary(seedHex, dark = false)),
     secondary = Color(QingyuTheme.secondary(dark = false)),
     dividerLine = Color(QingyuTheme.dividerLine(dark = false)),
     outline = Color(QingyuTheme.outline(dark = false)),
@@ -112,7 +165,7 @@ private fun qingyuLightColors() = lightColorScheme(
 
 /** 深色板：**这一份是本次修复的核心**——之前完全没有生效过。 */
 @Composable
-private fun qingyuDarkColors() = darkColorScheme(
+private fun qingyuDarkColors(seedHex: String?) = darkColorScheme(
     background = Color(QingyuTheme.scaffoldBackground(dark = true)),
     onBackground = Color(QingyuTheme.primaryText(dark = true)),
     onBackgroundVariant = Color(QingyuTheme.secondaryText(dark = true)),
@@ -126,9 +179,9 @@ private fun qingyuDarkColors() = darkColorScheme(
     surfaceContainerHighest = Color(QingyuTheme.surfaceContainerHighest(dark = true)),
     onSurfaceVariantSummary = Color(QingyuTheme.secondaryText(dark = true)),
     onSurfaceVariantActions = Color(QingyuTheme.actionIcon(dark = true)),
-    primary = Color(QingyuTheme.primary(dark = true)),
+    primary = Color(QingyuTheme.primary(seedHex, dark = true)),
     onPrimary = Color(QingyuTheme.onAccent(dark = true)),
-    primaryVariant = Color(QingyuTheme.primary(dark = true)),
+    primaryVariant = Color(QingyuTheme.primary(seedHex, dark = true)),
     secondary = Color(QingyuTheme.secondary(dark = true)),
     dividerLine = Color(QingyuTheme.dividerLine(dark = true)),
     outline = Color(QingyuTheme.outline(dark = true)),

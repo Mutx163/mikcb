@@ -37,6 +37,7 @@ import com.mutx163.qingyu.pages.import.CourseAutoRefreshModel
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSchedule
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSettingsLogic
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshStore
+import com.mutx163.qingyu.pages.shellPageIdForRoute
 import com.mutx163.qingyu.pages.settings.GlassDockEditorScreen
 import com.mutx163.qingyu.pages.settings.GlassDockEditorState
 import com.mutx163.qingyu.pages.settings.HomeMenuEditorScreen
@@ -1216,9 +1217,9 @@ fun HomeNavigationHost(
  * - `RESET_SCOPE`：先弹确认框，确认后 [SettingsActionDispatcher.applyResetScope]。
  *   作用域字段清单在分派器里（`SCOPE_TIMETABLE_PAGE`），本宿主不复制。
  * - `SHEET`：壁纸选图 / 最近使用。面板宿主在 `b.backdropFlow` / `b.recentWallpaper`，
- *   但本宿主只拿到 `onNavigate(route)`，壳的 `shellPageIdForRoute` 还没有这两条
- *   出站路由（2026-11-01；ShellWiring 属 Lead 写作用域）。在那之前**如实告知不可用**，
- *   不假装打开一个不存在的弹层。
+ *   本宿主按 rowId 认领这两行并 `onNavigate(route)` 推页。**遗留一步**：壳的
+ *   `shellPageIdForRoute` 还缺这两条出站路由（ShellWiring 属 Lead 写作用域），补齐前
+ *   会先判一次映射、解析不到就如实提示不可用（不静默吞点击）；需补的两行见交付报告。
  *
  * ## 背景色板的 rowId 翻译（重要）
  *
@@ -1330,11 +1331,21 @@ fun TimetablePageSettingsHost(
                         }
                     }
 
-                    // 壁纸选图 / 最近使用：面板宿主存在，但壳路由表还没有出站路由，
-                    // 只能如实说不可用（见类注释）。
+                    // 壁纸选图 / 最近使用：面板宿主已存在（`b.backdropFlow` / `b.recentWallpaper`），
+                    // 这两行从「一律提示不可用」改为真的推页。落点靠 rowId 区分（SHEET 动作的
+                    // target 是空的，见 SettingsActionDispatcher.writeSetting）。
+                    //
+                    // ⚠️ 壳的 `shellPageIdForRoute` 还没映射这两条出站路由；映射前 `onNavigate`
+                    // 会静默 no-op。所以这里先判一次映射：能解析就推页，解析不到**如实提示**
+                    // （不做「点了没反应」）。补的是 ShellWiring 里的两行，不在本文件。
                     SettingsActionKind.SHEET -> {
-                        Log.w(LOG_TAG, "timetable-page sheet has no host yet: rowId=$rowId")
-                        toast(SettingsStrings.aboutUnavailable.zh)
+                        val route = timetablePageSheetRoute(rowId)
+                        if (route != null && shellPageIdForRoute(route) != null) {
+                            onNavigate(route)
+                        } else {
+                            Log.w(LOG_TAG, "timetable-page sheet has no route: rowId=$rowId")
+                            toast(SettingsStrings.aboutUnavailable.zh)
+                        }
                     }
 
                     else -> Log.w(LOG_TAG, "unhandled timetable-page action: $kind rowId=$rowId")
@@ -1380,6 +1391,27 @@ private fun menuEditorSeed(raw: List<String>): List<String> =
     } else {
         SettingsHomeMenuEditorPage.sanitizeSeed(raw, diagnosticsBuild = false)
     }
+
+/** 课表页「背景图片」行的目标页：壁纸面板第一页。 */
+private const val ROUTE_BACKDROP_FLOW = "b.backdropFlow"
+
+/** 课表页「最近使用」行的目标页：最近壁纸面板。 */
+private const val ROUTE_RECENT_WALLPAPER = "b.recentWallpaper"
+
+/**
+ * 课表页两个 `SHEET` 行 → 已存在的面板宿主页 id。
+ *
+ * 分派产生的 `SHEET` 不带 target（`SettingsActionDispatcher.writeSetting`），
+ * 所以只能按 rowId 认领；未知 rowId 返回 null，调用方照旧提示不可用。
+ *
+ * ⚠️ 返回的是**页 id**，要经由壳的 `shellPageIdForRoute` 出站。那张表目前缺这两条
+ * 自映射（见本批报告的待办），补齐前点这两行不会跳转。
+ */
+private fun timetablePageSheetRoute(rowId: String): String? = when (rowId) {
+    SettingsActionDispatcher.ROW_TP_BG_IMAGE -> ROUTE_BACKDROP_FLOW
+    SettingsActionDispatcher.ROW_TP_BG_RECENT -> ROUTE_RECENT_WALLPAPER
+    else -> null
+}
 
 /**
  * 「自定义底栏按钮」编辑器真宿主：把 [GlassDockEditorScreen] 的增/删/移/恢复回调翻译成
