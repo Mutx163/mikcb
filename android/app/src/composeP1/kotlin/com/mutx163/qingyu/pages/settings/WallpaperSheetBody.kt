@@ -20,9 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import android.widget.Toast
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
@@ -63,7 +61,13 @@ object WallpaperSheetTargets {
     /** 「图片文件已丢失」警示行：点它同样回到选图（模型 `backdrop.image.missing`，Dart `:892-895`）。 */
     const val ROW_MISSING = "backdrop.image.missing"
 
-    /** 「调整位置」行（模型 `backdrop.image.adjust`，Dart `:919-925`）。 */
+    /**
+     * 「调整位置」行（模型 `backdrop.image.adjust`，Dart `:919-925`）。
+     *
+     * 它是 `NAVIGATE`：壳把 `backdrop.image.adjust` 映射到取景页
+     * `WallpaperPositionPickerHost`（`WallpaperPositionPickerPage.kt`）。面板**不做**
+     * 任何拦截 —— 以前这里弹「不可用」的分支已随取景页落地删除。
+     */
     const val ROW_ADJUST = "backdrop.image.adjust"
 
     /** 「清除图片」行（模型 `backdrop.image.clear`，Dart `:927-933`）。 */
@@ -182,7 +186,6 @@ fun WallpaperSheetBody(
         pageCount = { WallpaperSheetPages.COUNT },
     )
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // 系统图片选择器：`ActivityResultContracts.PickVisualMedia`（Android 13 起是系统
     // 相册，更老的系统自动退回 `ACTION_OPEN_DOCUMENT`）。与 Dart `:1025-1029` 的
@@ -269,36 +272,26 @@ fun WallpaperSheetBody(
     )
 
     /**
-     * 行 → 动作的中转，三种去向：
+     * 行 → 动作的中转，两种去向：
      * 1. 选图那两条**由面板自己开系统相册**（Dart 里这两条也是流程自己的闭包
      *    `onPick`，`:456` / `:894`）。为什么不能纯转出去：相册选择器必须挂在
      *    ActivityResult 注册表上，那是**这一层**的资格，不是分派器（纯 Kotlin）的。
-     * 2. 「调整位置」在本仓**没有目标页**，由面板自己诚实提示（见分支内注释）。
-     * 3. 其余一律原样转给宿主。
+     * 2. 其余一律原样转给宿主 —— 包括「调整位置」：它现在是 `NAVIGATE` +
+     *    `backdrop.image.adjust`，由壳映射到 `WallpaperPositionPickerHost`
+     *    （取景页，`WallpaperPositionPickerPage.kt`）。2026-10-31 之前这里给的是
+     *    「不可用」Toast，取景页落地后已删掉那条分支。
      */
     val handleAction: (SettingsAction, String?, String) -> Unit =
         { action, target, rowId ->
             val wantsPicker = rowId == WallpaperSheetTargets.ROW_PICK ||
                 target == WallpaperSheetTargets.ROW_PICK ||
                 target == WallpaperSheetTargets.ROW_MISSING
-            val wantsAdjust = rowId == WallpaperSheetTargets.ROW_ADJUST ||
-                target == WallpaperSheetTargets.ROW_ADJUST
-            when {
-                wantsPicker -> picker.launch(
+            if (wantsPicker) {
+                picker.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                 )
-                // 2026-10-31 F23：这条 `NAVIGATE` 的 target 是 `backdrop.image.adjust`，
-                // 分派器不认、路由表也没有键 ⇒ 转出去就是**静默无反应**（点了完全没动静）。
-                // 根因是 Dart 的「拖动取景」页还没移植（`BingGalleryApply.kt:325`、
-                // `BingGalleryHost.kt:78` 记的是同一处缺口），不是少写一个键。
-                // 取景页落地前，这里给一句诚实的「不可用」；落地后把本分支删掉，
-                // 让它照常走 `onAction` 即可。
-                wantsAdjust -> Toast.makeText(
-                    context,
-                    SettingsStrings.aboutUnavailable.zh,
-                    Toast.LENGTH_SHORT,
-                ).show()
-                else -> onAction(action, target, rowId)
+            } else {
+                onAction(action, target, rowId)
             }
         }
 
