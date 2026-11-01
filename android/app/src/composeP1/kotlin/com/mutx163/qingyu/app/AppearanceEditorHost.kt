@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.app
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -22,24 +24,46 @@ import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.settings.AppearanceEditorBridge
 import com.mutx163.qingyu.pages.settings.AppearanceEditorPreviewStrings
 import com.mutx163.qingyu.pages.settings.AppearanceEditorScreen
+import com.mutx163.qingyu.pages.settings.BingGalleryApplyPlanner
+import com.mutx163.qingyu.pages.settings.BingGalleryDataSource
+import com.mutx163.qingyu.pages.settings.BingGalleryDownloadResult
+import com.mutx163.qingyu.pages.settings.BingGalleryDownloader
+import com.mutx163.qingyu.pages.settings.BingWallpaperStore
 import com.mutx163.qingyu.pages.settings.MaterialSheetBody
 import com.mutx163.qingyu.pages.settings.MaterialSheetPages
+import com.mutx163.qingyu.pages.settings.RECENT_WALLPAPER_UNDO_WINDOW_MS
 import com.mutx163.qingyu.pages.settings.SelectionPageState
 import com.mutx163.qingyu.pages.settings.SettingsAction
+import com.mutx163.qingyu.pages.settings.SettingsBingWallpaperGalleryPage
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
+import com.mutx163.qingyu.pages.settings.WallpaperAutoApplyLogic
+import com.mutx163.qingyu.pages.settings.WallpaperHistoryLedger
 import com.mutx163.qingyu.pages.settings.WallpaperSheetBody
+import com.mutx163.qingyu.pages.settings.WallpaperSheetIntent
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.backdropFlowState
+import com.mutx163.qingyu.pages.settings.parseWallpaperSheetTarget
 import com.mutx163.qingyu.pages.settings.wallpaperSheetBottomGap
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
+import com.mutx163.qingyu.weather.BingAutoApplyDecision
+import com.mutx163.qingyu.weather.DailyApplyOutcome
+import com.mutx163.qingyu.weather.DailyWallpaperMapper
+import com.mutx163.qingyu.weather.WallpaperTargetSize
+import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import kotlinx.coroutines.withContext
 
 /**
  * 外观编辑页的**宿主**：草稿 / 落盘 / 取消回滚 / 两个底部面板 / 真课表页预览。
@@ -162,6 +186,41 @@ fun AppearanceEditorHost(
     val appearance = remember(model) { AppearanceEditorBridge.toState(model) }
 
     val context = LocalContext.current
+
+    // ------------------------------------------------ 壁纸：设备级台账 + 执行体
+    //
+    // 开关与下载台账的真源是 `BingWallpaperStore`（设备级，不进课表设置，也不随备份走；
+    // Dart `bing_wallpaper_store.dart:11-30`）。宿主从这里读快照喂面板，并在台账变更时
+    // 递增 revision 触发重组 —— 弹层正文不在本页的 widget 树下，光靠 `model` 带不动它
+    // （Dart 给那颗开关挂 `ValueListenableBuilder` 的同一理由，`:501-526`）。
+    val bingStore = remember(context) { BingWallpaperStore(PrefsKeyValueStore(context)) }
+    var bingRevision by remember { mutableIntStateOf(0) }
+    DisposableEffect(bingStore) {
+        val listener = { bingRevision += 1 }
+        bingStore.addListener(listener)
+        onDispose { bingStore.removeListener(listener) }
+    }
+    val autoApplySnapshot = remember(bingStore, bingRevision) { bingStore.snapshot() }
+
+    val bingSource = remember { BingGalleryDataSource() }
+    // 受管壁纸目录与图库宿主同名（App 私有，卸载即清）。
+    val wallpaperDir = remember(context) { File(context.filesDir, WALLPAPER_DIR_NAME) }
+    val bingDownloader = remember(wallpaperDir) { BingGalleryDownloader(wallpaperDir) }
+    val screenSize = remember(context) {
+        val metrics = context.resources.displayMetrics
+        WallpaperTargetSize(metrics.widthPixels, metrics.heightPixels)
+    }
+    // 删除排期**不挂在页面组合的 scope 上**：用户点完删除立刻退出本页时，文件仍应按时
+    // 删掉（Dart 的 `Future.delayed` 也不随页面销毁取消）。任务 2.5 秒内自会结束。
+    val wallpaperCleanupScope = remember {
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    }
+
+    // 「最近使用」删除的 2.5s 反悔窗（Dart `_pendingRemovals` / `_pendingBackdropDeletions`）：
+    // 连删两张时两张都留在待删清单里，第二次删除**重新起算整窗**，到点整批删。
+    val pendingRemovals = remember { mutableListOf<PendingWallpaperRemoval>() }
+    val pendingDeletionPaths = remember { LinkedHashSet<String>() }
+    var removalJob by remember { mutableStateOf<Job?>(null) }
     // `_exiting`（`:132`、`:702-727`）：连点「取消 / 完成 / 返回」时只认第一次，
     // 否则第二次会在已经退栈的页面上再退一层。
     var exiting by remember { mutableStateOf(false) }
@@ -244,6 +303,218 @@ fun AppearanceEditorHost(
         }
     }
 
+    /**
+     * 删壁纸文件前的白名单（**唯一口径**，见 [WallpaperHistoryLedger.evictionWhitelist]）。
+     *
+     * 三路：所有课表当前壁纸 + 本页草稿 + 图库台账。Kotlin 侧拿不到其它课表的壁纸路径
+     * （`TimetableProfile.settings` 只存时间 / 周次四键），所以这一路目前只能护住当前
+     * 课表；这是已知边界，**不假装已覆盖多课表**。
+     */
+    fun wallpaperWhitelist(): Set<String> = WallpaperHistoryLedger.evictionWhitelist(
+        allProfilesCurrentPaths = listOfNotNull(model.homePageWallpaperPath),
+        draftPath = model.homePageWallpaperPath,
+        galleryLedgerPaths = bingStore.snapshot().downloadedPaths,
+    )
+
+    /** 过白名单后真删；删不掉只记日志，不阻断界面（也不会误删在用图）。 */
+    fun deleteWallpaperFiles(paths: List<String>) {
+        if (paths.isEmpty()) return
+        val deletable = WallpaperHistoryLedger.deletable(paths, wallpaperWhitelist())
+        if (deletable.isEmpty()) return
+        wallpaperCleanupScope.launch {
+            withContext(Dispatchers.IO) {
+                for (path in deletable) {
+                    val deleted = runCatching { File(path).delete() }.getOrDefault(false)
+                    if (!deleted) Log.w(LOG_TAG, "wallpaper file was not deleted: $path")
+                }
+            }
+        }
+    }
+
+    /** 相册 URI → 受管壁纸目录；读不出来返回 null（取消 / 权限 / 空文件）。 */
+    fun importPickedWallpaper(uri: Uri): String? {
+        val bytes = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        }.getOrNull()
+        if (bytes == null || bytes.isEmpty()) return null
+        val dir = wallpaperDir.apply { mkdirs() }
+        val target = File(
+            dir,
+            "wallpaper_${System.currentTimeMillis()}.${wallpaperExtensionOf(context, uri)}",
+        )
+        return runCatching {
+            target.writeBytes(bytes)
+            target.absolutePath
+        }.getOrNull()
+    }
+
+    /** 「选择图片」返回：先收进受管目录，再记历史 + 写路径与居中取景（Dart `:1007-1019`）。 */
+    fun applyPickedWallpaper(uriText: String) {
+        val uri = runCatching { Uri.parse(uriText) }.getOrNull() ?: return
+        scope.launch {
+            val path = withContext(Dispatchers.IO) { importPickedWallpaper(uri) }
+            if (path == null) {
+                toast(SettingsStringsExt2.saveFailed.zh)
+                return@launch
+            }
+            val picked = WallpaperHistoryLedger.applyPicked(model, path) ?: return@launch
+            commit(picked.settings, debounce = false)
+            deleteWallpaperFiles(picked.evictedPaths)
+        }
+    }
+
+    /** 切回「最近使用」里的一条：连取景三件一起还原（Dart `:294-316`）。 */
+    fun applyHistorySelection(key: String) {
+        val selected = WallpaperHistoryLedger.select(model, key) ?: return
+        commit(selected.settings, debounce = false)
+        deleteWallpaperFiles(selected.evictedPaths)
+    }
+
+    /**
+     * 确认删除一条历史：摘条目并落盘，**2.5 秒后**再审一遍白名单删文件
+     * （Dart `:325-354`）。
+     *
+     * 连删两张时第二下会把计时**重新起算整窗**（Dart `_scheduleBackdropFileDeletion`
+     * 的同一口径）；到点一次删完整份待删清单，撤销只摘最后一张。
+     */
+    fun confirmHistoryRemoval(key: String) {
+        val removal = WallpaperHistoryLedger.remove(model, key) ?: return
+        commit(removal.settings, debounce = false)
+        pendingRemovals.add(
+            PendingWallpaperRemoval(
+                path = removal.removedPath,
+                previousHistory = removal.previousHistory,
+            ),
+        )
+        pendingDeletionPaths.add(removal.removedPath)
+        removalJob?.cancel()
+        removalJob = wallpaperCleanupScope.launch {
+            delay(RECENT_WALLPAPER_UNDO_WINDOW_MS)
+            removalJob = null
+            if (pendingDeletionPaths.isEmpty()) return@launch
+            val paths = pendingDeletionPaths.toList()
+            pendingDeletionPaths.clear()
+            pendingRemovals.clear()
+            deleteWallpaperFiles(paths)
+        }
+    }
+
+    /** 撤销删除：整份旧历史原样放回，并把这张图从待删清单里摘掉（Dart `:356-378`）。 */
+    fun undoHistoryRemoval(key: String) {
+        val pending = pendingRemovals.lastOrNull() ?: return
+        if (pending.path != key) return
+        pendingRemovals.removeAt(pendingRemovals.lastIndex)
+        pendingDeletionPaths.remove(pending.path)
+        if (pendingDeletionPaths.isEmpty()) {
+            removalJob?.cancel()
+            removalJob = null
+        }
+        commit(WallpaperHistoryLedger.undo(model, pending.previousHistory), debounce = false)
+    }
+
+    /**
+     * 打开自动换时**立刻换一次**（不等下次启动，Dart `:572-642`）。
+     *
+     * 四种结局各一句提示；只有真换上时才写设置（路径 + 居中取景，**不碰历史**）并回收
+     * 台账溢出文件。整套判据在 [WallpaperAutoApplyLogic]，本函数只做 IO 与落盘。
+     */
+    fun runAutoApplyOnce() {
+        scope.launch {
+            val snapshot = bingStore.snapshot()
+            val items = withContext(Dispatchers.IO) {
+                runCatching { bingSource.fetch() }.getOrDefault(emptyList())
+            }
+            val newest = items.firstOrNull()
+            if (newest == null) {
+                WallpaperAutoApplyLogic.outcomeNotice(DailyApplyOutcome.Failed)
+                    ?.let { toast(it.text.zh) }
+                return@launch
+            }
+            if (WallpaperAutoApplyLogic.decide(snapshot, newest) is BingAutoApplyDecision.AlreadyApplied) {
+                WallpaperAutoApplyLogic.outcomeNotice(DailyApplyOutcome.AlreadyApplied)
+                    ?.let { toast(it.text.zh) }
+                return@launch
+            }
+            val downloaded = withContext(Dispatchers.IO) {
+                bingDownloader.download(newest, screenSize)
+            }
+            var evicted: List<String> = emptyList()
+            val applied = when (downloaded) {
+                is BingGalleryDownloadResult.Success -> {
+                    val path = downloaded.file.absolutePath
+                    val targetSize = BingGalleryApplyPlanner
+                        .plan(newest, screenSize, downloaded.resolution)
+                        .targetSize
+                    evicted = bingStore.recordApplied(
+                        dateKey = newest.dateKey,
+                        resolution = downloaded.resolution,
+                        path = path,
+                        autoApplied = true,
+                        targetSize = targetSize,
+                    ).evictedPaths
+                    DailyWallpaperMapper.fromBing(
+                        WallpaperAutoApplyLogic.outcomeFor(newest, LocalDateTime.now()),
+                        path,
+                        newest.dateKey,
+                    )
+                }
+
+                is BingGalleryDownloadResult.Failure -> DailyWallpaperMapper.fromBing(
+                    BingAutoApplyDecision.Outcome.Failed,
+                    null,
+                    newest.dateKey,
+                )
+            }
+            WallpaperAutoApplyLogic.outcomeNotice(applied.outcome, dateKey = applied.itemId)
+                ?.let { toast(it.text.zh) }
+            val next = WallpaperAutoApplyLogic.settingsAfterApply(model, applied.path)
+            if (next != null) {
+                commit(next, debounce = false)
+                deleteWallpaperFiles(
+                    WallpaperAutoApplyLogic.deletableAfterApply(
+                        evictedPaths = evicted,
+                        allProfilesCurrentPaths = listOfNotNull(next.homePageWallpaperPath),
+                        draftPath = next.homePageWallpaperPath,
+                        snapshot = bingStore.snapshot(),
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * 拨一次「每天自动更换」。
+     *
+     * 动作拆解与提示文案全在 [WallpaperAutoApplyLogic.togglePlan] / `toggleNotice`：
+     * 打开 = 落盘 + 提示 + 立刻换一次；关闭 = 只落盘。开关真源是台账，**不走**草稿
+     * （Dart `:537-555`，2026-10-06 实报「点了一下没反应」的根因）。
+     */
+    fun toggleAutoApply() {
+        val snapshot = bingStore.snapshot()
+        val newValue = !snapshot.enabled
+        val plan = WallpaperAutoApplyLogic.togglePlan(snapshot.enabled, newValue)
+        if (plan.persistEnabled) bingStore.setAutoApplyEnabled(newValue)
+        if (plan.showApplying) toast(WallpaperAutoApplyLogic.toggleNotice().text.zh)
+        if (plan.runApplyOnce) runAutoApplyOnce()
+    }
+
+    /**
+     * 壁纸面板发来的数据动作 → 具体执行。
+     *
+     * 分派器只给原始 target（它不许碰 IO / pages.settings），解析与执行都在本宿主。
+     * 行导航（相册 / 调整位置 / 图库）与「清除图片」不经过这里。
+     */
+    fun handleWallpaperTarget(target: String) {
+        when (val intent = parseWallpaperSheetTarget(target)) {
+            is WallpaperSheetIntent.Picked -> applyPickedWallpaper(intent.uri)
+            is WallpaperSheetIntent.SelectHistory -> applyHistorySelection(intent.key)
+            is WallpaperSheetIntent.ConfirmRemove -> confirmHistoryRemoval(intent.key)
+            is WallpaperSheetIntent.UndoRemove -> undoHistoryRemoval(intent.key)
+            WallpaperSheetIntent.ToggleAutoApply -> toggleAutoApply()
+            else -> Log.w(LOG_TAG, "unhandled wallpaper target: $target")
+        }
+    }
+
     /** 开材质面板并停在指定页（每次打开都从该页重建正文）。 */
     fun openMaterial(page: Int) {
         materialInitialPageIndex = page.coerceIn(0, MaterialSheetPages.COUNT - 1)
@@ -318,8 +589,16 @@ fun AppearanceEditorHost(
             model = model,
         )
         when (dispatch) {
-            is SettingsDispatch.Write ->
-                commit(dispatch.model, debounce = isDebouncedSliderRow(rowId))
+            is SettingsDispatch.Write -> {
+                val wallpaperTarget = dispatch.wallpaperTarget
+                if (wallpaperTarget != null) {
+                    // 壁纸数据动作：分派器刻意不写模型（要碰文件 / 网络 / 台账，见
+                    // `SettingsActionDispatcher.wallpaperIntentTarget`），这里消费原始 target。
+                    handleWallpaperTarget(wallpaperTarget)
+                } else {
+                    commit(dispatch.model, debounce = isDebouncedSliderRow(rowId))
+                }
+            }
 
             // 面板里的「恢复默认」：液态玻璃那一档在 Dart 里**不走确认**，就是一次
             // `copyWith(preset = standard, tuning = defaults)`（`:1062-1070`），所以本地直接应用；
@@ -462,6 +741,9 @@ fun AppearanceEditorHost(
                 // 「最近使用」的选择态：壁纸键集合与当前壁纸都从同一份状态推出来；
                 // `armedKey`（移除确认）属于缩略图条自己的界面态，见类注释「已知差异」第 3 条。
                 selection = SelectionPageState(backdrop = backdropFlowState(appearance)),
+                // 设备级台账快照：传了它就等于「真源已接」——开关显示真实值且可点，
+                // 台账变更经 bingRevision 触发重组（见上方说明）。
+                autoApplySnapshot = autoApplySnapshot,
                 // 底部留白由**滚动内容**自己带（Dart `scrollableBottomGap`：系统手势区 + 16，
                 // `miui_bottom_sheet.dart:448-458`）。宿主不垫：垫在视口外面会让内容永远滚不进去。
                 contentPadding = wallpaperSheetBottomGap(),
@@ -556,6 +838,41 @@ private fun TimetablePreviewPage(
             activeProfileId = snapshot.activeProfileId,
         ),
     )
+}
+
+/** 2.5 秒反悔窗里待删的那一张；撤销凭据是删除前的整份历史（Dart `:31-39`）。 */
+private data class PendingWallpaperRemoval(
+    val path: String,
+    val previousHistory: List<WallpaperHistoryRowModel>,
+)
+
+/** 受管壁纸目录（与 `BingGalleryHost` 同名：App 私有，卸载即清，不进相册）。 */
+private const val WALLPAPER_DIR_NAME = "wallpapers"
+
+/**
+ * 相册 URI 的落盘扩展名：先看 MIME，再看路径后缀，最后退回 png。
+ *
+ * 不用 `MimeTypeMap`：它需要平台映射表，而这层只要图片常见的几种；
+ * 认不出来时 png 是安全的（解码只看内容，不看扩展名）。
+ */
+private fun wallpaperExtensionOf(context: Context, uri: Uri): String {
+    val mime = runCatching { context.contentResolver.getType(uri) }.getOrNull()
+    when (mime) {
+        "image/jpeg" -> return "jpg"
+        "image/png" -> return "png"
+        "image/webp" -> return "webp"
+        "image/gif" -> return "gif"
+        "image/heic", "image/heif" -> return "heic"
+    }
+    val extension = uri.lastPathSegment
+        ?.substringAfterLast('.', missingDelimiterValue = "")
+        ?.lowercase()
+        .orEmpty()
+    return if (extension.length in 1..5 && extension.all { it.isLetterOrDigit() }) {
+        extension
+    } else {
+        "png"
+    }
 }
 
 /**

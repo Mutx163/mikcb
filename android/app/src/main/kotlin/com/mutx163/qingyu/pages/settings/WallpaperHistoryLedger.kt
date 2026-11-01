@@ -52,6 +52,12 @@ object WallpaperHistoryLedger {
         val evictedPaths: List<String>,
     )
 
+    /** 相册选图收进受管目录后的结果：要落盘的设置 + 淘汰文件（尚未过白名单）。 */
+    data class PickedResult(
+        val settings: TimetableSettingsModel,
+        val evictedPaths: List<String>,
+    )
+
     /**
      * 一次「确认删除」的结果。
      *
@@ -184,6 +190,68 @@ object WallpaperHistoryLedger {
                 wallpaperHistory = result.history.map { it.toRowModel() },
             ),
             evictedPaths = result.evictedPaths,
+        )
+    }
+
+    /**
+     * 相册选图落进受管目录后的写入（Dart `:1007-1019` / `:1070-1091`）：
+     * 记一条「最近使用」并写路径 + 居中取景。
+     *
+     * 与 [applySelection] 的差别只有入口：那条是「切回已有历史」，这条是「新图第一次进来」。
+     * 两者共用同一份 [remember]，10 条上限与淘汰清单因此只有一处实现。
+     */
+    fun applyPicked(
+        current: TimetableSettingsModel,
+        path: String,
+        alignX: Double = 0.0,
+        alignY: Double = 0.0,
+        scale: Double = 1.0,
+        usedAt: Long = System.currentTimeMillis(),
+    ): PickedResult? {
+        if (!isAvailableKey(path)) return null
+        val pushed = pushWallpaperHistory(
+            history = current.wallpaperHistory.map { it.toWeatherEntry() },
+            key = path,
+            alignX = alignX,
+            alignY = alignY,
+            scale = scale,
+            usedAt = usedAt,
+        )
+        return PickedResult(
+            settings = current.copy(
+                homePageWallpaperPath = path,
+                homePageWallpaperAlignX = alignX,
+                homePageWallpaperAlignY = alignY,
+                homePageWallpaperScale = scale,
+                wallpaperHistory = pushed.history.map { it.toRowModel() },
+            ),
+            evictedPaths = pushed.evictedPaths,
+        )
+    }
+
+    /**
+     * 按 key 切回一条历史（Dart `:294-316`）：找不到（或已下线的内置壁纸）返回 null。
+     *
+     * 存在的理由只是把「从设置模型里找条目」收归一处，取景三件与补记顺序仍走
+     * [applySelection] —— 宿主不该在 UI 层自己拼 [WallpaperHistoryRow]。
+     */
+    fun select(
+        current: TimetableSettingsModel,
+        key: String,
+        usedAt: Long = System.currentTimeMillis(),
+    ): ApplyResult? {
+        val entry = current.wallpaperHistory.firstOrNull { it.key == key } ?: return null
+        return applySelection(
+            current = current,
+            entry = WallpaperHistoryRow(
+                key = entry.key,
+                label = SettingsBackdropFlowPage.fileNameOf(entry.key),
+                alignX = entry.alignX,
+                alignY = entry.alignY,
+                scale = entry.scale,
+                usedAt = entry.usedAt,
+            ),
+            usedAt = usedAt,
         )
     }
 

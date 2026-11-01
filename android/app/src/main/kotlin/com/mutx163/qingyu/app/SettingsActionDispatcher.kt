@@ -70,8 +70,18 @@ enum class SettingsActionKind {
 /** 分派结果：要么是「新的设置状态」，要么是一个界面意图（由壳执行）。 */
 sealed interface SettingsDispatch {
 
-    /** 写设置：宿主落盘 [model] 并重组界面。 */
-    data class Write(val model: TimetableSettingsModel, val rowId: String) : SettingsDispatch
+    /**
+     * 写设置：宿主落盘 [model] 并重组界面。
+     *
+     * [wallpaperTarget] 非空时**不写设置**（[model] 原样）：它表示「壁纸面板发来的一条
+     * 数据动作」，要碰文件 / 网络 / 设备级台账，必须由宿主执行（理由见
+     * [SettingsActionDispatcher.wallpaperIntentTarget]）。
+     */
+    data class Write(
+        val model: TimetableSettingsModel,
+        val rowId: String,
+        val wallpaperTarget: String? = null,
+    ) : SettingsDispatch
 
     /** 推一个新页（路由见 [route]，取自行的 `actionTarget`）。 */
     data class Navigate(val route: String, val rowId: String) : SettingsDispatch
@@ -282,6 +292,12 @@ object SettingsActionDispatcher {
     const val ROW_TP_TEXT_WEEKDAY_ACCENT = "timetablePage.textColors.weekdayAccent"
     const val ROW_TP_TEXT_TIME_AXIS = "timetablePage.textColors.timeAxis"
 
+    // 深色模式三条（2026-11-01 F26）。串必须与页面侧
+    // `SettingsTimetablePageSettingsPage.ROW_TEXT_*` 逐字一致。
+    const val ROW_TP_TEXT_WEEKDAY_DARK = "timetablePage.textColors.dark.weekday"
+    const val ROW_TP_TEXT_WEEKDAY_ACCENT_DARK = "timetablePage.textColors.dark.weekdayAccent"
+    const val ROW_TP_TEXT_TIME_AXIS_DARK = "timetablePage.textColors.dark.timeAxis"
+
     /** 恢复默认的作用域名（`settings_reset.dart:17-23` 里的两个）。 */
     const val SCOPE_APPEARANCE = "appearance"
     const val SCOPE_COURSE_CARD = "courseCard"
@@ -336,6 +352,54 @@ object SettingsActionDispatcher {
      * 负责（Dart 同口径）。写回口径见 [writeSetting] 的同名分支。
      */
     const val ROW_BACKDROP_IMAGE_CLEAR = "backdrop.image.clear"
+
+    /**
+     * 「每天自动更换」开关（模型行 id `backdrop.bing.autoApply`）。
+     *
+     * 它的真源是设备级台账（`BingWallpaperStore`），不在设置模型里；渲染层拿到的
+     * `onCheckedChange` 又不带新值，所以宿主只能按台账现值取反
+     * （Dart `settings_home_backdrop_flow.dart:537-555`）。
+     */
+    const val ROW_BACKDROP_AUTO_APPLY = "backdrop.bing.autoApply"
+
+    // 壁纸面板「要碰文件 / 网络」的 target 前缀。与 `pages/settings` 的
+    // `WallpaperSheetActionTargets` **逐字一致**（有契约测试钉住）；不在本文件写第二份
+    // 的行为，只做目标判定（见 [wallpaperIntentTarget]）。
+    const val WALLPAPER_PICKED_PREFIX = "backdrop.image.picked:"
+    const val WALLPAPER_SELECT_PREFIX = "backdrop.recent.select:"
+    const val WALLPAPER_CONFIRM_DELETE_PREFIX = "backdrop.recent.confirmDelete:"
+    const val WALLPAPER_UNDO_REMOVE_PREFIX = "backdrop.recent.undoRemove:"
+
+    /**
+     * 壁纸面板里需要**宿主**执行的 target：命中返回原串，否则 null。
+     *
+     * ## 为什么不在这里直接写设置
+     *
+     * 这四类动作（收图 / 切历史 / 删与撤销 / 自动换开关）要摸文件、网络与设备级台账；
+     * 而 `app/` 必须保持纯 Kotlin（`AppLayerPurityTest` 禁止 import `pages.settings`），
+     * 也不能 import Compose / Android。所以分派器只把原始 target 装进
+     * [SettingsDispatch.Write.wallpaperTarget]，由外观编辑页宿主用
+     * `parseWallpaperSheetTarget` 解析后执行。
+     *
+     * ## 认哪些
+     *
+     * * 四个前缀：`backdrop.image.picked:` / `backdrop.recent.select:` /
+     *   `backdrop.recent.confirmDelete:` / `backdrop.recent.undoRemove:`；
+     * * 自动换是精确串 `backdrop.bing.autoApply`：渲染层的开关不带 target，
+     *   所以 **rowId 兜底**也认（面板本应先把 target 补出来，这里再兜一层）。
+     *
+     * 「清除图片」（`backdrop.image.clear`）**不在这里**：它只清设置、不碰文件，
+     * 继续走下面按 rowId 的纯写入分支。
+     */
+    fun wallpaperIntentTarget(target: String?, rowId: String): String? = when {
+        target != null && target.startsWith(WALLPAPER_PICKED_PREFIX) -> target
+        target != null && target.startsWith(WALLPAPER_SELECT_PREFIX) -> target
+        target != null && target.startsWith(WALLPAPER_CONFIRM_DELETE_PREFIX) -> target
+        target != null && target.startsWith(WALLPAPER_UNDO_REMOVE_PREFIX) -> target
+        target == ROW_BACKDROP_AUTO_APPLY -> target
+        rowId == ROW_BACKDROP_AUTO_APPLY -> rowId
+        else -> null
+    }
 
     /**
      * 液态玻璃的「恢复默认」作用域名
@@ -551,6 +615,15 @@ object SettingsActionDispatcher {
         rowId: String,
         model: TimetableSettingsModel,
     ): SettingsDispatch {
+        // 壁纸面板的数据动作先认 target：它们不写设置模型，要由宿主碰文件 / 网络 / 台账
+        // （判据与理由见 [wallpaperIntentTarget]）。清除图片不在其中，继续往下按 rowId 写。
+        wallpaperIntentTarget(target, rowId)?.let { wallpaperTarget ->
+            return SettingsDispatch.Write(
+                model = model,
+                rowId = rowId,
+                wallpaperTarget = wallpaperTarget,
+            )
+        }
         val next: TimetableSettingsModel = when (rowId) {
             ROW_LOCALE -> model.copy(
                 appLocaleTag = TimetableSettingsModel.normalizeAppLocaleTag(target),
@@ -1102,6 +1175,24 @@ object SettingsActionDispatcher {
                 val hex = normalizeHexColor(target)
                     ?: return ignored(kind, target, rowId, "time axis color is not #RRGGBB: $target")
                 model.copy(timeAxisFontColorLight = hex)
+            }
+
+            ROW_TP_TEXT_WEEKDAY_DARK -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "dark weekday bar color is not #RRGGBB: $target")
+                model.copy(weekdayBarFontColorDark = hex)
+            }
+
+            ROW_TP_TEXT_WEEKDAY_ACCENT_DARK -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "dark weekday bar accent is not #RRGGBB: $target")
+                model.copy(weekdayBarAccentColorDark = hex)
+            }
+
+            ROW_TP_TEXT_TIME_AXIS_DARK -> {
+                val hex = normalizeHexColor(target)
+                    ?: return ignored(kind, target, rowId, "dark time axis color is not #RRGGBB: $target")
+                model.copy(timeAxisFontColorDark = hex)
             }
 
             else -> {
