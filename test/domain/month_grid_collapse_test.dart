@@ -488,6 +488,68 @@ void main() {
     });
   });
 
+  group('monthGridCardRowCount：卡片高度取跨着两页的较大行数（2026-11）', () {
+    // 人推：2026-10 只跨 5 行（10-31 在第 5 行），2026-11 跨 6 行
+    // （11-30 在第 6 行）。翻月途中两页共存，卡片必须按较大那份算，
+    // 否则 6 行页的最后一行会被裁掉。
+    int rowsOfPage(int page) => switch (page) {
+      0 => 5, // 2026-10
+      1 => 6, // 2026-11
+      2 => 5, // 2026-12
+      _ => 6,
+    };
+
+    test('停在整页：严格等于该页自己的行数（静止态不留一行空白）', () {
+      expect(monthGridCardRowCount(page: 0, rowsOfPage: rowsOfPage), 5);
+      expect(monthGridCardRowCount(page: 1, rowsOfPage: rowsOfPage), 6);
+      expect(monthGridCardRowCount(page: 2, rowsOfPage: rowsOfPage), 5);
+    });
+
+    test('跨在两页之间：取较大值，6 行页的末行不会被裁', () {
+      for (final p in [0.01, 0.25, 0.5, 0.75, 0.99]) {
+        expect(
+          monthGridCardRowCount(page: p, rowsOfPage: rowsOfPage),
+          6,
+          reason: '10→11 滑到 $p 时两页共存，卡片必须容得下 6 行那页',
+        );
+      }
+      // 反向（11 → 12）同样是 6：较高的那一页也参与比较。
+      expect(monthGridCardRowCount(page: 1.5, rowsOfPage: rowsOfPage), 6);
+    });
+
+    test('两页行数相同：结果不变（不会凭空多一行）', () {
+      int fiveEverywhere(int page) => 5;
+      expect(monthGridCardRowCount(page: 2.4, rowsOfPage: fiveEverywhere), 5);
+    });
+  });
+
+  group('monthGridDragTravel：拖拽行程按本页行数算（2026-11）', () {
+    const rowHeight = 45.0;
+    // 人推：展开到收起要收掉 (行数 - 1) 行。
+    test('4/5/6 行月各自的行程不同，不再写死 5 行', () {
+      expect(
+        monthGridDragTravel(rowCount: 4, rowHeight: rowHeight),
+        closeTo(3 * rowHeight, 1e-9),
+      );
+      expect(
+        monthGridDragTravel(rowCount: 5, rowHeight: rowHeight),
+        closeTo(4 * rowHeight, 1e-9),
+      );
+      expect(
+        monthGridDragTravel(rowCount: 6, rowHeight: rowHeight),
+        closeTo(5 * rowHeight, 1e-9),
+      );
+    });
+
+    test('越界行数钳回 1..6，不会算出负行程', () {
+      expect(monthGridDragTravel(rowCount: 0, rowHeight: rowHeight), 0);
+      expect(
+        monthGridDragTravel(rowCount: 99, rowHeight: rowHeight),
+        closeTo(5 * rowHeight, 1e-9),
+      );
+    });
+  });
+
   group('常量口径', () {
     test('42 格的合法行号范围是 0..5', () {
       expect(monthGridRowBounds(), (0, 5));

@@ -136,6 +136,47 @@ double monthGridVisibleRows(double t, {int rowCount = kMonthGridRowCount}) {
       (rows - kMonthGridCollapsedRows) * clamped;
 }
 
+/// 日历卡高度该按几行算：[page] 当前**跨着**的两页里较多的那份行数。
+///
+/// ## 为什么不是简单的「聚焦月行数」（2026-11 修）
+///
+/// PageView 在水平翻月途中会同时构建相邻页。5 行月挨着 6 行月时
+/// （2026-10 是 5 行、2026-11 是 6 行），卡片高度若只按聚焦月算，
+/// 6 行页的最后一行会被卡片裁掉。这里取两页的较大值。
+///
+/// 停在整页时 `floor == ceil`，返回值就**严格等于聚焦月自己的行数** ——
+/// 所以静止态不会因为「相邻月更高」而多留一行空白。
+///
+/// [rowsOfPage] 由调用方给（月页号 → 该月实际行数），本函数不碰数据。
+int monthGridCardRowCount({
+  required double page,
+  required int Function(int page) rowsOfPage,
+}) {
+  final lower = page.floor();
+  final lowerRows = rowsOfPage(lower);
+  final upper = page.ceil();
+  if (upper == lower) {
+    return lowerRows;
+  }
+  final upperRows = rowsOfPage(upper);
+  return upperRows > lowerRows ? upperRows : lowerRows;
+}
+
+/// 拖拽行程：把网格从展开收到一行，手指需要走的总距离。
+///
+/// ## 为什么不能写死 6 行（2026-11 修）
+///
+/// 旧实现是 `(6 - 1) × 行高`。可是 4/5 行月实际只缩 3/4 行 —— 手指走满
+/// 5 行的距离时，窗口早就停在一行，后半段变成「手指还在动、格子不动」。
+/// 行程必须按**这一页真实行数**算：`(rowCount - 1) × rowHeight`。
+double monthGridDragTravel({
+  required int rowCount,
+  required double rowHeight,
+}) {
+  final rows = rowCount.clamp(kMonthGridCollapsedRows, kMonthGridRowCount);
+  return (rows - kMonthGridCollapsedRows) * rowHeight;
+}
+
 /// 收起 / 展开动画的松手吸附目标（0 = 收起、1 = 展开）。
 ///
 /// 判据按优先级：

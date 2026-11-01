@@ -119,6 +119,12 @@ class _MonthViewScreenState extends State<MonthViewScreen>
   /// 最近一次布局算出的行高：拖拽行程按「收起的总高度」折算成 1:1 跟手。
   double _gridRowHeight = MonthGrid.minRowHeight;
 
+  /// 聚焦月实际要画的行数（4~6）：拖拽行程必须按**这一页**的行数折算。
+  ///
+  /// 旧实现把行程写死成 `(6 - 1) × 行高`：4/5 行月横竖只缩了 3/4 行，
+  /// 手指却要走 5 行 —— 于是"手指动、格子先停"。见 `_updateGridDragDy`。
+  int _gridRowCount = kMonthGridRowCount;
+
   /// 收起 / 展开吸附动画的基础时长（毫秒）。
   static const int _kGridCollapseBaseMs = 260;
 
@@ -352,6 +358,7 @@ class _MonthViewScreenState extends State<MonthViewScreen>
         // 所以展开态那份就是任何时刻那份。
         //
         // 拖拽行程按行高折算（1:1 跟手）；字段是因为手势回调拿不到局部量。
+        _gridRowCount = grid.rowsInMonth;
         _gridRowHeight = _layoutFor(
           t: 1,
           constraints: constraints,
@@ -419,7 +426,16 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                 horizontal: MonthMetrics.cardInset,
               ),
               child: AnimatedBuilder(
-                animation: _gridExpand,
+                // ⚠️ 监听**合并**源（翻月 pager + 收放动画），不再只监听
+                // `_gridExpand`：水平滑动途中相邻页会进来，卡片高度得跟着
+                // 跨着的两页里较高的那份走，否则 6 行月挨着 5 行月时最后
+                // 一行会被裁掉（2026-11 实测：2026-10 是 5 行、11 月是 6 行）。
+                //
+                // 用 State 上那份 `_pagingRepaint`（横竖两条运动源的合并实例）
+                // 而不是在这里现 `Listenable.merge`：每帧新建会让依赖它的
+                // 玻璃位图 scope 判定"监听源换了"（见 `_pagingRepaint` 注释）。
+                // `child` 仍是整个 PageView 子树，动画帧里不重建它。
+                animation: _pagingRepaint,
                 child: GestureDetector(
                   behavior: HitTestBehavior.deferToChild,
                   onVerticalDragStart: (_) => _beginGridDrag(),
@@ -452,12 +468,19 @@ class _MonthViewScreenState extends State<MonthViewScreen>
                   ),
                 ),
                 builder: (context, child) {
+                  // 卡片高度按**当前跨着的两页**里较多的行数算：静止时等于
+                  // 聚焦月自己的行数（不留空白），滑动途中取大值（不裁行）。
+                  // 判据在 `monthGridCardRowCount`（纯 Dart，test/domain 覆盖）。
+                  final cardRowCount = _cardRowCount(
+                    provider: provider,
+                    settings: settings,
+                  );
                   final layout = _layoutFor(
                     t: _gridExpand.value,
                     constraints: constraints,
                     settings: settings,
                     keptRow: keptRow,
-                    rowCount: grid.rowsInMonth,
+                    rowCount: cardRowCount,
                   );
                   return SizedBox(
                     // 表格窗口 + 卡底拉杆 + 卡顶导航行（同一本账，见类注释）。
@@ -537,6 +560,50 @@ class _MonthViewScreenState extends State<MonthViewScreen>
       // 网格外面那层 Padding 的上边距也算进窗口高度，否则内容溢出。
       topPadding: kMonthPageVerticalPadding,
     );
+  }
+
+  /// 日历卡高度该按几行算（判据见 [monthGridCardRowCount]）。
+  ///
+  /// 取 PageView 当前**跨着的两页**里较多的行数：水平滑动途中两页共存，
+  /// 只按聚焦月算会把更高那一页的最后一行裁掉（2026-10 是 5 行、
+  /// 2026-11 是 6 行，翻过去时 11 月的最后一行被切掉）。停在整页时两页
+  /// 相同 ⇒ 静止态严格等于聚焦月自己的行数，不会多留一行空白。
+  int _cardRowCount({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+  }) {
+    final fallbackPage = _pageFor(_focusedYear, _focusedMonth).toDouble();
+    final pager = _pager;
+    // `PageController.page` 在 PageView 尚未构建时会断言失败（与导航行
+    // 那处 pageOf 同一坑），所以必须先判 hasClients。
+    final pageValue = pager != null && pager.hasClients
+        ? (pager.page ?? fallbackPage)
+        : fallbackPage;
+    return monthGridCardRowCount(
+      page: pageValue,
+      rowsOfPage: (page) => _rowsInMonthForPage(page, provider, settings),
+    );
+  }
+
+  /// 某个月页实际要画几行（与 `_buildGridPage` 走同一份缓存，不另算一遍）。
+  int _rowsInMonthForPage(
+    int page,
+    TimetableProvider provider,
+    TimetableSettings settings,
+  ) {
+    final (year, month) = _monthForPage(page);
+    return _cache
+        .grid(
+          year: year,
+          month: month,
+          now: DateTime.now(),
+          courses: provider.courses,
+          scheduleItems: provider.scheduleItems,
+          exams: provider.exams,
+          settings: settings,
+          holidayData: provider.holidayData,
+        )
+        .rowsInMonth;
   }
 
   /// 上半那一页的网格（不含信息区）。
@@ -835,8 +902,13 @@ class _MonthViewScreenState extends State<MonthViewScreen>
 
   /// 同上，但直接吃原始位移（面板那边的分流结果是"一段 dy"，不是 DragUpdateDetails）。
   void _updateGridDragDy(double dy) {
-    final extent =
-        (kMonthGridRowCount - kMonthGridCollapsedRows) * _gridRowHeight;
+    // 行程 = 这一页真实要收掉的行数 × 行高。旧实现写死 `(6 - 1) × 行高`：
+    // 4/5 行月实际只缩 3/4 行，手指却要走满 5 行 —— 表现为「手指还在动、
+    // 格子已经停住」。行数由 `_buildMonthPage` 每页写入（`_gridRowCount`）。
+    final extent = monthGridDragTravel(
+      rowCount: _gridRowCount,
+      rowHeight: _gridRowHeight,
+    );
     if (extent <= 0) {
       return;
     }

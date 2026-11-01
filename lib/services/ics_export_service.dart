@@ -313,14 +313,25 @@ class IcsExportService {
         }
 
         final sessionNote = course.sessionNoteForWeek(week);
+        // ⚠️ 每一行都必须带**明确前缀**（2026-11 修）。
+        //
+        // 以前 `description` / `note` / 节次备注 / `Homework: yes` 是裸行，
+        // 导入侧（`ics_import_service.dart`）在没有 `Teacher:` 行时会把
+        // 描述行当成「位置式的教师/地点」：单行 → 整行当地点，多行 →
+        // 地点=描述、教师=备注，真正的 `LOCATION` 被丢掉。带上前缀后，
+        // 导入侧能把它们和地点/教师区分开，往返不再串字段。
         final descriptionParts = <String>[
           if (course.teacher.trim().isNotEmpty) 'Teacher: ${course.teacher}',
+          // 与 LOCATION 字段同值，但显式写出来：导入侧据此判定
+          // 「LOCATION 是纯地点，不是 WakeUp 那种『地点 + 教师』合并字段」。
+          if (course.location.trim().isNotEmpty) 'Location: ${course.location}',
           'Sections: ${course.startSection}-${course.endSection}',
           if (course.description?.trim().isNotEmpty == true)
-            course.description!.trim(),
-          if (course.note?.trim().isNotEmpty == true) course.note!.trim(),
+            'Description: ${course.description!.trim()}',
+          if (course.note?.trim().isNotEmpty == true)
+            'Note: ${course.note!.trim()}',
           if (sessionNote?.text.trim().isNotEmpty == true)
-            sessionNote!.text.trim(),
+            'Session note: ${sessionNote!.text.trim()}',
           if (sessionNote?.hasHomework == true) 'Homework: yes',
         ];
         final event = _buildTimedEvent(

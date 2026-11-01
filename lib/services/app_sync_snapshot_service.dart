@@ -832,9 +832,14 @@ class AppSyncSnapshotService {
 
         _lastRollbackSnapshot = rollbackSnapshot;
         _lastRollbackId = undoId;
-        // 恢复走完了：把落盘那条的状态从 applying 改成 applied（撤销点继续有效，
-        // 但不再被当成「半截恢复」）。
-        await _markRollbackPointApplied(undoId);
+        // 恢复走完了：清掉落盘的**明文**回滚点。
+        //
+        // 撤销点仍在内存（`_lastRollbackSnapshot`）里，本进程内可撤销；落盘
+        // 记录的唯一用途是「恢复途中被杀 / 回滚失败」时给下一次启动和撤销兜底
+        //（见 `_persistRollbackPoint` 与 `undoLastApply` 的回落分支）。
+        // 走完就清掉：① 明文课表不该长期留在磁盘上；② 盘上只剩下
+        // `applying` 的记录，启动侧就不会把「已经成功」误报成「没走完」。
+        await _clearRollbackPoint(undoId);
         await AppLogService.instance.info(
           'cloud_transfer_restore_completed',
           'cloud transfer restore completed',
@@ -877,7 +882,13 @@ class AppSyncSnapshotService {
           // 的本地状态当成正常改动推上去，覆盖掉云端最后一份好数据。
           // 这里清掉两个基线哈希，强制下次同步重新走完整 pull 决策。
           _webdavBaselineReset?.call();
+          // 回滚成功 = 本地已经是恢复前状态，落盘的回滚点不再需要。
+          // 不清掉的话，下一次启动会把它当成「上次恢复没走完」误报
+          //（记录状态还停在 applying）。
+          await _clearRollbackPoint(undoId);
         }
+        // 回滚失败时**保留**盘上那条 applying：本地可能停在半路，它是唯一
+        // 的退路（`pendingIncompleteRestore` / `undoLastApply` 的回落分支）。
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
           'cloud transfer restore failed',
@@ -938,6 +949,9 @@ class AppSyncSnapshotService {
       );
       final rollback = await _captureRollbackSnapshot(provider);
       final undoId = TransferPackage.newPackageId();
+      // 合并路径原先只抓内存快照、不落盘 —— 恢复途中被杀就没有任何撤销点，
+      // 与 overwrite 路径的保证不一致。这里补上落盘（best-effort，不阻断）。
+      await _persistRollbackPoint(rollback, undoId);
       await AppLogService.instance.info(
         'cloud_transfer_restore_started',
         'cloud transfer restore started',
@@ -960,10 +974,15 @@ class AppSyncSnapshotService {
           current: current,
         );
         if (!result.applied) {
+          // 没应用成功就返回错误：本地大概率没被改，落盘的回滚点留着只会
+          // 在下次启动被误报成「上次恢复没走完」。清掉。
+          await _clearRollbackPoint(undoId);
           return result.error ?? 'sync_snapshot_apply_failed';
         }
         _lastRollbackSnapshot = rollback;
         _lastRollbackId = undoId;
+        // 与 overwrite 路径同口径：走完就清掉明文回滚点（撤销点留在内存）。
+        await _clearRollbackPoint(undoId);
         await AppLogService.instance.info(
           'cloud_transfer_restore_completed',
           'cloud transfer restore completed',
@@ -997,6 +1016,8 @@ class AppSyncSnapshotService {
           // 与 applySnapshot 的回滚分支同口径：回滚后清基线，防自动上传
           // 把回滚后的本地状态按旧基线推上云端。
           _webdavBaselineReset?.call();
+          // 本地已回到恢复前：清掉落盘回滚点，避免下次启动误报「没走完」。
+          await _clearRollbackPoint(undoId);
         }
         await AppLogService.instance.error(
           'cloud_transfer_restore_failed',
@@ -1019,25 +1040,43 @@ class AppSyncSnapshotService {
     });
   }
 
-  /// Reverts the most recent cloud apply during this process session.
+  /// Reverts the most recent cloud apply.
+  ///
+  /// 先看本进程内存里的撤销点；没有（进程重启过）就回落到盘上那条
+  /// `applying` 记录 —— 「上次恢复途中被杀 / 回滚失败」时它是唯一的退路。
+  /// 这条回落让 [pendingIncompleteRestore] 与回滚点落盘**真正被读取**，
+  /// 而不是只写不读（2026-11 修）。
   Future<bool> undoLastApply({required AppSyncTimetablePort provider}) async {
-    final rollbackSnapshot = _lastRollbackSnapshot;
+    var rollbackSnapshot = _lastRollbackSnapshot;
+    var undoId = _lastRollbackId;
     if (rollbackSnapshot == null) {
-      return false;
+      final pending = await pendingIncompleteRestore();
+      if (pending == null) {
+        return false;
+      }
+      try {
+        rollbackSnapshot = parseSnapshotJson(pending.snapshotJson);
+      } catch (_) {
+        // 盘上那份解析不出来就别动本地数据（宁可不撤销，也不写坏）。
+        return false;
+      }
+      undoId = pending.undoId;
     }
+    final snapshotToApply = rollbackSnapshot;
     try {
       await provider.runMutationExclusive(() async {
         final error = await _applySnapshotData(
           provider: provider,
-          snapshot: rollbackSnapshot,
+          snapshot: snapshotToApply,
         );
         if (error != null) {
           throw StateError(error);
         }
       });
-      final undoId = _lastRollbackId;
       _lastRollbackSnapshot = null;
       _lastRollbackId = null;
+      // 撤销完成：内存与盘上的撤销点都失效，清掉（明文不该继续留在盘上）。
+      await _clearRollbackPoint(undoId);
       // 撤销改变了本地数据（回到应用前状态），旧的远端基线不再成立；
       // 清基线强制下次同步重走完整 pull 决策，防止把撤销后的本地状态
       // 当作基线内改动自动推上云端。
@@ -1144,6 +1183,11 @@ class AppSyncSnapshotService {
   /// **不抛**：落盘是取证用的，失败不该把一次本来能成功的恢复拦下来。
   /// 失败时落一条 warn —— 那意味着「恢复途中被杀就没有撤销点」，是用户要
   /// 知道的能力降级。
+  ///
+  /// ⚠️ 盘上是**明文快照**，所以生命周期必须收紧：它只在「恢复正在写盘」
+  /// 这段窗口里存在，终点由 [_clearRollbackPoint] 收口（成功 / 回滚成功 /
+  /// 撤销三条路径都清）。唯一会长期留下的情形是恢复途中进程被杀或回滚失败
+  /// —— 那正是用户唯一还能用于救数据的东西（`undoLastApply` 的回落分支）。
   Future<void> _persistRollbackPoint(
     AppSyncSnapshot snapshot,
     String undoId,
@@ -1163,15 +1207,19 @@ class AppSyncSnapshotService {
     }
   }
 
-  /// 恢复成功后把落盘状态改成 `applied`（best-effort，同样不抛）。
-  Future<void> _markRollbackPointApplied(String undoId) async {
+  /// 清掉落盘的回滚点（best-effort，不抛）。
+  ///
+  /// 恢复成功、回滚成功、撤销成功三条路径的终态都走这里：本地已经落定，
+  /// 回滚点不再有用，而明文课表不该继续留在盘上。清掉后
+  /// [pendingIncompleteRestore] 也不会再把已完成的恢复误报成「没走完」。
+  Future<void> _clearRollbackPoint(String? undoId) async {
     try {
-      await _rollbackStore.markApplied(undoId);
+      await _rollbackStore.clear();
     } catch (error) {
       await AppLogService.instance.warn(
-        'sync_rollback_point_mark_failed',
-        '回滚点状态未能更新，下次启动可能误报「恢复未完成」',
-        extras: {'undoId': undoId, 'error': '$error'},
+        'sync_rollback_point_clear_failed',
+        '回滚点未能清除，下次启动可能误报「恢复未完成」',
+        extras: {'undoId': ?undoId, 'error': '$error'},
       );
     }
   }

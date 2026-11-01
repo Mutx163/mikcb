@@ -1,4 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
+import 'package:university_timetable/services/ics_export_service.dart';
 import 'package:university_timetable/services/ics_import_service.dart';
 
 /// **往返**验收：本 App 导出的 .ics 必须能导回来（2026-10-27）。
@@ -16,7 +20,8 @@ import 'package:university_timetable/services/ics_import_service.dart';
 ///
 /// 这里钉的是导出侧的真实格式，不是手写的理想格式 —— 格式一旦漂移，测试先红。
 void main() {
-  /// 导出侧的 DESCRIPTION 形状：`Teacher: X` → `Sections: X-Y` → 其它。
+  /// 导出侧的 DESCRIPTION 形状（2026-11 起每行都带明确前缀）：
+  /// `Teacher: X` → `Location: Y` → `Sections: X-Y` → `Description: ...`。
   String exportedEvent({
     required String summary,
     required String start,
@@ -28,8 +33,10 @@ void main() {
   }) {
     final descriptionParts = <String>[
       if (teacher.trim().isNotEmpty) 'Teacher: $teacher',
+      if (location != null && location.trim().isNotEmpty)
+        'Location: $location',
       'Sections: $sections',
-      ?extraDescription,
+      if (extraDescription != null) 'Description: $extraDescription',
     ];
     return '''
 BEGIN:VEVENT
@@ -226,6 +233,93 @@ END:VEVENT''',
       ]);
 
       expect(IcsImportService().parseWakeUpSchedule(content).courses, isEmpty);
+    });
+  });
+
+  // ── 2026-11 缺陷：导出 → 导入把课程描述错当教师 / 地点 ──
+  //
+  // 导出侧以前把 `description` / `note` / 节次备注写成**裸行**。没有
+  // `Teacher:` 行时，导入侧的位置式配对会把它们当成「地点 / 教师」：
+  // 单行 → 整行当地点，多行 → 地点=描述、教师=备注，真正的 `LOCATION`
+  // 被丢弃。现在导出给每一行都带前缀，导入侧优先认前缀、无前缀行不再
+  // 参与位置式配对。下面用**真实导出服务**跑一遍，格式一漂就红。
+  group('真实导出 → 导入：教师 / 地点 / 描述不串（2026-11）', () {
+    TimetableProfile profileWith(List<Course> courses) => TimetableProfile(
+      id: 'profile-1',
+      name: '主课表',
+      courses: courses,
+      settings: TimetableSettings.defaults().copyWith(
+        semesterWeekCount: 8,
+        semesterStartDate: DateTime(2026, 3, 2),
+      ),
+      currentWeek: 1,
+      createdAt: DateTime(2026, 2),
+      lastUsedAt: DateTime(2026, 2),
+    );
+
+    IcsImportResult roundTrip(List<Course> courses) {
+      final exported = IcsExportService().build(
+        profile: profileWith(courses),
+        fromDate: DateTime(2026, 3),
+        toDate: DateTime(2026, 3, 31),
+        eventTypes: const {IcsExportEventType.course},
+        generatedAt: DateTime.utc(2026, 3),
+      );
+      return IcsImportService().parseWakeUpSchedule(exported.content);
+    }
+
+    test('没有教师、只剩地点 + 描述 + 备注：三项各归各位，互不冒充', () {
+      final result = roundTrip([
+        Course(
+          id: 'c1',
+          name: '大学物理',
+          teacher: '',
+          location: '理科楼-101',
+          dayOfWeek: DateTime.monday,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          endWeek: 1,
+          description: '实验课，需穿实验服',
+          note: '带计算器',
+        ),
+      ]);
+
+      expect(result.courses, hasLength(1));
+      final course = result.courses.single;
+      // 修复前：描述/备注会被当成地点/教师，而真实 LOCATION 消失。
+      expect(course.teacher, isEmpty, reason: '描述与备注不许冒充教师');
+      expect(course.location, '理科楼-101', reason: '真实的 LOCATION 不许被丢弃');
+      expect(course.description, '实验课，需穿实验服');
+      expect(course.note, '带计算器');
+    });
+
+    test('有教师的课：教师、地点、描述仍然各就各位', () {
+      final result = roundTrip([
+        Course(
+          id: 'c2',
+          name: '线性代数',
+          teacher: '李老师',
+          location: '教学楼 A101',
+          dayOfWeek: DateTime.tuesday,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          endWeek: 1,
+          description: '课后作业见群',
+          note: '单周带习题册',
+        ),
+      ]);
+
+      expect(result.courses, hasLength(1));
+      final course = result.courses.single;
+      expect(course.teacher, '李老师');
+      // 地点里本身带空格：旧口径会按空格把最后一个词剥成教师。
+      expect(course.location, '教学楼 A101');
+      expect(course.description, '课后作业见群');
+      expect(course.note, '单周带习题册');
     });
   });
 }

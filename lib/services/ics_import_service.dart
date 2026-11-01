@@ -234,6 +234,14 @@ class IcsImportService {
       '地点',
       '教室',
     ]);
+    // 本 App 自己的导出会给自由文本也带前缀（`Description:` / `Note:`），
+    // 只为把它们从「位置式配对」里排除，并顺手还原到课程字段。
+    final explicitDescription = _prefixedValue(contentLines, const [
+      'description',
+      '简介',
+      '描述',
+    ]);
+    final explicitNote = _prefixedValue(contentLines, const ['note', '备注']);
     // 被前缀行用掉的那些行不再参与位置式配对。
     final pairingLines = contentLines
         .where((line) => !_hasKnownPrefix(line))
@@ -260,8 +268,15 @@ class IcsImportService {
     if (explicitTeacher != null || explicitLocation != null) {
       // 带前缀的写法不需要猜：缺哪一半就从 LOCATION 字段补。
       final icsLocation = (event['LOCATION'] ?? '').trim();
+      // ⚠️ 显式 `Location:` 前缀说明 LOCATION 是**纯地点**（本 App 导出侧就是
+      // 这么写的）。这时"没有教师"就是真的没有，不能再从地点串里拆最后一个
+      // 词当教师 —— 否则 `Location: 教三-201` 会把教师写成 `教三-201`。
+      // 没有 Location 前缀时才保留 WakeUp 的旧口径（LOCATION = 地点 + 教师）。
       teacher =
-          explicitTeacher ?? _extractTeacherFromCombinedLocation(icsLocation);
+          explicitTeacher ??
+          (explicitLocation != null
+              ? ''
+              : _extractTeacherFromCombinedLocation(icsLocation));
       rawLocation = explicitLocation ?? icsLocation;
     } else if (!hasStructuredLocation) {
       rawLocation = event['LOCATION'] ?? '';
@@ -318,9 +333,13 @@ class IcsImportService {
       id: 'ics-${startDateTime.millisecondsSinceEpoch}-$index',
       name: _cleanSummary(summary),
       teacher: teacher,
-      location: hasStructuredLocation
+      // 显式 `Location:` 是纯地点，不再走「从合并字段里剥掉教师」的旧口径
+      //（旧口径按空格切，`教学楼 A101` 会被截成 `教学楼`）。
+      location: (hasStructuredLocation || explicitLocation != null)
           ? rawLocation.trim()
           : _extractLocationFromCombinedField(rawLocation),
+      description: explicitDescription,
+      note: explicitNote,
       dayOfWeek: startDateTime.weekday,
       startSection: startSection,
       endSection: endSection,
@@ -419,10 +438,17 @@ class IcsImportService {
       'room',
       'section',
       'period',
+      'description',
+      'note',
+      'session note',
+      'homework',
       '教师',
       '老师',
       '地点',
       '教室',
+      '简介',
+      '描述',
+      '备注',
     ]) {
       if (lower.startsWith(prefix.toLowerCase())) {
         final rest = line.substring(prefix.length).trimLeft();
