@@ -207,7 +207,7 @@ object AppearanceEditorTransitionSpec {
      * 与 Flutter `Curves.easeInOutCubic` 同一条曲线；二分 30 次在 [0,1] 上足够
      * （Dart 的 `linearT` 也是同一套写法）。
      */
-    private fun cubicBezierYForX(
+    internal fun cubicBezierYForX(
         t: Float,
         p1x: Float,
         p1y: Float,
@@ -462,6 +462,145 @@ fun zoomSnapshotFrame(
         heightDp = targetHeight,
         radiusDp = radius,
         clipRadiusBeforeScaleDp = if (sx > 0f) radius / sx else 0f,
+    )
+}
+
+// ───────────────────────────────────────────── 入场 / 退场的缩放与分层出场
+//
+// 这一层与上面两条转场都不是同一件事：
+// * [NotchMode] 那套是「页面推入」的滑动转场；
+// * [zoomSnapshotFrame] 那套是首页缩进卡片时**快照**的帧；
+// * 这里这套是**本页自己的**入场 / 退场：整屏内容缩成卡片、上下 chrome 分层归位。
+//   这套时间线写在页面内部（卡片缩放 380ms、顶栏 1.5→1、底部工具淡入 /
+//   上移 80dp / 模糊 8→0），与导航路由无关；我们照同一套数值复刻成纯函数，
+//   Compose 侧只负责把值喂给 `graphicsLayer`，不再自己算第二份。
+
+/**
+ * 入场 / 退场时间线的数值契约。
+ *
+ * 缓动是一条三次 Bézier `(0.3, 0.5, 0.2, 1.0)`：前段很快、后段慢慢收尾
+ * （半程就已走完约 89%）。三条动画共用这条曲线，只是目标值不同，所以「分层」来自
+ * 各层起止值的差异，而不是各自再挂一条不同的缓动。
+ */
+object AppearanceEditorEntranceSpec {
+
+    /** 入场总时长（毫秒）：卡片缩放 / 顶栏归位 / 底部工具归位共用。 */
+    const val ENTER_DURATION_MS = 380
+
+    /** 退场总时长（毫秒）：卡片长回整屏、顶栏放大离场、底部工具退走。 */
+    const val EXIT_DURATION_MS = 500
+
+    /** 顶栏出场时的起始缩放（1.5 → 1，绕整屏中心缩放，看起来从屏幕上方压进来）。 */
+    const val TOP_CHROME_START_SCALE = 1.5f
+
+    /** 底部工具起始纵向位移（80dp → 0，自下而上归位）。 */
+    const val BOTTOM_CHROME_SLIDE_DP = 80f
+
+    /** 底部工具起始模糊半径（8dp → 0，归位过程中逐渐对焦）。 */
+    const val BOTTOM_CHROME_START_BLUR_DP = 8f
+
+    /**
+     * 统一的缓动：三次 Bézier (0.3, 0.5, 0.2, 1.0)。
+     *
+     * 端点精确（0 → 0、1 → 1）：落定帧必须是 1，否则卡片停在 0.999 的缩放上、
+     * 与真实卡片差半个像素，截图对比会被抓出来。
+     */
+    fun eased(t: Float): Float = AppearanceEditorTransitionSpec.cubicBezierYForX(
+        t = t.coerceIn(0f, 1f),
+        p1x = 0.3f,
+        p1y = 0.5f,
+        p2x = 0.2f,
+        p2y = 1f,
+    )
+
+    /** 顶栏缩放：1.5 → 1。 */
+    fun topChromeScale(t: Float): Float =
+        lerp(TOP_CHROME_START_SCALE, 1f, eased(t))
+
+    /** 底部工具不透明度：0 → 1。 */
+    fun bottomChromeAlpha(t: Float): Float = eased(t)
+
+    /** 底部工具纵向位移：80dp → 0。 */
+    fun bottomChromeOffsetDp(t: Float): Float =
+        BOTTOM_CHROME_SLIDE_DP * (1f - eased(t))
+
+    /** 底部工具模糊半径：8dp → 0。 */
+    fun bottomChromeBlurDp(t: Float): Float =
+        BOTTOM_CHROME_START_BLUR_DP * (1f - eased(t))
+}
+
+/**
+ * 入场 / 退场某一片刻的整页状态（纯 dp / 无单位）。
+ *
+ * 约定 [progress]：0 = 整屏铺开（卡片还没缩进来），1 = 卡片落到 [appearanceEditorCardBox]
+ * 的落点。**入场**从 0 跑到 1，**退场**从 1 跑回 0，所以复刻退场不需要第二套公式。
+ */
+data class AppearanceEditorEntranceFrame(
+    /** 卡片**绘制**矩形的左边 / 上边（整屏→落点插值）。 */
+    val cardLeftDp: Float,
+    val cardTopDp: Float,
+    /** 卡片绘制矩形的宽高。 */
+    val cardWidthDp: Float,
+    val cardHeightDp: Float,
+    /**
+     * 相对**落点容器**的绘制缩放：容器始终按落点尺寸布局，只把这个缩放交给
+     * `graphicsLayer`，子树不会再被重新 measure。
+     */
+    val cardDrawScale: Float,
+    /** 绘制后的圆角（= 落点圆角 × 绘制缩放；起点正好回到屏幕圆角）。 */
+    val cardRadiusDp: Float,
+    /** 顶栏缩放（1.5 → 1）。 */
+    val topChromeScale: Float,
+    /** 底部工具不透明度（0 → 1）。 */
+    val bottomChromeAlpha: Float,
+    /** 底部工具纵向位移（80dp → 0）。 */
+    val bottomChromeOffsetDp: Float,
+    /** 底部工具模糊半径（8dp → 0）。 */
+    val bottomChromeBlurDp: Float,
+    /** 缓动后的进度（0..1），给不透明度和「是否落定」用。 */
+    val easedFraction: Float,
+) {
+    /** 是否已经落定（缓动值精确到 1）。 */
+    val settled: Boolean get() = easedFraction >= 1f
+}
+
+/**
+ * 算某一进度上的入场 / 退场状态。
+ *
+ * 卡片矩形从**整屏矩形**插到 [landing]（落点），圆角随绘制缩放一起收小：
+ * 起点绘制缩放 = `整屏宽 / 落点宽`，落点圆角乘上它正好回到屏幕圆角，
+ * 所以「缩进来」与「长回去」两端都不会出现圆角跳变。
+ *
+ * @param progress 0 = 整屏，1 = 落定（入场正向、退场反向共用）。
+ * @param screenWidthDp / screenHeightDp 整屏逻辑尺寸。
+ * @param landing 卡片落点（[appearanceEditorCardBox] 的结果）。
+ */
+fun appearanceEditorEntranceFrame(
+    progress: Float,
+    screenWidthDp: Float,
+    screenHeightDp: Float,
+    landing: AppearanceEditorCardBox,
+): AppearanceEditorEntranceFrame {
+    val eased = AppearanceEditorEntranceSpec.eased(progress)
+    val width = lerp(screenWidthDp, landing.cardWidthDp, eased)
+    val height = lerp(screenHeightDp, landing.cardHeightDp, eased)
+    val drawScale = if (landing.cardWidthDp > 1e-4f) {
+        width / landing.cardWidthDp
+    } else {
+        1f
+    }
+    return AppearanceEditorEntranceFrame(
+        cardLeftDp = lerp(0f, landing.cardLeftDp, eased),
+        cardTopDp = lerp(0f, landing.cardTopDp, eased),
+        cardWidthDp = width,
+        cardHeightDp = height,
+        cardDrawScale = drawScale,
+        cardRadiusDp = landing.radiusDp * drawScale,
+        topChromeScale = AppearanceEditorEntranceSpec.topChromeScale(progress),
+        bottomChromeAlpha = AppearanceEditorEntranceSpec.bottomChromeAlpha(progress),
+        bottomChromeOffsetDp = AppearanceEditorEntranceSpec.bottomChromeOffsetDp(progress),
+        bottomChromeBlurDp = AppearanceEditorEntranceSpec.bottomChromeBlurDp(progress),
+        easedFraction = eased,
     )
 }
 

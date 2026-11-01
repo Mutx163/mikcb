@@ -3,12 +3,18 @@ package com.mutx163.qingyu.pages.settings
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,11 +24,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -31,8 +41,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 外观编辑页的**沉浸式页面壳**：整屏暗底 + 中间一张「真课表页等比缩尺卡」+
@@ -80,6 +92,25 @@ import kotlinx.coroutines.delay
  * Kotlin 这份预览是活树、首帧就有内容，所以宿主通常传 `true`（罩子不进树）；参数
  * 保留是为了将来预览改成异步图源时能直接复用 Dart 那套三态门。
  *
+ * ## 入场 / 退场（本页自己的缩放，与壳的页面推入转场是两条）
+ *
+ * 进页后 380ms 内：整屏内容（真课表页）按统一缓动缩进卡片落点；顶栏从 1.5 倍收拢
+ * （绕整屏中心，观感是从上方压进来）；底部两颗圆钮从「透明 + 下移 80dp + 模糊 8dp」
+ * 归位。点「取消 / 完成」时先播 500ms 的反向动画，再回调宿主。
+ *
+ * 数值、曲线与分层插值都住在纯模型 [AppearanceEditorEntranceSpec] /
+ * [appearanceEditorEntranceFrame]（可走 JVM 单测逐数断言），这里只把结果交给官方
+ * `graphicsLayer`：容器布局不变、子树不重新 measure，进度在绘制 lambda 里读，
+ * 预览树不会逐帧重组。
+ *
+ * ### 已知差异
+ * * 壳推入本页仍走官方滑动转场（`NavTransitions.MiuixDefault`），内部缩放入场会与它
+ *   同时进行；没有外层滑动的版本才是「只有缩放」。
+ * * 系统返回由宿主的 `BackHandler` 直接调用取消，不经过本页的 `requestExit`，
+ *   所以只有点「取消 / 完成」才会播退场缩放。
+ * * 底部工具的「模糊对焦」用 `Modifier.blur`，Android 12 以下不生效（退化为无模糊）。
+
+ *
  * @param initialDayView 预览初始停在日课表（true）还是周课表（false）。
  * @param onCancel 「取消」：宿主回滚到进页快照后返回（Dart `:735-740`，不是什么都不做）。
  * @param onDone 「完成」：保留改动并返回（Dart `:672-675`）。
@@ -122,6 +153,55 @@ fun AppearanceEditorScreen(
     val bottomInset = with(density) { systemBars.getBottom(this).toDp() }
 
     var dayView by remember { mutableStateOf(initialDayView) }
+
+    // ── 入场 / 退场：本页自己的缩放与分层出场（与壳的页面推入转场无关）──────
+    //
+    // 时间线（数值在 `AppearanceEditorEntranceSpec`，逐条有单测）：
+    // * 整屏内容按统一缓动缩进卡片落点，退场反向长回整屏；
+    // * 顶栏同时从 1.5 倍缩回 1 倍（绕整屏中心，观感是从屏幕上方压进来）；
+    // * 底部两颗圆钮从「透明 + 下移 80dp + 模糊 8dp」归位。
+    //
+    // 进度用 `Animatable` 而不是 `animateFloatAsState`：退场要在回调宿主之前先播完，
+    // 且入场没播完就点取消时要能从当前值反向续播（`Animatable.animateTo` 自带互斥）。
+    val entrance = remember { Animatable(0f) }
+    // 连点退出的守门：动画期间第二下直接忽略，回调只发一次。
+    var exiting by remember { mutableStateOf(false) }
+    val exitScope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        entrance.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = AppearanceEditorEntranceSpec.ENTER_DURATION_MS,
+                easing = LinearEasing,
+            ),
+        )
+    }
+
+    /**
+     * 先播完退场再回调宿主。
+     *
+     * 缓动由纯模型 [AppearanceEditorEntranceSpec.eased] 负责，这里用线性 `tween` 只当
+     * 计时器——曲线只有一份，单测才能逐点断言。
+     */
+    fun requestExit(finish: () -> Unit) {
+        if (exiting) return
+        exiting = true
+        exitScope.launch {
+            entrance.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(
+                    durationMillis = AppearanceEditorEntranceSpec.EXIT_DURATION_MS,
+                    easing = LinearEasing,
+                ),
+            )
+            finish()
+        }
+    }
+
+    // 退场动画期间吞掉系统返回：宿主的 BackHandler 会直接 cancel()，不拦住的话
+    // 会在动画中途把页面推掉，退场看起来「闪一下」。动画结束后由 finish() 退栈。
+    BackHandler(enabled = exiting) { /* 等退场播完 */ }
+
     // 加载罩三态里的「还在树上」：淡出跑完才移除（见 [AppearanceEditorLoadingCover]）。
     var coverMounted by remember { mutableStateOf(!previewReady) }
     LaunchedEffect(previewReady) {
@@ -151,14 +231,39 @@ fun AppearanceEditorScreen(
                 bottomInset = bottomInset,
             )
             val cardShape = RoundedCornerShape(geometry.radius)
+            // 纯模型的落点矩形（入场 / 退场插值的终点）。
+            val landingBox = geometry.toCardBox()
 
             // ── 中间那张卡：整屏尺寸的真课表页，等比缩进来 ──────────────
             // 位置用 `absoluteOffset`（不跟随 RTL 镜像）：Dart 的 `Positioned(left:)`
             // 也是物理左边；卡片横向居中、纵向居中于「上下 chrome 之间」那条带（`:1647-1650`）。
+            //
+            // 入场 / 退场不改布局：容器始终按**落点**尺寸摆放，变化只发生在
+            // `graphicsLayer`（绘制层）——子树一次都不会重新 measure，真课表页仍是
+            // 整屏 1:1 排版。进度在 `graphicsLayer` 的 lambda 里读（绘制期快照读），
+            // 不会让整棵预览树逐帧重组。
             Box(
                 modifier = Modifier
                     .absoluteOffset(x = geometry.cardLeft, y = geometry.cardTop)
                     .size(width = geometry.cardWidth, height = geometry.cardHeight)
+                    // 入场期间卡片盖在 chrome 之上（整屏快照盖住 chrome、
+                    // 随缩小把 chrome 让出来）。落定后两者几何上不重叠，恒为 1 无副作用。
+                    // 加载罩用更高的 zIndex 压住它。
+                    .zIndex(1f)
+                    .graphicsLayer {
+                        val frame = appearanceEditorEntranceFrame(
+                            progress = entrance.value,
+                            screenWidthDp = screenWidth.value,
+                            screenHeightDp = screenHeight.value,
+                            landing = landingBox,
+                        )
+                        scaleX = frame.cardDrawScale
+                        scaleY = frame.cardDrawScale
+                        // 绕左上角缩放，位移另行补齐：绘制矩形 = 落点矩形插值到整屏。
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        translationX = (frame.cardLeftDp - landingBox.cardLeftDp).dp.toPx()
+                        translationY = (frame.cardTopDp - landingBox.cardTopDp).dp.toPx()
+                    }
                     // 浮影：Dart 是 `0x66000000 / blur 32 / spread 2`（`:1835-1841`）。
                     // 官方 `Modifier.shadow` 没有 spread 参数，2dp 的扩张用 elevation 的
                     // 平台模糊近似（颜色固定 40% 黑，不跟主题）。
@@ -195,20 +300,37 @@ fun AppearanceEditorScreen(
             // ── 上下 chrome：位置固定，弹层打开期间不动 ─────────────────
             // Dart 口径（2026-09-19）：弹窗打开时上下 chrome **保持常显、位置不变**
             // （`:780-782`），所以它们跟卡片一样是这一层的常驻子节点，不随弹层隐藏。
-            AppearanceEditorTopChrome(
-                dayView = dayView,
-                onDayViewChange = { dayView = it },
-                onCancel = onCancel,
-                onDone = onDone,
-                topInset = topInset,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
-            AppearanceEditorBottomChrome(
-                onAdjustWallpaper = onAdjustWallpaper,
-                onMaterial = onMaterial,
-                bottomInset = bottomInset,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            //
+            // 入场分层：顶栏 1.5 → 1 倍（绕**整屏中心**缩放，所以同时从屏幕上方压下来），
+            // 底部两颗圆钮淡入 + 上移 80dp + 从 8dp 模糊对焦。进度同样在绘制 lambda 里读。
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val scale = AppearanceEditorEntranceSpec.topChromeScale(entrance.value)
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    },
+            ) {
+                AppearanceEditorTopChrome(
+                    dayView = dayView,
+                    onDayViewChange = { dayView = it },
+                    // 退场先播完缩放再回调宿主；连点只认第一下。
+                    onCancel = { requestExit(onCancel) },
+                    onDone = { requestExit(onDone) },
+                    topInset = topInset,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
+            BottomChromeEntranceLayer(progress = { entrance.value }) {
+                AppearanceEditorBottomChrome(
+                    onAdjustWallpaper = onAdjustWallpaper,
+                    onMaterial = onMaterial,
+                    bottomInset = bottomInset,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
 
             // ── 加载罩：Stack 的最后一个子节点 = 盖住卡片与上下 chrome ────
             if (coverMounted) {
@@ -217,6 +339,8 @@ fun AppearanceEditorScreen(
                     label = SettingsStringsExt1.commonLoadingLabel.zh,
                     modifier = Modifier
                         .fillMaxSize()
+                        // 卡片恒有 `zIndex(1f)`，罩子必须更高才能真的盖住它。
+                        .zIndex(2f)
                         // 完全盖住期间连点击一起挡（Dart 的 `ColoredBox` 命中测试是 opaque 的）。
                         .consumeAllPointerEvents(),
                 )
@@ -284,6 +408,62 @@ private fun Context.findActivity(): Activity? {
         current = current.baseContext
     }
     return null
+}
+
+// ─────────────────────────────────────────────── 入场 / 退场（数值本体在纯模型里）
+//
+// `AppearanceEditorEntranceSpec` / `appearanceEditorEntranceFrame` 住在 main 源集，
+// 可走 L0 JVM 单测逐数断言；这里只做 dp ↔ Float 转换与官方 `graphicsLayer` 接线，
+// 不另算第二份几何。
+
+/** 把 Compose 侧的落点几何转回纯模型的 [AppearanceEditorCardBox]，避免两处各算一遍。 */
+internal fun AppearanceEditorCardGeometry.toCardBox(): AppearanceEditorCardBox =
+    AppearanceEditorCardBox(
+        scale = scale,
+        cardWidthDp = cardWidth.value,
+        cardHeightDp = cardHeight.value,
+        cardLeftDp = cardLeft.value,
+        cardTopDp = cardTop.value,
+        radiusDp = radius.value,
+        topReserveDp = topReserve.value,
+        bottomReserveDp = bottomReserve.value,
+        availableHeightDp = availableHeight.value,
+    )
+
+/**
+ * 底部 chrome 的入场层：淡入 + 自下而上 80dp + 从 8dp 模糊对焦。
+ *
+ * 只有这一层在组合期读进度（`Modifier.blur` 的半径只能在组合期给），代价是两颗圆钮
+ * 逐帧重组；卡片与顶栏都在绘制 lambda 里读，不触发重组。
+ */
+@Composable
+private fun BottomChromeEntranceLayer(
+    progress: () -> Float,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val t = progress()
+    val alpha = AppearanceEditorEntranceSpec.bottomChromeAlpha(t)
+    val offset = AppearanceEditorEntranceSpec.bottomChromeOffsetDp(t)
+    val blurRadius = AppearanceEditorEntranceSpec.bottomChromeBlurDp(t)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .graphicsLayer {
+                    this.alpha = alpha
+                    translationY = offset.dp.toPx()
+                }
+                .then(
+                    if (blurRadius > 0.01f) {
+                        Modifier.blur(blurRadius.dp)
+                    } else {
+                        Modifier
+                    },
+                ),
+            content = content,
+        )
+    }
 }
 
 // ─────────────────────────────────────────────── 几何（数值本体在纯模型里）

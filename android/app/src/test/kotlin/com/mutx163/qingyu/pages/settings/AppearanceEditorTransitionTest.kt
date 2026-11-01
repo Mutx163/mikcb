@@ -342,4 +342,126 @@ class AppearanceEditorTransitionTest {
             last = frame.widthDp
         }
     }
+
+    // ───────────────────────────────────────────── 入场 / 退场（缩放 + 分层出场）
+
+    private fun sampleEntranceFrame(progress: Float) = appearanceEditorEntranceFrame(
+        progress = progress,
+        screenWidthDp = 393f,
+        screenHeightDp = 852f,
+        landing = sampleCardBox(),
+    )
+
+    @Test
+    fun `入场起点是整屏 三层都停在起势值`() {
+        // 入场口径：整屏内容缩进卡片（380ms）、顶栏 1.5 → 1、底部工具
+        // 透明 + 下移 80dp + 模糊 8dp → 归位。
+        val landing = sampleCardBox()
+        val frame = sampleEntranceFrame(0f)
+        assertEquals(0f, frame.cardLeftDp, 0.001f)
+        assertEquals(0f, frame.cardTopDp, 0.001f)
+        assertEquals(393f, frame.cardWidthDp, 0.001f)
+        assertEquals(852f, frame.cardHeightDp, 0.001f)
+        // 绘制缩放 = 整屏宽 / 落点宽，落点圆角乘回去正好是屏幕圆角 28。
+        assertEquals(393f / landing.cardWidthDp, frame.cardDrawScale, 1e-4f)
+        assertEquals(28f, frame.cardRadiusDp, 0.001f)
+        assertEquals(1.5f, frame.topChromeScale, 0f)
+        assertEquals(0f, frame.bottomChromeAlpha, 0f)
+        assertEquals(80f, frame.bottomChromeOffsetDp, 0f)
+        assertEquals(8f, frame.bottomChromeBlurDp, 0f)
+        assertFalse(frame.settled)
+    }
+
+    @Test
+    fun `入场终点与卡片落点逐像素重合 且三层归位`() {
+        val landing = sampleCardBox()
+        val frame = sampleEntranceFrame(1f)
+        assertEquals(landing.cardLeftDp, frame.cardLeftDp, 0.001f)
+        assertEquals(landing.cardTopDp, frame.cardTopDp, 0.001f)
+        assertEquals(landing.cardWidthDp, frame.cardWidthDp, 0.001f)
+        assertEquals(landing.cardHeightDp, frame.cardHeightDp, 0.001f)
+        assertEquals(1f, frame.cardDrawScale, 1e-5f)
+        assertEquals(landing.radiusDp, frame.cardRadiusDp, 0.001f)
+        assertEquals(1f, frame.topChromeScale, 0f)
+        assertEquals(1f, frame.bottomChromeAlpha, 0f)
+        assertEquals(0f, frame.bottomChromeOffsetDp, 0f)
+        assertEquals(0f, frame.bottomChromeBlurDp, 0f)
+        assertTrue("落定必须是精确的 1，否则卡片停在 0.999 缩放", frame.settled)
+    }
+
+    @Test
+    fun `入场缓动前段快后段慢`() {
+        // 三次 Bézier (0.3, 0.5, 0.2, 1.0)：半程已走完约 89%。
+        assertEquals(0f, AppearanceEditorEntranceSpec.eased(0f), 0f)
+        assertEquals(1f, AppearanceEditorEntranceSpec.eased(1f), 0f)
+        assertTrue(
+            "这条曲线必须明显前倾（半程 > 0.8），否则就不是同一观感",
+            AppearanceEditorEntranceSpec.eased(0.5f) > 0.8f,
+        )
+        assertTrue(
+            "也不能到半程就结束",
+            AppearanceEditorEntranceSpec.eased(0.5f) < 1f,
+        )
+    }
+
+    @Test
+    fun `入场各层单调 卡片持续收缩 顶栏持续归位`() {
+        val landing = sampleCardBox()
+        var lastWidth = Float.MAX_VALUE
+        var lastTopScale = Float.MAX_VALUE
+        var lastAlpha = -1f
+        var lastOffset = Float.MAX_VALUE
+        var lastBlur = Float.MAX_VALUE
+        for (i in 0..100) {
+            val frame = appearanceEditorEntranceFrame(
+                progress = i / 100f,
+                screenWidthDp = 393f,
+                screenHeightDp = 852f,
+                landing = landing,
+            )
+            assertTrue("卡片宽度必须单调收缩", frame.cardWidthDp <= lastWidth + 1e-4f)
+            assertTrue("顶栏缩放必须单调收拢", frame.topChromeScale <= lastTopScale + 1e-6f)
+            assertTrue("底部工具必须单调变清晰", frame.bottomChromeAlpha >= lastAlpha - 1e-6f)
+            assertTrue("底部工具位移必须单调归零", frame.bottomChromeOffsetDp <= lastOffset + 1e-5f)
+            assertTrue("底部工具模糊必须单调归零", frame.bottomChromeBlurDp <= lastBlur + 1e-5f)
+            lastWidth = frame.cardWidthDp
+            lastTopScale = frame.topChromeScale
+            lastAlpha = frame.bottomChromeAlpha
+            lastOffset = frame.bottomChromeOffsetDp
+            lastBlur = frame.bottomChromeBlurDp
+        }
+    }
+
+    @Test
+    fun `退场时长比入场长 且端点常量与口径一致`() {
+        // 入场 380ms、退场 500ms、顶栏 1.5 倍、底部工具 80dp / 8dp。
+        assertEquals(380, AppearanceEditorEntranceSpec.ENTER_DURATION_MS)
+        assertEquals(500, AppearanceEditorEntranceSpec.EXIT_DURATION_MS)
+        assertEquals(1.5f, AppearanceEditorEntranceSpec.TOP_CHROME_START_SCALE, 0f)
+        assertEquals(80f, AppearanceEditorEntranceSpec.BOTTOM_CHROME_SLIDE_DP, 0f)
+        assertEquals(8f, AppearanceEditorEntranceSpec.BOTTOM_CHROME_START_BLUR_DP, 0f)
+    }
+
+    @Test
+    fun `落点宽为零时不产生除零缩放`() {
+        val zeroWidth = AppearanceEditorCardBox(
+            scale = 0f,
+            cardWidthDp = 0f,
+            cardHeightDp = 0f,
+            cardLeftDp = 0f,
+            cardTopDp = 0f,
+            radiusDp = 0f,
+            topReserveDp = 0f,
+            bottomReserveDp = 0f,
+            availableHeightDp = 0f,
+        )
+        val frame = appearanceEditorEntranceFrame(
+            progress = 1f,
+            screenWidthDp = 393f,
+            screenHeightDp = 852f,
+            landing = zeroWidth,
+        )
+        assertEquals(1f, frame.cardDrawScale, 0f)
+        assertEquals(0f, frame.cardRadiusDp, 0f)
+    }
 }
