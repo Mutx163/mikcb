@@ -20,10 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCardRole
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.AnalysisCell
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel.StatisticsAnalysisViewState
@@ -181,8 +182,8 @@ private fun TrendRows(viewState: StatisticsAnalysisViewState, standalone: Boolea
             )
             Text(
                 text = "${point.sections}",
-                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.SemiBold,
+                style = (if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main)
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
@@ -218,8 +219,8 @@ private fun TimeUtilRows(viewState: StatisticsAnalysisViewState, standalone: Boo
             )
             Text(
                 text = value,
-                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.SemiBold,
+                style = (if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main)
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
@@ -245,8 +246,8 @@ private fun VenueRows(viewState: StatisticsAnalysisViewState, standalone: Boolea
             )
             Text(
                 text = value,
-                style = if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.SemiBold,
+                style = (if (standalone) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.main)
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
@@ -268,8 +269,7 @@ private fun TeacherRows(viewState: StatisticsAnalysisViewState) {
             Text(text = label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
             Text(
                 text = value,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
@@ -324,8 +324,7 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((
             )
             Text(
                 text = row.second,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
         }
@@ -353,8 +352,7 @@ private fun CompareRows(viewState: StatisticsAnalysisViewState) {
             Text(text = label, style = MiuixTheme.textStyles.body2, color = Color(QingyuTheme.primaryText(dark)))
             Text(
                 text = value,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }

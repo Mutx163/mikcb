@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,8 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -433,8 +434,7 @@ private fun HintCard(title: String, body: String, dark: Boolean) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -468,8 +468,7 @@ private fun BasicRow(
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -525,8 +524,7 @@ private fun BackupPreviewRow(row: CloudBackupRowView, dark: Boolean) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = row.title,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -604,8 +602,7 @@ fun WebdavConnectSheet(
     ) {
         Text(
             text = SyncStrings.cloudSyncLoginSheetTitle.zh,
-            style = MiuixTheme.textStyles.title4,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -690,8 +687,7 @@ fun SyncConflictDialog(
     ) {
         Text(
             text = view.title,
-            style = MiuixTheme.textStyles.title4,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(8.dp))

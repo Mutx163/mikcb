@@ -26,13 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -247,8 +248,7 @@ private fun LiveKeepAliveServiceRow(
         Text(
             text = LiveKeepAliveStrings.keepAliveServiceTitle.zh,
             modifier = Modifier.weight(1f),
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
         )
         // 已开启时隐藏「去开启」：按钮唯一用途是开启，开着再引去确认弹窗是噪声。
@@ -297,8 +297,7 @@ private fun LiveDoNotDisturbAccessRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.zh,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(

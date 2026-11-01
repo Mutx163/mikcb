@@ -18,11 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -132,8 +133,7 @@ fun MonthPanelCard(
                     text = title,
                     modifier = Modifier.weight(1f),
                     // 15dp = body2（Dart MonthType.title）
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                     color = ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -143,8 +143,7 @@ fun MonthPanelCard(
                     Text(
                         text = trailing,
                         // 11dp = footnote2（Dart MonthType.caption）
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = MonthPanelSurface.muted(ink, MonthInk.TERTIARY),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +33,8 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -140,8 +141,7 @@ fun ImportNavRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -190,8 +190,7 @@ fun ImportSwitchRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -301,8 +300,7 @@ fun ImportGuidePanel(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.applicableScenarioTitle.zh,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -328,8 +326,7 @@ fun ImportGuidePanel(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = ImportStrings.supportedFilesTitle.zh,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -379,8 +376,7 @@ private fun ImportGuideLine(title: String, subtitle: String) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(

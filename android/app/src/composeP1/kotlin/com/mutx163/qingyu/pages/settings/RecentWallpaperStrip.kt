@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -42,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.app.imagecache.ImageSizeSelector
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuShapes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -354,14 +355,11 @@ private fun RecentWallpaperCard(
                     text = label,
                     // 字号取主题 `footnote2`（官方刻度里正好 11sp，与 Dart `:324` 同数），
                     // 行高按 Dart 的 1.2 显式给。
-                    style = MiuixTheme.textStyles.footnote2,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                        if (card.selected || card.armed) QingyuWeightDelta.SEMIBOLD else 0,
+                    ),
                     lineHeight = LABEL_LINE_HEIGHT,
                     color = labelColor,
-                    fontWeight = if (card.selected || card.armed) {
-                        FontWeight.W600
-                    } else {
-                        FontWeight.W400
-                    },
                     maxLines = SettingsRecentWallpaperSection.LABEL_MAX_LINES,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,

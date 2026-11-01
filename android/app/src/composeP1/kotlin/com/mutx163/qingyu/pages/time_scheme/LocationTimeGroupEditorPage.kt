@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -27,6 +26,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.LocationKeyword
 import com.mutx163.qingyu.core.LocationKeywordMatchMode
 import com.mutx163.qingyu.core.LocationTimeGroup
@@ -150,8 +151,7 @@ fun LocationTimeGroupEditorPage(
                     actions = {
                         Text(
                             text = LocationTimeMatchStrings.saveAction.zh,
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.Medium,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = Color(QingyuTheme.primary(dark = dark)),
                             modifier = Modifier
                                 .clickable { trySave() }
@@ -281,8 +281,9 @@ fun LocationTimeGroupEditorPage(
                                         val selected = mode == newMode
                                         Text(
                                             text = model.modeLabel(mode),
-                                            style = MiuixTheme.textStyles.footnote1,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                            style = MiuixTheme.textStyles.footnote1.shiftWeight(
+                                                if (selected) QingyuWeightDelta.BOLD else 0,
+                                            ),
                                             color = Color(if (selected) QingyuTheme.primary(dark = dark) else QingyuTheme.secondaryText(dark)),
                                             modifier = Modifier.clickable { newMode = mode },
                                         )
@@ -371,8 +372,7 @@ private fun ClusterCard(cluster: BuildingCluster, onAdd: () -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "${cluster.buildingKey} · ${cluster.displayName}",
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

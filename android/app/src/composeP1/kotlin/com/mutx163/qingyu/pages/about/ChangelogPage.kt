@@ -28,13 +28,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -216,8 +217,7 @@ private fun VersionTag(version: String) {
     val colors = MiuixTheme.colorScheme
     Text(
         text = version,
-        style = MiuixTheme.textStyles.footnote1,
-        fontWeight = FontWeight.Medium,
+        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
         color = colors.onSurfaceSecondary,
         modifier = Modifier
             .background(colors.surfaceContainerHigh, RoundedCornerShape(6.dp))
@@ -251,9 +251,8 @@ private fun ChangelogDigestView(digest: ReleaseNotesDigest) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = ChangelogStrings.highlightsTitle,
-            style = MiuixTheme.textStyles.footnote1,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.onSurfaceVariantSummary,
-            fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(8.dp))
 
@@ -323,9 +322,8 @@ private fun GroupedEntries(digest: ReleaseNotesDigest) {
         if (label != null) {
             Text(
                 text = "$label · ${group.size}",
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = kindColor(kind, colors),
-                fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(6.dp))
         }
@@ -357,9 +355,8 @@ private fun HighlightRow(entry: ReleaseChangeEntry) {
         if (entry.label.isNotEmpty()) {
             Text(
                 text = entry.label,
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = accent,
-                fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.width(8.dp))
         }
@@ -388,9 +385,8 @@ private fun EntryRow(entry: ReleaseChangeEntry, showLabel: Boolean) {
         if (showLabel && entry.label.isNotEmpty()) {
             Text(
                 text = entry.label,
-                style = MiuixTheme.textStyles.footnote2,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = kindColor(entry.kind, colors),
-                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -427,9 +423,8 @@ private fun ExpandToggle(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.primary,
-            fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.width(2.dp))
         Icon(

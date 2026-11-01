@@ -27,9 +27,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -136,8 +137,7 @@ fun MoreFeaturesPage(
                     Column {
                         Text(
                             text = group.title,
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = primaryColor,
                             modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
                         )
@@ -184,8 +184,7 @@ private fun FeatureItemRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark))
             )
             if (!item.subtitle.isNullOrBlank()) {

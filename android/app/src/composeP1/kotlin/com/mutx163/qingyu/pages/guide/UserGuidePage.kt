@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuBackIconButton
@@ -46,6 +45,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuSectionGap
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.launch
@@ -244,8 +245,7 @@ private fun GuideHeader(
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,
-            style = MiuixTheme.textStyles.title2,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.BOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
     }
@@ -255,8 +255,7 @@ private fun GuideHeader(
 private fun GuideGroupTitle(text: String, dark: Boolean) {
     Text(
         text = text,
-        style = MiuixTheme.textStyles.footnote1,
-        fontWeight = FontWeight.Bold,
+        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD),
         color = Color(QingyuTheme.secondaryText(dark)),
     )
 }
@@ -284,8 +283,7 @@ private fun GuideNavRow(title: String, onClick: () -> Unit) {
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             modifier = Modifier.weight(1f),
         )
@@ -483,8 +481,7 @@ private fun PermissionsPage(
                                 "ready" to "${progress.readyCount}",
                                 "total" to "${progress.totalCount}",
                             ),
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Spacer(Modifier.height(10.dp))
@@ -742,8 +739,7 @@ private fun MenuStylePreview(
             }
             Text(
                 text = label,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = if (selected) primary else Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -853,8 +849,7 @@ private fun ExampleRow(ok: Boolean, label: String, example: String, dark: Boolea
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = if (ok) "✓" else "✗",
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
             color = markColor,
         )
         Spacer(Modifier.width(8.dp))
@@ -878,8 +873,7 @@ private fun StepRow(step: String, text: String, dark: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = step,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD),
             color = Color(QingyuTheme.primary(dark = dark)),
             modifier = Modifier.width(18.dp),
         )
@@ -963,8 +957,7 @@ private fun GuideBottomBar(
                         GuideStrings.guideNextButton.zh
                     },
                     color = Color.White,
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 )
             }
         }
@@ -986,8 +979,7 @@ private fun GuideSecondaryButton(
         Text(
             text = label,
             color = Color(QingyuTheme.primaryText(dark)),
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
         )
     }
 }

@@ -16,9 +16,9 @@ import java.io.File
  * 23 页写死 `Color(0x…`、47 页自己拼分组标题。
  *
  * 这些**都不是编译错误**：编译过、测试绿、只有真机盯屏才看得出来。所以靠「写进文档请大家自觉」
- * 一定漏——本项目已经漏了一整轮。这里用**源码文本守卫 + 棘轮基线**把六条规则钉死。
+ * 一定漏——本项目已经漏了一整轮。这里用**源码文本守卫 + 棘轮基线**把七条规则钉死。
  *
- * ## 六条规则（详见 `docs/reference/compose-page-style-rules.md`）
+ * ## 七条规则（详见 `docs/reference/compose-page-style-rules.md`）
  *
  * | 规则 | 要求 | 违规症状 |
  * |---|---|---|
@@ -28,6 +28,7 @@ import java.io.File
  * | R4 | 字号走 `MiuixTheme.textStyles` | 写死 `fontSize = n.sp`，用户字重/字阶失效 |
  * | R5 | 颜色走主题语义槽 | 写死 `Color(0x…)`，深色模式必错 |
  * | R6 | 分组标题走 `QingyuSectionTitle` | 自己拼 13sp + padding，对不齐 28dp 轴线 |
+ * | R7 | 字重走 `…textStyles.*.shiftWeight()` | 写死 `fontWeight = FontWeight.X`，盖掉用户字重/系统粗体的平移 |
  *
  * ## 棘轮怎么工作（这是本守卫能落地为「规则」的关键）
  *
@@ -143,7 +144,7 @@ class ComposePageStyleGuardTest {
     /** 域级豁免：这些目录本来就该用裸组件（见规则文档 §五）。 */
     private val domainExempt: Map<String, Set<String>> = mapOf(
         "shell" to setOf("R1"), // 壳自带导航栏，不是子页
-        "showcase" to setOf("R1", "R3"), // 展厅故意逐个展示官方裸组件
+        "showcase" to setOf("R1", "R3", "R7"), // 展厅故意逐个展示官方裸组件与字重
     )
 
     /** 一处违规：`文件|规则` 是比对键，说明文字只给人看。 */
@@ -169,6 +170,10 @@ class ComposePageStyleGuardTest {
     private val reHardColor = Regex("""Color\(0x""")
     private val reSectionLabel = Regex("""sectionLabel\(""")
     private val reSectionTitle = Regex("""QingyuSectionTitle\s*[({]""")
+
+    // R7：写死绝对字重。只匹配 `fontWeight = FontWeight.X` 字面量；
+    // `fontWeight = weight`（实时活动自己的功能设置）不算——那是用户选的绝对值，不是设计强调。
+    private val reFontWeight = Regex("""fontWeight\s*=\s*FontWeight\.""")
 
     private fun violationsOf(file: File): List<Violation> {
         val rel = relOf(file)
@@ -218,6 +223,15 @@ class ComposePageStyleGuardTest {
         // R6 分组标题 → QingyuSectionTitle
         if (reSectionLabel.containsMatchIn(all) && !reSectionTitle.containsMatchIn(all)) {
             out += Violation(rel, "R6", "自己拼分组标题，未走 QingyuSectionTitle（第 ${first(reSectionLabel)} 行）")
+        }
+
+        // R7 字重 → 主题字阶上的 shiftWeight
+        if ("R7" !in exempt && reFontWeight.containsMatchIn(all)) {
+            out += Violation(
+                rel, "R7",
+                "写死字重 ${count(reFontWeight)} 处，首处第 ${first(reFontWeight)} 行" +
+                    "（应用 MiuixTheme.textStyles.*.shiftWeight）",
+            )
         }
 
         return out
@@ -322,6 +336,7 @@ class ComposePageStyleGuardTest {
                 "  R4 字号 → MiuixTheme.textStyles\n" +
                 "  R5 颜色 → MiuixTheme.colorScheme / Color(QingyuTheme.*)\n" +
                 "  R6 分组标题 → QingyuSectionTitle\n" +
+                "  R7 字重 → MiuixTheme.textStyles.*.shiftWeight(QingyuWeightDelta.*)\n" +
                 "确实需要保留的（如与主题无关的固定语义色），请跑 " +
                 "scripts/compose-style-lint.ps1 -Domain <域> -Write 登记进基线，并在基线行里写明原因。",
             offenders.isEmpty(),

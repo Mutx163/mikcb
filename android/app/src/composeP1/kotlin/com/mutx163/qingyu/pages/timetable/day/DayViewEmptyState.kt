@@ -11,9 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -49,8 +50,7 @@ fun DayViewEmptyState(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = DayViewStrings.dayViewEmptyTitle.zh,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = titleColor,
                 textAlign = TextAlign.Center,
             )

@@ -20,14 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
-import top.yukonga.miuix.kmp.basic.Card
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -180,8 +180,8 @@ private fun BrandBadge(channel: FeedbackChannel) {
     ) {
         Text(
             text = channel.title.take(1),
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote1
+                .shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = letterColor,
         )
     }

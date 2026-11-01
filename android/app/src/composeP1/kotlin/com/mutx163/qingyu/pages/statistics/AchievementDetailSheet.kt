@@ -21,11 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -146,8 +147,7 @@ fun AchievementDetailSheet(
                 ) {
                     Text(
                         text = achievement.statusLabel,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = if (unlocked) accent else Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
@@ -156,8 +156,7 @@ fun AchievementDetailSheet(
                     Spacer(Modifier.width(10.dp))
                     Text(
                         text = achievement.progressLabel,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }

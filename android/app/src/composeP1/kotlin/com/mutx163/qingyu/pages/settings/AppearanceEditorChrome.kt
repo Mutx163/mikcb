@@ -28,11 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
@@ -220,8 +221,9 @@ private fun CapsuleButton(label: String, emphasized: Boolean, onClick: () -> Uni
         ) {
             Text(
                 text = label,
-                style = labelStyle,
-                fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
+                style = labelStyle.shiftWeight(
+                    if (emphasized) QingyuWeightDelta.SEMIBOLD else 0,
+                ),
                 maxLines = 1,
             )
         }
@@ -286,9 +288,10 @@ private fun SegmentItem(label: String, selected: Boolean, onClick: () -> Unit) {
         ) {
             Text(
                 text = label,
-                style = labelStyle,
+                style = labelStyle.shiftWeight(
+                    if (selected) QingyuWeightDelta.SEMIBOLD else 0,
+                ),
                 color = if (selected) SegmentSelectedInk else Color.White,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
             )
         }

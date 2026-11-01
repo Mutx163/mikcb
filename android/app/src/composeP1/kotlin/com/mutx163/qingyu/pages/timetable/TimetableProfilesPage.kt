@@ -36,9 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -467,8 +468,9 @@ private fun TimetableProfileRow(
             ) {
                 Text(
                     text = profile.name,
-                    style = MiuixTheme.textStyles.main,
-                    fontWeight = if (profile.isActive) FontWeight.SemiBold else FontWeight.Medium,
+                    style = MiuixTheme.textStyles.main.shiftWeight(
+                        if (profile.isActive) QingyuWeightDelta.SEMIBOLD else QingyuWeightDelta.MEDIUM,
+                    ),
                     color = if (profile.isActive) {
                         Color(QingyuTheme.primary(dark = dark))
                     } else {
@@ -551,8 +553,7 @@ private fun PartnerBadge(dark: Boolean) {
     ) {
         Text(
             text = TimetableProfilesStrings.PARTNER_BADGE,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primary(dark = dark)),
         )
     }
@@ -582,8 +583,7 @@ private fun CreateProfileDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.CREATE_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
@@ -647,8 +647,7 @@ private fun RenameProfileDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.RENAME_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
@@ -710,8 +709,7 @@ private fun ClearCoursesConfirmDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
@@ -770,8 +768,7 @@ private fun DeleteProfileConfirmDialog(
             ) {
                 Text(
                     text = TimetableProfilesStrings.DELETE_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
 
@@ -833,8 +830,7 @@ private fun ProfileMoreActionsDialog(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = profile.name,
-                    style = MiuixTheme.textStyles.main,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                 )
@@ -961,8 +957,7 @@ private fun ActionMenuItem(
         )
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = textColor,
             modifier = Modifier.weight(1f),
         )

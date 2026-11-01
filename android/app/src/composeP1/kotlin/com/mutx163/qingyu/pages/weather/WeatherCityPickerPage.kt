@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -28,6 +27,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.weather.WeatherLocation
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -120,8 +121,8 @@ fun WeatherCityPickerPage(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = WeatherStrings.weatherUseCurrentLocation.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body1
+                                    .shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = colors.onSurface,
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -262,8 +263,8 @@ private fun WeatherCityRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = location.name,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1
+                    .shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = colors.onSurface,
             )
             if (location.regionLabel.isNotBlank()) {

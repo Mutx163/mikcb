@@ -27,10 +27,10 @@
 
 ---
 
-## 二、六条规则
+## 二、七条规则
 
 > 每条给：**必须怎么干** / **判定** / **为什么**。
-> 规则编号 `R1…R6` 就是基线文件里那一列，报错时对号入座。
+> 规则编号 `R1…R7` 就是基线文件里那一列，报错时对号入座。
 
 ### R1 · 不许手搓顶栏行 → 官方 `TopAppBar` / `QingyuPageScaffold`
 
@@ -118,6 +118,30 @@ QingyuSectionTitle("分组名")     // ✅ 官方 SmallTitle，自带 28dp 左�
 - **为什么**：官方骨架的横向刻度是「页面 0 → Card 外边距 12 → Preference 自带 16 = 文字左缘 **28**」，
   而 `SmallTitle` 自带 28 正好对齐。自己写 `Text(13.sp) + padding(start = 4.dp)` 就对不齐这条轴线，
   整页看起来「行不齐」。
+
+### R7 · 字重 → `MiuixTheme.textStyles.*.shiftWeight()`
+
+```kotlin
+// ✅ 在主题字阶上按设计增量加重
+style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
+// ❌ 绝对字重，会把主题的平移结果整个盖掉
+style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.SemiBold
+```
+
+- **判定**：页面文件里出现 `fontWeight = FontWeight.<字面量>` → 违规。
+- **为什么**：`MiuixTheme.textStyles.*` 的每个槽位已经被 `buildQingyuTextStyles` 平移过
+  （设计字重 + 用户字重 − 400 − 系统粗体增量）。页面再写绝对字重是**覆盖**，
+  用户在设置里调「应用字重」时，这些文字不跟着变。
+  2026-11-01 清理前页面层有 **311 处**这种写法。
+- **写法**：增量取 `QingyuWeightDelta` 的具名常量：
+  `LIGHT(-100)` / `MEDIUM(+100)` / `SEMIBOLD(+200)` / `BOLD(+300)` / `EXTRABOLD(+400)`；
+  条件式写成 `shiftWeight(if (选中) QingyuWeightDelta.SEMIBOLD else 0)`。
+  `SpanStyle` 用同名的 `shiftWeight` 扩展。
+- **等价性**：默认设置（用户 400、系统未开粗体）下与旧写法的绝对值完全一致，
+  由 `QingyuTextStylesTest` 的 7 条契约测试钉住。
+- **豁免**：`pages/showcase/`（展厅故意展示绝对字重）；
+  用户可配置的功能字重（如实时活动自己的字重选项，写法是 `fontWeight = weight` 而不是字面量，
+  判据本来就不会命中）。
 
 ---
 
@@ -218,7 +242,7 @@ pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
 |---|---|
 | `components/` 下的共享套件自身 | 天然豁免（它就是被用来绕开裸组件的） |
 | `pages/shell/`（壳、导航栏、玻璃坞） | 豁免 R1；它自带导航栏，不是子页 |
-| `pages/showcase/`（组件展厅） | 豁免 R1/R3——**它故意逐个展示官方裸组件**，这正是它的用途 |
+| `pages/showcase/`（组件展厅） | 豁免 R1/R3/R7——**它故意逐个展示官方裸组件与字重**，这正是它的用途 |
 | 弹层/抽屉内部的短列表 | 豁免 R2（不承载页面级滚动） |
 | 确实需要的固定语义色 | 允许，但要在基线行里写原因 |
 | 与 Dart 原版行为冲突 | **Dart 是行为真相、demo 是样式真相**；冲突时行为从 Dart、样式从 demo，并在 KDoc 写明 |
@@ -228,7 +252,8 @@ pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
 ## 六、相关文件
 
 - 套件：`components/QingyuPageScaffold.kt`（骨架/返回键）· `QingyuPageList.kt`（滚动三件套+滚动条）·
-  `QingyuCard.kt`（按压反馈+圆角）· `QingyuPageTheme.kt`（主题桥）
+  `QingyuCard.kt`（按压反馈+圆角）· `QingyuPageTheme.kt`（主题桥）·
+  `QingyuTextStyles.kt`（字阶注入 + `shiftWeight` 强调）
 - 守卫：`android/app/src/test/kotlin/com/mutx163/qingyu/pages/ComposePageStyleGuardTest.kt`
 - 上游基准：`docs/reference/miuix-demo/CHEATSHEET-Demo范例.md` §3（页面骨架配方）、§3.4（分组节奏表）、
   §3.7（六个坑）；`docs/reference/miuix-demo/CHEATSHEET-玻璃与手感.md` §2（按压反馈）

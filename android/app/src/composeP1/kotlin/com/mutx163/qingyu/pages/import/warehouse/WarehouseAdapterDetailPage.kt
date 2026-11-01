@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
@@ -30,6 +29,8 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -102,15 +103,13 @@ fun WarehouseAdapterDetailPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = adapter.adapterName,
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = school.name,
-                            style = MiuixTheme.textStyles.body2,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = MiuixTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         HorizontalDivider()
@@ -139,8 +138,7 @@ fun WarehouseAdapterDetailPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = "使用说明",
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -165,8 +163,7 @@ fun WarehouseAdapterDetailPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = WarehouseStrings.customLoginAddressAction.zh,
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -223,8 +220,7 @@ fun WarehouseAdapterDetailPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "链接与调试",
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
@@ -271,8 +267,7 @@ private fun DetailMetaRow(label: String, value: String) {
         )
         Text(
             text = value,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
         )
     }
 }

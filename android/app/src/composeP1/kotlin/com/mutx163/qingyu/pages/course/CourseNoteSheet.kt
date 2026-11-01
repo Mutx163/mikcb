@@ -28,10 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -178,8 +179,7 @@ fun CourseNoteSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = CourseNoteStrings.courseNoteSheetTitle.zh,
-                        style = MiuixTheme.textStyles.body2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = primaryText,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -298,8 +298,7 @@ private fun NoteFieldLabel(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = primaryText,
         )
         Spacer(modifier = Modifier.height(3.dp))

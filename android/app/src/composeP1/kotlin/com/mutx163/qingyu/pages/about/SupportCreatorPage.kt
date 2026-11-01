@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +47,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
@@ -133,8 +134,7 @@ fun SupportCreatorPage(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             text = SupportCreatorStrings.methodTitle,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -151,8 +151,7 @@ fun SupportCreatorPage(
                         }
                         Text(
                             text = SupportCreatorStrings.scanTitleFor(method),
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Row(
@@ -375,14 +374,12 @@ private fun SupportHeroCard() {
             ) {
                 Text(
                     text = SupportCreatorStrings.heroTitle,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
                     text = SupportCreatorStrings.runningBadge,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color(QingyuTheme.success(dark)),
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -434,8 +431,8 @@ private fun MethodTab(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            style = MiuixTheme.textStyles.body2
+                .shiftWeight(if (selected) QingyuWeightDelta.SEMIBOLD else 0),
             color = if (selected) {
                 Color(QingyuTheme.primary(dark = dark))
             } else {

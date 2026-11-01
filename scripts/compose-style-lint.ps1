@@ -6,7 +6,7 @@
 
 .DESCRIPTION
     扫描 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/<域>/*.kt，
-    按 R1..R6 六条规则列违规；-Write 时把自己域的基线文件重写为当前违规集
+    按 R1..R7 七条规则列违规；-Write 时把自己域的基线文件重写为当前违规集
     （已修好的行会自动消失，这就是「棘轮只进不出」的落地点）。
 
     一个域一个基线文件 tool/compose_style_baseline/<域>.txt，
@@ -74,10 +74,14 @@ $reHardColor = [regex]'Color\(0x'
 $reSectionLabel = [regex]'sectionLabel\('
 $reSectionTitle = [regex]'QingyuSectionTitle\s*[({]'
 
+# R7：写死绝对字重。只匹配 `fontWeight = FontWeight.X` 字面量；
+# `fontWeight = weight`（实时活动自己的功能设置）不算——那是用户选的绝对值，不是设计强调。
+$reFontWeight = [regex]'fontWeight\s*=\s*FontWeight\.'
+
 # 域级豁免：这些目录本来就该用裸组件（见规则文档 §五）
 $exempt = @{
-    "shell"    = @("R1")          # 壳自带导航栏，不是子页
-    "showcase" = @("R1", "R3")    # 展厅故意逐个展示官方裸组件
+    "shell"    = @("R1")               # 壳自带导航栏，不是子页
+    "showcase" = @("R1", "R3", "R7")   # 展厅故意逐个展示官方裸组件与字重
 }
 
 function Get-CodeLines {
@@ -149,6 +153,11 @@ function Get-Violations {
         # R6 分组标题 → QingyuSectionTitle
         if ($reSectionLabel.IsMatch($all) -and -not $reSectionTitle.IsMatch($all)) {
             $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R6"; Detail = "自己拼分组标题，未走 QingyuSectionTitle（第 $(& $firstLine $reSectionLabel) 行）" })
+        }
+
+        # R7 字重 → 主题字阶上的 shiftWeight
+        if ($ex -notcontains "R7" -and $reFontWeight.IsMatch($all)) {
+            $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R7"; Detail = "写死字重 $(& $hitCount $reFontWeight) 处，首处第 $(& $firstLine $reFontWeight) 行（应用 MiuixTheme.textStyles.*.shiftWeight）" })
         }
     }
 

@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -28,6 +27,8 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -103,8 +104,7 @@ fun WarehouseSchoolAdaptersPage(
                             ) {
                                 Text(
                                     text = school.initial.ifEmpty { "学" },
-                                    style = MiuixTheme.textStyles.title4,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                                     color = MiuixTheme.colorScheme.primary,
                                 )
                             }
@@ -112,8 +112,7 @@ fun WarehouseSchoolAdaptersPage(
                             Column {
                                 Text(
                                     text = school.name,
-                                    style = MiuixTheme.textStyles.main,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                                 )
                                 if (school.province.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -145,8 +144,7 @@ fun WarehouseSchoolAdaptersPage(
                             } else {
                                 Text(
                                     text = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                                 if (phase == WarehouseListPhase.Failed) {
@@ -178,8 +176,7 @@ fun WarehouseSchoolAdaptersPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = adapter.adapterName,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Bold,
+                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(

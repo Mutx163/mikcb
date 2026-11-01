@@ -23,9 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -222,8 +223,7 @@ private fun MonthNavTitleLabel(
     Row {
         Text(
             text = MonthText.yearLabel(year),
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = muted,
             maxLines = 1,
             textAlign = TextAlign.Center,
@@ -232,8 +232,7 @@ private fun MonthNavTitleLabel(
         Spacer(modifier = Modifier.width(3.dp))
         Text(
             text = MonthText.monthLabel(month),
-            style = MiuixTheme.textStyles.title3,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.BOLD),
             color = ink,
             maxLines = 1,
             textAlign = TextAlign.Center,
@@ -259,8 +258,7 @@ private fun MonthTodayPill(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = ink,
             maxLines = 1,
         )

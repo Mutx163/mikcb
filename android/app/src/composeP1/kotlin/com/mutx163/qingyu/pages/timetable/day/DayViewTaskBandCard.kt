@@ -20,11 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -78,8 +79,7 @@ fun DayViewTaskBandCard(
             if (data.overdue.isNotEmpty()) {
                 Text(
                     text = DayViewStrings.taskOverdueSection.zh,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = destructiveColor,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -110,8 +110,7 @@ fun DayViewTaskBandCard(
                     ) {
                         Text(
                             text = DayViewStrings.dayTaskBandOverdueMore(data.hiddenOverdueCount),
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.Medium,
+                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = secondaryTextColor,
                         )
                         Spacer(modifier = Modifier.width(2.dp))
@@ -158,8 +157,7 @@ fun DayViewTaskBandCard(
 
                 Text(
                     text = DayViewStrings.taskCompletedSection.zh,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = secondaryTextColor,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -223,8 +221,9 @@ private fun TaskBandItemRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = if (isCompleted) FontWeight.Normal else FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(
+                    if (isCompleted) 0 else QingyuWeightDelta.SEMIBOLD,
+                ),
                 color = primaryColor,
                 textDecoration = textDecoration,
                 maxLines = 2,
@@ -254,8 +253,7 @@ private fun TaskBandItemRow(
                     if (isOverdue && row.overdueDays > 0) {
                         Text(
                             text = DayViewStrings.dayTaskBandOverdueBadge(row.overdueDays),
-                            style = MiuixTheme.textStyles.footnote2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.destructive()),
                         )
                     }

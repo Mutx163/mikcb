@@ -20,10 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeManagementStrings
 import top.yukonga.miuix.kmp.basic.Icon
@@ -309,8 +310,7 @@ private fun UpcomingDayRow(
             ) {
                 Text(
                     text = MonthText.weekday(entry.date.dayOfWeek.value),
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = if (entry.isHoliday) {
                         MonthPanelAccents.holidayInk()
                     } else {
@@ -329,8 +329,7 @@ private fun UpcomingDayRow(
                         "month" to entry.date.monthValue.toString(),
                         "day" to entry.date.dayOfMonth.toString(),
                     ),
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -428,8 +427,7 @@ private fun OverviewStatsBody(counts: MonthOverviewCounts) {
             Text(
                 // 「有安排 N 天」：回答「这个月忙不忙」，但不值得一条横线 + 23dp 竖距。
                 text = MonthViewStrings.monthOverviewScheduledDays.filled("count", counts.scheduledDayCount.toString()),
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = mutedInk,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -483,8 +481,7 @@ private fun StatCell(
         Text(
             text = value.toString(),
             // 22dp = title3（Dart MonthType.display，也是工具栏的月份字号）
-            style = MiuixTheme.textStyles.title3,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.BOLD),
             color = if (value == 0) mixToward(ink, cardFill) else ink,
             maxLines = 1,
         )
@@ -499,8 +496,7 @@ private fun StatCell(
             Spacer(Modifier.width(MonthOverviewMetrics.STAT_ICON_GAP.dp))
             Text(
                 text = label,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = mutedInk,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -531,8 +527,7 @@ private fun MonthEmptyMonthBody() {
         Spacer(Modifier.height(MonthOverviewMetrics.EMPTY_ICON_GAP.dp))
         Text(
             text = MonthText.emptyMonthTitle.zh,
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = MonthPanelSurface.muted(ink),
             textAlign = TextAlign.Center,
         )

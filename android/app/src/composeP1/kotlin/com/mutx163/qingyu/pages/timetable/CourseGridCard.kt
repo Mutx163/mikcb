@@ -23,12 +23,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
@@ -286,7 +287,6 @@ fun CourseGridCard(
                     text = overline,
                     style = MiuixTheme.textStyles.footnote2,
                     fontSize = overlineFontSize.sp,
-                    fontWeight = FontWeight.Normal,
                     color = detailInk,
                     textAlign = textAlign,
                     maxLines = 1,
@@ -301,9 +301,8 @@ fun CourseGridCard(
                 hasAnyField = true
                 Text(
                     text = course.name,
-                    style = MiuixTheme.textStyles.footnote2,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     fontSize = titleFontSize.sp,
-                    fontWeight = FontWeight.Bold,
                     color = ink,
                     textAlign = textAlign,
                     maxLines = if (span >= 3) 4 else if (span >= 2) 3 else 2,
@@ -371,9 +370,8 @@ fun CourseGridCard(
             if (!hasAnyField) {
                 Text(
                     text = course.name,
-                    style = MiuixTheme.textStyles.footnote2,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     fontSize = titleFontSize.sp,
-                    fontWeight = FontWeight.Bold,
                     color = ink,
                     textAlign = textAlign,
                     maxLines = 2,
@@ -409,9 +407,8 @@ fun CourseGridCard(
                     ) {
                         Text(
                             text = label,
-                            style = MiuixTheme.textStyles.footnote2,
+                            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                             fontSize = overlineFontSize.sp,
-                            fontWeight = FontWeight.Bold,
                             color = ink,
                             maxLines = 1,
                         )
@@ -457,7 +454,6 @@ private fun CardDetailLine(
         text = text,
         style = MiuixTheme.textStyles.footnote2,
         fontSize = fontSize.sp,
-        fontWeight = FontWeight.Normal,
         color = color,
         textAlign = textAlign,
         maxLines = maxLines,

@@ -18,11 +18,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.MemoryStatsCollector
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.settings.SettingsTimetableHubLogic
 import com.mutx163.qingyu.pages.settings.SemesterSettingsLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
@@ -340,7 +341,8 @@ private fun SemesterWeekCountSheet(
                 label = { SettingsStringsExt2.semesterWeekCountAction.filled("count", it.toString()) },
                 // 与 Flutter 逐值对齐（`miuix_number_picker_sheet.dart:58-59` `_pickerHeight = 220`、
                 // `:85-87` `title3 + w600`）：高度差 40dp、字重差一档是最容易一眼看出来的两处。
-                textStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold),
+                textStyle = MiuixTheme.textStyles.title3
+                    .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp),

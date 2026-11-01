@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Icon
@@ -304,8 +306,7 @@ private fun IslandCapsule(
             if (criticalText.isNotEmpty()) {
                 Text(
                     text = criticalText,
-                    style = MiuixTheme.textStyles.footnote1,
-                    fontWeight = FontWeight.W600,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -360,8 +361,7 @@ private fun ExpandedNotificationCard(
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.W600,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

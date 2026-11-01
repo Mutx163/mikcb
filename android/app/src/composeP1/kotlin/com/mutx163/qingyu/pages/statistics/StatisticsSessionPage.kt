@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,6 +28,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.CoverageRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SessionRow
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.StatisticsSessionViewState
@@ -216,8 +217,7 @@ private fun SummaryCard(metrics: List<SummaryMetric>) {
                 ) {
                     Text(
                         text = metric.value,
-                        style = MiuixTheme.textStyles.title3,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = if (metric.highlight) {
@@ -305,8 +305,7 @@ private fun SessionLine(row: SessionRow) {
             ) {
                 Text(
                     text = row.phaseLabel,
-                    style = MiuixTheme.textStyles.footnote1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
             }

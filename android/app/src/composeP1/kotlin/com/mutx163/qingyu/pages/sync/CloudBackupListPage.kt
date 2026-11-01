@@ -21,13 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -144,8 +145,7 @@ private fun CloudBackupRowCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = row.title,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -164,8 +164,7 @@ private fun CloudBackupRowCard(
             row.details?.let { badge ->
                 Text(
                     text = badge,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primary(dark = dark)),
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
@@ -213,8 +212,7 @@ fun CloudBackupDetailBody(detail: CloudBackupDetailView, dark: Boolean) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = detail.title,
-            style = MiuixTheme.textStyles.title4,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(10.dp))

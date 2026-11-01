@@ -26,11 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -161,7 +161,7 @@ fun DayViewCourseCard(
                             text = statusText,
                             textColor = ink,
                             backgroundColor = Color.White.copy(alpha = 0.22f),
-                            fontWeight = FontWeight.Medium,
+                            weightDelta = QingyuWeightDelta.MEDIUM,
                         )
                     }
 
@@ -241,7 +241,6 @@ fun DayViewCourseCard(
             Text(
                 text = entry.course.name,
                 style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Normal,
                 color = ink,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

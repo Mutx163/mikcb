@@ -27,13 +27,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -319,8 +320,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = overview.statusLabel,
-                    style = MiuixTheme.textStyles.footnote1,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = statusAccent,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -339,8 +339,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
             Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = overview.name,
-                style = MiuixTheme.textStyles.title3,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = primaryText,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -349,8 +348,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = overview.bigTimeText,
-                style = MiuixTheme.textStyles.title1,
-                fontWeight = FontWeight.Light,
+                style = MiuixTheme.textStyles.title1.shiftWeight(QingyuWeightDelta.LIGHT),
                 color = primaryText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -404,8 +402,7 @@ private fun ExamOverviewCard(overview: ExamOverviewView, dark: Boolean, onClick:
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = countdown.toString(),
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = primaryText,
                         )
                         Spacer(modifier = Modifier.width(3.dp))
@@ -464,8 +461,7 @@ private fun ExamRow(
             Row(verticalAlignment = Alignment.Top) {
                 Text(
                     text = row.exam.name,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = mutedPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -482,8 +478,7 @@ private fun ExamRow(
                     ) {
                         Text(
                             text = badge,
-                            style = MiuixTheme.textStyles.footnote2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = if (row.isLive) kLiveOrange else mutedSecondary,
                         )
                     }
@@ -579,8 +574,8 @@ private fun ExamMetaLine(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            style = if (emphasis) MiuixTheme.textStyles.body2 else MiuixTheme.textStyles.footnote1,
-            fontWeight = if (emphasis) FontWeight.SemiBold else FontWeight.Normal,
+            style = (if (emphasis) MiuixTheme.textStyles.body2 else MiuixTheme.textStyles.footnote1)
+                .shiftWeight(if (emphasis) QingyuWeightDelta.SEMIBOLD else 0),
             color = color,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

@@ -17,10 +17,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.Colors
@@ -51,7 +52,7 @@ fun ReleaseNotesMarkdownView(blocks: List<MdBlock>) {
                 MdBlockKind.HEADING1, MdBlockKind.HEADING2, MdBlockKind.HEADING3 ->
                     BasicText(
                         text = annotated(block.spans, base, colors),
-                        style = base.copy(fontWeight = FontWeight.SemiBold, color = colors.onSurface),
+                        style = base.shiftWeight(QingyuWeightDelta.SEMIBOLD).copy(color = colors.onSurface),
                     )
 
                 MdBlockKind.HEADING4 ->
@@ -104,12 +105,12 @@ private fun annotated(
 ): AnnotatedString = buildAnnotatedString {
     for (span in spans) {
         val style = SpanStyle(
-            fontWeight = if (span.bold) FontWeight.SemiBold else null,
             fontStyle = if (span.italic) FontStyle.Italic else null,
             fontFamily = if (span.code) FontFamily.Monospace else null,
             color = if (span.linkUrl != null) colors.primary else Color.Unspecified,
             textDecoration = if (span.linkUrl != null) TextDecoration.Underline else null,
         )
-        withStyle(style) { append(span.text) }
+        val boldStyle = if (span.bold) style.shiftWeight(QingyuWeightDelta.SEMIBOLD) else style
+        withStyle(boldStyle) { append(span.text) }
     }
 }

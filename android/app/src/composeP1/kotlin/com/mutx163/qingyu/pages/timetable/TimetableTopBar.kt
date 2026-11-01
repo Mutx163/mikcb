@@ -25,11 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -146,8 +147,7 @@ fun TimetableTopBar(
         ) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.title2,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.BOLD),
                 color = primaryText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -156,8 +156,7 @@ fun TimetableTopBar(
                 Text(
                     text = profileName?.takeIf { it.isNotBlank() }
                         ?: TimetableStrings.switchProfileHint.zh,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = secondaryText,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

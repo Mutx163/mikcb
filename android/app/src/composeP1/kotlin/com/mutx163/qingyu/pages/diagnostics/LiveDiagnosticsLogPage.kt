@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -41,6 +40,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.DiagnosticsLogLevel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
@@ -392,8 +393,9 @@ private fun DiagnosticsFilterChip(
     ) {
         Text(
             text = chip.label,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = if (chip.selected) FontWeight.SemiBold else FontWeight.Normal,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(
+                if (chip.selected) QingyuWeightDelta.SEMIBOLD else 0,
+            ),
             color = textColor,
         )
     }
@@ -491,8 +493,7 @@ private fun DiagnosticsDeviceInfoCard(
         ) {
             Text(
                 text = DiagnosticsStrings.diagnosticsDeviceInfoTitle.zh,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )
@@ -739,8 +740,7 @@ private fun DiagnosticsEntryTagFlow(entry: DiagnosticsLogEntryView, dark: Boolea
         if (entry.categoryLabel.isNotEmpty()) {
             Text(
                 text = entry.categoryLabel,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         }
@@ -765,8 +765,7 @@ private fun DiagnosticsDetailBlock(label: String, value: String, dark: Boolean) 
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.secondaryText(dark)),
         )
         Text(
@@ -821,8 +820,7 @@ private fun DiagnosticsLoadErrorBody(
         )
         Text(
             text = DiagnosticsStrings.diagnosticsLoadFailedTitle.zh,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 12.dp),
@@ -868,8 +866,7 @@ private fun DiagnosticsCenteredState(
         )
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 12.dp),

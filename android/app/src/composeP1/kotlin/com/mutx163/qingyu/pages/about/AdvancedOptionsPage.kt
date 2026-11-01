@@ -19,12 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 import com.mutx163.qingyu.infra.AppUpdateDownloadSource
@@ -318,8 +319,7 @@ private fun ToggleRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = colors.onSurface,
             )
             if (subtitle.isNotEmpty()) {
@@ -355,8 +355,8 @@ private fun ChoiceRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                style = MiuixTheme.textStyles.body1
+                    .shiftWeight(if (selected) QingyuWeightDelta.SEMIBOLD else QingyuWeightDelta.MEDIUM),
                 color = if (selected) colors.primary else colors.onSurface,
             )
             if (subtitle.isNotEmpty()) {
@@ -388,8 +388,7 @@ private fun ArrowRow(title: String, onClick: () -> Unit, enabled: Boolean = true
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = if (enabled) colors.onSurface else colors.onSurfaceVariantSummary,
             modifier = Modifier.weight(1f),
         )

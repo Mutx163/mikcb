@@ -16,13 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -122,8 +123,7 @@ fun QrTransferScanPage(
                         if (errorMessage != null) {
                             Text(
                                 text = errorMessage,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = Color(QingyuTheme.error(dark)),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -138,8 +138,7 @@ fun QrTransferScanPage(
                             // ── 收齐 ──
                             Text(
                                 text = model.completeMessage,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = Color(QingyuTheme.primaryText(dark)),
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -161,8 +160,7 @@ fun QrTransferScanPage(
                             if (progress != null) {
                                 Text(
                                     text = progress,
-                                    style = MiuixTheme.textStyles.body2,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
                                 ProgressBar(fraction = model.progressFraction)

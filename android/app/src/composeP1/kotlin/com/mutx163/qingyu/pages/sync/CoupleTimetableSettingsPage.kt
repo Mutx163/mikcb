@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -37,6 +36,8 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -132,8 +133,7 @@ fun CoupleTimetableSettingsPage(
                         // Dart：状态行 `listTitle`(17) → main；说明行 `listDetail`(14) → body2。
                         Text(
                             text = viewState.webdavStatusText,
-                            style = MiuixTheme.textStyles.main,
-                            fontWeight = FontWeight.Medium,
+                            style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -206,8 +206,7 @@ fun CoupleTimetableSettingsPage(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = viewState.weekOffsetLabel,
-                                    style = MiuixTheme.textStyles.main,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = Color(QingyuTheme.primaryText(dark)),
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.weight(1f),
@@ -244,8 +243,7 @@ fun CoupleTimetableSettingsPage(
                                 if (index > 0) Spacer(modifier = Modifier.height(14.dp))
                                 Text(
                                     text = row.label,
-                                    style = MiuixTheme.textStyles.main,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))

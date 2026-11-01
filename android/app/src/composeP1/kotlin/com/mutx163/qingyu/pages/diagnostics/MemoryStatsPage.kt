@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -42,6 +41,8 @@ import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionGap
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -394,8 +395,7 @@ private fun MemorySummaryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = viewState.summaryText,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -635,8 +635,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
             item(key = "cleanable-summary") {
                 Text(
                     text = summary,
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
             }
@@ -814,8 +813,7 @@ private fun MemoryKvLine(label: String, value: String, dark: Boolean) {
         )
         Text(
             text = value,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             modifier = Modifier.weight(1f),
         )

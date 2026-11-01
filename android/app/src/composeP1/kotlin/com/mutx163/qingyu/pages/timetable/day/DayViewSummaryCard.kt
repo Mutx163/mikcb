@@ -21,11 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -71,21 +72,18 @@ fun DayViewSummaryCard(
                     if (state.isToday) {
                         Text(
                             text = DayViewStrings.todayTimetableTitle.zh,
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.Medium,
+                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                         Text(
                             text = " · ",
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.Medium,
+                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                             color = Color(QingyuTheme.secondaryText(dark)),
                         )
                     }
                     Text(
                         text = DayViewStrings.weekLabel(state.week),
-                        style = MiuixTheme.textStyles.footnote1,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
@@ -110,7 +108,6 @@ fun DayViewSummaryCard(
                 text = state.dateLabel,
                 style = MiuixTheme.textStyles.title3,
                 lineHeight = 26.sp,
-                fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.primaryText(dark)),
@@ -135,8 +132,7 @@ fun DayViewSummaryCard(
                 if (!state.agendaRangeLabel.isNullOrBlank()) {
                     Text(
                         text = state.agendaRangeLabel,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
@@ -174,8 +170,7 @@ private fun SummaryNeutralCapsule(
     ) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.secondaryText(dark)),
         )
     }
@@ -215,8 +210,7 @@ private fun SummaryStatusCapsule(
             )
             Text(
                 text = chip.text,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = accentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

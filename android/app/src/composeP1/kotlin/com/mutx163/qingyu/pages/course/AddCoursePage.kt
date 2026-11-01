@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,8 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -281,8 +282,7 @@ fun AddCoursePage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
                                 text = AddCourseStrings.sharedInfoTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
                             TextField(
@@ -441,8 +441,7 @@ fun AddCoursePage(
                             Column {
                                 Text(
                                     text = AddCourseFormLogic.scheduleEntryCardTitle(entries.size),
-                                    style = MiuixTheme.textStyles.body2,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                 )
                                 Text(
@@ -653,8 +652,7 @@ private fun AddCourseEntryFields(
             ) {
                 Text(
                     text = AddCourseStrings.scheduleEntryIndexTitle(index + 1),
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                     modifier = Modifier.weight(1f),
                 )

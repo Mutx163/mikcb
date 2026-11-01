@@ -58,10 +58,11 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.components.liquid.DampedDragAnimation
 import com.mutx163.qingyu.components.liquid.InnerShadow
 import com.mutx163.qingyu.components.liquid.InteractiveHighlight
@@ -453,12 +454,13 @@ fun GlassDockNavigationBar(
                 if (label != null) {
                     Text(
                         text = label,
-                        style = labelStyle,
-                        fontWeight = if (hasSelection && index == currentIndex) {
-                            FontWeight.SemiBold
-                        } else {
-                            FontWeight.Normal
-                        },
+                        style = labelStyle.shiftWeight(
+                            if (hasSelection && index == currentIndex) {
+                                QingyuWeightDelta.SEMIBOLD
+                            } else {
+                                0
+                            },
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

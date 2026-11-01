@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -35,6 +34,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -330,8 +331,7 @@ fun DisplaySettingsPage(
                             // 这里本地包一层：用一行标题 + 直接展开的滑杆/下拉（不折叠）。
                             Text(
                                 text = DisplaySettingsStrings.miuiLabelAdvancedAccordionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 color = Color(QingyuTheme.primaryText(dark)),
                                 modifier = Modifier.padding(
                                     start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
@@ -684,7 +684,7 @@ private fun ImagePickerBlock(
             ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(text = title, style = MiuixTheme.textStyles.body2, fontWeight = FontWeight.Medium, color = Color(QingyuTheme.primaryText(dark)))
+        Text(text = title, style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM), color = Color(QingyuTheme.primaryText(dark)))
         if (subtitle != null) {
             Text(text = subtitle, style = MiuixTheme.textStyles.footnote1, color = Color(QingyuTheme.secondaryText(dark)))
         }
@@ -866,7 +866,7 @@ private fun StagePreviewFab(
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = label, style = MiuixTheme.textStyles.body2, fontWeight = FontWeight.Medium, color = ink)
+        Text(text = label, style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM), color = ink)
     }
 }
 

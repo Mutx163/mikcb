@@ -27,11 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshModel
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSchedule
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshSettingsLogic
@@ -966,8 +967,8 @@ internal fun SettingsConfirmResetDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4
+                        .shiftWeight(QingyuWeightDelta.BOLD),
                     color = MiuixTheme.colorScheme.onBackground,
                 )
                 Text(
@@ -1022,8 +1023,8 @@ private fun SettingsColorPickerDialog(
                 ) {
                     Text(
                         text = "RGB",
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.title4
+                            .shiftWeight(QingyuWeightDelta.BOLD),
                         color = MiuixTheme.colorScheme.onBackground,
                     )
                     Text(

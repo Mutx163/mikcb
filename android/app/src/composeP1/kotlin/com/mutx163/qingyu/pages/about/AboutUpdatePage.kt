@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,8 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedQingyuPageScaffold
 import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
@@ -172,8 +173,7 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = appName,
-                    style = MiuixTheme.textStyles.main,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = colors.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -327,8 +327,8 @@ private fun AboutUpdateStatusCardFull(
                 } else {
                     AboutUpdateStrings.alreadyLatestHeadline
                 },
-                style = MiuixTheme.textStyles.main,
-                fontWeight = if (hasUpdate) FontWeight.SemiBold else FontWeight.Normal,
+                style = MiuixTheme.textStyles.main
+                    .shiftWeight(if (hasUpdate) QingyuWeightDelta.SEMIBOLD else 0),
                 color = if (hasUpdate) colors.primary else colors.onSurface,
             )
             if (hasUpdate) {
@@ -390,8 +390,7 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
         Spacer(Modifier.width(6.dp))
         Text(
             text = latestVersion,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -413,8 +412,7 @@ private fun NotesHeaderCard(release: AppReleaseInfo?) {
             Spacer(Modifier.width(8.dp))
             Text(
                 text = AboutUpdatePageStrings.releaseNotesTitle,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -468,8 +466,7 @@ private fun ExpandedDigest(digest: ReleaseNotesDigest) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = ChangelogStrings.highlightsTitle,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.onSurfaceVariantSummary,
         )
         Spacer(Modifier.height(8.dp))
@@ -513,8 +510,7 @@ private fun UpdateGroupedEntries(digest: ReleaseNotesDigest) {
         if (label != null) {
             Text(
                 text = "$label · ${group.size}",
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = digestKindColor(kind, colors),
             )
             Spacer(Modifier.height(6.dp))
@@ -549,8 +545,7 @@ private fun UpdateHighlightRow(entry: ReleaseChangeEntry) {
         if (entry.label.isNotEmpty()) {
             Text(
                 text = entry.label,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = accent,
             )
             Spacer(Modifier.width(8.dp))

@@ -11,11 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.SectionTime
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -155,9 +156,8 @@ fun TimetableTimeColumn(
                 ) {
                     Text(
                         text = "$sectionIndex",
-                        style = MiuixTheme.textStyles.footnote2,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                         fontSize = numberFontSize.sp,
-                        fontWeight = FontWeight.Bold,
                         color = timeAxisInk,
                         textAlign = TextAlign.Center,
                         maxLines = 1,

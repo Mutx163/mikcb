@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,6 +46,8 @@ import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -1017,8 +1018,8 @@ private fun PreviewCard(node: SettingsInline) {
         Text(
             text = node.label.orEmpty(),
             color = colors.onBackground,
-            style = MiuixTheme.textStyles.headline1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.headline1
+                .shiftWeight(QingyuWeightDelta.MEDIUM),
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(
@@ -1184,8 +1185,8 @@ private fun ControlCard(
         Text(
             text = node.label.orEmpty(),
             color = colors.onBackground,
-            style = MiuixTheme.textStyles.headline1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.headline1
+                .shiftWeight(QingyuWeightDelta.MEDIUM),
         )
         node.value?.let { value ->
             Text(

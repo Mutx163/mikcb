@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -25,6 +24,8 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import top.yukonga.miuix.kmp.basic.Button
@@ -219,8 +220,8 @@ fun IcsExportPage(
                     QingyuCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = viewState.summary.title,
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body1
+                                .shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark)),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -392,8 +393,8 @@ private fun SectionLabel(text: String, dark: Boolean) {
     ) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1
+                .shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.sectionLabel(dark)),
             modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
         )

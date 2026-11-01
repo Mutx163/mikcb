@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +25,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -112,8 +113,7 @@ fun LiveTestingFixturePage(
                 ) {
                     Text(
                         text = LiveFixtureStrings.leadSection,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
                     Text(
@@ -168,8 +168,7 @@ fun LiveTestingFixturePage(
                 ) {
                     Text(
                         text = LiveFixtureStrings.gridSection,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
                     if (viewState.gridCells.isEmpty()) {
@@ -304,8 +303,9 @@ private fun FixtureSectionCell(
     ) {
         Text(
             text = cell.title,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = if (cell.isCurrent) FontWeight.SemiBold else FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(
+                if (cell.isCurrent) QingyuWeightDelta.SEMIBOLD else QingyuWeightDelta.MEDIUM,
+            ),
             color = titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -320,8 +320,7 @@ private fun FixtureSectionCell(
         cell.badgeLabel?.let { badge ->
             Text(
                 text = badge,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = captionColor,
                 maxLines = 1,
             )

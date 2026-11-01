@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -31,6 +30,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -181,8 +182,7 @@ fun WarehouseCourseImportPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = WarehouseStrings.quickImportAction.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -223,8 +223,7 @@ fun WarehouseCourseImportPage(
                                         isSearching -> WarehouseStrings.noMatchingSchools.zh
                                         else -> WarehouseStrings.noAvailableSchools.zh
                                     },
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                                 if (phase == WarehouseListPhase.Failed) {
@@ -289,8 +288,7 @@ fun WarehouseCourseImportPage(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = bean.school.name,
-                                        style = MiuixTheme.textStyles.body1,
-                                        fontWeight = FontWeight.SemiBold,
+                                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                     )
                                     Spacer(modifier = Modifier.height(3.dp))
                                     val matched = adapterMatches[bean.school.id]

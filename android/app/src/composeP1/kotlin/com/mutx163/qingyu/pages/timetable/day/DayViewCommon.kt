@@ -18,11 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -71,7 +72,7 @@ fun DayAgendaBadge(
     textColor: Color,
     backgroundColor: Color,
     modifier: Modifier = Modifier,
-    fontWeight: FontWeight = FontWeight.Normal,
+    weightDelta: Int = 0,
 ) {
     Box(
         modifier = modifier
@@ -81,9 +82,8 @@ fun DayAgendaBadge(
     ) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.footnote2,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(weightDelta),
             lineHeight = 12.sp,
-            fontWeight = fontWeight,
             color = textColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -184,7 +184,6 @@ fun DayAgendaNoteAction(
             Text(
                 text = DayViewStrings.courseNoteAction.zh,
                 style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Normal,
                 color = ink,
             )
         }
@@ -225,8 +224,7 @@ fun DayAgendaTaskAction(
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = DayViewStrings.courseTaskAction.zh,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = if (hasTask) FontWeight.SemiBold else FontWeight.Normal,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(if (hasTask) QingyuWeightDelta.SEMIBOLD else 0),
                 color = ink,
             )
         }

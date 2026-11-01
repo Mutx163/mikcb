@@ -24,12 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.ExamReminderPreset
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -205,8 +206,7 @@ fun AddExamPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = ExamStrings.linkCourse.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     color = Color(QingyuTheme.primaryText(dark)),
                                 )
                                 Text(

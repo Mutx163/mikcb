@@ -21,10 +21,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
@@ -147,8 +148,9 @@ fun MonthDayCell(
         ) {
             Text(
                 text = entry.date.dayOfMonth.toString(),
-                style = MiuixTheme.textStyles.title4,
-                fontWeight = if (isToday || isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.title4.shiftWeight(
+                    if (isToday || isSelected) QingyuWeightDelta.EXTRABOLD else QingyuWeightDelta.SEMIBOLD,
+                ),
                 color = resolvedDayInk,
                 maxLines = 1,
                 overflow = TextOverflow.Clip,
@@ -191,8 +193,7 @@ fun MonthDayCell(
             ) {
                 Text(
                     text = badge.first,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     color = badge.second,
                     maxLines = 1,
                 )

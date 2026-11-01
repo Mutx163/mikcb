@@ -24,11 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -114,8 +115,7 @@ fun DayViewScheduleCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${entry.startTime} - ${entry.endTime}",
-                            style = MiuixTheme.textStyles.footnote2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = ink,
                         )
                     }
@@ -148,7 +148,7 @@ fun DayViewScheduleCard(
                         text = statusText,
                         textColor = ink,
                         backgroundColor = Color.White.copy(alpha = 0.22f),
-                        fontWeight = FontWeight.Medium,
+                        weightDelta = QingyuWeightDelta.MEDIUM,
                     )
                 }
             }
@@ -158,8 +158,7 @@ fun DayViewScheduleCard(
             // 日程标题
             Text(
                 text = entry.scheduleItem.title,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                 color = ink,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

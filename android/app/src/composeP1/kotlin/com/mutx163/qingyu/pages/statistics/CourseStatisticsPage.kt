@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +45,8 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -276,8 +277,7 @@ private fun StatisticsEmptyState(title: String, hint: String, dark: Boolean) {
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
         )
@@ -322,8 +322,9 @@ private fun StatisticsTabRow(
                 ) {
                     Text(
                         text = label,
-                        style = MiuixTheme.textStyles.body2,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        style = MiuixTheme.textStyles.body2.shiftWeight(
+                            if (isSelected) QingyuWeightDelta.SEMIBOLD else 0,
+                        ),
                         color = if (isSelected) {
                             Color(QingyuTheme.primaryText(dark))
                         } else {
@@ -377,8 +378,7 @@ private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
                 ) {
                     Text(
                         text = metric.value,
-                        style = MiuixTheme.textStyles.title2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = if (metric.highlight) {
@@ -414,15 +414,13 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = view.weekLabel,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = primary,
             )
         }
@@ -468,8 +466,7 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = view.percentText,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -487,8 +484,7 @@ private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
                 ) {
                     Text(
                         text = view.remainingLabel,
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.MEDIUM),
                         textAlign = TextAlign.End,
                         color = Color(QingyuTheme.primaryText(dark)),
                     )
@@ -519,8 +515,7 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )
@@ -588,8 +583,7 @@ private fun ComparisonCell(
     Column(modifier = modifier, horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
         Text(
             text = value,
-            style = MiuixTheme.textStyles.title2,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.title2.shiftWeight(QingyuWeightDelta.MEDIUM),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = if (alignEnd) TextAlign.End else TextAlign.Start,
@@ -689,8 +683,7 @@ private fun AchievementBadge(
         if (item.progressLabel != null) {
             Text(
                 text = item.progressLabel,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -738,7 +731,7 @@ private fun boldSegments(content: String): AnnotatedString = buildAnnotatedStrin
         if (match.range.first > lastEnd) {
             append(content.substring(lastEnd, match.range.first))
         }
-        pushStyle(SpanStyle(fontWeight = FontWeight.SemiBold))
+        pushStyle(SpanStyle().shiftWeight(QingyuWeightDelta.SEMIBOLD))
         append(match.groupValues[1])
         pop()
         lastEnd = match.range.last + 1
@@ -811,8 +804,9 @@ private fun DailyBarsChart(view: DailyChartView, dark: Boolean) {
                 view.bars.forEach { bar ->
                     Text(
                         text = bar.label,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = if (bar.isMax) FontWeight.Medium else FontWeight.Normal,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                            if (bar.isMax) QingyuWeightDelta.MEDIUM else 0,
+                        ),
                         textAlign = TextAlign.Center,
                         color = if (bar.isMax) {
                             Color(QingyuTheme.primary(dark = dark))
@@ -895,8 +889,7 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
                     }
                     Text(
                         text = legend.ratioText,
-                        style = MiuixTheme.textStyles.body2,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = color,
                     )
                 }
@@ -1067,8 +1060,7 @@ private fun WeekOverviewCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = StatisticsStrings.statisticsWeekSelector.filled("week", week.weekNumber.toString()),
-                style = MiuixTheme.textStyles.main,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark)),
                 modifier = Modifier.weight(1f),
             )

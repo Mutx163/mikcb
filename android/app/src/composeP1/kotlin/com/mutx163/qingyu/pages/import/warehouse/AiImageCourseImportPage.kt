@@ -23,13 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.import.parseImportAccentHex
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -160,8 +161,7 @@ fun AiImageCourseImportPage(
                             Column {
                                 Text(
                                     text = WarehouseStrings.importMethodAiTitle.zh,
-                                    style = MiuixTheme.textStyles.body1,
-                                    fontWeight = FontWeight.Bold
+                                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -193,16 +193,14 @@ fun AiImageCourseImportPage(
                                 ) {
                                     Text(
                                         text = "${index + 1}",
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        fontWeight = FontWeight.Bold,
+                                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                                         color = MiuixTheme.colorScheme.primary
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = step,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    fontWeight = FontWeight.Medium
+                                    style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
                                 )
                             }
                         }
@@ -293,8 +291,7 @@ fun AiImageCourseImportPage(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = WarehouseStrings.aiPasteJsonTitle.zh,
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.SemiBold
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -344,8 +341,7 @@ fun AiImageCourseImportPage(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = WarehouseStrings.aiParseFailedChip.zh,
-                                    style = MiuixTheme.textStyles.body2,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                                     color = MiuixTheme.colorScheme.error
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -371,8 +367,7 @@ fun AiImageCourseImportPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = WarehouseStrings.aiPreviewCoursesTitle.zh,
-                                style = MiuixTheme.textStyles.body1,
-                                fontWeight = FontWeight.Bold
+                                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             val warningSuffix = if (res.warnings.isNotEmpty()) {
@@ -383,9 +378,8 @@ fun AiImageCourseImportPage(
                                     .filled("count", res.courses.size.toString())
                                     .filled("section", res.requiredSectionCount.toString())
                                     .filled("warningSuffix", warningSuffix),
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Medium
+                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                                color = MiuixTheme.colorScheme.primary
                             )
 
                             if (res.warnings.isNotEmpty()) {
@@ -413,8 +407,7 @@ fun AiImageCourseImportPage(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = course.name,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.SemiBold
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(

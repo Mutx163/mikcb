@@ -20,11 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import top.yukonga.miuix.kmp.basic.Text
@@ -213,9 +214,8 @@ private fun WeekAgendaCard(
                     } else {
                         TimetableStrings.scheduleBadgeLabel.zh
                     },
-                    style = MiuixTheme.textStyles.footnote2,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                     fontSize = detailFontSize.sp,
-                    fontWeight = FontWeight.Bold,
                     color = ink,
                     maxLines = 1,
                 )
@@ -223,9 +223,8 @@ private fun WeekAgendaCard(
             Spacer(modifier = Modifier.height(WeekCardMetrics.LINE_GAP_DP.dp))
             Text(
                 text = model.title,
-                style = MiuixTheme.textStyles.footnote2,
+                style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.BOLD),
                 fontSize = titleFontSize.sp,
-                fontWeight = FontWeight.Bold,
                 color = ink,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

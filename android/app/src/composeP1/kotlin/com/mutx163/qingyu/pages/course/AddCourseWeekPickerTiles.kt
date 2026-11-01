@@ -13,8 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -56,8 +57,7 @@ internal fun AddCourseWeekGridTile(
         // Dart 侧按钮文案是纯数字 `'$week'`，不带「第 N 周」整词。
         Text(
             text = week.toString(),
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
         )
     }
@@ -158,8 +158,7 @@ internal fun AddCourseChoiceChip(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
         )
     }

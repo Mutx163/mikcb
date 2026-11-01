@@ -1,9 +1,11 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 /**
@@ -185,6 +187,118 @@ class QingyuTextStylesTest {
             buildQingyuTextStyles(
                 systemWeightDelta = normalizeSystemWeightDelta(Int.MAX_VALUE),
             ).main.fontWeight,
+        )
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 页面强调：在主题字阶上平移，而不是写死绝对字重（2026-11-01）
+    // ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `默认设置下页面强调与旧的写死字重逐档一致`() {
+        // 这是替换 311 处 `fontWeight = FontWeight.X` 的等价性证明：
+        // 用户 400、系统未开粗体时，shiftWeight 必须落在旧写法的同一个绝对值上，
+        // 否则这次「清理」就变成了一次全站变粗/变细。
+        val styles = buildQingyuTextStyles()
+        assertEquals(
+            FontWeight.W300,
+            styles.title1.shiftWeight(QingyuWeightDelta.LIGHT).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W500,
+            styles.body1.shiftWeight(QingyuWeightDelta.MEDIUM).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W600,
+            styles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W700,
+            styles.footnote1.shiftWeight(QingyuWeightDelta.BOLD).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W800,
+            styles.footnote2.shiftWeight(QingyuWeightDelta.EXTRABOLD).fontWeight,
+        )
+        // subtitle 本身设计就是 Bold（700），再加一档才是 800。
+        assertEquals(
+            FontWeight.W800,
+            styles.subtitle.shiftWeight(QingyuWeightDelta.MEDIUM).fontWeight,
+        )
+    }
+
+    @Test
+    fun `页面强调跟随用户字重平移，不再盖掉设置`() {
+        // 用户选 w600：字阶整体 +200，页面强调也要跟着 +200，
+        // 否则「应用字重」在这一处失效（这正是旧写法的缺陷）。
+        val styles = buildQingyuTextStyles(userFontWeight = 600)
+        assertEquals(
+            "正文平移后是 600，再强调一档应为 800",
+            FontWeight.W800,
+            styles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD).fontWeight,
+        )
+        // 上下限收敛：subtitle 700 + 200 = 900 已到顶，再强调仍钳在 900。
+        assertEquals(
+            FontWeight.W900,
+            styles.subtitle.shiftWeight(QingyuWeightDelta.SEMIBOLD).fontWeight,
+        )
+    }
+
+    @Test
+    fun `页面强调的基准是系统粗体减法之后的字重`() {
+        // 系统粗体 +100 时，内核先把字阶减回 300，避免平台再加一次造成双倍。
+        // 页面强调必须在这个 300 的基准上叠加，而不是在 400 上。
+        val styles = buildQingyuTextStyles(systemWeightDelta = 100)
+        assertEquals(FontWeight.W300, styles.body1.fontWeight)
+        assertEquals(
+            FontWeight.W500,
+            styles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD).fontWeight,
+        )
+    }
+
+    @Test
+    fun `页面强调钳在 100 到 900`() {
+        val styles = buildQingyuTextStyles()
+        assertEquals(
+            FontWeight.W900,
+            styles.body1.shiftWeight(5000).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W100,
+            styles.body1.shiftWeight(-5000).fontWeight,
+        )
+    }
+
+    @Test
+    fun `页面强调只动字重，不动字号`() {
+        val style = buildQingyuTextStyles().body1
+        val shifted = style.shiftWeight(QingyuWeightDelta.SEMIBOLD)
+        assertEquals(style.fontSize, shifted.fontSize)
+        assertEquals(style.lineHeight, shifted.lineHeight)
+        assertEquals(style.letterSpacing, shifted.letterSpacing)
+    }
+
+    @Test
+    fun `增量为零时原样返回，不做无谓的复制`() {
+        val style = buildQingyuTextStyles().body1
+        assertSame(style, style.shiftWeight(0))
+        val span = SpanStyle(fontWeight = FontWeight.W600)
+        assertSame(span, span.shiftWeight(0))
+    }
+
+    @Test
+    fun `SpanStyle 版本与 TextStyle 同口径`() {
+        // AnnotatedString 里的局部加重走 SpanStyle。它的 fontWeight 允许为 null
+        // （= 继承外层），这里按 w400 起算，与 TextStyle 版保持一致。
+        assertEquals(
+            FontWeight.W600,
+            SpanStyle().shiftWeight(QingyuWeightDelta.SEMIBOLD).fontWeight,
+        )
+        assertEquals(
+            FontWeight.W800,
+            SpanStyle(fontWeight = FontWeight.W600)
+                .shiftWeight(QingyuWeightDelta.SEMIBOLD)
+                .fontWeight,
         )
     }
 }

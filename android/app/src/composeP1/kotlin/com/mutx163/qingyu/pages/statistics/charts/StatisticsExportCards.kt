@@ -28,12 +28,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.CourseSemesterStat
 import com.mutx163.qingyu.statistics.DataStory
@@ -158,8 +159,7 @@ fun StatisticsExportBrandBar(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = ExportBrandModel.appName,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                     color = primaryText,
                 )
                 Spacer(Modifier.height(ExportBrandModel.TITLE_TO_TAGLINE_GAP_DP.dp))
@@ -171,8 +171,7 @@ fun StatisticsExportBrandBar(
                 Spacer(Modifier.height(ExportBrandModel.TAGLINE_TO_URL_GAP_DP.dp))
                 Text(
                     text = ExportBrandModel.websiteDisplay,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = linkColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -230,8 +229,7 @@ fun StatisticsExportDocument(
         Spacer(Modifier.height(ExportDocumentModel.BRAND_TO_TITLE_GAP_DP.dp))
         Text(
             text = ExportDocumentModel.title,
-            style = MiuixTheme.textStyles.title4,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(Modifier.height(ExportDocumentModel.TITLE_TO_SECTIONS_GAP_DP.dp))
@@ -281,8 +279,7 @@ private fun ExportBlock(
     Column {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
         )
@@ -410,8 +407,7 @@ private fun ExportRankingRow(
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = stat.totalSections.toString(),
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.ExtraBold,
+                style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.EXTRABOLD),
                 color = Color(QingyuTheme.primary(dark = dark)),
             )
             Text(
@@ -447,8 +443,7 @@ private fun ExportRankBadge(rank: Int, dark: Boolean) {
     ) {
         Text(
             text = ExportRankingModel.badgeText(rank) ?: rank.toString(),
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
             color = foreground,
         )
     }
@@ -466,8 +461,7 @@ private fun ExportNatureChip(isRequired: Boolean) {
     ) {
         Text(
             text = ExportRankingModel.natureLabel(isRequired),
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = accent,
         )
     }
@@ -509,8 +503,7 @@ fun StatisticsExportSheetContent(
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = ExportSheetModel.modulesSectionLabel,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = Color(QingyuTheme.secondaryText(dark)),
             modifier = Modifier.padding(start = 4.dp),
         )

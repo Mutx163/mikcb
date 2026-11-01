@@ -18,11 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -123,8 +124,9 @@ private fun ProfileCompareRowView(
             Text(
                 text = row.name,
                 // 当前课表加粗，其余常规（Dart `w600 / w400`）
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = if (row.isActive) FontWeight.SemiBold else FontWeight.Normal,
+                style = MiuixTheme.textStyles.body1.shiftWeight(
+                    if (row.isActive) QingyuWeightDelta.SEMIBOLD else 0,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = Color(QingyuTheme.primaryText(dark)),

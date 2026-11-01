@@ -16,10 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -137,8 +138,7 @@ fun WarehouseWebLoginPage(
                                     "username",
                                     sessionState.rememberedAccount?.username.orEmpty()
                                 ),
-                                style = MiuixTheme.textStyles.footnote1,
-                                fontWeight = FontWeight.Medium
+                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
@@ -174,8 +174,7 @@ fun WarehouseWebLoginPage(
                         ) {
                             Text(
                                 text = WarehouseStrings.rememberPasswordTitle.zh,
-                                style = MiuixTheme.textStyles.footnote1,
-                                fontWeight = FontWeight.Medium
+                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
@@ -239,9 +238,8 @@ fun WarehouseWebLoginPage(
                 ) {
                     Text(
                         text = WarehouseStrings.warehouseSessionAlreadyActive.zh,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
+                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                        color = MiuixTheme.colorScheme.primary
                     )
                 }
             }

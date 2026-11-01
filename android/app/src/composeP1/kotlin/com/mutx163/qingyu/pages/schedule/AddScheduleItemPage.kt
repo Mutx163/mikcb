@@ -29,11 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -254,8 +255,7 @@ fun AddScheduleItemPage(
                             Column {
                                 Text(
                                     text = ScheduleStrings.scheduleQuickPresetSectionTitle.zh,
-                                    style = MiuixTheme.textStyles.body2,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                     // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                     modifier = Modifier.padding(bottom = 8.dp),
@@ -349,8 +349,7 @@ fun AddScheduleItemPage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
                                 text = ScheduleStrings.scheduleInfoSectionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -385,8 +384,7 @@ fun AddScheduleItemPage(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = ScheduleStrings.scheduleTimeSectionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -463,8 +461,7 @@ fun AddScheduleItemPage(
                             // 颜色挑选横条
                             Text(
                                 text = ScheduleStrings.scheduleAppearanceSectionTitle.zh,
-                                style = MiuixTheme.textStyles.footnote1,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -513,8 +510,7 @@ fun AddScheduleItemPage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
                                 text = ScheduleStrings.scheduleRepeatSectionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -556,8 +552,7 @@ fun AddScheduleItemPage(
                                     ) {
                                         Text(
                                             text = label,
-                                            style = MiuixTheme.textStyles.footnote1,
-                                            fontWeight = FontWeight.Medium,
+                                            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                                             color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
                                         )
                                     }
@@ -576,8 +571,7 @@ fun AddScheduleItemPage(
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
                                 text = ScheduleStrings.scheduleReminderSectionTitle.zh,
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.Medium,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                                 // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
@@ -657,8 +651,7 @@ fun AddScheduleItemPage(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = titleText,
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 Text(
@@ -749,8 +742,7 @@ private fun MiuixActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = MiuixTheme.colorScheme.onPrimary,
         )
     }

@@ -39,10 +39,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -161,8 +162,7 @@ fun HyperosShowcasePage(
                             Column {
                                 Text(
                                     text = "HyperOS UI Kit",
-                                    style = MiuixTheme.textStyles.main,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                                     color = Color(QingyuTheme.primaryText(dark))
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -233,8 +233,7 @@ fun HyperosShowcasePage(
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
                                 text = "按钮样式 (Buttons)",
-                                style = MiuixTheme.textStyles.body2,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                                 color = Color(QingyuTheme.primaryText(dark))
                             )
 
@@ -349,8 +348,7 @@ fun HyperosShowcasePage(
                                             Text(
                                                 text = opt,
                                                 color = if (isSel) Color.White else primaryColor,
-                                                style = MiuixTheme.textStyles.footnote1,
-                                                fontWeight = FontWeight.Bold
+                                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD)
                                             )
                                         }
                                     }
@@ -456,8 +454,7 @@ fun HyperosShowcasePage(
 private fun ShowcaseSectionHeader(title: String) {
     Text(
         text = title,
-        style = MiuixTheme.textStyles.footnote1,
-        fontWeight = FontWeight.SemiBold,
+        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
         color = Color(0xFF3482FF),
         modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
     )
@@ -485,8 +482,7 @@ private fun AccordionRow(
         ) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Medium,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.MEDIUM),
                 color = Color(QingyuTheme.primaryText(dark))
             )
             Icon(

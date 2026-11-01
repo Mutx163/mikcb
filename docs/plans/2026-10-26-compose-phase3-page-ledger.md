@@ -959,7 +959,7 @@ L0 `OK (129 tests)`（原 64 例）；样式守卫 `time_scheme` 域 0 违规。
 见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做；
 ③ 备份写回**只解决了一半**：仓储原子入口已交付（`TimetableRepository.kt:197` `replaceActiveProfileContent(courses, tasks, exams)`、`:236` `replaceAllProfiles`），文件导入确实写回 tasks/exams（`DataTransferHost.kt:473-480`）；**WebDAV 云端恢复仍只下载快照、不写回仓储**（`CloudSyncCoordinator.kt:25-27` 自认归 task-14），局域网多档案包明确拒绝而非恢复（`LanTransferLogic.kt:109`）；
 ④ ~~相机真依赖未加~~ → **已加**（`android/app/build.gradle:363-368`：CameraX `1.6.1` + MLKit `17.3.0`）；真机取景仍未验；
-⑤ 毛玻璃页面层 / `fontWeight` / 裸 `Card(` 未动：`layerBackdrop` 仅 4 处（玻璃坞、首页壁纸、展示册、壳采样），**截至 HEAD 页面顶栏/弹层未接**（F24 E 线在途，见 §9.10）；页面层仍有 311 处硬写 `fontWeight`；裸 `Card(` 为 **26 处 / 2 文件**（`showcase/MiuixShowcaseSubpages.kt` 25、`timetable/WeekSelectorSheet.kt` 1），原文「26 个文件」是笔误。
+⑤ **毛玻璃仍待接，字重已清、裸 Card 已核销**：`layerBackdrop` 仅 4 处（玻璃坞、首页壁纸、展示册、壳采样），**截至 HEAD 页面顶栏/弹层未接**（F24 E 线在途，见 §9.10）；页面层硬写 `fontWeight` 已于 **2026-11-01 清零**（311 → 15，剩余 15 处全在 `pages/showcase/` 展厅、按规则豁免；功能字重 `fontWeight = weight` 不计），新增 R7 守卫与 `QingyuWeightDelta` / `shiftWeight` 套件，见 `claims/STYLE-fontweight-sweep.md`；裸 `Card(` 复核后**真违例为 0**——旧记的「26 处 / 2 文件」是原始 grep 把 `showcase/MiuixShowcaseSubpages.kt` 的 25 处展厅样例（规则 §五 豁免）与 `WeekSelectorSheet.kt:42` 的**注释文字**（1 处）都数了进去。
 
 **这一轮反复踩到的结构性问题（建议专门收一次）**：
 `app/` `share/` `sync/` `transfer/` 这些共享模型目录**被每次 L0 与 Gradle 编译无条件收录**，

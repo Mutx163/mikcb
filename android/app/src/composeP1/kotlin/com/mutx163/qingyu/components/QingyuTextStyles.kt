@@ -3,6 +3,7 @@ package com.mutx163.qingyu.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -141,3 +142,75 @@ internal fun buildQingyuTextStyles(
         title4 = base.title4.shaped(),
     )
 }
+
+/**
+ * 页面强调用的**设计字重增量**。数值 = 设计字重 - 正文 400。
+ *
+ * 页面只需要说明「比正文重几档」，不要写死绝对字重（那会盖掉用户字重与系统粗体，
+ * 见 [shiftWeight]）。
+ */
+object QingyuWeightDelta {
+    /** 设计 w300（比正文细一档）。 */
+    const val LIGHT = -100
+
+    /** 设计 w500。 */
+    const val MEDIUM = 100
+
+    /** 设计 w600。 */
+    const val SEMIBOLD = 200
+
+    /** 设计 w700。 */
+    const val BOLD = 300
+
+    /** 设计 w800。 */
+    const val EXTRABOLD = 400
+}
+
+/**
+ * 在**主题已注入的字阶**上按设计增量加/减字重，而不是写死绝对字重。
+ *
+ * ## 为什么必须走这里（这不是审美偏好，是一个真实缺陷）
+ *
+ * [buildQingyuTextStyles] 已经把每个官方字阶槽位平移过：
+ * `设计字重 + (用户字重 - 400) - 系统粗体增量`。页面里再写
+ * `fontWeight = FontWeight.SemiBold` 是**绝对覆盖**，平移结果会被整个盖掉 ——
+ * 用户在设置里调「应用字重」时，凡是写了 `fontWeight` 的地方都不跟着变。
+ * 2026-11-01 全仓页面仍有 311 处这种写法（台账 §9.5 记的未做项）。
+ *
+ * 这里的增量和 Dart 侧 `AppFontScope.resolveShiftedWeight` 同口径：
+ * 在当前（已平移的）字重上加回设计差值，结果钳在 [QingyuTypography.WEIGHT_MIN]
+ * ..[QingyuTypography.WEIGHT_MAX]。默认设置（用户 400、系统未开粗体）下，
+ * `body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)` 正好等于 w600，**与旧的写死值逐像素一致**；
+ * 开了系统粗体或改了用户字重时，才会按设计意图跟着平移。
+ *
+ * ## 用法
+ *
+ * ```kotlin
+ * Text(
+ *     text = "标题",
+ *     style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+ * )
+ * ```
+ *
+ * ⚠️ 只对来自 `MiuixTheme.textStyles.*` 的样式用。它假定当前字重是「设计字重平移后」
+ * 的结果；若对任意 [TextStyle] 调用，就只是相对加重，不保证与主题一致。
+ *
+ * @param delta 设计增量，优先取 [QingyuWeightDelta] 的具名常量。
+ */
+fun TextStyle.shiftWeight(delta: Int): TextStyle =
+    if (delta == 0) this else copy(fontWeight = shiftedWeight(fontWeight, delta))
+
+/**
+ * [shiftWeight] 的 [SpanStyle] 版本（`buildAnnotatedString` 里给局部文字加重）。
+ *
+ * ⚠️ 与 [TextStyle] 版一样，**不要**用它去「清除」字重：`null` 在这里按 w400 处理，
+ * 写回去会让原本继承主题字重的片段变成显式 w400。只想保留原样就别调用（delta = 0 时直接返回 this）。
+ */
+fun SpanStyle.shiftWeight(delta: Int): SpanStyle =
+    if (delta == 0) this else copy(fontWeight = shiftedWeight(fontWeight, delta))
+
+/** [TextStyle.shiftWeight] / [SpanStyle.shiftWeight] 的共同内核（纯函数，可单测）。 */
+private fun shiftedWeight(current: FontWeight?, delta: Int): FontWeight = FontWeight(
+    ((current?.weight ?: QingyuTypography.WEIGHT_DEFAULT) + delta)
+        .coerceIn(QingyuTypography.WEIGHT_MIN, QingyuTypography.WEIGHT_MAX),
+)

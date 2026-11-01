@@ -29,13 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -154,8 +155,7 @@ private fun FollowupHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                 color = Color(QingyuTheme.primaryText(isSystemInDarkTheme())),
             )
             if (subtitle != null && subtitle.isNotEmpty()) {
@@ -210,8 +210,7 @@ private fun FollowupOptionRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = foreground,
                 )
                 if (subtitle != null && subtitle.isNotEmpty()) {
@@ -341,8 +340,9 @@ private fun FollowupWeekdayChip(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(
+                if (selected) QingyuWeightDelta.BOLD else QingyuWeightDelta.MEDIUM,
+            ),
             color = highlight,
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -400,8 +400,9 @@ private fun FollowupPickerSheet(
                 ) {
                     Text(
                         text = option.label,
-                        style = MiuixTheme.textStyles.main,
-                        fontWeight = if (option.selected) FontWeight.Medium else FontWeight.Normal,
+                        style = MiuixTheme.textStyles.main.shiftWeight(
+                            if (option.selected) QingyuWeightDelta.MEDIUM else 0,
+                        ),
                         color = if (option.selected) accent else primaryText,
                         modifier = Modifier.weight(1f),
                     )
@@ -717,8 +718,7 @@ fun CourseRescheduleSheet(
                     // ── 标题 + 副题（Dart `:571-582`）──
                     Text(
                         text = view.title,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = primaryText,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -854,8 +854,7 @@ fun CourseRescheduleSheet(
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = view.targetLine,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = accent,
                         )
                         if (view.targetLocationLine != null) {

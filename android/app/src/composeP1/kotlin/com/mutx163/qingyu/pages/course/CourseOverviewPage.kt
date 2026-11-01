@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -45,6 +44,8 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlin.math.roundToInt
@@ -335,8 +336,7 @@ private fun CourseConflictEntryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -418,8 +418,7 @@ private fun CourseGroupRow(
                 Text(
                     text = row.displayName,
                     // Dart listTitle = 17sp（textStyles.main）。
-                    style = MiuixTheme.textStyles.main,
-                    fontWeight = FontWeight.Medium,
+                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM),
                     color = Color(QingyuTheme.primaryText(dark)),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -430,8 +429,7 @@ private fun CourseGroupRow(
                     // Dart HyperosTag：destructive 12% 底色 + 11sp w500。
                     Text(
                         text = CourseOverviewStrings.conflictLabel.zh,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.destructive()),
                         modifier = Modifier
                             .background(
@@ -532,8 +530,9 @@ private fun CourseOverviewSortPopup(
                         Text(
                             text = option.label,
                             // Dart 弹层条目 = preferenceTitleSize 17sp。
-                            style = MiuixTheme.textStyles.main,
-                            fontWeight = if (option.isSelected) FontWeight.Medium else FontWeight.Normal,
+                            style = MiuixTheme.textStyles.main.shiftWeight(
+                                if (option.isSelected) QingyuWeightDelta.MEDIUM else 0,
+                            ),
                             color = if (option.isSelected) {
                                 Color(QingyuTheme.primary(dark = dark))
                             } else {
@@ -571,8 +570,7 @@ private fun CourseOverviewActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = MiuixTheme.colorScheme.onPrimary,
         )
     }

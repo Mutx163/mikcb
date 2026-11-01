@@ -30,10 +30,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -198,8 +199,7 @@ private fun MigrationGuideContent(
                 Column {
                     Text(
                         text = GuideStrings.migrationSafeTitle.zh,
-                        style = MiuixTheme.textStyles.main,
-                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                         color = primaryColor
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -258,8 +258,7 @@ private fun MigrationGuideContent(
                     Column {
                         Text(
                             text = GuideStrings.migrationNoSaveToFilesTitle.zh,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -286,7 +285,7 @@ private fun MigrationGuideContent(
                     Text(
                         text = if (isOpeningOldApp) GuideStrings.openingOldApp.zh else GuideStrings.openOldAppForBackup.zh,
                         color = Color.White,
-                        fontWeight = FontWeight.Medium
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM)
                     )
                 }
 
@@ -298,7 +297,7 @@ private fun MigrationGuideContent(
                     Text(
                         text = GuideStrings.backupDoneGoImport.zh,
                         color = primaryColor,
-                        fontWeight = FontWeight.Medium
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.MEDIUM)
                     )
                 }
 
@@ -341,16 +340,14 @@ private fun MigrationStepRow(
             Text(
                 text = "$step",
                 color = primaryColor,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.Bold
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.BOLD)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.body2,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = Color(QingyuTheme.primaryText(dark))
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -405,8 +402,7 @@ private fun DateSetupContent(
                 Column {
                     Text(
                         text = GuideStrings.semesterStartDateLabel.zh,
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                         color = Color(QingyuTheme.primaryText(dark))
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -444,14 +440,12 @@ private fun DateSetupContent(
                     ) {
                         Text(
                             text = "学期总周数",
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                         Text(
                             text = GuideStrings.currentWeekCompact.filled("week", "$weeksValue"),
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
                             color = primaryColor
                         )
                     }
@@ -485,8 +479,7 @@ private fun DateSetupContent(
                                     Text(
                                         text = "$w 周",
                                         color = if (isSelected) Color.White else primaryColor,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        fontWeight = FontWeight.Medium
+                                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
                                     )
                                 }
                             }
@@ -516,8 +509,7 @@ private fun DateSetupContent(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = GuideStrings.syncedCurrentWeekMessage.filled("week", "$calculatedWeek"),
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                             color = Color(QingyuTheme.primaryText(dark))
                         )
                     }
@@ -531,8 +523,7 @@ private fun DateSetupContent(
                         Text(
                             text = "第 $calculatedWeek 周",
                             color = primaryColor,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MiuixTheme.textStyles.body2
+                            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                         )
                     }
                 }
@@ -549,8 +540,7 @@ private fun DateSetupContent(
                 Text(
                     text = GuideStrings.guideNextButton.zh,
                     color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MiuixTheme.textStyles.body1
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.SEMIBOLD)
                 )
             }
         }

@@ -23,11 +23,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -281,15 +282,13 @@ private fun ScheduleDateRuleCard(
             ) {
                 Text(
                     text = rule.name,
-                    style = MiuixTheme.textStyles.main,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = Color(QingyuTheme.primaryText(dark)),
                 )
                 if (item.isActiveToday) {
                     Text(
                         text = ScheduleStrings.scheduleDateRuleActiveToday.zh,
-                        style = MiuixTheme.textStyles.footnote1,
-                        fontWeight = FontWeight.Medium,
+                        style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.primary(dark = dark)),
                     )
                 }
@@ -354,8 +353,7 @@ private fun RuleEditorDialog(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = if (isNew) ScheduleStrings.scheduleDateRuleAdd.zh else ScheduleStrings.scheduleDateRuleEdit.zh,
-                style = MiuixTheme.textStyles.title4,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
 
@@ -409,15 +407,16 @@ private fun RuleEditorDialog(
                     ) {
                         Text(
                             text = schemeName,
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            style = MiuixTheme.textStyles.body2.shiftWeight(
+                                if (isSelected) QingyuWeightDelta.SEMIBOLD else 0,
+                            ),
                             color = if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.primaryText(dark)),
                         )
                         if (isSelected) {
                             Text(
                                 text = "✓",
+                                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
                                 color = Color(QingyuTheme.primary(dark = dark)),
-                                fontWeight = FontWeight.Bold,
                             )
                         }
                     }
@@ -493,8 +492,7 @@ private fun RuleDeleteConfirmDialog(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = ScheduleStrings.scheduleDateRuleDeleteTitle.zh,
-                style = MiuixTheme.textStyles.title4,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             Text(
@@ -536,8 +534,7 @@ private fun MiuixActionButton(
     Button(onClick = onClick, modifier = modifier, enabled = enabled) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = MiuixTheme.colorScheme.onPrimary,
         )
     }

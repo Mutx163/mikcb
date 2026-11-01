@@ -24,11 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.DataStory
 import com.mutx163.qingyu.statistics.SemesterStats
@@ -162,7 +163,7 @@ fun DataStoryList(
                             text = buildAnnotatedString {
                                 for (segment in item.segments) {
                                     if (segment.bold) {
-                                        pushStyle(SpanStyle(fontWeight = FontWeight.SemiBold))
+                                        pushStyle(SpanStyle().shiftWeight(QingyuWeightDelta.SEMIBOLD))
                                         append(segment.text)
                                         pop()
                                     } else {

@@ -23,10 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -99,8 +100,7 @@ fun MonthGrid(
                 ) {
                     Text(
                         text = MonthText.weekday(dayOfWeek),
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         // 周末比工作日重一档（secondary vs tertiary），
                         // 扫读时才找得到「一周从哪儿开始」。
                         color = if (dayOfWeek >= 6) weekendInk else mutedInk,
@@ -219,8 +219,7 @@ private fun WeekRailLabel(
         val maxWidthPx = constraints.maxWidth.toFloat()
         Text(
             text = text,
-            style = MiuixTheme.textStyles.footnote2,
-            fontWeight = FontWeight.SemiBold,
+            style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = color,
             maxLines = 1,
             softWrap = false,

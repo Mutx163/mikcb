@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -55,8 +56,7 @@ fun AboutUpdateStatusCard(
                     // 与「已是最新」分开画：失败不能长得像成功（Dart :832-835 的注释）。
                     Text(
                         text = AboutUpdateStrings.checkFailedTitle,
-                        style = MiuixTheme.textStyles.main,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = colors.onSurface,
                     )
                     Text(
@@ -75,8 +75,7 @@ fun AboutUpdateStatusCard(
                 AboutUpdateCardState.ALREADY_LATEST -> {
                     Text(
                         text = AboutUpdateStrings.alreadyLatestHeadline,
-                        style = MiuixTheme.textStyles.main,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = colors.onSurface,
                     )
                     latestVersionText?.takeIf { it.isNotEmpty() }?.let { version ->
@@ -97,8 +96,7 @@ fun AboutUpdateStatusCard(
                 AboutUpdateCardState.UPDATE_AVAILABLE -> {
                     Text(
                         text = AboutUpdateStrings.updateAvailableHeadline,
-                        style = MiuixTheme.textStyles.main,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                         color = colors.onSurface,
                     )
                     releaseVersionText?.takeIf { it.isNotEmpty() }?.let { version ->
@@ -175,8 +173,8 @@ private fun ActionRow(
     val colors = MiuixTheme.colorScheme
     Text(
         text = label,
-        style = MiuixTheme.textStyles.body2,
-        fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Normal,
+        style = MiuixTheme.textStyles.body2
+            .shiftWeight(if (emphasized) QingyuWeightDelta.SEMIBOLD else 0),
         color = if (emphasized) colors.primary else colors.onSurfaceVariantSummary,
         modifier = Modifier.clickable { onClick() },
     )

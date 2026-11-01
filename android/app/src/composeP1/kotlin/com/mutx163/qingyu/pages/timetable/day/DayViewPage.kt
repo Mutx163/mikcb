@@ -27,9 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import com.mutx163.qingyu.app.HomeMenuStyle
@@ -453,8 +454,7 @@ private fun BackToTodayButton(
     ) {
         Text(
             text = DayViewStrings.backToTodayAction.zh,
-            style = MiuixTheme.textStyles.body2,
-            fontWeight = FontWeight.Bold,
+            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
             color = Color(QingyuTheme.primary(dark = dark)),
         )
     }

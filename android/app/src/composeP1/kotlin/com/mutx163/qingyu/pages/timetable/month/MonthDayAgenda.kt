@@ -17,9 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -192,8 +193,7 @@ private fun AddCourseAction(
             Spacer(Modifier.width(MonthAgendaMetrics.ACTION_ICON_GAP.dp))
             Text(
                 text = MonthViewStrings.monthViewAgendaAddCourse.zh,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.SemiBold,
+                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 color = secondary,
                 maxLines = 1,
             )
@@ -249,8 +249,7 @@ private fun AgendaRow(
                 Text(
                     // 钟点缺失（课程节次映射不到作息时间）→ 占位，不留空。
                     text = row.clockText ?: CLOCK_PLACEHOLDER,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = secondary,
                     maxLines = 1,
                 )
@@ -258,8 +257,7 @@ private fun AgendaRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = row.title,
-                    style = MiuixTheme.textStyles.body2,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     color = ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
