@@ -251,4 +251,78 @@ class LiveIslandPreviewModelTest {
         val lines = LiveDisplayLogic.expandedDetailLines(LiveDisplayState(), LivePreviewStage.BEFORE_CLASS, sameName, 999_000L)
         assertFalse(lines.any { it.text.startsWith("简称：") })
     }
+
+    @Test
+    fun `真实课程窗口优先于演示窗口`() {
+        val start = 1_000_000L
+        val end = start + 45 * 60 * 1000L
+        val real = LiveIslandPreviewInfo(
+            courseName = "高等数学",
+            courseShortName = "高数",
+            location = "三教-401",
+            teacher = "张老师",
+            startTime = "08:10",
+            endTime = "09:50",
+            startMillis = start,
+            endMillis = end,
+            moment = LivePreviewMoment.IN_CLASS,
+        )
+        val nowMillis = start + 30 * 60 * 1000L
+
+        val window = LiveDisplayLogic.previewWindowFor(real, LivePreviewStage.DURING_CLASS, nowMillis)
+        assertEquals(start, window.startMillis)
+        assertEquals(end, window.endMillis)
+        // 默认 SMART + hidePrefixText：剩余 15 分钟 →「15分钟」。
+        assertEquals(
+            "15分钟",
+            LiveDisplayLogic.statusLine(LiveDisplayState(), LivePreviewStage.DURING_CLASS, real, nowMillis),
+        )
+        // 课前按真实开始时刻倒数：距上课 10 分钟。
+        assertEquals(
+            "10分钟",
+            LiveDisplayLogic.statusLine(
+                LiveDisplayState(),
+                LivePreviewStage.BEFORE_CLASS,
+                real,
+                start - 10 * 60 * 1000L,
+            ),
+        )
+    }
+
+    @Test
+    fun `速览锚点优先于真实课程窗口`() {
+        val real = LiveIslandPreviewInfo(
+            courseName = "高等数学",
+            location = "三教-401",
+            teacher = "张老师",
+            startTime = "08:10",
+            endTime = "09:50",
+            anchorMillis = anchor,
+            startMillis = 1L,
+            endMillis = 2L,
+        )
+        val window = LiveDisplayLogic.previewWindowFor(real, LivePreviewStage.DURING_CLASS, 999_000L)
+        assertEquals(anchor - 2_000L, window.startMillis)
+        assertEquals(anchor + 28_000L, window.endMillis)
+    }
+
+    @Test
+    fun `真实课堂时刻决定预览阶段`() {
+        assertEquals(
+            listOf(LivePreviewStage.DURING_CLASS, LivePreviewStage.BEFORE_END),
+            LiveDisplayLogic.stagesFor(forDuringEnd = false, moment = LivePreviewMoment.IN_CLASS),
+        )
+        assertEquals(
+            listOf(LivePreviewStage.BEFORE_CLASS),
+            LiveDisplayLogic.stagesFor(forDuringEnd = true, moment = LivePreviewMoment.BETWEEN_CLASSES),
+        )
+        assertTrue(
+            LiveDisplayLogic.stagesFor(forDuringEnd = true, moment = LivePreviewMoment.NO_COURSE).isEmpty(),
+        )
+        // 没有真实时刻（设计稿 / 纯测试构造）沿用页面旧口径。
+        assertEquals(
+            LiveDisplayLogic.stagesFor(forDuringEnd = true),
+            LiveDisplayLogic.stagesFor(forDuringEnd = true, moment = null),
+        )
+    }
 }

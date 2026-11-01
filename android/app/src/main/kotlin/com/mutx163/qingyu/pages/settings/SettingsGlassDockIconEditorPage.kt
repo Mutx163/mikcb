@@ -22,8 +22,10 @@ import kotlin.math.floor
  * 3. 网格排布（首格默认、末行补空位）——[cells]；
  * 4. 选中态与点击语义（点默认格传 null）——[select]。
  *
- * 名字清单由渲染层从 AAR 取出后作为 [IconPickerState.names] 传入，过滤逻辑照样能被
- * JVM 单测钉死。
+ * 名字清单由渲染层从 AAR 取出后作为 [IconPickerState.names] 传入；Kotlin 侧不再像 Dart
+ * 那样能运行时枚举，所以清单的**唯一来源**是纯 Kotlin 的 [GlassDockIconCatalog]（156 个，
+ * 与 Dart `_data` 键表逐项对应）。名字 → 矢量图标的映射在 `composeP1` 的
+ * `GlassDockIconVectors`。过滤逻辑照样能被 JVM 单测钉死。
  *
  * ## 逐项对照
  *
@@ -68,12 +70,13 @@ object SettingsGlassDockIconEditorPage {
      * （Dart :147-148 `constraints.maxWidth - HyperosTokens.listPadding.horizontal`，
      * 即宽屏也是这个口径），由渲染层按实际宽度算好传进来。
      *
-     * [picker] 给默认值，是为了让「只要确认这一页构造得出来」的调用点
-     * （批次完成度守卫）不必编一份假图标名；真实渲染一律会传自己的状态。
+     * [picker] 的默认值给**真实清单**（[GlassDockIconCatalog.names]），而不是空表：
+     * 只要确认「这一页构造得出来」的调用点（批次完成度守卫 / 桥的兜底路径）也能拿到
+     * 全部图标，不会渲染出一个只剩「默认 加号」的空网格。选中值仍默认 null（加号）。
      */
     fun spec(
         state: SettingsPageState,
-        picker: IconPickerState = IconPickerState(),
+        picker: IconPickerState = IconPickerState(names = GlassDockIconCatalog.names),
         contentWidthDp: Double = DEFAULT_CONTENT_WIDTH_DP,
     ): SettingsPageSpec {
         val filtered = filteredNames(picker)
@@ -224,7 +227,7 @@ object SettingsGlassDockIconEditorPage {
 /**
  * 图标挑选页的交互输入。
  *
- * [names] 由渲染层从 `MiuixIcons.extended.names` 取出后传入（见对象注释）。
+ * [names] 是全部候选图标名（真实清单见 [GlassDockIconCatalog.names]）。
  * [selectedName] 为 null 表示当前用的是「默认加号」。
  */
 data class IconPickerState(

@@ -118,6 +118,14 @@ enum class LiveExpandedDetailField(val wireValue: String) {
 /** 预览卡片的阶段（Dart 私有 `_PreviewStage`，此处公开给渲染层复用）。 */
 enum class LivePreviewStage { BEFORE_CLASS, DURING_CLASS, BEFORE_END }
 
+/**
+ * 预览时真实课堂所处的时刻（由 [LiveCurrentCourseSource] 解析）。
+ *
+ * 渲染层据此决定展示哪些阶段：上课中 → 上课中 + 下课提醒；课间 → 即将上课；
+ * 无课 → 不画岛卡，交给页面画诚实空态。
+ */
+enum class LivePreviewMoment { IN_CLASS, BETWEEN_CLASSES, NO_COURSE }
+
 // ───────────────────────────── 状态 ─────────────────────────────
 
 /**
@@ -221,6 +229,20 @@ data class LiveIslandPreviewInfo(
      * 非 null = 速览测试真实窗口起点，倒计时与真机同步。
      */
     val anchorMillis: Long? = null,
+    /**
+     * 当前课程的真实起止毫秒（同一天）。
+     *
+     * 与 [startTime] / [endTime] 成对：真实课程预览时倒计时按这两个边界走，
+     * 不再套「12 分 37 秒 / 45 分钟」的演示节奏。null = 没有真实课程数据。
+     */
+    val startMillis: Long? = null,
+    val endMillis: Long? = null,
+    /**
+     * 这一份数据对应真实课堂的哪个时刻。
+     *
+     * null = 纯设计/测试构造（沿用 [forDuringEnd] 的固定阶段，不参与空态判断）。
+     */
+    val moment: LivePreviewMoment? = null,
     /**
      * 锚点是否来自速览测试的**真实**窗口。
      *
@@ -570,6 +592,38 @@ object LiveDisplayLogic {
             LivePreviewWindow(start, start + 45 * 60 * 1000L)
         }
 
+    /**
+     * 预览实际使用的窗口，优先级：
+     * 1. 速览会话锚点（`anchored`）——倒计时跟真机同步，压过课程钟点；
+     * 2. 真实课程起止毫秒——设置页静态预览也按用户课表走，不再编演示时长；
+     * 3. 老演示节奏——仅在设计稿/纯测试构造（既无锚点也无真实钟点）时才有意义。
+     */
+    fun previewWindowFor(
+        info: LiveIslandPreviewInfo,
+        stage: LivePreviewStage,
+        nowMillis: Long,
+    ): LivePreviewWindow {
+        val anchor = info.anchorMillis
+        if (info.anchored && anchor != null) {
+            return if (stage == LivePreviewStage.BEFORE_CLASS) {
+                previewBeforeWindow(anchor, anchored = true)
+            } else {
+                previewEndWindow(anchor, anchored = true)
+            }
+        }
+        val start = info.startMillis
+        val end = info.endMillis
+        if (start != null && end != null && end > start) {
+            return LivePreviewWindow(start, end)
+        }
+        val fallbackAnchor = anchor ?: nowMillis
+        return if (stage == LivePreviewStage.BEFORE_CLASS) {
+            previewBeforeWindow(fallbackAnchor, anchored = false)
+        } else {
+            previewEndWindow(fallbackAnchor, anchored = false)
+        }
+    }
+
     /** 距窗口结束的剩余毫秒（可为负，交由格式化按 0 处理）。 */
     fun remainingMillis(window: LivePreviewWindow, nowMillis: Long): Long =
         window.endMillis - nowMillis
@@ -628,7 +682,7 @@ object LiveDisplayLogic {
         val duringOrEndingSoon =
             stage == LivePreviewStage.DURING_CLASS || stage == LivePreviewStage.BEFORE_END
         if (duringOrEndingSoon && state.showCountdown && stage == LivePreviewStage.DURING_CLASS) {
-            val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+            val window = previewWindowFor(info, stage, nowMillis)
             return formatCountdownMillis(
                 remainingMillis(window, nowMillis),
                 state.countdownTextStyle,
@@ -653,13 +707,13 @@ object LiveDisplayLogic {
         }
         return when (stage) {
             LivePreviewStage.BEFORE_CLASS -> {
-                val window = previewBeforeWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                val window = previewWindowFor(info, stage, nowMillis)
                 val raw = formatCountdownMillis(millisUntilStart(window, nowMillis), state.countdownTextStyle, 60)
                 untilClassStart(raw, state.hidePrefixText)
             }
             LivePreviewStage.DURING_CLASS -> stageWord(stage)
             LivePreviewStage.BEFORE_END -> {
-                val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                val window = previewWindowFor(info, stage, nowMillis)
                 val raw = formatCountdownMillis(
                     remainingMillis(window, nowMillis),
                     state.countdownTextStyle,
@@ -725,7 +779,7 @@ object LiveDisplayLogic {
         nowMillis: Long,
     ): String {
         val parts: List<String> = if (hasProgressBlock(state, stage)) {
-            val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+            val window = previewWindowFor(info, stage, nowMillis)
             listOfNotNull(
                 formatCountdownMillis(remainingMillis(window, nowMillis), state.countdownTextStyle, 60),
                 if (state.showLocation) info.location else null,
@@ -751,16 +805,16 @@ object LiveDisplayLogic {
         if (!state.showCountdown) return if (state.showStageText) stageWord(stage) else ""
         return when (stage) {
             LivePreviewStage.BEFORE_CLASS -> {
-                val window = previewBeforeWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                val window = previewWindowFor(info, stage, nowMillis)
                 val raw = formatCountdownMillis(millisUntilStart(window, nowMillis), state.countdownTextStyle, 60)
                 untilClassStart(raw, state.hidePrefixText)
             }
             LivePreviewStage.DURING_CLASS -> {
-                val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                val window = previewWindowFor(info, stage, nowMillis)
                 formatCountdownMillis(remainingMillis(window, nowMillis), state.countdownTextStyle, 60)
             }
             LivePreviewStage.BEFORE_END -> {
-                val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                val window = previewWindowFor(info, stage, nowMillis)
                 val raw = formatCountdownMillis(
                     remainingMillis(window, nowMillis),
                     state.countdownTextStyle,
@@ -811,7 +865,7 @@ object LiveDisplayLogic {
                                 ),
                             ),
                         )
-                        val window = previewEndWindow(info.anchorMillis ?: nowMillis, info.anchored)
+                        val window = previewWindowFor(info, stage, nowMillis)
                         lines.add(
                             LiveDetailLine(
                                 DisplaySettingsStrings.detailLineProgressFinal.filled(
@@ -940,6 +994,26 @@ object LiveDisplayLogic {
         } else {
             listOf(LivePreviewStage.BEFORE_CLASS)
         }
+
+    /**
+     * 真实课堂时刻优先的阶段选择。
+     *
+     * - 上课中 → 上课中 + 下课提醒（两页都如实显示岛此刻的状态）；
+     * - 课间 → 即将上课（下一节，课前页与课中/下课页都先看到它）；
+     * - 无课 → 空列表（页面不画岛卡，改画诚实空态）；
+     * - `moment == null` → 老口径（设计稿 / 纯测试构造）。
+     */
+    fun stagesFor(
+        forDuringEnd: Boolean,
+        moment: LivePreviewMoment?,
+    ): List<LivePreviewStage> = when (moment) {
+        LivePreviewMoment.IN_CLASS ->
+            listOf(LivePreviewStage.DURING_CLASS, LivePreviewStage.BEFORE_END)
+        LivePreviewMoment.BETWEEN_CLASSES ->
+            listOf(LivePreviewStage.BEFORE_CLASS)
+        LivePreviewMoment.NO_COURSE -> emptyList()
+        null -> stagesFor(forDuringEnd)
+    }
 }
 
 // ──────────────── 状态变异纯函数（便于单测与渲染层复用）────────────────

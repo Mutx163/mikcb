@@ -86,6 +86,14 @@ object DisplaySettingsStrings {
     // ── 预览卡标题与动作 ──
     val islandPreviewTitle = ArbText("liveIslandPreviewTitle", "超级岛预览")
     val islandExpandedPreviewTitle = ArbText("liveIslandExpandedPreviewTitle", "展开态预览")
+    /**
+     * 预览诚实空态。复用日视图已有的 `dayViewEmptyTitle`，**不新增 ARB 键**；
+     * 语义与「当前没有课程」一致。
+     */
+    val islandPreviewEmpty = ArbText("dayViewEmptyTitle", "暂无课程")
+    /** 学期未配置时的副句，同样复用 ARB 原句。 */
+    val islandPreviewSemesterUnsetHint =
+        ArbText("pleaseSetSemesterStartDate", "请先在课表设置里填写开学日期")
     val islandPreviewFollowBadge = ArbText("liveIslandPreviewFollowBadge", "跟随课前提醒设置，修改课前提醒即生效")
     val stagePreviewBeforeClassAction = ArbText("liveStagePreviewBeforeClassAction", "试弹上课前岛")
     val stagePreviewDuringClassAction = ArbText("liveStagePreviewDuringClassAction", "试弹课中岛")
@@ -106,7 +114,7 @@ object DisplaySettingsStrings {
     val untilClassStart = ArbText("liveIslandPreviewUntilClassStart", "距上课 {time}")
     val untilClassEnd = ArbText("liveIslandPreviewUntilClassEnd", "距下课 {time}")
 
-    // ── 预览样例数据（静态演示）──
+    // ── 预览样例数据（仅设计稿 / 测试构造；生产预览改读真实课程）──
     val sampleCourse = ArbText("liveIslandPreviewSampleCourse", "高等数学")
     val sampleCourseShort = ArbText("liveIslandPreviewSampleCourseShort", "高数")
     val sampleLocation = ArbText("liveIslandPreviewSampleLocation", "三教-401")
@@ -245,6 +253,8 @@ object DisplaySettingsStrings {
         detailFieldNote,
         islandPreviewTitle,
         islandExpandedPreviewTitle,
+        islandPreviewEmpty,
+        islandPreviewSemesterUnsetHint,
         islandPreviewFollowBadge,
         stagePreviewBeforeClassAction,
         stagePreviewDuringClassAction,

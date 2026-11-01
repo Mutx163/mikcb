@@ -68,7 +68,13 @@ fun DisplaySettingsPage(
     onStateChange: (LiveDisplayState) -> Unit,
     onBack: () -> Unit,
     forDuringEnd: Boolean = false,
-    previewInfo: LiveIslandPreviewInfo = demoPreviewInfo(),
+    /**
+     * 真实当前（或下一节）课程。**默认 null = 诚实空态**：
+     * 不再用演示数据兜底，没有真实课程就不画岛卡。
+     */
+    previewInfo: LiveIslandPreviewInfo? = null,
+    /** 空态副句（例如「请先在课表设置里填写开学日期」）；null = 只画主句。 */
+    previewEmptyHint: String? = null,
     onPickImage: (LiveImagePickTarget) -> String? = { null },
     onOpenDoNotDisturbAccess: () -> Unit = {},
     onStagePreviewStart: () -> Unit = {},
@@ -85,7 +91,7 @@ fun DisplaySettingsPage(
     } else {
         DisplaySettingsStrings.displayEntryTitleBeforeClass.zh
     }
-    val effectiveInfo = previewInfo.copy(
+    val effectiveInfo = previewInfo?.copy(
         promoteDuringClass = state.promoteDuringClass,
         endSecondsCountdownThresholdSeconds = state.endSecondsCountdownThreshold,
     )
@@ -473,26 +479,38 @@ fun DisplaySettingsPage(
                     }
                 }
 
-                // ── 7. 两张预览卡 ──
+                // ── 7. 两张预览卡（没有真实课程时只画诚实空态）──
                 item(key = "island-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandPreviewTitle.zh) }
-                item(key = "island-preview-card") {
-                    LiveIslandPreviewCard(
-                        state = state,
-                        previewInfo = effectiveInfo,
-                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                        forDuringEnd = forDuringEnd,
-                        followBeforeClass = followBeforeClass,
-                    )
-                }
-                item(key = "island-expanded-preview-label") { QingyuSectionTitle(DisplaySettingsStrings.islandExpandedPreviewTitle.zh) }
-                item(key = "island-expanded-preview-card") {
-                    LiveIslandExpandedPreviewCard(
-                        state = state,
-                        previewInfo = effectiveInfo,
-                        modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
-                        forDuringEnd = forDuringEnd,
-                        followBeforeClass = followBeforeClass,
-                    )
+                if (effectiveInfo == null) {
+                    item(key = "island-preview-empty") {
+                        IslandPreviewEmptyCard(
+                            hint = previewEmptyHint,
+                            dark = dark,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                        )
+                    }
+                } else {
+                    item(key = "island-preview-card") {
+                        LiveIslandPreviewCard(
+                            state = state,
+                            previewInfo = effectiveInfo,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            forDuringEnd = forDuringEnd,
+                            followBeforeClass = followBeforeClass,
+                        )
+                    }
+                    item(key = "island-expanded-preview-label") {
+                        QingyuSectionTitle(DisplaySettingsStrings.islandExpandedPreviewTitle.zh)
+                    }
+                    item(key = "island-expanded-preview-card") {
+                        LiveIslandExpandedPreviewCard(
+                            state = state,
+                            previewInfo = effectiveInfo,
+                            modifier = Modifier.padding(horizontal = QingyuPageCardMargin),
+                            forDuringEnd = forDuringEnd,
+                            followBeforeClass = followBeforeClass,
+                        )
+                    }
                 }
             }
 
@@ -526,6 +544,8 @@ fun DisplaySettingsPage(
     forDuringEnd: Boolean = false,
     onBack: () -> Unit,
     initialState: LiveDisplayState = LiveDisplayState(),
+    previewInfo: LiveIslandPreviewInfo? = null,
+    previewEmptyHint: String? = null,
     onPickImage: (LiveImagePickTarget) -> String? = { null },
     onOpenDoNotDisturbAccess: () -> Unit = {},
     onStagePreviewStart: () -> Unit = {},
@@ -539,6 +559,8 @@ fun DisplaySettingsPage(
         onStateChange = { state = it },
         onBack = onBack,
         forDuringEnd = forDuringEnd,
+        previewInfo = previewInfo,
+        previewEmptyHint = previewEmptyHint,
         onPickImage = onPickImage,
         onOpenDoNotDisturbAccess = onOpenDoNotDisturbAccess,
         onStagePreviewStart = {
@@ -789,6 +811,39 @@ private fun ExpandedDetailGroup(
     }
 }
 
+/** 预览空态：没有真实当前/下一节课时**如实说没有**，不画假课程。 */
+@Composable
+private fun IslandPreviewEmptyCard(
+    hint: String?,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    QingyuCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
+                    vertical = QingyuShapes.ROW_PADDING_VERTICAL.dp,
+                ),
+        ) {
+            Text(
+                text = DisplaySettingsStrings.islandPreviewEmpty.zh,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            if (!hint.isNullOrBlank()) {
+                Text(
+                    text = hint,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+    }
+}
+
 /** 速览悬浮按钮（对照 Flutter `_LiveStagePreviewFab` 的胶囊玻璃钮；此处用实心胶囊兜底）。 */
 @Composable
 private fun StagePreviewFab(
@@ -816,19 +871,6 @@ private fun StagePreviewFab(
 }
 
 // ───────────────────────── 小工具 ─────────────────────────
-
-/** 静态演示预览数据（用 ARB 样例文案 + 演示钟点；真实接线时由宿主传入真实课程）。 */
-private fun demoPreviewInfo(): LiveIslandPreviewInfo = LiveIslandPreviewInfo(
-    courseName = DisplaySettingsStrings.sampleCourse.zh,
-    courseShortName = DisplaySettingsStrings.sampleCourseShort.zh,
-    location = DisplaySettingsStrings.sampleLocation.zh,
-    teacher = DisplaySettingsStrings.sampleTeacher.zh,
-    startTime = "08:00",
-    endTime = "08:45",
-    note = DisplaySettingsStrings.sampleNote.zh,
-    nextCourseName = DisplaySettingsStrings.sampleNextClass.zh,
-    anchorMillis = null,
-)
 
 /** 一位小数格式化（用于偏移滑杆标题，避免出现浮点抖动长尾）。 */
 private fun formatOneDecimal(value: Double): String {

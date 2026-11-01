@@ -57,6 +57,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun AiImageCourseImportPage(
     onBack: () -> Unit = {},
+    isImporting: Boolean = false,
     onCopyPrompt: () -> Unit = {},
     onShowPromptSheet: () -> Unit = {},
     onPasteFromClipboard: () -> String = { "" },
@@ -65,7 +66,6 @@ fun AiImageCourseImportPage(
     var rawJsonInput by remember { mutableStateOf("") }
     var parseResult by remember { mutableStateOf<AiCourseImportParseResult?>(null) }
     var parseError by remember { mutableStateOf<String?>(null) }
-    var isImporting by remember { mutableStateOf(false) }
 
     // Dart 侧 AI 徽标用 HyperosIconColors.purple；取域内色板而不是字面量，深色模式与换主题色时不脱节。
     val aiAccent = Color(parseImportAccentHex("purple"))
@@ -123,7 +123,7 @@ fun AiImageCourseImportPage(
                         },
                         modifier = Modifier.weight(1f),
                         content = { Text(text = if (isImporting) "导入中..." else WarehouseStrings.confirmImportAction.zh) },
-                        enabled = !isImporting && parseResult != null
+                        enabled = !isImporting
                     )
                 }
             }

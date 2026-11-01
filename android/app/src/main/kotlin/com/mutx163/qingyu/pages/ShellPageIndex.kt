@@ -38,6 +38,7 @@ import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
 import com.mutx163.qingyu.app.AppearanceEditorHost
 import com.mutx163.qingyu.app.DiagnosticsLogHost
+import com.mutx163.qingyu.app.rememberMonthHolidayState
 import com.mutx163.qingyu.app.DiagnosticsSettingsHost
 import com.mutx163.qingyu.app.GlassDockEditorHost
 import com.mutx163.qingyu.app.HomeMenuEditorHost
@@ -122,9 +123,9 @@ import com.mutx163.qingyu.pages.import.IcsImportHost
 import com.mutx163.qingyu.pages.import.ImportEntryHost
 import com.mutx163.qingyu.pages.import.ImportShellBridge
 import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
-import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportPage
+import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailHost
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugPage
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
@@ -159,6 +160,7 @@ import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
+import com.mutx163.qingyu.pages.settings.GlassDockIconEditorHost
 import com.mutx163.qingyu.pages.settings.WallpaperPositionPickerHost
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
@@ -512,11 +514,11 @@ fun ShellPageContent(
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
         "b.glassDock" -> GlassDockEditorHost(store = wiring.settingsModel, onBack = onBack)
-        "b.glassDockIcon" -> SettingsHost(
-            pageId = SettingsGlassDockIconEditorPage.ID,
+        // 2026-11-01 F26：这一页原来走通用设置宿主，只能把图标铺成一排按钮，
+        // 装不下搜索 + 156 格网格；换专用宿主（图标清单、搜索、选中写回与回显都在里面）。
+        "b.glassDockIcon" -> GlassDockIconEditorHost(
             store = wiring.settingsModel,
             onBack = onBack,
-            onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
         )
         "b.reset" -> SettingsHost(
             pageId = SettingsResetPage.ID,
@@ -575,12 +577,17 @@ fun ShellPageContent(
                 onDispose { subscription.close() }
             }
             val appSettings = wiring.settingsModel.load()
+            // 2026-11-01 F26：节假日三路数据（provider 在 IO 线程初始化，失败退空态）。
+            val holidayState = rememberMonthHolidayState(wiring.holiday)
             MonthViewHost(
                 snapshot = snapshot,
                 // 2026-11-01 F24：月网格的考试 / 日程落格与当日议程都靠这两份。
                 // 不喂时页面画成「这个月没有考试、没有日程」——那是**假空态**，不是空数据。
                 exams = repository.exams,
                 scheduleItems = snapshot.scheduleItems,
+                holidayData = holidayState.holidayData,
+                holidayOverrideEnabled = holidayState.overrideEnabled,
+                holidayMarkingEnabled = holidayState.markingEnabled,
                 onAddCourse = { date ->
                     wiring.pendingAddCourseSeed = Pair(date.dayOfWeek.value, 1)
                     wiring.pendingEditCourse = null
@@ -1639,9 +1646,15 @@ fun ShellPageContent(
             message = WarehouseStrings.noValidWarehouseLoginUrl.zh,
             onBack = onBack,
         )
-        // 这两页目前确实没有真宿主，保留原渲染层（空回调见普查表 #5/#6，属另一批）。
-        "g2.customDebug" -> WarehouseCustomDebugPage(onBack = onBack)
-        "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
+        // 2026-11-01 F26：这两页原先只传 onBack，所有按钮都是空回调（点了没反应）。
+        // 自定义调试：保存/删除真落盘（prefs 键与 Dart 同键），执行诚实报「不可用」。
+        "g2.customDebug" -> WarehouseCustomDebugHost(onBack = onBack)
+        // 识图导入：剪贴板复制/粘贴、官方提示词弹层、确认导入真写课表（失败回滚并提示）。
+        "g2.aiImageImport" -> AiImageCourseImportHost(
+            repository = wiring.timetable,
+            bridge = importBridge,
+            onBack = onBack,
+        )
 
         // ── P3-G3 导出与传输 ──────────────────────────────────────────
         "g3.dataTransfer" -> DataTransferHost(

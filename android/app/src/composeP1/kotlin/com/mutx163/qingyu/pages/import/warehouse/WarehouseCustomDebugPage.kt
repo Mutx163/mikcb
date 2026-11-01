@@ -49,7 +49,7 @@ fun WarehouseCustomDebugPage(
     records: List<WarehouseCustomDebugRecord> = emptyList(),
     onBack: () -> Unit = {},
     onRunDebug: (WarehouseCustomDebugRecord) -> Unit = {},
-    onSaveRecord: (WarehouseCustomDebugRecord) -> Unit = {},
+    onSaveRecord: (WarehouseCustomDebugRecord) -> Boolean = { false },
     onDeleteRecord: (String) -> Unit = {},
 ) {
     var editingRecord by remember { mutableStateOf<WarehouseCustomDebugRecord?>(null) }
@@ -85,7 +85,11 @@ fun WarehouseCustomDebugPage(
             }
             return
         }
-        onSaveRecord(recordToValidate)
+        // 真落盘成功才收起表单：写失败时留在原地并给出「保存失败」，不让用户以为存上了。
+        if (!onSaveRecord(recordToValidate)) {
+            formError = WarehouseStrings.saveFailed.zh
+            return
+        }
         editingRecord = null
         isAddingNew = false
     }

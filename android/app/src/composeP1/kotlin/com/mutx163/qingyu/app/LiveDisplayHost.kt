@@ -23,12 +23,14 @@ import com.mutx163.qingyu.pages.import.ImportSharedModel
 import com.mutx163.qingyu.pages.import.ImportStrings
 import com.mutx163.qingyu.pages.live.DisplaySettingsPage
 import com.mutx163.qingyu.pages.live.DisplaySettingsStrings
+import com.mutx163.qingyu.pages.live.LiveCurrentCourseSource
 import com.mutx163.qingyu.pages.live.LiveDisplayStore
 import com.mutx163.qingyu.pages.live.LiveImagePickLogic
 import com.mutx163.qingyu.pages.live.LiveImagePickTarget
 import com.mutx163.qingyu.pages.live.LiveReminderTimingPage
 import com.mutx163.qingyu.pages.live.MiuiIslandExpandedIconMode
 import com.mutx163.qingyu.pages.live.ReminderTimingState
+import com.mutx163.qingyu.pages.live.toIslandPreviewInfo
 import com.mutx163.qingyu.pages.live.withMiuiIslandExpandedIconMode
 import com.mutx163.qingyu.pages.live.withMiuiIslandExpandedIconPath
 import com.mutx163.qingyu.pages.live.withMiuiIslandLabelLogoPath
@@ -38,6 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.LocalDateTime
 
 /**
  * 「超级岛 · 显示设置」页的**真实宿主**（取代壳里 `DisplaySettingsPage(forDuringEnd = …, onBack = …)`
@@ -79,6 +82,31 @@ fun LiveDisplayHost(
     val scope = rememberCoroutineScope()
     val store = remember(context) { liveDisplayStore(context) }
     var state by remember(store, forDuringEnd) { mutableStateOf(store.loadDisplay(forDuringEnd)) }
+
+    // 预览的真实课程来源：与课表页同一份仓储快照 + 同一条「当前课程」计算入口。
+    // 本宿主不直接写课表，只用只读快照；仓储后续若有变更（别的页面改课）跟着刷新。
+    val timetableRepository = remember(context) {
+        TimetableRepository(TimetableStore(PrefsKeyValueStore(context)))
+    }
+    var timetableSnapshot by remember(timetableRepository) {
+        mutableStateOf(timetableRepository.snapshot)
+    }
+    DisposableEffect(timetableRepository) {
+        val subscription = timetableRepository.observe { timetableSnapshot = it }
+        onDispose { subscription.close() }
+    }
+    // 上课中 / 课间会随时间切换：30 秒推进一次「现在」，不做每帧重算。
+    var previewNow by remember { mutableStateOf(LocalDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(PREVIEW_CLOCK_TICK_MILLIS)
+            previewNow = LocalDateTime.now()
+        }
+    }
+    val currentCourse = remember(timetableSnapshot, previewNow) {
+        LiveCurrentCourseSource.resolve(timetableSnapshot, previewNow)
+    }
+    val previewInfo = remember(currentCourse) { currentCourse.toIslandPreviewInfo() }
     /** 防抖写盘计数器：每次用户改动 +1，`LaunchedEffect` 随之重启待写任务。 */
     var version by remember { mutableStateOf(0) }
     /** 正在等选图结果的目标（选图是异步的，回调里才知道用户选没选）。 */
@@ -162,6 +190,13 @@ fun LiveDisplayHost(
         },
         onBack = onBack,
         forDuringEnd = forDuringEnd,
+        previewInfo = previewInfo,
+        // 学期未设置时，空态除了「暂无课程」再给一句可操作的原因；其余空态只留主句。
+        previewEmptyHint = if (previewInfo == null && currentCourse.semesterStartMissing) {
+            DisplaySettingsStrings.islandPreviewSemesterUnsetHint.zh
+        } else {
+            null
+        },
         // 选图是异步的：这里先登记目标并拉起系统选图，返回 null 让页面别自己改状态，
         // 真正的状态更新在选图回调里做（页面那份同步口径做不到异步选图）。
         onPickImage = { target ->
@@ -220,6 +255,9 @@ fun LiveReminderTimingHost(onBack: () -> Unit) {
 
 /** 防抖窗口（Dart `_updateDraft` 的 `Duration(milliseconds: 250)`）。 */
 private const val SAVE_DEBOUNCE_MILLIS: Long = 250L
+
+/** 预览「现在」的推进间隔：只用来跨过上课/下课边界，不需要逐秒。 */
+private const val PREVIEW_CLOCK_TICK_MILLIS: Long = 30_000L
 
 private const val IMAGE_MIME = "image/*"
 

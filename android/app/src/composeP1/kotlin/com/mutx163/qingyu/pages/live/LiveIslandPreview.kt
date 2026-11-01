@@ -99,7 +99,9 @@ fun LiveIslandPreviewCard(
         previewInfo.anchorMillis ?: System.currentTimeMillis()
     }
     val info = previewInfo.copy(anchorMillis = anchor)
-    val stages = LiveDisplayLogic.stagesFor(forDuringEnd)
+    // 阶段由真实课堂时刻决定：上课中 → 课中 + 下课提醒；课间 → 即将上课；
+    // 无课 → 空（页面不画岛卡，改画诚实空态）。moment 为 null 时沿用页面旧口径。
+    val stages = LiveDisplayLogic.stagesFor(forDuringEnd, previewInfo.moment)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (followBeforeClass) {
@@ -143,7 +145,9 @@ fun LiveIslandExpandedPreviewCard(
         previewInfo.anchorMillis ?: System.currentTimeMillis()
     }
     val info = previewInfo.copy(anchorMillis = anchor)
-    val stages = LiveDisplayLogic.stagesFor(forDuringEnd)
+    // 阶段由真实课堂时刻决定：上课中 → 课中 + 下课提醒；课间 → 即将上课；
+    // 无课 → 空（页面不画岛卡，改画诚实空态）。moment 为 null 时沿用页面旧口径。
+    val stages = LiveDisplayLogic.stagesFor(forDuringEnd, previewInfo.moment)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (followBeforeClass) {
