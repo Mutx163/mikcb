@@ -58,6 +58,7 @@ import kotlinx.coroutines.sync.withLock
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.runtime.NavProgrammaticEasing
 import top.yukonga.miuix.kmp.nav.transition.NavMotion
@@ -392,6 +393,17 @@ private fun PagesShell(
     }
     val backStack = remember { navBackStackOf(ShellRoute.Dock(initialRootId)) }
 
+    /**
+     * 推页序号：每次 push 分配一个递增 token，让两条路由的值互不相等。
+     *
+     * 为什么不复用同一个 key（2026-11-01 真机事故「退出外观编辑页后再进不来」）：
+     * miuix-nav 在旧页仍在退场（约 500ms）时又推入 **相同 key** 的页，会复用旧条目实例、
+     * 不重建 composition —— 页面自己的入场进度与 `exiting` 守卫都停在退场那一刻，
+     * 于是「点了没反应」（外观编辑页表现为停在全屏预览卡、取消/完成也不响应）。
+     * 每次一个新 token ⇒ 新条目、新 composition；旧条目照常自己播完退场。
+     */
+    val pushSeq = remember { java.util.concurrent.atomic.AtomicLong(0L) }
+
     fun popPage() {
         if (backStack.size > 1) backStack.removeLastOrNull()
     }
@@ -400,7 +412,10 @@ private fun PagesShell(
     fun pushRoute(route: ShellRoute) {
         // 2026-10-31 审核 P2-1：旧写法 `if (route !in backStack) add` 让
         // 「A 页 → B 页 → 又点 A」静默无反应（用户点了没动静，只能猜）。
-        val existing = backStack.indexOf(route)
+        //
+        // 判重看的是「同一类 + 同一个 id」，**忽略 pushToken**（每次推页都不相同）；
+        // 否则连点两次同一入口会压出两层一模一样的页面。
+        val existing = backStack.indexOfFirst { it.sameTargetAs(route) }
         if (existing >= 0) {
             while (backStack.size > existing + 1) backStack.removeLastOrNull()
             return
@@ -409,7 +424,7 @@ private fun PagesShell(
     }
 
     fun pushPage(id: String) {
-        pushRoute(ShellRoute.Page(id))
+        pushRoute(ShellRoute.Page(id, pushToken = pushSeq.incrementAndGet()))
     }
 
     /**
@@ -418,7 +433,7 @@ private fun PagesShell(
      * 与 [pushPage] 只差路由类型：那一档的入场是瞬时切换，页面自己负责把首页缩进预览卡。
      */
     fun pushZoomPage(id: String) {
-        pushRoute(ShellRoute.ZoomPage(id))
+        pushRoute(ShellRoute.ZoomPage(id, pushToken = pushSeq.incrementAndGet()))
     }
 
     // ── 视图档落盘：**必须离开点击所在的那一帧** ─────────────────────────────
@@ -600,7 +615,7 @@ private fun PagesShell(
                 // 「首页缩放」档（目前只有外观编辑页）：官方 `NavTransitions.None` = 瞬时切换，
                 // 页面自己从整屏缩进预览卡（`AppearanceEditorScreen` 的入场）。
                 // 不写自研转场：这里只是**不插一脚**，几何全在页面内部。
-                entry<ShellRoute.ZoomPage>(transition = NavTransitions.None) { route ->
+                entry<ShellRoute.ZoomPage>(transition = InstantSwap) { route ->
                     ShellPageContent(
                         pageId = route.id,
                         onBack = { popPage() },
@@ -652,6 +667,18 @@ private fun rootItemIdForView(mode: TimetableHomeViewMode): String = when (mode)
 }
 
 /**
+ * 两条页面路由是否指向**同一个目标**（推页幂等的判据）。
+ *
+ * 同类 + 同 id 即视为同一目标，**忽略每次推送分配的 `pushToken`** —— 那个 token
+ * 只用来保证路由值互不相等、让 miuix 每次推页都建新条目（见 `pushSeq` 的注释）。
+ */
+private fun NavKey.sameTargetAs(other: NavKey): Boolean = when {
+    this is ShellRoute.Page && other is ShellRoute.Page -> id == other.id
+    this is ShellRoute.ZoomPage && other is ShellRoute.ZoomPage -> id == other.id
+    else -> this == other
+}
+
+/**
  * 给官方转场预设套一层**时长缩放**：几何一点不改，只把「程序化整步」那一档
  * 的时长换成按倍率缩放过的值。
  *
@@ -700,6 +727,38 @@ private const val MIN_PAGE_TRANSITION_SPEED = 0.5
 
 /** 转场速度滑杆的上限（`TimetableSettings.maxPageTransitionSpeed`）。 */
 private const val MAX_PAGE_TRANSITION_SPEED = 2.5
+
+/**
+ * `NavTransitions.None` + **短驱动时长**（[INSTANT_SWAP_DURATION_MS]）。
+ *
+ * 「首页缩放」档几何上零位移（位置全在页面自己的入场里），但 miuix-nav 的驱动 float 仍要
+ * 从 0 走到 1（推入）/ 1 走到 0（退出），默认 500ms。这段时间里**已经看不见的旧条目
+ * 还在挡点击**（`NavEntryHost` 的 `opaqueInputModifier`）——用户 2026-11-01 报的
+ * 「退出外观编辑页后再点底栏没反应」，一部分就是这个窗口。压到 100ms 后视觉上仍是
+ * 瞬时切换，点击也马上回得来。
+ *
+ * 仍然是官方预设 + 只换时长（与 [scaledToUserSpeed] 同一手法），不是自研转场。
+ */
+private val InstantSwap: NavTransition = object : NavTransition {
+    private val delegate = NavTransitions.None
+    private val fastMotion = NavMotion(
+        programmatic = NavSettleSpec.Tween(INSTANT_SWAP_DURATION_MS, NavProgrammaticEasing),
+    )
+
+    override fun Modifier.transformEntry(scope: NavTransitionScope): Modifier =
+        with(delegate) { this@transformEntry.transformEntry(scope) }
+
+    override val opaqueDepth: Float get() = delegate.opaqueDepth
+
+    override val dismissDirection: NavSwipeDirection get() = delegate.dismissDirection
+
+    override val motion: NavMotion get() = fastMotion
+
+    override fun scrimFraction(scope: NavTransitionScope): Float = delegate.scrimFraction(scope)
+}
+
+/** 「首页缩放」档的驱动时长：只够把旧条目卸掉，不构成可见动画。 */
+private const val INSTANT_SWAP_DURATION_MS = 100
 
 /** miuix `NavDriverSpec.PROGRAMMATIC_DURATION_MILLIS` 的默认值（对方是 internal）。 */
 private const val OFFICIAL_PROGRAMMATIC_DURATION_MILLIS = 500
