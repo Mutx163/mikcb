@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -136,6 +137,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseShellState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginHost
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
+import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
 import com.mutx163.qingyu.pages.settings.BackdropFlowState
 import com.mutx163.qingyu.pages.settings.BingGalleryHost
@@ -177,6 +179,7 @@ import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModel
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisModule
 import com.mutx163.qingyu.pages.statistics.StatisticsAnalysisPage
 import com.mutx163.qingyu.pages.statistics.StatisticsFeed
+import com.mutx163.qingyu.pages.statistics.StatisticsRankingLinkModel
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionPage
 import com.mutx163.qingyu.pages.statistics.StatisticsSettingsLogic
@@ -236,6 +239,8 @@ import com.mutx163.qingyu.pages.weather.WeatherCityPickerHost
 import com.mutx163.qingyu.theme.QingyuTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -1015,11 +1020,22 @@ fun ShellPageContent(
                 }
             },
         )
-        "d2.dateRule" -> ScheduleDateRuleHost(
-            repository = wiring.timetable,
-            todayIso = LocalDate.now().toString(),
-            onBack = onBack,
-        )
+        "d2.dateRule" -> {
+            val context = LocalContext.current
+            val rulePrefs = remember(context) { PrefsKeyValueStore(context) }
+            val ruleScope = rememberCoroutineScope()
+            ScheduleDateRuleHost(
+                repository = wiring.timetable,
+                todayIso = LocalDate.now().toString(),
+                onBack = onBack,
+                // 保存 / 删除规则后按「今天是否命中」自动套用作息（Dart 同款触发点）。
+                onRulesChanged = {
+                    ruleScope.launch(Dispatchers.IO) {
+                        ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, rulePrefs)
+                    }
+                },
+            )
+        }
         // 任务清单：宿主抽到 `app/TaskHost.kt`（`TaskListHost`），与底栏「任务」tab 复用同一份接线。
         //
         // 为什么要抽：这个页面有**两个渲染点**——本路由与 `PagesShellActivity` 的 `DockSlot.TASK`。
@@ -1550,9 +1566,23 @@ fun ShellPageContent(
                         },
                 ),
                 onBack = onBack,
-                // ⚠️ 页面签名里 `onOpenCourse` 的默认实现就是空的（普查第 6 个盲区：
-                // 「只扫显式空回调」扫不到签名默认值）⇒ 点课程名进该课明细**尚不可用**。
-                // 有意不在这里塞一个空 lambda 冒充「已接」，等明细页选中态可复用后再接。
+                // 点排行里的课名 → 课程编辑页（Dart `statistics_analysis_screen.dart:190`
+                // `_openCourseEdit`：按课名取第一门 + 同名整组，找不到就静默不动作）。
+                // 可点性由渲染层按 `rankingOpenableNames` 逐行判定，这里只负责落点。
+                onOpenCourse = { courseName ->
+                    StatisticsRankingLinkModel.resolve(snapshot.courses, courseName)?.let { link ->
+                        wiring.pendingEditCourse = link.course
+                        wiring.pendingAddCourseSeed = null
+                        // 排行这一路不带来源周次：不清会把上一次加课的周次串进来。
+                        wiring.pendingEditWeek = null
+                        // 必须带同名整组，否则保存时「改名 / 删整组」会退化成只改这一节。
+                        wiring.pendingEditGroup = com.mutx163.qingyu.pages.course.CourseGroup(
+                            name = link.courseName,
+                            courses = link.groupCourses,
+                        )
+                        onOpenPage("d1.addCourse")
+                    }
+                },
             )
         }
         "e.session" -> {
@@ -1735,6 +1765,8 @@ fun ShellPageContent(
         "g2.webLogin" -> WarehouseWebLoginHost(
             state = warehouseState,
             prefs = warehousePrefs,
+            // 抓回的课程由宿主写回当前课表；不传就只剩日志（F32）。
+            repository = wiring.timetable,
             onBack = onBack,
             onOpenPage = onOpenPage,
         )
@@ -2264,17 +2296,14 @@ private fun ShellMissingPage(pageId: String, onBack: () -> Unit) {
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// 仓库适配三页（g2.schoolAdapters / g2.adapterDetail / g2.webLogin）的诚实空态
+// 仓库适配与导入（g2.schoolAdapters / g2.adapterDetail / g2.webLogin / g2.warehouseImport）
 // ────────────────────────────────────────────────────────────────────────
 
 /**
- * 2026-10-31 F23：壳侧**没有**学校列表数据源，这三页不再喂「示例学校 / 示例适配器 / example.com」，
- * 只显示一句空态文案；文案键全部取自既有的 `WarehouseStrings`（本轮不新增 ARB 键）。
- *
- * 为什么不直接复用三个页面类：它们都要求非空入参（学校名当顶栏标题、适配器详情整页渲染、
- * 登录页要有可加载地址），传空数据只会得到空白顶栏或白屏——那比空态更不诚实。
- * 骨架 / 列表 / 卡片走共享套件（R1/R2/R3），不自拼 UI。
+ * 2026-11-01 F28：`g2.webLogin` 已接 `WarehouseWebLoginHost`（真 WebView + 地址链路），
+ * `g2.schoolAdapters` / `g2.adapterDetail` 走选校/适配器宿主。三页都不再喂示例数据。
  */
+
 /**
  * 仓库导入的两条入口（`g2.warehouseImport` / `g2.schoolAdapters`）共用同一段判断：
  *
@@ -2304,35 +2333,6 @@ private fun WarehouseImportBranch(
             onBack = onBack,
             onOpenPage = onOpenPage,
         )
-    }
-}
-
-@Composable
-private fun ShellWarehouseEmptyPage(
-    title: String,
-    message: String,
-    onBack: () -> Unit,
-) {
-    QingyuPageScaffold(title = title, onBack = onBack) {
-        QingyuPageList(
-            innerPadding = innerPadding,
-            scrollBehavior = scrollBehavior,
-        ) {
-            item(key = "empty") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin, vertical = 12.dp),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
-                ) {
-                    Text(
-                        text = message,
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-        }
     }
 }
 

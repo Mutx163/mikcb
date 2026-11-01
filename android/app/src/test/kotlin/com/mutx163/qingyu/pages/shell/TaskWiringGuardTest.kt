@@ -50,7 +50,10 @@ class TaskWiringGuardTest {
         assertTrue(
             "ShellPageIndex.kt 的 d2.taskList 分支没有调用 TaskListHost(——" +
                 "任务清单页应只有一个宿主（app/TaskHost.kt）",
-            branchOf(index, """"d2.taskList"""", index).contains("TaskListHost("),
+            // 定位串必须带 `->`：只写 `"d2.taskList"` 会先命中前面的
+            // `onOpenPage("d2.taskList")` 调用点，再靠 6000 字上限兜底截取——
+            // 2026-11-01 新增代码后两者距离超过上限，守卫误判成「分支里没有 TaskListHost」。
+            branchOf(index, """"d2.taskList" ->""", index).contains("TaskListHost("),
         )
     }
 
