@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.pages.timetable
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.spring
@@ -7,7 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,23 +30,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import com.mutx163.qingyu.components.liquid.lens
+import com.mutx163.qingyu.components.liquid.vibrancy
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 
 /**
@@ -66,22 +83,30 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
  * 数值全部来自 [HomeMenuMorphModel]（纯函数 + JVM 单测逐数钉住），本文件不重复
  * 推导任何插值。
  *
+ * ## 玻璃材质
+ *
+ * 传了 [backdrop] 且设备支持 RuntimeShader 时，面板用 `miuix-blur` 采样背景画
+ * 玻璃（vibrancy + 高斯 + 边缘折射），与顶栏玻璃带、底栏玻璃坞同一套；
+ * 不满足条件就退回主题实色，不会出现"模糊空气"的脏灰块。
+ *
+ * ## 为什么浮层必须是**同一个窗口**
+ *
+ * `Backdrop` 是靠 `positionInWindow()` 换算采样区域的（`LayerBackdrop.drawBackdrop`
+ * 里 `localPositionOf` / 窗口坐标兜底）。放进 `androidx.compose.ui.window.Popup`
+ * 这类**独立窗口**里，两边坐标系不同，采到的就是错位的一小块。所以这里用 miuix
+ * 自己的同窗口浮层宿主 `MiuixPopupUtils.PopupLayout`，位置由我们按锚点窗口坐标
+ * 自己摆（`ListPopupLayout` 也是这么做的）。
+ *
  * ## 二级（「添加」三选）
  *
  * 在同一面板内原地展开：点「添加」把它的三个子项插在它下面、容器高度跟着弹到
  * 新高度；再点一次收回。**不另起第二个浮层** —— 那会变成两块材质不同的面板
  * 叠在一起，与「一张面板在变形」的观感打架。
  *
- * ## 弹出层
- *
- * 用一个 `Popup` 承载变形面板，锚在触发按钮的右上角（`Alignment.TopEnd`）：
- * 面板右缘固定在按钮右缘，向左向下长出来 —— 这正是「这颗按钮变成菜单」该有的
- * 方向。收起态尺寸与按钮完全相同，所以开合两帧严丝合缝、不会跳。
- * 点窗外 / 返回键由 `Popup` 的 dismiss 交给 [close]。
- *
  * @param items 菜单条目（含二级子项），顺序即屏上顺序。
  * @param contentDescription 触发按钮的无障碍名。
  * @param onSelect 点中一个**叶子**条目时回传它的 id；本组件不认识路由。
+ * @param backdrop 背景采样源（页面的 `rememberLayerBackdrop()`）；null = 画实色。
  */
 @Composable
 fun HomeMenuMorphButton(
@@ -89,19 +114,29 @@ fun HomeMenuMorphButton(
     contentDescription: String,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    backdrop: Backdrop? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     var expandedSubmenuId by remember { mutableStateOf<String?>(null) }
     val reveal = remember { Animatable(0f) }
+    // miuix 浮层宿主用 MutableState 控制显隐；它与 `open` 的差别只在「退场这段」：
+    // 收起动画跑完才把它置 false，浮层才会跟着卸载。
+    val popupVisible = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // 触发按钮在**窗口**里的位置；浮层靠它把自己摆到按钮的右上角。
+    var anchorBounds by remember { mutableStateOf(Rect.Zero) }
+    // 浮层宿主自己相对窗口的原点（Scaffold 可能不在窗口左上角）。
+    var hostOrigin by remember { mutableStateOf(Offset.Zero) }
 
     /** 展开：容器用中等刚度弹簧长出去（过冲一点点，读起来"弹一下"）。 */
     fun openMenu() {
         if (open) return
         expandedSubmenuId = null
         open = true
+        popupVisible.value = true
         scope.launch {
-            // 上一次「选中后立即收起」可能把进度留在 1（那里的协程会随页面切走被
+            // 上一次「选中后立即收起」可能把进度留在 1（那条协程会随页面切走被
             // 取消），所以每次展开都先从 0 起步，不能假设它还是 0。
             reveal.snapTo(0f)
             reveal.animateTo(
@@ -129,47 +164,79 @@ fun HomeMenuMorphButton(
             )
             open = false
             expandedSubmenuId = null
+            popupVisible.value = false
         }
     }
 
     /**
      * 选中一项：**立即**收起并执行，不播退场。
      *
-     * 面板在 `Popup` 里是独立窗口，若先播 300ms 退场再跳页，收起来的这半截会叠在
-     * 新页面上方浮一会儿；选中即走比"收得漂亮"重要。
+     * 浮层收起来的那半截会盖在新页面上，选中即走比"收得漂亮"重要。
      */
     fun selectAndClose(id: String) {
         open = false
         expandedSubmenuId = null
+        popupVisible.value = false
         scope.launch { reveal.snapTo(0f) }
         onSelect(id)
     }
 
-    Box(modifier = modifier) {
+    BackHandler(enabled = open) { closeMenu() }
+
+    val density = LocalDensity.current
+    val progress = reveal.value
+    val panelWidthDp = HomeMenuMorphModel.widthDp(progress).dp
+    val panelWidthPx = with(density) { panelWidthDp.toPx() }
+
+    Box(
+        modifier = modifier.onGloballyPositioned { anchorBounds = it.boundsInWindow() },
+    ) {
         HomeMenuTriggerButton(
             contentDescription = contentDescription,
             onClick = { openMenu() },
         )
 
-        if (open) {
-            Popup(
-                // 锚在这个 Box 的右上角：面板右缘钉住按钮右缘，向左下长出去。
-                alignment = Alignment.TopEnd,
-                onDismissRequest = { closeMenu() },
-                properties = PopupProperties(
-                    focusable = true,
-                    dismissOnClickOutside = true,
-                    dismissOnBackPress = true,
-                ),
+        MiuixPopupUtils.PopupLayout(
+            visible = popupVisible,
+            enableWindowDim = false,
+            enableBackHandler = false,
+            enterTransition = EnterTransition.None,
+            exitTransition = ExitTransition.None,
+            // 跟着当前 Scaffold 走（首页就在壳的 Scaffold 里），不弹到最外层。
+            renderInRootScaffold = false,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onGloballyPositioned { hostOrigin = it.positionInWindow() },
             ) {
+                // 点面板之外的任何地方都收起。铺满全屏放在面板下面，面板自己在上。
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { closeMenu() },
+                        ),
+                )
+
                 HomeMenuMorphPanel(
                     reveal = reveal,
                     items = items,
                     expandedSubmenuId = expandedSubmenuId,
+                    backdrop = backdrop,
                     onToggleSubmenu = { id ->
                         expandedSubmenuId = if (expandedSubmenuId == id) null else id
                     },
                     onSelect = { id -> selectAndClose(id) },
+                    modifier = Modifier.offset {
+                        IntOffset(
+                            // 面板右缘钉住按钮右缘、上缘钉住按钮上缘：向左向下长出去。
+                            x = (anchorBounds.right - hostOrigin.x - panelWidthPx).roundToInt(),
+                            y = (anchorBounds.top - hostOrigin.y).roundToInt(),
+                        )
+                    },
                 )
             }
         }
@@ -180,8 +247,8 @@ fun HomeMenuMorphButton(
  * 顶栏「更多」那颗圆形按钮。
  *
  * 两档菜单形态共用同一个样子，缺一不可：
- * * 列表档（容器变换）的**收起态就是这颗按钮** —— 面板在 `reveal = 0` 时尺寸等于
- *   它，所以变形起止两帧严丝合缝，不能两边各画一份、颜色或圆角差一点就会跳；
+ * * 列表档（容器变换）的**收起态就是这颗按钮** —— 面板在进度 0 时尺寸等于它，
+ *   所以变形起止两帧严丝合缝，不能两边各画一份、颜色或圆角差一点就会跳；
  * * 八宫格档只借它当触发器（点开的是 `QingyuSheet` 底部弹层）。
  *
  * 底色走 `surfaceContainer`（与面板、与官方菜单行同色），图标走
@@ -229,8 +296,10 @@ private fun HomeMenuMorphPanel(
     reveal: Animatable<Float, AnimationVector1D>,
     items: List<TimetableMenuItem>,
     expandedSubmenuId: String?,
+    backdrop: Backdrop?,
     onToggleSubmenu: (String) -> Unit,
     onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val triggerPx = with(density) { HomeMenuMorphModel.TRIGGER_DIAMETER_DP.dp.toPx() }
@@ -271,19 +340,59 @@ private fun HomeMenuMorphPanel(
     val progress = reveal.value
     val widthDp = HomeMenuMorphModel.widthDp(progress).dp
     val heightPx = HomeMenuMorphModel.heightPx(progress, triggerPx, targetContentPx)
-    val contentScale = HomeMenuMorphModel.contentScale(
-        with(density) { widthDp.toPx() },
-    )
+    val contentScale = HomeMenuMorphModel.contentScale(with(density) { widthDp.toPx() })
     val contentAlpha = HomeMenuMorphModel.contentAlpha(progress)
     val shape = RoundedCornerShape(HomeMenuMorphModel.PANEL_CORNER_RADIUS_DP.dp)
+    val containerColor = MiuixTheme.colorScheme.surfaceContainer
+
+    // 玻璃：有采样源 + 设备支持 RuntimeShader 才画。两者缺一就退回实色，
+    // 而不是"模糊空气"（那会得到一块脏灰）。
+    val glassBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
+    val blurPx = with(density) { HomeMenuMorphModel.PANEL_BLUR_DP.dp.toPx() }
+    val refractionBandPx = with(density) {
+        HomeMenuMorphModel.PANEL_REFRACTION_BAND_DP.dp.toPx()
+    }
+    val refractionAmountPx = with(density) {
+        HomeMenuMorphModel.PANEL_REFRACTION_AMOUNT_DP.dp.toPx()
+    }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .width(widthDp)
             .height(with(density) { heightPx.toDp() })
-            .shadow(elevation = (2f + 10f * progress.coerceIn(0f, 1f)).dp, shape = shape, clip = false)
-            .clip(shape)
-            .background(MiuixTheme.colorScheme.surfaceContainer),
+            .shadow(
+                elevation = (2f + 10f * progress.coerceIn(0f, 1f)).dp,
+                shape = shape,
+                clip = false,
+            )
+            .then(
+                if (glassBackdrop != null) {
+                    Modifier.drawBackdrop(
+                        backdrop = glassBackdrop,
+                        shape = { shape },
+                        effects = {
+                            // 折射要往形状外采样：先把采样层按位移量撑起来。
+                            // ⚠️ 必须在 blur() 读 padding 之前抬（同玻璃坞 / 顶栏带）。
+                            padding = maxOf(padding, refractionAmountPx)
+                            vibrancy()
+                            blur(blurPx)
+                            lens(
+                                refractionHeight = refractionBandPx,
+                                refractionAmount = refractionAmountPx,
+                            )
+                        },
+                        onDrawSurface = {
+                            drawRect(
+                                containerColor.copy(
+                                    alpha = HomeMenuMorphModel.PANEL_GLASS_TINT_ALPHA,
+                                ),
+                            )
+                        },
+                    )
+                } else {
+                    Modifier.clip(shape).background(containerColor)
+                },
+            ),
     ) {
         MenuRowsColumn(
             modifier = Modifier

@@ -34,6 +34,23 @@ object HomeMenuMorphModel {
     /** 面板圆角，dp。40dp 宽时会被形状自动钳成正圆。 */
     const val PANEL_CORNER_RADIUS_DP = 24f
 
+    /** 面板玻璃的高斯半径，dp。与顶栏玻璃带 / 底栏玻璃坞同一量级。 */
+    const val PANEL_BLUR_DP = 12f
+
+    /** 边缘折射的作用带宽度，dp。 */
+    const val PANEL_REFRACTION_BAND_DP = 16f
+
+    /** 边缘折射的最大位移量，dp。 */
+    const val PANEL_REFRACTION_AMOUNT_DP = 26f
+
+    /**
+     * 玻璃下面那层染色的不透明度。
+     *
+     * 0 = 全透，文字会被背景吃掉；1 = 实色，玻璃等于没有。0.62 是"能看清字、
+     * 又看得出背景在动"的平衡点。
+     */
+    const val PANEL_GLASS_TINT_ALPHA = 0.62f
+
     /**
      * 内容开始显形的进度点：`reveal` 低于它时菜单文字完全不画。
      *

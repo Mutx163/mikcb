@@ -33,6 +33,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -120,6 +121,11 @@ fun TimetableTopBar(
     onTitleClick: (() -> Unit)? = null,
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     menuItems: List<TimetableMenuItem> = emptyList(),
+    /**
+     * 背景采样源（页面自己的 `rememberLayerBackdrop()`），只有列表档的「更多」面板
+     * 用它画玻璃；null = 画主题实色。宿主不传也不会崩，只是没有玻璃质感。
+     */
+    backdrop: Backdrop? = null,
     onMenuSelect: (String) -> Unit = {},
 ) {
     val dark = isSystemInDarkTheme()
@@ -185,6 +191,7 @@ fun TimetableTopBar(
                     items = menuItems,
                     contentDescription = TimetableStrings.moreTooltip.zh,
                     onSelect = onMenuSelect,
+                    backdrop = backdrop,
                 )
             } else {
                 HomeMenuTriggerButton(
