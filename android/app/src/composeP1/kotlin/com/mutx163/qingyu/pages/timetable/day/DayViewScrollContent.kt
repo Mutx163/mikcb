@@ -78,6 +78,8 @@ fun DayViewScrollContent(
      * 浮钮出现时）钮高与间隙。默认 64 是「没有坞、没有浮钮」时的呼吸余量。
      */
     bottomInset: Dp = 64.dp,
+    /** 空态那块的壁纸亮度（正文带）；null = 没壁纸，保持主题原色。 */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
@@ -138,6 +140,7 @@ fun DayViewScrollContent(
                     DayViewEmptyState(
                         week = summaryState.week,
                         dayOfWeek = dayOfWeek,
+                        wallpaperLuminance = wallpaperLuminance,
                     )
                 }
             }

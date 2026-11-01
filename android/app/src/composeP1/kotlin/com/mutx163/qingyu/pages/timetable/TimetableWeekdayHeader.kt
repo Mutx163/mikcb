@@ -24,12 +24,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -176,6 +178,15 @@ fun TimetableWeekdayHeader(
     selectedDayOfWeek: Int? = null,
     hasExamOnDate: (LocalDate) -> Boolean = { false },
     hasScheduleOnDate: (LocalDate) -> Boolean = { false },
+    /**
+     * 星期栏背后壁纸的平均亮度（Dart `homePageOverWallpaperInk` 的输入，
+     * `home_page_background.dart:763-799`）。**null = 没壁纸 / 亮度未知 ⇒ 用设置/主题原色**。
+     *
+     * 非 null 时：用户挑的字色对比度够（≥3:1）就保留；不够就保色相推到够；
+     * 没有配置色（= 用的是主题默认）才按亮度直接翻黑/白。深壁纸上的星期栏/日期
+     * 以前沿用深色主题字 ⇒ 黑字压黑底看不见（2026-11-01 用户报）。
+     */
+    wallpaperLuminance: Double? = null,
     timeColumnWidth: Dp = 34.dp,
     height: Dp = WeekdayHeaderMetrics.HEIGHT_DP.dp,
     onDayClick: (dayOfWeek: Int) -> Unit = {},
@@ -185,13 +196,24 @@ fun TimetableWeekdayHeader(
     val dark = isSystemInDarkTheme()
     // 墨色来源：用户设置的星期栏字色 / 强调色（Dart `:210-237` 读的两个 hex 键）。
     // 解析失败时回落主题语义槽（Dart `themeFallback`），不写死任何色值。
-    val weekdayInk = parseHexColor(
-        if (dark) style.weekdayFontColorDark else style.weekdayFontColorLight,
-        fallback = MiuixTheme.colorScheme.onSurface,
+    // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
+    val weekdayInk = Color(
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = HomeBackgroundModel.parseHexArgb(
+                if (dark) style.weekdayFontColorDark else style.weekdayFontColorLight,
+            ),
+            fallbackArgb = MiuixTheme.colorScheme.onSurface.toArgb(),
+            wallpaperLuminance = wallpaperLuminance,
+        ),
     )
-    val accentInk = parseHexColor(
-        if (dark) style.weekdayAccentColorDark else style.weekdayAccentColorLight,
-        fallback = MiuixTheme.colorScheme.primary,
+    val accentInk = Color(
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = HomeBackgroundModel.parseHexArgb(
+                if (dark) style.weekdayAccentColorDark else style.weekdayAccentColorLight,
+            ),
+            fallbackArgb = MiuixTheme.colorScheme.primary.toArgb(),
+            wallpaperLuminance = wallpaperLuminance,
+        ),
     )
     // 分隔线：无壁纸档 Dart 用 `HyperosColors.dividerLine` + 0.5dp（`:122-125`）。
     val dividerColor = Color(QingyuTheme.dividerLine(dark))

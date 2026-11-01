@@ -576,4 +576,77 @@ class HomeBackgroundModelTest {
             snapshot.regionPaint(HomeBackdropRegion.Timetable).colorArgb,
         )
     }
+
+    // ───────────── 压在壁纸上的墨色（Dart homePageOverWallpaperInk 同口径） ─────────────
+
+    @Test
+    fun `没有壁纸时墨色用配置色 没有配置才用主题兜底`() {
+        val fallback = 0xFF202020.toInt()
+        assertEquals(fallback, HomeBackgroundModel.inkOverWallpaperArgb(null, fallback, null))
+        val configured = 0xFF3377CC.toInt()
+        assertEquals(
+            configured,
+            HomeBackgroundModel.inkOverWallpaperArgb(configured, fallback, null),
+        )
+    }
+
+    @Test
+    fun `深壁纸用浅墨 浅壁纸用深墨`() {
+        val fallback = 0xFF202020.toInt()
+        val darkWallpaper = HomeBackgroundModel.inkOverWallpaperArgb(null, fallback, 0.05)
+        val lightWallpaper = HomeBackgroundModel.inkOverWallpaperArgb(null, fallback, 0.95)
+        // 深壁纸 ⇒ 墨色被推到看得见（≥3:1）；浅壁纸 ⇒ 深墨原样就够。
+        val darkInkLuminance = HomeBackgroundModel.relativeLuminance(darkWallpaper)
+        assertTrue(
+            "深壁纸上的兜底墨色对比度不足：$darkInkLuminance",
+            HomeBackgroundModel.hasSufficientContrast(darkInkLuminance, 0.05),
+        )
+        assertTrue(
+            "深壁纸上的兜底墨色没有变浅",
+            darkInkLuminance > HomeBackgroundModel.relativeLuminance(fallback),
+        )
+        assertTrue(
+            "浅壁纸上的兜底墨色没有被判成可读的深墨",
+            HomeBackgroundModel.hasSufficientContrast(
+                HomeBackgroundModel.relativeLuminance(lightWallpaper),
+                0.95,
+            ),
+        )
+    }
+
+    @Test
+    fun `用户挑的墨色对比度够时原样保留`() {
+        // 亮蓝压在深壁纸上，对比度够 ⇒ 不该被改成黑/白。
+        val configured = 0xFF66CCFF.toInt()
+        assertEquals(
+            configured,
+            HomeBackgroundModel.inkOverWallpaperArgb(configured, 0xFF202020.toInt(), 0.05),
+        )
+    }
+
+    @Test
+    fun `对比度不够的墨色会被推亮或推暗 而不是留在看不见的原色`() {
+        // 近黑墨压在深壁纸上：对比度不足，必须被推亮到看得见。
+        val nearBlack = 0xFF101010.toInt()
+        val pushed = HomeBackgroundModel.inkOverWallpaperArgb(nearBlack, nearBlack, 0.05)
+        assertTrue(
+            "近黑墨压在深壁纸上没有被推亮：$pushed",
+            HomeBackgroundModel.relativeLuminance(pushed) > HomeBackgroundModel.relativeLuminance(nearBlack),
+        )
+        assertTrue(
+            "推完仍不够 3:1 对比度",
+            HomeBackgroundModel.hasSufficientContrast(
+                HomeBackgroundModel.relativeLuminance(pushed),
+                0.05,
+            ),
+        )
+    }
+
+    @Test
+    fun `次级墨色按墨色亮度选 0_72 与 0_70`() {
+        val light = HomeBackgroundModel.mutedInkOverWallpaperArgb(0xFFFFFFFF.toInt())
+        val dark = HomeBackgroundModel.mutedInkOverWallpaperArgb(0xFF101010.toInt())
+        assertEquals((0.72f * 255f).toInt(), (light ushr 24) and 0xFF)
+        assertEquals((0.70f * 255f).toInt(), (dark ushr 24) and 0xFF)
+    }
 }

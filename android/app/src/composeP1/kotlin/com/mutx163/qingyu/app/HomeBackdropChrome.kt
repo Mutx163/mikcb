@@ -16,7 +16,7 @@ import com.mutx163.qingyu.pages.shell.HomeBackdropSnapshot
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.shell.HomeWallpaperBackdrop
-import com.mutx163.qingyu.pages.shell.cachedWallpaperLuminance
+import com.mutx163.qingyu.pages.shell.cachedWallpaperInkBands
 import com.mutx163.qingyu.theme.QingyuTheme
 
 /**
@@ -36,6 +36,8 @@ import com.mutx163.qingyu.theme.QingyuTheme
 class HomeBackdropChrome(
     val snapshot: HomeBackdropSnapshot?,
     val material: HomeMaterialRenderSpec?,
+    /** 壁纸三档亮度带（顶栏 / 星期栏 / 正文）；无壁纸或还没量到时为 null。 */
+    val bands: HomeBackgroundModel.InkBands?,
     val chromeInk: HomeInkPolarity?,
     val backdrop: (@Composable BoxScope.() -> Unit)?,
 ) {
@@ -49,9 +51,10 @@ class HomeBackdropChrome(
 /**
  * 建一份 [HomeBackdropChrome]（见类注释：三样东西的唯一推导点）。
  *
- * 壁纸亮度（顶栏墨色的唯一判据）**首帧同步从进程缓存取**（`cachedWallpaperLuminance`）：
- * 同一张壁纸在首页早就量过，切视图 / 进外观编辑页的新组合第一帧就有正确墨色；
- * 只有「从没量过的新壁纸」才回落到主题墨色，并等解码完成后的异步回调补上。
+ * 壁纸亮度带（顶栏/字色墨色的唯一判据）**首帧同步从进程缓存取**
+ * （`cachedWallpaperInkBands`）：同一张壁纸在首页早就量过，切视图 / 进外观编辑页的
+ * 新组合第一帧就有正确墨色；只有「从没量过的新壁纸」才回落到主题墨色，
+ * 并等解码完成后的异步回调补上。
  */
 @Composable
 fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBackdropChrome {
@@ -84,19 +87,19 @@ fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBack
             )
         }
     }
-    // 壁纸「顶部那条带」的平均亮度（0..1）。**初值先同步查进程缓存**：切日/周视图、
+    // 壁纸三档亮度带（顶栏 / 星期栏 / 正文）。**初值先同步查进程缓存**：切日/周视图、
     // 进外观编辑页预览卡都是新建整棵树，若初值恒为 null 就会先按主题墨色画一帧、
     // 异步量完再翻面 —— 用户看到的就是「所有字黑白闪一下」（2026-11-01 真机）。
-    // 换壁纸 / 换解码宽时 key 变化 ⇒ 重新取新那张图的亮度；新图还没量过则为 null
+    // 换壁纸 / 换解码宽时 key 变化 ⇒ 重新取新那张图的三档；新图还没量过则为 null
     //（按主题墨色兜底，等异步回调）。
-    var wallpaperLuminance by remember(snapshot?.wallpaperPath, snapshot?.decodeWidthPx) {
+    var wallpaperBands by remember(snapshot?.wallpaperPath, snapshot?.decodeWidthPx) {
         mutableStateOf(
-            cachedWallpaperLuminance(snapshot?.wallpaperPath, snapshot?.decodeWidthPx ?: 0),
+            cachedWallpaperInkBands(snapshot?.wallpaperPath, snapshot?.decodeWidthPx ?: 0),
         )
     }
     // 只有「真有壁纸」才谈「壁纸上的墨色」；没壁纸 = 主题墨色（null）。
     val chromeInk: HomeInkPolarity? = if (snapshot?.hasWallpaper == true) {
-        HomeBackgroundModel.chromeInkPolarity(wallpaperLuminance)
+        HomeBackgroundModel.chromeInkPolarity(wallpaperBands?.top)
     } else {
         null
     }
@@ -104,13 +107,14 @@ fun rememberHomeBackdropChrome(settingsModel: TimetableSettingsModel?): HomeBack
         {
             HomeWallpaperBackdrop(
                 snapshot = snap,
-                onInkLuminance = { luminance -> wallpaperLuminance = luminance },
+                onInkBands = { bands -> wallpaperBands = bands },
             )
         }
     }
     return HomeBackdropChrome(
         snapshot = snapshot,
         material = material,
+        bands = if (snapshot?.hasWallpaper == true) wallpaperBands else null,
         chromeInk = chromeInk,
         backdrop = backdrop,
     )

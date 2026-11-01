@@ -235,6 +235,8 @@ fun TimetableHost(
         backdrop = homeChrome.backdrop,
         // 壁纸上的顶栏墨色（深壁纸 ⇒ 浅墨）。null = 没壁纸 / 亮度还没测出来 ⇒ 主题墨色。
         chromeInk = homeChrome.chromeInk,
+        // 壁纸三档亮度带：星期栏 / 时间列压在壁纸上的字色靠它翻深/翻浅（2026-11-01）。
+        wallpaperBands = homeChrome.bands,
         // 材质快照（2026-11-01）：让「默认材质 / 顶栏玻璃 / 八根旋钮」真正落到屏幕上。
         material = homeChrome.material,
         hasBackdrop = homeChrome.hasBackdrop,

@@ -53,6 +53,7 @@ import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeFloatingMetrics
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.timetable.ApplyChromeStatusBarInk
@@ -241,6 +242,13 @@ fun DayViewPage(
      * [com.mutx163.qingyu.pages.shell.HomeBackgroundModel] 的 `chromeInkPolarity`。
      */
     chromeInk: HomeInkPolarity? = null,
+    /**
+     * 壁纸三档亮度带（顶栏 / 星期栏 / 正文）。星期栏与空态的字色靠它翻深/翻浅
+     * （Dart `homePageOverWallpaperInk` 同口径，见
+     * [com.mutx163.qingyu.pages.shell.HomeBackgroundModel.inkOverWallpaperArgb]）。
+     * `null` = 没壁纸 / 亮度未知 ⇒ 保持设置 / 主题原色。
+     */
+    wallpaperBands: HomeBackgroundModel.InkBands? = null,
     /**
      * 材质快照（`SettingsMaterialModel.renderSpecOf` 的唯一出口）。null = 老行为
      * （顶栏不画玻璃带、议程卡按各自的实体填充）。
@@ -523,6 +531,8 @@ fun DayViewPage(
                             semesterStartDate = semesterStartDate,
                             visibleDays = visibleDays,
                             style = weekdayStyle,
+                            // 星期条直接压在壁纸上：亮度带决定字色翻深/翻浅。
+                            wallpaperLuminance = wallpaperBands?.weekday,
                             selectedDayOfWeek = currentTarget.dayOfWeek,
                             hasExamOnDate = hasExamOnDate,
                             hasScheduleOnDate = hasScheduleOnDate,
@@ -599,6 +609,8 @@ fun DayViewPage(
                             onViewAllOverdue = onViewAllOverdue,
                             courseResolver = courseResolver,
                             showConflictBadge = showConflictBadge,
+                            // 空态文字直接压在壁纸上：正文那档亮度决定字色。
+                            wallpaperLuminance = wallpaperBands?.body,
                             // 天气行：装配器按课程 id 算好的「一行文本」，不传就永远不显示
                             //（2026-10-29 二轮审核 P1-12 的病根就在这一行缺失）。
                             weatherLines = pageData.weatherLines,

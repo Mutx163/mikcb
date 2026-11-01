@@ -890,6 +890,8 @@ private fun DayViewPreview(
         // 壁纸层 + 材质快照 + 顶栏墨色（与壳里的 `c3.day` 同一份）。
         backdrop = homeChrome.backdrop,
         chromeInk = homeChrome.chromeInk,
+        // 星期栏 / 空态压在壁纸上的字色（2026-11-01）。
+        wallpaperBands = homeChrome.bands,
         material = homeChrome.material,
         hasBackdrop = homeChrome.hasBackdrop,
         pageColorArgb = homeChrome.pageColorArgb,

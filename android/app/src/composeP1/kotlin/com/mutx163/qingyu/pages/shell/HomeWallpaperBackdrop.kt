@@ -125,8 +125,8 @@ private val wallpaperBitmapCache: LruCache<String, Bitmap> =
  * @param snapshot 由 [HomeBackgroundModel.snapshotOf] 建出来的不可变快照。
  * @param weekPageOffset 当前周分页的浮点页偏移（-1…1，`currentPage` 的小数部分）；
  *   仅 `snapshot.followsWeekPager` 为真时生效，0 = 背景不跟手。
- * @param onInkLuminance 壁纸「顶部那条带」的平均相对亮度（0…1）回调，供顶栏/星期栏决定
- *   浅墨还是深墨（判据用 [HomeBackgroundModel.chromeInkPolarity]，本组件只回原始亮度）。
+ * @param onInkBands 壁纸三档亮度带（顶栏 / 星期栏 / 正文，0…1）回调，供顶栏、星期栏、
+ *   时间列、日视图空态决定浅墨还是深墨（判据在本组件的调用方 / 模型层，本组件只回原始亮度）。
  *   无壁纸 / 解码失败时回 `null`（= 亮度未知，调用方按主题墨色处理）。
  *   **传 `null`（默认）= 完全不算**：不额外解一次图、不额外扫一遍像素，行为与没有这个参数时一致。
  * @param content 叠在壁纸上的内容（周/日/月视图、顶栏等）。
@@ -136,7 +136,7 @@ fun HomeWallpaperBackdrop(
     snapshot: HomeBackdropSnapshot,
     modifier: Modifier = Modifier,
     weekPageOffset: Float = 0f,
-    onInkLuminance: ((Double?) -> Unit)? = null,
+    onInkBands: ((HomeBackgroundModel.InkBands?) -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val path = snapshot.wallpaperPath
@@ -164,25 +164,25 @@ fun HomeWallpaperBackdrop(
         }
     }
 
-    // 亮度只在「解码结果变了」时算一次（路径 / 解码宽变了才会变），**不进每帧绘制路径**；
+    // 墨色带只在「解码结果变了」时算一次（路径 / 解码宽变了才会变），**不进每帧绘制路径**；
     // 回调为 null 时整段直接返回，一个像素都不扫。用 rememberUpdatedState 接回调，
     // 避免调用方每帧换 lambda 导致重复量测。
-    val inkCallback = rememberUpdatedState(onInkLuminance)
-    val wantsInkLuminance = onInkLuminance != null
-    LaunchedEffect(wallpaper, wantsInkLuminance) {
+    val inkCallback = rememberUpdatedState(onInkBands)
+    val wantsInkBands = onInkBands != null
+    LaunchedEffect(wallpaper, wantsInkBands) {
         val callback = inkCallback.value ?: return@LaunchedEffect
         val image = wallpaper
-        val luminance = if (image == null) {
+        val bands = if (image == null) {
             null
         } else {
-            withContext(Dispatchers.IO) { measureChromeBandLuminance(image) }
+            withContext(Dispatchers.IO) { measureInkBands(image) }
         }
         // 写回进程缓存：下一次新组合（切视图、进外观编辑页）首帧就能同步拿到，
-        // 不会先按主题墨色画一帧再翻面（见 [wallpaperLuminanceCache] 的注释）。
-        if (luminance != null && !path.isNullOrEmpty()) {
-            wallpaperLuminanceCache.put(wallpaperCacheKey(path, snapshot.decodeWidthPx), luminance)
+        // 不会先按主题墨色画一帧再翻面（见 [wallpaperInkBandsCache] 的注释）。
+        if (bands != null && !path.isNullOrEmpty()) {
+            wallpaperInkBandsCache.put(wallpaperCacheKey(path, snapshot.decodeWidthPx), bands)
         }
-        callback(luminance)
+        callback(bands)
     }
 
     Box(
@@ -297,28 +297,31 @@ private fun wallpaperFromCache(path: String?, decodeWidthPx: Int): ImageBitmap? 
 }
 
 /**
- * 壁纸「顶部那条带」的亮度缓存（键同 [wallpaperCacheKey]）。
+ * 壁纸三档亮度带的缓存（键同 [wallpaperCacheKey]）。
  *
  * 为什么要有（2026-11-01 真机：切日/周视图时**所有字黑白闪一下**）：
- * 顶栏墨色（以及接下来所有压在壁纸上的字色）都由这个亮度推出。以前新组合里初值恒为
- * null ⇒ 首帧按主题墨色画、等异步量完再翻面。切视图/进外观编辑页都是新建整棵树，
- * 于是每次都能看到那一翻。有了这份缓存，新组合首帧就同步拿到同一张壁纸的亮度。
+ * 顶栏墨色（以及压在壁纸上的星期栏 / 时间列字色）都由这些亮度推出。以前新组合里初值
+ * 恒为 null ⇒ 首帧按主题墨色画、等异步量完再翻面。切视图/进外观编辑页都是新建整棵树，
+ * 于是每次都能看到那一翻。有了这份缓存，新组合首帧就同步拿到同一张壁纸的三档亮度。
  */
-private val wallpaperLuminanceCache = LruCache<String, Double>(64)
+private val wallpaperInkBandsCache = LruCache<String, HomeBackgroundModel.InkBands>(64)
 
 /**
- * **同步**取「顶部带亮度」：缓存命中直接返回；位图已在进程缓存里就顺手量一次
- * （顶部 9% 的行、约 1ms，只在换壁纸/换解码宽后第一次走到）并写回缓存；
+ * **同步**取三档亮度带：缓存命中直接返回；位图已在进程缓存里就顺手量一次
+ * （顶部 72% 的行、一两毫秒，只在换壁纸/换解码宽后第一次走到）并写回缓存；
  * 位图还没解出来返回 null（调用方按主题墨色兜底）。
  */
-fun cachedWallpaperLuminance(path: String?, decodeWidthPx: Int): Double? {
+fun cachedWallpaperInkBands(
+    path: String?,
+    decodeWidthPx: Int,
+): HomeBackgroundModel.InkBands? {
     if (path.isNullOrEmpty() || decodeWidthPx <= 0) return null
     val key = wallpaperCacheKey(path, decodeWidthPx)
-    wallpaperLuminanceCache.get(key)?.let { return it }
+    wallpaperInkBandsCache.get(key)?.let { return it }
     val bitmap = wallpaperBitmapCache.get(key) ?: return null
-    val luminance = measureChromeBandLuminance(bitmap.asImageBitmap()) ?: return null
-    wallpaperLuminanceCache.put(key, luminance)
-    return luminance
+    val bands = measureInkBands(bitmap.asImageBitmap()) ?: return null
+    wallpaperInkBandsCache.put(key, bands)
+    return bands
 }
 
 /**
@@ -346,36 +349,53 @@ private fun decodeWallpaper(path: String, decodeWidthPx: Int): ImageBitmap? = ru
 }.getOrNull()
 
 /**
- * 量「顶栏 / 状态栏那条带」的平均相对亮度（0…1），给 `onInkLuminance` 用。
+ * 量壁纸的**三档亮度带**（顶栏 / 星期栏 / 正文），给 `onInkBands` 用。
  *
- * 只读顶部 9% 的行（[HomeBackgroundModel.CHROME_TOP_BAND_TO]，Dart `:1355` 的
- * `band(0, 0.09)`）——不是整张图，也不是顶部 1/3：那一段才是顶栏标题真正压着的壁纸，
- * 取太宽会把屏幕中段混进来、把深色壁纸平均成中灰（于是深墨压深底）。
+ * 三档区间全部来自 [HomeBackgroundModel]（Dart `home_page_background.dart:1320-1357`）：
+ * 顶栏 `0..0.09` 决定 chrome 翻面；星期栏 `0.07..0.20`、正文 `0.22..0.72` 决定压在
+ * 壁纸上的字（星期栏 / 时间列 / 日视图空态）用深墨还是浅墨。
  *
- * 相对亮度在模型层按 WCAG 的 sRGB 线性化逐像素算，不是把 RGB 通道直接平均。
- * 像素在 IO 线程读，一次分配「宽 × 带高」的 int 数组（1440 宽约 1.3 MB），算完即丢。
+ * 只读顶部 72% 的行、**一次** getPixels，三个区间在同一份像素上求平均 ——
+ * 分三次读会把同一块位图读三遍。像素在 IO 线程读，算完即丢。
  *
- * 与 Dart 的已知差异：Dart 采样还把列裁到 cover 的**可见列**，这里按整行平均
- * （取景对齐偏移会带来一点偏差；方向上安全——可见列只是整行的子集）。
+ * 仍然是「按整行平均」（与 Dart 的已知差异：Dart 还会把列裁到 cover 的可见列，
+ * 取景对齐偏移会带来一点偏差，方向上安全）。
  */
-private fun measureChromeBandLuminance(image: ImageBitmap): Double? = runCatching {
+private fun measureInkBands(image: ImageBitmap): HomeBackgroundModel.InkBands? = runCatching {
     val bitmap = image.asAndroidBitmap()
     val width = bitmap.width
     val height = bitmap.height
+    if (width <= 0 || height <= 0) return@runCatching null
     val rows = HomeBackgroundModel.bandRows(
         height = height,
         fromFraction = HomeBackgroundModel.CHROME_TOP_BAND_FROM,
-        toFraction = HomeBackgroundModel.CHROME_TOP_BAND_TO,
+        toFraction = HomeBackgroundModel.BODY_BAND_TO,
     )
-    if (width <= 0 || rows.isEmpty()) return@runCatching null
+    if (rows.isEmpty()) return@runCatching null
     val bandHeight = rows.last + 1
     val pixels = IntArray(width * bandHeight)
     bitmap.getPixels(pixels, 0, width, 0, 0, width, bandHeight)
-    HomeBackgroundModel.meanRelativeLuminance(
-        argbPixels = pixels,
-        width = width,
-        fromRow = rows.first,
-        toRow = rows.last + 1,
+    fun band(from: Double, to: Double): Double? =
+        HomeBackgroundModel.meanRelativeLuminanceForVerticalRange(
+            argbPixels = pixels,
+            width = width,
+            height = height,
+            fromFraction = from,
+            toFraction = to,
+        )
+    HomeBackgroundModel.InkBands(
+        top = band(
+            HomeBackgroundModel.CHROME_TOP_BAND_FROM,
+            HomeBackgroundModel.CHROME_TOP_BAND_TO,
+        ),
+        weekday = band(
+            HomeBackgroundModel.WEEKDAY_BAND_FROM,
+            HomeBackgroundModel.WEEKDAY_BAND_TO,
+        ),
+        body = band(
+            HomeBackgroundModel.BODY_BAND_FROM,
+            HomeBackgroundModel.BODY_BAND_TO,
+        ),
     )
 }.getOrNull()
 

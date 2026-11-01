@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -30,11 +31,37 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun DayViewEmptyState(
     week: Int,
     dayOfWeek: Int? = null,
+    /**
+     * 空态背后壁纸的平均亮度（Dart `homePageOverWallpaperInk` 的输入，
+     * `home_page_background.dart:763-799`）。**null = 没壁纸 / 亮度未知 ⇒ 主题原色**。
+     * 深壁纸上的「暂无课程」以前是深色主题字 ⇒ 黑字压黑底看不见（2026-11-01 用户报）。
+     */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
-    val titleColor = Color(QingyuTheme.primaryText(dark))
-    val subtitleColor = Color(QingyuTheme.secondaryText(dark))
+    val titleColor = Color(
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = null,
+            fallbackArgb = QingyuTheme.primaryText(dark),
+            wallpaperLuminance = wallpaperLuminance,
+        ),
+    )
+    // 次级墨色只在**压在壁纸上**时压淡（Dart `homePageOverWallpaperMutedInk`）；
+    // 没壁纸保持原来的主题次级色，不无端多压一层 alpha。
+    val subtitleColor = if (wallpaperLuminance == null) {
+        Color(QingyuTheme.secondaryText(dark))
+    } else {
+        Color(
+            HomeBackgroundModel.mutedInkOverWallpaperArgb(
+                HomeBackgroundModel.inkOverWallpaperArgb(
+                    configuredArgb = null,
+                    fallbackArgb = QingyuTheme.secondaryText(dark),
+                    wallpaperLuminance = wallpaperLuminance,
+                ),
+            ),
+        )
+    }
 
     // Dart `day_view_empty_state.dart:64-66`：副标题只有「第 N 周」一条。
     // 2026-10-31 审核：这里曾拼成「第 N 周 · 周X」，而上一行的摘要卡已经写着日期与星期，

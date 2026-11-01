@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -109,6 +111,10 @@ object TimeColumnMetrics {
  * @param sectionHeight 每节渲染高度，必须与右侧网格完全一致。
  * @param timeColumnWidth 时间列宽（设置里的「窄/宽」两档由页面换算后传入）。
  * @param style 周视图渲染风格（读时间列显示档与时间轴字色）。
+ * @param wallpaperLuminance 时间列背后壁纸的平均亮度（Dart `homePageOverWallpaperInk`，
+ *   `home_page_background.dart:763-799`）。**null = 没壁纸 / 亮度未知 ⇒ 用设置/主题原色**。
+ *   非 null 时：用户挑的字色对比度够就保留，不够就保色相推到够；主题默认色直接翻黑/白。
+ *   深壁纸上的时间列以前沿用深色主题字 ⇒ 黑字压黑底看不见（2026-11-01 用户报）。
  */
 @Composable
 fun TimetableTimeColumn(
@@ -117,14 +123,21 @@ fun TimetableTimeColumn(
     sectionHeight: Dp = 64.dp,
     timeColumnWidth: Dp = 34.dp,
     style: WeekViewStyle = WeekViewStyle(),
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
     // 墨色来源：用户设置的时间轴字色（Dart `:30-40` 读的两个 hex 键）。
     // 解析失败时回落主题语义槽（Dart 的 `themeFallback`），不写死任何色值。
-    val timeAxisInk = parseHexColor(
-        if (dark) style.timeAxisColorDark else style.timeAxisColorLight,
-        fallback = MiuixTheme.colorScheme.onSurface,
+    // 压在壁纸上时再经 [HomeBackgroundModel.inkOverWallpaperArgb] 做对比度适配。
+    val timeAxisInk = Color(
+        HomeBackgroundModel.inkOverWallpaperArgb(
+            configuredArgb = HomeBackgroundModel.parseHexArgb(
+                if (dark) style.timeAxisColorDark else style.timeAxisColorLight,
+            ),
+            fallbackArgb = MiuixTheme.colorScheme.onSurface.toArgb(),
+            wallpaperLuminance = wallpaperLuminance,
+        ),
     )
     val mutedInk = timeAxisInk.secondaryInk()
 

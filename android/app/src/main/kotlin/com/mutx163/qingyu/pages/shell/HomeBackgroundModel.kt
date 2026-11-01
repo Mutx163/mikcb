@@ -216,6 +216,9 @@ object HomeBackgroundModel {
     /** 字色对壁纸至少要有 3:1 对比度，低于此值视为「压在照片上看不见」（`:869-878`）。 */
     const val MIN_INK_CONTRAST_RATIO = 3.0
 
+    /** 浅色壁纸上的深墨（Dart `homePageChromeForegroundOnLight`，`:709-712`）。 */
+    val ON_LIGHT_INK_ARGB: Int = 0xFF1A1A1A.toInt()
+
     /**
      * 顶栏 / 状态栏那条亮度带的竖直区间（Dart `home_page_background.dart:1355` 的
      * `band(0, 0.09)`，也就是 `bands.top`）。
@@ -482,6 +485,78 @@ object HomeBackgroundModel {
         val hi = max(inkLuminance, wallpaperLuminance)
         val lo = minOf(inkLuminance, wallpaperLuminance)
         return (hi + 0.05) / (lo + 0.05) >= minContrastRatio
+    }
+
+    // ───────────── 压在壁纸上的墨色（Dart `homePageOverWallpaper*`） ─────────────
+
+    /**
+     * 壁纸三档亮度带（Dart `home_page_background.dart:1320-1357`）：
+     * 顶栏 `0..0.09`、星期栏 `0.07..0.20`、正文 `0.22..0.72`。
+     *
+     * 「顶栏」那一档决定 chrome 的翻面；星期栏/正文档位决定**压在壁纸上的那些字**
+     * （星期栏、时间列、日视图空态）该用深墨还是浅墨。三档来自同一张位图、一次扫描。
+     */
+    data class InkBands(val top: Double?, val weekday: Double?, val body: Double?)
+
+    /**
+     * 压在壁纸上的墨色（Dart `homePageOverWallpaperInk`，`home_page_background.dart:763-799`）。
+     *
+     * * 没有壁纸 / 亮度未知 ⇒ 用配置色（没有配置色就用主题兜底）；
+     * * 配置色**本身对比度够**（≥ 3:1）⇒ 原样保留（尊重用户在设置里挑的颜色）；
+     * * 不够 ⇒ 保持色相、朝白 / 朝黑逐 5% 推亮度，推到够为止（最多 20 步）；
+     * * 推不到位 ⇒ 按亮度直接翻黑 / 白（`< 0.45` 用白，否则用近黑）。
+     *
+     * 这条是「黑色壁纸上黑字」的根治：以前星期栏 / 时间列 / 空态都直接用主题或设置里的
+     * 深色字，压在深壁纸上看不见（2026-11-01 用户报）。
+     */
+    fun inkOverWallpaperArgb(
+        configuredArgb: Int?,
+        fallbackArgb: Int,
+        wallpaperLuminance: Double?,
+    ): Int {
+        if (wallpaperLuminance == null) return configuredArgb ?: fallbackArgb
+        val base = configuredArgb ?: fallbackArgb
+        if (hasSufficientContrast(relativeLuminance(base), wallpaperLuminance)) return base
+        val target = if (wallpaperLuminance < CHROME_INK_FLIP_LUMINANCE) {
+            0xFFFFFFFF.toInt()
+        } else {
+            ON_LIGHT_INK_ARGB
+        }
+        return pushTowardContrast(base, target, wallpaperLuminance) ?: target
+    }
+
+    /**
+     * 次级墨色：浅墨压到 0.72、深墨压到 0.70
+     * （Dart `homePageOverWallpaperMutedInk`，`:999-1010`；判据是墨色自身亮度 > 0.55）。
+     */
+    fun mutedInkOverWallpaperArgb(inkArgb: Int): Int {
+        val alpha = if (relativeLuminance(inkArgb) > 0.55) 0.72f else 0.70f
+        return (inkArgb and 0x00FFFFFF) or (((alpha * 255f).toInt()) shl 24)
+    }
+
+    /** 朝 [targetArgb] 逐 5% 推 [fromArgb]，第一次够对比度就返回（Dart `readableColorOnLuminance` 的简化）。 */
+    private fun pushTowardContrast(
+        fromArgb: Int,
+        targetArgb: Int,
+        wallpaperLuminance: Double,
+    ): Int? {
+        val fromR = (fromArgb shr 16) and 0xFF
+        val fromG = (fromArgb shr 8) and 0xFF
+        val fromB = fromArgb and 0xFF
+        val toR = (targetArgb shr 16) and 0xFF
+        val toG = (targetArgb shr 8) and 0xFF
+        val toB = targetArgb and 0xFF
+        for (step in 1..20) {
+            val t = step / 20.0
+            val r = (fromR + (toR - fromR) * t).toInt().coerceIn(0, 255)
+            val g = (fromG + (toG - fromG) * t).toInt().coerceIn(0, 255)
+            val b = (fromB + (toB - fromB) * t).toInt().coerceIn(0, 255)
+            val candidate = 0xFF000000.toInt() or (r shl 16) or (g shl 8) or b
+            if (hasSufficientContrast(relativeLuminance(candidate), wallpaperLuminance)) {
+                return candidate
+            }
+        }
+        return null
     }
 
     // ───────────── 壁纸亮度采样（顶栏墨色的输入） ─────────────

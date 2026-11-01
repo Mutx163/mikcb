@@ -763,6 +763,8 @@ fun ShellPageContent(
                 // 壁纸层 + 材质快照 + 顶栏墨色（与周视图同一个推导出口）。
                 backdrop = homeChrome.backdrop,
                 chromeInk = homeChrome.chromeInk,
+                // 星期栏 / 空态压在壁纸上的字色（2026-11-01）。
+                wallpaperBands = homeChrome.bands,
                 material = homeChrome.material,
                 hasBackdrop = homeChrome.hasBackdrop,
                 pageColorArgb = homeChrome.pageColorArgb,
@@ -2039,12 +2041,10 @@ fun ShellPageContent(
                         copy = { value -> FeedbackChannelHost.copy(context, value) },
                         notify = { message -> FeedbackChannelHost.toast(context, message) },
                     )
-                    Unit
                 },
                 onCopyChannel = { channel ->
                     FeedbackChannelHost.copy(context, channel.copyValue)
                     FeedbackChannelHost.toast(context, channel.copyToast)
-                    Unit
                 },
             )
         }

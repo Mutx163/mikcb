@@ -59,6 +59,7 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -161,6 +162,13 @@ fun TimetableWeekPage(
      * （阈值与 Dart `homePageChromeForegroundForLuminance` 一致，0.45）。
      */
     chromeInk: HomeInkPolarity? = null,
+    /**
+     * 壁纸三档亮度带（顶栏 / 星期栏 / 正文）。**压在壁纸上的字色**靠它决定深墨还是浅墨：
+     * 星期栏用 `weekday` 那档、时间列用 `body` 那档（Dart `homePageOverWallpaperInk`
+     * 的同一口径，见 [com.mutx163.qingyu.pages.shell.HomeBackgroundModel.inkOverWallpaperArgb]）。
+     * `null` = 没有壁纸 / 亮度还没量到 ⇒ 保持设置 / 主题里的原色（旧行为）。
+     */
+    wallpaperBands: HomeBackgroundModel.InkBands? = null,
     /**
      * 材质快照（`SettingsMaterialModel.renderSpecOf` 的唯一出口）。null = 老行为
      * （顶栏不画带、课卡按 [WeekViewStyle.surfaceStyle] 的旧透明度）。
@@ -443,6 +451,8 @@ fun TimetableWeekPage(
                         semesterStartDate = semesterStart,
                         visibleDays = visibleDays,
                         style = style,
+                        // 星期栏直接压在壁纸上：亮度带决定字色该翻深还是翻浅。
+                        wallpaperLuminance = wallpaperBands?.weekday,
                         timeColumnWidth = style.timeColumnWidthDp.dp,
                         hasExamOnDate = hasExamOnDate,
                         hasScheduleOnDate = hasScheduleOnDate,
@@ -477,6 +487,8 @@ fun TimetableWeekPage(
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         material = material,
                         cardGlassBackdrop = cardGlassSource,
+                        // 时间列压在壁纸的正文带上：同一档亮度决定字色。
+                        wallpaperLuminance = wallpaperBands?.body,
                     )
                 }
 
@@ -585,6 +597,8 @@ private fun WeekPageContent(
      * 由 [TimetableWeekPage] 一次性算好，这里只往下透传。
      */
     cardGlassBackdrop: Backdrop? = null,
+    /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
+    wallpaperLuminance: Double? = null,
 ) {
     val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf) {
         WeekGridCourseMapping.cardsForWeek(
@@ -636,6 +650,7 @@ private fun WeekPageContent(
                     sectionHeight = sectionHeight,
                     timeColumnWidth = style.timeColumnWidthDp.dp,
                     style = style,
+                    wallpaperLuminance = wallpaperLuminance,
                 )
                 TimetableWeekGrid(
                     cardsByDay = cardsByDay,
