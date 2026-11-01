@@ -219,16 +219,9 @@ fun BingGalleryHost(
                     // 档案读不到 / 读不懂时**一张都不删**：无法确认别的课表没在用，
                     // 只记日志说明跳过原因（宁可留一张垃圾图，也不能删掉别人正在用的壁纸）。
                     when {
-                        profilesRead.isFailure -> Log.w(
-                            LOG_TAG,
-                            "读不到档案设置，跳过溢出回收（宁可留图，不误删）",
-                            profilesRead.exceptionOrNull(),
-                        )
+                        profilesRead.isFailure -> Log.w(LOG_TAG, "读不到档案设置，跳过溢出回收（宁可留图，不误删）", profilesRead.exceptionOrNull())
 
-                        outcome.profilesUnreadable -> Log.w(
-                            LOG_TAG,
-                            "档案设置读不懂，跳过溢出回收（宁可留图，不误删）",
-                        )
+                        outcome.profilesUnreadable -> Log.w(LOG_TAG, "档案设置读不懂，跳过溢出回收（宁可留图，不误删）")
 
                         else -> withContext(Dispatchers.IO) {
                             outcome.filesToDelete.forEach { evicted ->
