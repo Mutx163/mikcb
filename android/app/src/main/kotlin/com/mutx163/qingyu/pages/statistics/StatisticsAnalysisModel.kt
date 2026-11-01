@@ -1,5 +1,15 @@
 package com.mutx163.qingyu.pages.statistics
 
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.statistics.charts.ChartsStrings
+import com.mutx163.qingyu.pages.statistics.charts.CourseRankingModel
+import com.mutx163.qingyu.pages.statistics.charts.TeacherStatsModel
+import com.mutx163.qingyu.pages.statistics.charts.TimeUtilizationModel
+import com.mutx163.qingyu.pages.statistics.charts.VenueStatsModel
+import com.mutx163.qingyu.statistics.CourseStub
+import com.mutx163.qingyu.statistics.StatisticsService
+import com.mutx163.qingyu.statistics.VenueStats
+
 /**
  * 深度分析二级页（`lib/screens/statistics_analysis_screen.dart`，208 行）模型层。
  *
@@ -188,5 +198,192 @@ object StatisticsAnalysisModel {
         teacherRows = teacherRows,
         rankingRows = rankingRows,
         compareRows = compareRows,
+    )
+
+    // ────────────────────────────────────────────────────────────────────
+    // 快照 → 六张卡的真实读数（纯逻辑，JVM 可测）
+    // ────────────────────────────────────────────────────────────────────
+
+    /**
+     * 「课表对比」里的一份课表（从 `TimetableProfile` 换装出的纯数据）。
+     *
+     * 只取对比卡要用的四项：课表名、课程、当前周、学期总周数。
+     */
+    data class ProfileAnalysisInput(
+        val name: String,
+        val courses: List<Course>,
+        val currentWeek: Int,
+        val semesterWeekCount: Int,
+    )
+
+    /**
+     * 把六张分析卡的**真实读数**一次算好（Dart `statistics_analysis_screen.dart:80-166`
+     * 的 `_buildModuleContent` 逐模块对齐，读数全部来自 [StatisticsService]）。
+     *
+     * 壳（`e.analysis`）只负责把快照换成本函数的入参；页面的 `viewState` 原来只喂了
+     * `module` 与 `courseCount`，其余参数全是默认空表 ⇒ 六张卡恒空（P0）。
+     *
+     * 标签文案全部取自既有 ARB（`ChartsStrings` / `StatisticsExtStrings`），不在这里
+     * 新造中文；读数行形状仍是 `(标签, 读数)`，与渲染层 `TimeUtilRows` 等一致。
+     *
+     * @param courses 活动课表的课程（统计口径用 `CourseStub` 换装）。
+     * @param currentWeek 当前周（`< 1` 时按 1 处理，与仓储/统计服务同口径）。
+     * @param semesterWeekCount 学期总周数（`< 1` 时按 1 处理）。
+     * @param hasOtherProfiles 除活动课表外是否还有别的课表（决定对比卡是否 standalone）。
+     * @param activeProfileName 活动课表名；空串时对比卡第一行用 ARB「当前课表」。
+     * @param otherProfiles 其余课表（对比页逐份算学期课时）。
+     */
+    fun analysisViewState(
+        module: StatisticsAnalysisModule,
+        courses: List<Course>,
+        currentWeek: Int,
+        semesterWeekCount: Int,
+        hasOtherProfiles: Boolean = false,
+        activeProfileName: String = "",
+        otherProfiles: List<ProfileAnalysisInput> = emptyList(),
+    ): StatisticsAnalysisViewState {
+        val stubs = courses.map { it.toAnalysisStub() }
+        val week = currentWeek.coerceAtLeast(1)
+        val weekCount = semesterWeekCount.coerceAtLeast(1)
+        return when (module) {
+            StatisticsAnalysisModule.TREND -> {
+                val trend = StatisticsService.calculateWeeklyTrend(stubs, weekCount)
+                val heatmap = StatisticsService.calculateHeatmap(stubs, weekCount)
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    trend = trend,
+                    heatmapMax = heatmap.maxSections,
+                    heatmapSummary = if (heatmap.maxSections > 0) {
+                        ChartsStrings.statisticsHeatmapHint.zh
+                    } else {
+                        ""
+                    },
+                )
+            }
+
+            StatisticsAnalysisModule.TIME_UTIL -> {
+                val stats = StatisticsService.calculateTimeUtilization(stubs, week)
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    timeUtilRows = TimeUtilizationModel.facts(stats).map { it.label to it.value },
+                )
+            }
+
+            StatisticsAnalysisModule.VENUE -> {
+                val stats = StatisticsService.calculateVenueStats(stubs, week)
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    venueRows = venueRowsOf(stats),
+                )
+            }
+
+            StatisticsAnalysisModule.TEACHER -> {
+                val stats = StatisticsService.calculateTeacherStats(stubs, week)
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    teacherRows = TeacherStatsModel.rows(stats).map { row ->
+                        "${row.rank}. ${row.name}" to "${row.courseCountLabel} · ${row.sectionsLabel}"
+                    },
+                )
+            }
+
+            StatisticsAnalysisModule.RANKING -> {
+                val semester = StatisticsService.calculateSemester(stubs, week, weekCount)
+                val unit = ChartsStrings.statisticsSectionsUnit.zh
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    rankingRows = CourseRankingModel.build(semester.courseRanking).map { row ->
+                        row.name to "${row.totalSections} $unit"
+                    },
+                )
+            }
+
+            StatisticsAnalysisModule.COMPARE -> {
+                val activeTotal = StatisticsService
+                    .calculateSemester(stubs, week, weekCount)
+                    .totalSections
+                viewState(
+                    module = module,
+                    courseCount = courses.size,
+                    hasOtherProfiles = hasOtherProfiles,
+                    compareRows = compareRowsOf(
+                        activeTotal = activeTotal,
+                        activeName = activeProfileName,
+                        others = otherProfiles,
+                    ),
+                )
+            }
+        }
+    }
+
+    /** 教室与教学楼：两组读数各带一个分组标题（标题文案来自既有 ARB）。 */
+    private fun venueRowsOf(stats: VenueStats): List<Pair<String, String>> {
+        val bars = VenueStatsModel.bars(stats)
+        val rows = mutableListOf<Pair<String, String>>()
+        if (bars.rooms.isNotEmpty()) {
+            rows.add(ChartsStrings.statisticsVenueTopRooms.zh to "")
+            for (row in bars.rooms) rows.add(row.label to row.value)
+        }
+        if (bars.buildings.isNotEmpty()) {
+            rows.add(ChartsStrings.statisticsVenueBuildings.zh to "")
+            for (row in bars.buildings) rows.add(row.label to row.value)
+        }
+        return rows
+    }
+
+    /**
+     * 课表对比读数：第一行是当前课表（学期总课时），之后每行一份其它课表，
+     * 读数是「较当前 ±N 节」（Dart `ProfileCompareEntry.deltaSections`，`isActive` 行为课时）。
+     */
+    private fun compareRowsOf(
+        activeTotal: Int,
+        activeName: String,
+        others: List<ProfileAnalysisInput>,
+    ): List<Pair<String, String>> {
+        val unit = ChartsStrings.statisticsSectionsUnit.zh
+        val rows = mutableListOf<Pair<String, String>>()
+        rows.add(
+            (activeName.ifBlank { ChartsStrings.statisticsCompareActive.zh }) to "$activeTotal $unit",
+        )
+        for (profile in others) {
+            val total = StatisticsService.calculateSemester(
+                allCourses = profile.courses.map { it.toAnalysisStub() },
+                currentWeek = profile.currentWeek.coerceAtLeast(1),
+                semesterWeekCount = profile.semesterWeekCount.coerceAtLeast(1),
+            ).totalSections
+            val delta = total - activeTotal
+            val deltaText = if (delta > 0) "+$delta" else delta.toString()
+            rows.add(profile.name to ChartsStrings.statisticsCompareDelta.filled("delta", deltaText))
+        }
+        return rows
+    }
+
+    /** `core.Course` → 统计口径 `CourseStub`（与 `CourseStatisticsLogic` 内部那份同口径）。 */
+    private fun Course.toAnalysisStub(): CourseStub = CourseStub(
+        name = name,
+        teacher = teacher,
+        location = location,
+        dayOfWeek = dayOfWeek,
+        startSection = startSection,
+        endSection = endSection,
+        startTime = startTime,
+        endTime = endTime,
+        startWeek = startWeek,
+        endWeek = endWeek,
+        isOddWeek = isOddWeek,
+        isEvenWeek = isEvenWeek,
+        customWeeks = customWeeks,
+        suspendedWeeks = suspendedWeeks,
+        courseNature = courseNature,
     )
 }

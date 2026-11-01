@@ -93,6 +93,7 @@ import com.mutx163.qingyu.pages.conflict.CourseConflictPage
 import com.mutx163.qingyu.pages.conflict.buildCourseConflictView
 import com.mutx163.qingyu.pages.course.AddCourseEntryClock
 import com.mutx163.qingyu.pages.course.AddCoursePage
+import com.mutx163.qingyu.pages.course.AddCourseStrings
 import com.mutx163.qingyu.pages.course.CourseNoteSheet
 import com.mutx163.qingyu.pages.exam.AddExamFormReducer
 import com.mutx163.qingyu.pages.exam.AddExamLogic
@@ -132,7 +133,7 @@ import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseShellState
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseWebLoginHost
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
 import com.mutx163.qingyu.pages.schedule.ScheduleItemBridge
@@ -210,6 +211,7 @@ import com.mutx163.qingyu.pages.time_scheme.LocationTimeMatchHost
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesController
 import com.mutx163.qingyu.pages.timetable.TimetableStyleMapping
 import com.mutx163.qingyu.pages.timetable.TimetableMenuDefaults
+import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.toastOrNull
 import com.mutx163.qingyu.pages.timetable.TimetableProfilesPage
 import com.mutx163.qingyu.pages.timetable.TimetableWeekPage
@@ -642,7 +644,14 @@ fun ShellPageContent(
                     activeProfileId = snapshot.activeProfileId,
                 ),
                 homeMenuItems = TimetableMenuDefaults.entries(),
-                onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
+                // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
+                // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
+                onHomeMenuSelect = { id ->
+                    shellTimetableMenuPageId(id)?.let { target ->
+                        if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
+                        onOpenPage(target)
+                    }
+                },
             )
         }
 
@@ -701,7 +710,15 @@ fun ShellPageContent(
                 // ── 顶部星期条（2026-10-31 审核 P1-1）：日期、今天标记、考试/日程圆点、
                 // 点某天换日、点周次开选择器都要这三样数据。不传时页面只能整条不画。
                 semesterStartDate = snapshot.settings.semesterStartDate?.toLocalDate(),
-                realCurrentWeek = snapshot.currentWeek,
+                // 「今天在哪一周」必须按开学日**现算**，不能传 `snapshot.currentWeek`——
+                // 那个值每次翻页都会被写成「正在浏览的周」，于是「回今日」会跳回浏览周
+                // （P1：回不到今天）。学期没配 / 今天不在学期内时传 null，页面按同一判据
+                // 算不出就不该乱跳（Dart `_resolveCurrentSemesterWeek` / `_canNavigateDayViewToToday`）。
+                realCurrentWeek = TimetableDateLogic.currentSemesterWeek(
+                    semesterStart = snapshot.settings.semesterStartDate?.toLocalDate(),
+                    totalWeeks = snapshot.settings.semesterWeekCount,
+                    today = LocalDate.now(),
+                ),
                 weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
                 // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
                 showConflictBadge = appSettings.showConflictBadgeOnTimetable,
@@ -720,7 +737,14 @@ fun ShellPageContent(
                     activeProfileId = snapshot.activeProfileId,
                 ),
                 homeMenuItems = homeTopMenuItems(appSettings),
-                onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onOpenPage) },
+                // 「添加课程」要带当前浏览周与今天星期几（Dart `openCourseForm`，
+                // `timetable_screen.dart:1745-1752`）；其余项只按映射表推页。
+                onHomeMenuSelect = { id ->
+                    shellTimetableMenuPageId(id)?.let { target ->
+                        if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(snapshot.currentWeek)
+                        onOpenPage(target)
+                    }
+                },
                 // 壁纸层 + 材质快照 + 顶栏墨色（与周视图同一个推导出口）。
                 backdrop = homeChrome.backdrop,
                 chromeInk = homeChrome.chromeInk,
@@ -883,6 +907,7 @@ fun ShellPageContent(
         // 保存回调真的写进仓储（以前 `onSave` 是默认的空实现，所以点了「保存」什么也不发生）。
         "d1.addCourse" -> {
             val snapshot = wiring.timetable.snapshot
+            val shellContext = LocalContext.current
             AddCoursePage(
                 initialCourse = wiring.pendingEditCourse,
                 // 组编辑：课程总览点某个课程组进来时带整组（Dart `AddCourseScreen(courseGroup:)`），
@@ -912,9 +937,20 @@ fun ShellPageContent(
                     }
                 },
                 onSave = { payload ->
-                    wiring.applyAddCourseSave(payload)
-                    wiring.clearAddCourseIntent()
-                    onBack()
+                    // 服务校验 / 落盘失败会抛异常。不接的话异常从 Compose 点击回调里逃逸，
+                    // 用户可能看到闪退；Dart 口径是「失败弹保存失败、**不关页**」，填好的内容还在。
+                    runCatching { wiring.applyAddCourseSave(payload) }
+                        .onSuccess {
+                            wiring.clearAddCourseIntent()
+                            onBack()
+                        }
+                        .onFailure {
+                            Toast.makeText(
+                                shellContext,
+                                AddCourseStrings.saveFailed.zh,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
                 },
                 onDelete = {
                     // 确认弹窗由 AddCoursePage 自己渲染（`AddCoursePage.kt:556-580`），
@@ -1338,6 +1374,7 @@ fun ShellPageContent(
         }
         "d3.examList" -> {
             val repository = wiring.timetable
+            val shellContext = LocalContext.current
             // 快照 TimetableSnapshot 不含 exams，故用 tick 无条件触发重组：
             // deleteExam 会 notifyStateChanged，回调里 tick++ 让列表立刻刷新。
             var tick by remember(repository) { mutableStateOf(0) }
@@ -1371,7 +1408,18 @@ fun ShellPageContent(
                     wiring.pendingEditExam = exam
                     onOpenPage("d3.addExam")
                 },
-                onDeleteExam = { examService.deleteExam(it.id) },
+                onDeleteExam = { exam ->
+                    // 落盘失败会抛异常；不接就从点击回调逃逸（可能崩）。如实弹「保存失败」，
+                    // 列表由仓储通知刷新，失败时列表保持不变。
+                    runCatching { examService.deleteExam(exam.id) }
+                        .onFailure {
+                            Toast.makeText(
+                                shellContext,
+                                ExamStrings.saveFailed.zh,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                },
             )
         }
 
@@ -1477,9 +1525,29 @@ fun ShellPageContent(
                 )
             }
             StatisticsAnalysisPage(
-                viewState = StatisticsAnalysisModel.viewState(
+                // 六张卡的真实读数由模型层算（`StatisticsAnalysisModel.analysisViewState`），
+                // 这里只把快照/课表换装进去。原先前端只喂 module 与 courseCount，其余参数
+                // 全是默认空表 ⇒ 六张卡恒空（P0）。对比卡要的其余课表逐份带进去。
+                viewState = StatisticsAnalysisModel.analysisViewState(
                     module = wiring.pendingAnalysisModule,
-                    courseCount = feedState.courseCount,
+                    courses = snapshot.courses,
+                    currentWeek = snapshot.currentWeek,
+                    semesterWeekCount = snapshot.settings.semesterWeekCount,
+                    hasOtherProfiles = feedState.hasOtherProfiles,
+                    activeProfileName = snapshot.profiles
+                        .firstOrNull { it.id == snapshot.activeProfileId }
+                        ?.name
+                        ?: snapshot.profiles.firstOrNull()?.name.orEmpty(),
+                    otherProfiles = snapshot.profiles
+                        .filter { it.id != snapshot.activeProfileId }
+                        .map { profile ->
+                            StatisticsAnalysisModel.ProfileAnalysisInput(
+                                name = profile.name,
+                                courses = profile.courses,
+                                currentWeek = profile.currentWeek.toInt(),
+                                semesterWeekCount = profile.settings.semesterWeekCount,
+                            )
+                        },
                 ),
                 onBack = onBack,
                 // ⚠️ 页面签名里 `onOpenCourse` 的默认实现就是空的（普查第 6 个盲区：
@@ -1525,6 +1593,8 @@ fun ShellPageContent(
                     store = configStore,
                     snapshotStore = AppLocalSnapshotStore(context),
                     deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                    repository = wiring.timetable,
+                    passwordProvider = { configStore.readPassword() },
                 )
             }
             var showConnect by remember { mutableStateOf(false) }
@@ -1577,6 +1647,8 @@ fun ShellPageContent(
                     store = configStore,
                     snapshotStore = AppLocalSnapshotStore(context),
                     deviceLabel = configStore.readDeviceLabel() ?: "Compose 壳",
+                    repository = wiring.timetable,
+                    passwordProvider = { configStore.readPassword() },
                 )
             }
             var openBackupId by remember { mutableStateOf<String?>(null) }
@@ -1658,11 +1730,13 @@ fun ShellPageContent(
                 )
             }
         }
-        // WebView 抓课表属 F08-8c，保持诚实空态；不再开假页面。
-        "g2.webLogin" -> ShellWarehouseEmptyPage(
-            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
-            message = WarehouseStrings.noValidWarehouseLoginUrl.zh,
+        // 2026-11-01 F28：换成真宿主。地址链路（自定义覆盖 > 适配器 import_url）在宿主里，
+        // 没有可用地址时由宿主自己显示诚实空态；抓回来的课表暂只记类型日志（见 F28 认领）。
+        "g2.webLogin" -> WarehouseWebLoginHost(
+            state = warehouseState,
+            prefs = warehousePrefs,
             onBack = onBack,
+            onOpenPage = onOpenPage,
         )
         // 2026-11-01 F26：这两页原先只传 onBack，所有按钮都是空回调（点了没反应）。
         // 自定义调试：保存/删除真落盘（prefs 键与 Dart 同键），执行诚实报「不可用」。
@@ -1801,8 +1875,15 @@ fun ShellPageContent(
         "i.moreSearch" -> MoreFeaturesSearchOverlay(
             onDismiss = onBack,
             onSelectFeature = { featureId ->
-                shellTimetableMenuPageId(featureId)?.let(onOpenPage)
-                onBack()
+                val target = shellTimetableMenuPageId(featureId)
+                if (target != null) {
+                    // 顺序必须是「先关浮层、再推目标页」。壳里的 `onOpenPage` = push 一层、
+                    // `onBack` = pop 栈顶：反过来的话 pop 弹掉的是刚 push 的目标页，用户
+                    // 又回到浮层（P0：搜索选完回到浮层）。先 pop 掉本浮层再 push 目标页，
+                    // 目标页落在原本浮层的那一层上。
+                    onBack()
+                    onOpenPage(target)
+                }
             },
         )
         "i.hyperosShowcase" -> HyperosShowcasePage(onBack = onBack)
@@ -1878,11 +1959,25 @@ fun ShellPageContent(
                 view = buildCourseConflictView(snapshot.courses),
                 onBack = onBack,
                 onOpenCourse = { courseId ->
-                    wiring.pendingEditCourse = snapshot.courses.firstOrNull { it.id == courseId }
-                    wiring.pendingEditGroup = null
+                    val target = snapshot.courses.firstOrNull { it.id == courseId }
+                    wiring.pendingEditCourse = target
                     wiring.pendingAddCourseSeed = null
                     // 冲突页这一路同样不带来源周次，清掉上一条路径可能留下的意图。
                     wiring.pendingEditWeek = null
+                    // 带**同名整组**进编辑页（Dart `course_conflict_screen.dart:104-125`：
+                    // `AddCourseScreen(courseGroup: group, initialCourse: course)`）。
+                    // 只带单课会让保存走整组替换时把同名其它课次一起清掉（P0）。
+                    val siblings = target?.let { picked ->
+                        snapshot.courses.filter { it.name == picked.name }
+                    }
+                    wiring.pendingEditGroup = if (target == null || siblings.isNullOrEmpty()) {
+                        null
+                    } else {
+                        com.mutx163.qingyu.pages.course.CourseGroup(
+                            name = target.name,
+                            courses = siblings,
+                        )
+                    }
                     onOpenPage("d1.addCourse")
                 },
             )

@@ -48,6 +48,7 @@ import com.mutx163.qingyu.weather.JdkWeatherHttp
 import com.mutx163.qingyu.weather.WeatherPreferences
 import com.mutx163.qingyu.weather.WeatherProvider
 import com.mutx163.qingyu.weather.WeatherService
+import java.time.LocalDate
 
 /**
  * 壳的**接线层**（Phase 3.5 · L5，Lead 专属写作用域）。
@@ -332,6 +333,23 @@ class ShellWiring(context: Context) {
     }
 
     /**
+     * 顶栏「更多」菜单 → 添加课程时的统一预填（Dart `timetable_screen.dart:1745-1752`
+     * 的 `openCourseForm`：`AddCourseScreen(initialWeek: _visibleWeek, initialDayOfWeek: …)`）。
+     *
+     * 三个视图的顶栏菜单都走这里：带**当前浏览周**与**今天星期几**。
+     * 只带星期不带节次 —— Dart 不传 `initialStartSection`，页面默认从第 1 节起，
+     * 所以 [pendingAddCourseSeed] 的第二节固定 1 与页面默认值等价，不会预填错节次。
+     *
+     * @param browseWeek 当前浏览的周（= 仓储 `currentWeek`，三个视图同源）。
+     */
+    fun seedAddCourseFromMenu(browseWeek: Int) {
+        pendingAddCourseSeed = LocalDate.now().dayOfWeek.value to 1
+        pendingEditCourse = null
+        pendingEditGroup = null
+        pendingEditWeek = browseWeek
+    }
+
+    /**
      * 加课页的保存载荷 → 仓储。
      *
      * `AddCoursePage` 的 KDoc 明确写着「保存载荷交给壳层落盘，由壳层按 mode 分派」，
@@ -573,6 +591,11 @@ fun TimetableWithCourseActions(
         onOpenAddCourse = { dayOfWeek, section ->
             wiring.pendingAddCourseSeed = dayOfWeek to section
             wiring.pendingEditCourse = null
+            wiring.pendingEditGroup = null
+            // 长按空档要落在**当前浏览周**：原先前端漏了它，加课页 `initialWeek = null → 1`，
+            // 在第 5 周点空档会被记到第 1 周（Dart `_openAddCourseFromEmptySlot(week: …)`，
+            // `timetable_screen.dart:1334-1351`）。`week` 就是仓储当前周（本帧快照）。
+            wiring.pendingEditWeek = week
             onNavigate("d1.addCourse")
         },
         // T1：点课程 → 先弹操作层，不直接进编辑页。
@@ -622,7 +645,14 @@ fun TimetableWithCourseActions(
         // `shellTimetableMenuPageId`。2026-10-31 之前这里喂的是固定八项，
         // 「自定义八宫格按钮」改了没有任何效果。
         homeMenuItems = homeTopMenuItems(settingsModel),
-        onHomeMenuSelect = { id -> shellTimetableMenuPageId(id)?.let(onNavigate) },
+        // 「添加课程」这一项要带当前浏览周与今天星期几（Dart `openCourseForm`，见
+        // [ShellWiring.seedAddCourseFromMenu]）；其余项只按映射表推页。
+        onHomeMenuSelect = { id ->
+            shellTimetableMenuPageId(id)?.let { target ->
+                if (target == "d1.addCourse") wiring.seedAddCourseFromMenu(week)
+                onNavigate(target)
+            }
+        },
     )
 
     val course = actionTarget
@@ -644,10 +674,15 @@ fun TimetableWithCourseActions(
             if (target != null) {
                 when (event) {
                     is CourseActionEvent.Edit -> {
-                        // 带**同一门课**进编辑页（参数透传，别丢）。单课编辑，清掉可能的组意图。
+                        // 带**同名整组**进编辑页（Dart `_editCourse` → `courseGroupForCourse`，
+                        // `timetable_screen.dart:1644-1655`）。只带单门课会让组编辑上下文缺失：
+                        // 保存走整组替换时，同名其它课次会被当成「被删掉的课次」一起清掉
+                        // （P0：编辑一门课删掉同名其它课次）。`siblings` 必含 target，不会为空。
+                        val siblings = snapshot.courses.filter { it.name == target.name }
                         wiring.pendingEditCourse = target
                         wiring.pendingAddCourseSeed = null
-                        wiring.pendingEditGroup = null
+                        wiring.pendingEditWeek = null
+                        wiring.pendingEditGroup = CourseGroup(name = target.name, courses = siblings)
                         onNavigate("d1.addCourse")
                     }
                     is CourseActionEvent.AddTask -> {
@@ -753,6 +788,11 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     // ⚠️ `SettingsRouteWiringGuardTest` 按设计**不扫**带点号的值（那是页内动作的形状），
     // 所以这条只能靠人守——删了不会有测试报红。
     "backdrop.image.adjust" -> "b.wallpaperPosition"
+    // 课表页面设置里「背景图片 / 最近使用」两行的去向（2026-11-01）。分派器产出的 SHEET
+    // 不带 target，`TimetablePageSettingsHost` 按 rowId 翻成下面这两个页 id；这里是
+    // 页 id → 页 id 的自映射，只为让 `shellPageIdForRoute` 有出口，别误当成 Dart 路由串。
+    "b.backdropFlow" -> "b.backdropFlow"
+    "b.recentWallpaper" -> "b.recentWallpaper"
     "/settings/semester" -> "b.semester"
     "/settings/time-schemes" -> "d3.timeSchemes"
     // 时间模板「编辑节次」子页（P35-TS）：列表页点卡片按钮 / 新建成功后推这一页，
