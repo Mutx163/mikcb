@@ -177,6 +177,11 @@ fun HomeWallpaperBackdrop(
         } else {
             withContext(Dispatchers.IO) { measureChromeBandLuminance(image) }
         }
+        // 写回进程缓存：下一次新组合（切视图、进外观编辑页）首帧就能同步拿到，
+        // 不会先按主题墨色画一帧再翻面（见 [wallpaperLuminanceCache] 的注释）。
+        if (luminance != null && !path.isNullOrEmpty()) {
+            wallpaperLuminanceCache.put(wallpaperCacheKey(path, snapshot.decodeWidthPx), luminance)
+        }
         callback(luminance)
     }
 
@@ -289,6 +294,31 @@ private fun wallpaperCacheKey(path: String, decodeWidthPx: Int): String = "$path
 private fun wallpaperFromCache(path: String?, decodeWidthPx: Int): ImageBitmap? {
     if (path.isNullOrEmpty()) return null
     return wallpaperBitmapCache.get(wallpaperCacheKey(path, decodeWidthPx))?.asImageBitmap()
+}
+
+/**
+ * 壁纸「顶部那条带」的亮度缓存（键同 [wallpaperCacheKey]）。
+ *
+ * 为什么要有（2026-11-01 真机：切日/周视图时**所有字黑白闪一下**）：
+ * 顶栏墨色（以及接下来所有压在壁纸上的字色）都由这个亮度推出。以前新组合里初值恒为
+ * null ⇒ 首帧按主题墨色画、等异步量完再翻面。切视图/进外观编辑页都是新建整棵树，
+ * 于是每次都能看到那一翻。有了这份缓存，新组合首帧就同步拿到同一张壁纸的亮度。
+ */
+private val wallpaperLuminanceCache = LruCache<String, Double>(64)
+
+/**
+ * **同步**取「顶部带亮度」：缓存命中直接返回；位图已在进程缓存里就顺手量一次
+ * （顶部 9% 的行、约 1ms，只在换壁纸/换解码宽后第一次走到）并写回缓存；
+ * 位图还没解出来返回 null（调用方按主题墨色兜底）。
+ */
+fun cachedWallpaperLuminance(path: String?, decodeWidthPx: Int): Double? {
+    if (path.isNullOrEmpty() || decodeWidthPx <= 0) return null
+    val key = wallpaperCacheKey(path, decodeWidthPx)
+    wallpaperLuminanceCache.get(key)?.let { return it }
+    val bitmap = wallpaperBitmapCache.get(key) ?: return null
+    val luminance = measureChromeBandLuminance(bitmap.asImageBitmap()) ?: return null
+    wallpaperLuminanceCache.put(key, luminance)
+    return luminance
 }
 
 /**
