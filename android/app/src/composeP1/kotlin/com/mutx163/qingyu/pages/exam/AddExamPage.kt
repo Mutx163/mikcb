@@ -9,15 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,12 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.ExamReminderPreset
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -149,28 +146,20 @@ fun AddExamPage(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+        // 页面主滚动走共享套件：末端轻震 + 过度滚动 + 顶栏联动 + 滚动条。
+        // 表单页同样是一整页纵向内容，每张卡片一个 item（惰性组合），不再用非惰性的 Column。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            // QingyuPageList 的 contentPadding 只吃底部与横向，顶部 8dp 留白用 modifier 补。
+            modifier = Modifier.padding(top = 8.dp),
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = 16.dp,
+            contentPadding = PaddingValues(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // nestedScroll 必须挂在滚动容器外层：顺序反了滚动手势不会上抛，大标题永不折叠。
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        // 底部把系统手势条那段算进去，否则最后一项钻到小白条底下。
-                        bottom = innerPadding.calculateBottomPadding() + 8.dp,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                val toast = viewState.toastMessage
-                if (!toast.isNullOrEmpty()) {
+            val toast = viewState.toastMessage
+            if (!toast.isNullOrEmpty()) {
+                item(key = "toast") {
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
@@ -182,8 +171,10 @@ fun AddExamPage(
                         )
                     }
                 }
+            }
 
-                // ── 关联课程 ──
+            // ── 关联课程 ──
+            item(key = "course") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(0.dp),
@@ -246,8 +237,10 @@ fun AddExamPage(
                         }
                     }
                 }
+            }
 
-                // ── 名称 / 日期 / 时间 ──
+            // ── 名称 / 日期 / 时间 ──
+            item(key = "nameAndTime") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
@@ -296,8 +289,10 @@ fun AddExamPage(
                         )
                     }
                 }
+            }
 
-                // ── 考场 / 座位号 ──
+            // ── 考场 / 座位号 ──
+            item(key = "locationAndSeat") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
@@ -326,8 +321,10 @@ fun AddExamPage(
                         )
                     }
                 }
+            }
 
-                // ── 提醒设置 ──
+            // ── 提醒设置 ──
+            item(key = "reminders") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(vertical = 2.dp),
@@ -406,8 +403,10 @@ fun AddExamPage(
                         }
                     }
                 }
+            }
 
-                // ── 备注 ──
+            // ── 备注 ──
+            item(key = "note") {
                 QingyuCard(
                     modifier = Modifier.fillMaxWidth(),
                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
