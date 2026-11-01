@@ -354,7 +354,7 @@ object ExamReminderScheduler {
         val contentIntent = PendingIntent.getActivity(
             context,
             notificationId,
-            Intent(context, MainActivity::class.java).apply {
+            NotificationLaunchTarget.intent(context).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra("open_route", "/exams")
             },

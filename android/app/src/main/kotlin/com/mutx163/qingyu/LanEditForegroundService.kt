@@ -23,7 +23,7 @@ class LanEditForegroundService : Service() {
         }
 
         fun buildOpenLanEditIntent(context: Context): Intent {
-            return Intent(context, MainActivity::class.java).apply {
+            return NotificationLaunchTarget.intent(context).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra(EXTRA_OPEN_LAN_EDIT, true)
             }

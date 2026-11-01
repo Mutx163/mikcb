@@ -1,7 +1,10 @@
 package com.mutx163.qingyu.pages
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
 import android.view.View
@@ -11,6 +14,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -33,7 +37,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.core.content.ContextCompat
 import com.mutx163.qingyu.LiveUpdateScheduler
+import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
@@ -41,6 +47,7 @@ import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.app.TimetableHomeViewMode
+import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
 import com.mutx163.qingyu.pages.live.LiveSnapshotBuilder
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncRegistry
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
@@ -53,6 +60,7 @@ import kotlin.math.roundToInt
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -110,6 +118,20 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 class PagesShellActivity : ComponentActivity() {
 
     /**
+     * 通知权限申请入口（Android 13+）。
+     *
+     * 为什么壳里必须自己申请：`dev` / `bench` 变体把 [com.mutx163.qingyu.MainActivity]
+     * 置为禁用、由本壳当启动页，而项目里唯一申请过 `POST_NOTIFICATIONS` 的地方是
+     * MainActivity 的方法通道（由 Flutter 侧在用户打开相关开关时调用）。壳里根本不经过
+     * 那条路，于是考试提醒 / 周报 / 实时活动 / 局域网前台服务的通知在壳包里全都发不出来。
+     *
+     * 只问一次（结果写进独立 prefs），拒绝后不再反复弹窗；权限本身由系统设置管理，
+     * 用户随时可以自己开。
+     */
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    /**
      * 应用语言：在 Context 挂载前按存档里的 `appLocaleTag` 覆写配置语言。
      *
      * 只用 Android 原生路径（`LocaleList` + `createConfigurationContext`）——本工程没有
@@ -133,6 +155,8 @@ class PagesShellActivity : ComponentActivity() {
         // 设置，岛毫无变化」。这里把同步器挂到进程级注册点，由 [LiveSnapshotSyncRegistry]
         // 在每次显示设置 / 提醒时段落盘后调用（见 pages/live/LiveDisplayStore.kt）。
         installLiveSnapshotSync(applicationContext)
+
+        requestNotificationPermissionOnce()
 
         // 系统栏这件事有两层，缺任一层都会在屏幕上留黑条（2026-10-28 第二轮查清）：
         //
@@ -185,6 +209,15 @@ class PagesShellActivity : ComponentActivity() {
             // * `appTextScale` → `LocalDensity.fontScale` 缩放；
             // * `appLocaleTag` → `attachBaseContext`（仅启动时生效，见该方法注释）。
             val wiring = rememberShellWiring()
+            // 日程提醒 / 日期规则自动套用：仓储是纯 Kotlin，Android 侧的回调与端口在这里装上。
+            // 日程提醒还会在每次增删改后由 `TimetableRepository.syncExamReminders()` 触发重排。
+            val schedulePrefs = remember { PrefsKeyValueStore(applicationContext) }
+            LaunchedEffect(wiring) {
+                withContext(Dispatchers.IO) {
+                    ScheduleReminderCoordinator.install(applicationContext, wiring.timetable)
+                    ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
+                }
+            }
             var settingsModel by remember(wiring) {
                 mutableStateOf(wiring.settingsModel.load())
             }
@@ -254,6 +287,20 @@ class PagesShellActivity : ComponentActivity() {
                 SystemBarStyle.light(transparent, transparent)
             },
         )
+    }
+
+    /** 见 [notificationPermissionLauncher]：Android 13+ 且未授权、且没问过时，问一次。 */
+    private fun requestNotificationPermissionOnce() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        val prefs = getSharedPreferences(NOTIFICATION_PERMISSION_PREFS, Context.MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_NOTIFICATION_PERMISSION_ASKED, false)) return
+        prefs.edit().putBoolean(KEY_NOTIFICATION_PERMISSION_ASKED, true).apply()
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }
 
@@ -721,6 +768,10 @@ private fun NavTransition.scaledToUserSpeed(speed: Double): NavTransition {
         override fun scrimFraction(scope: NavTransitionScope): Float = delegate.scrimFraction(scope)
     }
 }
+
+/** 通知权限「是否已问过」的 prefs 名与键：与业务设置分开，设置重置不影响它。 */
+private const val NOTIFICATION_PERMISSION_PREFS = "shell_notification_permission"
+private const val KEY_NOTIFICATION_PERMISSION_ASKED = "asked"
 
 /** 转场速度滑杆的下限（`TimetableSettings.minPageTransitionSpeed`）。 */
 private const val MIN_PAGE_TRANSITION_SPEED = 0.5

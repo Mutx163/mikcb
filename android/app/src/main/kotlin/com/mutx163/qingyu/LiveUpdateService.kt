@@ -2398,7 +2398,7 @@ class LiveUpdateService : Service() {
             ).filterNotNull().joinToString(" · ")
         }
 
-        val notificationIntent = Intent(this, MainActivity::class.java).apply {
+        val notificationIntent = NotificationLaunchTarget.intent(this).apply {
             this.action = Intent.ACTION_MAIN
             this.addCategory(Intent.CATEGORY_LAUNCHER)
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP

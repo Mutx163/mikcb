@@ -321,7 +321,7 @@ object WeeklyReportScheduler {
         val contentIntent = PendingIntent.getActivity(
             context,
             notificationId,
-            Intent(context, MainActivity::class.java).apply {
+            NotificationLaunchTarget.intent(context).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
