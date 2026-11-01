@@ -38,6 +38,7 @@ import com.mutx163.qingyu.pages.settings.SettingsBingWallpaperGalleryPage
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.WallpaperAutoApplyLogic
+import com.mutx163.qingyu.pages.settings.WallpaperEvictionSources
 import com.mutx163.qingyu.pages.settings.WallpaperHistoryLedger
 import com.mutx163.qingyu.pages.settings.WallpaperSheetBody
 import com.mutx163.qingyu.pages.settings.WallpaperSheetIntent
@@ -194,6 +195,12 @@ fun AppearanceEditorHost(
     // 递增 revision 触发重组 —— 弹层正文不在本页的 widget 树下，光靠 `model` 带不动它
     // （Dart 给那颗开关挂 `ValueListenableBuilder` 的同一理由，`:501-526`）。
     val bingStore = remember(context) { BingWallpaperStore(PrefsKeyValueStore(context)) }
+
+    // 档案原始 JSON 的只读入口：删除壁纸前要拿到「其它档案内嵌的壁纸路径」。
+    // 这些键不在仓储快照里——`TimetableProfile.settings` 只解析时间/周次四键
+    //（`core/TimetableSettings.kt:22-27`），而盘上每份档案的 settings 是整份对象
+    //（`app/TimetableStore.kt:111-115`）。与 bingStore 读的是同一份 `flutter.` 存储。
+    val wallpaperProfilesPrefs = remember(context) { PrefsKeyValueStore(context) }
     var bingRevision by remember { mutableIntStateOf(0) }
     DisposableEffect(bingStore) {
         val listener = { bingRevision += 1 }
@@ -304,26 +311,39 @@ fun AppearanceEditorHost(
     }
 
     /**
-     * 删壁纸文件前的白名单（**唯一口径**，见 [WallpaperHistoryLedger.evictionWhitelist]）。
+     * 删壁纸文件前的权威判定（**唯一口径**，见 [WallpaperEvictionSources.planEviction]）。
      *
-     * 三路：所有课表当前壁纸 + 本页草稿 + 图库台账。Kotlin 侧拿不到其它课表的壁纸路径
-     * （`TimetableProfile.settings` 只存时间 / 周次四键），所以这一路目前只能护住当前
-     * 课表；这是已知边界，**不假装已覆盖多课表**。
+     * 白名单四路：**所有档案**内嵌的壁纸路径 + 当前课表 + 本页草稿 + 图库台账。
+     * 「其它档案」的路径只能从盘上 `timetable_profiles` 原始 JSON 读——仓储快照里的
+     * `TimetableProfile.settings` 只解析时间 / 周次四键，没有壁纸键。
+     *
+     * 档案 JSON 读不懂时**一张都不删**（保守策略）：无法确认别的档案没在用，
+     * 就不能拿残缺结果当白名单；只记一条日志说明跳过原因。
      */
-    fun wallpaperWhitelist(): Set<String> = WallpaperHistoryLedger.evictionWhitelist(
-        allProfilesCurrentPaths = listOfNotNull(model.homePageWallpaperPath),
-        draftPath = model.homePageWallpaperPath,
-        galleryLedgerPaths = bingStore.snapshot().downloadedPaths,
-    )
-
-    /** 过白名单后真删；删不掉只记日志，不阻断界面（也不会误删在用图）。 */
     fun deleteWallpaperFiles(paths: List<String>) {
         if (paths.isEmpty()) return
-        val deletable = WallpaperHistoryLedger.deletable(paths, wallpaperWhitelist())
-        if (deletable.isEmpty()) return
+        val profilesJson = try {
+            wallpaperProfilesPrefs.getString(WallpaperEvictionSources.PROFILES_KEY)
+        } catch (error: Exception) {
+            Log.w(LOG_TAG, "wallpaper profile settings read failed", error)
+            return
+        }
+        val currentPath = model.homePageWallpaperPath
+        val galleryPaths = bingStore.snapshot().downloadedPaths
         wallpaperCleanupScope.launch {
             withContext(Dispatchers.IO) {
-                for (path in deletable) {
+                val plan = WallpaperEvictionSources.planEviction(
+                    evictedPaths = paths,
+                    profilesJson = profilesJson,
+                    currentPath = currentPath,
+                    draftPath = currentPath,
+                    galleryLedgerPaths = galleryPaths,
+                )
+                if (plan.profilesUnreadable) {
+                    Log.w(LOG_TAG, "skip wallpaper deletion: profile settings unreadable")
+                    return@withContext
+                }
+                for (path in plan.deletable) {
                     val deleted = runCatching { File(path).delete() }.getOrDefault(false)
                     if (!deleted) Log.w(LOG_TAG, "wallpaper file was not deleted: $path")
                 }
@@ -469,15 +489,11 @@ fun AppearanceEditorHost(
                 ?.let { toast(it.text.zh) }
             val next = WallpaperAutoApplyLogic.settingsAfterApply(model, applied.path)
             if (next != null) {
+                // 先更新草稿 / 落盘，再走与手动删除**同一条**入口：
+                // 白名单在 [deleteWallpaperFiles] 里统一组装（所有档案 + 当前/草稿 +
+                // 图库台账），自动换与手动换不会各算一套。
                 commit(next, debounce = false)
-                deleteWallpaperFiles(
-                    WallpaperAutoApplyLogic.deletableAfterApply(
-                        evictedPaths = evicted,
-                        allProfilesCurrentPaths = listOfNotNull(next.homePageWallpaperPath),
-                        draftPath = next.homePageWallpaperPath,
-                        snapshot = bingStore.snapshot(),
-                    ),
-                )
+                deleteWallpaperFiles(evicted)
             }
         }
     }
