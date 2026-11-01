@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.pages.shell.ShellPageCatalog
 import com.mutx163.qingyu.pages.shell.ShellPageDataKind
@@ -87,7 +88,7 @@ fun ShellPageIndexScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
+                            contentDescription = CommonUiStrings.back,
                             tint = Color(QingyuTheme.primaryText(dark)),
                         )
                     }

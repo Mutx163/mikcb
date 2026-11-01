@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
+import com.mutx163.qingyu.pages.diagnostics.DiagnosticsStrings
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -183,7 +184,7 @@ object UmengDiagnosticReporter {
                 "mikcb-live-diagnostics-${System.currentTimeMillis()}.log"
             )
             val header = buildString {
-                appendLine("轻屿课表 - 应用日志")
+                appendLine(DiagnosticsStrings.appLogsShareSubject.zh)
                 appendLine("exportedAt=${System.currentTimeMillis()}")
                 buildDiagnosticContext(context).forEach { (key, value) ->
                     appendLine("$key=${value ?: "null"}")
@@ -208,7 +209,7 @@ object UmengDiagnosticReporter {
                 return@runCatching null
             }
             val header = buildString {
-                appendLine("轻屿课表 - 应用日志")
+                appendLine(DiagnosticsStrings.appLogsShareSubject.zh)
                 appendLine("exportedAt=${System.currentTimeMillis()}")
                 buildDiagnosticContext(context).forEach { (key, value) ->
                     appendLine("$key=${value ?: "null"}")

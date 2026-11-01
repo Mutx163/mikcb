@@ -100,7 +100,7 @@ data class AchievementView(
     val progressTarget: Int? = null,
     val progressRatio: Float = 0f,
     val statusLabel: String = "",
-    val confirmLabel: String = "知道了",
+    val confirmLabel: String = StatisticsStrings.statisticsAchievementDetailConfirm.zh,
     val rawAchievement: Achievement? = null,
 )
 
