@@ -50,6 +50,7 @@ import com.mutx163.qingyu.pages.settings.SettingsNode
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageSpec
+import com.mutx163.qingyu.pages.settings.SettingsResetScope
 import com.mutx163.qingyu.pages.settings.SettingsRow
 import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
@@ -58,6 +59,7 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.theme.QingyuFixedTokens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -158,7 +160,7 @@ fun SettingsHost(
     onHapticsChanged: (Boolean) -> Unit = {},
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
-    var pendingReset by remember { mutableStateOf<String?>(null) }
+    var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
     var pendingColor by remember { mutableStateOf<ColorEdit?>(null) }
     var showDailyTimeSheet by remember { mutableStateOf(false) }
     var showRunNowNotice by remember { mutableStateOf(false) }
@@ -250,7 +252,7 @@ fun SettingsHost(
     // 回读一遍、只比**本次改动过的键**：不一致 = 盘上还是旧值，此时把内存也拉回
     // 盘上的真值并提示（Dart `settings_general.dart:155-163` 的
     // `reportSettingsPersistFailure(resetDraft)` 同一语义：草稿回到存档真值）。
-    fun commitModel(next: TimetableSettingsModel) {
+    fun commitModel(next: TimetableSettingsModel): Boolean {
         val before = model
         val persisted = saveVerified(store, before, next)
         model = if (persisted) next else runCatching { store.load() }.getOrNull() ?: before
@@ -258,6 +260,7 @@ fun SettingsHost(
             Log.e(LOG_TAG, "settings save did not land: page=$pageId")
             toast(SettingsStringsExt2.saveFailed.zh)
         }
+        return persisted
     }
 
     // ================================================================ 意图消费端
@@ -468,11 +471,21 @@ fun SettingsHost(
         }
     }
 
-    /** 恢复默认：**先确认**，确认后把该作用域写回并落盘（Dart 同口径）。 */
-    fun applyReset(scope: String) {
-        SettingsActionDispatcher.applyResetScope(model, scope)?.let { next ->
-            writer.flush()
-            commitModel(next)
+    /**
+     * 恢复默认：**先确认**，确认后把该作用域写回并落盘（Dart 同口径）。
+     *
+     * 成功后给一句 `settingsResetDoneMessage`（Dart `settings_reset.dart:294`
+     * `showAppLightTip(context, message: l10n.settingsResetDoneMessage)`）——
+     * 落盘失败时 [commitModel] 已经给了「保存失败」，这里不再谎报已重置。
+     */
+    fun applyReset(scope: SettingsResetScope) {
+        val next = SettingsActionDispatcher.applyResetScope(model, scope.arg) ?: run {
+            Log.w(LOG_TAG, "unknown reset scope: ${scope.arg}")
+            return
+        }
+        writer.flush()
+        if (commitModel(next)) {
+            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
         }
     }
 
@@ -517,7 +530,16 @@ fun SettingsHost(
             SettingsActionKind.MATERIAL_PANEL -> target?.let(onNavigate)
 
             // 恢复默认：弹确认框，确认后写回（Dart `settings_reset.dart` 也是先确认）。
-            SettingsActionKind.RESET_SCOPE -> target?.let { pendingReset = it }
+            // 作用域名 → 枚举只走 [SettingsResetScope.fromArg]（单一真源，见其 KDoc）；
+            // 反查不到就留痕，不弹一个正文对不上作用域的确认框。
+            SettingsActionKind.RESET_SCOPE -> target?.let { arg ->
+                val parsed = SettingsResetScope.fromArg(arg)
+                if (parsed == null) {
+                    Log.w(LOG_TAG, "unknown reset scope: $arg")
+                } else {
+                    pendingReset = parsed
+                }
+            }
 
             // 选色：壳没提供选色器时，宿主自带一个 RGB 弹窗。
             SettingsActionKind.COLOR_PICKER -> {
@@ -918,22 +940,27 @@ private fun SettingsDialogFrame(
     }
 }
 
-/** 恢复默认确认弹窗（作用域不同，正文不同；文案全部取 ARB）。 */
+/**
+ * 恢复默认确认弹窗（**全仓唯一一份**，[SettingsHost] / [HomeNavigationHost] /
+ * `HomeWidgetHost` 共用）。
+ *
+ * 正文与按钮文案逐条照 Dart `settings_reset.dart:249-258` 的
+ * `showHyperosConfirmDialog(...)`：
+ * - 标题 `settingsResetDefaultsConfirmTitle`；
+ * - 正文取 [SettingsResetScope.confirmBody]（五个作用域各一句，**不落回外观口径**）；
+ * - 取消 `cancelAction`、确认 `settingsResetDefaultsTitle`（「恢复默认设置」，
+ *   不是主题那条「重置」）；
+ * - `destructive: true` ⇒ 确认按钮用危险色。
+ *
+ * 作用域名 → 枚举的反查在调用方完成（[SettingsResetScope.fromArg]），本函数只收
+ * 已识别的枚举，因此不可能对未知作用域画出「外观」正文。
+ */
 @Composable
-private fun SettingsConfirmResetDialog(
-    scope: String,
+internal fun SettingsConfirmResetDialog(
+    scope: SettingsResetScope,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val body = when (scope) {
-        SettingsActionDispatcher.SCOPE_COURSE_CARD ->
-            SettingsStringsExt4.settingsResetConfirmBodyCourseCard.zh
-        SettingsActionDispatcher.SCOPE_APPEARANCE ->
-            SettingsStringsExt4.settingsResetConfirmBodyAppearance.zh
-        SettingsActionDispatcher.SCOPE_HOME_NAVIGATION ->
-            SettingsStringsExt4.settingsResetConfirmBodyHomeNavigation.zh
-        else -> SettingsStringsExt4.settingsResetScopeNoticeAppearance.zh
-    }
     SettingsDialogFrame(onDismiss = onDismiss) {
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -944,7 +971,7 @@ private fun SettingsConfirmResetDialog(
                     color = MiuixTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = body,
+                    text = scope.confirmBody.zh,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -961,8 +988,9 @@ private fun SettingsConfirmResetDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = onConfirm) {
                         Text(
-                            text = SettingsStrings.themeResetToPreset.zh,
+                            text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
                             style = MiuixTheme.textStyles.button,
+                            color = Color(QingyuFixedTokens.DESTRUCTIVE),
                         )
                     }
                 }
@@ -1087,7 +1115,9 @@ private fun rgbToHex(r: Int, g: Int, b: Int): String =
  * 与 [SettingsHost] 同一套「读模型 → 建 spec → 动作回分派 → 合并落盘」循环，差异三点：
  * 1. spec 由 [SettingsHomeNavigationPage.spec] 出（不是 [SettingsPageBridge.specFor] 的那 4 页）；
  * 2. `NAVIGATE` 交给壳的 [onNavigate]（路由串 → 页面 id 由壳映射后推页）；
- * 3. `RESET_SCOPE` 调 [SettingsActionDispatcher.applyResetScope]（作用域 `homeNavigation`）。
+ * 3. `RESET_SCOPE` 只登记作用域、弹 [SettingsConfirmResetDialog]，**确认后**才调
+ *    [SettingsActionDispatcher.applyResetScope]（Dart `settings_reset.dart:249-258`；
+ *    2026-11-01 修：此前这里收到重置意图直接落盘，破坏性动作没有确认框）。
  *
  * Dart 原文 `settings_home_navigation.dart:168-172` 的「三子页返回后重读草稿」，由「每次进入
  * 本页都重新 `store.load()` 建宿主」自然满足：壳按 pageId 重组，从子页返回即重建、重新读盘。
@@ -1099,43 +1129,74 @@ fun HomeNavigationHost(
     onNavigate: (route: String) -> Unit = {},
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
-    fun apply(newModel: TimetableSettingsModel) {
+    /** 等待二次确认的重置作用域；null = 没有弹窗（Dart `settings_reset.dart:249-258`）。 */
+    var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
+    val context = LocalContext.current
+
+    fun toast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun apply(newModel: TimetableSettingsModel): Boolean {
         // 与 SettingsHost 同一条写路径：写完读回校验，没落盘就不改内存（界面停在旧值）。
-        if (saveVerified(store, model, newModel)) {
+        val landed = saveVerified(store, model, newModel)
+        if (landed) {
             model = newModel
         } else {
             Log.e(LOG_TAG, "home navigation save did not land")
         }
+        return landed
     }
     val state = SettingsPageBridge.toHomeNavigationState(model)
-    SettingsPageScreen(
-        spec = SettingsHomeNavigationPage.spec(state),
-        onBack = onBack,
-        onAction = { action, target, rowId ->
-            when (val kind = SettingsPageBridge.toKind(action)) {
-                SettingsActionKind.WRITE_SETTING -> {
-                    val result = SettingsActionDispatcher.dispatch(
-                        SettingsActionKind.WRITE_SETTING,
-                        target,
-                        rowId,
-                        model,
-                    )
-                    if (result is SettingsDispatch.Write) apply(result.model)
-                }
-
-                SettingsActionKind.NAVIGATE -> target?.let(onNavigate)
-
-                SettingsActionKind.RESET_SCOPE -> {
-                    target?.let { scope ->
-                        SettingsActionDispatcher.applyResetScope(model, scope)?.let { apply(it) }
+    Box(modifier = Modifier.fillMaxSize()) {
+        SettingsPageScreen(
+            spec = SettingsHomeNavigationPage.spec(state),
+            onBack = onBack,
+            onAction = { action, target, rowId ->
+                when (val kind = SettingsPageBridge.toKind(action)) {
+                    SettingsActionKind.WRITE_SETTING -> {
+                        val result = SettingsActionDispatcher.dispatch(
+                            SettingsActionKind.WRITE_SETTING,
+                            target,
+                            rowId,
+                            model,
+                        )
+                        if (result is SettingsDispatch.Write) apply(result.model)
                     }
-                }
 
-                // 「没写 / 没导航」也要留痕：静默分支排查时什么都看不到（与 SettingsHost 同口径）。
-                else -> Log.w(LOG_TAG, "unhandled home-navigation action: $kind rowId=$rowId")
-            }
-        },
-    )
+                    SettingsActionKind.NAVIGATE -> target?.let(onNavigate)
+
+                    // 破坏性动作先确认：这里只登记作用域，落盘在弹窗的 onConfirm 里。
+                    SettingsActionKind.RESET_SCOPE -> target?.let { arg ->
+                        val parsed = SettingsResetScope.fromArg(arg)
+                        if (parsed == null) {
+                            Log.w(LOG_TAG, "unknown reset scope: $arg")
+                        } else {
+                            pendingReset = parsed
+                        }
+                    }
+
+                    // 「没写 / 没导航」也要留痕：静默分支排查时什么都看不到（与 SettingsHost 同口径）。
+                    else -> Log.w(LOG_TAG, "unhandled home-navigation action: $kind rowId=$rowId")
+                }
+            },
+        )
+
+        pendingReset?.let { scope ->
+            SettingsConfirmResetDialog(
+                scope = scope,
+                onDismiss = { pendingReset = null },
+                onConfirm = {
+                    SettingsActionDispatcher.applyResetScope(model, scope.arg)?.let { next ->
+                        if (apply(next)) {
+                            toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
+                        }
+                    }
+                    pendingReset = null
+                },
+            )
+        }
+    }
 }
 
 /**

@@ -2,18 +2,6 @@ package com.mutx163.qingyu.app
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -24,19 +12,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.HomeWidgetInstanceInfo
 import com.mutx163.qingyu.TodayWidgetSupport
 import com.mutx163.qingyu.WidgetSystemActions
-import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.settings.HomeWidgetInstanceSpec
 import com.mutx163.qingyu.pages.settings.HomeWidgetPreviewHost
@@ -45,15 +27,11 @@ import com.mutx163.qingyu.pages.settings.ProfileSpec
 import com.mutx163.qingyu.pages.settings.SettingsHomeWidgetPage
 import com.mutx163.qingyu.pages.settings.SettingsPageBridge
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
-import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.pages.settings.SettingsResetScope
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
-import com.mutx163.qingyu.theme.QingyuFixedTokens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val LOG_TAG = "HomeWidgetHost"
 
@@ -111,9 +89,10 @@ fun HomeWidgetHost(
      * 等待二次确认的重置作用域；null = 没有弹窗。
      *
      * Dart `SettingsResetTile._confirm`（`settings_reset.dart:249-258`）先弹确认框再落盘，
-     * 不能点一下就把显示项与外观清空。
+     * 不能点一下就把显示项与外观清空。确认弹窗与设置族其它页共用
+     * [SettingsConfirmResetDialog]（2026-11-01 收敛，此前本文件另抄了一份）。
      */
-    var pendingReset by remember { mutableStateOf<String?>(null) }
+    var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
     /**
      * 预览代次：设置/绑定变一次 +1，已渲染的位图整批作废重出。
      *
@@ -161,7 +140,7 @@ fun HomeWidgetHost(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    fun applyModel(next: TimetableSettingsModel) {
+    fun applyModel(next: TimetableSettingsModel): Boolean {
         if (saveWidgetModelVerified(store, model, next)) {
             model = next
             // 桌面上的卡片读的是档案内嵌 settings（save 已镜像过去），但不会自己重绘：
@@ -173,14 +152,15 @@ fun HomeWidgetHost(
             }.onFailure { Log.w(LOG_TAG, "widget refresh after settings save failed", it) }
             // 预览读的就是这份设置：落盘成功后才让位图重出（Dart `_invalidatePreview`）。
             previewRevision++
-        } else {
-            Log.e(LOG_TAG, "home widget settings save did not land")
-            Toast.makeText(
-                context,
-                SettingsStringsExt2.saveFailed.zh,
-                Toast.LENGTH_SHORT,
-            ).show()
+            return true
         }
+        Log.e(LOG_TAG, "home widget settings save did not land")
+        Toast.makeText(
+            context,
+            SettingsStringsExt2.saveFailed.zh,
+            Toast.LENGTH_SHORT,
+        ).show()
+        return false
     }
 
     fun setBinding(appWidgetId: Int, target: String?) {
@@ -294,7 +274,14 @@ fun HomeWidgetHost(
 
                     SettingsActionKind.RESET_SCOPE ->
                         // 只记下作用域，真正的写入在确认弹窗里做（Dart :249-258）。
-                        target?.let { pendingReset = it }
+                        target?.let { arg ->
+                            val parsed = SettingsResetScope.fromArg(arg)
+                            if (parsed == null) {
+                                Log.w(LOG_TAG, "unknown reset scope: $arg")
+                            } else {
+                                pendingReset = parsed
+                            }
+                        }
 
                     SettingsActionKind.RUN_NOW -> when (rowId) {
                         SettingsActionDispatcher.ROW_HOME_WIDGET_PREVIEW_ADD ->
@@ -312,11 +299,21 @@ fun HomeWidgetHost(
             },
         )
 
-        pendingReset?.let { scopeId ->
-            HomeWidgetResetConfirmDialog(
+        pendingReset?.let { scope ->
+            // 与设置族其它页共用同一份确认弹窗（正文/按钮/危险色都在那里）。
+            SettingsConfirmResetDialog(
+                scope = scope,
                 onDismiss = { pendingReset = null },
                 onConfirm = {
-                    SettingsActionDispatcher.applyResetScope(model, scopeId)?.let(::applyModel)
+                    SettingsActionDispatcher.applyResetScope(model, scope.arg)?.let { next ->
+                        if (applyModel(next)) {
+                            Toast.makeText(
+                                context,
+                                SettingsStringsExt4.settingsResetDoneMessage.zh,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
                     pendingReset = null
                 },
             )
@@ -345,71 +342,4 @@ private fun saveWidgetModelVerified(
     store.save(next)
     val disk = runCatching { store.load() }.getOrNull() ?: return false
     return SettingsActionDispatcher.persistLanded(before, next, disk)
-}
-
-/**
- * 「恢复默认设置」二次确认框（`settings_reset.dart:249-258`）。
- *
- * 正文用 **homeWidget 作用域**那一句（`settingsResetConfirmBodyHomeWidget`，
- * 与 `SettingsResetPage.HOME_WIDGET` 登记的一致）；外层 `SettingsHost` 那份弹窗的
- * `when` 没有 homeWidget 分支，会落到外观作用域的正文，所以本页自己画一份。
- *
- * 交互照官方：点遮罩 / 取消 关闭；点确认才落盘。确认色用危险色，与 Dart
- * `showHyperosConfirmDialog(destructive: true)` 对齐。
- */
-@Composable
-private fun HomeWidgetResetConfirmDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                // 内层吞掉点击，避免点卡片本身把弹窗关掉。
-                .clickable(onClick = {}),
-        ) {
-            QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Bold,
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = SettingsStringsExt4.settingsResetConfirmBodyHomeWidget.zh,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        Button(onClick = onDismiss) {
-                            Text(
-                                text = SettingsStringsExt4.cancelAction.zh,
-                                style = MiuixTheme.textStyles.button,
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = onConfirm) {
-                            Text(
-                                text = SettingsStrings.settingsResetDefaultsTitle.zh,
-                                style = MiuixTheme.textStyles.button,
-                                color = Color(QingyuFixedTokens.DESTRUCTIVE),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

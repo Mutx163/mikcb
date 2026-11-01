@@ -115,7 +115,7 @@ object SettingsResetPage {
  */
 enum class SettingsResetScope(
     val arg: String,
-    val confirmBody: ArbText?,
+    val confirmBody: ArbText,
     val scopeNotice: ArbText?,
     val fields: List<String>,
     val clearFlags: List<String>,
@@ -274,4 +274,19 @@ enum class SettingsResetScope(
         ),
         clearFlags = emptyList(),
     ),
+    ;
+
+    companion object {
+        /**
+         * 页面行的 `actionTarget`（`"courseCard"` / `"timetablePage"` / …）→ 作用域。
+         *
+         * 宿主的「弹确认框 → 确认后落盘」两段式都从这里反查，**不要在宿主里另写一套
+         * `when`**：2026-11-01 修的缺陷就是那种写法只覆盖 3 个作用域，其余落到外观口径，
+         * 导致课表页 / 桌面小组件的确认正文错配。
+         *
+         * @return 未知作用域返回 null（宿主据此留痕、不弹一个内容不对的确认框）。
+         */
+        fun fromArg(arg: String): SettingsResetScope? =
+            entries.firstOrNull { it.arg == arg }
+    }
 }
