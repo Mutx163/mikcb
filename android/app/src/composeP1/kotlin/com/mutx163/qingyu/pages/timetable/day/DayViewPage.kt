@@ -516,8 +516,6 @@ fun DayViewPage(
                             profileName = profileName,
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
-                            // 列表档「更多」面板画玻璃用；录像层没开就不传（面板退回实色）。
-                            backdrop = pageBackdrop.takeIf { pageBackdropActive },
                             onMenuSelect = onHomeMenuSelect,
                         )
                     }

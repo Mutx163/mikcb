@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +33,10 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -41,10 +44,12 @@ import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Promotions
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tasks
+import top.yukonga.miuix.kmp.menu.OverlayIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -66,10 +71,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 右上角「更多」菜单（跟设置的 `homeMenuStyle` 分流，与 Flutter 一致）
  *
  * * `GRID`（八宫格）：点「更多」弹底部弹层（`QingyuSheet`），4 列图标瓷贴；
- * * `LIST`（列表）：**容器变换**——那颗按钮自己长成菜单面板，收起时缩回按钮。
- *   实现在 [HomeMenuMorphButton]（登记在 `miuix-component-first-standard.md`
- *   的例外表第三条）。这是 Dart `homeMenuController.showTopActionsSheet` 的两条
- *   分支，默认档位就是 list。
+ * * `LIST`（列表）：miuix 官方**级联菜单**——图标按钮点开锚定弹层，弹层缩放弹出；
+ *   「添加」展开时一级缩到 0.95、二级在新卡片里弹出。全部走官方件，零自研动画。
+ *   这是 Dart `homeMenuController.showTopActionsSheet` 的两条分支，默认档位就是 list。
  *
  * ## 「添加」是二级菜单，不是普通行
  *
@@ -81,12 +85,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 八宫格档的「添加」瓷贴仍是直接进加课页（Dart 八宫格走的是三宫格添加弹层，
  * 不是二级），两档行为不同是上游口径，不是漏做。
  *
- * ## 按压反馈（官方 `SinkFeedback`）
+ * ## 按压反馈
  *
- * 「更多」按钮按下会**下沉缩放**（0.94 + 弹簧）。这是 miuix 的官方手感件
- * （`top.yukonga.miuix.kmp.utils.SinkFeedback`，也就是 `PressFeedbackType.Sink`
- * 的底层，`Card(pressFeedbackType = Sink)` 用的同一个）。不换成 `IconButton`
- * 是因为官方 `IconButton` 没有开放 `indication` 口子，拿不到这档缩放。
+ * 列表档由官方组件提供：菜单开着期间那颗按钮保持**按下态**（官方 `holdDownState`），
+ * 按压高亮走主题注入的 miuix 指示。八宫格档的触发按钮用官方 `SinkFeedback`。
  *
  * 条目由 [menuItems] 注入（默认 [TimetableMenuDefaults.entries]），点选只回传
  * 稳定的 [TimetableMenuItem.id] —— 本组件不认识路由，页面/壳的分工不被污染。
@@ -121,11 +123,6 @@ fun TimetableTopBar(
     onTitleClick: (() -> Unit)? = null,
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     menuItems: List<TimetableMenuItem> = emptyList(),
-    /**
-     * 背景采样源（页面自己的 `rememberLayerBackdrop()`），只有列表档的「更多」面板
-     * 用它画玻璃；null = 画主题实色。宿主不传也不会崩，只是没有玻璃质感。
-     */
-    backdrop: Backdrop? = null,
     onMenuSelect: (String) -> Unit = {},
 ) {
     val dark = isSystemInDarkTheme()
@@ -185,19 +182,67 @@ fun TimetableTopBar(
 
         if (menuItems.isNotEmpty()) {
             if (homeMenuStyle == HomeMenuStyle.LIST) {
-                // 列表档：按钮自己长成菜单（容器变换）。组件内部自带触发按钮，
-                // 收起态与下面那颗八宫格按钮同一个形状 / 同一个颜色，两档切换不会跳。
-                HomeMenuMorphButton(
-                    items = menuItems,
-                    contentDescription = TimetableStrings.moreTooltip.zh,
-                    onSelect = onMenuSelect,
-                    backdrop = backdrop,
+                // 列表档 = miuix **官方级联菜单**，一行自研动画都没有：
+                //  * 弹层按 `scale 0.15→1 + 方向性裁剪揭示` 弹出来（官方 `ListPopupContent`）；
+                //  * 「添加」展开时**一级列表缩到 0.95 让位、二级在新卡片里弹出**
+                //   （官方 `CascadingListPopupLayout` 的 `PRIMARY_SHRUNK_SCALE`）；
+                //  * 菜单开着期间按钮保持按下态（官方 `holdDownState`）。
+                val selectState = rememberUpdatedState(onMenuSelect)
+                val entries = remember(menuItems) {
+                    menuItems.map { item ->
+                        DropdownEntry(
+                            items = listOf(
+                                DropdownItem(
+                                    text = item.label,
+                                    icon = { modifier -> Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = null,
+                                        modifier = modifier,
+                                    ) },
+                                    // children 非空 = 二级触发器：点它一级让位、二级弹出。
+                                    children = item.children
+                                        .takeIf { it.isNotEmpty() }
+                                        ?.map { child ->
+                                            DropdownItem(
+                                                text = child.label,
+                                                onClick = {
+                                                    selectState.value(child.id)
+                                                },
+                                            )
+                                        },
+                                    onClick = item.children
+                                        .takeIf { it.isEmpty() }
+                                        ?.let { { selectState.value(item.id) } },
+                                ),
+                            ),
+                        )
+                    }
+                }
+                OverlayIconCascadingDropdownMenu(
+                    entries = entries,
+                    // 跟着壳的 Scaffold（`PagesShellActivity` 的根 Scaffold 包在
+                    // NavDisplay 外面）：弹层挂它下面才不会被玻璃底栏盖住。
+                    renderInRootScaffold = false,
+                    content = {
+                        Icon(
+                            imageVector = MiuixIcons.More,
+                            contentDescription = TimetableStrings.moreTooltip.zh,
+                            tint = primaryText,
+                            modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
+                        )
+                    },
                 )
             } else {
-                HomeMenuTriggerButton(
-                    contentDescription = TimetableStrings.moreTooltip.zh,
-                    onClick = { showMenu = true },
-                )
+                // 八宫格档：与列表档**同一颗官方 `IconButton`**（圆角 40dp ⇒ 正圆，
+                // 底色跟随主题）。两档切换时按钮不会变形，用户不需要重新建立预期。
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = MiuixIcons.More,
+                        contentDescription = TimetableStrings.moreTooltip.zh,
+                        tint = primaryText,
+                        modifier = Modifier.size(TimetableTopBarMetrics.ICON.dp),
+                    )
+                }
             }
         }
     }
@@ -223,7 +268,7 @@ object TimetableTopBarMetrics {
     const val HEIGHT = 56.0
     const val H_PADDING = 16.0
 
-    /** 图标尺寸。按钮本身的直径归 `HomeMenuMorphModel.TRIGGER_DIAMETER_DP` 一处管。 */
+    /** 图标尺寸。 */
     const val ICON = 22.0
 
     /** 菜单网格列数（八宫格 = 4 列 × 2 行）。 */
