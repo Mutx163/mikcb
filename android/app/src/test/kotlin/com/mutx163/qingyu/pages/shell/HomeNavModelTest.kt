@@ -113,12 +113,28 @@ class HomeNavModelTest {
 
     // ---------------------------------------------------------------- 根内容判定
 
+    /**
+     * 内嵌页集合 = Dart `_inlineDockPageDescriptors`（`home_menu_route_registry.dart:83-173`）。
+     * 2026-11-01 之前这里只有三个，用户把统计/考试排进底栏后点开底栏就没了。
+     */
     @Test
-    fun `只有任务 日程 设置可作为根内容`() {
-        assertTrue(HomeDockNavModel.isRootCapable("tasks"))
-        assertTrue(HomeDockNavModel.isRootCapable("scheduleList"))
-        assertTrue(HomeDockNavModel.isRootCapable("settings"))
-        assertTrue(!HomeDockNavModel.isRootCapable("statistics"))
+    fun `内嵌页集合对齐 Dart 的内嵌表`() {
+        // Dart 内嵌表里有、本仓也具备页面的条目。
+        for (id in listOf(
+            "overview", "pickupCode", "statistics", "exams", "tasks", "scheduleList",
+            "courseConflict", "locationTimeMatch", "scheduleDateRule", "icsExport",
+            "timeSchemes", "profiles", "more", "update", "memoryStats",
+            "dataTransfer", "cloudSync", "lanEdit", "coupleTimetable",
+            "settings", "statisticsSettings", "support", "changelog", "userGuide",
+            "feedback", "openSourceLicenses",
+        )) {
+            assertTrue("$id 应是内嵌页（底栏常驻）", HomeDockNavModel.isRootCapable(id))
+        }
+        // Dart 侧是推入路由页 / 表单页：不内嵌。
+        assertTrue(!HomeDockNavModel.isRootCapable("appearanceEditor"))
+        assertTrue(!HomeDockNavModel.isRootCapable("addCourse"))
+        assertTrue(!HomeDockNavModel.isRootCapable("addExam"))
+        assertTrue(!HomeDockNavModel.isRootCapable("generalSettings"))
         assertTrue(!HomeDockNavModel.isRootCapable("day"))
     }
 
@@ -129,20 +145,24 @@ class HomeNavModelTest {
      * 根因就是壳里不分流（任何条目都替换栈底）。这条判据钉住分流口径。
      */
     @Test
-    fun `视图动作与内嵌宿主走根内容 其余目录页推页`() {
-        // 视图动作：切首页视图，底栏保留。
+    fun `视图动作与内嵌页走根内容 表单与外观编辑器推页`() {
+        // 视图动作：切首页视图，底栏保留（月视图在 Dart 也是底栏内嵌页）。
         assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.ACTION_DAY))
         assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.ACTION_WEEK))
-        // 真能当根内容渲染的宿主页。
+        assertTrue(HomeDockNavModel.rendersAsRoot("monthView"))
+        assertTrue(HomeDockNavModel.isViewAction("monthView"))
+        // 内嵌页（Dart 的 inlineDockPages）：底栏常驻。
         assertTrue(HomeDockNavModel.rendersAsRoot("tasks"))
         assertTrue(HomeDockNavModel.rendersAsRoot("scheduleList"))
         assertTrue(HomeDockNavModel.rendersAsRoot("settings"))
+        assertTrue(HomeDockNavModel.rendersAsRoot("statistics"))
+        assertTrue(HomeDockNavModel.rendersAsRoot("exams"))
         // 开发壳的页面索引本身就在栈底。
         assertTrue(HomeDockNavModel.rendersAsRoot(HomeDockNavModel.DEV_INDEX_ID))
-        // 其余目录页：推一层，底栏让位。
+        // 其余：推一层，底栏让位。
         assertTrue(!HomeDockNavModel.rendersAsRoot("appearanceEditor"))
-        assertTrue(!HomeDockNavModel.rendersAsRoot("statistics"))
-        assertTrue(!HomeDockNavModel.rendersAsRoot("exams"))
+        assertTrue(!HomeDockNavModel.rendersAsRoot("addCourse"))
+        assertTrue(!HomeDockNavModel.rendersAsRoot("generalSettings"))
     }
 
     // ---------------------------------------------------------------- 更多菜单

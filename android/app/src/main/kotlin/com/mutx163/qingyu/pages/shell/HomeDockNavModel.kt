@@ -67,21 +67,68 @@ object HomeDockNavModel {
      */
     val DEFAULT_IDS: List<String> = listOf(ACTION_DAY, ACTION_WEEK, "tasks")
 
-    /** 视图动作（不是页面）：点它切首页内容，不推路由。 */
-    val VIEW_ACTION_IDS: Set<String> = setOf(ACTION_DAY, ACTION_WEEK)
+    /**
+     * 视图动作（不是页面）：点它切首页内容，不推路由。
+     *
+     * `monthView` 与 `day` / `week` 同一条口径 —— Dart 的月视图是**底栏内嵌页**
+     * （`home_menu_route_registry.dart:128-135` 的 `monthView`），点开时底栏常驻。
+     */
+    val VIEW_ACTION_IDS: Set<String> = setOf(ACTION_DAY, ACTION_WEEK, "monthView")
 
-    /** 两个视图动作也算「有去处」（它们由首页自己处理，不走页面映射表）。 */
+    /** 视图动作也算「有去处」（它们由首页自己处理，不走页面映射表）。 */
     fun isViewAction(id: String): Boolean = id in VIEW_ACTION_IDS
 
     /**
      * 主屏内可直接切换内容、**底栏保留**的 id。
      *
-     * 对应 Dart `kInlineDockPages` 里本仓已经具备宿主的那几条
-     * （`lib/screens/home_menu_route_registry.dart:83-135`：`tasks` / `settings` / …）。
-     * 这里只列**当前壳真能当根内容渲染**的：任务列表、日程列表、设置主页。
-     * 其余目录页仍可排进底栏，但点开是推一层页面（底栏让位），差异已写进审核文档。
+     * ## 口径来源：Dart 的 `_inlineDockPageDescriptors`
+     *
+     * Dart 把底栏条目的去处分成两张表（`lib/screens/home_menu_route_registry.dart`）：
+     * **内嵌页**（`inlineDockPages`，点开在首页栈内切内容区、坞常驻）与**推入路由页**
+     * （`catalogPages`，点开推一层、坞被盖住）。这里逐条对齐 Dart 的内嵌表 ——
+     * 该表里有、且本仓已经具备页面的 id 全部列进来；视图动作（day / week / monthView）
+     * 由 [isViewAction] 单独放行，不重复列。
+     *
+     * ⚠️ 2026-11-01 之前这里只写了 `tasks` / `scheduleList` / `settings` 三个，
+     * 于是用户把「统计 / 考试 / 日程 / 更新 …」排进底栏后，点开是推一层页面、
+     * 底栏直接消失（用户报「各种情况跳转页面的时候底栏经常消失」）。
+     * Dart 这些页本来就是内嵌的，底栏不会走。
+     *
+     * 仍走推路由的（Dart 也是推）：外观编辑器（它走缩放转场，见
+     * `home_menu_catalog.dart:456-490` 的 `zoom`）、加课/加考试/加日程这类表单页、
+     * 以及各种设置子页（`generalSettings` / `appearanceSettings` / …）。
      */
-    val ROOT_CAPABLE_IDS: Set<String> = setOf("tasks", "scheduleList", "settings")
+    val ROOT_CAPABLE_IDS: Set<String> = setOf(
+        // 功能入口
+        "overview",
+        "pickupCode",
+        "statistics",
+        "exams",
+        "tasks",
+        "scheduleList",
+        "courseConflict",
+        "locationTimeMatch",
+        "scheduleDateRule",
+        "icsExport",
+        "timeSchemes",
+        "profiles",
+        "more",
+        "update",
+        "memoryStats",
+        // 数据与同步
+        "dataTransfer",
+        "cloudSync",
+        "lanEdit",
+        "coupleTimetable",
+        // 偏好与关于
+        "settings",
+        "statisticsSettings",
+        "support",
+        "changelog",
+        "userGuide",
+        "feedback",
+        "openSourceLicenses",
+    )
 
     /** 是否作为**主屏内容**渲染（底栏保留），否则走推路由。 */
     fun isRootCapable(id: String): Boolean = id in ROOT_CAPABLE_IDS
@@ -89,9 +136,9 @@ object HomeDockNavModel {
     /**
      * 底栏条目点下去，是**替换主屏内容**（底栏保留）还是**推一层页面**（底栏让位）。
      *
-     * 三类走前者：视图动作（`day` / `week`，切首页视图）、[ROOT_CAPABLE_IDS] 里那几个
-     * 真能当根内容渲染的宿主页、以及开发壳的页面索引（它自己就是栈底内容）。
-     * 其余目录页（外观编辑器、统计、考试……）一律推一层。
+     * 三类走前者：视图动作（`day` / `week` / `monthView`）、[ROOT_CAPABLE_IDS]
+     * （= Dart 的内嵌页表）、以及开发壳的页面索引（它自己就是栈底内容）。
+     * 其余（外观编辑器、加课这类表单页、设置子页）一律推一层 —— 与 Dart 的两张表一致。
      *
      * 为什么要单独抽出来：壳里 `selectRoot` 原先**不分流**，任何底栏条目都直接替换栈底，
      * 于是把「外观编辑器」排进底栏后，底栏会一直压在它上面（`atRoot` 仍为 true），
