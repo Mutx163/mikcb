@@ -745,6 +745,11 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     // 外观编辑页「每日壁纸」行的去向。串取自 `SettingsBackdropFlowPage.BING_GALLERY_TARGET`，
     // **没有前导 `/`**——它是页内目标 id 不是路由串，别顺手改成 `/settings/...`（那要同时改 Dart 侧）。
     "bingWallpaperGallery" -> "b.bingGallery"
+    // 壁纸取景页（外观编辑 → 壁纸面板 → 调整位置）。串带点号，是**页内动作 id** 不是路由串；
+    // 分派器原样转成 NAVIGATE，这里必须给落点，否则「调整位置」还是静默没反应。
+    // ⚠️ `SettingsRouteWiringGuardTest` 按设计**不扫**带点号的值（那是页内动作的形状），
+    // 所以这条只能靠人守——删了不会有测试报红。
+    "backdrop.image.adjust" -> "b.wallpaperPosition"
     "/settings/semester" -> "b.semester"
     "/settings/time-schemes" -> "d3.timeSchemes"
     // 时间模板「编辑节次」子页（P35-TS）：列表页点卡片按钮 / 新建成功后推这一页，

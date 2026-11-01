@@ -5,8 +5,9 @@ package com.mutx163.qingyu.pages.shell
  *
  * ## 这份清单从哪来
  *
- * 逐条来自 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md` §2（82 个页面单元，
- * 按批次分组）。那份清单是「真机逐页对照（L4）」的依据；本目录是它的**可点击版本**：
+ * 逐条来自 `docs/plans/2026-10-27-compose-phase3-l4-checklist.md` §2（原始清单 82 个页面单元，
+ * 按批次分组；本目录随后因补口与新增入口扩到 **88 条**，四档合计以
+ * `ShellPageCatalogTest` 的断言为准——本段不再重复写会过期的数字）。那份清单是「真机逐页对照（L4）」的依据；本目录是它的**可点击版本**：
  * 有了它，用户在真机上不用记路径，点一行就能进某页做对照。
  *
  * ## 为什么不直接写进 Activity
@@ -145,6 +146,9 @@ object ShellPageCatalog {
                 page("P3-B", "backdropFlow", "设置 · 首页背景", ShellPageDataKind.DEMO),
                 page("P3-B", "recentWallpaper", "设置 · 最近壁纸", ShellPageDataKind.DEMO),
                 page("P3-B", "bingGallery", "设置 · Bing 壁纸画廊", ShellPageDataKind.DEMO),
+                // 2026-11-01 F24：壁纸取景页（外观编辑 → 壁纸面板 → 调整位置）。
+                // 真实入口是壁纸面板；这里登记是为了 L4 能直接点到它做对照。
+                page("P3-B", "wallpaperPosition", "设置 · 壁纸取景", ShellPageDataKind.DIRECT),
                 page("P3-B", "homeWidget", "设置 · 首页小组件", ShellPageDataKind.DEMO),
                 page("P3-B", "homeNavigation", "设置 · 首页导航", ShellPageDataKind.DEMO),
                 page("P3-B", "homeMenuEditor", "设置 · 首页菜单编辑器", ShellPageDataKind.DEMO),

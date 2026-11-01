@@ -72,6 +72,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.course.CoursePortExamAdapter
@@ -122,8 +123,12 @@ import com.mutx163.qingyu.pages.import.ImportEntryHost
 import com.mutx163.qingyu.pages.import.ImportShellBridge
 import com.mutx163.qingyu.pages.import.SpreadsheetImportHost
 import com.mutx163.qingyu.pages.import.warehouse.AiImageCourseImportPage
-import com.mutx163.qingyu.pages.import.warehouse.WarehouseCourseImportPage
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseAdapterDetailHost
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseCustomDebugPage
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPickerHost
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseImportPrefs
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseSchoolAdaptersHost
+import com.mutx163.qingyu.pages.import.warehouse.WarehouseShellState
 import com.mutx163.qingyu.pages.import.warehouse.WarehouseStrings
 import com.mutx163.qingyu.pages.live.LiveKeepAliveSettingsPage
 import com.mutx163.qingyu.pages.schedule.AddScheduleItemPage
@@ -154,6 +159,7 @@ import com.mutx163.qingyu.pages.settings.SettingsPageState
 import com.mutx163.qingyu.pages.settings.SettingsRecentWallpaperSection
 import com.mutx163.qingyu.pages.settings.SettingsResetPage
 import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
+import com.mutx163.qingyu.pages.settings.WallpaperPositionPickerHost
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
 import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
@@ -211,6 +217,7 @@ import com.mutx163.qingyu.pages.timetable.day.DayAgendaEntry
 import com.mutx163.qingyu.pages.timetable.day.DayViewPage
 import com.mutx163.qingyu.pages.timetable.day.DayViewPageData
 import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryLogic
+import com.mutx163.qingyu.pages.timetable.month.MonthAgendaKind
 import com.mutx163.qingyu.pages.timetable.month.MonthViewHost
 import com.mutx163.qingyu.pages.transfer.DataTransferHost
 import com.mutx163.qingyu.pages.transfer.LanEditHost
@@ -298,6 +305,13 @@ fun ShellPageContent(
     // 导入三页的跨路由暂存（2026-10-29 F07）：子页成功落盘后要能让入口页也自关，
     // 对应 Dart 的 `Navigator.pop(true)` + 入口页 `_openImportPage` 的关单规则。
     val importBridge = remember { ImportShellBridge() }
+    // 教务仓库三页的跨路由暂存（选中学校 / 适配器）。与 importBridge 同挂法：
+    // 切页不丢，退出壳即丢（`WarehouseImportHosts.kt:70-80`）。
+    val warehouseState = remember { WarehouseShellState() }
+    val warehouseContext = LocalContext.current
+    val warehousePrefs = remember(warehouseContext) {
+        WarehouseImportPrefs(PrefsKeyValueStore(warehouseContext))
+    }
     when (pageId) {
         // ── P3-A 关于与说明 ────────────────────────────────────────────
         // 2026-10-28 补全：此前 onEntryClick 是空 lambda，10 个入口全部点了没反应；
@@ -410,6 +424,12 @@ fun ShellPageContent(
         // 2026-10-30 F05 收尾：这一页原先走空 state（永远「加载中」、点哪都没下文），
         // 换成真宿主：拉 Bing 每日壁纸清单 + 缩略图 + 点一张下载落盘并写设置。
         "b.bingGallery" -> BingGalleryHost(store = wiring.settingsModel, onBack = onBack)
+        // 2026-11-01 F24：壁纸取景页。此前「调整位置」这一行点了没反应（Dart 的取景页
+        // 在 Kotlin 侧没移植）；上一批只补了诚实提示，这批把整页搬过来了。
+        "b.wallpaperPosition" -> WallpaperPositionPickerHost(
+            store = wiring.settingsModel,
+            onBack = onBack,
+        )
         // 2026-10-31 F20 接线：这一页原先喂空构造 state——屏上恒默认值、6 个开关
         // 点了不落盘、预览区是两张占位小卡。换成真宿主：读设置模型 + 原生渲染的
         // 10 卡预览轮播 + 桌面真实卡片绑定 + 添加到桌面 / 精确闹钟授权。
@@ -552,10 +572,54 @@ fun ShellPageContent(
             val appSettings = wiring.settingsModel.load()
             MonthViewHost(
                 snapshot = snapshot,
+                // 2026-11-01 F24：月网格的考试 / 日程落格与当日议程都靠这两份。
+                // 不喂时页面画成「这个月没有考试、没有日程」——那是**假空态**，不是空数据。
+                exams = repository.exams,
+                scheduleItems = snapshot.scheduleItems,
                 onAddCourse = { date ->
                     wiring.pendingAddCourseSeed = Pair(date.dayOfWeek.value, 1)
                     wiring.pendingEditCourse = null
+                    // 从月视图加课要落在「所点那一天所在的周」，不能退回当前周。
+                    wiring.pendingEditWeek = WeekCalculator.weekForDate(
+                        date = date,
+                        semesterStart = snapshot.settings.semesterStartDate,
+                        semesterWeekCount = snapshot.settings.semesterWeekCount,
+                        fallback = snapshot.currentWeek,
+                    )
                     onOpenPage("d1.addCourse")
+                },
+                // 点当日议程行 → 与日视图同一套落点（课程 / 考试 / 日程各进对应表单）。
+                onOpenAgendaRow = { row ->
+                    when (row.kind) {
+                        MonthAgendaKind.COURSE -> row.course?.let { course ->
+                            wiring.pendingEditCourse = course
+                            wiring.pendingAddCourseSeed = null
+                            wiring.pendingEditWeek = null
+                            val siblings = snapshot.courses.filter { it.name == course.name }
+                            wiring.pendingEditGroup = if (siblings.isEmpty()) {
+                                null
+                            } else {
+                                com.mutx163.qingyu.pages.course.CourseGroup(
+                                    name = course.name,
+                                    courses = siblings,
+                                )
+                            }
+                            onOpenPage("d1.addCourse")
+                        }
+
+                        MonthAgendaKind.EXAM -> row.exam?.let { exam ->
+                            wiring.pendingEditExam = exam
+                            onOpenPage("d3.addExam")
+                        }
+
+                        MonthAgendaKind.SCHEDULE -> row.schedule?.let { instance ->
+                            wiring.clearScheduleIntent()
+                            wiring.pendingScheduleEdit = ScheduleItemBridge.toUiData(instance.item)
+                            wiring.pendingScheduleOccurrenceDate =
+                                instance.date.toLocalDate().toString()
+                            onOpenPage("d2.addSchedule")
+                        }
+                    }
                 },
                 homeTitleStyle = appSettings.homeTitleStyle,
                 homeMenuStyle = appSettings.homeMenuStyle,
@@ -1259,7 +1323,9 @@ fun ShellPageContent(
                     ExamListLogic.buildListViewState(
                         exams = repository.exams,
                         courses = repository.courses,
-                        semesterStart = null,
+                        // 2026-11-01 F24：以前写死 null，屏上永远没有「第 N 周」。
+                        // 与「添加/编辑考试」同源；没设开学日时模型自己退回只显示日期。
+                        semesterStart = repository.snapshot.settings.semesterStartDate,
                         now = LocalDateTime.now(),
                     )
                 },
@@ -1528,27 +1594,47 @@ fun ShellPageContent(
         )
 
         // ── P3-G2 导入 · 仓库适配 ────────────────────────────────────
-        // 2026-10-31 F23：壳侧**没有**学校列表数据源 ⇒ 三页一律不编数据，只显示诚实空态。
-        // 「示例学校 / 示例适配器 / example.com」三个常量已删；真数据属 F08-8c。
-        "g2.schoolAdapters" -> ShellWarehouseEmptyPage(
-            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
-            message = WarehouseStrings.noAvailableSchools.zh,
+        // 2026-11-01 F24：接上 F08-8b 已交付、但壳里一直没调用的三个真宿主
+        // （`WarehouseImportHosts.kt:84/148/213`）。此前三页走诚实空态，于是
+        // 「导入课程 → 教务导入」永远显示「暂无可用学校」，而真实现就在隔壁文件里。
+        // 直接进 `g2.schoolAdapters` 时先落到选校页，避免宿主内部再 push 造成来回跳。
+        "g2.warehouseImport" -> WarehouseImportBranch(
+            state = warehouseState,
+            prefs = warehousePrefs,
             onBack = onBack,
+            onOpenPage = onOpenPage,
         )
-        "g2.adapterDetail" -> ShellWarehouseEmptyPage(
-            title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
-            message = WarehouseStrings.warehouseAdaptersLoadFailedTitle.zh,
+        "g2.schoolAdapters" -> WarehouseImportBranch(
+            state = warehouseState,
+            prefs = warehousePrefs,
             onBack = onBack,
+            onOpenPage = onOpenPage,
         )
-        "g2.warehouseImport" -> WarehouseCourseImportPage(onBack = onBack)
-        // I2（`383df743`）时代这里挂的是 WebView 状态机 + `https://example.com/` 占位地址，
-        // 唯一目的就是「让 WebView 有东西可加载」。既然 `WarehouseSchoolEntry` 还没有 URL 字段、
-        // 壳里拿不到任何真实教务地址，就**不该开一个假页面**——直接显示「未找到有效的教务登录地址」。
+        "g2.adapterDetail" -> {
+            // 详情页要学校 + 适配器两份暂存；缺任一份就退回选校页，不留空白页。
+            if (warehouseState.school == null || warehouseState.adapter == null) {
+                WarehouseImportPickerHost(
+                    state = warehouseState,
+                    prefs = warehousePrefs,
+                    onBack = onBack,
+                    onOpenPage = onOpenPage,
+                )
+            } else {
+                WarehouseAdapterDetailHost(
+                    state = warehouseState,
+                    prefs = warehousePrefs,
+                    onBack = onBack,
+                    onOpenPage = onOpenPage,
+                )
+            }
+        }
+        // WebView 抓课表属 F08-8c，保持诚实空态；不再开假页面。
         "g2.webLogin" -> ShellWarehouseEmptyPage(
             title = ShellPageCatalog.find(pageId)?.title.orEmpty(),
             message = WarehouseStrings.noValidWarehouseLoginUrl.zh,
             onBack = onBack,
         )
+        // 这两页目前确实没有真宿主，保留原渲染层（空回调见普查表 #5/#6，属另一批）。
         "g2.customDebug" -> WarehouseCustomDebugPage(onBack = onBack)
         "g2.aiImageImport" -> AiImageCourseImportPage(onBack = onBack)
 
@@ -2058,6 +2144,38 @@ private fun ShellMissingPage(pageId: String, onBack: () -> Unit) {
  * 登录页要有可加载地址），传空数据只会得到空白顶栏或白屏——那比空态更不诚实。
  * 骨架 / 列表 / 卡片走共享套件（R1/R2/R3），不自拼 UI。
  */
+/**
+ * 仓库导入的两条入口（`g2.warehouseImport` / `g2.schoolAdapters`）共用同一段判断：
+ *
+ * - 还没选学校 ⇒ 选校页（数据源 `index/root_index.yaml`，真网络）；
+ * - 已选学校 ⇒ 适配器列表。
+ *
+ * 为什么抽成函数而不是写成 `"a", "b" -> {...}`：`ShellPageDispatchCoverageTest` 的正则
+ * 只认「一个分支一个 id」，合并写会让那两条被判成「目录里有、分派里没有」而红。
+ */
+@Composable
+private fun WarehouseImportBranch(
+    state: WarehouseShellState,
+    prefs: WarehouseImportPrefs,
+    onBack: () -> Unit,
+    onOpenPage: (String) -> Unit,
+) {
+    if (state.school == null) {
+        WarehouseImportPickerHost(
+            state = state,
+            prefs = prefs,
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+        )
+    } else {
+        WarehouseSchoolAdaptersHost(
+            state = state,
+            onBack = onBack,
+            onOpenPage = onOpenPage,
+        )
+    }
+}
+
 @Composable
 private fun ShellWarehouseEmptyPage(
     title: String,
