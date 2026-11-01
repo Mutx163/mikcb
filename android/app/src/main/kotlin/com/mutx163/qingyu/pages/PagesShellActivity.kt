@@ -21,6 +21,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,10 @@ import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -249,6 +254,23 @@ private fun PagesShell() {
         backStack.add(route)
     }
 
+    // ── 视图档落盘：**必须离开点击所在的那一帧** ─────────────────────────────
+    // `settingsModel.save` 内部是两次 `SharedPreferences.commit()`（同步等磁盘落盘），
+    // 其中 `saveSettingsPatchToActiveProfile` 还会把整份课表档案 JSON（全部课程 /
+    // 任务 / 考试）读出来、解析、重编码再写回。这一句原先就写在 [selectRoot] 里，
+    // 于是「点底栏 日/周/月 切视图」= 在下一帧画出来之前把主线程堵住 —— 用户反馈的
+    // 那一下「顿」（2026-11-01，性能版）。
+    //
+    // 现在丢到 IO 线程。用互斥量串行：连点两次时两次写同时起飞，后到的旧值可能最后
+    // 落盘，冷启动就会恢复成上一个视图；串行保证「最后一次点击 = 最后一次写」。
+    //
+    // 屏幕不等磁盘：与 Dart 同口径（`timetable_screen.dart:1011-1016` 的
+    // lightweight path：先改内存、后异步落盘，不 notify，避免动画中途重建首页）。
+    // 与其它写者不会打架：底栏只在栈底可见，此时设置页 / 课程编辑页都不在栈顶，
+    // 它们那些同样写 `timetable_settings` / `timetable_profiles` 的路径不会并发。
+    val persistScope = rememberCoroutineScope()
+    val persistMutex = remember { Mutex() }
+
     /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
     fun selectRoot(itemId: String) {
         if (backStack.size == 1) backStack[0] = ShellRoute.Dock(itemId)
@@ -257,7 +279,11 @@ private fun PagesShell() {
         if (settingsModel.timetableHomeViewMode == mode) return
         val next = settingsModel.copy(timetableHomeViewMode = mode)
         settingsModel = next
-        runCatching { wiring.settingsModel.save(next) }
+        persistScope.launch(Dispatchers.IO) {
+            persistMutex.withLock {
+                runCatching { wiring.settingsModel.save(next) }
+            }
+        }
     }
 
     /** 圆钮（右侧独立按钮）：Dart `handleRoundButtonTap`（`home_menu_controller.dart:306-333`）。 */
