@@ -23,12 +23,17 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.BuildConfig
 import com.mutx163.qingyu.MemoryStatsCollector
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.pages.settings.SettingsTimetableHubLogic
 import com.mutx163.qingyu.pages.settings.SemesterSettingsLogic
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePage
+import com.mutx163.qingyu.pages.sync.CouplePartnerPort
 import com.mutx163.qingyu.pages.task.TaskStrings
+import com.mutx163.qingyu.platform.CouplePartnerPortImpl
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.weather.WeatherProvider
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
@@ -364,22 +369,50 @@ private fun SemesterWeekCountSheet(
 }
 
 /**
- * 「课表设置」主页（设置首页，`b.settingsHome`）的**真宿主**——本批只把顶部那张
- * 学期摘要卡接真，其余行仍是各批次的演示数据（S2 的其余 16 页）。
+ * 「课表设置」主页（设置首页，`b.settingsHome`）的**真宿主**。
  *
- * ## 为什么这页也要改（审计缺口 F2）
+ * ## 本批修的是「五行拿默认值冒充真值」
  *
- * 那张摘要卡就是**学期设置的入口**，卡上写的是「当前第 N 周 / 共 M 周」＋开学日期
- * （Dart `timetable_settings_screen.dart:379-397` 直接读 `provider.currentWeek` 与
- * `settings.*`）。壳里原来给的是 `SettingsTimetableState()` 空构造 ⇒ 用户走进设置
- * 永远看到「当前第 1 周 / 共 20 周」「未设置开学日期」，哪怕他刚在学期设置里填过。
- * 于是「子页改了、入口卡不跟着变」——这正是审计里最刺眼的一条。
+ * 壳里原先只喂了学期摘要卡的三个字段，其余全走 [SettingsTimetableState] 的构造默认值，
+ * 于是用户在这些子页里改过的值，回到首页**看不出来**：
  *
- * 本宿主订阅 [TimetableRepository] 快照，把 `currentWeek` / `semesterWeekCount` /
- * `semesterStartDate` 换成真值后再交给 [SettingsTimetablePage.spec]；其余输入保持默认
- * （与改动前完全一致，不假装已经接上了课表管理 / 时间模板 / 天气等行）。
+ * | 行 | 假默认值 | 现在的真源 |
+ * |---|---|---|
+ * | 课表管理 | 空白（`activeProfileName = null`） | 仓储快照 `activeProfileId` 命中的档案名 |
+ * | 时间模板 | 恒「未选择」 | 快照 `activeTimeSchemeId` 命中的模板名 |
+ * | 节假日 | 恒「已开启」 | `TimetableSettingsModel.enableHolidayMarking`（落盘真值） |
+ * | 天气 | 恒「未设置」 | [WeatherProvider.location] 的城市名；provider 未注入时保持「未设置」 |
+ * | 情侣课表 | 恒「未绑定」 | `partner_timetable_binding` 键能否解出绑定（`hasPartnerBinding` 的同口径） |
  *
- * @param repository 课表仓储（与学期设置子页同一个实例，进子页改完回来卡上就是新值）。
+ * 合成逻辑在 `SettingsTimetableHubLogic.stateOf`（`pages/settings/SettingsP3B2States.kt`，
+ * 纯 Kotlin、有 JVM 单测），本函数只负责「从哪读到、什么时候重读」。
+ *
+ * ## 本页五行都是**只读展示**
+ *
+ * 五行的交互都是箭头（`MiuixRowComponent.ARROW` + `NAVIGATE`），与 Dart 一致——写入口在
+ * 各自子页：改名去「课表管理」、改模板去「时间模板」、拖节假日开关去「节假日标记」
+ * （`SettingsHolidayHost.toggleEnable` 负责落盘，失败会弹提示并把开关弹回）、选城去
+ * 「天气」、绑定去「情侣课表」。所以本页不存在「写回」动作，也就没有写回失败可提示；
+ * 读取失败时按「没有该数据」展示（不拿假值补位）。
+ *
+ * ## 为什么有可空参数
+ *
+ * 壳的调用点（`ShellPageIndex.kt`）归 Lead 所有，本批不动。因此：
+ *
+ * - [settingsStore] / [partnerPort] 传 null 时，宿主用 [PrefsKeyValueStore] 在**同一份**
+ *   `FlutterSharedPreferences` 上自建只读实例（键完全相同，读到的是同一份存档）；
+ * - [weather] 没有同等的「自建」余地（provider 带网络与缓存），传 null 就**保持
+ *   「未设置」并如实展示**，等 Lead 在调用点补 `weather = wiring.weather`。
+ *
+ * ## 重读时机
+ *
+ * 仓储快照有 `observe`，档案 / 模板改名当场跟着变；节假日与情侣绑定没有变更通道，
+ * 依赖「从子页返回时本 entry 重新组合」读到新值（NavDisplay 栈内下层 entry 会销毁重建）。
+ *
+ * @param repository 课表仓储（与学期设置子页同一个实例）。
+ * @param settingsStore 完整设置模型存储（节假日开关在其中）；null = 自建只读实例。
+ * @param weather 天气 provider（壳里注入 `wiring.weather`）；null = 天气行显示「未设置」。
+ * @param partnerPort 情侣绑定端口；null = 自建实例读 `partner_timetable_binding`。
  * @param onBack 返回键。
  * @param onNavigate 行上的导航目标（壳负责把路由串翻成页面 id 再推页）。
  */
@@ -388,11 +421,58 @@ fun SettingsTimetableHubHost(
     repository: TimetableRepository,
     onBack: () -> Unit,
     onNavigate: (route: String) -> Unit = {},
+    settingsStore: TimetableSettingsModelStore? = null,
+    weather: WeatherProvider? = null,
+    partnerPort: CouplePartnerPort? = null,
 ) {
+    val context = LocalContext.current
+
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
         val subscription = repository.observe { snapshot = it }
         onDispose { subscription.close() }
+    }
+
+    // ---- 三处本页不拥有的真源 -------------------------------------------------
+    // 与壳共用同一份 `FlutterSharedPreferences`（`PrefsKeyValueStore` 是无状态薄封装：
+    // 每次 get 直接读 SharedPreferences，所以自建实例读到的就是壳刚写进去的那份）。
+    val sharedPrefs = remember(context) { PrefsKeyValueStore(context.applicationContext) }
+    val fallbackSettingsStore = remember(sharedPrefs) {
+        TimetableSettingsModelStore(TimetableStore(sharedPrefs))
+    }
+    val fallbackPartnerPort = remember(repository, sharedPrefs) {
+        CouplePartnerPortImpl(repository, sharedPrefs)
+    }
+    val activeSettingsStore = settingsStore ?: fallbackSettingsStore
+    val activePartnerPort = partnerPort ?: fallbackPartnerPort
+
+    // 天气 provider 不是 Compose 可观察的（`addListener` 那套），用一个计数把
+    // 「数据到了 / 城市变了」转成重组；退订必须用**同一个** lambda 引用（同
+    // `TimetableWithCourseActions` 的写法）。
+    var weatherRevision by remember(weather) { mutableIntStateOf(0) }
+    DisposableEffect(weather) {
+        if (weather == null) {
+            onDispose { }
+        } else {
+            val listener: () -> Unit = { weatherRevision += 1 }
+            weather.addListener(listener)
+            onDispose { weather.removeListener(listener) }
+        }
+    }
+    @Suppress("UNUSED_EXPRESSION")
+    weatherRevision // 读一次建立订阅；值本身不参与渲染。
+
+    // 设置模型没有变更通道（只有 load / save），按「快照变一次就重读一次」取初值。
+    // 仓储通知不覆盖节假日写入（那是另一个 store 直接写盘），所以从子页返回时
+    // 依赖 entry 重建再读（见 KDoc「重读时机」）。
+    val settings = remember(activeSettingsStore, snapshot) {
+        runCatching { activeSettingsStore.load() }.getOrDefault(TimetableSettingsModel())
+    }
+    // 绑定态判据与 Dart `provider.hasPartnerBinding`（`:577`）同口径：能解出绑定才算绑定。
+    // 读失败 / 坏值 = 没有可用绑定 ⇒ false（`CouplePartnerPort.loadBinding` 对坏值按 Dart
+    // `getPartnerTimetableBinding` 的口径留档后清除，所以这里不出现「看着绑定其实是坏值」）。
+    val partnerBound = remember(activePartnerPort, snapshot) {
+        runCatching { activePartnerPort.loadBinding() != null }.getOrDefault(false)
     }
 
     // 开发者工具整组的可见性（Dart `timetable_settings_screen.dart:1052-1070`）：
@@ -400,13 +480,13 @@ fun SettingsTimetableHubHost(
     //   正式发布包 ⇒ 整组隐藏；其余（debug 包但非 dev flavor）⇒ 只留组件展示 / 调试叠层。
     // 壳里原来这两处都用默认 false ⇒ 永远走「其余」分支，**内存状态与夹具入口在壳里从未出现过**，
     // 而这两行正是诊断族的两个真实入口。Kotlin 侧判定是同步的，不必像 Dart 那样等 FutureBuilder。
-    val context = LocalContext.current
     val diagnosticsBuild = MemoryStatsCollector.isDiagnosticsPackage(context)
     val releaseBuild = !BuildConfig.DEBUG
-    val state = SemesterSettingsLogic.stateOf(
-        currentWeek = snapshot.currentWeek,
-        semesterWeekCount = snapshot.settings.semesterWeekCount,
-        startDate = snapshot.settings.semesterStartDate?.toLocalDate(),
+    val state = SettingsTimetableHubLogic.stateOf(
+        snapshot = snapshot,
+        settings = settings,
+        weatherCityName = weather?.location?.name,
+        partnerBound = partnerBound,
     ).copy(
         releaseBuild = releaseBuild,
         diagnosticsBuild = diagnosticsBuild,
@@ -416,7 +496,7 @@ fun SettingsTimetableHubHost(
         spec = SettingsTimetablePage.spec(state),
         onBack = onBack,
         onAction = { action, target, _ ->
-            // 本页只有「箭头行」有落点；开关/弹层那几行仍属演示数据（no-op 与改动前一致）。
+            // 本页只有「箭头行」有落点；开关/弹层那几行在各自子页（见 KDoc）。
             if (action == SettingsAction.NAVIGATE) target?.let(onNavigate)
         },
     )

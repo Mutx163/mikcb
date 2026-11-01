@@ -745,6 +745,9 @@ fun shellPageIdForRoute(route: String?): String? = when (route) {
     // 外观编辑页「每日壁纸」行的去向。串取自 `SettingsBackdropFlowPage.BING_GALLERY_TARGET`，
     // **没有前导 `/`**——它是页内目标 id 不是路由串，别顺手改成 `/settings/...`（那要同时改 Dart 侧）。
     "bingWallpaperGallery" -> "b.bingGallery"
+    // 课程卡片页「卡片外观」直达到材质面板的课程卡片页签（Dart `initialMaterialPage`）。
+    // 同样是没有前导 `/` 的页内目标 id。
+    "materialCourseCard" -> "b.materialCourseCard"
     // 壁纸取景页（外观编辑 → 壁纸面板 → 调整位置）。串带点号，是**页内动作 id** 不是路由串；
     // 分派器原样转成 NAVIGATE，这里必须给落点，否则「调整位置」还是静默没反应。
     // ⚠️ `SettingsRouteWiringGuardTest` 按设计**不扫**带点号的值（那是页内动作的形状），

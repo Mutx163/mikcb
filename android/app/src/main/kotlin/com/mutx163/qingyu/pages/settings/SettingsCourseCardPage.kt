@@ -48,6 +48,14 @@ object SettingsCourseCardPage {
 
     const val ID = "settings-course-card"
 
+    /**
+     * 「卡片外观」行的去向：材质面板的课程卡片页签。
+     *
+     * 命名按 `_TARGET` 后缀、值不带前导 `/`——这是 `SettingsRouteWiringGuardTest` 认的两种形态，
+     * 少了任何一个（或改成字面量）它就不扫，删了路由也没人报红。
+     */
+    const val COURSE_CARD_MATERIAL_TARGET = "materialCourseCard"
+
     /** 统一课卡色的八色板（`settings_course_card.dart:42-51` 的 `_cardColors`）。 */
     val CARD_COLORS: List<String> = listOf(
         "#2563EB",
@@ -115,7 +123,10 @@ object SettingsCourseCardPage {
                     // 跳转牌不是第二份选择器（2026-09-25 入口收敛，:205-207）
                     details = state.courseCardSurfaceStyle.label,
                     action = SettingsAction.MATERIAL_PANEL,
-                    actionTarget = SettingsAppearancePage.ROUTE_APPEARANCE_EDITOR,
+                    // 2026-11-01 F25：直达「材质面板 · 课程卡片页签」，不再只推到外观编辑页首页
+                    // （Dart `settings_appearance_editor.dart:78-88` 的 `initialMaterialPage`）。
+                    // 串没有前导 `/`，是页内目标 id；落点见 `shellPageIdForRoute`。
+                    actionTarget = COURSE_CARD_MATERIAL_TARGET,
                 ),
                 settingsRow(
                     id = "courseCard.verticalAlign",
