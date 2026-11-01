@@ -13,7 +13,6 @@ import com.mutx163.qingyu.share.TransferChannel
 import com.mutx163.qingyu.share.TransferEnvelope
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.sync.buildTransferPackageJson
-import com.mutx163.qingyu.sync.validateTransferPackageJson
 import java.time.LocalDateTime
 
 /**
@@ -45,13 +44,14 @@ data class LanEditSpreadsheetParse(
  *
  * ## 导入为什么先校验后落盘
  *
- * 整份备份导入是**唯一能一次性覆盖用户全部课表**的操作。所以
- * [importProfileBackupJson] 的顺序是死的：
- * 1. `validateTransferPackageJson`（纯函数，不碰存储）；
- * 2. 把要写的课**全部**解析成模型（仍不碰存储）；
- * 3. 只有前两步都过了，才开始清空 + 写入。
+ * 整份备份导入是**唯一能一次性覆盖用户全部课表**的操作。2026-11-01 起它与
+ * [applyTransferJson] 走同一条 LAN 应用链 [LanTransferApplier]（Dart 的
+ * `importProfileBackupJson` 本来就是 `applyToProvider(overwrite)`）：
+ * 1. `LanTransferLogic.parseIncoming` 先过结构门（纯函数，不碰存储）；
+ * 2. 通过后才开始「补时间模板 → 写实体 → 写设置 / 当前周」；
+ * 3. 落盘阶段任一步失败，applier 用导入前快照尽力补偿，再回 `applied: false`。
  *
- * 任何一步抛错，盘上一个字节都没动 —— 这条有测试钉着（见 `LanEditRepositoryHostTest`）。
+ * 校验失败时盘上一个字节都没动 —— 这条有测试钉着（见 `LanEditRepositoryHostTest`）。
  *
  * ## 明确不做的（诚实清单）
  *
@@ -66,8 +66,9 @@ data class LanEditSpreadsheetParse(
  *   `profile_backup_profiles_unsupported`，而不是静默只恢复活动档案
  *   （那会无声吞掉用户其它课表）。要支持得给仓储加「替换整份档案表」的入口，
  *   属 Lead 决定的范围，本泳道不自己加。
- * - 备份里的 `tasks` / `exams` **导出会带上、导入不写回**：恢复作业与考试需要
- *   `TimetableCourseService` 上没有的批量入口，留待 Lead 拍板。
+ * - ~~备份里的 `tasks` / `exams` 导出会带上、导入不写回~~ **已修（2026-11-01）**：
+ *   整份备份导出补齐了日程 / 日期规则 / 地点作息分组，导入改走 [LanTransferApplier]，
+ *   八张实体表 + 时间模板全部写回（P0 数据丢失）。
  */
 class LanEditRepositoryHost(
     private val repository: TimetableRepository,
@@ -202,50 +203,35 @@ class LanEditRepositoryHost(
                 coursesJson = snapshot.courses.map { it.toJson() },
                 tasksJson = repository.tasks.map { it.toJson() },
                 examsJson = repository.exams.map { it.toJson() },
+                // 2026-11-01 修（P0）：这三块原先没传，导出恒为空列表 ⇒ 接收端拿到
+                // 的「整份备份」里日程 / 日期规则 / 地点作息分组**全部消失**。
+                // 快照里都有，按 Dart `buildCurrentPackage` 的同源口径原样写出。
+                scheduleItemsJson = snapshot.scheduleItems.map { it.toJson() },
+                scheduleDateRulesJson = snapshot.scheduleDateRules.map { it.toJson() },
+                locationTimeGroupsJson = snapshot.locationTimeGroups.map { it.toJsonMap() },
                 timeSchemesJson = snapshot.timeSchemes.map { it.toJson() },
             ),
         )
     }
 
     override fun importProfileBackupJson(content: String) {
-        // ---- 第 1 步：校验（纯函数，不碰存储）----
-        val validation = validateTransferPackageJson(content)
-        if (!validation.isValid) {
-            throw FormatException(validation.errors.first())
-        }
-        val root = MiniJson.tryParse(content) as? Map<*, *>
-            ?: throw FormatException("transfer_package_json_invalid")
-        val profiles = root["profiles"] as? List<*> ?: emptyList<Any?>()
-        if (profiles.isNotEmpty()) {
-            // 多档案整份恢复要「替换整份档案表」的仓储入口；没有就先明确拒绝，
-            // 不静默只恢复活动档案（那会无声吞掉用户其它课表）。
-            throw FormatException("profile_backup_profiles_unsupported")
-        }
-
-        // ---- 第 2 步：把要写的东西全部解析出来（仍然不碰存储）----
-        val courses = parseCourseList(root["courses"])
-        val settings = (root["settings"] as? Map<*, *>)?.let { raw ->
-            try {
-                @Suppress("UNCHECKED_CAST")
-                TimetableSettings.fromJson(raw as Map<String, Any?>)
-            } catch (error: Exception) {
-                throw FormatException("transfer_settings_invalid")
-            }
-        }
-        val week = (root["currentWeek"] as? Number)?.toInt()
-
-        // ---- 第 3 步：前两步都过了才落盘，全部走仓储/服务 ----
+        // 2026-11-01 修（P0）：旧版只手写「课程 + 设置 + 当前周」，**作业、考试、
+        // 日程、日期规则、地点作息分组、时间模板全部丢掉**（导出侧已经带着它们，
+        // 导入侧却不认）。Dart 的 `importProfileBackupJson` 就是
+        // `applyToProvider(mode: overwrite)`，所以这里直接复用同一条 LAN 应用链
+        // （`LanTransferApplier`）：逐条写回八张实体表、补/并时间模板并按映射改写
+        // 引用、失败尽力回滚。不再在 LAN 层另写一份字段映射。
         //
-        // ⚠️ 这里**必须逐门 addCourse，不能用 addGroup**：`addGroup` 是「同一门课排在
-        // 不同天」的工具，它会把整组课的名字/教师/地点统一成第一门课的
-        //（`CourseDomain.applySharedFields(course, shared)`）。拿它恢复一份含多门**不同**
-        // 课的备份，会把所有课名压成第一个课名——2026-10-28 实测踩到（测试当场变红）。
-        TimetableCourseService.clearActiveProfileCourses(repository)
-        for (course in courses) {
-            repository.addCourse(course)
+        // 契约不变：
+        // - 结构门 / 多档案包（`profiles` 非空）/ 整设备包（`backupType: full` 或
+        //   `scope: all_data`）由 `parseIncoming` 抛 [FormatException]，**此时一个
+        //   字节都没写**（校验在落盘之前）；多档案仍是「明确拒绝」，不会静默只恢复活动档案。
+        // - 落盘阶段失败时 applier 先补偿再回 `applied: false`，这里折成 [FormatException]，
+        //   路由层照旧折 400。
+        val result = applier.apply(content, TransferApplyMode.OVERWRITE)
+        if (result["applied"] != true) {
+            throw FormatException((result["error"] as? String) ?: "transfer_import_failed")
         }
-        settings?.let { repository.updateSettings(it) }
-        week?.let { repository.setCurrentWeek(it) }
     }
 
     // -----------------------------------------------------------------------
@@ -301,24 +287,4 @@ class LanEditRepositoryHost(
      */
     override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?> =
         applier.apply(content, mode)
-
-    // -----------------------------------------------------------------------
-    // 内部
-    // -----------------------------------------------------------------------
-
-    /** 把包里的 `courses` 全部解析成模型；任何一条坏 → [FormatException]（此时还没写任何东西）。 */
-    private fun parseCourseList(raw: Any?): List<Course> {
-        if (raw !is List<*>) return emptyList()
-        val courses = ArrayList<Course>(raw.size)
-        for (item in raw) {
-            if (item !is Map<*, *>) throw FormatException("transfer_course_invalid")
-            try {
-                @Suppress("UNCHECKED_CAST")
-                courses.add(Course.fromJson(item as Map<String, Any?>))
-            } catch (error: Exception) {
-                throw FormatException("transfer_course_invalid")
-            }
-        }
-        return courses
-    }
 }

@@ -4,7 +4,16 @@ import com.mutx163.qingyu.app.InMemoryKeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.FormatException
+import com.mutx163.qingyu.core.LocationKeyword
+import com.mutx163.qingyu.core.LocationKeywordMatchMode
+import com.mutx163.qingyu.core.LocationTimeGroup
+import com.mutx163.qingyu.core.ScheduleDateRule
+import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.sync.validateTransferPackageJson
@@ -66,10 +75,113 @@ class LanEditRepositoryHostTest {
         assertTrue("盘上必须写着这两门课", raw.contains("高等数学") && raw.contains("大学物理"))
     }
 
+    /**
+     * 2026-11-01 P0 回归：整份备份导出**缺三块**（日程 / 日期规则 / 地点作息分组），
+     * 导入**只写课程 + 设置 + 当前周**，作业与考试也一起丢。
+     *
+     * 这条走「真仓储导出 → 空仓储导入 → 逐块断言」，任何一块没落盘都会红。
+     */
+    @Test
+    fun `导出再导入 作业考试日程规则地点分组时间模板全部还在`() {
+        val now = LocalDateTime.of(2026, 10, 28, 9, 0)
+        val scheme = TimeScheme(
+            id = "ts1",
+            name = "默认作息",
+            sections = listOf(SectionTime("08:00", "08:45")),
+            createdAt = now,
+            updatedAt = now,
+        )
+        val course = course("c1", "高等数学").copy(timeSchemeIdOverride = "ts1")
+        val task = CourseTask(id = "t1", title = "作业一", courseId = "c1", createdAt = now, updatedAt = now)
+        val exam = Exam(
+            id = "e1",
+            courseId = "c1",
+            name = "期中考试",
+            dateTime = LocalDateTime.of(2026, 11, 20, 9, 0),
+            startTime = "09:00",
+            endTime = "11:00",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val item = ScheduleItem(
+            id = "s1",
+            title = "社团活动",
+            startDate = LocalDateTime.of(2026, 11, 1, 0, 0),
+            endDate = LocalDateTime.of(2026, 11, 1, 0, 0),
+            startTime = "19:00",
+            endTime = "21:00",
+            createdAt = now,
+            updatedAt = now,
+        )
+        val rule = ScheduleDateRule(
+            id = "r1",
+            name = "国庆调休",
+            timeSchemeId = "ts1",
+            startDate = "2026-10-01",
+            endDate = "2026-10-07",
+            enabled = true,
+        )
+        val group = LocationTimeGroup(
+            id = "g1",
+            name = "实验室作息",
+            timeSchemeId = "ts1",
+            enabled = true,
+            priority = 3,
+            keywords = listOf(LocationKeyword("实验楼", LocationKeywordMatchMode.PREFIX)),
+        )
+
+        val sourceStore = InMemoryKeyValueStore()
+        val sourceTable = TimetableStore(sourceStore)
+        sourceTable.saveProfiles(
+            listOf(
+                TimetableProfile(
+                    id = "p1",
+                    name = "默认课表",
+                    courses = listOf(course),
+                    tasks = listOf(task),
+                    scheduleItems = listOf(item),
+                    exams = listOf(exam),
+                    currentWeek = 7L,
+                    createdAt = now,
+                    lastUsedAt = now,
+                ),
+            ),
+        )
+        sourceTable.saveActiveProfileId("p1")
+        sourceTable.saveSettings(TimetableSettings.defaults().copy(activeTimeSchemeId = "ts1"))
+        sourceTable.saveCurrentWeek(7)
+        sourceTable.saveTimeSchemes(listOf(scheme))
+        sourceTable.saveScheduleDateRules(listOf(rule))
+        sourceTable.saveLocationTimeGroups(listOf(group))
+        val source = TimetableRepository(sourceTable)
+
+        val exported = LanEditRepositoryHost(source).exportProfileBackupJson()
+        assertTrue("导出侧漏了日程条目：$exported", exported.contains("\"id\":\"s1\""))
+        assertTrue("导出侧漏了日期规则：$exported", exported.contains("\"id\":\"r1\""))
+        assertTrue("导出侧漏了地点分组：$exported", exported.contains("\"id\":\"g1\""))
+
+        val target = repositoryOn(InMemoryKeyValueStore())
+        LanEditRepositoryHost(target).importProfileBackupJson(exported)
+
+        assertEquals("课程", listOf("高等数学"), target.courses.map { it.name })
+        assertEquals("作业", listOf("t1"), target.tasks.map { it.id })
+        assertEquals("考试", listOf("e1"), target.exams.map { it.id })
+        assertEquals("日程条目", listOf("s1"), target.snapshot.scheduleItems.map { it.id })
+        assertEquals("日期规则", listOf("r1"), target.snapshot.scheduleDateRules.map { it.id })
+        assertEquals("地点分组", listOf("g1"), target.snapshot.locationTimeGroups.map { it.id })
+        assertEquals("时间模板", 1, target.snapshot.timeSchemes.size)
+        assertEquals("当前周", 7, target.snapshot.currentWeek)
+
+        // 跨设备导入新建了模板：三处引用都必须指向本机新建的那套，不能悬空。
+        val localSchemeId = target.snapshot.timeSchemes.single().id
+        assertEquals("课程覆盖的模板 id", localSchemeId, target.courses.single().timeSchemeIdOverride)
+        assertEquals("日期规则的模板 id", localSchemeId, target.snapshot.scheduleDateRules.single().timeSchemeId)
+        assertEquals("地点分组的模板 id", localSchemeId, target.snapshot.locationTimeGroups.single().timeSchemeId)
+    }
+
     // -----------------------------------------------------------------------
     // 导入：坏备份一个字节都不许写（本次验收重点）
     // -----------------------------------------------------------------------
-
     @Test
     fun `坏备份导入失败时盘上原文一字未变`() {
         val store = InMemoryKeyValueStore()

@@ -1,9 +1,12 @@
 package com.mutx163.qingyu.pages.transfer
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.LocationTimeGroup
+import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
+import com.mutx163.qingyu.share.TransferScope
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -112,6 +115,76 @@ class DataTransferApplyLogicTest {
         )
     }
 
+    // ── 模板 id 改写（2026-11-01 P1：规则与地点分组也要改） ──────────────
+
+    @Test
+    fun `跨设备导入时 日程规则与地点分组的模板引用一起改写`() {
+        val plan = planWithRulesAndGroups()
+        val writes = DataTransferApplyLogic.planWrites(
+            plan = plan,
+            mode = TransferApplyMode.OVERWRITE,
+            current = DataTransferApplyLogic.TransferCurrentContent(),
+            scope = TransferScope.CURRENT_TIMETABLE,
+            schemeIdMap = mapOf("ts-old" to "ts-new"),
+        )
+        assertEquals(
+            "日程规则指向的模板必须按映射改写，否则规则静默失效",
+            "ts-new",
+            writes.scheduleDateRules.single().timeSchemeId,
+        )
+        assertEquals(
+            "地点分组指向的模板必须按映射改写",
+            "ts-new",
+            writes.locationTimeGroups.single().timeSchemeId,
+        )
+    }
+
+    @Test
+    fun `映射里没有的模板引用保持原值而不是被置空`() {
+        // 映射只覆盖「本机新建的那几套」；id 恰好一致的模板不会进映射，
+        // 若按缺失置空，同设备往返会把所有引用抹掉（净损失）。
+        val plan = planWithRulesAndGroups()
+        val writes = DataTransferApplyLogic.planWrites(
+            plan = plan,
+            mode = TransferApplyMode.OVERWRITE,
+            current = DataTransferApplyLogic.TransferCurrentContent(),
+            scope = TransferScope.CURRENT_TIMETABLE,
+            schemeIdMap = mapOf("another-scheme" to "whatever"),
+        )
+        assertEquals("ts-old", writes.scheduleDateRules.single().timeSchemeId)
+        assertEquals("ts-old", writes.locationTimeGroups.single().timeSchemeId)
+    }
+
+    // ── 全量包当前周（2026-11-01 P1） ───────────────────────────────
+
+    @Test
+    fun `全量包顶层没有当前周时取活动档案自己那份`() {
+        val plan = fullBackupPlan(
+            profiles = listOf(profile("p1", "大一上").copy(currentWeek = 5L)),
+        ).copy(currentWeek = null)
+        val writes = DataTransferApplyLogic.planWrites(
+            plan = plan,
+            mode = TransferApplyMode.OVERWRITE,
+            current = DataTransferApplyLogic.TransferCurrentContent(),
+            scope = TransferScope.ALL_DATA,
+        )
+        assertEquals("顶层不带时回落到档案的当前周", 5, writes.currentWeek)
+    }
+
+    @Test
+    fun `全量包顶层有当前周时以顶层为准`() {
+        val plan = fullBackupPlan(
+            profiles = listOf(profile("p1", "大一上").copy(currentWeek = 5L)),
+        ).copy(currentWeek = 8)
+        val writes = DataTransferApplyLogic.planWrites(
+            plan = plan,
+            mode = TransferApplyMode.OVERWRITE,
+            current = DataTransferApplyLogic.TransferCurrentContent(),
+            scope = TransferScope.ALL_DATA,
+        )
+        assertEquals(8, writes.currentWeek)
+    }
+
     @Test
     fun `单课表包撤销只抓当前档案的三块与设置`() {
         assertEquals(
@@ -146,6 +219,32 @@ class DataTransferApplyLogicTest {
         exams = emptyList(),
         scheduleItems = emptyList(),
         scheduleDateRules = emptyList(),
+    )
+
+    /** 单课表计划，带一条日期规则与一个地点分组，模板都指向 `ts-old`。 */
+    private fun planWithRulesAndGroups() = TransferImportPlan(
+        profiles = emptyList(),
+        activeProfileId = "p1",
+        courses = emptyList(),
+        settings = null,
+        currentWeek = 1,
+        timeSchemes = emptyList(),
+        tasks = emptyList(),
+        exams = emptyList(),
+        scheduleItems = emptyList(),
+        scheduleDateRules = listOf(
+            ScheduleDateRule(
+                id = "r1",
+                name = "国庆调休",
+                timeSchemeId = "ts-old",
+                startDate = "2026-10-01",
+                endDate = "2026-10-07",
+                enabled = true,
+            ),
+        ),
+        locationTimeGroups = listOf(
+            LocationTimeGroup(id = "g1", name = "实验室作息", timeSchemeId = "ts-old"),
+        ),
     )
 
     private fun profile(id: String, name: String) = TimetableProfile(

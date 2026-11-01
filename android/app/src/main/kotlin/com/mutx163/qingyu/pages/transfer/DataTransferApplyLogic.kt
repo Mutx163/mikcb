@@ -153,9 +153,18 @@ object DataTransferApplyLogic {
         scope: TransferScope,
         schemeIdMap: Map<String, String> = emptyMap(),
     ): TransferApplyWrites {
-        // 日程规则：空列表视为「包没带这一块」，不覆盖本机（包缺该键时清空用户规则
-        // 是净损失，而少还原一次规则顶多是没同步到）。
-        val rules = plan.scheduleDateRules
+        // 日程规则 / 地点分组：空列表视为「包没带这一块」，不覆盖本机（包缺该键时
+        // 清空用户规则是净损失，而少还原一次顶多是没同步到）。
+        //
+        // 2026-11-01 修（P1）：这两块的 `timeSchemeId` 也必须跟课程与设置一样过
+        // `schemeIdMap`。跨设备导入时包里的模板 id 在本机不存在、宿主会新建并给出
+        // 「包 id → 本机 id」映射；不改写就会指向一个不存在的模板，规则/分组静默失效
+        // （Dart `unified_transfer_service.dart:717-724` 对两块都做了改写）。
+        // **映射缺失时保留原值**（与 `LanTransferLogic.remapScheduleDateRules` 同判据）：
+        // 映射只包含「本机新建的那几套」，id 恰好一致的模板不会进映射——若按缺失置空，
+        // 同设备往返会把所有引用抹掉，那是净损失。
+        val rules = remapScheduleDateRules(plan.scheduleDateRules, schemeIdMap)
+        val groups = remapLocationTimeGroups(plan.locationTimeGroups, schemeIdMap)
 
         if (isFullBackupPlan(plan)) {
             val profiles = plan.profiles.map { remapProfileSchemes(it, schemeIdMap) }
@@ -167,9 +176,14 @@ object DataTransferApplyLogic {
                 activeProfileId = plan.activeProfileId,
                 // 全量包：档案里已经带齐 courses/tasks/exams/scheduleItems，随档案一起写。
                 settings = active?.settings,
+                // 当前周：全量包顶层通常不带 `currentWeek`（Dart `buildFullPackage` 不传，
+                // 本仓 `DataTransferPackageLogic` 对 ALL_DATA 也传 null），所以只能回落到
+                // 恢复出来的活动档案自己那份。不写回的话本机全局 `current_week` 仍是旧值，
+                // 用户恢复完全量备份会停在原来的那一周（2026-11-01 修 P1）。
+                currentWeek = plan.currentWeek ?: active?.currentWeek?.toInt(),
                 timeSchemes = plan.timeSchemes,
                 scheduleDateRules = rules,
-                locationTimeGroups = plan.locationTimeGroups,
+                locationTimeGroups = groups,
             )
         }
 
@@ -218,7 +232,7 @@ object DataTransferApplyLogic {
             currentWeek = plan.currentWeek,
             timeSchemes = plan.timeSchemes,
             scheduleDateRules = rules,
-            locationTimeGroups = plan.locationTimeGroups,
+            locationTimeGroups = groups,
         )
     }
 
@@ -255,6 +269,35 @@ object DataTransferApplyLogic {
             settings
         } else {
             settings.copy(activeTimeSchemeId = mapped)
+        }
+    }
+
+    /**
+     * 日程规则的模板引用改写（Dart `_remapScheduleDateRules`）。
+     *
+     * 映射缺失时**保留原值**，理由见 [planWrites] 里这段的注释：映射只覆盖「本机新建的
+     * 模板」，同 id 模板不进映射。
+     */
+    fun remapScheduleDateRules(
+        rules: List<ScheduleDateRule>,
+        schemeIdMap: Map<String, String>,
+    ): List<ScheduleDateRule> {
+        if (schemeIdMap.isEmpty()) return rules
+        return rules.map { rule ->
+            val mapped = schemeIdMap[rule.timeSchemeId] ?: rule.timeSchemeId
+            if (mapped == rule.timeSchemeId) rule else rule.copy(timeSchemeId = mapped)
+        }
+    }
+
+    /** 地点作息分组的模板引用改写（Dart `_remapLocationTimeGroups`），判据同上。 */
+    fun remapLocationTimeGroups(
+        groups: List<LocationTimeGroup>,
+        schemeIdMap: Map<String, String>,
+    ): List<LocationTimeGroup> {
+        if (schemeIdMap.isEmpty()) return groups
+        return groups.map { group ->
+            val mapped = schemeIdMap[group.timeSchemeId] ?: group.timeSchemeId
+            if (mapped == group.timeSchemeId) group else group.copy(timeSchemeId = mapped)
         }
     }
 

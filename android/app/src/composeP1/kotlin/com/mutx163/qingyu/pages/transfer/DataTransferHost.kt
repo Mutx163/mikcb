@@ -425,6 +425,7 @@ private fun applyImport(
     mode: TransferApplyMode,
 ): ApplyOutcome {
     val plan = pending.plan
+    val scope = pending.info.scope
     val before = repository.snapshot
     val undoSnapshot = when (DataTransferApplyLogic.undoKindFor(plan)) {
         TransferUndoScope.FULL_PROFILES -> TransferUndoSnapshot(
@@ -449,7 +450,10 @@ private fun applyImport(
             locationTimeGroups = before.locationTimeGroups,
         )
     }
-    return runCatching {
+    // 2026-11-01 修（P1）：失败必须回滚。旧版整段 runCatching 却不还原，任何一步抛错
+    // 都会留下「课表已经换了、作业/日程还停在旧值」的半替换现场。回滚复用撤销那份快照
+    // 与 [restoreFromSnapshot]（同一判据，不另写一套）；撤销 token 只在成功后生成。
+    val applied = runCatching {
         // ① 先补时间模板表：包里带了模板而本机没有（跨设备导入的常态）时，
         //    这里新建并拿到「包 id → 本机 id」映射，下面的写入按映射改写引用。
         val schemeIdMap = reconcileTimeSchemes(repository, plan.timeSchemes)
@@ -466,47 +470,58 @@ private fun applyImport(
             ),
             // scope 决定「覆盖」的边界：局部 scope 只更新包内实体（Dart 同判据），
             // time_template 连内容块都不碰——写作用域与 [writes] 一一对应。
-            scope = pending.info.scope,
+            scope = scope,
             schemeIdMap = schemeIdMap,
         )
         if (writes.isFullBackup) {
             repository.replaceAllProfiles(writes.profiles, writes.activeProfileId)
             // 全量包里的全局设置（活动作息 / 学期周数 / 开学日）单独写：档案表不带它。
             writes.settings?.let(repository::updateSettings)
+            // 全量包也要还原当前周（见 planWrites 全量分支：顶层没有时取档案自己那份）。
+            writes.currentWeek?.let(repository::setCurrentWeek)
         } else if (writes.writesActiveProfileContent) {
             repository.replaceActiveProfileContent(
                 courses = writes.courses,
                 tasks = writes.tasks,
                 exams = writes.exams,
             )
-            if (writes.scheduleItems.isNotEmpty()) {
-                repository.scheduleItems = writes.scheduleItems
-            }
+            // 日程条目：计划里算好的就是「本机最终应该是什么」。覆盖模式下包内为空
+            // 就该清空——校验层要求八张列表键必须在场，所以「空数组」= 包里真的是空，
+            // 不是「没带该键」；合并模式下 planWrites 已保留本机独有的条目。
+            // 2026-11-01 修（P2）：旧版 isNotEmpty() 守卫让覆盖时空包清不掉本机日程。
+            repository.scheduleItems = writes.scheduleItems
             writes.settings?.let(repository::updateSettings)
             writes.currentWeek?.let(repository::setCurrentWeek)
             // 日程条目 / 设置 / 当前周一次落盘（上面的 setter 只改内存）。
             repository.persistActiveProfileState()
         }
-        // ③ 日程规则：整份替换（包没带就保持本机不动）。
-        if (writes.scheduleDateRules.isNotEmpty()) {
+        // ③ 日程规则 / 地点分组：Dart `_replaceRulesAndLocations` 的口径是
+        //    「非空 ⇒ 替换」，外加 `scope == all_data` 时**空也替换**（整设备覆盖）。
+        //    其他 scope 下包内为空表示「这一块没带」，保持本机不动。
+        val overwriteAllData = scope == TransferScope.ALL_DATA
+        if (writes.scheduleDateRules.isNotEmpty() || overwriteAllData) {
             repository.updateScheduleDateRules(writes.scheduleDateRules)
         }
-        // ③' 地点作息分组：同一约定——包没带就保持本机不动。
-        // 2026-10-30 修（审核 P0）：这块原先导出恒空、导入不认，等于双向全丢。
-        if (writes.locationTimeGroups.isNotEmpty()) {
+        if (writes.locationTimeGroups.isNotEmpty() || overwriteAllData) {
             repository.updateLocationTimeGroups(writes.locationTimeGroups)
         }
-        ApplyOutcome.Applied(
-            token = TransferUndoToken(
-                id = TransferEnvelope.newPackageId(),
-                snapshot = undoSnapshot,
-                createdAt = LocalDateTime.now(),
-            ),
-        )
-    }.getOrElse { error ->
-        // Dart：应用失败且无具体原因 → 「导入失败，请确认文件有效」。
-        ApplyOutcome.Failed(code = error.message ?: "import_failed_invalid_file")
     }
+    return applied.fold(
+        onSuccess = {
+            ApplyOutcome.Applied(
+                token = TransferUndoToken(
+                    id = TransferEnvelope.newPackageId(),
+                    snapshot = undoSnapshot,
+                    createdAt = LocalDateTime.now(),
+                ),
+            )
+        },
+        onFailure = { error ->
+            // Dart：应用失败且无具体原因 → 「导入失败，请确认文件有效」。
+            restoreFromSnapshot(repository, undoSnapshot)
+            ApplyOutcome.Failed(code = error.message ?: "import_failed_invalid_file")
+        },
+    )
 }
 
 /**
@@ -544,23 +559,37 @@ private fun reconcileTimeSchemes(
 
 /** 撤销一份导入：按快照种类整份写回（Dart `undoToken`）。 */
 private fun undoImport(repository: TimetableRepository, token: TransferUndoToken): Boolean =
+    restoreFromSnapshot(repository, token.snapshot)
+
+/**
+ * 按快照整份写回。**撤销**与「导入失败回滚」共用这一份判据——两处需要还原的
+ * 东西完全一样（profiles / 活动档案内容 / 设置 / 当前周 / 日程 / 规则 / 分组），
+ * 分成两份实现早晚会漂。
+ *
+ * 快照里的每一块都是**导入前本机的真实值**（不是「包里没带」），所以空列表也必须
+ * 照写：否则撤销清不掉本次导入进来的日程，回滚也会留下半替换现场。
+ */
+private fun restoreFromSnapshot(
+    repository: TimetableRepository,
+    snapshot: TransferUndoSnapshot,
+): Boolean =
     runCatching {
-        val snapshot = token.snapshot
         when (snapshot.kind) {
             TransferUndoScope.FULL_PROFILES -> {
                 repository.replaceAllProfiles(snapshot.profiles, snapshot.activeProfileId)
                 snapshot.settings?.let(repository::updateSettings)
+                // 全量导入现在会写当前周（见 applyImport），撤销必须一起还原。
+                repository.setCurrentWeek(snapshot.currentWeek)
             }
 
             TransferUndoScope.ACTIVE_PROFILE_CONTENT -> {
+                // 日程条目无条件写回（含空列表），理由见函数注释。
+                repository.scheduleItems = snapshot.scheduleItems
                 repository.replaceActiveProfileContent(
                     courses = snapshot.courses,
                     tasks = snapshot.tasks,
                     exams = snapshot.exams,
                 )
-                if (snapshot.scheduleItems.isNotEmpty()) {
-                    repository.scheduleItems = snapshot.scheduleItems
-                }
                 snapshot.settings?.let(repository::updateSettings)
                 repository.setCurrentWeek(snapshot.currentWeek)
                 repository.persistActiveProfileState()

@@ -201,6 +201,11 @@ class DataTransferRoundTripTest {
             "ts-local-new",
             writes.courses.single().timeSchemeIdOverride,
         )
+        assertEquals(
+            "日程规则的模板引用也要跟着改（否则指向不存在的模板，规则静默失效）",
+            "ts-local-new",
+            writes.scheduleDateRules.single().timeSchemeId,
+        )
     }
 
     // ── 5. 「覆盖」的边界按 scope 收窄（2026-10-30 三修） ────────────
