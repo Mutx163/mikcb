@@ -105,6 +105,10 @@ import kotlinx.coroutines.launch
  * 收拢（绕整屏中心，观感是从上方压进来）；底部两颗圆钮从「透明 + 下移 80dp + 模糊 8dp」
  * 归位。点「取消 / 完成」时先播 500ms 的反向动画，再回调宿主。
  *
+ * **系统返回与按钮同一条路**（2026-11-02 修）：两者都从 [requestExit] 走，所以系统返回
+ * 也播整段退场缩放。区别只在「该不该接管」——面板开着时系统返回留给官方弹层关面板
+ * （[requestBackExit] 由宿主传）。
+ *
  * 数值、曲线与分层插值都住在纯模型 [AppearanceEditorEntranceSpec] /
  * [appearanceEditorEntranceFrame]（可走 JVM 单测逐数断言），这里只把结果交给官方
  * `graphicsLayer`：容器布局不变、子树不重新 measure，进度在绘制 lambda 里读，
@@ -122,8 +126,6 @@ import kotlinx.coroutines.launch
  * * 卡片里那份首页是**同组件的新实例**（真首页此时被本页盖住），所以它总是「当前周 +
  *   滚动在顶部」；用户先把首页滚下去再进本页时，缩进去的那一屏与刚才那屏对不上
  *   （Dart 会把首页的滚动位置喂进预览源）。
- * * 系统返回由宿主的 `BackHandler` 直接调用取消，不经过本页的 `requestExit`，
- *   所以只有点「取消 / 完成」才会播退场缩放。
  * * 底部工具的「模糊对焦」用 `Modifier.blur`，Android 12 以下不生效（退化为无模糊）。
 
  *
@@ -132,6 +134,10 @@ import kotlinx.coroutines.launch
  * @param onDone 「完成」：保留改动并返回（Dart `:672-675`）。
  * @param onAdjustWallpaper 底部「调整壁纸」圆钮：宿主开壁纸面板。
  * @param onMaterial 底部「材质」圆钮：宿主开材质面板。
+ * @param requestBackExit 本页是否接管**系统返回**（`true` 时走 [requestExit] 播退场缩放
+ *   再回调 [onCancel]，与点「取消」逐字同路）。宿主在**两个面板都关着**时传 true；
+ *   面板开着时传 false —— 那一下应该先交给官方 `OverlayBottomSheet` 关面板，
+ *   本页不抢（见 [AppearanceEditorHost] 的 `BackHandler`）。
  * @param previewReady 首帧预览是否已就绪；false 时显示加载罩。
  * @param preview 卡片内容槽：宿主在这里放**真课表页**（周 / 日由参数选）。
  *   **不要**在这里自己做缩放或裁剪，那两件事由页面壳与预览舞台负责。
@@ -147,6 +153,7 @@ fun AppearanceEditorScreen(
     onAdjustWallpaper: () -> Unit,
     onMaterial: () -> Unit,
     modifier: Modifier = Modifier,
+    requestBackExit: Boolean = false,
     previewReady: Boolean = true,
     enableTransitionPreview: Boolean = APPEARANCE_EDITOR_TRANSITION_PREVIEW_ENABLED,
     preview: @Composable (dayView: Boolean) -> Unit,
@@ -203,6 +210,19 @@ fun AppearanceEditorScreen(
         if (exiting) return
         exiting = true
         exitScope.launch {
+            // 入场还没播完就退出时（进页 380ms 内按返回），先吃掉剩下的入场再反向：
+            // `animateTo(0f)` 会从**当前进度**直接反向，那一段的位移显得比正常退场短
+            // （读起来就是「刚进来还没落定，退出闪得快一点」）。这一步只等到位、不额外
+            // 延时——正好落定时是空操作，所以正常退场不受影响。
+            if (entrance.value < 1f) {
+                entrance.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = AppearanceEditorEntranceSpec.ENTER_DURATION_MS,
+                        easing = LinearEasing,
+                    ),
+                )
+            }
             entrance.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(
@@ -214,8 +234,21 @@ fun AppearanceEditorScreen(
         }
     }
 
-    // 退场动画期间吞掉系统返回：宿主的 BackHandler 会直接 cancel()，不拦住的话
-    // 会在动画中途把页面推掉，退场看起来「闪一下」。动画结束后由 finish() 退栈。
+    // 系统返回 == 点「取消」：**走同一条 [requestExit] 播退场缩放再回调宿主**。
+    //
+    // 以前这里分成两条路（2026-11-02 用户实报「系统返回是闪现关闭、点完成是正常缩回」）：
+    // 宿主那颗 `BackHandler` 直接调 `cancel()`（立刻退栈），本页的退场进度从没被人推过
+    // —— 于是系统返回是**硬切**，只有「取消 / 完成」才播缩放。
+    //
+    // 现在吞掉那一下、改走请求退场这条路（与按钮逐字同一条）；[enabled] 只在
+    // [requestBackExit] 为 true 时成立 —— 面板开着时宿主传 false，那一下必须留给官方
+    // `OverlayBottomSheet` 自己关面板（Dart `_popSelf` 也是先摘弹层再摘自己）。
+    // 「取消」= 回滚到进页快照（Dart `:735-740`），所以退场回调 [onCancel]。
+    BackHandler(enabled = requestBackExit) { requestExit(onCancel) }
+
+    // 退场动画期间吞掉系统返回（本页的再吞一层，宿主的 `enabled` 已随 [requestBackExit]
+    // 关掉；两层都留着是为了让「动画期间第二下无效」不依赖宿主那一侧的判据）。
+    // 动画结束后由 finish() 退栈。
     BackHandler(enabled = exiting) { /* 等退场播完 */ }
 
     // 加载罩三态里的「还在树上」：淡出跑完才移除（见 [AppearanceEditorLoadingCover]）。

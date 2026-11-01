@@ -96,7 +96,9 @@ import kotlinx.coroutines.withContext
  * * 「取消」= 把**进页那一刻的整份设置写回**再返回。不是「什么都不做」——因为改动
  *   早就落盘了，不做回滚的话按钮名与行为不符；防抖里欠着的那一档**丢弃不写**；
  * * 系统返回 = 取消（`BackHandler` 只在两个面板都关着时接管；面板开着时交给官方
- *   `OverlayBottomSheet` 自己关）。
+ *   `OverlayBottomSheet` 自己关）。**退场缩放照播**：接管后不直接 `cancel()`，而是把
+ *   那一下转交页面壳的 `requestExit`，与点「取消」逐字同路（2026-11-02 修「系统返回
+ *   是闪现关闭、按钮退出才缩回」）。
  * * 落盘**每次都读回校验**：`store.save` 不抛异常也不返回失败（commit() 的布尔被丢了），
  *   所以写完必须重新 `load()` 一次、只比这次改动过的键；没落地就把草稿拉回盘上真值
  *   并提示 —— 不许出现「看着存了、其实没存」。
@@ -673,7 +675,14 @@ fun AppearanceEditorHost(
 
     // 系统返回 = 取消。面板开着时**不接管**：那一下应该先关面板（Dart 的 `_popSelf`
     // 也是先摘弹层再摘自己，`:702-727`）。
-    BackHandler(enabled = !materialSheet && !wallpaperSheet) { cancel() }
+    //
+    // ⚠️ 这里**不再直接调 [cancel]**：以前是直接 `cancel()`（立刻退栈），而页面壳的退场
+    // 缩放只有点「取消 / 完成」才会播 ⇒ 系统返回是硬切、按钮退出是缩回，两条路两种观感
+    // （2026-11-02 用户实报「系统返回是闪现关闭」）。现在只把「该不该接管」这个判据放在
+    // 宿主（它才知道弹层开没开），退场动作交给页面壳的 `requestExit(onCancel)`
+    // —— 系统返回与点「取消」从此逐字同一条路。
+    val backExitEnabled = !materialSheet && !wallpaperSheet
+    BackHandler(enabled = backExitEnabled) { /* 转交页面壳：见下方 requestBackExit */ }
 
     // 深链接：进页后自动打开面板并停在指定页（Dart 等转场落定才开，`:243-247`；
     // Compose 这里首帧之后开等价，面板本来就是根覆盖层条目、不参与页面转场）。
@@ -710,6 +719,10 @@ fun AppearanceEditorHost(
         onMaterial = {
             openMaterial(MaterialSheetPages.GENERAL)
         },
+        // 系统返回由页面壳接管（它才播得了退场缩放）：宿主只给「现在该不该接管」
+        // —— 弹层开着时不接管，那一下留给官方 `OverlayBottomSheet` 关面板
+        // （同上面那颗 `BackHandler` 的判据，两处共用同一个值）。
+        requestBackExit = backExitEnabled,
         // 见类注释「已知差异」第 1 条。
         previewReady = true,
         preview = { dayView ->
