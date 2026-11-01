@@ -69,6 +69,9 @@ import com.mutx163.qingyu.components.liquid.innerShadow
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.rememberCombinedBackdrop
 import com.mutx163.qingyu.components.liquid.vibrancy
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.LiquidGlassTuning
+import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -143,6 +146,14 @@ fun GlassDockNavigationBar(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     backdrop: Backdrop? = null,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老行为（恒液态档）。
+     *
+     * 2026-11-01 之前坞不读任何材质设置：总闸关掉、作用范围关掉、八根旋钮怎么拖，
+     * 屏幕上的药丸一模一样。现在按 [HomeMaterialRenderSpec.dock] 分三档：
+     * 实体（不采样）/ 磨砂（模糊、不折射）/ 液态（模糊 + 折射 + 染色）。
+     */
+    material: HomeMaterialRenderSpec? = null,
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
     trailingContent: (@Composable () -> Unit)? = null,
@@ -161,14 +172,49 @@ fun GlassDockNavigationBar(
     val surfaceContainer = colors.surfaceContainer
     val isDark = surfaceContainer.luminanceIsDark()
 
-    // 只有「有采样源 + 设备支持 runtime shader」才走液态档。
+    // 只有「有采样源 + 设备支持 runtime shader + 这一表面不是实体档」才走液态/磨砂。
     // 少判 isRuntimeShaderSupported 会在低版本机上得到黑块而不是"没效果"。
-    val isBlurActive = backdrop != null && isRuntimeShaderSupported()
-    val containerColor =
-        if (isBlurActive) surfaceContainer.copy(alpha = 0.4f) else surfaceContainer
+    //
+    // 三档来源是 `SettingsMaterialModel.renderSpecOf`（总闸 / 作用范围 / 无 shader
+    // 系统降级都已折算好）：null = 没传材质（老行为，恒液态）。
+    val density = LocalDensity.current
+    val dockSurface = material?.dock
+    val liquidDock = dockSurface == null || dockSurface == SurfaceMaterialState.LIQUID_GLASS
+    val frostedDock = dockSurface == SurfaceMaterialState.FROST
+    val isBlurActive = backdrop != null &&
+        isRuntimeShaderSupported() &&
+        dockSurface != SurfaceMaterialState.SOLID &&
+        dockSurface != SurfaceMaterialState.OFF
+    val containerColor = when {
+        !isBlurActive -> surfaceContainer
+        // 实体/无采样源：不透明底（老降级同款）。
+        // 磨砂：仍模糊，但比液态厚一点、没有折射。
+        frostedDock -> surfaceContainer.copy(alpha = 0.55f)
+        // 液态：染色强度就是材质面板那根 `tintAlpha`（0 = 全透，0.9 = 最厚）。
+        liquidDock && material != null ->
+            surfaceContainer.copy(alpha = material.liquidTintAlpha.coerceIn(0f, 0.9f))
+        else -> surfaceContainer.copy(alpha = 0.4f)
+    }
+    val dockBlurRadiusPx = with(density) {
+        (material?.liquidBlurSigma ?: GlassDockGeometry.GlassBlurRadiusDp).dp.toPx()
+    }
+    // 折射两根旋钮 → miuix 透镜的两项（带宽度 / 位移量），以出厂档为 1 倍基准。
+    // 磨砂档不折射；实体档连采样都不做（上面已关）。
+    val refractionAmountScale =
+        (material?.liquidRefraction ?: LiquidGlassTuning.DEFAULT_REFRACTION.toFloat()) /
+            LiquidGlassTuning.DEFAULT_REFRACTION.toFloat()
+    val refractionBandScale =
+        (material?.liquidRefractionBand ?: LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat()) /
+            LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat()
+    // 边光强度：出厂 0.2 对应原来的 0.75 alpha；旋钮拉到 0 就完全不要边光。
+    val defaultRimStrength = LiquidGlassTuning.DEFAULT_RIM_STRENGTH.toFloat()
+    val rimHighlightAlpha = (
+        0.75f * (
+            (material?.liquidRimStrength ?: defaultRimStrength) / defaultRimStrength
+            )
+        ).coerceIn(0f, 1f)
 
     val pillShape = remember { CircleShape }
-    val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val animationScope = rememberCoroutineScope()
     val tabsCount = items.size
@@ -456,22 +502,23 @@ fun GlassDockNavigationBar(
                                             },
                                         )
                                         vibrancy()
-                                        blur(
-                                            with(density) {
-                                                GlassDockGeometry.GlassBlurRadiusDp.dp.toPx()
-                                            },
-                                        )
-                                        lens(
-                                            refractionHeight = with(density) {
-                                                GlassDockGeometry.RefractionHeightDp.dp.toPx()
-                                            },
-                                            refractionAmount = with(density) {
-                                                GlassDockGeometry.RefractionAmountDp.dp.toPx()
-                                            },
-                                        )
+                                        blur(dockBlurRadiusPx)
+                                        // 磨砂档（作用范围关）只糊不折射；液态档才叠透镜。
+                                        if (liquidDock) {
+                                            lens(
+                                                refractionHeight = with(density) {
+                                                    (GlassDockGeometry.RefractionHeightDp *
+                                                        refractionBandScale).dp.toPx()
+                                                },
+                                                refractionAmount = with(density) {
+                                                    (GlassDockGeometry.RefractionAmountDp *
+                                                        refractionAmountScale).dp.toPx()
+                                                },
+                                            )
+                                        }
                                     },
                                     highlight = {
-                                        baseHighlight.value.copy(alpha = 0.75f)
+                                        baseHighlight.value.copy(alpha = rimHighlightAlpha)
                                     },
                                     layerBlock = {
                                         // 按压时整块玻璃放大一点点：宽度是按比例算的，
@@ -535,19 +582,19 @@ fun GlassDockNavigationBar(
                                         },
                                     )
                                     vibrancy()
-                                    blur(
-                                        with(density) {
-                                            GlassDockGeometry.GlassBlurRadiusDp.dp.toPx()
-                                        },
-                                    )
-                                    lens(
-                                        refractionHeight = with(density) {
-                                            GlassDockGeometry.RefractionHeightDp.dp.toPx()
-                                        },
-                                        refractionAmount = with(density) {
-                                            GlassDockGeometry.RefractionAmountDp.dp.toPx()
-                                        },
-                                    )
+                                    blur(dockBlurRadiusPx)
+                                    if (liquidDock) {
+                                        lens(
+                                            refractionHeight = with(density) {
+                                                (GlassDockGeometry.RefractionHeightDp *
+                                                    refractionBandScale).dp.toPx()
+                                            },
+                                            refractionAmount = with(density) {
+                                                (GlassDockGeometry.RefractionAmountDp *
+                                                    refractionAmountScale).dp.toPx()
+                                            },
+                                        )
+                                    }
                                 },
                                 onDrawSurface = { drawRect(containerColor) },
                             )
@@ -598,31 +645,34 @@ fun GlassDockNavigationBar(
                                     shape = { pillShape },
                                     effects = {
                                         val progress = dampedDrag.pressProgress
-                                        lens(
-                                            refractionHeight = with(density) {
-                                                (GlassDockGeometry.IndicatorRefractionHeightDp *
-                                                    progress).dp.toPx()
-                                            },
-                                            refractionAmount = with(density) {
-                                                (GlassDockGeometry.IndicatorRefractionAmountDp *
-                                                    progress).dp.toPx()
-                                            },
-                                            depthEffect = true,
-                                            // 色散版本每像素要 7 次 `content.eval`，而它只在
-                                            // 「按下那一下」看得见。常开等于静止时也在付 7 倍采样。
-                                            // 切成 0 会走无配色的那条 shader（两条都按 key 缓存，
-                                            // 来回切不产生编译），2026-10-29 审计第 3 条。
-                                            chromaticAberration =
-                                                if (dampedDrag.pressProgress > 0.01f) {
-                                                    GlassDockGeometry.IndicatorDispersion
-                                                } else {
-                                                    0f
+                                        if (liquidDock) {
+                                            lens(
+                                                refractionHeight = with(density) {
+                                                    (GlassDockGeometry.IndicatorRefractionHeightDp *
+                                                        progress * refractionBandScale).dp.toPx()
                                                 },
-                                        )
+                                                refractionAmount = with(density) {
+                                                    (GlassDockGeometry.IndicatorRefractionAmountDp *
+                                                        progress * refractionAmountScale).dp.toPx()
+                                                },
+                                                depthEffect = true,
+                                                // 色散版本每像素要 7 次 `content.eval`，而它只在
+                                                // 「按下那一下」看得见。常开等于静止时也在付 7 倍采样。
+                                                // 切成 0 会走无配色的那条 shader（两条都按 key 缓存，
+                                                // 来回切不产生编译），2026-10-29 审计第 3 条。
+                                                chromaticAberration =
+                                                    if (dampedDrag.pressProgress > 0.01f) {
+                                                        GlassDockGeometry.IndicatorDispersion
+                                                    } else {
+                                                        0f
+                                                    },
+                                            )
+                                        }
                                     },
                                     highlight = {
                                         pillHighlight.value.copy(
-                                            alpha = dampedDrag.pressProgress,
+                                            alpha = dampedDrag.pressProgress *
+                                                rimHighlightAlpha,
                                         )
                                     },
                                     layerBlock = {

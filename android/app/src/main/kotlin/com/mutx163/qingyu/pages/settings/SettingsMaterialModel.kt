@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.pages.settings
 
+import com.mutx163.qingyu.app.LiquidGlassTuningModel
+import com.mutx163.qingyu.app.TimetableSettingsModel
+import com.mutx163.qingyu.app.CourseCardSurfaceStyle as ModelCourseCardSurfaceStyle
 import kotlin.math.abs
 
 /**
@@ -274,9 +277,53 @@ data class MaterialPanelState(
     val previewDayView: Boolean = false,
 )
 
+/**
+ * 渲染层直接消费的**材质快照**（首页顶栏玻璃带 / 课程卡片 / 玻璃坞）。
+ *
+ * ## 为什么要有这一层
+ *
+ * 2026-11-01 之前，材质面板里改「默认材质 / 顶栏玻璃 / 八根旋钮」能落盘、能读回、
+ * 面板读数也对，但**屏幕上什么都没有发生**：渲染层从来没有读过
+ * `frostedBlurEnabled` / `homeBandGlassMaterial` / `liquidGlassTuning`。
+ *
+ * 现在由 [SettingsMaterialModel.renderSpecOf] 一次性把「该画哪一档、用多大模糊 /
+ * 染色 / 折射」算成这个不可变对象，渲染层只照单执行，不再各自判断设置语义。
+ *
+ * ## 字段与落盘键的对应（逐条，别另起口径）
+ *
+ * | 字段 | 来自 |
+ * |---|---|
+ * | [band] | `homePageHeaderBlurEnabled` + `homeBandGlassMaterial` + `frostedBlurEnabled`（[SettingsMaterialModel.homeBandSurfaceMaterial]） |
+ * | [dock] | `frostedBlurEnabled` + `liquidGlassDockEnabled`（[SettingsMaterialModel.dockSurfaceMaterial]） |
+ * | [courseCard] | `courseCardSurfaceStyle` + `frostedBlurEnabled` + 有没有可用壁纸（[SettingsMaterialModel.courseCardSurfaceMaterial]） |
+ * | [liquidTintAlpha] / [liquidBlurSigma] / [liquidRefraction] / [liquidRefractionBand] / [liquidRimStrength] | `liquidGlassTuning`（深色独立时取 `liquidGlassTuningDark`，再套深色配方） |
+ * | [courseCardTintAlpha] / [courseCardBlurSigma] | `courseCardGlassTuning`（卡片自己那套，刻意与全局分开） |
+ *
+ * 深色配方与 Dart `LiquidGlassDarkRecipe`（`liquid_glass_tuning.dart:676-740`）同口径：
+ * 深色**恒**乘 `tintAlphaScale = 0.85`；`darkGlassBoostEnabled` 打开时再乘
+ * `blurSigmaScale = 1.3`、`rimStrengthScale = 0.6`；浅色恒等。
+ *
+ * @param band 顶栏玻璃带。没有壁纸时解析成 [SurfaceMaterialState.SOLID]（Dart
+ *   `homePageHeaderUsesFrostedChrome` 在无壁纸时恒 false），关掉总开关时是
+ *   [SurfaceMaterialState.OFF]（整条不画）。
+ * @param dock 玻璃坞。作用范围关 → 磨砂（仍模糊、不折射）；总闸关 → 实体。
+ * @param courseCard 课程卡片。无壁纸 / 总闸关 / 选了实体档 → 实体。
+ */
+data class HomeMaterialRenderSpec(
+    val band: SurfaceMaterialState = SurfaceMaterialState.OFF,
+    val dock: SurfaceMaterialState = SurfaceMaterialState.FROST,
+    val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
+    val liquidTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
+    val liquidBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
+    val liquidRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
+    val liquidRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
+    val liquidRimStrength: Float = LiquidGlassTuning.DEFAULT_RIM_STRENGTH.toFloat(),
+    val courseCardTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
+    val courseCardBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
+)
+
 /** 材质/表面的纯推导（`lib/models/surface_material.dart` + `glass_mode_choice.dart`）。 */
 object SettingsMaterialModel {
-
     /** 模糊总开关 → 玻璃档（`glass_mode_choice.dart:22-24`）。 */
     fun glassModeChoice(state: MaterialPanelState): GlassModeChoice =
         if (state.frostedBlurEnabled) GlassModeChoice.LIQUID_GLASS else GlassModeChoice.SOLID
@@ -391,4 +438,121 @@ object SettingsMaterialModel {
 
     /** 「自定义」档的存档值：不在 10 格阶梯上。 */
     const val PRESET_CUSTOM = "custom"
+
+    // ───────────────────────── 渲染侧快照（设置模型 → 屏幕该画什么） ─────────────────────────
+
+    /**
+     * 设置模型 → [HomeMaterialRenderSpec]。
+     *
+     * 渲染层**只调用这一个入口**，不要在页面里再读 `frostedBlurEnabled` 一类原始键：
+     * 那样「跟随默认 / 深色档 / 无壁纸降级」三套判据会在每个表面各写一遍，迟早漂开。
+     *
+     * @param isDark 当前系统明暗（决定深色档与深色配方）。
+     * @param hasBackdrop 当前有没有**可用**壁纸（宿主用 `HomeBackdropSnapshot.hasWallpaper`
+     *   传进来；课程卡片的实体降级与顶栏带的实心降级都依赖它，Dart 同口径）。
+     */
+    fun renderSpecOf(
+        model: TimetableSettingsModel,
+        isDark: Boolean,
+        hasBackdrop: Boolean,
+    ): HomeMaterialRenderSpec {
+        val panel = panelStateOf(model, hasBackdrop)
+        val rawBand = homeBandSurfaceMaterial(panel)
+        // Dart `homePageHeaderUsesFrostedChrome`：没有壁纸时标题行恒为不透明实心条。
+        // 「OFF」（顶栏玻璃总开关关）保持不画，不被这条降级吞掉。
+        val band = if (!hasBackdrop && rawBand != SurfaceMaterialState.OFF) {
+            SurfaceMaterialState.SOLID
+        } else {
+            rawBand
+        }
+        val global = activeLiquidTuning(model, isDark)
+        val card = model.courseCardGlassTuning ?: LiquidGlassTuningModel.DEFAULTS
+        val tintScale = darkTintScale(isDark)
+        val blurScale = darkBlurScale(isDark, model.darkGlassBoostEnabled)
+        val rimScale = darkRimScale(isDark, model.darkGlassBoostEnabled)
+        return HomeMaterialRenderSpec(
+            band = band,
+            dock = dockSurfaceMaterial(panel),
+            courseCard = courseCardSurfaceMaterial(panel),
+            liquidTintAlpha = (global.tintAlpha * tintScale).coerceIn(0.0, 1.0).toFloat(),
+            liquidBlurSigma = (global.blurSigma * blurScale)
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_BLUR_SIGMA).toFloat(),
+            liquidRefraction = global.refraction
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION).toFloat(),
+            liquidRefractionBand = global.refractionBand
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_REFRACTION_BAND).toFloat(),
+            liquidRimStrength = (global.rimStrength * rimScale).coerceIn(0.0, 1.0).toFloat(),
+            courseCardTintAlpha = (card.tintAlpha * tintScale).coerceIn(0.0, 1.0).toFloat(),
+            courseCardBlurSigma = (card.blurSigma * blurScale)
+                .coerceIn(0.0, LiquidGlassTuningModel.MAX_BLUR_SIGMA).toFloat(),
+        )
+    }
+
+    /**
+     * 设置模型 → 材质面板的输入状态（[MaterialPanelState]）。
+     *
+     * 与面板自己用的那份**同一形状**，这样「面板上显示的档位」与「渲染层拿到的档位」
+     * 不会各算一遍。两个 `CourseCardSurfaceStyle` 枚举（`app` 的落盘模型 / 本包的
+     * 界面模型）在这里做唯一一次翻译。
+     */
+    fun panelStateOf(
+        model: TimetableSettingsModel,
+        hasBackdrop: Boolean,
+    ): MaterialPanelState = MaterialPanelState(
+        frostedBlurEnabled = model.frostedBlurEnabled,
+        homePageHeaderBlurEnabled = model.homePageHeaderBlurEnabled,
+        homeBandGlassMaterial = model.homeBandGlassMaterial,
+        liquidGlassPreset = model.liquidGlassPreset,
+        liquidGlassTuning = model.liquidGlassTuning?.toPanelTuning() ?: LiquidGlassTuning.DEFAULTS,
+        liquidGlassTuningDark = model.liquidGlassTuningDark?.toPanelTuning(),
+        linkLiquidGlassTuning = model.linkLiquidGlassTuning,
+        darkGlassBoostEnabled = model.darkGlassBoostEnabled,
+        liquidGlassDockEnabled = model.liquidGlassDockEnabled,
+        courseCardGlassPreset = model.courseCardGlassPreset,
+        courseCardGlassTuning =
+        model.courseCardGlassTuning?.toPanelTuning() ?: LiquidGlassTuning.DEFAULTS,
+        hasHomePageBackdrop = hasBackdrop,
+        courseCardSurfaceStyle = when (model.courseCardSurfaceStyle) {
+            ModelCourseCardSurfaceStyle.SOLID -> CourseCardSurfaceStyle.SOLID
+            ModelCourseCardSurfaceStyle.GAUSSIAN -> CourseCardSurfaceStyle.GAUSSIAN
+            ModelCourseCardSurfaceStyle.LIQUID_GLASS -> CourseCardSurfaceStyle.LIQUID_GLASS
+        },
+    )
+
+    /**
+     * 当前明暗该用哪一档液态参数（Dart `LiquidGlassTuning.forMode`，
+     * `liquid_glass_tuning.dart:588-605`）：浅色恒用浅色档；深色在**独立**（`link = false`）
+     * 且深色档非空时才切过去，否则仍以浅色档为形状、再套深色配方。
+     */
+    fun activeLiquidTuning(
+        model: TimetableSettingsModel,
+        isDark: Boolean,
+    ): LiquidGlassTuningModel {
+        val light = model.liquidGlassTuning ?: LiquidGlassTuningModel.DEFAULTS
+        if (!isDark || model.linkLiquidGlassTuning) return light
+        return model.liquidGlassTuningDark ?: light
+    }
+
+    /** 深色配方的染色系数（`LiquidGlassDarkRecipe`：standard / legacy 都是 0.85）。 */
+    fun darkTintScale(isDark: Boolean): Double = if (isDark) 0.85 else 1.0
+
+    /** 深色配方的模糊系数：只有 standard 配方（`darkGlassBoostEnabled`）才上浮 1.3。 */
+    fun darkBlurScale(isDark: Boolean, darkBoost: Boolean): Double =
+        if (isDark && darkBoost) 1.3 else 1.0
+
+    /** 深色配方的边光系数：standard 收 0.6，legacy 不动。 */
+    fun darkRimScale(isDark: Boolean, darkBoost: Boolean): Double =
+        if (isDark && darkBoost) 0.6 else 1.0
 }
+
+/** 落盘模型（`app`）的液态参数 → 本包面板模型（字段一一对应，`liquid_glass_tuning.dart:476-498`）。 */
+private fun LiquidGlassTuningModel.toPanelTuning(): LiquidGlassTuning = LiquidGlassTuning(
+    refraction = refraction,
+    refractionBand = refractionBand,
+    refractionEdgePow = refractionEdgePow,
+    dispersion = dispersion,
+    rimStrength = rimStrength,
+    rimWidth = rimWidth,
+    blurSigma = blurSigma,
+    tintAlpha = tintAlpha,
+)

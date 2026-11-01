@@ -27,14 +27,14 @@ import kotlin.math.roundToInt
  * | [HomeBackgroundModel.relativeLuminance] / [HomeBackgroundModel.meanRelativeLuminance] / [HomeBackgroundModel.bandRows] | `:1330-1358`（逐像素 sRGB 线性化 + 三带 floor/ceil）+ `lib/utils/wallpaper_luminance_profile.dart:61-88` |
  * | [HomeBackgroundModel.exifRotationDegrees] | Dart 侧由引擎解码时自动按 EXIF 摆正（`FileImage`），这里显式补上 |
  *
- * ## Kotlin 设置模型目前**缺**的两项（别在这层伪造）
+ * ## Kotlin 设置模型目前**缺**的一项（别在这层伪造）
  *
- * 1. `timetablePageBackgroundColor`（Dart `:281` 的自定义页底色）——Kotlin
- *    `TimetableSettingsModel` 没有这个键，所以 [HomeBackgroundModel.snapshotOf] 的
- *    `pageColorHex` 参数暂时只能由调用方传 `null`（= 走主题兜底色）。加字段后接线一处即可。
- * 2. `homePageBackgroundScope`（区域位标志）——Kotlin 侧也没有，`pages/diagnostics/
+ * 1. `homePageBackgroundScope`（区域位标志）——Kotlin 侧没有，`pages/diagnostics/
  *    PerformanceSettingsSnapshot.kt:153` 已把它记成已知缺口。所以 [HomeBackdropSnapshot.scope]
  *    默认 [HomeBackdropScope.DEFAULT]（= 四区全铺，与 Dart 默认值一致）。
+ *
+ * （`timetablePageBackgroundColor` 已在 `TimetableSettingsModel` 里；宿主
+ * `TimetableHost` 从 2026-11-01 起把 `pageColorHex` 传给 [snapshotOf]，页底色真正上屏。）
  *
  * ## 谁在用
  *
@@ -635,8 +635,8 @@ object HomeBackgroundModel {
      * 从设置快照出一份渲染层直接能用的 [HomeBackdropSnapshot]。
      *
      * 这是**唯一**的接线入口：调用方只需要 `settings` / 深色开关 / 视口物理宽 / 主题兜底 ARGB，
-     * 其余收口都在这里做。`pageColorHex` 与 [HomeBackdropScope] 暂时没有设置字段可读，
-     * 见本文件头「Kotlin 设置模型目前缺的两项」。
+     * 其余收口都在这里做。`pageColorHex` 由宿主传 `settings.timetablePageBackgroundColor`
+     * （深色模式仍走主题兜底，见 [resolvePageColorArgb]）。
      *
      * @param viewportWidthPx 视口物理宽（`screenWidthDp × density`）；`null` = 拿不到，按 Dart 兜底 1440。
      * @param themeFallbackArgb 无壁纸底色，调用方传主题语义槽（如 `QingyuTheme.scaffoldBackground(isDark)`）。

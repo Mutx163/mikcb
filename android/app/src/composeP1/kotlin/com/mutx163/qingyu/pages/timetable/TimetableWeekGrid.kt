@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -58,6 +59,7 @@ fun TimetableWeekGrid(
     onAgendaClick: (WeekAgendaCardModel) -> Unit = {},
     onLongPressEmptySlot: ((dayOfWeek: Int, section: Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
+    material: HomeMaterialRenderSpec? = null,
 ) {
     val totalHeight = sectionHeight * sectionCount
     val dayCount = visibleDays.size.coerceAtLeast(1)
@@ -115,6 +117,7 @@ fun TimetableWeekGrid(
                                 sectionHeight = sectionHeight,
                                 isHoliday = holidayForDay(dayOfWeek),
                                 onClick = { onCourseClick(card.course) },
+                                material = material,
                             )
                         }
                     }

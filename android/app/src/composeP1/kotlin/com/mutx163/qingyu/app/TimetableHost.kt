@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.shell.HomeWallpaperBackdrop
@@ -210,6 +212,25 @@ fun TimetableHost(
                 isDark = isDarkTheme,
                 viewportWidthPx = viewportWidthPx,
                 themeFallbackArgb = QingyuTheme.scaffoldBackground(dark = isDarkTheme),
+                // 2026-11-01：页底色终于接上。不传这一项时模型只能走主题兜底，
+                // 于是「课表页面设置 → 背景色板」改了能存能读、屏幕上永远不变。
+                pageColorHex = model.timetablePageBackgroundColor,
+            )
+        }
+    }
+    val hasBackdrop = backdropSnapshot?.hasWallpaper == true
+    // 材质只在这一处翻译成渲染快照：顶栏玻璃带 / 课程卡片 / 玻璃坞都照它执行，
+    // 页面本身不再各读一遍 `frostedBlurEnabled` 之类的原始键。
+    val materialSpec: HomeMaterialRenderSpec? = remember(
+        settingsModel,
+        isDarkTheme,
+        hasBackdrop,
+    ) {
+        settingsModel?.let { model ->
+            SettingsMaterialModel.renderSpecOf(
+                model = model,
+                isDark = isDarkTheme,
+                hasBackdrop = hasBackdrop,
             )
         }
     }
@@ -273,5 +294,9 @@ fun TimetableHost(
         },
         // 壁纸上的顶栏墨色（深壁纸 ⇒ 浅墨）。null = 没壁纸 / 亮度还没测出来 ⇒ 主题墨色。
         chromeInk = chromeInk,
+        // 材质快照（2026-11-01）：让「默认材质 / 顶栏玻璃 / 八根旋钮」真正落到屏幕上。
+        material = materialSpec,
+        hasBackdrop = hasBackdrop,
+        pageColorArgb = backdropSnapshot?.pageColorArgb,
     )
 }

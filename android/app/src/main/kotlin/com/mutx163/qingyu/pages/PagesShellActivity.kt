@@ -38,6 +38,7 @@ import com.mutx163.qingyu.pages.shell.GlassDockGeometry
 import com.mutx163.qingyu.pages.shell.GlassDockNavigationBar
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
+import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
@@ -301,6 +302,20 @@ private fun PagesShell() {
     val glassAvailable = isRuntimeShaderSupported()
     val recordBackdrop = atRoot && showDock && glassAvailable
 
+    // 底栏材质（2026-11-01）：总闸 / 「作用范围 → 玻璃坞」/ 八根旋钮终于落到坞上。
+    // 与周视图共用同一份纯推导（`SettingsMaterialModel.renderSpecOf`），不在这里
+    // 另判 `frostedBlurEnabled`；明暗变了要重算（深色档 + 深色配方）。
+    val isDarkTheme = isSystemInDarkTheme()
+    val hasBackdrop = !settingsModel.homePageWallpaperPath.isNullOrEmpty() ||
+        !settingsModel.homePageBackgroundImagePath.isNullOrEmpty()
+    val dockMaterial = remember(settingsModel, isDarkTheme, hasBackdrop) {
+        SettingsMaterialModel.renderSpecOf(
+            model = settingsModel,
+            isDark = isDarkTheme,
+            hasBackdrop = hasBackdrop,
+        )
+    }
+
     // 根 Scaffold：只为一件事——把弹层（`OverlayBottomSheet` / `OverlayListPopup`）的宿主
     // 抬到玻璃底栏之上。miuix 的弹层走「root scaffold」这条通道；没有这层根 Scaffold 时，
     // 它落在课表页自己的 Scaffold 里，而玻璃底栏画在页内容的上一层 → 弹层底部会被底栏盖住。
@@ -374,6 +389,7 @@ private fun PagesShell() {
                     // 设备不支持 runtime shader 时别把 backdrop 传进去：
                     // 传了也画不出模糊，反而会多录一层、白费一次采样。
                     backdrop = if (glassAvailable) backdrop else null,
+                    material = dockMaterial,
                     modifier = Modifier.align(Alignment.BottomCenter),
                     trailingContent = if (settingsModel.glassDockShowAddButton) {
                         {

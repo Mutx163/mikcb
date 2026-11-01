@@ -114,6 +114,14 @@ class SettingsTimetablePageControlsTest {
         ).forEach { id ->
             assertEquals("$id 必须走官方选色器", SettingsAction.COLOR_PICKER, page.row(id).action)
         }
+        // 2026-11-01：深色档三行（Dart `_ModeColorSettings` 的第二组）。
+        listOf(
+            SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_DARK,
+            SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_ACCENT_DARK,
+            SettingsTimetablePageSettingsPage.ROW_TEXT_TIME_AXIS_DARK,
+        ).forEach { id ->
+            assertEquals("$id 必须走官方选色器", SettingsAction.COLOR_PICKER, page.row(id).action)
+        }
     }
 
     // --------------------------------------------------------------- 背景色板

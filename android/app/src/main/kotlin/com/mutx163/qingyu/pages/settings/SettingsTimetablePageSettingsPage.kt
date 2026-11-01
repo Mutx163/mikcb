@@ -31,7 +31,7 @@ import java.util.Locale
  * | `HyperosSectionLabel(背景)` | :327 | `timetablePage.label.background` |
  * | 背景色板 + 壁纸 + 最近 + 随周滑动 + 模糊 | :328-385 | `timetablePage.background` |
  * | `HyperosSettingsBlock(玻璃材质)` | :418-444 | `timetablePage.glass` |
- * | `TimetableTextColorSettings(scope: page)` | :394-398 | `timetablePage.textColors` |
+ * | `TimetableTextColorSettings(scope: page)` | :394-398 | `timetablePage.textColors.light` + `.dark` |
  * | `SettingsResetTile(scope: timetablePage)` | :399-402 | `timetablePage.reset` |
  *
  * ## 本页**不**管的两件事（都在别处）
@@ -47,6 +47,18 @@ object SettingsTimetablePageSettingsPage {
 
     /** 恢复默认的作用域参数（`SettingsResetPage` 的 `TIMETABLE_PAGE.arg`）。 */
     const val RESET_SCOPE_TIMETABLE_PAGE = "timetablePage"
+
+    /**
+     * 深色档三行的 rowId（`weekdayBarFontColorDark` / `weekdayBarAccentColorDark` /
+     * `timeAxisFontColorDark`，`timetable_settings.dart:1758 / :1764 / :1770`）。
+     *
+     * 浅色三行的 rowId 在 `SettingsActionDispatcher.ROW_TP_TEXT_*` 里；深色三行本轮
+     * 只补了页面与状态（写回分支在 Lead 独占的 `SettingsActionDispatcher.kt`，
+     * 见 F25 交付说明）。常量放这里，等分派器接上时直接引用，不要再抄一遍字面量。
+     */
+    const val ROW_TEXT_WEEKDAY_DARK = "timetablePage.textColors.dark.weekday"
+    const val ROW_TEXT_WEEKDAY_ACCENT_DARK = "timetablePage.textColors.dark.weekdayAccent"
+    const val ROW_TEXT_TIME_AXIS_DARK = "timetablePage.textColors.dark.timeAxis"
 
     /** 背景色板（Dart `_backgroundColors`，:53-60）。 */
     val BACKGROUND_COLORS: List<String> = listOf(
@@ -152,9 +164,20 @@ object SettingsTimetablePageSettingsPage {
         )
 
         // 区块 5：文字颜色（scope = page：星期栏两色 + 时间轴一色，Dart :243-265）
+        //
+        // Dart 的 `TimetableTextColorSettings`（`timetable_text_color_settings.dart:120-280`）
+        // 分**两组**渲染同一批行：浅色档 + 深色档，各三行（page 作用域）。
+        // 2026-11-01 之前这里只有浅色那三行，深色档的值在模型里、渲染层也早就在读
+        // （`TimetableWeekdayHeader` / `TimetableTimeColumn` 按 `isSystemInDarkTheme()`
+        // 取 Dark 键），但设置页没有任何入口 —— 用户切到深色模式后无法调整这三色。
         nodes += SettingsGap("timetablePage.gap.textColors")
+        nodes += SettingsLabel(
+            id = "timetablePage.textColors.light.label",
+            textKey = SettingsStrings.themeModeLight.key,
+            text = SettingsStrings.themeModeLight.zh,
+        )
         nodes += SettingsGroup(
-            id = "timetablePage.textColors",
+            id = "timetablePage.textColors.light",
             children = listOf(
                 colorRow(
                     id = "timetablePage.textColors.weekday",
@@ -170,6 +193,37 @@ object SettingsTimetablePageSettingsPage {
                     id = "timetablePage.textColors.timeAxis",
                     title = SettingsStringsExt5.textColorTimeAxis,
                     color = state.timeAxisColor,
+                ),
+            ),
+        )
+
+        // 深色档：键名与模型字段逐字对齐 ——
+        // `weekdayBarFontColorDark` / `weekdayBarAccentColorDark` / `timeAxisFontColorDark`
+        // （`timetable_settings.dart:1758 / :1764 / :1770`）。
+        nodes += SettingsGap("timetablePage.gap.textColors.afterLight")
+        nodes += SettingsGap("timetablePage.gap.textColors.dark")
+        nodes += SettingsLabel(
+            id = "timetablePage.textColors.dark.label",
+            textKey = SettingsStrings.themeModeDark.key,
+            text = SettingsStrings.themeModeDark.zh,
+        )
+        nodes += SettingsGroup(
+            id = "timetablePage.textColors.dark",
+            children = listOf(
+                colorRow(
+                    id = ROW_TEXT_WEEKDAY_DARK,
+                    title = SettingsStringsExt5.textColorWeekdayBar,
+                    color = state.weekdayBarColorDark,
+                ),
+                colorRow(
+                    id = ROW_TEXT_WEEKDAY_ACCENT_DARK,
+                    title = SettingsStringsExt5.textColorWeekdayBarAccent,
+                    color = state.weekdayBarAccentColorDark,
+                ),
+                colorRow(
+                    id = ROW_TEXT_TIME_AXIS_DARK,
+                    title = SettingsStringsExt5.textColorTimeAxis,
+                    color = state.timeAxisColorDark,
                 ),
             ),
         )
@@ -499,4 +553,13 @@ data class TimetablePageSettingsState(
     val weekdayBarColor: String = "#FFFFFF",
     val weekdayBarAccentColor: String = "#2563EB",
     val timeAxisColor: String = "#64748B",
+    /**
+     * 深色档三色（Dart `timetable_settings.dart:1758 / :1764 / :1770` 的读侧默认）。
+     *
+     * 渲染层已经在用它们（`TimetableWeekdayHeader` / `TimetableTimeColumn` 按
+     * `isSystemInDarkTheme()` 取 Dark 键）；本页 2026-11-01 之前缺这三行入口。
+     */
+    val weekdayBarColorDark: String = "#FFFFFF",
+    val weekdayBarAccentColorDark: String = "#93C5FD",
+    val timeAxisColorDark: String = "#FFFFFF",
 )

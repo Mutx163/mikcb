@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -123,16 +125,37 @@ fun CourseGridCard(
     modifier: Modifier = Modifier,
     isHighlighted: Boolean = false,
     isHoliday: Boolean = false,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf`）。null = 老口径
+     * （只看 [WeekViewStyle.surfaceStyle]）。
+     *
+     * 2026-11-01 之前：材质面板改「默认材质（实体/液态）」、卡片那档的染色旋钮
+     * 全都只落盘不上屏 —— 因为这里只读 `style.surfaceStyle`，而它不含总闸与无壁纸降级。
+     */
+    material: HomeMaterialRenderSpec? = null,
 ) {
     val course = model.course
     val dark = isSystemInDarkTheme()
     val rawColor = parseHexColor(model.colorHex ?: course.color, fallback = Color(0xFF2196F3))
     // 卡面透明度：Dart 的 `surfaceOpacity` 是冲突/非本周的压淡系数，直接乘在填充上。
-    val fillAlpha = when (style.surfaceStyle) {
-        WeekCardSurface.SOLID -> model.opacity
-        WeekCardSurface.TRANSLUCENT -> 0.72f * model.opacity
-        // 没有壁纸/模糊管线时 Dart 也退化成半透明实体（`effectiveCourseCardSurfaceStyle`）。
-        WeekCardSurface.GAUSSIAN -> 0.55f * model.opacity
+    //
+    // 有材质快照时按**生效档**取（Dart `effectiveCourseCardSurfaceStyle`）：
+    // * 实体（总闸关 / 无壁纸 / 用户选实体）→ 不透明课色；
+    // * 高斯档 → 0.55 课色（Compose 侧没有预糊位图管线，这是无模糊的降级观感）；
+    // * 液态档 → 卡片自己那套调参的 `tintAlpha`（Dart `CourseSurface.washAlpha` 同口径）。
+    val fillAlpha = when (material?.courseCard) {
+        SurfaceMaterialState.SOLID, SurfaceMaterialState.OFF -> model.opacity
+        SurfaceMaterialState.FROST_GAUSSIAN, SurfaceMaterialState.FROST ->
+            0.55f * model.opacity
+        SurfaceMaterialState.LIQUID_GLASS ->
+            (material?.courseCardTintAlpha ?: 0.70f).coerceIn(0.08f, 1f) * model.opacity
+        // 渐进模糊与「没传材质」都回旧口径（课卡不会用渐进档，防御性分支）。
+        SurfaceMaterialState.FROST_PROGRESSIVE, null -> when (style.surfaceStyle) {
+            WeekCardSurface.SOLID -> model.opacity
+            WeekCardSurface.TRANSLUCENT -> 0.72f * model.opacity
+            // 没有壁纸/模糊管线时 Dart 也退化成半透明实体（`effectiveCourseCardSurfaceStyle`）。
+            WeekCardSurface.GAUSSIAN -> 0.55f * model.opacity
+        }
     }
     val fill = rawColor.copy(alpha = fillAlpha.coerceIn(0.08f, 1f))
     // ── 墨色：设置里的「课卡标题色 / 详情色」（2026-10-29 二轮修复 P1-11）──

@@ -167,6 +167,13 @@ object SettingsPageBridge {
         SettingsActionDispatcher.ROW_TP_TEXT_WEEKDAY -> model.weekdayBarFontColorLight
         SettingsActionDispatcher.ROW_TP_TEXT_WEEKDAY_ACCENT -> model.weekdayBarAccentColorLight
         SettingsActionDispatcher.ROW_TP_TEXT_TIME_AXIS -> model.timeAxisFontColorLight
+        // 深色档三行（2026-11-01 补）：值直接取模型的 Dark 键，与渲染层同一份真源。
+        SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_DARK ->
+            model.weekdayBarFontColorDark
+        SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_ACCENT_DARK ->
+            model.weekdayBarAccentColorDark
+        SettingsTimetablePageSettingsPage.ROW_TEXT_TIME_AXIS_DARK ->
+            model.timeAxisFontColorDark
         else -> null
     }
 
@@ -491,6 +498,11 @@ object SettingsPageBridge {
         weekdayBarColor = model.weekdayBarFontColorLight,
         weekdayBarAccentColor = model.weekdayBarAccentColorLight,
         timeAxisColor = model.timeAxisFontColorLight,
+        // 深色档：渲染层 `TimetableWeekdayHeader` / `TimetableTimeColumn` 早就在按
+        // `isSystemInDarkTheme()` 读这三个键，本页只是把值显示出来（Dart 两组行同源）。
+        weekdayBarColorDark = model.weekdayBarFontColorDark,
+        weekdayBarAccentColorDark = model.weekdayBarAccentColorDark,
+        timeAxisColorDark = model.timeAxisFontColorDark,
     )
 
     /**

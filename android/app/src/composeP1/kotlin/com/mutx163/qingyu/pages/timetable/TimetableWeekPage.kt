@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.timetable
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -39,7 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
+import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -53,6 +59,11 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
@@ -136,6 +147,24 @@ fun TimetableWeekPage(
      * （阈值与 Dart `homePageChromeForegroundForLuminance` 一致，0.45）。
      */
     chromeInk: HomeInkPolarity? = null,
+    /**
+     * 材质快照（`SettingsMaterialModel.renderSpecOf` 的唯一出口）。null = 老行为
+     * （顶栏不画带、课卡按 [WeekViewStyle.surfaceStyle] 的旧透明度）。
+     *
+     * 页面**不读设置**：哪一档、多大模糊 / 染色由模型层算好，这里只执行。
+     */
+    material: HomeMaterialRenderSpec? = null,
+    /**
+     * 当前有没有可用壁纸。顶栏玻璃带只有在壁纸之上才值得采样（没有壁纸时
+     * Dart `homePageHeaderUsesFrostedChrome` 恒 false，实心条即可）。
+     */
+    hasBackdrop: Boolean = false,
+    /**
+     * 无壁纸 / 实体玻璃带用的页底色（ARGB，来自 `HomeBackdropSnapshot.pageColorArgb`）。
+     * null = 主题兜底色（老行为）。不传的话「课表页背景色板」选的自定义色会在
+     * 顶栏实心条上露出一截主题色，与页面底色对不上。
+     */
+    pageColorArgb: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -160,6 +189,46 @@ fun TimetableWeekPage(
     val subTextColor = Color(QingyuTheme.secondaryText(dark))
     val scaffoldBg = Color(QingyuTheme.scaffoldBackground(dark))
 
+    // ── 首页顶栏玻璃带（2026-11-01）──
+    // Dart 这条带是「标题行 + 星期栏」共用的一条连续玻璃（`home_page_region_blur.dart`
+    // 的 `HomePageChromeGlassFill`）；本页把同一份 modifier 套给这两块。
+    //
+    // 三步接线的第 ① 步：把壁纸层录进 `bandBackdrop`（记录 ≠ 上屏，原内容照常画）；
+    // 第 ② 步在带子上 `drawBackdrop` 采样 + 高斯 + 染色。只有「液态 + 真有壁纸 +
+    // 设备支持 RuntimeShader」三件事同时成立才录，否则省掉整层采样。
+    val density = LocalDensity.current
+    val bandBackdrop = rememberLayerBackdrop()
+    val bandSpec = material
+    val bandSurface = bandSpec?.band
+    val bandBlurActive = bandSurface == SurfaceMaterialState.LIQUID_GLASS &&
+        hasBackdrop && isRuntimeShaderSupported()
+    val bandTint = MiuixTheme.colorScheme.surface.copy(
+        alpha = bandSpec?.liquidTintAlpha ?: 1f,
+    )
+    val bandSolidColor = pageColorArgb?.let { Color(it) } ?: scaffoldBg
+    // 玻璃带按 `material.band` 分三档：OFF 不画；SOLID 不透明页面底色（有壁纸时
+    // 盖住壁纸，Dart `homePageHeaderUsesFrostedChrome` 的实体分支）；LIQUID 走
+    // miuix 高斯 + 主题底染色，模糊量与染色都来自材质面板那八根旋钮。
+    //
+    // 标题行与星期栏**共用这一份 modifier**（Dart 那条带就是两块连着的），
+    // 否则实体档下会看到「标题实心、星期栏透壁纸」的一道接缝。
+    val bandModifier = when {
+        bandSpec == null -> Modifier
+        bandSurface == SurfaceMaterialState.OFF -> Modifier
+        bandBlurActive -> Modifier.drawBackdrop(
+            backdrop = bandBackdrop,
+            shape = { RectangleShape },
+            effects = {
+                blur(with(density) { bandSpec.liquidBlurSigma.dp.toPx() })
+                // `vibrancy()` = 官方 `colorControls(saturation = 1.5)`：
+                // 少了它玻璃会发灰（见 miuix demo 的 LiquidGlass 四层结构）。
+                vibrancy()
+            },
+            onDrawSurface = { drawRect(bandTint) },
+        )
+        else -> Modifier.background(bandSolidColor)
+    }
+
     val sectionTimes: List<SectionTime> = timeScheme?.sections?.takeIf { it.isNotEmpty() }
         ?: settings.sections
     // 节数口径：Dart `settings.sectionCount => sections.length`
@@ -179,7 +248,18 @@ fun TimetableWeekPage(
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
         // 壁纸层在最底（Dart 的层次：壁纸 → 内容）。没有壁纸时这一行什么也不画。
-        backdrop?.invoke(this)
+        // 顶栏玻璃带要采样它，所以包一层（只有真要玻璃时才挂 `layerBackdrop`）。
+        if (backdrop != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (bandBlurActive) Modifier.layerBackdrop(bandBackdrop) else Modifier,
+                    ),
+            ) {
+                backdrop.invoke(this)
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -193,15 +273,17 @@ fun TimetableWeekPage(
                 ),
         ) {
             // ── 顶栏「轻屿课表」+ 右上角「更多」菜单（三视图共用一份）──
-            TimetableTopBar(
-                brand = homeTitleStyle == HomeTitleStyle.BRAND,
-                inkPolarity = chromeInk,
-                profileName = profileName,
-                onTitleClick = onSwitchProfileClick,
-                homeMenuStyle = homeMenuStyle,
-                menuItems = homeMenuItems,
-                onMenuSelect = onHomeMenuSelect,
-            )
+            Box(modifier = Modifier.fillMaxWidth().then(bandModifier)) {
+                TimetableTopBar(
+                    brand = homeTitleStyle == HomeTitleStyle.BRAND,
+                    inkPolarity = chromeInk,
+                    profileName = profileName,
+                    onTitleClick = onSwitchProfileClick,
+                    homeMenuStyle = homeMenuStyle,
+                    menuItems = homeMenuItems,
+                    onMenuSelect = onHomeMenuSelect,
+                )
+            }
 
             Box(modifier = Modifier.fillMaxSize()) {
                 HorizontalPager(
@@ -229,6 +311,8 @@ fun TimetableWeekPage(
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         onDayClick = onDayClick,
                         onWeekTitleClick = { showWeekSelectorDialog = true },
+                        material = material,
+                        bandModifier = bandModifier,
                     )
                 }
 
@@ -312,6 +396,8 @@ private fun WeekPageContent(
     onLongPressEmptySlot: (dayOfWeek: Int, section: Int) -> Unit,
     onDayClick: (dayOfWeek: Int) -> Unit,
     onWeekTitleClick: () -> Unit,
+    material: HomeMaterialRenderSpec? = null,
+    bandModifier: Modifier = Modifier,
 ) {
     val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf) {
         WeekGridCourseMapping.cardsForWeek(
@@ -336,19 +422,22 @@ private fun WeekPageContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TimetableWeekdayHeader(
-            week = pageWeek,
-            currentWeek = currentWeek,
-            todayDate = todayDate,
-            semesterStartDate = semesterStart,
-            visibleDays = visibleDays,
-            style = style,
-            timeColumnWidth = style.timeColumnWidthDp.dp,
-            hasExamOnDate = { date -> WeekAgendaLogic.hasExamOn(date, exams, now) },
-            hasScheduleOnDate = { date -> WeekAgendaLogic.hasScheduleOn(date, scheduleItems) },
-            onDayClick = onDayClick,
-            onWeekTitleClick = onWeekTitleClick,
-        )
+        // 星期栏与标题行共用同一条玻璃带（Dart `HomePageChromeGlassFill` 盖的就是这两块）。
+        Box(modifier = Modifier.fillMaxWidth().then(bandModifier)) {
+            TimetableWeekdayHeader(
+                week = pageWeek,
+                currentWeek = currentWeek,
+                todayDate = todayDate,
+                semesterStartDate = semesterStart,
+                visibleDays = visibleDays,
+                style = style,
+                timeColumnWidth = style.timeColumnWidthDp.dp,
+                hasExamOnDate = { date -> WeekAgendaLogic.hasExamOn(date, exams, now) },
+                hasScheduleOnDate = { date -> WeekAgendaLogic.hasScheduleOn(date, scheduleItems) },
+                onDayClick = onDayClick,
+                onWeekTitleClick = onWeekTitleClick,
+            )
+        }
 
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val sectionHeight = weekSectionHeight(
@@ -389,6 +478,7 @@ private fun WeekPageContent(
                         onAgendaClick = onAgendaClick,
                         onLongPressEmptySlot = onLongPressEmptySlot,
                         modifier = Modifier.weight(1f),
+                        material = material,
                     )
                 }
             }

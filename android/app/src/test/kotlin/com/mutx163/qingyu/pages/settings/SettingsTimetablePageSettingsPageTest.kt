@@ -47,7 +47,12 @@ class SettingsTimetablePageSettingsPageTest {
                 "timetablePage.label.glass",
                 "timetablePage.glass",
                 "timetablePage.gap.textColors",
-                "timetablePage.textColors",
+                "timetablePage.textColors.light.label",
+                "timetablePage.textColors.light",
+                "timetablePage.gap.textColors.afterLight",
+                "timetablePage.gap.textColors.dark",
+                "timetablePage.textColors.dark.label",
+                "timetablePage.textColors.dark",
                 "timetablePage.gap.reset",
                 "timetablePage.reset",
             ),
@@ -215,14 +220,17 @@ class SettingsTimetablePageSettingsPageTest {
     }
 
     @Test
-    fun `文字颜色三行都是色块行且不受课卡联动开关影响`() {
-        // page 作用域的三行没有 enabled 判据：联动开关只管课卡那两行
-        val rows = spec().group("timetablePage.textColors").children
-        assertEquals(3, rows.size)
-        for (node in rows) {
-            val row = node as SettingsRow
-            assertEquals(MiuixRowComponent.COLOR_SWATCH, row.component)
-            assertTrue("page 作用域的文字色行不该被禁用", row.enabled)
+    fun `文字颜色浅色深色各三行且都是色块行`() {
+        // page 作用域的三行没有 enabled 判据：联动开关只管课卡那两行。
+        // 2026-11-01：补齐深色档那一组（Dart 两个 `_ModeColorSettings`）。
+        for (groupId in listOf("timetablePage.textColors.light", "timetablePage.textColors.dark")) {
+            val rows = spec().group(groupId).children
+            assertEquals(3, rows.size)
+            for (node in rows) {
+                val row = node as SettingsRow
+                assertEquals(MiuixRowComponent.COLOR_SWATCH, row.component)
+                assertTrue("page 作用域的文字色行不该被禁用", row.enabled)
+            }
         }
         assertEquals(
             listOf(
@@ -230,7 +238,15 @@ class SettingsTimetablePageSettingsPageTest {
                 "timetablePage.textColors.weekdayAccent",
                 "timetablePage.textColors.timeAxis",
             ),
-            spec().group("timetablePage.textColors").childRowIds(),
+            spec().group("timetablePage.textColors.light").childRowIds(),
+        )
+        assertEquals(
+            listOf(
+                SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_DARK,
+                SettingsTimetablePageSettingsPage.ROW_TEXT_WEEKDAY_ACCENT_DARK,
+                SettingsTimetablePageSettingsPage.ROW_TEXT_TIME_AXIS_DARK,
+            ),
+            spec().group("timetablePage.textColors.dark").childRowIds(),
         )
     }
 
