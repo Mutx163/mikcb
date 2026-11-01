@@ -18,6 +18,10 @@
     <string name="notification_weekly_report_default_body">打开轻屿课表查看本周课程统计</string>
     <string name="notification_exam_reminder_default_title">考试提醒</string>
     <string name="notification_exam_reminder_default_body">你有一场即将开始的考试</string>
+    <string name="notification_channel_schedule_reminder_name">日程提醒</string>
+    <string name="notification_channel_schedule_reminder_desc">日程开始前的提醒通知</string>
+    <string name="notification_schedule_reminder_default_title">日程提醒</string>
+    <string name="notification_schedule_reminder_default_body">你有一条日程即将开始</string>
 
     <!-- Live update / super island -->
     <string name="notification_course_reminder_title">课程提醒: %1$s</string>

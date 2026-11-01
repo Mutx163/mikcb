@@ -64,6 +64,12 @@ fun ScheduleDateRuleHost(
     repository: TimetableRepository,
     todayIso: String,
     onBack: () -> Unit,
+    /**
+     * 规则新增 / 修改 / 删除**保存成功之后**回调，供宿主触发「日期规则自动套用作息」。
+     *
+     * 默认空实现：调用方（页面壳）不接时只是不自动套用，不会假装套过。
+     */
+    onRulesChanged: () -> Unit = {},
 ) {
     var snapshot by remember(repository) { mutableStateOf(repository.snapshot) }
     DisposableEffect(repository) {
@@ -86,9 +92,11 @@ fun ScheduleDateRuleHost(
             val ui = snapshot.scheduleDateRules.map { ScheduleItemBridge.toUiRule(it) }.toMutableList()
             ScheduleItemBridge.upsertRule(ui, incoming)
             repository.updateScheduleDateRules(ui.map { ScheduleItemBridge.toCoreRule(it) })
+            onRulesChanged()
         },
         onDeleteRule = { target ->
             repository.updateScheduleDateRules(snapshot.scheduleDateRules.filter { it.id != target.id })
+            onRulesChanged()
         },
     )
 }

@@ -89,10 +89,10 @@ object ScheduleReminderScheduler {
         }
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "日程提醒",
+            context.getString(R.string.notification_channel_schedule_reminder_name),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "日程开始前的提醒通知"
+            description = context.getString(R.string.notification_channel_schedule_reminder_desc)
         }
         manager.createNotificationChannel(channel)
     }
@@ -221,8 +221,12 @@ object ScheduleReminderScheduler {
             return
         }
 
-        val title = matched.title.ifBlank { "日程提醒" }
-        val body = matched.body.ifBlank { "你有一条日程即将开始" }
+        val title = matched.title.ifBlank {
+            context.getString(R.string.notification_schedule_reminder_default_title)
+        }
+        val body = matched.body.ifBlank {
+            context.getString(R.string.notification_schedule_reminder_default_body)
+        }
         val posted = postNotification(
             context = appContext,
             notificationId = if (matched.requestCode != 0) {

@@ -243,6 +243,30 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     /**
+     * 日期规则自动套用作息专用：**一次落盘全部档案 + 全局设置**，成功后才改内存并通知。
+     *
+     * 为什么不分别调 [replaceAllProfiles] 与 [updateSettings]：两者各自通知一次，
+     * 套用会先让界面看到「档案换了、全局设置还是旧的」的中间态；而且 [updateSettings]
+     * 是**先改内存再落盘**，落盘失败会留下内存新、盘上旧。
+     *
+     * **失败语义**：先落三次盘、全部成功后才改内存；任一次抛错时内存与监听者都不动。
+     * 盘上可能已写成一半（与 [replaceAllProfiles] 同口径，本层不做跨 key 事务）。
+     */
+    fun replaceAllProfilesAndSettings(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        settings: TimetableSettings,
+    ) {
+        store.saveSettings(settings)
+        store.saveProfiles(profiles)
+        store.saveActiveProfileId(activeProfileId)
+        loadedSettings = settings
+        loadedProfiles = profiles
+        loadedActiveProfileId = activeProfileId
+        notifyStateChanged()
+    }
+
+    /**
      * **把一份云端 / 本地备份快照整份写回**（云同步「恢复」的落点）。**破坏性操作。**
      *
      * ## 为什么要这一个入口（而不是让调用方逐个调 setter）
@@ -748,9 +772,20 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         // no-op：Compose 侧还没有分析通道。
     }
 
-    /** 考试提醒通知：Phase 4 原生能力，本阶段空实现。 */
+    /**
+     * 日程条目变化后的「提醒重排」钩子（纯 Kotlin 回调，不引用 Android 类型）。
+     *
+     * 谁调：`ScheduleItemService` 在日程增 / 改 / 删后统一调 [syncExamReminders]；
+     * 谁接：壳在启动时把它设成 `ScheduleReminderScheduler.reconcile(context, snapshot.scheduleItems)`。
+     *
+     * 放回调而不是直接在这里调调度器：本包必须保持纯 Kotlin（所有泳道的 L0 单测共用），
+     * 一旦 import Android 的 AlarmManager / Notification，轻量单测就编不过。
+     */
+    var onScheduleRemindersChanged: (() -> Unit)? = null
+
+    /** 日程条目变化后的提醒重排：没有宿主订阅时什么也不做（不是「假装排好了」）。 */
     override fun syncExamReminders() {
-        // no-op：通知权限与调度属 Phase 4。
+        onScheduleRemindersChanged?.invoke()
     }
 
     /** 实时活动（超级岛）：Phase 4 原生能力，本阶段空实现。 */

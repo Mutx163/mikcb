@@ -324,6 +324,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- 日程提醒：显式 PendingIntent 投递 ACTION_FIRE；开机/更新/改时区后按快照补排。 -->
+        <receiver
+            android:name=".ScheduleReminderReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Weekly report: explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm. -->
         <receiver
             android:name=".WeeklyReportReceiver"
