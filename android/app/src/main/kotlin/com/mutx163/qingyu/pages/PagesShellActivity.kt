@@ -261,27 +261,34 @@ private fun PagesShell() {
     // 于是「点底栏 日/周/月 切视图」= 在下一帧画出来之前把主线程堵住 —— 用户反馈的
     // 那一下「顿」（2026-11-01，性能版）。
     //
-    // 现在丢到 IO 线程。用互斥量串行：连点两次时两次写同时起飞，后到的旧值可能最后
-    // 落盘，冷启动就会恢复成上一个视图；串行保证「最后一次点击 = 最后一次写」。
+    // 三条纪律：
+    // 1. 写盘在 IO 线程，屏幕不等磁盘（与 Dart `timetable_screen.dart:1011-1016` 的
+    //    lightweight path 同口径：先改内存、后异步落盘）。
+    // 2. 互斥量串行：连点两次时两次写同时起飞，先发起的那次可能最后落盘，冷启动就
+    //    会恢复成上一个视图；串行保证「最后一次点击 = 最后一次写」。
+    // 3. **不写 `settingsModel` 这个 state**：它不影响屏幕上的任何一个像素，写它只会
+    //    让整个壳——含底栏三层玻璃的 effects——白白重组一遍，比它要省下的那次落盘贵
+    //    得多。「当前停在哪一档」以路由（`backStack`）为准，那才是真源。
     //
-    // 屏幕不等磁盘：与 Dart 同口径（`timetable_screen.dart:1011-1016` 的
-    // lightweight path：先改内存、后异步落盘，不 notify，避免动画中途重建首页）。
-    // 与其它写者不会打架：底栏只在栈底可见，此时设置页 / 课程编辑页都不在栈顶，
-    // 它们那些同样写 `timetable_settings` / `timetable_profiles` 的路径不会并发。
+    // 只写 `timetableHomeViewMode` 一个键（`saveHomeViewMode`），不再拿整份设置快照
+    // 覆盖：底栏只在栈底可见，此时写设置页的路径都不在栈顶，单键写的窗口更小。
     val persistScope = rememberCoroutineScope()
     val persistMutex = remember { Mutex() }
 
     /** 切到主屏某个条目（= Flutter 玻璃坞点某个槽位）。 */
     fun selectRoot(itemId: String) {
+        val mode = homeViewModeOf(itemId)
+        // 当前视图档必须在改 `backStack` **之前**取（改完就拿到新值了）。
+        val currentMode = homeViewModeOf(
+            (backStack.lastOrNull() as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK,
+        )
         if (backStack.size == 1) backStack[0] = ShellRoute.Dock(itemId)
-        // 视图档写回存档（Dart `timetableHomeViewMode` 同样是「切了就存」）。
-        val mode = homeViewModeOf(itemId) ?: return
-        if (settingsModel.timetableHomeViewMode == mode) return
-        val next = settingsModel.copy(timetableHomeViewMode = mode)
-        settingsModel = next
+        // 视图档写回存档（Dart `timetableHomeViewMode` 同样是「切了就存」）；
+        // 同档重复点不写。
+        if (mode == null || mode == currentMode) return
         persistScope.launch(Dispatchers.IO) {
             persistMutex.withLock {
-                runCatching { wiring.settingsModel.save(next) }
+                runCatching { wiring.settingsModel.saveHomeViewMode(mode) }
             }
         }
     }
