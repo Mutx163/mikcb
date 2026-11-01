@@ -120,7 +120,7 @@
       # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
       WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
       if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then
-        sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-8.14-all.zip|' "$WRAPPER_PROP"
+        sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-all.zip|' "$WRAPPER_PROP"
         echo "Gradle distribution 镜像已替换: $WRAPPER_PROP"
       else
         echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"
@@ -278,7 +278,7 @@
             # Gradle wrapper distribution 换国内镜像（规避 services.gradle.org 不可达/SSL 失败）
             WRAPPER_PROP="android/gradle/wrapper/gradle-wrapper.properties"
             if [ -f "$WRAPPER_PROP" ] && ! grep -q 'mirrors.cloud.tencent.com/gradle' "$WRAPPER_PROP"; then
-              sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-8.14-all.zip|' "$WRAPPER_PROP"
+              sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-all.zip|' "$WRAPPER_PROP"
               echo "Gradle distribution 镜像已替换: $WRAPPER_PROP"
             else
               echo "Gradle distribution 镜像已存在或文件缺失，跳过替换"

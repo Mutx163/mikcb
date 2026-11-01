@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Android 11 及以下（API 26~30，本项目 minSdk = 26）生效的备份规则，挂在
+  Android 11 及以下（API 26~30）的备份规则，挂在
   <application android:fullBackupContent>。API 31+ 走 data_extraction_rules.xml。
+  本项目 minSdk = 33（Android 13），运行时只会走 data_extraction_rules.xml，
+  本文件保留作旧系统兜底、当前不参与实际备份决策。
 
   这套格式**分不出「云备份」与「换机直传」**（D2D 分段是 Android 12 才引入的），
   所以这里只能在两者之间二选一。取「只排凭据」而不是「整段关掉」，理由是

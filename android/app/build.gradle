@@ -133,30 +133,14 @@ android {
     sourceSets {
         main {
             // 壳的 6 个文件（PagesShellActivity / ShellWiring / ShellRoute …）已于
-            // 2026-10-29 从 `src/composeUi/kotlin` 搬进本目录，不再需要单独挂载。
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/components'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/about'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/task'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/export'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/diagnostics'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/sync'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/exam'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/time_scheme'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/settings'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/statistics'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/course'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/import'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/conflict'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/feedback'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/guide'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/showcase'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/live'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/weather'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/pages/shell'
-            kotlin.srcDirs += 'src/composeP1/kotlin/com/mutx163/qingyu/app'
+            // 2026-10-29 从 `src/composeUi/kotlin` 搬进 `src/main/kotlin`，由 main 默认源集覆盖。
+            //
+            // Compose 页面整树挂载（2026-11-01）：此前这里逐目录登记了 23 条 srcDirs，
+            // 漏登记一个目录，其下的页面就会**静默不编译**——不报错、不进 APK，只有运行到
+            // 那一页时才崩。活例：包根的 `ComposeP1Activity.kt` 当时就没被挂上（已删，见下）。
+            // 改为整树挂载后，新增 `pages/<域>` 子目录无需再改本文件；源码目录里的非 Kotlin
+            // 文件（如 `WIRING-NOTE.md`）不会被 Kotlin 源集收录。
+            kotlin.srcDirs += 'src/composeP1/kotlin'
         }
 
         // 迁移期那个 `testComposeUi` 变体专属测试源集随 composeUi 变体一并删除（2026-10-29）。
@@ -365,9 +349,13 @@ dependencies {
     //    core/camera2/lifecycle 已在本地 Gradle 缓存里（只有 `camera-view` 需要拉一次）。
     //    多泳道并发时「少一次下载」就是少一次全队构建失败的可能。
     //
-    // ⚠️ 只挂 compose 变体：正式包（Flutter）现在**不需要**这套东西，
-    // 挂在 `implementation` 上会让 Flutter 包白背一份。
-    // ⚠️ 因此用到这些依赖的适配器代码**必须放 `composeP1/`**，不能放 `main/`。
+    // ⚠️ 实际挂载方式是 `implementation` ⇒ 对**所有变体**生效
+    //    （dev / perf / prod / itest / bench），不是 compose 专属；迁移期的
+    //    composeP1 变体已于 2026-10-29 删除。正式包也本来就带着这套模型：
+    //    Flutter 侧 `mobile_scanner` 在 Android 上用的就是 MLKit barcode-scanning，
+    //    所以这里不是给正式包额外新增一份体积。
+    // ⚠️ 用到这些依赖的适配器代码放在 `composeP1/` 源树（如
+    //    `pages/transfer/QrCameraHost.kt`），该源树由本文件的整树挂载并入 main 源集。
     def cameraxVersion = '1.6.1'
     implementation "androidx.camera:camera-core:$cameraxVersion"
     implementation "androidx.camera:camera-camera2:$cameraxVersion"

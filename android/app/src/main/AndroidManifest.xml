@@ -123,7 +123,9 @@
 
     <!-- fullBackupContent / dataExtractionRules：系统备份规则，两套并存。
          API 31+ 读 dataExtractionRules（分「云备份 / 换机直传」两段），
-         API 30 及以下读 fullBackupContent（本项目 minSdk = 26，两套都要）。
+         API 30 及以下读 fullBackupContent。本项目 minSdk = 33（Android 13）⇒
+         运行时只有 dataExtractionRules 生效；fullBackupContent 仍保留，供
+         万一回调 minSdk 时的旧设备兜底，当前不参与实际备份决策。
          此前两个属性都没声明 = 走系统默认（全量备份），课表与三组加密凭据
          一起进云。规则内容与取舍见 res/xml/ 下两个文件的注释。 -->
     <application

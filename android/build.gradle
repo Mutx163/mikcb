@@ -110,7 +110,9 @@ subprojects { subproject ->
 // 模块就会报 "Inconsistent JVM-target compatibility ... (17) and ... (25)"，
 // 且 25 字节码 D8 也未必吃得下。
 // 这里对**所有**应用了 kotlin-android 的子项目（含 pub 缓存里的第三方插件）统一钉到 17，
-// 与 AGP baseline、CI 的 setup-java 17、gradle-daemon-jvm.properties 一致。
+// 与 AGP 的 Java 17 baseline 一致。注意 CI 的 setup-java 与
+// android/gradle/gradle-daemon-jvm.properties 的 toolchainVersion 都是 21——那是
+// **跑 Gradle 的 JVM**，不是子项目的字节码目标，两者不冲突。
 subprojects { subproject ->
     subproject.plugins.withId('org.jetbrains.kotlin.android') {
         subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { task ->
