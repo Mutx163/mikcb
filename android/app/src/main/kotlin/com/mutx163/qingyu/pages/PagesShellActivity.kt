@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.core.content.ContextCompat
 import com.mutx163.qingyu.LiveUpdateScheduler
+import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
@@ -216,6 +217,9 @@ class PagesShellActivity : ComponentActivity() {
             LaunchedEffect(wiring) {
                 withContext(Dispatchers.IO) {
                     ScheduleReminderCoordinator.install(applicationContext, wiring.timetable)
+                    // 考试提醒：考试 / 课程 / 日程增删改与冷启动、恢复备份后整表重排
+                    //（对位上面日程提醒的安装；开机 / 换时区补排走 ExamReminderReceiver，无需在此装）。
+                    ExamReminderCoordinator.install(applicationContext, wiring.timetable)
                     ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
                 }
             }
