@@ -55,7 +55,6 @@
   "dataTransferEntryTitle": "データバックアップと移行",
   "dataTransferEntrySubtitle": "時間割ファイルをエクスポートして、他の人が直接インポート可能",
   "cloudSyncEntryTitle": "クラウド同期",
-  "cloudSyncEntrySubtitle": "Jianguoyun などで時間割とインポートデータを複数端末同期",
   "cloudSyncEntryDisabled": "オフ",
   "cloudSyncEntryEnabled": "オン",
   "cloudSyncEntrySyncing": "同期中",
@@ -71,13 +70,10 @@
   "cloudSyncModeTitle": "同期方式",
   "cloudSyncModeAuto": "自動同期",
   "cloudSyncModeManual": "手動同期",
-  "cloudSyncAccountTitle": "アカウント設定",
-  "cloudSyncAccountSubtitle": "ログイン用ではなくアプリ専用パスワードを使用します。スナップショットには保存済みの学校アカウントも含まれます",
   "cloudSyncUsernameLabel": "メール / ユーザー名",
   "cloudSyncUsernameHint": "Jianguoyun 登録メール",
   "cloudSyncPasswordLabel": "アプリ専用パスワード",
   "cloudSyncPasswordHint": "Jianguoyun アカウントのセキュリティ設定で生成",
-  "cloudSyncPasswordStoredHint": "パスワードを保存済み，空欄のままにすると保存済みのパスワードを使用します",
   "cloudSyncAdvancedTitle": "詳細設定",
   "cloudSyncBaseUrlLabel": "WebDAV URL",
   "cloudSyncBaseUrlSecurityNote": "HTTPS 暗号化接続を推奨します。HTTP 平文接続は信頼できるネットワークでのみ使用してください",
@@ -90,28 +86,11 @@
   "cloudSyncStatusTitle": "同期状態",
   "cloudSyncLastSyncedLabel": "最終同期",
   "cloudSyncLastErrorLabel": "最新のエラー",
-  "cloudSyncLastSyncedAt": "最終同期：{time}",
-  "@cloudSyncLastSyncedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncSyncing": "同期中…",
-  "cloudSyncLastError": "最新のエラー：{message}",
-  "@cloudSyncLastError": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncHelpTitle": "Jianguoyun アプリパスワードの取得方法",
   "cloudSyncHelpBody": "Jianguoyun ウェブまたはクライアント → アカウント情報 → セキュリティ → アプリパスワードを追加。WebDAV URL デフォルト：https://dav.jianguoyun.com/dav/",
   "cloudSyncTestConnection": "接続テスト",
   "cloudSyncSyncNow": "今すぐ同期",
-  "cloudSyncSyncNowSubtitle": "他の端末と時間割を揃えます：クラウドを取得してから端末の変更をアップロード",
   "cloudSyncTestSuccess": "WebDAV 接続成功",
   "cloudSyncTestFailed": "WebDAV 接続に失敗しました。アカウント、アプリパスワード、ネットワークを確認してください",
   "cloudSyncResultUploaded": "クラウドにアップロードしました",
@@ -152,7 +131,6 @@
   "cloudSyncConfirmConnect": "接続を確認",
   "cloudSyncConnectSuccess": "アカウント接続成功",
   "cloudBackupSectionTitle": "履歴バージョン",
-  "cloudBackupSectionSubtitle": "同期時に自動保存，タップしてこのバージョンに復元できます",
   "cloudBackupCurrentLabel": "現在のバージョン",
   "cloudBackupCurrentBadge": "現在",
   "cloudBackupCreateNow": "今すぐバックアップ",
@@ -267,11 +245,9 @@
   "lanEditLastActivityLabel": "最終アクティビティ",
   "lanEditKeepAliveWhenLeavingTitle": "退出後も維持",
   "lanEditKeepAliveWhenLeavingSubtitle": "オフなら画面を離れると停止",
-  "aboutSupportSectionTitle": "アプリ情報とサポート",
   "feedbackEntryTitle": "問題報告",
   "feedbackEntrySubtitle": "Issue、コミュニティチャネルとフィードバック",
   "aboutEntryTitle": "アプリ情報",
-  "aboutEntrySubtitle": "オープンソース、バージョン更新とGitHubリポジトリ",
   "setSemesterStartDateAction": "学期開始日を設定",
   "semesterStartDateAction": "学期開始日",
   "syncCurrentWeekAction": "現在の週を同期",
@@ -308,7 +284,6 @@
   "courseRecolorNoCoursesToast": "授業がありません。先にインポートまたは追加してください",
   "courseImportTitle": "授業インポート",
   "chooseImportMethodTitle": "インポート方法を選択",
-  "chooseImportMethodSubtitle": "従来の.icsカレンダーインポート、画像認識インポート、リポジトリからアダプタを読み込む教務システムインポートに対応",
   "importMethodIcsTitle": ".icsカレンダーインポート",
   "importMethodIcsSubtitle": "他の時間割アプリから書き出したカレンダー",
   "importMethodIcsFooter": "進入後、.icsファイルを選択して追加インポートまたは既存授業を置換可能。",
@@ -395,11 +370,8 @@
   "openIssuePage": "Issueページを開く",
   "copyAddress": "アドレスをコピー",
   "copiedIssueAddress": "Issueアドレスをコピーしました",
-  "copyXiaohongshuId": "Xiaohongshu IDをコピー",
   "copiedXiaohongshuId": "Xiaohongshu IDをコピーしました",
-  "copyCoolapkId": "Coolapk IDをコピー",
   "copiedCoolapkId": "Coolapk IDをコピーしました",
-  "copyQqGroupId": "QQグループIDをコピー",
   "copiedQqGroupId": "QQグループIDをコピーしました",
   "copiedWechatOaName": "公式アカウント名をコピーしました",
   "feedbackWechatOaOpenHint": "公式アカウント名をコピーしました。WeChatで貼り付けて検索してください",
@@ -751,14 +723,6 @@
   "courseOverviewTitle": "授業一覧と編集",
   "addNewCourseTooltip": "新規授業追加",
   "emptyCourseOverviewHint": "時間割を長押しするか、右上のボタンから授業を追加",
-  "conflictDetectedMessage": "{count}件の排課に実際の競合が検出されました，授業リストに競合項目をマーク済み",
-  "@conflictDetectedMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "conflictCountLabel": "競合{count}件",
   "@conflictCountLabel": {
     "placeholders": {
@@ -899,7 +863,6 @@
   "courseColorQuickSection": "よく使う色",
   "customPaletteAction": "カラーパレットでカスタム",
   "colorPaletteTitle": "カラーパレット",
-  "colorHexLabel": "カラーHex",
   "weekdayMon": "月曜",
   "weekdayTue": "火曜",
   "weekdayWed": "水曜",
@@ -917,14 +880,6 @@
   },
   "saturationLabel": "彩度{value}%",
   "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "brightnessLabel": "明度{value}%",
-  "@brightnessLabel": {
     "placeholders": {
       "value": {
         "type": "int"
@@ -978,9 +933,7 @@
   "aboutOpenSourceLicensesAppSectionTitle": "ライセンスについて",
   "aboutOpenSourceLicensesAppLicenseLabel": "軽屿時間割のソースコードは GPL-3.0-or-later で公開されています。",
   "aboutOpenSourceLicensesIntro": "以下は本アプリが利用するオープンソースコンポーネントと各ライセンスです。項目をタップすると全文を確認できます。",
-  "aboutOpenSourceLicensesExtraSectionTitle": "ライセンスについて",
   "aboutOpenSourceLicensesExtraUmeng": "友盟（Umeng）などの分析サービスは、プライバシーポリシーへの同意後にのみ有効になり、各サービスの利用規約とプライバシーポリシーが適用されます。",
-  "aboutOpenSourceLicensesExtraNote": "",
   "aboutOpenSourceLicensesPackagesSectionTitle": "オープンソースコンポーネント（{count}）",
   "@aboutOpenSourceLicensesPackagesSectionTitle": {
     "placeholders": {
@@ -1003,8 +956,6 @@
   "aboutAppLogsSubtitle": "実行ログを確認",
   "appLogsShareText": "軽屿時間割がエクスポートしたアプリログです。ローカル実行記録を含み、更新、インポート、通知、ページ、クラッシュ問題のトラブルシュートに使用できます。",
   "appLogsShareSubject": "軽屿時間割 - アプリログ",
-  "appLogsRecordingEnabled": "アプリログを記録中",
-  "appLogsRecordingDisabled": "アプリログ記録がオフ",
   "appLogsCopyAction": "ログをコピー",
   "appLogsCopied": "現在のログをコピーしました",
   "appLogsExportAction": "ログをエクスポート",
@@ -1152,7 +1103,6 @@
   "overrideSchemeCoursesSubtitle": "これらの授業は所属時間割のメインテンプレートが変わっても、引き続きこのテンプレートを個別使用",
   "closeAction": "閉じる",
   "editTimeSchemeTitle": "テンプレート編集",
-  "backToSchemeList": "テンプレート一覧に戻る",
   "currentInUse": "現在使用中",
   "quickGenerateAction": "クイック生成",
   "addSectionAction": "時限を追加",
@@ -1181,7 +1131,6 @@
       }
     }
   },
-  "copiedTimeSchemeShortMessage": "テンプレートをコピーしました",
   "unnamedTimeScheme": "名前未設定テンプレート",
   "unsetLabel": "未選択",
   "timeSchemeUsageCourseRefPrefix": "授業参照：",
@@ -1537,16 +1486,13 @@
   "guideRequireConsentHint": "まず下までスクロールして説明を読み、同意にチェックを入れてから使い始めてください",
   "guideContinueHint": "下にスクロールして完全なガイド内容を確認",
   "exitAppAction": "アプリ終了",
-  "continueReadingAction": "閲覧を続ける",
   "agreeAndStartAction": "同意して使い始める",
   "startUsingAction": "使い始める",
   "editSingleLessonTitle": "単一授業を編集",
   "editCourseTitle": "授業を編集",
-  "addSingleLessonTitle": "単一授業を追加",
   "addCourseTitle": "授業を追加",
   "deleteCourseTitle": "授業を削除",
   "courseDeleted": "授業を削除しました",
-  "addMethodTitle": "追加方法",
   "singleLessonLabel": "単一授業",
   "recurringLessonLabel": "繰り返し授業",
   "singleLessonHint": "振替授業や臨時追加に最適，授業は1つの週次にのみ表示",
@@ -1583,10 +1529,8 @@
   "singleLessonWeekHint": "単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適",
   "rangeWeekLabel": "連続週",
   "customWeekLabel": "カスタム週",
-  "allWeeksLabel": "全週",
   "oddWeeksLabel": "奇数週",
   "evenWeeksLabel": "偶数週",
-  "allWeeksHint": "開始週から終了週まで連続で授業を配置",
   "oddWeeksHint": "範囲内の奇数週のみ保持",
   "evenWeeksHint": "範囲内の偶数週のみ保持",
   "customPaletteColor": "カラーパレットでカスタム",
@@ -2159,8 +2103,6 @@
   "aboutCurrentVersionLabel": "現在のバージョン",
   "aboutLatestVersionLabel": "最新バージョン",
   "aboutUnreleasedLabel": "未リリース",
-  "aboutVersionChannelLabel": "バージョンチャネル",
-  "aboutPrereleaseChannel": "テスト版",
   "aboutUpdateAvailableHint": "下の「今すぐダウンロード」をタップするだけ，速度テスト、ミラーとテスト版は後方の高度なオプションに収納済み",
   "aboutUpdateHighlightsTitle": "主な更新内容",
   "aboutUpdateViewAllAction": "全 {count} 件を表示",
@@ -2175,63 +2117,15 @@
       }
     }
   },
-  "aboutUpdateNowTitle": "今すぐ更新",
-  "aboutUpdateNowAndroidSubtitle": "ダウンロードが遅い/失敗する場合は、下の詳細オプションでミラーを切り替えてください",
-  "aboutUpdateNowOtherSubtitle": "現在のプラットフォームはダウンロードページを直接開き、アプリ内ではインストールしない",
-  "aboutMirrorDownloadHint": "通常は国内ミラーを使用します。そのままダウンロードしてください",
-  "aboutOriginalDownloadHint": "現在国際ソースダウンロードを優先，ダウンロードが遅いまたは開けない場合、まず「国内ダウンロード」に切替推奨",
-  "aboutUseSystemDownloaderAction": "システムダウンローダーでダウンロード",
   "aboutOpenReleasePageAction": "Releaseページを開く",
-  "aboutDownloadMethodTitle": "ダウンロード方式",
-  "aboutDownloadMethodSubtitle": "通常は国内ミラーを推奨。GitHub に安定して接続できる場合は国際ソースに切り替えられます",
-  "aboutDownloadMethodMirror": "国内ダウンロード",
-  "aboutDownloadMethodOriginal": "国際ソースダウンロード",
-  "aboutMirrorModeHintRecommended": "現在国内ダウンロード使用中・{current}，最近の速度テストで「{recommended}」が推奨，必要時に後方の高度なオプションで切替可能",
-  "@aboutMirrorModeHintRecommended": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "recommended": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorModeHintCurrent": "現在国内ダウンロード使用中・{current}，ダウンロードが遅いまたは失敗した場合、後方の高度なオプションで速度テスト、回線変更またはカスタムアドレス入力",
-  "@aboutMirrorModeHintCurrent": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutOriginalModeHint": "現在国際ソースダウンロード使用中，GitHubに安定アクセスできる場合のみこの設定を推奨，それ以外は国内ダウンロードに切替",
   "aboutReleaseNotesTitle": "更新内容",
-  "aboutReleaseNotesSubtitle": "現在検出されたバージョンのRelease説明を表示。",
   "aboutAdvancedOptionsTitle": "高度なオプション",
-  "aboutAdvancedOptionsSubtitle": "ダウンロード遅い、手動で回線切替、テスト版検出時にのみ展開",
   "aboutMirrorSectionTitle": "ダウンロード回線とミラー",
-  "aboutMirrorSectionMirrorHint": "現在国内ダウンロード使用中，ここで手動で回線切替、速度テスト推奨、またはカスタムダウンロードアドレス入力可能",
-  "aboutMirrorSectionOriginalHint": "現在国際ソースダウンロード使用中，下の回線設定は「国内ダウンロード」に切替後にのみ有効",
   "aboutFillCustomMirrorFirst": "まずカスタムダウンロードアドレスを入力",
-  "aboutCurrentCustomMirrorTitle": "現在のカスタムダウンロードアドレス",
-  "aboutCurrentMirrorTitle": "現在のダウンロード回線アドレス",
-  "aboutCurrentCustomMirrorHint": "現在手動で入力したダウンロードアドレスを使用中",
-  "aboutCurrentMirrorHint": "現在の回線がアクセス失敗した場合、他の組み込み回線に切替るか、カスタムアドレスに変更可能",
   "aboutProbeMirrorsAction": "速度テストと推奨",
   "aboutProbingMirrors": "速度テスト中…",
   "aboutEditCustomMirrorAction": "カスタムアドレスを変更",
   "aboutSetCustomMirrorAction": "カスタムアドレスを入力",
-  "aboutSwitchToRecommendedAction": "推奨に切替：{label}",
-  "@aboutSwitchToRecommendedAction": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorDisabledHint": "現在国内ダウンロード未使用のため、ここでの回線設定は一時的に無効，必要であれば、上の「ダウンロード方式」で国内ダウンロードに切替",
-  "aboutRecentProbeResultsTitle": "最近の速度テスト結果",
   "aboutUnavailable": "利用不可",
   "aboutRecommended": "推奨",
   "aboutCheckPrereleaseTitle": "テスト版を検出",
@@ -2239,32 +2133,12 @@
   "aboutUpdatePromptTitle": "更新ダイアログ",
   "aboutUpdatePromptSubtitle": "オフ時は「もっと見る」に赤点のみ",
   "aboutDiagnosticsTitle": "テストと診断",
-  "aboutDiagnosticsSubtitle": "「スーパーアイランドが表示されない」または開発者へのフィードバックが必要な場合のみ展開",
   "aboutRecordDiagnosticsTitle": "アプリログを記録",
   "aboutRecordDiagnosticsSubtitle": "実行ログを端末内に記録",
-  "aboutExportDiagnosticsAction": "アプリログをエクスポート",
   "aboutViewPhoneLogsAction": "ログページを開く",
-  "aboutClearAndRecollectAction": "クリアして再収集",
   "aboutLiveDiagnosticsEnabled": "スーパーアイランド診断ログを有効化済み",
   "aboutLiveDiagnosticsDisabled": "スーパーアイランド診断ログを無効化済み",
   "aboutNoDiagnosticsExportYet": "エクスポート可能なスーパーアイランド診断ログがまだありません",
-  "aboutProbeNoMirrorFound": "速度テスト完了。利用可能なミラー回線が見つかりません",
-  "aboutProbeCurrentFastest": "速度テスト完了。現在の回線「{label}」が最速の利用可能回線",
-  "@aboutProbeCurrentFastest": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutProbeRecommendSwitch": "速度テスト完了。「{label}」への切替を推奨",
-  "@aboutProbeRecommendSwitch": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "switchAction": "切替",
   "aboutSwitchToMirrorAfterError": "{error}。国内ミラーに切替えて再試行可能",
   "@aboutSwitchToMirrorAfterError": {
@@ -2421,33 +2295,18 @@
       }
     }
   },
-  "aiWorkflowCompactTitle": "プロンプトコピー → Doubao画像認識 → インポート",
-  "aiWorkflowCompactSubtitle": "Doubaoエキスパートモード → JSONコピー → 学期開始日選択",
   "aiWorkflowTitle": "プロンプトコピー → Doubao画像認識 → JSON貼付 → インポート",
   "aiWorkflowSubtitle": "まずプロンプトをコピーし、Doubaoの左下でエキスパートモードに切替、時間割のスクリーンショットとプロンプトを一緒に送信，返されたJSONをここにコピーし、インポート後に学期開始日を選択",
   "aiPromptShortAction": "プロンプト",
   "aiExpertModeSuggestion": "Doubaoエキスパートモードを推奨。複数画像対応。スクリーンショットには曜日ヘッダーが必要。",
-  "aiHintExpertMode": "まずDoubaoエキスパートモードに切替",
-  "aiHintSendScreenshot": "スクリーンショットとプロンプトを一緒に送信",
-  "aiHintCopyJsonBack": "返されたJSONをコピー",
-  "aiHintPickSemesterAfterImport": "インポート後に学期開始日を選択",
   "jsonLabelShort": "JSON",
   "aiPasteJsonTitle": "AIが返したJSONを貼付",
-  "aiCourseCountChip": "{count}科目",
-  "@aiCourseCountChip": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "aiParseFailedChip": "解析失敗",
   "aiPasteJsonHintShort": "AIが返したJSONを貼付",
   "aiPasteJsonHintLong": "Doubaoが返したJSONをそのままここに貼付し、インポートをタップ，純JSONと```jsonコードブロックの両方に対応",
   "detailAction": "詳細",
   "aiParseErrorTitle": "解析エラー",
   "viewDetailsAction": "詳細を確認",
-  "aiWorkflowFooter": "プロンプトコピー → Doubaoでスクリーンショットとプロンプト送信 → JSONをここに貼付 → インポートタップ → 学期開始日選択。",
   "previewAction": "プレビュー",
   "confirmImportAction": "インポート確認",
   "promptCopiedHint": "プロンプトをコピーしました，Doubaoでスクリーンショットとプロンプトを送信",
@@ -2866,7 +2725,6 @@
   "homeWidgetTargetExamCard22": "試験カウントダウン 2×2",
   "homeWidgetTargetTodayWide42": "今日ワイド 4×2",
   "addCourseSheetTitle": "追加",
-  "addCourseSheetSubtitle": "時間割の空きコマはタップできません。ここから授業や予定を追加してください",
   "courseWeekdaySectionSummary": "{weekDescription}・{weekday} {startSection}-{endSection}時限",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -5459,7 +5317,6 @@
   "logCatDebugSnapshot": "debug snapshot",
   "logExportTitle": "Qingyu Timetable - App logs",
   "appUpdateMirrorPresetGhfast": "Default mirror",
-  "appUpdateMirrorPresetGhproxyCn": "Backup mirror 1",
   "appUpdateMirrorPresetGhLlkk": "Backup mirror 2",
   "appUpdateMirrorPresetGhProxyCom": "Backup mirror 3",
   "appUpdateMirrorPresetGhproxyNet": "Backup mirror 4",
@@ -5536,7 +5393,6 @@
   "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
-  "cloudBackupManualProtectedSubtitle": "Manual backups are never auto-deleted when enabled",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
@@ -5560,7 +5416,6 @@
     }
   },
   "coupleWebdavTitle": "Nutstoreで取得",
-  "coupleWebdavSubtitle": "相手の坚果雲アカウントにログインして時間割を取得します。クラウド同期のアカウントとは独立です",
   "coupleWebdavNotConnected": "Nutstore未接続",
   "coupleWebdavMySlotLabel": "この端末のスロット",
   "coupleWebdavMySlotHint": "双方で異なるスロットを選んでください。一方が1、もう一方が2。同じだと相手の時間割を読めません",
@@ -6182,7 +6037,6 @@
   "coupleTimetableModeEnableTooltip": "ペア時間割を有効にする",
   "coupleTimetableModeDisableTooltip": "ペア時間割を無効にする",
   "coupleTimetableTitle": "ペア時間割",
-  "coupleTimetableIntro": "自分の時間割を書き出して相手に送るか、相手が共有した時間割ファイルをインポートできます。インポート後は重ね合わせ表示で両方の授業を確認できます",
   "coupleTimetableBoundTitle": "相手の時間割と連携済み",
   "coupleTimetableUnboundTitle": "相手の時間割は未連携",
   "coupleTimetablePartnerNameLabel": "相手の名前",
@@ -6190,37 +6044,29 @@
   "coupleTimetableExportForPartner": "自分の時間割を相手に書き出す",
   "coupleTimetableImportPartner": "相手の時間割をインポート",
   "coupleTimetableUnlink": "連携を解除",
-  "coupleTimetableOpenOverlay": "重ね合わせ表示を開く",
   "coupleTimetableImportSuccess": "相手の時間割をインポートしました",
   "coupleTimetableImportUpdated": "相手の時間割を更新しました",
   "coupleTimetableUnlinkConfirmTitle": "ペア時間割の連携を解除しますか？",
   "coupleTimetableUnlinkConfirmMessage": "解除すると、端末に保存された相手の時間割が削除され、重ね合わせ表示も閉じます",
   "coupleTimetableUnlinkSuccess": "連携を解除しました",
-  "coupleTimetablePrivacyHint": "相手は、あなたが書き出したファイルに含まれる時間割の内容だけを見られます",
-  "coupleTimetableOverlayTitle": "ペア重ね合わせ",
   "coupleTimetableLegendMine": "自分の授業",
   "coupleTimetableLegendPartner": "相手の授業",
   "coupleTimetableLegendTogether": "一緒の授業",
-  "coupleTimetableLegendFree": "両方とも空き",
   "coupleTimetableSharedFreeTitle": "今日の共同空き時間",
   "coupleTimetableSharedFreeTitleOtherDay": "この日の共同空き時間",
   "coupleTimetableNoSharedFree": "今日は共同の空き時間がありません",
   "coupleTimetableNoSharedFreeOtherDay": "この日は共同の空き時間がありません",
   "coupleTimetableSharedFreeMeta": "全{count}コマ",
   "coupleTimetableSharedFreeMoreCount": "あと{count}コマ",
-  "coupleTimetableSharedFreeUnavailable": "現在、共同の空き時間を計算できません",
   "coupleTimetableSharedFreeStaleHint": "相手の時間割は最新でない可能性があります",
   "coupleTimetablePartnerReadOnlyBadge": "相手の時間割（読み取り専用）",
-  "coupleTimetableNotBoundMessage": "先に相手の時間割をインポートしてから、重ね合わせ表示をご覧ください",
   "coupleTimetableShareText": "これは私の時間割です。軽屿時間割のペア時間割にインポートすると、一緒に確認できます",
   "coupleTimetableShareSubject": "軽屿時間割・ペア時間割の共有",
   "coupleTimetableWeekOffsetTitle": "週オフセット",
-  "coupleTimetableWeekOffsetSubtitle": "N 周目を表示中は相手の N+オフセット週を表示します（+1 なら 1 週先）",
   "coupleTimetableWeekOffsetZero": "オフセットなし",
   "coupleTimetableWeekOffsetSigned": "{offset}週",
   "coupleTimetableWeekOffsetPreview": "あなたの第{myWeek}周を表示するとき、相手の第{partnerWeek}周の授業を表示します",
   "coupleTimetableColorsTitle": "重ね合わせの色",
-  "coupleTimetableColorsSubtitle": "「自分の授業」「相手の授業」「一緒の授業」の表示色をカスタマイズします",
   "partnerImportRequiresSingleProfile": "単一の時間割バックアップファイルをインポートしてください。全量バックアップには対応していません",
   "coupleWebdavConnectedAs": "接続済み：{username}",
   "coupleWebdavRemotePathHint": "リモートファイルパス：{path}",
@@ -6267,8 +6113,6 @@
   "homePageHeaderBlurSubtitle": "",
   "homePageWeekdayBarBlurTitle": "情報バーガラス",
   "homePageWeekdayBarBlurSubtitle": "ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します",
-  "chromeGlassMaterialSubtitle": "",
-  "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "画像を選択",
   "homePageSwitchImageAction": "写真を切り替え",
   "homePageAdjustPositionAction": "位置を調整",
@@ -6335,7 +6179,6 @@
   },
   "bingWallpaperAutoApplyStale": "Bing はまだ今日の画像を公開していないため、{date} の画像を使います",
   "appearanceTextColorsSectionTitle": "テキストの色",
-  "appearanceTextColorsSectionSubtitle": "授業カード、曜日バー、時間軸のテキストの色をカスタマイズします",
   "pageTransitionSpeedTitle": "ページ遷移の速度",
   "layoutBackToCurrentWeekButtonOpacityTitle": "フローティングボタンの不透明度",
   "layoutCourseCardGapTitle": "授業カードの間隔",
@@ -6431,49 +6274,18 @@
   "homeMenuMoreSearchHint": "検索：外観、インポート、ウィジェット",
   "homeMenuMoreSearchEmptyTitle": "見つかりません",
   "homeMenuMoreSearchEmptyHint": "別の言葉で試すか、設定をご覧ください",
-  "classAlarmLeadMinutesLabel": "{minutes}分前",
-  "@classAlarmLeadMinutesLabel": {
-    "placeholders": {
-      "minutes": { "type": "int" }
-    }
-  },
   "classAlarmInvalidTimeToast": "この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません",
-  "classAlarmSheetTitle": "授業リマインダー",
   "classAlarmQuickOption": "授業 {minutes} 分前に通知",
   "classAlarmCustomOption": "時間を自分で指定…",
   "classAlarmExistingLabel": "{time} にリマインダー設定済み",
-  "classAlarmSetToast": "リマインダーを設定しました",
   "classAlarmRemovedToast": "この授業のリマインダーを取り消しました",
-  "classAlarmPastToast": "その時刻はすでに過ぎています。別の時刻を選んでください",
-  "classAlarmNoSemesterToast": "先に学期開始日を設定してください",
   "classAlarmActionLabel": "この授業のアラームを設定",
-  "classAlarmConfirmMessage": "システム時計に作成します：{detail}。システムアラームは休日や休校を判別できず、その間も鳴ります。削除はシステム時計で行ってください。",
-  "@classAlarmConfirmMessage": {"placeholders":{"detail":{"type":"String"}}},
-  "classAlarmVariableSuffix": "なお、{days}の初回授業時刻は週により異なるため、これらの曜日にはアラームを作成していません。",
-  "@classAlarmVariableSuffix": {"placeholders":{"days":{"type":"String"}}},
-  "classAlarmEntryTitle": "授業アラーム",
-  "classAlarmGroupSetup": "アラームを追加",
-  "classAlarmGroupBehavior": "動作設定",
-  "classAlarmAddAllTitle": "授業アラームを一括追加",
-  "classAlarmRangeNext4Weeks": "今後4週間",
-  "classAlarmRangeNext8Weeks": "今後8週間",
-  "classAlarmRangeLabel": "追加範囲",
-  "classAlarmRangeRemaining": "今週から学期末まで",
-  "classAlarmRangeWhole": "学期全体",
-  "classAlarmLeadTitle": "事前時間",
-  "classAlarmSkipUiTitle": "確認画面をスキップ",
-  "classAlarmSkipUiSubtitle": "確認なしで直接書き込みを試みる（非対応機種あり）",
   "classAlarmOpenClock": "システム時計を開く",
-  "classAlarmConfirmTitle": "繰り返しアラームを作成しますか？",
-  "classAlarmNoSchemeToast": "先に設定で時間テンプレートを選択してください",
-  "classAlarmNoDataToast": "選択した範囲に授業が見つかりません",
   "classAlarmAddedToast": "システム時計に渡しました",
   "classAlarmLaunchFailedToast": "対応する時計アプリが見つかりません",
   "classAlarmCourseConfirmTitle": "この授業の繰り返しアラームを追加しますか？",
   "classAlarmCourseConfirmMessage": "システム時計に毎週{weekday} {time} の繰り返しアラームを作成します（授業開始の{lead}分前に鳴動、対象週：{weeks}）。休日や休講週でも鳴ります。削除はシステム時計で行ってください。",
   "@classAlarmCourseConfirmMessage": {"placeholders":{"weekday":{"type":"String"},"time":{"type":"String"},"lead":{"type":"int"},"weeks":{"type":"String"}}},
-  "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展開詳細",
   "liveExpandedDetailUnfilledSuffix": "未入力のため島には表示されません",
   "liveExpandedDetailUnfilledValue": "なし",

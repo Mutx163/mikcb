@@ -55,7 +55,6 @@
   "dataTransferEntryTitle": "資料備份與遷移",
   "dataTransferEntrySubtitle": "匯出完整課表檔案，給別人直接匯入使用",
   "cloudSyncEntryTitle": "雲端同步",
-  "cloudSyncEntrySubtitle": "透過堅果雲等多裝置同步課表與匯入資料",
   "cloudSyncEntryDisabled": "已關閉",
   "cloudSyncEntryEnabled": "已開啟",
   "cloudSyncEntrySyncing": "同步中",
@@ -71,13 +70,10 @@
   "cloudSyncModeTitle": "同步方式",
   "cloudSyncModeAuto": "自動同步",
   "cloudSyncModeManual": "手動同步",
-  "cloudSyncAccountTitle": "帳號設定",
-  "cloudSyncAccountSubtitle": "請使用堅果雲應用專用密碼，快照包含已保存的教務賬號",
   "cloudSyncUsernameLabel": "電子郵件 / 使用者名稱",
   "cloudSyncUsernameHint": "堅果雲註冊電子郵件",
   "cloudSyncPasswordLabel": "應用程式專用密碼",
   "cloudSyncPasswordHint": "在堅果雲帳戶安全選項中產生",
-  "cloudSyncPasswordStoredHint": "已儲存密碼；留空表示繼續使用已儲存的密碼",
   "cloudSyncAdvancedTitle": "進階設定",
   "cloudSyncBaseUrlLabel": "WebDAV 網址",
   "cloudSyncBaseUrlSecurityNote": "建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用",
@@ -90,28 +86,11 @@
   "cloudSyncStatusTitle": "同步狀態",
   "cloudSyncLastSyncedLabel": "上次同步",
   "cloudSyncLastErrorLabel": "最近錯誤",
-  "cloudSyncLastSyncedAt": "上次同步：{time}",
-  "@cloudSyncLastSyncedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncSyncing": "正在同步…",
-  "cloudSyncLastError": "最近錯誤：{message}",
-  "@cloudSyncLastError": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncHelpTitle": "如何取得堅果雲應用程式密碼",
   "cloudSyncHelpBody": "開啟堅果雲網頁或客戶端 → 帳戶資訊 → 安全選項 → 新增應用程式密碼，WebDAV 網址預設為 https://dav.jianguoyun.com/dav/ ",
   "cloudSyncTestConnection": "測試連線",
   "cloudSyncSyncNow": "立即同步",
-  "cloudSyncSyncNowSubtitle": "與其他裝置對齊課表：先拉取雲端更新，再上傳本機修改",
   "cloudSyncTestSuccess": "WebDAV 連線成功",
   "cloudSyncTestFailed": "WebDAV 連線失敗，請檢查帳號、應用程式密碼和網路",
   "cloudSyncResultUploaded": "已上傳到雲端",
@@ -152,7 +131,6 @@
   "cloudSyncConfirmConnect": "確認連接",
   "cloudSyncConnectSuccess": "帳號連接成功",
   "cloudBackupSectionTitle": "備份版本",
-  "cloudBackupSectionSubtitle": "每次同步都會自動保留備份版本",
   "cloudBackupCurrentLabel": "目前版本",
   "cloudBackupCurrentBadge": "目前",
   "cloudBackupCreateNow": "立即備份",
@@ -267,11 +245,9 @@
   "lanEditLastActivityLabel": "最近活動",
   "lanEditKeepAliveWhenLeavingTitle": "離開後保持開啟",
   "lanEditKeepAliveWhenLeavingSubtitle": "關閉後離開本頁就停止",
-  "aboutSupportSectionTitle": "關於與支持",
   "feedbackEntryTitle": "問題回饋",
   "feedbackEntrySubtitle": "Issue、社區渠道和建議反饋入口",
   "aboutEntryTitle": "關於軟件",
-  "aboutEntrySubtitle": "開源說明、版本更新和 GitHub 倉庫",
   "setSemesterStartDateAction": "設定開學日期",
   "semesterStartDateAction": "開學日期",
   "syncCurrentWeekAction": "同步目前周",
@@ -308,7 +284,6 @@
   "courseRecolorNoCoursesToast": "尚無課程，請先匯入或新增課程再換顏色",
   "courseImportTitle": "匯入課程",
   "chooseImportMethodTitle": "選擇匯入方式",
-  "chooseImportMethodSubtitle": "現在支持傳統 .ics 日歷匯入、識圖匯入，以及從倉庫讀取適配器的教務系統匯入",
   "importMethodIcsTitle": ".ics 日歷匯入",
   "importMethodIcsSubtitle": "從其他課表應用匯出的日歷檔案",
   "importMethodIcsFooter": "進入後直接選擇 .ics 檔案，可追加匯入或替換現有課程",
@@ -394,11 +369,8 @@
   "openIssuePage": "打開 Issue 頁面",
   "copyAddress": "複製地址",
   "copiedIssueAddress": "已複製 Issue 地址",
-  "copyXiaohongshuId": "複製小紅書號",
   "copiedXiaohongshuId": "已複製小紅書號",
-  "copyCoolapkId": "複製酷安號",
   "copiedCoolapkId": "已複製酷安號",
-  "copyQqGroupId": "複製群號",
   "copiedQqGroupId": "已複製 QQ 群號",
   "copiedWechatOaName": "已複製公眾號名稱",
   "feedbackWechatOaOpenHint": "已複製公眾號名稱，請到微信中貼上搜尋",
@@ -750,14 +722,6 @@
   "courseOverviewTitle": "課程總覽與編輯",
   "addNewCourseTooltip": "添加新課程",
   "emptyCourseOverviewHint": "長按課表或點擊右上角添加課程",
-  "conflictDetectedMessage": "檢測到 {count} 門排課存在實際衝突，課程列表已標記衝突項",
-  "@conflictDetectedMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "conflictCountLabel": "衝突 {count} 節",
   "@conflictCountLabel": {
     "placeholders": {
@@ -898,7 +862,6 @@
   "courseColorQuickSection": "常用顏色",
   "customPaletteAction": "調色盤自定義顏色",
   "colorPaletteTitle": "調色盤",
-  "colorHexLabel": "顏色 Hex",
   "weekdayMon": "周一",
   "weekdayTue": "周二",
   "weekdayWed": "周三",
@@ -916,14 +879,6 @@
   },
   "saturationLabel": "飽和度 {value}%",
   "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "brightnessLabel": "明度 {value}%",
-  "@brightnessLabel": {
     "placeholders": {
       "value": {
         "type": "int"
@@ -977,9 +932,7 @@
   "aboutOpenSourceLicensesAppSectionTitle": "許可說明",
   "aboutOpenSourceLicensesAppLicenseLabel": "輕嶼課表原始碼以 GPL-3.0-or-later 釋出。",
   "aboutOpenSourceLicensesIntro": "下方列表為本應用使用的開源元件及其授權，點進可查看全文。",
-  "aboutOpenSourceLicensesExtraSectionTitle": "許可說明",
   "aboutOpenSourceLicensesExtraUmeng": "友盟統計等分析服務僅在你同意隱私政策後啟用，適用友盟自身的使用者協議與隱私政策。",
-  "aboutOpenSourceLicensesExtraNote": "",
   "aboutOpenSourceLicensesPackagesSectionTitle": "開源組件 {count}",
   "@aboutOpenSourceLicensesPackagesSectionTitle": {
     "placeholders": {
@@ -1002,8 +955,6 @@
   "aboutAppLogsSubtitle": "查看執行日誌",
   "appLogsShareText": "這是輕嶼課表匯出的應用日誌，包含整個軟體的本地執行記錄，可用於排查更新、匯入、通知、頁面與崩潰問題",
   "appLogsShareSubject": "輕嶼課表 - 應用日誌",
-  "appLogsRecordingEnabled": "正在記錄應用日誌",
-  "appLogsRecordingDisabled": "應用日誌記錄已關閉",
   "appLogsCopyAction": "複製日誌",
   "appLogsCopied": "已複製目前日誌",
   "appLogsExportAction": "匯出日誌",
@@ -1151,7 +1102,6 @@
   "overrideSchemeCoursesSubtitle": "這些課程即使所在課表切換了主範本，也會繼續單獨使用這套時間",
   "closeAction": "關閉",
   "editTimeSchemeTitle": "編輯時間範本",
-  "backToSchemeList": "返回範本列表",
   "currentInUse": "目前使用",
   "quickGenerateAction": "快捷生成",
   "addSectionAction": "新增一節",
@@ -1180,7 +1130,6 @@
       }
     }
   },
-  "copiedTimeSchemeShortMessage": "已複製時間範本",
   "unnamedTimeScheme": "未命名範本",
   "unsetLabel": "未選擇",
   "timeSchemeUsageCourseRefPrefix": "課程引用：",
@@ -1536,16 +1485,13 @@
   "guideRequireConsentHint": "請先滑到底部閱讀說明，並勾選同意後開始使用",
   "guideContinueHint": "繼續下滑查看完整引導內容",
   "exitAppAction": "退出應用",
-  "continueReadingAction": "繼續查看",
   "agreeAndStartAction": "同意並開始使用",
   "startUsingAction": "開始使用",
   "editSingleLessonTitle": "編輯單節課",
   "editCourseTitle": "編輯課程",
-  "addSingleLessonTitle": "添加單節課",
   "addCourseTitle": "添加課程",
   "deleteCourseTitle": "刪除課程",
   "courseDeleted": "課程已刪除",
-  "addMethodTitle": "添加方式",
   "singleLessonLabel": "單節課",
   "recurringLessonLabel": "多節課",
   "singleLessonHint": "適合補課、臨時加課，課程只會落在一個周次",
@@ -1582,10 +1528,8 @@
   "singleLessonWeekHint": "單節課只會出現在一個周次裡，適合補課、臨時加課",
   "rangeWeekLabel": "連續周",
   "customWeekLabel": "自定義周",
-  "allWeeksLabel": "全部",
   "oddWeeksLabel": "單周",
   "evenWeeksLabel": "雙周",
-  "allWeeksHint": "按開始周到結束周連續排課",
   "oddWeeksHint": "只保留范圍內的單周",
   "evenWeeksHint": "只保留范圍內的雙周",
   "customPaletteColor": "調色盤自定義顏色",
@@ -2152,8 +2096,6 @@
   "aboutCurrentVersionLabel": "目前版本",
   "aboutLatestVersionLabel": "最新版本",
   "aboutUnreleasedLabel": "未發布",
-  "aboutVersionChannelLabel": "版本通道",
-  "aboutPrereleaseChannel": "測試版",
   "aboutUpdateAvailableHint": "可直接點擊立即下載。線路切換與高級選項已整合至下方。",
   "aboutUpdateHighlightsTitle": "更新重點",
   "aboutUpdateViewAllAction": "查看全部 {count} 項",
@@ -2168,63 +2110,15 @@
       }
     }
   },
-  "aboutUpdateNowTitle": "立即更新",
-  "aboutUpdateNowAndroidSubtitle": "下載慢或失敗時，再用下方進階選項更換線路",
-  "aboutUpdateNowOtherSubtitle": "目前平台會直接開啟下載頁面，不會在應用內安裝",
-  "aboutMirrorDownloadHint": "默認優先國內線路，可直接下載",
-  "aboutOriginalDownloadHint": "當前優先使用國際線路，如遇較慢可切換至國內線路",
-  "aboutUseSystemDownloaderAction": "使用系統下載器下載",
   "aboutOpenReleasePageAction": "打開 Release 頁面",
-  "aboutDownloadMethodTitle": "下載方式",
-  "aboutDownloadMethodSubtitle": "預設推薦國內線路，GitHub 存取穩定時可切換國際源",
-  "aboutDownloadMethodMirror": "國內下載",
-  "aboutDownloadMethodOriginal": "國際源下載",
-  "aboutMirrorModeHintRecommended": "當前使用國內線路 {current}，推薦使用 {recommended}，可在高級選項中切換",
-  "@aboutMirrorModeHintRecommended": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "recommended": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorModeHintCurrent": "目前使用國內下載 · {current}，如果下載慢或失敗，再到後面的高級選項裡測速、換線路或填寫自訂地址",
-  "@aboutMirrorModeHintCurrent": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutOriginalModeHint": "目前使用國際源下載，只有你網路能穩定訪問 GitHub 時才建議這樣設定；否則請切回國內下載",
   "aboutReleaseNotesTitle": "更新說明",
-  "aboutReleaseNotesSubtitle": "顯示目前檢測到版本的 Release 說明",
   "aboutAdvancedOptionsTitle": "高級選項",
-  "aboutAdvancedOptionsSubtitle": "只有下載慢、要手動切線路、或要檢測測試版時再展開",
   "aboutMirrorSectionTitle": "下載線路與鏡像",
-  "aboutMirrorSectionMirrorHint": "目前使用國內下載，這裡可以手動切線路、測速推薦，或填寫自訂下載地址",
-  "aboutMirrorSectionOriginalHint": "當前使用國際源下載，線路設置需切換至國內源後生效",
   "aboutFillCustomMirrorFirst": "先填寫自訂下載地址",
-  "aboutCurrentCustomMirrorTitle": "目前自訂下載地址",
-  "aboutCurrentMirrorTitle": "目前下載線路地址",
-  "aboutCurrentCustomMirrorHint": "目前正在使用你手動填寫的下載地址",
-  "aboutCurrentMirrorHint": "如果目前線路訪問失敗，可以切到其他內置線路，或改用自訂地址",
   "aboutProbeMirrorsAction": "測速並推薦",
   "aboutProbingMirrors": "測速中…",
   "aboutEditCustomMirrorAction": "修改自訂地址",
   "aboutSetCustomMirrorAction": "填寫自訂地址",
-  "aboutSwitchToRecommendedAction": "切到推薦：{label}",
-  "@aboutSwitchToRecommendedAction": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorDisabledHint": "當前未啟用國內下載，請先將下載方式切換為國內下載",
-  "aboutRecentProbeResultsTitle": "最近測速結果",
   "aboutUnavailable": "不可用",
   "aboutRecommended": "推薦",
   "aboutCheckPrereleaseTitle": "檢測測試版本",
@@ -2232,32 +2126,12 @@
   "aboutUpdatePromptTitle": "彈窗提醒",
   "aboutUpdatePromptSubtitle": "關閉後只在更多按鈕留紅點",
   "aboutDiagnosticsTitle": "測試與診斷",
-  "aboutDiagnosticsSubtitle": "用於排查超級島狀態或向開發者反饋問題",
   "aboutRecordDiagnosticsTitle": "記錄應用日誌",
   "aboutRecordDiagnosticsSubtitle": "持續記錄執行日誌，存本機",
-  "aboutExportDiagnosticsAction": "匯出診斷日誌",
   "aboutViewPhoneLogsAction": "開啟日誌頁面",
-  "aboutClearAndRecollectAction": "清空並重新收集",
   "aboutLiveDiagnosticsEnabled": "已開啟超級島診斷日誌",
   "aboutLiveDiagnosticsDisabled": "已關閉超級島診斷日誌",
   "aboutNoDiagnosticsExportYet": "還沒有可匯出的超級島診斷日誌",
-  "aboutProbeNoMirrorFound": "測速完成，但暫時沒有發現可用鏡像線路",
-  "aboutProbeCurrentFastest": "測速完成，當前線路 {label} 最快",
-  "@aboutProbeCurrentFastest": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutProbeRecommendSwitch": "測速完成，建議切換至 {label}",
-  "@aboutProbeRecommendSwitch": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "switchAction": "切換",
   "aboutSwitchToMirrorAfterError": "{error}，可切到國內鏡像後再試",
   "@aboutSwitchToMirrorAfterError": {
@@ -2414,33 +2288,18 @@
       }
     }
   },
-  "aiWorkflowCompactTitle": "複制提示詞 -> 豆包識圖 -> 匯入",
-  "aiWorkflowCompactSubtitle": "豆包專家模式 -> 複製 JSON -> 選擇開學日期",
   "aiWorkflowTitle": "複制提示詞 -> 豆包識圖 -> 貼上 JSON -> 匯入",
   "aiWorkflowSubtitle": "先複製提示詞，再到豆包左下角切換為專家模式，把課表螢幕截圖和提示詞一起發過去，把豆包返回的 JSON 複製回這裡，點擊匯入後再選擇開學日期",
   "aiPromptShortAction": "提示詞",
   "aiExpertModeSuggestion": "建議豆包專家模式，支持多圖，截圖需帶星期表頭",
-  "aiHintExpertMode": "先切到豆包專家模式",
-  "aiHintSendScreenshot": "截圖和提示詞一起發",
-  "aiHintCopyJsonBack": "返回結果複製 JSON",
-  "aiHintPickSemesterAfterImport": "匯入後再選開學日期",
   "jsonLabelShort": "JSON",
   "aiPasteJsonTitle": "貼上 AI 返回的 JSON",
-  "aiCourseCountChip": "{count} 門課",
-  "@aiCourseCountChip": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "aiParseFailedChip": "解析失敗",
   "aiPasteJsonHintShort": "貼上 AI 返回的 JSON",
   "aiPasteJsonHintLong": "把豆包返回的 JSON 原樣貼上到這裡，然後點擊匯入，支援純 JSON，也兼容 ```json 程式碼區塊",
   "detailAction": "詳情",
   "aiParseErrorTitle": "解析錯誤",
   "viewDetailsAction": "查看詳情",
-  "aiWorkflowFooter": "複製提示詞 -> 豆包發送螢幕截圖和提示詞 -> 把 JSON 貼回這裡 -> 點擊匯入 -> 選擇開學日期",
   "previewAction": "預覽",
   "confirmImportAction": "確認匯入",
   "promptCopiedHint": "提示詞已複制，去豆包發送截圖和提示詞",
@@ -2893,7 +2752,6 @@
   "editScheduleTitle": "編輯日程",
   "addScheduleAction": "新增日程",
   "addCourseSheetTitle": "新增",
-  "addCourseSheetSubtitle": "空白課表區域不可點擊，請由此新增課程或日程",
   "scheduleTitleLabel": "日程標題",
   "scheduleTitleHint": "例如：開組會、辦證件、取包裹",
   "scheduleTitleRequired": "請輸入日程標題",
@@ -5509,7 +5367,6 @@
   "logCatDebugSnapshot": "除錯快照",
   "logExportTitle": "輕嶼課表 - 應用程式日誌",
   "appUpdateMirrorPresetGhfast": "預設鏡像",
-  "appUpdateMirrorPresetGhproxyCn": "備用鏡像 1",
   "appUpdateMirrorPresetGhLlkk": "備用鏡像 2",
   "appUpdateMirrorPresetGhProxyCom": "備用鏡像 3",
   "appUpdateMirrorPresetGhproxyNet": "備用鏡像 4",
@@ -5586,7 +5443,6 @@
   "currentProfileTimeSchemeName": "目前課表時間",
   "unnamedTimetableProfile": "未命名課表",
   "cloudBackupManualProtectedTitle": "手動備份永不過期",
-  "cloudBackupManualProtectedSubtitle": "開啟後，手動建立的備份不會被自動清理",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 無默認登錄地址，請先輸入教務系統網址",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
@@ -6148,7 +6004,6 @@
   "coupleTimetableModeEnableTooltip": "開啟情侶課表",
   "coupleTimetableModeDisableTooltip": "關閉情侶課表",
   "coupleTimetableTitle": "情侶課表",
-  "coupleTimetableIntro": "匯出你的課表發給對方，或匯入對方分享的課表檔案，匯入後可在疊加檢視中查看雙方的課程",
   "coupleTimetableBoundTitle": "已綁定對方課表",
   "coupleTimetableUnboundTitle": "尚未綁定對方課表",
   "coupleTimetablePartnerNameLabel": "對方名稱",
@@ -6163,18 +6018,14 @@
   "coupleTimetableExportForPartner": "匯出我的課表給對方",
   "coupleTimetableImportPartner": "匯入對方課表",
   "coupleTimetableUnlink": "解除綁定",
-  "coupleTimetableOpenOverlay": "進入疊加檢視",
   "coupleTimetableImportSuccess": "已匯入對方課表",
   "coupleTimetableImportUpdated": "已更新對方課表",
   "coupleTimetableUnlinkConfirmTitle": "解除情侶課表綁定？",
   "coupleTimetableUnlinkConfirmMessage": "解除後將刪除本機儲存的對方課表，疊加檢視也會關閉",
   "coupleTimetableUnlinkSuccess": "已解除綁定",
-  "coupleTimetablePrivacyHint": "對方只能看到你匯出檔案中所包含的課表內容",
-  "coupleTimetableOverlayTitle": "情侶疊加",
   "coupleTimetableLegendMine": "我的課",
   "coupleTimetableLegendPartner": "對方課程",
   "coupleTimetableLegendTogether": "一起上課",
-  "coupleTimetableLegendFree": "共同空閒",
   "coupleTimetableSharedFreeTitle": "今日共同空閒",
   "coupleTimetableSharedFreeTitleOtherDay": "當日共同空閒",
   "coupleTimetableNoSharedFree": "今天沒有共同空閒時段",
@@ -6195,14 +6046,11 @@
     }
   },
   "coupleTimetableSharedFreeMoreCount": "還有 {count} 段",
-  "coupleTimetableSharedFreeUnavailable": "暫時算不出共同空閒",
   "coupleTimetableSharedFreeStaleHint": "對方課表可能不是最新",
   "coupleTimetablePartnerReadOnlyBadge": "對方課表 只讀",
-  "coupleTimetableNotBoundMessage": "請先匯入對方課表後再查看疊加檢視",
   "coupleTimetableShareText": "這是我的課表，匯入到輕嶼課表的情侶課表即可一起查看",
   "coupleTimetableShareSubject": "輕嶼課表・情侶課表分享",
   "coupleTimetableWeekOffsetTitle": "週次偏移",
-  "coupleTimetableWeekOffsetSubtitle": "查看第 N 週時讀取對方第 N+偏移 週，如 +1 表示對方快一週",
   "coupleTimetableWeekOffsetZero": "無偏移",
   "@coupleTimetableWeekOffsetSigned": {
     "placeholders": {
@@ -6224,10 +6072,8 @@
   },
   "coupleTimetableWeekOffsetPreview": "查看你的第 {myWeek} 週時，顯示對方第 {partnerWeek} 週的課",
   "coupleTimetableColorsTitle": "疊加顏色",
-  "coupleTimetableColorsSubtitle": "自定義本人課程、對方課程及重合課程的顯示顏色",
   "partnerImportRequiresSingleProfile": "請匯入單一課表備份檔案，不支援全量備份",
   "coupleWebdavTitle": "堅果雲拉取",
-  "coupleWebdavSubtitle": "登錄對方堅果雲賬號獲取課表，與個人雲同步互不影響",
   "coupleWebdavNotConnected": "尚未連接堅果雲",
   "@coupleWebdavConnectedAs": {
     "placeholders": {
@@ -6296,8 +6142,6 @@
   "homePageHeaderBlurSubtitle": "",
   "homePageWeekdayBarBlurTitle": "資訊欄玻璃",
   "homePageWeekdayBarBlurSubtitle": "玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙",
-  "chromeGlassMaterialSubtitle": "",
-  "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "選擇圖片",
   "homePageSwitchImageAction": "切換照片",
   "homePageAdjustPositionAction": "調整位置",
@@ -6374,7 +6218,6 @@
   },
   "bingWallpaperAutoApplyStale": "Bing 還沒放出今天的圖，先用 {date} 那張頂一下",
   "appearanceTextColorsSectionTitle": "文字顏色",
-  "appearanceTextColorsSectionSubtitle": "自訂課程卡片、星期欄與時間軸文字顏色",
   "pageTransitionSpeedTitle": "頁面轉場速度",
   "layoutBackToCurrentWeekButtonOpacityTitle": "懸浮按鈕不透明度",
   "layoutCourseCardGapTitle": "課程卡片間距",
@@ -6497,56 +6340,13 @@
   "homeMenuMoreSearchHint": "搜功能，如 外觀、匯入、小工具",
   "homeMenuMoreSearchEmptyTitle": "找不到",
   "homeMenuMoreSearchEmptyHint": "換個詞試試，或到課表設定裡找",
-  "classAlarmLeadMinutesLabel": "提前 {minutes} 分鐘",
-  "@classAlarmLeadMinutesLabel": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "classAlarmInvalidTimeToast": "這門課的節次超出時間模板，無法設定鬧鐘",
-  "classAlarmSheetTitle": "上課提醒",
   "classAlarmQuickOption": "上課前 {minutes} 分鐘提醒",
   "classAlarmCustomOption": "自訂提醒時間…",
   "classAlarmExistingLabel": "已設提醒：{time}",
-  "classAlarmSetToast": "提醒已設定",
   "classAlarmRemovedToast": "已取消這堂課的提醒",
-  "classAlarmPastToast": "所選時間已過，請換一個時間",
-  "classAlarmNoSemesterToast": "請先在設定中填寫學期開始日期",
   "classAlarmActionLabel": "設這節課的鬧鐘",
-  "classAlarmConfirmMessage": "將在系統時鐘創建：{detail}。系統鬧鐘無法識別假期與調休，停課期間照常響鈴；刪除請在系統時鐘中完成。",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmVariableSuffix": "另外，{days}的第一節課時間在不同周不一致，這些天未創建鬧鐘。",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmEntryTitle": "上課鬧鐘",
-  "classAlarmGroupSetup": "添加鬧鐘",
-  "classAlarmGroupBehavior": "響鈴行為",
-  "classAlarmAddAllTitle": "批量添加上課鬧鐘",
-  "classAlarmRangeNext4Weeks": "未來 4 周",
-  "classAlarmRangeNext8Weeks": "未來 8 周",
-  "classAlarmRangeLabel": "添加範圍",
-  "classAlarmRangeRemaining": "本週起至學期結束",
-  "classAlarmRangeWhole": "整學期",
-  "classAlarmLeadTitle": "提前量",
-  "classAlarmSkipUiTitle": "跳過確認頁",
-  "classAlarmSkipUiSubtitle": "直接寫入鬧鐘，不彈出時鐘確認頁，部分機型可能不支持",
   "classAlarmOpenClock": "打開系統時鐘",
-  "classAlarmConfirmTitle": "創建重複鬧鐘？",
-  "classAlarmNoSchemeToast": "請先在設置中選擇時間模板",
-  "classAlarmNoDataToast": "所選範圍內沒有找到課表",
   "classAlarmAddedToast": "已交給系統時鐘處理",
   "classAlarmLaunchFailedToast": "未找到可處理的時鐘應用",
   "classAlarmCourseConfirmTitle": "添加這節課的重複鬧鐘？",
@@ -6567,8 +6367,6 @@
       }
     }
   },
-  "classAlarmDaySeparator": "、",
-  "classAlarmDetailSeparator": "；",
   "liveExpandedDetailGroupTitle": "展開詳情",
   "liveExpandedDetailUnfilledSuffix": "未填寫，島上不顯示",
   "liveExpandedDetailUnfilledValue": "無",

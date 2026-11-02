@@ -168,10 +168,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleTimetableTitle => '커플 시간표';
 
   @override
-  String get coupleTimetableIntro =>
-      '내 시간표를 내보내서 상대방에게 보내거나, 상대방이 공유한 시간표 파일을 가져올 수 있습니다. 가져오면 겹쳐 보기에서 양쪽 수업을 확인할 수 있습니다';
-
-  @override
   String get coupleTimetableBoundTitle => '상대방 시간표 연결됨';
 
   @override
@@ -195,9 +191,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleTimetableUnlink => '연결 해제';
 
   @override
-  String get coupleTimetableOpenOverlay => '겹쳐 보기 열기';
-
-  @override
   String get coupleTimetableImportSuccess => '상대방 시간표를 가져왔습니다';
 
   @override
@@ -214,12 +207,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleTimetableUnlinkSuccess => '연결이 해제되었습니다';
 
   @override
-  String get coupleTimetablePrivacyHint => '상대방은 내보낸 파일에 포함된 시간표 내용만 볼 수 있습니다';
-
-  @override
-  String get coupleTimetableOverlayTitle => '커플 겹쳐 보기';
-
-  @override
   String get coupleTimetableLegendMine => '내 수업';
 
   @override
@@ -227,9 +214,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableLegendTogether => '함께 듣는 수업';
-
-  @override
-  String get coupleTimetableLegendFree => '공통 공강';
 
   @override
   String get coupleTimetableSharedFreeTitle => '오늘 공통 공강 시간';
@@ -254,16 +238,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get coupleTimetableSharedFreeUnavailable => '지금은 공통 공강 시간을 계산할 수 없습니다';
-
-  @override
   String get coupleTimetableSharedFreeStaleHint => '상대방 시간표가 최신이 아닐 수 있습니다';
 
   @override
   String get coupleTimetablePartnerReadOnlyBadge => '상대방 시간표(읽기 전용)';
-
-  @override
-  String get coupleTimetableNotBoundMessage => '먼저 상대방 시간표를 가져온 후 겹쳐 보기를 확인하세요';
 
   @override
   String get coupleTimetableShareText =>
@@ -274,10 +252,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetTitle => '주차 오프셋';
-
-  @override
-  String get coupleTimetableWeekOffsetSubtitle =>
-      'N주차를 볼 때 상대의 N+오프셋 주를 표시합니다. 예: +1이면 1주 앞섬';
 
   @override
   String get coupleTimetableWeekOffsetZero => '오프셋 없음';
@@ -296,19 +270,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coupleTimetableColorsTitle => '겹쳐 보기 색상';
 
   @override
-  String get coupleTimetableColorsSubtitle =>
-      '내 수업상대 수업같이 듣는 수업의 표시 색상을 사용자 지정합니다';
-
-  @override
   String get partnerImportRequiresSingleProfile =>
       '단일 시간표 백업 파일을 가져오세요. 전체 백업은 지원하지 않습니다';
 
   @override
   String get coupleWebdavTitle => '견과클라우드 가져오기';
-
-  @override
-  String get coupleWebdavSubtitle =>
-      '상대의 Jianguoyun 계정에 로그인해 시간표를 가져옵니다. 클라우드 동기화 계정과는 별개입니다';
 
   @override
   String get coupleWebdavNotConnected => '견과클라우드 미연결';
@@ -395,10 +361,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncEntryTitle => '클라우드 동기화';
 
   @override
-  String get cloudSyncEntrySubtitle =>
-      'Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화';
-
-  @override
   String get cloudSyncEntryDisabled => '꺼짐';
 
   @override
@@ -445,13 +407,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncModeManual => '수동 동기화';
 
   @override
-  String get cloudSyncAccountTitle => '계정 설정';
-
-  @override
-  String get cloudSyncAccountSubtitle =>
-      '로그인 비밀번호가 아닌 앱 전용 비밀번호를 사용하세요. 스냅샷에는 저장된 학교 계정도 포함됩니다';
-
-  @override
   String get cloudSyncUsernameLabel => '이메일 / 사용자명';
 
   @override
@@ -462,10 +417,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncPasswordHint => 'Jianguoyun 계정 보안 설정에서 생성';
-
-  @override
-  String get cloudSyncPasswordStoredHint =>
-      '비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다';
 
   @override
   String get cloudSyncAdvancedTitle => '고급 설정';
@@ -508,17 +459,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncLastErrorLabel => '최근 오류';
 
   @override
-  String cloudSyncLastSyncedAt(String time) {
-    return '마지막 동기화: $time';
-  }
-
-  @override
   String get cloudSyncSyncing => '동기화 중…';
-
-  @override
-  String cloudSyncLastError(String message) {
-    return '최근 오류: $message';
-  }
 
   @override
   String get cloudSyncHelpTitle => 'Jianguoyun 앱 비밀번호 받는 방법';
@@ -532,10 +473,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncSyncNow => '지금 동기화';
-
-  @override
-  String get cloudSyncSyncNowSubtitle =>
-      '다른 기기와 시간표를 맞춥니다: 클라우드에서 받은 뒤 기기 변경을 업로드';
 
   @override
   String get cloudSyncTestSuccess => 'WebDAV 연결 성공';
@@ -622,9 +559,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudBackupSectionTitle => '버전 기록';
-
-  @override
-  String get cloudBackupSectionSubtitle => '동기화할 때 자동 저장됩니다. 탭하여 해당 버전으로 복원';
 
   @override
   String get cloudBackupCurrentLabel => '현재 버전';
@@ -810,9 +744,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get lanEditKeepAliveWhenLeavingSubtitle => '끄면 이 화면을 나가면 중지';
 
   @override
-  String get aboutSupportSectionTitle => '앱 정보 및 지원';
-
-  @override
   String get feedbackEntryTitle => '문제 제보';
 
   @override
@@ -820,9 +751,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutEntryTitle => '앱 정보';
-
-  @override
-  String get aboutEntrySubtitle => '오픈소스, 버전 업데이트 및 GitHub 저장소';
 
   @override
   String get setSemesterStartDateAction => '학기 시작일 설정';
@@ -916,10 +844,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get chooseImportMethodTitle => '가져오기 방법 선택';
-
-  @override
-  String get chooseImportMethodSubtitle =>
-      '기존 .ics 캘린더 가져오기, 이미지 인식 가져오기, 저장소에서 어댑터를 읽어오는 교무 시스템 가져오기를 지원합니다';
 
   @override
   String get importMethodIcsTitle => '.ics 캘린더 가져오기';
@@ -1119,19 +1043,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get copiedIssueAddress => 'Issue 주소를 복사했습니다';
 
   @override
-  String get copyXiaohongshuId => '샤오홍슈 ID 복사';
-
-  @override
   String get copiedXiaohongshuId => '샤오홍슈 ID를 복사했습니다';
 
   @override
-  String get copyCoolapkId => 'Coolapk ID 복사';
-
-  @override
   String get copiedCoolapkId => 'Coolapk ID를 복사했습니다';
-
-  @override
-  String get copyQqGroupId => 'QQ 그룹 ID 복사';
 
   @override
   String get copiedQqGroupId => 'QQ 그룹 ID를 복사했습니다';
@@ -1706,11 +1621,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get emptyCourseOverviewHint => '시간표를 길게 누르거나 오른쪽 위에서 수업을 추가하세요';
 
   @override
-  String conflictDetectedMessage(int count) {
-    return '$count개의 배치에 실제 충돌이 감지되었습니다. 수업 목록에 충돌 항목이 표시됩니다';
-  }
-
-  @override
   String conflictCountLabel(int count) {
     return '충돌 $count건';
   }
@@ -1873,9 +1783,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get colorPaletteTitle => '색상 팔레트';
 
   @override
-  String get colorHexLabel => '색상 Hex';
-
-  @override
   String get weekdayMon => '월요일';
 
   @override
@@ -1904,11 +1811,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String saturationLabel(int value) {
     return '채도 $value%';
-  }
-
-  @override
-  String brightnessLabel(int value) {
-    return '명도 $value%';
   }
 
   @override
@@ -2044,14 +1946,8 @@ class AppLocalizationsKo extends AppLocalizations {
       '아래 목록은 이 앱이 사용하는 오픈소스 구성 요소와 라이선스입니다. 항목을 눌러 전문을 볼 수 있습니다.';
 
   @override
-  String get aboutOpenSourceLicensesExtraSectionTitle => '라이선스 안내';
-
-  @override
   String get aboutOpenSourceLicensesExtraUmeng =>
       '우멍(Umeng) 등 분석 서비스는 개인정보 처리방침에 동의한 후에만 사용되며, 해당 서비스의 약관과 개인정보 정책이 적용됩니다.';
-
-  @override
-  String get aboutOpenSourceLicensesExtraNote => '';
 
   @override
   String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
@@ -2082,12 +1978,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appLogsShareSubject => '경屿 시간표 - 앱 로그';
-
-  @override
-  String get appLogsRecordingEnabled => '앱 로그 기록 중';
-
-  @override
-  String get appLogsRecordingDisabled => '앱 로그 기록 꺼짐';
 
   @override
   String get appLogsCopyAction => '로그 복사';
@@ -2296,9 +2186,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get editTimeSchemeTitle => '템플릿 편집';
 
   @override
-  String get backToSchemeList => '템플릿 목록으로';
-
-  @override
   String get currentInUse => '현재 사용 중';
 
   @override
@@ -2367,9 +2254,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String editingSchemeLabel(String name) {
     return '편집 중: $name';
   }
-
-  @override
-  String get copiedTimeSchemeShortMessage => '템플릿을 복사했습니다';
 
   @override
   String get unnamedTimeScheme => '이름 없는 템플릿';
@@ -3011,9 +2895,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exitAppAction => '앱 종료';
 
   @override
-  String get continueReadingAction => '계속 보기';
-
-  @override
   String get agreeAndStartAction => '동의하고 시작';
 
   @override
@@ -3026,9 +2907,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get editCourseTitle => '수업 편집';
 
   @override
-  String get addSingleLessonTitle => '단일 수업 추가';
-
-  @override
   String get addCourseTitle => '수업 추가';
 
   @override
@@ -3036,9 +2914,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get courseDeleted => '수업이 삭제되었습니다';
-
-  @override
-  String get addMethodTitle => '추가 방법';
 
   @override
   String get singleLessonLabel => '단일 수업';
@@ -3137,16 +3012,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get customWeekLabel => '사용자 정의 주';
 
   @override
-  String get allWeeksLabel => '전체';
-
-  @override
   String get oddWeeksLabel => '홀수 주';
 
   @override
   String get evenWeeksLabel => '짝수 주';
-
-  @override
-  String get allWeeksHint => '시작 주부터 종료 주까지 연속으로 수업을 배치합니다';
 
   @override
   String get oddWeeksHint => '범위 내 홀수 주만 유지합니다';
@@ -3377,12 +3246,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다';
 
   @override
-  String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialHint => '';
-
-  @override
   String get homePagePickImageAction => '이미지 선택';
 
   @override
@@ -3517,10 +3380,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appearanceTextColorsSectionTitle => '텍스트 색상';
-
-  @override
-  String get appearanceTextColorsSectionSubtitle =>
-      '수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다';
 
   @override
   String get defaultTimetablePreviewName => '기본 시간표';
@@ -4475,12 +4334,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutUnreleasedLabel => '미출시';
 
   @override
-  String get aboutVersionChannelLabel => '버전 채널';
-
-  @override
-  String get aboutPrereleaseChannel => '시험판';
-
-  @override
   String get aboutUpdateAvailableHint =>
       '지금은 아래의 \'지금 다운로드\'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다';
 
@@ -4508,95 +4361,19 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get aboutUpdateNowTitle => '지금 업데이트';
-
-  @override
-  String get aboutUpdateNowAndroidSubtitle =>
-      '다운로드가 느리거나 실패하면 아래 고급 옵션에서 미러를 바꿔 보세요';
-
-  @override
-  String get aboutUpdateNowOtherSubtitle =>
-      '현재 플랫폼은 다운로드 페이지를 직접 열며 앱 내에서 설치하지 않습니다';
-
-  @override
-  String get aboutMirrorDownloadHint => '기본적으로 국내 미러를 사용합니다. 바로 다운로드를 누르면 됩니다';
-
-  @override
-  String get aboutOriginalDownloadHint =>
-      '현재 국제 소스 다운로드를 우선합니다. 다운로드가 느리거나 열리지 않으면 먼저 \'국내 다운로드\'로 전환하세요';
-
-  @override
-  String get aboutUseSystemDownloaderAction => '시스템 다운로더로 다운로드';
-
-  @override
   String get aboutOpenReleasePageAction => 'Release 페이지 열기';
-
-  @override
-  String get aboutDownloadMethodTitle => '다운로드 방식';
-
-  @override
-  String get aboutDownloadMethodSubtitle =>
-      '국내 미러를 권장합니다. GitHub 접속이 안정적이면 국제 소스로 전환하세요';
-
-  @override
-  String get aboutDownloadMethodMirror => '국내 다운로드';
-
-  @override
-  String get aboutDownloadMethodOriginal => '국제 소스 다운로드';
-
-  @override
-  String aboutMirrorModeHintRecommended(String current, String recommended) {
-    return '현재 국내 다운로드 사용 중 · $current. 최근 속도 측정에서 \"$recommended\"이(가) 권장됩니다. 필요 시 뒤의 고급 옵션에서 전환할 수 있습니다';
-  }
-
-  @override
-  String aboutMirrorModeHintCurrent(String current) {
-    return '현재 국내 다운로드 사용 중 · $current. 다운로드가 느리거나 실패하면 뒤의 고급 옵션에서 속도 측정, 회선 변경 또는 사용자 정의 주소를 입력하세요';
-  }
-
-  @override
-  String get aboutOriginalModeHint =>
-      '현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요';
 
   @override
   String get aboutReleaseNotesTitle => '업데이트 내역';
 
   @override
-  String get aboutReleaseNotesSubtitle => '현재 감지된 버전의 Release 설명을 표시합니다.';
-
-  @override
   String get aboutAdvancedOptionsTitle => '고급 옵션';
-
-  @override
-  String get aboutAdvancedOptionsSubtitle =>
-      '다운로드 느림, 수동 회선 전환, 시험판 검출 시에만 펼치세요';
 
   @override
   String get aboutMirrorSectionTitle => '다운로드 회선 및 미러';
 
   @override
-  String get aboutMirrorSectionMirrorHint =>
-      '현재 국내 다운로드 사용 중. 여기서 수동으로 회선 전환, 속도 측정 권장, 사용자 정의 다운로드 주소 입력이 가능합니다';
-
-  @override
-  String get aboutMirrorSectionOriginalHint =>
-      '현재 국제 소스 다운로드를 사용 중입니다. 아래 회선 설정은 \'국내 다운로드\'로 전환 후에만 유효합니다';
-
-  @override
   String get aboutFillCustomMirrorFirst => '먼저 사용자 정의 다운로드 주소를 입력하세요';
-
-  @override
-  String get aboutCurrentCustomMirrorTitle => '현재 사용자 정의 다운로드 주소';
-
-  @override
-  String get aboutCurrentMirrorTitle => '현재 다운로드 회선 주소';
-
-  @override
-  String get aboutCurrentCustomMirrorHint => '현재 수동으로 입력한 다운로드 주소를 사용 중입니다';
-
-  @override
-  String get aboutCurrentMirrorHint =>
-      '현재 회선 접속 실패 시 다른 내장 회선으로 전환하거나 사용자 정의 주소로 변경할 수 있습니다';
 
   @override
   String get aboutProbeMirrorsAction => '속도 측정 및 권장';
@@ -4609,18 +4386,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutSetCustomMirrorAction => '사용자 정의 주소 입력';
-
-  @override
-  String aboutSwitchToRecommendedAction(String label) {
-    return '권장으로 전환: $label';
-  }
-
-  @override
-  String get aboutMirrorDisabledHint =>
-      '현재 국내 다운로드를 사용하지 않아 여기의 회선 설정이 일시적으로 유효하지 않습니다. 필요하면 위의 \'다운로드 방식\'에서 국내 다운로드로 전환하세요';
-
-  @override
-  String get aboutRecentProbeResultsTitle => '최근 속도 측정 결과';
 
   @override
   String get aboutUnavailable => '사용 불가';
@@ -4644,23 +4409,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutDiagnosticsTitle => '테스트 및 진단';
 
   @override
-  String get aboutDiagnosticsSubtitle =>
-      '\'슈퍼아일랜드가 표시되지 않음\' 또는 개발자 피드백이 필요한 경우에만 펼치세요';
-
-  @override
   String get aboutRecordDiagnosticsTitle => '앱 로그 기록';
 
   @override
   String get aboutRecordDiagnosticsSubtitle => '실행 로그를 기기에 기록';
 
   @override
-  String get aboutExportDiagnosticsAction => '앱 로그 내보내기';
-
-  @override
   String get aboutViewPhoneLogsAction => '로그 페이지 열기';
-
-  @override
-  String get aboutClearAndRecollectAction => '비우고 재수집';
 
   @override
   String get aboutLiveDiagnosticsEnabled => '슈퍼아일랜드 진단 로그 활성화됨';
@@ -4670,19 +4425,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutNoDiagnosticsExportYet => '내보낼 수 있는 슈퍼아일랜드 진단 로그가 아직 없습니다';
-
-  @override
-  String get aboutProbeNoMirrorFound => '속도 측정 완료. 사용 가능한 미러 회선을 찾지 못했습니다';
-
-  @override
-  String aboutProbeCurrentFastest(String label) {
-    return '속도 측정 완료. 현재 회선 \"$label\"이(가) 가장 빠른 사용 가능한 회선입니다';
-  }
-
-  @override
-  String aboutProbeRecommendSwitch(String label) {
-    return '속도 측정 완료. \"$label\"(으)로 전환을 권장합니다';
-  }
 
   @override
   String get switchAction => '전환';
@@ -4862,12 +4604,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get aiWorkflowCompactTitle => '프롬프트 복사 → Doubao 이미지 인식 → 가져오기';
-
-  @override
-  String get aiWorkflowCompactSubtitle => 'Doubao 전문가 모드 → JSON 복사 → 학기 시작일 선택';
-
-  @override
   String get aiWorkflowTitle => '프롬프트 복사 → Doubao 이미지 인식 → JSON 붙여넣기 → 가져오기';
 
   @override
@@ -4882,27 +4618,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Doubao 전문가 모드를 권장합니다. 다중 이미지 지원, 스크린샷에 요일 헤더가 필요합니다.';
 
   @override
-  String get aiHintExpertMode => '먼저 Doubao 전문가 모드로 전환';
-
-  @override
-  String get aiHintSendScreenshot => '스크린샷과 프롬프트를 함께 전송';
-
-  @override
-  String get aiHintCopyJsonBack => '반환된 결과에서 JSON 복사';
-
-  @override
-  String get aiHintPickSemesterAfterImport => '가져오기 후 학기 시작일 선택';
-
-  @override
   String get jsonLabelShort => 'JSON';
 
   @override
   String get aiPasteJsonTitle => 'AI가 반환한 JSON 붙여넣기';
-
-  @override
-  String aiCourseCountChip(int count) {
-    return '$count과목';
-  }
 
   @override
   String get aiParseFailedChip => '파싱 실패';
@@ -4922,10 +4641,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get viewDetailsAction => '상세 보기';
-
-  @override
-  String get aiWorkflowFooter =>
-      '프롬프트 복사 → Doubao에서 스크린샷과 프롬프트 전송 → JSON을 여기에 붙여넣기 → 가져오기 탭 → 학기 시작일 선택.';
 
   @override
   String get previewAction => '미리보기';
@@ -5619,10 +5334,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get addCourseSheetTitle => '추가';
-
-  @override
-  String get addCourseSheetSubtitle =>
-      '시간표의 빈 영역은 탭할 수 없습니다. 여기서 수업이나 일정을 추가하세요';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9778,9 +9489,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appUpdateMirrorPresetGhfast => 'Default mirror';
 
   @override
-  String get appUpdateMirrorPresetGhproxyCn => 'Backup mirror 1';
-
-  @override
   String get appUpdateMirrorPresetGhLlkk => 'Backup mirror 2';
 
   @override
@@ -9886,10 +9594,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudBackupManualProtectedTitle => 'Protect manual backups';
-
-  @override
-  String get cloudBackupManualProtectedSubtitle =>
-      'Manual backups are never auto-deleted when enabled';
 
   @override
   String courseImportPortalUrlMissingBody(
@@ -11122,16 +10826,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuMoreSearchEmptyHint => '다른 단어로 검색하거나 설정을 확인하세요';
 
   @override
-  String classAlarmLeadMinutesLabel(int minutes) {
-    return '$minutes분 전';
-  }
-
-  @override
   String get classAlarmInvalidTimeToast =>
       '이 수업의 교시가 시간표 템플릿 범위를 벗어나 알람을 설정할 수 없습니다';
-
-  @override
-  String get classAlarmSheetTitle => '수업 알림';
 
   @override
   String classAlarmQuickOption(Object minutes) {
@@ -11147,77 +10843,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get classAlarmSetToast => '알림이 설정되었습니다';
-
-  @override
   String get classAlarmRemovedToast => '이 수업 알림을 취소했습니다';
-
-  @override
-  String get classAlarmPastToast => '선택한 시간이 이미 지났습니다. 다른 시간을 고르세요';
-
-  @override
-  String get classAlarmNoSemesterToast => '설정에서 학기 시작일을 먼저 입력하세요';
 
   @override
   String get classAlarmActionLabel => '이 수업 알람 설정';
 
   @override
-  String classAlarmConfirmMessage(String detail) {
-    return '시계 앱에 생성합니다: $detail. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return '또한 $days의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.';
-  }
-
-  @override
-  String get classAlarmEntryTitle => '수업 알람';
-
-  @override
-  String get classAlarmGroupSetup => '알람 추가';
-
-  @override
-  String get classAlarmGroupBehavior => '동작 설정';
-
-  @override
-  String get classAlarmAddAllTitle => '수업 알람 일괄 추가';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '앞으로 4주';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '앞으로 8주';
-
-  @override
-  String get classAlarmRangeLabel => '범위';
-
-  @override
-  String get classAlarmRangeRemaining => '이번 주부터 학기 끝까지';
-
-  @override
-  String get classAlarmRangeWhole => '학기 전체';
-
-  @override
-  String get classAlarmLeadTitle => '시간 여유';
-
-  @override
-  String get classAlarmSkipUiTitle => '확인 화면 건너뛰기';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '바로 쓰기를 시도합니다(일부 기기는 표시됨)';
-
-  @override
   String get classAlarmOpenClock => '시계 앱 열기';
-
-  @override
-  String get classAlarmConfirmTitle => '반복 알람을 만들까요?';
-
-  @override
-  String get classAlarmNoSchemeToast => '먼저 설정에서 시간표 템플릿을 선택하세요';
-
-  @override
-  String get classAlarmNoDataToast => '선택한 범위에서 시간표를 찾을 수 없습니다';
 
   @override
   String get classAlarmAddedToast => '시계 앱으로 전달했습니다';
@@ -11237,12 +10869,6 @@ class AppLocalizationsKo extends AppLocalizations {
   ) {
     return '시스템 시계에 매주 $weekday $time 반복 알람을 만듭니다(수업 $lead분 전 울림, 대상 주차: $weeks). 휴일·휴강 주에도 울리니 삭제는 시스템 시계에서 해주세요.';
   }
-
-  @override
-  String get classAlarmDaySeparator => ', ';
-
-  @override
-  String get classAlarmDetailSeparator => '; ';
 
   @override
   String get liveExpandedDetailGroupTitle => '펼침 상세';

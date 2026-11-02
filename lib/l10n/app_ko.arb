@@ -55,7 +55,6 @@
   "dataTransferEntryTitle": "데이터 백업 및 마이그레이션",
   "dataTransferEntrySubtitle": "시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다",
   "cloudSyncEntryTitle": "클라우드 동기화",
-  "cloudSyncEntrySubtitle": "Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화",
   "cloudSyncEntryDisabled": "꺼짐",
   "cloudSyncEntryEnabled": "켜짐",
   "cloudSyncEntrySyncing": "동기화 중",
@@ -71,13 +70,10 @@
   "cloudSyncModeTitle": "동기화 방식",
   "cloudSyncModeAuto": "자동 동기화",
   "cloudSyncModeManual": "수동 동기화",
-  "cloudSyncAccountTitle": "계정 설정",
-  "cloudSyncAccountSubtitle": "로그인 비밀번호가 아닌 앱 전용 비밀번호를 사용하세요. 스냅샷에는 저장된 학교 계정도 포함됩니다",
   "cloudSyncUsernameLabel": "이메일 / 사용자명",
   "cloudSyncUsernameHint": "Jianguoyun 가입 이메일",
   "cloudSyncPasswordLabel": "앱 전용 비밀번호",
   "cloudSyncPasswordHint": "Jianguoyun 계정 보안 설정에서 생성",
-  "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다",
   "cloudSyncAdvancedTitle": "고급 설정",
   "cloudSyncBaseUrlLabel": "WebDAV 주소",
   "cloudSyncBaseUrlSecurityNote": "HTTPS 암호화 연결을 권장합니다. HTTP 평문 연결은 신뢰할 수 있는 네트워크에서만 사용하세요",
@@ -90,28 +86,11 @@
   "cloudSyncStatusTitle": "동기화 상태",
   "cloudSyncLastSyncedLabel": "마지막 동기화",
   "cloudSyncLastErrorLabel": "최근 오류",
-  "cloudSyncLastSyncedAt": "마지막 동기화: {time}",
-  "@cloudSyncLastSyncedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncSyncing": "동기화 중…",
-  "cloudSyncLastError": "최근 오류: {message}",
-  "@cloudSyncLastError": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncHelpTitle": "Jianguoyun 앱 비밀번호 받는 방법",
   "cloudSyncHelpBody": "Jianguoyun 웹 또는 클라이언트 → 계정 정보 → 보안 → 앱 비밀번호 추가. WebDAV 주소 기본값: https://dav.jianguoyun.com/dav/",
   "cloudSyncTestConnection": "연결 테스트",
   "cloudSyncSyncNow": "지금 동기화",
-  "cloudSyncSyncNowSubtitle": "다른 기기와 시간표를 맞춥니다: 클라우드에서 받은 뒤 기기 변경을 업로드",
   "cloudSyncTestSuccess": "WebDAV 연결 성공",
   "cloudSyncTestFailed": "WebDAV 연결 실패. 계정, 앱 비밀번호, 네트워크를 확인하세요",
   "cloudSyncResultUploaded": "클라우드에 업로드됨",
@@ -152,7 +131,6 @@
   "cloudSyncConfirmConnect": "연결 확인",
   "cloudSyncConnectSuccess": "계정 연결 성공",
   "cloudBackupSectionTitle": "버전 기록",
-  "cloudBackupSectionSubtitle": "동기화할 때 자동 저장됩니다. 탭하여 해당 버전으로 복원",
   "cloudBackupCurrentLabel": "현재 버전",
   "cloudBackupCurrentBadge": "현재",
   "cloudBackupCreateNow": "지금 백업",
@@ -238,7 +216,6 @@
   "cloudBackupDetailDevice": "기기",
   "cloudBackupDetailSource": "유형",
   "cloudBackupDetailSummary": "내용",
-  "aboutSupportSectionTitle": "앱 정보 및 지원",
   "lanEditEntryTitle": "LAN 편집",
   "lanEditEntrySubtitle": "PC 브라우저에서 현재 시간표 편집",
   "lanEditTitle": "LAN 편집",
@@ -271,7 +248,6 @@
   "feedbackEntryTitle": "문제 제보",
   "feedbackEntrySubtitle": "이슈, 커뮤니티 채널 및 피드백",
   "aboutEntryTitle": "앱 정보",
-  "aboutEntrySubtitle": "오픈소스, 버전 업데이트 및 GitHub 저장소",
   "setSemesterStartDateAction": "학기 시작일 설정",
   "semesterStartDateAction": "학기 시작일",
   "syncCurrentWeekAction": "현재 주 동기화",
@@ -308,7 +284,6 @@
   "courseRecolorNoCoursesToast": "수업이 없습니다. 먼저 수업을 가져오거나 추가하세요",
   "courseImportTitle": "수업 가져오기",
   "chooseImportMethodTitle": "가져오기 방법 선택",
-  "chooseImportMethodSubtitle": "기존 .ics 캘린더 가져오기, 이미지 인식 가져오기, 저장소에서 어댑터를 읽어오는 교무 시스템 가져오기를 지원합니다",
   "importMethodIcsTitle": ".ics 캘린더 가져오기",
   "importMethodIcsSubtitle": "다른 시간표 앱에서 내보낸 캘린더 파일",
   "importMethodIcsFooter": "진입 후 .ics 파일을 선택하여 추가 가져오기 또는 기존 수업을 대체할 수 있습니다.",
@@ -395,11 +370,8 @@
   "openIssuePage": "Issue 페이지 열기",
   "copyAddress": "주소 복사",
   "copiedIssueAddress": "Issue 주소를 복사했습니다",
-  "copyXiaohongshuId": "샤오홍슈 ID 복사",
   "copiedXiaohongshuId": "샤오홍슈 ID를 복사했습니다",
-  "copyCoolapkId": "Coolapk ID 복사",
   "copiedCoolapkId": "Coolapk ID를 복사했습니다",
-  "copyQqGroupId": "QQ 그룹 ID 복사",
   "copiedQqGroupId": "QQ 그룹 ID를 복사했습니다",
   "copiedWechatOaName": "공식 계정 이름을 복사했습니다",
   "feedbackWechatOaOpenHint": "공식 계정 이름을 복사했습니다. WeChat에서 붙여넣어 검색하세요",
@@ -751,14 +723,6 @@
   "courseOverviewTitle": "수업 전체보기 및 편집",
   "addNewCourseTooltip": "새 수업 추가",
   "emptyCourseOverviewHint": "시간표를 길게 누르거나 오른쪽 위에서 수업을 추가하세요",
-  "conflictDetectedMessage": "{count}개의 배치에 실제 충돌이 감지되었습니다. 수업 목록에 충돌 항목이 표시됩니다",
-  "@conflictDetectedMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "conflictCountLabel": "충돌 {count}건",
   "@conflictCountLabel": {
     "placeholders": {
@@ -899,7 +863,6 @@
   "courseColorQuickSection": "자주 쓰는 색",
   "customPaletteAction": "팔레트에서 사용자 정의",
   "colorPaletteTitle": "색상 팔레트",
-  "colorHexLabel": "색상 Hex",
   "weekdayMon": "월요일",
   "weekdayTue": "화요일",
   "weekdayWed": "수요일",
@@ -917,14 +880,6 @@
   },
   "saturationLabel": "채도 {value}%",
   "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "brightnessLabel": "명도 {value}%",
-  "@brightnessLabel": {
     "placeholders": {
       "value": {
         "type": "int"
@@ -978,9 +933,7 @@
   "aboutOpenSourceLicensesAppSectionTitle": "라이선스 안내",
   "aboutOpenSourceLicensesAppLicenseLabel": "경屿 시간표 소스 코드는 GPL-3.0-or-later로 배포됩니다.",
   "aboutOpenSourceLicensesIntro": "아래 목록은 이 앱이 사용하는 오픈소스 구성 요소와 라이선스입니다. 항목을 눌러 전문을 볼 수 있습니다.",
-  "aboutOpenSourceLicensesExtraSectionTitle": "라이선스 안내",
   "aboutOpenSourceLicensesExtraUmeng": "우멍(Umeng) 등 분석 서비스는 개인정보 처리방침에 동의한 후에만 사용되며, 해당 서비스의 약관과 개인정보 정책이 적용됩니다.",
-  "aboutOpenSourceLicensesExtraNote": "",
   "aboutOpenSourceLicensesPackagesSectionTitle": "오픈소스 구성 요소({count})",
   "@aboutOpenSourceLicensesPackagesSectionTitle": {
     "placeholders": {
@@ -1003,8 +956,6 @@
   "aboutAppLogsSubtitle": "실행 로그 확인",
   "appLogsShareText": "경屿 시간표가 내보낸 앱 로그입니다. 로컬 실행 기록을 포함하며, 업데이트, 가져오기, 알림, 페이지, 충돌 문제의 트러블슈팅에 사용할 수 있습니다.",
   "appLogsShareSubject": "경屿 시간표 - 앱 로그",
-  "appLogsRecordingEnabled": "앱 로그 기록 중",
-  "appLogsRecordingDisabled": "앱 로그 기록 꺼짐",
   "appLogsCopyAction": "로그 복사",
   "appLogsCopied": "현재 로그를 복사했습니다",
   "appLogsExportAction": "로그 내보내기",
@@ -1152,7 +1103,6 @@
   "overrideSchemeCoursesSubtitle": "이 수업들은 소속 시간표의 메인 템플릿이 변경되어도 이 템플릿을 개별 사용합니다",
   "closeAction": "닫기",
   "editTimeSchemeTitle": "템플릿 편집",
-  "backToSchemeList": "템플릿 목록으로",
   "currentInUse": "현재 사용 중",
   "quickGenerateAction": "빠른 생성",
   "addSectionAction": "교시 추가",
@@ -1181,7 +1131,6 @@
       }
     }
   },
-  "copiedTimeSchemeShortMessage": "템플릿을 복사했습니다",
   "unnamedTimeScheme": "이름 없는 템플릿",
   "unsetLabel": "미선택",
   "timeSchemeUsageCourseRefPrefix": "수업 참조:",
@@ -1537,16 +1486,13 @@
   "guideRequireConsentHint": "먼저 아래로 스크롤하여 설명을 읽고, 동의에 체크한 후 시작하세요",
   "guideContinueHint": "아래로 스크롤하여 전체 가이드 내용을 확인하세요",
   "exitAppAction": "앱 종료",
-  "continueReadingAction": "계속 보기",
   "agreeAndStartAction": "동의하고 시작",
   "startUsingAction": "시작하기",
   "editSingleLessonTitle": "단일 수업 편집",
   "editCourseTitle": "수업 편집",
-  "addSingleLessonTitle": "단일 수업 추가",
   "addCourseTitle": "수업 추가",
   "deleteCourseTitle": "수업 삭제",
   "courseDeleted": "수업이 삭제되었습니다",
-  "addMethodTitle": "추가 방법",
   "singleLessonLabel": "단일 수업",
   "recurringLessonLabel": "반복 수업",
   "singleLessonHint": "보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다",
@@ -1583,10 +1529,8 @@
   "singleLessonWeekHint": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
   "rangeWeekLabel": "연속 주",
   "customWeekLabel": "사용자 정의 주",
-  "allWeeksLabel": "전체",
   "oddWeeksLabel": "홀수 주",
   "evenWeeksLabel": "짝수 주",
-  "allWeeksHint": "시작 주부터 종료 주까지 연속으로 수업을 배치합니다",
   "oddWeeksHint": "범위 내 홀수 주만 유지합니다",
   "evenWeeksHint": "범위 내 짝수 주만 유지합니다",
   "customPaletteColor": "팔레트에서 사용자 정의",
@@ -2159,8 +2103,6 @@
   "aboutCurrentVersionLabel": "현재 버전",
   "aboutLatestVersionLabel": "최신 버전",
   "aboutUnreleasedLabel": "미출시",
-  "aboutVersionChannelLabel": "버전 채널",
-  "aboutPrereleaseChannel": "시험판",
   "aboutUpdateAvailableHint": "지금은 아래의 '지금 다운로드'를 탭하기만 하면 됩니다. 속도 측정, 미러, 시험판은 뒤의 고급 옵션에 정리되어 있습니다",
   "aboutUpdateHighlightsTitle": "주요 업데이트",
   "aboutUpdateViewAllAction": "전체 {count}개 보기",
@@ -2175,63 +2117,15 @@
       }
     }
   },
-  "aboutUpdateNowTitle": "지금 업데이트",
-  "aboutUpdateNowAndroidSubtitle": "다운로드가 느리거나 실패하면 아래 고급 옵션에서 미러를 바꿔 보세요",
-  "aboutUpdateNowOtherSubtitle": "현재 플랫폼은 다운로드 페이지를 직접 열며 앱 내에서 설치하지 않습니다",
-  "aboutMirrorDownloadHint": "기본적으로 국내 미러를 사용합니다. 바로 다운로드를 누르면 됩니다",
-  "aboutOriginalDownloadHint": "현재 국제 소스 다운로드를 우선합니다. 다운로드가 느리거나 열리지 않으면 먼저 '국내 다운로드'로 전환하세요",
-  "aboutUseSystemDownloaderAction": "시스템 다운로더로 다운로드",
   "aboutOpenReleasePageAction": "Release 페이지 열기",
-  "aboutDownloadMethodTitle": "다운로드 방식",
-  "aboutDownloadMethodSubtitle": "국내 미러를 권장합니다. GitHub 접속이 안정적이면 국제 소스로 전환하세요",
-  "aboutDownloadMethodMirror": "국내 다운로드",
-  "aboutDownloadMethodOriginal": "국제 소스 다운로드",
-  "aboutMirrorModeHintRecommended": "현재 국내 다운로드 사용 중 · {current}. 최근 속도 측정에서 \"{recommended}\"이(가) 권장됩니다. 필요 시 뒤의 고급 옵션에서 전환할 수 있습니다",
-  "@aboutMirrorModeHintRecommended": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "recommended": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorModeHintCurrent": "현재 국내 다운로드 사용 중 · {current}. 다운로드가 느리거나 실패하면 뒤의 고급 옵션에서 속도 측정, 회선 변경 또는 사용자 정의 주소를 입력하세요",
-  "@aboutMirrorModeHintCurrent": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutOriginalModeHint": "현재 국제 소스 다운로드 사용 중. GitHub에 안정적으로 접근할 수 있을 때만 이 설정을 권장합니다. 그렇지 않으면 국내 다운로드로 전환하세요",
   "aboutReleaseNotesTitle": "업데이트 내역",
-  "aboutReleaseNotesSubtitle": "현재 감지된 버전의 Release 설명을 표시합니다.",
   "aboutAdvancedOptionsTitle": "고급 옵션",
-  "aboutAdvancedOptionsSubtitle": "다운로드 느림, 수동 회선 전환, 시험판 검출 시에만 펼치세요",
   "aboutMirrorSectionTitle": "다운로드 회선 및 미러",
-  "aboutMirrorSectionMirrorHint": "현재 국내 다운로드 사용 중. 여기서 수동으로 회선 전환, 속도 측정 권장, 사용자 정의 다운로드 주소 입력이 가능합니다",
-  "aboutMirrorSectionOriginalHint": "현재 국제 소스 다운로드를 사용 중입니다. 아래 회선 설정은 '국내 다운로드'로 전환 후에만 유효합니다",
   "aboutFillCustomMirrorFirst": "먼저 사용자 정의 다운로드 주소를 입력하세요",
-  "aboutCurrentCustomMirrorTitle": "현재 사용자 정의 다운로드 주소",
-  "aboutCurrentMirrorTitle": "현재 다운로드 회선 주소",
-  "aboutCurrentCustomMirrorHint": "현재 수동으로 입력한 다운로드 주소를 사용 중입니다",
-  "aboutCurrentMirrorHint": "현재 회선 접속 실패 시 다른 내장 회선으로 전환하거나 사용자 정의 주소로 변경할 수 있습니다",
   "aboutProbeMirrorsAction": "속도 측정 및 권장",
   "aboutProbingMirrors": "속도 측정 중…",
   "aboutEditCustomMirrorAction": "사용자 정의 주소 변경",
   "aboutSetCustomMirrorAction": "사용자 정의 주소 입력",
-  "aboutSwitchToRecommendedAction": "권장으로 전환: {label}",
-  "@aboutSwitchToRecommendedAction": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorDisabledHint": "현재 국내 다운로드를 사용하지 않아 여기의 회선 설정이 일시적으로 유효하지 않습니다. 필요하면 위의 '다운로드 방식'에서 국내 다운로드로 전환하세요",
-  "aboutRecentProbeResultsTitle": "최근 속도 측정 결과",
   "aboutUnavailable": "사용 불가",
   "aboutRecommended": "권장",
   "aboutCheckPrereleaseTitle": "시험판 검출",
@@ -2239,32 +2133,12 @@
   "aboutUpdatePromptTitle": "업데이트 알림",
   "aboutUpdatePromptSubtitle": "끄면 더 보기에 빨간 점만 표시",
   "aboutDiagnosticsTitle": "테스트 및 진단",
-  "aboutDiagnosticsSubtitle": "'슈퍼아일랜드가 표시되지 않음' 또는 개발자 피드백이 필요한 경우에만 펼치세요",
   "aboutRecordDiagnosticsTitle": "앱 로그 기록",
   "aboutRecordDiagnosticsSubtitle": "실행 로그를 기기에 기록",
-  "aboutExportDiagnosticsAction": "앱 로그 내보내기",
   "aboutViewPhoneLogsAction": "로그 페이지 열기",
-  "aboutClearAndRecollectAction": "비우고 재수집",
   "aboutLiveDiagnosticsEnabled": "슈퍼아일랜드 진단 로그 활성화됨",
   "aboutLiveDiagnosticsDisabled": "슈퍼아일랜드 진단 로그 비활성화됨",
   "aboutNoDiagnosticsExportYet": "내보낼 수 있는 슈퍼아일랜드 진단 로그가 아직 없습니다",
-  "aboutProbeNoMirrorFound": "속도 측정 완료. 사용 가능한 미러 회선을 찾지 못했습니다",
-  "aboutProbeCurrentFastest": "속도 측정 완료. 현재 회선 \"{label}\"이(가) 가장 빠른 사용 가능한 회선입니다",
-  "@aboutProbeCurrentFastest": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutProbeRecommendSwitch": "속도 측정 완료. \"{label}\"(으)로 전환을 권장합니다",
-  "@aboutProbeRecommendSwitch": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "switchAction": "전환",
   "aboutSwitchToMirrorAfterError": "{error}. 국내 미러로 전환 후 재시도할 수 있습니다",
   "@aboutSwitchToMirrorAfterError": {
@@ -2421,33 +2295,18 @@
       }
     }
   },
-  "aiWorkflowCompactTitle": "프롬프트 복사 → Doubao 이미지 인식 → 가져오기",
-  "aiWorkflowCompactSubtitle": "Doubao 전문가 모드 → JSON 복사 → 학기 시작일 선택",
   "aiWorkflowTitle": "프롬프트 복사 → Doubao 이미지 인식 → JSON 붙여넣기 → 가져오기",
   "aiWorkflowSubtitle": "먼저 프롬프트를 복사하고, Doubao 왼쪽 아래에서 전문가 모드로 전환한 뒤, 시간표 스크린샷과 프롬프트를 함께 전송합니다. Doubao가 반환한 JSON을 여기에 복사하고 가져오기를 탭한 뒤 학기 시작일을 선택합니다",
   "aiPromptShortAction": "프롬프트",
   "aiExpertModeSuggestion": "Doubao 전문가 모드를 권장합니다. 다중 이미지 지원, 스크린샷에 요일 헤더가 필요합니다.",
-  "aiHintExpertMode": "먼저 Doubao 전문가 모드로 전환",
-  "aiHintSendScreenshot": "스크린샷과 프롬프트를 함께 전송",
-  "aiHintCopyJsonBack": "반환된 결과에서 JSON 복사",
-  "aiHintPickSemesterAfterImport": "가져오기 후 학기 시작일 선택",
   "jsonLabelShort": "JSON",
   "aiPasteJsonTitle": "AI가 반환한 JSON 붙여넣기",
-  "aiCourseCountChip": "{count}과목",
-  "@aiCourseCountChip": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "aiParseFailedChip": "파싱 실패",
   "aiPasteJsonHintShort": "AI가 반환한 JSON 붙여넣기",
   "aiPasteJsonHintLong": "Doubao가 반환한 JSON을 그대로 여기에 붙여넣고 가져오기를 탭하세요. 순수 JSON과 ```json 코드 블록 모두 지원합니다",
   "detailAction": "상세",
   "aiParseErrorTitle": "파싱 오류",
   "viewDetailsAction": "상세 보기",
-  "aiWorkflowFooter": "프롬프트 복사 → Doubao에서 스크린샷과 프롬프트 전송 → JSON을 여기에 붙여넣기 → 가져오기 탭 → 학기 시작일 선택.",
   "previewAction": "미리보기",
   "confirmImportAction": "가져오기 확인",
   "promptCopiedHint": "프롬프트를 복사했습니다. Doubao에서 스크린샷과 프롬프트를 전송하세요",
@@ -2866,7 +2725,6 @@
   "homeWidgetTargetExamCard22": "시험 카운트다운 2×2",
   "homeWidgetTargetTodayWide42": "오늘 와이드 4×2",
   "addCourseSheetTitle": "추가",
-  "addCourseSheetSubtitle": "시간표의 빈 영역은 탭할 수 없습니다. 여기서 수업이나 일정을 추가하세요",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} {startSection}-{endSection}교시",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -5509,7 +5367,6 @@
   "logCatDebugSnapshot": "debug snapshot",
   "logExportTitle": "Qingyu Timetable - App logs",
   "appUpdateMirrorPresetGhfast": "Default mirror",
-  "appUpdateMirrorPresetGhproxyCn": "Backup mirror 1",
   "appUpdateMirrorPresetGhLlkk": "Backup mirror 2",
   "appUpdateMirrorPresetGhProxyCom": "Backup mirror 3",
   "appUpdateMirrorPresetGhproxyNet": "Backup mirror 4",
@@ -5586,7 +5443,6 @@
   "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
-  "cloudBackupManualProtectedSubtitle": "Manual backups are never auto-deleted when enabled",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
@@ -5610,7 +5466,6 @@
     }
   },
   "coupleWebdavTitle": "견과클라우드 가져오기",
-  "coupleWebdavSubtitle": "상대의 Jianguoyun 계정에 로그인해 시간표를 가져옵니다. 클라우드 동기화 계정과는 별개입니다",
   "coupleWebdavNotConnected": "견과클라우드 미연결",
   "coupleWebdavMySlotLabel": "이 기기 슬롯",
   "coupleWebdavMySlotHint": "양쪽이 서로 다른 슬롯을 선택해야 합니다. 한쪽은 1, 다른 쪽은 2. 같으면 상대 시간표를 읽을 수 없습니다",
@@ -6232,7 +6087,6 @@
   "coupleTimetableModeEnableTooltip": "커플 시간표 켜기",
   "coupleTimetableModeDisableTooltip": "커플 시간표 끄기",
   "coupleTimetableTitle": "커플 시간표",
-  "coupleTimetableIntro": "내 시간표를 내보내서 상대방에게 보내거나, 상대방이 공유한 시간표 파일을 가져올 수 있습니다. 가져오면 겹쳐 보기에서 양쪽 수업을 확인할 수 있습니다",
   "coupleTimetableBoundTitle": "상대방 시간표 연결됨",
   "coupleTimetableUnboundTitle": "상대방 시간표가 연결되지 않음",
   "coupleTimetablePartnerNameLabel": "상대방 이름",
@@ -6240,37 +6094,29 @@
   "coupleTimetableExportForPartner": "내 시간표를 상대방에게 내보내기",
   "coupleTimetableImportPartner": "상대방 시간표 가져오기",
   "coupleTimetableUnlink": "연결 해제",
-  "coupleTimetableOpenOverlay": "겹쳐 보기 열기",
   "coupleTimetableImportSuccess": "상대방 시간표를 가져왔습니다",
   "coupleTimetableImportUpdated": "상대방 시간표를 업데이트했습니다",
   "coupleTimetableUnlinkConfirmTitle": "커플 시간표 연결을 해제할까요?",
   "coupleTimetableUnlinkConfirmMessage": "해제하면 기기에 저장된 상대방 시간표가 삭제되고 겹쳐 보기도 닫힙니다",
   "coupleTimetableUnlinkSuccess": "연결이 해제되었습니다",
-  "coupleTimetablePrivacyHint": "상대방은 내보낸 파일에 포함된 시간표 내용만 볼 수 있습니다",
-  "coupleTimetableOverlayTitle": "커플 겹쳐 보기",
   "coupleTimetableLegendMine": "내 수업",
   "coupleTimetableLegendPartner": "상대방 수업",
   "coupleTimetableLegendTogether": "함께 듣는 수업",
-  "coupleTimetableLegendFree": "공통 공강",
   "coupleTimetableSharedFreeTitle": "오늘 공통 공강 시간",
   "coupleTimetableSharedFreeTitleOtherDay": "이날 공통 공강 시간",
   "coupleTimetableNoSharedFree": "오늘 공통 공강 시간이 없습니다",
   "coupleTimetableNoSharedFreeOtherDay": "이날 공통 공강 시간이 없습니다",
   "coupleTimetableSharedFreeMeta": "총 {count}개 구간",
   "coupleTimetableSharedFreeMoreCount": "{count}개 구간 더",
-  "coupleTimetableSharedFreeUnavailable": "지금은 공통 공강 시간을 계산할 수 없습니다",
   "coupleTimetableSharedFreeStaleHint": "상대방 시간표가 최신이 아닐 수 있습니다",
   "coupleTimetablePartnerReadOnlyBadge": "상대방 시간표(읽기 전용)",
-  "coupleTimetableNotBoundMessage": "먼저 상대방 시간표를 가져온 후 겹쳐 보기를 확인하세요",
   "coupleTimetableShareText": "이것은 내 시간표입니다. 경屿 시간표의 커플 시간표로 가져오면 함께 확인할 수 있습니다",
   "coupleTimetableShareSubject": "경屿 시간표 · 커플 시간표 공유",
   "coupleTimetableWeekOffsetTitle": "주차 오프셋",
-  "coupleTimetableWeekOffsetSubtitle": "N주차를 볼 때 상대의 N+오프셋 주를 표시합니다. 예: +1이면 1주 앞섬",
   "coupleTimetableWeekOffsetZero": "오프셋 없음",
   "coupleTimetableWeekOffsetSigned": "{offset}주",
   "coupleTimetableWeekOffsetPreview": "내 {myWeek}주차를 볼 때 상대방의 {partnerWeek}주차 수업을 표시합니다",
   "coupleTimetableColorsTitle": "겹쳐 보기 색상",
-  "coupleTimetableColorsSubtitle": "내 수업상대 수업같이 듣는 수업의 표시 색상을 사용자 지정합니다",
   "partnerImportRequiresSingleProfile": "단일 시간표 백업 파일을 가져오세요. 전체 백업은 지원하지 않습니다",
   "coupleWebdavConnectedAs": "연결됨: {username}",
   "coupleWebdavRemotePathHint": "원격 파일 경로: {path}",
@@ -6317,8 +6163,6 @@
   "homePageHeaderBlurSubtitle": "",
   "homePageWeekdayBarBlurTitle": "정보 바 유리",
   "homePageWeekdayBarBlurSubtitle": "유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다",
-  "chromeGlassMaterialSubtitle": "",
-  "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "이미지 선택",
   "homePageSwitchImageAction": "사진 변경",
   "homePageAdjustPositionAction": "위치 조정",
@@ -6395,7 +6239,6 @@
   },
   "bingWallpaperAutoApplyStale": "Bing 이 아직 오늘 이미지를 공개하지 않아 {date} 이미지를 사용합니다",
   "appearanceTextColorsSectionTitle": "텍스트 색상",
-  "appearanceTextColorsSectionSubtitle": "수업 카드, 요일 바, 시간 축의 텍스트 색상을 설정합니다",
   "pageTransitionSpeedTitle": "페이지 전환 속도",
   "layoutBackToCurrentWeekButtonOpacityTitle": "플로팅 버튼 불투명도",
   "layoutCourseCardGapTitle": "수업 카드 간격",
@@ -6497,56 +6340,13 @@
   "homeMenuMoreSearchHint": "검색: 외관, 가져오기, 위젯",
   "homeMenuMoreSearchEmptyTitle": "찾을 수 없음",
   "homeMenuMoreSearchEmptyHint": "다른 단어로 검색하거나 설정을 확인하세요",
-  "classAlarmLeadMinutesLabel": "{minutes}분 전",
-  "@classAlarmLeadMinutesLabel": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "classAlarmInvalidTimeToast": "이 수업의 교시가 시간표 템플릿 범위를 벗어나 알람을 설정할 수 없습니다",
-  "classAlarmSheetTitle": "수업 알림",
   "classAlarmQuickOption": "수업 {minutes}분 전에 알림",
   "classAlarmCustomOption": "직접 시간 지정…",
   "classAlarmExistingLabel": "{time} 알림 설정됨",
-  "classAlarmSetToast": "알림이 설정되었습니다",
   "classAlarmRemovedToast": "이 수업 알림을 취소했습니다",
-  "classAlarmPastToast": "선택한 시간이 이미 지났습니다. 다른 시간을 고르세요",
-  "classAlarmNoSemesterToast": "설정에서 학기 시작일을 먼저 입력하세요",
   "classAlarmActionLabel": "이 수업 알람 설정",
-  "classAlarmConfirmMessage": "시계 앱에 생성합니다: {detail}. 시스템 알람은 공휴일과 휴강을 인식하지 못하고 그대로 울립니다. 삭제는 시계 앱에서 하세요.",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmVariableSuffix": "또한 {days}의 첫 수업 시간은 주마다 달라 해당 요일에는 알람을 만들지 않았습니다.",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmEntryTitle": "수업 알람",
-  "classAlarmGroupSetup": "알람 추가",
-  "classAlarmGroupBehavior": "동작 설정",
-  "classAlarmAddAllTitle": "수업 알람 일괄 추가",
-  "classAlarmRangeNext4Weeks": "앞으로 4주",
-  "classAlarmRangeNext8Weeks": "앞으로 8주",
-  "classAlarmRangeLabel": "범위",
-  "classAlarmRangeRemaining": "이번 주부터 학기 끝까지",
-  "classAlarmRangeWhole": "학기 전체",
-  "classAlarmLeadTitle": "시간 여유",
-  "classAlarmSkipUiTitle": "확인 화면 건너뛰기",
-  "classAlarmSkipUiSubtitle": "바로 쓰기를 시도합니다(일부 기기는 표시됨)",
   "classAlarmOpenClock": "시계 앱 열기",
-  "classAlarmConfirmTitle": "반복 알람을 만들까요?",
-  "classAlarmNoSchemeToast": "먼저 설정에서 시간표 템플릿을 선택하세요",
-  "classAlarmNoDataToast": "선택한 범위에서 시간표를 찾을 수 없습니다",
   "classAlarmAddedToast": "시계 앱으로 전달했습니다",
   "classAlarmLaunchFailedToast": "처리할 시계 앱을 찾을 수 없습니다",
   "classAlarmCourseConfirmTitle": "이 수업의 반복 알람을 추가할까요?",
@@ -6567,8 +6367,6 @@
       }
     }
   },
-  "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; ",
   "liveExpandedDetailGroupTitle": "펼침 상세",
   "liveExpandedDetailUnfilledSuffix": "미입력, 섬에 표시되지 않음",
   "liveExpandedDetailUnfilledValue": "없음",

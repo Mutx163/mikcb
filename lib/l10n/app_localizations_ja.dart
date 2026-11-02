@@ -168,10 +168,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableTitle => 'ペア時間割';
 
   @override
-  String get coupleTimetableIntro =>
-      '自分の時間割を書き出して相手に送るか、相手が共有した時間割ファイルをインポートできます。インポート後は重ね合わせ表示で両方の授業を確認できます';
-
-  @override
   String get coupleTimetableBoundTitle => '相手の時間割と連携済み';
 
   @override
@@ -195,9 +191,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableUnlink => '連携を解除';
 
   @override
-  String get coupleTimetableOpenOverlay => '重ね合わせ表示を開く';
-
-  @override
   String get coupleTimetableImportSuccess => '相手の時間割をインポートしました';
 
   @override
@@ -214,13 +207,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableUnlinkSuccess => '連携を解除しました';
 
   @override
-  String get coupleTimetablePrivacyHint =>
-      '相手は、あなたが書き出したファイルに含まれる時間割の内容だけを見られます';
-
-  @override
-  String get coupleTimetableOverlayTitle => 'ペア重ね合わせ';
-
-  @override
   String get coupleTimetableLegendMine => '自分の授業';
 
   @override
@@ -228,9 +214,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleTimetableLegendTogether => '一緒の授業';
-
-  @override
-  String get coupleTimetableLegendFree => '両方とも空き';
 
   @override
   String get coupleTimetableSharedFreeTitle => '今日の共同空き時間';
@@ -255,17 +238,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get coupleTimetableSharedFreeUnavailable => '現在、共同の空き時間を計算できません';
-
-  @override
   String get coupleTimetableSharedFreeStaleHint => '相手の時間割は最新でない可能性があります';
 
   @override
   String get coupleTimetablePartnerReadOnlyBadge => '相手の時間割（読み取り専用）';
-
-  @override
-  String get coupleTimetableNotBoundMessage =>
-      '先に相手の時間割をインポートしてから、重ね合わせ表示をご覧ください';
 
   @override
   String get coupleTimetableShareText =>
@@ -276,10 +252,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coupleTimetableWeekOffsetTitle => '週オフセット';
-
-  @override
-  String get coupleTimetableWeekOffsetSubtitle =>
-      'N 周目を表示中は相手の N+オフセット週を表示します（+1 なら 1 週先）';
 
   @override
   String get coupleTimetableWeekOffsetZero => 'オフセットなし';
@@ -298,19 +270,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coupleTimetableColorsTitle => '重ね合わせの色';
 
   @override
-  String get coupleTimetableColorsSubtitle =>
-      '「自分の授業」「相手の授業」「一緒の授業」の表示色をカスタマイズします';
-
-  @override
   String get partnerImportRequiresSingleProfile =>
       '単一の時間割バックアップファイルをインポートしてください。全量バックアップには対応していません';
 
   @override
   String get coupleWebdavTitle => 'Nutstoreで取得';
-
-  @override
-  String get coupleWebdavSubtitle =>
-      '相手の坚果雲アカウントにログインして時間割を取得します。クラウド同期のアカウントとは独立です';
 
   @override
   String get coupleWebdavNotConnected => 'Nutstore未接続';
@@ -398,9 +362,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncEntryTitle => 'クラウド同期';
 
   @override
-  String get cloudSyncEntrySubtitle => 'Jianguoyun などで時間割とインポートデータを複数端末同期';
-
-  @override
   String get cloudSyncEntryDisabled => 'オフ';
 
   @override
@@ -446,13 +407,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncModeManual => '手動同期';
 
   @override
-  String get cloudSyncAccountTitle => 'アカウント設定';
-
-  @override
-  String get cloudSyncAccountSubtitle =>
-      'ログイン用ではなくアプリ専用パスワードを使用します。スナップショットには保存済みの学校アカウントも含まれます';
-
-  @override
   String get cloudSyncUsernameLabel => 'メール / ユーザー名';
 
   @override
@@ -463,10 +417,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudSyncPasswordHint => 'Jianguoyun アカウントのセキュリティ設定で生成';
-
-  @override
-  String get cloudSyncPasswordStoredHint =>
-      'パスワードを保存済み，空欄のままにすると保存済みのパスワードを使用します';
 
   @override
   String get cloudSyncAdvancedTitle => '詳細設定';
@@ -509,17 +459,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncLastErrorLabel => '最新のエラー';
 
   @override
-  String cloudSyncLastSyncedAt(String time) {
-    return '最終同期：$time';
-  }
-
-  @override
   String get cloudSyncSyncing => '同期中…';
-
-  @override
-  String cloudSyncLastError(String message) {
-    return '最新のエラー：$message';
-  }
 
   @override
   String get cloudSyncHelpTitle => 'Jianguoyun アプリパスワードの取得方法';
@@ -533,10 +473,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudSyncSyncNow => '今すぐ同期';
-
-  @override
-  String get cloudSyncSyncNowSubtitle =>
-      '他の端末と時間割を揃えます：クラウドを取得してから端末の変更をアップロード';
 
   @override
   String get cloudSyncTestSuccess => 'WebDAV 接続成功';
@@ -624,9 +560,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudBackupSectionTitle => '履歴バージョン';
-
-  @override
-  String get cloudBackupSectionSubtitle => '同期時に自動保存，タップしてこのバージョンに復元できます';
 
   @override
   String get cloudBackupCurrentLabel => '現在のバージョン';
@@ -813,9 +746,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lanEditKeepAliveWhenLeavingSubtitle => 'オフなら画面を離れると停止';
 
   @override
-  String get aboutSupportSectionTitle => 'アプリ情報とサポート';
-
-  @override
   String get feedbackEntryTitle => '問題報告';
 
   @override
@@ -823,9 +753,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutEntryTitle => 'アプリ情報';
-
-  @override
-  String get aboutEntrySubtitle => 'オープンソース、バージョン更新とGitHubリポジトリ';
 
   @override
   String get setSemesterStartDateAction => '学期開始日を設定';
@@ -918,10 +845,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get chooseImportMethodTitle => 'インポート方法を選択';
-
-  @override
-  String get chooseImportMethodSubtitle =>
-      '従来の.icsカレンダーインポート、画像認識インポート、リポジトリからアダプタを読み込む教務システムインポートに対応';
 
   @override
   String get importMethodIcsTitle => '.icsカレンダーインポート';
@@ -1117,19 +1040,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copiedIssueAddress => 'Issueアドレスをコピーしました';
 
   @override
-  String get copyXiaohongshuId => 'Xiaohongshu IDをコピー';
-
-  @override
   String get copiedXiaohongshuId => 'Xiaohongshu IDをコピーしました';
 
   @override
-  String get copyCoolapkId => 'Coolapk IDをコピー';
-
-  @override
   String get copiedCoolapkId => 'Coolapk IDをコピーしました';
-
-  @override
-  String get copyQqGroupId => 'QQグループIDをコピー';
 
   @override
   String get copiedQqGroupId => 'QQグループIDをコピーしました';
@@ -1700,11 +1614,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get emptyCourseOverviewHint => '時間割を長押しするか、右上のボタンから授業を追加';
 
   @override
-  String conflictDetectedMessage(int count) {
-    return '$count件の排課に実際の競合が検出されました，授業リストに競合項目をマーク済み';
-  }
-
-  @override
   String conflictCountLabel(int count) {
     return '競合$count件';
   }
@@ -1865,9 +1774,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get colorPaletteTitle => 'カラーパレット';
 
   @override
-  String get colorHexLabel => 'カラーHex';
-
-  @override
   String get weekdayMon => '月曜';
 
   @override
@@ -1896,11 +1802,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String saturationLabel(int value) {
     return '彩度$value%';
-  }
-
-  @override
-  String brightnessLabel(int value) {
-    return '明度$value%';
   }
 
   @override
@@ -2034,14 +1935,8 @@ class AppLocalizationsJa extends AppLocalizations {
       '以下は本アプリが利用するオープンソースコンポーネントと各ライセンスです。項目をタップすると全文を確認できます。';
 
   @override
-  String get aboutOpenSourceLicensesExtraSectionTitle => 'ライセンスについて';
-
-  @override
   String get aboutOpenSourceLicensesExtraUmeng =>
       '友盟（Umeng）などの分析サービスは、プライバシーポリシーへの同意後にのみ有効になり、各サービスの利用規約とプライバシーポリシーが適用されます。';
-
-  @override
-  String get aboutOpenSourceLicensesExtraNote => '';
 
   @override
   String aboutOpenSourceLicensesPackagesSectionTitle(int count) {
@@ -2072,12 +1967,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appLogsShareSubject => '軽屿時間割 - アプリログ';
-
-  @override
-  String get appLogsRecordingEnabled => 'アプリログを記録中';
-
-  @override
-  String get appLogsRecordingDisabled => 'アプリログ記録がオフ';
 
   @override
   String get appLogsCopyAction => 'ログをコピー';
@@ -2283,9 +2172,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get editTimeSchemeTitle => 'テンプレート編集';
 
   @override
-  String get backToSchemeList => 'テンプレート一覧に戻る';
-
-  @override
   String get currentInUse => '現在使用中';
 
   @override
@@ -2354,9 +2240,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String editingSchemeLabel(String name) {
     return '編集中：$name';
   }
-
-  @override
-  String get copiedTimeSchemeShortMessage => 'テンプレートをコピーしました';
 
   @override
   String get unnamedTimeScheme => '名前未設定テンプレート';
@@ -2996,9 +2879,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exitAppAction => 'アプリ終了';
 
   @override
-  String get continueReadingAction => '閲覧を続ける';
-
-  @override
   String get agreeAndStartAction => '同意して使い始める';
 
   @override
@@ -3011,9 +2891,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get editCourseTitle => '授業を編集';
 
   @override
-  String get addSingleLessonTitle => '単一授業を追加';
-
-  @override
   String get addCourseTitle => '授業を追加';
 
   @override
@@ -3021,9 +2898,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get courseDeleted => '授業を削除しました';
-
-  @override
-  String get addMethodTitle => '追加方法';
 
   @override
   String get singleLessonLabel => '単一授業';
@@ -3121,16 +2995,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get customWeekLabel => 'カスタム週';
 
   @override
-  String get allWeeksLabel => '全週';
-
-  @override
   String get oddWeeksLabel => '奇数週';
 
   @override
   String get evenWeeksLabel => '偶数週';
-
-  @override
-  String get allWeeksHint => '開始週から終了週まで連続で授業を配置';
 
   @override
   String get oddWeeksHint => '範囲内の奇数週のみ保持';
@@ -3360,12 +3228,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します';
 
   @override
-  String get chromeGlassMaterialSubtitle => '';
-
-  @override
-  String get chromeGlassMaterialHint => '';
-
-  @override
   String get homePagePickImageAction => '画像を選択';
 
   @override
@@ -3498,10 +3360,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appearanceTextColorsSectionTitle => 'テキストの色';
-
-  @override
-  String get appearanceTextColorsSectionSubtitle =>
-      '授業カード、曜日バー、時間軸のテキストの色をカスタマイズします';
 
   @override
   String get defaultTimetablePreviewName => 'デフォルト時間割';
@@ -4451,12 +4309,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutUnreleasedLabel => '未リリース';
 
   @override
-  String get aboutVersionChannelLabel => 'バージョンチャネル';
-
-  @override
-  String get aboutPrereleaseChannel => 'テスト版';
-
-  @override
   String get aboutUpdateAvailableHint =>
       '下の「今すぐダウンロード」をタップするだけ，速度テスト、ミラーとテスト版は後方の高度なオプションに収納済み';
 
@@ -4484,94 +4336,19 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get aboutUpdateNowTitle => '今すぐ更新';
-
-  @override
-  String get aboutUpdateNowAndroidSubtitle =>
-      'ダウンロードが遅い/失敗する場合は、下の詳細オプションでミラーを切り替えてください';
-
-  @override
-  String get aboutUpdateNowOtherSubtitle =>
-      '現在のプラットフォームはダウンロードページを直接開き、アプリ内ではインストールしない';
-
-  @override
-  String get aboutMirrorDownloadHint => '通常は国内ミラーを使用します。そのままダウンロードしてください';
-
-  @override
-  String get aboutOriginalDownloadHint =>
-      '現在国際ソースダウンロードを優先，ダウンロードが遅いまたは開けない場合、まず「国内ダウンロード」に切替推奨';
-
-  @override
-  String get aboutUseSystemDownloaderAction => 'システムダウンローダーでダウンロード';
-
-  @override
   String get aboutOpenReleasePageAction => 'Releaseページを開く';
-
-  @override
-  String get aboutDownloadMethodTitle => 'ダウンロード方式';
-
-  @override
-  String get aboutDownloadMethodSubtitle =>
-      '通常は国内ミラーを推奨。GitHub に安定して接続できる場合は国際ソースに切り替えられます';
-
-  @override
-  String get aboutDownloadMethodMirror => '国内ダウンロード';
-
-  @override
-  String get aboutDownloadMethodOriginal => '国際ソースダウンロード';
-
-  @override
-  String aboutMirrorModeHintRecommended(String current, String recommended) {
-    return '現在国内ダウンロード使用中・$current，最近の速度テストで「$recommended」が推奨，必要時に後方の高度なオプションで切替可能';
-  }
-
-  @override
-  String aboutMirrorModeHintCurrent(String current) {
-    return '現在国内ダウンロード使用中・$current，ダウンロードが遅いまたは失敗した場合、後方の高度なオプションで速度テスト、回線変更またはカスタムアドレス入力';
-  }
-
-  @override
-  String get aboutOriginalModeHint =>
-      '現在国際ソースダウンロード使用中，GitHubに安定アクセスできる場合のみこの設定を推奨，それ以外は国内ダウンロードに切替';
 
   @override
   String get aboutReleaseNotesTitle => '更新内容';
 
   @override
-  String get aboutReleaseNotesSubtitle => '現在検出されたバージョンのRelease説明を表示。';
-
-  @override
   String get aboutAdvancedOptionsTitle => '高度なオプション';
-
-  @override
-  String get aboutAdvancedOptionsSubtitle => 'ダウンロード遅い、手動で回線切替、テスト版検出時にのみ展開';
 
   @override
   String get aboutMirrorSectionTitle => 'ダウンロード回線とミラー';
 
   @override
-  String get aboutMirrorSectionMirrorHint =>
-      '現在国内ダウンロード使用中，ここで手動で回線切替、速度テスト推奨、またはカスタムダウンロードアドレス入力可能';
-
-  @override
-  String get aboutMirrorSectionOriginalHint =>
-      '現在国際ソースダウンロード使用中，下の回線設定は「国内ダウンロード」に切替後にのみ有効';
-
-  @override
   String get aboutFillCustomMirrorFirst => 'まずカスタムダウンロードアドレスを入力';
-
-  @override
-  String get aboutCurrentCustomMirrorTitle => '現在のカスタムダウンロードアドレス';
-
-  @override
-  String get aboutCurrentMirrorTitle => '現在のダウンロード回線アドレス';
-
-  @override
-  String get aboutCurrentCustomMirrorHint => '現在手動で入力したダウンロードアドレスを使用中';
-
-  @override
-  String get aboutCurrentMirrorHint =>
-      '現在の回線がアクセス失敗した場合、他の組み込み回線に切替るか、カスタムアドレスに変更可能';
 
   @override
   String get aboutProbeMirrorsAction => '速度テストと推奨';
@@ -4584,18 +4361,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutSetCustomMirrorAction => 'カスタムアドレスを入力';
-
-  @override
-  String aboutSwitchToRecommendedAction(String label) {
-    return '推奨に切替：$label';
-  }
-
-  @override
-  String get aboutMirrorDisabledHint =>
-      '現在国内ダウンロード未使用のため、ここでの回線設定は一時的に無効，必要であれば、上の「ダウンロード方式」で国内ダウンロードに切替';
-
-  @override
-  String get aboutRecentProbeResultsTitle => '最近の速度テスト結果';
 
   @override
   String get aboutUnavailable => '利用不可';
@@ -4619,23 +4384,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutDiagnosticsTitle => 'テストと診断';
 
   @override
-  String get aboutDiagnosticsSubtitle =>
-      '「スーパーアイランドが表示されない」または開発者へのフィードバックが必要な場合のみ展開';
-
-  @override
   String get aboutRecordDiagnosticsTitle => 'アプリログを記録';
 
   @override
   String get aboutRecordDiagnosticsSubtitle => '実行ログを端末内に記録';
 
   @override
-  String get aboutExportDiagnosticsAction => 'アプリログをエクスポート';
-
-  @override
   String get aboutViewPhoneLogsAction => 'ログページを開く';
-
-  @override
-  String get aboutClearAndRecollectAction => 'クリアして再収集';
 
   @override
   String get aboutLiveDiagnosticsEnabled => 'スーパーアイランド診断ログを有効化済み';
@@ -4645,19 +4400,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutNoDiagnosticsExportYet => 'エクスポート可能なスーパーアイランド診断ログがまだありません';
-
-  @override
-  String get aboutProbeNoMirrorFound => '速度テスト完了。利用可能なミラー回線が見つかりません';
-
-  @override
-  String aboutProbeCurrentFastest(String label) {
-    return '速度テスト完了。現在の回線「$label」が最速の利用可能回線';
-  }
-
-  @override
-  String aboutProbeRecommendSwitch(String label) {
-    return '速度テスト完了。「$label」への切替を推奨';
-  }
 
   @override
   String get switchAction => '切替';
@@ -4837,12 +4579,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get aiWorkflowCompactTitle => 'プロンプトコピー → Doubao画像認識 → インポート';
-
-  @override
-  String get aiWorkflowCompactSubtitle => 'Doubaoエキスパートモード → JSONコピー → 学期開始日選択';
-
-  @override
   String get aiWorkflowTitle => 'プロンプトコピー → Doubao画像認識 → JSON貼付 → インポート';
 
   @override
@@ -4857,27 +4593,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Doubaoエキスパートモードを推奨。複数画像対応。スクリーンショットには曜日ヘッダーが必要。';
 
   @override
-  String get aiHintExpertMode => 'まずDoubaoエキスパートモードに切替';
-
-  @override
-  String get aiHintSendScreenshot => 'スクリーンショットとプロンプトを一緒に送信';
-
-  @override
-  String get aiHintCopyJsonBack => '返されたJSONをコピー';
-
-  @override
-  String get aiHintPickSemesterAfterImport => 'インポート後に学期開始日を選択';
-
-  @override
   String get jsonLabelShort => 'JSON';
 
   @override
   String get aiPasteJsonTitle => 'AIが返したJSONを貼付';
-
-  @override
-  String aiCourseCountChip(int count) {
-    return '$count科目';
-  }
 
   @override
   String get aiParseFailedChip => '解析失敗';
@@ -4897,10 +4616,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get viewDetailsAction => '詳細を確認';
-
-  @override
-  String get aiWorkflowFooter =>
-      'プロンプトコピー → Doubaoでスクリーンショットとプロンプト送信 → JSONをここに貼付 → インポートタップ → 学期開始日選択。';
 
   @override
   String get previewAction => 'プレビュー';
@@ -5591,9 +5306,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get addCourseSheetTitle => '追加';
-
-  @override
-  String get addCourseSheetSubtitle => '時間割の空きコマはタップできません。ここから授業や予定を追加してください';
 
   @override
   String courseWeekdaySectionSummary(
@@ -9737,9 +9449,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appUpdateMirrorPresetGhfast => 'Default mirror';
 
   @override
-  String get appUpdateMirrorPresetGhproxyCn => 'Backup mirror 1';
-
-  @override
   String get appUpdateMirrorPresetGhLlkk => 'Backup mirror 2';
 
   @override
@@ -9845,10 +9554,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudBackupManualProtectedTitle => 'Protect manual backups';
-
-  @override
-  String get cloudBackupManualProtectedSubtitle =>
-      'Manual backups are never auto-deleted when enabled';
 
   @override
   String courseImportPortalUrlMissingBody(
@@ -11078,16 +10783,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuMoreSearchEmptyHint => '別の言葉で試すか、設定をご覧ください';
 
   @override
-  String classAlarmLeadMinutesLabel(int minutes) {
-    return '$minutes分前';
-  }
-
-  @override
   String get classAlarmInvalidTimeToast =>
       'この授業の時限が時間テンプレートの範囲外のため、アラームを設定できません';
-
-  @override
-  String get classAlarmSheetTitle => '授業リマインダー';
 
   @override
   String classAlarmQuickOption(Object minutes) {
@@ -11103,77 +10800,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get classAlarmSetToast => 'リマインダーを設定しました';
-
-  @override
   String get classAlarmRemovedToast => 'この授業のリマインダーを取り消しました';
-
-  @override
-  String get classAlarmPastToast => 'その時刻はすでに過ぎています。別の時刻を選んでください';
-
-  @override
-  String get classAlarmNoSemesterToast => '先に学期開始日を設定してください';
 
   @override
   String get classAlarmActionLabel => 'この授業のアラームを設定';
 
   @override
-  String classAlarmConfirmMessage(String detail) {
-    return 'システム時計に作成します：$detail。システムアラームは休日や休校を判別できず、その間も鳴ります。削除はシステム時計で行ってください。';
-  }
-
-  @override
-  String classAlarmVariableSuffix(String days) {
-    return 'なお、$daysの初回授業時刻は週により異なるため、これらの曜日にはアラームを作成していません。';
-  }
-
-  @override
-  String get classAlarmEntryTitle => '授業アラーム';
-
-  @override
-  String get classAlarmGroupSetup => 'アラームを追加';
-
-  @override
-  String get classAlarmGroupBehavior => '動作設定';
-
-  @override
-  String get classAlarmAddAllTitle => '授業アラームを一括追加';
-
-  @override
-  String get classAlarmRangeNext4Weeks => '今後4週間';
-
-  @override
-  String get classAlarmRangeNext8Weeks => '今後8週間';
-
-  @override
-  String get classAlarmRangeLabel => '追加範囲';
-
-  @override
-  String get classAlarmRangeRemaining => '今週から学期末まで';
-
-  @override
-  String get classAlarmRangeWhole => '学期全体';
-
-  @override
-  String get classAlarmLeadTitle => '事前時間';
-
-  @override
-  String get classAlarmSkipUiTitle => '確認画面をスキップ';
-
-  @override
-  String get classAlarmSkipUiSubtitle => '確認なしで直接書き込みを試みる（非対応機種あり）';
-
-  @override
   String get classAlarmOpenClock => 'システム時計を開く';
-
-  @override
-  String get classAlarmConfirmTitle => '繰り返しアラームを作成しますか？';
-
-  @override
-  String get classAlarmNoSchemeToast => '先に設定で時間テンプレートを選択してください';
-
-  @override
-  String get classAlarmNoDataToast => '選択した範囲に授業が見つかりません';
 
   @override
   String get classAlarmAddedToast => 'システム時計に渡しました';
@@ -11193,12 +10826,6 @@ class AppLocalizationsJa extends AppLocalizations {
   ) {
     return 'システム時計に毎週$weekday $time の繰り返しアラームを作成します（授業開始の$lead分前に鳴動、対象週：$weeks）。休日や休講週でも鳴ります。削除はシステム時計で行ってください。';
   }
-
-  @override
-  String get classAlarmDaySeparator => '、';
-
-  @override
-  String get classAlarmDetailSeparator => '；';
 
   @override
   String get liveExpandedDetailGroupTitle => '展開詳細';

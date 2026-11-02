@@ -59,7 +59,6 @@
   "coupleTimetableModeEnableTooltip": "Couple timetable on",
   "coupleTimetableModeDisableTooltip": "Couple timetable off",
   "coupleTimetableTitle": "Couple Timetable",
-  "coupleTimetableIntro": "Export your timetable for your partner, or import their shared file. After binding, open the overlay view to compare schedules",
   "coupleTimetableBoundTitle": "Partner timetable linked",
   "coupleTimetableUnboundTitle": "No partner timetable yet",
   "coupleTimetablePartnerNameLabel": "Partner name",
@@ -74,18 +73,14 @@
   "coupleTimetableExportForPartner": "Export my timetable for partner",
   "coupleTimetableImportPartner": "Import partner timetable",
   "coupleTimetableUnlink": "Unlink",
-  "coupleTimetableOpenOverlay": "Open overlay view",
   "coupleTimetableImportSuccess": "Partner timetable imported",
   "coupleTimetableImportUpdated": "Partner timetable updated",
   "coupleTimetableUnlinkConfirmTitle": "Unlink partner timetable?",
   "coupleTimetableUnlinkConfirmMessage": "This removes the locally stored partner timetable and closes the overlay view",
   "coupleTimetableUnlinkSuccess": "Partner timetable unlinked",
-  "coupleTimetablePrivacyHint": "Your partner only sees the timetable content included in the exported file",
-  "coupleTimetableOverlayTitle": "Couple overlay",
   "coupleTimetableLegendMine": "Mine",
   "coupleTimetableLegendPartner": "Partner",
   "coupleTimetableLegendTogether": "Together",
-  "coupleTimetableLegendFree": "Shared free",
   "coupleTimetableSharedFreeTitle": "Shared free time today",
   "coupleTimetableSharedFreeTitleOtherDay": "Shared free time this day",
   "coupleTimetableNoSharedFree": "No shared free time today",
@@ -106,14 +101,11 @@
       }
     }
   },
-  "coupleTimetableSharedFreeUnavailable": "Shared free time unavailable",
   "coupleTimetableSharedFreeStaleHint": "Partner schedule may be outdated",
   "coupleTimetablePartnerReadOnlyBadge": "Partner timetable (read-only)",
-  "coupleTimetableNotBoundMessage": "Import a partner timetable before opening the overlay view",
   "coupleTimetableShareText": "Here is my timetable. Import it in Qingyu Timetable > Couple Timetable to view together.",
   "coupleTimetableShareSubject": "Qingyu Timetable · Couple share",
   "coupleTimetableWeekOffsetTitle": "Week offset",
-  "coupleTimetableWeekOffsetSubtitle": "When viewing week N, shows your partner's week N+offset, e.g. +1 means one week ahead",
   "coupleTimetableWeekOffsetZero": "No offset",
   "coupleTimetableWeekOffsetSigned": "{offset} wk",
   "@coupleTimetableWeekOffsetSigned": {
@@ -135,10 +127,8 @@
     }
   },
   "coupleTimetableColorsTitle": "Overlay colors",
-  "coupleTimetableColorsSubtitle": "Customize overlay colors for my, their and shared courses",
   "partnerImportRequiresSingleProfile": "Please import a single-profile backup, not a full backup",
   "coupleWebdavTitle": "Nutstore pull",
-  "coupleWebdavSubtitle": "Sign in to your partner's Jianguoyun account to fetch their timetable; independent from the cloud sync account",
   "coupleWebdavNotConnected": "Not connected to Nutstore",
   "coupleWebdavConnectedAs": "Connected as {username}",
   "@coupleWebdavConnectedAs": {
@@ -185,7 +175,6 @@
   "coupleWebdavPullFailed": "Failed to pull partner timetable. Try again later.",
   "coupleWebdavNotConnectedError": "Connect Nutstore first",
   "cloudSyncEntryTitle": "Cloud Sync",
-  "cloudSyncEntrySubtitle": "Sync timetables and import data across devices via Jianguoyun",
   "cloudSyncEntryDisabled": "Off",
   "cloudSyncEntryEnabled": "On",
   "cloudSyncEntrySyncing": "Syncing",
@@ -201,13 +190,10 @@
   "cloudSyncModeTitle": "Sync mode",
   "cloudSyncModeAuto": "Automatic",
   "cloudSyncModeManual": "Manual",
-  "cloudSyncAccountTitle": "Account",
-  "cloudSyncAccountSubtitle": "Use a Jianguoyun app-specific password (not your login password); snapshots include saved school accounts",
   "cloudSyncUsernameLabel": "Email / username",
   "cloudSyncUsernameHint": "Jianguoyun account email",
   "cloudSyncPasswordLabel": "App-specific password",
   "cloudSyncPasswordHint": "Generate it in Jianguoyun security settings",
-  "cloudSyncPasswordStoredHint": "Password saved; leave blank to keep the stored password",
   "cloudSyncAdvancedTitle": "Advanced",
   "cloudSyncBaseUrlLabel": "WebDAV URL",
   "cloudSyncBaseUrlSecurityNote": "HTTPS is recommended. HTTP cleartext connections are allowed but only advised on trusted networks",
@@ -223,28 +209,11 @@
   "cloudSyncStatusTitle": "Status",
   "cloudSyncLastSyncedLabel": "Last synced",
   "cloudSyncLastErrorLabel": "Latest error",
-  "cloudSyncLastSyncedAt": "Last synced: {time}",
-  "@cloudSyncLastSyncedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncSyncing": "Syncing…",
-  "cloudSyncLastError": "Latest error: {message}",
-  "@cloudSyncLastError": {
-    "placeholders": {
-      "message": {
-        "type": "String"
-      }
-    }
-  },
   "cloudSyncHelpTitle": "How to get a Jianguoyun app password",
   "cloudSyncHelpBody": "Open Jianguoyun → Account → Security → Add app password. Default WebDAV URL: https://dav.jianguoyun.com/dav/",
   "cloudSyncTestConnection": "Test connection",
   "cloudSyncSyncNow": "Sync now",
-  "cloudSyncSyncNowSubtitle": "Keep timetables aligned across devices: pull cloud updates, then upload local changes",
   "cloudSyncTestSuccess": "WebDAV connection succeeded",
   "cloudSyncTestFailed": "WebDAV connection failed. Check account, app password, and network.",
   "cloudSyncResultUploaded": "Uploaded to cloud",
@@ -285,7 +254,6 @@
   "cloudSyncConfirmConnect": "Connect",
   "cloudSyncConnectSuccess": "Account connected",
   "cloudBackupSectionTitle": "Version history",
-  "cloudBackupSectionSubtitle": "Saved automatically when you sync. Tap to restore a version",
   "cloudBackupCurrentLabel": "Current version",
   "cloudBackupCurrentBadge": "Current",
   "cloudBackupCreateNow": "Back up now",
@@ -400,11 +368,9 @@
   "lanEditLastActivityLabel": "Last activity",
   "lanEditKeepAliveWhenLeavingTitle": "Keep open after leaving",
   "lanEditKeepAliveWhenLeavingSubtitle": "Off: stops when you leave",
-  "aboutSupportSectionTitle": "About & Support",
   "feedbackEntryTitle": "Feedback",
   "feedbackEntrySubtitle": "Issue tracker, community channels, and suggestion entry",
   "aboutEntryTitle": "About",
-  "aboutEntrySubtitle": "Open source info, version updates, and GitHub repositories",
   "setSemesterStartDateAction": "Set Semester Start",
   "semesterStartDateAction": "Semester Start",
   "syncCurrentWeekAction": "Sync Current Week",
@@ -441,7 +407,6 @@
   "courseRecolorNoCoursesToast": "No courses yet. Import or add courses first.",
   "courseImportTitle": "Import Courses",
   "chooseImportMethodTitle": "Choose Import Method",
-  "chooseImportMethodSubtitle": "Supports traditional .ics calendar import, AI image import, and warehouse-based academic system import",
   "importMethodIcsTitle": ".ics Calendar Import",
   "importMethodIcsSubtitle": "Calendar files from other timetable apps",
   "importMethodIcsFooter": "Pick an .ics file directly. You can append or replace existing courses.",
@@ -528,11 +493,8 @@
   "openIssuePage": "Open Issues",
   "copyAddress": "Copy Link",
   "copiedIssueAddress": "Issue link copied",
-  "copyXiaohongshuId": "Copy Xiaohongshu ID",
   "copiedXiaohongshuId": "Xiaohongshu ID copied",
-  "copyCoolapkId": "Copy Coolapk ID",
   "copiedCoolapkId": "Coolapk ID copied",
-  "copyQqGroupId": "Copy QQ Group ID",
   "copiedQqGroupId": "QQ group ID copied",
   "copiedWechatOaName": "Official account name copied",
   "feedbackWechatOaOpenHint": "Official account name copied. Paste and search in WeChat",
@@ -884,14 +846,6 @@
   "courseOverviewTitle": "Course Overview & Edit",
   "addNewCourseTooltip": "Add New Course",
   "emptyCourseOverviewHint": "Long press the timetable or tap the top-right button to add a course",
-  "conflictDetectedMessage": "{count} scheduled entries have actual conflicts. Conflicting items are highlighted below",
-  "@conflictDetectedMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "conflictCountLabel": "Conflicts: {count}",
   "@conflictCountLabel": {
     "placeholders": {
@@ -1032,7 +986,6 @@
   "courseColorQuickSection": "Quick picks",
   "customPaletteAction": "Custom Palette Color",
   "colorPaletteTitle": "Color Palette",
-  "colorHexLabel": "Color Hex",
   "useThisColor": "Use This Color",
   "selectAtLeastOneWeek": "Please select at least one week",
   "saveFailed": "Save failed",
@@ -1080,9 +1033,7 @@
   "aboutOpenSourceLicensesAppSectionTitle": "About these licenses",
   "aboutOpenSourceLicensesAppLicenseLabel": "Qingyu Timetable source code is released under GPL-3.0-or-later.",
   "aboutOpenSourceLicensesIntro": "The list below shows open-source components used by this app and their licenses. Tap an item to read the full text.",
-  "aboutOpenSourceLicensesExtraSectionTitle": "About these licenses",
   "aboutOpenSourceLicensesExtraUmeng": "Analytics services such as Umeng are enabled only after you accept the privacy policy, and are governed by their own terms and privacy policy.",
-  "aboutOpenSourceLicensesExtraNote": "",
   "aboutOpenSourceLicensesPackagesSectionTitle": "Open-source components ({count})",
   "@aboutOpenSourceLicensesPackagesSectionTitle": {
     "placeholders": {
@@ -1105,8 +1056,6 @@
   "aboutAppLogsSubtitle": "View runtime logs",
   "appLogsShareText": "These are the app logs exported from Qingyu Timetable. They include local runtime records across the whole app for troubleshooting updates, imports, notifications, screens, and crashes.",
   "appLogsShareSubject": "Qingyu Timetable - App logs",
-  "appLogsRecordingEnabled": "App log recording is on",
-  "appLogsRecordingDisabled": "App log recording is off",
   "appLogsCopyAction": "Copy logs",
   "appLogsCopied": "Current logs copied",
   "appLogsExportAction": "Export logs",
@@ -1257,7 +1206,6 @@
   "overrideSchemeCoursesSubtitle": "These courses will continue using this scheme even if their timetable changes its main schedule",
   "closeAction": "Close",
   "editTimeSchemeTitle": "Edit Time Scheme",
-  "backToSchemeList": "Back to Scheme List",
   "currentInUse": "Currently Used",
   "quickGenerateAction": "Quick Generate",
   "addSectionAction": "Add Section",
@@ -1286,7 +1234,6 @@
       }
     }
   },
-  "copiedTimeSchemeShortMessage": "Time scheme copied",
   "unnamedTimeScheme": "Unnamed Scheme",
   "unsetLabel": "Not Selected",
   "timeSchemeUsageCourseRefPrefix": "Course references: ",
@@ -1643,16 +1590,13 @@
   "guideRequireConsentHint": "Please scroll to the end, review the notes, and check consent before starting",
   "guideContinueHint": "Keep scrolling to finish the guide",
   "exitAppAction": "Exit App",
-  "continueReadingAction": "Continue Reading",
   "agreeAndStartAction": "Agree and Start",
   "startUsingAction": "Start Using",
   "editSingleLessonTitle": "Edit Single Lesson",
   "editCourseTitle": "Edit Course",
-  "addSingleLessonTitle": "Add Single Lesson",
   "addCourseTitle": "Add Course",
   "deleteCourseTitle": "Delete Course",
   "courseDeleted": "Course deleted",
-  "addMethodTitle": "Add Mode",
   "singleLessonLabel": "Single Lesson",
   "recurringLessonLabel": "Recurring Lesson",
   "singleLessonHint": "Best for make-up classes or temporary one-off lessons",
@@ -1689,10 +1633,8 @@
   "singleLessonWeekHint": "A single lesson appears in only one week, ideal for temporary additions or make-up classes",
   "rangeWeekLabel": "Continuous Weeks",
   "customWeekLabel": "Custom Weeks",
-  "allWeeksLabel": "All",
   "oddWeeksLabel": "Odd Weeks",
   "evenWeeksLabel": "Even Weeks",
-  "allWeeksHint": "Schedule continuously from the start week to the end week",
   "oddWeeksHint": "Keep only odd weeks within the selected range",
   "evenWeeksHint": "Keep only even weeks within the selected range",
   "customPaletteColor": "Custom Color Picker",
@@ -1706,14 +1648,6 @@
   },
   "saturationLabel": "Saturation {value}%",
   "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "brightnessLabel": "Brightness {value}%",
-  "@brightnessLabel": {
     "placeholders": {
       "value": {
         "type": "int"
@@ -1858,8 +1792,6 @@
   "homePageHeaderBlurSubtitle": "",
   "homePageWeekdayBarBlurTitle": "Info bar glass",
   "homePageWeekdayBarBlurSubtitle": "Glass material follows the glass mode in Appearance; when off, the info bar shows the wallpaper directly",
-  "chromeGlassMaterialSubtitle": "",
-  "chromeGlassMaterialHint": "",
   "homePagePickImageAction": "Choose image",
   "homePageSwitchImageAction": "Switch photo",
   "homePageAdjustPositionAction": "Adjust position",
@@ -1936,7 +1868,6 @@
   },
   "bingWallpaperAutoApplyStale": "Bing hasn't posted today's image yet — using the one from {date}",
   "appearanceTextColorsSectionTitle": "Text colors",
-  "appearanceTextColorsSectionSubtitle": "Customize course card, weekday bar, and time axis text colors",
   "defaultTimetablePreviewName": "Default timetable",
   "beforeClassDisplaySettingsTitle": "Before-class reminder display",
   "duringEndDisplaySettingsTitle": "In-class / end reminder display",
@@ -2408,8 +2339,6 @@
   "aboutCurrentVersionLabel": "Current version",
   "aboutLatestVersionLabel": "Latest version",
   "aboutUnreleasedLabel": "Not released",
-  "aboutVersionChannelLabel": "Release channel",
-  "aboutPrereleaseChannel": "Prerelease",
   "aboutUpdateAvailableHint": "You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options",
   "aboutUpdateHighlightsTitle": "Highlights",
   "aboutUpdateViewAllAction": "See all {count} items",
@@ -2424,63 +2353,15 @@
       }
     }
   },
-  "aboutUpdateNowTitle": "Update now",
-  "aboutUpdateNowAndroidSubtitle": "If the download is slow or fails, use the advanced options below to switch mirrors",
-  "aboutUpdateNowOtherSubtitle": "On the current platform, the app opens the download page directly instead of installing in-app",
-  "aboutMirrorDownloadHint": "Uses the domestic mirror by default; just tap Download now",
-  "aboutOriginalDownloadHint": "International-source download is currently prioritized. If downloading is slow or unreachable, switch back to domestic download",
-  "aboutUseSystemDownloaderAction": "Use system downloader",
   "aboutOpenReleasePageAction": "Open Release page",
-  "aboutDownloadMethodTitle": "Download method",
-  "aboutDownloadMethodSubtitle": "Domestic mirror is recommended; switch to the international source if GitHub is reachable",
-  "aboutDownloadMethodMirror": "Domestic download",
-  "aboutDownloadMethodOriginal": "International source",
-  "aboutMirrorModeHintRecommended": "Currently using domestic download · {current}. Recent speed tests recommend \"{recommended}\" instead, and you can switch in Advanced Options if needed",
-  "@aboutMirrorModeHintRecommended": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      },
-      "recommended": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorModeHintCurrent": "Currently using domestic download · {current}. If downloading is slow or fails, use Advanced Options to test, switch routes, or enter a custom address",
-  "@aboutMirrorModeHintCurrent": {
-    "placeholders": {
-      "current": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutOriginalModeHint": "You are currently using the international source. This is recommended only if your network can access GitHub reliably; otherwise, switch back to domestic download",
   "aboutReleaseNotesTitle": "Update notes",
-  "aboutReleaseNotesSubtitle": "Shows the Release notes of the currently detected version.",
   "aboutAdvancedOptionsTitle": "Advanced options",
-  "aboutAdvancedOptionsSubtitle": "Expand only when downloads are slow, you need to switch routes manually, or you want prerelease checks",
   "aboutMirrorSectionTitle": "Download routes & mirrors",
-  "aboutMirrorSectionMirrorHint": "You are currently using domestic download. Here you can switch routes manually, run speed tests, or enter a custom download address",
-  "aboutMirrorSectionOriginalHint": "You are currently using the international source. The route settings below take effect only after you switch back to domestic download",
   "aboutFillCustomMirrorFirst": "Enter a custom download address first",
-  "aboutCurrentCustomMirrorTitle": "Current custom download address",
-  "aboutCurrentMirrorTitle": "Current download route address",
-  "aboutCurrentCustomMirrorHint": "You are currently using the address you entered manually",
-  "aboutCurrentMirrorHint": "If the current route fails, switch to another built-in route or use a custom address instead",
   "aboutProbeMirrorsAction": "Test speed and recommend",
   "aboutProbingMirrors": "Testing speed…",
   "aboutEditCustomMirrorAction": "Edit custom address",
   "aboutSetCustomMirrorAction": "Enter custom address",
-  "aboutSwitchToRecommendedAction": "Switch to recommended: {label}",
-  "@aboutSwitchToRecommendedAction": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutMirrorDisabledHint": "Domestic download is not currently enabled, so the route settings here will not take effect. Switch back to domestic download first if needed",
-  "aboutRecentProbeResultsTitle": "Recent speed-test results",
   "aboutUnavailable": "Unavailable",
   "aboutRecommended": "Recommended",
   "aboutCheckPrereleaseTitle": "Check prerelease versions",
@@ -2488,32 +2369,12 @@
   "aboutUpdatePromptTitle": "Update prompt",
   "aboutUpdatePromptSubtitle": "Off: only a red dot on More",
   "aboutDiagnosticsTitle": "Testing & diagnostics",
-  "aboutDiagnosticsSubtitle": "Expand this only when the Island does not appear or when you need to send feedback to the developer",
   "aboutRecordDiagnosticsTitle": "Record app logs",
   "aboutRecordDiagnosticsSubtitle": "Keeps run logs on this device",
-  "aboutExportDiagnosticsAction": "Export app logs",
   "aboutViewPhoneLogsAction": "Open logs page",
-  "aboutClearAndRecollectAction": "Clear and collect again",
   "aboutLiveDiagnosticsEnabled": "App log recording enabled",
   "aboutLiveDiagnosticsDisabled": "App log recording disabled",
   "aboutNoDiagnosticsExportYet": "There are no app logs to export yet.",
-  "aboutProbeNoMirrorFound": "Speed test finished, but no available mirror route was found yet.",
-  "aboutProbeCurrentFastest": "Speed test finished. The current route \"{label}\" is already the fastest available one.",
-  "@aboutProbeCurrentFastest": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "aboutProbeRecommendSwitch": "Speed test finished. Recommended switch: \"{label}\".",
-  "@aboutProbeRecommendSwitch": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "switchAction": "Switch",
   "aboutSwitchToMirrorAfterError": "{error}. You can switch to a domestic mirror and try again.",
   "@aboutSwitchToMirrorAfterError": {
@@ -2670,33 +2531,18 @@
       }
     }
   },
-  "aiWorkflowCompactTitle": "Copy prompt -> Doubao OCR -> Import",
-  "aiWorkflowCompactSubtitle": "Doubao Expert Mode -> Copy JSON -> Choose semester date",
   "aiWorkflowTitle": "Copy prompt -> Doubao OCR -> Paste JSON -> Import",
   "aiWorkflowSubtitle": "Copy the prompt first, switch Doubao to Expert Mode from the lower-left corner, then send both the timetable screenshots and the prompt together. Copy the JSON returned by Doubao back here, then choose the semester date after tapping Import",
   "aiPromptShortAction": "Prompt",
   "aiExpertModeSuggestion": "Doubao Expert Mode is recommended. Multiple images are supported, and screenshots should include weekday headers.",
-  "aiHintExpertMode": "Switch Doubao to Expert Mode first",
-  "aiHintSendScreenshot": "Send screenshots together with the prompt",
-  "aiHintCopyJsonBack": "Copy the returned JSON",
-  "aiHintPickSemesterAfterImport": "Choose semester date after import",
   "jsonLabelShort": "JSON",
   "aiPasteJsonTitle": "Paste the JSON returned by AI",
-  "aiCourseCountChip": "{count} courses",
-  "@aiCourseCountChip": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "aiParseFailedChip": "Parse failed",
   "aiPasteJsonHintShort": "Paste the JSON returned by AI",
   "aiPasteJsonHintLong": "Paste the JSON returned by Doubao here exactly as-is, then tap Import. Pure JSON is supported, and ```json code blocks are also accepted",
   "detailAction": "Details",
   "aiParseErrorTitle": "Parse error",
   "viewDetailsAction": "View details",
-  "aiWorkflowFooter": "Copy the prompt -> send screenshots and prompt to Doubao -> paste the JSON back here -> tap Import -> choose semester date.",
   "previewAction": "Preview",
   "confirmImportAction": "Confirm import",
   "promptCopiedHint": "Prompt copied. Go to Doubao and send the screenshots with the prompt",
@@ -3115,7 +2961,6 @@
   "homeWidgetTargetExamCard22": "Exam countdown 2×2",
   "homeWidgetTargetTodayWide42": "Today wide 4×2",
   "addCourseSheetTitle": "Add",
-  "addCourseSheetSubtitle": "Empty timetable areas aren't tappable; add courses or schedules here",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} Sections {startSection}-{endSection}",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -5803,7 +5648,6 @@
   "logCatDebugSnapshot": "debug snapshot",
   "logExportTitle": "Qingyu Timetable - App logs",
   "appUpdateMirrorPresetGhfast": "Default mirror",
-  "appUpdateMirrorPresetGhproxyCn": "Backup mirror 1",
   "appUpdateMirrorPresetGhLlkk": "Backup mirror 2",
   "appUpdateMirrorPresetGhProxyCom": "Backup mirror 3",
   "appUpdateMirrorPresetGhproxyNet": "Backup mirror 4",
@@ -5880,7 +5724,6 @@
   "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
-  "cloudBackupManualProtectedSubtitle": "Manual backups are never auto-deleted when enabled",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
   "@courseImportPortalUrlMissingBody": {
     "placeholders": {
@@ -6500,56 +6343,13 @@
   "homeMenuMoreSearchHint": "Search, e.g. appearance, import, widgets",
   "homeMenuMoreSearchEmptyTitle": "Nothing found",
   "homeMenuMoreSearchEmptyHint": "Try another word, or look in Settings",
-  "classAlarmLeadMinutesLabel": "{minutes} min ahead",
-  "@classAlarmLeadMinutesLabel": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "classAlarmInvalidTimeToast": "This class's period is outside the time scheme; cannot set an alarm",
-  "classAlarmSheetTitle": "Class reminder",
   "classAlarmQuickOption": "Remind me {minutes} min before class",
   "classAlarmCustomOption": "Pick a custom time…",
   "classAlarmExistingLabel": "Reminder set for {time}",
-  "classAlarmSetToast": "Reminder set",
   "classAlarmRemovedToast": "Class reminder removed",
-  "classAlarmPastToast": "That time has already passed, pick another one",
-  "classAlarmNoSemesterToast": "Set the semester start date in Settings first",
   "classAlarmActionLabel": "Set alarm for this class",
-  "classAlarmConfirmMessage": "The system clock will create: {detail}. System alarms cannot recognize holidays or suspensions and ring anyway; delete them in the system clock.",
-  "@classAlarmConfirmMessage": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmVariableSuffix": "Also, first-class times on {days} differ between weeks; no alarm covers these days.",
-  "@classAlarmVariableSuffix": {
-    "placeholders": {
-      "days": {
-        "type": "String"
-      }
-    }
-  },
-  "classAlarmEntryTitle": "Class alarms",
-  "classAlarmGroupSetup": "Add alarms",
-  "classAlarmGroupBehavior": "Ring behavior",
-  "classAlarmAddAllTitle": "Batch add class alarms",
-  "classAlarmRangeNext4Weeks": "Next 4 weeks",
-  "classAlarmRangeNext8Weeks": "Next 8 weeks",
-  "classAlarmRangeLabel": "Range",
-  "classAlarmRangeRemaining": "This week to semester end",
-  "classAlarmRangeWhole": "Whole semester",
-  "classAlarmLeadTitle": "Lead time",
-  "classAlarmSkipUiTitle": "Skip confirmation page",
-  "classAlarmSkipUiSubtitle": "Try writing the alarm directly; some devices still show it",
   "classAlarmOpenClock": "Open system clock",
-  "classAlarmConfirmTitle": "Create repeating alarms?",
-  "classAlarmNoSchemeToast": "Select a time scheme in settings first",
-  "classAlarmNoDataToast": "No timetable found in the selected range",
   "classAlarmAddedToast": "Handed to the system clock",
   "classAlarmLaunchFailedToast": "No clock app found to handle this",
   "classAlarmCourseConfirmTitle": "Add a repeating alarm for this class?",
@@ -6570,8 +6370,6 @@
       }
     }
   },
-  "classAlarmDaySeparator": ", ",
-  "classAlarmDetailSeparator": "; ",
   "liveExpandedDetailGroupTitle": "Expanded details",
   "liveExpandedDetailUnfilledSuffix": "not filled in; hidden on the island",
   "liveExpandedDetailUnfilledValue": "None",
