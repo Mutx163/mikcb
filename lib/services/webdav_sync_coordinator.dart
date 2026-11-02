@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 
 import '../logging/app_debug_log.dart';
 import 'app_sync_snapshot_service.dart';
@@ -133,14 +134,27 @@ class WebdavSyncCoordinator extends ChangeNotifier {
   ///
   /// 折叠成稳定的 `sync_failed` 而不是把异常原文塞进 `lastError`：那个字段会被
   /// `localizeSyncError` 查表后显示给用户，异常原文可能含 URL / 用户名，不该进
-  /// UI —— 与仓库里"500 不回显内部异常"同一口径。原始异常只在 debug 日志留痕。
+  /// UI —— 与仓库里"500 不回显内部异常"同一口径。
+  ///
+  /// debug 日志同样不打原文（2026-11-02 安全审计）：`webdav_sync_coordinator`
+  /// 在 release 取证白名单里（`app_debug_log.dart`），原文会进正式包 logcat ——
+  /// 那是整机共享缓冲区，写入后无法回收。异常原文的形态也不可控：http 栈的
+  /// 错误串常带 baseUrl（有的还内嵌用户名），`redactPersonalFields` 的
+  /// `key=value` 口径对自由文本无从下手。所以 release 只打
+  /// [describeWebdavSyncErrorForLog] 的类型化摘要，足够区分「哪类错」；
+  /// debug 构建不上架，保留原文便于本地排查。
   Future<WebdavSyncResult> _collapseSyncFailure(
     Future<WebdavSyncResult> Function() action,
   ) async {
     try {
       return await action();
     } catch (error) {
-      appDebugLog('webdav_sync_coordinator', 'sync action threw: $error');
+      appDebugLog(
+        'webdav_sync_coordinator',
+        kDebugMode
+            ? 'sync action threw: $error'
+            : 'sync action threw ${describeWebdavSyncErrorForLog(error)}',
+      );
       return const WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
         message: 'sync_failed',
@@ -404,4 +418,17 @@ class WebdavSyncStatus {
       lastResult: lastResult ?? this.lastResult,
     );
   }
+}
+
+/// 同步异常的**类型化摘要**：只含 runtimeType 与稳定错误码，不含消息原文。
+///
+/// 这条摘要在 release 也会进 logcat（`webdav_sync_coordinator` 在取证白名单里，
+/// 见 `app_debug_log.dart`），所以**只能**放「枚举级」字段：`PlatformException`
+/// 带 `code`，其余异常只有类型名。message / stackTrace 一律不带 —— 它们的形态
+/// 不可控（http 栈的错误串带 baseUrl / 用户名），脱敏表兜不住（判据见
+/// [_collapseSyncFailure] 的文档）。单独摘成函数是为了能被单测直接断言：
+/// 「带敏感原文的异常经它处理后原文必须消失」。
+String describeWebdavSyncErrorForLog(Object error) {
+  final code = error is PlatformException ? ' code=${error.code}' : '';
+  return '${error.runtimeType}$code';
 }
