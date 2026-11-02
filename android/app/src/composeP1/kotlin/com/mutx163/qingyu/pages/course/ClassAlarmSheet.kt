@@ -169,7 +169,10 @@ fun ClassAlarmSheet(
     }
 
     // 确认弹层（Dart `:142-152` `showAppConfirmDialogWithBody`）：星期跟随真实响点。
-    val confirm = pendingConfirm
+    // 常驻组合 + show 驱动，remember 保留最后一份非空内容，退场动画期间不清空数据。
+    var lastConfirm by remember { mutableStateOf<Pair<ClassAlarmPlan, Int>?>(null) }
+    pendingConfirm?.let { lastConfirm = it }
+    val confirm = lastConfirm
     if (confirm != null) {
         val (plan, pickedMinute) = confirm
         val ringIso = plan.repeatDays.firstOrNull()
@@ -185,7 +188,7 @@ fun ClassAlarmSheet(
             ClassAlarmPlanLogic.effectiveLead(pickedMinute, startMinutesForLead, lead)
         }
         OverlayDialog(
-            show = true,
+            show = pendingConfirm != null,
             title = CourseActionStrings.classAlarmCourseConfirmTitle.zh,
             summary = CourseActionStrings.classAlarmConfirmMessage(
                 weekday = CourseActionSheetStrings.weekdayLabel(ringIso),
