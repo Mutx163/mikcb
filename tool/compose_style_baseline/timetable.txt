@@ -6,6 +6,5 @@
 timetable/CourseGridCard.kt|R5|例外：课程色解析/默认调色板（数据色，用户自定义，不跟主题）
 timetable/day/DayViewCommon.kt|R5|例外：课程色解析兜底 0xFF2196F3（数据色）
 timetable/day/DayViewCourseCard.kt|R5|例外：课程卡配色（数据色）
-timetable/month/MonthPanelOverview.kt|R5|例外：月历语义色（与 MonthDayCell 同源）
 timetable/month/MonthViewPage.kt|R2|例外：议程列表 userScrollEnabled=false，随月网格联动滚动，非用户直滚，无滚动条语义
 timetable/TimetableWeekPage.kt|R2|例外：周视图是自定义 Canvas 网格，单一纵向滚动承载整周（Dart 同构），非惰性可接受

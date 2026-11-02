@@ -540,12 +540,18 @@ class LanEditApiRouter(
         }
         val itemName = body["itemName"]?.toString()?.trim().orEmpty()
         val warnings = mutableListOf<String>()
-        val weeks = WeekExpressionParser.parse(
-            raw = expression,
-            itemName = itemName,
-            semesterWeekCount = host.semesterWeekCount,
-            warnings = warnings,
-        )
+        // 非法表达式 → 400 invalid_request（WeekExpressionException 是 RuntimeException，
+        // route 的 IAE catch 接不到，须就地接住，否则漏成 500）。
+        val weeks = try {
+            WeekExpressionParser.parse(
+                raw = expression,
+                itemName = itemName,
+                semesterWeekCount = host.semesterWeekCount,
+                warnings = warnings,
+            )
+        } catch (error: WeekExpressionException) {
+            return LanEditHttpResponse.error(400, "invalid_request", error.message ?: "invalid_request")
+        }
         return LanEditHttpResponse.json(
             200,
             linkedMapOf<String, Any?>("weeks" to weeks, "warnings" to warnings),

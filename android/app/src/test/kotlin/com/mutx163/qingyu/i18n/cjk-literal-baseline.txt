@@ -1,4 +1,4 @@
-﻿# i18n 棘轮基线：Compose 渲染层（composeP1）中文字面量计数
+# i18n 棘轮基线：Compose 渲染层（composeP1）中文字面量计数
 # 生成：python scripts/i18n-cjk-baseline.py --write
 # 规则见 CjkLiteralGateTest.kt；修复某文件后必须下调该行数字，不得上调。
 # 已排除：i18n 文案表（*Strings*.kt / *Arb*.kt / *ServiceMessages.kt / *LogMessages.kt / *Localizer.kt）与生成代码；Log.* 行整行跳过。
