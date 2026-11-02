@@ -36,6 +36,7 @@ import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -60,11 +61,11 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** 进行中徽标用的琥珀色（对齐 Dart `HyperosIconColors.orange`）。 */
-private val kLiveOrange = Color(0xFFF59E0B)
+/** 进行中徽标用的橙色（取应用层彩豆 token，对齐 Dart `HyperosIconColors.orange`）。 */
+private val kLiveOrange = Color(QingyuIconColors.ORANGE)
 
-/** 无关联课程时的默认课程色（对齐 Dart `HyperosIconColors.blue`）。 */
-private val kDefaultAccent = Color(0xFF2196F3)
+/** 无关联课程时的默认课程色（取应用层彩豆 token，对齐 Dart `HyperosIconColors.blue`）。 */
+private val kDefaultAccent = Color(QingyuIconColors.BLUE)
 
 /**
  * 考试安排页 · Compose 渲染层（Phase 3）。
@@ -592,6 +593,11 @@ private fun parseHexColor(hex: String?, fallback: Color = kDefaultAccent): Color
         3 -> value.map { "$it$it" }.joinToString("")
         else -> return fallback
     }
-    val parsed = normalized.toLongOrNull(16) ?: return fallback
-    return Color(0xFF000000L or parsed)
+    val parsed = normalized.toIntOrNull(16) ?: return fallback
+    // 逐通道取字节：等价于原来的「0xFF000000 或 RGB」掩码，强制不透明。
+    return Color(
+        red = (parsed shr 16) and 0xFF,
+        green = (parsed shr 8) and 0xFF,
+        blue = parsed and 0xFF,
+    )
 }

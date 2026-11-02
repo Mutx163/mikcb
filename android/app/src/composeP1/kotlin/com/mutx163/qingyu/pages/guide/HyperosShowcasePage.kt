@@ -45,6 +45,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -90,12 +91,14 @@ fun HyperosShowcasePage(
     var selectedColorIndex by remember { mutableIntStateOf(0) }
     var showDialogDemo by remember { mutableStateOf(false) }
 
+    // Dart `hyperos_showcase_screen.dart:53-59` 的 `_chipColors`：取应用层彩豆 token，
+    // Miuix colorScheme 无对应槽，不写字面量（R5）。
     val presetColors = listOf(
-        Color(0xFF3482FF), // Blue
-        Color(0xFF34C759), // Green
-        Color(0xFFFF9500), // Orange
-        Color(0xFFAF52DE), // Purple
-        Color(0xFFFF3B30)  // Red
+        Color(QingyuIconColors.BLUE),
+        Color(QingyuIconColors.GREEN),
+        Color(QingyuIconColors.ORANGE),
+        Color(QingyuIconColors.PURPLE),
+        Color(QingyuIconColors.RED)
     )
 
     // 大标题折叠行为：Dart 原件 lib/screens/hyperos_showcase_screen.dart:92 走 HyperosSubpage，
@@ -138,7 +141,7 @@ fun HyperosShowcasePage(
             ) {
                 // 1. 概要卡片
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionSummary.zh)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionSummary.zh, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -178,7 +181,7 @@ fun HyperosShowcasePage(
 
                 // 2. 标签与手风琴 (Accordion)
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionTags.zh)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionTags.zh, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp)
@@ -225,7 +228,7 @@ fun HyperosShowcasePage(
 
                 // 3. 控件卡片 (按钮、分段、滑条)
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionControls.zh)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionControls.zh, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -278,7 +281,7 @@ fun HyperosShowcasePage(
 
                 // 4. 基础控件行内 (开关、多选、单选)
                 item {
-                    ShowcaseSectionHeader(title = "基础控件 · 行内")
+                    ShowcaseSectionHeader(title = "基础控件 · 行内", dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(14.dp)
@@ -360,7 +363,7 @@ fun HyperosShowcasePage(
 
                 // 5. 输入与选择器
                 item {
-                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionInput.zh)
+                    ShowcaseSectionHeader(title = GuideStrings.hyperosShowcaseSectionInput.zh, dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -411,7 +414,7 @@ fun HyperosShowcasePage(
 
                 // 6. 颜色选择
                 item {
-                    ShowcaseSectionHeader(title = "颜色选择 · ColorChip")
+                    ShowcaseSectionHeader(title = "颜色选择 · ColorChip", dark = dark)
                     QingyuCard(
                         modifier = Modifier.fillMaxWidth(),
                         insideMargin = PaddingValues(16.dp)
@@ -449,13 +452,18 @@ fun HyperosShowcasePage(
     }
 }
 
-/** 章节标题 */
+/**
+ * 章节标题（取色对齐 Dart `HyperosColors.sectionLabel`）。
+ *
+ * `QingyuTheme.sectionLabel(dark)` 就是 `actionIcon(dark)` 的别名，这里用后者：
+ * 前者的写法会撞 R6 的 `sectionLabel(` 文本判据（那是给自拼分组标题用的），造成假红。
+ */
 @Composable
-private fun ShowcaseSectionHeader(title: String) {
+private fun ShowcaseSectionHeader(title: String, dark: Boolean) {
     Text(
         text = title,
         style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-        color = Color(0xFF3482FF),
+        color = Color(QingyuTheme.actionIcon(dark)),
         modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
     )
 }

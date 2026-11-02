@@ -2,5 +2,3 @@
 # 一行一处待还的债：<相对路径>|<规则>|<说明>
 # 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
 # 由 scripts/compose-style-lint.ps1 -Domain exam -Write 重新生成。
-# 例外（已注明原因，非待还的样式债）：
-exam/ExamListPage.kt|R5|例外：进行中徽标琥珀色 kLiveOrange、课程色兜底 kDefaultAccent、解析用户课程色时的不透明掩码 0xFF000000——均为数据/状态色，不跟主题（对齐 Dart HyperosIconColors）
