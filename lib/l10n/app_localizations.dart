@@ -140,12 +140,6 @@ abstract class AppLocalizations {
   /// **'课表背景'**
   String get timetableBackgroundPreview;
 
-  /// No description provided for @displayModeTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示模式'**
-  String get displayModeTitle;
-
   /// No description provided for @themeModeLabel.
   ///
   /// In zh, this message translates to:
@@ -169,24 +163,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'深色模式'**
   String get themeModeDark;
-
-  /// No description provided for @fontSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'应用字体'**
-  String get fontSectionTitle;
-
-  /// No description provided for @fontSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'内置 Inter 默认；也可选用系统已安装的字体'**
-  String get fontSectionSubtitle;
-
-  /// No description provided for @fontSectionFootnote.
-  ///
-  /// In zh, this message translates to:
-  /// **'厂商字体未内置，需系统已预装才生效，小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装'**
-  String get fontSectionFootnote;
 
   /// No description provided for @fontModeLabel.
   ///
@@ -283,12 +259,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'课表设置'**
   String get settingsTitle;
-
-  /// No description provided for @dailyUsageSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'日常使用'**
-  String get dailyUsageSectionTitle;
 
   /// No description provided for @appearanceEntryTitle.
   ///
@@ -1958,18 +1928,6 @@ abstract class AppLocalizations {
   /// **'问题反馈'**
   String get feedbackTitle;
 
-  /// No description provided for @feedbackIntro.
-  ///
-  /// In zh, this message translates to:
-  /// **'如果你遇到崩溃、课程显示异常、导入问题，或者想提交功能建议，可以通过下面这些渠道反馈'**
-  String get feedbackIntro;
-
-  /// No description provided for @feedbackIssueHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'涉及复现步骤、截图、版本号和日志的问题，建议优先走 GitHub Issue'**
-  String get feedbackIssueHint;
-
   /// No description provided for @githubIssueTitle.
   ///
   /// In zh, this message translates to:
@@ -2936,24 +2894,6 @@ abstract class AppLocalizations {
   /// **'已支持'**
   String get supportConfirmedShort;
 
-  /// No description provided for @donorSearchHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'搜昵称/寄语……'**
-  String get donorSearchHint;
-
-  /// No description provided for @donorSortLargeFirst.
-  ///
-  /// In zh, this message translates to:
-  /// **'大额优先'**
-  String get donorSortLargeFirst;
-
-  /// No description provided for @donorSortSmallFirst.
-  ///
-  /// In zh, this message translates to:
-  /// **'小额优先'**
-  String get donorSortSmallFirst;
-
   /// No description provided for @supportMonthlyGoalLabel.
   ///
   /// In zh, this message translates to:
@@ -3044,12 +2984,6 @@ abstract class AppLocalizations {
   /// **'共排课 {count} 节 · 展开查看冲突详情'**
   String scheduledCountWithConflictHint(int count);
 
-  /// No description provided for @courseTimeSummary.
-  ///
-  /// In zh, this message translates to:
-  /// **'时间：星期 {day} 第 {start}～{end} 节'**
-  String courseTimeSummary(int day, int start, int end);
-
   /// No description provided for @teacherUnset.
   ///
   /// In zh, this message translates to:
@@ -3061,27 +2995,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未设置'**
   String get locationUnset;
-
-  /// No description provided for @courseDetailSummary.
-  ///
-  /// In zh, this message translates to:
-  /// **'{weekDescription}  教师：{teacher}  教室：{location}'**
-  String courseDetailSummary(
-    String weekDescription,
-    String teacher,
-    String location,
-  );
-
-  /// No description provided for @courseDetailSummaryWithConflict.
-  ///
-  /// In zh, this message translates to:
-  /// **'{weekDescription}  教师：{teacher}  教室：{location}\n冲突课程：{conflictSummary}'**
-  String courseDetailSummaryWithConflict(
-    String weekDescription,
-    String teacher,
-    String location,
-    String conflictSummary,
-  );
 
   /// No description provided for @confirmDeleteTitle.
   ///
@@ -3095,18 +3008,6 @@ abstract class AppLocalizations {
   /// **'确定删除课程 {name}？'**
   String confirmDeleteCourseMessage(String name);
 
-  /// No description provided for @currentScheduleTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前排课'**
-  String get currentScheduleTitle;
-
-  /// No description provided for @currentScheduleSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课'**
-  String get currentScheduleSubtitle;
-
   /// No description provided for @timeSchemeLabel.
   ///
   /// In zh, this message translates to:
@@ -3118,12 +3019,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'跟随当前课表 {name}'**
   String followCurrentTimetableWithName(String name);
-
-  /// No description provided for @followCurrentTimetableDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'未手动指定时，按上课地点自动匹配时间模板；未命中则跟随课表主时间模板'**
-  String get followCurrentTimetableDescription;
 
   /// No description provided for @overrideTimeSchemeDescription.
   ///
@@ -4102,18 +3997,6 @@ abstract class AppLocalizations {
   /// **'有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程'**
   String get timeSchemeEditorOverrideHint;
 
-  /// No description provided for @editTimeAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'编辑时间'**
-  String get editTimeAction;
-
-  /// No description provided for @editingSchemeLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'正在编辑：{name}'**
-  String editingSchemeLabel(String name);
-
   /// No description provided for @unnamedTimeScheme.
   ///
   /// In zh, this message translates to:
@@ -5002,12 +4885,6 @@ abstract class AppLocalizations {
   /// **'推断等级'**
   String get diagnosticsLevelInferred;
 
-  /// No description provided for @diagnosticsRawFilteredHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'原文视图会跟随当前等级筛选，只显示对应日志块'**
-  String get diagnosticsRawFilteredHint;
-
   /// No description provided for @diagnosticsTimeSortAscending.
   ///
   /// In zh, this message translates to:
@@ -5025,12 +4902,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'查看与排序'**
   String get diagnosticsDisplayOptionsTitle;
-
-  /// No description provided for @diagnosticsStreamingHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'实时更新中，新日志会自动追加显示'**
-  String get diagnosticsStreamingHint;
 
   /// No description provided for @diagnosticsEmptyTitle.
   ///
@@ -5055,24 +4926,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'设备与导出信息'**
   String get diagnosticsDeviceInfoTitle;
-
-  /// No description provided for @diagnosticsContentTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'日志内容'**
-  String get diagnosticsContentTitle;
-
-  /// No description provided for @diagnosticsRecentLogsTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'最近日志'**
-  String get diagnosticsRecentLogsTitle;
-
-  /// No description provided for @diagnosticsUnknownCategory.
-  ///
-  /// In zh, this message translates to:
-  /// **'未分类事件'**
-  String get diagnosticsUnknownCategory;
 
   /// No description provided for @diagnosticsExportedAt.
   ///
@@ -5103,12 +4956,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'堆栈'**
   String get diagnosticsStackTrace;
-
-  /// No description provided for @firstUseGuideTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'首次使用引导'**
-  String get firstUseGuideTitle;
 
   /// No description provided for @guideAndPermissionsTitle.
   ///
@@ -5284,12 +5131,6 @@ abstract class AppLocalizations {
   /// **'开始使用'**
   String get startUsingAction;
 
-  /// No description provided for @editSingleLessonTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'编辑单节课'**
-  String get editSingleLessonTitle;
-
   /// No description provided for @editCourseTitle.
   ///
   /// In zh, this message translates to:
@@ -5446,18 +5287,6 @@ abstract class AppLocalizations {
   /// **'课程简介（可选）'**
   String get courseDescriptionOptional;
 
-  /// No description provided for @currentScheduleHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'这里的星期、节次、教室、周次和单双周只影响当前这一条排课'**
-  String get currentScheduleHint;
-
-  /// No description provided for @followProfileTimeScheme.
-  ///
-  /// In zh, this message translates to:
-  /// **'跟随当前课表 {name}'**
-  String followProfileTimeScheme(String name);
-
   /// No description provided for @timeSchemeOverrideLabel.
   ///
   /// In zh, this message translates to:
@@ -5482,41 +5311,17 @@ abstract class AppLocalizations {
   /// **'连续周'**
   String get rangeWeekLabel;
 
-  /// No description provided for @customWeekLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义周'**
-  String get customWeekLabel;
-
   /// No description provided for @oddWeeksLabel.
   ///
   /// In zh, this message translates to:
   /// **'单周'**
   String get oddWeeksLabel;
 
-  /// No description provided for @evenWeeksLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'双周'**
-  String get evenWeeksLabel;
-
   /// No description provided for @oddWeeksHint.
   ///
   /// In zh, this message translates to:
   /// **'只保留范围内的单周'**
   String get oddWeeksHint;
-
-  /// No description provided for @evenWeeksHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'只保留范围内的双周'**
-  String get evenWeeksHint;
-
-  /// No description provided for @customPaletteColor.
-  ///
-  /// In zh, this message translates to:
-  /// **'调色盘自定义颜色'**
-  String get customPaletteColor;
 
   /// No description provided for @timeSchemeSetCountValue.
   ///
@@ -5732,30 +5537,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'玻璃材质'**
   String get frostedSheetSectionTitle;
-
-  /// No description provided for @frostedBlurEnabledTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'启用模糊'**
-  String get frostedBlurEnabledTitle;
-
-  /// No description provided for @frostedBlurEnabledSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'关闭后弹窗为不透明纯色底，模糊区域保留半透明底色'**
-  String get frostedBlurEnabledSubtitle;
-
-  /// No description provided for @frostedSheetPreviewOpenAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开预览面板'**
-  String get frostedSheetPreviewOpenAction;
-
-  /// No description provided for @frostedSheetPreviewDemoTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'预览'**
-  String get frostedSheetPreviewDemoTitle;
 
   /// No description provided for @timetableBackgroundColorSectionTitle.
   ///
@@ -8347,12 +8128,6 @@ abstract class AppLocalizations {
   /// **'把豆包返回的 JSON 原样粘贴到这里，然后点击导入，支持纯 JSON，也兼容 ```json 代码块'**
   String get aiPasteJsonHintLong;
 
-  /// No description provided for @detailAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'详情'**
-  String get detailAction;
-
   /// No description provided for @aiParseErrorTitle.
   ///
   /// In zh, this message translates to:
@@ -8605,23 +8380,11 @@ abstract class AppLocalizations {
   /// **'已删除调试记录：{name}'**
   String deletedDebugRecord(String name);
 
-  /// No description provided for @customDebugName.
-  ///
-  /// In zh, this message translates to:
-  /// **'自定义调试'**
-  String get customDebugName;
-
   /// No description provided for @localDebugMaintainer.
   ///
   /// In zh, this message translates to:
   /// **'本地调试'**
   String get localDebugMaintainer;
-
-  /// No description provided for @customDebugDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'用户保存的自定义教务调试脚本'**
-  String get customDebugDescription;
 
   /// No description provided for @addDebugRecordTooltip.
   ///
@@ -8736,12 +8499,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'一条记录 = 一个网址 + 一段脚本'**
   String get debugRecordFormula;
-
-  /// No description provided for @debugRecordFormulaSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'适合反复调试同一学校或多套脚本，保存后长期保留'**
-  String get debugRecordFormulaSubtitle;
 
   /// No description provided for @debugRecordNameLabel.
   ///
@@ -9187,18 +8944,6 @@ abstract class AppLocalizations {
   /// **'冲突'**
   String get conflictLabel;
 
-  /// No description provided for @courseConflictSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'冲突课程'**
-  String get courseConflictSectionTitle;
-
-  /// No description provided for @courseNormalSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'其他课程'**
-  String get courseNormalSectionTitle;
-
   /// No description provided for @courseConflictDetailTitle.
   ///
   /// In zh, this message translates to:
@@ -9211,23 +8956,11 @@ abstract class AppLocalizations {
   /// **'查看冲突详情'**
   String get courseConflictDetailEntryTitle;
 
-  /// No description provided for @courseConflictDetailEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'查看互撞排课与重叠时段'**
-  String get courseConflictDetailEntrySubtitle;
-
   /// No description provided for @courseConflictWithCourse.
   ///
   /// In zh, this message translates to:
   /// **'与 {name} 冲突'**
   String courseConflictWithCourse(String name);
-
-  /// No description provided for @courseConflictOpenPartnerAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'查看对方排课'**
-  String get courseConflictOpenPartnerAction;
 
   /// No description provided for @courseConflictEmpty.
   ///
@@ -9319,12 +9052,6 @@ abstract class AppLocalizations {
   /// **'今日课表'**
   String get todayTimetableTitle;
 
-  /// No description provided for @dayTimetableTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'单日时间轴'**
-  String get dayTimetableTitle;
-
   /// No description provided for @backToWeekViewAction.
   ///
   /// In zh, this message translates to:
@@ -9367,35 +9094,11 @@ abstract class AppLocalizations {
   /// **'地点：{value}'**
   String locationPrefix(String value);
 
-  /// No description provided for @courseDialogCurrentWeekHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前查看第 {week} 周，可直接对这一周这节课调课'**
-  String courseDialogCurrentWeekHint(int week);
-
-  /// No description provided for @courseDialogNotThisWeekHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前查看第 {week} 周，本周无此课程，无法调整单周节次'**
-  String courseDialogNotThisWeekHint(int week);
-
-  /// No description provided for @editActionShort.
-  ///
-  /// In zh, this message translates to:
-  /// **'编辑'**
-  String get editActionShort;
-
   /// No description provided for @rescheduleAction.
   ///
   /// In zh, this message translates to:
   /// **'调课'**
   String get rescheduleAction;
-
-  /// No description provided for @deleteActionShort.
-  ///
-  /// In zh, this message translates to:
-  /// **'删除'**
-  String get deleteActionShort;
 
   /// No description provided for @deleteModeTitle.
   ///
@@ -9480,18 +9183,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'开始节次'**
   String get startSectionFieldLabel;
-
-  /// No description provided for @endSectionFieldLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'结束节次'**
-  String get endSectionFieldLabel;
-
-  /// No description provided for @courseLocationFieldLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'上课地点'**
-  String get courseLocationFieldLabel;
 
   /// No description provided for @confirmRescheduleAction.
   ///
@@ -9779,12 +9470,6 @@ abstract class AppLocalizations {
   /// **'本地调试模式：{scriptName}'**
   String localDebugModeScriptStatus(String scriptName);
 
-  /// No description provided for @executeImportScriptTooltip.
-  ///
-  /// In zh, this message translates to:
-  /// **'执行导入脚本'**
-  String get executeImportScriptTooltip;
-
   /// No description provided for @switchToMobileWebTooltip.
   ///
   /// In zh, this message translates to:
@@ -9838,18 +9523,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'在此登录教务系统后执行导入'**
   String get warehouseLoginHintImport;
-
-  /// No description provided for @currentPageModeDesktop.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前页面模式：桌面端'**
-  String get currentPageModeDesktop;
-
-  /// No description provided for @currentPageModeMobile.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前页面模式：移动端'**
-  String get currentPageModeMobile;
 
   /// No description provided for @localScriptLabel.
   ///
@@ -10577,12 +10250,6 @@ abstract class AppLocalizations {
   /// **'{days} 天后'**
   String examCountdownDays(int days);
 
-  /// No description provided for @examOverviewCountdown.
-  ///
-  /// In zh, this message translates to:
-  /// **'倒计时'**
-  String get examOverviewCountdown;
-
   /// No description provided for @examOverviewCountdownUnit.
   ///
   /// In zh, this message translates to:
@@ -10612,12 +10279,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'进行中'**
   String get examOverviewLiveBadge;
-
-  /// No description provided for @examOverviewStartsAt.
-  ///
-  /// In zh, this message translates to:
-  /// **'{time} 开始'**
-  String examOverviewStartsAt(String time);
 
   /// No description provided for @examOverviewUntilTime.
   ///
@@ -10840,12 +10501,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'停课'**
   String get suspendedStatusLabel;
-
-  /// No description provided for @courseActionSuspend.
-  ///
-  /// In zh, this message translates to:
-  /// **'停课'**
-  String get courseActionSuspend;
 
   /// No description provided for @courseActionUnsuspend.
   ///
@@ -11182,12 +10837,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请输入假期名称'**
   String get customHolidayNameRequired;
-
-  /// No description provided for @customHolidayDateRange.
-  ///
-  /// In zh, this message translates to:
-  /// **'{start}～{end}'**
-  String customHolidayDateRange(Object start, Object end);
 
   /// No description provided for @selectTeacherTitle.
   ///
@@ -13004,12 +12653,6 @@ abstract class AppLocalizations {
   /// **'还没有自定义提醒，点下方添加'**
   String get examReminderCustomEmptyHint;
 
-  /// No description provided for @debugCopiedJson.
-  ///
-  /// In zh, this message translates to:
-  /// **'已复制 JSON'**
-  String get debugCopiedJson;
-
   /// No description provided for @liveDuringClassTimeNearest.
   ///
   /// In zh, this message translates to:
@@ -14297,42 +13940,6 @@ abstract class AppLocalizations {
   /// **'轻屿课表 - 全部数据备份'**
   String get dataTransferFullBackupShareSubject;
 
-  /// No description provided for @courseWeekCustomDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'第 {weeks} 周'**
-  String courseWeekCustomDescription(String weeks);
-
-  /// No description provided for @courseWeekRangeDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'第 {startWeek}～{endWeek} 周{mode}'**
-  String courseWeekRangeDescription(int startWeek, int endWeek, String mode);
-
-  /// No description provided for @courseWeekOddModeSuffix.
-  ///
-  /// In zh, this message translates to:
-  /// **' 单周'**
-  String get courseWeekOddModeSuffix;
-
-  /// No description provided for @courseWeekEvenModeSuffix.
-  ///
-  /// In zh, this message translates to:
-  /// **' 双周'**
-  String get courseWeekEvenModeSuffix;
-
-  /// No description provided for @courseWeekSuspensionDescription.
-  ///
-  /// In zh, this message translates to:
-  /// **'第 {weeks} 周停课'**
-  String courseWeekSuspensionDescription(String weeks);
-
-  /// No description provided for @courseWeekListSeparator.
-  ///
-  /// In zh, this message translates to:
-  /// **'、'**
-  String get courseWeekListSeparator;
-
   /// No description provided for @holidayLogMemoryCacheHit.
   ///
   /// In zh, this message translates to:
@@ -15158,48 +14765,6 @@ abstract class AppLocalizations {
     String location,
     String weekText,
   );
-
-  /// No description provided for @courseImportCalendarWeekLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'校历第 {week} 周'**
-  String courseImportCalendarWeekLabel(int week);
-
-  /// No description provided for @courseImportTermStartDateTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'开学日期'**
-  String get courseImportTermStartDateTitle;
-
-  /// No description provided for @courseImportFirstWeekMappingLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'课表第 1 周对应校历第几周'**
-  String get courseImportFirstWeekMappingLabel;
-
-  /// No description provided for @courseImportFirstWeekMappingSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周'**
-  String get courseImportFirstWeekMappingSubtitle;
-
-  /// No description provided for @courseImportFirstWeekNoShift.
-  ///
-  /// In zh, this message translates to:
-  /// **'导入后会直接把课表第 1 周当作校历第 1 周'**
-  String get courseImportFirstWeekNoShift;
-
-  /// No description provided for @courseImportFirstWeekShifted.
-  ///
-  /// In zh, this message translates to:
-  /// **'导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周'**
-  String courseImportFirstWeekShifted(int weeks, int targetWeek);
-
-  /// No description provided for @courseImportContinueAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'继续导入'**
-  String get courseImportContinueAction;
 
   /// No description provided for @courseImportUpdateRecommendedAction.
   ///
@@ -16848,12 +16413,6 @@ abstract class AppLocalizations {
   /// **'{profileName} 时间'**
   String profileTimeSchemeName(String profileName);
 
-  /// No description provided for @currentProfileTimeSchemeName.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前课表时间'**
-  String get currentProfileTimeSchemeName;
-
   /// No description provided for @unnamedTimetableProfile.
   ///
   /// In zh, this message translates to:
@@ -17947,12 +17506,6 @@ abstract class AppLocalizations {
   /// **'运行自检'**
   String get liveSelfCheckSubtitle;
 
-  /// No description provided for @frostedSheetPreviewShowTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示预览'**
-  String get frostedSheetPreviewShowTitle;
-
   /// No description provided for @aboutSupportUpdatesSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -18841,42 +18394,6 @@ abstract class AppLocalizations {
   /// **'日课表'**
   String get glassDockTabDay;
 
-  /// No description provided for @glassDockLayoutLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'玻璃坞内容布局'**
-  String get glassDockLayoutLabel;
-
-  /// No description provided for @glassDockLayoutOverlay.
-  ///
-  /// In zh, this message translates to:
-  /// **'满屏悬浮'**
-  String get glassDockLayoutOverlay;
-
-  /// No description provided for @glassDockLayoutOverlaySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'课表满屏显示，底栏浮动在课表之上'**
-  String get glassDockLayoutOverlaySubtitle;
-
-  /// No description provided for @glassDockLayoutInset.
-  ///
-  /// In zh, this message translates to:
-  /// **'内容避让'**
-  String get glassDockLayoutInset;
-
-  /// No description provided for @glassDockLayoutInsetSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'课表底部预留空间，底栏悬浮在下方'**
-  String get glassDockLayoutInsetSubtitle;
-
-  /// No description provided for @glassDockInsetClearanceLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'避让高度'**
-  String get glassDockInsetClearanceLabel;
-
   /// No description provided for @glassDockRoundActionLabel.
   ///
   /// In zh, this message translates to:
@@ -18919,24 +18436,6 @@ abstract class AppLocalizations {
   /// **'视图切换'**
   String get homeDockEditorViewCategory;
 
-  /// No description provided for @glassDockEntriesSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'底栏入口'**
-  String get glassDockEntriesSectionTitle;
-
-  /// No description provided for @glassDockShowDayTabTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示日课表入口'**
-  String get glassDockShowDayTabTitle;
-
-  /// No description provided for @glassDockShowWeekTabTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'显示周课表入口'**
-  String get glassDockShowWeekTabTitle;
-
   /// No description provided for @glassDockShowAddButtonTitle.
   ///
   /// In zh, this message translates to:
@@ -18948,12 +18447,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'在药丸右侧单独显示'**
   String get glassDockShowAddButtonSubtitle;
-
-  /// No description provided for @glassDockButtonBackToWeekLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'回本周 / 今天'**
-  String get glassDockButtonBackToWeekLabel;
 
   /// No description provided for @glassDockExtraButtonSemanticLabel.
   ///

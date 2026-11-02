@@ -27,9 +27,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timetableBackgroundPreview => 'Timetable Background';
 
   @override
-  String get displayModeTitle => 'Display Mode';
-
-  @override
   String get themeModeLabel => 'Theme Mode';
 
   @override
@@ -40,17 +37,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Dark';
-
-  @override
-  String get fontSectionTitle => 'App Font';
-
-  @override
-  String get fontSectionSubtitle =>
-      'Inter is built in; other options use fonts already on your phone';
-
-  @override
-  String get fontSectionFootnote =>
-      'Brand fonts aren\'t bundled; they work only if already on your system. On Xiaomi, usually only MiSans is obvious. No change means auto fallback—you usually don\'t need to install fonts';
 
   @override
   String get fontModeLabel => 'Font';
@@ -100,9 +86,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTitle => 'Timetable Settings';
-
-  @override
-  String get dailyUsageSectionTitle => 'Daily Use';
 
   @override
   String get appearanceEntryTitle => 'Appearance';
@@ -1061,14 +1044,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackTitle => 'Feedback';
 
   @override
-  String get feedbackIntro =>
-      'If you encounter crashes, timetable display issues, import problems, or want to suggest features, you can use the channels below';
-
-  @override
-  String get feedbackIssueHint =>
-      'For issues with reproduction steps, screenshots, app version, or logs, GitHub Issue is recommended first';
-
-  @override
   String get githubIssueTitle => 'GitHub Issue';
 
   @override
@@ -1627,15 +1602,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportConfirmedShort => 'Supported';
 
   @override
-  String get donorSearchHint => 'Search name or message...';
-
-  @override
-  String get donorSortLargeFirst => 'Largest first';
-
-  @override
-  String get donorSortSmallFirst => 'Smallest first';
-
-  @override
   String get supportMonthlyGoalLabel => 'Monthly server & certificate renewal';
 
   @override
@@ -1696,34 +1662,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String courseTimeSummary(int day, int start, int end) {
-    return 'Time: Weekday $day · Sections $start-$end';
-  }
-
-  @override
   String get teacherUnset => 'Unknown Teacher';
 
   @override
   String get locationUnset => 'Unknown Location';
-
-  @override
-  String courseDetailSummary(
-    String weekDescription,
-    String teacher,
-    String location,
-  ) {
-    return '$weekDescription  Teacher: $teacher  Room: $location';
-  }
-
-  @override
-  String courseDetailSummaryWithConflict(
-    String weekDescription,
-    String teacher,
-    String location,
-    String conflictSummary,
-  ) {
-    return '$weekDescription  Teacher: $teacher  Room: $location\nConflicting courses: $conflictSummary';
-  }
 
   @override
   String get confirmDeleteTitle => 'Confirm Delete';
@@ -1734,23 +1676,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get currentScheduleTitle => 'Current Schedule Entry';
-
-  @override
-  String get currentScheduleSubtitle =>
-      'Weekday, sections, room, weeks, and odd/even settings here only affect this single schedule entry';
-
-  @override
   String get timeSchemeLabel => 'Time Scheme';
 
   @override
   String followCurrentTimetableWithName(String name) {
     return 'Follow current timetable ($name)';
   }
-
-  @override
-  String get followCurrentTimetableDescription =>
-      'Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme';
 
   @override
   String get overrideTimeSchemeDescription =>
@@ -2324,14 +2255,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Some courses are using this time scheme as an override. Saving will update every referenced course';
 
   @override
-  String get editTimeAction => 'Edit Time';
-
-  @override
-  String editingSchemeLabel(String name) {
-    return 'Editing: $name';
-  }
-
-  @override
   String get unnamedTimeScheme => 'Unnamed Scheme';
 
   @override
@@ -2849,10 +2772,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsLevelInferred => 'Inferred level';
 
   @override
-  String get diagnosticsRawFilteredHint =>
-      'The raw view follows the current level filter and only shows matching log blocks';
-
-  @override
   String get diagnosticsTimeSortAscending => 'Oldest first';
 
   @override
@@ -2860,10 +2779,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get diagnosticsDisplayOptionsTitle => 'View & sort';
-
-  @override
-  String get diagnosticsStreamingHint =>
-      'Live updates are on. New logs appear automatically';
 
   @override
   String get diagnosticsEmptyTitle => 'No Logs Yet';
@@ -2876,15 +2791,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get diagnosticsDeviceInfoTitle => 'Device & Export Info';
-
-  @override
-  String get diagnosticsContentTitle => 'Log Content';
-
-  @override
-  String get diagnosticsRecentLogsTitle => 'Recent Logs';
-
-  @override
-  String get diagnosticsUnknownCategory => 'Uncategorized Event';
 
   @override
   String get diagnosticsExportedAt => 'Exported At';
@@ -2900,9 +2806,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get diagnosticsStackTrace => 'Stack Trace';
-
-  @override
-  String get firstUseGuideTitle => 'First Use Guide';
 
   @override
   String get guideAndPermissionsTitle => 'Guide & Permissions';
@@ -3003,9 +2906,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startUsingAction => 'Start Using';
 
   @override
-  String get editSingleLessonTitle => 'Edit Single Lesson';
-
-  @override
   String get editCourseTitle => 'Edit Course';
 
   @override
@@ -3092,15 +2992,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseDescriptionOptional => 'Course Description (Optional)';
 
   @override
-  String get currentScheduleHint =>
-      'Weekday, sections, room, week range, and odd/even settings here only affect this specific entry';
-
-  @override
-  String followProfileTimeScheme(String name) {
-    return 'Follow current timetable ($name)';
-  }
-
-  @override
   String get timeSchemeOverrideLabel => 'Class Time Scheme';
 
   @override
@@ -3114,22 +3005,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rangeWeekLabel => 'Continuous Weeks';
 
   @override
-  String get customWeekLabel => 'Custom Weeks';
-
-  @override
   String get oddWeeksLabel => 'Odd Weeks';
 
   @override
-  String get evenWeeksLabel => 'Even Weeks';
-
-  @override
   String get oddWeeksHint => 'Keep only odd weeks within the selected range';
-
-  @override
-  String get evenWeeksHint => 'Keep only even weeks within the selected range';
-
-  @override
-  String get customPaletteColor => 'Custom Color Picker';
 
   @override
   String timeSchemeSetCountValue(int count) {
@@ -3271,19 +3150,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frostedSheetSectionTitle => 'Glass Material';
-
-  @override
-  String get frostedBlurEnabledTitle => 'Enable Blur';
-
-  @override
-  String get frostedBlurEnabledSubtitle =>
-      'When off, sheets become opaque solid panels; blurred areas keep a translucent tint';
-
-  @override
-  String get frostedSheetPreviewOpenAction => 'Open Preview Panel';
-
-  @override
-  String get frostedSheetPreviewDemoTitle => 'Preview';
 
   @override
   String get timetableBackgroundColorSectionTitle =>
@@ -4810,9 +4676,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Paste the JSON returned by Doubao here exactly as-is, then tap Import. Pure JSON is supported, and ```json code blocks are also accepted';
 
   @override
-  String get detailAction => 'Details';
-
-  @override
   String get aiParseErrorTitle => 'Parse error';
 
   @override
@@ -4964,14 +4827,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get customDebugName => 'Custom debug';
-
-  @override
   String get localDebugMaintainer => 'Local debug';
-
-  @override
-  String get customDebugDescription =>
-      'User-saved custom academic-system debug script';
 
   @override
   String get addDebugRecordTooltip => 'Add debug record';
@@ -5039,10 +4895,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugRecordFormula => 'One record = one URL + one script';
-
-  @override
-  String get debugRecordFormulaSubtitle =>
-      'For repeatedly debugging one school or keeping several scripts; entries persist';
 
   @override
   String get debugRecordNameLabel => 'Record name';
@@ -5289,28 +5141,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictLabel => 'Conflict';
 
   @override
-  String get courseConflictSectionTitle => 'Conflicts';
-
-  @override
-  String get courseNormalSectionTitle => 'Other courses';
-
-  @override
   String get courseConflictDetailTitle => 'Conflict details';
 
   @override
   String get courseConflictDetailEntryTitle => 'View conflict details';
 
   @override
-  String get courseConflictDetailEntrySubtitle =>
-      'See overlapping schedules and partners';
-
-  @override
   String courseConflictWithCourse(String name) {
     return 'Conflicts with $name';
   }
-
-  @override
-  String get courseConflictOpenPartnerAction => 'Open partner schedule';
 
   @override
   String get courseConflictEmpty => 'No conflicts detected';
@@ -5362,9 +5201,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayTimetableTitle => 'Today\'s Timetable';
 
   @override
-  String get dayTimetableTitle => 'Day Timeline';
-
-  @override
   String get backToWeekViewAction => 'Back to Week View';
 
   @override
@@ -5392,23 +5228,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String courseDialogCurrentWeekHint(int week) {
-    return 'You are viewing Week $week. You can reschedule this class occurrence directly';
-  }
-
-  @override
-  String courseDialogNotThisWeekHint(int week) {
-    return 'You are viewing Week $week, but this course does not occur this week, so it cannot be rescheduled as the current-week occurrence';
-  }
-
-  @override
-  String get editActionShort => 'Edit';
-
-  @override
   String get rescheduleAction => 'Reschedule';
-
-  @override
-  String get deleteActionShort => 'Delete';
 
   @override
   String get deleteModeTitle => 'Delete mode';
@@ -5464,12 +5284,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startSectionFieldLabel => 'Start section';
-
-  @override
-  String get endSectionFieldLabel => 'End section';
-
-  @override
-  String get courseLocationFieldLabel => 'Class location';
 
   @override
   String get confirmRescheduleAction => 'Confirm reschedule';
@@ -5659,9 +5473,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get executeImportScriptTooltip => 'Run import script';
-
-  @override
   String get switchToMobileWebTooltip => 'Switch to mobile page';
 
   @override
@@ -5689,12 +5500,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get warehouseLoginHintImport =>
       'Log in to the academic system here, then run import';
-
-  @override
-  String get currentPageModeDesktop => 'Current page mode: Desktop';
-
-  @override
-  String get currentPageModeMobile => 'Current page mode: Mobile';
 
   @override
   String localScriptLabel(String scriptName) {
@@ -6108,9 +5913,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get examOverviewCountdown => 'Countdown';
-
-  @override
   String get examOverviewCountdownUnit => 'days left';
 
   @override
@@ -6128,11 +5930,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get examOverviewLiveBadge => 'Live';
-
-  @override
-  String examOverviewStartsAt(String time) {
-    return 'Starts $time';
-  }
 
   @override
   String examOverviewUntilTime(String time) {
@@ -6255,9 +6052,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suspendedStatusLabel => 'Suspended';
-
-  @override
-  String get courseActionSuspend => 'Suspend';
 
   @override
   String get courseActionUnsuspend => 'Restore';
@@ -6445,11 +6239,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customHolidayNameRequired => 'Please enter a holiday name';
-
-  @override
-  String customHolidayDateRange(Object start, Object end) {
-    return '$start ~ $end';
-  }
 
   @override
   String get selectTeacherTitle => 'Select teacher';
@@ -7498,9 +7287,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'No custom reminders yet — tap below to add';
 
   @override
-  String get debugCopiedJson => 'JSON copied';
-
-  @override
   String get liveDuringClassTimeNearest => 'Nearest time';
 
   @override
@@ -8330,30 +8116,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Qingyu Timetable - Full data backup';
 
   @override
-  String courseWeekCustomDescription(String weeks) {
-    return 'Weeks $weeks';
-  }
-
-  @override
-  String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
-    return 'Weeks $startWeek-$endWeek$mode';
-  }
-
-  @override
-  String get courseWeekOddModeSuffix => ' odd weeks';
-
-  @override
-  String get courseWeekEvenModeSuffix => ' even weeks';
-
-  @override
-  String courseWeekSuspensionDescription(String weeks) {
-    return 'Suspended weeks $weeks';
-  }
-
-  @override
-  String get courseWeekListSeparator => ', ';
-
-  @override
   String holidayLogMemoryCacheHit(int year, int count) {
     return '$year: memory cache hit ($count entries), refreshing in background…';
   }
@@ -8846,34 +8608,6 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Weekday $weekday Sections $startSection-$endSection  $name  $location  Weeks: $weekText';
   }
-
-  @override
-  String courseImportCalendarWeekLabel(int week) {
-    return 'Calendar week $week';
-  }
-
-  @override
-  String get courseImportTermStartDateTitle => 'Term start date';
-
-  @override
-  String get courseImportFirstWeekMappingLabel =>
-      'Which calendar week is timetable week 1';
-
-  @override
-  String get courseImportFirstWeekMappingSubtitle =>
-      'If week 1 has no classes, choose week 2; if weeks 1-2 have none, choose week 3.';
-
-  @override
-  String get courseImportFirstWeekNoShift =>
-      'Import will treat timetable week 1 as calendar week 1.';
-
-  @override
-  String courseImportFirstWeekShifted(int weeks, int targetWeek) {
-    return 'Import will shift all course weeks by $weeks so timetable week 1 lands on calendar week $targetWeek.';
-  }
-
-  @override
-  String get courseImportContinueAction => 'Continue import';
 
   @override
   String get courseImportUpdateRecommendedAction =>
@@ -9825,9 +9559,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get currentProfileTimeSchemeName => 'Current timetable schedule';
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -10458,9 +10189,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveSelfCheckSubtitle => 'Run Self-Check';
 
   @override
-  String get frostedSheetPreviewShowTitle => 'Show Preview';
-
-  @override
   String get aboutSupportUpdatesSectionTitle => 'Support & Updates';
 
   @override
@@ -10951,26 +10679,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glassDockTabDay => 'Day';
 
   @override
-  String get glassDockLayoutLabel => 'Glass dock layout';
-
-  @override
-  String get glassDockLayoutOverlay => 'Fullscreen overlay';
-
-  @override
-  String get glassDockLayoutOverlaySubtitle =>
-      'Timetable fills the screen with the dock floating on top';
-
-  @override
-  String get glassDockLayoutInset => 'Reserve space below';
-
-  @override
-  String get glassDockLayoutInsetSubtitle =>
-      'Timetable leaves compact space at the bottom, dock sits below';
-
-  @override
-  String get glassDockInsetClearanceLabel => 'Inset clearance height';
-
-  @override
   String get glassDockRoundActionLabel => 'Round button action';
 
   @override
@@ -10992,22 +10700,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeDockEditorViewCategory => 'View switching';
 
   @override
-  String get glassDockEntriesSectionTitle => 'Dock entries';
-
-  @override
-  String get glassDockShowDayTabTitle => 'Show day view entry';
-
-  @override
-  String get glassDockShowWeekTabTitle => 'Show week view entry';
-
-  @override
   String get glassDockShowAddButtonTitle => 'Show round button';
 
   @override
   String get glassDockShowAddButtonSubtitle => 'Shows a button beside the pill';
-
-  @override
-  String get glassDockButtonBackToWeekLabel => 'Back to this week / today';
 
   @override
   String get glassDockExtraButtonSemanticLabel => 'Add';

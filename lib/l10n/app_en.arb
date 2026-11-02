@@ -6,14 +6,10 @@
   "appearanceTitle": "Appearance",
   "previewTitle": "Preview",
   "timetableBackgroundPreview": "Timetable Background",
-  "displayModeTitle": "Display Mode",
   "themeModeLabel": "Theme Mode",
   "themeModeSystem": "Follow System",
   "themeModeLight": "Light",
   "themeModeDark": "Dark",
-  "fontSectionTitle": "App Font",
-  "fontSectionSubtitle": "Inter is built in; other options use fonts already on your phone",
-  "fontSectionFootnote": "Brand fonts aren't bundled; they work only if already on your system. On Xiaomi, usually only MiSans is obvious. No change means auto fallback—you usually don't need to install fonts",
   "fontModeLabel": "Font",
   "fontModeSystem": "App Default",
   "fontModeSansSerif": "System Sans",
@@ -30,7 +26,6 @@
   "languageModeLabel": "Language",
   "languageModeSystem": "Follow System",
   "settingsTitle": "Timetable Settings",
-  "dailyUsageSectionTitle": "Daily Use",
   "appearanceEntryTitle": "Appearance",
   "appearanceThemeDisplaySectionTitle": "Theme & Display",
   "layoutSectionEntryTitle": "Layout & Sections",
@@ -486,8 +481,6 @@
     }
   },
   "feedbackTitle": "Feedback",
-  "feedbackIntro": "If you encounter crashes, timetable display issues, import problems, or want to suggest features, you can use the channels below",
-  "feedbackIssueHint": "For issues with reproduction steps, screenshots, app version, or logs, GitHub Issue is recommended first",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "Report bugs, ideas, or browse",
   "openIssuePage": "Open Issues",
@@ -804,9 +797,6 @@
   "supportTapQrHint": "Tap to enlarge",
   "supportSaveShort": "Save",
   "supportConfirmedShort": "Supported",
-  "donorSearchHint": "Search name or message...",
-  "donorSortLargeFirst": "Largest first",
-  "donorSortSmallFirst": "Smallest first",
   "supportMonthlyGoalLabel": "Monthly server & certificate renewal",
   "supportGoalRaised": "Raised: {raised} / Goal {goal}",
   "@supportGoalRaised": {
@@ -870,53 +860,8 @@
       }
     }
   },
-  "courseTimeSummary": "Time: Weekday {day} · Sections {start}-{end}",
-  "@courseTimeSummary": {
-    "placeholders": {
-      "day": {
-        "type": "int"
-      },
-      "start": {
-        "type": "int"
-      },
-      "end": {
-        "type": "int"
-      }
-    }
-  },
   "teacherUnset": "Unknown Teacher",
   "locationUnset": "Unknown Location",
-  "courseDetailSummary": "{weekDescription}  Teacher: {teacher}  Room: {location}",
-  "@courseDetailSummary": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "courseDetailSummaryWithConflict": "{weekDescription}  Teacher: {teacher}  Room: {location}\nConflicting courses: {conflictSummary}",
-  "@courseDetailSummaryWithConflict": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      },
-      "conflictSummary": {
-        "type": "String"
-      }
-    }
-  },
   "confirmDeleteTitle": "Confirm Delete",
   "confirmDeleteCourseMessage": "Delete course {name}?",
   "@confirmDeleteCourseMessage": {
@@ -926,8 +871,6 @@
       }
     }
   },
-  "currentScheduleTitle": "Current Schedule Entry",
-  "currentScheduleSubtitle": "Weekday, sections, room, weeks, and odd/even settings here only affect this single schedule entry",
   "timeSchemeLabel": "Time Scheme",
   "followCurrentTimetableWithName": "Follow current timetable ({name})",
   "@followCurrentTimetableWithName": {
@@ -937,7 +880,6 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme",
   "overrideTimeSchemeDescription": "This course will use the selected scheme separately instead of following the timetable’s main schedule",
   "weekdayLabel": "Weekday",
   "startSectionLabel": "Start Section",
@@ -1225,15 +1167,6 @@
   "timeSchemeEditorActiveAndCoursesHint": "The current timetable and some courses are using this time scheme. Saving will update all related timetables and courses",
   "timeSchemeEditorActiveHint": "The current timetable is using this time scheme. Saving will update every timetable that relies on it",
   "timeSchemeEditorOverrideHint": "Some courses are using this time scheme as an override. Saving will update every referenced course",
-  "editTimeAction": "Edit Time",
-  "editingSchemeLabel": "Editing: {name}",
-  "@editingSchemeLabel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimeScheme": "Unnamed Scheme",
   "unsetLabel": "Not Selected",
   "timeSchemeUsageCourseRefPrefix": "Course references: ",
@@ -1538,24 +1471,18 @@
     }
   },
   "diagnosticsLevelInferred": "Inferred level",
-  "diagnosticsRawFilteredHint": "The raw view follows the current level filter and only shows matching log blocks",
   "diagnosticsTimeSortAscending": "Oldest first",
   "diagnosticsTimeSortDescending": "Newest first",
   "diagnosticsDisplayOptionsTitle": "View & sort",
-  "diagnosticsStreamingHint": "Live updates are on. New logs appear automatically",
   "diagnosticsEmptyTitle": "No Logs Yet",
   "diagnosticsLoadFailedTitle": "Failed to Load Logs",
   "diagnosticsLogTitleFallback": "Island Diagnostics Log",
   "diagnosticsDeviceInfoTitle": "Device & Export Info",
-  "diagnosticsContentTitle": "Log Content",
-  "diagnosticsRecentLogsTitle": "Recent Logs",
-  "diagnosticsUnknownCategory": "Uncategorized Event",
   "diagnosticsExportedAt": "Exported At",
   "diagnosticsTime": "Time",
   "diagnosticsCategory": "Category",
   "diagnosticsMessage": "Message",
   "diagnosticsStackTrace": "Stack Trace",
-  "firstUseGuideTitle": "First Use Guide",
   "guideAndPermissionsTitle": "Guide & Permissions",
   "refreshStatusTooltip": "Refresh Status",
   "guideHeroTitle": "Finish this page first, then start using the app",
@@ -1592,7 +1519,6 @@
   "exitAppAction": "Exit App",
   "agreeAndStartAction": "Agree and Start",
   "startUsingAction": "Start Using",
-  "editSingleLessonTitle": "Edit Single Lesson",
   "editCourseTitle": "Edit Course",
   "addCourseTitle": "Add Course",
   "deleteCourseTitle": "Delete Course",
@@ -1619,25 +1545,12 @@
   "teacherLabel": "Teacher",
   "courseNatureLabel": "Course Nature",
   "courseDescriptionOptional": "Course Description (Optional)",
-  "currentScheduleHint": "Weekday, sections, room, week range, and odd/even settings here only affect this specific entry",
-  "followProfileTimeScheme": "Follow current timetable ({name})",
-  "@followProfileTimeScheme": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeOverrideLabel": "Class Time Scheme",
   "lessonWeeksTitle": "Weeks",
   "singleLessonWeekHint": "A single lesson appears in only one week, ideal for temporary additions or make-up classes",
   "rangeWeekLabel": "Continuous Weeks",
-  "customWeekLabel": "Custom Weeks",
   "oddWeeksLabel": "Odd Weeks",
-  "evenWeeksLabel": "Even Weeks",
   "oddWeeksHint": "Keep only odd weeks within the selected range",
-  "evenWeeksHint": "Keep only even weeks within the selected range",
-  "customPaletteColor": "Custom Color Picker",
   "hueLabel": "Hue {value}",
   "@hueLabel": {
     "placeholders": {
@@ -1764,10 +1677,6 @@
   "themeSeedSectionTitle": "App theme color",
   "themeSeedSectionSubtitle": "Affects the top bar, accent color, and global primary tone",
   "frostedSheetSectionTitle": "Glass Material",
-  "frostedBlurEnabledTitle": "Enable Blur",
-  "frostedBlurEnabledSubtitle": "When off, sheets become opaque solid panels; blurred areas keep a translucent tint",
-  "frostedSheetPreviewOpenAction": "Open Preview Panel",
-  "frostedSheetPreviewDemoTitle": "Preview",
   "timetableBackgroundColorSectionTitle": "Timetable background color",
   "timetableBackgroundColorSectionSubtitle": "Used in solid-color mode for the selected display regions; can pair with a background image",
   "homePageBackgroundFillLabel": "Background fill",
@@ -2540,7 +2449,6 @@
   "aiParseFailedChip": "Parse failed",
   "aiPasteJsonHintShort": "Paste the JSON returned by AI",
   "aiPasteJsonHintLong": "Paste the JSON returned by Doubao here exactly as-is, then tap Import. Pure JSON is supported, and ```json code blocks are also accepted",
-  "detailAction": "Details",
   "aiParseErrorTitle": "Parse error",
   "viewDetailsAction": "View details",
   "previewAction": "Preview",
@@ -2625,9 +2533,7 @@
       }
     }
   },
-  "customDebugName": "Custom debug",
   "localDebugMaintainer": "Local debug",
-  "customDebugDescription": "User-saved custom academic-system debug script",
   "addDebugRecordTooltip": "Add debug record",
   "customDebugIntroTitle": "Keep your own academic-system debug records here",
   "customDebugIntroSubtitle": "Save each school's URL and script once, then reuse them with one tap",
@@ -2668,7 +2574,6 @@
   "addDebugRecordTitle": "Add debug record",
   "savingAction": "Saving…",
   "debugRecordFormula": "One record = one URL + one script",
-  "debugRecordFormulaSubtitle": "For repeatedly debugging one school or keeping several scripts; entries persist",
   "debugRecordNameLabel": "Record name",
   "debugRecordNameHint": "Example: Chongqing Jidian - new system",
   "importUrlLabel": "Academic-system URL",
@@ -2784,11 +2689,8 @@
   "backToCurrentWeekAction": "Back",
   "nonCurrentWeekLabel": "Not this week",
   "conflictLabel": "Conflict",
-  "courseConflictSectionTitle": "Conflicts",
-  "courseNormalSectionTitle": "Other courses",
   "courseConflictDetailTitle": "Conflict details",
   "courseConflictDetailEntryTitle": "View conflict details",
-  "courseConflictDetailEntrySubtitle": "See overlapping schedules and partners",
   "courseConflictWithCourse": "Conflicts with {name}",
   "@courseConflictWithCourse": {
     "placeholders": {
@@ -2797,7 +2699,6 @@
       }
     }
   },
-  "courseConflictOpenPartnerAction": "Open partner schedule",
   "courseConflictEmpty": "No conflicts detected",
   "courseConflictPairTitle": "Conflict pair",
   "selectWeekTitle": "Select week",
@@ -2827,7 +2728,6 @@
   "homeMenuFeedbackTitle": "Feedback",
   "switchTimetableTitle": "Switch timetable",
   "todayTimetableTitle": "Today's Timetable",
-  "dayTimetableTitle": "Day Timeline",
   "backToWeekViewAction": "Back to Week View",
   "backToTodayAction": "Back to Today",
   "ongoingCourseBadge": "In Class",
@@ -2856,25 +2756,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "You are viewing Week {week}. You can reschedule this class occurrence directly",
-  "@courseDialogCurrentWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseDialogNotThisWeekHint": "You are viewing Week {week}, but this course does not occur this week, so it cannot be rescheduled as the current-week occurrence",
-  "@courseDialogNotThisWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "editActionShort": "Edit",
   "rescheduleAction": "Reschedule",
-  "deleteActionShort": "Delete",
   "deleteModeTitle": "Delete mode",
   "deleteCourseAction": "Delete course",
   "deleteOccurrenceAction": "Delete occurrence",
@@ -2940,8 +2822,6 @@
   "rescheduleTargetWeekLabel": "Move to week",
   "weekdayFieldLabel": "Weekday",
   "startSectionFieldLabel": "Start section",
-  "endSectionFieldLabel": "End section",
-  "courseLocationFieldLabel": "Class location",
   "confirmRescheduleAction": "Confirm reschedule",
   "homeTitleStyleClassicLabel": "Classic text",
   "homeTitleStyleBrandLabel": "Large logo",
@@ -3139,7 +3019,6 @@
       }
     }
   },
-  "executeImportScriptTooltip": "Run import script",
   "switchToMobileWebTooltip": "Switch to mobile page",
   "switchToDesktopWebTooltip": "Switch to desktop page",
   "rememberCurrentInputTooltip": "Remember current input",
@@ -3149,8 +3028,6 @@
   "copiedCurrentAddress": "Current address copied",
   "warehouseLoginHintLocalDebug": "Currently using local debug script mode",
   "warehouseLoginHintImport": "Log in to the academic system here, then run import",
-  "currentPageModeDesktop": "Current page mode: Desktop",
-  "currentPageModeMobile": "Current page mode: Mobile",
   "localScriptLabel": "Local script: {scriptName}",
   "@localScriptLabel": {
     "placeholders": {
@@ -3384,7 +3261,6 @@
       }
     }
   },
-  "examOverviewCountdown": "Countdown",
   "examOverviewCountdownUnit": "days left",
   "examOverviewTodayCount": "{count} today",
   "@examOverviewTodayCount": {
@@ -3404,14 +3280,6 @@
   },
   "examOverviewInProgress": "Exam in progress",
   "examOverviewLiveBadge": "Live",
-  "examOverviewStartsAt": "Starts {time}",
-  "@examOverviewStartsAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "examOverviewUntilTime": "Until {time}",
   "@examOverviewUntilTime": {
     "placeholders": {
@@ -3480,7 +3348,6 @@
   "holidayStatusLabel": "Holiday",
   "suspendedBadgeLabel": "Suspended",
   "suspendedStatusLabel": "Suspended",
-  "courseActionSuspend": "Suspend",
   "courseActionUnsuspend": "Restore",
   "courseActionEditPrimary": "Edit course",
   "courseActionRescheduleSecondary": "Reschedule",
@@ -3565,13 +3432,6 @@
   "customHolidayEmpty": "No custom holidays",
   "customHolidayCorrupted": "Read error; paused",
   "customHolidayNameRequired": "Please enter a holiday name",
-  "customHolidayDateRange": "{start} ~ {end}",
-  "@customHolidayDateRange": {
-    "placeholders": {
-      "start": {},
-      "end": {}
-    }
-  },
   "selectTeacherTitle": "Select teacher",
   "selectLocationTitle": "Select location",
   "historyRecordsLabel": "History",
@@ -4269,7 +4129,6 @@
   "examReminderCustomAlreadyAdded": "This reminder is already added",
   "examReminderCustomInvalid": "Set a time greater than zero",
   "examReminderCustomEmptyHint": "No custom reminders yet — tap below to add",
-  "debugCopiedJson": "JSON copied",
   "liveDuringClassTimeNearest": "Nearest time",
   "liveDuringClassTimeTotal": "Total time",
   "liveCountdownTextStyleSmart": "Smart (localized)",
@@ -4916,39 +4775,6 @@
   },
   "dataTransferFullBackupShareText": "This is a full data backup from Qingyu Timetable, including all timetables, the active timetable, and time schemes.",
   "dataTransferFullBackupShareSubject": "Qingyu Timetable - Full data backup",
-  "courseWeekCustomDescription": "Weeks {weeks}",
-  "@courseWeekCustomDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekRangeDescription": "Weeks {startWeek}-{endWeek}{mode}",
-  "@courseWeekRangeDescription": {
-    "placeholders": {
-      "startWeek": {
-        "type": "int"
-      },
-      "endWeek": {
-        "type": "int"
-      },
-      "mode": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekOddModeSuffix": " odd weeks",
-  "courseWeekEvenModeSuffix": " even weeks",
-  "courseWeekSuspensionDescription": "Suspended weeks {weeks}",
-  "@courseWeekSuspensionDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekListSeparator": ", ",
   "holidayLogMemoryCacheHit": "{year}: memory cache hit ({count} entries), refreshing in background…",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
@@ -5341,30 +5167,6 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "Calendar week {week}",
-  "@courseImportCalendarWeekLabel": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportTermStartDateTitle": "Term start date",
-  "courseImportFirstWeekMappingLabel": "Which calendar week is timetable week 1",
-  "courseImportFirstWeekMappingSubtitle": "If week 1 has no classes, choose week 2; if weeks 1-2 have none, choose week 3.",
-  "courseImportFirstWeekNoShift": "Import will treat timetable week 1 as calendar week 1.",
-  "courseImportFirstWeekShifted": "Import will shift all course weeks by {weeks} so timetable week 1 lands on calendar week {targetWeek}.",
-  "@courseImportFirstWeekShifted": {
-    "placeholders": {
-      "weeks": {
-        "type": "int"
-      },
-      "targetWeek": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportContinueAction": "Continue import",
   "courseImportUpdateRecommendedAction": "Update timetable (recommended)",
   "courseImportOverwriteAction": "Overwrite import",
   "courseImportSectionCountInsufficientTitle": "Not enough sections in time scheme",
@@ -5721,7 +5523,6 @@
       }
     }
   },
-  "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -6091,7 +5892,6 @@
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "Select Time",
   "liveSelfCheckSubtitle": "Run Self-Check",
-  "frostedSheetPreviewShowTitle": "Show Preview",
   "aboutSupportUpdatesSectionTitle": "Support & Updates",
   "aboutProductSectionTitle": "Product",
   "aboutCommunitySectionTitle": "Community",
@@ -6282,12 +6082,6 @@
   "homeNavigationFormGlassDockSubtitle": "Floating glass bottom bar to switch between day/week timetable",
   "glassDockTabWeek": "Week",
   "glassDockTabDay": "Day",
-  "glassDockLayoutLabel": "Glass dock layout",
-  "glassDockLayoutOverlay": "Fullscreen overlay",
-  "glassDockLayoutOverlaySubtitle": "Timetable fills the screen with the dock floating on top",
-  "glassDockLayoutInset": "Reserve space below",
-  "glassDockLayoutInsetSubtitle": "Timetable leaves compact space at the bottom, dock sits below",
-  "glassDockInsetClearanceLabel": "Inset clearance height",
   "glassDockRoundActionLabel": "Round button action",
   "glassDockButtonIconTitle": "Round button icon",
   "glassDockButtonIconDefault": "Default (+)",
@@ -6295,12 +6089,8 @@
   "glassDockCustomizeSectionTitle": "Bottom dock",
   "glassDockCustomizeTitle": "Customize dock buttons",
   "homeDockEditorViewCategory": "View switching",
-  "glassDockEntriesSectionTitle": "Dock entries",
-  "glassDockShowDayTabTitle": "Show day view entry",
-  "glassDockShowWeekTabTitle": "Show week view entry",
   "glassDockShowAddButtonTitle": "Show round button",
   "glassDockShowAddButtonSubtitle": "Shows a button beside the pill",
-  "glassDockButtonBackToWeekLabel": "Back to this week / today",
   "glassDockExtraButtonSemanticLabel": "Add",
   "homeMenuStyleLabel": "Top-right menu style",
   "homeMenuStyleList": "List menu",

@@ -6,14 +6,10 @@
   "appearanceTitle": "외관 및 색상",
   "previewTitle": "미리보기",
   "timetableBackgroundPreview": "시간표 배경",
-  "displayModeTitle": "표시 모드",
   "themeModeLabel": "테마 모드",
   "themeModeSystem": "시스템 연동",
   "themeModeLight": "라이트 모드",
   "themeModeDark": "다크 모드",
-  "fontSectionTitle": "앱 글꼴",
-  "fontSectionSubtitle": "Inter 기본 제공, 휴대폰에 이미 있는 글꼴도 선택할 수 있습니다",
-  "fontSectionFootnote": "제조사 글꼴은 포함되지 않으며, 시스템에 있을 때만 적용됩니다. Xiaomi에서는 보통 MiSans만 뚜렷합니다. 변화가 없으면 자동 대체되며, 직접 설치할 필요는 보통 없습니다",
   "fontModeLabel": "글꼴 선택",
   "fontModeSystem": "앱 기본",
   "fontModeSansSerif": "시스템 산세리프",
@@ -30,7 +26,6 @@
   "languageModeLabel": "언어 선택",
   "languageModeSystem": "시스템 연동",
   "settingsTitle": "시간표 설정",
-  "dailyUsageSectionTitle": "일상 사용",
   "appearanceEntryTitle": "외관 및 색상",
   "appearanceThemeDisplaySectionTitle": "테마 및 표시",
   "layoutSectionEntryTitle": "레이아웃 및 교시",
@@ -363,8 +358,6 @@
     }
   },
   "feedbackTitle": "문제 제보",
-  "feedbackIntro": "앱 충돌, 수업 표시 오류, 가져오기 문제 또는 기능 제안이 있다면 아래 채널을 통해 피드백해 주세요",
-  "feedbackIssueHint": "재현 단계, 스크린샷, 버전 번호, 로그가 관련된 문제는 GitHub Issue를 권장합니다",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "문제·제안 보내기, 기존 확인",
   "openIssuePage": "Issue 페이지 열기",
@@ -681,9 +674,6 @@
   "supportTapQrHint": "탭하여 확대",
   "supportSaveShort": "저장",
   "supportConfirmedShort": "후원함",
-  "donorSearchHint": "닉네임/메시지 검색...",
-  "donorSortLargeFirst": "금액 높은 순",
-  "donorSortSmallFirst": "금액 낮은 순",
   "supportMonthlyGoalLabel": "이번 달 서버·인증서 갱신 진행률",
   "supportGoalRaised": "모금: {raised} / 목표 {goal}",
   "@supportGoalRaised": {
@@ -747,53 +737,8 @@
       }
     }
   },
-  "courseTimeSummary": "시간: {day}요일 {start}-{end}교시",
-  "@courseTimeSummary": {
-    "placeholders": {
-      "day": {
-        "type": "int"
-      },
-      "start": {
-        "type": "int"
-      },
-      "end": {
-        "type": "int"
-      }
-    }
-  },
   "teacherUnset": "미설정",
   "locationUnset": "미설정",
-  "courseDetailSummary": "{weekDescription}  교사: {teacher}  강의실: {location}",
-  "@courseDetailSummary": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "courseDetailSummaryWithConflict": "{weekDescription}  교사: {teacher}  강의실: {location}\n충돌 수업: {conflictSummary}",
-  "@courseDetailSummaryWithConflict": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      },
-      "conflictSummary": {
-        "type": "String"
-      }
-    }
-  },
   "confirmDeleteTitle": "삭제 확인",
   "confirmDeleteCourseMessage": "수업 \"{name}\"을(를) 삭제하시겠습니까?",
   "@confirmDeleteCourseMessage": {
@@ -803,8 +748,6 @@
       }
     }
   },
-  "currentScheduleTitle": "현재 배치",
-  "currentScheduleSubtitle": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다",
   "timeSchemeLabel": "수업 시간 방안",
   "followCurrentTimetableWithName": "현재 시간표에 연동 ({name})",
   "@followCurrentTimetableWithName": {
@@ -814,7 +757,6 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme",
   "overrideTimeSchemeDescription": "이 수업은 선택한 템플릿을 개별 사용하며 메인 템플릿에 연동되지 않습니다",
   "weekdayLabel": "요일",
   "startSectionLabel": "시작 교시",
@@ -1122,15 +1064,6 @@
   "timeSchemeEditorActiveAndCoursesHint": "현재 시간표와 일부 수업이 이 템플릿을 사용 중입니다. 저장 후 관련된 모든 시간표와 수업이 동기화됩니다",
   "timeSchemeEditorActiveHint": "현재 시간표가 이 템플릿을 사용 중입니다. 저장 후 사용 중인 모든 시간표가 동기화됩니다",
   "timeSchemeEditorOverrideHint": "수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다",
-  "editTimeAction": "시간 편집",
-  "editingSchemeLabel": "편집 중: {name}",
-  "@editingSchemeLabel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimeScheme": "이름 없는 템플릿",
   "unsetLabel": "미선택",
   "timeSchemeUsageCourseRefPrefix": "수업 참조:",
@@ -1434,24 +1367,18 @@
     }
   },
   "diagnosticsLevelInferred": "추정 레벨",
-  "diagnosticsRawFilteredHint": "원본 뷰는 현재 레벨 필터에 연동되어 해당 로그 블록만 표시합니다",
   "diagnosticsTimeSortAscending": "오름차순",
   "diagnosticsTimeSortDescending": "내림차순",
   "diagnosticsDisplayOptionsTitle": "보기 및 정렬",
-  "diagnosticsStreamingHint": "실시간 업데이트 중입니다. 새 로그가 자동으로 표시됩니다",
   "diagnosticsEmptyTitle": "로그 없음",
   "diagnosticsLoadFailedTitle": "로그 로드 실패",
   "diagnosticsLogTitleFallback": "슈퍼아일랜드 진단 로그",
   "diagnosticsDeviceInfoTitle": "기기 및 내보내기 정보",
-  "diagnosticsContentTitle": "로그 내용",
-  "diagnosticsRecentLogsTitle": "최근 로그",
-  "diagnosticsUnknownCategory": "미분류 이벤트",
   "diagnosticsExportedAt": "내보내기 시간",
   "diagnosticsTime": "시간",
   "diagnosticsCategory": "카테고리",
   "diagnosticsMessage": "메시지",
   "diagnosticsStackTrace": "스택 트레이스",
-  "firstUseGuideTitle": "첫 사용 가이드",
   "guideAndPermissionsTitle": "사용 가이드 및 권한",
   "refreshStatusTooltip": "상태 새로고침",
   "guideHeroTitle": "먼저 이 페이지를 완료하세요",
@@ -1488,7 +1415,6 @@
   "exitAppAction": "앱 종료",
   "agreeAndStartAction": "동의하고 시작",
   "startUsingAction": "시작하기",
-  "editSingleLessonTitle": "단일 수업 편집",
   "editCourseTitle": "수업 편집",
   "addCourseTitle": "수업 추가",
   "deleteCourseTitle": "수업 삭제",
@@ -1515,25 +1441,12 @@
   "teacherLabel": "담당 교사",
   "courseNatureLabel": "수업 성격",
   "courseDescriptionOptional": "수업 개요 (선택)",
-  "currentScheduleHint": "여기의 요일, 교시, 강의실, 주차 및 홀짝주는 이 배치에만 영향을 줍니다",
-  "followProfileTimeScheme": "현재 시간표에 연동 ({name})",
-  "@followProfileTimeScheme": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeOverrideLabel": "수업 시간 방안",
   "lessonWeeksTitle": "수업 주차",
   "singleLessonWeekHint": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
   "rangeWeekLabel": "연속 주",
-  "customWeekLabel": "사용자 정의 주",
   "oddWeeksLabel": "홀수 주",
-  "evenWeeksLabel": "짝수 주",
   "oddWeeksHint": "범위 내 홀수 주만 유지합니다",
-  "evenWeeksHint": "범위 내 짝수 주만 유지합니다",
-  "customPaletteColor": "팔레트에서 사용자 정의",
   "timeSchemeSetCountValue": "{count}세트",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -2304,7 +2217,6 @@
   "aiParseFailedChip": "파싱 실패",
   "aiPasteJsonHintShort": "AI가 반환한 JSON 붙여넣기",
   "aiPasteJsonHintLong": "Doubao가 반환한 JSON을 그대로 여기에 붙여넣고 가져오기를 탭하세요. 순수 JSON과 ```json 코드 블록 모두 지원합니다",
-  "detailAction": "상세",
   "aiParseErrorTitle": "파싱 오류",
   "viewDetailsAction": "상세 보기",
   "previewAction": "미리보기",
@@ -2389,9 +2301,7 @@
       }
     }
   },
-  "customDebugName": "사용자 정의 디버그",
   "localDebugMaintainer": "로컬 디버그",
-  "customDebugDescription": "사용자가 저장한 사용자 정의 교무 디버그 스크립트",
   "addDebugRecordTooltip": "디버그 레코드 추가",
   "customDebugIntroTitle": "여기에 나만의 교무 디버그 레코드를 배치하세요",
   "customDebugIntroSubtitle": "학교별 URL과 스크립트를 저장해 두면 다음에 한 번에 재사용할 수 있습니다",
@@ -2432,7 +2342,6 @@
   "addDebugRecordTitle": "디버그 레코드 추가",
   "savingAction": "저장 중…",
   "debugRecordFormula": "1레코드 = 1URL + 1스크립트",
-  "debugRecordFormulaSubtitle": "같은 학교를 반복 디버깅하거나 여러 스크립트를 보관하기에 적합하며 저장 후 계속 유지됩니다",
   "debugRecordNameLabel": "레코드 이름",
   "debugRecordNameHint": "예: 충칭기전-신규교무",
   "importUrlLabel": "교무 URL",
@@ -2548,11 +2457,8 @@
   "backToCurrentWeekAction": "이번주로",
   "nonCurrentWeekLabel": "비이번주",
   "conflictLabel": "충돌",
-  "courseConflictSectionTitle": "충돌 수업",
-  "courseNormalSectionTitle": "기타 수업",
   "courseConflictDetailTitle": "충돌 상세",
   "courseConflictDetailEntryTitle": "충돌 상세 보기",
-  "courseConflictDetailEntrySubtitle": "겹치는 시간과 상대 수업 확인",
   "courseConflictWithCourse": "{name}와 충돌",
   "@courseConflictWithCourse": {
     "placeholders": {
@@ -2561,7 +2467,6 @@
       }
     }
   },
-  "courseConflictOpenPartnerAction": "상대 시간표 열기",
   "courseConflictEmpty": "충돌이 없습니다",
   "courseConflictPairTitle": "충돌 쌍",
   "selectWeekTitle": "주차 선택",
@@ -2591,7 +2496,6 @@
   "homeMenuFeedbackTitle": "문제 제보",
   "switchTimetableTitle": "시간표 전환",
   "todayTimetableTitle": "오늘 시간표",
-  "dayTimetableTitle": "일간 타임라인",
   "backToWeekViewAction": "주간 뷰로 돌아가기",
   "backToTodayAction": "오늘로 돌아가기",
   "ongoingCourseBadge": "수업 중",
@@ -2620,25 +2524,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "현재 제{week}주를 보고 있습니다. 이 주의 이 수업을 바로 시간 변경할 수 있습니다",
-  "@courseDialogCurrentWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseDialogNotThisWeekHint": "현재 제{week}주를 보고 있습니다. 이 수업은 이번 주에 없으므로 '이번주 이 수업'으로 시간 변경할 수 없습니다",
-  "@courseDialogNotThisWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "editActionShort": "편집",
   "rescheduleAction": "시간 변경",
-  "deleteActionShort": "삭제",
   "deleteModeTitle": "삭제 방식",
   "deleteCourseAction": "이 수업 삭제",
   "deleteOccurrenceAction": "이 수업 회 삭제",
@@ -2704,8 +2590,6 @@
   "rescheduleTargetWeekLabel": "변경할 주차",
   "weekdayFieldLabel": "요일",
   "startSectionFieldLabel": "시작 교시",
-  "endSectionFieldLabel": "종료 교시",
-  "courseLocationFieldLabel": "수업 장소",
   "confirmRescheduleAction": "시간 변경 확인",
   "homeTitleStyleClassicLabel": "클래식 텍스트",
   "homeTitleStyleBrandLabel": "큰 로고",
@@ -2903,7 +2787,6 @@
       }
     }
   },
-  "executeImportScriptTooltip": "가져오기 스크립트 실행",
   "switchToMobileWebTooltip": "모바일 페이지로 전환",
   "switchToDesktopWebTooltip": "데스크톱 페이지로 전환",
   "rememberCurrentInputTooltip": "현재 입력 기억",
@@ -2913,8 +2796,6 @@
   "copiedCurrentAddress": "현재 주소를 복사했습니다",
   "warehouseLoginHintLocalDebug": "현재 로컬 디버그 스크립트 모드",
   "warehouseLoginHintImport": "여기서 교무 시스템에 로그인한 뒤 가져오기를 실행합니다",
-  "currentPageModeDesktop": "현재 페이지 모드: 데스크톱",
-  "currentPageModeMobile": "현재 페이지 모드: 모바일",
   "localScriptLabel": "로컬 스크립트: {scriptName}",
   "@localScriptLabel": {
     "placeholders": {
@@ -3147,7 +3028,6 @@
       }
     }
   },
-  "examOverviewCountdown": "카운트다운",
   "examOverviewCountdownUnit": "일 후",
   "examOverviewTodayCount": "오늘 {count}건",
   "@examOverviewTodayCount": {
@@ -3167,14 +3047,6 @@
   },
   "examOverviewInProgress": "시험 진행 중",
   "examOverviewLiveBadge": "진행 중",
-  "examOverviewStartsAt": "{time} 시작",
-  "@examOverviewStartsAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "examOverviewUntilTime": "{time}까지",
   "@examOverviewUntilTime": {
     "placeholders": {
@@ -3243,7 +3115,6 @@
   "holidayStatusLabel": "휴일",
   "suspendedBadgeLabel": "정",
   "suspendedStatusLabel": "수업 중단",
-  "courseActionSuspend": "수업 중단",
   "courseActionUnsuspend": "복구",
   "courseActionEditPrimary": "수업 편집",
   "courseActionRescheduleSecondary": "시간 변경",
@@ -3284,13 +3155,6 @@
   "customHolidayEmpty": "사용자 정의 휴일 없음",
   "customHolidayCorrupted": "읽기 실패, 쓰기 중지",
   "customHolidayNameRequired": "휴일 이름을 입력하세요",
-  "customHolidayDateRange": "{start} ~ {end}",
-  "@customHolidayDateRange": {
-    "placeholders": {
-      "start": {},
-      "end": {}
-    }
-  },
   "selectTeacherTitle": "교사 선택",
   "selectLocationTitle": "강의실 선택",
   "historyRecordsLabel": "기록",
@@ -3988,7 +3852,6 @@
   "examReminderCustomAlreadyAdded": "This reminder is already added",
   "examReminderCustomInvalid": "Set a time greater than zero",
   "examReminderCustomEmptyHint": "No custom reminders yet — tap below to add",
-  "debugCopiedJson": "JSON copied",
   "liveDuringClassTimeNearest": "Nearest time",
   "liveDuringClassTimeTotal": "Total time",
   "liveCountdownTextStyleSmart": "Smart (localized)",
@@ -4635,39 +4498,6 @@
   },
   "dataTransferFullBackupShareText": "This is a full data backup from Qingyu Timetable, including all timetables, the active timetable, and time schemes.",
   "dataTransferFullBackupShareSubject": "Qingyu Timetable - Full data backup",
-  "courseWeekCustomDescription": "Weeks {weeks}",
-  "@courseWeekCustomDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekRangeDescription": "Weeks {startWeek}-{endWeek}{mode}",
-  "@courseWeekRangeDescription": {
-    "placeholders": {
-      "startWeek": {
-        "type": "int"
-      },
-      "endWeek": {
-        "type": "int"
-      },
-      "mode": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekOddModeSuffix": " odd weeks",
-  "courseWeekEvenModeSuffix": " even weeks",
-  "courseWeekSuspensionDescription": "Suspended weeks {weeks}",
-  "@courseWeekSuspensionDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekListSeparator": ", ",
   "holidayLogMemoryCacheHit": "{year}: memory cache hit ({count} entries), refreshing in background…",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
@@ -5060,30 +4890,6 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "Calendar week {week}",
-  "@courseImportCalendarWeekLabel": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportTermStartDateTitle": "Term start date",
-  "courseImportFirstWeekMappingLabel": "Which calendar week is timetable week 1",
-  "courseImportFirstWeekMappingSubtitle": "If week 1 has no classes, choose week 2; if weeks 1-2 have none, choose week 3.",
-  "courseImportFirstWeekNoShift": "Import will treat timetable week 1 as calendar week 1.",
-  "courseImportFirstWeekShifted": "Import will shift all course weeks by {weeks} so timetable week 1 lands on calendar week {targetWeek}.",
-  "@courseImportFirstWeekShifted": {
-    "placeholders": {
-      "weeks": {
-        "type": "int"
-      },
-      "targetWeek": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportContinueAction": "Continue import",
   "courseImportUpdateRecommendedAction": "Update timetable (recommended)",
   "courseImportOverwriteAction": "Overwrite import",
   "courseImportSectionCountInsufficientTitle": "Not enough sections in time scheme",
@@ -5440,7 +5246,6 @@
       }
     }
   },
-  "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5761,10 +5566,6 @@
   "frostedGlassModeLiquid": "리퀴드 글래스",
   "frostedGlassModeSolid": "솔리드 카드",
   "frostedSheetSectionTitle": "글래스 소재",
-  "frostedBlurEnabledTitle": "블러 활성화",
-  "frostedSheetPreviewDemoTitle": "미리보기",
-  "frostedSheetPreviewOpenAction": "미리보기 패널 열기",
-  "frostedSheetPreviewShowTitle": "미리보기 표시",
   "advancedMaterialTitle": "고급 재질",
   "liquidGlassPresetLabel": "리퀴드 글래스 프리셋",
   "liquidGlassPresetClear": "클리어",
@@ -6140,7 +5941,6 @@
   "appLogsSourceApp": "앱",
   "appLogsSourceNative": "슈퍼 아일랜드",
   "timeCorrectionTitle": "벨 시간 보정",
-  "frostedBlurEnabledSubtitle": "끄면 시트가 불투명한 단색이 되고 흐림 영역은 반투명 배경을 유지합니다",
   "homePageBackgroundFillLabel": "배경 채우기",
   "homePageBackgroundFillColor": "단색",
   "homePageBackgroundFillImage": "이미지",
@@ -6279,12 +6079,6 @@
   "homeNavigationFormGlassDockSubtitle": "떠 있는 글래스 하단 바로 일간/주간 시간표 전환",
   "glassDockTabWeek": "주간",
   "glassDockTabDay": "일간",
-  "glassDockLayoutLabel": "글래스 독 레이아웃",
-  "glassDockLayoutOverlay": "전체 화면 오버레이",
-  "glassDockLayoutOverlaySubtitle": "시간표 전체 화면 표시, 독이 위에 떠 있음",
-  "glassDockLayoutInset": "하단 공간 확보",
-  "glassDockLayoutInsetSubtitle": "시간표 하단 공간 확보, 독은 아래에 배치",
-  "glassDockInsetClearanceLabel": "여백 높이",
   "glassDockRoundActionLabel": "라운드 버튼 기능",
   "glassDockButtonIconTitle": "라운드 버튼 아이콘",
   "glassDockButtonIconDefault": "기본(+)",
@@ -6292,12 +6086,8 @@
   "glassDockCustomizeSectionTitle": "하단 내비게이션",
   "glassDockCustomizeTitle": "독 버튼 사용자 지정",
   "homeDockEditorViewCategory": "뷰 전환",
-  "glassDockEntriesSectionTitle": "독 항목",
-  "glassDockShowDayTabTitle": "일간 탭 표시",
-  "glassDockShowWeekTabTitle": "주간 탭 표시",
   "glassDockShowAddButtonTitle": "원형 버튼 표시",
   "glassDockShowAddButtonSubtitle": "필 옆에 별도 버튼 표시",
-  "glassDockButtonBackToWeekLabel": "이번 주로 / 오늘",
   "glassDockExtraButtonSemanticLabel": "추가",
   "homeMenuStyleLabel": "오른쪽 위 메뉴 스타일",
   "homeMenuStyleList": "리스트 메뉴",

@@ -27,9 +27,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timetableBackgroundPreview => '時間割背景';
 
   @override
-  String get displayModeTitle => '表示モード';
-
-  @override
   String get themeModeLabel => 'テーマモード';
 
   @override
@@ -40,16 +37,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeModeDark => 'ダークモード';
-
-  @override
-  String get fontSectionTitle => 'アプリフォント';
-
-  @override
-  String get fontSectionSubtitle => 'Inter を標準とし、端末に入っているフォントも選べます';
-
-  @override
-  String get fontSectionFootnote =>
-      'メーカーフォントは同梱されず、端末に入っている場合のみ有効です，Xiaomi では MiSans だけ目立ちやすいです，変化がなければ自動代替で、通常は自分でインストール不要です';
 
   @override
   String get fontModeLabel => 'フォント選択';
@@ -98,9 +85,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsTitle => '時間割設定';
-
-  @override
-  String get dailyUsageSectionTitle => '日常使い';
 
   @override
   String get appearanceEntryTitle => '外観と配色';
@@ -1017,14 +1001,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedbackTitle => '問題報告';
 
   @override
-  String get feedbackIntro =>
-      'クラッシュ、授業表示の異常、インポートの問題、または機能提案がある場合は、以下のチャネルからフィードバックしてください';
-
-  @override
-  String get feedbackIssueHint =>
-      '再現手順、スクリーンショット、バージョン番号、ログに関する問題は、GitHub Issueを推奨';
-
-  @override
   String get githubIssueTitle => 'GitHub Issue';
 
   @override
@@ -1563,15 +1539,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportConfirmedShort => '支援済み';
 
   @override
-  String get donorSearchHint => '名前/メッセージ検索...';
-
-  @override
-  String get donorSortLargeFirst => '高額順';
-
-  @override
-  String get donorSortSmallFirst => '低額順';
-
-  @override
   String get supportMonthlyGoalLabel => '今月のサーバー・証明書更新進捗';
 
   @override
@@ -1629,34 +1596,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String courseTimeSummary(int day, int start, int end) {
-    return '時間：$day曜$start〜$end時限';
-  }
-
-  @override
   String get teacherUnset => '未設定';
 
   @override
   String get locationUnset => '未設定';
-
-  @override
-  String courseDetailSummary(
-    String weekDescription,
-    String teacher,
-    String location,
-  ) {
-    return '$weekDescription　教師：$teacher　教室：$location';
-  }
-
-  @override
-  String courseDetailSummaryWithConflict(
-    String weekDescription,
-    String teacher,
-    String location,
-    String conflictSummary,
-  ) {
-    return '$weekDescription　教師：$teacher　教室：$location\n競合授業：$conflictSummary';
-  }
 
   @override
   String get confirmDeleteTitle => '削除確認';
@@ -1667,22 +1610,12 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get currentScheduleTitle => '現在の排課';
-
-  @override
-  String get currentScheduleSubtitle => '这里的曜日、時限、教室、週次と奇数偶数週はこの排課のみに影響';
-
-  @override
   String get timeSchemeLabel => '授業時間方案';
 
   @override
   String followCurrentTimetableWithName(String name) {
     return '現在の時間割に連携（$name）';
   }
-
-  @override
-  String get followCurrentTimetableDescription =>
-      'Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme';
 
   @override
   String get overrideTimeSchemeDescription =>
@@ -2234,14 +2167,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '授業がこのテンプレートを副テンプレートとして使用中，保存後、参照する全ての授業が同期更新されます';
 
   @override
-  String get editTimeAction => '時間を編集';
-
-  @override
-  String editingSchemeLabel(String name) {
-    return '編集中：$name';
-  }
-
-  @override
   String get unnamedTimeScheme => '名前未設定テンプレート';
 
   @override
@@ -2738,10 +2663,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsLevelInferred => '推定レベル';
 
   @override
-  String get diagnosticsRawFilteredHint =>
-      '原文ビューは現在のレベルフィルターに連携し、対応するログブロックのみ表示';
-
-  @override
   String get diagnosticsTimeSortAscending => '昇順';
 
   @override
@@ -2749,9 +2670,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get diagnosticsDisplayOptionsTitle => '表示と並び順';
-
-  @override
-  String get diagnosticsStreamingHint => 'リアルタイム更新中，新しいログが自動的に表示されます';
 
   @override
   String get diagnosticsEmptyTitle => 'ログなし';
@@ -2764,15 +2682,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get diagnosticsDeviceInfoTitle => 'デバイスとエクスポート情報';
-
-  @override
-  String get diagnosticsContentTitle => 'ログ内容';
-
-  @override
-  String get diagnosticsRecentLogsTitle => '最近のログ';
-
-  @override
-  String get diagnosticsUnknownCategory => '未分類イベント';
 
   @override
   String get diagnosticsExportedAt => 'エクスポート時間';
@@ -2788,9 +2697,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get diagnosticsStackTrace => 'スタックトレース';
-
-  @override
-  String get firstUseGuideTitle => '初回使用ガイド';
 
   @override
   String get guideAndPermissionsTitle => '使用ガイドと権限';
@@ -2885,9 +2791,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get startUsingAction => '使い始める';
 
   @override
-  String get editSingleLessonTitle => '単一授業を編集';
-
-  @override
   String get editCourseTitle => '授業を編集';
 
   @override
@@ -2972,14 +2875,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseDescriptionOptional => '授業概要（任意）';
 
   @override
-  String get currentScheduleHint => '这里的曜日、時限、教室、週次と奇数偶数週はこの排課のみに影響';
-
-  @override
-  String followProfileTimeScheme(String name) {
-    return '現在の時間割に連携（$name）';
-  }
-
-  @override
   String get timeSchemeOverrideLabel => '授業時間方案';
 
   @override
@@ -2992,22 +2887,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get rangeWeekLabel => '連続週';
 
   @override
-  String get customWeekLabel => 'カスタム週';
-
-  @override
   String get oddWeeksLabel => '奇数週';
 
   @override
-  String get evenWeeksLabel => '偶数週';
-
-  @override
   String get oddWeeksHint => '範囲内の奇数週のみ保持';
-
-  @override
-  String get evenWeeksHint => '範囲内の偶数週のみ保持';
-
-  @override
-  String get customPaletteColor => 'カラーパレットでカスタム';
 
   @override
   String timeSchemeSetCountValue(int count) {
@@ -3139,19 +3022,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get frostedSheetSectionTitle => 'ガラス素材';
-
-  @override
-  String get frostedBlurEnabledTitle => 'ぼかしを有効にする';
-
-  @override
-  String get frostedBlurEnabledSubtitle =>
-      'オフにするとシートは不透明な単色になり、ブラー領域は半透明のまま残ります';
-
-  @override
-  String get frostedSheetPreviewOpenAction => 'プレビューパネルを開く';
-
-  @override
-  String get frostedSheetPreviewDemoTitle => 'プレビュー';
 
   @override
   String get timetableBackgroundColorSectionTitle => '時間割背景色';
@@ -4609,9 +4479,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'Doubaoが返したJSONをそのままここに貼付し、インポートをタップ，純JSONと```jsonコードブロックの両方に対応';
 
   @override
-  String get detailAction => '詳細';
-
-  @override
   String get aiParseErrorTitle => '解析エラー';
 
   @override
@@ -4758,13 +4625,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get customDebugName => 'カスタムデバッグ';
-
-  @override
   String get localDebugMaintainer => 'ローカルデバッグ';
-
-  @override
-  String get customDebugDescription => 'ユーザーが保存したカスタム教務デバッグスクリプト';
 
   @override
   String get addDebugRecordTooltip => 'デバッグレコード追加';
@@ -4829,10 +4690,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get debugRecordFormula => '1レコード = 1URL + 1スクリプト';
-
-  @override
-  String get debugRecordFormulaSubtitle =>
-      '同じ学校の反復デバッグや複数スクリプトの保存に便利です。保存すると保持され続けます';
 
   @override
   String get debugRecordNameLabel => 'レコード名';
@@ -5069,27 +4926,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get conflictLabel => '競合';
 
   @override
-  String get courseConflictSectionTitle => '競合授業';
-
-  @override
-  String get courseNormalSectionTitle => 'その他の授業';
-
-  @override
   String get courseConflictDetailTitle => '競合の詳細';
 
   @override
   String get courseConflictDetailEntryTitle => '競合の詳細を見る';
 
   @override
-  String get courseConflictDetailEntrySubtitle => '重なる時間帯と相手の授業を確認';
-
-  @override
   String courseConflictWithCourse(String name) {
     return '「$name」と競合';
   }
-
-  @override
-  String get courseConflictOpenPartnerAction => '相手の排課を開く';
 
   @override
   String get courseConflictEmpty => '競合は検出されていません';
@@ -5141,9 +4986,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get todayTimetableTitle => '今日の時間割';
 
   @override
-  String get dayTimetableTitle => '日別タイムライン';
-
-  @override
   String get backToWeekViewAction => '週表示に戻る';
 
   @override
@@ -5171,23 +5013,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String courseDialogCurrentWeekHint(int week) {
-    return '現在第$week週を閲覧中，この週のこの授業を直接時間変更可能';
-  }
-
-  @override
-  String courseDialogNotThisWeekHint(int week) {
-    return '現在第$week週を閲覧中，この授業は今週ないため、「今週のこの授業」として時間変更できない';
-  }
-
-  @override
-  String get editActionShort => '編集';
-
-  @override
   String get rescheduleAction => '時間変更';
-
-  @override
-  String get deleteActionShort => '削除';
 
   @override
   String get deleteModeTitle => '削除方式';
@@ -5242,12 +5068,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get startSectionFieldLabel => '開始時限';
-
-  @override
-  String get endSectionFieldLabel => '終了時限';
-
-  @override
-  String get courseLocationFieldLabel => '授業場所';
 
   @override
   String get confirmRescheduleAction => '時間変更確認';
@@ -5436,9 +5256,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get executeImportScriptTooltip => 'インポートスクリプトを実行';
-
-  @override
   String get switchToMobileWebTooltip => 'モバイルページに切替';
 
   @override
@@ -5464,12 +5281,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get warehouseLoginHintImport => 'ここで教務システムにログインしてインポートを実行';
-
-  @override
-  String get currentPageModeDesktop => '現在のページモード：デスクトップ';
-
-  @override
-  String get currentPageModeMobile => '現在のページモード：モバイル';
 
   @override
   String localScriptLabel(String scriptName) {
@@ -5874,9 +5685,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get examOverviewCountdown => 'カウントダウン';
-
-  @override
   String get examOverviewCountdownUnit => '日後';
 
   @override
@@ -5894,11 +5702,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get examOverviewLiveBadge => '実施中';
-
-  @override
-  String examOverviewStartsAt(String time) {
-    return '$time 開始';
-  }
 
   @override
   String examOverviewUntilTime(String time) {
@@ -6020,9 +5823,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get suspendedStatusLabel => '授業停止';
-
-  @override
-  String get courseActionSuspend => '授業停止';
 
   @override
   String get courseActionUnsuspend => '復旧';
@@ -6201,11 +6001,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get customHolidayNameRequired => '休日名を入力してください';
-
-  @override
-  String customHolidayDateRange(Object start, Object end) {
-    return '$start ~ $end';
-  }
 
   @override
   String get selectTeacherTitle => '教師を選択';
@@ -7224,9 +7019,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'No custom reminders yet — tap below to add';
 
   @override
-  String get debugCopiedJson => 'JSON copied';
-
-  @override
   String get liveDuringClassTimeNearest => 'Nearest time';
 
   @override
@@ -8055,30 +7847,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'Qingyu Timetable - Full data backup';
 
   @override
-  String courseWeekCustomDescription(String weeks) {
-    return 'Weeks $weeks';
-  }
-
-  @override
-  String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
-    return 'Weeks $startWeek-$endWeek$mode';
-  }
-
-  @override
-  String get courseWeekOddModeSuffix => ' odd weeks';
-
-  @override
-  String get courseWeekEvenModeSuffix => ' even weeks';
-
-  @override
-  String courseWeekSuspensionDescription(String weeks) {
-    return 'Suspended weeks $weeks';
-  }
-
-  @override
-  String get courseWeekListSeparator => ', ';
-
-  @override
   String holidayLogMemoryCacheHit(int year, int count) {
     return '$year: memory cache hit ($count entries), refreshing in background…';
   }
@@ -8571,34 +8339,6 @@ class AppLocalizationsJa extends AppLocalizations {
   ) {
     return 'Weekday $weekday Sections $startSection-$endSection  $name  $location  Weeks: $weekText';
   }
-
-  @override
-  String courseImportCalendarWeekLabel(int week) {
-    return 'Calendar week $week';
-  }
-
-  @override
-  String get courseImportTermStartDateTitle => 'Term start date';
-
-  @override
-  String get courseImportFirstWeekMappingLabel =>
-      'Which calendar week is timetable week 1';
-
-  @override
-  String get courseImportFirstWeekMappingSubtitle =>
-      'If week 1 has no classes, choose week 2; if weeks 1-2 have none, choose week 3.';
-
-  @override
-  String get courseImportFirstWeekNoShift =>
-      'Import will treat timetable week 1 as calendar week 1.';
-
-  @override
-  String courseImportFirstWeekShifted(int weeks, int targetWeek) {
-    return 'Import will shift all course weeks by $weeks so timetable week 1 lands on calendar week $targetWeek.';
-  }
-
-  @override
-  String get courseImportContinueAction => 'Continue import';
 
   @override
   String get courseImportUpdateRecommendedAction =>
@@ -9547,9 +9287,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get currentProfileTimeSchemeName => 'Current timetable schedule';
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -10172,9 +9909,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveSelfCheckSubtitle => 'セルフチェックを実行';
 
   @override
-  String get frostedSheetPreviewShowTitle => 'プレビューを表示';
-
-  @override
   String get aboutSupportUpdatesSectionTitle => 'サポートと更新';
 
   @override
@@ -10647,24 +10381,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get glassDockTabDay => '日';
 
   @override
-  String get glassDockLayoutLabel => 'グラスドックのレイアウト';
-
-  @override
-  String get glassDockLayoutOverlay => 'フルスクリーン重ね';
-
-  @override
-  String get glassDockLayoutOverlaySubtitle => '課表を全画面表示し、ドックをその上に重ねる';
-
-  @override
-  String get glassDockLayoutInset => '下にスペース確保';
-
-  @override
-  String get glassDockLayoutInsetSubtitle => '課表下部にスペースを確保し、ドックは下に配置';
-
-  @override
-  String get glassDockInsetClearanceLabel => '回避スペースの高さ';
-
-  @override
   String get glassDockRoundActionLabel => '丸ボタンの機能';
 
   @override
@@ -10686,22 +10402,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeDockEditorViewCategory => 'ビュー切替';
 
   @override
-  String get glassDockEntriesSectionTitle => 'ドックの入口';
-
-  @override
-  String get glassDockShowDayTabTitle => '日課表タブを表示';
-
-  @override
-  String get glassDockShowWeekTabTitle => '週表示タブを表示';
-
-  @override
   String get glassDockShowAddButtonTitle => '丸ボタンを表示';
 
   @override
   String get glassDockShowAddButtonSubtitle => 'ピル右側に別ボタンを表示';
-
-  @override
-  String get glassDockButtonBackToWeekLabel => '今週へ戻る / 今日';
 
   @override
   String get glassDockExtraButtonSemanticLabel => '追加';

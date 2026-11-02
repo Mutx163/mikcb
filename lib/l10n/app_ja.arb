@@ -6,14 +6,10 @@
   "appearanceTitle": "外観と配色",
   "previewTitle": "プレビュー",
   "timetableBackgroundPreview": "時間割背景",
-  "displayModeTitle": "表示モード",
   "themeModeLabel": "テーマモード",
   "themeModeSystem": "システム連携",
   "themeModeLight": "ライトモード",
   "themeModeDark": "ダークモード",
-  "fontSectionTitle": "アプリフォント",
-  "fontSectionSubtitle": "Inter を標準とし、端末に入っているフォントも選べます",
-  "fontSectionFootnote": "メーカーフォントは同梱されず、端末に入っている場合のみ有効です，Xiaomi では MiSans だけ目立ちやすいです，変化がなければ自動代替で、通常は自分でインストール不要です",
   "fontModeLabel": "フォント選択",
   "fontModeSystem": "アプリ標準",
   "fontModeSansSerif": "システムサンセリフ",
@@ -30,7 +26,6 @@
   "languageModeLabel": "言語選択",
   "languageModeSystem": "システム連携",
   "settingsTitle": "時間割設定",
-  "dailyUsageSectionTitle": "日常使い",
   "appearanceEntryTitle": "外観と配色",
   "appearanceThemeDisplaySectionTitle": "テーマと表示",
   "layoutSectionEntryTitle": "レイアウトと時限",
@@ -363,8 +358,6 @@
     }
   },
   "feedbackTitle": "問題報告",
-  "feedbackIntro": "クラッシュ、授業表示の異常、インポートの問題、または機能提案がある場合は、以下のチャネルからフィードバックしてください",
-  "feedbackIssueHint": "再現手順、スクリーンショット、バージョン番号、ログに関する問題は、GitHub Issueを推奨",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "問題・提案の送信、既存の確認",
   "openIssuePage": "Issueページを開く",
@@ -681,9 +674,6 @@
   "supportTapQrHint": "タップで拡大",
   "supportSaveShort": "保存",
   "supportConfirmedShort": "支援済み",
-  "donorSearchHint": "名前/メッセージ検索...",
-  "donorSortLargeFirst": "高額順",
-  "donorSortSmallFirst": "低額順",
   "supportMonthlyGoalLabel": "今月のサーバー・証明書更新進捗",
   "supportGoalRaised": "集まった: {raised} / 目標 {goal}",
   "@supportGoalRaised": {
@@ -747,53 +737,8 @@
       }
     }
   },
-  "courseTimeSummary": "時間：{day}曜{start}〜{end}時限",
-  "@courseTimeSummary": {
-    "placeholders": {
-      "day": {
-        "type": "int"
-      },
-      "start": {
-        "type": "int"
-      },
-      "end": {
-        "type": "int"
-      }
-    }
-  },
   "teacherUnset": "未設定",
   "locationUnset": "未設定",
-  "courseDetailSummary": "{weekDescription}　教師：{teacher}　教室：{location}",
-  "@courseDetailSummary": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "courseDetailSummaryWithConflict": "{weekDescription}　教師：{teacher}　教室：{location}\n競合授業：{conflictSummary}",
-  "@courseDetailSummaryWithConflict": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      },
-      "conflictSummary": {
-        "type": "String"
-      }
-    }
-  },
   "confirmDeleteTitle": "削除確認",
   "confirmDeleteCourseMessage": "授業「{name}」を削除しますか？",
   "@confirmDeleteCourseMessage": {
@@ -803,8 +748,6 @@
       }
     }
   },
-  "currentScheduleTitle": "現在の排課",
-  "currentScheduleSubtitle": "这里的曜日、時限、教室、週次と奇数偶数週はこの排課のみに影響",
   "timeSchemeLabel": "授業時間方案",
   "followCurrentTimetableWithName": "現在の時間割に連携（{name}）",
   "@followCurrentTimetableWithName": {
@@ -814,7 +757,6 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "Without a manual override, auto-match by location keywords; otherwise follow the timetable main scheme",
   "overrideTimeSchemeDescription": "この授業は選択したテンプレートを個別使用し、メインテンプレートに連携しません",
   "weekdayLabel": "曜日",
   "startSectionLabel": "開始時限",
@@ -1122,15 +1064,6 @@
   "timeSchemeEditorActiveAndCoursesHint": "現在の時間割と一部の授業がこのテンプレートを使用中，保存後、関連する全ての時間割と授業が同期更新されます",
   "timeSchemeEditorActiveHint": "現在の時間割がこのテンプレートを使用中，保存後、使用中の全ての時間割が同期更新されます",
   "timeSchemeEditorOverrideHint": "授業がこのテンプレートを副テンプレートとして使用中，保存後、参照する全ての授業が同期更新されます",
-  "editTimeAction": "時間を編集",
-  "editingSchemeLabel": "編集中：{name}",
-  "@editingSchemeLabel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimeScheme": "名前未設定テンプレート",
   "unsetLabel": "未選択",
   "timeSchemeUsageCourseRefPrefix": "授業参照：",
@@ -1434,24 +1367,18 @@
     }
   },
   "diagnosticsLevelInferred": "推定レベル",
-  "diagnosticsRawFilteredHint": "原文ビューは現在のレベルフィルターに連携し、対応するログブロックのみ表示",
   "diagnosticsTimeSortAscending": "昇順",
   "diagnosticsTimeSortDescending": "降順",
   "diagnosticsDisplayOptionsTitle": "表示と並び順",
-  "diagnosticsStreamingHint": "リアルタイム更新中，新しいログが自動的に表示されます",
   "diagnosticsEmptyTitle": "ログなし",
   "diagnosticsLoadFailedTitle": "ログの読み込みに失敗しました",
   "diagnosticsLogTitleFallback": "スーパーアイランド診断ログ",
   "diagnosticsDeviceInfoTitle": "デバイスとエクスポート情報",
-  "diagnosticsContentTitle": "ログ内容",
-  "diagnosticsRecentLogsTitle": "最近のログ",
-  "diagnosticsUnknownCategory": "未分類イベント",
   "diagnosticsExportedAt": "エクスポート時間",
   "diagnosticsTime": "時間",
   "diagnosticsCategory": "カテゴリ",
   "diagnosticsMessage": "メッセージ",
   "diagnosticsStackTrace": "スタックトレース",
-  "firstUseGuideTitle": "初回使用ガイド",
   "guideAndPermissionsTitle": "使用ガイドと権限",
   "refreshStatusTooltip": "ステータス更新",
   "guideHeroTitle": "まずこのページを完了してから使い始めましょう",
@@ -1488,7 +1415,6 @@
   "exitAppAction": "アプリ終了",
   "agreeAndStartAction": "同意して使い始める",
   "startUsingAction": "使い始める",
-  "editSingleLessonTitle": "単一授業を編集",
   "editCourseTitle": "授業を編集",
   "addCourseTitle": "授業を追加",
   "deleteCourseTitle": "授業を削除",
@@ -1515,25 +1441,12 @@
   "teacherLabel": "担当教師",
   "courseNatureLabel": "授業性質",
   "courseDescriptionOptional": "授業概要（任意）",
-  "currentScheduleHint": "这里的曜日、時限、教室、週次と奇数偶数週はこの排課のみに影響",
-  "followProfileTimeScheme": "現在の時間割に連携（{name}）",
-  "@followProfileTimeScheme": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeOverrideLabel": "授業時間方案",
   "lessonWeeksTitle": "授業週次",
   "singleLessonWeekHint": "単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適",
   "rangeWeekLabel": "連続週",
-  "customWeekLabel": "カスタム週",
   "oddWeeksLabel": "奇数週",
-  "evenWeeksLabel": "偶数週",
   "oddWeeksHint": "範囲内の奇数週のみ保持",
-  "evenWeeksHint": "範囲内の偶数週のみ保持",
-  "customPaletteColor": "カラーパレットでカスタム",
   "timeSchemeSetCountValue": "{count}セット",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -2304,7 +2217,6 @@
   "aiParseFailedChip": "解析失敗",
   "aiPasteJsonHintShort": "AIが返したJSONを貼付",
   "aiPasteJsonHintLong": "Doubaoが返したJSONをそのままここに貼付し、インポートをタップ，純JSONと```jsonコードブロックの両方に対応",
-  "detailAction": "詳細",
   "aiParseErrorTitle": "解析エラー",
   "viewDetailsAction": "詳細を確認",
   "previewAction": "プレビュー",
@@ -2389,9 +2301,7 @@
       }
     }
   },
-  "customDebugName": "カスタムデバッグ",
   "localDebugMaintainer": "ローカルデバッグ",
-  "customDebugDescription": "ユーザーが保存したカスタム教務デバッグスクリプト",
   "addDebugRecordTooltip": "デバッグレコード追加",
   "customDebugIntroTitle": "ここに自分の教務デバッグレコードを配置",
   "customDebugIntroSubtitle": "学校ごとの URL とスクリプトを保存し、次からワンタップで再利用できます",
@@ -2432,7 +2342,6 @@
   "addDebugRecordTitle": "デバッグレコード追加",
   "savingAction": "保存中…",
   "debugRecordFormula": "1レコード = 1URL + 1スクリプト",
-  "debugRecordFormulaSubtitle": "同じ学校の反復デバッグや複数スクリプトの保存に便利です。保存すると保持され続けます",
   "debugRecordNameLabel": "レコード名",
   "debugRecordNameHint": "例：重慶機電-新版教務",
   "importUrlLabel": "教務URL",
@@ -2548,11 +2457,8 @@
   "backToCurrentWeekAction": "今週に戻る",
   "nonCurrentWeekLabel": "非今週",
   "conflictLabel": "競合",
-  "courseConflictSectionTitle": "競合授業",
-  "courseNormalSectionTitle": "その他の授業",
   "courseConflictDetailTitle": "競合の詳細",
   "courseConflictDetailEntryTitle": "競合の詳細を見る",
-  "courseConflictDetailEntrySubtitle": "重なる時間帯と相手の授業を確認",
   "courseConflictWithCourse": "「{name}」と競合",
   "@courseConflictWithCourse": {
     "placeholders": {
@@ -2561,7 +2467,6 @@
       }
     }
   },
-  "courseConflictOpenPartnerAction": "相手の排課を開く",
   "courseConflictEmpty": "競合は検出されていません",
   "courseConflictPairTitle": "競合ペア",
   "selectWeekTitle": "週次を選択",
@@ -2591,7 +2496,6 @@
   "homeMenuFeedbackTitle": "問題報告",
   "switchTimetableTitle": "時間割切替",
   "todayTimetableTitle": "今日の時間割",
-  "dayTimetableTitle": "日別タイムライン",
   "backToWeekViewAction": "週表示に戻る",
   "backToTodayAction": "今日に戻る",
   "ongoingCourseBadge": "授業中",
@@ -2620,25 +2524,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "現在第{week}週を閲覧中，この週のこの授業を直接時間変更可能",
-  "@courseDialogCurrentWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseDialogNotThisWeekHint": "現在第{week}週を閲覧中，この授業は今週ないため、「今週のこの授業」として時間変更できない",
-  "@courseDialogNotThisWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "editActionShort": "編集",
   "rescheduleAction": "時間変更",
-  "deleteActionShort": "削除",
   "deleteModeTitle": "削除方式",
   "deleteCourseAction": "この授業を削除",
   "deleteOccurrenceAction": "この授業回を削除",
@@ -2704,8 +2590,6 @@
   "rescheduleTargetWeekLabel": "変更先の週",
   "weekdayFieldLabel": "曜日",
   "startSectionFieldLabel": "開始時限",
-  "endSectionFieldLabel": "終了時限",
-  "courseLocationFieldLabel": "授業場所",
   "confirmRescheduleAction": "時間変更確認",
   "homeTitleStyleClassicLabel": "クラシックテキスト",
   "homeTitleStyleBrandLabel": "大Logo",
@@ -2903,7 +2787,6 @@
       }
     }
   },
-  "executeImportScriptTooltip": "インポートスクリプトを実行",
   "switchToMobileWebTooltip": "モバイルページに切替",
   "switchToDesktopWebTooltip": "デスクトップページに切替",
   "rememberCurrentInputTooltip": "現在の入力を記憶",
@@ -2913,8 +2796,6 @@
   "copiedCurrentAddress": "現在のアドレスをコピーしました",
   "warehouseLoginHintLocalDebug": "現在ローカルデバッグスクリプトモード",
   "warehouseLoginHintImport": "ここで教務システムにログインしてインポートを実行",
-  "currentPageModeDesktop": "現在のページモード：デスクトップ",
-  "currentPageModeMobile": "現在のページモード：モバイル",
   "localScriptLabel": "ローカルスクリプト：{scriptName}",
   "@localScriptLabel": {
     "placeholders": {
@@ -3147,7 +3028,6 @@
       }
     }
   },
-  "examOverviewCountdown": "カウントダウン",
   "examOverviewCountdownUnit": "日後",
   "examOverviewTodayCount": "本日 {count} 件",
   "@examOverviewTodayCount": {
@@ -3167,14 +3047,6 @@
   },
   "examOverviewInProgress": "試験中",
   "examOverviewLiveBadge": "実施中",
-  "examOverviewStartsAt": "{time} 開始",
-  "@examOverviewStartsAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "examOverviewUntilTime": "{time} まで",
   "@examOverviewUntilTime": {
     "placeholders": {
@@ -3243,7 +3115,6 @@
   "holidayStatusLabel": "休日",
   "suspendedBadgeLabel": "停",
   "suspendedStatusLabel": "授業停止",
-  "courseActionSuspend": "授業停止",
   "courseActionUnsuspend": "復旧",
   "courseActionEditPrimary": "授業を編集",
   "courseActionRescheduleSecondary": "時間変更",
@@ -3284,13 +3155,6 @@
   "customHolidayEmpty": "カスタム休日なし",
   "customHolidayCorrupted": "読取失敗、書込停止",
   "customHolidayNameRequired": "休日名を入力してください",
-  "customHolidayDateRange": "{start} ~ {end}",
-  "@customHolidayDateRange": {
-    "placeholders": {
-      "start": {},
-      "end": {}
-    }
-  },
   "selectTeacherTitle": "教師を選択",
   "selectLocationTitle": "教室を選択",
   "historyRecordsLabel": "履歴",
@@ -3938,7 +3802,6 @@
   "examReminderCustomAlreadyAdded": "This reminder is already added",
   "examReminderCustomInvalid": "Set a time greater than zero",
   "examReminderCustomEmptyHint": "No custom reminders yet — tap below to add",
-  "debugCopiedJson": "JSON copied",
   "liveDuringClassTimeNearest": "Nearest time",
   "liveDuringClassTimeTotal": "Total time",
   "liveCountdownTextStyleSmart": "Smart (localized)",
@@ -4585,39 +4448,6 @@
   },
   "dataTransferFullBackupShareText": "This is a full data backup from Qingyu Timetable, including all timetables, the active timetable, and time schemes.",
   "dataTransferFullBackupShareSubject": "Qingyu Timetable - Full data backup",
-  "courseWeekCustomDescription": "Weeks {weeks}",
-  "@courseWeekCustomDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekRangeDescription": "Weeks {startWeek}-{endWeek}{mode}",
-  "@courseWeekRangeDescription": {
-    "placeholders": {
-      "startWeek": {
-        "type": "int"
-      },
-      "endWeek": {
-        "type": "int"
-      },
-      "mode": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekOddModeSuffix": " odd weeks",
-  "courseWeekEvenModeSuffix": " even weeks",
-  "courseWeekSuspensionDescription": "Suspended weeks {weeks}",
-  "@courseWeekSuspensionDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekListSeparator": ", ",
   "holidayLogMemoryCacheHit": "{year}: memory cache hit ({count} entries), refreshing in background…",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
@@ -5010,30 +4840,6 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "Calendar week {week}",
-  "@courseImportCalendarWeekLabel": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportTermStartDateTitle": "Term start date",
-  "courseImportFirstWeekMappingLabel": "Which calendar week is timetable week 1",
-  "courseImportFirstWeekMappingSubtitle": "If week 1 has no classes, choose week 2; if weeks 1-2 have none, choose week 3.",
-  "courseImportFirstWeekNoShift": "Import will treat timetable week 1 as calendar week 1.",
-  "courseImportFirstWeekShifted": "Import will shift all course weeks by {weeks} so timetable week 1 lands on calendar week {targetWeek}.",
-  "@courseImportFirstWeekShifted": {
-    "placeholders": {
-      "weeks": {
-        "type": "int"
-      },
-      "targetWeek": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportContinueAction": "Continue import",
   "courseImportUpdateRecommendedAction": "Update timetable (recommended)",
   "courseImportOverwriteAction": "Overwrite import",
   "courseImportSectionCountInsufficientTitle": "Not enough sections in time scheme",
@@ -5390,7 +5196,6 @@
       }
     }
   },
-  "currentProfileTimeSchemeName": "Current timetable schedule",
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5711,9 +5516,6 @@
   "frostedGlassModeLiquid": "リキッドガラス",
   "frostedGlassModeSolid": "ソリッドカード",
   "frostedSheetSectionTitle": "ガラス素材",
-  "frostedBlurEnabledTitle": "ぼかしを有効にする",
-  "frostedSheetPreviewDemoTitle": "プレビュー",
-  "frostedSheetPreviewOpenAction": "プレビューパネルを開く",
   "advancedMaterialTitle": "高度なマテリアル",
   "liquidGlassPresetLabel": "リキッドガラスプリセット",
   "liquidGlassPresetClear": "クリア",
@@ -5770,7 +5572,6 @@
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "時間を選択",
   "liveSelfCheckSubtitle": "セルフチェックを実行",
-  "frostedSheetPreviewShowTitle": "プレビューを表示",
   "aboutSupportUpdatesSectionTitle": "サポートと更新",
   "aboutProductSectionTitle": "製品",
   "aboutCommunitySectionTitle": "コミュニティ",
@@ -6090,7 +5891,6 @@
   "appLogsSourceApp": "アプリ",
   "appLogsSourceNative": "スーパーアイランド",
   "timeCorrectionTitle": "ベル時間補正",
-  "frostedBlurEnabledSubtitle": "オフにするとシートは不透明な単色になり、ブラー領域は半透明のまま残ります",
   "homePageBackgroundFillLabel": "背景の塗りつぶし",
   "homePageBackgroundFillColor": "単色",
   "homePageBackgroundFillImage": "画像",
@@ -6219,12 +6019,6 @@
   "homeNavigationFormGlassDockSubtitle": "下に浮かぶガラスのボトムバーで日/週の時間割を切り替え",
   "glassDockTabWeek": "週",
   "glassDockTabDay": "日",
-  "glassDockLayoutLabel": "グラスドックのレイアウト",
-  "glassDockLayoutOverlay": "フルスクリーン重ね",
-  "glassDockLayoutOverlaySubtitle": "課表を全画面表示し、ドックをその上に重ねる",
-  "glassDockLayoutInset": "下にスペース確保",
-  "glassDockLayoutInsetSubtitle": "課表下部にスペースを確保し、ドックは下に配置",
-  "glassDockInsetClearanceLabel": "回避スペースの高さ",
   "glassDockRoundActionLabel": "丸ボタンの機能",
   "glassDockButtonIconTitle": "丸ボタンのアイコン",
   "glassDockButtonIconDefault": "デフォルト（＋）",
@@ -6232,12 +6026,8 @@
   "glassDockCustomizeSectionTitle": "下部ナビゲーション",
     "glassDockCustomizeTitle": "ドックボタンをカスタマイズ",
   "homeDockEditorViewCategory": "ビュー切替",
-  "glassDockEntriesSectionTitle": "ドックの入口",
-  "glassDockShowDayTabTitle": "日課表タブを表示",
-  "glassDockShowWeekTabTitle": "週表示タブを表示",
   "glassDockShowAddButtonTitle": "丸ボタンを表示",
   "glassDockShowAddButtonSubtitle": "ピル右側に別ボタンを表示",
-  "glassDockButtonBackToWeekLabel": "今週へ戻る / 今日",
     "glassDockExtraButtonSemanticLabel": "追加",
   "homeMenuStyleLabel": "右上メニューのスタイル",
   "homeMenuStyleList": "リストメニュー",

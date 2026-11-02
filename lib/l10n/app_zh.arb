@@ -6,14 +6,10 @@
   "appearanceTitle": "外观与配色",
   "previewTitle": "预览",
   "timetableBackgroundPreview": "课表背景",
-  "displayModeTitle": "显示模式",
   "themeModeLabel": "主题模式",
   "themeModeSystem": "跟随系统",
   "themeModeLight": "浅色模式",
   "themeModeDark": "深色模式",
-  "fontSectionTitle": "应用字体",
-  "fontSectionSubtitle": "内置 Inter 默认；也可选用系统已安装的字体",
-  "fontSectionFootnote": "厂商字体未内置，需系统已预装才生效，小米通常只有 MiSans 明显；没变化时会自动回退，一般不必自行安装",
   "fontModeLabel": "字体选择",
   "fontModeSystem": "应用默认",
   "fontModeSansSerif": "系统无衬线",
@@ -30,7 +26,6 @@
   "languageModeLabel": "语言选择",
   "languageModeSystem": "跟随系统",
   "settingsTitle": "课表设置",
-  "dailyUsageSectionTitle": "日常使用",
   "appearanceEntryTitle": "外观与配色",
   "appearanceThemeDisplaySectionTitle": "主题与显示",
   "layoutSectionEntryTitle": "布局与节次",
@@ -496,8 +491,6 @@
     }
   },
   "feedbackTitle": "问题反馈",
-  "feedbackIntro": "如果你遇到崩溃、课程显示异常、导入问题，或者想提交功能建议，可以通过下面这些渠道反馈",
-  "feedbackIssueHint": "涉及复现步骤、截图、版本号和日志的问题，建议优先走 GitHub Issue",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "提交问题、建议，查看已有反馈",
   "openIssuePage": "打开 Issue 页面",
@@ -814,9 +807,6 @@
   "supportTapQrHint": "点击放大扫码",
   "supportSaveShort": "保存",
   "supportConfirmedShort": "已支持",
-  "donorSearchHint": "搜昵称/寄语……",
-  "donorSortLargeFirst": "大额优先",
-  "donorSortSmallFirst": "小额优先",
   "supportMonthlyGoalLabel": "本月服务器和证书续期进度",
   "supportGoalRaised": "已筹：{raised} / 目标 {goal}",
   "@supportGoalRaised": {
@@ -880,53 +870,8 @@
       }
     }
   },
-  "courseTimeSummary": "时间：星期 {day} 第 {start}～{end} 节",
-  "@courseTimeSummary": {
-    "placeholders": {
-      "day": {
-        "type": "int"
-      },
-      "start": {
-        "type": "int"
-      },
-      "end": {
-        "type": "int"
-      }
-    }
-  },
   "teacherUnset": "未设置",
   "locationUnset": "未设置",
-  "courseDetailSummary": "{weekDescription}  教师：{teacher}  教室：{location}",
-  "@courseDetailSummary": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "courseDetailSummaryWithConflict": "{weekDescription}  教师：{teacher}  教室：{location}\n冲突课程：{conflictSummary}",
-  "@courseDetailSummaryWithConflict": {
-    "placeholders": {
-      "weekDescription": {
-        "type": "String"
-      },
-      "teacher": {
-        "type": "String"
-      },
-      "location": {
-        "type": "String"
-      },
-      "conflictSummary": {
-        "type": "String"
-      }
-    }
-  },
   "confirmDeleteTitle": "确认删除",
   "confirmDeleteCourseMessage": "确定删除课程 {name}？",
   "@confirmDeleteCourseMessage": {
@@ -936,8 +881,6 @@
       }
     }
   },
-  "currentScheduleTitle": "当前排课",
-  "currentScheduleSubtitle": "这里的星期、节次、教室、周次和单双周只影响当前这一条排课",
   "timeSchemeLabel": "时间模板",
   "followCurrentTimetableWithName": "跟随当前课表 {name}",
   "@followCurrentTimetableWithName": {
@@ -947,7 +890,6 @@
       }
     }
   },
-  "followCurrentTimetableDescription": "未手动指定时，按上课地点自动匹配时间模板；未命中则跟随课表主时间模板",
   "overrideTimeSchemeDescription": "这门课会单独使用所选时间模板，不跟随当前课表主时间模板",
   "weekdayLabel": "星期",
   "startSectionLabel": "开始节次",
@@ -1258,15 +1200,6 @@
   "timeSchemeEditorActiveAndCoursesHint": "当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程",
   "timeSchemeEditorActiveHint": "当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表",
   "timeSchemeEditorOverrideHint": "有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程",
-  "editTimeAction": "编辑时间",
-  "editingSchemeLabel": "正在编辑：{name}",
-  "@editingSchemeLabel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimeScheme": "未命名模板",
   "unsetLabel": "未选择",
   "timeSchemeUsageCourseRefPrefix": "课程引用：",
@@ -1579,24 +1512,18 @@
     }
   },
   "diagnosticsLevelInferred": "推断等级",
-  "diagnosticsRawFilteredHint": "原文视图会跟随当前等级筛选，只显示对应日志块",
   "diagnosticsTimeSortAscending": "正序",
   "diagnosticsTimeSortDescending": "倒序",
   "diagnosticsDisplayOptionsTitle": "查看与排序",
-  "diagnosticsStreamingHint": "实时更新中，新日志会自动追加显示",
   "diagnosticsEmptyTitle": "暂无日志",
   "diagnosticsLoadFailedTitle": "日志加载失败",
   "diagnosticsLogTitleFallback": "超级岛诊断日志",
   "diagnosticsDeviceInfoTitle": "设备与导出信息",
-  "diagnosticsContentTitle": "日志内容",
-  "diagnosticsRecentLogsTitle": "最近日志",
-  "diagnosticsUnknownCategory": "未分类事件",
   "diagnosticsExportedAt": "导出时间",
   "diagnosticsTime": "时间",
   "diagnosticsCategory": "类别",
   "diagnosticsMessage": "消息",
   "diagnosticsStackTrace": "堆栈",
-  "firstUseGuideTitle": "首次使用引导",
   "guideAndPermissionsTitle": "使用引导与权限",
   "refreshStatusTooltip": "刷新状态",
   "guideHeroTitle": "先把这页做完，再开始用",
@@ -1633,7 +1560,6 @@
   "exitAppAction": "退出应用",
   "agreeAndStartAction": "同意并开始使用",
   "startUsingAction": "开始使用",
-  "editSingleLessonTitle": "编辑单节课",
   "editCourseTitle": "编辑课程",
   "addCourseTitle": "添加课程",
   "deleteCourseTitle": "删除课程",
@@ -1660,25 +1586,12 @@
   "teacherLabel": "授课教师",
   "courseNatureLabel": "课程性质",
   "courseDescriptionOptional": "课程简介（可选）",
-  "currentScheduleHint": "这里的星期、节次、教室、周次和单双周只影响当前这一条排课",
-  "followProfileTimeScheme": "跟随当前课表 {name}",
-  "@followProfileTimeScheme": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeOverrideLabel": "时间模板",
   "lessonWeeksTitle": "上课周次",
   "singleLessonWeekHint": "单节课只会出现在一个周次里，适合补课、临时加课",
   "rangeWeekLabel": "连续周",
-  "customWeekLabel": "自定义周",
   "oddWeeksLabel": "单周",
-  "evenWeeksLabel": "双周",
   "oddWeeksHint": "只保留范围内的单周",
-  "evenWeeksHint": "只保留范围内的双周",
-  "customPaletteColor": "调色盘自定义颜色",
   "timeSchemeSetCountValue": "{count} 套",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -1803,10 +1716,6 @@
   "themeSeedSectionTitle": "应用主题色",
   "themeSeedSectionSubtitle": "影响顶部栏、强调色和全局主色调",
   "frostedSheetSectionTitle": "玻璃材质",
-  "frostedBlurEnabledTitle": "启用模糊",
-  "frostedBlurEnabledSubtitle": "关闭后弹窗为不透明纯色底，模糊区域保留半透明底色",
-  "frostedSheetPreviewOpenAction": "打开预览面板",
-  "frostedSheetPreviewDemoTitle": "预览",
   "timetableBackgroundColorSectionTitle": "课表背景色",
   "timetableBackgroundColorSectionSubtitle": "纯色模式下作用于已选显示区域；可与背景图搭配使用",
   "homePageBackgroundFillLabel": "背景填充",
@@ -2567,7 +2476,6 @@
   "aiParseFailedChip": "解析失败",
   "aiPasteJsonHintShort": "粘贴 AI 返回的 JSON",
   "aiPasteJsonHintLong": "把豆包返回的 JSON 原样粘贴到这里，然后点击导入，支持纯 JSON，也兼容 ```json 代码块",
-  "detailAction": "详情",
   "aiParseErrorTitle": "解析错误",
   "viewDetailsAction": "查看详情",
   "previewAction": "预览",
@@ -2652,9 +2560,7 @@
       }
     }
   },
-  "customDebugName": "自定义调试",
   "localDebugMaintainer": "本地调试",
-  "customDebugDescription": "用户保存的自定义教务调试脚本",
   "addDebugRecordTooltip": "新增调试记录",
   "customDebugIntroTitle": "这里放你自己的教务调试记录",
   "customDebugIntroSubtitle": "保存每所学校的网址与脚本，下次一键复用",
@@ -2695,7 +2601,6 @@
   "addDebugRecordTitle": "新增调试记录",
   "savingAction": "保存中……",
   "debugRecordFormula": "一条记录 = 一个网址 + 一段脚本",
-  "debugRecordFormulaSubtitle": "适合反复调试同一学校或多套脚本，保存后长期保留",
   "debugRecordNameLabel": "记录名称",
   "debugRecordNameHint": "例如：重庆机电-新版教务",
   "importUrlLabel": "教务网址",
@@ -2811,11 +2716,8 @@
   "backToCurrentWeekAction": "回本周",
   "nonCurrentWeekLabel": "非本周",
   "conflictLabel": "冲突",
-  "courseConflictSectionTitle": "冲突课程",
-  "courseNormalSectionTitle": "其他课程",
   "courseConflictDetailTitle": "冲突详情",
   "courseConflictDetailEntryTitle": "查看冲突详情",
-  "courseConflictDetailEntrySubtitle": "查看互撞排课与重叠时段",
   "courseConflictWithCourse": "与 {name} 冲突",
   "@courseConflictWithCourse": {
     "placeholders": {
@@ -2824,7 +2726,6 @@
       }
     }
   },
-  "courseConflictOpenPartnerAction": "查看对方排课",
   "courseConflictEmpty": "当前没有检测到冲突",
   "courseConflictPairTitle": "冲突组合",
   "selectWeekTitle": "选择周次",
@@ -2854,7 +2755,6 @@
   "homeMenuFeedbackTitle": "问题反馈",
   "switchTimetableTitle": "切换课表",
   "todayTimetableTitle": "今日课表",
-  "dayTimetableTitle": "单日时间轴",
   "backToWeekViewAction": "返回周视图",
   "backToTodayAction": "回今日",
   "ongoingCourseBadge": "正在上课",
@@ -2883,25 +2783,7 @@
       }
     }
   },
-  "courseDialogCurrentWeekHint": "当前查看第 {week} 周，可直接对这一周这节课调课",
-  "@courseDialogCurrentWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseDialogNotThisWeekHint": "当前查看第 {week} 周，本周无此课程，无法调整单周节次",
-  "@courseDialogNotThisWeekHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "editActionShort": "编辑",
   "rescheduleAction": "调课",
-  "deleteActionShort": "删除",
   "deleteModeTitle": "删除方式",
   "deleteCourseAction": "删这个课",
   "deleteOccurrenceAction": "删这节课",
@@ -2967,8 +2849,6 @@
   "rescheduleTargetWeekLabel": "调到第几周",
   "weekdayFieldLabel": "星期",
   "startSectionFieldLabel": "开始节次",
-  "endSectionFieldLabel": "结束节次",
-  "courseLocationFieldLabel": "上课地点",
   "confirmRescheduleAction": "确认调课",
   "homeTitleStyleClassicLabel": "经典文字",
   "homeTitleStyleBrandLabel": "大 Logo",
@@ -3166,7 +3046,6 @@
       }
     }
   },
-  "executeImportScriptTooltip": "执行导入脚本",
   "switchToMobileWebTooltip": "切换到移动端页面",
   "switchToDesktopWebTooltip": "切换到桌面端页面",
   "rememberCurrentInputTooltip": "记住当前输入",
@@ -3176,8 +3055,6 @@
   "copiedCurrentAddress": "已复制当前地址",
   "warehouseLoginHintLocalDebug": "当前为本地调试脚本模式",
   "warehouseLoginHintImport": "在此登录教务系统后执行导入",
-  "currentPageModeDesktop": "当前页面模式：桌面端",
-  "currentPageModeMobile": "当前页面模式：移动端",
   "localScriptLabel": "本地脚本：{scriptName}",
   "@localScriptLabel": {
     "placeholders": {
@@ -3434,7 +3311,6 @@
       }
     }
   },
-  "examOverviewCountdown": "倒计时",
   "examOverviewCountdownUnit": "天后",
   "examOverviewTodayCount": "今日 {count} 场",
   "@examOverviewTodayCount": {
@@ -3454,14 +3330,6 @@
   },
   "examOverviewInProgress": "考试进行中",
   "examOverviewLiveBadge": "进行中",
-  "examOverviewStartsAt": "{time} 开始",
-  "@examOverviewStartsAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "examOverviewUntilTime": "至 {time}",
   "@examOverviewUntilTime": {
     "placeholders": {
@@ -3530,7 +3398,6 @@
   "holidayStatusLabel": "假期",
   "suspendedBadgeLabel": "停",
   "suspendedStatusLabel": "停课",
-  "courseActionSuspend": "停课",
   "courseActionUnsuspend": "恢复",
   "courseActionEditPrimary": "编辑课程",
   "courseActionRescheduleSecondary": "调课",
@@ -3615,13 +3482,6 @@
   "customHolidayEmpty": "暂无自定义假期",
   "customHolidayCorrupted": "读取异常，暂停读写防丢",
   "customHolidayNameRequired": "请输入假期名称",
-  "customHolidayDateRange": "{start}～{end}",
-  "@customHolidayDateRange": {
-    "placeholders": {
-      "start": {},
-      "end": {}
-    }
-  },
   "selectTeacherTitle": "选择教师",
   "selectLocationTitle": "选择教室",
   "historyRecordsLabel": "历史记录",
@@ -4321,7 +4181,6 @@
   "examReminderCustomAlreadyAdded": "该提醒时间已添加",
   "examReminderCustomInvalid": "请设置大于 0 的提醒时间",
   "examReminderCustomEmptyHint": "还没有自定义提醒，点下方添加",
-  "debugCopiedJson": "已复制 JSON",
   "liveDuringClassTimeNearest": "最近时间",
   "liveDuringClassTimeTotal": "总时间",
   "liveCountdownTextStyleSmart": "智能 中文",
@@ -4968,39 +4827,6 @@
   },
   "dataTransferFullBackupShareText": "这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板",
   "dataTransferFullBackupShareSubject": "轻屿课表 - 全部数据备份",
-  "courseWeekCustomDescription": "第 {weeks} 周",
-  "@courseWeekCustomDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekRangeDescription": "第 {startWeek}～{endWeek} 周{mode}",
-  "@courseWeekRangeDescription": {
-    "placeholders": {
-      "startWeek": {
-        "type": "int"
-      },
-      "endWeek": {
-        "type": "int"
-      },
-      "mode": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekOddModeSuffix": " 单周",
-  "courseWeekEvenModeSuffix": " 双周",
-  "courseWeekSuspensionDescription": "第 {weeks} 周停课",
-  "@courseWeekSuspensionDescription": {
-    "placeholders": {
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseWeekListSeparator": "、",
   "holidayLogMemoryCacheHit": "{year} 年：命中内存缓存 {count} 条，后台刷新中",
   "@holidayLogMemoryCacheHit": {
     "placeholders": {
@@ -5393,30 +5219,6 @@
       }
     }
   },
-  "courseImportCalendarWeekLabel": "校历第 {week} 周",
-  "@courseImportCalendarWeekLabel": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportTermStartDateTitle": "开学日期",
-  "courseImportFirstWeekMappingLabel": "课表第 1 周对应校历第几周",
-  "courseImportFirstWeekMappingSubtitle": "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周",
-  "courseImportFirstWeekNoShift": "导入后会直接把课表第 1 周当作校历第 1 周",
-  "courseImportFirstWeekShifted": "导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周",
-  "@courseImportFirstWeekShifted": {
-    "placeholders": {
-      "weeks": {
-        "type": "int"
-      },
-      "targetWeek": {
-        "type": "int"
-      }
-    }
-  },
-  "courseImportContinueAction": "继续导入",
   "courseImportUpdateRecommendedAction": "更新课表 推荐",
   "courseImportOverwriteAction": "覆盖导入",
   "courseImportSectionCountInsufficientTitle": "时间模板节次不足",
@@ -5773,7 +5575,6 @@
       }
     }
   },
-  "currentProfileTimeSchemeName": "当前课表时间",
   "unnamedTimetableProfile": "未命名课表",
   "cloudBackupManualProtectedTitle": "手动备份永不过期",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
@@ -6143,7 +5944,6 @@
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "选择时间",
   "liveSelfCheckSubtitle": "运行自检",
-  "frostedSheetPreviewShowTitle": "显示预览",
   "aboutSupportUpdatesSectionTitle": "支持与更新",
   "aboutProductSectionTitle": "产品",
   "aboutCommunitySectionTitle": "社区",
@@ -6368,12 +6168,6 @@
   "homeNavigationFormGlassDockSubtitle": "悬浮玻璃底栏，切换日/周课表",
   "glassDockTabWeek": "周课表",
   "glassDockTabDay": "日课表",
-  "glassDockLayoutLabel": "玻璃坞内容布局",
-  "glassDockLayoutOverlay": "满屏悬浮",
-  "glassDockLayoutOverlaySubtitle": "课表满屏显示，底栏浮动在课表之上",
-  "glassDockLayoutInset": "内容避让",
-  "glassDockLayoutInsetSubtitle": "课表底部预留空间，底栏悬浮在下方",
-  "glassDockInsetClearanceLabel": "避让高度",
   "glassDockRoundActionLabel": "圆钮功能",
   "glassDockButtonIconTitle": "圆钮图标",
   "glassDockButtonIconDefault": "默认 加号",
@@ -6381,12 +6175,8 @@
   "glassDockCustomizeSectionTitle": "底部导航栏",
   "glassDockCustomizeTitle": "自定义底栏按钮",
   "homeDockEditorViewCategory": "视图切换",
-  "glassDockEntriesSectionTitle": "底栏入口",
-  "glassDockShowDayTabTitle": "显示日课表入口",
-  "glassDockShowWeekTabTitle": "显示周课表入口",
   "glassDockShowAddButtonTitle": "显示圆钮",
   "glassDockShowAddButtonSubtitle": "在药丸右侧单独显示",
-  "glassDockButtonBackToWeekLabel": "回本周 / 今天",
   "glassDockExtraButtonSemanticLabel": "添加",
   "homeMenuStyleLabel": "右上角菜单样式",
   "homeMenuStyleList": "列表菜单",
