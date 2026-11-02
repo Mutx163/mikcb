@@ -3,6 +3,7 @@ package com.mutx163.qingyu.transfer.lan
 import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.CourseColorPalette
 import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.MiniJson
@@ -164,17 +165,35 @@ class LanEditRepositoryHost(
         }
     }
 
+    /**
+     * 局域网编辑网页端星期标签（对齐 Dart `buildMetaJson` 的内联字面量
+     * `['周一'…'周日']`——Dart 侧就是硬编码中文，不走 ARB，这里同口径）。
+     */
+    private val weekdayLabels = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+
     override fun buildMetaJson(): Map<String, Any?> {
         val snapshot = repository.snapshot
         val scheme = TimetableHostLogic.resolveActiveTimeScheme(
             schemes = snapshot.timeSchemes,
             activeTimeSchemeId = snapshot.activeTimeSchemeId,
         )
-        val sections = (scheme?.sections ?: snapshot.settings.sections).map { it.toJson() }
+        val effectiveSections = scheme?.sections ?: snapshot.settings.sections
+        val sections = effectiveSections.map { it.toJson() }
+        // 2026-11-02 修：原来只回 5 个键，Dart 版回 9 个；网页端
+        // `assets/lan_edit/app.js` 直接读 `presetColors`（选色块）、`weekdayLabels`、
+        // `sectionCount`、`profileId`/`profileName`、`profiles`——缺了就各自退化
+        // （选色只剩一个默认蓝、周几显示成数字等）。这里逐字段对齐 Dart
+        // `LanEditProviderHost.buildMetaJson`；末尾两个 Kotlin 键是本仓扩展，保留。
         return linkedMapOf<String, Any?>(
-            "semesterWeekCount" to snapshot.settings.semesterWeekCount,
-            "sections" to sections,
+            "profileId" to snapshot.activeProfileId,
+            "profileName" to activeProfileName,
             "currentWeek" to snapshot.currentWeek,
+            "semesterWeekCount" to snapshot.settings.semesterWeekCount,
+            "sectionCount" to effectiveSections.size,
+            "sections" to sections,
+            "presetColors" to CourseColorPalette.PRESET_COURSE_COLOR_HEXES,
+            "weekdayLabels" to weekdayLabels,
+            "profiles" to listProfilesSummary(),
             "activeProfileId" to snapshot.activeProfileId,
             "activeTimeSchemeId" to snapshot.activeTimeSchemeId,
         )

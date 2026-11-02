@@ -398,6 +398,52 @@ class LanEditRepositoryHostTest {
         assertFalse("旧课必须从盘上消失", raw.contains("\"old\""))
     }
 
+    /**
+     * 2026-11-02 修回归钉：meta 原来只回 5 个键，Dart 版回 9 个；网页端
+     * `app.js` 直接读 presetColors（选色块）/weekdayLabels/sectionCount/
+     * profileId/profileName/profiles，缺了就各自退化（选色只剩默认蓝等）。
+     * 这条逐字段钉齐，少一个键就红。
+     */
+    @Test
+    fun `meta 接口字段与 Dart 版逐键对齐`() {
+        val (repository, _) = repositoryWith(course("c1", "高等数学"))
+        val host = LanEditRepositoryHost(repository)
+
+        val meta = host.buildMetaJson()
+
+        // Dart buildMetaJson 的全部 9 个键（缺一个网页端就退化一处）
+        val dartKeys = listOf(
+            "profileId", "profileName", "currentWeek", "semesterWeekCount",
+            "sectionCount", "sections", "presetColors", "weekdayLabels", "profiles",
+        )
+        for (key in dartKeys) {
+            assertTrue("meta 必须回 `$key`（网页端直接读它）", meta.containsKey(key))
+        }
+        assertEquals("p1", meta["profileId"])
+        assertEquals("默认课表", meta["profileName"])
+        assertEquals(7, meta["currentWeek"])
+        assertEquals(20, meta["semesterWeekCount"])
+        assertTrue("sectionCount 必须与 sections 同源", meta["sectionCount"] is Int)
+        assertTrue(meta["sections"] is List<*>)
+        // 色板必须来自下沉常量（不要新造色板），逐元素一致
+        assertEquals(
+            com.mutx163.qingyu.core.CourseColorPalette.PRESET_COURSE_COLOR_HEXES,
+            meta["presetColors"],
+        )
+        assertEquals(
+            listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日"),
+            meta["weekdayLabels"],
+        )
+        // profiles 是档案摘要列表（id/name/courseCount/currentWeek/isActive）
+        val profiles = meta["profiles"] as List<*>
+        assertEquals(1, profiles.size)
+        val profile = profiles.single() as Map<*, *>
+        assertEquals("p1", profile["id"])
+        assertEquals("默认课表", profile["name"])
+        assertEquals(1, profile["courseCount"])
+        assertEquals(true, profile["isActive"])
+    }
+
     // -----------------------------------------------------------------------
     // 其余写入口
     // -----------------------------------------------------------------------
