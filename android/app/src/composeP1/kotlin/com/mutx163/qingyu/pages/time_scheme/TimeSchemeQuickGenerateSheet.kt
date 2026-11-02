@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.BreakOverrideRule
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
@@ -311,8 +313,13 @@ private fun QuickGenerateForm(
     Column(modifier = Modifier.fillMaxWidth()) {
         // 弹层内部滚动（见文件头「滚动说明」）：字段区最多吃 380dp 高度，超出在内部滚，
         // 「取消/生成」留在外面固定。
+        // `weight(fill = false)`（2026-11-02 弹层债 #12）：键盘弹起时 sheet 给内容的可用
+        // 高度变小（sheet 外壳自己已有 imePadding，问题只在内容怎么分高度）——字段区
+        // 先收缩、转内部滚动，保证按钮行始终在屏内。不用 imePadding 配方：那会让整个
+        // 内容列顶到键盘上方，矮屏上按钮照样被挤出去。
         LazyColumn(
             modifier = Modifier
+                .weight(1f, fill = false)
                 .fillMaxWidth()
                 .heightIn(max = 380.dp)
                 .scrollEndHaptic()
@@ -471,7 +478,7 @@ private fun QuickGenerateTimePickerPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(220.dp)
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -481,7 +488,9 @@ private fun QuickGenerateTimePickerPage(
                 range = 0..23,
                 wrapAround = true,
                 label = { it.toString().padStart(2, '0') },
-                textStyle = MiuixTheme.textStyles.title3,
+                // 220dp + title3 SEMIBOLD 与 SettingsHost「每天更新时刻」滚轮同款
+                // （Dart 同弹层就是 title3 + w600）——弹层债 #3 同款顺手对齐。
+                textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 modifier = Modifier.weight(1f),
             )
             NumberPicker(
@@ -491,7 +500,7 @@ private fun QuickGenerateTimePickerPage(
                 wrapAround = true,
                 // 档位 → 分钟：0 → "00"、1 → "05" … 11 → "55"。
                 label = { (it * QuickTimeField.MINUTE_STEP).toString().padStart(2, '0') },
-                textStyle = MiuixTheme.textStyles.title3,
+                textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                 modifier = Modifier.weight(1f),
             )
         }
