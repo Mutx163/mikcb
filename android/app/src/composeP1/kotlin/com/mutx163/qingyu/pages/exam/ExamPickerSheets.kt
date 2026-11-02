@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -146,7 +146,7 @@ fun ExamDatePickerSheet(
                     .scrollEndHaptic()
                     .overScrollVertical(),
             ) {
-                items(weeks) { item ->
+                itemsIndexed(weeks) { index, item ->
                     val isSelected = item == week
                     Row(
                         modifier = Modifier
@@ -180,10 +180,13 @@ fun ExamDatePickerSheet(
                             )
                         }
                     }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
+                    // 最后一项之后不再画分割线（2026-11-02 弹窗审核 P3：底部多出一条悬空线）。
+                    if (index < weeks.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 16.dp),
+                            color = Color(QingyuTheme.dividerLine(dark)),
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -491,7 +494,7 @@ fun ExamCoursePickerSheet(
             // 原来那个 `Spacer(8.dp)` 贴底呼吸已被它取代。
             contentPadding = PaddingValues(bottom = bottomInset),
         ) {
-            items(options) { option ->
+            itemsIndexed(options) { index, option ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -527,10 +530,13 @@ fun ExamCoursePickerSheet(
                         )
                     }
                 }
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 16.dp),
-                    color = Color(QingyuTheme.dividerLine(dark)),
-                )
+                // 同周次列表：最后一项之后不画分割线。
+                if (index < options.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        color = Color(QingyuTheme.dividerLine(dark)),
+                    )
+                }
             }
         }
     }
