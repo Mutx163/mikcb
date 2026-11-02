@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/warehouse_repository_models.dart' show WarehouseAdapterEntry;
 import 'user_data_sync_hooks.dart';
 
 class WarehouseRememberedLogin {
@@ -332,6 +333,64 @@ class WarehouseImportPreferencesService {
     final prefs = await _prefs;
     final value = prefs.getString('$_customImportUrlPrefix$adapterId');
     return (value == null || value.trim().isEmpty) ? null : value.trim();
+  }
+
+  /// 适配器在仓库里**登记**的受信 host（macro / custom_debug 这类「云数据披着
+  /// 适配器外衣」的来源不提供锚点，理由见 [warehouseAutofillTrustedHosts] 的
+  /// 2026-10-14 段）。同步可得：W7 自动填充门禁与 loginAttempt 桥门禁共用
+  /// 这个锚点（2026-11-02 第二轮安全审计 #2 起）。
+  List<String> registeredAutofillAnchorHosts(WarehouseAdapterEntry adapter) {
+    final cloudShapedCategory =
+        adapter.category == 'macro' || adapter.category == 'custom_debug';
+    if (cloudShapedCategory) {
+      return const [];
+    }
+    final registered = extractUrlHost(adapter.importUrl);
+    return registered == null ? const [] : <String>[registered];
+  }
+
+  /// 教务凭据允许自动填充/保存密码的站点：适配器在仓库里登记的登录地址，加上
+  /// 用户为它自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。W7 自动
+  /// 填充门禁与 loginAttempt 桥门禁共用这一份判据。
+  ///
+  /// Why this exists: `host` 从 v2.1.3.2 起才随凭据一起落盘，在那之前
+  /// 存下的每一条凭据 host 都是空的。门禁原本对空 host 一律放行，于是**升级
+  /// 到修好之后的版本的老用户，门禁依然是全开的**。改成"只认 App 会导航过去
+  /// 的站点"之后，存量数据也纳入了保护；用户下次保存密码时 host 会自动补上。
+  ///
+  /// 自定义地址那道闸按**来源**判，不按协议（2026-10-10）：用户在本机亲手填的，
+  /// 落地页就在他眼前，明文 http 一样放行——只支持 http 的教务学校不该因此
+  /// 拿不到自动填充。云快照下发的则要 https + 与登记地址同域。
+  ///
+  /// 2026-10-14：锚点本身不再无条件可信。`adapter.importUrl` 在「快捷导入」
+  /// 路径下就是**云快照/备份里的宏地址**（`WarehouseMacroRecord.importUrl`，
+  /// fromJson 原样收、随快照上下行）——攻击者同时控制锚点与待验地址时，
+  /// 「与登记地址同域」自证成立。所以 macro/custom_debug 来源的适配器不提供
+  /// 锚点：凭据 host 为空的存量凭据在宏回放里一律不自动填充（要填请先在该
+  /// 适配器的正式入口重新保存一次密码，host 会随之绑定）；凭据自带 host 的
+  /// 不受影响，门禁仍按绑定站点放行。
+  Future<List<String>> warehouseAutofillTrustedHosts(
+    WarehouseAdapterEntry adapter,
+  ) async {
+    final anchorHosts = registeredAutofillAnchorHosts(adapter);
+    final hosts = List<String>.from(anchorHosts);
+    try {
+      final custom = await getCustomImportUrl(adapter.adapterId);
+      final customSource = await getCustomImportUrlSource(adapter.adapterId);
+      if (isTrustedCustomImportUrl(
+        url: custom ?? '',
+        registeredHost: anchorHosts.isEmpty ? null : anchorHosts.first,
+        source: customSource,
+      )) {
+        final customHost = extractUrlHost(custom);
+        if (customHost != null) {
+          hosts.add(customHost);
+        }
+      }
+    } catch (_) {
+      // 读不到自定义地址就只认登记地址。门禁因此更严，不会更松。
+    }
+    return hosts;
   }
 
   /// 这个自定义地址是**用户在本机亲手填的**，还是**从云快照还原来的**。

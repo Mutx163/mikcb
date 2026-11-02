@@ -153,6 +153,11 @@ class _WarehouseAdapterWebLoginScreenState
   Future<void>? _pendingImportedSectionsApplyFuture;
   WarehouseRememberedLogin? _rememberedLogin;
   WarehouseRememberedLogin? _latestLoginCandidate;
+
+  /// loginAttempt 桥门禁的受信 host 集合（登记地址 + 受信自定义地址，判据在
+  /// WarehouseImportPreferencesService.warehouseAutofillTrustedHosts）。
+  /// 登记地址同步可得，initState 先垫底，自定义地址读回全集后替换。
+  List<String> _trustedLoginHosts = const [];
   bool _hasPromptedAutofill = false;
   bool _hasPromptedSave = false;
   bool _isPromptShowing = false;
@@ -286,6 +291,17 @@ class _WarehouseAdapterWebLoginScreenState
     _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
+    // loginAttempt 桥门禁的受信 host：登记地址同步垫底，自定义地址异步补全。
+    _trustedLoginHosts = _preferencesService.registeredAutofillAnchorHosts(
+      widget.adapter,
+    );
+    _preferencesService
+        .warehouseAutofillTrustedHosts(widget.adapter)
+        .then((hosts) {
+          if (mounted) {
+            _trustedLoginHosts = hosts;
+          }
+        });
     _startSessionProbeConfigLoad();
     WarehouseImportSessionLog.instance.append(
       message:
@@ -1823,13 +1839,29 @@ $kWarehouseBridgeCompatShim  try {
     _debugImportLog('bridge ${_bridgeMessageSummary(message)}');
     final type = message['type'] as String? ?? '';
     // UI 类桥接消息（toast/confirm/prompt/singleSelection/error）只在导入
-    // 执行期处理：它们的唯一合法生产者是适配脚本，页面伪造的一律丢弃
-    // （钓鱼弹窗面），判据与名单见 lib/domain/warehouse_bridge_gate.dart。
+    // 执行期处理：唯一合法生产者是适配脚本，页面伪造的一律丢弃（钓鱼弹窗面），
+    // 判据与名单见 lib/domain/warehouse_bridge_gate.dart。macro:event /
+    // loginAttempt 原先「随时处理」（2026-11-02 第二轮安全审计 #2 收进门禁）：
+    // 宏事件只认录制态；登录尝试认 执行期/录制态/前台回放/受信源——前台回放
+    // 指登录步骤所在的导航阶段（executingImport 之前），受信源指当前页落在
+    // W7 同一套锚点上，普通手动登录靠它放行，放行路径不变。
     if (!shouldProcessWarehouseBridgeMessage(
       type: type,
       importExecutionActive: _isPrivilegedBridgeContextActive,
+      macroRecordingActive:
+          _macroRecordingState == MacroRecordingState.recording,
+      // 后台回放不算前台驱动：Offstage 里本就不该弹任何框。
+      foregroundReplayActive:
+          _isMacroReplay &&
+          !widget.runInBackground &&
+          (_playbackState == PlaybackUiState.playing ||
+              _playbackState == PlaybackUiState.pausedForInput),
+      trustedPageOrigin: warehouseUrlOnTrustedHosts(
+        _currentUrl ?? widget.initialUrl,
+        _trustedLoginHosts,
+      ),
     )) {
-      _debugImportLog('bridge $type ignored outside import execution');
+      _debugImportLog('bridge $type ignored by bridge gate');
       return;
     }
     switch (type) {
@@ -2708,63 +2740,6 @@ $kWarehouseBridgeCompatShim  try {
     }
   }
 
-  /// 教务凭据允许自动填充的站点：适配器在仓库里登记的登录地址，加上用户为它
-  /// 自定义的地址。两者都是 App 自己会把 WebView 带过去的地方。
-  ///
-  /// Why this exists: `host` 从 v2.1.3.2 起才随凭据一起落盘，在那之前
-  /// 存下的每一条凭据 host 都是空的。门禁原本对空 host 一律放行，于是**升级
-  /// 到修好之后的版本的老用户，门禁依然是全开的**。改成"只认 App 会导航过去
-  /// 的站点"之后，存量数据也纳入了保护；用户下次保存密码时 host 会自动补上。
-  ///
-  /// 自定义地址那道闸按**来源**判，不按协议（2026-10-10）：用户在本机亲手填的，
-  /// 落地页就在他眼前，明文 http 一样放行——只支持 http 的教务学校不该因此
-  /// 拿不到自动填充。云快照下发的则要 https + 与登记地址同域。
-  ///
-  /// 2026-10-14：锚点本身不再无条件可信。`adapter.importUrl` 在「快捷导入」
-  /// 路径下就是**云快照/备份里的宏地址**（`WarehouseMacroRecord.importUrl`，
-  /// fromJson 原样收、随快照上下行）——攻击者同时控制锚点与待验地址时，
-  /// 「与登记地址同域」自证成立。所以 macro/custom_debug 来源的适配器不提供
-  /// 锚点：凭据 host 为空的存量凭据在宏回放里一律不自动填充（要填请先在该
-  /// 适配器的正式入口重新保存一次密码，host 会随之绑定）；凭据自带 host 的
-  /// 不受影响，门禁仍按绑定站点放行。
-  Future<List<String>> _warehouseAutofillTrustedHosts() async {
-    // 宏回放与自定义调试的适配器是"云数据披着适配器外衣"，不作为信任锚点。
-    final cloudShapedCategory =
-        widget.adapter.category == 'macro' ||
-        widget.adapter.category == 'custom_debug';
-    final hosts = <String>[];
-    // macro/custom_debug 来源不提供锚点：registered 保持 null。
-    // isTrustedCustomImportUrl 的 cloud 分支对 base.isEmpty 一律拒收，
-    // 自定义地址也就进不了白名单；registered 本体也直接不进白名单。
-    final registered = cloudShapedCategory
-        ? null
-        : extractUrlHost(widget.adapter.importUrl);
-    if (registered != null) {
-      hosts.add(registered);
-    }
-    try {
-      final custom = await _preferencesService.getCustomImportUrl(
-        widget.adapter.adapterId,
-      );
-      final customSource = await _preferencesService.getCustomImportUrlSource(
-        widget.adapter.adapterId,
-      );
-      if (isTrustedCustomImportUrl(
-        url: custom ?? '',
-        registeredHost: registered,
-        source: customSource,
-      )) {
-        final customHost = extractUrlHost(custom);
-        if (customHost != null) {
-          hosts.add(customHost);
-        }
-      }
-    } catch (_) {
-      // 读不到自定义地址就只认登记地址。门禁因此更严，不会更松。
-    }
-    return hosts;
-  }
-
   void _recordWarehouseCourseSkip(
     WarehouseCourseSkipReason reason,
     String? name, {
@@ -2871,7 +2846,9 @@ $kWarehouseBridgeCompatShim  try {
     final gateAllows = rememberedLoginAllowsUrl(
       _rememberedLogin,
       await _resolveCurrentUrl(),
-      trustedHosts: await _warehouseAutofillTrustedHosts(),
+      trustedHosts: await _preferencesService.warehouseAutofillTrustedHosts(
+        widget.adapter,
+      ),
     );
     _logLoginStateAutofillDecision(
       gateAllows: gateAllows,
@@ -3452,7 +3429,8 @@ $kWarehouseBridgeCompatShim  try {
             if (!rememberedLoginAllowsUrl(
               remembered,
               await _resolveCurrentUrl(),
-              trustedHosts: await _warehouseAutofillTrustedHosts(),
+              trustedHosts: await _preferencesService
+                  .warehouseAutofillTrustedHosts(widget.adapter),
             )) {
               _debugImportLog(
                 'playback password step autofill blocked by host gate '
