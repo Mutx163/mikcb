@@ -64,6 +64,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
@@ -884,12 +885,13 @@ private fun SliderValueDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(
-                    onClick = onDismiss,
+                // 官方配方（CHEATSHEET §4.16）：取消走文字按钮，确认才是主色实心；
+                // 原来两颗都是灰实心，主次读不出来。
+                TextButton(
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = SettingsStringsExt4.cancelAction.zh)
-                }
+                    text = SettingsStringsExt4.cancelAction.zh,
+                    onClick = onDismiss,
+                )
                 Button(
                     onClick = {
                         val parsed = text.trim().toDoubleOrNull()
