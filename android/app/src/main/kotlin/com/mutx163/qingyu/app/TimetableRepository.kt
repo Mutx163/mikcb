@@ -263,6 +263,9 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     ) {
         replaceActiveProfileContentLocked(courses, tasks, exams)
         drainPendingNotify()
+        // 整块替换绕过了各写服务的提醒漏斗：考试 / 课程刚被换掉，闹钟必须跟着重排
+        //（与 Dart 恢复备份后 reconcile 同一时机；无宿主订阅时是 no-op）。
+        syncExamReminders()
     }
 
     @Synchronized
@@ -337,6 +340,10 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     ) {
         replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings)
         drainPendingNotify()
+        // 日期规则自动套用会整块换档案（含日程与考试），绕过了写服务的提醒漏斗，
+        // 这里补一次重排（`ScheduleReminderScheduler.reconcile` KDoc 列明的
+        // 「恢复备份后」时机；无宿主订阅时是 no-op）。
+        syncExamReminders()
     }
 
     @Synchronized
@@ -393,6 +400,10 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
             settings,
         )
         drainPendingNotify()
+        // 云恢复整块替换了课 / 作业 / 考试 / 日程，绕过了写服务的提醒漏斗；
+        // Dart 侧恢复后也会整表重排提醒（`ScheduleReminderScheduler.reconcile` KDoc），
+        // 这里对齐同一时机。无宿主订阅时是 no-op。
+        syncExamReminders()
     }
 
     @Synchronized
@@ -962,9 +973,19 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      */
     var onScheduleRemindersChanged: (() -> Unit)? = null
 
-    /** 日程条目变化后的提醒重排：没有宿主订阅时什么也不做（不是「假装排好了」）。 */
+    /**
+     * 考试 / 课程 / 日程变化后的「考试提醒重排」钩子（对位 [onScheduleRemindersChanged]）。
+     *
+     * 谁调：与 [syncExamReminders] 同一口径——考试增删改（`TimetableExamService`）、
+     * 课程增删改（会连带摘考试）、日程增删改都会触发。
+     * 谁接：壳在启动时把它设成 `ExamReminderCoordinator` 的整表重排。
+     */
+    var onExamRemindersChanged: (() -> Unit)? = null
+
+    /** 提醒重排：没有宿主订阅时什么也不做（不是「假装排好了」）。 */
     override fun syncExamReminders() {
         onScheduleRemindersChanged?.invoke()
+        onExamRemindersChanged?.invoke()
     }
 
     /** 实时活动（超级岛）：Phase 4 原生能力，本阶段空实现。 */
