@@ -1,16 +1,36 @@
 package com.mutx163.qingyu.pages.sync
 
 import android.widget.Toast
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.sync.SyncConflictChoice
+import com.mutx163.qingyu.sync.SyncConflictInfo
+import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 云同步 / 云备份两页的**控制器驱动入口**（C1 · 页面消费真实状态）。
@@ -65,9 +85,41 @@ fun CloudSyncPage(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    // 立即同步发现两边都改过时，控制器会挂起 pendingSyncConflict；这里弹「选边」框。
+    var conflictInfo by remember { mutableStateOf<SyncConflictInfo?>(null) }
+    var conflictBusy by remember { mutableStateOf(false) }
+
     // 进页首次加载：已连接时拉一次远端备份列表（否则备份区恒空，像云端没有备份）。
     LaunchedEffect(controller) {
         withContext(Dispatchers.IO) { controller.refreshOnEnter() }
+    }
+
+    fun toastSyncResult(kind: SyncResultKind) {
+        val toast = SyncResultToasts.forSyncNow(kind, controller.lastErrorCode)
+        Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+    }
+
+    // 立即同步：返回后有挂起冲突就弹选边框（不弹「已取消」，避免两个提示打架）。
+    fun syncNow() {
+        scope.launch {
+            val kind = withContext(Dispatchers.IO) { controller.syncNow() }
+            val pending = controller.pendingSyncConflict
+            if (pending != null) {
+                conflictInfo = pending
+            } else {
+                toastSyncResult(kind)
+            }
+        }
+    }
+
+    fun resolveConflict(choice: SyncConflictChoice) {
+        conflictBusy = true
+        scope.launch {
+            val kind = withContext(Dispatchers.IO) { controller.resolveSyncConflict(choice) }
+            conflictBusy = false
+            conflictInfo = null
+            toastSyncResult(kind)
+        }
     }
 
     // 撤销成功后控制器会自增 revision（撤销卡片随之消失）；失败则给出明确提示。
@@ -93,7 +145,7 @@ fun CloudSyncPage(
         // 返回的 verdict 里 NEED_HTTP_CONFIRM / INVALID 需宿主弹框；默认 https 直接生效。
         onSaveAdvanced = { controller.saveAdvanced() },
         // 上传是同步阻塞的网络调用：必须离开主线程，否则真机上一份大课表会卡住界面。
-        onSyncNow = { scope.launch { withContext(Dispatchers.IO) { controller.syncNow() } } },
+        onSyncNow = { syncNow() },
         onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
         onOpenBackup = onOpenBackup,
         onViewAllBackups = onViewAllBackups,
@@ -102,6 +154,27 @@ fun CloudSyncPage(
         onMaxAgeSelected = { controller.selectMaxAge(it) },
         onManualProtectedChange = { controller.setManualBackupProtected(it) },
     )
+
+    conflictInfo?.let { info ->
+        SyncConflictChoiceDialog(
+            info = info,
+            busy = conflictBusy,
+            onChoice = { choice ->
+                if (choice == SyncConflictChoice.CANCEL) {
+                    // 取消不碰网络：直接清掉挂起冲突（同时清掉控制器侧状态）。
+                    controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
+                    conflictInfo = null
+                } else {
+                    resolveConflict(choice)
+                }
+            },
+            // 点遮罩/返回键 = 放弃选边，与「取消」同义，也必须清掉挂起冲突。
+            onDismiss = {
+                controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
+                conflictInfo = null
+            },
+        )
+    }
 }
 
 /**
@@ -140,4 +213,64 @@ fun CloudBackupListPage(
         onOpenBackup = onOpenBackup,
         onUndoRestore = { undoRestore() },
     )
+}
+
+/**
+ * 同步冲突「选边」三键框（Dart `_resolveConflict`，标题/正文/三动作走
+ * [CloudSyncLogic.conflictDialog]，首次同步分歧自动换解释性文案）。
+ *
+ * 两个「选边」动作都会发起网络（保留本机 = PUT、使用云端 = GET+应用），经
+ * [onChoice] 交给宿主协程在 IO 线程执行；「取消」与点遮罩等价，纯本地状态清理。
+ */
+@Composable
+private fun SyncConflictChoiceDialog(
+    info: SyncConflictInfo,
+    busy: Boolean,
+    onChoice: (SyncConflictChoice) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val view = CloudSyncLogic.conflictDialog(isFirstSyncDivergence = info.isFirstSyncDivergence)
+    val dark = isSystemInDarkTheme()
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = true,
+        title = view.title,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = view.message,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(
+                    text = view.cancelLabel,
+                    onClick = { onChoice(SyncConflictChoice.CANCEL) },
+                    enabled = !busy,
+                    colors = ButtonDefaults.textButtonColors(),
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = { onChoice(SyncConflictChoice.KEEP_LOCAL) },
+                    enabled = !busy,
+                    colors = ButtonDefaults.buttonColors(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = view.keepLocalLabel)
+                }
+                Button(
+                    onClick = { onChoice(SyncConflictChoice.KEEP_REMOTE) },
+                    enabled = !busy,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = view.useRemoteLabel)
+                }
+            }
+        }
+    }
 }

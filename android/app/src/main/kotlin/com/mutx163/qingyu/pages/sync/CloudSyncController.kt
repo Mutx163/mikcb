@@ -2,7 +2,10 @@ package com.mutx163.qingyu.pages.sync
 
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.sync.SyncConflictChoice
+import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.sync.WebdavSyncConfig
+import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
+import com.mutx163.qingyu.sync.decodeSnapshotObject
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.concurrent.CopyOnWriteArrayList
@@ -84,6 +87,17 @@ class CloudSyncController(
     private var loadingBackups: Boolean = false
     private var isCreatingBackup: Boolean = false
     private var transport: WebdavRemoteTransport? = null
+
+    /**
+     * 「立即同步」先拉后推时发现的**待裁决冲突**（远端比基线新、本地也有改动）。
+     *
+     * 非空时页面应弹「选边」框；用户三选一经 [resolveSyncConflict] 消费后清空。
+     * 置位到消费之间**绝不**动远端与本机数据——这正是「不静默覆盖」的落点。
+     * syncNow 在 IO 线程写、主线程读，单引用读写用 volatile 兜底。
+     */
+    @Volatile
+    var pendingSyncConflict: SyncConflictInfo? = null
+        private set
 
     /**
      * 上传字节来源：优先用调用方注入的；否则若给了仓储，就从**当前课表**现组一份；
@@ -355,8 +369,55 @@ class CloudSyncController(
         return outcome
     }
 
-    /** 立即同步：上传本机当前快照，成功后刷新列表。 */
-    fun syncNow(): SyncResultKind = runUpload()
+    /**
+     * 立即同步：**先拉后推**（Dart `syncNow` = `downloadAndApply` → `uploadSnapshot`）。
+     *
+     * ## 为什么不能只 PUT
+     *
+     * 之前 `syncNow()` 就是 `runUpload()`：不比对远端直接覆盖。两台设备都改过之后，
+     * 后按同步的那台会**静默顶掉**先同步那台的数据，冲突判定（`webdavPullHasSyncConflict`）
+     * 因为基线从来没落盘而恒不触发。现在：
+     * 1. 远端缺失 / 远端仍是基线 → 直接推本地（远端没别人的新数据可丢）；
+     * 2. 本机没改、远端新了 → 以云端为准拉下来（与 Dart 口径一致）；
+     * 3. 两边都改过 → **挂起冲突**等用户选边（[resolveSyncConflict]），绝不静默覆盖。
+     */
+    fun syncNow(): SyncResultKind {
+        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        return when (val pull = runPullPhase(coordinator)) {
+            is PullPhase.Downloaded -> SyncResultKind.DOWNLOADED
+            is PullPhase.Failed -> {
+                status = status.copy(lastErrorCode = pull.errorCode)
+                notifyChanged()
+                SyncResultKind.FAILED
+            }
+            is PullPhase.Conflict -> {
+                pendingSyncConflict = pull.info
+                SyncResultKind.CANCELLED
+            }
+            PullPhase.ProceedToUpload -> runUpload()
+        }
+    }
+
+    /**
+     * 消费 [pendingSyncConflict]：按用户选边继续这次同步。
+     *
+     * - 保留本机 → 强制上传本地（Dart `keepLocal` → `uploadSnapshot`）；
+     * - 使用云端 → 拉取并应用远端（返回 [SyncResultKind.DOWNLOADED]）；
+     * - 取消 → 什么都不动。
+     *
+     * 没有待裁决冲突时返回 [SyncResultKind.CANCELLED]（幂等，页面重复调用无害）。
+     */
+    fun resolveSyncConflict(choice: SyncConflictChoice): SyncResultKind {
+        pendingSyncConflict ?: return SyncResultKind.CANCELLED
+        pendingSyncConflict = null
+        return when (choice) {
+            SyncConflictChoice.KEEP_LOCAL -> runUpload()
+            SyncConflictChoice.KEEP_REMOTE -> downloadApplyAndMark(
+                resolver = { SyncConflictChoice.KEEP_REMOTE },
+            )
+            SyncConflictChoice.CANCEL -> SyncResultKind.CANCELLED
+        }
+    }
 
     /** 立即备份：与同步同一套上传，只是结果提示不同。 */
     fun createBackup(): SyncResultKind = runUpload()
@@ -403,7 +464,9 @@ class CloudSyncController(
                 // 每次恢复成功都**重设**撤销点：取不到本次恢复前的快照时，旧撤销点
                 // 指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
                 lastRestoreRollback = rollback
-                markSynced()
+                // 恢复成功 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
+                //（Dart restoreFromBackup 同口径）。不写它，下一轮冲突判定恒误报。
+                markSynced(outcome.remoteContentSha256)
                 refreshBackups()
                 SyncResultKind.DOWNLOADED
             }
@@ -491,6 +554,14 @@ class CloudSyncController(
         val active = ensureTransport() ?: return SyncResultKind.FAILED
         val file = remoteFiles.firstOrNull { it.fileName == entryId }
             ?: return SyncResultKind.FAILED
+        // 当前云端版本不许删（Dart `deleteBackup` 的 `entry.isCurrent` 闸门）：它是其他
+        // 设备「最新一份」的参照。基线落盘修复后 `lastUploadedLocalHash` 才有值，
+        // 这个闸门此前恒放行——现在真的拦得住。
+        if (file.contentSha256 != null && file.contentSha256 == config.lastUploadedLocalHash) {
+            status = status.copy(lastErrorCode = "cannot_delete_current_backup")
+            notifyChanged()
+            return SyncResultKind.FAILED
+        }
         val result = active.deleteRemoteFile(file.remotePath)
         return if (result.isFailed) {
             status = status.copy(lastErrorCode = result.errorMessage ?: "delete_failed")
@@ -527,7 +598,10 @@ class CloudSyncController(
         isCreatingBackup = false
         return when (outcome.kind) {
             SyncOpKind.OK -> {
-                markSynced()
+                // 上传成功 = 本机就是最新一份：把「上传基线」落到盘上。此前只写
+                // lastSyncedAtIso，`lastUploadedLocalHash` 恒 null ⇒ 列表「当前版本」
+                // 永不出现、删除闸门恒放行、冲突判定恒误报（本条修的就是它）。
+                markSynced(outcome.contentSha256)
                 refreshBackups()
                 SyncResultKind.UPLOADED
             }
@@ -540,10 +614,120 @@ class CloudSyncController(
         }
     }
 
-    private fun markSynced() {
+    /**
+     * 同步成功收口：写上次同步时间 + 把两个基线钉到 [contentHash]。
+     *
+     * @param contentHash 本次同步后「本机与远端共同」的内容哈希（上传成功 = 上传字节、
+     *   拉取/恢复成功 = 远端字节）。null 时不改基线（仅旧路径兼容；正常成功路径必有值）。
+     */
+    private fun markSynced(contentHash: String? = null) {
         val now = clock()
         status = status.copy(lastSyncedAtIso = now, lastErrorCode = null)
-        persist(config.copyWith(lastSyncedAtIso = now))
+        persist(
+            config.copyWith(
+                lastSyncedAtIso = now,
+                lastUploadedLocalHash = contentHash,
+                lastAppliedRemoteHash = contentHash,
+            ),
+        )
+    }
+
+    /** [syncNow] 拉取阶段的三种出口（上传 / 已应用远端 / 等用户选边）。 */
+    private sealed interface PullPhase {
+        /** 远端没有新数据（缺失 / 就是基线），可以放心推本地。 */
+        data object ProceedToUpload : PullPhase
+
+        /** 已拉取并应用远端，本地现在就是云端那份，无需再推。 */
+        data object Downloaded : PullPhase
+
+        /** 拉取本身失败（网络 / 负载非法）。 */
+        data class Failed(val errorCode: String) : PullPhase
+
+        /** 两边都改过：挂起冲突等用户选边，本轮绝不动任何一端。 */
+        data class Conflict(val info: SyncConflictInfo) : PullPhase
+    }
+
+    /**
+     * 拉取阶段：GET「当前快照」指针 → 与基线比对 → 需要时走协调器的冲突判定。
+     *
+     * 顺序与判定对齐 Dart `downloadAndApply`：先看远端哈希是否等于 `lastAppliedRemoteHash`
+     * （等于 = 云端没有新东西，直接返回去推本地），不等才交给 `downloadSnapshot`——
+     * 直接调它会把「远端没变、本地变了」的情形也拉成云端覆盖，静默丢掉本机改动。
+     */
+    private fun runPullPhase(coordinator: WebdavSyncCoordinator): PullPhase {
+        val active = ensureTransport() ?: return PullPhase.Failed("missing_credentials")
+        val fetched = active.getBytes(config.snapshotRemotePath)
+        if (fetched.isFailed) {
+            return PullPhase.Failed(fetched.errorMessage ?: "sync_failed")
+        }
+        val bytes = fetched.bytes
+        if (fetched.isNotFound || fetched.isEmpty || bytes == null) {
+            return PullPhase.ProceedToUpload
+        }
+        val remotePayload = try {
+            decodeSnapshotObject(String(bytes, Charsets.UTF_8))
+        } catch (error: Exception) {
+            return PullPhase.Failed(error.message ?: "invalid_sync_snapshot_payload")
+        }
+        val envelope = checkSnapshotEnvelopeAndChecksum(remotePayload)
+        if (!envelope.isValid) {
+            return PullPhase.Failed(envelope.errorCode ?: "invalid_sync_snapshot_payload")
+        }
+        if (envelope.actualHash == config.lastAppliedRemoteHash) {
+            return PullPhase.ProceedToUpload
+        }
+        // 远端比基线新：让协调器做冲突判定。resolver 恒 CANCEL = 不自动选边，
+        // 冲突时协调器返回 CANCELLED + 冲突信息，挂起给页面弹「选边」框。
+        status = status.copy(isSyncing = true)
+        notifyChanged()
+        val outcome = coordinator.downloadSnapshot(
+            config = config,
+            hasLocalUserData = true,
+            resolver = { SyncConflictChoice.CANCEL },
+        )
+        status = status.copy(isSyncing = false)
+        return when (outcome.kind) {
+            SyncOpKind.OK -> if (applyDownloadedSnapshot(outcome.bytes)) {
+                markSynced(outcome.remoteContentSha256)
+                PullPhase.Downloaded
+            } else {
+                PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
+            }
+            SyncOpKind.CANCELLED -> outcome.conflict?.let { PullPhase.Conflict(it) }
+                ?: PullPhase.Failed("sync_failed")
+            else -> PullPhase.Failed(outcome.errorCode ?: "sync_failed")
+        }
+    }
+
+    /** 以云端为准拉取并应用（用户选了「使用云端」），成功后写基线。 */
+    private fun downloadApplyAndMark(
+        resolver: (SyncConflictInfo) -> SyncConflictChoice,
+    ): SyncResultKind {
+        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        status = status.copy(isSyncing = true)
+        notifyChanged()
+        val outcome = coordinator.downloadSnapshot(
+            config = config,
+            hasLocalUserData = true,
+            resolver = resolver,
+        )
+        status = status.copy(isSyncing = false)
+        return when (outcome.kind) {
+            SyncOpKind.OK -> {
+                if (!applyDownloadedSnapshot(outcome.bytes)) {
+                    notifyChanged()
+                    return SyncResultKind.FAILED
+                }
+                markSynced(outcome.remoteContentSha256)
+                SyncResultKind.DOWNLOADED
+            }
+            SyncOpKind.CANCELLED -> SyncResultKind.CANCELLED
+            else -> {
+                status = status.copy(lastErrorCode = outcome.errorCode)
+                notifyChanged()
+                SyncResultKind.FAILED
+            }
+        }
     }
 
     /**

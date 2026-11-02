@@ -1,9 +1,12 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -233,5 +236,190 @@ class CloudSyncControllerTest {
         assertEquals(BaseUrlVerdict.NEED_HTTP_CONFIRM, controller.saveAdvanced())
         assertEquals(BaseUrlVerdict.PROCEED, controller.saveAdvanced(allowedInsecureHttp = true))
         assertEquals("http://192.168.1.5:5005/dav/", controller.config.baseUrl)
+    }
+
+    // ---------- 同步基线落盘（2026-11-02 修「基线从来没写盘」） ----------
+
+    @Test
+    fun `立即备份成功后写入上传基线_isCurrent生效`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes())
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertNull(controller.config.lastUploadedLocalHash)
+
+        assertEquals(SyncResultKind.UPLOADED, controller.createBackup())
+
+        // 上传基线必须真的落盘（此前 markSynced 只写时间，基线恒 null）。
+        val uploadedHash = controller.config.lastUploadedLocalHash
+        assertNotNull("上传成功后 lastUploadedLocalHash 必须有值", uploadedHash)
+        assertEquals(
+            "落盘值必须等于上传内容的内容哈希",
+            WebdavSyncCoordinator.snapshotContentHash(buildSyncSnapshotBytes()),
+            uploadedHash,
+        )
+        // 列表里这条就是「当前版本」：isCurrent 与删除按钮的显隐都靠它。
+        val rows = controller.backupListViewState().rows
+        assertEquals(1, rows.size)
+        assertTrue("刚上传的那条应显示为当前版本", rows.first().isCurrent)
+    }
+
+    @Test
+    fun `恢复成功后两个基线钉到远端内容`() {
+        val transport = FakeRemoteTransport()
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        val remoteBytes = buildSyncSnapshotBytes(profileId = "pRemote")
+        transport.files["${folder}backup.mikcb"] = remoteBytes
+        val controller = controller(transport = transport)
+        controller.connect("me@example.com", "pw")
+        controller.refreshBackups()
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+
+        val remoteHash = WebdavSyncCoordinator.snapshotContentHash(remoteBytes)
+        assertEquals(remoteHash, controller.config.lastAppliedRemoteHash)
+        assertEquals(remoteHash, controller.config.lastUploadedLocalHash)
+    }
+
+    @Test
+    fun `删除当前备份被拒绝_错误码cannot_delete_current_backup`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes())
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.createBackup())
+        val currentId = controller.backupListViewState().rows.single().entryId
+
+        assertEquals(SyncResultKind.FAILED, controller.deleteBackup(currentId))
+
+        assertEquals("cannot_delete_current_backup", controller.lastErrorCode)
+        // 远端文件必须原地不动。
+        assertTrue(
+            transport.files.containsKey("${WebdavSyncConfig().historyRemoteFolder}$currentId"),
+        )
+    }
+
+    // ---------- 立即同步：先拉后推（2026-11-02 修「不比对远端就 PUT 覆盖」） ----------
+
+    @Test
+    fun `syncNow_远端为空时直接推本地`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes())
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+
+        assertTrue(transport.files.containsKey(controller.config.snapshotRemotePath))
+        assertNotNull(controller.config.lastUploadedLocalHash)
+    }
+
+    @Test
+    fun `syncNow_远端仍是基线而本地有改动时推本地`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "p1"))
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+
+        // 本机改了、远端没动：推本地是正确语义（远端没有别人的新数据可丢）。
+        snapshotStore.stored = buildSyncSnapshotBytes(profileId = "p1-edited")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+
+        assertArrayEquals(
+            buildSyncSnapshotBytes(profileId = "p1-edited"),
+            transport.files[controller.config.snapshotRemotePath],
+        )
+        assertNull(controller.pendingSyncConflict)
+    }
+
+    @Test
+    fun `syncNow_仅远端更新本地没改时以云端为准`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "p1"))
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+
+        // 另一台设备推了新版本；本机一个字没改。
+        val remoteNew = buildSyncSnapshotBytes(profileId = "pOther")
+        transport.files[controller.config.snapshotRemotePath] = remoteNew
+        assertEquals(SyncResultKind.DOWNLOADED, controller.syncNow())
+
+        assertArrayEquals("本机应被拉成云端那份", remoteNew, snapshotStore.stored)
+        assertNull(controller.pendingSyncConflict)
+    }
+
+    @Test
+    fun `syncNow_两边都改过时挂起冲突不覆盖任何一端`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "p1"))
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+
+        val remoteDrifted = buildSyncSnapshotBytes(profileId = "pRemote")
+        transport.files[controller.config.snapshotRemotePath] = remoteDrifted
+        snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
+
+        assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
+
+        val conflict = controller.pendingSyncConflict
+        assertNotNull("两边都改过必须挂起冲突等用户选边", conflict)
+        assertFalse(conflict!!.isFirstSyncDivergence)
+        // 挂起期间两端都必须原地不动：绝不静默覆盖。
+        assertArrayEquals(remoteDrifted, transport.files[controller.config.snapshotRemotePath])
+        assertArrayEquals(buildSyncSnapshotBytes(profileId = "pLocal"), snapshotStore.stored)
+
+        // 放弃选边：仍然什么都不动，挂起冲突被消费掉。
+        assertEquals(SyncResultKind.CANCELLED, controller.resolveSyncConflict(SyncConflictChoice.CANCEL))
+        assertNull(controller.pendingSyncConflict)
+        assertArrayEquals(remoteDrifted, transport.files[controller.config.snapshotRemotePath])
+        assertArrayEquals(buildSyncSnapshotBytes(profileId = "pLocal"), snapshotStore.stored)
+    }
+
+    @Test
+    fun `syncNow_冲突选本机后覆盖远端并写基线`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "p1"))
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+        transport.files[controller.config.snapshotRemotePath] = buildSyncSnapshotBytes(profileId = "pRemote")
+        snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
+        assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
+
+        assertEquals(SyncResultKind.UPLOADED, controller.resolveSyncConflict(SyncConflictChoice.KEEP_LOCAL))
+
+        assertArrayEquals(
+            buildSyncSnapshotBytes(profileId = "pLocal"),
+            transport.files[controller.config.snapshotRemotePath],
+        )
+        assertEquals(
+            WebdavSyncCoordinator.snapshotContentHash(buildSyncSnapshotBytes(profileId = "pLocal")),
+            controller.config.lastUploadedLocalHash,
+        )
+        assertNull(controller.pendingSyncConflict)
+    }
+
+    @Test
+    fun `syncNow_冲突选云端后应用远端并写基线`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore(initial = buildSyncSnapshotBytes(profileId = "p1"))
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
+        val remoteDrifted = buildSyncSnapshotBytes(profileId = "pRemote")
+        transport.files[controller.config.snapshotRemotePath] = remoteDrifted
+        snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
+        assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.resolveSyncConflict(SyncConflictChoice.KEEP_REMOTE))
+
+        assertArrayEquals(remoteDrifted, snapshotStore.stored)
+        val remoteHash = WebdavSyncCoordinator.snapshotContentHash(remoteDrifted)
+        assertEquals(remoteHash, controller.config.lastAppliedRemoteHash)
+        assertEquals(remoteHash, controller.config.lastUploadedLocalHash)
+        assertNull(controller.pendingSyncConflict)
     }
 }
