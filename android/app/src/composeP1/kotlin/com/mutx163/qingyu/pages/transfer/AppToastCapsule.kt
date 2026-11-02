@@ -1,14 +1,19 @@
 package com.mutx163.qingyu.pages.transfer
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -34,6 +39,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - 动作按钮点一下先关掉提示再执行回调（Dart 同款顺序，避免回调里又弹一条时
  *   两条叠在一起）。
  *
+ * @param description 第二行说明（比正文小一号、次要色）；null = 只有一行。
+ *   对应 Dart `showAppToast(description:)`，失败提示的「试试直接打开 App」放这里。
  * @param autoDismissMillis ≤ 0 表示不自动消失（需要用户点一下才走）。
  */
 @Composable
@@ -41,19 +48,25 @@ fun AppToastCapsule(
     message: String,
     dark: Boolean,
     modifier: Modifier = Modifier,
+    description: String? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     onDismiss: () -> Unit = {},
     autoDismissMillis: Long = TOAST_DURATION_MILLIS,
 ) {
-    LaunchedEffect(message, actionLabel) {
+    LaunchedEffect(message, description, actionLabel) {
         if (autoDismissMillis > 0L) {
             delay(autoDismissMillis)
             onDismiss()
         }
     }
+    val secondaryText = Color(QingyuTheme.secondaryText(dark))
     QingyuCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            // 自绘胶囊不会像系统 Toast 那样被读屏自动播报；合并成一个节点标成 polite
+            // live region，让 TalkBack 在提示出现时补念整句（不抢焦点）。
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         cornerRadius = 16.dp,
         insideMargin = PaddingValues(start = 16.dp, top = 12.dp, end = 12.dp, bottom = 12.dp),
     ) {
@@ -62,12 +75,21 @@ fun AppToastCapsule(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.primaryText(dark)),
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = message,
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.primaryText(dark)),
+                )
+                if (!description.isNullOrBlank()) {
+                    Text(
+                        text = description,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = secondaryText,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
             if (actionLabel != null) {
                 TextButton(
                     text = actionLabel,

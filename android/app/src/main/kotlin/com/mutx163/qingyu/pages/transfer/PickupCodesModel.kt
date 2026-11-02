@@ -53,8 +53,16 @@ object PickupCodesModel {
         /** 是否强制新开目标页（QuickJump 用它修「淘宝在后台时跳不动」的机型）。 */
         val clearTask: Boolean = false,
     ) {
-        val title: String get() = TransferExtStrings.valueOf(titleKey)?.zh ?: titleKey
-        val hint: String get() = TransferExtStrings.valueOf(hintKey)?.zh ?: hintKey
+        /**
+         * 屏上标题；**键不在文案表里时返回空串**，由 [entryTitle] 统一回落成「未命名入口」。
+         *
+         * 不能回落成键名（`pickupCodePresetFoo`）：键名非空，`entryTitle` 的
+         * `takeIf { it.isNotBlank() }` 就永远走不到兜底，内部标识符会直接上屏。
+         */
+        val title: String get() = TransferExtStrings.valueOf(titleKey)?.zh.orEmpty()
+
+        /** 屏上行说明；缺键时为空串，渲染层据此不画说明行。 */
+        val hint: String get() = TransferExtStrings.valueOf(hintKey)?.zh.orEmpty()
     }
 
     enum class Group { IDENTITY, PARCELS }
@@ -210,7 +218,7 @@ object PickupCodesModel {
     }
 
     /**
-     * 某个包名装没装（渲染层「未安装」那行灰字用它）。
+     * 某个包名装没装（渲染层据此把整行淡到 55%、首字加删除线，并把状态写进无障碍标签）。
      *
      * `installed` 为 null = 还没查到 / 查不到 ⇒ **当作已安装**：宁可少显示一句提示，
      * 也不能把「能点、点了就跳过去」的入口标成「未安装」（Android 11+ 包可见性没配好时
@@ -218,7 +226,61 @@ object PickupCodesModel {
      */
     fun isInstalled(preset: Preset, installed: Set<String>?): Boolean {
         if (installed == null) return true
+        // 没有 App 级兜底的入口（只有网页）不存在「未安装」：`any {}` 在空列表上返回
+        // false，会把「只有网页兜底」的入口恒标成未安装（Dart `_isMissing` 同款判据）。
+        if (preset.appPackages.isEmpty()) return true
         return preset.appPackages.any { installed.contains(it) }
+    }
+
+    // ── 品牌色与首字（Dart `pickup_code_icons.dart` / `_PickupCodeGlyph`） ──
+
+    /** 兜底色：不在品牌表里的入口沿用它（Dart `pickupCodeAccentFor` 的 `_` 分支）。 */
+    const val DEFAULT_ACCENT_LIGHT: Long = 0xFF3482FF
+    const val DEFAULT_ACCENT_DARK: Long = 0xFF7EB0FF
+
+    /**
+     * 品牌强调色（ARGB，亮/暗两档），按入口键取。
+     *
+     * 为什么颜色在模型层：这是**固定语义色**（各平台品牌主色），与主题无关；放在渲染层
+     * 会变成页面里的 `Color(0x…)` 字面量，深色/换肤时看着像漏改。颜色属于入口数据，
+     * 与链接、包名同一张表，因此跟数据一起放这里。
+     *
+     * 与 Dart 的唯一有意差异：Dart 的 switch 漏了 `*Parcels` 两条，导致「淘宝（查待取）」
+     * 「拼多多（查待取）」拿到兜底蓝，与同品牌的身份码行不同色。这里按品牌补齐——
+     * 同一平台在两个分组里颜色一致，才符合「首字认平台、颜色做辅助」的原设计。
+     */
+    private val brandAccents: Map<String, Pair<Long, Long>> = mapOf(
+        "pickupCodePresetCainiao" to (0xFFF97316L to 0xFFFFA24DL),
+        "pickupCodePresetTaobao" to (0xFFEF4444L to 0xFFFF7A6EL),
+        "pickupCodePresetPinduoduo" to (0xFFDC2626L to 0xFFF87171L),
+        "pickupCodePresetTaobaoParcels" to (0xFFEF4444L to 0xFFFF7A6EL),
+        "pickupCodePresetPinduoduoParcels" to (0xFFDC2626L to 0xFFF87171L),
+        "pickupCodePresetJdParcels" to (0xFFE11D48L to 0xFFFB7185L),
+        "pickupCodePresetDouyinParcels" to (0xFF18181BL to 0xFFE4E4E7L),
+    )
+
+    /** 某入口的品牌色；未知入口回落到 [DEFAULT_ACCENT_LIGHT] / [DEFAULT_ACCENT_DARK]。 */
+    fun accentFor(preset: Preset, dark: Boolean): Long {
+        val pair = brandAccents[preset.titleKey]
+        return when {
+            pair == null -> if (dark) DEFAULT_ACCENT_DARK else DEFAULT_ACCENT_LIGHT
+            dark -> pair.second
+            else -> pair.first
+        }
+    }
+
+    /**
+     * 平台首字（Dart `_PickupCodeGlyph` 的 `title.characters.first`）。
+     *
+     * 用 `offsetByCodePoints` 而不是 `take(1)`：后者会把代理对（emoji / 生僻字）
+     * 劈成半个字符，界面上出现方块。空标题回落 `?`，与 Dart 一致。
+     */
+    fun glyphOf(preset: Preset): String = firstGlyph(preset.title)
+
+    /** [glyphOf] 的纯函数内核（可单独用任意标题验证切字行为）。 */
+    internal fun firstGlyph(title: String): String {
+        if (title.isEmpty()) return "?"
+        return title.substring(0, title.offsetByCodePoints(0, 1))
     }
 
     val title: String get() = TransferExtStrings.pickupCodeTitle.zh

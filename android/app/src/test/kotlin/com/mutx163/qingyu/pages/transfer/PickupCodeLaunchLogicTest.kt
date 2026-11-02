@@ -25,6 +25,7 @@ class PickupCodeLaunchLogicTest {
         private val appResults: Map<String, PickupCodeLaunchOutcome> = emptyMap(),
         private val installed: Set<String>? = null,
         private val defaultOutcome: PickupCodeLaunchOutcome = PickupCodeLaunchOutcome(false, "no_activity"),
+        private val throwOnInstalled: Boolean = false,
     ) : PickupCodePlatform {
         val calls = mutableListOf<String>()
 
@@ -42,7 +43,10 @@ class PickupCodeLaunchLogicTest {
             return appResults[packageName] ?: defaultOutcome
         }
 
-        override fun installedPackages(packages: List<String>): Set<String>? = installed
+        override fun installedPackages(packages: List<String>): Set<String>? {
+            if (throwOnInstalled) error("probe failed")
+            return installed
+        }
     }
 
     private val preset = PickupCodesModel.Preset(
@@ -80,6 +84,50 @@ class PickupCodeLaunchLogicTest {
 
         assertEquals(PickupCodeRunStatus.LAUNCHED, result.status)
         assertEquals(listOf("uri:demo://first", "uri:demo://second"), platform.calls)
+    }
+
+    @Test
+    fun `空链接直接跳过不发出去`() {
+        val platform = FakePlatform(
+            uriResults = mapOf("demo://ok" to PickupCodeLaunchOutcome(true)),
+        )
+        val withBlank = preset.copy(
+            links = listOf(
+                PickupCodesModel.Link("   ", null),
+                PickupCodesModel.Link("demo://ok", "com.demo.a"),
+            ),
+        )
+
+        val result = PickupCodeRunner(platform).run(withBlank)
+
+        assertEquals(PickupCodeRunStatus.LAUNCHED, result.status)
+        assertEquals(listOf("uri:demo://ok"), platform.calls)
+    }
+
+    @Test
+    fun `链接的包名限定与 clearTask 原样透传`() {
+        val seen = mutableListOf<Triple<String, String?, Boolean>>()
+        val platform = object : PickupCodePlatform {
+            override val supported = true
+
+            override fun launchUri(
+                uri: String,
+                packageName: String?,
+                clearTask: Boolean,
+            ): PickupCodeLaunchOutcome {
+                seen.add(Triple(uri, packageName, clearTask))
+                return PickupCodeLaunchOutcome(true)
+            }
+
+            override fun launchApp(packageName: String, clearTask: Boolean) =
+                PickupCodeLaunchOutcome(true)
+
+            override fun installedPackages(packages: List<String>) = null
+        }
+
+        PickupCodeRunner(platform).run(preset.copy(clearTask = true))
+
+        assertEquals(Triple("demo://first", "com.demo.a", true), seen.single())
     }
 
     // ── 2. 拉起 App ──
@@ -178,6 +226,28 @@ class PickupCodeLaunchLogicTest {
         assertTrue(platform.calls.isEmpty())
     }
 
+    @Test
+    fun `结果带上本次耗时`() {
+        // 每次读时钟前进 100ms：起点 1000 → 预算检查 1100 → 成功收尾 1200 ⇒ 200ms。
+        var now = 1_000L
+        val platform = FakePlatform(
+            uriResults = mapOf("demo://first" to PickupCodeLaunchOutcome(true)),
+        )
+        val runner = PickupCodeRunner(
+            platform = platform,
+            clock = {
+                val current = now
+                now += 100L
+                current
+            },
+        )
+
+        val result = runner.run(preset)
+
+        assertEquals(PickupCodeRunStatus.LAUNCHED, result.status)
+        assertEquals(200L, result.elapsedMillis)
+    }
+
     // ── 5. 批量查安装 ──
 
     @Test
@@ -193,6 +263,13 @@ class PickupCodeLaunchLogicTest {
             setOf("com.demo.a"),
             PickupCodeRunner(platform).installedPackages(listOf("com.demo.a")),
         )
+    }
+
+    @Test
+    fun `批量查安装抛异常时返回 null 而不是空集`() {
+        // 空集会被当成「一个都没装」→ 七行全标未安装、跳过所有 App 兜底。
+        val platform = FakePlatform(throwOnInstalled = true)
+        assertNull(PickupCodeRunner(platform).installedPackages(listOf("com.demo.a")))
     }
 
     // ── 6. 结果 → 屏上那句话 ──

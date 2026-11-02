@@ -111,6 +111,43 @@ class PickupCodePresetsParityTest {
     }
 
     @Test
+    fun `网页兜底与 App 包名归属到正确入口`() {
+        // 只断言「所有 URL 都能在 Dart 源里找到」抓不到两条例目互换；
+        // 这里把「哪个入口该有哪条兜底 / 哪组包名」逐条钉住。
+        val expectedWeb = mapOf(
+            "pickupCodePresetCainiao" to "authCode.html",
+            "pickupCodePresetTaobao" to "end-collect-platform/identity-code?x-ssr=true",
+            "pickupCodePresetPinduoduo" to "m.pinduoduo.net/mdkd/package",
+            "pickupCodePresetTaobaoParcels" to "m-end-school-tab/home",
+            "pickupCodePresetPinduoduoParcels" to "m.pinduoduo.net/mdkd/package",
+            "pickupCodePresetJdParcels" to "order.jd.com/center/list.action",
+            "pickupCodePresetDouyinParcels" to "haohuo.jinritemai.com/views/order/list",
+        )
+        val expectedApps = mapOf(
+            "pickupCodePresetCainiao" to listOf("com.cainiao.wireless"),
+            "pickupCodePresetTaobao" to listOf("com.taobao.taobao"),
+            "pickupCodePresetPinduoduo" to listOf("com.xunmeng.pinduoduo"),
+            "pickupCodePresetTaobaoParcels" to listOf("com.taobao.taobao"),
+            "pickupCodePresetPinduoduoParcels" to listOf("com.xunmeng.pinduoduo"),
+            "pickupCodePresetJdParcels" to listOf("com.jingdong.app.mall"),
+            "pickupCodePresetDouyinParcels" to
+                listOf("com.ss.android.ugc.aweme", "com.ss.android.ugc.aweme.lite"),
+        )
+        for (preset in PickupCodesModel.presets) {
+            val webNeedle = expectedWeb.getValue(preset.titleKey)
+            assertTrue(
+                "${preset.titleKey} 的网页兜底归属不对：${preset.webUri}",
+                preset.webUri.orEmpty().contains(webNeedle),
+            )
+            assertEquals(
+                "${preset.titleKey} 的 App 兜底包名不对",
+                expectedApps.getValue(preset.titleKey),
+                preset.appPackages,
+            )
+        }
+    }
+
+    @Test
     fun `未安装判据：查不到时按已安装处理`() {
         val preset = PickupCodesModel.presets.first()
         // null = 还没查到 / 查不到 ⇒ 不许把能点的入口标成「未安装」。

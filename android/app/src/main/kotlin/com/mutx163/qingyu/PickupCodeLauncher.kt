@@ -161,19 +161,49 @@ object PickupCodeLauncher {
         }
     }
 
-    /** 批量查包名是否已安装（同样受 `<queries>` 可见性约束）。 */
+    /**
+     * 批量查包名是否已安装（同样受 `<queries>` 可见性约束）。
+     *
+     * **保留旧契约**：任何查询异常都算「没装」，返回值里每个合法包名都会有一项。
+     * 这是 Flutter 通道沿用的形状（`Map<String, Boolean>`），不要改。
+     * 新代码若需要区分「确实没装」与「查不了」（包可见性没配好时两者外观一样），
+     * 用 [probeInstalledPackages]。
+     */
     fun installedPackages(activity: Activity, packages: List<String>): Map<String, Boolean> {
         val result = LinkedHashMap<String, Boolean>()
         for (packageName in packages) {
             if (!PACKAGE_PATTERN.matches(packageName)) {
                 continue
             }
-            result[packageName] = isInstalled(activity, packageName)
+            // 旧契约不变：单条查不了就按「没装」记，其它条目照常给出结果。
+            result[packageName] = probeInstalled(activity, packageName) ?: false
         }
         return result
     }
 
-    private fun isInstalled(activity: Activity, packageName: String): Boolean {
+    /**
+     * 批量查安装状态；**返回 null = 有一项查不了（未知）**，不是「全都没装」。
+     *
+     * 为什么要区分：Android 11+ 包可见性没覆盖、或 `PackageManager` 抛了非
+     * `NameNotFoundException` 的异常时，若把它当成「没装」，界面会把七条入口全标成
+     * 未安装，回退器还会跳过所有 App 兜底（每个包白等一轮通道超时）。
+     * 取件码页用这一版：未知就**不做任何未安装判定**，运行时的多级回退仍会逐个试。
+     */
+    fun probeInstalledPackages(
+        activity: Activity,
+        packages: List<String>,
+    ): Map<String, Boolean>? {
+        val result = LinkedHashMap<String, Boolean>()
+        for (packageName in packages) {
+            if (!PACKAGE_PATTERN.matches(packageName)) {
+                continue
+            }
+            result[packageName] = probeInstalled(activity, packageName) ?: return null
+        }
+        return result
+    }
+
+    private fun probeInstalled(activity: Activity, packageName: String): Boolean? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 activity.packageManager.getPackageInfo(
@@ -186,10 +216,11 @@ object PickupCodeLauncher {
             }
             true
         } catch (error: PackageManager.NameNotFoundException) {
+            // 这是「确定没装」，不是「查不了」。
             false
         } catch (error: Exception) {
-            Log.w(TAG, "isInstalled failed for $packageName", error)
-            false
+            Log.w(TAG, "probeInstalled failed for $packageName", error)
+            null
         }
     }
 

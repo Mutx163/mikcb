@@ -50,6 +50,14 @@ data class PickupCodeRunResult(
     val status: String,
     /** 最后一次失败的原因码；成功时为 null。 */
     val reason: String? = null,
+    /**
+     * 本次执行耗时（毫秒）。
+     *
+     * Dart `PickupCodeRunResult.elapsed` 的同一用途：用户报「点了没反应」时，
+     * 只靠状态码分不清「链接秒失败」与「通道等满预算才失败」。
+     * 未知/未启动的路径为 0。
+     */
+    val elapsedMillis: Long = 0L,
 ) {
     val ok: Boolean
         get() = status == PickupCodeRunStatus.LAUNCHED ||
@@ -97,12 +105,14 @@ class PickupCodeRunner(
         }
         val startedAt = clock()
         fun budgetLeft(): Boolean = clock() - startedAt < budgetMillis
+        fun finish(status: String, reason: String? = null) =
+            PickupCodeRunResult(status, reason, clock() - startedAt)
 
         var lastReason: String? = null
 
         for (link in preset.links) {
             if (!budgetLeft()) {
-                return PickupCodeRunResult(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
+                return finish(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
             }
             val uri = link.uri.trim()
             if (uri.isEmpty()) {
@@ -110,7 +120,7 @@ class PickupCodeRunner(
             }
             val outcome = platform.launchUri(uri, link.packageName, preset.clearTask)
             if (outcome.ok) {
-                return PickupCodeRunResult(PickupCodeRunStatus.LAUNCHED)
+                return finish(PickupCodeRunStatus.LAUNCHED)
             }
             lastReason = outcome.reason ?: lastReason
         }
@@ -121,11 +131,11 @@ class PickupCodeRunner(
                 continue
             }
             if (!budgetLeft()) {
-                return PickupCodeRunResult(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
+                return finish(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
             }
             val outcome = platform.launchApp(packageName, preset.clearTask)
             if (outcome.ok) {
-                return PickupCodeRunResult(PickupCodeRunStatus.OPENED_APP)
+                return finish(PickupCodeRunStatus.OPENED_APP)
             }
             lastReason = outcome.reason ?: lastReason
         }
@@ -133,16 +143,16 @@ class PickupCodeRunner(
         val webUri = preset.webUri?.trim()
         if (!webUri.isNullOrEmpty()) {
             if (!budgetLeft()) {
-                return PickupCodeRunResult(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
+                return finish(PickupCodeRunStatus.FAILED, PickupCodesModel.REASON_TIMEOUT)
             }
             val outcome = platform.launchUri(webUri, null, preset.clearTask)
             if (outcome.ok) {
-                return PickupCodeRunResult(PickupCodeRunStatus.OPENED_WEB)
+                return finish(PickupCodeRunStatus.OPENED_WEB)
             }
             lastReason = outcome.reason ?: lastReason
         }
 
-        return PickupCodeRunResult(PickupCodeRunStatus.FAILED, lastReason)
+        return finish(PickupCodeRunStatus.FAILED, lastReason)
     }
 
     /** 进页面时批量查「哪些 App 装了」；查不到返回 null（调用方据此退回逐个试）。 */

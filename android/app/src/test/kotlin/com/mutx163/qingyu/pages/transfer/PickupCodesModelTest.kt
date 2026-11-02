@@ -140,4 +140,89 @@ class PickupCodesModelTest {
     fun `标题缺失时兜底未命名入口`() {
         assertEquals("未命名入口", PickupCodesModel.entryTitle(null))
     }
+
+    @Test
+    fun `文案键查不到时返回空串而不是把键名印到屏上`() {
+        // 之前回落成键名，`entryTitle` 的 isNotBlank 判据永远走不到兜底，
+        // 界面上会出现 `pickupCodePresetMissing` 这种内部标识符。
+        val unknown = PickupCodesModel.Preset(
+            titleKey = "pickupCodePresetMissing",
+            hintKey = "pickupCodeHintMissing",
+            icon = "parcel",
+            group = PickupCodesModel.Group.PARCELS,
+        )
+        assertEquals("", unknown.title)
+        assertEquals("", unknown.hint)
+        assertEquals("未命名入口", PickupCodesModel.entryTitle(unknown))
+    }
+
+    // ── 5. 品牌首字与品牌色（渲染层取这两样画行首） ──
+
+    @Test
+    fun `首字取平台名的第一个字`() {
+        assertEquals("菜", PickupCodesModel.glyphOf(PickupCodesModel.presets[0]))
+        assertEquals("淘", PickupCodesModel.glyphOf(PickupCodesModel.presets[1]))
+        assertEquals("拼", PickupCodesModel.glyphOf(PickupCodesModel.presets[2]))
+        assertEquals("京", PickupCodesModel.glyphOf(PickupCodesModel.presets[5]))
+        assertEquals("抖", PickupCodesModel.glyphOf(PickupCodesModel.presets[6]))
+    }
+
+    @Test
+    fun `首字对代理对不劈开`() {
+        // 生僻字/emoji 是一个码点两个 UTF-16 单元，`take(1)` 会劈出半个字符（显示成方块）。
+        assertEquals("😀", PickupCodesModel.firstGlyph("😀快递"))
+        assertEquals("𠀋", PickupCodesModel.firstGlyph("𠀋字"))
+        assertEquals("?", PickupCodesModel.firstGlyph(""))
+    }
+
+    @Test
+    fun `品牌色按平台亮暗两档`() {
+        val cainiao = PickupCodesModel.presets[0]
+        assertEquals(0xFFF97316L, PickupCodesModel.accentFor(cainiao, dark = false))
+        assertEquals(0xFFFFA24DL, PickupCodesModel.accentFor(cainiao, dark = true))
+
+        // 同一平台的「身份码」与「查待取」必须同色：Dart 原版漏了这两条，拿到兜底蓝。
+        val taobao = PickupCodesModel.presets[1]
+        val taobaoParcels = PickupCodesModel.presets[3]
+        assertEquals(
+            PickupCodesModel.accentFor(taobao, dark = false),
+            PickupCodesModel.accentFor(taobaoParcels, dark = false),
+        )
+        assertEquals(
+            PickupCodesModel.accentFor(taobao, dark = true),
+            PickupCodesModel.accentFor(taobaoParcels, dark = true),
+        )
+    }
+
+    @Test
+    fun `未知入口的品牌色回落到默认蓝`() {
+        val unknown = PickupCodesModel.Preset(
+            titleKey = "pickupCodePresetMissing",
+            hintKey = "pickupCodeHintMissing",
+            icon = "parcel",
+            group = PickupCodesModel.Group.PARCELS,
+        )
+        assertEquals(
+            PickupCodesModel.DEFAULT_ACCENT_LIGHT,
+            PickupCodesModel.accentFor(unknown, dark = false),
+        )
+        assertEquals(
+            PickupCodesModel.DEFAULT_ACCENT_DARK,
+            PickupCodesModel.accentFor(unknown, dark = true),
+        )
+    }
+
+    @Test
+    fun `没有 App 级兜底的入口不算未安装`() {
+        // 只有网页兜底的入口：`any {}` 在空列表上返回 false，旧判据会把它恒标成未安装。
+        val webOnly = PickupCodesModel.Preset(
+            titleKey = "pickupCodePresetCainiao",
+            hintKey = "pickupCodePresetCainiaoHint",
+            icon = "qrCode",
+            group = PickupCodesModel.Group.IDENTITY,
+            appPackages = emptyList(),
+            webUri = "https://example.com",
+        )
+        assertTrue(PickupCodesModel.isInstalled(webOnly, emptySet()))
+    }
 }
