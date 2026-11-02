@@ -123,49 +123,54 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                     lineHeight = 20.sp,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        val record = pendingDelete
-                        pendingDelete = null
-                        if (record != null) {
-                            val deleted = runCatching { store.delete(record.id) }.getOrElse { error ->
-                                Log.w(
-                                    CUSTOM_DEBUG_LOG_TAG,
-                                    "delete failed id=${record.id}: ${error.message}",
-                                )
-                                false
-                            }
-                            if (deleted) {
-                                records = runCatching { store.load() }.getOrDefault(
-                                    records.filterNot { it.id == record.id },
-                                )
-                                Toast.makeText(
-                                    context,
-                                    WarehouseStrings.deletedDebugRecord.filled("name", record.name),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            } else {
-                                Toast.makeText(context, WarehouseStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    },
+                // 两动作横排等宽（取消在左、删除在右），与 Dart `HyperosDialog` 的两动作行
+                // 一致；改用 TextButton——原来两颗 surfaceVariant 实心按钮在深色下与对话框底
+                // 同为 #242424，按钮边界直接消失，取消字色还是 40% 透明的
+                // onSurfaceVariantActions（审核报告 P2 旧 :126）。
+                // 删除 = destructive：中性底 + 危险色字；`textButtonColors(color = …)` 的
+                // `color` 是**底色**位（会得到整颗红底 + 灰字），所以用 `textColor`。
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    content = { Text(WarehouseStrings.deleteAction.zh) },
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
-                        contentColor = MiuixTheme.colorScheme.error,
-                    ),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { pendingDelete = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    content = { Text(WarehouseStrings.cancelAction.zh) },
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
-                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    ),
-                )
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = WarehouseStrings.cancelAction.zh,
+                        onClick = { pendingDelete = null },
+                    )
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = WarehouseStrings.deleteAction.zh,
+                        onClick = {
+                            val record = pendingDelete
+                            pendingDelete = null
+                            if (record != null) {
+                                val deleted = runCatching { store.delete(record.id) }.getOrElse { error ->
+                                    Log.w(
+                                        CUSTOM_DEBUG_LOG_TAG,
+                                        "delete failed id=${record.id}: ${error.message}",
+                                    )
+                                    false
+                                }
+                                if (deleted) {
+                                    records = runCatching { store.load() }.getOrDefault(
+                                        records.filterNot { it.id == record.id },
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        WarehouseStrings.deletedDebugRecord.filled("name", record.name),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, WarehouseStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            textColor = Color(QingyuTheme.error(isSystemInDarkTheme())),
+                        ),
+                    )
+                }
             }
         }
     }
