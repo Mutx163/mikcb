@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.import
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,13 +40,16 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -57,6 +62,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -784,48 +790,119 @@ fun ImportCapacityDialog(
 /**
  * 随机配色组选择弹层（Dart `import_random_color_toggle.dart` 的 `showHyperosSheet`）。
  *
- * 选项顺序与色板表一致（[ImportRandomColorStore.GROUP_OPTIONS]）；选中项行尾显示对勾。
- * 选完立刻落盘并关闭——与 Dart 一致（`await PlaybackRandomColorPreferences.setGroupId` 后 pop）。
+ * Dart 原版是**底部弹层** + `HyperosChoiceGroup`：选项行 = 标题 + 色点预览 +
+ * 选中行尾 22dp 勾（`tiles.dart:630-693`），选完立刻落盘并关闭、没有「取消」按钮
+ * （`Navigator.pop(sheetContext, groupId)`）。这里照抄同一形态，不再用居中对话框里
+ * 嵌卡片 + 右箭头 + 灰色 ✓ 的旧写法。
+ *
+ * 选项顺序与色板表一致（[ImportRandomColorStore.GROUP_OPTIONS]）。
+ * 选项行骨架与 `pages/task/TaskPickerSheets.kt` 的选课程弹层同款。
  */
 @Composable
-fun ImportColorGroupDialog(
+fun ImportColorGroupSheet(
     show: Boolean,
     selectedGroupId: String,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    if (!show) return
-    // 7 行配色组在小屏/大字号下会撑出弹窗：清单限高可滚，「取消」固定在外。
-    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
-    OverlayDialog(
-        insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+    val dark = isSystemInDarkTheme()
+    val colors = MiuixTheme.colorScheme
+    // 7 行配色组在小屏/大字号下会撑出面板：清单限高可滚（弹层内短列表，不承载页面级滚动）。
+    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    QingyuSheet(
+        show = show,
         title = ImportStrings.importRandomColorGroupTitle.zh,
+        // 内容自己有 LazyColumn ⇒ 不再套外层 verticalScroll，底部让位落进列表 contentPadding。
+        contentScrolls = true,
         onDismissRequest = onDismiss,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxBodyHeight)
-                    .scrollEndHaptic()
-                    .overScrollVertical(),
-            ) {
-                itemsIndexed(ImportRandomColorStore.GROUP_OPTIONS) { index, groupId ->
-                    if (index > 0) Spacer(modifier = Modifier.height(8.dp))
-                    ImportValueRow(
-                        title = ImportRandomColorStore.groupLabel(groupId),
-                        value = if (groupId == selectedGroupId) "✓" else "",
-                        enabled = true,
-                        onClick = { onSelect(groupId) },
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxListHeight)
+                .scrollEndHaptic()
+                .overScrollVertical(),
+            contentPadding = PaddingValues(bottom = bottomInset),
+        ) {
+            itemsIndexed(ImportRandomColorStore.GROUP_OPTIONS) { index, groupId ->
+                val selected = groupId == selectedGroupId
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = COLOR_GROUP_ROW_MIN_HEIGHT)
+                        .clickable { onSelect(groupId) }
+                        .padding(
+                            horizontal = COLOR_GROUP_ROW_HORIZONTAL_PADDING,
+                            vertical = COLOR_GROUP_ROW_VERTICAL_PADDING,
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = ImportRandomColorStore.groupLabel(groupId),
+                            // Dart 选项行是 `HyperosChoiceTile` → listTitle ⇒ 官方字阶 main。
+                            style = MiuixTheme.textStyles.main,
+                            color = Color(QingyuTheme.primaryText(dark)),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        ImportColorDotsPreview(
+                            hexes = ImportSharedModel.courseColorGroupPalette(groupId),
+                        )
+                    }
+                    if (selected) {
+                        // Dart `HyperosSelectedCheckmark(size = 22)`（dialog 变体）。
+                        Spacer(modifier = Modifier.width(COLOR_GROUP_CHECK_GAP))
+                        Icon(
+                            imageVector = MiuixIcons.Ok,
+                            contentDescription = null,
+                            modifier = Modifier.size(COLOR_GROUP_CHECK_SIZE),
+                            tint = colors.primary,
+                        )
+                    }
+                }
+                // 分隔线只画在行与行之间（Dart `showDivider`，末行不画悬空线）。
+                if (index < ImportRandomColorStore.GROUP_OPTIONS.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = COLOR_GROUP_ROW_HORIZONTAL_PADDING),
+                        color = colors.dividerLine,
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            ImportActionButton(
-                label = ImportStrings.cancelAction.zh,
-                onClick = onDismiss,
-                secondary = true,
+        }
+    }
+}
+
+/** Dart `HyperosChoiceTile` 行最小高度（`HyperosMiuixSpec.settingsRowMinHeight`）。 */
+private val COLOR_GROUP_ROW_MIN_HEIGHT = 56.dp
+
+/** Dart `HyperosMiuixSpec.settingsRowPadding`（`16,13,16,13`）。 */
+private val COLOR_GROUP_ROW_HORIZONTAL_PADDING = 16.dp
+private val COLOR_GROUP_ROW_VERTICAL_PADDING = 13.dp
+
+/** Dart `HyperosSelectedCheckmark(size = 22)`（dialog 变体）。 */
+private val COLOR_GROUP_CHECK_SIZE = 22.dp
+
+/** 勾与标题之间的间隔（Dart `tiles.dart:657` `SizedBox(width: 6)`）。 */
+private val COLOR_GROUP_CHECK_GAP = 6.dp
+
+/**
+ * 选组行的色点预览（Dart `_ColorDotsPreview`，`import_random_color_toggle.dart:132-166`）：
+ * 色板过长时按步长抽样，最多 10 个 14dp 圆点、间距 4dp。
+ */
+@Composable
+private fun ImportColorDotsPreview(hexes: List<String>) {
+    val stride = if (hexes.size > 10) (hexes.size + 9) / 10 else 1
+    Row(
+        modifier = Modifier.padding(top = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        (hexes.indices step stride).take(10).forEach { index ->
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(parseHexColorOrFallback(hexes[index])),
             )
         }
     }

@@ -117,7 +117,7 @@ fun ImportEntryHost(
                 }
             },
         )
-        ImportColorGroupDialog(
+        ImportColorGroupSheet(
             show = showGroupPicker,
             selectedGroupId = prefs?.groupId ?: ImportRandomColorStore.DEFAULT_GROUP_ID,
             onSelect = { groupId ->
