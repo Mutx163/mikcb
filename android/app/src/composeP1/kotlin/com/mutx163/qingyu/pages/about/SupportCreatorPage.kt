@@ -14,6 +14,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -151,8 +153,13 @@ fun SupportCreatorPage(
             // ── 鸣谢区：分组标题独立，内容合并成一张卡 ──
             item {
                 QingyuSectionTitle(
-                    donorData?.title?.takeIf { it.isNotEmpty() }
+                    text = donorData?.title?.takeIf { it.isNotEmpty() }
                         ?: SupportCreatorStrings.donorListTitle,
+                    // 列表已经加了 12dp，而 SmallTitle 默认横向内边距 28dp ⇒ 标题左缘 40dp，
+                    // 比卡内文字（12 + 16 = 28dp）右移 12dp。左移 12dp 落回同一条轴线。
+                    // TODO: 共享件 `QingyuSectionTitle` 合入 `insideMargin` 参数后，
+                    //  这一行应换成 `insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)`。
+                    modifier = Modifier.offset(x = (-12).dp),
                 )
             }
             item {
@@ -183,6 +190,7 @@ fun SupportCreatorPage(
             QrPreview(
                 assetPath = assetPath,
                 fileName = fileName,
+                contentDescription = SupportCreatorStrings.scanTitleFor(method),
                 fallbackAspectRatio = qrFallbackAspectRatio(method),
             )
         }
@@ -190,6 +198,7 @@ fun SupportCreatorPage(
 }
 
 /** 紧凑头卡：应用图标 + 心形角标 + 标题/运行中 + 副标题 + 三枚能力胶囊。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SupportHeroCard() {
     val dark = isSystemInDarkTheme()
@@ -256,7 +265,11 @@ private fun SupportHeroCard() {
                 lineHeight = 19.sp,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // 大字号下三枚胶囊会挤爆，用官方 FlowRow 自动换行。
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 FeatureChip(
                     label = SupportCreatorStrings.chipAdapters,
                     accent = MiuixTheme.colorScheme.primary,
@@ -290,13 +303,19 @@ private fun RunningBadge() {
     )
 }
 
-/** 能力胶囊：13% 强调色底 + 同色文字。 */
+/**
+ * 能力胶囊：13% 强调色底 + 正文色文字。
+ *
+ * 文字不用强调色：primary / ORANGE 在浅色底上对比度只有约 2.9:1 / 2.5:1，
+ * 11sp 小字会发虚；三枚胶囊靠**底色**区分即可。
+ */
 @Composable
 private fun FeatureChip(label: String, accent: Color) {
+    val dark = isSystemInDarkTheme()
     Text(
         text = label,
         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-        color = accent,
+        color = Color(QingyuTheme.primaryText(dark)),
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
             .background(accent.copy(alpha = 0.13f))
@@ -419,6 +438,7 @@ private fun PaymentCard(
 private fun QrPreview(
     assetPath: String,
     fileName: String,
+    contentDescription: String,
     fallbackAspectRatio: Float,
 ) {
     val dark = isSystemInDarkTheme()
@@ -446,6 +466,7 @@ private fun QrPreview(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp)),
+                    contentDescription = contentDescription,
                     useNaturalAspectRatio = true,
                     fallbackAspectRatio = fallbackAspectRatio,
                 )
