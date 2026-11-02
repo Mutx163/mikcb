@@ -816,6 +816,7 @@ private fun AddCourseWeekPickerDialog(
                                 week = week,
                                 isSelected = week in draft.customWeeks,
                                 dark = dark,
+                                modifier = Modifier.weight(1f),
                                 onPress = {
                                     onDraftChange(AddCourseWeekDraftLogic.toggleCustomWeek(draft, week))
                                 },

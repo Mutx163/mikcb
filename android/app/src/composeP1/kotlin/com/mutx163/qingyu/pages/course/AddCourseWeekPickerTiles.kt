@@ -37,10 +37,11 @@ internal fun AddCourseWeekGridTile(
     week: Int,
     isSelected: Boolean,
     dark: Boolean,
+    modifier: Modifier = Modifier,
     onPress: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.card(dark)),
