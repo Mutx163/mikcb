@@ -670,7 +670,23 @@ private fun SummaryCardRow(
  */
 @Composable
 private fun SettingsLeadingBadge(icon: SettingsRowIcon) {
-    val tint = parseHexColor(icon.tintHex) ?: MiuixTheme.colorScheme.primary
+    SettingsIconBadge(glyph = miuixIconByName(icon.name), tintHex = icon.tintHex)
+}
+
+/**
+ * [SettingsLeadingBadge] 的矢量直入版：图标已经是 [ImageVector]、不经名字映射时用这个。
+ *
+ * 2026-11-02 开放给 `DockMenuEditors`（玻璃坞 / 八宫格编辑器的候选行）：那两页的行
+ * 不走 [SettingsRow] 模型（宿主页自己建行），但 Dart 侧候选行与设置导航行是**同一个**
+ * `HyperosListTile`（`settings_glass_dock_editor.dart:139-144`），行首徽章必须是同一块
+ * ——尺寸、圆角、图标本色分毫不能差，各抄一份迟早分叉（`SectionLabel` 放宽的同一理由）。
+ * `tintHex = null` 时退主题主色：候选行在 Dart 传的是固定 accent（`HyperosIconColors.blue`），
+ * 本仓行内徽章统一跟主题主色走（预览卡 / 已启用行同款），与设置族「模型不给色就退主色」
+ * 是同一条规则。
+ */
+@Composable
+internal fun SettingsIconBadge(glyph: ImageVector, tintHex: String?) {
+    val tint = parseHexColor(tintHex) ?: MiuixTheme.colorScheme.primary
     Box(
         modifier = Modifier
             .size(26.dp)
@@ -679,7 +695,7 @@ private fun SettingsLeadingBadge(icon: SettingsRowIcon) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = miuixIconByName(icon.name),
+            imageVector = glyph,
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier.size(14.dp),

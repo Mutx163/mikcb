@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.pages.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,7 +48,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Alarm
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Email
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -80,6 +78,7 @@ import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Update
 import top.yukonga.miuix.kmp.icon.extended.UploadCloud
 import top.yukonga.miuix.kmp.icon.extended.Weeks
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -609,6 +608,23 @@ private fun CandidateCard(
     }
 }
 
+/**
+ * 候选行：点击把该入口加入已启用列表。
+ *
+ * Dart 侧候选行与设置导航行是**同一个** `HyperosListTile`（行首彩色徽章 + 标题 +
+ * 行尾读数 + chevron，`tiles.dart:268-271`；`settings_glass_dock_editor.dart:139-144`），
+ * Compose 侧因此与设置族渲染层用同一件官方 `ArrowPreference`，不再自拼 `Row`。
+ *
+ * 与 Dart 的两处差异（有意，且都在这里留痕）：
+ * * 行首徽章：Dart 的 `HyperosListTile` 行内徽章是 26dp 实底款（`HyperosIconBadge`），
+ *   46dp 那种是**预览卡**里的（`:198-213`）。原先这里误用了预览款（46dp、浅 tint），
+ *   现在换成设置族同一块 [SettingsIconBadge]（26dp、实底、白图标）；
+ * * 满格时：`onClick = null` + `enabled = false`——官方行整行灰化、点不动，与 Dart 一致。
+ *   「已达上限」读数留在行尾：Dart 渲染层对不可点行其实不画 details（`tiles.dart:358`），
+ *   但它是「为什么不可用」的有效说明，删掉等于砍提示，超出行控件替换的范畴，故保留。
+ *   另外 [ArrowPreference] 的箭头恒画（`ArrowPreference.kt:80-83`，不随 `onClick` 消失），
+ *   满格时比 Dart 多一枚灰箭头——组件能力缺口，如实记录。
+ */
 @Composable
 private fun CandidateRow(
     candidate: EditorCandidate,
@@ -616,39 +632,34 @@ private fun CandidateRow(
     maxReachedText: String,
     onAdd: (String) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (canAdd) Modifier.clickable { onAdd(candidate.id) } else Modifier)
-            .height(DockSlotRowHeight)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        DockIconBadge(glyph = candidate.glyph)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = candidate.label,
-            modifier = Modifier.weight(1f),
-            style = MiuixTheme.textStyles.body1,
-            color = if (canAdd) {
-                MiuixTheme.colorScheme.onBackground
-            } else {
-                MiuixTheme.colorScheme.onSurfaceVariantSummary
-            },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (!canAdd) {
-            // 满格后行尾写「已达上限」并禁用（Dart :142-143 / :173-174）。
-            Text(
-                text = maxReachedText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
-    }
+    ArrowPreference(
+        title = candidate.label,
+        startAction = { SettingsIconBadge(glyph = candidate.glyph, tintHex = null) },
+        onClick = if (canAdd) {
+            { onAdd(candidate.id) }
+        } else {
+            null
+        },
+        enabled = canAdd,
+        endActions = {
+            if (!canAdd) {
+                Text(
+                    text = maxReachedText,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+        },
+    )
 }
 
+/**
+ * 「恢复默认排列」：Dart 侧就是分组白卡内的一条普通导航行
+ * （`HyperosListGroup` + `HyperosListTile(title, onTap)`，`settings_glass_dock_editor.dart:109-116`），
+ * 与设置族「卡片 + 官方行」同构。原先自拼 `Row + ChevronForward`（定高 56dp 行），
+ * 现在换官方 [ArrowPreference]：行高、行内边距、箭头尺寸（10×16dp）、按压反馈
+ * 全部交给官方组件，与设置族所有箭头行同一套手感（2026-11-02 对齐官方 preference 组件）。
+ */
 @Composable
 private fun ResetCard(
     label: String,
@@ -659,28 +670,8 @@ private fun ResetCard(
             .fillMaxWidth()
             .padding(bottom = QingyuSectionGap),
         insideMargin = PaddingValues(0.dp),
-        onClick = onReset,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(DockSlotRowHeight)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onBackground,
-            )
-            Icon(
-                imageVector = MiuixIcons.ChevronForward,
-                contentDescription = null,
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.size(16.dp),
-            )
-        }
+        ArrowPreference(title = label, onClick = onReset)
     }
 }
 
