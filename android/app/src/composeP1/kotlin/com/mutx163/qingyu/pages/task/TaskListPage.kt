@@ -284,41 +284,37 @@ fun TaskListPage(
     // pages/settings 2026-11-02 弹窗审核 P2）。标题/正文均为常量字符串，退场期间没有
     // 会被清空的状态，无需 remember 保底；删除动作在点击时才读 pendingDelete，
     // 退场期间它已为 null，天然不会再触发。
+    // 正文走官方 summary 槽：该槽自带居中渲染（miuix DialogContentLayout 里
+    // `textAlign = Center`），对齐 Dart `HyperosDialog` 的 message（同居中、同次级墨）。
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = pendingDelete != null,
         title = TaskStrings.taskDelete,
+        summary = TaskStrings.taskDeleteConfirm,
         onDismissRequest = { pendingDelete = null },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = TaskStrings.taskDeleteConfirm,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.primaryText(dark)),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = TaskStrings.cancelAction,
+                onClick = { pendingDelete = null },
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    modifier = Modifier.weight(1f),
-                    text = TaskStrings.cancelAction,
-                    onClick = { pendingDelete = null },
-                )
-                TextButton(
-                    modifier = Modifier.weight(1f),
-                    text = TaskStrings.deleteAction,
-                    colors = ButtonDefaults.textButtonColors(
-                        // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
-                        textColor = Color(QingyuTheme.error(dark)),
-                    ),
-                    onClick = {
-                        val target = pendingDelete
-                        pendingDelete = null
-                        if (target != null) onDeleteTask(target)
-                    },
-                )
-            }
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = TaskStrings.deleteAction,
+                colors = ButtonDefaults.textButtonColors(
+                    // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
+                    textColor = Color(QingyuTheme.error(dark)),
+                ),
+                onClick = {
+                    val target = pendingDelete
+                    pendingDelete = null
+                    if (target != null) onDeleteTask(target)
+                },
+            )
         }
     }
 }
