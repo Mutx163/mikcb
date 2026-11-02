@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -68,10 +70,16 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * - 菜单是**底部动作表**而不是锚点变形菜单（理由见上表）；
  * - 使用情况弹层的三段固定列表在 Dart 里是「有边框的小卡」，这里用共享 `QingyuCard`
  *   （官方 `Card` 的薄封装）承载，圆角/底色随主题；
- * - `TimeSchemeShareSheet` 没有「模板名」字段（Dart 正文居中显示 `scheme.name`），
- *   所以分享弹层**不显示正文**，只显示标题与三个动作；宿主当前也未接分享（见其文件头差异表）；
+ * - `TimeSchemeShareSheetDialog` 正文居中显示模板名（与 Dart `_shareTimeScheme` 同口径）；
+ *   宿主当前也未接分享（见其文件头差异表）；
  * - 新建/重命名弹层没有用 `sheet.nameHint`：miuix `TextField` 的占位与浮动标签是同一个槽位
  *   （`useLabelAsPlaceholder`），同时给会互相顶掉，这里以「标签」为准（与 `AddCoursePage` 同口径）。
+ *
+ * ## 常驻组合（2026-11-02 弹层债）
+ *
+ * 宿主把六个弹层**全部常驻**在组合里，可见性只交给 `show`——条件挂载会让官方退场动画
+ * 一次都播不出来。所以每个弹层内部都用 [rememberLastNonNull] 钉住最后一份非空入参：
+ * 退场动画期间标题/正文照常渲染，不会闪成空板。
  */
 
 /**
@@ -94,20 +102,19 @@ fun TimeSchemeMenuSheet(
     onAction: (TimeSchemeAction) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    val current = rememberLastNonNull(state)
     QingyuSheet(
         show = state != null,
         // 用模板名当弹层标题：菜单里 7 个动作都作用于这一套模板，标题是唯一的上下文。
-        title = state?.schemeName,
+        title = current?.schemeName,
         onDismissRequest = onDismiss,
-        // 内容自己给了 16dp（下面那个 Column），所以框架侧横向归零，避免叠成 32。
-        contentPadsHorizontally = true,
+        // 横向内边距由框架侧统一给 16dp（2026-11-02 弹层债 #5）：原来「内容自带 16 +
+        // 框架侧归零」的写法把标题行一起归零，长模板名会顶到面板边。内容自己的 16dp
+        // 内边距一并去掉，避免叠成 32。
+        contentPadsHorizontally = false,
     ) {
-        val items = state?.items.orEmpty()
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-        ) {
+        val items = current?.items.orEmpty()
+        Column(modifier = Modifier.fillMaxWidth()) {
             for (item in items) {
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
@@ -147,10 +154,10 @@ fun TimeSchemeNameSheet(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    val current = sheet
+    val current = rememberLastNonNull(sheet)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = current != null,
+        show = sheet != null,
         title = current?.title,
         onDismissRequest = onDismiss,
     ) {
@@ -191,10 +198,10 @@ fun TimeSchemeDeleteSheet(
     onViewUsage: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val current = check
+    val current = rememberLastNonNull(check)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = current != null,
+        show = check != null,
         title = current?.title,
         summary = current?.message,
         onDismissRequest = onCancel,
@@ -243,12 +250,12 @@ fun TimeSchemeDeleteBlockedSheet(
     onViewUsage: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val current = check
+    val current = rememberLastNonNull(check)
     // 占用清单条数无上界：正文限高 + 可滚，两个动作按钮固定在外。
     val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = current != null,
+        show = check != null,
         title = current?.title,
         onDismissRequest = onCancel,
     ) {
@@ -265,7 +272,8 @@ fun TimeSchemeDeleteBlockedSheet(
                         item(key = "intro") {
                             Text(
                                 text = current.blockerIntro,
-                                style = MiuixTheme.textStyles.footnote1,
+                                // Dart 抬头句是 listDetail（body2 同档）+ 主文本墨色。
+                                style = MiuixTheme.textStyles.body2,
                                 // 抬头句沿用对话框自己的居中惯例（与 Dart 同口径）。
                                 textAlign = TextAlign.Center,
                                 color = Color(QingyuTheme.primaryText(dark)),
@@ -277,7 +285,7 @@ fun TimeSchemeDeleteBlockedSheet(
                     items(current.blockers) { line ->
                         Text(
                             text = line,
-                            style = MiuixTheme.textStyles.footnote1,
+                            style = MiuixTheme.textStyles.body2,
                             textAlign = TextAlign.Start,
                             color = Color(QingyuTheme.secondaryText(dark)),
                             modifier = Modifier
@@ -286,20 +294,26 @@ fun TimeSchemeDeleteBlockedSheet(
                         )
                     }
                 }
-                TextButton(
+                // Dart `HyperosDialogAction` 两个动作是**横排等宽**（`_HyperosDialogActions`
+                // 的两动作分支，间距 12）——2026-11-02 弹层债 #6，不再竖排整宽。
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    // 同 [TimeSchemeDeleteSheet]：Dart 这里也是 `cancelAction`（「取消」），
-                    // 不是使用情况弹层的 `closeAction`（「关闭」）。
-                    text = TimeSchemeManagementStrings.cancelAction.zh,
-                    onClick = onCancel,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = TimeSchemeManagementStrings.viewUsageAction.zh,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = onViewUsage,
-                )
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        // 同 [TimeSchemeDeleteSheet]：Dart 这里也是 `cancelAction`（「取消」），
+                        // 不是使用情况弹层的 `closeAction`（「关闭」）。
+                        text = TimeSchemeManagementStrings.cancelAction.zh,
+                        onClick = onCancel,
+                    )
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = TimeSchemeManagementStrings.viewUsageAction.zh,
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        onClick = onViewUsage,
+                    )
+                }
             }
         }
     }
@@ -321,12 +335,12 @@ fun TimeSchemeUsageSheet(
     onClose: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    val current = view
+    val current = rememberLastNonNull(view)
     // 清单限高按屏高走：矮屏不再被 380dp 硬上限顶掉「关闭」按钮。
     val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.42f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = current != null,
+        show = view != null,
         title = current?.title,
         onDismissRequest = onClose,
     ) {
@@ -334,7 +348,8 @@ fun TimeSchemeUsageSheet(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = current.intro,
-                    style = MiuixTheme.textStyles.footnote1,
+                    // Dart 说明句是 listDetail（body2 同档）——2026-11-02 弹层债 #11。
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -426,27 +441,40 @@ fun TimeSchemeShareSheetDialog(
     onShareSystem: () -> Unit,
     onShareQr: () -> Unit,
 ) {
-    val current = sheet
+    val dark = isSystemInDarkTheme()
+    val current = rememberLastNonNull(sheet)
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = current != null,
+        show = sheet != null,
         title = current?.title,
         onDismissRequest = onDismiss,
     ) {
         if (current != null) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // Dart `_shareTimeScheme:859-865`：正文居中显示模板名，且用主文本墨色
+                //（默认次级灰在液态玻璃弹窗上几乎不可见）——2026-11-02 弹层债 #7 补上。
+                if (current.schemeName.isNotBlank()) {
+                    Text(
+                        text = current.schemeName,
+                        style = MiuixTheme.textStyles.body2,
+                        textAlign = TextAlign.Center,
+                        color = Color(QingyuTheme.primaryText(dark)),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = current.cancelLabel,
                     onClick = onDismiss,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = current.viaQrLabel,
                     onClick = onShareQr,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = current.viaSystemLabel,
@@ -461,10 +489,27 @@ fun TimeSchemeShareSheetDialog(
 // ────────────────────────────── 内部小件 ──────────────────────────────
 
 /**
- * 对话框底部一行动作：左「取消」+ 右确认（Dart `HyperosDialogAction` 的排列）。
+ * 退场期保留最后一份非空状态（常驻组合配方的一半，见文件头「常驻组合」）。
  *
- * `destructive = true` 时确认按钮走危险色（删除）；`onSecondary` 非空时在两者之间
- * 再插一个次要动作（当前只有删除确认弹层的「查看使用情况」用到，且宿主可删时不会传）。
+ * 宿主把弹层常驻在组合里，`show` 归 false 的退场动画期间内容 lambda 还会被组合——
+ * 直接读可空入参会把标题/正文清成空板（审核报告 S10）。这里用 remember 钉住
+ * 最后一份非空值，六个弹层共用。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) {
+        shown = current
+    }
+    return shown
+}
+
+/**
+ * 对话框底部动作区（Dart `HyperosDialogAction` 的排列，`hyperos_dialog.dart`
+ * 的 `_HyperosDialogActions`）：两个动作**横排等宽**，三个及以上**竖排全宽**，
+ * 间距一律 12dp（2026-11-02 弹层债 #8/#9）。
+ *
+ * `destructive = true` 时确认按钮走危险色（删除）。
  */
 @Composable
 private fun DialogActionRow(
@@ -476,34 +521,55 @@ private fun DialogActionRow(
     onSecondary: (() -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        TextButton(
-            modifier = Modifier.weight(1f),
-            text = cancelLabel,
-            onClick = onCancel,
-        )
-        if (onSecondary != null) {
+    if (onSecondary == null) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             TextButton(
                 modifier = Modifier.weight(1f),
+                text = cancelLabel,
+                onClick = onCancel,
+            )
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = confirmLabel,
+                // `destructive` 是「中性底 + 危险色的字」：`textButtonColors(color = …)` 的 `color`
+                // 是**底色**（红底 + 默认灰字），所以这里必须用 `textColor`。
+                colors = if (destructive) {
+                    ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
+                } else {
+                    ButtonDefaults.textButtonColorsPrimary()
+                },
+                onClick = onConfirm,
+            )
+        }
+    } else {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = cancelLabel,
+                onClick = onCancel,
+            )
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
                 text = TimeSchemeManagementStrings.viewUsageAction.zh,
                 onClick = onSecondary,
             )
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = confirmLabel,
+                colors = if (destructive) {
+                    ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
+                } else {
+                    ButtonDefaults.textButtonColorsPrimary()
+                },
+                onClick = onConfirm,
+            )
         }
-        TextButton(
-            modifier = Modifier.weight(1f),
-            text = confirmLabel,
-            // `destructive` 是「中性底 + 危险色的字」：`textButtonColors(color = …)` 的 `color`
-            // 是**底色**（红底 + 默认灰字），所以这里必须用 `textColor`。
-            colors = if (destructive) {
-                ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark)))
-            } else {
-                ButtonDefaults.textButtonColorsPrimary()
-            },
-            onClick = onConfirm,
-        )
     }
 }
 
@@ -531,21 +597,23 @@ private fun UsageCountChips(
     }
 }
 
-/** 单个统计 chip：浅底圆角，文字走官方字阶（Dart `HyperosTag` 的对应物）。 */
+/** 单个统计 chip（Dart `HyperosTag`：8/2 内边距、圆角 6、w500 字重——2026-11-02 弹层债 #10）。 */
 @Composable
 private fun UsageChip(text: String) {
     val dark = isSystemInDarkTheme()
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(QingyuTheme.surfaceContainerHighest(dark)))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.footnote1,
+            // Dart 是 12sp w500；miuix 字阶没有 12 档，取最接近的 footnote1(13)，
+            // 字重差走 shiftWeight（不写死字重，用户字重/系统粗体设置仍然生效）。
+            // 不限 maxLines：外语文案折行显示，不截断。
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.secondaryText(dark)),
-            maxLines = 1,
         )
     }
 }
@@ -569,13 +637,16 @@ private fun UsageSection(
     ) {
         Text(
             text = title,
-            style = MiuixTheme.textStyles.body1,
+            // Dart 段标题是 listTitle（17，main 同档）——2026-11-02 弹层债 #11，原来的
+            // body1(16) 比它小一档。
+            style = MiuixTheme.textStyles.main,
             color = Color(QingyuTheme.primaryText(dark)),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = subtitle,
-            style = MiuixTheme.textStyles.footnote1,
+            // Dart 副标题是 listDetail（body2 同档），原来的 footnote1(13) 小一档。
+            style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -583,7 +654,7 @@ private fun UsageSection(
             val text = emptyText ?: subtitle
             Text(
                 text = text,
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
         } else {
@@ -615,14 +686,15 @@ private fun UsageLineItem(line: TimeSchemeLine) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = line.title,
-                style = MiuixTheme.textStyles.body1,
+                // Dart 主行是 listTitle（main 同档），副行是 listDetail（body2 同档）——#11。
+                style = MiuixTheme.textStyles.main,
                 color = Color(QingyuTheme.primaryText(dark)),
             )
             if (line.summary.isNotBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = line.summary,
-                    style = MiuixTheme.textStyles.footnote1,
+                    style = MiuixTheme.textStyles.body2,
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
