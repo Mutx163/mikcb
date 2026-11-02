@@ -131,6 +131,12 @@ object SyncStrings {
     val cloudBackupUploadAsCurrentNo = ArbText("cloudBackupUploadAsCurrentNo", "仅恢复本地")
     val cloudBackupRestoreSuccess = ArbText("cloudBackupRestoreSuccess", "已恢复到此备份")
     val cloudBackupRestoreFailed = ArbText("cloudBackupRestoreFailed", "恢复失败：{message}")
+    // 原生页新增（Dart 的撤销是 toast 动作按钮，Android Toast 渲染不了动作按钮，
+    // 改为备份区常驻撤销卡片；这四条在 Dart 源码里没有对应文案）。
+    val cloudBackupUndoRestoreTitle = ArbText("cloudBackupUndoRestoreTitle", "撤销上次恢复")
+    val cloudBackupUndoRestoreSummary = ArbText("cloudBackupUndoRestoreSummary", "重启应用后失效")
+    val cloudBackupUndoRestoreSuccess = ArbText("cloudBackupUndoRestoreSuccess", "已撤销恢复")
+    val cloudBackupUndoRestoreFailed = ArbText("cloudBackupUndoRestoreFailed", "撤销失败：{message}")
     val cloudBackupDeleteTitle = ArbText("cloudBackupDeleteTitle", "删除此备份")
     val cloudBackupDeleteBody = ArbText("cloudBackupDeleteBody", "确定删除 {time} 的云端备份吗？此操作不可撤销")
     val cloudBackupDeleteSuccess = ArbText("cloudBackupDeleteSuccess", "备份已删除")
@@ -280,6 +286,10 @@ object SyncStrings {
             cloudBackupUploadAsCurrentNo,
             cloudBackupRestoreSuccess,
             cloudBackupRestoreFailed,
+            cloudBackupUndoRestoreTitle,
+            cloudBackupUndoRestoreSummary,
+            cloudBackupUndoRestoreSuccess,
+            cloudBackupUndoRestoreFailed,
             cloudBackupDeleteTitle,
             cloudBackupDeleteBody,
             cloudBackupDeleteSuccess,
