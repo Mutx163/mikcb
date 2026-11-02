@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuIconColors
@@ -65,7 +66,6 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -743,7 +743,10 @@ private fun ShowcaseFeedbackSection(
                 )
                 Button(
                     modifier = Modifier.weight(1f),
-                    onClick = { onStateChange(state.showConfirmDialog(false)) }
+                    onClick = { onStateChange(state.showConfirmDialog(false)) },
+                    // 「确认」是出口键：miuix `Button` 不传 colors 是 secondaryVariant 灰底，
+                    // 确认键应走主色（与诊断日志清空确认框同口径）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(ShowcaseStrings.btnConfirm.zh)
                 }
@@ -796,10 +799,15 @@ private fun ShowcaseOverlaysSection(
             }
         }
 
-        OverlayBottomSheet(
+        // 底部弹层走共享套件 [QingyuSheet]（全 App 底栏弹层统一入口，不直调 miuix）：
+        // - insideMargin 由套件给本仓口径 16dp —— 此前不传，miuix 默认横向 24 叠上内容
+        //   自带的 16 成了单边 40dp；内容自己带 16 ⇒ `contentPadsHorizontally` 归零框架侧。
+        // - 底部手势区让位由套件在内容末尾补 Spacer（内容不滚动时自动），不再贴到小白条。
+        QingyuSheet(
             show = state.isBottomSheetOpen,
             title = ShowcaseStrings.overlaySheetTitle.zh,
-            onDismissRequest = { onStateChange(state.showBottomSheet(false)) }
+            onDismissRequest = { onStateChange(state.showBottomSheet(false)) },
+            contentPadsHorizontally = true,
         ) {
             Column(
                 modifier = Modifier
