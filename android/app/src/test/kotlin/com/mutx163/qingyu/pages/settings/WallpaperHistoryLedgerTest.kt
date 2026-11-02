@@ -219,6 +219,7 @@ class WallpaperHistoryLedgerTest {
     fun `淘汰白名单是三路并集`() {
         val whitelist = WallpaperHistoryLedger.evictionWhitelist(
             allProfilesCurrentPaths = listOf("/profile1.png", null, "", "/shared.png"),
+            profilesReadable = true,
             draftPath = "/draft.png",
             galleryLedgerPaths = listOf("/gallery.png", "/shared.png", "  "),
         )
@@ -230,11 +231,29 @@ class WallpaperHistoryLedgerTest {
     }
 
     @Test
-    fun `没拿到档案引用时白名单判定为未知且一律不可删`() {
-        // 不传（null）/ 传空表 / 只传空白项：三种「没交代档案引用」的写法都必须退回 fail-safe
+    fun `所有档案都没壁纸且当前为空时 淘汰文件仍可删`() {
+        // P2-18：空路径列表是「所有档案都没设壁纸」的合法快照，不是「读取失败」。
+        // 可读性由 profilesReadable 显式交代，不能拿「路径非空」推断。
+        val whitelist = WallpaperHistoryLedger.evictionWhitelist(
+            allProfilesCurrentPaths = emptyList(),
+            profilesReadable = true,
+        )
+        assertTrue(whitelist.profileReferencesKnown)
+        assertTrue(whitelist.paths.isEmpty())
+        assertEquals(
+            listOf("/garbage.png"),
+            WallpaperHistoryLedger.deletable(listOf("/garbage.png"), whitelist),
+        )
+    }
+
+    @Test
+    fun `读不到档案引用时白名单判定为未知且一律不可删`() {
+        // 读失败（null / 空表 / 只含空白项）必须由调用方显式说 profilesReadable = false；
+        // 不能因为「列表是空的」就推断读取失败，也不能反过来推断读取成功。
         for (profiles in listOf<Iterable<String?>?>(null, emptyList(), listOf(null, "", "  "))) {
             val whitelist = WallpaperHistoryLedger.evictionWhitelist(
                 allProfilesCurrentPaths = profiles,
+                profilesReadable = false,
                 draftPath = "/draft.png",
                 galleryLedgerPaths = listOf("/gallery.png"),
             )

@@ -168,6 +168,9 @@ object WallpaperEvictionSources {
         }
         val whitelist = WallpaperHistoryLedger.evictionWhitelist(
             allProfilesCurrentPaths = scan.backdropPaths + listOfNotNull(currentPath),
+            // 走到这里 scan 一定可读；空列表是「所有档案都没设壁纸」的合法结果，
+            // 不能因此把淘汰文件判成「引用未知」而永不回收（P2-18）。
+            profilesReadable = scan.readable,
             draftPath = draftPath,
             galleryLedgerPaths = galleryLedgerPaths,
         )

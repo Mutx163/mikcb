@@ -195,8 +195,9 @@ class WallpaperEvictionSourcesTest {
     }
 
     @Test
-    fun `档案引用为空表时退回不可删`() {
-        // 空表 = 没交代谁在用（不是「谁都没在用」）：fail-safe，一张都不删
+    fun `档案都可读但都没设壁纸时 淘汰文件照常可删`() {
+        // P2-18：空档案列表 / 全都无壁纸 = 可确认的引用快照，不是「引用未知」。
+        // 这里 currentPath 也为空，旧口径会把这批文件判成「谁都没在用却不敢删」。
         val plan = WallpaperEvictionSources.planEviction(
             evictedPaths = listOf("/w/orphan.jpg"),
             profilesJson = profilesJson(),
@@ -204,6 +205,18 @@ class WallpaperEvictionSourcesTest {
             draftPath = null,
         )
         assertFalse(plan.profilesUnreadable)
+        assertEquals(listOf("/w/orphan.jpg"), plan.deletable)
+    }
+
+    @Test
+    fun `读不到档案时淘汰文件不删`() {
+        val plan = WallpaperEvictionSources.planEviction(
+            evictedPaths = listOf("/w/orphan.jpg"),
+            profilesJson = """{"profiles":"broken"}""",
+            currentPath = null,
+            draftPath = null,
+        )
+        assertTrue(plan.profilesUnreadable)
         assertTrue(plan.deletable.isEmpty())
     }
 
@@ -214,6 +227,7 @@ class WallpaperEvictionSourcesTest {
         // 旧口径（本批之前）：白名单里只有当前课表
         val oldWhitelist = WallpaperHistoryLedger.evictionWhitelist(
             allProfilesCurrentPaths = listOf("/w/a.jpg"),
+            profilesReadable = true,
             draftPath = "/w/a.jpg",
         )
         assertEquals(

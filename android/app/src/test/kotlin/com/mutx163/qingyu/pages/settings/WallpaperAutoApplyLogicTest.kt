@@ -200,6 +200,7 @@ class WallpaperAutoApplyLogicTest {
                 "/cache/20261031.jpg",
             ),
             allProfilesCurrentPaths = listOf("/other-profile.jpg"),
+            profilesReadable = true,
             draftPath = "/draft.jpg",
             snapshot = snapshot,
         )
@@ -207,7 +208,22 @@ class WallpaperAutoApplyLogicTest {
     }
 
     @Test
-    fun `没交代档案引用时自动换淘汰也一张都不删`() {
+    fun `档案可读但都没壁纸时 垃圾图照常可删`() {
+        // P2-18：空列表 ≠ 读取失败；可读性由调用方显式交代。
+        // 台账也留空，确保这里测的是「所有引用来源都是合法空集」，而不是被台账撑成非空。
+        assertEquals(
+            listOf("/garbage.jpg"),
+            WallpaperAutoApplyLogic.deletableAfterApply(
+                evictedPaths = listOf("/garbage.jpg"),
+                allProfilesCurrentPaths = emptyList(),
+                profilesReadable = true,
+                snapshot = WallpaperAutoApplySnapshot(),
+            ),
+        )
+    }
+
+    @Test
+    fun `读不到档案引用时自动换淘汰也一张都不删`() {
         val snapshot = WallpaperAutoApplySnapshot(
             enabled = true,
             ledger = ledger("20261031"),
@@ -218,6 +234,7 @@ class WallpaperAutoApplyLogicTest {
                 WallpaperAutoApplyLogic.deletableAfterApply(
                     evictedPaths = listOf("/garbage.jpg"),
                     allProfilesCurrentPaths = profiles,
+                    profilesReadable = false,
                     snapshot = snapshot,
                 ),
             )

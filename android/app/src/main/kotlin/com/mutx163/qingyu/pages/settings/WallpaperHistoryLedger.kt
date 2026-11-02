@@ -11,11 +11,15 @@ import com.mutx163.qingyu.weather.rememberWallpaperHistoryBatch
 /**
  * 一次淘汰白名单的判定结果。
  *
- * [profileReferencesKnown] = false 表示**没拿到档案引用**（调用方没传、传了空表、
- * 或档案 JSON 读不懂）。此时 [WallpaperHistoryLedger.deletable] 一律返回空表：
+ * [profileReferencesKnown] = false 表示**没拿到档案引用**（调用方没读成功、或档案
+ * JSON 读不懂）。此时 [WallpaperHistoryLedger.deletable] 一律返回空表：
  * 「白名单为空」在语义上是「谁都没在用」，那是最危险的结论；宁可多留一张垃圾图，
  * 也不能删掉别的课表正在用的壁纸（与 `WallpaperEvictionSources.planEviction` 的
  * 保守口径同一条）。
+ *
+ * ⚠️ 这个信号**只表示「读没读成功」**，与路径列表是否为空无关：
+ * 「所有档案都没设壁纸」是一份**合法且可确认**的引用快照（空集），
+ * 此时淘汰文件必须能删；拿「路径非空」推断可读性会造成纯磁盘泄漏（P2-18）。
  */
 data class EvictionWhitelist(
     val paths: Set<String>,
@@ -316,33 +320,35 @@ object WallpaperHistoryLedger {
      * 2. 本页草稿里刚选中的那张（还没落盘）；
      * 3. Bing 图库台账里下过的每一张（= 下载缓存，删了下次要重下）。
      *
-     * ## 为什么参数不再有默认值（fail-safe）
+     * ## 可读性与「路径是否为空」是两个独立信号（P2-18）
      *
-     * 原先 `allProfilesCurrentPaths` 缺省 `emptyList()`：调用方干脆不传也能拿到一张
-     * 「白名单」，而空白名单等于「谁都没在用」——删除照常发生。这正是「只护当前课表」
-     * 那类漏删的形状。现在改成**必填可空**：`null` / 空表 = 没拿到档案引用，
-     * [EvictionWhitelist.profileReferencesKnown] 为 false，[deletable] 一律返回空表。
+     * 原先 `allProfilesCurrentPaths` 缺省 `emptyList()`，并用「至少有一个非空路径」
+     * 推断档案引用可读。这会把「所有课表都没设壁纸」误判成「引用未知」，淘汰文件
+     * 从此永不删（纯磁盘泄漏）。现在由调用方显式交代 [profilesReadable]：
+     *
+     * * `true` + 空列表 = 读到了，确实谁都没在用 ⇒ 该删就删；
+     * * `false`（读不到 / JSON 读不懂）= 引用未知 ⇒ [deletable] 一律返回空表。
+     *
+     * @param profilesReadable 调用方是否**成功读到了**全部档案的壁纸字段。
+     *   不能用「路径非空」代替：空列表是合法结果，不等于读取失败。
      */
     fun evictionWhitelist(
         allProfilesCurrentPaths: Iterable<String?>?,
+        profilesReadable: Boolean,
         draftPath: String? = null,
         galleryLedgerPaths: Iterable<String> = emptyList(),
     ): EvictionWhitelist {
         val out = LinkedHashSet<String>()
-        var profileReferencesKnown = false
         if (allProfilesCurrentPaths != null) {
             for (path in allProfilesCurrentPaths) {
-                if (path != null && path.isNotBlank()) {
-                    out.add(path)
-                    profileReferencesKnown = true
-                }
+                if (path != null && path.isNotBlank()) out.add(path)
             }
         }
         if (draftPath != null && draftPath.isNotBlank()) out.add(draftPath)
         for (path in galleryLedgerPaths) {
             if (path.isNotBlank()) out.add(path)
         }
-        return EvictionWhitelist(paths = out, profileReferencesKnown = profileReferencesKnown)
+        return EvictionWhitelist(paths = out, profileReferencesKnown = profilesReadable)
     }
 
     /**
