@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -517,20 +518,19 @@ fun ExamCoursePickerSheet(
         // 与 `TaskPickerSheets` 的选课程弹层同一口径。
         contentPadsHorizontally = false,
         // 正文是 LazyColumn（自己管滚动）：套件不能再套 verticalScroll（嵌套滚动）。
-        // 底部让位因此由列表的 contentPadding 落实（见下）。
+        // 底部让位因此由本文件落实——垫在固定的取消按钮之后（见下）。
         contentScrolls = true,
     ) {
         // 同上：弹层内短列表不用 `QingyuPageList`，但滚动三件套（末端轻震 + 过度滚动）照官方配方。
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                // 与 Dart 选项区同高（屏高 × 0.64）。
-                .heightIn(max = (LocalScreenHeight() * 0.64f).dp)
+                // 与 Dart 选项区同口径的限高；列表之下还有固定的取消按钮
+                //（2026-11-02 弹窗审核 P2 补的），上限收到 0.55 给固定件留出高度，
+                // 矮屏/大字号时按钮不再被挤出面板（同 `ExamDatePickerSheet` 的 0.55）。
+                .heightIn(max = (LocalScreenHeight() * 0.55f).dp)
                 .scrollEndHaptic()
                 .overScrollVertical(),
-            // 列表是最后一块 ⇒ 底部让位（手势区 + 16）塞进列表 contentPadding；
-            // 原来那个 `Spacer(8.dp)` 贴底呼吸已被它取代。
-            contentPadding = PaddingValues(bottom = bottomInset),
         ) {
             itemsIndexed(options) { index, option ->
                 Row(
@@ -540,6 +540,19 @@ fun ExamCoursePickerSheet(
                         .padding(horizontal = 16.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    // 2026-11-02 弹窗审核 P2：Dart 选项行首有 36dp 课程颜色徽章，Compose 缺失。
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                parseHexColorOrFallback(
+                                    option.color,
+                                    fallback = Color(QingyuTheme.primary(dark = dark)),
+                                ),
+                            ),
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = option.title,
@@ -577,6 +590,16 @@ fun ExamCoursePickerSheet(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        // 2026-11-02 弹窗审核 P2：Dart 弹层底部有全宽「取消」，Compose 此前只能靠点空白/返回关闭。
+        TextButton(
+            modifier = Modifier.fillMaxWidth(),
+            text = ExamStrings.cancelAction.zh,
+            onClick = onDismiss,
+        )
+        // 列表之下有固定件 ⇒ 底部让位（手势区 + 16）垫在固定件之后，
+        // 不再塞进列表 contentPadding（会在按钮上方造一截空白）。
+        Spacer(modifier = Modifier.height(bottomInset))
     }
 }
 

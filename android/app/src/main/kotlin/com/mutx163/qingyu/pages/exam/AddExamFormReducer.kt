@@ -240,6 +240,8 @@ object AddExamFormReducer {
                 courseId = first.id,
                 title = name,
                 details = first.teacher,
+                // 2026-11-02 弹窗审核 P2：Dart 选项行首有课程颜色徽章，颜色随选项一起下发。
+                color = first.color,
                 selected = selectedCourseId != null &&
                     group.any { it.id == selectedCourseId },
             )
@@ -251,6 +253,8 @@ object AddExamFormReducer {
         val courseId: String,
         val title: String,
         val details: String,
+        /** 该组第一条课程的颜色（hex，如 `#3366FF`）；渲染层画行首徽章用。 */
+        val color: String,
         val selected: Boolean,
     )
 

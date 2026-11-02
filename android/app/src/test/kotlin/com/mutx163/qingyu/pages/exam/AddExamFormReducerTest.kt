@@ -429,7 +429,7 @@ class AddExamFormReducerTest {
     @Test
     fun `选课候选项按名称分组去重且升序`() {
         val courses = listOf(
-            course("c1", "英语", teacher = "李老师"),
+            course("c1", "英语", teacher = "李老师").copy(color = "#FF0000"),
             course("c2", "高数", teacher = "张老师"),
             // 同一门课的第二个时段：只能出现一次，且取组内第一条的 id
             course("c3", "高数", teacher = "王老师"),
@@ -442,6 +442,9 @@ class AddExamFormReducerTest {
         assertEquals(listOf("英语", "高数"), options.map { it.title })
         assertEquals("c2", options[1].courseId)
         assertEquals("张老师", options[1].details)
+        // 颜色取组内第一条课程（行首徽章用，2026-11-02 弹窗审核 P2）。
+        assertEquals("#FF0000", options[0].color)
+        assertEquals("#3366FF", options[1].color)
         // 选中的是「高数」这一组（哪怕 id 是组内第二条）
         assertTrue(options[1].selected)
         assertFalse(options[0].selected)
