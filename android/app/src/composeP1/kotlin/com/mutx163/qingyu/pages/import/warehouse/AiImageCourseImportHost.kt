@@ -237,6 +237,10 @@ fun AiImageCourseImportHost(
         // 内容根自己带 16dp；框架侧横向归零 ⇒ 单边仍是 16，不再叠成 32。
         // 标题行没有 start/end action，归零不影响标题。
         contentPadsHorizontally = true,
+        // 正文里是 QingyuPageList（LazyColumn）：不传 contentScrolls 时套件在外面再套
+        // 一层 verticalScroll，两个竖向滚动容器嵌套抢手势；改为内容自管滚动，
+        // 底部让位按套件契约用末尾的 Spacer(bottomInset) 落实。
+        contentScrolls = true,
     ) {
         Column(
             modifier = Modifier
@@ -268,6 +272,7 @@ fun AiImageCourseImportHost(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(bottomInset))
     }
 }
 
