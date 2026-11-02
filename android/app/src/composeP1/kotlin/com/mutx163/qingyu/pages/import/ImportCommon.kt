@@ -443,63 +443,6 @@ fun ImportActionButton(
 }
 
 /**
- * 替换选择对话框（Dart `askImportReplaceExisting` → `showAppTripleActionDialog`）。
- *
- * 三个动作：取消 / 更新课表（推荐）/ 覆盖导入。Dart 在正文末尾固定拼接一段引导句，
- * 该句**不在 ARB 里**（源文件硬编码），所以照抄为下面的私有常量。
- */
-@Composable
-fun ImportReplaceExistingDialog(
-    show: Boolean,
-    title: String,
-    message: String,
-    onCancel: () -> Unit,
-    onUpdate: () -> Unit,
-    onOverwrite: () -> Unit,
-) {
-    val dark = isSystemInDarkTheme()
-    OverlayDialog(
-        insideMargin = DpSize(16.dp, 16.dp),
-        show = show,
-        title = title,
-        onDismissRequest = onCancel,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body2,
-                lineHeight = 20.sp,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = IMPORT_REPLACE_EXISTING_GUIDANCE,
-                style = MiuixTheme.textStyles.body2,
-                lineHeight = 20.sp,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            ImportActionButton(
-                label = ImportStrings.courseImportOverwriteAction.zh,
-                onClick = onOverwrite,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ImportActionButton(
-                label = ImportStrings.courseImportUpdateRecommendedAction.zh,
-                onClick = onUpdate,
-                secondary = true,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ImportActionButton(
-                label = ImportStrings.cancelAction.zh,
-                onClick = onCancel,
-                secondary = true,
-            )
-        }
-    }
-}
-
-/**
  * 表格导入提醒对话框（Dart `_showSpreadsheetWarnings`）：正文说明 + 逐行「• 提醒」。
  * [warnings] 已由模型层本地化好的成品句（`localizeServiceWarning` 的产物）。
  */
@@ -546,11 +489,24 @@ fun ImportSpreadsheetWarningsDialog(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            ImportActionButton(
-                label = ImportStrings.spreadsheetImportWarningsContinue.zh,
-                onClick = onContinue,
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+            // 两动作横排：取消在左、继续在右（Dart `showAppConfirmDialogWithBody`）。
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ImportActionButton(
+                    label = ImportStrings.cancelAction.zh,
+                    onClick = onDismiss,
+                    secondary = true,
+                    modifier = Modifier.weight(1f),
+                )
+                ImportActionButton(
+                    label = ImportStrings.spreadsheetImportWarningsContinue.zh,
+                    onClick = onContinue,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -689,13 +645,14 @@ fun ImportPreviewDialog(
             Spacer(modifier = Modifier.height(16.dp))
             val choiceStart = startDate
             if (hasExistingCourses) {
+                // 顺序对齐 Dart `showAppTripleActionDialog`：取消 → 更新（推荐） → 覆盖（主），
+                // 三个动作竖排、间距 12dp。
                 ImportActionButton(
-                    label = ImportStrings.courseImportOverwriteAction.zh,
-                    onClick = {
-                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
-                    },
+                    label = ImportStrings.cancelAction.zh,
+                    onClick = onCancel,
+                    secondary = true,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ImportActionButton(
                     label = ImportStrings.courseImportUpdateRecommendedAction.zh,
                     onClick = {
@@ -703,11 +660,12 @@ fun ImportPreviewDialog(
                     },
                     secondary = true,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ImportActionButton(
-                    label = ImportStrings.cancelAction.zh,
-                    onClick = onCancel,
-                    secondary = true,
+                    label = ImportStrings.courseImportOverwriteAction.zh,
+                    onClick = {
+                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
+                    },
                 )
             } else {
                 // 本地没课 ⇒ 只有一条路（整份写入），不摆「覆盖 / 更新」二选一。
@@ -802,16 +760,23 @@ fun ImportCapacityDialog(
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ImportActionButton(
-                label = ImportStrings.courseImportAutoFillAndImportAction.zh,
-                onClick = onAutoFill,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ImportActionButton(
-                label = ImportStrings.cancelAction.zh,
-                onClick = onCancel,
-                secondary = true,
-            )
+            // 两动作横排等宽：取消在左、自动补齐（主）在右，与 Dart 的确认弹层一致。
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ImportActionButton(
+                    label = ImportStrings.cancelAction.zh,
+                    onClick = onCancel,
+                    secondary = true,
+                    modifier = Modifier.weight(1f),
+                )
+                ImportActionButton(
+                    label = ImportStrings.courseImportAutoFillAndImportAction.zh,
+                    onClick = onAutoFill,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
