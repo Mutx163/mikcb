@@ -126,7 +126,7 @@ class QrTransferScanModelTest {
     }
 
     @Test
-    fun `解出数超过总量时夹住不显示超 100%`() {
+    fun `解出数超过总量时夹住不显示超 100`() {
         val model = QrTransferScanModel(receivedFrames = 200, decodedSymbols = 120, totalSymbols = 100)
         assertEquals("已接收 200 帧 · 已解出 100/100", model.progressText)
         assertEquals(1f, model.progressFraction, 0.0001f)
@@ -153,3 +153,4 @@ class QrTransferScanModelTest {
         assertTrue("明文提醒不能为空", model.plaintextWarning.isNotBlank())
     }
 }
+
