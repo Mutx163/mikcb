@@ -29,25 +29,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -55,6 +59,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -67,6 +72,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -318,7 +324,6 @@ fun TimetableProfilesPage(
     // 4.1 新建课表弹窗
     if (showCreateDialog) {
         CreateProfileDialog(
-            dark = dark,
             onDismiss = { showCreateDialog = false },
             onConfirm = { name ->
                 showCreateDialog = false
@@ -366,7 +371,6 @@ fun TimetableProfilesPage(
     renamingProfile?.let { profile ->
         RenameProfileDialog(
             profile = profile,
-            dark = dark,
             onDismiss = { renamingProfile = null },
             onConfirm = { newName ->
                 renamingProfile = null
@@ -379,7 +383,6 @@ fun TimetableProfilesPage(
     clearingProfile?.let { profile ->
         ClearCoursesConfirmDialog(
             profile = profile,
-            dark = dark,
             onDismiss = { clearingProfile = null },
             onConfirm = {
                 clearingProfile = null
@@ -392,7 +395,6 @@ fun TimetableProfilesPage(
     deletingProfile?.let { profile ->
         DeleteProfileConfirmDialog(
             profile = profile,
-            dark = dark,
             onDismiss = { deletingProfile = null },
             onConfirm = {
                 deletingProfile = null
@@ -564,58 +566,59 @@ private fun PartnerBadge(dark: Boolean) {
  */
 @Composable
 private fun CreateProfileDialog(
-    dark: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var nameInput by remember { mutableStateOf("") }
+    // Dart `autofocus: true`：打开即弹键盘。要等首帧布局完成再请求焦点，
+    // 节点还没挂上树时 requestFocus 会抛 IllegalStateException。
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        runCatching { focusRequester.requestFocus() }
+    }
 
-    Dialog(onDismissRequest = onDismiss) {
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            insideMargin = PaddingValues(20.dp),
+    OverlayDialog(
+        show = true,
+        title = TimetableProfilesStrings.CREATE_TIMETABLE_TITLE,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(
+            TextField(
+                value = nameInput,
+                onValueChange = { nameInput = it },
+                label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+            )
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = TimetableProfilesStrings.CREATE_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TimetableProfilesStrings.CANCEL_ACTION,
+                    onClick = onDismiss,
                 )
-
-                TextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
+                Button(
+                    enabled = nameInput.isNotBlank(),
+                    onClick = {
+                        val trimmed = nameInput.trim()
+                        if (trimmed.isNotEmpty()) {
+                            onConfirm(trimmed)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Button(
-                        onClick = onDismiss,
-                    ) {
-                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        enabled = nameInput.isNotBlank(),
-                        onClick = {
-                            val trimmed = nameInput.trim()
-                            if (trimmed.isNotEmpty()) {
-                                onConfirm(trimmed)
-                            }
-                        },
-                    ) {
-                        Text(text = TimetableProfilesStrings.CREATE_ACTION)
-                    }
+                    Text(text = TimetableProfilesStrings.CREATE_ACTION)
                 }
             }
         }
@@ -628,58 +631,58 @@ private fun CreateProfileDialog(
 @Composable
 private fun RenameProfileDialog(
     profile: TimetableProfileItem,
-    dark: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var nameInput by remember(profile) { mutableStateOf(profile.name) }
+    // 与新建框同口径：打开即聚焦名称输入框。
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        runCatching { focusRequester.requestFocus() }
+    }
 
-    Dialog(onDismissRequest = onDismiss) {
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            insideMargin = PaddingValues(20.dp),
+    OverlayDialog(
+        show = true,
+        title = TimetableProfilesStrings.RENAME_TIMETABLE_TITLE,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(
+            TextField(
+                value = nameInput,
+                onValueChange = { nameInput = it },
+                label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+            )
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = TimetableProfilesStrings.RENAME_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TimetableProfilesStrings.CANCEL_ACTION,
+                    onClick = onDismiss,
                 )
-
-                TextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = TimetableProfilesStrings.TIMETABLE_NAME_HINT,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
+                Button(
+                    enabled = nameInput.isNotBlank() && nameInput.trim() != profile.name,
+                    onClick = {
+                        val trimmed = nameInput.trim()
+                        if (trimmed.isNotEmpty() && trimmed != profile.name) {
+                            onConfirm(trimmed)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Button(
-                        onClick = onDismiss,
-                    ) {
-                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        enabled = nameInput.isNotBlank() && nameInput.trim() != profile.name,
-                        onClick = {
-                            val trimmed = nameInput.trim()
-                            if (trimmed.isNotEmpty() && trimmed != profile.name) {
-                                onConfirm(trimmed)
-                            }
-                        },
-                    ) {
-                        Text(text = TimetableProfilesStrings.RENAME_ACTION)
-                    }
+                    Text(text = TimetableProfilesStrings.RENAME_ACTION)
                 }
             }
         }
@@ -692,54 +695,36 @@ private fun RenameProfileDialog(
 @Composable
 private fun ClearCoursesConfirmDialog(
     profile: TimetableProfileItem,
-    dark: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            insideMargin = PaddingValues(20.dp),
+    OverlayDialog(
+        show = true,
+        title = TimetableProfilesStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
+        summary = TimetableProfilesStrings.clearCurrentTimetableMessage(profile.name),
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = TimetableProfilesStrings.CANCEL_ACTION,
+                onClick = onDismiss,
+            )
+            // 清空是危险动作：红底 + onError 字，不再是「灰底红字」。
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    color = MiuixTheme.colorScheme.error,
+                    contentColor = MiuixTheme.colorScheme.onError,
+                ),
             ) {
-                Text(
-                    text = TimetableProfilesStrings.CLEAR_CURRENT_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-
-                Text(
-                    text = TimetableProfilesStrings.clearCurrentTimetableMessage(profile.name),
-                    style = MiuixTheme.textStyles.body2,
-                    lineHeight = 20.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                    ) {
-                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onConfirm,
-                    ) {
-                        Text(
-                            text = TimetableProfilesStrings.CLEAR_ACTION,
-                            color = Color(QingyuTheme.error(dark)),
-                        )
-                    }
-                }
+                Text(text = TimetableProfilesStrings.CLEAR_ACTION)
             }
         }
     }
@@ -751,54 +736,36 @@ private fun ClearCoursesConfirmDialog(
 @Composable
 private fun DeleteProfileConfirmDialog(
     profile: TimetableProfileItem,
-    dark: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            insideMargin = PaddingValues(20.dp),
+    OverlayDialog(
+        show = true,
+        title = TimetableProfilesStrings.DELETE_TIMETABLE_TITLE,
+        summary = TimetableProfilesStrings.deleteTimetableMessage(profile.name),
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            TextButton(
+                modifier = Modifier.weight(1f),
+                text = TimetableProfilesStrings.CANCEL_ACTION,
+                onClick = onDismiss,
+            )
+            // 删除是危险动作：红底 + onError 字。
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    color = MiuixTheme.colorScheme.error,
+                    contentColor = MiuixTheme.colorScheme.onError,
+                ),
             ) {
-                Text(
-                    text = TimetableProfilesStrings.DELETE_TIMETABLE_TITLE,
-                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-
-                Text(
-                    text = TimetableProfilesStrings.deleteTimetableMessage(profile.name),
-                    style = MiuixTheme.textStyles.body2,
-                    lineHeight = 20.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                    ) {
-                        Text(text = TimetableProfilesStrings.CANCEL_ACTION)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onConfirm,
-                    ) {
-                        Text(
-                            text = TimetableProfilesStrings.DELETE_ACTION,
-                            color = Color(QingyuTheme.error(dark)),
-                        )
-                    }
-                }
+                Text(text = TimetableProfilesStrings.DELETE_ACTION)
             }
         }
     }
@@ -820,98 +787,85 @@ private fun ProfileMoreActionsDialog(
     onDelete: () -> Unit,
     onCannotDeleteWarning: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            insideMargin = PaddingValues(vertical = 12.dp),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = profile.name,
-                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                )
-
-                HorizontalDivider(
-                    color = Color(QingyuTheme.dividerLine(dark)),
-                )
-
-                // 1. 切换到此课表（非激活状态展示）
-                if (!profile.isActive) {
-                    ActionMenuItem(
-                        title = TimetableProfilesStrings.SWITCH_TO_THIS_TIMETABLE,
-                        icon = MiuixIcons.Ok,
-                        onClick = onSwitch,
-                        dark = dark,
-                    )
-                }
-
-                // 2. 重命名
+    // Dart 是 `HyperosSheet` 底部弹层，不是居中 Dialog。
+    QingyuSheet(
+        show = true,
+        title = profile.name,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. 切换到此课表（非激活状态展示）
+            if (!profile.isActive) {
                 ActionMenuItem(
-                    title = TimetableProfilesStrings.RENAME_ACTION,
-                    icon = MiuixIcons.Edit,
-                    onClick = onRename,
+                    title = TimetableProfilesStrings.SWITCH_TO_THIS_TIMETABLE,
+                    icon = MiuixIcons.Ok,
+                    onClick = onSwitch,
                     dark = dark,
                 )
+            }
 
-                // 3. 复制
+            // 2. 重命名
+            ActionMenuItem(
+                title = TimetableProfilesStrings.RENAME_ACTION,
+                icon = MiuixIcons.Edit,
+                onClick = onRename,
+                dark = dark,
+            )
+
+            // 3. 复制
+            ActionMenuItem(
+                title = TimetableProfilesStrings.DUPLICATE_ACTION,
+                icon = MiuixIcons.Copy,
+                onClick = onDuplicate,
+                dark = dark,
+            )
+
+            // 4. 清空课程（仅当前激活课表展示）
+            if (profile.isActive) {
+                val canClear = profile.courseCount > 0
                 ActionMenuItem(
-                    title = TimetableProfilesStrings.DUPLICATE_ACTION,
-                    icon = MiuixIcons.Copy,
-                    onClick = onDuplicate,
-                    dark = dark,
-                )
-
-                // 4. 清空课程（仅当前激活课表展示）
-                if (profile.isActive) {
-                    val canClear = profile.courseCount > 0
-                    ActionMenuItem(
-                        title = TimetableProfilesStrings.CLEAR_COURSES_ACTION,
-                        icon = MiuixIcons.Clear,
-                        isDestructive = true,
-                        enabled = canClear,
-                        onClick = onClear,
-                        dark = dark,
-                    )
-                }
-
-                // 5. 删除课表
-                ActionMenuItem(
-                    title = TimetableProfilesStrings.DELETE_ACTION,
-                    icon = MiuixIcons.Delete,
+                    title = TimetableProfilesStrings.CLEAR_COURSES_ACTION,
+                    icon = MiuixIcons.Clear,
                     isDestructive = true,
-                    enabled = canDelete,
-                    onClick = {
-                        if (canDelete) {
-                            onDelete()
-                        } else {
-                            onCannotDeleteWarning()
-                        }
-                    },
+                    enabled = canClear,
+                    onClick = onClear,
                     dark = dark,
                 )
+            }
 
-                HorizontalDivider(
-                    color = Color(QingyuTheme.dividerLine(dark)),
+            // 5. 删除课表
+            ActionMenuItem(
+                title = TimetableProfilesStrings.DELETE_ACTION,
+                icon = MiuixIcons.Delete,
+                isDestructive = true,
+                enabled = canDelete,
+                onClick = {
+                    if (canDelete) {
+                        onDelete()
+                    } else {
+                        onCannotDeleteWarning()
+                    }
+                },
+                dark = dark,
+            )
+
+            HorizontalDivider(
+                color = Color(QingyuTheme.dividerLine(dark)),
+            )
+
+            // 取消按钮
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onDismiss)
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = TimetableProfilesStrings.CANCEL_ACTION,
+                    style = MiuixTheme.textStyles.body1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
                 )
-
-                // 取消按钮
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onDismiss)
-                        .padding(vertical = 14.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = TimetableProfilesStrings.CANCEL_ACTION,
-                        style = MiuixTheme.textStyles.body1,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                    )
-                }
             }
         }
     }
@@ -945,7 +899,8 @@ private fun ActionMenuItem(
         modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            // 横向留白由 QingyuSheet 给（单边 16dp）；这里再加会叠成 36dp。
+            .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
