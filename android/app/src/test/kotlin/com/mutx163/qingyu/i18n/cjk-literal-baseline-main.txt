@@ -31,6 +31,12 @@ com/mutx163/qingyu/CountdownFormat.kt:9
 com/mutx163/qingyu/pages/ShellPageIndex.kt:6
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPackageLogic.kt:7
+# transfer/lan/LanEditRepositoryHost.kt 的 7 条 = buildMetaJson 协议字段 weekdayLabels（周一..周日）：
+# 与 Dart lib/services/lan_edit_provider_host.dart:441 内联字面量同源冻结——meta API 的 JSON 载荷，
+# 手机 UI 不渲染、main 源集无 ArbText。网页端 assets/lan_edit/i18n.js 四语均有 weekdayMon..weekdaySun，
+# app.js weekdayHeaderText() 对「周」前缀标签改写为本地文案；改发键名会落进「自定义标签」分支原样上屏。
+# 属协议内中文，不走 ArbText，登记放行。
+com/mutx163/qingyu/transfer/lan/LanEditRepositoryHost.kt:7
 com/mutx163/qingyu/calendar/WeekExpressionParser.kt:6
 com/mutx163/qingyu/pages/live/DisplaySettingsModel.kt:6
 com/mutx163/qingyu/pages/about/ChangelogModel.kt:5

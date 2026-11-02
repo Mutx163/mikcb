@@ -168,6 +168,12 @@ class LanEditRepositoryHost(
     /**
      * 局域网编辑网页端星期标签（对齐 Dart `buildMetaJson` 的内联字面量
      * `['周一'…'周日']`——Dart 侧就是硬编码中文，不走 ARB，这里同口径）。
+     *
+     * 这 7 条中文已按**协议内中文**登记进 `cjk-literal-baseline-main.txt`（i18n 门禁放行）：
+     * 它们只作为 meta API 的 JSON 字段下发给网页，手机 UI 不渲染、main 源集也没有
+     * `ArbText`；网页端 `assets/lan_edit/i18n.js` 四语都有 `weekdayMon..weekdaySun`，
+     * `weekdayHeaderText()` 见到「周」前缀标签就改写成本地文案——改发键名反而会把
+     * 键名原样上屏，破坏四语显示。
      */
     private val weekdayLabels = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
 
