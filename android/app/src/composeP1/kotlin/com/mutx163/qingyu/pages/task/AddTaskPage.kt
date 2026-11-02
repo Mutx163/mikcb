@@ -384,42 +384,45 @@ fun AddTaskPage(
         }
     }
 
-    if (showDeleteConfirm && onDelete != null) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = TaskStrings.taskDelete,
-            onDismissRequest = { showDeleteConfirm = false },
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = TaskStrings.taskDeleteConfirm,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.primaryText(dark)),
+    // 删除确认弹层常驻组合（2026-11-02 弹层债）：关闭只翻 showDeleteConfirm，`show`
+    // 驱动官方 260ms 退场动画。原先「if (show) { 弹层(show = true) }」的条件挂载会在
+    // 置 false 的一瞬把整棵 OverlayDialog 摘出组合，退场动画一次都播不出去
+    // （修法先例：pages/settings 2026-11-02 弹窗审核 P2，SettingsHost.SettingsConfirmResetDialog）。
+    // 标题/正文均为常量字符串，退场期间不存在会被清空的状态，无需 remember 保底。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showDeleteConfirm && onDelete != null,
+        title = TaskStrings.taskDelete,
+        onDismissRequest = { showDeleteConfirm = false },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = TaskStrings.taskDeleteConfirm,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TaskStrings.cancelAction,
+                    onClick = { showDeleteConfirm = false },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = TaskStrings.cancelAction,
-                        onClick = { showDeleteConfirm = false },
-                    )
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = TaskStrings.deleteAction,
-                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
-                            // 危险色只染**字**：`color` 是底色，传错会变成「红底 + 默认灰字」
-                            //（对比度坏，也不是 Dart `destructive` 变体的观感）。
-                            textColor = Color(QingyuTheme.error(dark)),
-                        ),
-                        onClick = {
-                            showDeleteConfirm = false
-                            onDelete?.invoke()
-                        },
-                    )
-                }
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TaskStrings.deleteAction,
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
+                        // 危险色只染**字**：`color` 是底色，传错会变成「红底 + 默认灰字」
+                        //（对比度坏，也不是 Dart `destructive` 变体的观感）。
+                        textColor = Color(QingyuTheme.error(dark)),
+                    ),
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete?.invoke()
+                    },
+                )
             }
         }
     }

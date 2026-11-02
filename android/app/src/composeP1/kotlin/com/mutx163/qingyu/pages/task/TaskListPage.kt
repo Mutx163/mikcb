@@ -278,42 +278,46 @@ fun TaskListPage(
     )
 
     // 删除确认对话框（对齐 Dart `_confirmDelete` 的 showHyperosConfirmDialog，`:364-373`）。
-    pendingDelete?.let { task ->
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = TaskStrings.taskDelete,
-            onDismissRequest = { pendingDelete = null },
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = TaskStrings.taskDeleteConfirm,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.primaryText(dark)),
+    // 常驻组合（2026-11-02 弹层债）：关闭只把 pendingDelete 置空，`show` 驱动官方 260ms
+    // 退场动画。原先「pendingDelete?.let { 弹层(show = true) }」的条件挂载会在置空的
+    // 一瞬把整棵 OverlayDialog 摘出组合，退场动画一次都播不出去（修法先例：
+    // pages/settings 2026-11-02 弹窗审核 P2）。标题/正文均为常量字符串，退场期间没有
+    // 会被清空的状态，无需 remember 保底；删除动作在点击时才读 pendingDelete，
+    // 退场期间它已为 null，天然不会再触发。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = pendingDelete != null,
+        title = TaskStrings.taskDelete,
+        onDismissRequest = { pendingDelete = null },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = TaskStrings.taskDeleteConfirm,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.primaryText(dark)),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TaskStrings.cancelAction,
+                    onClick = { pendingDelete = null },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = TaskStrings.cancelAction,
-                        onClick = { pendingDelete = null },
-                    )
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = TaskStrings.deleteAction,
-                        colors = ButtonDefaults.textButtonColors(
-                            // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
-                            textColor = Color(QingyuTheme.error(dark)),
-                        ),
-                        onClick = {
-                            val target = pendingDelete
-                            pendingDelete = null
-                            if (target != null) onDeleteTask(target)
-                        },
-                    )
-                }
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = TaskStrings.deleteAction,
+                    colors = ButtonDefaults.textButtonColors(
+                        // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
+                        textColor = Color(QingyuTheme.error(dark)),
+                    ),
+                    onClick = {
+                        val target = pendingDelete
+                        pendingDelete = null
+                        if (target != null) onDeleteTask(target)
+                    },
+                )
             }
         }
     }
