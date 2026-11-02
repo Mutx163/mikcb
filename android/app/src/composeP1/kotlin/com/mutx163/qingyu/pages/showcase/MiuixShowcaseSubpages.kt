@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -40,7 +41,6 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
@@ -356,7 +356,7 @@ private fun ShowcaseInputsSection(
                     "${ShowcaseStrings.inputContinuousSlider.zh}: ${(state.continuousSliderValue * 100).toInt()}%",
                     style = MiuixTheme.textStyles.body2
                 )
-                Slider(
+                QingyuSlider(
                     value = state.continuousSliderValue,
                     onValueChange = { onStateChange(state.setContinuousSlider(it)) },
                     modifier = Modifier.fillMaxWidth()
@@ -366,7 +366,7 @@ private fun ShowcaseInputsSection(
                     "${ShowcaseStrings.inputSteppedSlider.zh}: ${state.steppedSliderValue} 档",
                     style = MiuixTheme.textStyles.body2
                 )
-                Slider(
+                QingyuSlider(
                     value = state.steppedSliderValue.toFloat() / 10f,
                     onValueChange = { onStateChange(state.setSteppedSlider((it * 10).toInt())) },
                     modifier = Modifier.fillMaxWidth()
@@ -1009,7 +1009,7 @@ private fun ShowcaseBlurSection(
                     ShowcaseStrings.blurRadiusLabel.filled("radius", state.blurRadius.toInt().toString()),
                     style = MiuixTheme.textStyles.body2
                 )
-                Slider(
+                QingyuSlider(
                     value = state.blurRadius / 60f,
                     onValueChange = { onStateChange(state.setBlurRadius(it * 60f)) },
                     modifier = Modifier.fillMaxWidth()
@@ -1022,7 +1022,7 @@ private fun ShowcaseBlurSection(
                     ),
                     style = MiuixTheme.textStyles.body2
                 )
-                Slider(
+                QingyuSlider(
                     value = state.blurSaturation / 2f,
                     onValueChange = { onStateChange(state.setBlurSaturation(it * 2f)) },
                     modifier = Modifier.fillMaxWidth()
@@ -1130,7 +1130,7 @@ private fun ShowcaseFoundationSection(
                     ),
                     style = MiuixTheme.textStyles.body2
                 )
-                Slider(
+                QingyuSlider(
                     value = state.squircleRadius / 48f,
                     onValueChange = { onStateChange(state.setSquircleRadius(it * 48f)) },
                     modifier = Modifier.fillMaxWidth()

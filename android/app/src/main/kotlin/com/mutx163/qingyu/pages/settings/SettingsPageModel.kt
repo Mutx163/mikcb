@@ -47,6 +47,10 @@ import java.util.Locale
  * 滑杆行（[SLIDER]）的历史：0.8.8 没有官方滑杆行，当时用
  * `basic.BasicComponent` + `basic.Slider` 包了一层；0.9.4 的
  * `preference.SliderPreference` 到位后已改用官方组件，自绘那层删掉了。
+ * **2026-11-02 起又走共享件 `components.QingyuSliderPreference`**：官方 `Slider`
+ * 只挂 `draggable`、纯点击不回调，官方行没把内层滑杆的 `modifier` 开放出来，
+ * 只能复制一份官方行、把内层换成补了点击跳转的 `QingyuSlider`（见
+ * `components/QingyuSlider.kt`；例外登记在 `docs/reference/miuix-component-first-standard.md`）。
  */
 enum class MiuixRowComponent(
     val officialPreference: String,
@@ -63,7 +67,9 @@ enum class MiuixRowComponent(
     ),
     SLIDER(
         officialPreference = "MiuixSliderPreference",
-        composeP1Component = "preference.SliderPreference",
+        // 官方 `SliderPreference` 的逐字副本 + 内层点击跳转（官方 `Slider` 不认
+        // 「点轨道」）。官方补上 tap-to-jump 后换回 `preference.SliderPreference`。
+        composeP1Component = "components.QingyuSliderPreference",
     ),
     DROPDOWN(
         officialPreference = "MiuixOverlayDropdownPreference",

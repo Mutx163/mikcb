@@ -46,6 +46,7 @@ import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuFixedTokens
@@ -58,7 +59,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -96,7 +96,6 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
-import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -743,6 +742,10 @@ private fun parseHexColor(hex: String?): Color? {
  * ——那是 0.8.8 时代没有官方滑杆行的临时方案，现在官方有了就不该再自绘
  * （规格 Failure mode 6：官方已有组件直接 import，不许重复造轮子）。
  *
+ * 2026-11-02：官方 `Slider` 不认「点轨道」（纯点不越过 touch slop，`draggable`
+ * 不启动），换成 [QingyuSliderPreference] —— 它是官方行的逐字副本，只把内层
+ * `Slider` 换成 [com.mutx163.qingyu.components.QingyuSlider]（补点击跳转）。
+ *
  * `steps` 口径差异照旧：模型层 [SettingsSliderSpec.divisions] 是「区间数」，
  * 而官方 `steps`（Material 口径）是「端点之间的档数」→ 差 1。
  */
@@ -758,7 +761,7 @@ private fun SliderRow(
     // 只有模型给了 `dialogHelper` 的行才开这个入口：没给的（全站其它滑杆）保持
     // `onClick = null`，官方组件因此既不画行尾箭头、点行也没反应——与改动前完全一致。
     var editing by remember(row.id) { mutableStateOf(false) }
-    SliderPreference(
+    QingyuSliderPreference(
         value = value.toFloat(),
         onValueChange = { changed ->
             onAction(

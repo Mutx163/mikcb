@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshModel
@@ -69,7 +70,6 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.NumberPicker
-import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -1079,7 +1079,7 @@ private fun ColorChannel(label: String, value: Int, onChange: (Int) -> Unit) {
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onBackground,
         )
-        Slider(
+        QingyuSlider(
             value = value / 255f,
             onValueChange = { onChange((it * 255f).toInt().coerceIn(0, 255)) },
             modifier = Modifier.weight(1f),

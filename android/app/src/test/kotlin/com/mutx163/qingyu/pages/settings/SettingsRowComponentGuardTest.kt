@@ -70,8 +70,30 @@ class SettingsRowComponentGuardTest {
         )
     }
 
+    /**
+     * `composeP1Component` → 渲染层应当出现的完整 import。
+     *
+     * 目前有三类前缀：
+     * - `preference.*` / `basic.*`：miuix 官方包；
+     * - `components.*`：本仓 `composeP1/.../components` 下的共享件。滑杆行 2026-11-02
+     *   起走这一条（`QingyuSliderPreference`：官方行的逐字副本 + 点击跳转），
+     *   理由见 `SettingsPageModel.SLIDER` 的注释。
+     */
+    private fun expectedImport(component: String): String? {
+        val symbol = component.substringAfterLast('.')
+        return when {
+            component.startsWith("preference.") ->
+                "import top.yukonga.miuix.kmp.preference.$symbol"
+            component.startsWith("basic.") ->
+                "import top.yukonga.miuix.kmp.basic.$symbol"
+            component.startsWith("components.") ->
+                "import com.mutx163.qingyu.components.$symbol"
+            else -> null
+        }
+    }
+
     @Test
-    fun `每个行组件在渲染层都真的 import 了对应的官方组件`() {
+    fun `每个行组件在渲染层都真的 import 了模型登记的组件`() {
         val text = renderersFile().readText()
 
         // 模型层的 composeP1Component 写的是 `preference.XxxPreference` 这种短路径，
@@ -81,17 +103,14 @@ class SettingsRowComponentGuardTest {
             .associateWith { it.composeP1Component }
 
         val missing = expectedImports.filter { (_, component) ->
-            // component 形如 "preference.ArrowPreference"
-            val symbol = component.substringAfterLast('.')
-            val fullImport = "import top.yukonga.miuix.kmp.preference.$symbol"
-            fullImport !in text
+            val fullImport = expectedImport(component)
+            fullImport == null || fullImport !in text
         }
 
         assertTrue(
             "模型层声称使用、但渲染层没有 import 的组件：\n" +
                 missing.entries.joinToString("\n") { (row, comp) ->
-                    "  $row → $comp（缺 import top.yukonga.miuix.kmp.preference." +
-                        "${comp.substringAfterLast('.')}）"
+                    "  $row → $comp（缺 ${expectedImport(comp) ?: "可识别的包前缀"}）"
                 },
             missing.isEmpty(),
         )

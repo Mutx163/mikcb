@@ -34,6 +34,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSliderPreference
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuShapes
@@ -45,7 +46,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 /** 图片选择目标（供宿主接线层落到各自目录 / 前缀）。 */
@@ -609,7 +609,7 @@ private fun <T> EnumDropdown(
     )
 }
 
-/** 滑杆行封装（官方 SliderPreference）。 */
+/** 滑杆行封装（官方 `SliderPreference` 的逐字副本 + 点击跳转，见 `QingyuSliderPreference`）。 */
 @Composable
 private fun LabelSlider(
     title: String,
@@ -619,7 +619,7 @@ private fun LabelSlider(
     enabled: Boolean,
     onChange: (Float) -> Unit,
 ) {
-    SliderPreference(
+    QingyuSliderPreference(
         value = value.toFloat().coerceIn(range.start.toFloat(), range.endInclusive.toFloat()),
         onValueChange = onChange,
         title = title,
