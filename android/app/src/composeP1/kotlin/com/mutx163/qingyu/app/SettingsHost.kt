@@ -1693,7 +1693,8 @@ internal fun SettingsThemeDialogHost(
                 ThemeActionRow(SettingsStrings.themeDelete.zh, destructive = true) {
                     state.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                // 不加末尾 Spacer(8)：套件已补「手势区 + 16dp」让位，
+                // 这里再叠一层就多出约 16dp 空白（审核报告 settings 域 P3）。
             }
         }
     }
