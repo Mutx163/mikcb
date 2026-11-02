@@ -244,4 +244,117 @@ class CloudSyncCoordinatorTest {
         assertEquals(0, store.writeCount)
         assertNull(store.stored)
     }
+
+    // ---------- 保留策略（Dart CloudBackupIndexService.prune 规则移植） ----------
+
+    private val dayMillis = 24L * 60L * 60L * 1000L
+    private val nowMillis = 1_800_000_000_000L
+
+    private fun backupAt(
+        fileName: String,
+        ageMillis: Long,
+        hash: String? = fileName,
+        source: CloudBackupSource = CloudBackupSource.AUTO,
+    ): RemoteBackupFile = RemoteBackupFile(
+        fileName = fileName,
+        remotePath = "/Apps/x/history/$fileName",
+        exportedAtMillis = nowMillis - ageMillis,
+        contentSha256 = hash,
+        source = source,
+    )
+
+    @Test
+    fun `prune_超上限删最旧_当前版本豁免`() {
+        val config = WebdavSyncConfig(maxBackupCount = 2)
+        val oldest = backupAt("old.mikcb", ageMillis = 3 * dayMillis)
+        val middle = backupAt("mid.mikcb", ageMillis = 2 * dayMillis)
+        val newest = backupAt("new.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
+        // 最新的那条是「当前版本」：即便占名额也不可删。
+
+        val removed = WebdavSyncCoordinator.planHistoryPrune(
+            files = listOf(oldest, middle, newest),
+            config = config,
+            nowMillis = nowMillis,
+            manualFileNames = emptySet(),
+        )
+
+        assertEquals(listOf(oldest.fileName), removed.map { it.fileName })
+    }
+
+    @Test
+    fun `prune_手动备份受保护_点名的 oldest 也不删`() {
+        val config = WebdavSyncConfig(maxBackupCount = 1, manualBackupProtected = true)
+        val manual = backupAt(
+            "manual.mikcb",
+            ageMillis = 10 * dayMillis,
+            source = CloudBackupSource.MANUAL,
+        )
+        val auto1 = backupAt("auto1.mikcb", ageMillis = 5 * dayMillis)
+        val auto2 = backupAt("auto2.mikcb", ageMillis = 1 * dayMillis)
+
+        val removed = WebdavSyncCoordinator.planHistoryPrune(
+            files = listOf(manual, auto1, auto2),
+            config = config,
+            nowMillis = nowMillis,
+            manualFileNames = setOf("manual.mikcb"),
+        )
+
+        // 上限 1：current（auto2）+ 受保护手动（manual）都豁免，被挤掉的是 auto1。
+        assertEquals(listOf(auto1.fileName), removed.map { it.fileName })
+    }
+
+    @Test
+    fun `prune_关闭手动保护后手动备份照常参与淘汰`() {
+        val config = WebdavSyncConfig(maxBackupCount = 1, manualBackupProtected = false)
+        val manual = backupAt(
+            "manual.mikcb",
+            ageMillis = 10 * dayMillis,
+            source = CloudBackupSource.MANUAL,
+        )
+        val current = backupAt("current.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
+
+        val removed = WebdavSyncCoordinator.planHistoryPrune(
+            files = listOf(manual, current),
+            config = config,
+            nowMillis = nowMillis,
+            manualFileNames = setOf("manual.mikcb"),
+        )
+
+        assertEquals(listOf(manual.fileName), removed.map { it.fileName })
+    }
+
+    @Test
+    fun `prune_超过天数上限的过期备份删除`() {
+        val config = WebdavSyncConfig(maxBackupCount = 30, maxBackupAgeDays = 7)
+        val fresh = backupAt("fresh.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
+        val expired = backupAt("expired.mikcb", ageMillis = 8 * dayMillis)
+
+        val removed = WebdavSyncCoordinator.planHistoryPrune(
+            files = listOf(fresh, expired),
+            config = config,
+            nowMillis = nowMillis,
+        )
+
+        assertEquals(listOf(expired.fileName), removed.map { it.fileName })
+    }
+
+    @Test
+    fun `prune_解析不出时间的文件绝不删也不占名额`() {
+        val config = WebdavSyncConfig(maxBackupCount = 1, maxBackupAgeDays = 7)
+        // Dart 端写的 backup-*.mikcb 解析不出导出时间：当「纪元 0」删等于清光对方的全部历史。
+        val foreign = RemoteBackupFile(
+            fileName = "backup-20260304-093000-abcdef12.mikcb",
+            remotePath = "/Apps/x/history/backup-20260304-093000-abcdef12.mikcb",
+            exportedAtMillis = null,
+        )
+        val current = backupAt("current.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
+
+        val removed = WebdavSyncCoordinator.planHistoryPrune(
+            files = listOf(foreign, current),
+            config = config,
+            nowMillis = nowMillis,
+        )
+
+        assertTrue(removed.isEmpty())
+    }
 }

@@ -100,6 +100,15 @@ class CloudSyncController(
         private set
 
     /**
+     * 本会话里「立即备份」（手动）成功写出的远端文件名。
+     *
+     * 来源不落在版本化文件名里，目录列出来的条目缺省都是 AUTO；保留策略的
+     * 「手动备份保护」与列表的「来源」展示只能对**本会话亲手备份的那几条**如实，
+     * 会话外/别的设备的手动备份无从知晓（彻底解法要 index 互通，另案）。
+     */
+    private val manualBackupFileNames = LinkedHashSet<String>()
+
+    /**
      * 上传字节来源：优先用调用方注入的；否则若给了仓储，就从**当前课表**现组一份；
      * 都没有才退回本地快照文件（旧路径）。
      */
@@ -324,6 +333,7 @@ class CloudSyncController(
         backupEntries = emptyList()
         remoteFiles = emptyList()
         lastRestoreRollback = null
+        manualBackupFileNames.clear()
         status = CloudSyncStatusSource()
         notifyChanged()
     }
@@ -394,7 +404,7 @@ class CloudSyncController(
                 pendingSyncConflict = pull.info
                 SyncResultKind.CANCELLED
             }
-            PullPhase.ProceedToUpload -> runUpload()
+            PullPhase.ProceedToUpload -> runUpload(CloudBackupSource.AUTO)
         }
     }
 
@@ -411,7 +421,7 @@ class CloudSyncController(
         pendingSyncConflict ?: return SyncResultKind.CANCELLED
         pendingSyncConflict = null
         return when (choice) {
-            SyncConflictChoice.KEEP_LOCAL -> runUpload()
+            SyncConflictChoice.KEEP_LOCAL -> runUpload(CloudBackupSource.AUTO)
             SyncConflictChoice.KEEP_REMOTE -> downloadApplyAndMark(
                 resolver = { SyncConflictChoice.KEEP_REMOTE },
             )
@@ -419,8 +429,8 @@ class CloudSyncController(
         }
     }
 
-    /** 立即备份：与同步同一套上传，只是结果提示不同。 */
-    fun createBackup(): SyncResultKind = runUpload()
+    /** 立即备份：与同步同一套上传，来源记为手动（保留策略要保护它）。 */
+    fun createBackup(): SyncResultKind = runUpload(CloudBackupSource.MANUAL)
 
     /**
      * 打开（恢复）某条远端备份：强制以远端为准下载，**并写回课表仓储**。
@@ -581,7 +591,7 @@ class CloudSyncController(
 
     // ── 内部 ──
 
-    private fun runUpload(): SyncResultKind {
+    private fun runUpload(source: CloudBackupSource): SyncResultKind {
         val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
         val bytes = currentSnapshotBytes() ?: return SyncResultKind.FAILED
         val exportedAtMicros = exportedAtMicrosOf(bytes)
@@ -602,7 +612,13 @@ class CloudSyncController(
                 // lastSyncedAtIso，`lastUploadedLocalHash` 恒 null ⇒ 列表「当前版本」
                 // 永不出现、删除闸门恒放行、冲突判定恒误报（本条修的就是它）。
                 markSynced(outcome.contentSha256)
+                // 手动来源只在内存里记文件名（文件名格式不带来源，落盘另案）。
+                outcome.remotePath
+                    ?.substringAfterLast('/')
+                    ?.takeIf { source == CloudBackupSource.MANUAL }
+                    ?.let { manualBackupFileNames.add(it) }
                 refreshBackups()
+                pruneAfterUpload()
                 SyncResultKind.UPLOADED
             }
             SyncOpKind.CANCELLED -> SyncResultKind.CANCELLED
@@ -612,6 +628,33 @@ class CloudSyncController(
                 SyncResultKind.FAILED
             }
         }
+    }
+
+    /**
+     * 上传成功后执行保留策略（Dart `_writeBackupHistory` 尾部的 prune 同位）：
+     * 按「上限条数 / 天数过期 / 手动保护 / 当前版本豁免」算出待删并**真的删远端**。
+     * 此前设置页的三个保留策略旋钮只改配置，从没有任何代码执行它们。
+     * 删除失败的条目留在远端，下一轮上传后的 prune 会再试；删完刷新一次列表。
+     */
+    private fun pruneAfterUpload() {
+        if (remoteFiles.isEmpty()) return
+        val removals = WebdavSyncCoordinator.planHistoryPrune(
+            files = remoteFiles,
+            config = config,
+            nowMillis = CloudBackupListLogic.parseExportedAtMillis(clock()),
+            manualFileNames = manualBackupFileNames,
+        )
+        if (removals.isEmpty()) return
+        val active = ensureTransport() ?: return
+        var deletedAny = false
+        for (file in removals) {
+            val result = active.deleteRemoteFile(file.remotePath)
+            if (!result.isFailed) {
+                deletedAny = true
+                manualBackupFileNames.remove(file.fileName)
+            }
+        }
+        if (deletedAny) refreshBackups()
     }
 
     /**
@@ -806,7 +849,13 @@ class CloudSyncController(
         contentSha256 = file.contentSha256 ?: "",
         deviceId = file.deviceId ?: "",
         deviceLabel = file.deviceId ?: "",
-        source = CloudBackupSource.AUTO,
+        // 来源不再硬编码 AUTO：本会话手动备份的那几条如实标 MANUAL；
+        // 其余条目文件名里没有来源信息，缺省 AUTO（与 Dart 未知值回落一致）。
+        source = if (file.fileName in manualBackupFileNames) {
+            CloudBackupSource.MANUAL
+        } else {
+            file.source
+        },
         isCurrent = file.contentSha256 != null && file.contentSha256 == config.lastUploadedLocalHash,
     )
 

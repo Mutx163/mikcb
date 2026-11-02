@@ -58,6 +58,11 @@ data class RemoteBackupFile(
     val exportedAtMillis: Long? = null,
     val contentSha256: String? = null,
     val deviceId: String? = null,
+    /**
+     * 备份来源。版本化文件名里不带来源，目录列出来的条目只能给缺省 AUTO；
+     * 「本会话刚手动备份的那条」由调用方覆盖成 MANUAL（保留策略的豁免判据要用）。
+     */
+    val source: CloudBackupSource = CloudBackupSource.AUTO,
 )
 
 /** 列远端备份结果。 */
@@ -371,6 +376,57 @@ class WebdavSyncCoordinator(
             computeContentSha256(decodeSnapshotObject(String(bytes, Charsets.UTF_8)))
         } catch (_: Exception) {
             null
+        }
+
+        /**
+         * 保留策略（Dart `CloudBackupIndexService.prune` 规则移植）：
+         * 按导出时间倒序，逐条判「当前版本 / 受保护的手动备份」豁免，
+         * 其余按「天数过期或超出条数上限」挑出待删。
+         *
+         * ## 与 Dart 的两处刻意偏差（都偏保守）
+         * 1. **解析不出元信息的文件绝不删**：Dart 索引里每条都有 exportedAt 与 source，
+         *    而 Compose 只能从版本化文件名解析；Dart 端写的 `backup-*.mikcb` 与任何
+         *    不认识的名字都解析不出 exportedAtMillis——把它们当「纪元 0 的过期备份」
+         *    清掉，等于一键删光别的壳写的全部历史。所以这类文件直接跳过（不参与
+         *    计数、不被选中），等 index 互通（见 2026-11-02 汇报）后再对齐。
+         * 2. **手动豁免只认 [manualFileNames] 里点名的那几条**：来源不落在文件名里，
+         *    本会话之外的手动备份无从知晓；未点名的按 AUTO 参与淘汰。
+         *
+         * @param files 远端历史目录的全部条目
+         * @param config 保留策略三参（上限条数 / 天数 / 手动保护）与「当前版本」基线
+         * @param nowMillis 现在时刻（毫秒），注入便于单测
+         * @param manualFileNames 已知的手动备份文件名（本会话手动上传的那几条）
+         */
+        fun planHistoryPrune(
+            files: List<RemoteBackupFile>,
+            config: WebdavSyncConfig,
+            nowMillis: Long,
+            manualFileNames: Set<String> = emptySet(),
+        ): List<RemoteBackupFile> {
+            if (files.isEmpty()) return emptyList()
+            val prunable = files.filter { it.exportedAtMillis != null }
+            val sorted = prunable.sortedByDescending { it.exportedAtMillis }
+            val kept = ArrayList<RemoteBackupFile>(sorted.size)
+            val removed = ArrayList<RemoteBackupFile>()
+            val cutoff = nowMillis - config.maxBackupAgeDays * 24L * 60L * 60L * 1000L
+            for (file in sorted) {
+                val isCurrent = file.contentSha256 != null &&
+                    file.contentSha256 == config.lastUploadedLocalHash
+                val source = if (file.fileName in manualFileNames) {
+                    CloudBackupSource.MANUAL
+                } else {
+                    file.source
+                }
+                val isProtectedManual = config.manualBackupProtected &&
+                    source == CloudBackupSource.MANUAL
+                when {
+                    isCurrent || isProtectedManual -> kept.add(file)
+                    file.exportedAtMillis!! < cutoff || kept.size >= config.maxBackupCount ->
+                        removed.add(file)
+                    else -> kept.add(file)
+                }
+            }
+            return removed
         }
 
         /** 原始字节 SHA-256（情侣课表这类非快照信封的正文用）。 */

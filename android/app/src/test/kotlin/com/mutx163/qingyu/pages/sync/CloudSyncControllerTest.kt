@@ -402,6 +402,116 @@ class CloudSyncControllerTest {
         assertNull(controller.pendingSyncConflict)
     }
 
+    // ---------- 保留策略接线（2026-11-02 修「prune 从未执行」） ----------
+
+    /** 改本地快照内容再上传：不同 profileId ⇒ 不同内容哈希 ⇒ 不同的版本化文件。 */
+    private fun uploadAsNewVersion(
+        controller: CloudSyncController,
+        snapshotStore: FakeLocalSnapshotStore,
+        profileId: String,
+        exportedAt: String,
+        manual: Boolean,
+    ) {
+        snapshotStore.stored = buildSyncSnapshotBytes(profileId = profileId, exportedAt = exportedAt)
+        val kind = if (manual) controller.createBackup() else controller.syncNow()
+        assertEquals(SyncResultKind.UPLOADED, kind)
+    }
+
+    private fun historyFileNames(transport: FakeRemoteTransport): Set<String> =
+        transport.files.keys
+            .filter { it.contains("/history/") }
+            .map { it.substringAfterLast('/') }
+            .toSet()
+
+    /** 版本化文件名 `snapshot-<hash>-<微秒>-<设备>.mikcb` 里的微秒段。 */
+    private fun fileMicros(fileName: String): Long? =
+        fileName.split('-').getOrNull(2)?.toLongOrNull()
+
+    private fun exportedMicrosOf(exportedAtIso: String): Long =
+        CloudBackupListLogic.parseExportedAtMillis(exportedAtIso) * 1000L
+
+    @Test
+    fun `prune_超上限后上传真的删掉远端最旧一条`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore()
+        val store = FakeConfigStore(
+            config = WebdavSyncConfig(maxBackupCount = 2, manualBackupProtected = false),
+        )
+        val controller = controller(transport = transport, store = store, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+
+        uploadAsNewVersion(controller, snapshotStore, "p1", "2026-03-05T09:00:00.000", manual = true)
+        uploadAsNewVersion(controller, snapshotStore, "p2", "2026-03-06T09:00:00.000", manual = true)
+        assertEquals(2, historyFileNames(transport).size)
+        uploadAsNewVersion(controller, snapshotStore, "p3", "2026-03-07T09:00:00.000", manual = true)
+
+        val remaining = historyFileNames(transport)
+        assertEquals("超过上限 2 后远端必须只剩 2 条", 2, remaining.size)
+        val oldestMicros = exportedMicrosOf("2026-03-05T09:00:00.000")
+        assertTrue(
+            "最旧的一条必须被删",
+            remaining.none { fileMicros(it) == oldestMicros },
+        )
+    }
+
+    @Test
+    fun `prune_手动备份受保护_超限也不删`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore()
+        // 上限 1 + 手动保护（默认开）：手动那条即便最老也豁免。
+        val store = FakeConfigStore(config = WebdavSyncConfig(maxBackupCount = 1))
+        val controller = controller(transport = transport, store = store, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+
+        uploadAsNewVersion(controller, snapshotStore, "pManual", "2026-03-01T09:00:00.000", manual = true)
+        uploadAsNewVersion(controller, snapshotStore, "pAuto1", "2026-03-06T09:00:00.000", manual = false)
+        uploadAsNewVersion(controller, snapshotStore, "pAuto2", "2026-03-07T09:00:00.000", manual = false)
+
+        val remaining = historyFileNames(transport)
+        assertEquals("手动（豁免）+ 当前版本（豁免）留下，中间的自动备份被裁", 2, remaining.size)
+        val manualMicros = exportedMicrosOf("2026-03-01T09:00:00.000")
+        assertTrue(
+            "受保护的手动备份必须存活",
+            remaining.any { fileMicros(it) == manualMicros },
+        )
+    }
+
+    @Test
+    fun `prune_超过天数上限的过期备份上传后被裁`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore()
+        val store = FakeConfigStore(
+            config = WebdavSyncConfig(maxBackupCount = 30, maxBackupAgeDays = 7, manualBackupProtected = false),
+        )
+        val controller = controller(transport = transport, store = store, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+        // clock() = 2026-03-07T09:05+08:00：这条比「now-7天」还老 3 天多。
+        uploadAsNewVersion(controller, snapshotStore, "pOld", "2026-02-01T09:00:00.000", manual = true)
+        uploadAsNewVersion(controller, snapshotStore, "pFresh", "2026-03-07T09:00:00.000", manual = true)
+
+        val remaining = historyFileNames(transport)
+        val expiredMicros = exportedMicrosOf("2026-02-01T09:00:00.000")
+        assertTrue("过期备份必须被删", remaining.none { fileMicros(it) == expiredMicros })
+        assertEquals(1, remaining.size)
+    }
+
+    @Test
+    fun `备份来源不再硬编码_手动备份如实标MANUAL`() {
+        val transport = FakeRemoteTransport()
+        val snapshotStore = FakeLocalSnapshotStore()
+        val controller = controller(transport = transport, snapshotStore = snapshotStore)
+        controller.connect("me@example.com", "pw")
+
+        uploadAsNewVersion(controller, snapshotStore, "pManual", "2026-03-06T09:00:00.000", manual = true)
+        val manualEntry = controller.backupListViewState().rows.single()
+        assertEquals(CloudBackupSource.MANUAL, controller.backupEntry(manualEntry.entryId)?.source)
+
+        uploadAsNewVersion(controller, snapshotStore, "pAuto", "2026-03-07T09:00:00.000", manual = false)
+        val entries = controller.backupListViewState().rows
+        val sources = entries.map { controller.backupEntry(it.entryId)?.source }.toSet()
+        assertEquals(setOf(CloudBackupSource.MANUAL, CloudBackupSource.AUTO), sources)
+    }
+
     @Test
     fun `syncNow_冲突选云端后应用远端并写基线`() {
         val transport = FakeRemoteTransport()
