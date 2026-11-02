@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -26,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -503,6 +507,8 @@ fun ImportSpreadsheetWarningsDialog(
     onDismiss: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    // 提醒条数无上界：正文限高 + 可滚，动作按钮留在滚动区外（小屏/大字号仍能点到「继续」）。
+    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = show,
@@ -510,21 +516,28 @@ fun ImportSpreadsheetWarningsDialog(
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = ImportStrings.spreadsheetImportWarningsMessage.zh,
-                style = MiuixTheme.textStyles.body2,
-                lineHeight = 20.sp,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            for (warning in warnings) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxBodyHeight)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 Text(
-                    text = "• $warning",
-                    style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 19.sp,
+                    text = ImportStrings.spreadsheetImportWarningsMessage.zh,
+                    style = MiuixTheme.textStyles.body2,
+                    lineHeight = 20.sp,
                     color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(bottom = 6.dp),
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                for (warning in warnings) {
+                    Text(
+                        text = "• $warning",
+                        style = MiuixTheme.textStyles.footnote1,
+                        lineHeight = 19.sp,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             ImportActionButton(
@@ -810,6 +823,8 @@ fun ImportColorGroupDialog(
     onDismiss: () -> Unit,
 ) {
     if (!show) return
+    // 7 行配色组在小屏/大字号下会撑出弹窗：清单限高可滚，「取消」固定在外。
+    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = true,
@@ -817,14 +832,21 @@ fun ImportColorGroupDialog(
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            for ((index, groupId) in ImportRandomColorStore.GROUP_OPTIONS.withIndex()) {
-                if (index > 0) Spacer(modifier = Modifier.height(8.dp))
-                ImportValueRow(
-                    title = ImportRandomColorStore.groupLabel(groupId),
-                    value = if (groupId == selectedGroupId) "✓" else "",
-                    enabled = true,
-                    onClick = { onSelect(groupId) },
-                )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxBodyHeight)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                for ((index, groupId) in ImportRandomColorStore.GROUP_OPTIONS.withIndex()) {
+                    if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+                    ImportValueRow(
+                        title = ImportRandomColorStore.groupLabel(groupId),
+                        value = if (groupId == selectedGroupId) "✓" else "",
+                        enabled = true,
+                        onClick = { onSelect(groupId) },
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             ImportActionButton(

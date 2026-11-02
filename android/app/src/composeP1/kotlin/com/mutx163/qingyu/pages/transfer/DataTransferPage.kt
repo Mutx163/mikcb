@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -474,6 +476,8 @@ fun TransferPreviewDialog(
     onChoose: (TransferApplyMode?) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    // 4 行头信息 + merge/overwrite 两段差异摘要可能很长：正文限高 + 可滚，动作按钮留在滚动区外。
+    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
     OverlayDialog(
         show = content != null,
         title = content?.title ?: TransferStrings.selectImportModeTitle.zh,
@@ -488,7 +492,10 @@ fun TransferPreviewDialog(
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxBodyHeight)
+                    .verticalScroll(rememberScrollState()),
             )
             for (action in DataTransferLogic.previewActions(canMerge)) {
                 TransferButton(

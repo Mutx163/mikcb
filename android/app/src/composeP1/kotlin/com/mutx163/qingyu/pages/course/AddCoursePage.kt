@@ -13,12 +13,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -754,13 +758,22 @@ private fun AddCourseWeekPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (AddCourseWeekDraft) -> Unit,
 ) {
+    // Dart 原版是全屏子页 + 可滚 ListView；这里收成对话框，正文限高 + 可滚，
+    // 避免自定义周网格（53 周 / 大字号）撑破矮屏。确认/取消跟随正文滚动（与 Dart 底部动作一致）。
+    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = true,
         title = AddCourseStrings.weekPickerTitle.zh,
         onDismissRequest = onDismiss,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxBodyHeight)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             AddCourseWeekModeTileGroup(
                 tempMode = draft.mode,
                 dark = dark,

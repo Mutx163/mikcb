@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -242,6 +245,8 @@ fun TimeSchemeDeleteBlockedSheet(
 ) {
     val dark = isSystemInDarkTheme()
     val current = check
+    // 占用清单条数无上界：正文限高 + 可滚，两个动作按钮固定在外。
+    val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
@@ -250,27 +255,34 @@ fun TimeSchemeDeleteBlockedSheet(
     ) {
         if (current != null) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                if (current.blockerIntro.isNotBlank()) {
-                    Text(
-                        text = current.blockerIntro,
-                        style = MiuixTheme.textStyles.footnote1,
-                        // 抬头句沿用对话框自己的居中惯例（与 Dart 同口径）。
-                        textAlign = TextAlign.Center,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-                for (line in current.blockers) {
-                    Text(
-                        text = line,
-                        style = MiuixTheme.textStyles.footnote1,
-                        textAlign = TextAlign.Start,
-                        color = Color(QingyuTheme.secondaryText(dark)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxBodyHeight)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    if (current.blockerIntro.isNotBlank()) {
+                        Text(
+                            text = current.blockerIntro,
+                            style = MiuixTheme.textStyles.footnote1,
+                            // 抬头句沿用对话框自己的居中惯例（与 Dart 同口径）。
+                            textAlign = TextAlign.Center,
+                            color = Color(QingyuTheme.primaryText(dark)),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    for (line in current.blockers) {
+                        Text(
+                            text = line,
+                            style = MiuixTheme.textStyles.footnote1,
+                            textAlign = TextAlign.Start,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                        )
+                    }
                 }
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
@@ -308,6 +320,8 @@ fun TimeSchemeUsageSheet(
 ) {
     val dark = isSystemInDarkTheme()
     val current = view
+    // 清单限高按屏高走：矮屏不再被 380dp 硬上限顶掉「关闭」按钮。
+    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.42f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = current != null,
@@ -335,7 +349,7 @@ fun TimeSchemeUsageSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         // 弹窗里必须给上界，否则 LazyColumn 在无界高度里量不出来。
-                        .heightIn(max = 380.dp)
+                        .heightIn(max = maxListHeight)
                         .scrollEndHaptic()
                         .overScrollVertical(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
