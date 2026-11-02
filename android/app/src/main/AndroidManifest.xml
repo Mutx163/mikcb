@@ -151,6 +151,29 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- 正式包启动页 = Compose 壳（2026-11-02 从 Flutter 的 .MainActivity 切过来）。
+             dev / perf 两个渠道此前各自在自己的清单里声明过这一段；启动页落进 main 后
+             它们只保留「关掉 MainActivity」那一条，不再重复声明本 Activity
+             （两边都声明会在合并清单里留下同名 Activity 与两条 launcher intent-filter）。
+
+             回退方式（不改代码，只动本文件）：把下面这段 MAIN/LAUNCHER intent-filter
+             挪回 .MainActivity 即可，其余过滤规则本来就在 MainActivity 上。 -->
+        <activity
+            android:name=".pages.PagesShellActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/ComposeShellTheme"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:enableOnBackInvokedCallback="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -165,11 +188,9 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-
+            <!-- 2026-11-02 起这里不再带 MAIN/LAUNCHER（启动页已换成 .pages.PagesShellActivity）。
+                 Activity 本身与下面全部视图/导入过滤规则保留：回退只需把上面那段
+                 launcher intent-filter 挪回本处，文件导入与 umeng scheme 的落点不变。 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

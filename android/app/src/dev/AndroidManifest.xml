@@ -2,26 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application>
-        <!-- dev flavor (调试版与性能版) 专属入口：直接由 Compose 主界面接管，包名自动带 .debug 后缀 -->
+        <!-- dev flavor 专属：只关掉 Flutter 的 MainActivity。
+             启动页（.pages.PagesShellActivity + MAIN/LAUNCHER）自 2026-11-02 起声明在
+             src/main/AndroidManifest.xml，这里不再重复声明——两边都声明会在合并后的
+             清单里留下同名 Activity 与两条 launcher intent-filter。 -->
         <activity
             android:name=".MainActivity"
             android:enabled="false"
             tools:node="merge" />
-
-        <activity
-            android:name=".pages.PagesShellActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/ComposeShellTheme"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize"
-            android:enableOnBackInvokedCallback="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
     </application>
 </manifest>

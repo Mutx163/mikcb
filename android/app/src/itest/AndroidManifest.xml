@@ -1,0 +1,28 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!--
+        itest flavor 专属覆盖（`flutter test integration_test/...` 加 flavor itest）。
+
+        为什么要它：Flutter 的集成测试由工具拉起「本包的启动 Activity」，
+        它必须仍是 Flutter 的 .MainActivity。而 main 自 2026-11-02 起把启动页换成了
+        Compose 壳（.pages.PagesShellActivity），不覆盖的话 .itest 包装好点开是壳，
+        测试进程等不到 Flutter engine，全部超时。
+
+        做法与 dev / perf 相反、机制相同：还是清单源集覆盖，只是把 launcher 换回 Flutter。
+        -->
+        <activity
+            android:name=".pages.PagesShellActivity"
+            tools:node="remove" />
+
+        <activity
+            android:name=".MainActivity"
+            tools:node="merge">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
