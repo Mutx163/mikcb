@@ -133,7 +133,7 @@ fun WeekSelectorSheet(
             }
 
             // ── 回本周（Dart `:109-117`：14dp 间距 + 整宽按钮）──
-            if (showBackToCurrent && currentSemesterWeek != null) {
+            if (showBackToCurrent) {
                 Spacer(modifier = Modifier.height(14.dp))
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
