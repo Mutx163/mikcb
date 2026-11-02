@@ -84,7 +84,7 @@ class ShellExternalEntryActivity : ComponentActivity() {
         ) {
             val path = ShellExternalEntry.normalizeDebugDeepLinkPath(data?.host, data?.path)
             // query 缺口：壳的导航只认页面 id（见 ShellExternalEntryEffect 说明）。
-            val pageId = ShellExternalEntry.debugRoutePageId(path, ShellWiring::shellPageIdForRoute)
+            val pageId = ShellExternalEntry.debugRoutePageId(path, ::shellPageIdForRoute)
             if (pageId != null) {
                 ShellExternalEntryHub.post(pageId, payload = null)
             }
@@ -97,7 +97,7 @@ class ShellExternalEntryActivity : ComponentActivity() {
         if (ShellExternalEntry.isExternalImportAction(action, dataScheme)) {
             val uri = resolveImportUri(entry)
             if (uri != null && uri.scheme != ShellExternalEntry.DEBUG_SCHEME) {
-                readImportInBackground(entry.type, uri)
+                readImportInBackground(entry?.type, uri)
                 finish()
                 return
             }
@@ -108,14 +108,17 @@ class ShellExternalEntryActivity : ComponentActivity() {
     }
 
     /** [MainActivity.resolveImportUri] 同口径：SEND 取 EXTRA_STREAM，VIEW 取 data。 */
-    private fun resolveImportUri(entry: Intent): Uri? = when (entry.action) {
-        Intent.ACTION_SEND -> if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            entry.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            entry.getParcelableExtra(Intent.EXTRA_STREAM)
+    private fun resolveImportUri(entry: Intent?): Uri? {
+        if (entry == null) return null
+        return when (entry.action) {
+            Intent.ACTION_SEND -> if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                entry.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                entry.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            else -> entry.data
         }
-        else -> entry.data
     }
 
     /**
@@ -165,8 +168,9 @@ class ShellExternalEntryActivity : ComponentActivity() {
         val read = reader.read(uri, ShellExternalEntry.MAX_IMPORT_BYTES)
         return when (read) {
             is AndroidImportDocumentReader.Result.TooLarge ->
+                // TooLarge 不带名字（data object）：自己再查一次 DISPLAY_NAME。
                 ShellExternalEntry.ImportPayload.TooLarge(
-                    fileName = read.fileName ?: "import",
+                    fileName = reader.displayName(uri) ?: "import",
                     maxBytes = ShellExternalEntry.MAX_IMPORT_BYTES,
                 )
             is AndroidImportDocumentReader.Result.ReadFailed -> null

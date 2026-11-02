@@ -72,7 +72,8 @@ object ShellExternalEntryHub {
  */
 @Composable
 fun ShellExternalEntryEffect(onOpenPage: (String) -> Unit) {
-    val target by ShellExternalEntryHub.pendingPageId
+    // 直接读 object 的 snapshot state（读取本身即订阅重组），不再二次委托。
+    val target = ShellExternalEntryHub.pendingPageId
     LaunchedEffect(target) {
         if (target == null) return@LaunchedEffect
         // 以消费那一刻的值为准（捕获值与消费之间若又 post 了新入口，推的是新值）。
