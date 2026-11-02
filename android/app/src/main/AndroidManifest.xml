@@ -318,12 +318,14 @@
                 android:resource="@xml/keep_alive_accessibility_service" />
         </service>
 
-        <!-- System broadcasts need exported=true; custom ACTION_TRIGGER is only
-             delivered via explicit Component PendingIntent (not in filter). -->
+        <!-- Filtered actions are all protected system broadcasts (delivered by the
+             system even when not exported); custom ACTION_TRIGGER is only delivered
+             via explicit Component PendingIntent from this app. Nothing here needs
+             to be reachable by other apps. -->
         <receiver
             android:name=".LiveUpdateReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -332,11 +334,13 @@
             </intent-filter>
         </receiver>
 
-        <!-- Explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm. -->
+        <!-- Explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm.
+             Non-exported: system still delivers protected broadcasts; other apps
+             can no longer forge fires with enumerable requestCodes. -->
         <receiver
             android:name=".ExamReminderReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -345,11 +349,12 @@
             </intent-filter>
         </receiver>
 
-        <!-- 日程提醒：显式 PendingIntent 投递 ACTION_FIRE；开机/更新/改时区后按快照补排。 -->
+        <!-- 日程提醒：显式 PendingIntent 投递 ACTION_FIRE；开机/更新/改时区后按快照补排。
+            不导出：受保护系统广播仍由系统送达，外部应用无法伪造 requestCode / id+offset。 -->
         <receiver
             android:name=".ScheduleReminderReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -358,11 +363,12 @@
             </intent-filter>
         </receiver>
 
-        <!-- Weekly report: explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm. -->
+        <!-- Weekly report: explicit PendingIntent delivers ACTION_FIRE; boot/time filters re-arm.
+             Non-exported so other apps cannot trigger the post / roll-forward. -->
         <receiver
             android:name=".WeeklyReportReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -491,10 +497,13 @@
                 android:resource="@xml/widget_today_wide_info" />
         </receiver>
 
+        <!-- Refresh helper (not an AppWidgetProvider): all filter actions are
+             protected system broadcasts or this app's own explicit PendingIntent;
+             widget providers below stay exported for the system/launcher. -->
         <receiver
             android:name=".HomeWidgetRefreshReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
