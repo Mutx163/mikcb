@@ -102,9 +102,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetEntryTitle => 'ホームウィジェット';
 
   @override
-  String get homeWidgetEntrySubtitle => '今日の授業カード、ウィジェット背景と表示情報';
-
-  @override
   String get reminderNotificationSectionTitle => 'リマインダーと通知';
 
   @override
@@ -663,9 +660,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lanEditEntryTitle => 'LAN編集';
 
   @override
-  String get lanEditEntrySubtitle => 'PCブラウザから現在の時間割を編集';
-
-  @override
   String get lanEditTitle => 'LAN編集';
 
   @override
@@ -837,17 +831,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodIcsSubtitle => '他の時間割アプリから書き出したカレンダー';
 
   @override
-  String get importMethodIcsFooter => '進入後、.icsファイルを選択して追加インポートまたは既存授業を置換可能。';
-
-  @override
   String get importMethodAiTitle => '画像認識インポート';
 
   @override
   String get importMethodAiSubtitle => '時間割のスクリーンショットから認識';
-
-  @override
-  String get importMethodAiFooter =>
-      'プロンプトをコピーし、Doubaoのエキスパートモードでスクリーンショットとプロンプトを送信、返されたJSONをコピペしてインポート、最後に学期開始日を選択。';
 
   @override
   String get importMethodWarehouseTitle => '教務システムインポート';
@@ -856,18 +843,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodWarehouseSubtitle => '学校の教務システムにログインして取込';
 
   @override
-  String get importMethodWarehouseFooter =>
-      '進入後、学校とアダプタを選択し、教務Webページでログインしてインポートを実行。';
-
-  @override
   String get importMethodSpreadsheetTitle => '表インポート';
 
   @override
   String get importMethodSpreadsheetSubtitle => 'Excel / CSV テンプレートから取込';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      '.csvと.xlsxに対応。テンプレートをダウンロードして記入後、ファイルを選択。';
 
   @override
   String get spreadsheetImportTitle => '表インポート';
@@ -1726,11 +1705,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weekdaySun => '日曜';
-
-  @override
-  String hueLabel(int value) {
-    return '色相$value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -2699,41 +2673,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get diagnosticsStackTrace => 'スタックトレース';
 
   @override
-  String get guideAndPermissionsTitle => '使用ガイドと権限';
-
-  @override
   String get refreshStatusTooltip => 'ステータス更新';
-
-  @override
-  String get guideHeroTitle => 'まずこのページを完了してから使い始めましょう';
-
-  @override
-  String get guideHeroSubtitle =>
-      'まず最初の画面で認証，下にシステムバージョン対応、略称設定とインポート方法の説明があります，スクロールを続けてください';
-
-  @override
-  String get guideChipPermissions => '権限準備';
-
-  @override
-  String get guideChipShortName => '略称設定';
-
-  @override
-  String get guideChipImport => '授業インポート';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 完了';
-  }
-
-  @override
-  String get guideBottomReachedHint => '最後までスクロールしました，内容を確認して使い始められます';
-
-  @override
-  String get guideScrollHint =>
-      '下にスクロールして続行，HyperOSバージョン説明、権限リスト、略称設定とインポート方法があります';
-
-  @override
-  String get guideRequestNotificationFirst => 'まず通知権限を申請';
 
   @override
   String get quickSetupTitle => '初回画面クイック設定';
@@ -2773,13 +2713,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guidePrivacyConsentLabel => 'Umeng関連のプライバシー説明を読み同意します';
-
-  @override
-  String get guideRequireConsentHint =>
-      'まず下までスクロールして説明を読み、同意にチェックを入れてから使い始めてください';
-
-  @override
-  String get guideContinueHint => '下にスクロールして完全なガイド内容を確認';
 
   @override
   String get exitAppAction => 'アプリ終了';
@@ -3009,9 +2942,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeTitleSectionTitle => 'ホームタイトル';
 
   @override
-  String get homeTitleSectionSubtitle => 'ホーム左上の時間割切替エントリのスタイルを制御';
-
-  @override
   String get homeTitleStyleLabel => 'タイトルスタイル';
 
   @override
@@ -3030,21 +2960,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timetableBackgroundColorSectionSubtitle => '時間割ページの大背景にのみ作用';
 
   @override
-  String get homePageBackgroundFillLabel => '背景の塗りつぶし';
-
-  @override
-  String get homePageBackgroundFillColor => '単色';
-
-  @override
-  String get homePageBackgroundFillImage => '画像';
-
-  @override
-  String get homePageBackgroundImageTitle => '背景画像';
-
-  @override
-  String get homePageBackgroundImageSubtitle => '「画像」モードでは、下で選択した表示領域に適用されます';
-
-  @override
   String get homePageWallpaperTitle => '背景画像';
 
   @override
@@ -3054,17 +2969,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get wallpaperSheetTabSettings => '設定';
 
   @override
-  String get homePageWallpaperSubtitle => '全面背景。下で領域を選ぶ';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景を週送りに追従';
 
   @override
   String get homePageWallpaperBlurTitle => '壁紙のぼかし';
-
-  @override
-  String get homePageWallpaperBlurSubtitle =>
-      '背景を 1 枚の固定したぼかし画像にして、上の文字を読みやすくします';
 
   @override
   String get homePageWallpaperBlurOff => 'オフ';
@@ -3073,35 +2981,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homePageBackdropFollowsWeekPagerSubtitle => '背景がページと一緒に動く';
 
   @override
-  String get homePageBackgroundScopeTitle => '背景の表示領域';
-
-  @override
-  String get homePageBackgroundScopeSubtitle => 'チェックした領域のみ背景を表示';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => 'ステータスバー';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => '情報バー';
-
-  @override
-  String get homePageBackgroundScopeHeader => 'トップバー';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => '情報バーガラス';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle =>
-      'ガラス素材は外観のガラスモードに従います。オフのままでは情報バーに壁紙を直接表示します';
-
-  @override
   String get homePagePickImageAction => '画像を選択';
-
-  @override
-  String get homePageSwitchImageAction => '写真を切り替え';
 
   @override
   String get homePageAdjustPositionAction => '位置を調整';
@@ -3272,12 +3152,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => '現在のステータス';
-
-  @override
   String get guideStatusNotificationPermission => '通知権限';
 
   @override
@@ -3315,67 +3189,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => '未許可だとサイレントが効きません';
-
-  @override
-  String get guideStatusAndroidVersion => 'Androidバージョン';
-
-  @override
-  String get guideStatusVersionUnknown => '未認識';
-
-  @override
-  String get guideStatusIslandSystemSupport => 'スーパーアイランドシステム対応';
-
-  @override
-  String get guideStatusIslandSystemRequirement => 'HyperOS 3.0.300以上が必要';
-
-  @override
-  String get guideStatusIslandHint =>
-      'スーパーアイランドを主に使用する場合、まずシステムバージョンがHyperOS 3.0.300以上であることを確認し、その後以下の権限リストを順番に完了してください';
-
-  @override
-  String get guidePermissionChecklistTitle => '権限リスト';
-
-  @override
-  String get guidePermissionChecklistSubtitle => 'この順序で確認するのが最も効率的で、見落としが少ない';
-
-  @override
-  String get guideChecklistRequestNotificationTitle => '通知権限を申請';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle => '全リマインダーの前提条件';
-
-  @override
-  String get guideChecklistOpenNotificationTitle => '通知設定を開く';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle =>
-      '通知マスタースイッチ、ロック画面表示とリアルタイム通知権限を確認';
-
-  @override
-  String get guideChecklistOpenIslandTitle => 'フォーカス通知設定を開く';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'HyperOS 3.0.300以上でpromoted/スーパーアイランド通知を確認';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => '自動起動設定を開く';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle => 'アプリの自動起動とバックグラウンド常駐を許可';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => 'バッテリー戦略設定を開く';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle => '制限なしへの変更を推奨，授業リマインダーの中断を防止';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => 'バックグラウンド常駐補助を開く';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle =>
-      'スーパーアイランドとリマインダーのバックグラウンド安定性をさらに向上';
 
   @override
   String get guideShortNameAdviceTitle => '授業略称の提案';
@@ -3742,24 +3555,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetTodayCourseTitle => '今日の授業ウィジェット';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      '2×2 / 2×4 / 4×4 の 3 サイズに対応。タップでホームを開き、授業状態は自動更新されます';
-
-  @override
-  String get homeWidgetQuickAddTitle => 'ホームにクイック追加';
-
-  @override
-  String get homeWidgetCheckingPinSupport => '現在のホームがアプリ内ウィジェット追加に対応しているか確認中…';
-
-  @override
-  String get homeWidgetPinSupported =>
-      '対応している場合、システム追加確認が直接ポップアップ。個別の権限ポップアップではない。確認後にホームに固定可能。';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      '現在のホームがアプリ内直接追加に未対応の場合、ホームを長押し → ウィジェット → 轻屿時間割で手動追加可能。';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => '背景スタイル';
 
   @override
@@ -3778,15 +3573,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetCountdownLeadTitle => 'カウントダウン先行量';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle => '授業前に何分でカウントダウンモードに切替るかを設定';
-
-  @override
   String get homeWidgetCountdownLeadAlways => '常に表示';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '授業前$minutes分';
-  }
 
   @override
   String get widgetCountdownStyleTitle => 'カウントダウンスタイル';
@@ -3842,10 +3629,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeWidgetDescriptionTitle => '説明';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      'ウィジェットは現在今日の授業を優先表示，授業なし状態は完全なカードを維持し、空白にならない，時間割切替やスタイル変更時、デスクトップコンポーネントも連動して更新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -4463,9 +4246,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'Doubaoエキスパートモードを推奨。複数画像対応。スクリーンショットには曜日ヘッダーが必要。';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => 'AIが返したJSONを貼付';
 
   @override
@@ -4518,10 +4298,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get importAiReplaceMessage =>
       '現在のAI解析結果で既存の授業を置換しますか？この操作では、現在の時間割上の独立した予定（自習・会議など）も削除されます。';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      '学校の校暦の学期開始日を選択し、時間割の第1週が校暦の第何週に対応するかを確認，学校の第1週に授業がない場合、通常第2週に変更';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -4959,9 +4735,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuUpdateTitle => 'ソフトウェア更新';
 
   @override
-  String get homeMenuProfilesTitle => '時間割管理';
-
-  @override
   String get homeMenuOverviewTitle => '授業一覧';
 
   @override
@@ -4975,9 +4748,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeMenuCoffeeTitle => 'コーヒーをおごる';
-
-  @override
-  String get homeMenuFeedbackTitle => '問題報告';
 
   @override
   String get switchTimetableTitle => '時間割切替';
@@ -5774,9 +5544,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holidaySettingsEntryTitle => '休日マーク';
 
   @override
-  String get holidaySettingsEntrySubtitle => '時間割に法定休日と振替出勤日をマーク';
-
-  @override
   String get holidayMakeupWorkday => '振替出勤';
 
   @override
@@ -5789,34 +5556,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holidayEnableSubtitle => '祝日と振替出勤日を表示';
 
   @override
-  String get holidayDataSectionTitle => '休日データ';
-
-  @override
-  String get holidayDataYear => '年';
-
-  @override
-  String get holidayDataCount => '件数';
-
-  @override
-  String get holidayDataEmpty => '休日データなし';
-
-  @override
   String get holidayCheckUpdate => '更新を確認';
 
   @override
   String get holidayAdvancedTitle => '休日データの更新';
 
   @override
-  String get holidayUpcomingSectionTitle => '近日の休日';
-
-  @override
   String get holidayNoUpcoming => '近日休日なし';
 
   @override
   String get holidayBadgeLabel => '休';
-
-  @override
-  String get holidayStatusLabel => '休日';
 
   @override
   String get suspendedBadgeLabel => '停';
@@ -6048,13 +5797,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guidePersonalizePageTitle => 'カスタマイズ';
 
   @override
-  String get guidePersonalizeSubtitle => '選択はすぐに反映され、後から「設定 → 外観」でいつでも変更できます';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => 'メニュー形式';
-
-  @override
-  String get guidePersonalizeNavFormTitle => 'ナビゲーション形態';
 
   @override
   String get guidePersonalizeVisualEffectSolid => 'ソリッドカード';
@@ -6082,20 +5825,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guideNextButton => '次へ';
 
   @override
-  String get guidePermissionsHeader => 'システム権限設定';
-
-  @override
   String get guidePermissionsSubtitle =>
       'これらの設定を完了すると、スーパーアイランドとリマインダーが正常に使用可能';
 
   @override
   String get guidePermissionsFooterHint => 'システム制限あり、スイッチ優先';
-
-  @override
-  String get guideTipsHeader => '使い方のコツ';
-
-  @override
-  String get guideTipsSubtitle => 'これらはいつでも「設定」から確認可能';
 
   @override
   String get guidePrivacyReadBeforeUse => '使用前に以下を読み同意してください';
@@ -6110,11 +5844,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get holidayUpdateLog => '更新ログ';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count件';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -8249,15 +7978,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'With icon and subtitle, same as app toast';
 
   @override
-  String get hyperosShowcaseMenuCopy => 'Copy';
-
-  @override
-  String get hyperosShowcaseMenuShare => 'Share';
-
-  @override
-  String get hyperosShowcaseMenuDelete => 'Delete';
-
-  @override
   String get hyperosShowcaseRefreshDone => 'Refresh complete';
 
   @override
@@ -10356,9 +10076,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeMenuCustomizeSectionTitle => '右上メニュー';
 
   @override
-  String get homeNavigationSubtitle => 'ボトムバーの形式・メニュー・ホームタイトル';
-
-  @override
   String get homeNavigationFormLabel => 'ホームフォーム';
 
   @override
@@ -10442,13 +10159,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeGridEditorEnabledTitle => '表示中';
 
   @override
-  String get homeGridEditorAvailableTitle => '追加可能';
-
-  @override
   String get homeGridEditorRemoveTooltip => '削除';
-
-  @override
-  String get homeGridEditorAddTooltip => '追加';
 
   @override
   String get homeGridEditorResetAction => 'デフォルトの並びに戻す';

@@ -102,9 +102,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetEntryTitle => '홈 위젯';
 
   @override
-  String get homeWidgetEntrySubtitle => '오늘 수업 카드, 위젯 배경 및 표시 정보';
-
-  @override
   String get reminderNotificationSectionTitle => '알림 및 푸시';
 
   @override
@@ -662,9 +659,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get lanEditEntryTitle => 'LAN 편집';
 
   @override
-  String get lanEditEntrySubtitle => 'PC 브라우저에서 현재 시간표 편집';
-
-  @override
   String get lanEditTitle => 'LAN 편집';
 
   @override
@@ -836,18 +830,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodIcsSubtitle => '다른 시간표 앱에서 내보낸 캘린더 파일';
 
   @override
-  String get importMethodIcsFooter =>
-      '진입 후 .ics 파일을 선택하여 추가 가져오기 또는 기존 수업을 대체할 수 있습니다.';
-
-  @override
   String get importMethodAiTitle => '이미지 인식 가져오기';
 
   @override
   String get importMethodAiSubtitle => '시간표 스크린샷에서 인식해 가져오기';
-
-  @override
-  String get importMethodAiFooter =>
-      '프롬프트를 복사한 뒤 Doubao 전문가 모드에서 스크린샷과 프롬프트를 전송하고, 반환된 JSON을 복사하여 가져온 후 학기 시작일을 선택합니다.';
 
   @override
   String get importMethodWarehouseTitle => '교무 시스템 가져오기';
@@ -856,18 +842,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodWarehouseSubtitle => '학교 교무 시스템에 로그인하여 가져오기';
 
   @override
-  String get importMethodWarehouseFooter =>
-      '진입 후 학교와 어댑터를 선택하면 교무 웹페이지를 열어 로그인 후 가져오기를 실행할 수 있습니다.';
-
-  @override
   String get importMethodSpreadsheetTitle => '표 가져오기';
 
   @override
   String get importMethodSpreadsheetSubtitle => 'Excel / CSV 템플릿을 작성해 가져오기';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      '.csv와 .xlsx 지원. 템플릿을 다운로드해 작성 후 파일을 선택하세요.';
 
   @override
   String get spreadsheetImportTitle => '표 가져오기';
@@ -1734,11 +1712,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weekdaySun => '일요일';
-
-  @override
-  String hueLabel(int value) {
-    return '색상 $value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -2715,41 +2688,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get diagnosticsStackTrace => '스택 트레이스';
 
   @override
-  String get guideAndPermissionsTitle => '사용 가이드 및 권한';
-
-  @override
   String get refreshStatusTooltip => '상태 새로고침';
-
-  @override
-  String get guideHeroTitle => '먼저 이 페이지를 완료하세요';
-
-  @override
-  String get guideHeroSubtitle =>
-      '먼저 첫 화면에서 인증하세요. 아래에 시스템 버전 지원, 약칭 설정, 가져오기 방법이 설명되어 있습니다. 스크롤을 계속하세요';
-
-  @override
-  String get guideChipPermissions => '권한 준비';
-
-  @override
-  String get guideChipShortName => '약칭 설정';
-
-  @override
-  String get guideChipImport => '수업 가져오기';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 완료';
-  }
-
-  @override
-  String get guideBottomReachedHint => '마지막까지 스크롤했습니다. 확인 후 바로 시작할 수 있습니다';
-
-  @override
-  String get guideScrollHint =>
-      '아래로 스크롤하여 계속하세요. HyperOS 버전 설명, 권한 목록, 약칭 설정, 가져오기 방법이 있습니다';
-
-  @override
-  String get guideRequestNotificationFirst => '먼저 알림 권한 요청';
 
   @override
   String get quickSetupTitle => '첫 화면 빠른 설정';
@@ -2789,12 +2728,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guidePrivacyConsentLabel => 'Umeng 관련 개인정보 처리방침을 읽고 동의합니다';
-
-  @override
-  String get guideRequireConsentHint => '먼저 아래로 스크롤하여 설명을 읽고, 동의에 체크한 후 시작하세요';
-
-  @override
-  String get guideContinueHint => '아래로 스크롤하여 전체 가이드 내용을 확인하세요';
 
   @override
   String get exitAppAction => '앱 종료';
@@ -3025,9 +2958,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeTitleSectionTitle => '홈 제목';
 
   @override
-  String get homeTitleSectionSubtitle => '홈 왼쪽 위 시간표 전환 항목의 스타일을 제어합니다';
-
-  @override
   String get homeTitleStyleLabel => '제목 스타일';
 
   @override
@@ -3046,22 +2976,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timetableBackgroundColorSectionSubtitle => '시간표 페이지의 큰 배경에만 적용됩니다';
 
   @override
-  String get homePageBackgroundFillLabel => '배경 채우기';
-
-  @override
-  String get homePageBackgroundFillColor => '단색';
-
-  @override
-  String get homePageBackgroundFillImage => '이미지';
-
-  @override
-  String get homePageBackgroundImageTitle => '배경 이미지';
-
-  @override
-  String get homePageBackgroundImageSubtitle =>
-      '\'이미지\' 모드에서 아래에서 선택한 표시 영역에 적용됩니다';
-
-  @override
   String get homePageWallpaperTitle => '배경 이미지';
 
   @override
@@ -3071,17 +2985,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get wallpaperSheetTabSettings => '설정';
 
   @override
-  String get homePageWallpaperSubtitle => '전체 배경. 아래서 영역 선택';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle => '배경이 주차 스와이프를 따라감';
 
   @override
   String get homePageWallpaperBlurTitle => '배경화면 흐리게';
-
-  @override
-  String get homePageWallpaperBlurSubtitle =>
-      '배경을 고정된 흐림 이미지 한 장으로 만들어 위의 글자가 더 잘 보이게 합니다';
 
   @override
   String get homePageWallpaperBlurOff => '끔';
@@ -3090,35 +2997,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homePageBackdropFollowsWeekPagerSubtitle => '배경이 페이지와 함께 이동';
 
   @override
-  String get homePageBackgroundScopeTitle => '배경 표시 영역';
-
-  @override
-  String get homePageBackgroundScopeSubtitle => '선택한 영역만 배경 표시';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => '상태 표시줄';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => '정보 바';
-
-  @override
-  String get homePageBackgroundScopeHeader => '상단 바';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => '정보 바 유리';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle =>
-      '유리 소재는 외관의 유리 모드를 따릅니다. 끄면 정보 바에 배경화면이 그대로 표시됩니다';
-
-  @override
   String get homePagePickImageAction => '이미지 선택';
-
-  @override
-  String get homePageSwitchImageAction => '사진 변경';
 
   @override
   String get homePageAdjustPositionAction => '위치 조정';
@@ -3291,12 +3170,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => '현재 상태';
-
-  @override
   String get guideStatusNotificationPermission => '알림 권한';
 
   @override
@@ -3334,69 +3207,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => '권한 없으면 무음이 안 됩니다';
-
-  @override
-  String get guideStatusAndroidVersion => 'Android 버전';
-
-  @override
-  String get guideStatusVersionUnknown => '미인식';
-
-  @override
-  String get guideStatusIslandSystemSupport => '슈퍼아일랜드 시스템 지원';
-
-  @override
-  String get guideStatusIslandSystemRequirement => 'HyperOS 3.0.300 이상 필요';
-
-  @override
-  String get guideStatusIslandHint =>
-      '슈퍼아일랜드를 주로 사용하려면, 먼저 시스템 버전이 HyperOS 3.0.300 이상인지 확인한 뒤 아래 권한 목록을 순서대로 완료하세요';
-
-  @override
-  String get guidePermissionChecklistTitle => '권한 목록';
-
-  @override
-  String get guidePermissionChecklistSubtitle =>
-      '이 순서로 확인하는 것이 가장 효율적이고 누락이 적습니다';
-
-  @override
-  String get guideChecklistRequestNotificationTitle => '알림 권한 요청';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle => '모든 알림의 전제 조건';
-
-  @override
-  String get guideChecklistOpenNotificationTitle => '알림 설정 열기';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle =>
-      '알림 마스터 스위치, 잠금 화면 표시, 실시간 알림 권한 확인';
-
-  @override
-  String get guideChecklistOpenIslandTitle => '포커스 알림 설정 열기';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'HyperOS 3.0.300 이상에서 promoted/슈퍼아일랜드 알림 확인';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => '자동 시작 설정 열기';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle => '앱의 자동 시작과 백그라운드 상주를 허용';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => '배터리 전략 설정 열기';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle =>
-      '제한 없음으로 변경 권장. 수업 알림 중단을 방지합니다';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => '백그라운드 상주 보조 열기';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle =>
-      '슈퍼아일랜드와 알림의 백그라운드 안정성을 더욱 향상';
 
   @override
   String get guideShortNameAdviceTitle => '수업 약칭 권장사항';
@@ -3764,24 +3574,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetTodayCourseTitle => '오늘 수업 위젯';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      '2×2, 2×4, 4×4 크기를 지원하며 탭하면 홈이 열리고 수업 상태가 자동 새로고침됩니다';
-
-  @override
-  String get homeWidgetQuickAddTitle => '홈에 빠른 추가';
-
-  @override
-  String get homeWidgetCheckingPinSupport => '현재 홈이 앱 내 위젯 추가를 지원하는지 확인 중…';
-
-  @override
-  String get homeWidgetPinSupported =>
-      '지원하면 시스템 추가 확인이 직접 팝업됩니다. 별도의 권한 팝업이 아닙니다. 확인 후 홈에 고정할 수 있습니다.';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      '현재 홈이 앱 내 직접 추가를 지원하지 않으면, 홈을 길게 눌러 → 위젯 → 경屿 시간표에서 수동으로 추가할 수 있습니다.';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => '배경 스타일';
 
   @override
@@ -3800,16 +3592,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetCountdownLeadTitle => '카운트다운 선행량';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle =>
-      '수업 전 몇 분에 카운트다운 모드로 전환할지 설정합니다';
-
-  @override
   String get homeWidgetCountdownLeadAlways => '항상 표시';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '수업 전 $minutes분';
-  }
 
   @override
   String get widgetCountdownStyleTitle => '카운트다운 스타일';
@@ -3865,10 +3648,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeWidgetDescriptionTitle => '설명';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      '위젯은 현재 오늘 수업을 우선 표시합니다. 수업 없음 상태는 완전한 카드를 유지하며 빈 화면이 나타나지 않습니다. 시간표 전환이나 스타일 변경 시 데스크톱 컴포넌트도 연동하여 갱신됩니다';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -4487,9 +4266,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'Doubao 전문가 모드를 권장합니다. 다중 이미지 지원, 스크린샷에 요일 헤더가 필요합니다.';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => 'AI가 반환한 JSON 붙여넣기';
 
   @override
@@ -4542,10 +4318,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get importAiReplaceMessage =>
       '현재 AI 파싱 결과로 기존 수업을 대체하시겠습니까? 이 작업은 현재 시간표의 독립 일정(자습, 회의 등)도 함께 비웁니다.';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      '학교 학사일정의 학기 시작일을 선택하고, 시간표의 1주차가 학사일정의 몇 주차에 해당하는지 확인하세요. 학교 첫 주에 수업이 없으면 보통 2주차로 변경해야 합니다';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -4985,9 +4757,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuUpdateTitle => '소프트웨어 업데이트';
 
   @override
-  String get homeMenuProfilesTitle => '시간표 관리';
-
-  @override
   String get homeMenuOverviewTitle => '수업 전체보기';
 
   @override
@@ -5001,9 +4770,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeMenuCoffeeTitle => '커피 한 잔';
-
-  @override
-  String get homeMenuFeedbackTitle => '문제 제보';
 
   @override
   String get switchTimetableTitle => '시간표 전환';
@@ -5802,9 +5568,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holidaySettingsEntryTitle => '공휴일 표시';
 
   @override
-  String get holidaySettingsEntrySubtitle => '시간표에 법정 공휴일과 대체 근무일을 표시합니다';
-
-  @override
   String get holidayMakeupWorkday => '대체 근무';
 
   @override
@@ -5817,34 +5580,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holidayEnableSubtitle => '공휴일과 대체 근무일 표시';
 
   @override
-  String get holidayDataSectionTitle => '공휴일 데이터';
-
-  @override
-  String get holidayDataYear => '연도';
-
-  @override
-  String get holidayDataCount => '건수';
-
-  @override
-  String get holidayDataEmpty => '공휴일 데이터 없음';
-
-  @override
   String get holidayCheckUpdate => '업데이트 확인';
 
   @override
   String get holidayAdvancedTitle => '공휴일 데이터 업데이트';
 
   @override
-  String get holidayUpcomingSectionTitle => '다가오는 공휴일';
-
-  @override
   String get holidayNoUpcoming => '다가오는 공휴일 없음';
 
   @override
   String get holidayBadgeLabel => '휴';
-
-  @override
-  String get holidayStatusLabel => '휴일';
 
   @override
   String get suspendedBadgeLabel => '정';
@@ -6078,14 +5823,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guidePersonalizePageTitle => '개인화 설정';
 
   @override
-  String get guidePersonalizeSubtitle =>
-      '선택한 항목은 즉시 적용되며, 언제든지 \'설정 → 화면\'에서 변경할 수 있습니다';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => '메뉴 스타일';
-
-  @override
-  String get guidePersonalizeNavFormTitle => '탐색 형태';
 
   @override
   String get guidePersonalizeVisualEffectSolid => '솔리드 카드';
@@ -6113,19 +5851,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get guideNextButton => '다음';
 
   @override
-  String get guidePermissionsHeader => '시스템 권한 설정';
-
-  @override
   String get guidePermissionsSubtitle => '이 설정을 완료해야 슈퍼아일랜드와 알림이 정상 작동합니다';
 
   @override
   String get guidePermissionsFooterHint => '시스템 제한 있음, 스위치 기준';
-
-  @override
-  String get guideTipsHeader => '사용 팁';
-
-  @override
-  String get guideTipsSubtitle => '이것들은 언제든 \'설정\'에서 찾을 수 있습니다';
 
   @override
   String get guidePrivacyReadBeforeUse => '사용 전 아래 내용을 읽고 동의하세요';
@@ -6140,11 +5869,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get holidayUpdateLog => '업데이트 로그';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count건';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -8288,15 +8012,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'With icon and subtitle, same as app toast';
 
   @override
-  String get hyperosShowcaseMenuCopy => 'Copy';
-
-  @override
-  String get hyperosShowcaseMenuShare => 'Share';
-
-  @override
-  String get hyperosShowcaseMenuDelete => 'Delete';
-
-  @override
   String get hyperosShowcaseRefreshDone => 'Refresh complete';
 
   @override
@@ -10397,9 +10112,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeMenuCustomizeSectionTitle => '우측 상단 메뉴';
 
   @override
-  String get homeNavigationSubtitle => '하단 바 형태·메뉴·홈 제목';
-
-  @override
   String get homeNavigationFormLabel => '홈 형태';
 
   @override
@@ -10483,13 +10195,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeGridEditorEnabledTitle => '사용 중';
 
   @override
-  String get homeGridEditorAvailableTitle => '추가 가능';
-
-  @override
   String get homeGridEditorRemoveTooltip => '제거';
-
-  @override
-  String get homeGridEditorAddTooltip => '추가';
 
   @override
   String get homeGridEditorResetAction => '기본 배열로 되돌리기';

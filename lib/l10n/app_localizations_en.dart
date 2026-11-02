@@ -104,10 +104,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetEntryTitle => 'Home Widgets';
 
   @override
-  String get homeWidgetEntrySubtitle =>
-      'Today cards, widget background, and displayed information';
-
-  @override
   String get reminderNotificationSectionTitle => 'Reminders & Notifications';
 
   @override
@@ -682,10 +678,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lanEditEntryTitle => 'LAN Editing';
 
   @override
-  String get lanEditEntrySubtitle =>
-      'Edit the current timetable from a desktop browser';
-
-  @override
   String get lanEditTitle => 'LAN editing';
 
   @override
@@ -871,18 +863,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Calendar files from other timetable apps';
 
   @override
-  String get importMethodIcsFooter =>
-      'Pick an .ics file directly. You can append or replace existing courses.';
-
-  @override
   String get importMethodAiTitle => 'Image Import';
 
   @override
   String get importMethodAiSubtitle => 'Import from timetable screenshots';
-
-  @override
-  String get importMethodAiFooter =>
-      'Copy the prompt, send screenshots to the AI expert mode, paste the JSON result back, then choose semester start date.';
 
   @override
   String get importMethodWarehouseTitle => 'Academic System Import';
@@ -891,19 +875,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodWarehouseSubtitle => 'Sign in to your school system';
 
   @override
-  String get importMethodWarehouseFooter =>
-      'Choose a school and adapter, then open the academic system page and run the import.';
-
-  @override
   String get importMethodSpreadsheetTitle => 'Spreadsheet Import';
 
   @override
   String get importMethodSpreadsheetSubtitle =>
       'Import from an Excel or CSV template';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      'Supports .csv and .xlsx. Download the template, fill it in, then pick a file.';
 
   @override
   String get spreadsheetImportTitle => 'Spreadsheet Import';
@@ -1794,11 +1770,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weekdaySun => 'Sun';
-
-  @override
-  String hueLabel(int value) {
-    return 'Hue $value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -2808,44 +2779,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsStackTrace => 'Stack Trace';
 
   @override
-  String get guideAndPermissionsTitle => 'Guide & Permissions';
-
-  @override
   String get refreshStatusTooltip => 'Refresh Status';
-
-  @override
-  String get guideHeroTitle =>
-      'Finish this page first, then start using the app';
-
-  @override
-  String get guideHeroSubtitle =>
-      'Authorize the essentials on the first screen. Below you’ll also see HyperOS support, short-name setup, and import guidance, so keep scrolling';
-
-  @override
-  String get guideChipPermissions => 'Permissions';
-
-  @override
-  String get guideChipShortName => 'Short Names';
-
-  @override
-  String get guideChipImport => 'Import Timetable';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 Ready';
-  }
-
-  @override
-  String get guideBottomReachedHint =>
-      'You’ve reached the end. If everything looks right, you can start using the app now';
-
-  @override
-  String get guideScrollHint =>
-      'Scroll down to continue. HyperOS support, the permission checklist, short-name setup, and import methods are all below';
-
-  @override
-  String get guideRequestNotificationFirst =>
-      'Request Notification Permission First';
 
   @override
   String get quickSetupTitle => 'Quick Setup';
@@ -2888,13 +2822,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guidePrivacyConsentLabel =>
       'I have read and agree to the Umeng privacy notice';
-
-  @override
-  String get guideRequireConsentHint =>
-      'Please scroll to the end, review the notes, and check consent before starting';
-
-  @override
-  String get guideContinueHint => 'Keep scrolling to finish the guide';
 
   @override
   String get exitAppAction => 'Exit App';
@@ -3135,10 +3062,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitleSectionTitle => 'Home title';
 
   @override
-  String get homeTitleSectionSubtitle =>
-      'Controls the style of the timetable switch entry at the top left of the home page';
-
-  @override
   String get homeTitleStyleLabel => 'Title style';
 
   @override
@@ -3160,22 +3083,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Used in solid-color mode for the selected display regions; can pair with a background image';
 
   @override
-  String get homePageBackgroundFillLabel => 'Background fill';
-
-  @override
-  String get homePageBackgroundFillColor => 'Solid color';
-
-  @override
-  String get homePageBackgroundFillImage => 'Image';
-
-  @override
-  String get homePageBackgroundImageTitle => 'Background image';
-
-  @override
-  String get homePageBackgroundImageSubtitle =>
-      'In image mode, applies to the display regions selected below';
-
-  @override
   String get homePageWallpaperTitle => 'Background image';
 
   @override
@@ -3185,19 +3092,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wallpaperSheetTabSettings => 'Settings';
 
   @override
-  String get homePageWallpaperSubtitle =>
-      'Full-screen image; pick regions below';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle =>
       'Background follows week swipe';
 
   @override
   String get homePageWallpaperBlurTitle => 'Wallpaper blur';
-
-  @override
-  String get homePageWallpaperBlurSubtitle =>
-      'Bakes the background into one fixed blurred image so text over it reads better';
 
   @override
   String get homePageWallpaperBlurOff => 'Off';
@@ -3207,36 +3106,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Background moves with the page';
 
   @override
-  String get homePageBackgroundScopeTitle => 'Background display area';
-
-  @override
-  String get homePageBackgroundScopeSubtitle =>
-      'Checked regions show the image; rest use page color';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => 'Status bar';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => 'Info bar';
-
-  @override
-  String get homePageBackgroundScopeHeader => 'Top bar';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => 'Info bar glass';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle =>
-      'Glass material follows the glass mode in Appearance; when off, the info bar shows the wallpaper directly';
-
-  @override
   String get homePagePickImageAction => 'Choose image';
-
-  @override
-  String get homePageSwitchImageAction => 'Switch photo';
 
   @override
   String get homePageAdjustPositionAction => 'Adjust position';
@@ -3414,12 +3284,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => 'Current status';
-
-  @override
   String get guideStatusNotificationPermission => 'Notification permission';
 
   @override
@@ -3458,75 +3322,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => 'Required for silent action';
-
-  @override
-  String get guideStatusAndroidVersion => 'Android version';
-
-  @override
-  String get guideStatusVersionUnknown => 'Unknown';
-
-  @override
-  String get guideStatusIslandSystemSupport => 'Island system support';
-
-  @override
-  String get guideStatusIslandSystemRequirement =>
-      'Requires HyperOS 3.0.300 or above';
-
-  @override
-  String get guideStatusIslandHint =>
-      'If you mainly want to use the Island, first make sure your system version is at least HyperOS 3.0.300, then complete the permission checklist below in order';
-
-  @override
-  String get guidePermissionChecklistTitle => 'Permission checklist';
-
-  @override
-  String get guidePermissionChecklistSubtitle =>
-      'Follow this order for the easiest setup and the lowest chance of missing anything';
-
-  @override
-  String get guideChecklistRequestNotificationTitle =>
-      'Request notification permission';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle =>
-      'This is required for all reminders';
-
-  @override
-  String get guideChecklistOpenNotificationTitle =>
-      'Open notification settings';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle =>
-      'Check the master switch, lock-screen display, and live notification permission';
-
-  @override
-  String get guideChecklistOpenIslandTitle =>
-      'Open promoted notification settings';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'On HyperOS 3.0.300 and above, also check promoted / Island notifications';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => 'Open auto-start settings';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle =>
-      'Allow the app to launch on boot and stay active in the background';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => 'Open battery settings';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle =>
-      'Set it to Unrestricted to avoid missed reminders';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => 'Open keep-alive helper';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle =>
-      'Further improves Island and reminder stability in the background';
 
   @override
   String get guideShortNameAdviceTitle => 'Course short-name tips';
@@ -3906,25 +3701,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetTodayCourseTitle => 'Today\'s course widgets';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      'Available in 2×2, 2×4 and 4×4; tapping opens the app, and course status refreshes automatically';
-
-  @override
-  String get homeWidgetQuickAddTitle => 'Quick add to home screen';
-
-  @override
-  String get homeWidgetCheckingPinSupport =>
-      'Checking whether the current launcher supports in-app widget pinning…';
-
-  @override
-  String get homeWidgetPinSupported =>
-      'If supported, the system add confirmation will appear directly. It is not a separate permission dialog; once confirmed, the widget will be pinned to the home screen.';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      'If the current launcher does not support in-app widget pinning, long-press the home screen → Widgets → Qingyu Timetable to add it manually.';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => 'Background style';
 
   @override
@@ -3945,16 +3721,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetCountdownLeadTitle => 'Countdown lead time';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle =>
-      'Set how many minutes before class to automatically switch to countdown mode';
-
-  @override
   String get homeWidgetCountdownLeadAlways => 'Always show';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '$minutes min before class';
-  }
 
   @override
   String get widgetCountdownStyleTitle => 'Countdown style';
@@ -4012,10 +3779,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWidgetDescriptionTitle => 'Notes';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      'Widgets currently prioritize today\'s courses. On days without classes, the full card stays visible instead of turning blank. If you switch timetables or change styles, the home-screen widgets refresh as well';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -4660,9 +4423,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Doubao Expert Mode is recommended. Multiple images are supported, and screenshots should include weekday headers.';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => 'Paste the JSON returned by AI';
 
   @override
@@ -4717,10 +4477,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importAiReplaceMessage =>
       'Replace the existing courses with the current AI parsing result? This also clears independent agenda items on the current timetable (such as study sessions or meetings).';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      'Please choose the semester start date from your school calendar, then confirm which calendar week corresponds to Week 1 in the timetable. If there are no classes in the first week, this usually needs to be changed to Week 2.';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -5174,9 +4930,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuUpdateTitle => 'Software update';
 
   @override
-  String get homeMenuProfilesTitle => 'Timetables';
-
-  @override
   String get homeMenuOverviewTitle => 'Course overview';
 
   @override
@@ -5190,9 +4943,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMenuCoffeeTitle => 'Buy me a coffee';
-
-  @override
-  String get homeMenuFeedbackTitle => 'Feedback';
 
   @override
   String get switchTimetableTitle => 'Switch timetable';
@@ -6002,10 +5752,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidaySettingsEntryTitle => 'Holiday Marking';
 
   @override
-  String get holidaySettingsEntrySubtitle =>
-      'Mark statutory holidays and makeup workdays on timetable';
-
-  @override
   String get holidayMakeupWorkday => 'Workday';
 
   @override
@@ -6018,34 +5764,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayEnableSubtitle => 'Marks holidays and make-up';
 
   @override
-  String get holidayDataSectionTitle => 'Holiday Data';
-
-  @override
-  String get holidayDataYear => 'Year';
-
-  @override
-  String get holidayDataCount => 'Count';
-
-  @override
-  String get holidayDataEmpty => 'No holiday data yet';
-
-  @override
   String get holidayCheckUpdate => 'Check for updates';
 
   @override
   String get holidayAdvancedTitle => 'Holiday Data Update';
 
   @override
-  String get holidayUpcomingSectionTitle => 'Upcoming Holidays';
-
-  @override
   String get holidayNoUpcoming => 'No upcoming holidays';
 
   @override
   String get holidayBadgeLabel => 'Holiday';
-
-  @override
-  String get holidayStatusLabel => 'Holiday';
 
   @override
   String get suspendedBadgeLabel => 'Suspended';
@@ -6286,14 +6014,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidePersonalizePageTitle => 'Personalize';
 
   @override
-  String get guidePersonalizeSubtitle =>
-      'These apply immediately and can be changed anytime in Settings → Appearance';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => 'Menu style';
-
-  @override
-  String get guidePersonalizeNavFormTitle => 'Navigation form';
 
   @override
   String get guidePersonalizeVisualEffectSolid => 'Solid cards';
@@ -6323,20 +6044,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideNextButton => 'Next';
 
   @override
-  String get guidePermissionsHeader => 'System Permissions';
-
-  @override
   String get guidePermissionsSubtitle =>
       'Complete these settings for Super Island and reminders to work properly';
 
   @override
   String get guidePermissionsFooterHint => 'System limits auto-start';
-
-  @override
-  String get guideTipsHeader => 'Tips';
-
-  @override
-  String get guideTipsSubtitle => 'These can always be found in Settings';
 
   @override
   String get guidePrivacyReadBeforeUse => 'Please read and agree before use';
@@ -6352,11 +6064,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get holidayUpdateLog => 'Update Log';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count entries';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -8518,15 +8225,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'With icon and subtitle, same as app toast';
 
   @override
-  String get hyperosShowcaseMenuCopy => 'Copy';
-
-  @override
-  String get hyperosShowcaseMenuShare => 'Share';
-
-  @override
-  String get hyperosShowcaseMenuDelete => 'Delete';
-
-  @override
   String get hyperosShowcaseRefreshDone => 'Refresh complete';
 
   @override
@@ -10653,9 +10351,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeMenuCustomizeSectionTitle => 'Top-right menu';
 
   @override
-  String get homeNavigationSubtitle => 'Bottom bar style, menu and home title';
-
-  @override
   String get homeNavigationFormLabel => 'Home form';
 
   @override
@@ -10740,13 +10435,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeGridEditorEnabledTitle => 'Enabled';
 
   @override
-  String get homeGridEditorAvailableTitle => 'Available to add';
-
-  @override
   String get homeGridEditorRemoveTooltip => 'Remove';
-
-  @override
-  String get homeGridEditorAddTooltip => 'Add';
 
   @override
   String get homeGridEditorResetAction => 'Reset to default order';

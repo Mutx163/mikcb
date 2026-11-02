@@ -102,9 +102,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetEntryTitle => '桌面小组件';
 
   @override
-  String get homeWidgetEntrySubtitle => '今日课程卡片、小组件背景与显示信息';
-
-  @override
   String get reminderNotificationSectionTitle => '提醒与通知';
 
   @override
@@ -651,9 +648,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanEditEntryTitle => '局域网编辑';
 
   @override
-  String get lanEditEntrySubtitle => '在电脑浏览器中编辑当前课表';
-
-  @override
   String get lanEditTitle => '局域网编辑';
 
   @override
@@ -824,17 +818,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodIcsSubtitle => '从其他课表应用导出的日历文件';
 
   @override
-  String get importMethodIcsFooter => '进入后直接选择 .ics 文件，可追加导入或替换现有课程';
-
-  @override
   String get importMethodAiTitle => '识图导入';
 
   @override
   String get importMethodAiSubtitle => '从课表截图识别并导入';
-
-  @override
-  String get importMethodAiFooter =>
-      '先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期';
 
   @override
   String get importMethodWarehouseTitle => '教务系统导入';
@@ -843,17 +830,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importMethodWarehouseSubtitle => '登录学校教务系统导入';
 
   @override
-  String get importMethodWarehouseFooter => '进入后选择学校和适配器，可直接打开教务网页登录并执行导入';
-
-  @override
   String get importMethodSpreadsheetTitle => '表格导入';
 
   @override
   String get importMethodSpreadsheetSubtitle => '填写 Excel / CSV 模板后导入';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      '支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入';
 
   @override
   String get spreadsheetImportTitle => '表格导入';
@@ -1697,11 +1677,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get weekdaySun => '周日';
-
-  @override
-  String hueLabel(int value) {
-    return '色相 $value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -2657,39 +2632,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsStackTrace => '堆栈';
 
   @override
-  String get guideAndPermissionsTitle => '使用引导与权限';
-
-  @override
   String get refreshStatusTooltip => '刷新状态';
-
-  @override
-  String get guideHeroTitle => '先把这页做完，再开始用';
-
-  @override
-  String get guideHeroSubtitle => '首屏先授权，下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑';
-
-  @override
-  String get guideChipPermissions => '权限准备';
-
-  @override
-  String get guideChipShortName => '简称设置';
-
-  @override
-  String get guideChipImport => '导入课表';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 已完成';
-  }
-
-  @override
-  String get guideBottomReachedHint => '你已经滑到最后了，确认无误后就可以开始使用';
-
-  @override
-  String get guideScrollHint => '向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式';
-
-  @override
-  String get guideRequestNotificationFirst => '先申请通知权限';
 
   @override
   String get quickSetupTitle => '首屏快速设置';
@@ -2729,12 +2672,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guidePrivacyConsentLabel => '我已阅读并同意友盟相关隐私说明';
-
-  @override
-  String get guideRequireConsentHint => '请先滑到底部阅读说明，并勾选同意后开始使用';
-
-  @override
-  String get guideContinueHint => '继续下滑查看完整引导内容';
 
   @override
   String get exitAppAction => '退出应用';
@@ -2961,9 +2898,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeTitleSectionTitle => '首页标题';
 
   @override
-  String get homeTitleSectionSubtitle => '控制首页左上角课表切换入口的样式';
-
-  @override
   String get homeTitleStyleLabel => '标题样式';
 
   @override
@@ -2983,21 +2917,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '纯色模式下作用于已选显示区域；可与背景图搭配使用';
 
   @override
-  String get homePageBackgroundFillLabel => '背景填充';
-
-  @override
-  String get homePageBackgroundFillColor => '纯色';
-
-  @override
-  String get homePageBackgroundFillImage => '图片';
-
-  @override
-  String get homePageBackgroundImageTitle => '背景图';
-
-  @override
-  String get homePageBackgroundImageSubtitle => '在图片模式下作用于下方勾选区域';
-
-  @override
   String get homePageWallpaperTitle => '背景图片';
 
   @override
@@ -3007,16 +2926,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wallpaperSheetTabSettings => '设置';
 
   @override
-  String get homePageWallpaperSubtitle => '全屏铺底；下方勾选透出区域';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景随周次滑动';
 
   @override
   String get homePageWallpaperBlurTitle => '壁纸模糊';
-
-  @override
-  String get homePageWallpaperBlurSubtitle => '把背景糊成一张固定的图，壁纸上的字更好认';
 
   @override
   String get homePageWallpaperBlurOff => '关闭';
@@ -3025,34 +2938,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageBackdropFollowsWeekPagerSubtitle => '切周时背景与课表一起移动';
 
   @override
-  String get homePageBackgroundScopeTitle => '背景显示区域';
-
-  @override
-  String get homePageBackgroundScopeSubtitle => '勾选的区域透出背景，其余显示课表底色';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => '状态栏';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => '信息栏';
-
-  @override
-  String get homePageBackgroundScopeHeader => '顶栏';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => '信息栏玻璃';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle => '玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸';
-
-  @override
   String get homePagePickImageAction => '选择图片';
-
-  @override
-  String get homePageSwitchImageAction => '切换照片';
 
   @override
   String get homePageAdjustPositionAction => '调整位置';
@@ -3217,12 +3103,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => '当前状态';
-
-  @override
   String get guideStatusNotificationPermission => '通知权限';
 
   @override
@@ -3260,65 +3140,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => '未授权时课前静音点了没反应';
-
-  @override
-  String get guideStatusAndroidVersion => 'Android 版本';
-
-  @override
-  String get guideStatusVersionUnknown => '未识别';
-
-  @override
-  String get guideStatusIslandSystemSupport => '超级岛系统支持';
-
-  @override
-  String get guideStatusIslandSystemRequirement => '需 HyperOS 3.0.300 及以上';
-
-  @override
-  String get guideStatusIslandHint =>
-      '如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完';
-
-  @override
-  String get guidePermissionChecklistTitle => '权限清单';
-
-  @override
-  String get guidePermissionChecklistSubtitle => '按这个顺序检查，最省事，也最不容易漏';
-
-  @override
-  String get guideChecklistRequestNotificationTitle => '申请通知权限';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle => '这是所有提醒的前提';
-
-  @override
-  String get guideChecklistOpenNotificationTitle => '打开通知设置';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle => '检查通知总开关、锁屏展示和实时通知权限';
-
-  @override
-  String get guideChecklistOpenIslandTitle => '打开焦点通知设置';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'HyperOS 3.0.300 及以上再检查 promoted / 超级岛通知';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => '打开自启动设置';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle => '允许应用开机自启和后台常驻';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => '打开电池策略设置';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle => '建议改成无限制，避免上课提醒被中断';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => '打开后台保活辅助';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle => '进一步提升超级岛和提醒在后台场景下的稳定性';
 
   @override
   String get guideShortNameAdviceTitle => '课程简称建议';
@@ -3675,23 +3496,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetTodayCourseTitle => '今日课程组件';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      '支持 2×2、2×4、4×4 三种尺寸，点击打开首页，课程状态实时刷新';
-
-  @override
-  String get homeWidgetQuickAddTitle => '快速添加到桌面';
-
-  @override
-  String get homeWidgetCheckingPinSupport => '正在检查当前桌面是否支持应用内添加小组件……';
-
-  @override
-  String get homeWidgetPinSupported => '支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      '当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表，再手动添加';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => '背景样式';
 
   @override
@@ -3710,15 +3514,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetCountdownLeadTitle => '倒计时提前量';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle => '设置上课前多少分钟自动切换到倒计时模式';
-
-  @override
   String get homeWidgetCountdownLeadAlways => '始终显示';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '上课前 $minutes 分钟';
-  }
 
   @override
   String get widgetCountdownStyleTitle => '倒计时样式';
@@ -3774,10 +3570,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeWidgetDescriptionTitle => '说明';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      '小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面小组件也会跟着刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -4376,9 +4168,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aiExpertModeSuggestion => '建议豆包专家模式，支持多图，截图需带星期表头';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => '粘贴 AI 返回的 JSON';
 
   @override
@@ -4430,10 +4219,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get importAiReplaceMessage => '是否使用解析结果替换现有课程？此操作将同时清空自习等独立日程。';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      '请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周，如果学校第一周没课，这里通常要改成第 2 周';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -4867,9 +4652,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuUpdateTitle => '版本更新';
 
   @override
-  String get homeMenuProfilesTitle => '课表管理';
-
-  @override
   String get homeMenuOverviewTitle => '课程总览';
 
   @override
@@ -4883,9 +4665,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeMenuCoffeeTitle => '请喝咖啡';
-
-  @override
-  String get homeMenuFeedbackTitle => '问题反馈';
 
   @override
   String get switchTimetableTitle => '切换课表';
@@ -5679,9 +5458,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidaySettingsEntryTitle => '节假日标记';
 
   @override
-  String get holidaySettingsEntrySubtitle => '在课表上标记法定节假日和调休补班';
-
-  @override
   String get holidayMakeupWorkday => '补班';
 
   @override
@@ -5694,34 +5470,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayEnableSubtitle => '标记法定节假日和调休补班日';
 
   @override
-  String get holidayDataSectionTitle => '节假日数据';
-
-  @override
-  String get holidayDataYear => '年份';
-
-  @override
-  String get holidayDataCount => '条数';
-
-  @override
-  String get holidayDataEmpty => '暂无节假日数据';
-
-  @override
   String get holidayCheckUpdate => '检查更新';
 
   @override
   String get holidayAdvancedTitle => '节假日数据更新';
 
   @override
-  String get holidayUpcomingSectionTitle => '近期节假日';
-
-  @override
   String get holidayNoUpcoming => '近期没有节假日';
 
   @override
   String get holidayBadgeLabel => '假';
-
-  @override
-  String get holidayStatusLabel => '假期';
 
   @override
   String get suspendedBadgeLabel => '停';
@@ -5951,13 +5709,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePersonalizePageTitle => '个性化定制';
 
   @override
-  String get guidePersonalizeSubtitle => '更改即时生效，可随时在 设置 外观 中调整';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => '菜单样式';
-
-  @override
-  String get guidePersonalizeNavFormTitle => '导航形态';
 
   @override
   String get guidePersonalizeVisualEffectSolid => '实体卡片';
@@ -5984,19 +5736,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guideNextButton => '下一步';
 
   @override
-  String get guidePermissionsHeader => '系统权限设置';
-
-  @override
   String get guidePermissionsSubtitle => '完成这些设置，超级岛和提醒才能正常使用';
 
   @override
   String get guidePermissionsFooterHint => '自启动受系统限制，以系统开关为准';
-
-  @override
-  String get guideTipsHeader => '使用技巧';
-
-  @override
-  String get guideTipsSubtitle => '可随时在设置中查看与修改';
 
   @override
   String get guidePrivacyReadBeforeUse => '使用前请阅读并同意以下内容';
@@ -6011,11 +5754,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get holidayUpdateLog => '更新日志';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count 条';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -8079,15 +7817,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hyperosShowcaseToastDescription => '带图标与副标题，App Toast 同款';
 
   @override
-  String get hyperosShowcaseMenuCopy => '复制';
-
-  @override
-  String get hyperosShowcaseMenuShare => '分享';
-
-  @override
-  String get hyperosShowcaseMenuDelete => '删除';
-
-  @override
   String get hyperosShowcaseRefreshDone => '刷新完成';
 
   @override
@@ -10062,9 +9791,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMenuCustomizeSectionTitle => '右上角菜单';
 
   @override
-  String get homeNavigationSubtitle => '底栏形态、菜单与首页标题';
-
-  @override
   String get homeNavigationFormLabel => '应用形态';
 
   @override
@@ -10147,13 +9873,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeGridEditorEnabledTitle => '已启用';
 
   @override
-  String get homeGridEditorAvailableTitle => '可添加';
-
-  @override
   String get homeGridEditorRemoveTooltip => '移除';
-
-  @override
-  String get homeGridEditorAddTooltip => '添加';
 
   @override
   String get homeGridEditorResetAction => '恢复默认排列';
@@ -11043,9 +10763,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetEntryTitle => '桌面小組件';
 
   @override
-  String get homeWidgetEntrySubtitle => '今日課程卡片、小組件背景與顯示資訊';
-
-  @override
   String get reminderNotificationSectionTitle => '提醒與通知';
 
   @override
@@ -11592,9 +11309,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get lanEditEntryTitle => '局域網編輯';
 
   @override
-  String get lanEditEntrySubtitle => '在電腦瀏覽器中編輯當前課表';
-
-  @override
   String get lanEditTitle => '局域網編輯';
 
   @override
@@ -11765,17 +11479,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodIcsSubtitle => '從其他課表應用匯出的日歷檔案';
 
   @override
-  String get importMethodIcsFooter => '進入後直接選擇 .ics 檔案，可追加匯入或替換現有課程';
-
-  @override
   String get importMethodAiTitle => '識圖匯入';
 
   @override
   String get importMethodAiSubtitle => '從課表截圖識別並匯入';
-
-  @override
-  String get importMethodAiFooter =>
-      '先複製提示詞，再到豆包專家模式發送截圖和提示詞，把返回的 JSON 複製回來匯入，最後選擇開學日期';
 
   @override
   String get importMethodWarehouseTitle => '教務系統匯入';
@@ -11784,17 +11491,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get importMethodWarehouseSubtitle => '登入學校教務系統匯入';
 
   @override
-  String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入';
-
-  @override
   String get importMethodSpreadsheetTitle => '表格匯入';
 
   @override
   String get importMethodSpreadsheetSubtitle => '填寫 Excel / CSV 模板後匯入';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      '支持 .csv 與 .xlsx，可下載官方模板填寫後選擇檔案匯入';
 
   @override
   String get spreadsheetImportTitle => '表格匯入';
@@ -12638,11 +12338,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get weekdaySun => '周日';
-
-  @override
-  String hueLabel(int value) {
-    return '色相 $value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -13598,39 +13293,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get diagnosticsStackTrace => '堆棧';
 
   @override
-  String get guideAndPermissionsTitle => '使用引導與權限';
-
-  @override
   String get refreshStatusTooltip => '刷新狀態';
-
-  @override
-  String get guideHeroTitle => '先把這頁做完，再開始用';
-
-  @override
-  String get guideHeroSubtitle => '首屏先授權，下面還會明確說明系統版本支持、簡稱設定和匯入方式，記得繼續下滑';
-
-  @override
-  String get guideChipPermissions => '權限準備';
-
-  @override
-  String get guideChipShortName => '簡稱設定';
-
-  @override
-  String get guideChipImport => '匯入課表';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 已完成';
-  }
-
-  @override
-  String get guideBottomReachedHint => '你已經滑到最後了，確認無誤後就可以開始使用';
-
-  @override
-  String get guideScrollHint => '向下滑動繼續，下面還有 HyperOS 版本說明、權限清單、簡稱設定和匯入方式';
-
-  @override
-  String get guideRequestNotificationFirst => '先申請通知權限';
 
   @override
   String get quickSetupTitle => '首屏快速設定';
@@ -13670,12 +13333,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guidePrivacyConsentLabel => '我已閱讀並同意友盟相關隱私說明';
-
-  @override
-  String get guideRequireConsentHint => '請先滑到底部閱讀說明，並勾選同意後開始使用';
-
-  @override
-  String get guideContinueHint => '繼續下滑查看完整引導內容';
 
   @override
   String get exitAppAction => '退出應用';
@@ -13902,9 +13559,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeTitleSectionTitle => '首頁標題';
 
   @override
-  String get homeTitleSectionSubtitle => '控制首頁左上角課表切換入口的樣式';
-
-  @override
   String get homeTitleStyleLabel => '標題樣式';
 
   @override
@@ -13923,21 +13577,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
 
   @override
-  String get homePageBackgroundFillLabel => '背景填充';
-
-  @override
-  String get homePageBackgroundFillColor => '純色';
-
-  @override
-  String get homePageBackgroundFillImage => '圖片';
-
-  @override
-  String get homePageBackgroundImageTitle => '背景圖';
-
-  @override
-  String get homePageBackgroundImageSubtitle => '在圖片模式下作用於下方勾選區域';
-
-  @override
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
@@ -13947,16 +13586,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get wallpaperSheetTabSettings => '設定';
 
   @override
-  String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
 
   @override
   String get homePageWallpaperBlurTitle => '桌布模糊';
-
-  @override
-  String get homePageWallpaperBlurSubtitle => '把背景糊成一張固定的圖，桌布上的字更好認';
 
   @override
   String get homePageWallpaperBlurOff => '關閉';
@@ -13965,34 +13598,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homePageBackdropFollowsWeekPagerSubtitle => '切週時背景同課表一齊移動';
 
   @override
-  String get homePageBackgroundScopeTitle => '背景顯示區域';
-
-  @override
-  String get homePageBackgroundScopeSubtitle => '勾選嘅區域透出背景，其餘顯示課表底色';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => '狀態列';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => '資訊欄';
-
-  @override
-  String get homePageBackgroundScopeHeader => '頂欄';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
-
-  @override
   String get homePagePickImageAction => '選擇圖片';
-
-  @override
-  String get homePageSwitchImageAction => '切換照片';
 
   @override
   String get homePageAdjustPositionAction => '調整位置';
@@ -14157,12 +13763,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => '目前狀態';
-
-  @override
   String get guideStatusNotificationPermission => '通知權限';
 
   @override
@@ -14200,65 +13800,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => '未授權時課前靜音沒反應';
-
-  @override
-  String get guideStatusAndroidVersion => 'Android 版本';
-
-  @override
-  String get guideStatusVersionUnknown => '未識別';
-
-  @override
-  String get guideStatusIslandSystemSupport => '超級島系統支持';
-
-  @override
-  String get guideStatusIslandSystemRequirement => '需 HyperOS 3.0.300 及以上';
-
-  @override
-  String get guideStatusIslandHint =>
-      '如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再繼續把下面權限清單按順序點完';
-
-  @override
-  String get guidePermissionChecklistTitle => '權限清單';
-
-  @override
-  String get guidePermissionChecklistSubtitle => '按這個順序檢查，最省事，也最不容易漏';
-
-  @override
-  String get guideChecklistRequestNotificationTitle => '申請通知權限';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle => '這是所有提醒的前提';
-
-  @override
-  String get guideChecklistOpenNotificationTitle => '打開通知設定';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle => '檢查通知總開關、鎖屏展示和實時通知權限';
-
-  @override
-  String get guideChecklistOpenIslandTitle => '打開焦點通知設定';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'HyperOS 3.0.300 及以上再檢查 promoted / 超級島通知';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => '打開自啟動設定';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle => '允許應用開機自啟和後台常駐';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => '打開電池策略設定';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle => '建議改成無限制，避免上課提醒被中斷';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => '打開後台保活輔助';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle => '進一步提升超級島和提醒在後台場景下的穩定性';
 
   @override
   String get guideShortNameAdviceTitle => '課程簡稱建議';
@@ -14615,23 +14156,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetTodayCourseTitle => '今日課程組件';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      '支援 2×2、2×4、4×4 三種尺寸，點擊開啟首頁，課程狀態即時更新';
-
-  @override
-  String get homeWidgetQuickAddTitle => '快速添加到桌面';
-
-  @override
-  String get homeWidgetCheckingPinSupport => '正在檢查目前桌面是否支持應用內添加小組件…';
-
-  @override
-  String get homeWidgetPinSupported => '支持的話會直接彈出系統添加確認，不是單獨的權限彈窗；確認後即可固定到桌面';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      '目前桌面不支持應用內直接添加時，仍可長按桌面 → 小組件 → 輕嶼課表 手動添加';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => '背景養式';
 
   @override
@@ -14650,15 +14174,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle => '設置上課前多少分鐘自動切換到倒計時模式';
-
-  @override
   String get homeWidgetCountdownLeadAlways => '始終顯示';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '上課前 $minutes 分鐘';
-  }
 
   @override
   String get widgetCountdownStyleTitle => '倒計時樣式';
@@ -14714,10 +14230,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeWidgetDescriptionTitle => '說明';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      '小組件目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小組件也會跟著刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -15316,9 +14828,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aiExpertModeSuggestion => '建議豆包專家模式，支持多圖，截圖需帶星期表頭';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => '貼上 AI 返回的 JSON';
 
   @override
@@ -15370,10 +14879,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importAiReplaceMessage => '是否使用解析結果替換現有課程？此操作將同時清空自習等獨立日程。';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      '請選擇學校校歷的開學日期，再確認課表裡的第 1 週對應校歷第幾週，如果學校第一週沒課，這裡通常要改成第 2 週';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -15807,9 +15312,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuUpdateTitle => '版本更新';
 
   @override
-  String get homeMenuProfilesTitle => '課表管理';
-
-  @override
   String get homeMenuOverviewTitle => '課程總覽';
 
   @override
@@ -15823,9 +15325,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get homeMenuCoffeeTitle => '請喝咖啡';
-
-  @override
-  String get homeMenuFeedbackTitle => '問題回饋';
 
   @override
   String get switchTimetableTitle => '切換課表';
@@ -16619,9 +16118,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get holidaySettingsEntryTitle => '假日標記';
 
   @override
-  String get holidaySettingsEntrySubtitle => '在課表上標記公眾假期和調休補班';
-
-  @override
   String get holidayMakeupWorkday => '補班';
 
   @override
@@ -16634,34 +16130,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get holidayEnableSubtitle => '標記法定節假日和調休補班日';
 
   @override
-  String get holidayDataSectionTitle => '假期資料';
-
-  @override
-  String get holidayDataYear => '年份';
-
-  @override
-  String get holidayDataCount => '數量';
-
-  @override
-  String get holidayDataEmpty => '暫無假期資料';
-
-  @override
   String get holidayCheckUpdate => '檢查更新';
 
   @override
   String get holidayAdvancedTitle => '假期資料更新';
 
   @override
-  String get holidayUpcomingSectionTitle => '近期假期';
-
-  @override
   String get holidayNoUpcoming => '近期沒有假期';
 
   @override
   String get holidayBadgeLabel => '休';
-
-  @override
-  String get holidayStatusLabel => '假期';
 
   @override
   String get suspendedBadgeLabel => '停';
@@ -16891,13 +16369,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePersonalizePageTitle => '個人化設定';
 
   @override
-  String get guidePersonalizeSubtitle => '更改即時生效，可隨時在 設置 外觀 中調整';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => '選單樣式';
-
-  @override
-  String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
@@ -16924,19 +16396,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guideNextButton => '下一步';
 
   @override
-  String get guidePermissionsHeader => '系統權限設置';
-
-  @override
   String get guidePermissionsSubtitle => '完成這些設置，超級島和提醒才能正常使用';
 
   @override
   String get guidePermissionsFooterHint => '自啟動受系統限制，以系統開關為準';
-
-  @override
-  String get guideTipsHeader => '使用技巧';
-
-  @override
-  String get guideTipsSubtitle => '可隨時在設置中查看與修改';
 
   @override
   String get guidePrivacyReadBeforeUse => '使用前請閱讀並同意以下內容';
@@ -16951,11 +16414,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get holidayUpdateLog => '更新日誌';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count條';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -19059,15 +18517,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get hyperosShowcaseToastDescription => '帶圖標猶副標題，App Toast 同款';
 
   @override
-  String get hyperosShowcaseMenuCopy => '複製';
-
-  @override
-  String get hyperosShowcaseMenuShare => '分享';
-
-  @override
-  String get hyperosShowcaseMenuDelete => '刪除';
-
-  @override
   String get hyperosShowcaseRefreshDone => '刷新完成';
 
   @override
@@ -21042,9 +20491,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeMenuCustomizeSectionTitle => '右上角選單';
 
   @override
-  String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';
-
-  @override
   String get homeNavigationFormLabel => '應用形態';
 
   @override
@@ -21127,13 +20573,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeGridEditorEnabledTitle => '已啟用';
 
   @override
-  String get homeGridEditorAvailableTitle => '可新增';
-
-  @override
   String get homeGridEditorRemoveTooltip => '移除';
-
-  @override
-  String get homeGridEditorAddTooltip => '新增';
 
   @override
   String get homeGridEditorResetAction => '恢復預設排列';
@@ -22023,9 +21463,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetEntryTitle => '桌面小工具';
 
   @override
-  String get homeWidgetEntrySubtitle => '今日課程卡片、小工具背景與顯示資訊';
-
-  @override
   String get reminderNotificationSectionTitle => '提醒與通知';
 
   @override
@@ -22572,9 +22009,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get lanEditEntryTitle => '區域網路編輯';
 
   @override
-  String get lanEditEntrySubtitle => '在電腦瀏覽器中編輯目前課表';
-
-  @override
   String get lanEditTitle => '區域網路編輯';
 
   @override
@@ -22745,17 +22179,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodIcsSubtitle => '從其他課表應用匯出的日歷檔案';
 
   @override
-  String get importMethodIcsFooter => '進入後直接選擇 .ics 檔案，可追加匯入或替換現有課程';
-
-  @override
   String get importMethodAiTitle => '識圖匯入';
 
   @override
   String get importMethodAiSubtitle => '從課表截圖識別並匯入';
-
-  @override
-  String get importMethodAiFooter =>
-      '先複製提示詞，再到豆包專家模式發送截圖和提示詞，把返回的 JSON 複製回來匯入，最後選擇開學日期';
 
   @override
   String get importMethodWarehouseTitle => '教務系統匯入';
@@ -22764,17 +22191,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get importMethodWarehouseSubtitle => '登入學校教務系統匯入';
 
   @override
-  String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入';
-
-  @override
   String get importMethodSpreadsheetTitle => '表格匯入';
 
   @override
   String get importMethodSpreadsheetSubtitle => '填寫 Excel / CSV 模板後匯入';
-
-  @override
-  String get importMethodSpreadsheetFooter =>
-      '支持 .csv 與 .xlsx，可下載官方模板填寫後選擇檔案匯入';
 
   @override
   String get spreadsheetImportTitle => '表格匯入';
@@ -23618,11 +23038,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weekdaySun => '周日';
-
-  @override
-  String hueLabel(int value) {
-    return '色相 $value';
-  }
 
   @override
   String saturationLabel(int value) {
@@ -24578,39 +23993,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get diagnosticsStackTrace => '堆棧';
 
   @override
-  String get guideAndPermissionsTitle => '使用引導與權限';
-
-  @override
   String get refreshStatusTooltip => '刷新狀態';
-
-  @override
-  String get guideHeroTitle => '先把這頁做完，再開始用';
-
-  @override
-  String get guideHeroSubtitle => '首屏先授權，下面還會明確說明系統版本支持、簡稱設定和匯入方式，記得繼續下滑';
-
-  @override
-  String get guideChipPermissions => '權限準備';
-
-  @override
-  String get guideChipShortName => '簡稱設定';
-
-  @override
-  String get guideChipImport => '匯入課表';
-
-  @override
-  String guideChipReadyCount(int count) {
-    return '$count/3 已完成';
-  }
-
-  @override
-  String get guideBottomReachedHint => '你已經滑到最後了，確認無誤後就可以開始使用';
-
-  @override
-  String get guideScrollHint => '向下滑動繼續，下面還有 HyperOS 版本說明、權限清單、簡稱設定和匯入方式';
-
-  @override
-  String get guideRequestNotificationFirst => '先申請通知權限';
 
   @override
   String get quickSetupTitle => '首屏快速設定';
@@ -24650,12 +24033,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guidePrivacyConsentLabel => '我已閱讀並同意友盟相關隱私說明';
-
-  @override
-  String get guideRequireConsentHint => '請先滑到底部閱讀說明，並勾選同意後開始使用';
-
-  @override
-  String get guideContinueHint => '繼續下滑查看完整引導內容';
 
   @override
   String get exitAppAction => '退出應用';
@@ -24882,9 +24259,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeTitleSectionTitle => '首頁標題';
 
   @override
-  String get homeTitleSectionSubtitle => '控制首頁左上角課表切換入口的樣式';
-
-  @override
   String get homeTitleStyleLabel => '標題樣式';
 
   @override
@@ -24903,21 +24277,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
 
   @override
-  String get homePageBackgroundFillLabel => '背景填充';
-
-  @override
-  String get homePageBackgroundFillColor => '純色';
-
-  @override
-  String get homePageBackgroundFillImage => '圖片';
-
-  @override
-  String get homePageBackgroundImageTitle => '背景圖';
-
-  @override
-  String get homePageBackgroundImageSubtitle => '在圖片模式下作用於下方勾選區域';
-
-  @override
   String get homePageWallpaperTitle => '背景圖片';
 
   @override
@@ -24927,16 +24286,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get wallpaperSheetTabSettings => '設定';
 
   @override
-  String get homePageWallpaperSubtitle => '全屏鋪底；下方勾選透出區域';
-
-  @override
   String get homePageBackdropFollowsWeekPagerTitle => '背景隨週次滑動';
 
   @override
   String get homePageWallpaperBlurTitle => '桌布模糊';
-
-  @override
-  String get homePageWallpaperBlurSubtitle => '把背景糊成一張固定的圖，桌布上的字更好認';
 
   @override
   String get homePageWallpaperBlurOff => '關閉';
@@ -24945,34 +24298,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homePageBackdropFollowsWeekPagerSubtitle => '切週時背景與課表一起移動';
 
   @override
-  String get homePageBackgroundScopeTitle => '背景顯示區域';
-
-  @override
-  String get homePageBackgroundScopeSubtitle => '勾選的區域透出背景，其餘顯示課表底色';
-
-  @override
-  String get homePageBackgroundScopeStatusBar => '狀態列';
-
-  @override
-  String get homePageBackgroundScopeWeekdayBar => '資訊欄';
-
-  @override
-  String get homePageBackgroundScopeHeader => '頂欄';
-
-  @override
-  String get homePageHeaderBlurSubtitle => '';
-
-  @override
-  String get homePageWeekdayBarBlurTitle => '資訊欄玻璃';
-
-  @override
-  String get homePageWeekdayBarBlurSubtitle => '玻璃材質跟隨外觀的玻璃模式；關閉後資訊欄直接透出壁紙';
-
-  @override
   String get homePagePickImageAction => '選擇圖片';
-
-  @override
-  String get homePageSwitchImageAction => '切換照片';
 
   @override
   String get homePageAdjustPositionAction => '調整位置';
@@ -25137,12 +24463,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get guideHyperOsChip => 'HyperOS 3.0.300+';
-
-  @override
-  String get guideStatusTitle => '目前狀態';
-
-  @override
   String get guideStatusNotificationPermission => '通知權限';
 
   @override
@@ -25180,65 +24500,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guideStatusDoNotDisturbAccessHint => '未授權時課前靜音沒反應';
-
-  @override
-  String get guideStatusAndroidVersion => 'Android 版本';
-
-  @override
-  String get guideStatusVersionUnknown => '未識別';
-
-  @override
-  String get guideStatusIslandSystemSupport => '超級島系統支持';
-
-  @override
-  String get guideStatusIslandSystemRequirement => '需 HyperOS 3.0.300 及以上';
-
-  @override
-  String get guideStatusIslandHint =>
-      '如果你主要想用超級島，先確認系統版本至少是 HyperOS 3.0.300，再繼續把下面權限清單按順序點完';
-
-  @override
-  String get guidePermissionChecklistTitle => '權限清單';
-
-  @override
-  String get guidePermissionChecklistSubtitle => '按這個順序檢查，最省事，也最不容易漏';
-
-  @override
-  String get guideChecklistRequestNotificationTitle => '申請通知權限';
-
-  @override
-  String get guideChecklistRequestNotificationSubtitle => '這是所有提醒的前提';
-
-  @override
-  String get guideChecklistOpenNotificationTitle => '打開通知設定';
-
-  @override
-  String get guideChecklistOpenNotificationSubtitle => '檢查通知總開關、鎖定畫面展示和實時通知權限';
-
-  @override
-  String get guideChecklistOpenIslandTitle => '打開焦點通知設定';
-
-  @override
-  String get guideChecklistOpenIslandSubtitle =>
-      'HyperOS 3.0.300 及以上再檢查 promoted / 超級島通知';
-
-  @override
-  String get guideChecklistOpenAutoStartTitle => '打開自啟動設定';
-
-  @override
-  String get guideChecklistOpenAutoStartSubtitle => '允許應用開機自啟和背景常駐';
-
-  @override
-  String get guideChecklistOpenBatteryTitle => '打開電池策略設定';
-
-  @override
-  String get guideChecklistOpenBatterySubtitle => '建議改成無限制，避免上課提醒被中斷';
-
-  @override
-  String get guideChecklistOpenKeepAliveTitle => '打開後台保活輔助';
-
-  @override
-  String get guideChecklistOpenKeepAliveSubtitle => '進一步提升超級島和提醒在後台場景下的穩定性';
 
   @override
   String get guideShortNameAdviceTitle => '課程簡稱建議';
@@ -25595,23 +24856,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetTodayCourseTitle => '今日課程工具';
 
   @override
-  String get homeWidgetTodayCourseSubtitle =>
-      '支援 2×2、2×4、4×4 三種尺寸，點擊開啟首頁，課程狀態即時更新';
-
-  @override
-  String get homeWidgetQuickAddTitle => '快速添加到桌面';
-
-  @override
-  String get homeWidgetCheckingPinSupport => '正在檢查目前桌面是否支持應用內添加小工具…';
-
-  @override
-  String get homeWidgetPinSupported => '支援的話會直接彈出系統添加確認，不是單獨的權限彈窗；確認後即可固定到桌面';
-
-  @override
-  String get homeWidgetPinUnsupported =>
-      '目前桌面不支持應用內直接添加時，仍可長按桌面 → 小工具 → 輕嶼課表 手動添加';
-
-  @override
   String get homeWidgetBackgroundStyleLabel => '背景樣式';
 
   @override
@@ -25630,15 +24874,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetCountdownLeadTitle => '倒計時提前量';
 
   @override
-  String get homeWidgetCountdownLeadSubtitle => '設置上課前多少分鐘自動切換到倒計時模式';
-
-  @override
   String get homeWidgetCountdownLeadAlways => '始終顯示';
-
-  @override
-  String homeWidgetCountdownLeadMinutes(String minutes) {
-    return '上課前 $minutes 分鐘';
-  }
 
   @override
   String get widgetCountdownStyleTitle => '倒計時樣式';
@@ -25694,10 +24930,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeWidgetDescriptionTitle => '說明';
-
-  @override
-  String get homeWidgetDescriptionText =>
-      '小工具目前優先展示今日課程，無課狀態會保持完整卡片，不會出現空白；如果你切換課表或修改樣式，桌面小工具也會跟著刷新';
 
   @override
   String homeWidgetPinRequested(String label) {
@@ -26296,9 +25528,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aiExpertModeSuggestion => '建議豆包專家模式，支持多圖，截圖需帶星期表頭';
 
   @override
-  String get jsonLabelShort => 'JSON';
-
-  @override
   String get aiPasteJsonTitle => '貼上 AI 返回的 JSON';
 
   @override
@@ -26350,10 +25579,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importAiReplaceMessage => '是否使用解析結果替換現有課程？此操作將同時清空自習等獨立日程。';
-
-  @override
-  String get importConfirmSemesterMappingSubtitleAi =>
-      '請選擇學校校歷的開學日期，再確認課表裡的第 1 周對應校歷第幾周，如果學校第一週沒課，這裡通常要改成第 2 周';
 
   @override
   String aiWarningExtraSuffix(int count) {
@@ -26787,9 +26012,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuUpdateTitle => '版本更新';
 
   @override
-  String get homeMenuProfilesTitle => '課表管理';
-
-  @override
   String get homeMenuOverviewTitle => '課程總覽';
 
   @override
@@ -26803,9 +26025,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get homeMenuCoffeeTitle => '請喝咖啡';
-
-  @override
-  String get homeMenuFeedbackTitle => '問題回饋';
 
   @override
   String get switchTimetableTitle => '切換課表';
@@ -27599,9 +26818,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get holidaySettingsEntryTitle => '假日標記';
 
   @override
-  String get holidaySettingsEntrySubtitle => '在課表上標示放假日與補班日';
-
-  @override
   String get holidayMakeupWorkday => '補班';
 
   @override
@@ -27614,34 +26830,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get holidayEnableSubtitle => '標記法定節假日和調休補班日';
 
   @override
-  String get holidayDataSectionTitle => '假日資料';
-
-  @override
-  String get holidayDataYear => '年份';
-
-  @override
-  String get holidayDataCount => '數量';
-
-  @override
-  String get holidayDataEmpty => '目前沒有假日資料';
-
-  @override
   String get holidayCheckUpdate => '檢查更新';
 
   @override
   String get holidayAdvancedTitle => '假日資料更新';
 
   @override
-  String get holidayUpcomingSectionTitle => '近期假日';
-
-  @override
   String get holidayNoUpcoming => '近期沒有假日';
 
   @override
   String get holidayBadgeLabel => '休';
-
-  @override
-  String get holidayStatusLabel => '放假';
 
   @override
   String get suspendedBadgeLabel => '停';
@@ -27871,13 +27069,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guidePersonalizePageTitle => '個人化設定';
 
   @override
-  String get guidePersonalizeSubtitle => '更改即時生效，可隨時在 設置 外觀 中調整';
-
-  @override
   String get guidePersonalizeMenuStyleTitle => '選單樣式';
-
-  @override
-  String get guidePersonalizeNavFormTitle => '導覽形態';
 
   @override
   String get guidePersonalizeVisualEffectSolid => '實體卡片';
@@ -27904,19 +27096,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guideNextButton => '下一步';
 
   @override
-  String get guidePermissionsHeader => '系統權限設定';
-
-  @override
   String get guidePermissionsSubtitle => '完成這些設定，超級島和提醒才能正常使用';
 
   @override
   String get guidePermissionsFooterHint => '自啟動受系統限制，以系統開關為準';
-
-  @override
-  String get guideTipsHeader => '使用技巧';
-
-  @override
-  String get guideTipsSubtitle => '可隨時在設置中查看與修改';
 
   @override
   String get guidePrivacyReadBeforeUse => '使用前請閱讀並同意以下內容';
@@ -27931,11 +27114,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get holidayUpdateLog => '更新紀錄';
-
-  @override
-  String holidayUpdateLogCount(int count) {
-    return '$count筆';
-  }
 
   @override
   String holidayDateSameMonth(int month, int start, int end) {
@@ -30040,15 +29218,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseToastDescription => '帶圖示與副標題，App Toast 同款';
 
   @override
-  String get hyperosShowcaseMenuCopy => '複製';
-
-  @override
-  String get hyperosShowcaseMenuShare => '分享';
-
-  @override
-  String get hyperosShowcaseMenuDelete => '刪除';
-
-  @override
   String get hyperosShowcaseRefreshDone => '刷新完成';
 
   @override
@@ -32023,9 +31192,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeMenuCustomizeSectionTitle => '右上角選單';
 
   @override
-  String get homeNavigationSubtitle => '底欄形態、選單與首頁標題';
-
-  @override
   String get homeNavigationFormLabel => '應用形態';
 
   @override
@@ -32108,13 +31274,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeGridEditorEnabledTitle => '已啟用';
 
   @override
-  String get homeGridEditorAvailableTitle => '可新增';
-
-  @override
   String get homeGridEditorRemoveTooltip => '移除';
-
-  @override
-  String get homeGridEditorAddTooltip => '新增';
 
   @override
   String get homeGridEditorResetAction => '恢復預設排列';

@@ -290,12 +290,6 @@ abstract class AppLocalizations {
   /// **'桌面小组件'**
   String get homeWidgetEntryTitle;
 
-  /// No description provided for @homeWidgetEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'今日课程卡片、小组件背景与显示信息'**
-  String get homeWidgetEntrySubtitle;
-
   /// No description provided for @reminderNotificationSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -1304,12 +1298,6 @@ abstract class AppLocalizations {
   /// **'局域网编辑'**
   String get lanEditEntryTitle;
 
-  /// No description provided for @lanEditEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在电脑浏览器中编辑当前课表'**
-  String get lanEditEntrySubtitle;
-
   /// No description provided for @lanEditTitle.
   ///
   /// In zh, this message translates to:
@@ -1634,12 +1622,6 @@ abstract class AppLocalizations {
   /// **'从其他课表应用导出的日历文件'**
   String get importMethodIcsSubtitle;
 
-  /// No description provided for @importMethodIcsFooter.
-  ///
-  /// In zh, this message translates to:
-  /// **'进入后直接选择 .ics 文件，可追加导入或替换现有课程'**
-  String get importMethodIcsFooter;
-
   /// No description provided for @importMethodAiTitle.
   ///
   /// In zh, this message translates to:
@@ -1651,12 +1633,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'从课表截图识别并导入'**
   String get importMethodAiSubtitle;
-
-  /// No description provided for @importMethodAiFooter.
-  ///
-  /// In zh, this message translates to:
-  /// **'先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期'**
-  String get importMethodAiFooter;
 
   /// No description provided for @importMethodWarehouseTitle.
   ///
@@ -1670,12 +1646,6 @@ abstract class AppLocalizations {
   /// **'登录学校教务系统导入'**
   String get importMethodWarehouseSubtitle;
 
-  /// No description provided for @importMethodWarehouseFooter.
-  ///
-  /// In zh, this message translates to:
-  /// **'进入后选择学校和适配器，可直接打开教务网页登录并执行导入'**
-  String get importMethodWarehouseFooter;
-
   /// No description provided for @importMethodSpreadsheetTitle.
   ///
   /// In zh, this message translates to:
@@ -1687,12 +1657,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'填写 Excel / CSV 模板后导入'**
   String get importMethodSpreadsheetSubtitle;
-
-  /// No description provided for @importMethodSpreadsheetFooter.
-  ///
-  /// In zh, this message translates to:
-  /// **'支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入'**
-  String get importMethodSpreadsheetFooter;
 
   /// No description provided for @spreadsheetImportTitle.
   ///
@@ -3229,12 +3193,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'周日'**
   String get weekdaySun;
-
-  /// No description provided for @hueLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'色相 {value}'**
-  String hueLabel(int value);
 
   /// No description provided for @saturationLabel.
   ///
@@ -4957,71 +4915,11 @@ abstract class AppLocalizations {
   /// **'堆栈'**
   String get diagnosticsStackTrace;
 
-  /// No description provided for @guideAndPermissionsTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'使用引导与权限'**
-  String get guideAndPermissionsTitle;
-
   /// No description provided for @refreshStatusTooltip.
   ///
   /// In zh, this message translates to:
   /// **'刷新状态'**
   String get refreshStatusTooltip;
-
-  /// No description provided for @guideHeroTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'先把这页做完，再开始用'**
-  String get guideHeroTitle;
-
-  /// No description provided for @guideHeroSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'首屏先授权，下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑'**
-  String get guideHeroSubtitle;
-
-  /// No description provided for @guideChipPermissions.
-  ///
-  /// In zh, this message translates to:
-  /// **'权限准备'**
-  String get guideChipPermissions;
-
-  /// No description provided for @guideChipShortName.
-  ///
-  /// In zh, this message translates to:
-  /// **'简称设置'**
-  String get guideChipShortName;
-
-  /// No description provided for @guideChipImport.
-  ///
-  /// In zh, this message translates to:
-  /// **'导入课表'**
-  String get guideChipImport;
-
-  /// No description provided for @guideChipReadyCount.
-  ///
-  /// In zh, this message translates to:
-  /// **'{count}/3 已完成'**
-  String guideChipReadyCount(int count);
-
-  /// No description provided for @guideBottomReachedHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'你已经滑到最后了，确认无误后就可以开始使用'**
-  String get guideBottomReachedHint;
-
-  /// No description provided for @guideScrollHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式'**
-  String get guideScrollHint;
-
-  /// No description provided for @guideRequestNotificationFirst.
-  ///
-  /// In zh, this message translates to:
-  /// **'先申请通知权限'**
-  String get guideRequestNotificationFirst;
 
   /// No description provided for @quickSetupTitle.
   ///
@@ -5100,18 +4998,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'我已阅读并同意友盟相关隐私说明'**
   String get guidePrivacyConsentLabel;
-
-  /// No description provided for @guideRequireConsentHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'请先滑到底部阅读说明，并勾选同意后开始使用'**
-  String get guideRequireConsentHint;
-
-  /// No description provided for @guideContinueHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'继续下滑查看完整引导内容'**
-  String get guideContinueHint;
 
   /// No description provided for @exitAppAction.
   ///
@@ -5508,12 +5394,6 @@ abstract class AppLocalizations {
   /// **'首页标题'**
   String get homeTitleSectionTitle;
 
-  /// No description provided for @homeTitleSectionSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'控制首页左上角课表切换入口的样式'**
-  String get homeTitleSectionSubtitle;
-
   /// No description provided for @homeTitleStyleLabel.
   ///
   /// In zh, this message translates to:
@@ -5550,36 +5430,6 @@ abstract class AppLocalizations {
   /// **'纯色模式下作用于已选显示区域；可与背景图搭配使用'**
   String get timetableBackgroundColorSectionSubtitle;
 
-  /// No description provided for @homePageBackgroundFillLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'背景填充'**
-  String get homePageBackgroundFillLabel;
-
-  /// No description provided for @homePageBackgroundFillColor.
-  ///
-  /// In zh, this message translates to:
-  /// **'纯色'**
-  String get homePageBackgroundFillColor;
-
-  /// No description provided for @homePageBackgroundFillImage.
-  ///
-  /// In zh, this message translates to:
-  /// **'图片'**
-  String get homePageBackgroundFillImage;
-
-  /// No description provided for @homePageBackgroundImageTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'背景图'**
-  String get homePageBackgroundImageTitle;
-
-  /// No description provided for @homePageBackgroundImageSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在图片模式下作用于下方勾选区域'**
-  String get homePageBackgroundImageSubtitle;
-
   /// No description provided for @homePageWallpaperTitle.
   ///
   /// In zh, this message translates to:
@@ -5598,12 +5448,6 @@ abstract class AppLocalizations {
   /// **'设置'**
   String get wallpaperSheetTabSettings;
 
-  /// No description provided for @homePageWallpaperSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'全屏铺底；下方勾选透出区域'**
-  String get homePageWallpaperSubtitle;
-
   /// No description provided for @homePageBackdropFollowsWeekPagerTitle.
   ///
   /// In zh, this message translates to:
@@ -5615,12 +5459,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'壁纸模糊'**
   String get homePageWallpaperBlurTitle;
-
-  /// No description provided for @homePageWallpaperBlurSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'把背景糊成一张固定的图，壁纸上的字更好认'**
-  String get homePageWallpaperBlurSubtitle;
 
   /// No description provided for @homePageWallpaperBlurOff.
   ///
@@ -5634,65 +5472,11 @@ abstract class AppLocalizations {
   /// **'切周时背景与课表一起移动'**
   String get homePageBackdropFollowsWeekPagerSubtitle;
 
-  /// No description provided for @homePageBackgroundScopeTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'背景显示区域'**
-  String get homePageBackgroundScopeTitle;
-
-  /// No description provided for @homePageBackgroundScopeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'勾选的区域透出背景，其余显示课表底色'**
-  String get homePageBackgroundScopeSubtitle;
-
-  /// No description provided for @homePageBackgroundScopeStatusBar.
-  ///
-  /// In zh, this message translates to:
-  /// **'状态栏'**
-  String get homePageBackgroundScopeStatusBar;
-
-  /// No description provided for @homePageBackgroundScopeWeekdayBar.
-  ///
-  /// In zh, this message translates to:
-  /// **'信息栏'**
-  String get homePageBackgroundScopeWeekdayBar;
-
-  /// No description provided for @homePageBackgroundScopeHeader.
-  ///
-  /// In zh, this message translates to:
-  /// **'顶栏'**
-  String get homePageBackgroundScopeHeader;
-
-  /// No description provided for @homePageHeaderBlurSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **''**
-  String get homePageHeaderBlurSubtitle;
-
-  /// No description provided for @homePageWeekdayBarBlurTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'信息栏玻璃'**
-  String get homePageWeekdayBarBlurTitle;
-
-  /// No description provided for @homePageWeekdayBarBlurSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'玻璃材质跟随外观的玻璃模式；关闭后信息栏直接透出壁纸'**
-  String get homePageWeekdayBarBlurSubtitle;
-
   /// No description provided for @homePagePickImageAction.
   ///
   /// In zh, this message translates to:
   /// **'选择图片'**
   String get homePagePickImageAction;
-
-  /// No description provided for @homePageSwitchImageAction.
-  ///
-  /// In zh, this message translates to:
-  /// **'切换照片'**
-  String get homePageSwitchImageAction;
 
   /// No description provided for @homePageAdjustPositionAction.
   ///
@@ -5994,18 +5778,6 @@ abstract class AppLocalizations {
   /// **'{first} 等 {count} 项'**
   String liveDisplaySummaryMore(String first, int count);
 
-  /// No description provided for @guideHyperOsChip.
-  ///
-  /// In zh, this message translates to:
-  /// **'HyperOS 3.0.300+'**
-  String get guideHyperOsChip;
-
-  /// No description provided for @guideStatusTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前状态'**
-  String get guideStatusTitle;
-
   /// No description provided for @guideStatusNotificationPermission.
   ///
   /// In zh, this message translates to:
@@ -6083,120 +5855,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未授权时课前静音点了没反应'**
   String get guideStatusDoNotDisturbAccessHint;
-
-  /// No description provided for @guideStatusAndroidVersion.
-  ///
-  /// In zh, this message translates to:
-  /// **'Android 版本'**
-  String get guideStatusAndroidVersion;
-
-  /// No description provided for @guideStatusVersionUnknown.
-  ///
-  /// In zh, this message translates to:
-  /// **'未识别'**
-  String get guideStatusVersionUnknown;
-
-  /// No description provided for @guideStatusIslandSystemSupport.
-  ///
-  /// In zh, this message translates to:
-  /// **'超级岛系统支持'**
-  String get guideStatusIslandSystemSupport;
-
-  /// No description provided for @guideStatusIslandSystemRequirement.
-  ///
-  /// In zh, this message translates to:
-  /// **'需 HyperOS 3.0.300 及以上'**
-  String get guideStatusIslandSystemRequirement;
-
-  /// No description provided for @guideStatusIslandHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完'**
-  String get guideStatusIslandHint;
-
-  /// No description provided for @guidePermissionChecklistTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'权限清单'**
-  String get guidePermissionChecklistTitle;
-
-  /// No description provided for @guidePermissionChecklistSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'按这个顺序检查，最省事，也最不容易漏'**
-  String get guidePermissionChecklistSubtitle;
-
-  /// No description provided for @guideChecklistRequestNotificationTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'申请通知权限'**
-  String get guideChecklistRequestNotificationTitle;
-
-  /// No description provided for @guideChecklistRequestNotificationSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'这是所有提醒的前提'**
-  String get guideChecklistRequestNotificationSubtitle;
-
-  /// No description provided for @guideChecklistOpenNotificationTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开通知设置'**
-  String get guideChecklistOpenNotificationTitle;
-
-  /// No description provided for @guideChecklistOpenNotificationSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'检查通知总开关、锁屏展示和实时通知权限'**
-  String get guideChecklistOpenNotificationSubtitle;
-
-  /// No description provided for @guideChecklistOpenIslandTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开焦点通知设置'**
-  String get guideChecklistOpenIslandTitle;
-
-  /// No description provided for @guideChecklistOpenIslandSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'HyperOS 3.0.300 及以上再检查 promoted / 超级岛通知'**
-  String get guideChecklistOpenIslandSubtitle;
-
-  /// No description provided for @guideChecklistOpenAutoStartTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开自启动设置'**
-  String get guideChecklistOpenAutoStartTitle;
-
-  /// No description provided for @guideChecklistOpenAutoStartSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'允许应用开机自启和后台常驻'**
-  String get guideChecklistOpenAutoStartSubtitle;
-
-  /// No description provided for @guideChecklistOpenBatteryTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开电池策略设置'**
-  String get guideChecklistOpenBatteryTitle;
-
-  /// No description provided for @guideChecklistOpenBatterySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'建议改成无限制，避免上课提醒被中断'**
-  String get guideChecklistOpenBatterySubtitle;
-
-  /// No description provided for @guideChecklistOpenKeepAliveTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'打开后台保活辅助'**
-  String get guideChecklistOpenKeepAliveTitle;
-
-  /// No description provided for @guideChecklistOpenKeepAliveSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'进一步提升超级岛和提醒在后台场景下的稳定性'**
-  String get guideChecklistOpenKeepAliveSubtitle;
 
   /// No description provided for @guideShortNameAdviceTitle.
   ///
@@ -6846,36 +6504,6 @@ abstract class AppLocalizations {
   /// **'今日课程组件'**
   String get homeWidgetTodayCourseTitle;
 
-  /// No description provided for @homeWidgetTodayCourseSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'支持 2×2、2×4、4×4 三种尺寸，点击打开首页，课程状态实时刷新'**
-  String get homeWidgetTodayCourseSubtitle;
-
-  /// No description provided for @homeWidgetQuickAddTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'快速添加到桌面'**
-  String get homeWidgetQuickAddTitle;
-
-  /// No description provided for @homeWidgetCheckingPinSupport.
-  ///
-  /// In zh, this message translates to:
-  /// **'正在检查当前桌面是否支持应用内添加小组件……'**
-  String get homeWidgetCheckingPinSupport;
-
-  /// No description provided for @homeWidgetPinSupported.
-  ///
-  /// In zh, this message translates to:
-  /// **'支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面'**
-  String get homeWidgetPinSupported;
-
-  /// No description provided for @homeWidgetPinUnsupported.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表，再手动添加'**
-  String get homeWidgetPinUnsupported;
-
   /// No description provided for @homeWidgetBackgroundStyleLabel.
   ///
   /// In zh, this message translates to:
@@ -6912,23 +6540,11 @@ abstract class AppLocalizations {
   /// **'倒计时提前量'**
   String get homeWidgetCountdownLeadTitle;
 
-  /// No description provided for @homeWidgetCountdownLeadSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'设置上课前多少分钟自动切换到倒计时模式'**
-  String get homeWidgetCountdownLeadSubtitle;
-
   /// No description provided for @homeWidgetCountdownLeadAlways.
   ///
   /// In zh, this message translates to:
   /// **'始终显示'**
   String get homeWidgetCountdownLeadAlways;
-
-  /// No description provided for @homeWidgetCountdownLeadMinutes.
-  ///
-  /// In zh, this message translates to:
-  /// **'上课前 {minutes} 分钟'**
-  String homeWidgetCountdownLeadMinutes(String minutes);
 
   /// No description provided for @widgetCountdownStyleTitle.
   ///
@@ -7031,12 +6647,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'说明'**
   String get homeWidgetDescriptionTitle;
-
-  /// No description provided for @homeWidgetDescriptionText.
-  ///
-  /// In zh, this message translates to:
-  /// **'小组件目前优先展示今日课程，无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面小组件也会跟着刷新'**
-  String get homeWidgetDescriptionText;
 
   /// No description provided for @homeWidgetPinRequested.
   ///
@@ -8098,12 +7708,6 @@ abstract class AppLocalizations {
   /// **'建议豆包专家模式，支持多图，截图需带星期表头'**
   String get aiExpertModeSuggestion;
 
-  /// No description provided for @jsonLabelShort.
-  ///
-  /// In zh, this message translates to:
-  /// **'JSON'**
-  String get jsonLabelShort;
-
   /// No description provided for @aiPasteJsonTitle.
   ///
   /// In zh, this message translates to:
@@ -8205,12 +7809,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'是否使用解析结果替换现有课程？此操作将同时清空自习等独立日程。'**
   String get importAiReplaceMessage;
-
-  /// No description provided for @importConfirmSemesterMappingSubtitleAi.
-  ///
-  /// In zh, this message translates to:
-  /// **'请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周，如果学校第一周没课，这里通常要改成第 2 周'**
-  String get importConfirmSemesterMappingSubtitleAi;
 
   /// No description provided for @aiWarningExtraSuffix.
   ///
@@ -8998,12 +8596,6 @@ abstract class AppLocalizations {
   /// **'版本更新'**
   String get homeMenuUpdateTitle;
 
-  /// No description provided for @homeMenuProfilesTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'课表管理'**
-  String get homeMenuProfilesTitle;
-
   /// No description provided for @homeMenuOverviewTitle.
   ///
   /// In zh, this message translates to:
@@ -9033,12 +8625,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'请喝咖啡'**
   String get homeMenuCoffeeTitle;
-
-  /// No description provided for @homeMenuFeedbackTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'问题反馈'**
-  String get homeMenuFeedbackTitle;
 
   /// No description provided for @switchTimetableTitle.
   ///
@@ -10400,12 +9986,6 @@ abstract class AppLocalizations {
   /// **'节假日标记'**
   String get holidaySettingsEntryTitle;
 
-  /// No description provided for @holidaySettingsEntrySubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'在课表上标记法定节假日和调休补班'**
-  String get holidaySettingsEntrySubtitle;
-
   /// No description provided for @holidayMakeupWorkday.
   ///
   /// In zh, this message translates to:
@@ -10430,30 +10010,6 @@ abstract class AppLocalizations {
   /// **'标记法定节假日和调休补班日'**
   String get holidayEnableSubtitle;
 
-  /// No description provided for @holidayDataSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'节假日数据'**
-  String get holidayDataSectionTitle;
-
-  /// No description provided for @holidayDataYear.
-  ///
-  /// In zh, this message translates to:
-  /// **'年份'**
-  String get holidayDataYear;
-
-  /// No description provided for @holidayDataCount.
-  ///
-  /// In zh, this message translates to:
-  /// **'条数'**
-  String get holidayDataCount;
-
-  /// No description provided for @holidayDataEmpty.
-  ///
-  /// In zh, this message translates to:
-  /// **'暂无节假日数据'**
-  String get holidayDataEmpty;
-
   /// No description provided for @holidayCheckUpdate.
   ///
   /// In zh, this message translates to:
@@ -10466,12 +10022,6 @@ abstract class AppLocalizations {
   /// **'节假日数据更新'**
   String get holidayAdvancedTitle;
 
-  /// No description provided for @holidayUpcomingSectionTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'近期节假日'**
-  String get holidayUpcomingSectionTitle;
-
   /// No description provided for @holidayNoUpcoming.
   ///
   /// In zh, this message translates to:
@@ -10483,12 +10033,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'假'**
   String get holidayBadgeLabel;
-
-  /// No description provided for @holidayStatusLabel.
-  ///
-  /// In zh, this message translates to:
-  /// **'假期'**
-  String get holidayStatusLabel;
 
   /// No description provided for @suspendedBadgeLabel.
   ///
@@ -10928,23 +10472,11 @@ abstract class AppLocalizations {
   /// **'个性化定制'**
   String get guidePersonalizePageTitle;
 
-  /// No description provided for @guidePersonalizeSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'更改即时生效，可随时在 设置 外观 中调整'**
-  String get guidePersonalizeSubtitle;
-
   /// No description provided for @guidePersonalizeMenuStyleTitle.
   ///
   /// In zh, this message translates to:
   /// **'菜单样式'**
   String get guidePersonalizeMenuStyleTitle;
-
-  /// No description provided for @guidePersonalizeNavFormTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'导航形态'**
-  String get guidePersonalizeNavFormTitle;
 
   /// No description provided for @guidePersonalizeVisualEffectSolid.
   ///
@@ -10994,12 +10526,6 @@ abstract class AppLocalizations {
   /// **'下一步'**
   String get guideNextButton;
 
-  /// No description provided for @guidePermissionsHeader.
-  ///
-  /// In zh, this message translates to:
-  /// **'系统权限设置'**
-  String get guidePermissionsHeader;
-
   /// No description provided for @guidePermissionsSubtitle.
   ///
   /// In zh, this message translates to:
@@ -11011,18 +10537,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'自启动受系统限制，以系统开关为准'**
   String get guidePermissionsFooterHint;
-
-  /// No description provided for @guideTipsHeader.
-  ///
-  /// In zh, this message translates to:
-  /// **'使用技巧'**
-  String get guideTipsHeader;
-
-  /// No description provided for @guideTipsSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'可随时在设置中查看与修改'**
-  String get guideTipsSubtitle;
 
   /// No description provided for @guidePrivacyReadBeforeUse.
   ///
@@ -11047,12 +10561,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'更新日志'**
   String get holidayUpdateLog;
-
-  /// No description provided for @holidayUpdateLogCount.
-  ///
-  /// In zh, this message translates to:
-  /// **'{count} 条'**
-  String holidayUpdateLogCount(int count);
 
   /// No description provided for @holidayDateSameMonth.
   ///
@@ -14617,24 +14125,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'带图标与副标题，App Toast 同款'**
   String get hyperosShowcaseToastDescription;
-
-  /// No description provided for @hyperosShowcaseMenuCopy.
-  ///
-  /// In zh, this message translates to:
-  /// **'复制'**
-  String get hyperosShowcaseMenuCopy;
-
-  /// No description provided for @hyperosShowcaseMenuShare.
-  ///
-  /// In zh, this message translates to:
-  /// **'分享'**
-  String get hyperosShowcaseMenuShare;
-
-  /// No description provided for @hyperosShowcaseMenuDelete.
-  ///
-  /// In zh, this message translates to:
-  /// **'删除'**
-  String get hyperosShowcaseMenuDelete;
 
   /// No description provided for @hyperosShowcaseRefreshDone.
   ///
@@ -18346,12 +17836,6 @@ abstract class AppLocalizations {
   /// **'右上角菜单'**
   String get homeMenuCustomizeSectionTitle;
 
-  /// No description provided for @homeNavigationSubtitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'底栏形态、菜单与首页标题'**
-  String get homeNavigationSubtitle;
-
   /// No description provided for @homeNavigationFormLabel.
   ///
   /// In zh, this message translates to:
@@ -18508,23 +17992,11 @@ abstract class AppLocalizations {
   /// **'已启用'**
   String get homeGridEditorEnabledTitle;
 
-  /// No description provided for @homeGridEditorAvailableTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'可添加'**
-  String get homeGridEditorAvailableTitle;
-
   /// No description provided for @homeGridEditorRemoveTooltip.
   ///
   /// In zh, this message translates to:
   /// **'移除'**
   String get homeGridEditorRemoveTooltip;
-
-  /// No description provided for @homeGridEditorAddTooltip.
-  ///
-  /// In zh, this message translates to:
-  /// **'添加'**
-  String get homeGridEditorAddTooltip;
 
   /// No description provided for @homeGridEditorResetAction.
   ///
