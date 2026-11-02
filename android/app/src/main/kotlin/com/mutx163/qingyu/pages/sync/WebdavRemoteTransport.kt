@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.sync
 import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.GetBytesResult
 import com.mutx163.qingyu.sync.HistoryListResult
+import com.mutx163.qingyu.sync.LockResult
 import com.mutx163.qingyu.sync.WebdavEndpoint
 import com.mutx163.qingyu.sync.WebdavHeadResult
 import com.mutx163.qingyu.sync.WebdavHttpTransport
@@ -14,12 +15,27 @@ import com.mutx163.qingyu.sync.WebdavWriteResult
  *
  * 为什么要有它：`WebdavHttpTransport`（`main: sync/`，已交付 `c339330d`）直接持有
  * `HttpURLConnection`/裸 socket，页面协调层若直接依赖它，L0 的 JVM 单测就只能起一个
- * 真 HTTP 服务才有得测。把 8 个动作抽成接口后，单测注入一个内存假实现即可覆盖
+ * 真 HTTP 服务才有得测。把动作抽成接口后，单测注入一个内存假实现即可覆盖
  * 「列备份 / 上传 / 下载 / 冲突 / 断线 / 取消」全部路径，生产实现 [WebdavHttpRemoteTransport]
  * 只做一字不改的透传。
  *
- * **接口只放页面层真实用到的 8 个动作**，与传输层一一对应，不在这里新增任何语义
+ * **接口只放页面层真实用到的动作**，与传输层一一对应，不在这里新增任何语义
  * （路径拼接、失败分类、XML 解析全在 `sync/` 的纯逻辑里，本层不重复实现）。
+ *
+ * ## 条件写能力（2026-11-02 协议互通第 1 段）
+ *
+ * 云备份与 Flutter 版互通需要 Dart 已有的三样并发能力：`If-Match`/`If-None-Match`
+ * 条件 PUT（Dart `webdav_sync_service.dart` `_publishSnapshotVersion`）、取独占写锁、
+ * 释放写锁。传输层本体（`sync/WebdavHttpTransport`）早已具备全部三个（`putBytes` 的
+ * `headers`/`lockToken` 参数与 `acquireWriteLock`/`releaseWriteLock`），缺的只是这个
+ * 接口面。三个新方法都带**默认实现 = 今天的能力**：
+ * - `putBytesConditional` 默认丢弃条件头、原样转调 [putBytes]；
+ * - `acquireWriteLock` 默认返回「服务器不支持锁」（Dart `WebdavLockResult.unsupported`
+ *   同一语义，调用方据此走无锁路径）；
+ * - `releaseWriteLock` 只在拿到锁后才会被调用，默认失败值不可达。
+ *
+ * 这样新能力是**纯增量**：既有调用点（情侣同步走 [putBytes]）与既有测试假实现
+ * 一个字都不用改，行为与今天完全一致——由 `WebdavRemoteTransportCapabilityTest` 钉住。
  */
 interface WebdavRemoteTransport {
     /** PROPFIND depth=1 列历史备份目录里的文件名。 */
@@ -30,6 +46,18 @@ interface WebdavRemoteTransport {
 
     /** PUT 一个远端文件。 */
     fun putBytes(remotePath: String, bytes: ByteArray): WebdavWriteResult
+
+    /**
+     * PUT 一个远端文件，可带条件头（`If-Match` / `If-None-Match` 等）与锁 token
+     * （token 会包成 WebDAV `If: (<token>)` 头，Dart `putBytes` 同口径）。
+     * 默认实现**忽略**全部条件、等价 [putBytes]——「锁能力关闭时行为与今天一致」。
+     */
+    fun putBytesConditional(
+        remotePath: String,
+        bytes: ByteArray,
+        headers: Map<String, String> = emptyMap(),
+        lockToken: String? = null,
+    ): WebdavWriteResult = putBytes(remotePath, bytes)
 
     /** PROPFIND depth=0 取 ETag（拿不到返回 null）。 */
     fun getRemoteEtag(remotePath: String): String?
@@ -45,6 +73,16 @@ interface WebdavRemoteTransport {
 
     /** DELETE 一个远端文件（404 按幂等返回 notFound=true）。 */
     fun deleteRemoteFile(remotePath: String): WebdavWriteResult
+
+    /**
+     * 对目录取独占写锁（Dart `acquireWriteLock` 口径：405/501 与明确「不支持锁」的
+     * 403 → [LockResult.unsupported]，其余失败是硬失败）。默认 = 不支持锁。
+     */
+    fun acquireWriteLock(remotePath: String): LockResult = LockResult.unsupported()
+
+    /** 释放写锁（`Lock-Token: <token>`）。默认实现不可达（拿不到锁就没有 token）。 */
+    fun releaseWriteLock(remotePath: String, lockToken: String): WebdavWriteResult =
+        WebdavWriteResult.failed("sync_failed")
 }
 
 /**
@@ -65,6 +103,13 @@ class WebdavHttpRemoteTransport(
     override fun putBytes(remotePath: String, bytes: ByteArray): WebdavWriteResult =
         transport.putBytes(remotePath, bytes)
 
+    override fun putBytesConditional(
+        remotePath: String,
+        bytes: ByteArray,
+        headers: Map<String, String>,
+        lockToken: String?,
+    ): WebdavWriteResult = transport.putBytes(remotePath, bytes, headers = headers, lockToken = lockToken)
+
     override fun getRemoteEtag(remotePath: String): String? =
         transport.getRemoteEtag(remotePath)
 
@@ -79,6 +124,12 @@ class WebdavHttpRemoteTransport(
 
     override fun deleteRemoteFile(remotePath: String): WebdavWriteResult =
         transport.deleteRemoteFile(remotePath)
+
+    override fun acquireWriteLock(remotePath: String): LockResult =
+        transport.acquireWriteLock(remotePath)
+
+    override fun releaseWriteLock(remotePath: String, lockToken: String): WebdavWriteResult =
+        transport.releaseWriteLock(remotePath, lockToken)
 }
 
 /**

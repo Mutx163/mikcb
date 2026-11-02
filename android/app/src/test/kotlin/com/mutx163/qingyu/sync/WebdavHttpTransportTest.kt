@@ -581,6 +581,65 @@ class WebdavHttpTransportTest {
         assertEquals("<opaquelocktoken:xyz-1>", server.requests[0].lockTokenHeader)
     }
 
+    // ---------- 页面层适配器的条件写透传（协议互通第 1 段） ----------
+    //
+    // 证明 `WebdavHttpRemoteTransport.putBytesConditional` 把 If-Match / If-None-Match
+    // 与锁 token 原样送到线上（锁 token 包成 `If: (<token>)`），锁的取/放也透传。
+
+    @Test
+    fun adapterConditionalPutForwardsConditionHeadersAndLockToken() {
+        server.handler = { exchange, _ -> exchange.respond(201, ByteArray(0)) }
+        val adapter = com.mutx163.qingyu.pages.sync.WebdavHttpRemoteTransport(transport())
+
+        val result = adapter.putBytesConditional(
+            "/Apps/qingyu-sync/snapshot.meta.json",
+            byteArrayOf(1, 2),
+            headers = mapOf("If-Match" to "etag-7", "If-None-Match" to "*"),
+            lockToken = "opaquelocktoken:tok-9",
+        )
+
+        assertFalse(result.isFailed)
+        assertEquals("PUT", server.requests[0].method)
+        assertEquals("etag-7", server.requests[0].allHeaders["if-match"])
+        assertEquals("*", server.requests[0].allHeaders["if-none-match"])
+        assertEquals("(<opaquelocktoken:tok-9>)", server.requests[0].allHeaders["if"])
+    }
+
+    @Test
+    fun adapterConditionalPutWithoutConditionsOmitsConditionHeaders() {
+        server.handler = { exchange, _ -> exchange.respond(201, ByteArray(0)) }
+        val adapter = com.mutx163.qingyu.pages.sync.WebdavHttpRemoteTransport(transport())
+
+        adapter.putBytesConditional("/x", byteArrayOf(1))
+
+        assertFalse(server.requests[0].allHeaders.containsKey("if-match"))
+        assertFalse(server.requests[0].allHeaders.containsKey("if-none-match"))
+        assertFalse(server.requests[0].allHeaders.containsKey("if"))
+    }
+
+    @Test
+    fun adapterAcquireAndReleaseLockRoundTrip() {
+        server.handler = { exchange, recorded ->
+            if (recorded.method == "LOCK") {
+                exchange.respond(200, ByteArray(0), mapOf("Lock-Token" to "<opaquelocktoken:wire-1>"))
+            } else {
+                exchange.respond(204)
+            }
+        }
+        val adapter = com.mutx163.qingyu.pages.sync.WebdavHttpRemoteTransport(transport())
+
+        val lock = adapter.acquireWriteLock("/Apps/qingyu-sync/")
+
+        assertFalse(lock.isFailed)
+        assertFalse(lock.isUnsupported)
+        assertEquals("opaquelocktoken:wire-1", lock.lockToken)
+
+        val release = adapter.releaseWriteLock("/Apps/qingyu-sync/", lock.lockToken!!)
+        assertFalse(release.isFailed)
+        assertEquals("UNLOCK", server.requests[1].method)
+        assertEquals("<opaquelocktoken:wire-1>", server.requests[1].lockTokenHeader)
+    }
+
     // ---------- 连接自检 ----------
 
     @Test
@@ -672,6 +731,8 @@ class WebdavHttpTransportTest {
         val lockTokenHeader: String?,
         val timeoutHeader: String?,
         val body: ByteArray,
+        /** 全量请求头（键小写）；条件写用例断言 `If-Match` / `If-None-Match` 用。 */
+        val allHeaders: Map<String, String> = emptyMap(),
     )
 
     /**
@@ -757,6 +818,7 @@ class WebdavHttpTransportTest {
                 lockTokenHeader = headers["lock-token"],
                 timeoutHeader = headers["timeout"],
                 body = body,
+                allHeaders = headers,
             )
             requests.add(recorded)
             val exchange = FakeExchange(output, path)

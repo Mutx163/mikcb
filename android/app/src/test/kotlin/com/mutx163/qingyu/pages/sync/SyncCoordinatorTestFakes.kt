@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.sync
 import com.mutx163.qingyu.sync.CoupleWebdavConfig
 import com.mutx163.qingyu.sync.GetBytesResult
 import com.mutx163.qingyu.sync.HistoryListResult
+import com.mutx163.qingyu.sync.LockResult
 import com.mutx163.qingyu.sync.WebdavHeadResult
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.WebdavWriteResult
@@ -32,6 +33,24 @@ class FakeRemoteTransport : WebdavRemoteTransport {
     var beforeGet: () -> Unit = {}
     var beforePut: () -> Unit = {}
 
+    // ── 条件写 / 锁能力（协议互通第 1 段；默认值 = 今天的行为） ──
+
+    /** 最近一次条件 PUT 携带的条件头与锁 token（缺省调用记录为空 map / null）。 */
+    var lastConditionalPutHeaders: Map<String, String>? = null
+        private set
+    var lastConditionalPutLockToken: String? = null
+        private set
+
+    /** false = 服务器不支持 LOCK（`acquireWriteLock` 返回 unsupported，与旧行为一致）。 */
+    var lockSupported: Boolean = false
+
+    /** true = 模拟别的客户端正持锁（取锁硬失败）。 */
+    var lockConflict: Boolean = false
+
+    /** 当前被持有的锁 token；`releaseWriteLock` 后清空。 */
+    var heldLockToken: String? = null
+        private set
+
     override fun listHistoryBackupFiles(historyRemoteFolder: String): HistoryListResult {
         listResultOverride?.let { return it }
         val names = files.keys
@@ -54,6 +73,33 @@ class FakeRemoteTransport : WebdavRemoteTransport {
         putFailureCode?.let { return WebdavWriteResult.failed(it) }
         files[remotePath] = bytes
         return WebdavWriteResult.ok(201, null)
+    }
+
+    override fun putBytesConditional(
+        remotePath: String,
+        bytes: ByteArray,
+        headers: Map<String, String>,
+        lockToken: String?,
+    ): WebdavWriteResult {
+        lastConditionalPutHeaders = headers
+        lastConditionalPutLockToken = lockToken
+        return putBytes(remotePath, bytes)
+    }
+
+    override fun acquireWriteLock(remotePath: String): LockResult = when {
+        !lockSupported -> LockResult.unsupported()
+        lockConflict -> LockResult.failed("access_denied")
+        else -> LockResult.acquired("opaquelocktoken:fake-${System.nanoTime()}").also {
+            heldLockToken = it.lockToken
+        }
+    }
+
+    override fun releaseWriteLock(remotePath: String, lockToken: String): WebdavWriteResult {
+        if (heldLockToken == lockToken) {
+            heldLockToken = null
+            return WebdavWriteResult.ok(204, null)
+        }
+        return WebdavWriteResult.failed("conflict")
     }
 
     override fun getRemoteEtag(remotePath: String): String? = null
