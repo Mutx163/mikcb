@@ -474,6 +474,7 @@ private fun FollowupLocationSheet(
                 Button(
                     onClick = { onConfirm(text.text) },
                     modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = CourseFollowupStrings.confirmAction.zh)
                 }
@@ -886,6 +887,7 @@ fun CourseRescheduleSheet(
                     onClick = { onConfirm(draft.toTarget()) },
                     enabled = view.canConfirm,
                     modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = CourseFollowupStrings.confirmRescheduleAction.zh)
                 }

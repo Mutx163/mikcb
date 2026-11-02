@@ -39,6 +39,7 @@ import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -348,6 +349,7 @@ private fun LiveKeepAliveConfirmDialog(
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = onConfirm,
+                colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
                 Text(LiveKeepAliveStrings.keepAliveConfirmGoAction.zh)
             }

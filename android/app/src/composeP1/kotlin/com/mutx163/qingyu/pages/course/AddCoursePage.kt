@@ -899,6 +899,7 @@ private fun AddCourseWeekPickerDialog(
                             onClick = { onConfirm(draft) },
                             enabled = AddCourseWeekDraftLogic.canConfirm(draft),
                             modifier = Modifier.weight(1f),
+                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary(),
                         ) {
                             Text(text = AddCourseStrings.confirmAction.zh)
                         }

@@ -439,6 +439,7 @@ internal fun TransferButton(
             onClick = onClick,
             modifier = actualModifier,
             enabled = enabled && !loading,
+            colors = ButtonDefaults.buttonColorsPrimary(),
         ) { content() }
     } else {
         Button(

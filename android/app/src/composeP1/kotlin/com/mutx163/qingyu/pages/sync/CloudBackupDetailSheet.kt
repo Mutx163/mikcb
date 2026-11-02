@@ -87,7 +87,7 @@ fun CloudBackupDetailSheet(
                 Button(
                     onClick = onRestore,
                     enabled = !busy,
-                    colors = ButtonDefaults.buttonColors(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(SyncStrings.cloudBackupRestoreAction.zh)

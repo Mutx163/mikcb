@@ -36,6 +36,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -264,6 +265,7 @@ fun CourseNoteSheet(
                 if (editable) {
                     Button(
                         modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                         onClick = {
                             // Dart `:153`：先收键盘再保存。
                             focusManager.clearFocus()

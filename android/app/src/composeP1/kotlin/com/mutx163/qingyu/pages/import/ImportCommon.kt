@@ -437,6 +437,7 @@ fun ImportActionButton(
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
             enabled = enabled && !loading,
+            colors = ButtonDefaults.buttonColorsPrimary(),
         ) { content() }
     }
 }

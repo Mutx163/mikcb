@@ -395,7 +395,7 @@ private fun ConfirmRow(
                     contentColor = Color(QingyuTheme.onError(dark)),
                 )
             } else {
-                ButtonDefaults.buttonColors()
+                ButtonDefaults.buttonColorsPrimary()
             },
         ) {
             Text(confirmLabel)

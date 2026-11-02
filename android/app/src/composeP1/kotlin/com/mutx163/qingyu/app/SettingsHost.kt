@@ -859,6 +859,7 @@ private fun AutoRefreshDailyTimeSheet(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { onConfirm(hour * 60 + minute) },
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = SettingsStrings.confirmAction.zh)
                 }
@@ -903,7 +904,10 @@ private fun AutoRefreshRunNowNotice(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                Button(onClick = onDismiss) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
                     Text(text = SettingsStrings.confirmAction.zh)
                 }
             }
@@ -1043,7 +1047,10 @@ private fun SettingsColorPickerDialog(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = { onConfirm(hex) }) {
+                Button(
+                    onClick = { onConfirm(hex) },
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
                     Text(
                         text = SettingsStringsExt1.appearanceEditorDoneAction.zh,
                         style = MiuixTheme.textStyles.button,
@@ -1584,6 +1591,7 @@ internal fun SettingsThemeDialogHost(
                         modifier = Modifier.weight(1f),
                         // 空名字点不动：Dart 的保存对话框同样不给提交空名。
                         enabled = text.isNotBlank(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                         onClick = {
                             val id = state.themeId
                             if (state.mode == ThemeDialogMode.RENAME && id != null) {
@@ -1720,7 +1728,10 @@ private fun SettingsNoticeDialog(notice: SettingsNotice, onDismiss: () -> Unit) 
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                Button(onClick = onDismiss) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
                     Text(text = SettingsStrings.confirmAction.zh)
                 }
             }

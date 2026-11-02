@@ -132,7 +132,7 @@ fun CloudBackupDetailHost(
                             restore()
                         },
                         enabled = !busy,
-                        colors = ButtonDefaults.buttonColors(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(SyncStrings.cloudBackupRestoreAction.zh)

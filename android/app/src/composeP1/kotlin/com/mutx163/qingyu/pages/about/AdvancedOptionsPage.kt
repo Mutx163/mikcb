@@ -31,6 +31,7 @@ import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
 import com.mutx163.qingyu.infra.AppUpdateDownloadSource
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
@@ -290,6 +291,7 @@ fun AdvancedOptionsPage(
                 Button(
                     onClick = { submitMirror() },
                     modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(text = AboutUpdatePageStrings.confirmAction)
                 }
