@@ -891,7 +891,8 @@ private fun AutoRefreshDailyTimeSheet(
                     Text(text = SettingsStrings.confirmAction.zh)
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            // 不加末尾 Spacer：QingyuSheet 在 contentScrolls=false 时已自动补
+            // 「手势区 + 16dp」让位，这里再叠 16 会多出一截空白。
         }
     }
 }
