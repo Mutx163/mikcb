@@ -43,7 +43,7 @@ object ExamReminderCoordinator {
 
     private fun reconcileNow(appContext: Context, repository: TimetableRepository) {
         val payload = ExamReminderLogic.buildPayload(
-            exams = repository.snapshot.exams,
+            exams = repository.exams,
             resolveCourse = { exam -> repository.getCourseById(exam.courseId) },
         )
         ExamReminderScheduler.reconcile(
