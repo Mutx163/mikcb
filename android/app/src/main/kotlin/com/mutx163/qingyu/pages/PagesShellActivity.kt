@@ -53,6 +53,7 @@ import com.mutx163.qingyu.pages.live.LiveSnapshotSyncRegistry
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
+import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
@@ -193,6 +194,12 @@ class PagesShellActivity : ComponentActivity() {
         // 换页打点在 `ShellPageContent`（只有那里知道当前页 id），这里是「装 + 挂窗口」。
         PerfProbe.attach(this)
         PerfProbe.markStartup("shellAttach")
+
+        // 截屏检测（Android 14+ 官方 ScreenCaptureCallback）：注册/注销由组件自管
+        // （STARTED 才注册、退后台/销毁自动摘除），壳只在这里挂一次。
+        // 事件出口 onScreenshot 暂无消费方（Dart 版的「分享课表图」提示未移植），
+        // 接线方式见 platform/ScreenCaptureWatcher.kt 头注。
+        ScreenCaptureWatcher.attach(this)
 
         setContent {
             // ── 外观设置 → 主题桥 ──────────────────────────────────────────────
