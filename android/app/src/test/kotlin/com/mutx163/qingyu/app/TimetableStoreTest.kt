@@ -326,6 +326,37 @@ class TimetableStoreTest {
         assertFalse(raw.contains("teacher_records"))
     }
 
+    @Test
+    fun archiveWriteFailureKeepsLoadSideAliveInsteadOfCrashingInit() {
+        // 「坏数据 + 磁盘满」双故障：留档这笔写不进去（IOException）。读侧不许把它
+        // 升级成崩溃（仓储在 init 里 reload，一炸就是启动崩），降级为按默认值读，
+        // 坏值留在盘上等下次再补留档（2026-11-02：写失败开始抛 IOException 后的护栏）。
+        val raw = InMemoryKeyValueStore(mapOf("timetable_profiles" to "{not json"))
+        val store = TimetableStore(
+            ArchiveFailingStore(raw, failArchiveOf = "timetable_profiles"),
+            nowMicros = { fixedMicros },
+        )
+
+        val result = store.loadProfiles()
+
+        assertEquals(emptyList<TimetableProfile>(), result.profiles)
+        assertTrue(result.didDrop)
+        // 坏值还在盘上（这次没删成），留档名照常返回（但不代表盘上有留档）。
+        assertEquals("{not json", raw.getString("timetable_profiles"))
+        assertEquals("timetable_profiles_corrupt_backup_$fixedMicros", result.corruptBackupKey)
+    }
+
+    /** 只有 `archiveCorruptAndRemove` 对指定 key 抛 IOException 的替身（磁盘满）。 */
+    private class ArchiveFailingStore(
+        private val delegate: InMemoryKeyValueStore,
+        private val failArchiveOf: String,
+    ) : KeyValueStore by delegate {
+        override fun archiveCorruptAndRemove(key: String, micros: Long): String {
+            if (key == failArchiveOf) throw java.io.IOException("disk_full")
+            return delegate.archiveCorruptAndRemove(key, micros)
+        }
+    }
+
     // ---------- 夹具 ----------
 
     private fun course(id: String, name: String = "数学") = Course(

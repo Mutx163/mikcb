@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.mutx163.qingyu.app.FrozenValueCodec
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.corruptBackupKey
+import java.io.IOException
 
 /**
  * [KeyValueStore] 的 **Android 实现**（`FlutterSharedPreferences` + `flutter.` 前缀）。
@@ -31,6 +32,12 @@ import com.mutx163.qingyu.app.corruptBackupKey
  * 3. **`getStringList` 解码失败照抛**：接口 KDoc 的硬要求——空列表是合法数据
  *    （用户真的没课），与「数据坏了」必须分开。留档自愈由
  *    [com.mutx163.qingyu.app.TimetableStore] 在**知道该 key 语义**的那一层做。
+ * 4. **写失败（`commit()` 返回 false）抛 [IOException]**：磁盘满 / IO 异常时
+ *    `commit()` 不抛异常、只返回 false；把布尔丢掉等于「界面显示成功、重启数据回退」。
+ *    上层契约（`TimetableRepository` / `TimetableCourseService`）写的是
+ *    「先落盘，失败则内存与监听者都不动」——靠的就是这一层把失败变成异常，
+ *    服务的快照回滚与宿主的失败提示才有机会生效。`KeyValueStore` 的签名是冻结的
+ *    （不能改成返回 Boolean / Result），异常是唯一不破坏签名又能被上层感知的通道。
  */
 class PrefsKeyValueStore(context: Context) : KeyValueStore {
 
@@ -87,32 +94,43 @@ class PrefsKeyValueStore(context: Context) : KeyValueStore {
         return FrozenValueCodec.decodeStringList(encoded)
     }
 
+    /**
+     * `commit()` 返回 false（磁盘满 / IO 异常）时抛 [IOException]；不抛等于写失败被吞掉。
+     *
+     * 注意**不 catch 任何东西再转述**：上层（服务回滚 / 宿主提示）需要的是「这次写失败」本身。
+     */
+    private fun SharedPreferences.Editor.commitOrThrow(key: String) {
+        if (!commit()) {
+            throw IOException("SharedPreferences commit failed for key: $key")
+        }
+    }
+
     override fun putString(key: String, value: String) {
-        prefs.edit().putString(FrozenValueCodec.physicalKey(key), value).commit()
+        prefs.edit().putString(FrozenValueCodec.physicalKey(key), value).commitOrThrow(key)
     }
 
     override fun putInt(key: String, value: Int) {
         // 与 Flutter 插件逐字节一致：int 落盘为 Long。
-        prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value.toLong()).commit()
+        prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value.toLong()).commitOrThrow(key)
     }
 
     override fun putLong(key: String, value: Long) {
         // 与 Dart `prefs.setInt` 同类型、同步落盘（理由见类注释第 1 条）。
-        prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value).commit()
+        prefs.edit().putLong(FrozenValueCodec.physicalKey(key), value).commitOrThrow(key)
     }
 
     override fun putBool(key: String, value: Boolean) {
-        prefs.edit().putBoolean(FrozenValueCodec.physicalKey(key), value).commit()
+        prefs.edit().putBoolean(FrozenValueCodec.physicalKey(key), value).commitOrThrow(key)
     }
 
     override fun putStringList(key: String, value: List<String>) {
         prefs.edit()
             .putString(FrozenValueCodec.physicalKey(key), FrozenValueCodec.encodeStringList(value))
-            .commit()
+            .commitOrThrow(key)
     }
 
     override fun remove(key: String) {
-        prefs.edit().remove(FrozenValueCodec.physicalKey(key)).commit()
+        prefs.edit().remove(FrozenValueCodec.physicalKey(key)).commitOrThrow(key)
     }
 
     override fun contains(key: String): Boolean =
@@ -126,7 +144,8 @@ class PrefsKeyValueStore(context: Context) : KeyValueStore {
         if (raw != null) editor.putString(backupPhysical, raw)
         editor.remove(physical)
         // 留档与原 key 的删除必须一起落盘：先删后写失败等于把坏数据弄丢。
-        editor.commit()
+        // 这一笔失败同样要抛：留档丢了的后果比普通写失败更严重。
+        editor.commitOrThrow(key)
         return corruptBackupKey(key, micros)
     }
 

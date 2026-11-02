@@ -3,10 +3,12 @@ package com.mutx163.qingyu.app
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import java.io.IOException
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -403,6 +405,116 @@ class TimetableRepositoryTest {
         assertTrue("落盘失败不许通知", seen.isEmpty())
     }
 
+    // ---------- 写失败（IOException 形态：与 PrefsKeyValueStore 的 commit() 失败同型） ----------
+    //
+    // 生产实现 `PrefsKeyValueStore` 在磁盘满时抛 IOException（2026-11-02 修复：
+    // 以前 commit() 的布尔被丢掉，界面假成功、重启回退）。下面用**按 key 选择性失败**
+    // 的替身证明：失败以 IOException 形态上抛时，「内存与监听者都不动」的契约同样成立，
+    // 且多笔写的入口要能把已落盘的那几笔回滚掉。
+
+    @Test
+    fun restoreFromCloudSnapshotOnIoFailureLeavesMemoryAndListenersUntouched() {
+        val delegate = InMemoryKeyValueStore()
+        val seed = TimetableStore(delegate)
+        seed.saveProfiles(listOf(profile("p1", listOf(course("c1", name = "数学")))))
+        seed.saveActiveProfileId("p1")
+        val failing = SelectiveFailStore(delegate, failKeys = setOf("timetable_profiles"))
+        val repository = TimetableRepository(TimetableStore(failing))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        try {
+            repository.restoreFromCloudSnapshot(
+                profiles = listOf(profile("p9", listOf(course("c9", name = "云上的课")))),
+                activeProfileId = "p9",
+                timeSchemes = emptyList(),
+                scheduleDateRules = emptyList(),
+                locationTimeGroups = emptyList(),
+            )
+            fail("落盘失败必须上抛")
+        } catch (expected: IOException) {
+            assertEquals("disk_full", expected.message)
+        }
+
+        assertEquals(listOf("p1"), repository.snapshot.profiles.map { it.id })
+        assertEquals(listOf("数学"), repository.snapshot.courses.map { it.name })
+        assertTrue("落盘失败不许通知", seen.isEmpty())
+        // 盘上也没有被写一半的恢复数据（第一笔就失败了）。
+        assertTrue(delegate.getString("timetable_profiles")!!.contains("\"p1\""))
+        assertFalse(delegate.getString("timetable_profiles")!!.contains("\"p9\""))
+    }
+
+    @Test
+    fun updateScheduleDateRulesOnIoFailureLeavesMemoryAndDiskUntouched() {
+        val delegate = InMemoryKeyValueStore()
+        val seed = TimetableStore(delegate)
+        val oldRule = ScheduleDateRule("r1", "秋假", "ts-1", "2026-10-01", "2026-10-07")
+        seed.saveScheduleDateRules(listOf(oldRule))
+        val failing = SelectiveFailStore(delegate, failKeys = setOf("schedule_date_rules"))
+        val repository = TimetableRepository(TimetableStore(failing))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        try {
+            repository.updateScheduleDateRules(
+                listOf(oldRule, ScheduleDateRule("r2", "寒假", "ts-1", "2027-01-20", "2027-02-20")),
+            )
+            fail("落盘失败必须上抛")
+        } catch (expected: IOException) {
+            assertEquals("disk_full", expected.message)
+        }
+
+        assertEquals(listOf("r1"), repository.snapshot.scheduleDateRules.map { it.id })
+        assertTrue("落盘失败不许通知", seen.isEmpty())
+        assertEquals(1, TimetableStore(delegate).loadScheduleDateRules().size)
+    }
+
+    @Test
+    fun updateTimeSchemeSecondWriteFailureWritesOldSchemeBackToDisk() {
+        // 两笔写：第一笔（作息表）成功、第二笔（档案）失败 ⇒ update 里那个补偿分支
+        // 必须把**旧作息表**写回盘上；否则冷启动后「被告知没改成」的新节次自己生效
+        //（updateTimeScheme KDoc 里记的正是这个事故）。
+        val delegate = InMemoryKeyValueStore()
+        val seed = TimetableStore(delegate)
+        seed.saveTimeSchemes(listOf(twoSectionScheme("ts-1")))
+        seed.saveProfiles(listOf(profile("p1", listOf(course("c1")))))
+        seed.saveActiveProfileId("p1")
+        val failing = SelectiveFailStore(delegate, failKeys = setOf("timetable_profiles"))
+        val repository = TimetableRepository(TimetableStore(failing))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        try {
+            repository.updateTimeScheme(
+                "ts-1",
+                "三节作息",
+                listOf(
+                    SectionTime("08:00", "08:45"),
+                    SectionTime("08:55", "09:40"),
+                    SectionTime("10:00", "10:45"),
+                ),
+            )
+            fail("第二笔落盘失败必须上抛")
+        } catch (expected: IOException) {
+            assertEquals("disk_full", expected.message)
+        }
+
+        // 内存维持旧模板。
+        assertEquals(2, repository.snapshot.timeSchemes.single().sections.size)
+        // 盘上：第一笔曾写成 3 节，补偿后必须回到 2 节。
+        assertEquals(2, TimetableStore(delegate).loadTimeSchemes().schemes.single().sections.size)
+        assertTrue("落盘失败不许通知", seen.isEmpty())
+    }
+
+    /** 两节作息模板（2026-09-01 起）。 */
+    private fun twoSectionScheme(id: String) = TimeScheme(
+        id = id,
+        name = "两节作息",
+        sections = listOf(SectionTime("08:00", "08:45"), SectionTime("08:55", "09:40")),
+        createdAt = LocalDateTime.of(2026, 9, 1, 8, 0),
+        updatedAt = LocalDateTime.of(2026, 9, 1, 8, 0),
+    )
+
     // ---------- 订阅 ----------
 
     @Test
@@ -605,5 +717,39 @@ class TimetableRepositoryTest {
         override fun keys(): Set<String> = delegate.keys()
 
         private fun failWrite(): Nothing = throw IllegalStateException("disk_full")
+    }
+
+    /**
+     * 读与**未列出**的 key 写入正常透传；列出的 key 的写（含留档）抛 [IOException]。
+     *
+     * 与 [FailingWriteStore] 的区别：失败按 key 选择、且失败类型与生产实现
+     * `PrefsKeyValueStore` 的 `commit()` 失败（IOException）同型——用来测多笔写入口的
+     * 「第一笔成功、第二笔失败」的补偿路径。
+     */
+    private class SelectiveFailStore(
+        private val delegate: InMemoryKeyValueStore,
+        private val failKeys: Set<String>,
+    ) : KeyValueStore {
+        override fun getString(key: String): String? = delegate.getString(key)
+        override fun getInt(key: String, default: Int): Int = delegate.getInt(key, default)
+        override fun getLong(key: String, default: Long): Long = delegate.getLong(key, default)
+        override fun getBool(key: String, default: Boolean): Boolean = delegate.getBool(key, default)
+        override fun getStringList(key: String): List<String>? = delegate.getStringList(key)
+        override fun putString(key: String, value: String) = failIfListed(key) { delegate.putString(key, value) }
+        override fun putInt(key: String, value: Int) = failIfListed(key) { delegate.putInt(key, value) }
+        override fun putLong(key: String, value: Long) = failIfListed(key) { delegate.putLong(key, value) }
+        override fun putBool(key: String, value: Boolean) = failIfListed(key) { delegate.putBool(key, value) }
+        override fun putStringList(key: String, value: List<String>) =
+            failIfListed(key) { delegate.putStringList(key, value) }
+
+        override fun remove(key: String) = failIfListed(key) { delegate.remove(key) }
+        override fun contains(key: String): Boolean = delegate.contains(key)
+        override fun archiveCorruptAndRemove(key: String, micros: Long): String =
+            failIfListed(key) { delegate.archiveCorruptAndRemove(key, micros) }
+
+        override fun keys(): Set<String> = delegate.keys()
+
+        private inline fun <T> failIfListed(key: String, block: () -> T): T =
+            if (key in failKeys) throw IOException("disk_full") else block()
     }
 }

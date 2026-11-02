@@ -6,6 +6,7 @@ import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import java.io.IOException
 
 /**
  * 课表相关 key 的**领域存储**（纯 Kotlin，无 Android 依赖）。
@@ -471,11 +472,23 @@ class TimetableStore(
     /**
      * 留档 + 删原 key + 清扫旧留档；返回本次留档用的**契约 key**。
      * 时间戳由 [nowMicros] 给，便于测试断言留档名。
+     *
+     * **留档本身写不进去（`IOException`，磁盘满）时不再上抛**：本方法只被 load 侧的
+     * 损坏分支调用，抛出去等于「坏数据 + 磁盘满」双重故障下仓储 `init` 直接崩、
+     * App 起不来。这里选择继续按「默认值」读（与没有留档机制时同口径），坏值留在盘上，
+     * 下一次写路径成功或下次冷启动再补留档——延迟留档不等于丢数据。
      */
     fun archiveCorrupt(key: String): String {
-        val backupKey = store.archiveCorruptAndRemove(key, nowMicros())
-        sweepOldCorruptBackups(key, keepKey = backupKey)
-        return backupKey
+        return try {
+            val backupKey = store.archiveCorruptAndRemove(key, nowMicros())
+            sweepOldCorruptBackups(key, keepKey = backupKey)
+            backupKey
+        } catch (error: IOException) {
+            error.printStackTrace()
+            // 返回「本应写出的留档名」：生产代码不消费这个返回值（只有测试断言成功路径），
+            // 失败时给名字只是保持签名语义，不代表盘上真有那份留档。
+            corruptBackupKey(key, nowMicros())
+        }
     }
 
     /** 同 key 的旧留档只留最近一份（Dart `_sweepOldCorruptBackups`，:527-553）。 */

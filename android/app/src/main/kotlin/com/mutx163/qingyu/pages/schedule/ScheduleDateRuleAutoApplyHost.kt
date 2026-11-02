@@ -1,9 +1,11 @@
 package com.mutx163.qingyu.pages.schedule
 
+import android.util.Log
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.calendar.ScheduleDateRuleAutoApply
 import com.mutx163.qingyu.calendar.ScheduleDateRuleAutoApplyPort
 import com.mutx163.qingyu.calendar.ScheduleDateRuleApplyResult
+import com.mutx163.qingyu.calendar.ScheduleDateRuleApplyOutcome
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
@@ -11,6 +13,7 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import java.io.IOException
 import java.time.LocalDateTime
 
 /**
@@ -96,8 +99,19 @@ object ScheduleDateRuleAutoApplyHost {
         repository: TimetableRepository,
         prefs: PrefsKeyValueStore,
         now: LocalDateTime = LocalDateTime.now(),
-    ): ScheduleDateRuleApplyResult = ScheduleDateRuleAutoApply.applyDue(
-        port = RepositoryScheduleDateRulePort(repository, prefs),
-        now = now,
-    )
+    ): ScheduleDateRuleApplyResult {
+        return try {
+            ScheduleDateRuleAutoApply.applyDue(
+                port = RepositoryScheduleDateRulePort(repository, prefs),
+                now = now,
+            )
+        } catch (error: IOException) {
+            // 落盘失败（磁盘满）：不能让冷启动 LaunchedEffect / 规则保存后的后台协程炸掉
+            // （两处调用点都不在本文件的写作用域内，只能在共同入口兜）。
+            // 签名没写成功 ⇒ 下次冷启动仍判「该套」自动重试；内存已被仓储契约保持原样。
+            // NotDue 在这里表示「本次未生效」，调用方目前不消费返回值。
+            Log.e("ScheduleDateRuleAutoApply", "applyDue persist failed; will retry next launch", error)
+            ScheduleDateRuleApplyResult(ScheduleDateRuleApplyOutcome.NotDue)
+        }
+    }
 }
