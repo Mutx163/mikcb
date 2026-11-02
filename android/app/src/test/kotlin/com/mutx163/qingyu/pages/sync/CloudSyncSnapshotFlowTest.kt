@@ -173,6 +173,24 @@ class CloudSyncSnapshotFlowTest {
     }
 
     @Test
+    fun `撤销不抹掉恢复后的编辑_按id只回退仍是恢复后值的条目`() {
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val (controller, _) = controllerWithRemote(local, remoteCourseId = "remote-course")
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+
+        // 恢复成功后用户又加了一门课，然后才点撤销。
+        local.addCourse(course("user-added"))
+
+        assertTrue(controller.undoLastRestore())
+
+        val ids = local.snapshot.courses.map { it.id }
+        assertTrue("恢复前的本地课程必须写回", ids.contains("local-course"))
+        assertTrue("恢复之后用户加的课绝不能被撤销抹掉", ids.contains("user-added"))
+        assertFalse("恢复带入且未被改过的课程应被撤销", ids.contains("remote-course"))
+    }
+
+    @Test
     fun `恢复成功才有可撤销点_撤销后页面状态同步消失`() {
         val local = repository()
         local.addCourse(course("local-course"))
@@ -225,12 +243,20 @@ class CloudSyncSnapshotFlowTest {
 
     @Test
     fun `撤销写回失败时保留撤销点并记录错误码`() {
-        val local = repository()
-        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        val remoteBytes = buildSyncSnapshotBytes(profileId = "pRemote")
+        transport.files["${folder}backup.mikcb"] = remoteBytes
+        // 「当前现场」可控：恢复前 = 本地那份；恢复成功后 = 远端那份（模拟真实写回生效）。
+        var currentBytes = buildSyncSnapshotBytes(profileId = "pLocal")
         var applyCalls = 0
-        val (controller, _) = controllerWithRemote(
-            local,
-            remoteCourseId = "remote-course",
+        val controller = CloudSyncController(
+            store = FakeConfigStore(),
+            snapshotStore = FakeLocalSnapshotStore(),
+            transportFactory = { _, _ -> transport },
+            deviceLabel = "测试机",
+            clock = { "2026-03-07T09:05:00+08:00" },
+            snapshotProvider = { SnapshotBuildResult.Success(currentBytes) },
             snapshotApplier = {
                 applyCalls++
                 if (applyCalls == 1) {
@@ -239,8 +265,12 @@ class CloudSyncSnapshotFlowTest {
                     SnapshotApplyResult.Failed("sync_snapshot_apply_failed")
                 }
             },
+            undoStore = CloudSyncUndoStore(),
         )
+        controller.connect("me@example.com", "pw")
+        controller.refreshBackups()
         assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+        currentBytes = remoteBytes
 
         assertFalse(controller.undoLastRestore())
         assertEquals("sync_snapshot_apply_failed", controller.lastErrorCode)

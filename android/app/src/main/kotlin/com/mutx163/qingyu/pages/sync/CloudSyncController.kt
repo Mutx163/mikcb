@@ -477,7 +477,12 @@ class CloudSyncController(
                 // 每次恢复成功都**重设**共享撤销点：取不到本次恢复前的快照时必须清空，
                 // 旧撤销点指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
                 if (rollback != null) {
-                    undoStore.set(CloudRestoreUndoPoint(beforeBytes = rollback))
+                    undoStore.set(
+                        CloudRestoreUndoPoint(
+                            beforeBytes = rollback,
+                            afterBytes = outcome.bytes,
+                        ),
+                    )
                 } else {
                     undoStore.clear()
                 }
@@ -497,17 +502,42 @@ class CloudSyncController(
     }
 
     /**
-     * 撤销最近一次恢复（把恢复前的课表快照写回去）。
+     * 撤销最近一次恢复。
+     *
+     * ## 只回退「仍是恢复后值」的条目（2026-11-02）
+     *
+     * 之前是把恢复前抓的整份快照写回：恢复后用户又改的课会一起消失。现在撤销前先
+     * 组一份当前课表，交 [CloudRestoreUndoPlanner] 按 id 三向比对（恢复前 / 恢复时 /
+     * 现在）：恢复带入且未被动的条目撤掉、恢复覆盖且未被动的条目还原、用户改过或
+     * 新建的条目原样保留。
+     *
+     * 三份现场拿不齐（旧路径没有快照提供者、或某份解析失败）时保守回落
+     * 「整份写回恢复前快照」，与按 id 比对出现前的行为一致。
      *
      * 成功会 `notifyChanged()`：两份 viewState 的 `canUndoRestore` 随之变 false，
      * 页面上的撤销卡片立即消失；失败会留下撤销点并写 [lastErrorCode]，让用户能重试。
      *
-     * @return true = 已回退；false = 没有撤销点 / 写回失败（错误码见 [lastErrorCode]）。
+     * @return true = 已回退（含「无可回退变更」的空撤销）；false = 没有撤销点 / 写回失败
+     *   （错误码见 [lastErrorCode]）。
      */
     fun undoLastRestore(): Boolean {
-        val rollback = undoStore.peek()?.beforeBytes ?: return false
+        val point = undoStore.peek() ?: return false
         val applier = effectiveSnapshotApplier ?: return false
-        return when (val result = applier(rollback)) {
+        val currentBytes = (effectiveSnapshotProvider?.invoke() as? SnapshotBuildResult.Success)?.bytes
+        val targetBytes = CloudRestoreUndoPlanner.buildUndoBytes(
+            point = point,
+            currentBytes = currentBytes,
+            exportedAtIso = clock(),
+        )
+        if (targetBytes == null) {
+            // 没有任何需要回退的变更（恢复没改过数据，或改动已被用户全部改过）：
+            // 消费掉撤销点即可，不必为「什么都没改」再写一次整份课表。
+            undoStore.clear()
+            status = status.copy(lastErrorCode = null)
+            notifyChanged()
+            return true
+        }
+        return when (val result = applier(targetBytes)) {
             SnapshotApplyResult.Applied -> {
                 undoStore.clear()
                 status = status.copy(lastErrorCode = null)

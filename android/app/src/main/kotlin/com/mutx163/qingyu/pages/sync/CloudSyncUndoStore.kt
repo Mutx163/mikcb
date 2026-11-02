@@ -24,6 +24,12 @@ package com.mutx163.qingyu.pages.sync
 class CloudRestoreUndoPoint(
     /** 恢复**前**的本机课表快照（撤销要写回去的那份）。 */
     val beforeBytes: ByteArray,
+    /**
+     * 恢复**写入**的那份内容（下载到的远端快照字节）；null = 旧点 / 无法比对。
+     * 「按 id 只回退仍是恢复后值的条目」（不抹掉恢复后用户的编辑）要靠它才能回答
+     * 「恢复当时把每条数据写成了什么」。
+     */
+    val afterBytes: ByteArray? = null,
     /** 撤销点创建时刻（毫秒），注入 clock 便于单测；仅用于诊断，不参与判据。 */
     val createdAtMillis: Long = 0L,
 )
