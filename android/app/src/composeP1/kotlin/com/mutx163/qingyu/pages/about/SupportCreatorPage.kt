@@ -180,7 +180,11 @@ fun SupportCreatorPage(
             // 预览列自己留 4dp 呼吸：保持套件侧边距 ⇒ 单边 20dp。
             contentPadsHorizontally = false,
         ) {
-            QrPreview(assetPath = assetPath, fileName = fileName)
+            QrPreview(
+                assetPath = assetPath,
+                fileName = fileName,
+                fallbackAspectRatio = qrFallbackAspectRatio(method),
+            )
         }
     }
 }
@@ -356,6 +360,8 @@ private fun PaymentCard(
                         .clip(RoundedCornerShape(16.dp)),
                     contentDescription = SupportCreatorStrings.scanTitleFor(method),
                     useNaturalAspectRatio = true,
+                    // 解码完成前先用素材已知比例占位，避免首帧 0 高再撑开导致整页跳动。
+                    fallbackAspectRatio = qrFallbackAspectRatio(method),
                 )
             }
         }
@@ -408,11 +414,12 @@ private fun PaymentCard(
     }
 }
 
-/** 放大预览：竖版海报按原始比例铺满 90% 宽，下面一句说明 + 主按钮保存。 */
+/** 放大预览：竖版海报按原始比例铺满 72% 宽，下面一句说明 + 主按钮保存。 */
 @Composable
 private fun QrPreview(
     assetPath: String,
     fileName: String,
+    fallbackAspectRatio: Float,
 ) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
@@ -428,7 +435,9 @@ private fun QrPreview(
             contentAlignment = Alignment.Center,
         ) {
             QingyuCard(
-                modifier = Modifier.fillMaxWidth(0.9f),
+                // 0.72 而不是 0.9：竖版海报按原始比例会很高，宽一点就会把
+                // 标题 + 说明 + 保存按钮挤出矮屏的一屏。
+                modifier = Modifier.fillMaxWidth(0.72f),
                 insideMargin = PaddingValues(0.dp),
                 cornerRadius = 20.dp,
             ) {
@@ -438,6 +447,7 @@ private fun QrPreview(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp)),
                     useNaturalAspectRatio = true,
+                    fallbackAspectRatio = fallbackAspectRatio,
                 )
             }
         }
@@ -682,6 +692,8 @@ private fun DonorRow(donor: SupportDonorEntry) {
  *
  * @param useNaturalAspectRatio 传 `true` 时按 `bitmap.width / bitmap.height` 约束宽高比，
  *   用于竖版支付海报（1325×1806 / 1182×1772）。图标这类已知方形的图不传。
+ * @param fallbackAspectRatio bitmap 解码出来之前的占位比例。不传则占位高度为 0，
+ *   首帧会从 0 撑到海报高度，整页明显跳一下；传入素材已知比例可让首帧就占住位置。
  */
 @Composable
 private fun QingyuAssetImage(
@@ -689,6 +701,7 @@ private fun QingyuAssetImage(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     useNaturalAspectRatio: Boolean = false,
+    fallbackAspectRatio: Float? = null,
 ) {
     val context = LocalContext.current
     val bitmap by produceState<ImageBitmap?>(initialValue = null, assetPath) {
@@ -714,7 +727,16 @@ private fun QingyuAssetImage(
             ),
         )
     } else {
-        Box(modifier)
+        // 解码完成前的占位：有已知比例时先按比例撑住高度，避免首帧 0 高再跳开。
+        Box(
+            modifier.then(
+                if (fallbackAspectRatio != null) {
+                    Modifier.aspectRatio(fallbackAspectRatio)
+                } else {
+                    Modifier
+                },
+            ),
+        )
     }
 }
 
@@ -756,3 +778,12 @@ private const val wechatQrAsset = "flutter_assets/assets/donate/wechatpay.png"
 private const val alipayQrAsset = "flutter_assets/assets/donate/alipay.png"
 private const val wechatQrFileName = "qingyu_kebiao_wechatpay.png"
 private const val alipayQrFileName = "qingyu_kebiao_alipay.png"
+
+/** 二维码素材像素比（wechatpay.png = 1325×1806，alipay.png = 1182×1772），用于解码前占位。 */
+private val wechatQrAspectRatio = 1325f / 1806f
+private val alipayQrAspectRatio = 1182f / 1772f
+
+private fun qrFallbackAspectRatio(method: SupportMethod): Float = when (method) {
+    SupportMethod.WECHAT -> wechatQrAspectRatio
+    SupportMethod.ALIPAY -> alipayQrAspectRatio
+}
