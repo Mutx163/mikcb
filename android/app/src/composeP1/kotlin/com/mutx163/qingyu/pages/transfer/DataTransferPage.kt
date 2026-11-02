@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
@@ -304,6 +305,8 @@ private fun QrScopeDialog(
 ) {
     OverlayDialog(
         show = show,
+        // 本仓/Dart 的对话框横向口径是 16dp（官方默认 24 偏大，审核报告 P2 旧 :303）。
+        insideMargin = DpSize(16.dp, 16.dp),
         title = TransferStrings.qrTransferSendCurrent.zh,
         onDismissRequest = onDismiss,
     ) {
@@ -481,6 +484,8 @@ fun TransferPreviewDialog(
     val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
     OverlayDialog(
         show = content != null,
+        // 与 QrScopeDialog 同一口径：对话框内缩收到 16dp（官方默认 24 偏大）。
+        insideMargin = DpSize(16.dp, 16.dp),
         title = content?.title ?: TransferStrings.selectImportModeTitle.zh,
         onDismissRequest = { onChoose(null) },
     ) {
