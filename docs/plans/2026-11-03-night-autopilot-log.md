@@ -37,17 +37,29 @@
 - `android/app/build.gradle` 实际 `compileSdk = 37`，已装 `platforms;android-37.0`（`platforms;android-37` 在 sdkmanager 中不存在，等价于 37.0）。
 - 交接文档提到“对齐 build.gradle 的 compileSdk”——核对后确为 37，platform 37 计划**不作废**（此前误判过 36.1，已纠正并补装 37.0）。
 
-## 三、四道门最后结果与时间
+## 三、四道门最后结果与时间（2026-11-03 02:35 主控复核后重测）
 
-| 门 | 命令 | 结果 | 时间 |
+| 门 | 命令 | 最后一次执行结果 | 时间 |
 |---|---|---|---|
 | 门1 编译（L1） | `safe-gradle.ps1 :app:compileDevDebugKotlin` | ✅ BUILD SUCCESSFUL（7m08s 增量） | 2026-11-03 02:20 |
-| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | ✅ BUILD SUCCESSFUL（5m31s，全量测试通过） | 2026-11-03 02:26 |
-| 门3 样式守卫 | `compose-style-lint.ps1 -Domain all` | ✅ 5 处违规全在基线内，无新增 | 2026-11-03 02:15 |
-| 门4 文案门禁（copy_style） | `dart run tool/copy_style_lint.dart` | ✅ 无新增 | 2026-11-03 00:59 |
-| 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py` | ✅ 绿（ImportCommon 2→1、TimetableProfilesPage 36→4 压行后） | 2026-11-03 02:00 |
+| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | ✅ BUILD SUCCESSFUL（5m31s，全量测试通过，exit=0） | 2026-11-03 02:26 |
+| 门3 样式守卫 | `compose-style-lint.ps1 -Domain all` | ✅ 5 处违规全在基线内，无新增（exit=0） | 2026-11-03 02:35 复测 |
+| 门4 文案门禁（copy_style） | `dart run tool/copy_style_lint.dart` | ✅ 无新增（203 超宽/1 死键均冻结基线内，exit=0） | 2026-11-03 02:35 复测 |
+| 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py --source-set composeP1` | ✅ 绿（压行后 exit=0） | 2026-11-03 02:35 复测 |
 
-> **当前阶段：四道门全绿（L1 编译 + L2 整包单测 + 样式守卫 + 文案门禁均通过）。** 门2 的 7 类红项全部修复并复跑确认（含 ComposePageStyleGuardTest 新增的 S5 OverlayDialog insideMargin 分支）。
+> **当前阶段：四道门全绿，全部有 2026-11-03 实测证据。** 门2 的 7 类红项全部修复并复跑确认（含 ComposePageStyleGuardTest 新增的 S5 OverlayDialog insideMargin 分支）。
+
+### 远端 HEAD 核对（2026-11-03 02:35）
+- 本地 `git log -1 --format=%H` = `5d97cf489a0d1610c50d9ccb3c4db6a25e791580`
+- 远端 `git ls-remote https://github.com/Mutx163/mikcb.git refs/heads/compose-migration` = `5d97cf489a0d1610c50d9ccb3c4db6a25e791580`
+- **一致**（已 `git fetch` 同步 remote-tracking，`status -sb` 无 ahead/behind）。
+
+### 三个未跟踪文件处置（2026-11-03 02:35）
+| 文件 | 处置 | 理由 |
+|---|---|---|
+| `gradle.properties` | 加进 `.gitignore`（`/gradle.properties`），不进库 | 含本机绝对路径 `C:/dev/jdk/jdk-21.0.13+9`（各机 JDK 路径不同），是本机配置非项目资产；保留在工作区供本机 Gradle 用 |
+| `scripts/safe-gradle-bom.ps1` | **删除** | 交接文档明确「全程用 pwsh 7，不要系统自带 5.1」；该 BOM 副本是给 PS 5.1 的兼容兜底，pwsh 7 下无必要 |
+| `scripts/with-kotlinc.ps1` | **路径限定提交**（`5d97cf48`） | 便携 kotlinc 闸门脚本，无 Android Studio 机器跑 L0（test-kotlin-module.ps1）必需，多路子代理复用，属项目资产 |
 
 ### 门2 失败清单（28 笔新提交未验暴露）与修复状态（2026-11-03 02:00 复核）
 1. `CjkLiteralGateTest`：ImportCommon 已修但基线未下调 → ✅ 已压行修复（`6daddc8b`）。
