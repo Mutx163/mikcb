@@ -110,6 +110,9 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ("    安装阶段耗时: {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 Write-Host "==> [3/3] 启动 $appId ..."
-$activity = "com.mutx163.qingyu.MainActivity"  # Kotlin 包名（flavor 只改 applicationId，不改类包）
+# 启动页自 2026-11-02 起是 Compose 壳；debug(dev) / profile(perf) 变体把 Flutter 的
+# MainActivity 置为 enabled=false，release(prod) 虽仍声明 MainActivity 但它已不是启动页。
+# 三个模式都统一拉壳入口，否则这两个模式会「安装成功但启动失败」，release 则会打开旧 Flutter 界面。
+$activity = "com.mutx163.qingyu.pages.PagesShellActivity"  # Kotlin 包名（flavor 只改 applicationId，不改类包）
 & $adb -s $Device shell am start -n "$appId/$activity" 2>$null | Out-Null
 Write-Host "==> 完成（总耗时: $([math]::Round($sw.Elapsed.TotalSeconds, 1))s）"

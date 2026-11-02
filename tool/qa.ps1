@@ -121,12 +121,18 @@ function Invoke-DeepLink {
     )
     # Use path-absolute form (mikcb-debug:///...) so host is empty and the full
     # path is preserved for both Kotlin and Flutter route parsing.
+    #
+    # 启动页自 2026-11-02 起是 Compose 壳；debug(dev) / profile(perf) 包把 Flutter 的
+    # MainActivity 置为 enabled=false，写死它会让这些命令直接报「Activity 不存在」。
+    # 改拉壳入口后至少能把 App 拉起来；壳当前不消费 mikcb-debug 路由，path/query 会被忽略
+    #（`home` 仍等价于打开默认主屏），等壳补深链后再接回路由。
     Write-Host ">> am start -a VIEW -d $Uri ($PackageName)" -ForegroundColor Cyan
+    Write-Host "   （壳暂不解析 mikcb-debug 路由，path/query 会被忽略）" -ForegroundColor DarkGray
     & $adb shell am start `
         -a android.intent.action.VIEW `
         -c android.intent.category.BROWSABLE `
         -d $Uri `
-        -n "$PackageName/com.mutx163.qingyu.MainActivity" | Out-Host
+        -n "$PackageName/com.mutx163.qingyu.pages.PagesShellActivity" | Out-Host
 }
 
 function Show-Help {
