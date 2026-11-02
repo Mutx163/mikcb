@@ -759,7 +759,7 @@ private fun SliderRow(
     // 「点开数值输入框」：Dart `HyperosSliderTile.tapToEdit` 默认 true（:491-660），
     // 点行或数值 → `showHyperosSliderValueDialog`（:339-395）→ 确认后 `onChanged`。
     // 只有模型给了 `dialogHelper` 的行才开这个入口：没给的（全站其它滑杆）保持
-    // `onClick = null`，官方组件因此既不画行尾箭头、点行也没反应——与改动前完全一致。
+    // `onClick = null`，该组件因此既不画行尾箭头、点行也没反应——与改动前完全一致。
     var editing by remember(row.id) { mutableStateOf(false) }
     QingyuSliderPreference(
         value = value.toFloat(),

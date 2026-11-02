@@ -311,7 +311,7 @@ fun DisplaySettingsPage(
                                     ),
                                     value = state.miuiIslandLabelLogoCornerRadius,
                                     range = LiveDisplayLogic.LABEL_LOGO_CORNER_MIN..LiveDisplayLogic.LABEL_LOGO_CORNER_MAX,
-                                    steps = LiveDisplayLogic.LABEL_LOGO_CORNER_DIVISIONS,
+                                    divisions = LiveDisplayLogic.LABEL_LOGO_CORNER_DIVISIONS,
                                     enabled = editable,
                                     onChange = { onStateChange(state.withMiuiIslandLabelLogoCornerRadius(it.toDouble())) },
                                 )
@@ -353,7 +353,7 @@ fun DisplaySettingsPage(
                                 title = DisplaySettingsStrings.fontSizeLabel(state.miuiIslandLabelFontSize.toInt().toString()),
                                 value = state.miuiIslandLabelFontSize,
                                 range = LiveDisplayLogic.LABEL_FONT_SIZE_MIN..LiveDisplayLogic.LABEL_FONT_SIZE_MAX,
-                                steps = LiveDisplayLogic.LABEL_FONT_SIZE_DIVISIONS,
+                                divisions = LiveDisplayLogic.LABEL_FONT_SIZE_DIVISIONS,
                                 enabled = editable,
                                 onChange = { onStateChange(state.withMiuiIslandLabelFontSize(it.toDouble())) },
                             )
@@ -361,7 +361,7 @@ fun DisplaySettingsPage(
                                 title = DisplaySettingsStrings.offsetXLabel(formatOneDecimal(state.miuiIslandLabelOffsetX)),
                                 value = state.miuiIslandLabelOffsetX,
                                 range = LiveDisplayLogic.LABEL_OFFSET_MIN..LiveDisplayLogic.LABEL_OFFSET_MAX,
-                                steps = LiveDisplayLogic.LABEL_OFFSET_DIVISIONS,
+                                divisions = LiveDisplayLogic.LABEL_OFFSET_DIVISIONS,
                                 enabled = editable,
                                 onChange = { onStateChange(state.withMiuiIslandLabelOffsetX(it.toDouble())) },
                             )
@@ -369,7 +369,7 @@ fun DisplaySettingsPage(
                                 title = DisplaySettingsStrings.offsetYLabel(formatOneDecimal(state.miuiIslandLabelOffsetY)),
                                 value = state.miuiIslandLabelOffsetY,
                                 range = LiveDisplayLogic.LABEL_OFFSET_MIN..LiveDisplayLogic.LABEL_OFFSET_MAX,
-                                steps = LiveDisplayLogic.LABEL_OFFSET_DIVISIONS,
+                                divisions = LiveDisplayLogic.LABEL_OFFSET_DIVISIONS,
                                 enabled = editable,
                                 onChange = { onStateChange(state.withMiuiIslandLabelOffsetY(it.toDouble())) },
                             )
@@ -609,13 +609,21 @@ private fun <T> EnumDropdown(
     )
 }
 
-/** 滑杆行封装（官方 `SliderPreference` 的逐字副本 + 点击跳转，见 `QingyuSliderPreference`）。 */
+/**
+ * 滑杆行封装（官方 `SliderPreference` 的逐字副本 + 点击跳转，见 `QingyuSliderPreference`）。
+ *
+ * [divisions] 是 Dart `HyperosSliderTile` 的口径 —— **区间数**（`step = span / divisions`，
+ * `lib/ui/hyperos/hyperos_controls.dart:318-338`），而官方 `steps` 是「端点之间的档数」，
+ * 少 1（区间数 = steps + 1）。所以这里和 `SettingsPageRenderers.SliderRow` 一样减 1，
+ * 否则网格会比 Flutter 版多一格：字号 1..32 会变成 31/32 的步长，读数还是整数、
+ * 落盘却是小数。
+ */
 @Composable
 private fun LabelSlider(
     title: String,
     value: Double,
     range: ClosedFloatingPointRange<Double>,
-    steps: Int,
+    divisions: Int,
     enabled: Boolean,
     onChange: (Float) -> Unit,
 ) {
@@ -625,7 +633,7 @@ private fun LabelSlider(
         title = title,
         enabled = enabled,
         valueRange = range.start.toFloat()..range.endInclusive.toFloat(),
-        steps = steps,
+        steps = (divisions - 1).coerceAtLeast(0),
     )
 }
 

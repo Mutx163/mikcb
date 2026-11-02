@@ -3,6 +3,7 @@ package com.mutx163.qingyu.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.BasicComponentColors
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderColors
@@ -108,7 +110,10 @@ fun QingyuSlider(
                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
                     if (change.isConsumed) break
                     if (!change.pressed) {
-                        tappedUp = change
+                        // 还有别的手指按着（比如双指手势）就不算点击。
+                        if (event.changes.all { !it.pressed }) {
+                            tappedUp = change
+                        }
                         break
                     }
                     // 越过 touch slop 就是拖 / 滚，不是点击；交给官方 draggable
@@ -173,9 +178,15 @@ fun QingyuSliderPreference(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: String? = null,
+    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
+    startAction: @Composable (() -> Unit)? = null,
     valueText: String? = null,
+    endActions: @Composable (RowScope.() -> Unit)? = null,
+    bottomAction: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    holdDownState: Boolean = false,
     enabled: Boolean = true,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
@@ -190,13 +201,16 @@ fun QingyuSliderPreference(
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
 ) {
     val showArrow = onClick != null
-    val showEndArea = valueText != null || showArrow
+    val showEndArea = valueText != null || endActions != null || showArrow
 
     BasicComponent(
         modifier = modifier,
         insideMargin = insideMargin,
         title = title,
+        titleColor = titleColor,
         summary = summary,
+        summaryColor = summaryColor,
+        startAction = startAction,
         endActions = if (showEndArea) {
             {
                 Row(
@@ -216,6 +230,7 @@ fun QingyuSliderPreference(
                             },
                         )
                     }
+                    endActions?.invoke(this)
                 }
                 if (showArrow) {
                     QingyuSliderPreferenceArrowIcon(enabled = enabled)
@@ -225,24 +240,28 @@ fun QingyuSliderPreference(
             null
         },
         bottomAction = {
-            QingyuSlider(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = enabled,
-                valueRange = valueRange,
-                steps = steps,
-                onValueChangeFinished = onValueChangeFinished,
-                reverseDirection = reverseDirection,
-                height = sliderHeight,
-                colors = sliderColors,
-                hapticEffect = hapticEffect,
-                showKeyPoints = showKeyPoints,
-                keyPoints = keyPoints,
-                magnetThreshold = magnetThreshold,
-            )
+            Column {
+                bottomAction?.invoke()
+                QingyuSlider(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = enabled,
+                    valueRange = valueRange,
+                    steps = steps,
+                    onValueChangeFinished = onValueChangeFinished,
+                    reverseDirection = reverseDirection,
+                    height = sliderHeight,
+                    colors = sliderColors,
+                    hapticEffect = hapticEffect,
+                    showKeyPoints = showKeyPoints,
+                    keyPoints = keyPoints,
+                    magnetThreshold = magnetThreshold,
+                )
+            }
         },
         onClick = onClick,
+        holdDownState = holdDownState,
         enabled = enabled,
     )
 }

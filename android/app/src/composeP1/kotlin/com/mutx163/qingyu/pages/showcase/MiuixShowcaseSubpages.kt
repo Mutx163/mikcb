@@ -32,6 +32,7 @@ import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.theme.QingyuFixedTokens
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -366,10 +367,15 @@ private fun ShowcaseInputsSection(
                     "${ShowcaseStrings.inputSteppedSlider.zh}: ${state.steppedSliderValue} 档",
                     style = MiuixTheme.textStyles.body2
                 )
+                // steps = 9 ⇒ 10 个区间 / 11 个档位（0..10）：让滑杆自己量化到档，
+                // 演示的才是官方「步进滑杆」能力（Flutter 演示页同样传 steps）。
                 QingyuSlider(
                     value = state.steppedSliderValue.toFloat() / 10f,
-                    onValueChange = { onStateChange(state.setSteppedSlider((it * 10).toInt())) },
-                    modifier = Modifier.fillMaxWidth()
+                    // 四舍五入而不是截断：0.7f 实际是 0.6999999，`toInt()` 会落回 6，
+                    // 拖到第 7 档会自己弹回第 6 档。
+                    onValueChange = { onStateChange(state.setSteppedSlider((it * 10).roundToInt())) },
+                    modifier = Modifier.fillMaxWidth(),
+                    steps = 9
                 )
             }
         }
