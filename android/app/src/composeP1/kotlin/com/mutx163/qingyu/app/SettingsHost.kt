@@ -1638,7 +1638,9 @@ internal fun SettingsThemeDialogHost(
         ThemeDialogMode.DELETE -> OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = true,
-            title = SettingsStrings.themeDelete.zh,
+            // Dart 同弹层标题是「确认删除」（confirmDeleteTitle），按钮才是「删除」；
+            // 原来标题与按钮同用 themeDelete，一个「删除」说了两遍。
+            title = SettingsStrings.confirmDeleteTitle.zh,
             summary = SettingsStrings.themeDeleteConfirmMessage.filled("name", state.themeName),
             onDismissRequest = onDismiss,
         ) {

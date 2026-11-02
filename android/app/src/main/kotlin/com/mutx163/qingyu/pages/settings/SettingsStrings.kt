@@ -133,6 +133,9 @@ object SettingsStrings {
     val themeImportFailed = ArbText("themeImportFailed", "剪贴板内容格式错误")
     val themeApply = ArbText("themeApply", "应用")
     val themeDelete = ArbText("themeDelete", "删除")
+    // 删除**确认框**的标题（Dart `confirmDeleteTitle`「确认删除」，按钮才是「删除」）。
+    // 键早已在六份 ARB 里（Dart 课程删除同款），这里只补 Kotlin 句柄，不动 ARB。
+    val confirmDeleteTitle = ArbText("confirmDeleteTitle", "确认删除")
     val themeRename = ArbText("themeRename", "重命名")
     val themeDuplicate = ArbText("themeDuplicate", "复制")
     val themeDuplicateCopyName = ArbText("themeDuplicateCopyName", "{name} 副本")
