@@ -43,9 +43,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 标题 + 副标题（`coupleWebdavLoginSheetTitle/Subtitle`） | [CoupleWebdavSheetTexts.title] / `.subtitle` |
  * | 账号框（初值 = 配置里的 username） | 同名 TextField，初值 [initialUsername] |
  * | 应用专用密码框（`obscureText: true`） | `PasswordVisualTransformation()` |
- * | 本机槽位 1 / 2 二选一，选中态为主色 | 两个 `Button`，选中的用默认按钮色、另一个用 `textButtonColors()` |
+ * | 本机槽位 1 / 2 二选一，选中态为主色 | 两个 `Button`，选中用 `buttonColorsPrimary()`、未选中用 `buttonColors()` |
  * | 槽位说明（`coupleWebdavMySlotHint`） | [CoupleWebdavSheetTexts.slotHint] |
- * | 底部「测试连接」(次要) + 「连接并拉取」(主色) | 同排两个 `Button`，各 `weight(1f)` |
+ * | 底部「测试连接」(次要) + 「连接并拉取」(主色) | 同排两个 `Button`，各 `weight(1f)`；前者 `buttonColors()`、后者 `buttonColorsPrimary()` |
  * | 账号或密码为空 / 正在忙 → 两个按钮都不可点 | `credentialsFilled && !busy` |
  *
  * 弹层内部只剩「输入框里现在是什么」这一类 UI 态；网络与落盘都在宿主侧。
@@ -115,7 +115,6 @@ fun CoupleWebdavConnectSheet(
                     label = texts.slotOne,
                     selected = slot == 1,
                     enabled = !busy,
-                    dark = dark,
                     onClick = { slot = 1 },
                     modifier = Modifier.weight(1f),
                 )
@@ -123,7 +122,6 @@ fun CoupleWebdavConnectSheet(
                     label = texts.slotTwo,
                     selected = slot == 2,
                     enabled = !busy,
-                    dark = dark,
                     onClick = { slot = 2 },
                     modifier = Modifier.weight(1f),
                 )
@@ -139,14 +137,11 @@ fun CoupleWebdavConnectSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 次要：先测连接（不落盘）。tonal 填充，见 [SlotButton] 的说明。
+                // 次要：先测连接（不落盘）。
                 Button(
                     onClick = { onTest(username.trim(), password) },
                     enabled = credentialsFilled && !busy,
-                    colors = ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.primarySurface(dark = dark)),
-                        contentColor = Color(QingyuTheme.primary(dark = dark)),
-                    ),
+                    colors = ButtonDefaults.buttonColors(),
                     modifier = Modifier.weight(1f),
                 ) {
                     if (testing) {
@@ -159,6 +154,7 @@ fun CoupleWebdavConnectSheet(
                 Button(
                     onClick = { onConfirm(username.trim(), password, slot) },
                     enabled = credentialsFilled && !busy,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                     modifier = Modifier.weight(1f),
                 ) {
                     if (connecting) {
@@ -173,7 +169,12 @@ fun CoupleWebdavConnectSheet(
 }
 
 /**
- * 槽位单选按钮：选中 = 主色按钮，未选中 = tonal 次级按钮（与 Dart 的 primary/secondary 对位）。
+ * 槽位单选按钮：选中 = 主色实心（`buttonColorsPrimary()`），未选中 = 默认次灰
+ * （`buttonColors()`，`secondaryVariant` 底 + `onSecondaryVariant` 深字），
+ * 与 Dart 的 `HyperosButtonVariant.primary` / `secondary` 对位。
+ *
+ * **不要**把未选中写成 `primarySurface` 底 + `primary` 字：没有 seed 时两者同色，
+ * 标签不可见（2026-11-02 审核 P1）。
  *
  * 不用 `TextButton` 的理由同页面里的 `ActionButtonRow`：官方 `TextButtonColors`
  * 与 `ButtonColors` 不是同一个类型，混用编译不过。
@@ -183,7 +184,6 @@ private fun SlotButton(
     label: String,
     selected: Boolean,
     enabled: Boolean,
-    dark: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -191,12 +191,9 @@ private fun SlotButton(
         onClick = onClick,
         enabled = enabled,
         colors = if (selected) {
-            ButtonDefaults.buttonColors()
+            ButtonDefaults.buttonColorsPrimary()
         } else {
-            ButtonDefaults.buttonColors(
-                color = Color(QingyuTheme.primarySurface(dark = dark)),
-                contentColor = Color(QingyuTheme.primary(dark = dark)),
-            )
+            ButtonDefaults.buttonColors()
         },
         modifier = modifier,
     ) {

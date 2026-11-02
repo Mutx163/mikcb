@@ -153,7 +153,6 @@ fun CoupleTimetableSettingsPage(
                         Spacer(modifier = Modifier.height(12.dp))
                         ActionButtonRow(
                             buttons = viewState.webdavButtons,
-                            dark = dark,
                             onAction = onAction,
                         )
                     }
@@ -170,7 +169,6 @@ fun CoupleTimetableSettingsPage(
                     ) {
                         ActionButtonRow(
                             buttons = viewState.coupleButtons,
-                            dark = dark,
                             onAction = { actionId ->
                                 // 解除绑定先过二次确认（Dart `_confirmUnlink`），其余直接交给宿主。
                                 if (actionId == CoupleTimetableSettingsLogic.COUPLE_UNLINK) {
@@ -317,17 +315,21 @@ private fun InfoRow(label: String, value: String, dark: Boolean) {
 /**
  * 一组动作按钮：**流水布局**（Dart `Wrap(spacing: 8, runSpacing: 8)` 的对位件）。
  *
- * 主色按钮 = 默认按钮配色；次要按钮 = **同色系的 tonal 填充**
- * （`primarySurface` 底 + 主色字）。为什么不用 `TextButton`：官方那个组件的
- * `colors` 参数类型是 `TextButtonColors`（与 `Button` 的 `ButtonColors` 不是同一个类型），
- * 而且它只收 `text: String`、没有内容槽——塞不进「转圈 + 文案」，而 Dart 的次要按钮
- * 忙碌时同样转圈。tonal 填充在视觉上仍是「次级」，且保住了 loading 能力。
+ * 主按钮 = `buttonColorsPrimary()`（强调色实心，Dart `HyperosButtonVariant.primary`）；
+ * 次按钮 = `buttonColors()`（`secondaryVariant` 灰底深字，Dart `secondary`）。
+ *
+ * **不要**再用 `primarySurface` 底 + `primary` 字做「tonal 次级」：没有 seed 时
+ * `QingyuTheme.primarySurface(seedHex = null)` 直接返回 `PRIMARY`，与 `primary` 同色，
+ * 按钮标签会完全看不见（2026-11-02 审核 P1）。
+ *
+ * 为什么不用 `TextButton`：官方那个组件的 `colors` 参数类型是 `TextButtonColors`
+ * （与 `Button` 的 `ButtonColors` 不是同一个类型），而且它只收 `text: String`、
+ * 没有内容槽——塞不进「转圈 + 文案」，而 Dart 的次要按钮忙碌时同样转圈。
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ActionButtonRow(
     buttons: List<CoupleActionButton>,
-    dark: Boolean,
     onAction: (String) -> Unit,
 ) {
     FlowRow(
@@ -336,11 +338,8 @@ private fun ActionButtonRow(
     ) {
         for (button in buttons) {
             val colors = when (button.variant) {
-                CoupleButtonVariant.PRIMARY -> ButtonDefaults.buttonColors()
-                CoupleButtonVariant.SECONDARY -> ButtonDefaults.buttonColors(
-                    color = Color(QingyuTheme.primarySurface(dark = dark)),
-                    contentColor = Color(QingyuTheme.primary(dark = dark)),
-                )
+                CoupleButtonVariant.PRIMARY -> ButtonDefaults.buttonColorsPrimary()
+                CoupleButtonVariant.SECONDARY -> ButtonDefaults.buttonColors()
             }
             Button(
                 onClick = { onAction(button.id) },
