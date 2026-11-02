@@ -42,9 +42,24 @@
 | 门 | 命令 | 结果 | 时间 |
 |---|---|---|---|
 | 门1 编译（L1） | `safe-gradle.ps1 :app:compileDevDebugKotlin` | ✅ BUILD SUCCESSFUL（13m22s 全量 / 2m40s 增量） | 2026-11-03 01:05 |
-| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | 进行中，回填后更新 | 2026-11-03 01:08 起跑 |
+| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | ❌ 红（7 类失败，见下） | 2026-11-03 01:30 |
 | 门3 样式守卫 | `compose-style-lint.ps1 -Domain all` | ✅ 9 处违规全在基线内，无新增 | 2026-11-03 00:58 |
-| 门4 文案门禁 | `dart run tool/copy_style_lint.dart` | ✅ 无新增（203 超宽/1 死键均冻结基线内） | 2026-11-03 00:59 |
+| 门4 文案门禁（copy_style） | `dart run tool/copy_style_lint.dart` | ✅ 无新增 | 2026-11-03 00:59 |
+| 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py` | 曾红 1 处（ImportCommon 2→1 未压行），已压行修复 → 绿 | 2026-11-03 01:20 修复 |
+
+### 门2 失败清单（28 笔新提交未验暴露）
+1. `CjkLiteralGateTest`：ImportCommon 已修但基线未下调（与门4 cjk 同源，已压行修复 → 待复跑）。
+2. `ComposePageStyleGuardTest`：基线 3 行（DayViewScheduleCard/DayViewTaskBandCard/MonthDayCell R5）对应违规已不存在，需从基线删行（**派给路 B**）。
+3. `ImportTemplateModelTest`：模板正文与 assets CSV 逐字节不一致（**派给路 E**）。
+4. `SettingsDialogOverlayGuardTest` / `SettingsResetConfirmationGuardTest` ×3：函数体行首收尾 `}` 找不到（settings 域，**派给路 D**）。
+5. `LanEditSessionTest`：并发读侧未真读（transfer/lan 域）。
+6. `LanEditApiRouterTest` ×3：非法 weekExpression 应回 400 实回 500（transfer/lan 域）。
+
+> Lan 域两项不在 A~E 切分内，记入「需 Lead / 后续补一路」。
+
+### 门4 cjk 修复记录
+- 基线 `cjk-literal-baseline.txt` 的 `ImportCommon.kt:2` → `:1`（审计「965db6df 把层面量 2→1 未压行」），已提交 `6daddc8b`。
+- 审计提到的 `cjk-literal-baseline.txt` 路径实为 `android/app/src/test/kotlin/com/mutx163/qingyu/i18n/cjk-literal-baseline.txt`（`tool/cjk-literal-baseline.txt` 不存在）。
 
 > 说明：门 3 曾遇两类环境阻塞，均已解决——①用户级 Pub 缓存目录被系统占用，改用仓库内 `PUB_CACHE=<repo>/.pub-cache` 并重建 package_config；②Maven Central TLS 握手失败，按仓库 `android/settings.gradle` 既有约定设 `CNB_BUILD_ID=local-mirror` 走国内镜像。**当前以仓库内 PUB_CACHE + CNB 镜像运行，gradle.properties 未动全局。**
 
@@ -111,17 +126,20 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 
 ---
 
-## 五·c、5 路并行域分工（2026-11-03 01:10 起）
+## 五·c、5 路并行域分工（2026-11-03 01:35 起，按主控 A~E 切分）
 
-| 路 | 域 | 范围 | 验收门 | 状态 |
+| 路 | 域 | 文件级互斥范围 | 验收门 | 状态 |
 |---|---|---|---|---|
-| 1 | course 弹层常驻化 | ClassAlarmSheet.kt 确认弹层改常驻组合 + show 驱动 + remember 最后非空 | L0 + 门4 | 进行中（本代理） |
-| 2 | timetable 样式债 | 门3 全量扫描的 9 处基线违规（DayViewScheduleCard/DayViewTaskBandCard/MonthDayCell/MonthPanelOverview 写死颜色、MonthViewPage 裸 LazyColumn、TimetableWeekPage 非惰性滚动）清债 | L0 + 门4 | 待认领 |
-| 3 | sync 域接线/欠账 | docs/plans 派工大表 sync 域未完成项 | L0 + 门4 | 待认领 |
-| 4 | 文案基线清债 | tool/copy_style_dead_keys_baseline.txt 死键清理（清掉删行，不加行） | 门4 | 待认领 |
-| 5 | settings 域派工项 | docs/plans settings 域未完成项 / 弹层审计回填「仍成立」中 settings 相关 | L0 + 门4 | 待认领 |
+| A | 文案/l10n | 独占六份 ARB（lib/l10n/*.arb）+ TimetableProfilesPage.kt:81-115 中文常量迁 ARB + copy_style 203 条 + dead key | 门4 + L0 | 已派 |
+| B | course/timetable/共享件 | 裸 Popup（CourseOverviewPage.kt:504）、未用 import（TimetableWeekPage.kt:52）、QingyuSheet IME+标题动作、守卫补 OverlayDialog 分支、门2 样式基线删行（DayView×2/MonthDayCell R5） | L0 + 门4 | 已派 |
+| C | sync 族 | 独占 pages/sync/：云备份整组 ×4 + 情侣整组 ×3 + SyncConflictChoiceDialog 三动作竖排 | L0 + 门4 | 已派 |
+| D | settings | 仅 SettingsHost.kt：说明框动作区、主题动作表灰实心、门2 函数体收尾 `}` 修复 | L0 + 门4 | 已派 |
+| E | statistics + import | pages/statistics/ + pages/import/warehouse/：成就弹层整组、I2 四件、门2 ImportTemplateModelTest 模板对齐 | L0 + 门4 | 已派 |
 
-> 约束：六份 ARB 同一时刻只许一路改；每路先核实现状再动手；不碰禁改范围；改完走对应门。
+**串行约束**：门 3（L1）绿之前只用 L0 + 门4 验收；六份 ARB 只归 A；壳/拍板/真机项不进 5 路。
+**已不成立（别再改，主控审计+本代理复核）**：调课 480dp、周格白字、周加/减无障碍、备注 16dp、写死中文、导入两动作排布；ExamTimePickerSheet（文件不存在）；CourseActionSheet L308（按需挂载子弹层，非条件挂载）。
+**被拍板挡住（不进 5 路，记此）**：42dp 空档×4、官方字阶、自动聚焦、选周结构、ICS 菜单、滚轮抢手势。
+**文档已过时（记已不成立）**：ST1 classReminders、局域网撤销点、perf manifest、台账 P3-E 成就详情、§9.10 exam、DEMO 60→63；KDoc 自相矛盾 ×2（TimetableStore.kt:44、ClassAlarmSheet.kt:50）顺手修。
 
 ---
 
