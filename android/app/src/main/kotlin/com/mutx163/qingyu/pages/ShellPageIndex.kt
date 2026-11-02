@@ -60,6 +60,7 @@ import com.mutx163.qingyu.app.SettingsHolidayHost
 import com.mutx163.qingyu.app.SettingsHost
 import com.mutx163.qingyu.app.SettingsSemesterHost
 import com.mutx163.qingyu.app.SettingsTimetableHubHost
+import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.WeatherSettingsHost
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.app.TimetablePageSettingsHost
@@ -300,6 +301,15 @@ fun ShellPageContent(
     wiring: ShellWiring,
     /** 页面内部要「推一个新页」时用它（路由字符串 → 壳页面 id 由 [shellPageIdForRoute] 负责）。 */
     onOpenPage: (String) -> Unit = {},
+    /**
+     * 设置页改动后的**即时回推**（外观页当场换肤用）。
+     *
+     * 只有外观 / 主题 / 恢复默认三页会用到：它们改的是主题桥读取的那批字段
+     * （明暗 / 种子色 / 字重 / 字族 / 字号）。壳把回调接到 `setContent` 顶层的
+     * `settingsModel` 状态上，`QingyuPageTheme` 立刻按新值重组。
+     * 不传 = 旧行为（设置仍会落盘，只是要等回到主屏才换肤）。
+     */
+    onSettingsChanged: (TimetableSettingsModel) -> Unit = {},
 ) {
     // 单一天气 provider（设备级状态：开关/城市/预报缓存）。2026-10-29 起实例住在
     // `ShellWiring.weather`（`by lazy`），不再在这里 `remember` 一份 —— 因为**底部坞**那条
@@ -385,17 +395,22 @@ fun ShellPageContent(
             onTransitionSpeedChanged = { wiring.pageTransitionSpeed = it },
             onHapticsChanged = { wiring.enableHaptics = it },
         )
+        // 外观 / 主题管理：`onModelChanged` 接壳的 `onSettingsChanged`，改明暗、种子色、
+        // 字重、字体、字号时**当场**换肤（不等回到主屏）。此前只写盘，用户看到的是
+        // 「选项变了、界面纹丝不动」。
         "b.appearance" -> SettingsHost(
             pageId = SettingsAppearancePage.ID,
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            onModelChanged = onSettingsChanged,
         )
         "b.theme" -> SettingsHost(
             pageId = SettingsThemeManagePage.ID,
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            onModelChanged = onSettingsChanged,
         )
         // 2026-10-29 外观编辑页接真宿主。原先这一屏是
         // `SettingsScreen(SettingsAppearanceEditorPage.spec(SettingsPageState()))`——传**空构造的
@@ -538,6 +553,8 @@ fun ShellPageContent(
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
+            // 「恢复默认」里也有外观作用域：恢复后当场换回默认主题。
+            onModelChanged = onSettingsChanged,
         )
 
         // ── P3-C1 课表 · 周视图 ────────────────────────────────────────

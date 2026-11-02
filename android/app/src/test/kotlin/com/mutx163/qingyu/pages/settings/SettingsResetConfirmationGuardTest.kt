@@ -87,9 +87,13 @@ class SettingsResetConfirmationGuardTest {
             "未知作用域不许落回外观口径（settingsResetScopeNoticeAppearance）",
             "settingsResetScopeNoticeAppearance" in dialog,
         )
+        // 危险色的载体随 2026-11-02「危险操作改实心红」一起从 theme/ 固定 token
+        // 换成了官方语义槽 `MiuixTheme.colorScheme.error`（`9a4f1a7e`）；判据跟着事实走，
+        // 但仍然要求「实心红底 + onError 字」，不许退回默认灰。
         assertTrue(
-            "Dart 传了 destructive: true，确认按钮必须用危险色",
-            "DESTRUCTIVE" in dialog,
+            "Dart 传了 destructive: true，确认按钮必须用危险色（error / onError）",
+            "MiuixTheme.colorScheme.error" in dialog &&
+                "MiuixTheme.colorScheme.onError" in dialog,
         )
     }
 

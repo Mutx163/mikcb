@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -18,8 +19,48 @@ import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
+ * 当前生效的外观档位（种子色 / 字重 / 字族 / 字号）。
+ *
+ * 由最外层 [QingyuPageTheme]（壳 Activity）写入；页面里再包一层无参
+ * [QingyuPageTheme] 时**默认继承**这组值，而不是回到出厂默认。
+ *
+ * 2026-11-02 修：页面骨架（`QingyuPageScaffold`）与十几个独立页面都会自己再包
+ * 一层无参 `QingyuPageTheme { }`。那层的形参默认值原来是「种子色 null、字重 400、
+ * 字族 null、字号 1.0」——于是壳里选的主题色 / 字重 / 字体被页面这一层**静默覆盖**
+ * 回默认值：外观页改完设置，页面正文纹丝不动，只有壳自己的顶栏 / 坞跟着变。
+ * 这不是某页漏接，是「嵌套包裹时默认值不该重置外层」。
+ *
+ * 用 `staticCompositionLocalOf` 而不是 `compositionLocalOf`：外观设置一变本来就该
+ * 整树换肤，不需要逐读取点追踪依赖。
+ */
+private data class QingyuPageAppearance(
+    val seedColor: String? = null,
+    val userFontWeight: Int = QingyuTypography.WEIGHT_DEFAULT,
+    val fontFamily: FontFamily? = null,
+    val textScale: Float = 1f,
+)
+
+private val LocalQingyuPageAppearance = staticCompositionLocalOf { QingyuPageAppearance() }
+
+/**
+ * 字号缩放**之前**的基准 density。
+ *
+ * 页面嵌套 [QingyuPageTheme] 时，外层已经按 `textScale` 放大过 `fontScale`；
+ * 内层若拿外层的 density 再乘一次，字号会被平方放大（1.2 → 1.44）。
+ * 所以把「还没缩放的基准」单独记一份，每一层都从基准乘一次，结果与只包一层相同。
+ */
+private val LocalQingyuBaseDensity = staticCompositionLocalOf<Density?> { null }
+
+/**
  * 页面级主题桥：把自家色板填进官方 [MiuixTheme]，并承载「外观设置」的几项映射：
  * 明暗档（[isDark]）、主题种子色（[seedColor]）、应用字重 / 字族 / 字号（[rememberQingyuTextStyles]）。
+ *
+ * ## 嵌套包裹：默认继承外层，不重置
+ *
+ * 页面骨架和独立页面都会自己再包一层无参 [QingyuPageTheme]。四个外观形参的默认值
+ * 因此取 [LocalQingyuPageAppearance]（外层写入的当前档位），**不是**出厂默认——
+ * 否则页面这一层会把壳里选的主题色 / 字重 / 字体静默覆盖回去。
+ * 显式传参仍然以传参为准（例如壳 Activity 从设置模型读出真值）。
  *
  * ## 明暗与「系统深色」的关系
  *
@@ -66,11 +107,11 @@ fun QingyuPageTheme(
     /** 明暗档：由外壳按「外观设置的主题模式 + 系统」解析后传入（默认跟随系统）。 */
     isDark: Boolean = isSystemInDarkTheme(),
     /** 主题种子色（`themeSeedColor` 的十六进制串）；null = 不派生，用固定蓝。 */
-    seedColor: String? = null,
-    userFontWeight: Int = QingyuTypography.WEIGHT_DEFAULT,
-    fontFamily: FontFamily? = null,
+    seedColor: String? = LocalQingyuPageAppearance.current.seedColor,
+    userFontWeight: Int = LocalQingyuPageAppearance.current.userFontWeight,
+    fontFamily: FontFamily? = LocalQingyuPageAppearance.current.fontFamily,
     /** 应用字号倍率（`appTextScale`）：1.0 = 不变。 */
-    textScale: Float = 1f,
+    textScale: Float = LocalQingyuPageAppearance.current.textScale,
     content: @Composable () -> Unit,
 ) {
     // 两份配色必须在 Composable 上下文里先算出来（`remember` 的 lambda 不是
@@ -105,7 +146,10 @@ fun QingyuPageTheme(
 
     // 字号倍率：只缩放 `fontScale`（sp→px），不动 `density`（dp→px），
     // 于是布局尺寸不变、只有文字按比例放大/缩小——与 Dart `appTextScale` 的口径一致。
-    val baseDensity = LocalDensity.current
+    //
+    // 嵌套包裹时取「缩放前的基准」（见 [LocalQingyuBaseDensity]），否则同一档
+    // 字号会被外层、内层各乘一次。
+    val baseDensity = LocalQingyuBaseDensity.current ?: LocalDensity.current
     val effectiveDensity = androidx.compose.runtime.remember(baseDensity, textScale) {
         if (textScale == 1f) {
             baseDensity
@@ -115,6 +159,13 @@ fun QingyuPageTheme(
     }
 
     CompositionLocalProvider(
+        LocalQingyuPageAppearance provides QingyuPageAppearance(
+            seedColor = seedColor,
+            userFontWeight = userFontWeight,
+            fontFamily = fontFamily,
+            textScale = textScale,
+        ),
+        LocalQingyuBaseDensity provides baseDensity,
         LocalConfiguration provides effectiveConfig,
         LocalDensity provides effectiveDensity,
     ) {

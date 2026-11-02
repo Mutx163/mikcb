@@ -1037,12 +1037,16 @@ private fun PreviewCard(node: SettingsInline) {
             PreviewTile(
                 modifier = Modifier.weight(1f),
                 container = colors.primary,
+                contentColor = colors.onPrimary,
                 label = node.texts.getOrNull(0)?.text.orEmpty(),
                 sublabel = node.texts.getOrNull(1)?.text.orEmpty(),
             )
             PreviewTile(
                 modifier = Modifier.weight(1f),
                 container = colors.surfaceContainer,
+                // 第二块是「卡片色 + 正文色」的样张（Dart 用默认 listDetail 字色）。
+                // 以前两块的文字都取 `onPrimary`，亮色下第二块是白底白字、整块看不见。
+                contentColor = colors.onSurfaceContainer,
                 label = node.texts.getOrNull(2)?.text.orEmpty(),
                 sublabel = null,
             )
@@ -1054,10 +1058,10 @@ private fun PreviewCard(node: SettingsInline) {
 private fun PreviewTile(
     modifier: Modifier,
     container: Color,
+    contentColor: Color,
     label: String,
     sublabel: String?,
 ) {
-    val colors = MiuixTheme.colorScheme
     Column(
         modifier = modifier
             .height(72.dp)
@@ -1068,13 +1072,13 @@ private fun PreviewTile(
     ) {
         Text(
             text = label,
-            color = colors.onPrimary,
+            color = contentColor,
             style = MiuixTheme.textStyles.body2,
         )
         if (!sublabel.isNullOrEmpty()) {
             Text(
                 text = sublabel,
-                color = colors.onPrimary.copy(alpha = 0.7f),
+                color = contentColor.copy(alpha = 0.7f),
                 style = MiuixTheme.textStyles.footnote1,
             )
         }

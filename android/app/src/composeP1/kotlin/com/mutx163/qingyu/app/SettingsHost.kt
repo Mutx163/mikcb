@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -157,8 +158,24 @@ fun SettingsHost(
     onTransitionSpeedChanged: (Double) -> Unit = {},
     /** 应用内震动总开关的当场生效回调（壳据此决定还要不要发触感反馈）。 */
     onHapticsChanged: (Boolean) -> Unit = {},
+    /**
+     * 设置模型每次变更后的回推（外观页「当场生效」用）。
+     *
+     * 为什么需要它：设置存储没有变更通道（只有 `load`/`save`），而主题桥
+     * （`QingyuPageTheme` 的明暗 / 种子色 / 字重 / 字族 / 字号）在壳 Activity 那一层。
+     * 本宿主改完设置如果只写盘，壳要等到「回到主屏」才重读——用户在外观页把主题模式
+     * 切到深色、拖字号滑杆，屏上一点变化都没有，看起来就是「这些设置没接上」。
+     *
+     * 回调时机：滑杆拖动中**每次内存草稿**都发（预览要跟手），非滑杆在落盘校验通过后发；
+     * 落盘失败时发的是**回滚后的盘上真值**，避免主题停在一个没存下的档位。
+     * 不传 = 旧行为（只在离开本页 / 回主屏时生效）。
+     */
+    onModelChanged: (TimetableSettingsModel) -> Unit = {},
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
+    // 防抖写盘器是 `remember` 的长生命周期对象，拿不到后续重组的新回调；
+    // 用 `rememberUpdatedState` 让它始终调用**最新**那一个。
+    val latestOnModelChanged by rememberUpdatedState(onModelChanged)
     var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
     var pendingColor by remember { mutableStateOf<ColorEdit?>(null) }
     var showDailyTimeSheet by remember { mutableStateOf(false) }
@@ -225,6 +242,9 @@ fun SettingsHost(
         DebouncedSettingsWriter(store, scope) {
             // 滑杆那一档没落盘：内存拉回盘上真值 + 提示（Dart `resetDraft` + `saveFailed`）。
             model = runCatching { store.load() }.getOrNull() ?: model
+            // 主题桥可能已经按拖动中的草稿换过肤，这里必须把它拉回真值，
+            // 否则用户会看到「提示保存失败，但界面还停在没存下的档位」。
+            latestOnModelChanged(model)
             Log.e(LOG_TAG, "debounced settings save did not land")
             toast(SettingsStringsExt2.saveFailed.zh)
         }
@@ -255,6 +275,8 @@ fun SettingsHost(
         val before = model
         val persisted = saveVerified(store, before, next)
         model = if (persisted) next else runCatching { store.load() }.getOrNull() ?: before
+        // 当场回推给壳（主题桥 / 预览）。失败时回推的是盘上真值，不是这次没存下的草稿。
+        onModelChanged(model)
         if (!persisted) {
             Log.e(LOG_TAG, "settings save did not land: page=$pageId")
             toast(SettingsStringsExt2.saveFailed.zh)
@@ -449,6 +471,9 @@ fun SettingsHost(
                 if (rowId in sliderRowIds) {
                     // 拖动中只改内存，250ms 后一次落盘（落盘失败由 writer 回读后纠正）。
                     model = result.model
+                    // 预览必须跟手：字重 / 字号 / 材质滑杆拖动时主题桥当场换档，
+                    // 不等 250ms 落盘（Dart `_updateDraft` 也是先 setState、后防抖写盘）。
+                    onModelChanged(result.model)
                     writer.schedule(result.model)
                 } else {
                     // 先补写防抖里欠着的那一档，避免旧值后落地把新值盖回去。

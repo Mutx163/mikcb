@@ -645,6 +645,9 @@ private fun PagesShell(
                                     onBack = { selectRoot(ROOT_WEEK) },
                                     wiring = wiring,
                                     onOpenPage = { target -> pushPage(target) },
+                                    // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
+                                    // `settingsModel`，`QingyuPageTheme` 立刻重建。
+                                    onSettingsChanged = onReloadSettings,
                                 )
                             }
                         }
@@ -671,6 +674,7 @@ private fun PagesShell(
                         wiring = wiring,
                         // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
                         onOpenPage = { target -> pushPage(target) },
+                        onSettingsChanged = onReloadSettings,
                     )
                 }
                 // 「首页缩放」档（目前只有外观编辑页）：官方 `NavTransitions.None` = 瞬时切换，
@@ -682,6 +686,7 @@ private fun PagesShell(
                         onBack = { popPage() },
                         wiring = wiring,
                         onOpenPage = { target -> pushPage(target) },
+                        onSettingsChanged = onReloadSettings,
                     )
                 }
             }
