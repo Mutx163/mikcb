@@ -7,6 +7,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * 云同步状态持有者单测（C1 · 页面接线契约）。
@@ -62,6 +63,90 @@ class CloudSyncControllerTest {
         assertEquals("auth_failed", result.errorCode)
         assertNull(store.password)
         assertFalse(controller.config.enabled)
+    }
+
+    @Test
+    fun `连接失败错误码写进status供页面提示`() {
+        // 2026-11-02：连接挪到 IO 线程后，弹层不再无条件关闭——页面按返回值留人重试，
+        // 可见提示走 status.lastErrorCode 这条既有通道，所以失败码必须真的写进去。
+        val transport = FakeRemoteTransport()
+        transport.connectionErrorCode = "connection_timeout"
+        val controller = controller(transport = transport)
+
+        val revisionBefore = controller.revision
+        val result = controller.connect("me@example.com", "pw")
+
+        assertFalse(result.success)
+        assertEquals("connection_timeout", controller.lastErrorCode)
+        // 写错误码必须广播（revision 自增），否则页面不会重组、提示不会出现。
+        assertTrue(controller.revision > revisionBefore)
+        // 连接成功路径会清掉错误码（既有测试钉过），这里钉失败→再成功的恢复。
+        transport.connectionErrorCode = null
+        assertTrue(controller.connect("me@example.com", "pw").success)
+        assertNull(controller.lastErrorCode)
+    }
+
+    @Test
+    fun `测试连接失败错误码写进status且不落盘`() {
+        val transport = FakeRemoteTransport()
+        transport.connectionErrorCode = "auth_failed"
+        val store = FakeConfigStore()
+        val controller = controller(transport = transport, store = store)
+
+        val ok = controller.testConnection("me@example.com", "pw")
+
+        assertFalse(ok)
+        assertEquals("auth_failed", controller.lastErrorCode)
+        // 测试连接不落盘：配置与密码都不动。
+        assertEquals("", controller.config.username)
+        assertNull(store.password)
+    }
+
+    @Test
+    fun `监听器并发增删与通知不抛并发修改异常`() {
+        // 2026-11-02：连接/测试连接挪到 IO 线程后，notifyChanged 会在 IO 线程迭代监听器，
+        // 而主线程在进出组合时增删监听。旧实现 LinkedHashSet 的 toList() 与并发写不互斥，
+        // 会抛 ConcurrentModificationException（咬合探针实测会红）；CopyOnWriteArrayList 不抛。
+        val controller = controller()
+        // 常驻几个监听器：让每次通知的迭代窗口足够大，保证旧实现必红而不是靠运气。
+        repeat(32) { controller.addListener {} }
+        val failure = AtomicReference<Throwable?>(null)
+        val notifyRuns = java.util.concurrent.atomic.AtomicLong()
+        val subscriberRuns = java.util.concurrent.atomic.AtomicLong()
+        val deadline = System.currentTimeMillis() + 2_000
+
+        val subscriber = Thread {
+            try {
+                while (System.currentTimeMillis() < deadline && failure.get() == null) {
+                    val listener: () -> Unit = {}
+                    controller.addListener(listener)
+                    controller.removeListener(listener)
+                    subscriberRuns.incrementAndGet()
+                }
+            } catch (t: Throwable) {
+                failure.set(t)
+            }
+        }
+        val notifier = Thread {
+            try {
+                while (System.currentTimeMillis() < deadline && failure.get() == null) {
+                    // 公开的纯通知入口：改草稿 + notifyChanged，不碰网络与落盘。
+                    controller.onBaseUrlChanged("http://example.com/dav/")
+                    notifyRuns.incrementAndGet()
+                }
+            } catch (t: Throwable) {
+                failure.set(t)
+            }
+        }
+        subscriber.start()
+        notifier.start()
+        subscriber.join(5_000)
+        notifier.join(5_000)
+
+        // 两条循环都必须真的跑起来，否则测试空转恒绿。
+        assertTrue("并发压力没跑起来（通知 ${notifyRuns.get()} 次）", notifyRuns.get() > 1_000)
+        assertTrue("并发压力没跑起来（增删 ${subscriberRuns.get()} 次）", subscriberRuns.get() > 1_000)
+        assertNull("并发增删/通知抛了异常：${failure.get()}", failure.get())
     }
 
     @Test

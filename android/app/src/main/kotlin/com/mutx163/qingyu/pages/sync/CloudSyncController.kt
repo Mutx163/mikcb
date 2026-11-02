@@ -5,6 +5,7 @@ import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * 云同步 / 云备份页面**可观察状态持有者**（Phase 3.5 · C1）。
@@ -114,7 +115,17 @@ class CloudSyncController(
 
     // ── 可观察协议 ──
 
-    private val listeners = LinkedHashSet<() -> Unit>()
+    /**
+     * 监听器列表用 [CopyOnWriteArrayList] 而不是 `LinkedHashSet` + 锁。
+     *
+     * 为什么必须换：连接 / 测试连接挪到 IO 线程后，[notifyChanged] 会在 IO 线程迭代
+     * 监听器，而 add / remove 发生在主线程（Compose 进入 / 离开组合时订阅退订）。
+     * `LinkedHashSet` 的 `toList()` 与并发写不互斥，会直接 `ConcurrentModificationException`。
+     * 为什么不加锁：锁方案要求**持锁期间回调监听器**，回调里写 Compose 状态会触发重组，
+     * 等于把重组路径拖进临界区，有死锁风险；写时复制对这里的「读多写少」（监听器一页
+     * 一两个、增删只在进出页面时发生）是零成本，且迭代永远安全，调用方无需关心线程。
+     */
+    private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
     /** 每次状态变化自增；Compose 侧据此触发重组。 */
     var revision: Long = 0L
@@ -235,21 +246,33 @@ class CloudSyncController(
 
     // ── 连接 / 断开 ──
 
-    /** 测试连接（不落盘）：发起一次根 PROPFIND 自检。 */
+    /**
+     * 测试连接（不落盘）：发起一次根 PROPFIND 自检。
+     * 失败码同时写进 [lastErrorCode] 并广播，页面（含连接弹层）据此给出可见提示。
+     */
     fun testConnection(username: String, password: String): Boolean {
         val candidate = candidateForConnection(username)
-        val probe = transportFactory(candidate, password) ?: return false
-        return probe.testConnection() == null
+        val created = transportFactory(candidate, password)
+        if (created == null) {
+            recordConnectFailure("insecure_url_blocked")
+            return false
+        }
+        val connectionError = created.testConnection()
+        if (connectionError != null) {
+            recordConnectFailure(connectionError)
+            return false
+        }
+        return true
     }
 
     /** 连接：先自检，通过才落配置 + 密码并启用。 */
     fun connect(username: String, password: String): CloudSyncConnectResult {
-        if (username.trim().isEmpty()) return CloudSyncConnectResult(false, "missing_credentials")
+        if (username.trim().isEmpty()) return connectFailure("missing_credentials")
         val candidate = candidateForConnection(username)
         val created = transportFactory(candidate, password)
-            ?: return CloudSyncConnectResult(false, "insecure_url_blocked")
+            ?: return connectFailure("insecure_url_blocked")
         val connectionError = created.testConnection()
-        if (connectionError != null) return CloudSyncConnectResult(false, connectionError)
+        if (connectionError != null) return connectFailure(connectionError)
 
         store.storePassword(password)
         transport = created
@@ -259,6 +282,24 @@ class CloudSyncController(
         // 连接成功就把备份列表拉回来：否则首次连接的这一页仍是空的，用户以为云端没备份。
         refreshBackups()
         return CloudSyncConnectResult(true)
+    }
+
+    /**
+     * 连接 / 测试失败的统一出口：错误码写进 [status] 并 `notifyChanged()`。
+     *
+     * 为什么走 status 而不是另开回调：页面的错误显示（`lastErrorText`）与各失败动作
+     * （刷新 / 恢复 / 删除）本来就都落在 `status.lastErrorCode` 这一条通道上，
+     * 连接失败没有理由特殊化。弹层是否关闭由页面按返回值判断——失败时返回
+     * `success = false`，弹层留着让用户改完重试。
+     */
+    private fun connectFailure(errorCode: String): CloudSyncConnectResult {
+        recordConnectFailure(errorCode)
+        return CloudSyncConnectResult(false, errorCode)
+    }
+
+    private fun recordConnectFailure(errorCode: String) {
+        status = status.copy(lastErrorCode = errorCode)
+        notifyChanged()
     }
 
     fun disconnect() {

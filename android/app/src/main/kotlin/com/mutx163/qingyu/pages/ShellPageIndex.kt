@@ -197,6 +197,7 @@ import com.mutx163.qingyu.pages.sync.CloudSyncStatusSource
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsHost
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsLogic
 import com.mutx163.qingyu.pages.sync.CoupleTimetableSettingsPage
+import com.mutx163.qingyu.pages.sync.SyncStrings
 import com.mutx163.qingyu.pages.sync.WebdavConnectSheet
 import com.mutx163.qingyu.platform.AppLocalSnapshotStore
 import com.mutx163.qingyu.platform.KeystoreSecretCipher
@@ -246,6 +247,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -1695,6 +1697,13 @@ fun ShellPageContent(
             var showConnect by remember { mutableStateOf(false) }
             // 2026-10-30（F12）：正在看详情的那条备份（null = 不展示弹层）。
             var openBackupId by remember { mutableStateOf<String?>(null) }
+            // 2026-11-02：连接弹层的进行中状态 + IO 线程调度。connect / testConnection 是
+            // 同步阻塞网络请求，直接在主线程调会 NetworkOnMainThreadException 闪退；
+            // 写法沿用本仓既有的 scope + withContext(Dispatchers.IO)（同
+            // CoupleTimetableSettingsHost / CloudBackupDetailHost），不自造线程池。
+            var sheetTesting by remember { mutableStateOf(false) }
+            var sheetConnecting by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
             CloudSyncPage(
                 controller = controller,
                 onBack = onBack,
@@ -1714,16 +1723,40 @@ fun ShellPageContent(
             if (showConnect) {
                 WebdavConnectSheet(
                     initialUsername = controller.config.username,
-                    testing = false,
-                    connecting = false,
+                    testing = sheetTesting,
+                    connecting = sheetConnecting,
                     onTestConnection = { u, p ->
-                        if (!controller.testConnection(u, p)) {
-                            Toast.makeText(context, "连接测试失败", Toast.LENGTH_SHORT).show()
+                        scope.launch {
+                            sheetTesting = true
+                            val ok = withContext(Dispatchers.IO) { controller.testConnection(u, p) }
+                            sheetTesting = false
+                            if (!ok) {
+                                // 失败不关弹层：错误码已写进 status（页面 lastErrorText 同步可见），
+                                // Toast 沿用本分支既有提示通道给一句本地化的人话。
+                                Toast.makeText(
+                                    context,
+                                    SyncStrings.localizeSyncError(controller.lastErrorCode),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         }
                     },
                     onConfirm = { u, p ->
-                        controller.connect(u, p)
-                        showConnect = false
+                        scope.launch {
+                            sheetConnecting = true
+                            val result = withContext(Dispatchers.IO) { controller.connect(u, p) }
+                            sheetConnecting = false
+                            if (result.success) {
+                                // 只在成功时关弹层；失败留在弹层里改完重试，错误码已进 status。
+                                showConnect = false
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    SyncStrings.localizeSyncError(result.errorCode),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
                     },
                     onCancel = { showConnect = false },
                 )

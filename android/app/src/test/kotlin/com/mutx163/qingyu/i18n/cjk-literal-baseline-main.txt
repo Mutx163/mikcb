@@ -29,7 +29,7 @@ com/mutx163/qingyu/pages/about/OpenSourceLicensesModel.kt:11
 com/mutx163/qingyu/WidgetHolidayLogic.kt:10
 com/mutx163/qingyu/calendar/HolidayResolver.kt:10
 com/mutx163/qingyu/CountdownFormat.kt:9
-com/mutx163/qingyu/pages/ShellPageIndex.kt:7
+com/mutx163/qingyu/pages/ShellPageIndex.kt:6
 com/mutx163/qingyu/pages/settings/SettingsLiveSelfCheckPage.kt:7
 com/mutx163/qingyu/pages/transfer/DataTransferPackageLogic.kt:7
 com/mutx163/qingyu/calendar/WeekExpressionParser.kt:6
