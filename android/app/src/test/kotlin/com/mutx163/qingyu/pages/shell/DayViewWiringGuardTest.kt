@@ -171,6 +171,29 @@ class DayViewWiringGuardTest {
     }
 
     @Test
+    fun `日视图必须记住上次看的那一天`() {
+        val branch = branchBody("c3.day")
+        // 2026-11-02 用户实报：「我滑到其他天，点外观编辑，预览显示的是另一天」。
+        // 根因是日视图的浏览位置只活在 pagerState 里：不落盘，外观编辑页的日预览
+        // （按 `timetableLastViewedDayOfWeek` 取日期）就只能看到旧值。
+        assertTrue(
+            "`c3.day` 的无意图初始日没有回落到 `appSettings.timetableLastViewedDayOfWeek`：" +
+                "从底栏再进日视图会跳回今天，与外观编辑页预览也对不上。",
+            "dayIntent ?: appSettings.timetableLastViewedDayOfWeek" in branch,
+        )
+        assertTrue(
+            "`c3.day` 的 `onPageChanged` 没有把看的那一天写回存档（找不到 " +
+                "`saveLastViewedDayOfWeek(`）：日视图的浏览位置永远不会落盘。",
+            "saveLastViewedDayOfWeek(" in branch,
+        )
+        assertTrue(
+            "`c3.day` 的 `onPageChanged` 仍然只收 week、把 dayOfWeek 丢掉（`{ week, _ ->`）：" +
+                "翻到哪一天不会写进设置，外观编辑页的日预览会停在旧日期上。",
+            "onPageChanged = { week, _ ->" !in branch,
+        )
+    }
+
+    @Test
     fun `守卫本身没有空转`() {
         // 防空转：解析器坏了会让上面几条全部变绿——那比没有守卫更糟。
         val branch = branchBody("c3.day")

@@ -561,8 +561,16 @@ private fun PagesShell(
     // 设置页与图标挑选页都压在这个返回栈里（`ShellRoute.Page`）：push 时 `atRoot` 变 false，
     // pop 回栈底时再变 true，本效果于是重跑一次 `load()`。少了这一步，`glassDockButtonIconName`
     // 只在进程重启后才生效。
+    //
+    // 同时自增 [ShellWiring.settingsRevision]：首页页面内容（周 / 日 / 月视图）是在**组合期
+    // 裸调** `settingsModel.load()` 读盘的，不是可观察状态 —— 返回主屏时页面条目一直被
+    // NavDisplay 保持组合、参数又没变（Compose 强跳过），不通知就**不会重组**，材质 / 壁纸
+    // 会停在进设置页之前的旧值上，直到用户翻一下页才刷新（2026-11-02 用户实报）。
     LaunchedEffect(atRoot) {
-        if (atRoot) onReloadSettings(wiring.settingsModel.load())
+        if (atRoot) {
+            onReloadSettings(wiring.settingsModel.load())
+            wiring.settingsRevision++
+        }
     }
 
     // 系统返回：压着页面时由 NavDisplay.onBack 弹层；栈底且不在周视图时回周视图。

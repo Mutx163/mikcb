@@ -239,8 +239,12 @@ import com.mutx163.qingyu.pages.weather.WeatherCityPickerHost
 import com.mutx163.qingyu.theme.QingyuTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -585,7 +589,9 @@ fun ShellPageContent(
                 val subscription = repository.observe { snapshot = it }
                 onDispose { subscription.close() }
             }
-            val appSettings = wiring.settingsModel.load()
+            // 设置存储没有变更通道：把壳的变更序号读进组合，回到主屏时才会重读一次盘
+            // （详见 `ShellWiring.settingsRevision`）。
+            val appSettings = remember(wiring.settingsRevision) { wiring.settingsModel.load() }
             // 壁纸 / 材质 / 顶栏墨色：与周 / 日视图同一条推导（`rememberHomeBackdropChrome`
             // 是唯一出口）。不接这一层时月视图没有壁纸、顶栏是一块不透明主题底 ——
             // 用户从周视图切到月视图会看到壁纸"消失"。
@@ -678,7 +684,9 @@ fun ShellPageContent(
                 val subscription = repository.observe { snapshot = it }
                 onDispose { subscription.close() }
             }
-            val appSettings = wiring.settingsModel.load()
+            // 设置存储没有变更通道：读壳的变更序号，回到主屏时才重读一次盘
+            // （详见 `ShellWiring.settingsRevision`；也供下面的「上次看的是哪天」用）。
+            val appSettings = remember(wiring.settingsRevision) { wiring.settingsModel.load() }
             // ── 首页壁纸 / 材质 / 顶栏墨色（2026-11-01）──
             // 与周视图同一条推导（`rememberHomeBackdropChrome` 是唯一出口）：
             // 不接这一层时，日视图是一块不透明主题底 —— 用户在周视图看到的壁纸与玻璃
@@ -688,9 +696,15 @@ fun ShellPageContent(
             val floatingInsets = rememberHomeFloatingInsets(appSettings)
             // 「点星期栏某一天」是**单次意图**：`ShellWiring.onOpenDay` 写进
             // `pendingDayViewDayOfWeek`，这里读一次就清。读完不清会让下一次从底栏或
-            // 菜单进日视图时沿用上一次点的那天；恒取 `LocalDate.now()` 则是 P0-2 本身
-            // （点「周五」进去看的是今天）。null = 没有具体意图 ⇒ 页面自己落今天。
+            // 菜单进日视图时沿用上一次点的那天。
             val dayIntent = remember { wiring.consumeDayViewDayOfWeek() }
+            // 翻页停稳后把「看的是哪一天」写回存档（Dart `persistHomeViewState` 的日那半边）。
+            // 不写它会有两个可感知的后果：① 从底栏再进日视图回到今天而不是上次看的那天；
+            // ② 外观编辑页的日预览按这个键取日期，会停在旧值上（用户 2026-11-02 实报
+            // 「我滑到其他天，点外观编辑却显示另一天」）。
+            // 写盘离开主线程并串行：`saveSettingsPatchToActiveProfile` 会重编码整份档案 JSON。
+            val dayPersistScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
+            val dayPersistMutex = remember { Mutex() }
             val displayPrefs = remember(appSettings) {
                 TimetableHostDisplayPrefs.fromSettings(appSettings)
             }
@@ -718,7 +732,11 @@ fun ShellPageContent(
             Box(modifier = Modifier.fillMaxSize()) {
             DayViewPage(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
-                initialDayOfWeek = dayIntent,
+                // 有显式意图（点星期栏某天）就用它；否则回到**上次看的那一天**，与 Dart
+                // `_restoreViewStateFromProvider`（`timetable_screen.dart:862-890`）同口径。
+                // 不能回落「今天」：从底栏再进日视图会跳回今天，与外观编辑页的预览
+                //（按同一个键取日期）对不上（2026-11-02 用户实报）。
+                initialDayOfWeek = dayIntent ?: appSettings.timetableLastViewedDayOfWeek,
                 visibleDays = visibleDays,
                 // 学期周数必须下传：页面默认 30 周，不传就能翻到学期之外。
                 totalWeeks = snapshot.settings.semesterWeekCount,
@@ -880,10 +898,28 @@ fun ShellPageContent(
                 },
                 // 「还有 N 项逾期 ›」→ 任务清单（Dart `pushHomeMenuPage(context, homePage('taskListPage'))`）。
                 onViewAllOverdue = { onOpenPage("d2.taskList") },
-                // 翻页落定后把仓储当前周同步过去：否则退出日视图回到周视图还停在老周
-                //（Dart `settlePage` → `jumpToWeek(animatePage:false)` 同义）。
-                onPageChanged = { week, _ ->
+                // 翻页落定后做两件事：
+                // ① 把仓储当前周同步过去 —— 否则退出日视图回到周视图还停在老周
+                //   （Dart `settlePage` → `jumpToWeek(animatePage:false)` 同义）；
+                // ② 把「看的是哪一天」写回存档 —— Dart `persistHomeViewState(mode:, dayOfWeek:)`
+                //   同口径。外观编辑页的日预览与下次进入日视图的初始日都读这个键。
+                //   只在真的变了才写（首帧停稳也会上报一次），写盘在 IO 上串行。
+                onPageChanged = { week, dayOfWeek ->
                     if (snapshot.currentWeek != week) repository.setCurrentWeek(week)
+                    dayPersistScope.launch {
+                        dayPersistMutex.withLock {
+                            runCatching {
+                                if (
+                                    wiring.settingsModel.load().timetableLastViewedDayOfWeek !=
+                                    dayOfWeek
+                                ) {
+                                    wiring.settingsModel.saveLastViewedDayOfWeek(dayOfWeek)
+                                }
+                            }.onFailure {
+                                Log.w("home-day-view", "persist last viewed day failed", it)
+                            }
+                        }
+                    }
                 },
             )
             // 单节备注弹层（Dart 日课卡「备注」胶囊的落点）。

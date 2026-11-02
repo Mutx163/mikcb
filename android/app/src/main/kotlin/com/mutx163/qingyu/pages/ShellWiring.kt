@@ -106,6 +106,34 @@ class ShellWiring(context: Context) {
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
 
     /**
+     * 设置变更序号：**页面内容重读设置模型**的重组信号。
+     *
+     * ## 它解决什么（2026-11-02 用户实报）
+     *
+     * 「外观编辑页改完材质 / 壁纸，返回首页，材质还是旧的；左右滑一下才变成新样式」。
+     *
+     * 设置存储没有变更通道（只有 `load` / `save`），而首页各视图（周 / 日 / 月）是在
+     * **组合期裸调** `settingsModel.load()` 读盘的普通函数调用——它既不是可观察状态，
+     * 也不会让 Compose 建立依赖。以前靠「`onBack` / `onOpenPage` 这些不稳定 lambda
+     * 在返回首页时补一次重读」，但 Compose 的强跳过（Kotlin 2.x 默认）会把捕获值相等的
+     * lambda 记住，整棵页面内容被跳过 ⇒ 返回那一刻没有重组，`load()` 也就没有再跑。
+     * 用户随后滑动翻页会改仓储状态、逼出一次重组，新材质才「突然」出现。
+     *
+     * ## 用法（唯一正确姿势）
+     *
+     * 需要读整份设置的页面内容：
+     * ```kotlin
+     * val revision = wiring.settingsRevision            // 订阅：自增时本组合重组
+     * val model = remember(revision) { wiring.settingsModel.load() }  // 只在这一刻读盘
+     * ```
+     *
+     * 写者：壳在**回到主屏**时自增一次（`PagesShellActivity` 的 `LaunchedEffect(atRoot)`，
+     * 与主题 / 底栏的 `onReloadSettings` 同一时刻）。只增不碰盘，成本是一次重组；
+     * 不要在每帧或每次滚动里自增。
+     */
+    var settingsRevision: Int by mutableIntStateOf(0)
+
+    /**
      * 「课表自动更新」的配置与台账（通用设置页那一整块）。
      *
      * 为什么**不**塞进 [settingsModel]：Dart 侧明确把它另存一个 prefs 键
@@ -497,9 +525,13 @@ fun TimetableWithCourseActions(
     var actionTarget by remember { mutableStateOf<Course?>(null) }
     val context = LocalContext.current
     val week = snapshot.currentWeek
-    // 设置模型：弹层里的天气四开关要它。⚠️ 每次重组都 `load()` 一次——设置存储没有变更通道
-    // （与 `TimetableHost` 里那一处同口径，见那里的注释）。
-    val settingsModel = wiring.settingsModel.load()
+    // 设置模型：首页材质 / 壁纸 + 弹层里的天气四开关都读它。
+    // ⚠️ `settingsModel.load()` 是**普通函数调用**，不是可观察状态：必须把
+    // [ShellWiring.settingsRevision] 读进组合才会在「返回首页」时重读一次盘。
+    // 否则从外观编辑页 / 设置页回来，材质、壁纸、显示偏好全部停在旧值上，
+    // 直到用户翻一下页（仓储状态变化逼出重组）才刷新 —— 2026-11-02 用户实报。
+    val settingsRevision = wiring.settingsRevision
+    val settingsModel = remember(settingsRevision) { wiring.settingsModel.load() }
 
     // 天气 provider **不是** Compose 可观察的（它是 `addListener` 那套）。这里用一个计数
     // 把「数据到了 / 城市变了」转成重组；`DisposableEffect` 负责订阅与退订，

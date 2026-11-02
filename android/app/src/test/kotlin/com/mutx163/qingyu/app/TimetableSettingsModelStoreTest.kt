@@ -91,4 +91,54 @@ class TimetableSettingsModelStoreTest {
         assertEquals(before.filterKeys { it != "timetableHomeViewMode" }, filtered)
         assertEquals("month", after["timetableHomeViewMode"])
     }
+
+    @Test
+    fun saveLastViewedDayOfWeek_writesOnlyThatKeyInBothTargets() {
+        val (raw, store) = newStore()
+
+        store.saveLastViewedDayOfWeek(4)
+
+        // ── 顶层 settings：只多不少都不行，键集合必须原样（+ 新写的这一个） ──
+        val settings = raw.jsonObject(TimetableStore.KEY_SETTINGS)
+        assertEquals(4, (settings["timetableLastViewedDayOfWeek"] as Number).toInt())
+        assertEquals(
+            setOf(
+                "timetableHomeViewMode",
+                "appLocaleTag",
+                "pageTransitionSpeed",
+                "timetableLastViewedDayOfWeek",
+            ),
+            settings.keys.filterIsInstance<String>().toSet(),
+        )
+        assertEquals("week", settings["timetableHomeViewMode"])
+        assertEquals("zh", settings["appLocaleTag"])
+
+        // ── active profile 内嵌 settings：同样只改一个键 ──
+        val profiles = MiniJson.tryParse(raw.getString(TimetableStore.KEY_PROFILES)!!) as List<*>
+        val embedded = (profiles.single() as Map<*, *>)["settings"] as Map<*, *>
+        assertEquals(4, (embedded["timetableLastViewedDayOfWeek"] as Number).toInt())
+        assertEquals(
+            setOf("timetableHomeViewMode", "glassDockActions", "timetableLastViewedDayOfWeek"),
+            embedded.keys.filterIsInstance<String>().toSet(),
+        )
+        assertEquals(listOf("day", "week"), embedded["glassDockActions"])
+
+        // ── 读侧能读到刚写的值 ──
+        assertEquals(4, store.load().timetableLastViewedDayOfWeek)
+    }
+
+    @Test
+    fun saveLastViewedDayOfWeek_clampsToOneThroughSeven() {
+        val (raw, store) = newStore()
+
+        store.saveLastViewedDayOfWeek(0)
+        assertEquals(1, store.load().timetableLastViewedDayOfWeek)
+
+        store.saveLastViewedDayOfWeek(9)
+        assertEquals(7, store.load().timetableLastViewedDayOfWeek)
+
+        // 顶层与内嵌两处都写的是夹过之后的值
+        val settings = raw.jsonObject(TimetableStore.KEY_SETTINGS)
+        assertEquals(7, (settings["timetableLastViewedDayOfWeek"] as Number).toInt())
+    }
 }

@@ -1169,6 +1169,31 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
         store.saveSettingsPatch(patch)
         store.saveSettingsPatchToActiveProfile(patch)
     }
+
+    /**
+     * 只落**日视图看的是哪一天**一个键（1..7）。
+     *
+     * ## 谁写、谁读
+     *
+     * * 写：首页日视图每次翻页**停稳**后（`ShellPageIndex` 的 `c3.day` 分支
+     *   `onPageChanged`），与 Dart `persistHomeViewState(mode:, dayOfWeek:)`
+     *   （`timetable_provider.dart:3012-3027`）里 dayOfWeek 那半边同口径；
+     * * 读：进日视图时的初始日（从底栏进也回到上次看的那天，Dart
+     *   `_restoreViewStateFromProvider` 同口径），以及外观编辑页的日预览
+     *   （`AppearanceEditorHost.DayViewPreview`，Dart `:208-210` / `:379`）。
+     *
+     * ## 为什么单独一个键、单独一个方法
+     *
+     * 理由与 [saveHomeViewMode] 相同：整份 [save] 会把 80+ 个键按「翻页那一刻的快照」
+     * 重写一遍，后台写慢半拍就会覆盖用户刚改的设置。这里只写这一个键。
+     * 调用方必须**离开主线程**调用：`saveSettingsPatchToActiveProfile` 会把整份
+     * 课表档案 JSON 读出来重编码再提交。
+     */
+    fun saveLastViewedDayOfWeek(dayOfWeek: Int) {
+        val patch = mapOf("timetableLastViewedDayOfWeek" to dayOfWeek.coerceIn(1, 7))
+        store.saveSettingsPatch(patch)
+        store.saveSettingsPatchToActiveProfile(patch)
+    }
 }
 
 /** `AppThemeMode`（`timetable_settings_enums.dart:12`）。 */
