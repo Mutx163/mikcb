@@ -143,6 +143,11 @@ private fun qingyuLightColors(seedHex: String?) = lightColorScheme(
     background = Color(QingyuTheme.scaffoldBackground(dark = false)),
     onBackground = Color(QingyuTheme.primaryText(dark = false)),
     onBackgroundVariant = Color(QingyuTheme.secondaryText(dark = false)),
+    // 官方弹层默认取这两槽：`OverlayBottomSheet` 标题用 onSurface、`OverlayDialog` 的
+    // `summary` 正文用 onSurfaceSecondary。官方默认值是纯黑 / 80% 黑，与本仓 #333 / #999
+    // 对不上，会表现为「弹层标题比页面标题更黑、次级正文像主文本」。
+    onSurface = Color(QingyuTheme.primaryText(dark = false)),
+    onSurfaceSecondary = Color(QingyuTheme.secondaryText(dark = false)),
     // surface / surfaceContainer 是 Scaffold 与 Card 的默认取色处；
     // 分开填是因为亮色板里页面底是 #F2F2F2、卡片是 #FFFFFF，必须有层次。
     surface = Color(QingyuTheme.scaffoldBackground(dark = false)),
@@ -169,6 +174,9 @@ private fun qingyuDarkColors(seedHex: String?) = darkColorScheme(
     background = Color(QingyuTheme.scaffoldBackground(dark = true)),
     onBackground = Color(QingyuTheme.primaryText(dark = true)),
     onBackgroundVariant = Color(QingyuTheme.secondaryText(dark = true)),
+    // 弹层标题 / 对话框次级正文，口径同亮色板（见上方注释）。
+    onSurface = Color(QingyuTheme.primaryText(dark = true)),
+    onSurfaceSecondary = Color(QingyuTheme.secondaryText(dark = true)),
     // 深色下卡片刻意取「最高级容器」而非与页底同色（见 QingyuTheme.card 注释：
     // 页底 #242424 与 surfaceContainer #242424 相同会让卡片在暗色下隐形）。
     surface = Color(QingyuTheme.scaffoldBackground(dark = true)),
