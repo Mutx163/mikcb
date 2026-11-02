@@ -78,7 +78,13 @@ data class TimetableSnapshot(
  * - `logEvent` / `syncExamReminders` / `updateLiveActivity` 是**空实现**：
  *   埋点、考试提醒通知、实时活动都属 Phase 4 原生能力对齐，本阶段只接线数据。
  * - 不做跨 key 事务日志（`app_global_settings_mirror_tx_v1`）：那是全局设置族的活。
- * - 不做并发写串行化：宿主是单线程 Compose 状态持有者；真并发场景由 Phase 4 决定。
+ * - 并发写**串行化但不做事务**：局域网编辑服务（`LanEditHttpServer`）每个连接一个
+ *   工作线程，与 UI 主线程共用同一份内存状态；本类所有公开读写入口都挂在同一把
+ *   对象锁（`@Synchronized`）上，写与写、写与读快照都不再交错。锁只保证「单个
+ *   入口原子」，多个入口组成的多步序列仍不是事务（那属于调用方，如 `LanTransferApplier`
+ *   的快照补偿）。notifyStateChanged 的监听者回调刻意在锁外执行（先锁内原子抓
+ *   snapshot，再逐个回调），避免宿主回调里再做仓储操作时把锁持有时间拉长。
+ *   Kotlin 的 `@Synchronized` 可重入：服务层在入口锁内再调 port 读写不会自锁。
  */
 class TimetableRepository(private val store: TimetableStore) : TimetableCoursePort, TimetableScheduleItemPort {
 
@@ -102,6 +108,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     // ---------- 装载 ----------
 
     /** 从盘上重新装载（[initialize] 与构造共用）。 */
+    @Synchronized
     fun reload() {
         val profilesResult = store.loadProfiles()
         loadedProfiles = profilesResult.profiles
@@ -130,7 +137,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     // ---------- 对外只读视图 ----------
 
     val snapshot: TimetableSnapshot
-        get() = TimetableSnapshot(
+        @Synchronized get() = TimetableSnapshot(
             profiles = loadedProfiles,
             activeProfileId = activeProfile.id,
             courses = activeProfile.courses,
@@ -152,14 +159,17 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
 
     // ---------- 对外写入口 ----------
 
+    @Synchronized
     fun addCourse(course: Course) {
         TimetableCourseService.add(this, course)
     }
 
+    @Synchronized
     fun updateCourse(course: Course, previousSharedName: String? = null) {
         TimetableCourseService.update(this, course, previousSharedName)
     }
 
+    @Synchronized
     fun deleteCourse(courseId: String) {
         TimetableCourseService.delete(this, courseId)
     }
@@ -168,6 +178,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 切换激活档案。
      * @return true 表示真的切了（目标存在且与当前不同）；否则 false 且**不通知**。
      */
+    @Synchronized
     fun setActiveProfile(profileId: String): Boolean {
         if (loadedProfiles.none { it.id == profileId }) return false
         if (profileId == activeProfile.id) return false
@@ -178,6 +189,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     /** 更新设置：落盘（合并写）后通知。 */
+    @Synchronized
     fun updateSettings(settings: TimetableSettings) {
         loadedSettings = settings
         store.saveSettings(settings)
@@ -201,6 +213,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * （profiles + active id），两次之间失败会留下「盘新内存旧」——
      * Dart 侧用 `runSettingsMirrorTransaction` 覆盖这一段，本层未实现事务。
      */
+    @Synchronized
     fun replaceActiveProfileContent(
         courses: List<Course>,
         tasks: List<CourseTask>,
@@ -240,6 +253,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * **失败语义**：先落盘、成功后才改内存；落盘抛错时内存与监听者都不动。
      */
+    @Synchronized
     fun replaceAllProfiles(profiles: List<TimetableProfile>, activeProfileId: String?) {
         // 先落盘：失败则内存与监听者都不动。
         store.saveProfiles(profiles)
@@ -259,6 +273,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * **失败语义**：先落三次盘、全部成功后才改内存；任一次抛错时内存与监听者都不动。
      * 盘上可能已写成一半（与 [replaceAllProfiles] 同口径，本层不做跨 key 事务）。
      */
+    @Synchronized
     fun replaceAllProfilesAndSettings(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
@@ -294,6 +309,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * **调用方义务**：备快照的信封 / 校验和 / 档案列表是否可信必须由调用方先校验完。
      */
+    @Synchronized
     fun restoreFromCloudSnapshot(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
@@ -345,6 +361,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * Dart 的 `notify: Boolean = true` 开关对应内部调用路径，本层暂无消费方，不预置。
      */
+    @Synchronized
     fun setCurrentWeek(week: Int) {
         val clamped = clampCurrentWeekToSettings(week.toLong(), loadedSettings).toInt()
         loadedCurrentWeek = clamped
@@ -356,26 +373,26 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     // ---------- TimetableCoursePort ----------
 
     override var courses: List<Course>
-        get() = activeProfile.courses
-        set(value) {
+        @Synchronized get() = activeProfile.courses
+        @Synchronized set(value) {
             updateActiveProfile { it.copy(courses = value) }
         }
 
     override var tasks: List<CourseTask>
-        get() = activeProfile.tasks
-        set(value) {
+        @Synchronized get() = activeProfile.tasks
+        @Synchronized set(value) {
             updateActiveProfile { it.copy(tasks = value) }
         }
 
     override var exams: List<Exam>
-        get() = activeProfile.exams
-        set(value) {
+        @Synchronized get() = activeProfile.exams
+        @Synchronized set(value) {
             updateActiveProfile { it.copy(exams = value) }
         }
 
     override var profiles: List<TimetableProfile>
-        get() = loadedProfiles
-        set(value) {
+        @Synchronized get() = loadedProfiles
+        @Synchronized set(value) {
             loadedProfiles = value
         }
 
@@ -386,14 +403,15 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 落盘由 [ScheduleItemService] 显式调用 [persistActiveProfileState] 触发。
      */
     override var scheduleItems: List<ScheduleItem>
-        get() = activeProfile.scheduleItems
-        set(value) {
+        @Synchronized get() = activeProfile.scheduleItems
+        @Synchronized set(value) {
             updateActiveProfile { it.copy(scheduleItems = value) }
         }
 
     // ---------- 作息日期规则 ----------
 
     /** 整份替换作息日期规则：落盘成功后才改内存并通知（成功才通知语义）。 */
+    @Synchronized
     fun updateScheduleDateRules(rules: List<ScheduleDateRule>) {
         store.saveScheduleDateRules(rules)
         loadedScheduleDateRules = rules
@@ -415,6 +433,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 「整份数组写回 `location_time_groups`」这一笔上；批次 F10 只搬这一笔，
      * 分组增删改的判据在 `pages/time_scheme/LocationTimeGroupController`（纯 Kotlin、JVM 可测）。
      */
+    @Synchronized
     fun updateLocationTimeGroups(groups: List<LocationTimeGroup>) {
         store.saveLocationTimeGroups(groups)
         loadedLocationTimeGroups = groups
@@ -448,6 +467,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * `sections ?? activeTimeScheme?.sections ?? settings.sections`）。
      * [applyToActiveProfile] 为真时顺手把它套到当前课表（等于随后调 [applyTimeScheme]）。
      */
+    @Synchronized
     fun createTimeScheme(
         name: String,
         sections: List<SectionTime>? = null,
@@ -473,6 +493,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     /** 改名；找不到返回 null（不落盘、不通知）。 */
+    @Synchronized
     fun renameTimeScheme(schemeId: String, name: String): TimeScheme? {
         val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
         if (index < 0) return null
@@ -491,6 +512,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * `timetable_time_scheme_service.dart:224`）。**这不是新造的文案**：它与 Dart
      * 逐字一致，宿主通常直接传入列表页算好的 `copyName`（那条走 ARB 同形键）。
      */
+    @Synchronized
     fun duplicateTimeScheme(schemeId: String, name: String? = null): TimeScheme? {
         val source = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return null
         val now = LocalDateTime.now()
@@ -516,6 +538,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 2. 节次数不能小于**已用最大节次**：课程按节次下标取钟点，收窄会让课程无处取时间。
      *    能定位到具体是哪门课时给带明细的那条（`section_count_below_usage_detail`）。
      */
+    @Synchronized
     fun updateTimeScheme(schemeId: String, name: String, sections: List<SectionTime>): String? {
         validateSectionTimes(sections)?.let { return it }
 
@@ -614,6 +637,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 先查「现有课程最靠后的那一节」：课程保留自己的节次下标，目标模板必须覆盖它们，
      * 否则那些课会取不到钟点（`section_count_below_usage`）。
      */
+    @Synchronized
     fun applyTimeScheme(schemeId: String): String? {
         val scheme = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return "time_scheme_not_found"
         val requiredMaxSection = activeProfile.courses.maxOfOrNull { it.endSection } ?: 0
@@ -644,6 +668,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * 判据走 [TimeSchemeLogic.isSchemeInUse] 这唯一一份口径，不在本层另写一套。
      */
+    @Synchronized
     fun deleteTimeScheme(schemeId: String): Boolean {
         if (TimeSchemeLogic.isSchemeInUse(
                 profiles = loadedProfiles,
@@ -696,14 +721,17 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     override val semesterWeekCount: Int
-        get() = loadedSettings.semesterWeekCount
+        @Synchronized get() = loadedSettings.semesterWeekCount
 
+    @Synchronized
     override fun getCourseById(id: String): Course? =
         activeProfile.courses.firstOrNull { it.id == id }
 
+    @Synchronized
     override fun dateForCourseOccurrence(course: Course, week: Int): LocalDateTime? =
         TimetableCourseService.courseOccurrenceDate(loadedSettings.semesterStartDate, course, week)
 
+    @Synchronized
     override fun validateCourseTimeSchemeOverride(
         timeSchemeId: String?,
         startSection: Int,
@@ -716,6 +744,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         endSection = endSection,
     )
 
+    @Synchronized
     override fun syncCourseWithEffectiveTimeScheme(course: Course): Course =
         TimeSchemeLogic.syncCourseWithEffectiveTimeScheme(
             course = course,
@@ -723,6 +752,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
             settings = loadedSettings,
         )
 
+    @Synchronized
     override fun isLiveTestingFixture(course: Course): Boolean =
         isLiveTestingFixtureCourseId(course.id)
 
@@ -751,6 +781,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     /** 把当前设置与活动课表落盘；失败时抛错，由 [TimetableCourseService] 回滚。 */
+    @Synchronized
     override fun persistActiveProfileState() {
         val week = resolvedCurrentWeek()
         val profile = activeProfile.copy(
@@ -806,6 +837,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         listeners.forEach { it(current) }
     }
 
+    @Synchronized
     override fun initialize() {
         reload()
     }
