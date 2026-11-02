@@ -168,7 +168,11 @@ class ComposePageStyleGuardTest {
     private val reRawCard = Regex("""(?<![A-Za-z])Card\s*[({]""")
     private val reFontSize = Regex("""fontSize\s*=\s*[0-9]+(\.[0-9]+)?\.sp""")
     private val reHardColor = Regex("""Color\(0x""")
-    private val reSectionLabel = Regex("""sectionLabel\(""")
+    // R6 只判「未限定的调用/定义」：`QingyuTheme.sectionLabel(dark)` 是主题语义取色
+    //（与 actionIcon 同值），不是自拼分组标题，裸子串会假红（2026-11-02 实测）。
+    // 负向后顾排除标识符与 `.`：`sectionLabel("分组")` / `private fun sectionLabel(` 仍命中，
+    // `QingyuTheme.sectionLabel(` / `obj.sectionLabel(` 不命中。
+    private val reSectionLabel = Regex("""(?<![A-Za-z0-9_$.])sectionLabel\s*\(""")
     private val reSectionTitle = Regex("""QingyuSectionTitle\s*[({]""")
 
     // R7：写死绝对字重。只匹配 `fontWeight = FontWeight.X` 字面量；

@@ -71,7 +71,12 @@ $reVerticalScroll = [regex]'verticalScroll\(rememberScrollState\(\)\)'
 $reRawCard = [regex]'(?<![A-Za-z])Card\s*[({]'
 $reFontSize = [regex]'fontSize\s*=\s*[0-9]+(\.[0-9]+)?\.sp'
 $reHardColor = [regex]'Color\(0x'
-$reSectionLabel = [regex]'sectionLabel\('
+# R6：自己拼分组标题。判据认「未限定的调用/定义」，不认主题槽的成员访问——
+# `Color(QingyuTheme.sectionLabel(dark))` 是语义取色（与 actionIcon 同值），不是自拼标题。
+# 2026-11-02 实测：裸子串 `sectionLabel(` 把这种正当取色判成了 R6 假红。
+# 负向后顾排除标识符与 `.`，于是 `sectionLabel("分组")`、`private fun sectionLabel(` 仍命中，
+# `QingyuTheme.sectionLabel(` / `obj.sectionLabel(` 不再命中。
+$reSectionLabel = [regex]'(?<![A-Za-z0-9_$.])sectionLabel\s*\('
 $reSectionTitle = [regex]'QingyuSectionTitle\s*[({]'
 
 # R7：写死绝对字重。只匹配 `fontWeight = FontWeight.X` 字面量；

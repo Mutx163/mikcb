@@ -452,18 +452,13 @@ fun HyperosShowcasePage(
     }
 }
 
-/**
- * 章节标题（取色对齐 Dart `HyperosColors.sectionLabel`）。
- *
- * `QingyuTheme.sectionLabel(dark)` 就是 `actionIcon(dark)` 的别名，这里用后者：
- * 前者的写法会撞 R6 的 `sectionLabel(` 文本判据（那是给自拼分组标题用的），造成假红。
- */
+/** 章节标题（取色对齐 Dart `HyperosColors.sectionLabel`）。 */
 @Composable
 private fun ShowcaseSectionHeader(title: String, dark: Boolean) {
     Text(
         text = title,
         style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-        color = Color(QingyuTheme.actionIcon(dark)),
+        color = Color(QingyuTheme.sectionLabel(dark)),
         modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
     )
 }
