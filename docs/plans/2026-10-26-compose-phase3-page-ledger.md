@@ -135,7 +135,7 @@
 | P3-D3-c | 作息与考试 · 地点时间匹配页 | 1 | 1 131 行 | `pages/time_scheme/`（仅 `LocationTimeMatch*`） | ✅ 已交付（`7499c7ab`，21 例；编辑页留下一批） |
 | P3-E | 统计族 | 26 | 5 299 行 | `pages/statistics/` | ✅ **4/4 页已交付**（前 2 页 + E-b 的 2 页；widget 图表未迁）；余量已拆分为下列一行 |
 | P3-E-b | 统计族 · 分析页与会话页 | 2 | 355 行 | `pages/statistics/`（仅 `StatisticsAnalysis*`、`StatisticsSession*`） | ✅ 已交付（`09e2de9f`，33 例；图表为骨架） |
-| P3-F | 同步与备份 | 4 | 2 536 行 | `pages/sync/` | 🔶 四件套已交（`dfdac7f2` `03015c20` `65247cb8` `8f5c4675`，86 例）· **L1/L2 未出证**、未真机对照 |
+| P3-F | 同步与备份 | 4 | 2 536 行 | `pages/sync/` | ✅ 四件套已交（`dfdac7f2` `03015c20` `65247cb8` `8f5c4675`，86 例）；**L1/L2 已出证（2026-11-02 回填，原记「L1/L2 未出证」已过期）**：2026-11-01 全仓 L2 `:app:testDevDebugUnitTest` **5791 例全绿**、L1 `BUILD SUCCESSFUL`（`.agents/compose-phase3/claims/STYLE-fontweight-sweep.md:3`）；未真机对照 |
 | P3-G1 | 导入 · 基础 | 6 | 1 878 行 | `pages/import/`（不含 `pages/import/warehouse/`） | ✅ 已交付（`1b58806b`，17 文件 5 191 行，161 例；未真机对照） |
 | P3-G2 | 导入 · 仓库适配 | 8 | 7 259 行 | `pages/import/warehouse/` | ✅ 已交付（`ea9202aa`，24 文件 6 195 行；6 个 Page 覆盖 8 个 Dart 文件；未真机对照） |
 | P3-G3 | 导出与传输 | 7 | 3 914 行 | `pages/transfer/`、`pages/export/` | ✅ **7/7 页已交付**（export/transfer 前 2 页 + G3-b/G3-c 的 5 件）；余量已拆分为下列两行 |
@@ -550,7 +550,7 @@ bash .agents/compose-phase3/build-gate.sh :app:testProdDebugUnitTest --tests 'co
 | P3-D2 日程与任务 | ✅ 已完成 | `97157c7a` + `59faedc8` 修 74 个 miuix 0.9.4 错误中的 schedule/task 部分 |
 | P3-D3 作息与考试 | ✅ **4/4 页已交付** | exam 侧 `40dbb943`（41 例）+ `a84fb0d6`（36 例）；`fae9721a` 作息管理（25 例）+ `7499c7ab` 地点匹配（21 例）。D3-b 渲染层首次进编译 |
 | P3-E 统计族 | ✅ 页 4/4 + **图表 22/22 全迁** | 页：`61f3d80e` `e0473069` `09e2de9f`。图表：`f518c917` `ddc5e48b` `35a0fca2` `96d9b704`，折线/柱/热力/环形/排行条/周分布/热度全为 Canvas 真绘，非读数行；L0 153 例。偏差（无奖杯/锁图标、成就动画与详情弹层未搬、日期仅中文、二维码自写版本 2-L 编码器）均在 KDoc 与提交信息里 |
-| P3-F 同步与备份 | ✅ **4/4 页已交付** | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍） |
+| P3-F 同步与备份 | ✅ **4/4 页已交付** | `dfdac7f2` + `03015c20` + `65247cb8` + `8f5c4675`；86 例（含 2 份 ARB 逐字对拍）。2026-11-02 回填：L1/L2 已出证——2026-11-01 全仓 L2 **5791 例全绿**、L1 `BUILD SUCCESSFUL`（`claims/STYLE-fontweight-sweep.md:3`） |
 | P3-G1 导入·基础 | ✅ 已交付 | `1b58806b`，17 文件 5,191 行，161 例 |
 | P3-G2 导入·仓库适配 | ✅ 已交付 | `ea9202aa`，24 文件 6,195 行 |
 | P3-G3 导出与传输 | ✅ **7/7 页已交付** | 前 2 页 `ff6d3bcb`（34 例）+ `11988a1d`（26 例）；`92050236` 局域网编辑/取件码/预览（45 例）+ `bccbb2e9` 二维码收发（28 例） |
@@ -573,7 +573,7 @@ L1：`:app:compileComposeUiDebugKotlin` → BUILD SUCCESSFUL。
 留作下一批，本批给的是结构一致的骨架/列表；
 ② 相机扫码、局域网真实收发热都没有真机证据。
 
-> 上表是 Phase 3 **页面搬运**批次的快照。此后的**接线批次**不在上表：F23（2026-10-31，设置族收尾 + 壁纸死路由）见 §9.9；F24（2026-11-01，并行硬化，进行中）见 §9.10。
+> 上表是 Phase 3 **页面搬运**批次的快照。此后的**接线批次**不在上表：F23（2026-10-31，设置族收尾 + 壁纸死路由）见 §9.9；F24（2026-11-01，并行硬化，**已交付**）见 §9.10。
 
 ### 9.1 本轮五个批次的过程记录（写给后来者）
 
@@ -1038,22 +1038,24 @@ F23 认领文件：`.agents/compose-phase3/claims/F23-settings-tail-and-gallery.
 
 **F23 明确遗留**：`liveTestingExportAction`（导出并分享日志）仍是死按钮；自检页测试通知卡的四个按钮无 Kotlin 数据源；壁纸拖动取景页未移植（现在只给诚实提示）；`b.reset` 四条缺陷另批；CJK 门禁扩到 `main` 源集另批。
 
-### 9.10 2026-11-01 F24 并行硬化（**进行中**，占位记录）
+### 9.10 2026-11-01 F24 并行硬化（**已交付**，2026-11-02 回填）
 
-F24 认领文件：`.agents/compose-phase3/claims/F24-parallel-hardening.md`（状态：**进行中**）。8 条工作线并行、写作用域互不重叠；壳与跨族共享件（`ShellPageIndex.kt` / `ShellWiring.kt` / `SettingsPageRenderers.kt` / `SettingsPageBridge.kt`）由 Lead 单写，子代理只交 snippet。
+F24 认领文件：`.agents/compose-phase3/claims/F24-parallel-hardening.md`（状态：**已交付**，2026-11-01）。8 条工作线并行、写作用域互不重叠；壳与跨族共享件（`ShellPageIndex.kt` / `ShellWiring.kt` / `SettingsPageRenderers.kt` / `SettingsPageBridge.kt`）由 Lead 单写，子代理只交 snippet。
 
 | # | 工作线 | 在做什么 | 状态 |
 |---|---|---|---|
-| A | `b.reset` 四条缺陷 | ①确认弹窗正文只覆盖 3 个作用域，课表页 / 桌面小组件走了外观口径；②首页导航收到 `RESET_SCOPE` 直接应用、无二次确认；③确认按钮文案用了「重置」而非登记的「恢复默认设置」；④`DONE_MESSAGE_KEY` 从不弹 | 进行中 |
-| B | 自检页剩余按钮 | 导出并分享日志、测试通知四颗按钮、假期开关闭环 | 进行中 |
-| C | 壁纸取景页 | 移植 `backdrop.image.adjust` 的真拖动取景；落地后删掉 `1c6428d1` 的「不可用」提示分支 | 进行中 |
-| D | CJK 门禁扩到 `main` 源集 | 当前 `CjkLiteralGateTest` 只扫 `composeP1/kotlin`，`src/main/kotlin` 整目录是盲区；扩了要整目录立基线 | 进行中 |
-| E | 共享骨架毛玻璃与宽屏 | `QingyuPageScaffold` 顶栏接 miuix-blur；宽屏 `AdaptiveTopAppBar` / `NavigationRail` 调研 | 进行中 |
-| F | 壳里假数据 / 死控件普查 | **只读**第二轮普查，不改任何文件 | 进行中 |
-| G | 文档同步 | 派工大表 §五 与本节 §9.9 / §9.10 的核实修订（本批本条） | 进行中 |
-| H | 样式债清理 | 选一个域把 R1–R6 棘轮欠账清零 | 进行中 |
+| A | `b.reset` 四条缺陷 | ①确认弹窗正文只覆盖 3 个作用域，课表页 / 桌面小组件走了外观口径；②首页导航收到 `RESET_SCOPE` 直接应用、无二次确认；③确认按钮文案用了「重置」而非登记的「恢复默认设置」；④`DONE_MESSAGE_KEY` 从不弹 | ✅ `28cc5044` |
+| B | 自检页剩余按钮 | 导出并分享日志、测试通知四颗按钮、假期开关闭环 | ✅ `b2daddbd` |
+| C | 壁纸取景页 | 移植 `backdrop.image.adjust` 的真拖动取景；落地后删掉 `1c6428d1` 的「不可用」提示分支 | ✅ 页 `f967fd5f` + 落点 `32808774` |
+| D | CJK 门禁扩到 `main` 源集 | 当前 `CjkLiteralGateTest` 只扫 `composeP1/kotlin`，`src/main/kotlin` 整目录是盲区；扩了要整目录立基线 | ✅ `ae4c7f98` |
+| E | 共享骨架毛玻璃与宽屏 | `QingyuPageScaffold` 顶栏接 miuix-blur；宽屏 `AdaptiveTopAppBar` / `NavigationRail` 调研 | ✅ `08246e26` |
+| F | 壳里假数据 / 死控件普查 | **只读**第二轮普查，不改任何文件 | ✅ 普查完成；成果随 `32808774`（目录 88→89） |
+| G | 文档同步 | 派工大表 §五 与本节 §9.9 / §9.10 的核实修订（本批本条） | ✅ `bfb554a4` |
+| H | 样式债清理 | 选一个域把 R1–R6 棘轮欠账清零 | ✅ `213a835a` |
 
-**口径**：本节只是占位，**不声明任何一条已完成**。八条都交付后，由 Lead 在本节补提交号与验收数字；真机逐页对照仍归用户。
+**收口验收（2026-11-01，Lead 重跑；原文「本节只是占位、不声明任何一条已完成」随本批交付失效）**：L1 `:app:compileDevDebugKotlin` `BUILD SUCCESSFUL`；L2 `:app:testDevDebugUnitTest` **5569 例全绿**；样式闸门 settings 0 处、exam 1 处（已登记理由）；探针「改坏恢复默认弹窗正文 / 取景拖动方向」→ 3 条用例红 → 还原后 `OK (776 tests)`（`.agents/compose-phase3/claims/F24-parallel-hardening.md:46-68`）。**真机逐页对照仍归用户**。C 线的拖动/捏合手势用标准 Compose `transformable`（miuix 0.9.4 无取景组件），例外登记**待用户确认**，登记表尚未写入（同上 `:78-82`）。
+
+**本节还取代了 §9.5 ⑤ 的「F24 E 线在途」**：顶栏毛玻璃已由 E 线 `08246e26` 交付（2026-11-01）。另两条跨批状态（2026-11-02 复核）：云备份恢复撤销 UI 已交付（`bc0a02c6`，差异预览仍无）；单节课提醒 `classReminders` 与局域网撤销点/真实 `transferId` 已实现但**工作区未提交**。
 
 ---
 

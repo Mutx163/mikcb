@@ -4,6 +4,16 @@
 > 上游：[迁移计划](2026-10-26-compose-migration-plan.md) · [数据契约](2026-10-26-data-contract.md) · [Phase 3 页面台账](2026-10-26-compose-phase3-page-ledger.md)
 > 起因：用户实机反馈「好多页面是空壳、按钮点了没反应」。
 
+> **2026-11-02 现状回填（只改状态与过期结论，保留 2026-10-28 的规划与理由）**
+>
+> | 本文当时的结论 | 现在 | 证据（2026-11-02 复核） |
+> |---|---|---|
+> | §0 表：正式包仍是 `MainActivity : FlutterActivity` | 正式包启动页已切到 Compose 壳 `PagesShellActivity`；回退方式写在 `main/AndroidManifest.xml:159-160`、`:191-193` 注释里 | `1158ee20` |
+> | §2 L5：壳里「课表 tab 用真宿主；其余页仍走演示数据」 | 已过期：`b.*` 25 条与课程/统计/同步/导入导出等页面均已接真宿主，逐包状态见派工大表 §二 | 派工大表（2026-11-01 / 11-02 复核） |
+> | §3 第 6 条：L1 = `:app:compileComposeUiDebugKotlin` | 变体已不存在；现行闸门是 `:app:compileDevDebugKotlin` / `:app:testDevDebugUnitTest` | 台账 §0 顶部「2026-10-29 变体清理」 |
+>
+> **接线期后续状态（不属于本文 2026-10-28 的范围）**：教务抓课写回已交付（`83e8426a`，剩余原生 confirm/prompt/单选/保存配置）；统计点课进课程编辑已交付（`58057a9c`）；Compose 壳通知权限与点击路由已交付（`bd1bbeb0`）；云备份恢复撤销 UI 已交付（`bc0a02c6`，恢复前差异预览仍无）；局域网撤销点/真实 `transferId` 与单节课提醒 `classReminders` 均为**工作区已实现、未提交**（2026-11-02）。
+
 ---
 
 ## 0. 为什么要有这个阶段（不是新需求，是原计划漏了一段）
@@ -30,7 +40,7 @@
 | 壳分派层里的空回调 | **137 处**（78 个分支） | `composeUi/.../ShellPageIndex.kt` |
 | 几乎完全惰性的分支 | 19 个（云同步 16 处、加考试 14 处、导出 10 处…） | 同上 |
 | 数据端口有没有实现 | `TimetableCoursePort` 是接口，**全仓 0 个实现** | `main/.../course/TimetableCoursePort.kt` |
-| 正式包用的什么 | `MainActivity : FlutterActivity`（**仍是 Flutter**） | `main/.../MainActivity.kt` |
+| 正式包用的什么 | ~~`MainActivity : FlutterActivity`（**仍是 Flutter**）~~（2026-10-28 当时事实；**已由 `1158ee20` 取代**，2026-11-02：正式包启动页 = `PagesShellActivity`，回退写在 `main/AndroidManifest.xml:159-160`） | `main/.../MainActivity.kt`、`main/AndroidManifest.xml:154-175` |
 | 页面本身有没有死控件 | 设置族 167 个控件里 157 个写了 `action`；余 9 个是**故意只读**（禁用行 / 日志行 / 表头） | 配平扫描，见台账 §9.5 |
 
 ⇒ **页面没做坏，是页面还没被接上。**
@@ -61,7 +71,7 @@
 | L2 领域存储 | `main/.../app/TimetableStore.kt` | 课表相关 key 的 JSON 编解码（`timetable_profiles` 等），损坏值留档自愈 | 泳道 |
 | L3 仓储 | `main/.../app/TimetableRepository.kt` | 持有状态、实现 `TimetableCoursePort`、变更即落盘并通知 | 泳道 |
 | L4 宿主 | `composeP1/.../app/TimetableHost.kt` | Compose：把仓储接到 `TimetableWeekPage` 等页面上 | 泳道 |
-| L5 壳接线 | `composeUi/.../ShellPageIndex.kt` + `PagesShellActivity.kt` | 课表 tab 用真宿主；其余页仍走演示数据 | **Lead 专属** |
+| L5 壳接线 | `composeUi/.../ShellPageIndex.kt` + `PagesShellActivity.kt` | 课表 tab 用真宿主；其余页仍走演示数据（**2026-11-02 已由后续接线批次取代**，见文首回填表与派工大表 §二） | **Lead 专属** |
 
 **写作用域互斥**：L1/L2/L3 在 `main/.../app/`，L1b 在 `main/.../platform/`，
 L4 在 `composeP1/.../app/`，L5 是 Lead 区。四层互不重叠；同一目录内按**文件**互斥。
