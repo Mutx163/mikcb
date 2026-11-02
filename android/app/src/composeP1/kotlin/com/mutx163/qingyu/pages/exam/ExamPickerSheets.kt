@@ -158,13 +158,15 @@ fun ExamDatePickerSheet(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = weekLabel.replace("{week}", item.toString()),
-                                style = MiuixTheme.textStyles.body1,
+                                // 2026-11-02 弹窗审核 P3：Dart 选项行主行是 listTitle(17)=main、
+                                // 副行是 listDetail(14)=body2，body1/footnote1 整体小一档。
+                                style = MiuixTheme.textStyles.main,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
                             if (AddExamLogic.isCurrentWeek(item, semesterStart, LocalDateTime.now())) {
                                 Text(
                                     text = thisWeek,
-                                    style = MiuixTheme.textStyles.footnote1,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = Color(QingyuTheme.secondaryText(dark)),
                                 )
                             }
@@ -500,7 +502,8 @@ fun ExamCoursePickerSheet(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = option.title,
-                            style = MiuixTheme.textStyles.body1,
+                            // 与周次列表同一条口径：主行 main、副行 body2（对齐 Dart listTitle/listDetail）。
+                            style = MiuixTheme.textStyles.main,
                             color = Color(QingyuTheme.primaryText(dark)),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -508,7 +511,7 @@ fun ExamCoursePickerSheet(
                         if (option.details.isNotEmpty()) {
                             Text(
                                 text = option.details,
-                                style = MiuixTheme.textStyles.footnote1,
+                                style = MiuixTheme.textStyles.body2,
                                 color = Color(QingyuTheme.secondaryText(dark)),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
