@@ -10,6 +10,8 @@ import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import java.io.IOException
 import java.time.LocalDateTime
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -26,7 +28,8 @@ import org.junit.Test
  *   第 2 节 08:55-09:40），不是从实现里读出来的；
  * - 课次日期：2026-09-07 是**周一**（2026-01-01 是周四，+249 天 ≡ +4 天 → 周一），
  *   周一起算 + (week-1)*7 + (dayOfWeek-1)；
- * - 通知次数按「一次成功变更 = 一次通知」数。
+ * - 通知次数按「一次成功变更 = 一次通知」数；
+ * - 监听者回调**不持仓储对象锁**执行（`Thread.holdsLock` 断言钉住，防死锁隐患回归）。
  */
 class TimetableRepositoryTest {
 
@@ -532,6 +535,109 @@ class TimetableRepositoryTest {
         subscription.close()
         repository.addCourse(course("c2"))
         assertEquals("退订后不再收到", 1, seen.size)
+    }
+
+    // ---------- 锁外通知（防死锁隐患回归，见仓储类注释「监听者回调绝不持锁执行」） ----------
+
+    @Test
+    fun listenerCallbackRunsOutsideRepositoryMonitor() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val heldDuringCallback = mutableListOf<Boolean>()
+        repository.observe { heldDuringCallback.add(Thread.holdsLock(repository)) }
+
+        repository.addCourse(course("c1"))
+        repository.updateSettings(TimetableSettings.defaults().copy(semesterWeekCount = 20))
+        repository.setCurrentWeek(3)
+
+        assertEquals(3, heldDuringCallback.size)
+        assertFalse(
+            "监听者回调不得在仓储对象锁内执行（否则回调里等别的锁就是环形等待）",
+            heldDuringCallback.any { it },
+        )
+    }
+
+    @Test
+    fun listenerCanReadSnapshotDuringCallback() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val idsSeenInsideCallback = mutableListOf<List<String>>()
+        repository.observe {
+            idsSeenInsideCallback.add(repository.snapshot.courses.map { course -> course.id })
+        }
+
+        repository.addCourse(course("c1"))
+        repository.addCourse(course("c2"))
+
+        // 回调里同步读仓储快照（模拟「回调里还要拿数据」）：必须拿得到本次变更且不抛。
+        assertEquals(listOf(listOf("c1"), listOf("c1", "c2")), idsSeenInsideCallback)
+    }
+
+    @Test
+    fun concurrentWritesWithSnapshotReadingListenerDoNotDeadlock() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val callbacks = AtomicInteger()
+        val heldDuringCallback = Collections.synchronizedList(mutableListOf<Boolean>())
+        repository.observe {
+            callbacks.incrementAndGet()
+            heldDuringCallback.add(Thread.holdsLock(repository))
+            // 模拟「回调里还要拿数据」：同步再抓一份快照。
+            repository.snapshot
+        }
+
+        val writerCount = 4
+        val writesPerWriter = 25
+        val writers = (0 until writerCount).map {
+            Thread { repeat(writesPerWriter) { index -> repository.setCurrentWeek(index + 1) } }
+                .apply { isDaemon = true }
+        }
+        writers.forEach { it.start() }
+        writers.forEach { it.join(15_000) }
+        assertFalse("并发写 15 秒没跑完，疑似死锁", writers.any { it.isAlive })
+
+        assertTrue("至少回调过一次", callbacks.get() > 0)
+        assertTrue("回调不得持锁执行", heldDuringCallback.none { it })
+        // 并发下允许合并（少于总写数），但绝不因重入翻倍。
+        assertTrue("回调次数不得超过写次数", callbacks.get() <= writerCount * writesPerWriter)
+        // 最终状态一致：最后落进去的周次总能读到（默认学期 20 周，写超的被钳到 20）。
+        val finalWeek = repository.snapshot.currentWeek
+        assertTrue("finalWeek=$finalWeek 不在合法范围", finalWeek in 1..writesPerWriter)
+    }
+
+    @Test
+    fun reentrantApplyPathNotifiesOnce() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        // createTimeScheme(applyToActiveProfile = true) 锁内串 create → apply → persist 三级，
+        // 每级都只置「待通知」标志，公共入口排空一次 ⇒ 回调恰好一次，不因可重入翻倍。
+        repository.createTimeScheme("新作息", applyToActiveProfile = true)
+
+        assertEquals(1, seen.size)
+        val appliedId = repository.snapshot.settings.activeTimeSchemeId
+        assertEquals("新作息", repository.snapshot.timeSchemes.firstOrNull { it.id == appliedId }?.name)
+    }
+
+    @Test
+    fun outOfLockExplicitNotifyStillFires() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        // 模拟服务层流程（ScheduleItemService 同型）：port setter 只改内存，
+        // 服务显式 persist 后自己调 notifyStateChanged —— 锁外显式通知必须立即回调。
+        repository.scheduleItems = emptyList()
+        repository.persistActiveProfileState()
+        repository.notifyStateChanged()
+
+        assertEquals(1, seen.size)
+        // 锁外显式通知不受「待通知」标志影响：再通知一次就再回调一次（与历史行为一致）。
+        repository.notifyStateChanged()
+        assertEquals(2, seen.size)
     }
 
     // ---------- 夹具 ----------

@@ -82,9 +82,15 @@ data class TimetableSnapshot(
  *   工作线程，与 UI 主线程共用同一份内存状态；本类所有公开读写入口都挂在同一把
  *   对象锁（`@Synchronized`）上，写与写、写与读快照都不再交错。锁只保证「单个
  *   入口原子」，多个入口组成的多步序列仍不是事务（那属于调用方，如 `LanTransferApplier`
- *   的快照补偿）。notifyStateChanged 的监听者回调刻意在锁外执行（先锁内原子抓
- *   snapshot，再逐个回调），避免宿主回调里再做仓储操作时把锁持有时间拉长。
- *   Kotlin 的 `@Synchronized` 可重入：服务层在入口锁内再调 port 读写不会自锁。
+ *   的快照补偿）。Kotlin 的 `@Synchronized` 可重入：服务层在入口锁内再调 port 读写
+ *   不会自锁。
+ * - **监听者回调绝不持锁执行**：写入口锁内只改内存 + 落盘 + 置「待通知」标志
+ *   （[pendingNotify]），公共入口释放锁后统一回调（先锁外原子抓 snapshot，再逐个回调）。
+ *   这样回调里再做仓储操作、同步等主线程、拿别的锁，都不会与本类对象锁成环
+ *   （否则 worker → 主线程 → 仓储锁就是现成的环形等待）。锁外显式调
+ *   [notifyStateChanged]（`ScheduleItemService` / 考试服务 / 日期规则自动套用 /
+ *   情侣同步）维持「立即通知」语义不变。这些契约由 `TimetableRepositoryTest`
+ *   的持锁断言与并发测试钉住。
  */
 class TimetableRepository(private val store: TimetableStore) : TimetableCoursePort, TimetableScheduleItemPort {
 
@@ -98,6 +104,12 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
 
     /** Dart 侧是 provider 的一个内存字段（`_currentLiveCourseId`），不落盘。 */
     private var currentLiveCourseId: String? = null
+
+    /**
+     * 「有变更待通知」标志：锁内置位，公共入口释放锁后由 [drainPendingNotify] 排空。
+     * 由本类对象锁保护——这是「监听者回调绝不持锁执行」的机制（见类注释）。
+     */
+    private var pendingNotify = false
 
     private val listeners = CopyOnWriteArrayList<(TimetableSnapshot) -> Unit>()
 
@@ -158,19 +170,39 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     }
 
     // ---------- 对外写入口 ----------
+    //
+    // 公共入口统一形态：**非 synchronized 包装 + `@Synchronized private …Locked` 实现**。
+    // 包装在锁实现返回（对象锁已释放）后调 [drainPendingNotify]，保证监听者回调
+    // 绝不在持锁状态下执行（见类注释）。锁实现内部一律用 `pendingNotify = true`
+    // 代替直接回调；`@Synchronized` 可重入，锁实现之间的互相调用不会自锁。
+
+    fun addCourse(course: Course) {
+        addCourseLocked(course)
+        drainPendingNotify()
+    }
 
     @Synchronized
-    fun addCourse(course: Course) {
+    private fun addCourseLocked(course: Course) {
         TimetableCourseService.add(this, course)
     }
 
-    @Synchronized
     fun updateCourse(course: Course, previousSharedName: String? = null) {
-        TimetableCourseService.update(this, course, previousSharedName)
+        updateCourseLocked(course, previousSharedName)
+        drainPendingNotify()
     }
 
     @Synchronized
+    private fun updateCourseLocked(course: Course, previousSharedName: String? = null) {
+        TimetableCourseService.update(this, course, previousSharedName)
+    }
+
     fun deleteCourse(courseId: String) {
+        deleteCourseLocked(courseId)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun deleteCourseLocked(courseId: String) {
         TimetableCourseService.delete(this, courseId)
     }
 
@@ -178,22 +210,33 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 切换激活档案。
      * @return true 表示真的切了（目标存在且与当前不同）；否则 false 且**不通知**。
      */
-    @Synchronized
     fun setActiveProfile(profileId: String): Boolean {
+        val changed = setActiveProfileLocked(profileId)
+        drainPendingNotify()
+        return changed
+    }
+
+    @Synchronized
+    private fun setActiveProfileLocked(profileId: String): Boolean {
         if (loadedProfiles.none { it.id == profileId }) return false
         if (profileId == activeProfile.id) return false
         loadedActiveProfileId = profileId
         store.saveActiveProfileId(profileId)
-        notifyStateChanged()
+        pendingNotify = true
         return true
     }
 
     /** 更新设置：落盘（合并写）后通知。 */
-    @Synchronized
     fun updateSettings(settings: TimetableSettings) {
+        updateSettingsLocked(settings)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun updateSettingsLocked(settings: TimetableSettings) {
         loadedSettings = settings
         store.saveSettings(settings)
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     // ---------- 备份恢复用的原子入口 ----------
@@ -213,8 +256,17 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * （profiles + active id），两次之间失败会留下「盘新内存旧」——
      * Dart 侧用 `runSettingsMirrorTransaction` 覆盖这一段，本层未实现事务。
      */
-    @Synchronized
     fun replaceActiveProfileContent(
+        courses: List<Course>,
+        tasks: List<CourseTask>,
+        exams: List<Exam>,
+    ) {
+        replaceActiveProfileContentLocked(courses, tasks, exams)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceActiveProfileContentLocked(
         courses: List<Course>,
         tasks: List<CourseTask>,
         exams: List<Exam>,
@@ -227,7 +279,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         store.saveActiveProfileId(next.id)
         loadedProfiles = nextProfiles
         loadedActiveProfileId = next.id
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     /**
@@ -253,14 +305,19 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * **失败语义**：先落盘、成功后才改内存；落盘抛错时内存与监听者都不动。
      */
-    @Synchronized
     fun replaceAllProfiles(profiles: List<TimetableProfile>, activeProfileId: String?) {
+        replaceAllProfilesLocked(profiles, activeProfileId)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceAllProfilesLocked(profiles: List<TimetableProfile>, activeProfileId: String?) {
         // 先落盘：失败则内存与监听者都不动。
         store.saveProfiles(profiles)
         store.saveActiveProfileId(activeProfileId)
         loadedProfiles = profiles
         loadedActiveProfileId = activeProfileId
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     /**
@@ -273,8 +330,17 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * **失败语义**：先落三次盘、全部成功后才改内存；任一次抛错时内存与监听者都不动。
      * 盘上可能已写成一半（与 [replaceAllProfiles] 同口径，本层不做跨 key 事务）。
      */
-    @Synchronized
     fun replaceAllProfilesAndSettings(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        settings: TimetableSettings,
+    ) {
+        replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceAllProfilesAndSettingsLocked(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         settings: TimetableSettings,
@@ -285,7 +351,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedSettings = settings
         loadedProfiles = profiles
         loadedActiveProfileId = activeProfileId
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     /**
@@ -309,7 +375,6 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * **调用方义务**：备快照的信封 / 校验和 / 档案列表是否可信必须由调用方先校验完。
      */
-    @Synchronized
     fun restoreFromCloudSnapshot(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
@@ -318,6 +383,26 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         locationTimeGroups: List<LocationTimeGroup>,
         /** 快照里携带的全局设置（core 四键）；null = 取激活档案内嵌的那份。 */
         settings: TimetableSettings? = null,
+    ) {
+        restoreFromCloudSnapshotLocked(
+            profiles,
+            activeProfileId,
+            timeSchemes,
+            scheduleDateRules,
+            locationTimeGroups,
+            settings,
+        )
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun restoreFromCloudSnapshotLocked(
+        profiles: List<TimetableProfile>,
+        activeProfileId: String?,
+        timeSchemes: List<TimeScheme>,
+        scheduleDateRules: List<ScheduleDateRule>,
+        locationTimeGroups: List<LocationTimeGroup>,
+        settings: TimetableSettings?,
     ) {
         require(profiles.isNotEmpty()) { "restore snapshot must contain at least one profile" }
         val resolvedActiveId = activeProfileId
@@ -344,7 +429,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedScheduleDateRules = scheduleDateRules
         loadedLocationTimeGroups = locationTimeGroups
         currentLiveCourseId = null
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     /**
@@ -361,13 +446,18 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * Dart 的 `notify: Boolean = true` 开关对应内部调用路径，本层暂无消费方，不预置。
      */
-    @Synchronized
     fun setCurrentWeek(week: Int) {
+        setCurrentWeekLocked(week)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun setCurrentWeekLocked(week: Int) {
         val clamped = clampCurrentWeekToSettings(week.toLong(), loadedSettings).toInt()
         loadedCurrentWeek = clamped
         currentLiveCourseId = null
         persistActiveProfileState()
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     // ---------- TimetableCoursePort ----------
@@ -411,11 +501,16 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     // ---------- 作息日期规则 ----------
 
     /** 整份替换作息日期规则：落盘成功后才改内存并通知（成功才通知语义）。 */
-    @Synchronized
     fun updateScheduleDateRules(rules: List<ScheduleDateRule>) {
+        updateScheduleDateRulesLocked(rules)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun updateScheduleDateRulesLocked(rules: List<ScheduleDateRule>) {
         store.saveScheduleDateRules(rules)
         loadedScheduleDateRules = rules
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     // ---------- 地点作息分组 ----------
@@ -433,11 +528,16 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 「整份数组写回 `location_time_groups`」这一笔上；批次 F10 只搬这一笔，
      * 分组增删改的判据在 `pages/time_scheme/LocationTimeGroupController`（纯 Kotlin、JVM 可测）。
      */
-    @Synchronized
     fun updateLocationTimeGroups(groups: List<LocationTimeGroup>) {
+        updateLocationTimeGroupsLocked(groups)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun updateLocationTimeGroupsLocked(groups: List<LocationTimeGroup>) {
         store.saveLocationTimeGroups(groups)
         loadedLocationTimeGroups = groups
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     // ---------- 时间模板（作息）写入口 ----------
@@ -467,11 +567,21 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * `sections ?? activeTimeScheme?.sections ?? settings.sections`）。
      * [applyToActiveProfile] 为真时顺手把它套到当前课表（等于随后调 [applyTimeScheme]）。
      */
-    @Synchronized
     fun createTimeScheme(
         name: String,
         sections: List<SectionTime>? = null,
         applyToActiveProfile: Boolean = false,
+    ): TimeScheme {
+        val scheme = createTimeSchemeLocked(name, sections, applyToActiveProfile)
+        drainPendingNotify()
+        return scheme
+    }
+
+    @Synchronized
+    private fun createTimeSchemeLocked(
+        name: String,
+        sections: List<SectionTime>?,
+        applyToActiveProfile: Boolean,
     ): TimeScheme {
         val now = LocalDateTime.now()
         val scheme = TimeScheme(
@@ -485,23 +595,30 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         store.saveTimeSchemes(next)
         loadedTimeSchemes = next
         if (applyToActiveProfile) {
-            applyTimeScheme(scheme.id)
+            // 锁内互调：走 Locked 实现，不经过公共包装（那会在持锁状态下排空通知）。
+            applyTimeSchemeLocked(scheme.id)
         } else {
-            notifyStateChanged()
+            pendingNotify = true
         }
         return scheme
     }
 
     /** 改名；找不到返回 null（不落盘、不通知）。 */
-    @Synchronized
     fun renameTimeScheme(schemeId: String, name: String): TimeScheme? {
+        val updated = renameTimeSchemeLocked(schemeId, name)
+        drainPendingNotify()
+        return updated
+    }
+
+    @Synchronized
+    private fun renameTimeSchemeLocked(schemeId: String, name: String): TimeScheme? {
         val index = loadedTimeSchemes.indexOfFirst { it.id == schemeId }
         if (index < 0) return null
         val updated = loadedTimeSchemes[index].copy(name = name.trim(), updatedAt = LocalDateTime.now())
         val next = loadedTimeSchemes.toMutableList().also { it[index] = updated }
         store.saveTimeSchemes(next)
         loadedTimeSchemes = next
-        notifyStateChanged()
+        pendingNotify = true
         return updated
     }
 
@@ -512,8 +629,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * `timetable_time_scheme_service.dart:224`）。**这不是新造的文案**：它与 Dart
      * 逐字一致，宿主通常直接传入列表页算好的 `copyName`（那条走 ARB 同形键）。
      */
-    @Synchronized
     fun duplicateTimeScheme(schemeId: String, name: String? = null): TimeScheme? {
+        val duplicated = duplicateTimeSchemeLocked(schemeId, name)
+        drainPendingNotify()
+        return duplicated
+    }
+
+    @Synchronized
+    private fun duplicateTimeSchemeLocked(schemeId: String, name: String?): TimeScheme? {
         val source = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return null
         val now = LocalDateTime.now()
         val duplicated = source.copy(
@@ -526,7 +649,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         val next = loadedTimeSchemes + duplicated
         store.saveTimeSchemes(next)
         loadedTimeSchemes = next
-        notifyStateChanged()
+        pendingNotify = true
         return duplicated
     }
 
@@ -538,8 +661,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 2. 节次数不能小于**已用最大节次**：课程按节次下标取钟点，收窄会让课程无处取时间。
      *    能定位到具体是哪门课时给带明细的那条（`section_count_below_usage_detail`）。
      */
-    @Synchronized
     fun updateTimeScheme(schemeId: String, name: String, sections: List<SectionTime>): String? {
+        val result = updateTimeSchemeLocked(schemeId, name, sections)
+        drainPendingNotify()
+        return result
+    }
+
+    @Synchronized
+    private fun updateTimeSchemeLocked(schemeId: String, name: String, sections: List<SectionTime>): String? {
         validateSectionTimes(sections)?.let { return it }
 
         val requiredMaxSection = TimeSchemeLogic.maxUsedSection(
@@ -627,7 +756,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedProfiles = nextProfiles
         loadedSettings = nextSettings
         currentLiveCourseId = null
-        notifyStateChanged()
+        pendingNotify = true
         return null
     }
 
@@ -637,8 +766,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      * 先查「现有课程最靠后的那一节」：课程保留自己的节次下标，目标模板必须覆盖它们，
      * 否则那些课会取不到钟点（`section_count_below_usage`）。
      */
-    @Synchronized
     fun applyTimeScheme(schemeId: String): String? {
+        val result = applyTimeSchemeLocked(schemeId)
+        drainPendingNotify()
+        return result
+    }
+
+    @Synchronized
+    private fun applyTimeSchemeLocked(schemeId: String): String? {
         val scheme = loadedTimeSchemes.firstOrNull { it.id == schemeId } ?: return "time_scheme_not_found"
         val requiredMaxSection = activeProfile.courses.maxOfOrNull { it.endSection } ?: 0
         if (requiredMaxSection > scheme.sections.size) {
@@ -668,8 +803,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      *
      * 判据走 [TimeSchemeLogic.isSchemeInUse] 这唯一一份口径，不在本层另写一套。
      */
-    @Synchronized
     fun deleteTimeScheme(schemeId: String): Boolean {
+        val deleted = deleteTimeSchemeLocked(schemeId)
+        drainPendingNotify()
+        return deleted
+    }
+
+    @Synchronized
+    private fun deleteTimeSchemeLocked(schemeId: String): Boolean {
         if (TimeSchemeLogic.isSchemeInUse(
                 profiles = loadedProfiles,
                 schemeId = schemeId,
@@ -685,7 +826,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         val next = loadedTimeSchemes.toMutableList().also { it.removeAt(index) }
         store.saveTimeSchemes(next)
         loadedTimeSchemes = next
-        notifyStateChanged()
+        pendingNotify = true
         return true
     }
 
@@ -717,7 +858,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedSettings = settings
         loadedCurrentWeek = week
         currentLiveCourseId = null
-        notifyStateChanged()
+        pendingNotify = true
     }
 
     override val semesterWeekCount: Int
@@ -831,10 +972,45 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         // no-op：实时活动属 Phase 4。
     }
 
+    /**
+     * 通知监听者「状态已变」。**双语义**（见类注释「监听者回调绝不持锁执行」）：
+     *
+     * - **持锁调用**（本类 `@Synchronized` 锁实现内部、或服务层经 port 回到持锁中的仓储）：
+     *   只置「待通知」标志，由最外层公共入口释放锁后统一回调——锁内多次置位合并成一次回调。
+     * - **锁外调用**（`ScheduleItemService` / 考试服务 / 日期规则自动套用 / 情侣同步等
+     *   自管持久化与通知时序的调用方）：立即回调，与历史行为一致。
+     */
     override fun notifyStateChanged() {
+        if (Thread.holdsLock(this)) {
+            pendingNotify = true
+        } else {
+            fireNotification()
+        }
+    }
+
+    /**
+     * 抓一份当前快照后逐个回调监听者。
+     *
+     * 调用方必须保证此刻**不持有**本类对象锁：回调里可能做任何事（再读仓储、等别的锁、
+     * 同步等主线程），持锁回调正是本类要杜绝的死锁隐患。
+     */
+    private fun fireNotification() {
         if (listeners.isEmpty()) return
         val current = snapshot
         listeners.forEach { it(current) }
+    }
+
+    /**
+     * 排空「待通知」标志：在锁内原子取走标志（并发下多次置位在此合并成一次），
+     * 有变更才在**锁外**回调一次。公共写入口在自己的 `…Locked` 实现返回（锁已释放）后调用。
+     */
+    private fun drainPendingNotify() {
+        val pending = synchronized(this) {
+            val wasPending = pendingNotify
+            pendingNotify = false
+            wasPending
+        }
+        if (pending) fireNotification()
     }
 
     @Synchronized
