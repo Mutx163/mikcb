@@ -204,6 +204,31 @@ android {
     }
 }
 
+// 变体白名单（2026-11-02）：4 个渠道 × 4 个构建类型 = 16 个组合，日常只用这 5 个。
+// 未列出的组合在这里关掉，Android Studio 的 Build Variants 下拉框就只剩这 5 个。
+//
+// 关掉不只是「列表短」，更是堵住误选：
+//   · devBench：包名是 .debug，但 bench 继承 release 签名 ⇒ 与日常调试包同包名不同签名，
+//     装不上；Studio 在 Android 14+ 还会把真实错误盖成 INSTALL_BASELINE_PROFILE_FAILED。
+//   · prodBench：与正式版完全同包名、同签名 ⇒ 一装就覆盖用户手机上的正式版。
+//   · profile 档（devProfile / perfProfile / prodProfile / itestProfile）：测性能不作数
+//     （AGENTS.md 规定只认 Bench 或 release），只在历史上用过。
+//
+// prodDebug 保留是给 CI 的 `:app:testProdDebugUnitTest` 用的，**不要拿它装机**：
+// 它是 debug 签名 + 正式包名，会和已安装的正式版撞签名。
+//
+// 临时要用被关掉的组合：把变体名加进下面的列表即可，任务名会一起恢复。
+// 注意 devProfile 关掉后 `flutter run --profile --flavor dev` 会找不到变体。
+def keepVariants = ['devDebug', 'itestDebug', 'perfBench', 'prodDebug', 'prodRelease'] as Set
+
+androidComponents {
+    beforeVariants(selector().all()) { variant ->
+        if (!keepVariants.contains(variant.name)) {
+            variant.enable = false
+        }
+    }
+}
+
 // Compose 编译器插件是模块级应用的，对全部变体的 Kotlin 编译生效。2026-10-26 建这两个
 // flavor 时，Compose runtime 只挂在 composeP1 的 classpath 上，其余变体编译时插件因找不到
 // runtime 抛 IncompatibleComposeRuntimeVersionException，把整条 JVM 单测链连坐
