@@ -329,6 +329,75 @@ class LanEditRepositoryHostTest {
         assertEquals(1, repository.courses.size)
     }
 
+    /**
+     * 2026-11-02 修（P0）回归钉：旧实现 replaceExisting=true 时**先清空（立即落盘）
+     * 再逐行写**，任一行非法时旧课表已经没了。新实现必须先验完全部行才允许碰盘——
+     * 第 N 行非法 ⇒ 旧课表在内存与盘上都原样保留。
+     */
+    @Test
+    fun `表格中间行非法时旧课表原样保留`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("old", "旧课"))
+        val before = store.rawSnapshot()
+        assertTrue("前置条件：盘上得先有东西", before.isNotEmpty())
+
+        val good1 = course("n1", "新课一")
+        // 节次倒挂（endSection < startSection）：prepareForImport 的校验会拒。
+        val bad = course("n2", "新课二").copy(startSection = 3, endSection = 1)
+        val good3 = course("n3", "新课三")
+        val host = LanEditRepositoryHost(repository) { _, _, _ ->
+            LanEditSpreadsheetParse(listOf(good1, bad, good3), emptyList(), "csv")
+        }
+
+        val error = try {
+            host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
+            null
+        } catch (e: IllegalArgumentException) {
+            e
+        }
+        assertNotNull("非法行必须被拒", error)
+        assertEquals("course_sections_invalid", error!!.message)
+        // 旧课表在内存里原样（一行新课都没进、旧课也没被清）
+        assertEquals(listOf("old"), repository.courses.map { it.id })
+        // 盘上一字未变（旧实现这里课表已经被清空落盘了）
+        assertEquals("第 2 行非法时盘上必须一字未变", before, store.rawSnapshot())
+
+        // 追加模式同样不许写一半：同一批坏数据在 replaceExisting=false 下也整批拒绝。
+        val errorAppend = try {
+            host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = false)
+            null
+        } catch (e: IllegalArgumentException) {
+            e
+        }
+        assertNotNull("追加模式同样必须整批拒绝", errorAppend)
+        assertEquals(listOf("old"), repository.courses.map { it.id })
+        assertEquals("追加模式拒绝时盘上一字未变", before, store.rawSnapshot())
+    }
+
+    /** 覆盖导入成功的正路径：新课全量进、挂在旧课上的作业按 clear 口径一起清。 */
+    @Test
+    fun `表格覆盖导入成功后旧课与挂课作业一起换掉`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("old", "旧课"))
+        val host = LanEditRepositoryHost(repository) { _, _, _ ->
+            LanEditSpreadsheetParse(
+                listOf(course("n1", "新课一"), course("n2", "新课二")),
+                emptyList(),
+                "csv",
+            )
+        }
+
+        val outcome = host.importSpreadsheetBytes("a,b".toByteArray(), "x.csv", replaceExisting = true)
+
+        assertEquals(2, outcome.importedCount)
+        assertEquals(setOf("n1", "n2"), repository.courses.map { it.id }.toSet())
+        val raw = store.rawSnapshot().values.joinToString("\n")
+        assertTrue("新课必须真的落到盘上", raw.contains("新课一") && raw.contains("新课二"))
+        assertFalse("旧课必须从盘上消失", raw.contains("\"old\""))
+    }
+
     // -----------------------------------------------------------------------
     // 其余写入口
     // -----------------------------------------------------------------------

@@ -266,14 +266,34 @@ class LanEditRepositoryHost(
             // Dart 同口径：一门都没解析出来时**不落盘**，直接回 0 + 警告。
             return LanEditSpreadsheetImport(0, parsed.warnings, parsed.format)
         }
-        if (replaceExisting) {
-            TimetableCourseService.clearActiveProfileCourses(repository)
+        // 2026-11-02 修（P0）：旧实现 replaceExisting=true 时**先清空旧课表（立即落盘）
+        // 再逐行 add**，任一行校验/落盘失败只回 400——旧课表已经没了、新课表只写了一半。
+        // 现在先在内存里校验+归一全部行（[TimetableCourseService.prepareForImport]，
+        // 与逐行 add 同一份校验/归一逻辑），任一行非法在这里抛，盘上一个字节都没动；
+        // 全部通过后走 [TimetableRepository.replaceActiveProfileContent] **一次落盘**
+        // （先落盘、成功才改内存），不存在「清完没写完」的中间态。这与 Dart
+        // `importParsedCourses` 的「内存合并 → 整份替换 → 一次 persist → 失败恢复」同型，
+        // 只是把失败恢复做进了唯一写入口的失败语义里（该入口落盘失败时内存与盘都不动）。
+        //
+        // 与逐行 add 的两处已知行为差异（有意，对齐 Dart 的整份替换口径）：
+        // - 落盘与通知从「每行一次」变成「整批一次」，界面不再闪中间态；
+        // - 覆盖模式沿用 clearActiveProfileCourses 的口径：挂在课程上的作业一起清、
+        //   考试刻意保留（清空后往往马上重导，考试留着才接得上）。
+        val prepared = parsed.courses.map { course ->
+            TimetableCourseService.prepareForImport(repository, course)
         }
-        // 同样逐门 add：表格每一行都是**独立**的课（名字各不相同），
-        // `addGroup` 会把它们压成同一门课（见 importProfileBackupJson 里的同一处说明）。
-        for (course in parsed.courses) {
-            repository.addCourse(course)
+        val beforeCourses = repository.courses
+        val beforeTasks = repository.tasks
+        val beforeExams = repository.exams
+        val nextCourses = if (replaceExisting) prepared else beforeCourses + prepared
+        val nextTasks = if (replaceExisting) {
+            beforeTasks.filter { it.courseId == null }
+        } else {
+            beforeTasks
         }
+        repository.replaceActiveProfileContent(nextCourses, nextTasks, beforeExams)
+        // 课表整份换掉了，「当前正在上的课」缓存必须失效（clearActiveProfileCourses 同口径）。
+        repository.clearCurrentLiveCourseId()
         return LanEditSpreadsheetImport(parsed.courses.size, parsed.warnings, parsed.format)
     }
 

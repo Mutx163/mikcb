@@ -78,15 +78,26 @@ object TimetableCourseService {
         return null
     }
 
-    /** 加一门课：改的就是用户刚填的那条，刻意不回滚。 */
-    fun add(port: TimetableCoursePort, course: Course) {
+    /**
+     * 校验并归一**单条课**，不碰 port、不落盘。
+     *
+     * 给「先验全量、再一次写入」的导入路径用（局域网表格导入）：任一行在这里抛，
+     * 调用方可以安全放弃——因为此刻什么都没写。校验/归一口径与 [add] 完全同源
+     * （同一份 [validateSections] 与 [normalize]），不存在第二套标准。
+     */
+    fun prepareForImport(port: TimetableCoursePort, course: Course): Course {
         validateSections(port, course)
         val normalized = normalize(course, semesterWeekCount = port.semesterWeekCount)
-        val normalizedCourse = if (port.isLiveTestingFixture(normalized)) {
+        return if (port.isLiveTestingFixture(normalized)) {
             normalized
         } else {
             port.syncCourseWithEffectiveTimeScheme(normalized)
         }
+    }
+
+    /** 加一门课：改的就是用户刚填的那条，刻意不回滚。 */
+    fun add(port: TimetableCoursePort, course: Course) {
+        val normalizedCourse = prepareForImport(port, course)
         val existingSharedCourse = port.courses.firstOrNull { item ->
             CourseDomain.sharedKey(item) == CourseDomain.sharedKey(normalizedCourse)
         }
