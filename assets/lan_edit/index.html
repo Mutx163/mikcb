@@ -233,6 +233,8 @@
                 <div class="card overview-log-card">
                   <div class="card-header">
                     <h3 class="card-title"><i class="ti ti-history"></i>操作日志</h3>
+                    <!-- 导入成功后由 app.js 亮出；凭服务端回的 transferId 撤回这一批导入 -->
+                    <button id="btn-transfer-undo" type="button" class="btn btn-outline btn-sm hidden"></button>
                   </div>
                   <div class="card-body overflow-auto">
                     <div id="activity-log-list" class="activity-log-timeline">

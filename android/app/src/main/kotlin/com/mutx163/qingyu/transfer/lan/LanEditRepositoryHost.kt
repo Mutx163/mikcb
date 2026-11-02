@@ -55,31 +55,38 @@ data class LanEditSpreadsheetParse(
  *
  * ## 明确不做的（诚实清单）
  *
- * - **局部传输的 diff/预览与应用已接线**（2026-10-30，批次 F17）：`previewTransferJson` /
- *   `applyTransferJson` 交给 [LanTransferApplier]（纯逻辑 [LanTransferLogic] + 仓储写入）。
- *   仍未做的三件：① **撤销点**（Dart `TransferUndoService` 那套）没有，
- *   `applyTransferJson` 的 `transferId` 恒为 `null`；② 设置只应用 Kotlin 已移植的
- *   时间/周次子集（`TimetableSettings` 的边界说明）；③ 地点分组改变后**不重算**课程钟点
- *   （Dart `replaceLocationTimeGroups(resync: true)` 的对应物在仓储层还没有）。
+ * - **局部传输的 diff/预览 / 应用 / 撤销已接线**（2026-10-30 应用，2026-11-02 撤销）：
+ *   `previewTransferJson` / `applyTransferJson` / `undoTransferJson` 交给
+ *   [LanTransferApplier]（纯逻辑 [LanTransferLogic] + [LanTransferUndoLogic] + 仓储写入）。
+ *   `applyTransferJson` 成功后回真实 `transferId`（撤销点 id），凭它调
+ *   `POST /api/v1/import/undo` 只回退这一批导入、保留用户之后的操作。
+ *   仍未做的两件：① 设置只应用 Kotlin 已移植的时间/周次子集（`TimetableSettings` 的
+ *   边界说明）；② 地点分组改变后**不重算**课程钟点（Dart
+ *   `replaceLocationTimeGroups(resync: true)` 的对应物在仓储层还没有）。
  *   调色板同步：局域网课程颜色按 `normalizeLanCourseColor` 收窄到 `#RRGGBB`（防 HTML 注入面）。
  * - **多档案整份恢复不支持**：备份里 `profiles` 非空时明确抛
- *   `profile_backup_profiles_unsupported`，而不是静默只恢复活动档案
- *   （那会无声吞掉用户其它课表）。要支持得给仓储加「替换整份档案表」的入口，
- *   属 Lead 决定的范围，本泳道不自己加。
+ *   [LanTransferLogic.ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED]，而不是静默只恢复
+ *   活动档案（那会无声吞掉用户其它课表）。网页端按该错误码显示可读解释与替代路径
+ *   （手机端「数据备份与迁移」支持整份档案恢复）；后续路线见该常量的 KDoc。
  * - ~~备份里的 `tasks` / `exams` 导出会带上、导入不写回~~ **已修（2026-11-01）**：
  *   整份备份导出补齐了日程 / 日期规则 / 地点作息分组，导入改走 [LanTransferApplier]，
  *   八张实体表 + 时间模板全部写回（P0 数据丢失）。
  */
 class LanEditRepositoryHost(
     private val repository: TimetableRepository,
+    /**
+     * 撤销点索引。局域网服务传进程级单例 [LanTransferUndoStore.shared]（停服再开仍可撤销）；
+     * 单测各自建独立实例，避免用例之间互相污染。
+     */
+    private val undoStore: LanTransferUndoStore = LanTransferUndoStore(),
     /** 表格解析器，由接线方注入（见 [LanEditSpreadsheetParse] 的说明）。 */
     private val parseSpreadsheet: (ByteArray, String, TimetableSettings) -> LanEditSpreadsheetParse = { _, _, _ ->
         throw UnsupportedOperationException("spreadsheet_import_unsupported")
     },
-) : LanEditHost {
+) : LanEditHost, LanTransferHost {
 
-    /** 传输包预览/应用的执行层（无状态，只持仓储引用）。 */
-    private val applier = LanTransferApplier(repository)
+    /** 传输包预览/应用/撤销的执行层（无状态，只持仓储与撤销索引）。 */
+    private val applier = LanTransferApplier(repository, undoStore)
 
     /**
      * 仓储在构造时就装载完毕（`TimetableRepository.init { reload() }`），
@@ -283,8 +290,16 @@ class LanEditRepositoryHost(
 
     /**
      * Dart `LanEditProviderHost.applyTransferJson`：**先校验后落盘**，失败回 `applied: false`。
-     * `transferId`（Dart 的撤销点 id）Kotlin 侧还没有，恒为 `null`。
+     * 成功后 `transferId` 是这个撤销点的真实 id（不是包里的 `packageId`）。
      */
     override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?> =
         applier.apply(content, mode)
+
+    /**
+     * `POST /api/v1/import/undo`：凭 `transferId` 撤回这次导入。
+     *
+     * 只回退这次导入写入、且之后没被用户改过的那部分（判据见 [LanTransferUndoLogic]）；
+     * 不认识的 id / 已撤销过的 id 都安全跳过，不写盘。
+     */
+    override fun undoTransferJson(transferId: String): Map<String, Any?> = applier.undo(transferId)
 }

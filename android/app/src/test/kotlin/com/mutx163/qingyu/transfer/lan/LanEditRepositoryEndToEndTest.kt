@@ -14,6 +14,7 @@ import com.mutx163.qingyu.sync.buildTransferPackageJson
 import com.mutx163.qingyu.sync.validateTransferPackageJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
@@ -36,7 +37,7 @@ class LanEditRepositoryEndToEndTest {
     private val now = 1_700_000_000_000L
 
     @Test
-    fun `坏备份走真 HTTP 导入 400 且盘上一字未变`() {
+    fun `具备传输包能力的 host 在 PUT profile active 时真 HTTP 回 409 且盘上一字未变`() {
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
         repository.addCourse(course("keep1", "原有课程"))
@@ -44,6 +45,45 @@ class LanEditRepositoryEndToEndTest {
         val session = session()
 
         withServer(repository, session) { port ->
+            val bad = """{"app":"mikcb","packageType":"transfer","schemaVersion":1,"packageId":"p1",""" +
+                """"scope":"current_timetable","channel":"lan","exportedAt":"2026-10-28T09:00:00.000",""" +
+                """"currentWeek":7,"courses":[{"id":"c9"}],"tasks":[],"scheduleItems":[],"exams":[],""" +
+                """"timeSchemes":[],"scheduleDateRules":[],"locationTimeGroups":[],"profiles":[]}"""
+            val response = parseResponse(exchange(port, put(port, "/api/v1/profile/active", bad, session.token)))
+            assertEquals(409, response.status)
+            assertTrue("返回 409 要求先 preview 再 apply：${response.body}", response.body.contains("transfer_preview_required"))
+            assertEquals("HTTP 409 拒绝保证盘上一字未变", before, store.rawSnapshot())
+            assertEquals(1, repository.courses.size)
+        }
+    }
+
+    @Test
+    fun `409 先于请求体与档案校验 真 HTTP 空体也回 409 且盘上一字未变`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
+        // 会话未绑定档案 + 空请求体：任何一项排在 409 之前都会变成 400
+        val session = session(boundProfileId = null)
+
+        withServer(repository, session) { port ->
+            val response = parseResponse(exchange(port, put(port, "/api/v1/profile/active", "", session.token)))
+            assertEquals(409, response.status)
+            assertTrue("必须先回 409 再谈别的：${response.body}", response.body.contains("transfer_preview_required"))
+            assertEquals("409 拒绝保证盘上一字未变", before, store.rawSnapshot())
+            assertEquals(1, repository.courses.size)
+        }
+    }
+
+    @Test
+    fun `legacy host 坏备份走真 HTTP 导入 400 且盘上一字未变`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val before = store.rawSnapshot()
+        val session = session()
+
+        withLegacyServer(repository, session) { port ->
             val bad = """{"app":"mikcb","packageType":"transfer","schemaVersion":1,"packageId":"p1",""" +
                 """"scope":"current_timetable","channel":"lan","exportedAt":"2026-10-28T09:00:00.000",""" +
                 """"currentWeek":7,"courses":[{"id":"c9"}],"tasks":[],"scheduleItems":[],"exams":[],""" +
@@ -57,7 +97,7 @@ class LanEditRepositoryEndToEndTest {
     }
 
     @Test
-    fun `导出再导入走真 HTTP 课程真的落到盘上`() {
+    fun `legacy host 导出再导入走真 HTTP 课程真的落到盘上`() {
         val sourceStore = InMemoryKeyValueStore()
         val source = repositoryOn(sourceStore)
         source.addCourse(course("c1", "高等数学"))
@@ -71,10 +111,10 @@ class LanEditRepositoryEndToEndTest {
             assertEquals(200, exported.status)
             assertTrue("导出的必须是合法传输包", validateTransferPackageJson(exported.body).isValid)
 
-            // 导到另一份空课表上
+            // 导到另一份空课表上（通过 legacy host 验证 legacy 导入通道）
             val targetStore = InMemoryKeyValueStore()
             val target = repositoryOn(targetStore)
-            withServer(target, session) { targetPort ->
+            withLegacyServer(target, session) { targetPort ->
                 val imported = parseResponse(
                     exchange(targetPort, put(targetPort, "/api/v1/profile/active", exported.body, session.token)),
                 )
@@ -110,6 +150,54 @@ class LanEditRepositoryEndToEndTest {
             assertEquals(setOf(2, 4), repository.courses.filter { it.name == "高等数学" }.map { it.dayOfWeek }.toSet())
             val raw = store.rawSnapshot().values.joinToString("\n")
             assertTrue("盘上要写着新排课", raw.contains("\"dayOfWeek\":4"))
+        }
+    }
+
+    @Test
+    fun `组替换带 weekExpression 走真 HTTP 课程自定义周次真的落到盘上`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val session = session()
+
+        withServer(repository, session) { port ->
+            val body = """{"originalName":"线性代数","profileId":"p1","slots":[""" +
+                """{"name":"线性代数","dayOfWeek":2,"startSection":1,"endSection":2,"weekExpression":"1-3、5"}]}"""
+            val response = parseResponse(exchange(port, put(port, "/api/v1/courses/group", body, session.token)))
+            assertEquals(200, response.status)
+
+            val course = repository.courses.firstOrNull { it.name == "线性代数" }
+            assertNotNull(course)
+            assertEquals(listOf(1, 2, 3, 5), course!!.customWeeks)
+            assertEquals(1, course.startWeek)
+            assertEquals(5, course.endWeek)
+            val raw = store.rawSnapshot().values.joinToString("\n")
+            assertTrue("盘上要持久化 customWeeks", raw.contains("1, 2, 3, 5") || raw.contains("1,2,3,5"))
+        }
+    }
+
+    @Test
+    fun `组替换带 suspendedWeekExpression 走真 HTTP 停课周真的落到盘上`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val session = session()
+
+        withServer(repository, session) { port ->
+            val body = """{"originalName":"编译原理","profileId":"p1","slots":[""" +
+                """{"name":"编译原理","dayOfWeek":2,"startSection":1,"endSection":2,""" +
+                """"weekExpression":"1-6","suspendedWeekExpression":"3、5"}]}"""
+            val response = parseResponse(exchange(port, put(port, "/api/v1/courses/group", body, session.token)))
+            assertEquals(200, response.status)
+
+            val found = repository.courses.firstOrNull { it.name == "编译原理" }
+            assertNotNull(found)
+            val course = requireNotNull(found)
+            assertEquals(listOf(1, 2, 3, 4, 5, 6), course.customWeeks)
+            assertEquals(listOf(3, 5), course.suspendedWeeks)
+            val raw = store.rawSnapshot().values.joinToString("\n")
+            assertTrue(
+                "盘上要持久化 suspendedWeeks 的值，而不只是写了一个键",
+                raw.contains("\"suspendedWeeks\":[3,5]"),
+            )
         }
     }
 
@@ -165,12 +253,59 @@ class LanEditRepositoryEndToEndTest {
             )
             assertEquals(200, applied.status)
             assertTrue("应用结果要说明成没成：${applied.body}", applied.body.contains("\"applied\":true"))
-            assertTrue(
-                "撤销点尚未移植，transferId 必须是 null：${applied.body}",
+            // 2026-11-02：撤销点已接线，transferId 必须是真实 id（不是 null，也不是包里的 packageId）。
+            assertFalse(
+                "应用成功必须回撤销点 id：${applied.body}",
                 applied.body.contains("\"transferId\":null"),
             )
             assertTrue(repository.courses.any { it.id == "c9" })
             assertTrue(store.rawSnapshot().values.joinToString("\n").contains("外来课程"))
+        }
+    }
+
+    @Test
+    fun `import_undo 凭 apply 回的 transferId 真 HTTP 撤回这一批导入`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        repository.addCourse(course("keep1", "原有课程"))
+        val session = session()
+
+        withServer(repository, session) { port ->
+            val content = transferPackage(listOf(course("c9", "外来课程")))
+            val applied = parseResponse(
+                exchange(
+                    port,
+                    post(
+                        port,
+                        "/api/v1/import/apply",
+                        MiniJson.encode(mapOf("content" to content, "mode" to "merge", "profileId" to "p1")),
+                        session.token,
+                    ),
+                ),
+            )
+            assertEquals(200, applied.status)
+            val appliedJson = MiniJson.tryParse(applied.body) as? Map<*, *>
+            val transferId = appliedJson?.get("transferId") as? String
+            assertNotNull("apply 必须回撤销点 id：${applied.body}", transferId)
+            assertTrue(repository.courses.any { it.id == "c9" })
+
+            val undoBody = MiniJson.encode(mapOf("transferId" to transferId, "profileId" to "p1"))
+            val undone = parseResponse(
+                exchange(port, post(port, "/api/v1/import/undo", undoBody, session.token)),
+            )
+            assertEquals(200, undone.status)
+            assertTrue("撤销要说明成没成：${undone.body}", undone.body.contains("\"undo\":true"))
+            assertFalse("本次导入新增的课必须撤掉", repository.courses.any { it.id == "c9" })
+            assertTrue("导入前的课必须还在", repository.courses.any { it.id == "keep1" })
+
+            // 重复撤销：200 + undo:false，且不再改数据（撤销点已被消费）。
+            val again = parseResponse(
+                exchange(port, post(port, "/api/v1/import/undo", undoBody, session.token)),
+            )
+            assertEquals(200, again.status)
+            assertTrue("重复撤销不能报成功：${again.body}", again.body.contains("\"undo\":false"))
+            assertTrue(again.body.contains("transfer_undo_already_undone"))
+            assertFalse(repository.courses.any { it.id == "c9" })
         }
     }
 
@@ -240,7 +375,30 @@ class LanEditRepositoryEndToEndTest {
     ) {
         val server = LanEditHttpServer(
             router = LanEditApiRouter(
-                host = LanEditRepositoryHost(repository, parser),
+                host = LanEditRepositoryHost(repository, parseSpreadsheet = parser),
+                session = session,
+                clock = { now },
+            ),
+            bindAddress = InetAddress.getByName("127.0.0.1"),
+        )
+        val port = server.start()
+        try {
+            block(port)
+        } finally {
+            server.stop("test_done")
+        }
+    }
+
+    private fun withLegacyServer(
+        repository: TimetableRepository,
+        session: LanEditSession,
+        block: (Int) -> Unit,
+    ) {
+        val repoHost = LanEditRepositoryHost(repository)
+        val legacyHost = object : LanEditHost by repoHost {}
+        val server = LanEditHttpServer(
+            router = LanEditApiRouter(
+                host = legacyHost,
                 session = session,
                 clock = { now },
             ),
@@ -274,12 +432,12 @@ class LanEditRepositoryEndToEndTest {
         return TimetableRepository(timetableStore)
     }
 
-    private fun session(): LanEditSession = LanEditSession.forTest(
+    private fun session(boundProfileId: String? = "p1"): LanEditSession = LanEditSession.forTest(
         pin = "123456",
         token = "tok-e2e",
         createdAtMillis = now,
         lastActivityAtMillis = now,
-        boundProfileId = "p1",
+        boundProfileId = boundProfileId,
         clockMillis = { now },
     )
 
@@ -323,17 +481,16 @@ class LanEditRepositoryEndToEndTest {
             "Authorization: Bearer $token\r\nContent-Length: ${bytes.size}\r\n\r\n$body"
     }
 
-    private fun exchange(port: Int, request: String): String {
-        Socket("127.0.0.1", port).use { socket ->
+    private fun exchange(port: Int, rawRequest: String): String {
+        Socket(InetAddress.getByName("127.0.0.1"), port).use { socket ->
             socket.soTimeout = 10_000
-            socket.getOutputStream().write(request.toByteArray(Charsets.UTF_8))
+            socket.getOutputStream().write(rawRequest.toByteArray(Charsets.UTF_8))
             socket.getOutputStream().flush()
             socket.shutdownOutput()
             return readAll(socket.getInputStream())
         }
     }
 
-    /** 容忍 RST：服务端在错误响应后直接关连接时，已收到的字节仍然有效。 */
     private fun readAll(input: InputStream): String {
         val out = ByteArrayOutputStream()
         val buffer = ByteArray(4096)

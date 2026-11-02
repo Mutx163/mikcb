@@ -4,6 +4,9 @@
 > `pages/transfer/**` 是 P3-G3-c 已交付的渲染层，本泳道只新建
 > `android/app/src/{main,test}/kotlin/com/mutx163/qingyu/transfer/lan/` 下的文件。
 >
+> 2026-11-01 局域网编辑收口：`LanTransferHost` 的 409 协议、周次表达式的解析范围
+> （仅 group）、学期周数不再在 HTTP 层收敛；§三 B 重排为「与 Dart 一致 / 端点级差异」。
+>
 > ## ⚠️ 接线时必须做的一件事
 >
 > **起服务时不要漏掉前台服务与静态资源**：本泳道只做 HTTP + API，不碰通知、不发网页文件。
@@ -36,17 +39,18 @@
 | `POST /api/v1/profiles/switch` | 200 `{profileId, profileName, profiles, meta}` / 400 / 404 |
 | `GET /api/v1/meta` | 200 `host.buildMetaJson()` |
 | `GET /api/v1/courses` | 200 `{courses:[…]}` |
-| `POST /api/v1/courses` | 201 课程 JSON / 400 `course_name_required`·`profile_id_required`·`profile_id_mismatch` / 409 `profile_mismatch` |
-| `GET/PATCH/DELETE /api/v1/courses/{id}` | 200 / 400 / 404 |
+| `POST /api/v1/courses` | 201 课程 JSON / 400 `course_name_required`·`profile_id_required`·`profile_id_mismatch` / 409 `profile_mismatch`；**忽略 `weekExpression` / `suspendedWeekExpression`（与 Dart 一致）** |
+| `GET/PATCH/DELETE /api/v1/courses/{id}` | 200 / 400 / 404（PATCH 同样忽略周次表达式） |
 | `POST /api/v1/courses/batch-delete` | 200 `{deletedCount}` / 400 `ids_required` |
-| `POST /api/v1/week-expression/parse` | 200 `{weeks, warnings}` / 400 `expression_required` |
+| `POST /api/v1/week-expression/parse` | 200 `{weeks, warnings}` / 400 `expression_required`·非法表达式 `invalid_request` |
 | `POST /api/v1/import/preview` | 200 预览 / 400 `backup_content_required` / 501 `transfer_preview_not_supported`（仅当 host 未实现预览时；当前 `LanEditRepositoryHost` 已实现） |
 | `GET /api/v1/profile/active` | 200 整份备份（传输包 JSON 对象，`scope=current_timetable`、`channel=lan`） |
-| `PUT /api/v1/profile/active` | 200 `{imported:true}` / 400（校验不过，**一个字节都不写**） |
-| `PUT /api/v1/courses/group` | 200 `{courses:[…]}`（按课名整组替换）/ 400 `at_least_one_schedule_slot`·`course_name_required`·`invalid_slot_entry` |
+| `PUT /api/v1/profile/active` | 409 `transfer_preview_required`（具备 `LanTransferHost` 能力的宿主强制客户端先走 preview 再 apply）/ legacy host 保留 200 `{imported:true}` / 400（校验不过，**一个字节都不写**） |
+| `PUT /api/v1/courses/group` | 200 `{courses:[…]}`（按课名整组替换）/ 400 `at_least_one_schedule_slot`·`course_name_required`·`invalid_slot_entry`；**逐 slot 解析 `weekExpression` / `suspendedWeekExpression`** |
 | `POST /api/v1/import/spreadsheet` | 200 `{importedCount, warnings, format}` / 400 `content_base64_required`·`content_base64_invalid` |
-| `POST /api/v1/import/apply` | 200 应用结果 / 400 `transfer_content_and_mode_required` · 坏包 `400 invalid_request` / 501 `transfer_apply_not_supported`（仅当 host 未实现应用时；当前已实现） |
-| `POST /api/v1/import/merge` | **409 `transfer_preview_required`**（Dart 里这条端点就是故意拒的，照抄，不实现合并导入） |
+| `POST /api/v1/import/apply` | 200 应用结果（成功时 `transferId` = **撤销点 id**，不是包里的 `packageId`）/ 400 `transfer_content_and_mode_required` · 坏包 `400 invalid_request` / 501 `transfer_apply_not_supported`（仅当 host 未实现应用时；当前已实现） |
+| `POST /api/v1/import/undo` | **Kotlin 新增**：200 `{undo, transferId, restored, skipped, error?}`；缺 `transferId` 400 `transfer_id_required`。撤销点不存在 / 已撤销过回 200 + `undo:false` + 错误码，**都不写盘**。只回退这次导入写入且之后没被改过的那部分 |
+| `POST /api/v1/import/merge` | **409 `transfer_preview_required`**（Dart 对具备 `LanTransferHost` 的宿主回 409；legacy host 会真正合并回 200。生产宿主恒具备能力，所以生产行为与 Dart 一致；Kotlin 统一 409 是端点级差异，见 §三 B3） |
 
 横切规则：跨源 403、Bearer 令牌、`Content-Type: application/json` 强制、请求体 5 MiB 上限、
 并发上限 16（超出 503）、头 431 / 体 413 / 超时 408、异常不回显原文（500 `internal_error`）、
@@ -78,9 +82,17 @@ val router = LanEditApiRouter(host = host, session = session, audit = audit)
 2. **恢复课程必须逐门 `addCourse`，不能用 `addGroup`**：`addGroup` 是「同一门课排在不同天」
    的工具，它会把整组名字统一成第一门课的名字——拿它恢复一份含多门不同课的备份，
    所有课名会被压成第一个。这是 2026-10-28 实测踩到的坑，测试当场变红。
-3. **多档案整份恢复明确拒绝**（`profile_backup_profiles_unsupported`）：备份里 `profiles`
-   非空时直接 400，不静默只恢复活动档案（那会无声吞掉用户其它课表）。
-   要支持得给仓储加「替换整份档案表」的入口，属 Lead 决定的范围。
+3. **多档案整份恢复明确拒绝**（`LanTransferLogic.ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED`）：
+   备份里 `profiles` 非空时直接 400，不静默只恢复活动档案（那会无声吞掉用户其它课表）。
+   网页端按该错误码显示可读解释与替代路径（手机端「数据备份与迁移」能恢复整份档案），
+   不再只甩一个裸错误码。**后续路线**：仓储已有 `TimetableRepository.replaceAllProfiles`
+   可整份替换档案表，缺的是产品决策（覆盖时旧档案留不留、激活档指向谁、与云恢复如何互斥），
+   属 Lead 决定的范围。未决策前保持拒绝。
+4. **撤销点是内存态、按 id 消费一次**：`apply` 成功后回真实 `transferId`；
+   `POST /api/v1/import/undo` 按「导入前 / 导入后 / 现在」三份现场做反向补丁，
+   只回退这次导入写入且之后没被用户改过的条目。索引挂在进程级
+   `LanTransferUndoStore.shared`（`pages/transfer/LanEditHost.kt` 已这样接线），
+   停服再开仍可撤销，**杀进程失效**（与 Dart `TransferUndoService` 同语义）。
 
 ## 二、怎么接（三步）
 
@@ -91,7 +103,7 @@ val router = LanEditApiRouter(host = host, session = session, audit = audit)
 `suspend` 就在适配器里 `runBlocking`，那个线程不是主线程）。
 
 ```kotlin
-class ProviderLanEditHost(...) : LanEditHost {
+class ProviderLanEditHost(...) : LanEditHost, LanTransferHost {
     override fun ensureInitialized() { /* 确保 provider 已加载 */ }
     override val activeProfileId: String? get() = ...
     override val courses: List<Course> get() = ...
@@ -101,10 +113,16 @@ class ProviderLanEditHost(...) : LanEditHost {
     override fun deleteCoursesBatch(courseIds: List<String>): Int = ...
     override fun setCurrentWeek(week: Int) = ...
     override fun switchProfile(profileId: String) = ...         // 失败抛 IllegalArgumentException("profile_not_found")
-    override fun previewTransferJson(content: String): Map<String, Any?>? = ...  // 不支持就返回 null
+    override fun previewTransferJson(content: String): Map<String, Any?>? = ...
+    override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>? = ...
     ...
 }
 ```
+
+`previewTransferJson` / `applyTransferJson` **只声明在 `LanTransferHost`**（与 Dart 的两个接口划分一致），
+路由用 `host as? LanTransferHost` 判能力。**只实现 `LanEditHost` 的宿主不具备迁移能力**：
+`PUT /api/v1/profile/active` 走 legacy 200 直接导入，`/api/v1/import/preview` 与
+`/api/v1/import/apply` 回 501；要 preview-before-apply 必须同时实现 `LanTransferHost`。
 
 ### 2. 起停服务
 
@@ -137,30 +155,47 @@ Kotlin 侧要发的是 Android `assets/lan_edit/**`（需把这些前端产物�
 | # | 端点 | 现状 |
 |---|---|---|
 | 1 | `GET /api/v1/profile/active` | ✅ 导出当前课表的传输包（用 `sync/buildTransferPackageJson`，不自拼 JSON） |
-| 2 | `PUT /api/v1/profile/active` | ✅ 导入（先校验后落盘）。⚠️ 与 Dart 有一处**尚未跟上的差异**：Dart 在 host 具备传输包能力时这条回 409（强制先 preview 再 apply）；Kotlin 侧 apply **已于 `378b801f` 落地**，但这条仍走 legacy 导入，**应改成 409**（未做，属已知差异） |
+| 2 | `PUT /api/v1/profile/active` | ✅ 具备传输包能力（`LanTransferHost`）时按 Dart 契约严格返回 409 `transfer_preview_required`（强制客户端先走 preview 再 apply）；未实现传输包迁移能力的 legacy 宿主保留直接导入并返回 200（先校验后落盘） |
 | 3 | `PUT /api/v1/courses/group` | ✅ 走 `TimetableCourseService.updateGroup` |
 | 4 | `POST /api/v1/import/spreadsheet` | ✅ 解析器由接线方注入，落盘逐门 `addCourse` |
-| 5 | `POST /api/v1/import/merge` | ✅ **照 Dart 只回 409**，不实现合并导入 |
-| 6 | `POST /api/v1/import/apply` | ✅ **已交付**（`378b801f`）：先校验后落盘，走 `transfer/lan/LanTransferLogic` + `LanTransferApplier`。仍缺：撤销点（`transferId` 恒 null）、设置只应用已移植子集 |
+| 5 | `POST /api/v1/import/merge` | ✅ Dart 对具备 `LanTransferHost` 的宿主回 409；legacy host 会真正合并回 200。生产宿主恒具备能力，所以生产行为与 Dart 一致；Kotlin 统一 409 属端点级差异（见 §三 B3） |
+| 6 | `POST /api/v1/import/apply` | ✅ **已交付**（`378b801f`）：先校验后落盘，走 `transfer/lan/LanTransferLogic` + `LanTransferApplier` |
+| 7 | `POST /api/v1/import/undo` | ✅ **已交付（2026-11-02）**：`LanTransferUndoLogic` 按「导入前 / 导入后 / 现在」三份现场做反向补丁，只回退这一批、保留用户之后的操作；撤销点索引在进程级 `LanTransferUndoStore.shared`。仍缺：设置只应用已移植子集 |
 
-### B. 有意的行为差异（不是漏，是有取舍）
+### B1. 与 Dart 一致（不是差异）
+
+| # | 行为 | 说明 |
+|---|---|---|
+| 9 | 请求体上限 5 MiB、并发 16、空闲 60 秒 | 与 Dart 数值一致（`_maxRequestBodyBytes` / `_maxConcurrentRequests` / `idleTimeout`） |
+| 12 | 周次表达式只在 `PUT /api/v1/courses/group` 逐 slot 解析 | `weekExpression` / `suspendedWeekExpression` 经 `WeekExpressionParser.applyWeekExpressionFields` 计算 `customWeeks`、`startWeek`、`endWeek`、`isOddWeek`、`isEvenWeek`、`suspendedWeeks`；`POST /api/v1/courses` 与 `PATCH /api/v1/courses/{id}` **忽略**这两个字段（Dart 同口径） |
+| 13 | `/api/v1/week-expression/parse` 原样使用 `host.semesterWeekCount` | 不做 1..60 收敛；裁剪只由 `WeekExpressionParser` 按该值完成 |
+| 16 | `previewTransferJson` / `applyTransferJson` 只声明在 `LanTransferHost` | 路由用 `host as? LanTransferHost` 判能力。非能力宿主的 `/import/preview` 回 501；`/import/apply` 在 `content` / `mode` 校验通过后才回 501（缺字段仍是 400，与 Dart 同序） |
+
+### B2. 比 Dart 多做（客户端可观察）
+
+| # | 差异 | 现状 |
+|---|---|---|
+| 20 | `POST /api/v1/import/undo` 端点 | Dart 的撤销点（`TransferUndoService`）只在手机端 UI 消费，没有 HTTP 对应物。Kotlin 侧把它暴露成端点，网页端导入成功后拿 `apply` 回包的 `transferId` 直接调；手机端与网页端共用同一份撤销索引（`LanTransferUndoStore.shared`，**内存态**，杀进程失效）。契约测试：`LanEditApiRouterTest`（400/501/200）+ `LanEditRepositoryEndToEndTest`（真 HTTP 撤回后再撤一次） |
+
+### B3. 端点级差异（有取舍 / 存量）
 
 | # | 差异 | 理由 / 影响 |
 |---|---|---|
 | 7 | **每连接只处理一个请求**（响应恒 `Connection: close`） | keep-alive 要完整连接复用状态机（流水线、半关连接）；局域网页面一次加载几个请求，收益远小于风险 |
 | 8 | **不支持 `Transfer-Encoding: chunked`** | 明确 400；自己写 chunked 解码器或信对端长度都不划算 |
-| 9 | 请求体上限 5 MiB、并发 16、空闲 60 秒 | 与 Dart 数值一致（`_maxRequestBodyBytes` / `_maxConcurrentRequests` / `idleTimeout`） |
-| 10 | 四条错误 message 改成等义错误码串 | Dart 用中文（`currentWeek 无效` / `currentWeek 不能超过学期周数 N` / `expression 不能为空` / `ids 不能为空` / `contentBase64 不能为空`），Kotlin 侧按仓库 i18n 纪律不写中文字面量：改成 `current_week_invalid` / `current_week_exceeds_semester_weeks:N` / `expression_required` / `ids_required` / `content_base64_required`。**状态码与 `error` 码不变**，只有 message 文本不同 |
+| 10 | 五条错误 message 改成等义错误码串 | Dart 用中文（`currentWeek 无效` / `currentWeek 不能超过学期周数 N` / `expression 不能为空` / `ids 不能为空` / `contentBase64 不能为空`），Kotlin 侧按仓库 i18n 纪律不写中文字面量：改成 `current_week_invalid` / `current_week_exceeds_semester_weeks:N` / `expression_required` / `ids_required` / `content_base64_required`。**状态码与 `error` 码不变**，只有 message 文本不同 |
 | 11 | `itemName` 缺省空串 | Dart 缺省是本地化的「课程」；它只影响 warning 文案，网页端每次都带 |
-| 12 | 周次表达式联动未做 | Dart `courseFromApiJson` / `mergeCoursePatch` 会调 `applyWeekExpressionFields`（`weekExpression` → 周次数组）；本层建/改课只走 `Course.fromJson` 的既有归一化。**后果**：网页端发 `weekExpression` 字段会被忽略 |
-| 13 | 对端可控的学期周数未做收敛 | Dart `_safeSemesterWeekCount` 把对端给的 `semesterWeekCount` 收敛到 1..60（防 `List.generate(10^9)` OOM）。本层**不从对端取这个值**（只用 host 自己的），所以该 OOM 面不存在；但第 12 条补上时**必须**一起补这个收敛 |
-| 14 | 备份里的 `tasks` / `exams`：**导出带上、导入不写回** | 导出按 Dart 口径带上（信封格式完整）；写回需要 `TimetableCourseService` 上没有的批量入口，留待 Lead 拍板 |
-| 15 | 多档案整份恢复不支持 | 见上面「数据层」第 3 点：明确 400，不静默丢档案 |
+| 14 | 备份里的 `tasks` / `exams`：**已修（2026-11-01）** | 导入走 `LanTransferApplier`，`courses` / `tasks` / `exams` / `scheduleItems` / `timeSchemes` / `scheduleDateRules` / `locationTimeGroups` 与已移植的 settings 子集一起写回 |
+| 15 | 多档案整份恢复不支持 | 见上面「数据层」第 3 点：明确 400，不静默丢档案。错误码 `LanTransferLogic.ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED`，网页端 `describeTransferError` 把它显示成可读解释 + 替代路径（手机端「数据备份与迁移」可恢复整份档案）；后续路线写在该常量的 KDoc 里 |
+| 17 | 组替换空课名回落不一致 | Kotlin 把 `originalName` 回写进 slot 的 `name`；Dart 只用它拼 warning，首个 slot 空名仍回 `course_name_required`。生产网页端每次带 `name`，未在本批修 |
+| 18 | `POST /courses` 缺 `endWeek` 的默认值不同 | Dart 用 `semesterWeekCount`，Kotlin `Course.fromJson` 缺省 16；网页端与复制路径都显式带 `endWeek`，未在本批修 |
+| 19 | `import/merge` 的 legacy nuance | Dart 只对 `LanTransferHost` 回 409，legacy host 会真正合并回 200；Kotlin 一律 409。生产宿主恒为 `LanTransferHost`，生产行为与 Dart 一致 |
 
 ### C. 只有真机能验
 
 真机上的表现（手机热点下电脑连得上、浏览器页面能不能正常交互、前台服务通知、
-息屏后连接是否还在）本泳道**未验**——设备铁律：未经用户明确允许不碰真机。
+息屏后连接是否还在、导入后点「撤销本次导入」是否真能回到导入前）本泳道**未验**——
+设备铁律：未经用户明确允许不碰真机。
 
 ## 四、验收命令
 

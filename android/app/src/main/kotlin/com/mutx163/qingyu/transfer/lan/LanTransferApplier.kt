@@ -4,12 +4,9 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
-import com.mutx163.qingyu.core.LocationTimeGroup
-import com.mutx163.qingyu.core.ScheduleDateRule
-import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
-import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
+import com.mutx163.qingyu.share.TransferEnvelope
 import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.share.carriesSettings
 import com.mutx163.qingyu.share.overwriteUsesMergeSemantics
@@ -43,7 +40,12 @@ import com.mutx163.qingyu.transfer.syncImportedCourses
  * 课/作业/考试/日程/设置/当前周/规则/分组/模板写回；补偿自身失败不上抛，
  * 以免盖住「这次导入没成功」这个更重要的事实。
  */
-class LanTransferApplier(private val repository: TimetableRepository) {
+class LanTransferApplier(
+    private val repository: TimetableRepository,
+    /** 撤销点索引；局域网服务传 [LanTransferUndoStore.shared]，测试各自建独立实例。 */
+    private val undoStore: LanTransferUndoStore = LanTransferUndoStore(),
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
 
     /** 本地当前状态（差异的 current 侧）。 */
     fun currentSource(): LanTransferDiffSource {
@@ -85,17 +87,107 @@ class LanTransferApplier(private val repository: TimetableRepository) {
         val errors = ArrayList<String>(incoming.diagnostics)
         errors += LanTransferLogic.collectReferenceErrors(incoming.source, current)
         if (errors.isNotEmpty()) {
-            return LanTransferLogic.applyResultJson(false, mode, diff, errors.first())
+            return LanTransferLogic.applyResultJson(false, mode, diff, errors.first(), null)
         }
 
-        val before = captureSnapshot()
+        val before = captureState()
         return try {
             applyIncoming(incoming, current, mode)
-            LanTransferLogic.applyResultJson(true, mode, diff, null)
+            // 导入成功后立刻再抓一份现场。撤销靠「导入前 / 导入后」两份比对，才能
+            // 判断某条数据是这次导入写的、之后有没有被用户改过（见 LanTransferUndoLogic）。
+            val token = LanTransferUndoToken(
+                id = TransferEnvelope.newPackageId(nowMicros = clock() * 1000L),
+                profileId = repository.snapshot.activeProfileId,
+                mode = mode,
+                scope = incoming.scope,
+                before = before,
+                after = captureState(),
+                createdAtMillis = clock(),
+            )
+            undoStore.create(token)
+            LanTransferLogic.applyResultJson(true, mode, diff, null, token.id)
         } catch (_: Exception) {
-            restoreSnapshot(before)
-            LanTransferLogic.applyResultJson(false, mode, diff, "transfer_import_failed")
+            restoreState(before)
+            LanTransferLogic.applyResultJson(false, mode, diff, "transfer_import_failed", null)
         }
+    }
+
+    /**
+     * 按撤销点 id 回退这次导入写入的内容（`POST /api/v1/import/undo` 的执行层）。
+     *
+     * - **只回退这一批**：每类实体按 id 比「导入前 / 导入后 / 现在」，只还原仍是
+     *   「导入后」值的条目；用户导入之后改过的一律保留。判据只有
+     *   [LanTransferUndoLogic.plan] 一处。
+     * - **取走即消费**：同一个撤销点不会被应用两次；第二次调用回
+     *   `transfer_undo_already_undone` 且一个字节都不写。
+     * - **缺失安全跳过**：不认识的 id 回 `transfer_undo_token_missing`，不写盘。
+     */
+    fun undo(transferId: String): Map<String, Any?> {
+        val id = transferId.trim()
+        if (id.isEmpty()) {
+            return LanTransferUndoLogic.resultJson(false, "", error = "transfer_id_required")
+        }
+        val token = undoStore.take(id)
+        if (token == null) {
+            val reason = if (undoStore.isConsumed(id)) {
+                "transfer_undo_already_undone"
+            } else {
+                "transfer_undo_token_missing"
+            }
+            return LanTransferUndoLogic.resultJson(false, id, error = reason)
+        }
+        // 撤销点记的是导入时那个档案；换了档案再撤销等于拿 A 课表的快照写 B 课表。
+        val activeProfileId = repository.snapshot.activeProfileId
+        if (token.profileId != null && activeProfileId != null && token.profileId != activeProfileId) {
+            undoStore.restore(token)
+            return LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_profile_changed")
+        }
+        val plan = LanTransferUndoLogic.plan(captureState(), token)
+        if (!plan.hasChanges) {
+            // 导入没有实际改变数据，或用户已经把每一处都改回去了：不算失败，也不写盘。
+            return LanTransferUndoLogic.resultJson(true, id)
+        }
+        return try {
+            val skipped = executeUndo(plan)
+            LanTransferUndoLogic.resultJson(
+                undone = true,
+                transferId = id,
+                restoredCounts = plan.restoredCounts,
+                skipped = skipped,
+            )
+        } catch (_: Exception) {
+            // 撤销途中写盘失败：把令牌放回索引，用户还能再试一次（不放回等于吞掉撤销机会）。
+            undoStore.restore(token)
+            LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_failed")
+        }
+    }
+
+    /** 执行反向补丁。返回被跳过的模板说明（删除被引用拒绝 / 节次数低于已用最大节次）。 */
+    private fun executeUndo(plan: LanTransferUndoPlan): List<String> {
+        val snapshot = repository.snapshot
+        if (plan.courses != null || plan.tasks != null || plan.exams != null || plan.scheduleItems != null) {
+            // 与 apply 同序：日程先写内存，再由 replaceActiveProfileContent 一次落盘。
+            repository.scheduleItems = plan.scheduleItems ?: snapshot.scheduleItems
+            repository.replaceActiveProfileContent(
+                plan.courses ?: snapshot.courses,
+                plan.tasks ?: repository.tasks,
+                plan.exams ?: repository.exams,
+            )
+        }
+        plan.settings?.let { repository.updateSettings(it) }
+        plan.currentWeek?.let { repository.setCurrentWeek(it) }
+        plan.scheduleDateRules?.let { repository.updateScheduleDateRules(it) }
+        plan.locationTimeGroups?.let { repository.updateLocationTimeGroups(it) }
+
+        val skipped = ArrayList<String>()
+        for (schemeId in plan.timeSchemesToDelete) {
+            if (!repository.deleteTimeScheme(schemeId)) skipped += "time_scheme_delete_refused:$schemeId"
+        }
+        for (scheme in plan.timeSchemesToRestore) {
+            val error = repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections)
+            if (error != null) skipped += "time_scheme_restore_failed:${scheme.id}:$error"
+        }
+        return skipped
     }
 
     // -----------------------------------------------------------------------
@@ -230,49 +322,38 @@ class LanTransferApplier(private val repository: TimetableRepository) {
     // 快照 / 补偿
     // -----------------------------------------------------------------------
 
-    private data class LanSnapshot(
-        val courses: List<Course>,
-        val tasks: List<CourseTask>,
-        val exams: List<Exam>,
-        val scheduleItems: List<ScheduleItem>,
-        val settings: TimetableSettings,
-        val currentWeek: Int,
-        val rules: List<ScheduleDateRule>,
-        val groups: List<LocationTimeGroup>,
-        val schemes: List<TimeScheme>,
-    )
-
-    private fun captureSnapshot(): LanSnapshot {
+    /** 当前仓储现场（导入前 / 导入后 / 撤销前都抓这一份）。 */
+    private fun captureState(): LanTransferState {
         val snapshot = repository.snapshot
-        return LanSnapshot(
+        return LanTransferState(
             courses = snapshot.courses,
             tasks = repository.tasks,
             exams = repository.exams,
             scheduleItems = snapshot.scheduleItems,
+            timeSchemes = snapshot.timeSchemes,
+            scheduleDateRules = snapshot.scheduleDateRules,
+            locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
             currentWeek = snapshot.currentWeek,
-            rules = snapshot.scheduleDateRules,
-            groups = snapshot.locationTimeGroups,
-            schemes = snapshot.timeSchemes,
         )
     }
 
     /** 尽力补偿：任何一步失败都不上抛（见类注释）。 */
-    private fun restoreSnapshot(before: LanSnapshot) {
+    private fun restoreState(before: LanTransferState) {
         runCatching {
             repository.scheduleItems = before.scheduleItems
             repository.replaceActiveProfileContent(before.courses, before.tasks, before.exams)
             repository.updateSettings(before.settings)
             repository.setCurrentWeek(before.currentWeek)
-            repository.updateScheduleDateRules(before.rules)
-            repository.updateLocationTimeGroups(before.groups)
+            repository.updateScheduleDateRules(before.scheduleDateRules)
+            repository.updateLocationTimeGroups(before.locationTimeGroups)
 
-            val keepIds = HashSet<String>(before.schemes.size)
-            before.schemes.mapTo(keepIds) { it.id }
+            val keepIds = HashSet<String>(before.timeSchemes.size)
+            before.timeSchemes.mapTo(keepIds) { it.id }
             for (scheme in repository.snapshot.timeSchemes) {
                 if (scheme.id !in keepIds) repository.deleteTimeScheme(scheme.id)
             }
-            for (scheme in before.schemes) {
+            for (scheme in before.timeSchemes) {
                 val current = repository.snapshot.timeSchemes.firstOrNull { it.id == scheme.id } ?: continue
                 if (current.name != scheme.name || current.sections != scheme.sections) {
                     repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections)

@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.transfer.lan
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.share.LanEditSession
+import com.mutx163.qingyu.share.TransferApplyMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -319,7 +321,7 @@ class LanEditApiRouterTest {
 
     @Test
     fun `host 支持预览时回 200 空体回 400`() {
-        val host = FakeLanEditHost()
+        val host = FakeLanTransferHost()
         host.previewResult = linkedMapOf<String, Any?>("transferId" to "t1", "diff" to emptyMap<String, Any?>())
         val session = session(boundProfileId = "p1")
         val router = router(host = host, session = session)
@@ -346,6 +348,101 @@ class LanEditApiRouterTest {
         )
         assertEquals(400, empty.status)
         assertEquals("backup_content_required", json(empty)["message"])
+    }
+
+    // -----------------------------------------------------------------------
+    // 应用（可选能力）
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `host 不支持应用时先校验 content 与 mode 再回 501`() {
+        val session = session(boundProfileId = "p1")
+        val router = router(session = session)
+
+        // Dart 的顺序：content/mode 缺失是请求本身的问题（400），先于能力判定
+        val missing = router.route(
+            postJson("/api/v1/import/apply", """{"profileId":"p1"}""", token = session.token),
+        )
+        assertEquals(400, missing.status)
+        assertEquals("transfer_content_and_mode_required", json(missing)["message"])
+
+        val unsupported = router.route(
+            postJson(
+                "/api/v1/import/apply",
+                """{"content":"{}","mode":"merge","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals(501, unsupported.status)
+        assertEquals("transfer_apply_not_supported", json(unsupported)["error"])
+    }
+
+    @Test
+    fun `host 支持应用时回 200 并带上 mode`() {
+        val host = FakeLanTransferHost()
+        val session = session(boundProfileId = "p1")
+        val response = router(host = host, session = session).route(
+            postJson(
+                "/api/v1/import/apply",
+                """{"content":"{}","mode":"overwrite","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals(200, response.status)
+        assertEquals(true, json(response)["applied"])
+        assertEquals("OVERWRITE", json(response)["mode"])
+    }
+
+    // -----------------------------------------------------------------------
+    // 撤销（可选能力，Kotlin 侧新增端点）
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `import_undo 缺 transferId 回 400`() {
+        val session = session(boundProfileId = "p1")
+        val response = router(host = FakeLanTransferHost(), session = session).route(
+            postJson("/api/v1/import/undo", """{"profileId":"p1"}""", token = session.token),
+        )
+        assertEquals(400, response.status)
+        assertEquals("transfer_id_required", json(response)["message"])
+    }
+
+    @Test
+    fun `host 不具备撤销能力时 import_undo 回 501`() {
+        val session = session(boundProfileId = "p1")
+        val response = router(session = session).route(
+            postJson(
+                "/api/v1/import/undo",
+                """{"transferId":"t1","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals(501, response.status)
+        assertEquals("transfer_undo_not_supported", json(response)["error"])
+    }
+
+    @Test
+    fun `host 支持撤销时回 200 并原样透传结果`() {
+        val host = FakeLanTransferHost()
+        host.undoResult = linkedMapOf(
+            "undo" to true,
+            "transferId" to "t1",
+            "restored" to mapOf("courses" to 1),
+            "skipped" to emptyList<String>(),
+        )
+        val session = session(boundProfileId = "p1")
+        val response = router(host = host, session = session).route(
+            postJson(
+                "/api/v1/import/undo",
+                """{"transferId":"t1","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals(200, response.status)
+        assertEquals(true, json(response)["undo"])
+        assertEquals("t1", json(response)["transferId"])
+        // JSON 往返后嵌套数字是 Long，按 Number 取值，避免 Int/Long 断言噪声。
+        assertEquals(1, ((json(response)["restored"] as Map<*, *>)["courses"] as Number).toInt())
     }
 
     // -----------------------------------------------------------------------
@@ -602,6 +699,264 @@ class LanEditApiRouterTest {
         assertEquals("expression_required", json(empty)["message"])
     }
 
+    @Test
+    fun `周次表达式解析非法表达式回 400 invalid_request`() {
+        val session = session()
+        val response = router(session = session).route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"abc"}""", token = session.token),
+        )
+        assertEquals(400, response.status)
+        assertEquals("invalid_request", json(response)["error"])
+        assertTrue(json(response)["message"].toString().contains("week_token_unrecognized"))
+    }
+
+    @Test
+    fun `周次表达式解析对小于 1 的学期周数不夹紧`() {
+        val host = FakeLanEditHost()
+        host.semesterWeekCount = 0
+        val session = session()
+        val response = router(host = host, session = session).route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"1,2,5"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        assertEquals(listOf(1L, 2L, 5L), json(response)["weeks"])
+        assertTrue("解析器对 <1 直通，不该有裁剪 warning", (json(response)["warnings"] as List<*>).isEmpty())
+    }
+
+    @Test
+    fun `周次表达式解析对大于 60 的学期周数不夹紧`() {
+        val host = FakeLanEditHost()
+        host.semesterWeekCount = 1000
+        val session = session()
+        val response = router(host = host, session = session).route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"1,35,61,70"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        assertEquals(listOf(1L, 35L, 61L, 70L), json(response)["weeks"])
+        assertTrue((json(response)["warnings"] as List<*>).isEmpty())
+    }
+
+    @Test
+    fun `周次表达式解析只按 host 学期周数裁剪`() {
+        val host = FakeLanEditHost()
+        host.semesterWeekCount = 20
+        val session = session()
+        val response = router(host = host, session = session).route(
+            postJson("/api/v1/week-expression/parse", """{"expression":"1,5,25"}""", token = session.token),
+        )
+        assertEquals(200, response.status)
+        assertEquals(listOf(1L, 5L), json(response)["weeks"])
+        val warnings = json(response)["warnings"] as List<*>
+        assertTrue(
+            "裁剪必须来自 parser 的 weeks_exceed_semester_clamped：$warnings",
+            warnings.any { it.toString().contains("weeks_exceed_semester_clamped") },
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // 周次表达式与传输迁移协议联动 (weekExpression / LanTransferHost)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `新建课程忽略 weekExpression 不解析出 customWeeks`() {
+        val host = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val response = router.route(
+            postJson(
+                "/api/v1/courses",
+                """{"name":"操作系统","startWeek":3,"endWeek":9,"weekExpression":"1-5单","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals(201, response.status)
+        val created = host.courses.first { it.name == "操作系统" }
+        assertNull("建课不解析 weekExpression（Dart 只在 group 解析）", created.customWeeks)
+        assertEquals(3, created.startWeek)
+        assertEquals(9, created.endWeek)
+        assertFalse(created.isOddWeek)
+        assertFalse(created.isEvenWeek)
+    }
+
+    @Test
+    fun `新建课程忽略非法 weekExpression 仍然成功`() {
+        val host = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val response = router.route(
+            postJson(
+                "/api/v1/courses",
+                """{"name":"操作系统","weekExpression":"abc_not_a_week","profileId":"p1"}""",
+                token = session.token,
+            ),
+        )
+        assertEquals("非法表达式不影响建课（Dart 建课不解析）", 201, response.status)
+        val created = host.courses.first { it.name == "操作系统" }
+        assertNull(created.customWeeks)
+    }
+
+    @Test
+    fun `PATCH 课程忽略 weekExpression 保留原有 customWeeks`() {
+        val host = FakeLanEditHost()
+        host.seed(
+            courseJson("c1", "计算机网络") + mapOf("customWeeks" to listOf(2, 4)),
+        )
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val response = router.route(
+            jsonRequest(
+                "/api/v1/courses/c1",
+                "PATCH",
+                """{"weekExpression":"1-5","profileId":"p1"}""",
+                session.token,
+            ),
+        )
+        assertEquals(200, response.status)
+        val updated = host.findCourse("c1")!!
+        assertEquals("改课不解析 weekExpression（Dart 只在 group 解析）", listOf(2, 4), updated.customWeeks)
+        assertEquals(1, updated.startWeek)
+        assertEquals(16, updated.endWeek)
+        assertFalse(updated.isOddWeek)
+        assertFalse(updated.isEvenWeek)
+    }
+
+    @Test
+    fun `PUT 组替换解析 weekExpression 与 suspendedWeekExpression`() {
+        val host = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val groupBody = """{
+            "originalName":"编译原理",
+            "slots":[
+                {"name":"编译原理","weekExpression":"1-6","suspendedWeekExpression":"3、5"}
+            ],
+            "profileId":"p1"
+        }"""
+        val response = router.route(jsonRequest("/api/v1/courses/group", "PUT", groupBody, session.token))
+        assertEquals(200, response.status)
+        val saved = host.replacedGroupSlots
+        assertNotNull(saved)
+        assertEquals(1, saved!!.size)
+        assertEquals(listOf(1, 2, 3, 4, 5, 6), saved[0].customWeeks)
+        assertEquals(listOf(3, 5), saved[0].suspendedWeeks)
+        assertEquals(1, saved[0].startWeek)
+        assertEquals(6, saved[0].endWeek)
+        assertFalse(saved[0].isOddWeek)
+        assertFalse(saved[0].isEvenWeek)
+    }
+
+    @Test
+    fun `PUT 组替换非法 suspendedWeekExpression 回 400 invalid_request`() {
+        val host = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val groupBody = """{
+            "originalName":"编译原理",
+            "slots":[
+                {"name":"编译原理","suspendedWeekExpression":"abc"}
+            ],
+            "profileId":"p1"
+        }"""
+        val response = router.route(jsonRequest("/api/v1/courses/group", "PUT", groupBody, session.token))
+        assertEquals(400, response.status)
+        assertEquals("invalid_request", json(response)["error"])
+        assertTrue(json(response)["message"].toString().contains("week_token_unrecognized"))
+        assertNull("400 之后一个 slot 都不许写", host.replacedGroupSlots)
+    }
+
+    @Test
+    fun `PUT 组替换课程带有非法 weekExpression 时回 400 invalid_request`() {
+        val host = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = host, session = session)
+
+        val groupBody = """{
+            "originalName":"编译原理",
+            "slots":[
+                {"name":"编译原理","weekExpression":"bad-expression"}
+            ],
+            "profileId":"p1"
+        }"""
+        val response = router.route(jsonRequest("/api/v1/courses/group", "PUT", groupBody, session.token))
+        assertEquals(400, response.status)
+        assertEquals("invalid_request", json(response)["error"])
+        assertNull("400 之后一个 slot 都不许写", host.replacedGroupSlots)
+    }
+
+    @Test
+    fun `PUT active profile 遇到具备 LanTransferHost 能力的宿主时按协议回 409 transfer_preview_required`() {
+        val transferHost = FakeLanTransferHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = transferHost, session = session)
+
+        val response = router.route(
+            build("/api/v1/profile/active", "PUT", emptyMap(), """{"transferPackageVersion":1}""", session.token),
+        )
+        assertEquals(409, response.status)
+        val body = json(response)
+        assertEquals("transfer_preview_required", body["error"])
+        assertEquals("Use /api/v1/import/preview then /api/v1/import/apply with an explicit mode", body["message"])
+        assertNull(transferHost.importedBackupContent)
+    }
+
+    @Test
+    fun `PUT active profile 的 409 先于初始化 档案校验与读体`() {
+        val transferHost = FakeLanTransferHost(activeProfileId = null)
+        transferHost.failWith = IllegalStateException("must_not_run")
+        val session = session(boundProfileId = null)
+        val router = router(host = transferHost, session = session)
+
+        // 空体 + 无档案：若 409 判定排在后面，这里会变成 400 或 500
+        val response = router.route(
+            build("/api/v1/profile/active", "PUT", emptyMap(), "", session.token),
+        )
+        assertEquals(409, response.status)
+        val body = json(response)
+        assertEquals("transfer_preview_required", body["error"])
+        assertEquals(
+            "Use /api/v1/import/preview then /api/v1/import/apply with an explicit mode",
+            body["message"],
+        )
+        assertNull("409 之后不许走到导入", transferHost.importedBackupContent)
+    }
+
+    @Test
+    fun `PUT active profile 遇到未实现迁移能力的 legacy 宿主时走既有导入分支`() {
+        val legacyHost = FakeLanEditHost()
+        val session = session(boundProfileId = "p1")
+        val router = router(host = legacyHost, session = session)
+
+        // 空体 400
+        val empty = router.route(
+            build("/api/v1/profile/active", "PUT", emptyMap(), "   ", session.token),
+        )
+        assertEquals(400, empty.status)
+        assertEquals("backup_content_required", json(empty)["message"])
+
+        // 校验失败（抛 FormatException）400
+        legacyHost.importBackupFailure = FormatException("invalid_package_json")
+        val bad = router.route(
+            build("/api/v1/profile/active", "PUT", emptyMap(), """{"bad":true}""", session.token),
+        )
+        assertEquals(400, bad.status)
+        assertEquals("invalid_request", json(bad)["error"])
+        assertEquals("invalid_package_json", json(bad)["message"])
+
+        // 正常导入 200
+        legacyHost.importBackupFailure = null
+        val ok = router.route(
+            build("/api/v1/profile/active", "PUT", emptyMap(), """{"valid":true}""", session.token),
+        )
+        assertEquals(200, ok.status)
+        assertEquals(true, json(ok)["imported"])
+        assertEquals("""{"valid":true}""", legacyHost.importedBackupContent)
+    }
+
     // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------
@@ -683,7 +1038,7 @@ class LanEditApiRouterTest {
 }
 
 /** 假 host：只实现这一层需要的数据面，把「数据从哪来」摘出协议测试。 */
-internal class FakeLanEditHost(
+internal open class FakeLanEditHost(
     override var activeProfileId: String? = "p1",
 ) : LanEditHost {
     private val stored = mutableListOf<Course>()
@@ -697,8 +1052,6 @@ internal class FakeLanEditHost(
     override val currentWeek: Int get() = currentWeekValue
 
     override var semesterWeekCount: Int = 20
-
-    var previewResult: Map<String, Any?>? = null
 
     var failWith: Throwable? = null
 
@@ -800,9 +1153,41 @@ internal class FakeLanEditHost(
         "sections" to emptyList<Any?>(),
     )
 
+    var importedBackupContent: String? = null
+    var importBackupFailure: Throwable? = null
+    var replacedGroupSlots: List<Course>? = null
+
+    override fun importProfileBackupJson(content: String) {
+        importBackupFailure?.let { throw it }
+        if (content.trim().isEmpty()) throw FormatException("backup_content_required")
+        importedBackupContent = content
+    }
+
+    override fun replaceCourseGroup(originalName: String?, slots: List<Course>): List<Course> {
+        replacedGroupSlots = slots
+        return slots
+    }
+}
+
+internal class FakeLanTransferHost(
+    activeProfileId: String? = "p1",
+) : FakeLanEditHost(activeProfileId = activeProfileId), LanTransferHost {
+    var previewResult: Map<String, Any?>? = null
+
     override fun previewTransferJson(content: String): Map<String, Any?>? {
-        if (previewResult == null) return null
-        if (content.trim().isEmpty()) throw com.mutx163.qingyu.core.FormatException("backup_content_required")
+        if (content.trim().isEmpty()) throw FormatException("backup_content_required")
         return previewResult
     }
+
+    var undoResult: Map<String, Any?>? = null
+
+    override fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>? =
+        linkedMapOf("applied" to true, "mode" to mode.name)
+
+    override fun undoTransferJson(transferId: String): Map<String, Any?>? =
+        undoResult ?: linkedMapOf(
+            "undo" to false,
+            "transferId" to transferId,
+            "error" to "transfer_undo_token_missing",
+        )
 }

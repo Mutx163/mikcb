@@ -141,12 +141,16 @@ const transferPreviewResult = document.getElementById('transfer-preview-result')
 const btnTransferPreviewMerge = document.getElementById('btn-transfer-preview-merge');
 const btnTransferPreviewOverwrite = document.getElementById('btn-transfer-preview-overwrite');
 const btnTransferPreviewCancel = document.getElementById('btn-transfer-preview-cancel');
+const btnTransferUndo = document.getElementById('btn-transfer-undo');
 const btnBatchDeleteCourses = document.getElementById('btn-batch-delete-courses');
 
 let slotCounter = 0;
 let selectedSpreadsheetFile = null;
 let selectedMergeFileContent = null;
 let pendingTransferContent = null;
+// 最近一次成功导入的撤销点 id（服务端按 id 消费一次）；刷新页面即丢失，
+// 但服务端仍保留撤销点，只是这一页没有按钮可点。
+let lastTransferId = null;
 const selectedCourseIds = new Set();
 
 function updateLibraryBatchDeleteUi() {
@@ -330,6 +334,21 @@ async function api(path, options = {}) {
     throw new Error(data.message || data.error || `HTTP ${code}`);
   }
   return data;
+}
+
+// 传输类错误码 → 可读解释。服务端只回错误码（不写中文/English 字面量），
+// 人话放在这里，且尽量给出「现在能怎么做」。
+const TRANSFER_ERROR_HINTS = {
+  profile_backup_profiles_unsupported: 'transferErrorMultiProfile',
+  use_profile_backup_not_full: 'transferErrorWholeDevice',
+  transfer_undo_token_missing: 'transferUndoTokenMissing',
+  transfer_undo_already_undone: 'transferUndoAlreadyUndone',
+  transfer_undo_profile_changed: 'transferUndoProfileChanged',
+};
+
+function describeTransferError(code) {
+  const key = TRANSFER_ERROR_HINTS[code];
+  return key ? t(key) : (code || 'transfer_import_failed');
 }
 
 // 核心周数计算逻辑
@@ -876,7 +895,7 @@ async function previewTransferContent(content) {
     btnTransferPreviewOverwrite.disabled = false;
     showToast('差异预览已生成，请选择合并或覆盖', 'info');
   } catch (error) {
-    showToast(t('previewFailed') + error.message, 'error');
+    showToast(t('previewFailed') + describeTransferError(error.message), 'error');
   } finally {
     setLoading(false);
   }
@@ -895,6 +914,14 @@ async function applyPreviewedTransfer(mode) {
     }
     showToast(mode === 'overwrite' ? t('overwriteImportSuccess') : t('mergeDone'), 'success');
     addActivityLog(t('transferImportActivity'), `${t(mode === 'overwrite' ? 'transferImportModeOverwrite' : 'transferImportModeMerge')} · ${result.transferId || '-'}`);
+    // 服务端已生成撤销点：把「撤销本次导入」入口亮出来（操作日志卡片的标题栏）。
+    lastTransferId = result.transferId || null;
+    if (lastTransferId) {
+      btnTransferUndo.textContent = t('undoImport');
+      show(btnTransferUndo);
+    } else {
+      hide(btnTransferUndo);
+    }
     pendingTransferContent = null;
     hide(transferPreviewCard);
     state.selectedBackupFileContent = null;
@@ -906,11 +933,38 @@ async function applyPreviewedTransfer(mode) {
     await loadEditorData();
     setViewTab('overview');
   } catch (error) {
-    showToast(t('transferImportFailed', error.message), 'error');
+    showToast(t('transferImportFailed', describeTransferError(error.message)), 'error');
   } finally {
     setLoading(false);
   }
 }
+
+// 撤销最近一次局域网导入：只回退这次导入写入、且之后没被用户改过的部分。
+async function undoLastTransfer() {
+  if (!lastTransferId) return;
+  try {
+    setLoading(true, t('undoingTransfer'));
+    const result = await api('/api/v1/import/undo', {
+      method: 'POST',
+      body: JSON.stringify({ transferId: lastTransferId }),
+    });
+    if (!result.undo) {
+      throw new Error(describeTransferError(result.error));
+    }
+    const undoneId = result.transferId || lastTransferId;
+    lastTransferId = null;
+    hide(btnTransferUndo);
+    showToast(t('transferUndoSuccess'), 'success');
+    addActivityLog(t('transferUndoActivity'), `${undoneId}`);
+    await loadEditorData();
+  } catch (error) {
+    showToast(t('transferUndoFailed') + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+btnTransferUndo?.addEventListener('click', undoLastTransfer);
 
 btnTransferPreviewMerge?.addEventListener('click', () =>
   applyPreviewedTransfer('merge'),

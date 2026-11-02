@@ -406,6 +406,13 @@ class LanEditRepositoryHostTest {
         )
     }
 
+    @Test
+    fun `仓储宿主实现了 LanTransferHost 传输迁移能力`() {
+        val (repository, _) = repositoryWith()
+        val host = LanEditRepositoryHost(repository)
+        assertTrue("LanEditRepositoryHost 必须具备传输包迁移能力", host is LanTransferHost)
+    }
+
     // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------

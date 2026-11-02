@@ -52,12 +52,6 @@ interface LanEditHost {
 
     fun buildMetaJson(): Map<String, Any?>
 
-    /**
-     * 可选能力：解析一份备份 JSON 并给出合并/覆盖两种预览（Dart `LanTransferHost.previewTransferJson`）。
-     * 返回 null = 本 host 不支持 → 501 `transfer_preview_not_supported`。
-     */
-    fun previewTransferJson(content: String): Map<String, Any?>? = null
-
     /** 设置当前周（Dart `LanEditHost.setCurrentWeek`）。 */
     fun setCurrentWeek(week: Int)
 
@@ -104,9 +98,35 @@ interface LanEditHost {
         replaceExisting: Boolean,
     ): LanEditSpreadsheetImport =
         throw UnsupportedOperationException("spreadsheet_import_unsupported")
+}
 
-    /** 传输包应用（Dart `LanTransferHost.applyTransferJson`）。返回 null = 不支持 → 501。 */
-    fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>? = null
+/**
+ * 传输包迁移能力（对应 Dart `LanTransferHost`）：**能力与方法同源**。
+ *
+ * 具备此能力的宿主（如 [LanEditRepositoryHost]）在 `PUT /api/v1/profile/active`
+ * 时会按统一传输协议拒绝直接覆写（409 transfer_preview_required），
+ * 强制客户端先走 `/api/v1/import/preview` 确认差异，再走 `/api/v1/import/apply`。
+ *
+ * `previewTransferJson` / `applyTransferJson` 必须实现（Dart 侧同样是抽象方法，
+ * 没有默认实现）；路由用 `host as? LanTransferHost` 判定能力，不支持时
+ * `/import/preview` 回 501；`/import/apply` 在 `content` / `mode` 校验通过后才回 501
+ * （缺字段仍是 400）。
+ *
+ * `undoTransferJson` 是**撤销点能力**（Kotlin 侧新增端点，Dart 的撤销点只在手机端
+ * 消费、没有对应 HTTP 接口）：默认抛 `transfer_undo_not_supported` 让老宿主回 501，
+ * 真实宿主 [LanEditRepositoryHost] 覆盖它。
+ *
+ * 不要把这三个方法声明回 [LanEditHost]——那会让
+ * 「只实现数据面」的宿主也能回 preview 200，或出现「能力判定为真、执行却落到
+ * 默认 null」的脱钩状态。
+ */
+interface LanTransferHost {
+    fun previewTransferJson(content: String): Map<String, Any?>?
+    fun applyTransferJson(content: String, mode: TransferApplyMode): Map<String, Any?>?
+
+    /** 凭 `transferId` 撤回一次导入；不具备撤销能力的宿主抛异常 → 路由回 501。 */
+    fun undoTransferJson(transferId: String): Map<String, Any?>? =
+        throw UnsupportedOperationException("transfer_undo_not_supported")
 }
 
 /** 表格导入结果（Dart `SpreadsheetImportResult` 在 HTTP 层的投影）。 */
@@ -258,8 +278,10 @@ class LanEditApiRouter(
                 path == "/api/v1/import/preview" && request.method == "POST" -> handleTransferPreview(request)
                 path == "/api/v1/import/spreadsheet" && request.method == "POST" -> handleSpreadsheetImport(request)
                 path == "/api/v1/import/apply" && request.method == "POST" -> handleTransferApply(request)
-                // Dart：这条端点**故意**只回 409，强制走「先 preview 再 apply」两步
-                // （`_handleMergeImport` → `_handleLegacyImportRejected`）。
+                path == "/api/v1/import/undo" && request.method == "POST" -> handleTransferUndo(request)
+                // Dart：能力宿主（LanTransferHost）回 409，强制走「先 preview 再 apply」；
+                // legacy host 会真正合并回 200。Kotlin 统一 409 是端点级差异
+                //（WIRING-NOTE §三 B3 #19），生产宿主恒具备能力，生产行为一致。
                 path == "/api/v1/import/merge" && request.method == "POST" -> handleLegacyImportRejected()
                 else -> handleCourseById(request, path)
             }
@@ -281,6 +303,8 @@ class LanEditApiRouter(
         } catch (error: IllegalArgumentException) {
             // Dart 各处 `on ArgumentError` 统一回 400 invalid_request，消息即错误码
             //（`FormatException` 是它的子类，上面那条已经先接走了）。
+            // 周次表达式解析失败（WeekExpressionException 是 IAE 子类）也走这里，
+            // 统一 400 invalid_request，对应 Dart 的 FormatException 分支。
             return LanEditHttpResponse.error(400, "invalid_request", error.message ?: "invalid_request")
         } catch (error: Throwable) {
             // 未鉴权路径上的兜底：异常原文（类型名 / provider 内部结构 / 绝对路径）
@@ -625,7 +649,7 @@ class LanEditApiRouter(
             return LanEditHttpResponse.error(400, "invalid_request", "backup_content_required")
         }
         val preview = try {
-            host.previewTransferJson(content)
+            (host as? LanTransferHost)?.previewTransferJson(content)
         } catch (error: FormatException) {
             return LanEditHttpResponse.error(400, "invalid_request", formatMessage(error))
         }
@@ -659,16 +683,18 @@ class LanEditApiRouter(
     }
 
     /**
-     * `PUT /api/v1/profile/active`：整份备份导入（Dart `_handleImportProfile` 的 legacy 分支）。
+     * `PUT /api/v1/profile/active`：整份备份导入（Dart `_handleImportProfile`）。
      *
-     * ⚠️ 与 Dart 的一处**有意差异**（已记入 WIRING-NOTE）：Dart 在 host 具备传输包能力时
-     * 这条会 409（强制先 preview 再 apply）；Kotlin 侧目前**没有**传输包应用服务，
-     * 所以走 legacy 导入路径。等 apply 落地后应改成 409 以对齐 Dart。
+     * 传输包能力严格对齐 Dart：具备传输包能力时回 409（强制先 preview 再 apply）；
+     * 仅未实现传输包能力的轻量/遗留测试 host 走 legacy 导入路径。
      *
      * 请求体是**裸 JSON**（Dart 这里用 `_readBody` 而不是 `_readJsonBody`，不校验 Content-Type）。
      * 「先校验后落盘」由 host 实现保证（见 [LanEditHost.importProfileBackupJson] 的契约）。
      */
     private fun handleImportProfileBackup(request: LanEditHttpRequest): LanEditHttpResponse {
+        if (host is LanTransferHost) {
+            return handleLegacyImportRejected()
+        }
         host.ensureInitialized()
         when (val target = ensureWriteProfileTarget(request, null)) {
             is ProfileTarget.Rejected -> return target.response
@@ -691,6 +717,9 @@ class LanEditApiRouter(
      * `PUT /api/v1/courses/group`：按课名整组替换（Dart `_handleReplaceCourseGroup`）。
      *
      * `slots` 必须是非空数组；第一门课的课名不能为空（Dart 的 `course_name_required`）。
+     * **周次表达式只在这里解析**：每个 slot 的 `weekExpression` /
+     * `suspendedWeekExpression` 经 [WeekExpressionParser.applyWeekExpressionFields]
+     * 展开成 `customWeeks` / `suspendedWeeks`（与 Dart 的唯一调用点一致）。
      * 返回保存后的整组课。
      */
     private fun handleReplaceCourseGroup(request: LanEditHttpRequest): LanEditHttpResponse {
@@ -718,6 +747,11 @@ class LanEditApiRouter(
             if (name.isNullOrEmpty() && !originalName.isNullOrEmpty()) {
                 slotMap["name"] = originalName
             }
+            WeekExpressionParser.applyWeekExpressionFields(
+                slotMap = slotMap,
+                courseName = slotMap["name"]?.toString()?.trim().orEmpty(),
+                semesterWeekCount = host.semesterWeekCount,
+            )
             slots.add(courseFromApiJson(slotMap))
         }
         if (slots.first().name.trim().isEmpty()) {
@@ -819,8 +853,14 @@ class LanEditApiRouter(
                 "transfer_content_and_mode_required",
             )
         }
+        val transferHost = host as? LanTransferHost
+            ?: return LanEditHttpResponse.error(
+                501,
+                "transfer_apply_not_supported",
+                "transfer_apply_not_supported",
+            )
         val result = try {
-            host.applyTransferJson(content, mode)
+            transferHost.applyTransferJson(content, mode)
         } catch (error: FormatException) {
             // Dart `_handleTransferApply` 的 `on FormatException` 分支：包不合法是
             // 请求本身的问题（400），不是服务器错误。没有这一段的话，F17 接线之后
@@ -838,8 +878,61 @@ class LanEditApiRouter(
     }
 
     /**
-     * Dart `_handleLegacyImportRejected`：`import/merge` 一律 409，
-     * 要求先 `import/preview` 再 `import/apply` 并显式给 mode。
+     * `POST /api/v1/import/undo`：凭 `transferId` 撤回这次导入。
+     *
+     * 请求体 `{transferId}`，返回 `{undo, transferId, restored, skipped, error?}`。
+     * **这是 Kotlin 侧新增的端点**：Dart 的撤销点只在手机端 UI 消费，没有 HTTP
+     * 对应物；网页端导入成功后拿 `apply` 回包里的 `transferId` 调这里（WIRING-NOTE B2）。
+     *
+     * 撤销点不存在 / 已经撤销过都回 **200 + `undo:false` + 错误码**（与 apply 用
+     * `applied:false + error` 表达业务失败同一形状），并且两种情况下都**不写盘**。
+     * 缺 `transferId` 是请求本身的问题，回 400。
+     */
+    private fun handleTransferUndo(request: LanEditHttpRequest): LanEditHttpResponse {
+        host.ensureInitialized()
+        val body = readJsonBody(request)
+        when (val target = ensureWriteProfileTarget(request, body)) {
+            is ProfileTarget.Rejected -> return target.response
+            is ProfileTarget.Allowed -> Unit
+        }
+        val transferId = body["transferId"]?.toString()?.trim().orEmpty()
+        if (transferId.isEmpty()) {
+            return LanEditHttpResponse.error(400, "invalid_request", "transfer_id_required")
+        }
+        val transferHost = host as? LanTransferHost
+            ?: return LanEditHttpResponse.error(
+                501,
+                "transfer_undo_not_supported",
+                "transfer_undo_not_supported",
+            )
+        val result = transferHost.undoTransferJson(transferId)
+            ?: return LanEditHttpResponse.error(
+                501,
+                "transfer_undo_not_supported",
+                "transfer_undo_not_supported",
+            )
+        if (result["undo"] == true) {
+            audit.info(
+                "lan_edit_transfer_undone",
+                "transfer undo applied",
+                mapOf("transferId" to transferId, "restored" to result["restored"]),
+            )
+        } else {
+            audit.info(
+                "lan_edit_transfer_undo_skipped",
+                "transfer undo skipped",
+                mapOf("transferId" to transferId, "reason" to result["error"]),
+            )
+        }
+        return LanEditHttpResponse.json(200, result)
+    }
+
+    /**
+     * 拒绝直接合并导入：回 409，要求先 `import/preview` 再 `import/apply` 并显式给 mode。
+     *
+     * Dart 只在宿主具备 `LanTransferHost` 时走这条（legacy host 会真正合并回 200，
+     * `_handleMergeImport`）；Kotlin 对 legacy host 也一律 409，属端点级差异，
+     * 见 WIRING-NOTE §三 B3 #19。生产宿主恒具备能力，生产行为与 Dart 一致。
      */
     private fun handleLegacyImportRejected(): LanEditHttpResponse = LanEditHttpResponse.error(
         409,
@@ -925,12 +1018,11 @@ class LanEditApiRouter(
     }
 
     /**
-     * 从 API JSON 构造一门课。
+     * 建课：从对端 JSON 映射出 [Course]。
      *
-     * ⚠️ **未移植**：Dart `LanEditProviderHost.courseFromApiJson` 还负责
-     * 「周次表达式」（`weekExpression` / `applyWeekExpressionFields`）与节次时间表的联动，
-     * 那部分依赖 `WeekExpressionParser`（本切片未移植，见 WIRING-NOTE 的未移植清单）。
-     * 这里只做：补齐 `id`（缺省生成）→ 走 `Course.fromJson` 的既有归一化与校验。
+     * **忽略周次表达式**（`weekExpression` / `suspendedWeekExpression`）——
+     * Dart 只在 `PUT /api/v1/courses/group` 解析它们。建课时把表达式留着不解析，
+     * 两字段并存时不会静默覆盖客户端给的 `customWeeks`。
      */
     private fun courseFromApiJson(body: Map<String, Any?>): Course {
         val normalized = LinkedHashMap<String, Any?>(body)
@@ -945,8 +1037,8 @@ class LanEditApiRouter(
     /**
      * PATCH：把补丁字段叠到既有记录上。
      *
-     * ⚠️ **未移植**：Dart `LanEditProviderHost.mergeCoursePatch` 还做
-     * `applyWeekExpressionFields` 的联动；这里只做字段覆盖 + `id` 保持 + 缺省补齐。
+     * **忽略周次表达式**（`weekExpression` / `suspendedWeekExpression`）——
+     * 与 Dart 一致，改课不做表达式展开，不会覆盖既有的 `customWeeks`。
      */
     private fun mergeCoursePatch(existing: Course, patch: Map<String, Any?>): Course {
         val merged = LinkedHashMap<String, Any?>(existing.toJson())

@@ -55,6 +55,19 @@ object LanTransferLogic {
     /** Dart `LanEditProviderHost.defaultLanCourseColor` 原样。 */
     const val DEFAULT_LAN_COURSE_COLOR = "#2196F3"
 
+    /**
+     * 备份里带多份档案时的拒绝码（**不是**通用格式错误）。
+     *
+     * 局域网只恢复当前档案，多档案包要么静默丢掉其它档案（不可接受），要么明确拒绝。
+     * 网页端按这个码显示可读解释与替代路径（`assets/lan_edit/app.js` 的
+     * `describeTransferError`）；服务端保持错误码口径，不在这里拼人话。
+     *
+     * 后续路线：仓储已有 [com.mutx163.qingyu.app.TimetableRepository.replaceAllProfiles]
+     * 可整份替换档案表，缺的是产品决策——覆盖时旧档案留不留在回收站、激活档指向谁、
+     * 与云备份恢复如何互斥。未决策前保持拒绝。
+     */
+    const val ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED = "profile_backup_profiles_unsupported"
+
     /** Dart `_lanCourseColorPattern` = `^#?([0-9a-fA-F]{6})$` 原样。 */
     private val LAN_COURSE_COLOR_PATTERN = Regex("^#?([0-9a-fA-F]{6})$")
 
@@ -106,7 +119,7 @@ object LanTransferLogic {
         // 偏差 1：profiles 非空明确拒（Dart 会静默忽略）。
         val profilesRaw = json["profiles"] as? List<*> ?: emptyList<Any?>()
         if (profilesRaw.isNotEmpty()) {
-            throw FormatException("profile_backup_profiles_unsupported")
+            throw FormatException(ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED)
         }
 
         val courses = parseTransferList("course", json["courses"], Course::fromJson).map { course ->
@@ -329,19 +342,21 @@ object LanTransferLogic {
      * Dart `_handleTransferApply` 的响应体：
      * `{applied, mode, transferId, diff, error?}`。
      *
-     * `transferId` 是 Dart 的**撤销点 id**；Kotlin 侧还没有 `TransferUndoService`，
-     * 所以恒定 null（如实告知缺失，不编一个假 id）。
+     * `transferId` 是**撤销点 id**（Dart 同样是 `result.undoToken?.id`，不是包里的
+     * `packageId`）：应用成功才有值，凭它调 `POST /api/v1/import/undo` 撤回这一批导入；
+     * 失败或未应用时为 null。
      */
     fun applyResultJson(
         applied: Boolean,
         mode: TransferApplyMode,
         diff: LanTransferDiff,
         error: String?,
+        transferId: String? = null,
     ): Map<String, Any?> {
         val out = linkedMapOf<String, Any?>(
             "applied" to applied,
             "mode" to modeName(mode),
-            "transferId" to null,
+            "transferId" to transferId,
             "diff" to diff.toJson(),
         )
         if (error != null) out["error"] = error

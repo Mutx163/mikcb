@@ -71,7 +71,10 @@ class LanTransferApplyTest {
         val applied = host.applyTransferJson(content, TransferApplyMode.MERGE)
         assertEquals(true, applied["applied"])
         assertEquals("merge", applied["mode"])
-        assertEquals("撤销点尚未移植：transferId 必须是 null 而不是编一个", null, applied["transferId"])
+        // 2026-11-02：撤销点已接线，成功应用必须回真实 id（不再是 null）。
+        val transferId = applied["transferId"]
+        assertNotNull("应用成功必须回撤销点 id", transferId)
+        assertNotEquals("撤销点 id 不是包里的 packageId", "transfer-test-1", transferId)
 
         @Suppress("UNCHECKED_CAST")
         val diff = applied["diff"] as Map<String, Any?>
