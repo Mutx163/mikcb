@@ -40,10 +40,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 文案
  *
  * 无中文字面量：标题与按钮文字全部来自 [SyncStrings]（ARB 逐字对拍）。
+ *
+ * ## 常驻组合（2026-11-02 弹窗审核 P3）
+ *
+ * 本组件**常驻组合**，可见性只由 [show] 驱动 —— 旧版 `show = true` 静态写在组件里、
+ * 靠宿主 `if (entryId == null) return` 整棵移出组合来关闭，官方退场动画一次都播不出来。
+ * [view] 可空：宿主在 `entryId` 置 null 后用 remember 保留的最后一份非空视图继续渲染
+ * 退场期间的内容（先例：`pages/diagnostics/MemoryStatsPage.kt:297-320`）。
  */
 @Composable
 fun CloudBackupDetailSheet(
-    view: CloudBackupDetailView,
+    show: Boolean,
+    view: CloudBackupDetailView?,
     busy: Boolean,
     onDismissRequest: () -> Unit,
     onRestore: () -> Unit,
@@ -52,45 +60,48 @@ fun CloudBackupDetailSheet(
     val dark = isSystemInDarkTheme()
 
     QingyuSheet(
-        show = true,
-        title = view.title,
+        show = show,
+        title = view?.title,
         onDismissRequest = onDismissRequest,
         // 内容左右自留 4dp（与页面口径的「16 + 4」一致，正文/按钮都不自带横向内边距），
         // 所以框架侧照旧给 16dp：单边合计 20dp，不是 miuix 默认 24 的 28。
         contentPadsHorizontally = false,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-            DetailLine(view.deviceLine, dark)
-            DetailLine(view.sourceLine, dark)
-            view.summaryLine?.let { DetailLine(it, dark) }
+        if (view != null) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                DetailLine(view.deviceLine, dark)
+                DetailLine(view.sourceLine, dark)
+                view.summaryLine?.let { DetailLine(it, dark) }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // 「删除」只在 Dart 给的动作里有才画（当前版本备份不可删，见 buildDetail）。
-                // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
-                // `cloudBackupDeleteTitle`（那句是确认弹框标题「删除此备份」）。
-                if (view.canDelete) {
-                    TextButton(
-                        text = SyncStrings.deleteAction.zh,
-                        onClick = onDelete,
-                        enabled = !busy,
-                        // 删除是破坏性操作：文字按钮只染字色（`textColor`），不是底色。
-                        colors = ButtonDefaults.textButtonColors(
-                            textColor = Color(QingyuTheme.error(dark)),
-                        ),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Button(
-                    onClick = onRestore,
-                    enabled = !busy,
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                    modifier = Modifier.weight(1f),
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(SyncStrings.cloudBackupRestoreAction.zh)
+                    // Dart 动作顺序是「恢复在前、删除在后」（旧版排反了，主次关系相反）。
+                    Button(
+                        onClick = onRestore,
+                        enabled = !busy,
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(SyncStrings.cloudBackupRestoreAction.zh)
+                    }
+                    // 「删除」只在 Dart 给的动作里有才画（当前版本备份不可删，见 buildDetail）。
+                    // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
+                    // `cloudBackupDeleteTitle`（那句是确认弹框标题「删除此备份」）。
+                    if (view.canDelete) {
+                        TextButton(
+                            text = SyncStrings.deleteAction.zh,
+                            onClick = onDelete,
+                            enabled = !busy,
+                            // 删除是破坏性操作：文字按钮只染字色（`textColor`），不是底色。
+                            colors = ButtonDefaults.textButtonColors(
+                                textColor = Color(QingyuTheme.error(dark)),
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }

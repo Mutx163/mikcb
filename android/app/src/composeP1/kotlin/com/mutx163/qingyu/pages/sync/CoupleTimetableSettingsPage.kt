@@ -258,37 +258,39 @@ fun CoupleTimetableSettingsPage(
         }
     }
 
-    if (showUnlinkConfirm) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = viewState.unlinkConfirmTitle,
-            summary = viewState.unlinkConfirmMessage,
-            onDismissRequest = { showUnlinkConfirm = false },
+    // 常驻组合、只翻 `show`（2026-11-02 弹窗审核 P3）：旧版 `if (showUnlinkConfirm) {
+    // OverlayDialog(show = true) }` 条件挂载会在置 false 的一瞬把整棵弹框摘出组合，
+    // 官方退场动画一次都播不出来。标题/正文都是 viewState 里的稳定字符串，退场期间
+    // 不存在会被清空的状态，无需 remember 保底（先例：pages/task/AddTaskPage.kt:388-391）。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showUnlinkConfirm,
+        title = viewState.unlinkConfirmTitle,
+        summary = viewState.unlinkConfirmMessage,
+        onDismissRequest = { showUnlinkConfirm = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            Button(
+                onClick = { showUnlinkConfirm = false },
+                modifier = Modifier.weight(1f),
             ) {
-                Button(
-                    onClick = { showUnlinkConfirm = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = viewState.unlinkConfirmCancelLabel)
-                }
-                Button(
-                    onClick = {
-                        showUnlinkConfirm = false
-                        onAction(CoupleTimetableSettingsLogic.COUPLE_UNLINK)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = viewState.unlinkConfirmActionLabel)
-                }
+                Text(text = viewState.unlinkConfirmCancelLabel)
+            }
+            Button(
+                onClick = {
+                    showUnlinkConfirm = false
+                    onAction(CoupleTimetableSettingsLogic.COUPLE_UNLINK)
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = viewState.unlinkConfirmActionLabel)
             }
         }
     }
