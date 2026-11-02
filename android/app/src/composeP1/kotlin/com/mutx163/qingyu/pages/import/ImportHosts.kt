@@ -20,6 +20,8 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.ShellExternalEntryHub
+import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidImportDocumentReader
 import com.mutx163.qingyu.platform.AndroidImportTemplateSharer
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
@@ -86,11 +88,27 @@ fun ImportEntryHost(
     LaunchedEffect(Unit) {
         prefs = withContext(Dispatchers.IO) { store.snapshot() }
     }
-    // 子页导入成功 → 与 Dart 的 pop(true) 同义：入口页也自关（关单规则在 ImportEntryModel）。
+    // 子页导入成功 → 与 Dart 的 pop(true) 同义：入口页回到前台时消费它并自关。
     LaunchedEffect(Unit) {
         if (bridge.completedImport) {
             bridge.completedImport = false
             onBack()
+        }
+    }
+    // 外部「打开方式 / 分享」带进来但 provider 自报超限的文件（R1 补口 2026-11-02）：
+    // 跳板读完声明尺寸就 post 过来，这里弹与 SAF 路径同一句的「文件过大」——超限
+    // 必须告诉用户，不能像收到一个打不开的文件一样毫无反应。
+    LaunchedEffect(Unit) {
+        val payload = ShellExternalEntryHub.consumeImport(ShellExternalEntry.IMPORT_KIND_TOO_LARGE)
+        if (payload is ShellExternalEntry.ImportPayload.TooLarge) {
+            Toast.makeText(
+                context,
+                ImportStrings.importFileTooLarge.filled(
+                    "size",
+                    ImportFlowModel.formatSizeLimit(payload.maxBytes.toInt()),
+                ),
+                Toast.LENGTH_SHORT,
+            ).show()
         }
     }
 
@@ -162,6 +180,29 @@ fun IcsImportHost(
 
     LaunchedEffect(Unit) {
         colorPrefs = withContext(Dispatchers.IO) { colorStore.snapshot() }
+    }
+    // 外部「打开方式 / 分享」带进来的 .ics（R1 补口 2026-11-02）：跳板已限长读好，
+    // 这里与 SAF 读到字节走同一条「解析 → 预览确认」链，不落盘、不再读一遍 URI。
+    LaunchedEffect(Unit) {
+        val payload = ShellExternalEntryHub.consumeImport("ics")
+            as? ShellExternalEntry.ImportPayload.Ics
+            ?: return@LaunchedEffect
+        // Dart 用 `utf8.decode(allowMalformed: true)`：坏字节变 U+FFFD，不整份失败。
+        val parsed = runCatching { IcsImportModel.parseWakeUpSchedule(payload.text) }.getOrNull()
+        if (parsed == null || parsed.courses.isEmpty()) {
+            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.zh, Toast.LENGTH_SHORT).show()
+            return@LaunchedEffect
+        }
+        val snapshot = repository.snapshot
+        val defaultStart = snapshot.settings.semesterStartDate ?: parsed.semesterStart
+        pending = PendingImport(
+            courses = parsed.courses,
+            semesterStartDate = defaultStart,
+            firstCourseWeek = ImportWeekAlignment.inferFirstCourseWeek(
+                semesterStartDate = defaultStart,
+                firstCourseDate = parsed.semesterStart,
+            ),
+        )
     }
 
     fun showToast(message: String) {
@@ -318,6 +359,47 @@ fun SpreadsheetImportHost(
 
     LaunchedEffect(Unit) {
         colorPrefs = withContext(Dispatchers.IO) { colorStore.snapshot() }
+    }
+    // 外部「打开方式 / 分享」带进来的表格文件（R1 补口 2026-11-02）：跳板已把字节读好，
+    // csv 编码探测 / xlsx 容器解码走与 SAF 完全相同的 parseSpreadsheet 链。
+    LaunchedEffect(Unit) {
+        val payload = ShellExternalEntryHub.consumeImport("spreadsheet")
+            as? ShellExternalEntry.ImportPayload.Spreadsheet
+            ?: return@LaunchedEffect
+        val settings = repository.snapshot.settings
+        val parsed = runCatching {
+            withContext(Dispatchers.IO) { parseSpreadsheet(payload.bytes, payload.fileName, settings) }
+        }.getOrElse { error ->
+            // 解析失败要说清原因（格式不识别 / 编码不识别 / xlsx 容器读不出来），与 SAF 同口径。
+            val code = (error as? FormatException)?.message
+            Toast.makeText(
+                context,
+                ImportServiceMessages.localize(code ?: error.message),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return@LaunchedEffect
+        }
+        if (parsed.courses.isEmpty()) {
+            Toast.makeText(context, ImportStrings.importNoCoursesRecognized.zh, Toast.LENGTH_SHORT).show()
+            return@LaunchedEffect
+        }
+        // 提醒先看，再确认导入（Dart `_executeSpreadsheetImport` 同顺序）。
+        warnings = parsed.warnings.map(ImportServiceMessages::localize)
+        pending = if (warnings.isNotEmpty()) {
+            showWarnings = true
+            PendingImport(
+                courses = parsed.courses,
+                semesterStartDate = null,
+                firstCourseWeek = 1,
+                warningCount = warnings.size,
+            )
+        } else {
+            PendingImport(
+                courses = parsed.courses,
+                semesterStartDate = null,
+                firstCourseWeek = 1,
+            )
+        }
     }
 
     fun showToast(message: String) {
