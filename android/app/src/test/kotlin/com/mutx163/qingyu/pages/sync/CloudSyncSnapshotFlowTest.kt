@@ -88,8 +88,14 @@ class CloudSyncSnapshotFlowTest {
         val kind = controller.createBackup()
 
         assertEquals(SyncResultKind.UPLOADED, kind)
-        val uploaded = transport.files[controller.config.snapshotRemotePath]
-        assertNotNull("上传后远端应存在当前快照指针文件", uploaded)
+        // Flutter 协议：当前版本 = meta.snapshotPath 指向的不可变正文。
+        @Suppress("UNCHECKED_CAST")
+        val meta = decodeSnapshotObject(
+            String(transport.files[controller.config.metaRemotePath]!!, Charsets.UTF_8),
+        ) as Map<String, Any?>
+        val bodyPath = meta["snapshotPath"] as String
+        val uploaded = transport.files[bodyPath]
+        assertNotNull("上传后远端应存在 meta 指向的快照正文", uploaded)
         val json = decodeSnapshotObject(String(uploaded!!, Charsets.UTF_8))
         val profiles = json["profiles"] as List<*>
         assertTrue("上传的快照里必须带档案", profiles.isNotEmpty())

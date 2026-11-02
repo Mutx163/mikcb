@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.sync.GetBytesResult
 import com.mutx163.qingyu.sync.HistoryListResult
 import com.mutx163.qingyu.sync.SyncConflictChoice
@@ -13,12 +14,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 云同步协调层单测（C1 · 真收发接线）。
+ * 云同步协调层单测（C1 真收发；2026-11-02 起按 Dart 协议对拍）。
  *
  * ## 期望值哪来的（人推的，不是从实现抄的）
- * - 「列备份」= PROPFIND 目录里直接子文件数，空目录就是没有备份；
- * - 「上传后远端多一条」= 历史目录里 `.mikcb` 文件计数 +1；
+ * - 「上传后远端布局」= Dart `_publishSnapshotVersion` + `_writeBackupHistory`：
+ *   根目录版本化正文 + `snapshot.meta.json` 指针 + `history/<ts>-<hash8>.mikcb` + `history/index.json`；
+ * - 「列备份」= index.json 条目；index 缺失/损坏时按恢复决策从 listing 重建；
  * - 「下载并解出快照」= 远端快照信封合法、内容哈希可算出、落盘字节与远端一致；
+ * - 「meta 与正文不配对」= `sync_snapshot_meta_mismatch`，绝不落盘；
  * - 「冲突」= 首次同步（双基线空）且本机与远端内容不同 —— 这是产品定义，不是实现细节；
  * - 「断线/超时」失败码沿用 `WebdavFailures` 的安全短码口径；
  * - 「中途退出」= 网络已返回但用户已离开页面，**绝不能把字节写进本机**。
@@ -30,29 +33,86 @@ class CloudSyncCoordinatorTest {
         store: FakeLocalSnapshotStore = FakeLocalSnapshotStore(),
     ): WebdavSyncCoordinator = WebdavSyncCoordinator(transport, store)
 
-    // ---------- 列远端备份（PROPFIND） ----------
+    private val exportIso = "2026-03-07T09:05:00.000"
+
+    // ---------- 列远端备份（index 驱动） ----------
 
     @Test
-    fun `列远端备份成功_解析版本化文件名元信息`() {
+    fun `列远端备份_读index逐字段解析`() {
         val transport = FakeRemoteTransport()
-        val folder = WebdavSyncConfig().historyRemoteFolder
-        transport.files["${folder}snapshot-abc123-1700000000000000-devA.mikcb"] = byteArrayOf(1)
-        transport.files["${folder}snapshot-def456-1700000123000000-devB.mikcb"] = byteArrayOf(2)
+        val config = WebdavSyncConfig()
+        val snapshot = buildSyncSnapshotBytes()
+        val hash = WebdavSyncCoordinator.snapshotContentHash(snapshot)!!
+        val history = config.historyRemoteFolder
+        transport.files["${history}20260307-171501-$hash.mikcb"] = snapshot
+        transport.files[config.historyIndexRemotePath] = """
+            {"version":1,"entries":[{
+              "id":"20260307-171501-$hash",
+              "fileName":"20260307-171501-$hash.mikcb",
+              "exportedAt":"2026-03-07T17:15:01.000",
+              "contentSha256":"$hash",
+              "deviceId":"devA",
+              "deviceLabel":"Pixel",
+              "isCurrent":true,
+              "source":"manual",
+              "profileCount":1,
+              "courseCount":0
+            }]}
+        """.trimIndent().toByteArray()
 
-        val outcome = coordinator(transport).listRemoteBackups(WebdavSyncConfig())
+        val outcome = coordinator(transport).listRemoteBackups(config)
 
         assertEquals(SyncOpKind.OK, outcome.kind)
-        assertEquals(2, outcome.files.size)
-        val first = outcome.files.first { it.fileName.contains("abc123") }
-        // 1700000000000000 微秒 = 1700000000000 毫秒
-        assertEquals(1700000000000L, first.exportedAtMillis)
-        assertEquals("abc123", first.contentSha256)
-        assertEquals("devA", first.deviceId)
-        assertEquals("${folder}snapshot-abc123-1700000000000000-devA.mikcb", first.remotePath)
+        assertEquals(1, outcome.files.size)
+        val file = outcome.files.single()
+        assertEquals("20260307-171501-$hash.mikcb", file.fileName)
+        assertEquals("${history}20260307-171501-$hash.mikcb", file.remotePath)
+        assertEquals(hash, file.contentSha256)
+        assertEquals("devA", file.deviceId)
+        assertEquals("Pixel", file.deviceLabel)
+        assertEquals(CloudBackupSource.MANUAL, file.source)
+        assertTrue(file.isCurrent)
+        assertEquals(1, file.profileCount)
     }
 
     @Test
-    fun `列远端备份_空目录是没有备份而不是失败`() {
+    fun `列远端备份_index缺失时从listing重建`() {
+        val transport = FakeRemoteTransport()
+        val config = WebdavSyncConfig()
+        val snapshot = buildSyncSnapshotBytes()
+        val hash = WebdavSyncCoordinator.snapshotContentHash(snapshot)!!
+        // Flutter 旧布局：只有 history 文件，没有 index.json。
+        transport.files["${config.historyRemoteFolder}20260307-171501-$hash.mikcb"] = snapshot
+
+        val outcome = coordinator(transport).listRemoteBackups(config)
+
+        assertEquals(SyncOpKind.OK, outcome.kind)
+        val file = outcome.files.single()
+        assertEquals(hash, file.contentSha256)
+        assertEquals("devA", file.deviceId)
+        assertEquals(1, file.profileCount)
+        assertFalse(file.isCurrent) // meta 缺失 → currentHash 空 → 无人标当前
+    }
+
+    @Test
+    fun `列远端备份_index损坏时从listing重建_坏体跳过`() {
+        val transport = FakeRemoteTransport()
+        val config = WebdavSyncConfig()
+        val snapshot = buildSyncSnapshotBytes()
+        val hash = WebdavSyncCoordinator.snapshotContentHash(snapshot)!!
+        transport.files[config.historyIndexRemotePath] = "not-json".toByteArray()
+        transport.files["${config.historyRemoteFolder}good.mikcb"] = snapshot
+        transport.files["${config.historyRemoteFolder}corrupt.mikcb"] = "垃圾字节".toByteArray()
+
+        val outcome = coordinator(transport).listRemoteBackups(config)
+
+        assertEquals(SyncOpKind.OK, outcome.kind)
+        assertEquals(listOf("good.mikcb"), outcome.files.map { it.fileName })
+        assertEquals(hash, outcome.files.single().contentSha256)
+    }
+
+    @Test
+    fun `列远端备份_空远端是没有备份而不是失败`() {
         val outcome = coordinator().listRemoteBackups(WebdavSyncConfig())
         assertEquals(SyncOpKind.EMPTY, outcome.kind)
         assertTrue(outcome.files.isEmpty())
@@ -76,34 +136,119 @@ class CloudSyncCoordinatorTest {
         assertEquals("connection_failed", outcome.errorCode)
     }
 
-    @Test
-    fun `文件名不是版本化格式时仍算一条备份_元信息为空`() {
-        val file = WebdavSyncCoordinator.parseRemoteBackupFile("random.mikcb", "/Apps/x/history/")
-        assertEquals("random.mikcb", file.fileName)
-        assertNull(file.exportedAtMillis)
-        assertNull(file.contentSha256)
-        assertNull(file.deviceId)
-    }
-
-    // ---------- 上传（PUT） ----------
+    // ---------- 上传（发布正文 + meta + 历史 + 索引） ----------
 
     @Test
-    fun `上传成功后远端多一条`() {
+    fun `上传后远端布局与Flutter协议一致`() {
         val transport = FakeRemoteTransport()
         val store = FakeLocalSnapshotStore()
         val coord = coordinator(transport, store)
         val config = WebdavSyncConfig()
-        val bytes = buildSyncSnapshotBytes()
+        val bytes = buildSyncSnapshotBytes(exportedAt = exportIso)
+        val hash = WebdavSyncCoordinator.snapshotContentHash(bytes)!!
 
-        val upload = coord.uploadSnapshot(config, bytes, exportedAtUtcMicros = 1_700_000_000_000_000L, deviceId = "devA")
+        val upload = coord.uploadSnapshot(config, bytes, exportedAtIso = exportIso, deviceId = "devA")
         assertEquals(SyncOpKind.OK, upload.kind)
-        assertNotNull(upload.contentSha256)
+        assertEquals(hash, upload.contentSha256)
 
-        // 上传后目录里恰好 1 条（上传前是 0 条）。
-        val listing = coord.listRemoteBackups(config)
-        assertEquals(SyncOpKind.OK, listing.kind)
-        assertEquals(1, listing.files.size)
-        assertTrue(transport.files.containsKey(config.snapshotRemotePath))
+        // 1) 版本化正文在**根目录**（不是 history/），名字含完整 sha256 + 微秒 + 设备。
+        val rootBody = transport.files.keys.single { it.startsWith(config.normalizedRemoteFolder) && it.endsWith(".mikcb") && !it.contains("/history/") }
+        assertTrue(rootBody.contains("snapshot-$hash-"))
+        assertTrue(rootBody.contains("-devA.mikcb"))
+        assertArrayEquals(bytes, transport.files[rootBody])
+
+        // 2) meta 指针：snapshotPath 指向那份正文，contentSha256 是本次哈希。
+        val meta = MiniJson.parse(String(transport.files[config.metaRemotePath]!!, Charsets.UTF_8)) as Map<*, *>
+        assertEquals(hash, meta["contentSha256"])
+        assertEquals(rootBody, meta["snapshotPath"])
+        assertEquals(exportIso, meta["exportedAt"])
+        assertEquals("devA", meta["deviceId"])
+
+        // 3) 历史文件用 Dart 命名（本地时刻 yyyyMMdd-HHmmss + hash8）。
+        val historyName = transport.files.keys.single { it.startsWith(config.historyRemoteFolder) && it != config.historyIndexRemotePath }
+        assertTrue("Dart 命名应形如 20260307-HHMMSS-<hash8>.mikcb：$historyName",
+            Regex("""20260307-\d{6}-[0-9a-f]{8}\.mikcb$""").containsMatchIn(historyName))
+        assertArrayEquals(bytes, transport.files[historyName])
+
+        // 4) index.json 有这一条且标为当前版本。
+        val index = MiniJson.parse(String(transport.files[config.historyIndexRemotePath]!!, Charsets.UTF_8)) as Map<*, *>
+        val entries = index["entries"] as List<*>
+        assertEquals(1, entries.size)
+        val entry = entries.single() as Map<*, *>
+        assertEquals(hash, entry["contentSha256"])
+        assertEquals(true, entry["isCurrent"])
+        assertEquals("auto", entry["source"])
+        assertEquals(1L, (index["version"] as Number).toLong())
+    }
+
+    @Test
+    fun `上传时锁被占是硬失败_远端一个字都不动`() {
+        val transport = FakeRemoteTransport().apply {
+            lockSupported = true
+            lockConflict = true
+        }
+        val config = WebdavSyncConfig()
+        val outcome = coordinator(transport).uploadSnapshot(
+            config,
+            buildSyncSnapshotBytes(exportedAt = exportIso),
+            exportedAtIso = exportIso,
+            deviceId = "devA",
+        )
+        assertEquals(SyncOpKind.FAILED, outcome.kind)
+        assertEquals("access_denied", outcome.errorCode)
+        // 挂起期间远端必须原地不动。
+        assertNull(transport.files[config.metaRemotePath])
+        assertTrue(transport.files.keys.none { it.endsWith(".mikcb") })
+    }
+
+    @Test
+    fun `上传时锁能力关闭_无If头照样发布_与今天一致`() {
+        val transport = FakeRemoteTransport() // lockSupported = false
+        val config = WebdavSyncConfig()
+
+        val outcome = coordinator(transport).uploadSnapshot(
+            config,
+            buildSyncSnapshotBytes(exportedAt = exportIso),
+            exportedAtIso = exportIso,
+            deviceId = "devA",
+        )
+
+        assertEquals(SyncOpKind.OK, outcome.kind)
+        assertNull("无锁路径不得带 If 头", transport.lastConditionalPutLockToken)
+        assertTrue(transport.lastConditionalPutHeaders.isNullOrEmpty())
+        assertNotNull(transport.files[config.metaRemotePath])
+    }
+
+    @Test
+    fun `上传时锁可用_PUT带锁token且用完释放`() {
+        val transport = FakeRemoteTransport().apply { lockSupported = true }
+        val config = WebdavSyncConfig()
+
+        assertEquals(SyncOpKind.OK, coordinator(transport).uploadSnapshot(
+            config,
+            buildSyncSnapshotBytes(exportedAt = exportIso),
+            exportedAtIso = exportIso,
+            deviceId = "devA",
+        ).kind)
+
+        assertNotNull(transport.lastConditionalPutLockToken)
+        assertNull("发布完成后锁必须释放", transport.heldLockToken)
+    }
+
+    @Test
+    fun `上传正文读回不一致判失败`() {
+        val transport = FakeRemoteTransport().apply { tamperNextGet = true }
+        val config = WebdavSyncConfig()
+        val outcome = coordinator(transport).uploadSnapshot(
+            config,
+            buildSyncSnapshotBytes(exportedAt = exportIso),
+            exportedAtIso = exportIso,
+            deviceId = "devA",
+        )
+        assertEquals(SyncOpKind.FAILED, outcome.kind)
+        assertEquals("sync_failed", outcome.errorCode)
+        // 读回不合格 ⇒ meta 不许发布（正文/meta 配对不被拆散）。
+        assertNull(transport.files[config.metaRemotePath])
     }
 
     @Test
@@ -113,7 +258,7 @@ class CloudSyncCoordinatorTest {
         val outcome = coordinator(transport).uploadSnapshot(
             WebdavSyncConfig(),
             buildSyncSnapshotBytes(),
-            exportedAtUtcMicros = 1_700_000_000_000_000L,
+            exportedAtIso = exportIso,
             deviceId = "devA",
         )
         assertEquals(SyncOpKind.FAILED, outcome.kind)
@@ -125,11 +270,25 @@ class CloudSyncCoordinatorTest {
         val outcome = coordinator().uploadSnapshot(
             WebdavSyncConfig(),
             "not-a-snapshot".toByteArray(),
-            exportedAtUtcMicros = 1L,
+            exportedAtIso = exportIso,
             deviceId = "devA",
         )
         assertEquals(SyncOpKind.FAILED, outcome.kind)
         assertEquals("invalid_sync_snapshot_payload", outcome.errorCode)
+    }
+
+    @Test
+    fun `上传同内容两次_index不堆重复条目`() {
+        val transport = FakeRemoteTransport()
+        val config = WebdavSyncConfig()
+        val bytes = buildSyncSnapshotBytes(exportedAt = exportIso)
+        val coord = coordinator(transport)
+
+        assertEquals(SyncOpKind.OK, coord.uploadSnapshot(config, bytes, exportedAtIso = exportIso, deviceId = "devA").kind)
+        assertEquals(SyncOpKind.OK, coord.uploadSnapshot(config, bytes, exportedAtIso = exportIso, deviceId = "devA").kind)
+
+        val index = MiniJson.parse(String(transport.files[config.historyIndexRemotePath]!!, Charsets.UTF_8)) as Map<*, *>
+        assertEquals(1, (index["entries"] as List<*>).size)
     }
 
     // ---------- 下载（GET）+ 快照解码 ----------
@@ -151,6 +310,25 @@ class CloudSyncCoordinatorTest {
         // 远端内容哈希与本地内容哈希一致（同一份内容）。
         assertEquals(outcome.remoteContentSha256, outcome.localContentSha256)
         assertFalse(outcome.remoteContentSha256.isNullOrEmpty())
+    }
+
+    @Test
+    fun `下载时meta与正文不配对判sync_snapshot_meta_mismatch`() {
+        val config = WebdavSyncConfig()
+        val snapshot = buildSyncSnapshotBytes(profileId = "p1")
+        val transport = FakeRemoteTransport()
+        transport.files["${config.normalizedRemoteFolder}body.mikcb"] = snapshot
+        val store = FakeLocalSnapshotStore(initial = null)
+
+        val outcome = coordinator(transport, store).downloadSnapshot(
+            config,
+            remotePath = "${config.normalizedRemoteFolder}body.mikcb",
+            expectedRemoteHash = "deadbeef".repeat(4),
+        )
+
+        assertEquals(SyncOpKind.FAILED, outcome.kind)
+        assertEquals("sync_snapshot_meta_mismatch", outcome.errorCode)
+        assertEquals(0, store.writeCount)
     }
 
     @Test
@@ -177,6 +355,40 @@ class CloudSyncCoordinatorTest {
         val outcome = coordinator(transport).downloadSnapshot(config)
         assertEquals(SyncOpKind.FAILED, outcome.kind)
         assertEquals("unrecognized_sync_snapshot", outcome.errorCode)
+    }
+
+    // ---------- 远端 meta ----------
+
+    @Test
+    fun `fetchRemoteMeta_缺失返回NotFound_损坏返回invalid_response`() {
+        val transport = FakeRemoteTransport()
+        val config = WebdavSyncConfig()
+        val coord = coordinator(transport)
+
+        assertEquals(RemoteMetaFetch.NotFound, coord.fetchRemoteMeta(config))
+
+        transport.files[config.metaRemotePath] = "{broken".toByteArray()
+        assertEquals("invalid_response", (coord.fetchRemoteMeta(config) as RemoteMetaFetch.Failed).errorCode)
+
+        transport.files[config.metaRemotePath] = """{"contentSha256":42}""".toByteArray()
+        assertEquals("invalid_response", (coord.fetchRemoteMeta(config) as RemoteMetaFetch.Failed).errorCode)
+    }
+
+    @Test
+    fun `fetchRemoteMeta_Flutter格式读出全字段`() {
+        val transport = FakeRemoteTransport()
+        val config = WebdavSyncConfig()
+        transport.files[config.metaRemotePath] = """
+            {"exportedAt":"2026-11-01T09:15:00.000Z","contentSha256":"abc123",
+             "deviceId":"flutter-dev-1","appVersion":"2.0.1",
+             "snapshotPath":"/Apps/qingyu-sync/snapshot-abc123-123-flutter-dev-1.mikcb"}
+        """.trimIndent().toByteArray()
+
+        val meta = coordinator(transport).fetchRemoteMeta(config) as RemoteMetaFetch.Ok
+
+        assertEquals("abc123", meta.contentSha256)
+        assertEquals("flutter-dev-1", meta.deviceId)
+        assertEquals("/Apps/qingyu-sync/snapshot-abc123-123-flutter-dev-1.mikcb", meta.snapshotPath)
     }
 
     // ---------- 冲突判定 ----------
@@ -243,118 +455,5 @@ class CloudSyncCoordinatorTest {
         assertFalse(outcome.applied)
         assertEquals(0, store.writeCount)
         assertNull(store.stored)
-    }
-
-    // ---------- 保留策略（Dart CloudBackupIndexService.prune 规则移植） ----------
-
-    private val dayMillis = 24L * 60L * 60L * 1000L
-    private val nowMillis = 1_800_000_000_000L
-
-    private fun backupAt(
-        fileName: String,
-        ageMillis: Long,
-        hash: String? = fileName,
-        source: CloudBackupSource = CloudBackupSource.AUTO,
-    ): RemoteBackupFile = RemoteBackupFile(
-        fileName = fileName,
-        remotePath = "/Apps/x/history/$fileName",
-        exportedAtMillis = nowMillis - ageMillis,
-        contentSha256 = hash,
-        source = source,
-    )
-
-    @Test
-    fun `prune_超上限删最旧_当前版本豁免`() {
-        val config = WebdavSyncConfig(maxBackupCount = 2)
-        val oldest = backupAt("old.mikcb", ageMillis = 3 * dayMillis)
-        val middle = backupAt("mid.mikcb", ageMillis = 2 * dayMillis)
-        val newest = backupAt("new.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
-        // 最新的那条是「当前版本」：即便占名额也不可删。
-
-        val removed = WebdavSyncCoordinator.planHistoryPrune(
-            files = listOf(oldest, middle, newest),
-            config = config,
-            nowMillis = nowMillis,
-            manualFileNames = emptySet(),
-        )
-
-        assertEquals(listOf(oldest.fileName), removed.map { it.fileName })
-    }
-
-    @Test
-    fun `prune_手动备份受保护_点名的 oldest 也不删`() {
-        val config = WebdavSyncConfig(maxBackupCount = 1, manualBackupProtected = true)
-        val manual = backupAt(
-            "manual.mikcb",
-            ageMillis = 10 * dayMillis,
-            source = CloudBackupSource.MANUAL,
-        )
-        val auto1 = backupAt("auto1.mikcb", ageMillis = 5 * dayMillis)
-        val auto2 = backupAt("auto2.mikcb", ageMillis = 1 * dayMillis)
-
-        val removed = WebdavSyncCoordinator.planHistoryPrune(
-            files = listOf(manual, auto1, auto2),
-            config = config,
-            nowMillis = nowMillis,
-            manualFileNames = setOf("manual.mikcb"),
-        )
-
-        // 上限 1：current（auto2）+ 受保护手动（manual）都豁免，被挤掉的是 auto1。
-        assertEquals(listOf(auto1.fileName), removed.map { it.fileName })
-    }
-
-    @Test
-    fun `prune_关闭手动保护后手动备份照常参与淘汰`() {
-        val config = WebdavSyncConfig(maxBackupCount = 1, manualBackupProtected = false)
-        val manual = backupAt(
-            "manual.mikcb",
-            ageMillis = 10 * dayMillis,
-            source = CloudBackupSource.MANUAL,
-        )
-        val current = backupAt("current.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
-
-        val removed = WebdavSyncCoordinator.planHistoryPrune(
-            files = listOf(manual, current),
-            config = config,
-            nowMillis = nowMillis,
-            manualFileNames = setOf("manual.mikcb"),
-        )
-
-        assertEquals(listOf(manual.fileName), removed.map { it.fileName })
-    }
-
-    @Test
-    fun `prune_超过天数上限的过期备份删除`() {
-        val config = WebdavSyncConfig(maxBackupCount = 30, maxBackupAgeDays = 7)
-        val fresh = backupAt("fresh.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
-        val expired = backupAt("expired.mikcb", ageMillis = 8 * dayMillis)
-
-        val removed = WebdavSyncCoordinator.planHistoryPrune(
-            files = listOf(fresh, expired),
-            config = config,
-            nowMillis = nowMillis,
-        )
-
-        assertEquals(listOf(expired.fileName), removed.map { it.fileName })
-    }
-
-    @Test
-    fun `prune_解析不出时间的文件绝不删也不占名额`() {
-        val config = WebdavSyncConfig(maxBackupCount = 1, maxBackupAgeDays = 7)
-        // Dart 端写的 backup-*.mikcb 解析不出导出时间：当「纪元 0」删等于清光对方的全部历史。
-        val foreign = RemoteBackupFile(
-            fileName = "backup-20260304-093000-abcdef12.mikcb",
-            remotePath = "/Apps/x/history/backup-20260304-093000-abcdef12.mikcb",
-            exportedAtMillis = null,
-        )
-        val current = backupAt("current.mikcb", ageMillis = 1 * dayMillis, hash = "current-hash")
-
-        val removed = WebdavSyncCoordinator.planHistoryPrune(
-            files = listOf(foreign, current),
-            config = config,
-            nowMillis = nowMillis,
-        )
-
-        assertTrue(removed.isEmpty())
     }
 }

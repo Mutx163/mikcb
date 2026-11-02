@@ -7,6 +7,7 @@ import com.mutx163.qingyu.sync.LockResult
 import com.mutx163.qingyu.sync.WebdavHeadResult
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.WebdavWriteResult
+import com.mutx163.qingyu.sync.versionedSnapshotRemotePath
 
 /**
  * C1 协调层单测用的内存假实现（不参与 JUnit 运行，只被各 Test 类引用）。
@@ -32,6 +33,9 @@ class FakeRemoteTransport : WebdavRemoteTransport {
     /** 在 GET / PUT 前回调（用于模拟「用户中途退出」）。 */
     var beforeGet: () -> Unit = {}
     var beforePut: () -> Unit = {}
+
+    /** 置位后下一次 GET 返回被篡改的字节（模拟传输损坏/并发覆盖），用完自动复位。 */
+    var tamperNextGet: Boolean = false
 
     // ── 条件写 / 锁能力（协议互通第 1 段；默认值 = 今天的行为） ──
 
@@ -65,6 +69,10 @@ class FakeRemoteTransport : WebdavRemoteTransport {
         beforeGet()
         getResultOverride?.let { return it }
         val bytes = files[remotePath] ?: return GetBytesResult.notFound()
+        if (tamperNextGet) {
+            tamperNextGet = false
+            return GetBytesResult.ok(bytes + byteArrayOf(0x7F))
+        }
         return GetBytesResult.ok(bytes)
     }
 
@@ -182,6 +190,36 @@ fun buildSyncSnapshotBytes(
 /** 构造一份情侣课表正文（不要求是快照信封，本层只做字节对比/哈希）。 */
 fun buildCoupleBytes(content: String = "partner-timetable-v1"): ByteArray =
     content.toByteArray(Charsets.UTF_8)
+
+/**
+ * 按新协议把一份快照种进假远端：根目录版本化正文 + `snapshot.meta.json` 指针
+ * （Flutter 版写盘的同款布局）。@return 正文远端路径（断言用）。
+ */
+fun seedRemoteSnapshot(
+    transport: FakeRemoteTransport,
+    config: WebdavSyncConfig,
+    bytes: ByteArray,
+    deviceId: String = "devA",
+    exportedAtIso: String = "2026-03-07T09:05:00.000",
+): String {
+    val hash = WebdavSyncCoordinator.snapshotContentHash(bytes)
+        ?: throw IllegalArgumentException("seed bytes 必须是合法快照")
+    val bodyPath = versionedSnapshotRemotePath(
+        normalizedRemoteFolder = config.normalizedRemoteFolder,
+        contentSha256 = hash,
+        exportedAtUtcMicros = CloudBackupListLogic.parseExportedAtMillis(exportedAtIso) * 1000L,
+        deviceId = deviceId,
+    )
+    transport.files[bodyPath] = bytes
+    transport.files[config.metaRemotePath] = CloudBackupIndexCodec.buildMetaBytes(
+        exportedAtIso = exportedAtIso,
+        contentSha256 = hash,
+        deviceId = deviceId,
+        appVersion = null,
+        snapshotPath = bodyPath,
+    )
+    return bodyPath
+}
 
 /** 便捷：默认情侣配置（http 不可用，但本层不校验 scheme，只用路径拼接）。 */
 fun defaultCoupleConfig(): CoupleWebdavConfig = CoupleWebdavConfig()

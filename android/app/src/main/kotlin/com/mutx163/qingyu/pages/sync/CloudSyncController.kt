@@ -6,6 +6,7 @@ import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import com.mutx163.qingyu.sync.resolveRemoteSnapshotPath
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.concurrent.CopyOnWriteArrayList
@@ -66,6 +67,11 @@ class CloudSyncController(
     private val snapshotProvider: (() -> SnapshotBuildResult)? = null,
     /** 覆盖默认的「写回仓储」实现（单测可注入失败）。 */
     private val snapshotApplier: ((ByteArray) -> SnapshotApplyResult)? = null,
+    /**
+     * App 版本号（写进 snapshot.meta.json 与 history/index.json 的 appVersion 字段，
+     * Flutter 端备份详情会显示）。宿主注入；null/空时不写键（Dart 条件写入同口径）。
+     */
+    private val appVersion: String? = null,
     /**
      * 撤销点索引。默认进程级共享（[CloudSyncUndoStore.shared]）：f.cloudSync 与
      * f.backupList 各自 new 控制器，但撤销点必须是同一份——在备份列表页恢复、
@@ -589,35 +595,50 @@ class CloudSyncController(
         backupEntries.firstOrNull { it.id == entryId }
 
     /**
-     * 删除某条远端备份（Dart `_deleteBackup`，`cloud_backup_list_screen.dart:218`）。
+     * 删除某条远端备份（Dart `deleteBackup`：索引查条目 → 当前版本拒绝 → 删文件 → 维护索引）。
      *
-     * 与 [openBackup] 同一套查找口径（`remoteFiles.firstOrNull { it.fileName == entryId }`）：
-     * 列表行的 `entryId` 就是远端文件名，两个动作不能各用一套匹配方式，否则会出现
-     * 「能恢复但删不掉」这种只有真连过 WebDAV 才看得见的错位。
-     *
-     * 成功 → 刷新列表并回 [SyncResultKind.BACKUP_DELETED]；失败 → 记错误码回 `FAILED`。
+     * 条目从 `history/index.json` 查（读不到走恢复重建）；文件与索引都认识它才动得起来，
+     * 不认识的远端文件永远不会被这条路删掉。当前版本闸门是两道：索引的 `isCurrent`，
+     * 以及本机上传基线（`lastUploadedLocalHash`）——它是其他设备「最新一份」的参照。
      */
     fun deleteBackup(entryId: String): SyncResultKind {
-        val active = ensureTransport() ?: return SyncResultKind.FAILED
-        val file = remoteFiles.firstOrNull { it.fileName == entryId }
+        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        val entries = when (val loaded = coordinator.loadBackupIndex(config)) {
+            is BackupIndexLoad.Failed -> {
+                status = status.copy(lastErrorCode = loaded.errorCode)
+                notifyChanged()
+                return SyncResultKind.FAILED
+            }
+            is BackupIndexLoad.Ok -> loaded.entries
+        }
+        // UI 行 id 用的是文件名；索引 id 用的是 backupId，两个都能定位到同一条。
+        val entry = entries.firstOrNull { it.fileName == entryId || it.id == entryId }
             ?: return SyncResultKind.FAILED
-        // 当前云端版本不许删（Dart `deleteBackup` 的 `entry.isCurrent` 闸门）：它是其他
-        // 设备「最新一份」的参照。基线落盘修复后 `lastUploadedLocalHash` 才有值，
-        // 这个闸门此前恒放行——现在真的拦得住。
-        if (file.contentSha256 != null && file.contentSha256 == config.lastUploadedLocalHash) {
+        if (entry.isCurrent || entry.contentSha256 == config.lastUploadedLocalHash) {
             status = status.copy(lastErrorCode = "cannot_delete_current_backup")
             notifyChanged()
             return SyncResultKind.FAILED
         }
-        val result = active.deleteRemoteFile(file.remotePath)
-        return if (result.isFailed) {
+        val active = ensureTransport() ?: return SyncResultKind.FAILED
+        val result = active.deleteRemoteFile(config.historyBackupRemotePath(entry.fileName))
+        if (result.isFailed) {
             status = status.copy(lastErrorCode = result.errorMessage ?: "delete_failed")
             notifyChanged()
-            SyncResultKind.FAILED
-        } else {
-            refreshBackups()
-            SyncResultKind.BACKUP_DELETED
+            return SyncResultKind.FAILED
         }
+        // 索引同步摘掉这条：失败的顺序与 Dart 一致（文件先删，索引保存失败按失败报，
+        // 文件已删不回滚——孤儿索引条目下次重建自 listing 会自然消失）。
+        val saveResult = coordinator.saveBackupIndex(
+            config,
+            CloudBackupIndexCodec.removeEntry(entries, entry.id),
+        )
+        if (saveResult.isFailed) {
+            status = status.copy(lastErrorCode = saveResult.errorMessage ?: "delete_failed")
+            notifyChanged()
+            return SyncResultKind.FAILED
+        }
+        refreshBackups()
+        return SyncResultKind.BACKUP_DELETED
     }
 
     /** 页面退出时调用：取消进行中的下载 + 摘掉监听。 */
@@ -631,15 +652,19 @@ class CloudSyncController(
     private fun runUpload(source: CloudBackupSource): SyncResultKind {
         val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
         val bytes = currentSnapshotBytes() ?: return SyncResultKind.FAILED
-        val exportedAtMicros = exportedAtMicrosOf(bytes)
+        val exportedAtIso = exportedAtIsoOf(bytes)
         status = status.copy(isSyncing = true)
         isCreatingBackup = true
         notifyChanged()
+        // 上传按 Dart 协议在协调器里一次完成：锁 → 正文（读回校验）→ meta（发布校验）
+        // → 历史文件 → index 维护（含保留策略执行）。成功即远端布局与 Flutter 版互通。
         val outcome = coordinator.uploadSnapshot(
             config = config,
             snapshotBytes = bytes,
-            exportedAtUtcMicros = exportedAtMicros,
+            exportedAtIso = exportedAtIso,
             deviceId = deviceIdOf(),
+            source = source,
+            appVersion = appVersion,
         )
         status = status.copy(isSyncing = false)
         isCreatingBackup = false
@@ -649,13 +674,12 @@ class CloudSyncController(
                 // lastSyncedAtIso，`lastUploadedLocalHash` 恒 null ⇒ 列表「当前版本」
                 // 永不出现、删除闸门恒放行、冲突判定恒误报（本条修的就是它）。
                 markSynced(outcome.contentSha256)
-                // 手动来源只在内存里记文件名（文件名格式不带来源，落盘另案）。
+                // 手动来源只在内存里记文件名（index 互通后条目来源已如实落盘）。
                 outcome.remotePath
                     ?.substringAfterLast('/')
                     ?.takeIf { source == CloudBackupSource.MANUAL }
                     ?.let { manualBackupFileNames.add(it) }
                 refreshBackups()
-                pruneAfterUpload()
                 SyncResultKind.UPLOADED
             }
             SyncOpKind.CANCELLED -> SyncResultKind.CANCELLED
@@ -665,33 +689,6 @@ class CloudSyncController(
                 SyncResultKind.FAILED
             }
         }
-    }
-
-    /**
-     * 上传成功后执行保留策略（Dart `_writeBackupHistory` 尾部的 prune 同位）：
-     * 按「上限条数 / 天数过期 / 手动保护 / 当前版本豁免」算出待删并**真的删远端**。
-     * 此前设置页的三个保留策略旋钮只改配置，从没有任何代码执行它们。
-     * 删除失败的条目留在远端，下一轮上传后的 prune 会再试；删完刷新一次列表。
-     */
-    private fun pruneAfterUpload() {
-        if (remoteFiles.isEmpty()) return
-        val removals = WebdavSyncCoordinator.planHistoryPrune(
-            files = remoteFiles,
-            config = config,
-            nowMillis = CloudBackupListLogic.parseExportedAtMillis(clock()),
-            manualFileNames = manualBackupFileNames,
-        )
-        if (removals.isEmpty()) return
-        val active = ensureTransport() ?: return
-        var deletedAny = false
-        for (file in removals) {
-            val result = active.deleteRemoteFile(file.remotePath)
-            if (!result.isFailed) {
-                deletedAny = true
-                manualBackupFileNames.remove(file.fileName)
-            }
-        }
-        if (deletedAny) refreshBackups()
     }
 
     /**
@@ -728,13 +725,34 @@ class CloudSyncController(
     }
 
     /**
-     * 拉取阶段：GET「当前快照」指针 → 与基线比对 → 需要时走协调器的冲突判定。
+     * 拉取阶段：读 `snapshot.meta.json` 指针 → 与基线比对 → 需要时交给协调器拉取。
      *
-     * 顺序与判定对齐 Dart `downloadAndApply`：先看远端哈希是否等于 `lastAppliedRemoteHash`
-     * （等于 = 云端没有新东西，直接返回去推本地），不等才交给 `downloadSnapshot`——
-     * 直接调它会把「远端没变、本地变了」的情形也拉成云端覆盖，静默丢掉本机改动。
+     * 顺序与判定对齐 Dart `downloadAndApply`：meta 缺失/内容哈希等于 `lastAppliedRemoteHash`
+     * = 云端没有新东西，直接返回去推本地；meta 声明的哈希与正文重算值不符报
+     * `sync_snapshot_meta_mismatch`，绝不把配不上对的正文写进本机。
+     *
+     * 旧格式兼容：云端没有 meta（本壳旧版写的，只有 `snapshot.mikcb` 指针）时按旧路径
+     * 判定——正文缺失 → 推本地；存在 → 信封校验后按基线/冲突走（见 [legacyPullPhase]）。
      */
     private fun runPullPhase(coordinator: WebdavSyncCoordinator): PullPhase {
+        ensureTransport() ?: return PullPhase.Failed("missing_credentials")
+        return when (val meta = coordinator.fetchRemoteMeta(config)) {
+            is RemoteMetaFetch.Failed -> PullPhase.Failed(meta.errorCode)
+            RemoteMetaFetch.NotFound -> legacyPullPhase(coordinator) ?: PullPhase.ProceedToUpload
+            is RemoteMetaFetch.Ok -> {
+                if (meta.contentSha256.isEmpty()) return PullPhase.ProceedToUpload
+                pullAndApplyRemote(coordinator, meta, resolver = { SyncConflictChoice.CANCEL })
+                    ?: PullPhase.ProceedToUpload
+            }
+        }
+    }
+
+    /**
+     * 旧格式云端（没有 meta）的拉取判定：GET legacy 指针 `snapshot.mikcb` →
+     * 缺失 = 云端没数据（去推本地）；存在 = 信封校验 → 基线比对 → 冲突走协调器。
+     * null 返回值 = 云端没有新数据，可以推本地。
+     */
+    private fun legacyPullPhase(coordinator: WebdavSyncCoordinator): PullPhase? {
         val active = ensureTransport() ?: return PullPhase.Failed("missing_credentials")
         val fetched = active.getBytes(config.snapshotRemotePath)
         if (fetched.isFailed) {
@@ -742,7 +760,7 @@ class CloudSyncController(
         }
         val bytes = fetched.bytes
         if (fetched.isNotFound || fetched.isEmpty || bytes == null) {
-            return PullPhase.ProceedToUpload
+            return null
         }
         val remotePayload = try {
             decodeSnapshotObject(String(bytes, Charsets.UTF_8))
@@ -754,7 +772,7 @@ class CloudSyncController(
             return PullPhase.Failed(envelope.errorCode ?: "invalid_sync_snapshot_payload")
         }
         if (envelope.actualHash == config.lastAppliedRemoteHash) {
-            return PullPhase.ProceedToUpload
+            return null
         }
         // 远端比基线新：让协调器做冲突判定。resolver 恒 CANCEL = 不自动选边，
         // 冲突时协调器返回 CANCELLED + 冲突信息，挂起给页面弹「选边」框。
@@ -779,33 +797,78 @@ class CloudSyncController(
         }
     }
 
-    /** 以云端为准拉取并应用（用户选了「使用云端」），成功后写基线。 */
-    private fun downloadApplyAndMark(
+    /**
+     * 按 meta 声明拉取并应用远端（立即同步的「云端较新」分支与「使用云端」选边共用）。
+     * 正文路径取 meta 的 `snapshotPath`（经穿越校验）；非法路径报
+     * `sync_snapshot_path_invalid`（Dart 同码）。
+     * @return null = meta 声明哈希等于当前基线（云端没有新数据，调用方自行推进）
+     */
+    private fun pullAndApplyRemote(
+        coordinator: WebdavSyncCoordinator,
+        meta: RemoteMetaFetch.Ok,
         resolver: (SyncConflictInfo) -> SyncConflictChoice,
-    ): SyncResultKind {
-        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+    ): PullPhase? {
+        if (meta.contentSha256 == config.lastAppliedRemoteHash) return null
+        val snapshotPath = resolveRemoteSnapshotPath(
+            normalizedRemoteFolder = config.normalizedRemoteFolder,
+            snapshotRemotePath = config.snapshotRemotePath,
+            rawPath = meta.snapshotPath,
+        ) ?: return PullPhase.Failed("sync_snapshot_path_invalid")
         status = status.copy(isSyncing = true)
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
             config = config,
+            remotePath = snapshotPath,
+            expectedRemoteHash = meta.contentSha256,
             hasLocalUserData = true,
             resolver = resolver,
         )
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
-            SyncOpKind.OK -> {
-                if (!applyDownloadedSnapshot(outcome.bytes)) {
-                    notifyChanged()
-                    return SyncResultKind.FAILED
-                }
+            SyncOpKind.OK -> if (applyDownloadedSnapshot(outcome.bytes)) {
                 markSynced(outcome.remoteContentSha256)
-                SyncResultKind.DOWNLOADED
+                PullPhase.Downloaded
+            } else {
+                PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
             }
-            SyncOpKind.CANCELLED -> SyncResultKind.CANCELLED
-            else -> {
-                status = status.copy(lastErrorCode = outcome.errorCode)
+            SyncOpKind.CANCELLED -> outcome.conflict?.let { PullPhase.Conflict(it) }
+                ?: PullPhase.Failed("sync_failed")
+            else -> PullPhase.Failed(outcome.errorCode ?: "sync_failed")
+        }
+    }
+
+    /** 以云端为准拉取并应用（用户选了「使用云端」），成功后写基线。 */
+    private fun downloadApplyAndMark(
+        resolver: (SyncConflictInfo) -> SyncConflictChoice,
+    ): SyncResultKind {
+        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        val meta = coordinator.fetchRemoteMeta(config)
+        return when (meta) {
+            is RemoteMetaFetch.Failed -> {
+                status = status.copy(lastErrorCode = meta.errorCode)
                 notifyChanged()
                 SyncResultKind.FAILED
+            }
+            RemoteMetaFetch.NotFound -> {
+                // 旧格式云端：直接按 legacy 指针拉（无 meta 配对校验可做）。
+                when (val phase = legacyPullPhase(coordinator)) {
+                    is PullPhase.Downloaded -> SyncResultKind.DOWNLOADED
+                    is PullPhase.Failed -> {
+                        status = status.copy(lastErrorCode = phase.errorCode)
+                        notifyChanged()
+                        SyncResultKind.FAILED
+                    }
+                    else -> SyncResultKind.CANCELLED
+                }
+            }
+            is RemoteMetaFetch.Ok -> when (val phase = pullAndApplyRemote(coordinator, meta, resolver)) {
+                PullPhase.Downloaded -> SyncResultKind.DOWNLOADED
+                is PullPhase.Failed -> {
+                    status = status.copy(lastErrorCode = phase.errorCode)
+                    notifyChanged()
+                    SyncResultKind.FAILED
+                }
+                else -> SyncResultKind.CANCELLED
             }
         }
     }
@@ -856,7 +919,11 @@ class CloudSyncController(
 
     private fun coordinatorOrNull(): WebdavSyncCoordinator? {
         val active = ensureTransport() ?: return null
-        return WebdavSyncCoordinator(active, snapshotStore)
+        return WebdavSyncCoordinator(
+            transport = active,
+            localStore = snapshotStore,
+            nowMillis = { CloudBackupListLogic.parseExportedAtMillis(clock()) },
+        )
     }
 
     /**
@@ -882,26 +949,33 @@ class CloudSyncController(
     private fun toEntry(file: RemoteBackupFile): CloudBackupEntryModel = CloudBackupEntryModel(
         id = file.fileName,
         fileName = file.fileName,
-        exportedAtIso = file.exportedAtMillis?.let { Instant.ofEpochMilli(it).toString() } ?: "",
+        exportedAtIso = file.exportedAtIso
+            ?: file.exportedAtMillis?.let { Instant.ofEpochMilli(it).toString() }
+            ?: "",
         contentSha256 = file.contentSha256 ?: "",
         deviceId = file.deviceId ?: "",
-        deviceLabel = file.deviceId ?: "",
-        // 来源不再硬编码 AUTO：本会话手动备份的那几条如实标 MANUAL；
-        // 其余条目文件名里没有来源信息，缺省 AUTO（与 Dart 未知值回落一致）。
+        deviceLabel = file.deviceLabel.ifBlank { file.deviceId ?: "" },
+        appVersion = file.appVersion,
+        // 索引条目自带 isCurrent（Flutter 端写的也算数）；本机基线命中同样算当前版本。
+        isCurrent = file.isCurrent ||
+            (file.contentSha256 != null && file.contentSha256 == config.lastUploadedLocalHash),
+        // 来源不再硬编码 AUTO：index 互通后条目来源已如实落盘（Flutter 写的 MANUAL 也认）；
+        // 本会话手动备份的那几条由内存记录兜底（重建自 listing 的条目没有来源信息）。
         source = if (file.fileName in manualBackupFileNames) {
             CloudBackupSource.MANUAL
         } else {
             file.source
         },
-        isCurrent = file.contentSha256 != null && file.contentSha256 == config.lastUploadedLocalHash,
+        profileCount = file.profileCount,
+        courseCount = file.courseCount,
     )
 
-    private fun exportedAtMicrosOf(bytes: ByteArray): Long {
+    /** 快照信封里的 `exportedAt` 原串（meta/历史命名都用它）；缺失回落当前时刻。 */
+    private fun exportedAtIsoOf(bytes: ByteArray): String {
         val payload = runCatching {
             com.mutx163.qingyu.sync.decodeSnapshotObject(String(bytes, Charsets.UTF_8))
-        }.getOrNull() ?: return 0L
-        val millis = CloudBackupListLogic.parseExportedAtMillis(payload["exportedAt"] as? String)
-        return millis * 1000L
+        }.getOrNull()
+        return (payload?.get("exportedAt") as? String)?.takeIf { it.isNotBlank() } ?: clock()
     }
 
     private fun deviceIdOf(): String = deviceLabelDraft.trim().ifEmpty { "device" }

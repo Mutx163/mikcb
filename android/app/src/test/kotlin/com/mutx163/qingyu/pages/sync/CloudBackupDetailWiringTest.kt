@@ -34,12 +34,12 @@ class CloudBackupDetailWiringTest {
         clock = { "2026-03-07T09:05:00+08:00" },
     )
 
-    /** 连上 + 造一条远端历史备份，返回控制器。 */
+    /** 连上 + 造一条远端历史备份，返回控制器。index 缺失 → 从 listing 重建，体必须是合法快照。 */
     private fun connected(transport: FakeRemoteTransport): CloudSyncController {
         val controller = controller(transport = transport)
         controller.connect("me@example.com", "pw")
         // 历史备份落在 history/ 下：listHistoryBackupFiles 会把它当候选条目。
-        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = byteArrayOf(1, 2, 3)
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = buildSyncSnapshotBytes(profileId = "p1")
         controller.refreshBackups()
         return controller
     }
@@ -69,8 +69,8 @@ class CloudBackupDetailWiringTest {
     @Test
     fun `删除成功_远端少一条且回BACKUP_DELETED`() {
         val transport = FakeRemoteTransport()
-        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = byteArrayOf(1, 2, 3)
-        transport.files["/Apps/qingyu-sync/history/2026-03-05.mikcb"] = byteArrayOf(4, 5, 6)
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = buildSyncSnapshotBytes(profileId = "p1")
+        transport.files["/Apps/qingyu-sync/history/2026-03-05.mikcb"] = buildSyncSnapshotBytes(profileId = "p2")
         val controller = connected(transport)
 
         val kind = controller.deleteBackup("2026-03-06.mikcb")
@@ -139,13 +139,12 @@ class CloudBackupDetailWiringTest {
     @Test
     fun `恢复成功回DOWNLOADED_列表仍可读`() {
         val transport = FakeRemoteTransport()
-        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = byteArrayOf(9, 9, 9)
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = buildSyncSnapshotBytes(profileId = "pRemote")
         val controller = connected(transport)
 
-        // 远端字节不是合法快照 ⇒ 协调器会按失败处理；这里只要求「不抛、结局合法」。
         val kind = controller.openBackup("2026-03-06.mikcb")
 
-        assertTrue(kind in setOf(SyncResultKind.DOWNLOADED, SyncResultKind.FAILED))
+        assertEquals(SyncResultKind.DOWNLOADED, kind)
         assertTrue(controller.backupListViewState().rows.isNotEmpty())
     }
 }

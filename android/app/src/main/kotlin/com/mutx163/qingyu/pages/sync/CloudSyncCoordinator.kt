@@ -1,33 +1,44 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.sync.BackupIndexRecoveryAction
+import com.mutx163.qingyu.sync.GetBytesResult
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.sync.WebdavSyncConfig
+import com.mutx163.qingyu.sync.WebdavWriteResult
+import com.mutx163.qingyu.sync.bytesEqual
 import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
 import com.mutx163.qingyu.sync.computeContentSha256
+import com.mutx163.qingyu.sync.decideBackupIndexRecovery
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import com.mutx163.qingyu.sync.parseSnapshotMetaFields
 import com.mutx163.qingyu.sync.resolveSyncConflictAutomatically
 import com.mutx163.qingyu.sync.versionedSnapshotRemotePath
 import com.mutx163.qingyu.sync.webdavPullHasSyncConflict
 import java.security.MessageDigest
 
 /**
- * 云同步「真收发」协调层（Phase 3.5 · C1）。
+ * 云同步「真收发」协调层（Phase 3.5 · C1；2026-11-02 起按 **Dart 协议**读写远端）。
  *
- * 这是把 P3-F 只做「状态机 + 解析」的模型层接上**真实网络收发**的那一层：
- * 列远端备份（PROPFIND）、上传（PUT）、下载（GET）、冲突判定、断线/超时失败码、
- * 中途退出取消，全部在这里完成。数据面依赖 [WebdavRemoteTransport] 这个缝，
- * 单测注入内存假实现即可覆盖全路径，不碰真机、不起 HTTP 服务。
+ * ## 远端布局（与 Flutter 版 `webdav_sync_service.dart` 逐字对齐，双向互通的格式合同）
  *
- * **刻意不放进来的东西**（交给别的层）：
- * - 密码 / 端点构造：由 [createWebdavRemoteTransport] 从配置 + 密码生成，密码存储归宿主；
- * - 配置落盘（SharedPreferences）、UI 文案与按钮态：归 `CloudSyncController` / 宿主；
- * - 快照 `applySnapshot`（把快照写回仓储各表）：这是仓储原子入口（台账 §9.4 ③ `task-14`），
- *   本层只负责把「校验通过、无冲突、未取消」的快照字节交给 [LocalSnapshotStore]。
+ * - `<folder>snapshot.meta.json` —— **当前快照指针**：`exportedAt/contentSha256/deviceId/
+ *   appVersion?/snapshotPath`，`snapshotPath` 指向不可变的版本化正文；Dart 缺 meta 直接当
+ *   「已是最新」，所以 meta 是唯一权威指针；
+ * - `<folder>snapshot-<sha256>-<微秒>-<设备>.mikcb` —— 版本化正文，写在**根目录**
+ *   （不是 history/）；
+ * - `<folder>history/<yyyyMMdd-HHmmss本地>-<hash8>.mikcb` —— 历史备份（Dart 命名）；
+ * - `<folder>history/index.json` —— 历史索引（version=1 + entries），缺失/损坏按
+ *   Dart `decideWebdavBackupIndexRecovery` 口径恢复（重建自 listing）。
  *
- * ## 取消语义（中途退出不落脏数据）
- * [cancel] 置位后，一次下载在「网络返回之后、写本地之前」会看到取消标记并直接返回
- * [SyncOpKind.CANCELLED]，**不写任何字节**；每次新操作开头清掉取消标记。
+ * ## 发布顺序（Dart `_publishSnapshotVersion` 原样）
+ *
+ * 取独占锁（服务器不支持锁→继续，锁被占→硬失败）→ PUT 版本化正文 → **读回校验** →
+ * PUT meta → **再读 meta 校验**（contentSha256 与 snapshotPath 必须等于本次发布的）
+ * → 解锁。读回校验保证「正文/meta 配对」不被并发写者拆散——服务器没有锁和 ETag 也成立。
+ *
+ * 数据面依赖 [WebdavRemoteTransport] 这个缝，单测注入内存假实现即可覆盖全路径。
  */
 
 /** 一次同步动作的结局（不是 HTTP 细节，是页面要判的业务结局）。 */
@@ -51,18 +62,25 @@ enum class SyncOpKind {
     FAILED,
 }
 
-/** 远端一条备份文件（来自 PROPFIND 文件名，元信息尽力从版本化文件名解析）。 */
+/** 远端一条备份（来自 history/index.json 条目，或重建自 listing 的快照体解析）。 */
 data class RemoteBackupFile(
     val fileName: String,
     val remotePath: String,
     val exportedAtMillis: Long? = null,
     val contentSha256: String? = null,
     val deviceId: String? = null,
+    val exportedAtIso: String? = null,
+    val deviceLabel: String = "",
+    val appVersion: String? = null,
+    /** 索引条目自带的「当前版本」标记；重建自 listing 时由 meta 哈希判定。 */
+    val isCurrent: Boolean = false,
     /**
-     * 备份来源。版本化文件名里不带来源，目录列出来的条目只能给缺省 AUTO；
-     * 「本会话刚手动备份的那条」由调用方覆盖成 MANUAL（保留策略的豁免判据要用）。
+     * 备份来源。索引互通后来自 index.json（Flutter 写的真实来源）；
+     * 重建自 listing 的条目只能给缺省 AUTO——文件名里没有来源信息。
      */
     val source: CloudBackupSource = CloudBackupSource.AUTO,
+    val profileCount: Int? = null,
+    val courseCount: Int? = null,
 )
 
 /** 列远端备份结果。 */
@@ -92,6 +110,29 @@ data class DownloadSnapshotOutcome(
     val errorCode: String? = null,
 )
 
+/** `snapshot.meta.json` 的读取结果（Dart `WebdavRemoteMetaResult` 口径）。 */
+sealed interface RemoteMetaFetch {
+    /** meta 存在且可解析；[contentSha256] 为空串表示声明为空（Dart 同样当「无拉取工作」）。 */
+    data class Ok(
+        val exportedAtIso: String,
+        val contentSha256: String,
+        val deviceId: String,
+        val snapshotPath: String?,
+    ) : RemoteMetaFetch
+
+    /** 404 / 空体：云端从未发布过 meta（Dart `isNotFound` → upToDate）。 */
+    data object NotFound : RemoteMetaFetch
+
+    /** 网络失败或 JSON/类型不合法（Dart `invalid_response`）。 */
+    data class Failed(val errorCode: String) : RemoteMetaFetch
+}
+
+/** 历史索引装载结果（上传维护索引、删除备份共用）。 */
+sealed interface BackupIndexLoad {
+    data class Ok(val entries: List<CloudBackupEntryModel>) : BackupIndexLoad
+    data class Failed(val errorCode: String) : BackupIndexLoad
+}
+
 /**
  * 本机快照读写接缝（生产用存储层实现，单测用内存假实现）。
  * 只读写「当前快照」这一份字节；多档案/任务写回归仓储（不在本层）。
@@ -106,10 +147,13 @@ interface LocalSnapshotStore {
  *
  * @param transport 真实收发通道（生产由 [createWebdavRemoteTransport] 构造）。
  * @param localStore 本机快照读写（下载成功且无冲突时写这里）。
+ * @param nowMillis 保留策略的「现在」（毫秒）；控制器把页面时钟传进来，单测注入固定值，
+ *   生产缺省用系统时钟（Dart `DateTime.now()` 同位）。
  */
 class WebdavSyncCoordinator(
     private val transport: WebdavRemoteTransport,
     private val localStore: LocalSnapshotStore,
+    private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) {
 
     @Volatile
@@ -125,37 +169,188 @@ class WebdavSyncCoordinator(
         cancelled = false
     }
 
-    // ---------- 列远端备份（PROPFIND） ----------
+    // ---------- 远端 meta（当前快照指针） ----------
 
-    fun listRemoteBackups(config: WebdavSyncConfig): ListBackupsOutcome {
-        val listing = transport.listHistoryBackupFiles(config.historyRemoteFolder)
-        if (listing.isFailed) {
-            return ListBackupsOutcome(SyncOpKind.FAILED, errorCode = listing.errorMessage ?: "sync_failed")
+    /** GET `snapshot.meta.json` 并按 Dart `getRemoteMetaResult` 口径归类。 */
+    fun fetchRemoteMeta(config: WebdavSyncConfig): RemoteMetaFetch {
+        val result = transport.getBytes(config.metaRemotePath)
+        if (result.isFailed) {
+            return RemoteMetaFetch.Failed(result.errorMessage ?: "sync_failed")
         }
-        // 目录不存在（404）与空目录在产品语义上都是「还没有备份」。
-        if (listing.isNotFound || listing.fileNames.isEmpty()) {
-            return ListBackupsOutcome(SyncOpKind.EMPTY)
+        val bytes = result.bytes
+        if (result.isNotFound || bytes == null || bytes.isEmpty()) {
+            return RemoteMetaFetch.NotFound
         }
-        val files = listing.fileNames.map { name ->
-            parseRemoteBackupFile(name, config.historyRemoteFolder)
+        val decoded = try {
+            MiniJson.parse(String(bytes, Charsets.UTF_8))
+        } catch (_: Exception) {
+            null
         }
-        return ListBackupsOutcome(SyncOpKind.OK, files = files)
+        if (decoded !is Map<*, *>) return RemoteMetaFetch.Failed("invalid_response")
+        @Suppress("UNCHECKED_CAST")
+        val fields = parseSnapshotMetaFields(decoded as Map<String, Any?>)
+        if (!fields.isValid) {
+            // Dart 侧 fromJson 抛 FormatException 被 getRemoteMetaResult catch → invalid_response。
+            return RemoteMetaFetch.Failed("invalid_response")
+        }
+        return RemoteMetaFetch.Ok(
+            exportedAtIso = fields.exportedAtIso ?: "",
+            contentSha256 = fields.contentSha256 ?: "",
+            deviceId = fields.deviceId ?: "",
+            snapshotPath = fields.snapshotPath,
+        )
     }
 
-    // ---------- 上传（PUT） ----------
+    // ---------- 列远端备份（index 优先，缺失/损坏走恢复） ----------
+
+    fun listRemoteBackups(config: WebdavSyncConfig): ListBackupsOutcome {
+        return when (val loaded = loadBackupIndex(config)) {
+            is BackupIndexLoad.Failed -> ListBackupsOutcome(
+                SyncOpKind.FAILED,
+                errorCode = loaded.errorCode,
+            )
+            is BackupIndexLoad.Ok -> {
+                if (loaded.entries.isEmpty()) {
+                    ListBackupsOutcome(SyncOpKind.EMPTY)
+                } else {
+                    ListBackupsOutcome(
+                        SyncOpKind.OK,
+                        files = loaded.entries.map { toRemoteBackupFile(config, it) },
+                    )
+                }
+            }
+        }
+    }
 
     /**
-     * 上传一份快照：先建目录，再写版本化文件，最后更新「当前快照」指针。
+     * 装载历史索引（Dart `_loadRemoteBackupIndex` 原样口径）：
+     * 1. index.json 可读且是合法结构 → 直接用；
+     * 2. index 缺失/损坏 → 按 `decideBackupIndexRecovery` 决策：
+     *    空远端 → 空；listing 也拿不到 → 失败（**瞬时错误绝不用空索引顶掉好索引**）；
+     *    否则从 listing 重建——逐个下载历史文件解析快照体，坏体跳过（绝不删）。
+     */
+    fun loadBackupIndex(config: WebdavSyncConfig): BackupIndexLoad {
+        val indexResult = transport.getBytes(config.historyIndexRemotePath)
+        var readable = indexResult
+        if (!indexResult.isFailed && !indexResult.isNotFound) {
+            val bytes = indexResult.bytes
+            val decoded = bytes?.let {
+                try {
+                    MiniJson.parse(String(it, Charsets.UTF_8))
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            if (decoded is Map<*, *> && decoded["entries"] is List<*>) {
+                return BackupIndexLoad.Ok(CloudBackupIndexCodec.decodeIndex(String(bytes, Charsets.UTF_8)))
+            }
+            // 结构不合法：按 Dart `readableIndexResult = failed('sync_failed')` 进恢复决策。
+            readable = GetBytesResult.failed("sync_failed")
+        }
+
+        val listing = transport.listHistoryBackupFiles(config.historyRemoteFolder)
+        return when (decideBackupIndexRecovery(readable, listing)) {
+            BackupIndexRecoveryAction.USE_INDEX -> BackupIndexLoad.Failed("sync_failed")
+            BackupIndexRecoveryAction.EMPTY -> BackupIndexLoad.Ok(emptyList())
+            BackupIndexRecoveryAction.FAILED -> BackupIndexLoad.Failed(
+                listing.errorMessage ?: readable.errorMessage ?: "sync_failed",
+            )
+            BackupIndexRecoveryAction.REBUILD_FROM_LISTING ->
+                rebuildIndexFromListing(config, listing.fileNames)
+        }
+    }
+
+    /**
+     * 从 listing 重建索引（Dart `_loadRemoteBackupIndex` 重建分支）：
+     * 逐个下载 → 解析快照体 → `id = 文件名去 .mikcb`；单个体损坏跳过不外抛
+     * （一个坏文件不许把全部历史藏掉）；旧命名（`snapshot-*`）与新命名同样可读。
+     */
+    private fun rebuildIndexFromListing(
+        config: WebdavSyncConfig,
+        fileNames: List<String>,
+    ): BackupIndexLoad {
+        val meta = fetchRemoteMeta(config)
+        if (meta is RemoteMetaFetch.Failed) return BackupIndexLoad.Failed(meta.errorCode)
+        val currentHash = (meta as? RemoteMetaFetch.Ok)?.contentSha256 ?: ""
+        val entries = ArrayList<CloudBackupEntryModel>(fileNames.size)
+        for (name in fileNames) {
+            val backup = transport.getBytes(config.historyBackupRemotePath(name))
+            if (backup.isFailed) {
+                return BackupIndexLoad.Failed(backup.errorMessage ?: "sync_failed")
+            }
+            if (backup.isNotFound) continue
+            val bytes = backup.bytes ?: continue
+            val payload = try {
+                decodeSnapshotObject(String(bytes, Charsets.UTF_8))
+            } catch (_: Exception) {
+                continue
+            }
+            val envelope = checkSnapshotEnvelopeAndChecksum(payload)
+            if (!envelope.isValid) continue
+            val exportedRaw = payload["exportedAt"] as? String
+            entries.add(
+                CloudBackupEntryModel(
+                    id = name.removeSuffix(".mikcb"),
+                    fileName = name,
+                    exportedAtIso = exportedRaw ?: "",
+                    contentSha256 = envelope.actualHash,
+                    deviceId = payload["deviceId"] as? String ?: "",
+                    deviceLabel = "",
+                    isCurrent = envelope.actualHash == currentHash,
+                    source = CloudBackupSource.AUTO,
+                    profileCount = CloudBackupIndexCodec.countProfilesInSnapshot(payload),
+                    courseCount = CloudBackupIndexCodec.countCoursesInSnapshot(payload),
+                ),
+            )
+        }
+        return BackupIndexLoad.Ok(entries)
+    }
+
+    /** 覆写 `history/index.json`（失败即失败，调用方决定是否外显）。 */
+    fun saveBackupIndex(
+        config: WebdavSyncConfig,
+        entries: List<CloudBackupEntryModel>,
+    ): WebdavWriteResult = transport.putBytes(
+        config.historyIndexRemotePath,
+        CloudBackupIndexCodec.encodeIndex(entries),
+    )
+
+    private fun toRemoteBackupFile(config: WebdavSyncConfig, entry: CloudBackupEntryModel): RemoteBackupFile {
+        val millis = CloudBackupIndexCodec.entryMillis(entry)
+        return RemoteBackupFile(
+            fileName = entry.fileName,
+            remotePath = config.historyBackupRemotePath(entry.fileName),
+            exportedAtMillis = millis.takeIf { it > 0L },
+            contentSha256 = entry.contentSha256.ifEmpty { null },
+            deviceId = entry.deviceId.ifEmpty { null },
+            exportedAtIso = entry.exportedAtIso,
+            deviceLabel = entry.deviceLabel,
+            appVersion = entry.appVersion,
+            isCurrent = entry.isCurrent,
+            source = entry.source,
+            profileCount = entry.profileCount,
+            courseCount = entry.courseCount,
+        )
+    }
+
+    // ---------- 上传（发布正文 + meta + 历史与索引） ----------
+
+    /**
+     * 上传一份快照：按 Dart 协议发布（锁 → 正文 → 读回 → meta → 校验 → 解锁 → 历史 → 索引）。
      *
      * @param snapshotBytes 快照正文（UTF-8 JSON 字节）
-     * @param exportedAtUtcMicros 导出时刻（微秒，来自快照信封）
+     * @param exportedAtIso 导出时刻（快照信封里的 `exportedAt` 原串；meta 与历史命名都用它）
      * @param deviceId 设备标识（只用于文件名，会做字符清洗）
+     * @param source 备份来源（手动允许重复哈希入索引；写进 index 供 Flutter 端识别）
+     * @param appVersion App 版本（写进 meta 与索引；宿主注入，null 时不写键）
      */
     fun uploadSnapshot(
         config: WebdavSyncConfig,
         snapshotBytes: ByteArray,
-        exportedAtUtcMicros: Long,
+        exportedAtIso: String,
         deviceId: String,
+        source: CloudBackupSource = CloudBackupSource.AUTO,
+        appVersion: String? = null,
     ): UploadSnapshotOutcome {
         cancelled = false
         val contentSha256 = snapshotContentHash(snapshotBytes) ?: return UploadSnapshotOutcome(
@@ -163,7 +358,24 @@ class WebdavSyncCoordinator(
             errorCode = "invalid_sync_snapshot_payload",
         )
 
-        val folderResult = transport.ensureRemoteFolder(config.historyRemoteFolder)
+        // 版本化正文写在**根目录**（Dart `_versionedSnapshotRemotePath`），不是 history/。
+        val exportedAtMicros =
+            CloudBackupListLogic.parseExportedAtMillis(exportedAtIso) * 1000L
+        val versionedPath = versionedSnapshotRemotePath(
+            normalizedRemoteFolder = config.normalizedRemoteFolder,
+            contentSha256 = contentSha256,
+            exportedAtUtcMicros = exportedAtMicros,
+            deviceId = deviceId,
+        )
+        val metaBytes = CloudBackupIndexCodec.buildMetaBytes(
+            exportedAtIso = exportedAtIso,
+            contentSha256 = contentSha256,
+            deviceId = deviceId,
+            appVersion = appVersion,
+            snapshotPath = versionedPath,
+        )
+
+        val folderResult = transport.ensureRemoteFolder(config.normalizedRemoteFolder)
         if (folderResult.isFailed) {
             return UploadSnapshotOutcome(
                 SyncOpKind.FAILED,
@@ -172,36 +384,164 @@ class WebdavSyncCoordinator(
         }
         if (cancelled) return UploadSnapshotOutcome(SyncOpKind.CANCELLED)
 
-        val versionedPath = versionedSnapshotRemotePath(
-            normalizedRemoteFolder = config.historyRemoteFolder,
-            contentSha256 = contentSha256,
-            exportedAtUtcMicros = exportedAtUtcMicros,
-            deviceId = deviceId,
-        )
-        val versionedResult = transport.putBytes(versionedPath, snapshotBytes)
-        if (versionedResult.isFailed) {
+        // 锁被占是硬失败（Dart `_publishSnapshotVersion`：同步窗口内有人正在写，重试）；
+        // 服务器不支持锁则 tokenless 继续——靠不可变正文 + 读回校验保证配对。
+        val lock = transport.acquireWriteLock(config.normalizedRemoteFolder)
+        if (lock.isFailed) {
             return UploadSnapshotOutcome(
                 SyncOpKind.FAILED,
-                errorCode = versionedResult.errorMessage ?: "sync_failed",
+                errorCode = lock.errorMessage ?: "sync_failed",
             )
         }
+        val lockToken = lock.lockToken
+
+        try {
+            val bodyResult = transport.putBytesConditional(versionedPath, snapshotBytes, lockToken = lockToken)
+            if (bodyResult.isFailed) {
+                return UploadSnapshotOutcome(
+                    SyncOpKind.FAILED,
+                    errorCode = bodyResult.errorMessage ?: "sync_failed",
+                )
+            }
+            if (cancelled) return UploadSnapshotOutcome(SyncOpKind.CANCELLED)
+
+            // 读回校验：服务器没锁/没 ETag 也不许半截正文上盘（Dart `_verifyRemoteBytes`）。
+            val readBack = transport.getBytes(versionedPath)
+            if (readBack.isFailed || readBack.isNotFound) {
+                return UploadSnapshotOutcome(
+                    SyncOpKind.FAILED,
+                    remotePath = versionedPath,
+                    contentSha256 = contentSha256,
+                    errorCode = readBack.errorMessage ?: "sync_failed",
+                )
+            }
+            val backBytes = readBack.bytes
+            if (backBytes == null || !bytesEqual(backBytes, snapshotBytes)) {
+                return UploadSnapshotOutcome(
+                    SyncOpKind.FAILED,
+                    remotePath = versionedPath,
+                    contentSha256 = contentSha256,
+                    errorCode = "sync_failed",
+                )
+            }
+
+            val metaResult = transport.putBytesConditional(config.metaRemotePath, metaBytes, lockToken = lockToken)
+            if (metaResult.isFailed) {
+                return UploadSnapshotOutcome(
+                    SyncOpKind.FAILED,
+                    remotePath = versionedPath,
+                    contentSha256 = contentSha256,
+                    errorCode = metaResult.errorMessage ?: "sync_failed",
+                )
+            }
+
+            // 发布后读回 meta：contentSha256 与 snapshotPath 必须是本次这份，
+            // 否则说明并发写者在我们读回之前又覆盖了 meta（Dart 同款校验）。
+            val publishedMeta = fetchRemoteMeta(config)
+            val published = publishedMeta as? RemoteMetaFetch.Ok
+            if (published == null ||
+                published.contentSha256 != contentSha256 ||
+                published.snapshotPath != versionedPath
+            ) {
+                return UploadSnapshotOutcome(
+                    SyncOpKind.FAILED,
+                    remotePath = versionedPath,
+                    contentSha256 = contentSha256,
+                    errorCode = "sync_failed",
+                )
+            }
+        } finally {
+            // 锁有服务端超时；解锁失败不掩盖发布结果（Dart finally 注释原样）。
+            if (lockToken != null) {
+                runCatching { transport.releaseWriteLock(config.normalizedRemoteFolder, lockToken) }
+            }
+        }
+
         if (cancelled) return UploadSnapshotOutcome(SyncOpKind.CANCELLED)
 
-        // 「当前快照」指针：让其他设备知道最新快照是哪一份（失败即整体失败，不留半截）。
-        val pointerResult = transport.putBytes(config.snapshotRemotePath, snapshotBytes)
-        if (pointerResult.isFailed) {
-            return UploadSnapshotOutcome(
-                SyncOpKind.FAILED,
-                remotePath = versionedPath,
-                contentSha256 = contentSha256,
-                errorCode = pointerResult.errorMessage ?: "sync_failed",
-            )
+        // ── 历史与索引（Dart `_writeBackupHistory`）。
+        // 失败按 Dart 口径整体报失败——正文与 meta 已发布（不可变正文有意保留），
+        // 下一次同步可安全重试或由保留策略回收。
+        return writeBackupHistory(config, snapshotBytes, contentSha256, exportedAtIso, deviceId, source, appVersion)
+            .let { historyError ->
+                if (historyError == null) {
+                    UploadSnapshotOutcome(SyncOpKind.OK, remotePath = versionedPath, contentSha256 = contentSha256)
+                } else {
+                    UploadSnapshotOutcome(
+                        SyncOpKind.FAILED,
+                        remotePath = versionedPath,
+                        contentSha256 = contentSha256,
+                        errorCode = historyError,
+                    )
+                }
+            }
+    }
+
+    /** 历史备份 + 索引维护；null = 成功，非 null = 失败短码（正文/meta 已发布不受影响）。 */
+    private fun writeBackupHistory(
+        config: WebdavSyncConfig,
+        snapshotBytes: ByteArray,
+        contentSha256: String,
+        exportedAtIso: String,
+        deviceId: String,
+        source: CloudBackupSource,
+        appVersion: String?,
+    ): String? {
+        val folderResult = transport.ensureRemoteFolder(config.historyRemoteFolder)
+        if (folderResult.isFailed) {
+            return folderResult.errorMessage ?: "sync_failed"
         }
-        return UploadSnapshotOutcome(
-            SyncOpKind.OK,
-            remotePath = versionedPath,
+
+        // Dart 命名：本地墙上时刻 yyyyMMdd-HHmmss + hash8（CloudBackupIndexService.buildBackupId）。
+        val backupId = CloudBackupIndexCodec.buildBackupId(exportedAtIso, contentSha256)
+        val fileName = CloudBackupIndexCodec.buildBackupFileName(backupId)
+        val historyResult = transport.putBytes(config.historyBackupRemotePath(fileName), snapshotBytes)
+        if (historyResult.isFailed) {
+            return historyResult.errorMessage ?: "sync_failed"
+        }
+
+        val loaded = loadBackupIndex(config)
+        val existingEntries = when (loaded) {
+            is BackupIndexLoad.Failed -> return loaded.errorCode
+            is BackupIndexLoad.Ok -> loaded.entries
+        }
+
+        val payload = runCatching {
+            decodeSnapshotObject(String(snapshotBytes, Charsets.UTF_8))
+        }.getOrNull() ?: return "invalid_sync_snapshot_payload"
+        val entry = CloudBackupEntryModel(
+            id = backupId,
+            fileName = fileName,
+            exportedAtIso = exportedAtIso,
             contentSha256 = contentSha256,
+            deviceId = deviceId,
+            deviceLabel = "",
+            appVersion = appVersion,
+            source = source,
+            profileCount = CloudBackupIndexCodec.countProfilesInSnapshot(payload),
+            courseCount = CloudBackupIndexCodec.countCoursesInSnapshot(payload),
         )
+        val withNew = CloudBackupIndexCodec.addEntry(
+            entries = existingEntries,
+            entry = entry,
+            currentContentSha256 = contentSha256,
+            allowDuplicateHash = source == CloudBackupSource.MANUAL,
+        )
+        val removals = CloudBackupIndexCodec.planHistoryPrune(
+            entries = withNew,
+            config = config,
+            nowMillis = nowMillis(),
+            manualFileNames = emptySet(),
+        )
+        for (removed in removals) {
+            // 索引已裁掉但远端删除失败 → 孤儿文件，下一轮 prune 再试（Dart 同口径：只记日志不中断）。
+            runCatching { transport.deleteRemoteFile(config.historyBackupRemotePath(removed.fileName)) }
+        }
+        val saveResult = saveBackupIndex(config, withNew - removals.toSet())
+        if (saveResult.isFailed) {
+            return saveResult.errorMessage ?: "sync_failed"
+        }
+        return null
     }
 
     // ---------- 下载（GET）+ 冲突判定 ----------
@@ -209,13 +549,16 @@ class WebdavSyncCoordinator(
     /**
      * 下载远端快照，校验信封/校验和，做冲突判定，无冲突且未取消时写本机。
      *
-     * @param remotePath 要下载的远端路径（默认「当前快照」指针）
+     * @param remotePath 要下载的远端路径（meta 指针解析出的版本化正文，或历史文件）
+     * @param expectedRemoteHash meta 声明的内容哈希；非空且与正文重算值不符 →
+     *   `sync_snapshot_meta_mismatch`（Dart `downloadAndApply` 的配对校验）
      * @param hasLocalUserData 本机快照是否含用户亲手沉淀的数据（冲突自动决策要用）
      * @param resolver 冲突裁决（默认 LWW + 字典序平局判云端；后台拉取传 background 版）
      */
     fun downloadSnapshot(
         config: WebdavSyncConfig,
         remotePath: String = config.snapshotRemotePath,
+        expectedRemoteHash: String? = null,
         hasLocalUserData: Boolean = false,
         resolver: (SyncConflictInfo) -> SyncConflictChoice = ::resolveSyncConflictAutomatically,
     ): DownloadSnapshotOutcome {
@@ -251,6 +594,15 @@ class WebdavSyncCoordinator(
             return DownloadSnapshotOutcome(
                 SyncOpKind.FAILED,
                 errorCode = envelope.errorCode ?: "invalid_sync_snapshot_payload",
+            )
+        }
+        if (!expectedRemoteHash.isNullOrEmpty() && envelope.actualHash != expectedRemoteHash) {
+            // meta 与正文不配对：另一台设备刚发了新版本（Dart `sync_snapshot_meta_mismatch`）。
+            return DownloadSnapshotOutcome(
+                SyncOpKind.FAILED,
+                bytes = bytes,
+                remoteContentSha256 = envelope.actualHash,
+                errorCode = "sync_snapshot_meta_mismatch",
             )
         }
 
@@ -352,81 +704,11 @@ class WebdavSyncCoordinator(
     }
 
     companion object {
-        private val VERSIONED_FILE_REGEX =
-            Regex("""^snapshot-([0-9a-fA-F]+)-(\d+)-(.+)\.mikcb$""")
-
-        /**
-         * 从版本化文件名解析元信息（`snapshot-<sha256>-<micros>-<device>.mikcb`）。
-         * 解析不出就给 null（仍是一条备份，只是没有结构化元信息）。
-         */
-        fun parseRemoteBackupFile(fileName: String, historyRemoteFolder: String): RemoteBackupFile {
-            val match = VERSIONED_FILE_REGEX.find(fileName)
-            val exportedAtMillis = match?.groupValues?.getOrNull(2)?.toLongOrNull()?.let { it / 1000L }
-            return RemoteBackupFile(
-                fileName = fileName,
-                remotePath = "$historyRemoteFolder$fileName",
-                exportedAtMillis = exportedAtMillis,
-                contentSha256 = match?.groupValues?.getOrNull(1),
-                deviceId = match?.groupValues?.getOrNull(3),
-            )
-        }
-
         /** 快照字节的内容一致性哈希；不是合法快照时返回 null。 */
         fun snapshotContentHash(bytes: ByteArray): String? = try {
             computeContentSha256(decodeSnapshotObject(String(bytes, Charsets.UTF_8)))
         } catch (_: Exception) {
             null
-        }
-
-        /**
-         * 保留策略（Dart `CloudBackupIndexService.prune` 规则移植）：
-         * 按导出时间倒序，逐条判「当前版本 / 受保护的手动备份」豁免，
-         * 其余按「天数过期或超出条数上限」挑出待删。
-         *
-         * ## 与 Dart 的两处刻意偏差（都偏保守）
-         * 1. **解析不出元信息的文件绝不删**：Dart 索引里每条都有 exportedAt 与 source，
-         *    而 Compose 只能从版本化文件名解析；Dart 端写的 `backup-*.mikcb` 与任何
-         *    不认识的名字都解析不出 exportedAtMillis——把它们当「纪元 0 的过期备份」
-         *    清掉，等于一键删光别的壳写的全部历史。所以这类文件直接跳过（不参与
-         *    计数、不被选中），等 index 互通（见 2026-11-02 汇报）后再对齐。
-         * 2. **手动豁免只认 [manualFileNames] 里点名的那几条**：来源不落在文件名里，
-         *    本会话之外的手动备份无从知晓；未点名的按 AUTO 参与淘汰。
-         *
-         * @param files 远端历史目录的全部条目
-         * @param config 保留策略三参（上限条数 / 天数 / 手动保护）与「当前版本」基线
-         * @param nowMillis 现在时刻（毫秒），注入便于单测
-         * @param manualFileNames 已知的手动备份文件名（本会话手动上传的那几条）
-         */
-        fun planHistoryPrune(
-            files: List<RemoteBackupFile>,
-            config: WebdavSyncConfig,
-            nowMillis: Long,
-            manualFileNames: Set<String> = emptySet(),
-        ): List<RemoteBackupFile> {
-            if (files.isEmpty()) return emptyList()
-            val prunable = files.filter { it.exportedAtMillis != null }
-            val sorted = prunable.sortedByDescending { it.exportedAtMillis }
-            val kept = ArrayList<RemoteBackupFile>(sorted.size)
-            val removed = ArrayList<RemoteBackupFile>()
-            val cutoff = nowMillis - config.maxBackupAgeDays * 24L * 60L * 60L * 1000L
-            for (file in sorted) {
-                val isCurrent = file.contentSha256 != null &&
-                    file.contentSha256 == config.lastUploadedLocalHash
-                val source = if (file.fileName in manualFileNames) {
-                    CloudBackupSource.MANUAL
-                } else {
-                    file.source
-                }
-                val isProtectedManual = config.manualBackupProtected &&
-                    source == CloudBackupSource.MANUAL
-                when {
-                    isCurrent || isProtectedManual -> kept.add(file)
-                    file.exportedAtMillis!! < cutoff || kept.size >= config.maxBackupCount ->
-                        removed.add(file)
-                    else -> kept.add(file)
-                }
-            }
-            return removed
         }
 
         /** 原始字节 SHA-256（情侣课表这类非快照信封的正文用）。 */

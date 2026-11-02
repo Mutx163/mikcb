@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.sync
 
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import org.junit.Assert.assertArrayEquals
@@ -166,7 +167,8 @@ class CloudSyncControllerTest {
     fun `刷新列表后viewState里有远端备份行`() {
         val transport = FakeRemoteTransport()
         val folder = WebdavSyncConfig().historyRemoteFolder
-        transport.files["${folder}snapshot-abc123-1700000000000000-devA.mikcb"] = byteArrayOf(1)
+        // index 缺失 → 从 listing 重建：体必须是合法快照（坏体按 Dart 口径跳过不显示）。
+        transport.files["${folder}20260307-170501-abcdef12.mikcb"] = buildSyncSnapshotBytes()
         val controller = controller(transport = transport)
         controller.connect("me@example.com", "pw")
 
@@ -207,7 +209,7 @@ class CloudSyncControllerTest {
     fun `断开后账号清零_密码清除_列表清空`() {
         val transport = FakeRemoteTransport()
         val folder = WebdavSyncConfig().historyRemoteFolder
-        transport.files["${folder}snapshot-abc123-1700000000000000-devA.mikcb"] = byteArrayOf(1)
+        transport.files["${folder}20260307-170501-abcdef12.mikcb"] = buildSyncSnapshotBytes()
         val store = FakeConfigStore()
         val controller = controller(transport = transport, store = store)
         controller.connect("me@example.com", "pw")
@@ -303,6 +305,17 @@ class CloudSyncControllerTest {
 
     // ---------- 立即同步：先拉后推（2026-11-02 修「不比对远端就 PUT 覆盖」） ----------
 
+    /** 读当前 meta 指针指向的正文（Flutter 协议下「云端当前版本」的唯一读法）。 */
+    private fun remoteCurrentBody(
+        transport: FakeRemoteTransport,
+        config: WebdavSyncConfig,
+    ): ByteArray? {
+        val metaBytes = transport.files[config.metaRemotePath] ?: return null
+        @Suppress("UNCHECKED_CAST")
+        val meta = MiniJson.parse(String(metaBytes, Charsets.UTF_8)) as Map<String, Any?>
+        return meta["snapshotPath"]?.let { transport.files[it] }
+    }
+
     @Test
     fun `syncNow_远端为空时直接推本地`() {
         val transport = FakeRemoteTransport()
@@ -312,7 +325,8 @@ class CloudSyncControllerTest {
 
         assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
 
-        assertTrue(transport.files.containsKey(controller.config.snapshotRemotePath))
+        // 推本地后远端必须有 meta 指针（Flutter 协议的「当前版本」指针）。
+        assertTrue(transport.files.containsKey(controller.config.metaRemotePath))
         assertNotNull(controller.config.lastUploadedLocalHash)
     }
 
@@ -330,7 +344,7 @@ class CloudSyncControllerTest {
 
         assertArrayEquals(
             buildSyncSnapshotBytes(profileId = "p1-edited"),
-            transport.files[controller.config.snapshotRemotePath],
+            remoteCurrentBody(transport, controller.config),
         )
         assertNull(controller.pendingSyncConflict)
     }
@@ -343,9 +357,9 @@ class CloudSyncControllerTest {
         controller.connect("me@example.com", "pw")
         assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
 
-        // 另一台设备推了新版本；本机一个字没改。
+        // 另一台设备推了新版本（Flutter 布局：meta 指向新正文）；本机一个字没改。
         val remoteNew = buildSyncSnapshotBytes(profileId = "pOther")
-        transport.files[controller.config.snapshotRemotePath] = remoteNew
+        seedRemoteSnapshot(transport, controller.config, remoteNew, deviceId = "devOther")
         assertEquals(SyncResultKind.DOWNLOADED, controller.syncNow())
 
         assertArrayEquals("本机应被拉成云端那份", remoteNew, snapshotStore.stored)
@@ -361,7 +375,7 @@ class CloudSyncControllerTest {
         assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
 
         val remoteDrifted = buildSyncSnapshotBytes(profileId = "pRemote")
-        transport.files[controller.config.snapshotRemotePath] = remoteDrifted
+        val driftedPath = seedRemoteSnapshot(transport, controller.config, remoteDrifted, deviceId = "devOther")
         snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
 
         assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
@@ -370,13 +384,13 @@ class CloudSyncControllerTest {
         assertNotNull("两边都改过必须挂起冲突等用户选边", conflict)
         assertFalse(conflict!!.isFirstSyncDivergence)
         // 挂起期间两端都必须原地不动：绝不静默覆盖。
-        assertArrayEquals(remoteDrifted, transport.files[controller.config.snapshotRemotePath])
+        assertArrayEquals(remoteDrifted, transport.files[driftedPath])
         assertArrayEquals(buildSyncSnapshotBytes(profileId = "pLocal"), snapshotStore.stored)
 
         // 放弃选边：仍然什么都不动，挂起冲突被消费掉。
         assertEquals(SyncResultKind.CANCELLED, controller.resolveSyncConflict(SyncConflictChoice.CANCEL))
         assertNull(controller.pendingSyncConflict)
-        assertArrayEquals(remoteDrifted, transport.files[controller.config.snapshotRemotePath])
+        assertArrayEquals(remoteDrifted, transport.files[driftedPath])
         assertArrayEquals(buildSyncSnapshotBytes(profileId = "pLocal"), snapshotStore.stored)
     }
 
@@ -387,7 +401,7 @@ class CloudSyncControllerTest {
         val controller = controller(transport = transport, snapshotStore = snapshotStore)
         controller.connect("me@example.com", "pw")
         assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
-        transport.files[controller.config.snapshotRemotePath] = buildSyncSnapshotBytes(profileId = "pRemote")
+        seedRemoteSnapshot(transport, controller.config, buildSyncSnapshotBytes(profileId = "pRemote"), deviceId = "devOther")
         snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
         assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
 
@@ -395,7 +409,7 @@ class CloudSyncControllerTest {
 
         assertArrayEquals(
             buildSyncSnapshotBytes(profileId = "pLocal"),
-            transport.files[controller.config.snapshotRemotePath],
+            remoteCurrentBody(transport, controller.config),
         )
         assertEquals(
             WebdavSyncCoordinator.snapshotContentHash(buildSyncSnapshotBytes(profileId = "pLocal")),
@@ -423,14 +437,12 @@ class CloudSyncControllerTest {
         transport.files.keys
             .filter { it.contains("/history/") }
             .map { it.substringAfterLast('/') }
+            .filter { it.endsWith(".mikcb") }
             .toSet()
 
-    /** 版本化文件名 `snapshot-<hash>-<微秒>-<设备>.mikcb` 里的微秒段。 */
-    private fun fileMicros(fileName: String): Long? =
-        fileName.split('-').getOrNull(2)?.toLongOrNull()
-
-    private fun exportedMicrosOf(exportedAtIso: String): Long =
-        CloudBackupListLogic.parseExportedAtMillis(exportedAtIso) * 1000L
+    /** Dart 历史命名的 backupId 前缀（本地时刻 yyyyMMdd-HHmmss；哈希段不计）。 */
+    private fun backupIdPrefix(exportedAtIso: String): String =
+        CloudBackupIndexCodec.buildBackupId(exportedAtIso, "").let { it.substringBeforeLast('-') }
 
     @Test
     fun `prune_超上限后上传真的删掉远端最旧一条`() {
@@ -449,10 +461,10 @@ class CloudSyncControllerTest {
 
         val remaining = historyFileNames(transport)
         assertEquals("超过上限 2 后远端必须只剩 2 条", 2, remaining.size)
-        val oldestMicros = exportedMicrosOf("2026-03-05T09:00:00.000")
+        val oldestPrefix = backupIdPrefix("2026-03-05T09:00:00.000")
         assertTrue(
             "最旧的一条必须被删",
-            remaining.none { fileMicros(it) == oldestMicros },
+            remaining.none { it.startsWith(oldestPrefix) },
         )
     }
 
@@ -471,10 +483,10 @@ class CloudSyncControllerTest {
 
         val remaining = historyFileNames(transport)
         assertEquals("手动（豁免）+ 当前版本（豁免）留下，中间的自动备份被裁", 2, remaining.size)
-        val manualMicros = exportedMicrosOf("2026-03-01T09:00:00.000")
+        val manualPrefix = backupIdPrefix("2026-03-01T09:00:00.000")
         assertTrue(
             "受保护的手动备份必须存活",
-            remaining.any { fileMicros(it) == manualMicros },
+            remaining.any { it.startsWith(manualPrefix) },
         )
     }
 
@@ -492,8 +504,8 @@ class CloudSyncControllerTest {
         uploadAsNewVersion(controller, snapshotStore, "pFresh", "2026-03-07T09:00:00.000", manual = true)
 
         val remaining = historyFileNames(transport)
-        val expiredMicros = exportedMicrosOf("2026-02-01T09:00:00.000")
-        assertTrue("过期备份必须被删", remaining.none { fileMicros(it) == expiredMicros })
+        val expiredPrefix = backupIdPrefix("2026-02-01T09:00:00.000")
+        assertTrue("过期备份必须被删", remaining.none { it.startsWith(expiredPrefix) })
         assertEquals(1, remaining.size)
     }
 
@@ -522,13 +534,14 @@ class CloudSyncControllerTest {
         controller.connect("me@example.com", "pw")
         assertEquals(SyncResultKind.UPLOADED, controller.syncNow())
         val remoteDrifted = buildSyncSnapshotBytes(profileId = "pRemote")
-        transport.files[controller.config.snapshotRemotePath] = remoteDrifted
+        val driftedPath = seedRemoteSnapshot(transport, controller.config, remoteDrifted, deviceId = "devOther")
         snapshotStore.stored = buildSyncSnapshotBytes(profileId = "pLocal")
         assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
 
         assertEquals(SyncResultKind.DOWNLOADED, controller.resolveSyncConflict(SyncConflictChoice.KEEP_REMOTE))
 
         assertArrayEquals(remoteDrifted, snapshotStore.stored)
+        assertArrayEquals(remoteDrifted, transport.files[driftedPath])
         val remoteHash = WebdavSyncCoordinator.snapshotContentHash(remoteDrifted)
         assertEquals(remoteHash, controller.config.lastAppliedRemoteHash)
         assertEquals(remoteHash, controller.config.lastUploadedLocalHash)
