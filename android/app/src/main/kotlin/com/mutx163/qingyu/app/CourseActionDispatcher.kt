@@ -4,6 +4,9 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseSessionNote
 import com.mutx163.qingyu.course.TimetableCoursePort
 import com.mutx163.qingyu.course.TimetableCourseService
+import com.mutx163.qingyu.pages.course.ClassAlarmPlanLogic
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -147,10 +150,14 @@ object CourseActionDispatcher {
             CourseActionOutcome.OpenReschedule(course, week)
         }
 
-        CourseAction.SET_ALARM -> CourseActionOutcome.NotWired(
-            CourseAction.SET_ALARM,
-            "no_class_alarm_scheduler",
-        )
+        CourseAction.SET_ALARM ->
+            // 弹层对这一动作的处理是**开子弹层**（Dart `:852` `onSetAlarm(course)` 直接
+            // 开 `class_reminder_sheet`），不走分派器；这条分支只为保住动作词汇表完整，
+            // 真有人分派到它时照实报「分派器没有写入落点」，不假装成功。
+            CourseActionOutcome.NotWired(
+                CourseAction.SET_ALARM,
+                "set_alarm_is_sheet_driven_use_ClassAlarmEvent",
+            )
 
         CourseAction.DELETE -> {
             deleteCourse(port, course.id)
@@ -393,14 +400,23 @@ object CourseActionDispatcher {
     fun canReschedule(course: Course, week: Int): Boolean = course.isInWeek(week)
 
     /**
-     * 单节课提醒是否应当出现在弹层里。
+     * 单节课提醒是否应当出现在弹层里（Dart `_isAlarmAvailable`，
+     * `course_action_sheet.dart:1145-1167`）：这节课要在**未来**（当天 = 开课前）、
+     * 且生效作息下解析得出开始钟点。判据本体在 [ClassAlarmPlanLogic.isAvailable]
+     * （纯 Kotlin，JVM 可测）；本方法只是把「日期从哪来」钉在这里——
+     * 与 `dateForCourseOccurrence` 同源，不许渲染层另算一份。
      *
-     * Dart 判据是 `_isAlarmAvailable(settings, week, course, provider)`
-     * （`course_action_sheet.dart:840-846`）：那节课要在这一周、且用户设置允许精确闹钟。
-     * **本批返回 false**——Compose 侧没有任何「单节课闹钟」调度器（全仓只有
-     * `ExamReminderScheduler` / `LiveUpdateScheduler` / `WeeklyReportScheduler`，
-     * 没有 class-alarm 那条），依赖的原生能力属 Phase 4。
-     * 渲染层据此**不显示**这一行，而不是显示一个点了没反应的入口。
+     * 写入走系统时钟（`SystemAlarmHelper.fireSetAlarm`，`AlarmClock.ACTION_SET_ALARM`），
+     * 系统时钟 App 拥有闹钟，本应用不需要也不存在「应用内 class-alarm 调度器」
+     *（Dart 侧现状同此，2026-10 迁移保留）。
      */
-    fun isClassAlarmAvailable(): Boolean = false
+    fun isClassAlarmAvailable(
+        courseDate: LocalDate?,
+        startMinutes: Int?,
+        now: LocalDateTime = LocalDateTime.now(),
+    ): Boolean = ClassAlarmPlanLogic.isAvailable(
+        courseDate = courseDate,
+        startMinutes = startMinutes,
+        now = now,
+    )
 }

@@ -260,7 +260,7 @@ class CourseActionDispatcherTest {
     // ================================================================
 
     @Test
-    fun `单节课提醒本批没有落点 要报缺口而不是假装成功`() {
+    fun `闹钟动作本身不走分派器 报缺口指路子弹层`() {
         val repo = repositoryWith(course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3))
         val outcome = CourseActionDispatcher.dispatch(
             CourseAction.SET_ALARM,
@@ -270,9 +270,60 @@ class CourseActionDispatcherTest {
         ) as CourseActionOutcome.NotWired
 
         assertEquals(CourseAction.SET_ALARM, outcome.action)
-        assertEquals("no_class_alarm_scheduler", outcome.reason)
-        // 渲染层据此**不显示**这一行（显示一个点了没反应的入口就是假实现）
-        assertFalse(CourseActionDispatcher.isClassAlarmAvailable())
+        // 设闹钟走 ClassAlarmEvent 子弹层（class_reminder_sheet 同口径），分派器没有写入落点。
+        assertEquals("set_alarm_is_sheet_driven_use_ClassAlarmEvent", outcome.reason)
+    }
+
+    @Test
+    fun `闹钟入口判据 未来课可设 当天开课前可设 开课后与过去课不出现`() {
+        val wednesday = java.time.LocalDate.of(2026, 11, 4) // 周三
+
+        // 未来日期（周三的课，现在是周一上午）→ 出现。
+        assertTrue(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = wednesday,
+                startMinutes = 8 * 60,
+                now = java.time.LocalDateTime.of(2026, 11, 2, 10, 0),
+            ),
+        )
+        // 就是今天、还没开课 → 出现。
+        assertTrue(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = wednesday,
+                startMinutes = 8 * 60,
+                now = java.time.LocalDateTime.of(2026, 11, 4, 7, 30),
+            ),
+        )
+        // 就是今天、已开课 → 消失（Dart `:1158-1167`）。
+        assertFalse(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = wednesday,
+                startMinutes = 8 * 60,
+                now = java.time.LocalDateTime.of(2026, 11, 4, 8, 0),
+            ),
+        )
+        // 过去的课 / 没开学日 / 解析不出钟点 → 都不出现。
+        assertFalse(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = java.time.LocalDate.of(2026, 11, 3),
+                startMinutes = 8 * 60,
+                now = java.time.LocalDateTime.of(2026, 11, 4, 7, 30),
+            ),
+        )
+        assertFalse(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = null,
+                startMinutes = 8 * 60,
+                now = java.time.LocalDateTime.of(2026, 11, 4, 7, 30),
+            ),
+        )
+        assertFalse(
+            CourseActionDispatcher.isClassAlarmAvailable(
+                courseDate = wednesday,
+                startMinutes = null,
+                now = java.time.LocalDateTime.of(2026, 11, 4, 7, 30),
+            ),
+        )
     }
 
     @Test

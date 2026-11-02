@@ -107,7 +107,12 @@ fun CourseActionSheet(
     week: Int,
     previewItems: List<CourseActionPreviewItem>,
     details: CourseActionSheetDetails,
+    /** 闹钟提前量（宿主从 `classAlarmLeadMinutes` 读，缺省 30）。 */
+    leadMinutes: Int = 30,
+    /** 闹钟是否跳过系统时钟保存页（宿主从 `classAlarmSkipUi` 读，缺省 false）。 */
+    skipUi: Boolean = false,
     onEvent: (CourseActionEvent) -> Unit,
+    onAlarmEvent: (ClassAlarmEvent) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
@@ -169,6 +174,7 @@ fun CourseActionSheet(
                 if (index > 0) Spacer(modifier = Modifier.height(8.dp))
                 val onRowTap: (() -> Unit)? = when (row.tap) {
                     CourseActionRowTap.OPEN_NOTE -> ({ stage = CourseSheetStage.NOTE })
+                    CourseActionRowTap.OPEN_ALARM -> ({ stage = CourseSheetStage.ALARM })
                     CourseActionRowTap.OPEN_TASK -> ({
                         // 事件带的是**当前选中这条**的 courseId（见 CourseActionSheetModel.Events）
                         onEvent(CourseActionSheetModel.Events.addTask(section))
@@ -295,10 +301,25 @@ fun CourseActionSheet(
             onDismiss()
         },
     )
+    // 这节课闹钟（Dart `class_reminder_sheet.dart`）：写入走系统时钟，事件抛宿主。
+    // 作息表用 details.sectionTimes（与调课弹层同一份解析，Dart `resolvedCourseStartTime`
+    // 同口径）；alarmAvailable 在模型层已判，这里只在字段齐备时挂载。
+    if (activeSection.alarmAvailable) {
+        ClassAlarmSheet(
+            show = stage == CourseSheetStage.ALARM,
+            course = selectedCourse,
+            resolvedStartTime = activeSection.alarmResolvedStart,
+            courseDate = activeSection.alarmDate,
+            leadMinutes = leadMinutes,
+            skipUi = skipUi,
+            onEvent = onAlarmEvent,
+            onDismiss = { stage = CourseSheetStage.NONE },
+        )
+    }
 }
 
 /** 弹层里当前开着哪个子弹层。 */
-private enum class CourseSheetStage { NONE, DELETE_SCOPE, DELETE_CONFIRM, SUSPEND_SCOPE, RESCHEDULE, NOTE }
+private enum class CourseSheetStage { NONE, DELETE_SCOPE, DELETE_CONFIRM, SUSPEND_SCOPE, RESCHEDULE, NOTE, ALARM }
 
 /** Dart `MediaQuery.sizeOf(context).height * 0.8`（`:168-171`）。 */
 private const val SHEET_MAX_HEIGHT_FRACTION = 0.8f

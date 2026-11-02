@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages
 
+import android.app.Activity
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -24,7 +25,10 @@ import com.mutx163.qingyu.calendar.HolidayProvider
 import com.mutx163.qingyu.calendar.HolidayService
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimeSchemeLogic
+import com.mutx163.qingyu.SystemAlarmHelper
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
+import com.mutx163.qingyu.pages.course.ClassAlarmEvent
+import com.mutx163.qingyu.pages.course.ClassAlarmPlanLogic
 import com.mutx163.qingyu.pages.course.CourseActionEvent
 import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.pages.course.CourseActionSheetModel
@@ -104,6 +108,15 @@ class ShellWiring(context: Context) {
      * 且都走 `saveSettingsPatch` 的读-合并-写，所以谁都不会覆盖谁。
      */
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
+
+    /**
+     * 读 `timetable_settings` 的**原始 JSON**（组合函数在 `settingsRevision` 变化时调一次）。
+     *
+     * 「这节课闹钟」的两个提醒键（`classAlarmLeadMinutes` / `classAlarmSkipUi`）属
+     * 「提醒」设置族——设置完整模型（P35-settings-model）还没认领它们，这里按原始
+     * 键只读，等设置族接线后迁回模型。
+     */
+    fun loadRawSettingsJson(): Map<String, Any?> = timetableStore.loadSettingsJson()
 
     /**
      * 设置变更序号：**页面内容重读设置模型**的重组信号。
@@ -506,8 +519,9 @@ fun rememberShellWiring(): ShellWiring {
  * ## 失败不假装成功
  *
  * 写库失败（分派器回滚并 rethrow，Dart 同一口径）一律如实 toast，**不静默关掉**——
- * 静默就是「点了没反应」的另一种形态。单节课提醒这一行已经在渲染层按「本机没有调度器」
- * 不出现（见 `CourseActionDispatcher.isClassAlarmAvailable`），不再走 NotWired 提示。
+ * 静默就是「点了没反应」的另一种形态。单节课提醒这一行由模型层按
+ * `ClassAlarmPlanLogic.isAvailable`（未来课可设 / 当天开课前可设）决定出现与否，
+ * 确认后经 `onAlarmEvent` 走系统时钟（`SystemAlarmHelper`）。
  */
 @Composable
 fun TimetableWithCourseActions(
@@ -532,6 +546,13 @@ fun TimetableWithCourseActions(
     // 直到用户翻一下页（仓储状态变化逼出重组）才刷新 —— 2026-11-02 用户实报。
     val settingsRevision = wiring.settingsRevision
     val settingsModel = remember(settingsRevision) { wiring.settingsModel.load() }
+    // 「这节课闹钟」的两个提醒设置键（Dart `classAlarmLeadMinutes` / `classAlarmSkipUi`，
+    // timetable_settings.dart:1746-1747 的读口径在 ClassAlarmPlanLogic）。这两个键属
+    // 「提醒」设置族（P35-settings-model 认领表里未覆盖的键），这里按原始 JSON 只读，
+    // 不动设置模型的 OWNED_KEYS。
+    val alarmSettings = remember(settingsRevision) { wiring.loadRawSettingsJson() }
+    val classAlarmLeadMinutes = ClassAlarmPlanLogic.leadMinutesFromSettings(alarmSettings)
+    val classAlarmSkipUi = ClassAlarmPlanLogic.skipUiFromSettings(alarmSettings)
 
     // 天气 provider **不是** Compose 可观察的（它是 `addListener` 那套）。这里用一个计数
     // 把「数据到了 / 城市变了」转成重组；`DisposableEffect` 负责订阅与退订，
@@ -693,6 +714,8 @@ fun TimetableWithCourseActions(
         week = week,
         previewItems = previewItems,
         details = details,
+        leadMinutes = classAlarmLeadMinutes,
+        skipUi = classAlarmSkipUi,
         onDismiss = { actionTarget = null },
         // 弹层只抛事件、不写库；写库与导航都在这里。
         //
@@ -778,6 +801,49 @@ fun TimetableWithCourseActions(
                         )
                     } catch (_: Exception) {
                         Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        },
+        // 「这节课闹钟」事件 → 系统时钟（Dart `SystemAlarmService` ← `class_reminder_sheet`）。
+        // 闹钟标签 = 应用名 + ` · ` + 短课名（Dart `'轻屿 · $label'`，`class_reminder_sheet.dart:96`）；
+        // 应用名走 PackageManager 运行时取，不在壳里写死文案。
+        onAlarmEvent = { event ->
+            val activity = context as? Activity
+            when (event) {
+                is ClassAlarmEvent.SetSystemAlarm -> {
+                    val appName = activity?.applicationInfo?.loadLabel(context.packageManager)
+                        ?.toString()?.trim().orEmpty()
+                    val label = if (appName.isEmpty()) event.courseLabel else "$appName · ${event.courseLabel}"
+                    val outcome = activity?.let {
+                        SystemAlarmHelper.fireSetAlarm(
+                            activity = it,
+                            hour = event.hour,
+                            minute = event.minute,
+                            label = label,
+                            skipUi = event.skipUi,
+                            days = event.repeatDays,
+                        )
+                    }
+                    val ok = outcome?.launched == true
+                    Toast.makeText(
+                        context,
+                        (if (ok) {
+                            com.mutx163.qingyu.app.CourseActionStrings.classAlarmAddedToast
+                        } else {
+                            com.mutx163.qingyu.app.CourseActionStrings.classAlarmLaunchFailedToast
+                        }).zh,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+                ClassAlarmEvent.OpenSystemClock -> {
+                    val ok = activity?.let { SystemAlarmHelper.fireShowAlarms(it) } ?: false
+                    if (!ok) {
+                        Toast.makeText(
+                            context,
+                            com.mutx163.qingyu.app.CourseActionStrings.classAlarmLaunchFailedToast.zh,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     }
                 }
             }

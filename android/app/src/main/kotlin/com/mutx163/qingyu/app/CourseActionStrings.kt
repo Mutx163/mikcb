@@ -29,6 +29,25 @@ object CourseActionStrings {
     val classAlarmActionLabel = CourseArbText("classAlarmActionLabel", "设这节课的闹钟")
     val courseTaskAction = CourseArbText("courseTaskAction", "作业")
 
+    // ── 这节课闹钟子弹层（Dart `class_reminder_sheet.dart`；ARB :5678-5699 与 :5406） ──
+    val classAlarmQuickOption = CourseArbText("classAlarmQuickOption", "上课前 {minutes} 分钟提醒")
+    val classAlarmCustomOption = CourseArbText("classAlarmCustomOption", "自定义提醒时间……")
+    val classAlarmOpenClock = CourseArbText("classAlarmOpenClock", "打开系统时钟")
+    val classAlarmAddedToast = CourseArbText("classAlarmAddedToast", "已交给系统时钟处理")
+    val classAlarmLaunchFailedToast = CourseArbText(
+        "classAlarmLaunchFailedToast",
+        "未找到可处理的时钟应用",
+    )
+    val classAlarmCourseConfirmTitle = CourseArbText(
+        "classAlarmCourseConfirmTitle",
+        "添加这节课的重复闹钟？",
+    )
+    val classAlarmCourseConfirmMessage = CourseArbText(
+        "classAlarmCourseConfirmMessage",
+        "将在系统时钟创建每周 {weekday} {time} 的闹钟，提前 {lead} 分钟响铃，上课周次 {weeks}。非上课周与假期仍会响铃，需在系统时钟中删除。",
+    )
+    val selectTimeTitle = CourseArbText("selectTimeTitle", "选择时间")
+
     // ── 说明与兜底 ──
     val courseActionSheetNotice = CourseArbText(
         "courseActionSheetNotice",
@@ -71,6 +90,14 @@ object CourseActionStrings {
         courseActionDeleteSecondary,
         classAlarmActionLabel,
         courseTaskAction,
+        classAlarmQuickOption,
+        classAlarmCustomOption,
+        classAlarmOpenClock,
+        classAlarmAddedToast,
+        classAlarmLaunchFailedToast,
+        classAlarmCourseConfirmTitle,
+        classAlarmCourseConfirmMessage,
+        selectTimeTitle,
         courseActionSheetNotice,
         unknownTeacher,
         unknownLocation,
@@ -85,6 +112,18 @@ object CourseActionStrings {
 
     /** `courseActionSheetNotice` 的周次填充。 */
     fun notice(week: Int): String = courseActionSheetNotice.filled("week", week.toString())
+
+    /** 闹钟确认正文的四占位符填充（Dart `classAlarmCourseConfirmMessage(…)`）。 */
+    fun classAlarmConfirmMessage(weekday: String, time: String, lead: Int, weeks: String): String =
+        classAlarmCourseConfirmMessage
+            .filled("weekday", weekday)
+            .replace("{time}", time)
+            .replace("{lead}", lead.toString())
+            .replace("{weeks}", weeks)
+
+    /** 快捷响点按钮（「上课前 {minutes} 分钟提醒」）。 */
+    fun classAlarmQuickLabel(minutes: Int): String =
+        classAlarmQuickOption.filled("minutes", minutes.toString())
 
     /** 教师 / 地点的空值兜底（Dart `course_action_sheet.dart:768-775`）。 */
     fun teacherOrUnknown(teacher: String): String =

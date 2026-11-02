@@ -8,6 +8,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.weather.CourseWeatherSummary
 import com.mutx163.qingyu.weather.planWeatherLine
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 周视图「课程操作弹层」的**纯模型层**（Dart 判据 `lib/widgets/course_action_sheet.dart`）。
@@ -189,6 +190,9 @@ enum class CourseActionRowTap {
 
     /** 抛 [CourseActionEvent.AddTask]（Dart `:838`）。 */
     OPEN_TASK,
+
+    /** 打开「这节课闹钟」子弹层（Dart `:840-854` → `onSetAlarm`）。 */
+    OPEN_ALARM,
 }
 
 /** 一段文字 + 是否用前景色强调（Dart `_CourseActionNoticeText` 的周次高亮）。 */
@@ -295,6 +299,16 @@ data class CourseActionSection(
     val canDeleteOccurrence: Boolean,
     /** 是否有任何一周被停过（Dart `hasAnySuspended = suspendedWeeks?.isNotEmpty ?? false`）。 */
     val hasAnySuspended: Boolean,
+    // ── 这节课闹钟（Dart `_isAlarmAvailable` / `_addSystemAlarm` 要用的原始料）──
+    /**
+     * 生效作息下这一节的开始钟点 `HH:mm`（Dart `resolvedCourseStartTime`：
+     * `sections[startSection-1].startTime`，越界 = null）。null ⇒ 闹钟入口不出现。
+     */
+    val alarmResolvedStart: String? = null,
+    /** 这节课在本周的真实日期（学期开始日推算；没设 = null）。 */
+    val alarmDate: LocalDate? = null,
+    /** 入口判据的结论（[ClassAlarmPlanLogic.isAvailable]）；false ⇒ 渲染层不画这一行。 */
+    val alarmAvailable: Boolean = false,
 )
 
 /** 关联面板里的一条（Dart `_RelatedCourseCompactRow`，`:375-472`）。 */
@@ -558,6 +572,7 @@ object CourseActionSheetModel {
         weekdayLabels: List<String> = CourseActionSheetStrings.weekdayLabels,
         weekCount: Int = DEFAULT_WEEK_COUNT,
         sectionTimes: List<SectionTime> = emptyList(),
+        now: LocalDateTime = LocalDateTime.now(),
     ): CourseActionSheetDetails = CourseActionSheetDetails(
         sections = previewItems.map { item ->
             buildSection(
@@ -568,6 +583,8 @@ object CourseActionSheetModel {
                 dateOf = dateOf,
                 weatherOf = weatherOf,
                 weekdayLabels = weekdayLabels,
+                sectionTimes = sectionTimes,
+                now = now,
             )
         },
         weekCount = weekCount,
@@ -584,6 +601,8 @@ object CourseActionSheetModel {
         dateOf: (Course) -> LocalDate? = { null },
         weatherOf: (Course) -> CourseSheetWeatherInfo = { CourseSheetWeatherInfo() },
         weekdayLabels: List<String> = CourseActionSheetStrings.weekdayLabels,
+        sectionTimes: List<SectionTime> = emptyList(),
+        now: LocalDateTime = LocalDateTime.now(),
     ): CourseActionSection {
         val course = item.course
         val teacher = course.teacher.trim()
@@ -603,6 +622,17 @@ object CourseActionSheetModel {
         val weekdayText = weekdayLabelOf(weekdayLabels, course.dayOfWeek)
         val sectionLine = "$weekdayText · ${CourseActionSheetStrings.sectionRange(course.startSection, course.endSection)}"
         val shortName = course.shortName?.trim().orEmpty()
+
+        // ── C7 这节课闹钟的原始料（Dart `resolvedCourseStartTime` + `_isAlarmAvailable`）──
+        // 生效作息表 = 调课弹层用的同一份（壳按主课解析；冲突课同作息的已知差异
+        // 与调课弹层共有一条诚实清单）。
+        val alarmResolvedStart = sectionTimes.getOrNull(course.startSection - 1)?.startTime
+        val alarmDate = dateOf(course)
+        val alarmAvailable = !item.isReadOnly && ClassAlarmPlanLogic.isAvailable(
+            courseDate = alarmDate,
+            startMinutes = alarmResolvedStart?.let { ClassAlarmPlanLogic.parseClockMinutes(it) },
+            now = now,
+        )
 
         val natureText = when {
             // Dart `:732`：对方课不显示性质。
@@ -698,9 +728,19 @@ object CourseActionSheetModel {
                 showsChevron = true,
                 tap = CourseActionRowTap.OPEN_TASK,
             )
-            // C7 单节课提醒：Dart 只在 `onSetAlarm != null && _isAlarmAvailable(...)` 时出现。
-            // Compose 侧没有 class-alarm 调度器（audit §五），所以这一行**不产生**——
-            // 与其画一个点了没反应的入口，不如诚实地不画。
+            // C7 这节课闹钟（Dart `:840-854`）：只在 `alarmAvailable` 时出现——
+            // 入口判据见 [ClassAlarmPlanLogic.isAvailable]（未来课可设、当天开课前可设、
+            // 过去课 / 没开学日 / 解析不出钟点不出现）。写入走系统时钟
+            //（`AlarmClock.ACTION_SET_ALARM`），不是应用内调度器。
+            if (alarmAvailable) {
+                rows += CourseActionDetailRow(
+                    kind = CourseActionRowKind.ALARM,
+                    icon = CourseActionIcon.ALARM,
+                    title = com.mutx163.qingyu.app.CourseActionStrings.classAlarmActionLabel.zh,
+                    showsChevron = true,
+                    tap = CourseActionRowTap.OPEN_ALARM,
+                )
+            }
         }
 
         // C8 说明行（Dart `:856-870`）
@@ -741,6 +781,9 @@ object CourseActionSheetModel {
             weekDescription = weekDescription,
             canDeleteOccurrence = course.isInWeek(week),
             hasAnySuspended = !course.suspendedWeeks.isNullOrEmpty(),
+            alarmResolvedStart = alarmResolvedStart,
+            alarmDate = alarmDate,
+            alarmAvailable = alarmAvailable,
         )
     }
 

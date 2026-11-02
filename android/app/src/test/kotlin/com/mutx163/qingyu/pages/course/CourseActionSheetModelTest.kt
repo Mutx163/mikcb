@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.course
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.weather.CourseWeatherSummary
 import com.mutx163.qingyu.weather.WeatherCategory
 import java.time.LocalDate
@@ -98,6 +99,8 @@ class CourseActionSheetModelTest {
         partner: Boolean = false,
         conflict: Boolean = false,
         coupleKind: CourseCoupleKind? = null,
+        now: LocalDateTime = LocalDateTime.of(2026, 11, 2, 10, 0),
+        sectionTimes: List<SectionTime> = emptyList(),
     ): CourseActionSection = CourseActionSheetModel.buildSection(
         item = CourseActionPreviewItem(
             course = course,
@@ -110,6 +113,8 @@ class CourseActionSheetModelTest {
         weatherPrefs = weatherPrefs,
         dateOf = { date },
         weatherOf = { weather },
+        now = now,
+        sectionTimes = sectionTimes,
     )
 
     private fun kinds(section: CourseActionSection): List<CourseActionRowKind> =
@@ -219,8 +224,51 @@ class CourseActionSheetModelTest {
     }
 
     @Test
-    fun `单节课提醒行本轮不产生`() {
+    fun `闹钟行在数据不齐或不该出现时不产生`() {
+        // 没给日期（没设开学日）⇒ 入口不出现。
         assertFalse(kinds(buildOne(course())).contains(CourseActionRowKind.ALARM))
+        // 过去的课不出现（2026-11-02 已过 2026-11-01 的课）。
+        assertFalse(
+            kinds(
+                buildOne(
+                    course(),
+                    date = LocalDate.of(2026, 11, 1),
+                    sectionTimes = listOf(SectionTime("08:00", "08:45")),
+                ),
+            ).contains(CourseActionRowKind.ALARM),
+        )
+    }
+
+    @Test
+    fun `未来的课出现闹钟行 带箭头可点`() {
+        // 未来日期不看钟点（Dart `:1157` `isAfter(today) → true` 直接放行），
+        // 即便节次表没给（解析不出钟点）也出现——子弹层里按钮再按 Dart 置灰。
+        assertTrue(
+            kinds(buildOne(course(), date = LocalDate.of(2026, 11, 9))).contains(
+                CourseActionRowKind.ALARM,
+            ),
+        )
+        val section = buildOne(
+            course(),
+            date = LocalDate.of(2026, 11, 9), // 未来的周一
+            sectionTimes = listOf(SectionTime("08:00", "08:45")),
+        )
+        val alarm = row(section, CourseActionRowKind.ALARM)
+        assertEquals("设这节课的闹钟", alarm.title)
+        assertTrue(alarm.showsChevron)
+        assertEquals(CourseActionRowTap.OPEN_ALARM, alarm.tap)
+        assertEquals("08:00", section.alarmResolvedStart)
+        // 当天已开课 ⇒ 消失（同一份作息表，把 now 拨到 08:00 之后）。
+        assertFalse(
+            kinds(
+                buildOne(
+                    course(),
+                    date = LocalDate.of(2026, 11, 2),
+                    sectionTimes = listOf(SectionTime("08:00", "08:45")),
+                    now = LocalDateTime.of(2026, 11, 2, 10, 0),
+                ),
+            ).contains(CourseActionRowKind.ALARM),
+        )
     }
 
     @Test
