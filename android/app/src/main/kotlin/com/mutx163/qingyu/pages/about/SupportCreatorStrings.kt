@@ -40,6 +40,9 @@ object SupportCreatorStrings {
     const val completeThanks = "感谢你支持轻屿课表继续打磨"
     const val confirmedShort = "已支持"
 
+    /** ARB `closeAction`（与诊断/课表等域共用的全局键）：二维码预览弹层的「关闭」。 */
+    const val closeAction = "关闭"
+
     /** ARB `updatedAtLabel`（`更新于 {time}`）。 */
     fun updatedAtLabel(time: String): String = "更新于 $time"
 

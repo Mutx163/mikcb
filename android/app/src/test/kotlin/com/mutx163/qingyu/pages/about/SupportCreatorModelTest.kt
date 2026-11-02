@@ -213,6 +213,7 @@ class SupportCreatorModelTest {
             "supportChipPolish" to SupportCreatorStrings.chipPolish,
             "supportCompleteThanks" to SupportCreatorStrings.completeThanks,
             "supportConfirmedShort" to SupportCreatorStrings.confirmedShort,
+            "closeAction" to SupportCreatorStrings.closeAction,
         )
         for ((key, value) in pairs) {
             assertEquals("ARB 键 $key 与模型不一致", arbString(key), value)

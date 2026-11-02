@@ -194,6 +194,7 @@ fun SupportCreatorPage(
             fileName = fileName,
             contentDescription = SupportCreatorStrings.scanTitleFor(method),
             fallbackAspectRatio = qrFallbackAspectRatio(method),
+            onClose = { previewOpen = false },
         )
     }
 }
@@ -434,13 +435,14 @@ private fun PaymentCard(
     }
 }
 
-/** 放大预览：竖版海报按原始比例铺满 72% 宽，下面一句说明 + 主按钮保存。 */
+/** 放大预览：竖版海报按原始比例铺满 72% 宽，下面一句说明 + 保存/关闭两个动作。 */
 @Composable
 private fun QrPreview(
     assetPath: String,
     fileName: String,
     contentDescription: String,
     fallbackAspectRatio: Float,
+    onClose: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
@@ -482,9 +484,17 @@ private fun QrPreview(
         Button(
             onClick = { saveQrAndToast(context, assetPath, fileName) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColorsPrimary(),
+            // Dart `_showQrPreview`：保存是普通动作（非 primary），关闭才是 isPrimary。
+            colors = ButtonDefaults.buttonColors(),
         ) {
             Text(SupportCreatorStrings.saveToGallery)
+        }
+        Button(
+            onClick = onClose,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColorsPrimary(),
+        ) {
+            Text(SupportCreatorStrings.closeAction)
         }
     }
 }
