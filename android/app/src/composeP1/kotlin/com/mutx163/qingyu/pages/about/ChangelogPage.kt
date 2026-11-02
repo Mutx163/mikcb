@@ -57,10 +57,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 数据从哪来（与 Dart 的分工一一对应）
  *
  * Dart 侧 `_loadChangelog` 扫的是 Flutter 的 `AssetManifest`；这里扫的是**同一个目录**
- * 在 APK 里的落点 `assets/flutter_assets/docs/releases/`（`assets.list` + 直接按 key 读，
+ * 在 APK 里的落点 `assets/docs/releases/`（`assets.list` + 直接按 key 读，
  * 与 Dart 的 manifest + `rootBundle.loadString` 是同一件事的两条路）。
- * 已用 2026-10-26 构建出的 `app-composep1-debug.apk` 核对过该目录确实存在
- * （134 个文件，含全部 `v*.md`）；**真机运行时能否读到尚未验证**。
+ * 2026-11-02 资产迁移：`docs/releases/*.md` 已拷进 `android/app/src/main/assets/`，
+ * Compose 不再依赖 Flutter 打包出来的 `flutter_assets/` 目录（删 Flutter 后不再生成）；
+ * **真机运行时能否读到尚未验证**。
  *
  * 清单列举失败（目录不存在）时退回 [knownChangelogVersions]，与 Dart 的
  * `_getKnownVersions()` 回退同理——直接按 key 读文件这条路仍然可用。
@@ -119,8 +120,8 @@ fun ChangelogPage(
     }
 }
 
-/** `docs/releases/` 在 APK 里的实际落点（已用构建出的 APK 核对）。 */
-private const val releaseAssetsDir = "flutter_assets/docs/releases"
+/** `docs/releases/` 在 APK 里的落点（2026-11-02 起为主 assets 直落，不再带 flutter_assets 前缀）。 */
+private const val releaseAssetsDir = "docs/releases"
 
 /** [matchReleaseAssetKey] 认的是 Flutter 口径的 asset key，不带 `flutter_assets/` 前缀。 */
 private const val releaseAssetKeyDir = "docs/releases"
