@@ -6,33 +6,12 @@
 #
 # 同样是**待办清单不是豁免记录**：清掉一条删一行，不许加回来。
 #
-# 2026-10-21 立基线：539 条，横跨三轮 UI 重构（forui 迁移 /
-# 设置页重排 / 入口目录化）。清理按前缀逐族做，一族的键一起删、
-# 六份 ARB 同步删，跑 gen-l10n 后确认 dart analyze 干净。
+# 2026-10-21 立基线：539 条，横跨三轮 UI 重构（forui 迁移 / 设置页重排 /
+# 入口目录化）。2026-10-30 F13 把语料扩到 Kotlin 后剩 483 条；2026-11-02
+# 按族分五批清到 1 条，六份 ARB 同步删、gen-l10n 重生成。
 #
-# 2026-10-30 F13：判据的 corpus 已扩到 `android/app/src/**/*.kt`（见
-# copy_style_rules.dart 的 deadKeyCorpus —— CLI 与守卫共用同一个入口）。
-# 原先以「只被 Kotlin 消费」为由冻结的 5 条例外——
-#   liveImagePickFailed / liveDoNotDisturbAccessUnavailable（LiveDisplayHost.kt）
-#   datePickerYear / datePickerMonth / datePickerDay（日期滚轮后缀）
-# ——连同其余 54 条同样只被 Kotlin 引用的键一起**从基线删除**：542 → 483。
-# 删掉的 58 条不是「放宽守卫」，是判据扩面的必然结果——但要分清两种成色
-# （2026-10-30 对抗审核逐条回查 58 条后修正，别再把它们一律叫「假阳性」）：
-#   · 51 条：生产 Kotlin 里真有引用（`ArbText("key", …)` 之类带引号的字面量）。
-#   · 7 条：aboutUpdateStatusTitle / aboutLatestVersionLabel / aboutMirrorSaved /
-#     aboutMirrorPrefixInvalid / aboutCheckingLatestVersion / aboutReadVersionFailedHint /
-#     aboutUpdateNoUpdateHint —— 生产侧唯一足迹是 KDoc 锚点注释，真正的代码引用在
-#     `android/app/src/test` 的 ARB 对拍表里（那几张表钉的是「ARB 与 Kotlin 常量同值」）。
-#     按判据原文匹配的口径（与 Dart 侧一直一致：`lib/` 里的注释也算引用）它们判活。
-#     **这 7 条的 ARB 值其实已无人读**（UI 读的是硬编码常量），属真债，只是不在本批口径内。
-#     ⇒ 想收它们需要另立一批：把 Kotlin 语料改成「剥注释 + 排除 src/test」，与 Dart 侧对称。
-#       （那会把 7 行加回基线，文本上像「加行」，所以必须单独立项、写明是口径收紧。）
-# 留下的 483 条才是判据口径下的真死键。注意其中 7 条（cloudSyncLastError /
-# courseActionSuspend / dayTimetableTitle / examOverviewCountdown / holidayDataYear /
-# setSemesterStartDate / supportConfirmed）在 Kotlin 里只是**别的标识符的子串**
-# （如 courseActionSuspend ⊂ courseActionSuspendSecondary），判据的词边界规则
-# 把它们正确判死——这正是「真死键不许被假阳性淹没」要保住的那部分。
-# 已回收（2026-10-31 F21）：`themeImportSuccess` 的临时例外已到期——
-# F05 的 `SettingsHost.kt` / `SettingsStrings.kt` 已随「设置页 P0 补口」提交落库，
-# 该键在 Kotlin 侧真有引用了，基线行按纪律删除（只降不升）。
+# 剩下这条不是漏清，是**判据口径外**：生产 Dart / Kotlin 两侧确实零引用，
+# 真正的引用在 `test/l10n/localization_completeness_test.dart`（直接读生成的
+# getter）。死键判据不扫 `test/`，现在删键会让那张测试当场编译失败。要么先处理
+# 测试，要么把键接到生产侧——两件事都超出「只删 ARB」的范围，留作待办。
 cloudSyncBaseUrlSecurityNote
