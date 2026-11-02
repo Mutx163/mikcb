@@ -17,6 +17,7 @@ import java.io.File
  * | S1 | `OverlayBottomSheet(insideMargin = 24dp)` | 16dp（`hyperosMiuixBottomSheetInsideMargin`） | 调用点自己再叠 16dp ⇒ 单边 40dp，内容被挤成中间窄条 |
  * | S2 | 只 `imePadding()`（只让键盘） | 手势区/导航栏 + 16dp（`bottomGapInsetOf`） | 最后一排按钮贴屏幕最下沿、被小白条压住 |
  * | S3 | `textButtonColors(color = …)` 是**底色** | 危险色只染**字**（Dart `destructive` 变体） | 「红底 + 默认灰字」：既不像原版，对比度也不够 |
+ * | S5 | `OverlayDialog` 缺省 `insideMargin = 24dp` | 对话框横向 16dp（与 S1 同一口径） | 内容自带边距叠上去就是 32~40dp |
  *
  * 32 个底部弹层里 32 个都缺 S2、27 个叠了侧边距。**根因不是缺组件，是每个调用方各自记**
  * —— 所以修法是把口径收进套件 `com.mutx163.qingyu.components.QingyuSheet`，再用这条守卫
@@ -51,6 +52,10 @@ class ComposeSheetGuardTest {
         assertTrue(
             "一个 OverlayBottomSheet 调用点都没扫到，判据已失效",
             files.any { File(it).readText().contains("OverlayBottomSheet(") },
+        )
+        assertTrue(
+            "一个 OverlayDialog 调用点都没扫到，S5 判据已失效",
+            files.any { File(it).readText().contains(DIALOG_CALL) },
         )
     }
 
@@ -110,8 +115,45 @@ class ComposeSheetGuardTest {
                     "第 $line 行 `buttonColors(color = 危险色)` 没写 `contentColor`：实心红底会配默认字色，" +
                         "Dart `HyperosButtonVariant.destructive` 是「红底 + `onError` 字」"
             }
+            dialogMissingInsideMargin(text).forEach { line ->
+                result["$relative|S5"] =
+                    "第 $line 行 `OverlayDialog` 没传 `insideMargin`：官方默认 24dp，本仓口径" +
+                        "横向 16dp（`DpSize(16.dp, 16.dp)`），缺省会与内容边距叠成 32~40dp"
+            }
         }
         return result
+    }
+
+    /**
+     * 找出 `OverlayDialog(` 实参表里**没有 `insideMargin`** 的行号（规则 S5，2026-11-03 补）。
+     *
+     * 背景：守卫原本只拦 `OverlayBottomSheet`（S1），对话框漏网 —— 审核报告 S13 点名的
+     * 4 处 `OverlayDialog` 没传 `insideMargin` 全是事后真机看出来的。判据与 S3/S4 同一套
+     * 括号配平；**整行注释先掏空**（`// 旧版 OverlayDialog(...)` 这类考古注释不算调用，
+     * sync/CoupleTimetableSettingsPage.kt 里真有一条），行号按原始文本计。
+     */
+    private fun dialogMissingInsideMargin(text: String): List<Int> {
+        val code = text.lineSequence()
+            .map { line ->
+                val trimmed = line.trimStart()
+                if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) "" else line
+            }
+            .joinToString("\n")
+        val hits = mutableListOf<Int>()
+        var from = 0
+        while (true) {
+            val start = code.indexOf(DIALOG_CALL, from)
+            if (start < 0) break
+            val openParen = start + DIALOG_CALL.length - 1
+            val close = matchingParen(code, openParen)
+            if (close < 0) break
+            val args = code.substring(openParen + 1, close)
+            if (!args.contains("insideMargin")) {
+                hits += code.take(start).count { it == '\n' } + 1
+            }
+            from = close
+        }
+        return hits
     }
 
     /**
@@ -301,6 +343,9 @@ class ComposeSheetGuardTest {
         const val SHOWCASE_PREFIX = "pages/showcase/"
 
         val SHEET_CALL = Regex("""\bOverlayBottomSheet\s*\(""")
+
+        /** 对话框口径的入口（规则 S5）。 */
+        const val DIALOG_CALL = "OverlayDialog("
 
         const val TEXT_BUTTON_CALL = "textButtonColors("
 
