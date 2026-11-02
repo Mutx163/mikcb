@@ -154,6 +154,11 @@ data class CloudSyncViewState(
     val maxAgeSelectedIndex: Int,
     val manualProtectedTitle: String,
     val manualBackupProtected: Boolean,
+    // 撤销上一次恢复（仅当确有可撤销的恢复、且备份区可见时才出现）
+    val canUndoRestore: Boolean = false,
+    val undoRestoreTitle: String = "",
+    val undoRestoreSummary: String = "",
+    val undoRestoreActionLabel: String = "",
 )
 
 object CloudSyncLogic {
@@ -337,6 +342,7 @@ object CloudSyncLogic {
         isLoading: Boolean,
         deviceLabel: String,
         zone: ZoneId = ZoneId.systemDefault(),
+        canUndoRestore: Boolean = false,
     ): CloudSyncViewState {
         val connected = isAccountConnected(config.username, hasStoredPassword)
         val statusView = buildStatusView(status, zone)
@@ -427,6 +433,11 @@ object CloudSyncLogic {
             maxAgeSelectedIndex = optionIndexOf(MAX_BACKUP_AGE_OPTIONS, config.maxBackupAgeDays),
             manualProtectedTitle = SyncStrings.cloudBackupManualProtectedTitle.zh,
             manualBackupProtected = config.manualBackupProtected,
+            // 恢复入口就在备份区里：业务区整段不出现时（未连接 / 同步关闭），撤销也不该出现。
+            canUndoRestore = canUndoRestore && showBusinessSections,
+            undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.zh,
+            undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.zh,
+            undoRestoreActionLabel = SyncStrings.themeUndo.zh,
         )
     }
 

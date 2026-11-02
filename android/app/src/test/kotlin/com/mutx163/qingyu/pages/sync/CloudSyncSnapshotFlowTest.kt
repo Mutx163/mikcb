@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.decodeSnapshotObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -167,6 +168,82 @@ class CloudSyncSnapshotFlowTest {
 
         assertTrue(undone)
         assertEquals(listOf("local-course"), local.snapshot.courses.map { it.id })
+    }
+
+    @Test
+    fun `恢复成功才有可撤销点_撤销后页面状态同步消失`() {
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val (controller, _) = controllerWithRemote(local, remoteCourseId = "remote-course")
+
+        // 恢复前：两份 viewState 都不该露出撤销入口。
+        assertFalse(controller.canUndoLastRestore)
+        assertFalse(controller.backupListViewState().canUndoRestore)
+        assertFalse(controller.cloudSyncViewState().canUndoRestore)
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+        assertTrue(controller.canUndoLastRestore)
+        assertTrue(controller.backupListViewState().canUndoRestore)
+        assertTrue(controller.cloudSyncViewState().canUndoRestore)
+
+        assertTrue(controller.undoLastRestore())
+        assertFalse(controller.canUndoLastRestore)
+        assertFalse(controller.backupListViewState().canUndoRestore)
+        assertFalse(controller.cloudSyncViewState().canUndoRestore)
+        // 撤销成功后旧的失败码要清掉，页面状态栏不该继续挂着错误。
+        assertNull(controller.lastErrorCode)
+    }
+
+    @Test
+    fun `恢复失败不产生可撤销点`() {
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val (controller, _) = controllerWithRemote(
+            local,
+            remoteCourseId = "remote-course",
+            snapshotApplier = { SnapshotApplyResult.Failed("sync_snapshot_apply_failed") },
+        )
+
+        assertEquals(SyncResultKind.FAILED, controller.openBackup("backup.mikcb"))
+        assertFalse(controller.canUndoLastRestore)
+        assertFalse(controller.backupListViewState().canUndoRestore)
+        assertFalse(controller.cloudSyncViewState().canUndoRestore)
+    }
+
+    @Test
+    fun `本机原本没有课表时恢复成功也没有可撤销点`() {
+        val local = repository() // 没有任何档案 → 恢复前的快照构建不出来
+        val (controller, _) = controllerWithRemote(local, remoteCourseId = "remote-course")
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+        // 没有「恢复前」可回退的东西，就不能给用户一个点了没用的撤销按钮。
+        assertFalse(controller.canUndoLastRestore)
+        assertFalse(controller.backupListViewState().canUndoRestore)
+    }
+
+    @Test
+    fun `撤销写回失败时保留撤销点并记录错误码`() {
+        val local = repository()
+        local.addCourse(course("local-course"))
+        var applyCalls = 0
+        val (controller, _) = controllerWithRemote(
+            local,
+            remoteCourseId = "remote-course",
+            snapshotApplier = {
+                applyCalls++
+                if (applyCalls == 1) {
+                    SnapshotApplyResult.Applied // 模拟恢复写回成功
+                } else {
+                    SnapshotApplyResult.Failed("sync_snapshot_apply_failed")
+                }
+            },
+        )
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+
+        assertFalse(controller.undoLastRestore())
+        assertEquals("sync_snapshot_apply_failed", controller.lastErrorCode)
+        // 写回失败时撤销点不能丢：用户还可以再试一次。
+        assertTrue(controller.canUndoLastRestore)
     }
 
     // ---------- 进页加载 ----------

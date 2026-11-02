@@ -193,6 +193,17 @@
       }
     }
   },
+  "cloudBackupUndoRestoreTitle": "前回の復元を取消",
+  "cloudBackupUndoRestoreSummary": "アプリ再起動で無効",
+  "cloudBackupUndoRestoreSuccess": "復元を取消しました",
+  "cloudBackupUndoRestoreFailed": "復元取消失敗：{message}",
+  "@cloudBackupUndoRestoreFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "このバックアップを削除",
   "cloudBackupDeleteBody": "{time} のクラウドバックアップを削除しますか？元に戻せません。",
   "@cloudBackupDeleteBody": {

@@ -61,6 +61,7 @@ fun CloudBackupListPage(
     onBack: () -> Unit,
     onCreateBackup: () -> Unit,
     onOpenBackup: (entryId: String) -> Unit,
+    onUndoRestore: () -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
 
@@ -70,6 +71,16 @@ fun CloudBackupListPage(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            // 撤销入口放在列表外：列表为空 / 加载中时也要能撤回上一次恢复。
+            if (viewState.canUndoRestore) {
+                CloudRestoreUndoCard(
+                    title = viewState.undoRestoreTitle,
+                    summary = viewState.undoRestoreSummary,
+                    actionLabel = viewState.undoRestoreActionLabel,
+                    onUndo = onUndoRestore,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
 
             when {
                 viewState.isLoading -> Box(
@@ -178,6 +189,55 @@ private fun CloudBackupRowCard(
                 contentDescription = null,
                 tint = Color(QingyuTheme.actionIcon(dark)),
                 modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 「撤销上一次恢复」卡片（云同步页与备份列表页共用）。
+ *
+ * 显隐判据由调用方的 viewState `canUndoRestore` 给，渲染层不自己判断
+ * 「有没有撤销点」；没有撤销点时整块不组合。
+ */
+@Composable
+fun CloudRestoreUndoCard(
+    title: String,
+    summary: String,
+    actionLabel: String,
+    onUndo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dark = isSystemInDarkTheme()
+    QingyuCard(
+        modifier = modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+                    color = Color(QingyuTheme.primaryText(dark)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = summary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TextButton(
+                text = actionLabel,
+                onClick = onUndo,
             )
         }
     }

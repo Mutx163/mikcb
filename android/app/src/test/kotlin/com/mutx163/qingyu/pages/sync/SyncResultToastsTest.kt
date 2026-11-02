@@ -137,15 +137,22 @@ class SyncResultToastsTest {
     @Test
     fun `撤销恢复成功与失败`() {
         val ok = SyncResultToasts.forUndoRestore(success = true)
-        assertEquals("已恢复到此备份", ok.message)
+        // 成功文案不能再复用「已恢复到此备份」——那会把撤销说成恢复。
+        assertEquals("已撤销恢复", ok.message)
         assertFalse(ok.isError)
         assertTrue(ok.reloadBackups)
 
-        val failed = SyncResultToasts.forUndoRestore(success = false)
-        // Dart 传的是原文 'Undo failed'，没有过本地化表。
-        assertEquals("恢复失败：Undo failed", failed.message)
+        val failed = SyncResultToasts.forUndoRestore(success = false, errorCode = "sync_snapshot_apply_failed")
+        // 原生页把失败原因本地化；未知码落到「同步失败」。
+        assertEquals("撤销失败：同步失败", failed.message)
         assertTrue(failed.isError)
         assertFalse(failed.reloadBackups)
+
+        // 没有错误码时也要给出完整的失败句，不出现空的占位符。
+        assertEquals(
+            "撤销失败：同步失败",
+            SyncResultToasts.forUndoRestore(success = false, errorCode = null).message,
+        )
     }
 
     @Test

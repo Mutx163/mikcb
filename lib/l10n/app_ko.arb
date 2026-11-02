@@ -193,6 +193,17 @@
       }
     }
   },
+  "cloudBackupUndoRestoreTitle": "마지막 복원 취소",
+  "cloudBackupUndoRestoreSummary": "앱 재시작 후 무효",
+  "cloudBackupUndoRestoreSuccess": "복원을 취소했습니다",
+  "cloudBackupUndoRestoreFailed": "복원 취소 실패: {message}",
+  "@cloudBackupUndoRestoreFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "이 백업 삭제",
   "cloudBackupDeleteBody": "{time} 클라우드 백업을 삭제할까요? 되돌릴 수 없습니다.",
   "@cloudBackupDeleteBody": {

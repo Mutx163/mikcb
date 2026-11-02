@@ -193,6 +193,17 @@
       }
     }
   },
+  "cloudBackupUndoRestoreTitle": "撤銷上次恢復",
+  "cloudBackupUndoRestoreSummary": "重啟應用後失效",
+  "cloudBackupUndoRestoreSuccess": "已撤銷恢復",
+  "cloudBackupUndoRestoreFailed": "撤銷失敗：{message}",
+  "@cloudBackupUndoRestoreFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "刪除此備份",
   "cloudBackupDeleteBody": "確定刪除 {time} 的雲端備份嗎？此操作不可撤銷",
   "@cloudBackupDeleteBody": {

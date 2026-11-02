@@ -102,6 +102,16 @@ class CloudSyncController(
     /** 最近一次恢复前的课表快照（撤销用）；null = 没有可撤销的恢复。 */
     private var lastRestoreRollback: ByteArray? = null
 
+    /**
+     * 是否有可撤销的恢复。
+     *
+     * 只有**真正写回成功**的那次恢复才会留下撤销点；恢复失败、本机原本没有数据、
+     * 断开连接、已经撤销过，都是 false。页面据此决定撤销入口是否出现。
+     * 没有写回落点（[effectiveSnapshotApplier] 为空）时也不给入口：点了必然失败。
+     */
+    val canUndoLastRestore: Boolean
+        get() = lastRestoreRollback != null && effectiveSnapshotApplier != null
+
     // ── 可观察协议 ──
 
     private val listeners = LinkedHashSet<() -> Unit>()
@@ -134,6 +144,7 @@ class CloudSyncController(
         backupEntries = backupEntries,
         isLoading = false,
         deviceLabel = deviceLabelDraft,
+        canUndoRestore = canUndoLastRestore,
     )
 
     /**
@@ -150,6 +161,7 @@ class CloudSyncController(
         isLoading = loadingBackups,
         isCreatingBackup = isCreatingBackup,
         errorCode = status.lastErrorCode,
+        canUndoRestore = canUndoLastRestore,
     )
 
     // ── 配置编辑（全部委托既有纯逻辑，不重复判据） ──
@@ -320,8 +332,9 @@ class CloudSyncController(
      * ## 撤销点
      *
      * 下载前先把**本机当前课表**组一份快照存进 [lastRestoreRollback]，成功后可调
-     * [undoLastRestore] 回退。注意：当前页面没有撤销入口（Toast 承载不了动作按钮），
-     * 见宿主接线报告。
+     * [undoLastRestore] 回退。撤销入口由两份 viewState 的 `canUndoRestore` 透出：
+     * 云同步页备份区与备份列表页在确有撤销点时显示「撤销上次恢复」卡片，
+     * 恢复失败 / 已撤销后自动消失。
      */
     fun openBackup(entryId: String): SyncResultKind {
         val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
@@ -346,7 +359,9 @@ class CloudSyncController(
                     notifyChanged()
                     return SyncResultKind.FAILED
                 }
-                rollback?.let { lastRestoreRollback = it }
+                // 每次恢复成功都**重设**撤销点：取不到本次恢复前的快照时，旧撤销点
+                // 指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
+                lastRestoreRollback = rollback
                 markSynced()
                 refreshBackups()
                 SyncResultKind.DOWNLOADED
@@ -362,6 +377,9 @@ class CloudSyncController(
 
     /**
      * 撤销最近一次恢复（把恢复前的课表快照写回去）。
+     *
+     * 成功会 `notifyChanged()`：两份 viewState 的 `canUndoRestore` 随之变 false，
+     * 页面上的撤销卡片立即消失；失败会留下撤销点并写 [lastErrorCode]，让用户能重试。
      *
      * @return true = 已回退；false = 没有撤销点 / 写回失败（错误码见 [lastErrorCode]）。
      */

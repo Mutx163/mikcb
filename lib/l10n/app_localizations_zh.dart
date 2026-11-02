@@ -664,6 +664,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupUndoRestoreTitle => '撤销上次恢复';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => '重启应用后失效';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => '已撤销恢复';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return '撤销失败：$message';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => '删除此备份';
 
   @override
@@ -12233,6 +12247,20 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String cloudBackupRestoreFailed(String message) {
     return '恢復失敗：$message';
+  }
+
+  @override
+  String get cloudBackupUndoRestoreTitle => '撤銷上次恢復';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => '重啟應用後失效';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => '已撤銷恢復';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return '撤銷失敗：$message';
   }
 
   @override
@@ -23844,6 +23872,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String cloudBackupRestoreFailed(String message) {
     return '恢復失敗：$message';
+  }
+
+  @override
+  String get cloudBackupUndoRestoreTitle => '撤銷上次恢復';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => '重啟應用後失效';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => '已撤銷恢復';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return '撤銷失敗：$message';
   }
 
   @override

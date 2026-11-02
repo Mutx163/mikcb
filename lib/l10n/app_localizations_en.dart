@@ -706,6 +706,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupUndoRestoreTitle => 'Undo last restore';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => 'Only in this session';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => 'Restore undone';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return 'Undo failed: $message';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => 'Delete this backup';
 
   @override

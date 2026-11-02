@@ -1334,6 +1334,30 @@ abstract class AppLocalizations {
   /// **'恢复失败：{message}'**
   String cloudBackupRestoreFailed(String message);
 
+  /// No description provided for @cloudBackupUndoRestoreTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销上次恢复'**
+  String get cloudBackupUndoRestoreTitle;
+
+  /// No description provided for @cloudBackupUndoRestoreSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'重启应用后失效'**
+  String get cloudBackupUndoRestoreSummary;
+
+  /// No description provided for @cloudBackupUndoRestoreSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已撤销恢复'**
+  String get cloudBackupUndoRestoreSuccess;
+
+  /// No description provided for @cloudBackupUndoRestoreFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销失败：{message}'**
+  String cloudBackupUndoRestoreFailed(String message);
+
   /// No description provided for @cloudBackupDeleteTitle.
   ///
   /// In zh, this message translates to:

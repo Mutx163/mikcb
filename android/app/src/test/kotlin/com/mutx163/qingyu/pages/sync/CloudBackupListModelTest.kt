@@ -229,6 +229,30 @@ class CloudBackupListModelTest {
     }
 
     @Test
+    fun `可撤销恢复的显隐与文案透出到渲染层`() {
+        val hidden = CloudBackupListLogic.buildListViewState(
+            entries = emptyList(),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            canUndoRestore = false,
+        )
+        assertFalse(hidden.canUndoRestore)
+
+        val shown = CloudBackupListLogic.buildListViewState(
+            entries = emptyList(),
+            isLoading = false,
+            isCreatingBackup = false,
+            zone = zone,
+            canUndoRestore = true,
+        )
+        assertTrue(shown.canUndoRestore)
+        assertEquals("撤销上次恢复", shown.undoRestoreTitle)
+        assertEquals("重启应用后失效", shown.undoRestoreSummary)
+        assertEquals("撤销", shown.undoRestoreActionLabel)
+    }
+
+    @Test
     fun `加载中状态与创建中状态透出到渲染层`() {
         val state = CloudBackupListLogic.buildListViewState(
             entries = listOf(entry()),

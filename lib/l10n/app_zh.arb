@@ -326,6 +326,17 @@
       }
     }
   },
+  "cloudBackupUndoRestoreTitle": "撤销上次恢复",
+  "cloudBackupUndoRestoreSummary": "重启应用后失效",
+  "cloudBackupUndoRestoreSuccess": "已撤销恢复",
+  "cloudBackupUndoRestoreFailed": "撤销失败：{message}",
+  "@cloudBackupUndoRestoreFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "删除此备份",
   "cloudBackupDeleteBody": "确定删除 {time} 的云端备份吗？此操作不可撤销",
   "@cloudBackupDeleteBody": {

@@ -683,6 +683,20 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupUndoRestoreTitle => '前回の復元を取消';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => 'アプリ再起動で無効';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => '復元を取消しました';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return '復元取消失敗：$message';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => 'このバックアップを削除';
 
   @override

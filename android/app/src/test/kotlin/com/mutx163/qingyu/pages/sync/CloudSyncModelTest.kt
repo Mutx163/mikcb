@@ -264,6 +264,43 @@ class CloudSyncModelTest {
     }
 
     @Test
+    fun `撤销恢复入口只在备份业务区可见时出现`() {
+        val connected = CloudSyncLogic.buildViewState(
+            config = config(enabled = true),
+            hasStoredPassword = true,
+            status = CloudSyncStatusSource(),
+            isCreatingBackup = false,
+            loadingBackups = false,
+            backupEntries = emptyList(),
+            isLoading = false,
+            deviceLabel = "",
+            zone = zone,
+            canUndoRestore = true,
+        )
+        assertTrue(connected.showBackups)
+        assertTrue(connected.canUndoRestore)
+        assertEquals("撤销上次恢复", connected.undoRestoreTitle)
+        assertEquals("重启应用后失效", connected.undoRestoreSummary)
+        assertEquals("撤销", connected.undoRestoreActionLabel)
+
+        // 同步开关关掉后备份区整段不出现，撤销入口也不能单独悬空。
+        val disabled = CloudSyncLogic.buildViewState(
+            config = config(enabled = false),
+            hasStoredPassword = true,
+            status = CloudSyncStatusSource(),
+            isCreatingBackup = false,
+            loadingBackups = false,
+            backupEntries = emptyList(),
+            isLoading = false,
+            deviceLabel = "",
+            zone = zone,
+            canUndoRestore = true,
+        )
+        assertFalse(disabled.showBackups)
+        assertFalse(disabled.canUndoRestore)
+    }
+
+    @Test
     fun `已连接且启用时显示设置同步与保留策略`() {
         val state = CloudSyncLogic.buildViewState(
             config = config(),

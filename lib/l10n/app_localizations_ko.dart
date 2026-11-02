@@ -681,6 +681,20 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get cloudBackupUndoRestoreTitle => '마지막 복원 취소';
+
+  @override
+  String get cloudBackupUndoRestoreSummary => '앱 재시작 후 무효';
+
+  @override
+  String get cloudBackupUndoRestoreSuccess => '복원을 취소했습니다';
+
+  @override
+  String cloudBackupUndoRestoreFailed(String message) {
+    return '복원 취소 실패: $message';
+  }
+
+  @override
   String get cloudBackupDeleteTitle => '이 백업 삭제';
 
   @override

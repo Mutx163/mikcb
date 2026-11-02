@@ -109,6 +109,11 @@ data class CloudBackupListViewState(
      * 没有它时断网 / 密码失效都会显示「还没有备份版本」，把失败说成了正常。
      */
     val errorText: String? = null,
+    // 撤销上一次恢复（仅当确有可撤销的恢复时才出现）
+    val canUndoRestore: Boolean = false,
+    val undoRestoreTitle: String = "",
+    val undoRestoreSummary: String = "",
+    val undoRestoreActionLabel: String = "",
 ) {
     val isEmpty: Boolean get() = rows.isEmpty()
 }
@@ -246,6 +251,7 @@ object CloudBackupListLogic {
         isCreatingBackup: Boolean,
         zone: ZoneId = ZoneId.systemDefault(),
         errorCode: String? = null,
+        canUndoRestore: Boolean = false,
     ): CloudBackupListViewState = CloudBackupListViewState(
         isLoading = isLoading,
         isCreatingBackup = isCreatingBackup,
@@ -255,6 +261,10 @@ object CloudBackupListLogic {
         emptyText = SyncStrings.cloudBackupEmpty.zh,
         // 只有「列表是空的」时才有意义：有数据时轮不到空态，不该盖住列表。
         errorText = if (entries.isEmpty()) errorCode?.let { SyncStrings.localizeSyncError(it) } else null,
+        canUndoRestore = canUndoRestore,
+        undoRestoreTitle = SyncStrings.cloudBackupUndoRestoreTitle.zh,
+        undoRestoreSummary = SyncStrings.cloudBackupUndoRestoreSummary.zh,
+        undoRestoreActionLabel = SyncStrings.themeUndo.zh,
     )
 
     private fun pad2(value: Int): String = value.toString().padStart(2, '0')

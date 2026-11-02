@@ -1,11 +1,13 @@
 package com.mutx163.qingyu.pages.sync
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,10 +63,20 @@ fun CloudSyncPage(
     val revision = rememberControllerRevision(controller)
     val viewState = remember(controller, revision) { controller.cloudSyncViewState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // 进页首次加载：已连接时拉一次远端备份列表（否则备份区恒空，像云端没有备份）。
     LaunchedEffect(controller) {
         withContext(Dispatchers.IO) { controller.refreshOnEnter() }
+    }
+
+    // 撤销成功后控制器会自增 revision（撤销卡片随之消失）；失败则给出明确提示。
+    fun undoRestore() {
+        scope.launch {
+            val success = withContext(Dispatchers.IO) { controller.undoLastRestore() }
+            val toast = SyncResultToasts.forUndoRestore(success, controller.lastErrorCode)
+            Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     CloudSyncPage(
@@ -85,6 +97,7 @@ fun CloudSyncPage(
         onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
         onOpenBackup = onOpenBackup,
         onViewAllBackups = onViewAllBackups,
+        onUndoRestore = { undoRestore() },
         onMaxCountSelected = { controller.selectMaxCount(it) },
         onMaxAgeSelected = { controller.selectMaxAge(it) },
         onManualProtectedChange = { controller.setManualBackupProtected(it) },
@@ -105,10 +118,19 @@ fun CloudBackupListPage(
     val revision = rememberControllerRevision(controller)
     val viewState = remember(controller, revision) { controller.backupListViewState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // 同云同步页：进页首次加载，避免整页恒空。
     LaunchedEffect(controller) {
         withContext(Dispatchers.IO) { controller.refreshOnEnter() }
+    }
+
+    fun undoRestore() {
+        scope.launch {
+            val success = withContext(Dispatchers.IO) { controller.undoLastRestore() }
+            val toast = SyncResultToasts.forUndoRestore(success, controller.lastErrorCode)
+            Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     CloudBackupListPage(
@@ -116,5 +138,6 @@ fun CloudBackupListPage(
         onBack = onBack,
         onCreateBackup = { scope.launch { withContext(Dispatchers.IO) { controller.createBackup() } } },
         onOpenBackup = onOpenBackup,
+        onUndoRestore = { undoRestore() },
     )
 }

@@ -138,19 +138,25 @@ object SyncResultToasts {
     /**
      * 撤销上一次恢复。
      *
-     * 注意：Dart 在失败分支里传的是原文 `'Undo failed'`，**没有**过本地化表，
-     * 所以屏上是「恢复失败：Undo failed」。这里保留该口径（要改先改 Dart）。
+     * 与 Dart 的差异：Dart 失败分支直接拼原文 `'Undo failed'`（屏上是「恢复失败：Undo failed」），
+     * 用户看不出到底哪一步失败。原生页改为「撤销失败：{本地化原因}」，成功也换成
+     * 「已撤销恢复」——原来复用「已恢复到此备份」会把「撤销」说成「恢复」。
+     *
+     * @param errorCode 撤销失败时的原始错误码（取自 `controller.lastErrorCode`）
      */
-    fun forUndoRestore(success: Boolean): SyncToast =
+    fun forUndoRestore(success: Boolean, errorCode: String? = null): SyncToast =
         if (success) {
             SyncToast(
-                message = SyncStrings.cloudBackupRestoreSuccess.zh,
+                message = SyncStrings.cloudBackupUndoRestoreSuccess.zh,
                 isError = false,
                 reloadBackups = true,
             )
         } else {
             SyncToast(
-                message = SyncStrings.cloudBackupRestoreFailed.filled("message", "Undo failed"),
+                message = SyncStrings.cloudBackupUndoRestoreFailed.filled(
+                    "message",
+                    SyncStrings.localizeSyncError(errorCode),
+                ),
                 isError = true,
             )
         }

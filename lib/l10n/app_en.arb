@@ -326,6 +326,17 @@
       }
     }
   },
+  "cloudBackupUndoRestoreTitle": "Undo last restore",
+  "cloudBackupUndoRestoreSummary": "Only in this session",
+  "cloudBackupUndoRestoreSuccess": "Restore undone",
+  "cloudBackupUndoRestoreFailed": "Undo failed: {message}",
+  "@cloudBackupUndoRestoreFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "cloudBackupDeleteTitle": "Delete this backup",
   "cloudBackupDeleteBody": "Delete the cloud backup from {time}? This cannot be undone.",
   "@cloudBackupDeleteBody": {

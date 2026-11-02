@@ -81,6 +81,7 @@ fun CloudSyncPage(
     onCreateBackup: () -> Unit,
     onOpenBackup: (entryId: String) -> Unit,
     onViewAllBackups: () -> Unit,
+    onUndoRestore: () -> Unit,
     onMaxCountSelected: (index: Int) -> Unit,
     onMaxAgeSelected: (index: Int) -> Unit,
     onManualProtectedChange: (Boolean) -> Unit,
@@ -293,6 +294,18 @@ fun CloudSyncPage(
                     if (viewState.showBackups) {
                         item(key = "backups_header") {
                             SectionHeader(title = viewState.backupSectionTitle, dark = dark)
+                        }
+                        // 撤销入口：只有确实存在可撤销的恢复时才出现（恢复失败 / 已撤销后消失）。
+                        if (viewState.canUndoRestore) {
+                            item(key = "backups_undo") {
+                                CloudRestoreUndoCard(
+                                    title = viewState.undoRestoreTitle,
+                                    summary = viewState.undoRestoreSummary,
+                                    actionLabel = viewState.undoRestoreActionLabel,
+                                    onUndo = onUndoRestore,
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                )
+                            }
                         }
                         item(key = "backups_create") {
                             LoadingButton(
