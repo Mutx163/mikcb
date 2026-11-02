@@ -198,22 +198,18 @@ fun ExamDatePickerSheet(
             ) {
                 for (candidate in 1..7) {
                     val isSelected = candidate == dayOfWeek
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = weekdayShort(candidate),
+                    // 2026-11-02 弹窗审核 P2：Dart 每格是「日名 + 日期」两行，Compose 只剩一个
+                    // 星期字。TextButton 只有单文本槽，改用官方 Button 的 content 槽补第二行。
+                    Button(
                         onClick = { dayOfWeek = candidate },
-                        // 2026-11-02 弹窗审核 P2：默认左右各 16dp 内边距，7 颗按钮在 400dp 屏上
-                        // 每颗只剩约 12dp 给文字；收窄到 4/8 才放得下。
-                        insideMargin = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-                        // miuix 的 `textButtonColors(color = …)` 是**底色**、`textColor` 是字色
-                        // （见 `CourseActionSheet.kt:725` 那张对照表）：选中 = 主色底 + onPrimary 字。
-                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
                             color = if (isSelected) {
                                 Color(QingyuTheme.primary(dark = dark))
                             } else {
                                 Color(QingyuTheme.surfaceContainerHighest(dark))
                             },
-                            textColor = if (isSelected) {
+                            contentColor = if (isSelected) {
                                 // on-primary 走 miuix 主题令牌（本仓先例 `CourseOverviewPage.kt:576`），
                                 // 不写死白色：换主题色后字色才跟着变。
                                 MiuixTheme.colorScheme.onPrimary
@@ -221,7 +217,19 @@ fun ExamDatePickerSheet(
                                 Color(QingyuTheme.primaryText(dark))
                             },
                         ),
-                    )
+                        insideMargin = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(text = weekdayShort(candidate), style = MiuixTheme.textStyles.footnote2)
+                            Text(
+                                text = weekdayDateLabel(week, candidate, semesterStart),
+                                style = MiuixTheme.textStyles.footnote2,
+                            )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -271,6 +279,16 @@ private fun selectedDateLabelText(
     if (dayOfWeek == null) return weekText
     val date = AddExamLogic.dateForWeekAndDay(semesterStart, week, dayOfWeek)
     return "$weekText · %d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth)
+}
+
+/** 星期按钮第二行的具体日期（月-日，纯数字不需要走 ARB；Dart 每格日名下有这一行）。 */
+private fun weekdayDateLabel(
+    week: Int,
+    dayOfWeek: Int,
+    semesterStart: LocalDateTime,
+): String {
+    val date = AddExamLogic.dateForWeekAndDay(semesterStart, week, dayOfWeek)
+    return "%d-%02d".format(date.monthValue, date.dayOfMonth)
 }
 
 /**
