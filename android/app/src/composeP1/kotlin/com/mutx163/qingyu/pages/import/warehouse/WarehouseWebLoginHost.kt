@@ -103,6 +103,12 @@ fun WarehouseWebLoginHost(
         return
     }
 
+    // 受信登录地址（loginAttempt 门禁的「受信 host」放行锚点）：适配器登记地址 +
+    // 受信自定义地址，与 Dart 侧同一来源口径；host 化在门禁里做。
+    val trustedLoginUrls = remember(adapter.importUrl, customUrl) {
+        listOfNotNull(adapter.importUrl.takeIf { it.isNotBlank() }, customUrl?.takeIf { it.isNotBlank() })
+    }
+
     val controller = rememberWarehouseWebViewController()
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
     var session by remember(target.loginUrl) {
@@ -329,6 +335,7 @@ fun WarehouseWebLoginHost(
         title = school.name,
         sessionState = session,
         webViewController = controller,
+        trustedLoginUrls = trustedLoginUrls,
         onBack = onBack,
         onWebProgress = { progress ->
             session = session.withStage(WarehouseWebLoginWebState.stageForProgress(progress))

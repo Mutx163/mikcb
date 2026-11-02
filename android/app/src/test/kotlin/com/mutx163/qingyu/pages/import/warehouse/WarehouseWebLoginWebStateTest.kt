@@ -88,8 +88,9 @@ class WarehouseWebLoginWebStateTest {
 
     @Test
     fun `非 UI 类消息与判不出类型的一律放行`() {
-        // 宿主自己注入的探活协议、宏事件、数据类消息：任何阶段都照常处理（Dart 同口径）
-        for (type in listOf("loginState", "loginAttempt", "sessionProbe", "macro:event", "courses")) {
+        // 宿主自己注入的探活协议、数据类消息：任何阶段都照常处理（Dart 同口径）。
+        // macro:event / loginAttempt 不在此列——它们各自有放行条件（见下面两测）。
+        for (type in listOf("loginState", "sessionProbe", "courses")) {
             for (stage in WarehouseWebLoginStage.entries) {
                 assertTrue(
                     "非 UI 类消息 `$type` 不该被门禁拦下（阶段 $stage）",
@@ -99,6 +100,63 @@ class WarehouseWebLoginWebStateTest {
         }
         assertTrue(WarehouseWebLoginWebState.shouldDeliverBridgeMessage(null, WarehouseWebLoginStage.IDLE))
         assertTrue(WarehouseWebLoginWebState.shouldDeliverBridgeMessage("   ", WarehouseWebLoginStage.IDLE))
+    }
+
+    @Test
+    fun `macro_event 与 loginAttempt 按新门禁判定`() {
+        val macroEvent = """{"type":"macro:event"}"""
+        val loginAttempt = """{"type":"loginAttempt","username":"a","password":"b"}"""
+        // macro:event：非录制态一律拦（页面现在还没接录制，macroState 恒 IDLE）
+        for (stage in WarehouseWebLoginStage.entries) {
+            assertFalse(
+                "macro:event 在阶段 $stage（未录制）必须被拦",
+                WarehouseWebLoginWebState.shouldDeliverBridgeMessage(macroEvent, stage),
+            )
+        }
+        assertTrue(
+            "录制态放行",
+            WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                macroEvent,
+                WarehouseWebLoginStage.LOADED,
+                macroRecordingActive = true,
+            ),
+        )
+        // loginAttempt：非执行期、当前页不在受信 host 上 ⇒ 拦（钓鱼页面）
+        assertFalse(
+            "钓鱼页上的伪造 loginAttempt 必须被拦",
+            WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                loginAttempt,
+                WarehouseWebLoginStage.LOADED,
+                currentUrl = "https://trusted.cn.evil.com/login",
+                trustedLoginUrls = listOf("https://trusted.cn/login"),
+            ),
+        )
+        // loginAttempt：当前页在受信 host（含子域）上 ⇒ 放行（普通手动登录的主路径）
+        assertTrue(
+            "受信页上的 loginAttempt 应放行",
+            WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                loginAttempt,
+                WarehouseWebLoginStage.LOADED,
+                currentUrl = "https://jw.trusted.cn/login",
+                trustedLoginUrls = listOf("https://trusted.cn/login"),
+            ),
+        )
+        // loginAttempt：执行期放行（与受信无关）
+        assertTrue(
+            WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                loginAttempt,
+                WarehouseWebLoginStage.EXECUTING,
+                currentUrl = "https://trusted.cn.evil.com/login",
+                trustedLoginUrls = listOf("https://trusted.cn/login"),
+            ),
+        )
+        // 没传受信地址 ⇒ 受信放行永不生效（只会更严），非执行期照拦
+        assertFalse(
+            WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                loginAttempt,
+                WarehouseWebLoginStage.LOADED,
+            ),
+        )
     }
 
     @Test

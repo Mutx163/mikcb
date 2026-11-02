@@ -48,14 +48,31 @@ object WarehouseWebLoginWebState {
      * 宿主对任意页面开放 `QingyuBridge`，页面随时可以 `postMessage`；UI 类消息
      * （`toast` / `confirm` / `prompt` / `singleSelection` / `error`）的唯一合法生产者
      * 是**导入执行期**正在跑的适配脚本。不判就会让任意网页在原生层弹任意标题/内容的
-     * 对话框（伪造「请输入身份证号」一类）。
+     * 对话框（伪造「请输入身份证号」一类）。`macro:event` / `loginAttempt` 的放行
+     * 条件见 [shouldProcessWarehouseBridgeMessage]（2026-11-02 安全审计对齐）。
      *
      * 把「取类型 + 判阶段」绑在这一个函数里，页面只调它一次：
      * 调用点少一处，绕过门禁的机会就少一处（页面源码级守卫也钉着这条，见测试）。
+     *
+     * @param currentUrl 当前页地址（WebView 现值），算 [trustedPageOrigin] 用。
+     * @param trustedLoginUrls 受信地址集合（适配器登记地址 + 受信自定义地址），
+     *   host 化后与 [currentUrl] 的 host 比对；空集合 ⇒ 受信放行永不生效（只会更严）。
+     * @param macroRecordingActive 录制态（会话真实状态；录制引擎未移植时恒 false）。
      */
-    fun shouldDeliverBridgeMessage(raw: String?, stage: WarehouseWebLoginStage): Boolean =
-        shouldProcessWarehouseBridgeMessage(
-            type = warehouseBridgeMessageType(raw),
-            importExecutionActive = stage == WarehouseWebLoginStage.EXECUTING,
-        )
+    fun shouldDeliverBridgeMessage(
+        raw: String?,
+        stage: WarehouseWebLoginStage,
+        currentUrl: String? = null,
+        trustedLoginUrls: List<String> = emptyList(),
+        macroRecordingActive: Boolean = false,
+    ): Boolean = shouldProcessWarehouseBridgeMessage(
+        type = warehouseBridgeMessageType(raw),
+        importExecutionActive = stage == WarehouseWebLoginStage.EXECUTING,
+        macroRecordingActive = macroRecordingActive,
+        // 前台回放引擎尚未移植（F08-8c）：Kotlin 侧没有对应状态，恒 false（默认值）。
+        trustedPageOrigin = warehouseUrlOnTrustedHosts(
+            currentUrl,
+            warehouseTrustedLoginHosts(*trustedLoginUrls.toTypedArray()),
+        ),
+    )
 }

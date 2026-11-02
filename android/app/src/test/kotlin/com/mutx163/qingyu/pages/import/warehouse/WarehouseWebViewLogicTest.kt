@@ -356,12 +356,147 @@ class WarehouseWebViewLogicTest {
             assertFalse("UI 类消息 `$type` 在非导入期必须被丢弃", shouldProcessWarehouseBridgeMessage(type, false))
             assertTrue("UI 类消息 `$type` 在导入期应放行", shouldProcessWarehouseBridgeMessage(type, true))
         }
-        // 非 UI 类消息一律照常处理（探活 / 宏事件 / 数据类）
-        for (type in listOf("loginState", "loginAttempt", "sessionProbe", "macro:event", "courses")) {
+        // 其余非 UI 类消息照常处理（宿主自己注入的探活协议 / 数据类）
+        for (type in listOf("loginState", "sessionProbe", "courses")) {
             assertTrue("非 UI 类消息 `$type` 不该被门禁拦下", shouldProcessWarehouseBridgeMessage(type, false))
         }
         // 判不出类型时交回调用方（与 Dart「非 UI 类一律照常处理」同口径）
         assertTrue(shouldProcessWarehouseBridgeMessage(null, false))
+    }
+
+    @Test
+    fun `macro_event 只在录制态放行`() {
+        // 非录制态没有合法生产者（录制脚本由宿主在录制态注入）——伪造的一律丢弃
+        assertFalse(
+            "非录制态的 macro:event 必须被丢弃",
+            shouldProcessWarehouseBridgeMessage("macro:event", importExecutionActive = false),
+        )
+        assertFalse(
+            "导入执行期也不放行 macro:event（放行条件只看录制态，与 Dart 并集口径一致）",
+            shouldProcessWarehouseBridgeMessage("macro:event", importExecutionActive = true),
+        )
+        assertTrue(
+            "录制态的 macro:event 应放行",
+            shouldProcessWarehouseBridgeMessage(
+                "macro:event",
+                importExecutionActive = false,
+                macroRecordingActive = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `loginAttempt 四类放行并集与钓鱼页拒绝`() {
+        val allOff = {
+            shouldProcessWarehouseBridgeMessage(
+                "loginAttempt",
+                importExecutionActive = false,
+                macroRecordingActive = false,
+                foregroundReplayActive = false,
+                trustedPageOrigin = false,
+            )
+        }
+        // 拒绝 1：钓鱼页/第三方页上的伪造登录尝试（执行期/录制态/回放/受信全不沾）
+        assertFalse("四个条件全不满足时必须拒绝", allOff())
+        // 拒绝 2：非录制态的杂项环境里也不因为「消息长得像数据类」而放行
+        //（与 UI 类判据隔离：loginAttempt 不在 UI 集合里，但也不是无条件放行）
+        assertFalse(
+            "macro:event 语义同场校验：非录制态杂项消息丢弃",
+            shouldProcessWarehouseBridgeMessage("macro:event", importExecutionActive = false),
+        )
+        // 放行 1：导入执行期（适配脚本主导的会话）
+        assertTrue(
+            shouldProcessWarehouseBridgeMessage(
+                "loginAttempt",
+                importExecutionActive = true,
+            ),
+        )
+        // 放行 2：录制态
+        assertTrue(
+            shouldProcessWarehouseBridgeMessage(
+                "loginAttempt",
+                importExecutionActive = false,
+                macroRecordingActive = true,
+            ),
+        )
+        // 放行 3：前台回放的导航阶段（登录步骤在 executingImport 之前）
+        assertTrue(
+            shouldProcessWarehouseBridgeMessage(
+                "loginAttempt",
+                importExecutionActive = false,
+                foregroundReplayActive = true,
+            ),
+        )
+        // 放行 4：当前页在受信 host 上（普通手动登录的主路径）
+        assertTrue(
+            shouldProcessWarehouseBridgeMessage(
+                "loginAttempt",
+                importExecutionActive = false,
+                trustedPageOrigin = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `受信 host 锚点精确与子域放行后缀伪装拒绝`() {
+        // 受信集合按真实调用路径构造（宿主给地址、warehouseTrustedLoginHosts 做 host 化）
+        val trusted = warehouseTrustedLoginHosts(
+            "https://jw.trusted.cn/login",
+            "https://portal.school.edu.cn:8443/",
+        )
+        // 登记地址本体精确命中
+        assertTrue(warehouseUrlOnTrustedHosts("https://jw.trusted.cn/login", trusted))
+        // 子域放行：a.trusted.cn 匹配 trusted.cn（Dart 同款要求）
+        assertTrue(warehouseUrlOnTrustedHosts("https://a.trusted.cn/x", listOf("trusted.cn")))
+        // 端口 / userinfo / 路径不参与判定
+        assertTrue(
+            warehouseUrlOnTrustedHosts(
+                "https://user:pass@Portal.School.EDU.cn:8443/login?a=1",
+                listOf("portal.school.edu.cn"),
+            ),
+        )
+        // 大小写不敏感
+        assertTrue(warehouseUrlOnTrustedHosts("https://JW.Trusted.CN/", listOf("jw.trusted.cn")))
+        // 后缀伪装拒绝：trusted.cn.evil.com 不是 trusted.cn 的子域
+        assertFalse(
+            "后缀伪装必须拒绝",
+            warehouseUrlOnTrustedHosts("https://trusted.cn.evil.com/login", listOf("trusted.cn")),
+        )
+        assertFalse(
+            "前缀伪装也必须拒绝",
+            warehouseUrlOnTrustedHosts("https://eviltrusted.cn/", listOf("trusted.cn")),
+        )
+        // 解析不出 host 的输入一律拒绝（空 / null / 相对地址 / 非 http 形态）
+        assertFalse(warehouseUrlOnTrustedHosts(null, trusted))
+        assertFalse(warehouseUrlOnTrustedHosts("", trusted))
+        assertFalse(warehouseUrlOnTrustedHosts("   ", trusted))
+        assertFalse(warehouseUrlOnTrustedHosts("/relative/path", trusted))
+        assertFalse(warehouseUrlOnTrustedHosts("about:blank", trusted))
+        assertFalse(warehouseUrlOnTrustedHosts("javascript:alert(1)", trusted))
+        // 受信条目里的空白项跳过，不影响其余条目的判定
+        assertTrue(
+            warehouseUrlOnTrustedHosts("https://trusted.cn/", listOf("  ", "", "trusted.cn")),
+        )
+        assertFalse(warehouseUrlOnTrustedHosts("https://other.cn/", listOf("  ", "", "trusted.cn")))
+        // 全是空白条目 ⇒ 没有任何受信 host ⇒ 一律拒绝
+        assertFalse(warehouseUrlOnTrustedHosts("https://trusted.cn/", listOf("  ", "")))
+    }
+
+    @Test
+    fun `受信 host 集合从登记与自定义地址构造`() {
+        assertEquals(
+            setOf("jw.trusted.cn", "portal.school.edu.cn"),
+            warehouseTrustedLoginHosts(
+                "https://jw.trusted.cn/login",
+                "https://Portal.School.edu.cn:8443/",
+                null,
+                "",
+                "   ",
+                "/no-host-here",
+            ),
+        )
+        // 全都解析不出 ⇒ 空集合（受信放行永不生效，门禁只会更严）
+        assertTrue(warehouseTrustedLoginHosts(null, "", "about:blank").isEmpty())
     }
 
     @Test

@@ -376,14 +376,101 @@ fun warehouseBridgeMessageType(raw: String?): String? {
 }
 
 /**
- * 桥接消息门禁：**逐字对齐 Dart** 的 `shouldProcessWarehouseBridgeMessage`。
+ * 桥接消息门禁：**逐字对齐 Dart** 的 `shouldProcessWarehouseBridgeMessage`
+ * （`lib/domain/warehouse_bridge_gate.dart`，2026-11-02 第二轮安全审计 #2 后的新语义）。
  *
- * - 非 UI 类消息（`loginState` / `loginAttempt` / `macro:event` / 数据类…）一律照常处理；
- * - UI 类消息只在导入执行期放行，其余时刻直接丢弃；
+ * - UI 类消息（[WAREHOUSE_IMPORT_ONLY_BRIDGE_MESSAGE_TYPES]）只在导入执行期放行；
+ * - `macro:event` 只认**录制态**：唯一合法生产者是宿主在录制态注入的录制脚本，
+ *   非录制态一律丢弃（原先这个判据写在事件处理器内部，现与其它消息一样收进门禁）；
+ * - `loginAttempt` 取并集放行：执行期 / 录制态 / 前台回放导航阶段 /
+ *   当前页在受信 host 上（[trustedPageOrigin]，锚点见 [warehouseUrlOnTrustedHosts]）——
+ *   普通手动登录不在执行期，主路径靠受信 host 这条放行；钓鱼页/第三方页上的
+ *   伪造登录尝试在这里被挡下（伪造的落点是「保存密码」弹窗，存盘即覆盖真凭据）；
+ * - 其余非 UI 类消息（`loginState` / `sessionProbe` / 数据类…）照常处理；
  * - [type] 为 null（判不出类型）时交回调用方——与 Dart「非 UI 类一律照常处理」同一口径。
+ *
+ * Kotlin 侧现状（诚实边界）：宏录制与回放引擎尚未移植（F08-8c），边界处
+ * `macroRecordingActive` 传的是真实会话状态（现在恒为 IDLE ⇒ 恒 false）、
+ * `foregroundReplayActive` 无对应状态传默认 false；受信 host 一条已随
+ * [trustedPageOrigin] 接到边界（见 `WarehouseWebLoginWebState.shouldDeliverBridgeMessage`）。
+ * 这两个参数先落位，消费方移植时不再改门禁签名。
  */
-fun shouldProcessWarehouseBridgeMessage(type: String?, importExecutionActive: Boolean): Boolean {
+fun shouldProcessWarehouseBridgeMessage(
+    type: String?,
+    importExecutionActive: Boolean,
+    macroRecordingActive: Boolean = false,
+    foregroundReplayActive: Boolean = false,
+    trustedPageOrigin: Boolean = false,
+): Boolean {
     if (type == null) return true
-    if (type !in WAREHOUSE_IMPORT_ONLY_BRIDGE_MESSAGE_TYPES) return true
-    return importExecutionActive
+    return when (type) {
+        "macro:event" -> macroRecordingActive
+        "loginAttempt" ->
+            importExecutionActive || macroRecordingActive ||
+                foregroundReplayActive || trustedPageOrigin
+        else -> if (type !in WAREHOUSE_IMPORT_ONLY_BRIDGE_MESSAGE_TYPES) true else importExecutionActive
+    }
 }
+
+/**
+ * 取 URL 的 host（小写，去掉 userinfo / 端口 / 路径）；解析不出返回空串。
+ *
+ * 不用 `java.net.URI`：它对非 ASCII 主机名（`http://例.com`）直接抛
+ * `URISyntaxException`，而 Dart 的 `Uri.tryParse` 收得下——用 URI 会把合法中文域名的
+ * 门禁判定从「放行/拒绝」扭曲成「抛异常」，行为与 Dart 不一致（同 [warehouseUrlScheme]
+ * 的取舍）。没有 `://` 的输入（相对地址、`about:blank` 一类）按「没有 host」处理。
+ */
+fun warehouseUrlHost(url: String?): String {
+    val text = url?.trim().orEmpty()
+    if (text.isEmpty()) return ""
+    val schemeSep = text.indexOf("://")
+    if (schemeSep < 0) return ""
+    var rest = text.substring(schemeSep + 3)
+    for (sep in charArrayOf('/', '?', '#')) {
+        val cut = rest.indexOf(sep)
+        if (cut >= 0) rest = rest.substring(0, cut)
+    }
+    val at = rest.lastIndexOf('@')
+    if (at >= 0) rest = rest.substring(at + 1)
+    rest = if (rest.startsWith("[")) {
+        // IPv6 字面量 [::1]:8080：取方括号里的地址本体
+        val end = rest.indexOf(']')
+        if (end < 0) return ""
+        rest.substring(1, end)
+    } else {
+        val colon = rest.lastIndexOf(':')
+        if (colon >= 0) rest.substring(0, colon) else rest
+    }
+    return rest.trim().lowercase()
+}
+
+/**
+ * 当前页 URL 是否落在受信 host 集合内（精确或子域）——loginAttempt 门禁的
+ * 「同源放行」锚点。**逐字对齐 Dart**
+ * `lib/domain/warehouse_bridge_gate.dart` 的 `warehouseUrlOnTrustedHosts`。
+ *
+ * 受信 host 由调用方从现有配置构造（[warehouseTrustedLoginHosts]：适配器登记地址 +
+ * 受信自定义地址），这里不做任何硬编码名单。两处（Dart/Kotlin）测试都必须覆盖
+ * `a.trusted.cn` 匹配 `trusted.cn`、而 `trusted.cn.evil.com` 的后缀伪装被拒绝。
+ *
+ * 解析不出 host 的输入（空串、相对地址、非 http 形态）按拒绝处理：门禁
+ * 因此只会更严，不会更松。
+ */
+fun warehouseUrlOnTrustedHosts(url: String?, trustedHosts: Iterable<String>): Boolean {
+    val host = warehouseUrlHost(url)
+    if (host.isEmpty()) return false
+    for (trusted in trustedHosts) {
+        val t = trusted.trim().lowercase()
+        if (t.isEmpty()) continue
+        if (host == t || host.endsWith(".$t")) return true
+    }
+    return false
+}
+
+/**
+ * 受信 host 集合的构造：从**现有配置地址**取 host（适配器登记的登录地址 + 受信的
+ * 自定义导入地址），与 Dart 侧「受信 host 由宿主提供」同一来源口径——不另造一份
+ * 硬编码名单。解析不出 host 的地址直接跳过（门禁只会更严）。
+ */
+fun warehouseTrustedLoginHosts(vararg urls: String?): Set<String> =
+    urls.mapNotNull { warehouseUrlHost(it).takeIf { host -> host.isNotEmpty() } }.toSet()

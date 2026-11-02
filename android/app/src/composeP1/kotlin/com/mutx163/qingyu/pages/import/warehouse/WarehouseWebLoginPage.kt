@@ -61,6 +61,12 @@ fun WarehouseWebLoginPage(
      * 调用方拿到的就是「可以处理」的消息，不需要再判一次。
      */
     onWebBridgeMessage: ((String) -> Unit)? = null,
+    /**
+     * 受信登录地址集合（适配器登记地址 + 受信自定义地址，见宿主）。
+     * `loginAttempt` 门禁的「当前页在受信 host 上」放行锚点从这里来；
+     * 空集合时该放行路径永不生效（门禁只会更严）。
+     */
+    trustedLoginUrls: List<String> = emptyList(),
     onBack: () -> Unit = {},
     onReload: () -> Unit = {},
     onToggleDesktopMode: () -> Unit = {},
@@ -259,12 +265,22 @@ fun WarehouseWebLoginPage(
                 onError = onWebError,
                 onBridgeMessage = { raw ->
                     // ---- §6.2 消息门禁（**不许省**，Dart 修过的钓鱼洞）----
-                    // 宿主对任意页面开放 QingyuBridge，UI 类消息（toast/confirm/prompt/
+                    // 宿主对任意页面开放 QingyuBridge：UI 类消息（toast/confirm/prompt/
                     // singleSelection/error）的唯一合法生产者是导入执行期的适配脚本；
-                    // 不过这道门禁，任意网页都能在原生层弹任意标题/内容的对话框。
+                    // macro:event 只认录制态、loginAttempt 认 执行期/录制态/受信 host
+                    //（2026-11-02 安全审计对齐）。不判就会让任意网页在原生层弹任意
+                    // 标题/内容的对话框，或把伪造的登录尝试送进后续消费者。
                     // 判定放在 WarehouseWebLoginWebState 里（纯逻辑、有 JVM 测试），
                     // 且页面源码级守卫钉着「这里必须调它」。
-                    if (WarehouseWebLoginWebState.shouldDeliverBridgeMessage(raw, sessionState.stage)) {
+                    if (WarehouseWebLoginWebState.shouldDeliverBridgeMessage(
+                            raw,
+                            sessionState.stage,
+                            currentUrl = sessionState.currentUrl,
+                            trustedLoginUrls = trustedLoginUrls,
+                            macroRecordingActive =
+                            sessionState.macroState == WarehouseMacroActionState.RECORDING,
+                        )
+                    ) {
                         onWebBridgeMessage?.invoke(raw)
                     }
                 },
