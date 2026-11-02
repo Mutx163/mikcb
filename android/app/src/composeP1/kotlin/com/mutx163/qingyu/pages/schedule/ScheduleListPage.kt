@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -35,11 +36,12 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -141,9 +143,10 @@ fun ScheduleListPage(
                                         style = MiuixTheme.textStyles.body1,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                     )
-                                    MiuixActionButton(
+                                    ScheduleActionButton(
                                         text = ScheduleStrings.addScheduleAction.zh,
                                         onClick = onAddSchedule,
+                                        primary = true,
                                     )
                                 }
                             }
@@ -201,19 +204,39 @@ fun ScheduleListPage(
                 }
             }
         }
-    }
 
-    // 删除确认弹框
-    deleteCandidate?.let { candidate ->
-        ConfirmDeleteDialog(
+        // 删除确认框：官方 OverlayDialog（遮罩 + 点外部 / 返回键关闭 + 居中）。
+        // 原来是一张裸 QingyuCard 直接画在页面里，既不遮罩也不居中，返回键会退掉整页。
+        val candidate = deleteCandidate
+        OverlayDialog(
+            show = candidate != null,
             title = ScheduleStrings.deleteScheduleTitle.zh,
-            message = ScheduleStrings.deleteScheduleMessage.filled("title", candidate.title),
-            onDismiss = { deleteCandidate = null },
-            onConfirm = {
-                onDeleteSchedule(candidate)
-                deleteCandidate = null
-            },
-        )
+            summary = candidate?.let { ScheduleStrings.deleteScheduleMessage.filled("title", it.title) },
+            onDismissRequest = { deleteCandidate = null },
+            insideMargin = DpSize(16.dp, 16.dp),
+        ) {
+            if (candidate != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = ScheduleStrings.cancelAction.zh,
+                        onClick = { deleteCandidate = null },
+                    )
+                    ScheduleActionButton(
+                        text = ScheduleStrings.deleteAction.zh,
+                        onClick = {
+                            onDeleteSchedule(candidate)
+                            deleteCandidate = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        destructive = true,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -347,61 +370,16 @@ private fun ScheduleListCard(
 
             // 尾部删除与编辑箭头
             Row(verticalAlignment = Alignment.CenterVertically) {
-                MiuixActionButton(
+                ScheduleActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onDelete,
+                    destructive = true,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = MiuixIcons.ChevronForward,
                     contentDescription = null,
                     tint = Color(QingyuTheme.actionIcon(dark)).copy(alpha = primaryAlpha),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ConfirmDeleteDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    val dark = isSystemInDarkTheme()
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        insideMargin = PaddingValues(16.dp),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                MiuixActionButton(
-                    text = ScheduleStrings.cancelAction.zh,
-                    onClick = onDismiss,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                MiuixActionButton(
-                    text = ScheduleStrings.deleteAction.zh,
-                    onClick = onConfirm,
                 )
             }
         }
@@ -445,27 +423,5 @@ private fun parseHexColor(hex: String?, fallback: Color): Color {
         }
     } catch (_: Exception) {
         fallback
-    }
-}
-
-
-/**
- * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
- * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
- * 避免把每处按钮正文都重写一遍。
- */
-@Composable
-private fun MiuixActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
-        Text(
-            text = text,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = MiuixTheme.colorScheme.onPrimary,
-        )
     }
 }

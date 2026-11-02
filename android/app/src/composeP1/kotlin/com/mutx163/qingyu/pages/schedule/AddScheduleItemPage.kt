@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -36,7 +36,6 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -53,6 +52,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 private val kColorPalette = listOf(
     "#6366F1", "#0EA5E9", "#2196F3", "#8B5CF6", "#D946EF",
@@ -624,126 +624,104 @@ fun AddScheduleItemPage(
         }
     }
 
-    // 重复日程修改/删除范围确认弹框
-    if (showOccurrenceScopeDialog) {
-        val titleText = if (pendingActionIsDelete) {
-            ScheduleStrings.scheduleDeleteScopeTitle.zh
-        } else {
-            ScheduleStrings.scheduleEditScopeTitle.zh
-        }
-        val thisActionText = if (pendingActionIsDelete) {
-            ScheduleStrings.scheduleDeleteScopeThis.zh
-        } else {
-            ScheduleStrings.scheduleEditScopeThis.zh
-        }
-        val allActionText = if (pendingActionIsDelete) {
-            ScheduleStrings.scheduleDeleteScopeAll.zh
-        } else {
-            ScheduleStrings.scheduleEditScopeAll.zh
-        }
+    // 重复日程修改/删除范围确认弹框。
+    //
+    // 原来是一张裸 QingyuCard：没有遮罩、点外部不关、返回键会把整个编辑页退掉
+    //（未保存内容一起丢）。现改官方 OverlayDialog 并交给 `show` 驱动：
+    // 返回键 / 点外部只关弹窗，不再退页。
+    val scopeTitleText = if (pendingActionIsDelete) {
+        ScheduleStrings.scheduleDeleteScopeTitle.zh
+    } else {
+        ScheduleStrings.scheduleEditScopeTitle.zh
+    }
+    val thisActionText = if (pendingActionIsDelete) {
+        ScheduleStrings.scheduleDeleteScopeThis.zh
+    } else {
+        ScheduleStrings.scheduleEditScopeThis.zh
+    }
+    val allActionText = if (pendingActionIsDelete) {
+        ScheduleStrings.scheduleDeleteScopeAll.zh
+    } else {
+        ScheduleStrings.scheduleEditScopeAll.zh
+    }
 
-        QingyuCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = titleText,
-                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                    color = Color(QingyuTheme.primaryText(dark)),
+    OverlayDialog(
+        show = showOccurrenceScopeDialog,
+        title = scopeTitleText,
+        onDismissRequest = { showOccurrenceScopeDialog = false },
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = ScheduleStrings.scheduleOccurrenceEditHint.zh,
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+            // 「本次 / 全部」都是出口，没有第三颗取消；两个都用主色实心。
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                ScheduleActionButton(
+                    text = thisActionText,
+                    onClick = {
+                        showOccurrenceScopeDialog = false
+                        val draft = ScheduleItemData(
+                            id = scheduleItem?.id ?: "",
+                            title = title.trim(),
+                            location = location.trim().ifEmpty { null },
+                            note = note.trim().ifEmpty { null },
+                            startDate = startDate,
+                            endDate = endDate,
+                            startTime = startTime,
+                            endTime = endTime,
+                            color = selectedColor,
+                            recurrence = recurrence,
+                            reminderMinutesBefore = reminderMinutes,
+                            enabled = enabled,
+                            seriesId = scheduleItem?.seriesId,
+                            occurrenceDate = occurrenceDate,
+                        )
+                        if (pendingActionIsDelete) {
+                            onDelete(draft, false)
+                        } else {
+                            onSave(draft, false)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    primary = true,
                 )
-                Text(
-                    text = ScheduleStrings.scheduleOccurrenceEditHint.zh,
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
+                ScheduleActionButton(
+                    text = allActionText,
+                    onClick = {
+                        showOccurrenceScopeDialog = false
+                        val draft = ScheduleItemData(
+                            id = scheduleItem?.id ?: "",
+                            title = title.trim(),
+                            location = location.trim().ifEmpty { null },
+                            note = note.trim().ifEmpty { null },
+                            startDate = startDate,
+                            endDate = endDate,
+                            startTime = startTime,
+                            endTime = endTime,
+                            color = selectedColor,
+                            recurrence = recurrence,
+                            reminderMinutesBefore = reminderMinutes,
+                            enabled = enabled,
+                            seriesId = scheduleItem?.seriesId,
+                            occurrenceDate = occurrenceDate,
+                        )
+                        if (pendingActionIsDelete) {
+                            onDelete(draft, true)
+                        } else {
+                            onSave(draft, true)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    primary = true,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    MiuixActionButton(
-                        text = thisActionText,
-                        onClick = {
-                            showOccurrenceScopeDialog = false
-                            val draft = ScheduleItemData(
-                                id = scheduleItem?.id ?: "",
-                                title = title.trim(),
-                                location = location.trim().ifEmpty { null },
-                                note = note.trim().ifEmpty { null },
-                                startDate = startDate,
-                                endDate = endDate,
-                                startTime = startTime,
-                                endTime = endTime,
-                                color = selectedColor,
-                                recurrence = recurrence,
-                                reminderMinutesBefore = reminderMinutes,
-                                enabled = enabled,
-                                seriesId = scheduleItem?.seriesId,
-                                occurrenceDate = occurrenceDate,
-                            )
-                            if (pendingActionIsDelete) {
-                                onDelete(draft, false)
-                            } else {
-                                onSave(draft, false)
-                            }
-                        },
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    MiuixActionButton(
-                        text = allActionText,
-                        onClick = {
-                            showOccurrenceScopeDialog = false
-                            val draft = ScheduleItemData(
-                                id = scheduleItem?.id ?: "",
-                                title = title.trim(),
-                                location = location.trim().ifEmpty { null },
-                                note = note.trim().ifEmpty { null },
-                                startDate = startDate,
-                                endDate = endDate,
-                                startTime = startTime,
-                                endTime = endTime,
-                                color = selectedColor,
-                                recurrence = recurrence,
-                                reminderMinutesBefore = reminderMinutes,
-                                enabled = enabled,
-                                seriesId = scheduleItem?.seriesId,
-                                occurrenceDate = occurrenceDate,
-                            )
-                            if (pendingActionIsDelete) {
-                                onDelete(draft, true)
-                            } else {
-                                onSave(draft, true)
-                            }
-                        },
-                    )
-                }
             }
         }
     }
-    }
-}
-
-
-/**
- * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
- * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
- * 避免把每处按钮正文都重写一遍。
- */
-@Composable
-private fun MiuixActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
-        Text(
-            text = text,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = MiuixTheme.colorScheme.onPrimary,
-        )
     }
 }

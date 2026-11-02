@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.schedule
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -23,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -30,16 +33,19 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import com.mutx163.qingyu.components.QingyuPageTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -65,6 +71,9 @@ fun ScheduleDateRulePage(
     var isAddingNew by remember { mutableStateOf(false) }
     var deletingRule by remember { mutableStateOf<ScheduleDateRuleData?>(null) }
     var bannerMessage by remember { mutableStateOf<String?>(null) }
+    // 弹层常驻（为了退场动画），表单状态不能只靠「重新进入组合」重置；
+    // 每次打开编辑框都递增这个会话号，编辑框里用 remember(session) 重建字段。
+    var editorSession by remember { mutableStateOf(0) }
 
     // 顶栏折叠行为：Dart 侧 schedule_date_rule_screen.dart:27 走 HyperosSubpage 默认参数
     //（overlayHeader / collapsibleLargeTitle 均 true）。
@@ -109,6 +118,7 @@ fun ScheduleDateRulePage(
                                     endDate = "2027-04-30",
                                     enabled = true,
                                 )
+                                editorSession++
                             },
                         ) {
                             Icon(
@@ -184,12 +194,12 @@ fun ScheduleDateRulePage(
                                         style = MiuixTheme.textStyles.body1,
                                         color = Color(QingyuTheme.secondaryText(dark)),
                                     )
-                                    MiuixActionButton(
+                                    ScheduleActionButton(
                                         text = ScheduleStrings.scheduleDateRuleAdd.zh,
                                         onClick = {
                                             if (availableSchemes.isEmpty()) {
                                                 bannerMessage = ScheduleStrings.scheduleDateRuleNeedScheme.zh
-                                                return@MiuixActionButton
+                                                return@ScheduleActionButton
                                             }
                                             bannerMessage = null
                                             isAddingNew = true
@@ -201,7 +211,9 @@ fun ScheduleDateRulePage(
                                                 endDate = "2027-04-30",
                                                 enabled = true,
                                             )
+                                            editorSession++
                                         },
+                                        primary = true,
                                     )
                                 }
                             }
@@ -217,6 +229,7 @@ fun ScheduleDateRulePage(
                             onEdit = {
                                 isAddingNew = false
                                 editingRule = item.rule
+                                editorSession++
                             },
                             onDelete = {
                                 deletingRule = item.rule
@@ -226,13 +239,12 @@ fun ScheduleDateRulePage(
                 }
             }
         }
-    }
 
-    // 新增/编辑规则弹框
-    editingRule?.let { draft ->
+        // 新增/编辑规则弹框：官方 OverlayDialog，由 `show` 驱动（弹层常驻，退场动画不被掐）。
         RuleEditorDialog(
-            draft = draft,
+            draft = editingRule,
             isNew = isAddingNew,
+            session = editorSession,
             existingRules = rules.map { it.rule },
             availableSchemes = availableSchemes,
             dark = dark,
@@ -242,16 +254,13 @@ fun ScheduleDateRulePage(
                 editingRule = null
             },
         )
-    }
 
-    // 删除规则确认框
-    deletingRule?.let { candidate ->
+        // 删除规则确认框
         RuleDeleteConfirmDialog(
-            candidate = candidate,
-            dark = dark,
+            candidate = deletingRule,
             onDismiss = { deletingRule = null },
-            onConfirm = {
-                onDeleteRule(candidate)
+            onConfirm = { rule ->
+                onDeleteRule(rule)
                 deletingRule = null
             },
         )
@@ -313,14 +322,15 @@ private fun ScheduleDateRuleCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MiuixActionButton(
+                ScheduleActionButton(
                     text = ScheduleStrings.editAction.zh,
                     onClick = onEdit,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                MiuixActionButton(
+                ScheduleActionButton(
                     text = ScheduleStrings.deleteAction.zh,
                     onClick = onDelete,
+                    destructive = true,
                 )
             }
         }
@@ -329,148 +339,176 @@ private fun ScheduleDateRuleCard(
 
 @Composable
 private fun RuleEditorDialog(
-    draft: ScheduleDateRuleData,
+    draft: ScheduleDateRuleData?,
     isNew: Boolean,
+    session: Int,
     existingRules: List<ScheduleDateRuleData>,
     availableSchemes: List<Pair<String, String>>,
     dark: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (ScheduleDateRuleData) -> Unit,
 ) {
-    var name by remember { mutableStateOf(draft.name) }
-    var startDate by remember { mutableStateOf(draft.startDate) }
-    var endDate by remember { mutableStateOf(draft.endDate) }
-    var schemeId by remember { mutableStateOf(draft.timeSchemeId) }
-    var enabled by remember { mutableStateOf(draft.enabled) }
-    var dialogError by remember { mutableStateOf<String?>(null) }
+    // 弹层常驻（为了退场动画），字段状态按 `session` 重建：否则关掉再开同一条规则，
+    // 会看到上一次没提交的编辑残留。
+    val currentDraft = draft
+    var name by remember(session) { mutableStateOf(currentDraft?.name.orEmpty()) }
+    var startDate by remember(session) { mutableStateOf(currentDraft?.startDate.orEmpty()) }
+    var endDate by remember(session) { mutableStateOf(currentDraft?.endDate.orEmpty()) }
+    var schemeId by remember(session) { mutableStateOf(currentDraft?.timeSchemeId.orEmpty()) }
+    var enabled by remember(session) { mutableStateOf(currentDraft?.enabled ?: true) }
+    var dialogError by remember(session) { mutableStateOf<String?>(null) }
 
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp),
-        insideMargin = PaddingValues(16.dp),
+    // 字段多：矮屏或键盘弹出时必须能滚。限高按屏高走，动作行固定留在滚动区外。
+    // 不用 `Column + verticalScroll`（R2 守卫判红、且非惰性），走官方 LazyColumn + 滚动两件套。
+    val maxFormHeight = (LocalConfiguration.current.screenHeightDp * 0.55f).dp
+
+    OverlayDialog(
+        show = currentDraft != null,
+        title = if (isNew) {
+            ScheduleStrings.scheduleDateRuleAdd.zh
+        } else {
+            ScheduleStrings.scheduleDateRuleEdit.zh
+        },
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                text = if (isNew) ScheduleStrings.scheduleDateRuleAdd.zh else ScheduleStrings.scheduleDateRuleEdit.zh,
-                style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
+        if (currentDraft != null) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxFormHeight)
+                        .scrollEndHaptic()
+                        .overScrollVertical(),
+                ) {
+                    item(key = "form") {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            dialogError?.let { err ->
+                                Text(
+                                    text = err,
+                                    color = Color(QingyuTheme.error(dark)),
+                                    style = MiuixTheme.textStyles.footnote1,
+                                )
+                            }
 
-            dialogError?.let { err ->
-                Text(
-                    text = err,
-                    color = Color(QingyuTheme.error(dark)),
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-            }
+                            TextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                label = ScheduleStrings.scheduleDateRuleNameLabel.zh,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
 
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                label = ScheduleStrings.scheduleDateRuleNameLabel.zh,
-                modifier = Modifier.fillMaxWidth(),
-            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextField(
+                                    value = startDate,
+                                    onValueChange = { startDate = it },
+                                    label = ScheduleStrings.scheduleDateRuleStartDate.zh,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                TextField(
+                                    value = endDate,
+                                    onValueChange = { endDate = it },
+                                    label = ScheduleStrings.scheduleDateRuleEndDate.zh,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = startDate,
-                    onValueChange = { startDate = it },
-                    label = ScheduleStrings.scheduleDateRuleStartDate.zh,
-                    modifier = Modifier.weight(1f),
-                )
-                TextField(
-                    value = endDate,
-                    onValueChange = { endDate = it },
-                    label = ScheduleStrings.scheduleDateRuleEndDate.zh,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            // 方案单选行
-            Text(
-                text = ScheduleStrings.scheduleDateRuleBoundScheme.zh,
-                style = MiuixTheme.textStyles.footnote1,
-                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for ((id, schemeName) in availableSchemes) {
-                    val isSelected = schemeId == id
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { schemeId = id }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = schemeName,
-                            style = MiuixTheme.textStyles.body2.shiftWeight(
-                                if (isSelected) QingyuWeightDelta.SEMIBOLD else 0,
-                            ),
-                            color = if (isSelected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.primaryText(dark)),
-                        )
-                        if (isSelected) {
+                            // 方案单选行
                             Text(
-                                text = "✓",
-                                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
-                                color = Color(QingyuTheme.primary(dark = dark)),
+                                text = ScheduleStrings.scheduleDateRuleBoundScheme.zh,
+                                style = MiuixTheme.textStyles.footnote1,
+                                // 与 QingyuTheme.sectionLabel(dark) 在主题桥里同值，走语义槽取色（R5/R6）。
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                for ((id, schemeName) in availableSchemes) {
+                                    val isSelected = schemeId == id
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { schemeId = id }
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        Text(
+                                            text = schemeName,
+                                            style = MiuixTheme.textStyles.body2.shiftWeight(
+                                                if (isSelected) QingyuWeightDelta.SEMIBOLD else 0,
+                                            ),
+                                            color = if (isSelected) {
+                                                Color(QingyuTheme.primary(dark = dark))
+                                            } else {
+                                                Color(QingyuTheme.primaryText(dark))
+                                            },
+                                        )
+                                        if (isSelected) {
+                                            Text(
+                                                text = "✓",
+                                                style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
+                                                color = Color(QingyuTheme.primary(dark = dark)),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2026-10-29 修（审核 misc-wiring P1-7）：原来是「文字 + 一颗会变字的按钮」，
+                            // 按钮文案 `已启用` / `已停用` 是渲染层写死的中文，ARB 里没有这两个词；
+                            // 而 Dart `schedule_date_rule_screen.dart:328-333` 用的是带 label 的开关
+                            // （`_DateRuleSwitchField`：左侧文案 + 右侧 `HyperosSwitch`，整行可点）。
+                            // 现改回官方 `SwitchPreference`，文案走 `ScheduleStrings.scheduleDateRuleEnabled`（="启用"）。
+                            SwitchPreference(
+                                title = ScheduleStrings.scheduleDateRuleEnabled.zh,
+                                checked = enabled,
+                                onCheckedChange = { enabled = it },
                             )
                         }
                     }
                 }
-            }
 
-            // 2026-10-29 修（审核 misc-wiring P1-7）：原来是「文字 + 一颗会变字的按钮」，
-            // 按钮文案 `已启用` / `已停用` 是渲染层写死的中文，ARB 里没有这两个词；
-            // 而 Dart `schedule_date_rule_screen.dart:328-333` 用的是带 label 的开关
-            // （`_DateRuleSwitchField`：左侧文案 + 右侧 `HyperosSwitch`，整行可点）。
-            // 现改回官方 `SwitchPreference`，文案走 `ScheduleStrings.scheduleDateRuleEnabled`（="启用"）。
-            SwitchPreference(
-                title = ScheduleStrings.scheduleDateRuleEnabled.zh,
-                checked = enabled,
-                onCheckedChange = { enabled = it },
-            )
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(10.dp))
 
-            HorizontalDivider(modifier = Modifier.fillMaxWidth())
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                MiuixActionButton(
-                    text = ScheduleStrings.cancelAction.zh,
-                    onClick = onDismiss,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                MiuixActionButton(
-                    text = ScheduleStrings.saveAction.zh,
-                    onClick = {
-                        val candidate = draft.copy(
-                            name = name.trim(),
-                            startDate = startDate.trim(),
-                            endDate = endDate.trim(),
-                            timeSchemeId = schemeId,
-                            enabled = enabled,
-                        )
-                        val result = ScheduleDateRuleDomain.validateRule(
-                            draft = candidate,
-                            existingRules = existingRules,
-                            isEditing = !isNew,
-                        )
-                        when (result) {
-                            is ScheduleDateRuleValidationResult.Valid -> {
-                                dialogError = null
-                                onConfirm(candidate)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TextButton(
+                        modifier = Modifier.weight(1f),
+                        text = ScheduleStrings.cancelAction.zh,
+                        onClick = onDismiss,
+                    )
+                    ScheduleActionButton(
+                        text = ScheduleStrings.saveAction.zh,
+                        onClick = {
+                            val candidate = currentDraft.copy(
+                                name = name.trim(),
+                                startDate = startDate.trim(),
+                                endDate = endDate.trim(),
+                                timeSchemeId = schemeId,
+                                enabled = enabled,
+                            )
+                            val result = ScheduleDateRuleDomain.validateRule(
+                                draft = candidate,
+                                existingRules = existingRules,
+                                isEditing = !isNew,
+                            )
+                            when (result) {
+                                is ScheduleDateRuleValidationResult.Valid -> {
+                                    dialogError = null
+                                    onConfirm(candidate)
+                                }
+                                is ScheduleDateRuleValidationResult.Invalid -> {
+                                    dialogError = result.errorText
+                                }
                             }
-                            is ScheduleDateRuleValidationResult.Invalid -> {
-                                dialogError = result.errorText
-                            }
-                        }
-                    },
-                )
+                        },
+                        modifier = Modifier.weight(1f),
+                        primary = true,
+                    )
+                }
             }
         }
     }
@@ -478,64 +516,36 @@ private fun RuleEditorDialog(
 
 @Composable
 private fun RuleDeleteConfirmDialog(
-    candidate: ScheduleDateRuleData,
-    dark: Boolean,
+    candidate: ScheduleDateRuleData?,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (ScheduleDateRuleData) -> Unit,
 ) {
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        insideMargin = PaddingValues(16.dp),
+    OverlayDialog(
+        show = candidate != null,
+        title = ScheduleStrings.scheduleDateRuleDeleteTitle.zh,
+        summary = candidate?.let {
+            ScheduleStrings.scheduleDateRuleDeleteMessage.filled("name", it.name)
+        },
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = ScheduleStrings.scheduleDateRuleDeleteTitle.zh,
-                style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            Text(
-                text = ScheduleStrings.scheduleDateRuleDeleteMessage.filled("name", candidate.name),
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
+        if (candidate != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                MiuixActionButton(
+                TextButton(
+                    modifier = Modifier.weight(1f),
                     text = ScheduleStrings.cancelAction.zh,
                     onClick = onDismiss,
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                MiuixActionButton(
+                ScheduleActionButton(
                     text = ScheduleStrings.deleteAction.zh,
-                    onClick = onConfirm,
+                    onClick = { onConfirm(candidate) },
+                    modifier = Modifier.weight(1f),
+                    destructive = true,
                 )
             }
         }
-    }
-}
-
-
-/**
- * miuix 0.9.4 对齐补丁：0.9.4 的 `Button` 只有 `content: @Composable RowScope.() -> Unit`，
- * 不再有 `text` 参数（0.8.8 才有）。这里包一层，保持既有调用点的 `text = …` 形状，
- * 避免把每处按钮正文都重写一遍。
- */
-@Composable
-private fun MiuixActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Button(onClick = onClick, modifier = modifier, enabled = enabled) {
-        Text(
-            text = text,
-            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = MiuixTheme.colorScheme.onPrimary,
-        )
     }
 }
