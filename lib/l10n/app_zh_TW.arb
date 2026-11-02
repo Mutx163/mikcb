@@ -1786,6 +1786,7 @@
       }
     }
   },
+  "importReplaceExistingGuidance": "日常更新建議優先選擇更新課表，保留本地獨有課程並合併新課程",
   "importNoCoursesRecognized": "未識別到可匯入課程",
   "importConfirmSemesterMappingTitle": "確認開學日期和週次對應",
   "importConfirmSemesterMappingSubtitleIcs": "週次已按檔案裡最早的上課日期預填",

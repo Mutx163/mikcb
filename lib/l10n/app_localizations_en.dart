@@ -3878,6 +3878,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get importReplaceExistingGuidance =>
+      'For everyday updates, prefer Update timetable — it keeps courses unique to this device and merges in new ones.';
+
+  @override
   String get importNoCoursesRecognized =>
       'No importable courses were recognized';
 

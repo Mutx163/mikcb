@@ -537,10 +537,6 @@ fun parseImportAccentHex(slot: String): Long = when (slot.trim().lowercase()) {
     else -> 0xFF3482FF
 }
 
-/** Dart `askImportReplaceExisting` 正文末尾的固定引导句（硬编码，不在 ARB）。 */
-private const val IMPORT_REPLACE_EXISTING_GUIDANCE =
-    "日常更新建议优先选择更新课表，保留本地独有课程并合并新课程"
-
 // ==========================================================================
 // 导入流程的三个弹层（2026-10-29 · F07 接线补）
 //
@@ -666,7 +662,7 @@ fun ImportPreviewDialog(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = IMPORT_REPLACE_EXISTING_GUIDANCE,
+                                text = ImportStrings.importReplaceExistingGuidance.zh,
                                 style = MiuixTheme.textStyles.body2,
                                 lineHeight = 20.sp,
                                 color = Color(QingyuTheme.secondaryText(dark)),

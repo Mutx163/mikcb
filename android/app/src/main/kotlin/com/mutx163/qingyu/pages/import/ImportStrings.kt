@@ -100,6 +100,12 @@ object ImportStrings {
         "importReplaceExistingMessage",
         "导入 {name} 时是否替换现有课程？此操作将同时清空自习等独立日程。",
     )
+    // Dart 侧这句是写死在 `askImportReplaceExisting` 正文末尾的引导句（不在 Dart ARB）；
+    // Compose 侧不能照抄硬编码——en/ja/ko/zh-TW 用户会看到中文，2026-11-02 补进六份 ARB。
+    val importReplaceExistingGuidance = ImportArbText(
+        "importReplaceExistingGuidance",
+        "日常更新建议优先选择更新课表，保留本地独有课程并合并新课程",
+    )
     val courseImportUpdateRecommendedAction = ImportArbText("courseImportUpdateRecommendedAction", "更新课表 推荐")
     val courseImportOverwriteAction = ImportArbText("courseImportOverwriteAction", "覆盖导入")
     val importConfirmSemesterMappingTitle = ImportArbText("importConfirmSemesterMappingTitle", "确认开学日期和周次对应")
@@ -224,6 +230,7 @@ object ImportStrings {
             saveFailed,
             importReplaceExistingTitle,
             importReplaceExistingMessage,
+            importReplaceExistingGuidance,
             courseImportUpdateRecommendedAction,
             courseImportOverwriteAction,
             importConfirmSemesterMappingTitle,

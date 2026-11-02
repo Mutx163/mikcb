@@ -3674,6 +3674,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get importReplaceExistingGuidance => '日常更新建议优先选择更新课表，保留本地独有课程并合并新课程';
+
+  @override
   String get importNoCoursesRecognized => '未识别到可导入课程';
 
   @override
@@ -13669,6 +13672,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String importReplaceExistingMessage(String name) {
     return '導入 $name 時是否替換現有課程？此操作將同時清空自習等獨立日程。';
   }
+
+  @override
+  String get importReplaceExistingGuidance => '日常更新建議優先選擇更新課表，保留本地獨有課程並合併新課程';
 
   @override
   String get importNoCoursesRecognized => '未識別到可匯入課程';
@@ -23706,6 +23712,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String importReplaceExistingMessage(String name) {
     return '導入 $name 時是否替換現有課程？此操作將同時清空自習等獨立日程。';
   }
+
+  @override
+  String get importReplaceExistingGuidance => '日常更新建議優先選擇更新課表，保留本地獨有課程並合併新課程';
 
   @override
   String get importNoCoursesRecognized => '未識別到可匯入課程';

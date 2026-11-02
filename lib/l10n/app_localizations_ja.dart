@@ -3738,6 +3738,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get importReplaceExistingGuidance =>
+      '日常の更新では「Update timetable」を優先してください。この端末のみの授業を残し、新しい授業を取り込みます。';
+
+  @override
   String get importNoCoursesRecognized => 'インポート可能な授業が認識されませんでした';
 
   @override

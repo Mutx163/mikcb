@@ -2008,6 +2008,7 @@
       }
     }
   },
+  "importReplaceExistingGuidance": "For everyday updates, prefer Update timetable — it keeps courses unique to this device and merges in new ones.",
   "importNoCoursesRecognized": "No importable courses were recognized",
   "importConfirmSemesterMappingTitle": "Confirm semester start date and week mapping",
   "importConfirmSemesterMappingSubtitleIcs": "Weeks pre-filled from file",

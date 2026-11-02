@@ -6846,6 +6846,12 @@ abstract class AppLocalizations {
   /// **'导入 {name} 时是否替换现有课程？此操作将同时清空自习等独立日程。'**
   String importReplaceExistingMessage(String name);
 
+  /// No description provided for @importReplaceExistingGuidance.
+  ///
+  /// In zh, this message translates to:
+  /// **'日常更新建议优先选择更新课表，保留本地独有课程并合并新课程'**
+  String get importReplaceExistingGuidance;
+
   /// No description provided for @importNoCoursesRecognized.
   ///
   /// In zh, this message translates to:

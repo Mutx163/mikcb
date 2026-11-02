@@ -3753,6 +3753,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get importReplaceExistingGuidance =>
+      '일상적인 업데이트는 Update timetable을 먼저 선택하세요. 이 기기에만 있는 수업을 유지하고 새 수업을 병합합니다.';
+
+  @override
   String get importNoCoursesRecognized => '가져올 수 있는 수업이 인식되지 않았습니다';
 
   @override
