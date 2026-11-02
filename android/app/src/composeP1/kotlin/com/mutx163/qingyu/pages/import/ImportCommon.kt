@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -576,17 +577,24 @@ fun ImportPreviewDialog(
     onCancel: () -> Unit,
     onConfirm: (ImportPreviewChoice) -> Unit,
 ) {
-    if (!show) return
     val dark = isSystemInDarkTheme()
     val maxWeek = lastAllowedWeek.coerceAtLeast(1)
-    var startDate by remember(show, semesterStartDate) { mutableStateOf(semesterStartDate) }
-    var firstWeek by remember(show, initialFirstCourseWeek) {
-        mutableIntStateOf(initialFirstCourseWeek.coerceIn(1, maxWeek))
+    // 弹层常驻组合、可见性只交给 show（提前 return 会把 OverlayDialog 整棵摘出组合，
+    // 官方 260ms 退场动画一次都不播；规矩见
+    // .agents/notes/implemented/architecture/2026-11-02-settings-dialogs-persistent-composition.md）。
+    // 打开时重置步进值：remember 初值只算一次，靠 LaunchedEffect(show) 在每次打开时回填。
+    var startDate by remember { mutableStateOf(semesterStartDate) }
+    var firstWeek by remember { mutableIntStateOf(initialFirstCourseWeek.coerceIn(1, maxWeek)) }
+    LaunchedEffect(show, semesterStartDate, initialFirstCourseWeek, lastAllowedWeek) {
+        if (show) {
+            startDate = semesterStartDate
+            firstWeek = initialFirstCourseWeek.coerceIn(1, maxWeek)
+        }
     }
 
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+        show = show,
         title = ImportStrings.importReplaceExistingTitle.zh,
         onDismissRequest = onCancel,
     ) {
@@ -747,11 +755,12 @@ fun ImportCapacityDialog(
     onCancel: () -> Unit,
     onAutoFill: () -> Unit,
 ) {
-    if (!show) return
     val dark = isSystemInDarkTheme()
+    // 常驻组合、show 驱动显隐：提前 return 会让官方 260ms 退场动画一次都不播
+    //（与 ImportPreviewDialog 同一条规矩）。
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+        show = show,
         title = ImportStrings.courseImportSectionCountInsufficientTitle.zh,
         onDismissRequest = onCancel,
     ) {
