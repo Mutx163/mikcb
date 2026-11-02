@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.core.ClassAlarmEvent
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme

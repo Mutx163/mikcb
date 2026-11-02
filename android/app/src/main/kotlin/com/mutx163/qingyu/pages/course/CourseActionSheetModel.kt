@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.pages.course
 
+import com.mutx163.qingyu.core.ClassAlarmPlanLogic
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.course.CourseDomain

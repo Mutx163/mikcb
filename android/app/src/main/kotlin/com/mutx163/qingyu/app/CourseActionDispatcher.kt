@@ -2,9 +2,9 @@ package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseSessionNote
+import com.mutx163.qingyu.core.ClassAlarmPlanLogic
 import com.mutx163.qingyu.course.TimetableCoursePort
 import com.mutx163.qingyu.course.TimetableCourseService
-import com.mutx163.qingyu.pages.course.ClassAlarmPlanLogic
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID

@@ -27,8 +27,8 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.SystemAlarmHelper
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
-import com.mutx163.qingyu.pages.course.ClassAlarmEvent
-import com.mutx163.qingyu.pages.course.ClassAlarmPlanLogic
+import com.mutx163.qingyu.core.ClassAlarmEvent
+import com.mutx163.qingyu.core.ClassAlarmPlanLogic
 import com.mutx163.qingyu.pages.course.CourseActionEvent
 import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.pages.course.CourseActionSheetModel

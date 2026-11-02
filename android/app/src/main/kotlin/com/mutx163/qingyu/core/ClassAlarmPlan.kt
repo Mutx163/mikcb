@@ -1,6 +1,5 @@
-package com.mutx163.qingyu.pages.course
+package com.mutx163.qingyu.core
 
-import com.mutx163.qingyu.core.Course
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -29,6 +28,11 @@ data class ClassAlarmPlan(
  *
  * Dart 的「单节课提醒」现状（2026-10 迁移保留）：写入走**系统时钟**每周重复闹钟；
  * 旧版「课程×真实日期」一次性本地通知条目只读不写。本层只管前者。
+ *
+ * 位置说明（2026-11-02 自 `pages/course/` 下沉到 `core/`）：`app/` 是每个 L0 模块
+ * 都收编的共享目录，`CourseActionDispatcher` 需要引用 [ClassAlarmPlanLogic]，
+ * 共享层不得反向依赖页面域（`pages/` 只在 `-Module pages/course` 时才进 classpath），
+ * 故纯逻辑落共享层。对外形状（类型名 / 签名）不变。
  */
 object ClassAlarmPlanLogic {
 
@@ -180,8 +184,8 @@ object ClassAlarmPlanLogic {
 /**
  * 「这节课闹钟」子弹层抛给宿主的事件（弹层自身不起 Intent、不写库）。
  *
- * 与 [CourseActionEvent] 分开：这两个动作**不写课程库**，只碰系统时钟；
- * 宿主（壳）负责拼应用名前缀、调 `SystemAlarmHelper` 并弹 toast。
+ * 与 `CourseActionEvent`（`pages/course` 包，弹层动作事件）分开：这两个动作**不写课程库**，
+ * 只碰系统时钟；宿主（壳）负责拼应用名前缀、调 `SystemAlarmHelper` 并弹 toast。
  */
 sealed interface ClassAlarmEvent {
 

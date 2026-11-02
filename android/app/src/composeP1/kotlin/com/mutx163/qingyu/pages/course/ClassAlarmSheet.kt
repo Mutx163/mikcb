@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.core.ClassAlarmEvent
+import com.mutx163.qingyu.core.ClassAlarmPlan
+import com.mutx163.qingyu.core.ClassAlarmPlanLogic
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.exam.ExamTimePickerSheet
 import com.mutx163.qingyu.theme.QingyuTheme
