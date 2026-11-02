@@ -1,6 +1,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/timetable_settings.dart';
@@ -197,9 +198,11 @@ SummaryFlightInput buildSummaryFlightInput({
       ? ''
       : '${date.month.toString().padLeft(2, '0')}/'
             '${date.day.toString().padLeft(2, '0')}';
+  // 与真摘要卡同一格式（`_formatDayViewSummaryDate`）：DateFormat.MMMd 按
+  // 当前语言出「3月20日 / Mar 20」，英文环境不再闪中文。
   final title = date == null
       ? weekday
-      : '${date.month}月${date.day}日 $weekday';
+      : '${DateFormat.MMMd(l10n.localeName).format(date)} $weekday';
   // ⚠️ 判墨必须与真摘要卡**逐输入一致**，否则起飞与落定两端的字色不同。
   //
   // 三件事都要对齐（少一件都会偏）：
