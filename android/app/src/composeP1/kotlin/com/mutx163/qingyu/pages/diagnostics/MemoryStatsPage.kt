@@ -295,9 +295,15 @@ fun MemoryStatsPage(
     }
 
     val sheet = openSheet?.let { viewState.sheets[it] }
+    // 弹层常驻组合：关闭只翻 `show`，正文用 remember 保留的最后一份非空快照渲染 ——
+    // 否则 `openSheet` 置 null 的瞬间标题/正文/限高一起清空，退场动画播的是空板
+    //（先例：.agents/notes/implemented/architecture/2026-11-02-settings-dialogs-persistent-composition.md）。
+    var shownSheet by remember { mutableStateOf(sheet) }
+    if (sheet != null) shownSheet = sheet
+    val currentSheet = shownSheet
     QingyuSheet(
         show = sheet != null,
-        title = sheet?.title,
+        title = currentSheet?.title,
         onDismissRequest = { openSheet = null },
         // 正文自己带 16dp（LazyColumn 的 contentPadding）⇒ 套件侧边距归零，避免叠成 32。
         contentPadsHorizontally = true,
@@ -306,10 +312,10 @@ fun MemoryStatsPage(
         contentScrolls = true,
         // Dart 每个弹层的限高比例不同（0.62 / 0.68 / 0.72）⇒ 走套件现成的限高参数，
         // 不在正文里再写一层 `heightIn`（两处限高会打架，且套件这边更清楚让位的落点）。
-        maxHeightFraction = sheet?.let { sheetMaxHeightFraction(it) },
+        maxHeightFraction = currentSheet?.let { sheetMaxHeightFraction(it) },
     ) {
-        if (sheet != null) {
-            MemorySheetBody(sheet = sheet, dark = dark, bottomInset = bottomInset)
+        if (currentSheet != null) {
+            MemorySheetBody(sheet = currentSheet, dark = dark, bottomInset = bottomInset)
         }
     }
 }

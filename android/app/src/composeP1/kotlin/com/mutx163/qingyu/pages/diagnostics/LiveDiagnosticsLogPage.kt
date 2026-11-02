@@ -303,8 +303,8 @@ fun LiveDiagnosticsLogPage(
         // 内容自己写了左右 8dp；miuix 对话框默认 insideMargin 是 (24,24) ⇒ 合起来单边 32dp。
         // 横向给 8dp：8（框架）+ 8（内容）= **16dp**，正好是本仓 Dart 对话框的口径
         //（`docs/reference/changelog-2026-07-30-sheet-fixes.md`：`EdgeInsets.fromLTRB(16,16,16,16)`）。
-        // 纵向仍用 miuix 默认 24（Dart 是 16）—— 纵向逐内容核对未做，记在审核报告 §五，不在这一批改。
-        insideMargin = DpSize(8.dp, 24.dp),
+        // 纵向内容无自带边距，直接给 16dp（与其他弹层一致，不再用 miuix 默认 24）。
+        insideMargin = DpSize(8.dp, 16.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
