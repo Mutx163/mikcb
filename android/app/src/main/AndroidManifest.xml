@@ -189,8 +189,26 @@
               android:resource="@style/NormalTheme"
               />
             <!-- 2026-11-02 起这里不再带 MAIN/LAUNCHER（启动页已换成 .pages.PagesShellActivity）。
-                 Activity 本身与下面全部视图/导入过滤规则保留：回退只需把上面那段
-                 launcher intent-filter 挪回本处，文件导入与 umeng scheme 的落点不变。 -->
+                 2026-11-02（R1 补口）起 VIEW/SEND 导入与 umeng scheme 的过滤规则也搬走了：
+                 全部挪到 .pages.ShellExternalEntryActivity（透明跳板，不依赖 Flutter），删掉
+                 Flutter 后那三条外部入口仍有落点。回退 = 把跳板上的 intent-filter 段
+                 挪回本 Activity（与 launcher intent-filter 的回退方式同构）。 -->
+        </activity>
+
+        <!-- 外部入口跳板（R1 补口 2026-11-02）：VIEW/SEND 文件导入、umeng scheme、
+             （debug overlay 的）mikcb-debug 深链都先落到这里。透明 + noHistory +
+             excludeFromRecents，用户感知不到这一跳；解析/读取逻辑在
+             pages/ShellExternalEntryActivity.kt 与纯 Kotlin 的
+             pages/shell/ShellExternalEntry.kt，解析完把壳拉到前台并带上落点
+             （PagesShellActivity 组合树里 ShellExternalEntryEffect 一行消费）。
+             过滤规则自 .MainActivity 原样搬移（逐条未改，2026-11-02）。 -->
+        <activity
+            android:name=".pages.ShellExternalEntryActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:noHistory="true"
+            android:excludeFromRecents="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
