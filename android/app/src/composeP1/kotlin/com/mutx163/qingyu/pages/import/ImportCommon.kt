@@ -417,6 +417,7 @@ fun ImportActionButton(
     loading: Boolean = false,
     enabled: Boolean = true,
 ) {
+    val dark = isSystemInDarkTheme()
     val content: @Composable () -> Unit = {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -429,14 +430,17 @@ fun ImportActionButton(
         }
     }
     if (secondary) {
-        // Dart HyperosButtonVariant.secondary：浅底 + 主色文字（与 AI 导入页同款取法）。
+        // Dart HyperosButtonVariant.secondary：`#E6E6E6`（暗 0xFF505050）底 + 主文本字
+        //（`hyperos_controls.dart:657-818`，与 transfer 域 TransferButton 同款取法）。
+        // 以前用 miuix 的 surfaceVariant：深色下与对话框底同为 #242424，按钮直接
+        // 「隐身」；浅色下白底蓝字又比灰底主按钮更抢眼（审核报告 P2 旧 :429）。
         Button(
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
             enabled = enabled && !loading,
             colors = ButtonDefaults.buttonColors(
-                color = MiuixTheme.colorScheme.surfaceVariant,
-                contentColor = MiuixTheme.colorScheme.primary,
+                color = Color(QingyuTheme.secondary(dark)),
+                contentColor = Color(QingyuTheme.primaryText(dark)),
             ),
         ) { content() }
     } else {
