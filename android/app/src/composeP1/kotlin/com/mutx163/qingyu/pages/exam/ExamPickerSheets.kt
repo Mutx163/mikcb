@@ -149,8 +149,11 @@ fun ExamDatePickerSheet(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Dart 弹层选项区上限是屏高的 0.64（`add_exam_screen.dart:301-304` 同口径）。
-                    .heightIn(max = (LocalScreenHeight() * 0.64f).dp)
+                    // Dart 弹层选项区上限是屏高的 0.64（`add_exam_screen.dart:301-304` 同口径）；
+                    // 但本弹层列表之下还有星期按钮行与取消/确认行等固定件，0.64 在矮屏/大字号
+                    // 时会把底部按钮挤出面板（2026-11-02 弹窗审核 P2 已知债）——收到 0.55 给
+                    // 固定件留出高度。矮屏表现仍需真机复核。
+                    .heightIn(max = (LocalScreenHeight() * 0.55f).dp)
                     .scrollEndHaptic()
                     .overScrollVertical(),
             ) {
