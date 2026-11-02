@@ -159,6 +159,54 @@ class WallpaperEvictionSourcesTest {
         assertTrue(plan.deletable.isEmpty())
     }
 
+    // ------------------------------------------------------------ 删档案边界
+
+    @Test
+    fun `删掉档案后其独占用图转为可删 共用的仍护住`() {
+        // 删除前：a 只用 /w/exclusive.jpg，b 与 c 共用 /w/shared.jpg
+        val before = profilesJson(
+            """{"homePageWallpaperPath":"/w/exclusive.jpg"}""",
+            """{"homePageWallpaperPath":"/w/shared.jpg"}""",
+            """{"homePageWallpaperPath":"/w/shared.jpg"}""",
+        )
+        val evicted = listOf("/w/exclusive.jpg", "/w/shared.jpg")
+        val whileReferenced = WallpaperEvictionSources.planEviction(
+            evictedPaths = evicted,
+            profilesJson = before,
+            currentPath = "/w/current.jpg",
+            draftPath = "/w/current.jpg",
+        )
+        // 删除前两张都还被档案引用：一张都不能删
+        assertEquals(emptyList<String>(), whileReferenced.deletable)
+
+        // 删掉 a 之后盘上的档案（b、c 仍在用 /w/shared.jpg）
+        val after = profilesJson(
+            """{"homePageWallpaperPath":"/w/shared.jpg"}""",
+            """{"homePageWallpaperPath":"/w/shared.jpg"}""",
+        )
+        val afterDelete = WallpaperEvictionSources.planEviction(
+            evictedPaths = evicted,
+            profilesJson = after,
+            currentPath = "/w/current.jpg",
+            draftPath = "/w/current.jpg",
+        )
+        // 只被 a 用过的那张转为可删；b、c 共用的那张仍然不可删
+        assertEquals(listOf("/w/exclusive.jpg"), afterDelete.deletable)
+    }
+
+    @Test
+    fun `档案引用为空表时退回不可删`() {
+        // 空表 = 没交代谁在用（不是「谁都没在用」）：fail-safe，一张都不删
+        val plan = WallpaperEvictionSources.planEviction(
+            evictedPaths = listOf("/w/orphan.jpg"),
+            profilesJson = profilesJson(),
+            currentPath = null,
+            draftPath = null,
+        )
+        assertFalse(plan.profilesUnreadable)
+        assertTrue(plan.deletable.isEmpty())
+    }
+
     // ------------------------------------------------------------ 咬合对照
 
     @Test

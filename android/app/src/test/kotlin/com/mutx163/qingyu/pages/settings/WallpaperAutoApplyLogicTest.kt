@@ -205,4 +205,22 @@ class WallpaperAutoApplyLogicTest {
         )
         assertEquals(listOf("/garbage.jpg"), deletable)
     }
+
+    @Test
+    fun `没交代档案引用时自动换淘汰也一张都不删`() {
+        val snapshot = WallpaperAutoApplySnapshot(
+            enabled = true,
+            ledger = ledger("20261031"),
+        )
+        for (profiles in listOf<Iterable<String?>?>(null, emptyList())) {
+            assertEquals(
+                emptyList<String>(),
+                WallpaperAutoApplyLogic.deletableAfterApply(
+                    evictedPaths = listOf("/garbage.jpg"),
+                    allProfilesCurrentPaths = profiles,
+                    snapshot = snapshot,
+                ),
+            )
+        }
+    }
 }

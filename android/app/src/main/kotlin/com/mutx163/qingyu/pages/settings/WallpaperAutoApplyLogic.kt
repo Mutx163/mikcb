@@ -196,10 +196,14 @@ object WallpaperAutoApplyLogic {
      *
      * 与手动路径共用 [WallpaperHistoryLedger.evictionWhitelist] —— 自动换写下的那张
      * **不在历史里**，只按历史当白名单会把它删掉、首页当场裂图（Dart `:265-274`）。
+     *
+     * ⚠️ [allProfilesCurrentPaths] **必填、无默认值**：漏传就等于「档案引用未知」，
+     * 白名单退回 fail-safe，一张都不删（见 [WallpaperHistoryLedger.EvictionWhitelist]）。
+     * 宁可留一张垃圾图，也不能删掉别的课表正在用的壁纸。
      */
     fun deletableAfterApply(
         evictedPaths: List<String>,
-        allProfilesCurrentPaths: Iterable<String?> = emptyList(),
+        allProfilesCurrentPaths: Iterable<String?>?,
         draftPath: String? = null,
         snapshot: WallpaperAutoApplySnapshot = WallpaperAutoApplySnapshot(),
     ): List<String> = WallpaperHistoryLedger.deletable(

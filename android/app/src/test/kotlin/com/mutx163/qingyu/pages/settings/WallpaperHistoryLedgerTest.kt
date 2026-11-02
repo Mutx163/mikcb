@@ -224,15 +224,30 @@ class WallpaperHistoryLedgerTest {
         )
         assertEquals(
             setOf("/profile1.png", "/shared.png", "/draft.png", "/gallery.png"),
-            whitelist,
+            whitelist.paths,
         )
+        assertTrue(whitelist.profileReferencesKnown)
+    }
+
+    @Test
+    fun `没拿到档案引用时白名单判定为未知且一律不可删`() {
+        // 不传（null）/ 传空表 / 只传空白项：三种「没交代档案引用」的写法都必须退回 fail-safe
+        for (profiles in listOf<Iterable<String?>?>(null, emptyList(), listOf(null, "", "  "))) {
+            val whitelist = WallpaperHistoryLedger.evictionWhitelist(
+                allProfilesCurrentPaths = profiles,
+                draftPath = "/draft.png",
+                galleryLedgerPaths = listOf("/gallery.png"),
+            )
+            assertFalse(whitelist.profileReferencesKnown)
+            assertEquals(emptyList<String>(), WallpaperHistoryLedger.deletable(listOf("/garbage.png"), whitelist))
+        }
     }
 
     @Test
     fun `删除清单豁免空串 内置壁纸键 与白名单里的图`() {
         val deletable = WallpaperHistoryLedger.deletable(
             evictedPaths = listOf("", "builtin:og", "/in-use.png", "/garbage.png"),
-            whitelist = setOf("/in-use.png"),
+            whitelist = EvictionWhitelist(setOf("/in-use.png"), profileReferencesKnown = true),
         )
         assertEquals(listOf("/garbage.png"), deletable)
     }

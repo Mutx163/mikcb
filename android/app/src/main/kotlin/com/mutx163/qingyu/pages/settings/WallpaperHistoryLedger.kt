@@ -9,6 +9,20 @@ import com.mutx163.qingyu.weather.pushWallpaperHistory
 import com.mutx163.qingyu.weather.rememberWallpaperHistoryBatch
 
 /**
+ * 一次淘汰白名单的判定结果。
+ *
+ * [profileReferencesKnown] = false 表示**没拿到档案引用**（调用方没传、传了空表、
+ * 或档案 JSON 读不懂）。此时 [WallpaperHistoryLedger.deletable] 一律返回空表：
+ * 「白名单为空」在语义上是「谁都没在用」，那是最危险的结论；宁可多留一张垃圾图，
+ * 也不能删掉别的课表正在用的壁纸（与 `WallpaperEvictionSources.planEviction` 的
+ * 保守口径同一条）。
+ */
+data class EvictionWhitelist(
+    val paths: Set<String>,
+    val profileReferencesKnown: Boolean,
+)
+
+/**
  * 壁纸「最近使用」台账的纯运算层（Dart `lib/utils/wallpaper_history.dart`
  * `lib/screens/settings/settings_home_backdrop_flow.dart:234-417`）。
  *
@@ -301,21 +315,34 @@ object WallpaperHistoryLedger {
      * 1. 所有课表当前壁纸（自动换写下的那张**不在历史里**）；
      * 2. 本页草稿里刚选中的那张（还没落盘）；
      * 3. Bing 图库台账里下过的每一张（= 下载缓存，删了下次要重下）。
+     *
+     * ## 为什么参数不再有默认值（fail-safe）
+     *
+     * 原先 `allProfilesCurrentPaths` 缺省 `emptyList()`：调用方干脆不传也能拿到一张
+     * 「白名单」，而空白名单等于「谁都没在用」——删除照常发生。这正是「只护当前课表」
+     * 那类漏删的形状。现在改成**必填可空**：`null` / 空表 = 没拿到档案引用，
+     * [EvictionWhitelist.profileReferencesKnown] 为 false，[deletable] 一律返回空表。
      */
     fun evictionWhitelist(
-        allProfilesCurrentPaths: Iterable<String?> = emptyList(),
+        allProfilesCurrentPaths: Iterable<String?>?,
         draftPath: String? = null,
         galleryLedgerPaths: Iterable<String> = emptyList(),
-    ): Set<String> {
+    ): EvictionWhitelist {
         val out = LinkedHashSet<String>()
-        for (path in allProfilesCurrentPaths) {
-            if (path != null && path.isNotBlank()) out.add(path)
+        var profileReferencesKnown = false
+        if (allProfilesCurrentPaths != null) {
+            for (path in allProfilesCurrentPaths) {
+                if (path != null && path.isNotBlank()) {
+                    out.add(path)
+                    profileReferencesKnown = true
+                }
+            }
         }
         if (draftPath != null && draftPath.isNotBlank()) out.add(draftPath)
         for (path in galleryLedgerPaths) {
             if (path.isNotBlank()) out.add(path)
         }
-        return out
+        return EvictionWhitelist(paths = out, profileReferencesKnown = profileReferencesKnown)
     }
 
     /**
@@ -323,9 +350,15 @@ object WallpaperHistoryLedger {
      *
      * 三条豁免（由 weather 层同一实现保证）：空串、已下线的 `builtin:` 键、
      * 以及 [whitelist] 里还在用的图。
+     *
+     * 第四条是 fail-safe：**档案引用没拿到时一张都不删**（见 [EvictionWhitelist]）。
      */
-    fun deletable(evictedPaths: List<String>, whitelist: Set<String>): List<String> =
-        deletableWallpaperPaths(evictedPaths, inUsePaths = whitelist)
+    fun deletable(evictedPaths: List<String>, whitelist: EvictionWhitelist): List<String> =
+        if (!whitelist.profileReferencesKnown) {
+            emptyList()
+        } else {
+            deletableWallpaperPaths(evictedPaths, inUsePaths = whitelist.paths)
+        }
 
     /** 空 key 与已下线的内置壁纸键都不可用；文件存在性不在这里判（IO）。 */
     fun isAvailableKey(key: String): Boolean =
