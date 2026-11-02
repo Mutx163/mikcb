@@ -478,8 +478,8 @@ fun AchievementDetailContent(
     }
 }
 
-/** 成就语义色 → 实际颜色。 */
-private fun achievementAccentColor(accent: AchievementAccent, dark: Boolean): Color = when (accent) {
+/** 成就语义色 → 实际颜色。成就详情弹层（`pages/statistics/AchievementDetailSheet.kt`）也复用它。 */
+fun achievementAccentColor(accent: AchievementAccent, dark: Boolean): Color = when (accent) {
     AchievementAccent.ORANGE -> ChartPalette.Orange
     AchievementAccent.GREEN -> ChartPalette.Green
     AchievementAccent.PURPLE -> ChartPalette.Purple

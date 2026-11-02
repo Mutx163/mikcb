@@ -24,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mutx163.qingyu.pages.statistics.charts.AchievementModel
 import com.mutx163.qingyu.pages.statistics.charts.WeekStatsView
+import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -638,10 +640,16 @@ private fun AchievementBadge(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accent = if (item.isUnlocked) {
-        Color(QingyuTheme.primary(dark = dark))
+    // per-id 语义色（Dart `_achievementAccent`，2026-11-03 弹层审核 statistics 项）：
+    // 原来统一取主题 primary / 中性灰底，与「每个成就一个颜色身份」不一致；
+    // 与徽章网格 `charts/AchievementBadgeGrid` 同一出处与同一套锁定态淡染口径。
+    val accent = achievementAccentColor(AchievementModel.accentOf(item.id), dark)
+    val fill = if (item.isUnlocked) {
+        accent
     } else {
-        Color(QingyuTheme.surfaceContainerHighest(dark))
+        accent.copy(
+            alpha = if (dark) AchievementModel.LOCKED_FILL_DARK else AchievementModel.LOCKED_FILL_LIGHT,
+        )
     }
     Column(
         modifier = modifier
@@ -654,7 +662,7 @@ private fun AchievementBadge(
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(accent),
+                .background(fill),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -663,7 +671,9 @@ private fun AchievementBadge(
                 color = if (item.isUnlocked) {
                     Color(QingyuTheme.onAccent(dark))
                 } else {
-                    Color(QingyuTheme.secondaryText(dark))
+                    accent.copy(
+                        alpha = if (dark) AchievementModel.LOCKED_ICON_DARK else AchievementModel.LOCKED_ICON_LIGHT,
+                    )
                 },
             )
         }
@@ -688,7 +698,7 @@ private fun AchievementBadge(
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
                 color = if (item.isUnlocked) {
-                    Color(QingyuTheme.primary(dark = dark))
+                    accent
                 } else {
                     Color(QingyuTheme.secondaryText(dark))
                 },
