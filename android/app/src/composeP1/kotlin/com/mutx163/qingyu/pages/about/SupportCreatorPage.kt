@@ -720,7 +720,7 @@ private fun DonorRow(donor: SupportDonorEntry) {
 }
 
 /**
- * 从 `flutter_assets` 读一张图并画出来（读不到时留尺寸占位，不画假图）。
+ * 从主 assets 读一张图并画出来（读不到时留尺寸占位，不画假图）。
  *
  * @param useNaturalAspectRatio 传 `true` 时按 `bitmap.width / bitmap.height` 约束宽高比，
  *   用于竖版支付海报（1325×1806 / 1182×1772）。图标这类已知方形的图不传。
@@ -805,9 +805,10 @@ private fun saveQrToGallery(context: Context, assetPath: String, fileName: Strin
         true
     }.getOrDefault(false)
 
-private const val launcherIconAsset = "flutter_assets/assets/branding/launcher_icon.png"
-private const val wechatQrAsset = "flutter_assets/assets/donate/wechatpay.png"
-private const val alipayQrAsset = "flutter_assets/assets/donate/alipay.png"
+// 2026-11-02 资产迁移：二维码与图标落主 assets，不再读 flutter_assets/（删 Flutter 后不再生成）。
+private const val launcherIconAsset = "assets/branding/launcher_icon.png"
+private const val wechatQrAsset = "assets/donate/wechatpay.png"
+private const val alipayQrAsset = "assets/donate/alipay.png"
 private const val wechatQrFileName = "qingyu_kebiao_wechatpay.png"
 private const val alipayQrFileName = "qingyu_kebiao_alipay.png"
 
