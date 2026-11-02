@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
@@ -327,6 +328,9 @@ fun IcsExportPage(
                 "calendarName",
                 IcsExportLogic.syncCalendarName(viewState.selectedProfile?.name.orEmpty()),
             ),
+            // Flutter 弹窗正文居中（hyperos_dialog.dart:52 `textAlign: TextAlign.center`）。
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
@@ -348,6 +352,8 @@ fun IcsExportPage(
     ) {
         Text(
             text = ExportStrings.icsExportRemoveCalendarBody.zh,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body2,
             color = Color(QingyuTheme.secondaryText(dark)),
         )
