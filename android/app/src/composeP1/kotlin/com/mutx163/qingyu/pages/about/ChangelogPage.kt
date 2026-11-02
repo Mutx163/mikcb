@@ -59,7 +59,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * Dart 侧 `_loadChangelog` 扫的是 Flutter 的 `AssetManifest`；这里扫的是**同一个目录**
  * 在 APK 里的落点 `assets/docs/releases/`（`assets.list` + 直接按 key 读，
  * 与 Dart 的 manifest + `rootBundle.loadString` 是同一件事的两条路）。
- * 2026-11-02 资产迁移：`docs/releases/*.md` 已拷进 `android/app/src/main/assets/`，
+ * 2026-11-02 资产迁移：`docs/releases` 下的 `v*.md` 已拷进 `android/app/src/main/assets/`，
  * Compose 不再依赖 Flutter 打包出来的 `flutter_assets/` 目录（删 Flutter 后不再生成）；
  * **真机运行时能否读到尚未验证**。
  *
