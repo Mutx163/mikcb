@@ -77,8 +77,8 @@ fun MonthDayCell(
     val cardLuminance = scheme.surface.luminance()
 
     val badge = when {
-        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.zh to monthWorkdayBadgeInk(dark)
-        entry.isHoliday -> MonthText.holidayBadge.zh to monthHolidayInk(dark)
+        entry.isAdjustedWorkday -> MonthText.adjustedWorkdayBadge.zh to scheme.primary
+        entry.isHoliday -> MonthText.holidayBadge.zh to scheme.error
         else -> null
     }
 
@@ -90,7 +90,7 @@ fun MonthDayCell(
             if (onPrimary.luminance() > primary.luminance()) onPrimary else ink
         }
         isToday -> primary
-        entry.isHoliday -> monthHolidayInk(dark)
+        entry.isHoliday -> scheme.error
         else -> ink
     }
 
@@ -103,14 +103,16 @@ fun MonthDayCell(
     }
 
     // ── 底边分段色带：课程色（最多 4 段）→ 考试红 → 日程蓝 ──
+    // 考试/假期红走 error 槽、日程蓝走 primary 槽（语义槽，深浅色由主题桥接管）：
+    // error 不受种子色触碰（QingyuPageTheme 只派生 primary 族），考试红不与主题撞色。
     val strips = buildList {
         for (index in entry.courseColorHexes.indices) {
             if (index < courseStripBudget) {
                 add(parseHexColorOrFallback(entry.courseColorHexes[index], fallback = primary))
             }
         }
-        if (entry.examCount > 0) add(monthExamDotColor(dark))
-        if (entry.scheduleCount > 0) add(monthScheduleDotColor(dark))
+        if (entry.examCount > 0) add(scheme.error)
+        if (entry.scheduleCount > 0) add(scheme.primary)
     }
     // 月外格不画色带：它们是邻月的日子，不该在本月里「浮出来」。
     val showStrips = strips.isNotEmpty() && !entry.isOutsideMonth
@@ -271,19 +273,3 @@ private fun semanticsLabel(entry: MonthDayEntry): String {
  * 按源码扫字符，标点也算一行命中 —— 这不是文案，却会被误报。
  */
 private const val SEMANTICS_SEPARATOR = "\uFF0C"
-
-/** 假期日数字/标：与周视图「假期灰显」同语义的暖红。 */
-private fun monthHolidayInk(dark: Boolean): Color =
-    if (dark) Color(0xFFFF7A72) else Color(0xFFD93025)
-
-/** 调休上班日「班」标色。 */
-private fun monthWorkdayBadgeInk(dark: Boolean): Color =
-    if (dark) Color(0xFF7FB4FF) else Color(0xFF1A66D6)
-
-/** 考试强调色：固定红系，**不跟主题走**（主题本身是红色时会撞色）。 */
-private fun monthExamDotColor(dark: Boolean): Color =
-    if (dark) Color(0xFFFF6B6B) else Color(0xFFE5484D)
-
-/** 日程强调色：固定蓝系，与考试红、课程自身色三者互相可辨。 */
-private fun monthScheduleDotColor(dark: Boolean): Color =
-    if (dark) Color(0xFF6AA8FF) else Color(0xFF3B82F6)
