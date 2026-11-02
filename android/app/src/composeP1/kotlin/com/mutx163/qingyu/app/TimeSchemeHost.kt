@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +21,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.calendar.ScheduleDateRuleLogic
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeAction
@@ -223,84 +224,97 @@ fun TimeSchemeManagementHost(
         onOpenDateRules = onOpenDateRules,
     )
 
-    when (val state = dialog) {
-        is TimeSchemeDialog.None -> Unit
+    // ---- 五个弹层全部常驻组合（2026-11-02 弹层债 #1）：原来的 `when (dialog)` 条件挂载，
+    // 父级一翻 false 整棵弹层就离开组合，官方 260ms 退场动画一次都播不出来。
+    // 可见性只交给各弹层内部的 `show`；退场期间的标题/正文由各弹层用 remember 保留的
+    // 最后一份非空状态渲染，不会闪成空板（同 settings 弹窗常驻组合配方）。----
+    val menuDialog = dialog as? TimeSchemeDialog.Menu
+    TimeSchemeMenuSheet(
+        state = menuDialog?.state,
+        onDismiss = { dialog = TimeSchemeDialog.None },
+        onAction = { action ->
+            menuDialog?.let { dispatch(it.state.schemeId, action) }
+        },
+    )
 
-        is TimeSchemeDialog.Menu -> TimeSchemeMenuSheet(
-            state = state.state,
-            onDismiss = { dialog = TimeSchemeDialog.None },
-            onAction = { action -> dispatch(state.state.schemeId, action) },
-        )
-
-        is TimeSchemeDialog.Name -> TimeSchemeNameSheet(
-            sheet = state.sheet,
-            onDismiss = { dialog = TimeSchemeDialog.None },
-            onConfirm = { raw ->
-                dialog = TimeSchemeDialog.None
-                val name = raw.trim()
-                val error = model.validateName(name)
-                if (error != null) {
-                    toast(error)
-                    return@TimeSchemeNameSheet
+    val nameDialog = dialog as? TimeSchemeDialog.Name
+    TimeSchemeNameSheet(
+        sheet = nameDialog?.sheet,
+        onDismiss = { dialog = TimeSchemeDialog.None },
+        onConfirm = { raw ->
+            val state = nameDialog ?: return@TimeSchemeNameSheet
+            dialog = TimeSchemeDialog.None
+            val name = raw.trim()
+            val error = model.validateName(name)
+            if (error != null) {
+                toast(error)
+                return@TimeSchemeNameSheet
+            }
+            if (state.mode == TimeSchemeNameMode.CREATE) {
+                val result = runCatching { repository.createTimeScheme(name) }
+                result.onSuccess { created ->
+                    // Dart：新建后立刻进编辑器，把「建完什么都没发生」变成「建完就能填节次」。
+                    onOpenEditor(created.id)
+                }.onFailure {
+                    toast(TimeSchemeManagementStrings.saveFailed.zh)
                 }
-                if (state.mode == TimeSchemeNameMode.CREATE) {
-                    val result = runCatching { repository.createTimeScheme(name) }
-                    result.onSuccess { created ->
-                        // Dart：新建后立刻进编辑器，把「建完什么都没发生」变成「建完就能填节次」。
-                        onOpenEditor(created.id)
-                    }.onFailure {
+            } else {
+                val schemeId = state.schemeId ?: return@TimeSchemeNameSheet
+                if (name == state.sheet.initialName) return@TimeSchemeNameSheet
+                val result = runCatching { repository.renameTimeScheme(schemeId, name) }
+                result.onSuccess { renamed ->
+                    if (renamed == null) {
                         toast(TimeSchemeManagementStrings.saveFailed.zh)
+                    } else {
+                        toast(TimeSchemeManagementStrings.renamedToMessage.filled("name", name))
                     }
-                } else {
-                    val schemeId = state.schemeId ?: return@TimeSchemeNameSheet
-                    if (name == state.sheet.initialName) return@TimeSchemeNameSheet
-                    val result = runCatching { repository.renameTimeScheme(schemeId, name) }
-                    result.onSuccess { renamed ->
-                        if (renamed == null) {
-                            toast(TimeSchemeManagementStrings.saveFailed.zh)
-                        } else {
-                            toast(TimeSchemeManagementStrings.renamedToMessage.filled("name", name))
-                        }
-                    }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
-                }
-            },
-        )
+                }.onFailure { toast(TimeSchemeManagementStrings.saveFailed.zh) }
+            }
+        },
+    )
 
-        is TimeSchemeDialog.Delete -> TimeSchemeDeleteSheet(
-            check = state.check,
-            onCancel = { dialog = TimeSchemeDialog.None },
-            onConfirm = {
-                dialog = TimeSchemeDialog.None
-                val result = runCatching { repository.deleteTimeScheme(state.check.schemeId) }
-                result.onSuccess { deleted ->
-                    val name = model.row(state.check.schemeId)?.title.orEmpty()
-                    toast(
-                        if (deleted) {
-                            TimeSchemeManagementStrings.deletedTimeSchemeMessage.filled("name", name)
-                        } else {
-                            TimeSchemeManagementStrings.timeSchemeInUseMessage.zh
-                        },
-                    )
-                }.onFailure { toast(TimeSchemeManagementStrings.deleteFailed.zh) }
-            },
-            onViewUsage = {
-                model.usageView(state.check.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
-            },
-        )
+    val deleteDialog = dialog as? TimeSchemeDialog.Delete
+    TimeSchemeDeleteSheet(
+        check = deleteDialog?.check,
+        onCancel = { dialog = TimeSchemeDialog.None },
+        onConfirm = {
+            val check = deleteDialog?.check ?: return@TimeSchemeDeleteSheet
+            dialog = TimeSchemeDialog.None
+            val result = runCatching { repository.deleteTimeScheme(check.schemeId) }
+            result.onSuccess { deleted ->
+                val name = model.row(check.schemeId)?.title.orEmpty()
+                toast(
+                    if (deleted) {
+                        TimeSchemeManagementStrings.deletedTimeSchemeMessage.filled("name", name)
+                    } else {
+                        TimeSchemeManagementStrings.timeSchemeInUseMessage.zh
+                    },
+                )
+            }.onFailure { toast(TimeSchemeManagementStrings.deleteFailed.zh) }
+        },
+        onViewUsage = {
+            deleteDialog?.check?.let { chk ->
+                model.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
+            }
+        },
+    )
 
-        is TimeSchemeDialog.DeleteBlocked -> TimeSchemeDeleteBlockedSheet(
-            check = state.check,
-            onCancel = { dialog = TimeSchemeDialog.None },
-            onViewUsage = {
-                model.usageView(state.check.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
-            },
-        )
+    val blockedDialog = dialog as? TimeSchemeDialog.DeleteBlocked
+    TimeSchemeDeleteBlockedSheet(
+        check = blockedDialog?.check,
+        onCancel = { dialog = TimeSchemeDialog.None },
+        onViewUsage = {
+            blockedDialog?.check?.let { chk ->
+                model.usageView(chk.schemeId)?.let { dialog = TimeSchemeDialog.Usage(it) }
+            }
+        },
+    )
 
-        is TimeSchemeDialog.Usage -> TimeSchemeUsageSheet(
-            view = state.view,
-            onClose = { dialog = TimeSchemeDialog.None },
-        )
-    }
+    val usageDialog = dialog as? TimeSchemeDialog.Usage
+    TimeSchemeUsageSheet(
+        view = usageDialog?.view,
+        onClose = { dialog = TimeSchemeDialog.None },
+    )
 }
 
 /** 列表页宿主的渲染转接：把 `TimeSchemeManagementPage` 的入参一次性摊开，避免宿主里出现长参数块。 */
@@ -467,39 +481,44 @@ fun TimeSchemeEditorHost(
     )
 
     // ── 单节时间：开始 → 结束 两跳（Dart `_editSectionTime:1400-1450`） ──
-    when (val phase = pickPhase) {
-        is SectionPickPhase.None -> Unit
-        is SectionPickPhase.Start -> SchemeTimePickerSheet(
-            show = true,
-            title = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
-            initial = phase.section.startTime,
-            onDismiss = { pickPhase = SectionPickPhase.None },
-            onConfirm = { start ->
-                pickPhase = SectionPickPhase.End(phase.index, phase.section, start)
-            },
-        )
+    // 两个选择器也常驻组合（2026-11-02 弹层债 #2）：`when (pickPhase)` 条件挂载同样杀退场
+    // 动画。`show` 由相位驱动；`initial` 用 [rememberLastNonNull] 钉住最后一份非空相位，
+    // 退场期间滚轮不会被重铺成空值。
+    val startPick = pickPhase as? SectionPickPhase.Start
+    val endPick = pickPhase as? SectionPickPhase.End
 
-        is SectionPickPhase.End -> SchemeTimePickerSheet(
-            show = true,
-            title = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
-            initial = phase.section.endTime,
-            onDismiss = { pickPhase = SectionPickPhase.None },
-            onConfirm = { pickedEnd ->
-                pickPhase = SectionPickPhase.None
-                // Dart `resolveSectionEndTimeEdit`：选择器小时上限 23 表达不了 24:00，
-                // 用户没动结束时间时要把这个哨兵认回来，否则「只想改开始时间」会顺手把 24:00 改成 00:00。
-                val end = TimeSchemeSectionEdit.resolveEndTimeEdit(
-                    storedEndTime = phase.section.endTime,
-                    pickedEndTime = pickedEnd,
-                )
-                val outcome = model?.withSectionTime(phase.index, phase.start, end)
-                if (outcome != null) {
-                    model = outcome.model
-                    outcome.message?.let { toast(it) }
-                }
-            },
-        )
-    }
+    SchemeTimePickerSheet(
+        show = startPick != null,
+        title = TimeSchemeManagementStrings.selectStartTimeTitle.zh,
+        initial = rememberLastNonNull(startPick)?.section?.startTime.orEmpty(),
+        onDismiss = { pickPhase = SectionPickPhase.None },
+        onConfirm = { start ->
+            val phase = startPick ?: return@SchemeTimePickerSheet
+            pickPhase = SectionPickPhase.End(phase.index, phase.section, start)
+        },
+    )
+
+    SchemeTimePickerSheet(
+        show = endPick != null,
+        title = TimeSchemeManagementStrings.selectEndTimeTitle.zh,
+        initial = rememberLastNonNull(endPick)?.section?.endTime.orEmpty(),
+        onDismiss = { pickPhase = SectionPickPhase.None },
+        onConfirm = { pickedEnd ->
+            val phase = endPick ?: return@SchemeTimePickerSheet
+            pickPhase = SectionPickPhase.None
+            // Dart `resolveSectionEndTimeEdit`：选择器小时上限 23 表达不了 24:00，
+            // 用户没动结束时间时要把这个哨兵认回来，否则「只想改开始时间」会顺手把 24:00 改成 00:00。
+            val end = TimeSchemeSectionEdit.resolveEndTimeEdit(
+                storedEndTime = phase.section.endTime,
+                pickedEndTime = pickedEnd,
+            )
+            val outcome = model?.withSectionTime(phase.index, phase.start, end)
+            if (outcome != null) {
+                model = outcome.model
+                outcome.message?.let { toast(it) }
+            }
+        },
+    )
 }
 
 /** 单节时间选择的两跳状态。`End` 里要带着已经选好的开始时间。 */
@@ -532,19 +551,15 @@ private fun SchemeTimePickerSheet(
         show = show,
         title = title,
         onDismissRequest = onDismiss,
-        // 内容根 Column 自己给了左右 16（两列滚轮 + 按钮行都不通栏）⇒ 框架侧横向归零，
-        // 单边就是 Dart 那个 16，不再叠成 32。
-        contentPadsHorizontally = true,
+        // 横向内边距由框架侧统一给 16dp，与标题行落在同一条竖线上。原来的写法是
+        // 「内容自带 16 + 框架侧归零」，标题行跟着归零、长标题会顶到面板边（弹层债 #5 同款）。
+        contentPadsHorizontally = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(220.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 NumberPicker(
@@ -555,7 +570,9 @@ private fun SchemeTimePickerSheet(
                     // Dart `miuix_time_picker_sheet.dart:91/102` 的 label 就是 `_twoDigits`：
                     // 只显示两位数字，不带「时 / 分」后缀（那两个字在 ARB 里没有键，屏上也不该出现）。
                     label = { it.toString().padStart(2, '0') },
-                    textStyle = MiuixTheme.textStyles.title3,
+                    // 220dp + title3 SEMIBOLD 与 SettingsHost 的「每天更新时刻」滚轮同款
+                    // （Dart 同弹层就是 title3 + w600）；走 shiftWeight 才不会被用户字重盖掉。
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     modifier = Modifier.weight(1f),
                 )
                 NumberPicker(
@@ -564,7 +581,7 @@ private fun SchemeTimePickerSheet(
                     range = 0 until (60 / MINUTE_STEP),
                     wrapAround = true,
                     label = { (it * MINUTE_STEP).toString().padStart(2, '0') },
-                    textStyle = MiuixTheme.textStyles.title3,
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -588,7 +605,9 @@ private fun SchemeTimePickerSheet(
                     // `secondaryVariant`，读起来像禁用（Dart 用 primary 变体）。
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
-                    Text(text = TimeSchemeManagementStrings.saveAction.zh)
+                    // Dart 同位置（`miuix_time_picker_sheet.dart:124`）用的是 confirmAction
+                    //（「确认」），不是 saveAction（「保存」）——弹层债 #4，这里对齐。
+                    Text(text = TimeSchemeManagementStrings.confirmAction.zh)
                 }
             }
         }
@@ -596,6 +615,22 @@ private fun SchemeTimePickerSheet(
 }
 
 private const val MINUTE_STEP = 5
+
+/**
+ * 退场期保留最后一份非空状态：[current] 变 null 后仍返回上一次的非空值。
+ *
+ * 弹层常驻组合后，`show` 归 false 的退场动画期间内容还会被组合——直接读可空相位
+ * 会把滚轮初值重铺成空。这里用 remember 钉住最后一份非空状态（与 settings 弹窗
+ * 「常驻组合」笔记同配方）。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) {
+        shown = current
+    }
+    return shown
+}
 
 /**
  * 容错解析 `HH:MM`。
