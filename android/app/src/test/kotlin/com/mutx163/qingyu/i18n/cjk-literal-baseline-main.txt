@@ -15,7 +15,6 @@ com/mutx163/qingyu/MemoryStatsCollector.kt:51
 com/mutx163/qingyu/app/SettingsActionDispatcher.kt:51
 com/mutx163/qingyu/pages/about/AboutInfoModel.kt:48
 com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureModel.kt:29
-com/mutx163/qingyu/pages/about/SupportCreatorModel.kt:27
 com/mutx163/qingyu/pages/feedback/FeedbackModel.kt:18
 com/mutx163/qingyu/widgetdata/LiveTestingFixtureData.kt:17
 com/mutx163/qingyu/pages/about/ContributorsModel.kt:15

@@ -10,7 +10,7 @@ import com.mutx163.qingyu.core.DartTime
  *
  * 与开源许可页同一套约定：本文件在 main 源集、**零 Compose/Miuix 依赖**
  * （main 对全变体编译，import miuix 会让 Flutter 的 prod 包编不过），
- * 只承载「JSON 解析 / 排序 / 文案」；渲染在 composeP1 源集。
+ * 只承载「JSON 解析 / 排序」；文案在 `SupportCreatorStrings.kt`，渲染在 composeP1 源集。
  */
 
 /** 一位支持者（Dart `SupportDonorEntry`）。 */
@@ -113,55 +113,3 @@ private fun parseDonorDate(raw: String?): java.time.LocalDateTime? {
 /** 支持方式（Dart `_SupportMethod`）。 */
 enum class SupportMethod { WECHAT, ALIPAY }
 
-/**
- * 支持作者页文案（逐字取自 `lib/l10n/app_zh.arb`）。
- *
- * 与许可页同一纪律：测试用 MiniJson 直读 ARB 逐字对拍，不手抄信任。
- */
-object SupportCreatorStrings {
-    /** ARB `supportCreatorTitle`：顶栏标题（与头卡 `heroTitle` 不同，避免进页读两遍同一句）。 */
-    const val pageTitle = "请作者喝杯咖啡"
-    const val heroTitle = "支持轻屿课表继续更新"
-    const val heroSubtitle = "你的支持会直接用于维护课表、教务导入适配与体验优化"
-    const val methodTitle = "选择支持方式"
-    const val wechatLabel = "微信"
-    const val alipayLabel = "支付宝"
-    const val scanQrWechatTitle = "使用微信扫描二维码"
-    const val scanQrAlipayTitle = "使用支付宝扫描二维码"
-    const val scanQrSubtitle = "截图并导入扫一扫，感谢支持"
-    const val weChatHint = "使用微信扫一扫支持作者"
-    const val alipayHint = "使用支付宝扫一扫支持作者"
-    const val tapQrHint = "点击放大扫码"
-    const val saveShort = "保存"
-    const val saveToGallery = "保存到相册"
-    const val savedToGallery = "已保存到相册"
-    const val saveToGalleryFailed = "保存到相册失败"
-    const val donorListTitle = "鸣谢名单"
-    const val donorListEmpty = "名单还没有填写，你可以直接编辑 docs/donors.json 后重新发布"
-    const val donorListLoadFailed = "暂时无法加载在线鸣谢名单"
-    const val reloadAction = "重新加载"
-    const val runningBadge = "运行中"
-    const val chipAdapters = "教务适配"
-    const val chipFixes = "修复问题"
-    const val chipPolish = "体验优化"
-    const val completeThanks = "感谢你支持轻屿课表继续打磨"
-    const val confirmedShort = "已支持"
-
-    /** ARB `updatedAtLabel`（`更新于 {time}`）。 */
-    fun updatedAtLabel(time: String): String = "更新于 $time"
-
-    /** ARB `saveFailedWithError`（`保存失败：{error}`）。 */
-    fun saveFailedWithError(error: String): String = "保存失败：$error"
-
-    /** 当前支持方式对应的扫码标题（Dart 三元：wechat ? scanQrWechatTitle : scanQrAlipayTitle）。 */
-    fun scanTitleFor(method: SupportMethod): String = when (method) {
-        SupportMethod.WECHAT -> scanQrWechatTitle
-        SupportMethod.ALIPAY -> scanQrAlipayTitle
-    }
-
-    /** 当前支持方式对应的提示语（Dart :_buildPaymentCard 的两条 hint）。 */
-    fun hintFor(method: SupportMethod): String = when (method) {
-        SupportMethod.WECHAT -> weChatHint
-        SupportMethod.ALIPAY -> alipayHint
-    }
-}
