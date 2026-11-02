@@ -31,10 +31,12 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
@@ -576,10 +578,18 @@ private fun LoadingButton(
 }
 
 /**
- * 连接坚果云弹窗（Dart `_WebdavConnectSheet`）。
+ * 连接坚果云弹层（Dart `_WebdavConnectSheet`）。
  *
- * 两个动作：先「测试连接」（成功才允许确认），再「确认连接」把账号密码交给宿主落盘。
- * 用户名/密码是本弹窗内的临时输入，属 UI 态；校验与 toast 由宿主经回调处理。
+ * 官方底部弹层 [QingyuSheet]：带遮罩，点空白 / 返回键经 [onCancel] 关闭；
+ * 标题行由套件的 `title` 给，不再自绘。
+ *
+ * 两个动作：先「测试连接」（次要，`buttonColors()`），再「确认连接」（主操作，
+ * `buttonColorsPrimary()`）把账号密码交给宿主落盘。Dart 只有这两枚等宽按钮，
+ * 没有第三枚「取消」——关闭靠下滑 / 返回键。
+ * 用户名/密码是本弹层内的临时输入，属 UI 态；校验与 toast 由宿主经回调处理。
+ *
+ * @param show 是否显示。宿主当前以 `showConnect` 决定是否组合本组件，所以默认 `true`；
+ *   Task 8b 接真实显隐时改为透传宿主状态。
  */
 @Composable
 fun WebdavConnectSheet(
@@ -589,126 +599,72 @@ fun WebdavConnectSheet(
     onTestConnection: (username: String, password: String) -> Unit,
     onConfirm: (username: String, password: String) -> Unit,
     onCancel: () -> Unit,
+    show: Boolean = true,
 ) {
     val dark = isSystemInDarkTheme()
     var username by remember(initialUsername) { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
 
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp),
-        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+    QingyuSheet(
+        show = show,
+        title = SyncStrings.cloudSyncLoginSheetTitle.zh,
+        onDismissRequest = onCancel,
     ) {
-        Text(
-            text = SyncStrings.cloudSyncLoginSheetTitle.zh,
-            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = Color(QingyuTheme.primaryText(dark)),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = SyncStrings.cloudSyncLoginSheetSubtitle.zh,
-            style = MiuixTheme.textStyles.footnote1,
-            color = Color(QingyuTheme.secondaryText(dark)),
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        TextField(
-            value = username,
-            onValueChange = { username = it },
-            label = SyncStrings.cloudSyncUsernameLabel.zh,
-            useLabelAsPlaceholder = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = SyncStrings.cloudSyncPasswordLabel.zh,
-            useLabelAsPlaceholder = true,
-            // 对应 Dart `obscureText: true`
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Button(
-                onClick = { onTestConnection(username.trim(), password) },
-                enabled = !testing && !connecting,
-                modifier = Modifier.weight(1f),
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = SyncStrings.cloudSyncLoginSheetSubtitle.zh,
+                style = MiuixTheme.textStyles.footnote1,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            TextField(
+                value = username,
+                onValueChange = { username = it },
+                label = SyncStrings.cloudSyncUsernameLabel.zh,
+                useLabelAsPlaceholder = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                label = SyncStrings.cloudSyncPasswordLabel.zh,
+                useLabelAsPlaceholder = true,
+                // 对应 Dart `obscureText: true`
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                if (testing) {
-                    CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(6.dp))
+                // 次要：先测连接（不落盘）。
+                Button(
+                    onClick = { onTestConnection(username.trim(), password) },
+                    enabled = !testing && !connecting,
+                    colors = ButtonDefaults.buttonColors(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (testing) {
+                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(text = SyncStrings.cloudSyncTestConnection.zh)
                 }
-                Text(text = SyncStrings.cloudSyncTestConnection.zh)
-            }
-            Button(
-                onClick = { onConfirm(username.trim(), password) },
-                enabled = !connecting,
-                modifier = Modifier.weight(1f),
-            ) {
-                if (connecting) {
-                    CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(6.dp))
+                // 主色：确认连接并落盘。
+                Button(
+                    onClick = { onConfirm(username.trim(), password) },
+                    enabled = !connecting,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (connecting) {
+                        CircularProgressIndicator(size = 16.dp, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(text = SyncStrings.cloudSyncConfirmConnect.zh)
                 }
-                Text(text = SyncStrings.cloudSyncConfirmConnect.zh)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(
-            text = SyncStrings.cancelAction.zh,
-            onClick = onCancel,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-/**
- * 同步冲突弹框（Dart `_resolveConflict`）：取消 / 使用云端 / 保留本机。
- *
- * 首次同步分歧时 [view] 的标题与正文由模型层换成解释性版本。
- */
-@Composable
-fun SyncConflictDialog(
-    view: SyncConflictDialogView,
-    onCancel: () -> Unit,
-    onUseRemote: () -> Unit,
-    onKeepLocal: () -> Unit,
-) {
-    val dark = isSystemInDarkTheme()
-    QingyuCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp),
-        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-    ) {
-        Text(
-            text = view.title,
-            style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-            color = Color(QingyuTheme.primaryText(dark)),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = view.message,
-            style = MiuixTheme.textStyles.body2,
-            color = Color(QingyuTheme.secondaryText(dark)),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(onClick = onCancel, modifier = Modifier.weight(1f)) {
-                Text(text = view.cancelLabel)
-            }
-            Button(onClick = onUseRemote, modifier = Modifier.weight(1f)) {
-                Text(text = view.useRemoteLabel)
-            }
-            Button(onClick = onKeepLocal, modifier = Modifier.weight(1f)) {
-                Text(text = view.keepLocalLabel)
             }
         }
     }
