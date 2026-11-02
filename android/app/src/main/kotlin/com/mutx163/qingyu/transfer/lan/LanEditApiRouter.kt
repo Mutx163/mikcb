@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.transfer.lan
 
+import com.mutx163.qingyu.calendar.WeekExpressionException
 import com.mutx163.qingyu.calendar.WeekExpressionParser
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.DartTime
@@ -748,11 +749,18 @@ class LanEditApiRouter(
             if (name.isNullOrEmpty() && !originalName.isNullOrEmpty()) {
                 slotMap["name"] = originalName
             }
-            WeekExpressionParser.applyWeekExpressionFields(
-                slotMap = slotMap,
-                courseName = slotMap["name"]?.toString()?.trim().orEmpty(),
-                semesterWeekCount = host.semesterWeekCount,
-            )
+            // 周次表达式非法 → 400 invalid_request（Dart `on ArgumentError` 分支；
+            // WeekExpressionException 是 RuntimeException，route 的 IAE catch 接不到，
+            // 必须在这里就地接住，否则漏成 500）。
+            try {
+                WeekExpressionParser.applyWeekExpressionFields(
+                    slotMap = slotMap,
+                    courseName = slotMap["name"]?.toString()?.trim().orEmpty(),
+                    semesterWeekCount = host.semesterWeekCount,
+                )
+            } catch (error: WeekExpressionException) {
+                return LanEditHttpResponse.error(400, "invalid_request", error.message ?: "invalid_request")
+            }
             slots.add(courseFromApiJson(slotMap))
         }
         if (slots.first().name.trim().isEmpty()) {
