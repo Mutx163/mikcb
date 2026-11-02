@@ -119,6 +119,8 @@ enum class SupportMethod { WECHAT, ALIPAY }
  * 与许可页同一纪律：测试用 MiniJson 直读 ARB 逐字对拍，不手抄信任。
  */
 object SupportCreatorStrings {
+    /** ARB `supportCreatorTitle`：顶栏标题（与头卡 `heroTitle` 不同，避免进页读两遍同一句）。 */
+    const val pageTitle = "请作者喝杯咖啡"
     const val heroTitle = "支持轻屿课表继续更新"
     const val heroSubtitle = "你的支持会直接用于维护课表、教务导入适配与体验优化"
     const val methodTitle = "选择支持方式"

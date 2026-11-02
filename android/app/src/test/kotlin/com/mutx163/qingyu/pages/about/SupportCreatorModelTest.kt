@@ -187,6 +187,7 @@ class SupportCreatorModelTest {
     @Test
     fun `arbStringsMatchModel`() {
         val pairs = listOf(
+            "supportCreatorTitle" to SupportCreatorStrings.pageTitle,
             "supportHeroTitle" to SupportCreatorStrings.heroTitle,
             "supportHeroSubtitle" to SupportCreatorStrings.heroSubtitle,
             "supportMethodTitle" to SupportCreatorStrings.methodTitle,

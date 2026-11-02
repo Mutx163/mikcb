@@ -472,7 +472,6 @@ statisticsSectionCountRatio
 statisticsWeekDailyHint
 supportBackerCount
 supportConfirmed
-supportCreatorTitle
 supportDonorListFooter
 supportGoalRaised
 supportMarqueeTail
