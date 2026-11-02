@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.exam
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,9 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,11 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
+import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -148,6 +155,7 @@ fun ExamDatePickerSheet(
             ) {
                 itemsIndexed(weeks) { index, item ->
                     val isSelected = item == week
+                    val isCurrentWeek = AddExamLogic.isCurrentWeek(item, semesterStart, LocalDateTime.now())
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -155,6 +163,15 @@ fun ExamDatePickerSheet(
                             .padding(horizontal = 16.dp, vertical = 13.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        // 2026-11-02 弹窗审核 P3：Dart 行首有 36dp 周数字徽章
+                        //（选中=主色实心、本周=次色、其余=浅底），Compose 此前缺失。
+                        WeekBadge(
+                            week = item,
+                            isSelected = isSelected,
+                            isCurrentWeek = isCurrentWeek,
+                            dark = dark,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = weekLabel.replace("{week}", item.toString()),
@@ -163,7 +180,7 @@ fun ExamDatePickerSheet(
                                 style = MiuixTheme.textStyles.main,
                                 color = Color(QingyuTheme.primaryText(dark)),
                             )
-                            if (AddExamLogic.isCurrentWeek(item, semesterStart, LocalDateTime.now())) {
+                            if (isCurrentWeek) {
                                 Text(
                                     text = thisWeek,
                                     style = MiuixTheme.textStyles.body2,
@@ -660,6 +677,38 @@ fun ExamReminderPickerSheet(
                 }
             }
         }
+    }
+}
+
+/**
+ * 周次行首的 36dp 周数字徽章（Dart 同款）：选中 = 主色实心 + onPrimary 字、
+ * 本周 = 次色底、其余 = 浅底。颜色全走主题令牌，不写死。
+ */
+@Composable
+private fun WeekBadge(
+    week: Int,
+    isSelected: Boolean,
+    isCurrentWeek: Boolean,
+    dark: Boolean,
+) {
+    val bg = when {
+        isSelected -> Color(QingyuTheme.primary(dark = dark))
+        isCurrentWeek -> MiuixTheme.colorScheme.secondaryContainer
+        else -> Color(QingyuTheme.surfaceContainerHighest(dark))
+    }
+    val fg = if (isSelected) MiuixTheme.colorScheme.onPrimary else Color(QingyuTheme.primaryText(dark))
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(bg),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = week.toString(),
+            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+            color = fg,
+        )
     }
 }
 
