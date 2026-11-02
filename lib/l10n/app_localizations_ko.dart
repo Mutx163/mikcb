@@ -93,16 +93,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appearanceThemeDisplaySectionTitle => '테마 및 표시';
 
   @override
-  String get layoutSectionEntryTitle => '레이아웃 및 교시';
-
-  @override
-  String get layoutSectionEntrySubtitle => '교시 시간, 행 높이, 시간 열, 주말 표시 및 카드 레이아웃';
-
-  @override
   String get homeWidgetEntryTitle => '홈 위젯';
-
-  @override
-  String get reminderNotificationSectionTitle => '알림 및 푸시';
 
   @override
   String get userGuideEntryTitle => '사용 가이드 및 권한';
@@ -988,9 +979,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get githubIssueSubtitle => '문제·제안 보내기, 기존 확인';
 
   @override
-  String get openIssuePage => 'Issue 페이지 열기';
-
-  @override
   String get copyAddress => '주소 복사';
 
   @override
@@ -1584,9 +1572,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get teacherUnset => '미설정';
 
   @override
-  String get locationUnset => '미설정';
-
-  @override
   String get confirmDeleteTitle => '삭제 확인';
 
   @override
@@ -1601,10 +1586,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String followCurrentTimetableWithName(String name) {
     return '현재 시간표에 연동 ($name)';
   }
-
-  @override
-  String get overrideTimeSchemeDescription =>
-      '이 수업은 선택한 템플릿을 개별 사용하며 메인 템플릿에 연동되지 않습니다';
 
   @override
   String get weekdayLabel => '요일';
@@ -1658,15 +1639,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get evenWeeksFilter => '짝수 주';
 
   @override
-  String get rangeWeeksAllHint => '시작 주부터 종료 주까지 연속으로 수업을 배치합니다';
-
-  @override
-  String get rangeWeeksOddHint => '범위 내 홀수 주만 유지합니다';
-
-  @override
-  String get rangeWeeksEvenHint => '범위 내 짝수 주만 유지합니다';
-
-  @override
   String get selectAllAction => '전체 선택';
 
   @override
@@ -1712,11 +1684,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weekdaySun => '일요일';
-
-  @override
-  String saturationLabel(int value) {
-    return '채도 $value%';
-  }
 
   @override
   String get useThisColor => '이 색상 사용';
@@ -2226,29 +2193,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveGroupMaintenance => '유지 관리 및 셀프 점검';
 
   @override
-  String get liveReminderTimingEntryTitle => '알림 시간대';
-
-  @override
-  String get liveReminderTimingEntrySubtitle =>
-      '수업 전, 수업 중과 종료 알림, 그리고 포커스 전환 시점';
-
-  @override
   String get liveBeforeClassDisplayEntryTitle => '수업 전 알림 표시';
 
   @override
   String get liveDuringEndDisplayEntryTitle => '수업 중과 종료 알림 표시';
-
-  @override
-  String get liveKeepAliveEntryTitle => '백그라운드 상주';
-
-  @override
-  String get liveKeepAliveEntrySubtitle => '숨김, 백그라운드 상주 보조 서비스 및 권한 항목';
-
-  @override
-  String get liveTestingEntryTitle => '테스트 및 진단';
-
-  @override
-  String get liveTestingEntrySubtitle => '테스트 알림 전송, 슈퍼아일랜드 및 로컬 진단 로그 확인';
 
   @override
   String get followBeforeClassSetting => '수업 전 알림에 연동';
@@ -2258,10 +2206,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveReminderSwitchesTitle => '알림 스위치';
-
-  @override
-  String get liveReminderSwitchesSubtitle =>
-      '서로 다른 알림 시간대를 자유롭게 조합할 수 있습니다. 이 스위치들은 서로 대체하지 않습니다';
 
   @override
   String get beforeClassReminderTitle => '수업 전 알림';
@@ -2289,9 +2233,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveDisplayModeTitle => '표시 모드';
 
   @override
-  String get liveDisplayModeSubtitle => '활성화된 알림 시간대에 적용됩니다';
-
-  @override
   String get duringClassStatusNotificationTitle => '수업 중 상태바 알림';
 
   @override
@@ -2308,10 +2249,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTimeThresholdTitle => '시간 임계값';
-
-  @override
-  String get liveTimeThresholdSubtitle =>
-      '수업 전 팝업, 종료 전 슈퍼아일랜드/포커스 알림 전환, 초 단위 카운트다운을 제어합니다';
 
   @override
   String get beforeClassPopupLabel => '수업 전 팝업 시간';
@@ -2346,10 +2283,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveDisplayContentTitle => '표시 내용';
-
-  @override
-  String get liveDisplayContentSubtitle =>
-      '이 설정 그룹은 현재 스테이지에만 영향을 주며, 다른 알림 표시는 변경하지 않습니다';
 
   @override
   String get showCourseNameTitle => '수업명 표시';
@@ -2449,11 +2382,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String liveMiuiLabelSizePreview(String value) {
-    return '$value';
-  }
-
-  @override
   String get liveIslandVisualTitle => '캡슐 좌측 아이콘';
 
   @override
@@ -2548,24 +2476,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keepAliveConfirmGoAction => '활성화';
 
   @override
-  String get layoutEntryTitle => '레이아웃 및 교시';
-
-  @override
-  String get layoutEntrySubtitle => '교시 시간, 행 높이, 시간 열, 주말 표시 및 카드 레이아웃';
-
-  @override
-  String get remindersSectionTitle => '알림 및 푸시';
-
-  @override
-  String get liveGuideEntryTitle => '사용 가이드 및 권한';
-
-  @override
-  String get liveGuideEntrySubtitle => '약칭 설정, 알림, 자동 시작, 배터리 전략';
-
-  @override
-  String get managementSectionTitle => '시간표 관리';
-
-  @override
   String timeSchemeEntryCurrentPrefix(String name) {
     return '현재: $name · 전환, 교시 편집 및 복사';
   }
@@ -2596,12 +2506,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String syncedCurrentWeekMessage(int week) {
     return '제$week주에 동기화됨';
   }
-
-  @override
-  String get pickSemesterWeekCountTitle => '학기 주 수 선택';
-
-  @override
-  String get pickSemesterWeekCountSubtitle => '학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다';
 
   @override
   String weekCountItem(int count) {
@@ -2691,40 +2595,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get refreshStatusTooltip => '상태 새로고침';
 
   @override
-  String get quickSetupTitle => '첫 화면 빠른 설정';
-
-  @override
-  String get quickSetupSubtitle => '가장 중요한 5개 항목을 먼저 배치합니다. 아래까지 스크롤할 필요 없이';
-
-  @override
-  String get quickActionNotificationsTitle => '알림 설정';
-
-  @override
-  String get quickActionNotificationsSubtitle => '먼저 알림 전송 가능 확인';
-
-  @override
-  String get quickActionIslandTitle => '슈퍼아일랜드 권한';
-
-  @override
-  String get quickActionIslandSubtitle => 'promoted 알림 확인';
-
-  @override
   String get quickActionAutoStartTitle => '자동 시작';
-
-  @override
-  String get quickActionAutoStartSubtitle => '백그라운드 종료 방지';
-
-  @override
-  String get quickActionBatteryTitle => '배터리 제한 없음';
-
-  @override
-  String get quickActionBatterySubtitle => '알림 중단 방지';
-
-  @override
-  String get quickActionKeepAliveTitle => '백그라운드 상주 보조';
-
-  @override
-  String get quickActionKeepAliveSubtitle => '백그라운드 안정성 향상';
 
   @override
   String get guidePrivacyConsentLabel => 'Umeng 관련 개인정보 처리방침을 읽고 동의합니다';
@@ -2754,13 +2625,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get singleLessonLabel => '단일 수업';
 
   @override
-  String get recurringLessonLabel => '반복 수업';
-
-  @override
   String get singleLessonHint => '보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다';
-
-  @override
-  String get recurringLessonHint => '같은 시간에 매주 연속하는 정규 수업에 적합합니다';
 
   @override
   String get sharedInfoTitle => '공유 정보';
@@ -2826,20 +2691,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timeSchemeOverrideLabel => '수업 시간 방안';
 
   @override
-  String get lessonWeeksTitle => '수업 주차';
-
-  @override
   String get singleLessonWeekHint =>
       '단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다';
-
-  @override
-  String get rangeWeekLabel => '연속 주';
-
-  @override
-  String get oddWeeksLabel => '홀수 주';
-
-  @override
-  String get oddWeeksHint => '범위 내 홀수 주만 유지합니다';
 
   @override
   String timeSchemeSetCountValue(int count) {
@@ -2947,9 +2800,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveClassReminderLeadSummaryFocused => '종료 전 중요 알림 시작';
-
-  @override
-  String get liveSettingsEntrySubtitle => '알림 시간대, 아일랜드 표시, 알림바 및 표시 내용';
 
   @override
   String get timetableProfilesEntrySubtitle => '새로 만들기, 전환, 복사, 이름 변경 및 삭제';
@@ -3347,9 +3197,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingNotRefreshed => '아직 새로고침 안 됨';
 
   @override
-  String get liveTestingTitle => '테스트 및 진단';
-
-  @override
   String get liveTestingNotificationTitle => '테스트 알림';
 
   @override
@@ -3439,9 +3286,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingSectionRecentLogs => '최근 진단 로그';
-
-  @override
-  String get liveTestingRawDataTitle => '원시 디버그 데이터';
 
   @override
   String get liveTestingExpandRawJson => '원시 JSON 펼치기';
@@ -3546,18 +3390,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingInFlight => '테스트가 진행 중입니다. 중복으로 탭하지 말고 잠시 후 다시 시도해 주세요';
-
-  @override
-  String get liveTestingProductionHomeHint =>
-      '정식 슈퍼아일랜드 선택 경로를 사용했습니다. Home 키로 홈 화면에 나가서 확인하세요(앱을 열어 둔 상태에서는 보통 표시되지 않습니다)';
-
-  @override
-  String get liveTestingPresetFallbackNote =>
-      '(테스트 가능한 실제 수업이 없어 자가 점검 프리셋 수업을 대신 사용했습니다. 시간표에는 기록되지 않습니다)';
-
-  @override
-  String get liveTestingTestCourseNote =>
-      '여기에 메모가 표시됩니다. 수업 편집 페이지에서 설정할 수 있습니다';
 
   @override
   String get liveTestingNotificationSent => '테스트 알림이 전송되었습니다';
@@ -3715,24 +3547,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeWidgetPreviewUnavailable => '미리보기를 표시할 수 없음';
 
   @override
-  String get layoutSettingsTitle => '레이아웃 및 교시';
-
-  @override
-  String get layoutDensityTitle => '시간표 밀도';
-
-  @override
   String get layoutAutoFitHeightTitle => '화면 높이에 자동 맞춤';
 
   @override
-  String get layoutAutoFitHeightSubtitle =>
-      '켜면 현재 교시 수에 따라 페이지 하단까지 자동 맞춤됩니다. 아래 여백을 유지하지 않습니다';
-
-  @override
   String get layoutHideWeekendsTitle => '토요일과 일요일 숨기기';
-
-  @override
-  String get layoutHideWeekendsSubtitle =>
-      '켜면 홈에 월~금만 표시됩니다. 나머지 열 너비는 자동 맞춤됩니다';
 
   @override
   String get layoutEnableHapticsTitle => '앱 내 진동 피드백 활성화';
@@ -3741,21 +3559,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutEnableHapticsSubtitle => '끄면 전환 진동 없음';
 
   @override
-  String pageTransitionSpeedLabel(String speed) {
-    return '페이지 전환 속도 $speed×';
-  }
-
-  @override
   String get pageTransitionSpeedTitle => '페이지 전환 속도';
-
-  @override
-  String get pageTransitionSpeedSubtitle =>
-      '값이 클수록 애니메이션이 빨라집니다. 시스템 \'전환 애니메이션 배율\' 설정도 함께 적용됩니다';
-
-  @override
-  String pageTransitionSpeedDurationHint(int milliseconds) {
-    return '약 ${milliseconds}ms';
-  }
 
   @override
   String get layoutTimeColumnDisplayLabel => '홈 시간 열 표시';
@@ -3764,68 +3568,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutTimeColumnWidthLabel => '시간 열 너비';
 
   @override
-  String get layoutBackToCurrentWeekButtonStyleLabel => '\"이번주로 돌아가기\" 버튼 스타일';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleHelper =>
-      '기본은 현재 인라인 스타일을 유지합니다. 주간 뷰 오른쪽 아래의 소형 플로팅 버튼으로도 변경할 수 있습니다';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleInline => '시간 열 인라인';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleFloating => '오른쪽 아래 플로팅';
-
-  @override
-  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
-    return '플로팅 버튼 불투명도 $value%';
-  }
-
-  @override
   String get layoutBackToCurrentWeekButtonOpacityTitle => '플로팅 버튼 불투명도';
-
-  @override
-  String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
-      '오른쪽 아래 플로팅 스타일에만 유효합니다';
-
-  @override
-  String layoutCourseCardGapLabel(String value) {
-    return '수업 카드 간격 $value';
-  }
 
   @override
   String get layoutCourseCardGapTitle => '수업 카드 간격';
 
   @override
-  String layoutSectionHeightLabel(String value) {
-    return '시간표 행 높이 $value';
-  }
-
-  @override
   String get layoutSectionHeightTitle => '시간표 행 높이';
-
-  @override
-  String layoutCompactFontSizeLabel(String value) {
-    return '컴팩트 폰트 크기 $value';
-  }
 
   @override
   String get layoutCompactFontSizeTitle => '컴팩트 글꼴 크기';
 
   @override
-  String layoutCourseCardFontSizeLabel(String value) {
-    return '수업 카드 폰트 크기 $value';
-  }
-
-  @override
   String get layoutCourseCardFontSizeTitle => '수업 카드 글꼴 크기';
-
-  @override
-  String get layoutCourseCardDisplayTitle => '수업 카드 표시';
-
-  @override
-  String get layoutCourseCardDisplaySubtitle =>
-      '기본으로 수업명, 교사, 강의실을 표시합니다. 다른 정보는 시간표별로 자유롭게 조합할 수 있습니다';
 
   @override
   String get layoutShowTeacherTitle => '교사 표시';
@@ -3840,20 +3595,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowTimeLabelsTitle => '수업 시작과 종료 텍스트 표시';
 
   @override
-  String get layoutShowTimeLabelsSubtitle =>
-      '끄면 시간 포인트만 표시합니다. \'수업 시작\' \'수업 종료\' 텍스트는 숨겨집니다';
-
-  @override
   String get layoutShowWeeksTitle => '주차 수 표시';
 
   @override
-  String get layoutShowWeeksSubtitle => '예: 1-16주, 홀짝주';
-
-  @override
   String get layoutShowDescriptionTitle => '수업 개요 표시';
-
-  @override
-  String get layoutShowDescriptionSubtitle => '기본 꺼짐. 공간 부족 시 가장 먼저 압축됩니다';
 
   @override
   String get layoutShowOtherWeeksTitle => '비이번주 수업 표시';
@@ -3883,32 +3628,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get layoutShowConflictBadgeTitle => '홈에 충돌 캡슐 표시';
 
   @override
-  String get layoutShowConflictBadgeSubtitle =>
-      '끄면 홈 시간표에서 충돌 수업에 \'충돌\' 캡슐을 표시하지 않습니다';
-
-  @override
-  String layoutConflictOpacityLabel(int value) {
-    return '충돌 수업 투명도 $value%';
-  }
-
-  @override
   String get layoutConflictOpacityTitle => '충돌 수업 투명도';
-
-  @override
-  String get layoutConflictOpacitySubtitle =>
-      '충돌 수업은 자동으로 겹쳐 표시됩니다. 투명도를 낮추면 여러 수업을 동시에 확인할 수 있습니다';
-
-  @override
-  String get layoutTipsText =>
-      '템플릿은 설정 홈으로 이동했습니다. 여기서는 시간표의 행 높이, 시간 열, 주말 표시, 수업 카드 레이아웃을 조정합니다. 현재 시간표의 시간만 변경하려면 먼저 템플릿에서 복사한 뒤 적용하세요.';
 
   @override
   String currentWeekCompact(int week) {
     return '$week주';
   }
-
-  @override
-  String get sampleCourseNumericalControl => '수치';
 
   @override
   String get sampleCourseAdvancedMath => '미적';
@@ -4422,9 +4147,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get localDebugMaintainer => '로컬 디버그';
-
-  @override
   String get addDebugRecordTooltip => '디버그 레코드 추가';
 
   @override
@@ -4805,9 +4527,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get rescheduleAction => '시간 변경';
-
-  @override
   String get deleteModeTitle => '삭제 방식';
 
   @override
@@ -5074,11 +4793,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get warehouseLoginHintImport => '여기서 교무 시스템에 로그인한 뒤 가져오기를 실행합니다';
-
-  @override
-  String localScriptLabel(String scriptName) {
-    return '로컬 스크립트: $scriptName';
-  }
 
   @override
   String get webAddressHint => '웹 주소 입력';
@@ -5796,9 +5510,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get selectTimeSchemeTitle => '시간 방안 선택';
 
   @override
-  String get manageTimeSchemesAction => '시간 방안 관리';
-
-  @override
   String get examDefaultName => '기말고사';
 
   @override
@@ -5905,9 +5616,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeEnabledDesc => '수업 알림과 위젯이 모든 수업을 숨깁니다';
-
-  @override
-  String get liveTestingHolidayModeDisabledDesc => '현재 일반 휴일 데이터를 사용 중입니다';
 
   @override
   String get textColorTitle => '텍스트 색상';
@@ -7760,47 +7468,9 @@ class AppLocalizationsKo extends AppLocalizations {
       'Quick path failed; retrying with the full recorded steps…';
 
   @override
-  String get macroReplayNoSteps => 'No recorded steps';
-
-  @override
-  String get macroReplayUserCancelled => 'Cancelled by user';
-
-  @override
-  String macroReplayStepFailed(int current, int total, String error) {
-    return 'Step $current/$total failed: $error';
-  }
-
-  @override
-  String get macroReplayEmptyNavigateUrl => 'Navigation URL is empty';
-
-  @override
-  String macroReplayInvalidUrl(String url) {
-    return 'Invalid URL: $url';
-  }
-
-  @override
-  String get macroReplayEmptyFillSelector => 'Fill selector is empty';
-
-  @override
-  String macroReplayFieldNotFound(String selector) {
-    return 'Form field not found: $selector';
-  }
-
-  @override
-  String get macroReplayEmptyClickSelector => 'Click selector is empty';
-
-  @override
-  String macroReplayClickNotFound(String selector) {
-    return 'Click target not found: $selector';
-  }
-
-  @override
   String macroReplayWaitUrlPattern(String pattern) {
     return 'Waiting for URL match: $pattern';
   }
-
-  @override
-  String get macroReplayEmptyWaitSelector => 'Wait selector is empty';
 
   @override
   String macroReplayWaitSelector(String selector) {
@@ -9036,11 +8706,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String profileTimeSchemeName(String profileName) {
-    return '$profileName schedule';
-  }
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -9446,25 +9111,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get frostedGlassModeLabel => '기본 소재';
 
   @override
-  String get liquidGlassScopePopupTitle => '드롭다운 팝업';
-
-  @override
-  String get liquidGlassScopePopupSubtitle => '유리 모드 등 설정 행에서 열리는 작은 앵커 메뉴';
-
-  @override
-  String get liquidGlassScopeSelectSheetTitle => '전체 화면 선택 패널';
-
-  @override
-  String get liquidGlassScopeSelectSheetSubtitle =>
-      '프리셋 테마, 글꼴 등 긴 목록 선택 대화상자. 끄면 솔리드 카드로 바뀝니다';
-
-  @override
-  String get liquidGlassScopeSheetDialogTitle => '시트 및 대화상자';
-
-  @override
-  String get liquidGlassScopeSheetDialogSubtitle => '바텀 시트, 확인 대화상자, 작업 메뉴';
-
-  @override
   String get liquidGlassScopeHomeChromeTitle => '홈 유리 밴드';
 
   @override
@@ -9472,13 +9118,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liquidGlassScopeDockSubtitle => '하단 플로팅 필과 수업 추가 버튼';
-
-  @override
-  String get liquidGlassScopePickerButtonsTitle => '배경화면 선택 버튼';
-
-  @override
-  String get liquidGlassScopePickerButtonsSubtitle =>
-      '배경화면 위치 선택 페이지에서 배경 위에 떠 있는 유리 버튼';
 
   @override
   String get frostedGlassModeLiquid => '리퀴드 글래스';
@@ -9491,21 +9130,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liquidGlassPresetLabel => '리퀴드 글래스 프리셋';
-
-  @override
-  String get liquidGlassPresetClear => '클리어';
-
-  @override
-  String get liquidGlassPresetLight => '라이트 미스트';
-
-  @override
-  String get liquidGlassPresetStandard => '표준';
-
-  @override
-  String get liquidGlassPresetDense => '덴스';
-
-  @override
-  String get liquidGlassPresetCustom => '사용자 정의';
 
   @override
   String get liquidGlassRefractionLabel => '굴절 강도';
@@ -9659,9 +9283,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get selectTimeTitle => '시간 선택';
-
-  @override
-  String get liveSelfCheckSubtitle => '자체 점검 실행';
 
   @override
   String get aboutSupportUpdatesSectionTitle => '지원 및 업데이트';

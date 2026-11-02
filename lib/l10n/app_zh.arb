@@ -28,10 +28,7 @@
   "settingsTitle": "课表设置",
   "appearanceEntryTitle": "外观与配色",
   "appearanceThemeDisplaySectionTitle": "主题与显示",
-  "layoutSectionEntryTitle": "布局与节次",
-  "layoutSectionEntrySubtitle": "节次时间、行高、时间列、周末显示与卡片布局",
   "homeWidgetEntryTitle": "桌面小组件",
-  "reminderNotificationSectionTitle": "提醒与通知",
   "userGuideEntryTitle": "使用引导与权限",
   "userGuideEntrySubtitle": "简称建议、通知、自启动、电池策略",
   "timetableManagementSectionTitle": "课表管理",
@@ -487,7 +484,6 @@
   "feedbackTitle": "问题反馈",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "提交问题、建议，查看已有反馈",
-  "openIssuePage": "打开 Issue 页面",
   "copyAddress": "复制地址",
   "copiedIssueAddress": "已复制 Issue 地址",
   "copiedXiaohongshuId": "已复制小红书号",
@@ -865,7 +861,6 @@
     }
   },
   "teacherUnset": "未设置",
-  "locationUnset": "未设置",
   "confirmDeleteTitle": "确认删除",
   "confirmDeleteCourseMessage": "确定删除课程 {name}？",
   "@confirmDeleteCourseMessage": {
@@ -884,7 +879,6 @@
       }
     }
   },
-  "overrideTimeSchemeDescription": "这门课会单独使用所选时间模板，不跟随当前课表主时间模板",
   "weekdayLabel": "星期",
   "startSectionLabel": "开始节次",
   "endSectionLabel": "结束节次",
@@ -911,9 +905,6 @@
   "allWeeksFilter": "全部",
   "oddWeeksFilter": "单周",
   "evenWeeksFilter": "双周",
-  "rangeWeeksAllHint": "按开始周到结束周连续排课",
-  "rangeWeeksOddHint": "只保留范围内的单周",
-  "rangeWeeksEvenHint": "只保留范围内的双周",
   "selectAllAction": "全选",
   "selectOddWeeksAction": "单周",
   "selectEvenWeeksAction": "双周",
@@ -939,14 +930,6 @@
   "weekdayFri": "周五",
   "weekdaySat": "周六",
   "weekdaySun": "周日",
-  "saturationLabel": "饱和度 {value}%",
-  "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "useThisColor": "使用这个颜色",
   "selectAtLeastOneWeek": "请至少选择一个上课周次",
   "saveFailed": "保存失败",
@@ -1226,18 +1209,11 @@
   "liveGroupReminders": "提醒",
   "liveGroupDisplay": "显示内容",
   "liveGroupMaintenance": "维护与自检",
-  "liveReminderTimingEntryTitle": "提醒时段",
-  "liveReminderTimingEntrySubtitle": "上课前、课中与下课提醒，以及重点提醒切入时机",
   "liveBeforeClassDisplayEntryTitle": "上课前提醒显示",
   "liveDuringEndDisplayEntryTitle": "课中与下课提醒显示",
-  "liveKeepAliveEntryTitle": "后台保活",
-  "liveKeepAliveEntrySubtitle": "隐藏后台、后台保活辅助服务和权限入口",
-  "liveTestingEntryTitle": "测试与诊断",
-  "liveTestingEntrySubtitle": "发送测试通知，检查超级岛和本地诊断日志",
   "followBeforeClassSetting": "跟随上课前提醒",
   "liveReminderTimingTitle": "提醒时段",
   "liveReminderSwitchesTitle": "提醒开关",
-  "liveReminderSwitchesSubtitle": "可自由组合，互不影响",
   "beforeClassReminderTitle": "上课前提醒",
   "beforeClassReminderSubtitle": "课程开始前 {minutes} 分钟弹出",
   "@beforeClassReminderSubtitle": {
@@ -1259,14 +1235,12 @@
     }
   },
   "liveDisplayModeTitle": "展示方式",
-  "liveDisplayModeSubtitle": "对已开启的提醒生效",
   "duringClassStatusNotificationTitle": "课中状态栏通知",
   "duringClassStatusNotificationImmediate": "保留状态栏通知",
   "duringClassStatusNotificationBeforeEnd": "重点提醒前用普通通知",
   "duringClassStatusNotificationPersistent": "全程显示普通通知",
   "enableIslandDisplayTitle": "展示超级岛",
   "liveTimeThresholdTitle": "时间阈值",
-  "liveTimeThresholdSubtitle": "控制课前弹出与秒级倒计时",
   "beforeClassPopupLabel": "上课前弹出时间",
   "beforeClassMinutesOption": "{minutes} 分钟",
   "@beforeClassMinutesOption": {
@@ -1297,7 +1271,6 @@
   "timeCorrectionHelp": "铃声比课表快则提前，慢则延后",
   "duringEndTimeDisplayLabel": "课中时间样式",
   "liveDisplayContentTitle": "显示内容",
-  "liveDisplayContentSubtitle": "这组设置只影响当前阶段，不会改动另一组提醒显示",
   "showCourseNameTitle": "显示课程名",
   "preferShortNameTitle": "优先显示课程简称",
   "preferShortNameSubtitle": "课程未填写简称时不生效",
@@ -1345,14 +1318,6 @@
     "placeholders": {
       "minutes": {
         "type": "int"
-      }
-    }
-  },
-  "liveMiuiLabelSizePreview": "{value}",
-  "@liveMiuiLabelSizePreview": {
-    "placeholders": {
-      "value": {
-        "type": "String"
       }
     }
   },
@@ -1412,12 +1377,6 @@
   "keepAliveConfirmTitle": "开启后台保活服务",
   "keepAliveConfirmBody": "用于后台更新桌面小组件和课程提醒，不会读取屏幕内容或代为点击。需要系统无障碍权限，可随时关闭。",
   "keepAliveConfirmGoAction": "去开启",
-  "layoutEntryTitle": "布局与节次",
-  "layoutEntrySubtitle": "节次时间、行高、时间列、周末显示与卡片布局",
-  "remindersSectionTitle": "提醒与通知",
-  "liveGuideEntryTitle": "使用引导与权限",
-  "liveGuideEntrySubtitle": "简称建议、通知、自启动、电池策略",
-  "managementSectionTitle": "课表管理",
   "timeSchemeEntryCurrentPrefix": "当前：{name} · 切换、编辑节次和复制",
   "@timeSchemeEntryCurrentPrefix": {
     "placeholders": {
@@ -1457,8 +1416,6 @@
       }
     }
   },
-  "pickSemesterWeekCountTitle": "选择学期周数",
-  "pickSemesterWeekCountSubtitle": "不同学校可按实际教学周数调整",
   "weekCountItem": "{count} 周",
   "@weekCountItem": {
     "placeholders": {
@@ -1511,18 +1468,7 @@
   "diagnosticsMessage": "消息",
   "diagnosticsStackTrace": "堆栈",
   "refreshStatusTooltip": "刷新状态",
-  "quickSetupTitle": "首屏快速设置",
-  "quickSetupSubtitle": "先把最关键的 5 个入口放在前面，不用翻到下面再找",
-  "quickActionNotificationsTitle": "通知设置",
-  "quickActionNotificationsSubtitle": "先确保能发通知",
-  "quickActionIslandTitle": "超级岛权限",
-  "quickActionIslandSubtitle": "检查 promoted 通知",
   "quickActionAutoStartTitle": "自启动",
-  "quickActionAutoStartSubtitle": "避免后台被杀",
-  "quickActionBatteryTitle": "电池无限制",
-  "quickActionBatterySubtitle": "避免提醒中断",
-  "quickActionKeepAliveTitle": "后台保活辅助",
-  "quickActionKeepAliveSubtitle": "提升后台稳定性",
   "guidePrivacyConsentLabel": "我已阅读并同意友盟相关隐私说明",
   "exitAppAction": "退出应用",
   "agreeAndStartAction": "同意并开始使用",
@@ -1532,9 +1478,7 @@
   "deleteCourseTitle": "删除课程",
   "courseDeleted": "课程已删除",
   "singleLessonLabel": "单节课",
-  "recurringLessonLabel": "多节课",
   "singleLessonHint": "适合补课、临时加课，课程只会落在一个周次",
-  "recurringLessonHint": "适合同一时间连续上很多周的常规课程",
   "sharedInfoTitle": "共享信息",
   "sharedInfoHint": "查看共享字段说明",
   "sharedInfoSheetItemCourseName": "课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录",
@@ -1554,11 +1498,7 @@
   "courseNatureLabel": "课程性质",
   "courseDescriptionOptional": "课程简介（可选）",
   "timeSchemeOverrideLabel": "时间模板",
-  "lessonWeeksTitle": "上课周次",
   "singleLessonWeekHint": "单节课只会出现在一个周次里，适合补课、临时加课",
-  "rangeWeekLabel": "连续周",
-  "oddWeeksLabel": "单周",
-  "oddWeeksHint": "只保留范围内的单周",
   "timeSchemeSetCountValue": "{count} 套",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -1675,7 +1615,6 @@
   "liveClassReminderLeadSummaryKeepNormal": "课中普通通知，下课前切重点提醒",
   "liveClassReminderLeadSummaryIsland": "课中普通通知，下课前切超级岛",
   "liveClassReminderLeadSummaryFocused": "下课前开始重点提醒",
-  "liveSettingsEntrySubtitle": "提醒时段、岛展示、通知栏和显示内容",
   "timetableProfilesEntrySubtitle": "新建、切换、复制、重命名和删除课表",
   "homeTitleSectionTitle": "首页标题",
   "homeTitleStyleLabel": "标题样式",
@@ -1849,7 +1788,6 @@
   "liveDiagnosticsCleared": "已清空应用日志",
   "liveDiagnosticsClearFailed": "清空应用日志失败",
   "liveTestingNotRefreshed": "尚未刷新",
-  "liveTestingTitle": "测试与诊断",
   "liveTestingNotificationTitle": "测试通知",
   "liveTestingNotificationSubtitle": "验证超级岛与通知栏的显示效果",
   "liveTestingStartAction": "开始测试",
@@ -1893,7 +1831,6 @@
   "liveTestingSectionDisplay": "岛显示配置",
   "liveTestingSectionNotification": "通知判定结果",
   "liveTestingSectionRecentLogs": "最近诊断日志",
-  "liveTestingRawDataTitle": "原始调试数据",
   "liveTestingExpandRawJson": "展开原始 JSON",
   "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直占满页面",
   "liveTestingLocalLogsTitle": "本地诊断日志",
@@ -1949,9 +1886,6 @@
   "liveStagePreviewStageBeforeClass": "上课前",
   "liveStagePreviewStageDuringClass": "课中",
   "liveTestingInFlight": "测试进行中，请勿重复点击，请稍后再试",
-  "liveTestingProductionHomeHint": "已触发超级岛更新。请返回桌面查看，应用处于前台时系统不弹出。",
-  "liveTestingPresetFallbackNote": "未检测到有效课程，使用自检预设课程，不写入课表",
-  "liveTestingTestCourseNote": "此处显示备注，可以在课程编辑页设置",
   "liveTestingNotificationSent": "测试通知已发送",
   "sendFailedWithError": "发送失败：{error}",
   "@sendFailedWithError": {
@@ -2040,95 +1974,24 @@
   "homeWidgetPreviewTitle": "效果预览",
   "homeWidgetPreviewAddAction": "添加到桌面",
   "homeWidgetPreviewUnavailable": "预览暂不可用",
-  "layoutSettingsTitle": "布局与节次",
-  "layoutDensityTitle": "课表密度",
   "layoutAutoFitHeightTitle": "自动充满屏幕高度",
-  "layoutAutoFitHeightSubtitle": "开启后会按当前节数自动铺满页面底部，不再保留下方空隙",
   "layoutHideWeekendsTitle": "隐藏周六周日",
-  "layoutHideWeekendsSubtitle": "开启后首页只显示周一到周五，剩余列宽会自动铺满",
   "layoutEnableHapticsTitle": "启用应用内震动反馈",
   "layoutEnableHapticsSubtitle": "关闭后页码切换不再震动",
-  "pageTransitionSpeedLabel": "页面转场速度 {speed}×",
-  "@pageTransitionSpeedLabel": {
-    "placeholders": {
-      "speed": {
-        "type": "String"
-      }
-    }
-  },
   "pageTransitionSpeedTitle": "页面转场速度",
-  "pageTransitionSpeedSubtitle": "数值越大动画越快，实际速度受系统过渡动画缩放影响",
-  "pageTransitionSpeedDurationHint": "约 {milliseconds} 毫秒",
-  "@pageTransitionSpeedDurationHint": {
-    "placeholders": {
-      "milliseconds": {
-        "type": "int"
-      }
-    }
-  },
   "layoutTimeColumnDisplayLabel": "首页时间列显示",
   "layoutTimeColumnWidthLabel": "时间栏宽度",
-  "layoutBackToCurrentWeekButtonStyleLabel": "回到本周按钮样式",
-  "layoutBackToCurrentWeekButtonStyleHelper": "默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮",
-  "layoutBackToCurrentWeekButtonStyleInline": "时间栏内嵌",
-  "layoutBackToCurrentWeekButtonStyleFloating": "右下角悬浮",
-  "layoutBackToCurrentWeekButtonOpacityLabel": "悬浮按钮不透明度 {value}%",
-  "@layoutBackToCurrentWeekButtonOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "layoutBackToCurrentWeekButtonOpacityTitle": "悬浮按钮不透明度",
-  "layoutBackToCurrentWeekButtonOpacitySubtitle": "只对右下角悬浮样式生效",
-  "layoutCourseCardGapLabel": "课程卡片间距 {value}",
-  "@layoutCourseCardGapLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "layoutCourseCardGapTitle": "课程卡片间距",
-  "layoutSectionHeightLabel": "课表行高 {value}",
-  "@layoutSectionHeightLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "layoutSectionHeightTitle": "课表行高",
-  "layoutCompactFontSizeLabel": "紧凑字号 {value}",
-  "@layoutCompactFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "layoutCompactFontSizeTitle": "紧凑字号",
-  "layoutCourseCardFontSizeLabel": "课程卡片字号 {value}",
-  "@layoutCourseCardFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "layoutCourseCardFontSizeTitle": "课程卡片字号",
-  "layoutCourseCardDisplayTitle": "课程卡片显示",
-  "layoutCourseCardDisplaySubtitle": "默认显示课程名、教师和教室；其他信息可按课表自由开关组合",
   "layoutShowTeacherTitle": "显示教师",
   "layoutShowClassroomTitle": "显示教室",
   "layoutShowTimeTitle": "显示时间",
   "layoutShowTimeLabelsTitle": "显示上下课字样",
-  "layoutShowTimeLabelsSubtitle": "关闭后仅显示时间点，不显示上课和下课字样",
   "layoutShowWeeksTitle": "显示周数",
-  "layoutShowWeeksSubtitle": "例如第 1～16 周、单双周",
   "layoutShowDescriptionTitle": "显示课程简介",
-  "layoutShowDescriptionSubtitle": "默认关闭，空间不足时会最先被压缩",
   "layoutShowOtherWeeksTitle": "显示非本周课程",
   "layoutShowOtherWeeksSubtitle": "非本周课程以半透明灰色显示",
   "weekGridShowExamsTitle": "周视图显示考试",
@@ -2138,18 +2001,7 @@
   "layoutVerticalAlignLabel": "垂直排版",
   "layoutHorizontalAlignLabel": "水平排版",
   "layoutShowConflictBadgeTitle": "首页显示冲突小胶囊",
-  "layoutShowConflictBadgeSubtitle": "关闭后，首页课表不再对冲突课程显示冲突标识",
-  "layoutConflictOpacityLabel": "冲突课程透明度 {value}%",
-  "@layoutConflictOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "layoutConflictOpacityTitle": "冲突课程透明度",
-  "layoutConflictOpacitySubtitle": "冲突课程会自动层叠显示，调低透明度后能同时看到多节课",
-  "layoutTipsText": "时间模板已移到设置首页，这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用",
   "currentWeekCompact": "{week} 周",
   "@currentWeekCompact": {
     "placeholders": {
@@ -2158,7 +2010,6 @@
       }
     }
   },
-  "sampleCourseNumericalControl": "数控",
   "sampleCourseAdvancedMath": "高数",
   "sampleTeacherZhang": "张老师",
   "sampleCourseEnglish": "英语",
@@ -2472,7 +2323,6 @@
       }
     }
   },
-  "localDebugMaintainer": "本地调试",
   "addDebugRecordTooltip": "新增调试记录",
   "customDebugIntroTitle": "这里放你自己的教务调试记录",
   "customDebugIntroSubtitle": "保存每所学校的网址与脚本，下次一键复用",
@@ -2693,7 +2543,6 @@
       }
     }
   },
-  "rescheduleAction": "调课",
   "deleteModeTitle": "删除方式",
   "deleteCourseAction": "删这个课",
   "deleteOccurrenceAction": "删这节课",
@@ -2965,14 +2814,6 @@
   "copiedCurrentAddress": "已复制当前地址",
   "warehouseLoginHintLocalDebug": "当前为本地调试脚本模式",
   "warehouseLoginHintImport": "在此登录教务系统后执行导入",
-  "localScriptLabel": "本地脚本：{scriptName}",
-  "@localScriptLabel": {
-    "placeholders": {
-      "scriptName": {
-        "type": "String"
-      }
-    }
-  },
   "webAddressHint": "输入网页地址",
   "goAction": "前往",
   "rememberedAccountLabel": "已记住账号：{username}",
@@ -3391,7 +3232,6 @@
   "noHistoryRecords": "暂无历史记录",
   "weekPickerTitle": "选择上课周次",
   "selectTimeSchemeTitle": "选择时间模板",
-  "manageTimeSchemesAction": "管理时间模板",
   "examDefaultName": "期末考试",
   "examDateWeekPickerTitle": "选择考试日期",
   "weekPickerCalendarTooltip": "使用日历选择",
@@ -3467,7 +3307,6 @@
   "liveTestingHolidayModeEnabled": "假期模式已开启",
   "liveTestingHolidayModeDisabled": "假期模式已关闭",
   "liveTestingHolidayModeEnabledDesc": "课程提醒和小组件将隐藏所有课程",
-  "liveTestingHolidayModeDisabledDesc": "当前使用正常假期数据",
   "textColorTitle": "文字颜色",
   "textColorSubtitle": "自定义课表各区域的文字颜色",
   "textColorIndependentDetail": "独立设置详情颜色",
@@ -4895,49 +4734,6 @@
   "macroReplayStepExecuteScript": "正在执行导入脚本……",
   "macroReplayStepDelay": "等待中……",
   "macroReplayAcceleratedFallbackTip": "快捷路径失败，正在使用完整录制步骤重试……",
-  "macroReplayNoSteps": "没有录制的步骤",
-  "macroReplayUserCancelled": "用户取消",
-  "macroReplayStepFailed": "第 {current}/{total} 步失败：{error}",
-  "@macroReplayStepFailed": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyNavigateUrl": "导航 URL 为空",
-  "macroReplayInvalidUrl": "无效的 URL: {url}",
-  "@macroReplayInvalidUrl": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyFillSelector": "填充字段的选择器为空",
-  "macroReplayFieldNotFound": "未找到表单字段：{selector}",
-  "@macroReplayFieldNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyClickSelector": "点击元素的选择器为空",
-  "macroReplayClickNotFound": "未找到点击元素：{selector}",
-  "@macroReplayClickNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
   "macroReplayWaitUrlPattern": "等待 URL 匹配：{pattern}",
   "@macroReplayWaitUrlPattern": {
     "placeholders": {
@@ -4946,7 +4742,6 @@
       }
     }
   },
-  "macroReplayEmptyWaitSelector": "等待元素的选择器为空",
   "macroReplayWaitSelector": "等待元素：{selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
@@ -5454,14 +5249,6 @@
       }
     }
   },
-  "profileTimeSchemeName": "{profileName} 时间",
-  "@profileTimeSchemeName": {
-    "placeholders": {
-      "profileName": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "未命名课表",
   "cloudBackupManualProtectedTitle": "手动备份永不过期",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
@@ -5762,26 +5549,13 @@
   "materialStateSolid": "实体",
   "materialStateFrost": "高斯模糊",
   "frostedGlassModeLabel": "默认材质",
-  "liquidGlassScopePopupTitle": "下拉选择弹窗",
-  "liquidGlassScopePopupSubtitle": "玻璃模式等设置行弹出的小气泡菜单",
-  "liquidGlassScopeSelectSheetTitle": "全屏选择面板",
-  "liquidGlassScopeSelectSheetSubtitle": "预设主题、字体等长列表选择弹窗；关闭后改为实体卡片",
-  "liquidGlassScopeSheetDialogTitle": "弹窗与对话框",
-  "liquidGlassScopeSheetDialogSubtitle": "底部弹窗、确认对话框与操作菜单",
   "liquidGlassScopeHomeChromeTitle": "首页玻璃带",
   "liquidGlassScopeDockTitle": "玻璃坞导航",
   "liquidGlassScopeDockSubtitle": "底部悬浮药丸与加课圆钮",
-  "liquidGlassScopePickerButtonsTitle": "壁纸选点按钮",
-  "liquidGlassScopePickerButtonsSubtitle": "壁纸位置选择页悬浮在壁纸上的玻璃按钮",
   "frostedGlassModeLiquid": "液态玻璃",
   "frostedGlassModeSolid": "实体卡片",
   "advancedMaterialTitle": "高级材质",
   "liquidGlassPresetLabel": "液态玻璃预设",
-  "liquidGlassPresetClear": "清澈",
-  "liquidGlassPresetLight": "轻雾",
-  "liquidGlassPresetStandard": "标准",
-  "liquidGlassPresetDense": "浓密",
-  "liquidGlassPresetCustom": "自定义",
   "liquidGlassRefractionLabel": "折射强度",
   "liquidGlassRefractionBandLabel": "作用带宽度",
   "liquidGlassRefractionEdgePowLabel": "边缘陡缓",
@@ -5830,7 +5604,6 @@
   "timetablePageSectionBackground": "背景",
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "选择时间",
-  "liveSelfCheckSubtitle": "运行自检",
   "aboutSupportUpdatesSectionTitle": "支持与更新",
   "aboutProductSectionTitle": "产品",
   "aboutCommunitySectionTitle": "社区",

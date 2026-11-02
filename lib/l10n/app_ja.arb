@@ -28,10 +28,7 @@
   "settingsTitle": "時間割設定",
   "appearanceEntryTitle": "外観と配色",
   "appearanceThemeDisplaySectionTitle": "テーマと表示",
-  "layoutSectionEntryTitle": "レイアウトと時限",
-  "layoutSectionEntrySubtitle": "時限時間、行高さ、時間列、週末表示とカードレイアウト",
   "homeWidgetEntryTitle": "ホームウィジェット",
-  "reminderNotificationSectionTitle": "リマインダーと通知",
   "userGuideEntryTitle": "使用ガイドと権限",
   "userGuideEntrySubtitle": "略称設定、通知、自動起動、バッテリー戦略",
   "timetableManagementSectionTitle": "時間割管理",
@@ -354,7 +351,6 @@
   "feedbackTitle": "問題報告",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "問題・提案の送信、既存の確認",
-  "openIssuePage": "Issueページを開く",
   "copyAddress": "アドレスをコピー",
   "copiedIssueAddress": "Issueアドレスをコピーしました",
   "copiedXiaohongshuId": "Xiaohongshu IDをコピーしました",
@@ -732,7 +728,6 @@
     }
   },
   "teacherUnset": "未設定",
-  "locationUnset": "未設定",
   "confirmDeleteTitle": "削除確認",
   "confirmDeleteCourseMessage": "授業「{name}」を削除しますか？",
   "@confirmDeleteCourseMessage": {
@@ -751,7 +746,6 @@
       }
     }
   },
-  "overrideTimeSchemeDescription": "この授業は選択したテンプレートを個別使用し、メインテンプレートに連携しません",
   "weekdayLabel": "曜日",
   "startSectionLabel": "開始時限",
   "endSectionLabel": "終了時限",
@@ -778,9 +772,6 @@
   "allWeeksFilter": "全週",
   "oddWeeksFilter": "奇数週",
   "evenWeeksFilter": "偶数週",
-  "rangeWeeksAllHint": "開始週から終了週まで連続で授業を配置",
-  "rangeWeeksOddHint": "範囲内の奇数週のみ保持",
-  "rangeWeeksEvenHint": "範囲内の偶数週のみ保持",
   "selectAllAction": "全選択",
   "selectOddWeeksAction": "奇数週",
   "selectEvenWeeksAction": "偶数週",
@@ -806,14 +797,6 @@
   "weekdayFri": "金曜",
   "weekdaySat": "土曜",
   "weekdaySun": "日曜",
-  "saturationLabel": "彩度{value}%",
-  "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "useThisColor": "この色を使用",
   "selectAtLeastOneWeek": "少なくとも1つの授業週次を選択してください",
   "saveFailed": "保存失敗",
@@ -1090,18 +1073,11 @@
   "liveGroupReminders": "リマインダー",
   "liveGroupDisplay": "表示内容",
   "liveGroupMaintenance": "メンテナンスと自己診断",
-  "liveReminderTimingEntryTitle": "リマインダー時間帯",
-  "liveReminderTimingEntrySubtitle": "授業前・授業中と終了リマインダー、およびフォーカス切替タイミング",
   "liveBeforeClassDisplayEntryTitle": "授業前リマインダー表示",
   "liveDuringEndDisplayEntryTitle": "授業中と終了リマインダー表示",
-  "liveKeepAliveEntryTitle": "バックグラウンド常駐",
-  "liveKeepAliveEntrySubtitle": "非表示、バックグラウンド常駐補助サービスと権限エントリ",
-  "liveTestingEntryTitle": "テストと診断",
-  "liveTestingEntrySubtitle": "テスト通知送信、スーパーアイランドとローカル診断ログの確認",
   "followBeforeClassSetting": "授業前リマインダーに連携",
   "liveReminderTimingTitle": "リマインダー時間帯",
   "liveReminderSwitchesTitle": "リマインダー切替",
-  "liveReminderSwitchesSubtitle": "異なるリマインダー時間帯を自由に組み合わせ可能，これらの切替は相互に代替しません",
   "beforeClassReminderTitle": "授業前リマインダー",
   "beforeClassReminderSubtitle": "授業開始{minutes}分前にポップアップ",
   "@beforeClassReminderSubtitle": {
@@ -1123,14 +1099,12 @@
     }
   },
   "liveDisplayModeTitle": "表示モード",
-  "liveDisplayModeSubtitle": "有効なリマインダー時間帯に適用",
   "duringClassStatusNotificationTitle": "授業中ステータスバー通知",
   "duringClassStatusNotificationImmediate": "ステータスバー通知を保持",
   "duringClassStatusNotificationBeforeEnd": "重点の前は通常通知",
   "duringClassStatusNotificationPersistent": "全体を通して通常通知",
   "enableIslandDisplayTitle": "スーパーアイランドを表示",
   "liveTimeThresholdTitle": "時間しきい値",
-  "liveTimeThresholdSubtitle": "授業前ポップアップ、終了前のスーパーアイランド/フォーカスリマインダー切替、および秒単位カウントダウンを制御",
   "beforeClassPopupLabel": "授業前ポップアップ時間",
   "beforeClassMinutesOption": "{minutes}分",
   "@beforeClassMinutesOption": {
@@ -1160,7 +1134,6 @@
   "timeCorrectionHelp": "学校のチャイムが時間割より数秒早い場合は「早める」、遅い場合は「遅らせる」に設定。",
   "duringEndTimeDisplayLabel": "授業中/終了リマインダーの時間スタイル",
   "liveDisplayContentTitle": "表示内容",
-  "liveDisplayContentSubtitle": "この設定グループは現在のステージのみに影響し、他のリマインダー表示は変更しません",
   "showCourseNameTitle": "授業名を表示",
   "preferShortNameTitle": "略称を優先表示",
   "preferShortNameSubtitle": "略称が未入力の場合は無効",
@@ -1204,14 +1177,6 @@
   "liveBeforeClassQuickActionAutoSubtitle": "授業前に自動オン、授業後に戻します",
   "liveBeforeClassQuickActionAutoOptionOff": "オフ",
   "liveBeforeClassQuickActionAutoOptionMinutes": "授業の {minutes} 分前",
-  "liveMiuiLabelSizePreview": "{value}",
-  "@liveMiuiLabelSizePreview": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "liveIslandVisualTitle": "カプセル左側アイコン",
   "liveExpandedIconSectionTitle": "展開カード大アイコン",
   "liveMiuiLabelImageTitle": "小米アイランド左側テキストアイコン",
@@ -1268,12 +1233,6 @@
   "keepAliveConfirmTitle": "バックグラウンド保持サービスを有効にする",
   "keepAliveConfirmBody": "このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。",
   "keepAliveConfirmGoAction": "有効にする",
-  "layoutEntryTitle": "レイアウトと時限",
-  "layoutEntrySubtitle": "時限時間、行高さ、時間列、週末表示とカードレイアウト",
-  "remindersSectionTitle": "リマインダーと通知",
-  "liveGuideEntryTitle": "使用ガイドと権限",
-  "liveGuideEntrySubtitle": "略称設定、通知、自動起動、バッテリー戦略",
-  "managementSectionTitle": "時間割管理",
   "timeSchemeEntryCurrentPrefix": "現在：{name}・切替、時限編集とコピー",
   "@timeSchemeEntryCurrentPrefix": {
     "placeholders": {
@@ -1313,8 +1272,6 @@
       }
     }
   },
-  "pickSemesterWeekCountTitle": "学期週数を選択",
-  "pickSemesterWeekCountSubtitle": "学校に合わせて実際の授業週数に調整可能",
   "weekCountItem": "{count}週",
   "@weekCountItem": {
     "placeholders": {
@@ -1366,18 +1323,7 @@
   "diagnosticsMessage": "メッセージ",
   "diagnosticsStackTrace": "スタックトレース",
   "refreshStatusTooltip": "ステータス更新",
-  "quickSetupTitle": "初回画面クイック設定",
-  "quickSetupSubtitle": "最も重要な5つのエントリを先に配置，下までスクロールして探す必要なし",
-  "quickActionNotificationsTitle": "通知設定",
-  "quickActionNotificationsSubtitle": "まず通知が送信できるか確認",
-  "quickActionIslandTitle": "スーパーアイランド権限",
-  "quickActionIslandSubtitle": "promoted通知を確認",
   "quickActionAutoStartTitle": "自動起動",
-  "quickActionAutoStartSubtitle": "バックグラウンド終了を防止",
-  "quickActionBatteryTitle": "バッテリー制限なし",
-  "quickActionBatterySubtitle": "リマインダー中断を防止",
-  "quickActionKeepAliveTitle": "バックグラウンド常駐補助",
-  "quickActionKeepAliveSubtitle": "バックグラウンド安定性を向上",
   "guidePrivacyConsentLabel": "Umeng関連のプライバシー説明を読み同意します",
   "exitAppAction": "アプリ終了",
   "agreeAndStartAction": "同意して使い始める",
@@ -1387,9 +1333,7 @@
   "deleteCourseTitle": "授業を削除",
   "courseDeleted": "授業を削除しました",
   "singleLessonLabel": "単一授業",
-  "recurringLessonLabel": "繰り返し授業",
   "singleLessonHint": "振替授業や臨時追加に最適，授業は1つの週次にのみ表示",
-  "recurringLessonHint": "同じ時間に毎週連続する通常授業に最適",
   "sharedInfoTitle": "共有情報",
   "sharedInfoHint": "共有フィールドの説明を表示",
   "sharedInfoSheetItemCourseName": "授業名：授業の一意識別子。同名の複数排課は同一授業として扱われます。名称を変更すると別授業として記録されます。",
@@ -1409,11 +1353,7 @@
   "courseNatureLabel": "授業性質",
   "courseDescriptionOptional": "授業概要（任意）",
   "timeSchemeOverrideLabel": "授業時間方案",
-  "lessonWeeksTitle": "授業週次",
   "singleLessonWeekHint": "単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適",
-  "rangeWeekLabel": "連続週",
-  "oddWeeksLabel": "奇数週",
-  "oddWeeksHint": "範囲内の奇数週のみ保持",
   "timeSchemeSetCountValue": "{count}セット",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -1530,7 +1470,6 @@
   "liveClassReminderLeadSummaryKeepNormal": "授業中は通常通知、終了前に重点へ",
   "liveClassReminderLeadSummaryIsland": "授業中は通常通知、終了前に島へ",
   "liveClassReminderLeadSummaryFocused": "終了前に重点リマインダーを開始",
-  "liveSettingsEntrySubtitle": "リマインダー時間帯、アイランド表示、通知バーと表示内容",
   "timetableProfilesEntrySubtitle": "新規作成、切替、コピー、名前変更と削除",
   "homeTitleSectionTitle": "ホームタイトル",
   "homeTitleStyleLabel": "タイトルスタイル",
@@ -1619,7 +1558,6 @@
   "liveDiagnosticsCleared": "スーパーアイランド診断ログをクリアしました。以降再び収集を開始",
   "liveDiagnosticsClearFailed": "スーパーアイランド診断ログのクリアに失敗",
   "liveTestingNotRefreshed": "未更新",
-  "liveTestingTitle": "テストと診断",
   "liveTestingNotificationTitle": "テスト通知",
   "liveTestingNotificationSubtitle": "スーパーアイランドと通知バーの表示効果を検証",
   "liveTestingStartAction": "テスト開始",
@@ -1663,7 +1601,6 @@
   "liveTestingSectionDisplay": "アイランド表示設定",
   "liveTestingSectionNotification": "通知判定結果",
   "liveTestingSectionRecentLogs": "最近の診断ログ",
-  "liveTestingRawDataTitle": "生のデバッグデータ",
   "liveTestingExpandRawJson": "生のJSONを展開",
   "liveTestingExpandRawJsonSubtitle": "大量の生フィールドがページを占拠するのを防止",
   "liveTestingLocalLogsTitle": "ローカル診断ログ",
@@ -1719,9 +1656,6 @@
   "liveStagePreviewStageBeforeClass": "授業前",
   "liveStagePreviewStageDuringClass": "授業中",
   "liveTestingInFlight": "テスト実行中です。連続タップせず、しばらく待ってからもう一度お試しください",
-  "liveTestingProductionHomeHint": "正規のスーパーアイランド選択パスを使用しました。Home キーでホーム画面に戻って確認してください（アプリを開いたままにしていると通常は表示されません）",
-  "liveTestingPresetFallbackNote": "（テスト可能な実際の授業が見つからなかったため、自己診断のプリセット授業を使用しました。時間割には書き込まれません）",
-  "liveTestingTestCourseNote": "ここにメモを表示，授業編集ページで設定可能",
   "liveTestingNotificationSent": "テスト通知を送信しました",
   "sendFailedWithError": "送信失敗：{error}",
   "@sendFailedWithError": {
@@ -1810,89 +1744,18 @@
   "homeWidgetPreviewTitle": "プレビュー",
   "homeWidgetPreviewAddAction": "ホーム画面に追加",
   "homeWidgetPreviewUnavailable": "プレビューを表示できません",
-  "layoutSettingsTitle": "レイアウトと時限",
-  "layoutDensityTitle": "時間割密度",
   "layoutAutoFitHeightTitle": "画面高さに自動フィット",
-  "layoutAutoFitHeightSubtitle": "オンにすると現在の時限数に応じてページ下部まで自動フィット，下部の余白を保持しない",
   "layoutHideWeekendsTitle": "土日を非表示",
-  "layoutHideWeekendsSubtitle": "オンにすると月〜金のみ表示，残りの列幅は自動フィット",
   "layoutEnableHapticsTitle": "アプリ内バイブレーションを有効化",
   "layoutEnableHapticsSubtitle": "オフで切替の振動なし",
-  "pageTransitionSpeedLabel": "ページ遷移速度 {speed}×",
-  "@pageTransitionSpeedLabel": {
-    "placeholders": {
-      "speed": {
-        "type": "String"
-      }
-    }
-  },
-  "pageTransitionSpeedSubtitle": "数値が大きいほど速くなります。システムのアニメーション スケール設定も影響します",
-  "pageTransitionSpeedDurationHint": "約 {milliseconds} ミリ秒",
-  "@pageTransitionSpeedDurationHint": {
-    "placeholders": {
-      "milliseconds": {
-        "type": "int"
-      }
-    }
-  },
   "layoutTimeColumnDisplayLabel": "ホーム時間列表示",
   "layoutTimeColumnWidthLabel": "時間列幅",
-  "layoutBackToCurrentWeekButtonStyleLabel": "「今週に戻る」ボタンスタイル",
-  "layoutBackToCurrentWeekButtonStyleHelper": "デフォルトは現在のインラインスタイルを維持，週表示右下の小型フローティングボタンにも変更可能",
-  "layoutBackToCurrentWeekButtonStyleInline": "時間列インライン",
-  "layoutBackToCurrentWeekButtonStyleFloating": "右下フローティング",
-  "layoutBackToCurrentWeekButtonOpacityLabel": "フローティングボタン不透明度{value}%",
-  "@layoutBackToCurrentWeekButtonOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "layoutBackToCurrentWeekButtonOpacitySubtitle": "右下フローティングスタイルにのみ有効",
-  "layoutCourseCardGapLabel": "授業カード間隔{value}",
-  "@layoutCourseCardGapLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutSectionHeightLabel": "時間割行高さ{value}",
-  "@layoutSectionHeightLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCompactFontSizeLabel": "コンパクトフォントサイズ{value}",
-  "@layoutCompactFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCourseCardFontSizeLabel": "授業カードフォントサイズ{value}",
-  "@layoutCourseCardFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCourseCardDisplayTitle": "授業カード表示",
-  "layoutCourseCardDisplaySubtitle": "デフォルトで授業名、教師と教室を表示，他の情報は時間割ごとに自由に切替可能",
   "layoutShowTeacherTitle": "教師を表示",
   "layoutShowClassroomTitle": "教室を表示",
   "layoutShowTimeTitle": "時間を表示",
   "layoutShowTimeLabelsTitle": "授業開始と終了テキストを表示",
-  "layoutShowTimeLabelsSubtitle": "オフにすると時間ポイントのみ表示，「授業開始」「授業終了」テキストは非表示",
   "layoutShowWeeksTitle": "週数を表示",
-  "layoutShowWeeksSubtitle": "例：第1-16週、奇数偶数週",
   "layoutShowDescriptionTitle": "授業概要を表示",
-  "layoutShowDescriptionSubtitle": "デフォルトオフ，スペース不足時に最初に圧縮される",
   "layoutShowOtherWeeksTitle": "非今週の授業を表示",
   "layoutShowOtherWeeksSubtitle": "今週以外の授業は半透明のグレーで表示",
   "weekGridShowExamsTitle": "週表示に試験を表示",
@@ -1902,18 +1765,7 @@
   "layoutVerticalAlignLabel": "垂直レイアウト",
   "layoutHorizontalAlignLabel": "水平レイアウト",
   "layoutShowConflictBadgeTitle": "ホームに競合カプセルを表示",
-  "layoutShowConflictBadgeSubtitle": "オフにすると、ホームの時間割で競合授業に「競合」カプセルを表示しない",
-  "layoutConflictOpacityLabel": "競合授業透明度{value}%",
-  "@layoutConflictOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "layoutConflictOpacityTitle": "競合授業の透明度",
-  "layoutConflictOpacitySubtitle": "競合授業は自動的に重ね表示，透明度を下げると複数の授業を同時に確認可能",
-  "layoutTipsText": "テンプレートは設定ホームに移動済み。ここでは主に時間割の行高さ、時間列、週末表示と授業カードレイアウトを調整。現在の時間割の時間のみ変更する場合、まずテンプレートでコピーしてから適用。",
   "currentWeekCompact": "{week}週",
   "@currentWeekCompact": {
     "placeholders": {
@@ -1922,7 +1774,6 @@
       }
     }
   },
-  "sampleCourseNumericalControl": "数控",
   "sampleCourseAdvancedMath": "高数",
   "sampleTeacherZhang": "張先生",
   "sampleCourseEnglish": "英語",
@@ -2229,7 +2080,6 @@
       }
     }
   },
-  "localDebugMaintainer": "ローカルデバッグ",
   "addDebugRecordTooltip": "デバッグレコード追加",
   "customDebugIntroTitle": "ここに自分の教務デバッグレコードを配置",
   "customDebugIntroSubtitle": "学校ごとの URL とスクリプトを保存し、次からワンタップで再利用できます",
@@ -2450,7 +2300,6 @@
       }
     }
   },
-  "rescheduleAction": "時間変更",
   "deleteModeTitle": "削除方式",
   "deleteCourseAction": "この授業を削除",
   "deleteOccurrenceAction": "この授業回を削除",
@@ -2722,14 +2571,6 @@
   "copiedCurrentAddress": "現在のアドレスをコピーしました",
   "warehouseLoginHintLocalDebug": "現在ローカルデバッグスクリプトモード",
   "warehouseLoginHintImport": "ここで教務システムにログインしてインポートを実行",
-  "localScriptLabel": "ローカルスクリプト：{scriptName}",
-  "@localScriptLabel": {
-    "placeholders": {
-      "scriptName": {
-        "type": "String"
-      }
-    }
-  },
   "webAddressHint": "Webアドレスを入力",
   "goAction": "移動",
   "rememberedAccountLabel": "記憶済みアカウント：{username}",
@@ -3080,7 +2921,6 @@
   "noHistoryRecords": "履歴なし",
   "weekPickerTitle": "授業週次を選択",
   "selectTimeSchemeTitle": "時間方案を選択",
-  "manageTimeSchemesAction": "時間方案を管理",
   "examDefaultName": "期末試験",
   "examDateWeekPickerTitle": "試験日を選択",
   "weekPickerCalendarTooltip": "カレンダーで選択",
@@ -3156,7 +2996,6 @@
   "liveTestingHolidayModeEnabled": "休日モード有効",
   "liveTestingHolidayModeDisabled": "休日モード無効",
   "liveTestingHolidayModeEnabledDesc": "授業リマインダーとウィジェットは全授業を非表示",
-  "liveTestingHolidayModeDisabledDesc": "現在通常の休日データを使用",
   "textColorTitle": "テキストの色",
   "textColorSubtitle": "時間割の各エリアのテキスト色をカスタマイズ",
   "textColorIndependentDetail": "詳細色を個別に設定",
@@ -4532,49 +4371,6 @@
   "macroReplayStepExecuteScript": "Running import script…",
   "macroReplayStepDelay": "Waiting…",
   "macroReplayAcceleratedFallbackTip": "Quick path failed; retrying with the full recorded steps…",
-  "macroReplayNoSteps": "No recorded steps",
-  "macroReplayUserCancelled": "Cancelled by user",
-  "macroReplayStepFailed": "Step {current}/{total} failed: {error}",
-  "@macroReplayStepFailed": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyNavigateUrl": "Navigation URL is empty",
-  "macroReplayInvalidUrl": "Invalid URL: {url}",
-  "@macroReplayInvalidUrl": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyFillSelector": "Fill selector is empty",
-  "macroReplayFieldNotFound": "Form field not found: {selector}",
-  "@macroReplayFieldNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyClickSelector": "Click selector is empty",
-  "macroReplayClickNotFound": "Click target not found: {selector}",
-  "@macroReplayClickNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
   "macroReplayWaitUrlPattern": "Waiting for URL match: {pattern}",
   "@macroReplayWaitUrlPattern": {
     "placeholders": {
@@ -4583,7 +4379,6 @@
       }
     }
   },
-  "macroReplayEmptyWaitSelector": "Wait selector is empty",
   "macroReplayWaitSelector": "Waiting for element: {selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
@@ -5091,14 +4886,6 @@
       }
     }
   },
-  "profileTimeSchemeName": "{profileName} schedule",
-  "@profileTimeSchemeName": {
-    "placeholders": {
-      "profileName": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5405,27 +5192,14 @@
   "materialStateSolid": "ソリッド",
   "materialStateFrost": "ガウスぼかし",
   "frostedGlassModeLabel": "既定のマテリアル",
-  "liquidGlassScopePopupTitle": "プルダウンポップアップ",
-  "liquidGlassScopePopupSubtitle": "ガラスモードなど設定行から開く小さなアンカーメニュー",
-  "liquidGlassScopeSelectSheetTitle": "全画面セレクターパネル",
-  "liquidGlassScopeSelectSheetSubtitle": "プリセットテーマやフォントなど長いリストの選択ダイアログ。オフにするとソリッドカードになります",
-  "liquidGlassScopeSheetDialogTitle": "シートとダイアログ",
-  "liquidGlassScopeSheetDialogSubtitle": "ボトムシート、確認ダイアログ、アクションメニュー",
   "liquidGlassScopeHomeChromeTitle": "ホームのガラス帯",
   "liquidGlassScopeDockTitle": "ガラスドック操作",
   "liquidGlassScopeDockSubtitle": "下部のフローティングピルと授業追加ボタン",
-  "liquidGlassScopePickerButtonsTitle": "壁紙配置ボタン",
-  "liquidGlassScopePickerButtonsSubtitle": "壁紙位置選択ページで壁紙に浮かぶガラスボタン",
   "frostedGlassModeLiquid": "リキッドガラス",
   "frostedGlassModeSolid": "ソリッドカード",
   "frostedSheetSectionTitle": "ガラス素材",
   "advancedMaterialTitle": "高度なマテリアル",
   "liquidGlassPresetLabel": "リキッドガラスプリセット",
-  "liquidGlassPresetClear": "クリア",
-  "liquidGlassPresetLight": "ライトミスト",
-  "liquidGlassPresetStandard": "スタンダード",
-  "liquidGlassPresetDense": "デンス",
-  "liquidGlassPresetCustom": "カスタム",
   "liquidGlassRefractionLabel": "屈折の強さ",
   "liquidGlassRefractionBandLabel": "屈折帯の幅",
   "liquidGlassRefractionEdgePowLabel": "エッジの急峻さ",
@@ -5474,7 +5248,6 @@
   "timetablePageSectionBackground": "背景",
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "時間を選択",
-  "liveSelfCheckSubtitle": "セルフチェックを実行",
   "aboutSupportUpdatesSectionTitle": "サポートと更新",
   "aboutProductSectionTitle": "製品",
   "aboutCommunitySectionTitle": "コミュニティ",

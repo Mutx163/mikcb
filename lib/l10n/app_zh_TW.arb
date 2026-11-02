@@ -28,10 +28,7 @@
   "settingsTitle": "課表設定",
   "appearanceEntryTitle": "外觀與配色",
   "appearanceThemeDisplaySectionTitle": "主題與顯示",
-  "layoutSectionEntryTitle": "布局與節次",
-  "layoutSectionEntrySubtitle": "節次時間、行高、時間列、周末顯示與卡片布局",
   "homeWidgetEntryTitle": "桌面小工具",
-  "reminderNotificationSectionTitle": "提醒與通知",
   "userGuideEntryTitle": "使用引導與權限",
   "userGuideEntrySubtitle": "簡稱建議、通知、自啟動、電池策略",
   "timetableManagementSectionTitle": "課表管理",
@@ -353,7 +350,6 @@
   "feedbackTitle": "問題回饋",
   "githubIssueTitle": "GitHub Issue",
   "githubIssueSubtitle": "提交問題、建議，查看已有回饋",
-  "openIssuePage": "打開 Issue 頁面",
   "copyAddress": "複製地址",
   "copiedIssueAddress": "已複製 Issue 地址",
   "copiedXiaohongshuId": "已複製小紅書號",
@@ -731,7 +727,6 @@
     }
   },
   "teacherUnset": "未置",
-  "locationUnset": "未置",
   "confirmDeleteTitle": "確認刪除",
   "confirmDeleteCourseMessage": "確定刪除課程 {name}？",
   "@confirmDeleteCourseMessage": {
@@ -750,7 +745,6 @@
       }
     }
   },
-  "overrideTimeSchemeDescription": "這門課會單獨使用所選時間範本，不跟隨目前課表主時間範本",
   "weekdayLabel": "星期",
   "startSectionLabel": "開始節次",
   "endSectionLabel": "結束節次",
@@ -777,9 +771,6 @@
   "allWeeksFilter": "全部",
   "oddWeeksFilter": "單周",
   "evenWeeksFilter": "雙周",
-  "rangeWeeksAllHint": "按開始周到結束周連續排課",
-  "rangeWeeksOddHint": "只保留范圍內的單周",
-  "rangeWeeksEvenHint": "只保留范圍內的雙周",
   "selectAllAction": "全選",
   "selectOddWeeksAction": "單周",
   "selectEvenWeeksAction": "雙周",
@@ -805,14 +796,6 @@
   "weekdayFri": "周五",
   "weekdaySat": "周六",
   "weekdaySun": "周日",
-  "saturationLabel": "飽和度 {value}%",
-  "@saturationLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "useThisColor": "使用這個顏色",
   "selectAtLeastOneWeek": "請至少選擇一個上課周次",
   "saveFailed": "保存失敗",
@@ -1089,18 +1072,11 @@
   "liveGroupReminders": "提醒",
   "liveGroupDisplay": "顯示內容",
   "liveGroupMaintenance": "維護與自檢",
-  "liveReminderTimingEntryTitle": "提醒時段",
-  "liveReminderTimingEntrySubtitle": "上課前、課中與下課提醒，以及重點提醒切入時機",
   "liveBeforeClassDisplayEntryTitle": "上課前提醒顯示",
   "liveDuringEndDisplayEntryTitle": "課中與下課提醒顯示",
-  "liveKeepAliveEntryTitle": "後台保活",
-  "liveKeepAliveEntrySubtitle": "隱藏後台、後台保活輔助服務和權限入口",
-  "liveTestingEntryTitle": "測試與診斷",
-  "liveTestingEntrySubtitle": "發送測試通知，檢查超級島和本地診斷日誌",
   "followBeforeClassSetting": "跟隨上課前提醒",
   "liveReminderTimingTitle": "提醒時段",
   "liveReminderSwitchesTitle": "提醒開關",
-  "liveReminderSwitchesSubtitle": "不同提醒時段可以自由組合；這些開關互不替代",
   "beforeClassReminderTitle": "上課前提醒",
   "beforeClassReminderSubtitle": "在課程開始前 {minutes} 分鐘彈出",
   "@beforeClassReminderSubtitle": {
@@ -1122,14 +1098,12 @@
     }
   },
   "liveDisplayModeTitle": "展示方式",
-  "liveDisplayModeSubtitle": "對已啟用的提醒時段生效",
   "duringClassStatusNotificationTitle": "課中狀態欄通知",
   "duringClassStatusNotificationImmediate": "保留狀態列通知",
   "duringClassStatusNotificationBeforeEnd": "重點提醒前用普通通知",
   "duringClassStatusNotificationPersistent": "全程顯示普通通知",
   "enableIslandDisplayTitle": "展示超級島",
   "liveTimeThresholdTitle": "時間閾值",
-  "liveTimeThresholdSubtitle": "控製上課前彈出、下課前多久切到超級島 / 重點提醒，以及最後秒級倒計時",
   "beforeClassPopupLabel": "上課前彈出時間",
   "beforeClassMinutesOption": "{minutes} 分鐘",
   "@beforeClassMinutesOption": {
@@ -1159,7 +1133,6 @@
   "timeCorrectionHelp": "如果學校鈴聲比課表快幾秒，就調成提前；如果鈴聲慢幾秒，就調成延後",
   "duringEndTimeDisplayLabel": "課中 / 下課提醒時間樣式",
   "liveDisplayContentTitle": "顯示內容",
-  "liveDisplayContentSubtitle": "這組設定只影響目前階段，不會改動另一組提醒顯示",
   "showCourseNameTitle": "顯示課程名",
   "preferShortNameTitle": "優先顯示課程簡稱",
   "preferShortNameSubtitle": "課程未填寫簡稱時不生效",
@@ -1203,14 +1176,6 @@
   "liveBeforeClassQuickActionAutoSubtitle": "上課前自動開啟，下課後恢復",
   "liveBeforeClassQuickActionAutoOptionOff": "不自動執行",
   "liveBeforeClassQuickActionAutoOptionMinutes": "上課前 {minutes} 分鐘",
-  "liveMiuiLabelSizePreview": "{value}",
-  "@liveMiuiLabelSizePreview": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "liveIslandVisualTitle": "膠囊左側圖示",
   "liveExpandedIconSectionTitle": "展開卡片大圖示",
   "liveMiuiLabelImageTitle": "超級島左側文字圖標",
@@ -1267,12 +1232,6 @@
   "keepAliveConfirmTitle": "開啟後台保活服務",
   "keepAliveConfirmBody": "用於後臺更新桌面小組件和課程提醒，不會讀取屏幕內容或代為點擊。需要系統無障礙權限，可隨時關閉。",
   "keepAliveConfirmGoAction": "去開啟",
-  "layoutEntryTitle": "布局與節次",
-  "layoutEntrySubtitle": "節次時間、行高、時間列、周末顯示與卡片布局",
-  "remindersSectionTitle": "提醒與通知",
-  "liveGuideEntryTitle": "使用引導與權限",
-  "liveGuideEntrySubtitle": "簡稱建議、通知、自啟動、電池策略",
-  "managementSectionTitle": "課表管理",
   "timeSchemeEntryCurrentPrefix": "目前：{name} · 切換、編輯節次和複製",
   "@timeSchemeEntryCurrentPrefix": {
     "placeholders": {
@@ -1312,8 +1271,6 @@
       }
     }
   },
-  "pickSemesterWeekCountTitle": "選擇學期周數",
-  "pickSemesterWeekCountSubtitle": "不同學校可按實際教學周數調整",
   "weekCountItem": "{count} 周",
   "@weekCountItem": {
     "placeholders": {
@@ -1365,18 +1322,7 @@
   "diagnosticsMessage": "消息",
   "diagnosticsStackTrace": "堆棧",
   "refreshStatusTooltip": "刷新狀態",
-  "quickSetupTitle": "首屏快速設定",
-  "quickSetupSubtitle": "先把最關鍵的 5 個入口放在前面，不用翻到下面再找",
-  "quickActionNotificationsTitle": "通知設定",
-  "quickActionNotificationsSubtitle": "先確保能發通知",
-  "quickActionIslandTitle": "超級島權限",
-  "quickActionIslandSubtitle": "檢查 promoted 通知",
   "quickActionAutoStartTitle": "自啟動",
-  "quickActionAutoStartSubtitle": "避免後台被殺",
-  "quickActionBatteryTitle": "電池無限製",
-  "quickActionBatterySubtitle": "避免提醒中斷",
-  "quickActionKeepAliveTitle": "後台保活輔助",
-  "quickActionKeepAliveSubtitle": "提升後台穩定性",
   "guidePrivacyConsentLabel": "我已閱讀並同意友盟相關隱私說明",
   "exitAppAction": "退出應用",
   "agreeAndStartAction": "同意並開始使用",
@@ -1386,9 +1332,7 @@
   "deleteCourseTitle": "刪除課程",
   "courseDeleted": "課程已刪除",
   "singleLessonLabel": "單節課",
-  "recurringLessonLabel": "多節課",
   "singleLessonHint": "適合補課、臨時加課，課程只會落在一個周次",
-  "recurringLessonHint": "適合同一時間連續上很多周的常規課程",
   "sharedInfoTitle": "共享資訊",
   "sharedInfoHint": "查看共享欄位說明",
   "sharedInfoSheetItemCourseName": "課程名稱：課程唯一標識，名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄",
@@ -1408,11 +1352,7 @@
   "courseNatureLabel": "課程性質",
   "courseDescriptionOptional": "課程簡介（可選）",
   "timeSchemeOverrideLabel": "時間模板",
-  "lessonWeeksTitle": "上課周次",
   "singleLessonWeekHint": "單節課只會出現在一個周次裡，適合補課、臨時加課",
-  "rangeWeekLabel": "連續周",
-  "oddWeeksLabel": "單周",
-  "oddWeeksHint": "只保留范圍內的單周",
   "timeSchemeSetCountValue": "{count} 套",
   "@timeSchemeSetCountValue": {
     "placeholders": {
@@ -1529,7 +1469,6 @@
   "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前切重點提醒",
   "liveClassReminderLeadSummaryIsland": "課中普通通知，下課前切超級島",
   "liveClassReminderLeadSummaryFocused": "下課前開始重點提醒",
-  "liveSettingsEntrySubtitle": "提醒時段、島顯示、通知欄和顯示內容",
   "timetableProfilesEntrySubtitle": "新建、切換、複製、重新命名和刪除課表",
   "homeTitleSectionTitle": "首頁標題",
   "homeTitleStyleLabel": "標題樣式",
@@ -1618,7 +1557,6 @@
   "liveDiagnosticsCleared": "已清空超級島診斷日誌，後續會重新開始收集",
   "liveDiagnosticsClearFailed": "清空超級島診斷日誌失敗",
   "liveTestingNotRefreshed": "尚未刷新",
-  "liveTestingTitle": "測試與診斷",
   "liveTestingNotificationTitle": "測試通知",
   "liveTestingNotificationSubtitle": "驗證超級島與通知欄的顯示效果",
   "liveTestingStartAction": "開始測試",
@@ -1662,7 +1600,6 @@
   "liveTestingSectionDisplay": "島顯示配置",
   "liveTestingSectionNotification": "通知判定結果",
   "liveTestingSectionRecentLogs": "最近診斷日誌",
-  "liveTestingRawDataTitle": "原始偵錯資料",
   "liveTestingExpandRawJson": "展開原始 JSON",
   "liveTestingExpandRawJsonSubtitle": "避免大段原始字段一直佔滿頁面",
   "liveTestingLocalLogsTitle": "本地診斷日誌",
@@ -1718,9 +1655,6 @@
   "liveStagePreviewStageBeforeClass": "上課前",
   "liveStagePreviewStageDuringClass": "課中",
   "liveTestingInFlight": "測試進行中，請勿重複點擊，請稍後再試",
-  "liveTestingProductionHomeHint": "已觸發超級島更新。請返回桌面查看，應用處於前臺時系統不彈出。",
-  "liveTestingPresetFallbackNote": "未檢測到有效課程，使用自檢預設課程，不寫入課表",
-  "liveTestingTestCourseNote": "此處顯示備注，可以在課程編輯頁進行設定",
   "liveTestingNotificationSent": "測試通知已發送",
   "sendFailedWithError": "發送失敗: {error}",
   "@sendFailedWithError": {
@@ -1803,89 +1737,18 @@
   "homeWidgetPreviewTitle": "效果預覽",
   "homeWidgetPreviewAddAction": "加入桌面",
   "homeWidgetPreviewUnavailable": "預覽暫時無法使用",
-  "layoutSettingsTitle": "布局與節次",
-  "layoutDensityTitle": "課表密度",
   "layoutAutoFitHeightTitle": "自動充滿螢幕高度",
-  "layoutAutoFitHeightSubtitle": "開啟後會按目前節數自動鋪滿頁面底部，不再保留下方空隙",
   "layoutHideWeekendsTitle": "隱藏周六周日",
-  "layoutHideWeekendsSubtitle": "開啟後首頁只顯示週一到週五，剩餘列寬會自動鋪滿",
   "layoutEnableHapticsTitle": "啟用應用內震動反饋",
   "layoutEnableHapticsSubtitle": "關閉後頁碼切換不再震動",
-  "pageTransitionSpeedLabel": "頁面轉場速度 {speed}×",
-  "@pageTransitionSpeedLabel": {
-    "placeholders": {
-      "speed": {
-        "type": "String"
-      }
-    }
-  },
-  "pageTransitionSpeedSubtitle": "數值越大動畫越快，實際速度受系統過渡動畫縮放影響",
-  "pageTransitionSpeedDurationHint": "約 {milliseconds} 毫秒",
-  "@pageTransitionSpeedDurationHint": {
-    "placeholders": {
-      "milliseconds": {
-        "type": "int"
-      }
-    }
-  },
   "layoutTimeColumnDisplayLabel": "首頁時間列顯示",
   "layoutTimeColumnWidthLabel": "時間欄寬度",
-  "layoutBackToCurrentWeekButtonStyleLabel": "回到本週按鈕樣式",
-  "layoutBackToCurrentWeekButtonStyleHelper": "預設維持現在的內嵌樣式；也可以改成周視圖右下角的小型懸浮按鈕",
-  "layoutBackToCurrentWeekButtonStyleInline": "時間欄內嵌",
-  "layoutBackToCurrentWeekButtonStyleFloating": "右下角懸浮",
-  "layoutBackToCurrentWeekButtonOpacityLabel": "懸浮按鈕不透明度 {value}%",
-  "@layoutBackToCurrentWeekButtonOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-  "layoutBackToCurrentWeekButtonOpacitySubtitle": "只對右下角懸浮樣式生效",
-  "layoutCourseCardGapLabel": "課程卡片間距 {value}",
-  "@layoutCourseCardGapLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutSectionHeightLabel": "課表行高 {value}",
-  "@layoutSectionHeightLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCompactFontSizeLabel": "緊湊字級 {value}",
-  "@layoutCompactFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCourseCardFontSizeLabel": "課程卡片字級 {value}",
-  "@layoutCourseCardFontSizeLabel": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "layoutCourseCardDisplayTitle": "課程卡片顯示",
-  "layoutCourseCardDisplaySubtitle": "預設顯示課程名、教師和教室；其他資訊可按課表自由開關組合",
   "layoutShowTeacherTitle": "顯示教師",
   "layoutShowClassroomTitle": "顯示教室",
   "layoutShowTimeTitle": "顯示時間",
   "layoutShowTimeLabelsTitle": "顯示上下課字樣",
-  "layoutShowTimeLabelsSubtitle": "關閉後僅顯示時間點，不顯示上課和下課字樣",
   "layoutShowWeeksTitle": "顯示週數",
-  "layoutShowWeeksSubtitle": "例如第 1-16 周、單雙週",
   "layoutShowDescriptionTitle": "顯示課程簡介",
-  "layoutShowDescriptionSubtitle": "預設關閉，空間不足時會最先被壓縮",
   "layoutShowOtherWeeksTitle": "顯示非本周課程",
   "layoutShowOtherWeeksSubtitle": "非本週課程以半透明灰色顯示",
   "weekGridShowExamsTitle": "週檢視顯示考試",
@@ -1895,18 +1758,7 @@
   "layoutVerticalAlignLabel": "垂直排版",
   "layoutHorizontalAlignLabel": "水平排版",
   "layoutShowConflictBadgeTitle": "首頁顯示衝突小膠囊",
-  "layoutShowConflictBadgeSubtitle": "關閉後，首頁課表不再對沖突課程顯示衝突標識",
-  "layoutConflictOpacityLabel": "衝突課程透明度 {value}%",
-  "@layoutConflictOpacityLabel": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
   "layoutConflictOpacityTitle": "衝突課程透明度",
-  "layoutConflictOpacitySubtitle": "衝突課程會自動層疊顯示，調低透明度後能同時看到多節課",
-  "layoutTipsText": "時間模板已移到設定首頁，這裡主要調課表行高、時間列、周末顯示和課程卡片布局；如果你想只改目前課表的時間，先在時間模板裡複制一套再應用",
   "currentWeekCompact": "{week}周",
   "@currentWeekCompact": {
     "placeholders": {
@@ -1915,7 +1767,6 @@
       }
     }
   },
-  "sampleCourseNumericalControl": "數控",
   "sampleCourseAdvancedMath": "高數",
   "sampleTeacherZhang": "張老師",
   "sampleCourseEnglish": "英語",
@@ -2222,7 +2073,6 @@
       }
     }
   },
-  "localDebugMaintainer": "本地偵錯",
   "addDebugRecordTooltip": "新增偵錯記錄",
   "customDebugIntroTitle": "這裡放你自己的教務偵錯記錄",
   "customDebugIntroSubtitle": "儲存每所學校的網址與腳本，下次一鍵復用",
@@ -2442,7 +2292,6 @@
       }
     }
   },
-  "rescheduleAction": "調課",
   "deleteModeTitle": "刪除方式",
   "deleteCourseAction": "刪這個課",
   "deleteOccurrenceAction": "刪這節課",
@@ -2772,14 +2621,6 @@
   "copiedCurrentAddress": "已複製當前地址",
   "warehouseLoginHintLocalDebug": "當前為本地偵錯腳本模式",
   "warehouseLoginHintImport": "在此登入教務系統後執行匯入",
-  "localScriptLabel": "本地腳本：{scriptName}",
-  "@localScriptLabel": {
-    "placeholders": {
-      "scriptName": {
-        "type": "String"
-      }
-    }
-  },
   "webAddressHint": "輸入網頁地址",
   "goAction": "前往",
   "rememberedAccountLabel": "已記住賬號：{username}",
@@ -3084,7 +2925,6 @@
   "noHistoryRecords": "目前沒有歷史紀錄",
   "weekPickerTitle": "選擇上課週次",
   "selectTimeSchemeTitle": "選擇時間模板",
-  "manageTimeSchemesAction": "管理時間模板",
   "guidePrivacyPageTitle": "隱私權條款",
   "guidePermissionsPageTitle": "系統權限",
   "guideTipsPageTitle": "使用技巧",
@@ -3156,7 +2996,6 @@
   "liveTestingHolidayModeEnabled": "假期模式已開啟",
   "liveTestingHolidayModeDisabled": "假期模式已關閉",
   "liveTestingHolidayModeEnabledDesc": "課程提醒和小工具將隱藏所有課程",
-  "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據",
   "textColorTitle": "文字顏色",
   "textColorSubtitle": "自訂課表各區域的文字顏色",
   "textColorIndependentDetail": "獨立設定詳情顏色",
@@ -4582,49 +4421,6 @@
   "macroReplayStepExecuteScript": "正在執行匯入腳本...",
   "macroReplayStepDelay": "等待中...",
   "macroReplayAcceleratedFallbackTip": "快捷路徑失敗，正在使用完整錄製步驟重試…",
-  "macroReplayNoSteps": "沒有錄製步驟",
-  "macroReplayUserCancelled": "使用者取消",
-  "macroReplayStepFailed": "第 {current}/{total} 步失敗: {error}",
-  "@macroReplayStepFailed": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyNavigateUrl": "導覽 URL 為空",
-  "macroReplayInvalidUrl": "無效的 URL: {url}",
-  "@macroReplayInvalidUrl": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyFillSelector": "填寫欄位的選擇器為空",
-  "macroReplayFieldNotFound": "找不到表單欄位: {selector}",
-  "@macroReplayFieldNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
-  "macroReplayEmptyClickSelector": "點選元素的選擇器為空",
-  "macroReplayClickNotFound": "找不到點選元素: {selector}",
-  "@macroReplayClickNotFound": {
-    "placeholders": {
-      "selector": {
-        "type": "String"
-      }
-    }
-  },
   "macroReplayWaitUrlPattern": "等待 URL 匹配: {pattern}",
   "@macroReplayWaitUrlPattern": {
     "placeholders": {
@@ -4633,7 +4429,6 @@
       }
     }
   },
-  "macroReplayEmptyWaitSelector": "等待元素的選擇器為空",
   "macroReplayWaitSelector": "等待元素: {selector}",
   "@macroReplayWaitSelector": {
     "placeholders": {
@@ -5141,14 +4936,6 @@
       }
     }
   },
-  "profileTimeSchemeName": "{profileName} 時間",
-  "@profileTimeSchemeName": {
-    "placeholders": {
-      "profileName": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "未命名課表",
   "cloudBackupManualProtectedTitle": "手動備份永不過期",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 無默認登錄地址，請先輸入教務系統網址",
@@ -5453,27 +5240,14 @@
   "materialStateSolid": "實體",
   "materialStateFrost": "高斯模糊",
   "frostedGlassModeLabel": "預設材質",
-  "liquidGlassScopePopupTitle": "下拉選擇彈窗",
-  "liquidGlassScopePopupSubtitle": "玻璃模式等設定列彈出的小氣泡選單",
-  "liquidGlassScopeSelectSheetTitle": "全螢幕選擇面板",
-  "liquidGlassScopeSelectSheetSubtitle": "預設主題、字體等長列表選擇彈窗；關閉後改為實體卡片",
-  "liquidGlassScopeSheetDialogTitle": "彈窗與對話框",
-  "liquidGlassScopeSheetDialogSubtitle": "底部彈窗、確認對話框與動作選單",
   "liquidGlassScopeHomeChromeTitle": "首頁玻璃帶",
   "liquidGlassScopeDockTitle": "玻璃塢導航",
   "liquidGlassScopeDockSubtitle": "底部懸浮藥丸與加課圓鈕",
-  "liquidGlassScopePickerButtonsTitle": "壁紙選點按鈕",
-  "liquidGlassScopePickerButtonsSubtitle": "壁紙位置選擇頁懸浮在壁紙上的玻璃按鈕",
   "frostedGlassModeLiquid": "液態玻璃",
   "frostedGlassModeSolid": "實體卡片",
   "frostedSheetSectionTitle": "玻璃材質",
   "advancedMaterialTitle": "進階材質",
   "liquidGlassPresetLabel": "液態玻璃預設",
-  "liquidGlassPresetClear": "清澈",
-  "liquidGlassPresetLight": "輕霧",
-  "liquidGlassPresetStandard": "標準",
-  "liquidGlassPresetDense": "濃密",
-  "liquidGlassPresetCustom": "自訂",
   "liquidGlassRefractionLabel": "折射強度",
   "liquidGlassRefractionBandLabel": "作用帶寬度",
   "liquidGlassRefractionEdgePowLabel": "邊緣陡緩",
@@ -5522,7 +5296,6 @@
   "timetablePageSectionBackground": "背景",
   "largeTitleContentGap": "16.0",
   "selectTimeTitle": "選擇時間",
-  "liveSelfCheckSubtitle": "執行自我檢查",
   "aboutSupportUpdatesSectionTitle": "支援與更新",
   "aboutProductSectionTitle": "產品",
   "aboutCommunitySectionTitle": "社群",

@@ -93,16 +93,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appearanceThemeDisplaySectionTitle => 'テーマと表示';
 
   @override
-  String get layoutSectionEntryTitle => 'レイアウトと時限';
-
-  @override
-  String get layoutSectionEntrySubtitle => '時限時間、行高さ、時間列、週末表示とカードレイアウト';
-
-  @override
   String get homeWidgetEntryTitle => 'ホームウィジェット';
-
-  @override
-  String get reminderNotificationSectionTitle => 'リマインダーと通知';
 
   @override
   String get userGuideEntryTitle => '使用ガイドと権限';
@@ -986,9 +977,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get githubIssueSubtitle => '問題・提案の送信、既存の確認';
 
   @override
-  String get openIssuePage => 'Issueページを開く';
-
-  @override
   String get copyAddress => 'アドレスをコピー';
 
   @override
@@ -1578,9 +1566,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get teacherUnset => '未設定';
 
   @override
-  String get locationUnset => '未設定';
-
-  @override
   String get confirmDeleteTitle => '削除確認';
 
   @override
@@ -1595,10 +1580,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String followCurrentTimetableWithName(String name) {
     return '現在の時間割に連携（$name）';
   }
-
-  @override
-  String get overrideTimeSchemeDescription =>
-      'この授業は選択したテンプレートを個別使用し、メインテンプレートに連携しません';
 
   @override
   String get weekdayLabel => '曜日';
@@ -1651,15 +1632,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get evenWeeksFilter => '偶数週';
 
   @override
-  String get rangeWeeksAllHint => '開始週から終了週まで連続で授業を配置';
-
-  @override
-  String get rangeWeeksOddHint => '範囲内の奇数週のみ保持';
-
-  @override
-  String get rangeWeeksEvenHint => '範囲内の偶数週のみ保持';
-
-  @override
   String get selectAllAction => '全選択';
 
   @override
@@ -1705,11 +1677,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weekdaySun => '日曜';
-
-  @override
-  String saturationLabel(int value) {
-    return '彩度$value%';
-  }
 
   @override
   String get useThisColor => 'この色を使用';
@@ -2214,29 +2181,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveGroupMaintenance => 'メンテナンスと自己診断';
 
   @override
-  String get liveReminderTimingEntryTitle => 'リマインダー時間帯';
-
-  @override
-  String get liveReminderTimingEntrySubtitle =>
-      '授業前・授業中と終了リマインダー、およびフォーカス切替タイミング';
-
-  @override
   String get liveBeforeClassDisplayEntryTitle => '授業前リマインダー表示';
 
   @override
   String get liveDuringEndDisplayEntryTitle => '授業中と終了リマインダー表示';
-
-  @override
-  String get liveKeepAliveEntryTitle => 'バックグラウンド常駐';
-
-  @override
-  String get liveKeepAliveEntrySubtitle => '非表示、バックグラウンド常駐補助サービスと権限エントリ';
-
-  @override
-  String get liveTestingEntryTitle => 'テストと診断';
-
-  @override
-  String get liveTestingEntrySubtitle => 'テスト通知送信、スーパーアイランドとローカル診断ログの確認';
 
   @override
   String get followBeforeClassSetting => '授業前リマインダーに連携';
@@ -2246,10 +2194,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveReminderSwitchesTitle => 'リマインダー切替';
-
-  @override
-  String get liveReminderSwitchesSubtitle =>
-      '異なるリマインダー時間帯を自由に組み合わせ可能，これらの切替は相互に代替しません';
 
   @override
   String get beforeClassReminderTitle => '授業前リマインダー';
@@ -2277,9 +2221,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveDisplayModeTitle => '表示モード';
 
   @override
-  String get liveDisplayModeSubtitle => '有効なリマインダー時間帯に適用';
-
-  @override
   String get duringClassStatusNotificationTitle => '授業中ステータスバー通知';
 
   @override
@@ -2296,10 +2237,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTimeThresholdTitle => '時間しきい値';
-
-  @override
-  String get liveTimeThresholdSubtitle =>
-      '授業前ポップアップ、終了前のスーパーアイランド/フォーカスリマインダー切替、および秒単位カウントダウンを制御';
 
   @override
   String get beforeClassPopupLabel => '授業前ポップアップ時間';
@@ -2333,10 +2270,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveDisplayContentTitle => '表示内容';
-
-  @override
-  String get liveDisplayContentSubtitle =>
-      'この設定グループは現在のステージのみに影響し、他のリマインダー表示は変更しません';
 
   @override
   String get showCourseNameTitle => '授業名を表示';
@@ -2434,11 +2367,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String liveMiuiLabelSizePreview(String value) {
-    return '$value';
-  }
-
-  @override
   String get liveIslandVisualTitle => 'カプセル左側アイコン';
 
   @override
@@ -2533,24 +2461,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keepAliveConfirmGoAction => '有効にする';
 
   @override
-  String get layoutEntryTitle => 'レイアウトと時限';
-
-  @override
-  String get layoutEntrySubtitle => '時限時間、行高さ、時間列、週末表示とカードレイアウト';
-
-  @override
-  String get remindersSectionTitle => 'リマインダーと通知';
-
-  @override
-  String get liveGuideEntryTitle => '使用ガイドと権限';
-
-  @override
-  String get liveGuideEntrySubtitle => '略称設定、通知、自動起動、バッテリー戦略';
-
-  @override
-  String get managementSectionTitle => '時間割管理';
-
-  @override
   String timeSchemeEntryCurrentPrefix(String name) {
     return '現在：$name・切替、時限編集とコピー';
   }
@@ -2581,12 +2491,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String syncedCurrentWeekMessage(int week) {
     return '第$week週に同期済み';
   }
-
-  @override
-  String get pickSemesterWeekCountTitle => '学期週数を選択';
-
-  @override
-  String get pickSemesterWeekCountSubtitle => '学校に合わせて実際の授業週数に調整可能';
 
   @override
   String weekCountItem(int count) {
@@ -2676,40 +2580,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get refreshStatusTooltip => 'ステータス更新';
 
   @override
-  String get quickSetupTitle => '初回画面クイック設定';
-
-  @override
-  String get quickSetupSubtitle => '最も重要な5つのエントリを先に配置，下までスクロールして探す必要なし';
-
-  @override
-  String get quickActionNotificationsTitle => '通知設定';
-
-  @override
-  String get quickActionNotificationsSubtitle => 'まず通知が送信できるか確認';
-
-  @override
-  String get quickActionIslandTitle => 'スーパーアイランド権限';
-
-  @override
-  String get quickActionIslandSubtitle => 'promoted通知を確認';
-
-  @override
   String get quickActionAutoStartTitle => '自動起動';
-
-  @override
-  String get quickActionAutoStartSubtitle => 'バックグラウンド終了を防止';
-
-  @override
-  String get quickActionBatteryTitle => 'バッテリー制限なし';
-
-  @override
-  String get quickActionBatterySubtitle => 'リマインダー中断を防止';
-
-  @override
-  String get quickActionKeepAliveTitle => 'バックグラウンド常駐補助';
-
-  @override
-  String get quickActionKeepAliveSubtitle => 'バックグラウンド安定性を向上';
 
   @override
   String get guidePrivacyConsentLabel => 'Umeng関連のプライバシー説明を読み同意します';
@@ -2739,13 +2610,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get singleLessonLabel => '単一授業';
 
   @override
-  String get recurringLessonLabel => '繰り返し授業';
-
-  @override
   String get singleLessonHint => '振替授業や臨時追加に最適，授業は1つの週次にのみ表示';
-
-  @override
-  String get recurringLessonHint => '同じ時間に毎週連続する通常授業に最適';
 
   @override
   String get sharedInfoTitle => '共有情報';
@@ -2811,19 +2676,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeSchemeOverrideLabel => '授業時間方案';
 
   @override
-  String get lessonWeeksTitle => '授業週次';
-
-  @override
   String get singleLessonWeekHint => '単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適';
-
-  @override
-  String get rangeWeekLabel => '連続週';
-
-  @override
-  String get oddWeeksLabel => '奇数週';
-
-  @override
-  String get oddWeeksHint => '範囲内の奇数週のみ保持';
 
   @override
   String timeSchemeSetCountValue(int count) {
@@ -2931,9 +2784,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveClassReminderLeadSummaryFocused => '終了前に重点リマインダーを開始';
-
-  @override
-  String get liveSettingsEntrySubtitle => 'リマインダー時間帯、アイランド表示、通知バーと表示内容';
 
   @override
   String get timetableProfilesEntrySubtitle => '新規作成、切替、コピー、名前変更と削除';
@@ -3330,9 +3180,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingNotRefreshed => '未更新';
 
   @override
-  String get liveTestingTitle => 'テストと診断';
-
-  @override
   String get liveTestingNotificationTitle => 'テスト通知';
 
   @override
@@ -3422,9 +3269,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingSectionRecentLogs => '最近の診断ログ';
-
-  @override
-  String get liveTestingRawDataTitle => '生のデバッグデータ';
 
   @override
   String get liveTestingExpandRawJson => '生のJSONを展開';
@@ -3528,17 +3372,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingInFlight => 'テスト実行中です。連続タップせず、しばらく待ってからもう一度お試しください';
-
-  @override
-  String get liveTestingProductionHomeHint =>
-      '正規のスーパーアイランド選択パスを使用しました。Home キーでホーム画面に戻って確認してください（アプリを開いたままにしていると通常は表示されません）';
-
-  @override
-  String get liveTestingPresetFallbackNote =>
-      '（テスト可能な実際の授業が見つからなかったため、自己診断のプリセット授業を使用しました。時間割には書き込まれません）';
-
-  @override
-  String get liveTestingTestCourseNote => 'ここにメモを表示，授業編集ページで設定可能';
 
   @override
   String get liveTestingNotificationSent => 'テスト通知を送信しました';
@@ -3696,23 +3529,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeWidgetPreviewUnavailable => 'プレビューを表示できません';
 
   @override
-  String get layoutSettingsTitle => 'レイアウトと時限';
-
-  @override
-  String get layoutDensityTitle => '時間割密度';
-
-  @override
   String get layoutAutoFitHeightTitle => '画面高さに自動フィット';
 
   @override
-  String get layoutAutoFitHeightSubtitle =>
-      'オンにすると現在の時限数に応じてページ下部まで自動フィット，下部の余白を保持しない';
-
-  @override
   String get layoutHideWeekendsTitle => '土日を非表示';
-
-  @override
-  String get layoutHideWeekendsSubtitle => 'オンにすると月〜金のみ表示，残りの列幅は自動フィット';
 
   @override
   String get layoutEnableHapticsTitle => 'アプリ内バイブレーションを有効化';
@@ -3721,21 +3541,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutEnableHapticsSubtitle => 'オフで切替の振動なし';
 
   @override
-  String pageTransitionSpeedLabel(String speed) {
-    return 'ページ遷移速度 $speed×';
-  }
-
-  @override
   String get pageTransitionSpeedTitle => 'ページ遷移の速度';
-
-  @override
-  String get pageTransitionSpeedSubtitle =>
-      '数値が大きいほど速くなります。システムのアニメーション スケール設定も影響します';
-
-  @override
-  String pageTransitionSpeedDurationHint(int milliseconds) {
-    return '約 $milliseconds ミリ秒';
-  }
 
   @override
   String get layoutTimeColumnDisplayLabel => 'ホーム時間列表示';
@@ -3744,68 +3550,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutTimeColumnWidthLabel => '時間列幅';
 
   @override
-  String get layoutBackToCurrentWeekButtonStyleLabel => '「今週に戻る」ボタンスタイル';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleHelper =>
-      'デフォルトは現在のインラインスタイルを維持，週表示右下の小型フローティングボタンにも変更可能';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleInline => '時間列インライン';
-
-  @override
-  String get layoutBackToCurrentWeekButtonStyleFloating => '右下フローティング';
-
-  @override
-  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
-    return 'フローティングボタン不透明度$value%';
-  }
-
-  @override
   String get layoutBackToCurrentWeekButtonOpacityTitle => 'フローティングボタンの不透明度';
-
-  @override
-  String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
-      '右下フローティングスタイルにのみ有効';
-
-  @override
-  String layoutCourseCardGapLabel(String value) {
-    return '授業カード間隔$value';
-  }
 
   @override
   String get layoutCourseCardGapTitle => '授業カードの間隔';
 
   @override
-  String layoutSectionHeightLabel(String value) {
-    return '時間割行高さ$value';
-  }
-
-  @override
   String get layoutSectionHeightTitle => '時間割の行の高さ';
-
-  @override
-  String layoutCompactFontSizeLabel(String value) {
-    return 'コンパクトフォントサイズ$value';
-  }
 
   @override
   String get layoutCompactFontSizeTitle => 'コンパクト時の文字サイズ';
 
   @override
-  String layoutCourseCardFontSizeLabel(String value) {
-    return '授業カードフォントサイズ$value';
-  }
-
-  @override
   String get layoutCourseCardFontSizeTitle => '授業カードの文字サイズ';
-
-  @override
-  String get layoutCourseCardDisplayTitle => '授業カード表示';
-
-  @override
-  String get layoutCourseCardDisplaySubtitle =>
-      'デフォルトで授業名、教師と教室を表示，他の情報は時間割ごとに自由に切替可能';
 
   @override
   String get layoutShowTeacherTitle => '教師を表示';
@@ -3820,20 +3577,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowTimeLabelsTitle => '授業開始と終了テキストを表示';
 
   @override
-  String get layoutShowTimeLabelsSubtitle =>
-      'オフにすると時間ポイントのみ表示，「授業開始」「授業終了」テキストは非表示';
-
-  @override
   String get layoutShowWeeksTitle => '週数を表示';
 
   @override
-  String get layoutShowWeeksSubtitle => '例：第1-16週、奇数偶数週';
-
-  @override
   String get layoutShowDescriptionTitle => '授業概要を表示';
-
-  @override
-  String get layoutShowDescriptionSubtitle => 'デフォルトオフ，スペース不足時に最初に圧縮される';
 
   @override
   String get layoutShowOtherWeeksTitle => '非今週の授業を表示';
@@ -3863,32 +3610,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get layoutShowConflictBadgeTitle => 'ホームに競合カプセルを表示';
 
   @override
-  String get layoutShowConflictBadgeSubtitle =>
-      'オフにすると、ホームの時間割で競合授業に「競合」カプセルを表示しない';
-
-  @override
-  String layoutConflictOpacityLabel(int value) {
-    return '競合授業透明度$value%';
-  }
-
-  @override
   String get layoutConflictOpacityTitle => '競合授業の透明度';
-
-  @override
-  String get layoutConflictOpacitySubtitle =>
-      '競合授業は自動的に重ね表示，透明度を下げると複数の授業を同時に確認可能';
-
-  @override
-  String get layoutTipsText =>
-      'テンプレートは設定ホームに移動済み。ここでは主に時間割の行高さ、時間列、週末表示と授業カードレイアウトを調整。現在の時間割の時間のみ変更する場合、まずテンプレートでコピーしてから適用。';
 
   @override
   String currentWeekCompact(int week) {
     return '$week週';
   }
-
-  @override
-  String get sampleCourseNumericalControl => '数控';
 
   @override
   String get sampleCourseAdvancedMath => '高数';
@@ -4401,9 +4128,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get localDebugMaintainer => 'ローカルデバッグ';
-
-  @override
   String get addDebugRecordTooltip => 'デバッグレコード追加';
 
   @override
@@ -4783,9 +4507,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get rescheduleAction => '時間変更';
-
-  @override
   String get deleteModeTitle => '削除方式';
 
   @override
@@ -5051,11 +4772,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get warehouseLoginHintImport => 'ここで教務システムにログインしてインポートを実行';
-
-  @override
-  String localScriptLabel(String scriptName) {
-    return 'ローカルスクリプト：$scriptName';
-  }
 
   @override
   String get webAddressHint => 'Webアドレスを入力';
@@ -5770,9 +5486,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectTimeSchemeTitle => '時間方案を選択';
 
   @override
-  String get manageTimeSchemesAction => '時間方案を管理';
-
-  @override
   String get examDefaultName => '期末試験';
 
   @override
@@ -5880,9 +5593,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeEnabledDesc => '授業リマインダーとウィジェットは全授業を非表示';
-
-  @override
-  String get liveTestingHolidayModeDisabledDesc => '現在通常の休日データを使用';
 
   @override
   String get textColorTitle => 'テキストの色';
@@ -7726,47 +7436,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'Quick path failed; retrying with the full recorded steps…';
 
   @override
-  String get macroReplayNoSteps => 'No recorded steps';
-
-  @override
-  String get macroReplayUserCancelled => 'Cancelled by user';
-
-  @override
-  String macroReplayStepFailed(int current, int total, String error) {
-    return 'Step $current/$total failed: $error';
-  }
-
-  @override
-  String get macroReplayEmptyNavigateUrl => 'Navigation URL is empty';
-
-  @override
-  String macroReplayInvalidUrl(String url) {
-    return 'Invalid URL: $url';
-  }
-
-  @override
-  String get macroReplayEmptyFillSelector => 'Fill selector is empty';
-
-  @override
-  String macroReplayFieldNotFound(String selector) {
-    return 'Form field not found: $selector';
-  }
-
-  @override
-  String get macroReplayEmptyClickSelector => 'Click selector is empty';
-
-  @override
-  String macroReplayClickNotFound(String selector) {
-    return 'Click target not found: $selector';
-  }
-
-  @override
   String macroReplayWaitUrlPattern(String pattern) {
     return 'Waiting for URL match: $pattern';
   }
-
-  @override
-  String get macroReplayEmptyWaitSelector => 'Wait selector is empty';
 
   @override
   String macroReplayWaitSelector(String selector) {
@@ -9002,11 +8674,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String profileTimeSchemeName(String profileName) {
-    return '$profileName schedule';
-  }
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -9412,25 +9079,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frostedGlassModeLabel => '既定のマテリアル';
 
   @override
-  String get liquidGlassScopePopupTitle => 'プルダウンポップアップ';
-
-  @override
-  String get liquidGlassScopePopupSubtitle => 'ガラスモードなど設定行から開く小さなアンカーメニュー';
-
-  @override
-  String get liquidGlassScopeSelectSheetTitle => '全画面セレクターパネル';
-
-  @override
-  String get liquidGlassScopeSelectSheetSubtitle =>
-      'プリセットテーマやフォントなど長いリストの選択ダイアログ。オフにするとソリッドカードになります';
-
-  @override
-  String get liquidGlassScopeSheetDialogTitle => 'シートとダイアログ';
-
-  @override
-  String get liquidGlassScopeSheetDialogSubtitle => 'ボトムシート、確認ダイアログ、アクションメニュー';
-
-  @override
   String get liquidGlassScopeHomeChromeTitle => 'ホームのガラス帯';
 
   @override
@@ -9438,12 +9086,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassScopeDockSubtitle => '下部のフローティングピルと授業追加ボタン';
-
-  @override
-  String get liquidGlassScopePickerButtonsTitle => '壁紙配置ボタン';
-
-  @override
-  String get liquidGlassScopePickerButtonsSubtitle => '壁紙位置選択ページで壁紙に浮かぶガラスボタン';
 
   @override
   String get frostedGlassModeLiquid => 'リキッドガラス';
@@ -9456,21 +9098,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liquidGlassPresetLabel => 'リキッドガラスプリセット';
-
-  @override
-  String get liquidGlassPresetClear => 'クリア';
-
-  @override
-  String get liquidGlassPresetLight => 'ライトミスト';
-
-  @override
-  String get liquidGlassPresetStandard => 'スタンダード';
-
-  @override
-  String get liquidGlassPresetDense => 'デンス';
-
-  @override
-  String get liquidGlassPresetCustom => 'カスタム';
 
   @override
   String get liquidGlassRefractionLabel => '屈折の強さ';
@@ -9624,9 +9251,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get selectTimeTitle => '時間を選択';
-
-  @override
-  String get liveSelfCheckSubtitle => 'セルフチェックを実行';
 
   @override
   String get aboutSupportUpdatesSectionTitle => 'サポートと更新';
