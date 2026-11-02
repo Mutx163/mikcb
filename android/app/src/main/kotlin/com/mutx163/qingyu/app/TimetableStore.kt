@@ -20,7 +20,7 @@ import com.mutx163.qingyu.core.TimetableSettings
  * | `timetable_profiles` | String(JSON) | 课表全量 JSON **数组**，v1 布局 |
  * | `timetable_profiles_schema_version` | int | 恒 1；**写路径自动盖章** |
  * | `active_timetable_profile_id` | String | 当前激活档案 id |
- * | `timetable_settings` | String(JSON) | 设置（本层只拥有时间/周次 4 键，见下） |
+ * | `timetable_settings` | String(JSON) | 设置（本层只拥有时间/周次 4 键 + 单节提醒 1 键，见下） |
  * | `current_week` | int | 当前周次 |
  * | `time_schemes` | String(JSON) | 作息方案数组 |
  * | `schedule_date_rules` | String(JSON) | 作息日期规则数组 |
@@ -40,7 +40,7 @@ import com.mutx163.qingyu.core.TimetableSettings
  *
  * ## 设置为什么是「合并不是整体覆盖」
  *
- * [TimetableSettings] 只移植了时间/周次的 4 个键，Dart 侧同名字典有 250+ 字段
+ * [TimetableSettings] 只移植了时间/周次的 4 个键 + 单节提醒 `classReminders`，Dart 侧同名字典有 250+ 字段
  *（`timetable_settings.dart` 头注释已写明：**在设置族补齐前，Compose 侧不得用本类
  * 整体覆盖设置存档，会丢其余字段**）。所以 [saveSettings] 的做法是：
  * 读回盘上那份 JSON 对象 → 只覆盖本层拥有的键 → 写回。其余字段原样保留。
@@ -70,6 +70,14 @@ class TimetableStore(
     )
 
     // ---------- timetable_profiles ----------
+
+    /**
+     * 读**原始串**（只读、不解析、不留档）。
+     *
+     * 只给「删档案后回收独占用图」的引用扫描用：壁纸键不在 [TimetableSettings]
+     * 的 4 键里，仓储快照也拿不到。JSON 读不懂时由调用方负责 fail-safe，本层不替它猜。
+     */
+    fun rawJson(key: String): String? = store.getString(key)
 
     fun loadProfiles(): ProfilesLoadResult {
         val raw = store.getString(KEY_PROFILES)
@@ -224,7 +232,7 @@ class TimetableStore(
     /**
      * **读-合并-写**：只覆盖 [patch] 里出现的键，盘上其余键（Dart 侧 250+ 个）原样保留。
      *
-     * 这是全仓唯一一份 `timetable_settings` 合并写实现——[saveSettings]（4 键子集）
+     * 这是全仓唯一一份 `timetable_settings` 合并写实现——[saveSettings]（core 键子集）
      * 与设置族完整模型都走这里。合并逻辑若有两份，「测试用的那份」就会比真实现宽松。
      *
      * ⚠️ 与 Dart `toJson()` **整体覆盖**的一处必要差异：Dart 对 null 值的键是**省略**

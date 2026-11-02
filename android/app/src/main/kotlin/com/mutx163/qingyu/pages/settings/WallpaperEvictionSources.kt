@@ -2,6 +2,8 @@ package com.mutx163.qingyu.pages.settings
 
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.weather.BingWallpaperLedgerEntry
+import com.mutx163.qingyu.weather.deletableWallpaperPaths
 
 /**
  * 删壁纸文件前，「其它档案正在用的图」从哪来（纯函数）。
@@ -53,15 +55,35 @@ object WallpaperEvictionSources {
     )
 
     /**
-     * 一次「待删清单」的判定结果。
+     * 每份档案 id → 有效背景图路径（[scanProfileBackdrops] 的按 id 版本）。
      *
-     * [profilesUnreadable] 为 true 时 [deletable] 必为空——这是给宿主的显式信号，
-     * 用来记一条「为什么没删」的日志，而不是静默跳过。
+     * [readable] = false 表示有条目读不懂（`settings` 不是对象），此时不能据此
+     * 判定「谁在用 / 谁没人用」。回收独占用图必须按 id 取「被删那份」的图，
+     * 所以单独保留这一份映射；两条入口共用同一个解析核心，不另写一套。
      */
-    data class EvictionPlan(
-        val deletable: List<String>,
-        val profilesUnreadable: Boolean,
+    data class ProfileBackdropIndex(
+        val byId: Map<String, String>,
+        val readable: Boolean,
     )
+
+    /** 一次「删档案后回收独占用图」的判定结果。 */
+    data class ProfileReclaimPlan(
+        /** 被删档案实际引用过的图（通常 0 或 1 张）。 */
+        val candidatePaths: List<String>,
+        /** 确认不再被任何来源引用、可以删的图。 */
+        val deletablePaths: List<String>,
+        /**
+         * false = 有引用来源读不到 / 读不懂（档案 JSON、设置、图库台账任一）。
+         * 此时 [deletablePaths] 必为空：宁可留一张垃圾图，也不能删别人的在用图。
+         */
+        val referencesKnown: Boolean,
+    ) {
+        companion object {
+            /** 引用来源读不懂时的唯一形状：候选照记（给日志用），可删清单一律为空。 */
+            fun unknown(candidates: List<String> = emptyList()): ProfileReclaimPlan =
+                ProfileReclaimPlan(candidates, emptyList(), referencesKnown = false)
+        }
+    }
 
     /**
      * 从盘上原始 JSON 文本扫描。
@@ -70,22 +92,31 @@ object WallpaperEvictionSources {
      * 解析失败 = 读不懂（`readable = false`）。
      */
     fun scanProfileBackdrops(profilesJson: String?): ProfileBackdropScan {
-        if (profilesJson.isNullOrEmpty()) {
-            return ProfileBackdropScan(emptyList(), readable = true)
-        }
-        val decoded = MiniJson.tryParse(profilesJson)
-            ?: return ProfileBackdropScan(emptyList(), readable = false)
-        return scanProfileBackdrops(decoded)
+        val index = scanProfileBackdropIndex(profilesJson)
+        return ProfileBackdropScan(
+            backdropPaths = index.byId.values.toList().distinct(),
+            readable = index.readable,
+        )
     }
 
-    /** 内部：解析后的 JSON 树。对外只暴露文本入口，避免调用方各拼一棵树。 */
-    private fun scanProfileBackdrops(profiles: Any?): ProfileBackdropScan {
-        if (profiles !is List<*>) {
-            return ProfileBackdropScan(emptyList(), readable = false)
+    /**
+     * 按档案 id 取有效背景图（回收独占用图用）。
+     *
+     * 与 [scanProfileBackdrops] 同一条解析规则：壁纸优先、旧版背景图字段兜底，
+     * 空串与 `builtin:` 键不算引用；`settings` 存在却不是对象 ⇒ `readable = false`。
+     */
+    fun scanProfileBackdropIndex(profilesJson: String?): ProfileBackdropIndex {
+        if (profilesJson.isNullOrEmpty()) {
+            return ProfileBackdropIndex(emptyMap(), readable = true)
         }
-        val paths = LinkedHashSet<String>()
+        val decoded = MiniJson.tryParse(profilesJson)
+            ?: return ProfileBackdropIndex(emptyMap(), readable = false)
+        if (decoded !is List<*>) {
+            return ProfileBackdropIndex(emptyMap(), readable = false)
+        }
+        val byId = LinkedHashMap<String, String>()
         var readable = true
-        for (profile in profiles) {
+        for (profile in decoded) {
             // 非对象条目不是档案，也不可能带 settings；仓储的宽松解析同样丢弃它们。
             if (profile !is Map<*, *>) continue
             val settings = profile["settings"] ?: continue
@@ -96,10 +127,24 @@ object WallpaperEvictionSources {
                 readable = false
                 continue
             }
-            effectiveBackdropPath(settings)?.let { paths.add(it) }
+            val path = effectiveBackdropPath(settings) ?: continue
+            // 没有 id 的档案无法和「被删的那份」对应；它不构成可读性失败，只是进不了映射。
+            val id = (profile["id"] as? String)?.takeIf { it.isNotBlank() } ?: continue
+            byId[id] = path
         }
-        return ProfileBackdropScan(paths.toList(), readable)
+        return ProfileBackdropIndex(byId, readable)
     }
+
+    /**
+     * 一次「待删清单」的判定结果。
+     *
+     * [profilesUnreadable] 为 true 时 [deletable] 必为空——这是给宿主的显式信号，
+     * 用来记一条「为什么没删」的日志，而不是静默跳过。
+     */
+    data class EvictionPlan(
+        val deletable: List<String>,
+        val profilesUnreadable: Boolean,
+    )
 
     /**
      * 判一次待删清单：返回真正可以删的路径。
@@ -130,6 +175,97 @@ object WallpaperEvictionSources {
             deletable = WallpaperHistoryLedger.deletable(evictedPaths, whitelist),
             profilesUnreadable = false,
         )
+    }
+
+    /**
+     * 判一次「删档案后回收独占用图」（**只在删除档案那条流程里**调用）。
+     *
+     * 取被删档案实际引用过的那张图；它若不再被以下任一来源引用，就可以删：
+     *
+     * 1. 删除后盘上的**其余档案**（壁纸字段 + 旧版 `homePageBackgroundImagePath` 兜底）；
+     * 2. 当前设置里的背景图（`timetable_settings` 原始 JSON，壁纸优先、旧字段兜底）；
+     * 3. 本流程的草稿（档案管理页没有草稿，参数留给同一模型的其它调用方）；
+     * 4. 图库下载台账（`bing_wallpaper_v1` 原始 JSON 数组）。
+     *
+     * ## fail-safe
+     *
+     * 任一来源读不到 / 读不懂（档案 JSON 不是数组、某份 settings 不是对象、
+     * 设置 JSON 不是对象、台账不是数组或有一条解析不出）⇒
+     * [ProfileReclaimPlan.referencesKnown] = false 且**一张都不删**。
+     * 「读不懂」绝不能当成「没人用」：那会把别的课表正在用的壁纸删掉、切过去首页裂图。
+     *
+     * ## 不做的事
+     *
+     * 这里只判**该怎么删**，不碰磁盘；真删与失败日志由调用方负责。也不做开机 /
+     * 定时扫描——候选只来自「刚被删掉的那份档案」。
+     */
+    fun planProfileDeletionReclaim(
+        deletedProfileId: String,
+        profilesJsonBefore: String?,
+        profilesJsonAfter: String?,
+        settingsJson: String?,
+        ledgerJson: String?,
+        draftPath: String? = null,
+    ): ProfileReclaimPlan {
+        val before = scanProfileBackdropIndex(profilesJsonBefore)
+        if (!before.readable) return ProfileReclaimPlan.unknown()
+        val candidates = listOfNotNull(before.byId[deletedProfileId])
+            .filter { it.isNotBlank() }
+            .distinct()
+        // 被删的那份本来就没壁纸：没有可回收的候选，这是一次可确认的空集。
+        if (candidates.isEmpty()) {
+            return ProfileReclaimPlan(candidates, emptyList(), referencesKnown = true)
+        }
+
+        val after = scanProfileBackdropIndex(profilesJsonAfter)
+        if (!after.readable) return ProfileReclaimPlan.unknown(candidates)
+        val current = currentBackdropPaths(settingsJson)
+            ?: return ProfileReclaimPlan.unknown(candidates)
+        val ledger = ledgerPaths(ledgerJson)
+            ?: return ProfileReclaimPlan.unknown(candidates)
+
+        val references = HashSet<String>(after.byId.values)
+        references.addAll(current)
+        references.addAll(ledger)
+        draftPath?.takeIf { it.isNotBlank() }?.let { references.add(it) }
+
+        return ProfileReclaimPlan(
+            candidatePaths = candidates,
+            deletablePaths = deletableWallpaperPaths(candidates, inUsePaths = references),
+            referencesKnown = true,
+        )
+    }
+
+    /**
+     * `timetable_settings` 原始 JSON 里的当前背景图（壁纸优先、旧字段兜底）。
+     *
+     * null = JSON 读不懂；空集 = 确实没设背景图。
+     */
+    private fun currentBackdropPaths(settingsJson: String?): Set<String>? {
+        if (settingsJson.isNullOrEmpty()) return emptySet()
+        val decoded = MiniJson.tryParse(settingsJson) ?: return null
+        if (decoded !is Map<*, *>) return null
+        val path = effectiveBackdropPath(decoded) ?: return emptySet()
+        return setOf(path)
+    }
+
+    /**
+     * 图库台账里记着的本地路径。
+     *
+     * null = 读不懂（不是数组、或任意一条解析不出）；空集 = 真没有台账。
+     * 解析必须**逐条严格**：宽松丢弃一条就等于「那张图没人引用」，
+     * 而它可能正是用户刚下好、还没应用的那张。
+     */
+    private fun ledgerPaths(ledgerJson: String?): Set<String>? {
+        if (ledgerJson.isNullOrEmpty()) return emptySet()
+        val decoded = MiniJson.tryParse(ledgerJson) ?: return null
+        if (decoded !is List<*>) return null
+        val paths = LinkedHashSet<String>()
+        for (raw in decoded) {
+            val entry = BingWallpaperLedgerEntry.fromJson(raw) ?: return null
+            paths.add(entry.path)
+        }
+        return paths
     }
 
     /**

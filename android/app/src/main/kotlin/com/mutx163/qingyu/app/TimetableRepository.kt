@@ -120,6 +120,13 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     /** 盘上档案的解析结果（含「只是条目级损坏」信号，供宿主决定是否提示用户）。 */
     fun loadProfilesResult(): TimetableStore.ProfilesLoadResult = store.loadProfiles()
 
+    /**
+     * 读盘上原始串（只读；语义见 [TimetableStore.rawJson]）。
+     *
+     * 只给「删档案后回收独占用图」的引用扫描用——本层不认识壁纸键，也不做可用性判断。
+     */
+    fun rawStoredJson(key: String): String? = store.rawJson(key)
+
     // ---------- 对外只读视图 ----------
 
     val snapshot: TimetableSnapshot

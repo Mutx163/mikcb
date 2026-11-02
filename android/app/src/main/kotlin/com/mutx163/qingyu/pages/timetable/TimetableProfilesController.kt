@@ -2,10 +2,15 @@ package com.mutx163.qingyu.pages.timetable
 
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
+import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.settings.BingWallpaperStore
+import com.mutx163.qingyu.pages.settings.WallpaperEvictionSources
+import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.logging.Logger
 
 /**
  * 课表档案动作的结果（纯数据，不含 Compose）。
@@ -62,6 +67,9 @@ fun TimetableProfileActionResult.toastOrNull(): String? = when (this) {
  * - **复制**：复制来源档，名字加 `" 副本"` 后缀（`duplicateActiveProfile` :1957-1989），复制品成为激活档。
  * - **删除**：至少保留一份（`_profiles.length <= 1` 拒）；拒删情侣导入档；删的是激活档时
  *   自动激活「第一份非情侣导入档」，且**必须存在**这样的回退档（`deleteProfile` :2085-2159）。
+ *   删除成功后**只在这一次流程里**回收该档案的独占用图（判定在
+ *   [WallpaperEvictionSources.planProfileDeletionReclaim]）：引用来源读不到 / 读不懂时
+ *   一张都不删；删文件失败只记日志，不影响档案删除结果。
  * - **清空**：只清当前激活档；课全删、挂在课上的作业（`courseId != null`）一并删，
  *   **手写作业（courseId == null）与考试保留**（`timetable_course_service.dart:460-497`，
  *   考试不清是有意为之）。
@@ -215,14 +223,94 @@ class TimetableProfilesController(
         } else {
             snap.activeProfileId
         }
-        return write(
+        // 回收候选必须取**删除前**那份档案的壁纸（删完就从盘上消失了）。
+        val profilesJsonBefore = readRawJson(TimetableStore.KEY_PROFILES)
+        val result = write(
             profiles = remaining,
             activeProfileId = newActiveId,
             failureMessage = TimetableStrings.deleteFailed.zh,
         ) { TimetableStrings.formatDeletedProfile(target.name) }
+        // 只在**档案真的删掉之后**回收；落盘失败（Failed）时档案还在，一张都不动。
+        if (result is TimetableProfileActionResult.Success) {
+            reclaimDeletedProfileWallpaper(id, profilesJsonBefore)
+        }
+        return result
     }
 
     // ---------- 内部 ----------
+
+    /** 一次读原始串的结果：区分「键不存在（null）」与「读操作失败」。 */
+    private data class RawRead(val value: String?, val ok: Boolean)
+
+    /**
+     * 读盘上原始串。
+     *
+     * 读失败不能当成「没有值」——那会让回收把「读不到引用」误判成「谁都没在用」。
+     * 所以把成败单独带回来，由 [reclaimDeletedProfileWallpaper] 决定跳过。
+     */
+    private fun readRawJson(key: String): RawRead = try {
+        RawRead(repository.rawStoredJson(key), ok = true)
+    } catch (error: Exception) {
+        LOGGER.warning("read raw settings failed: key=$key, error=$error")
+        RawRead(null, ok = false)
+    }
+
+    /**
+     * 删档案后的**独占用图回收**——本功能唯一的触发点。
+     *
+     * 候选只来自「刚被删掉的那份档案」；不扫描全盘、不在启动 / 后台触发。
+     * 任一引用来源读不到或读不懂时一张都不删，只记日志（判定在
+     * [WallpaperEvictionSources.planProfileDeletionReclaim]）。
+     *
+     * 删文件失败**不影响**档案删除结果：档案已经落盘成功，这里每一步都吞掉异常、只留日志。
+     */
+    private fun reclaimDeletedProfileWallpaper(
+        deletedProfileId: String,
+        profilesJsonBefore: RawRead,
+    ) {
+        if (!profilesJsonBefore.ok) {
+            LOGGER.info("skip wallpaper reclaim: profiles before unreadable")
+            return
+        }
+        val profilesAfter = readRawJson(TimetableStore.KEY_PROFILES)
+        val settings = readRawJson(TimetableStore.KEY_SETTINGS)
+        val ledger = readRawJson(BingWallpaperStore.PREF_LEDGER)
+        if (!profilesAfter.ok || !settings.ok || !ledger.ok) {
+            LOGGER.info(
+                "skip wallpaper reclaim: source unreadable " +
+                    "(profiles=${profilesAfter.ok}, settings=${settings.ok}, ledger=${ledger.ok})",
+            )
+            return
+        }
+        val plan = try {
+            WallpaperEvictionSources.planProfileDeletionReclaim(
+                deletedProfileId = deletedProfileId,
+                profilesJsonBefore = profilesJsonBefore.value,
+                profilesJsonAfter = profilesAfter.value,
+                settingsJson = settings.value,
+                ledgerJson = ledger.value,
+            )
+        } catch (error: Exception) {
+            LOGGER.warning("skip wallpaper reclaim: plan failed, error=$error")
+            return
+        }
+        if (!plan.referencesKnown) {
+            LOGGER.info(
+                "skip wallpaper reclaim: references unreadable, " +
+                    "candidates=${plan.candidatePaths}",
+            )
+            return
+        }
+        for (path in plan.deletablePaths) {
+            val deleted = try {
+                File(path).delete()
+            } catch (error: Exception) {
+                LOGGER.warning("wallpaper file was not deleted: $path, error=$error")
+                false
+            }
+            if (!deleted) LOGGER.warning("wallpaper file was not deleted: $path")
+        }
+    }
 
     /** 统一的「整份替换 + 落盘」：成功才取成功文案；落盘抛错 → [TimetableProfileActionResult.Failed]。 */
     private inline fun write(
@@ -256,4 +344,14 @@ class TimetableProfilesController(
             timeSchemeId = profile.settings.activeTimeSchemeId,
             currentWeek = profile.currentWeek,
         )
+
+    private companion object {
+        /**
+         * 纯 JVM 日志（`java.util.logging` 在 Android 上映射到 logcat）。
+         *
+         * 本类刻意不引 `android.util.Log`：`pages/timetable` 在 L0 里按纯 Kotlin 编译，
+         * 一旦混入 Android 依赖，整个模块的轻量单测通道会被跳过。
+         */
+        val LOGGER: Logger = Logger.getLogger("TimetableProfilesController")
+    }
 }
