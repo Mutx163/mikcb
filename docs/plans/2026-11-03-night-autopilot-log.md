@@ -41,11 +41,13 @@
 
 | 门 | 命令 | 结果 | 时间 |
 |---|---|---|---|
-| 门1 编译（L1） | `safe-gradle.ps1 :app:compileDevDebugKotlin` | ✅ BUILD SUCCESSFUL（13m22s 全量 / 2m40s 增量） | 2026-11-03 01:05 |
-| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | ❌ 红（7 类失败，见下） | 2026-11-03 01:30 |
-| 门3 样式守卫 | `compose-style-lint.ps1 -Domain all` | ✅ 9 处违规全在基线内，无新增 | 2026-11-03 00:58 |
+| 门1 编译（L1） | `safe-gradle.ps1 :app:compileDevDebugKotlin` | ✅ BUILD SUCCESSFUL（7m08s 增量） | 2026-11-03 02:20 |
+| 门2 整包单测（L2） | `safe-gradle.ps1 :app:testDevDebugUnitTest` | ✅ BUILD SUCCESSFUL（5m31s，全量测试通过） | 2026-11-03 02:26 |
+| 门3 样式守卫 | `compose-style-lint.ps1 -Domain all` | ✅ 5 处违规全在基线内，无新增 | 2026-11-03 02:15 |
 | 门4 文案门禁（copy_style） | `dart run tool/copy_style_lint.dart` | ✅ 无新增 | 2026-11-03 00:59 |
-| 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py` | 曾红 1 处（ImportCommon 2→1 未压行），已压行修复 → 绿 | 2026-11-03 01:20 修复 |
+| 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py` | ✅ 绿（ImportCommon 2→1、TimetableProfilesPage 36→4 压行后） | 2026-11-03 02:00 |
+
+> **当前阶段：四道门全绿（L1 编译 + L2 整包单测 + 样式守卫 + 文案门禁均通过）。** 门2 的 7 类红项全部修复并复跑确认（含 ComposePageStyleGuardTest 新增的 S5 OverlayDialog insideMargin 分支）。
 
 ### 门2 失败清单（28 笔新提交未验暴露）与修复状态（2026-11-03 02:00 复核）
 1. `CjkLiteralGateTest`：ImportCommon 已修但基线未下调 → ✅ 已压行修复（`6daddc8b`）。
@@ -130,16 +132,30 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 
 | 路 | 域 | 文件级互斥范围 | 验收门 | 状态 |
 |---|---|---|---|---|
-| A | 文案/l10n | 独占六份 ARB（lib/l10n/*.arb）+ TimetableProfilesPage.kt:81-115 中文常量迁 ARB + copy_style 203 条 + dead key | 门4 + L0 | ✅ 主任务完成（d98eb76f 迁移 22 常量到 TimetableStrings 复用既有键+补10引用；ef1bcbe7 cjk 36→4 压行）。卡点：死键 cloudSyncBaseUrlSecurityNote 被 test 引用、判据口径外，不删记 Lead；203 条超宽债未清 |
-| B | course/timetable/共享件 | 裸 Popup（CourseOverviewPage.kt:504）、未用 import（TimetableWeekPage.kt:52）、QingyuSheet IME+标题动作、守卫补 OverlayDialog 分支、门2 样式基线删行（DayView×2/MonthDayCell R5） | L0 + 门4 | 已派 |
-| C | sync 族 | 独占 pages/sync/：云备份整组 ×4 + 情侣整组 ×3 + SyncConflictChoiceDialog 三动作竖排 | L0 + 门4 | 已派 |
-| D | settings | 仅 SettingsHost.kt：说明框动作区、主题动作表灰实心、门2 函数体收尾 `}` 修复 | L0 + 门4 | 已派 |
-| E | statistics + import | pages/statistics/ + pages/import/warehouse/：成就弹层整组、I2 四件、门2 ImportTemplateModelTest 模板对齐 | L0 + 门4 | 已派 |
+| A | 文案/l10n | 独占六份 ARB + TimetableProfilesPage 中文常量迁 ARB + copy_style 203 + dead key | 门4 + L0 | ✅ 主任务完成（d98eb76f 迁移 22 常量；ef1bcbe7 cjk 36→4 压行）。卡点：死键被 test 引用记 Lead；203 条超宽债**机制性卡死**（判据只扫 lib+ARB 均禁改，子代理实测 0 条可清，典型可清项已记 Lead） |
+| B | course/timetable/共享件 | 裸 Popup、未用 import、QingyuSheet IME、守卫补 OverlayDialog S5、基线删行 | L0 + 门4 | ✅ 完成（fd8c7f3d 样式+import、52379d98 裸Popup+QingyuSheet IME+ClassAlarm 16dp、19338b2a 守卫 S5 分支） |
+| C | sync 族 | 云备份整组 + 情侣整组 + SyncConflictChoiceDialog 三动作竖排 | L0 + 门4 | ✅ 完成（4bb71447 常驻组合化、8bd1f535 三动作竖排） |
+| D | settings | 仅 SettingsHost.kt：说明框 8→12dp、守卫函数体收尾修复 | L0 + 门4 | ✅ 完成（1c42a026，间距 12dp + 守卫读源码归一 LF 修 CRLF） |
+| E | statistics + import | 成就弹层整组、I2 四件、ImportTemplateModelTest 模板对齐 | L0 + 门4 | ✅ 完成（e75cdfe8 模板 CRLF 对齐、5517bd89 成就弹层×3 + 新增守卫棘轮） |
+| F（补） | transfer/lan | LanEditApiRouter 400/500、LanEditSessionTest 并发断言 | L0 + 门4 | ✅ 完成（1bc9e4f8 组替换 400、2487203d parse 400、d6893c97 并发 do-while） |
 
 **串行约束**：门 3（L1）绿之前只用 L0 + 门4 验收；六份 ARB 只归 A；壳/拍板/真机项不进 5 路。
 **已不成立（别再改，主控审计+本代理复核）**：调课 480dp、周格白字、周加/减无障碍、备注 16dp、写死中文、导入两动作排布；ExamTimePickerSheet（文件不存在）；CourseActionSheet L308（按需挂载子弹层，非条件挂载）。
 **被拍板挡住（不进 5 路，记此）**：42dp 空档×4、官方字阶、自动聚焦、选周结构、ICS 菜单、滚轮抢手势。
 **文档已过时（记已不成立）**：ST1 classReminders、局域网撤销点、perf manifest、台账 P3-E 成就详情、§9.10 exam、DEMO 60→63；KDoc 自相矛盾 ×2（TimetableStore.kt:44、ClassAlarmSheet.kt:50）顺手修。
+
+---
+
+## 五·d、明早接手第一步
+
+1. **拉代码**：`git fetch` + `merge --ff-only`，核对 HEAD。本代理已推送至 `52379d98`（含弹层守卫 S5）。
+2. **复核四道门**：门1/门2 全绿（02:26）。若远端有新提交，先复跑门2 确认。
+3. **继续推进**：5 路已全部完成（A~E + 补 F）。剩余候选：
+   - 弹层核实子代理标「仍成立留 Lead」：WebDAV 连接弹层静态 show+动作不固定（需套件 footer 槽）、CloudBackupDetailSheet 半宽 Row 残留。
+   - 拍板挡住项（42dp 空档、官方字阶、自动聚焦、选周结构、ICS 菜单、滚轮抢手势、解绑红+10dp）。
+   - copy_style 203 条超宽债（机制性卡死，需解禁 ARB 外语词条；典型可清项：ja/ko 各 10 条未翻译英文兜底、en `homePullQuickImportSubtitle` 43.4>17 可压「Runs in the background」）。
+   - 死键 `cloudSyncBaseUrlSecurityNote`（被 test 引用，判据口径外）。
+4. **环境**：便携工具链全在 `.tools/`（mingit/pwsh 7.5.4 在 C:\dev\pwsh、python313、kotlinc）；JDK 21 在 `C:\dev\jdk\jdk-21.0.13+9`；PUB_CACHE 用仓库内 `.pub-cache`、CNB 镜像（`CNB_BUILD_ID=local-mirror`）。L0 套 `pwsh -File scripts/with-kotlinc.ps1 <cmd>` 自动注入便携 kotlinc。
 
 ---
 
