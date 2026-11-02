@@ -114,7 +114,14 @@ color = Color(0xFF999999)                            // ❌ 深色模式下必�
 QingyuSectionTitle("分组名")     // ✅ 官方 SmallTitle，自带 28dp 左缘
 ```
 
-- **判定**：页面文件里出现 `sectionLabel(`（自己拼分组标题）却**没有** `QingyuSectionTitle(` → 违规。
+- **判定**：页面文件里出现**未限定的** `sectionLabel(`（调用或定义，即前面不是标识符或 `.`）
+  却**没有** `QingyuSectionTitle(` → 违规。判据正则 `(?<![A-Za-z0-9_$.])sectionLabel\s*\(`，
+  与 `ComposePageStyleGuardTest` / `compose-style-lint.ps1` 同一套（2026-11-02 收窄，
+  见提交 `b15aad25`）。两个方向：
+  - **会命中**：`private fun sectionLabel(text: String) { Text(...) }`——自拼 13sp + padding
+    的分组标题，缺 `QingyuSectionTitle` 就红（咬合探针实测）；
+  - **不命中**：`Color(QingyuTheme.sectionLabel(dark))`——这是主题语义取色
+    （`sectionLabel` 槽是 `actionIcon` 的别名），不是自拼标题；带 `.` 前缀的成员访问一律不算。
 - **为什么**：官方骨架的横向刻度是「页面 0 → Card 外边距 12 → Preference 自带 16 = 文字左缘 **28**」，
   而 `SmallTitle` 自带 28 正好对齐。自己写 `Text(13.sp) + padding(start = 4.dp)` 就对不齐这条轴线，
   整页看起来「行不齐」。
