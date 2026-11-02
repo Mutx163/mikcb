@@ -822,6 +822,10 @@ private fun AddCourseWeekPickerDialog(
                                 },
                             )
                         }
+                        // 末排不足 5 格时补等宽空位，保持格宽与上面各行一致（Dart GridView 原版行为）。
+                        repeat(5 - rowWeeks.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
                 Row(

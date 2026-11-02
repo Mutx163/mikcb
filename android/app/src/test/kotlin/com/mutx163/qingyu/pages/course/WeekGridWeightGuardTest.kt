@@ -17,6 +17,10 @@ import java.io.File
  * 所以这里沿用仓库已有的源码文本守卫做法（`ComposeSheetGuardTest` / `PickupCodesPageGuardTest`
  * 同一套路）：按括号配平取出每个 `AddCourseWeekGridTile(...)` 的实参，要求带 `Modifier.weight`。
  *
+ * 另钉一条：末排不足 5 格时必须 `repeat(5 - rowWeeks.size) { Spacer(Modifier.weight(1f)) }` 补位，
+ * 否则 Row 会把整行宽度均分给实有的 1~4 格（16 周时末排是 1 个整宽按钮），
+ * 与 Dart `GridView` 的固定列宽不一致。
+ *
  * **代价写清**：文本判据对格式敏感。真把调用改成别的写法时这条会先红——那是**故意的**，
  * 提醒改接线的人同时更新判据，而不是静默失效。
  */
@@ -42,9 +46,55 @@ class WeekGridWeightGuardTest {
         )
     }
 
+    @Test
+    fun `自定义周末排必须补等宽占位`() {
+        val block = chunkedWeekLoop(pageSource)
+        assertTrue(
+            "没找到 `availableWeeks.chunked(5).forEach` 循环，判据已失效（门禁空跑会假绿）。" +
+                "user.dir=${System.getProperty("user.dir")}",
+            block != null,
+        )
+        assertTrue(
+            "自定义周末排不足 5 格时必须用 `repeat(5 - rowWeeks.size)` + " +
+                "`Spacer(Modifier.weight(1f))` 补等宽空位，否则 Row 会把整行宽度均分给实有的 1~4 格" +
+                "（16 周时末排是 1 个整宽按钮），与 Dart GridView 的固定列宽不一致",
+            PADDING_LOOP.containsMatchIn(normalizeWhitespace(block!!)),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据
     // ------------------------------------------------------------------
+
+    /** 取出 `availableWeeks.chunked(5).forEach { … }` 的花括号块（含嵌套全部内容）。 */
+    private fun chunkedWeekLoop(text: String): String? {
+        val start = text.indexOf(CHUNKED_LOOP)
+        if (start < 0) return null
+        val openBrace = text.indexOf('{', start + CHUNKED_LOOP.length)
+        if (openBrace < 0) return null
+        val close = matchingBrace(text, openBrace)
+        if (close < 0) return null
+        return text.substring(openBrace, close + 1)
+    }
+
+    private fun matchingBrace(text: String, openIndex: Int): Int {
+        var depth = 0
+        var i = openIndex
+        while (i < text.length) {
+            when (text[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+            i++
+        }
+        return -1
+    }
+
+    private fun normalizeWhitespace(text: String): String =
+        WHITESPACE.replace(text, " ")
 
     /** 按括号配平取出所有调用：`行号 to 实参文本`。 */
     private fun gridTileCalls(text: String): List<Pair<Int, String>> {
@@ -97,6 +147,16 @@ class WeekGridWeightGuardTest {
 
     private companion object {
         const val TILE_CALL = "AddCourseWeekGridTile("
+
+        const val CHUNKED_LOOP = "availableWeeks.chunked(5).forEach"
+
+        val WHITESPACE = Regex("""\s+""")
+
+        /** 末排补位：`repeat(5 - rowWeeks.size) { Spacer(modifier = Modifier.weight(1f)) }`。 */
+        val PADDING_LOOP = Regex(
+            """repeat\s*\(\s*5\s*-\s*rowWeeks\.size\s*\)\s*\{\s*""" +
+                """Spacer\s*\(\s*modifier\s*=\s*Modifier\s*\.\s*weight\s*\(\s*1f\s*\)\s*\)\s*\}""",
+        )
 
         /**
          * 实参里出现了 `modifier = Modifier...weight(`。
