@@ -698,18 +698,26 @@ fun ImportPreviewDialog(
                 )
             } else {
                 // 本地没课 ⇒ 只有一条路（整份写入），不摆「覆盖 / 更新」二选一。
-                ImportActionButton(
-                    label = ImportStrings.spreadsheetImportWarningsContinue.zh,
-                    onClick = {
-                        onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
-                    },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                ImportActionButton(
-                    label = ImportStrings.cancelAction.zh,
-                    onClick = onCancel,
-                    secondary = true,
-                )
+                // 两动作横排等宽：取消在左、继续在右（Dart/官方 demo 的两动作排布，
+                // 与同文件 ImportCapacityDialog 一致）。
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    ImportActionButton(
+                        label = ImportStrings.cancelAction.zh,
+                        onClick = onCancel,
+                        secondary = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ImportActionButton(
+                        label = ImportStrings.spreadsheetImportWarningsContinue.zh,
+                        onClick = {
+                            onConfirm(ImportPreviewChoice(choiceStart, firstWeek, replaceExisting = true))
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
