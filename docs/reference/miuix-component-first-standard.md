@@ -80,10 +80,11 @@ grep -rniE "transformable|crop|pinch|zoom" docs/reference/miuix-demo --include='
 
 | # | 位置 | 现状 | 官方可替代 |
 |---|---|---|---|
-| 1 | `pages/course/CourseOverviewPage.kt:506` | 裸 `Popup` + 自拼三行 | `overlay/OverlayListPopup.kt:37`、`popup/OverlayDropdownPopup.kt:35`、`basic/ListPopup.kt:79` |
-| 2 | `pages/timetable/TimetableProfilesPage.kt:291-301` | 自绘 Toast 浮层 + `AnimatedVisibility` | `basic/Snackbar.kt`（需确认壳里有无统一宿主） |
-| 3 | `pages/timetable/day/DayViewCourseCard.kt:96-105`、`DayViewScheduleCard.kt:76-85` | `animateFloatAsState` 驱动的卡片内进度填充 | `basic/ProgressIndicator.kt`（视觉是否必须为卡片内填充需拍板） |
-| 4 | `pages/guide/HyperosShowcasePage.kt:499-502`、`pages/settings/AppearanceEditorChrome.kt:410-416` | 内容展开 / 加载罩的 `AnimatedVisibility` | 无展开/收起组件；若判定属「自研动画」，需补登记 |
+| 1 | `pages/timetable/TimetableProfilesPage.kt:291-301` | 自绘 Toast 浮层 + `AnimatedVisibility` | `basic/Snackbar.kt`（需确认壳里有无统一宿主） |
+| 2 | `pages/timetable/day/DayViewCourseCard.kt:96-105`、`DayViewScheduleCard.kt:76-85` | `animateFloatAsState` 驱动的卡片内进度填充 | `basic/ProgressIndicator.kt`（视觉是否必须为卡片内填充需拍板） |
+| 3 | `pages/guide/HyperosShowcasePage.kt:499-502`、`pages/settings/AppearanceEditorChrome.kt:410-416` | 内容展开 / 加载罩的 `AnimatedVisibility` | 无展开/收起组件；若判定属「自研动画」，需补登记 |
+
+> 已移除：`pages/course/CourseOverviewPage.kt` 排序弹层（2026-11-03 换成官方 `WindowListPopup` + `ListPopupColumn` + `DropdownImpl`，常驻组合 + `show` 驱动）。
 
 **判为非例外（已核实，不登记）**：
 

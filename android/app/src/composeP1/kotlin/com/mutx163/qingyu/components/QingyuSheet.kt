@@ -1,14 +1,18 @@
 package com.mutx163.qingyu.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -56,10 +60,11 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
  * @param show 是否显示。
  * @param onDismissRequest 点空白 / 返回键时回调。
  * @param title 弹层标题；`null` = 不画（内容自绘标题时用）。
- * @param startAction 标题行左侧动作（如关闭键）。
- * @param endAction 标题行右侧动作（如提交键）。
+ * @param startAction 标题行左侧动作（如关闭键）。横向留白与内容内边距**已解耦**：
+ *   `contentPadsHorizontally = true` 时动作槽由套件单独补 16dp，不会贴到面板边缘。
+ * @param endAction 标题行右侧动作（如提交键）。解耦方式同 [startAction]。
  * @param contentPadsHorizontally 内容**自己**带了左右内边距时置 `true`：此时框架侧横向
- *   内边距归零，避免叠加成 32~40dp。
+ *   内边距归零，避免叠加成 32~40dp（标题动作的 16dp 由套件单独保留，不受归零影响）。
  *   ⚠️ **带阈值，别机械照字面判**：内容自带的是 **4dp 这类微调**（本仓常见的面板内小推手）
  *   时应当传 `false` —— 归零会让内容只剩单边 4dp，比 16dp 口径更糟。经验线是
  *   「自带 ≥ 12dp 才算内容的主边距」。判据的意图是「归零后没有任何通栏元素被贴到面板边」，
@@ -90,18 +95,31 @@ fun QingyuSheet(
     maxHeightFraction: Float? = null,
     content: @Composable QingyuSheetContentScope.() -> Unit,
 ) {
+    // 标题动作的横向留白与内容内边距解耦：contentPadsHorizontally=true 时框架侧
+    // 横向内边距归零，官方标题行会跟着归零、动作贴到面板边缘（2026-11-02 弹窗审核
+    // 「标题动作贴边」）。动作槽此时单独补回 16dp；false 时框架侧已是 16dp，补 0。
+    val titleActionInset = if (contentPadsHorizontally) QingyuSheetDefaults.InsideMargin else 0.dp
     OverlayBottomSheet(
         show = show,
         modifier = modifier,
         title = title,
-        startAction = startAction,
-        endAction = endAction,
+        startAction = startAction?.let { action ->
+            { Box(modifier = Modifier.padding(start = titleActionInset)) { action() } }
+        },
+        endAction = endAction?.let { action ->
+            { Box(modifier = Modifier.padding(end = titleActionInset)) { action() } }
+        },
         // S1：本仓口径 16dp；内容自带左右内边距时置 0，绝不叠成 32+。
         insideMargin = DpSize(if (contentPadsHorizontally) 0.dp else QingyuSheetDefaults.InsideMargin, 0.dp),
         onDismissRequest = onDismissRequest,
     ) {
         // S2：底部让位 = 系统手势区 + 16dp 呼吸。
+        // 键盘可见时手势区已被 IME 覆盖，官方 OverlayBottomSheet 又自带 imePadding——
+        // 若照旧加上整份 navigationBars，键盘上方会多出约 24~40dp 双倍空白
+        // （2026-11-02 弹窗审核 S11）。所以先对 navigationBars 做 exclude(ime)：
+        // IME 覆盖的部分不再重复让位，只留 16dp 呼吸；键盘收起时与旧口径完全一致。
         val bottomInset = WindowInsets.navigationBars
+            .exclude(WindowInsets.ime)
             .asPaddingValues()
             .calculateBottomPadding() + QingyuSheetDefaults.ContentBottomGap
         val scope = QingyuSheetContentScope(bottomInset = bottomInset)
@@ -132,7 +150,8 @@ fun QingyuSheet(
  */
 class QingyuSheetContentScope internal constructor(
     /**
-     * 底部让位 = 系统手势区高度 + [QingyuSheetDefaults.ContentBottomGap]。
+     * 底部让位 = 系统手势区（键盘可见时已被 IME 覆盖的部分除外）+
+     * [QingyuSheetDefaults.ContentBottomGap]。
      *
      * `contentScrolls = true` 时由调用方落实（列表 `contentPadding` / 末尾 `Spacer`）；
      * 否则套件已经补好了，调用方不用管。

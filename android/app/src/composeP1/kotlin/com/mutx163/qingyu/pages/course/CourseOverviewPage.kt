@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,21 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.window.PopupPositionProvider
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
@@ -48,11 +36,13 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -62,9 +52,9 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.ContactsBook
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowListPopup
 
 /**
  * 课程总览与编辑页 · Compose 渲染层（Phase 3 · P3-D1）。
@@ -78,8 +68,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 排序、同名聚合、冲突标记、行标题/副标题拼装、弹层三项与选中态**全部**在
  * 模型层 [CourseOverviewLogic.buildViewState] 里算好，本文件只做三件事：
  * 1. 把 [CourseOverviewViewState] 的字段摆上屏；
- * 2. 持有**纯 UI 状态** `sortPopupOpen` 与排序图标的屏幕坐标（Dart 侧同样放在 State 里，
- *    不是业务状态：`_sortPopupOpen` / `_sortAnchorRect`）；
+ * 2. 持有**纯 UI 状态** `sortPopupOpen`（Dart 侧同样放在 State 里，不是业务状态：
+ *    `_sortPopupOpen`）；锚点不再手写状态——官方弹层以父级 Box 为锚（见下）；
  * 3. 把点击回调按语义转给壳层（onOpenGroup 带整组，onOpenConflictDetail 不带参数）。
  *
  * ## 视觉对齐 Flutter 原页（2026-10-28 逐项核对）
@@ -99,12 +89,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * ## 与 Dart 的渲染层差异（都记在这里，不进别的文件）
  *
  * - **排序弹层**：Dart 用 `HyperosSelectPopup`（常驻挂载 + 锚定矩形 + 切 show）。
- *   Miuix 0.9.4 没有「任意锚点的选择弹层」这种组件——`WindowDropdownPreference` /
- *   `OverlayDropdownPreference` 都是**设置行**形态（自带标题行），不能挂到顶栏图标下。
- *   所以这里用共享 [QingyuCard] + 官方 [Text] 行组合出弹层，弹层容器用 Compose 原生 [Popup]
- *   （`focusable = true`，点空白/返回键即关，对齐 Dart `onDismiss` 语义）。**锚点位置按排序
- *   图标实测的屏幕矩形动态计算**（`onGloballyPositioned` 取 `boundsInWindow()`，右对齐、
- *   贴图标下方 4dp），不再写死「状态栏 + 60dp」——大标题折叠态下也贴得住。
+ *   这里用官方窗口级列表弹层 [WindowListPopup] + [ListPopupColumn] + [DropdownImpl]
+ *   （2026-11-02 弹窗审核 S6：旧版是裸 `androidx.compose.ui.window.Popup` + 自拼三行，
+ *   已换成官方件并从例外表「待核」移除）。**锚点 = 包裹排序图标的父级 Box**（官方 demo
+ *   同款写法），`Align.End` 右对齐到图标、贴其下方；菜单类弹层不压暗背景
+ *   （`enableWindowDim = false`）。弹层常驻组合、`show` 驱动，选中态（主色字 + 对勾）
+ *   由官方条目行自带，不再自绘。
  * - **冲突入口图标**：Dart 用 `Icons.warning_amber_rounded` + `HyperosIconColors.orange`
  *   （`0xFFFF6B00`）。Miuix 0.9.4 的 extended 图标里**没有**警告类字形，取最接近的官方
  *   [MiuixIcons.Info]，颜色沿用 Dart 的橙色（语义由橙色 + 行内标题承载，不靠字形）。
@@ -135,13 +125,10 @@ fun CourseOverviewPage(
     // overlayHeader / collapsibleLargeTitle 均为默认 true（可折叠大标题）。
     val scrollBehavior = MiuixScrollBehavior()
 
-    // 「排序」弹层的显示开关与锚点：**纯 UI 状态**（Dart `_sortPopupOpen` /
-    // `_sortAnchorRect` 的对应物）。锚点在排序图标 `onGloballyPositioned` 时实测。
+    // 「排序」弹层的显示开关：**纯 UI 状态**（Dart `_sortPopupOpen` 的对应物）。
     var sortPopupOpen by remember { mutableStateOf(false) }
-    var sortAnchorBounds by remember { mutableStateOf<Rect?>(null) }
 
     QingyuPageTheme {
-        // 弹层要锚在「整个页面坐标系」的右上，所以 Scaffold 外面再包一层 Box。
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
@@ -163,17 +150,25 @@ fun CourseOverviewPage(
                         },
                         // Dart 侧两个后缀都是 FHeaderAction 图标按钮：排序 + 添加。
                         actions = {
-                            IconButton(
-                                onClick = { sortPopupOpen = true },
-                                // 记下排序图标的屏幕矩形，弹层据此右对齐、贴其下方。
-                                modifier = Modifier.onGloballyPositioned { coords ->
-                                    sortAnchorBounds = coords.boundsInWindow()
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Sort,
-                                    contentDescription = CourseOverviewStrings.sortAction.zh,
-                                    tint = Color(QingyuTheme.actionIcon(dark)),
+                            // 排序弹层以这层 Box 为锚（官方 WindowListPopup demo 同款写法）：
+                            // 弹层与触发件包在同一个 Box 里，右对齐贴图标下方。
+                            // 弹层常驻组合、只翻 `show`（与全仓弹层口径一致）。
+                            Box {
+                                IconButton(onClick = { sortPopupOpen = true }) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Sort,
+                                        contentDescription = CourseOverviewStrings.sortAction.zh,
+                                        tint = Color(QingyuTheme.actionIcon(dark)),
+                                    )
+                                }
+                                CourseOverviewSortPopup(
+                                    show = sortPopupOpen,
+                                    options = viewState.sortOptions,
+                                    onSelect = { option ->
+                                        onSortModeSelected(option.mode)
+                                        sortPopupOpen = false
+                                    },
+                                    onDismiss = { sortPopupOpen = false },
                                 )
                             }
                             IconButton(onClick = onAddCourse) {
@@ -232,19 +227,6 @@ fun CourseOverviewPage(
                         }
                     }
                 }
-            }
-
-            if (sortPopupOpen) {
-                CourseOverviewSortPopup(
-                    options = viewState.sortOptions,
-                    dark = dark,
-                    anchorBounds = sortAnchorBounds,
-                    onSelect = { option ->
-                        onSortModeSelected(option.mode)
-                        sortPopupOpen = false
-                    },
-                    onDismiss = { sortPopupOpen = false },
-                )
             }
         }
     }
@@ -467,89 +449,36 @@ private fun CourseGroupRow(
 /**
  * 「排序」选择弹层（Dart `HyperosSelectPopup` 的三项 + 当前档）。
  *
- * 形态差异见文件头第一条：官方 Card 容器的弹层，**右对齐到排序图标、贴其下方 4dp**
- * （锚点矩形由调用方在 `onGloballyPositioned` 实测传入）。三项文案与顺序来自
- * [CourseOverviewViewState.sortOptions]（added → name → schedule），当前档由 `isSelected`
- * 标出（文字转主题色 + 尾部对勾）。
- *
- * 行内边距对齐 Dart `HyperosMiuixDropdown`：首/末行纵向 20dp、中间行 12dp、横向 20dp。
+ * 官方窗口级列表弹层 [WindowListPopup]（窗口层级渲染，不需要 Scaffold 宿主），
+ * 锚点是调用处包裹排序图标的父级 Box（官方 demo 同款写法），`Align.End` 右对齐到
+ * 图标、贴其下方。三项文案与顺序来自 [CourseOverviewViewState.sortOptions]
+ * （added → name → schedule）；条目行用官方 [DropdownImpl]，当前档由它自带的
+ * 主色字 + 对勾标出（对应旧自绘行的 17sp / 主题色 / `MiuixIcons.Ok` 配方）。
+ * 菜单不压暗背景（`enableWindowDim = false`，对齐旧裸 Popup 与 Dart 的表现）。
  */
 @Composable
 private fun CourseOverviewSortPopup(
+    show: Boolean,
     options: List<CourseSortOption>,
-    dark: Boolean,
-    anchorBounds: Rect?,
     onSelect: (CourseSortOption) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val density = LocalDensity.current
-    val gapPx = with(density) { 4.dp.roundToPx() }
-    val positionProvider = remember(anchorBounds) {
-        object : PopupPositionProvider {
-            override fun calculatePosition(
-                anchorBoundsPx: IntRect,
-                windowSize: IntSize,
-                layoutDirection: LayoutDirection,
-                popupContentSize: IntSize,
-            ): IntOffset {
-                // 右对齐到排序图标、贴其下方；锚点还没测到时退回窗口右上角。
-                val iconRight = anchorBounds?.right?.roundToInt() ?: windowSize.width
-                val iconBottom = anchorBounds?.bottom?.roundToInt() ?: 0
-                val x = (iconRight - popupContentSize.width).coerceAtLeast(gapPx)
-                return IntOffset(x = x, y = iconBottom + gapPx)
-            }
-        }
-    }
-
-    Popup(
-        popupPositionProvider = positionProvider,
+    WindowListPopup(
+        show = show,
+        alignment = PopupPositionProvider.Align.End,
+        enableWindowDim = false,
+        minWidth = 180.dp,
         onDismissRequest = onDismiss,
-        properties = PopupProperties(focusable = true),
     ) {
-        QingyuCard(
-            modifier = Modifier.widthIn(min = 180.dp),
-            insideMargin = PaddingValues(0.dp),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                options.forEachIndexed { index, option ->
-                    val isFirst = index == 0
-                    val isLast = index == options.lastIndex
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(option) }
-                            .padding(
-                                start = 20.dp,
-                                end = 20.dp,
-                                top = if (isFirst) 20.dp else 12.dp,
-                                bottom = if (isLast) 20.dp else 12.dp,
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = option.label,
-                            // Dart 弹层条目 = preferenceTitleSize 17sp。
-                            style = MiuixTheme.textStyles.main.shiftWeight(
-                                if (option.isSelected) QingyuWeightDelta.MEDIUM else 0,
-                            ),
-                            color = if (option.isSelected) {
-                                Color(QingyuTheme.primary(dark = dark))
-                            } else {
-                                Color(QingyuTheme.primaryText(dark))
-                            },
-                        )
-                        if (option.isSelected) {
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = null,
-                                tint = Color(QingyuTheme.primary(dark = dark)),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                }
+        ListPopupColumn {
+            options.forEachIndexed { index, option ->
+                DropdownImpl(
+                    text = option.label,
+                    optionSize = options.size,
+                    isSelected = option.isSelected,
+                    index = index,
+                    onSelectedIndexChange = { onSelect(options[it]) },
+                )
             }
         }
     }

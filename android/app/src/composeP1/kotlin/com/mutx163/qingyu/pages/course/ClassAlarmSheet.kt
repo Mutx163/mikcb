@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuSheet
@@ -190,6 +191,9 @@ fun ClassAlarmSheet(
         }
         OverlayDialog(
             show = pendingConfirm != null,
+            // 本仓/Dart 的对话框横向口径是 16dp（官方默认 24 偏大，守卫 S5 同款注释
+            // 见 transfer/DataTransferPage.kt 的 QrScopeDialog）。
+            insideMargin = DpSize(16.dp, 16.dp),
             title = CourseActionStrings.classAlarmCourseConfirmTitle.zh,
             summary = CourseActionStrings.classAlarmConfirmMessage(
                 weekday = CourseActionSheetStrings.weekdayLabel(ringIso),
