@@ -1,6 +1,6 @@
 package com.mutx163.qingyu.pages.schedule
 
-import android.util.Log
+import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.calendar.ScheduleDateRuleAutoApply
 import com.mutx163.qingyu.calendar.ScheduleDateRuleAutoApplyPort
@@ -12,7 +12,6 @@ import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
-import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import java.io.IOException
 import java.time.LocalDateTime
 
@@ -28,7 +27,7 @@ import java.time.LocalDateTime
  */
 class RepositoryScheduleDateRulePort(
     private val repository: TimetableRepository,
-    private val prefs: PrefsKeyValueStore,
+    private val prefs: KeyValueStore,
 ) : ScheduleDateRuleAutoApplyPort {
 
     private val snapshot get() = repository.snapshot
@@ -97,8 +96,9 @@ object ScheduleDateRuleAutoApplyHost {
 
     fun applyDue(
         repository: TimetableRepository,
-        prefs: PrefsKeyValueStore,
+        prefs: KeyValueStore,
         now: LocalDateTime = LocalDateTime.now(),
+        onPersistError: (IOException) -> Unit = {},
     ): ScheduleDateRuleApplyResult {
         return try {
             ScheduleDateRuleAutoApply.applyDue(
@@ -110,7 +110,13 @@ object ScheduleDateRuleAutoApplyHost {
             // （两处调用点都不在本文件的写作用域内，只能在共同入口兜）。
             // 签名没写成功 ⇒ 下次冷启动仍判「该套」自动重试；内存已被仓储契约保持原样。
             // NotDue 在这里表示「本次未生效」，调用方目前不消费返回值。
-            Log.e("ScheduleDateRuleAutoApply", "applyDue persist failed; will retry next launch", error)
+            //
+            // 错误上报走注入回调而不是直接 `android.util.Log`：本文件被 L0 纯 JVM 单测
+            // 收编（scripts/test-kotlin-module.ps1 拿不到 Android 类型），仓库又没有
+            // 现成的 JVM 错误日志口（`logEvent` 族是空埋点）。默认不动作；生产壳要
+            // 记日志时传 `{ Log.e("ScheduleDateRuleAutoApply", "...", it) }` 即可，
+            // 两个壳调用点不传也能编过（诊断缺口见提交说明与 .agents/notes/）。
+            onPersistError(error)
             ScheduleDateRuleApplyResult(ScheduleDateRuleApplyOutcome.NotDue)
         }
     }
