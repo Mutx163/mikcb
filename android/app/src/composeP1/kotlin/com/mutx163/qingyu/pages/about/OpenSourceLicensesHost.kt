@@ -12,11 +12,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 
-/** `NOTICES` 在 APK 里的落点（Flutter 把 LICENSE 汇总压成 gzip；已用构建产物核对）。 */
-private const val noticesAssetPath = "flutter_assets/NOTICES.Z"
+/**
+ * 许可证全文在 APK 里的落点（2026-11-02 起换源为主 assets 的**自维护快照**）。
+ *
+ * 原数据源是 Flutter 工具链打进 `flutter_assets/NOTICES.Z` 的汇总文件——删 Flutter 后
+ * 它**永不再生成**，所以把最近一次构建产物的字节原样拷进
+ * `android/app/src/main/assets/licenses/NOTICES.gz`（SHA-256 一致，gzip 格式不变）。
+ * 格式与解析器（[parseFlutterNotices]）零改动；代价是**新增依赖后要手动刷新快照**，
+ * 自动化生成属构建脚本改动，方案见「需 Lead 执行」补丁（暂缺，见迁移说明文档）。
+ */
+private const val noticesAssetPath = "licenses/NOTICES.gz"
 
 /**
- * 读 APK 里的 `NOTICES.Z`（gzip）→ 解压 → 解析 → 聚合成可渲染的包许可证列表。
+ * 读主 assets 里的许可证快照（gzip）→ 解压 → 解析 → 聚合成可渲染的包许可证列表。
  *
  * 与 Flutter `loadOpenSourcePackageLicenses()` 的结果同源（Flutter 的 `LicenseRegistry` 读的也是这份
  * `NOTICES`）。任何一步失败都抛出，由 [OpenSourceLicensesHost] 落到「加载失败」态，不静默吞。
