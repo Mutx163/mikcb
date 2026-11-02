@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -97,6 +98,10 @@ fun AboutStaticPage(
     val sections = aboutInfoSections()
     var infoSheetEntry by remember { mutableStateOf<AboutInfoEntry?>(null) }
     var repositorySheetOpen by remember { mutableStateOf(false) }
+    // 退场动画期间保留最后一份非空快照：弹层常驻组合、只翻 show（2026-11-02 弹窗审核 P3，
+    // 「条件成立才组合」会让关闭时的下滑退场一次都不播）。
+    var lastInfoEntry by remember { mutableStateOf<AboutInfoEntry?>(null) }
+    LaunchedEffect(infoSheetEntry) { infoSheetEntry?.let { lastInfoEntry = it } }
     val context = LocalContext.current
 
     QingyuPageScaffold(title = AboutInfoStrings.aboutTitle, onBack = onBack) {
@@ -144,24 +149,28 @@ fun AboutStaticPage(
         }
     }
 
-    infoSheetEntry?.let { entry ->
-        AboutInfoSheet(entry = entry, onDismiss = { infoSheetEntry = null })
-    }
-    if (repositorySheetOpen) {
-        AboutRepositorySheet(
-            onDismiss = { repositorySheetOpen = false },
-            onOpenMainRepo = { openUrl(context, AboutRepositoryStrings.mainRepoUrl) },
-            onOpenWarehouseRepo = { openUrl(context, AboutRepositoryStrings.warehouseRepoUrl) },
-            onCopyAddress = {
-                copyToClipboard(context, AboutRepositoryStrings.mainRepoUrl)
-                Toast.makeText(
-                    context,
-                    AboutRepositoryStrings.copiedAddress,
-                    Toast.LENGTH_SHORT,
-                ).show()
-            },
+    val renderedInfoEntry = infoSheetEntry ?: lastInfoEntry
+    if (renderedInfoEntry != null) {
+        AboutInfoSheet(
+            show = infoSheetEntry != null,
+            entry = renderedInfoEntry,
+            onDismiss = { infoSheetEntry = null },
         )
     }
+    AboutRepositorySheet(
+        show = repositorySheetOpen,
+        onDismiss = { repositorySheetOpen = false },
+        onOpenMainRepo = { openUrl(context, AboutRepositoryStrings.mainRepoUrl) },
+        onOpenWarehouseRepo = { openUrl(context, AboutRepositoryStrings.warehouseRepoUrl) },
+        onCopyAddress = {
+            copyToClipboard(context, AboutRepositoryStrings.mainRepoUrl)
+            Toast.makeText(
+                context,
+                AboutRepositoryStrings.copiedAddress,
+                Toast.LENGTH_SHORT,
+            ).show()
+        },
+    )
 }
 
 /**
@@ -348,10 +357,14 @@ private fun HeroMetaDivider() {
  * 与 Dart 一致：正文是**普通段落**（不是一行一张卡），完整折行、可读优先。
  */
 @Composable
-private fun AboutInfoSheet(entry: AboutInfoEntry, onDismiss: () -> Unit) {
+private fun AboutInfoSheet(
+    show: Boolean,
+    entry: AboutInfoEntry,
+    onDismiss: () -> Unit,
+) {
     val dark = isSystemInDarkTheme()
     QingyuSheet(
-        show = true,
+        show = show,
         title = entry.title,
         onDismissRequest = onDismiss,
         // 内容那 4dp 只是面板内的微调，不足以顶掉套件的 16dp 口径：置 true 会把正文贴到
@@ -388,6 +401,7 @@ private fun AboutInfoSheet(entry: AboutInfoEntry, onDismiss: () -> Unit) {
  */
 @Composable
 private fun AboutRepositorySheet(
+    show: Boolean,
     onDismiss: () -> Unit,
     onOpenMainRepo: () -> Unit,
     onOpenWarehouseRepo: () -> Unit,
@@ -395,7 +409,7 @@ private fun AboutRepositorySheet(
 ) {
     val dark = isSystemInDarkTheme()
     QingyuSheet(
-        show = true,
+        show = show,
         title = AboutRepositoryStrings.sheetTitle,
         onDismissRequest = onDismiss,
         // 同 AboutInfoSheet：内容只有 4dp 微调，套件的 16dp 侧边距保留。
