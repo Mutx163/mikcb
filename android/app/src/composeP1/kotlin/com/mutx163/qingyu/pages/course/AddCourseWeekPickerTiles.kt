@@ -59,7 +59,7 @@ internal fun AddCourseWeekGridTile(
         Text(
             text = week.toString(),
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
+            color = if (isSelected) Color(QingyuTheme.onAccent(dark)) else Color(QingyuTheme.primaryText(dark)),
         )
     }
 }
@@ -160,7 +160,7 @@ internal fun AddCourseChoiceChip(
         Text(
             text = label,
             style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM),
-            color = if (isSelected) Color.White else Color(QingyuTheme.primaryText(dark)),
+            color = if (isSelected) Color(QingyuTheme.onAccent(dark)) else Color(QingyuTheme.primaryText(dark)),
         )
     }
 }
