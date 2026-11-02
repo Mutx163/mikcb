@@ -50,6 +50,7 @@ class CloudSyncSnapshotFlowTest {
         transport: FakeRemoteTransport = FakeRemoteTransport(),
         snapshotStore: FakeLocalSnapshotStore = FakeLocalSnapshotStore(),
         snapshotApplier: ((ByteArray) -> SnapshotApplyResult)? = null,
+        undoStore: CloudSyncUndoStore = CloudSyncUndoStore(),
     ): CloudSyncController = CloudSyncController(
         store = FakeConfigStore(),
         snapshotStore = snapshotStore,
@@ -58,6 +59,7 @@ class CloudSyncSnapshotFlowTest {
         clock = { "2026-03-07T09:05:00+08:00" },
         repository = repository,
         snapshotApplier = snapshotApplier,
+        undoStore = undoStore,
     )
 
     /** 用另一份仓储造一份「远端备份」字节（同一套 bridge，保证信封/校验和合法）。 */
@@ -265,6 +267,7 @@ class CloudSyncSnapshotFlowTest {
             clock = { "2026-03-07T09:05:00+08:00" },
             repository = repository,
             passwordProvider = { store.password },
+            undoStore = CloudSyncUndoStore(),
         )
     }
 

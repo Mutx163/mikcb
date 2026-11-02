@@ -31,12 +31,14 @@ class CloudSyncControllerTest {
         transport: FakeRemoteTransport = FakeRemoteTransport(),
         store: FakeConfigStore = FakeConfigStore(),
         snapshotStore: FakeLocalSnapshotStore = FakeLocalSnapshotStore(),
+        undoStore: CloudSyncUndoStore = CloudSyncUndoStore(),
     ): CloudSyncController = CloudSyncController(
         store = store,
         snapshotStore = snapshotStore,
         transportFactory = { _, _ -> transport },
         deviceLabel = "测试机",
         clock = { "2026-03-07T09:05:00+08:00" },
+        undoStore = undoStore,
     )
 
     @Test
@@ -531,5 +533,76 @@ class CloudSyncControllerTest {
         assertEquals(remoteHash, controller.config.lastAppliedRemoteHash)
         assertEquals(remoteHash, controller.config.lastUploadedLocalHash)
         assertNull(controller.pendingSyncConflict)
+    }
+
+    // ---------- 撤销点进程级共享（2026-11-02 修「换页就丢撤销入口」） ----------
+
+    /** 造一个带远端备份、已连接已刷新、且撤销链路（快照构建 + 写回）可用的控制器。 */
+    private fun controllerWithRemoteBackup(
+        transport: FakeRemoteTransport,
+        undoStore: CloudSyncUndoStore,
+    ): CloudSyncController {
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        transport.files["${folder}backup.mikcb"] = buildSyncSnapshotBytes(profileId = "pRemote")
+        val controller = CloudSyncController(
+            store = FakeConfigStore(),
+            snapshotStore = FakeLocalSnapshotStore(),
+            transportFactory = { _, _ -> transport },
+            deviceLabel = "测试机",
+            clock = { "2026-03-07T09:05:00+08:00" },
+            snapshotProvider = { SnapshotBuildResult.Success(buildSyncSnapshotBytes(profileId = "pLocal")) },
+            snapshotApplier = { SnapshotApplyResult.Applied },
+            undoStore = undoStore,
+        )
+        controller.connect("me@example.com", "pw")
+        controller.refreshBackups()
+        return controller
+    }
+
+    @Test
+    fun `撤销点跨控制器共享_列表页恢复_同步页能看到并撤销`() {
+        val sharedStore = CloudSyncUndoStore()
+        try {
+            // 模拟壳里两条分支：备份列表页与云同步页各 remember 一个控制器。
+            val listPageController = controllerWithRemoteBackup(FakeRemoteTransport(), sharedStore)
+
+            assertEquals(SyncResultKind.DOWNLOADED, listPageController.openBackup("backup.mikcb"))
+            assertTrue(listPageController.canUndoLastRestore)
+
+            // 「换页」：同一个共享撤销点，另一个全新控制器实例必须看得到
+            //（真壳里两个入口都传仓储 ⇒ 都有写回落点，这里注入等价的假写回）。
+            val syncPageController = CloudSyncController(
+                store = FakeConfigStore(),
+                snapshotStore = FakeLocalSnapshotStore(),
+                transportFactory = { _, _ -> FakeRemoteTransport() },
+                deviceLabel = "测试机",
+                clock = { "2026-03-07T09:05:00+08:00" },
+                snapshotApplier = { SnapshotApplyResult.Applied },
+                undoStore = sharedStore,
+            )
+            assertTrue("另一入口必须能看到撤销点", syncPageController.canUndoLastRestore)
+            // viewState 里撤销卡片还要求业务区可见（未连接整段隐藏），那是另一条既有判据。
+
+            // 在同步页撤销成功：撤销点被消费，两个入口同时消失。
+            assertTrue(syncPageController.undoLastRestore())
+            assertFalse(syncPageController.canUndoLastRestore)
+            assertFalse(listPageController.canUndoLastRestore)
+        } finally {
+            // shared 单例若被复用必须清干净；这里注入独立实例，清一次兜底。
+            sharedStore.clear()
+        }
+    }
+
+    @Test
+    fun `断开连接清掉共享撤销点`() {
+        val sharedStore = CloudSyncUndoStore()
+        val controller = controllerWithRemoteBackup(FakeRemoteTransport(), sharedStore)
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+        assertTrue(controller.canUndoLastRestore)
+
+        controller.disconnect()
+
+        assertFalse("断开后撤销点必须失效", controller.canUndoLastRestore)
+        assertNull(sharedStore.peek())
     }
 }

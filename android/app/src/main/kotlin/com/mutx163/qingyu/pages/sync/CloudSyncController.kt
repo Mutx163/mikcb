@@ -66,6 +66,12 @@ class CloudSyncController(
     private val snapshotProvider: (() -> SnapshotBuildResult)? = null,
     /** 覆盖默认的「写回仓储」实现（单测可注入失败）。 */
     private val snapshotApplier: ((ByteArray) -> SnapshotApplyResult)? = null,
+    /**
+     * 撤销点索引。默认进程级共享（[CloudSyncUndoStore.shared]）：f.cloudSync 与
+     * f.backupList 各自 new 控制器，但撤销点必须是同一份——在备份列表页恢复、
+     * 进云同步页仍要能看到撤销入口。单测注入独立实例做隔离。
+     */
+    private val undoStore: CloudSyncUndoStore = CloudSyncUndoStore.shared,
 ) {
 
     var config: WebdavSyncConfig = store.loadConfig()
@@ -123,18 +129,15 @@ class CloudSyncController(
             { bytes -> TimetableSnapshotBridge.applySnapshot(repo, bytes) }
         }
 
-    /** 最近一次恢复前的课表快照（撤销用）；null = 没有可撤销的恢复。 */
-    private var lastRestoreRollback: ByteArray? = null
-
     /**
-     * 是否有可撤销的恢复。
+     * 是否有可撤销的恢复（撤销点在 [undoStore] 里，两页共享，见构造参数说明）。
      *
      * 只有**真正写回成功**的那次恢复才会留下撤销点；恢复失败、本机原本没有数据、
      * 断开连接、已经撤销过，都是 false。页面据此决定撤销入口是否出现。
      * 没有写回落点（[effectiveSnapshotApplier] 为空）时也不给入口：点了必然失败。
      */
     val canUndoLastRestore: Boolean
-        get() = lastRestoreRollback != null && effectiveSnapshotApplier != null
+        get() = undoStore.peek() != null && effectiveSnapshotApplier != null
 
     // ── 可观察协议 ──
 
@@ -332,7 +335,7 @@ class CloudSyncController(
         persist(CloudSyncLogic.buildDisconnectConfig(config))
         backupEntries = emptyList()
         remoteFiles = emptyList()
-        lastRestoreRollback = null
+        undoStore.clear()
         manualBackupFileNames.clear()
         status = CloudSyncStatusSource()
         notifyChanged()
@@ -471,9 +474,13 @@ class CloudSyncController(
                     notifyChanged()
                     return SyncResultKind.FAILED
                 }
-                // 每次恢复成功都**重设**撤销点：取不到本次恢复前的快照时，旧撤销点
-                // 指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
-                lastRestoreRollback = rollback
+                // 每次恢复成功都**重设**共享撤销点：取不到本次恢复前的快照时必须清空，
+                // 旧撤销点指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
+                if (rollback != null) {
+                    undoStore.set(CloudRestoreUndoPoint(beforeBytes = rollback))
+                } else {
+                    undoStore.clear()
+                }
                 // 恢复成功 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
                 //（Dart restoreFromBackup 同口径）。不写它，下一轮冲突判定恒误报。
                 markSynced(outcome.remoteContentSha256)
@@ -498,11 +505,11 @@ class CloudSyncController(
      * @return true = 已回退；false = 没有撤销点 / 写回失败（错误码见 [lastErrorCode]）。
      */
     fun undoLastRestore(): Boolean {
-        val rollback = lastRestoreRollback ?: return false
+        val rollback = undoStore.peek()?.beforeBytes ?: return false
         val applier = effectiveSnapshotApplier ?: return false
         return when (val result = applier(rollback)) {
             SnapshotApplyResult.Applied -> {
-                lastRestoreRollback = null
+                undoStore.clear()
                 status = status.copy(lastErrorCode = null)
                 notifyChanged()
                 true
