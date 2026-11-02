@@ -2,11 +2,9 @@ package com.mutx163.qingyu.app
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -917,31 +914,6 @@ private fun AutoRefreshRunNowNotice(onDismiss: () -> Unit) {
 /** 选色弹窗的一次编辑目标：行 id + 当前色。 */
 private data class ColorEdit(val rowId: String, val hex: String)
 
-/** 全屏遮罩 + 居中卡片；点遮罩关闭。 */
-@Composable
-private fun SettingsDialogFrame(
-    onDismiss: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        // 内层再拦一次点击，避免点卡片本身把弹窗关掉。
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .clickable(onClick = {}),
-        ) {
-            content()
-        }
-    }
-}
-
 /**
  * 恢复默认确认弹窗（**全仓唯一一份**，[SettingsHost] / [HomeNavigationHost] /
  * `HomeWidgetHost` 共用）。
@@ -954,6 +926,9 @@ private fun SettingsDialogFrame(
  *   不是主题那条「重置」）；
  * - `destructive: true` ⇒ 确认按钮用危险色。
  *
+ * 容器是官方 `OverlayDialog`（2026-11-02 从自绘 `Box + 黑遮罩 + QingyuCard` 换过来）：
+ * 遮罩层级、进出动画、返回键关闭、大屏/IME 行为都由它提供，本函数只管正文与按钮。
+ *
  * 作用域名 → 枚举的反查在调用方完成（[SettingsResetScope.fromArg]），本函数只收
  * 已识别的枚举，因此不可能对未知作用域画出「外观」正文。
  */
@@ -963,45 +938,48 @@ internal fun SettingsConfirmResetDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    SettingsDialogFrame(onDismiss = onDismiss) {
-        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
-                    style = MiuixTheme.textStyles.title4
-                        .shiftWeight(QingyuWeightDelta.BOLD),
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = scope.confirmBody.zh,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Button(onClick = onDismiss) {
-                        Text(
-                            text = SettingsStringsExt4.cancelAction.zh,
-                            style = MiuixTheme.textStyles.button,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = onConfirm) {
-                        Text(
-                            text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
-                            style = MiuixTheme.textStyles.button,
-                            color = Color(QingyuFixedTokens.DESTRUCTIVE),
-                        )
-                    }
+    OverlayDialog(
+        show = true,
+        title = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = scope.confirmBody.zh,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                // 按钮配色不归本任务（Task 5 统一清扫）；这里只搬容器，逻辑原样保留。
+                Button(onClick = onDismiss) {
+                    Text(
+                        text = SettingsStringsExt4.cancelAction.zh,
+                        style = MiuixTheme.textStyles.button,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = onConfirm) {
+                    Text(
+                        text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+                        style = MiuixTheme.textStyles.button,
+                        color = Color(QingyuFixedTokens.DESTRUCTIVE),
+                    )
                 }
             }
         }
     }
 }
 
-/** RGB 选色弹窗：三通道滑杆 + 实时预览 + 十六进制读数。 */
+/**
+ * RGB 选色弹窗：三通道滑杆 + 实时预览 + 十六进制读数。
+ *
+ * 容器是官方 `OverlayDialog`（2026-11-02 从自绘 `Box + 黑遮罩 + QingyuCard` 换过来）。
+ * 不传 `title`：内容首行「RGB + 十六进制」就是标题，避免官方标题与它重复。
+ */
 @Composable
 private fun SettingsColorPickerDialog(
     initialHex: String,
@@ -1014,53 +992,56 @@ private fun SettingsColorPickerDialog(
     var blue by remember(initialHex) { mutableStateOf(initial[2]) }
     val hex = rgbToHex(red, green, blue)
 
-    SettingsDialogFrame(onDismiss = onDismiss) {
-        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+    OverlayDialog(
+        show = true,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 官方对话框不带 title 时，这一行「RGB + 十六进制」就是标题。
+                Text(
+                    text = "RGB",
+                    style = MiuixTheme.textStyles.title4
+                        .shiftWeight(QingyuWeightDelta.BOLD),
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = hex,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(red, green, blue)),
+            )
+            ColorChannel("R", red) { red = it }
+            ColorChannel("G", green) { green = it }
+            ColorChannel("B", blue) { blue = it }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Button(onClick = onDismiss) {
                     Text(
-                        text = "RGB",
-                        style = MiuixTheme.textStyles.title4
-                            .shiftWeight(QingyuWeightDelta.BOLD),
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = hex,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        text = SettingsStringsExt4.cancelAction.zh,
+                        style = MiuixTheme.textStyles.button,
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(red, green, blue)),
-                )
-                ColorChannel("R", red) { red = it }
-                ColorChannel("G", green) { green = it }
-                ColorChannel("B", blue) { blue = it }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Button(onClick = onDismiss) {
-                        Text(
-                            text = SettingsStringsExt4.cancelAction.zh,
-                            style = MiuixTheme.textStyles.button,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onConfirm(hex) }) {
-                        Text(
-                            text = SettingsStringsExt1.appearanceEditorDoneAction.zh,
-                            style = MiuixTheme.textStyles.button,
-                        )
-                    }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onConfirm(hex) }) {
+                    Text(
+                        text = SettingsStringsExt1.appearanceEditorDoneAction.zh,
+                        style = MiuixTheme.textStyles.button,
+                    )
                 }
             }
         }
