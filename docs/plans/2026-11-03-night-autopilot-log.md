@@ -47,15 +47,15 @@
 | 门4 文案门禁（copy_style） | `dart run tool/copy_style_lint.dart` | ✅ 无新增 | 2026-11-03 00:59 |
 | 门4 cjk 棘轮 | `python scripts/i18n-cjk-baseline.py` | 曾红 1 处（ImportCommon 2→1 未压行），已压行修复 → 绿 | 2026-11-03 01:20 修复 |
 
-### 门2 失败清单（28 笔新提交未验暴露）
-1. `CjkLiteralGateTest`：ImportCommon 已修但基线未下调（与门4 cjk 同源，已压行修复 → 待复跑）。
-2. `ComposePageStyleGuardTest`：基线 3 行（DayViewScheduleCard/DayViewTaskBandCard/MonthDayCell R5）对应违规已不存在，需从基线删行（**派给路 B**）。
-3. `ImportTemplateModelTest`：模板正文与 assets CSV 逐字节不一致（**派给路 E**）。
-4. `SettingsDialogOverlayGuardTest` / `SettingsResetConfirmationGuardTest` ×3：函数体行首收尾 `}` 找不到（settings 域，**派给路 D**）。
-5. `LanEditSessionTest`：并发读侧未真读（transfer/lan 域）。
-6. `LanEditApiRouterTest` ×3：非法 weekExpression 应回 400 实回 500（transfer/lan 域）。
+### 门2 失败清单（28 笔新提交未验暴露）与修复状态（2026-11-03 02:00 复核）
+1. `CjkLiteralGateTest`：ImportCommon 已修但基线未下调 → ✅ 已压行修复（`6daddc8b`）。
+2. `ComposePageStyleGuardTest`：基线 3 行 R5 对应违规已不存在 → ✅ B 路已删行（`fd8c7f3d`，DayView×2/MonthDayCell 写死色改语义槽）。
+3. `ImportTemplateModelTest`：模板正文与 assets CSV 逐字节不一致 → ✅ E 路修复（`e75cdfe8`，CONTENT `\n`→`\r\n` 对齐 CSV CRLF 字节）。
+4. `SettingsDialogOverlayGuardTest` / `SettingsResetConfirmationGuardTest` ×3：函数体行首收尾 `}` 找不到 → ✅ D 路修复（`1c42a026`，守卫读源码归一 LF，根因是 Windows CRLF 行尾让 `\n}\n` 匹配不到，属守卫本身该修）。
+5. `LanEditSessionTest`：并发读侧未真读 → ✅ 修复（`d6893c97`，读循环改 do-while 保证至少真读一轮；断言口径过严、依赖时序，非业务 bug）。
+6. `LanEditApiRouterTest` ×3：非法 weekExpression 应回 400 实回 500 → ✅ 修复（`1bc9e4f8`，组替换处理器就地捕获 `WeekExpressionException`（RuntimeException，route 的 IAE catch 接不到）回 400）。
 
-> Lan 域两项不在 A~E 切分内，记入「需 Lead / 后续补一路」。
+> 全部 7 类门2 红项已修，门2 复跑验证中（回填最终结果）。
 
 ### 门4 cjk 修复记录
 - 基线 `cjk-literal-baseline.txt` 的 `ImportCommon.kt:2` → `:1`（审计「965db6df 把层面量 2→1 未压行」），已提交 `6daddc8b`。
