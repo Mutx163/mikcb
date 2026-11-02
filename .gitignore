@@ -211,3 +211,6 @@ docs/WSL-DSH-*.md
 /store_screenshots/
 /package.json
 /thinking-effort-loaded.json
+
+# 本机 JDK 路径覆盖（compose-migration 需 JDK 21，各机路径不同，不进库）
+/gradle.properties
