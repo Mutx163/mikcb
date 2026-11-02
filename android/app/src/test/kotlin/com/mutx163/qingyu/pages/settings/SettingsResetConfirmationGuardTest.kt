@@ -166,7 +166,9 @@ class SettingsResetConfirmationGuardTest {
     private fun composeSource(name: String): String {
         val file = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/app/$name")
         assertTrue("${file.path} 不存在", file.isFile)
-        return file.readText()
+        // 源码在 Windows 上是 CRLF；[functionBlock] 按 `\n}\n` 截行首收尾，
+        // 这里先归一成 LF，否则行尾多出的 \r 会让「行首 }」永远匹配不到。
+        return file.readText().replace("\r\n", "\n")
     }
 
     /**

@@ -2,6 +2,8 @@ package com.mutx163.qingyu.app
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -26,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
@@ -67,10 +72,16 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.CoroutineScope
@@ -995,7 +1006,8 @@ internal fun SettingsConfirmResetDialog(
                             style = MiuixTheme.textStyles.button,
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    // 本仓 Dialog 动作区口径是 12dp 间距，不再行尾挤 8dp。
+                    Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = onConfirm,
                         // 恢复默认会覆盖用户设置，属破坏性操作：红底 + onError 字，
@@ -1083,7 +1095,8 @@ private fun SettingsColorPickerDialog(
                         style = MiuixTheme.textStyles.button,
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                // 本仓 Dialog 动作区口径是 12dp 间距，不再行尾挤 8dp。
+                Spacer(modifier = Modifier.width(12.dp))
                 Button(
                     onClick = { onConfirm(hex) },
                     colors = ButtonDefaults.buttonColorsPrimary(),
@@ -1695,18 +1708,24 @@ internal fun SettingsThemeDialogHost(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ThemeActionRow(SettingsStrings.themeApply.zh) {
+                // Dart 是 HyperosChoiceGroup 列表行（`showSavedThemeActionSheet`），
+                // 不是整宽实心按钮；「应用」留在本表是因为 Compose 没有 Dart 的
+                // 预览弹层（`showSavedThemePreviewSheet`），拿掉就没有应用入口了。
+                ThemeActionRow(SettingsStrings.themeApply.zh, icon = MiuixIcons.Ok) {
                     current.themeId?.let { onAction(ThemeRowAction.APPLY, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeRename.zh) {
+                ThemeActionRow(SettingsStrings.themeRename.zh, icon = MiuixIcons.Edit) {
                     current.themeId?.let { onAction(ThemeRowAction.RENAME, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeDuplicate.zh) {
+                ThemeActionRow(SettingsStrings.themeDuplicate.zh, icon = MiuixIcons.Copy) {
                     current.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeDelete.zh, destructive = true) {
+                ThemeActionRow(
+                    SettingsStrings.themeDelete.zh,
+                    icon = MiuixIcons.Delete,
+                    destructive = true,
+                ) {
                     current.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
                 }
                 // 不加末尾 Spacer(8)：套件已补「手势区 + 16dp」让位，
@@ -1719,26 +1738,49 @@ internal fun SettingsThemeDialogHost(
     }
 }
 
+/**
+ * 动作表里的单行：图标 + 文案的列表行（对齐 Dart `HyperosChoiceTile` 与
+ * `TimetableProfilesPage.ActionMenuItem` 的既有配方）；[destructive] 时图标
+ * 与文案都染危险色。
+ */
 @Composable
 private fun ThemeActionRow(
     label: String,
+    icon: ImageVector,
     destructive: Boolean = false,
     onClick: () -> Unit,
 ) {
-    Button(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        // 删除行动作不可撤销：与同表其它行同形（实心按钮），只换危险色。
-        colors = if (destructive) {
-            ButtonDefaults.buttonColors(
-                color = MiuixTheme.colorScheme.error,
-                contentColor = MiuixTheme.colorScheme.onError,
-            )
-        } else {
-            ButtonDefaults.buttonColors()
-        },
+    val dark = isSystemInDarkTheme()
+    val contentColor = if (destructive) {
+        MiuixTheme.colorScheme.error
+    } else {
+        Color(QingyuTheme.primaryText(dark))
+    }
+    val iconColor = if (destructive) {
+        MiuixTheme.colorScheme.error
+    } else {
+        Color(QingyuTheme.actionIcon(dark))
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(text = label, style = MiuixTheme.textStyles.button)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
+            color = contentColor,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -1768,27 +1810,42 @@ private fun SettingsNoticeDialog(notice: SettingsNotice?, onDismiss: () -> Unit)
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    val undo = current.onUndo
-                    val undoLabel = current.undoLabel
-                    if (undo != null && undoLabel != null) {
+                val undo = current.onUndo
+                val undoLabel = current.undoLabel
+                if (undo != null && undoLabel != null) {
+                    // 双动作：等宽两枚 + 12dp 间距（本仓 Dialog 口径），不再行尾挤 8dp。
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         TextButton(
+                            modifier = Modifier.weight(1f),
                             text = undoLabel,
                             onClick = {
                                 undo()
                                 onDismiss()
                             },
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            modifier = Modifier.weight(1f),
+                            onClick = onDismiss,
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(text = SettingsStrings.confirmAction.zh)
+                        }
                     }
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColorsPrimary(),
+                } else {
+                    // 唯一动作保持右对齐主色（与同文件「每天更新时刻」弹层同配方）。
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
                     ) {
-                        Text(text = SettingsStrings.confirmAction.zh)
+                        Button(
+                            onClick = onDismiss,
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(text = SettingsStrings.confirmAction.zh)
+                        }
                     }
                 }
             }
