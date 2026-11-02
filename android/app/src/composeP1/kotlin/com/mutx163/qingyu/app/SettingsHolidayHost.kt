@@ -421,8 +421,8 @@ private enum class DateField { START, END }
  * 编辑弹层的表单页（Dart `:140-260`）。
  *
  * 布局与前例（`TimeSchemeQuickGenerateSheet`）同一套：字段区限高 380dp 内部滚动，
- * 「取消 / 保存」留在滚动区外固定；`TextField` 与 `BasicComponent` 都自带 16dp 内边距，
- * 所以左右留白只给分区标题与按钮行另补。
+ * 「取消 / 保存」留在滚动区外固定。左右 16 由外层弹层统一给；`TextField` /
+ * `BasicComponent` 那 16 是控件内部留白，不再给分区标题 / 按钮行另补，避免叠成 32。
  */
 @Composable
 private fun HolidayEditorForm(
@@ -476,10 +476,11 @@ private fun HolidayEditorForm(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     // 类型两档（Dart `:226-247`：HyperosSegmentedControl）
+                    // 分区标题、TabRow 与按钮行都不再自带横向 16：弹层已给 16，
+                    // 再叠一层就是 32（与其它同口径弹框对齐成单边 16）。
                     Text(
                         text = s.customHolidayType.zh,
                         style = MiuixTheme.textStyles.main,
-                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     TabRow(
@@ -493,7 +494,6 @@ private fun HolidayEditorForm(
                                 if (index == 0) HolidayType.Vacation else HolidayType.AdjustedWorkday,
                             )
                         },
-                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     if (onDelete != null) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -503,9 +503,7 @@ private fun HolidayEditorForm(
                         // Dart `HyperosButtonVariant.destructive` = 红底 + `onError` 字。
                         Button(
                             onClick = onDelete,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 color = errorColor,
                                 contentColor = errorContentColor,
@@ -522,9 +520,7 @@ private fun HolidayEditorForm(
         Spacer(modifier = Modifier.height(20.dp))
         // Dart `:104-139`：左取消、右保存，平分宽度。
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TextButton(
@@ -587,8 +583,7 @@ private fun HolidayDateWheelPage(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
-                .padding(horizontal = 16.dp),
+                .height(180.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NumberPicker(
@@ -620,9 +615,7 @@ private fun HolidayDateWheelPage(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TextButton(

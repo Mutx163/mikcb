@@ -234,6 +234,9 @@ fun AiImageCourseImportHost(
         show = showPromptSheet,
         title = WarehouseStrings.aiPromptSheetTitle.zh,
         onDismissRequest = { showPromptSheet = false },
+        // 内容根自己带 16dp；框架侧横向归零 ⇒ 单边仍是 16，不再叠成 32。
+        // 标题行没有 start/end action，归零不影响标题。
+        contentPadsHorizontally = true,
     ) {
         Column(
             modifier = Modifier

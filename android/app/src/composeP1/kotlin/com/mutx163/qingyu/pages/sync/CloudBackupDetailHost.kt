@@ -178,7 +178,11 @@ fun CloudBackupDetailHost(
                             }
                         },
                         enabled = !busy,
-                        colors = ButtonDefaults.buttonColors(),
+                        // 删除备份是破坏性操作：红底 + onError 字。
+                        colors = ButtonDefaults.buttonColors(
+                            color = Color(QingyuTheme.error(dark)),
+                            contentColor = Color(QingyuTheme.onError(dark)),
+                        ),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(SyncStrings.deleteAction.zh)

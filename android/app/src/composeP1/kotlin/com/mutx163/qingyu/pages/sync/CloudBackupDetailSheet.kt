@@ -77,7 +77,10 @@ fun CloudBackupDetailSheet(
                         text = SyncStrings.deleteAction.zh,
                         onClick = onDelete,
                         enabled = !busy,
-                        colors = ButtonDefaults.textButtonColors(),
+                        // 删除是破坏性操作：文字按钮只染字色（`textColor`），不是底色。
+                        colors = ButtonDefaults.textButtonColors(
+                            textColor = Color(QingyuTheme.error(dark)),
+                        ),
                         modifier = Modifier.weight(1f),
                     )
                 }

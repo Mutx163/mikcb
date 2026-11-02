@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -248,6 +249,9 @@ fun AdvancedOptionsPage(
         show = editingMirror,
         title = AboutUpdatePageStrings.setMirrorSourceTitle,
         onDismissRequest = { editingMirror = false },
+        // 内容自己带 8dp（TextField 的视觉轴线）；框架侧给 8 ⇒ 单边合计仍是 16，
+        // 不是官方默认 24 + 8 = 32。
+        insideMargin = DpSize(8.dp, 16.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),

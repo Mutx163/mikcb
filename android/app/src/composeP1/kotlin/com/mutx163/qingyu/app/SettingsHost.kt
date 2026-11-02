@@ -59,13 +59,13 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
 import com.mutx163.qingyu.core.MiniJson
-import com.mutx163.qingyu.theme.QingyuFixedTokens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -954,7 +954,6 @@ internal fun SettingsConfirmResetDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                // 按钮配色不归本任务（Task 5 统一清扫）；这里只搬容器，逻辑原样保留。
                 Button(onClick = onDismiss) {
                     Text(
                         text = SettingsStringsExt4.cancelAction.zh,
@@ -962,11 +961,18 @@ internal fun SettingsConfirmResetDialog(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = onConfirm) {
+                Button(
+                    onClick = onConfirm,
+                    // 恢复默认会覆盖用户设置，属破坏性操作：红底 + onError 字，
+                    // 不再用「灰底 + 红字」这第三种形态。
+                    colors = ButtonDefaults.buttonColors(
+                        color = MiuixTheme.colorScheme.error,
+                        contentColor = MiuixTheme.colorScheme.onError,
+                    ),
+                ) {
                     Text(
                         text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
                         style = MiuixTheme.textStyles.button,
-                        color = Color(QingyuFixedTokens.DESTRUCTIVE),
                     )
                 }
             }
@@ -1612,6 +1618,11 @@ internal fun SettingsThemeDialogHost(
                 Button(
                     modifier = Modifier.weight(1f),
                     onClick = { state.themeId?.let(onDelete) },
+                    // 删除主题不可撤销：红底 + onError 字（不是默认灰实心）。
+                    colors = ButtonDefaults.buttonColors(
+                        color = MiuixTheme.colorScheme.error,
+                        contentColor = MiuixTheme.colorScheme.onError,
+                    ),
                 ) {
                     Text(text = SettingsStrings.themeDelete.zh)
                 }
@@ -1641,7 +1652,7 @@ internal fun SettingsThemeDialogHost(
                 ThemeActionRow(SettingsStrings.themeDuplicate.zh) {
                     state.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
                 }
-                ThemeActionRow(SettingsStrings.themeDelete.zh) {
+                ThemeActionRow(SettingsStrings.themeDelete.zh, destructive = true) {
                     state.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1651,8 +1662,24 @@ internal fun SettingsThemeDialogHost(
 }
 
 @Composable
-private fun ThemeActionRow(label: String, onClick: () -> Unit) {
-    Button(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+private fun ThemeActionRow(
+    label: String,
+    destructive: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Button(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        // 删除行动作不可撤销：与同表其它行同形（实心按钮），只换危险色。
+        colors = if (destructive) {
+            ButtonDefaults.buttonColors(
+                color = MiuixTheme.colorScheme.error,
+                contentColor = MiuixTheme.colorScheme.onError,
+            )
+        } else {
+            ButtonDefaults.buttonColors()
+        },
+    ) {
         Text(text = label, style = MiuixTheme.textStyles.button)
     }
 }

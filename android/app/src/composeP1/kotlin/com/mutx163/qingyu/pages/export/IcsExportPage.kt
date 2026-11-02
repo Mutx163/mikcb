@@ -29,6 +29,7 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.transfer.IcsExportEventKind
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -291,7 +292,9 @@ fun IcsExportPage(
 
     // ── 导出成功后的二选一（Dart `_buildExportActionMenu`） ──
     OverlayDialog(
-        insideMargin = DpSize(16.dp, 16.dp),
+        // 两行 `ArrowPreference` 自带 16dp；框架侧横向归零 ⇒ 文字单边仍是 16。
+        // 分割线自己补 start = 16，与行文字左缘对齐（否则从 0 起、比文字长一截）。
+        insideMargin = DpSize(0.dp, 16.dp),
         show = viewState.exportActionMenuVisible,
         title = ExportStrings.icsExportButton.zh,
         onDismissRequest = onDismissExportMenu,
@@ -301,7 +304,10 @@ fun IcsExportPage(
                 title = ExportStrings.icsExportActionShare.zh,
                 onClick = onShareExported,
             )
-            HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 16.dp),
+                color = Color(QingyuTheme.dividerLine(dark)),
+            )
             ArrowPreference(
                 title = ExportStrings.icsExportActionSave.zh,
                 onClick = onSaveExported,
@@ -351,6 +357,8 @@ fun IcsExportPage(
             confirmLabel = ExportStrings.icsExportRemoveCalendarConfirm.zh,
             onCancel = onDismissRemoveConfirm,
             onConfirm = onConfirmRemove,
+            // 移除系统日程页是破坏性操作：确认按钮用实心危险色。
+            destructive = true,
         )
     }
 }
@@ -365,7 +373,9 @@ private fun ConfirmRow(
     confirmLabel: String,
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
+    destructive: Boolean = false,
 ) {
+    val dark = isSystemInDarkTheme()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -378,6 +388,15 @@ private fun ConfirmRow(
         Button(
             modifier = Modifier.weight(1f),
             onClick = onConfirm,
+            // 危险操作：红底 + onError 字（`color` 是底色、`contentColor` 才是字色）。
+            colors = if (destructive) {
+                ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                )
+            } else {
+                ButtonDefaults.buttonColors()
+            },
         ) {
             Text(confirmLabel)
         }

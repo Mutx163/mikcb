@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.SettingsActionDispatcher
 import com.mutx163.qingyu.R
@@ -837,6 +838,8 @@ private fun SliderValueDialog(
         show = true,
         title = title,
         onDismissRequest = onDismiss,
+        // 内容自留 8dp（与镜像地址弹框同一口径）；框架侧也 8 ⇒ 单边 16，不是默认 24 + 8。
+        insideMargin = DpSize(8.dp, 16.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
