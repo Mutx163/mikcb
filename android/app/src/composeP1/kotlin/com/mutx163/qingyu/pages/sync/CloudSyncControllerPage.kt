@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -155,26 +154,30 @@ fun CloudSyncPage(
         onManualProtectedChange = { controller.setManualBackupProtected(it) },
     )
 
-    conflictInfo?.let { info ->
-        SyncConflictChoiceDialog(
-            info = info,
-            busy = conflictBusy,
-            onChoice = { choice ->
-                if (choice == SyncConflictChoice.CANCEL) {
-                    // 取消不碰网络：直接清掉挂起冲突（同时清掉控制器侧状态）。
-                    controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
-                    conflictInfo = null
-                } else {
-                    resolveConflict(choice)
-                }
-            },
-            // 点遮罩/返回键 = 放弃选边，与「取消」同义，也必须清掉挂起冲突。
-            onDismiss = {
+    // 弹层常驻组合、只翻 `show`：`conflictInfo?.let { … }` 会在置 null 的一瞬把整棵弹层摘出
+    // 组合，退场动画一次都播不出来。退场期间的标题/正文/动作用 remember 保留的最后一份
+    // 非空冲突渲染（先例：pages/diagnostics/MemoryStatsPage.kt:297-320）。
+    var shownConflict by remember { mutableStateOf(conflictInfo) }
+    if (conflictInfo != null) shownConflict = conflictInfo
+    SyncConflictChoiceDialog(
+        show = conflictInfo != null,
+        info = shownConflict,
+        busy = conflictBusy,
+        onChoice = { choice ->
+            if (choice == SyncConflictChoice.CANCEL) {
+                // 取消不碰网络：直接清掉挂起冲突（同时清掉控制器侧状态）。
                 controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
                 conflictInfo = null
-            },
-        )
-    }
+            } else {
+                resolveConflict(choice)
+            }
+        },
+        // 点遮罩/返回键 = 放弃选边，与「取消」同义，也必须清掉挂起冲突。
+        onDismiss = {
+            controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
+            conflictInfo = null
+        },
+    )
 }
 
 /**
@@ -219,46 +222,48 @@ fun CloudBackupListPage(
  * 同步冲突「选边」三键框（Dart `_resolveConflict`，标题/正文/三动作走
  * [CloudSyncLogic.conflictDialog]，首次同步分歧自动换解释性文案）。
  *
+ * 三动作竖排整宽、间距 12dp（Dart `showAppTripleActionDialog` 口径：三动作不挤同一行；
+ * 本仓先例 pages/import/ImportCommon.kt 的三动作分支）。弹层常驻组合、只翻 [show]，
+ * [info] 传 remember 保留的最后一份非空冲突，供退场期间继续渲染。
+ *
  * 两个「选边」动作都会发起网络（保留本机 = PUT、使用云端 = GET+应用），经
  * [onChoice] 交给宿主协程在 IO 线程执行；「取消」与点遮罩等价，纯本地状态清理。
  */
 @Composable
 private fun SyncConflictChoiceDialog(
-    info: SyncConflictInfo,
+    show: Boolean,
+    info: SyncConflictInfo?,
     busy: Boolean,
     onChoice: (SyncConflictChoice) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val view = CloudSyncLogic.conflictDialog(isFirstSyncDivergence = info.isFirstSyncDivergence)
+    val view = info?.let { CloudSyncLogic.conflictDialog(isFirstSyncDivergence = it.isFirstSyncDivergence) }
     val dark = isSystemInDarkTheme()
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
-        title = view.title,
+        show = show,
+        title = view?.title,
         onDismissRequest = onDismiss,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = view.message,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+        if (view != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = view.message,
+                    style = MiuixTheme.textStyles.body2,
+                    color = Color(QingyuTheme.secondaryText(dark)),
+                )
                 TextButton(
                     text = view.cancelLabel,
                     onClick = { onChoice(SyncConflictChoice.CANCEL) },
                     enabled = !busy,
                     colors = ButtonDefaults.textButtonColors(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Button(
                     onClick = { onChoice(SyncConflictChoice.KEEP_LOCAL) },
                     enabled = !busy,
                     colors = ButtonDefaults.buttonColors(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = view.keepLocalLabel)
                 }
@@ -266,7 +271,7 @@ private fun SyncConflictChoiceDialog(
                     onClick = { onChoice(SyncConflictChoice.KEEP_REMOTE) },
                     enabled = !busy,
                     colors = ButtonDefaults.buttonColorsPrimary(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = view.useRemoteLabel)
                 }
