@@ -208,12 +208,17 @@ fun LocationTimeMatchHost(
         },
     )
 
-    val deleting = pendingDelete
-    // 与 `TimeSchemeDeleteSheet` 同姿势：弹层实例常驻、`show` 控制显隐，
-    // 关闭时才有退出动画；内容用非空判断守住。
+    // 删除确认弹层常驻组合，`show` 由实时 pendingDelete 驱动；标题/正文/按钮用
+    // remember 钉住的最后一份非空快照渲染——退场动画期间不会闪成空板
+    //（2026-11-02 弹层债 #13，与 TimeSchemeManagementDialogs 同配方）。
+    var shownDelete by remember { mutableStateOf(pendingDelete) }
+    if (pendingDelete != null) {
+        shownDelete = pendingDelete
+    }
+    val deleting = shownDelete
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = deleting != null,
+        show = pendingDelete != null,
         title = deleting?.let { LocationTimeMatchStrings.deleteTitle.zh },
         summary = deleting?.let {
             LocationTimeMatchStrings.deleteMessage.filled("name", it.name)
@@ -224,7 +229,8 @@ fun LocationTimeMatchHost(
             val dark = isSystemInDarkTheme()
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                // Dart 两动作横排等宽、间距 12（`_HyperosDialogActions`）——弹层债 #9。
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(
                     modifier = Modifier.weight(1f),
@@ -237,16 +243,20 @@ fun LocationTimeMatchHost(
                     // 危险色只染**字**（`color` 是底色，传错就是「红底 + 默认灰字」）。
                     colors = ButtonDefaults.textButtonColors(textColor = Color(QingyuTheme.error(dark))),
                     onClick = {
+                        // 动作读实时值（点击只发生在可见期间）；快照只服务退场渲染。
+                        val target = pendingDelete
                         pendingDelete = null
-                        when (val result = controller.delete(deleting.id)) {
-                            is LocationTimeGroupChange.Applied -> {
-                                if (persist(result.groups, LocationTimeMatchStrings.deleteFailed.zh)) {
-                                    toast(LocationTimeMatchStrings.deleted.zh)
+                        if (target != null) {
+                            when (val result = controller.delete(target.id)) {
+                                is LocationTimeGroupChange.Applied -> {
+                                    if (persist(result.groups, LocationTimeMatchStrings.deleteFailed.zh)) {
+                                        toast(LocationTimeMatchStrings.deleted.zh)
+                                    }
                                 }
-                            }
 
-                            is LocationTimeGroupChange.Rejected -> toast(result.message)
-                            LocationTimeGroupChange.Missing -> Unit
+                                is LocationTimeGroupChange.Rejected -> toast(result.message)
+                                LocationTimeGroupChange.Missing -> Unit
+                            }
                         }
                     },
                 )
