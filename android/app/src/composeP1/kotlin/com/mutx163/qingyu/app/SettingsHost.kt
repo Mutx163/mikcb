@@ -858,7 +858,9 @@ private fun AutoRefreshDailyTimeSheet(
                     range = 0..23,
                     wrapAround = true,
                     label = { "%02d".format(Locale.ROOT, it) },
-                    textStyle = MiuixTheme.textStyles.title3,
+                    // Dart 同弹层是 title3 + w600（`miuix_time_picker_sheet.dart`）；
+                    // 走 shiftWeight 才不会被用户字重/系统粗体设置盖掉。
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     modifier = Modifier.weight(1f),
                 )
                 NumberPicker(
@@ -867,7 +869,7 @@ private fun AutoRefreshDailyTimeSheet(
                     range = 0..59,
                     wrapAround = true,
                     label = { "%02d".format(Locale.ROOT, it) },
-                    textStyle = MiuixTheme.textStyles.title3,
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
                     modifier = Modifier.weight(1f),
                 )
             }
