@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -788,8 +789,11 @@ private fun SliderRow(
         keyPoints = spec.keyPoints?.map { it.toFloat() },
     )
     val helper = spec.dialogHelper
-    if (editing && helper != null) {
+    if (helper != null) {
+        // 弹窗常驻组合：关闭只把 `editing` 置 false，`show` 驱动官方退场动画
+        //（条件挂载会让 OverlayDialog 整棵离开组合、动画一次都不播）。
         SliderValueDialog(
+            show = editing,
             title = row.title,
             helper = helper,
             initialValue = value,
@@ -822,6 +826,7 @@ private fun SliderRow(
  */
 @Composable
 private fun SliderValueDialog(
+    show: Boolean,
     title: String,
     helper: String,
     initialValue: Double,
@@ -835,8 +840,16 @@ private fun SliderValueDialog(
         mutableStateOf(SettingsSliderValueLogic.inputText(initialValue, min, max, divisions))
     }
     var invalid by remember { mutableStateOf(false) }
+    // 弹窗常驻组合（关闭不摘组件，官方退场动画才播得出来）：每次重新打开
+    // 都按当前值重置输入——`remember` 的初值只在首次组合时算一次，靠这里补。
+    LaunchedEffect(show) {
+        if (show) {
+            text = SettingsSliderValueLogic.inputText(initialValue, min, max, divisions)
+            invalid = false
+        }
+    }
     OverlayDialog(
-        show = true,
+        show = show,
         title = title,
         onDismissRequest = onDismiss,
         // 内容自留 8dp（与镜像地址弹框同一口径）；框架侧也 8 ⇒ 单边 16，不是默认 24 + 8。
