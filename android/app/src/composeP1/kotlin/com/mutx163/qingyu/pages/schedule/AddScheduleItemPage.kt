@@ -21,27 +21,36 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.task.TaskStrings
 import com.mutx163.qingyu.theme.QingyuTheme
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -53,6 +62,8 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import java.time.LocalDate
+import java.time.YearMonth
 
 private val kColorPalette = listOf(
     "#6366F1", "#0EA5E9", "#2196F3", "#8B5CF6", "#D946EF",
@@ -94,6 +105,13 @@ fun AddScheduleItemPage(
 
     var showOccurrenceScopeDialog by remember { mutableStateOf(false) }
     var pendingActionIsDelete by remember { mutableStateOf(false) }
+
+    // 日期/时间滚轮弹层：正在选「哪一端」（对应 Dart `_pickDate` / `_pickTime` 的 isStart）。
+    var pickingDate by remember { mutableStateOf<ScheduleEndpoint?>(null) }
+    var pickingTime by remember { mutableStateOf<ScheduleEndpoint?>(null) }
+    // Dart 打开滚轮前先收键盘（add_schedule_item_screen.dart:749-751）：
+    // 弹层里没有文本框，不收的话键盘会顶在弹层底下。
+    val focusManager = LocalFocusManager.current
 
     fun validateAndProceed(isDeleting: Boolean) {
         if (isDeleting) {
@@ -389,50 +407,43 @@ fun AddScheduleItemPage(
                                 color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                             )
 
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = ScheduleStrings.scheduleStartGroupLabel.zh,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    TextField(
-                                        value = startDate,
-                                        onValueChange = { startDate = it },
-                                        label = ScheduleStrings.scheduleStartDateLabel.zh,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    TextField(
-                                        value = startTime,
-                                        onValueChange = { startTime = it },
-                                        label = ScheduleStrings.scheduleStartTimeLabel.zh,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = ScheduleStrings.scheduleEndGroupLabel.zh,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = Color(QingyuTheme.secondaryText(dark)),
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    TextField(
-                                        value = endDate,
-                                        onValueChange = { endDate = it },
-                                        label = ScheduleStrings.scheduleEndDateLabel.zh,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    TextField(
-                                        value = endTime,
-                                        onValueChange = { endTime = it },
-                                        label = ScheduleStrings.scheduleEndTimeLabel.zh,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                }
-                            }
+                            // 起止日期/时间：四行「标签 → 取值」选值行，点行弹滚轮
+                            //（Dart `add_schedule_item_screen.dart:331/338` 的 `HyperosPickerField`
+                            // + `showMiuixDatePickerSheet` / `showMiuixTimePickerSheet`）。
+                            // 原来是四个自由文本框：用户得手输 `2026-10-01` 这种格式，
+                            // 还可能输进解析不出来的值。滚轮弹层见本文件底部。
+                            SchedulePickerField(
+                                label = ScheduleStrings.scheduleStartDateLabel.zh,
+                                value = formatScheduleDateDisplay(startDate),
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    pickingDate = ScheduleEndpoint.Start
+                                },
+                            )
+                            SchedulePickerField(
+                                label = ScheduleStrings.scheduleStartTimeLabel.zh,
+                                value = startTime,
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    pickingTime = ScheduleEndpoint.Start
+                                },
+                            )
+                            SchedulePickerField(
+                                label = ScheduleStrings.scheduleEndDateLabel.zh,
+                                value = formatScheduleDateDisplay(endDate),
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    pickingDate = ScheduleEndpoint.End
+                                },
+                            )
+                            SchedulePickerField(
+                                label = ScheduleStrings.scheduleEndTimeLabel.zh,
+                                value = endTime,
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    pickingTime = ScheduleEndpoint.End
+                                },
+                            )
 
                             // 跨天或重复提示
                             if (recurrence == ScheduleRecurrence.WEEKLY) {
@@ -723,5 +734,279 @@ fun AddScheduleItemPage(
             }
         }
     }
+
+    // 起止日期滚轮（年/月/日三列官方 NumberPicker）。选完按 Dart `_pickDate` 归一：
+    // 开始 > 结束时把另一端收拢，保证「结束不早于开始」。
+    ScheduleDatePickerSheet(
+        show = pickingDate != null,
+        title = if (pickingDate == ScheduleEndpoint.End) {
+            ScheduleStrings.scheduleEndDateLabel.zh
+        } else {
+            ScheduleStrings.scheduleStartDateLabel.zh
+        },
+        initialIso = if (pickingDate == ScheduleEndpoint.End) endDate else startDate,
+        onConfirm = { iso ->
+            when (pickingDate) {
+                ScheduleEndpoint.Start -> {
+                    startDate = iso
+                    if (endDate < startDate) endDate = startDate
+                }
+                ScheduleEndpoint.End -> {
+                    endDate = iso
+                    if (endDate < startDate) startDate = endDate
+                }
+                null -> {}
+            }
+            pickingDate = null
+        },
+        onDismiss = { pickingDate = null },
+    )
+
+    // 起止时间滚轮（时/分两列官方 NumberPicker），标题与 Dart `_pickTime` 传的同键。
+    ScheduleTimePickerSheet(
+        show = pickingTime != null,
+        title = if (pickingTime == ScheduleEndpoint.End) {
+            ScheduleStrings.selectEndTimeTitle.zh
+        } else {
+            ScheduleStrings.selectStartTimeTitle.zh
+        },
+        initial = if (pickingTime == ScheduleEndpoint.End) endTime else startTime,
+        onConfirm = { clock ->
+            when (pickingTime) {
+                ScheduleEndpoint.Start -> startTime = clock
+                ScheduleEndpoint.End -> endTime = clock
+                null -> {}
+            }
+            pickingTime = null
+        },
+        onDismiss = { pickingTime = null },
+    )
+    }
+}
+
+/** 滚轮正在选起止的哪一端（对应 Dart `_pickDate` / `_pickTime` 的 `isStart` 参数）。 */
+private enum class ScheduleEndpoint { Start, End }
+
+/** 日期滚轮可选范围：与 Dart `add_schedule_item_screen.dart:755-756` 的 firstDate/lastDate 同口径。 */
+private const val SCHEDULE_DATE_FIRST_YEAR = 2020
+private const val SCHEDULE_DATE_LAST_YEAR = 2100
+
+/**
+ * 日期/时间选值行：Dart `HyperosPickerField` 的等价物。
+ *
+ * 用官方 `BasicComponent`（标题 + 行尾取值 + 整行可点 + 官方按压反馈）承载，
+ * 与 `SettingsHolidayHost.DatePickerField` / `TimeSchemeQuickGenerateSheet.TimeField` 同一先例。
+ * 与 Dart 的差异只有外观：Dart 是一个「像输入框」的选值框（带图标），
+ * 这里是一行「标签 → 取值」——点哪儿、点了会弹什么，两者一致。
+ */
+@Composable
+private fun SchedulePickerField(label: String, value: String, onClick: () -> Unit) {
+    BasicComponent(
+        title = label,
+        endActions = {
+            Text(
+                text = value,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+/**
+ * 起止日期滚轮弹层：年 / 月 / 日三列官方 `NumberPicker` + 取消 / 确认。
+ *
+ * Dart 侧是月历弹层（`showMiuixDatePickerSheet`），Kotlin 侧 miuix 0.9.4 没有
+ * DatePicker，只有 `NumberPicker`——沿用 `SettingsSemesterHost` 的既定等价做法
+ * （三列滚轮，交互结果一致）。年不循环、月/日循环；年/月改动后「日」的上界跟着
+ * 变并就地收拢，避免确认写进一个不存在的日期（Dart `_YearMonthWheelDialog` 同口径）。
+ */
+@Composable
+private fun ScheduleDatePickerSheet(
+    show: Boolean,
+    title: String,
+    initialIso: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val initial = remember(initialIso) {
+        ScheduleDateUtils.parseDate(initialIso) ?: LocalDate.now()
+    }
+    var year by remember(show, initialIso) { mutableIntStateOf(initial.year) }
+    var month by remember(show, initialIso) { mutableIntStateOf(initial.monthValue) }
+    var day by remember(show, initialIso) { mutableIntStateOf(initial.dayOfMonth) }
+
+    val maxDay = YearMonth.of(year, month).lengthOfMonth()
+    val safeDay = day.coerceAtMost(maxDay)
+
+    QingyuSheet(
+        show = show,
+        title = title,
+        onDismissRequest = onDismiss,
+        // 内容根 Column 自己给了左右 16（三列滚轮 + 按钮行都不通栏）⇒ 框架侧横向归零，
+        // 单边就是 16，不再叠成 32（与 SettingsSemesterHost 的日期滚轮同口径）。
+        contentPadsHorizontally = true,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NumberPicker(
+                    value = year,
+                    onValueChange = {
+                        year = it
+                        day = day.coerceAtMost(YearMonth.of(it, month).lengthOfMonth())
+                    },
+                    range = SCHEDULE_DATE_FIRST_YEAR..SCHEDULE_DATE_LAST_YEAR,
+                    label = { "$it${TaskStrings.datePickerYear}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+                NumberPicker(
+                    value = month,
+                    onValueChange = {
+                        month = it
+                        day = day.coerceAtMost(YearMonth.of(year, it).lengthOfMonth())
+                    },
+                    range = 1..12,
+                    wrapAround = true,
+                    label = { "$it${TaskStrings.datePickerMonth}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+                NumberPicker(
+                    value = safeDay,
+                    onValueChange = { day = it },
+                    range = 1..maxDay,
+                    wrapAround = true,
+                    label = { "$it${TaskStrings.datePickerDay}" },
+                    textStyle = MiuixTheme.textStyles.title3,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = ScheduleStrings.cancelAction.zh,
+                    onClick = onDismiss,
+                )
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onConfirm(ScheduleDateUtils.formatDate(LocalDate.of(year, month, safeDay)))
+                    },
+                    // 弹层的主出口（不是取消）⇒ 强调色；默认 `buttonColors()` 是灰底，
+                    // 读起来像禁用（审核 P1/S1 的同一条口径）。
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = TaskStrings.confirmAction)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 起止时间滚轮弹层：时 0-23 / 分 0-59（步长 1），官方 `NumberPicker` 两列。
+ *
+ * 与 Dart `showMiuixTimePickerSheet`（`miuix_time_picker_sheet.dart`）同口径：
+ * 分钟不分档（这个页面 Dart 就是一分钟一档，区别于作息页的 5 分钟一档）、
+ * `_twoDigits` 两位数字标签、滚轮高 220dp、title3 + w600。
+ */
+@Composable
+private fun ScheduleTimePickerSheet(
+    show: Boolean,
+    title: String,
+    initial: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val parsedMinutes = remember(initial) { ScheduleDateUtils.parseMinutes(initial) }
+    var hour by remember(show, initial) { mutableIntStateOf(parsedMinutes / 60) }
+    var minute by remember(show, initial) { mutableIntStateOf(parsedMinutes % 60) }
+
+    QingyuSheet(
+        show = show,
+        title = title,
+        onDismissRequest = onDismiss,
+        // 与日期滚轮同一个口径（见上）。
+        contentPadsHorizontally = true,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NumberPicker(
+                    value = hour,
+                    onValueChange = { hour = it },
+                    range = 0..23,
+                    wrapAround = true,
+                    label = { it.toString().padStart(2, '0') },
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    modifier = Modifier.weight(1f),
+                )
+                NumberPicker(
+                    value = minute,
+                    onValueChange = { minute = it },
+                    range = 0..59,
+                    wrapAround = true,
+                    label = { it.toString().padStart(2, '0') },
+                    textStyle = MiuixTheme.textStyles.title3.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = ScheduleStrings.cancelAction.zh,
+                    onClick = onDismiss,
+                )
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { onConfirm(ScheduleDateUtils.formatMinutes(hour * 60 + minute)) },
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(text = TaskStrings.confirmAction)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 选值行里的日期显示：与 Dart `_formatCompactDateLabel`（`add_schedule_item_screen.dart:735-741`）
+ * 同口径——今年内只显示「M月d日」，跨年才带年份。单位词复用 ARB 既有键
+ * （`datePickerYear/Month/Day`），不新增写死文案。
+ */
+private fun formatScheduleDateDisplay(iso: String): String {
+    val date = ScheduleDateUtils.parseDate(iso) ?: return iso
+    return if (date.year == LocalDate.now().year) {
+        "${date.monthValue}${TaskStrings.datePickerMonth}${date.dayOfMonth}${TaskStrings.datePickerDay}"
+    } else {
+        "${date.year}${TaskStrings.datePickerYear}" +
+            "${date.monthValue}${TaskStrings.datePickerMonth}${date.dayOfMonth}${TaskStrings.datePickerDay}"
     }
 }
