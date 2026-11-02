@@ -106,6 +106,11 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
         )
 
         val target = pendingDelete
+        // 退场动画期间保留最后一份非空记录：pendingDelete 置 null 触发关闭时，
+        // 正文若直接跟着读 null 会塌成「删除「」？」——审核报告 P3（旧 :119）的
+        // 「空板退场」。弹层常驻组合，show 仍由 pendingDelete 驱动。
+        var shownDelete by remember { mutableStateOf<WarehouseCustomDebugRecord?>(null) }
+        if (target != null) shownDelete = target
         OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = target != null,
@@ -116,7 +121,7 @@ fun WarehouseCustomDebugHost(onBack: () -> Unit) {
                 Text(
                     text = WarehouseStrings.deleteDebugRecordMessage.filled(
                         "name",
-                        target?.name.orEmpty(),
+                        shownDelete?.name.orEmpty(),
                     ),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
