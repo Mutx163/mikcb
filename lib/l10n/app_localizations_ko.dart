@@ -24,9 +24,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get previewTitle => '미리보기';
 
   @override
-  String get timetableBackgroundPreview => '시간표 배경';
-
-  @override
   String get themeModeLabel => '테마 모드';
 
   @override
@@ -99,24 +96,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get userGuideEntryTitle => '사용 가이드 및 권한';
 
   @override
-  String get userGuideEntrySubtitle => '약칭 설정, 알림, 자동 시작, 배터리 전략';
-
-  @override
-  String get timetableManagementSectionTitle => '시간표 관리';
-
-  @override
   String get timeSchemeEntryTitle => '시간 템플릿';
 
   @override
-  String get timeSchemeEntrySubtitleNoneSelected => '전환, 교시 편집, 복사 및 템플릿 관리';
-
-  @override
   String get timeSchemeEntryNotSelected => '미선택';
-
-  @override
-  String timeSchemeEntrySubtitleSelected(String name) {
-    return '현재: $name · 전환, 교시 편집 및 복사';
-  }
 
   @override
   String get dataTransferEntryTitle => '데이터 백업 및 마이그레이션';
@@ -739,10 +722,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get selectSemesterWeekCountTitle => '학기 주 수 선택';
 
   @override
-  String get selectSemesterWeekCountSubtitle =>
-      '학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다';
-
-  @override
   String get unifiedCourseCardColorTitle => '수업 카드 색상 통일';
 
   @override
@@ -1351,9 +1330,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get startUsingTitle => '시작하기';
 
   @override
-  String get startUsingSubtitle => '앱에 진입하여 첫 사용 가이드를 계속 진행';
-
-  @override
   String get importTimetableTitle => '시간표 가져오기';
 
   @override
@@ -1364,12 +1340,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get restoreBackupSubtitle => '.mikcb 백업 파일에서 이전 데이터 복원';
-
-  @override
-  String get viewGuideTitle => '기능 설명 보기';
-
-  @override
-  String get viewGuideSubtitle => '권한, 슈퍼아일랜드 및 기본 설정 확인';
 
   @override
   String get migrationTitle => '이전 데이터 마이그레이션';
@@ -1459,16 +1429,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportAlipayHint => 'Alipay로 QR 코드를 스캔하여 개발자 지원';
 
   @override
-  String get viewLargeImage => '큰 이미지 보기';
-
-  @override
   String get saveToGallery => '갤러리에 저장';
 
   @override
   String get supportCompleteThanks => '경屿 시간표의 지속적인 개선을 지원해 주셔서 감사합니다 ❤️';
-
-  @override
-  String get supportConfirmed => '지원했습니다';
 
   @override
   String get donorListTitle => '감사 목록';
@@ -1512,30 +1476,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportConfirmedShort => '후원함';
 
   @override
-  String get supportMonthlyGoalLabel => '이번 달 서버·인증서 갱신 진행률';
-
-  @override
-  String supportGoalRaised(String raised, String goal) {
-    return '모금: $raised / 목표 $goal';
-  }
-
-  @override
-  String supportBackerCount(int count) {
-    return '이미 $count명이 후원';
-  }
-
-  @override
-  String get supportDonorListFooter => '명단은 영구 보존됩니다 💖';
-
-  @override
-  String supportMarqueeThanks(String name, String amount) {
-    return '🎉 $name님 $amount 감사합니다';
-  }
-
-  @override
-  String get supportMarqueeTail => '경屿 시간표가 안정적으로 운영 중 — 여러분의 후원을 기다립니다!';
-
-  @override
   String get scanQrWechatTitle => 'WeChat으로 QR 코드 스캔';
 
   @override
@@ -1557,19 +1497,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String conflictCountLabel(int count) {
     return '충돌 $count건';
   }
-
-  @override
-  String scheduledCountLabel(int count) {
-    return '배치 합계 $count건';
-  }
-
-  @override
-  String scheduledCountWithConflictHint(int count) {
-    return '배치 합계 $count건 · 펼쳐서 충돌 상세 확인';
-  }
-
-  @override
-  String get teacherUnset => '미설정';
 
   @override
   String get confirmDeleteTitle => '삭제 확인';
@@ -1597,25 +1524,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get endSectionLabel => '종료 교시';
 
   @override
-  String timeRangeLabel(String start, String end) {
-    return '시간: $start - $end';
-  }
-
-  @override
   String get locationLabel => '수업 장소';
-
-  @override
-  String get singleLessonWeekTitle => '수업 주차';
-
-  @override
-  String get singleLessonWeekSubtitle =>
-      '단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다';
-
-  @override
-  String get selectWeekLabel => '주차 선택';
-
-  @override
-  String get weekSettingsTitle => '주차 설정';
 
   @override
   String get rangeWeeksLabel => '연속 주';
@@ -2080,15 +1989,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '현재 시간표가 이 템플릿을 사용 중이면, 교시 수는 사용된 최대 교시 이상이어야 합니다';
 
   @override
-  String get schemeListCurrentLabel => '현재';
-
-  @override
-  String get schemeListCountLabel => '수';
-
-  @override
-  String get sectionCountLabel => '교시 수';
-
-  @override
   String get quickGenerateTimeSchemeTitle => '시간표 시간 빠른 생성';
 
   @override
@@ -2120,24 +2020,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다';
 
   @override
-  String get unnamedTimeScheme => '이름 없는 템플릿';
-
-  @override
   String get unsetLabel => '미선택';
-
-  @override
-  String get timeSchemeUsageCourseRefPrefix => '수업 참조:';
 
   @override
   String get mainTimeSchemeLabel => '메인 템플릿';
 
   @override
   String get overrideTimeSchemeShortLabel => '부 템플릿';
-
-  @override
-  String timeSchemeBottomUsageSingle(String first) {
-    return '$first';
-  }
 
   @override
   String timeSchemeBottomUsageMulti(String first, int count) {
@@ -2476,14 +2365,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keepAliveConfirmGoAction => '활성화';
 
   @override
-  String timeSchemeEntryCurrentPrefix(String name) {
-    return '현재: $name · 전환, 교시 편집 및 복사';
-  }
-
-  @override
-  String get timeSchemeEntrySubtitle => '전환, 교시 편집, 복사 및 템플릿 관리';
-
-  @override
   String semesterOverviewCurrentWeek(int current, int total) {
     return '현재 제$current주 / 총 $total주';
   }
@@ -2497,19 +2378,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get setSemesterStartDate => '학기 시작일 설정';
-
-  @override
   String get semesterStartDateLabel => '학기 시작일';
 
   @override
   String syncedCurrentWeekMessage(int week) {
     return '제$week주에 동기화됨';
-  }
-
-  @override
-  String weekCountItem(int count) {
-    return '$count주';
   }
 
   @override
@@ -2607,9 +2480,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agreeAndStartAction => '동의하고 시작';
 
   @override
-  String get startUsingAction => '시작하기';
-
-  @override
   String get editCourseTitle => '수업 편집';
 
   @override
@@ -2622,28 +2492,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseDeleted => '수업이 삭제되었습니다';
 
   @override
-  String get singleLessonLabel => '단일 수업';
-
-  @override
-  String get singleLessonHint => '보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다';
-
-  @override
   String get sharedInfoTitle => '공유 정보';
-
-  @override
-  String get sharedInfoHint => '공유 필드 설명 보기';
-
-  @override
-  String get sharedInfoSheetItemCourseName =>
-      '수업명: 수업 고유 식별자. 동일한 이름의 여러 배치는 하나의 수업으로 처리됩니다. 이름을 변경하면 별도 수업 기록이 생성됩니다.';
-
-  @override
-  String get sharedInfoSheetItemShortName =>
-      '수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장.';
-
-  @override
-  String get sharedInfoSheetItemSharedSync =>
-      '공유 동기화: 약칭, 색상, 성격, 개요 등은 동일 수업명의 다른 배치에 동기화됩니다.';
 
   @override
   String get reuseExistingCourseLabel => '기존 수업 활용';
@@ -2686,18 +2535,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get courseDescriptionOptional => '수업 개요 (선택)';
-
-  @override
-  String get timeSchemeOverrideLabel => '수업 시간 방안';
-
-  @override
-  String get singleLessonWeekHint =>
-      '단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다';
-
-  @override
-  String timeSchemeSetCountValue(int count) {
-    return '$count세트';
-  }
 
   @override
   String profileCountValue(int count) {
@@ -2774,9 +2611,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timeRangeValidationNoCrossDay => '종료 시간은 시작 시간보다 나중이어야 합니다';
 
   @override
-  String get timeSchemeNameEmptyValidation => '템플릿 이름은 비워둘 수 없습니다';
-
-  @override
   String get liveTimeCorrectionNone => '보정 없음';
 
   @override
@@ -2802,9 +2636,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveClassReminderLeadSummaryFocused => '종료 전 중요 알림 시작';
 
   @override
-  String get timetableProfilesEntrySubtitle => '새로 만들기, 전환, 복사, 이름 변경 및 삭제';
-
-  @override
   String get homeTitleSectionTitle => '홈 제목';
 
   @override
@@ -2821,9 +2652,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get timetableBackgroundColorSectionTitle => '시간표 배경색';
-
-  @override
-  String get timetableBackgroundColorSectionSubtitle => '시간표 페이지의 큰 배경에만 적용됩니다';
 
   @override
   String get homePageWallpaperTitle => '배경 이미지';
@@ -2901,9 +2729,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get wallpaperPositionPickerResetTooltip => '재설정';
-
-  @override
-  String get wallpaperPositionPickerDragHint => '배경화면을 드래그해 위치 조정';
 
   @override
   String get wallpaperPositionPickerSwitchWallpaper => '배경화면 바꾸기';
@@ -4575,12 +4400,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get rescheduleTargetWeekLabel => '변경할 주차';
 
   @override
-  String get weekdayFieldLabel => '요일';
-
-  @override
-  String get startSectionFieldLabel => '시작 교시';
-
-  @override
   String get confirmRescheduleAction => '시간 변경 확인';
 
   @override
@@ -4789,12 +4608,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get copiedCurrentAddress => '현재 주소를 복사했습니다';
 
   @override
-  String get warehouseLoginHintLocalDebug => '현재 로컬 디버그 스크립트 모드';
-
-  @override
-  String get warehouseLoginHintImport => '여기서 교무 시스템에 로그인한 뒤 가져오기를 실행합니다';
-
-  @override
   String get webAddressHint => '웹 주소 입력';
 
   @override
@@ -4980,30 +4793,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleInfoSectionTitle => '일정 정보';
 
   @override
-  String get scheduleInfoSectionSubtitle =>
-      '일정은 구체적인 날짜로 일간 뷰 타임라인에 삽입됩니다. 수업 자체는 변경하지 않습니다';
-
-  @override
   String get scheduleTimeSectionTitle => '시간 설정';
 
   @override
-  String get scheduleTimeSectionSubtitle =>
-      '이 일정이 실제로 발생하는 날짜와 시작/종료 시간을 선택하세요';
-
-  @override
   String get scheduleAppearanceSectionTitle => '표시 스타일';
-
-  @override
-  String get scheduleAppearanceSectionSubtitle => '수업과 쉽게 구분되는 일정 색상을 선택하세요';
 
   @override
   String get scheduleLocationLabel => '장소';
 
   @override
   String get scheduleLocationHint => '선택사항';
-
-  @override
-  String get scheduleDateLabel => '날짜';
 
   @override
   String get scheduleStartGroupLabel => '시작';
@@ -5024,9 +4823,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleEndTimeLabel => '종료 시간';
 
   @override
-  String get scheduleColorLabel => '일정 색상';
-
-  @override
   String get scheduleNoteLabel => '메모';
 
   @override
@@ -5045,9 +4841,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get scheduleDateRangeInvalid => '종료일은 시작일보다 이전일 수 없습니다';
-
-  @override
-  String get scheduleSingleDayHint => '같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다';
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
@@ -5251,24 +5044,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleEntryCardSubtitle => '요일, 주, 장소 설정';
 
   @override
-  String get scheduleEntryTimeSectionTitle => '언제';
-
-  @override
-  String get scheduleEntryTimeSectionSubtitle =>
-      '요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다';
-
-  @override
   String get scheduleEntryWeeksSectionTitle => '어떤 주';
-
-  @override
-  String get scheduleEntryPeopleSectionTitle => '교수와 강의실';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionTitle => '별도 시간표';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionSubtitle =>
-      '기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요';
 
   @override
   String scheduleSectionNumberLabel(int section) {
@@ -5307,9 +5083,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get suspendedBadgeLabel => '정';
-
-  @override
-  String get suspendedStatusLabel => '수업 중단';
 
   @override
   String get courseActionUnsuspend => '복구';
@@ -5618,12 +5391,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveTestingHolidayModeEnabledDesc => '수업 알림과 위젯이 모든 수업을 숨깁니다';
 
   @override
-  String get textColorTitle => '텍스트 색상';
-
-  @override
-  String get textColorSubtitle => '시간표 각 영역의 텍스트 색상 사용자 지정';
-
-  @override
   String get textColorIndependentDetail => '세부 색상 개별 설정';
 
   @override
@@ -5689,9 +5456,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get textColorLowContrastWarning => '색상 대비가 낮아 가독성에 영향을 줄 수 있습니다';
-
-  @override
   String get themeCurrentTheme => '현재 테마';
 
   @override
@@ -5714,27 +5478,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themeNameHint => '테마 이름 입력';
-
-  @override
-  String get themePresetBlue => '기본 블루';
-
-  @override
-  String get themePresetPurple => '나이트 퍼플';
-
-  @override
-  String get themePresetGreen => '포레스트 그린';
-
-  @override
-  String get themePresetOrange => '웜 오렌지';
-
-  @override
-  String get themePresetEyeCare => '눈 보호';
-
-  @override
-  String get themePresetHighContrast => '고대비';
-
-  @override
-  String get themePresetDarkMinimal => '다크 미니멀';
 
   @override
   String get foruiThemeNeutral => '뉴트럴';
@@ -5834,12 +5577,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsNoData => '수업 데이터 없음';
 
   @override
-  String get statisticsCourseCountRatio => '수업 수 비율';
-
-  @override
-  String get statisticsSectionCountRatio => '수업 시간 비율';
-
-  @override
   String statisticsWeekSelector(int week) {
     return '$week주차';
   }
@@ -5918,15 +5655,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsExportModulesSection => '포함할 모듈';
 
   @override
-  String get statisticsExportFormatSection => '내보내기 형식';
-
-  @override
-  String get statisticsExportFormatImage => '긴 이미지 (PNG)';
-
-  @override
-  String get statisticsExportFormatPdf => 'PDF 문서';
-
-  @override
   String get statisticsExportAction => '내보내기';
 
   @override
@@ -5937,14 +5665,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get statisticsExportBrandTagline => '수업 정보를 시스템 경험으로';
-
-  @override
-  String statisticsExportGithubHint(String url) {
-    return 'GitHub에서 검색: $url';
-  }
-
-  @override
-  String get statisticsExportQrScanHint => '스캔하여 공식 사이트';
 
   @override
   String statisticsExportRankingMore(int count) {
@@ -6055,27 +5775,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statisticsCompareActive => '현재 시간표';
 
   @override
-  String get statisticsCompareNone => '다른 시간표가 없습니다. 시간표 관리에서 만들 수 있어요';
-
-  @override
   String statisticsCompareDelta(String delta) {
     return '현재 대비 $delta교시';
   }
 
   @override
-  String get statisticsCompareDetailTitle => '비교 상세';
-
-  @override
-  String get statisticsCompareWeek => '현재 주차';
-
-  @override
   String get statisticsMoreTitle => '심층 분석';
-
-  @override
-  String get statisticsMoreGroupTrend => '추세 · 분포';
-
-  @override
-  String get statisticsMoreGroupPeople => '강의실 · 교수 · 순위';
 
   @override
   String get statisticsNatureNoneRequired => '필수 과목 없음';
@@ -6293,11 +5998,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => '달성 완료';
-
-  @override
-  String statisticsWeekDailyHint(int week) {
-    return '탭하여 $week주차 세부 정보 보기';
-  }
 
   @override
   String get weekListSeparator => ', ';
@@ -8701,11 +8401,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutMirrorProbeFailedLabel => 'Failed';
 
   @override
-  String timeSchemeImportSupplementName(String name) {
-    return '$name (import supplement)';
-  }
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -9074,10 +8769,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDateRuleErrorNameRequired => 'Enter a name';
 
   @override
-  String get scheduleDateRuleNote =>
-      'Location match takes priority over date rules.';
-
-  @override
   String get homeBandGlassMaterialLabel => '홈 상단 바 유리';
 
   @override
@@ -9441,9 +9132,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get scheduleOccurrenceEditHint => '반복 일정의 한 항목을 편집하고 있습니다';
-
-  @override
-  String get scheduleRepeatEndRequired => '반복 종료일을 선택하세요';
 
   @override
   String get homeMenuTasksTitle => '할 일';
@@ -10140,9 +9828,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get weatherCitySearchFailed => '검색에 실패했습니다. 잠시 후 다시 시도해 주세요';
-
-  @override
-  String get weatherStatusLoading => '날씨 업데이트 중';
 
   @override
   String get weatherStatusFailed => '지난 업데이트 실패';

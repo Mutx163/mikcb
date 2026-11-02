@@ -5,7 +5,6 @@
   "appTitleProfile": "輕嶼課表效能版",
   "appearanceTitle": "外觀與配色",
   "previewTitle": "預覽",
-  "timetableBackgroundPreview": "課表背景",
   "themeModeLabel": "主題模式",
   "themeModeSystem": "跟隨系統",
   "themeModeLight": "淺色模式",
@@ -30,19 +29,8 @@
   "appearanceThemeDisplaySectionTitle": "主題與顯示",
   "homeWidgetEntryTitle": "桌面小組件",
   "userGuideEntryTitle": "使用引導與權限",
-  "userGuideEntrySubtitle": "簡稱建議、通知、自啟動、電池策略",
-  "timetableManagementSectionTitle": "課表管理",
   "timeSchemeEntryTitle": "時間範本",
-  "timeSchemeEntrySubtitleNoneSelected": "切換、編輯節次、複製和管理時間範本",
   "timeSchemeEntryNotSelected": "未選擇",
-  "timeSchemeEntrySubtitleSelected": "目前：{name} · 切換、編輯節次和複製",
-  "@timeSchemeEntrySubtitleSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "dataTransferEntryTitle": "資料備份與遷移",
   "dataTransferEntrySubtitle": "匯出完整課表檔案，給別人直接匯入使用",
   "cloudSyncEntryTitle": "雲端同步",
@@ -250,7 +238,6 @@
     }
   },
   "selectSemesterWeekCountTitle": "選擇學期周數",
-  "selectSemesterWeekCountSubtitle": "不同學校可按實際教學周數調整",
   "unifiedCourseCardColorTitle": "統一課程卡片顏色",
   "unifiedCourseCardColorSubtitle": "關閉後繼續使用每門課程自己的顏色",
   "importRandomCourseColorTitle": "隨機課程顏色",
@@ -599,13 +586,10 @@
   "welcomeSubtitle": "你可以先開始使用，也可以直接匯入課程或從備份還原",
   "thirdPartyDisclaimer": "特此聲明：本應用由第三方開發者獨立開發，僅用於學習研究用途，不屬於小米官方軟件，與小米科技有限責任公司無任何隸屬、合作或授權關係。如涉及內容侵權，請權利方聯繫作者，我們將第一時間下架並刪除相關內容。",
   "startUsingTitle": "開始使用",
-  "startUsingSubtitle": "直接進入軟件，並繼續完成首次使用說明",
   "importTimetableTitle": "匯入課表",
   "importTimetableSubtitle": "從 .ics 或 AI 解析結果匯入",
   "restoreBackupTitle": "從備份還原",
   "restoreBackupSubtitle": "從 .mikcb 備份檔案還原舊資料",
-  "viewGuideTitle": "查看功能說明",
-  "viewGuideSubtitle": "先了解權限、超級島和基礎設定",
   "migrationTitle": "遷移舊資料",
   "migrationSafeTitle": "別擔心，這不是資料丟失",
   "migrationSafeSubtitle": "我們更換了應用包名，所以桌面上會暫時出現兩個應用圖示，這是正常現象，舊資料仍在舊版應用裡，請先去舊版備份，再回到新版匯入",
@@ -633,10 +617,8 @@
   "alipayLabel": "支付寶",
   "supportWeChatHint": "使用微信掃一掃支持作者",
   "supportAlipayHint": "使用支付寶掃一掃支持作者",
-  "viewLargeImage": "查看大圖",
   "saveToGallery": "保存到相冊",
   "supportCompleteThanks": "感謝你支持輕嶼課表繼續打磨 ❤️",
-  "supportConfirmed": "我已經支持了",
   "donorListTitle": "鳴謝名單",
   "donorListLoadFailed": "暫時無法加載在線鳴謝名單",
   "reloadAction": "重新加載",
@@ -663,39 +645,6 @@
   "supportTapQrHint": "點擊放大掃碼",
   "supportSaveShort": "保存",
   "supportConfirmedShort": "已支持",
-  "supportMonthlyGoalLabel": "本月伺服器和證書續期進度",
-  "supportGoalRaised": "已籌: {raised} / 目標 {goal}",
-  "@supportGoalRaised": {
-    "placeholders": {
-      "raised": {
-        "type": "String"
-      },
-      "goal": {
-        "type": "String"
-      }
-    }
-  },
-  "supportBackerCount": "已有 {count} 人獻出愛心",
-  "@supportBackerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "supportDonorListFooter": "名單永久保留 💖",
-  "supportMarqueeThanks": "🎉 感謝 {name} 贊助 {amount}",
-  "@supportMarqueeThanks": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "supportMarqueeTail": "輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！",
   "scanQrWechatTitle": "使用微信掃描二維碼",
   "scanQrAlipayTitle": "使用支付寶掃描二維碼",
   "scanQrSubtitle": "截圖並導入掃一掃，感謝支持！",
@@ -710,23 +659,6 @@
       }
     }
   },
-  "scheduledCountLabel": "共排課 {count} 節",
-  "@scheduledCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "scheduledCountWithConflictHint": "共排課 {count} 節 · 展開查看衝突詳情",
-  "@scheduledCountWithConflictHint": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teacherUnset": "未置",
   "confirmDeleteTitle": "確認刪除",
   "confirmDeleteCourseMessage": "確定刪除課程 {name}？",
   "@confirmDeleteCourseMessage": {
@@ -748,22 +680,7 @@
   "weekdayLabel": "星期",
   "startSectionLabel": "開始節次",
   "endSectionLabel": "結束節次",
-  "timeRangeLabel": "時間: {start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
   "locationLabel": "上課地點",
-  "singleLessonWeekTitle": "上課周次",
-  "singleLessonWeekSubtitle": "單節課只會出現在一個周次裡，適合補課、臨時加課",
-  "selectWeekLabel": "選擇周次",
-  "weekSettingsTitle": "周次設定",
   "rangeWeeksLabel": "連續周",
   "customWeeksLabel": "自定義周",
   "startWeekLabel": "開始周",
@@ -1020,9 +937,6 @@
   "resetDefaultAction": "還原預設",
   "sectionTimesTitle": "節次時間",
   "sectionTimesSubtitle": "如果目前課表正在使用這套範本，節次數量不能小於已使用的最大節次",
-  "schemeListCurrentLabel": "目前",
-  "schemeListCountLabel": "數量",
-  "sectionCountLabel": "節數",
   "quickGenerateTimeSchemeTitle": "快捷生成課表時間",
   "addBreakRuleAction": "新增大課間規則",
   "breakOverrideInvalidMessage": "大課間規則要改：第幾節後填 1 以上的數字，時長填 0 以上的數字",
@@ -1032,19 +946,9 @@
   "timeSchemeEditorActiveAndCoursesHint": "目前課表和部分課程正在使用這套時間範本，保存後會同步更新所有相關課表和課程",
   "timeSchemeEditorActiveHint": "目前課表正在使用這套時間範本，保存後會同步更新所有使用它的課表",
   "timeSchemeEditorOverrideHint": "有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程",
-  "unnamedTimeScheme": "未命名範本",
   "unsetLabel": "未選擇",
-  "timeSchemeUsageCourseRefPrefix": "課程引用：",
   "mainTimeSchemeLabel": "主時間模板",
   "overrideTimeSchemeShortLabel": "副時間模板",
-  "timeSchemeBottomUsageSingle": "{first}",
-  "@timeSchemeBottomUsageSingle": {
-    "placeholders": {
-      "first": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeBottomUsageMulti": "{first} 等 {count} 節課程",
   "@timeSchemeBottomUsageMulti": {
     "placeholders": {
@@ -1232,15 +1136,6 @@
   "keepAliveConfirmTitle": "開啟後台保活服務",
   "keepAliveConfirmBody": "用於後台更新桌面小組件和課程提醒，不會讀取屏幕內容或代為點擊。需要系統無障礙權限，可隨時關閉。",
   "keepAliveConfirmGoAction": "去開啟",
-  "timeSchemeEntryCurrentPrefix": "目前：{name} · 切換、編輯節次和複製",
-  "@timeSchemeEntryCurrentPrefix": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "timeSchemeEntrySubtitle": "切換、編輯節次、複製和管理時間範本",
   "semesterOverviewCurrentWeek": "目前第 {current} 周 / 共 {total} 周",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -1261,20 +1156,11 @@
       }
     }
   },
-  "setSemesterStartDate": "設定開學日期",
   "semesterStartDateLabel": "開學日期",
   "syncedCurrentWeekMessage": "已同步到第 {week} 周",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
-        "type": "int"
-      }
-    }
-  },
-  "weekCountItem": "{count} 周",
-  "@weekCountItem": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1326,18 +1212,11 @@
   "guidePrivacyConsentLabel": "我已閱讀並同意友盟相關隱私說明",
   "exitAppAction": "退出應用",
   "agreeAndStartAction": "同意並開始使用",
-  "startUsingAction": "開始使用",
   "editCourseTitle": "編輯課程",
   "addCourseTitle": "添加課程",
   "deleteCourseTitle": "刪除課程",
   "courseDeleted": "課程已刪除",
-  "singleLessonLabel": "單節課",
-  "singleLessonHint": "適合補課、臨時加課，課程只會落在一個周次",
   "sharedInfoTitle": "共享資訊",
-  "sharedInfoHint": "查看共享欄位說明",
-  "sharedInfoSheetItemCourseName": "課程名稱：課程唯一標識，名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄",
-  "sharedInfoSheetItemShortName": "課程簡稱：用於超級島等精簡展示，開啓優先顯示簡稱後生效，建議 3 字以內",
-  "sharedInfoSheetItemSharedSync": "共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄",
   "reuseExistingCourseLabel": "沿用已有課程",
   "reuseExistingCourseHelper": "帶入這門課已有的資訊",
   "manualInputLabel": "手動填寫",
@@ -1351,16 +1230,6 @@
   "teacherLabel": "授課教師",
   "courseNatureLabel": "課程性質",
   "courseDescriptionOptional": "課程簡介（可選）",
-  "timeSchemeOverrideLabel": "時間模板",
-  "singleLessonWeekHint": "單節課只會出現在一個周次裡，適合補課、臨時加課",
-  "timeSchemeSetCountValue": "{count} 套",
-  "@timeSchemeSetCountValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileCountValue": "{count} 個",
   "@profileCountValue": {
     "placeholders": {
@@ -1447,7 +1316,6 @@
     }
   },
   "timeRangeValidationNoCrossDay": "結束時間必須晚於開始時間",
-  "timeSchemeNameEmptyValidation": "時間模板名稱不能為空",
   "liveTimeCorrectionNone": "不校正",
   "liveTimeCorrectionDelay": "整體延後 {seconds} 秒",
   "@liveTimeCorrectionDelay": {
@@ -1469,13 +1337,11 @@
   "liveClassReminderLeadSummaryKeepNormal": "課中普通通知，下課前切重點提醒",
   "liveClassReminderLeadSummaryIsland": "課中普通通知，下課前切超級島",
   "liveClassReminderLeadSummaryFocused": "下課前開始重點提醒",
-  "timetableProfilesEntrySubtitle": "新建、切換、複製、重新命名和刪除課表",
   "homeTitleSectionTitle": "首頁標題",
   "homeTitleStyleLabel": "標題樣式",
   "themeSeedSectionTitle": "應用主題色",
   "themeSeedSectionSubtitle": "影響頂部欄、強調色和全局主色調",
   "timetableBackgroundColorSectionTitle": "課表背景色",
-  "timetableBackgroundColorSectionSubtitle": "只作用於課表頁面的大背景",
   "defaultTimetablePreviewName": "預設課表",
   "beforeClassDisplaySettingsTitle": "上課前提醒顯示",
   "duringEndDisplaySettingsTitle": "課中／下課提醒顯示",
@@ -2355,8 +2221,6 @@
     }
   },
   "rescheduleTargetWeekLabel": "調到第幾周",
-  "weekdayFieldLabel": "星期",
-  "startSectionFieldLabel": "開始節次",
   "confirmRescheduleAction": "確認調課",
   "homeTitleStyleClassicLabel": "經典文字",
   "homeTitleStyleBrandLabel": "大 Logo",
@@ -2415,21 +2279,16 @@
   "scheduleTitleHint": "例如：開組會、辦證件、取快遞",
   "scheduleTitleRequired": "請輸入日程標題",
   "scheduleInfoSectionTitle": "日程資訊",
-  "scheduleInfoSectionSubtitle": "日程會按具體日期插入日視圖時間線，不會改動課程本身",
   "scheduleTimeSectionTitle": "時間安排",
-  "scheduleTimeSectionSubtitle": "選擇這條日程實際發生的日期和起止時間",
   "scheduleAppearanceSectionTitle": "顯示樣式",
-  "scheduleAppearanceSectionSubtitle": "選一個更容易和課程區分的日程顏色",
   "scheduleLocationLabel": "地點",
   "scheduleLocationHint": "選填",
-  "scheduleDateLabel": "日期",
   "scheduleStartGroupLabel": "開始",
   "scheduleEndGroupLabel": "結束",
   "scheduleStartDateLabel": "開始日期",
   "scheduleEndDateLabel": "結束日期",
   "scheduleStartTimeLabel": "開始時間",
   "scheduleEndTimeLabel": "結束時間",
-  "scheduleColorLabel": "日程顏色",
   "scheduleNoteLabel": "備註",
   "scheduleNoteHint": "選填",
   "scheduleBadgeLabel": "日程",
@@ -2443,7 +2302,6 @@
   },
   "scheduleTimeRangeInvalid": "結束時間必須晚於開始時間",
   "scheduleDateRangeInvalid": "結束日期不能早於開始日期",
-  "scheduleSingleDayHint": "同日結束時，結束時間必須晚於開始時間",
   "scheduleCrossDaySpanHint": "從 {start} 持續到 {end}",
   "scheduleSavedHint": "日程已新增",
   "scheduleUpdatedHint": "日程已更新",
@@ -2619,8 +2477,6 @@
   "clearRememberedTooltip": "清除已記住賬號",
   "copyCurrentAddressTooltip": "複製當前地址",
   "copiedCurrentAddress": "已複製當前地址",
-  "warehouseLoginHintLocalDebug": "當前為本地偵錯腳本模式",
-  "warehouseLoginHintImport": "在此登入教務系統後執行匯入",
   "webAddressHint": "輸入網頁地址",
   "goAction": "前往",
   "rememberedAccountLabel": "已記住賬號：{username}",
@@ -2853,12 +2709,7 @@
   },
   "scheduleEntrySingleTitle": "上課安排",
   "scheduleEntryCardSubtitle": "何時、哪些週、在哪裡",
-  "scheduleEntryTimeSectionTitle": "什麼時候上",
-  "scheduleEntryTimeSectionSubtitle": "選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同",
   "scheduleEntryWeeksSectionTitle": "哪些週上",
-  "scheduleEntryPeopleSectionTitle": "誰在哪裡上",
-  "scheduleEntryTimeSchemeSectionTitle": "特殊時間模板",
-  "scheduleEntryTimeSchemeSectionSubtitle": "預設跟隨當前課表；僅當本節課上下課時間與課表不同時才需要修改",
   "scheduleSectionNumberLabel": "{section}節",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -2878,7 +2729,6 @@
   "holidayNoUpcoming": "近期沒有假期",
   "holidayBadgeLabel": "休",
   "suspendedBadgeLabel": "停",
-  "suspendedStatusLabel": "停課",
   "courseActionUnsuspend": "恢復上課",
   "courseActionEditPrimary": "編輯課程",
   "courseActionRescheduleSecondary": "調課",
@@ -2996,8 +2846,6 @@
   "liveTestingHolidayModeEnabled": "假期模式已開啟",
   "liveTestingHolidayModeDisabled": "假期模式已關閉",
   "liveTestingHolidayModeEnabledDesc": "課程提醒和小組件將隱藏所有課程",
-  "textColorTitle": "文字顏色",
-  "textColorSubtitle": "自訂課表各區域嘅文字顏色",
   "textColorIndependentDetail": "獨立設定詳情顏色",
   "textColorCourseCardTitle": "課程卡片標題顏色",
   "textColorCourseCardDetail": "課程卡片詳情顏色",
@@ -3026,7 +2874,6 @@
       }
     }
   },
-  "textColorLowContrastWarning": "顏色對比度較低，可能會影響可讀性",
   "themeCurrentTheme": "當前主題",
   "themeBasedOnModified": "基於 {baseName} 已修改",
   "@themeBasedOnModified": {
@@ -3041,13 +2888,6 @@
   "themeUnsavedChangesMessage": "當前主題有未儲存的修改，是否儲存？",
   "themeDiscardAndApply": "放棄並套用",
   "themeNameHint": "輸入主題名稱",
-  "themePresetBlue": "預設藍",
-  "themePresetPurple": "暗夜紫",
-  "themePresetGreen": "森林綠",
-  "themePresetOrange": "暖陽橙",
-  "themePresetEyeCare": "護眼模式",
-  "themePresetHighContrast": "高對比度",
-  "themePresetDarkMinimal": "深色極簡",
   "foruiThemeNeutral": "中性灰",
   "foruiThemeMiuix": "默認",
   "foruiThemeZinc": "鋅灰",
@@ -3093,8 +2933,6 @@
   "statisticsSectionsUnit": "節",
   "statisticsSectionUnit": "節",
   "statisticsNoData": "暫無課程數據",
-  "statisticsCourseCountRatio": "門數比例",
-  "statisticsSectionCountRatio": "課時比例",
   "statisticsWeekSelector": "第 {week} 週",
   "@statisticsWeekSelector": {
     "placeholders": {
@@ -3183,22 +3021,10 @@
   "statisticsShareLabel": "分享統計",
   "statisticsExportTitle": "匯出統計",
   "statisticsExportModulesSection": "包含模組",
-  "statisticsExportFormatSection": "匯出格式",
-  "statisticsExportFormatImage": "長圖 PNG",
-  "statisticsExportFormatPdf": "PDF 文件",
   "statisticsExportAction": "開始匯出",
   "statisticsExportSelectModuleHint": "請至少選擇一個模組",
   "statisticsExportModuleOverview": "學期總覽",
   "statisticsExportBrandTagline": "把課程資訊做成系統體驗",
-  "statisticsExportGithubHint": "GitHub 搜尋專案：{url}",
-  "@statisticsExportGithubHint": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "statisticsExportQrScanHint": "掃碼造訪官網",
   "statisticsExportRankingMore": "另有 {count} 門課程未展示",
   "@statisticsExportRankingMore": {
     "placeholders": {
@@ -3287,7 +3113,6 @@
   "weeklyReportDisabledHint": "已關閉每週週報推送",
   "statisticsCompareTitle": "課表對比",
   "statisticsCompareActive": "當前課表",
-  "statisticsCompareNone": "暫無其他課表，可在課表管理中新建",
   "statisticsCompareDelta": "較當前 {delta} 節",
   "@statisticsCompareDelta": {
     "placeholders": {
@@ -3296,17 +3121,7 @@
       }
     }
   },
-  "statisticsCompareDetailTitle": "課表對比詳情",
-  "statisticsCompareWeek": "當前週",
   "statisticsMoreTitle": "深度分析",
-  "statisticsMoreGroupTrend": "趨勢 · 分佈",
-  "@statisticsMoreGroupTrend": {
-    "description": "Accordion group header: trend and distribution analysis entries"
-  },
-  "statisticsMoreGroupPeople": "教室 · 教師 · 排行",
-  "@statisticsMoreGroupPeople": {
-    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
-  },
   "statisticsNatureNoneRequired": "暫無必修",
   "@statisticsNatureNoneRequired": {
     "description": "Donut chart center hint when required-course count is zero"
@@ -3466,14 +3281,6 @@
     }
   },
   "statisticsAchievementDone": "已達成",
-  "statisticsWeekDailyHint": "點擊查看第 {week} 週詳情",
-  "@statisticsWeekDailyHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第{weeks}周",
   "@courseWeekListLabel": {
@@ -4928,14 +4735,6 @@
   "aboutAlreadyLatestHeadline": "已是最新版本",
   "aboutDownloadChannelSectionTitle": "下載渠道",
   "aboutMirrorProbeFailedLabel": "失敗",
-  "timeSchemeImportSupplementName": "{name} 導入補齊",
-  "@timeSchemeImportSupplementName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "未命名課表",
   "cloudBackupManualProtectedTitle": "手動備份永不過期",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 無默認登錄地址，請先輸入教務系統網址",
@@ -5228,7 +5027,6 @@
   "scheduleDateRuleErrorEndBeforeStart": "結束日期不能早於開始日期",
   "scheduleDateRuleErrorSchemeRequired": "請選擇時間模板",
   "scheduleDateRuleErrorNameRequired": "請填寫名稱",
-  "scheduleDateRuleNote": "地點匹配優先於日期規則。",
   "homeBandGlassMaterialLabel": "首頁頂欄玻璃",
   "homeBandGlassMaterialFollow": "跟隨預設材質",
   "headerBlurStyleGaussian": "高斯模糊",
@@ -5354,7 +5152,6 @@
   "scheduleDeleteScopeThis": "僅刪除本次",
   "scheduleDeleteScopeAll": "刪除全部重複日程",
   "scheduleOccurrenceEditHint": "你正在編輯這條重複日程的一次實例",
-  "scheduleRepeatEndRequired": "請選擇重複結束日期",
   "homeMenuTasksTitle": "任務清單",
   "taskListTitle": "任務清單",
   "addTask": "新增任務",
@@ -5620,7 +5417,6 @@
   "homePageWallpaperFileMissingToast": "桌布檔案已遺失，已還原做純色背景，請重新揀一張",
   "wallpaperPositionPickerTitle": "調整桌布顯示位置",
   "wallpaperPositionPickerResetTooltip": "重設",
-  "wallpaperPositionPickerDragHint": "拖曳桌布調整位置",
   "wallpaperPositionPickerSwitchWallpaper": "更換桌布",
   "wallpaperPositionPickerDone": "完成",
   "wallpaperPositionPickerExit": "退出",
@@ -5976,7 +5772,6 @@
   "weatherCitySearchHint": "輸入城市名稱",
   "weatherCitySearchEmpty": "沒有找到符合的城市",
   "weatherCitySearchFailed": "搜尋失敗，請稍後再試",
-  "weatherStatusLoading": "正在更新天氣",
   "weatherStatusFailed": "上次更新失敗",
   "weatherRetryAction": "重試",
   "weatherCoverageNote": "預報只覆蓋未來 16 天，更遠不顯示",

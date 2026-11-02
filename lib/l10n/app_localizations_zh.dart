@@ -24,9 +24,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get previewTitle => '预览';
 
   @override
-  String get timetableBackgroundPreview => '课表背景';
-
-  @override
   String get themeModeLabel => '主题模式';
 
   @override
@@ -99,24 +96,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get userGuideEntryTitle => '使用引导与权限';
 
   @override
-  String get userGuideEntrySubtitle => '简称建议、通知、自启动、电池策略';
-
-  @override
-  String get timetableManagementSectionTitle => '课表管理';
-
-  @override
   String get timeSchemeEntryTitle => '时间模板';
 
   @override
-  String get timeSchemeEntrySubtitleNoneSelected => '切换、编辑节次、复制和管理时间模板';
-
-  @override
   String get timeSchemeEntryNotSelected => '未选择';
-
-  @override
-  String timeSchemeEntrySubtitleSelected(String name) {
-    return '当前：$name · 切换、编辑节次和复制';
-  }
 
   @override
   String get dataTransferEntryTitle => '数据备份与迁移';
@@ -728,9 +711,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectSemesterWeekCountTitle => '选择学期周数';
 
   @override
-  String get selectSemesterWeekCountSubtitle => '不同学校可按实际教学周数调整';
-
-  @override
   String get unifiedCourseCardColorTitle => '统一课程卡片颜色';
 
   @override
@@ -1322,9 +1302,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get startUsingTitle => '开始使用';
 
   @override
-  String get startUsingSubtitle => '直接进入软件，并继续完成首次使用说明';
-
-  @override
   String get importTimetableTitle => '导入课表';
 
   @override
@@ -1335,12 +1312,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get restoreBackupSubtitle => '从 .mikcb 备份文件恢复旧数据';
-
-  @override
-  String get viewGuideTitle => '查看功能说明';
-
-  @override
-  String get viewGuideSubtitle => '先了解权限、超级岛和基础设置';
 
   @override
   String get migrationTitle => '迁移旧数据';
@@ -1427,16 +1398,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportAlipayHint => '使用支付宝扫一扫支持作者';
 
   @override
-  String get viewLargeImage => '查看大图';
-
-  @override
   String get saveToGallery => '保存到相册';
 
   @override
   String get supportCompleteThanks => '感谢你支持轻屿课表继续打磨';
-
-  @override
-  String get supportConfirmed => '我已经支持了';
 
   @override
   String get donorListTitle => '鸣谢名单';
@@ -1479,30 +1444,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportConfirmedShort => '已支持';
 
   @override
-  String get supportMonthlyGoalLabel => '本月服务器和证书续期进度';
-
-  @override
-  String supportGoalRaised(String raised, String goal) {
-    return '已筹：$raised / 目标 $goal';
-  }
-
-  @override
-  String supportBackerCount(int count) {
-    return '已有 $count 人献出爱心';
-  }
-
-  @override
-  String get supportDonorListFooter => '名单永久保留';
-
-  @override
-  String supportMarqueeThanks(String name, String amount) {
-    return '感谢 $name 赞助 $amount';
-  }
-
-  @override
-  String get supportMarqueeTail => '轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心';
-
-  @override
   String get scanQrWechatTitle => '使用微信扫描二维码';
 
   @override
@@ -1524,19 +1465,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String conflictCountLabel(int count) {
     return '冲突 $count 节';
   }
-
-  @override
-  String scheduledCountLabel(int count) {
-    return '共排课 $count 节';
-  }
-
-  @override
-  String scheduledCountWithConflictHint(int count) {
-    return '共排课 $count 节 · 展开查看冲突详情';
-  }
-
-  @override
-  String get teacherUnset => '未设置';
 
   @override
   String get confirmDeleteTitle => '确认删除';
@@ -1564,24 +1492,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get endSectionLabel => '结束节次';
 
   @override
-  String timeRangeLabel(String start, String end) {
-    return '时间：$start - $end';
-  }
-
-  @override
   String get locationLabel => '上课地点';
-
-  @override
-  String get singleLessonWeekTitle => '上课周次';
-
-  @override
-  String get singleLessonWeekSubtitle => '单节课只会出现在一个周次里，适合补课、临时加课';
-
-  @override
-  String get selectWeekLabel => '选择周次';
-
-  @override
-  String get weekSettingsTitle => '周次设置';
 
   @override
   String get rangeWeeksLabel => '连续周';
@@ -2036,15 +1947,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sectionTimesSubtitle => '如果当前课表正在使用这套模板，节次数量不能小于已使用的最大节次';
 
   @override
-  String get schemeListCurrentLabel => '当前';
-
-  @override
-  String get schemeListCountLabel => '数量';
-
-  @override
-  String get sectionCountLabel => '节数';
-
-  @override
   String get quickGenerateTimeSchemeTitle => '快捷生成课表时间';
 
   @override
@@ -2074,24 +1976,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程';
 
   @override
-  String get unnamedTimeScheme => '未命名模板';
-
-  @override
   String get unsetLabel => '未选择';
-
-  @override
-  String get timeSchemeUsageCourseRefPrefix => '课程引用：';
 
   @override
   String get mainTimeSchemeLabel => '主时间模板';
 
   @override
   String get overrideTimeSchemeShortLabel => '副时间模板';
-
-  @override
-  String timeSchemeBottomUsageSingle(String first) {
-    return '$first';
-  }
 
   @override
   String timeSchemeBottomUsageMulti(String first, int count) {
@@ -2425,14 +2316,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keepAliveConfirmGoAction => '去开启';
 
   @override
-  String timeSchemeEntryCurrentPrefix(String name) {
-    return '当前：$name · 切换、编辑节次和复制';
-  }
-
-  @override
-  String get timeSchemeEntrySubtitle => '切换、编辑节次、复制和管理时间模板';
-
-  @override
   String semesterOverviewCurrentWeek(int current, int total) {
     return '当前第 $current 周 / 共 $total 周';
   }
@@ -2446,19 +2329,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get setSemesterStartDate => '设置开学日期';
-
-  @override
   String get semesterStartDateLabel => '开学日期';
 
   @override
   String syncedCurrentWeekMessage(int week) {
     return '已同步到第 $week 周';
-  }
-
-  @override
-  String weekCountItem(int count) {
-    return '$count 周';
   }
 
   @override
@@ -2556,9 +2431,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agreeAndStartAction => '同意并开始使用';
 
   @override
-  String get startUsingAction => '开始使用';
-
-  @override
   String get editCourseTitle => '编辑课程';
 
   @override
@@ -2571,28 +2443,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseDeleted => '课程已删除';
 
   @override
-  String get singleLessonLabel => '单节课';
-
-  @override
-  String get singleLessonHint => '适合补课、临时加课，课程只会落在一个周次';
-
-  @override
   String get sharedInfoTitle => '共享信息';
-
-  @override
-  String get sharedInfoHint => '查看共享字段说明';
-
-  @override
-  String get sharedInfoSheetItemCourseName =>
-      '课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录';
-
-  @override
-  String get sharedInfoSheetItemShortName =>
-      '课程简称：用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内';
-
-  @override
-  String get sharedInfoSheetItemSharedSync =>
-      '共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有课程';
@@ -2632,17 +2483,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get courseDescriptionOptional => '课程简介（可选）';
-
-  @override
-  String get timeSchemeOverrideLabel => '时间模板';
-
-  @override
-  String get singleLessonWeekHint => '单节课只会出现在一个周次里，适合补课、临时加课';
-
-  @override
-  String timeSchemeSetCountValue(int count) {
-    return '$count 套';
-  }
 
   @override
   String profileCountValue(int count) {
@@ -2719,9 +2559,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timeRangeValidationNoCrossDay => '结束时间必须晚于开始时间';
 
   @override
-  String get timeSchemeNameEmptyValidation => '时间模板名称不能为空';
-
-  @override
   String get liveTimeCorrectionNone => '不矫正';
 
   @override
@@ -2747,9 +2584,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveClassReminderLeadSummaryFocused => '下课前开始重点提醒';
 
   @override
-  String get timetableProfilesEntrySubtitle => '新建、切换、复制、重命名和删除课表';
-
-  @override
   String get homeTitleSectionTitle => '首页标题';
 
   @override
@@ -2766,10 +2600,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timetableBackgroundColorSectionTitle => '课表背景色';
-
-  @override
-  String get timetableBackgroundColorSectionSubtitle =>
-      '纯色模式下作用于已选显示区域；可与背景图搭配使用';
 
   @override
   String get homePageWallpaperTitle => '背景图片';
@@ -2842,9 +2672,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wallpaperPositionPickerResetTooltip => '重置';
-
-  @override
-  String get wallpaperPositionPickerDragHint => '拖动壁纸调整位置';
 
   @override
   String get wallpaperPositionPickerSwitchWallpaper => '换壁纸';
@@ -4486,12 +4313,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rescheduleTargetWeekLabel => '调到第几周';
 
   @override
-  String get weekdayFieldLabel => '星期';
-
-  @override
-  String get startSectionFieldLabel => '开始节次';
-
-  @override
   String get confirmRescheduleAction => '确认调课';
 
   @override
@@ -4698,12 +4519,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get copiedCurrentAddress => '已复制当前地址';
 
   @override
-  String get warehouseLoginHintLocalDebug => '当前为本地调试脚本模式';
-
-  @override
-  String get warehouseLoginHintImport => '在此登录教务系统后执行导入';
-
-  @override
   String get webAddressHint => '输入网页地址';
 
   @override
@@ -4889,28 +4704,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleInfoSectionTitle => '日程信息';
 
   @override
-  String get scheduleInfoSectionSubtitle => '日程会按具体日期插入日视图时间线里，不会改动课程本身';
-
-  @override
   String get scheduleTimeSectionTitle => '时间安排';
 
   @override
-  String get scheduleTimeSectionSubtitle => '选择这条日程实际发生的日期和起止时间';
-
-  @override
   String get scheduleAppearanceSectionTitle => '显示样式';
-
-  @override
-  String get scheduleAppearanceSectionSubtitle => '选择一个更容易和课程区分的日程颜色';
 
   @override
   String get scheduleLocationLabel => '地点';
 
   @override
   String get scheduleLocationHint => '选填';
-
-  @override
-  String get scheduleDateLabel => '日期';
 
   @override
   String get scheduleStartGroupLabel => '开始';
@@ -4931,9 +4734,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleEndTimeLabel => '结束时间';
 
   @override
-  String get scheduleColorLabel => '日程颜色';
-
-  @override
   String get scheduleNoteLabel => '备注';
 
   @override
@@ -4952,9 +4752,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDateRangeInvalid => '结束日期不能早于开始日期';
-
-  @override
-  String get scheduleSingleDayHint => '同日结束时，结束时间必须晚于开始时间';
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
@@ -5158,23 +4955,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleEntryCardSubtitle => '何时、哪些周、在哪里';
 
   @override
-  String get scheduleEntryTimeSectionTitle => '什么时候上';
-
-  @override
-  String get scheduleEntryTimeSectionSubtitle => '选择星期几和第几节课；连堂请填写起止节次，单节课起止相同';
-
-  @override
   String get scheduleEntryWeeksSectionTitle => '哪些周上';
-
-  @override
-  String get scheduleEntryPeopleSectionTitle => '谁在哪里上';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊时间模板';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionSubtitle =>
-      '默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改';
 
   @override
   String scheduleSectionNumberLabel(int section) {
@@ -5213,9 +4994,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get suspendedBadgeLabel => '停';
-
-  @override
-  String get suspendedStatusLabel => '停课';
 
   @override
   String get courseActionUnsuspend => '恢复';
@@ -5518,12 +5296,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTestingHolidayModeEnabledDesc => '课程提醒和小组件将隐藏所有课程';
 
   @override
-  String get textColorTitle => '文字颜色';
-
-  @override
-  String get textColorSubtitle => '自定义课表各区域的文字颜色';
-
-  @override
   String get textColorIndependentDetail => '独立设置详情颜色';
 
   @override
@@ -5589,9 +5361,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get textColorLowContrastWarning => '颜色对比度较低，可能影响可读性';
-
-  @override
   String get themeCurrentTheme => '当前主题';
 
   @override
@@ -5613,27 +5382,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeNameHint => '输入主题名称';
-
-  @override
-  String get themePresetBlue => '默认蓝';
-
-  @override
-  String get themePresetPurple => '暗夜紫';
-
-  @override
-  String get themePresetGreen => '森林绿';
-
-  @override
-  String get themePresetOrange => '暖阳橙';
-
-  @override
-  String get themePresetEyeCare => '护眼模式';
-
-  @override
-  String get themePresetHighContrast => '高对比度';
-
-  @override
-  String get themePresetDarkMinimal => '深色极简';
 
   @override
   String get foruiThemeNeutral => '中性灰';
@@ -5733,12 +5481,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsNoData => '暂无课程数据';
 
   @override
-  String get statisticsCourseCountRatio => '门数比例';
-
-  @override
-  String get statisticsSectionCountRatio => '课时比例';
-
-  @override
   String statisticsWeekSelector(int week) {
     return '第 $week 周';
   }
@@ -5817,15 +5559,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsExportModulesSection => '包含模块';
 
   @override
-  String get statisticsExportFormatSection => '导出格式';
-
-  @override
-  String get statisticsExportFormatImage => '长图 PNG';
-
-  @override
-  String get statisticsExportFormatPdf => 'PDF 文档';
-
-  @override
   String get statisticsExportAction => '开始导出';
 
   @override
@@ -5836,14 +5569,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statisticsExportBrandTagline => '把课程信息做成系统体验';
-
-  @override
-  String statisticsExportGithubHint(String url) {
-    return 'GitHub 搜索项目：$url';
-  }
-
-  @override
-  String get statisticsExportQrScanHint => '扫码访问官网';
 
   @override
   String statisticsExportRankingMore(int count) {
@@ -5953,27 +5678,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsCompareActive => '当前课表';
 
   @override
-  String get statisticsCompareNone => '暂无其他课表，可在课表管理中新建';
-
-  @override
   String statisticsCompareDelta(String delta) {
     return '较当前 $delta 节';
   }
 
   @override
-  String get statisticsCompareDetailTitle => '课表对比详情';
-
-  @override
-  String get statisticsCompareWeek => '当前周';
-
-  @override
   String get statisticsMoreTitle => '深度分析';
-
-  @override
-  String get statisticsMoreGroupTrend => '趋势 · 分布';
-
-  @override
-  String get statisticsMoreGroupPeople => '教室 · 教师 · 排行';
 
   @override
   String get statisticsNatureNoneRequired => '暂无必修';
@@ -6186,11 +5896,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => '已达成';
-
-  @override
-  String statisticsWeekDailyHint(int week) {
-    return '点击查看第 $week 周详情';
-  }
 
   @override
   String get weekListSeparator => '、';
@@ -8421,11 +8126,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutMirrorProbeFailedLabel => '失败';
 
   @override
-  String timeSchemeImportSupplementName(String name) {
-    return '$name 导入补齐';
-  }
-
-  @override
   String get unnamedTimetableProfile => '未命名课表';
 
   @override
@@ -8783,9 +8483,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateRuleErrorNameRequired => '请填写名称';
 
   @override
-  String get scheduleDateRuleNote => '地点匹配优先于日期规则。';
-
-  @override
   String get homeBandGlassMaterialLabel => '首页顶栏玻璃';
 
   @override
@@ -9141,9 +8838,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleOccurrenceEditHint => '你正在编辑这条重复日程的一次实例';
-
-  @override
-  String get scheduleRepeatEndRequired => '请选择重复结束日期';
 
   @override
   String get homeMenuTasksTitle => '任务清单';
@@ -9835,9 +9529,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherCitySearchFailed => '搜索失败，请稍后重试';
 
   @override
-  String get weatherStatusLoading => '正在更新天气';
-
-  @override
   String get weatherStatusFailed => '上次更新失败';
 
   @override
@@ -10324,9 +10015,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get previewTitle => '預覽';
 
   @override
-  String get timetableBackgroundPreview => '課表背景';
-
-  @override
   String get themeModeLabel => '主題模式';
 
   @override
@@ -10399,24 +10087,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get userGuideEntryTitle => '使用引導與權限';
 
   @override
-  String get userGuideEntrySubtitle => '簡稱建議、通知、自啟動、電池策略';
-
-  @override
-  String get timetableManagementSectionTitle => '課表管理';
-
-  @override
   String get timeSchemeEntryTitle => '時間範本';
 
   @override
-  String get timeSchemeEntrySubtitleNoneSelected => '切換、編輯節次、複製和管理時間範本';
-
-  @override
   String get timeSchemeEntryNotSelected => '未選擇';
-
-  @override
-  String timeSchemeEntrySubtitleSelected(String name) {
-    return '目前：$name · 切換、編輯節次和複製';
-  }
 
   @override
   String get dataTransferEntryTitle => '資料備份與遷移';
@@ -11028,9 +10702,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get selectSemesterWeekCountTitle => '選擇學期周數';
 
   @override
-  String get selectSemesterWeekCountSubtitle => '不同學校可按實際教學周數調整';
-
-  @override
   String get unifiedCourseCardColorTitle => '統一課程卡片顏色';
 
   @override
@@ -11622,9 +11293,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get startUsingTitle => '開始使用';
 
   @override
-  String get startUsingSubtitle => '直接進入軟件，並繼續完成首次使用說明';
-
-  @override
   String get importTimetableTitle => '匯入課表';
 
   @override
@@ -11635,12 +11303,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get restoreBackupSubtitle => '從 .mikcb 備份檔案還原舊資料';
-
-  @override
-  String get viewGuideTitle => '查看功能說明';
-
-  @override
-  String get viewGuideSubtitle => '先了解權限、超級島和基礎設定';
 
   @override
   String get migrationTitle => '遷移舊資料';
@@ -11727,16 +11389,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get supportAlipayHint => '使用支付寶掃一掃支持作者';
 
   @override
-  String get viewLargeImage => '查看大圖';
-
-  @override
   String get saveToGallery => '保存到相冊';
 
   @override
   String get supportCompleteThanks => '感謝你支持輕嶼課表繼續打磨 ❤️';
-
-  @override
-  String get supportConfirmed => '我已經支持了';
 
   @override
   String get donorListTitle => '鳴謝名單';
@@ -11779,30 +11435,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get supportConfirmedShort => '已支持';
 
   @override
-  String get supportMonthlyGoalLabel => '本月伺服器和證書續期進度';
-
-  @override
-  String supportGoalRaised(String raised, String goal) {
-    return '已籌: $raised / 目標 $goal';
-  }
-
-  @override
-  String supportBackerCount(int count) {
-    return '已有 $count 人獻出愛心';
-  }
-
-  @override
-  String get supportDonorListFooter => '名單永久保留 💖';
-
-  @override
-  String supportMarqueeThanks(String name, String amount) {
-    return '🎉 感謝 $name 贊助 $amount';
-  }
-
-  @override
-  String get supportMarqueeTail => '輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！';
-
-  @override
   String get scanQrWechatTitle => '使用微信掃描二維碼';
 
   @override
@@ -11824,19 +11456,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String conflictCountLabel(int count) {
     return '衝突 $count 節';
   }
-
-  @override
-  String scheduledCountLabel(int count) {
-    return '共排課 $count 節';
-  }
-
-  @override
-  String scheduledCountWithConflictHint(int count) {
-    return '共排課 $count 節 · 展開查看衝突詳情';
-  }
-
-  @override
-  String get teacherUnset => '未置';
 
   @override
   String get confirmDeleteTitle => '確認刪除';
@@ -11864,24 +11483,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get endSectionLabel => '結束節次';
 
   @override
-  String timeRangeLabel(String start, String end) {
-    return '時間: $start - $end';
-  }
-
-  @override
   String get locationLabel => '上課地點';
-
-  @override
-  String get singleLessonWeekTitle => '上課周次';
-
-  @override
-  String get singleLessonWeekSubtitle => '單節課只會出現在一個周次裡，適合補課、臨時加課';
-
-  @override
-  String get selectWeekLabel => '選擇周次';
-
-  @override
-  String get weekSettingsTitle => '周次設定';
 
   @override
   String get rangeWeeksLabel => '連續周';
@@ -12336,15 +11938,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get sectionTimesSubtitle => '如果目前課表正在使用這套範本，節次數量不能小於已使用的最大節次';
 
   @override
-  String get schemeListCurrentLabel => '目前';
-
-  @override
-  String get schemeListCountLabel => '數量';
-
-  @override
-  String get sectionCountLabel => '節數';
-
-  @override
   String get quickGenerateTimeSchemeTitle => '快捷生成課表時間';
 
   @override
@@ -12374,24 +11967,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程';
 
   @override
-  String get unnamedTimeScheme => '未命名範本';
-
-  @override
   String get unsetLabel => '未選擇';
-
-  @override
-  String get timeSchemeUsageCourseRefPrefix => '課程引用：';
 
   @override
   String get mainTimeSchemeLabel => '主時間模板';
 
   @override
   String get overrideTimeSchemeShortLabel => '副時間模板';
-
-  @override
-  String timeSchemeBottomUsageSingle(String first) {
-    return '$first';
-  }
 
   @override
   String timeSchemeBottomUsageMulti(String first, int count) {
@@ -12725,14 +12307,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get keepAliveConfirmGoAction => '去開啟';
 
   @override
-  String timeSchemeEntryCurrentPrefix(String name) {
-    return '目前：$name · 切換、編輯節次和複製';
-  }
-
-  @override
-  String get timeSchemeEntrySubtitle => '切換、編輯節次、複製和管理時間範本';
-
-  @override
   String semesterOverviewCurrentWeek(int current, int total) {
     return '目前第 $current 周 / 共 $total 周';
   }
@@ -12746,19 +12320,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get setSemesterStartDate => '設定開學日期';
-
-  @override
   String get semesterStartDateLabel => '開學日期';
 
   @override
   String syncedCurrentWeekMessage(int week) {
     return '已同步到第 $week 周';
-  }
-
-  @override
-  String weekCountItem(int count) {
-    return '$count 周';
   }
 
   @override
@@ -12856,9 +12422,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get agreeAndStartAction => '同意並開始使用';
 
   @override
-  String get startUsingAction => '開始使用';
-
-  @override
   String get editCourseTitle => '編輯課程';
 
   @override
@@ -12871,28 +12434,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseDeleted => '課程已刪除';
 
   @override
-  String get singleLessonLabel => '單節課';
-
-  @override
-  String get singleLessonHint => '適合補課、臨時加課，課程只會落在一個周次';
-
-  @override
   String get sharedInfoTitle => '共享資訊';
-
-  @override
-  String get sharedInfoHint => '查看共享欄位說明';
-
-  @override
-  String get sharedInfoSheetItemCourseName =>
-      '課程名稱：課程唯一標識，名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄';
-
-  @override
-  String get sharedInfoSheetItemShortName =>
-      '課程簡稱：用於超級島等精簡展示，開啓優先顯示簡稱後生效，建議 3 字以內';
-
-  @override
-  String get sharedInfoSheetItemSharedSync =>
-      '共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有課程';
@@ -12932,17 +12474,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get courseDescriptionOptional => '課程簡介（可選）';
-
-  @override
-  String get timeSchemeOverrideLabel => '時間模板';
-
-  @override
-  String get singleLessonWeekHint => '單節課只會出現在一個周次裡，適合補課、臨時加課';
-
-  @override
-  String timeSchemeSetCountValue(int count) {
-    return '$count 套';
-  }
 
   @override
   String profileCountValue(int count) {
@@ -13019,9 +12550,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間';
 
   @override
-  String get timeSchemeNameEmptyValidation => '時間模板名稱不能為空';
-
-  @override
   String get liveTimeCorrectionNone => '不校正';
 
   @override
@@ -13047,9 +12575,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveClassReminderLeadSummaryFocused => '下課前開始重點提醒';
 
   @override
-  String get timetableProfilesEntrySubtitle => '新建、切換、複製、重新命名和刪除課表';
-
-  @override
   String get homeTitleSectionTitle => '首頁標題';
 
   @override
@@ -13066,9 +12591,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
-
-  @override
-  String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -13141,9 +12663,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get wallpaperPositionPickerResetTooltip => '重設';
-
-  @override
-  String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';
 
   @override
   String get wallpaperPositionPickerSwitchWallpaper => '更換桌布';
@@ -14785,12 +14304,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get rescheduleTargetWeekLabel => '調到第幾周';
 
   @override
-  String get weekdayFieldLabel => '星期';
-
-  @override
-  String get startSectionFieldLabel => '開始節次';
-
-  @override
   String get confirmRescheduleAction => '確認調課';
 
   @override
@@ -14997,12 +14510,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get copiedCurrentAddress => '已複製當前地址';
 
   @override
-  String get warehouseLoginHintLocalDebug => '當前為本地偵錯腳本模式';
-
-  @override
-  String get warehouseLoginHintImport => '在此登入教務系統後執行匯入';
-
-  @override
   String get webAddressHint => '輸入網頁地址';
 
   @override
@@ -15188,28 +14695,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleInfoSectionTitle => '日程資訊';
 
   @override
-  String get scheduleInfoSectionSubtitle => '日程會按具體日期插入日視圖時間線，不會改動課程本身';
-
-  @override
   String get scheduleTimeSectionTitle => '時間安排';
 
   @override
-  String get scheduleTimeSectionSubtitle => '選擇這條日程實際發生的日期和起止時間';
-
-  @override
   String get scheduleAppearanceSectionTitle => '顯示樣式';
-
-  @override
-  String get scheduleAppearanceSectionSubtitle => '選一個更容易和課程區分的日程顏色';
 
   @override
   String get scheduleLocationLabel => '地點';
 
   @override
   String get scheduleLocationHint => '選填';
-
-  @override
-  String get scheduleDateLabel => '日期';
 
   @override
   String get scheduleStartGroupLabel => '開始';
@@ -15230,9 +14725,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleEndTimeLabel => '結束時間';
 
   @override
-  String get scheduleColorLabel => '日程顏色';
-
-  @override
   String get scheduleNoteLabel => '備註';
 
   @override
@@ -15251,9 +14743,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRangeInvalid => '結束日期不能早於開始日期';
-
-  @override
-  String get scheduleSingleDayHint => '同日結束時，結束時間必須晚於開始時間';
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
@@ -15457,23 +14946,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleEntryCardSubtitle => '何時、哪些週、在哪裡';
 
   @override
-  String get scheduleEntryTimeSectionTitle => '什麼時候上';
-
-  @override
-  String get scheduleEntryTimeSectionSubtitle => '選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同';
-
-  @override
   String get scheduleEntryWeeksSectionTitle => '哪些週上';
-
-  @override
-  String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間模板';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionSubtitle =>
-      '預設跟隨當前課表；僅當本節課上下課時間與課表不同時才需要修改';
 
   @override
   String scheduleSectionNumberLabel(int section) {
@@ -15512,9 +14985,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get suspendedBadgeLabel => '停';
-
-  @override
-  String get suspendedStatusLabel => '停課';
 
   @override
   String get courseActionUnsuspend => '恢復上課';
@@ -15817,12 +15287,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveTestingHolidayModeEnabledDesc => '課程提醒和小組件將隱藏所有課程';
 
   @override
-  String get textColorTitle => '文字顏色';
-
-  @override
-  String get textColorSubtitle => '自訂課表各區域嘅文字顏色';
-
-  @override
   String get textColorIndependentDetail => '獨立設定詳情顏色';
 
   @override
@@ -15888,9 +15352,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get textColorLowContrastWarning => '顏色對比度較低，可能會影響可讀性';
-
-  @override
   String get themeCurrentTheme => '當前主題';
 
   @override
@@ -15912,27 +15373,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeNameHint => '輸入主題名稱';
-
-  @override
-  String get themePresetBlue => '預設藍';
-
-  @override
-  String get themePresetPurple => '暗夜紫';
-
-  @override
-  String get themePresetGreen => '森林綠';
-
-  @override
-  String get themePresetOrange => '暖陽橙';
-
-  @override
-  String get themePresetEyeCare => '護眼模式';
-
-  @override
-  String get themePresetHighContrast => '高對比度';
-
-  @override
-  String get themePresetDarkMinimal => '深色極簡';
 
   @override
   String get foruiThemeNeutral => '中性灰';
@@ -16032,12 +15472,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get statisticsNoData => '暫無課程數據';
 
   @override
-  String get statisticsCourseCountRatio => '門數比例';
-
-  @override
-  String get statisticsSectionCountRatio => '課時比例';
-
-  @override
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
   }
@@ -16116,15 +15550,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get statisticsExportModulesSection => '包含模組';
 
   @override
-  String get statisticsExportFormatSection => '匯出格式';
-
-  @override
-  String get statisticsExportFormatImage => '長圖 PNG';
-
-  @override
-  String get statisticsExportFormatPdf => 'PDF 文件';
-
-  @override
   String get statisticsExportAction => '開始匯出';
 
   @override
@@ -16135,14 +15560,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsExportBrandTagline => '把課程資訊做成系統體驗';
-
-  @override
-  String statisticsExportGithubHint(String url) {
-    return 'GitHub 搜尋專案：$url';
-  }
-
-  @override
-  String get statisticsExportQrScanHint => '掃碼造訪官網';
 
   @override
   String statisticsExportRankingMore(int count) {
@@ -16252,27 +15669,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get statisticsCompareActive => '當前課表';
 
   @override
-  String get statisticsCompareNone => '暫無其他課表，可在課表管理中新建';
-
-  @override
   String statisticsCompareDelta(String delta) {
     return '較當前 $delta 節';
   }
 
   @override
-  String get statisticsCompareDetailTitle => '課表對比詳情';
-
-  @override
-  String get statisticsCompareWeek => '當前週';
-
-  @override
   String get statisticsMoreTitle => '深度分析';
-
-  @override
-  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
-
-  @override
-  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
 
   @override
   String get statisticsNatureNoneRequired => '暫無必修';
@@ -16485,11 +15887,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String statisticsWeekDailyHint(int week) {
-    return '點擊查看第 $week 週詳情';
-  }
 
   @override
   String get weekListSeparator => '、';
@@ -18760,11 +18157,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get aboutMirrorProbeFailedLabel => '失敗';
 
   @override
-  String timeSchemeImportSupplementName(String name) {
-    return '$name 導入補齊';
-  }
-
-  @override
   String get unnamedTimetableProfile => '未命名課表';
 
   @override
@@ -19122,9 +18514,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
 
   @override
-  String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
-
-  @override
   String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
 
   @override
@@ -19480,9 +18869,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleOccurrenceEditHint => '你正在編輯這條重複日程的一次實例';
-
-  @override
-  String get scheduleRepeatEndRequired => '請選擇重複結束日期';
 
   @override
   String get homeMenuTasksTitle => '任務清單';
@@ -20174,9 +19560,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get weatherCitySearchFailed => '搜尋失敗，請稍後再試';
 
   @override
-  String get weatherStatusLoading => '正在更新天氣';
-
-  @override
   String get weatherStatusFailed => '上次更新失敗';
 
   @override
@@ -20663,9 +20046,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get previewTitle => '預覽';
 
   @override
-  String get timetableBackgroundPreview => '課表背景';
-
-  @override
   String get themeModeLabel => '主題模式';
 
   @override
@@ -20738,24 +20118,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get userGuideEntryTitle => '使用引導與權限';
 
   @override
-  String get userGuideEntrySubtitle => '簡稱建議、通知、自啟動、電池策略';
-
-  @override
-  String get timetableManagementSectionTitle => '課表管理';
-
-  @override
   String get timeSchemeEntryTitle => '時間範本';
 
   @override
-  String get timeSchemeEntrySubtitleNoneSelected => '切換、編輯節次、複製和管理時間範本';
-
-  @override
   String get timeSchemeEntryNotSelected => '未選擇';
-
-  @override
-  String timeSchemeEntrySubtitleSelected(String name) {
-    return '目前：$name · 切換、編輯節次和複製';
-  }
 
   @override
   String get dataTransferEntryTitle => '資料備份與遷移';
@@ -21367,9 +20733,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get selectSemesterWeekCountTitle => '選擇學期周數';
 
   @override
-  String get selectSemesterWeekCountSubtitle => '不同學校可按實際教學周數調整';
-
-  @override
   String get unifiedCourseCardColorTitle => '統一課程卡片顏色';
 
   @override
@@ -21961,9 +21324,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get startUsingTitle => '開始使用';
 
   @override
-  String get startUsingSubtitle => '直接進入軟件，並繼續完成首次使用說明';
-
-  @override
   String get importTimetableTitle => '匯入課表';
 
   @override
@@ -21974,12 +21334,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get restoreBackupSubtitle => '從 .mikcb 備份檔案還原舊資料';
-
-  @override
-  String get viewGuideTitle => '查看功能說明';
-
-  @override
-  String get viewGuideSubtitle => '先了解權限、超級島和基礎設定';
 
   @override
   String get migrationTitle => '遷移舊資料';
@@ -22066,16 +21420,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get supportAlipayHint => '使用支付寶掃一掃支持作者';
 
   @override
-  String get viewLargeImage => '查看大圖';
-
-  @override
   String get saveToGallery => '保存到相冊';
 
   @override
   String get supportCompleteThanks => '感謝你支持輕嶼課表繼續打磨 ❤️';
-
-  @override
-  String get supportConfirmed => '我已經支持了';
 
   @override
   String get donorListTitle => '鳴謝名單';
@@ -22118,30 +21466,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get supportConfirmedShort => '已支持';
 
   @override
-  String get supportMonthlyGoalLabel => '本月伺服器和證書續期進度';
-
-  @override
-  String supportGoalRaised(String raised, String goal) {
-    return '已籌: $raised / 目標 $goal';
-  }
-
-  @override
-  String supportBackerCount(int count) {
-    return '已有 $count 人獻出愛心';
-  }
-
-  @override
-  String get supportDonorListFooter => '名單永久保留 💖';
-
-  @override
-  String supportMarqueeThanks(String name, String amount) {
-    return '🎉 感謝 $name 贊助 $amount';
-  }
-
-  @override
-  String get supportMarqueeTail => '輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！';
-
-  @override
   String get scanQrWechatTitle => '使用微信掃描二維碼';
 
   @override
@@ -22163,19 +21487,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String conflictCountLabel(int count) {
     return '衝突 $count 節';
   }
-
-  @override
-  String scheduledCountLabel(int count) {
-    return '共排課 $count 節';
-  }
-
-  @override
-  String scheduledCountWithConflictHint(int count) {
-    return '共排課 $count 節 · 展開查看衝突詳情';
-  }
-
-  @override
-  String get teacherUnset => '未置';
 
   @override
   String get confirmDeleteTitle => '確認刪除';
@@ -22203,24 +21514,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get endSectionLabel => '結束節次';
 
   @override
-  String timeRangeLabel(String start, String end) {
-    return '時間: $start - $end';
-  }
-
-  @override
   String get locationLabel => '上課地點';
-
-  @override
-  String get singleLessonWeekTitle => '上課周次';
-
-  @override
-  String get singleLessonWeekSubtitle => '單節課只會出現在一個周次裡，適合補課、臨時加課';
-
-  @override
-  String get selectWeekLabel => '選擇周次';
-
-  @override
-  String get weekSettingsTitle => '周次設定';
 
   @override
   String get rangeWeeksLabel => '連續周';
@@ -22675,15 +21969,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sectionTimesSubtitle => '如果目前課表正在使用這套範本，節次數量不能小於已使用的最大節次';
 
   @override
-  String get schemeListCurrentLabel => '目前';
-
-  @override
-  String get schemeListCountLabel => '數量';
-
-  @override
-  String get sectionCountLabel => '節數';
-
-  @override
   String get quickGenerateTimeSchemeTitle => '快捷生成課表時間';
 
   @override
@@ -22713,24 +21998,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '有課程正在把這套模板作為副時間模板使用，儲存後會同步更新所有引用課程';
 
   @override
-  String get unnamedTimeScheme => '未命名範本';
-
-  @override
   String get unsetLabel => '未選擇';
-
-  @override
-  String get timeSchemeUsageCourseRefPrefix => '課程引用：';
 
   @override
   String get mainTimeSchemeLabel => '主時間模板';
 
   @override
   String get overrideTimeSchemeShortLabel => '副時間模板';
-
-  @override
-  String timeSchemeBottomUsageSingle(String first) {
-    return '$first';
-  }
 
   @override
   String timeSchemeBottomUsageMulti(String first, int count) {
@@ -23064,14 +22338,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get keepAliveConfirmGoAction => '去開啟';
 
   @override
-  String timeSchemeEntryCurrentPrefix(String name) {
-    return '目前：$name · 切換、編輯節次和複製';
-  }
-
-  @override
-  String get timeSchemeEntrySubtitle => '切換、編輯節次、複製和管理時間範本';
-
-  @override
   String semesterOverviewCurrentWeek(int current, int total) {
     return '目前第 $current 周 / 共 $total 周';
   }
@@ -23085,19 +22351,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get setSemesterStartDate => '設定開學日期';
-
-  @override
   String get semesterStartDateLabel => '開學日期';
 
   @override
   String syncedCurrentWeekMessage(int week) {
     return '已同步到第 $week 周';
-  }
-
-  @override
-  String weekCountItem(int count) {
-    return '$count 周';
   }
 
   @override
@@ -23195,9 +22453,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get agreeAndStartAction => '同意並開始使用';
 
   @override
-  String get startUsingAction => '開始使用';
-
-  @override
   String get editCourseTitle => '編輯課程';
 
   @override
@@ -23210,28 +22465,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseDeleted => '課程已刪除';
 
   @override
-  String get singleLessonLabel => '單節課';
-
-  @override
-  String get singleLessonHint => '適合補課、臨時加課，課程只會落在一個周次';
-
-  @override
   String get sharedInfoTitle => '共享資訊';
-
-  @override
-  String get sharedInfoHint => '查看共享欄位說明';
-
-  @override
-  String get sharedInfoSheetItemCourseName =>
-      '課程名稱：課程唯一標識，名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄';
-
-  @override
-  String get sharedInfoSheetItemShortName =>
-      '課程簡稱：用於超級島等精簡展示，開啟優先顯示簡稱後生效，建議 3 字以內';
-
-  @override
-  String get sharedInfoSheetItemSharedSync =>
-      '共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有課程';
@@ -23271,17 +22505,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get courseDescriptionOptional => '課程簡介（可選）';
-
-  @override
-  String get timeSchemeOverrideLabel => '時間模板';
-
-  @override
-  String get singleLessonWeekHint => '單節課只會出現在一個周次裡，適合補課、臨時加課';
-
-  @override
-  String timeSchemeSetCountValue(int count) {
-    return '$count 套';
-  }
 
   @override
   String profileCountValue(int count) {
@@ -23358,9 +22581,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間';
 
   @override
-  String get timeSchemeNameEmptyValidation => '時間模板名稱不能為空';
-
-  @override
   String get liveTimeCorrectionNone => '不校正';
 
   @override
@@ -23386,9 +22606,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveClassReminderLeadSummaryFocused => '下課前開始重點提醒';
 
   @override
-  String get timetableProfilesEntrySubtitle => '新建、切換、複製、重新命名和刪除課表';
-
-  @override
   String get homeTitleSectionTitle => '首頁標題';
 
   @override
@@ -23405,9 +22622,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timetableBackgroundColorSectionTitle => '課表背景色';
-
-  @override
-  String get timetableBackgroundColorSectionSubtitle => '只作用於課表頁面的大背景';
 
   @override
   String get homePageWallpaperTitle => '背景圖片';
@@ -23480,9 +22694,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get wallpaperPositionPickerResetTooltip => '重設';
-
-  @override
-  String get wallpaperPositionPickerDragHint => '拖曳桌布調整位置';
 
   @override
   String get wallpaperPositionPickerSwitchWallpaper => '更換桌布';
@@ -25124,12 +24335,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get rescheduleTargetWeekLabel => '調到第几周';
 
   @override
-  String get weekdayFieldLabel => '星期';
-
-  @override
-  String get startSectionFieldLabel => '開始節次';
-
-  @override
   String get confirmRescheduleAction => '確認調課';
 
   @override
@@ -25336,12 +24541,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get copiedCurrentAddress => '已複製當前地址';
 
   @override
-  String get warehouseLoginHintLocalDebug => '當前為本地偵錯腳本模式';
-
-  @override
-  String get warehouseLoginHintImport => '在此登入教務系統後執行匯入';
-
-  @override
   String get webAddressHint => '輸入網頁地址';
 
   @override
@@ -25527,28 +24726,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleInfoSectionTitle => '日程資訊';
 
   @override
-  String get scheduleInfoSectionSubtitle => '日程會按具體日期插入日視圖時間線，不會改動課程本身';
-
-  @override
   String get scheduleTimeSectionTitle => '時間安排';
 
   @override
-  String get scheduleTimeSectionSubtitle => '選擇這條日程實際發生的日期和起止時間';
-
-  @override
   String get scheduleAppearanceSectionTitle => '顯示樣式';
-
-  @override
-  String get scheduleAppearanceSectionSubtitle => '選一個更容易和課程區分的日程顏色';
 
   @override
   String get scheduleLocationLabel => '地點';
 
   @override
   String get scheduleLocationHint => '選填';
-
-  @override
-  String get scheduleDateLabel => '日期';
 
   @override
   String get scheduleStartGroupLabel => '開始';
@@ -25569,9 +24756,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleEndTimeLabel => '結束時間';
 
   @override
-  String get scheduleColorLabel => '日程顏色';
-
-  @override
   String get scheduleNoteLabel => '備註';
 
   @override
@@ -25590,9 +24774,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateRangeInvalid => '結束日期不能早於開始日期';
-
-  @override
-  String get scheduleSingleDayHint => '同日結束時，結束時間必須晚於開始時間';
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
@@ -25796,23 +24977,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleEntryCardSubtitle => '何時、哪些週、在哪裡';
 
   @override
-  String get scheduleEntryTimeSectionTitle => '什麼時候上';
-
-  @override
-  String get scheduleEntryTimeSectionSubtitle => '選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同';
-
-  @override
   String get scheduleEntryWeeksSectionTitle => '哪些週上';
-
-  @override
-  String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間模板';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionSubtitle =>
-      '預設跟隨目前課表；僅當本節課上下課時間與課表不同時才需要修改';
 
   @override
   String scheduleSectionNumberLabel(int section) {
@@ -25851,9 +25016,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get suspendedBadgeLabel => '停';
-
-  @override
-  String get suspendedStatusLabel => '停課';
 
   @override
   String get courseActionUnsuspend => '恢復上課';
@@ -26156,12 +25318,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveTestingHolidayModeEnabledDesc => '課程提醒和小工具將隱藏所有課程';
 
   @override
-  String get textColorTitle => '文字顏色';
-
-  @override
-  String get textColorSubtitle => '自訂課表各區域的文字顏色';
-
-  @override
   String get textColorIndependentDetail => '獨立設定詳情顏色';
 
   @override
@@ -26227,9 +25383,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get textColorLowContrastWarning => '顏色對比度較低，可能會影響可讀性';
-
-  @override
   String get themeCurrentTheme => '當前主題';
 
   @override
@@ -26251,27 +25404,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeNameHint => '輸入主題名稱';
-
-  @override
-  String get themePresetBlue => '預設藍';
-
-  @override
-  String get themePresetPurple => '暗夜紫';
-
-  @override
-  String get themePresetGreen => '森林綠';
-
-  @override
-  String get themePresetOrange => '暖陽橙';
-
-  @override
-  String get themePresetEyeCare => '護眼模式';
-
-  @override
-  String get themePresetHighContrast => '高對比度';
-
-  @override
-  String get themePresetDarkMinimal => '深色極簡';
 
   @override
   String get foruiThemeNeutral => '中性灰';
@@ -26371,12 +25503,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get statisticsNoData => '暫無課程數據';
 
   @override
-  String get statisticsCourseCountRatio => '門數比例';
-
-  @override
-  String get statisticsSectionCountRatio => '課時比例';
-
-  @override
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
   }
@@ -26455,15 +25581,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get statisticsExportModulesSection => '包含模組';
 
   @override
-  String get statisticsExportFormatSection => '匯出格式';
-
-  @override
-  String get statisticsExportFormatImage => '長圖 PNG';
-
-  @override
-  String get statisticsExportFormatPdf => 'PDF 文件';
-
-  @override
   String get statisticsExportAction => '開始匯出';
 
   @override
@@ -26474,14 +25591,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsExportBrandTagline => '把課程資訊做成系統體驗';
-
-  @override
-  String statisticsExportGithubHint(String url) {
-    return 'GitHub 搜尋專案：$url';
-  }
-
-  @override
-  String get statisticsExportQrScanHint => '掃碼造訪官網';
 
   @override
   String statisticsExportRankingMore(int count) {
@@ -26591,27 +25700,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get statisticsCompareActive => '當前課表';
 
   @override
-  String get statisticsCompareNone => '暫無其他課表，可在課表管理中新建';
-
-  @override
   String statisticsCompareDelta(String delta) {
     return '較當前 $delta 節';
   }
 
   @override
-  String get statisticsCompareDetailTitle => '課表對比詳情';
-
-  @override
-  String get statisticsCompareWeek => '當前週';
-
-  @override
   String get statisticsMoreTitle => '深度分析';
-
-  @override
-  String get statisticsMoreGroupTrend => '趨勢 · 分佈';
-
-  @override
-  String get statisticsMoreGroupPeople => '教室 · 教師 · 排行';
 
   @override
   String get statisticsNatureNoneRequired => '暫無必修';
@@ -26824,11 +25918,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get statisticsAchievementDone => '已達成';
-
-  @override
-  String statisticsWeekDailyHint(int week) {
-    return '點擊查看第 $week 週詳情';
-  }
 
   @override
   String get weekListSeparator => '、';
@@ -29100,11 +28189,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get aboutMirrorProbeFailedLabel => '失敗';
 
   @override
-  String timeSchemeImportSupplementName(String name) {
-    return '$name 導入補齊';
-  }
-
-  @override
   String get unnamedTimetableProfile => '未命名課表';
 
   @override
@@ -29462,9 +28546,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scheduleDateRuleErrorNameRequired => '請填寫名稱';
 
   @override
-  String get scheduleDateRuleNote => '地點匹配優先於日期規則。';
-
-  @override
   String get homeBandGlassMaterialLabel => '首頁頂欄玻璃';
 
   @override
@@ -29820,9 +28901,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleOccurrenceEditHint => '你正在編輯這條重複行程的一次實例';
-
-  @override
-  String get scheduleRepeatEndRequired => '請選擇重複結束日期';
 
   @override
   String get homeMenuTasksTitle => '任務清單';
@@ -30512,9 +29590,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get weatherCitySearchFailed => '搜尋失敗，請稍後再試';
-
-  @override
-  String get weatherStatusLoading => '正在更新天氣';
 
   @override
   String get weatherStatusFailed => '上次更新失敗';

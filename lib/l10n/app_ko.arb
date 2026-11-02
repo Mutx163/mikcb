@@ -5,7 +5,6 @@
   "appTitleProfile": "경屿 시간표 프로필판",
   "appearanceTitle": "외관 및 색상",
   "previewTitle": "미리보기",
-  "timetableBackgroundPreview": "시간표 배경",
   "themeModeLabel": "테마 모드",
   "themeModeSystem": "시스템 연동",
   "themeModeLight": "라이트 모드",
@@ -30,19 +29,8 @@
   "appearanceThemeDisplaySectionTitle": "테마 및 표시",
   "homeWidgetEntryTitle": "홈 위젯",
   "userGuideEntryTitle": "사용 가이드 및 권한",
-  "userGuideEntrySubtitle": "약칭 설정, 알림, 자동 시작, 배터리 전략",
-  "timetableManagementSectionTitle": "시간표 관리",
   "timeSchemeEntryTitle": "시간 템플릿",
-  "timeSchemeEntrySubtitleNoneSelected": "전환, 교시 편집, 복사 및 템플릿 관리",
   "timeSchemeEntryNotSelected": "미선택",
-  "timeSchemeEntrySubtitleSelected": "현재: {name} · 전환, 교시 편집 및 복사",
-  "@timeSchemeEntrySubtitleSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "dataTransferEntryTitle": "데이터 백업 및 마이그레이션",
   "dataTransferEntrySubtitle": "시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다",
   "cloudSyncEntryTitle": "클라우드 동기화",
@@ -250,7 +238,6 @@
     }
   },
   "selectSemesterWeekCountTitle": "학기 주 수 선택",
-  "selectSemesterWeekCountSubtitle": "학교에 따라 실제 수업 주 수에 맞게 조정할 수 있습니다",
   "unifiedCourseCardColorTitle": "수업 카드 색상 통일",
   "unifiedCourseCardColorSubtitle": "끄면 각 수업의 개별 색상을 계속 사용합니다",
   "importRandomCourseColorTitle": "수업 색상 무작위",
@@ -600,13 +587,10 @@
   "welcomeSubtitle": "바로 시작하거나 수업을 가져오거나 백업에서 복원할 수 있습니다",
   "thirdPartyDisclaimer": "声明：본 앱은 제3자 개발자가 독립적으로 개발하였으며, 학습 및 연구 목적으로만 사용됩니다. Xiaomi(小米) 공식 소프트웨어가 아니며 Xiaomi Technology Co., Ltd.(小米科技有限責任公司)와 어떠한 종속, 협력 또는 승인 관계도 없습니다. 콘텐츠 침해가 있는 경우 권리자께서 작성자에게 연락해 주시면 즉시 관련 콘텐츠를下架 및 삭제하겠습니다.",
   "startUsingTitle": "시작하기",
-  "startUsingSubtitle": "앱에 진입하여 첫 사용 가이드를 계속 진행",
   "importTimetableTitle": "시간표 가져오기",
   "importTimetableSubtitle": ".ics 또는 AI 결과에서 가져오기",
   "restoreBackupTitle": "백업에서 복원",
   "restoreBackupSubtitle": ".mikcb 백업 파일에서 이전 데이터 복원",
-  "viewGuideTitle": "기능 설명 보기",
-  "viewGuideSubtitle": "권한, 슈퍼아일랜드 및 기본 설정 확인",
   "migrationTitle": "이전 데이터 마이그레이션",
   "migrationSafeTitle": "걱정 마세요, 데이터가 사라진 것이 아닙니다",
   "migrationSafeSubtitle": "앱 패키지명이 변경되어 홈 화면에 잠시 두 개의 아이콘이 표시됩니다. 이는 정상입니다. 이전 데이터는 이전 버전 앱에 있습니다. 먼저 이전 버전에서 백업한 뒤 새 버전에서 가져오세요",
@@ -634,10 +618,8 @@
   "alipayLabel": "Alipay",
   "supportWeChatHint": "WeChat으로 QR 코드를 스캔하여 개발자 지원",
   "supportAlipayHint": "Alipay로 QR 코드를 스캔하여 개발자 지원",
-  "viewLargeImage": "큰 이미지 보기",
   "saveToGallery": "갤러리에 저장",
   "supportCompleteThanks": "경屿 시간표의 지속적인 개선을 지원해 주셔서 감사합니다 ❤️",
-  "supportConfirmed": "지원했습니다",
   "donorListTitle": "감사 목록",
   "donorListLoadFailed": "온라인 감사 목록을 불러올 수 없습니다.",
   "reloadAction": "다시 불러오기",
@@ -664,39 +646,6 @@
   "supportTapQrHint": "탭하여 확대",
   "supportSaveShort": "저장",
   "supportConfirmedShort": "후원함",
-  "supportMonthlyGoalLabel": "이번 달 서버·인증서 갱신 진행률",
-  "supportGoalRaised": "모금: {raised} / 목표 {goal}",
-  "@supportGoalRaised": {
-    "placeholders": {
-      "raised": {
-        "type": "String"
-      },
-      "goal": {
-        "type": "String"
-      }
-    }
-  },
-  "supportBackerCount": "이미 {count}명이 후원",
-  "@supportBackerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "supportDonorListFooter": "명단은 영구 보존됩니다 💖",
-  "supportMarqueeThanks": "🎉 {name}님 {amount} 감사합니다",
-  "@supportMarqueeThanks": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "supportMarqueeTail": "경屿 시간표가 안정적으로 운영 중 — 여러분의 후원을 기다립니다!",
   "scanQrWechatTitle": "WeChat으로 QR 코드 스캔",
   "scanQrAlipayTitle": "Alipay로 QR 코드 스캔",
   "scanQrSubtitle": "스크린샷 후 스캔, 후원 감사합니다!",
@@ -711,23 +660,6 @@
       }
     }
   },
-  "scheduledCountLabel": "배치 합계 {count}건",
-  "@scheduledCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "scheduledCountWithConflictHint": "배치 합계 {count}건 · 펼쳐서 충돌 상세 확인",
-  "@scheduledCountWithConflictHint": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teacherUnset": "미설정",
   "confirmDeleteTitle": "삭제 확인",
   "confirmDeleteCourseMessage": "수업 \"{name}\"을(를) 삭제하시겠습니까?",
   "@confirmDeleteCourseMessage": {
@@ -749,22 +681,7 @@
   "weekdayLabel": "요일",
   "startSectionLabel": "시작 교시",
   "endSectionLabel": "종료 교시",
-  "timeRangeLabel": "시간: {start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
   "locationLabel": "수업 장소",
-  "singleLessonWeekTitle": "수업 주차",
-  "singleLessonWeekSubtitle": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
-  "selectWeekLabel": "주차 선택",
-  "weekSettingsTitle": "주차 설정",
   "rangeWeeksLabel": "연속 주",
   "customWeeksLabel": "사용자 정의 주",
   "startWeekLabel": "시작 주",
@@ -1021,9 +938,6 @@
   "resetDefaultAction": "기본값 복원",
   "sectionTimesTitle": "교시 시간",
   "sectionTimesSubtitle": "현재 시간표가 이 템플릿을 사용 중이면, 교시 수는 사용된 최대 교시 이상이어야 합니다",
-  "schemeListCurrentLabel": "현재",
-  "schemeListCountLabel": "수",
-  "sectionCountLabel": "교시 수",
   "quickGenerateTimeSchemeTitle": "시간표 시간 빠른 생성",
   "addBreakRuleAction": "대휴식 규칙 추가",
   "breakOverrideInvalidMessage": "대휴식 규칙을 수정하세요: 교시는 1 이상, 시간은 0 이상으로 입력",
@@ -1033,19 +947,9 @@
   "timeSchemeEditorActiveAndCoursesHint": "현재 시간표와 일부 수업이 이 템플릿을 사용 중입니다. 저장 후 관련된 모든 시간표와 수업이 동기화됩니다",
   "timeSchemeEditorActiveHint": "현재 시간표가 이 템플릿을 사용 중입니다. 저장 후 사용 중인 모든 시간표가 동기화됩니다",
   "timeSchemeEditorOverrideHint": "수업이 이 템플릿을 부 템플릿으로 사용 중입니다. 저장 후 참조하는 모든 수업이 동기화됩니다",
-  "unnamedTimeScheme": "이름 없는 템플릿",
   "unsetLabel": "미선택",
-  "timeSchemeUsageCourseRefPrefix": "수업 참조:",
   "mainTimeSchemeLabel": "메인 템플릿",
   "overrideTimeSchemeShortLabel": "부 템플릿",
-  "timeSchemeBottomUsageSingle": "{first}",
-  "@timeSchemeBottomUsageSingle": {
-    "placeholders": {
-      "first": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeBottomUsageMulti": "{first} 외 {count}건 수업",
   "@timeSchemeBottomUsageMulti": {
     "placeholders": {
@@ -1233,15 +1137,6 @@
   "keepAliveConfirmTitle": "백그라운드 유지 서비스 사용",
   "keepAliveConfirmBody": "이 서비스는 백그라운드에서 홈 화면 위젯을 새로 고치고 수업 알림을 다시 예약하는 용도로만 사용되며, 화면 내용을 읽거나 사용자를 대신하여 어떤 작업도 수행하지 않습니다. 사용하려면 시스템 설정에서 '접근성' 권한을 허용해야 하며, 언제든지 끌 수 있습니다.",
   "keepAliveConfirmGoAction": "활성화",
-  "timeSchemeEntryCurrentPrefix": "현재: {name} · 전환, 교시 편집 및 복사",
-  "@timeSchemeEntryCurrentPrefix": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "timeSchemeEntrySubtitle": "전환, 교시 편집, 복사 및 템플릿 관리",
   "semesterOverviewCurrentWeek": "현재 제{current}주 / 총 {total}주",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -1262,20 +1157,11 @@
       }
     }
   },
-  "setSemesterStartDate": "학기 시작일 설정",
   "semesterStartDateLabel": "학기 시작일",
   "syncedCurrentWeekMessage": "제{week}주에 동기화됨",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
-        "type": "int"
-      }
-    }
-  },
-  "weekCountItem": "{count}주",
-  "@weekCountItem": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1327,18 +1213,11 @@
   "guidePrivacyConsentLabel": "Umeng 관련 개인정보 처리방침을 읽고 동의합니다",
   "exitAppAction": "앱 종료",
   "agreeAndStartAction": "동의하고 시작",
-  "startUsingAction": "시작하기",
   "editCourseTitle": "수업 편집",
   "addCourseTitle": "수업 추가",
   "deleteCourseTitle": "수업 삭제",
   "courseDeleted": "수업이 삭제되었습니다",
-  "singleLessonLabel": "단일 수업",
-  "singleLessonHint": "보충 수업, 임시 추가에 적합합니다. 수업은 한 주차에만 표시됩니다",
   "sharedInfoTitle": "공유 정보",
-  "sharedInfoHint": "공유 필드 설명 보기",
-  "sharedInfoSheetItemCourseName": "수업명: 수업 고유 식별자. 동일한 이름의 여러 배치는 하나의 수업으로 처리됩니다. 이름을 변경하면 별도 수업 기록이 생성됩니다.",
-  "sharedInfoSheetItemShortName": "수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 수업 약칭 우선 표시 활성화 시 적용. 3자 이내 권장.",
-  "sharedInfoSheetItemSharedSync": "공유 동기화: 약칭, 색상, 성격, 개요 등은 동일 수업명의 다른 배치에 동기화됩니다.",
   "reuseExistingCourseLabel": "기존 수업 활용",
   "reuseExistingCourseHelper": "기존 정보를 채웁니다",
   "manualInputLabel": "수동 입력",
@@ -1352,16 +1231,6 @@
   "teacherLabel": "담당 교사",
   "courseNatureLabel": "수업 성격",
   "courseDescriptionOptional": "수업 개요 (선택)",
-  "timeSchemeOverrideLabel": "수업 시간 방안",
-  "singleLessonWeekHint": "단일 수업은 한 주차에만 나타납니다. 보충 수업이나 임시 추가에 적합합니다",
-  "timeSchemeSetCountValue": "{count}세트",
-  "@timeSchemeSetCountValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileCountValue": "{count}개",
   "@profileCountValue": {
     "placeholders": {
@@ -1448,7 +1317,6 @@
     }
   },
   "timeRangeValidationNoCrossDay": "종료 시간은 시작 시간보다 나중이어야 합니다",
-  "timeSchemeNameEmptyValidation": "템플릿 이름은 비워둘 수 없습니다",
   "liveTimeCorrectionNone": "보정 없음",
   "liveTimeCorrectionDelay": "전체를 {seconds}초 늦추기",
   "@liveTimeCorrectionDelay": {
@@ -1470,13 +1338,11 @@
   "liveClassReminderLeadSummaryKeepNormal": "수업 중 일반 알림, 종료 전 중요로",
   "liveClassReminderLeadSummaryIsland": "수업 중 일반 알림, 종료 전 아일랜드로",
   "liveClassReminderLeadSummaryFocused": "종료 전 중요 알림 시작",
-  "timetableProfilesEntrySubtitle": "새로 만들기, 전환, 복사, 이름 변경 및 삭제",
   "homeTitleSectionTitle": "홈 제목",
   "homeTitleStyleLabel": "제목 스타일",
   "themeSeedSectionTitle": "앱 테마 색상",
   "themeSeedSectionSubtitle": "상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다",
   "timetableBackgroundColorSectionTitle": "시간표 배경색",
-  "timetableBackgroundColorSectionSubtitle": "시간표 페이지의 큰 배경에만 적용됩니다",
   "defaultTimetablePreviewName": "기본 시간표",
   "beforeClassDisplaySettingsTitle": "수업 전 알림 표시",
   "duringEndDisplaySettingsTitle": "수업 중/종료 알림 표시",
@@ -2363,8 +2229,6 @@
     }
   },
   "rescheduleTargetWeekLabel": "변경할 주차",
-  "weekdayFieldLabel": "요일",
-  "startSectionFieldLabel": "시작 교시",
   "confirmRescheduleAction": "시간 변경 확인",
   "homeTitleStyleClassicLabel": "클래식 텍스트",
   "homeTitleStyleBrandLabel": "큰 로고",
@@ -2569,8 +2433,6 @@
   "clearRememberedTooltip": "기억된 계정 삭제",
   "copyCurrentAddressTooltip": "현재 주소 복사",
   "copiedCurrentAddress": "현재 주소를 복사했습니다",
-  "warehouseLoginHintLocalDebug": "현재 로컬 디버그 스크립트 모드",
-  "warehouseLoginHintImport": "여기서 교무 시스템에 로그인한 뒤 가져오기를 실행합니다",
   "webAddressHint": "웹 주소 입력",
   "goAction": "이동",
   "rememberedAccountLabel": "기억된 계정: {username}",
@@ -2696,21 +2558,16 @@
   "scheduleTitleHint": "예: 조모임, 서류 처리, 택배 수령",
   "scheduleTitleRequired": "일정 제목을 입력하세요",
   "scheduleInfoSectionTitle": "일정 정보",
-  "scheduleInfoSectionSubtitle": "일정은 구체적인 날짜로 일간 뷰 타임라인에 삽입됩니다. 수업 자체는 변경하지 않습니다",
   "scheduleTimeSectionTitle": "시간 설정",
-  "scheduleTimeSectionSubtitle": "이 일정이 실제로 발생하는 날짜와 시작/종료 시간을 선택하세요",
   "scheduleAppearanceSectionTitle": "표시 스타일",
-  "scheduleAppearanceSectionSubtitle": "수업과 쉽게 구분되는 일정 색상을 선택하세요",
   "scheduleLocationLabel": "장소",
   "scheduleLocationHint": "선택사항",
-  "scheduleDateLabel": "날짜",
   "scheduleStartGroupLabel": "시작",
   "scheduleEndGroupLabel": "종료",
   "scheduleStartDateLabel": "시작일",
   "scheduleEndDateLabel": "종료일",
   "scheduleStartTimeLabel": "시작 시간",
   "scheduleEndTimeLabel": "종료 시간",
-  "scheduleColorLabel": "일정 색상",
   "scheduleNoteLabel": "메모",
   "scheduleNoteHint": "선택사항",
   "scheduleBadgeLabel": "일정",
@@ -2724,7 +2581,6 @@
   },
   "scheduleTimeRangeInvalid": "종료 시간은 시작 시간보다 나중이어야 합니다",
   "scheduleDateRangeInvalid": "종료일은 시작일보다 이전일 수 없습니다",
-  "scheduleSingleDayHint": "같은 날 종료 시 종료 시간은 시작 시간보다 나중이어야 합니다",
   "scheduleCrossDaySpanHint": "{start}부터 {end}까지 연속으로 진행됩니다",
   "scheduleSavedHint": "일정이 추가되었습니다",
   "scheduleUpdatedHint": "일정이 업데이트되었습니다",
@@ -2849,12 +2705,7 @@
   },
   "scheduleEntrySingleTitle": "수업 일정",
   "scheduleEntryCardSubtitle": "요일, 주, 장소 설정",
-  "scheduleEntryTimeSectionTitle": "언제",
-  "scheduleEntryTimeSectionSubtitle": "요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다",
   "scheduleEntryWeeksSectionTitle": "어떤 주",
-  "scheduleEntryPeopleSectionTitle": "교수와 강의실",
-  "scheduleEntryTimeSchemeSectionTitle": "별도 시간표",
-  "scheduleEntryTimeSchemeSectionSubtitle": "기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요",
   "scheduleSectionNumberLabel": "{section}교시",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -2874,7 +2725,6 @@
   "holidayNoUpcoming": "다가오는 공휴일 없음",
   "holidayBadgeLabel": "휴",
   "suspendedBadgeLabel": "정",
-  "suspendedStatusLabel": "수업 중단",
   "courseActionUnsuspend": "복구",
   "courseActionEditPrimary": "수업 편집",
   "courseActionRescheduleSecondary": "시간 변경",
@@ -2996,8 +2846,6 @@
   "liveTestingHolidayModeEnabled": "휴일 모드 활성화됨",
   "liveTestingHolidayModeDisabled": "휴일 모드 비활성화됨",
   "liveTestingHolidayModeEnabledDesc": "수업 알림과 위젯이 모든 수업을 숨깁니다",
-  "textColorTitle": "텍스트 색상",
-  "textColorSubtitle": "시간표 각 영역의 텍스트 색상 사용자 지정",
   "textColorIndependentDetail": "세부 색상 개별 설정",
   "textColorCourseCardTitle": "수업 카드 제목 색상",
   "textColorCourseCardDetail": "수업 카드 세부 색상",
@@ -3026,7 +2874,6 @@
       }
     }
   },
-  "textColorLowContrastWarning": "색상 대비가 낮아 가독성에 영향을 줄 수 있습니다",
   "themeCurrentTheme": "현재 테마",
   "themeBasedOnModified": "{baseName} (수정됨)",
   "@themeBasedOnModified": {
@@ -3041,13 +2888,6 @@
   "themeUnsavedChangesMessage": "현재 테마에 저장되지 않은 변경사항이 있습니다. 저장하시겠습니까?",
   "themeDiscardAndApply": "버리고 적용",
   "themeNameHint": "테마 이름 입력",
-  "themePresetBlue": "기본 블루",
-  "themePresetPurple": "나이트 퍼플",
-  "themePresetGreen": "포레스트 그린",
-  "themePresetOrange": "웜 오렌지",
-  "themePresetEyeCare": "눈 보호",
-  "themePresetHighContrast": "고대비",
-  "themePresetDarkMinimal": "다크 미니멀",
   "foruiThemeNeutral": "뉴트럴",
   "foruiThemeMiuix": "기본",
   "foruiThemeZinc": "징크",
@@ -3093,8 +2933,6 @@
   "statisticsSectionsUnit": "교시",
   "statisticsSectionUnit": "교시",
   "statisticsNoData": "수업 데이터 없음",
-  "statisticsCourseCountRatio": "수업 수 비율",
-  "statisticsSectionCountRatio": "수업 시간 비율",
   "statisticsWeekSelector": "{week}주차",
   "@statisticsWeekSelector": {
     "placeholders": {
@@ -3183,22 +3021,10 @@
   "statisticsShareLabel": "통계 공유",
   "statisticsExportTitle": "통계 내보내기",
   "statisticsExportModulesSection": "포함할 모듈",
-  "statisticsExportFormatSection": "내보내기 형식",
-  "statisticsExportFormatImage": "긴 이미지 (PNG)",
-  "statisticsExportFormatPdf": "PDF 문서",
   "statisticsExportAction": "내보내기",
   "statisticsExportSelectModuleHint": "모듈을 하나 이상 선택하세요",
   "statisticsExportModuleOverview": "학기 개요",
   "statisticsExportBrandTagline": "수업 정보를 시스템 경험으로",
-  "statisticsExportGithubHint": "GitHub에서 검색: {url}",
-  "@statisticsExportGithubHint": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "statisticsExportQrScanHint": "스캔하여 공식 사이트",
   "statisticsExportRankingMore": "외 {count}개 수업은 생략",
   "@statisticsExportRankingMore": {
     "placeholders": {
@@ -3287,7 +3113,6 @@
   "weeklyReportDisabledHint": "주간 리포트가 꺼졌습니다",
   "statisticsCompareTitle": "시간표 비교",
   "statisticsCompareActive": "현재 시간표",
-  "statisticsCompareNone": "다른 시간표가 없습니다. 시간표 관리에서 만들 수 있어요",
   "statisticsCompareDelta": "현재 대비 {delta}교시",
   "@statisticsCompareDelta": {
     "placeholders": {
@@ -3296,17 +3121,7 @@
       }
     }
   },
-  "statisticsCompareDetailTitle": "비교 상세",
-  "statisticsCompareWeek": "현재 주차",
   "statisticsMoreTitle": "심층 분석",
-  "statisticsMoreGroupTrend": "추세 · 분포",
-  "@statisticsMoreGroupTrend": {
-    "description": "Accordion group header: trend and distribution analysis entries"
-  },
-  "statisticsMoreGroupPeople": "강의실 · 교수 · 순위",
-  "@statisticsMoreGroupPeople": {
-    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
-  },
   "statisticsNatureNoneRequired": "필수 과목 없음",
   "@statisticsNatureNoneRequired": {
     "description": "Donut chart center hint when required-course count is zero"
@@ -3466,14 +3281,6 @@
     }
   },
   "statisticsAchievementDone": "달성 완료",
-  "statisticsWeekDailyHint": "탭하여 {week}주차 세부 정보 보기",
-  "@statisticsWeekDailyHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
   "weekListSeparator": ", ",
   "courseWeekListLabel": "제{weeks}주",
   "@courseWeekListLabel": {
@@ -4928,14 +4735,6 @@
   "aboutAlreadyLatestHeadline": "최신 버전입니다",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
-  "timeSchemeImportSupplementName": "{name} (import supplement)",
-  "@timeSchemeImportSupplementName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5230,7 +5029,6 @@
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",
   "scheduleDateRuleErrorSchemeRequired": "Pick a time scheme",
   "scheduleDateRuleErrorNameRequired": "Enter a name",
-  "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "홈 상단 바 유리",
   "homeBandGlassMaterialFollow": "기본값 따르기",
   "headerBlurStyleGaussian": "가우시안 블러",
@@ -5356,7 +5154,6 @@
   "scheduleDeleteScopeThis": "이번 항목만 삭제",
   "scheduleDeleteScopeAll": "모든 반복 항목 삭제",
   "scheduleOccurrenceEditHint": "반복 일정의 한 항목을 편집하고 있습니다",
-  "scheduleRepeatEndRequired": "반복 종료일을 선택하세요",
   "homeMenuTasksTitle": "할 일",
   "taskListTitle": "할 일",
   "addTask": "할 일 추가",
@@ -5641,7 +5438,6 @@
   "homePageWallpaperFileMissingToast": "배경화면 파일이 없어 단색 배경으로 되돌렸습니다. 새 이미지를 선택하세요",
   "wallpaperPositionPickerTitle": "배경화면 표시 위치 조정",
   "wallpaperPositionPickerResetTooltip": "재설정",
-  "wallpaperPositionPickerDragHint": "배경화면을 드래그해 위치 조정",
   "wallpaperPositionPickerSwitchWallpaper": "배경화면 바꾸기",
   "wallpaperPositionPickerDone": "완료",
   "wallpaperPositionPickerExit": "나가기",
@@ -5976,7 +5772,6 @@
   "weatherCitySearchHint": "도시 이름 입력",
   "weatherCitySearchEmpty": "일치하는 도시를 찾을 수 없습니다",
   "weatherCitySearchFailed": "검색에 실패했습니다. 잠시 후 다시 시도해 주세요",
-  "weatherStatusLoading": "날씨 업데이트 중",
   "weatherStatusFailed": "지난 업데이트 실패",
   "weatherRetryAction": "다시 시도",
   "weatherCoverageNote": "예보는 향후 16일만",

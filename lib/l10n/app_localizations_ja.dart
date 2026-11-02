@@ -24,9 +24,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get previewTitle => 'プレビュー';
 
   @override
-  String get timetableBackgroundPreview => '時間割背景';
-
-  @override
   String get themeModeLabel => 'テーマモード';
 
   @override
@@ -99,24 +96,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get userGuideEntryTitle => '使用ガイドと権限';
 
   @override
-  String get userGuideEntrySubtitle => '略称設定、通知、自動起動、バッテリー戦略';
-
-  @override
-  String get timetableManagementSectionTitle => '時間割管理';
-
-  @override
   String get timeSchemeEntryTitle => '時間テンプレート';
 
   @override
-  String get timeSchemeEntrySubtitleNoneSelected => '切替、時限編集、コピーとテンプレート管理';
-
-  @override
   String get timeSchemeEntryNotSelected => '未選択';
-
-  @override
-  String timeSchemeEntrySubtitleSelected(String name) {
-    return '現在：$name・切替、時限編集とコピー';
-  }
 
   @override
   String get dataTransferEntryTitle => 'データバックアップと移行';
@@ -741,9 +724,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectSemesterWeekCountTitle => '学期週数を選択';
 
   @override
-  String get selectSemesterWeekCountSubtitle => '学校に合わせて実際の授業週数に調整可能';
-
-  @override
   String get unifiedCourseCardColorTitle => '授業カードの色を統一';
 
   @override
@@ -1346,9 +1326,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get startUsingTitle => '使い始める';
 
   @override
-  String get startUsingSubtitle => 'アプリに入り、初回使用ガイドを続行';
-
-  @override
   String get importTimetableTitle => '時間割インポート';
 
   @override
@@ -1359,12 +1336,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get restoreBackupSubtitle => '.mikcbバックアップファイルから旧データを復元';
-
-  @override
-  String get viewGuideTitle => '機能説明を見る';
-
-  @override
-  String get viewGuideSubtitle => '権限、スーパーアイランドと基本設定を確認';
 
   @override
   String get migrationTitle => '旧データ移行';
@@ -1453,16 +1424,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportAlipayHint => 'AlipayでQRコードをスキャンして作者を支援';
 
   @override
-  String get viewLargeImage => '大きな画像を見る';
-
-  @override
   String get saveToGallery => 'ギャラリーに保存';
 
   @override
   String get supportCompleteThanks => '軽屿時間割の継続的な改善を支援していただきありがとうございます ❤️';
-
-  @override
-  String get supportConfirmed => '支援しました';
 
   @override
   String get donorListTitle => '謝辞リスト';
@@ -1506,30 +1471,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportConfirmedShort => '支援済み';
 
   @override
-  String get supportMonthlyGoalLabel => '今月のサーバー・証明書更新進捗';
-
-  @override
-  String supportGoalRaised(String raised, String goal) {
-    return '集まった: $raised / 目標 $goal';
-  }
-
-  @override
-  String supportBackerCount(int count) {
-    return 'すでに $count 人が支援';
-  }
-
-  @override
-  String get supportDonorListFooter => '名前は永久に残ります 💖';
-
-  @override
-  String supportMarqueeThanks(String name, String amount) {
-    return '🎉 $name さん $amount ありがとう';
-  }
-
-  @override
-  String get supportMarqueeTail => '軽屿時間割は安定稼働中 — あなたの支援を待っています！';
-
-  @override
   String get scanQrWechatTitle => 'WeChatでQRコードをスキャン';
 
   @override
@@ -1551,19 +1492,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String conflictCountLabel(int count) {
     return '競合$count件';
   }
-
-  @override
-  String scheduledCountLabel(int count) {
-    return '排課合計$count件';
-  }
-
-  @override
-  String scheduledCountWithConflictHint(int count) {
-    return '排課合計$count件・展開して競合詳細を確認';
-  }
-
-  @override
-  String get teacherUnset => '未設定';
 
   @override
   String get confirmDeleteTitle => '削除確認';
@@ -1591,24 +1519,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get endSectionLabel => '終了時限';
 
   @override
-  String timeRangeLabel(String start, String end) {
-    return '時間：$start - $end';
-  }
-
-  @override
   String get locationLabel => '授業場所';
-
-  @override
-  String get singleLessonWeekTitle => '授業週次';
-
-  @override
-  String get singleLessonWeekSubtitle => '単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適';
-
-  @override
-  String get selectWeekLabel => '週次を選択';
-
-  @override
-  String get weekSettingsTitle => '週次設定';
 
   @override
   String get rangeWeeksLabel => '連続週';
@@ -2068,15 +1979,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '現在の時間割がこのテンプレートを使用中の場合、時限数は使用済みの最大時限以上である必要があります';
 
   @override
-  String get schemeListCurrentLabel => '現在';
-
-  @override
-  String get schemeListCountLabel => '数';
-
-  @override
-  String get sectionCountLabel => '時限数';
-
-  @override
   String get quickGenerateTimeSchemeTitle => '時間割時間をクイック生成';
 
   @override
@@ -2108,24 +2010,13 @@ class AppLocalizationsJa extends AppLocalizations {
       '授業がこのテンプレートを副テンプレートとして使用中，保存後、参照する全ての授業が同期更新されます';
 
   @override
-  String get unnamedTimeScheme => '名前未設定テンプレート';
-
-  @override
   String get unsetLabel => '未選択';
-
-  @override
-  String get timeSchemeUsageCourseRefPrefix => '授業参照：';
 
   @override
   String get mainTimeSchemeLabel => 'メインテンプレート';
 
   @override
   String get overrideTimeSchemeShortLabel => '副テンプレート';
-
-  @override
-  String timeSchemeBottomUsageSingle(String first) {
-    return '$first';
-  }
 
   @override
   String timeSchemeBottomUsageMulti(String first, int count) {
@@ -2461,14 +2352,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keepAliveConfirmGoAction => '有効にする';
 
   @override
-  String timeSchemeEntryCurrentPrefix(String name) {
-    return '現在：$name・切替、時限編集とコピー';
-  }
-
-  @override
-  String get timeSchemeEntrySubtitle => '切替、時限編集、コピーとテンプレート管理';
-
-  @override
   String semesterOverviewCurrentWeek(int current, int total) {
     return '現在第$current週 / 全$total週';
   }
@@ -2482,19 +2365,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get setSemesterStartDate => '学期開始日を設定';
-
-  @override
   String get semesterStartDateLabel => '学期開始日';
 
   @override
   String syncedCurrentWeekMessage(int week) {
     return '第$week週に同期済み';
-  }
-
-  @override
-  String weekCountItem(int count) {
-    return '$count週';
   }
 
   @override
@@ -2592,9 +2467,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agreeAndStartAction => '同意して使い始める';
 
   @override
-  String get startUsingAction => '使い始める';
-
-  @override
   String get editCourseTitle => '授業を編集';
 
   @override
@@ -2607,28 +2479,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseDeleted => '授業を削除しました';
 
   @override
-  String get singleLessonLabel => '単一授業';
-
-  @override
-  String get singleLessonHint => '振替授業や臨時追加に最適，授業は1つの週次にのみ表示';
-
-  @override
   String get sharedInfoTitle => '共有情報';
-
-  @override
-  String get sharedInfoHint => '共有フィールドの説明を表示';
-
-  @override
-  String get sharedInfoSheetItemCourseName =>
-      '授業名：授業の一意識別子。同名の複数排課は同一授業として扱われます。名称を変更すると別授業として記録されます。';
-
-  @override
-  String get sharedInfoSheetItemShortName =>
-      '授業略称：スーパーアイランド等での簡略表示に使用。手動入力が必要で、自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。';
-
-  @override
-  String get sharedInfoSheetItemSharedSync =>
-      '共有同期：略称、色、性質、概要等は同名授業の他排課へ同期されます。';
 
   @override
   String get reuseExistingCourseLabel => '既存授業を流用';
@@ -2671,17 +2522,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get courseDescriptionOptional => '授業概要（任意）';
-
-  @override
-  String get timeSchemeOverrideLabel => '授業時間方案';
-
-  @override
-  String get singleLessonWeekHint => '単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適';
-
-  @override
-  String timeSchemeSetCountValue(int count) {
-    return '$countセット';
-  }
 
   @override
   String profileCountValue(int count) {
@@ -2758,9 +2598,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeRangeValidationNoCrossDay => '終了時間は開始時間より後である必要があります';
 
   @override
-  String get timeSchemeNameEmptyValidation => 'テンプレート名は空にできません';
-
-  @override
   String get liveTimeCorrectionNone => '補正なし';
 
   @override
@@ -2786,9 +2623,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveClassReminderLeadSummaryFocused => '終了前に重点リマインダーを開始';
 
   @override
-  String get timetableProfilesEntrySubtitle => '新規作成、切替、コピー、名前変更と削除';
-
-  @override
   String get homeTitleSectionTitle => 'ホームタイトル';
 
   @override
@@ -2805,9 +2639,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get timetableBackgroundColorSectionTitle => '時間割背景色';
-
-  @override
-  String get timetableBackgroundColorSectionSubtitle => '時間割ページの大背景にのみ作用';
 
   @override
   String get homePageWallpaperTitle => '背景画像';
@@ -2884,9 +2715,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get wallpaperPositionPickerResetTooltip => 'リセット';
-
-  @override
-  String get wallpaperPositionPickerDragHint => '壁紙をドラッグして位置を調整';
 
   @override
   String get wallpaperPositionPickerSwitchWallpaper => '壁紙を変更';
@@ -4555,12 +4383,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get rescheduleTargetWeekLabel => '変更先の週';
 
   @override
-  String get weekdayFieldLabel => '曜日';
-
-  @override
-  String get startSectionFieldLabel => '開始時限';
-
-  @override
   String get confirmRescheduleAction => '時間変更確認';
 
   @override
@@ -4768,12 +4590,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copiedCurrentAddress => '現在のアドレスをコピーしました';
 
   @override
-  String get warehouseLoginHintLocalDebug => '現在ローカルデバッグスクリプトモード';
-
-  @override
-  String get warehouseLoginHintImport => 'ここで教務システムにログインしてインポートを実行';
-
-  @override
   String get webAddressHint => 'Webアドレスを入力';
 
   @override
@@ -4959,29 +4775,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleInfoSectionTitle => 'スケジュール情報';
 
   @override
-  String get scheduleInfoSectionSubtitle =>
-      'スケジュールは具体的な日付で日別ビューのタイムラインに挿入，授業自体は変更しない';
-
-  @override
   String get scheduleTimeSectionTitle => '時間設定';
 
   @override
-  String get scheduleTimeSectionSubtitle => 'このスケジュールが実際に発生する日付と開始/終了時間を選択';
-
-  @override
   String get scheduleAppearanceSectionTitle => '表示スタイル';
-
-  @override
-  String get scheduleAppearanceSectionSubtitle => '授業と区別しやすいスケジュールカラーを選択';
 
   @override
   String get scheduleLocationLabel => '場所';
 
   @override
   String get scheduleLocationHint => '任意';
-
-  @override
-  String get scheduleDateLabel => '日付';
 
   @override
   String get scheduleStartGroupLabel => '開始';
@@ -5002,9 +4805,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleEndTimeLabel => '終了時間';
 
   @override
-  String get scheduleColorLabel => 'スケジュールカラー';
-
-  @override
   String get scheduleNoteLabel => 'メモ';
 
   @override
@@ -5023,9 +4823,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleDateRangeInvalid => '終了日は開始日より前にすることはできません';
-
-  @override
-  String get scheduleSingleDayHint => '同日終了の場合、終了時間は開始時間より後である必要があります';
 
   @override
   String scheduleCrossDaySpanHint(Object start, Object end) {
@@ -5229,24 +5026,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleEntryCardSubtitle => '曜日・週・場所を設定';
 
   @override
-  String get scheduleEntryTimeSectionTitle => 'いつ';
-
-  @override
-  String get scheduleEntryTimeSectionSubtitle =>
-      '曜日と時限を選びます，連続時限は開始と終了を、単時限は同じ番号にします';
-
-  @override
   String get scheduleEntryWeeksSectionTitle => 'どの週';
-
-  @override
-  String get scheduleEntryPeopleSectionTitle => '教員と教室';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionTitle => '特別な時間割';
-
-  @override
-  String get scheduleEntryTimeSchemeSectionSubtitle =>
-      '既定は時間割に従います，ベル時刻が異なる場合のみ変更してください';
 
   @override
   String scheduleSectionNumberLabel(int section) {
@@ -5285,9 +5065,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get suspendedBadgeLabel => '停';
-
-  @override
-  String get suspendedStatusLabel => '授業停止';
 
   @override
   String get courseActionUnsuspend => '復旧';
@@ -5595,12 +5372,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveTestingHolidayModeEnabledDesc => '授業リマインダーとウィジェットは全授業を非表示';
 
   @override
-  String get textColorTitle => 'テキストの色';
-
-  @override
-  String get textColorSubtitle => '時間割の各エリアのテキスト色をカスタマイズ';
-
-  @override
   String get textColorIndependentDetail => '詳細色を個別に設定';
 
   @override
@@ -5666,9 +5437,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get textColorLowContrastWarning => '色のコントラストが低く、可読性に影響する可能性があります';
-
-  @override
   String get themeCurrentTheme => '現在のテーマ';
 
   @override
@@ -5690,27 +5458,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeNameHint => 'テーマ名を入力';
-
-  @override
-  String get themePresetBlue => 'デフォルトブルー';
-
-  @override
-  String get themePresetPurple => 'ナイトパープル';
-
-  @override
-  String get themePresetGreen => 'フォレストグリーン';
-
-  @override
-  String get themePresetOrange => 'ウォームオレンジ';
-
-  @override
-  String get themePresetEyeCare => 'アイケア';
-
-  @override
-  String get themePresetHighContrast => 'ハイコントラスト';
-
-  @override
-  String get themePresetDarkMinimal => 'ダークミニマル';
 
   @override
   String get foruiThemeNeutral => 'ニュートラル';
@@ -5810,12 +5557,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsNoData => '授業データがありません';
 
   @override
-  String get statisticsCourseCountRatio => '科目数の割合';
-
-  @override
-  String get statisticsSectionCountRatio => '授業時間の割合';
-
-  @override
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
   }
@@ -5894,15 +5635,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsExportModulesSection => '含める項目';
 
   @override
-  String get statisticsExportFormatSection => '書き出し形式';
-
-  @override
-  String get statisticsExportFormatImage => '長尺画像 (PNG)';
-
-  @override
-  String get statisticsExportFormatPdf => 'PDF 文書';
-
-  @override
   String get statisticsExportAction => '書き出す';
 
   @override
@@ -5913,14 +5645,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statisticsExportBrandTagline => '授業情報をシステム体験に';
-
-  @override
-  String statisticsExportGithubHint(String url) {
-    return 'GitHub で検索：$url';
-  }
-
-  @override
-  String get statisticsExportQrScanHint => 'スキャンで公式サイト';
 
   @override
   String statisticsExportRankingMore(int count) {
@@ -6030,27 +5754,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statisticsCompareActive => '現在の時間割';
 
   @override
-  String get statisticsCompareNone => '他の時間割がありません。時間割管理から作成できます';
-
-  @override
   String statisticsCompareDelta(String delta) {
     return '現在比 $delta コマ';
   }
 
   @override
-  String get statisticsCompareDetailTitle => '比較詳細';
-
-  @override
-  String get statisticsCompareWeek => '現在の週';
-
-  @override
   String get statisticsMoreTitle => '詳細分析';
-
-  @override
-  String get statisticsMoreGroupTrend => 'トレンド・分布';
-
-  @override
-  String get statisticsMoreGroupPeople => '教室・教員・ランキング';
 
   @override
   String get statisticsNatureNoneRequired => '必修なし';
@@ -6263,11 +5972,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statisticsAchievementDone => '達成済み';
-
-  @override
-  String statisticsWeekDailyHint(int week) {
-    return 'タップで第 $week 週の詳細';
-  }
 
   @override
   String get weekListSeparator => '、';
@@ -8669,11 +8373,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aboutMirrorProbeFailedLabel => 'Failed';
 
   @override
-  String timeSchemeImportSupplementName(String name) {
-    return '$name (import supplement)';
-  }
-
-  @override
   String get unnamedTimetableProfile => 'Unnamed timetable';
 
   @override
@@ -9042,10 +8741,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleDateRuleErrorNameRequired => 'Enter a name';
 
   @override
-  String get scheduleDateRuleNote =>
-      'Location match takes priority over date rules.';
-
-  @override
   String get homeBandGlassMaterialLabel => 'ホーム上部バーのガラス';
 
   @override
@@ -9409,9 +9104,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scheduleOccurrenceEditHint => '繰り返し予定の1回分を編集しています';
-
-  @override
-  String get scheduleRepeatEndRequired => '繰り返し終了日を選択してください';
 
   @override
   String get homeMenuTasksTitle => 'タスク';
@@ -10106,9 +9798,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get weatherCitySearchFailed => '検索に失敗しました。しばらくしてからお試しください';
-
-  @override
-  String get weatherStatusLoading => '天気を更新中';
 
   @override
   String get weatherStatusFailed => '前回の更新に失敗しました';

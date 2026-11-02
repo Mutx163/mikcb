@@ -5,7 +5,6 @@
   "appTitleProfile": "轻屿课表性能版",
   "appearanceTitle": "外观与配色",
   "previewTitle": "预览",
-  "timetableBackgroundPreview": "课表背景",
   "themeModeLabel": "主题模式",
   "themeModeSystem": "跟随系统",
   "themeModeLight": "浅色模式",
@@ -30,19 +29,8 @@
   "appearanceThemeDisplaySectionTitle": "主题与显示",
   "homeWidgetEntryTitle": "桌面小组件",
   "userGuideEntryTitle": "使用引导与权限",
-  "userGuideEntrySubtitle": "简称建议、通知、自启动、电池策略",
-  "timetableManagementSectionTitle": "课表管理",
   "timeSchemeEntryTitle": "时间模板",
-  "timeSchemeEntrySubtitleNoneSelected": "切换、编辑节次、复制和管理时间模板",
   "timeSchemeEntryNotSelected": "未选择",
-  "timeSchemeEntrySubtitleSelected": "当前：{name} · 切换、编辑节次和复制",
-  "@timeSchemeEntrySubtitleSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "dataTransferEntryTitle": "数据备份与迁移",
   "dataTransferEntrySubtitle": "导出完整课表文件，给别人直接导入使用",
   "coupleTimetableEntryTitle": "情侣课表",
@@ -373,7 +361,6 @@
     }
   },
   "selectSemesterWeekCountTitle": "选择学期周数",
-  "selectSemesterWeekCountSubtitle": "不同学校可按实际教学周数调整",
   "unifiedCourseCardColorTitle": "统一课程卡片颜色",
   "unifiedCourseCardColorSubtitle": "关闭后继续使用每门课程自己的颜色",
   "importRandomCourseColorTitle": "随机课程颜色",
@@ -733,13 +720,10 @@
   "welcomeSubtitle": "你可以先开始使用，也可以直接导入课程或从备份恢复",
   "thirdPartyDisclaimer": "特此声明：本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，与小米科技有限责任公司无任何隶属、合作或授权关系。如涉及内容侵权，请权利方联系作者，我们将第一时间下架并删除相关内容。",
   "startUsingTitle": "开始使用",
-  "startUsingSubtitle": "直接进入软件，并继续完成首次使用说明",
   "importTimetableTitle": "导入课表",
   "importTimetableSubtitle": "从 .ics 或 AI 解析结果导入",
   "restoreBackupTitle": "从备份恢复",
   "restoreBackupSubtitle": "从 .mikcb 备份文件恢复旧数据",
-  "viewGuideTitle": "查看功能说明",
-  "viewGuideSubtitle": "先了解权限、超级岛和基础设置",
   "migrationTitle": "迁移旧数据",
   "migrationSafeTitle": "别担心，这不是数据丢失",
   "migrationSafeSubtitle": "我们更换了应用包名，所以桌面上会暂时出现两个应用图标，这是正常现象，旧数据仍在旧版应用里，请先去旧版备份，再回到新版导入",
@@ -767,10 +751,8 @@
   "alipayLabel": "支付宝",
   "supportWeChatHint": "使用微信扫一扫支持作者",
   "supportAlipayHint": "使用支付宝扫一扫支持作者",
-  "viewLargeImage": "查看大图",
   "saveToGallery": "保存到相册",
   "supportCompleteThanks": "感谢你支持轻屿课表继续打磨",
-  "supportConfirmed": "我已经支持了",
   "donorListTitle": "鸣谢名单",
   "donorListLoadFailed": "暂时无法加载在线鸣谢名单",
   "reloadAction": "重新加载",
@@ -797,39 +779,6 @@
   "supportTapQrHint": "点击放大扫码",
   "supportSaveShort": "保存",
   "supportConfirmedShort": "已支持",
-  "supportMonthlyGoalLabel": "本月服务器和证书续期进度",
-  "supportGoalRaised": "已筹：{raised} / 目标 {goal}",
-  "@supportGoalRaised": {
-    "placeholders": {
-      "raised": {
-        "type": "String"
-      },
-      "goal": {
-        "type": "String"
-      }
-    }
-  },
-  "supportBackerCount": "已有 {count} 人献出爱心",
-  "@supportBackerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "supportDonorListFooter": "名单永久保留",
-  "supportMarqueeThanks": "感谢 {name} 赞助 {amount}",
-  "@supportMarqueeThanks": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "supportMarqueeTail": "轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心",
   "scanQrWechatTitle": "使用微信扫描二维码",
   "scanQrAlipayTitle": "使用支付宝扫描二维码",
   "scanQrSubtitle": "截图并导入扫一扫，感谢支持",
@@ -844,23 +793,6 @@
       }
     }
   },
-  "scheduledCountLabel": "共排课 {count} 节",
-  "@scheduledCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "scheduledCountWithConflictHint": "共排课 {count} 节 · 展开查看冲突详情",
-  "@scheduledCountWithConflictHint": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teacherUnset": "未设置",
   "confirmDeleteTitle": "确认删除",
   "confirmDeleteCourseMessage": "确定删除课程 {name}？",
   "@confirmDeleteCourseMessage": {
@@ -882,22 +814,7 @@
   "weekdayLabel": "星期",
   "startSectionLabel": "开始节次",
   "endSectionLabel": "结束节次",
-  "timeRangeLabel": "时间：{start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
   "locationLabel": "上课地点",
-  "singleLessonWeekTitle": "上课周次",
-  "singleLessonWeekSubtitle": "单节课只会出现在一个周次里，适合补课、临时加课",
-  "selectWeekLabel": "选择周次",
-  "weekSettingsTitle": "周次设置",
   "rangeWeeksLabel": "连续周",
   "customWeeksLabel": "自定义周",
   "startWeekLabel": "开始周",
@@ -1157,9 +1074,6 @@
   "resetDefaultAction": "恢复默认",
   "sectionTimesTitle": "节次时间",
   "sectionTimesSubtitle": "如果当前课表正在使用这套模板，节次数量不能小于已使用的最大节次",
-  "schemeListCurrentLabel": "当前",
-  "schemeListCountLabel": "数量",
-  "sectionCountLabel": "节数",
   "quickGenerateTimeSchemeTitle": "快捷生成课表时间",
   "addBreakRuleAction": "新增大课间规则",
   "breakOverrideInvalidMessage": "大课间规则要改：第几节后填 1 以上的数字，时长填 0 以上的数字",
@@ -1169,19 +1083,9 @@
   "timeSchemeEditorActiveAndCoursesHint": "当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程",
   "timeSchemeEditorActiveHint": "当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表",
   "timeSchemeEditorOverrideHint": "有课程正在把这套模板作为副时间模板使用，保存后会同步更新所有引用课程",
-  "unnamedTimeScheme": "未命名模板",
   "unsetLabel": "未选择",
-  "timeSchemeUsageCourseRefPrefix": "课程引用：",
   "mainTimeSchemeLabel": "主时间模板",
   "overrideTimeSchemeShortLabel": "副时间模板",
-  "timeSchemeBottomUsageSingle": "{first}",
-  "@timeSchemeBottomUsageSingle": {
-    "placeholders": {
-      "first": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeBottomUsageMulti": "{first} 等 {count} 节课程",
   "@timeSchemeBottomUsageMulti": {
     "placeholders": {
@@ -1377,15 +1281,6 @@
   "keepAliveConfirmTitle": "开启后台保活服务",
   "keepAliveConfirmBody": "用于后台更新桌面小组件和课程提醒，不会读取屏幕内容或代为点击。需要系统无障碍权限，可随时关闭。",
   "keepAliveConfirmGoAction": "去开启",
-  "timeSchemeEntryCurrentPrefix": "当前：{name} · 切换、编辑节次和复制",
-  "@timeSchemeEntryCurrentPrefix": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "timeSchemeEntrySubtitle": "切换、编辑节次、复制和管理时间模板",
   "semesterOverviewCurrentWeek": "当前第 {current} 周 / 共 {total} 周",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -1406,20 +1301,11 @@
       }
     }
   },
-  "setSemesterStartDate": "设置开学日期",
   "semesterStartDateLabel": "开学日期",
   "syncedCurrentWeekMessage": "已同步到第 {week} 周",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
-        "type": "int"
-      }
-    }
-  },
-  "weekCountItem": "{count} 周",
-  "@weekCountItem": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1472,18 +1358,11 @@
   "guidePrivacyConsentLabel": "我已阅读并同意友盟相关隐私说明",
   "exitAppAction": "退出应用",
   "agreeAndStartAction": "同意并开始使用",
-  "startUsingAction": "开始使用",
   "editCourseTitle": "编辑课程",
   "addCourseTitle": "添加课程",
   "deleteCourseTitle": "删除课程",
   "courseDeleted": "课程已删除",
-  "singleLessonLabel": "单节课",
-  "singleLessonHint": "适合补课、临时加课，课程只会落在一个周次",
   "sharedInfoTitle": "共享信息",
-  "sharedInfoHint": "查看共享字段说明",
-  "sharedInfoSheetItemCourseName": "课程名称：课程唯一标识，名称相同的多条排课视为同一课程；更改名称将形成独立课程记录",
-  "sharedInfoSheetItemShortName": "课程简称：用于超级岛等精简展示，开启优先显示简称后生效，建议 3 字以内",
-  "sharedInfoSheetItemSharedSync": "共享同步：课程简称、颜色、性质、简介等字段会同步给同名课程的其他排课记录",
   "reuseExistingCourseLabel": "沿用已有课程",
   "reuseExistingCourseHelper": "带入这门课已有的信息",
   "manualInputLabel": "手动填写",
@@ -1497,16 +1376,6 @@
   "teacherLabel": "授课教师",
   "courseNatureLabel": "课程性质",
   "courseDescriptionOptional": "课程简介（可选）",
-  "timeSchemeOverrideLabel": "时间模板",
-  "singleLessonWeekHint": "单节课只会出现在一个周次里，适合补课、临时加课",
-  "timeSchemeSetCountValue": "{count} 套",
-  "@timeSchemeSetCountValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileCountValue": "{count} 个",
   "@profileCountValue": {
     "placeholders": {
@@ -1593,7 +1462,6 @@
     }
   },
   "timeRangeValidationNoCrossDay": "结束时间必须晚于开始时间",
-  "timeSchemeNameEmptyValidation": "时间模板名称不能为空",
   "liveTimeCorrectionNone": "不矫正",
   "liveTimeCorrectionDelay": "整体延后 {seconds} 秒",
   "@liveTimeCorrectionDelay": {
@@ -1615,14 +1483,12 @@
   "liveClassReminderLeadSummaryKeepNormal": "课中普通通知，下课前切重点提醒",
   "liveClassReminderLeadSummaryIsland": "课中普通通知，下课前切超级岛",
   "liveClassReminderLeadSummaryFocused": "下课前开始重点提醒",
-  "timetableProfilesEntrySubtitle": "新建、切换、复制、重命名和删除课表",
   "homeTitleSectionTitle": "首页标题",
   "homeTitleStyleLabel": "标题样式",
   "themeSeedSectionTitle": "应用主题色",
   "themeSeedSectionSubtitle": "影响顶部栏、强调色和全局主色调",
   "frostedSheetSectionTitle": "玻璃材质",
   "timetableBackgroundColorSectionTitle": "课表背景色",
-  "timetableBackgroundColorSectionSubtitle": "纯色模式下作用于已选显示区域；可与背景图搭配使用",
   "homePageWallpaperTitle": "背景图片",
   "wallpaperSheetTabPicker": "壁纸",
   "wallpaperSheetTabSettings": "设置",
@@ -1647,7 +1513,6 @@
   "homePageWallpaperFileMissingToast": "壁纸文件已丢失，已恢复为纯色背景，请重新选择一张",
   "wallpaperPositionPickerTitle": "调整壁纸显示位置",
   "wallpaperPositionPickerResetTooltip": "重置",
-  "wallpaperPositionPickerDragHint": "拖动壁纸调整位置",
   "wallpaperPositionPickerSwitchWallpaper": "换壁纸",
   "wallpaperPositionPickerDone": "完成",
   "wallpaperPositionPickerExit": "退出",
@@ -2606,8 +2471,6 @@
     }
   },
   "rescheduleTargetWeekLabel": "调到第几周",
-  "weekdayFieldLabel": "星期",
-  "startSectionFieldLabel": "开始节次",
   "confirmRescheduleAction": "确认调课",
   "homeTitleStyleClassicLabel": "经典文字",
   "homeTitleStyleBrandLabel": "大 Logo",
@@ -2812,8 +2675,6 @@
   "clearRememberedTooltip": "清除已记住账号",
   "copyCurrentAddressTooltip": "复制当前地址",
   "copiedCurrentAddress": "已复制当前地址",
-  "warehouseLoginHintLocalDebug": "当前为本地调试脚本模式",
-  "warehouseLoginHintImport": "在此登录教务系统后执行导入",
   "webAddressHint": "输入网页地址",
   "goAction": "前往",
   "rememberedAccountLabel": "已记住账号：{username}",
@@ -2939,21 +2800,16 @@
   "scheduleTitleHint": "例如：开组会、办证件、拿快递",
   "scheduleTitleRequired": "请输入日程标题",
   "scheduleInfoSectionTitle": "日程信息",
-  "scheduleInfoSectionSubtitle": "日程会按具体日期插入日视图时间线里，不会改动课程本身",
   "scheduleTimeSectionTitle": "时间安排",
-  "scheduleTimeSectionSubtitle": "选择这条日程实际发生的日期和起止时间",
   "scheduleAppearanceSectionTitle": "显示样式",
-  "scheduleAppearanceSectionSubtitle": "选择一个更容易和课程区分的日程颜色",
   "scheduleLocationLabel": "地点",
   "scheduleLocationHint": "选填",
-  "scheduleDateLabel": "日期",
   "scheduleStartGroupLabel": "开始",
   "scheduleEndGroupLabel": "结束",
   "scheduleStartDateLabel": "开始日期",
   "scheduleEndDateLabel": "结束日期",
   "scheduleStartTimeLabel": "开始时间",
   "scheduleEndTimeLabel": "结束时间",
-  "scheduleColorLabel": "日程颜色",
   "scheduleNoteLabel": "备注",
   "scheduleNoteHint": "选填",
   "scheduleBadgeLabel": "日程",
@@ -2967,7 +2823,6 @@
   },
   "scheduleTimeRangeInvalid": "结束时间必须晚于开始时间",
   "scheduleDateRangeInvalid": "结束日期不能早于开始日期",
-  "scheduleSingleDayHint": "同日结束时，结束时间必须晚于开始时间",
   "scheduleCrossDaySpanHint": "从 {start} 持续到 {end}",
   "@scheduleCrossDaySpanHint": {
     "placeholders": {
@@ -3116,12 +2971,7 @@
   },
   "scheduleEntrySingleTitle": "上课安排",
   "scheduleEntryCardSubtitle": "何时、哪些周、在哪里",
-  "scheduleEntryTimeSectionTitle": "什么时候上",
-  "scheduleEntryTimeSectionSubtitle": "选择星期几和第几节课；连堂请填写起止节次，单节课起止相同",
   "scheduleEntryWeeksSectionTitle": "哪些周上",
-  "scheduleEntryPeopleSectionTitle": "谁在哪里上",
-  "scheduleEntryTimeSchemeSectionTitle": "特殊时间模板",
-  "scheduleEntryTimeSchemeSectionSubtitle": "默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改",
   "scheduleSectionNumberLabel": "{section} 节",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -3141,7 +2991,6 @@
   "holidayNoUpcoming": "近期没有节假日",
   "holidayBadgeLabel": "假",
   "suspendedBadgeLabel": "停",
-  "suspendedStatusLabel": "停课",
   "courseActionUnsuspend": "恢复",
   "courseActionEditPrimary": "编辑课程",
   "courseActionRescheduleSecondary": "调课",
@@ -3307,8 +3156,6 @@
   "liveTestingHolidayModeEnabled": "假期模式已开启",
   "liveTestingHolidayModeDisabled": "假期模式已关闭",
   "liveTestingHolidayModeEnabledDesc": "课程提醒和小组件将隐藏所有课程",
-  "textColorTitle": "文字颜色",
-  "textColorSubtitle": "自定义课表各区域的文字颜色",
   "textColorIndependentDetail": "独立设置详情颜色",
   "textColorCourseCardTitle": "课程卡片标题颜色",
   "textColorCourseCardDetail": "课程卡片详情颜色",
@@ -3337,7 +3184,6 @@
       }
     }
   },
-  "textColorLowContrastWarning": "颜色对比度较低，可能影响可读性",
   "themeCurrentTheme": "当前主题",
   "themeBasedOnModified": "基于 {baseName} 已修改",
   "@themeBasedOnModified": {
@@ -3352,13 +3198,6 @@
   "themeUnsavedChangesMessage": "当前主题有未保存的修改，是否保存？",
   "themeDiscardAndApply": "放弃并应用",
   "themeNameHint": "输入主题名称",
-  "themePresetBlue": "默认蓝",
-  "themePresetPurple": "暗夜紫",
-  "themePresetGreen": "森林绿",
-  "themePresetOrange": "暖阳橙",
-  "themePresetEyeCare": "护眼模式",
-  "themePresetHighContrast": "高对比度",
-  "themePresetDarkMinimal": "深色极简",
   "foruiThemeNeutral": "中性灰",
   "foruiThemeMiuix": "默认",
   "foruiThemeZinc": "锌灰",
@@ -3404,8 +3243,6 @@
   "statisticsSectionsUnit": "节",
   "statisticsSectionUnit": "节",
   "statisticsNoData": "暂无课程数据",
-  "statisticsCourseCountRatio": "门数比例",
-  "statisticsSectionCountRatio": "课时比例",
   "statisticsWeekSelector": "第 {week} 周",
   "@statisticsWeekSelector": {
     "placeholders": {
@@ -3494,22 +3331,10 @@
   "statisticsShareLabel": "分享统计",
   "statisticsExportTitle": "导出统计",
   "statisticsExportModulesSection": "包含模块",
-  "statisticsExportFormatSection": "导出格式",
-  "statisticsExportFormatImage": "长图 PNG",
-  "statisticsExportFormatPdf": "PDF 文档",
   "statisticsExportAction": "开始导出",
   "statisticsExportSelectModuleHint": "请至少选择一个模块",
   "statisticsExportModuleOverview": "学期总览",
   "statisticsExportBrandTagline": "把课程信息做成系统体验",
-  "statisticsExportGithubHint": "GitHub 搜索项目：{url}",
-  "@statisticsExportGithubHint": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "statisticsExportQrScanHint": "扫码访问官网",
   "statisticsExportRankingMore": "另有 {count} 门课程未展示",
   "@statisticsExportRankingMore": {
     "placeholders": {
@@ -3598,7 +3423,6 @@
   "weeklyReportDisabledHint": "已关闭每周周报推送",
   "statisticsCompareTitle": "课表对比",
   "statisticsCompareActive": "当前课表",
-  "statisticsCompareNone": "暂无其他课表，可在课表管理中新建",
   "statisticsCompareDelta": "较当前 {delta} 节",
   "@statisticsCompareDelta": {
     "placeholders": {
@@ -3607,17 +3431,7 @@
       }
     }
   },
-  "statisticsCompareDetailTitle": "课表对比详情",
-  "statisticsCompareWeek": "当前周",
   "statisticsMoreTitle": "深度分析",
-  "statisticsMoreGroupTrend": "趋势 · 分布",
-  "@statisticsMoreGroupTrend": {
-    "description": "Accordion group header: trend and distribution analysis entries"
-  },
-  "statisticsMoreGroupPeople": "教室 · 教师 · 排行",
-  "@statisticsMoreGroupPeople": {
-    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
-  },
   "statisticsNatureNoneRequired": "暂无必修",
   "@statisticsNatureNoneRequired": {
     "description": "Donut chart center hint when required-course count is zero"
@@ -3779,14 +3593,6 @@
     }
   },
   "statisticsAchievementDone": "已达成",
-  "statisticsWeekDailyHint": "点击查看第 {week} 周详情",
-  "@statisticsWeekDailyHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第 {weeks} 周",
   "@courseWeekListLabel": {
@@ -5241,14 +5047,6 @@
   "aboutAlreadyLatestHeadline": "已是最新版本",
   "aboutDownloadChannelSectionTitle": "下载渠道",
   "aboutMirrorProbeFailedLabel": "失败",
-  "timeSchemeImportSupplementName": "{name} 导入补齐",
-  "@timeSchemeImportSupplementName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "未命名课表",
   "cloudBackupManualProtectedTitle": "手动备份永不过期",
   "courseImportPortalUrlMissingBody": "{schoolName} {adapterName} 无默认登录地址，请先输入教务系统网址",
@@ -5537,7 +5335,6 @@
   "scheduleDateRuleErrorEndBeforeStart": "结束日期不能早于开始日期",
   "scheduleDateRuleErrorSchemeRequired": "请选择时间模板",
   "scheduleDateRuleErrorNameRequired": "请填写名称",
-  "scheduleDateRuleNote": "地点匹配优先于日期规则。",
   "homeBandGlassMaterialLabel": "首页顶栏玻璃",
   "homeBandGlassMaterialFollow": "跟随默认材质",
   "headerBlurStyleGaussian": "高斯模糊",
@@ -5662,7 +5459,6 @@
   "scheduleDeleteScopeThis": "仅删除本次",
   "scheduleDeleteScopeAll": "删除全部重复日程",
   "scheduleOccurrenceEditHint": "你正在编辑这条重复日程的一次实例",
-  "scheduleRepeatEndRequired": "请选择重复结束日期",
   "homeMenuTasksTitle": "任务清单",
   "taskListTitle": "任务清单",
   "addTask": "添加任务",
@@ -6086,7 +5882,6 @@
   "weatherCitySearchHint": "输入城市名称",
   "weatherCitySearchEmpty": "没有找到匹配的城市",
   "weatherCitySearchFailed": "搜索失败，请稍后重试",
-  "weatherStatusLoading": "正在更新天气",
   "weatherStatusFailed": "上次更新失败",
   "weatherRetryAction": "重试",
   "weatherCoverageNote": "预报只覆盖未来 16 天，更远不显示",

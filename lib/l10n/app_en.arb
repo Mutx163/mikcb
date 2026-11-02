@@ -5,7 +5,6 @@
   "appTitleProfile": "Qingyu Timetable Profile",
   "appearanceTitle": "Appearance",
   "previewTitle": "Preview",
-  "timetableBackgroundPreview": "Timetable Background",
   "themeModeLabel": "Theme Mode",
   "themeModeSystem": "Follow System",
   "themeModeLight": "Light",
@@ -30,19 +29,8 @@
   "appearanceThemeDisplaySectionTitle": "Theme & Display",
   "homeWidgetEntryTitle": "Home Widgets",
   "userGuideEntryTitle": "Guide & Permissions",
-  "userGuideEntrySubtitle": "Short-name suggestions, notifications, auto-start, and battery policy",
-  "timetableManagementSectionTitle": "Timetable Management",
   "timeSchemeEntryTitle": "Time Schemes",
-  "timeSchemeEntrySubtitleNoneSelected": "Switch, edit sections, duplicate, and manage time schemes",
   "timeSchemeEntryNotSelected": "Not set",
-  "timeSchemeEntrySubtitleSelected": "Current: {name} · switch, edit sections, and duplicate",
-  "@timeSchemeEntrySubtitleSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "dataTransferEntryTitle": "Backup & Migration",
   "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
   "coupleTimetableEntryTitle": "Couple Timetable",
@@ -373,7 +361,6 @@
     }
   },
   "selectSemesterWeekCountTitle": "Select Semester Week Count",
-  "selectSemesterWeekCountSubtitle": "Adjust this based on your school’s actual teaching weeks",
   "unifiedCourseCardColorTitle": "Use Unified Course Card Color",
   "unifiedCourseCardColorSubtitle": "If disabled, each course keeps its own color",
   "importRandomCourseColorTitle": "Random course colors",
@@ -723,13 +710,10 @@
   "welcomeSubtitle": "You can start using the app right away, or import courses / restore a backup first",
   "thirdPartyDisclaimer": "Disclaimer: This app is independently developed by a third-party developer for learning and research purposes only. It is not official Xiaomi software and has no affiliation, partnership, or authorization relationship with Xiaomi Technology Co., Ltd. If you believe any content infringes your rights, please contact the author. We will promptly remove the relevant content upon notification.",
   "startUsingTitle": "Start Using",
-  "startUsingSubtitle": "Enter the app directly and continue the first-use guide",
   "importTimetableTitle": "Import Timetable",
   "importTimetableSubtitle": "Import from .ics or AI result",
   "restoreBackupTitle": "Restore from Backup",
   "restoreBackupSubtitle": "Restore old data from a .mikcb backup file",
-  "viewGuideTitle": "View Guide",
-  "viewGuideSubtitle": "Read permissions, island, and basic setup first",
   "migrationTitle": "Migrate Old Data",
   "migrationSafeTitle": "Don’t worry, your data is not lost",
   "migrationSafeSubtitle": "We changed the app package name, so you may temporarily see two app icons. This is normal. Your old data is still in the old app. Back it up there first, then import it here",
@@ -757,10 +741,8 @@
   "alipayLabel": "Alipay",
   "supportWeChatHint": "Use WeChat to scan and support the creator",
   "supportAlipayHint": "Use Alipay to scan and support the creator",
-  "viewLargeImage": "View Large Image",
   "saveToGallery": "Save to Gallery",
   "supportCompleteThanks": "Thanks for supporting Qingyu Timetable ❤️",
-  "supportConfirmed": "I’ve Supported",
   "donorListTitle": "Acknowledgements",
   "donorListLoadFailed": "The online donor list is temporarily unavailable.",
   "reloadAction": "Reload",
@@ -787,39 +769,6 @@
   "supportTapQrHint": "Tap to enlarge",
   "supportSaveShort": "Save",
   "supportConfirmedShort": "Supported",
-  "supportMonthlyGoalLabel": "Monthly server & certificate renewal",
-  "supportGoalRaised": "Raised: {raised} / Goal {goal}",
-  "@supportGoalRaised": {
-    "placeholders": {
-      "raised": {
-        "type": "String"
-      },
-      "goal": {
-        "type": "String"
-      }
-    }
-  },
-  "supportBackerCount": "{count} supporters so far",
-  "@supportBackerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "supportDonorListFooter": "Names are kept permanently 💖",
-  "supportMarqueeThanks": "🎉 Thanks to {name} for {amount}",
-  "@supportMarqueeThanks": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "supportMarqueeTail": "Qingyu Timetable keeps running — thank you for your support!",
   "scanQrWechatTitle": "Scan with WeChat",
   "scanQrAlipayTitle": "Scan with Alipay",
   "scanQrSubtitle": "Screenshot and scan, thank you for your support!",
@@ -834,23 +783,6 @@
       }
     }
   },
-  "scheduledCountLabel": "{count} entries",
-  "@scheduledCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "scheduledCountWithConflictHint": "{count} entries · expand to review conflicts",
-  "@scheduledCountWithConflictHint": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teacherUnset": "Unknown Teacher",
   "confirmDeleteTitle": "Confirm Delete",
   "confirmDeleteCourseMessage": "Delete course {name}?",
   "@confirmDeleteCourseMessage": {
@@ -872,22 +804,7 @@
   "weekdayLabel": "Weekday",
   "startSectionLabel": "Start Section",
   "endSectionLabel": "End Section",
-  "timeRangeLabel": "Time: {start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
   "locationLabel": "Location",
-  "singleLessonWeekTitle": "Lesson Week",
-  "singleLessonWeekSubtitle": "Single lessons only appear in one week, which is ideal for make-up or temporary classes",
-  "selectWeekLabel": "Select Week",
-  "weekSettingsTitle": "Week Settings",
   "rangeWeeksLabel": "Continuous Weeks",
   "customWeeksLabel": "Custom Weeks",
   "startWeekLabel": "Start Week",
@@ -1140,31 +1057,18 @@
   "resetDefaultAction": "Restore Defaults",
   "sectionTimesTitle": "Section Times",
   "sectionTimesSubtitle": "If the current timetable is using this scheme, the section count cannot be lower than the maximum section already in use",
-  "schemeListCurrentLabel": "Current",
-  "schemeListCountLabel": "Count",
   "quickGenerateTimeSchemeTitle": "Quick Generate Timetable Times",
   "addBreakRuleAction": "Add Break Rule",
   "breakOverrideInvalidMessage": "Fix break rules: section number must be 1 or more, duration 0 or more",
   "afterSectionLabel": "After Section",
   "breakDurationMinutesLabel": "Break Duration (min)",
   "fillNumbersValidationMessage": "Please fill both section count and duration with numbers",
-  "sectionCountLabel": "Sections",
   "timeSchemeEditorActiveAndCoursesHint": "The current timetable and some courses are using this time scheme. Saving will update all related timetables and courses",
   "timeSchemeEditorActiveHint": "The current timetable is using this time scheme. Saving will update every timetable that relies on it",
   "timeSchemeEditorOverrideHint": "Some courses are using this time scheme as an override. Saving will update every referenced course",
-  "unnamedTimeScheme": "Unnamed Scheme",
   "unsetLabel": "Not Selected",
-  "timeSchemeUsageCourseRefPrefix": "Course references: ",
   "mainTimeSchemeLabel": "Main Scheme",
   "overrideTimeSchemeShortLabel": "Override Scheme",
-  "timeSchemeBottomUsageSingle": "{first}",
-  "@timeSchemeBottomUsageSingle": {
-    "placeholders": {
-      "first": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeBottomUsageMulti": "{first} and {count} course entries",
   "@timeSchemeBottomUsageMulti": {
     "placeholders": {
@@ -1353,15 +1257,6 @@
   "liveBeforeClassQuickActionAutoSubtitle": "Turns on automatically before class and restores after class",
   "liveBeforeClassQuickActionAutoOptionOff": "Off",
   "liveBeforeClassQuickActionAutoOptionMinutes": "{minutes} min before class",
-  "timeSchemeEntryCurrentPrefix": "Current: {name} · switch, edit sections, and duplicate",
-  "@timeSchemeEntryCurrentPrefix": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "timeSchemeEntrySubtitle": "Switch, edit section times, duplicate, and manage time schemes",
   "semesterOverviewCurrentWeek": "Week {current} / {total}",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -1382,20 +1277,11 @@
       }
     }
   },
-  "setSemesterStartDate": "Set Semester Start",
   "semesterStartDateLabel": "Semester Start Date",
   "syncedCurrentWeekMessage": "Synced to week {week}",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
-        "type": "int"
-      }
-    }
-  },
-  "weekCountItem": "{count} weeks",
-  "@weekCountItem": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1447,18 +1333,11 @@
   "guidePrivacyConsentLabel": "I have read and agree to the Umeng privacy notice",
   "exitAppAction": "Exit App",
   "agreeAndStartAction": "Agree and Start",
-  "startUsingAction": "Start Using",
   "editCourseTitle": "Edit Course",
   "addCourseTitle": "Add Course",
   "deleteCourseTitle": "Delete Course",
   "courseDeleted": "Course deleted",
-  "singleLessonLabel": "Single Lesson",
-  "singleLessonHint": "Best for make-up classes or temporary one-off lessons",
   "sharedInfoTitle": "Shared Info",
-  "sharedInfoHint": "View shared field descriptions",
-  "sharedInfoSheetItemCourseName": "Course name: Unique identifier. Schedule entries with the same name belong to one course; renaming creates a separate course record.",
-  "sharedInfoSheetItemShortName": "Course short name: Used for concise display in Super Island and similar surfaces. Must be entered manually; the system does not generate it automatically. Takes effect when Prefer course short name is enabled; limit to about 3 characters when possible.",
-  "sharedInfoSheetItemSharedSync": "Shared sync: Short name, color, nature, description, and related fields sync to other schedule entries under the same course name.",
   "reuseExistingCourseLabel": "Reuse Existing Course",
   "reuseExistingCourseHelper": "Fills in existing info",
   "manualInputLabel": "Enter Manually",
@@ -1472,16 +1351,6 @@
   "teacherLabel": "Teacher",
   "courseNatureLabel": "Course Nature",
   "courseDescriptionOptional": "Course Description (Optional)",
-  "timeSchemeOverrideLabel": "Class Time Scheme",
-  "singleLessonWeekHint": "A single lesson appears in only one week, ideal for temporary additions or make-up classes",
-  "timeSchemeSetCountValue": "{count} sets",
-  "@timeSchemeSetCountValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileCountValue": "{count}",
   "@profileCountValue": {
     "placeholders": {
@@ -1554,7 +1423,6 @@
     }
   },
   "timeRangeValidationNoCrossDay": "End time must be later than start time",
-  "timeSchemeNameEmptyValidation": "Time scheme name cannot be empty",
   "liveTimeCorrectionNone": "No correction",
   "liveTimeCorrectionDelay": "Delay by {seconds}s",
   "@liveTimeCorrectionDelay": {
@@ -1576,14 +1444,12 @@
   "liveClassReminderLeadSummaryKeepNormal": "Normal notification, switches to priority later",
   "liveClassReminderLeadSummaryIsland": "Normal notification, switches to Island",
   "liveClassReminderLeadSummaryFocused": "Priority reminder before class ends",
-  "timetableProfilesEntrySubtitle": "Create, switch, duplicate, rename, and delete timetables",
   "homeTitleSectionTitle": "Home title",
   "homeTitleStyleLabel": "Title style",
   "themeSeedSectionTitle": "App theme color",
   "themeSeedSectionSubtitle": "Affects the top bar, accent color, and global primary tone",
   "frostedSheetSectionTitle": "Glass Material",
   "timetableBackgroundColorSectionTitle": "Timetable background color",
-  "timetableBackgroundColorSectionSubtitle": "Used in solid-color mode for the selected display regions; can pair with a background image",
   "homePageWallpaperTitle": "Background image",
   "wallpaperSheetTabPicker": "Wallpaper",
   "wallpaperSheetTabSettings": "Settings",
@@ -1608,7 +1474,6 @@
   "homePageWallpaperFileMissingToast": "The wallpaper file is missing. Fell back to a solid background — pick a new image",
   "wallpaperPositionPickerTitle": "Adjust wallpaper position",
   "wallpaperPositionPickerResetTooltip": "Reset",
-  "wallpaperPositionPickerDragHint": "Drag the wallpaper to adjust its position",
   "wallpaperPositionPickerSwitchWallpaper": "Change wallpaper",
   "wallpaperPositionPickerDone": "Done",
   "wallpaperPositionPickerExit": "Exit",
@@ -2579,8 +2444,6 @@
     }
   },
   "rescheduleTargetWeekLabel": "Move to week",
-  "weekdayFieldLabel": "Weekday",
-  "startSectionFieldLabel": "Start section",
   "confirmRescheduleAction": "Confirm reschedule",
   "homeTitleStyleClassicLabel": "Classic text",
   "homeTitleStyleBrandLabel": "Large logo",
@@ -2785,8 +2648,6 @@
   "clearRememberedTooltip": "Clear remembered account",
   "copyCurrentAddressTooltip": "Copy current address",
   "copiedCurrentAddress": "Current address copied",
-  "warehouseLoginHintLocalDebug": "Currently using local debug script mode",
-  "warehouseLoginHintImport": "Log in to the academic system here, then run import",
   "webAddressHint": "Enter web address",
   "goAction": "Go",
   "rememberedAccountLabel": "Remembered account: {username}",
@@ -2912,21 +2773,16 @@
   "scheduleTitleHint": "For example: team meeting, pickup, office visit",
   "scheduleTitleRequired": "Please enter a schedule title",
   "scheduleInfoSectionTitle": "Schedule Info",
-  "scheduleInfoSectionSubtitle": "Schedule items are inserted into the day-view timeline for a specific date and do not change course data",
   "scheduleTimeSectionTitle": "Time Arrangement",
-  "scheduleTimeSectionSubtitle": "Choose the exact date and time range for this schedule item",
   "scheduleAppearanceSectionTitle": "Appearance",
-  "scheduleAppearanceSectionSubtitle": "Pick a color that makes schedule items easy to distinguish from courses",
   "scheduleLocationLabel": "Location",
   "scheduleLocationHint": "Optional",
-  "scheduleDateLabel": "Date",
   "scheduleStartGroupLabel": "Start",
   "scheduleEndGroupLabel": "End",
   "scheduleStartDateLabel": "Start Date",
   "scheduleEndDateLabel": "End Date",
   "scheduleStartTimeLabel": "Start Time",
   "scheduleEndTimeLabel": "End Time",
-  "scheduleColorLabel": "Schedule Color",
   "scheduleNoteLabel": "Note",
   "scheduleNoteHint": "Optional",
   "scheduleBadgeLabel": "Schedule",
@@ -2940,7 +2796,6 @@
   },
   "scheduleTimeRangeInvalid": "End time must be later than the start time",
   "scheduleDateRangeInvalid": "End date cannot be earlier than the start date",
-  "scheduleSingleDayHint": "For same-day schedules, the end time must be later than the start time",
   "scheduleCrossDaySpanHint": "Runs continuously from {start} to {end}",
   "scheduleSavedHint": "Schedule added",
   "scheduleUpdatedHint": "Schedule updated",
@@ -3066,12 +2921,7 @@
   },
   "scheduleEntrySingleTitle": "Class schedule",
   "scheduleEntryCardSubtitle": "When, which weeks, and where",
-  "scheduleEntryTimeSectionTitle": "When",
-  "scheduleEntryTimeSectionSubtitle": "Pick the weekday and section range. Use the same start/end section for a single period",
   "scheduleEntryWeeksSectionTitle": "Which weeks",
-  "scheduleEntryPeopleSectionTitle": "Teacher & location",
-  "scheduleEntryTimeSchemeSectionTitle": "Custom time scheme",
-  "scheduleEntryTimeSchemeSectionSubtitle": "Follows the timetable by default. Change only if this slot uses different bell times",
   "scheduleSectionNumberLabel": "P{section}",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -3091,7 +2941,6 @@
   "holidayNoUpcoming": "No upcoming holidays",
   "holidayBadgeLabel": "Holiday",
   "suspendedBadgeLabel": "Suspended",
-  "suspendedStatusLabel": "Suspended",
   "courseActionUnsuspend": "Restore",
   "courseActionEditPrimary": "Edit course",
   "courseActionRescheduleSecondary": "Reschedule",
@@ -3257,8 +3106,6 @@
   "liveTestingHolidayModeEnabled": "Holiday Mode Enabled",
   "liveTestingHolidayModeDisabled": "Holiday Mode Disabled",
   "liveTestingHolidayModeEnabledDesc": "Reminders and widgets will hide all courses",
-  "textColorTitle": "Text Colors",
-  "textColorSubtitle": "Customize text colors for each area of the timetable",
   "textColorIndependentDetail": "Set detail colors independently",
   "textColorCourseCardTitle": "Course card title color",
   "textColorCourseCardDetail": "Course card detail color",
@@ -3287,7 +3134,6 @@
       }
     }
   },
-  "textColorLowContrastWarning": "Low color contrast may affect readability",
   "themeCurrentTheme": "Current Theme",
   "themeBasedOnModified": "Based on {baseName} (modified)",
   "@themeBasedOnModified": {
@@ -3302,13 +3148,6 @@
   "themeUnsavedChangesMessage": "Current theme has unsaved changes. Do you want to save?",
   "themeDiscardAndApply": "Discard & Apply",
   "themeNameHint": "Enter theme name",
-  "themePresetBlue": "Default Blue",
-  "themePresetPurple": "Night Purple",
-  "themePresetGreen": "Forest Green",
-  "themePresetOrange": "Warm Orange",
-  "themePresetEyeCare": "Eye Care",
-  "themePresetHighContrast": "High Contrast",
-  "themePresetDarkMinimal": "Dark Minimal",
   "foruiThemeNeutral": "Neutral",
   "foruiThemeMiuix": "Default",
   "foruiThemeZinc": "Zinc",
@@ -3354,8 +3193,6 @@
   "statisticsSectionsUnit": "sections",
   "statisticsSectionUnit": " sections",
   "statisticsNoData": "No course data",
-  "statisticsCourseCountRatio": "By Count",
-  "statisticsSectionCountRatio": "By Sections",
   "statisticsWeekSelector": "Week {week}",
   "@statisticsWeekSelector": {
     "placeholders": {
@@ -3444,22 +3281,10 @@
   "statisticsShareLabel": "Share statistics",
   "statisticsExportTitle": "Export statistics",
   "statisticsExportModulesSection": "Include modules",
-  "statisticsExportFormatSection": "Export format",
-  "statisticsExportFormatImage": "Long image (PNG)",
-  "statisticsExportFormatPdf": "PDF document",
   "statisticsExportAction": "Export",
   "statisticsExportSelectModuleHint": "Select at least one module",
   "statisticsExportModuleOverview": "Semester overview",
   "statisticsExportBrandTagline": "Course info, system experience",
-  "statisticsExportGithubHint": "Find us on GitHub: {url}",
-  "@statisticsExportGithubHint": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "statisticsExportQrScanHint": "Scan for website",
   "statisticsExportRankingMore": "{count} more courses not shown",
   "@statisticsExportRankingMore": {
     "placeholders": {
@@ -3548,7 +3373,6 @@
   "weeklyReportDisabledHint": "Weekly report disabled",
   "statisticsCompareTitle": "Timetable Comparison",
   "statisticsCompareActive": "Active",
-  "statisticsCompareNone": "No other timetables yet — create one in timetable management",
   "statisticsCompareDelta": "{delta} vs active",
   "@statisticsCompareDelta": {
     "placeholders": {
@@ -3557,17 +3381,7 @@
       }
     }
   },
-  "statisticsCompareDetailTitle": "Comparison Details",
-  "statisticsCompareWeek": "Current week",
   "statisticsMoreTitle": "Deep Dive",
-  "statisticsMoreGroupTrend": "Trends & Distribution",
-  "@statisticsMoreGroupTrend": {
-    "description": "Accordion group header: trend and distribution analysis entries"
-  },
-  "statisticsMoreGroupPeople": "Rooms · Teachers · Ranking",
-  "@statisticsMoreGroupPeople": {
-    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
-  },
   "statisticsNatureNoneRequired": "No required courses",
   "@statisticsNatureNoneRequired": {
     "description": "Donut chart center hint when required-course count is zero"
@@ -3727,14 +3541,6 @@
     }
   },
   "statisticsAchievementDone": "Unlocked",
-  "statisticsWeekDailyHint": "Tap to view week {week} details",
-  "@statisticsWeekDailyHint": {
-    "placeholders": {
-      "week": {
-        "type": "int"
-      }
-    }
-  },
   "weekListSeparator": ", ",
   "courseWeekListLabel": "Weeks {weeks}",
   "@courseWeekListLabel": {
@@ -5189,14 +4995,6 @@
   "aboutAlreadyLatestHeadline": "Up to date",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
-  "timeSchemeImportSupplementName": "{name} (import supplement)",
-  "@timeSchemeImportSupplementName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5485,7 +5283,6 @@
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",
   "scheduleDateRuleErrorSchemeRequired": "Pick a time scheme",
   "scheduleDateRuleErrorNameRequired": "Enter a name",
-  "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "Home top bar glass",
   "homeBandGlassMaterialFollow": "Follow default",
   "headerBlurStyleGaussian": "Gaussian blur",
@@ -5610,7 +5407,6 @@
   "scheduleDeleteScopeThis": "Delete this occurrence only",
   "scheduleDeleteScopeAll": "Delete all repeated occurrences",
   "scheduleOccurrenceEditHint": "You are editing one occurrence of this recurring schedule",
-  "scheduleRepeatEndRequired": "Choose an end date for the recurring schedule",
   "homeMenuTasksTitle": "Tasks",
   "taskListTitle": "Tasks",
   "addTask": "Add Task",
@@ -5979,7 +5775,6 @@
   "weatherCitySearchHint": "Enter a city name",
   "weatherCitySearchEmpty": "No matching city found",
   "weatherCitySearchFailed": "Search failed, please try again later",
-  "weatherStatusLoading": "Updating weather",
   "weatherStatusFailed": "Last update failed",
   "weatherRetryAction": "Retry",
   "weatherCoverageNote": "Covers only the next 16 days",

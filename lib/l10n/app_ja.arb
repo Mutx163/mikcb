@@ -5,7 +5,6 @@
   "appTitleProfile": "軽屿時間割 プロファイル版",
   "appearanceTitle": "外観と配色",
   "previewTitle": "プレビュー",
-  "timetableBackgroundPreview": "時間割背景",
   "themeModeLabel": "テーマモード",
   "themeModeSystem": "システム連携",
   "themeModeLight": "ライトモード",
@@ -30,19 +29,8 @@
   "appearanceThemeDisplaySectionTitle": "テーマと表示",
   "homeWidgetEntryTitle": "ホームウィジェット",
   "userGuideEntryTitle": "使用ガイドと権限",
-  "userGuideEntrySubtitle": "略称設定、通知、自動起動、バッテリー戦略",
-  "timetableManagementSectionTitle": "時間割管理",
   "timeSchemeEntryTitle": "時間テンプレート",
-  "timeSchemeEntrySubtitleNoneSelected": "切替、時限編集、コピーとテンプレート管理",
   "timeSchemeEntryNotSelected": "未選択",
-  "timeSchemeEntrySubtitleSelected": "現在：{name}・切替、時限編集とコピー",
-  "@timeSchemeEntrySubtitleSelected": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "dataTransferEntryTitle": "データバックアップと移行",
   "dataTransferEntrySubtitle": "時間割ファイルをエクスポートして、他の人が直接インポート可能",
   "cloudSyncEntryTitle": "クラウド同期",
@@ -250,7 +238,6 @@
     }
   },
   "selectSemesterWeekCountTitle": "学期週数を選択",
-  "selectSemesterWeekCountSubtitle": "学校に合わせて実際の授業週数に調整可能",
   "unifiedCourseCardColorTitle": "授業カードの色を統一",
   "unifiedCourseCardColorSubtitle": "オフにすると各授業の個別カラーを使用",
   "importRandomCourseColorTitle": "授業カラーをランダム",
@@ -600,13 +587,10 @@
   "welcomeSubtitle": "そのまま使い始めることも、授業をインポートしたりバックアップから復元することもできます",
   "thirdPartyDisclaimer": "声明：本アプリは第三者開発者が独立して開発したものであり、学習・研究目的のみに使用されます。Xiaomi（小米）公式ソフトウェアではなく、Xiaomi Technology Co., Ltd.（小米科技有限責任公司）とは一切の隶属、協力、授权関係がありません。コンテンツの侵权がある場合は、権利者より作者までご連絡ください。確認次第、速やかに下架・削除いたします。",
   "startUsingTitle": "使い始める",
-  "startUsingSubtitle": "アプリに入り、初回使用ガイドを続行",
   "importTimetableTitle": "時間割インポート",
   "importTimetableSubtitle": ".ics か AI 結果からインポート",
   "restoreBackupTitle": "バックアップから復元",
   "restoreBackupSubtitle": ".mikcbバックアップファイルから旧データを復元",
-  "viewGuideTitle": "機能説明を見る",
-  "viewGuideSubtitle": "権限、スーパーアイランドと基本設定を確認",
   "migrationTitle": "旧データ移行",
   "migrationSafeTitle": "ご安心ください、データ消失ではありません",
   "migrationSafeSubtitle": "アプリのパッケージ名が変更されたため、一時的にホーム画面に2つのアイコンが表示されます，旧データは旧バージョンのアプリにあります，まず旧バージョンでバックアップを取ってから、新版でインポートしてください",
@@ -634,10 +618,8 @@
   "alipayLabel": "Alipay",
   "supportWeChatHint": "WeChatでQRコードをスキャンして作者を支援",
   "supportAlipayHint": "AlipayでQRコードをスキャンして作者を支援",
-  "viewLargeImage": "大きな画像を見る",
   "saveToGallery": "ギャラリーに保存",
   "supportCompleteThanks": "軽屿時間割の継続的な改善を支援していただきありがとうございます ❤️",
-  "supportConfirmed": "支援しました",
   "donorListTitle": "謝辞リスト",
   "donorListLoadFailed": "オンライン謝辞リストを読み込めません。",
   "reloadAction": "再読み込み",
@@ -664,39 +646,6 @@
   "supportTapQrHint": "タップで拡大",
   "supportSaveShort": "保存",
   "supportConfirmedShort": "支援済み",
-  "supportMonthlyGoalLabel": "今月のサーバー・証明書更新進捗",
-  "supportGoalRaised": "集まった: {raised} / 目標 {goal}",
-  "@supportGoalRaised": {
-    "placeholders": {
-      "raised": {
-        "type": "String"
-      },
-      "goal": {
-        "type": "String"
-      }
-    }
-  },
-  "supportBackerCount": "すでに {count} 人が支援",
-  "@supportBackerCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "supportDonorListFooter": "名前は永久に残ります 💖",
-  "supportMarqueeThanks": "🎉 {name} さん {amount} ありがとう",
-  "@supportMarqueeThanks": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "supportMarqueeTail": "軽屿時間割は安定稼働中 — あなたの支援を待っています！",
   "scanQrWechatTitle": "WeChatでQRコードをスキャン",
   "scanQrAlipayTitle": "AlipayでQRコードをスキャン",
   "scanQrSubtitle": "スクリーンショットしてスキャン、支援ありがとう！",
@@ -711,23 +660,6 @@
       }
     }
   },
-  "scheduledCountLabel": "排課合計{count}件",
-  "@scheduledCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "scheduledCountWithConflictHint": "排課合計{count}件・展開して競合詳細を確認",
-  "@scheduledCountWithConflictHint": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "teacherUnset": "未設定",
   "confirmDeleteTitle": "削除確認",
   "confirmDeleteCourseMessage": "授業「{name}」を削除しますか？",
   "@confirmDeleteCourseMessage": {
@@ -749,22 +681,7 @@
   "weekdayLabel": "曜日",
   "startSectionLabel": "開始時限",
   "endSectionLabel": "終了時限",
-  "timeRangeLabel": "時間：{start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
   "locationLabel": "授業場所",
-  "singleLessonWeekTitle": "授業週次",
-  "singleLessonWeekSubtitle": "単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適",
-  "selectWeekLabel": "週次を選択",
-  "weekSettingsTitle": "週次設定",
   "rangeWeeksLabel": "連続週",
   "customWeeksLabel": "カスタム週",
   "startWeekLabel": "開始週",
@@ -1021,9 +938,6 @@
   "resetDefaultAction": "デフォルトに戻す",
   "sectionTimesTitle": "時限時間",
   "sectionTimesSubtitle": "現在の時間割がこのテンプレートを使用中の場合、時限数は使用済みの最大時限以上である必要があります",
-  "schemeListCurrentLabel": "現在",
-  "schemeListCountLabel": "数",
-  "sectionCountLabel": "時限数",
   "quickGenerateTimeSchemeTitle": "時間割時間をクイック生成",
   "addBreakRuleAction": "大休憩ルールを追加",
   "breakOverrideInvalidMessage": "大休憩ルールを修正：時限は 1 以上、時間は 0 以上の数字で入力してください",
@@ -1033,19 +947,9 @@
   "timeSchemeEditorActiveAndCoursesHint": "現在の時間割と一部の授業がこのテンプレートを使用中，保存後、関連する全ての時間割と授業が同期更新されます",
   "timeSchemeEditorActiveHint": "現在の時間割がこのテンプレートを使用中，保存後、使用中の全ての時間割が同期更新されます",
   "timeSchemeEditorOverrideHint": "授業がこのテンプレートを副テンプレートとして使用中，保存後、参照する全ての授業が同期更新されます",
-  "unnamedTimeScheme": "名前未設定テンプレート",
   "unsetLabel": "未選択",
-  "timeSchemeUsageCourseRefPrefix": "授業参照：",
   "mainTimeSchemeLabel": "メインテンプレート",
   "overrideTimeSchemeShortLabel": "副テンプレート",
-  "timeSchemeBottomUsageSingle": "{first}",
-  "@timeSchemeBottomUsageSingle": {
-    "placeholders": {
-      "first": {
-        "type": "String"
-      }
-    }
-  },
   "timeSchemeBottomUsageMulti": "{first}など{count}件の授業",
   "@timeSchemeBottomUsageMulti": {
     "placeholders": {
@@ -1233,15 +1137,6 @@
   "keepAliveConfirmTitle": "バックグラウンド保持サービスを有効にする",
   "keepAliveConfirmBody": "このサービスはバックグラウンドでのウィジェット更新と授業リマインダーの再スケジュールにのみ使用され、画面の内容を読み取ったり、ユーザーに代わって操作を行ったりすることはありません。有効にするにはシステム設定で「ユーザー補助」権限を許可する必要があります。いつでもオフにできます。",
   "keepAliveConfirmGoAction": "有効にする",
-  "timeSchemeEntryCurrentPrefix": "現在：{name}・切替、時限編集とコピー",
-  "@timeSchemeEntryCurrentPrefix": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "timeSchemeEntrySubtitle": "切替、時限編集、コピーとテンプレート管理",
   "semesterOverviewCurrentWeek": "現在第{current}週 / 全{total}週",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -1262,20 +1157,11 @@
       }
     }
   },
-  "setSemesterStartDate": "学期開始日を設定",
   "semesterStartDateLabel": "学期開始日",
   "syncedCurrentWeekMessage": "第{week}週に同期済み",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
       "week": {
-        "type": "int"
-      }
-    }
-  },
-  "weekCountItem": "{count}週",
-  "@weekCountItem": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1327,18 +1213,11 @@
   "guidePrivacyConsentLabel": "Umeng関連のプライバシー説明を読み同意します",
   "exitAppAction": "アプリ終了",
   "agreeAndStartAction": "同意して使い始める",
-  "startUsingAction": "使い始める",
   "editCourseTitle": "授業を編集",
   "addCourseTitle": "授業を追加",
   "deleteCourseTitle": "授業を削除",
   "courseDeleted": "授業を削除しました",
-  "singleLessonLabel": "単一授業",
-  "singleLessonHint": "振替授業や臨時追加に最適，授業は1つの週次にのみ表示",
   "sharedInfoTitle": "共有情報",
-  "sharedInfoHint": "共有フィールドの説明を表示",
-  "sharedInfoSheetItemCourseName": "授業名：授業の一意識別子。同名の複数排課は同一授業として扱われます。名称を変更すると別授業として記録されます。",
-  "sharedInfoSheetItemShortName": "授業略称：スーパーアイランド等での簡略表示に使用。手動入力が必要で、自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。",
-  "sharedInfoSheetItemSharedSync": "共有同期：略称、色、性質、概要等は同名授業の他排課へ同期されます。",
   "reuseExistingCourseLabel": "既存授業を流用",
   "reuseExistingCourseHelper": "既存の情報を入力",
   "manualInputLabel": "手動入力",
@@ -1352,16 +1231,6 @@
   "teacherLabel": "担当教師",
   "courseNatureLabel": "授業性質",
   "courseDescriptionOptional": "授業概要（任意）",
-  "timeSchemeOverrideLabel": "授業時間方案",
-  "singleLessonWeekHint": "単一授業は1つの週次にのみ表示，振替授業や臨時追加に最適",
-  "timeSchemeSetCountValue": "{count}セット",
-  "@timeSchemeSetCountValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileCountValue": "{count}個",
   "@profileCountValue": {
     "placeholders": {
@@ -1448,7 +1317,6 @@
     }
   },
   "timeRangeValidationNoCrossDay": "終了時間は開始時間より後である必要があります",
-  "timeSchemeNameEmptyValidation": "テンプレート名は空にできません",
   "liveTimeCorrectionNone": "補正なし",
   "liveTimeCorrectionDelay": "全体を{seconds}秒遅らせる",
   "@liveTimeCorrectionDelay": {
@@ -1470,13 +1338,11 @@
   "liveClassReminderLeadSummaryKeepNormal": "授業中は通常通知、終了前に重点へ",
   "liveClassReminderLeadSummaryIsland": "授業中は通常通知、終了前に島へ",
   "liveClassReminderLeadSummaryFocused": "終了前に重点リマインダーを開始",
-  "timetableProfilesEntrySubtitle": "新規作成、切替、コピー、名前変更と削除",
   "homeTitleSectionTitle": "ホームタイトル",
   "homeTitleStyleLabel": "タイトルスタイル",
   "themeSeedSectionTitle": "アプリテーマカラー",
   "themeSeedSectionSubtitle": "トップバー、アクセントカラーとグローバルメインカラーに影響",
   "timetableBackgroundColorSectionTitle": "時間割背景色",
-  "timetableBackgroundColorSectionSubtitle": "時間割ページの大背景にのみ作用",
   "defaultTimetablePreviewName": "デフォルト時間割",
   "beforeClassDisplaySettingsTitle": "授業前リマインダー表示",
   "duringEndDisplaySettingsTitle": "授業中/終了リマインダー表示",
@@ -2363,8 +2229,6 @@
     }
   },
   "rescheduleTargetWeekLabel": "変更先の週",
-  "weekdayFieldLabel": "曜日",
-  "startSectionFieldLabel": "開始時限",
   "confirmRescheduleAction": "時間変更確認",
   "homeTitleStyleClassicLabel": "クラシックテキスト",
   "homeTitleStyleBrandLabel": "大Logo",
@@ -2569,8 +2433,6 @@
   "clearRememberedTooltip": "記憶済みアカウントをクリア",
   "copyCurrentAddressTooltip": "現在のアドレスをコピー",
   "copiedCurrentAddress": "現在のアドレスをコピーしました",
-  "warehouseLoginHintLocalDebug": "現在ローカルデバッグスクリプトモード",
-  "warehouseLoginHintImport": "ここで教務システムにログインしてインポートを実行",
   "webAddressHint": "Webアドレスを入力",
   "goAction": "移動",
   "rememberedAccountLabel": "記憶済みアカウント：{username}",
@@ -2696,21 +2558,16 @@
   "scheduleTitleHint": "例：グループミーティング、書類手続き、荷物受取",
   "scheduleTitleRequired": "スケジュールタイトルを入力してください",
   "scheduleInfoSectionTitle": "スケジュール情報",
-  "scheduleInfoSectionSubtitle": "スケジュールは具体的な日付で日別ビューのタイムラインに挿入，授業自体は変更しない",
   "scheduleTimeSectionTitle": "時間設定",
-  "scheduleTimeSectionSubtitle": "このスケジュールが実際に発生する日付と開始/終了時間を選択",
   "scheduleAppearanceSectionTitle": "表示スタイル",
-  "scheduleAppearanceSectionSubtitle": "授業と区別しやすいスケジュールカラーを選択",
   "scheduleLocationLabel": "場所",
   "scheduleLocationHint": "任意",
-  "scheduleDateLabel": "日付",
   "scheduleStartGroupLabel": "開始",
   "scheduleEndGroupLabel": "終了",
   "scheduleStartDateLabel": "開始日",
   "scheduleEndDateLabel": "終了日",
   "scheduleStartTimeLabel": "開始時間",
   "scheduleEndTimeLabel": "終了時間",
-  "scheduleColorLabel": "スケジュールカラー",
   "scheduleNoteLabel": "メモ",
   "scheduleNoteHint": "任意",
   "scheduleBadgeLabel": "スケジュール",
@@ -2724,7 +2581,6 @@
   },
   "scheduleTimeRangeInvalid": "終了時間は開始時間より後である必要があります",
   "scheduleDateRangeInvalid": "終了日は開始日より前にすることはできません",
-  "scheduleSingleDayHint": "同日終了の場合、終了時間は開始時間より後である必要があります",
   "scheduleCrossDaySpanHint": "{start} から {end} まで継続します",
   "scheduleSavedHint": "スケジュール追加済み",
   "scheduleUpdatedHint": "スケジュール更新済み",
@@ -2849,12 +2705,7 @@
   },
   "scheduleEntrySingleTitle": "授業スケジュール",
   "scheduleEntryCardSubtitle": "曜日・週・場所を設定",
-  "scheduleEntryTimeSectionTitle": "いつ",
-  "scheduleEntryTimeSectionSubtitle": "曜日と時限を選びます，連続時限は開始と終了を、単時限は同じ番号にします",
   "scheduleEntryWeeksSectionTitle": "どの週",
-  "scheduleEntryPeopleSectionTitle": "教員と教室",
-  "scheduleEntryTimeSchemeSectionTitle": "特別な時間割",
-  "scheduleEntryTimeSchemeSectionSubtitle": "既定は時間割に従います，ベル時刻が異なる場合のみ変更してください",
   "scheduleSectionNumberLabel": "{section}時限",
   "@scheduleSectionNumberLabel": {
     "placeholders": {
@@ -2874,7 +2725,6 @@
   "holidayNoUpcoming": "近日休日なし",
   "holidayBadgeLabel": "休",
   "suspendedBadgeLabel": "停",
-  "suspendedStatusLabel": "授業停止",
   "courseActionUnsuspend": "復旧",
   "courseActionEditPrimary": "授業を編集",
   "courseActionRescheduleSecondary": "時間変更",
@@ -2996,8 +2846,6 @@
   "liveTestingHolidayModeEnabled": "休日モード有効",
   "liveTestingHolidayModeDisabled": "休日モード無効",
   "liveTestingHolidayModeEnabledDesc": "授業リマインダーとウィジェットは全授業を非表示",
-  "textColorTitle": "テキストの色",
-  "textColorSubtitle": "時間割の各エリアのテキスト色をカスタマイズ",
   "textColorIndependentDetail": "詳細色を個別に設定",
   "textColorCourseCardTitle": "授業カードタイトル色",
   "textColorCourseCardDetail": "授業カード詳細色",
@@ -3026,7 +2874,6 @@
       }
     }
   },
-  "textColorLowContrastWarning": "色のコントラストが低く、可読性に影響する可能性があります",
   "themeCurrentTheme": "現在のテーマ",
   "themeBasedOnModified": "{baseName}（変更済み）",
   "@themeBasedOnModified": {
@@ -3041,13 +2888,6 @@
   "themeUnsavedChangesMessage": "現在のテーマに未保存の変更があります，保存しますか？",
   "themeDiscardAndApply": "破棄して適用",
   "themeNameHint": "テーマ名を入力",
-  "themePresetBlue": "デフォルトブルー",
-  "themePresetPurple": "ナイトパープル",
-  "themePresetGreen": "フォレストグリーン",
-  "themePresetOrange": "ウォームオレンジ",
-  "themePresetEyeCare": "アイケア",
-  "themePresetHighContrast": "ハイコントラスト",
-  "themePresetDarkMinimal": "ダークミニマル",
   "foruiThemeNeutral": "ニュートラル",
   "foruiThemeMiuix": "デフォルト",
   "foruiThemeZinc": "ジンク",
@@ -3093,8 +2933,6 @@
   "statisticsSectionsUnit": "コマ",
   "statisticsSectionUnit": "コマ",
   "statisticsNoData": "授業データがありません",
-  "statisticsCourseCountRatio": "科目数の割合",
-  "statisticsSectionCountRatio": "授業時間の割合",
   "statisticsWeekSelector": "第 {week} 週",
   "@statisticsWeekSelector": {
     "placeholders": {
@@ -3183,22 +3021,10 @@
   "statisticsShareLabel": "統計を共有",
   "statisticsExportTitle": "統計を書き出す",
   "statisticsExportModulesSection": "含める項目",
-  "statisticsExportFormatSection": "書き出し形式",
-  "statisticsExportFormatImage": "長尺画像 (PNG)",
-  "statisticsExportFormatPdf": "PDF 文書",
   "statisticsExportAction": "書き出す",
   "statisticsExportSelectModuleHint": "少なくとも1つの項目を選択してください",
   "statisticsExportModuleOverview": "学期の概要",
   "statisticsExportBrandTagline": "授業情報をシステム体験に",
-  "statisticsExportGithubHint": "GitHub で検索：{url}",
-  "@statisticsExportGithubHint": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "statisticsExportQrScanHint": "スキャンで公式サイト",
   "statisticsExportRankingMore": "他 {count} 件の授業は省略",
   "@statisticsExportRankingMore": {
     "placeholders": {
@@ -3273,24 +3099,13 @@
   "weeklyReportDisabledHint": "週間レポートを無効にしました",
   "statisticsCompareTitle": "時間割比較",
   "statisticsCompareActive": "現在の時間割",
-  "statisticsCompareNone": "他の時間割がありません。時間割管理から作成できます",
   "statisticsCompareDelta": "現在比 {delta} コマ",
   "@statisticsCompareDelta": {
     "placeholders": {
       "delta": { "type": "String" }
     }
   },
-  "statisticsCompareDetailTitle": "比較詳細",
-  "statisticsCompareWeek": "現在の週",
   "statisticsMoreTitle": "詳細分析",
-  "statisticsMoreGroupTrend": "トレンド・分布",
-  "@statisticsMoreGroupTrend": {
-    "description": "Accordion group header: trend and distribution analysis entries"
-  },
-  "statisticsMoreGroupPeople": "教室・教員・ランキング",
-  "@statisticsMoreGroupPeople": {
-    "description": "Accordion group header: classroom, teacher and ranking analysis entries"
-  },
   "statisticsNatureNoneRequired": "必修なし",
   "@statisticsNatureNoneRequired": {
     "description": "Donut chart center hint when required-course count is zero"
@@ -3418,12 +3233,6 @@
     }
   },
   "statisticsAchievementDone": "達成済み",
-  "statisticsWeekDailyHint": "タップで第 {week} 週の詳細",
-  "@statisticsWeekDailyHint": {
-    "placeholders": {
-      "week": { "type": "int" }
-    }
-  },
   "weekListSeparator": "、",
   "courseWeekListLabel": "第{weeks}週",
   "@courseWeekListLabel": {
@@ -4878,14 +4687,6 @@
   "aboutAlreadyLatestHeadline": "最新バージョンです",
   "aboutDownloadChannelSectionTitle": "Download channel",
   "aboutMirrorProbeFailedLabel": "Failed",
-  "timeSchemeImportSupplementName": "{name} (import supplement)",
-  "@timeSchemeImportSupplementName": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "unnamedTimetableProfile": "Unnamed timetable",
   "cloudBackupManualProtectedTitle": "Protect manual backups",
   "courseImportPortalUrlMissingBody": "\"{schoolName} / {adapterName}\" has no default login URL. Enter the school portal URL first.",
@@ -5180,7 +4981,6 @@
   "scheduleDateRuleErrorEndBeforeStart": "End date cannot be before start date",
   "scheduleDateRuleErrorSchemeRequired": "Pick a time scheme",
   "scheduleDateRuleErrorNameRequired": "Enter a name",
-  "scheduleDateRuleNote": "Location match takes priority over date rules.",
   "homeBandGlassMaterialLabel": "ホーム上部バーのガラス",
   "homeBandGlassMaterialFollow": "既定に従う",
   "headerBlurStyleGaussian": "ガウスぼかし",
@@ -5306,7 +5106,6 @@
   "scheduleDeleteScopeThis": "今回のみ削除",
   "scheduleDeleteScopeAll": "すべて削除",
   "scheduleOccurrenceEditHint": "繰り返し予定の1回分を編集しています",
-  "scheduleRepeatEndRequired": "繰り返し終了日を選択してください",
   "homeMenuTasksTitle": "タスク",
   "taskListTitle": "タスク",
   "addTask": "タスクを追加",
@@ -5591,7 +5390,6 @@
   "homePageWallpaperFileMissingToast": "壁紙ファイルがないため単色の背景に戻りました。新しい画像を選んでください",
   "wallpaperPositionPickerTitle": "壁紙の表示位置を調整",
   "wallpaperPositionPickerResetTooltip": "リセット",
-  "wallpaperPositionPickerDragHint": "壁紙をドラッグして位置を調整",
   "wallpaperPositionPickerSwitchWallpaper": "壁紙を変更",
   "wallpaperPositionPickerDone": "完了",
   "wallpaperPositionPickerExit": "終了",
@@ -5829,7 +5627,6 @@
   "weatherCitySearchHint": "都市名を入力",
   "weatherCitySearchEmpty": "一致する都市が見つかりません",
   "weatherCitySearchFailed": "検索に失敗しました。しばらくしてからお試しください",
-  "weatherStatusLoading": "天気を更新中",
   "weatherStatusFailed": "前回の更新に失敗しました",
   "weatherRetryAction": "再試行",
   "weatherCoverageNote": "予報は今後 16 日のみ",
