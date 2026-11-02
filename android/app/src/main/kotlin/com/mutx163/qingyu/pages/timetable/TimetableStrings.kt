@@ -50,6 +50,16 @@ object TimetableStrings {
     val saveFailed = ArbText("saveFailed", "保存失败")
     val deleteFailed = ArbText("deleteFailed", "删除失败")
     val clearFailed = ArbText("clearFailed", "清空失败，课表内容没有变化")
+    val createAction = ArbText("createAction", "创建")
+    val cancelAction = ArbText("cancelAction", "取消")
+    val renameAction = ArbText("renameAction", "重命名")
+    val clearAction = ArbText("clearAction", "清空")
+    val deleteAction = ArbText("deleteAction", "删除")
+    val moreActionsTooltip = ArbText("moreActionsTooltip", "更多操作")
+    val partnerReadOnlyBadge = ArbText("coupleTimetablePartnerReadOnlyBadge", "对方课表 只读")
+    val partnerBadge = ArbText("coupleTimetableTitle", "情侣课表")
+    val clearCurrentTimetableMessage = ArbText("clearCurrentTimetableMessage", "确定清空 {name} 的全部课程？课表设置将保留")
+    val deleteTimetableMessage = ArbText("deleteTimetableMessage", "确定删除课表 {name}？")
 
     // ── 周视图导航与网格展示 ──
     val backToCurrentWeekAction = ArbText("backToCurrentWeekAction", "回本周")
@@ -306,6 +316,16 @@ object TimetableStrings {
             saveFailed,
             deleteFailed,
             clearFailed,
+            createAction,
+            cancelAction,
+            renameAction,
+            clearAction,
+            deleteAction,
+            moreActionsTooltip,
+            partnerReadOnlyBadge,
+            partnerBadge,
+            clearCurrentTimetableMessage,
+            deleteTimetableMessage,
             backToCurrentWeekAction,
             nonCurrentWeekLabel,
             currentWeekBullet,
