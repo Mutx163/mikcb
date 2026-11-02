@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
@@ -282,12 +283,12 @@ fun AdvancedOptionsPage(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(
+                // 官方搭配：取消键文字按钮、确认键主色实心（与 IcsExportPage.ConfirmRow 同一套）。
+                TextButton(
                     onClick = { editingMirror = false },
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AboutUpdatePageStrings.cancelAction)
-                }
+                    text = AboutUpdatePageStrings.cancelAction,
+                )
                 Button(
                     onClick = { submitMirror() },
                     modifier = Modifier.weight(1f),
