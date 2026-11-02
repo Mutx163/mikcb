@@ -1857,9 +1857,17 @@ class LiveUpdateService : Service() {
                             JSONObject().apply {
                                 put("actionTitle", getString(R.string.notification_action_view_timetable))
                                 put("actionIntentType", 1)
+                                // 跳转目标统一走 [NotificationLaunchTarget]：正式包 / dev / perf
+                                // 解析到 Compose 壳（Flutter 入口在这些包里已禁用 / 不再是启动页）。
+                                // 壳不读页面参数，冷启动落在默认课表主屏（周视图或月视图），见该类注释。
+                                // flags 与旧字符串一致：NEW_TASK | CLEAR_TOP（合并成 0x14000000）。
                                 put(
                                     "actionIntent",
-                                    "intent:#Intent;component=${packageName}/.MainActivity;launchFlags=0x14000000;end"
+                                    NotificationLaunchTarget.intent(this@LiveUpdateService).apply {
+                                        addFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                        )
+                                    }.toUri(Intent.URI_INTENT_SCHEME)
                                 )
                             }
                         )

@@ -1800,13 +1800,19 @@ internal fun findNextRefreshAtMillis(
     }
 
     /**
-     * 卡片点击的启动 Intent：必须携带 appWidgetId，Flutter 收到后按该卡片的
-     * 绑定档案分流（切普通课表 / 开情侣覆盖层 / 未绑定=普通打开）。
+     * 卡片点击的启动 Intent：目标由 [NotificationLaunchTarget] 解析（正式包 / dev / perf
+     * 落到 Compose 壳，itest 落到 Flutter 宿主），并携带 appWidgetId。
+     *
+     * Flutter 宿主收到这两个 extra 后按卡片的绑定档案分流（切普通课表 / 开情侣覆盖层 /
+     * 未绑定=普通打开）；**Compose 壳当前不读这组 extra**，只按默认主屏打开
+     *（周视图或月视图，见 [NotificationLaunchTarget] 的落点说明）。extras 保留原协议，
+     * 不因目标切换而丢失——itest 变体仍按原行为分流。
+     *
      * requestCode 恒等于 appWidgetId：它跨全部卡型全局唯一，可避免不同卡型
      * 间 requestCode 撞车导致 PendingIntent 被 extras 互相覆盖。
      */
     fun buildLaunchPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = NotificationLaunchTarget.intent(context).apply {
             putExtra(EXTRA_WIDGET_LAUNCH, true)
             putExtra(EXTRA_WIDGET_LAUNCH_APP_WIDGET_ID, appWidgetId)
         }
