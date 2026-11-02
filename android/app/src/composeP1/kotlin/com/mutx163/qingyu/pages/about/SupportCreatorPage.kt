@@ -179,21 +179,22 @@ fun SupportCreatorPage(
         }
     }
 
-    if (previewOpen) {
-        QingyuSheet(
-            show = true,
-            title = SupportCreatorStrings.scanTitleFor(method),
-            onDismissRequest = { previewOpen = false },
-            // 预览列自己留 4dp 呼吸：保持套件侧边距 ⇒ 单边 20dp。
-            contentPadsHorizontally = false,
-        ) {
-            QrPreview(
-                assetPath = assetPath,
-                fileName = fileName,
-                contentDescription = SupportCreatorStrings.scanTitleFor(method),
-                fallbackAspectRatio = qrFallbackAspectRatio(method),
-            )
-        }
+    // 弹层常驻组合、只翻 show：包在 `if (previewOpen)` 里会让关闭时的下滑退场一次都不播
+    // （2026-11-02 弹窗审核 P3）。内容取值都来自页面状态（method 派生），没有可空载荷，
+    // 不需要退场快照。
+    QingyuSheet(
+        show = previewOpen,
+        title = SupportCreatorStrings.scanTitleFor(method),
+        onDismissRequest = { previewOpen = false },
+        // 预览列自己留 4dp 呼吸：保持套件侧边距 ⇒ 单边 20dp。
+        contentPadsHorizontally = false,
+    ) {
+        QrPreview(
+            assetPath = assetPath,
+            fileName = fileName,
+            contentDescription = SupportCreatorStrings.scanTitleFor(method),
+            fallbackAspectRatio = qrFallbackAspectRatio(method),
+        )
     }
 }
 
