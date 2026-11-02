@@ -142,8 +142,10 @@ fun CourseNoteSheet(
 
     QingyuSheet(
         show = show && course != null,
-        // 内容自己给左右 16 + 顶部 16，所以框架侧横向内边距归零（否则单边 24+16 = 40，
-        // 内容会被挤成中间窄条）。底部让位与键盘让位由套件统一处理。
+        // 内容自己给左右 16，所以框架侧横向内边距归零（否则单边 24+16 = 40，
+        // 内容会被挤成中间窄条）。顶部不再另加 16dp：miuix 上游无标题时本就留
+        // 42dp（把手 24 + 空标题行 18，见 QingyuSheet KDoc），再叠就是 58dp。
+        // 底部让位与键盘让位由套件统一处理。
         contentPadsHorizontally = true,
         // 限高上限：屏高 × 0.88（Dart `:209-212` 的上界）。
         maxHeightFraction = SHEET_MAX_HEIGHT_RATIO,
@@ -156,7 +158,7 @@ fun CourseNoteSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                .padding(start = 16.dp, end = 16.dp),
         ) {
             // ── 头部：44dp 圆角色块 + 标题 + 副标题（Dart `:231-268`）──
             Row(modifier = Modifier.fillMaxWidth()) {
