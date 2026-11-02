@@ -202,6 +202,9 @@ fun ExamDatePickerSheet(
                         modifier = Modifier.weight(1f),
                         text = weekdayShort(candidate),
                         onClick = { dayOfWeek = candidate },
+                        // 2026-11-02 弹窗审核 P2：默认左右各 16dp 内边距，7 颗按钮在 400dp 屏上
+                        // 每颗只剩约 12dp 给文字；收窄到 4/8 才放得下。
+                        insideMargin = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                         // miuix 的 `textButtonColors(color = …)` 是**底色**、`textColor` 是字色
                         // （见 `CourseActionSheet.kt:725` 那张对照表）：选中 = 主色底 + onPrimary 字。
                         colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColors(
