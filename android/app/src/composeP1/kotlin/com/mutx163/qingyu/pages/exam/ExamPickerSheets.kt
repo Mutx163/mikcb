@@ -230,6 +230,9 @@ fun ExamDatePickerSheet(
                 )
                 Button(
                     modifier = Modifier.weight(1f),
+                    // 未选星期时置灰而不是可点但无声无息（2026-11-02 弹窗审核 P2：
+                    // onClick 里判空后什么都不做，用户会以为卡死了）。
+                    enabled = dayOfWeek != null,
                     onClick = {
                         val picked = dayOfWeek
                         if (picked != null) {
