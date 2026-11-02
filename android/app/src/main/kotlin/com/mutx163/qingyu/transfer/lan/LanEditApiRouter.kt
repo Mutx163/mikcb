@@ -186,7 +186,8 @@ class LanEditAuditRingBuffer(
  * 与 Dart 逐条对齐的行为：
  * - `OPTIONS` 直接 204（CORS 预检不吃鉴权）；
  * - **跨源请求 403**：同网段任意网页都能连到手机，`Origin` 与请求 `Host` 不同就拒，
- *   否则逛一个陌生网站就能烧掉机主的 PIN 尝试次数；
+ *   `Origin: null` 或「一致的 host 不是本机 / 局域网私有网段」也拒（DNS rebinding 防线，
+ *   判据在 `LanEditOriginPolicy`），否则逛一个陌生网站就能烧掉机主的 PIN 尝试次数；
  * - `/api/v1/health` 与 `/api/v1/auth/verify` 免鉴权，其余一律 Bearer 令牌；
  * - 写操作要过 `profileId` 三道闸（绑定 / 请求 / 当前激活），见 [ensureWriteProfileTarget]；
  * - JSON 体必须声明 `Content-Type: application/json`，否则 400（否则跨源 HTML 表单

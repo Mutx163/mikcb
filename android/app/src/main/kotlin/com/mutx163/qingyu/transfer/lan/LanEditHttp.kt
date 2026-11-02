@@ -107,34 +107,41 @@ data class LanEditHttpRequest(
             return header.substring(prefix.length).trim()
         }
 
-    /** `Origin` 头的 host（小写）；缺省 / `null` / 解析不出返回空串。 */
+    /** `Origin` 头的 host（小写；IPv6 字面量保留方括号）；缺省 / `null` / 解析不出返回空串。 */
     val originHost: String
         get() {
             val origin = header("origin")?.trim().orEmpty()
-            if (origin.isEmpty() || origin == "null") return ""
+            if (origin.isEmpty() || origin.equals("null", ignoreCase = true)) return ""
             return hostOf(origin)
         }
 
-    /** `Host` 头的 host（小写）；解析不出返回空串。 */
+    /** `Host` 头的 host（小写；IPv6 字面量保留方括号）；解析不出返回空串。 */
     val requestHost: String
         get() = hostOf(header("host")?.trim().orEmpty())
 
     /**
-     * 同源判定（Dart `_isSameOrigin`）：`Origin` 的 host 必须等于请求 `Host` 的 host。
+     * 同源判定（Kotlin 侧收紧版；Dart `_isSameOrigin` 仍是「只比 host」，两端已分叉，
+     * 分叉理由见 [LanEditOriginPolicy]）：
      *
-     * 服务端绑的是全部网卡，手机可能被叫成 192.168.x.x / 10.x.x.x / 热点地址，
-     * 所以拿请求自己的 `Host` 当基准，既接受客户端真正用的那个地址，
-     * 又拒绝任何别的站点发起的页面。没有 `Origin` 的一律放行——那是原生客户端。
+     * 1. **没有 `Origin` 放行**——原生客户端 / 地址栏直接导航不带头；
+     * 2. **`Origin: null` 一律拒**（旧版放行）——sandbox iframe / `file://` 判不出真实来源，
+     *    而正常网页端永远是 `http://<地址>`，不需要这个口子；
+     * 3. `Origin` 的 host 必须等于请求 `Host` 的 host（端口不比，Dart 口径不变）；
+     * 4. **且这个 host 必须是本机 / 局域网私有网段**（[LanEditOriginPolicy]）——
+     *    这是 DNS rebinding 的闸门：恶意页面把自家域名解析到手机 IP 时，
+     *    `Origin` 与 `Host` 都是同一个外来域名，第 3 条拦不住，第 4 条拦得住。
      */
     val isSameOrigin: Boolean
         get() {
             val origin = header("origin")?.trim().orEmpty()
-            if (origin.isEmpty() || origin == "null") return true
+            if (origin.isEmpty()) return true
+            if (origin.equals("null", ignoreCase = true)) return false
             val originHost = originHost
             if (originHost.isEmpty()) return false
             val requestHost = requestHost
             if (requestHost.isEmpty()) return false
-            return originHost == requestHost
+            if (originHost != requestHost) return false
+            return LanEditOriginPolicy.isLocalOrPrivateHost(requestHost)
         }
 
     private fun hostOf(value: String): String {
@@ -146,10 +153,80 @@ data class LanEditHttpRequest(
         }
         val afterScheme = withScheme.substringAfter("://", "")
         if (afterScheme.isEmpty()) return ""
-        // 去掉 userinfo / 端口 / 路径，只留主机名
-        val hostPort = afterScheme.substringBefore('/')
-        val host = hostPort.substringAfterLast('@').substringBefore(':')
-        return host.trim().lowercase()
+        // 去掉 userinfo / 端口 / 路径，只留主机名。
+        // IPv6 字面量自带方括号（[::1]:8080）：端口分隔符『:』在括号里面，
+        // 不能对它做 substringBefore(':')，否则会截成『[』。
+        val hostPort = afterScheme.substringBefore('/').substringAfterLast('@')
+        if (hostPort.startsWith("[")) {
+            val close = hostPort.indexOf(']')
+            return (if (close < 0) hostPort else hostPort.substring(0, close + 1)).lowercase()
+        }
+        return hostPort.substringBefore(':').trim().lowercase()
+    }
+}
+
+/**
+ * 来源可信判定（纯函数，L0 全覆盖）。
+ *
+ * 只认「本机 / 链路本地 / 局域网私有网段」的**地址字面量**与 `localhost`：
+ * - IPv4：回环 `127.0.0.0/8`、私网 `10/8`、`172.16/12`、`192.168/16`、链路本地 `169.254/16`；
+ * - IPv6：回环 `::1`、唯一本地 `fc00::/7`、链路本地 `fe80::/10`、
+ *   IPv4 映射 `::ffff:a.b.c.d`（按 IPv4 规则判）。
+ *
+ * 为什么不放行任何域名：服务绑的是全部网卡、同网段谁都能连，而 DNS rebinding 的
+ * 攻击形状就是「外来域名 ↔ 手机 IP」——放行域名等于把这道闸整个让出去。
+ * 正常用户路径是 App 展示的 `http://<LAN IPv4>:port`（Dart `findPreferredLanIPv4`
+ * 只挑 192.168 / 10 / 172.16-31 这三族），手机自开是 `127.0.0.1` / `localhost`，全覆盖。
+ * 判不准的形状（缩写过短的 IPv6、前导 0 的 IPv4、段数不对）一律按不可信拒。
+ */
+object LanEditOriginPolicy {
+
+    /** `localhost` 与本机 / 局域网私有网段地址字面量为 true；域名与公网地址为 false。 */
+    fun isLocalOrPrivateHost(host: String): Boolean {
+        val value = host.trim().lowercase()
+        if (value.isEmpty()) return false
+        if (value == "localhost") return true
+        val literal = if (value.startsWith('[') && value.endsWith(']')) {
+            value.substring(1, value.length - 1)
+        } else {
+            value
+        }
+        return if (literal.contains(':')) isTrustedIpv6(literal) else isTrustedIpv4(literal)
+    }
+
+    private fun isTrustedIpv4(value: String): Boolean {
+        val parts = value.split('.')
+        if (parts.size != 4) return false
+        var first = -1
+        var second = -1
+        for ((index, part) in parts.withIndex()) {
+            // 前导 0（192.168.01.1）在部分解析器里按八进制解释：形状歧义一律不认
+            if (part.isEmpty() || part.length > 3 || (part.length > 1 && part[0] == '0')) return false
+            var octet = 0
+            for (c in part) {
+                if (c < '0' || c > '9') return false
+                octet = octet * 10 + (c - '0')
+            }
+            if (octet > 255) return false
+            if (index == 0) first = octet
+            if (index == 1) second = octet
+        }
+        return first == 127 || first == 10 ||
+            (first == 172 && second in 16..31) ||
+            (first == 192 && second == 168) ||
+            (first == 169 && second == 254)
+    }
+
+    private fun isTrustedIpv6(value: String): Boolean {
+        if (value == "::1") return true
+        if (value.startsWith("::ffff:")) return isTrustedIpv4(value.removePrefix("::ffff:"))
+        // fc00::/7 与 fe80::/10 只认「首组四位完整十六进制」的规范写法（fd12:… / fe80::…）。
+        // 首组不足四位时首字节判不准（"fc::1" 的首字节其实是 0x00），按不可信拒。
+        val first = value.substringBefore(':')
+        if (first.length != 4) return false
+        val high = first.substring(0, 2).toIntOrNull(16) ?: return false
+        val low = first.substring(2, 4).toIntOrNull(16) ?: return false
+        return high == 0xfc || high == 0xfd || (high == 0xfe && low in 0x80..0xbf)
     }
 }
 

@@ -213,20 +213,66 @@ class LanEditHttpParseTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `同源判定用 Origin 的 host 对比请求 Host`() {
+    fun `同源判定要求 Origin 与 Host 一致且该 host 必须是本机或私网`() {
+        // 同网段电脑访问：Origin 就是页面自己的地址，Host 是手机地址——host 相等且是私网
         assertTrue(request(headers = mapOf("origin" to "http://192.168.1.5:8080", "host" to "192.168.1.5:8080")).isSameOrigin)
-        // 端口不同但主机相同也算同源（Dart 只比 host）
+        // 端口不同但主机相同也算同源（Dart 只比 host，口径不变）
         assertTrue(request(headers = mapOf("origin" to "http://192.168.1.5:9999", "host" to "192.168.1.5:8080")).isSameOrigin)
+        // 手机自己开：127.0.0.1 / localhost / 本机内网 IP 全放行
+        assertTrue(request(headers = mapOf("origin" to "http://127.0.0.1:8080", "host" to "127.0.0.1:8080")).isSameOrigin)
+        assertTrue(request(headers = mapOf("origin" to "http://localhost:8080", "host" to "localhost:8080")).isSameOrigin)
+        assertTrue(request(headers = mapOf("origin" to "http://10.0.0.2:8080", "host" to "10.0.0.2")).isSameOrigin)
+        assertTrue(request(headers = mapOf("origin" to "http://172.31.255.254", "host" to "172.31.255.254:8080")).isSameOrigin)
+        // IPv6 回环（方括号字面量）也放行
+        assertTrue(request(headers = mapOf("origin" to "http://[::1]:8080", "host" to "[::1]:8080")).isSameOrigin)
         // 没有 Origin = 原生客户端，放行
         assertTrue(request(headers = mapOf("host" to "192.168.1.5:8080")).isSameOrigin)
-        // Origin: null（sandbox iframe / file://）按「没有」处理，放行
-        assertTrue(request(headers = mapOf("origin" to "null", "host" to "192.168.1.5:8080")).isSameOrigin)
-        // 别的站点：必须拒（否则逛一个陌生网站就能烧机主的 PIN 次数）
+
+        // Origin: null（sandbox iframe / file://）判不出真实来源：一律拒（旧版放行，2026-11-02 收紧）
+        assertFalse(request(headers = mapOf("origin" to "null", "host" to "192.168.1.5:8080")).isSameOrigin)
+        assertFalse(request(headers = mapOf("origin" to "NULL", "host" to "192.168.1.5:8080")).isSameOrigin)
+        // DNS rebinding：恶意页面把自家域名解析到手机 IP，Origin 与 Host 是同一个外来域名——必须拒
+        assertFalse(request(headers = mapOf("origin" to "http://evil.example:8080", "host" to "evil.example:8080")).isSameOrigin)
+        // 公网 IP 不算「本机 / 局域网私有网段」
+        assertFalse(request(headers = mapOf("origin" to "http://8.8.8.8:8080", "host" to "8.8.8.8:8080")).isSameOrigin)
+        // 别的站点打内网地址：host 不等，本来就拒
         assertFalse(request(headers = mapOf("origin" to "http://evil.example", "host" to "192.168.1.5:8080")).isSameOrigin)
         // Origin 有但 Host 缺失：拒（判不出来就不放行）
         assertFalse(request(headers = mapOf("origin" to "http://192.168.1.5")).isSameOrigin)
         // Origin 形状坏掉：拒
         assertFalse(request(headers = mapOf("origin" to "http://", "host" to "192.168.1.5:8080")).isSameOrigin)
+        // 大小写：host 一律小写化后比较
+        assertTrue(request(headers = mapOf("origin" to "http://LOCALHOST:8080", "host" to "localhost:8080")).isSameOrigin)
+    }
+
+    @Test
+    fun `本机与私有网段判定 只认地址字面量不认域名`() {
+        // 放行清单：localhost、127/8、10/8、172.16/12、192.168/16、169.254/16、
+        // ::1、fc00::/7、fe80::/10、IPv4 映射
+        for (host in listOf(
+            "localhost", "LOCALHOST",
+            "127.0.0.1", "127.255.0.7",
+            "10.1.2.3",
+            "172.16.0.1", "172.31.255.255",
+            "192.168.0.0", "192.168.43.1",
+            "169.254.10.20",
+            "::1", "[::1]",
+            "[FD12::A1]", "[fe80::1]",
+            "::ffff:192.168.1.5",
+        )) {
+            assertTrue("应放行：$host", LanEditOriginPolicy.isLocalOrPrivateHost(host))
+        }
+        // 一律不认：外来域名、公网 / 越界网段、形状判不准的
+        for (host in listOf(
+            "evil.example", "",
+            "0.0.0.0", "8.8.8.8", "11.0.0.1", "100.64.0.1",
+            "172.32.0.1", "172.15.0.1",
+            "192.169.0.1", "191.168.0.1",
+            "192.168.1", "192.168.1.1.1", "192.168.01.1", "192.168.256.1",
+            "abc", "::", "::2", "[fd1::]",
+        )) {
+            assertFalse("应拒绝：$host", LanEditOriginPolicy.isLocalOrPrivateHost(host))
+        }
     }
 
     @Test
