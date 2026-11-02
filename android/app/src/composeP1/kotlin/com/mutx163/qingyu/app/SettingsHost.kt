@@ -601,119 +601,114 @@ fun SettingsHost(
             onAction = ::onRowAction,
         )
 
-        pendingReset?.let { scope ->
-            SettingsConfirmResetDialog(
-                scope = scope,
-                onDismiss = { pendingReset = null },
-                onConfirm = {
-                    applyReset(scope)
-                    pendingReset = null
-                },
-            )
-        }
+        // ---- 以下弹窗全部常驻组合：pending 状态只切 `show`，官方退场动画才播得出来
+        //（2026-11-02 弹窗审核 P2：条件挂载会让弹层整棵离开组合，关闭时瞬间消失）----
 
-        pendingColor?.let { edit ->
-            SettingsColorPickerDialog(
-                initialHex = edit.hex,
-                onDismiss = { pendingColor = null },
-                onConfirm = { hex ->
-                    commitWrite(hex, edit.rowId)
-                    pendingColor = null
-                },
-            )
-        }
+        SettingsConfirmResetDialog(
+            pendingScope = pendingReset,
+            onDismiss = { pendingReset = null },
+            onConfirm = {
+                pendingReset?.let { applyReset(it) }
+                pendingReset = null
+            },
+        )
+
+        SettingsColorPickerDialog(
+            initialHex = pendingColor?.hex,
+            onDismiss = { pendingColor = null },
+            onConfirm = { hex ->
+                pendingColor?.let { commitWrite(hex, it.rowId) }
+                pendingColor = null
+            },
+        )
 
         // 「每天更新时刻」：官方 `NumberPicker` 两列滚轮（Dart 是同一个形态，见
         // `lib/widgets/miuix_time_picker_sheet.dart:8-20`：时/分双列滚轮 + 确认）。
-        if (showDailyTimeSheet) {
-            AutoRefreshDailyTimeSheet(
-                initialMinute = schedule?.dailyMinuteOfDay
-                    ?: CourseAutoRefreshModel.DEFAULT_DAILY_MINUTE,
-                onDismiss = { showDailyTimeSheet = false },
-                onConfirm = { minute ->
-                    showDailyTimeSheet = false
-                    val autoStore = autoRefreshStore
-                    val current = schedule
-                    if (autoStore != null && current != null) {
-                        val next = current.copy(
-                            dailyMinuteOfDay = CourseAutoRefreshModel.clampDailyMinute(minute),
-                        )
-                        if (autoStore.saveSchedule(next)) {
-                            schedule = next
-                        } else {
-                            Log.e(LOG_TAG, "auto-refresh daily time save failed")
-                        }
+        AutoRefreshDailyTimeSheet(
+            show = showDailyTimeSheet,
+            initialMinute = schedule?.dailyMinuteOfDay
+                ?: CourseAutoRefreshModel.DEFAULT_DAILY_MINUTE,
+            onDismiss = { showDailyTimeSheet = false },
+            onConfirm = { minute ->
+                showDailyTimeSheet = false
+                val autoStore = autoRefreshStore
+                val current = schedule
+                if (autoStore != null && current != null) {
+                    val next = current.copy(
+                        dailyMinuteOfDay = CourseAutoRefreshModel.clampDailyMinute(minute),
+                    )
+                    if (autoStore.saveSchedule(next)) {
+                        schedule = next
+                    } else {
+                        Log.e(LOG_TAG, "auto-refresh daily time save failed")
                     }
-                },
-            )
-        }
+                }
+            },
+        )
 
         // 「立即试一次」：见 [AutoRefreshRunNowNotice] 的说明——执行器还没随壳迁移，
         // 这里至少给出**看得懂的反馈**，而不是点了没反应。
-        if (showRunNowNotice) {
-            AutoRefreshRunNowNotice(onDismiss = { showRunNowNotice = false })
-        }
+        AutoRefreshRunNowNotice(
+            show = showRunNowNotice,
+            onDismiss = { showRunNowNotice = false },
+        )
 
         // ---- 主题管理页的四类弹层（2026-10-29 补口：此前这四个动作**全无落点**）----
-        themeDialog?.let { dialog ->
-            SettingsThemeDialogHost(
-                state = dialog,
-                onDismiss = { themeDialog = null },
-                onSaveCurrent = { name ->
-                    themeDialog = null
-                    val next = SettingsActionDispatcher.saveTheme(
-                        model = model,
-                        name = name,
-                        id = themeEntryId(System.currentTimeMillis()),
-                        createdAtIso = LocalDateTime.now().toString(),
-                    )
-                    if (next == null) {
-                        // 名字为空：不写盘、不假装成功（确认按钮本来就是禁用的，这里再兜一层）。
-                        Log.w(LOG_TAG, "save theme rejected: blank name")
+        SettingsThemeDialogHost(
+            state = themeDialog,
+            onDismiss = { themeDialog = null },
+            onSaveCurrent = { name ->
+                themeDialog = null
+                val next = SettingsActionDispatcher.saveTheme(
+                    model = model,
+                    name = name,
+                    id = themeEntryId(System.currentTimeMillis()),
+                    createdAtIso = LocalDateTime.now().toString(),
+                )
+                if (next == null) {
+                    // 名字为空：不写盘、不假装成功（确认按钮本来就是禁用的，这里再兜一层）。
+                    Log.w(LOG_TAG, "save theme rejected: blank name")
+                } else {
+                    commitModel(next)
+                }
+            },
+            onRename = { id, name ->
+                themeDialog = null
+                val next = SettingsActionDispatcher.renameSavedTheme(model, id, name)
+                if (next == null) {
+                    Log.w(LOG_TAG, "rename theme failed: id=$id")
+                    toast(SettingsStringsExt2.saveFailed.zh)
+                } else {
+                    commitModel(next)
+                }
+            },
+            onDelete = { id ->
+                themeDialog = null
+                val deletedName = savedThemeName(id)
+                val next = SettingsActionDispatcher.deleteSavedTheme(model, id)
+                if (next == null) {
+                    Log.w(LOG_TAG, "delete theme failed: id=$id")
+                    toast(SettingsStringsExt2.saveFailed.zh)
+                } else {
+                    // 删掉的正是「当前主题」那一份 ⇒ 检查点一起清掉，否则「当前主题」卡片
+                    // 会指着一份已经不存在的存档（Dart 侧 `deleteTheme` 后也不会再选中它）。
+                    val cleared = if (deletedName.isNotEmpty() &&
+                        next.themeCheckpointName == deletedName
+                    ) {
+                        next.copy(themeCheckpointName = null, themeCheckpointConfig = null)
                     } else {
-                        commitModel(next)
+                        next
                     }
-                },
-                onRename = { id, name ->
-                    themeDialog = null
-                    val next = SettingsActionDispatcher.renameSavedTheme(model, id, name)
-                    if (next == null) {
-                        Log.w(LOG_TAG, "rename theme failed: id=$id")
-                        toast(SettingsStringsExt2.saveFailed.zh)
-                    } else {
-                        commitModel(next)
-                    }
-                },
-                onDelete = { id ->
-                    themeDialog = null
-                    val deletedName = savedThemeName(id)
-                    val next = SettingsActionDispatcher.deleteSavedTheme(model, id)
-                    if (next == null) {
-                        Log.w(LOG_TAG, "delete theme failed: id=$id")
-                        toast(SettingsStringsExt2.saveFailed.zh)
-                    } else {
-                        // 删掉的正是「当前主题」那一份 ⇒ 检查点一起清掉，否则「当前主题」卡片
-                        // 会指着一份已经不存在的存档（Dart 侧 `deleteTheme` 后也不会再选中它）。
-                        val cleared = if (deletedName.isNotEmpty() &&
-                            next.themeCheckpointName == deletedName
-                        ) {
-                            next.copy(themeCheckpointName = null, themeCheckpointConfig = null)
-                        } else {
-                            next
-                        }
-                        commitModel(cleared)
-                    }
-                },
-                onAction = { action, id -> themeDialog = null; runSavedThemeAction(action, id) },
-            )
-        }
+                    commitModel(cleared)
+                }
+            },
+            onAction = { action, id -> themeDialog = null; runSavedThemeAction(action, id) },
+        )
 
-        notice?.let { current ->
-            SettingsNoticeDialog(
-                notice = current,
-                onDismiss = { notice = null },
-            )
-        }
+        SettingsNoticeDialog(
+            notice = notice,
+            onDismiss = { notice = null },
+        )
     }
 }
 
@@ -825,6 +820,7 @@ private class DebouncedSettingsWriter(
  */
 @Composable
 private fun AutoRefreshDailyTimeSheet(
+    show: Boolean,
     initialMinute: Int,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
@@ -834,7 +830,7 @@ private fun AutoRefreshDailyTimeSheet(
     var minute by remember(initial) { mutableIntStateOf(initial % 60) }
 
     QingyuSheet(
-        show = true,
+        show = show,
         title = SettingsStrings.courseAutoRefreshDailyTimeTitle.zh,
         // 内容根是 `Column(padding(horizontal = 16.dp))` ⇒ 框架侧横向归零，单边仍是 16
         //（不然 24 + 16 = 40）。
@@ -915,10 +911,10 @@ private fun AutoRefreshDailyTimeSheet(
  * 标题就是「立即试一次」）。开关/档位/时刻这些是真的写盘的，执行器一到位就能跑。
  */
 @Composable
-private fun AutoRefreshRunNowNotice(onDismiss: () -> Unit) {
+private fun AutoRefreshRunNowNotice(show: Boolean, onDismiss: () -> Unit) {
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+        show = show,
         title = SettingsStrings.courseAutoRefreshTryNowTitle.zh,
         onDismissRequest = onDismiss,
     ) {
@@ -966,46 +962,54 @@ private data class ColorEdit(val rowId: String, val hex: String)
  */
 @Composable
 internal fun SettingsConfirmResetDialog(
-    scope: SettingsResetScope,
+    pendingScope: SettingsResetScope?,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    // 弹窗常驻组合（2026-11-02 弹窗审核 P2）：调用方关闭只把 pendingScope 置空，
+    // `show` 驱动官方退场动画；退场期间 pendingScope 已是 null，
+    // 用 remember 保留的最后一份非空作用域继续渲染正文。
+    var shown by remember { mutableStateOf(pendingScope) }
+    if (pendingScope != null) shown = pendingScope
     OverlayDialog(
-        show = true,
+        show = pendingScope != null,
         title = SettingsStringsExt4.settingsResetDefaultsConfirmTitle.zh,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = scope.confirmBody.zh,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Button(onClick = onDismiss) {
-                    Text(
-                        text = SettingsStringsExt4.cancelAction.zh,
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = onConfirm,
-                    // 恢复默认会覆盖用户设置，属破坏性操作：红底 + onError 字，
-                    // 不再用「灰底 + 红字」这第三种形态。
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.error,
-                        contentColor = MiuixTheme.colorScheme.onError,
-                    ),
+        val scope = shown
+        if (scope != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = scope.confirmBody.zh,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(
-                        text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
-                        style = MiuixTheme.textStyles.button,
-                    )
+                    Button(onClick = onDismiss) {
+                        Text(
+                            text = SettingsStringsExt4.cancelAction.zh,
+                            style = MiuixTheme.textStyles.button,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onConfirm,
+                        // 恢复默认会覆盖用户设置，属破坏性操作：红底 + onError 字，
+                        // 不再用「灰底 + 红字」这第三种形态。
+                        colors = ButtonDefaults.buttonColors(
+                            color = MiuixTheme.colorScheme.error,
+                            contentColor = MiuixTheme.colorScheme.onError,
+                        ),
+                    ) {
+                        Text(
+                            text = SettingsStringsExt4.settingsResetDefaultsTitle.zh,
+                            style = MiuixTheme.textStyles.button,
+                        )
+                    }
                 }
             }
         }
@@ -1020,18 +1024,23 @@ internal fun SettingsConfirmResetDialog(
  */
 @Composable
 private fun SettingsColorPickerDialog(
-    initialHex: String,
+    initialHex: String?,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    val initial = remember(initialHex) { parseHexRgb(initialHex) }
-    var red by remember(initialHex) { mutableStateOf(initial[0]) }
-    var green by remember(initialHex) { mutableStateOf(initial[1]) }
-    var blue by remember(initialHex) { mutableStateOf(initial[2]) }
+    // 弹窗常驻组合（同 [SettingsConfirmResetDialog]）：调用方关闭只清掉 pending 的
+    // 编辑目标，`show` 驱动官方退场动画；退场期间用保留的最后一份 hex 继续渲染
+    //（`parseHexRgb` 对空串按黑处理，首次组合时的占位不会出事）。
+    var shownHex by remember { mutableStateOf(initialHex ?: "") }
+    if (initialHex != null) shownHex = initialHex
+    val initial = remember(shownHex) { parseHexRgb(shownHex) }
+    var red by remember(shownHex) { mutableStateOf(initial[0]) }
+    var green by remember(shownHex) { mutableStateOf(initial[1]) }
+    var blue by remember(shownHex) { mutableStateOf(initial[2]) }
     val hex = rgbToHex(red, green, blue)
 
     OverlayDialog(
-        show = true,
+        show = initialHex != null,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -1206,20 +1215,22 @@ fun HomeNavigationHost(
             },
         )
 
-        pendingReset?.let { scope ->
-            SettingsConfirmResetDialog(
-                scope = scope,
-                onDismiss = { pendingReset = null },
-                onConfirm = {
-                    SettingsActionDispatcher.applyResetScope(model, scope.arg)?.let { next ->
+        // 常驻组合：pendingReset 只切 show，退场动画才播得出来（同 SettingsHost 主宿主）。
+        SettingsConfirmResetDialog(
+            pendingScope = pendingReset,
+            onDismiss = { pendingReset = null },
+            onConfirm = {
+                val scope = pendingReset
+                pendingReset = null
+                scope?.let {
+                    SettingsActionDispatcher.applyResetScope(model, it.arg)?.let { next ->
                         if (apply(next)) {
                             toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
                         }
                     }
-                    pendingReset = null
-                },
-            )
-        }
+                }
+            },
+        )
     }
 }
 
@@ -1375,27 +1386,26 @@ fun TimetablePageSettingsHost(
             },
         )
 
-        pendingReset?.let { scope ->
-            SettingsConfirmResetDialog(
-                scope = scope,
-                onDismiss = { pendingReset = null },
-                onConfirm = {
-                    pendingReset = null
-                    applyReset(scope)
-                },
-            )
-        }
+        // 常驻组合：pending 状态只切 show，退场动画才播得出来（同 SettingsHost 主宿主）。
+        SettingsConfirmResetDialog(
+            pendingScope = pendingReset,
+            onDismiss = { pendingReset = null },
+            onConfirm = {
+                val scope = pendingReset
+                pendingReset = null
+                scope?.let { applyReset(it) }
+            },
+        )
 
-        pendingColor?.let { edit ->
-            SettingsColorPickerDialog(
-                initialHex = edit.hex,
-                onDismiss = { pendingColor = null },
-                onConfirm = { hex ->
-                    pendingColor = null
-                    commitWrite(hex, edit.rowId)
-                },
-            )
-        }
+        SettingsColorPickerDialog(
+            initialHex = pendingColor?.hex,
+            onDismiss = { pendingColor = null },
+            onConfirm = { hex ->
+                val edit = pendingColor
+                pendingColor = null
+                edit?.let { commitWrite(hex, it.rowId) }
+            },
+        )
     }
 }
 
@@ -1575,21 +1585,27 @@ internal data class SettingsNotice(
  */
 @Composable
 internal fun SettingsThemeDialogHost(
-    state: ThemeDialogState,
+    state: ThemeDialogState?,
     onDismiss: () -> Unit,
     onSaveCurrent: (name: String) -> Unit,
     onRename: (id: String, name: String) -> Unit,
     onDelete: (id: String) -> Unit,
     onAction: (ThemeRowAction, id: String) -> Unit,
 ) {
-    when (state.mode) {
+    // 弹窗常驻组合（2026-11-02 弹窗审核 P2）：`show` 由 state 是否为空驱动，
+    // 调用方关闭只把 state 置 null，官方退场动画才播得出来；退场期间 state 已是
+    // null，用 remember 保留的最后一份非空 state 继续渲染标题与正文。
+    var shown by remember { mutableStateOf(state) }
+    if (state != null) shown = state
+    val current = shown
+    when (current?.mode) {
         ThemeDialogMode.SAVE_CURRENT, ThemeDialogMode.RENAME -> {
-            val initial = if (state.mode == ThemeDialogMode.RENAME) state.themeName else ""
-            var text by remember(state) { mutableStateOf(initial) }
+            val initial = if (current.mode == ThemeDialogMode.RENAME) current.themeName else ""
+            var text by remember(current) { mutableStateOf(initial) }
             OverlayDialog(
                 insideMargin = DpSize(16.dp, 16.dp),
-                show = true,
-                title = if (state.mode == ThemeDialogMode.RENAME) {
+                show = state != null,
+                title = if (current.mode == ThemeDialogMode.RENAME) {
                     SettingsStrings.themeRename.zh
                 } else {
                     SettingsStrings.themeSaveCurrent.zh
@@ -1621,8 +1637,8 @@ internal fun SettingsThemeDialogHost(
                         enabled = text.isNotBlank(),
                         colors = ButtonDefaults.buttonColorsPrimary(),
                         onClick = {
-                            val id = state.themeId
-                            if (state.mode == ThemeDialogMode.RENAME && id != null) {
+                            val id = current.themeId
+                            if (current.mode == ThemeDialogMode.RENAME && id != null) {
                                 onRename(id, text)
                             } else {
                                 onSaveCurrent(text)
@@ -1637,11 +1653,11 @@ internal fun SettingsThemeDialogHost(
 
         ThemeDialogMode.DELETE -> OverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
+            show = state != null,
             // Dart 同弹层标题是「确认删除」（confirmDeleteTitle），按钮才是「删除」；
             // 原来标题与按钮同用 themeDelete，一个「删除」说了两遍。
             title = SettingsStrings.confirmDeleteTitle.zh,
-            summary = SettingsStrings.themeDeleteConfirmMessage.filled("name", state.themeName),
+            summary = SettingsStrings.themeDeleteConfirmMessage.filled("name", current.themeName),
             onDismissRequest = onDismiss,
         ) {
             Row(
@@ -1655,7 +1671,7 @@ internal fun SettingsThemeDialogHost(
                 )
                 Button(
                     modifier = Modifier.weight(1f),
-                    onClick = { state.themeId?.let(onDelete) },
+                    onClick = { current.themeId?.let(onDelete) },
                     // 删除主题不可撤销：红底 + onError 字（不是默认灰实心）。
                     colors = ButtonDefaults.buttonColors(
                         color = MiuixTheme.colorScheme.error,
@@ -1669,9 +1685,9 @@ internal fun SettingsThemeDialogHost(
 
         // 内容根是 `Column(padding(horizontal = 16.dp, …))` ⇒ 框架侧横向归零（单边仍是 16）。
         ThemeDialogMode.ACTIONS -> QingyuSheet(
-            show = true,
+            show = state != null,
             // 标题是用户数据（主题名），不来自 ARB。
-            title = state.themeName,
+            title = current.themeName,
             contentPadsHorizontally = true,
             onDismissRequest = onDismiss,
         ) {
@@ -1682,21 +1698,24 @@ internal fun SettingsThemeDialogHost(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ThemeActionRow(SettingsStrings.themeApply.zh) {
-                    state.themeId?.let { onAction(ThemeRowAction.APPLY, it) }
+                    current.themeId?.let { onAction(ThemeRowAction.APPLY, it) }
                 }
                 ThemeActionRow(SettingsStrings.themeRename.zh) {
-                    state.themeId?.let { onAction(ThemeRowAction.RENAME, it) }
+                    current.themeId?.let { onAction(ThemeRowAction.RENAME, it) }
                 }
                 ThemeActionRow(SettingsStrings.themeDuplicate.zh) {
-                    state.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
+                    current.themeId?.let { onAction(ThemeRowAction.DUPLICATE, it) }
                 }
                 ThemeActionRow(SettingsStrings.themeDelete.zh, destructive = true) {
-                    state.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
+                    current.themeId?.let { onAction(ThemeRowAction.DELETE, it) }
                 }
                 // 不加末尾 Spacer(8)：套件已补「手势区 + 16dp」让位，
                 // 这里再叠一层就多出约 16dp 空白（审核报告 settings 域 P3）。
             }
         }
+
+        // 首次组合（还没开过任何主题弹层）：什么都不画。
+        null -> Unit
     }
 }
 
@@ -1730,40 +1749,47 @@ private fun ThemeActionRow(
  * 区别只在多了 [SettingsNotice.onUndo] 这条撤销通路。
  */
 @Composable
-private fun SettingsNoticeDialog(notice: SettingsNotice, onDismiss: () -> Unit) {
+private fun SettingsNoticeDialog(notice: SettingsNotice?, onDismiss: () -> Unit) {
+    // 弹窗常驻组合（同 [SettingsConfirmResetDialog]）：`show` 由 notice 是否为空驱动，
+    // 退场期间用保留的最后一份非空 notice 继续渲染。
+    var shown by remember { mutableStateOf(notice) }
+    if (notice != null) shown = notice
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
-        title = notice.title,
+        show = notice != null,
+        title = shown?.title,
         onDismissRequest = onDismiss,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = notice.body,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                val undo = notice.onUndo
-                val undoLabel = notice.undoLabel
-                if (undo != null && undoLabel != null) {
-                    TextButton(
-                        text = undoLabel,
-                        onClick = {
-                            undo()
-                            onDismiss()
-                        },
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColorsPrimary(),
+        val current = shown
+        if (current != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = current.body,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(text = SettingsStrings.confirmAction.zh)
+                    val undo = current.onUndo
+                    val undoLabel = current.undoLabel
+                    if (undo != null && undoLabel != null) {
+                        TextButton(
+                            text = undoLabel,
+                            onClick = {
+                                undo()
+                                onDismiss()
+                            },
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(text = SettingsStrings.confirmAction.zh)
+                    }
                 }
             }
         }

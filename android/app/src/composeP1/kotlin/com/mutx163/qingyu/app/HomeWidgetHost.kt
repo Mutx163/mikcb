@@ -299,13 +299,15 @@ fun HomeWidgetHost(
             },
         )
 
-        pendingReset?.let { scope ->
-            // 与设置族其它页共用同一份确认弹窗（正文/按钮/危险色都在那里）。
-            SettingsConfirmResetDialog(
-                scope = scope,
-                onDismiss = { pendingReset = null },
-                onConfirm = {
-                    SettingsActionDispatcher.applyResetScope(model, scope.arg)?.let { next ->
+        // 常驻组合：pendingReset 只切 show，退场动画才播得出来（同 SettingsHost 主宿主）。
+        SettingsConfirmResetDialog(
+            pendingScope = pendingReset,
+            onDismiss = { pendingReset = null },
+            onConfirm = {
+                val scope = pendingReset
+                pendingReset = null
+                scope?.let {
+                    SettingsActionDispatcher.applyResetScope(model, it.arg)?.let { next ->
                         if (applyModel(next)) {
                             Toast.makeText(
                                 context,
@@ -314,10 +316,9 @@ fun HomeWidgetHost(
                             ).show()
                         }
                     }
-                    pendingReset = null
-                },
-            )
-        }
+                }
+            },
+        )
     }
 }
 
