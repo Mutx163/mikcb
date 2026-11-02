@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,7 +90,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * 2. **周 / 节次选择器**：Dart 是 `showHyperosSelectSheet`（列表弹层），本层同样是列表弹层
  *    （[FollowupPickerSheet]），不是数字步进；步进只留给「周」那对 ± 按钮（Dart 也有）。
  * 3. **容器高度**：Dart 调课弹层限高 `屏高 × 0.88` + 顶部滚动 + 底部按钮固定。
- *    本层用 `heightIn(max = 480.dp)` 的可滚列表 + 固定底部按钮，效果同构（列表自己滚）。
+ *    本层用 `heightIn(max = 屏高 × 0.72)` 的可滚列表 + 固定底部按钮，效果同构（列表自己滚）；
+ *    0.72 = Dart 的 0.88 总预算扣掉固定的底部按钮区 + 底部让位 + miuix 顶部把手，
+ *    与同域 `AddCoursePage.kt` 的正文限高比例一致，矮屏时列表跟着缩、按钮不再被挤出屏。
  *
  * ## 纪律
  *
@@ -695,9 +698,13 @@ fun CourseRescheduleSheet(
         sectionTimes = sectionTimes,
     )
 
+    // 正文列表限高：屏高 × 0.72（写死 dp 值在矮屏会把底部按钮挤出弹层；
+    // 比例依据见本文件 KDoc「与 Dart 的已知差异」第 3 条）。
+    val maxListHeight = (LocalConfiguration.current.screenHeightDp * RESCHEDULE_LIST_HEIGHT_FRACTION).dp
+
     QingyuSheet(
         show = show,
-        // 正文里有自己的 LazyColumn（限高 480 自己滚）⇒ 套件不再套 verticalScroll
+        // 正文里有自己的 LazyColumn（限高按屏高比例自己滚）⇒ 套件不再套 verticalScroll
         //（否则嵌套滚动崩）；底部让位由本层垫在固定按钮下面。
         contentScrolls = true,
         onDismissRequest = onDismiss,
@@ -711,7 +718,7 @@ fun CourseRescheduleSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp)
+                    .heightIn(max = maxListHeight)
                     .scrollEndHaptic()
                     .overScrollVertical(),
             ) {
@@ -938,3 +945,13 @@ fun CourseRescheduleSheet(
         },
     )
 }
+
+/**
+ * 调课弹层正文列表的最大高度占屏高比例。
+ *
+ * Dart 整弹层限 `屏高 × 0.88`（`course_followup_sheets.dart` 容器）；本层的列表只占
+ * 弹层的一部分 —— 扣掉 miuix 顶部把手/空标题（42dp）、底部固定按钮行、12dp 间距与
+ * 手势区让位后约为 0.72，与同域 `AddCoursePage.kt` 的正文限高比例同源。按比例而不是
+ * 写死 dp，矮屏（分屏 / 小屏设备）时列表自己缩，底部按钮始终留在屏内。
+ */
+private const val RESCHEDULE_LIST_HEIGHT_FRACTION = 0.72f
