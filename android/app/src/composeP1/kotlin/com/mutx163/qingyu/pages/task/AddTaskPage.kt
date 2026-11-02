@@ -400,7 +400,9 @@ fun AddTaskPage(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // 按钮间距 12：Dart `_HyperosDialogActions` 两按钮 `SizedBox(width: 12)`
+            // （`hyperos_dialog.dart:162`）。
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
