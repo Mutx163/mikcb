@@ -380,6 +380,58 @@ class LanEditHttpServerTest {
         }
     }
 
+    @Test
+    fun `在飞体预算占满时新的大体请求回 503 小请求不受影响`() {
+        // 预算 16 字节：构造「一个连接把体读到一半、预算被占住」的确定性场景
+        val budget = LanEditBodyBudget(maxBytes = 16)
+        val server = LanEditHttpServer(
+            router = LanEditApiRouter(host = FakeLanEditHost(), session = session(), clock = { now }),
+            bindAddress = InetAddress.getByName("127.0.0.1"),
+            sessionExpired = null,
+            bodyBudget = budget,
+        )
+        val port = server.start()
+        try {
+            // A：声明 11 字节只发 5 字节，读体停在半途，预算被它占住（16-11=5）
+            val slow = Socket("127.0.0.1", port)
+            try {
+                slow.getOutputStream().write(
+                    ("POST /api/v1/auth/verify HTTP/1.1\r\nHost: h\r\nContent-Type: application/json\r\n" +
+                        "Content-Length: 11\r\n\r\n{\"pin").toByteArray(),
+                )
+                slow.getOutputStream().flush()
+                // 等 A 真的拿到预算再发下一个请求，消除调度竞态
+                val deadline = System.currentTimeMillis() + 5_000
+                while (budget.availableBytes() != 5L) {
+                    check(System.currentTimeMillis() < deadline) { "慢请求没占到预算：${budget.availableBytes()}" }
+                    Thread.sleep(10)
+                }
+
+                // B：也要 11 字节——预算只剩 5，必须立刻 503，而不是等 A
+                val busy = parseResponse(
+                    exchange(port, post(port, "/api/v1/auth/verify", """{"pin":"1"}""")),
+                )
+                assertEquals(503, busy.status)
+                assertTrue(busy.body.contains("too_many_requests"))
+
+                // 无体小请求完全不碰闸门，照常服务
+                val health = parseResponse(exchange(port, "GET /api/v1/health HTTP/1.1\r\nHost: h\r\n\r\n"))
+                assertEquals(200, health.status)
+
+                // A 补完剩余 6 字节（体共 11 字节），正常拿响应；finally 归还后预算回到满额
+                slow.getOutputStream().write("\":\"1\"}".toByteArray())
+                slow.getOutputStream().flush()
+                val resumed = parseResponse(readAll(slow.getInputStream()))
+                assertEquals(401, resumed.status)
+            } finally {
+                slow.close()
+            }
+            assertEquals(16L, budget.availableBytes())
+        } finally {
+            server.stop("test_done")
+        }
+    }
+
     // -----------------------------------------------------------------------
     // 生命周期
     // -----------------------------------------------------------------------

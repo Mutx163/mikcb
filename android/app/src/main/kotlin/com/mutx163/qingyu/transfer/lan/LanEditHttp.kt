@@ -34,6 +34,20 @@ object LanEditHttpLimits {
     /** 请求体上限 5 MiB —— 与 Dart `_maxRequestBodyBytes` 一致（整份课表备份也远小于它）。 */
     const val MAX_BODY_BYTES = 5 * 1024 * 1024
 
+    /**
+     * 全部在飞请求体的**总字节预算**（2026-11-02 新增内存闸门）。
+     *
+     * 为什么单请求上限不动、加总闸：真实的最大请求体是表格导入的 `contentBase64`
+     *（base64 后膨胀 4/3，5 MiB 体 ≈ 3.7 MiB 文件，Dart 解析器单文件上限 20 MiB，
+     * HTTP 这条管子本来就是更窄的那个），收到 2 MiB 会拒掉合法的大表格；
+     * 但 16 并发 × 5 MiB 的字节数组再转一次字符串，理论峰值 80–160 MB，
+     * 而且读体发生在路由层并发闸（`router.tryEnter`）**之前**，
+     * 工作池 16+4 个线程可以同时停在 readBody 里。总预算 8 MiB 把任意时刻
+     * 活着的体内存钉在 ≈8 MiB 字节 + ≤8 MiB 字符串（≈16–24 MB 峰值），
+     * 一次只传一个大文件的正常使用完全无感。
+     */
+    const val MAX_INFLIGHT_BODY_BYTES = 8L * 1024 * 1024
+
     /** 读一个请求体的墙钟预算（Dart `_bodyReadBudget`）。 */
     const val BODY_READ_BUDGET_MILLIS = 20_000L
 
@@ -65,6 +79,33 @@ class LanEditHttpException(
     val failure: LanEditHttpFailure,
     val detail: String = "",
 ) : RuntimeException(if (detail.isEmpty()) failure.error else "${failure.error}: $detail")
+
+/**
+ * 在飞请求体的字节预算闸门（纯逻辑，L0 可测；服务端每实例持一个）。
+ *
+ * `tryAcquire` 是「要么全拿、要么不动」：剩余不足时返回 false 且预算不变，
+ * 调用方直接回 503。`release` 归还时按上限钳制，重复释放不会把预算放大到超过初值。
+ * 零字节体（GET 等）不走这个闸。
+ */
+class LanEditBodyBudget(private val maxBytes: Long) {
+
+    private var available = maxBytes
+
+    fun tryAcquire(bytes: Long): Boolean = synchronized(this) {
+        if (bytes <= 0) return true
+        if (available < bytes) return false
+        available -= bytes
+        true
+    }
+
+    fun release(bytes: Long) {
+        if (bytes <= 0) return
+        synchronized(this) { available = minOf(maxBytes, available + bytes) }
+    }
+
+    /** 剩余预算（测试与诊断用）。 */
+    fun availableBytes(): Long = synchronized(this) { available }
+}
 
 /** 请求行三元组。 */
 data class LanEditRequestLine(

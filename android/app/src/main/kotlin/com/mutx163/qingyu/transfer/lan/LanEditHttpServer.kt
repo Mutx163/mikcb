@@ -65,6 +65,14 @@ class LanEditHttpServer(
      */
     private val sessionExpired: (() -> Boolean)? = { router.isSessionExpired },
     private val idleCheckIntervalMillis: Long = DEFAULT_IDLE_CHECK_INTERVAL_MILLIS,
+    /**
+     * 在飞请求体的总字节预算（[LanEditHttpLimits.MAX_INFLIGHT_BODY_BYTES]）。
+     *
+     * 读体发生在路由层并发闸之前，16+4 个工作线程可以同时停在 readBody 里；
+     * 没有这个闸，16 并发 × 5 MiB 的体在低内存机型上是 OOM 形状。
+     * 测试注入小预算来构造「预算占满」的确定性场景。
+     */
+    private val bodyBudget: LanEditBodyBudget = LanEditBodyBudget(LanEditHttpLimits.MAX_INFLIGHT_BODY_BYTES),
 ) {
 
     private val running = AtomicBoolean(false)
@@ -201,6 +209,7 @@ class LanEditHttpServer(
 
     private fun handleConnection(socket: Socket) {
         var entered = false
+        var bodyReserved = 0L
         try {
             socket.soTimeout = LanEditHttpLimits.SOCKET_IDLE_TIMEOUT_MILLIS
             socket.tcpNoDelay = true
@@ -210,6 +219,13 @@ class LanEditHttpServer(
             val requestLine = LanEditHttpParse.parseRequestLine(lines.firstOrNull().orEmpty())
             val headers = LanEditHttpParse.parseHeaders(lines.drop(1))
             val contentLength = LanEditHttpParse.requireContentLength(headers)
+            // 内存闸门：在飞体总量超过预算时明确回 503（与工作池满同一错误形状），
+            // 而不是照单全收把低内存机型推到 OOM。零字节体不占预算。
+            if (contentLength > 0 && !bodyBudget.tryAcquire(contentLength)) {
+                writeQuietly(socket, LanEditHttpResponse.error(503, "too_many_requests", "Too many requests"))
+                return
+            }
+            bodyReserved = contentLength
             val body = readBody(input, contentLength)
             val (path, queryString) = LanEditHttpParse.splitTarget(requestLine.target)
             val request = LanEditHttpRequest(
@@ -261,6 +277,9 @@ class LanEditHttpServer(
             writeQuietly(socket, LanEditHttpResponse.error(500, "internal_error", "internal_error"))
         } finally {
             if (entered) router.exit()
+            // 预算在「响应已写出、连接收摊」时归还：请求体字符串活到 route() 返回，
+            // 提前归还会让预算虚高、闸门失效。
+            if (bodyReserved > 0) bodyBudget.release(bodyReserved)
             closeQuietly(socket)
         }
     }

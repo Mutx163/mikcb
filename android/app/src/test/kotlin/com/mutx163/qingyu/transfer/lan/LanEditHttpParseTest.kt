@@ -339,6 +339,49 @@ class LanEditHttpParseTest {
     }
 
     // -----------------------------------------------------------------------
+    // 在飞体预算闸门
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `请求体预算闸门 要么全拿要么不动 释放归还且不放大`() {
+        val budget = LanEditBodyBudget(maxBytes = 100)
+        assertTrue(budget.tryAcquire(60))
+        assertEquals(40L, budget.availableBytes())
+        // 剩余不足：拒绝且预算一个字节都不动
+        assertFalse(budget.tryAcquire(41))
+        assertEquals(40L, budget.availableBytes())
+        assertTrue(budget.tryAcquire(40))
+        assertEquals(0L, budget.availableBytes())
+        // 零字节体（GET 等）不占预算
+        assertTrue(budget.tryAcquire(0))
+        assertEquals(0L, budget.availableBytes())
+        // 释放归还；重复释放被钳制回上限
+        budget.release(20)
+        assertEquals(20L, budget.availableBytes())
+        budget.release(1000)
+        assertEquals(100L, budget.availableBytes())
+    }
+
+    @Test
+    fun `请求体预算闸门 初始等于上限且可并发收支`() {
+        val budget = LanEditBodyBudget(maxBytes = LanEditHttpLimits.MAX_INFLIGHT_BODY_BYTES)
+        assertEquals(LanEditHttpLimits.MAX_INFLIGHT_BODY_BYTES, budget.availableBytes())
+
+        // 并发收支总量守恒：8 个线程各拿 1 MiB 放 1 MiB，循环后预算必须回到满额
+        val workers = (1..8).map {
+            Thread {
+                repeat(50) {
+                    if (budget.tryAcquire(1024 * 1024)) {
+                        budget.release(1024 * 1024)
+                    }
+                }
+            }.apply { start() }
+        }
+        workers.forEach { it.join(5_000) }
+        assertEquals(LanEditHttpLimits.MAX_INFLIGHT_BODY_BYTES, budget.availableBytes())
+    }
+
+    // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------
 
