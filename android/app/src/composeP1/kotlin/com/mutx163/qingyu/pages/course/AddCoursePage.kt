@@ -18,10 +18,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +58,8 @@ import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 /** 颜色选择盘（与 AddScheduleItemPage 同一套十色盘；Dart 侧走共享的 course_palette_sheet）。 */
 private val kCourseColorPalette = listOf(
@@ -767,137 +768,141 @@ private fun AddCourseWeekPickerDialog(
         title = AddCourseStrings.weekPickerTitle.zh,
         onDismissRequest = onDismiss,
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = maxBodyHeight)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .scrollEndHaptic()
+                .overScrollVertical(),
         ) {
-            AddCourseWeekModeTileGroup(
-                tempMode = draft.mode,
-                dark = dark,
-                onSelect = { nextMode ->
-                    onDraftChange(AddCourseWeekDraftLogic.selectMode(draft, nextMode, availableWeeks))
-                },
-            )
-            if (draft.mode == AddCourseWeekSelectionMode.RANGE) {
-                WindowDropdownPreference(
-                    items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
-                    selectedIndex = availableWeeks.indexOf(draft.startWeek).coerceAtLeast(0),
-                    title = AddCourseStrings.startWeekLabel.zh,
-                    onSelectedIndexChange = { position ->
-                        availableWeeks.getOrNull(position)?.let { week ->
-                            onDraftChange(AddCourseWeekDraftLogic.setStartWeek(draft, week, availableWeeks))
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AddCourseWeekModeTileGroup(
+                        tempMode = draft.mode,
+                        dark = dark,
+                        onSelect = { nextMode ->
+                            onDraftChange(AddCourseWeekDraftLogic.selectMode(draft, nextMode, availableWeeks))
+                        },
+                    )
+                    if (draft.mode == AddCourseWeekSelectionMode.RANGE) {
+                        WindowDropdownPreference(
+                            items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
+                            selectedIndex = availableWeeks.indexOf(draft.startWeek).coerceAtLeast(0),
+                            title = AddCourseStrings.startWeekLabel.zh,
+                            onSelectedIndexChange = { position ->
+                                availableWeeks.getOrNull(position)?.let { week ->
+                                    onDraftChange(AddCourseWeekDraftLogic.setStartWeek(draft, week, availableWeeks))
+                                }
+                            },
+                        )
+                        WindowDropdownPreference(
+                            items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
+                            selectedIndex = availableWeeks.indexOf(draft.endWeek).coerceAtLeast(0),
+                            title = AddCourseStrings.endWeekLabel.zh,
+                            onSelectedIndexChange = { position ->
+                                availableWeeks.getOrNull(position)?.let { week ->
+                                    onDraftChange(AddCourseWeekDraftLogic.setEndWeek(draft, week, availableWeeks))
+                                }
+                            },
+                        )
+                        AddCourseWeekParityTileGroup(
+                            isAllWeeks = !draft.isOddWeek && !draft.isEvenWeek,
+                            isOddWeek = draft.isOddWeek,
+                            isEvenWeek = draft.isEvenWeek,
+                            dark = dark,
+                            onSelectAll = {
+                                onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = false))
+                            },
+                            onSelectOdd = {
+                                onDraftChange(draft.copy(isOddWeek = true, isEvenWeek = false))
+                            },
+                            onSelectEven = {
+                                onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = true))
+                            },
+                        )
+                    } else {
+                        // 周网格：每行 5 个（Dart 按宽度 4/5/6 列自适应，先取中档）。
+                        availableWeeks.chunked(5).forEach { rowWeeks ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                rowWeeks.forEach { week ->
+                                    AddCourseWeekGridTile(
+                                        week = week,
+                                        isSelected = week in draft.customWeeks,
+                                        dark = dark,
+                                        modifier = Modifier.weight(1f),
+                                        onPress = {
+                                            onDraftChange(AddCourseWeekDraftLogic.toggleCustomWeek(draft, week))
+                                        },
+                                    )
+                                }
+                                // 末排不足 5 格时补等宽空位，保持格宽与上面各行一致（Dart GridView 原版行为）。
+                                repeat(5 - rowWeeks.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
-                    },
-                )
-                WindowDropdownPreference(
-                    items = availableWeeks.map { AddCourseStrings.weekLabel.filled("week", it.toString()) },
-                    selectedIndex = availableWeeks.indexOf(draft.endWeek).coerceAtLeast(0),
-                    title = AddCourseStrings.endWeekLabel.zh,
-                    onSelectedIndexChange = { position ->
-                        availableWeeks.getOrNull(position)?.let { week ->
-                            onDraftChange(AddCourseWeekDraftLogic.setEndWeek(draft, week, availableWeeks))
-                        }
-                    },
-                )
-                AddCourseWeekParityTileGroup(
-                    isAllWeeks = !draft.isOddWeek && !draft.isEvenWeek,
-                    isOddWeek = draft.isOddWeek,
-                    isEvenWeek = draft.isEvenWeek,
-                    dark = dark,
-                    onSelectAll = {
-                        onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = false))
-                    },
-                    onSelectOdd = {
-                        onDraftChange(draft.copy(isOddWeek = true, isEvenWeek = false))
-                    },
-                    onSelectEven = {
-                        onDraftChange(draft.copy(isOddWeek = false, isEvenWeek = true))
-                    },
-                )
-            } else {
-                // 周网格：每行 5 个（Dart 按宽度 4/5/6 列自适应，先取中档）。
-                availableWeeks.chunked(5).forEach { rowWeeks ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        rowWeeks.forEach { week ->
-                            AddCourseWeekGridTile(
-                                week = week,
-                                isSelected = week in draft.customWeeks,
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            AddCourseChoiceChip(
+                                label = AddCourseStrings.selectAllAction.zh,
+                                isSelected = false,
                                 dark = dark,
                                 modifier = Modifier.weight(1f),
-                                onPress = {
-                                    onDraftChange(AddCourseWeekDraftLogic.toggleCustomWeek(draft, week))
+                                onClick = {
+                                    onDraftChange(AddCourseWeekDraftLogic.selectAllCustom(draft, availableWeeks))
+                                },
+                            )
+                            AddCourseChoiceChip(
+                                label = AddCourseStrings.selectOddWeeksAction.zh,
+                                isSelected = false,
+                                dark = dark,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    onDraftChange(AddCourseWeekDraftLogic.selectOddCustom(draft, availableWeeks))
+                                },
+                            )
+                            AddCourseChoiceChip(
+                                label = AddCourseStrings.selectEvenWeeksAction.zh,
+                                isSelected = false,
+                                dark = dark,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    onDraftChange(AddCourseWeekDraftLogic.selectEvenCustom(draft, availableWeeks))
                                 },
                             )
                         }
-                        // 末排不足 5 格时补等宽空位，保持格宽与上面各行一致（Dart GridView 原版行为）。
-                        repeat(5 - rowWeeks.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                    }
+                    val selectedWeeks = AddCourseWeekDraftLogic.selectedWeeks(draft)
+                    Text(
+                        text = AddCourseStrings.selectedWeeksSummary
+                            .filled("count", selectedWeeks.size.toString())
+                            .filled("weeks", AddCourseFormLogic.formatWeekList(selectedWeeks)),
+                        style = MiuixTheme.textStyles.body2,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Button(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(text = AddCourseStrings.cancelAction.zh)
+                        }
+                        top.yukonga.miuix.kmp.basic.Button(
+                            onClick = { onConfirm(draft) },
+                            enabled = AddCourseWeekDraftLogic.canConfirm(draft),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(text = AddCourseStrings.confirmAction.zh)
                         }
                     }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    AddCourseChoiceChip(
-                        label = AddCourseStrings.selectAllAction.zh,
-                        isSelected = false,
-                        dark = dark,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            onDraftChange(AddCourseWeekDraftLogic.selectAllCustom(draft, availableWeeks))
-                        },
-                    )
-                    AddCourseChoiceChip(
-                        label = AddCourseStrings.selectOddWeeksAction.zh,
-                        isSelected = false,
-                        dark = dark,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            onDraftChange(AddCourseWeekDraftLogic.selectOddCustom(draft, availableWeeks))
-                        },
-                    )
-                    AddCourseChoiceChip(
-                        label = AddCourseStrings.selectEvenWeeksAction.zh,
-                        isSelected = false,
-                        dark = dark,
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            onDraftChange(AddCourseWeekDraftLogic.selectEvenCustom(draft, availableWeeks))
-                        },
-                    )
-                }
-            }
-            val selectedWeeks = AddCourseWeekDraftLogic.selectedWeeks(draft)
-            Text(
-                text = AddCourseStrings.selectedWeeksSummary
-                    .filled("count", selectedWeeks.size.toString())
-                    .filled("weeks", AddCourseFormLogic.formatWeekList(selectedWeeks)),
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { onConfirm(draft) },
-                    enabled = AddCourseWeekDraftLogic.canConfirm(draft),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.confirmAction.zh)
                 }
             }
         }

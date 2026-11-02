@@ -14,10 +14,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,6 +59,8 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.time.LocalDateTime
 
 /**
@@ -516,20 +519,23 @@ fun ImportSpreadsheetWarningsDialog(
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = maxBodyHeight)
-                    .verticalScroll(rememberScrollState()),
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
             ) {
-                Text(
-                    text = ImportStrings.spreadsheetImportWarningsMessage.zh,
-                    style = MiuixTheme.textStyles.body2,
-                    lineHeight = 20.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                for (warning in warnings) {
+                item(key = "message") {
+                    Text(
+                        text = ImportStrings.spreadsheetImportWarningsMessage.zh,
+                        style = MiuixTheme.textStyles.body2,
+                        lineHeight = 20.sp,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                items(warnings) { warning ->
                     Text(
                         text = "• $warning",
                         style = MiuixTheme.textStyles.footnote1,
@@ -832,13 +838,14 @@ fun ImportColorGroupDialog(
         onDismissRequest = onDismiss,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = maxBodyHeight)
-                    .verticalScroll(rememberScrollState()),
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
             ) {
-                for ((index, groupId) in ImportRandomColorStore.GROUP_OPTIONS.withIndex()) {
+                itemsIndexed(ImportRandomColorStore.GROUP_OPTIONS) { index, groupId ->
                     if (index > 0) Spacer(modifier = Modifier.height(8.dp))
                     ImportValueRow(
                         title = ImportRandomColorStore.groupLabel(groupId),

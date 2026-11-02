@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +46,8 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 /**
  * 数据备份与迁移页 · Compose 渲染层。
@@ -487,16 +487,23 @@ fun TransferPreviewDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = content?.message.orEmpty(),
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-                textAlign = TextAlign.Center,
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = maxBodyHeight)
-                    .verticalScroll(rememberScrollState()),
-            )
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
+            ) {
+                item(key = "message") {
+                    Text(
+                        text = content?.message.orEmpty(),
+                        style = MiuixTheme.textStyles.body2,
+                        color = Color(QingyuTheme.secondaryText(dark)),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
             for (action in DataTransferLogic.previewActions(canMerge)) {
                 TransferButton(
                     label = action.label,

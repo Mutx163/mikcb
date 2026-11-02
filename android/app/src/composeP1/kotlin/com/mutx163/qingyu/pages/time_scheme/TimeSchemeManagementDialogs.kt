@@ -17,10 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -255,24 +254,27 @@ fun TimeSchemeDeleteBlockedSheet(
     ) {
         if (current != null) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = maxBodyHeight)
-                        .verticalScroll(rememberScrollState()),
+                        .scrollEndHaptic()
+                        .overScrollVertical(),
                 ) {
                     if (current.blockerIntro.isNotBlank()) {
-                        Text(
-                            text = current.blockerIntro,
-                            style = MiuixTheme.textStyles.footnote1,
-                            // 抬头句沿用对话框自己的居中惯例（与 Dart 同口径）。
-                            textAlign = TextAlign.Center,
-                            color = Color(QingyuTheme.primaryText(dark)),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        item(key = "intro") {
+                            Text(
+                                text = current.blockerIntro,
+                                style = MiuixTheme.textStyles.footnote1,
+                                // 抬头句沿用对话框自己的居中惯例（与 Dart 同口径）。
+                                textAlign = TextAlign.Center,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
-                    for (line in current.blockers) {
+                    items(current.blockers) { line ->
                         Text(
                             text = line,
                             style = MiuixTheme.textStyles.footnote1,
