@@ -130,7 +130,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 
 | 路 | 域 | 文件级互斥范围 | 验收门 | 状态 |
 |---|---|---|---|---|
-| A | 文案/l10n | 独占六份 ARB（lib/l10n/*.arb）+ TimetableProfilesPage.kt:81-115 中文常量迁 ARB + copy_style 203 条 + dead key | 门4 + L0 | 已派 |
+| A | 文案/l10n | 独占六份 ARB（lib/l10n/*.arb）+ TimetableProfilesPage.kt:81-115 中文常量迁 ARB + copy_style 203 条 + dead key | 门4 + L0 | ✅ 主任务完成（d98eb76f 迁移 22 常量到 TimetableStrings 复用既有键+补10引用；ef1bcbe7 cjk 36→4 压行）。卡点：死键 cloudSyncBaseUrlSecurityNote 被 test 引用、判据口径外，不删记 Lead；203 条超宽债未清 |
 | B | course/timetable/共享件 | 裸 Popup（CourseOverviewPage.kt:504）、未用 import（TimetableWeekPage.kt:52）、QingyuSheet IME+标题动作、守卫补 OverlayDialog 分支、门2 样式基线删行（DayView×2/MonthDayCell R5） | L0 + 门4 | 已派 |
 | C | sync 族 | 独占 pages/sync/：云备份整组 ×4 + 情侣整组 ×3 + SyncConflictChoiceDialog 三动作竖排 | L0 + 门4 | 已派 |
 | D | settings | 仅 SettingsHost.kt：说明框动作区、主题动作表灰实心、门2 函数体收尾 `}` 修复 | L0 + 门4 | 已派 |
