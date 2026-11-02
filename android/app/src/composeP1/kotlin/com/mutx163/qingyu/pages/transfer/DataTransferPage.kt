@@ -480,13 +480,19 @@ fun TransferPreviewDialog(
     onChoose: (TransferApplyMode?) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
+    // 退场动画期间保留最后一份非空 content：content 置 null 触发关闭时，标题若直接
+    // 跟着读 null 会切到兜底文案、正文清空，面板先「变空」再消失（审核报告 P3
+    // 旧 :479 的「空板退场」）。可见性仍由 content 驱动。
+    var shown by remember { mutableStateOf(content) }
+    if (content != null) shown = content
+    val current = shown
     // 4 行头信息 + merge/overwrite 两段差异摘要可能很长：正文限高 + 可滚，动作按钮留在滚动区外。
     val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.45f).dp
     OverlayDialog(
         show = content != null,
         // 与 QrScopeDialog 同一口径：对话框内缩收到 16dp（官方默认 24 偏大）。
         insideMargin = DpSize(16.dp, 16.dp),
-        title = content?.title ?: TransferStrings.selectImportModeTitle.zh,
+        title = current?.title ?: TransferStrings.selectImportModeTitle.zh,
         onDismissRequest = { onChoose(null) },
     ) {
         Column(
@@ -502,7 +508,7 @@ fun TransferPreviewDialog(
             ) {
                 item(key = "message") {
                     Text(
-                        text = content?.message.orEmpty(),
+                        text = current?.message.orEmpty(),
                         style = MiuixTheme.textStyles.body2,
                         color = Color(QingyuTheme.secondaryText(dark)),
                         textAlign = TextAlign.Center,
