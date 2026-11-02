@@ -1,0 +1,2162 @@
+const t = (key, ...args) => window.LanEditI18n?.t(key, ...args) ?? key;
+
+const DEFAULT_COURSE_COLOR = '#2196F3';
+const SAFE_COURSE_COLOR_PATTERN = /^#?([0-9a-f]{6})$/i;
+
+function normalizeCourseColor(rawColor) {
+  const trimmedColor = String(rawColor ?? '').trim();
+  const match = SAFE_COURSE_COLOR_PATTERN.exec(trimmedColor);
+  return match ? `#${match[1].toUpperCase()}` : DEFAULT_COURSE_COLOR;
+}
+
+const THEME_STORAGE_KEY = 'lanEditTheme';
+
+function resolvePreferredTheme() {
+  try {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      return storedTheme;
+    }
+  } catch (_) {
+    // localStorage may be unavailable in private mode.
+  }
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function applyTheme(theme) {
+  const nextTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  } catch (_) {
+    // Ignore persistence failures; theme still applies for this session.
+  }
+  document.querySelectorAll('[data-theme-toggle]').forEach((toggleButton) => {
+    const nextLabel =
+      nextTheme === 'dark' ? t('switchToLightTheme') : t('switchToDarkTheme');
+    toggleButton.setAttribute('aria-label', nextLabel);
+    toggleButton.setAttribute('title', nextLabel);
+  });
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark'
+    ? 'dark'
+    : 'light';
+  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+function bindThemeToggles() {
+  document.querySelectorAll('[data-theme-toggle]').forEach((toggleButton) => {
+    toggleButton.addEventListener('click', () => toggleTheme());
+  });
+}
+
+applyTheme(resolvePreferredTheme());
+
+const state = {
+  token: sessionStorage.getItem('lanEditToken') || '',
+  pin: sessionStorage.getItem('lanEditPin') || '',
+  meta: null,
+  courses: [],
+  session: null,
+  editingGroupName: null,
+  // null until first successful sync — then defaults to phone currentWeek
+  viewWeek: null,
+  loading: false,
+  courseSearch: '',
+  filterNature: '',
+  sessionTimerId: null,
+  activeTab: 'overview',
+  logs: JSON.parse(sessionStorage.getItem('lanEditLogs') || '[]'),
+  selectedBackupFileContent: null,
+};
+
+// UI 元素声明
+const loginView = document.getElementById('login-view');
+const editorView = document.getElementById('editor-view');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const profileName = document.getElementById('profile-name');
+const profileSwitcher = document.getElementById('profile-switcher');
+const weekLabel = document.getElementById('week-label');
+const grid = document.getElementById('timetable-grid');
+const modal = document.getElementById('editor-modal');
+const courseForm = document.getElementById('course-form');
+const formError = document.getElementById('form-error');
+const deleteCourseBtn = document.getElementById('delete-course-btn');
+const duplicateCourseBtn = document.getElementById('duplicate-course-btn');
+const colorInput = document.getElementById('color-input');
+const colorSwatches = document.getElementById('color-swatches');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingText = document.getElementById('loading-text');
+const weekPicker = document.getElementById('week-picker');
+const courseSearch = document.getElementById('course-search');
+const filterNature = document.getElementById('filter-nature');
+const courseCount = document.getElementById('course-count');
+const sessionBadge = document.getElementById('session-badge');
+const sessionCountdown = document.getElementById('session-countdown');
+const toastContainer = document.getElementById('toast-container');
+
+// Tab 面板
+const navItems = document.querySelectorAll('.nav-link[data-tab]');
+const tabPanels = document.querySelectorAll('.tab-panel');
+const pageTitle = document.getElementById('page-title');
+
+// 概览页指标元素
+const todayCourseList = document.getElementById('today-course-list');
+const overviewTodayDate = document.getElementById('overview-today-date');
+const infoIp = document.getElementById('info-ip');
+const infoPort = document.getElementById('info-port');
+const infoPin = document.getElementById('info-pin');
+const infoClients = document.getElementById('info-clients');
+
+// 备份与作息
+const btnExportBackup = document.getElementById('btn-export-backup');
+const btnImportBackup = document.getElementById('btn-import-backup');
+const backupProfileName = document.getElementById('backup-profile-name');
+const dropZone = document.getElementById('drop-zone');
+const backupFileInput = document.getElementById('backup-file-input');
+const selectedFilename = document.getElementById('selected-filename');
+const metaSectionsContainer = document.getElementById('meta-sections-container');
+const btnAddSlotField = document.getElementById('btn-add-slot-field');
+const scheduleSlotsContainer = document.getElementById('schedule-slots-container');
+const spreadsheetDropZone = document.getElementById('spreadsheet-drop-zone');
+const spreadsheetFileInput = document.getElementById('spreadsheet-file-input');
+const spreadsheetSelectedFilename = document.getElementById('spreadsheet-selected-filename');
+const btnImportSpreadsheet = document.getElementById('btn-import-spreadsheet');
+const spreadsheetReplaceExisting = document.getElementById('spreadsheet-replace-existing');
+const spreadsheetImportResult = document.getElementById('spreadsheet-import-result');
+const syncPhoneWeekBtn = document.getElementById('sync-phone-week-btn');
+const mergeDropZone = document.getElementById('merge-drop-zone');
+const mergeFileInput = document.getElementById('merge-file-input');
+const mergeSelectedFilename = document.getElementById('merge-selected-filename');
+const btnImportMerge = document.getElementById('btn-import-merge');
+const mergeImportResult = document.getElementById('merge-import-result');
+const transferPreviewCard = document.getElementById('transfer-preview-card');
+const transferPreviewResult = document.getElementById('transfer-preview-result');
+const btnTransferPreviewMerge = document.getElementById('btn-transfer-preview-merge');
+const btnTransferPreviewOverwrite = document.getElementById('btn-transfer-preview-overwrite');
+const btnTransferPreviewCancel = document.getElementById('btn-transfer-preview-cancel');
+const btnTransferUndo = document.getElementById('btn-transfer-undo');
+const btnBatchDeleteCourses = document.getElementById('btn-batch-delete-courses');
+
+let slotCounter = 0;
+let selectedSpreadsheetFile = null;
+let selectedMergeFileContent = null;
+let pendingTransferContent = null;
+// 最近一次成功导入的撤销点 id（服务端按 id 消费一次）；刷新页面即丢失，
+// 但服务端仍保留撤销点，只是这一页没有按钮可点。
+let lastTransferId = null;
+const selectedCourseIds = new Set();
+
+function updateLibraryBatchDeleteUi() {
+  if (!btnBatchDeleteCourses) return;
+  const count = selectedCourseIds.size;
+  if (count === 0) {
+    hide(btnBatchDeleteCourses);
+    btnBatchDeleteCourses.disabled = true;
+    return;
+  }
+  show(btnBatchDeleteCourses);
+  btnBatchDeleteCourses.disabled = false;
+  btnBatchDeleteCourses.textContent = t('batchDeleteSelected', count);
+}
+
+function formatWeeksForExpression(weeks) {
+  if (!weeks || !weeks.length) return '';
+  return weeks.join('、');
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = String(dataUrl).split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// 通用助手函数
+function show(el) {
+  if (el) el.classList.remove('hidden');
+}
+
+function hide(el) {
+  if (el) el.classList.add('hidden');
+}
+
+/** shadcn 风格 Dialog（纯 CSS + class 切换，无 Bootstrap 依赖） */
+function showCourseModal() {
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function hideCourseModal() {
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function setError(el, message) {
+  if (!message) {
+    hide(el);
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  show(el);
+}
+
+function setLoading(isLoading, text = t('loadingData')) {
+  state.loading = isLoading;
+  if (isLoading) {
+    if (loadingText) {
+      loadingText.textContent = text;
+    }
+    show(loadingOverlay);
+  } else {
+    hide(loadingOverlay);
+  }
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+// 审计日志助手
+function addActivityLog(action, detail) {
+  const log = {
+    time: new Date().toLocaleTimeString(),
+    action,
+    detail
+  };
+  state.logs.unshift(log);
+  if (state.logs.length > 50) state.logs.pop();
+  sessionStorage.setItem('lanEditLogs', JSON.stringify(state.logs));
+  renderActivityLog();
+}
+
+function renderActivityLog() {
+  const listEl = document.getElementById('activity-log-list');
+  if (!listEl) return;
+  if (state.logs.length === 0) {
+    listEl.innerHTML = `<div class="log-empty-hint">${t('noActivityLog')}</div>`;
+    return;
+  }
+  listEl.innerHTML = state.logs.map(log => `
+    <div class="log-item">
+      <span class="log-time">${escapeHtml(log.time)}</span>
+      <span class="log-action badge badge-primary">${escapeHtml(log.action)}</span>
+      <span class="log-detail">${escapeHtml(log.detail)}</span>
+    </div>
+  `).join('');
+}
+
+// HTTP API 封装
+async function api(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (state.token) {
+    headers.Authorization = `Bearer ${state.token}`;
+  }
+  const profileId = state.session?.profileId || state.meta?.profileId || '';
+  if (profileId) {
+    headers['X-Profile-Id'] = profileId;
+  }
+  let body = options.body;
+  const method = (options.method || 'GET').toUpperCase();
+  if (
+    profileId &&
+    body &&
+    typeof body === 'string' &&
+    method !== 'GET' &&
+    method !== 'HEAD'
+  ) {
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.profileId) {
+        parsed.profileId = profileId;
+        body = JSON.stringify(parsed);
+      }
+    } catch (_) {
+      // Non-JSON body (e.g. raw backup import) — header carries profileId.
+    }
+  }
+  if (body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const response = await fetch(path, { ...options, headers, body });
+  const text = await response.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      data = { message: text };
+    }
+  }
+  if (!response.ok) {
+    const code = response.status;
+    if (code === 409 && data.error === 'profile_mismatch') {
+      throw new Error(data.message || t('timetableSwitchedReload'));
+    }
+    if (code === 502 || code === 504) {
+      throw new Error(t('connectionError', code));
+    }
+    if (code === 503) {
+      throw new Error(t('serviceUnavailable'));
+    }
+    if (code === 401) {
+      const reason = data.error || data.message || '';
+      if (reason === 'session_expired' || String(data.message || '').includes('expired')) {
+        throw new Error(t('sessionExpired'));
+      }
+      throw new Error(data.message || data.error || t('unauthorized'));
+    }
+    throw new Error(data.message || data.error || `HTTP ${code}`);
+  }
+  return data;
+}
+
+// 传输类错误码 → 可读解释。服务端只回错误码（不写中文/English 字面量），
+// 人话放在这里，且尽量给出「现在能怎么做」。
+const TRANSFER_ERROR_HINTS = {
+  profile_backup_profiles_unsupported: 'transferErrorMultiProfile',
+  use_profile_backup_not_full: 'transferErrorWholeDevice',
+  transfer_undo_token_missing: 'transferUndoTokenMissing',
+  transfer_undo_already_undone: 'transferUndoAlreadyUndone',
+  transfer_undo_profile_changed: 'transferUndoProfileChanged',
+};
+
+function describeTransferError(code) {
+  const key = TRANSFER_ERROR_HINTS[code];
+  return key ? t(key) : (code || 'transfer_import_failed');
+}
+
+// 核心周数计算逻辑
+function courseInWeek(course, week) {
+  if (course.suspendedWeeks && course.suspendedWeeks.includes(week)) {
+    return false;
+  }
+  if (course.customWeeks && course.customWeeks.length) {
+    return course.customWeeks.includes(week);
+  }
+  if (week < course.startWeek || week > course.endWeek) {
+    return false;
+  }
+  if (course.isOddWeek && week % 2 === 0) return false;
+  if (course.isEvenWeek && week % 2 === 1) return false;
+  return true;
+}
+
+// 分组计算逻辑 (核心：将一门课的多个上课时间聚合成一个 CourseGroup)
+function getCourseGroups(coursesList) {
+  // ⚠️ 必须 `Object.create(null)`，不能用 `{}`。
+  // 键是**课程名**，而课程名来自导入的表格/备份，用户可控。普通对象字面量继承
+  // Object.prototype，所以课程名恰好叫 `__proto__` / `constructor` / `toString`
+  // 时，`groupsMap[key]` 命中的是原型上的东西（真值）→ `if (!groupsMap[key])`
+  // 判不出「还没有」→ 落到 `groupsMap[key].courses.push(...)`，而原型上并没有
+  // courses，抛 TypeError。renderGrid / renderCoursesTable / renderDashboard
+  // 一起废掉，整页不可用。
+  // null 原型对象没有继承链，`Object.values()` 照常可用。
+  const groupsMap = Object.create(null);
+  coursesList.forEach(course => {
+    const key = course.name.trim();
+    if (!groupsMap[key]) {
+      groupsMap[key] = {
+        name: course.name,
+        shortName: course.shortName || '',
+        color: normalizeCourseColor(course.color),
+        courseNature: course.courseNature || 'required',
+        note: course.note || course.description || '',
+        courses: [],
+      };
+    }
+    groupsMap[key].courses.push(course);
+  });
+  return Object.values(groupsMap);
+}
+
+function coursesForViewWeek() {
+  return state.courses.filter((course) => courseInWeek(course, state.viewWeek));
+}
+
+function coursesStartingAt(dayOfWeek, section) {
+  return coursesForViewWeek().filter(
+    (course) => course.dayOfWeek === dayOfWeek && course.startSection === section,
+  );
+}
+
+function todayDayOfWeek() {
+  const day = new Date().getDay();
+  return day === 0 ? 7 : day;
+}
+
+function getWeekdayCn(index) {
+  return [
+    t('weekdayMon'), t('weekdayTue'), t('weekdayWed'), t('weekdayThu'),
+    t('weekdayFri'), t('weekdaySat'), t('weekdaySun'),
+  ][index] || '';
+}
+
+function weekdayHeaderText(label, index) {
+  const fallback = getWeekdayCn(index) || String(index + 1);
+  const raw = label || fallback;
+  if (!String(raw).startsWith('周')) {
+    return raw;
+  }
+  return getWeekdayCn(index) || raw;
+}
+
+function contrastTextColor(hex) {
+  const value = (hex || '#2563eb').replace('#', '');
+  if (value.length !== 6) return '#ffffff';
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? '#1f2937' : '#ffffff';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    // 单引号：目前所有属性都用双引号包裹，所以补它属于加固而非补漏。
+    // 代价是零，且能挡住将来有人写成单引号属性的那一刻。
+    .replaceAll("'", '&#39;');
+}
+
+function courseDisplayName(course) {
+  return course.shortName?.trim() || course.name;
+}
+
+// 仪表盘渲染函数
+function renderDashboard() {
+  if (!state.meta) return;
+
+  const phoneWeek = state.meta.currentWeek;
+  const today = todayDayOfWeek();
+  const todayName = getWeekdayCn(today - 1);
+  
+  overviewTodayDate.textContent = t('weekN', phoneWeek) + ` · ${todayName}`;
+
+  // 今日课程 (从当前查看的周中读取今日的课程)
+  const todayCourses = state.courses
+    .filter(course => course.dayOfWeek === today && courseInWeek(course, phoneWeek))
+    .sort((a, b) => a.startSection - b.startSection);
+
+  todayCourseList.innerHTML = '';
+  if (todayCourses.length === 0) {
+    todayCourseList.innerHTML = `<li class="empty-list-hint"><i class="ti ti-mood-smile me-1"></i>${t('noClassesToday')}</li>`;
+  } else {
+    todayCourses.forEach(course => {
+      const item = document.createElement('li');
+      item.className = 'list-card-item';
+
+      // Escape even though these can only be numbers today. The guarantee comes
+      // from the Dart type (Course.startSection is a non-nullable int), not from
+      // this file: if a future importer ever hands the client a string here, an
+      // unescaped interpolation becomes stored XSS with nothing to catch it.
+      // b344be91 applied exactly this reasoning to the value="" attributes and
+      // these three text nodes were left out of it.
+      const sectionText = escapeHtml(
+        course.startSection === course.endSection
+          ? t('sectionSingle', course.startSection)
+          : t('sectionRange', course.startSection, course.endSection),
+      );
+
+      const typeBadge = course.courseNature === 'elective'
+        ? `<span class="badge badge-success">${t('electiveBadge')}</span>`
+        : `<span class="badge badge-destructive">${t('requiredBadge')}</span>`;
+
+      item.innerHTML = `
+        <div class="item-color-indicator"></div>
+        <div class="item-info">
+          <h4>${escapeHtml(course.name)}</h4>
+          <p><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher || t('noTeacher'))} · <i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location || t('noRoom'))}</p>
+        </div>
+        <div class="item-meta">
+          <div><strong>${sectionText}</strong></div>
+          <div style="margin-top: 4px;">${typeBadge}</div>
+        </div>
+      `;
+      item.querySelector('.item-color-indicator').style.backgroundColor =
+        normalizeCourseColor(course.color);
+      item.addEventListener('click', () => {
+        state.activeTab = 'timetable';
+        syncTabsUI();
+        const groups = getCourseGroups(state.courses);
+        const group = groups.find(g => g.name === course.name);
+        if (group) {
+          openEditor(group, course.dayOfWeek, course.startSection, course.id);
+        }
+      });
+      todayCourseList.appendChild(item);
+    });
+  }
+
+  // 本地服务明细
+  infoIp.textContent = window.location.hostname;
+  infoPort.textContent = window.location.port || '80';
+  infoPin.textContent = state.pin || t('viewInApp');
+  
+  const connectedDevices = state.session?.connectedClientCount || 1;
+  infoClients.textContent = t('devicesCount', connectedDevices);
+
+  // 备份的课表档案名字
+  backupProfileName.textContent = state.session?.profileName || state.meta.profileName || t('currentProfileFallback');
+
+  renderActivityLog();
+}
+
+// 课表网格视图渲染 (Timetable Grid)
+function buildCourseBlock(course) {
+  const block = document.createElement('div');
+  block.className = 'course-block';
+  const bg = normalizeCourseColor(course.color);
+  block.style.background = bg;
+  block.style.color = contrastTextColor(bg);
+  block.dataset.courseId = course.id;
+
+  const nature =
+    course.courseNature === 'elective'
+      ? `<span class="course-nature elective">${t('electiveBadge')}</span>`
+      : `<span class="course-nature">${t('requiredBadge')}</span>`;
+
+  const teacher = course.teacher?.trim()
+    ? `<span class="course-teacher">${escapeHtml(course.teacher)}</span>`
+    : '';
+  const location = course.location?.trim()
+    ? `<span class="course-location">${escapeHtml(course.location)}</span>`
+    : '';
+
+  block.innerHTML = `
+    <div class="course-block-header">
+      <strong>${escapeHtml(courseDisplayName(course))}</strong>
+      ${nature}
+    </div>
+    ${teacher}
+    ${location}
+  `;
+
+  block.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const groups = getCourseGroups(state.courses);
+    const group = groups.find(g => g.name === course.name);
+    if (group) {
+      openEditor(group, course.dayOfWeek, course.startSection, course.id);
+    }
+  });
+  return block;
+}
+
+function renderGrid() {
+  if (!state.meta) return;
+  grid.innerHTML = '';
+  const sections = state.meta.sections || [];
+  const weekdays = state.meta.weekdayLabels || [];
+  const occupied = new Set();
+  const today = todayDayOfWeek();
+
+  const header = document.createElement('tr');
+  header.appendChild(document.createElement('th'));
+  for (let day = 1; day <= 7; day += 1) {
+    const th = document.createElement('th');
+    const label = weekdayHeaderText(weekdays[day - 1], day - 1);
+    th.dataset.day = String(day);
+    if (day === today) {
+      th.classList.add('today-col');
+      th.title = t('todayBadge');
+      th.innerHTML = `<span class="day-label">${escapeHtml(label)}</span><span class="today-badge">${t('todayBadge')}</span>`;
+    } else {
+      th.textContent = label;
+    }
+    header.appendChild(th);
+  }
+  grid.appendChild(header);
+
+  sections.forEach((section, index) => {
+    const sectionNum = index + 1;
+    const row = document.createElement('tr');
+
+    const timeCell = document.createElement('td');
+    timeCell.className = 'time-col';
+    timeCell.innerHTML = `<span class="section-num">${sectionNum}</span><span class="section-time">${escapeHtml(section.startTime)}-${escapeHtml(section.endTime)}</span>`;
+    row.appendChild(timeCell);
+
+    for (let day = 1; day <= 7; day += 1) {
+      const key = `${day}-${sectionNum}`;
+      if (occupied.has(key)) {
+        continue;
+      }
+
+      const cell = document.createElement('td');
+      cell.className = 'slot-cell';
+      cell.dataset.day = String(day);
+      cell.dataset.section = String(sectionNum);
+      if (day === today) {
+        cell.classList.add('today-col');
+      }
+
+      const startingCourses = coursesStartingAt(day, sectionNum);
+      startingCourses.forEach((course) => {
+        const span = Math.max(1, course.endSection - course.startSection + 1);
+        const block = buildCourseBlock(course);
+        if (span > 1 && startingCourses.length === 1) {
+          cell.rowSpan = span;
+          for (let s = sectionNum + 1; s <= course.endSection; s += 1) {
+            occupied.add(`${day}-${s}`);
+          }
+          block.classList.add('course-block-span');
+        }
+        cell.appendChild(block);
+      });
+
+      cell.addEventListener('click', () => openEditor(null, day, sectionNum));
+      row.appendChild(cell);
+    }
+
+    grid.appendChild(row);
+  });
+}
+
+// 课程库管理：用卡片网格渲染分组后的课程
+function renderCoursesTable() {
+  const container = document.getElementById('courses-cards-container');
+  if (!container) return;
+
+  const searchQuery = state.courseSearch.trim().toLowerCase();
+  const groups = getCourseGroups(state.courses);
+
+  // 过滤课程组
+  const filteredGroups = groups.filter(group => {
+    // 模糊搜索：匹配课程名、简称、教师、教室、备注
+    if (searchQuery) {
+      const matchText = [
+        group.name,
+        group.shortName,
+        group.note,
+        group.courses.map(c => c.teacher).join(' '),
+        group.courses.map(c => c.location).join(' '),
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!matchText.includes(searchQuery)) return false;
+    }
+
+    // 性质过滤
+    if (state.filterNature && group.courseNature !== state.filterNature) {
+      return false;
+    }
+
+    return true;
+  }).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+
+  courseCount.textContent = String(filteredGroups.length);
+  container.innerHTML = '';
+  selectedCourseIds.clear();
+  updateLibraryBatchDeleteUi();
+
+  if (filteredGroups.length === 0) {
+    container.innerHTML = `
+      <div class="empty-list-hint col-span-2" style="width: 100%; grid-column: 1 / -1;">
+        ${t('noMatchingCourses')}
+      </div>
+    `;
+    return;
+  }
+
+  filteredGroups.forEach(group => {
+    const card = document.createElement('div');
+    card.className = 'course-group-card';
+    
+    // 生成上课时间段的 HTML 列表
+    const slotsHtml = group.courses.map(course => {
+      const dayName = getWeekdayCn(course.dayOfWeek - 1);
+      // See the note at the other sectionText: numeric today by Dart's type, but
+      // escape here rather than depend on that. Build the whole label first so
+      // the odd/even suffix is covered too.
+      const sectionText = escapeHtml(
+        course.startSection === course.endSection
+          ? t('sectionSingle', course.startSection)
+          : t('sectionRange', course.startSection, course.endSection),
+      );
+
+      let weekText = t('weekRange', course.startWeek, course.endWeek);
+      if (course.isOddWeek) weekText += t('oddWeek');
+      else if (course.isEvenWeek) weekText += t('evenWeek');
+      weekText = escapeHtml(weekText);
+
+      return `
+        <div class="card-slot-item">
+          <div class="slot-time-line">
+            <i class="ti ti-calendar-event"></i>
+            <span class="slot-time-main">${dayName} · ${sectionText}</span>
+            <span class="slot-weeks">${weekText}</span>
+          </div>
+          ${(course.teacher || course.location) ? `
+          <div class="slot-details">
+            ${course.teacher ? `<span class="slot-detail-pill"><i class="ti ti-user"></i>${escapeHtml(course.teacher)}</span>` : ''}
+            ${course.location ? `<span class="slot-detail-pill"><i class="ti ti-map-pin"></i>${escapeHtml(course.location)}</span>` : ''}
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const natureBadge = group.courseNature === 'elective'
+      ? `<span class="badge badge-success course-nature-badge">${t('electiveBadge')}</span>`
+      : `<span class="badge badge-primary course-nature-badge">${t('requiredBadge')}</span>`;
+
+    const accentColor = normalizeCourseColor(group.color);
+    const slotCount = group.courses.length;
+    card.className = 'card course-group-card';
+    card.innerHTML = `
+      <div class="course-card-accent"></div>
+      <div class="course-card-body">
+        <div class="course-card-top">
+          <label class="course-card-check" title="${t('batchDelete')}">
+            <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${escapeHtml(group.courses.map(c => c.id).join(','))}" />
+          </label>
+          <div class="course-card-heading min-w-0">
+            <div class="course-card-title-row">
+              <h3 class="course-card-title" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</h3>
+              ${natureBadge}
+            </div>
+            <div class="course-card-meta">
+              ${group.shortName ? `<span class="course-card-short">${escapeHtml(group.shortName)}</span>` : ''}
+              <span class="course-card-slot-count">${t('slotCount', slotCount)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-slots-list">${slotsHtml}</div>
+        ${group.note ? `<p class="course-card-note"><i class="ti ti-notes"></i><span>${escapeHtml(group.note)}</span></p>` : ''}
+        <div class="course-card-actions">
+          <button type="button" class="btn btn-outline btn-sm action-edit-btn"><i class="ti ti-edit"></i>${t('edit')}</button>
+          <button type="button" class="btn btn-ghost btn-sm action-copy-btn"><i class="ti ti-copy"></i>${t('copy')}</button>
+          <button type="button" class="btn btn-ghost btn-sm course-card-delete action-delete-btn"><i class="ti ti-trash"></i>${t('deleteCourse')}</button>
+        </div>
+      </div>
+    `;
+    card.querySelector('.course-card-accent').style.backgroundColor = accentColor;
+
+    // 绑定事件
+    card.querySelector('.action-edit-btn').addEventListener('click', () => openEditor(group));
+    card.querySelector('.action-copy-btn').addEventListener('click', () => {
+      openEditor(group);
+      state.editingGroupName = null; // 变成新建模式
+      document.getElementById('modal-title').textContent = t('copyNewCourse');
+      courseForm.name.value = t('courseCopyName', group.name);
+      // 重置 slots 里的 id 以便生成全新课程记录
+      const slotInputs = scheduleSlotsContainer.querySelectorAll('.slot-card');
+      slotInputs.forEach(slotCard => {
+        slotCard.dataset.id = '';
+      });
+      hide(deleteCourseBtn);
+      hide(duplicateCourseBtn);
+    });
+    card.querySelector('.action-delete-btn').addEventListener('click', () => deleteCourseGroupDirectly(group));
+
+    const selectInput = card.querySelector('.library-course-select');
+    selectInput.addEventListener('change', () => {
+      const ids = (selectInput.dataset.courseIds || '').split(',').filter(Boolean);
+      if (selectInput.checked) {
+        ids.forEach((id) => selectedCourseIds.add(id));
+      } else {
+        ids.forEach((id) => selectedCourseIds.delete(id));
+      }
+      updateLibraryBatchDeleteUi();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// 快速删除整个课程
+async function deleteCourseGroupDirectly(group) {
+  if (!window.confirm(t('deleteGroupConfirm', group.name, group.courses.length))) return;
+  try {
+    setLoading(true, t('deletingCourse'));
+    for (const course of group.courses) {
+      await api(`/api/v1/courses/${encodeURIComponent(course.id)}`, {
+        method: 'DELETE',
+      });
+    }
+    showToast('整个课程已删除', 'success');
+    addActivityLog(t('deleteCourse'), t('courseGroupDeletedLog', group.name));
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    showToast(t('deleteFailed') + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// 备份与作息配置渲染
+function renderBackupView() {
+  if (!state.meta) return;
+
+  // 渲染作息时间表
+  const sections = state.meta.sections || [];
+  metaSectionsContainer.innerHTML = '';
+  if (sections.length === 0) {
+    metaSectionsContainer.innerHTML = `<p class="text-muted">${t('noScheduleConfig')}</p>`;
+  } else {
+    sections.forEach((section, index) => {
+      const card = document.createElement('div');
+      card.className = 'meta-section-card';
+      card.innerHTML = `
+        <div class="meta-section-badge">${index + 1}</div>
+        <div class="meta-section-info">
+          <span class="meta-section-name">${t('periodN', index + 1)}</span>
+          <span class="meta-section-time">⏰ ${escapeHtml(section.startTime)} - ${escapeHtml(section.endTime)}</span>
+        </div>
+      `;
+      metaSectionsContainer.appendChild(card);
+    });
+  }
+}
+
+// 备份导入导出操作
+btnExportBackup?.addEventListener('click', async () => {
+  try {
+    setLoading(true, t('exportingBackup'));
+    const data = await api('/api/v1/profile/active');
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    const profile = state.session?.profileName || state.meta?.profileName || 'backup';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    
+    a.href = url;
+    a.download = t('backupFileName', profile, dateStr);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('备份文件已下载', 'success');
+    addActivityLog(t('exportBackup'), t('backupProfileExportedLog', profile));
+  } catch (error) {
+    showToast(t('backupExportFailed') + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+async function previewTransferContent(content) {
+  if (!content) return;
+  try {
+    setLoading(true, t('calculatingTransferDiff'));
+    const preview = await api('/api/v1/import/preview', {
+      method: 'POST',
+      body: content,
+    });
+    const mergeDiff = preview.mergeDiff || preview.diff || {};
+    const overwriteDiff = preview.overwriteDiff || preview.diff || {};
+    const formatDiff = (label, diff) => {
+      const summaries = Array.isArray(diff.summaries) ? diff.summaries : [];
+      return [
+        label,
+        ...summaries.map((item) =>
+          `${item.kind || '-'}: +${item.added || 0} / ~${item.updated || 0} / -${item.removed || 0}`,
+        ),
+      ];
+    };
+    const lines = [
+      t('transferPreviewMeta', preview.transferId || '-', preview.channel || 'lan', preview.scope || '-'),
+      ...formatDiff(t('mergePreview'), mergeDiff),
+      ...formatDiff(t('overwritePreview'), overwriteDiff),
+    ];
+    pendingTransferContent = content;
+    transferPreviewResult.textContent = lines.join('\n');
+    show(transferPreviewCard);
+    btnTransferPreviewMerge.disabled = false;
+    btnTransferPreviewOverwrite.disabled = false;
+    showToast('差异预览已生成，请选择合并或覆盖', 'info');
+  } catch (error) {
+    showToast(t('previewFailed') + describeTransferError(error.message), 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function applyPreviewedTransfer(mode) {
+  if (!pendingTransferContent) return;
+  try {
+    setLoading(true, mode === 'overwrite' ? t('overwriteImportWithBackup') : t('mergingImport'));
+    const result = await api('/api/v1/import/apply', {
+      method: 'POST',
+      body: JSON.stringify({ content: pendingTransferContent, mode }),
+    });
+    if (!result.applied) {
+      throw new Error(result.error || 'transfer_import_failed');
+    }
+    showToast(mode === 'overwrite' ? t('overwriteImportSuccess') : t('mergeDone'), 'success');
+    addActivityLog(t('transferImportActivity'), `${t(mode === 'overwrite' ? 'transferImportModeOverwrite' : 'transferImportModeMerge')} · ${result.transferId || '-'}`);
+    // 服务端已生成撤销点：把「撤销本次导入」入口亮出来（操作日志卡片的标题栏）。
+    lastTransferId = result.transferId || null;
+    if (lastTransferId) {
+      btnTransferUndo.textContent = t('undoImport');
+      show(btnTransferUndo);
+    } else {
+      hide(btnTransferUndo);
+    }
+    pendingTransferContent = null;
+    hide(transferPreviewCard);
+    state.selectedBackupFileContent = null;
+    selectedMergeFileContent = null;
+    hide(selectedFilename);
+    hide(mergeSelectedFilename);
+    btnImportBackup.disabled = true;
+    btnImportMerge.disabled = true;
+    await loadEditorData();
+    setViewTab('overview');
+  } catch (error) {
+    showToast(t('transferImportFailed', describeTransferError(error.message)), 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// 撤销最近一次局域网导入：只回退这次导入写入、且之后没被用户改过的部分。
+async function undoLastTransfer() {
+  if (!lastTransferId) return;
+  try {
+    setLoading(true, t('undoingTransfer'));
+    const result = await api('/api/v1/import/undo', {
+      method: 'POST',
+      body: JSON.stringify({ transferId: lastTransferId }),
+    });
+    if (!result.undo) {
+      throw new Error(describeTransferError(result.error));
+    }
+    const undoneId = result.transferId || lastTransferId;
+    lastTransferId = null;
+    hide(btnTransferUndo);
+    showToast(t('transferUndoSuccess'), 'success');
+    addActivityLog(t('transferUndoActivity'), `${undoneId}`);
+    await loadEditorData();
+  } catch (error) {
+    showToast(t('transferUndoFailed') + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+btnTransferUndo?.addEventListener('click', undoLastTransfer);
+
+btnTransferPreviewMerge?.addEventListener('click', () =>
+  applyPreviewedTransfer('merge'),
+);
+btnTransferPreviewOverwrite?.addEventListener('click', () => {
+  if (window.confirm(t('overwriteLocalBackupConfirm'))) {
+    applyPreviewedTransfer('overwrite');
+  }
+});
+btnTransferPreviewCancel?.addEventListener('click', () => {
+  pendingTransferContent = null;
+  hide(transferPreviewCard);
+});
+
+btnImportBackup?.addEventListener('click', () => {
+  previewTransferContent(state.selectedBackupFileContent);
+});
+
+// 拖拽上传逻辑
+dropZone?.addEventListener('click', () => backupFileInput?.click());
+
+backupFileInput?.addEventListener('change', (e) => {
+  handleSelectedFile(e.target.files[0]);
+});
+
+dropZone?.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+['dragleave', 'dragend'].forEach(type => {
+  dropZone?.addEventListener(type, () => dropZone.classList.remove('dragover'));
+});
+
+dropZone?.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    handleSelectedFile(e.dataTransfer.files[0]);
+  }
+});
+
+function handleSelectedFile(file) {
+  if (!file) return;
+  if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+    showToast('只允许上传 .json 格式的备份文件', 'error');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      JSON.parse(event.target.result);
+      state.selectedBackupFileContent = event.target.result;
+      
+      selectedFilename.textContent = t('selectedFileWithSize', file.name, (file.size / 1024).toFixed(1));
+      show(selectedFilename);
+      btnImportBackup.disabled = false;
+      showToast('文件解析成功，可以打开迁移预览', 'info');
+    } catch (e) {
+      showToast('文件解析失败，请检查是否为合法 JSON 备份文件', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 动态时间段表单项生成
+function addSlotField(data = {}, options = {}) {
+  const slotId = `slot-${slotCounter++}`;
+  const card = document.createElement('div');
+  card.className = options.focused ? 'slot-card slot-card-focused' : 'slot-card';
+  card.id = slotId;
+  card.dataset.id = data.id || ''; // 保存的原课程 ID (如果有)
+  if (data.id) {
+    card.dataset.courseId = data.id;
+  }
+
+  const slotTitle = t(options.focused ? 'focusedTimeSlot' : 'timeSlot');
+
+  card.innerHTML = `
+    <div class="slot-card-header">
+      <h4 class="slot-card-title">${slotTitle}</h4>
+      <button type="button" class="btn-remove-slot" title="${t('deleteTimeSlotTitle')}">&times; ${t('delete')}</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">${t('classDay')}</label>
+        <select class="field-slot-day select-modern">
+          <option value="1" ${data.dayOfWeek == 1 ? 'selected' : ''}>${t('mon')}</option>
+          <option value="2" ${data.dayOfWeek == 2 ? 'selected' : ''}>${t('tue')}</option>
+          <option value="3" ${data.dayOfWeek == 3 ? 'selected' : ''}>${t('wed')}</option>
+          <option value="4" ${data.dayOfWeek == 4 ? 'selected' : ''}>${t('thu')}</option>
+          <option value="5" ${data.dayOfWeek == 5 ? 'selected' : ''}>${t('fri')}</option>
+          <option value="6" ${data.dayOfWeek == 6 ? 'selected' : ''}>${t('sat')}</option>
+          <option value="7" ${data.dayOfWeek == 7 ? 'selected' : ''}>${t('sun')}</option>
+        </select>
+      </div>
+
+      <div class="form-group form-inline-row">
+        <div class="nested-group">
+          <label class="form-label">${t('startPeriod')}</label>
+          <input type="number" min="1" class="field-slot-startSection" value="${escapeHtml(data.startSection || 1)}" required />
+        </div>
+        <div class="nested-group">
+          <label class="form-label">${t('endPeriod')}</label>
+          <input type="number" min="1" class="field-slot-endSection" value="${escapeHtml(data.endSection || 2)}" required />
+        </div>
+      </div>
+
+      <div class="form-group form-inline-row">
+        <div class="nested-group">
+          <label class="form-label">${t('startWeek')}</label>
+          <input type="number" min="1" class="field-slot-startWeek" value="${escapeHtml(data.startWeek || 1)}" required />
+        </div>
+        <div class="nested-group">
+          <label class="form-label">${t('endWeek')}</label>
+          <input type="number" min="1" class="field-slot-endWeek" value="${escapeHtml(data.endWeek || (state.meta?.semesterWeekCount || 20))}" required />
+        </div>
+      </div>
+
+      <div class="form-group checkbox-group-row">
+        <label class="checkbox-container">
+          <input type="checkbox" class="field-slot-isOddWeek" ${data.isOddWeek ? 'checked' : ''} />
+          <span class="checkbox-checkmark"></span>
+          <span>${t('onlyOddWeeks')}</span>
+        </label>
+        <label class="checkbox-container">
+          <input type="checkbox" class="field-slot-isEvenWeek" ${data.isEvenWeek ? 'checked' : ''} />
+          <span class="checkbox-checkmark"></span>
+          <span>${t('onlyEvenWeeks')}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">${t('teacher')}</label>
+        <input type="text" class="field-slot-teacher" placeholder="${t('teacherPlaceholder')}" value="${escapeHtml(data.teacher || '')}" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">${t('classLocation')}</label>
+        <input type="text" class="field-slot-location" placeholder="${t('locationPlaceholder')}" value="${escapeHtml(data.location || '')}" />
+      </div>
+
+      <div class="form-group col-span-2 slot-advanced">
+        <label class="form-label">${t('classWeeksExpressionOptional')}</label>
+        <div class="form-inline-row">
+          <input type="text" class="field-slot-weekExpression" placeholder="${t('weekExpressionPlaceholder')}" value="${escapeHtml(formatWeeksForExpression(data.customWeeks) || '')}" />
+          <button type="button" class="btn btn-outline btn-sm btn-preview-week">${t('preview')}</button>
+        </div>
+        <p class="field-hint field-slot-week-preview text-muted"></p>
+      </div>
+      <div class="form-group col-span-2 slot-advanced">
+        <label class="form-label">${t('suspendedWeeksExpressionOptional')}</label>
+        <input type="text" class="field-slot-suspendedWeekExpression" placeholder="${t('suspendedWeeksPlaceholder')}" value="${escapeHtml(formatWeeksForExpression(data.suspendedWeeks) || '')}" />
+      </div>
+    </div>
+  `;
+
+  card.querySelector('.btn-preview-week')?.addEventListener('click', async () => {
+    const input = card.querySelector('.field-slot-weekExpression');
+    const preview = card.querySelector('.field-slot-week-preview');
+    const expression = input.value.trim();
+    if (!expression) {
+      preview.textContent = '';
+      return;
+    }
+    try {
+      const result = await api('/api/v1/week-expression/parse', {
+        method: 'POST',
+        body: JSON.stringify({
+          expression,
+          itemName: courseForm?.name?.value?.trim() || t('course'),
+        }),
+      });
+      const weeks = result.weeks || [];
+      preview.textContent = weeks.length
+        ? t('parsedWeeks', weeks.join(t('weekListSeparator')))
+        : t('noValidWeeks');
+    } catch (error) {
+      preview.textContent = error.message;
+    }
+  });
+
+  card.querySelector('.btn-remove-slot').addEventListener('click', () => {
+    if (scheduleSlotsContainer.querySelectorAll('.slot-card').length <= 1) {
+      showToast('课程必须包含至少一个上课时间段', 'error');
+      return;
+    }
+    card.remove();
+  });
+
+  scheduleSlotsContainer.appendChild(card);
+}
+
+// 课表档案切换器
+function fillProfileSwitcher(profiles, activeProfileId) {
+  if (!profileSwitcher) return;
+  const list = Array.isArray(profiles) ? profiles : [];
+  const activeId =
+    activeProfileId ||
+    list.find((item) => item?.isActive)?.id ||
+    list[0]?.id ||
+    '';
+
+  profileSwitcher.innerHTML = '';
+  if (!list.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = state.session?.profileName || state.meta?.profileName || t('currentProfileFallback');
+    profileSwitcher.appendChild(option);
+    profileSwitcher.disabled = true;
+    return;
+  }
+
+  list.forEach((profile) => {
+    const option = document.createElement('option');
+    option.value = profile.id || '';
+    const courseCount = Number(profile.courseCount ?? 0);
+    option.textContent = courseCount > 0
+      ? t('profileCourseCount', profile.name || t('unnamedProfile'), courseCount)
+      : (profile.name || t('unnamedProfile'));
+    if (profile.id === activeId) {
+      option.selected = true;
+    }
+    profileSwitcher.appendChild(option);
+  });
+  profileSwitcher.disabled = list.length <= 1;
+}
+
+async function switchActiveProfile(profileId) {
+  const targetId = String(profileId || '').trim();
+  if (!targetId) return;
+  const currentId = state.session?.profileId || state.meta?.profileId || '';
+  if (targetId === currentId) return;
+
+  try {
+    setLoading(true, t('switchingTimetable'));
+    const result = await api('/api/v1/profiles/switch', {
+      method: 'POST',
+      body: JSON.stringify({ profileId: targetId }),
+    });
+    // Force view week to follow the newly activated profile on next load.
+    state.viewWeek = null;
+    showToast(`已切换到「${result.profileName || '课表'}」`, 'success');
+    addActivityLog(t('switchTimetableLog'), t('currentTimetableTo', result.profileName || targetId));
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    showToast(error.message, 'error');
+    fillProfileSwitcher(
+      state.session?.profiles || state.meta?.profiles || [],
+      state.session?.profileId || state.meta?.profileId || '',
+    );
+  } finally {
+    setLoading(false);
+  }
+}
+
+// 周次选择器填充
+function fillWeekPicker() {
+  const total = state.meta.semesterWeekCount || 20;
+  weekPicker.innerHTML = '';
+  for (let week = 1; week <= total; week += 1) {
+    const option = document.createElement('option');
+    option.value = String(week);
+    option.textContent = t('weekN', week);
+    if (week === state.viewWeek) {
+      option.selected = true;
+    }
+    weekPicker.appendChild(option);
+  }
+}
+
+function updateWeekLabel() {
+  const phoneWeek = state.meta.currentWeek;
+  const total = state.meta.semesterWeekCount;
+  const viewing = state.viewWeek;
+  if (viewing === phoneWeek) {
+    weekLabel.textContent = t('weekSyncedLabel', viewing, total);
+  } else {
+    weekLabel.textContent = t('weekViewingLabel', viewing, phoneWeek, total);
+  }
+}
+
+function setViewWeek(week) {
+  const total = state.meta?.semesterWeekCount || 20;
+  state.viewWeek = Math.min(Math.max(1, week), total);
+  weekPicker.value = String(state.viewWeek);
+  updateWeekLabel();
+  renderGrid();
+  renderCoursesTable();
+  renderDashboard();
+}
+
+// 颜色选择器
+function fillColorSwatches(selectedColor) {
+  const colors = (state.meta.presetColors || [DEFAULT_COURSE_COLOR])
+    .map((preset) => normalizeCourseColor(preset));
+  const color = normalizeCourseColor(selectedColor || colors[0]);
+  colorSwatches.innerHTML = '';
+  colorInput.value = color;
+
+  colors.forEach((preset) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'color-swatch';
+    btn.style.backgroundColor = preset;
+    btn.title = preset;
+    btn.dataset.color = preset;
+    if (preset.toLowerCase() === String(color).toLowerCase()) {
+      btn.classList.add('selected');
+    }
+    btn.addEventListener('click', () => {
+      colorInput.value = preset;
+      colorSwatches.querySelectorAll('.color-swatch').forEach((el) => {
+        el.classList.toggle('selected', el.dataset.color === preset);
+      });
+    });
+    colorSwatches.appendChild(btn);
+  });
+}
+
+// 课程表单编辑 Modal (按组聚合打开)
+// focusCourseId / defaultDay / defaultSection：从课表网格点进时，把对应时间段排到第一并高亮
+function openEditor(courseGroup, defaultDay, defaultSection, focusCourseId) {
+  scheduleSlotsContainer.innerHTML = '';
+  
+  if (courseGroup) {
+    state.editingGroupName = courseGroup.name;
+    document.getElementById('modal-title').textContent = t('editCourse');
+    courseForm.name.value = courseGroup.name || '';
+    courseForm.shortName.value = courseGroup.shortName || '';
+    courseForm.courseNature.value = courseGroup.courseNature || 'required';
+    courseForm.note.value = courseGroup.note || '';
+    fillColorSwatches(courseGroup.color);
+
+    const orderedSlots = orderSlotsForFocus(
+      courseGroup.courses,
+      focusCourseId,
+      defaultDay,
+      defaultSection,
+    );
+    const focusKey = resolveFocusSlotKey(orderedSlots, focusCourseId, defaultDay, defaultSection);
+
+    orderedSlots.forEach((courseSlot) => {
+      const isFocused = focusKey != null && slotMatchesFocus(courseSlot, focusKey);
+      addSlotField(courseSlot, { focused: isFocused });
+    });
+
+    // 若未匹配到任何时段（异常数据），仍保证至少有一张卡
+    if (orderedSlots.length === 0) {
+      addSlotField({
+        dayOfWeek: defaultDay || 1,
+        startSection: defaultSection || 1,
+        endSection: defaultSection || 2,
+      }, { focused: true });
+    }
+
+    show(deleteCourseBtn);
+    show(duplicateCourseBtn);
+  } else {
+    state.editingGroupName = null;
+    document.getElementById('modal-title').textContent = t('newCourse');
+    courseForm.name.value = '';
+    courseForm.shortName.value = '';
+    courseForm.courseNature.value = 'required';
+    courseForm.note.value = '';
+    fillColorSwatches(state.meta?.presetColors?.[0] || '#2196F3');
+
+    // 默认提供一个上课时间段项（空格点击时带上星期/节次）
+    addSlotField({
+      dayOfWeek: defaultDay || 1,
+      startSection: defaultSection || 1,
+      endSection: defaultSection || 2,
+    }, { focused: true });
+
+    hide(deleteCourseBtn);
+    hide(duplicateCourseBtn);
+  }
+  
+  setError(formError, '');
+  showCourseModal();
+  focusPrimaryEditorField();
+}
+
+/** Put the clicked timetable slot first (same UX as phone course editor). */
+function orderSlotsForFocus(courses, focusCourseId, defaultDay, defaultSection) {
+  const list = Array.isArray(courses) ? [...courses] : [];
+  const focusKey = resolveFocusSlotKey(list, focusCourseId, defaultDay, defaultSection);
+  if (!focusKey) {
+    return list.sort(compareSlotsByDayAndSection);
+  }
+  return list.sort((left, right) => {
+    const leftFocused = slotMatchesFocus(left, focusKey);
+    const rightFocused = slotMatchesFocus(right, focusKey);
+    if (leftFocused && !rightFocused) return -1;
+    if (!leftFocused && rightFocused) return 1;
+    return compareSlotsByDayAndSection(left, right);
+  });
+}
+
+function resolveFocusSlotKey(courses, focusCourseId, defaultDay, defaultSection) {
+  if (focusCourseId) {
+    const byId = courses.find((course) => course.id === focusCourseId);
+    if (byId) {
+      return { type: 'id', courseId: focusCourseId };
+    }
+  }
+  if (defaultDay != null && defaultSection != null) {
+    return {
+      type: 'daySection',
+      dayOfWeek: Number(defaultDay),
+      section: Number(defaultSection),
+    };
+  }
+  return null;
+}
+
+function slotMatchesFocus(course, focusKey) {
+  if (!course || !focusKey) return false;
+  if (focusKey.type === 'id') {
+    return course.id === focusKey.courseId;
+  }
+  if (focusKey.type === 'daySection') {
+    const day = Number(course.dayOfWeek);
+    const start = Number(course.startSection);
+    const end = Number(course.endSection || course.startSection);
+    return (
+      day === focusKey.dayOfWeek &&
+      start <= focusKey.section &&
+      end >= focusKey.section
+    );
+  }
+  return false;
+}
+
+function compareSlotsByDayAndSection(left, right) {
+  const dayDelta = Number(left.dayOfWeek || 0) - Number(right.dayOfWeek || 0);
+  if (dayDelta !== 0) return dayDelta;
+  return Number(left.startSection || 0) - Number(right.startSection || 0);
+}
+
+function focusPrimaryEditorField() {
+  // Prefer the focused slot (clicked cell); fall back to course name.
+  const focusedSlot = scheduleSlotsContainer?.querySelector('.slot-card-focused');
+  if (focusedSlot) {
+    requestAnimationFrame(() => {
+      focusedSlot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const daySelect = focusedSlot.querySelector('.field-slot-day');
+      if (daySelect && typeof daySelect.focus === 'function') {
+        daySelect.focus({ preventScroll: true });
+      }
+    });
+    return;
+  }
+  courseForm?.name?.focus?.();
+}
+
+function closeEditor() {
+  hideCourseModal();
+  state.editingGroupName = null;
+}
+
+// 倒计时刷新
+function updateSessionBadge() {
+  const expiresAt = state.session?.expiresAt;
+  if (!expiresAt) {
+    sessionBadge.textContent = t('connectionOk');
+    sessionCountdown.textContent = t('noExpiry');
+    return;
+  }
+  const remainingMs = new Date(expiresAt).getTime() - Date.now();
+  if (remainingMs <= 0) {
+    sessionBadge.textContent = t('connectionExpired');
+    sessionBadge.className = 'badge badge-destructive';
+    sessionCountdown.textContent = t('reconnectHint');
+    return;
+  }
+  const minutes = Math.floor(remainingMs / 60000);
+  const seconds = Math.floor((remainingMs % 60000) / 1000);
+
+  if (minutes < 5) {
+    sessionBadge.textContent = t('connectionEnding');
+    sessionBadge.className = 'badge badge-warning';
+  } else {
+    sessionBadge.textContent = t('secureConnection');
+    sessionBadge.className = 'badge badge-success';
+  }
+  sessionCountdown.textContent = minutes > 0
+    ? t('countdownMinSec', minutes, seconds)
+    : t('countdownSec', seconds);
+}
+
+function startSessionCountdown() {
+  if (state.sessionTimerId) {
+    clearInterval(state.sessionTimerId);
+  }
+  updateSessionBadge();
+  state.sessionTimerId = setInterval(updateSessionBadge, 1000);
+}
+
+// 载入全部同步数据
+async function loadEditorData(options = {}) {
+  const { silent = false, notifyRefresh = false } = options;
+  if (!silent) {
+    setLoading(true, t('syncingPhone'));
+  }
+  try {
+    const [meta, coursePayload, session] = await Promise.all([
+      api('/api/v1/meta'),
+      api('/api/v1/courses'),
+      api('/api/v1/session'),
+    ]);
+    state.meta = meta;
+    const receivedCourses = Array.isArray(coursePayload.courses)
+      ? coursePayload.courses
+      : [];
+    state.courses = receivedCourses.map((course) => ({
+      ...course,
+      color: normalizeCourseColor(course?.color),
+    }));
+    state.session = session;
+
+    // First open: show the phone's current week (not hard-coded week 1).
+    // Later refreshes keep the user's selected viewWeek.
+    if (state.viewWeek == null || state.viewWeek < 1) {
+      state.viewWeek = meta.currentWeek || 1;
+    }
+    const semesterWeekCount = meta.semesterWeekCount || 20;
+    state.viewWeek = Math.min(Math.max(1, state.viewWeek), semesterWeekCount);
+
+    profileName.textContent = session.profileName || meta.profileName || t('currentProfileFallback');
+    fillProfileSwitcher(
+      session.profiles || meta.profiles || [],
+      session.profileId || meta.profileId || '',
+    );
+    fillWeekPicker();
+    updateWeekLabel();
+    renderGrid();
+    renderCoursesTable();
+    renderDashboard();
+    renderBackupView();
+    startSessionCountdown();
+
+    if (notifyRefresh) {
+      showToast(t('refreshSuccess'), 'success');
+      addActivityLog(t('dataRefreshLog'), t('refreshLogDetail'));
+    }
+  } catch (error) {
+    showToast(t('syncFailed') + error.message, 'error');
+    throw error;
+  } finally {
+    if (!silent) {
+      setLoading(false);
+    }
+  }
+}
+
+async function enterEditor() {
+  hide(loginView);
+  show(editorView);
+  await loadEditorData();
+}
+
+async function verifyPinAndEnter(pin) {
+  const result = await api('/api/v1/auth/verify', {
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+  state.token = result.token;
+  state.pin = pin;
+  sessionStorage.setItem('lanEditToken', state.token);
+  sessionStorage.setItem('lanEditPin', pin);
+  await enterEditor();
+  addActivityLog(t('loginSuccess'), t('pinLoginLogDetail'));
+}
+
+function stripPinFromUrl() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('pin')) {
+    return;
+  }
+  url.searchParams.delete('pin');
+  const cleaned = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState({}, '', cleaned || '/');
+}
+
+// 导航栏 Tab 切换
+navItems.forEach((item) => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tabName = item.getAttribute('data-tab');
+    setViewTab(tabName);
+    setSidebarOpen(false);
+  });
+});
+
+function setViewTab(tabName) {
+  state.activeTab = tabName;
+  syncTabsUI();
+}
+
+function syncTabsUI() {
+  navItems.forEach((btn) => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === state.activeTab);
+  });
+
+  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach((item) => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === state.activeTab);
+  });
+
+  tabPanels.forEach((panel) => {
+    if (panel.id === `${state.activeTab}-panel`) {
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  });
+
+  const titles = {
+    overview: t('tabOverview'),
+    timetable: t('tabTimetable'),
+    courses: t('courseLibrary'),
+    backup: t('tabBackup'),
+  };
+  pageTitle.textContent = titles[state.activeTab] || t('lanConsoleTitle');
+}
+
+// 事件侦听器
+loginForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setError(loginError, '');
+  try {
+    const pin = document.getElementById('pin-input')?.value.trim() || '';
+    await verifyPinAndEnter(pin);
+  } catch (error) {
+    setError(loginError, error.message);
+    showToast(error.message, 'error');
+  }
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+  addActivityLog(t('secureLogoutLog'), t('disconnectLogDetail'));
+  state.token = '';
+  state.pin = '';
+  sessionStorage.removeItem('lanEditToken');
+  sessionStorage.removeItem('lanEditPin');
+  if (state.sessionTimerId) {
+    clearInterval(state.sessionTimerId);
+    state.sessionTimerId = null;
+  }
+  hide(editorView);
+  show(loginView);
+  showToast(t('loggedOut'), 'info');
+});
+
+document.getElementById('refresh-btn')?.addEventListener('click', () => {
+  loadEditorData({ silent: true, notifyRefresh: true }).catch(() => {});
+});
+
+if (syncPhoneWeekBtn) {
+  syncPhoneWeekBtn.addEventListener('click', async () => {
+    try {
+      setLoading(true, t('syncingWeek'));
+      await api('/api/v1/session', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentWeek: state.viewWeek }),
+      });
+      showToast(`已将手机当前周设为第 ${state.viewWeek} 周`, 'success');
+      addActivityLog(t('syncCurrentWeekLog'), t('phoneCurrentWeekToWeek', state.viewWeek));
+      await loadEditorData({ silent: true });
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+function handleSpreadsheetFile(file) {
+  if (!file) return;
+  const lower = file.name.toLowerCase();
+  if (!lower.endsWith('.csv') && !lower.endsWith('.xlsx')) {
+    showToast('请选择 .csv 或 .xlsx 文件', 'error');
+    return;
+  }
+  selectedSpreadsheetFile = file;
+  spreadsheetSelectedFilename.textContent = t('selectedFile', `${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+  show(spreadsheetSelectedFilename);
+  btnImportSpreadsheet.disabled = false;
+}
+
+if (spreadsheetDropZone) {
+  spreadsheetDropZone.addEventListener('click', () => spreadsheetFileInput?.click());
+  spreadsheetFileInput?.addEventListener('change', (e) => {
+    handleSpreadsheetFile(e.target.files[0]);
+  });
+  spreadsheetDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    spreadsheetDropZone.classList.add('dragover');
+  });
+  ['dragleave', 'dragend'].forEach((type) => {
+    spreadsheetDropZone.addEventListener(type, () => {
+      spreadsheetDropZone.classList.remove('dragover');
+    });
+  });
+  spreadsheetDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    spreadsheetDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      handleSpreadsheetFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+btnImportSpreadsheet?.addEventListener('click', async () => {
+  if (!selectedSpreadsheetFile) return;
+  const replace = spreadsheetReplaceExisting?.checked === true;
+  if (replace && !window.confirm(t('overwriteCoursesConfirm'))) {
+    return;
+  }
+  try {
+    setLoading(true, t('importingSpreadsheet'));
+    const contentBase64 = await readFileAsBase64(selectedSpreadsheetFile);
+    const result = await api('/api/v1/import/spreadsheet', {
+      method: 'POST',
+      body: JSON.stringify({
+        fileName: selectedSpreadsheetFile.name,
+        contentBase64,
+        replaceExisting: replace,
+      }),
+    });
+    const lines = [
+      t('importedCourses', result.importedCount ?? 0),
+      t('formatLabel', result.format ?? '-'),
+    ];
+    if (result.warnings?.length) {
+      lines.push(t('warnings'), ...result.warnings.map((w) => `· ${w}`));
+    }
+    spreadsheetImportResult.textContent = lines.join('\n');
+    show(spreadsheetImportResult);
+    showToast(`表格导入完成：${result.importedCount ?? 0} 门课`, 'success');
+    addActivityLog(t('spreadsheetImport'), t('spreadsheetImportLogDetail', result.importedCount ?? 0, t(replace ? 'overwriteMode' : 'mergeMode')));
+    selectedSpreadsheetFile = null;
+    btnImportSpreadsheet.disabled = true;
+    await loadEditorData();
+  } catch (error) {
+    showToast(t('spreadsheetFailed') + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+function handleMergeBackupFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.json')) {
+    showToast('请选择 .json 备份文件', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    selectedMergeFileContent = String(reader.result);
+    mergeSelectedFilename.textContent = t('selectedFile', file.name);
+    show(mergeSelectedFilename);
+    if (btnImportMerge) btnImportMerge.disabled = false;
+  };
+  reader.onerror = () => showToast('读取文件失败', 'error');
+  reader.readAsText(file, 'utf-8');
+}
+
+if (mergeDropZone) {
+  mergeDropZone.addEventListener('click', () => mergeFileInput?.click());
+  mergeFileInput?.addEventListener('change', (e) => handleMergeBackupFile(e.target.files[0]));
+  mergeDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.add('dragover');
+  });
+  ['dragleave', 'dragend'].forEach((type) => {
+    mergeDropZone.addEventListener(type, () => mergeDropZone.classList.remove('dragover'));
+  });
+  mergeDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleMergeBackupFile(e.dataTransfer.files[0]);
+  });
+}
+
+btnImportMerge?.addEventListener('click', () =>
+  previewTransferContent(selectedMergeFileContent),
+);
+
+btnBatchDeleteCourses?.addEventListener('click', async () => {
+  const ids = [...selectedCourseIds];
+  if (!ids.length) return;
+  if (!window.confirm(t('batchDeleteConfirm', ids.length))) return;
+  try {
+    setLoading(true, t('batchDeleting'));
+    const result = await api('/api/v1/courses/batch-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+    showToast(`已删除 ${result.deletedCount ?? 0} 条`, 'success');
+    addActivityLog(t('batchDelete'), t('batchDeleteLogDetail', result.deletedCount ?? 0));
+    selectedCourseIds.clear();
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+document.getElementById('prev-week-btn')?.addEventListener('click', () => {
+  setViewWeek(state.viewWeek - 1);
+});
+
+document.getElementById('next-week-btn')?.addEventListener('click', () => {
+  setViewWeek(state.viewWeek + 1);
+});
+
+weekPicker?.addEventListener('change', () => {
+  setViewWeek(Number(weekPicker.value));
+});
+
+profileSwitcher?.addEventListener('change', () => {
+  switchActiveProfile(profileSwitcher.value);
+});
+
+courseSearch?.addEventListener('input', () => {
+  state.courseSearch = courseSearch.value;
+  renderCoursesTable();
+});
+
+filterNature?.addEventListener('change', () => {
+  state.filterNature = filterNature.value;
+  renderCoursesTable();
+});
+
+document.getElementById('quick-add-btn')?.addEventListener('click', () => {
+  state.activeTab = 'courses';
+  syncTabsUI();
+  openEditor(null);
+});
+
+document.getElementById('btn-add-course')?.addEventListener('click', () => openEditor(null));
+document.getElementById('cancel-course-btn')?.addEventListener('click', closeEditor);
+document.getElementById('close-modal-x')?.addEventListener('click', closeEditor);
+
+modal?.addEventListener('click', (event) => {
+  if (event.target === modal) {
+    closeEditor();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && modal?.classList.contains('open')) {
+    closeEditor();
+  }
+});
+
+// 移动端侧栏开关
+const appSidebar = document.getElementById('app-sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+
+function setSidebarOpen(open) {
+  appSidebar?.classList.toggle('open', open);
+  sidebarBackdrop?.classList.toggle('open', open);
+  if (sidebarBackdrop) {
+    sidebarBackdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+}
+
+mobileMenuToggle?.addEventListener('click', () => {
+  const isOpen = appSidebar?.classList.contains('open');
+  setSidebarOpen(!isOpen);
+});
+
+sidebarBackdrop?.addEventListener('click', () => setSidebarOpen(false));
+
+document.querySelectorAll('.mobile-nav-item[data-tab]').forEach((item) => {
+  item.addEventListener('click', (event) => {
+    event.preventDefault();
+    const tabName = item.getAttribute('data-tab');
+    if (!tabName) return;
+    setViewTab(tabName);
+    setSidebarOpen(false);
+  });
+});
+
+// 添加动态 slots field 项
+btnAddSlotField?.addEventListener('click', () => {
+  addSlotField();
+});
+
+// 整个课程组的删除操作
+deleteCourseBtn?.addEventListener('click', async () => {
+  if (!state.editingGroupName) return;
+  if (!window.confirm(t('deleteCourseAllSlotsConfirm', state.editingGroupName))) return;
+  try {
+    setLoading(true, t('deletingCourse'));
+    const toDelete = state.courses.filter(c => c.name === state.editingGroupName);
+    for (const c of toDelete) {
+      await api(`/api/v1/courses/${encodeURIComponent(c.id)}`, {
+        method: 'DELETE',
+      });
+    }
+    closeEditor();
+    showToast('课程已删除', 'success');
+    addActivityLog(t('deleteCourse'), t('deletedCourseLog', state.editingGroupName));
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    setError(formError, error.message);
+    showToast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+// 整个课程组的复制操作
+duplicateCourseBtn?.addEventListener('click', async () => {
+  const name = t('courseCopySuffix', courseForm.name.value.trim());
+  const shortName = courseForm.shortName.value.trim() || null;
+  const courseNature = courseForm.courseNature.value;
+  const color = normalizeCourseColor(colorInput.value);
+  const note = courseForm.note.value.trim() || null;
+
+  if (!name) {
+    setError(formError, t('fillCourseName'));
+    return;
+  }
+
+  const slotCards = scheduleSlotsContainer.querySelectorAll('.slot-card');
+  const slots = [];
+
+  for (const card of slotCards) {
+    const dayOfWeek = Number(card.querySelector('.field-slot-day').value);
+    const startSection = Number(card.querySelector('.field-slot-startSection').value);
+    const endSection = Number(card.querySelector('.field-slot-endSection').value);
+    const startWeek = Number(card.querySelector('.field-slot-startWeek').value);
+    const endWeek = Number(card.querySelector('.field-slot-endWeek').value);
+    const isOddWeek = card.querySelector('.field-slot-isOddWeek').checked;
+    const isEvenWeek = card.querySelector('.field-slot-isEvenWeek').checked;
+    const teacher = card.querySelector('.field-slot-teacher').value.trim();
+    const location = card.querySelector('.field-slot-location').value.trim();
+
+    if (endSection < startSection) {
+      setError(formError, t('endSectionError'));
+      return;
+    }
+    if (endWeek < startWeek) {
+      setError(formError, t('endWeekError'));
+      return;
+    }
+
+    slots.push({ dayOfWeek, startSection, endSection, startWeek, endWeek, isOddWeek, isEvenWeek, teacher, location });
+  }
+
+  if (slots.length === 0) {
+    setError(formError, t('needOneSlot'));
+    return;
+  }
+
+  try {
+    setLoading(true, t('duplicatingCourse'));
+    for (const slot of slots) {
+      const payload = {
+        name,
+        shortName,
+        courseNature,
+        color,
+        note,
+        dayOfWeek: slot.dayOfWeek,
+        startSection: slot.startSection,
+        endSection: slot.endSection,
+        startWeek: slot.startWeek,
+        endWeek: slot.endWeek,
+        isOddWeek: slot.isOddWeek,
+        isEvenWeek: slot.isEvenWeek,
+        teacher: slot.teacher,
+        location: slot.location
+      };
+      await api('/api/v1/courses', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
+
+    closeEditor();
+    showToast('课程复制成功', 'success');
+    addActivityLog(t('logCopyCourse'), t('logCourseGroupCopied', name));
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    setError(formError, error.message);
+    showToast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+// 保存表单（多 slots 协同写入）
+courseForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setError(formError, '');
+
+  const name = courseForm.name.value.trim();
+  const shortName = courseForm.shortName.value.trim() || null;
+  const courseNature = courseForm.courseNature.value;
+  const color = normalizeCourseColor(colorInput.value);
+  const note = courseForm.note.value.trim() || null;
+
+  if (!name) {
+    setError(formError, t('courseNameRequired'));
+    return;
+  }
+
+  const slotCards = scheduleSlotsContainer.querySelectorAll('.slot-card');
+  const slots = [];
+
+  for (const card of slotCards) {
+    const slotId = card.dataset.id || '';
+    const dayOfWeek = Number(card.querySelector('.field-slot-day').value);
+    const startSection = Number(card.querySelector('.field-slot-startSection').value);
+    const endSection = Number(card.querySelector('.field-slot-endSection').value);
+    const startWeek = Number(card.querySelector('.field-slot-startWeek').value);
+    const endWeek = Number(card.querySelector('.field-slot-endWeek').value);
+    const isOddWeek = card.querySelector('.field-slot-isOddWeek').checked;
+    const isEvenWeek = card.querySelector('.field-slot-isEvenWeek').checked;
+    const teacher = card.querySelector('.field-slot-teacher').value.trim();
+    const location = card.querySelector('.field-slot-location').value.trim();
+    const weekExpression = card.querySelector('.field-slot-weekExpression')?.value.trim() || '';
+    const suspendedWeekExpression =
+      card.querySelector('.field-slot-suspendedWeekExpression')?.value.trim() || '';
+
+    if (endSection < startSection) {
+      setError(formError, t('endSectionBeforeStart'));
+      return;
+    }
+    if (!weekExpression && endWeek < startWeek) {
+      setError(formError, t('endWeekBeforeStart'));
+      return;
+    }
+
+    const maxSection = state.meta?.sectionCount || state.meta?.sections?.length || 12;
+    if (startSection < 1 || endSection > maxSection) {
+      setError(formError, t('sectionRangeHint', maxSection));
+      return;
+    }
+
+    const slotEntry = {
+      id: slotId,
+      dayOfWeek,
+      startSection,
+      endSection,
+      startWeek,
+      endWeek,
+      isOddWeek,
+      isEvenWeek,
+      teacher,
+      location,
+    };
+    if (weekExpression) {
+      slotEntry.weekExpression = weekExpression;
+    }
+    if (suspendedWeekExpression) {
+      slotEntry.suspendedWeekExpression = suspendedWeekExpression;
+    }
+    slots.push(slotEntry);
+  }
+
+  if (slots.length === 0) {
+    setError(formError, t('needOneSlot'));
+    return;
+  }
+
+  try {
+    setLoading(true, t('savingToPhone'));
+
+    const buildSlotPayload = (slot) => ({
+      id: slot.id || undefined,
+      name,
+      shortName,
+      courseNature,
+      color,
+      note,
+      dayOfWeek: slot.dayOfWeek,
+      startSection: slot.startSection,
+      endSection: slot.endSection,
+      startWeek: slot.startWeek,
+      endWeek: slot.endWeek,
+      isOddWeek: slot.isOddWeek,
+      isEvenWeek: slot.isEvenWeek,
+      teacher: slot.teacher,
+      location: slot.location,
+      ...(slot.weekExpression ? { weekExpression: slot.weekExpression } : {}),
+      ...(slot.suspendedWeekExpression
+        ? { suspendedWeekExpression: slot.suspendedWeekExpression }
+        : {}),
+    });
+
+    await api('/api/v1/courses/group', {
+      method: 'PUT',
+      body: JSON.stringify({
+        originalName: state.editingGroupName || undefined,
+        slots: slots.map(buildSlotPayload),
+      }),
+    });
+
+    if (state.editingGroupName) {
+      showToast('课程修改已保存', 'success');
+      addActivityLog(t('logUpdateCourse'), t('logCourseScheduleUpdated', name));
+    } else {
+      showToast('新课程已成功创建', 'success');
+      addActivityLog(t('logCreateCourse'), t('logCourseCreated', name));
+    }
+
+    closeEditor();
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    setError(formError, error.message);
+    showToast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+// 快捷键绑定
+document.addEventListener('keydown', (event) => {
+  if (!modal?.classList.contains('show')) {
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeEditor();
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    courseForm?.requestSubmit();
+  }
+});
+
+// 页面初始化自举引导
+async function bootstrap() {
+  try {
+    window.LanEditI18n?.applyDomI18n?.();
+  } catch (_) {
+    // i18n is optional; login must still work if the asset fails to load.
+  }
+
+  bindThemeToggles();
+  applyTheme(resolvePreferredTheme());
+  renderActivityLog();
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('token');
+  if (urlToken) {
+    state.token = urlToken;
+    sessionStorage.setItem('lanEditToken', urlToken);
+  }
+
+  const urlPin = (params.get('pin') || '').trim();
+  if (urlPin) {
+    state.pin = urlPin;
+    sessionStorage.setItem('lanEditPin', urlPin);
+    const pinInput = document.getElementById('pin-input');
+    if (pinInput) {
+      pinInput.value = urlPin;
+    }
+  }
+
+  if (state.token) {
+    try {
+      await enterEditor();
+      stripPinFromUrl();
+      return;
+    } catch (_) {
+      state.token = '';
+      sessionStorage.removeItem('lanEditToken');
+    }
+  }
+
+  if (urlPin) {
+    setLoading(true, t('autoPinLogin'));
+    try {
+      await verifyPinAndEnter(urlPin);
+      stripPinFromUrl();
+      showToast(t('loginSuccess'), 'success');
+      return;
+    } catch (error) {
+      setError(loginError, error.message);
+      showToast(error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+}
+
+bootstrap();

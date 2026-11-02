@@ -255,7 +255,7 @@ object LanEditServiceRuntime {
                     router = router,
                     // 控制台页面与静态资源：不传这一项，电脑浏览器打开地址就是一片空白
                     // （`/` 落到路由层是 404，而 `/api/v1/*` 全通，现象上很难反推）。
-                    staticAssets = LanEditStaticAssets { assetPath -> readFlutterAsset(context, assetPath) },
+                    staticAssets = LanEditStaticAssets { assetPath -> readConsoleAsset(context, assetPath) },
                 )
                 newServer.start()
                 startedServer = newServer
@@ -346,24 +346,23 @@ object LanEditServiceRuntime {
     }
 
     /**
-     * 读一个 Flutter 资源（Dart 侧 `rootBundle.load('assets/lan_edit/index.html')` 的对应物）。
+     * 读一个打包在**主 assets** 里的控制台资源（Dart 侧 `rootBundle.load('assets/lan_edit/index.html')`
+     * 的对应物）。
      *
-     * ## 为什么要试两个前缀
+     * ## 为什么只有一条路径
      *
-     * Flutter 把 Dart 的 `assets/` 打进 APK 的 `flutter_assets/` 目录下，所以正常情况要用
-     * `flutter_assets/assets/lan_edit/index.html`。但纯 Compose 的构建变体（不跑 Flutter 资源链）
-     * 如果直接把仓库里的 `assets/` 拷进 APK，路径就是不带前缀的那一个。
-     * 两种都试一次，代价是失败分支多读一次目录，比「某个变体上页面永远是空白」便宜得多。
+     * 2026-11-02 资产迁移：`assets/lan_edit/`（含 `mapAssetPath` 里 favicon 用的
+     * `assets/branding/launcher_icon.png`）已拷进 `android/app/src/main/assets/`，
+     * Compose 不再依赖 Flutter 工具链打进 APK 的 `flutter_assets/` 目录——删 Flutter 后
+     * 那个目录**永不再生成**。原先「先 `flutter_assets/` 再裸路径」的双前缀回退已删：
+     * 留着它，删 Flutter 后每次读取都要先撞一条死路径。
      *
-     * @return null = 两处都没有（调用方回 404，与「页面没打包进去」这个事实一致）。
+     * @return null = 资产没打包进去（调用方回 404，与「页面没打包进去」这个事实一致）。
      */
-    private fun readFlutterAsset(context: Context, assetPath: String): ByteArray? {
-        for (candidate in listOf("flutter_assets/$assetPath", assetPath)) {
-            val bytes = runCatching {
-                context.assets.open(candidate).use { it.readBytes() }
-            }.getOrNull()
-            if (bytes != null && bytes.isNotEmpty()) return bytes
-        }
-        return null
+    private fun readConsoleAsset(context: Context, assetPath: String): ByteArray? {
+        val bytes = runCatching {
+            context.assets.open(assetPath).use { it.readBytes() }
+        }.getOrNull()
+        return if (bytes != null && bytes.isNotEmpty()) bytes else null
     }
 }

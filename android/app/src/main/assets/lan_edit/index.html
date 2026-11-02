@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="pageTitle">轻屿课表 · 局域网控制台</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="apple-touch-icon" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/assets/tabler-icons-subset.css" />
+  <link rel="stylesheet" href="/assets/lan-timetable.css" />
+</head>
+<body>
+  <div id="toast-container" aria-live="polite"></div>
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner" role="status" aria-hidden="true"></div>
+    <p id="loading-text" data-i18n="loadingData">加载课表数据…</p>
+  </div>
+
+  <!-- 登录页 -->
+  <div id="login-view" class="login-page">
+    <button
+      type="button"
+      class="theme-toggle login-theme-toggle"
+      data-theme-toggle
+      aria-label="切换浅色/深色模式"
+      title="切换主题"
+    >
+      <i class="ti ti-sun icon-sun" aria-hidden="true"></i>
+      <i class="ti ti-moon icon-moon" aria-hidden="true"></i>
+    </button>
+    <div class="login-bg" aria-hidden="true">
+      <span class="login-bg-orb login-bg-orb-a"></span>
+      <span class="login-bg-orb login-bg-orb-b"></span>
+      <span class="login-bg-orb login-bg-orb-c"></span>
+    </div>
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="login-logo-wrap">
+          <img
+            class="login-logo"
+            src="/assets/logo.png"
+            width="88"
+            height="88"
+            alt="轻屿课表"
+            decoding="async"
+          />
+        </div>
+        <h1 class="login-title" data-i18n="appName">轻屿课表</h1>
+        <p class="login-subtitle" data-i18n="lanConsole">局域网管理后台</p>
+      </div>
+      <div class="card login-card">
+        <div class="card-body">
+          <div class="login-pin-badge">
+            <i class="ti ti-shield-lock"></i>
+            <span data-i18n="pinLabel">手机 App 显示的 6 位 PIN</span>
+          </div>
+          <form id="login-form" autocomplete="off">
+            <label class="visually-hidden" for="pin-input" data-i18n="pinLabel">手机 App 显示的 6 位 PIN</label>
+            <input
+              id="pin-input"
+              class="input login-pin-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="6"
+              placeholder="• • • • • •"
+              autocomplete="one-time-code"
+              required
+            />
+            <button type="submit" class="btn btn-primary login-submit-btn">
+              <i class="ti ti-login"></i><span data-i18n="verifyEnter">验证并进入</span>
+            </button>
+          </form>
+          <p id="login-error" class="login-error hidden" role="alert"></p>
+        </div>
+      </div>
+      <div class="login-hint">
+        <i class="ti ti-wifi me-1"></i>
+        <span data-i18n="loginHint">
+          电脑与手机需在同一 Wi‑Fi 或手机热点；PIN 失效请在 App 重新开启局域网编辑。
+        </span>
+      </div>
+      <div class="login-hint">
+        <i class="ti ti-lock me-1"></i>
+        <span data-i18n="lanHttpNotice"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 后台主界面 -->
+  <div id="editor-view" class="hidden">
+    <div class="app-shell">
+      <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+      <aside id="app-sidebar" class="sidebar" aria-label="侧边导航">
+        <div class="sidebar-inner">
+          <div class="sidebar-brand">
+            <img class="sidebar-brand-logo" src="/assets/logo.png" width="36" height="36" alt="" />
+            <div class="sidebar-brand-text">
+              <p class="sidebar-brand-title" data-i18n="appName">轻屿课表</p>
+              <p class="sidebar-brand-sub" data-i18n="lanConsole">局域网控制台</p>
+            </div>
+          </div>
+
+          <div class="sidebar-profile">
+            <div class="sidebar-profile-label" data-i18n="currentProfile">当前课表</div>
+            <label class="visually-hidden" for="profile-switcher">切换课表</label>
+            <select id="profile-switcher" class="profile-switcher select" title="切换课表">
+              <option value="" data-i18n="loading">加载中…</option>
+            </select>
+            <div id="profile-name" class="sidebar-profile-name hidden" data-i18n="loading">加载中…</div>
+          </div>
+
+          <nav>
+            <ul class="sidebar-nav">
+              <li>
+                <a class="nav-link active" href="#" data-tab="overview">
+                  <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
+                  <span data-i18n="tabOverview">控制台概览</span>
+                </a>
+              </li>
+              <li>
+                <a class="nav-link" href="#" data-tab="timetable">
+                  <span class="nav-link-icon"><i class="ti ti-calendar"></i></span>
+                  <span data-i18n="tabTimetable">课表网格</span>
+                </a>
+              </li>
+              <li>
+                <a class="nav-link" href="#" data-tab="courses">
+                  <span class="nav-link-icon"><i class="ti ti-book"></i></span>
+                  <span data-i18n="tabCourses">课程库</span>
+                </a>
+              </li>
+              <li>
+                <a class="nav-link" href="#" data-tab="backup">
+                  <span class="nav-link-icon"><i class="ti ti-database"></i></span>
+                  <span data-i18n="tabBackup">导入与备份</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="sidebar-footer">
+            <div class="sidebar-session">
+              <span id="session-badge" class="badge badge-success" data-i18n="connectionOk">连接正常</span>
+              <div id="session-countdown" class="sidebar-session-time">—</div>
+            </div>
+            <button id="refresh-btn" type="button" class="btn btn-outline btn-sm w-full">
+              <i class="ti ti-refresh"></i><span data-i18n="refreshSync">刷新同步</span>
+            </button>
+            <button id="logout-btn" type="button" class="btn btn-destructive btn-sm w-full">
+              <i class="ti ti-logout"></i><span data-i18n="logout">退出连接</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="main-header">
+          <div class="min-w-0">
+            <h2 id="page-title" class="main-header-title" data-i18n="pageOverview">控制台概览</h2>
+            <p id="week-label" class="main-header-sub" data-i18n="fetchingTimeline">获取时间轴数据中…</p>
+          </div>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="theme-toggle"
+              data-theme-toggle
+              aria-label="切换浅色/深色模式"
+              title="切换主题"
+            >
+              <i class="ti ti-sun icon-sun" aria-hidden="true"></i>
+              <i class="ti ti-moon icon-moon" aria-hidden="true"></i>
+            </button>
+          </div>
+        </header>
+
+        <div class="main-body">
+          <!-- 概览 -->
+          <section id="overview-panel" class="tab-panel stack">
+            <div class="alert alert-success" role="status">
+              <i class="ti ti-circle-check alert-icon"></i>
+              <div>
+                <h4 class="alert-title">局域网连接已建立</h4>
+                <div class="text-muted text-sm">电脑端修改会实时同步到手机 App。</div>
+                <div class="mt-3">
+                  <button id="quick-add-btn" type="button" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus"></i>新建课程
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3">
+              <div class="card lg:col-span-2">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-calendar-event"></i>今日课程</h3>
+                  <span id="overview-today-date" class="badge badge-success">—</span>
+                </div>
+                <div class="card-body">
+                  <ul id="today-course-list">
+                    <li class="empty-list-hint">加载中…</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="stack">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title"><i class="ti ti-server"></i>服务明细</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="datagrid">
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">IP</div>
+                        <div class="datagrid-content user-select-all" id="info-ip">-</div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">端口</div>
+                        <div class="datagrid-content" id="info-port">-</div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">PIN</div>
+                        <div class="datagrid-content user-select-all" id="info-pin">-</div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">设备</div>
+                        <div class="datagrid-content" id="info-clients">-</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card overview-log-card">
+                  <div class="card-header">
+                    <h3 class="card-title"><i class="ti ti-history"></i>操作日志</h3>
+                    <!-- 导入成功后由 app.js 亮出；凭服务端回的 transferId 撤回这一批导入 -->
+                    <button id="btn-transfer-undo" type="button" class="btn btn-outline btn-sm hidden"></button>
+                  </div>
+                  <div class="card-body overflow-auto">
+                    <div id="activity-log-list" class="activity-log-timeline">
+                      <div class="text-muted">暂无记录</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 课表 -->
+          <section id="timetable-panel" class="tab-panel hidden">
+            <div class="card">
+              <div class="card-header">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button id="prev-week-btn" type="button" class="btn btn-outline btn-icon" aria-label="上一周">
+                    <i class="ti ti-chevron-left"></i>
+                  </button>
+                  <select id="week-picker" class="select w-auto" style="width: auto; min-width: 7rem;"></select>
+                  <button id="next-week-btn" type="button" class="btn btn-outline btn-icon" aria-label="下一周">
+                    <i class="ti ti-chevron-right"></i>
+                  </button>
+                  <button id="sync-phone-week-btn" type="button" class="btn btn-primary btn-sm">
+                    <i class="ti ti-device-mobile"></i>设为手机当前周
+                  </button>
+                </div>
+                <div class="text-muted text-xs">点击空格快速添加课程</div>
+              </div>
+              <div class="table-wrap">
+                <table id="timetable-grid"></table>
+              </div>
+            </div>
+          </section>
+
+          <!-- 课程库 -->
+          <section id="courses-panel" class="tab-panel hidden">
+            <div class="card">
+              <div class="card-header courses-toolbar">
+                <div class="courses-toolbar-filters">
+                  <input
+                    id="course-search"
+                    class="input courses-search-input"
+                    type="search"
+                    placeholder="搜索课程、教师、教室…"
+                  />
+                  <select id="filter-nature" class="select courses-filter-select">
+                    <option value="">全部性质</option>
+                    <option value="required">必修</option>
+                    <option value="elective">选修</option>
+                  </select>
+                  <button id="btn-batch-delete-courses" type="button" class="btn btn-destructive btn-sm hidden" disabled>
+                    <i class="ti ti-trash"></i>批量删除
+                  </button>
+                </div>
+                <div class="courses-toolbar-actions">
+                  <button id="btn-add-course" type="button" class="btn btn-primary">
+                    <i class="ti ti-plus"></i>新建课程
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <p class="courses-count-line text-muted mb-3">共 <strong id="course-count">0</strong> 门课程</p>
+                <div id="courses-cards-container" class="row-cards"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 备份 -->
+          <section id="backup-panel" class="tab-panel hidden stack">
+            <div class="grid md:grid-cols-2">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-download"></i>导出备份</h3>
+                </div>
+                <div class="card-body stack">
+                  <p class="text-muted mb-0">下载完整课表 JSON。</p>
+                  <p class="mb-0">档案：<strong id="backup-profile-name">-</strong></p>
+                  <button id="btn-export-backup" type="button" class="btn btn-primary w-full">
+                    <i class="ti ti-file-download"></i>下载 .json
+                  </button>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-git-merge"></i>合并导入</h3>
+                </div>
+                <div class="card-body">
+                  <div id="merge-drop-zone" class="upload-drop-zone mb-3">
+                    <input type="file" id="merge-file-input" accept=".json" class="hidden" />
+                    <span id="merge-selected-filename" class="selected-filename hidden"></span>
+                    <i class="ti ti-cloud-upload" style="font-size: 1.75rem;"></i>
+                    <div class="mt-2">拖放或点击选择 JSON</div>
+                  </div>
+                  <button id="btn-import-merge" type="button" class="btn btn-primary w-full" disabled>
+                    <i class="ti ti-eye"></i>打开迁移预览
+                  </button>
+                  <pre id="merge-import-result" class="import-result-log hidden"></pre>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-upload"></i>覆盖导入</h3>
+                </div>
+                <div class="card-body">
+                  <div class="alert alert-warning mb-3" style="padding: 0.65rem 0.8rem;">
+                    <i class="ti ti-alert-triangle alert-icon"></i>
+                    <div class="text-sm">将完全替换手机当前课表</div>
+                  </div>
+                  <div id="drop-zone" class="upload-drop-zone mb-3">
+                    <input type="file" id="backup-file-input" accept=".json" class="hidden" />
+                    <span id="selected-filename" class="selected-filename hidden"></span>
+                    <i class="ti ti-cloud-upload" style="font-size: 1.75rem;"></i>
+                    <div class="mt-2">拖放或点击选择 JSON</div>
+                  </div>
+                  <button id="btn-import-backup" type="button" class="btn btn-destructive w-full" disabled>
+                    <i class="ti ti-eye"></i>打开迁移预览
+                  </button>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-table"></i>表格导入</h3>
+                </div>
+                <div class="card-body">
+                  <label class="form-check mb-3">
+                    <input type="checkbox" id="spreadsheet-replace-existing" class="form-check-input" />
+                    <span>覆盖现有课程</span>
+                  </label>
+                  <div id="spreadsheet-drop-zone" class="upload-drop-zone mb-3">
+                    <input type="file" id="spreadsheet-file-input" accept=".csv,.xlsx" class="hidden" />
+                    <span id="spreadsheet-selected-filename" class="selected-filename hidden"></span>
+                    <i class="ti ti-cloud-upload" style="font-size: 1.75rem;"></i>
+                    <div class="mt-2">CSV / XLSX</div>
+                  </div>
+                  <button id="btn-import-spreadsheet" type="button" class="btn btn-primary w-full" disabled>
+                    <i class="ti ti-table-import"></i>导入表格
+                  </button>
+                  <pre id="spreadsheet-import-result" class="import-result-log hidden"></pre>
+                </div>
+              </div>
+            </div>
+            <div id="transfer-preview-card" class="card hidden">
+              <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-eye"></i>迁移差异预览</h3>
+              </div>
+              <div class="card-body stack">
+                <pre id="transfer-preview-result" class="import-result-log"></pre>
+                <div class="flex gap-2 flex-wrap">
+                  <button id="btn-transfer-preview-merge" type="button" class="btn btn-primary" disabled>确认合并</button>
+                  <button id="btn-transfer-preview-overwrite" type="button" class="btn btn-destructive" disabled>确认覆盖</button>
+                  <button id="btn-transfer-preview-cancel" type="button" class="btn btn-outline">取消</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-clock"></i>作息节次</h3>
+              </div>
+              <div class="card-body">
+                <div id="meta-sections-container"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- 移动端底部导航（仅登录后显示） -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+      <button type="button" class="mobile-nav-item active" data-tab="overview">
+        <i class="ti ti-layout-dashboard"></i>
+        <span>概览</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="timetable">
+        <i class="ti ti-calendar"></i>
+        <span>课表</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="courses">
+        <i class="ti ti-book"></i>
+        <span>课程</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="backup">
+        <i class="ti ti-database"></i>
+        <span>备份</span>
+      </button>
+      <button type="button" class="mobile-nav-item" id="mobile-menu-toggle">
+        <i class="ti ti-menu-2"></i>
+        <span>更多</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- 编辑课程 Dialog -->
+  <div id="editor-modal" class="dialog-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="dialog" role="document">
+      <div class="dialog-header">
+        <h5 id="modal-title" class="dialog-title">编辑课程</h5>
+        <button type="button" id="close-modal-x" class="btn btn-ghost btn-icon btn-sm" aria-label="关闭">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <form id="course-form" autocomplete="off">
+        <div class="dialog-body">
+          <div class="form-grid">
+            <div class="col-span-2">
+              <label class="form-label required" for="field-name">课程名称</label>
+              <input name="name" id="field-name" class="input" required />
+            </div>
+            <div>
+              <label class="form-label" for="field-shortName">简称</label>
+              <input name="shortName" id="field-shortName" class="input" />
+            </div>
+            <div>
+              <label class="form-label" for="field-courseNature">性质</label>
+              <select name="courseNature" id="field-courseNature" class="select">
+                <option value="required">必修</option>
+                <option value="elective">选修</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="form-label">颜色</label>
+              <div id="color-swatches" class="color-swatches"></div>
+              <input type="hidden" name="color" id="color-input" />
+            </div>
+            <div class="col-span-2">
+              <label class="form-label" for="field-note">备注</label>
+              <textarea name="note" id="field-note" class="textarea" rows="2"></textarea>
+            </div>
+            <div class="col-span-2">
+              <div class="flex justify-between items-center mb-2">
+                <label class="form-label mb-0">上课时间段</label>
+                <button type="button" id="btn-add-slot-field" class="btn btn-outline btn-sm">
+                  <i class="ti ti-plus"></i>添加
+                </button>
+              </div>
+              <div id="schedule-slots-container" class="schedule-slots-container"></div>
+            </div>
+          </div>
+          <p id="form-error" class="text-destructive hidden mt-2"></p>
+        </div>
+        <div class="dialog-footer">
+          <button type="button" id="delete-course-btn" class="btn btn-destructive btn-sm me-auto hidden">
+            <i class="ti ti-trash"></i>删除课程
+          </button>
+          <button type="button" id="duplicate-course-btn" class="btn btn-outline btn-sm hidden">
+            <i class="ti ti-copy"></i>复制
+          </button>
+          <button type="button" id="cancel-course-btn" class="btn btn-ghost btn-sm">取消</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="ti ti-check"></i>保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/assets/i18n.js"></script>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
