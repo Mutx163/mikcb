@@ -141,7 +141,7 @@ internal fun yamlListMaps(content: String, topLevelKey: String): List<Map<String
             current = linkedMapOf()
             val pair = trimmed.substring(2).trim()
             if (pair.isNotEmpty()) {
-                parseYamlPair(pair)?.let { (key, value) -> current?.put(key, value) }
+                parseYamlPair(pair)?.let { (key, value) -> current[key] = value }
             }
             continue
         }
