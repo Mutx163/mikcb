@@ -875,17 +875,17 @@ Modifier
 
 | # | 官方有的能力 | 官方出处（完整路径:行号） | 我们仓库现状 |
 | --- | --- | --- | --- |
-| **G20** | `miuix-blur` 依赖本身（毛玻璃/描边/倾灯的全部前置） | `docs/reference/miuix-demo/docs/guide/blur.md:15-33`（依赖写法）、`:5-11`（minSdk 33 硬要求） | `android/app/build.gradle:367-377` 只有 ui/preference/icons 三个模块，**无 miuix-blur**；`minSdk 33` 已在 `:49`/`:146`/`:168` 达标 |
-| **G21** | `isRuntimeShaderSupported()` 能力探测 + 不支持时整段降级（返回 `null` / 不渲染） | `docs/reference/miuix-demo/example/shared/src/commonMain/kotlin/utils/PageUtils.kt:118`、`.../component/BlurSection.kt:61`、`docs/.../guide/blur.md:49-68` | 0 处（无 `blur` 导入，自然也没有门控） |
-| **G1** | 真毛玻璃三步管线：`rememberLayerBackdrop` → `Modifier.layerBackdrop(backdrop)` → `Modifier.textureBlur(backdrop, shape, ...)` | `.../utils/PageUtils.kt:116-124`（造+录）、`:126-161`（用）；`.../component/BlurSection.kt:118`、`:132-138`、`:144-151`；`docs/.../guide/blur.md:71-77`、`:86-135` | `layerBackdrop` 0 处、`textureBlur` 0 处；顶栏/底栏仍是纯色 |
-| **G2** | 整页级统一接线：`BlurredBar`（顶栏模糊）+ 内容容器 `layerBackdrop` + `barColor = Transparent` | `.../utils/PageUtils.kt:126-168`；`.../MainPage.kt:99`、`:256-302`、`:305`；`.../AppContent.kt:527-559` | 无（`Scaffold`/`TopAppBar` 直接用 `MiuixTheme.colorScheme.surface` 实色） |
-| **G3** | 渐进模糊 `progressiveTextureBlur` + `ProgressiveBlur.Top.copy(curve = 2.2f)`（顶栏边缘淡出，清晰端像素级锐利） | `.../utils/PageUtils.kt:146-157`；`.../component/BlurSection.kt:114-116`、`:144-151`；`docs/.../guide/blur.md:243-292`、`:422-449` | 0 处 |
+| **G20** | `miuix-blur` 依赖本身（毛玻璃/描边/倾灯的全部前置） | `docs/reference/miuix-demo/docs/guide/blur.md:15-33`（依赖写法）、`:5-11`（minSdk 33 硬要求） | 已引入：`android/app/build.gradle:318-340` 的 `miuix-blur-android:0.9.4`（与 miuix-ui 同版本）；`minSdk 33` 已达标 |
+| **G21** | `isRuntimeShaderSupported()` 能力探测 + 不支持时整段降级（返回 `null` / 不渲染） | `docs/reference/miuix-demo/example/shared/src/commonMain/kotlin/utils/PageUtils.kt:118`、`.../component/BlurSection.kt:61`、`docs/.../guide/blur.md:49-68` | 已接：`QingyuPageScaffold` / `TimetableChromeBandGlass` / `GlassDockNavigationBar` 都以 `isRuntimeShaderSupported()` 门控，不支持时回落实色或实体 |
+| **G1** | 真毛玻璃三步管线：`rememberLayerBackdrop` → `Modifier.layerBackdrop(backdrop)` → `Modifier.textureBlur(backdrop, shape, ...)` | `.../utils/PageUtils.kt:116-124`（造+录）、`:126-161`（用）；`.../component/BlurSection.kt:118`、`:132-138`、`:144-151`；`docs/.../guide/blur.md:71-77`、`:86-135` | 已接线：`QingyuPageScaffold`（子页顶栏）、`TimetableChromeBandGlass`（首页玻璃带）、`GlassDockNavigationBar`（底栏） |
+| **G2** | 整页级统一接线：`BlurredBar`（顶栏模糊）+ 内容容器 `layerBackdrop` + `barColor = Transparent` | `.../utils/PageUtils.kt:126-168`；`.../MainPage.kt:99`、`:256-302`、`:305`；`.../AppContent.kt:527-559` | `QingyuPageScaffold` 已接：内容容器 `layerBackdrop` + 顶栏 `drawBackdrop` + `barColor = Transparent`；不支持 `RuntimeShader` / 关动效时回落实色 |
+| **G3** | 渐进模糊 `progressiveTextureBlur` + `ProgressiveBlur.Top.copy(curve = 2.2f)`（顶栏边缘淡出，清晰端像素级锐利） | `.../utils/PageUtils.kt:146-157`；`.../component/BlurSection.kt:114-116`、`:144-151`；`docs/.../guide/blur.md:243-292`、`:422-449` | 1 处：`QingyuPageScaffold`（`drawBackdrop` + `progressiveTextureBlurEffect`；**curve 0.5 + 49dp + 独立线性叠色**，按 Flutter 原版校准，不是 demo 的 2.2 / 10dp） |
 | **G4** | 前景模糊：`contentBlendMode = BlendMode.DstIn`，让文字本身被背景模糊填充 | `.../component/BlurSection.kt:436-468`（尤其 `:466`）；`docs/.../guide/blur.md:314-332` | 0 处 |
 | **G5** | 模糊配色：`BlurColors` / `BlendColorEntry` / `BlurDefaults.blurColors()` + 成套 `ColorBlendToken`（Info/Colored/Pured/Overlay × Thin/Regular/Thick × Light/Dark） | `.../component/BlurSection.kt:246-262`、`:298-303`；`.../component/blend/ColorBlendToken.kt:10-212`；`docs/.../guide/blur.md:138-241`、`:451-470` | 0 处（showcase 只有单色 alpha，见 §4.0 证据 1） |
 | **G6** | 玻璃描边高亮 `Highlight` 六预设（`GlassStrokeBig/Middle/Small × Light/Dark`）+ `Highlight.Default` + 按尺寸/主题选择的 `HighlightConfig` | `.../component/highlight/HighlightConfig.kt:10-22`；`.../component/BlurSection.kt:236-244`、`:304`；`docs/.../guide/blur.md:472-533` | `Highlight.` 0 处 |
 | **G7** | 传感器倾灯 `rememberTiltLight(basePosition, color, intensity, sensitivity)`（主光 0.15 / 副光 0.12），含「传感器必须无条件接线、最后再 gate 成 null」的写法 | `.../component/highlight/ContainerHighlight.kt:22-58`（尤其 `:32-43`、`:45-58`）；`docs/.../guide/blur.md:566-594`、`:632-639` | `rememberTiltLight` 0 处 |
 | **G8** | 重力驱动的量化倾灯：`rememberDeviceTilt()` → `atan2(gy,gx)` → 量化 3° → 旋转 `dualPeak` 主光；且只在**绘制期**读 `State` 以免 50Hz 传感器触发重组 | `.../component/liquid/LiquidGlassNavigationBar.kt:129-134`、`:136-161`、`:163-192`、`:323-324` | 0 处（无 `rememberDeviceTilt`） |
-| **G9** | 低阶管线 `Modifier.drawBackdrop(backdrop, shape, effects, highlight, layerBlock, onDrawSurface)` + `BackdropEffectScope`（`blur` / `colorControls` / `runtimeShaderEffect`；像素量必须 `/ downscaleFactor`） | `.../component/liquid/LiquidGlassNavigationBar.kt:417-443`、`:499-546`；`docs/.../guide/blur.md:349-401`（含 `:387-389` 警告） | `drawBackdrop` 0 处 |
+| **G9** | 低阶管线 `Modifier.drawBackdrop(backdrop, shape, effects, highlight, layerBlock, onDrawSurface)` + `BackdropEffectScope`（`blur` / `colorControls` / `runtimeShaderEffect`；像素量必须 `/ downscaleFactor`） | `.../component/liquid/LiquidGlassNavigationBar.kt:417-443`、`:499-546`；`docs/.../guide/blur.md:349-401`（含 `:387-389` 警告） | 已用在 `QingyuPageScaffold`、`TimetableChromeBandGlass`、`GlassDockNavigationBar`（含 `progressiveGradient` / `lens` / `vibrancy`） |
 | **G10** | 折射透镜 `lens(refractionHeight, refractionAmount, depthEffect, chromaticAberration)`（圆角 SDF 位移采样；`padding` 自动抬升；仅支持 `CornerBasedShape`） | `.../component/liquid/Lens.kt:15-70`（`:29` 能力门控、`:32-34` padding） | 0 处 |
 | **G11** | `PressFeedbackType.Sink`（按下平滑缩小）与 `.Tilt`（按触摸点倾斜）在 Card 上的用法 | `.../component/CardSection.kt:68-86`（Sink + `onClick`）、`:87-105`（Tilt + `onLongPress`）；`docs/.../components/card.md:36`、`:142-150`；`docs/.../guide/utils.md:247-255` | `pressFeedbackType` 0 处；交互 Card 只有裸 `onClick`（`composeP1/.../pages/about/PagesCommon.kt:195`、`.../pages/import/ImportCommon.kt:142`） |
 | **G12** | `Modifier.pressable()` + `SinkFeedback()` / `TiltFeedback()`（非 Card 组件的通用按压反馈；默认即 Sink） | `docs/.../guide/utils.md:196-245` | `pressable` / `SinkFeedback` / `TiltFeedback` 均 0 处 |
@@ -921,6 +921,8 @@ Modifier
 ① build.gradle：+ implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.4")
    （minSdk 33 已达标；composeP1 与 composeUi 两个变体都要加）
 ② 抄 PageUtils.kt:116-168 的 rememberBlurBackdrop / BlurredBar / barBlurColors
+   ⚠️ 本仓已有产品实现，**不要再来一份**：子页顶栏 = `QingyuPageScaffold` 的
+   `rememberQingyuBlurBackdrop` + `QingyuBlurredTopBar`；首页玻璃带 = `TimetableChromeBandGlass`。
 ③ 页面：backdrop = rememberBlurBackdrop()；顶栏 BlurredBar(backdrop, blurActive){ TopAppBar(color = barColor) }；
    内容容器 Modifier.layerBackdrop(backdrop)；barColor = if (blurActive) Transparent else surface
 ④ 交互 Card：+ pressFeedbackType = PressFeedbackType.Sink, showIndication = true
@@ -929,6 +931,8 @@ Modifier
 ⑥ 玻璃卡片：textureBlur(shape = RoundedCornerShape(24.dp), colors = BlurDefaults.blurColors(
       blendColors = ColorBlendToken.Colored_Thick_Light/Dark), highlight = Highlight.GlassStrokeMiddleLight/Dark)
 ⑦ 顶栏想要边缘淡出：改用 progressiveTextureBlur + ProgressiveBlur.Top.copy(curve = 2.2f)
+   —— demo 档。产品侧子页顶栏按 Flutter 原版用 curve = 0.5f + 49dp + 独立线性叠色，
+   见 `QingyuPageScaffold` 的 `QingyuTopBarBlur`；改参数前先读那份 KDoc 的换算依据。
 ⑧ 要真「液态玻璃」：整段抄 component/animation/ + component/liquid/（含 Lens/InnerShadow/Vibrancy/CombinedBackdrop）
 ⑨ 顺手修 MiuixShowcaseSubpages.kt:935-951 的假模糊与 ShowcaseStrings.kt:145 的虚假文案
 ```

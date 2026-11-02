@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
@@ -23,14 +24,14 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlurEffect
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 
@@ -81,17 +82,21 @@ class QingyuPageContentScope(
 /**
  * 全站统一的页面骨架：官方顶栏 + 返回键 + 顶栏毛玻璃。
  *
- * ## 顶栏毛玻璃（照抄官方配方）
+ * ## 顶栏毛玻璃（渐进模糊，对齐 Flutter 原版）
  *
- * 出处：`docs/reference/miuix-demo/example/shared/src/commonMain/kotlin/utils/PageUtils.kt:115-168`
- * 与 `MainPage.kt:99-119`、`:256-305`。官方是三步，顺序与依赖不能换：
+ * 采样链路仍照抄官方三步（`PageUtils.kt:115-168`、`MainPage.kt:99-119`、`:256-305`），
+ * 顺序与依赖不能换：
  *
  * 1. [rememberQingyuBlurBackdrop] 造一个「录像带」（`LayerBackdrop`），并先铺一层页面底色；
  * 2. `Modifier.layerBackdrop(backdrop)` 挂在**页面内容**容器上，把已画出的像素录进去；
- * 3. [QingyuBlurredTopBar] 用 `Modifier.textureBlur(backdrop, RectangleShape, blurRadius = 25f,
- *    colors = 页面底色@0.8)` 把模糊面垫在顶栏下，同时顶栏底色改成 `Color.Transparent`。
+ * 3. [QingyuBlurredTopBar] 用 `drawBackdrop + progressiveTextureBlurEffect` 把**渐进**
+ *    模糊面垫在顶栏下（上沿最强、到顶栏底边收敛到 0），同时顶栏底色改成 `Color.Transparent`。
  *
  * 三步缺一：只有 3 会采样到空气（黑/透明），只有 2 则毫无视觉变化。
+ *
+ * 为什么不用官方 demo 的均匀档 / 也不用 demo 的 `curve = 2.2f`：Flutter 原版子页顶栏
+ * 锁死的是渐进档（`2026-09-23-lock-subpage-progressive-blur.md`），参数换算写在
+ * [QingyuTopBarBlur] 上；Compose 迁移时先接了均匀档，本次补回原版观感。
  *
  * ## 退化路径（都回到改动前的样子，不会白屏/闪烁）
  *
@@ -130,7 +135,7 @@ fun QingyuPageScaffold(
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            QingyuBlurredTopBar(backdrop = backdrop, pageBackground = pageBackground) {
+            QingyuBlurredTopBar(backdrop = backdrop, dark = dark) {
                 if (smallTopBar) {
                     SmallTopAppBar(
                         title = title,
@@ -180,41 +185,100 @@ fun QingyuPageScaffold(
 }
 
 /**
- * 顶栏毛玻璃：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`）。
+ * 子页顶栏渐进模糊的参数（对齐 Flutter 原版 `InspireHeaderBlur`，不是官方 demo 的取值）。
  *
- * 只接官方**均匀模糊**一档：`RectangleShape` 通栏 + `blurRadius = 25f` +
- * 页面底色 80% 不透明度压住背景。官方另一档「渐进模糊」
- * （`progressiveTextureBlur` + `ProgressiveBlur.Top.copy(curve = 2.2f)`）由 demo 的
- * `blurStyle` 设置切换；本仓没有这个设置，不接第二套。
+ * ## 为什么是这几个数
+ *
+ * - **半径 49dp**：Flutter 渐进档的固定高斯 sigma = 22 逻辑 px
+ *   （`lib/ui/hyperos/inspire/inspire_header_blur.dart` 的 `progressiveSigma`）。
+ *   miuix 的换算是 `sigma_px = 0.45 × radius_dp × density`，22 / 0.45 ≈ 48.9 → 49dp。
+ * - **曲线 0.5**：Flutter 的强度分布是 `easeInSine(1 - t)`（1/3 处 50%、1/2 处 29%）；
+ *   miuix 的强度是 `1 - smoothstep(t)^curve`，curve = 0.5 时约为 1/3 处 49%、
+ *   1/2 处 29%（误差 < 1 个百分点）。官方 demo 的 2.2 是「前重后轻」的陡降，
+ *   不对应产品原版。
+ * - **叠色**：Flutter 是**独立**的一层线性 scrim（不跟模糊曲线收）：浅色 white@0.70、
+ *   深色 #565656@0.475（`hyperos_blurred_header.dart` 的 `_frostedScrimColor`）。
+ *   所以这里用 `onDrawSurface` 另画，不塞进 `BlurColors`——后者会被 ramp 一起调制，
+ *   中段会比原版淡。
+ *
+ * 改这里必须同步 `TopBarProgressiveBlurGuardTest`（数字与接线都被它钉住）。
+ */
+internal object QingyuTopBarBlur {
+    /** 顶边满强度处的半径（dp）。 */
+    const val MaxRadiusDp = 49f
+
+    /** miuix 幂曲线，复现 Flutter 的 `easeInSine(1 - t)`。 */
+    const val Curve = 0.5f
+
+    /** 浅色叠色：纯白 70%。 */
+    const val LightTintAlpha = 0.70f
+
+    /** 深色叠色：中性灰 #565656，alpha 按 `sheetTintAlpha` 换算后为 0.475。 */
+    const val DarkTintArgb = 0xFF565656
+    const val DarkTintAlpha = 0.475f
+}
+
+private val QingyuTopBarGradient: ProgressiveBlur =
+    ProgressiveBlur.Top.copy(curve = QingyuTopBarBlur.Curve)
+
+private fun qingyuTopBarTint(dark: Boolean): Color =
+    if (dark) {
+        Color(QingyuTopBarBlur.DarkTintArgb).copy(alpha = QingyuTopBarBlur.DarkTintAlpha)
+    } else {
+        Color.White.copy(alpha = QingyuTopBarBlur.LightTintAlpha)
+    }
+
+/**
+ * 顶栏渐进模糊：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`），但接的是官方
+ * **渐进档**（`drawBackdrop(progressiveGradient = …) + progressiveTextureBlurEffect`）。
+ *
+ * 渐变自顶边满强度（[QingyuTopBarBlur.MaxRadiusDp]）向下连续衰减，到顶栏盒底正好为 0，
+ * 所以顶栏与正文交界处没有一条硬边；叠色是另一层线性 scrim（见 [QingyuTopBarBlur]），
+ * 也一并淡到透明。
+ *
+ * ⚠️ `progressiveGradient` 不能漏传：漏了会让 draw 路径**静默**退回单级均匀模糊
+ * （不报错，只是清晰端不再真正锐利）。它和 effects 里的 `gradient` 应当用同一份，
+ * 否则两套口径会漂——实际驱动 ramp 的是 `progressiveGradient` 这一份。
  *
  * [backdrop] 为 null 时退化成普通 `Box`，与改动前的布局完全一致。
  */
 @Composable
 private fun QingyuBlurredTopBar(
     backdrop: LayerBackdrop?,
-    pageBackground: Color,
+    dark: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val modifier = if (backdrop != null) {
-        Modifier.textureBlur(
-            backdrop = backdrop,
-            shape = RectangleShape,
-            blurRadius = 25f,
-            colors = qingyuBarBlurColors(pageBackground),
-        )
-    } else {
-        Modifier
+    Box {
+        if (backdrop != null) {
+            val tint = qingyuTopBarTint(dark)
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { RectangleShape },
+                        effects = {
+                            progressiveTextureBlurEffect(
+                                blurRadiusX = QingyuTopBarBlur.MaxRadiusDp,
+                                gradient = QingyuTopBarGradient,
+                                // 叠色单独画（见 [QingyuTopBarBlur]），这里不留混合层。
+                                colors = BlurColors(),
+                            )
+                        },
+                        progressiveGradient = QingyuTopBarGradient,
+                        onDrawSurface = {
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(tint, tint.copy(alpha = 0f)),
+                                ),
+                            )
+                        },
+                    ),
+            )
+        }
+        content()
     }
-    Box(modifier = modifier) { content() }
 }
-
-/** 官方 `barBlurColors()`（`PageUtils.kt:163-168`）：通栏面用页面底色 80% 压住背景。 */
-@Composable
-private fun qingyuBarBlurColors(pageBackground: Color): BlurColors = BlurDefaults.blurColors(
-    blendColors = listOf(
-        BlendColorEntry(color = pageBackground.copy(alpha = 0.8f)),
-    ),
-)
 
 /**
  * 造顶栏模糊的采样源（官方 `rememberBlurBackdrop()`，`PageUtils.kt:115-124`）。
