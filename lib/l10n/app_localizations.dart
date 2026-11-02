@@ -7984,6 +7984,18 @@ abstract class AppLocalizations {
   /// **'确认调课'**
   String get confirmRescheduleAction;
 
+  /// No description provided for @reschedulePreviousWeekAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一周'**
+  String get reschedulePreviousWeekAction;
+
+  /// No description provided for @rescheduleNextWeekAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一周'**
+  String get rescheduleNextWeekAction;
+
   /// No description provided for @homeTitleStyleClassicLabel.
   ///
   /// In zh, this message translates to:

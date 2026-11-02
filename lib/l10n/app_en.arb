@@ -2445,6 +2445,8 @@
   },
   "rescheduleTargetWeekLabel": "Move to week",
   "confirmRescheduleAction": "Confirm reschedule",
+  "reschedulePreviousWeekAction": "Previous week",
+  "rescheduleNextWeekAction": "Next week",
   "homeTitleStyleClassicLabel": "Classic text",
   "homeTitleStyleBrandLabel": "Large logo",
   "homeTitleStyleClassicDescription": "Keeps the original title style with text only; tap it to switch timetables",

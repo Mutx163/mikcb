@@ -4550,6 +4550,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmRescheduleAction => 'Confirm reschedule';
 
   @override
+  String get reschedulePreviousWeekAction => 'Previous week';
+
+  @override
+  String get rescheduleNextWeekAction => 'Next week';
+
+  @override
   String get homeTitleStyleClassicLabel => 'Classic text';
 
   @override

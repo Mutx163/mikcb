@@ -2472,6 +2472,8 @@
   },
   "rescheduleTargetWeekLabel": "调到第几周",
   "confirmRescheduleAction": "确认调课",
+  "reschedulePreviousWeekAction": "上一周",
+  "rescheduleNextWeekAction": "下一周",
   "homeTitleStyleClassicLabel": "经典文字",
   "homeTitleStyleBrandLabel": "大 Logo",
   "homeTitleStyleClassicDescription": "保持原本标题样式，只显示文字，点击即可切换课表",

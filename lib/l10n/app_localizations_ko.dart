@@ -4403,6 +4403,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get confirmRescheduleAction => '시간 변경 확인';
 
   @override
+  String get reschedulePreviousWeekAction => '이전 주';
+
+  @override
+  String get rescheduleNextWeekAction => '다음 주';
+
+  @override
   String get homeTitleStyleClassicLabel => '클래식 텍스트';
 
   @override

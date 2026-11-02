@@ -2222,6 +2222,8 @@
   },
   "rescheduleTargetWeekLabel": "調到第几周",
   "confirmRescheduleAction": "確認調課",
+  "reschedulePreviousWeekAction": "上一週",
+  "rescheduleNextWeekAction": "下一週",
   "homeTitleStyleClassicLabel": "經典文字",
   "homeTitleStyleBrandLabel": "大 Logo",
   "homeTitleStyleClassicDescription": "維持原本標題樣式，只顯示文字，點一下即可切換課表",

@@ -4316,6 +4316,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmRescheduleAction => '确认调课';
 
   @override
+  String get reschedulePreviousWeekAction => '上一周';
+
+  @override
+  String get rescheduleNextWeekAction => '下一周';
+
+  @override
   String get homeTitleStyleClassicLabel => '经典文字';
 
   @override
@@ -14305,6 +14311,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get confirmRescheduleAction => '確認調課';
+
+  @override
+  String get reschedulePreviousWeekAction => '上一週';
+
+  @override
+  String get rescheduleNextWeekAction => '下一週';
 
   @override
   String get homeTitleStyleClassicLabel => '經典文字';
@@ -24336,6 +24348,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get confirmRescheduleAction => '確認調課';
+
+  @override
+  String get reschedulePreviousWeekAction => '上一週';
+
+  @override
+  String get rescheduleNextWeekAction => '下一週';
 
   @override
   String get homeTitleStyleClassicLabel => '經典文字';

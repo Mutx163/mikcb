@@ -2230,6 +2230,8 @@
   },
   "rescheduleTargetWeekLabel": "変更先の週",
   "confirmRescheduleAction": "時間変更確認",
+  "reschedulePreviousWeekAction": "前の週",
+  "rescheduleNextWeekAction": "次の週",
   "homeTitleStyleClassicLabel": "クラシックテキスト",
   "homeTitleStyleBrandLabel": "大Logo",
   "homeTitleStyleClassicDescription": "元のタイトルスタイルを維持，テキストのみ表示，タップで時間割切替",

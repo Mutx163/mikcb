@@ -59,6 +59,9 @@ object CourseFollowupStrings {
     val locationPrefix = ArbText("locationPrefix", "地点：{value}")
     val selectLocationTitle = ArbText("selectLocationTitle", "选择教室")
     val confirmRescheduleAction = ArbText("confirmRescheduleAction", "确认调课")
+    // 周次步进 ± 按钮的读屏描述（无障碍用，不直接上屏）
+    val reschedulePreviousWeekAction = ArbText("reschedulePreviousWeekAction", "上一周")
+    val rescheduleNextWeekAction = ArbText("rescheduleNextWeekAction", "下一周")
 
     // ── 通用按钮 ──
     val cancelAction = ArbText("cancelAction", "取消")
@@ -106,6 +109,8 @@ object CourseFollowupStrings {
         locationPrefix,
         selectLocationTitle,
         confirmRescheduleAction,
+        reschedulePreviousWeekAction,
+        rescheduleNextWeekAction,
         cancelAction,
         confirmAction,
         clearAction,

@@ -298,6 +298,7 @@ private fun FollowupFieldCard(
 @Composable
 private fun FollowupStepButton(
     icon: ImageVector,
+    contentDescription: String,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
@@ -308,7 +309,7 @@ private fun FollowupStepButton(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = if (enabled) {
                 Color(QingyuTheme.primaryText(dark))
             } else {
@@ -761,6 +762,7 @@ fun CourseRescheduleSheet(
                     ) {
                         FollowupStepButton(
                             icon = MiuixIcons.Remove,
+                            contentDescription = CourseFollowupStrings.reschedulePreviousWeekAction.zh,
                             enabled = view.canDecrementWeek,
                             onClick = { draft = draft.previousWeek(weekCount) },
                         )
@@ -773,6 +775,7 @@ fun CourseRescheduleSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         FollowupStepButton(
                             icon = MiuixIcons.Add,
+                            contentDescription = CourseFollowupStrings.rescheduleNextWeekAction.zh,
                             enabled = view.canIncrementWeek,
                             onClick = { draft = draft.nextWeek(weekCount) },
                         )

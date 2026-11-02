@@ -4386,6 +4386,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get confirmRescheduleAction => '時間変更確認';
 
   @override
+  String get reschedulePreviousWeekAction => '前の週';
+
+  @override
+  String get rescheduleNextWeekAction => '次の週';
+
+  @override
   String get homeTitleStyleClassicLabel => 'クラシックテキスト';
 
   @override
