@@ -599,62 +599,77 @@ fun ImportPreviewDialog(
         onDismissRequest = onCancel,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 「识别到 N 门课程，是否导入？」
-            Text(
-                text = ImportStrings.importCourseCountPrompt.filled("count", courseCount.toString()),
-                style = MiuixTheme.textStyles.body2,
-                lineHeight = 20.sp,
-                color = Color(QingyuTheme.primaryText(dark)),
-            )
-            val start = startDate
-            if (start != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                // 开学日只能按周挪：学期起点本来就归一到周一，按天调只会造出半周。
-                ImportStepperRow(
-                    title = ImportStrings.importSemesterStartDateTitle.zh,
-                    subtitle = ImportStrings.importSemesterStartDateSubtitle.zh,
-                    value = ImportSharedModel.importFormatDate(start),
-                    onDecrease = { startDate = start.minusDays(7) },
-                    onIncrease = { startDate = start.plusDays(7) },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                ImportStepperRow(
-                    title = ImportStrings.importFirstCourseWeekMappingLabel.zh,
-                    subtitle = ImportStrings.importFirstCourseWeekMappingSubtitle.zh,
-                    value = firstWeek.toString(),
-                    onDecrease = { if (firstWeek > 1) firstWeek -= 1 },
-                    onIncrease = { if (firstWeek < maxWeek) firstWeek += 1 },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (firstWeek > 1) {
-                        ImportStrings.importSemesterMappingShiftHint.filled(
-                            "shiftedWeeks" to (firstWeek - 1).toString(),
-                            "calendarWeek" to firstWeek.toString(),
+            // 正文限高可滚：学期映射两行 + 替换说明在小屏/大字号下可能撑出弹窗
+            //（审核报告 P1 旧 :520 三个对话框里最后没改到的这条），动作按钮留在滚动区外。
+            val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxBodyHeight)
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
+            ) {
+                item(key = "body") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // 「识别到 N 门课程，是否导入？」
+                        Text(
+                            text = ImportStrings.importCourseCountPrompt.filled("count", courseCount.toString()),
+                            style = MiuixTheme.textStyles.body2,
+                            lineHeight = 20.sp,
+                            color = Color(QingyuTheme.primaryText(dark)),
                         )
-                    } else {
-                        ImportStrings.importSemesterMappingNoShiftHint.zh
-                    },
-                    style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 18.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-            }
-            if (hasExistingCourses) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = ImportStrings.importReplaceExistingMessage.filled("name", importLabel),
-                    style = MiuixTheme.textStyles.body2,
-                    lineHeight = 20.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = IMPORT_REPLACE_EXISTING_GUIDANCE,
-                    style = MiuixTheme.textStyles.body2,
-                    lineHeight = 20.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
+                        val start = startDate
+                        if (start != null) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            // 开学日只能按周挪：学期起点本来就归一到周一，按天调只会造出半周。
+                            ImportStepperRow(
+                                title = ImportStrings.importSemesterStartDateTitle.zh,
+                                subtitle = ImportStrings.importSemesterStartDateSubtitle.zh,
+                                value = ImportSharedModel.importFormatDate(start),
+                                onDecrease = { startDate = start.minusDays(7) },
+                                onIncrease = { startDate = start.plusDays(7) },
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ImportStepperRow(
+                                title = ImportStrings.importFirstCourseWeekMappingLabel.zh,
+                                subtitle = ImportStrings.importFirstCourseWeekMappingSubtitle.zh,
+                                value = firstWeek.toString(),
+                                onDecrease = { if (firstWeek > 1) firstWeek -= 1 },
+                                onIncrease = { if (firstWeek < maxWeek) firstWeek += 1 },
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (firstWeek > 1) {
+                                    ImportStrings.importSemesterMappingShiftHint.filled(
+                                        "shiftedWeeks" to (firstWeek - 1).toString(),
+                                        "calendarWeek" to firstWeek.toString(),
+                                    )
+                                } else {
+                                    ImportStrings.importSemesterMappingNoShiftHint.zh
+                                },
+                                style = MiuixTheme.textStyles.footnote1,
+                                lineHeight = 18.sp,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                        }
+                        if (hasExistingCourses) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = ImportStrings.importReplaceExistingMessage.filled("name", importLabel),
+                                style = MiuixTheme.textStyles.body2,
+                                lineHeight = 20.sp,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = IMPORT_REPLACE_EXISTING_GUIDANCE,
+                                style = MiuixTheme.textStyles.body2,
+                                lineHeight = 20.sp,
+                                color = Color(QingyuTheme.secondaryText(dark)),
+                            )
+                        }
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             val choiceStart = startDate
