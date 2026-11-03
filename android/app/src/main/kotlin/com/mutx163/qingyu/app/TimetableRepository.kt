@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.EventSink
 import com.mutx163.qingyu.core.EventSinks
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.LocationTimeGroup
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
@@ -250,6 +251,148 @@ class TimetableRepository(
         loadedSettings = settings
         store.saveSettings(settings)
         pendingNotify = true
+    }
+
+    /**
+     * 盘上 `timetable_settings` 的**原始 JSON 文档**（只读）。
+     *
+     * [TimetableSettings] 只是时间/周次五键的投影，Dart 侧那份是 250+ 键。局域网
+     * 导入要整份写回、差异要比原文、撤销要能判断「导入后用户改过没有」，都需要它。
+     */
+    @Synchronized
+    fun settingsJson(): Map<String, Any?> = store.loadSettingsJson()
+
+    /**
+     * 盘上**激活档案内嵌** `settings` 的原始 JSON；盘上还没有档案 → null。
+     *
+     * 桌面小组件读的是档案里那份（`TimetableStore.saveSettingsPatchToActiveProfile`
+     * 的类注释），撤销与失败补偿要靠它把镜像也还原。
+     */
+    @Synchronized
+    fun activeProfileSettingsJson(): Map<String, Any?>? = activeProfileSettingsJsonLocked()
+
+    /**
+     * 设置的**合并写**（局域网导入的落点）：只覆盖 [patch] 里出现的键，盘上其余
+     * （Dart 侧 250+ 个）原样保留；同一份补丁同时镜像进活动档案内嵌的 `settings`
+     * ——Dart `updateSettings` 走 `_persistActiveProfileState`，档案那份也会被写，
+     * 只写顶层等于「设置页改了、桌面卡片纹丝不动」。
+     *
+     * **失败语义**：两笔写（顶层 + 档案）。第二笔失败时把顶层写回旧值再上抛；
+     * 内存只在两笔都成功后才更新。补丁里值为 null = 删除该键（合并写的约定）。
+     */
+    fun updateSettingsPatch(patch: Map<String, Any?>) {
+        updateSettingsPatchLocked(patch)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun updateSettingsPatchLocked(patch: Map<String, Any?>) {
+        if (patch.isEmpty()) return
+        val previousTop = store.loadSettingsJson()
+        val mergedTop = LinkedHashMap<String, Any?>(previousTop)
+        mergedTop.putAll(patch)
+        val nextSettings = TimetableSettings.fromJson(mergedTop)
+
+        store.saveSettingsPatch(patch)
+        try {
+            store.saveSettingsPatchToActiveProfile(patch)
+        } catch (error: Throwable) {
+            // 第二笔失败：第一笔已落盘，把顶层写回旧文档（补偿失败不遮原始错误）。
+            runCatching { store.saveSettingsPatch(settingsDiffPatch(store.loadSettingsJson(), previousTop)) }
+            throw error
+        }
+
+        loadedSettings = nextSettings
+        val activeId = activeProfile.id
+        loadedProfiles = loadedProfiles.map { profile ->
+            if (profile.id == activeId) profile.copy(settings = mergeSettings(profile.settings, patch)) else profile
+        }
+        pendingNotify = true
+    }
+
+    /**
+     * 把顶层设置文档**整份写回**为 [values]（撤销 / 失败补偿用）。
+     *
+     * 底层只有合并写，所以先和盘上现有文档求差：目标里没有的键显式写 null（= 删除）。
+     */
+    fun replaceSettingsJson(values: Map<String, Any?>) {
+        replaceSettingsJsonLocked(values)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceSettingsJsonLocked(values: Map<String, Any?>) {
+        val patch = settingsDiffPatch(store.loadSettingsJson(), values)
+        if (patch.isEmpty()) return
+        val nextSettings = TimetableSettings.fromJson(values)
+        store.saveSettingsPatch(patch)
+        loadedSettings = nextSettings
+        pendingNotify = true
+    }
+
+    /** 把**活动档案内嵌**的设置文档整份写回（撤销 / 失败补偿用）。 */
+    fun replaceActiveProfileSettingsJson(values: Map<String, Any?>) {
+        replaceActiveProfileSettingsJsonLocked(values)
+        drainPendingNotify()
+    }
+
+    @Synchronized
+    private fun replaceActiveProfileSettingsJsonLocked(values: Map<String, Any?>) {
+        if (loadedProfiles.isEmpty()) return
+        val current = activeProfileSettingsJsonLocked() ?: emptyMap()
+        val patch = settingsDiffPatch(current, values)
+        val nextSettings = TimetableSettings.fromJson(values)
+        if (patch.isNotEmpty()) store.saveSettingsPatchToActiveProfile(patch)
+
+        val activeId = activeProfile.id
+        val nextProfiles = loadedProfiles.map { profile ->
+            if (profile.id == activeId) profile.copy(settings = nextSettings) else profile
+        }
+        if (nextProfiles != loadedProfiles) {
+            loadedProfiles = nextProfiles
+            pendingNotify = true
+        }
+    }
+
+    /** 内存模型合并一份设置补丁（只关心时间/周次五键；其余键由存储层保留）。 */
+    private fun mergeSettings(base: TimetableSettings, patch: Map<String, Any?>): TimetableSettings {
+        val merged = LinkedHashMap<String, Any?>(base.toJson())
+        // 开学日双键：外来只给毫秒时，别让本机旧的文本键把它压掉（fromJson 文本优先）。
+        if (patch.containsKey("semesterStartDate") && !patch.containsKey("semesterStartDateText")) {
+            merged.remove("semesterStartDateText")
+        }
+        merged.putAll(patch)
+        return TimetableSettings.fromJson(merged)
+    }
+
+    /**
+     * 「把 [current] 改成 [target]」所需的合并补丁：缺的键写 null（删除），
+     * 值不同的键写目标值。键序不影响语义。
+     */
+    private fun settingsDiffPatch(
+        current: Map<String, Any?>,
+        target: Map<String, Any?>,
+    ): Map<String, Any?> {
+        val patch = LinkedHashMap<String, Any?>()
+        for (key in current.keys) if (key !in target) patch[key] = null
+        for ((key, value) in target) {
+            if (current[key] != value) patch[key] = value
+        }
+        return patch
+    }
+
+    private fun activeProfileSettingsJsonLocked(): Map<String, Any?>? {
+        val raw = store.rawJson(TimetableStore.KEY_PROFILES) ?: return null
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*>) return null
+        val activeId = activeProfile.id
+        val profile = decoded.firstOrNull { item ->
+            item is Map<*, *> && item["id"] == activeId
+        } as? Map<*, *> ?: return null
+        val settings = profile["settings"] as? Map<*, *> ?: return null
+        val out = LinkedHashMap<String, Any?>()
+        for ((key, value) in settings) if (key is String) out[key] = value
+        return out
     }
 
     // ---------- 备份恢复用的原子入口 ----------
@@ -552,15 +695,54 @@ class TimetableRepository(
      * 「整份数组写回 `location_time_groups`」这一笔上；批次 F10 只搬这一笔，
      * 分组增删改的判据在 `pages/time_scheme/LocationTimeGroupController`（纯 Kotlin、JVM 可测）。
      */
-    fun updateLocationTimeGroups(groups: List<LocationTimeGroup>) {
-        updateLocationTimeGroupsLocked(groups)
+    fun updateLocationTimeGroups(groups: List<LocationTimeGroup>, resync: Boolean = false) {
+        updateLocationTimeGroupsLocked(groups, resync)
         drainPendingNotify()
     }
 
+    /**
+     * [resync] = true 是 Dart `replaceLocationTimeGroups(resync: true)` 的对应物：
+     * 分组落盘后按**新分组**重算每份档案的课程钟点（[TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes]，
+     * 与地点规则族同一份口径），再整份写回档案。
+     *
+     * 为什么传输层必须用它：局域网覆盖导入的顺序是「先写课（按接收方**原有**分组算钟点）、
+     * 后换分组」。少了重算，盘上分组已经是新的、课程时间还是旧楼的教学节次，用户要到
+     * 下一次任意地点规则改动才会被静默改对。
+     *
+     * 失败语义：分组先落盘；重算后的档案写盘失败时，尽力把旧分组写回去再上抛
+     * （Dart `commitGroupChange` 同型），不留下「盘上新分组、内存旧分组」。
+     * 默认 false 保持既有调用方语义不变（撤销路径自己会写回课程，不能重算覆盖）。
+     */
     @Synchronized
-    private fun updateLocationTimeGroupsLocked(groups: List<LocationTimeGroup>) {
+    private fun updateLocationTimeGroupsLocked(groups: List<LocationTimeGroup>, resync: Boolean) {
+        if (!resync) {
+            store.saveLocationTimeGroups(groups)
+            loadedLocationTimeGroups = groups
+            pendingNotify = true
+            return
+        }
+        val previousGroups = loadedLocationTimeGroups
+        val nextProfiles = loadedProfiles.map { profile ->
+            profile.copy(
+                courses = TimeSchemeLogic.syncCoursesWithEffectiveTimeSchemes(
+                    source = profile.courses,
+                    schemes = loadedTimeSchemes,
+                    settings = profile.settings,
+                    locationTimeGroups = groups,
+                    scheduleDateRules = loadedScheduleDateRules,
+                ),
+            )
+        }
         store.saveLocationTimeGroups(groups)
+        try {
+            if (nextProfiles != loadedProfiles) store.saveProfiles(nextProfiles)
+        } catch (error: Throwable) {
+            runCatching { store.saveLocationTimeGroups(previousGroups) }
+            throw error
+        }
         loadedLocationTimeGroups = groups
+        loadedProfiles = nextProfiles
+        currentLiveCourseId = null
         pendingNotify = true
     }
 

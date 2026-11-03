@@ -27,8 +27,9 @@ import com.mutx163.qingyu.transfer.syncImportedCourses
  * 1. 时间模板（`_mergeTimeSchemes` 的数序：同 id 更新 / 同签名复用 / 新签名创建）；
  * 2. `scheduleItems` 先写内存，再随 `replaceActiveProfileContent` 一次落盘
  *    （课 / 作业 / 考试 / 日程四块一次写、一次通知 —— 见仓储该方法的说明）；
- * 3. 设置（只有 `scope.carriesSettings` 才写，且只写已移植的时间/周次子集）；
- * 4. 当前周；5. 日期规则；6. 地点分组。
+ * 3. 设置（只有 `scope.carriesSettings` 才写）：整份设置文档合并写回，
+ *    未知键原样保留、设备级信任锚保留本机值（见 [LanTransferLogic.settingsApplyPatch]）；
+ * 4. 当前周；5. 日期规则；6. 地点分组（`resync = true`，按新分组重算课程钟点）。
  *
  * ## 回滚为什么是「尽力补偿」而不是「事务」
  *
@@ -59,6 +60,8 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
+            // 设置的差异按原始文档整份比（模型层只有五键，见 LanTransferLogic 的偏差 3）。
+            settingsJson = LanTransferLogic.normalizeSettingsDocument(repository.settingsJson()),
         )
     }
 
@@ -276,7 +279,10 @@ class LanTransferApplier(
                 plan.exams ?: repository.exams,
             )
         }
-        plan.settings?.let { repository.updateSettings(it) }
+        // 设置按整份文档还原（撤销点连「只改了未移植字段」那类也要退）。
+        plan.settingsJson?.let { repository.replaceSettingsJson(it) }
+            ?: plan.settings?.let { repository.updateSettings(it) }
+        plan.activeProfileSettingsJson?.let { repository.replaceActiveProfileSettingsJson(it) }
         plan.currentWeek?.let { repository.setCurrentWeek(it) }
         plan.scheduleDateRules?.let { repository.updateScheduleDateRules(it) }
         plan.locationTimeGroups?.let { repository.updateLocationTimeGroups(it) }
@@ -355,7 +361,15 @@ class LanTransferApplier(
         repository.replaceActiveProfileContent(nextCourses, nextTasks, nextExams)
 
         if (incomingSettings != null && incoming.scope.carriesSettings) {
-            repository.updateSettings(incomingSettings)
+            val rawSettings = packageSource.settingsJson
+            if (rawSettings != null) {
+                // 整份设置文档写回（Dart `updateSettings(TimetableSettings)` 的同口径）：
+                // 只写时间/周次五键会把包里其余 200+ 个设置静默丢掉。
+                val patch = LanTransferLogic.settingsApplyPatch(rawSettings, incomingSettings)
+                if (patch.isNotEmpty()) repository.updateSettingsPatch(patch)
+            } else {
+                repository.updateSettings(incomingSettings)
+            }
         }
         val week = incoming.currentWeek
         if (week != null &&
@@ -367,17 +381,23 @@ class LanTransferApplier(
         // Dart `_mergeRulesAndLocations` / `_replaceRulesAndLocations`：外来为空时不动本地。
         if (mergeSemantics) {
             if (incomingGroups.isNotEmpty()) {
+                // resync = Dart `replaceLocationTimeGroups(resync: true)`：分组变了，
+                // 课程钟点必须按新分组重算，否则盘上分组是新的、时间还是旧口径。
                 repository.updateLocationTimeGroups(
                     LanTransferLogic.mergeById(current.locationTimeGroups, incomingGroups) { it.id },
+                    resync = true,
                 )
             }
             if (incomingRules.isNotEmpty()) {
+                // 日期规则与 Dart 一样 **不** resync（规则重算看日期，另有自动套用路径）。
                 repository.updateScheduleDateRules(
                     LanTransferLogic.mergeById(current.scheduleDateRules, incomingRules) { it.id },
                 )
             }
         } else {
-            if (incomingGroups.isNotEmpty()) repository.updateLocationTimeGroups(incomingGroups)
+            if (incomingGroups.isNotEmpty()) {
+                repository.updateLocationTimeGroups(incomingGroups, resync = true)
+            }
             if (incomingRules.isNotEmpty()) repository.updateScheduleDateRules(incomingRules)
         }
     }
@@ -441,6 +461,12 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
+            // 设置文档原文：撤销 / 失败补偿要整份还原，只存五键会把包里
+            // 其余设置留在盘上（撤销后「设置自己变了」）。null 键按缺键对待，
+            // 与 Dart toJson 的「null 即省略」同口径。
+            settingsJson = LanTransferLogic.normalizeSettingsDocument(repository.settingsJson()),
+            activeProfileSettingsJson = repository.activeProfileSettingsJson()
+                ?.let(LanTransferLogic::normalizeSettingsDocument),
             currentWeek = snapshot.currentWeek,
             profiles = if (includeProfiles) snapshot.profiles else emptyList(),
             activeProfileId = snapshot.activeProfileId,
@@ -463,9 +489,15 @@ class LanTransferApplier(
                 )
                 return
             }
+            // 档案镜像先还原（只动内存 + 档案 JSON），再写课：`replaceActiveProfileContent`
+            // 会按内存里的活动档案整份落盘，顺序反了会把刚还原的设置又冲掉。
+            // 顶层设置留在写课之后：它与原实现的失败位置一致，补偿自身失败时
+            // 也不会把「课已还原」这一步挡在前面。
+            before.activeProfileSettingsJson?.let { repository.replaceActiveProfileSettingsJson(it) }
             repository.scheduleItems = before.scheduleItems
             repository.replaceActiveProfileContent(before.courses, before.tasks, before.exams)
-            repository.updateSettings(before.settings)
+            before.settingsJson?.let { repository.replaceSettingsJson(it) }
+                ?: repository.updateSettings(before.settings)
             repository.setCurrentWeek(before.currentWeek)
             repository.updateScheduleDateRules(before.scheduleDateRules)
             repository.updateLocationTimeGroups(before.locationTimeGroups)

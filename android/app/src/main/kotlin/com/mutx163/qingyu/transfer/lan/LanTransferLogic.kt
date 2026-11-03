@@ -51,7 +51,11 @@ import com.mutx163.qingyu.sync.validateTransferPackageJson
  *    而局域网导出（`exportProfileBackupJson`）从来不带 profiles，正常流程不受影响；
  * 2. 模型 parse 失败统一映射成 `transfer_${kind}_invalid`，不透出模型层的自由文本消息
  *    （结构门的报错码仍与 Dart 逐字一致）；
- * 3. `settings` 差异只比 Kotlin 已移植的时间/周次子集（见 [TimetableSettings] 的边界说明）。
+ * 3. `settings` 的**写回与差异**走原始 JSON 整份，不再只覆盖 Kotlin 已移植的
+ *    时间/周次子集：Dart 侧 `updateSettings` 写的是整份 `TimetableSettings.toJson()`，
+ *    只写五个键会把包里其余 200+ 个设置静默丢掉。模型层仍只解析这五个键（那层的
+ *    边界没变），但落盘走 [settingsApplyPatch] 的合并补丁，未知键原样写回；
+ *    设备级信任锚（更新镜像）按 Dart `keepingDeviceTrustAnchorsFrom` 一律保留本机值。
  */
 object LanTransferLogic {
 
@@ -135,6 +139,13 @@ object LanTransferLogic {
         val courses = parseTransferList("course", json["courses"], Course::fromJson).map { course ->
             course.copy(color = normalizeLanCourseColor(course.color))
         }
+        // 设置保留**原始文档**：模型层只认识时间/周次五键，落盘却要整份写回
+        // （见 [settingsApplyPatch]）。结构门已经保证它是对象且五键能解析。
+        val rawSettings = (json["settings"] as? Map<*, *>)?.let { raw ->
+            val out = LinkedHashMap<String, Any?>(raw.size)
+            for ((key, value) in raw) if (key is String) out[key] = value
+            out
+        }
         return LanTransferIncoming(
             packageId = (json["packageId"] as? String)?.trim().orEmpty(),
             scope = scope,
@@ -156,7 +167,8 @@ object LanTransferLogic {
                 timeSchemes = parseTransferList("time_scheme", json["timeSchemes"], TimeScheme::fromJson),
                 scheduleDateRules = parseTransferList("time_rule", json["scheduleDateRules"], ScheduleDateRule::fromJson),
                 locationTimeGroups = parseTransferList("location_group", json["locationTimeGroups"], LocationTimeGroup::fromJson),
-                settings = parseSettings(json["settings"]),
+                settings = parseSettings(rawSettings),
+                settingsJson = rawSettings,
             ),
         )
     }
@@ -192,11 +204,10 @@ object LanTransferLogic {
         return "#" + match.groupValues[1].uppercase()
     }
 
-    private fun parseSettings(raw: Any?): TimetableSettings? {
-        if (raw !is Map<*, *>) return null
+    private fun parseSettings(raw: Map<String, Any?>?): TimetableSettings? {
+        if (raw == null) return null
         return try {
-            @Suppress("UNCHECKED_CAST")
-            TimetableSettings.fromJson(raw as Map<String, Any?>)
+            TimetableSettings.fromJson(raw)
         } catch (_: Exception) {
             null
         }
@@ -289,8 +300,20 @@ object LanTransferLogic {
         val currentSettings = current.settings
         val incomingSettings = incoming.settings
         if (scope.carriesSettings && currentSettings != null && incomingSettings != null) {
-            val before = currentSettings.toJson()
-            val after = incomingSettings.toJson()
+            // 两侧都有原始文档时按整份比（Dart 比的就是完整 TimetableSettings.toJson）；
+            // 只有一侧有（单测直接构造模型）才退回已移植五键，避免把「没带原文」
+            // 误判成「设置全被清空」。信任锚在写入时保留本机值，差异里也不该报。
+            val useRawDocuments = current.settingsJson != null && incoming.settingsJson != null
+            val before = if (useRawDocuments) {
+                normalizeSettingsDocument(current.settingsJson!!)
+            } else {
+                currentSettings.toJson()
+            }
+            val after = if (useRawDocuments) {
+                normalizeSettingsDocument(incoming.settingsJson!!)
+            } else {
+                incomingSettings.toJson()
+            }
             val changes = if (sameJson(before, after)) {
                 emptyList()
             } else {
@@ -651,6 +674,69 @@ object LanTransferLogic {
         return if (target == null || target == source) settings else settings.copy(activeTimeSchemeId = target)
     }
 
+    /**
+     * 设备级信任锚的键名（Dart `TimetableSettings.keepingDeviceTrustAnchorsFrom`）。
+     *
+     * 这两个键决定「自动更新清单从哪取」「APK 允许从哪个主机下载」，夹在设置里
+     * 一起传输。局域网的 `POST /api/v1/import/apply` 属于携带设置的作用域，
+     * 若整份写回外来设置，配对端就能把机主更新通道指向攻击者域名——而清单摘要
+     * 与下载地址又同源，「摘要与 URL 同源」的完整性校验会变成自证。故一律保留本机值。
+     */
+    val DEVICE_TRUST_ANCHOR_KEYS: Set<String> = setOf(
+        "appUpdateMirrorPreset",
+        "appUpdateMirrorUrlPrefix",
+    )
+
+    /**
+     * 设置文档的比较口径：去掉设备级信任锚（写入时保留本机值）与 null 值键
+     * （Dart `toJson` 对 null 是省略；合并写为了能删键会显式留 null，两者读侧等价）。
+     */
+    fun normalizeSettingsDocument(settings: Map<String, Any?>): Map<String, Any?> =
+        withoutNullValues(withoutDeviceTrustAnchors(settings))
+
+    /** null 值键与缺键在读侧等价（`LenientJson.*(null) ?? 默认值`），比较前一并抹平。 */
+    fun withoutNullValues(settings: Map<String, Any?>): Map<String, Any?> {
+        if (settings.values.none { it == null }) return settings
+        val out = LinkedHashMap<String, Any?>(settings.size)
+        for ((key, value) in settings) {
+            if (value != null) out[key] = value
+        }
+        return out
+    }
+
+    /** 去掉设备级信任锚，其余键原样（Dart 里等价于写回时取本机那两项）。 */
+    fun withoutDeviceTrustAnchors(settings: Map<String, Any?>): Map<String, Any?> {
+        if (settings.keys.none { it in DEVICE_TRUST_ANCHOR_KEYS }) return settings
+        val out = LinkedHashMap<String, Any?>(settings.size)
+        for ((key, value) in settings) {
+            if (key !in DEVICE_TRUST_ANCHOR_KEYS) out[key] = value
+        }
+        return out
+    }
+
+    /**
+     * 外来的**完整设置文档** → 真正要写盘的合并补丁。
+     *
+     * - 剔除设备级信任锚（[withoutDeviceTrustAnchors]）；
+     * - 模板引用被 [remapSettingsScheme] 改写时，用改写后的 `activeTimeSchemeId`
+     *   覆盖原文——包里引用的是发送端模板 id，直接写回会指向本机不存在的模板。
+     *
+     * 返回空补丁表示「这份包没有可写回的设置键」（正常不会发生：携带设置的作用域
+     * 在结构门里要求 settings 非空）。
+     */
+    fun settingsApplyPatch(
+        raw: Map<String, Any?>,
+        remapped: TimetableSettings,
+    ): Map<String, Any?> {
+        val patch = LinkedHashMap(withoutDeviceTrustAnchors(raw))
+        val rawScheme = raw["activeTimeSchemeId"] as? String
+        if (remapped.activeTimeSchemeId != rawScheme) {
+            // 显式 null = 删除该键（`TimetableStore.saveSettingsPatch` 的合并写语义）。
+            patch["activeTimeSchemeId"] = remapped.activeTimeSchemeId
+        }
+        return patch
+    }
+
     /** Dart `_remapScheduleDateRules`。 */
     fun remapScheduleDateRules(
         rules: List<ScheduleDateRule>,
@@ -778,6 +864,12 @@ data class LanTransferDiffSource(
     val scheduleDateRules: List<ScheduleDateRule> = emptyList(),
     val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     val settings: TimetableSettings? = null,
+    /**
+     * 设置文档的原始 JSON（Dart 侧 250+ 键）。[settings] 只是时间/周次五键的投影，
+     * 落盘与差异都必须用这一份，否则包里其余设置会被静默丢掉。
+     * null = 调用方没提供原文（纯逻辑单测直接构造模型时的兼容路径）。
+     */
+    val settingsJson: Map<String, Any?>? = null,
 )
 
 /** [LanTransferLogic.parseIncoming] 的结果。 */

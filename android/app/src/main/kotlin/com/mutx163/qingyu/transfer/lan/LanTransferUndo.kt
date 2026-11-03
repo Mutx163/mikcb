@@ -46,6 +46,13 @@ data class LanTransferState(
     val scheduleDateRules: List<ScheduleDateRule> = emptyList(),
     val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     val settings: TimetableSettings = TimetableSettings.defaults(),
+    /**
+     * 顶层设置文档的原始 JSON（Dart 侧 250+ 键）。[settings] 只是五键投影，
+     * 撤销判据与写回都走这一份；null = 没捕获原文（旧调用方 / 纯逻辑单测）。
+     */
+    val settingsJson: Map<String, Any?>? = null,
+    /** 活动档案内嵌设置文档的原始 JSON（桌面小组件读的那份镜像）。 */
+    val activeProfileSettingsJson: Map<String, Any?>? = null,
     val currentWeek: Int = 1,
     /**
      * **整台设备**的档案表 + 导入时的激活档案 id。只在整份恢复的撤销点里捕获
@@ -158,6 +165,10 @@ data class LanTransferUndoPlan(
     val scheduleDateRules: List<ScheduleDateRule>? = null,
     val locationTimeGroups: List<LocationTimeGroup>? = null,
     val settings: TimetableSettings? = null,
+    /** 顶层设置文档的反向补丁（整份）；与 [settings] 同时给出，执行层优先用它。 */
+    val settingsJson: Map<String, Any?>? = null,
+    /** 活动档案内嵌设置文档的反向补丁（桌面小组件镜像）。 */
+    val activeProfileSettingsJson: Map<String, Any?>? = null,
     val currentWeek: Int? = null,
     val timeSchemesToDelete: List<String> = emptyList(),
     val timeSchemesToRestore: List<TimeScheme> = emptyList(),
@@ -241,15 +252,10 @@ object LanTransferUndoLogic {
             counts["time_schemes"] = schemePlan.deletedIds.size + schemePlan.restored.size
         }
 
-        val settings = if (
-            differs(token.before.settings, token.after.settings) &&
-            LanTransferLogic.sameJson(current.settings.toJson(), token.after.settings.toJson())
-        ) {
-            token.before.settings
-        } else {
-            null
-        }
-        settings?.let { counts["settings"] = 1 }
+        // 设置按**原始文档**比：导入写回的是整份 250+ 键，只比五键会漏掉
+        // 「只改了未移植字段」的那一类，撤销就静默不生效。
+        val settingsPlan = settingsReversePatch(current, token)
+        settingsPlan?.let { counts["settings"] = 1 }
 
         val week = if (
             token.before.currentWeek != token.after.currentWeek &&
@@ -268,7 +274,9 @@ object LanTransferUndoLogic {
             scheduleItems = scheduleItemsPatch?.items,
             scheduleDateRules = rulesPatch?.items,
             locationTimeGroups = groupsPatch?.items,
-            settings = settings,
+            settings = settingsPlan?.settings,
+            settingsJson = settingsPlan?.settingsJson,
+            activeProfileSettingsJson = settingsPlan?.activeProfileSettingsJson,
             currentWeek = week,
             timeSchemesToDelete = schemePlan.deletedIds,
             timeSchemesToRestore = schemePlan.restored,
@@ -393,6 +401,53 @@ object LanTransferUndoLogic {
     private fun <T> same(left: T, right: T, jsonOf: (T) -> Map<String, Any?>): Boolean =
         LanTransferLogic.sameJson(jsonOf(left), jsonOf(right))
 
-    private fun differs(left: TimetableSettings, right: TimetableSettings): Boolean =
-        !LanTransferLogic.sameJson(left.toJson(), right.toJson())
+    private data class SettingsPlan(
+        val settings: TimetableSettings?,
+        val settingsJson: Map<String, Any?>?,
+        val activeProfileSettingsJson: Map<String, Any?>?,
+    )
+
+    /**
+     * 设置的反向补丁：只有「导入确实改了」且「现在仍是导入后的值」才回退。
+     *
+     * 优先按**原始文档**比（两侧都捕获到原文时）；任一侧没有原文（纯逻辑单测
+     * 直接构造 [LanTransferState]）退回五键投影，与旧口径等价。
+     * 活动档案镜像只在它确实被导入改过时才还原。
+     */
+    private fun settingsReversePatch(
+        current: LanTransferState,
+        token: LanTransferUndoToken,
+    ): SettingsPlan? {
+        val beforeTop = token.before.settingsJson?.let(LanTransferLogic::normalizeSettingsDocument)
+        val afterTop = token.after.settingsJson?.let(LanTransferLogic::normalizeSettingsDocument)
+        val currentTop = current.settingsJson?.let(LanTransferLogic::normalizeSettingsDocument)
+        val useRawTop = beforeTop != null && afterTop != null && currentTop != null
+
+        val changed = if (useRawTop) {
+            !LanTransferLogic.sameJson(beforeTop!!, afterTop!!)
+        } else {
+            !LanTransferLogic.sameJson(token.before.settings.toJson(), token.after.settings.toJson())
+        }
+        if (!changed) return null
+
+        val stillAfter = if (useRawTop) {
+            LanTransferLogic.sameJson(currentTop!!, afterTop!!)
+        } else {
+            LanTransferLogic.sameJson(current.settings.toJson(), token.after.settings.toJson())
+        }
+        if (!stillAfter) return null
+
+        val beforeProfile = token.before.activeProfileSettingsJson
+            ?.let(LanTransferLogic::normalizeSettingsDocument)
+        val afterProfile = token.after.activeProfileSettingsJson
+            ?.let(LanTransferLogic::normalizeSettingsDocument)
+        val profileChanged = beforeProfile != null && afterProfile != null &&
+            !LanTransferLogic.sameJson(beforeProfile, afterProfile)
+
+        return SettingsPlan(
+            settings = if (useRawTop) null else token.before.settings,
+            settingsJson = if (useRawTop) beforeTop else null,
+            activeProfileSettingsJson = if (profileChanged) beforeProfile else null,
+        )
+    }
 }

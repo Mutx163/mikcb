@@ -67,9 +67,10 @@ data class LanEditSpreadsheetParse(
  *   `applyTransferJson` 成功后回真实 `transferId`（撤销点 id），凭它调
  *   `POST /api/v1/import/undo` 只回退这一批导入、保留用户之后的操作；
  *   整份恢复的撤销是全有或全无（导入后数据被动过即拒，见 [LanTransferApplier.undo]）。
- *   仍未做的两件：① 设置只应用 Kotlin 已移植的时间/周次子集（`TimetableSettings` 的
- *   边界说明）；② 地点分组改变后**不重算**课程钟点（Dart
- *   `replaceLocationTimeGroups(resync: true)` 的对应物在仓储层还没有）。
+ *   2026-11-03 补齐的两件：① 设置改为**整份文档合并写回**（Dart 侧 250+ 键不再丢，
+ *   设备级更新镜像保留本机值），撤销 / 失败补偿按原文还原；② 地点分组变化后按新分组
+ *   **重算课程钟点**（Dart `replaceLocationTimeGroups(resync: true)` 的对应物
+ *   `TimetableRepository.updateLocationTimeGroups(resync = true)`）。
  *   调色板同步：局域网课程颜色按 `normalizeLanCourseColor` 收窄到 `#RRGGBB`（防 HTML 注入面）。
  * - ~~备份里的 `tasks` / `exams` 导出会带上、导入不写回~~ **已修（2026-11-01）**：
  *   整份备份导出补齐了日程 / 日期规则 / 地点作息分组，导入改走 [LanTransferApplier]，
