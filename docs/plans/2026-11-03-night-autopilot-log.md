@@ -386,7 +386,24 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 2. **`CouplePartnerPortImpl.unlink()` 必须补写 active 键**（Dart `timetable_partner_service.dart:161-184`），`platform/` 单文件已授权。
    - ~~核对结果：当前实现已满足、无需再改~~ **该结论作废**（本代理上轮误判，见 10.19）：`02698142` 及截至 `6a6ab1b8` 的完整函数体只有 `replaceAllProfiles(next, snapshot.activeProfileId)`——**active 原样落盘**，未做写侧补偿；界面正常是因为**读侧** `TimetableRepository.reload()`/`activeProfile` 对未知 id 回落第一份。**写侧补偿由 `096ff9bb` 补上**。
 
+### 2026-11-04 · 「明天」取日本轮裁决（有意偏离 Dart，后续不要改回）
+
+- **背景**：桌面/实时卡片的「明天」在 Dart 侧写作 `currentTime.add(const Duration(days: 1))`（24 小时加法）——`lib/services/timetable_live_activity_service.dart:580/657/843`；Kotlin 侧对应 `android/app/src/main/kotlin/com/mutx163/qingyu/widgetdata/HomeWidgetHostPipeline.kt:103/177/273` 的 `currentTime.plusDays(1)`（日历日）。
+- **问题**：DST（夏令时）切换日一天只有 23 或 25 小时，24 小时加法会落到**同一天或后天**，即「明天」显示**错一天**。这是 **Dart 自身的缺陷**，不是 Kotlin 与 Dart 的语义差异。
+- **裁决（Lead 拍板）**：**保留 Kotlin `DartTime` 的日历日口径**（`now + 1 calendar day`），**有意偏离 Dart、不去照抄 24 小时加法**。理由：迁移期以 Dart 为真值的前提是「Dart 行为正确」；遇到 Dart 自身缺陷时按**项目既有 `DartTime` 日历日口径**落地，与此前 `no_local_user_data`（拒绝 Dart 的信息丢失）、情侣文案（拒绝 Dart 的误导性折叠）属同一类判断。
+- **约束**：**不得为了「与 Dart 逐字对齐」改回 24 小时加法**；后续若有人发现此处与 Dart 不一致，以本条为准，不是回归。
+
 ---
+
+### 2026-11-04 · 整机级全局设置（`app_global_settings_v1`）的归属边界与优先级
+
+**决定**：Kotlin 补一份与 Dart 同构的整机级全局设置存储，作为 44 键（`lib/services/app_global_settings_service.dart:59-114`）**唯一读写真源**。
+
+- **哪些进全局 store**：严格照 Dart `keys` 列表（主题 / 字体 / 语言 / 材质 / 导航 / 更新渠道等 44 键）。列表外的一律不进——判定不看语义猜，只看这份契约；Dart 往列表加键，这边必须同步加。
+- **哪些只存顶层 `timetable_settings`**：不在这 44 键里的设置（`semesterWeekCount`、`sections`、`timetableHomeViewMode` 等）继续以「档案内嵌为真源 + 顶层为 bootstrap 播种源 / 回退镜像」；顶层**不升级为第二真源**，只有「盘上还没有档案」时才参与读。
+- **优先级**：读 = `overlay(档案内嵌, 全局)`（44 键逐个覆盖，`null` 也覆盖才能表达「清空」）；写 = 44 键先落全局，再把整份 patch 镜像进档案内嵌与顶层。
+- **镜像为何保留**：Dart 备份 payload 只序列化 profiles；全局键在档案里不留一份，备份 → 换机 → 恢复就会整组丢（Dart `_persistActiveProfileState` 写整份 settings 同口径）。所以这**不是两套冲突真源**：全局是读写真源，档案/顶层是镜像；镜像滞后由读侧 overlay 兜底。
+- **不变量**：切档只换档案自己的键；44 个全局键换档前后必须完全一致（`AppGlobalSettingsStoreTest` 的换档用例咬合）。
 
 ## 十、五路并行（第二班）
 
@@ -1012,3 +1029,122 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `scripts/test-kotlin-module.ps1 -Module pages/settings`（pwsh 7）：**976 例 OK**，exit 0。
 - 探针：回退 4 处 → 976 例中 4 红；恢复 → 976 绿。
 - 只声明 JVM 单测通过，不声明编译/真机通过；未 push。
+
+### 10.27 ✅ 升级级缺陷修复：Kotlin 补齐整机级全局设置 `app_global_settings_v1`（2026-11-04）
+
+**缺陷性质（升级级）**：Kotlin 侧完全没有整机级全局设置，主题/字体/语言/材质/导航/更新渠道等 44 个键被降级成「每课表一份」——**切档会连带换掉这些全局偏好**。Dart 于 2026-09-22 明确否掉该行为（`timetable_provider.dart:1119-1123` `_settingsFromProfile`；键表与 overlay 见 `app_global_settings_service.dart:59-114` / `:140-149`）。
+
+**新增文件**
+- `android/app/src/main/kotlin/com/mutx163/qingyu/app/AppGlobalSettingsStore.kt`：键 `app_global_settings_v1` / 标记 `app_global_settings_v1_migrated`；44 键表（Dart 顺序原样）、`fill` / `overlay` / `split` / `ensureInitialized`。
+- `android/app/src/test/kotlin/com/mutx163/qingyu/app/AppGlobalSettingsStoreTest.kt`（8 例）。
+
+**改动点（均在授权范围内）**
+1. `app/TimetableStore.kt`
+   - 新增私有 `globalSettings`（播种源 = 活动档案内嵌；无档案时回落顶层旧镜像）。
+   - `loadSettingsJson()` 出口：`overlay(embedded, ensureInitialized())`，44 键逐个覆盖档案内嵌同名键（`null` 也盖，保留「清空」语义）。
+   - `saveSettingsPatch()` 入口：先 `split` 出 44 键写全局真源，再把**整份 patch** 镜像进活动档案内嵌与顶层 `timetable_settings`（Dart 备份 payload 只序列化 profiles，不留镜像会导致备份 → 换机 → 恢复丢全局键；与 `_persistActiveProfileState` 同口径）。
+   - 类头冻结格式表新增 `app_global_settings_v1` 一行。
+2. **未改 `pages/ShellWiring.kt`**：读入口 `loadRawSettingsJson()` / `settingsModel.load()` 都走 `loadSettingsJson()`，overlay 在 store 层已生效，无需接线。未改 `TimetableRepository` / `theme/` / 两个壳 Activity / `lib/ui/` / 路由表 / `ShellPageIndex` / `import` / `sync`。
+
+**迁移策略**
+- 盘上有 `app_global_settings_v1` 且是 JSON 对象 → **原样读**：不补键、不重建、不看标记（标记丢失不等于数据作废，比 Dart 的 marker-gated 检查更保守）。
+- 数据缺失或被写坏 → 按 Dart `resolveInitial` 口径从**活动档案内嵌**播种一次（无档案时回落顶层 `timetable_settings`，仅 bootstrap 前），写 44 键同构对象 + 盖 `_migrated` 标记；有数据后重复读幂等、不再写。
+- 一张档案都没有且顶层也没有 → 不写盘、不盖标记，下次再试（Dart `:174-179`）。
+
+**两层键归属边界 / 优先级**：见「九、决定与理由」同日条目。一句话：全局 store 是 44 键真源；档案内嵌是其余键真源 + 全局键镜像；顶层仍只是 bootstrap 播种源 / 回退镜像。判定只看 Dart `keys` 列表，不看语义猜；列表外的键（`semesterWeekCount`、`timetableHomeViewMode` 等）永不进全局对象。
+
+**测试断言（8 例）**
+1. 键表与 Dart 44 键逐字一致（顺序 / 内容 / 去重）。
+2. 首次读盘从**活动档案**播种一次并盖标记；非活动档案值不得被选中；重复读幂等不重写。
+3. 已有全局数据原样读：不重建、不补键；标记缺失也不重建。
+4. 只有顶层旧盘从顶层播种，且课表核心键不进全局对象。
+5. 空盘不播种、不盖标记。
+6. 全局那份被写坏时按活动档案重建（44 键同构）。
+7. `saveSettingsPatch` 分拣：全局键进 store；`semesterWeekCount` / `timetableHomeViewMode` 不进 store，但档案内嵌与顶层镜像都保留。
+8. **换档不改变 5 类全局偏好**：`setActiveProfile("p1" → "p2")` 前后，raw JSON 与 `TimetableSettingsModel` 的 `appThemeMode` / `appFontMode` / `appFontWeight` / `appLocaleTag` / `courseCardSurfaceStyle` / `homeNavigationForm` 完全相同；同时 `semesterWeekCount` 正确跟随目标档案（证明 overlay 只盖 44 键）。
+
+**L0 数字**
+- `-Module pages/settings -ExtraSources AppGlobalSettingsStoreTest.kt`：**984 例 OK**（976 基线 + 8 新例），exit 0。
+- `-Module pages/settings -ExtraSources`（新例 + `TimetableStoreTest` / `TimetableRepositoryTest` / `RawSettingsPatchTest` / `TimetableSettingsModelStoreTest` / `SettingsActionDispatcherTest`）：**1115 例 OK**，exit 0。
+- `-Module pages/timetable`：**291 例 OK**（换档控制器回归），exit 0。
+- 咬合探针：摘掉 `loadSettingsJson` 的 overlay → 984 中 **5 红**；恢复 → **984 绿**。
+- 模块支持说明：`-Module app` **不在统一脚本支持列表**（脚本只认 `pages/<域>`；`app/` 作为共享目录总是被收，`app/` 下的测试文件需 `-ExtraSources` 点名，本题实际用 `-Module pages/settings` + 点名）。只声明「编译通过」「JVM 单测通过」，不声明真机/安装/整包。
+
+**剩余风险（本次未碰，交后续线）**
+- 桌面小组件（`TodayWidgetSupport`）读活动档案内嵌 `settings`，切档后该档案里的全局键镜像可能滞后；`widgets/` / `widgetdata/` 在途，本次未改。settings 页 / 灵动 / 诊断等读侧已走 overlay，不受影响。
+- 档案复制/新建丢内嵌 settings、切档不更新 `lastUsedAt` 仍归另一条线。
+- 全局写入与档案镜像不是同一事务（顺序：全局 store → 档案 → 顶层）；中途异常时读侧仍以全局为准，但备份 payload 可能暂时缺一份镜像，下次设置写入会补齐。
+- L1/L2 由协调线在门 2 后补；本笔未 push。
+
+### 10.28 ✅ 通用组件层收线（组件域路径确认 + 1 处真差异 + 绕过清单）
+
+> 编号 10.26 / 10.27 已被 settings 线占用，本节顺延为 10.28。
+
+1. **实际路径**：`android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/**`（UI 源集，不是 `src/main`）；测试在 `android/app/src/test/kotlin/com/mutx163/qingyu/components/**`。本批只动这两处，未碰 `pages/ShellPageIndex|ShellWiring`、`app/TimetableStore`、`pages/import|sync`、`theme/`、壳 Activity、路由。
+2. **薄封装规则核对（无违规、未改）**：
+   - `QingyuPageScaffold.kt`：字号/字重全部来自 `QingyuTextStyles`/`QingyuTypography`；颜色走 `QingyuTheme.*`（唯一 `Color.White` 是顶栏毛玻璃固定 tint，与 Dart 固定语义色一致，非主题色）；内边距为设计令牌 `QingyuPageScaffoldDefaults`。
+   - `QingyuPageList.kt`：只做官方滚动 recipe（`scrollEndHaptic/overScrollVertical/Scrollbar`），无硬编码 sp/色/字重；12/14/16dp 均来自页面里的既有常量。
+   - `QingyuCard.kt:69-89`：半径默认 16 对齐 `MiuixCardDefaults.cornerRadius`（Dart `adaptive_card.dart:77`），可点走 `PressFeedbackType.Sink`（Dart `tiles.dart:45/115` 是 25ms 高亮状态机，机制不同、意图同解）；无硬编码颜色。
+   - 规则要求的 `compose-style-lint -Domain components` **不存在**（实测报错：`没有这个域：components（可选：about…weather）`，脚本只扫 `pages/<域>`）。改用人工逐行核对 + 现有 `TopBarProgressiveBlurGuardTest` / `QingyuPageThemeSlotsGuardTest` 静态守卫覆盖。
+3. **真差异已修（字重）**：`components/QingyuTextStyles.kt:112-122` 原来无条件 `design + (user-400) - systemDelta`，与 Dart `AppFontScope.resolveShiftedWeight`（`lib/ui/app_fonts.dart:105-116`）**两分支**不一致——Dart 只在用户未改字重时减 `systemDelta`；用户改过时 `design + user - 400`。后果：系统粗体 + 应用字重 w600 时正文落到 w500、副标题 900→800，课卡主次被抹。改为委托已移植的 `QingyuTypography.resolveShiftedWeight`（`theme/QingyuTypography.kt:89-94`），并补 `QingyuTextStylesTest` 用例「用户改过字重时不再抵扣系统粗体增量」（w600/w900）。
+4. **双侧同解（未改）**：
+   - 卡片 `QingyuCard` ↔ `HyperosAdaptiveCard`（半径 16、贴卡片内边距由调用方给）＋ `HyperosPressableCard` 的按压意图。
+   - 列表 `QingyuPageList` ↔ `hyperos_page.dart:931 HyperosListView`（滚动/内边距/键盘 insets 同口径；Kotlin 额外补了官方 haptic/scrollbar recipe，属样式真相）。
+   - 滑块 `QingyuSlider` ↔ `HyperosSlider`（已按 `tiles.dart` 点击跳值，tap math 有 JVM 用例）。
+   - 弹层 `QingyuSheet` ↔ `HyperosSheet`（`show` 常驻、交给官方退场动画，不提前 return）。
+   - **空态/加载态/标签**：components 域没有这三类组件（全仓 grep 无 Empty/Loading/Tag/Chip/Badge 封装），它们散在各页，属跨域，未动。
+5. **绕过薄封装清单（只报告，不修）**：全仓 `pages/**` 共 31 处 `LazyColumn`，其中真正页面级主滚动绕过 `QingyuPageList` 的有 **8 文件 / 9 处**：
+   - `pages/exam/ExamListPage.kt:135` — LazyColumn + 手写 contentPadding（页面根列表）
+   - `pages/guide/StartupFlowPage.kt:183` — LazyColumn（引导页步骤列表）
+   - `pages/guide/StartupFlowPage.kt:385` — LazyColumn（另一引导页）
+   - `pages/guide/MoreFeaturesPage.kt:94` — LazyColumn（功能说明页）
+   - `pages/guide/HyperosShowcasePage.kt:128` — LazyColumn（样式展示页）
+   - `pages/timetable/TimetableProfilesPage.kt:213` — LazyColumn（档案页根列表）
+   - `pages/timetable/month/MonthViewPage.kt:695` — LazyColumn（基线已登记为例外）
+   - `pages/timetable/TimetableWeekPage.kt:659` — Column + verticalScroll（基线已登记为例外）
+   - `pages/timetable/day/DayViewScrollContent.kt:92` — LazyColumn + stickyHeader + 每日独立 LazyListState（定制滚动）
+   其余 19 处为弹层/抽屉/浮层内短列表（`DataTransferPage` 2、`ScheduleDateRulePage` 1、`WarehouseBridgeDialogs` 2、`ImportCommon` 3、`MoreFeaturesSearchOverlay` 1、`ExamPickerSheets` 2、`TaskPickerSheets` 1、`TimeSchemeManagementDialogs` 2、`TimeSchemeQuickGenerateSheet` 1、`CourseFollowupSheets` 2、`AddCoursePage` 1、`MemoryStatsPage` 1），不适用页面规则；另有 4 处仅注释提到 LazyColumn。
+6. **条件挂载弹层（只报告，不修）**：仍有 3 处 `if (state) { OverlayDialog(show = true) }`，置 false 会整棵摘出组合、丢退场动画：
+   - `pages/course/AddCoursePage.kt:540-541`（`if (confirmDiscard)`）
+   - `pages/exam/ExamListPage.kt:224-225`（`if (target != null)`）
+   - `pages/exam/AddExamPage.kt:428-429`（`if (confirmDelete)`）
+   其余弹层均为常驻组合 + `show = …` 驱动，符合 2026-11-02 弹窗审核 P3 口径。
+7. **L0（统一入口实跑）**：
+   - `-Module course` = **OK (232 tests)**
+   - `-Module ../theme` = **OK (54 tests)**（`resolveShiftedWeight` 所在纯函数层）
+   - `-Module timetable` = **Tests run 291, Failures 3**，3 条全部落在 `TimetableProfilesControllerTest`（`lastUsedAt`/`zh_TW`），来自他线未提交的 `TimetableProfilesController.kt` + 其测试，非本批改动；本批 `WeatherGateGuardTest` 全绿。
+   - **components 域 L0 不支持**：脚本硬编码 `pages/<module>` 且不含 composeP1；实测 `-Module ../components` 编 139 文件后 `unresolved reference 'androidx'`。故 `QingyuTextStyles` 的新用例只能由门 2 的 Compose 测试执行，本批**不声称**组件编译/单测通过。
+8. **未推送**，等协调线统一推。
+
+### 10.29 ✅ 档案线收口：复制/新建补铺完整内嵌 settings + 切档刷新 `lastUsedAt`（2026-11-04）
+
+**对应关系**：本节修的就是 §10.26「C. 需他人改」里的 C2、C3（C1 `app_global_settings_v1` 已由 §10.27 专线落地，本批**未碰**）。
+
+**范围**：只改 `pages/timetable/TimetableProfilesController.kt` 与 `pages/timetable/TimetableProfilesControllerTest.kt`；未改 `app/TimetableStore.kt`、`app/TimetableRepository.kt`、`pages/ShellWiring.kt`、`pages/ShellPageIndex.kt`、`theme/`、两个壳 Activity、`lib/ui/`、路由表、`pages/import/**`、`pages/sync/**`。
+
+**修复 1 · 复制/新建档案丢完整内嵌 settings（§10.26 C2）**
+- Dart 依据：`duplicateActiveProfile`（`timetable_provider.dart:1957`）用 `source.copyWith(...)` 拷贝**整份** `TimetableSettings`；新建 `:1940-1943` 把 `defaults()` + 当前作息 sections 整份写进新档。
+- Kotlin 现状：`TimetableProfile.settings` 只有 core 4 键，`saveProfiles` 对**新 id** 没有旧内嵌可铺底（`TimetableStore.kt:280-298`），所以新档内嵌只剩 4 键 ⇒ 外观/语言全回默认。
+- 做法（不改 store）：复制/新建前用只读入口取源档完整 JSON（活动档走 `repository.readRawSettings()` = `store.loadSettingsJson()`，非活动档按 id 读 `timetable_profiles` 原始数组），写入成功后经 `repository.writeRawSettingsPatch(...)` 铺到新激活档的内嵌 settings；失败则回滚到操作前整份快照并返回 `Failed`（对齐 Dart `_rollbackProfileMutation:1991-2008`）。
+- 新建的铺设范围是 §10.26 C1 的 44 个全局键白名单（`GLOBAL_SETTINGS_KEYS`，逐字对齐 `app_global_settings_service.dart:59-114`）：**只带整机偏好，不带档案级外观**，与 Dart「新档 settings = defaults() 再叠全局」同解。读取失败一律当「读不到」跳过铺设，不把新建/复制本身变成异常（磁盘满仍应返回 `Failed`）。
+- 待 §10.27 的 `AppGlobalSettingsStore` 正式接入新建路径后，这份白名单应改为直接读全局真源；本批先按「活动档内嵌 + 白名单」实现，注释已写明。
+
+**修复 2 · 切档不更新 `lastUsedAt`（§10.26 C3）**
+- Dart 依据：`switchProfile:2034` 带 `touchLastUsedAt: true`。
+- 做法：落盘前对目标 profile `copy(lastUsedAt = clock())`，与设置/周次一起塞进**同一次** `replaceAllProfilesAndSettings`（保持「一次写 + 一次通知」）；非目标档不动。
+
+**三条测试断言**
+1. `复制档案外观与语言跟源档完全一致 不是默认值`：源档内嵌带 `appLocaleTag=zh_TW` / `appThemeMode=dark` / `themeSeedColor=#123456` / `courseCardFontSize=11.0` / `timetableHideWeekends=true`，复制品落盘后逐键相同（并重读磁盘验证真落盘）。
+2. `新建档案不继承源档档案级外观 但保留全局偏好`：新档带 `appLocaleTag` / `appThemeMode` / `themeSeedColor`（全局），但 `TimetableSettingsModel.fromJson` 解析出的 `courseCardFontSize=9.0`、`timetableHideWeekends=false`（档案级回落默认）。
+3. `切档后目标档 lastUsedAt 更新且最近使用排序变化`：切前 p1/p2 同一旧时间，切 p2 后 `p2.lastUsedAt == t1`、`p1` 不变、按 `lastUsedAt` 降序为 `["p2","p1"]`，重开仓储仍保持。
+
+**咬合探针**：同时把「铺设」短路 + 「lastUsedAt 刷新」还原成原样 → `-Module pages/timetable` **291 例中 3 红**（精确命中上述三条）；恢复后 **291 绿**。
+
+**L0 数字**（统一入口，pwsh 7，`scripts/test-kotlin-module.ps1`）
+- 实际模块：`-Module pages/timetable`（脚本规整为 `timetable`，支持 `pages/<域>`）；编译 194 个 .kt。
+- **Tests run: 291, OK**（基线 288 + 本批新增 3 例），exit 0。
+- 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
+- 未推送。
+
+
+
