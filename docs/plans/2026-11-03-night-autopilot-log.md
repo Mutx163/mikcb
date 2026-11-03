@@ -190,7 +190,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 |---|---|---|---|---|
 | **A（本代理）文案/l10n + 协调** | `lib/l10n/*.arb`、`android/app/src/**/i18n/**`（含 cjk-literal-baseline.txt / cjk_hardcode_baseline.txt）、`pages/timetable/TimetableStrings.kt`、`tool/` 下文案与样式基线及 copy_style 相关脚本、`docs/plans/` 日志 | copy_style 203 条欠账收敛、dead key 1 条、ARB 六份同步与 gen-l10n | 门4 + L0 | 其他线白名单外的一切 |
 | **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | ✅ **已收线**（见下「B 线收口」） |
-| **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | lib/**、ARB、其他域 |
+| **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | ✅ **已收线**（见下「C 线收口」） |
 | **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | ✅ **已收线**（见下「D 线收口」） |
 | **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | lib/**、ARB、其他域 |
 
@@ -220,6 +220,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 ### A 线回 B 线（键名交付）
 - `TimetableProfilesPage.kt:490` 的 `contentDescription = "已激活"` 写死中文 → 已新增键 **`timetableProfileActiveBadge`**（六份 ARB 同步 + gen-l10n + copy_style 无新增死键），并在 `TimetableStrings.kt` 补 `ArbText` 引用使其非死键（`86765ada`）。B 线替换后把 cjk 基线 `TimetableProfilesPage.kt` 行 4→3 压行。
 
+### C 线收口（2026-11-03 09:05，C 线自验回填，提交 `134cac79` 已推送）
+- **云备份差异预览接通**：`CloudSyncController.kt` +199（`previewBackupRestore`/`applyPreviewedBackupRestore`/`CloudBackupRestorePreview`/`parseSnapshotList`）；`CloudBackupDetailHost.kt` 恢复改走「预览 → 确认 → 落盘」并删旧二次确认；`CoupleTimetableSettingsHost.kt` 去条件挂载；`CoupleWebdavConnectSheet.kt` 参数化 `show`；新增 `CloudBackupRestorePreviewTest.kt` +209（10 条）。
+- **结论要点**：快照信封 `backupType: sync` 不是传输包信封，故手动构 `TransferImportPlan`（对齐 Dart `buildTransferPackageFromSnapshot`）；快照恒全量 ⇒ `canMerge=false`，不摆合并按钮；文案全复用 `SyncStrings`/`TransferStrings` 无新增键。
+- **验收**：L0 `-Module sync` 327 tests OK。
+- **L1 当前红是 E 线半成品**：`pages/import/warehouse/WarehouseBridgeDialogs.kt` 的 `KeyboardOptions` 未解析（E 线未提交的在途改动），**与 C 线无关**；门 1/门 2 等 E 线收口后再复跑，本次红不计入 C 线。
+
 ---
 
 ## 七、需 Lead 处理项
@@ -229,7 +235,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 3. **safe-gradle.ps1 BOM**：仓库脚本无 BOM，PS 5.1 无法直接运行；pwsh 7 正常。若团队仍有 PS 5.1 环境，建议给 `scripts/*.ps1` 统一加 BOM。
 4. **（D 线报）LAN 导入的设置子集补全属 transfer 域**：`LanTransferLogic.kt:51` 自认只比时间/周次子集，需 transfer 域 Owner 接手；台账同条「撤销点 transferId 恒 null」已不成立（`LanTransferUndoStore` 已在）。
 5. **（B 线报）timetable 域 L0 跑不过属既有结构债**：`TimetableProfilesController.kt`/`DayAgendaSurfaceLogic.kt` 反向引用 `pages/settings` 8+ 个类（旧提交 06522f5c/49eaf778），ExtraSources 补 6 文件仍不闭合，`test-kotlin-module.ps1:176-179` 自述同类未修。**是否解耦或扩脚本白名单需裁决。**
-6. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
+6. **（C 线报）① `ShellPageIndex.kt:1723` `WebdavConnectSheet` 仍 `if (showConnect)` 条件挂载**（壳文件禁改，记 Lead）；② `CloudBackupDetailSheet.kt:77-105` 动作区仍是半宽横排，Dart 是整宽竖排「恢复前删除后」，配色已修结构未改，改否待拍板；③ timetable 域 L0 结构债同第 5 条。
+7. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
 
 ## 八、当前状态（2026-11-03 02:45 更新）
 
