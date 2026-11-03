@@ -30,6 +30,8 @@ import com.mutx163.qingyu.SystemAlarmHelper
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.core.ClassAlarmEvent
 import com.mutx163.qingyu.core.ClassAlarmPlanLogic
+import com.mutx163.qingyu.core.ClassReminderEntry
+import com.mutx163.qingyu.core.ClassReminderLogic
 import com.mutx163.qingyu.pages.course.CourseActionEvent
 import com.mutx163.qingyu.pages.course.CourseActionSheet
 import com.mutx163.qingyu.pages.course.CourseActionSheetModel
@@ -649,6 +651,24 @@ fun TimetableWithCourseActions(
     val classAlarmLeadMinutes = ClassAlarmPlanLogic.leadMinutesFromSettings(alarmSettings)
     val classAlarmSkipUi = ClassAlarmPlanLogic.skipUiFromSettings(alarmSettings)
 
+    // 「已设提醒」读侧（Dart `class_reminder_sheet` 的旧条目块，2026-11-03 接线）：
+    // 按「课程 + 真实日期」从 classReminders 取响点。日期与 details 的 alarmDate
+    // 同一源（dateForCourseOccurrence）；匹配判据与 ClassReminderLogic 增删同一条
+    //（courseId + yyyy-MM-dd 逐字相等，即条目 key 的两半）。null = 没设过 / 日期未知
+    // ——子弹层整块不画，不做假入口。**主课口径**：值按 actionTarget 算；弹层内切到
+    // 冲突课时沿用主课的已设块，与节次表解析同属一条「冲突课」已知差异诚实清单。
+    val existingReminderMinuteOfDay = remember(actionTarget, week, snapshot) {
+        val target = actionTarget
+        val date = target?.let { repository.dateForCourseOccurrence(it, week)?.toLocalDate() }
+        if (target == null || date == null) {
+            null
+        } else {
+            snapshot.settings.classReminders
+                .firstOrNull { it.courseId == target.id && it.date == ClassReminderEntry.formatDate(date) }
+                ?.minuteOfDay
+        }
+    }
+
     // 天气 provider **不是** Compose 可观察的（它是 `addListener` 那套）。这里用一个计数
     // 把「数据到了 / 城市变了」转成重组；`DisposableEffect` 负责订阅与退订，
     // 退订必须用**同一个** lambda 引用，否则监听器会漏在 provider 里。
@@ -850,6 +870,39 @@ fun TimetableWithCourseActions(
         },
     )
 
+    /**
+     * 「取消已设提醒」（Dart `removeClassReminder`）：从 classReminders 删掉
+     * 「这门课 × 这一天」那条，经仓储公开入口合并写落盘。成功才收弹层；
+     * 失败如实 toast、弹层留着——静默就是「点了没反应」的另一种形态。
+     */
+    fun removeTargetClassReminder() {
+        val target = actionTarget ?: return
+        val date = repository.dateForCourseOccurrence(target, week)?.toLocalDate()
+        if (date == null) {
+            Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val dateText = ClassReminderEntry.formatDate(date)
+            val current = repository.snapshot.settings
+            // 删表走共享的 ClassReminderLogic.remove（Dart removeClassReminder 同口径，
+            // 与统计「设过提醒」/课卡铃铛同一份判据，不另写一套）；落盘走
+            // updateSettings——内部即 saveSettings → saveSettingsPatch 合并写
+            //（保留盘上 Dart 侧 250+ 其它键），并按仓储契约排空通知，
+            // 课卡铃铛与统计「设过提醒」跟着刷新。
+            val updated = ClassReminderLogic.remove(current.classReminders, target.id, dateText)
+            repository.updateSettings(current.copy(classReminders = updated))
+            Toast.makeText(
+                context,
+                com.mutx163.qingyu.app.CourseActionStrings.classAlarmRemovedToast.zh,
+                Toast.LENGTH_SHORT,
+            ).show()
+            actionTarget = null
+        } catch (_: Exception) {
+            Toast.makeText(context, TimetableStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val course = actionTarget
     CourseActionSheet(
         course = course,
@@ -858,6 +911,8 @@ fun TimetableWithCourseActions(
         details = details,
         leadMinutes = classAlarmLeadMinutes,
         skipUi = classAlarmSkipUi,
+        existingReminderMinuteOfDay = existingReminderMinuteOfDay,
+        onRemoveReminder = { removeTargetClassReminder() },
         onDismiss = { actionTarget = null },
         // 弹层只抛事件、不写库；写库与导航都在这里。
         //

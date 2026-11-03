@@ -34,6 +34,7 @@ object CourseActionStrings {
     val classAlarmCustomOption = CourseArbText("classAlarmCustomOption", "自定义提醒时间……")
     val classAlarmOpenClock = CourseArbText("classAlarmOpenClock", "打开系统时钟")
     val classAlarmAddedToast = CourseArbText("classAlarmAddedToast", "已交给系统时钟处理")
+    val classAlarmRemovedToast = CourseArbText("classAlarmRemovedToast", "已取消这节课的提醒")
     val classAlarmLaunchFailedToast = CourseArbText(
         "classAlarmLaunchFailedToast",
         "未找到可处理的时钟应用",
@@ -96,6 +97,7 @@ object CourseActionStrings {
         classAlarmCustomOption,
         classAlarmOpenClock,
         classAlarmAddedToast,
+        classAlarmRemovedToast,
         classAlarmLaunchFailedToast,
         classAlarmCourseConfirmTitle,
         classAlarmCourseConfirmMessage,
