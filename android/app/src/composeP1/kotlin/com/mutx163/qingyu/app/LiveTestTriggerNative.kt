@@ -20,6 +20,7 @@ import com.mutx163.qingyu.pages.live.computeTestSessionSettingsSignature
 import com.mutx163.qingyu.pages.live.resolveLivePreviewTestCourse
 import com.mutx163.qingyu.pages.live.resolveNextCourseForTest
 import com.mutx163.qingyu.widgetdata.LiveActivityLogicData
+import com.mutx163.qingyu.widgetdata.LiveTestingFixtureData
 import com.mutx163.qingyu.widgetdata.SectionTimeData
 import com.mutx163.qingyu.widgetdata.WidgetDataClock
 import kotlinx.coroutines.CancellationException
@@ -93,7 +94,6 @@ class LiveTestTrigger(
 
         val snapshot = repository.snapshot
         val now = LocalDateTime.now()
-        val nowMillis = System.currentTimeMillis()
         val stage = if (forDuringEnd) LiveCourseTestStage.DURING_CLASS else LiveCourseTestStage.BEFORE_CLASS
 
         // 目标课程：优先当前/今天接下来最近的一门（与预览卡同一来源），空表走预设兜底。
@@ -112,8 +112,34 @@ class LiveTestTrigger(
             now = now,
             currentSelection = currentSelection,
         )
+        return startSession(course, stage, display, sessionLengthMillis, source)
+    }
 
-        val window = buildCourseTestWindow(nowMillis, stage, sessionLengthMillis)
+    /**
+     * 自检页「选课测试」：对用户选中的课程 + 阶段强制起岛（Dart
+     * `triggerLiveUpdateCourseTest` 的 Kotlin 对等物）。
+     *
+     * 与 [startStagePreview] 的唯一区别是课程由调用方给（用户选的），窗口用经典变体
+     * （课前 3+3 分钟 / 课中 1+4 分钟，Dart `sessionLength == null`）。
+     */
+    suspend fun startCourseTest(
+        course: Course,
+        stage: LiveCourseTestStage,
+        display: LiveDisplayState,
+        source: String = "live_self_check",
+    ): Outcome = startSession(course, stage, display, sessionLengthMillis = null, source = source)
+
+    /** 起岛会话的公共尾段：窗口 → 双路暂停 → 投递 → 登记。 */
+    private suspend fun startSession(
+        course: Course,
+        stage: LiveCourseTestStage,
+        display: LiveDisplayState,
+        sessionLengthMillis: Long?,
+        source: String,
+    ): Outcome {
+        if (LiveCourseTestSessions.current() != null) return Outcome.InFlight
+
+        val window = buildCourseTestWindow(System.currentTimeMillis(), stage, sessionLengthMillis)
         val session = LiveCourseTestSession(
             stage = stage,
             courseName = course.name,
@@ -150,6 +176,102 @@ class LiveTestTrigger(
      */
     suspend fun cancelStagePreview() {
         LiveCourseTestSessions.clear()
+        LiveUpdateScheduler.suspendScheduleTriggers(context, 0)
+        LiveUpdateScheduler.stopRunningLiveUpdate(context)
+        productionRefresh()
+    }
+
+    /** 当前选课测试的课程名；null = 没在测（会话到点自动清槽）。 */
+    val courseTestLabel: String? get() = LiveCourseTestSessions.current()?.courseName
+
+    /** 自检「开始测试」的结局。 */
+    enum class ProductionOutcome {
+        /** 真实课表选出了课，走正式路径。 */
+        STARTED,
+
+        /** 真实课表无课可测，已把自检预设课注进原生快照（不写课表）。 */
+        STARTED_WITH_PRESET,
+
+        /** 连预设课都生成不了（临近午夜，课表不支持跨日；Dart StateError 同义）。 */
+        NO_COURSE,
+    }
+
+    /**
+     * 进程级：自检「开始测试」当前是否挂着预设课覆盖层。
+     *
+     * 覆盖层只存在于原生快照里，仓储与磁盘上的真实课表始终不变；取消 / 正式刷新
+     * 之后置 false。放在 companion 而不是实例上：自检页退出再进会新建一个
+     * [LiveTestTrigger]，实例字段会让按钮忘了会话还在跑（Dart 上收全局的同一动机）。
+     */
+    val presetSessionActive: Boolean
+        get() {
+            if (presetSessionActiveFlag && System.currentTimeMillis() >= presetSessionEndMillis) {
+                // 预设会话的最后一门课已经上完：覆盖层由原生收岛，标志跟着失效
+                // （Dart 的预设覆盖层同样到点自动摘除，按钮无需操作就回到「开始」）。
+                presetSessionActiveFlag = false
+                presetSessionEndMillis = 0L
+            }
+            return presetSessionActiveFlag
+        }
+
+    /**
+     * 自检页「开始测试」：正式路径优先，真实课表选不出课时注入自检预设课
+     * （Dart `triggerLiveUpdateProductionRefresh` + `_triggerWithPresetFixtureCourses`）。
+     *
+     * 预设课**不写课表**：它们只并进这一次下发给原生的快照 JSON，原生 reschedule
+     * 后按正式选课规则挑中第一门，岛的「下一节」位由第二门填充。
+     */
+    fun startProductionSession(now: LocalDateTime = LocalDateTime.now()): ProductionOutcome {
+        // 正式路径接管会重选真实课：进行中的选课测试随之失效，暂停也必须先解除
+        //（Dart `triggerLiveUpdateProductionRefresh` 同样先 clearSuspend + suspend(0)，
+        // 否则 `reschedule` 见到未过期暂停会直接退避，岛永远起不来）。
+        LiveCourseTestSessions.clear()
+        LiveUpdateScheduler.suspendScheduleTriggers(context, 0)
+        val snapshot = repository.snapshot
+        if (LiveCurrentCourseSource.resolve(snapshot, now).course != null) {
+            presetSessionActiveFlag = false
+            presetSessionEndMillis = 0L
+            productionRefresh()
+            return ProductionOutcome.STARTED
+        }
+        val presets = try {
+            LiveTestingFixtureData.buildPresetCourses(
+                now = now,
+                targetWeek = calendarWeekOrFallback(snapshot),
+                semesterWeekCount = snapshot.settings.semesterWeekCount,
+            )
+        } catch (_: RuntimeException) {
+            return ProductionOutcome.NO_COURSE
+        }
+        val snapshotJson = LiveNativeSnapshotBuilder.buildJson(
+            courses = snapshot.courses + presets,
+            settingsJson = settingsJson(),
+            currentWeek = snapshot.currentWeek,
+            semesterStartMillis = semesterStartMillis(snapshot),
+        )
+        LiveUpdateScheduler.syncSnapshot(context, snapshotJson)
+        LiveUpdateScheduler.reschedule(context, allowImmediateStart = true)
+        presetSessionActiveFlag = true
+        // 预设课两门：lead + 一门时长 + gap + 第二门时长（与 buildPresetCourses 默认值同源）。
+        val totalMinutes = LiveTestingFixtureData.DEFAULT_PRESET_LEAD_MINUTES +
+            LiveTestingFixtureData.DEFAULT_PRESET_DURATION_MINUTES * 2 +
+            LiveTestingFixtureData.DEFAULT_PRESET_GAP_MINUTES
+        presetSessionEndMillis = now.plusMinutes(totalMinutes)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        return ProductionOutcome.STARTED_WITH_PRESET
+    }
+
+    /**
+     * 自检页「取消测试」：摘掉预设覆盖层并回到正式调度。
+     *
+     * 顺序与 [cancelStagePreview] 同一条：先解暂停，再停服务，最后重排；
+     * 反过来的话 `reschedule` 见到未过期暂停会直接退避，岛永远收不掉。
+     */
+    fun cancelProductionSession() {
+        presetSessionActiveFlag = false
+        presetSessionEndMillis = 0L
         LiveUpdateScheduler.suspendScheduleTriggers(context, 0)
         LiveUpdateScheduler.stopRunningLiveUpdate(context)
         productionRefresh()
@@ -325,6 +447,14 @@ class LiveTestTrigger(
     }
 
     private companion object {
+        /** 进程级：自检预设课覆盖层是否挂着（退出页面再进也要记得）。 */
+        @Volatile
+        var presetSessionActiveFlag: Boolean = false
+
+        /** 预设会话的终点（毫秒）；到点后覆盖层由原生收岛，标志惰性失效。 */
+        @Volatile
+        var presetSessionEndMillis: Long = 0L
+
         /** 与 MainActivity 的通知回执上限同值（对方 private，引用不到）。 */
         const val NOTIFICATION_ACK_TIMEOUT_MILLIS = 1_000L
 

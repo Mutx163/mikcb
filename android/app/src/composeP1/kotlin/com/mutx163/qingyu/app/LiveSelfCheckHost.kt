@@ -5,6 +5,13 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,8 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.BuildConfig
+import com.mutx163.qingyu.R
+import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.LiveUpdateService
 import com.mutx163.qingyu.UmengApplication
 import com.mutx163.qingyu.UmengDiagnosticReporter
@@ -27,6 +39,11 @@ import com.mutx163.qingyu.pages.diagnostics.AppLogSource
 import com.mutx163.qingyu.pages.diagnostics.DiagnosticsStrings
 import com.mutx163.qingyu.pages.diagnostics.LogViewerEntryLogic
 import com.mutx163.qingyu.pages.diagnostics.perfSnapshotJsonText
+import com.mutx163.qingyu.pages.live.LiveCourseTestStage
+import com.mutx163.qingyu.pages.live.LiveDisplayStore
+import com.mutx163.qingyu.pages.live.LiveSelfCheckNotificationController
+import com.mutx163.qingyu.pages.live.LiveSelfCheckNotificationPort
+import com.mutx163.qingyu.pages.live.LiveSelfCheckNotificationRows
 import com.mutx163.qingyu.pages.settings.LiveDebugRow
 import com.mutx163.qingyu.pages.settings.LiveDebugSection
 import com.mutx163.qingyu.pages.settings.LiveSelfCheckData
@@ -37,6 +54,7 @@ import com.mutx163.qingyu.pages.settings.SettingsStrings
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt3
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.widgetdata.MILESTONE_RECENT_END_LABEL_KEY
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,6 +63,11 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 本地日志卡「清空日志」的节点 rowId（`SettingsLiveSelfCheckPage.localLogButtons` 的第一个动作）。 */
 private const val ROW_LOCAL_LOGS_CLEAR = "liveSelfCheck.card.localLogs.clear"
@@ -66,14 +89,6 @@ private const val ROW_ISLAND_EXPORT = "liveSelfCheck.island.export"
 
 /** 假期覆盖开关的节点 id（`SettingsLiveSelfCheckPage.holidaySwitchRow`）。 */
 private const val ROW_HOLIDAY_SWITCH = "liveSelfCheck.holidaySwitch"
-
-/** 测试通知卡「开始测试 / 取消测试」（同一个按钮，文案随 `sessionActive` 翻转）。 */
-private const val ROW_NOTIFICATION_START = "liveSelfCheck.notification.start"
-private const val ROW_NOTIFICATION_CANCEL = "liveSelfCheck.notification.cancel"
-
-/** 测试通知卡「选课测试 / 停止测试」。 */
-private const val ROW_NOTIFICATION_COURSE_TEST = "liveSelfCheck.notification.courseTest"
-private const val ROW_NOTIFICATION_COURSE_TEST_STOP = "liveSelfCheck.notification.courseTestStop"
 
 /** 测试通知卡「崩溃测试 / 异常卡顿测试」（仅 debug 构建渲染）。 */
 private const val ROW_NOTIFICATION_CRASH = "liveSelfCheck.notification.crashTest"
@@ -153,6 +168,110 @@ fun LiveSelfCheckHost(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val timetableStore = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
+
+    // ── 测试通知卡的四颗按钮（2026-11-03）──
+    //
+    // 触发管线已在 Kotlin 侧（`pages/live` 的纯逻辑 + `LiveTestTrigger` 的 Context 宿主），
+    // 本页只提供两个数据源：课表仓储（选课 / 正式刷新）与显示设置（岛样式）。
+    // 「开始测试」在真实课表无课时注入自检预设课——只进原生快照，不写课表。
+    val timetableRepository = remember(context) { TimetableRepository(timetableStore) }
+    val displayStore = remember(timetableStore) { LiveDisplayStore(timetableStore) }
+    val testTrigger = remember(context, timetableRepository, timetableStore) {
+        LiveTestTrigger(
+            context = context,
+            repository = timetableRepository,
+            settingsJson = { timetableStore.loadSettingsJson() },
+            localizeMilestone = { key ->
+                context.getString(
+                    if (key == MILESTONE_RECENT_END_LABEL_KEY) {
+                        R.string.milestone_recent_end
+                    } else {
+                        R.string.milestone_next_start
+                    },
+                )
+            },
+        )
+    }
+    /** 自检会话（预设课覆盖层）是否挂着；按钮文案据此在「开始/取消」间翻转。 */
+    var sessionActive by remember { mutableStateOf(testTrigger.presetSessionActive) }
+    /** 选课测试进行中的课程名；null = 没在测。 */
+    var courseTestLabel by remember { mutableStateOf(testTrigger.courseTestLabel) }
+    /** 选课弹层 / 阶段弹层的状态。 */
+    var pickingCourse by remember { mutableStateOf(false) }
+    var stageCourse by remember { mutableStateOf<Course?>(null) }
+
+    val notificationController = remember(testTrigger, timetableRepository, displayStore) {
+        LiveSelfCheckNotificationController(object : LiveSelfCheckNotificationPort {
+            override fun startSession() {
+                scope.launch {
+                    showToast(
+                        context,
+                        when (testTrigger.startProductionSession()) {
+                            LiveTestTrigger.ProductionOutcome.STARTED,
+                            LiveTestTrigger.ProductionOutcome.STARTED_WITH_PRESET,
+                            -> SettingsStringsExt3.liveTestingSessionRunning.zh
+                            LiveTestTrigger.ProductionOutcome.NO_COURSE ->
+                                SettingsStringsExt3.liveTestingNoCourseAvailable.zh
+                        },
+                    )
+                    sessionActive = testTrigger.presetSessionActive
+                }
+            }
+
+            override fun cancelSession() {
+                scope.launch {
+                    testTrigger.cancelProductionSession()
+                    sessionActive = false
+                    showToast(context, SettingsStringsExt3.liveTestingSessionCanceled.zh)
+                }
+            }
+
+            override fun startCourseTest(courseId: String, stage: LiveCourseTestStage) {
+                scope.launch {
+                    val course = timetableRepository.snapshot.courses
+                        .firstOrNull { it.id == courseId }
+                    if (course == null) {
+                        showToast(context, SettingsStringsExt3.liveTestingNoCourseAvailable.zh)
+                        return@launch
+                    }
+                    val display = displayStore.loadDisplay(
+                        forDuringEnd = stage == LiveCourseTestStage.DURING_CLASS,
+                    )
+                    showToast(
+                        context,
+                        when (testTrigger.startCourseTest(course, stage, display)) {
+                            is LiveTestTrigger.Outcome.Started,
+                            LiveTestTrigger.Outcome.InFlight,
+                            -> SettingsStringsExt3.liveTestingSessionRunning.zh
+                            is LiveTestTrigger.Outcome.DispatchFailed ->
+                                SettingsStrings.aboutUnavailable.zh
+                        },
+                    )
+                    courseTestLabel = testTrigger.courseTestLabel
+                }
+            }
+
+            override fun stopCourseTest() {
+                scope.launch {
+                    testTrigger.cancelStagePreview()
+                    courseTestLabel = null
+                    showToast(
+                        context,
+                        SettingsStringsExt3.liveTestingCourseTestStoppedToast.zh,
+                    )
+                }
+            }
+        })
+    }
+
+    // 会话 / 选课测试到点后由原生收岛；每秒同步一次按钮态（Dart 侧同样靠刷新恢复）。
+    LaunchedEffect(testTrigger) {
+        while (true) {
+            sessionActive = testTrigger.presetSessionActive
+            courseTestLabel = testTrigger.courseTestLabel
+            delay(POLL_INTERVAL_MILLIS)
+        }
+    }
 
     var debugLoaded by remember { mutableStateOf(false) }
     var serviceRunning by remember { mutableStateOf(false) }
@@ -329,6 +448,8 @@ fun LiveSelfCheckHost(
     val data = LiveSelfCheckData(
         isReleaseBuild = !BuildConfig.DEBUG,
         holidayOverrideEnabled = holidayOverrideEnabled,
+        sessionActive = sessionActive,
+        courseTestLabel = courseTestLabel,
         semesterUnset = semesterUnset,
         serviceRunning = serviceRunning,
         notIslandReason = notIslandReason,
@@ -356,20 +477,132 @@ fun LiveSelfCheckHost(
                 ROW_ISLAND_AUTO_REFRESH -> autoRefreshEnabled = !autoRefreshEnabled
                 ROW_ISLAND_EXPORT -> exportDiagnostics()
                 ROW_HOLIDAY_SWITCH -> setHolidayOverride(!holidayOverrideEnabled)
-                // 测试夹具会话（开始/取消测试）与强制起岛管线（选课测试）只有 Dart 侧
-                // 的 `TimetableProvider` / `live_testing_trigger.dart` 有；原生
-                // `LiveUpdateService` / `LiveUpdateScheduler` 里没有可用入口。
-                ROW_NOTIFICATION_START,
-                ROW_NOTIFICATION_CANCEL,
-                ROW_NOTIFICATION_COURSE_TEST,
-                ROW_NOTIFICATION_COURSE_TEST_STOP,
-                -> showToast(context, SettingsStrings.aboutUnavailable.zh)
+                // 测试通知卡：会话起停 / 停止走真触发管线；「选课测试」先选课、再选阶段，
+                // 两个弹层都关闭后才真正投递（避免弹层还在时岛先弹起来）。
+                LiveSelfCheckNotificationRows.START,
+                LiveSelfCheckNotificationRows.CANCEL,
+                LiveSelfCheckNotificationRows.COURSE_TEST_STOP,
+                -> notificationController.trigger(rowId)
+
+                LiveSelfCheckNotificationRows.COURSE_TEST -> pickingCourse = true
 
                 ROW_NOTIFICATION_CRASH -> triggerTestCrash()
                 ROW_NOTIFICATION_ANR -> triggerTestAnr()
             }
         },
     )
+
+    // 选课测试：先选课程，再选阶段。两个弹层都按官方 OverlayDialog 走
+    //（遮罩、返回键、大屏行为由它提供），宿主只排正文。
+    if (pickingCourse) {
+        CourseTestPickerDialog(
+            courses = timetableRepository.snapshot.courses
+                .distinctBy { Triple(it.name, it.teacher, it.location) },
+            onDismiss = { pickingCourse = false },
+            onPick = { course ->
+                pickingCourse = false
+                stageCourse = course
+            },
+        )
+    }
+    val pickedCourse = stageCourse
+    if (pickedCourse != null) {
+        CourseTestStageDialog(
+            courseName = pickedCourse.name,
+            onDismiss = { stageCourse = null },
+            onPick = { stage ->
+                stageCourse = null
+                notificationController.trigger(
+                    rowId = LiveSelfCheckNotificationRows.COURSE_TEST,
+                    courseId = pickedCourse.id,
+                    stage = stage,
+                )
+            },
+        )
+    }
+}
+
+/** 选课测试第一步：从真实课表里选一门课（同名同师同地的重复课只列一次）。 */
+@Composable
+private fun CourseTestPickerDialog(
+    courses: List<Course>,
+    onDismiss: () -> Unit,
+    onPick: (Course) -> Unit,
+) {
+    OverlayDialog(
+        show = true,
+        title = SettingsStringsExt3.liveTestingCourseTestPickerTitle.zh,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = 420.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (courses.isEmpty()) {
+                Text(
+                    text = SettingsStringsExt3.liveTestingNoCourseAvailable.zh,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            } else {
+                courses.forEach { course ->
+                    Button(
+                        onClick = { onPick(course) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(text = course.name)
+                    }
+                }
+            }
+            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text(text = SettingsStringsExt3.cancelAction.zh)
+            }
+        }
+    }
+}
+
+/** 选课测试第二步：选要预览的阶段（课前倒计时 / 上课中）。 */
+@Composable
+private fun CourseTestStageDialog(
+    courseName: String,
+    onDismiss: () -> Unit,
+    onPick: (LiveCourseTestStage) -> Unit,
+) {
+    OverlayDialog(
+        show = true,
+        title = SettingsStringsExt3.liveTestingCourseTestStageTitle.zh,
+        onDismissRequest = onDismiss,
+        insideMargin = DpSize(16.dp, 16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = courseName,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Button(
+                onClick = { onPick(LiveCourseTestStage.BEFORE_CLASS) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) {
+                Text(text = SettingsStringsExt3.liveTestingCourseTestStageBeforeClass.zh)
+            }
+            Button(
+                onClick = { onPick(LiveCourseTestStage.DURING_CLASS) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = SettingsStringsExt3.liveTestingCourseTestStageDuringClass.zh)
+            }
+            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text(text = SettingsStringsExt3.cancelAction.zh)
+            }
+        }
+    }
 }
 
 /** 假期覆盖的真值：`timetable_settings.holidayOverrideEnabled`（缺键 / 坏值按 false）。 */
