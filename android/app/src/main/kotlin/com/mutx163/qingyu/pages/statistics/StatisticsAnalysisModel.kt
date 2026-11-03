@@ -49,6 +49,23 @@ object StatisticsAnalysisModel {
     /** Dart `hasData = courses.isNotEmpty`：无课走空态，有课走列表。 */
     fun hasData(courseCount: Int): Boolean = courseCount > 0
 
+    /**
+     * 卡片角色 → 卡内小标题（非 standalone 卡片的抬头）。
+     *
+     * 原先渲染层只映射了 TEACHER / RANKING，其余一律回落成 `statisticsNoData`
+     * （「暂无课程数据」）——趋势页和热力图页的数据卡片顶部因此写了一行「暂无课程数据」。
+     * 映射放进模型层后，七个角色都能被单测逐个钉住。
+     */
+    fun cardTitle(role: AnalysisCardRole): String = when (role) {
+        AnalysisCardRole.TREND_CHART -> ChartsStrings.statisticsTrendTitle.zh
+        AnalysisCardRole.HEATMAP -> ChartsStrings.statisticsHeatmapTitle.zh
+        AnalysisCardRole.TIME_UTILIZATION -> StatisticsExtStrings.statisticsTimeUtilTitle.zh
+        AnalysisCardRole.VENUE -> StatisticsExtStrings.statisticsVenueTitle.zh
+        AnalysisCardRole.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.zh
+        AnalysisCardRole.RANKING -> StatisticsExtStrings.statisticsRankingTitle.zh
+        AnalysisCardRole.PROFILE_COMPARE -> StatisticsExtStrings.statisticsCompareTitle.zh
+    }
+
     /** 整页列表里的一格（卡片或分段间距）。 */
     sealed interface AnalysisCell {
         /** 一张卡片。`standalone` 对应 Dart 里「独立二级页去掉卡内标题、读数放大」的那档。 */

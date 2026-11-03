@@ -33,6 +33,24 @@ class StatisticsAnalysisModelTest {
         assertEquals("课表对比", StatisticsAnalysisModel.title(StatisticsAnalysisModule.COMPARE))
     }
 
+    @Test
+    fun `每个卡片角色都有对的卡内标题`() {
+        // 原先渲染层只映射了 TEACHER / RANKING，其余全回落成「暂无课程数据」：
+        // 趋势页、热力图页的数据卡片顶部会写错标题。
+        val expected = mapOf(
+            StatisticsAnalysisModel.AnalysisCardRole.TREND_CHART to "每周课时趋势",
+            StatisticsAnalysisModel.AnalysisCardRole.HEATMAP to "学期热力图",
+            StatisticsAnalysisModel.AnalysisCardRole.TIME_UTILIZATION to "时间利用",
+            StatisticsAnalysisModel.AnalysisCardRole.VENUE to "教室与教学楼",
+            StatisticsAnalysisModel.AnalysisCardRole.TEACHER to "教师课时排行",
+            StatisticsAnalysisModel.AnalysisCardRole.RANKING to "课程排行",
+            StatisticsAnalysisModel.AnalysisCardRole.PROFILE_COMPARE to "课表对比",
+        )
+        for ((role, title) in expected) {
+            assertEquals("$role 的卡内标题", title, StatisticsAnalysisModel.cardTitle(role))
+        }
+    }
+
     // ── 2. 空态判据 ──
 
     @Test

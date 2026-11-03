@@ -136,7 +136,7 @@ private fun AnalysisCard(
             // 非 standalone 保留卡内小标题（TeacherStatsCard / CourseRanking 的形态）。
             if (!cell.standalone) {
                 Text(
-                    text = roleTitle(cell.role),
+                    text = StatisticsAnalysisModel.cardTitle(cell.role),
                     style = MiuixTheme.textStyles.footnote1,
                     // 卡内小标题的取色槽：与 `QingyuTheme.sectionLabel(dark)` 同值
                     // （QingyuPageTheme 把 onSurfaceVariantActions 填成 actionIcon），
@@ -157,14 +157,6 @@ private fun AnalysisCard(
             }
         }
     }
-}
-
-/** 卡内小标题：非 standalone 卡片的抬头，取该模块的 ARB 标题。 */
-@Composable
-private fun roleTitle(role: AnalysisCardRole): String = when (role) {
-    AnalysisCardRole.TEACHER -> StatisticsExtStrings.statisticsTeacherTitle.zh
-    AnalysisCardRole.RANKING -> StatisticsExtStrings.statisticsRankingTitle.zh
-    else -> StatisticsExtStrings.statisticsNoData.zh
 }
 
 @Composable
