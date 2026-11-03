@@ -30,6 +30,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Phone
+import top.yukonga.miuix.kmp.icon.extended.RecordingTape
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -87,6 +88,28 @@ fun WarehouseWebLoginPage(
         onBack = onBack,
         smallTopBar = true,
         actions = {
+            // 宏录制开关（对齐 Dart 顶栏 FHeaderAction：只有图标 + 无障碍文案，
+            // 执行导入期间禁用 `_isExecutingImport ? null : _toggleMacroRecording`）。
+            // 录制中换 error 色提示状态；P1 起接真实现，不再是「不可用」实话。
+            val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
+            IconButton(
+                onClick = onToggleMacroRecording,
+                enabled = sessionState.stage != WarehouseWebLoginStage.EXECUTING,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.RecordingTape,
+                    contentDescription = if (isRecording) {
+                        WarehouseStrings.stopRecordingTooltip.zh
+                    } else {
+                        WarehouseStrings.startRecordingTooltip.zh
+                    },
+                    tint = if (isRecording) {
+                        MiuixTheme.colorScheme.error
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
+                )
+            }
             // 桌面/移动切换（Dart `_toggleWebPageMode`）。换 UA 之外还会重载当前页
             // （`toggleDesktopMode` 内部做），因为教务站按 UA 决定回哪个登录页。
             //
@@ -200,29 +223,14 @@ fun WarehouseWebLoginPage(
                     }
                 }
 
-                // 底部操作主按钮
+                // 底部操作主按钮（Dart 底栏只有「执行导入脚本」一个按钮；宏录制开关在顶栏）
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
-                    Button(
-                        onClick = onToggleMacroRecording,
-                        modifier = Modifier.weight(1f),
-                        content = { Text(text = if (isRecording) {
-                            "停止录制 (${sessionState.recordedStepsCount})"
-                        } else {
-                            WarehouseStrings.recordImportAction.zh
-                        }) },
-                        colors = ButtonDefaults.buttonColors(
-                            color = if (isRecording) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.surfaceVariant,
-                            contentColor = if (isRecording) MiuixTheme.colorScheme.surface else MiuixTheme.colorScheme.primary
-                        )
-                    )
-
                     Button(
                         onClick = onExecuteImport,
-                        modifier = Modifier.weight(1.5f),
+                        modifier = Modifier.fillMaxWidth(),
                         content = { Text(text = WarehouseStrings.executeImportScriptAction.zh) }
                     )
                 }

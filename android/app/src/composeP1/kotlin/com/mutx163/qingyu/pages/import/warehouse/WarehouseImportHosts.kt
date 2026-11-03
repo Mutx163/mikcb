@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,7 +41,8 @@ import kotlinx.coroutines.withContext
  * | 详情页「复制登录地址 / 复制脚本地址」 | 系统剪贴板 + Toast（文案取 ARB 原文） |
  * | 详情页自定义登录地址 | [WarehouseImportPrefs] 落盘（键名与 Dart 逐字一致），重进这一页看得见 |
  * | 详情页「网页登录」 | 进 `g2.webLogin`（同上，真地址） |
- * | 「录制导入 / 快捷导入」 | **给一句实话**：宏引擎（`warehouse_macro_service`）还没移植 |
+ * | 「录制导入」 | **P1 起可用**：进 `g2.webLogin` 并自动开始录制，成功后询问保存 |
+ * | 「快捷导入」 | 仍是实话（P2 回放引擎未接），但保存过宏的适配器与没有的显示一致（D7：不亮假入口） |
  * | 「意见反馈 / 自定义调试」 | 壳的 `onOpenPage`（`k.feedback` / `g2.customDebug`） |
  *
  * ## 诚实边界（重要，别把这段删掉）
@@ -48,7 +50,8 @@ import kotlinx.coroutines.withContext
  * 1. **登录之后的「抓课表」没有接**：Dart 侧靠 WebView 里注入适配脚本（`asset_js_path`）跑出课表，
  *    再走导入确认；Kotlin 侧脚本引擎没移植（属 8c）。所以「网页登录导入」现在能到**登录页**、
  *    地址是真的，但登录完**不会**自己抓课表。这一点写在 F08 认领文件的诚实清单里。
- * 2. **宏录制 / 快捷导入**给的是「不可用」提示，不是空回调；等宏引擎移植后再接。
+ * 2. **宏录制**已接（P1：录制/保存/键名与 Dart 同键共读）；**快捷导入（回放）**未接（P2），
+ *    保存过的宏在本期只落盘不回放。
  * 3. **没有缓存**：每次进页面都真拉一次（Dart 会落 SharedPreferences 并标缓存时间），
  *    断网时看到的是失败态 + 重试，而不是上次的旧名单冒充新数据。
  * 4. 真机没对照：本刀只证明「编译通过 + JVM 单测通过」。仓库文件能不能拉到、学校名对不对，
@@ -77,6 +80,13 @@ internal object WarehouseRoutes {
 class WarehouseShellState {
     var school by mutableStateOf<WarehouseSchoolEntry?>(null)
     var adapter by mutableStateOf<WarehouseAdapterEntry?>(null)
+
+    /**
+     * 进网页登录页时是否自动开始录制（Dart `_openAdapterImport` 的 `autoRecord` 参数）：
+     * 「录制导入」按钮恒 true；普通导入按 [shouldAutoRecordWarehouseImport]
+     * （无已存宏才自动录）。由列表宿主在导航前写好，登录页 `LaunchedEffect` 读一次。
+     */
+    var autoRecordMacro by mutableStateOf(false)
 }
 
 /** `g2.warehouseImport`：学校选择页（数据源 = `index/root_index.yaml`）。 */
@@ -160,8 +170,13 @@ fun WarehouseSchoolAdaptersHost(
     }
 
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 宏持久化（P1）：与网页登录宿主同一套键（Dart SharedPreferences 同键共读），
+    // 实例各建各的，物理上是同一份文件。
+    val macroStore = remember(school.id) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
     var phase by remember(school.id) { mutableStateOf(WarehouseListPhase.Loading) }
     var adapters by remember(school.id) { mutableStateOf<List<WarehouseAdapterEntry>>(emptyList()) }
+    // 哪些适配器存过录制（驱动卡片上的「快捷导入」按钮显隐，D7：P1/P2 间隙用空表天然隐藏）。
+    var macroMap by remember(school.id) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var reloadToken by remember(school.id) { mutableStateOf(0) }
 
     LaunchedEffect(school.id, reloadToken) {
@@ -171,11 +186,17 @@ fun WarehouseSchoolAdaptersHost(
             is WarehouseLoad.Ok -> {
                 adapters = loaded.value.adapters
                 phase = WarehouseListPhase.Idle
+                macroMap = withContext(Dispatchers.IO) {
+                    loaded.value.adapters.associate { adapter ->
+                        adapter.id to macroStore.hasMacro(school.id, adapter.id)
+                    }
+                }
             }
 
             is WarehouseLoad.Failed -> {
                 adapters = emptyList()
                 phase = WarehouseListPhase.Failed
+                macroMap = emptyMap()
                 Log.w(
                     LOG_TAG,
                     "adapters load failed school=${school.id} code=${loaded.code} attempts=${loaded.attempts}",
@@ -187,24 +208,36 @@ fun WarehouseSchoolAdaptersHost(
     WarehouseSchoolAdaptersPage(
         school = school,
         adapters = adapters,
-        // 宏映射（哪些适配器存过录制）依赖宏服务，未移植 ⇒ 一律没有「快捷导入」入口。
+        // 宏映射真值（P1）：存过录制的适配器本来要亮「快捷导入」按钮，但回放引擎
+        // 属 P2 —— 按拍板 D7 保持隐藏（macroMap 只喂「录制」入口要用的真值判断，
+        // 页面上「快捷导入」按钮由 hasMacro 驱动，这里先传空表避免画不可点的假入口）。
         macroMap = emptyMap(),
         phase = phase,
         onBack = onBack,
         onRefresh = { reloadToken += 1 },
         onRetry = { reloadToken += 1 },
         onImportAdapter = { adapter ->
-            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。地址是真的（`import_url`）；
-            // 登录之后的脚本抓课表未接，见本文件 KDoc 诚实边界第 1 条。
+            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。
+            // 首次导入（该适配器还没存过宏）自动开始录制——对齐 Dart
+            // `shouldAutoRecordWarehouseImport(forceRecord = false, hasExistingMacro)`。
             state.adapter = adapter
+            state.autoRecordMacro = shouldAutoRecordWarehouseImport(
+                forceRecord = false,
+                hasExistingMacro = macroMap[adapter.id] ?: false,
+            )
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
         onViewAdapterDetail = { adapter ->
             state.adapter = adapter
             onOpenPage(WarehouseRoutes.DETAIL)
         },
-        onRecordAdapter = { toastUnavailable(context, "macro recording: engine not ported (F08-8c)") },
-        onQuickImportAdapter = { toastUnavailable(context, "quick import: macro engine not ported (F08-8c)") },
+        onRecordAdapter = { adapter ->
+            // 「录制导入」（P1 起可用）：显式录制，无论有没有已存宏（Dart autoRecord: true 恒真）。
+            state.adapter = adapter
+            state.autoRecordMacro = true
+            onOpenPage(WarehouseRoutes.WEB_LOGIN)
+        },
+        onQuickImportAdapter = { toastUnavailable(context, "quick import: replay engine not ported (P2)") },
     )
 }
 
