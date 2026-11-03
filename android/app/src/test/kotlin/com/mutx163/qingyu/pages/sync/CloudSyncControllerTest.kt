@@ -120,15 +120,19 @@ class CloudSyncControllerTest {
         val failure = AtomicReference<Throwable?>(null)
         val notifyRuns = java.util.concurrent.atomic.AtomicLong()
         val subscriberRuns = java.util.concurrent.atomic.AtomicLong()
-        val deadline = System.currentTimeMillis() + 2_000
-
+        // 固定迭代次数，不用「跑满 2 秒」作为结束条件：
+        // 机器负载高时 2 秒窗口内的迭代数不可控（可能 <1000 恒红、也可能空转恒绿）；
+        // 固定次数 + 宽松 join 只把「线程是否被调度」留作时间依赖，次数本身是确定的。
+        val iterations = 2_000
         val subscriber = Thread {
             try {
-                while (System.currentTimeMillis() < deadline && failure.get() == null) {
-                    val listener: () -> Unit = {}
-                    controller.addListener(listener)
-                    controller.removeListener(listener)
-                    subscriberRuns.incrementAndGet()
+                repeat(iterations) {
+                    if (failure.get() == null) {
+                        val listener: () -> Unit = {}
+                        controller.addListener(listener)
+                        controller.removeListener(listener)
+                        subscriberRuns.incrementAndGet()
+                    }
                 }
             } catch (t: Throwable) {
                 failure.set(t)
@@ -136,10 +140,12 @@ class CloudSyncControllerTest {
         }
         val notifier = Thread {
             try {
-                while (System.currentTimeMillis() < deadline && failure.get() == null) {
-                    // 公开的纯通知入口：改草稿 + notifyChanged，不碰网络与落盘。
-                    controller.onBaseUrlChanged("http://example.com/dav/")
-                    notifyRuns.incrementAndGet()
+                repeat(iterations) {
+                    if (failure.get() == null) {
+                        // 公开的纯通知入口：改草稿 + notifyChanged，不碰网络与落盘。
+                        controller.onBaseUrlChanged("http://example.com/dav/")
+                        notifyRuns.incrementAndGet()
+                    }
                 }
             } catch (t: Throwable) {
                 failure.set(t)
@@ -147,13 +153,15 @@ class CloudSyncControllerTest {
         }
         subscriber.start()
         notifier.start()
-        subscriber.join(5_000)
-        notifier.join(5_000)
+        subscriber.join(10_000)
+        notifier.join(10_000)
 
-        // 两条循环都必须真的跑起来，否则测试空转恒绿。
-        assertTrue("并发压力没跑起来（通知 ${notifyRuns.get()} 次）", notifyRuns.get() > 1_000)
-        assertTrue("并发压力没跑起来（增删 ${subscriberRuns.get()} 次）", subscriberRuns.get() > 1_000)
+        // 先报异常：异常会让循环提前跳过计数，误报成「没跑满」会掩盖真正原因。
         assertNull("并发增删/通知抛了异常：${failure.get()}", failure.get())
+        // 两条循环都必须真的跑满，否则测试空转恒绿。
+        assertFalse("并发压力线程未在 10s 内完成", subscriber.isAlive || notifier.isAlive)
+        assertEquals("并发增删没跑满", iterations.toLong(), subscriberRuns.get())
+        assertEquals("并发通知没跑满", iterations.toLong(), notifyRuns.get())
     }
 
     @Test

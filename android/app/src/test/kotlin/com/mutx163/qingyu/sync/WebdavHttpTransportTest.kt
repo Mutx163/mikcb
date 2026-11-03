@@ -13,13 +13,16 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.URL
 import java.util.Collections
-import org.junit.After
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import org.junit.AfterClass
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 
 /**
@@ -35,6 +38,15 @@ import org.junit.Test
  * 于是 `:app:compileProdDebugUnitTestKotlin`（CI 跑的 `:app:testProdDebugUnitTest` 的编译阶段）
  * 直接报 `Unresolved reference 'sun'`，而 `scripts/test-kotlin-module.ps1`（L0）用完整 JDK 全绿——
  * **L0 绿 ≠ CI 绿**。`java.net.*` 两边都可用，所以这里自己写一个。
+ *
+ * **确定性约束（2026-11-04，消除 getBytesGivesUpAfterMaxRedirects 偶发 connection_failed）**：
+ * 1. 整个类只 bind 一个监听端口（[startSharedServer]），用例之间只 reset handler/请求记录，
+ *    不再每个用例 `ServerSocket(0)` bind/close 一次——临时端口被系统回收再分配时，
+ *    上一个用例的残留 socket 可能和新监听的端口撞上，表现为随机 `connection_failed`。
+ * 2. `handler` 是 `@Volatile`：worker 线程在构造时启动，用例线程随后赋值，JMM 必须给可见性。
+ * 3. `close()` 先关 listener、再关已 accept 的连接、最后 join worker，用例结束不留活 socket。
+ * 4. 读超时用例用 `CountDownLatch` 卡住 handler，不再 `Thread.sleep(3s)`（异步释放，零空转）。
+ * 5. `http.keepAlive=false`：关掉 JDK 按 host:port 复用的连接池，避免复用到指向旧服务器的连接。
  */
 class WebdavHttpTransportTest {
 
@@ -42,12 +54,10 @@ class WebdavHttpTransportTest {
 
     @Before
     fun setUp() {
-        server = FakeWebdavServer()
-    }
-
-    @After
-    fun tearDown() {
-        server.close()
+        // 整个类共用一个监听端口：不再每个用例 bind/close 一次临时端口，
+        // 杜绝「上一个用例的残留 socket 被下一个用例的 ServerSocket(0) 撞上」。
+        server = sharedServer
+        server.reset()
     }
 
     private fun transport(
@@ -145,15 +155,22 @@ class WebdavHttpTransportTest {
 
     @Test
     fun getBytesFailsOnReadTimeout() {
+        // 用 latch 卡住 handler，而不是 Thread.sleep：用例结束立刻释放，
+        // 不给下一个用例留下「活着的连接 + 被占用的临时端口」。
+        val release = CountDownLatch(1)
         server.handler = { exchange, _ ->
-            Thread.sleep(3_000)
+            release.await(5, TimeUnit.SECONDS)
             exchange.respond(200, byteArrayOf(1))
         }
 
-        val result = transport(timeoutMillis = 400).getBytes("/slow.mikcb")
+        try {
+            val result = transport(timeoutMillis = 400).getBytes("/slow.mikcb")
 
-        assertTrue(result.isFailed)
-        assertEquals("connection_timeout", result.errorMessage)
+            assertTrue(result.isFailed)
+            assertEquals("connection_timeout", result.errorMessage)
+        } finally {
+            release.countDown()
+        }
     }
 
     @Test
@@ -498,7 +515,7 @@ class WebdavHttpTransportTest {
 
         val result = transport().head("/Apps/qingyu-sync/gone.mikcb")
 
-        assertFalse(result.isFailed)
+        assertFalse("head failed: ${result.errorMessage}", result.isFailed)
         assertFalse(result.exists)
         assertEquals(404, result.statusCode)
     }
@@ -532,7 +549,7 @@ class WebdavHttpTransportTest {
 
         val result = transport().acquireWriteLock("/Apps/qingyu-sync/snapshot.mikcb")
 
-        assertFalse(result.isFailed)
+        assertFalse("lock failed: ${result.errorMessage}", result.isFailed)
         assertTrue(result.isUnsupported)
         assertNull(result.lockToken)
     }
@@ -746,9 +763,19 @@ class WebdavHttpTransportTest {
         val requests: MutableList<Recorded> =
             Collections.synchronizedList(mutableListOf<Recorded>())
 
+        // worker 在构造时就启动，handler 由用例线程随后赋值：必须保证可见性。
+        @Volatile
         var handler: (FakeExchange, Recorded) -> Unit = { exchange, _ -> exchange.respond(404) }
 
         private val listener = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        private val lifecycleLock = Any()
+
+        @Volatile
+        private var closed = false
+
+        @Volatile
+        private var activeClient: Socket? = null
+
         private val worker = Thread({ acceptLoop() }, "fake-webdav").apply {
             isDaemon = true
             start()
@@ -756,18 +783,37 @@ class WebdavHttpTransportTest {
 
         val baseUrl: String get() = "http://127.0.0.1:${listener.localPort}/dav/"
 
+        fun reset() {
+            handler = { exchange, _ -> exchange.respond(404) }
+            requests.clear()
+        }
+
         private fun acceptLoop() {
-            while (!listener.isClosed) {
+            while (true) {
                 val client = try {
                     listener.accept()
                 } catch (_: IOException) {
                     return
+                }
+                synchronized(lifecycleLock) {
+                    if (closed) {
+                        try {
+                            client.close()
+                        } catch (_: IOException) {
+                            // 已经关了。
+                        }
+                        return
+                    }
+                    activeClient = client
                 }
                 try {
                     serve(client)
                 } catch (_: Throwable) {
                     // 客户端提前断开（例如超时用例）：无处可写，忽略。
                 } finally {
+                    synchronized(lifecycleLock) {
+                        if (activeClient === client) activeClient = null
+                    }
                     try {
                         client.close()
                     } catch (_: IOException) {
@@ -860,11 +906,24 @@ class WebdavHttpTransportTest {
         }
 
         fun close() {
-            try {
-                listener.close()
-            } catch (_: IOException) {
-                // 已经关了。
+            // 先关 listener 再关已 accept 的连接，最后 join：
+            // 确保用例结束时没有活 socket 继续占着临时端口，
+            // 下一个用例的 ServerSocket(0) 不会和残留连接撞上。
+            synchronized(lifecycleLock) {
+                closed = true
+                try {
+                    listener.close()
+                } catch (_: IOException) {
+                    // 已经关了。
+                }
+                try {
+                    activeClient?.close()
+                } catch (_: IOException) {
+                    // 已经关了。
+                }
+                activeClient = null
             }
+            worker.join(2_000)
         }
     }
 
@@ -945,12 +1004,35 @@ class WebdavHttpTransportTest {
      */
     private class RawResponseServer(private val responseText: String) {
         private val socket = ServerSocket(0)
+        private val lifecycleLock = Any()
+
+        @Volatile
+        private var closed = false
+
+        @Volatile
+        private var activeClient: Socket? = null
 
         private val worker = Thread {
+            val client = try {
+                socket.accept()
+            } catch (_: Throwable) {
+                return@Thread
+            }
+            synchronized(lifecycleLock) {
+                if (closed) {
+                    try {
+                        client.close()
+                    } catch (_: Throwable) {
+                        // 已经关了。
+                    }
+                    return@Thread
+                }
+                activeClient = client
+            }
             try {
-                socket.accept().use { client ->
-                    client.soTimeout = 5_000
-                    val input = client.getInputStream()
+                client.use {
+                    it.soTimeout = 5_000
+                    val input = it.getInputStream()
                     // 读到请求头结束（\r\n\r\n）即可，请求体由内核缓冲吞掉。
                     var state = 0
                     while (true) {
@@ -965,13 +1047,22 @@ class WebdavHttpTransportTest {
                         }
                         if (state == 4) break
                     }
-                    client.getOutputStream().apply {
+                    it.getOutputStream().apply {
                         write(responseText.toByteArray(Charsets.UTF_8))
                         flush()
                     }
                 }
             } catch (_: Throwable) {
                 // 用例结束时会关 socket，这里静默即可。
+            } finally {
+                synchronized(lifecycleLock) {
+                    if (activeClient === client) activeClient = null
+                }
+                try {
+                    client.close()
+                } catch (_: Throwable) {
+                    // 已经关了。
+                }
             }
         }.apply {
             isDaemon = true
@@ -985,15 +1076,45 @@ class WebdavHttpTransportTest {
         }
 
         fun close() {
-            try {
-                socket.close()
-            } catch (_: Throwable) {
-                // 已经关了。
+            // 与 FakeWebdavServer 同理：关 listener + 关活动连接 + join，
+            // 不给下一个用例留下占用临时端口的活 socket。
+            synchronized(lifecycleLock) {
+                closed = true
+                try {
+                    socket.close()
+                } catch (_: Throwable) {
+                    // 已经关了。
+                }
+                try {
+                    activeClient?.close()
+                } catch (_: Throwable) {
+                    // 已经关了。
+                }
+                activeClient = null
             }
+            worker.join(2_000)
         }
     }
 
     companion object {
+        private lateinit var sharedServer: FakeWebdavServer
+
+        @BeforeClass
+        @JvmStatic
+        fun startSharedServer() {
+            // 关闭 JDK 的 HTTP keep-alive 缓存：它按 host:port 复用连接，而本类（以及同 JVM
+            // 里的其他测试类）都用临时端口；端口被系统回收再分配后，复用一条指向旧服务器的
+            // 连接会得到 reset → connection_failed。本类只需一次性真实往返，关掉池化最稳。
+            System.setProperty("http.keepAlive", "false")
+            sharedServer = FakeWebdavServer()
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun stopSharedServer() {
+            sharedServer.close()
+        }
+
         /** 手写 207：目录本身 + 两个 .mikcb + 一个 .txt + 一个子目录。 */
         private val HISTORY_MULTISTATUS = """
             <?xml version="1.0" encoding="utf-8"?>
