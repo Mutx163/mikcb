@@ -39,7 +39,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.core.content.ContextCompat
 import com.mutx163.qingyu.LiveUpdateScheduler
-import com.mutx163.qingyu.ExamReminderCoordinator
 import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
@@ -54,6 +53,7 @@ import com.mutx163.qingyu.pages.live.LiveSnapshotSyncRegistry
 import com.mutx163.qingyu.pages.live.LiveSnapshotSyncer
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
+import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
@@ -195,6 +195,12 @@ class PagesShellActivity : ComponentActivity() {
         PerfProbe.attach(this)
         PerfProbe.markStartup("shellAttach")
 
+        // 截屏检测（Android 14+ 官方 ScreenCaptureCallback）：注册/注销由组件自管
+        // （STARTED 才注册、退后台/销毁自动摘除），壳只在这里挂一次。
+        // 事件出口 onScreenshot 暂无消费方（Dart 版的「分享课表图」提示未移植），
+        // 接线方式见 platform/ScreenCaptureWatcher.kt 头注。
+        ScreenCaptureWatcher.attach(this)
+
         setContent {
             // ── 外观设置 → 主题桥 ──────────────────────────────────────────────
             // 设置存储没有变更通道（只有 load / save），所以这里读一次进 state；
@@ -217,9 +223,6 @@ class PagesShellActivity : ComponentActivity() {
             LaunchedEffect(wiring) {
                 withContext(Dispatchers.IO) {
                     ScheduleReminderCoordinator.install(applicationContext, wiring.timetable)
-                    // 考试提醒：考试 / 课程 / 日程增删改与冷启动、恢复备份后整表重排
-                    //（对位上面日程提醒的安装；开机 / 换时区补排走 ExamReminderReceiver，无需在此装）。
-                    ExamReminderCoordinator.install(applicationContext, wiring.timetable)
                     ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
                 }
             }
@@ -487,10 +490,6 @@ private fun PagesShell(
     fun pushZoomPage(id: String) {
         pushRoute(ShellRoute.ZoomPage(id, pushToken = pushSeq.incrementAndGet()))
     }
-
-    // 外部入口落点（R1 补口 2026-11-02）：VIEW/SEND 导入 / umeng scheme / mikcb-debug
-    // 深链由透明跳板 ShellExternalEntryActivity 解析后 post 到 hub，这里一行消费推页。
-    ShellExternalEntryEffect(onOpenPage = { target -> pushPage(target) })
 
     // ── 视图档落盘：**必须离开点击所在的那一帧** ─────────────────────────────
     // `settingsModel.save` 内部是两次 `SharedPreferences.commit()`（同步等磁盘落盘），
