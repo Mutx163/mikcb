@@ -1,5 +1,8 @@
 package com.mutx163.qingyu.sync
 
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
 import java.security.MessageDigest
 
 /**
@@ -242,14 +245,8 @@ private fun writeCanonicalJson(sb: StringBuilder, value: Any?) {
         is Boolean -> sb.append(if (value) "true" else "false")
         is Int -> sb.append(value.toString())
         is Long -> sb.append(value.toString())
-        is Double -> {
-            // Dart jsonEncode 对 double 用最短往返；Kotlin toString 足够判等（两侧同实现）。
-            if (value.isNaN() || value.isInfinite()) sb.append("null") else sb.append(value.toString())
-        }
-        is Float -> {
-            val d = value.toDouble()
-            if (d.isNaN() || d.isInfinite()) sb.append("null") else sb.append(d.toString())
-        }
+        is Double -> sb.append(dartJsonNumber(value))
+        is Float -> sb.append(dartJsonNumber(value.toDouble()))
         is Number -> sb.append(value.toLong().toString())
         is Map<*, *> -> {
             sb.append('{')
@@ -297,6 +294,61 @@ private fun writeJsonString(sb: StringBuilder, value: String) {
         }
     }
     sb.append('"')
+}
+
+/**
+ * Dart `jsonEncode` 的 double 编码（ECMAScript `Number::toString` 规则）。
+ *
+ * `contentSha256` 必须两端逐字节相同，否则同一份快照在 Dart 与 Kotlin 各算一个
+ * 哈希，同步时会把自己写得数据当成「对方冲突」。Java `Double.toString` 在指数
+ * 区间与之不同（`1.0E20` vs `100000000000000000000.0`、`1.0E-5` vs `0.00001`、
+ * 正指数带 `+` 号且不补零），所以**只在这条哈希路径**做 Dart 兼容渲染，
+ * 持久化格式不变。
+ *
+ * 规则（以 Dart 实测为准）：
+ * - 整数型 double 保留 `.0`（`1.0`）；`-0.0` 原样输出；
+ * - `1e-6 ≤ |x| < 1e21` 用定点，其余用科学计数（小写 `e`，正指数带 `+`）；
+ * - 有效数字取**最短往返**（按 1..17 位有效数字逐级试探），避免 JDK 17 的
+ *   `Double.toString` 在个别值上比 Dart 多一位（如 1e23 → `1e+23`）。
+ */
+internal fun dartJsonNumber(value: Double): String {
+    if (value.isNaN() || value.isInfinite()) return "null"
+    if (value == 0.0) return if (1.0 / value < 0.0) "-0.0" else "0.0"
+    val negative = value < 0.0
+    val abs = Math.abs(value)
+    var digits = "1"
+    var exponent = 0
+    for (precision in 1..17) {
+        val stripped = BigDecimal(abs)
+            .round(MathContext(precision, RoundingMode.HALF_EVEN))
+            .stripTrailingZeros()
+        // 用字符串回解验证「这个位数仍能唯一还原同一个 double」。
+        if (stripped.toString().toDouble() == abs) {
+            digits = stripped.unscaledValue().abs().toString()
+            exponent = digits.length - 1 - stripped.scale()
+            break
+        }
+    }
+    val body = if (exponent >= 21 || exponent <= -7) {
+        buildString {
+            append(digits[0])
+            if (digits.length > 1) append('.').append(digits, 1, digits.length)
+            append('e')
+            if (exponent >= 0) append('+')
+            append(exponent)
+        }
+    } else if (exponent >= 0) {
+        val intLen = exponent + 1
+        if (digits.length >= intLen) {
+            val fraction = if (digits.length > intLen) digits.substring(intLen) else "0"
+            "${digits.substring(0, intLen)}.$fraction"
+        } else {
+            digits + "0".repeat(intLen - digits.length) + ".0"
+        }
+    } else {
+        "0." + "0".repeat(-exponent - 1) + digits
+    }
+    return if (negative) "-$body" else body
 }
 
 // ---------- 用户数据判定（无模型版） ----------

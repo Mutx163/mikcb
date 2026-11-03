@@ -64,6 +64,12 @@ class TimetableStore(
         val quarantinedItems: List<String>,
         /** 本次因整份坏掉而留档用的契约 key；没留档为 null。 */
         val corruptBackupKey: String? = null,
+        /**
+         * 需要写回的清洗后数组串：**整条档案**坏掉且没有条目级损失时才有值。
+         * 由本层按原始字节切除坏记录生成，其余档案的字节原样保留
+         * （Dart `_writeProfilesWithoutLock` 的等价物，:1216-1226）。
+         */
+        val prunedRawProfiles: String? = null,
     )
 
     /** 作息方案数组的解析结果。 */
@@ -113,13 +119,126 @@ class TimetableStore(
         // 不做这一步，条目级损坏在每次冷启动都会重演，而原始字节只活在内存里，
         // 进程一退就永久消失——这正是 Dart 侧最在意的「丢课要能找回」。
         archiveUnparsedItems(parsed.quarantinedItems)
+        // D1：整条档案坏掉（profile 级）且没有条目级损失 → 生成「按原始字节切除坏记录」
+        // 的清洗结果，交由仓储在持锁写回（坏记录已在上一行留档）。
+        // 条目级坏条目**一律不写回**：能救的条目（下次解析器修好就能读）绝不删除。
+        val prunedRaw = if (
+            parsed.stats.hasProfileLevelDrops && !parsed.stats.hasItemLevelDrops
+        ) {
+            pruneTopLevelJsonItems(raw, parsed.droppedProfileIndices.toSet())
+        } else {
+            null
+        }
         return ProfilesLoadResult(
             profiles = parsed.profiles,
             didDrop = parsed.didDrop,
             itemLevelOnlyDrop = parsed.hasItemLevelOnlyDrops,
             quarantinedItems = parsed.quarantinedItems,
+            prunedRawProfiles = prunedRaw,
         )
     }
+
+    /**
+     * 按原始字节切除顶层数组里的坏档案（[dropIndices] 为下标）。
+     *
+     * 只做「切片 + 重新加分隔符」，保留的条目**逐字节不变**——不能用
+     * [MiniJson.encode] 重编：那会把档案内嵌的完整 settings 等不属于本层
+     * 的键/数值格式一并改写（数据冻结区不许这么干）。
+     * 任何无法安全解析的结构（非数组、字符串未闭合、下标越界）一律返回 null，
+     * 调用方放弃写回，宁可不修也不破坏。
+     */
+    fun pruneTopLevelJsonItems(raw: String, dropIndices: Set<Int>): String? {
+        if (dropIndices.isEmpty()) return null
+        val items = splitTopLevelArrayItems(raw) ?: return null
+        if (dropIndices.any { it !in items.indices }) return null
+        val kept = items.filterIndexed { index, _ -> index !in dropIndices }
+        if (kept.isEmpty()) return null
+        return kept.joinToString(",", prefix = "[", postfix = "]")
+    }
+
+    /** 把顶层 JSON 数组切成「每个元素的原文字节」；结构不合法返回 null。 */
+    private fun splitTopLevelArrayItems(raw: String): List<String>? {
+        var i = 0
+        fun skipWs() {
+            while (i < raw.length && raw[i].isWhitespace()) i++
+        }
+        skipWs()
+        if (i >= raw.length || raw[i] != '[') return null
+        i++
+        skipWs()
+        if (i < raw.length && raw[i] == ']') {
+            i++
+            skipWs()
+            return if (i >= raw.length) emptyList() else null
+        }
+        val out = mutableListOf<String>()
+        while (true) {
+            skipWs()
+            val start = i
+            i = scanValueEnd(raw, i) ?: return null
+            val text = raw.substring(start, i).trimEnd()
+            if (text.isEmpty()) return null
+            out.add(text)
+            skipWs()
+            if (i >= raw.length) return null
+            when (raw[i]) {
+                ',' -> i++
+                ']' -> {
+                    i++
+                    skipWs()
+                    return if (i >= raw.length) out else null
+                }
+                else -> return null
+            }
+        }
+    }
+
+    /** 扫描一个 JSON 值的结尾（返回下标后一位）；不合法返回 null。 */
+    private fun scanValueEnd(raw: String, start: Int): Int? {
+        if (start >= raw.length) return null
+        return when (raw[start]) {
+            '"' -> scanStringEnd(raw, start)
+            '{', '[' -> scanContainerEnd(raw, start)
+            else -> {
+                var i = start
+                while (i < raw.length && raw[i] != ',' && raw[i] != ']' && !raw[i].isWhitespace()) i++
+                if (i == start) null else i
+            }
+        }
+    }
+
+    private fun scanStringEnd(raw: String, start: Int): Int? {
+        var i = start + 1
+        while (i < raw.length) {
+            when (raw[i]) {
+                '\\' -> i += 2
+                '"' -> return i + 1
+                else -> i++
+            }
+        }
+        return null
+    }
+
+    private fun scanContainerEnd(raw: String, start: Int): Int? {
+        var depth = 0
+        var i = start
+        while (i < raw.length) {
+            when (raw[i]) {
+                '"' -> {
+                    i = scanStringEnd(raw, i) ?: return null
+                    continue
+                }
+                '{', '[' -> depth++
+                '}', ']' -> {
+                    depth--
+                    if (depth == 0) return i + 1
+                }
+            }
+            i++
+        }
+        return null
+    }
+
 
     /**
      * 把解析失败的原始条目留档到**单个滚动 key**（覆盖写，Dart :1136-1150 同口径）。
@@ -173,6 +292,17 @@ class TimetableStore(
             }
         }
         store.putString(KEY_PROFILES, MiniJson.encode(payload))
+        stampProfilesSchemaVersion()
+    }
+
+    /**
+     * 写回**已经清洗好的原始数组串**（[pruneTopLevelJsonItems] 的产物）。
+     *
+     * 与 [saveProfiles] 的区别：这里不经过模型编解码，保留条目逐字节不变，
+     * 因此不会动档案内嵌的完整 settings。只在整条档案坏掉时使用。
+     */
+    fun saveRawProfiles(raw: String) {
+        store.putString(KEY_PROFILES, raw)
         stampProfilesSchemaVersion()
     }
 

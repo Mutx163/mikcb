@@ -178,6 +178,12 @@ data class TimetableProfile(
             var droppedSettings: Int = 0
             val quarantinedItems: MutableList<String> = mutableListOf()
 
+            /**
+             * 顶层数组里被整条丢弃的档案下标（升序）。存储层据此**按原始字节**
+             * 切除坏记录后写回，其余档案字节不动（见 [TimetableStore.loadProfiles]）。
+             */
+            val droppedProfileIndices: MutableList<Int> = mutableListOf()
+
             val hasItemLevelDrops: Boolean
                 get() = droppedCourses > 0 || droppedTasks > 0 || droppedScheduleItems > 0 ||
                     droppedExams > 0 || droppedSettings > 0
@@ -203,6 +209,8 @@ data class TimetableProfile(
                 get() = stats.hasItemLevelDrops && !stats.hasProfileLevelDrops
 
             val quarantinedItems: List<String> get() = stats.quarantinedItems
+
+            val droppedProfileIndices: List<Int> get() = stats.droppedProfileIndices
         }
 
         /**
@@ -213,9 +221,10 @@ data class TimetableProfile(
         fun parseProfilesPayload(rawProfiles: List<*>): ProfilesParseResult {
             val stats = ParseStats()
             val profiles = mutableListOf<TimetableProfile>()
-            for (item in rawProfiles) {
+            for ((index, item) in rawProfiles.withIndex()) {
                 if (item !is Map<*, *>) {
                     stats.droppedProfiles++
+                    stats.droppedProfileIndices.add(index)
                     quarantineDroppedItem(stats.quarantinedItems, item)
                     continue
                 }
@@ -226,6 +235,7 @@ data class TimetableProfile(
                     )
                 } catch (_: Exception) {
                     stats.droppedProfiles++
+                    stats.droppedProfileIndices.add(index)
                     quarantineDroppedItem(stats.quarantinedItems, item)
                 }
             }

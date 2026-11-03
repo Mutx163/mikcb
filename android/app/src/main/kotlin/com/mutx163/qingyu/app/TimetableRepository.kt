@@ -134,6 +134,11 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         loadedTimeSchemes = store.loadTimeSchemes().schemes
         loadedScheduleDateRules = store.loadScheduleDateRules()
         loadedLocationTimeGroups = store.loadLocationTimeGroups()
+        // D1：整条档案坏掉时把清洗结果写回（坏记录已由 store.loadProfiles 先留档）。
+        // 写回只切除坏记录、其余条目逐字节保留；写入在本对象的锁内完成，与 UI 写入串行。
+        profilesResult.prunedRawProfiles?.let { pruned ->
+            runCatching { store.saveRawProfiles(pruned) }
+        }
     }
 
     /** 盘上档案的解析结果（含「只是条目级损坏」信号，供宿主决定是否提示用户）。 */

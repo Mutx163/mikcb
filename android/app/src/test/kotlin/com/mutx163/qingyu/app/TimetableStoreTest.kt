@@ -166,10 +166,10 @@ class TimetableStoreTest {
         val items = archive["items"] as List<*>
         assertEquals(1, (archive["count"] as Number).toInt())
         assertEquals("留档的是原始条目编码串，不是解析后的半成品", "\"garbage-course-entry\"", items.single())
-        // 时间戳按 Dart 口径是本机 ISO 串（不是 epoch 数字）。
+        // 时间戳按 Dart 口径是本机 ISO 串（不是 epoch 数字）；微秒非零时 Dart 输出 6 位。
         assertTrue(
             "archivedAt 应为 ISO 串，实际 ${archive["archivedAt"]}",
-            Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$""")
+            Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}(\d{3})?$""")
                 .matches(archive["archivedAt"] as String),
         )
         // 归档归归档，原 key 仍然一个字节不变。
