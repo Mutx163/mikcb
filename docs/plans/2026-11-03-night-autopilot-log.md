@@ -292,9 +292,14 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | HEAD | TOTAL | COVERED | UNCOVERED | ENTRIES | 复算时间 |
 |---|---|---|---|---|---|
 | `d7a3fe7d` | **50** | **48** | **2** ❌ | 16 | 2026-11-03 23:45 |
+| `9dd376d2` | **50** | **48** | **2** ❌ | 16 | 2026-11-03 23:49 |
+| `c4587694` | **48** | **48** | **0** ✅ | 16 | 2026-11-03 23:50 |
 
-- **UNCOVERED=2（HEAD 上守卫是红的）**：`main/kotlin/com/mutx163/qingyu/pages/timetable/TimetableGridMetrics.kt:57` 两处 `String.format("%02d:00"/"%02d:45")` 未传 Locale。根因是 **`pages/timetable/` 白名单条目已在 HEAD 删除、但修复代码还没提交**（工作树版本 61-62 行已改 `Locale.ROOT`，属课表线 5 个未提交文件之一）。**这就是「先删登记后修代码」的典型口径差**：工作树看着绿，HEAD 是红的。
+- **`c4587694` 收口**：课表线把 `TimetableGridMetrics.kt:57` 两处兜底时刻改 `Locale.ROOT` 后，UNCOVERED 归零。**`pages/timetable` 条目已消失**（不再需要），**`time_scheme` 条目仍在**（其站点未修，属作用域外）；条目数仍 16（删 timetable 的同时此前拆分为精确到包的登记形态不变）。
+
+- **UNCOVERED=2（两个 HEAD 上守卫都是红的）**：`main/kotlin/com/mutx163/qingyu/pages/timetable/TimetableGridMetrics.kt:57` 两处 `String.format("%02d:00"/"%02d:45")` 未传 Locale。根因是 **`pages/timetable/` 白名单条目已在 HEAD 删除、但修复代码还没提交**（工作树版本 61-62 行已改 `Locale.ROOT`，属课表线 5 个未提交文件之一）。**这就是「先删登记后修代码」的典型口径差**：工作树看着绿，HEAD 是红的。
 - **处置**：不跑门（跑了门 2 必红）；等课表线 5 文件落库后，对新 HEAD 复算应归零（预期 TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16），再跑门 1 → 门 2。
+- **过程事故（留痕）**：`9dd376d2` 的 stat 里出现本日志 18 行改动——原因是协调线 `git add` 后提交时撞上他线 `index.lock`，日志已暂存；他线随后 `commit` 把它一并带入。**内容无误、已复核**。**规矩**：并发共享工作区里，`git add` 与 `commit` 要挨着做；等待锁后重试前先看 `status`，避免把别人暂存内容夹带进提交。
 
 ---
 
@@ -607,6 +612,16 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 5. **中断硬化（`310c2d8b`）**：`TransferInterruptionTest` **6 条**（导入 2、导出 2、局域网收发 2）；`KilledMidway : Error` 绕开 `catch(Exception)` 模拟真杀进程。**途中自纠**：首版「设置在写点被杀」断言失败——实际写序是**核心设置先落、再写 LAN 镜像**，已按真实写序改断言（不是放宽）。
 6. **自验**：L0 sync/transfer **913 例**；门 3 两域 **0 处**。
 
+#### L2（course/timetable）第六批 ✅（2026-11-03 23:55 协调线回填）
+
+- **两笔待推**：`9a5ebf48`（月视图横向翻月，3 文件 +338/−35）、`c4587694`（`TimetableGridMetrics` 兜底时刻 `Locale.ROOT` + 回收白名单条目）。
+
+1. **月视图横向翻月实现要点**：`MonthPagerModel` 提供 `pageOf` / `monthOfPage` / `pageFraction` / `pagerPage` / `cardRowCount`；`HorizontalPager` **2400 页**，每页按**本页行数**算版面；聚焦月由**落定页**驱动（`snapshotFlow settledPage` + 既有纯函数 `chromeDisplayedPage`，**手势/吸附中保持旧页**）；点补位格跳**相邻月页**；跨页卡高取**两页 max**；纵向 `pointerInput` 与 pager **正交**。核对依据**全部带 Dart 行号**（见课表线回报）。
+2. **自验**：L0 timetable **284** / course **224**；门 3 timetable **5 处＝基线**、course **0 处**；`:app:compileItestDebugKotlin` **9m47s 绿**（属 `Itest` 变体证据）。
+3. **流程违规留痕（不改历史）**：课表线对 `LocaleFormatGuardTest` 白名单的**删行被 sync 线 `5f62ded8` 顺带提交**（疑似 `git add -A`）。**内容正确**，但**归属失真**。**规矩**：**只用显式路径提交，禁 `git add -A` / `git add .` / `git commit -a`**；证据口径是「一笔提交里混进别人域文件会让归属失真」。已让 sync 线核对并回报文件清单。
+4. **白名单复算（HEAD `c4587694`，23:50）**：**TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16**；**`pages/timetable` 条目已消失**、**`time_scheme` 条目仍在**（其站点未修，属作用域外）。
+5. **工作区状态**：课表域已清，**只剩 statistics 线改动**（`CourseStatisticsModel`/`StatsInfoModels`/`SemesterProgressRatio` 等）；**已在只读 worktree 开跑门 1 → 门 2**。
+
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
 - **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
@@ -709,9 +724,11 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `0533bc8f` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进**（未跑，不沿用） |
 | `c6e3ac33` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `4fff617c`**（未跑，不沿用） |
 | `4fff617c` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `d7a3fe7d`**（未跑，不沿用） |
-| `d7a3fe7d` | 门 1 / 门 2 | ⛔ **按住** | — | — | **守卫复算 UNCOVERED=2**（`TimetableGridMetrics.kt:57` ×2，课表线删登记但修复未提交）→ **门 2 必红，不硬跑**；等课表 5 文件落库、新 HEAD 复算 UNCOVERED=0 后跑门 1 → 门 2 |
+| `d7a3fe7d` | 门 1 / 门 2 | ⛔ **按住** | — | — | **守卫复算 UNCOVERED=2**（`TimetableGridMetrics.kt:57` ×2），HEAD 推进后未跑 |
+| `9dd376d2` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `c4587694`**（未跑，不沿用） |
+| `c4587694` | 门 1 / 门 2 | ▶️ **已开跑** | — | — | **当前 HEAD**；守卫复算 **TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16**，课表域已清（工作区仅剩 statistics 线改动）→ 在只读 worktree 跑门 1 → 门 2 |
 
-**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `d7a3fe7d`，且**该 HEAD 守卫复算 UNCOVERED=2**（课表修复未提交），**必须等课表 5 文件落库、复算归零后再重跑门 1 → 门 2**。**编译口径**：L1 的 locale 改动前 `:app:compileItestDebugKotlin` 12m12s 绿属**改动前证据**；改动后复跑仍在排队，**当前不声明编译通过**。
+**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `c4587694`，**守卫复算 UNCOVERED=0**，**正在该 HEAD 的只读 worktree 上跑门 1 → 门 2**（结果另行回填）。**编译口径**：L1 的 locale 改动前 `:app:compileItestDebugKotlin` 12m12s 绿属**改动前证据**；改动后复跑仍在排队，**当前不声明编译通过**。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
