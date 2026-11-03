@@ -11,15 +11,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
+import com.mutx163.qingyu.components.glass.QingyuGlassSurface
+import com.mutx163.qingyu.core.GlassSpec
+import com.mutx163.qingyu.core.GlassSpecResolver
+import com.mutx163.qingyu.core.GlassTuning
+import com.mutx163.qingyu.core.TopBarGlassBand
 import com.mutx163.qingyu.pages.shell.ShellRootEntryRule
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -29,13 +43,10 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
-import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.progressiveTextureBlurEffect
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -193,7 +204,7 @@ fun QingyuPageScaffold(
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            QingyuBlurredTopBar(backdrop = backdrop, dark = dark) {
+            QingyuBlurredTopBar(backdrop = backdrop, dark = dark, scrollBehavior = scrollBehavior) {
                 // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
                 // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
                 // 宽屏档的大标题换成单行小标题（demo AdaptiveTopAppBar 的等价分支），
@@ -264,8 +275,8 @@ fun QingyuPageScaffold(
                 // 页面主题桥兜住深色：壳用的是无参 MiuixTheme{ }（配色恒亮），
                 // 不在这里兜一层，深色下卡片仍是白底而正文取白字 → 内容不可读。
                 QingyuPageTheme {
-                    // 弹窗玻璃（GlassOverlayDialog）与顶栏共用这条录像带采样页面内容，
-                    // 不另录第二份图层；backdrop 为 null（能力门控关闭）时玻璃自动降级实心。
+                    // 弹窗材质（本地 fork 的 DialogContentLayout 玻璃分支）与顶栏共用这条录像带
+                    // 采样页面内容，不另录第二份图层；backdrop 为 null 时消费方自动降级实心。
                     CompositionLocalProvider(LocalQingyuPageBackdrop provides backdrop) {
                         QingyuPageContentScope(innerPadding, scrollBehavior).content()
                     }
@@ -312,6 +323,26 @@ internal object QingyuTopBarBlur {
 private val QingyuTopBarGradient: ProgressiveBlur =
     ProgressiveBlur.Top.copy(curve = QingyuTopBarBlur.Curve)
 
+/**
+ * 顶栏带的固定玻璃口径（不读用户设置，与 Flutter 原版锁死的那一档一致）。
+ *
+ * 走统一 spec 解析：同一份 [GlassTuning] 在任何表面都得到同一份 [GlassSpec]，
+ * 顶栏只是「旋钮值固定」而不是「另一套实现」。
+ * 叠色由 `onDrawSurface` 单独画，所以这里 `tintAlpha = 0`；顶栏不做折射、不做高光。
+ */
+private val QingyuTopBarGlassSpec: GlassSpec = GlassSpecResolver.resolve(
+    GlassTuning(
+        blurSigmaDp = QingyuTopBarBlur.MaxRadiusDp,
+        tintAlpha = 0f,
+        vibrancy = 1f,
+        rimStrength = 0f,
+        rimWidthDp = 0f,
+        refractionBandDp = 0f,
+        refractionAmountDp = 0f,
+        dispersion = 0f,
+    ),
+)
+
 private fun qingyuTopBarTint(dark: Boolean): Color =
     if (dark) {
         Color(QingyuTopBarBlur.DarkTintArgb).copy(alpha = QingyuTopBarBlur.DarkTintAlpha)
@@ -321,15 +352,20 @@ private fun qingyuTopBarTint(dark: Boolean): Color =
 
 /**
  * 顶栏渐进模糊：官方 `BlurredBar` 的等价物（`PageUtils.kt:126-168`），但接的是官方
- * **渐进档**（`drawBackdrop(progressiveGradient = …) + progressiveTextureBlurEffect`）。
+ * **渐进档**，且渲染走全站唯一实现 [QingyuGlassSurface]。
  *
- * 渐变自顶边满强度（[QingyuTopBarBlur.MaxRadiusDp]）向下连续衰减，到顶栏盒底正好为 0，
- * 所以顶栏与正文交界处没有一条硬边；叠色是另一层线性 scrim（见 [QingyuTopBarBlur]），
- * 也一并淡到透明。
+ * ## 为什么不再用 `matchParentSize()`（2026-11-03 真机抖动修复）
  *
- * ⚠️ `progressiveGradient` 不能漏传：漏了会让 draw 路径**静默**退回单级均匀模糊
- * （不报错，只是清晰端不再真正锐利）。它和 effects 里的 `gradient` 应当用同一份，
- * 否则两套口径会漂——实际驱动 ramp 的是 `progressiveGradient` 这一份。
+ * 大标题 [TopAppBar] 的高度 = 常量高度 - `heightOffset`，`heightOffset` 由滚动逐帧写入。
+ * 旧实现让模糊层跟顶栏同高，于是模糊层的**采样裁剪尺寸**每帧变：
+ *
+ * - miuix 的 `progressiveTextureBlurEffect` 把 `paddedW/paddedH` 当缓存键，尺寸一变就
+ *   重建 RenderEffect（原生分配 + uniform 上传）；
+ * - 多级合成层的 `recordLayer(size=…)` 尺寸一变就重新分配纹理；
+ *
+ * 真机上读起来就是「糊的东西一直在颤」。现在改为 [TopBarGlassBand] 的**离散两档**：
+ * 档内高度恒定（模糊层尺寸、σ、采样矩形都不变），跨 0.5 才换档；外层只用当前顶栏
+ * 高度做裁剪，裁剪矩形每帧变但**不触发模糊层重建**。
  *
  * [backdrop] 为 null 时退化成普通 `Box`，与改动前的布局完全一致。
  */
@@ -337,37 +373,59 @@ private fun qingyuTopBarTint(dark: Boolean): Color =
 private fun QingyuBlurredTopBar(
     backdrop: LayerBackdrop?,
     dark: Boolean,
+    scrollBehavior: ScrollBehavior?,
     content: @Composable () -> Unit,
 ) {
-    Box {
-        if (backdrop != null) {
-            val tint = qingyuTopBarTint(dark)
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { RectangleShape },
-                        effects = {
-                            progressiveTextureBlurEffect(
-                                blurRadiusX = QingyuTopBarBlur.MaxRadiusDp,
-                                gradient = QingyuTopBarGradient,
-                                // 叠色单独画（见 [QingyuTopBarBlur]），这里不留混合层。
-                                colors = BlurColors(),
-                            )
-                        },
-                        progressiveGradient = QingyuTopBarGradient,
-                        onDrawSurface = {
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(tint, tint.copy(alpha = 0f)),
-                                ),
-                            )
-                        },
-                    ),
-            )
+    var measuredHeightPx by remember { mutableIntStateOf(0) }
+    val state = scrollBehavior?.state
+    // 档内恒定：只读 state 的 float 不会让子树每帧重组（derivedStateOf 只在结果变化时通知）。
+    val bandHeightPx by remember(state) {
+        derivedStateOf {
+            when {
+                measuredHeightPx <= 0 -> 0
+                state == null -> measuredHeightPx
+                else -> TopBarGlassBand.resolveBandHeightPx(
+                    currentHeightPx = measuredHeightPx.toFloat(),
+                    heightOffsetPx = state.heightOffset,
+                    heightOffsetLimitPx = state.heightOffsetLimit,
+                )
+            }
         }
-        content()
+    }
+    Layout(
+        content = {
+            if (backdrop != null) {
+                val tint = qingyuTopBarTint(dark)
+                QingyuGlassSurface(
+                    backdrop = backdrop,
+                    spec = QingyuTopBarGlassSpec,
+                    shape = RectangleShape,
+                    progressive = QingyuTopBarGradient,
+                    onDrawSurface = {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(tint, tint.copy(alpha = 0f)),
+                            ),
+                        )
+                    },
+                )
+            }
+            Box(Modifier.onSizeChanged { measuredHeightPx = it.height }) { content() }
+        },
+        modifier = Modifier.clipToBounds(),
+    ) { measurables, constraints ->
+        val contentPlaceable = measurables.last().measure(constraints)
+        val width = contentPlaceable.width.coerceAtLeast(constraints.minWidth)
+        val height = contentPlaceable.height
+        val blurPlaceable = if (backdrop != null && bandHeightPx > 0) {
+            measurables.first().measure(Constraints.fixed(width, bandHeightPx))
+        } else {
+            null
+        }
+        layout(width, height) {
+            blurPlaceable?.place(0, 0)
+            contentPlaceable.place(0, 0)
+        }
     }
 }
 

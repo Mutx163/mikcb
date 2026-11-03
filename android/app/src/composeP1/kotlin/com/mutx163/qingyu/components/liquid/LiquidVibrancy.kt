@@ -20,11 +20,14 @@ import top.yukonga.miuix.kmp.blur.colorControls
  *
  * 1.5 是官方 demo 的取值（Kyant 的 `vibrancy()` 轻量替代），不要随手改：
  * 再高会在高饱和壁纸上出现色块，再低就退回"发灰"。
+ *
+ * @param saturation 饱和度倍数。1 = 原样（等价不做）。默认 1.5 是历史口径；
+ *   统一玻璃件按 `GlassSpec.vibrancy` 传入，让「一处参数一处解释」。
  */
-fun BackdropEffectScope.vibrancy() {
+fun BackdropEffectScope.vibrancy(saturation: Float = 1.5f) {
     colorControls(
         brightness = 0f,
         contrast = 1f,
-        saturation = 1.5f,
+        saturation = saturation,
     )
 }

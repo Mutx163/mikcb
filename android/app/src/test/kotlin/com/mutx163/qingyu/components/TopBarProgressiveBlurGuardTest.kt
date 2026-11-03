@@ -70,16 +70,37 @@ class TopBarProgressiveBlurGuardTest {
         .map { it.substringBefore("//") }
         .joinToString("\n")
 
+    private fun glassSurfaceSource(): String {
+        var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
+        while (dir != null) {
+            val candidate = File(
+                dir,
+                "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt",
+            )
+            if (candidate.isFile) return candidate.readText()
+            val direct = File(
+                dir,
+                "app/src/composeP1/kotlin/com/mutx163/qingyu/components/glass/QingyuGlassSurface.kt",
+            )
+            if (direct.isFile) return direct.readText()
+            dir = dir.parentFile
+        }
+        throw AssertionError(
+            "找不到 QingyuGlassSurface.kt —— 守卫无法验证，按失败处理。" +
+                "当前工作目录：${System.getProperty("user.dir")}",
+        )
+    }
+
     @Test
     fun `top bar uses progressive blur wiring, not uniform textureBlur`() {
         val code = codeOnly(scaffoldSource())
         assertTrue(
-            "顶栏必须走官方渐进档：缺少 progressiveTextureBlurEffect",
-            code.contains("progressiveTextureBlurEffect("),
+            "顶栏必须走全站唯一玻璃件：缺少 QingyuGlassSurface(",
+            code.contains("QingyuGlassSurface("),
         )
         assertTrue(
-            "progressiveGradient 必须显式传给 drawBackdrop（漏传会静默退回单级模糊）",
-            code.contains("progressiveGradient = QingyuTopBarGradient"),
+            "顶栏必须把渐进曲线交给共享件（漏传会静默退回单级模糊）",
+            code.contains("progressive = QingyuTopBarGradient"),
         )
         assertTrue(
             "渐变必须是 ProgressiveBlur.Top + 原版曲线",
@@ -92,6 +113,29 @@ class TopBarProgressiveBlurGuardTest {
         assertFalse(
             "顶栏退回了均匀模糊：渐进档的顶强底清与叠色渐变都会消失",
             Regex("""(?<!progressive)\.textureBlur\s*\(""").containsMatchIn(code),
+        )
+        assertFalse(
+            "顶栏不得绕过共享件自己拼玻璃链（drawBackdrop / blur / lens 只许出现在 QingyuGlassSurface）",
+            code.contains("drawBackdrop(") ||
+                Regex("""\blur\s*\(""").containsMatchIn(code) ||
+                code.contains("progressiveTextureBlurEffect("),
+        )
+    }
+
+    @Test
+    fun `shared glass surface owns the progressive wiring`() {
+        val code = codeOnly(glassSurfaceSource())
+        assertTrue(
+            "共享件必须调官方渐进档",
+            code.contains("progressiveTextureBlurEffect("),
+        )
+        assertTrue(
+            "共享件必须把同一份 gradient 同时交给 effects 与 progressiveGradient（漏传会静默退回单级模糊）",
+            code.contains("gradient = progressive") && code.contains("progressiveGradient = progressive"),
+        )
+        assertTrue(
+            "共享件必须按 GlassSpec 解释参数，不许出现第二套口径",
+            code.contains("spec.blurSigmaDp") && code.contains("spec.refractionBandDp"),
         )
     }
 
