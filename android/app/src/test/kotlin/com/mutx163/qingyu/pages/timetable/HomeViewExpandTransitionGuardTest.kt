@@ -38,6 +38,14 @@ class HomeViewExpandTransitionGuardTest {
         stripKotlinComments(readAndroidSource(MOTION_PATH))
     }
 
+    private val flightSource: String by lazy {
+        stripKotlinComments(readAndroidSource(FLIGHT_PATH))
+    }
+
+    private val flightCardSource: String by lazy {
+        stripKotlinComments(readAndroidSource(FLIGHT_CARD_PATH))
+    }
+
     @Test
     fun `展开路径不得出现自研转场 API`() {
         for (source in listOf(weekPageSource, motionSource)) {
@@ -170,6 +178,100 @@ class HomeViewExpandTransitionGuardTest {
     }
 
     // ------------------------------------------------------------------
+    // 摘要卡飞行守卫（2026-11-03，阶段 A）
+    //
+    // 用户口径「还是很恶心的展开效果」：只做圆角窗口裁切 = 一块窗口从选中列擦开。
+    // Flutter 最新那套的主体是**卡片自己从格位飞到落点**。这组判据钉住「飞行这一刀
+    // 不能退回纯裁切」，也钉住「落点/起点不许写死比例」。
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `摘要卡飞行必须调用纯几何与节奏函数`() {
+        assertTrue(
+            "摘要卡飞行的插值/圆角/文案节奏必须在 HomeViewExpandFlight 的纯函数里——" +
+                "渲染层自己算，单测就钉不住「t=0 在格位、t=1 在卡位」。",
+            flightSource.contains("fun homeViewSummaryFlightRect(") &&
+                flightSource.contains("fun homeViewSummaryStartCell(") &&
+                flightSource.contains("fun homeViewSummaryFlightCornerDp("),
+        )
+        assertTrue(
+            "飞行卡没有调用 homeViewSummaryFlightRect——它自己在拼矩形，" +
+                "等于绕开了上一条判据。",
+            flightCardSource.contains("homeViewSummaryFlightRect("),
+        )
+        assertTrue(
+            "飞行卡没有调用 homeViewSummaryFlightCornerDp——圆角另算了。",
+            flightCardSource.contains("homeViewSummaryFlightCornerDp("),
+        )
+        assertFalse(
+            "飞行卡里出现了自己的 lerp——插值公式只能有一份（HomeViewExpandFlight）。",
+            flightCardSource.contains("private fun lerp") ||
+                Regex("""\blerp\(""").containsMatchIn(flightCardSource),
+        )
+    }
+
+    @Test
+    fun `飞行起点与终点必须来自实测`() {
+        assertTrue(
+            "周视图页没有调用 homeViewSummaryStartCell——起点没按星期栏实测换算。",
+            weekPageSource.contains("homeViewSummaryStartCell("),
+        )
+        assertTrue(
+            "周视图页没有量星期栏（flightHeaderBounds）——起点会变成写死常量。",
+            weekPageSource.contains("flightHeaderBounds"),
+        )
+        assertTrue(
+            "周视图页没有量真摘要卡（flightSummaryBounds）——终点必须实测，" +
+                "卡片高度随考试/进行中/冲突变化，算不出来。",
+            weekPageSource.contains("flightSummaryBounds"),
+        )
+        assertTrue(
+            "周视图页没有把测量值换算到内容区局部坐标（positionInRoot）——" +
+                "起点与终点会落在不同的坐标系里，飞行轨迹整体偏移。",
+            weekPageSource.contains("positionInRoot()"),
+        )
+    }
+
+    @Test
+    fun `真摘要卡在飞行期间必须在绘制阶段隐藏`() {
+        assertTrue(
+            "找不到 `dayVisible && dayExpand.value < 0.999f` 的绘制守卫——" +
+                "真摘要卡会从起点一路被窗口裁到终点，读起来还是擦除。",
+            weekPageSource.contains("dayVisible && dayExpand.value < 0.999f"),
+        )
+        assertTrue(
+            "摘要卡的隐藏修饰器没有挂在 drawWithContent 里——在组合阶段读进度会逐帧重组整棵页面。",
+            weekPageSource.contains("summaryFlightModifier") &&
+                weekPageSource.contains(".drawWithContent {"),
+        )
+        assertTrue(
+            "dayContent 没收到 summaryFlightModifier——壳拿不到测量/隐藏修饰器，" +
+                "飞行终点量不到、真卡也会和飞行卡一起画出来。",
+            weekPageSource.contains("dayContent(0.dp, summaryFlightModifier)"),
+        )
+    }
+
+    @Test
+    fun `飞行层必须是裁切盒子的兄弟且排在它之后`() {
+        val dayContentIndex = weekPageSource.indexOf("dayContent(0.dp, summaryFlightModifier)")
+        val flightLayerIndex = weekPageSource.indexOf("DayViewSummaryFlightLayer(")
+        assertTrue(
+            "找不到 DayViewSummaryFlightLayer 调用——飞行层被删了（退回纯窗口擦除）。",
+            flightLayerIndex >= 0,
+        )
+        assertTrue(
+            "飞行层排在 dayContent 之前——它会被裁切盒子盖住；" +
+                "起点在星期栏里（内容区局部 y 为负），必须作为裁切盒子的兄弟、排在它后面才画得上去。",
+            flightLayerIndex > dayContentIndex,
+        )
+        assertTrue(
+            "飞行层没有 matchParentSize——它的坐标系必须和内容区一致（起点/终点都按内容区局部坐标算）。",
+            weekPageSource.contains("DayViewSummaryFlightLayer(") &&
+                weekPageSource.substring(flightLayerIndex).contains("Modifier.matchParentSize()"),
+        )
+    }
+
+    // ------------------------------------------------------------------
     // 判据工具（与 CourseOverviewSortPopupGuardTest 同一套路）
     // ------------------------------------------------------------------
 
@@ -291,5 +393,9 @@ class HomeViewExpandTransitionGuardTest {
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableWeekPage.kt"
         const val MOTION_PATH =
             "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/HomeViewExpandMotion.kt"
+        const val FLIGHT_PATH =
+            "android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/HomeViewExpandFlight.kt"
+        const val FLIGHT_CARD_PATH =
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/day/DayViewSummaryFlight.kt"
     }
 }

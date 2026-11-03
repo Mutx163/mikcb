@@ -308,6 +308,13 @@ data class DayViewOverlayBinding(
      * null = 独立页面 / 页面索引进入（没有宿主可借），仍按旧路径自己 `load()`。
      */
     val settingsModel: TimetableSettingsModel? = null,
+    /**
+     * 摘要卡飞行的**测量 + 飞行期间隐藏**修饰器（2026-11-03，阶段 A）。
+     *
+     * 由首页周视图页生成（它持有展开层坐标系与两处实测值），原样挂到日视图的
+     * 真摘要卡上。null / 默认 = 独立页面（没有首页展开态）⇒ 行为不变。
+     */
+    val summaryModifier: Modifier = Modifier,
 )
 
 /**
@@ -805,6 +812,7 @@ fun ShellPageContent(
             val taskController = remember(repository) { TaskListController(repository) }
             Box(modifier = Modifier.fillMaxSize()) {
             DayViewPage(
+                summaryModifier = dayOverlay?.summaryModifier ?: Modifier,
                 initialWeek = dayOverlay?.initialWeek ?: snapshot.currentWeek.coerceAtLeast(1),
                 // 有显式意图（点星期栏某天）就用它；否则回到**上次看的那一天**，与 Dart
                 // `_restoreViewStateFromProvider`（`timetable_screen.dart:862-890`）同口径。

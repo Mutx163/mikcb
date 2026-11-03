@@ -80,6 +80,13 @@ fun DayViewScrollContent(
     bottomInset: Dp = 64.dp,
     /** 空态那块的壁纸亮度（正文带）；null = 没壁纸，保持主题原色。 */
     wallpaperLuminance: Double? = null,
+    /**
+     * 真摘要卡的附加修饰器（首页展开态的飞行测量 + 飞行期间不画）。
+     *
+     * 挂**卡本身**而不是外面的 stickyHeader 盒子：飞行终点要的是卡片四边，
+     * 盒子还含 12dp 下呼吸间距，量成盒子会让落点整体偏下 12dp。
+     */
+    summaryModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(
@@ -113,6 +120,7 @@ fun DayViewScrollContent(
                     onClose = onCloseToWeekView,
                     material = material,
                     glassBackdrop = glassBackdrop,
+                    modifier = summaryModifier,
                 )
             }
         }

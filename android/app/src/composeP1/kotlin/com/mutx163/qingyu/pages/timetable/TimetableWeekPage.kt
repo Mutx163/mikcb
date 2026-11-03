@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.provider.Settings
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -33,7 +32,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,6 +47,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -78,8 +79,9 @@ import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.timetable.day.DayViewDataAssembler
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
-import com.mutx163.qingyu.platform.PerfProbe
+import com.mutx163.qingyu.pages.timetable.day.DayViewSummaryFlightLayer
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -242,7 +244,7 @@ fun TimetableWeekPage(
      * 参数是「首页顶栏玻璃带的高度」：日视图在展开窗口里只画正文，顶栏 / 星期栏
      * 由本页画（与周视图共用一条带），正文从这条高度往下开始。
      */
-    dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
+    dayContent: (@Composable (contentTop: Dp, summaryModifier: Modifier) -> Unit)? = null,
     /** 用户设置的页面转场速度（1.0 = 原速；周→日展开与其它转场同一口径缩放）。 */
     transitionSpeed: Double = 1.0,
     /**
@@ -353,13 +355,8 @@ fun TimetableWeekPage(
     // 注意与 `dayVisible` 的分工：dayMounted 决定「组合/测量」，dayVisible 决定
     // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
     val dayMounted = dayVisible || dayLayerReady
-    // ── 临时打点（量完即删）：展开起手帧耗时 + 动画期重组次数 ──
-    // 门与 `PerfProbe` 同一道（debug / bench / debuggable 才记录），
-    // release 只多一次布尔判断。取值口径见文件末尾 [DayExpandTrace]。
-    val dayExpandTraceOn = remember(resolverContext) { PerfProbe.isEnabled(resolverContext) }
     LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
-        if (dayExpandTraceOn) DayExpandTrace.begin(System.nanoTime())
         if (dayExpandReducedMotion) {
             // 降级：两个方向都直接落定（Dart `controller.value = 1/0` 同口径）。
             // snap 后 value 恰为 1.0/0.0，下方的落定判据（dayVisible + `value < 0.999f`
@@ -371,7 +368,6 @@ fun TimetableWeekPage(
                 animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
             )
         }
-        if (dayExpandTraceOn) DayExpandTrace.finish(expandTarget)
     }
 
     // 收起落定后把周 pager 对到「日视图刚才看的那一周」：否则收起会跳回进日视图前的旧周。
@@ -477,6 +473,43 @@ fun TimetableWeekPage(
     // 旧实现写成 `coerceAtLeast(12)`，用户把作息表配成 10 节时 Compose 仍画 12 行、Dart 只画 10 行。
     val sectionCount = sectionTimes.size
     val semesterStart = settings.semesterStartDate?.toLocalDate()
+
+    // ── 摘要卡飞行（阶段 A，2026-11-03）────────────────────────────────────
+    //
+    // 用户口径「还是很恶心的展开效果」：只做圆角窗口裁切，读起来是**一块窗口从
+    // 选中列擦开**，不是 Flutter 原版的「卡片自己飞过去」。这一步把摘要卡那一颗
+    // 补上（课程卡逐卡飞行是阶段 B）。
+    //
+    // 起点**算**：星期格 = 时间列宽 + 下标 × 日宽，纯布局产物。
+    // 终点**量**：摘要卡高度随内容变（考试 / 进行中 / 冲突），算不出来。
+    // 两处都在**内容区局部坐标**里比较（相减同一个根原点），不写死任何比例。
+    var flightContentOrigin by remember { mutableStateOf<Offset?>(null) }
+    var flightHeaderBounds by remember { mutableStateOf<Rect?>(null) }
+    var flightSummaryBounds by remember { mutableStateOf<Rect?>(null) }
+    val flightDate = WeekdayHeaderMetrics.dateForWeekDay(
+        semesterStartDate = semesterStart,
+        week = selectedWeek,
+        dayOfWeek = selectedDayOfWeek,
+    )
+    val flightWeekdayLabel = TimetableStrings.formatWeekday(selectedDayOfWeek)
+    val flightCellDateLabel = flightDate?.let { WeekdayHeaderMetrics.dateText(it) }.orEmpty()
+    val flightTitleLabel = DayViewDataAssembler.dateLabel(flightDate, selectedDayOfWeek)
+    val flightMetaLabel = if (flightDate != null && flightDate == todayDate) {
+        "${DayViewStrings.todayTimetableTitle.zh} · ${DayViewStrings.weekLabel(selectedWeek)}"
+    } else {
+        DayViewStrings.weekLabel(selectedWeek)
+    }
+    // 真摘要卡在飞行期间**不画**（否则一张卡从起点一路被裁到终点，读起来还是擦除）。
+    // 读进度必须在 **draw 阶段**：drawWithContent 的 lambda 只在绘制时执行，
+    // 不会触发组合，动画期间不额外重组页面。
+    val summaryFlightModifier = remember {
+        Modifier
+            .onGloballyPositioned { coords -> flightSummaryBounds = coords.boundsInRoot() }
+            .drawWithContent {
+                if (dayVisible && dayExpand.value < 0.999f) return@drawWithContent
+                drawContent()
+            }
+    }
     // 单节课提醒键（`courseId|yyyy-MM-dd`）：课卡右上角铃铛的唯一数据源
     //（`core/TimetableSettings.classReminders`，随仓储快照进来）。
     val reminderKeys = remember(settings.classReminders) {
@@ -603,6 +636,11 @@ fun TimetableWeekPage(
                     // 日视图展开时改跟「日视图正在看的那一周/那一天」：日视图可以连续翻周，
                     // 而周 pager 停在下面不动，继续读 displayedPage 会把星期栏钉在旧周上。
                     TimetableWeekdayHeader(
+                        // 摘要卡飞行的**起点**要从这条栏实测：格子宽高与顶边都由它给出，
+                        // 不靠常量反推（栏高以后改 38/42dp 时飞行起点自动跟着走）。
+                        modifier = Modifier.onGloballyPositioned {
+                            flightHeaderBounds = it.boundsInRoot()
+                        },
                         week = if (dayVisible) selectedWeek else displayedPage + 1,
                         currentWeek = currentWeek,
                         todayDate = todayDate,
@@ -642,7 +680,10 @@ fun TimetableWeekPage(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    // 飞行层与日视图层的坐标原点（只量不画）：两者的测量值都减去它，
+                    // 换成「内容区局部坐标」。布局稳定，动画期间不会重测。
+                    .onGloballyPositioned { flightContentOrigin = it.positionInRoot() },
             ) {
                 HorizontalPager(
                     state = pagerState,
@@ -657,7 +698,6 @@ fun TimetableWeekPage(
                             if (!dayVisible || dayExpand.value < 0.999f) drawContent()
                         },
                 ) { page ->
-                    if (dayExpandTraceOn) SideEffect { DayExpandTrace.recompose() }
                     WeekPageContent(
                         pageWeek = page + 1,
                         semesterStart = semesterStart,
@@ -781,7 +821,6 @@ fun TimetableWeekPage(
                             .drawWithContent {
                                 // 隐藏（收起播完 / 预热）时只保留组合与测量，不绘制。
                                 if (!dayVisible) return@drawWithContent
-                                if (dayExpandTraceOn) DayExpandTrace.firstFrame(System.nanoTime())
                                 val progress = dayExpand.value
                                 val window = homeViewExpandWindow(
                                     progress = progress,
@@ -832,9 +871,54 @@ fun TimetableWeekPage(
                                 .graphicsLayer { alpha = 1f }
                                 .inertUnless(dayVisible),
                         ) {
-                            if (dayExpandTraceOn) SideEffect { DayExpandTrace.recompose() }
-                            dayContent(0.dp)
+                            // summaryModifier：真摘要卡在飞行期间不画 + 把落点实测回去。
+                            dayContent(0.dp, summaryFlightModifier)
                         }
+                    }
+                }
+
+                // ── 摘要卡飞行层（阶段 A，2026-11-03）─────────────────────────
+                // ⚠️ 必须是裁切盒子的**兄弟**、且排在它后面：父链没有 clip，
+                // 飞行起点在星期栏里（内容区局部 y 为负），只有兄弟层才画得上去；
+                // 放进裁切盒子里会被 `clipToBounds` 连同窗口一起裁掉。
+                if (dayContent != null) {
+                    val origin = flightContentOrigin
+                    val headerBounds = flightHeaderBounds
+                    val summaryBounds = flightSummaryBounds
+                    if (origin != null && headerBounds != null && summaryBounds != null) {
+                        val startCell = homeViewSummaryStartCell(
+                            header = HomeViewFlightRect(
+                                left = headerBounds.left - origin.x,
+                                top = headerBounds.top - origin.y,
+                                right = headerBounds.right - origin.x,
+                                bottom = headerBounds.bottom - origin.y,
+                            ),
+                            timeColumnWidth = with(density) {
+                                style.timeColumnWidthDp.dp.toPx()
+                            },
+                            visibleDayCount = visibleDays.size,
+                            selectedDayIndex = visibleDays.indexOf(selectedDayOfWeek),
+                        )
+                        val endCell = HomeViewFlightRect(
+                            left = summaryBounds.left - origin.x,
+                            top = summaryBounds.top - origin.y,
+                            right = summaryBounds.right - origin.x,
+                            bottom = summaryBounds.bottom - origin.y,
+                        )
+                        DayViewSummaryFlightLayer(
+                            progress = { dayExpand.value },
+                            visible = dayVisible,
+                            startCell = startCell,
+                            endCell = endCell,
+                            weekdayLabel = flightWeekdayLabel,
+                            cellDateLabel = flightCellDateLabel,
+                            titleLabel = flightTitleLabel,
+                            metaLabel = flightMetaLabel,
+                            dark = dark,
+                            material = materialSpec,
+                            glassBackdrop = cardGlassSource,
+                            modifier = Modifier.matchParentSize(),
+                        )
                     }
                 }
             }
@@ -1125,52 +1209,4 @@ private fun Context.findHostActivity(): Activity? {
         current = current.baseContext
     }
     return null
-}
-
-/**
- * 临时打点（量完即删，2026-11-03 日↔周卡顿定位）：只回答两个数字。
- *
- * | 数字 | 从哪一刻到哪一刻 | 说明 |
- * |---|---|---|
- * | `firstFrame` | `animateTo` 启动 → 移动层画出第一帧 | 这一段包含目标视图的首次 measure/layout 与首帧绘制，就是用户说的「起手卡一下」 |
- * | `recompositions` | 动画期间两层内容根组的 `SideEffect` 次数 | 进度只在 draw 阶段读，正常应停在 0~1；逐帧上涨说明有人把进度读回了组合阶段 |
- *
- * 记录门与 [PerfProbe.isEnabled] 同一道（debug / bench / debuggable 才记录），
- * release 只多一次布尔判断。删掉本对象时把三处调用点（`LaunchedEffect`、
- * 两个内容层的 `SideEffect`、展开层 draw 块）一并删掉。
- */
-private object DayExpandTrace {
-    private const val TAG = "[day-expand-perf]"
-
-    @Volatile private var active = false
-    @Volatile private var startNanos = -1L
-    @Volatile private var firstFrameNanos = -1L
-    @Volatile private var recompositions = 0
-
-    fun begin(nowNanos: Long) {
-        startNanos = nowNanos
-        firstFrameNanos = -1L
-        recompositions = 0
-        active = true
-    }
-
-    fun recompose() {
-        if (active) recompositions++
-    }
-
-    fun firstFrame(nowNanos: Long) {
-        if (active && firstFrameNanos < 0L) firstFrameNanos = nowNanos
-    }
-
-    fun finish(target: Float) {
-        if (!active) return
-        active = false
-        val firstFrameMs = if (firstFrameNanos < 0L) -1f
-        else ((firstFrameNanos - startNanos) / 100_000L).toFloat() / 10f
-        val totalMs = ((System.nanoTime() - startNanos) / 100_000L).toFloat() / 10f
-        Log.i(
-            TAG,
-            "target=$target firstFrameMs=$firstFrameMs totalMs=$totalMs recompositions=$recompositions",
-        )
-    }
 }

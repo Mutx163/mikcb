@@ -817,7 +817,9 @@ fun TimetableWithCourseActions(
         // 日视图的**内容**仍由 `c3.day` 那一条分支提供（数据装配、点击落点都只有一份）。
         // 这里只是把同一个页面塞进首页的展开窗口里，并告诉它「顶栏/星期栏已由周视图画好，
         // 你的正文从 contentTop 开始」——避免两套壳重叠、也避免再抄一份 200 行接线。
-        dayContent = { contentTopInset ->
+        // 第二个参数是摘要卡飞行的测量/隐藏修饰器（阶段 A）：由周视图页生成，
+        // 壳原样挂到日视图的真摘要卡上（见 `DayViewOverlayBinding.summaryModifier`）。
+        dayContent = { contentTopInset, summaryModifier ->
             ShellPageContent(
                 pageId = "c3.day",
                 onBack = {},
@@ -825,6 +827,7 @@ fun TimetableWithCourseActions(
                 onOpenPage = onNavigate,
                 dayOverlay = DayViewOverlayBinding(
                     contentTopInset = contentTopInset,
+                    summaryModifier = summaryModifier,
                     initialWeek = wiring.homeSelectedWeek,
                     initialDayOfWeek = wiring.homeSelectedDayOfWeek,
                     requestedWeek = wiring.homeSelectedWeek,

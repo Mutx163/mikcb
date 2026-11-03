@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.pages.shell.HomeNavIcons
@@ -93,8 +94,14 @@ fun TimetableHost(
     onSelectDay: (week: Int, dayOfWeek: Int) -> Unit = { _, _ -> },
     /** 日视图摘要卡的关闭叉：壳收回周视图。 */
     onCloseDay: () -> Unit = {},
-    /** 日视图正文（整屏页面），窗口 / 裁切由页面负责；参数是顶栏高度。 */
-    dayContent: (@Composable (contentTop: Dp) -> Unit)? = null,
+    /**
+     * 日视图正文（整屏页面），窗口 / 裁切由页面负责。
+     *
+     * 参数 ① 是顶栏高度；参数 ② 是页面要求挂在**真摘要卡**上的修饰器（摘要卡飞行
+     * 的落点实测 + 飞行期间隐藏，阶段 A）。壳必须把它原样透传到卡片上，否则飞行
+     * 终点量不到、真卡也会和飞行卡一起画出来。
+     */
+    dayContent: (@Composable (contentTop: Dp, summaryModifier: Modifier) -> Unit)? = null,
     /** 用户「页面转场速度」，周→日展开按同一倍率缩放。 */
     transitionSpeed: Double = 1.0,
     /**

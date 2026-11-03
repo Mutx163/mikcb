@@ -300,6 +300,14 @@ fun DayViewPage(
      * 经典形态 = 系统手势条。`null` = 退回 `innerPadding.bottom + 64dp`。
      */
     contentBottomInset: Dp? = null,
+    /**
+     * 首页「周 → 日」摘要卡飞行（阶段 A）的**测量 + 隐藏**修饰器，挂在真摘要卡上。
+     *
+     * 只有首页展开层传入：里面挂着两件事——`onGloballyPositioned` 把卡片真实落点
+     * 量回去（飞行终点必须实测），以及飞行期间不绘制真卡（否则会看到「一张卡被
+     * 窗口一路裁过去」，还是擦除）。独立页面 / 预览 / 分享图不传，行为完全不变。
+     */
+    summaryModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -669,6 +677,7 @@ fun DayViewPage(
 
                         DayViewScrollContent(
                             summaryState = pageData.summaryState,
+                            summaryModifier = summaryModifier,
                             agendaEntries = pageData.agendaEntries,
                             dayOfWeek = target.dayOfWeek,
                             taskBandData = pageData.taskBandData,
