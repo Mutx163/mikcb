@@ -255,14 +255,25 @@ object CourseActionDispatcher {
         }
 
         val remainingWeeks = course.activeWeeks.filter { it != sourceWeek }.sorted()
+        // 目标位置的新条目：单周、目标星期/节次；共享字段由服务侧广播。
+        // 两个分支都**必须**写目标周字段与迁移备注（Dart `:2933-2953` 的 movedOccurrence
+        // 在分支之前构造）：只挪星期/节次而不改 customWeeks，单周课会留在原周不出现；
+        // 备注不迁走则「这一节的备注」在调课后凭空丢失。
+        val moved = course.copy(
+            id = if (remainingWeeks.isEmpty()) course.id else UUID.randomUUID().toString(),
+            dayOfWeek = targetDayOfWeek,
+            startSection = targetStartSection,
+            endSection = targetEndSection,
+            location = location,
+            startWeek = targetWeek,
+            endWeek = targetWeek,
+            isOddWeek = false,
+            isEvenWeek = false,
+            customWeeks = listOf(targetWeek),
+            sessionNotes = course.sessionNotesForSingleWeek(sourceWeek, targetWeek),
+        )
         if (remainingWeeks.isEmpty()) {
-            // 只剩这一周：原地改位置即可（Dart 同分支的等价写法）。
-            val moved = course.copy(
-                dayOfWeek = targetDayOfWeek,
-                startSection = targetStartSection,
-                endSection = targetEndSection,
-                location = location,
-            )
+            // 只剩这一周：就地改（不新增条目）。
             TimetableCourseService.update(port, moved, previousSharedName = null)
             return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
         }
@@ -276,21 +287,6 @@ object CourseActionDispatcher {
             sessionNotes = course.sessionNotesExcludingWeek(sourceWeek),
         )
         TimetableCourseService.update(port, shrunk, previousSharedName = null)
-
-        // 目标位置的新条目：新 id、单周、目标星期/节次；共享字段由服务侧广播。
-        val moved = course.copy(
-            id = UUID.randomUUID().toString(),
-            dayOfWeek = targetDayOfWeek,
-            startSection = targetStartSection,
-            endSection = targetEndSection,
-            location = location,
-            startWeek = targetWeek,
-            endWeek = targetWeek,
-            isOddWeek = false,
-            isEvenWeek = false,
-            customWeeks = listOf(targetWeek),
-            sessionNotes = null,
-        )
         TimetableCourseService.add(port, moved)
         return CourseActionOutcome.Rescheduled(courseId, sourceWeek, targetWeek, changed = true)
     }

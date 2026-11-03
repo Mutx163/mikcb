@@ -199,6 +199,64 @@ class CourseActionDispatcherTest {
     }
 
     @Test
+    fun `单周课调到别的周 必须真的换周 而不是留在原周`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 2, endWeek = 2, dayOfWeek = 1, section = 1),
+        )
+
+        CourseActionDispatcher.rescheduleOccurrence(
+            port = repo,
+            courseId = "c1",
+            sourceWeek = 2,
+            targetWeek = 5,
+            targetDayOfWeek = 3,
+            targetStartSection = 2,
+            targetEndSection = 2,
+        )
+
+        // Dart `:2933-2953` 的 movedOccurrence 在分支**之前**构造，startWeek/endWeek/
+        // customWeeks 一律写成目标周。只改星期节次的话，课程仍挂在第 2 周，
+        // 目标周第 5 周看不到它 —— 用户眼里就是「调课没生效」。
+        val only = repo.snapshot.courses.single()
+        assertEquals("c1", only.id)
+        assertEquals(5, only.startWeek)
+        assertEquals(5, only.endWeek)
+        assertEquals(listOf(5), only.activeWeeks)
+        assertEquals(3, only.dayOfWeek)
+        assertEquals(listOf(5), only.normalizedCustomWeeks)
+    }
+
+    @Test
+    fun `调课把这一节的备注迁到目标周 而不是丢掉`() {
+        val repo = repositoryWith(
+            course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 3).copy(
+                sessionNotes = mapOf(2 to CourseSessionNote(text = "带作业本", hasHomework = true)),
+            ),
+        )
+
+        CourseActionDispatcher.rescheduleOccurrence(
+            port = repo,
+            courseId = "c1",
+            sourceWeek = 2,
+            targetWeek = 4,
+            targetDayOfWeek = 3,
+            targetStartSection = 2,
+            targetEndSection = 2,
+        )
+
+        val original = repo.snapshot.courses.single { it.id == "c1" }
+        assertEquals("源周的备注要被摘掉", null, original.sessionNoteForWeek(2))
+        val moved = repo.snapshot.courses.single { it.id != "c1" }
+        assertEquals(
+            "Dart `sessionNotesForSingleWeek`：这一节的备注跟着课走到目标周",
+            "带作业本",
+            moved.sessionNoteForWeek(4)?.text,
+        )
+        assertTrue("作业标记也要一起迁走", moved.sessionNoteForWeek(4)?.hasHomework == true)
+        assertEquals("只迁这一周的备注", listOf(4), moved.normalizedSessionNotesMap?.keys?.toList())
+    }
+
+    @Test
     fun `目标周超出学期范围要拒绝`() {
         val repo = repositoryWith(course(id = "c1", name = "高等数学", startWeek = 1, endWeek = 2))
         try {
