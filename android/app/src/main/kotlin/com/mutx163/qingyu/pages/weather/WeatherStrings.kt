@@ -83,29 +83,15 @@ object WeatherStrings {
     val weatherProbabilityValue = ArbText("weatherProbabilityValue", "{probability}%")
     val weatherSummarySeparator = ArbText("weatherSummarySeparator", " · ")
 
-    /** 天气现象分类 → 本地化名（对齐 Flutter `WeatherCategoryLocalizer.label`）。 */
-    fun categoryLabel(category: WeatherCategory): String = when (category) {
-        WeatherCategory.CLEAR -> weatherClear.zh
-        WeatherCategory.MAINLY_CLEAR -> weatherMainlyClear.zh
-        WeatherCategory.PARTLY_CLOUDY -> weatherPartlyCloudy.zh
-        WeatherCategory.OVERCAST -> weatherOvercast.zh
-        WeatherCategory.FOG -> weatherFog.zh
-        WeatherCategory.DRIZZLE -> weatherDrizzle.zh
-        WeatherCategory.FREEZING_DRIZZLE -> weatherFreezingDrizzle.zh
-        WeatherCategory.LIGHT_RAIN -> weatherLightRain.zh
-        WeatherCategory.RAIN -> weatherRain.zh
-        WeatherCategory.HEAVY_RAIN -> weatherHeavyRain.zh
-        WeatherCategory.FREEZING_RAIN -> weatherFreezingRain.zh
-        WeatherCategory.RAIN_SHOWERS -> weatherRainShowers.zh
-        WeatherCategory.HEAVY_RAIN_SHOWERS -> weatherHeavyRainShowers.zh
-        WeatherCategory.LIGHT_SNOW -> weatherLightSnow.zh
-        WeatherCategory.SNOW -> weatherSnow.zh
-        WeatherCategory.HEAVY_SNOW -> weatherHeavySnow.zh
-        WeatherCategory.SNOW_GRAINS -> weatherSnowGrains.zh
-        WeatherCategory.SNOW_SHOWERS -> weatherSnowShowers.zh
-        WeatherCategory.THUNDERSTORM -> weatherThunderstorm.zh
-        WeatherCategory.THUNDERSTORM_HAIL -> weatherThunderstormHail.zh
-    }
+    /**
+     * 天气现象分类 → 本地化名（对齐 Flutter `WeatherCategoryLocalizer.label`）。
+     *
+     * 2026-11-03 起委托共享层 [com.mutx163.qingyu.weather.WeatherCategoryLocalizer]：
+     * 现象名是天气域的共享词汇（课表日视图天气行也要用），映射真源随
+     * `WeatherCategory` 放在共享 `weather/`，对外形状（本函数签名）不变。
+     */
+    fun categoryLabel(category: WeatherCategory): String =
+        com.mutx163.qingyu.weather.WeatherCategoryLocalizer.label(category)
 
     fun temperatureValue(celsius: Int): String =
         weatherTemperatureValue.filled("temperature", celsius.toString())

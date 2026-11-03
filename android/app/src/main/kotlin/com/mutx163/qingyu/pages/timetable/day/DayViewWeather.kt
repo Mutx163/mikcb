@@ -3,7 +3,7 @@ package com.mutx163.qingyu.pages.timetable.day
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.pages.timetable.TimetableStrings
-import com.mutx163.qingyu.pages.weather.WeatherStrings
+import com.mutx163.qingyu.weather.WeatherCategoryLocalizer
 import com.mutx163.qingyu.weather.WeatherProvider
 import java.time.LocalDate
 
@@ -43,7 +43,7 @@ object DayViewWeather {
                 provider.summaryForCourse(date.atStartOfDay(), course.startTime, course.endTime)
                     ?.let { summary ->
                         TimetableStrings.formatWeatherLine(
-                            phenomenon = WeatherStrings.categoryLabel(summary.category),
+                            phenomenon = WeatherCategoryLocalizer.label(summary.category),
                             temperatureC = summary.temperatureC,
                             probability = summary.precipitationProbability,
                             showPhenomenon = showPhenomenon,
