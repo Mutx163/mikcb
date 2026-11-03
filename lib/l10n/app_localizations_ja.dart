@@ -2190,7 +2190,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get showStageTextTitle => 'ステージステータステキストを表示';
 
   @override
-  String get hidePrefixTextTitle => '「授業開始まで / 授業終了まで」接頭辞を非表示';
+  String get hidePrefixTextTitle => '接頭辞を非表示';
 
   @override
   String get hidePrefixTextInactiveHint => '現在は無効：上の「カウントダウンを表示」を有効にする必要があります';
@@ -8324,8 +8324,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => '超過時は最も古いものを削除';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -9795,7 +9794,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherEnableTitle => '天気を表示';
 
   @override
-  String get weatherEnableSubtitle => 'オフにすると天気データを取得しなくなります';
+  String get weatherEnableSubtitle => 'オフで天気取得を停止';
 
   @override
   String get weatherCityLabel => '都市';

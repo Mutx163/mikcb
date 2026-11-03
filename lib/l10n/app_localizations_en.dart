@@ -750,15 +750,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unifiedCourseCardColorTitle => 'Use Unified Course Card Color';
 
   @override
-  String get unifiedCourseCardColorSubtitle =>
-      'If disabled, each course keeps its own color';
+  String get unifiedCourseCardColorSubtitle => 'Off: keeps per-course colors';
 
   @override
   String get importRandomCourseColorTitle => 'Random course colors';
 
   @override
-  String get importRandomCourseColorSubtitle =>
-      'Assign preset colors by course name and teacher';
+  String get importRandomCourseColorSubtitle => 'Auto color by name & teacher';
 
   @override
   String get importRandomColorGroupTitle => 'Random color group';
@@ -825,8 +823,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodIcsTitle => '.ics Calendar Import';
 
   @override
-  String get importMethodIcsSubtitle =>
-      'Calendar files from other timetable apps';
+  String get importMethodIcsSubtitle => 'Calendar files from other apps';
 
   @override
   String get importMethodAiTitle => 'Image Import';
@@ -2255,8 +2252,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferShortNameTitle => 'Prefer Short Course Name';
 
   @override
-  String get preferShortNameSubtitle =>
-      'Takes effect only if short name is filled in';
+  String get preferShortNameSubtitle => 'Needs a short name to apply';
 
   @override
   String get showLocationTitle => 'Show Location';
@@ -2877,8 +2873,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => 'Change daily';
 
   @override
-  String get bingWallpaperAutoApplySubtitle =>
-      'Shared by all timetables, changes the current one only';
+  String get bingWallpaperAutoApplySubtitle => 'Shared; only current changes';
 
   @override
   String get bingWallpaperAutoApplyApplying =>
@@ -3364,8 +3359,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetHideCompletedTitle => 'Hide completed classes';
 
   @override
-  String get homeWidgetHideCompletedSubtitle =>
-      'Show only classes that have not ended yet';
+  String get homeWidgetHideCompletedSubtitle => 'Show unfinished classes only';
 
   @override
   String get homeWidgetShowTomorrowTitle => 'Show tomorrow\'s classes';
@@ -4277,8 +4271,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Long-press empty slot to add course';
 
   @override
-  String get longPressEmptySlotToAddSubtitle =>
-      'Long-press a slot, then tap the dashed plus';
+  String get longPressEmptySlotToAddSubtitle => 'Long-press, then tap plus';
 
   @override
   String get homePullQuickImportFetchingCourses => 'Fetching new courses…';
@@ -8527,8 +8520,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => 'Oldest removed when exceeded';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -9001,8 +8993,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liquidGlassScopeDockTitle => 'Glass dock navigation';
 
   @override
-  String get liquidGlassScopeDockSubtitle =>
-      'Floating bottom pill and add-course button';
+  String get liquidGlassScopeDockSubtitle => 'Bottom pill & add button';
 
   @override
   String get frostedGlassModeLiquid => 'Liquid Glass';
@@ -10028,8 +10019,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherEnableTitle => 'Show weather';
 
   @override
-  String get weatherEnableSubtitle =>
-      'Turning this off stops fetching weather data';
+  String get weatherEnableSubtitle => 'Off: no weather fetching';
 
   @override
   String get weatherCityLabel => 'City';
@@ -10071,8 +10061,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => 'Week view cards';
 
   @override
-  String get weatherShowOnWeekCardSubtitle =>
-      'Narrow cells — one item only, temperature first';
+  String get weatherShowOnWeekCardSubtitle => 'Narrow cells: temp first';
 
   @override
   String get weatherShowOnSheetTitle => 'Course detail sheet';

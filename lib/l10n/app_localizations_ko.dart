@@ -2201,7 +2201,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get showStageTextTitle => '스테이지 상태 텍스트 표시';
 
   @override
-  String get hidePrefixTextTitle => '\'수업 시작까지 / 수업 종료까지\' 접두사 숨기기';
+  String get hidePrefixTextTitle => '시작/종료 숨기기';
 
   @override
   String get hidePrefixTextInactiveHint =>
@@ -8351,8 +8351,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudBackupMaxCountTitle => 'Maximum backups';
 
   @override
-  String get cloudBackupMaxCountSubtitle =>
-      'Oldest backups are removed when exceeded';
+  String get cloudBackupMaxCountSubtitle => '초과 시 오래된 백업 삭제';
 
   @override
   String cloudBackupMaxCountOption(int count) {
@@ -9824,7 +9823,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get weatherEnableTitle => '날씨 표시';
 
   @override
-  String get weatherEnableSubtitle => '끄면 날씨 데이터를 더 이상 가져오지 않습니다';
+  String get weatherEnableSubtitle => '끄면 날씨 수집 중단';
 
   @override
   String get weatherCityLabel => '도시';

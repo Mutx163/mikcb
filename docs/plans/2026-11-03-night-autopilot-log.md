@@ -380,7 +380,14 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 ### 10.8 线收口记录
 
-**第二班线况**：L3 ✅ 已收线；L2 ✅ 已收线；L4 ✅ 已收线（`9da5b72d`）；L1 进行中（工作区有未提交中间态）。
+**第二班线况**：L3 ✅ 已收线；L2 ✅ 已收线；L4 ✅ 已收线（`9da5b72d`）；L1 ⏸ 断点续跑中（原因见下）。
+
+#### L1（import/statistics）⏸ 断点续跑（2026-11-03 19:00 协调线回填）
+
+- **断点原因**：上一轮**跑爆 step 上限**，只做探索、**未提交**任何内容。
+- **保住的工作区产物（未提交，仍在树里）**：`WarehouseMacroReplayer.kt`（composeP1 新）、`WarehouseMacroReplayLogic.kt`（main 新）、`WarehouseMacroReplayLogicTest.kt`（新测试）；另有 `WarehouseBridgeDialogs.kt`、`WarehouseImportHosts.kt`、`WarehouseWebLoginHost.kt`、`WarehouseWebLoginPage.kt`、`WarehouseStrings.kt` 的改动。**协调线未触碰、未提交、未 reset。**
+- **续跑修复顺序（L1 自定，第一件事）**：先把 `compileItestDebugKotlin` 修绿（宏回放引擎移植的编译依赖），再接开学日/周次映射弹窗、`savePresetTimeSlots`、登录态探针/自动填充。
+- **对门禁的影响（重要）**：**门 1 / 门 2 在 warehouse 编译恢复前不可信**——L1 是半成品状态，整包编译/单测结论会被它带红，不能作为收工证据。收工前须等 L1 提交后，在干净树重跑门 1（`compileDevDebugKotlin`）+ 门 2 + 门 4。
 
 #### L3（sync/transfer）✅ 已收线（2026-11-03 18:12 协调线回填）
 
@@ -438,3 +445,5 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 ### 10.10 收工前置纪律（Lead 要求）
 
 **收工前必须在「干净工作树」重跑门 2（`safe-gradle.ps1 :app:testDevDebugUnitTest`）与门 4（cjk 两源集 + copy_style）**——上一轮 18:11 / 18:49 两次门 4 均含他线未提交中间态，只能作为阶段性证据，不能作为收工证据。
+
+**另加（19:00 更新）**：**门 1 / 门 2 待 warehouse 编译恢复后重跑**。L1 上一轮跑爆 step 上限未提交，其半成品（宏回放引擎移植）会让整包编译/单测带红，因此当前**不给出门 1 / 门 2 结论**；等 L1 把 `compileItestDebugKotlin` 修绿并提交后，协调线在干净树依次跑门 1 → 门 2 → 门 4 再出结论。
