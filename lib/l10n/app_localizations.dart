@@ -800,12 +800,6 @@ abstract class AppLocalizations {
   /// **'WebDAV 地址'**
   String get cloudSyncBaseUrlLabel;
 
-  /// 安全提示：说明正式版仅支持HTTPS加密连接，HTTP明文协议已被禁用
-  ///
-  /// In zh, this message translates to:
-  /// **'建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用'**
-  String get cloudSyncBaseUrlSecurityNote;
-
   /// No description provided for @cloudSyncBaseUrlInvalid.
   ///
   /// In zh, this message translates to:

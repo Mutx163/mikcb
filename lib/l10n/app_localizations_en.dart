@@ -394,10 +394,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WebDAV URL';
 
   @override
-  String get cloudSyncBaseUrlSecurityNote =>
-      'HTTPS is recommended. HTTP cleartext connections are allowed but only advised on trusted networks';
-
-  @override
   String get cloudSyncBaseUrlInvalid =>
       'The WebDAV URL must start with http:// or https://';
 

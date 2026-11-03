@@ -380,10 +380,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WebDAV URL';
 
   @override
-  String get cloudSyncBaseUrlSecurityNote =>
-      'HTTPS 暗号化接続を推奨します。HTTP 平文接続は信頼できるネットワークでのみ使用してください';
-
-  @override
   String get cloudSyncBaseUrlInvalid =>
       'WebDAV アドレスは http:// または https:// で始まる必要があります';
 

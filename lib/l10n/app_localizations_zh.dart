@@ -373,10 +373,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncBaseUrlLabel => 'WebDAV 地址';
 
   @override
-  String get cloudSyncBaseUrlSecurityNote =>
-      '建议使用 HTTPS 加密连接；HTTP 明文连接仅建议在可信网络环境下使用';
-
-  @override
   String get cloudSyncBaseUrlInvalid => 'WebDAV 地址必须以 http:// 或 https:// 开头';
 
   @override
@@ -10371,10 +10367,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncBaseUrlLabel => 'WebDAV 網址';
-
-  @override
-  String get cloudSyncBaseUrlSecurityNote =>
-      '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
 
   @override
   String get cloudSyncBaseUrlInvalid => 'WebDAV 網址必須以 http:// 或 https:// 開頭';
@@ -20411,10 +20403,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncBaseUrlLabel => 'WebDAV 網址';
-
-  @override
-  String get cloudSyncBaseUrlSecurityNote =>
-      '建議使用 HTTPS 加密連線；HTTP 明文連線僅建議在可信網路環境下使用';
 
   @override
   String get cloudSyncBaseUrlInvalid => 'WebDAV 網址必須以 http:// 或 https:// 開頭';

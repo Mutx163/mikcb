@@ -10,8 +10,7 @@
 # 入口目录化）。2026-10-30 F13 把语料扩到 Kotlin 后剩 483 条；2026-11-02
 # 按族分五批清到 1 条，六份 ARB 同步删、gen-l10n 重生成。
 #
-# 剩下这条不是漏清，是**判据口径外**：生产 Dart / Kotlin 两侧确实零引用，
-# 真正的引用在 `test/l10n/localization_completeness_test.dart`（直接读生成的
-# getter）。死键判据不扫 `test/`，现在删键会让那张测试当场编译失败。要么先处理
-# 测试，要么把键接到生产侧——两件事都超出「只删 ARB」的范围，留作待办。
-cloudSyncBaseUrlSecurityNote
+# 2026-11-03 清零：最后一条 cloudSyncBaseUrlSecurityNote 删键（生产 Dart /
+# Kotlin 两侧本就零引用，唯一引用是 test/l10n/localization_completeness_test.dart
+# 的专用断言，随键一并删除；防回潮由本清单「只减不增」棘轮兜底）。
+# 当前存量 0 条。
