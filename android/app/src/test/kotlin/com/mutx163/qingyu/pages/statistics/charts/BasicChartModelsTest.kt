@@ -58,6 +58,24 @@ class TrendChartModelTest {
     }
 
     @Test
+    fun `空周是零值点而非断点`() {
+        // Dart `calculateWeeklyTrend` 用 List.generate 铺满 1..总周数：
+        // 没课的周仍产出 WeeklyTrendPoint(sections: 0)，折线落到底部而不是断开。
+        val trend = listOf(
+            trendPoint(1, 4),
+            trendPoint(2, 6),
+            trendPoint(3, 0),
+            trendPoint(4, 2),
+        )
+        val spec = TrendChartModel.build(trend, currentWeek = 4)!!
+        assertEquals(4, spec.elapsed.size)
+        assertEquals(3, spec.elapsed[2].week)
+        assertEquals(0, spec.elapsed[2].sections)
+        // 0 值点贴画布底边（不是被跳过后的直线插值）
+        assertEquals(160f, TrendChartModel.pointY(spec.elapsed[2].sections, spec.maxY, 160f), 1e-4f)
+    }
+
+    @Test
     fun `坐标轴范围与上限`() {
         val trend = (1..20).map { trendPoint(it, it * 2) }
         val spec = TrendChartModel.build(trend, currentWeek = 8)!!
