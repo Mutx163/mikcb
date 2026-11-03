@@ -311,7 +311,9 @@ object SpreadsheetImportModel {
      *
      * - **先按行切，再解析每行引号语法**：`split(RegExp(r'\r?\n'))` 发生在引号处理之前，
      *   所以「引号内的换行」**不会**把字段拼回来——它会变成两行（第二行照常参与导入）。
-     *   这是 Dart 的真值，不是 RFC4180；要支持跨行字段属于产品决策，应先改 Dart。
+     *   **这是有意退回 Dart，不是退步**：早期 Kotlin 实现支持过 RFC4180 跨行字段，
+     *   现已按 Dart 真值退回「先切行再解析」。**后续不要重新实现跨行支持**——
+     *   要支持跨行属于产品决策，必须先改 Dart 侧的 `CsvDecoder._parseContent`。
      * - **空白行整行跳过**（`line.trim().isEmpty`）：行号因此只数非空行，警告里的
      *   `rowNumber` 与 Dart 一致。
      * - **空白内容（含全空格）没有表** → [tryParseCsvContent] 返回 null，外层落到

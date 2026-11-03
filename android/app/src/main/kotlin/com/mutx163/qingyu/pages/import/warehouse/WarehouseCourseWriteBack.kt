@@ -187,14 +187,15 @@ object WarehouseCourseWriteBack {
             }
         }
 
-        // Dart 导入会按「合并后课程的最大周次」抬高学期总周数（只升不降，封顶 42），
+        // Dart 导入会按「合并后课程的最大周次」抬高学期总周数（只升不降，封顶 30 周，
+        // Dart `import_export_logic.dart:39` + `timetable_import_export_service.dart:588-601`），
         // 否则第 21-25 周的课会落盘却永远点不出来。
-        val requiredWeekCount = mergedCourses.maxOfOrNull { course ->
-            course.customWeeks?.lastOrNull() ?: course.endWeek
-        } ?: before.settings.semesterWeekCount
-        val nextWeekCount = maxOf(
+        //
+        // 算术只在 [SemesterWeekUplift] 一处：表格导入（`ImportFlowModel.nextSemesterWeekCount`）
+        // 与本函数同调该对象，**不要再在这里写第二份 max/coerceIn**。
+        val nextWeekCount = SemesterWeekUplift.nextSemesterWeekCount(
             before.settings.semesterWeekCount,
-            requiredWeekCount.coerceIn(1, MAX_ALLOWED_SEMESTER_WEEK_COUNT),
+            mergedCourses,
         )
         val nextSettings = before.settings.copy(
             semesterStartDate = semesterStartDate ?: before.settings.semesterStartDate,

@@ -501,7 +501,7 @@ object ChartMath {
     /**
      * 名次：**序号即名次**，`[a,b,c,d]` → `[1,2,3,4]`。
      *
-     * 严格对齐 Dart 原实现 `course_ranking.dart:52` `rank: index + 1`。
+     * 严格对齐 Dart 原实现 `course_ranking.dart:46` `rank: index + 1`。
      *
      * ## 已知缺陷（**本批有意不修**）
      *

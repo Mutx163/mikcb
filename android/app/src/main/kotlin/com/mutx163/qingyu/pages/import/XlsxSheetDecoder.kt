@@ -174,6 +174,10 @@ object XlsxSheetDecoder {
             rows.add(if (hasValue) row else mutableListOf())
         }
 
+        // 行矩阵归一化，逐字对齐 Dart `table_parser-1.0.1` 的 `Table._normalizeTable`：
+        // 尾部空行裁掉、按全表最右非空列补齐每一行（短行也补 `""`）。
+        // **这是有意退回 Dart，不是退步**：早期 Kotlin 保留稀疏短行（按行各自列数），
+        // 现已退回整表等宽。**后续不要重新实现「按表头宽度」或「保留稀疏行」**。
         val lastNonEmpty = rows.indexOfLast { row -> row.any { it != null } }
         if (lastNonEmpty < 0) return emptyList()
         val kept = rows.subList(0, lastNonEmpty + 1)

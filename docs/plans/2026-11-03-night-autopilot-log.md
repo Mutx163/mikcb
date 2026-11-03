@@ -926,3 +926,28 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 3. **无生命周期钩子**：`PagesShellActivity` 无 `onResume` / `Lifecycle*`（Dart 有 3 处：`main.dart:921/1105/1145`）。
 4. **无互斥**：Dart `_syncGate` 串行化；Kotlin 控制器可被启动拉取与页面 `refreshOnEnter` 叠跑。
 5. 若接：需 `pullRemoteInBackground()`（含 `keepLocal → 上传` 链）+ App 级实例 + `PagesShellActivity.onCreate` 里 `LaunchedEffect(wiring)`（约 10 行，**壳文件，需 Lead 授权**）；`allowConflictPrompt=false` 的「本地有用户数据且未同步 → 取消」语义必须照搬。**本条只评估、未实现。**
+
+### 10.24 ✅ 定案：学期周数上限 30 + 排名并列口径（2026-11-04，L1 表格导入）
+
+1. **学期总周数上限 = 30 周（「42」是错的）**
+   - Dart 真值：`lib/domain/import_export_logic.dart:39` `static const int maxAllowedSemesterWeekCount = 30;`；`maxCourseWeek` 在 `:57-69` 两处 `clamp(1, 30)`；抬升点在 `lib/services/timetable_import_export_service.dart:588-601`（`clamp` 后「只升不降」）。
+   - Kotlin `transfer/ImportExportLogic.kt:49` `MAX_ALLOWED_SEMESTER_WEEK_COUNT = 30`，本来就对。
+   - **早前 warehouse 交付说明里的「封顶 42、只升不降」作废**：42 是月视图固定 6×7 格数，与学期周数无关。
+   - **收敛为单一实现**：新增 `pages/import/warehouse/SemesterWeekUplift.kt`，`ImportFlowModel.nextSemesterWeekCount` 与 `WarehouseCourseWriteBack` 都调它；后者原有的一份 `max/coerceIn` 已删（且它用 `customWeeks` 而非 Dart 的 `normalizedCustomWeeks`，一并纠正）。
+   - 为什么放 warehouse 子目录：`-Module pages/import/warehouse` 收不到父目录的 `ImportFlowModel.kt`，而 `-Module pages/import` 递归收子目录；放这里两条 L0 路径都能引用同一份实现。
+   - 断言：`ImportFlowModelTest` 新增「学期总周数上限是 30 周 与 Dart maxAllowedSemesterWeekCount 一致」，直接断言常量 30 并注明 `import_export_logic.dart:39`。
+
+2. **排名并列口径 = `index + 1` 顺序编号，并列也各占一个名次**
+   - Dart `lib/widgets/statistics/course_ranking.dart:43-46`：`for (var index = 0; index < courseRanking.length; index++) _CourseRankingTile(..., rank: index + 1, ...)`。
+   - 因此 `[40, 40, 20]` 的排名是 **1、2、3**：既不是本批报告写的竞赛式 `1,1,3`，也不是上一轮笔记里的并列同号 `1,1,2`。**两条结论均作废**，原因：Dart 对并列不做合并，名次就是下标 + 1。
+   - Kotlin `ChartMath.rankOf(index) = index + 1`（`ChartMath.kt:520`）本来就对，**未改实现**；新增用例「课时并列也按顺序编号 1 2 3」钉住，并把 KDoc 行号从 `:52` 校正为 `:46`。
+
+3. **「有意退回 Dart」两处（后续不要当成 bug 改回来）**
+   - CSV 引号内换行：早期 Kotlin 支持 RFC4180 跨行字段，现已按 Dart `CsvDecoder._parseContent` 退回「先按 `\r?\n` 切行再解析引号」。
+   - XLSX 行矩阵：早期 Kotlin 保留稀疏短行，现已按 Dart `Table._normalizeTable` 退回「尾部空行裁掉 + 按最右非空列整表补宽」。
+   - **这是有意退回，不是退步，后续不要重新实现**；要改先改 Dart 真值。
+
+4. **L0（统一入口重跑，不沿用带矛盾的结论）**
+   - `-Module pages/import`：**OK (504 tests)**（新增 1 例周数上限）。
+   - `-Module statistics`：**OK (312 tests)**（新增 1 例并列名次）。
+   - 只声明 JVM 单测通过，不声明编译/真机通过。

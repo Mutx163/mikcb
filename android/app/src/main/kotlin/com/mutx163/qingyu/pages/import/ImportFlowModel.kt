@@ -2,8 +2,8 @@ package com.mutx163.qingyu.pages.import
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
+import com.mutx163.qingyu.pages.import.warehouse.SemesterWeekUplift
 import com.mutx163.qingyu.transfer.buildExpandedSections
-import com.mutx163.qingyu.transfer.maxCourseWeek
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
 import com.mutx163.qingyu.transfer.syncImportedCourses
 import kotlin.random.Random
@@ -170,12 +170,16 @@ object ImportFlowModel {
         buildExpandedSections(currentSections, requiredCount)
 
     /**
-     * 导入成功后要写入的学期总周数（Dart `importParsedCourses`）：
-     * 取「当前值」与「合并后课程的最大周次」中较大者——**只升不降**，封顶 30 周
-     * （与 `maxCourseWeek` 同一常量）。课程为空时保持当前值。
+     * 导入成功后要写入的学期总周数（Dart `timetable_import_export_service.dart:588-601`）：
+     * 取「当前值」与「合并后课程的最大周次」中较大者——**只升不降**，封顶 **30** 周
+     * （Dart `lib/domain/import_export_logic.dart:39` `maxAllowedSemesterWeekCount = 30`；
+     * 不是 42——42 是月视图格数）。
+     *
+     * 算术**只在 [SemesterWeekUplift] 一处**，本函数是转发；教务回传
+     * `WarehouseCourseWriteBack` 也调同一个对象，两处不得各写一份。
      */
     fun nextSemesterWeekCount(currentWeekCount: Int, courses: List<Course>): Int =
-        maxOf(currentWeekCount, maxCourseWeek(courses, currentWeekCount))
+        SemesterWeekUplift.nextSemesterWeekCount(currentWeekCount, courses)
 
     // ------------------------------------------------------------------
     // 随机配色

@@ -2,6 +2,8 @@ package com.mutx163.qingyu.pages.import
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.import.warehouse.SemesterWeekUplift
+import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -291,5 +293,21 @@ class ImportFlowModelTest {
         assertEquals(21, ImportFlowModel.nextSemesterWeekCount(16, listOf(custom)))
         // 空课表保持当前值（不能落成 0）
         assertEquals(30, ImportFlowModel.nextSemesterWeekCount(30, emptyList()))
+    }
+
+    @Test
+    fun `学期总周数上限是 30 周 与 Dart maxAllowedSemesterWeekCount 一致`() {
+        // Dart `lib/domain/import_export_logic.dart:39`：
+        //   static const int maxAllowedSemesterWeekCount = 30;
+        // 抬升点 `lib/services/timetable_import_export_service.dart:588-601`：clamp(1, 30) 后只升不降。
+        // 不是 42——42 是月视图固定格数，与学期周数无关（早前 warehouse 交付说明写错）。
+        assertEquals(30, MAX_ALLOWED_SEMESTER_WEEK_COUNT)
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(1, listOf(course("a", endWeek = 42))))
+        assertEquals(29, ImportFlowModel.nextSemesterWeekCount(1, listOf(course("a", endWeek = 29))))
+        // 单一实现：表格导入与教务回传（WarehouseCourseWriteBack）都走 SemesterWeekUplift。
+        assertEquals(
+            SemesterWeekUplift.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))),
+            ImportFlowModel.nextSemesterWeekCount(20, listOf(course("a", endWeek = 40))),
+        )
     }
 }
