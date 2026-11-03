@@ -99,20 +99,35 @@ class ComposeSheetGuardTest {
      * 这条必须红；还原后绿（2026-11-03 实际执行过）。
      */
     @Test
-    fun `pages transfer 自建弹层必须常驻组合且 show 驱动`() {
-        val transferFiles = renderFiles().filter { it.contains(TRANSFER_PREFIX) }
+    fun `pages transfer 自建弹层必须常驻组合且 show 驱动`() =
+        assertPermanentSheetMounts(TRANSFER_PREFIX, "pages/transfer")
+
+    /**
+     * S8（2026-11-03 补）：`pages/sync/` 与 S7 同等强度。
+     *
+     * `pages/sync` 的弹层同样是常驻组合 + `show` 驱动（备份详情、控制器页、情侣 WebDAV、
+     * 情侣课表设置）；条件挂载会让退场动画整棵消失，且编译/单测都看不出来。
+     * 咬合探针：给 `CloudSyncControllerPage.kt:242` 的 `OverlayDialog` 套 `if (false) { ... }`
+     * 必须红，还原后绿（2026-11-03 实际执行过）。
+     */
+    @Test
+    fun `pages sync 自建弹层必须常驻组合且 show 驱动`() =
+        assertPermanentSheetMounts(SYNC_PREFIX, "pages/sync")
+
+    private fun assertPermanentSheetMounts(prefix: String, label: String) {
+        val files = renderFiles().filter { it.contains(prefix) }
         assertTrue(
-            "pages/transfer 下一个弹层文件都没扫到，S7 判据失效（扫描根 user.dir=" +
+            "$label 下一个弹层文件都没扫到，判据失效（扫描根 user.dir=" +
                 "${System.getProperty("user.dir")}）",
-            transferFiles.any { File(it).readText().contains("QingyuSheet(") },
+            files.any { File(it).readText().contains("QingyuSheet(") },
         )
-        val violations = transferFiles.flatMap { path ->
+        val violations = files.flatMap { path ->
             conditionalSheetMounts(File(path).readText()).map { line ->
                 "${relativeName(path)}:$line 弹层被 if/when/let 条件挂载"
             }
         }
         assertTrue(
-            "pages/transfer 有弹层被条件挂载（应为常驻组合 + `show` 驱动，退出动画才放得完）：\n" +
+            "$label 有弹层被条件挂载（应为常驻组合 + `show` 驱动，退出动画才放得完）：\n" +
                 violations.joinToString("\n") { "    $it" },
             violations.isEmpty(),
         )
@@ -483,6 +498,9 @@ class ComposeSheetGuardTest {
 
         /** S7 只扫本域自建弹层目录（裁决作用域）。 */
         const val TRANSFER_PREFIX = "/pages/transfer/"
+
+        /** S8：`pages/sync` 与 S7 同等强度。 */
+        const val SYNC_PREFIX = "/pages/sync/"
 
         /** 弹层入口（套件与 miuix 对话框）。 */
         val SHEET_ANY = Regex("""(?:QingyuSheet|OverlayDialog)\s*\(""")
