@@ -53,6 +53,28 @@
 
 42dp 无标题空档 ×4（`CourseActionSheet` / `CourseNoteSheet` / `WeekSelectorSheet` / `AppearanceEditorHost`，等上游悬浮把手，拍板 #7）、学期滚轮抢手势（需真机）、选周结构分歧（按拍板 #5 保留）、输入自动聚焦 4 处未加（按拍板 #1 默认不加；课表管理一处已加待拍板）、`QingyuSheet` 标题动作贴边（潜在）/ IME 叠加（需真机+套件层，共享套件只记录不扩散）/ 官方字阶（按拍板 #2 接受）、ICS 菜单形态（按拍板 #8 保留结构，即「部分成立」那条）。~~裸 `Popup`（`CourseOverviewPage`）~~ → 已由收尾批迁官方 `OverlayListPopup`；~~调课列表 480dp / 备注顶部 16dp / 周格白字 / 周加/减无障碍~~ → 已由并行泳道修掉（`a150be39` / `b5647157` / `2ce5679e` / `4325e210`），收尾批逐条核实回填。明细见两表回填列。
 
+### 材质对照（2026-11-03 弹窗材质批，对齐 NexioSchedule）
+
+用户反馈「弹窗材质/圆角简陋」。取 `HaoZai000/NexioSchedule`（其 `miuix/` 目录是 miuix 的 fork，弹窗配方在我们同一个文件 `DialogContentLayout.kt` 里改）逐项对照：
+
+| 项 | 我们（miuix-ui 0.9.4 上游 + 本仓桥） | NexioSchedule（fork） | 差异判定 |
+|---|---|---|---|
+| 布局骨架 | 手机贴底（BottomCenter）/ 宽屏居中，MaxWidth 420dp，outsideMargin 12dp，屏角圆角 coerceIn(32,48) | 完全一致（同一上游） | 无差异 |
+| 圆角 | 屏角 −12dp，夹 32..48dp（贴底）；居中 32dp；官方 `cornerRadius` 参数可覆写 | 屏角 −12dp，下限 32dp（无上夹） | **实质一致**，不简陋 |
+| 内边距 | 本仓口径显式 16dp（S1D 守卫） | 默认 24dp | 本仓更紧，是既定口径不是债 |
+| 标题/正文字阶 | title4 Medium 居中 / body1 居中（官方） | 同（另换 MotionAwareText） | 实质一致 |
+| 进出场 | 手机上滑入 / 260ms Decelerate 出；遮罩 300/250ms | 同 + 预测返回跟手 | 实质一致 |
+| **表面材质** | `squircleSurface` **实心板**，底色 = `colorScheme.background`（亮 #F2F2F2 / 暗 #242424，与页面同色） | `drawBackdrop(vibrancy + blur + lens)` + 半透明压色（亮 0.78 / 暗 0.87）+ `edgeLight` 边缘高光 | **核心差异：玻璃分层 vs 实心平板** |
+| 遮罩强度 | 官方默认亮 30% / 暗 60% 黑，全量绘制 | 同底 ×0.6 → 等效 **18% / 36%** | 我们重 ~1.7×，**本批已改**（见下） |
+
+**「简陋在哪」一句话**：骨架（圆角/边距/字阶/动画）与对方同源无差距，差在**表面材质**——对方是「实时模糊玻璃 + 半透明压色 + 边缘高光」的分层表面，我们是与页面同色的实心平板，叠上偏重的遮罩，观感就「死板、简陋」。
+
+**本批落地（一次生效，零性能代价）**：主题桥（`QingyuPageTheme` 亮/暗色板）显式映射 `windowDimming = Black.copy(alpha=0.18/0.36)`——对齐 Nexio ×0.6 软化档，全部弹层（Dialog/BottomSheet/Popup 共用此槽）遮罩同步变柔。守卫 `QingyuDialogMaterialGuardTest`（判据先剥注释）钉住两行，咬合探针（删行→红→还原→绿）过。
+
+**玻璃分层方案（未落地，待拍板/待真机）**：弹窗表面玻璃有两条路——①像 Nexio 一样 fork `miuix-ui` 在 `DialogContentLayout`/`BottomSheetContentLayout` 内部接 `miuix-blur`（干净、跟手动画天然对齐，但改库=依赖升级/例外审批，Lead 专属）；②不 fork，用官方公开参数从外部拼（`OverlayDialog(cornerRadius=X, backgroundColor=半透明)` + `modifier` 里挂 miuix-blur 的 `drawBackdrop`）——可行但有两条代价：47 处 `OverlayDialog` 调用点要迁统一封装；`OverlayBottomSheet` 拖动位移经 graphicsLayer 施加、外部采样层拿不到内部偏移，**拖动时模糊区可能错位，必须真机验证**。仓内已有玻璃基建可复用（`QingyuPageScaffold.rememberQingyuBlurBackdrop` 页面级 backdrop、`components/liquid/` 折射）。在真机验证 + 审批前不动默认观感（「不要为了像而硬塞模糊」）。
+
+
+
 ### 需拍板的 8 个决策点（2026-11-02 暂按「能不折腾就不折腾」定默认）
 
 | # | 决策 | 两个选项的差异 | 当前默认 |
