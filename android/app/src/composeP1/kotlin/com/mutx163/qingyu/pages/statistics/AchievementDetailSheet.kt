@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
+import com.mutx163.qingyu.pages.statistics.charts.AchievementModel
+import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -52,34 +58,52 @@ fun AchievementDetailSheet(
     dark: Boolean,
     onDismiss: () -> Unit,
 ) {
-    if (achievement == null) return
+    // 弹层常驻组合、只翻 show（2026-11-02 弹窗全量审核 P3）：原先
+    // `if (achievement == null) return` 把弹层整棵移出组合，官方下滑退场
+    // 一次都不播。退场动画期间用最后一份非空快照渲染正文，面板不会先变空。
+    var lastAchievement by remember { mutableStateOf(achievement) }
+    if (achievement != null) lastAchievement = achievement
+    val current = lastAchievement
 
-    val unlocked = achievement.isUnlocked
-    val accent = Color(QingyuTheme.primary(dark = dark))
-    val fill = if (unlocked) {
-        accent
-    } else {
-        Color(QingyuTheme.surfaceContainerHighest(dark))
+    val unlocked = current?.isUnlocked == true
+    // 每枚成就按 id 取语义色（橙/绿/紫/黄/蓝/青/靛/红），与 Dart
+    // `achievement_badge.dart` 的 `_achievementAccent` 及主页徽章格子同源；
+    // 未解锁态用同一色的淡染/描边（14%/26% 底、28%/44% 边、55%/86% 图标），
+    // 不再一律灰底——否则徽章失去每个成就的颜色身份。
+    val accent = current?.let { achievementAccentColor(AchievementModel.accentOf(it.id)) }
+        ?: Color.Unspecified
+    val fill = when {
+        current == null -> Color.Unspecified
+        unlocked -> accent
+        else -> accent.copy(
+            alpha = if (dark) AchievementModel.LOCKED_FILL_DARK else AchievementModel.LOCKED_FILL_LIGHT,
+        )
     }
-    val iconTint = if (unlocked) {
-        Color(QingyuTheme.onAccent(dark))
-    } else {
-        Color(QingyuTheme.secondaryText(dark))
+    val lockBorder = accent.copy(
+        alpha = if (dark) AchievementModel.LOCKED_BORDER_DARK else AchievementModel.LOCKED_BORDER_LIGHT,
+    )
+    val iconTint = when {
+        current == null -> Color.Unspecified
+        unlocked -> Color(QingyuTheme.onAccent(dark))
+        else -> accent.copy(
+            alpha = if (dark) AchievementModel.LOCKED_ICON_DARK else AchievementModel.LOCKED_ICON_LIGHT,
+        )
     }
 
     QingyuSheet(
-        show = true,
-        title = achievement.name,
+        show = achievement != null,
+        title = current?.name ?: "",
         onDismissRequest = onDismiss,
         // 正文自带 16dp ⇒ 套件侧边距归零，避免叠成 32。
         contentPadsHorizontally = true,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        if (current != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
             // ── 勋章大图标（84×84，圆角 24） ──
             Box(
                 modifier = Modifier
@@ -92,7 +116,7 @@ fun AchievementDetailSheet(
                         } else {
                             Modifier.border(
                                 width = 0.5.dp,
-                                color = Color(QingyuTheme.dividerLine(dark)),
+                                color = lockBorder,
                                 shape = RoundedCornerShape(24.dp),
                             )
                         },
@@ -146,16 +170,16 @@ fun AchievementDetailSheet(
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
                     Text(
-                        text = achievement.statusLabel,
+                        text = current.statusLabel,
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = if (unlocked) accent else Color(QingyuTheme.secondaryText(dark)),
                     )
                 }
 
-                if (achievement.hasProgress && achievement.progressLabel != null) {
+                if (current.hasProgress && current.progressLabel != null) {
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = achievement.progressLabel,
+                        text = current.progressLabel,
                         style = MiuixTheme.textStyles.footnote2.shiftWeight(QingyuWeightDelta.MEDIUM),
                         color = Color(QingyuTheme.secondaryText(dark)),
                     )
@@ -163,7 +187,7 @@ fun AchievementDetailSheet(
             }
 
             // ── 进度条 ──
-            if (achievement.hasProgress) {
+            if (current.hasProgress) {
                 Spacer(Modifier.height(12.dp))
                 Box(
                     modifier = Modifier
@@ -172,7 +196,7 @@ fun AchievementDetailSheet(
                         .clip(RoundedCornerShape(3.dp))
                         .background(Color(QingyuTheme.surfaceContainerHighest(dark))),
                 ) {
-                    val ratio = if (unlocked) 1f else achievement.progressRatio.coerceIn(0f, 1f)
+                    val ratio = if (unlocked) 1f else current.progressRatio.coerceIn(0f, 1f)
                     if (ratio > 0f) {
                         Box(
                             modifier = Modifier
@@ -198,7 +222,7 @@ fun AchievementDetailSheet(
             // `listTitle.copyWith(fontSize: footnote2 + 2)` = 13sp。迁移时写成了 15sp，
             // 本次只做「回到字阶」，没有顺手改字号（那是版式变更，需要用户过目）。
             Text(
-                text = achievement.description,
+                text = current.description,
                 style = MiuixTheme.textStyles.body1,
                 lineHeight = 22.sp,
                 textAlign = TextAlign.Center,
@@ -207,10 +231,10 @@ fun AchievementDetailSheet(
             )
 
             // ── 详细达成说明（次要字色 13sp） ──
-            if (achievement.detail.isNotEmpty()) {
+            if (current.detail.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = achievement.detail,
+                    text = current.detail,
                     style = MiuixTheme.textStyles.footnote1,
                     lineHeight = 20.sp,
                     textAlign = TextAlign.Center,
@@ -229,7 +253,8 @@ fun AchievementDetailSheet(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColorsPrimary(),
             ) {
-                Text(achievement.confirmLabel)
+                Text(current.confirmLabel)
+            }
             }
         }
     }
