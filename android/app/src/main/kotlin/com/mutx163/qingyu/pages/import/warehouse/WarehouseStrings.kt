@@ -134,6 +134,7 @@ object WarehouseStrings {
     val noImportableCoursesFromScript = WarehouseArbText("noImportableCoursesFromScript", "脚本未返回可导入课程")
     val inputRequiredTitle = WarehouseArbText("inputRequiredTitle", "需要输入")
     val invalidImportUrl = WarehouseArbText("invalidImportUrl", "请输入有效的教务网址")
+    val invalidSectionTimeFormat = WarehouseArbText("invalidSectionTimeFormat", "节次时间格式不正确")
     val laterAction = WarehouseArbText("laterAction", "稍后再说")
     val localDebugModeScriptStatus = WarehouseArbText("localDebugModeScriptStatus", "本地调试模式：{scriptName}")
     val loginEntryLabel = WarehouseArbText("loginEntryLabel", "登录入口")
@@ -143,6 +144,7 @@ object WarehouseStrings {
     val noMacroRecordFound = WarehouseArbText("noMacroRecordFound", "未找到录制记录，请先完成一次录制")
     val noMatchingSchools = WarehouseArbText("noMatchingSchools", "没有找到匹配的学校或适配器")
     val noRecognizedLoginInputs = WarehouseArbText("noRecognizedLoginInputs", "未识别到登录输入项")
+    val noSectionTimesToSave = WarehouseArbText("noSectionTimesToSave", "没有可保存的节次时间")
     val noSavedDebugRecords = WarehouseArbText("noSavedDebugRecords", "还没有保存的调试记录")
     val noSavedDebugRecordsHint = WarehouseArbText("noSavedDebugRecordsHint", "先新增一条，把网址和脚本贴进去，以后就能直接复用")
     val noSavedQuickImportRecords = WarehouseArbText("noSavedQuickImportRecords", "暂无已保存的快捷导入记录")
@@ -205,6 +207,7 @@ object WarehouseStrings {
     val warehouseAdaptersLoadFailedTitle = WarehouseArbText("warehouseAdaptersLoadFailedTitle", "暂时无法读取适配器列表")
     val warehouseCustomDebugTitle = WarehouseArbText("warehouseCustomDebugTitle", "自定义调试")
     val warehouseFeedbackMissingSchoolTitle = WarehouseArbText("warehouseFeedbackMissingSchoolTitle", "缺少学校？去反馈")
+    val warehouseImportedTimeSchemeName = WarehouseArbText("warehouseImportedTimeSchemeName", "{schoolName} 导入节次")
     val warehouseImportExecutionLogMenuLabel = WarehouseArbText("warehouseImportExecutionLogMenuLabel", "课表导入执行日志")
     val warehouseMatchedAdaptersLabel = WarehouseArbText("warehouseMatchedAdaptersLabel", "匹配适配器：{names}")
     val warehouseMissingSchoolSubtitle = WarehouseArbText("warehouseMissingSchoolSubtitle", "请到反馈页提交 Issue，附上学校名称、教务系统网址与课表页截图，便于补充适配")
@@ -329,6 +332,7 @@ object WarehouseStrings {
         inputRequiredTitle,
         invalidCourseDataFormat,
         invalidImportUrl,
+        invalidSectionTimeFormat,
         laterAction,
         noImportableCoursesFromScript,
         localDebugModeScriptStatus,
@@ -339,6 +343,7 @@ object WarehouseStrings {
         noMacroRecordFound,
         noMatchingSchools,
         noRecognizedLoginInputs,
+        noSectionTimesToSave,
         noSavedDebugRecords,
         noSavedDebugRecordsHint,
         noSavedQuickImportRecords,
@@ -401,6 +406,7 @@ object WarehouseStrings {
         warehouseAdaptersLoadFailedTitle,
         warehouseCustomDebugTitle,
         warehouseFeedbackMissingSchoolTitle,
+        warehouseImportedTimeSchemeName,
         warehouseImportExecutionLogMenuLabel,
         warehouseMatchedAdaptersLabel,
         warehouseMissingSchoolSubtitle,
