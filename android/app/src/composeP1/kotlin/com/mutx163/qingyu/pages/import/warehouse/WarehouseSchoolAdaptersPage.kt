@@ -1,7 +1,5 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,17 +9,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -85,48 +79,8 @@ fun WarehouseSchoolAdaptersPage(
             scrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = 12.dp),
         ) {
-            // 学校概览卡片
-            item(key = "school_header") {
-                QingyuCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = QingyuPageCardMargin),
-                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = school.initial.ifEmpty { "学" },
-                                    style = MiuixTheme.textStyles.title4.shiftWeight(QingyuWeightDelta.BOLD),
-                                    color = MiuixTheme.colorScheme.primary,
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = school.name,
-                                    style = MiuixTheme.textStyles.main.shiftWeight(QingyuWeightDelta.BOLD),
-                                )
-                                if (school.province.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = school.province,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // 学校概览卡（旧版 Dart 没有这张卡）：页面大标题就是学校名，再画一张
+            // 「头像 + 校名」卡是显式冗余（用户 2026-11-03 实报），身份由标题承担。
 
             // 适配器列表
             if (adapters.isEmpty()) {
@@ -149,13 +103,16 @@ fun WarehouseSchoolAdaptersPage(
                                 )
                                 if (phase == WarehouseListPhase.Failed) {
                                     // 真失败才给重试；Idle 是「调用方没接数据层」，给重试按钮没有意义。
+                                    // 配色对齐旧版（warehouse_school_adapters_screen.dart:119-123
+                                    // 的 HyperosButton secondary）；此前 primary 12% 浅蓝底在
+                                    // 页底 #F2F2F2 上对比比 ~1.05，几乎看不见是个按钮。
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Button(
                                         onClick = onRetry,
                                         content = { Text(text = WarehouseStrings.reloadAction.zh) },
                                         colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MiuixTheme.colorScheme.primary,
+                                            color = MiuixTheme.colorScheme.secondary,
+                                            contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                         ),
                                     )
                                 }
@@ -179,18 +136,23 @@ fun WarehouseSchoolAdaptersPage(
                                 style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.BOLD),
                             )
                             Spacer(modifier = Modifier.height(4.dp))
+                            // 元信息是标签行：footnote2（比说明小一档）弱化，说明才用 body2。
+                            // 旧版同样直接显示原始分类串（warehouse_shared.dart:174），不动内容。
                             Text(
                                 text = "${WarehouseStrings.categoryLabel.zh}：${adapter.category} · ${WarehouseStrings.maintainerLabel.zh}：${adapter.maintainer.ifEmpty { "社区" }}",
-                                style = MiuixTheme.textStyles.footnote1,
+                                style = MiuixTheme.textStyles.footnote2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
 
                             if (adapter.description.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))
+                                // 说明是正文字号（body2）+ 放开的行距（22sp ≈ 1.57 倍），
+                                // 限 3 行：全文由「查看详情」承接（列表保持可扫读）。
                                 Text(
                                     text = adapter.description,
-                                    style = MiuixTheme.textStyles.footnote1,
+                                    style = MiuixTheme.textStyles.body2,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    lineHeight = 22.sp,
                                     maxLines = 3,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -198,7 +160,13 @@ fun WarehouseSchoolAdaptersPage(
 
                             Spacer(modifier = Modifier.height(14.dp))
 
-                            // 动作按钮组
+                            // 动作按钮组：统一 2×2 等宽网格（列宽全部 weight(1f) 等分、
+                            // 行内同构件等高，触摸高 ≈48dp 来自官方组件默认）。
+                            // 旧版是「primary / secondary / 右对齐散排」三种摆法混用，且
+                            // Compose 版此前四颗用了四种配色（surfaceVariant 白底在白卡上
+                            // 对比比 1.0 完全隐形，只剩蓝字飘着）；现在只留一颗主操作
+                            // 「网页登录导入」（primary 实心），其余三颗同为次级灰
+                            // （secondary #E6E6E6 底 + onSecondaryVariant 墨，白卡上对比 1.25）。
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -206,46 +174,50 @@ fun WarehouseSchoolAdaptersPage(
                                 Button(
                                     onClick = { onImportAdapter(adapter) },
                                     modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColorsPrimary(),
                                     content = { Text(text = WarehouseStrings.webLoginImport.zh) },
                                 )
                                 Button(
                                     onClick = { onRecordAdapter(adapter) },
                                     modifier = Modifier.weight(1f),
-                                    content = { Text(text = WarehouseStrings.recordImportAction.zh) },
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.primary,
+                                        color = MiuixTheme.colorScheme.secondary,
+                                        contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                     ),
+                                    content = { Text(text = WarehouseStrings.recordImportAction.zh) },
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
+                            // 查看详情固定在右列（对齐旧版 centerRight 的位置记忆）；
+                            // 没有宏时左列留空位撑住网格，不让「查看详情」变形。
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 if (hasMacro) {
                                     Button(
                                         onClick = { onQuickImportAdapter(adapter) },
-                                        content = { Text(text = WarehouseStrings.quickImportAction.zh) },
+                                        modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(
-                                            color = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                            contentColor = MiuixTheme.colorScheme.primary,
+                                            color = MiuixTheme.colorScheme.secondary,
+                                            contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                         ),
+                                        content = { Text(text = WarehouseStrings.quickImportAction.zh) },
                                     )
                                 } else {
-                                    Spacer(modifier = Modifier.width(1.dp))
+                                    Spacer(modifier = Modifier.weight(1f))
                                 }
 
                                 Button(
                                     onClick = { onViewAdapterDetail(adapter) },
-                                    content = { Text(text = WarehouseStrings.viewDetailsAction.zh) },
+                                    modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(
-                                        color = MiuixTheme.colorScheme.surfaceVariant,
-                                        contentColor = MiuixTheme.colorScheme.primary,
+                                        color = MiuixTheme.colorScheme.secondary,
+                                        contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
                                     ),
+                                    content = { Text(text = WarehouseStrings.viewDetailsAction.zh) },
                                 )
                             }
                         }
