@@ -219,6 +219,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 
 ### A 线回 B 线（键名交付）
 - `TimetableProfilesPage.kt:490` 的 `contentDescription = "已激活"` 写死中文 → 已新增键 **`timetableProfileActiveBadge`**（六份 ARB 同步 + gen-l10n + copy_style 无新增死键），并在 `TimetableStrings.kt` 补 `ArbText` 引用使其非死键（`86765ada`）。B 线替换后把 cjk 基线 `TimetableProfilesPage.kt` 行 4→3 压行。
+- **B 线已完成替换**（`24263aa3`，+2/-2 仅该文件 + cjk 基线）：cjk 门 `--source-set composeP1` exit=0，基线 4→3（总条目 121 不变）；门3 timetable 5 处全在基线例外、门4 copy_style 新增 0；`TimetableStringsParityTest` + `TimetableProfilesDialogGuardTest` 11 tests JVM 通过。生成物 `app_localizations*.dart` 已同步收进 `a0b1be71`。
 
 ### C 线收口（2026-11-03 09:05，C 线自验回填，提交 `134cac79` 已推送）
 - **云备份差异预览接通**：`CloudSyncController.kt` +199（`previewBackupRestore`/`applyPreviewedBackupRestore`/`CloudBackupRestorePreview`/`parseSnapshotList`）；`CloudBackupDetailHost.kt` 恢复改走「预览 → 确认 → 落盘」并删旧二次确认；`CoupleTimetableSettingsHost.kt` 去条件挂载；`CoupleWebdavConnectSheet.kt` 参数化 `show`；新增 `CloudBackupRestorePreviewTest.kt` +209（10 条）。
