@@ -2,7 +2,8 @@
 
 > **一句话**：`composeP1` 下的每个页面都必须用**共享页面套件**搭，不许直接调 miuix 裸组件。
 > 判定由 `android/app/src/test/kotlin/com/mutx163/qingyu/pages/ComposePageStyleGuardTest.kt` 机械执行，
-> 每个域一份棘轮基线 `tool/compose_style_baseline/<域>.txt`。
+> 判据收敛成 4 个扫描器（结构 / 内容块 / 字体 / 颜色）。**待修违规必须为 0**；
+> 确需保留的写法登记在 `tool/compose_style_exceptions/<域>.txt`。
 >
 > 建立日期：2026-10-28。起因：用户实测「好多页面各不一样」「对比 demo 一堆毛病」，
 > 根因是共享封装早就写好了，但页面还在直接调裸组件，于是手感/滚动/圆角/轴线各写各的。
@@ -30,7 +31,8 @@
 ## 二、七条规则
 
 > 每条给：**必须怎么干** / **判定** / **为什么**。
-> 规则编号 `R1…R7` 就是基线文件里那一列，报错时对号入座。
+> 规则编号 `R1…R7` 就是例外清单里那一列，报错时对号入座。
+> 2026-11-03 起判据按「结构 / 内容块 / 字体 / 颜色」归成 4 个扫描器，编号不变。
 
 ### R1 · 不许手搓顶栏行 → 官方 `TopAppBar` / `QingyuPageScaffold`
 
@@ -106,7 +108,7 @@ color = Color(0xFF999999)                            // ❌ 深色模式下必�
 - **为什么**：写死色值在深色模式/换主题色后必然与周围不一致；`QingyuPageTheme` 已把自家色板桥进
   `MiuixTheme.colorScheme`，语义槽取色即可。语义槽对照表见 `docs/reference/miuix-api-mapping.md` §1。
 - **豁免**：确实与主题无关的固定语义色（如危险色 `QingyuFixedTokens.DESTRUCTIVE`、图标彩豆），
-  但**应当**改走 token 而不是字面量；要留在基线里必须在该行写明原因。
+  但**应当**改走 token 而不是字面量；要留在例外清单里必须写明原因。
 
 ### R6 · 分组标题 → `QingyuSectionTitle`
 
@@ -202,44 +204,49 @@ fun XxxPage(viewState: XxxViewState, onBack: () -> Unit) {
 
 ---
 
-## 四、棘轮基线怎么用（改页面的人看这一节）
+## 四、例外清单怎么用（改页面的人看这一节）
 
-### 4.1 基线在哪、谁拥有
+### 4.1 清单在哪、怎么写的
 
 ```
-tool/compose_style_baseline/
-    about.txt      ← 拥有 about/ 这个域的人维护
-    course.txt
-    ...
+tool/compose_style_exceptions/
+    showcase.txt   ← 展厅的固定配色
+    timetable.txt  ← 与用户课程/日程数据绑定的颜色、两处结构性滚动豁免
 ```
 
-一行 = 一处待还的债，格式 `<相对路径>|<规则>|<说明>`。**一个域一个文件**，
-这样多个 Agent 并行时各改各的、不会撞车（共用一个文件必然冲突）。
+一行 = 一处**永久例外**，格式 `<相对路径>|<规则>|<原因>`。**不是待还的债**：
+债已经清完，守卫要求待修违规 = 0；这里只放「确实不能走主题/共享套件」的写法。
+原因必须写实（为什么不能走主题、Dart 是哪个值），空原因会被守卫拒绝。
+
+> 2026-11-03 之前是每域一份 `tool/compose_style_baseline/<域>.txt`。清到 0 以后，
+> 21 份里有 19 份只剩注释头，2 份合计 10 行有效内容；继续保留会让「修一处」变成
+> 「改代码 + 改基线」两个文件，也让 `-Write` 能把新违规洗进基线。现在合并成 2 份例外清单，
+> 空文件不再留在仓库里。
 
 ### 4.2 三条纪律
 
-1. **守卫只拦新增**：基线里已冻结的违规不会让测试变红；**新写的**违规会。
+1. **新增必红**：新写的违规不在例外清单里 ⇒ 失败，必须改代码。
    ⇒ 新页面天然无法退回旧写法。
-2. **修好一条就删一行**：基线里那行还留着、但代码已经不违规了，测试会报「**过期**」并变红。
-   ⇒ 逼着人还债，不许只进不出。
-3. **不许为了让提交变绿往基线里加行**（除非写清原因，例如「本页确实需要固定语义色」）。
-   那是把守卫变成摆设，比没有守卫更糟。
+2. **过期必红**：清单里的行还留着、但代码已经不违规了 ⇒ 测试报「**过期**」并变红。
+   ⇒ 修好必须删行，不许只进不出。
+3. **不许用 `-Write` 加行**：脚本只会删过期行，**绝不新增**。新增例外只能人工编辑
+   并写明原因——这是为了堵住「跑一下命令就变绿」的后门。
 
 ### 4.3 怎么跑
 
 ```powershell
-# 看自己域还欠哪些（不写文件）
+# 看自己域（只读；有待修或过期时 exit 1）
 pwsh -File scripts/compose-style-lint.ps1 -Domain statistics
 
-# 修完之后重新生成自己域的基线（会自动删掉已修好的行）
+# 删掉自己域里已经修好的过期例外（只删，不加）
 pwsh -File scripts/compose-style-lint.ps1 -Domain statistics -Write
 
 # 权威闸门（JUnit，CI 与 L2 都跑这个）
-pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
+pwsh -File scripts/safe-gradle.ps1 :app:testDevDebugUnitTest
 ```
 
-> 只跑自己域：**不要**在别人的域还没修完时跑全量 `-Domain all -Write`，那会把别人的债
-> 记到你头上、也让他们的过期判定失效。
+> 只跑自己域：**不要**在别人的域还没修完时跑 `-Domain all -Write`，那会把别人
+> 还没落地的改动判成过期。
 
 ---
 
@@ -251,7 +258,7 @@ pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
 | `pages/shell/`（壳、导航栏、玻璃坞） | 豁免 R1；它自带导航栏，不是子页 |
 | `pages/showcase/`（组件展厅） | 豁免 R1/R3/R7——**它故意逐个展示官方裸组件与字重**，这正是它的用途 |
 | 弹层/抽屉内部的短列表 | 豁免 R2（不承载页面级滚动） |
-| 确实需要的固定语义色 | 允许，但要在基线行里写原因 |
+| 确实需要的固定语义色 | 允许，但要在例外清单里写明原因 |
 | 与 Dart 原版行为冲突 | **Dart 是行为真相、demo 是样式真相**；冲突时行为从 Dart、样式从 demo，并在 KDoc 写明 |
 
 ---
@@ -262,6 +269,8 @@ pwsh -File scripts/safe-gradle.ps1 :app:testComposeUiDebugUnitTest
   `QingyuCard.kt`（按压反馈+圆角）· `QingyuPageTheme.kt`（主题桥）·
   `QingyuTextStyles.kt`（字阶注入 + `shiftWeight` 强调）
 - 守卫：`android/app/src/test/kotlin/com/mutx163/qingyu/pages/ComposePageStyleGuardTest.kt`
+- 自查脚本：`scripts/compose-style-lint.ps1`（4 个扫描器与守卫逐条对应；`-Write` 只删过期例外）
+- 例外清单：`tool/compose_style_exceptions/<域>.txt`（只有确有正当理由的写法才登记）
 - 上游基准：`docs/reference/miuix-demo/CHEATSHEET-Demo范例.md` §3（页面骨架配方）、§3.4（分组节奏表）、
   §3.7（六个坑）；`docs/reference/miuix-demo/CHEATSHEET-玻璃与手感.md` §2（按压反馈）
 - 既有同类守卫（写法参考）：`PageScaffoldGuardTest.kt`、`SettingsRowComponentGuardTest.kt`

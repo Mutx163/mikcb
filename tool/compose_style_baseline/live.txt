@@ -1,4 +1,0 @@
-# live 域的 Compose 页面样式基线（棘轮）。规则见 docs/reference/compose-page-style-rules.md
-# 一行一处待还的债：<相对路径>|<规则>|<说明>
-# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
-# 由 scripts/compose-style-lint.ps1 -Domain live -Write 重新生成。

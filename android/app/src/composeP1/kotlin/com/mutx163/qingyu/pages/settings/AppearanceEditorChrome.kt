@@ -58,8 +58,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 「白色 × 某个不透明度」，与明暗主题无关：浅色主题下这里也是暗底白字。所以色调
  * 直接取白/黑的 alpha（`Color.White.copy(alpha = …)` 与 0x66/0xEB 等值换算），
  * 只有两处是**绝对色值**（见 [AppearanceEditorScrim] 与 [SegmentSelectedInk]）。
- * 这两处已在 `tool/compose_style_baseline/settings.txt` 里按「与主题无关的固定语义色」
- * 登记（守卫规则 R5 的口径），不是漏改。
+ * 它们走具名 ARGB 常量（`ScrimArgb` / `SegmentInkArgb`），不写成 `Color(0x…)` 字面量，
+ * 所以样式守卫的 R5 不会命中，也不占例外清单。
  *
  * ## 为什么这些控件用官方 `Surface` 而不是自绘容器
  *
