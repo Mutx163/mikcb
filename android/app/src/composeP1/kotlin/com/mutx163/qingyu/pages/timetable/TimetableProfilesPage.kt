@@ -487,7 +487,7 @@ private fun TimetableProfileRow(
                 if (profile.isActive) {
                     Icon(
                         imageVector = MiuixIcons.Ok,
-                        contentDescription = "已激活",
+                        contentDescription = TimetableStrings.timetableProfileActiveBadge.zh,
                         tint = Color(QingyuTheme.primary(dark = dark)),
                         modifier = Modifier.size(20.dp),
                     )
