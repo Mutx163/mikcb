@@ -93,11 +93,32 @@ object TimetableStrings {
     val weekdaySat = ArbText("weekdaySat", "周六")
     val weekdaySun = ArbText("weekdaySun", "周日")
 
-    // ── 截屏「分享课表图」提示（Dart timetable_screen.dart:956-961 的胶囊文案）──
-    // 提示壳见 composeP1 的 ScreenshotSharePromptHost。Dart 版还有动作键
-    // timetableSharePromptAction（「分享」），动作对应导出分享面板——该面板还没移植，
-    // 按钮不画（没有去处的按钮不画），键也先不进 Compose。
+    // ── 截屏「分享课表图」提示与导出分享（Dart timetable_screen.dart:956-961 的胶囊 +
+    // timetable_share_service.dart 的分享正文 + timetable_export_document.dart 的图内标题）──
+    // 提示壳见 composeP1 的 ScreenshotSharePromptHost。导出面板已随 2026-11-03 的
+    // 「干净课表图」落地（TimetableShareImageModel/Render/Launcher），动作按钮接
+    // AppToastCapsule 的 actionLabel/onAction，动作 = 直接分享当前视图的图（Dart
+    // _shareTimetableImage 同口径：没有中间面板）。
     val timetableSharePromptMessage = ArbText("timetableSharePromptMessage", "要分享一张干净的课表图吗？")
+    val timetableSharePromptAction = ArbText("timetableSharePromptAction", "分享")
+
+    /** 分享正文（Dart `ShareParams(text: l10n.timetableShareText)`，`timetable_share_service.dart:84`）。 */
+    val timetableShareText = ArbText("timetableShareText", "来自轻屿课表的课表")
+
+    /** 导出图标题：周图「第 {week} 周课表」（Dart `timetableShareExportWeekTitle`）。 */
+    val timetableShareExportWeekTitle = ArbText("timetableShareExportWeekTitle", "第 {week} 周课表")
+
+    /** 导出图标题：日图「第 {week} 周 · {weekday}」（Dart `timetableShareExportDayTitle`）。 */
+    val timetableShareExportDayTitle = ArbText("timetableShareExportDayTitle", "第 {week} 周 · {weekday}")
+
+    /** 日图空态「这天没有课」（Dart `timetableShareExportEmptyDay`）。 */
+    val timetableShareExportEmptyDay = ArbText("timetableShareExportEmptyDay", "这天没有课")
+
+    fun timetableShareExportWeek(week: Int): String =
+        timetableShareExportWeekTitle.filled("week", week.toString())
+
+    fun timetableShareExportDay(week: Int, weekday: String): String =
+        timetableShareExportDayTitle.filled("week" to week.toString(), "weekday" to weekday)
 
     // ── 周视图表头 / 课卡 / 周次选择器（全部来自 ARB，2026-10-29 重做时补齐）──
     /** 星期栏左端周次简写（Dart `timetable_weekday_header.dart:181`，`{week} 周` 带半角空格）。 */
@@ -336,6 +357,11 @@ object TimetableStrings {
             addScheduleAction,
             addExam,
             timetableSharePromptMessage,
+            timetableSharePromptAction,
+            timetableShareText,
+            timetableShareExportWeekTitle,
+            timetableShareExportDayTitle,
+            timetableShareExportEmptyDay,
             weekdayMon,
             weekdayTue,
             weekdayWed,
