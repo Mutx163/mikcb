@@ -217,6 +217,11 @@ private fun qingyuLightColors(seedHex: String?) = lightColorScheme(
     outline = Color(QingyuTheme.outline(dark = false)),
     error = Color(QingyuTheme.error(dark = false)),
     onError = Color(QingyuTheme.onError(dark = false)),
+    // 弹层遮罩（Dialog/BottomSheet/Popup 共用一槽）。官方默认亮 30%/暗 60% 黑、且全量绘制，
+    // 观感偏重；对齐 NexioSchedule 的 ×0.6 软化档（其 fork 在 DialogContentLayout 绘制处
+    // 乘 0.6），等效 18%/36%。官方无 alpha 参数可传，只能在色板槽上给等效值——
+    // 一次生效：全部弹层的遮罩同此档。守卫 QingyuDialogMaterialGuardTest 钉住两行。
+    windowDimming = Color.Black.copy(alpha = 0.18f),
 )
 
 /** 深色板：**这一份是本次修复的核心**——之前完全没有生效过。 */
@@ -246,4 +251,6 @@ private fun qingyuDarkColors(seedHex: String?) = darkColorScheme(
     outline = Color(QingyuTheme.outline(dark = true)),
     error = Color(QingyuTheme.error(dark = true)),
     onError = Color(QingyuTheme.onError(dark = true)),
+    // 遮罩档口径见亮色板注释：官方默认暗色 60% 黑 → Nexio ×0.6 等效 36%。
+    windowDimming = Color.Black.copy(alpha = 0.36f),
 )
