@@ -1,7 +1,5 @@
 package com.mutx163.qingyu.pages.guide
 
-import com.mutx163.qingyu.pages.shell.ShellPageCatalog
-import com.mutx163.qingyu.pages.shell.ShellPageDataKind
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,11 +26,14 @@ import org.junit.Test
  * ## 为什么读文本而不是直接调函数
  *
  * `shellTimetableMenuPageId` 住在 `ShellWiring.kt`，那个文件 import 了 `android.*`
- * 与 Compose，进不了 L0 的 JVM classpath（`scripts/test-kotlin-module.ps1` 会把整目录跳过）。
- * 所以这里读源码文本——与 `SettingsRouteWiringGuardTest` 同一套做法。
+ * 与 Compose，进不了 L0 的 JVM classpath（`scripts/test-kotlin-module.ps1` 会把整目录跳过）；
+ * `ShellPageCatalog` 倒是纯 Kotlin，但它是 `pages/shell` 域的类型——guide 域的测试
+ * 直接 import 它，guide 的 L0 就得把 shell 域整个拉进来（跨域引用治理，2026-11-03）。
+ * 所以两处都读源码文本——与 `SettingsRouteWiringGuardTest` 同一套做法。
  *
  * **代价写清**：文本解析对格式敏感，表里必须写成 `"<id>" -> "<pageId>"` 且一行一条；
- * 哪天改成多行或动态拼装，这条会先红——那是故意的，提醒改的人同时更新这里。
+ * 目录条目必须保持 `page("P3-X", "<name>", "<标题>", ShellPageDataKind.<KIND>)` 的
+ * 单调用形状。哪天改成多行拆装或动态拼装，这条会先红——那是故意的，提醒改的人同时更新这里。
  */
 class MoreFeaturesNavigationGuardTest {
 
@@ -55,6 +56,44 @@ class MoreFeaturesNavigationGuardTest {
         return ENTRY.findAll(untilNextTopLevel).associate { it.groupValues[1] to it.groupValues[2] }
     }
 
+    /** 壳页面目录里的一条（只取本守卫需要的字段；kind 用枚举名的文本）。 */
+    private data class CatalogEntry(val id: String, val kind: String, val note: String?)
+
+    /**
+     * 解析 `ShellPageCatalog.kt` 的全部 `page(...)` 调用（`fun page(` 定义因首参不是
+     * 带引号字符串而天然不匹配）。
+     */
+    private fun shellCatalogEntries(): List<CatalogEntry> {
+        val text = shellCatalogSource()
+        val entries = mutableListOf<CatalogEntry>()
+        var index = text.indexOf("page(")
+        while (index >= 0) {
+            var depth = 1
+            var cursor = index + "page(".length
+            while (cursor < text.length && depth > 0) {
+                when (text[cursor]) {
+                    '(' -> depth++
+                    ')' -> depth--
+                }
+                cursor++
+            }
+            parsePageCall(text.substring(index + "page(".length, cursor - 1))?.let { entries += it }
+            index = text.indexOf("page(", cursor)
+        }
+        assertTrue("没在 ShellPageCatalog.kt 里解析出任何目录条目", entries.isNotEmpty())
+        return entries
+    }
+
+    private fun parsePageCall(body: String): CatalogEntry? {
+        val head = PAGE_CALL.find(body) ?: return null
+        val (code, name, _, kind) = head.destructured
+        val id = "${code.lowercase().removePrefix("p3-")}.$name"
+        // note 只用于失败信息：命名参数或 kind 后的第一个位置参数，二选一。
+        val note = NOTE_NAMED.find(body)?.groupValues?.get(1)
+            ?: NOTE_POSITIONAL.find(body)?.groupValues?.get(1)
+        return CatalogEntry(id, kind, note)
+    }
+
     // ------------------------------------------------------------------ 守卫
 
     @Test
@@ -73,16 +112,16 @@ class MoreFeaturesNavigationGuardTest {
     @Test
     fun `每个目标页面都在壳目录里且标着可进入`() {
         val table = shellMenuTable()
-        val known = ShellPageCatalog.batches.flatMap { it.pages }.associateBy { it.id }
+        val known = shellCatalogEntries().associateBy { it.id }
         val problems = mutableListOf<String>()
         for (id in featureItemIds()) {
             val target = table[id] ?: continue // 上一条断言负责报缺失
             val entry = known[target]
             when {
                 entry == null -> problems += "$id -> $target（目录里没有这个页面 id）"
-                entry.kind == ShellPageDataKind.UNAVAILABLE ->
-                    problems += "$id -> $target（目录标着暂不可用：${entry.note}）"
-                entry.kind == ShellPageDataKind.ALWAYS_VISIBLE ->
+                entry.kind == "UNAVAILABLE" ->
+                    problems += "$id -> $target（目录标着暂不可用：${entry.note ?: "没写原因"}）"
+                entry.kind == "ALWAYS_VISIBLE" ->
                     problems += "$id -> $target（常驻槽位不是可推的页）"
             }
         }
@@ -143,21 +182,23 @@ class MoreFeaturesNavigationGuardTest {
         assertTrue("功能条目太少（${ids.size}），模型可能被改坏", ids.size >= 35)
         assertTrue("功能条目 id 有重复：${ids.groupBy { it }.filterValues { it.size > 1 }.keys}", ids.size == ids.toSet().size)
         assertTrue("壳的 id→页面表条目太少（${shellMenuTable().size}）", shellMenuTable().size >= 30)
+        // 目录改文本解析后没有编译兜底了，条目总数自证解析没退化（当前 88 条，下限留余量）。
+        assertTrue(
+            "壳页面目录只解析出 ${shellCatalogEntries().size} 条（应 ≥ 80），正则可能失效",
+            shellCatalogEntries().size >= 80,
+        )
     }
 
     // ------------------------------------------------------------------ 定位
 
     /**
-     * 从工作目录向上找 `android/app/src`，再定位壳的路由表。
+     * 从工作目录向上找 `android/app/src`，再定位壳的路由表 / 页面目录。
      *
      * 与 `SettingsRouteWiringGuardTest` 同一套：L0 与 Gradle 的工作目录不同，
      * 所以按「向上找标志目录」而不是写死相对路径；**找不到判失败，不静默跳过**。
      */
-    private fun shellWiringSource(): String {
-        val candidates = listOf(
-            "main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
-            "composeUi/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
-        )
+    private fun locateSource(relativeCandidates: List<String>): String {
+        val candidates = relativeCandidates
         var dir: File? = File("").absoluteFile
         repeat(8) {
             if (dir != null) {
@@ -172,13 +213,40 @@ class MoreFeaturesNavigationGuardTest {
             dir = dir?.parentFile
         }
         error(
-            "找不到 ShellWiring.kt（工作目录 ${File("").absolutePath}）；试过：\n" +
+            "找不到壳源码文件（工作目录 ${File("").absolutePath}）；试过：\n" +
                 candidates.joinToString("\n") { "  android/app/src/$it" },
         )
     }
 
+    private fun shellWiringSource(): String = locateSource(
+        listOf(
+            "main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
+            "composeUi/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
+        ),
+    )
+
+    private fun shellCatalogSource(): String = locateSource(
+        listOf(
+            "main/kotlin/com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt",
+            "composeUi/kotlin/com/mutx163/qingyu/pages/shell/ShellPageCatalog.kt",
+        ),
+    )
+
     private companion object {
         /** 表里的一条：`"条目id" -> "页面id"`。id 允许驼峰与小写点分。 */
         val ENTRY = Regex(""""([A-Za-z0-9_]+)"\s*->\s*"([A-Za-z0-9._-]+)"""")
+
+        /**
+         * `page("P3-X", "<name>", "<标题>", ShellPageDataKind.<KIND>` 的调用头。
+         * `fun page(` 的参数表首参不是带引号字符串，天然不匹配。
+         */
+        val PAGE_CALL = Regex(
+            "^\\s*\"([A-Za-z0-9-]+)\"\\s*,\\s*\"([A-Za-z0-9_.]+)\"\\s*," +
+                "\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*,\\s*ShellPageDataKind\\.([A-Z_]+)",
+        )
+
+        /** note 的两种写法：命名参数，或 kind 后紧跟的位置参数（允许跨行）。 */
+        val NOTE_NAMED = Regex("""note\s*=\s*"((?:[^"\\]|\\.)*)"""")
+        val NOTE_POSITIONAL = Regex("""ShellPageDataKind\.[A-Z_]+\s*,\s*"((?:[^"\\]|\\.)*)"""")
     }
 }
