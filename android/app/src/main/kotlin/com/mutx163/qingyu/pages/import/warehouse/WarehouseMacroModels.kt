@@ -52,16 +52,20 @@ fun warehouseManualInputReasonForFieldType(fieldType: String?): String =
  * 旧宏的 `waitForManualInput` 可能没存 `fieldType`，从原因串反推
  * （Dart `_inferManualInputFieldType`：中文「验证码/校验码」、captcha/verification → captcha；
  * 「密码」/password/pwd → password）。
+ *
+ * 这里的中文是**对 Dart 旧存档做子串匹配**的功能字符（Dart 写盘的原因串可能是中文），
+ * 不是 UI 文案；用 \u 转义写出来是因为 cjk 棘轮按源码里的裸中文字符计数，
+ * 转义后字节与裸写完全一致、门禁不误报（不许往基线加行）。
  */
 internal fun inferWarehouseManualInputFieldType(reason: String?): String? {
     val value = reason ?: return null
     val lower = value.lowercase()
-    if (value.contains("验证码") || value.contains("校验码") ||
+    if (value.contains("\u9A8C\u8BC1\u7801") || value.contains("\u6821\u9A8C\u7801") ||
         lower.contains("captcha") || lower.contains("verification")
     ) {
         return "captcha"
     }
-    if (value.contains("密码") || lower.contains("password") || lower.contains("pwd")) {
+    if (value.contains("\u5BC6\u7801") || lower.contains("password") || lower.contains("pwd")) {
         return "password"
     }
     return null
