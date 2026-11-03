@@ -998,15 +998,22 @@ fun ShellPageContent(
                     val sections = snapshot.settings.sections
                     val index = (entry.startSection - 1).coerceAtLeast(0)
                     val section = sections.getOrNull(index)
-                    if (section != null) {
-                        AddCourseEntryClock(startTime = section.startTime, endTime = section.endTime)
-                    } else {
-                        val startMinutes = 8 * 60 + index * 55
-                        AddCourseEntryClock(
-                            startTime = clockText(startMinutes),
-                            endTime = clockText(startMinutes + 45),
-                        )
-                    }
+                    val templateStartTime = section?.startTime ?: clockText(8 * 60 + index * 55)
+                    val templateEndTime = section?.endTime ?: clockText(8 * 60 + index * 55 + 45)
+                    // Dart add_course_screen.dart:2021-2039：编辑既有课且原文 hasCustomTime、节次未变时，
+                    // 模板不得覆盖适配脚本钉住的钟点（否则「改个教师再保存」会把 07:00 静默改回 08:00）。
+                    val clock = com.mutx163.qingyu.course.CourseDomain.editCourseClock(
+                        original = entry.originalCourse,
+                        startSection = entry.startSection,
+                        endSection = entry.endSection,
+                        templateStartTime = templateStartTime,
+                        templateEndTime = templateEndTime,
+                    )
+                    AddCourseEntryClock(
+                        startTime = clock.startTime,
+                        endTime = clock.endTime,
+                        hasCustomTime = clock.hasCustomTime,
+                    )
                 },
                 onSave = { payload ->
                     // 服务校验 / 落盘失败会抛异常。不接的话异常从 Compose 点击回调里逃逸，
