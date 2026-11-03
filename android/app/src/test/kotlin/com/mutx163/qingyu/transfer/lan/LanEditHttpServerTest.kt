@@ -162,6 +162,28 @@ class LanEditHttpServerTest {
                 ),
             )
             assertEquals(413, response.status)
+            // Dart `lan_edit_api_handlers.dart:207-233`：error 固定 invalid_request，
+            // message 才是 request_body_too_large（早先本仓把两者都写成 payload_too_large）。
+            assertEquals("invalid_request", regexValue(response.body, "error"))
+            assertEquals("request_body_too_large", regexValue(response.body, "message"))
+        }
+    }
+
+    @Test
+    fun `请求体不是合法 UTF-8 时回 400 invalid_request`() {
+        withServer { _, port, _ ->
+            // `{\xC3(}`：0xC3 后面接 0x28 不是合法的 UTF-8 续字节。
+            val body = byteArrayOf(0x7B, 0xC3.toByte(), 0x28, 0x7D)
+            val head = (
+                "POST /api/v1/auth/verify HTTP/1.1\r\nHost: h\r\nContent-Type: application/json\r\n" +
+                    "Content-Length: ${body.size}\r\n\r\n"
+                ).toByteArray(Charsets.US_ASCII)
+            val response = parseResponse(exchangeRaw(port, head + body))
+            assertEquals(400, response.status)
+            // Dart 的 utf8.decode 抛 FormatException → invalid_request；
+            // 本仓不用替换字符洗成「看似合法」的 JSON。
+            assertEquals("invalid_request", regexValue(response.body, "error"))
+            assertEquals("invalid_utf8", regexValue(response.body, "message"))
         }
     }
 
@@ -577,10 +599,14 @@ class LanEditHttpServerTest {
     }
 
     /** 开一个真 socket，发原始请求文本（发完半关写端），读到 EOF。 */
-    private fun exchange(port: Int, request: String): String {
+    private fun exchange(port: Int, request: String): String =
+        exchangeRaw(port, request.toByteArray(Charsets.UTF_8))
+
+    /** 同 [exchange]，但允许直接发字节（畸形 UTF-8 这类用例没法用 String 表达）。 */
+    private fun exchangeRaw(port: Int, request: ByteArray): String {
         Socket("127.0.0.1", port).use { socket ->
             socket.soTimeout = 10_000
-            socket.getOutputStream().write(request.toByteArray(Charsets.UTF_8))
+            socket.getOutputStream().write(request)
             socket.getOutputStream().flush()
             // 半关写端：请求发完了。这样「只发了半个头」这类用例能让服务端看到 EOF
             // 并立刻回 400，而不是两边互相等对方的超时。

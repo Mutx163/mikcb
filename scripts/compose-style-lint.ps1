@@ -6,8 +6,9 @@
 
 .DESCRIPTION
     扫描 android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/<域>/*.kt，
-    按 R1..R7 七条规则列违规；-Write 时把自己域的基线文件重写为当前违规集
-    （已修好的行会自动消失，这就是「棘轮只进不出」的落地点）。
+    以及共享套件层 .../qingyu/components/*.kt（`-Domain components`，2026-11-04 补域；
+    基线键前缀 `components/`），按 R1..R7 七条规则列违规；-Write 时把自己域的基线文件
+    重写为当前违规集（已修好的行会自动消失，这就是「棘轮只进不出」的落地点）。
 
     一个域一个基线文件 tool/compose_style_baseline/<域>.txt，
     这样多 Agent 并行时各改各的，不会撞同一个文件。
@@ -31,6 +32,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $pagesRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages"
+$componentsRoot = Join-Path $repoRoot "android/app/src/composeP1/kotlin/com/mutx163/qingyu/components"
 $baselineRoot = Join-Path $repoRoot "tool/compose_style_baseline"
 
 if (-not (Test-Path $pagesRoot)) {
@@ -38,12 +40,19 @@ if (-not (Test-Path $pagesRoot)) {
     exit 2
 }
 
+# 域 → 源码根。pages 下按目录分域；components 是共享套件层（2026-11-04 补域），
+# 它不是 pages/<域>，但同样要过 R1..R7，且基线键前缀固定为 `components/`。
+$domainRoots = @{}
+foreach ($d in @(Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name)) {
+    $domainRoots[$d] = Join-Path $pagesRoot $d
+}
+if (Test-Path $componentsRoot) { $domainRoots["components"] = $componentsRoot }
+
 if ($Domain -eq "all") {
-    $domains = @(Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+    $domains = @($domainRoots.Keys | Sort-Object)
 } else {
-    $one = Join-Path $pagesRoot $Domain
-    if (-not (Test-Path $one)) {
-        $avail = (Get-ChildItem -Path $pagesRoot -Directory | Select-Object -ExpandProperty Name | Sort-Object) -join ', '
+    if (-not $domainRoots.ContainsKey($Domain)) {
+        $avail = ($domainRoots.Keys | Sort-Object) -join ', '
         Write-Error "没有这个域：$Domain（可选：$avail）"
         exit 2
     }
@@ -89,6 +98,12 @@ $exempt = @{
     "showcase" = @("R1", "R3", "R7")   # 展厅故意逐个展示官方裸组件与字重
 }
 
+# 文件级豁免：套件本体就是「被用来绕开裸组件」的那一层，规则文档 §二 R3 明文豁免
+# `components/QingyuCard.kt` 自身（其它组件文件不豁免，仍按 R1..R7 逐条查）。
+$fileExempt = @{
+    "components/QingyuCard.kt" = @("R3")
+}
+
 function Get-CodeLines {
     param([string]$Path)
     $n = 0
@@ -106,13 +121,17 @@ function Get-CodeLines {
 function Get-Violations {
     param([string]$DomainName)
 
-    $dir = Join-Path $pagesRoot $DomainName
+    $dir = $domainRoots[$DomainName]
     $files = @(Get-ChildItem -Path $dir -Recurse -File -Filter *.kt | Sort-Object FullName)
     $ex = $exempt[$DomainName]
     $out = New-Object System.Collections.Generic.List[object]
 
     foreach ($f in $files) {
-        $rel = $f.FullName.Substring($pagesRoot.Length + 1).Replace('\', '/')
+        $relBody = $f.FullName.Substring($dir.Length + 1).Replace('\', '/')
+        # 页面域沿用 `pages/<域>/文件` 的相对路径；components 域补上 `components/` 前缀，
+        # 保证基线键与守卫（File 相对 pagesRoot）的读取口径一致。
+        $rel = if ($DomainName -eq "components") { "components/$relBody" } else { $relBody }
+        $fx = $fileExempt[$rel]
         $lines = @(Get-CodeLines -Path $f.FullName)
         $all = ($lines | ForEach-Object { $_.Code }) -join "`n"
 
@@ -140,8 +159,8 @@ function Get-Violations {
             $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R2"; Detail = "用 Column+verticalScroll 当主滚动（非惰性，第 $(& $firstLine $reVerticalScroll) 行）" })
         }
 
-        # R3 卡片 → QingyuCard
-        if ($ex -notcontains "R3" -and $reRawCard.IsMatch($all)) {
+        # R3 卡片 → QingyuCard（QingyuCard.kt 本体按规则文档明文豁免）
+        if ($ex -notcontains "R3" -and $fx -notcontains "R3" -and $reRawCard.IsMatch($all)) {
             $out.Add([pscustomobject]@{ Rel = $rel; Rule = "R3"; Detail = "裸 Card，缺按压反馈与语义圆角（第 $(& $firstLine $reRawCard) 行）" })
         }
 

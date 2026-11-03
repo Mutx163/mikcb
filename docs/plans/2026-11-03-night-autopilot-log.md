@@ -1919,6 +1919,64 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Mo
 
 **边界**：未碰 `app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`pages/import/**`、`pages/transfer/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
 
+### 10.41 ✅ transfer 域「文件/编码/大小/命名」边界全量对拍（2026-11-04，transfer/lan）
+
+**结论**：5 项逐条核实。真差异 2 条，均在 `transfer/lan`（LAN 体超限/超时的 HTTP error 码、LAN 请求体 UTF-8 严格性），已修 + 2 条咬合探针。导出命名 1 条越界差异（`pages/export`，按范围只报不修）；LAN 旧 5 键包按既有裁决保持不实现。
+
+**A. 真差异已修**
+
+1. **体超限/超时的响应契约**
+   - Dart `lan_edit_api_handlers.dart:999-1017` 抛 `request_body_too_large` / `request_body_timeout`；`:207-233` 响应统一 `error='invalid_request'`，状态 413/408，只有 `message` 是上述两码。
+   - Kotlin 旧状：`LanEditHttp.kt:73-74` 把 `payload_too_large` / `request_timeout` 同时写进 error 与 message；`LanEditHttpServer.kt:260` 用 `failure.error` 填两字段 ⇒ 网页端按 `error` 分流会误判。
+   - 修：`LanEditHttpFailure` 增加独立 `message`（默认等于 error）；`BODY_TOO_LARGE(413,"invalid_request","request_body_too_large")`、`BODY_TIMEOUT(408,"invalid_request","request_body_timeout")`；服务端两处改取 `failure.message`。
+2. **LAN 请求体编码**
+   - Dart `:1019` `utf8.decode`（`allowMalformed` 默认 false）畸形字节直接 `FormatException` → 400 `invalid_request`。
+   - Kotlin 旧状：`LanEditHttpServer.kt:342` `String(buffer, Charsets.UTF_8)` 把畸形字节洗成 `U+FFFD`，可能把坏包洗成「能解析的 JSON」。
+   - 修：复用 `TransferTextDecoding.decodeStrictUtf8`（`TransferTextDecoding.kt:47-55`），失败抛新 `INVALID_BODY_ENCODING`（400 / `invalid_request` / `invalid_utf8`）。
+
+**咬合探针**（改坏 → 红 → 还原）：
+
+- `BODY_TOO_LARGE.message` 改回 `payload_too_large` → `Tests run: 481, Failures: 1`（`expected:<request_body_too_large> but was:<payload_too_large>`）→ 还原后 553 全绿。
+- `readBody` 改回 `String(buffer, UTF_8)` → `Failures: 1`（`expected:<invalid_utf8> but was:<Expected JSON object>`）→ 还原后 553 全绿。
+
+**B. 双侧同解（核实后不动）**
+
+1. **大小上限**
+   - 文件通道 20 MiB：Dart `unified_transfer_service.dart:142` + `import_file_reader.dart:35`（**读前**拒绝，不截断），超限 → `importFileTooLarge`（`data_transfer_screen.dart:408-413`）；Kotlin `TransferShareContract.kt:126-137` 同 20 MiB、同 `ReadResult.TooLarge` 映射。
+   - LAN 体 5 MiB：Dart `:999`，Kotlin `LanEditHttp.kt:35`，`requireContentLength` 读前拒（`LanEditHttpParseTest` 已钉边界）。
+   - Kotlin 额外 8 MiB 在飞总预算（`LanEditHttp.kt:49`）是内存闸门，Dart 无对应，属有意加固。
+2. **文件通道编码**：Dart `data_transfer_screen.dart:415` `utf8.decode` 严格；Kotlin `decodeStrictUtf8` REPORT 同判据，`InvalidEncoding` 未被别的分支吞掉。空/仅空白 → `EmptyContent`：Dart `:419-421` 只判 `isEmpty`，本仓「仅空白也判失败」+「InvalidEncoding 复用 `importFailedInvalidFile`」均为既有裁决（`TransferTextDecoding.kt:26-43`）。
+3. **空文件 / 只读 URI / 无权限**：Dart `:394-397` 路径为空 → `importFileReadFailed`；`:423-440` 读失败兜底 → `importFailedInvalidFile`。Kotlin `AndroidTransferDocumentAdapter.kt:126-129` 同三分类，文案键已由既有测试钉住。
+4. **LAN 整份替换 vs 合并**：Dart `unified_transfer_service.dart:657-697`（overwrite 整份替换、merge 合并）；`:1000-1027` 外来 rules/groups 为空时不动本地。Kotlin `LanTransferApplier` / `LanTransferLogic.applyIncoming` 同构（含 settings 空不覆盖、rules/groups 空不动）。同解。
+
+**C. 需他人改（越界，只报 / 给补丁）**
+
+1. **导出文件名缺 80 rune 截断**：Dart `ics_export_service.dart:751-754`；Kotlin `pages/export/IcsExportModel.kt:278-292` 无此段。补丁（BMP 内等价；含 emoji 时需按 `codePoints` 截断）：
+   ```kotlin
+   if (safe.isEmpty()) return "timetable"
+   if (safe.length > 80) safe = safe.substring(0, 80)
+   return safe
+   ```
+2. **QR 接收仍宽松解码**：`pages/transfer/DataTransferHost.kt:243` `String(bytes, Charsets.UTF_8)`。Dart QR 通道走严格 `utf8.decode`；建议改 `TransferTextDecoding.decodeStrictUtf8(bytes) ?: 失败(importFailedInvalidFile)`。该文件不在 `transfer/**`。
+3. **LAN 旧 5 键包**：Dart LAN 走 `parseCompatible`（`lan_edit_provider_host.dart:342-344` 等 4 处），旧备份包被接受，再按当前档案整份替换/合并；Kotlin `LanTransferLogic.parseIncoming:100-104` 直接 `validateTransferPackageJson`，旧包在类型门即拒（`transfer_package_type_invalid`）。既有裁决见 `DataTransferLegacyBackupLogic.kt:55`（LAN 不实现兼容层）。若要补：需把 legacy 归一化搬到 `transfer/` 共享（现实现 `pages/transfer/DataTransferLegacyBackupLogic`，`transfer/lan` 反向依赖 `pages` 会倒置分层），需 Lead 授权跨域移动。**本批未改**。
+
+**L0（实际命令与数字）**
+
+```
+C:\dev\pwsh\pwsh.exe -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -Module transfer -ExtraSources @('<pages/import/IcsImportModel.kt>','<IcsHeaderKeywords.kt>','<transfer 测试 16 个文件>')"
+```
+
+- 编译 198 文件，`OK (553 tests)`（`pages/transfer` 25 类 + `transfer`/`transfer.lan` 16 类）。
+- 探针子集（仅 lan 测试）：`Tests run: 481, Failures: 1` ×2（各只红一条新用例）。
+
+```
+C:\dev\pwsh\pwsh.exe -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -Module pages/import"
+```
+
+- 编译 230 文件，`OK (522 tests)`。
+
+**边界**：只改 `transfer/lan/LanEditHttp.kt`、`transfer/lan/LanEditHttpServer.kt`、`transfer/lan/LanEditHttpServerTest.kt`；未碰 `pages/sync/**`（只读核对）、`pages/import/**`（仅 `-ExtraSources` 测试引用）、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/timetable/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
 
 
 

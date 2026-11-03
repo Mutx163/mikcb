@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.transfer.lan
 
 import com.mutx163.qingyu.share.UNKNOWN_LAN_CLIENT_IP
+import com.mutx163.qingyu.transfer.TransferTextDecoding
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.IOException
@@ -257,7 +258,7 @@ class LanEditHttpServer(
         } catch (error: LanEditHttpException) {
             writeQuietly(
                 socket,
-                LanEditHttpResponse.error(error.failure.status, error.failure.error, error.failure.error),
+                LanEditHttpResponse.error(error.failure.status, error.failure.error, error.failure.message),
             )
         } catch (_: ClientDisconnected) {
             // 对端半途消失（浏览器关标签页 / 手机走出 WiFi）：没有对端可回，安静收摊。
@@ -267,7 +268,7 @@ class LanEditHttpServer(
                 LanEditHttpResponse.error(
                     LanEditHttpFailure.BODY_TIMEOUT.status,
                     LanEditHttpFailure.BODY_TIMEOUT.error,
-                    LanEditHttpFailure.BODY_TIMEOUT.error,
+                    LanEditHttpFailure.BODY_TIMEOUT.message,
                 ),
             )
         } catch (_: IOException) {
@@ -339,7 +340,9 @@ class LanEditHttpServer(
             }
             read += chunk
         }
-        return String(buffer, Charsets.UTF_8)
+        // 与 Dart `utf8.decode` 同口径：畸形字节直接 400，不用 U+FFFD 洗成合法 JSON。
+        return TransferTextDecoding.decodeStrictUtf8(buffer)
+            ?: throw LanEditHttpException(LanEditHttpFailure.INVALID_BODY_ENCODING, "malformed utf-8")
     }
 
     private fun writeQuietly(socket: Socket, response: LanEditHttpResponse) {

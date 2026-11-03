@@ -97,6 +97,10 @@ class ComposePageStyleGuardTest {
     private val pagesRoot: File
         get() = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/pages")
 
+    /** 共享套件层（2026-11-04 起与 lint 同口径纳入扫描，基线键前缀 `components/`）。 */
+    private val componentsRoot: File
+        get() = File(androidSrc(), "composeP1/kotlin/com/mutx163/qingyu/components")
+
     private val baselineRoot: File
         get() = File(repoRoot(), "tool/compose_style_baseline")
 
@@ -105,18 +109,27 @@ class ComposePageStyleGuardTest {
         if (!root.isDirectory) {
             throw AssertionError("找不到页面源码目录：${root.path} —— 守卫无法验证，按失败处理。")
         }
-        val files = root.walkTopDown()
-            .filter { it.isFile && it.extension == "kt" }
-            .toList()
-            .sortedBy { it.path }
+        val roots = listOf(root, componentsRoot).filter { it.isDirectory }
+        val files = roots.flatMap { r ->
+            r.walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .sortedBy { it.path }
+                .toList()
+        }.sortedBy { it.path }
         if (files.isEmpty()) {
             throw AssertionError("${root.path} 下一个 .kt 都没有，守卫会变成空跑，按失败处理。")
         }
         return files
     }
 
-    private fun relOf(file: File): String =
-        file.relativeTo(pagesRoot).path.replace(File.separatorChar, '/')
+    private fun relOf(file: File): String {
+        val abs = file.absoluteFile
+        val comp = componentsRoot.absoluteFile
+        if (abs.path.startsWith(comp.path + File.separator)) {
+            return "components/" + abs.relativeTo(comp).path.replace(File.separatorChar, '/')
+        }
+        return abs.relativeTo(pagesRoot.absoluteFile).path.replace(File.separatorChar, '/')
+    }
 
     /** 域 = 相对路径的第一段（about / course / statistics …）。 */
     private fun domainOf(rel: String): String = rel.substringBefore('/')
@@ -145,6 +158,14 @@ class ComposePageStyleGuardTest {
     private val domainExempt: Map<String, Set<String>> = mapOf(
         "shell" to setOf("R1"), // 壳自带导航栏，不是子页
         "showcase" to setOf("R1", "R3", "R7"), // 展厅故意逐个展示官方裸组件与字重
+    )
+
+    /**
+     * 文件级豁免（与 lint 的 `$fileExempt` 同口径）：套件本体就是「被用来绕开裸组件」
+     * 的那一层，规则文档 §二 R3 明文豁免 `components/QingyuCard.kt` 自身。
+     */
+    private val fileExempt: Map<String, Set<String>> = mapOf(
+        "components/QingyuCard.kt" to setOf("R3"),
     )
 
     /** 一处违规：`文件|规则` 是比对键，说明文字只给人看。 */
@@ -183,6 +204,8 @@ class ComposePageStyleGuardTest {
         val rel = relOf(file)
         val domain = domainOf(rel)
         val exempt = domainExempt[domain] ?: emptySet()
+        // 文件级豁免：套件本体就是「被用来绕开裸组件」的那一层（规则文档 §二 R3）。
+        val fx = fileExempt[rel] ?: emptySet()
         val lines = codeLines(file)
         val all = lines.joinToString("\n") { it.second }
         val out = mutableListOf<Violation>()
@@ -204,7 +227,7 @@ class ComposePageStyleGuardTest {
         }
 
         // R3 卡片 → QingyuCard
-        if ("R3" !in exempt && reRawCard.containsMatchIn(all)) {
+        if ("R3" !in exempt && "R3" !in fx && reRawCard.containsMatchIn(all)) {
             out += Violation(rel, "R3", "裸 Card，缺按压反馈与语义圆角（第 ${first(reRawCard)} 行）")
         }
 
