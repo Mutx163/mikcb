@@ -280,4 +280,92 @@ class WarehouseMacroStoreTest {
             throw IllegalStateException("disk full (test stub)")
         }
     }
+
+    // ---------------------------------------------------------------------
+    // 云同步：exportAllMacros / importAllMacros（P3 / N5）
+    // ---------------------------------------------------------------------
+
+    private fun recordAt(schoolId: String, adapterId: String, updatedAt: String): WarehouseMacroRecord =
+        record(schoolId = schoolId, adapterId = adapterId)
+            .copy(updatedAt = LocalDateTime.parse(updatedAt))
+
+    @Test
+    fun `导出按更新时间新到旧 坏本体跳过不拖累其余`() {
+        val store = InMemoryKeyValueStore()
+        val service = WarehouseMacroStore(store)
+        service.saveMacro(recordAt("old", "a", "2026-11-03T08:00:00"))
+        service.saveMacro(recordAt("new", "b", "2026-11-03T10:00:00"))
+        // 一条坏本体（目录里没有它，靠孤儿扫描才会碰到）：导出必须跳过而不是抛。
+        store.putString(WarehouseMacroRecord.storageKey("bad", "c"), "{not-json")
+
+        val exported = service.exportAllMacros()
+        assertEquals("坏条目占位不应被导出", 2, exported.size)
+        assertEquals("new", exported[0].schoolId)
+        assertEquals("old", exported[1].schoolId)
+    }
+
+    @Test
+    fun `导入整库覆盖 本地多余条目被删 索引随之重建`() {
+        val store = InMemoryKeyValueStore()
+        val service = WarehouseMacroStore(store)
+        service.saveMacro(recordAt("s1", "a1", "2026-11-03T09:00:00"))
+        service.saveMacro(recordAt("s2", "a2", "2026-11-03T09:30:00"))
+
+        val remote = recordAt("s3", "a3", "2026-11-04T08:00:00")
+        service.importAllMacros(listOf(remote))
+
+        assertFalse("本地旧宏应被整库覆盖删掉", service.hasMacro("s1", "a1"))
+        assertFalse(service.hasMacro("s2", "a2"))
+        assertEquals(remote, service.getMacro("s3", "a3"))
+        val entries = service.getAllMacroEntries()
+        assertEquals("索引只留新集合的一条", 1, entries.size)
+        assertEquals("s3", entries[0].schoolId)
+    }
+
+    @Test
+    fun `导入同 key 重复行收敛为一条 后出现的为准`() {
+        val store = InMemoryKeyValueStore()
+        val service = WarehouseMacroStore(store)
+        val first = recordAt("s1", "a1", "2026-11-03T09:00:00")
+        val second = first.copy(steps = listOf(WarehouseMacroStep.click("#a"), WarehouseMacroStep.click("#b")))
+
+        service.importAllMacros(listOf(first, second))
+
+        assertEquals("同名两行只落一条（后出现的覆盖前一条）", 2, service.getMacro("s1", "a1")!!.steps.size)
+        assertEquals(1, service.getAllMacroEntries().size)
+    }
+
+    @Test
+    fun `导入空表清空本地宏 与 Dart 一致`() {
+        val store = InMemoryKeyValueStore()
+        val service = WarehouseMacroStore(store)
+        service.saveMacro(record())
+
+        service.importAllMacros(emptyList())
+
+        assertFalse(service.hasMacro("s1", "a1"))
+        assertTrue(service.getAllMacroEntries().isEmpty())
+        assertEquals(
+            "索引应写成空数组（不是省略键）",
+            "[]",
+            store.getString(WarehouseMacroRecord.INDEX_KEY),
+        )
+    }
+
+    @Test
+    fun `导入写盘失败会抛出 由云恢复侧统一报错`() {
+        val seeded = InMemoryKeyValueStore()
+        WarehouseMacroStore(seeded).saveMacro(record())
+        val throwing = ThrowingStore(seeded)
+        val service = WarehouseMacroStore(throwing)
+
+        var failed = false
+        try {
+            service.importAllMacros(listOf(record(schoolId = "s9", adapterId = "a9")))
+        } catch (_: IllegalStateException) {
+            failed = true
+        }
+        assertTrue("写盘失败必须抛出，不能静默当成恢复成功", failed)
+        assertTrue("确实走过写路径（不是提前返回）", throwing.usedForWrite)
+    }
 }

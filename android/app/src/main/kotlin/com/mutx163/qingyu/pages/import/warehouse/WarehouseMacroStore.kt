@@ -93,6 +93,54 @@ class WarehouseMacroStore(private val store: KeyValueStore) {
     }
 
     /**
+     * 导出一份全量宏（云同步快照的 `warehouse.macros` 字段）。
+     *
+     * 与 Dart `exportAllMacros` 同序：按索引更新时间**新→旧**；读不出的条目跳过，
+     * 不影响其余宏上云。
+     */
+    fun exportAllMacros(): List<WarehouseMacroRecord> =
+        getAllMacroEntries().mapNotNull { getMacro(it.schoolId, it.adapterId) }
+
+    /**
+     * 用云端的一份宏整库覆盖本地（Dart `importAllMacros` 逐条对齐）。
+     *
+     * 1. 先按存储 key 收敛：同名重复项 / 上游导出重复行会让本体只留一条、
+     *    目录却按 records 逐条生成，列表里出现两遍且删一次删不干净；
+     * 2. **全部序列化完成后再动本地数据**：逐条「先删后写」在写路径中途抛出
+     *    （磁盘满 / 进程被杀）会留下「本地宏已清、远端只落一半」的中间态；
+     * 3. 删掉本地不在新集合里的本体 → 写新本体 → 最后写索引。
+     *
+     * 空列表是合法输入（云端确实没有宏）→ 清空本地宏，与 Dart 一致。
+     */
+    fun importAllMacros(records: List<WarehouseMacroRecord>) {
+        val byKey = LinkedHashMap<String, WarehouseMacroRecord>()
+        for (record in records) {
+            byKey[WarehouseMacroRecord.storageKey(record.schoolId, record.adapterId)] = record
+        }
+        val serialized = LinkedHashMap<String, String>()
+        for ((key, record) in byKey) {
+            serialized[key] = record.encode()
+        }
+        val indexJson = MiniJson.encode(
+            byKey.values.map { record ->
+                WarehouseMacroIndexEntry(record.schoolId, record.adapterId, record.updatedAt).toJson()
+            },
+        )
+        val staleKeys = store.keys().filter { key ->
+            key.startsWith(WarehouseMacroRecord.RECORD_KEY_PREFIX) &&
+                key != WarehouseMacroRecord.INDEX_KEY &&
+                key !in serialized
+        }
+        for (key in staleKeys) {
+            store.remove(key)
+        }
+        for ((key, value) in serialized) {
+            store.putString(key, value)
+        }
+        store.putString(WarehouseMacroRecord.INDEX_KEY, indexJson)
+    }
+
+    /**
      * 全部宏的索引条目，按更新时间**新→旧**排序。
      * 目录坏了或漏了条目时顺手把修好的目录落盘（下次读不用再扫本体）。
      */
