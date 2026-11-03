@@ -377,6 +377,15 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 5. **两键启动时单向对账**：`weeklyReportEnabled`、`liveHideFromRecents`（写 native pref、settings 不读）走启动时 **settings → native pref 单向对账**，不逐个改读取方。
 6. **声明口径**：本轮只声明「**JVM 单测通过 + 四种老盘状态覆盖**」；**未做真实老盘实测**，真机迁移未验。
 
+### 2026-11-04 · 情侣链路两条裁决（有意偏离 Dart / `platform/` 单文件授权）
+
+1. **情侣拉取传输失败文案不照抄 Dart 折叠（有意偏离 Dart）**
+   - Dart 把 401 / 超时 / 网络错误统一折叠成「未找到对方课表文件，请让对方先上传」（`couple_webdav_service.dart:195-199` → `app_localizations_zh.dart:301`），属**误导性缺陷**（把鉴权/网络问题说成对方没上传）。
+   - Kotlin 改为**复用既有键显示具体原因**，**不新增 ARB**（实现见 `CoupleStrings.kt:130-154`，传输码经 `SyncStrings.localizeSyncError` 映射）。
+   - 理由：迁移期「以 Dart 为真值」的原则，遇到「**Dart 本身丢失信息或误导用户**」时不适用——与此前 `no_local_user_data` 同一条逻辑（Dart 落泛化属信息丢失，Kotlin 保留精确）。
+2. **`CouplePartnerPortImpl.unlink()` 必须补写 active 键**（Dart `timetable_partner_service.dart:161-184`），`platform/` 单文件已授权。
+   - 核对结果：**当前实现已满足**（`platform/CouplePartnerPortImpl.kt:70-84`：解绑后若 active 正是 `partner-imported`，切回第一份非情侣档并 `replaceAllProfiles` 落盘），**无需再改**；授权保留待后续同类修补。
+
 ---
 
 ## 十、五路并行（第二班）
@@ -773,6 +782,8 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | **`4d534e04`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **00:54:23→00:59:17** | **4m44s（Gradle）/ 4m54s 墙钟** | **同一真实红**：`compileDevDebugUnitTestKotlin FAILED`，`WidgetWeekendMoodTest.kt:33:28`/`34:24` actual `Double` vs `Int` expected；其余任务 UP-TO-DATE。**待 L4 对齐 `TodayWidgetSnapshotInfo` 后重跑** |
 
 **有效结论口径**：**门 1 在 HEAD `4d534e04` 实测绿（00:50:50→00:54:04，Gradle 2m51s / 墙钟 3m13s，exit=0）**，该绿**代言 `4d534e04`**（主源集未变，属 `a7eef5be` 修复后的延续）。**门 2 在同一 HEAD 实测红（00:54:23→00:59:17，Gradle 4m44s / 墙钟 4m54s，exit=1）**，红项唯一为测试源集编译错误（`WidgetWeekendMoodTest.kt:33/34` Double vs `TodayWidgetSnapshotInfo` Int），**当前不声明「两门全绿」**。前序 `a7eef5be` 门 1 绿 / 门 2 红为同一条红链的前序证据；`f1472e58`/`58693492` 门 1 红均为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
+
+**HEAD 推进到 `e9630e47`（2026-11-04 00:5x）后的口径**：该笔只加统计图表测试（`BasicChartModelsTest.kt`），主源集未动，**门 1 结论沿用 `4d534e04`**。逻辑层的 `Int→Double` 修复（`TodayWidgetSupport.kt`/`StatsWidgetSupport.kt` 及 11 个 provider 调用点）**目前只在工作区、尚未提交**，因此**未在 HEAD 上重跑门 2**——未提交改动不能当 HEAD 证据；待其提交后再跑并回填数字。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
@@ -811,3 +822,13 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 1. `holidayOverrideEnabled` **不是写死 false**——已双向读写（`MonthHolidaySettings.kt:46` + `LiveSelfCheckHost.kt:376-380`）；旧 backlog 项作废。
 2. `timetableShowCurrentWeekCourses` 是 Dart **只写不读**的遗留键；真正生效的是 `timetableShowNonCurrentWeekCourses`，两侧都读。
 3. `classReminders` **确认整体未移植** → backlog（**通知族 + 课程/日视图 + 设置族**三块，跨域整块缺口，需 Lead 排期）。
+
+### 10.17 🔍 前提推翻 · 情侣课表没有「配对码」（2026-11-04）
+
+> 结论：凡是把情侣链路设计成「配对码生成 / 过期 / 失效 / 重新配对」的前提，**全部不成立**。
+
+1. **Dart 无配对码机制**：`lib/` 全量检索 `pairCode` / `partnerCode` / 「配对码」**0 相关命中**（命中的「配对」均为无关措辞，如卡牌配对、ADB 配对）。真实配对方式 = **导入对方单档** + **双槽 WebDAV**（`couple-slot-1.mikcb` / `couple-slot-2.mikcb`）。
+2. **旧 `partner-timetable.mikcb` 不回落**：`lib/services/couple_webdav_service.dart:192-194` 明写 “Dual-slot is authoritative. Do not fall back to the legacy single file”（原因是旧单文件两端读写同一路径，会「把自己当对方」导入）。
+3. **「对方停用情侣功能」无标记位**：拉取只按**内容哈希**判 `unchanged`——`couple_webdav_service.dart:234-241`（`lastRemoteContentHash == contentHash && host.hasPartnerBinding` → `unchanged`）。对方停止上传只是**不写 slot**，哈希不变，于是本地看到 `unchanged`，不存在任何「已停用」标记或状态位。
+4. **误导性折叠的实测证据**：`couple_webdav_service.dart:188-199` — `getBytes` 把 401 / 超时 / 网络错误吞成 `null`，随后统一折成 `couple_webdav_partner_file_missing`；对应文案在 `lib/l10n/app_localizations_zh.dart:301`「未找到对方课表文件，请让对方先上传」。故 Kotlin 不照抄（裁决见九章）。
+5. **台账处置**：`docs/` 检索「配对码」**0 命中**；若其他台账出现「配对码过期」类待办，一律标记**已不成立**，证据行号 = 本节 1–4 条。
