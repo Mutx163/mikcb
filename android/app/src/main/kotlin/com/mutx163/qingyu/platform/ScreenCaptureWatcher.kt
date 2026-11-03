@@ -43,13 +43,17 @@ import java.util.concurrent.Executor
  * ScreenCaptureWatcher.attach(this) { settings.screenshotSharePromptEnabled }
  * ```
  *
- * ## 当前边界（2026-11-02）
+ * ## 当前边界（2026-11-03）
  *
- * 壳里已挂 [attach]，但 `onScreenshot` 暂无消费方：Dart 版检测到截屏后浮
- * 「要分享干净的课表图吗」胶囊提示，其分享面板尚未移植到 Compose，且事件
- * 出口该由课表页接线（只在课表页置顶时提示）。能力探测
- * [isSupported] 已就绪，设置页 `screenshotShareSupported` 需要在分享提示
- * 落地后才会由 false 翻 true（`SettingsPageBridge.toTimetablePageState`）。
+ * 壳里已挂 [attach]；`attach` 的返回值壳没有留下，消费方通过 [activeWatcher]
+ * 拿到当前实例接线：课表页的「分享课表图」提示宿主
+ * （`pages/timetable/ScreenshotSharePromptHost`）是唯一消费方，自己守
+ * 「只在课表页置顶时提示」与设置开关（Dart `ModalRoute.isCurrent` +
+ * `screenshotSharePromptEnabled` 的同口径判据）。能力探测 [isSupported]
+ * 已接进设置页（`SettingsHost` 传 `screenshotShareSupported`）。
+ *
+ * 「干净课表图」的导出面板（Dart `TimetableExportDocument` → PNG → 系统分享）
+ * 尚未移植到 Compose，所以提示本体暂不带「分享」动作按钮——没有去处的按钮不画。
  */
 class ScreenCaptureWatcher private constructor(
     private val activity: Activity,
@@ -86,6 +90,10 @@ class ScreenCaptureWatcher private constructor(
         started = false
         sync()
         lifecycle.removeObserver(this)
+        // 摘掉进程级引用：Activity 销毁后不该再有活实例可拿（拿到的永远是当前那个）。
+        if (activeWatcher === this) {
+            active = null
+        }
     }
 
     private fun sync() {
@@ -142,6 +150,18 @@ class ScreenCaptureWatcher private constructor(
             get() = isScreenCaptureCallbackSupported(Build.VERSION.SDK_INT)
 
         /**
+         * 当前已挂载的实例。壳 `attach` 后不保留返回值，页面消费方从这里取；
+         * 同一时刻至多一个（一台 Activity 一个），Activity 销毁时清空。
+         * 进程级引用在主线程写（[attach] 与生命周期回调都在主线程），读侧只在
+         * 组装期取一次，`@Volatile` 保证跨线程可见性即可。
+         */
+        @Volatile
+        private var active: ScreenCaptureWatcher? = null
+
+        val activeWatcher: ScreenCaptureWatcher?
+            get() = active
+
+        /**
          * 把组件挂上宿主 Activity 的生命周期（onStart 注册 / onStop 注销 /
          * onDestroy 自摘），宿主无需再管任何状态位。
          *
@@ -157,6 +177,7 @@ class ScreenCaptureWatcher private constructor(
         ): ScreenCaptureWatcher where T : Activity, T : LifecycleOwner {
             val watcher = ScreenCaptureWatcher(activity, activity.lifecycle, isListenerWanted)
             activity.lifecycle.addObserver(watcher)
+            active = watcher
             return watcher
         }
     }
