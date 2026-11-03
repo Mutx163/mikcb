@@ -210,7 +210,10 @@ internal object QingyuTopBarBlur {
     /** miuix 幂曲线，复现 Flutter 的 `easeInSine(1 - t)`。 */
     const val Curve = 0.5f
 
-    /** 浅色叠色：纯白 70%。 */
+    /** 浅色叠色：纯白（#FFFFFF），与深色叠色成对命名（2026-11-04 顶栏固定 tint 收口）。 */
+    const val LightTintArgb = 0xFFFFFFFF
+
+    /** 浅色叠色 alpha：纯白 70%。 */
     const val LightTintAlpha = 0.70f
 
     /** 深色叠色：中性灰 #565656，alpha 按 `sheetTintAlpha` 换算后为 0.475。 */
@@ -225,7 +228,7 @@ private fun qingyuTopBarTint(dark: Boolean): Color =
     if (dark) {
         Color(QingyuTopBarBlur.DarkTintArgb).copy(alpha = QingyuTopBarBlur.DarkTintAlpha)
     } else {
-        Color.White.copy(alpha = QingyuTopBarBlur.LightTintAlpha)
+        Color(QingyuTopBarBlur.LightTintArgb).copy(alpha = QingyuTopBarBlur.LightTintAlpha)
     }
 
 /**
