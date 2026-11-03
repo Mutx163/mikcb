@@ -111,9 +111,19 @@ fun TimetableChromeBandGlass(
                         backdrop = blurBackdrop,
                         shape = { shape },
                         effects = {
-                            val refractionPx = with(density) {
-                                material.liquidRefraction.dp.toPx()
-                            }
+                            // ── 折射收窄（2026-11-03）──
+                            // 用户口径：作用带一宽，交界处的画面被弯得上下对不上
+                            // （读作「壁纸错位」）。作用带与位移都先过夹具
+                            // [timetableBandRefraction]：作用带压到紧贴交界的一小条
+                            // （≤8dp），位移压到 ≤8dp；位移拖到 0 时输出 (0,0)，
+                            // 整段不挂折射、严格零偏移。周/日/月三视图共用本组件，
+                            // 同一套参数只有这一处。
+                            val refraction = timetableBandRefraction(
+                                bandBoxHeightDp = with(density) { bandSize.height.toDp().value },
+                                requestedBandDp = material.liquidRefractionBand,
+                                requestedAmountDp = material.liquidRefraction,
+                            )
+                            val refractionPx = with(density) { refraction.amountDp.dp.toPx() }
                             // 折射朝形状外采样：先把采样层按位移量撑起来。
                             // ⚠️ 必须在 blur() 读 padding 之前抬 —— 事后抬会让 miuix
                             // 把整段 effects 重跑一遍。
@@ -122,11 +132,8 @@ fun TimetableChromeBandGlass(
                             // 少了它玻璃会发灰。
                             vibrancy()
                             blur(with(density) { material.liquidBlurSigma.dp.toPx() })
-                            // 折射：作用带宽度 / 位移量 / 色散三根都来自全局调参。
-                            // 两项任一为 0 时 `lens()` 自己 return（清档 = 不折射）。
-                            val bandPx = with(density) {
-                                material.liquidRefractionBand.dp.toPx()
-                            }
+                            // 夹具输出为 0（位移拖到 0 / 作用带为 0）时整段不挂折射。
+                            val bandPx = with(density) { refraction.bandDp.dp.toPx() }
                             if (bandPx > 0f && refractionPx > 0f) {
                                 lens(
                                     refractionHeight = bandPx,

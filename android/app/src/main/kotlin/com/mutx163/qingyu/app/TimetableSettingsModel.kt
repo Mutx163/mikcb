@@ -1483,8 +1483,12 @@ data class LiquidGlassTuningModel(
     companion object {
 
         // ---- 出厂值（即第 7 格「标准」，`liquid_glass_tuning.dart:408-454`）----
-        const val DEFAULT_REFRACTION = 8.0 // :410
-        const val DEFAULT_REFRACTION_BAND = 11.0 // :418
+        // 2026-11-03 折射收档：默认 8→6、作用带默认 11→8。顶栏玻璃带把交界处画面
+        // 弯得太多（用户口径「壁纸错位」），收小位移与作用范围后，带内除紧贴交界
+        // 的一小条外与下方内容视觉连续。渲染层另有 8dp 硬夹具
+        // （`timetableBandRefraction`），滑杆拖多大都不会超过。
+        const val DEFAULT_REFRACTION = 6.0 // :410
+        const val DEFAULT_REFRACTION_BAND = 8.0 // :418
         const val DEFAULT_REFRACTION_EDGE_POW = 2.5 // :419
         const val DEFAULT_RIM_STRENGTH = 0.2 // :432
         const val DEFAULT_RIM_WIDTH = 1.5 // :433
@@ -1493,10 +1497,11 @@ data class LiquidGlassTuningModel(
         const val DEFAULT_DISPERSION = 0.35 // :454
 
         // ---- 滑杆区间（同文件 `:456-474`）----
+        // 2026-11-03 折射上限收档：位移 20→10、作用带 24→12（理由同上）。
         const val MIN_REFRACTION = 0.0 // :457
-        const val MAX_REFRACTION = 20.0 // :458
+        const val MAX_REFRACTION = 10.0 // :458
         const val MIN_REFRACTION_BAND = 1.0 // :459
-        const val MAX_REFRACTION_BAND = 24.0 // :460
+        const val MAX_REFRACTION_BAND = 12.0 // :460
         const val MIN_REFRACTION_EDGE_POW = 1.0 // :461
         const val MAX_REFRACTION_EDGE_POW = 6.0 // :462
         const val MIN_DISPERSION = 0.0 // :463
