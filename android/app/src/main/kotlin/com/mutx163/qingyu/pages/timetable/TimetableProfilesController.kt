@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.timetable
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.app.TimetableStore
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
@@ -98,6 +99,10 @@ class TimetableProfilesController(
         val snap = snapshot
         val finalName = name.trim().ifEmpty { TimetableStrings.unnamedTimetableProfile.zh }
         val now = clock()
+        // 新档不继承源档的档案级外观（Dart `_buildDefaultSettingsForNewProfile:1787-1798` 只带
+        // 作息 sections），但全局偏好是整机级、必须跟着走（`app_global_settings_service.dart:59-114`）。
+        // 当前 Kotlin 的全局偏好仍寄存在活动档内嵌 settings，故先摘出白名单键再铺到新档。
+        val globalPreferences = globalSettingsOf(snap)
         val newProfile = TimetableProfile(
             id = idFactory(),
             name = finalName,
@@ -107,13 +112,14 @@ class TimetableProfilesController(
             createdAt = now,
             lastUsedAt = now,
         )
-        return write(
+        val result = write(
             profiles = snap.profiles + newProfile,
             activeProfileId = newProfile.id,
             failureMessage = TimetableStrings.saveFailed.zh,
             settings = newProfile.settings,
             currentWeek = currentWeekFor(newProfile),
         ) { TimetableStrings.formatCreatedProfile(finalName) }
+        return seedActiveSettings(result, globalPreferences, snap)
     }
 
     /** 切换激活课表：情侣导入 / 不存在 / 已是当前 → 拒绝，否则切并落盘激活 id。 */
@@ -131,8 +137,14 @@ class TimetableProfilesController(
             // 切档 = 换激活 id **并且**把全局设置换成目标档那份（Dart `_applyProfileState`）。
             // 仓储的 setActiveProfile 只换 id，设置会留在旧档，所以走合并写入口。
             // 当前周同样按**目标档**的开学日重算（不能带着上一份课表的周数）。
+            // Dart `switchProfile:2034` 带 `touchLastUsedAt: true`：目标档的「最近使用」要刷新，
+            // 一并塞进同一次整份替换里，保持「一次写 + 一次通知」。
+            val now = clock()
+            val nextProfiles = snap.profiles.map { profile ->
+                if (profile.id == id) profile.copy(lastUsedAt = now) else profile
+            }
             repository.replaceAllProfilesAndSettings(
-                profiles = snap.profiles,
+                profiles = nextProfiles,
                 activeProfileId = id,
                 settings = target.settings,
                 currentWeek = currentWeekFor(target),
@@ -172,19 +184,24 @@ class TimetableProfilesController(
             return TimetableProfileActionResult.Rejected()
         }
         val now = clock()
+        // Dart `duplicateActiveProfile:1967-1972` 用 `source.copyWith(...)`，拷贝的是**整份**
+        // `TimetableSettings`；Kotlin 的 `TimetableProfile.settings` 只有 core 4 键，完整外观/语言
+        // 都在档案内嵌 JSON 里，所以先把源档内嵌整份取出，落盘后再铺到复制品。
+        val sourceSettings = rawSettingsOf(source.id)
         val copy = source.copy(
             id = idFactory(),
             name = "${source.name} 副本",
             createdAt = now,
             lastUsedAt = now,
         )
-        return write(
+        val result = write(
             profiles = snap.profiles + copy,
             activeProfileId = copy.id,
             failureMessage = TimetableStrings.saveFailed.zh,
             settings = copy.settings,
             currentWeek = currentWeekFor(copy),
         ) { TimetableStrings.copiedCurrentTimetable.zh }
+        return seedActiveSettings(result, sourceSettings, snap)
     }
 
     /** 清空当前课表：只清激活档；课全删、挂课作业删、手写作业与考试保留。 */
@@ -353,6 +370,68 @@ class TimetableProfilesController(
     }
 
     /**
+     * 把「整份/白名单」settings 铺到**新激活档**的内嵌 settings。
+     *
+     * 必须在 [write] 成功之后调用（此时活动档 = 新建/复制出的那份）。仓储的
+     * [TimetableRepository.writeRawSettingsPatch] 与 `store.saveSettingsPatchToActiveProfile`
+     * 同口径：只合并 [patch] 出现的键，其余键保留。失败时回滚到 [before] 的整份状态
+     * （Dart `_rollbackProfileMutation:1991-2008`），避免留下「多一份档、外观还是默认值」的中间态。
+     */
+    private fun seedActiveSettings(
+        result: TimetableProfileActionResult,
+        patch: Map<String, Any?>,
+        before: TimetableSnapshot,
+    ): TimetableProfileActionResult {
+        if (result !is TimetableProfileActionResult.Success || patch.isEmpty()) return result
+        if (repository.writeRawSettingsPatch(patch)) return result
+        runCatching {
+            repository.replaceAllProfilesAndSettings(
+                profiles = before.profiles,
+                activeProfileId = before.activeProfileId,
+                settings = before.settings,
+                currentWeek = before.currentWeek,
+            )
+        }
+        return TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.zh)
+    }
+
+    /** 当前活动档的完整内嵌 settings（等价 `store.loadSettingsJson()`，走只读公开入口）。 */
+    private fun globalSettingsOf(snap: TimetableSnapshot): Map<String, Any?> =
+        rawSettingsOf(snap.activeProfileId)
+            .filterKeys { key -> key in GLOBAL_SETTINGS_KEYS }
+
+    /**
+     * 取指定档案的完整内嵌 settings：活动档走 `readRawSettings()`，非活动档从 `profiles`
+     * 原始 JSON 里按 id 找。读不到 / 读不懂时返回空表（调用方会跳过铺设，不误删其它键）。
+     */
+    private fun rawSettingsOf(profileId: String?): Map<String, Any?> {
+        if (profileId == null) return emptyMap()
+        // 读失败（含播种全局那份时的落盘失败）一律当「读不到」：铺设是可选增强，
+        // 不能因为它把新建/复制本身变成异常（例如磁盘已满时创建仍应返回 Failed 而不是崩）。
+        return try {
+            if (profileId == snapshot.activeProfileId) {
+                repository.readRawSettings()
+            } else {
+                val profiles = readRawJson(TimetableStore.KEY_PROFILES).let { read ->
+                    if (!read.ok) return emptyMap()
+                    runCatching { MiniJson.parse(read.value ?: "[]") }.getOrNull()
+                } as? List<*> ?: return emptyMap()
+                val settings = profiles
+                    .asSequence()
+                    .mapNotNull { it as? Map<*, *> }
+                    .firstOrNull { it["id"] == profileId }
+                    ?.get("settings") as? Map<*, *> ?: return emptyMap()
+                settings.entries
+                    .mapNotNull { entry -> (entry.key as? String)?.let { it to entry.value } }
+                    .toMap()
+            }
+        } catch (error: Exception) {
+            LOGGER.warning("read profile settings failed: id=$profileId, error=$error")
+            emptyMap()
+        }
+    }
+
+    /**
      * 换档后的「当前周」：对齐 Dart `_applyProfileState`（`timetable_provider.dart:1139-1148`）。
      *
      * - 目标档**有开学日** ⇒ 按它自己的开学日把「今天」换算成日历周，再钳进学期周数
@@ -396,6 +475,67 @@ class TimetableProfilesController(
         )
 
     private companion object {
+        /**
+         * 整机级「全局偏好」键集，逐字对齐 Dart `lib/services/app_global_settings_service.dart:59-114`。
+         *
+         * 新建档只从当前活动档摘出这些键铺过去（Dart 新档 settings = `defaults()`
+         * + 当前作息 sections，再经 `_applyProfileState` 叠全局）；档案级外观/课表项不继承。
+         *
+         * 待 `app_global_settings_v1` 专线落地后，这份清单应改为共享常量并直接读全局真源。
+         */
+        val GLOBAL_SETTINGS_KEYS: Set<String> = setOf(
+            // 首页导航 / 图标（:60-70）
+            "homeNavigationForm",
+            "glassDockActions",
+            "glassDockShowAddButton",
+            "glassDockButtonEntryId",
+            "glassDockButtonIconName",
+            "homeTitleStyle",
+            "homeMenuStyle",
+            "homeGridMenuActions",
+            // 底部标签（:71-74）
+            "glassDockShowDayTab",
+            "glassDockShowWeekTab",
+            "glassDockShowSettingsTab",
+            // 材质 / 玻璃（:75-89）
+            "frostedBlurEnabled",
+            "liquidGlassPreset",
+            "liquidGlassTuning",
+            "liquidGlassTuningDark",
+            "linkLiquidGlassTuning",
+            "darkGlassBoostEnabled",
+            "liquidGlassDockEnabled",
+            "courseCardSurfaceStyle",
+            "courseCardGlassTuning",
+            "courseCardGlassPreset",
+            "homeBandGlassMaterial",
+            "homePageTimeColumnBlurEnabled",
+            // 主题 / 字体 / 语言（:90-103）
+            "appThemeMode",
+            "appFontMode",
+            "appFontWeight",
+            "appTextScale",
+            "themeSeedColor",
+            "foruiTheme",
+            "savedThemes",
+            "themeCheckpointName",
+            "themeCheckpointConfig",
+            "appLocaleTag",
+            // 通用（:104-107）
+            "pageTransitionSpeed",
+            "enableHaptics",
+            "homePullQuickImportEnabled",
+            "liveHideFromRecents",
+            // 应用内更新（:108-114）
+            "appUpdateDownloadSource",
+            "appUpdateDownloadChannel",
+            "appUpdateUseSystemDownloader",
+            "appUpdateMirrorPreset",
+            "appUpdateIncludePrerelease",
+            "appUpdateMirrorUrlPrefix",
+            "appUpdatePromptEnabled",
+        )
+
         /**
          * 纯 JVM 日志（`java.util.logging` 在 Android 上映射到 logcat）。
          *

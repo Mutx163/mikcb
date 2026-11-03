@@ -3,10 +3,12 @@ package com.mutx163.qingyu.pages.timetable
 import com.mutx163.qingyu.app.InMemoryKeyValueStore
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
@@ -531,9 +533,131 @@ class TimetableProfilesControllerTest {
         assertNotEquals("p2", repo.snapshot.activeProfileId)
     }
 
+    @Test
+    fun `复制档案外观与语言跟源档完全一致 不是默认值`() {
+        // Dart `duplicateActiveProfile:1967-1972` 拷贝整份 `TimetableSettings`；
+        // 这里源档完整内嵌 JSON 带全局键与非全局外观键，复制品必须逐键照抄。
+        val f = fullSettingsFixture(
+            profileJson(
+                id = "p1",
+                fullSettings = mapOf(
+                    "semesterStartDate" to "2026-09-07T00:00:00",
+                    "semesterWeekCount" to 18,
+                    "appLocaleTag" to "zh_TW",
+                    "appThemeMode" to "dark",
+                    "themeSeedColor" to "#123456",
+                    "courseCardFontSize" to 11.0,
+                    "timetableHideWeekends" to true,
+                ),
+            ),
+        )
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p_copy" }, clock = { t1 })
+
+        val result = controller.duplicateProfile("p1")
+        assertTrue("result=$result", result is TimetableProfileActionResult.Success)
+
+        val copySettings = rawSettings(f.raw, "p_copy")
+        assertEquals("语言（全局键）必须跟源档一致", "zh_TW", copySettings["appLocaleTag"])
+        assertEquals("主题（全局键）必须跟源档一致", "dark", copySettings["appThemeMode"])
+        assertEquals("种子色必须跟源档一致", "#123456", copySettings["themeSeedColor"])
+        assertEquals("课程卡字号必须跟源档一致", 11.0, copySettings["courseCardFontSize"])
+        assertEquals("课表页显示项必须跟源档一致", true, copySettings["timetableHideWeekends"])
+        // 杀进程重开也还在（真落盘，不是只改了内存快照）。
+        assertEquals("zh_TW", rawSettings(f.raw, "p_copy")["appLocaleTag"])
+    }
+
+    @Test
+    fun `新建档案不继承源档档案级外观 但保留全局偏好`() {
+        // Dart `createProfile:1940-1943` 新档 settings = defaults() + 当前作息 sections，
+        // 再经 `_applyProfileState` 叠全局偏好（`app_global_settings_service.dart:59-114`）。
+        val f = fullSettingsFixture(
+            profileJson(
+                id = "p1",
+                fullSettings = mapOf(
+                    "semesterStartDate" to "2026-09-07T00:00:00",
+                    "semesterWeekCount" to 18,
+                    "appLocaleTag" to "zh_TW",
+                    "appThemeMode" to "dark",
+                    "themeSeedColor" to "#123456",
+                    "courseCardFontSize" to 11.0,
+                    "timetableHideWeekends" to true,
+                ),
+            ),
+        )
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t1 })
+
+        val createResult = controller.createProfile("新课表")
+        assertTrue("result=$createResult", createResult is TimetableProfileActionResult.Success)
+
+        val created = rawSettings(f.raw, "p2")
+        // 全局偏好（整机级）必须跟着走。
+        assertEquals("zh_TW", created["appLocaleTag"])
+        assertEquals("dark", created["appThemeMode"])
+        assertEquals("#123456", created["themeSeedColor"])
+        // 档案级外观/课表项不继承源档（缺键 = 读侧按 Dart lenient 回落默认值）。
+        val parsed = TimetableSettingsModel.fromJson(rawMap(created))
+        assertEquals("课程卡字号应回落默认 9.0", 9.0, parsed.courseCardFontSize, 0.0)
+        assertFalse("周末隐藏应回落默认 false", parsed.timetableHideWeekends)
+    }
+
+    @Test
+    fun `切档后目标档 lastUsedAt 更新且最近使用排序变化`() {
+        val older = t0.minusDays(1)
+        val p1 = profile("p1", "课表1").copy(lastUsedAt = older)
+        val p2 = profile("p2", "课表2").copy(lastUsedAt = older)
+        val f = fixture(profiles = listOf(p1, p2), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, clock = { t1 })
+
+        assertTrue(controller.switchProfile("p2") is TimetableProfileActionResult.Success)
+
+        val switched = f.repo.snapshot.profiles
+        assertEquals("目标档 lastUsedAt 必须刷新", t1, switched.first { it.id == "p2" }.lastUsedAt)
+        assertEquals("非目标档 lastUsedAt 不动", older, switched.first { it.id == "p1" }.lastUsedAt)
+        // 「最近使用」排序：切档前 p1/p2 同旧时间（按存储顺序），切档后 p2 必须排到最前。
+        assertEquals(
+            listOf("p2", "p1"),
+            switched.sortedByDescending { it.lastUsedAt }.map { it.id },
+        )
+        // 落盘：重开仍是刷新后的时间。
+        val reopened = TimetableRepository(TimetableStore(f.raw))
+        assertEquals(t1, reopened.snapshot.profiles.first { it.id == "p2" }.lastUsedAt)
+    }
+
     // ============ 夹具 ============
 
     private val t0: LocalDateTime = LocalDateTime.of(2026, 9, 1, 8, 0)
+    private val t1: LocalDateTime = t0.plusDays(2)
+
+    /**
+     * 直接播种「完整内嵌 settings」的档案 JSON：Kotlin 的 `TimetableProfile.settings`
+     * 只有 core 4 键，外观/语言只存在于磁盘内嵌 JSON，用 `saveProfiles` 造不出来。
+     */
+    private fun fullSettingsFixture(profilesJson: String): Fixture {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                TimetableStore.KEY_PROFILES to profilesJson,
+                TimetableStore.KEY_ACTIVE_PROFILE_ID to "p1",
+            ),
+        )
+        val store = TimetableStore(raw)
+        return Fixture(raw, store, TimetableRepository(store))
+    }
+
+    private fun profileJson(id: String, fullSettings: Map<String, Any?>): String {
+        val base = profile(id, "源课表").toJson().toMutableMap()
+        base["settings"] = fullSettings
+        return MiniJson.encode(listOf(base))
+    }
+
+    /** 读档案在磁盘上的内嵌 settings（by id）。 */
+    private fun rawSettings(raw: InMemoryKeyValueStore, profileId: String): Map<*, *> {
+        val list = MiniJson.parse(raw.getString(TimetableStore.KEY_PROFILES)!!) as List<*>
+        val entry = list.mapNotNull { it as? Map<*, *> }.first { it["id"] == profileId }
+        return entry["settings"] as Map<*, *>
+    }
+
+    private fun rawMap(settings: Map<*, *>): Map<String, Any?> =
+        settings.entries.mapNotNull { entry -> (entry.key as? String)?.let { it to entry.value } }.toMap()
 
     private class Fixture(
         val raw: InMemoryKeyValueStore,
