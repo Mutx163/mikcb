@@ -8,13 +8,17 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -32,6 +36,14 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
  * |---|---|---|---|
  * | S1 | `insideMargin = DpSize(24.dp, 0.dp)` | 16dp（`hyperosMiuixBottomSheetInsideMargin`） | 再叠上内容自己那 16dp 就是单边 40dp，卡片被挤成中间窄条、两边各空一大块 |
  * | S2 | 只 `imePadding()`（只让键盘） | 手势区/导航栏 + 16dp 呼吸（`bottomGapInsetOf`） | 最后一排按钮贴到屏幕最下沿、被小白条压住（Dart 侧当年原话：「调课停课什么的都到底部屏幕外面去了」） |
+ *
+ * 另有两个**只在特定组合下**才发作的缺口（2026-11-03 修，R10）：
+ *
+ * - **键盘弹出时多一截空白**：miuix 在面板外做了 `imePadding()`，面板已被抬到键盘上方；
+ *   本套件若仍按「导航栏 + 16」垫底部，就会多出 24~40dp。现在 IME > 0 时只留 16dp 呼吸。
+ * - **标题动作贴边**：`contentPadsHorizontally = true` 会把 `insideMargin` 横向归零，
+ *   而标题动作与内容共用这个边距。现在有标题动作时保留 16dp，再把内容反向撑出去，
+ *   让标题有边距、内容仍按「自带边距」的契约拿满宽度。
  *
  * 这两个值**必须由套件统一给**，理由与 `QingyuPageScaffold` 一样：让每个调用方自己记得，
  * 就一定会有漏的；漏了只在真机上看得出。
@@ -64,6 +76,8 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
  *   时应当传 `false` —— 归零会让内容只剩单边 4dp，比 16dp 口径更糟。经验线是
  *   「自带 ≥ 12dp 才算内容的主边距」。判据的意图是「归零后没有任何通栏元素被贴到面板边」，
  *   不是「源码里出现过 padding(horizontal」（两个泳道都在这条上反过车，见审核报告 §五）。
+ *   有 [startAction] / [endAction] 时框架会保留 16dp 给标题动作，并把内容反向撑出去
+ *   同样宽度——标题不贴边、内容也不会被叠成 32dp。
  * @param contentScrolls 内容**自己**管滚动时置 `true`：本组件不再套 `verticalScroll`，
  *   底部让位由内容自己用 [QingyuSheetContentScope.bottomInset] 落实。
  *   ⚠️ **两种布局，让位落点不同**：
@@ -90,22 +104,45 @@ fun QingyuSheet(
     maxHeightFraction: Float? = null,
     content: @Composable QingyuSheetContentScope.() -> Unit,
 ) {
+    val density = LocalDensity.current
+    val hasTitleActions = startAction != null || endAction != null
+    // S1：本仓口径 16dp；内容自带左右内边距时置 0，绝不叠成 32+。
+    //
+    // ⚠️ 但**标题动作**与内容共用同一个 `insideMargin`：无标题动作时归零没问题，
+    // 有标题动作时归零会把关闭/提交键贴到面板边上。此时保留 16dp，再把内容用
+    // [horizontalBleed] 反向撑出去 16dp —— 标题动作有边距、内容仍按「自带边距」
+    // 的契约拿满宽度，两件事同时成立。
+    val bleedContent = contentPadsHorizontally && hasTitleActions
+    val insideWidth = if (contentPadsHorizontally && !hasTitleActions) 0.dp else QingyuSheetDefaults.InsideMargin
     OverlayBottomSheet(
         show = show,
         modifier = modifier,
         title = title,
         startAction = startAction,
         endAction = endAction,
-        // S1：本仓口径 16dp；内容自带左右内边距时置 0，绝不叠成 32+。
-        insideMargin = DpSize(if (contentPadsHorizontally) 0.dp else QingyuSheetDefaults.InsideMargin, 0.dp),
+        insideMargin = DpSize(insideWidth, 0.dp),
         onDismissRequest = onDismissRequest,
     ) {
         // S2：底部让位 = 系统手势区 + 16dp 呼吸。
-        val bottomInset = WindowInsets.navigationBars
+        //
+        // 键盘弹出时 **miuix 已经在面板外做了 `imePadding()`**——整个面板被抬到键盘
+        // 上方，面板底边与键盘之间不再有系统手势区。此时再叠一次导航栏高度，就多出
+        // 一截 24~40dp 的空白（手势导航 24~32 + 16 呼吸）。所以 IME > 0 时只留呼吸。
+        val navBottom = WindowInsets.navigationBars
             .asPaddingValues()
-            .calculateBottomPadding() + QingyuSheetDefaults.ContentBottomGap
+            .calculateBottomPadding()
+        val imeBottomPx = WindowInsets.ime.getBottom(density)
+        val bottomInset = if (imeBottomPx > 0) {
+            QingyuSheetDefaults.ContentBottomGap
+        } else {
+            navBottom + QingyuSheetDefaults.ContentBottomGap
+        }
         val scope = QingyuSheetContentScope(bottomInset = bottomInset)
         var columnModifier = Modifier.fillMaxWidth()
+        if (bleedContent) {
+            // 内容是「满宽」的，但父级已经按 16dp 收过边：反向外扩同样的值。
+            columnModifier = columnModifier.horizontalBleed(QingyuSheetDefaults.InsideMargin)
+        }
         if (maxHeightFraction != null) {
             val maxHeight = (LocalConfiguration.current.screenHeightDp * maxHeightFraction).dp
             columnModifier = columnModifier.heightIn(max = maxHeight)
@@ -125,6 +162,36 @@ fun QingyuSheet(
 }
 
 /**
+ * 让内容在自己的布局边界之外**左右各多占** [bleed]。
+ *
+ * 用在「miuix 的 `insideMargin` 同时管标题与内容」这一处：给标题动作保留 16dp 之后，
+ * 内容要拿回被这 16dp 收掉的宽度。子项按 `宽 + 2×bleed` 测量、放在 `-bleed`，
+ * 布局自身仍报告原宽度 —— 于是父级布局不变，只有内容绘制/命中区铺到面板边。
+ *
+ * 只用于**水平**方向；`maxWidth` 无界（极少数不受限父级）时原样放行，不做减法。
+ */
+private fun Modifier.horizontalBleed(bleed: Dp): Modifier = layout { measurable, constraints ->
+    val bleedPx = bleed.roundToPx()
+    if (bleedPx <= 0 || constraints.maxWidth == Constraints.Infinity) {
+        val placeable = measurable.measure(constraints)
+        return@layout layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+    val childMaxWidth = constraints.maxWidth + bleedPx * 2
+    val childMinWidth = if (constraints.minWidth > 0) {
+        (constraints.minWidth + bleedPx * 2).coerceAtMost(childMaxWidth)
+    } else {
+        0
+    }
+    val placeable = measurable.measure(
+        constraints.copy(minWidth = childMinWidth, maxWidth = childMaxWidth),
+    )
+    val width = (placeable.width - bleedPx * 2).coerceIn(constraints.minWidth, constraints.maxWidth)
+    layout(width, placeable.height) {
+        placeable.place(-bleedPx, 0)
+    }
+}
+
+/**
  * [QingyuSheet] 内容的作用域。
  *
  * 目前只带一个值，但**必须用作用域而不是让调用方自己算**：底部让位的口径将来若要
@@ -132,7 +199,8 @@ fun QingyuSheet(
  */
 class QingyuSheetContentScope internal constructor(
     /**
-     * 底部让位 = 系统手势区高度 + [QingyuSheetDefaults.ContentBottomGap]。
+     * 底部让位 = 系统手势区高度 + [QingyuSheetDefaults.ContentBottomGap]；
+     * 键盘弹出时系统手势区那一段已由 miuix 的 `imePadding()` 让掉，只留呼吸。
      *
      * `contentScrolls = true` 时由调用方落实（列表 `contentPadding` / 末尾 `Spacer`）；
      * 否则套件已经补好了，调用方不用管。
