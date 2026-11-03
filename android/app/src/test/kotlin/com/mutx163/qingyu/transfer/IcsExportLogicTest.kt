@@ -99,7 +99,7 @@ class IcsExportLogicTest {
         val longLines = content.split("\r\n").filter { it.startsWith(" ") }
         assertTrue("期望出现折行续行", longLines.isNotEmpty())
         // fold → unfold 往返：unfold 后的 DESCRIPTION 行应还原出完整转义值
-        val unfoldedDescriptionLine = IcsImportParser.unfoldLines(content)
+        val unfoldedDescriptionLine = unfoldIcsLines(content)
             .first { it.startsWith("DESCRIPTION:") }
         assertEquals(
             unfoldIcsTest(content)["DESCRIPTION"],
@@ -384,7 +384,7 @@ class IcsExportLogicTest {
 
     /** 测试辅助：unfold + 顶层属性抓取（对应 Dart 测试的 _events/_property）。 */
     private fun unfoldIcsTest(content: String): Map<String, String> {
-        val unfolded = IcsImportParser.unfoldLines(content)
+        val unfolded = unfoldIcsLines(content)
         val map = LinkedHashMap<String, String>()
         for (raw in unfolded) {
             val line = raw.trim()

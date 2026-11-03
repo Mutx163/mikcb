@@ -84,6 +84,26 @@ fun unescapeIcsText(value: String): String {
 }
 
 /**
+ * 导入侧折行展开（Dart `ics_import_service.dart` 的 unfold）：以空格/制表符
+ * 开头的行拼回上一行（去掉折叠用的首字符）；`\r\n` 先归一到 `\n`。
+ *
+ * 从已删除的 `transfer/IcsImportParser` 副本挪来——该校验逻辑只有测试在用，
+ * 统一收进本文件，避免同一规则再长出第二份实现。
+ */
+fun unfoldIcsLines(content: String): List<String> {
+    val normalized = content.replace("\r\n", "\n")
+    val unfolded = mutableListOf<String>()
+    for (line in normalized.split("\n")) {
+        if ((line.startsWith(" ") || line.startsWith("\t")) && unfolded.isNotEmpty()) {
+            unfolded[unfolded.size - 1] = unfolded.last() + line.substring(1)
+        } else {
+            unfolded.add(line)
+        }
+    }
+    return unfolded
+}
+
+/**
  * 导出侧 `_foldLine`（ics_export_service.dart:683-710）。
  * 首行上限 75 字节；一旦折过，后续每段载荷上限 74 字节（第 75 字节是续行
  * 引导空格）；按 UTF-8 字节计，多字节字符不被劈开；空行返回 `[""]`。

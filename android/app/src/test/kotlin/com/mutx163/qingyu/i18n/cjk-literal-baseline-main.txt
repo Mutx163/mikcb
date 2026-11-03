@@ -85,5 +85,4 @@ com/mutx163/qingyu/pages/timetable/TimetableProfilesController.kt:1
 com/mutx163/qingyu/share/TransferShareContract.kt:1
 com/mutx163/qingyu/share/camera/CameraPermissionStateMachine.kt:1
 com/mutx163/qingyu/statistics/StatisticsModels.kt:1
-com/mutx163/qingyu/transfer/IcsImportParser.kt:1
 com/mutx163/qingyu/widgetdata/WidgetDataModels.kt:1
