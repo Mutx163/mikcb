@@ -13,6 +13,7 @@ import com.mutx163.qingyu.sync.SNAPSHOT_SCHEMA_VERSION
 import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
 import com.mutx163.qingyu.sync.computeContentSha256
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import com.mutx163.qingyu.sync.selectSnapshotMacros
 
 /**
  * 课表仓储 ⇄ 云同步快照字节的**桥**（修「立即备份必然失败 / 恢复点了没效果」）。
@@ -29,9 +30,13 @@ import com.mutx163.qingyu.sync.decodeSnapshotObject
  *
  * ## 诚实边界（仍未做，别当成已完工）
  *
- * 1. 快照只带**课表族**（档案 / 作息表 / 日期规则 / 地点分组）。Dart 快照里的
- *    warehouse / macros / customHolidays / teacherRecords / partnerTimetableBinding
- *    在这里不开采——Dart 端读这份快照时这几块会是空，反之亦然。
+ * 1. 快照带的课表族（档案 / 作息表 / 日期规则 / 地点分组）之外，另带 **宏录制**
+ *    （`warehouse.macros`，P3 接上）。宏的编解码留在 warehouse 域，这里只当
+ *    `List<Map<String, Any?>>` 放进去 / 回调原始列表出去（sync 模块不能反向依赖
+ *    warehouse，否则 `-Module pages/sync` 的 L0 编不过）。Dart 快照里的其余
+ *    warehouse 偏好（记住的登录 / 自定义地址 / 最近学校 / 调试记录）、customHolidays /
+ *    teacherRecords / partnerTimetableBinding 仍未开采——Dart 读这份快照时这几块会是空，
+ *    反之亦然。
  * 2. 档案内嵌的 `settings` 只有 core 四键（`TimetableSettings.toJson()` 的移植边界）。
  *    恢复时 `TimetableStore.saveProfiles` 会按 id 把旧档案的其余设置铺底保留，
  *    所以不会清掉用户的其它设置，但也**不会**从快照里恢复它们。
@@ -44,6 +49,8 @@ object TimetableSnapshotBridge {
         repository: TimetableRepository,
         deviceId: String,
         exportedAtIso: String,
+        /** 已存宏的 `toJson()` 列表；空表也照写，与 Dart 一致。 */
+        macros: List<Map<String, Any?>> = emptyList(),
     ): SnapshotBuildResult {
         val snapshot = repository.snapshot
         if (snapshot.profiles.isEmpty()) {
@@ -61,6 +68,12 @@ object TimetableSnapshotBridge {
             "timeSchemes" to snapshot.timeSchemes.map { it.toJson() },
             "locationTimeGroups" to snapshot.locationTimeGroups.map { it.toJsonMap() },
             "scheduleDateRules" to snapshot.scheduleDateRules.map { it.toJson() },
+            // 键位照 Dart `buildSnapshotJsonFromSnapshot`：宏在 `warehouse.macros` 下。
+            // Dart 只把 warehouse 里**在场的子键**当数据（缺的类别不覆盖本地），
+            // 所以这里只放 macros，Dart 恢复时不会误清它自己的仓库偏好。
+            "warehouse" to linkedMapOf<String, Any?>(
+                "macros" to macros,
+            ),
             // 顶层设置是 Compose 侧的扩展键（Dart 快照没有这个键，它的设置内嵌在档案里）。
             // 有了它，「恢复」才能如实还原用户改过、但还没写进档案的那批核心设置；
             // Dart 解析时按未知键忽略，不影响互通。
@@ -75,8 +88,17 @@ object TimetableSnapshotBridge {
         }
     }
 
-    /** 恢复侧：快照字节 → 仓储（整份覆盖，写回成功后仓储只通知一次）。 */
-    fun applySnapshot(repository: TimetableRepository, bytes: ByteArray): SnapshotApplyResult {
+    /**
+     * 恢复侧：快照字节 → 仓储（整份覆盖，写回成功后仓储只通知一次）。
+     *
+     * [applyWarehouseMacros] 非空时同一趟把快照里的宏列表（原始 `List<*>`，可能为 null）
+     * 交给调用方落库；抛错会按恢复失败上报（课表写入已生效，不静默吞）。为空则不动宏。
+     */
+    fun applySnapshot(
+        repository: TimetableRepository,
+        bytes: ByteArray,
+        applyWarehouseMacros: ((Any?) -> Unit)? = null,
+    ): SnapshotApplyResult {
         val json = try {
             decodeSnapshotObject(String(bytes, Charsets.UTF_8))
         } catch (error: Exception) {
@@ -100,6 +122,7 @@ object TimetableSnapshotBridge {
             @Suppress("UNCHECKED_CAST")
             runCatching { TimetableSettings.fromJson(raw as Map<String, Any?>) }.getOrNull()
         }
+        val warehouseMacros: Any? = if (applyWarehouseMacros != null) selectSnapshotMacros(json) else null
         return try {
             repository.restoreFromCloudSnapshot(
                 profiles = profiles,
@@ -109,6 +132,9 @@ object TimetableSnapshotBridge {
                 locationTimeGroups = locationTimeGroups,
                 settings = settings,
             )
+            // 宏走 Dart 的整库覆盖语义：快照里没有宏（null/空表）也导入空表，
+            // 即清空本地宏——云端没带宏就是「这份备份没有宏」，不能留下旧条目。
+            applyWarehouseMacros?.invoke(warehouseMacros)
             SnapshotApplyResult.Applied
         } catch (error: Exception) {
             SnapshotApplyResult.Failed("sync_snapshot_apply_failed")

@@ -61,6 +61,14 @@ class CloudSyncController(
      * 「恢复」才会真的把快照写回课表；不注入则退回旧的本地快照文件路径（仅在单测 / 兼容时用）。
      */
     private val repository: TimetableRepository? = null,
+    /**
+     * 宏进快照的读取缝（P3）：非空时上传的字节带 `warehouse.macros`。
+     * 类型只到 `List<Map<String, Any?>>`——sync 模块不能反向 import warehouse
+     * （否则 `-Module pages/sync` 的 L0 编不过）；编解码由 warehouse 侧提供。
+     */
+    private val warehouseMacrosProvider: (() -> List<Map<String, Any?>>)? = null,
+    /** 宏出快照的落库缝（P3）：恢复成功后把 `warehouse.macros` 原始列表交给 warehouse 域。 */
+    private val warehouseMacrosApplier: ((Any?) -> Unit)? = null,
     /** 已存密码的读取缝：进程重启后进云页面可据此重建传输，不必让用户重新输密码。 */
     private val passwordProvider: (() -> String?)? = null,
     /** 覆盖默认的「生成上传字节」实现（单测可直接喂固定字节）。 */
@@ -140,13 +148,26 @@ class CloudSyncController(
      */
     private val effectiveSnapshotProvider: (() -> SnapshotBuildResult)? =
         snapshotProvider ?: repository?.let { repo ->
-            { TimetableSnapshotBridge.buildSnapshotBytes(repo, deviceIdOf(), clock()) }
+            {
+                TimetableSnapshotBridge.buildSnapshotBytes(
+                    repo,
+                    deviceIdOf(),
+                    clock(),
+                    warehouseMacrosProvider?.invoke() ?: emptyList(),
+                )
+            }
         }
 
     /** 恢复落点：优先用调用方注入的；否则写回仓储；都没有则不额外写（旧路径）。 */
     private val effectiveSnapshotApplier: ((ByteArray) -> SnapshotApplyResult)? =
         snapshotApplier ?: repository?.let { repo ->
-            { bytes -> TimetableSnapshotBridge.applySnapshot(repo, bytes) }
+            { bytes ->
+                TimetableSnapshotBridge.applySnapshot(
+                    repo,
+                    bytes,
+                    warehouseMacrosApplier,
+                )
+            }
         }
 
     /**
