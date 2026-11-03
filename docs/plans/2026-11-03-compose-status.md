@@ -66,7 +66,7 @@ CI 权威变体是 `:app:testProdDebugUnitTest`（`.github/workflows/ci.yml:116`
 |---|---|---|
 | **R08** | **全仓 L1/L2 复跑（原 F19）** | 先等工作区在途索引收敛；跑 `:app:compileDevDebugKotlin` + 全量 JVM 单测，结果回填本文件。写作用域：无代码，只跑 `scripts/safe-gradle.ps1` |
 | **R09** | **通知点击落页** | `NotificationLaunchTarget.kt:31` 自认壳不读 Intent 页面参数；`PagesShellActivity` 无 Intent 解析。生产端已有 `open_route` / `open_lan_edit` 两处 extras 但无人消费。需定义页面参数、冷启动 + `singleTop` 两路解析，并补断言目标路由 id 的契约测试。写作用域：`NotificationLaunchTarget.kt`、四个 scheduler/service、`test/`；壳侧 `PagesShellActivity.kt` **[Lead]** |
-| **R10** | **弹层剩余 11 条 + `QingyuSheet` 两个底层缺口** | 42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等；另有 `QingyuSheet.kt:96-116`：IME 未感知（键盘弹出多 24~40dp 空白）、`contentPadsHorizontally` 会把标题动作贴边（当前无人用标题动作）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
+| **R10** | **弹层剩余 11 条（`QingyuSheet` 两个底层缺口已修）** | ✅ `QingyuSheet.kt` 两处已修并提交 `bd0c3eb7`：IME>0 时底部只留 16dp 呼吸（原来多垫 24~40dp）、有标题动作时保留 16dp 并用私有 `horizontalBleed` 把内容反向撑出（标题不贴边、内容仍满宽）。仍未做：42dp 无标题空档 ×4、自动聚焦 ×4、选周结构、ICS 菜单等（部分待 R05 拍板）。写作用域：`components/`、`pages/course/`、`pages/timetable/`、`pages/settings/` |
 | **R11** | **弹窗玻璃铺开** | 试点只有加课页删除确认 1 处（`e8cafb75` / `4a8011b3`，守卫钉调用点数=1）。先等真机看采样跟手与低端机帧率，确认后再铺其余 46 处 OverlayDialog 与底部弹层。写作用域：`components/glass/`、`pages/**` |
 | **R12** | **局域网两个残余** | `LanTransferLogic.kt:54` / `LanEditRepositoryHost.kt:70-72`：① settings 只应用 Kotlin 已移植的时间/周次子集；② 地点分组变化后不重算课程钟点（Dart `replaceLocationTimeGroups(resync:true)` 无对应物）。撤销点、真实 `transferId`、整份恢复已完成，勿重做。写作用域：`main/transfer/lan/`、`main/app/TimetableRepository.kt` |
 | **R13** | **F18：两条壁纸路由语义** | `ShellPageIndex.kt:477-489` 两条路由都传 `initialWallpaperPage = PICKER`，疑似一条吃掉另一条；对照 Dart 两个文件确认是不同页签还是同一面板入口。写作用域：`pages/settings/`、`app/AppearanceEditorHost.kt`；`ShellPageIndex.kt` **[Lead]** |
