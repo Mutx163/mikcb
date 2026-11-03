@@ -170,6 +170,10 @@ fun TimetableHost(
                 val date = TimetableDateLogic.dateForWeekDay(start, week, dayOfWeek)
                 val occurrence = repository.dateForCourseOccurrence(course, week)
                 when {
+                    // Dart `timetable_home_page_assembly.dart:456`：停课周（及单双周错位、
+                    // 尚未开课的周）这节并不上，挂那天的天气会让人误以为要带伞——是
+                    // 整行不挂，不是挂空值。
+                    !course.isActiveInWeek(week) -> null
                     date == null || occurrence == null -> null
                     else -> provider.summaryForCourse(occurrence, course.startTime, course.endTime)?.let { summary ->
                         TimetableStrings.formatWeatherLine(

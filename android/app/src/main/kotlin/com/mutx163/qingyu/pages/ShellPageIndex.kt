@@ -824,8 +824,11 @@ fun ShellPageContent(
                             tasks = repository.tasks,
                             showNonCurrentWeekCourses =
                                 appSettings.timetableShowNonCurrentWeekCourses,
-                            // 日卡天气行：只在「日视图课卡显示天气」开着且有 provider 时返回非空。
-                            weatherOf = weatherOf,
+                            // 日卡天气行：取数器带当前页的 week，停课周整行不挂
+                            //（Dart `day_view_course_agenda_card_variants.dart:166-169`）。
+                            weatherOf = weatherOf?.let { resolve ->
+                                { date, course -> resolve(week, date, course) }
+                            },
                         ),
                     )
                 },
