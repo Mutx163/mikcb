@@ -6,6 +6,7 @@ import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.ScheduleRecurrence
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -322,6 +323,45 @@ class DayViewDataAssemblerTest {
         assertTrue(
             DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 29, 0, 0, 1)),
         )
+    }
+
+    @Test
+    fun `同一次取钟 跨零点一瞬周次与今天判定不错位`() {
+        val semesterStart = LocalDate.of(2026, 9, 1)
+        val settings = TimetableSettings(
+            semesterWeekCount = 20,
+            semesterStartDate = semesterStart.atStartOfDay(),
+        )
+        // 23:59:59 这一瞬取钟：壳里 `realCurrentWeek` 与装配器必须共用同一个 now。
+        val now = LocalDateTime.of(2026, 10, 28, 23, 59, 59)
+        val week = requireNotNull(
+            TimetableDateLogic.currentSemesterWeek(
+                semesterStart = semesterStart,
+                totalWeeks = 20,
+                today = now.toLocalDate(),
+            ),
+        )
+        val sameClock = DayViewDataAssembler.build(
+            week = week,
+            dayOfWeek = now.dayOfWeek.value,
+            courses = emptyList(),
+            settings = settings,
+            currentWeek = week,
+            now = now,
+        )
+        assertTrue("同一次取钟：这一页仍是今天", sameClock.isToday)
+
+        // 壳里旧写法（周次用 LocalDate.now()、装配器再取一次 now）在跨零点一瞬会拆成两半：
+        // 周次还是昨天所在周，装配器已按次日判「今天」——同一页被判成昨天。
+        val splitClock = DayViewDataAssembler.build(
+            week = week,
+            dayOfWeek = now.dayOfWeek.value,
+            courses = emptyList(),
+            settings = settings,
+            currentWeek = week,
+            now = now.plusSeconds(1),
+        )
+        assertFalse("拆钟后同一页被判成昨天，这正是单次取钟要消除的错位", splitClock.isToday)
     }
 
     // ------------------------------------------------------------------ 夹具

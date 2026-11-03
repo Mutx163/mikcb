@@ -104,17 +104,50 @@ class TimetableDateLogicTest {
     }
 
     @Test
-    fun `注入时钟的今天按真实日历平移 跨零点后不再停在昨天`() {
-        val injected = LocalDate.of(2026, 10, 28)
-        // 同一天：保持注入值。
+    fun `跨日写回当前周 只在周次变了才写且天然幂等`() {
+        val semesterStart = LocalDate.of(2026, 9, 1)
+        val weekOfNow = TimetableDateLogic.currentSemesterWeek(
+            semesterStart = semesterStart,
+            totalWeeks = 20,
+            today = LocalDate.of(2026, 10, 28),
+        )!!
+        // 同一周：不写。
         assertEquals(
-            injected,
-            TimetableDateLogic.rollTodayDate(injected, LocalDate.of(2026, 10, 28), LocalDate.of(2026, 10, 28)),
+            null,
+            TimetableDateLogic.weekToCommitOnDayChange(
+                semesterStart = semesterStart,
+                totalWeeks = 20,
+                today = LocalDate.of(2026, 10, 28),
+                currentWeek = weekOfNow,
+            ),
         )
-        // 跨一天：跟到次日（Dart 每次构建重读 `DateTime.now()`，`timetable_screen.dart:1429`）。
+        // 跨到下一周：写出新周（Dart `_syncTemporalContextImpl` 的 `didChangeWeek`）。
+        val nextWeek = TimetableDateLogic.weekToCommitOnDayChange(
+            semesterStart = semesterStart,
+            totalWeeks = 20,
+            today = LocalDate.of(2026, 11, 2),
+            currentWeek = weekOfNow,
+        )
+        assertTrue("应算出大于当前周的周次", nextWeek != null && nextWeek > weekOfNow)
+        // 写回后再跳一次：周次已一致，必须返回 null（幂等，不会反复落盘）。
         assertEquals(
-            LocalDate.of(2026, 10, 29),
-            TimetableDateLogic.rollTodayDate(injected, LocalDate.of(2026, 10, 28), LocalDate.of(2026, 10, 29)),
+            null,
+            TimetableDateLogic.weekToCommitOnDayChange(
+                semesterStart = semesterStart,
+                totalWeeks = 20,
+                today = LocalDate.of(2026, 11, 2),
+                currentWeek = nextWeek!!,
+            ),
+        )
+        // 没配开学日：算不出日历周，不写。
+        assertEquals(
+            null,
+            TimetableDateLogic.weekToCommitOnDayChange(
+                semesterStart = null,
+                totalWeeks = 20,
+                today = LocalDate.of(2026, 11, 2),
+                currentWeek = 8,
+            ),
         )
     }
 }

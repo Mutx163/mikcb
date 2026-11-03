@@ -1704,6 +1704,56 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **日志提交**：仅本文件追加，无代码路径。
 
+---
+
+### 10.38 ✅ 日视图单次取钟（ShellPageIndex 最小例外交）+ `currentWeek` 跨日写回接线（2026-11-04）
+
+**授权范围（Lead 最小例外交）**：`android/app/src/main/kotlin/…/pages/ShellPageIndex.kt` 的日视图分支 `:753-860`，
+只做「当前周」与装配器 `now` 同一次取钟；文件其它区块一行未动（`git diff` 只含 3 处：1 行取钟 + 2 处替换）。
+
+**1. 撞车检查**：动手前 `git status --short` / `git diff HEAD -- ShellPageIndex.kt` → 该文件**无他线未提交改动**，安全。
+
+**2. 单次取钟改法**
+- 日视图分支入口新增 `val dayViewNow = LocalDateTime.now()`（`ShellPageIndex.kt:755`）。
+- 「今天在哪一周」：`today = LocalDate.now()` → `today = dayViewNow.toLocalDate()`（`:776`）。
+- 装配器：显式追加 `now = dayViewNow`（`:827`），不再让 `DayViewDataAssembler.build` 默认参数二次取钟。
+- 语义依据：Dart `_resolveCurrentSemesterWeek` 与 `isToday`（`timetable_day_view_part.dart:326-338`）都读同一次构建的
+  `DateTime.now()`；旧写法两处各自取钟，跨零点一瞬会把「周次」与「今天」拆成两天。
+
+**3. 新增用例（判据层，白名单目录 `pages/timetable`）**
+- `DayViewDataAssemblerTest`「同一次取钟 跨零点一瞬周次与今天判定不错位」：`2026-10-28T23:59:59` 同一 now 下
+  `isToday == true`；把 now 换成 `+1s`（模拟拆钟）同一页 `isToday == false` —— 钉住「拆钟即错位」。
+- `TimetableDateLogicTest`「跨日写回当前周 只在周次变了才写且天然幂等」：同周 → `null`；跨周 → 新周；
+  写回后再调 → `null`（幂等，不反复落盘）；无开学日 → `null`。
+
+**4. `currentWeek` 跨日写回（第 2 条结论）**
+- Dart 真源不是 `commitPendingWeek`（那只是翻页落定写回，`week_pager_controller.dart:309-331`）；
+  **跨日/时间上下文刷新**走 `syncTemporalContext` → `_syncTemporalContextImpl`（`timetable_provider.dart:3259-3302`），
+  `didChangeWeek` 时按日历周写回（`:3271-3287`），并由 30 s 心跳 / 生命周期恢复触发（`timetable_screen.dart:668`）。
+- Kotlin 现状：翻页落定写回**已有**（`ShellPageIndex.kt:936` → `repository.setCurrentWeek`，带 `!=` 幂等守卫，
+  等价 `commitPendingWeek`）；但 `syncTemporalContext` **完全缺位**（全仓 Kotlin 仅注释提及，无实现/无调用）。
+- 接线（不改 `TimetableStore`、不新增仓储 API）：在 `TimetableHost` 已有的分钟心跳里，跨日时调
+  `TimetableDateLogic.weekToCommitOnDayChange(...)`（纯函数，新增于 `TimetableDateLogic.kt:139-151`），
+  非 `null` 才走壳注入的 `onWeekChanged`（壳侧即 `repository.setCurrentWeek`，`ShellWiring.kt:717`）。
+  - 幂等：与本帧快照 `currentWeek` 比较，写成功后下一跳返回 `null`。
+  - 失败回退：`runCatching` 吞掉异常，快照不变 → 下一分钟重试一次，渲染不受影响。
+  - 触发面：仅周视图宿主在组合时；日视图跨零点仍由日页自身时钟平移兜底，写回等回到周视图的下一跳。
+- 剩余卡点（需 store 线）：学期结束后 Dart 会夹到最后一击（`clampCurrentWeekToSettings`），
+  Kotlin `currentSemesterWeek` 在学期外返回 `null` → 不写；长假跨学期边界需 `TimetableRepository` 补
+  「日历周（含夹取）」API 才能完全对齐（本批按纪律不碰 `TimetableStore`）。
+
+**5. L0（诚实口径）**
+- `-Module pages/timetable` → **299 例全绿**（基线 291，本批 +2 用例 + 上节 +6）。
+- `-Module pages/settings -ExtraSources '…/pages/ShellPageIndex.kt'` → **编译失败**：ShellPageIndex 依赖
+  `android.widget.Toast` 等 Android/Compose 全量编译面，L0 单文件收不进来（unresolved `Toast`，`ShellPageIndex.kt:2540`）。
+  该文件的编译保障只能由门 1/门 2 整包负责；本批未裸跑 gradlew、未跑整包。
+- 咬合探针：`weekToCommitOnDayChange` 去掉 `takeIf`、`isToday` 改恒真 → **3 红**；还原后 299 绿。
+
+**6. 未触碰**：`ShellWiring.kt`、`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、
+`pages/ShellPageIndex.kt` 其它区块、`pages/import/**`、`pages/sync/**`、`TimetableProfilesController.kt`、
+`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
+
 
 
 

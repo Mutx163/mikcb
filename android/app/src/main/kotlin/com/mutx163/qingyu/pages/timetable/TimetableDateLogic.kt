@@ -127,4 +127,26 @@ object TimetableDateLogic {
      */
     fun rollTodayDate(seedToday: LocalDate, seedRealToday: LocalDate, realToday: LocalDate): LocalDate =
         seedToday.plusDays(ChronoUnit.DAYS.between(seedRealToday, realToday))
+
+    /**
+     * 跨日把「当前周」写回仓储的判据（Dart `_syncTemporalContextImpl`：
+     * 只有 `didChangeWeek` 命中且夹到学期内才写，`timetable_provider.dart:3271-3287`）。
+     *
+     * 返回 `null` = 这一跳不用写：没配开学日（算不出日历周）或仓储已经就是这个周。
+     * 调用方拿返回值直接写回即可，天然幂等——写成功后下一跳的 [currentWeek] 已更新，
+     * 再次调用返回 null。写失败只需等下一跳重试，不会累积。
+     */
+    fun weekToCommitOnDayChange(
+        semesterStart: LocalDate?,
+        totalWeeks: Int,
+        today: LocalDate,
+        currentWeek: Int,
+    ): Int? {
+        val calendarWeek = currentSemesterWeek(
+            semesterStart = semesterStart,
+            totalWeeks = totalWeeks,
+            today = today,
+        ) ?: return null
+        return calendarWeek.takeIf { it != currentWeek }
+    }
 }

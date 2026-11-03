@@ -124,7 +124,22 @@ fun TimetableHost(
         while (isActive) {
             delay(1000L)
             val fresh = LocalDateTime.now()
-            if (TimetableDateLogic.homeClockShouldAdvance(now, fresh)) now = fresh
+            if (!TimetableDateLogic.homeClockShouldAdvance(now, fresh)) continue
+            val previousDate = now.toLocalDate()
+            now = fresh
+            // 跨日把「当前周」写回仓储，补齐 Dart 时间上下文刷新的日历部分
+            //（`timetable_provider.dart:3271-3287`：`didChangeWeek` 时才夹到学期内写回）。
+            // 幂等：只在与本帧快照不同才调；写失败由壳回调吞掉并每分钟重试一次，
+            // 不影响渲染 —— 不新增仓储 API，也不碰 `TimetableStore`。
+            if (fresh.toLocalDate() != previousDate) {
+                val commitWeek = TimetableDateLogic.weekToCommitOnDayChange(
+                    semesterStart = settings.semesterStartDate?.toLocalDate(),
+                    totalWeeks = settings.semesterWeekCount,
+                    today = fresh.toLocalDate(),
+                    currentWeek = snapshot.currentWeek,
+                )
+                if (commitWeek != null) runCatching { onWeekChanged(commitWeek) }
+            }
         }
     }
 

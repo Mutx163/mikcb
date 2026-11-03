@@ -749,6 +749,10 @@ fun ShellPageContent(
             val shellContext = LocalContext.current
             val taskController = remember(repository) { TaskListController(repository) }
             Box(modifier = Modifier.fillMaxSize()) {
+            // 日视图分支**只取一次钟**：上面「今天在哪一周」按 `today` 现算，下面装配器按 `now`
+            // 判「今天/进行中/考试过期」。两处各自 `now()` 时跨零点一瞬会出现周次与「今天」错位
+            //（例如 00:00:00 前取到周次、00:00:01 后取到日期）。
+            val dayViewNow = LocalDateTime.now()
             DayViewPage(
                 initialWeek = snapshot.currentWeek.coerceAtLeast(1),
                 // 有显式意图（点星期栏某天）就用它；否则回到**上次看的那一天**，与 Dart
@@ -769,7 +773,7 @@ fun ShellPageContent(
                 realCurrentWeek = TimetableDateLogic.currentSemesterWeek(
                     semesterStart = snapshot.settings.semesterStartDate?.toLocalDate(),
                     totalWeeks = snapshot.settings.semesterWeekCount,
-                    today = LocalDate.now(),
+                    today = dayViewNow.toLocalDate(),
                 ),
                 weekdayStyle = TimetableStyleMapping.weekViewStyle(appSettings),
                 // 「课卡显示冲突角标」开关（Dart `showConflictBadgeOnTimetable`）。
@@ -819,6 +823,8 @@ fun ShellPageContent(
                             courses = snapshot.courses,
                             settings = snapshot.settings,
                             currentWeek = snapshot.currentWeek,
+                            // 与上面 `realCurrentWeek` 同一次取钟，杜绝跨零点错位。
+                            now = dayViewNow,
                             scheduleItems = snapshot.scheduleItems,
                             exams = repository.exams,
                             tasks = repository.tasks,
