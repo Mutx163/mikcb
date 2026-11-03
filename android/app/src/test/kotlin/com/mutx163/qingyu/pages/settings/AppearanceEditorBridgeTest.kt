@@ -85,7 +85,7 @@ class AppearanceEditorBridgeTest {
           "liquidGlassDockEnabled": true,
           "courseCardGlassPreset": "standard",
           "courseCardGlassTuning": {
-            "refraction": 8, "refractionBand": 11, "refractionEdgePow": 2.5,
+            "refraction": 6, "refractionBand": 8, "refractionEdgePow": 2.5,
             "dispersion": 0.35, "rimStrength": 0.2, "rimWidth": 1.5,
             "blurSigma": 15, "tintAlpha": 0.7
           },
@@ -121,15 +121,17 @@ class AppearanceEditorBridgeTest {
         // :671 / :1786-1798：档位键与参数键一致时原样保留（这里是第 8 格）
         assertEquals("level8", material.liquidGlassPreset)
         // :672 / :929（第 8 格的推荐参数）
+        // 存档里沿用旧版第 8 格的作用带 13（低于旧上限 24、高于新上限 12）：读侧按
+        // `.clamped()` 收到 12 后仍与第 8 格逐字段相等，所以档位键原样保留。
         assertEquals(
-            LiquidGlassTuning(refraction = 9.0, refractionBand = 13.0, refractionEdgePow = 2.25,
+            LiquidGlassTuning(refraction = 9.0, refractionBand = 12.0, refractionEdgePow = 2.25,
                 dispersion = 0.4, rimStrength = 0.25, rimWidth = 1.7,
                 blurSigma = 18.0, tintAlpha = 0.75),
             material.liquidGlassTuning,
         )
-        // :675 / :930（深色档 = 第 9 格那套）
+        // :675 / :930（深色档 = 旧第 9 格那套，作用带 14 同样收口到 12）
         assertEquals(
-            LiquidGlassTuning(refraction = 10.0, refractionBand = 14.0, refractionEdgePow = 2.25,
+            LiquidGlassTuning(refraction = 10.0, refractionBand = 12.0, refractionEdgePow = 2.25,
                 dispersion = 0.45, rimStrength = 0.3, rimWidth = 1.9,
                 blurSigma = 21.0, tintAlpha = 0.8),
             material.liquidGlassTuningDark,
@@ -289,8 +291,8 @@ class AppearanceEditorBridgeTest {
             },
             assertState = {
                 assertEquals("dense", it.material.liquidGlassPreset)
-                // 第 10 格：折射 11 / 作用带 15 / 陡缓 2 / 色散 0.5 / 边光 0.3×2.1 / 模糊 24 / 染色 0.9
-                assertEquals(11.0, it.material.liquidGlassTuning.refraction, 0.0)
+                // 第 10 格：折射 10 / 作用带 12 / 陡缓 2 / 色散 0.5 / 边光 0.3×2.1 / 模糊 24 / 染色 0.9
+                assertEquals(10.0, it.material.liquidGlassTuning.refraction, 0.0)
                 assertEquals(24.0, it.material.liquidGlassTuning.blurSigma, 0.0)
                 assertEquals(0.9, it.material.liquidGlassTuning.tintAlpha, 0.0)
             },
@@ -506,6 +508,56 @@ class AppearanceEditorBridgeTest {
             assertEquals("回写改坏了本模型拥有的 $key", expected[key], after[key])
             assertEquals("frostedBlurEnabled 没写进去", false, after["frostedBlurEnabled"])
         }
+    }
+
+    // ------------------------------------------------------ 档位往返 / 自定义
+
+    /**
+     * 选中一档 → 落盘 → 重新读回，档位必须还是那一档。
+     *
+     * 这是「第 8/9/10 档回读被判成自定义」的回归：预设参数一旦越过滑杆区间，读侧的
+     * `.clamped()` 会把它改掉，档位键与参数键对不上就只能回落 `custom`。
+     * 第 1 / 7 / 10 档各覆盖一次（薄端 / 出厂档 / 厚端）。
+     */
+    @Test
+    fun `档位往返：第 1 7 10 档存盘再读回仍是同一档`() {
+        for ((step, preset) in listOf(1 to "clear", 7 to "standard", 10 to "dense")) {
+            val store = TimetableSettingsModelStore(TimetableStore(storeOf("{}")))
+            store.save(
+                TimetableSettingsModel(
+                    liquidGlassPreset = preset,
+                    liquidGlassTuning = LiquidGlassTuningModel.tuningOfPreset(preset),
+                ),
+            )
+
+            val loaded = store.load()
+            assertEquals("第 $step 档（$preset）回读档位", preset, loaded.liquidGlassPreset)
+            assertEquals(
+                "第 $step 档（$preset）回读参数",
+                LiquidGlassTuningModel.tuningOfPreset(preset),
+                loaded.liquidGlassTuning,
+            )
+            // 面板滑杆停在哪一格读的就是档位键
+            assertEquals(step, SettingsMaterialModel.presetStepOf(loaded.liquidGlassPreset))
+        }
+    }
+
+    @Test
+    fun `手改过的参数回读仍是自定义`() {
+        // 在厚端那档上只改一根旋钮（11.5 不落在任何一格的推荐值上）：
+        // 读回必须是 custom，不能为了绿灯把真正手改的值归到最近一档。
+        val handEdited = LiquidGlassTuningModel.tuningOfPreset("dense").copy(refractionBand = 11.5)
+        val store = TimetableSettingsModelStore(TimetableStore(storeOf("{}")))
+        store.save(
+            TimetableSettingsModel(
+                liquidGlassPreset = TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM,
+                liquidGlassTuning = handEdited,
+            ),
+        )
+
+        val loaded = store.load()
+        assertEquals(TimetableSettingsModel.LIQUID_GLASS_PRESET_CUSTOM, loaded.liquidGlassPreset)
+        assertEquals(11.5, loaded.liquidGlassTuning!!.refractionBand, 0.0)
     }
 
     // ------------------------------------------------- 结构守卫 / 两处档位表

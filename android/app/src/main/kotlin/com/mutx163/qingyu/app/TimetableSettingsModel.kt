@@ -1609,9 +1609,12 @@ data class LiquidGlassTuningModel(
             // 第 7 格 = 标准档 = 出厂值（`:249-250` presetStandard = defaults）
             DEFAULTS,
             // 第 8 格（`:333-342`）
+            // 2026-11-03 与上下限同步收档：作用带 13 超出新上限 12，这里收到 12。
+            // 预设必须落在滑杆区间内，否则「选档 → 存 → 读」经过 `.clamped()` 后与原档位
+            // 值对不上，只能被判成自定义（第 8/9/10 格当时整条回读链路都是 `custom`）。
             LiquidGlassTuningModel(
                 refraction = 9.0,
-                refractionBand = 13.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.25,
                 dispersion = 0.4,
                 rimStrength = 0.25,
@@ -1619,10 +1622,10 @@ data class LiquidGlassTuningModel(
                 blurSigma = 18.0,
                 tintAlpha = 0.75,
             ),
-            // 第 9 格（`:345-354`）
+            // 第 9 格（`:345-354`）：作用带 14 同上收到 12
             LiquidGlassTuningModel(
                 refraction = 10.0,
-                refractionBand = 14.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.25,
                 dispersion = 0.45,
                 rimStrength = 0.3,
@@ -1631,9 +1634,10 @@ data class LiquidGlassTuningModel(
                 tintAlpha = 0.8,
             ),
             // 第 10 格（最厚，存档值沿用旧的 dense，`:357-368`；染色刻意不到 1）
+            // 折射 11 / 作用带 15 同上收到新上限 10 / 12
             LiquidGlassTuningModel(
-                refraction = 11.0,
-                refractionBand = 15.0,
+                refraction = 10.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.0,
                 dispersion = 0.5,
                 rimStrength = 0.3,

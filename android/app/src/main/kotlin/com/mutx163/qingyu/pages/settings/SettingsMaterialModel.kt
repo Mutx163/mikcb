@@ -149,9 +149,10 @@ data class LiquidGlassTuning(
             ),
             // 第 7 格 = 标准档 = 出厂值
             DEFAULTS,
+            // 第 8 格：作用带 13 收到新上限 12（与 app 侧档位表逐字段相等）
             LiquidGlassTuning(
                 refraction = 9.0,
-                refractionBand = 13.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.25,
                 dispersion = 0.4,
                 rimStrength = 0.25,
@@ -159,9 +160,10 @@ data class LiquidGlassTuning(
                 blurSigma = 18.0,
                 tintAlpha = 0.75,
             ),
+            // 第 9 格：作用带 14 同上收到 12
             LiquidGlassTuning(
                 refraction = 10.0,
-                refractionBand = 14.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.25,
                 dispersion = 0.45,
                 rimStrength = 0.3,
@@ -169,10 +171,10 @@ data class LiquidGlassTuning(
                 blurSigma = 21.0,
                 tintAlpha = 0.8,
             ),
-            // 第 10 格：染色刻意不到 1（全不透明就不是玻璃了）
+            // 第 10 格：染色刻意不到 1（全不透明就不是玻璃了）；折射 11 / 作用带 15 同上收到 10 / 12
             LiquidGlassTuning(
-                refraction = 11.0,
-                refractionBand = 15.0,
+                refraction = 10.0,
+                refractionBand = 12.0,
                 refractionEdgePow = 2.0,
                 dispersion = 0.5,
                 rimStrength = 0.3,

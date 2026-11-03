@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.settings
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -87,6 +88,50 @@ class SettingsMaterialModelTest {
                 tuning.tintAlpha * 20,
                 Math.round(tuning.tintAlpha * 20).toDouble(),
                 1e-9,
+            )
+        }
+    }
+
+    @Test
+    fun `每一格的八项参数都在滑杆区间内`() {
+        // 2026-11-03 的回归点：上下限收档（位移 10 / 作用带 12）后，第 8/9/10 格仍留着
+        // 旧值 13 / 14 / 15 与折射 11。落盘本身不夹，读侧 `.clamped()` 一夹，档位键与
+        // 参数键就对不上，回读只能判成 custom，所以预设必须自己先落在区间内。
+        LiquidGlassTuning.PRESET_TUNINGS.forEachIndexed { index, tuning ->
+            val step = index + 1
+            assertTrue(
+                "第 $step 格折射 ${tuning.refraction} 超出滑杆区间",
+                tuning.refraction in LiquidGlassTuning.MIN_REFRACTION..LiquidGlassTuning.MAX_REFRACTION,
+            )
+            assertTrue(
+                "第 $step 格作用带 ${tuning.refractionBand} 超出滑杆区间",
+                tuning.refractionBand in
+                    LiquidGlassTuning.MIN_REFRACTION_BAND..LiquidGlassTuning.MAX_REFRACTION_BAND,
+            )
+            assertTrue(
+                "第 $step 格陡缓 ${tuning.refractionEdgePow} 超出滑杆区间",
+                tuning.refractionEdgePow in
+                    LiquidGlassTuning.MIN_REFRACTION_EDGE_POW..LiquidGlassTuning.MAX_REFRACTION_EDGE_POW,
+            )
+            assertTrue(
+                "第 $step 格色散 ${tuning.dispersion} 超出滑杆区间",
+                tuning.dispersion in LiquidGlassTuning.MIN_DISPERSION..LiquidGlassTuning.MAX_DISPERSION,
+            )
+            assertTrue(
+                "第 $step 格边光强度 ${tuning.rimStrength} 超出滑杆区间",
+                tuning.rimStrength in LiquidGlassTuning.MIN_RIM_STRENGTH..LiquidGlassTuning.MAX_RIM_STRENGTH,
+            )
+            assertTrue(
+                "第 $step 格边光宽度 ${tuning.rimWidth} 超出滑杆区间",
+                tuning.rimWidth in LiquidGlassTuning.MIN_RIM_WIDTH..LiquidGlassTuning.MAX_RIM_WIDTH,
+            )
+            assertTrue(
+                "第 $step 格模糊 ${tuning.blurSigma} 超出滑杆区间",
+                tuning.blurSigma in LiquidGlassTuning.MIN_BLUR_SIGMA..LiquidGlassTuning.MAX_BLUR_SIGMA,
+            )
+            assertTrue(
+                "第 $step 格染色 ${tuning.tintAlpha} 超出滑杆区间",
+                tuning.tintAlpha in LiquidGlassTuning.MIN_TINT_ALPHA..LiquidGlassTuning.MAX_TINT_ALPHA,
             )
         }
     }
