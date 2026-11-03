@@ -25,6 +25,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.statistics.CourseNatureStats
 import com.mutx163.qingyu.statistics.WeeklyComparison
 import com.mutx163.qingyu.theme.QingyuTheme
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Notes
@@ -149,8 +150,11 @@ private fun NatureLegendItem(
             )
         }
         Text(
-            // 百分比按「本侧 / 两侧合计」算（ratio 已是该口径），四舍五入到整数
-            text = "${kotlin.math.round(ratio * 100).toInt()}%",
+            // 百分比按「本侧 / 两侧合计」算（ratio 已是该口径），四舍五入到整数。
+            // 用 roundToInt（ties away from zero）而不是 round().toInt()（ties to even）：
+            // 与学期视图的 percentText 和 Dart `(ratio*100).round()` 同口径，
+            // 否则 1/8 会在两个页签分别显示 12% / 13%。
+            text = "${(ratio * 100).roundToInt()}%",
             style = MiuixTheme.textStyles.body1,
             color = color,
         )
@@ -207,11 +211,12 @@ fun WeeklyComparisonCard(
                 )
                 ComparisonCell(
                     value = if (isFirstWeek) "—" else deltaText,
-                    label = if (isFirstWeek) {
-                        ChartsStrings.statisticsComparisonLastWeek.zh
-                    } else {
-                        ChartsStrings.statisticsComparisonVsLastWeek.filled("delta", deltaText)
-                    },
+                    // Dart `weekly_comparison_card.dart:70-76` 第一周也走
+                    // `statisticsComparisonVsLastWeek('—')`（「较上周 — 节」），
+                    // 不是另一句「上周课时」。原先两个页签因此显示了不同标签。
+                    label = ChartsStrings.statisticsComparisonVsLastWeek.filled(
+                        "delta" to if (isFirstWeek) "—" else deltaText,
+                    ),
                     accent = if (isFirstWeek) Color(QingyuTheme.secondaryText(dark)) else deltaColor,
                     dark = dark,
                     modifier = Modifier.weight(1f),
