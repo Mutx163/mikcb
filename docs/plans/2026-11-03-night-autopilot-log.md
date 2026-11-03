@@ -257,7 +257,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 
 ## 八、当前状态（2026-11-03 09:55 更新）
 
-- HEAD：`f8b04f80`（E 线 I2 收口）+ 本轮 A 线 ARB/基线/日志提交；推送后远端 HEAD 以 ls-remote 复核为准。
+- HEAD = 远端 = `1c3fe57e`（09:56 推送 `2901432b..1c3fe57e`，ls-remote 复核一致；含 E 线 `f8b04f80` + 本轮 A 线 ARB/基线/日志）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
 - 门1 L1 编译 ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55）；门4 copy_style ✅ 09:50（超宽冻结 175/新增 0、死键新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
 - 5 路（A~E + 补 F）已全部完成并经 L0/门3 验证；并行方式切换为 5 条独立会话，A 线（本代理）继续 copy_style 欠账与 ARB 同步。
