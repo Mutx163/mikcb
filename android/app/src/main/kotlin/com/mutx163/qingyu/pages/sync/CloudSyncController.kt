@@ -101,6 +101,20 @@ class CloudSyncController(
     private var transport: WebdavRemoteTransport? = null
 
     /**
+     * 已下载待确认应用的远端快照（[prepareRestore] 与 [confirmPreparedRestore] 之间的
+     * 一次性交接）。预览阶段零副作用：不写本机快照文件、不写课表仓储，用户取消即弃。
+     * prepare 在 IO 线程写、confirm 在 IO 线程读、discard 在主线程清，单引用用 volatile 兜底。
+     */
+    @Volatile
+    private var pendingRestore: PendingRemoteSnapshot? = null
+
+    /** 一次恢复准备的缓存体：预览时下载并校验过的字节，确认时原样应用。 */
+    private class PendingRemoteSnapshot(
+        val bytes: ByteArray,
+        val contentSha256: String,
+    )
+
+    /**
      * 「立即同步」先拉后推时发现的**待裁决冲突**（远端比基线新、本地也有改动）。
      *
      * 非空时页面应弹「选边」框；用户三选一经 [resolveSyncConflict] 消费后清空。
@@ -342,6 +356,7 @@ class CloudSyncController(
         backupEntries = emptyList()
         remoteFiles = emptyList()
         undoStore.clear()
+        pendingRestore = null
         manualBackupFileNames.clear()
         status = CloudSyncStatusSource()
         notifyChanged()
@@ -442,69 +457,112 @@ class CloudSyncController(
     fun createBackup(): SyncResultKind = runUpload(CloudBackupSource.MANUAL)
 
     /**
-     * 打开（恢复）某条远端备份：强制以远端为准下载，**并写回课表仓储**。
+     * 打开（恢复）某条远端备份的**单步入口**：等于 [prepareRestore] + [confirmPreparedRestore]
+     * 两步合成，语义与拆出的两步完全一致（同一份代码，无第二实现）。
+     *
+     * 既有单测锚定这个入口；页面走两步——确认框里要先给差异概要，应用必须等用户确认。
      *
      * ## 修复了什么（P0）
      *
      * 之前下载成功只把字节写进本地快照文件，全仓没有代码把它写回课表：用户的课表
      * 一点没变，界面却提示「已从云端恢复」。现在只有 [effectiveSnapshotApplier] 写回成功
      * 才返回 [SyncResultKind.DOWNLOADED]；写回失败一律 [SyncResultKind.FAILED] 并带错误码。
-     *
-     * ## 撤销点
-     *
-     * 下载前先把**本机当前课表**组一份快照存进 [lastRestoreRollback]，成功后可调
-     * [undoLastRestore] 回退。撤销入口由两份 viewState 的 `canUndoRestore` 透出：
-     * 云同步页备份区与备份列表页在确有撤销点时显示「撤销上次恢复」卡片，
-     * 恢复失败 / 已撤销后自动消失。
      */
-    fun openBackup(entryId: String): SyncResultKind {
-        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+    fun openBackup(entryId: String): SyncResultKind = when (prepareRestore(entryId)) {
+        is RestorePrepareOutcome.Ready -> confirmPreparedRestore()
+        is RestorePrepareOutcome.Failed -> SyncResultKind.FAILED
+        RestorePrepareOutcome.NotFound -> SyncResultKind.FAILED
+        RestorePrepareOutcome.Missing -> SyncResultKind.FAILED
+    }
+
+    /**
+     * 恢复第一步（预览）：下载远端快照、校验信封、与当前本机算差异概要。
+     *
+     * **零副作用**：不写本机快照文件、不写课表仓储（预览字节缓存在 [pendingRestore]，
+     * 用户取消即弃）。概要供确认框展示——恢复是整份覆盖，用户确认前必须看到影响面。
+     * 失败时错误码写进 [lastErrorCode]，页面按「恢复失败」提示。
+     */
+    fun prepareRestore(entryId: String): RestorePrepareOutcome {
+        val coordinator = coordinatorOrNull() ?: return RestorePrepareOutcome.Missing
         val file = remoteFiles.firstOrNull { it.fileName == entryId }
-            ?: return SyncResultKind.FAILED
-        // 撤销点：下载会先覆盖本地快照文件，所以必须在下载**之前**取当前课表。
+            ?: return RestorePrepareOutcome.NotFound
+        status = status.copy(isSyncing = true)
+        notifyChanged()
+        val fetch = coordinator.fetchSnapshotBytes(file.remotePath)
+        status = status.copy(isSyncing = false)
+        return when (fetch) {
+            is WebdavSyncCoordinator.SnapshotBytesFetch.Ok -> {
+                pendingRestore = PendingRemoteSnapshot(
+                    bytes = fetch.bytes,
+                    contentSha256 = fetch.contentSha256,
+                )
+                notifyChanged()
+                RestorePrepareOutcome.Ready(
+                    RestoreDiffLogic.summarize(fetch.payload, currentLocalPayload()),
+                )
+            }
+            is WebdavSyncCoordinator.SnapshotBytesFetch.Failed -> {
+                status = status.copy(lastErrorCode = fetch.errorCode)
+                notifyChanged()
+                RestorePrepareOutcome.Failed(fetch.errorCode)
+            }
+        }
+    }
+
+    /** 用户在确认框点了取消 / 关闭：丢弃预览缓存（幂等；不碰网络与任何存储）。 */
+    fun discardPreparedRestore() {
+        pendingRestore = null
+    }
+
+    /**
+     * 恢复第二步（应用）：把 [prepareRestore] 缓存的字节写回课表仓储。
+     *
+     * 与单步恢复的 OK 分支同一条路：先抓撤销点（当前课表），本机快照文件换成远端
+     * 这份（镜像下载落盘行为），再写回仓储；失败不留撤销点、错误码见 [lastErrorCode]。
+     * 没有待应用的缓存（没 prepare 过 / 已确认过 / 已丢弃）直接 FAILED。
+     *
+     * @return [SyncResultKind.DOWNLOADED] = 已写回成功
+     */
+    fun confirmPreparedRestore(): SyncResultKind {
+        val pending = pendingRestore ?: return SyncResultKind.FAILED
+        // 撤销点：必须在写回**之前**取当前课表（与单步恢复同口径）。
         val rollback = effectiveSnapshotProvider?.let { provider ->
             (provider() as? SnapshotBuildResult.Success)?.bytes
         }
-        status = status.copy(isSyncing = true)
-        notifyChanged()
-        val outcome = coordinator.downloadSnapshot(
-            config = config,
-            remotePath = file.remotePath,
-            hasLocalUserData = true,
-            resolver = { SyncConflictChoice.KEEP_REMOTE },
-        )
-        status = status.copy(isSyncing = false)
-        return when (outcome.kind) {
-            SyncOpKind.OK -> {
-                if (!applyDownloadedSnapshot(outcome.bytes)) {
-                    notifyChanged()
-                    return SyncResultKind.FAILED
-                }
-                // 每次恢复成功都**重设**共享撤销点：取不到本次恢复前的快照时必须清空，
-                // 旧撤销点指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
-                if (rollback != null) {
-                    undoStore.set(
-                        CloudRestoreUndoPoint(
-                            beforeBytes = rollback,
-                            afterBytes = outcome.bytes,
-                        ),
-                    )
-                } else {
-                    undoStore.clear()
-                }
-                // 恢复成功 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
-                //（Dart restoreFromBackup 同口径）。不写它，下一轮冲突判定恒误报。
-                markSynced(outcome.remoteContentSha256)
-                refreshBackups()
-                SyncResultKind.DOWNLOADED
-            }
-            SyncOpKind.CANCELLED -> SyncResultKind.CANCELLED
-            else -> {
-                status = status.copy(lastErrorCode = outcome.errorCode)
-                notifyChanged()
-                SyncResultKind.FAILED
-            }
+        pendingRestore = null
+        // 本机快照文件也要换成远端这份：与 downloadSnapshot 的 OK 分支同款（其写盘
+        // 发生在仓储写回之前，这里保持同一顺序）。
+        snapshotStore.writeSnapshot(pending.bytes)
+        if (!applyDownloadedSnapshot(pending.bytes)) {
+            notifyChanged()
+            return SyncResultKind.FAILED
         }
+        // 每次恢复成功都**重设**共享撤销点：取不到本次恢复前的快照时必须清空，
+        // 旧撤销点指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
+        if (rollback != null) {
+            undoStore.set(
+                CloudRestoreUndoPoint(
+                    beforeBytes = rollback,
+                    afterBytes = pending.bytes,
+                ),
+            )
+        } else {
+            undoStore.clear()
+        }
+        // 恢复成功 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
+        //（Dart restoreFromBackup 同口径）。不写它，下一轮冲突判定恒误报。
+        markSynced(pending.contentSha256)
+        refreshBackups()
+        return SyncResultKind.DOWNLOADED
+    }
+
+    /** 当前课表的快照 payload（差异概要的本机侧）；没有数据 / 解析失败给 null（按空表比对）。 */
+    private fun currentLocalPayload(): Map<String, Any?>? {
+        val bytes = (effectiveSnapshotProvider?.invoke() as? SnapshotBuildResult.Success)?.bytes
+            ?: return null
+        return runCatching {
+            decodeSnapshotObject(String(bytes, Charsets.UTF_8))
+        }.getOrNull()
     }
 
     /**

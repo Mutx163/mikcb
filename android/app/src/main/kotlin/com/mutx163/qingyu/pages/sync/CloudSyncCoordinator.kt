@@ -670,6 +670,48 @@ class WebdavSyncCoordinator(
         )
     }
 
+    /** 只取快照字节的结局（恢复前差异预览用；不落盘、不判冲突）。 */
+    sealed interface SnapshotBytesFetch {
+        data class Ok(
+            val bytes: ByteArray,
+            /** 信封重算出的内容哈希（确认恢复后写基线用）。 */
+            val contentSha256: String,
+            /** 解码后的快照 payload（差异概要比对用）。 */
+            val payload: Map<String, Any?>,
+        ) : SnapshotBytesFetch
+
+        data class Failed(val errorCode: String) : SnapshotBytesFetch
+    }
+
+    /**
+     * GET 远端快照正文并校验信封，**不写本机快照文件、不做冲突判定**。
+     *
+     * 恢复前的差异预览要零副作用：用户还没确认，任何一端都不能动。字节由控制器
+     * 缓存，确认后走应用路径——所以这份 GET 与 [downloadSnapshot] 的区别不只是
+     * 少一个落盘调用，而是「预览的字节就是恢复要应用的字节」，不存在二次下载
+     * 之间被并发写者换掉的风险。
+     */
+    fun fetchSnapshotBytes(remotePath: String): SnapshotBytesFetch {
+        val fetched = transport.getBytes(remotePath)
+        if (fetched.isFailed) {
+            return SnapshotBytesFetch.Failed(fetched.errorMessage ?: "sync_failed")
+        }
+        val bytes = fetched.bytes
+        if (fetched.isNotFound || fetched.isEmpty || bytes == null) {
+            return SnapshotBytesFetch.Failed("backup_not_found")
+        }
+        val payload = try {
+            decodeSnapshotObject(String(bytes, Charsets.UTF_8))
+        } catch (error: Exception) {
+            return SnapshotBytesFetch.Failed(error.message ?: "invalid_sync_snapshot_payload")
+        }
+        val envelope = checkSnapshotEnvelopeAndChecksum(payload)
+        if (!envelope.isValid) {
+            return SnapshotBytesFetch.Failed(envelope.errorCode ?: "invalid_sync_snapshot_payload")
+        }
+        return SnapshotBytesFetch.Ok(bytes = bytes, contentSha256 = envelope.actualHash, payload = payload)
+    }
+
     // ---------- 内部 ----------
 
     private fun buildConflictInfo(
