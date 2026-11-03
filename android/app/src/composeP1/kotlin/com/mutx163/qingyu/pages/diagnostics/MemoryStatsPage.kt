@@ -706,7 +706,7 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
                     color = Color(QingyuTheme.secondaryText(dark)),
                 )
             }
-            itemsIndexed(sheet.history) { index, row ->
+            itemsIndexed(sheet.history, key = { _, row -> row.atMillis }) { index, row ->
                 Text(
                     // 行文本由模型层的 `MemoryHistoryRow.lineText` 拼好（文案不落渲染层）。
                     text = row.lineText,

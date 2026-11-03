@@ -227,6 +227,8 @@ data class MemoryHistoryRow(
     val heapRatioText: String,
     val liveLabel: String,
     val pressureLevel: String,
+    /** 采样时刻（epoch 毫秒，Collector 逐条唯一）；只作 LazyColumn 的稳定 key，不参与显示。 */
+    val atMillis: Long,
 ) {
     /** Dart `:910`：`${时间}  [$state]  PSS $pss  堆 $ratio  $live  压力 $level`。 */
     val lineText: String
@@ -856,6 +858,7 @@ private fun buildSheetMap(
                 MemoryStatsStrings.islandOff
             },
             pressureLevel = sample.stringAt("pressureLevel") ?: MemoryStatsStrings.dash,
+            atMillis = sample.longAt("atMillis") ?: 0L,
         )
     }
     val historySheet = MemoryStatsSheet(
