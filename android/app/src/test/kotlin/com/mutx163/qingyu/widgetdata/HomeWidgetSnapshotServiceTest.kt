@@ -43,8 +43,8 @@ class HomeWidgetSnapshotServiceTest {
     fun hideCompletedCoursesKeepsDailyState() { // [Dart抄录] hide completed 用例
         val settings = WidgetSettingsFace().copy(
             widgetHideCompletedCourses = true,
-            widgetHeightAdjustment = 8,
-            widgetCornerRadius = 16,
+            widgetHeightAdjustment = 8.0,
+            widgetCornerRadius = 16.0,
         )
         val snapshot = service.build(
             profileId = "profile-1",
@@ -56,8 +56,13 @@ class HomeWidgetSnapshotServiceTest {
         )
         assertEquals(HomeWidgetSnapshotState.ONGOING, snapshot.state)
         assertEquals(3, snapshot.totalTodayCourseCount)
-        assertEquals(8, snapshot.heightAdjustment)
-        assertEquals(16, snapshot.cornerRadius)
+        assertEquals(8.0, snapshot.heightAdjustment, 0.0)
+        assertEquals(16.0, snapshot.cornerRadius, 0.0)
+        // Dart `HomeWidgetSnapshot.heightAdjustment/cornerRadius` 是 double，
+        // `jsonEncode` 输出 `8.0`/`16.0`；Kotlin 若用 Int 会落成 `8`/`16`，跨端字节与哈希都对不上。
+        val json = MiniJson.encode(snapshot.toJson())
+        assertTrue(json, json.contains("\"heightAdjustment\":8.0"))
+        assertTrue(json, json.contains("\"cornerRadius\":16.0"))
         assertEquals(3, snapshot.todayCourses.size)
         assertEquals(listOf("ongoing", "upcoming"), snapshot.visibleTodayCourses.map { it.id })
         assertEquals("ongoing", snapshot.highlightedCourse?.id)

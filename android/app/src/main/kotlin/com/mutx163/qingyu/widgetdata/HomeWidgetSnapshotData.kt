@@ -2,6 +2,7 @@ package com.mutx163.qingyu.widgetdata
 
 import com.mutx163.qingyu.core.Course
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 桌面卡片快照组装（移植 lib/services/home_widget_snapshot_service.dart:190-435，
@@ -219,8 +220,8 @@ data class HomeWidgetSnapshot(
     val showCountdown: Boolean,
     val countdownTextStyle: String,
     val hideCompletedCourses: Boolean,
-    val heightAdjustment: Int,
-    val cornerRadius: Int,
+    val heightAdjustment: Double,
+    val cornerRadius: Double,
     val totalTodayCourseCount: Int,
     val todayCourses: List<HomeWidgetCourseSummary>,
     val visibleTodayCourses: List<HomeWidgetCourseSummary>,
@@ -237,7 +238,10 @@ data class HomeWidgetSnapshot(
     /** Dart nextExamDate 的格式化：yyyy-MM-dd。 */
     val nextExamDate: String?
         get() = nextExamFace?.let {
-            "%04d-%02d-%02d".format(it.dateTime.year, it.dateTime.monthValue, it.dateTime.dayOfMonth)
+            String.format(
+                Locale.ROOT, "%04d-%02d-%02d",
+                it.dateTime.year, it.dateTime.monthValue, it.dateTime.dayOfMonth,
+            )
         }
 
     /** Dart Exam.daysUntil：按日历日差算「还有几天」。 */

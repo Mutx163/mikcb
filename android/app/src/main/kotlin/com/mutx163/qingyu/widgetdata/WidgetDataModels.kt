@@ -2,6 +2,7 @@ package com.mutx163.qingyu.widgetdata
 
 import com.mutx163.qingyu.core.Course
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 超级岛/小组件数据面的阶段枚举（移植 lib/domain/live_activity_logic.dart）。
@@ -137,7 +138,10 @@ data class ExamFace(
         get() = examDateTimeWithFallback(startTime, fallbackHour = 0, fallbackMinute = 0)
 
     private fun examDateTimeWithFallback(rawTime: String, fallbackHour: Int, fallbackMinute: Int): LocalDateTime {
-        val normalized = normalizeTimeOfDay(rawTime, fallback = "%02d:%02d".format(fallbackHour, fallbackMinute))
+        val normalized = normalizeTimeOfDay(
+            rawTime,
+            fallback = String.format(Locale.ROOT, "%02d:%02d", fallbackHour, fallbackMinute),
+        )
         val parts = normalized.split(":")
         val h = parts[0].toIntOrNull() ?: fallbackHour
         val m = parts[1].toIntOrNull() ?: fallbackMinute
@@ -154,7 +158,7 @@ data class ExamFace(
             if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
                 return fallback
             }
-            return "%02d:%02d".format(hour, minute)
+            return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
         }
 
         /** Dart Exam.compareByStart：开始 → 结束 → id（exam.dart:283-297）。 */
@@ -230,8 +234,8 @@ data class WidgetSettingsFace(
     val widgetShowCountdown: Boolean = true,
     val widgetHideCompletedCourses: Boolean = false,
     val widgetShowTomorrowCourses: Boolean = true,
-    val widgetHeightAdjustment: Int = -11,
-    val widgetCornerRadius: Int = 22,
+    val widgetHeightAdjustment: Double = -11.0,
+    val widgetCornerRadius: Double = 22.0,
     val widgetCountdownLeadMinutes: Int = 20,
     val widgetCountdownTextStyle: String = "smart",
     // live 阶段开关（timetable_settings.dart:830-886）

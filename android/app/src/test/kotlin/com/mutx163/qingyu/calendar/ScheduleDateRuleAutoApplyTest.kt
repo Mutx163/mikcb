@@ -13,6 +13,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 日期规则自动套用测试。
@@ -26,7 +27,10 @@ class ScheduleDateRuleAutoApplyTest {
 
     private fun sections(count: Int): List<SectionTime> = List(count) { index ->
         val hour = 8 + index
-        SectionTime(startTime = "%02d:00".format(hour), endTime = "%02d:45".format(hour))
+        SectionTime(
+            startTime = String.format(Locale.ROOT, "%02d:00", hour),
+            endTime = String.format(Locale.ROOT, "%02d:45", hour),
+        )
     }
 
     private fun scheme(id: String = "s1", sectionCount: Int = 8) = TimeScheme(

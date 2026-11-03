@@ -3,6 +3,7 @@ package com.mutx163.qingyu.widgetdata
 import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.statistics.ClockTime
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 钟点串纯逻辑（移植 lib/domain/clock_order.dart + LiveActivityLogic 的日期构造口径）。
@@ -62,5 +63,5 @@ object WidgetDataClock {
 
     /** Dart `LiveTestingFixtureService.formatClock` 的等价物：`HH:mm` 补零。 */
     fun formatClock(time: LocalDateTime): String =
-        "%02d:%02d".format(time.hour, time.minute)
+        String.format(Locale.ROOT, "%02d:%02d", time.hour, time.minute)
 }
