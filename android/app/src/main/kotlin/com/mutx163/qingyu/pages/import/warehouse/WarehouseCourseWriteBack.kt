@@ -158,23 +158,36 @@ object WarehouseCourseWriteBack {
     }
 
     /**
-     * 脚本载荷 → 解析 → 写回。
+     * 脚本载荷 → 解析（**不写盘**）。
      *
-     * @param unknownTeacher / @param unknownLocation 空字段占位文案（宿主从 ARB 传，本层不硬写中文）。
-     * @param idFactory 课程 id 生成器（宿主注入 UUID，便于测试钉死）。
+     * 「替换/合并」弹窗（I2-3）要先拿到解析结果（课程数、丢弃数）给用户看，
+     * 等用户在弹窗里选完才落盘——解析与写入因此拆成两步，[applyPayload] 是
+     * 「解析 + 立即写入」的一步到位封装（旧调用点不变）。
      */
-    fun applyPayload(
-        repository: TimetableRepository,
+    sealed interface PayloadParse {
+        /** 解析完成（`courses` 可能为空——空列表不写盘的判定在 [apply]）。 */
+        data class Parsed(
+            val courses: List<Course>,
+            val droppedCount: Int,
+            val weeksTrimmedCount: Int,
+            val receivedCount: Int,
+        ) : PayloadParse
+
+        /** 载荷不是 JSON 数组。 */
+        object InvalidFormat : PayloadParse
+    }
+
+    /** 只解析不写盘。参数口径与 [applyPayload] 一致。 */
+    fun parsePayload(
         payload: String,
         unknownTeacher: String,
         unknownLocation: String,
         idFactory: () -> String,
-        requestedMode: Mode? = null,
         maxWeek: Int = MAX_ALLOWED_SEMESTER_WEEK_COUNT,
-    ): PayloadResult {
+    ): PayloadParse {
         val decoded = MiniJson.tryParse(payload)
         if (decoded !is List<*>) {
-            return PayloadResult.InvalidFormat
+            return PayloadParse.InvalidFormat
         }
         @Suppress("UNCHECKED_CAST")
         val rawCourses = decoded as List<Any?>
@@ -197,20 +210,53 @@ object WarehouseCourseWriteBack {
             }
         }
         // 被丢弃的记录要么是 MALFORMED、要么是 UNUSABLE，每条只计一次。
-        val receivedCount = courses.size + dropped
-
-        return when (val result = apply(
-            repository = repository,
+        return PayloadParse.Parsed(
             courses = courses,
-            requestedMode = requestedMode,
             droppedCount = dropped,
             weeksTrimmedCount = weeksTrimmed,
-        )) {
-            is Result.Done -> PayloadResult.Done(result.outcome, receivedCount)
-            is Result.NoImportableCourses ->
-                PayloadResult.NoImportableCourses(result.droppedCount, receivedCount)
+            receivedCount = courses.size + dropped,
+        )
+    }
 
-            is Result.Failed -> PayloadResult.Failed(result.cause, receivedCount)
-        }
+    /** 把解析好的课程写回（[apply] 的结果 + 解析统计拼成一次可展示结果）。 */
+    fun applyParsed(
+        repository: TimetableRepository,
+        parsed: PayloadParse.Parsed,
+        requestedMode: Mode? = null,
+        preserveLocalColors: Boolean = true,
+    ): PayloadResult = when (
+        val result = apply(
+            repository = repository,
+            courses = parsed.courses,
+            requestedMode = requestedMode,
+            droppedCount = parsed.droppedCount,
+            weeksTrimmedCount = parsed.weeksTrimmedCount,
+            preserveLocalColors = preserveLocalColors,
+        )
+    ) {
+        is Result.Done -> PayloadResult.Done(result.outcome, parsed.receivedCount)
+        is Result.NoImportableCourses ->
+            PayloadResult.NoImportableCourses(result.droppedCount, parsed.receivedCount)
+
+        is Result.Failed -> PayloadResult.Failed(result.cause, parsed.receivedCount)
+    }
+
+    /**
+     * 脚本载荷 → 解析 → 写回。
+     *
+     * @param unknownTeacher / @param unknownLocation 空字段占位文案（宿主从 ARB 传，本层不硬写中文）。
+     * @param idFactory 课程 id 生成器（宿主注入 UUID，便于测试钉死）。
+     */
+    fun applyPayload(
+        repository: TimetableRepository,
+        payload: String,
+        unknownTeacher: String,
+        unknownLocation: String,
+        idFactory: () -> String,
+        requestedMode: Mode? = null,
+        maxWeek: Int = MAX_ALLOWED_SEMESTER_WEEK_COUNT,
+    ): PayloadResult = when (val parsed = parsePayload(payload, unknownTeacher, unknownLocation, idFactory, maxWeek)) {
+        PayloadParse.InvalidFormat -> PayloadResult.InvalidFormat
+        is PayloadParse.Parsed -> applyParsed(repository, parsed, requestedMode)
     }
 }

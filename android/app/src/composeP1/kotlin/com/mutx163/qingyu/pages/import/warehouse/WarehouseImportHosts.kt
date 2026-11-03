@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.pages.settings.SettingsStrings
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,15 +41,16 @@ import kotlinx.coroutines.withContext
  * | 详情页「复制登录地址 / 复制脚本地址」 | 系统剪贴板 + Toast（文案取 ARB 原文） |
  * | 详情页自定义登录地址 | [WarehouseImportPrefs] 落盘（键名与 Dart 逐字一致），重进这一页看得见 |
  * | 详情页「网页登录」 | 进 `g2.webLogin`（同上，真地址） |
- * | 「录制导入 / 快捷导入」 | **给一句实话**：宏引擎（`warehouse_macro_service`）还没移植 |
+ * | 适配器「录制导入」 | 进 `g2.webLogin` 并自动开录（Dart `autoRecord`，I2-4 已接） |
+ * | 「快捷导入」 | 宏能录能存、入口按真值显示；**回放引擎未移植**，点了给一句实话 |
  * | 「意见反馈 / 自定义调试」 | 壳的 `onOpenPage`（`k.feedback` / `g2.customDebug`） |
  *
  * ## 诚实边界（重要，别把这段删掉）
  *
- * 1. **登录之后的「抓课表」没有接**：Dart 侧靠 WebView 里注入适配脚本（`asset_js_path`）跑出课表，
- *    再走导入确认；Kotlin 侧脚本引擎没移植（属 8c）。所以「网页登录导入」现在能到**登录页**、
- *    地址是真的，但登录完**不会**自己抓课表。这一点写在 F08 认领文件的诚实清单里。
- * 2. **宏录制 / 快捷导入**给的是「不可用」提示，不是空回调；等宏引擎移植后再接。
+ * 1. **登录之后的「抓课表」已接**（F32 + I2）：脚本注入、`courses` 写回、原生对话框、
+ *    `saveCourseConfig` 落盘、替换/合并弹窗都已落地（见 `WarehouseWebLoginHost`）。
+ * 2. **快捷导入（宏回放）**给的是「不可用」提示，不是空回调；录制侧（I2-4）已落地，
+ *    回放引擎（`warehouse_macro_replayer`）移植后这里才有真动作。
  * 3. **没有缓存**：每次进页面都真拉一次（Dart 会落 SharedPreferences 并标缓存时间），
  *    断网时看到的是失败态 + 重试，而不是上次的旧名单冒充新数据。
  * 4. 真机没对照：本刀只证明「编译通过 + JVM 单测通过」。仓库文件能不能拉到、学校名对不对，
@@ -77,6 +79,12 @@ internal object WarehouseRoutes {
 class WarehouseShellState {
     var school by mutableStateOf<WarehouseSchoolEntry?>(null)
     var adapter by mutableStateOf<WarehouseAdapterEntry?>(null)
+
+    /** 「录制导入」一录到底：进 `g2.webLogin` 后自动开录（Dart `widget.autoRecord`）。 */
+    var autoRecord by mutableStateOf(false)
+
+    /** 宏存档版本号：录制保存成功 +1，列表页据此重拉 macroMap/计数（导航回退不触发 LaunchedEffect 重跑）。 */
+    var macrosVersion by mutableStateOf(0)
 }
 
 /** `g2.warehouseImport`：学校选择页（数据源 = `index/root_index.yaml`）。 */
@@ -91,16 +99,22 @@ fun WarehouseImportPickerHost(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 宏引擎的录制侧已移植（I2-4）：列表卡片显示真计数；回放（快捷导入）仍未移植。
+    val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
 
     var phase by remember { mutableStateOf(WarehouseListPhase.Loading) }
     var schools by remember { mutableStateOf<List<WarehouseSchoolEntry>>(emptyList()) }
     var recentSchoolIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    var macroCount by remember { mutableStateOf(0) }
     var reloadToken by remember { mutableStateOf(0) }
 
-    LaunchedEffect(reloadToken) {
+    LaunchedEffect(reloadToken, state.macrosVersion) {
         phase = WarehouseListPhase.Loading
         val loaded = withContext(Dispatchers.IO) { service.loadRootIndex() }
         recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
+        macroCount = withContext(Dispatchers.IO) {
+            runCatching { macroStore.count() }.getOrDefault(0)
+        }
         when (loaded) {
             is WarehouseLoad.Ok -> {
                 schools = loaded.value.schools
@@ -124,9 +138,9 @@ fun WarehouseImportPickerHost(
         adapterMatches = emptyMap(),
         phase = phase,
         onBack = onBack,
-        // 宏（快捷导入）引擎未移植 ⇒ 卡片不显示，数量恒 0，不是「测出来没有」。
-        hasQuickImportMacro = false,
-        quickImportMacroCount = 0,
+        // 宏录制已落地（I2-4）：卡片显示真实宏数；点了仍是「回放未移植」的实话。
+        hasQuickImportMacro = macroCount > 0,
+        quickImportMacroCount = macroCount,
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
             state.school = school
@@ -136,7 +150,7 @@ fun WarehouseImportPickerHost(
                 recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
             }
         },
-        onQuickImportClick = { toastUnavailable(context, "quick import: macro engine not ported (F08-8c)") },
+        onQuickImportClick = { toastUnavailable(context, "quick import: macro replay engine not ported (F08-8c)") },
         onFeedbackClick = { onOpenPage(WarehouseRoutes.FEEDBACK) },
         onCustomDebugClick = { onOpenPage(WarehouseRoutes.CUSTOM_DEBUG) },
         onExecutionLogClick = { toastUnavailable(context, "execution log: import pipeline not ported (F08-8c)") },
@@ -160,21 +174,30 @@ fun WarehouseSchoolAdaptersHost(
     }
 
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 宏录制已落地（I2-4）：哪些适配器存过录制读真值；回放仍未移植。
+    val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
     var phase by remember(school.id) { mutableStateOf(WarehouseListPhase.Loading) }
     var adapters by remember(school.id) { mutableStateOf<List<WarehouseAdapterEntry>>(emptyList()) }
+    var macroMap by remember(school.id) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var reloadToken by remember(school.id) { mutableStateOf(0) }
 
-    LaunchedEffect(school.id, reloadToken) {
+    LaunchedEffect(school.id, reloadToken, state.macrosVersion) {
         phase = WarehouseListPhase.Loading
         val loaded = withContext(Dispatchers.IO) { service.loadAdaptersIndex(school) }
         when (loaded) {
             is WarehouseLoad.Ok -> {
                 adapters = loaded.value.adapters
+                macroMap = withContext(Dispatchers.IO) {
+                    loaded.value.adapters.associate { entry ->
+                        entry.id to runCatching { macroStore.hasMacro(school.id, entry.id) }.getOrDefault(false)
+                    }
+                }
                 phase = WarehouseListPhase.Idle
             }
 
             is WarehouseLoad.Failed -> {
                 adapters = emptyList()
+                macroMap = emptyMap()
                 phase = WarehouseListPhase.Failed
                 Log.w(
                     LOG_TAG,
@@ -187,15 +210,14 @@ fun WarehouseSchoolAdaptersHost(
     WarehouseSchoolAdaptersPage(
         school = school,
         adapters = adapters,
-        // 宏映射（哪些适配器存过录制）依赖宏服务，未移植 ⇒ 一律没有「快捷导入」入口。
-        macroMap = emptyMap(),
+        // 宏映射：录制侧已移植（I2-4），真值来自 WarehouseMacroStore（与 Dart 同一份存档）。
+        macroMap = macroMap,
         phase = phase,
         onBack = onBack,
         onRefresh = { reloadToken += 1 },
         onRetry = { reloadToken += 1 },
         onImportAdapter = { adapter ->
-            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。地址是真的（`import_url`）；
-            // 登录之后的脚本抓课表未接，见本文件 KDoc 诚实边界第 1 条。
+            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。
             state.adapter = adapter
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
@@ -203,8 +225,13 @@ fun WarehouseSchoolAdaptersHost(
             state.adapter = adapter
             onOpenPage(WarehouseRoutes.DETAIL)
         },
-        onRecordAdapter = { toastUnavailable(context, "macro recording: engine not ported (F08-8c)") },
-        onQuickImportAdapter = { toastUnavailable(context, "quick import: macro engine not ported (F08-8c)") },
+        onRecordAdapter = { adapter ->
+            // 一录到底（Dart `autoRecord: true`）：进登录页后自动开录。
+            state.adapter = adapter
+            state.autoRecord = true
+            onOpenPage(WarehouseRoutes.WEB_LOGIN)
+        },
+        onQuickImportAdapter = { toastUnavailable(context, "quick import: macro replay engine not ported (F08-8c)") },
     )
 }
 
