@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.app.CommonUiStrings
 import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
+import com.mutx163.qingyu.pages.shell.ShellRootEntryRule
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -76,11 +78,37 @@ fun QingyuBackIconButton(
     }
 }
 
+/**
+ * 当前页面是否处在**「从底栏进入的根页」**环境（页面栈的栈底主屏）。
+ *
+ * 由壳在 miuix-nav 的 entry 分支注入：栈底主屏（`ShellRoute.Dock`）= `true`，
+ * 推入页（`ShellRoute.Page` / `ZoomPage`）= `false`——页面栈的真实结构由壳声明，
+ * 页面自己不传「我是不是根」的布尔。不注入（null）= 无壳环境（缩尺预览卡、独立预览），
+ * 骨架保持原行为（显示返回键）。消费方只有 [QingyuPageScaffold]（经
+ * [ShellRootEntryRule.shouldShowBackButton]），一处判定、全站生效。
+ */
+val LocalQingyuPageIsRootEntry = staticCompositionLocalOf<Boolean?> { null }
+
 /** 内容槽拿到的东西：内边距与顶栏折叠行为。 */
 class QingyuPageContentScope(
     val innerPadding: PaddingValues,
     val scrollBehavior: ScrollBehavior,
 )
+
+/**
+ * 顶栏导航槽的内容：根页（[showBackButton] 为 false）给**空**——即 miuix
+ * `navigationIcon` 参数的默认值形态（官方「无返回键」的用法），不画任何东西；
+ * 其余页面给标准返回键。显隐判据见 [ShellRootEntryRule.shouldShowBackButton]。
+ */
+private fun backIconOrNull(
+    showBackButton: Boolean,
+    onBack: () -> Unit,
+): @Composable () -> Unit =
+    if (showBackButton) {
+        { QingyuBackIconButton(onBack = onBack) }
+    } else {
+        {}
+    }
 
 /**
  * 全站统一的页面骨架：官方顶栏 + 返回键 + 顶栏毛玻璃。
@@ -137,6 +165,10 @@ fun QingyuPageScaffold(
     val dark = isSystemInDarkTheme()
     // 每个页面实例一个折叠状态：返回后重新进入应从展开态开始。
     val scrollBehavior = MiuixScrollBehavior()
+    // 返回键显隐的唯一判定（2026-11-03）：从底栏进入的根页没有上一级可回，不画返回键；
+    // 推入的二级/更深页照常画。壳在 entry 分支注入页面栈的真实结构，这里一处消费——
+    // 页面零传参，51 处调用点全站生效；判据本体在 ShellRootEntryRule（纯函数 + JVM 单测）。
+    val showBackButton = ShellRootEntryRule.shouldShowBackButton(LocalQingyuPageIsRootEntry.current)
     // 顶栏与页面底色必须同源：模糊层靠它铺底，否则内容里的透明区
     // 会在大标题下糊出色块（`docs/guide/blur.md:105-118`）。
     val pageBackground = Color(QingyuTheme.scaffoldBackground(dark))
@@ -159,7 +191,7 @@ fun QingyuPageScaffold(
                             SmallTopAppBar(
                                 title = title,
                                 color = barColor,
-                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                navigationIcon = backIconOrNull(showBackButton, onBack),
                                 actions = actions,
                             )
                         }
@@ -167,7 +199,7 @@ fun QingyuPageScaffold(
                             SmallTopAppBar(
                                 title = title,
                                 color = barColor,
-                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                navigationIcon = backIconOrNull(showBackButton, onBack),
                                 actions = actions,
                             )
                         }
@@ -177,7 +209,7 @@ fun QingyuPageScaffold(
                                 color = barColor,
                                 largeTitle = title,
                                 scrollBehavior = scrollBehavior,
-                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                navigationIcon = backIconOrNull(showBackButton, onBack),
                                 actions = actions,
                             )
                         }

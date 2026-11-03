@@ -53,6 +53,7 @@ import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.components.QingyuLocalWindowAdaptive
 import com.mutx163.qingyu.components.QingyuPageTheme
+import com.mutx163.qingyu.components.LocalQingyuPageIsRootEntry
 import com.mutx163.qingyu.components.rememberQingyuShellRailAdaptive
 import com.mutx163.qingyu.app.TimetableHomeViewMode
 import com.mutx163.qingyu.pages.schedule.ScheduleDateRuleAutoApplyHost
@@ -806,85 +807,97 @@ private fun PagesShell(
                 // 课表 / 月视图页内有自己的横向手势（翻周 / 翻月），Pager 不与之抢。
                 // 页列表 `dockPageIds` 由底栏排列派生（day/week 归一成同一课表页）。
                 entry<ShellRoute.Dock> { _ ->
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                // 只有真要采样的那一档才录制（理由见上方 `backdrop` 注释）。
-                                .then(
-                                    if (recordBackdrop) {
-                                        Modifier.layerBackdrop(backdrop)
+                    // 根页标记（2026-11-03）：本条目是页面栈的栈底主屏（从底栏进入的那些页），
+                    // 注入 true 后骨架不再画返回箭头——根页没有上一级可回。消费方只有
+                    // QingyuPageScaffold（一处判定、全站生效）；物理返回键行为不在这里，
+                    // 仍由下方 BackHandler / NavDisplay.onBack 负责，语义不变。
+                    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides true) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    // 只有真要采样的那一档才录制（理由见上方 `backdrop` 注释）。
+                                    .then(
+                                        if (recordBackdrop) {
+                                            Modifier.layerBackdrop(backdrop)
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
+                            ) {
+                                HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier.fillMaxSize(),
+                                    userScrollEnabled = false,
+                                ) { page ->
+                                    val pageItemId = dockPageIds[page]
+                                    if (pageItemId == HomeDockNavModel.DEV_INDEX_ID) {
+                                        // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
+                                        // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
+                                        ShellPageIndexScreen(
+                                            onOpenPage = { target -> pushPage(target) },
+                                            onBack = { selectRoot(ROOT_WEEK) },
+                                        )
                                     } else {
-                                        Modifier
-                                    },
-                                ),
-                        ) {
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.fillMaxSize(),
-                                userScrollEnabled = false,
-                            ) { page ->
-                                val pageItemId = dockPageIds[page]
-                                if (pageItemId == HomeDockNavModel.DEV_INDEX_ID) {
-                                    // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
-                                    // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
-                                    ShellPageIndexScreen(
-                                        onOpenPage = { target -> pushPage(target) },
-                                        onBack = { selectRoot(ROOT_WEEK) },
-                                    )
-                                } else {
-                                    ShellPageContent(
-                                        pageId = rootPageIdFor(pageItemId) ?: ROOT_WEEK_PAGE_ID,
-                                        onBack = { selectRoot(ROOT_WEEK) },
-                                        wiring = wiring,
-                                        onOpenPage = { target -> pushPage(target) },
-                                        // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
-                                        // `settingsModel`，`QingyuPageTheme` 立刻重建。
-                                        onSettingsChanged = onReloadSettings,
-                                    )
+                                        ShellPageContent(
+                                            pageId = rootPageIdFor(pageItemId) ?: ROOT_WEEK_PAGE_ID,
+                                            onBack = { selectRoot(ROOT_WEEK) },
+                                            wiring = wiring,
+                                            onOpenPage = { target -> pushPage(target) },
+                                            // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
+                                            // `settingsModel`，`QingyuPageTheme` 立刻重建。
+                                            onSettingsChanged = onReloadSettings,
+                                        )
+                                    }
                                 }
                             }
+                            HomeGlassDock(
+                                settingsModel = settingsModel,
+                                // 高亮口径与 Rail 同源（见 [dockSelectedIdOf] 与 railSelectedId 注释）。
+                                selectedId = dockSelectedIdOf(currentRootId, wiring.homeViewMode),
+                                // 宽屏档整块不组合，由左侧 Rail 接管导航（方案第 2 批口径）。
+                                replacedByRail = shellRail.railVisible,
+                                // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
+                                isNavigable = { id -> rootPageIdFor(id) != null },
+                                onSelect = { id -> selectRoot(id) },
+                                onRoundButton = { handleRoundButton() },
+                                // 设备不支持 runtime shader 时别把 backdrop 传进去：
+                                // 传了也画不出模糊，反而会多录一层、白费一次采样。
+                                backdrop = if (glassAvailable) backdrop else null,
+                                modifier = Modifier.align(Alignment.BottomCenter),
+                            )
                         }
-                        HomeGlassDock(
-                            settingsModel = settingsModel,
-                            // 高亮口径与 Rail 同源（见 [dockSelectedIdOf] 与 railSelectedId 注释）。
-                            selectedId = dockSelectedIdOf(currentRootId, wiring.homeViewMode),
-                            // 宽屏档整块不组合，由左侧 Rail 接管导航（方案第 2 批口径）。
-                            replacedByRail = shellRail.railVisible,
-                            // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
-                            isNavigable = { id -> rootPageIdFor(id) != null },
-                            onSelect = { id -> selectRoot(id) },
-                            onRoundButton = { handleRoundButton() },
-                            // 设备不支持 runtime shader 时别把 backdrop 传进去：
-                            // 传了也画不出模糊，反而会多录一层、白费一次采样。
-                            backdrop = if (glassAvailable) backdrop else null,
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                        )
                     }
                 }
                 // 页面层：任意目录 id 的一层。返回 = 弹掉这层，回到它下面那一页/主屏。
                 // 它**盖住**栈底条目（含坞）—— 与 Dart 推入路由页同口径。
+                // 注入 false：推入的二级/更深页保留返回箭头（设置 → 关于 → 更新这类）。
                 entry<ShellRoute.Page> { route ->
-                    ShellPageContent(
-                        pageId = route.id,
-                        onBack = { popPage() },
-                        wiring = wiring,
-                        // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
-                        onOpenPage = { target -> pushPage(target) },
-                        onSettingsChanged = onReloadSettings,
-                    )
+                    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides false) {
+                        ShellPageContent(
+                            pageId = route.id,
+                            onBack = { popPage() },
+                            wiring = wiring,
+                            // 页面内部「推新页」：路由字符串 → 壳页面 id（映射表在 ShellWiring.kt）。
+                            onOpenPage = { target -> pushPage(target) },
+                            onSettingsChanged = onReloadSettings,
+                        )
+                    }
                 }
                 // 「首页缩放」档（目前只有外观编辑页）：官方 `NavTransitions.None` = 瞬时切换，
                 // 页面自己从整屏缩进预览卡（`AppearanceEditorScreen` 的入场）。
                 // 不写自研转场：这里只是**不插一脚**，几何全在页面内部。
                 entry<ShellRoute.ZoomPage>(transition = InstantSwap) { route ->
-                    ShellPageContent(
-                        pageId = route.id,
-                        onBack = { popPage() },
-                        wiring = wiring,
-                        onOpenPage = { target -> pushPage(target) },
-                        onSettingsChanged = onReloadSettings,
-                    )
+                    // 推入型条目（外观编辑页从底栏点进也是推一层）：与 Page 同判，保留返回箭头。
+                    CompositionLocalProvider(LocalQingyuPageIsRootEntry provides false) {
+                        ShellPageContent(
+                            pageId = route.id,
+                            onBack = { popPage() },
+                            wiring = wiring,
+                            onOpenPage = { target -> pushPage(target) },
+                            onSettingsChanged = onReloadSettings,
+                        )
+                    }
                 }
             }
                 }
