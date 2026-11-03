@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
 import com.mutx163.qingyu.app.CommonUiStrings
+import com.mutx163.qingyu.components.glass.LocalQingyuPageBackdrop
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -217,7 +219,11 @@ fun QingyuPageScaffold(
                 // 页面主题桥兜住深色：壳用的是无参 MiuixTheme{ }（配色恒亮），
                 // 不在这里兜一层，深色下卡片仍是白底而正文取白字 → 内容不可读。
                 QingyuPageTheme {
-                    QingyuPageContentScope(innerPadding, scrollBehavior).content()
+                    // 弹窗玻璃（GlassOverlayDialog）与顶栏共用这条录像带采样页面内容，
+                    // 不另录第二份图层；backdrop 为 null（能力门控关闭）时玻璃自动降级实心。
+                    CompositionLocalProvider(LocalQingyuPageBackdrop provides backdrop) {
+                        QingyuPageContentScope(innerPadding, scrollBehavior).content()
+                    }
                 }
             }
         }

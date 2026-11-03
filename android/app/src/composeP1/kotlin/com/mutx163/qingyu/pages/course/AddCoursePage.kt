@@ -38,6 +38,7 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.glass.GlassOverlayDialog
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
@@ -575,7 +576,9 @@ fun AddCoursePage(
 
     if (confirmDelete && isEditing) {
         val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
-        OverlayDialog(
+        // 弹窗玻璃试点（2026-11-03，用户批准）：全仓唯一玻璃调用点，其余弹窗保持官方实心；
+        // QingyuDialogGlass.enabled = false 一键回退实心板。守卫 QingyuGlassDialogGuardTest 钉住。
+        GlassOverlayDialog(
             insideMargin = DpSize(16.dp, 16.dp),
             show = true,
             title = AddCourseStrings.deleteCourseTitle.zh,
