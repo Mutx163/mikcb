@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.LanEditForegroundService
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
-import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.pages.ShellWiring
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.share.LanAddressScoring
@@ -249,11 +248,10 @@ object LanEditServiceRuntime {
             appContext = context.applicationContext
             return try {
                 val newSession = LanEditSession.create()
-                // 设置要按 Dart 的 250+ 键整份读写：仓储只拥有时间/周次核心四键，
-                // 其余键由同一个存储上的 TimetableStore 负责。
-                val settingsStore = TimetableStoreLanSettings(
-                    TimetableStore(PrefsKeyValueStore(context.applicationContext)),
-                )
+                // 设置要按 Dart 的 250+ 键整份读写：走仓储的带锁通道（readRawSettings /
+                // writeRawSettingsPatch），与时间/周次核心四键共用同一把对象锁，
+                // 消除「读→算→写」跨调用窗口。
+                val settingsStore = TimetableStoreLanSettings(repository)
                 val router = LanEditApiRouter(
                     host = LanEditRepositoryHost(repository, settingsStore = settingsStore),
                     session = newSession,

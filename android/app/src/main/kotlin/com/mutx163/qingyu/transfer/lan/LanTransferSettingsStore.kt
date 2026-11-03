@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.transfer.lan
 
+import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 
 /**
@@ -23,16 +24,30 @@ interface LanTransferSettingsStore {
     fun writeSettingsPatch(patch: Map<String, Any?>)
 }
 
-/** [LanTransferSettingsStore] 的仓储版实现：底层就是与 [TimetableStore] 同一份存储。 */
-class TimetableStoreLanSettings(private val store: TimetableStore) : LanTransferSettingsStore {
+/**
+ * [LanTransferSettingsStore] 的仓储版实现。
+ *
+ * 2026-11-03：从「直接持有 [TimetableStore]」改为「注入 [TimetableRepository]」，
+ * 读走 `readRawSettings()`、写走 `writeRawSettingsPatch(patch)`——两者都在仓储的
+ * **同一把对象锁**内完成「读 → 合并 → 写 → 刷新内存 → 锁外通知」，
+ * 消除了旧实现「`loadSettingsJson` 与 `saveSettingsPatch` 两次跨调用之间被 UI
+ * 设置编辑插队」的丢更新窗口。
+ *
+ * 语义不变：整份替换由 [LanTransferLogic.settingsReplacePatch] 负责（缺失键写 null），
+ * 设备信任锚点仍在补丁构造时保留；撤销「删新增键」依旧走同一个 patch 入口。
+ * `writeRawSettingsPatch` 返回 false（底层写失败）时抛异常，交给
+ * [LanTransferApplier] 的统一 catch 走回滚 + `transfer_import_failed`。
+ */
+class TimetableStoreLanSettings(private val repository: TimetableRepository) : LanTransferSettingsStore {
 
     override fun readSettingsJson(): Map<String, Any?> =
         // 盘上可能留着合并写产生的显式 null；Dart `toJson()` 的口径是「null 即省略」，
         // 读出来先归一，否则差异比对会把「同义」的缺键/空键判成不同。
-        store.loadSettingsJson().filterValues { it != null }
+        repository.readRawSettings().filterValues { it != null }
 
     override fun writeSettingsPatch(patch: Map<String, Any?>) {
-        store.saveSettingsPatch(patch)
-        store.saveSettingsPatchToActiveProfile(patch)
+        if (!repository.writeRawSettingsPatch(patch)) {
+            throw IllegalStateException("lan_settings_write_failed")
+        }
     }
 }

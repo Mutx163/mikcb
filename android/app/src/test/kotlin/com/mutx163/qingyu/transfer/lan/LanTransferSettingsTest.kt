@@ -159,9 +159,11 @@ class LanTransferSettingsTest {
             ),
         )
         timetableStore.saveCurrentWeek(7)
+        // 同一份存储只建一个仓储：设置读写与课表写入共用一把锁，避免两套内存快照。
+        val repository = TimetableRepository(timetableStore)
         return Setup(
-            repository = TimetableRepository(timetableStore),
-            settingsStore = TimetableStoreLanSettings(TimetableStore(store)),
+            repository = repository,
+            settingsStore = TimetableStoreLanSettings(repository),
         )
     }
 
