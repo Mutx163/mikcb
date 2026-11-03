@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.widgetdata
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.DartTime
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -273,7 +274,9 @@ data class HomeWidgetSnapshot(
         "nextCourse" to nextCourseSummary?.toJson(),
         "nextExamName" to nextExamFace?.name,
         "nextExamDate" to nextExamDate,
-        "nextExamDaysUntil" to nextExamFace?.let { examDaysUntil(LocalDateTime.now()) },
+        // Dart 在 build 时就用传入的 now 算好 daysUntil（home_widget_snapshot_service.dart:300-303），
+        // 这里同样以快照生成时刻为准，避免序列化晚于构建时跨零点导致天数漂移。
+        "nextExamDaysUntil" to nextExamFace?.let { examDaysUntil(DartTime.fromEpochMillis(generatedAtMillis)) },
         "nextExamLocation" to nextExamFace?.location,
         "nextExamStartTime" to nextExamFace?.startTime,
         "nextExamEndTime" to nextExamFace?.endTime,

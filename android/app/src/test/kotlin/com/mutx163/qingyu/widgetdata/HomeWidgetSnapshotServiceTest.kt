@@ -8,6 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 快照组装纯逻辑的端口测试（移植 lib/services/home_widget_snapshot_service.dart）。
@@ -430,5 +431,44 @@ class HomeWidgetSnapshotServiceTest {
         )
         // 只剩午夜触发点
         assertEquals(listOf(WidgetDataClock.toEpochMillis(LocalDateTime.of(2026, 3, 28, 0, 0))), triggers)
+    }
+
+    @Test
+    fun nextExamDaysUntilUsesSnapshotNow() { // [Dart抄录] daysUntil 按 build 传入的 now 计，不读蛇形时钟
+        val exam = ExamFace(
+            id = "e1", name = "期末考试",
+            dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
+            startTime = "09:00", endTime = "11:00", location = "S101",
+        )
+        val snapshot = service.build(
+            profileId = "p", profileName = "n", currentWeek = 6,
+            settings = WidgetSettingsFace(), todayCourses = emptyList(),
+            now = LocalDateTime.of(2026, 3, 27, 14, 30),
+            nextExam = exam,
+        )
+        // 2026-03-27 → 2026-04-02 = 6 天；若误用 LocalDateTime.now()（2026-11-04）会得到负数。
+        assertEquals(6, snapshot.toJson()["nextExamDaysUntil"])
+    }
+
+    @Test
+    fun examTextStableUnderArabicLocale() { // [Dart抄录] padLeft 无 Locale，Kotlin 必须钉 Locale.ROOT
+        val previous = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+        try {
+            val exam = ExamFace(
+                id = "e1", name = "期末考试",
+                dateTime = LocalDateTime.of(2026, 4, 2, 0, 0),
+                startTime = "09:00", endTime = "11:00", location = "S101",
+            )
+            val snapshot = service.build(
+                profileId = "p", profileName = "n", currentWeek = 6,
+                settings = WidgetSettingsFace(), todayCourses = emptyList(),
+                now = now, nextExam = exam,
+            )
+            assertEquals("2026-04-02", snapshot.toJson()["nextExamDate"])
+            assertEquals("09:05", WidgetDataClock.formatClock(LocalDateTime.of(2026, 4, 2, 9, 5)))
+        } finally {
+            Locale.setDefault(previous)
+        }
     }
 }
