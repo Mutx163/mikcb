@@ -102,15 +102,21 @@ enum class AppThemeMode(val value: String, val label: ArbText) {
     DARK("dark", SettingsStrings.themeModeDark),
 }
 
-/** `AppFontMode`（`timetable_settings_enums.dart:14-25`）。 */
+/**
+ * `AppFontMode`（枚举名 `timetable_settings_enums.dart:14-25`，磁盘值
+ * `timetable_settings_extensions.dart:61-80`）。
+ *
+ * ⚠️ [value] 必须与磁盘值一致（下划线），不是 Dart 枚举名：`SettingsPageBridge.pick`
+ * 按 `.value` 把模型档位映射到这里，写成驼峰会静默回落到默认档。
+ */
 enum class AppFontMode(val value: String, val label: ArbText) {
     SYSTEM("system", SettingsStrings.fontModeSystem),
-    SANS_SERIF("sansSerif", SettingsStrings.fontModeSansSerif),
-    MI_SANS("miSans", SettingsStrings.fontModeMiSans),
-    HARMONY_OS("harmonyOS", SettingsStrings.fontModeHarmonyOS),
-    OPPO_SANS("oppoSans", SettingsStrings.fontModeOppoSans),
-    PING_FANG("pingFang", SettingsStrings.fontModePingFang),
-    NOTO_SANS("notoSans", SettingsStrings.fontModeNotoSans),
+    SANS_SERIF("sans_serif", SettingsStrings.fontModeSansSerif),
+    MI_SANS("mi_sans", SettingsStrings.fontModeMiSans),
+    HARMONY_OS("harmony_os", SettingsStrings.fontModeHarmonyOS),
+    OPPO_SANS("oppo_sans", SettingsStrings.fontModeOppoSans),
+    PING_FANG("ping_fang", SettingsStrings.fontModePingFang),
+    NOTO_SANS("noto_sans", SettingsStrings.fontModeNotoSans),
     SERIF("serif", SettingsStrings.fontModeSerif),
     SONG_TI("songti", SettingsStrings.fontModeSongti),
     MONOSPACE("monospace", SettingsStrings.fontModeMonospace),

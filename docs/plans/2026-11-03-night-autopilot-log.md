@@ -963,3 +963,30 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 4. **守卫 + 探针**：新增 `pages/timetable/day/WeatherGateGuardTest.kt`（4 例，正则锚定行首，注释掉的门不会假绿）。探针两轮：注释 `TimetableHost` 门 → **288 run / 1 failure** 精确命中周卡用例；去掉 `DayViewWeather` 门 → **288 run / 1 failure** 精确命中日卡用例；还原后全绿。
 5. **L0**：`-Module timetable` **288 例**、`-Module course` **232 例**，均 exit 0；`compose-style-lint -Domain timetable` 仍为既有 5 处基线（本次 0 新增）。只声明 JVM 单测通过，不声明编译/真机通过。
 6. **剩下的**：整包 L1/L2 由门 1 专线负责；本笔未 push，由协调线统一推。
+
+### 10.26 ✅ settings 域 Dart 对拍：3 处落盘口径真差异已修 + 2 项跨域报告（2026-11-04）
+
+**范围**：只动 `pages/settings/**`、`app/TimetableSettingsModel.kt`（settings 纯模型）与测试；未碰 `TimetableStore` / `ShellWiring` / `ShellPageIndex` / `import` / `sync` / `theme` / 壳 Activity / 路由表。工作区其它线的未提交改动未 add。
+
+**A. 真差异（已修，全部是「读 Dart 落盘值」口径）**
+1. **`AppFontMode` 落盘串是下划线，不是 Dart 枚举名**。Dart 真值 `lib/models/settings/timetable_settings_extensions.dart:61-80`（`mi_sans` / `sans_serif` / `harmony_os` / `oppo_sans` / `ping_fang` / `noto_sans`），`fromJson` 按 `.value` 匹配（`lib/models/timetable_settings.dart:1467`）。Kotlin 原写成驼峰 ⇒ 存量 Flutter 档位全部回落 `system`，Kotlin 写出的值 Flutter 也不认。修 `app/TimetableSettingsModel.kt` 与 `pages/settings/SettingsPageState.kt` 两份枚举（`SettingsPageBridge.pick` 按 `.value` 跨枚举映射，必须同步）。
+2. **`ForuiTheme` 读侧缺键/未知值回落 `blue`**，不是 `miui`。Dart `lib/models/settings/timetable_settings_enums.dart:87-92` 的 `orElse`。只改 `fromValue`；构造默认仍 `miui`（Dart 构造默认 `:889-890`）。
+3. **`CourseCardSurfaceStyle` 旧串迁移**：Dart `timetable_settings_extensions.dart:332-349` 把 `translucent` 读成 `solid`、`glass` / `liquidGlass` 读成 **`gaussian`**（历史液态玻璃 = 现在的高斯磨砂）；Kotlin 原统一回落 `solid`，存量 `"liquidGlass"` 档案会丢磨砂。
+4. **咬合探针**：同时回退上述 4 个落点 → `-Module pages/settings` 976 例中 **4 红**（3 个新用例 + 字体选项顺序），恢复后 **976 绿**。
+5. 新增 `pages/settings/TimetableSettingsDartParityTest.kt`（5 例）；并修正 `app/TimetableSettingsModelTest` 两处旧断言、`pages/diagnostics/PerformanceSettingsSnapshotTest` 的字体快照串（该测试原先把 Dart 的 `.value` 错写成 `.name`）。
+
+**B. 双侧同解（不改，已取证）**
+1. **换档 `_applyProfileState`**：Dart `lib/providers/timetable_provider.dart:1125-1150`（overlay → 按目标档开学日重算 currentWeek → 单次 `_persistActiveProfileState(touchLastUsedAt: true)` `:2034`）；Kotlin `pages/timetable/TimetableProfilesController.kt:337-350` 的 `write(settings=..., currentWeek=currentWeekFor(target))` 走单次 `replaceAllProfilesAndSettings`（一次锁写入 + 一次通知）。**currentWeek 重算与「单次写入单次通知」等价**；唯一不等价点是全局 settings overlay（见 C1）与 `lastUsedAt`（见 C3），二者都不属于 settings 纯逻辑，未改。
+2. **顶层 `timetable_settings` 不再当权威**：`app/TimetableStore.kt:570-571` `loadSettingsJson` 只以活动档案内嵌为真源；顶层仅 `bootstrapLegacyProfileIfNeeded` 播种与回 Flutter 镜像。全仓无其它读侧把顶层 settings 当权威（`TimetableStoreTest.kt:476-510` 已锁）。
+3. **`appLocaleTag` 等键在合并写不误删/不误覆盖**：`saveSettingsPatch` 读-合并-写（`TimetableStore.kt:585-594`），`saveProfiles` 以旧内嵌铺底（`:273-299`）。新增 2 例覆盖「档案内嵌」与「无档案顶层 mirror」两种形态。
+4. **其余默认值逐项**：`TimetableSettingsModelTest` 既有断言与 Dart `fromJson` / 常量一致；本批只发现 A1-A3 三处，其余未改。
+
+**C. 需他人改（跨域，只报告 + 精确补丁，未修）**
+1. **`app_global_settings_v1` 在 Kotlin 完全缺失（最大缺口）**。Dart 44 个全局键（`lib/services/app_global_settings_service.dart:45`，键表 `:59-114`，`appLocaleTag` 在 `:101`）是**整机级真源**，`overlay` 在 `:140-149`，换档经 `_settingsFromProfile`（`timetable_provider.dart:1119-1123`）。Kotlin 读路径只有活动档案内嵌 ⇒ 主题/字体/语言/材质/导航等被降为「每课表一份」，切档会连带换这些全局偏好，正是 Dart 于 2026-09-22 明确否掉的行为。归属：`TimetableStore`/Repository 线 + `ShellWiring` 读入口（均为本批禁改区/门1专线）。补丁方向：新增 `AppGlobalSettingsStore`（键 `app_global_settings_v1`，读侧 `overlay(profileSettings, global)` 只覆盖 44 键，写侧按键集分拣到全局 + 镜像档案），`loadSettingsJson()` 出口叠一层 overlay，`saveSettingsPatch` 入口按白名单分拣。
+2. **复制/新建档案丢完整内嵌 settings**。Dart 把整份 `TimetableSettings` 写进新档案（`duplicateActiveProfile:1957`、新建 `:1940-1943`）；Kotlin `TimetableProfile.settings` 只有 core 4 键，新 id 无旧内嵌铺底（`TimetableStore.saveProfiles:280-298`）⇒ 新档案内嵌只剩 4 键，切过去外观全回默认、`appLocaleTag` 丢。归属：`pages/timetable` 档案线。补丁：`duplicateProfile` / `createProfile` 先用 `store.loadSettingsJson()` 取源档案完整 JSON，再经 `saveSettingsPatchToActiveProfile` 铺入新档案；无需改 store。
+3. **切档不更新 `lastUsedAt`**。Dart `switchProfile:2034` 带 `touchLastUsedAt: true`；Kotlin `replaceAllProfilesAndSettings` 不碰该字段 ⇒「最近使用」排序不随切档变化。归属：`pages/timetable` 档案线。补丁：`write(...)` 内对目标 profile `copy(lastUsedAt = now)` 后再落盘。
+
+**D. 验证**
+- `scripts/test-kotlin-module.ps1 -Module pages/settings`（pwsh 7）：**976 例 OK**，exit 0。
+- 探针：回退 4 处 → 976 例中 4 红；恢复 → 976 绿。
+- 只声明 JVM 单测通过，不声明编译/真机通过；未 push。

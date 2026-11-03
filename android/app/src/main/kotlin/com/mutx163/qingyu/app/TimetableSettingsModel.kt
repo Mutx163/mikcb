@@ -1207,15 +1207,22 @@ enum class AppThemeMode(val value: String) {
     }
 }
 
-/** `AppFontMode`（`timetable_settings_enums.dart:14-25`）。 */
+/**
+ * `AppFontMode`（枚举名 `timetable_settings_enums.dart:14-25`，落盘串见
+ * `timetable_settings_extensions.dart:61-80`）。
+ *
+ * ⚠️ 磁盘值**不是** Dart 枚举名：多词档位用下划线（`mi_sans` / `sans_serif` /
+ * `harmony_os` / `oppo_sans` / `ping_fang` / `noto_sans`）。Dart 的 `fromJson`
+ * （`timetable_settings.dart:1467`）按 `.value` 匹配，写成驼峰会让存量档位全部回落 system。
+ */
 enum class AppFontMode(val value: String) {
     SYSTEM("system"),
-    SANS_SERIF("sansSerif"),
-    MI_SANS("miSans"),
-    HARMONY_OS("harmonyOS"),
-    OPPO_SANS("oppoSans"),
-    PING_FANG("pingFang"),
-    NOTO_SANS("notoSans"),
+    SANS_SERIF("sans_serif"),
+    MI_SANS("mi_sans"),
+    HARMONY_OS("harmony_os"),
+    OPPO_SANS("oppo_sans"),
+    PING_FANG("ping_fang"),
+    NOTO_SANS("noto_sans"),
     SERIF("serif"),
     SONG_TI("songti"),
     MONOSPACE("monospace");
@@ -1226,7 +1233,11 @@ enum class AppFontMode(val value: String) {
     }
 }
 
-/** `ForuiTheme`（`timetable_settings_enums.dart:52-85`，含 `seedHex`）。 */
+/**
+ * `ForuiTheme`（`timetable_settings_enums.dart:52-93`，含 `seedHex`）。
+ *
+ * 读侧缺键 / 未知值回落 **`blue`**（`:87-92` 的 `orElse`），不是构造默认的 `miui`。
+ */
 enum class ForuiTheme(val value: String, val seedHex: String) {
     MIUI("miui", "#3482FF"),
     NEUTRAL("neutral", "#171717"),
@@ -1241,8 +1252,9 @@ enum class ForuiTheme(val value: String, val seedHex: String) {
     YELLOW("yellow", "#FCC800");
 
     companion object {
+        /** 未知值回落 `blue`（Dart `timetable_settings_enums.dart:87-92` 的 `orElse`）。 */
         fun fromValue(raw: String?): ForuiTheme =
-            entries.firstOrNull { it.value == raw } ?: MIUI
+            entries.firstOrNull { it.value == raw } ?: BLUE
     }
 }
 
@@ -1258,8 +1270,16 @@ enum class CourseCardSurfaceStyle(val value: String) {
     LIQUID_GLASS("refraction");
 
     companion object {
-        fun fromValue(raw: String?): CourseCardSurfaceStyle =
-            entries.firstOrNull { it.value == raw } ?: SOLID
+        /**
+         * 旧档位迁移与读侧回落（Dart `timetable_settings_extensions.dart:332-349`）：
+         * `translucent` → solid；`glass` / `liquidGlass` → **gaussian**（这两个历史串
+         * 指当年那档液态玻璃，语义就是现在的高斯磨砂）；其余未知值 → solid。
+         */
+        fun fromValue(raw: String?): CourseCardSurfaceStyle = when (raw) {
+            "translucent" -> SOLID
+            "glass", "liquidGlass" -> GAUSSIAN
+            else -> entries.firstOrNull { it.value == raw } ?: SOLID
+        }
     }
 }
 
