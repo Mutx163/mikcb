@@ -32,7 +32,6 @@ import com.mutx163.qingyu.statistics.TeacherStat
 import com.mutx163.qingyu.statistics.TimeUtilizationStats
 import com.mutx163.qingyu.statistics.VenueStats
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
@@ -78,12 +77,6 @@ fun TimeUtilizationCard(
                 Spacer(Modifier.height(8.dp))
             }
             facts.forEachIndexed { index, fact ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -303,11 +296,6 @@ fun TeacherStatsCard(
                 )
             }
             rows.forEach { row ->
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 16.dp),
-                    thickness = 1.dp,
-                    color = Color(QingyuTheme.dividerLine(dark)),
-                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.statistics.CourseSemesterStat
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -82,13 +81,6 @@ fun CourseRankingCard(
     ) {
         Column {
             rows.forEachIndexed { index, row ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 60.dp),
-                        thickness = 1.dp,
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 CourseRankingTile(
                     row = row,
                     dark = dark,

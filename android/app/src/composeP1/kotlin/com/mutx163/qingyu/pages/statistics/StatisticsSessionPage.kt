@@ -36,7 +36,6 @@ import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.StatisticsSess
 import com.mutx163.qingyu.pages.statistics.StatisticsSessionModel.SummaryMetric
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -187,10 +186,7 @@ fun StatisticsSessionPage(
                             for ((index, row) in viewState.sessionRows.withIndex()) {
                                 SessionLine(row)
                                 if (index < viewState.sessionRows.lastIndex) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        color = Color(QingyuTheme.dividerLine(dark)),
-                                    )
+                                    Spacer(Modifier.height(12.dp))
                                 }
                             }
                         }

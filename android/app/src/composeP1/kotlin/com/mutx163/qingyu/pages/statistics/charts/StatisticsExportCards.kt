@@ -326,12 +326,6 @@ fun StatisticsExportCourseRanking(
     Column(modifier = modifier.fillMaxWidth()) {
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
             visible.forEachIndexed { index, stat ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 60.dp),
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 ExportRankingRow(stat = stat, rank = index + 1, dark = dark)
             }
         }
@@ -511,12 +505,6 @@ fun StatisticsExportSheetContent(
         Spacer(Modifier.height(ExportSheetModel.LABEL_TO_LIST_GAP_DP.dp))
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(0.dp)) {
             modules.forEachIndexed { index, module ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 CheckboxPreference(
                     title = ExportSheetModel.moduleTitle(module),
                     checked = module in selection,

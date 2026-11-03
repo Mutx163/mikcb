@@ -342,12 +342,6 @@ private fun RankingRows(viewState: StatisticsAnalysisViewState, onOpenCourse: ((
                 )
             }
         }
-        if (index < viewState.rankingRows.lastIndex) {
-            top.yukonga.miuix.kmp.basic.HorizontalDivider(
-                modifier = Modifier.padding(start = 28.dp),
-                color = Color(QingyuTheme.dividerLine(dark)),
-            )
-        }
     }
 }
 

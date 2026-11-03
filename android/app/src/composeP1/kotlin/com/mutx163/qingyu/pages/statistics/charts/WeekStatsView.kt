@@ -27,7 +27,6 @@ import com.mutx163.qingyu.statistics.TimeUtilizationStats
 import com.mutx163.qingyu.statistics.WeeklyComparison
 import com.mutx163.qingyu.statistics.WeeklyStats
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -190,7 +189,7 @@ private fun WeekSelectorCard(
     }
 }
 
-/** 本周课程列表：一个卡里排多行，行间细分隔线（Dart `HyperosListGroup` 的形态）。 */
+/** 本周课程列表：一个卡里排多行，行距由行自身内边距承担（官方 demo 行列表形态）。 */
 @Composable
 private fun WeekCourseListCard(
     rows: List<WeekStatsModel.WeekCourseRow>,
@@ -202,13 +201,6 @@ private fun WeekCourseListCard(
     ) {
         Column {
             rows.forEachIndexed { index, row ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 WeekCourseTile(row = row, dark = dark)
             }
         }

@@ -34,7 +34,6 @@ import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.DataStory
 import com.mutx163.qingyu.statistics.SemesterStats
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -134,13 +133,6 @@ fun DataStoryList(
     ) {
         Column {
             items.forEachIndexed { index, item ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 52.dp),
-                        thickness = 1.dp,
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
-                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

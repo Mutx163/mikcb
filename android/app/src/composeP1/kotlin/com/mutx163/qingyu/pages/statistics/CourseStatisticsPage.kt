@@ -58,7 +58,6 @@ import com.mutx163.qingyu.pages.statistics.charts.DailyChartModel
 import com.mutx163.qingyu.pages.statistics.charts.DonutRingCanvas
 import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -739,7 +738,8 @@ private fun StoryList(stories: List<StoryView>, dark: Boolean) {
     Column(modifier = Modifier.fillMaxWidth()) {
         stories.forEachIndexed { index, story ->
             if (index > 0) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                // 原行间细线删掉（官方 demo 行列表无线），块间用 20dp 间距承接原线上下的 10+10dp。
+                Spacer(modifier = Modifier.height(20.dp))
             }
             Text(
                 text = story.title,
@@ -871,9 +871,6 @@ private fun AnalysisEntryList(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         entries.forEachIndexed { index, entry ->
-            if (index > 0) {
-                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-            }
             // Dart 每行是 `HyperosListTile(icon, iconAccent)`：实色图标徽章 +
             // 官方按压反馈。原先手搓 Row + clickable 既丢了七种语义色，也没有
             // 按下反馈；ArrowPreference 自带 16dp 内边距、右箭头与无障碍角色。
