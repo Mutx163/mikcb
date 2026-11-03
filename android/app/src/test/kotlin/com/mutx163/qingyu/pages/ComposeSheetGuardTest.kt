@@ -125,6 +125,60 @@ class ComposeSheetGuardTest {
         )
     }
 
+    @Test
+    fun `S1D 判据必须剥掉注释——注释里的假调用不算调用`() {
+        // 假红盲区（2026-11-03 弹层审计第二批踩中）：讲历史的注释引用了旧写法
+        // `OverlayDialog(show = true)`，判据在**原文**里找调用名时把注释当成了真调用，
+        // 对着注释报 S1D。判据必须先整篇剥注释再找 `OverlayDialog(`。
+        val fakeCallInLineComment = """
+            // 原先 if (confirmDelete) { OverlayDialog(show = true) } 条件挂载，已改常驻。
+            OverlayDialog(
+                show = state != null,
+                insideMargin = DpSize(16.dp, 16.dp),
+            ) { }
+        """.trimIndent()
+        assertTrue(
+            "行注释里的假 OverlayDialog( 不能算真实调用（真调用已传 insideMargin）",
+            dialogInsideMarginViolations(fakeCallInLineComment).isEmpty(),
+        )
+
+        val fakeCallInBlockComment = """
+            /**
+             * 历史写法示例：
+             * OverlayDialog(
+             *     show = true,
+             * )
+             */
+            val ok = 1
+        """.trimIndent()
+        assertTrue(
+            "KDoc 里的假 OverlayDialog( 不能算真实调用",
+            dialogInsideMarginViolations(fakeCallInBlockComment).isEmpty(),
+        )
+
+        // 反向咬合：注释之后**真调用**没传 insideMargin，仍要判红（剥注释不能把真账也剥掉）。
+        val realMissing = """
+            // 注释里的 OverlayDialog(show = true) 不算数
+            OverlayDialog(
+                show = true,
+            ) { }
+        """.trimIndent()
+        assertTrue(
+            "真调用没传 insideMargin 仍必须判红",
+            dialogInsideMarginViolations(realMissing).isNotEmpty(),
+        )
+
+        // S3/S4 与 S1D 同盲区：注释里写的假 buttonColors 不参与判定。
+        val fakeDangerInComment = """
+            // 历史写法：buttonColors(color = error) 忘了 contentColor
+            val ok = ButtonDefaults.buttonColors()
+        """.trimIndent()
+        assertTrue(
+            "注释里的假 buttonColors(color = 危险色) 不能判 S4",
+            solidDangerWithoutContentColor(fakeDangerInComment).isEmpty(),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据
     // ------------------------------------------------------------------
@@ -141,8 +195,11 @@ class ComposeSheetGuardTest {
         for (path in renderFiles()) {
             val relative = relativeName(path)
             val text = File(path).readText()
+            // 四条判据都只看代码：先整篇剥注释（保留换行，行号不漂），
+            // 注释里写的 `OverlayBottomSheet(` / 假调用 / 假实参都不参与判定。
+            val code = stripKotlinComments(text)
             if (!relative.endsWith(SHEET_SUITE_FILE) && !relative.startsWith(SHOWCASE_PREFIX)) {
-                text.lineSequence().forEachIndexed { index, line ->
+                code.lineSequence().forEachIndexed { index, line ->
                     if (SHEET_CALL.containsMatchIn(line)) {
                         result["$relative|S1"] =
                             "第 ${index + 1} 行直接调 `OverlayBottomSheet`，应改用 `QingyuSheet`"
@@ -150,18 +207,18 @@ class ComposeSheetGuardTest {
                 }
             }
             if (!relative.startsWith(SHOWCASE_PREFIX)) {
-                dialogInsideMarginViolations(text).forEach { line ->
+                dialogInsideMarginViolations(code).forEach { line ->
                     result["$relative|S1D"] =
                         "第 $line 行 `OverlayDialog` 未显式传 `insideMargin`：" +
                             "官方默认 24dp，本仓口径单边合计 16dp"
                 }
             }
-            dangerousColorUsages(text).forEach { line ->
+            dangerousColorUsages(code).forEach { line ->
                 result["$relative|S3"] =
                     "第 $line 行 `textButtonColors(color = 危险色)`：危险色要染**字**（`textColor = …`），" +
                         "否则是「红底 + 灰字」"
             }
-            solidDangerWithoutContentColor(text).forEach { line ->
+            solidDangerWithoutContentColor(code).forEach { line ->
                 result["$relative|S4"] =
                     "第 $line 行 `buttonColors(color = 危险色)` 没写 `contentColor`：实心红底会配默认字色，" +
                         "Dart `HyperosButtonVariant.destructive` 是「红底 + `onError` 字」"
@@ -181,17 +238,20 @@ class ComposeSheetGuardTest {
      * **正确**写法误判）。
      */
     private fun dangerousColorUsages(text: String): List<Int> {
+        // 与 S1D 同一口径：先剥注释再找调用，注释里的 `textButtonColors(color = …)`
+        // 不算调用（假红盲区与 S1D 同批修掉）。
+        val code = stripKotlinComments(text)
         val hits = mutableListOf<Int>()
         var from = 0
         while (true) {
-            val start = text.indexOf(TEXT_BUTTON_CALL, from)
+            val start = code.indexOf(TEXT_BUTTON_CALL, from)
             if (start < 0) break
             val openParen = start + TEXT_BUTTON_CALL.length - 1
-            val close = matchingParen(text, openParen)
+            val close = matchingParen(code, openParen)
             if (close < 0) break
-            val argument = colorArgument(text.substring(openParen + 1, close))
+            val argument = colorArgument(code.substring(openParen + 1, close))
             if (argument != null && DANGER_COLOR.containsMatchIn(argument)) {
-                hits += text.take(start).count { it == '\n' } + 1
+                hits += code.take(start).count { it == '\n' } + 1
             }
             from = close
         }
@@ -217,22 +277,28 @@ class ComposeSheetGuardTest {
      * `S1D 判据必须剥掉注释`。
      */
     private fun dialogInsideMarginViolations(text: String): List<Int> {
+        // 判据看的是**代码**，不是「代码+注释」：整篇先剥注释、再找调用。注释里写的
+        // `OverlayDialog(show = true)`（讲历史的注释 / KDoc 示例）不算调用——否则守卫会
+        // 被注释骗出**假红**（2026-11-03 弹层审计第二批踩中：同步域两份注释里引用了
+        // 旧的条件挂载写法，守卫对着注释里的假调用报 S1D）。da6d312f 只修了
+        // 「实参区注释写 insideMargin 的假绿」，没修「注释里写假调用的假红」。
+        // 「旧版假绿盲区」与「新版假红盲区」都靠先剥注释堵上。
+        val code = stripKotlinComments(text)
         val hits = mutableListOf<Int>()
         var from = 0
         while (true) {
-            val start = text.indexOf(DIALOG_CALL, from)
+            val start = code.indexOf(DIALOG_CALL, from)
             if (start < 0) break
             // `XxxOverlayDialog(` 这类自定义名字的尾巴也是 `OverlayDialog(` —— 卡词边界。
-            if (start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_')) {
+            if (start > 0 && (code[start - 1].isLetterOrDigit() || code[start - 1] == '_')) {
                 from = start + DIALOG_CALL.length
                 continue
             }
             val openParen = start + DIALOG_CALL.length - 1
-            val close = matchingParen(text, openParen)
+            val close = matchingParen(code, openParen)
             if (close < 0) break
-            val args = stripKotlinComments(text.substring(openParen + 1, close))
-            if (!INSIDE_MARGIN_NAMED_ARG.containsMatchIn(args)) {
-                hits += text.take(start).count { it == '\n' } + 1
+            if (!INSIDE_MARGIN_NAMED_ARG.containsMatchIn(code.substring(openParen + 1, close))) {
+                hits += code.take(start).count { it == '\n' } + 1
             }
             from = close
         }
@@ -276,6 +342,9 @@ class ComposeSheetGuardTest {
                         i += 2
                         if (blockDepth == 0) inBlockComment = false
                     } else {
+                        // 块注释里的换行要保留：判据报的是「第几行」，剥注释把行吞了
+                        // 行号就会整体上漂（KDoc 越长的文件漂得越多）。
+                        if (ch == '\n') sb.append(ch)
                         i++
                     }
                 }
@@ -342,24 +411,26 @@ class ComposeSheetGuardTest {
      *（写了 `contentColor` 的正确写法不会被误判）。
      */
     private fun solidDangerWithoutContentColor(text: String): List<Int> {
+        // 与 S1D 同一口径：先剥注释再找调用，注释里的 `buttonColors(color = error)` 不算调用。
+        val code = stripKotlinComments(text)
         val hits = mutableListOf<Int>()
         var from = 0
         while (true) {
-            val start = text.indexOf(BUTTON_COLORS_CALL, from)
+            val start = code.indexOf(BUTTON_COLORS_CALL, from)
             if (start < 0) break
             // `textButtonColors(` 的尾巴也是 `buttonColors(` —— 必须卡词边界，否则 S4 会
             // 把 S3 那些文字按钮当成实心按钮重复报一次。
-            if (start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_')) {
+            if (start > 0 && (code[start - 1].isLetterOrDigit() || code[start - 1] == '_')) {
                 from = start + BUTTON_COLORS_CALL.length
                 continue
             }
             val openParen = start + BUTTON_COLORS_CALL.length - 1
-            val close = matchingParen(text, openParen)
+            val close = matchingParen(code, openParen)
             if (close < 0) break
-            val args = text.substring(openParen + 1, close)
+            val args = code.substring(openParen + 1, close)
             val color = colorArgument(args)
             if (color != null && DANGER_COLOR.containsMatchIn(color) && !args.contains("contentColor")) {
-                hits += text.take(start).count { it == '\n' } + 1
+                hits += code.take(start).count { it == '\n' } + 1
             }
             from = close
         }
