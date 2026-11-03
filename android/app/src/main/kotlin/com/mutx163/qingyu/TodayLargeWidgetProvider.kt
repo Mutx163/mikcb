@@ -32,7 +32,7 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.backgroundRes(
                 style,
-                snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                snapshot?.cornerRadius?.toInt() ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
             )
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
@@ -41,7 +41,7 @@ class TodayLargeWidgetProvider : BaseQingyuWidgetProvider() {
             profile,
             baseVerticalDp = 14,
             heightAdjustmentDp =
-                snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
+                snapshot?.heightAdjustment?.toInt() ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 1f,
         )
         views.applyInk(R.id.widget_large_week, WidgetInk.SECONDARY, style, context, fallback = secondaryColor)

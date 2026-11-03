@@ -38,8 +38,9 @@ data class StatsWidgetSnapshot(
  */
 data class StatsWidgetChrome(
     val backgroundStyle: String,
-    val cornerRadius: Int,
-    val heightAdjustment: Int,
+    // 与 Dart double 同源（默认 22.0 / -11.0），不能收窄成 Int。
+    val cornerRadius: Double,
+    val heightAdjustment: Double,
 )
 
 /** Storage + shared rendering helpers for the stats widgets. */
@@ -50,8 +51,8 @@ object StatsWidgetSupport {
     /** 默认值与 TimetableSettings 的默认外观保持一致（solid / 22dp / -11dp）。 */
     private val DEFAULT_CHROME = StatsWidgetChrome(
         backgroundStyle = "solid",
-        cornerRadius = TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
-        heightAdjustment = TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
+        cornerRadius = TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP.toDouble(),
+        heightAdjustment = TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP.toDouble(),
     )
 
     fun syncSnapshot(context: Context, snapshot: Map<String, Any?>) {
@@ -151,8 +152,8 @@ object StatsWidgetSupport {
         )
         return StatsWidgetChrome(
             backgroundStyle = settings.optString("widgetBackgroundStyle", DEFAULT_CHROME.backgroundStyle),
-            cornerRadius = settings.optDouble("widgetCornerRadius", DEFAULT_CHROME.cornerRadius.toDouble()).toInt(),
-            heightAdjustment = settings.optDouble("widgetHeightAdjustment", DEFAULT_CHROME.heightAdjustment.toDouble()).toInt(),
+            cornerRadius = settings.optDouble("widgetCornerRadius", DEFAULT_CHROME.cornerRadius),
+            heightAdjustment = settings.optDouble("widgetHeightAdjustment", DEFAULT_CHROME.heightAdjustment),
         )
     }
 

@@ -32,7 +32,7 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             "setBackgroundResource",
             TodayWidgetSupport.backgroundRes(
                 style,
-                snapshot?.cornerRadius ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
+                snapshot?.cornerRadius?.toInt() ?: TodayWidgetSupport.DEFAULT_CORNER_RADIUS_DP,
             )
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
@@ -41,7 +41,7 @@ class TodayMediumWidgetProvider : BaseQingyuWidgetProvider() {
             profile,
             baseVerticalDp = 14,
             heightAdjustmentDp =
-                snapshot?.heightAdjustment ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
+                snapshot?.heightAdjustment?.toInt() ?: TodayWidgetSupport.DEFAULT_HEIGHT_ADJUSTMENT_DP,
             targetAspect = 0.5f,
         )
         // 课程色贯穿：主卡课程名左侧色条 + 课程名文字（档位关闭时恒回落中性色）。

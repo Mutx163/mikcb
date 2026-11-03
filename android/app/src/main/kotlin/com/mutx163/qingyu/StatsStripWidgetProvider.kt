@@ -48,14 +48,14 @@ class StatsStripWidgetProvider : BaseQingyuWidgetProvider() {
         views.setInt(
             R.id.widget_card,
             "setBackgroundResource",
-            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
+            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius.toInt()),
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
             views,
             R.id.widget_root,
             profile,
             baseVerticalDp = 8,
-            heightAdjustmentDp = chrome.heightAdjustment,
+            heightAdjustmentDp = chrome.heightAdjustment.toInt(),
             targetAspect = 4f,
         )
 

@@ -46,14 +46,14 @@ class StatsMediumWidgetProvider : BaseQingyuWidgetProvider() {
         views.setInt(
             R.id.widget_card,
             "setBackgroundResource",
-            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius),
+            TodayWidgetSupport.backgroundRes(chrome.backgroundStyle, chrome.cornerRadius.toInt()),
         )
         TodayWidgetSupport.applyAdaptiveVerticalPadding(
             views,
             R.id.widget_root,
             profile,
             baseVerticalDp = 16,
-            heightAdjustmentDp = chrome.heightAdjustment,
+            heightAdjustmentDp = chrome.heightAdjustment.toInt(),
             targetAspect = 0.5f,
         )
 

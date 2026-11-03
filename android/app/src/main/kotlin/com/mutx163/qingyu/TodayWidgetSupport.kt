@@ -37,8 +37,10 @@ data class TodayWidgetSnapshotInfo(
     val showCountdown: Boolean,
     val countdownTextStyle: String,
     val hideCompletedCourses: Boolean,
-    val heightAdjustment: Int,
-    val cornerRadius: Int,
+    // Dart `HomeWidgetSnapshot.heightAdjustment/cornerRadius` 是 double（默认 -11.0 / 22.0）：
+    // 这里必须是 Double，否则 JSON 落成 `8` 而 Dart 是 `8.0`，跨端字节对不上。
+    val heightAdjustment: Double,
+    val cornerRadius: Double,
     val totalTodayCourseCount: Int,
     val todayCourses: List<TodayWidgetCourseInfo>,
     val visibleTodayCourses: List<TodayWidgetCourseInfo>,
@@ -521,11 +523,11 @@ object TodayWidgetSupport {
             heightAdjustment = settingsJson.optDouble(
                 "widgetHeightAdjustment",
                 DEFAULT_HEIGHT_ADJUSTMENT_DP.toDouble(),
-            ).toInt(),
+            ),
             cornerRadius = settingsJson.optDouble(
                 "widgetCornerRadius",
                 DEFAULT_CORNER_RADIUS_DP.toDouble(),
-            ).toInt(),
+            ),
             totalTodayCourseCount = todayCourses.size,
             todayCourses = todayCourses.map { it.toWidgetCourseInfo() },
             visibleTodayCourses = visibleTodayCourses.map { it.toWidgetCourseInfo() },
@@ -1843,11 +1845,11 @@ internal fun findNextRefreshAtMillis(
             heightAdjustment = json.optDouble(
                 "heightAdjustment",
                 DEFAULT_HEIGHT_ADJUSTMENT_DP.toDouble(),
-            ).toInt(),
+            ),
             cornerRadius = json.optDouble(
                 "cornerRadius",
                 DEFAULT_CORNER_RADIUS_DP.toDouble(),
-            ).toInt(),
+            ),
             totalTodayCourseCount = json.optInt(
                 "totalTodayCourseCount",
                 allCourses.size
