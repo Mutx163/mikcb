@@ -412,7 +412,16 @@ fun DayViewPage(
         material?.dock == SurfaceMaterialState.FROST) &&
         hasBackdrop && isRuntimeShaderSupported()
     // 浮钮只在「当前看的不是今天」时出现；不可见就不为它录整屏。
-    val showsBackToToday = !isCurrentPageToday
+    // 今天还必须是可见星期、且落在学期内（Dart `_canNavigateDayViewToToday`，
+    // `timetable_screen.dart:1428-1435`：假期/学期末、或今天那个星期被隐藏时不给入口，
+    // 免得点一下跳到「上周同一个星期几」；判据收敛在 [TimetableDateLogic.canNavigateToToday]）。
+    val showsBackToToday = TimetableDateLogic.canNavigateToToday(
+        isCurrentPageToday = isCurrentPageToday,
+        visibleDays = visibleDays,
+        semesterStart = semesterStartDate,
+        totalWeeks = totalWeeks.coerceAtLeast(1),
+        today = todayDate,
+    )
     // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采，或浮钮真要玻璃。
     val pageBackdropActive = bandBlurActive || cardGlassActive ||
         (floatingGlassActive && showsBackToToday)

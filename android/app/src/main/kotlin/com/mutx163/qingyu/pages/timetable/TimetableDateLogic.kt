@@ -59,6 +59,26 @@ object TimetableDateLogic {
     }
 
     /**
+     * 日视图「回今日」浮钮能否出现（Dart `_canNavigateDayViewToToday`，`timetable_screen.dart:1428-1435`）。
+     *
+     * 三条同时成立才给入口：
+     * 1. 当前页不是今天；
+     * 2. 今天那个星期没有被用户隐藏（否则点一下会落到「看不见的那天」）；
+     * 3. 今天落在学期内、能解析出周次（假期 / 学期末不给，避免跳成「上周同一个星期几」）。
+     */
+    fun canNavigateToToday(
+        isCurrentPageToday: Boolean,
+        visibleDays: List<Int>,
+        semesterStart: LocalDate?,
+        totalWeeks: Int,
+        today: LocalDate,
+    ): Boolean {
+        if (isCurrentPageToday) return false
+        if (!visibleDays.contains(today.dayOfWeek.value)) return false
+        return currentSemesterWeek(semesterStart, totalWeeks, today) != null
+    }
+
+    /**
      * 没有开学日时的**兜底日期**：按「当前查看的周」把星期几映射到今天所在的那一周。
      *
      * Dart `_resolveDisplayDateForWeekDay`（`timetable_day_view_part.dart:340-355`）：
