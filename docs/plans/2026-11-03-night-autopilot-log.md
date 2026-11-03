@@ -782,10 +782,23 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `d53b8ae6` | 门 1 / 门 2 | ⏳ **未单独跑** | — | — | 作废口径：HEAD 已推进到 `4d534e04`（`d53b8ae6` 只加测试 +37/−0，未改主源集，结论由 `4d534e04` 覆盖） |
 | **`4d534e04`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **00:50:50→00:54:04** | **2m51s（Gradle）/ 3m13s 墙钟** | **当前 HEAD**；`compileDevDebugKotlin UP-TO-DATE`（主源集自 `a7eef5be` 起无改动，只推进了测试与文档），任务真实执行且 exit=0 |
 | **`4d534e04`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **00:54:23→00:59:17** | **4m44s（Gradle）/ 4m54s 墙钟** | **同一真实红**：`compileDevDebugUnitTestKotlin FAILED`，`WidgetWeekendMoodTest.kt:33:28`/`34:24` actual `Double` vs `Int` expected；其余任务 UP-TO-DATE。**待 L4 对齐 `TodayWidgetSnapshotInfo` 后重跑** |
+| **`5289c6da`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **02:13:05→02:27:44** | **14m00s（Gradle）/ 14m39s 墙钟** | A+B 迁移（`e57607b5`）+ 13 文件类型对齐（`6a6ab1b8`）+ ICS 死副本删除后的首次全量主源集编译；仅既有 warning |
+| `df1a9873` | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **02:28:53→02:42:32** | **13m24s（Gradle）/ 13m39s 墙钟** | 删单次课改动增量编译通过；**此绿只代言 `df1a9873`**——HEAD 此后推进到 `0f99dee1`（`bd2af39f`/`a1d2b48b`/`0f99dee1` 均动主源集），见「有效结论口径」 |
+| **`df1a9873`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **02:45:08→02:58:12** | **12m12s（Gradle）/ 13m04s 墙钟** | **6538 tests / 6 failed**：①`CjkLiteralGateTest:151` → `IcsImportModel.kt` 1→16 条（**批准例外未落地**：常量文件未抽出、基线未登记）；②`WarehouseCourseWriteBackTest` ×5（`:223`/`:291`/`:311`/`:328`/`:439`）→ 详见下方「两类红定性」。 |
+| `0f99dee1` | 门 1 `:app:compileDevDebugKotlin` | ⏳ **跑中** | — | — | 主源集有变（`ShellPageIndex` 例外科改、`AddCourseFormModel`、`NativePrefReconcileLogic` 新增 + `ShellWiring`），必须重跑；数字回填于本节末尾 |
+| `0f99dee1` | 门 2 `:app:testDevDebugUnitTest` | ⛔ **暂不跑（有已知红）** | — | — | 两类红的修复仍在**工作区未提交**（CJK 常量文件 + warehouse 夹具），提交前跑门 2 只会复现同 6 例；**待修复提交后一次性重跑门 1 → 门 2** |
 
-**有效结论口径**：**门 1 在 HEAD `4d534e04` 实测绿（00:50:50→00:54:04，Gradle 2m51s / 墙钟 3m13s，exit=0）**，该绿**代言 `4d534e04`**（主源集未变，属 `a7eef5be` 修复后的延续）。**门 2 在同一 HEAD 实测红（00:54:23→00:59:17，Gradle 4m44s / 墙钟 4m54s，exit=1）**，红项唯一为测试源集编译错误（`WidgetWeekendMoodTest.kt:33/34` Double vs `TodayWidgetSnapshotInfo` Int），**当前不声明「两门全绿」**。前序 `a7eef5be` 门 1 绿 / 门 2 红为同一条红链的前序证据；`f1472e58`/`58693492` 门 1 红均为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
+**有效结论口径（2026-11-04 03:2x 定稿）**：**门 2 已跑，不是「未跑」**——最近一次跑在 `df1a9873`（02:45:08→02:58:12，Gradle 12m12s / 墙钟 13m04s，exit=1，**6538 tests / 6 failed**）；该 HEAD 的门 1 亦实测绿（02:28:53→02:42:32，Gradle 13m24s / 墙钟 13m39s）。**但 HEAD 已推进到 `0f99dee1`（新三笔均动主源集），旧结论不代言新 HEAD**；`0f99dee1` 门 1 重跑中，门 2 待两类红修复提交后一次性重跑。**期间不声明「两门全绿」。**
 
-**HEAD 推进到 `e9630e47`（2026-11-04 00:5x）后的口径**：该笔只加统计图表测试（`BasicChartModelsTest.kt`），主源集未动，**门 1 结论沿用 `4d534e04`**。逻辑层的 `Int→Double` 修复（`TodayWidgetSupport.kt`/`StatsWidgetSupport.kt` 及 11 个 provider 调用点）**目前只在工作区、尚未提交**，因此**未在 HEAD 上重跑门 2**——未提交改动不能当 HEAD 证据；待其提交后再跑并回填数字。
+- `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
+- `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
+- 前序：`4d534e04` 门 1 绿 / 门 2 红（`WidgetWeekendMoodTest` Double vs Int，已由 `6a6ab1b8` 修）；`f1472e58`/`58693492` 门 1 红为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
+
+**两类红定性（`df1a9873` 门 2）**
+
+1. `CjkLiteralGateTest:151` = **批准例外未落地**，不是新增违规。落地形态已在工作区成型（**未提交**）：`pages/import/IcsHeaderKeywords.kt` 收 9 个 CJK 常量（由 16 处同别名收敛）、KDoc 明写「仅 ICS 表头匹配、禁上屏」、基线只登记该文件 `:9` 并删除 `IcsImportModel.kt:1` 旧行、`IcsImportModelTest` 新增用例钉「解析器无中文字面量 + 文件名不含 `Strings`/`Arb` + 无 `Composable`/`androidx.compose`/`ArbText` 引用 + 9 常量均被比较逻辑引用」。**待提交。**
+2. `WarehouseCourseWriteBackTest` ×5（`:223`/`:291`/`:311`/`:328`/`:439`）= **测试夹具未随 A+B 单一真源迁移**，**不是产品行为回归**——上轮「真实行为红」的定性在此修正。夹具仍把 settings 写在顶层 `timetable_settings`，而 `e57607b5` 之后读侧只认档案内嵌 `settings`，于是读回默认值：作息 10 节、`semesterWeekCount` 20（期望 30）、开学日被当未设而改写。修法（工作区**未提交**）：`profileWith` 增 `settings` 参数、settings 内嵌进 `timetable_profiles`；「课程落盘失败回滚开学日」因 settings 与 courses 同写一个 key，改为 `failOnMatch=2`（第 1 次 settings 成功、第 2 次 courses 失败、第 3 次回滚）。**断言未放宽，只改夹具与失败注入位置。**
+
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
@@ -886,3 +899,9 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 3. **插曲（共享工作区范例）**：跑 L0 时另一线正在改 `app/TimetableStore.kt`，真实仓连续编译红；课程线用「HEAD 版 `TimetableStore` + 自己的改动」搭**净室临时树**跑通并删净室，随后真实仓复跑 **230 / 284**。正确做法是：**不替人提交、也不因此停下**。
 4. **backlog 精确到行**：`hasCustomTime` 只需两处——`AddCourseFormModel.kt:162` 加字段 + `:406-415` 透传；`ShellPageIndex.kt:997-1008` `clockResolver` 回传布尔（**Lead 已授权例外科改，仅该 lambda**，做完此条即可划掉）。
 5. **明确「不要补」**：课程级复制 / 移动到其他档案**两侧都无实现**（全仓无 `copyCourse`/`duplicateCourse`/`moveCourse`，动作面板无入口）；唯一「复制」是档案级 `duplicateProfile`。**这是事实，不是缺口，后续不要当任务派。**
+
+### 10.22 ✅ 授权例外科改落地 + 表单钟点 + 启动对账收敛（`bd2af39f` / `a1d2b48b` / `0f99dee1`）
+
+1. **`bd2af39f` 例外科改落地（授权范围内）**：`ShellPageIndex.kt` **只加两处**——`onWeeklyReportToggle`（`:1574-1576`）与 `onPersistHideFromRecents`（`:2051-2053`），各追加一行 `writeRawSettingsPatch`；**未改布局/主题/路由/页面装配**。同笔 `ShellWiring.kt` +46 行 = 启动时 settings→native pref 单向对账（对应裁决「`weeklyReportEnabled`、`liveHideFromRecents` 走启动对账」）。
+2. **`a1d2b48b` 表单钟点（backlog 第一处）**：`AddCourseEntryClock` 新增 `hasCustomTime`（默认 `false`），`buildSavePayload` 透传给 `toCourse`（Dart `add_course_screen.dart:2022-2039`）；补两用例（自定义时间课保存后仍 `true`、非自定义课不为 `true`）。**该 backlog 项不能划掉**：第二处 `ShellPageIndex.kt:997-1008` 的 `clockResolver` 仍在**工作区未提交**（已见 diff：改用 `CourseDomain.editCourseClock(...)` 回传布尔，属授权 lambda 范围）。
+3. **`0f99dee1` 启动对账收敛**：把 `bd2af39f` 的启动回写抽成纯决策层 `app/NativePrefReconcileLogic.kt`（+137）+ `ShellWiring` 40 行接线 + 212 行单测。**三笔均动主源集**，故 `df1a9873` 的门结论不代言 `0f99dee1`。
