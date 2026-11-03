@@ -99,6 +99,14 @@ object DisplaySettingsStrings {
     val stagePreviewDuringClassAction = ArbText("liveStagePreviewDuringClassAction", "试弹课中岛")
     val stagePreviewStopAction = ArbText("liveTestingCourseTestStopAction", "停止测试")
 
+    // ── 试弹触发反馈（键全部为 ARB 既有键，速览管线接线时复用）──
+    val stagePreviewStartedToast = ArbText("liveStagePreviewStartedToast", "已开启超级岛预览")
+    val stagePreviewStoppedToast = ArbText("liveStagePreviewStoppedToast", "已停止超级岛预览")
+    val stagePreviewStageBeforeClass = ArbText("liveStagePreviewStageBeforeClass", "上课前")
+    val stagePreviewStageDuringClass = ArbText("liveStagePreviewStageDuringClass", "课中")
+    val testingInFlight = ArbText("liveTestingInFlight", "测试进行中，请勿重复点击，请稍后再试")
+    val sendFailedWithError = ArbText("sendFailedWithError", "发送失败：{error}")
+
     // ── 课中/下课页「配置方式」组 ──
     val displayConfigModeTitle = ArbText("liveDisplayConfigModeTitle", "配置方式")
     val followBeforeClassDisplayTitle = ArbText("followBeforeClassDisplayTitle", "跟随上课前提醒设置")
@@ -259,6 +267,12 @@ object DisplaySettingsStrings {
         stagePreviewBeforeClassAction,
         stagePreviewDuringClassAction,
         stagePreviewStopAction,
+        stagePreviewStartedToast,
+        stagePreviewStoppedToast,
+        stagePreviewStageBeforeClass,
+        stagePreviewStageDuringClass,
+        testingInFlight,
+        sendFailedWithError,
         displayConfigModeTitle,
         followBeforeClassDisplayTitle,
         displayEntryTitleBeforeClass,
