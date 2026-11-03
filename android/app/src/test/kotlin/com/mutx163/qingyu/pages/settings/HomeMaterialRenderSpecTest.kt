@@ -224,27 +224,30 @@ class HomeMaterialRenderSpecTest {
     fun `课卡折射与作用带取卡片自己那套参数`() {
         // 卡片有自己一套 `CourseGlassTuning`（`course_glass_tuning.dart:5-23`）：
         // 顶栏带 / 玻璃坞读全局那份，卡片读它自己那份，两边不许混。
+        // 取值都落在收档后的滑杆区间内（位移 ≤10、作用带 ≤12），这样这条测的是
+        // 「读的是哪一份」，不会和下面的区间收口测试混在一起。
         val result = spec(
             model(
-                lightTuning = LiquidGlassTuningModel(refraction = 12.0, refractionBand = 16.0),
+                lightTuning = LiquidGlassTuningModel(refraction = 9.0, refractionBand = 10.0),
                 cardTuning = LiquidGlassTuningModel(refraction = 4.0, refractionBand = 6.0),
             ),
         )
-        assertEquals(12.0f, result.liquidRefraction, 1e-6f)
-        assertEquals(16.0f, result.liquidRefractionBand, 1e-6f)
+        assertEquals(9.0f, result.liquidRefraction, 1e-6f)
+        assertEquals(10.0f, result.liquidRefractionBand, 1e-6f)
         assertEquals(4.0f, result.courseCardRefraction, 1e-6f)
         assertEquals(6.0f, result.courseCardRefractionBand, 1e-6f)
     }
 
     @Test
     fun `课卡折射与作用带按滑杆区间收口`() {
-        // 折射 0..20、作用带 1..24（`liquid_glass_tuning.dart:457-474` 那一批常量，
-        // 卡片直接引用它们）。旧存档 / 手改 JSON 顶出区间时不许把几何算飞。
+        // 折射 0..10、作用带 1..12（2026-11-03 收档，`845dd9a49`：位移上限 20→10、
+        // 作用带上限 24→12；卡片直接引用同一批常量）。旧存档 / 手改 JSON 顶出区间时
+        // 不许把几何算飞。
         val result = spec(
             model(cardTuning = LiquidGlassTuningModel(refraction = 40.0, refractionBand = 40.0)),
         )
-        assertEquals(20.0f, result.courseCardRefraction, 1e-6f)
-        assertEquals(24.0f, result.courseCardRefractionBand, 1e-6f)
+        assertEquals(10.0f, result.courseCardRefraction, 1e-6f)
+        assertEquals(12.0f, result.courseCardRefractionBand, 1e-6f)
     }
 
     @Test

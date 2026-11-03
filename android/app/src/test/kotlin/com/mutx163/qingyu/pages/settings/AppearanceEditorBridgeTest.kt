@@ -304,8 +304,9 @@ class AppearanceEditorBridgeTest {
             assertWritten = {
                 val map = it as Map<*, *>
                 assertEquals(12.0, (map["refraction"] as Number).toDouble(), 0.0)
-                // 其余七项回落出厂值（缺键 = 出厂档，liquid_glass_tuning.dart:605-624）
-                assertEquals(11.0, (map["refractionBand"] as Number).toDouble(), 0.0)
+                // 其余七项回落出厂值（缺键 = 出厂档，liquid_glass_tuning.dart:605-624；
+                // 2026-11-03 收档后作用带出厂值是 8）
+                assertEquals(8.0, (map["refractionBand"] as Number).toDouble(), 0.0)
             },
         ),
         KeyCase(

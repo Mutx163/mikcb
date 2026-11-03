@@ -21,8 +21,9 @@ class SettingsMaterialModelTest {
     fun `出厂档就是标准档那八个值`() {
         // liquid_glass_tuning.dart:410-451
         val d = LiquidGlassTuning.DEFAULTS
-        assertEquals(8.0, d.refraction, 0.0)
-        assertEquals(11.0, d.refractionBand, 0.0)
+        // 2026-11-03 收档（`845dd9a49`）：位移 8→6、作用带 11→8。
+        assertEquals(6.0, d.refraction, 0.0)
+        assertEquals(8.0, d.refractionBand, 0.0)
         assertEquals(2.5, d.refractionEdgePow, 0.0)
         assertEquals(0.35, d.dispersion, 0.0)
         assertEquals(0.2, d.rimStrength, 0.0)
@@ -35,9 +36,10 @@ class SettingsMaterialModelTest {
     fun `上下限逐个对得上 Dart 常量`() {
         // liquid_glass_tuning.dart:457-474
         assertEquals(0.0, LiquidGlassTuning.MIN_REFRACTION, 0.0)
-        assertEquals(20.0, LiquidGlassTuning.MAX_REFRACTION, 0.0)
+        // 2026-11-03 收档（`845dd9a49`）：位移上限 20→10、作用带上限 24→12。
+        assertEquals(10.0, LiquidGlassTuning.MAX_REFRACTION, 0.0)
         assertEquals(1.0, LiquidGlassTuning.MIN_REFRACTION_BAND, 0.0)
-        assertEquals(24.0, LiquidGlassTuning.MAX_REFRACTION_BAND, 0.0)
+        assertEquals(12.0, LiquidGlassTuning.MAX_REFRACTION_BAND, 0.0)
         assertEquals(1.0, LiquidGlassTuning.MIN_REFRACTION_EDGE_POW, 0.0)
         assertEquals(6.0, LiquidGlassTuning.MAX_REFRACTION_EDGE_POW, 0.0)
         assertEquals(0.0, LiquidGlassTuning.MIN_DISPERSION, 0.0)

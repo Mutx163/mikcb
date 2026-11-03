@@ -251,15 +251,15 @@ class SettingsAppearanceEditorPageTest {
         assertEquals("磨砂强度", spec.row("material.general.tuning.blurSigma").title)
         assertEquals("染色强度", spec.row("material.general.tuning.tint").title)
 
-        // 折射：0~20 / 40 档（:1485-1497）
+        // 折射：0~10 / 40 档（2026-11-03 收档，`845dd9a49`）
         val refraction = spec.row("material.general.tuning.refraction").slider!!
         assertEquals(0.0, refraction.min, 0.0)
-        assertEquals(20.0, refraction.max, 0.0)
+        assertEquals(10.0, refraction.max, 0.0)
         assertEquals(40, refraction.divisions)
-        // 作用带 1~24 / 46 档（:1498-1512）
+        // 作用带 1~12 / 46 档（同上）
         val band = spec.row("material.general.tuning.refractionBand").slider!!
         assertEquals(1.0, band.min, 0.0)
-        assertEquals(24.0, band.max, 0.0)
+        assertEquals(12.0, band.max, 0.0)
         assertEquals(46, band.divisions)
         // 陡缓 1~6 / 20 档（:1513-1527）
         val edge = spec.row("material.general.tuning.edgePow").slider!!
@@ -286,8 +286,9 @@ class SettingsAppearanceEditorPageTest {
     fun `八根旋钮的读数格式`() {
         // :1387-1388：数值按指定位数、百分比四舍五入到整数
         val spec = general()
-        assertEquals("8.0", spec.row("material.general.tuning.refraction").value)
-        assertEquals("11.0", spec.row("material.general.tuning.refractionBand").value)
+        // 2026-11-03 收档（`845dd9a49`）：折射 8→6、作用带 11→8。
+        assertEquals("6.0", spec.row("material.general.tuning.refraction").value)
+        assertEquals("8.0", spec.row("material.general.tuning.refractionBand").value)
         assertEquals("2.50", spec.row("material.general.tuning.edgePow").value)
         assertEquals("35%", spec.row("material.general.tuning.dispersion").value)
         assertEquals("20%", spec.row("material.general.tuning.rimStrength").value)

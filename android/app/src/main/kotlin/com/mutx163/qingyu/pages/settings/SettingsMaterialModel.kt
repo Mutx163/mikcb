@@ -37,8 +37,13 @@ data class LiquidGlassTuning(
 ) {
     companion object {
         // ---- 出厂值（即第 7 格「标准」）：liquid_glass_tuning.dart:410-451
-        const val DEFAULT_REFRACTION = 8.0
-        const val DEFAULT_REFRACTION_BAND = 11.0
+        //
+        // 2026-11-03 与 `app/TimetableSettingsModel.LiquidGlassTuningModel` 同步收档
+        // （`845dd9a49` 只改了 app 侧，这份渲染/滑杆用的镜像漏改，模块 L0 因此红了三条）：
+        // 折射默认 8→6、作用带默认 11→8。两处必须逐字相等，否则「滑杆停在标准档、
+        // 读数却是自定义」。
+        const val DEFAULT_REFRACTION = 6.0
+        const val DEFAULT_REFRACTION_BAND = 8.0
         const val DEFAULT_REFRACTION_EDGE_POW = 2.5
         const val DEFAULT_DISPERSION = 0.35
         const val DEFAULT_RIM_STRENGTH = 0.2
@@ -47,10 +52,13 @@ data class LiquidGlassTuning(
         const val DEFAULT_TINT_ALPHA = 0.70
 
         // ---- 上下限：同文件 :457-474
+        //
+        // 同上收档（`845dd9a49`）：位移上限 20→10、作用带上限 24→12。滑杆 divisions
+        // 不变（40 / 46），仍是 0.25 / 0.5 一档。
         const val MIN_REFRACTION = 0.0
-        const val MAX_REFRACTION = 20.0
+        const val MAX_REFRACTION = 10.0
         const val MIN_REFRACTION_BAND = 1.0
-        const val MAX_REFRACTION_BAND = 24.0
+        const val MAX_REFRACTION_BAND = 12.0
         const val MIN_REFRACTION_EDGE_POW = 1.0
         const val MAX_REFRACTION_EDGE_POW = 6.0
         const val MIN_DISPERSION = 0.0
