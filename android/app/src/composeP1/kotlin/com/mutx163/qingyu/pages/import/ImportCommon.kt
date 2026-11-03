@@ -50,7 +50,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -831,13 +830,6 @@ fun ImportColorGroupSheet(
                             tint = colors.primary,
                         )
                     }
-                }
-                // 分隔线只画在行与行之间（Dart `showDivider`，末行不画悬空线）。
-                if (index < ImportRandomColorStore.GROUP_OPTIONS.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = COLOR_GROUP_ROW_HORIZONTAL_PADDING),
-                        color = colors.dividerLine,
-                    )
                 }
             }
         }

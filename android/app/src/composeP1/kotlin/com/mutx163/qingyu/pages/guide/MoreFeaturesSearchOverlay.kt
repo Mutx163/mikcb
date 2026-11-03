@@ -37,7 +37,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -162,7 +161,6 @@ fun MoreFeaturesSearchOverlay(
                             ) {
                                 Column {
                                     group.items.forEachIndexed { idx, item ->
-                                        if (idx > 0) HorizontalDivider()
                                         SearchResultRow(
                                             item = item,
                                             query = searchQuery,

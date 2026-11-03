@@ -60,7 +60,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
@@ -123,8 +122,8 @@ fun SupportCreatorPage(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             horizontalPadding = QingyuPageCardMargin,
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+            verticalArrangement = AboutPageListSpacing,
         ) {
             // ── 头卡：图标 + 运行中 + 副标题 + 能力胶囊 ──
             item {
@@ -152,14 +151,13 @@ fun SupportCreatorPage(
 
             // ── 鸣谢区：分组标题独立，内容合并成一张卡 ──
             item {
+                // 标题内边距收 16dp（+列表 12dp = 官方 28dp 轴线）。原先用
+                // `Modifier.offset(-12dp)` 硬掰，2026-11-03 共享件出了 `insideMargin`
+                // 参数后按它自己的 TODO 换成正式口径。
                 QingyuSectionTitle(
                     text = donorData?.title?.takeIf { it.isNotEmpty() }
                         ?: SupportCreatorStrings.donorListTitle,
-                    // 列表已经加了 12dp，而 SmallTitle 默认横向内边距 28dp ⇒ 标题左缘 40dp，
-                    // 比卡内文字（12 + 16 = 28dp）右移 12dp。左移 12dp 落回同一条轴线。
-                    // TODO: 共享件 `QingyuSectionTitle` 合入 `insideMargin` 参数后，
-                    //  这一行应换成 `insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp)`。
-                    modifier = Modifier.offset(x = (-12).dp),
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
             item {
@@ -366,10 +364,11 @@ private fun PaymentCard(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
+            // 内容/展示类卡片圆角统一走默认 16（[QingyuCardDefaults.Corner]）；
+            // 显式传参收掉，避免同层出现第二种圆角。
             QingyuCard(
                 modifier = Modifier.fillMaxWidth(0.72f),
                 insideMargin = PaddingValues(0.dp),
-                cornerRadius = 16.dp,
                 onClick = onOpenPreview,
             ) {
                 // 素材是竖版支付海报（1325×1806 / 1182×1772），按原始宽高比显示；
@@ -458,11 +457,9 @@ private fun QrPreview(
             contentAlignment = Alignment.Center,
         ) {
             QingyuCard(
-                // 0.72 而不是 0.9：竖版海报按原始比例会很高，宽一点就会把
-                // 标题 + 说明 + 保存按钮挤出矮屏的一屏。
+                // 内容/展示类卡片圆角统一默认 16（原 20 与收款卡同层不同角，已收）。
                 modifier = Modifier.fillMaxWidth(0.72f),
                 insideMargin = PaddingValues(0.dp),
-                cornerRadius = 20.dp,
             ) {
                 QingyuAssetImage(
                     assetPath = assetPath,
@@ -564,9 +561,6 @@ private fun DonorCard(
                 )
             } else {
                 donorData.donors.forEachIndexed { index, donor ->
-                    if (index > 0) {
-                        HorizontalDivider(Modifier.padding(start = 56.dp))
-                    }
                     DonorRow(donor)
                 }
             }

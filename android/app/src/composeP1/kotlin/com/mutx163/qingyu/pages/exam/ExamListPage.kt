@@ -132,12 +132,6 @@ fun ExamListPage(
                                 insideMargin = PaddingValues(vertical = 2.dp),
                             ) {
                                 viewState.upcoming.forEachIndexed { index, row ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 14.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
                                     ExamRow(
                                         row = row,
                                         dark = dark,
@@ -159,12 +153,6 @@ fun ExamListPage(
                                 insideMargin = PaddingValues(vertical = 2.dp),
                             ) {
                                 viewState.past.forEachIndexed { index, row ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 14.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
                                     ExamRow(
                                         row = row,
                                         dark = dark,

@@ -36,7 +36,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
@@ -195,13 +194,11 @@ private fun MigrationGuideContent(
                         title = GuideStrings.migrationStep1Title.zh,
                         subtitle = GuideStrings.migrationStep1Subtitle.zh
                     )
-                    HorizontalDivider()
                     MigrationStepRow(
                         step = 2,
                         title = GuideStrings.migrationStep2Title.zh,
                         subtitle = GuideStrings.migrationStep2Subtitle.zh
                     )
-                    HorizontalDivider()
                     MigrationStepRow(
                         step = 3,
                         title = GuideStrings.migrationStep3Title.zh,

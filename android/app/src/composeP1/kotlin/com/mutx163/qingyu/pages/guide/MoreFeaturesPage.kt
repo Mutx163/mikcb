@@ -29,7 +29,6 @@ import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -112,7 +111,6 @@ fun MoreFeaturesPage(
                         ) {
                             Column {
                                 group.items.forEachIndexed { index, item ->
-                                    if (index > 0) HorizontalDivider()
                                     FeatureItemRow(
                                         item = item,
                                         onClick = { onOpenFeature(item.id) }

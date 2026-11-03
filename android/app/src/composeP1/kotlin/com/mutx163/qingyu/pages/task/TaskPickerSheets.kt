@@ -30,7 +30,6 @@ import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
@@ -149,13 +148,6 @@ fun TaskCoursePickerSheet(
                             tint = colors.primary,
                         )
                     }
-                }
-                // `showDivider: index < values.length - 1`，左缩进 = 行内边距 16。
-                if (index < options.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = CHOICE_ROW_HORIZONTAL_PADDING),
-                        color = colors.dividerLine,
-                    )
                 }
             }
         }

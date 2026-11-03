@@ -54,7 +54,6 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -325,9 +324,7 @@ private fun WelcomePage(
             ) {
                 Column {
                     GuideNavRow(GuideStrings.startUsingTitle.zh, onStart)
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
                     GuideNavRow(GuideStrings.importTimetableTitle.zh, onImport)
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
                     GuideNavRow(GuideStrings.restoreBackupTitle.zh, onRestore)
                 }
             }
@@ -511,7 +508,6 @@ private fun PermissionsPage(
                 ) {
                     Column {
                         items.forEachIndexed { idx, item ->
-                            if (idx > 0) HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
                             GuidePermissionRow(
                                 item = item,
                                 dark = dark,

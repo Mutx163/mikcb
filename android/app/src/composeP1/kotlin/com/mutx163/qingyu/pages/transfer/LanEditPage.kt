@@ -27,7 +27,6 @@ import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -160,31 +159,15 @@ fun LanEditPage(
                                 )
                                 val pin = model.pinText
                                 if (pin.isNotEmpty()) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 16.dp),
-                                        color = Color(QingyuTheme.dividerLine(dark)),
-                                    )
                                     InfoRow(label = model.pinLabel, value = pin)
                                 }
                                 val port = model.portText
                                 if (port.isNotEmpty()) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 16.dp),
-                                        color = Color(QingyuTheme.dividerLine(dark)),
-                                    )
                                     InfoRow(label = model.portLabel, value = port)
                                 }
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 16.dp),
-                                    color = Color(QingyuTheme.dividerLine(dark)),
-                                )
                                 InfoRow(label = model.clientsLabel, value = model.clientsText)
                                 val lastActivity = model.lastActivityLine
                                 if (lastActivity != null) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 16.dp),
-                                        color = Color(QingyuTheme.dividerLine(dark)),
-                                    )
                                     InfoRow(label = model.lastActivityLabel, value = lastActivity)
                                 }
                             }

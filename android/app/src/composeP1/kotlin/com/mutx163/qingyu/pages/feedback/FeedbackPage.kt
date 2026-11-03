@@ -28,7 +28,6 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -51,7 +50,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * ## 组件与已知差异
  *
- * - Scaffold / Card / Text / Icon / IconButton / HorizontalDivider 全部官方 Miuix；
+ * - Scaffold / Card / Text / Icon / IconButton 全部官方 Miuix；
  * - 返回与复制用官方图标 `MiuixIcons.Back` / `MiuixIcons.Copy`
  *   （依赖 `miuix-icons-android:0.8.8`，用户 2026-10-26 批准）；
  * - **品牌徽标暂用占位**：原图是 Flutter 资产（github/xiaohongshu/qq 是 SVG），
@@ -85,13 +84,6 @@ fun FeedbackPage(
                 QingyuCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
                         view.channels.forEachIndexed { index, channel ->
-                            if (index > 0) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 16.dp),
-                                    thickness = 0.75.dp,
-                                    color = colors.dividerLine,
-                                )
-                            }
                             FeedbackChannelRow(
                                 channel = channel,
                                 onOpen = { onOpenChannel(channel) },

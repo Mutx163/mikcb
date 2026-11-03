@@ -28,7 +28,6 @@ import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -88,7 +87,6 @@ fun LiveTestingFixturePage(
                         onClick = onInstall,
                         dark = dark,
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                     FixtureActionRow(
                         icon = MiuixIcons.Delete,
                         title = viewState.clearTitle,
@@ -142,9 +140,6 @@ fun LiveTestingFixturePage(
                     insideMargin = PaddingValues(vertical = 4.dp),
                 ) {
                     viewState.sendRows.forEachIndexed { index, row ->
-                        if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                        }
                         FixtureActionRow(
                             icon = if (index == 0) MiuixIcons.Play else MiuixIcons.Forward,
                             title = row.title,

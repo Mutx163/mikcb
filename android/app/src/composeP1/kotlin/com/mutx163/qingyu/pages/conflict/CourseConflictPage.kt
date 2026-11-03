@@ -19,7 +19,6 @@ import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -42,7 +41,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - 页面骨架 / 滚动 / 卡片 / 分组标题走共享套件：`QingyuPageScaffold`（官方 TopAppBar +
  *   标准左箭头）、`QingyuPageList`（官方滚动三件套 + 右侧滚动条）、`QingyuCard`（按压反馈 +
  *   语义圆角）、`QingyuSectionTitle`（官方 SmallTitle，自带 28dp 左缘）；
- * - Text / Icon / HorizontalDivider 用官方 `top.yukonga.miuix.kmp.basic.*`，不自绘；
+ * - Text / Icon 用官方 `top.yukonga.miuix.kmp.basic.*`，不自绘；
  * - 行尾箭头用官方图标包 `miuix-icons-android:0.8.8` 的 `MiuixIcons.ChevronForward`
  *   （依赖由用户 2026-10-26 批准新增，仍只挂 composeP1）；
  * - 0.8.8 没有 preference 模块（那套在 0.9.4 且要 Kotlin 2.4），列表用 QingyuCard + Row，
@@ -103,11 +102,6 @@ fun CourseConflictPage(
                                     onOpenCourse = onOpenCourse,
                                 )
                                 if (pair.rows.size > 1) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 16.dp),
-                                        thickness = 0.75.dp,
-                                        color = colors.dividerLine,
-                                    )
                                     CourseConflictRowView(
                                         row = pair.rows[1],
                                         onOpenCourse = onOpenCourse,

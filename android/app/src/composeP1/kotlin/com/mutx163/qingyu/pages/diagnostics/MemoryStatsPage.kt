@@ -47,7 +47,6 @@ import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -351,15 +350,6 @@ private fun Modifier.groupCard(withBottomGap: Boolean): Modifier =
         .padding(horizontal = QingyuPageCardMargin)
         .then(if (withBottomGap) Modifier.padding(bottom = QingyuSectionGap) else Modifier)
 
-/** 组内分隔线：官方口径是左起 16dp（让出行的图标列，与分组标题左缘对齐）。 */
-@Composable
-private fun GroupDivider(dark: Boolean) {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 16.dp),
-        color = Color(QingyuTheme.dividerLine(dark)),
-    )
-}
-
 /** 分组卡下面的一句灰字（Dart `HyperosSectionDescription`）：整宽段落，允许折行。 */
 @Composable
 private fun SectionNote(text: String, dark: Boolean, withBottomGap: Boolean) {
@@ -624,12 +614,11 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
             }
         }
 
-        // 键值表：Dart `_KvTable` 是「左定宽 128 + 分隔线」，不是每行一块底色。
+        // 键值表：Dart `_KvTable` 是「左定宽 128」，行距由行自身 10dp 内边距承担。
         if (sheet.rows.isNotEmpty()) {
             item(key = "kv-rows") {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     sheet.rows.forEachIndexed { index, row ->
-                        if (index > 0) HorizontalDivider()
                         MemoryKvLine(label = row.label, value = row.value, dark = dark)
                     }
                 }
@@ -680,7 +669,6 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
             item(key = "breakdown") {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     sheet.breakdown.forEachIndexed { index, row ->
-                        if (index > 0) HorizontalDivider()
                         MemoryBreakdownItem(row = row, dark = dark)
                     }
                 }
@@ -691,7 +679,6 @@ private fun MemorySheetBody(sheet: MemoryStatsSheet, dark: Boolean, bottomInset:
             item(key = "processes") {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     sheet.processes.forEachIndexed { index, process ->
-                        if (index > 0) HorizontalDivider()
                         MemoryProcessItem(process = process, dark = dark)
                     }
                 }

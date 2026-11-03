@@ -32,7 +32,6 @@ import com.mutx163.qingyu.transfer.IcsExportEventKind
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -142,10 +141,6 @@ fun IcsExportPage(
                             onClick = {
                                 showDatePicker(context, options.fromDate, onFromDateChange)
                             },
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 16.dp),
-                            color = Color(QingyuTheme.dividerLine(dark)),
                         )
                         ArrowPreference(
                             title = ExportStrings.icsExportEndDate.zh,
@@ -276,10 +271,6 @@ fun IcsExportPage(
             ArrowPreference(
                 title = ExportStrings.icsExportActionShare.zh,
                 onClick = onShareExported,
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(start = 16.dp),
-                color = Color(QingyuTheme.dividerLine(dark)),
             )
             ArrowPreference(
                 title = ExportStrings.icsExportActionSave.zh,

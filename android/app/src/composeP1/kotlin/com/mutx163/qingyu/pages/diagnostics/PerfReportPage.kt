@@ -32,7 +32,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuIconColors
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -192,9 +191,6 @@ fun PerfReportPage(
                         insideMargin = PaddingValues(vertical = 4.dp),
                     ) {
                         viewState.startupRows.forEachIndexed { index, row ->
-                            if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            }
                             PerfRow(
                                 icon = MiuixIcons.Stopwatch,
                                 // Dart `:155`：`iconAccent: HyperosIconColors.teal`
@@ -222,9 +218,6 @@ fun PerfReportPage(
                         insideMargin = PaddingValues(vertical = 4.dp),
                     ) {
                         viewState.pageRows.forEachIndexed { index, row ->
-                            if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
-                            }
                             PerfRow(
                                 icon = verdictIcon(row.verdict),
                                 iconTint = accentColor(row.accent, dark),
@@ -256,7 +249,6 @@ fun PerfReportPage(
                         onClick = onClearLedger,
                         dark = dark,
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                     PerfRow(
                         icon = MiuixIcons.File,
                         iconTint = Color(QingyuIconColors.INDIGO),
@@ -267,7 +259,6 @@ fun PerfReportPage(
                         dark = dark,
                     )
                     if (viewState.rawReportVisible) {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                         // Dart `:195-207`：`Padding(16,4,16,12)` 里放 `SelectableText`，
                         // monospace、`fontSize: 10`、`height: 1.45`。
                         // 字号走主题（R4 不许写死 sp），只把等宽字体与行距对齐。
@@ -300,7 +291,6 @@ fun PerfReportPage(
                                 onClick = onCopyTextReport,
                                 dark = dark,
                             )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                             PerfRow(
                                 icon = MiuixIcons.Tune,
                                 iconTint = Color(QingyuIconColors.PURPLE),

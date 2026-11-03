@@ -53,7 +53,6 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -230,12 +229,6 @@ fun TimetableProfilesPage(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 profiles.forEachIndexed { index, profile ->
-                                    if (index > 0) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            color = Color(QingyuTheme.dividerLine(dark)),
-                                        )
-                                    }
                                     TimetableProfileRow(
                                         profile = profile,
                                         dark = dark,
@@ -809,10 +802,6 @@ private fun ProfileMoreActionsDialog(
                     }
                 },
                 dark = dark,
-            )
-
-            HorizontalDivider(
-                color = Color(QingyuTheme.dividerLine(dark)),
             )
 
             // 取消按钮

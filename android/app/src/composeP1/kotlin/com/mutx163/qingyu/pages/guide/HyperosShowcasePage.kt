@@ -48,7 +48,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
@@ -169,7 +168,6 @@ fun HyperosShowcasePage(
                                 )
                             }
 
-                            HorizontalDivider()
 
                             // 手风琴 1
                             AccordionRow(
@@ -179,7 +177,6 @@ fun HyperosShowcasePage(
                                 onToggle = { accordionExpanded1 = !accordionExpanded1 }
                             )
 
-                            HorizontalDivider()
 
                             // 手风琴 2
                             AccordionRow(
@@ -227,7 +224,6 @@ fun HyperosShowcasePage(
                                 }
                             }
 
-                            HorizontalDivider()
 
                             // 滑动条 (Slider)
                             Text(
@@ -270,7 +266,6 @@ fun HyperosShowcasePage(
                                 )
                             }
 
-                            HorizontalDivider()
 
                             // 多选行
                             Row(
@@ -289,7 +284,6 @@ fun HyperosShowcasePage(
                                 )
                             }
 
-                            HorizontalDivider()
 
                             // 单选组
                             Row(
@@ -346,7 +340,6 @@ fun HyperosShowcasePage(
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            HorizontalDivider()
 
                             // 滚轮选择器模拟行
                             Row(

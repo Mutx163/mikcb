@@ -31,7 +31,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.weather.WeatherLocation
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -225,13 +224,6 @@ fun WeatherCityPickerPage(
                     ) {
                         Column {
                             state.results.forEachIndexed { index, location ->
-                                if (index > 0) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 16.dp),
-                                        thickness = 0.75.dp,
-                                        color = colors.dividerLine,
-                                    )
-                                }
                                 WeatherCityRow(
                                     location = location,
                                     selected = state.currentCity?.isSamePlaceAs(location) == true,

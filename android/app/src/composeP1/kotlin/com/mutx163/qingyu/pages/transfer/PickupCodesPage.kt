@@ -34,14 +34,10 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-/** 分隔线缩进：行内 16 + 首字方块 40 + 方块与文字间距 12（Dart `HyperosInsetDivider(indent: 68)`）。 */
-private val DividerIndent = 68.dp
 
 /**
  * 取件码页 · Compose 渲染层（Phase 3）。
@@ -121,12 +117,6 @@ fun PickupCodesPage(
                                 interactive = busyTitleKey == null,
                                 onTap = { onEntryClick(preset) },
                             )
-                            if (index < entries.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = DividerIndent),
-                                    color = Color(QingyuTheme.dividerLine(dark)),
-                                )
-                            }
                         }
                     }
                 }

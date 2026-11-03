@@ -40,7 +40,6 @@ import com.mutx163.qingyu.pages.timetable.day.parseHexColorOrFallback
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
@@ -200,13 +199,6 @@ fun ExamDatePickerSheet(
                                 modifier = Modifier.size(18.dp),
                             )
                         }
-                    }
-                    // 最后一项之后不再画分割线（2026-11-02 弹窗审核 P3：底部多出一条悬空线）。
-                    if (index < weeks.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 16.dp),
-                            color = Color(QingyuTheme.dividerLine(dark)),
-                        )
                     }
                 }
             }
@@ -583,13 +575,6 @@ fun ExamCoursePickerSheet(
                             modifier = Modifier.size(18.dp),
                         )
                     }
-                }
-                // 同周次列表：最后一项之后不画分割线。
-                if (index < options.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        color = Color(QingyuTheme.dividerLine(dark)),
-                    )
                 }
             }
         }

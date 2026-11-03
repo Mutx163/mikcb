@@ -321,10 +321,6 @@ fun AddExamPage(
                     )
 
                     if (viewState.reminderPreset == ExamReminderPreset.CUSTOM) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                            color = Color(QingyuTheme.dividerLine(dark)),
-                        )
                         val offsets = AddExamLogic.sortedOffsets(viewState.customReminderMinutes)
                         if (offsets.isEmpty()) {
                             Text(
