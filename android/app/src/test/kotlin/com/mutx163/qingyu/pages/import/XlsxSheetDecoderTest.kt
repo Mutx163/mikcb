@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.TimetableSettings
 import java.io.ByteArrayOutputStream
+import java.util.TimeZone
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
@@ -111,7 +112,7 @@ class XlsxSheetDecoderTest {
                 cell(4, 2, raw = "2"),
                 cell(5, 2, sharedIndex = 8),
                 cell(6, 2, sharedIndex = 9),
-                cell(7, 2, raw = "1-16"),
+                cell(7, 2, inline = "1-16"),
             ),
         )
         val rows = XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, shared))
@@ -125,6 +126,91 @@ class XlsxSheetDecoderTest {
         assertEquals("李老师", course.teacher)
         assertEquals("楼A", course.location)
         assertEquals(16, course.endWeek)
+    }
+
+    @Test
+    fun `日期样式按 numFmt 转本地 ISO 基准 1899-12-30 且不认 date1904`() {
+        // Dart `XlsxDecoder._parseCell`（`xlsx.dart:409-437`）：
+        //   DateTime(1899, 12, 30).add(serial 天).toIso8601String()
+        // 基准固定 1900 系统，Dart 根本不读 workbook 的 date1904，这里也必须一致。
+        val sheet = worksheet(
+            row(
+                1,
+                cell(1, 1, raw = "0", style = 1),
+                cell(2, 1, raw = "60", style = 1),
+                cell(3, 1, raw = "61", style = 1),
+            ),
+        )
+        val rows = XlsxSheetDecoder.decodeFirstSheet(
+            buildXlsx(sheet, emptyList(), stylesXml = styles(0, 14), date1904 = true),
+        )
+        assertEquals(
+            listOf(
+                // serial 0：基准当天
+                "1899-12-30T00:00:00.000",
+                // serial 60：Dart 走公历，没有 Excel 的 1900-02-29 幻影日 → 2 月 28 日
+                "1900-02-28T00:00:00.000",
+                // serial 61 → 1900-03-01
+                "1900-03-01T00:00:00.000",
+            ),
+            rows[0],
+        )
+    }
+
+    @Test
+    fun `同一个序列号 纯数字与日期样式输出不同`() {
+        val sheet = worksheet(
+            row(
+                1,
+                cell(1, 1, raw = "61"),
+                cell(2, 1, raw = "61", style = 0),
+                cell(3, 1, raw = "61", style = 1),
+                cell(4, 1, raw = "1.50"),
+                cell(5, 1, raw = "1e3"),
+            ),
+        )
+        val rows = XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, emptyList(), stylesXml = styles(0, 14)))
+        assertEquals(
+            listOf("61", "61", "1900-03-01T00:00:00.000", "1.5", "1000"),
+            rows[0],
+        )
+    }
+
+    @Test
+    fun `时间样式走 HH_mm_ss 且与默认时区无关`() {
+        // Dart `DateTime(0)` 是本地零点，取 date.hour/minute/second 拼 HH:mm:ss；
+        // Kotlin 用 LocalDateTime 纯日历运算，不查时区，换默认时区结果不变。
+        val previous = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Kiritimati")) // UTC+14，最容易暴露 Z/本地混用
+            val sheet = worksheet(
+                row(
+                    1,
+                    cell(1, 1, raw = "0.5", style = 1),
+                    cell(2, 1, raw = "1.25", style = 1),
+                    cell(3, 1, raw = "0", style = 1),
+                ),
+            )
+            val rows = XlsxSheetDecoder.decodeFirstSheet(
+                buildXlsx(sheet, emptyList(), stylesXml = styles(0, 20)),
+            )
+            assertEquals(listOf("12:00:00", "06:00:00", "00:00:00"), rows[0])
+        } finally {
+            TimeZone.setDefault(previous)
+        }
+    }
+
+    @Test
+    fun `日期样式的非法序列号整份报 xlsx 解析失败`() {
+        // Dart `num.parse(_parseValue(content))` 抛 FormatException ⇒ 整个 xlsx 解析失败；
+        // 不要改成本地兜底成空串，否则多缺陷包的报错优先级与 Dart 不一致。
+        val sheet = worksheet(row(1, cell(1, 1, raw = "abc", style = 1)))
+        val error = runCatching {
+            XlsxSheetDecoder.decodeFirstSheet(buildXlsx(sheet, emptyList(), stylesXml = styles(0, 14)))
+        }.exceptionOrNull()
+        assertTrue("必须是 FormatException，实际：$error", error is FormatException)
+        assertTrue(error!!.message!!.startsWith("spreadsheet_xlsx_parse_failed"))
+        assertTrue(error.message!!.contains("invalid numeric cell"))
     }
 
     @Test
@@ -165,16 +251,27 @@ class XlsxSheetDecoderTest {
         inline: String? = null,
         raw: String? = null,
         boolean: String? = null,
+        style: Int? = null,
     ): String {
         val ref = "${columnLetter(column)}$rowIndex"
+        val styleAttr = style?.let { " s=\"$it\"" }.orEmpty()
         return when {
             sharedIndex != null -> "<c r=\"$ref\" t=\"s\"><v>$sharedIndex</v></c>"
             inline != null -> "<c r=\"$ref\" t=\"inlineStr\"><is><t>$inline</t></is></c>"
             boolean != null -> "<c r=\"$ref\" t=\"b\"><v>$boolean</v></c>"
-            raw != null -> "<c r=\"$ref\"><v>$raw</v></c>"
+            raw != null -> "<c r=\"$ref\"$styleAttr><v>$raw</v></c>"
             else -> ""
         }
     }
+
+    /** `cellXfs` 里第 i 个 `xf` 的 `numFmtId`，对应单元格 `s="i"`（与 Dart `_parseStyles` 同构）。 */
+    private fun styles(vararg numFmtIds: Int): String =
+        "<?xml version=\"1.0\"?><styleSheet><cellXfs count=\"${numFmtIds.size}\">" +
+            numFmtIds.joinToString("") { "<xf numFmtId=\"$it\" xfId=\"0\"/>" } +
+            "</cellXfs></styleSheet>"
+
+    private fun workbook(workbookPr: String): String =
+        "<?xml version=\"1.0\"?><workbook><workbookPr$workbookPr/></workbook>"
 
     private fun row(index: Int, vararg cells: String): String =
         "<row r=\"$index\">${cells.joinToString("")}</row>"
@@ -193,7 +290,12 @@ class XlsxSheetDecoderTest {
         return letters.toString()
     }
 
-    private fun buildXlsx(sheetXml: String, sharedStrings: List<String>): ByteArray {
+    private fun buildXlsx(
+        sheetXml: String,
+        sharedStrings: List<String>,
+        stylesXml: String? = null,
+        date1904: Boolean = false,
+    ): ByteArray {
         val out = ByteArrayOutputStream()
         ZipOutputStream(out).use { zip ->
             fun put(name: String, content: String) {
@@ -205,6 +307,12 @@ class XlsxSheetDecoderTest {
             put(
                 "xl/sharedStrings.xml",
                 "<sst>${sharedStrings.joinToString("") { "<si><t>$it</t></si>" }}</sst>",
+            )
+            if (stylesXml != null) put("xl/styles.xml", stylesXml)
+            // date1904 只影响 Excel 自己的显示；Dart 不读它，这里也塞进去做「不认」的负向验证。
+            put(
+                "xl/workbook.xml",
+                workbook(if (date1904) " date1904=\"1\"" else ""),
             )
             put("xl/worksheets/sheet1.xml", sheetXml)
         }

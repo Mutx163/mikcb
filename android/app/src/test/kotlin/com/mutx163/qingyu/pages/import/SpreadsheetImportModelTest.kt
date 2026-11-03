@@ -152,6 +152,36 @@ class SpreadsheetImportModelTest {
     }
 
     @Test
+    fun `同一行多缺陷只报最高优先级 缺列优先于星期与周次`() {
+        // Dart `_parseWakeUpDataRow`（spreadsheet_import_service.dart:279-335）逐项 throw & return：
+        // ① row.length < 7（insufficient_columns）→ ② 课程名为空 → ③ 星期 1-7 →
+        // ④ 节次 → ⑤ 周次。后面的缺陷不会再被报出来。
+        // 这里第 2 行同时缺列、星期越界（9）、周次越界（99-100），只能报第一条。
+        val missingColumns = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, ",9,99-100"),
+            "a.csv",
+            settings,
+        )
+        assertTrue(missingColumns.courses.isEmpty())
+        assertEquals(
+            listOf("spreadsheet_row_warning|rowNumber=2|inner=spreadsheet_wakeup_insufficient_columns|rowNumber=2|columnCount=3"),
+            missingColumns.warnings,
+        )
+
+        // 列数齐了，但课程名为空 + 星期 9 + 周次 99-100：只报课程名，后面的不再报。
+        val fullColumns = SpreadsheetImportModel.parseBytes(
+            csv(wakeupHeader, ",9,1,2,李,楼,99-100"),
+            "a.csv",
+            settings,
+        )
+        assertTrue(fullColumns.courses.isEmpty())
+        assertEquals(
+            listOf("spreadsheet_row_warning|rowNumber=2|inner=course_name_required"),
+            fullColumns.warnings,
+        )
+    }
+
+    @Test
     fun `课程名为空的行落警告`() {
         val bytes = csv(wakeupHeader, ",1,1,2,李老师,楼,1-2")
         val result = SpreadsheetImportModel.parseBytes(bytes, "a.csv", settings)

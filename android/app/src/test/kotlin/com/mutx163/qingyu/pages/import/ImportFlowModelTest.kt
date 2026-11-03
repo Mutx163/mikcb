@@ -296,6 +296,20 @@ class ImportFlowModelTest {
     }
 
     @Test
+    fun `周次抬升边界 0 1 30 31 与归一化周次顺序`() {
+        // Dart `maxCourseWeek`（import_export_logic.dart:57-69）：raw 先 clamp(1, 30)；
+        // `importParsedCourses` 再与当前值取 max（当前值本身不再夹取）。
+        assertEquals(1, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 0))))
+        assertEquals(1, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 1))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 30))))
+        assertEquals(30, ImportFlowModel.nextSemesterWeekCount(0, listOf(course("a", endWeek = 31))))
+        assertEquals(31, ImportFlowModel.nextSemesterWeekCount(31, listOf(course("a", endWeek = 30))))
+        // 归一化周次升序去重：乱序 [21,1,3] 末项是 21，不是 3。
+        val unordered = course("a", endWeek = 16).copy(customWeeks = listOf(21, 1, 3))
+        assertEquals(21, ImportFlowModel.nextSemesterWeekCount(16, listOf(unordered)))
+    }
+
+    @Test
     fun `学期总周数上限是 30 周 与 Dart maxAllowedSemesterWeekCount 一致`() {
         // Dart `lib/domain/import_export_logic.dart:39`：
         //   static const int maxAllowedSemesterWeekCount = 30;

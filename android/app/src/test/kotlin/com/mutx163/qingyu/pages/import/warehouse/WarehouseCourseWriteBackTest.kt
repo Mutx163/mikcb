@@ -250,6 +250,26 @@ class WarehouseCourseWriteBackTest {
     }
 
     @Test
+    fun `学期总周数封顶 30 周 第 31 周不再抬高`() {
+        val repository = repositoryWith()
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = (1..31).toList()))
+        )
+        // Dart `maxAllowedSemesterWeekCount = 30`（import_export_logic.dart:39），
+        // 归一化时 31 已被剔除，最后一周 = 30（不是 42）。
+        assertEquals(30, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `自定义周次乱序也按归一化最大值抬升`() {
+        val repository = repositoryWith()
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = listOf(21, 1, 3)))
+        )
+        // Dart `maxCourseWeek` 取 `normalizedCustomWeeks.last`（升序去重后的末项），
+        // 不是原始 `customWeeks.lastOrNull()`——乱序时旧实现会误抬到 3。
+        assertEquals(21, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
     fun `确认开学日后按今天重算当前周`() {
         val start = LocalDateTime.now().minusDays(14)
         val repository = repositoryWith(listOf(course("c1", weeks = (1..20).toList())))

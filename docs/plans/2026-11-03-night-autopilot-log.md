@@ -953,6 +953,27 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
    - `-Module statistics`：**OK (312 tests)**（新增 1 例并列名次）。
    - 只声明 JVM 单测通过，不声明编译/真机通过。
 
+### 10.24.1 ✅ 表格 XLSX 日期样式 + 多缺陷优先级 + warehouse 周次字段（2026-11-04，L1 表格导入）
+
+1. **XLSX `numFmt` 日期单元格：Kotlin 原先没照做，已补**
+   - Dart 只读 `xl/styles.xml` 的 `<cellXfs>` 顺序表（`table_parser-1.0.1/lib/src/xlsx.dart:257-275`），单元格 `s="i"` 取第 i 项 `numFmtId`；`_parseCell`（同文件 `:409-437`）对 14-17/22 用 `DateTime(1899, 12, 30).add(serial 天).toIso8601String()`，对 18-21/45-47 用 `DateTime(0).add(...)` 取 `HH:mm:ss`，其余 `num.parse`。
+   - Kotlin 现状：数值单元格一律返回 `<v>` 原文，日期会变成 `45466` 这种序列号 → **真差异已修**。`XlsxSheetDecoder` 新增 `parseNumFormats` + `cellText` 按样式分流；ISO 用 `LocalDateTime` 纯日历运算（不查时区），输出 `YYYY-MM-DDTHH:mm:ss.SSS`。
+   - **1904 基准不实现，这是与 Dart 一致、不是遗漏**：Dart 根本不读 `workbookPr.date1904`，Kotlin 同样固定 1899-12-30；测试里专门塞了 `date1904="1"` 做负向验证。
+   - 数字文本按 Dart `num.parse` + `_cellToString`（`spreadsheet_import_service.dart:762-767`）归一：`61`→`61`、`1.50`→`1.5`、`1e3`→`1000`；非法数值整份报 `spreadsheet_xlsx_parse_failed`（Dart `num.parse` 抛异常），**不要改成本地逐行兜底**。
+   - 用例：日期（serial 0/60/61 + 1904 干扰）、同值纯数字 vs 日期样式、时间（0.5/1.25，UTC+14 默认时区下仍 12:00:00/06:00:00）、非法序列号整份失败。
+
+2. **多缺陷报错优先级：与 Dart 同序，未改实现**
+   - Dart `_parseWakeUpDataRow`（`spreadsheet_import_service.dart:279-335`）逐项 `throw`：缺列（`<7`）→ 课程名 → 星期 1-7 → 节次 → 周次；Kotlin 同序 → **双侧同解**。
+   - 新增用例：同一行「缺列 + 星期 9 + 周次 99-100」只报 `insufficient_columns|columnCount=3`；「列齐但课程名为空 + 星期 9 + 周次 99-100」只报 `course_name_required`。
+   - 咬合探针：把列数门槛从 `<7` 改成 `<2` → 该用例红（实际报 `course_name_required`），还原后绿。
+
+3. **warehouse 字段对拍**
+   - `normalizedCustomWeeks`：**真差异已修**（`10.24` 共用实现）。旧写法用原始 `customWeeks.lastOrNull()`，乱序 `[21,1,3]` 会误抬到 3；现按 Dart `maxCourseWeek` 的 `normalizedCustomWeeks.last`（升序去重）→ 21。新增 warehouse 用例钉住。
+   - 周次夹取边界：`0→1`、`1→1`、`30→30`、`31→30`（课程侧先 clamp）；当前值 31 保持 31（Dart 不对当前值再夹）→ 新增边界用例。
+   - 开学日：`WarehouseCourseConfig.warehouseSemesterStartDate` 与 Dart 同解（取串首 `yyyy-MM-dd`，非法返回 null），`semesterTotalWeeks > 0` 判定也同解 → **双侧同解**，未改。
+
+4. **L0**：`-Module pages/import`（含 `warehouse` 子目录）统一入口 **OK (512 tests)**；咬合探针两次红均已还原。只声明 JVM 单测通过，不声明编译/真机通过。
+
 ### 10.25 ✅ 课卡天气门槛落地（`2d3f4fc0`，Lead 授权例外科改，仅三处）
 
 1. **授权范围（已记 §10.22 第 6 条）**：只动 `composeP1/app/TimetableHost.kt` 天气挂载处、`composeP1/pages/timetable/day/DayViewWeather.kt` 调用处、`ShellPageIndex.kt` weather lambda 那几行；其余布局/主题/路由/装配一行未改，`ShellWiring.kt` 未触碰。
