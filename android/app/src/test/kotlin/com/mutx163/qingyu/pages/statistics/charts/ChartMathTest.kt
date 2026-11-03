@@ -472,6 +472,10 @@ class ChartMathTest {
         assertEquals("-0.3", ChartMath.oneDecimal(-0.3))
         assertEquals("-2.5", ChartMath.oneDecimal(-2.54))
         assertEquals("-0.0", ChartMath.oneDecimal(-0.04))
+        // Dart `toStringAsFixed(1)` 的 .5 是「远离零」：-2.25 → "-2.3"。
+        // 旧实现 `(value * 10).roundToInt()` 是「朝正无穷」，会得到 "-2.2"（真实差异，已修）。
+        assertEquals("-2.3", ChartMath.oneDecimal(-2.25))
+        assertEquals("-1.3", ChartMath.oneDecimal(-1.25))
     }
 
     @Test

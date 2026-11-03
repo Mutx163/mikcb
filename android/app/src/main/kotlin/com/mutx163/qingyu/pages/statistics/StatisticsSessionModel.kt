@@ -138,7 +138,9 @@ object StatisticsSessionModel {
             count = count,
             total = total,
             ratio = ratio,
-            valueText = "$count/$total",
+            // Dart `session_coverage_card.dart:100` 是 `'$count / $total'`（斜杠两侧有空格）。
+            // 上一版漏了空格，屏上是 `3/4` 而 Dart 是 `3 / 4`；两版逐字对照时会当成文案错。
+            valueText = "$count / $total",
         )
     }
 

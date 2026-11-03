@@ -170,7 +170,7 @@ class StatisticsSessionModelTest {
         val rows = StatisticsSessionModel.coverageRows(stats)
         assertEquals("有备注 3 次", 3, rows[0].count)
         assertEquals("分母是全部 4 个课次", 4, rows[0].total)
-        assertEquals("3/4", rows[0].valueText)
+        assertEquals("3 / 4", rows[0].valueText)
         // 比例必须落在 0~1，不会超过 100%
         assertTrue("比例不该超过 1：${rows[0].ratio}", rows[0].ratio <= 1f)
         assertEquals(0.75f, rows[0].ratio, 0.0001f)
@@ -180,7 +180,7 @@ class StatisticsSessionModelTest {
     fun `分母为零时比例为 0 不抛除零`() {
         val rows = StatisticsSessionModel.coverageRows(statsOf())
         assertEquals(0, rows[0].total)
-        assertEquals("0/0", rows[0].valueText)
+        assertEquals("0 / 0", rows[0].valueText)
         assertEquals(0f, rows[0].ratio, 0.0001f)
     }
 

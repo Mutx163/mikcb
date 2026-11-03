@@ -455,7 +455,7 @@ class StatisticsFeedTest {
         val withHomework = session.stats!!.sessions.filter { it.hasHomework }
         assertEquals("只有挂了作业的那一周算有作业", 1, withHomework.size)
         assertEquals("作业挂在第 2 周", 2, withHomework.first().week)
-        assertEquals("1/16", session.coverageRows[1].valueText)
+        assertEquals("1 / 16", session.coverageRows[1].valueText)
     }
 
     // ── 8. 时钟注入：今天/已过/未到跟着入参走 ──
