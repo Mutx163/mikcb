@@ -39,7 +39,6 @@ import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuShapes
 import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -144,7 +143,6 @@ fun DisplaySettingsPage(
                             } else null,
                             enabled = editable,
                         )
-                        PreferenceDivider(dark)
                         SwitchPreference(
                             checked = state.useShortName,
                             onCheckedChange = { onStateChange(state.withUseShortName(it)) },
@@ -152,7 +150,6 @@ fun DisplaySettingsPage(
                             summary = DisplaySettingsStrings.preferShortNameSubtitle.zh,
                             enabled = editable,
                         )
-                        PreferenceDivider(dark)
                         SwitchPreference(
                             checked = state.showLocation,
                             onCheckedChange = { onStateChange(state.withShowLocation(it)) },
@@ -162,14 +159,12 @@ fun DisplaySettingsPage(
                             } else null,
                             enabled = editable,
                         )
-                        PreferenceDivider(dark)
                         SwitchPreference(
                             checked = state.showCountdown,
                             onCheckedChange = { onStateChange(state.withShowCountdown(it)) },
                             title = DisplaySettingsStrings.showCountdownTitle.zh,
                             enabled = editable,
                         )
-                        PreferenceDivider(dark)
                         Box(modifier = Modifier.alpha(if (LiveDisplayLogic.shouldDimStageText(state)) 0.55f else 1f)) {
                             SwitchPreference(
                                 checked = state.showStageText,
@@ -179,7 +174,6 @@ fun DisplaySettingsPage(
                                 enabled = editable,
                             )
                         }
-                        PreferenceDivider(dark)
                         Box(modifier = Modifier.alpha(if (LiveDisplayLogic.shouldDimHidePrefix(state)) 0.55f else 1f)) {
                             SwitchPreference(
                                 checked = state.hidePrefixText,
@@ -223,7 +217,6 @@ fun DisplaySettingsPage(
                                 onSelect = { onStateChange(state.withBeforeClassQuickAction(it)) },
                             )
                             if (state.beforeClassQuickAction != LiveBeforeClassQuickAction.NONE) {
-                                PreferenceDivider(dark)
                                 val autoOptions = LiveDisplayLogic.quickActionAutoMinuteOptions()
                                 OverlayDropdownPreference(
                                     items = autoOptions.map { DisplaySettingsStrings.quickActionAutoMinuteLabel(it) },
@@ -239,7 +232,6 @@ fun DisplaySettingsPage(
                                 )
                             }
                             if (LiveDisplayLogic.requiresDoNotDisturbAccess(state.beforeClassQuickAction)) {
-                                PreferenceDivider(dark)
                                 ArrowPreference(
                                     title = LiveKeepAliveStrings.guideStatusDoNotDisturbAccess.zh,
                                     summary = LiveKeepAliveStrings.guideStatusDoNotDisturbAccessHint.zh,
@@ -275,7 +267,6 @@ fun DisplaySettingsPage(
                                 enabled = editable,
                                 onSelect = { onStateChange(state.withMiuiIslandLabelContent(it)) },
                             )
-                            PreferenceDivider(dark)
                             EnumDropdown(
                                 title = DisplaySettingsStrings.miuiLabelStyleLabel.zh,
                                 values = MiuiIslandLabelStyle.entries,
@@ -286,7 +277,6 @@ fun DisplaySettingsPage(
                             )
                             // 选图块（仅「图标+文字」样式）
                             if (state.miuiIslandLabelStyle == MiuiIslandLabelStyle.ICON_AND_TEXT) {
-                                PreferenceDivider(dark)
                                 ImagePickerBlock(
                                     title = DisplaySettingsStrings.miuiLabelLogoTitle.zh,
                                     subtitle = DisplaySettingsStrings.miuiLabelLogoSubtitle.zh,
@@ -304,7 +294,6 @@ fun DisplaySettingsPage(
                             if (state.miuiIslandLabelStyle == MiuiIslandLabelStyle.ICON_AND_TEXT &&
                                 state.miuiIslandLabelLogoPath != null
                             ) {
-                                PreferenceDivider(dark)
                                 LabelSlider(
                                     title = DisplaySettingsStrings.logoCornerRadiusLabel(
                                         state.miuiIslandLabelLogoCornerRadius.toInt().toString(),
@@ -317,7 +306,6 @@ fun DisplaySettingsPage(
                                 )
                             }
                             // 6 色点
-                            PreferenceDivider(dark)
                             ColorDotRow(
                                 selectedHex = state.miuiIslandLabelFontColor,
                                 enabled = editable,
@@ -373,7 +361,6 @@ fun DisplaySettingsPage(
                                 enabled = editable,
                                 onChange = { onStateChange(state.withMiuiIslandLabelOffsetY(it.toDouble())) },
                             )
-                            PreferenceDivider(dark)
                             EnumDropdown(
                                 title = DisplaySettingsStrings.miuiLabelFontWeightLabel.zh,
                                 values = MiuiIslandLabelFontWeight.entries,
@@ -382,7 +369,6 @@ fun DisplaySettingsPage(
                                 enabled = editable,
                                 onSelect = { onStateChange(state.withMiuiIslandLabelFontWeight(it)) },
                             )
-                            PreferenceDivider(dark)
                             EnumDropdown(
                                 title = DisplaySettingsStrings.miuiLabelRenderQualityLabel.zh,
                                 values = MiuiIslandLabelRenderQuality.entries,
@@ -414,7 +400,6 @@ fun DisplaySettingsPage(
                             },
                         )
                         if (state.miuiIslandExpandedIconMode == MiuiIslandExpandedIconMode.CUSTOM_IMAGE) {
-                            PreferenceDivider(dark)
                             ImagePickerBlock(
                                 title = DisplaySettingsStrings.miuiExpandedIconLabel.zh,
                                 subtitle = null,
@@ -578,15 +563,6 @@ fun DisplaySettingsPage(
 }
 
 // ───────────────────────── 子组件 ─────────────────────────
-
-/** 组内分隔线（与 miuix preference 自带 16dp 内边距对齐，左缩进）。 */
-@Composable
-private fun PreferenceDivider(dark: Boolean) {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = QingyuShapes.ROW_PADDING_HORIZONTAL.dp),
-        color = Color(QingyuTheme.dividerLine(dark)),
-    )
-}
 
 /** 枚举下拉的通用封装：`values` 顺序即下拉项顺序，选中回传给 [onSelect]。 */
 @Composable
@@ -759,7 +735,6 @@ private fun ExpandedDetailGroup(
     val hiddenFields = LiveDisplayLogic.resolveHiddenDetailFields(state, forDuringEnd)
 
     enabledFields.forEachIndexed { index, field ->
-        if (index > 0) PreferenceDivider(dark)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -798,7 +773,6 @@ private fun ExpandedDetailGroup(
         }
     }
     if (hiddenFields.isNotEmpty()) {
-        PreferenceDivider(dark)
         Text(
             text = DisplaySettingsStrings.detailHiddenCaption.zh,
             style = MiuixTheme.textStyles.footnote1,

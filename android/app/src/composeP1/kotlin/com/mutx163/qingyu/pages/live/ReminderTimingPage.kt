@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.live
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
@@ -20,8 +18,6 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.theme.QingyuShapes
-import com.mutx163.qingyu.theme.QingyuTheme
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
@@ -48,9 +44,6 @@ fun LiveReminderTimingPage(
     onStateChange: (ReminderTimingState) -> Unit,
     onBack: () -> Unit,
 ) {
-    val dark = isSystemInDarkTheme()
-    val dividerColor = Color(QingyuTheme.dividerLine(dark))
-
     val duringClassEnabled = ReminderTimingLogic.isDuringClassReminderEnabled(state)
     val leadSummary = ReminderTimingLogic.resolveLeadSummary(state)
     val statusHint = ReminderTimingLogic.resolveDuringClassStatusHint(state)
@@ -84,8 +77,6 @@ fun LiveReminderTimingPage(
                         ),
                     )
 
-                    HorizontalDivider(color = dividerColor)
-
                     SwitchPreference(
                         // 显示值与写回值都走 OR 判据：拨一下把两个字段一起写。
                         checked = duringClassEnabled,
@@ -98,7 +89,6 @@ fun LiveReminderTimingPage(
                     )
 
                     if (duringClassEnabled) {
-                        HorizontalDivider(color = dividerColor)
                         val leadOptions = ReminderTimingLogic.CLASS_REMINDER_START_MINUTES
                         val leadLabels = leadOptions.map { minutes ->
                             ReminderTimingStrings.leadOptionText(minutes)
@@ -137,8 +127,6 @@ fun LiveReminderTimingPage(
                         summary = ReminderTimingStrings.duringClassStatusHintText(statusHint),
                     )
 
-                    HorizontalDivider(color = dividerColor)
-
                     SwitchPreference(
                         checked = state.livePromoteDuringClass,
                         onCheckedChange = {
@@ -173,8 +161,6 @@ fun LiveReminderTimingPage(
                         },
                     )
 
-                    HorizontalDivider(color = dividerColor)
-
                     val endSecondsOptions = ReminderTimingLogic.END_SECONDS_OPTIONS
                     val endSecondsIndex = endSecondsOptions
                         .indexOf(state.liveEndSecondsCountdownThreshold)
@@ -193,8 +179,6 @@ fun LiveReminderTimingPage(
                             }
                         },
                     )
-
-                    HorizontalDivider(color = dividerColor)
 
                     val displayModes = LiveDuringClassTimeDisplayMode.entries
                     val displayModeIndex = displayModes

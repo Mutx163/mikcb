@@ -40,7 +40,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -115,15 +114,12 @@ fun LiveKeepAliveSettingsPage(
                         title = LiveKeepAliveStrings.hideFromRecentsTitle.zh,
                     )
 
-                    HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
-
                     LiveKeepAliveServiceRow(
                         enabled = state.accessibilityEnabled,
                         onOpenSettings = { confirmVisible = true },
                     )
 
                     if (showDoNotDisturbAccessRow) {
-                        HorizontalDivider(color = Color(QingyuTheme.dividerLine(dark)))
                         LiveDoNotDisturbAccessRow(
                             checked = state.doNotDisturbAccessChecked,
                             granted = state.doNotDisturbAccessGranted,
