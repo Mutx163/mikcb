@@ -1,15 +1,18 @@
 # Compose 迁移 · Phase 3 页面进度与认领台账
 
+> **进度已合并（2026-11-03）**：本文件的进度/状态不再更新，统一见
+> [Compose 迁移 · 唯一进度账](2026-11-03-compose-status.md)。本文保留为 **Phase 3 页面搬运历史台账**。
+
 > ⚠️ **【历史归档：Phase 3 页面搬运已于 2026-10-27 全部完工】**  
 > 全仓 78 屏 UI 迁移已 100% 完成（**当时的页面单元口径**；2026-11-01 索引口径为 88 条 / 87 条可进入，见派工大表 §1.1）。当前已进入 Phase 3.5 接线装配阶段。  
-> 最新唯一派工总表请前往：👉 [**全景直通派工大表（2026-10-28-compose-master-dispatch-table.md）**](2026-10-28-compose-master-dispatch-table.md)  
+> 进度与待办状态见 [**Compose 迁移 · 唯一进度账（2026-11-03-compose-status.md）**](2026-11-03-compose-status.md)；本文只作历史台账。  
 > 
 > 状态：**已完工归档**（2026-10-26 建立，2026-10-27 完工）
 > 读者：所有参与页面重构与接线的 agent，**包括没读过本次对话的独立会话**
 > 上游：[迁移计划](2026-10-26-compose-migration-plan.md) · [执行规格](2026-10-26-compose-migration-spec.md) · [Phase 2 业务族](2026-10-26-compose-phase2-families.md) · [Phase 3 开工准备](2026-10-26-compose-phase3-prep.md)
 >
 > ⚠️ **实时进度不在本文档里**。本文档的「状态」列只是 2026-10-26 23:29 的快照；
-> 谁正在做什么，一律以本机认领区 `.agents/compose-phase3/claims/` 为准（见 §2）。
+> 谁正在做什么，先看认领区 `.agents/compose-phase3/claims/`，再用 `git status` / `git log` 核实（认领文件可能过期）。
 > 这样设计的原因：状态高频变化，放进仓库等于每次改状态都要提交，多个会话必然冲突。
 
 > ⚠️ **【2026-10-29 变体清理：本文里的 `composeUi` / `composeP1` 变体已不存在】**
@@ -42,12 +45,12 @@
 
 | 层 | 文件 | 行数 |
 |---|---|---|
-| `lib/screens/*.dart`（顶层页面） | 55 | 39 983 |
+| `lib/screens/*.dart`（顶层页面） | 55 | 40 055 |
 | `lib/screens/settings/` | 19 | 12 639 |
-| `lib/screens/import/`（含 `warehouse/`） | 14 | 9 137 |
+| `lib/screens/import/`（含 `warehouse/`） | 14 | 9 115 |
 | `lib/screens/miuix_showcase/` | 14 | 4 265 |
 | `lib/widgets/*.dart`（跨页共享件） | 63 | 23 756 |
-| `lib/widgets/timetable/` | 77 | 17 779 |
+| `lib/widgets/timetable/` | 77 | 17 782 |
 | `lib/widgets/statistics/` | 22 | 4 460 |
 | `lib/ui/`（主题 / 玻璃 / 动效基建） | 75 | 26 705 |
 | **合计** | **339** | **≈138 724** |

@@ -8,17 +8,20 @@
 ## 🔴 进行中：Flutter → Jetpack Compose 迁移（2026-10-26 起）
 
 > **接手重构与接线的 agent 从这里进** →
-> [**全景直通派工大表**](2026-10-28-compose-master-dispatch-table.md)
-> 覆盖 7 大业务域与 10 个端到端工作包，做完本表即彻底达到 Flutter 生产水平。
-> 认领状态在本机 `.agents/compose-phase3/claims/`：**有文件的批次 = 有人在做，别碰**；
-> 领用 = 新建 `claims/<批次号>.md`（文件即锁，新建成功才算领到）。
+> [**Compose 迁移 · 唯一进度账**](2026-11-03-compose-status.md)
+> 当前状态、剩余待办、阻塞归属、接活与避让、文档地图都在这一份里。
+> 认领状态仍在本机 `.agents/compose-phase3/claims/`：**有文件的批次 = 有人在做，别碰**；
+> 领用 = 新建 `claims/<批次号>.md`（文件即锁，新建成功才算领到）。**但认领文件可能过期，
+> 开工前再用 `git status` / `git log` 核实是否真有人在动。**
 > 仓库根 `AGENTS.md` 的「Compose 迁移」节也指向这里。
 
 | 文档 | 作用 |
 |---|---|
-| [**全景直通派工大表**](2026-10-28-compose-master-dispatch-table.md) | **当前主入口**：直通 Flutter 水平的 10 个端到端工作包与派工看板 |
-| [**Phase 3.5 接线装配计划**](2026-10-28-compose-phase35-wiring-plan.md) | 真实数据持久化（L1~L5）分层架构与演示数据清零标准 |
-| [页面进度与认领台账](2026-10-26-compose-phase3-page-ledger.md) | 存量 78 屏 UI 迁移记录（Phase 3 归档） |
+| [**Compose 迁移 · 唯一进度账**](2026-11-03-compose-status.md) | **当前主入口**：唯一进度来源、待办与阻塞归属 |
+| [全景直通派工大表](2026-10-28-compose-master-dispatch-table.md) | 派工明细与逐包验收门槛（状态列已冻结） |
+| [Phase 3.5 接线装配计划](2026-10-28-compose-phase35-wiring-plan.md) | 真实数据持久化（L1~L5）分层架构与演示数据清零标准 |
+| [页面进度与认领台账](2026-10-26-compose-phase3-page-ledger.md) | 存量 78 屏 UI 迁移历史台账（Phase 3 归档） |
+| [剩余页任务清单](2026-10-29-remaining-pages-tasklist.md) | F01–F24 历史任务清单与复核记录 |
 | [迁移计划](2026-10-26-compose-migration-plan.md) | 总体方案、六条硬约束、五个阶段、回退方案、被否掉的方案 |
 | [执行规格（doublecheck spec）](2026-10-26-compose-migration-spec.md) | Goal / Scope / 验收标准 / 红线，开工前必读 |
 | [数据契约](2026-10-26-data-contract.md) | 盘上格式冻结：prefs key 的逐字段 schema（Phase 0 产出） |
@@ -51,5 +54,5 @@
 
 - 新计划按 `yyyy-mm-dd-主题.md` 命名；**做完的不要删**，它是后来者理解既有取舍的唯一线索。
 - 计划被新方案取代时：新文档里写清「取代了哪一份、为什么」，并在旧文档顶部加一行指向新文档。
-- 页面级任务的分工与进度**不放这里**（高频变化，放仓库会天天冲突）：见
-  [台账](2026-10-26-compose-phase3-page-ledger.md) §2 说明的双文件制。
+- 页面级任务的分工与进度**不放这里**（高频变化，放仓库会天天冲突）：统一放
+  [Compose 迁移 · 唯一进度账](2026-11-03-compose-status.md)。
