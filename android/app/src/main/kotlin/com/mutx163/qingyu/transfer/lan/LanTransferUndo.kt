@@ -7,6 +7,7 @@ import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferScope
@@ -46,6 +47,13 @@ data class LanTransferState(
     val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     val settings: TimetableSettings = TimetableSettings.defaults(),
     val currentWeek: Int = 1,
+    /**
+     * **整台设备**的档案表 + 导入时的激活档案 id。只在整份恢复的撤销点里捕获
+     * （普通导入只动激活档案，抓全设备档案表白费内存）；空列表 = 未捕获。
+     * 撤销判据见 [LanTransferLogic.wholeRestoreStateEquals]。
+     */
+    val profiles: List<TimetableProfile> = emptyList(),
+    val activeProfileId: String? = null,
 )
 
 /**

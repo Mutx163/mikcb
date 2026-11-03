@@ -10,6 +10,7 @@ import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.share.TransferChannel
@@ -34,8 +35,10 @@ import com.mutx163.qingyu.sync.validateTransferPackageJson
  *   `_handleTransferApply` → `{applied, mode, transferId, diff, error?}`；
  * - 解析口径：`UnifiedTransferService.parseCompatible(content, channel: lan)` ——
  *   **channel 由调用方覆盖成 lan**（包里的 channel 只是元信息）；
- * - 拒绝口径：`_rejectWholeDeviceWrite` —— `backupType: full` 或 `scope: all_data`
- *   一律 `FormatException('use_profile_backup_not_full')`，防止配对端一键覆盖整台设备；
+ * - 拒绝口径：整设备写入按**分层矩阵**（见 [parseIncoming]）——`backupType: full`
+ *   + 非空 profiles 走整份快照恢复（Dart 旧版 `_overwrite → importFullAppDataBackup`
+ *   的同款能力，bf09a7c3 一刀切拒绝时被误伤，2026-11-03 放开）；`all_data` 非 full、
+ *   full 缺档案、非 full 带 profiles 仍明确拒且理由各不相同；
  * - 差异口径：`TransferDiffService.compare` —— 按 id 比 **模型 toJson 的规范化 JSON**，
  *   `merge` 不报删除；`overwrite` 只在 `!scope.overwriteUsesMergeSemantics` 时报删除；
  * - 颜色口径：`LanEditProviderHost.normalizeLanCourseColor` —— 非 `#RRGGBB` 一律回落
@@ -56,15 +59,13 @@ object LanTransferLogic {
     const val DEFAULT_LAN_COURSE_COLOR = "#2196F3"
 
     /**
-     * 备份里带多份档案时的拒绝码（**不是**通用格式错误）。
+     * 备份里带 profiles 但**不是** `backupType: full` 全量格式时的拒绝码（**不是**通用格式错误）。
      *
-     * 局域网只恢复当前档案，多档案包要么静默丢掉其它档案（不可接受），要么明确拒绝。
-     * 网页端按这个码显示可读解释与替代路径（`assets/lan_edit/app.js` 的
-     * `describeTransferError`）；服务端保持错误码口径，不在这里拼人话。
-     *
-     * 后续路线：仓储已有 [com.mutx163.qingyu.app.TimetableRepository.replaceAllProfiles]
-     * 可整份替换档案表，缺的是产品决策——覆盖时旧档案留不留在回收站、激活档指向谁、
-     * 与云备份恢复如何互斥。未决策前保持拒绝。
+     * 这种包要么静默丢掉其它档案（不可接受），要么明确拒绝。整份恢复请走手机端
+     * 「数据备份与迁移」导出的 full 备份（`backupType: full` + profiles），那条路
+     * 2026-11-03 起在局域网放行。网页端按这个码显示可读解释与替代路径
+     * （`assets/lan_edit/app.js` 的 `describeTransferError`）；服务端保持错误码口径，
+     * 不在这里拼人话。
      */
     const val ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED = "profile_backup_profiles_unsupported"
 
@@ -112,15 +113,24 @@ object LanTransferLogic {
             throw FormatException("transfer_scope_invalid")
         }
         val isFullBackup = json["backupType"] == "full"
-        // Dart `_rejectWholeDeviceWrite`：整份备份 / all_data 都拒。
-        if (isFullBackup || scope == TransferScope.ALL_DATA) {
-            throw FormatException("use_profile_backup_not_full")
-        }
-        // 偏差 1：profiles 非空明确拒（Dart 会静默忽略）。
         val profilesRaw = json["profiles"] as? List<*> ?: emptyList<Any?>()
-        if (profilesRaw.isNotEmpty()) {
+
+        // 整设备写入的**分层**拒绝矩阵（2026-11-03 起 full+profiles 放行为整份恢复）：
+        // 1. `backupType: full` + 非空 profiles → 整份快照恢复（Dart 旧版经
+        //    `_overwrite → importFullAppDataBackup` 本来就支持，bf09a7c3 一刀切时被误伤）；
+        // 2. `backupType: full` 但 profiles 为空 → 拒：整份备份的壳里没有可恢复内容；
+        // 3. `scope: all_data` 且非 full → 拒：bf09a7c3 修的正是这个绕过形状——非全量
+        //    信封却声称整设备作用域，`_replaceRulesAndLocations` 判 scope 不看数组，
+        //    一次 200 会把全设备的规则 / 分组清空；
+        // 4. profiles 非空但非 full → 拒：要么静默丢掉其它档案，要么明确拒（不变）。
+        if (isFullBackup) {
+            if (profilesRaw.isEmpty()) throw FormatException("use_profile_backup_not_full")
+        } else if (scope == TransferScope.ALL_DATA) {
+            throw FormatException("use_profile_backup_not_full")
+        } else if (profilesRaw.isNotEmpty()) {
             throw FormatException(ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED)
         }
+        val profiles = if (isFullBackup) parseWholeProfiles(profilesRaw) else emptyList()
 
         val courses = parseTransferList("course", json["courses"], Course::fromJson).map { course ->
             course.copy(color = normalizeLanCourseColor(course.color))
@@ -135,6 +145,7 @@ object LanTransferLogic {
             activeProfileId = (json["activeProfileId"] as? String)?.trim()?.ifEmpty { null },
             isFullBackup = isFullBackup,
             profileCount = profilesRaw.size,
+            profiles = profiles,
             diagnostics = diagnostics,
             warnings = validation.warnings,
             source = LanTransferDiffSource(
@@ -148,6 +159,30 @@ object LanTransferLogic {
                 settings = parseSettings(json["settings"]),
             ),
         )
+    }
+
+    /**
+     * 整份备份的档案表解析（Dart `TransferPackage.fromJson` 对 profiles 走
+     * `_parseList(TimetableProfile.fromJson)` 的严格口径：任一档案模型层解析失败
+     * 整份拒，折成 `transfer_profile_invalid`）。档案内嵌课程的颜色同样过
+     * [normalizeLanCourseColor]——整份恢复会把它们写进本机课表，最终被浏览器
+     * 渲染，注入面与顶层课程相同。
+     */
+    private fun parseWholeProfiles(rawProfiles: List<*>): List<TimetableProfile> {
+        val out = ArrayList<TimetableProfile>(rawProfiles.size)
+        for (item in rawProfiles) {
+            if (item !is Map<*, *>) throw FormatException("transfer_profile_invalid")
+            @Suppress("UNCHECKED_CAST")
+            val profile = try {
+                TimetableProfile.fromJson(item as Map<String, Any?>)
+            } catch (_: Exception) {
+                throw FormatException("transfer_profile_invalid")
+            }
+            out += profile.copy(
+                courses = profile.courses.map { it.copy(color = normalizeLanCourseColor(it.color)) },
+            )
+        }
+        return out
     }
 
     /** Dart `LanEditProviderHost.normalizeLanCourseColor`：只认 `#RRGGBB`（可省 `#`），其余回落默认色。 */
@@ -325,9 +360,20 @@ object LanTransferLogic {
     fun previewJson(
         incoming: LanTransferIncoming,
         current: LanTransferDiffSource,
+        currentProfiles: List<TimetableProfile> = emptyList(),
     ): Map<String, Any?> {
-        val mergeDiff = compare(current, incoming.source, incoming.scope, TransferApplyMode.MERGE)
-        val overwriteDiff = compare(current, incoming.source, incoming.scope, TransferApplyMode.OVERWRITE)
+        val mergeDiff: LanTransferDiff
+        val overwriteDiff: LanTransferDiff
+        if (incoming.isWholeRestore) {
+            // 整份恢复的预演：档案表 + 三张设备级表（整表替换口径，报删除）。
+            // 顶层课程 / 作业等列表在全量包里恒为空，逐类比过去只会得到全 0 行。
+            val whole = wholeRestoreDiff(currentProfiles, incoming.profiles, current, incoming.source)
+            mergeDiff = whole
+            overwriteDiff = whole
+        } else {
+            mergeDiff = compare(current, incoming.source, incoming.scope, TransferApplyMode.MERGE)
+            overwriteDiff = compare(current, incoming.source, incoming.scope, TransferApplyMode.OVERWRITE)
+        }
         return linkedMapOf(
             "transferId" to incoming.packageId,
             "channel" to incoming.channel.value,
@@ -335,7 +381,176 @@ object LanTransferLogic {
             "mergeDiff" to mergeDiff.toJson(),
             "overwriteDiff" to overwriteDiff.toJson(),
             "diff" to overwriteDiff.toJson(),
+            // 网页端据此隐藏「合并」按钮：整份恢复只有覆盖一种语义。
+            "wholeRestore" to incoming.isWholeRestore,
         )
+    }
+
+    /**
+     * 整份恢复的差异：**档案表按档案粒度**（增 / 删 / 内容变），三张设备级表
+     * （作息模板 / 日期规则 / 地点分组）按实体粒度整表替换比对（报删除——
+     * 恢复后本机表就是包里那张，包外的条目确实会消失）。
+     *
+     * 全量包的顶层课程 / 作业 / 考试 / 日程 / 设置恒为空（导出侧不带），不比。
+     */
+    fun wholeRestoreDiff(
+        currentProfiles: List<TimetableProfile>,
+        incomingProfiles: List<TimetableProfile>,
+        current: LanTransferDiffSource,
+        incoming: LanTransferDiffSource,
+    ): LanTransferDiff {
+        val currentById = currentProfiles.associateBy { it.id }
+        val incomingById = incomingProfiles.associateBy { it.id }
+        val profileChanges = ArrayList<LanTransferChange>()
+        for (profile in incomingProfiles) {
+            val before = currentById[profile.id]
+            if (before == null) {
+                profileChanges += LanTransferChange(
+                    kind = LanTransferKind.PROFILES,
+                    type = LanTransferChangeType.ADDED,
+                    id = profile.id,
+                    label = profile.name,
+                )
+            } else if (!sameJson(before.toJson(), profile.toJson())) {
+                profileChanges += LanTransferChange(
+                    kind = LanTransferKind.PROFILES,
+                    type = LanTransferChangeType.UPDATED,
+                    id = profile.id,
+                    label = profile.name,
+                    before = before.toJson(),
+                    after = profile.toJson(),
+                )
+            }
+        }
+        for (profile in currentProfiles) {
+            if (profile.id !in incomingById) {
+                profileChanges += LanTransferChange(
+                    kind = LanTransferKind.PROFILES,
+                    type = LanTransferChangeType.REMOVED,
+                    id = profile.id,
+                    label = profile.name,
+                    before = profile.toJson(),
+                )
+            }
+        }
+        val summaries = ArrayList<LanTransferEntityDiff>()
+        if (profileChanges.isNotEmpty()) {
+            summaries += LanTransferEntityDiff(LanTransferKind.PROFILES, profileChanges)
+        }
+        // 三张设备级表：整表替换，报删除。与 compare() 的 reportRemovals 口径一致，
+        // 但不经过它——那条按 mode 判，整份恢复无论 mode 都是整表替换。
+        summaries += compareList(
+            LanTransferKind.TIME_SCHEMES,
+            current.timeSchemes.map { entityOf(it.id, it.name, it.toJson()) },
+            incoming.timeSchemes.map { entityOf(it.id, it.name, it.toJson()) },
+            reportRemovals = true,
+        )
+        summaries += compareList(
+            LanTransferKind.TIME_RULES,
+            current.scheduleDateRules.map { entityOf(it.id, it.name, it.toJson()) },
+            incoming.scheduleDateRules.map { entityOf(it.id, it.name, it.toJson()) },
+            reportRemovals = true,
+        )
+        summaries += compareList(
+            LanTransferKind.LOCATIONS,
+            current.locationTimeGroups.map { entityOf(it.id, it.name, it.toJsonMap()) },
+            incoming.locationTimeGroups.map { entityOf(it.id, it.name, it.toJsonMap()) },
+            reportRemovals = true,
+        )
+        return LanTransferDiff(mode = TransferApplyMode.OVERWRITE, summaries = summaries)
+    }
+
+    // -----------------------------------------------------------------------
+    // 整份恢复：引用校验与状态等价
+    // -----------------------------------------------------------------------
+
+    /**
+     * 整份恢复的**包内自洽**校验（Dart 的手机端整份恢复不做引用校验——整表替换后
+     * 引用天然指向包内；但局域网来源不可信，手工拼包可能把考试指向不存在的课，
+     * 恢复后那门考试在界面上永远点不开。错误码沿用单档案路径的词表，id 加
+     * 档案前缀定位：`exam_course_missing:<profileId>/<examId>`）。
+     *
+     * 顺序：逐档案（考试 → 作业 → 课程模板覆盖）→ 日期规则 → 地点分组。
+     */
+    fun collectWholeRestoreReferenceErrors(incoming: LanTransferIncoming): List<String> {
+        val schemeIds = incoming.source.timeSchemes.mapTo(HashSet()) { it.id }
+        val errors = ArrayList<String>()
+        for (profile in incoming.profiles) {
+            val courseIds = profile.courses.mapTo(HashSet()) { it.id }
+            for (exam in profile.exams) {
+                if (exam.courseId !in courseIds) {
+                    errors += "exam_course_missing:${profile.id}/${exam.id}"
+                }
+            }
+            for (task in profile.tasks) {
+                val courseId = task.courseId ?: continue
+                if (courseId !in courseIds) errors += "task_course_missing:${profile.id}/${task.id}"
+            }
+            for (course in profile.courses) {
+                val schemeId = course.timeSchemeIdOverride
+                if (schemeId != null && schemeId.isNotEmpty() && schemeId !in schemeIds) {
+                    errors += "course_scheme_missing:${profile.id}/${course.id}"
+                }
+            }
+        }
+        for (rule in incoming.source.scheduleDateRules) {
+            if (rule.timeSchemeId.isEmpty() || rule.timeSchemeId !in schemeIds) {
+                errors += "time_rule_scheme_missing:${rule.id}"
+            }
+        }
+        for (group in incoming.source.locationTimeGroups) {
+            if (group.timeSchemeId.isEmpty() || group.timeSchemeId !in schemeIds) {
+                errors += "location_scheme_missing:${group.id}"
+            }
+        }
+        return errors
+    }
+
+    /**
+     * 整份恢复撤销的**全有或全无**判据：当前现场是否仍与「导入后」完全一致
+     * （档案表 + 激活档案 + 各实体表 + 设置 + 当前周）。
+     *
+     * 为什么不做部分撤销：撤销点存的是**整台设备**的档案表，用户导入后若动过
+     * 任何一个档案，「按实体回退」需要跨多档案的三方比对机器——那套机器目前
+     * 只对单档案存在（[LanTransferUndoLogic.plan]）。与其静默覆盖用户后来的
+     * 操作（Dart 整份恢复撤销的做法），不如明确拒绝并让人话解释。
+     */
+    fun wholeRestoreStateEquals(left: LanTransferState, right: LanTransferState): Boolean {
+        if (left.activeProfileId != right.activeProfileId) return false
+        if (left.currentWeek != right.currentWeek) return false
+        if (!sameJson(left.settings.toJson(), right.settings.toJson())) return false
+        if (left.profiles.size != right.profiles.size) return false
+        val rightById = right.profiles.associateBy { it.id }
+        for (profile in left.profiles) {
+            val other = rightById[profile.id] ?: return false
+            if (!sameJson(profile.toJson(), other.toJson())) return false
+        }
+        return listsEqualById(left.timeSchemes, right.timeSchemes, TimeScheme::id, TimeScheme::toJson) &&
+            listsEqualById(
+                left.scheduleDateRules,
+                right.scheduleDateRules,
+                ScheduleDateRule::id,
+                ScheduleDateRule::toJson,
+            ) &&
+            listsEqualById(
+                left.locationTimeGroups,
+                right.locationTimeGroups,
+                LocationTimeGroup::id,
+                LocationTimeGroup::toJsonMap,
+            )
+    }
+
+    /** 按 id 一一对应的规范化 JSON 相等（顺序也算：整表替换连顺序一起写）。 */
+    private fun <T> listsEqualById(
+        left: List<T>,
+        right: List<T>,
+        idOf: (T) -> String,
+        jsonOf: (T) -> Map<String, Any?>,
+    ): Boolean {
+        if (left.size != right.size) return false
+        return left.zip(right).all { (l, r) ->
+            idOf(l) == idOf(r) && sameJson(jsonOf(l), jsonOf(r))
+        }
     }
 
     /**
@@ -575,13 +790,27 @@ data class LanTransferIncoming(
     val activeProfileId: String?,
     val isFullBackup: Boolean,
     val profileCount: Int,
+    /**
+     * 解析好的档案表，**只在整份恢复包**（`backupType: full` + 非空 profiles）里非空。
+     * 内嵌课程颜色已过 [LanTransferLogic.normalizeLanCourseColor]。
+     */
+    val profiles: List<TimetableProfile> = emptyList(),
     /** 结构诊断（`transfer_package_empty` 一类）：可预览，应用时折成 `applied: false`。 */
     val diagnostics: List<String>,
     val warnings: List<String>,
     val source: LanTransferDiffSource,
-)
+) {
+    /** 整份快照恢复包：full + 至少一份档案（Dart `_overwrite` 走 `importFullAppDataBackup` 的同一判据）。 */
+    val isWholeRestore: Boolean get() = isFullBackup && profiles.isNotEmpty()
+}
 
-/** Dart `TransferEntityKind.value` 原样（顺序 = `TransferDiff.allKinds`）。 */
+/**
+ * Dart `TransferEntityKind.value` 原样（顺序 = `TransferDiff.allKinds`）。
+ *
+ * [PROFILES] 是 Kotlin 侧扩展（整份恢复的差异以档案为粒度），**不在** [all] 里：
+ * Dart 的 `TransferDiff.allKinds` 冻结为 8 类，普通导入的 `summaries` 输出必须
+ * 与 Dart 逐字同形；PROFILES 只在整份恢复的差异里出现（见 [LanTransferDiff.toJson]）。
+ */
 enum class LanTransferKind(val value: String) {
     COURSES("courses"),
     EXAMS("exams"),
@@ -590,7 +819,8 @@ enum class LanTransferKind(val value: String) {
     TASKS("tasks"),
     SCHEDULE_ITEMS("schedule_items"),
     TIME_SCHEMES("time_schemes"),
-    SETTINGS("settings");
+    SETTINGS("settings"),
+    PROFILES("profiles");
 
     companion object {
         val all: List<LanTransferKind> = listOf(
@@ -668,14 +898,19 @@ data class LanTransferDiff(
     val totalCount: Int get() = summaries.sumOf { it.totalCount }
     val hasChanges: Boolean get() = summaries.any { it.changes.isNotEmpty() }
 
-    fun toJson(): Map<String, Any?> = linkedMapOf(
-        "mode" to LanTransferLogic.modeName(mode),
-        "added" to addedCount,
-        "updated" to updatedCount,
-        "removed" to removedCount,
-        "total" to totalCount,
-        "summaries" to LanTransferKind.all.map { forKind(it).toJson() },
-    )
+    fun toJson(): Map<String, Any?> {
+        // PROFILES 不在 all 里（保持普通导入与 Dart 同形）；整份恢复的差异带它时排在首位。
+        val ordered = summaries.filter { it.kind == LanTransferKind.PROFILES } +
+            LanTransferKind.all.map { forKind(it) }
+        return linkedMapOf(
+            "mode" to LanTransferLogic.modeName(mode),
+            "added" to addedCount,
+            "updated" to updatedCount,
+            "removed" to removedCount,
+            "total" to totalCount,
+            "summaries" to ordered.map { it.toJson() },
+        )
+    }
 }
 
 /** [LanTransferLogic.planTimeSchemes] 的一步。 */

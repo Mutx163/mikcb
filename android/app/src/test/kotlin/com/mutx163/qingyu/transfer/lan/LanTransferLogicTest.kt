@@ -124,7 +124,10 @@ class LanTransferLogicTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun `整份备份与 all_data 一律拒 防止配对端一键覆盖整台设备`() {
+    fun `整份备份缺档案与 all_data 仍拒 分层矩阵里它们没有可恢复内容`() {
+        // 两条都不带 profiles：full 缺档案（无可恢复内容）与 all_data 非 full
+        // （bf09a7c3 的清表绕过形状）仍拒；full + profiles 的整份包已放行，
+        // 见 LanTransferWholeRestoreTest。
         assertEquals(
             "use_profile_backup_not_full",
             parseError(packageJson(scope = TransferScope.ALL_DATA)),
@@ -409,13 +412,16 @@ class LanTransferLogicTest {
             packageJson(channel = TransferChannel.FILE, courses = listOf(course("c1", "高数"))),
         )
         val preview = LanTransferLogic.previewJson(incoming, LanTransferDiffSource())
+        // wholeRestore 是 Kotlin 侧新增的标记位（网页端据此禁用合并按钮）；
+        // 其余六键与 Dart `LanTransferPreview.toJson()` 逐字同形。
         assertEquals(
-            listOf("transferId", "channel", "scope", "mergeDiff", "overwriteDiff", "diff"),
+            listOf("transferId", "channel", "scope", "mergeDiff", "overwriteDiff", "diff", "wholeRestore"),
             preview.keys.toList(),
         )
         assertEquals("transfer-test-1", preview["transferId"])
         assertEquals("lan", preview["channel"])
         assertEquals("current_timetable", preview["scope"])
+        assertEquals(false, preview["wholeRestore"])
 
         @Suppress("UNCHECKED_CAST")
         val merge = preview["mergeDiff"] as Map<String, Any?>

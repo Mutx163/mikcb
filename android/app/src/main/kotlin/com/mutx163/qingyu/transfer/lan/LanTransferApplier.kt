@@ -69,7 +69,11 @@ class LanTransferApplier(
      */
     fun preview(content: String): Map<String, Any?> {
         val incoming = LanTransferLogic.parseIncoming(content)
-        return LanTransferLogic.previewJson(incoming, currentSource())
+        return LanTransferLogic.previewJson(
+            incoming,
+            currentSource(),
+            currentProfiles = repository.snapshot.profiles,
+        )
     }
 
     /**
@@ -77,10 +81,12 @@ class LanTransferApplier(
      *
      * - 结构门 / 整设备写入 → 抛 [com.mutx163.qingyu.core.FormatException]（路由层 400）；
      * - 结构诊断（空包一类）或本地引用对不上 → 回 `applied: false` + 错误码，**一个字节不写**；
+     * - 整份恢复包（`backupType: full` + profiles）→ 走 [applyWholeRestore]；
      * - 正常路径 → 真写仓储；写失败 → 尽力补偿后回 `applied: false` + `transfer_import_failed`。
      */
     fun apply(content: String, mode: TransferApplyMode): Map<String, Any?> {
         val incoming = LanTransferLogic.parseIncoming(content)
+        if (incoming.isWholeRestore) return applyWholeRestore(incoming, mode)
         val current = currentSource()
         val diff = LanTransferLogic.compare(current, incoming.source, incoming.scope, mode)
 
@@ -113,11 +119,78 @@ class LanTransferApplier(
     }
 
     /**
+     * 整份快照恢复（`backupType: full` + 非空 profiles；Dart 手机端
+     * `importFullAppDataBackup` 的同款语义，2026-11-03 起局域网放行）。
+     *
+     * - **只有覆盖一种语义**：档案表无法按 id 跨设备合并（同 id 在两端是两张不同的
+     *   课表），merge 请求明确拒，不给「看起来成功、档案却没进去」的假象；
+     * - **先校验后落盘**：包内引用对不上 → `applied: false` + 错误码，一个字节不写；
+     * - **一次落盘**：档案表 + 激活档案 + 设置 + 当前周 + 三张设备级表走仓储的
+     *   整份恢复入口（先全部落盘、成功才改内存并只通知一次），全局设置与当前周
+     *   取自包里激活档案的内嵌值；`activeProfileId` 指不到包内档案时回落第一份
+     *   （与 Dart 同口径）；
+     * - **撤销点**：before / after 各抓一份**含档案表**的现场；导入后数据被动过
+     *   就拒绝撤销（见 [undo]），不会静默覆盖用户之后的操作。
+     */
+    private fun applyWholeRestore(incoming: LanTransferIncoming, mode: TransferApplyMode): Map<String, Any?> {
+        val diff = LanTransferLogic.wholeRestoreDiff(
+            currentProfiles = repository.snapshot.profiles,
+            incomingProfiles = incoming.profiles,
+            current = currentSource(),
+            incoming = incoming.source,
+        )
+        if (mode != TransferApplyMode.OVERWRITE) {
+            return LanTransferLogic.applyResultJson(
+                false,
+                mode,
+                diff,
+                "transfer_full_backup_requires_overwrite",
+                null,
+            )
+        }
+        val errors = ArrayList<String>(incoming.diagnostics)
+        errors += LanTransferLogic.collectWholeRestoreReferenceErrors(incoming)
+        if (errors.isNotEmpty()) {
+            return LanTransferLogic.applyResultJson(false, mode, diff, errors.first(), null)
+        }
+
+        val before = captureState(includeProfiles = true)
+        return try {
+            repository.restoreFromCloudSnapshot(
+                profiles = incoming.profiles,
+                activeProfileId = incoming.activeProfileId,
+                timeSchemes = incoming.source.timeSchemes,
+                scheduleDateRules = incoming.source.scheduleDateRules,
+                locationTimeGroups = incoming.source.locationTimeGroups,
+            )
+            val token = LanTransferUndoToken(
+                id = TransferEnvelope.newPackageId(nowMicros = clock() * 1000L),
+                // 整份恢复可能合法地切换激活档案，「导入时档案 ≠ 当前档案」不构成拒绝
+                // 撤销的理由；档案表比对（wholeRestoreStateEquals）已覆盖这层安全。
+                profileId = null,
+                mode = mode,
+                scope = incoming.scope,
+                before = before,
+                after = captureState(includeProfiles = true),
+                createdAtMillis = clock(),
+            )
+            undoStore.create(token)
+            LanTransferLogic.applyResultJson(true, mode, diff, null, token.id)
+        } catch (_: Exception) {
+            restoreState(before)
+            LanTransferLogic.applyResultJson(false, mode, diff, "transfer_import_failed", null)
+        }
+    }
+
+    /**
      * 按撤销点 id 回退这次导入写入的内容（`POST /api/v1/import/undo` 的执行层）。
      *
      * - **只回退这一批**：每类实体按 id 比「导入前 / 导入后 / 现在」，只还原仍是
      *   「导入后」值的条目；用户导入之后改过的一律保留。判据只有
      *   [LanTransferUndoLogic.plan] 一处。
+     * - **整份恢复的撤销是全有或全无**：导入后任何档案 / 设备表被动过 →
+     *   `transfer_undo_state_changed`，不消费撤销点（把现场改回去还能再撤）；
+     *   现场没动过 → 整份写回「导入前」（判据 [LanTransferLogic.wholeRestoreStateEquals]）。
      * - **取走即消费**：同一个撤销点不会被应用两次；第二次调用回
      *   `transfer_undo_already_undone` 且一个字节都不写。
      * - **缺失安全跳过**：不认识的 id 回 `transfer_undo_token_missing`，不写盘。
@@ -135,6 +208,35 @@ class LanTransferApplier(
                 "transfer_undo_token_missing"
             }
             return LanTransferUndoLogic.resultJson(false, id, error = reason)
+        }
+        val isWholeRestore = token.before.profiles.isNotEmpty()
+        if (isWholeRestore) {
+            val current = captureState(includeProfiles = true)
+            if (!LanTransferLogic.wholeRestoreStateEquals(current, token.after)) {
+                // 导入之后用户（或下一次导入）动过数据：撤销点放回，用户把现场改回去
+                // 后还能再撤——「拒绝」不该烧掉撤销机会。
+                undoStore.restore(token)
+                return LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_state_changed")
+            }
+            return try {
+                repository.restoreFromCloudSnapshot(
+                    profiles = token.before.profiles,
+                    activeProfileId = token.before.activeProfileId,
+                    timeSchemes = token.before.timeSchemes,
+                    scheduleDateRules = token.before.scheduleDateRules,
+                    locationTimeGroups = token.before.locationTimeGroups,
+                    settings = token.before.settings,
+                )
+                LanTransferUndoLogic.resultJson(
+                    undone = true,
+                    transferId = id,
+                    restoredCounts = mapOf("profiles" to token.before.profiles.size),
+                )
+            } catch (_: Exception) {
+                // 撤销途中写盘失败：把令牌放回索引，用户还能再试一次。
+                undoStore.restore(token)
+                LanTransferUndoLogic.resultJson(false, id, error = "transfer_undo_failed")
+            }
         }
         // 撤销点记的是导入时那个档案；换了档案再撤销等于拿 A 课表的快照写 B 课表。
         val activeProfileId = repository.snapshot.activeProfileId
@@ -322,8 +424,13 @@ class LanTransferApplier(
     // 快照 / 补偿
     // -----------------------------------------------------------------------
 
-    /** 当前仓储现场（导入前 / 导入后 / 撤销前都抓这一份）。 */
-    private fun captureState(): LanTransferState {
+    /**
+     * 当前仓储现场（导入前 / 导入后 / 撤销前都抓这一份）。
+     *
+     * [includeProfiles] 只在整份恢复路径传 true：普通导入只动激活档案，
+     * 抓全设备档案表只是白占撤销槽的内存。
+     */
+    private fun captureState(includeProfiles: Boolean = false): LanTransferState {
         val snapshot = repository.snapshot
         return LanTransferState(
             courses = snapshot.courses,
@@ -335,12 +442,27 @@ class LanTransferApplier(
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
             currentWeek = snapshot.currentWeek,
+            profiles = if (includeProfiles) snapshot.profiles else emptyList(),
+            activeProfileId = snapshot.activeProfileId,
         )
     }
 
     /** 尽力补偿：任何一步失败都不上抛（见类注释）。 */
     private fun restoreState(before: LanTransferState) {
         runCatching {
+            // 整份恢复的补偿走同一个整份入口：档案表 / 激活档案 / 设置 / 当前周 /
+            // 三张设备级表一次写回（先落盘、成功才改内存）。
+            if (before.profiles.isNotEmpty()) {
+                repository.restoreFromCloudSnapshot(
+                    profiles = before.profiles,
+                    activeProfileId = before.activeProfileId,
+                    timeSchemes = before.timeSchemes,
+                    scheduleDateRules = before.scheduleDateRules,
+                    locationTimeGroups = before.locationTimeGroups,
+                    settings = before.settings,
+                )
+                return
+            }
             repository.scheduleItems = before.scheduleItems
             repository.replaceActiveProfileContent(before.courses, before.tasks, before.exams)
             repository.updateSettings(before.settings)

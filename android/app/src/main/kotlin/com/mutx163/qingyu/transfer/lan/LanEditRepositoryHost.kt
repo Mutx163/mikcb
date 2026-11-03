@@ -56,19 +56,21 @@ data class LanEditSpreadsheetParse(
  *
  * ## 明确不做的（诚实清单）
  *
+ * - **多档案整份恢复已支持**（2026-11-03，分层放行）：`backupType: full` + 非空
+ *   profiles 的包走 [LanTransferApplier] 的整份快照恢复（校验 → 预演 → 仓储
+ *   `restoreFromCloudSnapshot` 一次落盘 + 撤销点）。仍明确拒的三种形状理由各不相同：
+ *   `all_data` 非 full（清空全设备规则/分组的绕过形状）、full 缺档案（无可恢复内容）、
+ *   非 full 带 profiles（要么静默丢档案要么拒）——矩阵见 [LanTransferLogic.parseIncoming]。
  * - **局部传输的 diff/预览 / 应用 / 撤销已接线**（2026-10-30 应用，2026-11-02 撤销）：
  *   `previewTransferJson` / `applyTransferJson` / `undoTransferJson` 交给
  *   [LanTransferApplier]（纯逻辑 [LanTransferLogic] + [LanTransferUndoLogic] + 仓储写入）。
  *   `applyTransferJson` 成功后回真实 `transferId`（撤销点 id），凭它调
- *   `POST /api/v1/import/undo` 只回退这一批导入、保留用户之后的操作。
+ *   `POST /api/v1/import/undo` 只回退这一批导入、保留用户之后的操作；
+ *   整份恢复的撤销是全有或全无（导入后数据被动过即拒，见 [LanTransferApplier.undo]）。
  *   仍未做的两件：① 设置只应用 Kotlin 已移植的时间/周次子集（`TimetableSettings` 的
  *   边界说明）；② 地点分组改变后**不重算**课程钟点（Dart
  *   `replaceLocationTimeGroups(resync: true)` 的对应物在仓储层还没有）。
  *   调色板同步：局域网课程颜色按 `normalizeLanCourseColor` 收窄到 `#RRGGBB`（防 HTML 注入面）。
- * - **多档案整份恢复不支持**：备份里 `profiles` 非空时明确抛
- *   [LanTransferLogic.ERROR_PROFILE_BACKUP_PROFILES_UNSUPPORTED]，而不是静默只恢复
- *   活动档案（那会无声吞掉用户其它课表）。网页端按该错误码显示可读解释与替代路径
- *   （手机端「数据备份与迁移」支持整份档案恢复）；后续路线见该常量的 KDoc。
  * - ~~备份里的 `tasks` / `exams` 导出会带上、导入不写回~~ **已修（2026-11-01）**：
  *   整份备份导出补齐了日程 / 日期规则 / 地点作息分组，导入改走 [LanTransferApplier]，
  *   八张实体表 + 时间模板全部写回（P0 数据丢失）。
@@ -255,9 +257,9 @@ class LanEditRepositoryHost(
         // 引用、失败尽力回滚。不再在 LAN 层另写一份字段映射。
         //
         // 契约不变：
-        // - 结构门 / 多档案包（`profiles` 非空）/ 整设备包（`backupType: full` 或
-        //   `scope: all_data`）由 `parseIncoming` 抛 [FormatException]，**此时一个
-        //   字节都没写**（校验在落盘之前）；多档案仍是「明确拒绝」，不会静默只恢复活动档案。
+        // - 结构门 / 整设备包的分层拒绝（`all_data` 非 full、full 缺档案、非 full 带
+        //   profiles）由 `parseIncoming` 抛 [FormatException]，**此时一个字节都没写**
+        //   （校验在落盘之前）；`backupType: full` + profiles 的整份包走整份快照恢复。
         // - 落盘阶段失败时 applier 先补偿再回 `applied: false`，这里折成 [FormatException]，
         //   路由层照旧折 400。
         val result = applier.apply(content, TransferApplyMode.OVERWRITE)

@@ -226,7 +226,10 @@ class LanEditRepositoryHostTest {
     }
 
     @Test
-    fun `多档案整份恢复明确拒绝而不是静默丢档案`() {
+    fun `非 full 格式的多档案包明确拒绝而不是静默丢档案`() {
+        // 整份恢复（backupType: full + profiles）2026-11-03 起放行，见
+        // LanTransferWholeRestoreTest；这里钉住的是「带 profiles 却不是 full 格式」
+        // 的包仍要明确拒——要么静默丢档案要么拒，没有第三条路。
         val store = InMemoryKeyValueStore()
         val repository = repositoryOn(store)
         repository.addCourse(course("keep1", "原有课程"))
