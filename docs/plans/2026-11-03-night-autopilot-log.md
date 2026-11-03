@@ -626,3 +626,27 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
    - **成因与纠正**：Lead 转达 L3 错误码写法时未做命名转换，A 线照抄入 ARB，导致 `backup_restore_commit_failed` / `backup_restore_rollback_failed` 两键命名违规。**已纠正**为 `backupRestoreCommitFailed` / `backupRestoreRollbackFailed`（六份 ARB + `BackupFileStrings` 引用 + gen-l10n 重跑；copy_style 20:06:09 exit=0，超宽 158/死键 1 新增均 0；`CloudSyncController` 内部错误码按上述铁律保留下划线未动）。
 
 **正确姿势（针对坑 1/2）**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）+ 把 kotlinc 放进 PATH**（`scripts/with-kotlinc.ps1` 已封装）。用 PS 5.1 跑 L0 的结论一律不可信。
+
+### 10.12 门 1/门 2 标准做法：在 HEAD 的只读 worktree 上跑（已定为本项目标准流程）
+
+**背景**：五路并行持续开发，「工作区干净」这个前置条件**实际上不可得**——刚清掉一批未提交文件，下一批立刻出现（本轮就发生两次：calendar/sync 4 个刚落库，月视图又冒出 4 个）。等干净树会让**门禁永不开跑**，而门禁本来就只该证明**已提交 HEAD**的质量。
+
+**标准做法**：
+
+1. `git worktree add <临时路径，如 ../mikcb-gate> HEAD`（只读用途，不改 HEAD、不影响主工作树）。
+2. 从主工作树**复制两个被 gitignore 的本机文件**：`android/local.properties`（含 `sdk.dir`，没有它 Gradle 起不来）、仓库根 `gradle.properties`（含 `org.gradle.java.home`）。**另需复制 `.dart_tool/` 并设 `PUB_CACHE`**，否则门 2 的 Flutter 资源链路会缺件。
+3. 依次跑门 1 `:app:compileDevDebugKotlin` → 门 2 `:app:testDevDebugUnitTest`，**一律走 `scripts/safe-gradle.ps1`**（全机互斥锁跨 worktree 同样生效，排队防爆内存）。
+4. **结果必须标注对应 HEAD 哈希**：`HEAD` 变了旧结论**作废**，不许拿 HEAD A 的绿代言 HEAD B。
+5. 跑完清理：`git worktree remove`（长路径会失败，改用 `robocopy <空目录> <worktree> /MIR` 清空后 `Remove-Item`，再 `git worktree prune`）。
+6. **记录口径**：写「门禁在 HEAD `<哈希>` 的只读 worktree 上实测，主工作树当时有 N 个未提交文件（属其他域在途），不影响本结论」。
+
+### 10.13 门 1/门 2 实测结论（收工证据）
+
+| 轮次 | HEAD | 门 1 `:app:compileDevDebugKotlin` | 门 2 `:app:testDevDebugUnitTest` | 结论 |
+|---|---|---|---|---|
+| 首轮 | `45dc4f89` | ✅ 21:37:40→21:59:10，12m52s，exit=0 | ✅ 22:04:41→22:27:53，13m29s，exit=0 | 通过，但 HEAD 已推进 → 按规矩作废 |
+| 二轮 | `a8e4cf22` | ❌ **排队超时**（等 10 分钟未获互斥锁，611s，exit=1） | 未跑 | **无结论，作废**（他线构建长期占用锁，非代码问题） |
+| **三轮（有效）** | **`6b33f490`** | ✅ **22:46:43→22:54:28，7m35s（465s），exit=0** | ✅ **22:54:48→23:01:34，6m41s（406s），exit=0** | **有效结论** |
+
+**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。跑完后主 HEAD 已推进到 `49a5a739`（他线新提交），**该结论只代言 `6b33f490`**，后续 HEAD 需重跑。
+**观察**：首轮冷构建 12m52s / 13m29s，三轮增量 7m35s / 6m41s；二轮的失败是**锁排队超时**（`safe-gradle` 已按设计放弃执行，未损坏任何产物），并非编译或测试红。
