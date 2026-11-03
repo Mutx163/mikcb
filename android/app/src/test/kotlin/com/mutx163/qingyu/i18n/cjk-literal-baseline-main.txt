@@ -80,7 +80,6 @@ com/mutx163/qingyu/pages/export/IcsShareWiring.kt:1
 com/mutx163/qingyu/pages/import/IcsImportModel.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryParsers.kt:1
 com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt:1
-com/mutx163/qingyu/pages/statistics/StatisticsSessionModel.kt:1
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsModel.kt:1
 com/mutx163/qingyu/pages/timetable/TimetableProfilesController.kt:1
 com/mutx163/qingyu/share/TransferShareContract.kt:1
