@@ -36,7 +36,7 @@ import com.mutx163.qingyu.theme.QingyuTheme
 class HomeBackdropChrome(
     val snapshot: HomeBackdropSnapshot?,
     val material: HomeMaterialRenderSpec?,
-    /** 壁纸三档亮度带（顶栏 / 星期栏 / 正文）；无壁纸或还没量到时为 null。 */
+    /** 壁纸四档亮度带（顶栏 / 星期栏 / 正文 / 玻璃坞）；无壁纸或还没量到时为 null。 */
     val bands: HomeBackgroundModel.InkBands?,
     val chromeInk: HomeInkPolarity?,
     val backdrop: (@Composable BoxScope.() -> Unit)?,
