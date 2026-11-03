@@ -28,7 +28,7 @@ import com.mutx163.qingyu.calendar.HolidayService
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.SystemAlarmHelper
-import com.mutx163.qingyu.WeeklyReportScheduleLogic
+import com.mutx163.qingyu.app.WeeklyReportScheduleLogic
 import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.core.ClassAlarmEvent
@@ -57,6 +57,7 @@ import com.mutx163.qingyu.weather.WeatherPreferences
 import com.mutx163.qingyu.weather.WeatherProvider
 import com.mutx163.qingyu.weather.WeatherService
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 壳的**接线层**（Phase 3.5 · L5，Lead 专属写作用域）。
