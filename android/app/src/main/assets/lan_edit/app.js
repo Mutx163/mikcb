@@ -341,9 +341,12 @@ async function api(path, options = {}) {
 const TRANSFER_ERROR_HINTS = {
   profile_backup_profiles_unsupported: 'transferErrorMultiProfile',
   use_profile_backup_not_full: 'transferErrorWholeDevice',
+  transfer_full_profiles_required: 'transferErrorFullNoProfiles',
+  transfer_full_backup_requires_overwrite: 'transferErrorFullNeedsOverwrite',
   transfer_undo_token_missing: 'transferUndoTokenMissing',
   transfer_undo_already_undone: 'transferUndoAlreadyUndone',
   transfer_undo_profile_changed: 'transferUndoProfileChanged',
+  transfer_undo_state_changed: 'transferUndoStateChanged',
 };
 
 function describeTransferError(code) {
@@ -891,9 +894,16 @@ async function previewTransferContent(content) {
     pendingTransferContent = content;
     transferPreviewResult.textContent = lines.join('\n');
     show(transferPreviewCard);
-    btnTransferPreviewMerge.disabled = false;
+    // 整份恢复（backupType: full）只有覆盖一种语义：合并按钮禁用，防止点了
+    // 才被服务端拒。普通包维持原状（可合并可覆盖）。
+    btnTransferPreviewMerge.disabled = preview.wholeRestore === true;
     btnTransferPreviewOverwrite.disabled = false;
-    showToast('差异预览已生成，请选择合并或覆盖', 'info');
+    showToast(
+      preview.wholeRestore === true
+        ? t('wholeRestorePreviewReady')
+        : t('previewReady'),
+      'info',
+    );
   } catch (error) {
     showToast(t('previewFailed') + describeTransferError(error.message), 'error');
   } finally {
