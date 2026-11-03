@@ -13,11 +13,13 @@ import java.io.File
  *
  * 1. **两处必须引用同一个组件**：`DayViewPage` / `TimetableWeekPage` 都必须是
  *    `BackToTodayFab(` 调用，且谁都不许再直接调 `FloatingActionButton(` 自己画一份；
- * 2. **官方组件**：共用件内部必须是 miuix `FloatingActionButton` + 官方 border，
- *    旧的 `BackToTodayButton(` / `homeFloatingChipSurface(` 自拼面不得回流；
- * 3. **形状**：圆角 < 高度一半（胶囊，不是用户否掉的「圆球」），且不许出现 CircleShape；
- * 4. **描边与投影同时在**（任一项被删即红）；
- * 5. **触摸区**：尺寸走常量（视觉高 40dp）+ 外层 padding 兜到 ≥48dp；
+ * 2. **玻璃底**：共用件内部必须是 `drawBackdrop` + `vibrancy()` + `blur()` + `lens()`
+ *    + 官方 `Highlight.GlassStrokeSmall*`；旧的 `homeFloatingChipSurface` 自拼面
+ *    与实心 `FloatingActionButton` 不得回流；
+ * 3. **形状**：`RoundedCornerShape(percent = 50)` 胶囊（不是用户否掉的「圆球」），
+ *    且不许出现 CircleShape；
+ * 4. **投影与亮棱同时在**（任一项被删即红）；
+ * 5. **触摸区**：`heightIn(min = BACK_TO_TODAY_FAB_MIN_HEIGHT_DP.dp)`，且 ≥48dp；
  * 6. **读屏完整语义**：contentDescription 接各自域的既有键，可见字只是单字「今」；
  * 7. **可见字短键**：两处都必须用 `DayViewStrings.backToTodayShort`；
  * 8. **颜色**：共用件与两个调用点都禁写死 `Color(0xFF`。
@@ -40,7 +42,7 @@ class DayViewBackToTodayFabGuardTest {
                 STATEMENT_FAB_CALL.containsMatchIn(source),
             )
             assertFalse(
-                "$name 直接调用 FloatingActionButton(——玻璃/形状/描边只有共用件一处实现，" +
+                "$name 直接调用 FloatingActionButton(——玻璃/形状/投影只有共用件一处实现，" +
                     "自己画一份等于两颗钮开始漂移（用户口径：周视图也用同一个按钮）。",
                 STATEMENT_RAW_FAB_CALL.containsMatchIn(source),
             )
@@ -56,12 +58,78 @@ class DayViewBackToTodayFabGuardTest {
     }
 
     @Test
-    fun `共用件内部必须是官方件且旧自拼面不得回流`() {
-        val callArgs = fabCallArgs(fabSource)
+    fun `两处必须把玻璃与可见性接进共用件`() {
+        for ((name, source) in mapOf("DayViewPage" to dayPageSource, "TimetableWeekPage" to weekPageSource)) {
+            assertTrue(
+                "$name 没有把可见性交给共用件的 visible——外层 if 会把节点直接摘掉，" +
+                    "退场动画没机会播。",
+                source.contains("visible = "),
+            )
+            assertTrue(
+                "$name 没有把页面壁纸录像层传给浮钮（backdrop = pageBackdrop）——" +
+                    "玻璃会采到空层。",
+                source.contains("backdrop = pageBackdrop"),
+            )
+            assertTrue(
+                "$name 没有把材质快照传给浮钮（material = ...）——浮钮会永远画实底。",
+                source.contains("material = material"),
+            )
+            assertTrue(
+                "$name 没有把 hasBackdrop 传给浮钮——没壁纸时也会去模糊空气。",
+                source.contains("hasBackdrop = hasBackdrop"),
+            )
+            assertTrue(
+                "$name 没有把浮钮算进 pageBackdropActive——壁纸层不会被录，" +
+                    "浮钮玻璃无源可采（表现为透明/发黑的胶囊）。",
+                source.contains(
+                    "pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive",
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `共用件内部必须是玻璃胶囊且旧自拼面不得回流`() {
         assertTrue(
-            "共用件里没有 FloatingActionButton( 调用——官方件被换掉了。" +
+            "共用件里没有 drawBackdrop(——玻璃底被换成了实心色块。" +
                 "user.dir=${System.getProperty("user.dir")}",
-            callArgs != null,
+            fabSource.contains("drawBackdrop("),
+        )
+        assertTrue(
+            "共用件没有 vibrancy()——玻璃会发灰。",
+            fabSource.contains("vibrancy()"),
+        )
+        assertTrue(
+            "共用件没有 blur(——模糊层被删了。",
+            fabSource.contains("blur("),
+        )
+        assertTrue(
+            "共用件没有 lens(——液态档的折射被删了。",
+            fabSource.contains("lens("),
+        )
+        assertTrue(
+            "共用件没有官方 Highlight.GlassStrokeSmall*——玻璃亮棱被删了。",
+            fabSource.contains("Highlight.GlassStrokeSmall"),
+        )
+        assertTrue(
+            "共用件没有 InteractiveHighlight(——按压提亮 / 指尖光斑被删了。",
+            fabSource.contains("InteractiveHighlight("),
+        )
+        assertTrue(
+            "共用件没有 title3（20sp）——字号被改小了，胶囊会显得又矮又空。",
+            fabSource.contains("textStyles.title3"),
+        )
+        assertTrue(
+            "共用件没有 AnimatedVisibility(——出入场动画被删了。",
+            fabSource.contains("AnimatedVisibility("),
+        )
+        assertTrue(
+            "共用件没有 visible 参数——两处调用点就没办法交给它播退场。",
+            fabSource.contains("visible: Boolean"),
+        )
+        assertFalse(
+            "共用件里出现 FloatingActionButton(——实心 FAB 又回来了。",
+            fabSource.contains("FloatingActionButton("),
         )
         assertFalse(
             "旧的自拼磨砂面 homeFloatingChipSurface 不得进共用件。",
@@ -74,50 +142,45 @@ class DayViewBackToTodayFabGuardTest {
     }
 
     @Test
-    fun `形态必须是圆角胶囊不得回退圆形`() {
-        val corner = constFloatValue(fabSource, "BACK_TO_TODAY_FAB_CORNER_DP")
-        val height = constFloatValue(fabSource, "BACK_TO_TODAY_FAB_HEIGHT_DP")
-        assertTrue("找不到胶囊圆角常量 BACK_TO_TODAY_FAB_CORNER_DP", corner != null)
-        assertTrue("找不到胶囊高度常量 BACK_TO_TODAY_FAB_HEIGHT_DP", height != null)
+    fun `形态必须是胶囊不得回退圆形或实心块`() {
         assertTrue(
-            "圆角 ${corner}dp ≥ 高度 ${height}dp 的一半——胶囊会读成圆形/圆球" +
-                "（用户口径：不是圆形、不是圆球）。",
-            corner!! < height!! / 2f,
+            "胶囊形状没有用 RoundedCornerShape(percent = 50) 构造。",
+            fabSource.contains("RoundedCornerShape(percent = 50)"),
         )
-        assertTrue(
-            "胶囊形状没有用圆角常量构造（RoundedCornerShape(BACK_TO_TODAY_FAB_CORNER_DP.dp)）。",
-            fabSource.contains("RoundedCornerShape(BACK_TO_TODAY_FAB_CORNER_DP.dp)"),
+        assertFalse(
+            "共用件出现 CircleShape——形状被改回圆球（用户已否）。",
+            fabSource.contains("CircleShape"),
         )
     }
 
     @Test
-    fun `描边与投影必须同时在`() {
-        val callArgs = fabCallArgs(fabSource) ?: throw AssertionError("共用件里 FAB 调用不存在")
+    fun `投影与亮棱必须同时在`() {
         assertTrue(
-            "FAB 实参没有 shadowElevation——柔和投影（把钮从卡片上托起来）被删了。",
-            callArgs.contains(Regex("""shadowElevation\s*=""")),
+            "共用件没有 dropShadow(——彩色浮影被删了，钮会贴在卡片上。",
+            fabSource.contains("dropShadow("),
         )
         assertTrue(
-            "胶囊没有描边（border）——玻璃亮棱那圈细边被删了。",
-            fabSource.contains(Regex("""\.border\(1\.dp,\s*MiuixTheme\.colorScheme\.onPrimary""")),
+            "共用件没有 Shadow(——dropShadow 缺少投影参数。",
+            fabSource.contains("Shadow("),
+        )
+        assertTrue(
+            "共用件没有官方 Highlight.GlassStrokeSmall*——玻璃亮棱被删了。",
+            fabSource.contains("Highlight.GlassStrokeSmall"),
         )
     }
 
     @Test
-    fun `触摸区尺寸必须走常量且外层兜满48dp`() {
-        val callArgs = fabCallArgs(fabSource) ?: throw AssertionError("共用件里 FAB 调用不存在")
+    fun `触摸区尺寸必须走常量且不低于48dp`() {
         assertTrue(
-            "胶囊的 minHeight 必须用 BACK_TO_TODAY_FAB_HEIGHT_DP 常量——视觉高 40dp，" +
-                "命中区靠外层 padding 兜到 ≥48dp。",
-            callArgs.contains(Regex("""minHeight\s*=\s*BACK_TO_TODAY_FAB_HEIGHT_DP\.dp""")),
+            "胶囊没有 heightIn(min = BACK_TO_TODAY_FAB_MIN_HEIGHT_DP.dp)——" +
+                "命中区下限被删了。",
+            fabSource.contains("heightIn(min = BACK_TO_TODAY_FAB_MIN_HEIGHT_DP.dp)"),
         )
+        val height = constFloatValue(fabSource, "BACK_TO_TODAY_FAB_MIN_HEIGHT_DP")
+        assertTrue("找不到胶囊高度常量 BACK_TO_TODAY_FAB_MIN_HEIGHT_DP", height != null)
         assertTrue(
-            "胶囊的 minWidth 必须用 BACK_TO_TODAY_FAB_WIDTH_DP 常量。",
-            callArgs.contains(Regex("""minWidth\s*=\s*BACK_TO_TODAY_FAB_WIDTH_DP\.dp""")),
-        )
-        assertTrue(
-            "胶囊外层缺少垂直 padding 兜底——视觉高 40dp 时命中区必须兜到 ≥48dp。",
-            fabSource.contains("padding(vertical = 4.dp)"),
+            "胶囊视觉高 ${height}dp 小于 48dp 的命中下限。",
+            height!! >= 48f,
         )
     }
 
@@ -190,31 +253,6 @@ class DayViewBackToTodayFabGuardTest {
     // ------------------------------------------------------------------
     // 判据工具（与 CourseOverviewSortPopupGuardTest 同一套路）
     // ------------------------------------------------------------------
-
-    /** 取出 `FloatingActionButton(` **调用语句**的实参文本（按括号配平，含嵌套）。 */
-    private fun fabCallArgs(text: String): String? {
-        val match = STATEMENT_RAW_FAB_CALL.find(text) ?: return null
-        val openParen = match.range.last
-        val close = matchingParen(text, openParen)
-        if (close < 0) return null
-        return text.substring(openParen + 1, close)
-    }
-
-    private fun matchingParen(text: String, openIndex: Int): Int {
-        var depth = 0
-        var i = openIndex
-        while (i < text.length) {
-            when (text[i]) {
-                '(' -> depth++
-                ')' -> {
-                    depth--
-                    if (depth == 0) return i
-                }
-            }
-            i++
-        }
-        return -1
-    }
 
     /** 抽 `const val NAME = <float>f` 的值（剥注释后的源码）。 */
     private fun constFloatValue(source: String, name: String): Float? {

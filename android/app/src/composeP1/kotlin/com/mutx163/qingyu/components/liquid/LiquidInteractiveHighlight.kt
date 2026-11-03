@@ -50,6 +50,21 @@ internal class InteractiveHighlight(
         Animatable(Offset.Zero, Offset.VectorConverter, Offset.VisibilityThreshold)
     private var startPosition = Offset.Zero
 
+    /**
+     * 形变位移，独立于高光位置。
+     *
+     * 高光松手时弹回按下点、若形变也读它就会跟着"滑回去"；所以形变单跟一根动画，
+     * 松手回弹到 0。只有需要「按着拖、整块玻璃跟手形变」的调用方会读 [offset]。
+     */
+    private val dragOffsetAnimation =
+        Animatable(Offset.Zero, Offset.VectorConverter, Offset.VisibilityThreshold)
+
+    /** 当前按压进度（0..1）。宿主可据此做缩放等派生动效。 */
+    val pressProgress: Float get() = pressProgressAnimation.value
+
+    /** 当前拖动位移（相对按下点），松手回弹到 [Offset.Zero]。 */
+    val offset: Offset get() = dragOffsetAnimation.value
+
     // 平滑阶跃的光斑；不支持 runtime shader 时退化成 radialGradient 近似
     // （线性衰减而非 S 曲线，肉眼几乎看不出差别，但不能不画 —— 不画就没有光斑）。
     private val spotShader: RuntimeShader? =
@@ -104,20 +119,25 @@ internal class InteractiveHighlight(
                 animationScope.launch {
                     launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
                     launch { positionAnimation.snapTo(startPosition) }
+                    launch { dragOffsetAnimation.snapTo(Offset.Zero) }
                 }
             },
             onDragEnd = { release() },
             onDragCancel = { release() },
         ) { change, _ ->
-            animationScope.launch { positionAnimation.snapTo(change.position) }
+            animationScope.launch {
+                positionAnimation.snapTo(change.position)
+                dragOffsetAnimation.snapTo(change.position - startPosition)
+            }
         }
     }
 
-    /** 松手：光斑弹回按下点，同时淡出。 */
+    /** 松手：光斑弹回按下点，形变回弹到零，同时淡出。 */
     private fun release() {
         animationScope.launch {
             launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
             launch { positionAnimation.animateTo(startPosition, positionAnimationSpec) }
+            launch { dragOffsetAnimation.animateTo(Offset.Zero, positionAnimationSpec) }
         }
     }
 }

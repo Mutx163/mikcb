@@ -477,10 +477,16 @@ fun TimetableWeekPage(
         realCurrentWeek != null &&
         realCurrentWeek != browsingWeek
 
-    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采。
-    // （2026-11-03：「回本周」换成共用件 BackToTodayFab——半透明底不采录像带，
-    // 判据里那一份「浮钮真要玻璃」随之移除。）
-    val pageBackdropActive = bandBlurActive || cardGlassActive
+    // 浮钮与玻璃坞同一档：真有壁纸 + 设备支持 runtime shader + 坞本身是玻璃材质。
+    // 只是「要不要录整屏」的判据；真正的档位判断在共用件里再做一次。
+    val floatingGlassActive = showBackToCurrentWeek && !dayVisible &&
+        hasBackdrop && isRuntimeShaderSupported() &&
+        (materialSpec?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+            materialSpec?.dock == SurfaceMaterialState.FROST)
+
+    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采、浮钮玻璃也要采。
+    // 漏掉最后一项时浮钮采到的是空层——画出来是一块透明/发黑的胶囊。
+    val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -675,32 +681,37 @@ fun TimetableWeekPage(
                 // 读屏念完整语义「回本周」（`backToCurrentWeekAction`）。
                 // 旧版行为原样保留：浏览周 ≠ 真实当前周才出现（显隐判据见
                 // [showBackToCurrentWeek]），点按回到本周；透明度设置压在
-                // 底色与文字上（`backToCurrentWeekOpacity`）。
-                if (showBackToCurrentWeek && !dayVisible) {
-                    val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
-                    BackToTodayFab(
-                        onClick = {
-                            realCurrentWeek?.let { target ->
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        (target - 1).coerceIn(0, pageCount - 1),
-                                    )
-                                }
+                // 染色与文字上（`backToCurrentWeekOpacity`）。
+                //
+                // 可见性交给共用件的 `visible`（而不是外层 `if`）：外层 `if` 会把节点
+                // 直接摘掉，退场动画没有机会播，钮是「啪」地消失的。
+                val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
+                BackToTodayFab(
+                    onClick = {
+                        realCurrentWeek?.let { target ->
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    (target - 1).coerceIn(0, pageCount - 1),
+                                )
                             }
-                        },
-                        label = DayViewStrings.backToTodayShort.zh,
-                        contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
-                        alpha = buttonOpacity,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
-                            // 宿主没接时退回旧口径（系统内边距 + 72dp），不再自己猜坞的高度。
-                            .padding(
-                                bottom = floatingButtonBottomInset
-                                    ?: (innerPadding.calculateBottomPadding() + 72.dp),
-                            ),
-                    )
-                }
+                        }
+                    },
+                    label = DayViewStrings.backToTodayShort.zh,
+                    contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
+                    visible = showBackToCurrentWeek && !dayVisible,
+                    backdrop = pageBackdrop,
+                    material = materialSpec,
+                    hasBackdrop = hasBackdrop,
+                    alpha = buttonOpacity,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
+                        // 宿主没接时退回旧口径（系统内边距 + 72dp），不再自己猜坞的高度。
+                        .padding(
+                            bottom = floatingButtonBottomInset
+                                ?: (innerPadding.calculateBottomPadding() + 72.dp),
+                        ),
+                )
 
                 // ── 日视图展开层（2026-11-03：重定位到「内容区」里）──────────────
                 // 以前的写法：日视图按**整屏**排版（`requiredSize(屏宽, 屏高)`），再

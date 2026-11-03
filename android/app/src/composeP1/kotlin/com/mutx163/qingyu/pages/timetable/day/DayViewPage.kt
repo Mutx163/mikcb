@@ -446,11 +446,16 @@ fun DayViewPage(
     // σ = 0 是**有效的清档**（Dart 清澈档）：背景原样透出、不跑高斯，连预糊也省掉。
     val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
     // 浮钮只在「当前看的不是今天」时出现；不可见就不为它录整屏。
-    // （2026-11-03：「回今日」换官方 FloatingActionButton 后不再采玻璃，
-    // 录像带判据里那一份「浮钮真要玻璃」随之移除。）
     val showsBackToToday = !isCurrentPageToday
-    // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采。
-    val pageBackdropActive = bandBlurActive || cardGlassActive
+    // 浮钮与玻璃坞同一档：真有壁纸 + 设备支持 runtime shader + 坞本身是玻璃材质。
+    // 只是「要不要录整屏」的判据；真正的档位判断在共用件里再做一次。
+    val floatingGlassActive = showsBackToToday &&
+        hasBackdrop && isRuntimeShaderSupported() &&
+        (material?.dock == SurfaceMaterialState.LIQUID_GLASS ||
+            material?.dock == SurfaceMaterialState.FROST)
+    // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采、浮钮玻璃也要采。
+    // 漏掉最后一项时浮钮采到的是空层——画出来是一块透明/发黑的胶囊。
+    val pageBackdropActive = bandBlurActive || cardGlassActive || floatingGlassActive
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
         cardPreblurActive -> cardGlassBackdrop
@@ -697,34 +702,37 @@ fun DayViewPage(
                 // 「回今日」浮钮（Dart `timetable_screen.dart:1556-1574`）：
                 // 翻到别的日期后一键回到今天；停在今天时不出现。
                 // 2026-11-03：与周视图「回本周」换成**同一颗共用件** [BackToTodayFab]
-                // （圆角胶囊、半透明主题主色底、亮棱描边、官方投影——只有一处实现，
+                // （玻璃胶囊、液态折射、亮棱、彩色浮影——只有一处实现，
                 // 用户口径「周视图也用同一个按钮」）。可见字是专用短键
                 // `backToTodayShort`（单字「今」），读屏念完整语义 `backToTodayAction`。
-                if (showsBackToToday) {
-                    BackToTodayFab(
-                        onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(
-                                    DayViewPaging.globalPage(
-                                        visibleDays = visibleDays,
-                                        week = todayWeek,
-                                        dayOfWeek = todayDate.dayOfWeek.value,
-                                    ).coerceIn(0, pageCount - 1),
-                                )
-                            }
-                        },
-                        label = DayViewStrings.backToTodayShort.zh,
-                        contentDescription = DayViewStrings.backToTodayAction.zh,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
-                            // 宿主没接时退回旧口径（系统内边距 + 20dp）。
-                            .padding(
-                                bottom = floatingButtonBottomInset
-                                    ?: (innerPadding.calculateBottomPadding() + 20.dp),
-                            ),
-                    )
-                }
+                // 可见性交给 `visible`：外层 `if` 会把节点摘掉，退场动画没机会播。
+                BackToTodayFab(
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(
+                                DayViewPaging.globalPage(
+                                    visibleDays = visibleDays,
+                                    week = todayWeek,
+                                    dayOfWeek = todayDate.dayOfWeek.value,
+                                ).coerceIn(0, pageCount - 1),
+                            )
+                        }
+                    },
+                    label = DayViewStrings.backToTodayShort.zh,
+                    contentDescription = DayViewStrings.backToTodayAction.zh,
+                    visible = showsBackToToday,
+                    backdrop = pageBackdrop,
+                    material = material,
+                    hasBackdrop = hasBackdrop,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
+                        // 宿主没接时退回旧口径（系统内边距 + 20dp）。
+                        .padding(
+                            bottom = floatingButtonBottomInset
+                                ?: (innerPadding.calculateBottomPadding() + 20.dp),
+                        ),
+                )
             }
         }
         }

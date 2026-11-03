@@ -53,7 +53,7 @@ class HomeFloatingMetricsTest {
 
     @Test
     fun `浮钮高度与间隙覆盖日视图列表那一段`() {
-        // 38（钮高）+ 12（间隙）：日视图列表要多让这一段，最后一卡才停在钮上方。
-        assertEquals(50f, HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP, 0.0001f)
+        // 48（玻璃胶囊的视觉高）+ 12（间隙）：日视图列表要多让这一段，最后一卡才停在钮上方。
+        assertEquals(60f, HomeFloatingMetrics.BACK_TO_TODAY_SCROLL_EXTRA_DP, 0.0001f)
     }
 }
