@@ -210,6 +210,9 @@ object AchievementModel {
      * 其次才是 `6/100`，没有进度信息就整行不显示。
      */
     fun progressLabel(achievement: Achievement): String? = when {
+        // 「空档 ≤ 2」这类越小越好的成就不能显示 `当前/上限`（会出现 6/2），
+        // 未解锁时宁可不显示线性进度。
+        achievement.isLowerBetterProgress && !achievement.isUnlocked -> null
         !achievement.hasProgress -> null
         achievement.isUnlocked -> ChartsStrings.statisticsAchievementDone.zh
         else -> ChartsStrings.statisticsAchievementProgress.filled(
@@ -220,6 +223,7 @@ object AchievementModel {
 
     /** 进度比例，钳在 0..1（目标为 0 或缺失时返回 0，不除零）。 */
     fun progressFraction(achievement: Achievement): Double {
+        if (achievement.isLowerBetterProgress && !achievement.isUnlocked) return 0.0
         if (!achievement.hasProgress) return 0.0
         val current = achievement.progressCurrent ?: 0
         val target = achievement.progressTarget ?: 0

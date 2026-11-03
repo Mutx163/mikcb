@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.statistics
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
+import com.mutx163.qingyu.pages.statistics.charts.BarEmphasis
 import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.CourseNatureStats
 import com.mutx163.qingyu.statistics.DailyAverageStats
@@ -362,6 +363,30 @@ class CourseStatisticsModelTest {
     }
 
     @Test
+    fun `越小越好的成就未解锁时不显示反向前进`() {
+        // balanced / gap_master 的 progressCurrent 是「当前空档数」、target 是上限。
+        // 6/2 不是 300% 完成度，未解锁时宁可只显示「未达成」。
+        for (id in listOf("balanced", "gap_master")) {
+            val locked = CourseStatisticsLogic.buildAchievement(
+                Achievement(id = id, isUnlocked = false, progressCurrent = 6, progressTarget = 2),
+            )
+            assertNull("$id 未解锁时不应显示 6/2", locked.progressLabel)
+            assertFalse("$id 未解锁时不应画进度条", locked.hasProgress)
+            assertNull(locked.progressCurrent)
+            assertNull(locked.progressTarget)
+            assertEquals(0f, locked.progressRatio, 0.0001f)
+            assertEquals("未达成", locked.statusLabel)
+
+            val unlocked = CourseStatisticsLogic.buildAchievement(
+                Achievement(id = id, isUnlocked = true, progressCurrent = 2, progressTarget = 2),
+            )
+            assertEquals("已达成", unlocked.progressLabel)
+            assertTrue(unlocked.hasProgress)
+            assertEquals(1f, unlocked.progressRatio, 0.0001f)
+        }
+    }
+
+    @Test
     fun `周视图携带完整的WeeklyStats与WeeklyComparison与TimeUtilization`() {
         val c1 = course("c1", "高数", dayOfWeek = 1, startSection = 1, endSection = 2)
         val state = CourseStatisticsLogic.buildViewState(
@@ -428,22 +453,31 @@ class CourseStatisticsModelTest {
             DailyAverageStats(6, 0.0, 0, 0),
             DailyAverageStats(7, 0.0, 0, 0),
         )
-        val view = CourseStatisticsLogic.buildDailyChart(daily)
+        val spec = CourseStatisticsLogic.buildDailyChart(daily)!!
 
-        assertEquals(listOf("一", "二", "三", "四", "五", "六", "日"), view.bars.map { it.label })
-        assertEquals(3.5, view.maxAverage, 0.0001)
-        assertEquals(4.5, view.maxY, 0.0001)             // maxY = maxAverage + 1
-        assertEquals(listOf(false, false, true, false, false, false, false), view.bars.map { it.isMax })
-        assertEquals(listOf(false, false, false, false, true, false, false), view.bars.map { it.isMin })
+        assertEquals(listOf("一", "二", "三", "四", "五", "六", "日"), spec.bars.map { it.label })
+        assertEquals(3.5, spec.maxValue, 0.0001)
+        assertEquals(4.5, spec.maxY, 0.0001)             // maxY = maxAverage + 1
+        assertEquals(
+            listOf(
+                BarEmphasis.NORMAL,
+                BarEmphasis.NORMAL,
+                BarEmphasis.MAX,
+                BarEmphasis.NORMAL,
+                BarEmphasis.MIN,
+                BarEmphasis.NORMAL,
+                BarEmphasis.NORMAL,
+            ),
+            spec.bars.map { it.emphasis },
+        )
     }
 
     @Test
     fun `整周无课时不标任何最大最小`() {
         val daily = (1..7).map { DailyAverageStats(it, 0.0, 0, 0) }
-        val view = CourseStatisticsLogic.buildDailyChart(daily)
-        assertTrue(view.bars.none { it.isMax })
-        assertTrue(view.bars.none { it.isMin })
-        assertEquals(0.0, view.maxAverage, 0.0001)
+        val spec = CourseStatisticsLogic.buildDailyChart(daily)!!
+        assertTrue(spec.bars.all { it.emphasis == BarEmphasis.NORMAL })
+        assertEquals(0.0, spec.maxValue, 0.0001)
     }
 
     // ── 11. 必修 / 选修（nature_ratio.dart） ──
@@ -456,6 +490,9 @@ class CourseStatisticsModelTest {
         assertEquals(listOf("3 门 · 12 节", "2 门 · 8 节"), view.legend.map { it.detail })
         assertEquals(listOf("60%", "40%"), view.legend.map { it.ratioText })
         assertNull(view.missingLabel)
+        // 环图按门数算弧长，不再从 60%/40% 这种已取整的显示文案反解。
+        assertEquals(3, view.requiredCount)
+        assertEquals(2, view.electiveCount)
     }
 
     @Test

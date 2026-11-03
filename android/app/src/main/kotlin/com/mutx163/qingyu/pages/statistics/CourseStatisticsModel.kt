@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.statistics
 
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.pages.statistics.charts.BarChartSpec
+import com.mutx163.qingyu.pages.statistics.charts.DailyChartModel
 import com.mutx163.qingyu.statistics.Achievement
 import com.mutx163.qingyu.statistics.CourseNatureStats
 import com.mutx163.qingyu.statistics.CourseStub
@@ -111,23 +113,6 @@ data class StoryView(
     val content: String,
 )
 
-/** 每日柱状图中的一根柱。 */
-data class DailyBarView(
-    val dayOfWeek: Int,
-    val label: String,
-    val average: Double,
-    val isMax: Boolean,
-    val isMin: Boolean,
-)
-
-/** 每日课时分布图视图（`maxY = maxAverage + 1`，与 Dart fl_chart 口径一致）。 */
-data class DailyChartView(
-    val bars: List<DailyBarView>,
-    val maxAverage: Double,
-) {
-    val maxY: Double get() = maxAverage + 1.0
-}
-
 /** 必修 / 选修图例一行。 */
 data class NatureLegendView(
     val label: String,
@@ -146,6 +131,13 @@ data class NatureRatioView(
     val hasRequired: Boolean = false,
     /** 选修侧是否有课。 */
     val hasElective: Boolean = false,
+    /**
+     * 两侧门数：环图直接交给共享 `ChartMath.donutSlices` 算弧长。
+     * 不再从 `ratioText`（已经四舍五入成整数的显示文案）反解比例——
+     * 那会丢精度，还会和共享环图画出不同弧长。
+     */
+    val requiredCount: Int = 0,
+    val electiveCount: Int = 0,
 )
 
 /** 学期视图整块内容（按 Dart 屏层顺序装配）。 */
@@ -155,7 +147,8 @@ data class SemesterContent(
     val comparison: WeeklyComparisonView,
     val achievements: List<AchievementView>,
     val stories: List<StoryView>,
-    val dailyChart: DailyChartView,
+    /** 每日课时分布（学期口径）直接带共享图表规格，渲染层不再自己算网格/柱高。 */
+    val dailyChart: BarChartSpec?,
     val nature: NatureRatioView,
 ) {
     /** Dart: `if (stories.isNotEmpty())` 才渲染「数据故事」分组。 */
@@ -358,7 +351,11 @@ object CourseStatisticsLogic {
     }
 
     fun buildAchievement(achievement: Achievement): AchievementView {
-        val hasProgress = achievement.hasProgress
+        // 「越小越好」的成就（空档 ≤ 2）不能把当前空档当分子：未解锁时会出现
+        // 「6/2」和满格进度条，和「未达成」自相矛盾。未解锁时宁可不画线性进度，
+        // 已解锁仍显示「已达成」。
+        val hideInvertedProgress = achievement.isLowerBetterProgress && !achievement.isUnlocked
+        val hasProgress = achievement.hasProgress && !hideInvertedProgress
         val progressLabel = if (hasProgress) {
             if (achievement.isUnlocked) {
                 StatisticsStrings.statisticsAchievementDone.zh
@@ -389,8 +386,8 @@ object CourseStatisticsLogic {
             isUnlocked = achievement.isUnlocked,
             progressLabel = progressLabel,
             hasProgress = hasProgress,
-            progressCurrent = achievement.progressCurrent,
-            progressTarget = achievement.progressTarget,
+            progressCurrent = if (hasProgress) achievement.progressCurrent else null,
+            progressTarget = if (hasProgress) achievement.progressTarget else null,
             progressRatio = ratio,
             statusLabel = statusLabel,
             confirmLabel = StatisticsStrings.statisticsAchievementDetailConfirm.zh,
@@ -455,24 +452,14 @@ object CourseStatisticsLogic {
 
     fun buildStories(list: List<DataStory>): List<StoryView> = list.map(::buildStory)
 
-    /** 每日课时分布（`daily_chart.dart`：最大高亮、最小次高亮、零课时都不标）。 */
-    fun buildDailyChart(dailyAverages: List<DailyAverageStats>): DailyChartView {
-        val maxAverage = dailyAverages.maxOfOrNull { it.averageSections } ?: 0.0
-        val activeAverages = dailyAverages.map { it.averageSections }.filter { it > 0 }
-        val minAverage = if (activeAverages.isEmpty()) 0.0 else activeAverages.min()
-        val hasActive = activeAverages.isNotEmpty()
-
-        val bars = dailyAverages.map { stat ->
-            DailyBarView(
-                dayOfWeek = stat.dayOfWeek,
-                label = StatisticsStrings.weekdayShort(stat.dayOfWeek),
-                average = stat.averageSections,
-                isMax = hasActive && stat.averageSections == maxAverage,
-                isMin = hasActive && stat.averageSections == minAverage && stat.averageSections > 0,
-            )
-        }
-        return DailyChartView(bars = bars, maxAverage = maxAverage)
-    }
+    /**
+     * 每日课时分布（`daily_chart.dart`：最大高亮、最小次高亮、零课时都不标）。
+     *
+     * 直接复用共享的 [DailyChartModel.averageSpec]：网格/刻度/柱高/强调档
+     * 与周视图、导出图同一套口径（原先这里另算一份，分数均值时刻度会对不上）。
+     */
+    fun buildDailyChart(dailyAverages: List<DailyAverageStats>): BarChartSpec? =
+        DailyChartModel.averageSpec(dailyAverages)
 
     /** 必修 / 选修（`nature_ratio.dart`）。 */
     fun buildNature(stats: CourseNatureStats): NatureRatioView {
@@ -510,6 +497,8 @@ object CourseStatisticsLogic {
             missingLabel = missingLabel,
             hasRequired = stats.requiredCount > 0,
             hasElective = stats.electiveCount > 0,
+            requiredCount = stats.requiredCount,
+            electiveCount = stats.electiveCount,
         )
     }
 

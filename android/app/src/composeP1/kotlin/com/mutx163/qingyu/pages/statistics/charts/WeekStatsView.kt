@@ -81,7 +81,11 @@ fun WeekStatsView(
 
         // ── 每日课时分布（周口径柱图，真的画柱） ──
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            QingyuSectionTitle(text = ChartsStrings.statisticsDailyDistribution.zh)
+            QingyuSectionTitle(
+                text = ChartsStrings.statisticsDailyDistribution.zh,
+                // 页面已统一缩进 12dp；标题再缩 16dp 才能与卡内文字一起落在 28dp 轴线。
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            )
             DailyChartCard(
                 spec = DailyChartModel.weekSpec(stats.dailyStats),
                 dark = dark,
@@ -92,13 +96,19 @@ fun WeekStatsView(
 
         // ── 必修 / 选修（真的画环） ──
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            QingyuSectionTitle(text = ChartsStrings.statisticsNatureRatio.zh)
+            QingyuSectionTitle(
+                text = ChartsStrings.statisticsNatureRatio.zh,
+                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            )
             NatureRatioCard(stats = stats.natureStats, dark = dark)
         }
 
         if (timeUtilization != null && !timeUtilization.isEmpty) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                QingyuSectionTitle(text = ChartsStrings.statisticsTimeUtilTitle.zh)
+                QingyuSectionTitle(
+                    text = ChartsStrings.statisticsTimeUtilTitle.zh,
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                )
                 TimeUtilizationCard(stats = timeUtilization, dark = dark)
             }
         }
@@ -106,7 +116,10 @@ fun WeekStatsView(
         val courseRows = WeekStatsModel.buildCourseRows(stats)
         if (courseRows.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                QingyuSectionTitle(text = ChartsStrings.statisticsCourseList.zh)
+                QingyuSectionTitle(
+                    text = ChartsStrings.statisticsCourseList.zh,
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                )
                 WeekCourseListCard(rows = courseRows, dark = dark)
             }
         }
@@ -143,6 +156,7 @@ private fun WeekSelectorCard(
             ChartIconBadge(
                 icon = MiuixIcons.Months,
                 accent = Color(QingyuTheme.primary(dark = dark)),
+                dark = dark,
             )
             Spacer(Modifier.width(10.dp))
             Text(

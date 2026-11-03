@@ -72,7 +72,7 @@ class StatisticsShareTextTest {
         ),
         achievements = emptyList(),
         stories = emptyList(),
-        dailyChart = DailyChartView(bars = emptyList(), maxAverage = 0.0),
+        dailyChart = null,
         nature = NatureRatioView(
             hasData = false,
             legend = emptyList(),

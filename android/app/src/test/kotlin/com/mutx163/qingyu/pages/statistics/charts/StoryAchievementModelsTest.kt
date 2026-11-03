@@ -198,6 +198,17 @@ class AchievementModelTest {
     }
 
     @Test
+    fun `越小越好的成就未解锁时不显示反向前进`() {
+        for (id in listOf("balanced", "gap_master")) {
+            val model = AchievementModel.badge(
+                Achievement(id = id, isUnlocked = false, progressCurrent = 6, progressTarget = 2),
+            )
+            assertNull("$id 不应显示 6/2", model.progressLabel)
+            assertEquals("$id 不应画满进度条", 0.0, model.progressFraction, 1e-9)
+        }
+    }
+
+    @Test
     fun `没有进度信息时整行不显示`() {
         val model = AchievementModel.badge(Achievement(id = "weekend_warrior", isUnlocked = true))
         assertNull(model.progressLabel)

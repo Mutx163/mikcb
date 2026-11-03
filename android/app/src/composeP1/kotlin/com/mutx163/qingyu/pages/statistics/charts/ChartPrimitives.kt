@@ -2,12 +2,11 @@ package com.mutx163.qingyu.pages.statistics.charts
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,26 +63,33 @@ object ChartPalette {
 /**
  * 图表卡的图标徽章（Dart `HyperosIconBadge` 的对位件）。
  *
- * 28dp 圆角方块 + 12% 强调色底 + 强调色图标，与 Dart 的 `iconBadgeSize` 一致。
+ * 26dp 方块 + 圆角 7dp + 14dp 图标 + **实色**强调底 + `onAccent` 图标，
+ * 逐项对齐 `lib/ui/hyperos/hyperos_tokens.dart:63-65`（`iconBadgeSize = 26`、
+ * `iconGlyphSize = 14`、`iconBadgeRadius = 7`）与
+ * `lib/ui/hyperos/widgets/indicators.dart:136-163`（实色底 + 白图标）。
+ *
+ * 原先写成 28/9/17 + 14% 淡底 + 同色图标，KDoc 却声称「与 Dart 一致」；
+ * 同仓 `SettingsPageRenderers.kt:662` 等页面早已使用 26/7/14。
  */
 @Composable
 fun ChartIconBadge(
     icon: ImageVector,
     accent: Color,
+    dark: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(9.dp))
-            .background(accent.copy(alpha = 0.14f)),
+            .size(26.dp)
+            .clip(RoundedCornerShape(7.dp))
+            .background(accent),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = accent,
-            modifier = Modifier.size(17.dp),
+            tint = Color(QingyuTheme.onAccent(dark)),
+            modifier = Modifier.size(14.dp),
         )
     }
 }
@@ -102,7 +108,7 @@ fun ChartCardHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChartIconBadge(icon = icon, accent = accent)
+        ChartIconBadge(icon = icon, accent = accent, dark = dark)
         Box(modifier = Modifier.width(10.dp))
         Text(
             text = title,
@@ -464,9 +470,15 @@ fun ChartAxisLabelRow(
 }
 
 /**
- * 纵轴上下边界标签（顶部 = 上限、底部 = 0），纵向两端对齐图表高度。
+ * 纵轴刻度标签：按 [ChartMath.leftAxisTicks] 的整数刻度逐个落位。
  *
  * 与 Canvas 里的 `mapY` 同口径：值 [maxY] 在顶部、0 在底部。
+ *
+ * 原先只画「上限 + 0」两个标签、并用 `SpaceBetween` 贴上下边：
+ * 上限是小数（例如日均 1.5 → maxY 2.5）时，顶部标签写「2」却被放在 2.5 的位置，
+ * 与真正落在 2 的网格线错开。现在每个刻度都按自己的值定位。
+ *
+ * @param interval 刻度间隔；`null` = 自动（最多 4 格），与网格线同一口径。
  */
 @Composable
 fun ChartLeftAxisLabels(
@@ -475,22 +487,28 @@ fun ChartLeftAxisLabels(
     widthDp: Float,
     dark: Boolean,
     modifier: Modifier = Modifier,
+    interval: Int? = null,
 ) {
-    Column(
+    val ticks = ChartMath.leftAxisTicks(maxY, interval)
+    Box(
         modifier = modifier
             .width(widthDp.dp)
             .height(heightDp.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = maxY.toInt().toString(),
-            style = MiuixTheme.textStyles.footnote2,
-            color = Color(QingyuTheme.secondaryText(dark)),
-        )
-        Text(
-            text = "0",
-            style = MiuixTheme.textStyles.footnote2,
-            color = Color(QingyuTheme.secondaryText(dark)),
-        )
+        for (tick in ticks) {
+            val fraction = if (maxY <= 0.0) 0f else (tick / maxY).toFloat().coerceIn(0f, 1f)
+            Text(
+                text = tick.toString(),
+                style = MiuixTheme.textStyles.footnote2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    // 让文字竖直中心对准刻度线；11sp 行高约 15dp，取一半。
+                    .offset(y = (heightDp * (1f - fraction)).dp - AXIS_LABEL_HALF_HEIGHT_DP),
+            )
+        }
     }
 }
+
+/** 轴标签半高（11sp 行高约 15dp 的一半）。 */
+private val AXIS_LABEL_HALF_HEIGHT_DP = 7.dp

@@ -69,6 +69,7 @@ fun TrendChartCard(
                     heightDp = spec.chartHeightDp,
                     widthDp = spec.leftReserveDp,
                     dark = dark,
+                    interval = spec.leftInterval,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     TrendLineCanvas(spec = spec, dark = dark)
@@ -124,6 +125,7 @@ fun DailyChartCard(
                     heightDp = chartHeightDp,
                     widthDp = leftReserveDp,
                     dark = dark,
+                    interval = spec.leftInterval,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     BarChartCanvas(

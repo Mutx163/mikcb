@@ -376,6 +376,7 @@ fun SemesterProgressCard(
                 ChartIconBadge(
                     icon = MiuixIcons.Months,
                     accent = Color(QingyuTheme.primary(dark = dark)),
+                    dark = dark,
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(

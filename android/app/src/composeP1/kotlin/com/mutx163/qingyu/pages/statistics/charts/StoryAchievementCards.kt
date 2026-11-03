@@ -150,6 +150,7 @@ fun DataStoryList(
                     ChartIconBadge(
                         icon = storyIcon(item.tone),
                         accent = storyToneColor(item.tone, dark),
+                        dark = dark,
                     )
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
@@ -269,7 +270,7 @@ private fun AchievementMedal(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)?,
 ) {
-    val accent = achievementAccentColor(model.accent, dark)
+    val accent = achievementAccentColor(model.accent)
     val fill = if (model.unlocked) {
         accent
     } else {
@@ -388,7 +389,7 @@ fun AchievementDetailContent(
     modifier: Modifier = Modifier,
 ) {
     val model = AchievementModel.badge(achievement)
-    val accent = achievementAccentColor(model.accent, dark)
+    val accent = achievementAccentColor(model.accent)
 
     Column(
         modifier = modifier
@@ -478,8 +479,8 @@ fun AchievementDetailContent(
     }
 }
 
-/** 成就语义色 → 实际颜色。 */
-private fun achievementAccentColor(accent: AchievementAccent, dark: Boolean): Color = when (accent) {
+/** 成就语义色 → 实际颜色（主页徽章与分析页共用同一套映射）。 */
+fun achievementAccentColor(accent: AchievementAccent): Color = when (accent) {
     AchievementAccent.ORANGE -> ChartPalette.Orange
     AchievementAccent.GREEN -> ChartPalette.Green
     AchievementAccent.PURPLE -> ChartPalette.Purple

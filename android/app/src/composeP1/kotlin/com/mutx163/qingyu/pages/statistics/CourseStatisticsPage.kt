@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.statistics
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,11 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.mutx163.qingyu.pages.statistics.charts.WeekStatsView
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -47,14 +47,23 @@ import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import com.mutx163.qingyu.theme.QingyuIconColors
+import com.mutx163.qingyu.pages.statistics.charts.AchievementModel
+import com.mutx163.qingyu.pages.statistics.charts.BarChartCanvas
+import com.mutx163.qingyu.pages.statistics.charts.BarEmphasis
+import com.mutx163.qingyu.pages.statistics.charts.ChartAxisLabelRow
+import com.mutx163.qingyu.pages.statistics.charts.ChartIconBadge
+import com.mutx163.qingyu.pages.statistics.charts.ChartLeftAxisLabels
+import com.mutx163.qingyu.pages.statistics.charts.ChartPalette
+import com.mutx163.qingyu.pages.statistics.charts.DailyChartModel
+import com.mutx163.qingyu.pages.statistics.charts.DonutRingCanvas
+import com.mutx163.qingyu.pages.statistics.charts.achievementAccentColor
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Community
 import top.yukonga.miuix.kmp.icon.extended.Location
 import top.yukonga.miuix.kmp.icon.extended.Notes
@@ -64,6 +73,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -123,6 +133,10 @@ fun CourseStatisticsPage(
 ) {
     val dark = isSystemInDarkTheme()
     var activeAchievementDetail by remember { mutableStateOf<AchievementView?>(null) }
+    // 分段切换时列表会保留滚动位置：学期视图滚到深处再切到周视图，
+    // 周视图只剩 1 个 item，会停在中段而不是从头看。切分段就回到顶部。
+    val listState = rememberLazyListState()
+    LaunchedEffect(viewState.selectedTabIndex) { listState.scrollToItem(0) }
 
     // 顶栏 / 返回键 / 折叠行为 / 容器底色统一走共享骨架（规则 R1）。
     // Dart 原件 lib/screens/course_statistics_screen.dart:122 走 HyperosSubpage，
@@ -162,20 +176,27 @@ fun CourseStatisticsPage(
             }
         } else {
             // 官方页面骨架（规则 R2）：惰性列表 + 右侧滚动条 + 末端触感 + 顶栏折叠联动。
-            // 横向留白交给每个块自己带 QingyuPageCardMargin（12dp），
-            // 与分组标题 SmallTitle 自带的 28dp 左缘对齐；不在 contentPadding 里加左右内边距。
+            // 横向 12dp 是卡片外边距；卡内统一 16dp、分组标题也传 16dp 横向，
+            // 于是「卡片文字 / 分组标题」左缘都是 12+16=28（官方轴线）。
             QingyuPageList(
                 innerPadding = innerPadding,
+                state = listState,
                 scrollBehavior = scrollBehavior,
                 horizontalPadding = QingyuPageCardMargin,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(key = "tabs") {
-                    StatisticsTabRow(
+                    // Dart `course_statistics_screen.dart:194-207` 用 HyperosTabRow，
+                    // 默认 contour 样式 ⇒ 官方 `TabRowWithContour`（超椭圆轨道 +
+                    // 连续滑动指示器 + 「第几个/共几个」语义）。原先手拼 Box+clickable
+                    // 属于自研交互，热区也只有约 36dp。
+                    TabRowWithContour(
                         tabs = viewState.tabs,
-                        selectedIndex = viewState.selectedTabIndex,
+                        selectedTabIndex = viewState.selectedTabIndex,
                         onTabSelected = onTabSelected,
-                        dark = dark,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
                     )
                 }
 
@@ -206,7 +227,34 @@ fun CourseStatisticsPage(
                     }
                     item(key = "dailyDistribution") {
                         SectionBlock(StatisticsStrings.statisticsDailyDistribution.zh) {
-                            DailyBarsChart(view = semester.dailyChart, dark = dark)
+                            // 与周视图、导出图共用同一套柱图内核：网格按整数节、
+                            // 纵轴上限 = 最大均值 + 1、柱宽/圆角/强调档全部同源。
+                            val spec = semester.dailyChart
+                            if (spec != null && spec.bars.isNotEmpty()) {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    ChartLeftAxisLabels(
+                                        maxY = spec.maxY,
+                                        interval = spec.leftInterval,
+                                        heightDp = DailyChartModel.AVERAGE_CHART_HEIGHT_DP,
+                                        widthDp = DailyChartModel.AVERAGE_LEFT_RESERVE_DP,
+                                        dark = dark,
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        BarChartCanvas(
+                                            spec = spec,
+                                            dark = dark,
+                                            chartHeightDp = DailyChartModel.AVERAGE_CHART_HEIGHT_DP,
+                                        )
+                                        ChartAxisLabelRow(
+                                            labels = spec.bars.map { it.label },
+                                            dark = dark,
+                                            highlightIndex = spec.bars
+                                                .indexOfFirst { it.emphasis == BarEmphasis.MAX }
+                                                .takeIf { it >= 0 },
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                     item(key = "natureRatio") {
@@ -215,7 +263,12 @@ fun CourseStatisticsPage(
                         }
                     }
                     item(key = "more") {
-                        SectionBlock(StatisticsStrings.statisticsMoreTitle.zh) {
+                        // 行内是官方 ArrowPreference（自带 16dp 内边距与按压反馈），
+                        // 卡片只留 2dp 呼吸位，避免叠成 32dp。
+                        SectionBlock(
+                            title = StatisticsStrings.statisticsMoreTitle.zh,
+                            insideMargin = PaddingValues(vertical = 2.dp),
+                        ) {
                             AnalysisEntryList(
                                 entries = viewState.analysisEntries,
                                 onOpenAnalysis = onOpenAnalysis,
@@ -275,65 +328,27 @@ private fun StatisticsEmptyState(title: String, hint: String, dark: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        // Dart `HyperosEmptyState(icon: analytics_outlined)`：48dp 图标 + 16dp 间距。
+        Icon(
+            imageVector = MiuixIcons.Report,
+            contentDescription = null,
+            tint = Color(QingyuTheme.secondaryText(dark)),
+            modifier = Modifier.size(48.dp),
+        )
         Text(
             text = title,
             style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
             color = Color(QingyuTheme.primaryText(dark)),
             textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp),
         )
         Text(
             text = hint,
             style = MiuixTheme.textStyles.footnote1,
             color = Color(QingyuTheme.secondaryText(dark)),
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = 8.dp),
         )
-    }
-}
-
-// ── 分段控制器 ──
-
-@Composable
-private fun StatisticsTabRow(
-    tabs: List<String>,
-    selectedIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    dark: Boolean,
-) {
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(4.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            tabs.forEachIndexed { index, label ->
-                val isSelected = index == selectedIndex
-                val base = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                Box(
-                    // 选中段的底色取「最高级容器」语义槽：原先写死的
-                    // 0xFFE5E5EA（亮）/ 0xFF2C2C2E（暗）与该槽位（#E8E8E8 / #2D2D2D）几乎同值，
-                    // 换成槽位后深色模式与换主题色都能跟着走（规则 R5）。
-                    modifier = if (isSelected) {
-                        base.background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    } else {
-                        base
-                    }
-                        .clickable { onTabSelected(index) }
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        style = MiuixTheme.textStyles.body2.shiftWeight(
-                            if (isSelected) QingyuWeightDelta.SEMIBOLD else 0,
-                        ),
-                        color = if (isSelected) {
-                            Color(QingyuTheme.primaryText(dark))
-                        } else {
-                            Color(QingyuTheme.secondaryText(dark))
-                        },
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -347,10 +362,18 @@ private fun StatisticsTabRow(
  * 改走 [QingyuSectionTitle]（内部就是官方 `SmallTitle`，自带 28dp 左缘）。
  */
 @Composable
-private fun SectionBlock(title: String, content: @Composable () -> Unit) {
+private fun SectionBlock(
+    title: String,
+    insideMargin: PaddingValues = PaddingValues(16.dp),
+    content: @Composable () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        QingyuSectionTitle(text = title)
-        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+        // 列表已统一加 12dp：标题再缩 16dp ⇒ 文字左缘 28，与卡内 16dp 对齐。
+        QingyuSectionTitle(
+            text = title,
+            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        )
+        QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = insideMargin) {
             content()
         }
     }
@@ -361,7 +384,7 @@ private fun SectionBlock(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
     if (metrics.isEmpty()) return
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             metrics.forEachIndexed { index, metric ->
                 if (index > 0) {
@@ -410,7 +433,7 @@ private fun OverviewCard(metrics: List<StatisticsMetricView>, dark: Boolean) {
 @Composable
 private fun SemesterProgressCard(view: SemesterProgressView, dark: Boolean) {
     val primary = Color(QingyuTheme.primary(dark = dark))
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
@@ -511,7 +534,7 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
         DeltaTone.DOWN -> Color(QingyuTheme.success(dark))
         DeltaTone.FLAT -> Color(QingyuTheme.secondaryText(dark))
     }
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = view.title,
@@ -536,7 +559,6 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
                 label = view.weekSectionsLabel,
                 accent = Color(QingyuTheme.primary(dark = dark)),
                 labelColor = Color(QingyuTheme.primaryText(dark)),
-                dark = dark,
                 alignEnd = false,
                 modifier = Modifier.weight(1f),
             )
@@ -545,16 +567,14 @@ private fun WeeklyComparisonCard(view: WeeklyComparisonView, dark: Boolean) {
                 label = view.deltaLabel,
                 accent = deltaColor,
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
-                dark = dark,
                 alignEnd = false,
                 modifier = Modifier.weight(1f),
             )
             ComparisonCell(
                 value = view.averageValue,
                 label = view.averageLabel,
-                accent = TealAccent,
+                accent = ChartPalette.Teal,
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
-                dark = dark,
                 alignEnd = true,
                 modifier = Modifier.weight(1f),
             )
@@ -576,7 +596,6 @@ private fun ComparisonCell(
     label: String,
     accent: Color,
     labelColor: Color,
-    dark: Boolean,
     alignEnd: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -638,11 +657,23 @@ private fun AchievementBadge(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accent = if (item.isUnlocked) {
-        Color(QingyuTheme.primary(dark = dark))
+    // Dart `achievement_badge.dart:344-360`：每枚成就按 id 取语义色（橙/绿/紫/黄/
+    // 蓝/青/靛/红），锁定态用同一色的淡底 + 描边，而不是全部灰色。
+    // 映射与共享徽章层 `AchievementModel.accentOf` 同源。
+    val accent = achievementAccentColor(AchievementModel.accentOf(item.id))
+    val fill = if (item.isUnlocked) {
+        accent
     } else {
-        Color(QingyuTheme.surfaceContainerHighest(dark))
+        accent.copy(
+            alpha = if (dark) AchievementModel.LOCKED_FILL_DARK else AchievementModel.LOCKED_FILL_LIGHT,
+        )
     }
+    val lockBorder = accent.copy(
+        alpha = if (dark) AchievementModel.LOCKED_BORDER_DARK else AchievementModel.LOCKED_BORDER_LIGHT,
+    )
+    val lockIcon = accent.copy(
+        alpha = if (dark) AchievementModel.LOCKED_ICON_DARK else AchievementModel.LOCKED_ICON_LIGHT,
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
@@ -654,17 +685,24 @@ private fun AchievementBadge(
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(accent),
+                .background(fill)
+                .then(
+                    if (item.isUnlocked) {
+                        Modifier
+                    } else {
+                        Modifier.border(
+                            width = 1.dp,
+                            color = lockBorder,
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "★",
                 style = MiuixTheme.textStyles.body1,
-                color = if (item.isUnlocked) {
-                    Color(QingyuTheme.onAccent(dark))
-                } else {
-                    Color(QingyuTheme.secondaryText(dark))
-                },
+                color = if (item.isUnlocked) Color(QingyuTheme.onAccent(dark)) else lockIcon,
             )
         }
         Text(
@@ -687,11 +725,7 @@ private fun AchievementBadge(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
-                color = if (item.isUnlocked) {
-                    Color(QingyuTheme.primary(dark = dark))
-                } else {
-                    Color(QingyuTheme.secondaryText(dark))
-                },
+                color = if (item.isUnlocked) accent else Color(QingyuTheme.secondaryText(dark)),
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -741,88 +775,6 @@ private fun boldSegments(content: String): AnnotatedString = buildAnnotatedStrin
     }
 }
 
-// ── 每日课时分布（Canvas 柱状图） ──
-
-@Composable
-private fun DailyBarsChart(view: DailyChartView, dark: Boolean) {
-    if (view.bars.isEmpty()) return
-    val primary = Color(QingyuTheme.primary(dark = dark))
-    val gridColor = Color(QingyuTheme.dividerLine(dark))
-    val topLabel = view.maxY.toInt().toString()
-
-    Row(modifier = Modifier.fillMaxWidth()) {
-        // 左侧刻度：上界与 0
-        Column(
-            modifier = Modifier
-                .width(24.dp)
-                .height(168.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(text = topLabel, style = MiuixTheme.textStyles.footnote2, color = Color(QingyuTheme.secondaryText(dark)))
-            Text(text = "0", style = MiuixTheme.textStyles.footnote2, color = Color(QingyuTheme.secondaryText(dark)))
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(168.dp),
-            ) {
-                val maxY = if (view.maxY <= 0.0) 1f else view.maxY.toFloat()
-                // 横向网格线（按整数节数）
-                val steps = if (maxY <= 4f) maxY.toInt() else 4
-                for (i in 0..steps) {
-                    val y = size.height - size.height * (i.toFloat() / steps)
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = 1f,
-                    )
-                }
-                val count = view.bars.size
-                val slot = size.width / count
-                val barWidth = minOf(20.dp.toPx(), slot * 0.5f)
-                view.bars.forEachIndexed { index, bar ->
-                    val centerX = slot * index + slot / 2f
-                    val barHeight = size.height * (bar.average.toFloat() / maxY)
-                    val color = when {
-                        bar.isMax -> primary
-                        bar.isMin -> TealAccent
-                        else -> primary.copy(alpha = 0.35f)
-                    }
-                    if (barHeight > 0f) {
-                        drawRoundRect(
-                            color = color,
-                            topLeft = Offset(centerX - barWidth / 2f, size.height - barHeight),
-                            size = Size(barWidth, barHeight),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()),
-                        )
-                    }
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth()) {
-                view.bars.forEach { bar ->
-                    Text(
-                        text = bar.label,
-                        style = MiuixTheme.textStyles.footnote2.shiftWeight(
-                            if (bar.isMax) QingyuWeightDelta.MEDIUM else 0,
-                        ),
-                        textAlign = TextAlign.Center,
-                        color = if (bar.isMax) {
-                            Color(QingyuTheme.primary(dark = dark))
-                        } else {
-                            Color(QingyuTheme.secondaryText(dark))
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(top = 6.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ── 必修 / 选修 ──
 
 @Composable
@@ -845,7 +797,13 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
-            NatureDonut(view = view, dark = dark)
+            // 与周视图共用同一个环图内核（环厚 20 / 孔 28、缺失侧 18/32、2° 段间隙，
+            // 单侧为 0 时补 12% 占位弧）。不再从格式化后的百分比反解弧角。
+            DonutRingCanvas(
+                requiredCount = view.requiredCount,
+                electiveCount = view.electiveCount,
+                modifier = Modifier.size(100.dp),
+            )
             if (view.missingLabel != null) {
                 Text(
                     text = view.missingLabel,
@@ -863,7 +821,7 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             view.legend.forEach { legend ->
-                val color = if (legend.isRequired) RequiredAccent else ElectiveAccent
+                val color = if (legend.isRequired) ChartPalette.Blue else ChartPalette.Purple
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -898,93 +856,6 @@ private fun NatureRatioBlock(view: NatureRatioView, dark: Boolean) {
     }
 }
 
-@Composable
-private fun NatureDonut(view: NatureRatioView, dark: Boolean) {
-    val required = view.legend.firstOrNull { it.isRequired }
-    val requiredRatio = required?.ratioText?.trimEnd('%')?.toFloatOrNull() ?: 0f
-    val hasRequired = view.hasRequired
-    val hasElective = view.hasElective
-
-    Canvas(modifier = Modifier.size(100.dp)) {
-        val stroke = 10.dp.toPx()
-        val inset = stroke / 2f
-        val arcSize = Size(size.width - stroke, size.height - stroke)
-        val topLeft = Offset(inset, inset)
-
-        // 缺失侧补极浅轨道段，让「空」可见（对齐 Dart 的 0.12 alpha 兜底段）
-        if (!hasRequired) {
-            drawArc(
-                color = RequiredAccent.copy(alpha = 0.12f),
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-        }
-        if (!hasElective) {
-            drawArc(
-                color = ElectiveAccent.copy(alpha = 0.12f),
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-        }
-        if (hasRequired && hasElective) {
-            val sweep = 360f * (requiredRatio / 100f)
-            drawArc(
-                color = RequiredAccent,
-                startAngle = -90f,
-                sweepAngle = sweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-            drawArc(
-                color = ElectiveAccent,
-                startAngle = -90f + sweep,
-                sweepAngle = 360f - sweep,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-        } else if (hasRequired) {
-            drawArc(
-                color = RequiredAccent,
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-        } else if (hasElective) {
-            drawArc(
-                color = ElectiveAccent,
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Butt),
-            )
-        }
-        // 暗色下保留一点内圈描边光感
-        if (dark) {
-            drawCircle(
-                color = Color.White.copy(alpha = 0.04f),
-                radius = size.minDimension / 2f - stroke,
-            )
-        }
-    }
-}
-
 // ── 深度分析入口组 ──
 
 @Composable
@@ -997,41 +868,41 @@ private fun AnalysisEntryList(
     Column(modifier = Modifier.fillMaxWidth()) {
         entries.forEachIndexed { index, entry ->
             if (index > 0) {
-                HorizontalDivider()
+                HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        when (val target = entry.target) {
-                            is StatisticsEntryTarget.Sessions -> onOpenSessions()
-                            is StatisticsEntryTarget.Analysis -> onOpenAnalysis(target.module)
-                        }
+            // Dart 每行是 `HyperosListTile(icon, iconAccent)`：实色图标徽章 +
+            // 官方按压反馈。原先手搓 Row + clickable 既丢了七种语义色，也没有
+            // 按下反馈；ArrowPreference 自带 16dp 内边距、右箭头与无障碍角色。
+            ArrowPreference(
+                title = entry.title,
+                onClick = {
+                    when (val target = entry.target) {
+                        is StatisticsEntryTarget.Sessions -> onOpenSessions()
+                        is StatisticsEntryTarget.Analysis -> onOpenAnalysis(target.module)
                     }
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    imageVector = iconFor(entry.target),
-                    contentDescription = null,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    text = entry.title,
-                    style = MiuixTheme.textStyles.main,
-                    color = Color(QingyuTheme.primaryText(dark)),
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = MiuixIcons.ChevronForward,
-                    contentDescription = null,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+                },
+                startAction = {
+                    ChartIconBadge(
+                        icon = iconFor(entry.target),
+                        accent = accentFor(entry.target),
+                        dark = dark,
+                    )
+                },
+            )
         }
+    }
+}
+
+/** Dart `_buildAnalysisEntries` 的 `iconAccent`：teal / blue / cyan / purple / green / orange / indigo。 */
+private fun accentFor(target: StatisticsEntryTarget): Color = when (target) {
+    is StatisticsEntryTarget.Sessions -> ChartPalette.Teal
+    is StatisticsEntryTarget.Analysis -> when (target.module) {
+        StatisticsAnalysisModule.TREND -> ChartPalette.Blue
+        StatisticsAnalysisModule.TIME_UTIL -> ChartPalette.Cyan
+        StatisticsAnalysisModule.VENUE -> ChartPalette.Purple
+        StatisticsAnalysisModule.TEACHER -> ChartPalette.Green
+        StatisticsAnalysisModule.RANKING -> ChartPalette.Orange
+        StatisticsAnalysisModule.COMPARE -> ChartPalette.Indigo
     }
 }
 
@@ -1056,7 +927,7 @@ private fun WeekOverviewCard(
     onWeekChanged: (Int) -> Unit,
     dark: Boolean,
 ) {
-    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(14.dp)) {
+    QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = StatisticsStrings.statisticsWeekSelector.filled("week", week.weekNumber.toString()),
@@ -1098,7 +969,6 @@ private fun WeekOverviewCard(
                 label = StatisticsStrings.statisticsCourseCount.zh,
                 accent = Color(QingyuTheme.primaryText(dark)),
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
-                dark = dark,
                 alignEnd = false,
                 modifier = Modifier.weight(1f),
             )
@@ -1107,7 +977,6 @@ private fun WeekOverviewCard(
                 label = StatisticsStrings.statisticsSectionCount.zh,
                 accent = Color(QingyuTheme.primary(dark = dark)),
                 labelColor = Color(QingyuTheme.secondaryText(dark)),
-                dark = dark,
                 alignEnd = false,
                 modifier = Modifier.weight(1f),
             )
@@ -1121,22 +990,6 @@ private fun WeekOverviewCard(
     }
 }
 
-// ── 图表配色（Dart `HyperosIconColors` 的语义色） ──
-//
-// 数值的唯一定义处在 `theme/QingyuPalette.kt` 的 [QingyuIconColors]（`QingyuPaletteTest` 钉着 9 个值）。
-// 这里原先自己抄了一份**不同**的 Material 调色板字面量（0xFF26A69A / 0xFF2196F3 / 0xFF9C27B0），
-// KDoc 却写着「对齐 Dart HyperosIconColors」——实际与 Dart 的
-// 0xFF14B8A6 / 0xFF3482FF / 0xFF8B5CF6 并不一致，属于「两处定义同一色板且值不同」。
-// 现在改引用唯一出处：既消掉写死色（规则 R5），也修掉这处值不一致。
-//
-// 这些是**数据系列语义色**（青=最低档、蓝=必修、紫=选修），亮暗同值、不跟主题种子色走，
-// 与 `charts/ChartPrimitives.kt` 的 `ChartPalette` 同一套出处。
-
-/** Dart `HyperosIconColors.teal`（柱状图最低档）。 */
-private val TealAccent = Color(QingyuIconColors.TEAL)
-
-/** Dart `HyperosIconColors.blue`（必修）。 */
-private val RequiredAccent = Color(QingyuIconColors.BLUE)
-
-/** Dart `HyperosIconColors.purple`（选修）。 */
-private val ElectiveAccent = Color(QingyuIconColors.PURPLE)
+// 图表语义色统一走 `charts/ChartPrimitives.kt` 的 `ChartPalette` / `ChartMath`：
+// 本页原先自己抄过一份 `QingyuIconColors` 常量，和周视图各写一套，
+// 于是同一个「必修/选修」在两处会取到不同来源。现在只保留一个出处。
