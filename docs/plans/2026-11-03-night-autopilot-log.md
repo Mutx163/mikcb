@@ -1112,7 +1112,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 7. **L0（统一入口实跑）**：
    - `-Module course` = **OK (232 tests)**
    - `-Module ../theme` = **OK (54 tests)**（`resolveShiftedWeight` 所在纯函数层）
-   - `-Module timetable` = **Tests run 291, Failures 3**，3 条全部落在 `TimetableProfilesControllerTest`（`lastUsedAt`/`zh_TW`），来自他线未提交的 `TimetableProfilesController.kt` + 其测试，非本批改动；本批 `WeatherGateGuardTest` 全绿。
+   - `-Module timetable` = **OK (291 tests)**（收线复跑 HEAD `30e2aca6`）。过程中曾出现 3 红，全部落在 `TimetableProfilesControllerTest`（`lastUsedAt`/`zh_TW`），来自他线 WIP；其提交后已复绿，非本批改动。本批 `WeatherGateGuardTest` 全绿。
    - **components 域 L0 不支持**：脚本硬编码 `pages/<module>` 且不含 composeP1；实测 `-Module ../components` 编 139 文件后 `unresolved reference 'androidx'`。故 `QingyuTextStyles` 的新用例只能由门 2 的 Compose 测试执行，本批**不声称**组件编译/单测通过。
 8. **未推送**，等协调线统一推。
 
