@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -65,9 +66,11 @@ fun MoreFeaturesSearchOverlay(
         MoreFeaturesModel.filterGroups(groups, searchQuery)
     }
 
+    // 全屏浮层带输入框：imePadding 把搜索栏与结果整体抬到键盘之上（壳是 edge-to-edge）。
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .background(Color(QingyuTheme.scaffoldBackground(dark)))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

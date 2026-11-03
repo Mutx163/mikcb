@@ -8,13 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -27,12 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -40,15 +38,10 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -72,9 +65,6 @@ fun StartupFlowPage(
     val dark = isSystemInDarkTheme()
     val primaryColor = Color(QingyuTheme.primary(dark = dark))
 
-    // 大标题折叠行为：Dart 原件 lib/screens/startup_flow_screens.dart:34 走 HyperosSubpage，
-    // 大标题可折叠（collapsibleLargeTitle 默认 true）。不传 scrollBehavior 则永不收起。
-    val scrollBehavior = MiuixScrollBehavior()
     // 顶栏标题随状态机步骤变化：抽成同一个局部变量喂给 title 与 largeTitle，避免两处各写一遍分叉。
     val pageTitle = when (currentState.currentStep) {
         StartupStep.MIGRATION_CHECK -> GuideStrings.migrationTitle.zh
@@ -83,81 +73,63 @@ fun StartupFlowPage(
         StartupStep.COMPLETED -> GuideStrings.welcomeAppName.zh
     }
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = pageTitle,
-                largeTitle = pageTitle,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = Color(QingyuTheme.primaryText(dark))
-                        )
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃（QingyuPageScaffold 内部三步接线）。
+    // 大标题可折叠（Dart 原件 lib/screens/startup_flow_screens.dart:34 走 HyperosSubpage 默认）。
+    QingyuPageScaffold(title = pageTitle, onBack = onBack) {
+        when (currentState.currentStep) {
+            StartupStep.MIGRATION_CHECK -> {
+                MigrationGuideContent(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    isOpeningOldApp = currentState.isOpeningOldApp,
+                    onOpenOldApp = {
+                        stateMachine.setOpeningOldApp(true)
+                        currentState = stateMachine.state
+                        onOpenOldApp()
+                        // 立刻复位「正在打开」：宿主那一步是同步的（`startActivity` 发完就返回），
+                        // Dart 原件也是在 await 之后 setState 复位（`startup_flow_screens.dart:181-192`）。
+                        // 不复位的话按钮会**永久**停在「正在打开旧版……」——用户从旧版回来时
+                        // 会看到「正在打开」和「未能打开旧版应用」两句互相矛盾的话。
+                        stateMachine.setOpeningOldApp(false)
+                        currentState = stateMachine.state
+                    },
+                    onGoImport = {
+                        stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)
+                        currentState = stateMachine.state
+                        onGoImportBackup()
+                    },
+                    onSkip = {
+                        stateMachine.onMigrationAction(MigrationFlowAction.SKIP)
+                        currentState = stateMachine.state
                     }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            when (currentState.currentStep) {
-                StartupStep.MIGRATION_CHECK -> {
-                    MigrationGuideContent(
-                        innerPadding = innerPadding,
-                        scrollBehavior = scrollBehavior,
-                        isOpeningOldApp = currentState.isOpeningOldApp,
-                        onOpenOldApp = {
-                            stateMachine.setOpeningOldApp(true)
-                            currentState = stateMachine.state
-                            onOpenOldApp()
-                            // 立刻复位「正在打开」：宿主那一步是同步的（`startActivity` 发完就返回），
-                            // Dart 原件也是在 await 之后 setState 复位（`startup_flow_screens.dart:181-192`）。
-                            // 不复位的话按钮会**永久**停在「正在打开旧版……」——用户从旧版回来时
-                            // 会看到「正在打开」和「未能打开旧版应用」两句互相矛盾的话。
-                            stateMachine.setOpeningOldApp(false)
-                            currentState = stateMachine.state
-                        },
-                        onGoImport = {
-                            stateMachine.onMigrationAction(MigrationFlowAction.RESTORE_BACKUP)
-                            currentState = stateMachine.state
-                            onGoImportBackup()
-                        },
-                        onSkip = {
-                            stateMachine.onMigrationAction(MigrationFlowAction.SKIP)
-                            currentState = stateMachine.state
-                        }
-                    )
-                }
+                )
+            }
 
-                StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
-                    DateSetupContent(
-                        innerPadding = innerPadding,
-                        scrollBehavior = scrollBehavior,
-                        initialDate = currentState.semesterStartDate ?: "2026-09-01",
-                        initialWeeks = currentState.totalWeeks,
-                        calculatedWeek = currentState.currentWeek,
-                        onDateChanged = { newDate ->
-                            stateMachine.onUpdateSemesterStartDate(newDate)
+            StartupStep.DATE_SETUP, StartupStep.GUIDE_TOUR, StartupStep.COMPLETED -> {
+                DateSetupContent(
+                    innerPadding = innerPadding,
+                    scrollBehavior = scrollBehavior,
+                    initialDate = currentState.semesterStartDate ?: "2026-09-01",
+                    initialWeeks = currentState.totalWeeks,
+                    calculatedWeek = currentState.currentWeek,
+                    onDateChanged = { newDate ->
+                        stateMachine.onUpdateSemesterStartDate(newDate)
+                        currentState = stateMachine.state
+                    },
+                    onWeeksChanged = { newWeeks ->
+                        stateMachine.onUpdateTotalWeeks(newWeeks)
+                        currentState = stateMachine.state
+                    },
+                    onConfirm = {
+                        if (stateMachine.onCompleteDateSetup()) {
                             currentState = stateMachine.state
-                        },
-                        onWeeksChanged = { newWeeks ->
-                            stateMachine.onUpdateTotalWeeks(newWeeks)
-                            currentState = stateMachine.state
-                        },
-                        onConfirm = {
-                            if (stateMachine.onCompleteDateSetup()) {
-                                currentState = stateMachine.state
-                                onFinishStartupFlow(
-                                    currentState.semesterStartDate ?: "2026-09-01",
-                                    currentState.totalWeeks
-                                )
-                            }
+                            onFinishStartupFlow(
+                                currentState.semesterStartDate ?: "2026-09-01",
+                                currentState.totalWeeks
+                            )
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
@@ -180,14 +152,12 @@ private fun MigrationGuideContent(
 
     // 折叠手势喂给页面唯一的 scrollBehavior。每一步的内容都是互斥渲染的，
     // 同一时刻只会有一个列表在吃手势，所以每处都接上不会把滚动量送两遍。
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 8.dp,
-            bottom = innerPadding.calculateBottomPadding() + 24.dp
-        ),
+    // 官方页面骨架：QingyuPageList（末端轻震 + 过度滚动 + 顶栏联动 + 右侧滚动条）。
+    QingyuPageList(
+        innerPadding = innerPadding,
+        scrollBehavior = scrollBehavior,
+        horizontalPadding = 16.dp,
+        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // 顶部安心提示卡片
@@ -382,16 +352,13 @@ private fun DateSetupContent(
 
     // 本页主体滚动容器：4 个步骤里 3 个（DATE_SETUP / GUIDE_TOUR / COMPLETED）都渲染这一份，
     // 折叠手势喂给页面唯一的 scrollBehavior。
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 8.dp,
-            bottom = innerPadding.calculateBottomPadding() + 24.dp
-        ),
+    // 表单页：imePadding 把整页抬到键盘之上（壳是 edge-to-edge，adjustResize 不生效）。
+    QingyuPageList(
+        modifier = Modifier.imePadding(),
+        innerPadding = innerPadding,
+        scrollBehavior = scrollBehavior,
+        horizontalPadding = 16.dp,
+        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
