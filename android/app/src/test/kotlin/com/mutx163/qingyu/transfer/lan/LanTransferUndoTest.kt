@@ -208,6 +208,33 @@ class LanTransferUndoTest {
         assertTrue("导入新建的课也要撤掉", repository.courses.none { it.id == "c9" })
     }
 
+    @Test
+    fun `导入后用户改过的新建模板撤销时保留`() {
+        val store = InMemoryKeyValueStore()
+        val repository = repositoryOn(store)
+        val host = LanEditRepositoryHost(repository, LanTransferUndoStore())
+
+        val applied = host.applyTransferJson(
+            packageJson(
+                courses = listOf(course("c9", "外来课程")),
+                timeSchemes = listOf(scheme("s_remote", "外来新建模板", sectionsThree())),
+            ),
+            TransferApplyMode.MERGE,
+        )
+        assertEquals(true, applied["applied"])
+        val createdId = repository.snapshot.timeSchemes.single().id
+
+        // 导入之后用户自己改了这套模板：撤销点必须尊重「之后的编辑」，
+        // 只回退这一批导入造成的差异，不能把用户改名一起抹掉。
+        repository.updateTimeScheme(createdId, "用户改名", sectionsTwo())
+
+        val undone = host.undoTransferJson(applied["transferId"] as String)
+        assertEquals(true, undone["undo"])
+        val kept = repository.snapshot.timeSchemes.single { it.id == createdId }
+        assertEquals("用户改名", kept.name)
+        assertFalse("撤销仍要撤掉这批导入的课", repository.courses.any { it.id == "c9" })
+    }
+
     // -----------------------------------------------------------------------
     // 工具
     // -----------------------------------------------------------------------
