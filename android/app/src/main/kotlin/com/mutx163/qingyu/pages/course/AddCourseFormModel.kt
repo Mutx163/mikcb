@@ -162,8 +162,12 @@ enum class AddCourseEntryIssue {
     WEEKS_EMPTY,
 }
 
-/** 条目时刻解析结果（由渲染层按作息模板注入，模型层不做时间计算）。 */
-data class AddCourseEntryClock(val startTime: String, val endTime: String)
+/** 条目时刻解析结果（渲染层注入；`hasCustomTime` 由 `CourseDomain.editCourseClock` 回传，Dart `:2022-2039`）。 */
+data class AddCourseEntryClock(
+    val startTime: String,
+    val endTime: String,
+    val hasCustomTime: Boolean = false,
+)
 
 /** 保存载荷。 */
 data class AddCourseSavePayload(
@@ -412,6 +416,7 @@ object AddCourseFormLogic {
                 courseNature = courseNature,
                 startTime = clock.startTime,
                 endTime = clock.endTime,
+                hasCustomTime = clock.hasCustomTime,
                 shortName = shortName.ifEmpty { null },
                 description = description.ifEmpty { null },
             )

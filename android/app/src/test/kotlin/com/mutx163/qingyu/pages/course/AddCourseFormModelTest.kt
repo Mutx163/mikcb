@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.course
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.CourseSessionNote
+import com.mutx163.qingyu.course.CourseDomain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -39,6 +40,7 @@ class AddCourseFormModelTest {
         sessionNotes: Map<Int, CourseSessionNote>? = null,
         timeSchemeIdOverride: String? = null,
         shortName: String? = null,
+        hasCustomTime: Boolean = false,
     ): Course = Course(
         id = id,
         name = name,
@@ -59,12 +61,37 @@ class AddCourseFormModelTest {
         note = note,
         sessionNotes = sessionNotes,
         timeSchemeIdOverride = timeSchemeIdOverride,
+        hasCustomTime = hasCustomTime,
     )
+
+    /** 模拟渲染层 clockResolver：按 `CourseDomain.editCourseClock` 回传 hasCustomTime。 */
+    private fun savePayload(original: Course): AddCourseSavePayload {
+        val entry = AddCourseScheduleEntryData.fromCourse(original)
+        return AddCourseFormLogic.buildSavePayload(
+            initialCourse = original,
+            courseGroup = null,
+            name = original.name,
+            shortName = "",
+            description = "",
+            color = original.color,
+            courseNature = original.courseNature,
+            entries = listOf(entry),
+            clockResolver = { e ->
+                val clock = CourseDomain.editCourseClock(
+                    original = e.originalCourse,
+                    startSection = e.startSection,
+                    endSection = e.endSection,
+                    templateStartTime = "08:00",
+                    templateEndTime = "09:40",
+                )
+                AddCourseEntryClock(clock.startTime, clock.endTime, clock.hasCustomTime)
+            },
+        )
+    }
 
     // ==========================================
     // 1. weeksFromRangeSelection（Dart 源 :39-56）
     // ==========================================
-
     @Test
     fun `范围全选不带单双周得到闭区间`() {
         assertEquals((1..16).toList(), AddCourseFormLogic.weeksFromRangeSelection(1, 16, false, false))
@@ -184,6 +211,19 @@ class AddCourseFormModelTest {
         val fallback = AddCourseScheduleEntryData.fromCourse(allInvalid)
         assertEquals(AddCourseWeekSelectionMode.RANGE, fallback.weekSelectionMode)
         assertTrue(fallback.selectedCustomWeeks.isEmpty())
+    }
+
+    @Test
+    fun `编辑自定义时间课保存后仍标记自定义时间`() {
+        // 节次没动 → 保留适配脚本钉住的权威钟点（Dart :2022-2039 / course_domain.dart:137-148）。
+        val original = testCourse(hasCustomTime = true)
+        assertTrue(savePayload(original).courses.single().hasCustomTime)
+    }
+
+    @Test
+    fun `编辑非自定义时间课保存后不标记自定义时间`() {
+        val original = testCourse(hasCustomTime = false)
+        assertFalse(savePayload(original).courses.single().hasCustomTime)
     }
 
     @Test
