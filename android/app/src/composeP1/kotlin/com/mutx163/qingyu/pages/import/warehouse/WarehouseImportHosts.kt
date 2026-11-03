@@ -42,15 +42,15 @@ import kotlinx.coroutines.withContext
  * | 详情页自定义登录地址 | [WarehouseImportPrefs] 落盘（键名与 Dart 逐字一致），重进这一页看得见 |
  * | 详情页「网页登录」 | 进 `g2.webLogin`（同上，真地址） |
  * | 适配器「录制导入」 | 进 `g2.webLogin` 并自动开录（Dart `autoRecord`，I2-4 已接） |
- * | 「快捷导入」 | 宏能录能存、入口按真值显示；**回放引擎未移植**，点了给一句实话 |
+ * | 「快捷导入」（学校页 / 适配器页） | 读已存宏（多个时先选一条）→ 合成临时学校/适配器 → 进 `g2.webLogin` 自动回放（I2-5） |
  * | 「意见反馈 / 自定义调试」 | 壳的 `onOpenPage`（`k.feedback` / `g2.customDebug`） |
  *
  * ## 诚实边界（重要，别把这段删掉）
  *
  * 1. **登录之后的「抓课表」已接**（F32 + I2）：脚本注入、`courses` 写回、原生对话框、
  *    `saveCourseConfig` 落盘、替换/合并弹窗都已落地（见 `WarehouseWebLoginHost`）。
- * 2. **快捷导入（宏回放）**给的是「不可用」提示，不是空回调；录制侧（I2-4）已落地，
- *    回放引擎（`warehouse_macro_replayer`）移植后这里才有真动作。
+ * 2. **快捷导入（宏回放）已接**：入口读真宏存档，多条时先弹选择，进登录页后由
+ *    [`WarehouseMacroReplayer`] 自动跑完再执行导入脚本。
  * 3. **没有缓存**：每次进页面都真拉一次（Dart 会落 SharedPreferences 并标缓存时间），
  *    断网时看到的是失败态 + 重试，而不是上次的旧名单冒充新数据。
  * 4. 真机没对照：本刀只证明「编译通过 + JVM 单测通过」。仓库文件能不能拉到、学校名对不对，
@@ -82,6 +82,13 @@ class WarehouseShellState {
 
     /** 「录制导入」一录到底：进 `g2.webLogin` 后自动开录（Dart `widget.autoRecord`）。 */
     var autoRecord by mutableStateOf(false)
+
+    /** 「快捷导入」选定的宏：进 `g2.webLogin` 后由回放引擎自动跑完并执行导入脚本。 */
+    var quickMacro by mutableStateOf<WarehouseMacroRecord?>(null)
+
+    /** 快捷导入的页标题主体：全局入口用学校名、适配器入口用适配器名（Dart `quickImportTitle`）。 */
+    var quickImportTitleName by mutableStateOf<String?>(null)
+
 
     /** 宏存档版本号：录制保存成功 +1，列表页据此重拉 macroMap/计数（导航回退不触发 LaunchedEffect 重跑）。 */
     var macrosVersion by mutableStateOf(0)
@@ -130,6 +137,59 @@ fun WarehouseImportPickerHost(
         }
     }
 
+    // ---- 快捷导入：多条宏先让用户选（Dart `_handleQuickImport`） ----
+    var quickImportRecords by remember { mutableStateOf<List<WarehouseMacroRecord>?>(null) }
+
+    /** 全局快捷导入：合成临时学校/适配器 → 进登录页自动回放（Dart `_startQuickImport`）。 */
+    fun launchQuickImport(record: WarehouseMacroRecord, titleName: String) {
+        val synthesizedSchool = WarehouseSchoolEntry(
+            id = record.schoolId,
+            name = record.schoolName,
+            initial = record.schoolName.firstOrNull()?.toString() ?: "#",
+            resourceFolder = record.schoolResourceFolder.ifBlank { record.schoolId },
+        )
+        val synthesizedAdapter = WarehouseAdapterEntry(
+            id = record.adapterId,
+            name = record.adapterName,
+            script = record.adapterAssetJsPath.ifBlank { "macro/${record.adapterId}.js" },
+            category = "macro",
+            maintainer = "macro",
+            importUrl = record.importUrl,
+        )
+        if (resolveWarehouseWebLoginTarget(synthesizedAdapter, prefs.customImportUrl(record.adapterId)) == null) {
+            // 与 Dart 同一个拦截口径：没有可用登录地址就别进页面。
+            Toast.makeText(context, WarehouseStrings.noValidWarehouseLoginUrl.zh, Toast.LENGTH_SHORT).show()
+            return
+        }
+        state.school = synthesizedSchool
+        state.adapter = synthesizedAdapter
+        state.autoRecord = false
+        state.quickMacro = record
+        state.quickImportTitleName = titleName
+        onOpenPage(WarehouseRoutes.WEB_LOGIN)
+    }
+
+    fun pickQuickImport() {
+        scope.launch {
+            val records = withContext(Dispatchers.IO) {
+                runCatching {
+                    macroStore.listEntries().mapNotNull { entry ->
+                        macroStore.getMacro(entry.schoolId, entry.adapterId)
+                    }
+                }.getOrDefault(emptyList())
+            }
+            if (records.isEmpty()) {
+                Toast.makeText(context, WarehouseStrings.noSavedQuickImportRecords.zh, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            if (records.size == 1) {
+                launchQuickImport(records.first(), records.first().schoolName)
+            } else {
+                quickImportRecords = records
+            }
+        }
+    }
+
     WarehouseCourseImportPage(
         allSchools = schools,
         recentSchoolIds = recentSchoolIds,
@@ -138,22 +198,36 @@ fun WarehouseImportPickerHost(
         adapterMatches = emptyMap(),
         phase = phase,
         onBack = onBack,
-        // 宏录制已落地（I2-4）：卡片显示真实宏数；点了仍是「回放未移植」的实话。
+        // 宏录制（I2-4）+ 回放（I2-5）都已落地：计数与点击都走真实宏存档。
         hasQuickImportMacro = macroCount > 0,
         quickImportMacroCount = macroCount,
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
+            // 普通选校入口必须把快捷导入的残留清掉，否则再次进登录页会被当成回放。
+            state.quickMacro = null
+            state.quickImportTitleName = null
             state.school = school
+            state.autoRecord = false
             onOpenPage(WarehouseRoutes.ADAPTERS)
             scope.launch {
                 withContext(Dispatchers.IO) { prefs.recordRecentSchool(school.id) }
                 recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
             }
         },
-        onQuickImportClick = { toastUnavailable(context, "quick import: macro replay engine not ported (F08-8c)") },
+        onQuickImportClick = { pickQuickImport() },
         onFeedbackClick = { onOpenPage(WarehouseRoutes.FEEDBACK) },
         onCustomDebugClick = { onOpenPage(WarehouseRoutes.CUSTOM_DEBUG) },
         onExecutionLogClick = { toastUnavailable(context, "execution log: import pipeline not ported (F08-8c)") },
+    )
+
+    // 弹层常驻组合 + show 驱动：选完/取消后靠内部记住的最后一份列表撑完退场动画。
+    WarehouseQuickImportPickerDialog(
+        show = quickImportRecords != null,
+        records = quickImportRecords,
+        onResult = { record ->
+            quickImportRecords = null
+            if (record != null) launchQuickImport(record, record.schoolName)
+        },
     )
 }
 
@@ -174,8 +248,10 @@ fun WarehouseSchoolAdaptersHost(
     }
 
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
-    // 宏录制已落地（I2-4）：哪些适配器存过录制读真值；回放仍未移植。
+    // 宏录制（I2-4）与回放（I2-5）：哪些适配器存过录制读真值，快捷导入据此取宏。
     val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
+    val scope = rememberCoroutineScope()
+    val prefs = remember(context) { WarehouseImportPrefs(PrefsKeyValueStore(context)) }
     var phase by remember(school.id) { mutableStateOf(WarehouseListPhase.Loading) }
     var adapters by remember(school.id) { mutableStateOf<List<WarehouseAdapterEntry>>(emptyList()) }
     var macroMap by remember(school.id) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
@@ -207,6 +283,30 @@ fun WarehouseSchoolAdaptersHost(
         }
     }
 
+    // 适配器页快捷导入：沿用真学校 + 真适配器，只多带一份宏（Dart `_openQuickImport`）。
+    fun launchAdapterQuickImport(adapter: WarehouseAdapterEntry) {
+        val currentSchool = school
+        scope.launch {
+            val macro = withContext(Dispatchers.IO) {
+                runCatching { macroStore.getMacro(currentSchool.id, adapter.id) }.getOrNull()
+            }
+            if (macro == null) {
+                Toast.makeText(context, WarehouseStrings.noMacroRecordFound.zh, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            if (resolveWarehouseWebLoginTarget(adapter, prefs.customImportUrl(adapter.id)) == null) {
+                Toast.makeText(context, WarehouseStrings.noValidWarehouseLoginUrl.zh, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            state.school = currentSchool
+            state.adapter = adapter
+            state.autoRecord = false
+            state.quickMacro = macro
+            state.quickImportTitleName = adapter.adapterName
+            onOpenPage(WarehouseRoutes.WEB_LOGIN)
+        }
+    }
+
     WarehouseSchoolAdaptersPage(
         school = school,
         adapters = adapters,
@@ -217,21 +317,28 @@ fun WarehouseSchoolAdaptersHost(
         onRefresh = { reloadToken += 1 },
         onRetry = { reloadToken += 1 },
         onImportAdapter = { adapter ->
-            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。
+            // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）；普通入口清掉快捷导入残留。
+            state.quickMacro = null
+            state.quickImportTitleName = null
             state.adapter = adapter
+            state.autoRecord = false
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
         onViewAdapterDetail = { adapter ->
+            state.quickMacro = null
+            state.quickImportTitleName = null
             state.adapter = adapter
             onOpenPage(WarehouseRoutes.DETAIL)
         },
         onRecordAdapter = { adapter ->
             // 一录到底（Dart `autoRecord: true`）：进登录页后自动开录。
+            state.quickMacro = null
+            state.quickImportTitleName = null
             state.adapter = adapter
             state.autoRecord = true
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
-        onQuickImportAdapter = { toastUnavailable(context, "quick import: macro replay engine not ported (F08-8c)") },
+        onQuickImportAdapter = { adapter -> launchAdapterQuickImport(adapter) },
     )
 }
 
@@ -290,7 +397,10 @@ fun WarehouseAdapterDetailHost(
             }
         },
         onOpenWebLogin = {
+            state.quickMacro = null
+            state.quickImportTitleName = null
             state.adapter = adapter
+            state.autoRecord = false
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
     )

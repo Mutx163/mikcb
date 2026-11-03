@@ -218,6 +218,7 @@ fun WarehouseScriptPromptDialog(
 fun WarehouseScriptSingleSelectionDialog(
     show: Boolean,
     request: WarehouseBridgeDialogRequest?,
+    confirmLabel: String = WarehouseStrings.saveAction.zh,
     onResult: (Int?) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
@@ -276,7 +277,7 @@ fun WarehouseScriptSingleSelectionDialog(
             Spacer(modifier = Modifier.height(16.dp))
             ScriptDialogActions(
                 cancelLabel = WarehouseStrings.cancelAction.zh,
-                confirmLabel = WarehouseStrings.saveAction.zh,
+                confirmLabel = confirmLabel,
                 onCancel = { onResult(null) },
                 onConfirm = {
                     val current = shown
@@ -286,6 +287,76 @@ fun WarehouseScriptSingleSelectionDialog(
                         onResult(selected.coerceIn(0, current.options.size - 1))
                     }
                 },
+            )
+        }
+    }
+}
+
+/**
+ * 「快捷导入」多条宏时的选择弹层（Dart `_handleQuickImport` 的 `showAppSelectionDialog`）。
+ *
+ * 与脚本 singleSelection 的区别：这里点一条就**直接开始**（Dart 同样没有二次确认），
+ * 所以不用选中态，只保留一个取消动作。
+ */
+@Composable
+fun WarehouseQuickImportPickerDialog(
+    show: Boolean,
+    records: List<WarehouseMacroRecord>?,
+    onResult: (WarehouseMacroRecord?) -> Unit,
+) {
+    val dark = isSystemInDarkTheme()
+    val shown = rememberLastRequest(records)
+    val maxListHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = show,
+        title = WarehouseStrings.selectQuickImportTitle.zh,
+        onDismissRequest = { onResult(null) },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxListHeight)
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
+            ) {
+                itemsIndexed(
+                    items = shown.orEmpty(),
+                    key = { _, record -> "${record.schoolId}_${record.adapterId}" },
+                ) { _, record ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onResult(record) }
+                            .padding(vertical = 12.dp),
+                    ) {
+                        Text(
+                            text = record.schoolName,
+                            style = MiuixTheme.textStyles.body2,
+                            color = Color(QingyuTheme.primaryText(dark)),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = WarehouseStrings.quickImportMacroSteps.filled(
+                                "adapterName" to record.adapterName,
+                                "stepCount" to record.steps.size.toString(),
+                            ),
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = WarehouseStrings.cancelAction.zh,
+                onClick = { onResult(null) },
             )
         }
     }

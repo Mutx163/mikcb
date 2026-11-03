@@ -40,6 +40,24 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 2. 教务会话状态提示与已存账号自动填入浮条；
  * 3. 宏录制状态与底部动作栏（开始/结束录制、执行导入脚本）。
  */
+/** 快捷导入回放覆盖层阶段（Dart `PlaybackUiState` 的精简版）。 */
+enum class WarehousePlaybackPhase {
+    PLAYING,
+    WAITING_MANUAL_INPUT,
+    EXECUTING_IMPORT,
+    FINISHED,
+    ERROR,
+}
+
+/** 页面只渲染「现在该说什么、该给哪些按钮」，状态机在宿主里。 */
+data class WarehousePlaybackUiState(
+    val phase: WarehousePlaybackPhase,
+    val title: String,
+    val detail: String? = null,
+    val progressText: String? = null,
+    val errorMessage: String? = null,
+)
+
 @Composable
 fun WarehouseWebLoginPage(
     title: String,
@@ -77,6 +95,12 @@ fun WarehouseWebLoginPage(
     onDismissSaveLogin: () -> Unit = {},
     onToggleMacroRecording: () -> Unit = {},
     onExecuteImport: () -> Unit = {},
+    /** 快捷导入回放覆盖层；null = 不在回放。 */
+    playbackState: WarehousePlaybackUiState? = null,
+    onCancelPlayback: () -> Unit = {},
+    onContinuePlayback: () -> Unit = {},
+    onRetryPlayback: () -> Unit = {},
+    onDismissPlayback: () -> Unit = {},
 ) {
     // 与 Dart 侧 warehouse_adapter_web_login_screen.dart:841-844 对齐
     // （title: SizedBox.shrink()、collapsibleLargeTitle: false）：这一页滚动发生在 WebView
@@ -200,11 +224,100 @@ fun WarehouseWebLoginPage(
                     }
                 }
 
-                // 底部操作主按钮
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                // 快捷导入回放状态（Dart `PlaybackOverlay`）：录制/执行按钮在回放期收起，
+                // 只留「取消 / 继续 / 重试 / 完成」这些回放专属动作。
+                playbackState?.let { playback ->
+                    QingyuCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = playback.title,
+                                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.MEDIUM)
+                            )
+                            playback.progressText?.let {
+                                Text(text = it, style = MiuixTheme.textStyles.footnote2)
+                            }
+                            playback.detail?.let {
+                                Text(text = it, style = MiuixTheme.textStyles.footnote2)
+                            }
+                            playback.errorMessage?.let {
+                                Text(
+                                    text = it,
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    color = MiuixTheme.colorScheme.error
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                when (playback.phase) {
+                                    WarehousePlaybackPhase.WAITING_MANUAL_INPUT -> {
+                                        Button(
+                                            onClick = onCancelPlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportCancelPlaybackAction.zh) },
+                                            colors = ButtonDefaults.buttonColors(
+                                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
+                                            )
+                                        )
+                                        Button(
+                                            onClick = onContinuePlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportContinueAction.zh) }
+                                        )
+                                    }
+
+                                    WarehousePlaybackPhase.PLAYING -> {
+                                        Button(
+                                            onClick = onCancelPlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportCancelPlaybackAction.zh) },
+                                            colors = ButtonDefaults.buttonColors(
+                                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
+                                            )
+                                        )
+                                    }
+
+                                    WarehousePlaybackPhase.ERROR -> {
+                                        Button(
+                                            onClick = onCancelPlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportCancelImportAction.zh) },
+                                            colors = ButtonDefaults.buttonColors(
+                                                color = MiuixTheme.colorScheme.surfaceVariant,
+                                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions
+                                            )
+                                        )
+                                        Button(
+                                            onClick = onRetryPlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportRetryAction.zh) }
+                                        )
+                                    }
+
+                                    WarehousePlaybackPhase.FINISHED -> {
+                                        Button(
+                                            onClick = onDismissPlayback,
+                                            content = { Text(text = WarehouseStrings.quickImportDismissAction.zh) }
+                                        )
+                                    }
+
+                                    WarehousePlaybackPhase.EXECUTING_IMPORT -> Unit
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 底部操作主按钮（回放期让位给上面的回放卡，避免用户中途手动触发脚本）
+                if (playbackState == null || playbackState.phase == WarehousePlaybackPhase.FINISHED) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                     val isRecording = sessionState.macroState == WarehouseMacroActionState.RECORDING
                     Button(
                         onClick = onToggleMacroRecording,
@@ -228,6 +341,7 @@ fun WarehouseWebLoginPage(
                         modifier = Modifier.weight(1.5f),
                         content = { Text(text = WarehouseStrings.executeImportScriptAction.zh) }
                     )
+                    }
                 }
             }
         }

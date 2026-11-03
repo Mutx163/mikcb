@@ -28,8 +28,11 @@ import com.mutx163.qingyu.pages.import.ImportServiceMessages
 import com.mutx163.qingyu.pages.import.ImportSharedModel
 import com.mutx163.qingyu.pages.import.ImportWeekAlignment
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
@@ -66,9 +69,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 1. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
  *    见回报「需 Lead」：Dart 的记住账号存 FlutterSecureStorage，Kotlin 侧无同构存储适配。
- * 2. **快捷导入（宏回放）未移植**：宏能录能存、列表能显示「快捷导入」入口，
- *    但点了仍是「不可用」实话——回放引擎（`warehouse_macro_replayer`）是另一刀。
- * 3. 真机未验：仓库能不能拉到脚本、教务站能不能登录并通过脚本抓课，只有用户真机可见。
+ * 2. 真机未验：仓库能不能拉到脚本、教务站能不能登录并通过脚本抓课，只有用户真机可见。
  */
 
 private const val LOG_TAG = "WarehouseWebLogin"
@@ -164,6 +165,14 @@ fun WarehouseWebLoginHost(
     var macroAutoRecord by remember { mutableStateOf(false) }
     var macroSavePrompt by remember { mutableStateOf<WarehouseMacroSavePrompt?>(null) }
 
+    // ---- I2-5：快捷导入回放 ----
+    var playbackPhase by remember { mutableStateOf<WarehousePlaybackPhase?>(null) }
+    var playbackProgress by remember { mutableStateOf<WarehouseReplayProgress?>(null) }
+    var playbackError by remember { mutableStateOf<String?>(null) }
+    var playbackReplayer by remember { mutableStateOf<WarehouseMacroReplayer?>(null) }
+    var playbackStarted by remember { mutableStateOf(false) }
+    var manualInputGate by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
+
     val recording = session.macroState == WarehouseMacroActionState.RECORDING
 
     fun showToasts(messages: List<String>) {
@@ -179,11 +188,20 @@ fun WarehouseWebLoginHost(
         controller.injectJavaScript(script)
     }
 
+    /** 回放期出错：把错误搬到覆盖层（Dart `_showMacroReplayImportError`），别让用户卡在「正在执行」。 */
+    fun failPlayback(message: String) {
+        if (state.quickMacro == null) return
+        playbackPhase = WarehousePlaybackPhase.ERROR
+        playbackProgress = null
+        playbackError = message
+    }
+
     fun executeImportScript() {
         if (isExecuting) return
         when (val plan = planWarehouseScriptExecution(session.stage, school, adapter)) {
             is WarehouseScriptExecutionPlan.Blocked -> {
                 Log.w(LOG_TAG, "execute import blocked: ${plan.reason}")
+                failPlayback(WarehouseStrings.courseImportScriptFailed.zh)
                 Toast.makeText(
                     context,
                     WarehouseStrings.courseImportScriptFailed.zh,
@@ -222,6 +240,7 @@ fun WarehouseWebLoginHost(
                                 WarehouseWebLoginStage.ERROR,
                                 WarehouseStrings.courseImportScriptFailed.zh,
                             )
+                            failPlayback(WarehouseStrings.importFailedStatus.zh)
                             Toast.makeText(
                                 context,
                                 WarehouseStrings.courseImportScriptFailed.zh,
@@ -233,6 +252,104 @@ fun WarehouseWebLoginHost(
                 }
             }
         }
+    }
+
+    // ---- I2-5：快捷导入回放 ----
+
+    /**
+     * 跑一遍宏。失败可重试（Dart `_retry` 重跑同一条宏，引擎自己会先 navigate 回入口页）。
+     *
+     * 回放成功只代表「表单/页面已就绪」，导入脚本由 [executeImportScript] 继续执行；
+     * 等 `courses` 回到宿主后才进入「替换/合并 + 领学期映射」弹层。
+     */
+    fun runQuickImportPlayback(record: WarehouseMacroRecord) {
+        playbackError = null
+        playbackProgress = null
+        playbackPhase = WarehousePlaybackPhase.PLAYING
+        val replayer = WarehouseMacroReplayer(controller)
+        playbackReplayer = replayer
+        scope.launch {
+            val outcome = replayer.execute(
+                record = record,
+                onProgress = { progress -> playbackProgress = progress },
+                onTip = { tip -> showToasts(listOf(tip)) },
+                onManualInput = {
+                    val gate = CompletableDeferred<Boolean>()
+                    manualInputGate = gate
+                    playbackPhase = WarehousePlaybackPhase.WAITING_MANUAL_INPUT
+                    val answer = gate.await()
+                    manualInputGate = null
+                    if (answer) playbackPhase = WarehousePlaybackPhase.PLAYING
+                    answer
+                },
+            )
+            when (outcome) {
+                is WarehouseReplayOutcome.Success -> {
+                    playbackPhase = WarehousePlaybackPhase.EXECUTING_IMPORT
+                    // Dart `_autoExecuteImportAfterPlayback`：回放成功先等 500ms 再注入脚本。
+                    delay(500)
+                    executeImportScript()
+                }
+
+                is WarehouseReplayOutcome.Cancelled -> {
+                    playbackReplayer = null
+                    playbackPhase = null
+                    playbackProgress = null
+                    playbackError = null
+                }
+
+                is WarehouseReplayOutcome.Failed -> {
+                    Log.w(LOG_TAG, "macro playback failed: ${outcome.message}")
+                    playbackPhase = WarehousePlaybackPhase.ERROR
+                    playbackError = outcome.message
+                }
+            }
+        }
+    }
+
+    fun cancelPlayback() {
+        playbackReplayer?.cancel()
+        manualInputGate?.complete(false)
+        manualInputGate = null
+        playbackReplayer = null
+        playbackPhase = null
+        playbackProgress = null
+        playbackError = null
+        scriptActive = false
+    }
+
+    fun retryPlayback() {
+        val record = state.quickMacro ?: return
+        cancelPlayback()
+        // Dart `_retry`：先把页面重新载回初始地址，再从第一步重跑（别在失败页上硬点）。
+        if (target.loginUrl.isNotBlank()) controller.loadUrl(target.loginUrl)
+        runQuickImportPlayback(record)
+    }
+
+    fun continuePlayback() {
+        manualInputGate?.complete(true)
+    }
+
+    fun dismissPlayback() {
+        playbackPhase = null
+        playbackProgress = null
+        playbackError = null
+        // 结束态返回后若还留着 quickMacro，用户再次进入本页会被误当成快捷导入重新回放。
+        state.quickMacro = null
+        onBack()
+    }
+
+    fun replayStatusText(status: WarehouseReplayStatus): String = when (status) {
+        WarehouseReplayStatus.PENDING -> ""
+        WarehouseReplayStatus.NAVIGATING -> WarehouseStrings.macroReplayStepNavigating.zh
+        WarehouseReplayStatus.FILLING -> WarehouseStrings.macroReplayStepFilling.zh
+        WarehouseReplayStatus.CLICKING -> WarehouseStrings.macroReplayStepClicking.zh
+        WarehouseReplayStatus.WAITING_URL -> WarehouseStrings.macroReplayStepWaitUrl.zh
+        WarehouseReplayStatus.WAITING_ELEMENT -> WarehouseStrings.macroReplayStepWaitSelector.zh
+        WarehouseReplayStatus.WAITING_MANUAL_INPUT -> WarehouseStrings.macroReplayStepWaitManual.zh
+        WarehouseReplayStatus.EXECUTING_SCRIPT -> WarehouseStrings.macroReplayStepExecuteScript.zh
+        WarehouseReplayStatus.DELAY -> WarehouseStrings.macroReplayStepDelay.zh
+        WarehouseReplayStatus.WAITING_PAGE_LOAD -> WarehouseStrings.macroReplayWaitPageLoad.zh
     }
 
     /** 把写回结果翻成用户能看懂的几句话（全部取 ARB 原文，不在代码里硬写中文）。 */
@@ -428,6 +545,25 @@ fun WarehouseWebLoginHost(
 
     // ---- I2-3 课程写回（含「替换/合并」选择） ----
 
+    /**
+     * 快捷导入成功：把这次成功计数与落点页写回宏记录（Dart `_markMacroImportCompleted`）。
+     * 只更新统计字段，**不重写 steps/应答**——旧宏仍是用户当初录的那条。
+     */
+    fun markMacroImportCompleted(record: WarehouseMacroRecord, importedCount: Int) {
+        val currentUrl = sanitizeWarehouseScriptPageUrl(controller.liveUrl() ?: session.currentUrl)
+        val updated = record.copy(
+            successfulImportCount = record.successfulImportCount + if (importedCount > 0) 1 else 0,
+            updatedAt = LocalDateTime.now(),
+            scriptPageUrl = currentUrl ?: record.scriptPageUrl,
+        )
+        state.quickMacro = updated
+        scope.launch {
+            withContext(Dispatchers.IO) { runCatching { macroStore.saveMacro(updated) } }
+            state.macrosVersion += 1
+            playbackPhase = WarehousePlaybackPhase.FINISHED
+        }
+    }
+
     fun applyCourses(
         parsed: WarehouseCourseWriteBack.PayloadParse.Parsed,
         requestedMode: WarehouseCourseWriteBack.Mode?,
@@ -450,6 +586,19 @@ fun WarehouseWebLoginHost(
             if (done != null && done.outcome.importedCount > 0 && recording) {
                 stopMacroRecording(completedImport = true)
             }
+            // 快捷导入：脚本已跑完且课表已处置 → 记成功计数并进完成态（Dart `_finishPlayback`）。
+            if (done != null && state.quickMacro != null) {
+                playbackReplayer = null
+                playbackProgress = null
+                playbackError = null
+                val record = state.quickMacro
+                if (record != null) {
+                    markMacroImportCompleted(record, done.outcome.importedCount)
+                }
+            } else if (state.quickMacro != null) {
+                // 写回失败（格式错/无课/落盘失败）：Dart 把错误搬到回放覆盖层，不能停在「执行中」。
+                failPlayback(WarehouseStrings.importFailedStatus.zh)
+            }
         }
     }
 
@@ -464,6 +613,7 @@ fun WarehouseWebLoginHost(
             // 壳没传仓储：不许假装导入成功。
             Log.w(LOG_TAG, "courses received but repository is not wired")
             showToasts(listOf(WarehouseStrings.importFailedStatus.zh))
+            failPlayback(WarehouseStrings.importFailedStatus.zh)
             return
         }
         scope.launch {
@@ -476,17 +626,46 @@ fun WarehouseWebLoginHost(
                 )
             }
             when (parsed) {
-                is WarehouseCourseWriteBack.PayloadParse.InvalidFormat ->
+                is WarehouseCourseWriteBack.PayloadParse.InvalidFormat -> {
                     showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.zh))
+                    failPlayback(WarehouseStrings.invalidCourseDataFormat.zh)
+                }
 
                 is WarehouseCourseWriteBack.PayloadParse.Parsed -> {
+                    val settings = repo.snapshot.settings
+                    val hasExistingCourses = repo.snapshot.courses.isNotEmpty()
+                    // 快捷导入：Dart 优先吃录制时对「替换/合并」与「学期配置」的回答，**不弹窗**；
+                    // 只有录制里缺这一项（老宏）才退回弹层。口径见 `_resumeImportAfterMacroReplay`。
+                    val replay = state.quickMacro
+                    val recordedConfig = replay?.let {
+                        parseRecordedSemesterConfig(it.dialogResponses["semesterConfig"])
+                    }
+                    val recordedReplace = replay?.dialogResponses?.get("replaceExisting") as? Boolean
+                    if (replay != null && recordedConfig != null &&
+                        (recordedReplace != null || !hasExistingCourses)
+                    ) {
+                        applyCourses(
+                            parsed = parsed.copy(
+                                courses = ImportWeekAlignment.shiftCoursesToSemesterWeeks(
+                                    courses = parsed.courses,
+                                    firstCourseWeek = recordedConfig.firstCourseWeek,
+                                ),
+                            ),
+                            requestedMode = if (hasExistingCourses && recordedReplace == true) {
+                                WarehouseCourseWriteBack.Mode.REPLACE
+                            } else {
+                                WarehouseCourseWriteBack.Mode.MERGE
+                            },
+                            semesterStartDate = recordedConfig.semesterStartDate,
+                        )
+                        return@launch
+                    }
                     // 空表也要问开学日/周次映射（Dart `pickImportSemesterConfig` 无条件调用）；
                     // 「替换/合并」只在已有课时才出现（Dart `askImportReplaceExisting`）。
-                    val settings = repo.snapshot.settings
                     pendingImport = PendingWarehouseImport(
                         parsed = parsed,
                         semesterStartDate = settings.semesterStartDate ?: LocalDateTime.now(),
-                        hasExistingCourses = repo.snapshot.courses.isNotEmpty(),
+                        hasExistingCourses = hasExistingCourses,
                     )
                 }
             }
@@ -500,6 +679,33 @@ fun WarehouseWebLoginHost(
         if (request == null) {
             Log.w(LOG_TAG, "bridge dialog ignored: unsafe requestId or unknown type")
             return
+        }
+        // 回放期：不弹原生窗，按录制时同一把键找回用户当时的回答（Dart `_resolveJavaScriptRequest`）。
+        val replayRecord = state.quickMacro
+        if (replayRecord != null) {
+            val recorded = replayRecord.dialogResponses[request.responseKey()]
+            if (recorded != null) {
+                when (request.kind) {
+                    WarehouseBridgeDialogKind.CONFIRM ->
+                        resolveBridgeRequest(request.requestId, if (recorded as? Boolean == true) "true" else "false")
+
+                    WarehouseBridgeDialogKind.PROMPT ->
+                        resolveBridgeRequest(request.requestId, MiniJson.encode(recorded as? String ?: ""))
+
+                    WarehouseBridgeDialogKind.SINGLE_SELECTION -> {
+                        val index = matchRecordedOptionIndex(request.options, recorded)
+                        resolveBridgeRequest(request.requestId, index?.toString() ?: "null")
+                    }
+
+                    else -> Unit
+                }
+                return
+            }
+            val fallback = warehouseBridgeFallbackAnswer(raw)
+            if (fallback != null) {
+                resolveBridgeRequest(fallback.requestId, fallback.jsonValue)
+                return
+            }
         }
         if (pendingDialog != null) {
             // 脚本 await 语义下不该有第二个并发弹窗；真来了用确定降级答掉新的，防脚本挂起。
@@ -530,7 +736,7 @@ fun WarehouseWebLoginHost(
 
     fun answerSingleSelection(request: WarehouseBridgeDialogRequest, index: Int?) {
         // Dart 录制侧存的是「用户选的那一项的文字」：宿主调整选项顺序也不会选错；
-        // 回放时再把文字还原成下标（回放引擎未移植，这里只负责存对形状）。
+        // 回放时再由 `matchRecordedOptionIndex` 把文字还原成下标。
         if (recording && index != null && request.options.isNotEmpty()) {
             request.optionTextAt(index)?.let { macroDialogResponses[request.responseKey()] = it }
         }
@@ -753,8 +959,52 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    // 列表页「快捷导入」进来：进页自动回放选定的宏（Dart `_startPlayback`），只触发一次。
+    LaunchedEffect(state.quickMacro) {
+        val record = state.quickMacro ?: return@LaunchedEffect
+        if (!playbackStarted) {
+            playbackStarted = true
+            runQuickImportPlayback(record)
+        }
+    }
+
+    val playbackUi = playbackPhase?.let { phase ->
+        val progress = playbackProgress
+        WarehousePlaybackUiState(
+            phase = phase,
+            title = when (phase) {
+                WarehousePlaybackPhase.PLAYING -> WarehouseStrings.quickImportPlayingTitle.zh
+                WarehousePlaybackPhase.WAITING_MANUAL_INPUT -> WarehouseStrings.quickImportManualInputTitle.zh
+                WarehousePlaybackPhase.EXECUTING_IMPORT -> WarehouseStrings.quickImportExecutingScriptTitle.zh
+                WarehousePlaybackPhase.FINISHED -> WarehouseStrings.quickImportFinishedTitle.zh
+                WarehousePlaybackPhase.ERROR -> WarehouseStrings.importFailedStatus.zh
+            },
+            detail = (when (phase) {
+                WarehousePlaybackPhase.PLAYING -> progress?.let { replayStatusText(it.status) }
+                WarehousePlaybackPhase.WAITING_MANUAL_INPUT -> WarehouseStrings.quickImportManualInputHint.zh
+                else -> null
+            })?.takeIf { it.isNotBlank() },
+            progressText = if (phase == WarehousePlaybackPhase.PLAYING && progress != null && progress.totalSteps > 0) {
+                WarehouseStrings.quickImportPlaybackStepProgress.filled(
+                    "current" to progress.stepIndex.toString(),
+                    "total" to progress.totalSteps.toString(),
+                )
+            } else {
+                null
+            },
+            errorMessage = if (phase == WarehousePlaybackPhase.ERROR) {
+                playbackError ?: WarehouseStrings.quickImportUnknownError.zh
+            } else {
+                null
+            },
+        )
+    }
+
     WarehouseWebLoginPage(
-        title = school.name,
+        // 快捷导入的页面标题是「快捷导入 - 学校/适配器」（Dart `quickImportTitle`）。
+        title = state.quickImportTitleName
+            ?.let { WarehouseStrings.quickImportTitle.filled("name", it) }
+            ?: school.name,
         sessionState = session,
         webViewController = controller,
         trustedLoginUrls = trustedLoginUrls,
@@ -828,6 +1078,11 @@ fun WarehouseWebLoginHost(
             }
         },
         onExecuteImport = { executeImportScript() },
+        playbackState = playbackUi,
+        onCancelPlayback = { cancelPlayback() },
+        onContinuePlayback = { continuePlayback() },
+        onRetryPlayback = { retryPlayback() },
+        onDismissPlayback = { dismissPlayback() },
     )
 
     // ---- I2-1 原生脚本弹窗（常驻组合 + show 驱动；弹层内记住最后一份非空请求供退场渲染） ----
@@ -868,6 +1123,18 @@ fun WarehouseWebLoginHost(
             val pending = pendingImport
             pendingImport = null
             if (pending != null) {
+                // 用户把日期清空时退回打开时的初始值（Dart 的学期配置一定带日期，不存在「无开学日」分支）。
+                val confirmedStartDate = choice.semesterStartDate ?: pending.semesterStartDate
+                // 录制期把这次选择也记进宏应答：快捷导入回放时 Dart 直接吃这两把键，不再弹窗
+                // （`_resumeImportAfterMacroReplay` 读 `replaceExisting` / `semesterConfig`）。
+                if (recording) {
+                    macroDialogResponses["replaceExisting"] =
+                        if (pending.hasExistingCourses) choice.replaceExisting else true
+                    macroDialogResponses["semesterConfig"] = linkedMapOf<String, Any?>(
+                        "startDate" to confirmedStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                        "firstCourseWeek" to choice.firstCourseWeek,
+                    )
+                }
                 // Dart：确认后按 `shiftCoursesToSemesterWeeks(firstCourseWeek)` 平移周次，
                 // 并把确认的开学日写回设置（`importParsedCourses(semesterStart: ...)`）。
                 applyCourses(
@@ -882,7 +1149,7 @@ fun WarehouseWebLoginHost(
                     } else {
                         WarehouseCourseWriteBack.Mode.MERGE
                     },
-                    semesterStartDate = choice.semesterStartDate,
+                    semesterStartDate = confirmedStartDate,
                 )
             }
         },

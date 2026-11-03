@@ -159,11 +159,33 @@ object WarehouseStrings {
     val previewAction = WarehouseArbText("previewAction", "预览")
     val promptCopiedHint = WarehouseArbText("promptCopiedHint", "提示词已复制，去豆包发送截图和提示词")
     val quickImportAction = WarehouseArbText("quickImportAction", "快捷导入")
+    val quickImportCancelImportAction = WarehouseArbText("quickImportCancelImportAction", "取消导入")
+    val quickImportCancelPlaybackAction = WarehouseArbText("quickImportCancelPlaybackAction", "取消")
+    val quickImportContinueAction = WarehouseArbText("quickImportContinueAction", "继续")
     val quickImportDismissAction = WarehouseArbText("quickImportDismissAction", "完成")
+    val quickImportExecutingScriptTitle = WarehouseArbText("quickImportExecutingScriptTitle", "回放完成，正在执行导入脚本……")
     val quickImportFinishedTitle = WarehouseArbText("quickImportFinishedTitle", "导入完成")
     val quickImportMacroSteps = WarehouseArbText("quickImportMacroSteps", "{adapterName} · {stepCount} 步")
+    val quickImportManualInputHint = WarehouseArbText("quickImportManualInputHint", "请完成当前需要的手动操作，完成后点击继续")
+    val quickImportManualInputTitle = WarehouseArbText("quickImportManualInputTitle", "需要手动操作")
+    val quickImportPlaybackStepProgress = WarehouseArbText("quickImportPlaybackStepProgress", "步骤 {current} / {total}")
+    val quickImportPlayingTitle = WarehouseArbText("quickImportPlayingTitle", "自动导入中……")
+    val quickImportRetryAction = WarehouseArbText("quickImportRetryAction", "重试")
     val quickImportTitle = WarehouseArbText("quickImportTitle", "快捷导入 - {name}")
     val quickImportTooltip = WarehouseArbText("quickImportTooltip", "快捷导入")
+    val quickImportUnknownError = WarehouseArbText("quickImportUnknownError", "发生未知错误")
+    val macroReplayAcceleratedFallbackTip = WarehouseArbText("macroReplayAcceleratedFallbackTip", "快捷路径失败，正在使用完整录制步骤重试……")
+    val macroReplayStatusFailed = WarehouseArbText("macroReplayStatusFailed", "失败：{error}")
+    val macroReplayStatusPaused = WarehouseArbText("macroReplayStatusPaused", "等待手动操作：{reason}")
+    val macroReplayStepClicking = WarehouseArbText("macroReplayStepClicking", "正在点击……")
+    val macroReplayStepDelay = WarehouseArbText("macroReplayStepDelay", "等待中……")
+    val macroReplayStepExecuteScript = WarehouseArbText("macroReplayStepExecuteScript", "正在执行导入脚本……")
+    val macroReplayStepFilling = WarehouseArbText("macroReplayStepFilling", "正在填充表单……")
+    val macroReplayStepNavigating = WarehouseArbText("macroReplayStepNavigating", "正在导航……")
+    val macroReplayStepWaitManual = WarehouseArbText("macroReplayStepWaitManual", "等待用户操作")
+    val macroReplayStepWaitSelector = WarehouseArbText("macroReplayStepWaitSelector", "等待页面元素……")
+    val macroReplayStepWaitUrl = WarehouseArbText("macroReplayStepWaitUrl", "等待页面跳转……")
+    val macroReplayWaitPageLoad = WarehouseArbText("macroReplayWaitPageLoad", "等待页面加载")
     val recentSchoolLabel = WarehouseArbText("recentSchoolLabel", "最近使用")
     val recordImportAction = WarehouseArbText("recordImportAction", "录制导入")
     val reloadAction = WarehouseArbText("reloadAction", "重新加载")
@@ -360,11 +382,33 @@ object WarehouseStrings {
         previewAction,
         promptCopiedHint,
         quickImportAction,
+        quickImportCancelImportAction,
+        quickImportCancelPlaybackAction,
+        quickImportContinueAction,
         quickImportDismissAction,
+        quickImportExecutingScriptTitle,
         quickImportFinishedTitle,
         quickImportMacroSteps,
+        quickImportManualInputHint,
+        quickImportManualInputTitle,
+        quickImportPlaybackStepProgress,
+        quickImportPlayingTitle,
+        quickImportRetryAction,
         quickImportTitle,
         quickImportTooltip,
+        quickImportUnknownError,
+        macroReplayAcceleratedFallbackTip,
+        macroReplayStatusFailed,
+        macroReplayStatusPaused,
+        macroReplayStepClicking,
+        macroReplayStepDelay,
+        macroReplayStepExecuteScript,
+        macroReplayStepFilling,
+        macroReplayStepNavigating,
+        macroReplayStepWaitManual,
+        macroReplayStepWaitSelector,
+        macroReplayStepWaitUrl,
+        macroReplayWaitPageLoad,
         recentSchoolLabel,
         recordImportAction,
         reloadAction,
