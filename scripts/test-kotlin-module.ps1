@@ -225,6 +225,39 @@ foreach ($sharedFile in $sharedModelFiles) {
     if ($sources -notcontains $absSharedFile) { $sources += $absSharedFile }
 }
 
+# 模块专属补充源（2026-11-04 新增）。
+#
+# 模块目录内的生产代码/用例会引用模块目录之外的**纯 Kotlin**文件，只收本模块
+# 目录会报 unresolved。这里按模块列**具体文件**，不整目录收：
+# - `pages/sync` 的 `CloudSyncController.kt` 引用 `pages/transfer/` 的快照差异与
+#   导入预览逻辑（两个文件，均零 Android import）；
+# - `pages/sync` 的 `CouplePartnerUnlinkTest` / `LocaleHashAsciiTest` 直接构造
+#   `platform.CouplePartnerPortImpl`（纯 Kotlin 端口实现）。
+# `platform/` 整目录不能收——里面还有 Context / AndroidKeyStore 适配层；
+# `pages/transfer/` 也不整目录收，避免以后某个页面文件引入 Compose 后把本模块带红。
+# 收录条件与上面的根包白名单一致：① 文件零 `android.*` / `androidx.compose` / miuix 导入；
+# ② 被本模块真实引用。
+$moduleSourceFiles = @{
+    "sync" = @(
+        "pages/transfer/DataTransferApplyLogic.kt",
+        "pages/transfer/DataTransferDiffLogic.kt",
+        "pages/transfer/DataTransferImportLogic.kt",
+        "pages/transfer/DataTransferModel.kt",
+        "pages/transfer/TransferStrings.kt",
+        "platform/CouplePartnerPortImpl.kt"
+    )
+}
+if ($moduleSourceFiles.ContainsKey($cleanModule)) {
+    foreach ($moduleFile in $moduleSourceFiles[$cleanModule]) {
+        $absModuleFile = Join-Path $repoRoot "android/app/src/main/kotlin/com/mutx163/qingyu/$moduleFile"
+        if (-not (Test-Path $absModuleFile)) {
+            Write-Host ">>> [test-kotlin-module] 模块白名单文件不存在，已跳过：$moduleFile" -ForegroundColor DarkYellow
+            continue
+        }
+        if ($sources -notcontains $absModuleFile) { $sources += $absModuleFile }
+    }
+}
+
 if ($sources.Count -eq 0) {
     Write-Error "[test-kotlin-module] 模块 $cleanModule 下未找到任何 .kt 文件。"
     exit 1
