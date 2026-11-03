@@ -812,6 +812,26 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - 前一红链：`df1a9873` 门 2 红 6 例（CJK 批准例外未落地 + warehouse 夹具），分别由 `a1933aa8` / `38018912` 修，在 `2ff51dab` 复跑**归零**；`d68e2b88` 门 1 红（`ShellWiring.kt` 6 error）由 `2ff51dab` 修。
 - **注意：HEAD 已推进到 `2e0eda96`（`2d3f4fc0` 天气门槛、`8e1de8d5` 文档、`2e0eda96` settings 落盘口径），三笔均动主源集，故两门全绿只代言 `2ff51dab`；新 HEAD 需增量重跑。**
 
+**第二轮重跑（检查点 `f40f998c`，2026-11-04 05:30）**
+
+| HEAD | 门 | 结果 | 起止 | 耗时 | 备注 |
+|---|---|---|---|---|---|
+| **`f40f998c`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **04:45:32→05:04:52** | **18m19s（Gradle）/ 19m20s 墙钟** | 重建只读 worktree 冷跑，全量主源集编译；仅存量 warning |
+| **`f40f998c`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1，BUILD FAILED）** | **05:10:49→05:29:51** | **18m17s（Gradle）/ 19m02s 墙钟** | **6583 tests / 1 failed**（其余 6582 全绿，无 flaky 复现）：`TimetableSettingsModelTest.corruptSettingsJsonIsArchivedAndDefaultsAreReturned`（`TimetableSettingsModelTest.kt:813`）——`expected foruiTheme=MIUI`，`actual foruiTheme=BLUE`；仅此一字段不同 |
+
+> **结论代言 `f40f998c`；其后再有提交必须再重跑。** 跑完后 HEAD 已前移到 `f62fda9a`（新增 7 条，见下），故本结论不含这 7 条。
+
+**这一例红的定性（`2e0eda96` 连坐）**：坏盘 settings 路径（`[1,2,3]` 非对象）走「按缺 key 读侧缺省」，`ForuiTheme.fromValue(null)` 在 `2e0eda96` 里由 `MIUI` 改成 `BLUE`（对齐 Dart `timetable_settings_enums.dart:87-92` 的 `orElse`），但该测试的期望仍是构造默认 `MIUI`。对照 Dart：坏盘时 `storage_service.dart:809-813` 是 `catch → TimetableSettings.defaults()`，而 `defaults()`（`:945-960`）用构造默认，即 **Dart 坏盘得 `miui`**。所以这是**代码与断言口径冲突的真差异，不属存量基线红、不属 flaky**；裁决权归 settings 线：①把坏盘路径改为回落构造默认（与 Dart 一致，测试不动），或 ②认定「缺 key 读侧缺省」为本仓既定口径、把断言改成 `BLUE` 并在日志写明这一处与 Dart 的偏离。**未改代码、未改断言。**
+
+**自上次门禁以来的变更清单（`2ff51dab..f40f998c`，共 5 条）**
+1. `2d3f4fc0` fix(timetable): 课卡天气按 `isActiveInWeek` 挂载（Lead 授权例外科改）
+2. `8e1de8d5` docs: 交接日志补 §10.25 天气门槛落地
+3. `2e0eda96` Fix settings Dart disk-encoding parity and lock merge-write preservation（**本轮唯一红因**）
+4. `291e8cc5` docs(交接): 门禁 `2ff51dab` 两门全绿
+5. `f40f998c` feat(import): XLSX numFmt 日期/时间样式对齐 Dart + 多缺陷优先级用例 + warehouse 周次边界
+
+**检查点之后又落的 7 条（`f40f998c..f62fda9a`，未含在本结论内）**：`60b4bc91`、`3ef6f6f9`、`585113c4`、`59e28be8`、`30e2aca6`、`26698a59`、`f62fda9a`。
+
 - `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
 - `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
 - 前序：`4d534e04` 门 1 绿 / 门 2 红（`WidgetWeekendMoodTest` Double vs Int，已由 `6a6ab1b8` 修）；`f1472e58`/`58693492` 门 1 红为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
