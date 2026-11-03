@@ -230,6 +230,16 @@ object ShowcaseStrings {
     val foundationRadiusLabel = ShowcaseText("foundationRadiusLabel", "圆角：{radius}")
     val foundationHapticLabel = ShowcaseText("foundationHapticLabel", "触觉类型：{type}")
 
+    // ── 深水区玻璃（G4–G8，照抄官方 demo，2026-11-03 批次）──
+    val glassBlendCardTitle = ShowcaseText("glassBlendCardTitle", "G5 配色 × G6 描边 × G7 倾灯")
+    val glassForegroundCardTitle = ShowcaseText("glassForegroundCardTitle", "G4 前景模糊 · 文字吃背景模糊")
+    val glassGravityCardTitle = ShowcaseText("glassGravityCardTitle", "G8 重力倾灯")
+    val glassBlendLabel = ShowcaseText("glassBlendLabel", "配色方案")
+    val glassHighlightLabel = ShowcaseText("glassHighlightLabel", "描边档位")
+    val glassTiltLabel = ShowcaseText("glassTiltLabel", "传感器倾灯")
+    val glassForegroundHint = ShowcaseText("glassForegroundHint", "文字的透明度被当作遮罩，字里透出被模糊的背景")
+    val glassGravityHint = ShowcaseText("glassGravityHint", "倾斜手机，高光会绕玻璃边缘转动")
+
     val allTexts: List<ShowcaseText> by lazy {
         listOf(
             showcaseScreenTitle,
@@ -334,7 +344,15 @@ object ShowcaseStrings {
             blurRadiusLabel,
             blurSaturationLabel,
             foundationRadiusLabel,
-            foundationHapticLabel
+            foundationHapticLabel,
+            glassBlendCardTitle,
+            glassForegroundCardTitle,
+            glassGravityCardTitle,
+            glassBlendLabel,
+            glassHighlightLabel,
+            glassTiltLabel,
+            glassForegroundHint,
+            glassGravityHint
         )
     }
 }

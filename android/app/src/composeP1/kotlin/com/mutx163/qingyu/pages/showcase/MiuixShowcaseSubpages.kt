@@ -129,8 +129,14 @@ fun MiuixShowcaseCategoryDetail(
             ShowcaseCategoryId.THEMING -> item {
                 ShowcaseThemingSection(state, onStateChange, dark, primaryColor)
             }
-            ShowcaseCategoryId.BLUR -> item {
-                ShowcaseBlurSection(state, onStateChange, dark, primaryColor)
+            ShowcaseCategoryId.BLUR -> {
+                item {
+                    ShowcaseBlurSection(state, onStateChange, dark, primaryColor)
+                }
+                // 深水区视觉效果（G4–G8，照抄官方 demo），2026-11-03 批次。
+                item {
+                    ShowcaseDeepGlassSection(dark, primaryColor)
+                }
             }
             ShowcaseCategoryId.FOUNDATION -> item {
                 ShowcaseFoundationSection(state, onStateChange, dark, primaryColor)
