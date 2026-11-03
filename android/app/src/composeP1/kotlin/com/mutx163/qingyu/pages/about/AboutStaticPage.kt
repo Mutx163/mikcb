@@ -253,14 +253,15 @@ private fun AboutHeroCard() {
     }
 }
 
-/** 应用图标：读 APK 里 `assets/branding/launcher_icon.png`（2026-11-02 起落主 assets，与 Flutter 同一份）。 */
+/** 应用图标：读 APK 里 `branding/launcher_icon.png`（2026-11-02 起落主 assets，与 Flutter 同一份）。
+ *  路径不带 `assets/` 前缀——AssetManager 本就相对 assets 根，多一层前缀必 FileNotFound（2026-11-03）。 */
 @Composable
 private fun AppIconBadge(size: Dp, radius: Dp) {
     val context = LocalContext.current
     val bitmap by produceState<ImageBitmap?>(initialValue = null) {
         value = withContext(Dispatchers.IO) {
             runCatching {
-                context.assets.open("assets/branding/launcher_icon.png").use { stream ->
+                context.assets.open("branding/launcher_icon.png").use { stream ->
                     BitmapFactory.decodeStream(stream)?.asImageBitmap()
                 }
             }.getOrNull()

@@ -52,17 +52,22 @@ class LanEditStaticAssets(
         )
     }
 
-    /** 请求路径 → 资源路径（Dart `_mapAssetPath` 逐条对照）。 */
+    /** 请求路径 → 资源路径（Dart `_mapAssetPath` 逐条对照，**前缀已去 `assets/`**）。
+     *
+     *  2026-11-03 修：AssetManager 的路径相对 APK assets 根，照抄 Dart 的
+     *  `assets/lan_edit/…` 会找成 `assets/assets/…`，整表必 FileNotFound、
+     *  控制台整个 404（迁移 8af8d74d 同款路径病）。落点见仓库
+     *  `android/app/src/main/assets/lan_edit|branding/`（裸路径）。 */
     fun mapAssetPath(path: String): String? = when (path) {
-        "/", "/index.html" -> "assets/lan_edit/index.html"
-        "/assets/app.js" -> "assets/lan_edit/app.js"
-        "/assets/i18n.js" -> "assets/lan_edit/i18n.js"
-        "/assets/style.css", "/assets/lan-timetable.css" -> "assets/lan_edit/lan-timetable.css"
+        "/", "/index.html" -> "lan_edit/index.html"
+        "/assets/app.js" -> "lan_edit/app.js"
+        "/assets/i18n.js" -> "lan_edit/i18n.js"
+        "/assets/style.css", "/assets/lan-timetable.css" -> "lan_edit/lan-timetable.css"
         // 图标以 data: URI 内联在这个文件里，页面不依赖任何第三方 CDN：
         // 手机或访客设备离线时图标不会整体消失（Dart 原文，`@latest` 还带供应链风险）。
-        "/assets/tabler-icons-subset.css" -> "assets/lan_edit/tabler-icons-subset.css"
+        "/assets/tabler-icons-subset.css" -> "lan_edit/tabler-icons-subset.css"
         // 登录页与浏览器标签页图标。
-        "/assets/logo.png", "/favicon.ico" -> "assets/branding/launcher_icon.png"
+        "/assets/logo.png", "/favicon.ico" -> "branding/launcher_icon.png"
         else -> null
     }
 

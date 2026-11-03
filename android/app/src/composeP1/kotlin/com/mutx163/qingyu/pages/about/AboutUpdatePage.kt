@@ -23,12 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -142,17 +142,31 @@ fun AboutUpdatePage(
     }
 }
 
-/** 应用图标徽标（Dart `AppIconBadge`）：圆角方图，取自 launcher icon。 */
+/**
+ * 应用图标徽标（Dart `AppIconBadge`）：圆角方图。
+ *
+ * 自适应启动图的两层 PNG 叠起来画（与 `SettingsPageRenderers` / `StatisticsExportCards`
+ * 同一套避法）。不能写 `painterResource(context.applicationInfo.icon)`：
+ * API 26+ 上该 id 解析到 `mipmap-anydpi-v26/ic_launcher.xml`，而本仓 classpath 的
+ * compose ui 1.12 里 painterResource 只认 `<vector>` XML 与位图，根标签是
+ * `adaptive-icon` 时直接抛 `IllegalArgumentException`——进页即闪退
+ * （2026-11-03 用户实测「进入版本更新页直接闪退」的根因）。
+ */
 @Composable
 private fun AppIconBadge(size: Dp = 72.dp) {
-    val context = LocalContext.current
     Box(
         modifier = Modifier
             .size(size)
             .clip(RoundedCornerShape(size * 0.22f)),
     ) {
         Image(
-            painter = painterResource(id = context.applicationInfo.icon),
+            painter = painterResource(id = R.mipmap.ic_launcher_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),

@@ -806,9 +806,12 @@ private fun saveQrToGallery(context: Context, assetPath: String, fileName: Strin
     }.getOrDefault(false)
 
 // 2026-11-02 资产迁移：二维码与图标落主 assets，不再读 flutter_assets/（删 Flutter 后不再生成）。
-private const val launcherIconAsset = "assets/branding/launcher_icon.png"
-private const val wechatQrAsset = "assets/donate/wechatpay.png"
-private const val alipayQrAsset = "assets/donate/alipay.png"
+// 2026-11-03 修路径：AssetManager 的路径本就相对 APK 的 assets 根，写 `assets/donate/…`
+// 会找成 assets/assets/…，必 FileNotFound 且被 runCatching 吞掉（症状：二维码不显示、
+// 只剩占位框）。改裸路径，与 docs/releases / licenses / lan_edit 同一口径。
+private const val launcherIconAsset = "branding/launcher_icon.png"
+private const val wechatQrAsset = "donate/wechatpay.png"
+private const val alipayQrAsset = "donate/alipay.png"
 private const val wechatQrFileName = "qingyu_kebiao_wechatpay.png"
 private const val alipayQrFileName = "qingyu_kebiao_alipay.png"
 

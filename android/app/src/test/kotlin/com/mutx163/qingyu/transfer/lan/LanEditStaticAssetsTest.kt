@@ -16,6 +16,10 @@ import java.io.File
  * - 响应头：`_serveStatic`（:200-217）——`no-store` / CSP / `nosniff`；
  * - 缺资源与未知路径都是 404。
  *
+ * **前缀口径（2026-11-03）**：Dart 的资源路径带 `assets/` 前缀（rootBundle 以 flutter
+ * 资产目录为根）；Kotlin 侧 `AssetManager` 本就相对 APK assets 根，映射表**不带**
+ * `assets/` 前缀——照抄会找成 `assets/assets/…`，整表 FileNotFound、控制台整个 404。
+ *
  * 另外两条**与 Dart 源对照**的用例：映射表与 CSP 字符串改错在 Kotlin 侧完全看不出来，
  * 只有真机打开浏览器才知道（而真机对照归用户），所以用读源码做子串比对挡在提交前。
  */
@@ -37,34 +41,39 @@ class LanEditStaticAssetsTest {
         throw AssertionError("从工作目录找不到 $relative")
     }
 
+    /** 主 assets 落点（打进 APK 的就是这份；仓库根 `assets/` 是删 Flutter 前的 Dart 原件，别拿它对拍）。 */
+    private fun mainAssetFile(relative: String): File =
+        repoFile("pubspec.yaml").parentFile
+            .resolve("android/app/src/main/assets/$relative")
+
     // ── 1. 路径表 ──
 
     @Test
     fun `根路径与 index 都指向控制台首页`() {
-        assertEquals("assets/lan_edit/index.html", fallback.mapAssetPath("/"))
-        assertEquals("assets/lan_edit/index.html", fallback.mapAssetPath("/index.html"))
+        assertEquals("lan_edit/index.html", fallback.mapAssetPath("/"))
+        assertEquals("lan_edit/index.html", fallback.mapAssetPath("/index.html"))
     }
 
     @Test
     fun `脚本与样式按 Dart 的表映射`() {
-        assertEquals("assets/lan_edit/app.js", fallback.mapAssetPath("/assets/app.js"))
-        assertEquals("assets/lan_edit/i18n.js", fallback.mapAssetPath("/assets/i18n.js"))
+        assertEquals("lan_edit/app.js", fallback.mapAssetPath("/assets/app.js"))
+        assertEquals("lan_edit/i18n.js", fallback.mapAssetPath("/assets/i18n.js"))
         // 两个样式路径指向同一个文件（Dart 里 style.css 是历史别名）
-        assertEquals("assets/lan_edit/lan-timetable.css", fallback.mapAssetPath("/assets/style.css"))
+        assertEquals("lan_edit/lan-timetable.css", fallback.mapAssetPath("/assets/style.css"))
         assertEquals(
-            "assets/lan_edit/lan-timetable.css",
+            "lan_edit/lan-timetable.css",
             fallback.mapAssetPath("/assets/lan-timetable.css"),
         )
         assertEquals(
-            "assets/lan_edit/tabler-icons-subset.css",
+            "lan_edit/tabler-icons-subset.css",
             fallback.mapAssetPath("/assets/tabler-icons-subset.css"),
         )
     }
 
     @Test
     fun `图标两个路径都指向同一张 logo`() {
-        assertEquals("assets/branding/launcher_icon.png", fallback.mapAssetPath("/assets/logo.png"))
-        assertEquals("assets/branding/launcher_icon.png", fallback.mapAssetPath("/favicon.ico"))
+        assertEquals("branding/launcher_icon.png", fallback.mapAssetPath("/assets/logo.png"))
+        assertEquals("branding/launcher_icon.png", fallback.mapAssetPath("/favicon.ico"))
     }
 
     @Test
@@ -82,7 +91,7 @@ class LanEditStaticAssetsTest {
     fun `读到资源时回 200 且带齐三个安全头`() {
         val payload = "%PDF-fake".toByteArray()
         val assets = LanEditStaticAssets { path ->
-            if (path == "assets/lan_edit/app.js") payload else null
+            if (path == "lan_edit/app.js") payload else null
         }
 
         val response = assets.serve("/assets/app.js")
@@ -185,7 +194,9 @@ class LanEditStaticAssetsTest {
         ).mapNotNull { fallback.mapAssetPath(it) }.distinct()
 
         for (assetPath in needed) {
-            val file = repoFile(assetPath)
+            // 对拍主 assets（打进 APK 的那份），不拿仓库根的 Dart 原件凑数。
+            val file = mainAssetFile(assetPath)
+            assertTrue("主 assets 缺资源：$assetPath", file.isFile)
             assertTrue("资源是空文件：$assetPath", file.length() > 0)
         }
     }

@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.about
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -13,7 +14,7 @@ import java.util.zip.GZIPInputStream
  * 四类 Compose 读路径已从 Flutter 打包的 `flutter_assets/` 换到主 assets：
  * `lan_edit/`（局域网控制台）、`docs/releases/`（更新日志正文）、
  * `licenses/NOTICES.gz`（开源许可快照）、`donate/` + `branding/`（二维码与图标）。
- * 本守卫钉四件事：
+ * 本守卫钉五件事：
  *
  * 1. **新落点存在且内容未漂移**：二进制文件钉原始字节哈希；文本资产钉
  *    规范化换行（CRRLF→LF）后的哈希——`core.autocrlf=true` 下重新检出会改
@@ -26,6 +27,13 @@ import java.util.zip.GZIPInputStream
  * 4. **死路径棘轮**：五个页面源文件里不得再出现**字符串字面量**形式的
  *    `flutter_assets` 读路径——删 Flutter 后该目录永不再生成，引用它的读路径
  *    都是白屏炸弹。注释/文档里提它不拦（正则只认引号紧跟的形态）。
+ * 5. **读路径与磁盘对拍（2026-11-03 补）**：页面引用的资产路径必须真实存在于
+ *    主 assets。AssetManager 的路径本就相对 assets 根，多带一层 `assets/` 前缀
+ *    是在找 `assets/assets/…`，必 FileNotFound——而 about 域读图全走
+ *    `runCatching` 静默吞掉，症状是「不显示」（捐助页二维码实测）而非崩溃，
+ *    机器上不看图标根本发现不了。另钉一条：版本更新页不得用
+ *    `painterResource(applicationInfo.icon)` 画启动图（adaptive-icon XML 在
+ *    compose ui 1.12 直接抛 `IllegalArgumentException`，进页即闪退）。
  */
 class FlutterAssetsDecouplingGuardTest {
 
@@ -175,9 +183,12 @@ class FlutterAssetsDecouplingGuardTest {
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesHost.kt" to
                 "noticesAssetPath = \"licenses/NOTICES.gz\"",
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt" to
-                "\"assets/donate/wechatpay.png\"",
+                "\"donate/wechatpay.png\"",
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt" to
-                "\"assets/branding/launcher_icon.png\"",
+                "\"branding/launcher_icon.png\"",
+            // 2026-11-03 补：控制台映射表同款路径病（照抄 Dart 的 assets/ 前缀 → 整表 404）。
+            "main/kotlin/com/mutx163/qingyu/transfer/lan/LanEditStaticAssets.kt" to
+                "\"lan_edit/index.html\"",
         )
         for ((relative, needle) in expectations) {
             val text = pageSource(relative).readText()
@@ -186,5 +197,97 @@ class FlutterAssetsDecouplingGuardTest {
                 text.contains(needle),
             )
         }
+    }
+
+    // ---- 5. 读路径与磁盘文件对拍（2026-11-03，二维码不显示的根因守卫） ----
+
+    /**
+     * 页面引用的资产读路径 → 主 assets 磁盘文件逐条对拍。
+     * AssetManager 路径相对 assets 根；这里同时钉「字面量在源码里」与「文件在磁盘上」，
+     * 两边任一漂移都红。有意迁移时同步改表与磁盘落点。
+     */
+    private val pageAssetPathPins = mapOf(
+        "composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt" to listOf(
+            "branding/launcher_icon.png",
+            "donate/wechatpay.png",
+            "donate/alipay.png",
+        ),
+        "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt" to listOf(
+            "branding/launcher_icon.png",
+        ),
+    )
+
+    @Test
+    fun `asset paths referenced by about pages exist on disk at the bare path`() {
+        for ((relative, paths) in pageAssetPathPins) {
+            val text = pageSource(relative).readText()
+            for (path in paths) {
+                assertTrue(
+                    "页面读路径字面量漂了（若是有意迁移请同步本守卫）：$relative 应含 \"$path\"",
+                    text.contains("\"$path\""),
+                )
+                assertTrue(
+                    "代码引用的资产在主 assets 不存在。AssetManager 相对 assets 根取路径，" +
+                        "写 assets/… 前缀会找成 assets/assets/…，读不到且被 runCatching 吞掉" +
+                        "（症状：图不显示）：$path",
+                    asset(path).isFile,
+                )
+            }
+        }
+    }
+
+    /**
+     * `assets.open("assets/…")` 形态棘轮：assets 根下没有再嵌一层的 assets/ 目录，
+     * 这种写法必 FileNotFound。只认 `assets.open/list(` 紧跟的字符串，注释提及不拦。
+     */
+    private val redundantAssetsPrefixOpen = Regex("""\.open\(\s*"assets/""")
+    private val redundantAssetsPrefixList = Regex("""\.list\(\s*"assets/""")
+
+    @Test
+    fun `about pages never open or list assets through a redundant assets prefix`() {
+        val pages = listOf(
+            "composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt",
+            "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt",
+            "composeP1/kotlin/com/mutx163/qingyu/pages/about/ChangelogPage.kt",
+            "composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesHost.kt",
+            "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt",
+        )
+        for (relative in pages) {
+            val text = pageSource(relative).readText()
+            val openHit = redundantAssetsPrefixOpen.containsMatchIn(text)
+            val listHit = redundantAssetsPrefixList.containsMatchIn(text)
+            assertTrue(
+                "资产读路径多了 assets/ 前缀（AssetManager 相对 assets 根，这样必读不到）：$relative",
+                !openHit && !listHit,
+            )
+        }
+    }
+
+    /**
+     * 剥掉 Kotlin 行/块注释再匹配，注释里讲历史（引用旧写法）不算违规——
+     * 与弹层守卫「先剥注释」同一纪律（.agents 笔记 2026-11-03）。
+     */
+    private fun stripKotlinComments(source: String): String {
+        val withoutBlock = Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL).replace(source, "")
+        return withoutBlock.lineSequence().map { it.substringBefore("//") }.joinToString("\n")
+    }
+
+    /**
+     * 版本更新页不得用 `painterResource(applicationInfo.icon)` 画启动图：
+     * API 26+ 解析到 adaptive-icon XML，本仓 classpath 的 compose ui 1.12 里
+     * painterResource 对非 `<vector>` XML 直接抛 IllegalArgumentException，
+     * 进页即闪退（2026-11-03 用户实测）。两层 PNG 的避法见 AboutUpdatePage.AppIconBadge。
+     */
+    @Test
+    fun `update page never paints the launcher icon via painterResource on applicationInfo`() {
+        val code = stripKotlinComments(
+            pageSource("composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt").readText(),
+        )
+        assertFalse(
+            "版本更新页在用 painterResource 读 applicationInfo.icon（adaptive-icon XML 会抛 " +
+                "IllegalArgumentException，进页即闪退）。改用 ic_launcher_background/foreground " +
+                "两层 PNG，见 AboutUpdatePage.AppIconBadge 注释",
+            code.contains("applicationInfo.icon"),
+        )
     }
 }
