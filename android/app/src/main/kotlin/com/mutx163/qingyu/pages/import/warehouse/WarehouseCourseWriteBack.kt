@@ -1,10 +1,14 @@
 package com.mutx163.qingyu.pages.import.warehouse
 
+import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
+import com.mutx163.qingyu.transfer.buildExpandedSections
 import com.mutx163.qingyu.transfer.courseListsEqual
 import com.mutx163.qingyu.transfer.dedupeImportedCourses
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
@@ -118,7 +122,7 @@ object WarehouseCourseWriteBack {
         val mode = resolveMode(before.courses.size, requestedMode)
 
         val mergedCourses: List<Course>
-        var importedCount: Int
+        val importedCount: Int
         when (mode) {
             Mode.REPLACE -> {
                 // Dart `importParsedCourses` 覆盖导入先去重（导入包内互重的条目只留一条），
@@ -146,6 +150,41 @@ object WarehouseCourseWriteBack {
                 } else {
                     synced.addedCount + synced.updatedCount
                 }
+            }
+        }
+
+        // Dart `ensureImportSectionCapacity`：最终课表要用到第几节超过现有节次时先补齐，
+        // 再写课程。
+        //
+        // 判据与 `ImportFlowModel.needsSectionExpansion` / `sectionsForImport` 同源，
+        // 但本文件的 L0 编译范围是 `pages/import/warehouse`，**收不到 `pages/import` 根目录**
+        // 的 `ImportFlowModel.kt`（`test-kotlin-module.ps1` 的 mainDir 就是模块子目录）；
+        // 直接引用会让 `-Module pages/import/warehouse` 全线 Unresolved。所以这里直接调
+        // 共享的 `transfer.buildExpandedSections`，配额判断照抄那两行的定义，不另造判据。
+        val currentSections = AiImageImportApply.activeSections(before)
+        val requiredSections = mergedCourses.maxOfOrNull { it.endSection } ?: 0
+        val scheme = TimetableHostLogic.resolveActiveTimeScheme(
+            schemes = before.timeSchemes,
+            activeTimeSchemeId = before.activeTimeSchemeId,
+        )
+        val needsSectionExpansion = requiredSections > currentSections.size
+        var sectionsExpanded = false
+        if (needsSectionExpansion) {
+            val nextSections = buildExpandedSections(currentSections, requiredSections)
+            try {
+                if (scheme != null) {
+                    // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
+                    val error = repository.updateTimeScheme(scheme.id, scheme.name, nextSections)
+                    if (error != null) {
+                        return Result.Failed(null)
+                    }
+                } else {
+                    repository.updateSettings(before.settings.copy(sections = nextSections))
+                }
+                sectionsExpanded = true
+            } catch (error: Exception) {
+                rollbackImportWrites(repository, before, scheme, sectionsExpanded = true, settingsWritten = false)
+                return Result.Failed(error)
             }
         }
 
@@ -183,7 +222,7 @@ object WarehouseCourseWriteBack {
                 repository.updateSettings(nextSettings)
                 settingsWritten = true
             } catch (error: Exception) {
-                rollbackSettings(repository, before, settingsWritten)
+                rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
                 return Result.Failed(error)
             }
         }
@@ -216,20 +255,31 @@ object WarehouseCourseWriteBack {
             Result.Done(outcome)
         } catch (error: Exception) {
             // 仓储先落盘、成功才改内存；抛错时内存仍是旧课表，宿主据此提示失败。
-            // 学期设置已先行写入，这里尽力回滚，避免「课没进、学期日期却变了」的半个状态。
-            rollbackSettings(repository, before, settingsWritten)
+            // 学期设置/补齐的节次已先行写入，这里尽力回滚，避免「课没进、作息却变了」的半个状态。
+            rollbackImportWrites(repository, before, scheme, sectionsExpanded, settingsWritten)
             Result.Failed(error)
         }
     }
 
-    /** 把先行写入的学期设置恢复成写回前的值（尽力而为，不掩盖原始错误）。 */
-    private fun rollbackSettings(
+    /**
+     * 把先行写入的学期设置与补齐的节次恢复成写回前的值（尽力而为，不掩盖原始错误）。
+     *
+     * [settingsWritten] 为假时仍要恢复设置，只要本次确实扩过节且没有主模板——那种情况下
+     * 节次表就写在设置里，不回滚等于「课没进、节次却变长」。
+     */
+    private fun rollbackImportWrites(
         repository: TimetableRepository,
-        before: com.mutx163.qingyu.app.TimetableSnapshot,
+        before: TimetableSnapshot,
+        scheme: TimeScheme?,
+        sectionsExpanded: Boolean,
         settingsWritten: Boolean,
     ) {
-        if (!settingsWritten) return
-        runCatching { repository.updateSettings(before.settings) }
+        if (settingsWritten || (sectionsExpanded && scheme == null)) {
+            runCatching { repository.updateSettings(before.settings) }
+        }
+        if (sectionsExpanded && scheme != null) {
+            runCatching { repository.updateTimeScheme(scheme.id, scheme.name, scheme.sections) }
+        }
     }
 
     /**

@@ -6,7 +6,9 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -72,6 +74,29 @@ class WarehouseCourseWriteBackTest {
             if (key == failKey) throw IllegalStateException("disk_full")
             delegate.putString(key, value)
         }
+    }
+
+    /** 只有两节课的作息：用来钉「节次不够时补齐」。 */
+    private fun twoSections() = listOf(
+        SectionTime(startTime = "08:00", endTime = "08:45"),
+        SectionTime(startTime = "08:55", endTime = "09:40"),
+    )
+
+    /** 指定节次表的仓储（设置里没有主模板，补节应直接写设置）。 */
+    private fun repositoryWithSections(
+        sections: List<SectionTime>,
+        courses: List<Course> = emptyList(),
+        store: (InMemoryKeyValueStore) -> KeyValueStore = { it },
+    ): TimetableRepository {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(listOf(profileWith(courses).toJson())),
+                "timetable_settings" to MiniJson.encode(
+                    TimetableSettings.defaults().copy(sections = sections).toJson(),
+                ),
+            ),
+        )
+        return TimetableRepository(TimetableStore(store(raw)))
     }
 
     // ── 策略 ──────────────────────────────────────────────────────────
@@ -248,6 +273,59 @@ class WarehouseCourseWriteBackTest {
 
         val reloaded = TimetableRepository(TimetableStore(raw))
         assertEquals(listOf("持久化课"), reloaded.snapshot.courses.map { it.name })
+    }
+
+    // ── 节次容量（Dart `ensureImportSectionCapacity`） ──────────────────
+
+    @Test
+    fun `节次不够时补齐到最终课表所需节次`() {
+        val repository = repositoryWithSections(twoSections())
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 5, weeks = listOf(1, 2, 3))),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart：容量确认后先补节次表再写课程，否则第 5 节的课落盘了却读不到时间。
+        assertEquals(5, repository.snapshot.settings.sections.size)
+        assertEquals(5, repository.snapshot.courses.single().endSection)
+    }
+
+    @Test
+    fun `节次够用时不做任何补节`() {
+        val eight = (1..8).map { index ->
+            SectionTime(
+                startTime = "%02d:00".format(7 + index),
+                endTime = "%02d:45".format(7 + index),
+            )
+        }
+        val repository = repositoryWithSections(eight)
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 3)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertEquals("够用就不该动用户的作息", eight, repository.snapshot.settings.sections)
+    }
+
+    @Test
+    fun `课程落盘失败时回滚已补齐的节次`() {
+        val repository = repositoryWithSections(
+            twoSections(),
+            store = { raw -> FailingWriteStore(raw, "timetable_profiles") },
+        )
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", startSection = 1, endSection = 5)),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        // 「课没进、作息却变了」是最难解释的状态：补节必须随课程落盘失败一起退回去。
+        assertEquals(twoSections(), repository.snapshot.settings.sections)
     }
 
     // ── 载荷整链 ──────────────────────────────────────────────────────
