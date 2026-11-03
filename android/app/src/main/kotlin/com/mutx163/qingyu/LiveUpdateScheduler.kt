@@ -1337,11 +1337,7 @@ object LiveUpdateScheduler {
                 context.packageManager.getLaunchIntentForPackage(context.packageName),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Notification.Builder(context, LiveUpdateService.CHANNEL_ID)
-            } else {
-                Notification.Builder(context)
-            }
+            val builder = Notification.Builder(context, LiveUpdateService.CHANNEL_ID)
                 .setContentTitle(
                     context.getString(
                         R.string.notification_course_reminder_title,

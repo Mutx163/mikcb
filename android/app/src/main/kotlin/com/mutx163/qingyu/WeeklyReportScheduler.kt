@@ -327,12 +327,7 @@ object WeeklyReportScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(context, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(context)
-        }
+        val builder = Notification.Builder(context, CHANNEL_ID)
         val notification = builder
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)

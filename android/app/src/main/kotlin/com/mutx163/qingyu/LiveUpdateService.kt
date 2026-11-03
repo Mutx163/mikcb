@@ -847,11 +847,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun buildBootstrapNotification(title: String): Notification {
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            Notification.Builder(this)
-        }
+        val builder = Notification.Builder(this, CHANNEL_ID)
 
         return builder
             .setContentTitle(title)
@@ -2540,11 +2536,7 @@ class LiveUpdateService : Service() {
             "beforeEnd" -> R.drawable.ic_countdown
             else -> R.drawable.ic_course
         }
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            Notification.Builder(this)
-        }
+        val builder = Notification.Builder(this, CHANNEL_ID)
 
         val notificationTitle = if (shouldPromote || showStandardNotification) {
             title
