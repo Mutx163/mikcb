@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -32,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
@@ -76,6 +79,7 @@ import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
+import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -349,8 +353,13 @@ fun TimetableWeekPage(
     // 注意与 `dayVisible` 的分工：dayMounted 决定「组合/测量」，dayVisible 决定
     // 「绘制与命中」——隐藏时树还在，但不画、不接事件（见下方展开层的 inert 门控）。
     val dayMounted = dayVisible || dayLayerReady
+    // ── 临时打点（量完即删）：展开起手帧耗时 + 动画期重组次数 ──
+    // 门与 `PerfProbe` 同一道（debug / bench / debuggable 才记录），
+    // release 只多一次布尔判断。取值口径见文件末尾 [DayExpandTrace]。
+    val dayExpandTraceOn = remember(resolverContext) { PerfProbe.isEnabled(resolverContext) }
     LaunchedEffect(dayMode) {
         val expandTarget = if (dayMode) 1f else 0f
+        if (dayExpandTraceOn) DayExpandTrace.begin(System.nanoTime())
         if (dayExpandReducedMotion) {
             // 降级：两个方向都直接落定（Dart `controller.value = 1/0` 同口径）。
             // snap 后 value 恰为 1.0/0.0，下方的落定判据（dayVisible + `value < 0.999f`
@@ -362,6 +371,7 @@ fun TimetableWeekPage(
                 animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
             )
         }
+        if (dayExpandTraceOn) DayExpandTrace.finish(expandTarget)
     }
 
     // 收起落定后把周 pager 对到「日视图刚才看的那一周」：否则收起会跳回进日视图前的旧周。
@@ -647,6 +657,7 @@ fun TimetableWeekPage(
                             if (!dayVisible || dayExpand.value < 0.999f) drawContent()
                         },
                 ) { page ->
+                    if (dayExpandTraceOn) SideEffect { DayExpandTrace.recompose() }
                     WeekPageContent(
                         pageWeek = page + 1,
                         semesterStart = semesterStart,
@@ -669,6 +680,16 @@ fun TimetableWeekPage(
                         cardGlassBackdrop = cardGlassSource,
                         // 时间列压在壁纸的正文带上：同一档亮度决定字色。
                         wallpaperLuminance = wallpaperBands?.body,
+                        // ── 内容层缓存（2026-11-03 卡顿修复）──
+                        // 展开/收起期间本页的 draw 块逐帧执行（读 `dayExpand.value`），
+                        // 若子树没有自己的图层，整页绘制命令会被并进 pager 那一层的
+                        // DisplayList、每帧重录一遍（几十张卡的文字与圆角）。
+                        // 挂一层**配置恒定**（不读进度、不读动画状态）的 `graphicsLayer`，
+                        // 内容录一次后复用，动画帧只换外层裁切。配置一旦随进度变化
+                        // （例如把 alpha/scale 接到 dayExpand），图层失效，缓存等于没挂。
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = 1f },
                     )
                 }
 
@@ -760,6 +781,7 @@ fun TimetableWeekPage(
                             .drawWithContent {
                                 // 隐藏（收起播完 / 预热）时只保留组合与测量，不绘制。
                                 if (!dayVisible) return@drawWithContent
+                                if (dayExpandTraceOn) DayExpandTrace.firstFrame(System.nanoTime())
                                 val progress = dayExpand.value
                                 val window = homeViewExpandWindow(
                                     progress = progress,
@@ -802,8 +824,15 @@ fun TimetableWeekPage(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                // 内容层缓存（2026-11-03 卡顿修复）：与周网格同一个理由——
+                                // 外层 draw 块逐帧读进度，子树必须有**自己的恒定图层**，
+                                // 否则整棵日视图的绘制命令每帧被重录进外层 DisplayList。
+                                // 这里只放恒定配置（alpha = 1f），绝不接 `dayExpand`，
+                                // 一旦接了进度，图层逐帧失效、缓存失效。
+                                .graphicsLayer { alpha = 1f }
                                 .inertUnless(dayVisible),
                         ) {
+                            if (dayExpandTraceOn) SideEffect { DayExpandTrace.recompose() }
                             dayContent(0.dp)
                         }
                     }
@@ -900,6 +929,8 @@ private fun WeekPageContent(
     cardGlassBackdrop: Backdrop? = null,
     /** 时间列那档壁纸亮度；null = 没壁纸（保持设置里的字色）。 */
     wallpaperLuminance: Double? = null,
+    /** 内容层外壳（缓存图层挂在这里，见 pager 调用处的说明）。 */
+    modifier: Modifier = Modifier,
 ) {
     val cardsByDay = remember(courses, pageWeek, style, visibleDays, weatherOf, reminderKeys, semesterStart) {
         WeekGridCourseMapping.cardsForWeek(
@@ -928,7 +959,7 @@ private fun WeekPageContent(
     // 星期栏已经提到共享玻璃带里（见 [TimetableWeekPage]），这里只剩网格。
     // `weekdayHeaderHeightDp = 0`：本 Box 的 maxHeight 已经不含星期栏，
     // 再减一次 40 会把节高压扁（旧结构里栏在页内、却又减了一遍栏高）。
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val sectionHeight = weekSectionHeight(
             style = style,
             availableHeightDp = maxHeight.value,
@@ -1094,4 +1125,52 @@ private fun Context.findHostActivity(): Activity? {
         current = current.baseContext
     }
     return null
+}
+
+/**
+ * 临时打点（量完即删，2026-11-03 日↔周卡顿定位）：只回答两个数字。
+ *
+ * | 数字 | 从哪一刻到哪一刻 | 说明 |
+ * |---|---|---|
+ * | `firstFrame` | `animateTo` 启动 → 移动层画出第一帧 | 这一段包含目标视图的首次 measure/layout 与首帧绘制，就是用户说的「起手卡一下」 |
+ * | `recompositions` | 动画期间两层内容根组的 `SideEffect` 次数 | 进度只在 draw 阶段读，正常应停在 0~1；逐帧上涨说明有人把进度读回了组合阶段 |
+ *
+ * 记录门与 [PerfProbe.isEnabled] 同一道（debug / bench / debuggable 才记录），
+ * release 只多一次布尔判断。删掉本对象时把三处调用点（`LaunchedEffect`、
+ * 两个内容层的 `SideEffect`、展开层 draw 块）一并删掉。
+ */
+private object DayExpandTrace {
+    private const val TAG = "[day-expand-perf]"
+
+    @Volatile private var active = false
+    @Volatile private var startNanos = -1L
+    @Volatile private var firstFrameNanos = -1L
+    @Volatile private var recompositions = 0
+
+    fun begin(nowNanos: Long) {
+        startNanos = nowNanos
+        firstFrameNanos = -1L
+        recompositions = 0
+        active = true
+    }
+
+    fun recompose() {
+        if (active) recompositions++
+    }
+
+    fun firstFrame(nowNanos: Long) {
+        if (active && firstFrameNanos < 0L) firstFrameNanos = nowNanos
+    }
+
+    fun finish(target: Float) {
+        if (!active) return
+        active = false
+        val firstFrameMs = if (firstFrameNanos < 0L) -1f
+        else ((firstFrameNanos - startNanos) / 100_000L).toFloat() / 10f
+        val totalMs = ((System.nanoTime() - startNanos) / 100_000L).toFloat() / 10f
+        Log.i(
+            TAG,
+            "target=$target firstFrameMs=$firstFrameMs totalMs=$totalMs recompositions=$recompositions",
+        )
+    }
 }

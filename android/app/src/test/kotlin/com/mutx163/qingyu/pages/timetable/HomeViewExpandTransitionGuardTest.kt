@@ -109,8 +109,97 @@ class HomeViewExpandTransitionGuardTest {
     }
 
     // ------------------------------------------------------------------
+    // 卡顿守卫（2026-11-03）：绘制期读进度 ⇒ 内容层必须有恒定缓存图层
+    // ------------------------------------------------------------------
+
+    /**
+     * 两层内容的绘制命令不得每帧重录。
+     *
+     * 展开/收起期间，周网格与日视图各自的 draw 块**逐帧**执行（进度只能在绘制阶段读）。
+     * 子树若没有自己的图层，整棵绘制命令会被并进外层 DisplayList、每帧重录一遍——
+     * 这就是用户报的「日↔周那一下卡」。修法是给两层内容各挂一个 `graphicsLayer`，
+     * 配置**恒定**（不读进度）：内容录一次后复用，动画帧只换外层裁切。
+     */
+    @Test
+    fun `两处内容层必须各挂一个配置恒定的缓存图层`() {
+        val blocks = graphicsLayerBlocks(weekPageSource)
+        assertTrue(
+            "只找到 ${blocks.size} 处 graphicsLayer——周网格页与日视图内容两层都要挂，" +
+                "少一层就退化回「每帧重录整层」。",
+            blocks.size >= 2,
+        )
+        for (block in blocks) {
+            assertFalse(
+                "缓存图层的配置里出现了 dayExpand——配置随进度变化会让图层逐帧失效，" +
+                    "缓存等于没挂。恒定配置只能写常量（如 alpha = 1f）。block=$block",
+                block.contains("dayExpand"),
+            )
+            assertFalse(
+                "缓存图层的配置里出现了 progress 之类的动画取值——同上，图层会逐帧失效。block=$block",
+                block.contains("progress"),
+            )
+            assertFalse(
+                "缓存图层的配置里出现了 homeViewExpand 几何——几何只能留在 draw 阶段。block=$block",
+                block.contains("homeViewExpand"),
+            )
+        }
+        assertTrue(
+            "缓存图层的配置里找不到任何恒定属性（alpha = 1f）——空配置挡不住后续有人把" +
+                "动画值接进来，判据要能咬住这条线。",
+            blocks.any { it.contains("alpha = 1f") },
+        )
+    }
+
+    /** 裁切 Path 必须 `remember` 一份、逐帧 `rewind()` 复用；逐帧 new 等于每帧分配。 */
+    @Test
+    fun `裁切 Path 必须复用而不是逐帧新建`() {
+        assertTrue(
+            "找不到 `remember { Path() }`——裁切路径改为逐帧新建，动画期每帧都会分配新 Path。",
+            weekPageSource.contains("remember { Path() }"),
+        )
+        assertTrue(
+            "找不到 `expandWindowClip.rewind()`——Path 没有复用回收，逐帧新建退回旧病。",
+            weekPageSource.contains("expandWindowClip.rewind()"),
+        )
+        val allocations = Regex("""Path\(\)""").findAll(weekPageSource).count()
+        assertTrue(
+            "`Path()` 出现了 $allocations 次（应恰为 1 次，在 remember 里）——多于 1 次说明" +
+                "有人在绘制路径上新建 Path。",
+            allocations == 1,
+        )
+    }
+
+    // ------------------------------------------------------------------
     // 判据工具（与 CourseOverviewSortPopupGuardTest 同一套路）
     // ------------------------------------------------------------------
+
+    /**
+     * 抽出所有 `graphicsLayer { … }` 的花括号块（按大括号配平到闭合处）。
+     * 只看 lambda 里写了什么，位置由计数断言另判。
+     */
+    private fun graphicsLayerBlocks(source: String): List<String> {
+        val blocks = mutableListOf<String>()
+        // 只认**同一行的调用**（`graphicsLayer {`）：`import …graphicsLayer` 这种也含这个词，
+        // 但 import 行后面没有花括号，跨行匹配会把它误算成一个调用点。
+        val callPattern = Regex("""graphicsLayer[ \t]*\{""")
+        for (match in callPattern.findAll(source)) {
+            val open = match.range.last
+            var depth = 0
+            var i = open
+            while (i < source.length) {
+                when (source[i]) {
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) break
+                    }
+                }
+                i++
+            }
+            blocks += source.substring(open, minOf(i + 1, source.length))
+        }
+        return blocks
+    }
 
     /**
      * 剥掉 `//` 与 `/* */`（块注释按 Kotlin 语义**可嵌套**），字符串字面量感知
