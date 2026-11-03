@@ -19,6 +19,7 @@ import java.io.File
  * | S3 | `textButtonColors(color = …)` 是**底色** | 危险色只染**字**（Dart `destructive` 变体） | 「红底 + 默认灰字」：既不像原版，对比度也不够 |
  * | S5 | `OverlayDialog` 缺省 `insideMargin = 24dp` | 对话框横向 16dp（与 S1 同一口径） | 内容自带边距叠上去就是 32~40dp |
  * | S6 | 平台 `androidx.compose.ui.window.Dialog` / `Popup` | 一律走 miuix 官方 `OverlayDialog` / `QingyuSheet` / `OverlayListPopup` | 无遮罩/返回键/进出动画口径，弹层审核查漏的 11 个自建弹窗全是这种形态 |
+ * | S7 | `if (show) { QingyuSheet(...) }` 条件挂载 | 常驻组合 + `show` 驱动 + `remember` 最后非空 | 退出动画放不完：弹层直接消失而不是下滑；`show` 变化时整棵子树重建 |
  *
  * 32 个底部弹层里 32 个都缺 S2、27 个叠了侧边距。**根因不是缺组件，是每个调用方各自记**
  * —— 所以修法是把口径收进套件 `com.mutx163.qingyu.components.QingyuSheet`，再用这条守卫
@@ -79,6 +80,41 @@ class ComposeSheetGuardTest {
             "基线里有这些行，但代码已经不违规了 —— 请从 `tool/compose_sheet_baseline/` 删掉对应行" +
                 "（棘轮只许收不许放）：\n" + stale.joinToString("\n") { "    $it" },
             stale.isEmpty(),
+        )
+    }
+
+    /**
+     * S7（2026-11-03 补）：`pages/transfer/` 自建弹层必须**常驻组合**，不许条件挂载。
+     *
+     * 背景：本域把「预览弹层 / 二维码范围弹层」从 `if (show) { Dialog }` 改成常驻 +
+     * `show` 驱动（退场动画才能放完）。S1/S5/S6 只查入口与参数，条件挂载一条都拦不住，
+     * 而且这种形状编译照过、单测照绿，只有真机看得出「弹层直接消失」。
+     *
+     * 判据（只扫 `pages/transfer` 下的 .kt 文件，注释整行掏出）：
+     * - 弹层调用出现在 `if (...)` / `when (...)` / `...?.let {` / `....let {` 的块内 → 违规；
+     * - `if (...) QingyuSheet(...)` 这种单行形态 → 违规；
+     * - 普通容器 lambda（`Row { ... }`、`Column { ... }`、`Box { ... }`、`surface { ... }`）不算。
+     *
+     * 咬合探针：给 `DataTransferPage.kt` 的 `OverlayDialog` 套一层 `if (false) { ... }`，
+     * 这条必须红；还原后绿（2026-11-03 实际执行过）。
+     */
+    @Test
+    fun `pages transfer 自建弹层必须常驻组合且 show 驱动`() {
+        val transferFiles = renderFiles().filter { it.contains(TRANSFER_PREFIX) }
+        assertTrue(
+            "pages/transfer 下一个弹层文件都没扫到，S7 判据失效（扫描根 user.dir=" +
+                "${System.getProperty("user.dir")}）",
+            transferFiles.any { File(it).readText().contains("QingyuSheet(") },
+        )
+        val violations = transferFiles.flatMap { path ->
+            conditionalSheetMounts(File(path).readText()).map { line ->
+                "${relativeName(path)}:$line 弹层被 if/when/let 条件挂载"
+            }
+        }
+        assertTrue(
+            "pages/transfer 有弹层被条件挂载（应为常驻组合 + `show` 驱动，退出动画才放得完）：\n" +
+                violations.joinToString("\n") { "    $it" },
+            violations.isEmpty(),
         )
     }
 
@@ -296,6 +332,56 @@ class ComposeSheetGuardTest {
         return null
     }
 
+    /**
+     * 找出被 `if` / `when` / `let` 条件挂载的弹层调用行号（规则 S7）。
+     *
+     * 用缩进 + 块栈做近似（不引 Kotlin 解析器）：行尾 `{` 入栈，行首 `}` 且缩进不大于栈顶
+     * 就出栈；弹层调用出现时，只要栈里有一层是条件块就判违规。注释整行掏空（含块注释）
+     * 避免考古 KDoc 误伤。缩进在本仓统一 4 空格，探针（`if (false) {`）能稳定命中。
+     */
+    private fun conditionalSheetMounts(text: String): List<Int> {
+        val hits = mutableListOf<Int>()
+        data class Block(val indent: Int, val header: String)
+        val stack = ArrayDeque<Block>()
+        var inBlockComment = false
+        text.lineSequence().forEachIndexed { index, line ->
+            val trimmed = line.trimStart()
+            if (inBlockComment) {
+                if (trimmed.contains("*/")) inBlockComment = false
+                return@forEachIndexed
+            }
+            if (trimmed.startsWith("/*")) {
+                inBlockComment = !trimmed.contains("*/")
+                return@forEachIndexed
+            }
+            if (trimmed.startsWith("//") || trimmed.startsWith("*")) return@forEachIndexed
+            val indent = line.length - trimmed.length
+            while (stack.isNotEmpty() && trimmed.startsWith("}") && indent <= stack.last().indent) {
+                stack.removeLast()
+            }
+            if (SHEET_ANY.containsMatchIn(line) || SINGLE_LINE_CONDITIONAL_SHEET.containsMatchIn(line)) {
+                if (SINGLE_LINE_CONDITIONAL_SHEET.containsMatchIn(line) ||
+                    stack.any { isConditionalHeader(it.header) }
+                ) {
+                    hits += index + 1
+                }
+            }
+            if (trimmed.endsWith("{") && !trimmed.startsWith("}")) {
+                stack.addLast(Block(indent, trimmed))
+            }
+        }
+        return hits
+    }
+
+    private fun isConditionalHeader(header: String): Boolean {
+        val h = header.trimStart()
+        return h.startsWith("if (") || h.startsWith("if(") ||
+            h.startsWith("when (") || h.startsWith("when(") ||
+            h.startsWith("when {") ||
+            h.endsWith("?.let {") || h.endsWith(".let {") ||
+            h.endsWith("?.let{") || h.endsWith(".let{")
+    }
+
     private fun loadBaseline(): Map<String, String> {
         val dir = File(repoRoot(), BASELINE_DIR)
         if (!dir.isDirectory) return emptyMap()
@@ -394,5 +480,16 @@ class ComposeSheetGuardTest {
 
         /** 危险色的写法（本仓是 `QingyuTheme.error(…)` / `destructive`）。 */
         val DANGER_COLOR = Regex("""(error|Error|destructive|Destructive)""")
+
+        /** S7 只扫本域自建弹层目录（裁决作用域）。 */
+        const val TRANSFER_PREFIX = "/pages/transfer/"
+
+        /** 弹层入口（套件与 miuix 对话框）。 */
+        val SHEET_ANY = Regex("""(?:QingyuSheet|OverlayDialog)\s*\(""")
+
+        /** `if (...) QingyuSheet(...)` 不换行形态。 */
+        val SINGLE_LINE_CONDITIONAL_SHEET = Regex(
+            """if\s*\(.*\)\s*(?:QingyuSheet|OverlayDialog)\s*\(""",
+        )
     }
 }
