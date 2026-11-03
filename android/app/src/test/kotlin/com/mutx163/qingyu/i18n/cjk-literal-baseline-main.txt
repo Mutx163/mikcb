@@ -68,9 +68,16 @@ com/mutx163/qingyu/pages/settings/SettingsResetPage.kt:2
 com/mutx163/qingyu/pages/statistics/StatisticsSettingsModel.kt:2
 com/mutx163/qingyu/pages/statistics/charts/StatsInfoModels.kt:2
 com/mutx163/qingyu/pages/task/TaskModel.kt:2
+# statistics/ExportBrandModel.kt 的 2 条 = 品牌条「轻屿课表 / 把课程信息做成系统体验」：
+# ARB timetableAppName / statisticsExportBrandTagline 的逐字内联（共享层不反引页面域、
+# 引不到 pages 的 ChartsStrings；KDoc 与统计域 ExportModelsTest 值断言双侧钉住漂移）。登记放行。
+com/mutx163/qingyu/statistics/ExportBrandModel.kt:2
 com/mutx163/qingyu/UmengDiagnosticReporter.kt:1
 com/mutx163/qingyu/app/TimetableHostLogic.kt:1
 com/mutx163/qingyu/calendar/HolidayConversion.kt:1
+# core/EventSink.kt 的 1 条 = RingEventSink 构造校验 require 消息（「capacity 必须为正」）：
+# 开发者诊断信息，只进异常栈/日志、永不上屏；core/ 是纯 JVM 层，无 ArbText 通道。登记放行。
+com/mutx163/qingyu/core/EventSink.kt:1
 com/mutx163/qingyu/core/TimeScheme.kt:1
 com/mutx163/qingyu/pages/exam/ExamListModel.kt:1
 com/mutx163/qingyu/pages/export/IcsExportModel.kt:1
@@ -82,6 +89,10 @@ com/mutx163/qingyu/pages/settings/SettingsTimetablePageSettingsPage.kt:1
 com/mutx163/qingyu/pages/statistics/StatisticsSessionModel.kt:1
 com/mutx163/qingyu/pages/sync/CoupleTimetableSettingsModel.kt:1
 com/mutx163/qingyu/pages/timetable/TimetableProfilesController.kt:1
+# pages/timetable/TimetableShareImageModel.kt 的 1 条 = 分享图日副标题「M月d日」：
+# Dart DateFormat.MMMd(zh) 输出的手写等价，统计域 StatsInfoModels/StatisticsSettingsModel
+# 同式同源已在基线；各语言各有自己的日期格式器，无单个 ARB 键可引。登记放行。
+com/mutx163/qingyu/pages/timetable/TimetableShareImageModel.kt:1
 com/mutx163/qingyu/share/TransferShareContract.kt:1
 com/mutx163/qingyu/share/camera/CameraPermissionStateMachine.kt:1
 com/mutx163/qingyu/statistics/StatisticsModels.kt:1
