@@ -191,7 +191,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 | **A（本代理）文案/l10n + 协调** | `lib/l10n/*.arb`、`android/app/src/**/i18n/**`（含 cjk-literal-baseline.txt / cjk_hardcode_baseline.txt）、`pages/timetable/TimetableStrings.kt`、`tool/` 下文案与样式基线及 copy_style 相关脚本、`docs/plans/` 日志 | copy_style 203 条欠账收敛、dead key 1 条、ARB 六份同步与 gen-l10n | 门4 + L0 | 其他线白名单外的一切 |
 | **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | lib/**、ARB、build.gradle、theme/、壳 |
 | **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | lib/**、ARB、其他域 |
-| **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | lib/**、ARB、其他域 |
+| **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | ✅ **已收线**（见下「D 线收口」） |
 | **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | lib/**、ARB、其他域 |
 
 ### 协调线职责（本代理）
@@ -204,6 +204,13 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 **判据确认**（推翻子代理「机制性卡死」结论）：lint 只扫 `lib/**` 行控件绑定（`HyperosSwitchTile` 等的 `title`/`subtitle`/`details`/`hint`/`caption` 参数）× 六份 ARB 词条，**改短外语 ARB 词条即可清债**——ARB 属 A 线白名单，不动 lib。方法：读 zh 模板语义 → 压缩 en/ja/ko 到 ≤17 宽（说明）/≤11 宽（标题）→ `visualWidth`（汉字1/ASCII0.55/占位符3）核验 → 删基线对应行 → 门4 复测无新增。zh/zh_HK/zh_TW 模板已合规不动。
 **后续**：剩 191 条按宽度降序逐批清（en 95 / ja 56 / ko 48 / zh_HK·zh_TW 各 2），每批提交+推送。
 
+### D 线收口（2026-11-03 03:05，D 线自验回填，未重跑门禁）
+- **三项全部已由 `1c42a026` 结清**：主题动作表灰实心、说明框动作区 8→12dp、设置族台账。审计两条「仍成立」回填为**已不成立**。溯源证据：`SettingsHost.kt` L1715-1730 调用 / L1747-1785 定义 `ThemeActionRow`，动作区 L1816-1836 为 `weight(1f)` + `spacedBy(12.dp)`，全文件无残留 8dp 动作间距。
+- 台账 §9.9 F23 遗留 5 项已由 F24 结清（`28cc5044`/`b2daddbd`/`f967fd5f`/`ae4c7f98`）；`liveTestingExportAction` 已接线（`SettingsPageRenderers.kt:1334`）；`DONE_MESSAGE_KEY` 全仓 0 命中。
+- 弹层复核：`SettingsHost.kt` 六处弹层 + 三个宿主全部常驻组合 + show 驱动 + remember 最后非空；`SliderValueDialog` 的 `if (helper != null)` 属配置存在性、合规，不当条件挂载误判。
+- 验收：L0 `pages/settings` 971 例 JVM 单测通过（kotlinc 编译 247 文件，exit=0）、门3 `-Domain settings` 0 违规（本轮实测）；零代码改动、零提交，L1/L2 未重跑属正常（沿用 02:20/02:26 证据 + 此后仅 docs 提交）。
+- 拍板挡住不动：主题命名输入框自动聚焦（拍板 #1，`SettingsPageRenderers.kt:838-839` 已有「不抢焦点」取舍）。
+
 ---
 
 ## 七、需 Lead 处理项
@@ -211,6 +218,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 1. **Pub 缓存目录锁定**：`C:\Users\Administrator\AppData\Local\Pub\Cache` 被系统/安全软件占用，Gradle 写冲突。建议长期方案：为 Gradle/Pub 缓存加杀软白名单，或统一改用仓库内/非系统盘缓存。
 2. **Android Studio 缺失**：L0 脚本默认找 AS 内置 kotlinc。便携 kotlinc 已 workaround，但 AS 缺失也意味着无法使用 IDE 调试。
 3. **safe-gradle.ps1 BOM**：仓库脚本无 BOM，PS 5.1 无法直接运行；pwsh 7 正常。若团队仍有 PS 5.1 环境，建议给 `scripts/*.ps1` 统一加 BOM。
+4. **（D 线报）LAN 导入的设置子集补全属 transfer 域**：`LanTransferLogic.kt:51` 自认只比时间/周次子集，需 transfer 域 Owner 接手；台账同条「撤销点 transferId 恒 null」已不成立（`LanTransferUndoStore` 已在）。
+5. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
 
 ## 八、当前状态（2026-11-03 02:45 更新）
 
