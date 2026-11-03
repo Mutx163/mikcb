@@ -1047,7 +1047,7 @@
   "countdownFormatLabel": "카운트다운 형식",
   "countdownFormatHelp": "분은 분마다, 초는 초마다",
   "showStageTextTitle": "스테이지 상태 텍스트 표시",
-  "hidePrefixTextTitle": "'수업 시작까지 / 수업 종료까지' 접두사 숨기기",
+  "hidePrefixTextTitle": "시작/종료 숨기기",
   "hidePrefixTextInactiveHint": "현재 미적용: 상단의 '카운트다운 표시'를 먼저 켜야 합니다",
   "showStageTextInactiveHint": "카운트다운이 켜져 있으면 적용되지 않습니다",
   "courseNameDuplicatedHint": "왼쪽에도 표시 중",
@@ -4697,7 +4697,7 @@
   "appUpdateMirrorPresetCustomDescription": "Enter a custom mirror URL prefix",
   "cloudBackupRetentionTitle": "Backup retention",
   "cloudBackupMaxCountTitle": "Maximum backups",
-  "cloudBackupMaxCountSubtitle": "Oldest backups are removed when exceeded",
+  "cloudBackupMaxCountSubtitle": "초과 시 오래된 백업 삭제",
   "cloudBackupMaxCountOption": "{count} backups",
   "@cloudBackupMaxCountOption": {
     "placeholders": {
@@ -5777,7 +5777,7 @@
   "weatherSettingsEntryTitle": "수업 카드 날씨",
   "weatherSettingsTitle": "날씨",
   "weatherEnableTitle": "날씨 표시",
-  "weatherEnableSubtitle": "끄면 날씨 데이터를 더 이상 가져오지 않습니다",
+  "weatherEnableSubtitle": "끄면 날씨 수집 중단",
   "weatherCityLabel": "도시",
   "weatherCityNotSet": "설정 안 됨",
   "weatherCityPickerTitle": "도시 선택",

@@ -267,9 +267,9 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
 9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。**→ Lead 已裁决（2026-11-03）：采用方案 A 收敛形态（`WarehouseFormLabelStrings` 常量对象，文件名避开 `Strings` 排除标记），基线换行不加行；转 E 线随宏回放批次落地，A 线复核基线行数后跑门 4 + 门 2 推送。** **✅ 已落地（`0b33a151`）：基线换行不加行，仍 3 条指向 `WarehouseFormLabels.kt`；门4/门2 复测全绿（见「E 线最终批次收口」）。**
 
-## 八、当前状态（2026-11-03 18:12 更新）
+## 八、当前状态（2026-11-03 18:55 更新）
 
-- HEAD = 远端 = `f80a3c42`（2026-11-03 18:09 推 `adbed462..f80a3c42`，ls-remote 复核一致：含 L3 `c17a9fb2`/`5b4b5c3f`、L1 `59a3092a`、L2 `f80a3c42`）。
+- HEAD = 远端 = `5f53e06b`（2026-11-03 18:23 推 `60a8c902..5f53e06b`，ls-remote 复核一致：含 L2 `978841df`/`5f53e06b`、L4 `9da5b72d`）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
 - 门1 L1 编译 ✅ 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ 7m8s（10:16:53→10:24:03，E 线最终批次后复测）；门4 cjk ✅ 10:15（composeP1 120 条/14 文件、main 1257 条/81 文件，均 exit=0）+ copy_style ✅ 10:16:07→10:16:39（超宽冻结 175/新增 0、死键冻结 1/新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
 
@@ -309,6 +309,24 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 2. **LAN 旧版导出包兼容性保持 Dart 语义**：整份替换，不做兼容层——旧包只有 5 键时其余项回落默认，这与 Dart 版行为一致。**记为「用户可感知的已知行为」**，不视为回归；若要改需产品先定旧包升级策略。
 3. **设置落盘加锁缺口转 L4**：`LanTransferSettingsStore` 读改写非原子（并发可能覆盖），属 `transfer/**` × `services/**` 交叉，L3 域内不便单方面加锁。**跨线移交 L4**（见 10.8 L3 条 + 10.5）。
 
+### 2026-11-03 · L2 course/timetable 三条裁决
+
+1. **追认 L2 越界改动（解结构债必需的跨目录下沉）**：为解 `timetable`→`settings` 反向依赖，改 `pages/settings/` 5 文件 + 2 测试、新建 `weather/` 3 文件与 `core/` 1 文件。性质是**下沉/转名，无逻辑变更**，属任务授权的「抽共享抽象」，予以追认。**后续此类「解结构债必需的跨目录下沉」默认批准，但必须在日志登记文件清单**（本批清单见 10.8 L2 条）。
+2. **天气线接线、假期标记、情侣冲突预览半边 — 本轮处理口径**：
+   - 天气线接线：需改壳，**本轮不做** → 进 10.5「需 Lead」；
+   - 情侣冲突预览半边：需 partner 数据源，**本轮不做** → 进 10.5「需 Lead」；
+   - 假期标记：交 L2 本轮评估，**若 provider 本地可得就在域内接**（不跨域取数）。
+3. **app 侧单测补跑不许跳过**：`978841df` 的 `CourseActionDispatcherTest` 依赖 warehouse 编译恢复，等 L1 收口后由协调线统一跑门 2（见 10.9）。
+
+### 2026-11-03 · L4 domain/services 对拍裁决
+
+1. **作用域口径**：`app/` + `core/` 视为该逻辑层的一部分，**已确认**。
+2. **D2**：双向放宽读、写侧归一（读容错但不静默改写，写入前统一格式）。
+3. **D4**：只对哈希路径做 Dart 兼容编码，**不动持久化格式**（数据格式冻结是硬约束）。
+4. **D1**：**有条件批准**——先留档再 prune、能救不删、走带锁通道（三条同时满足才允许清理）。
+5. **D3 / D5**：按格式问题修（不扩语义）。
+6. **`TimetableSettings` 键集**：只做审计 + 修实质差异，**不逐键重写**（避免大面积无收益改动引入回归）。
+
 ---
 
 ## 十、五路并行（第二班）
@@ -345,10 +363,12 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 1. **（L3 报）云备份合并恢复——待产品裁决**：Dart `canMerge` 恒 false、快照恒全量；补合并需先定「保留哪些本地数据」的产品语义。暂不做（见「九」L3 裁决 1）。
 2. **（L3 报）LAN 旧版导出包只含 5 键时其余项回落默认**：保持 Dart 整份替换语义，作为「用户可感知的已知行为」记录，不补兼容层（见「九」L3 裁决 2）。
 3. **（L3→L4 跨线移交）`LanTransferSettingsStore` 读改写非原子**：设置落盘加锁缺口，转 L4 在 `services/**` 侧统一处理（见「九」L3 裁决 3、10.8 L3 条）。
+4. **（L2 报）天气线接线需改壳**：本轮不做，待 Lead 决定壳文件改动排期（见「九」L2 裁决 2）。
+5. **（L2 报）情侣冲突预览半边需 partner 数据源**：本轮不做，待 Lead 决定数据源方案（见「九」L2 裁决 2）。
 
 ### 10.6 冲突记录
 
-_（空）_
+1. **（L4→L3）`LanEditRepositoryHostTest.kt` 编译断裂**：L3 `c17a9fb2` 给 `LanEditRepositoryHost` 新增第 4 个构造参数，`LanEditRepositoryHostTest.kt:300/:320` 的尾随 lambda 绑定错位，8 条用例编译失败。裁决：**L3 保留其改动（先提交者保留），L4 报缺陷由 L3 补修**（改命名参 + 迁移带锁 API），不属文件争抢。
 
 ### 10.7 门禁实测（第二班）
 
@@ -356,10 +376,11 @@ _（空）_
 - **2026-11-03 18:10:23 · 门4 copy_style** ✅ exit=0：超宽 175（新增 0）、死键 1（新增 0）、复述 0。
 - **2026-11-03 18:11:07→18:11:10 · 门4 cjk** ✅ exit=0：composeP1 与 main 两个源集均通过。
   - 注：本次跑门时工作区存在 L1/L2/L4 未提交中间态（`git status` 有改动+新文件），门4 为工作区扫描，故结果代表「含中间态的当前树」；按域归因未见新增违规。
+- **2026-11-03 18:49:42 · 门4 copy_style** ✅ exit=0：超宽 **158**（存量冻结 158、新增 0）、死键 1（新增 0）、复述 0。本批 A 线压掉 17 条（详见 10.9）。**注：仍含他线未提交中间态，收工前须在干净树重跑门2+门4。**
 
 ### 10.8 线收口记录
 
-**第二班线况**：L3 ✅ 已收线；L1/L2 已有提交推送（L1 `59a3092a`、L2 `f80a3c42`，待其正式报收口）；L4 进行中（工作区有未提交中间态）。
+**第二班线况**：L3 ✅ 已收线；L2 ✅ 已收线；L4 ✅ 已收线（`9da5b72d`）；L1 进行中（工作区有未提交中间态）。
 
 #### L3（sync/transfer）✅ 已收线（2026-11-03 18:12 协调线回填）
 
@@ -373,3 +394,47 @@ _（空）_
 - **自验**：L0 `test-kotlin-module.ps1 -Module sync` **334 例全绿**；门3 零新增违规；门4 零新增。
 - **协调线复核**：门4 copy_style ✅ 18:10:23 / cjk ✅ 18:11:07（两源集 exit=0）。
 - **跨线移交（转 L4）**：设置落盘加锁缺口——`LanTransferSettingsStore` 的读改写非原子，并发落盘可能互相覆盖；落点属 `transfer/**` 与 `services/**` 交叉，已登记给 L4 处理（见本节 10.5 待办）。
+
+#### L2（course/timetable）✅ 已收线（2026-11-03 18:25 协调线回填）
+
+- **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
+- **结构债解法与证据**：
+  - timetable 主源集**不再有到 `pages/settings` 的反向依赖**（协调线复核：`main/**/pages/timetable` 下 grep `^import com.mutx163.qingyu.pages.settings` **零命中**）。
+  - 壁纸淘汰判定下沉 `weather/`（3 新文件：`WallpaperEvictionPolicy.kt`、`WallpaperEvictionSources.kt`、`BingWallpaperPrefs.kt`）；材质档位词汇下沉 `core/`（1 新文件 `SurfaceMaterial.kt`）；settings 侧仅保留 `typealias`/`const` 零逻辑转发。
+  - `DayViewWeather` 从 main 源集移到 composeP1。
+  - 自验：L0 `-Module timetable` **253 例**、`-Module course` **223 例**、`-Module settings` / `-Module weather` 均 exit 0。
+- **修掉的 3 处真实 bug（Dart 依据）**：
+  1. 调课单周课不换周 → 依据 `timetable_provider.dart:2933-2972`；
+  2. 周网格「系列例外」去重丢卡 → 键应为「系列@显示日」+ `#occurrenceId`，依据 `schedule_item_expander.dart:43-63`；
+  3. 周次摘要单双周后缀被吞 → 应为两个独立 `if`，依据 `add_course_screen.dart:1599-1600`。
+- **待办**：`978841df` 的 `CourseActionDispatcherTest` 依赖 warehouse 编译恢复，**等 L1 收口后由协调线统一跑 app 侧单测，不得跳过**（见 10.9）。
+
+#### L4（domain/services 对拍）✅ 已收线（2026-11-03 18:55 协调线回填）
+
+- **提交**：`9da5b72d`（11 文件 +926/−5；**已在 `5f53e06b` 之前的推送区间内上远端**，无需再推）。
+- **对拍规模**：11 个逻辑域 / 127 个 Kotlin 文件 ↔ Dart `domain/` 39 + `models/` 32 + `services/` 109；**9 域已对齐、无整域空壳**，成员级未移植 6 项。自验 L0 **1829 例全绿**。
+- **修掉 3 处真实差异**：
+  1. `ScheduleItem.endDate` 未钳制 → 空区间不显示；
+  2. `CourseTask.dueDate` 未归一 → 与 Dart 字节不一致；
+  3. profile 坏条目未留档 → 数据静默丢失，改走 `timetable_profiles_unparsed_items` 留档。
+- **既有断言纠偏（性质=纠错，不是放宽）**：`LenientAndProfileTest` 原断言钉 `dueDate=2026-11-08T18:00`，Dart 实为**午夜**；已改断言 + 写侧归一。**特此注明：这是修正错误断言，不是放宽校验**，避免后续误读为松动。
+- **并发通道落地**：`TimetableRepository.readRawSettings()` / `writeRawSettingsPatch()` 复用既有对象锁，store 层补兜底同步；6 条测试（含「sleep 放大窗口」的并发用例）；4 次咬合探针。
+- **跨线缺陷登记（转 L3）**：`LanEditRepositoryHostTest.kt:300/:320` 因 `c17a9fb2` 新增第 4 构造参数导致尾随 lambda 绑错、**8 条用例编译失败**；已派 L3 修（改命名参 + 迁移到带锁 API）。
+
+### 10.9 文案债进度（A 线，按宽度降序）
+
+口径：`copy_style_lint.dart` 超宽存量（标题 ≤11 / 说明 ≤17；visualWidth 汉字 1.0、ASCII 0.55、占位符 3）。每批改外语 ARB 词条 → 复测 → 删基线行，只减不增。
+
+| 批次 | 区间 | 处理 | 压掉 | 剩余 | 复测时间戳 |
+|---|---|---|---|---|---|
+| 第一班累计 | — | — | 203→175 | 175 | — |
+| **B1** | 宽度 ≥22.0 | en 11 + ja 3 + ko 3 = 17 条压缩（含 ja/ko `cloudBackupMaxCountSubtitle` 由英文补译为日/韩文） | **17** | **158** | 18:49:42 exit=0 |
+| B2 | 20.0–21.9 | — | 待做 | 158 | — |
+
+**B1 明细（17 条）**：`en/bingWallpaperAutoApplySubtitle`、`en/importRandomCourseColorSubtitle`、`en/weatherShowOnWeekCardSubtitle`、`en/unifiedCourseCardColorSubtitle`、`en/preferShortNameSubtitle`、`en/weatherEnableSubtitle`、`en/longPressEmptySlotToAddSubtitle`、`en/liquidGlassScopeDockSubtitle`、`en/homeWidgetHideCompletedSubtitle`、`en/importMethodIcsSubtitle`、`en/cloudBackupMaxCountSubtitle`、`ja/weatherEnableSubtitle`、`ja/hidePrefixTextTitle`、`ja/cloudBackupMaxCountSubtitle`、`ko/weatherEnableSubtitle`、`ko/hidePrefixTextTitle`、`ko/cloudBackupMaxCountSubtitle`。
+
+**遗留观察**：`en/hidePrefixTextTitle` 仍超标题宽（19.25 > 11），留在基线待 B2；`ja/ko/bingWallpaperAutoApplySubtitle` 仍未压（属 B2～B3 区间）。
+
+### 10.10 收工前置纪律（Lead 要求）
+
+**收工前必须在「干净工作树」重跑门 2（`safe-gradle.ps1 :app:testDevDebugUnitTest`）与门 4（cjk 两源集 + copy_style）**——上一轮 18:11 / 18:49 两次门 4 均含他线未提交中间态，只能作为阶段性证据，不能作为收工证据。

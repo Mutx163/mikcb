@@ -1047,7 +1047,7 @@
   "countdownFormatLabel": "カウントダウン形式",
   "countdownFormatHelp": "分のみは分ごと、秒ありは秒ごと",
   "showStageTextTitle": "ステージステータステキストを表示",
-  "hidePrefixTextTitle": "「授業開始まで / 授業終了まで」接頭辞を非表示",
+  "hidePrefixTextTitle": "接頭辞を非表示",
   "hidePrefixTextInactiveHint": "現在は無効：上の「カウントダウンを表示」を有効にする必要があります",
   "showStageTextInactiveHint": "カウントダウン中は無効",
   "courseNameDuplicatedHint": "左側にも表示中",
@@ -4649,7 +4649,7 @@
   "appUpdateMirrorPresetCustomDescription": "Enter a custom mirror URL prefix",
   "cloudBackupRetentionTitle": "Backup retention",
   "cloudBackupMaxCountTitle": "Maximum backups",
-  "cloudBackupMaxCountSubtitle": "Oldest backups are removed when exceeded",
+  "cloudBackupMaxCountSubtitle": "超過時は最も古いものを削除",
   "cloudBackupMaxCountOption": "{count} backups",
   "@cloudBackupMaxCountOption": {
     "placeholders": {
@@ -5632,7 +5632,7 @@
   "weatherSettingsEntryTitle": "授業カードの天気",
   "weatherSettingsTitle": "天気",
   "weatherEnableTitle": "天気を表示",
-  "weatherEnableSubtitle": "オフにすると天気データを取得しなくなります",
+  "weatherEnableSubtitle": "オフで天気取得を停止",
   "weatherCityLabel": "都市",
   "weatherCityNotSet": "未設定",
   "weatherCityPickerTitle": "都市を選択",
