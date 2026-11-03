@@ -1574,6 +1574,9 @@ fun ShellPageContent(
                 // 「已到点」也算已到点、顺延一周）；标题/正文对齐 `:36` / `:38-71`。
                 // 统计数字**不重算**——复用已交付的 `statistics/StatisticsService`。
                 onWeeklyReportToggle = { enabled ->
+                    // Lead 授权例外科改（行为接线，仅本函数体）：开关值同时写 settings，
+                    // 否则备份/导出永远读到旧的 false。settings 已是唯一真源（见 TimetableStore）。
+                    wiring.timetable.writeRawSettingsPatch(mapOf("weeklyReportEnabled" to enabled))
                     if (enabled) {
                         val now = LocalDateTime.now()
                         val snap = wiring.timetable.snapshot
@@ -2048,6 +2051,9 @@ fun ShellPageContent(
                 ),
                 onBack = onBack,
                 onPersistHideFromRecents = { hidden ->
+                    // Lead 授权例外科改（行为接线，仅本函数体）：与上一处同理，
+                    // 开关值同时写 settings，保证备份/导出与运行时一致。
+                    wiring.timetable.writeRawSettingsPatch(mapOf("liveHideFromRecents" to hidden))
                     runCatching {
                         context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)
                             .edit().putBoolean("hide_from_recents", hidden).apply()

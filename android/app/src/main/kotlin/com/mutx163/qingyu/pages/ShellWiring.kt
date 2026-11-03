@@ -26,6 +26,8 @@ import com.mutx163.qingyu.calendar.HolidayService
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimeSchemeLogic
 import com.mutx163.qingyu.SystemAlarmHelper
+import com.mutx163.qingyu.WeeklyReportScheduleLogic
+import com.mutx163.qingyu.WeeklyReportScheduler
 import com.mutx163.qingyu.pages.course.AddCourseSavePayload
 import com.mutx163.qingyu.core.ClassAlarmEvent
 import com.mutx163.qingyu.core.ClassAlarmPlanLogic
@@ -108,6 +110,50 @@ class ShellWiring(context: Context) {
      * 且都走 `saveSettingsPatch` 的读-合并-写，所以谁都不会覆盖谁。
      */
     val settingsModel: TimetableSettingsModelStore = TimetableSettingsModelStore(timetableStore)
+
+    /**
+     * 启动时 **settings → native pref 单向对账**（Lead 授权的行为接线）。
+     *
+     * `weeklyReportEnabled` / `liveHideFromRecents` 历史上只有 native pref 一条链路：
+     * 开关值写 pref，settings JSON 里那份同名键**写了没人读**（备份/导出读 settings ⇒
+     * 永远过期）。settings 现在是唯一真源，启动时按它修一次 pref。
+     *
+     * 只在 settings 里**存在该键**时覆盖；缺失（Compose 新建档案还没写过）时不动 pref，
+     * 避免把「旧版只写 pref、settings 里没这个键」的用户静默关掉。
+     */
+    init {
+        reconcileNativePrefsFromSettings()
+    }
+
+    private fun reconcileNativePrefsFromSettings() {
+        val settings = timetableStore.loadSettingsJson()
+        (settings["weeklyReportEnabled"] as? Boolean)?.let { enabled ->
+            if (WeeklyReportScheduler.isEnabled(context) != enabled) {
+                if (enabled) {
+                    val snapshot = timetable.snapshot
+                    WeeklyReportScheduler.scheduleNext(
+                        context = context,
+                        enabled = true,
+                        fireAtMillis = WeeklyReportScheduleLogic.nextFireAtMillis(LocalDateTime.now()),
+                        title = WeeklyReportScheduleLogic.buildTitle(),
+                        body = WeeklyReportScheduleLogic.buildBody(
+                            courses = snapshot.courses,
+                            currentWeek = snapshot.currentWeek,
+                            semesterWeekCount = snapshot.settings.semesterWeekCount,
+                        ),
+                    )
+                } else {
+                    WeeklyReportScheduler.cancel(context)
+                }
+            }
+        }
+        // 键名与 `pages/ShellPageIndex.kt` 的 keepAlive 落点、`LiveUpdateService` 同源；
+        // 此处的写入是「恢复备份后把设置真正应用到运行时」的那一步。
+        (settings["liveHideFromRecents"] as? Boolean)?.let { hidden ->
+            context.getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
+                .edit().putBoolean("hide_from_recents", hidden).apply()
+        }
+    }
 
     /**
      * 读 `timetable_settings` 的**原始 JSON**（组合函数在 `settingsRevision` 变化时调一次）。
