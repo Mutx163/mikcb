@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -51,6 +55,15 @@ fun StatisticsSettingsPage(
 ) {
     val dark = isSystemInDarkTheme()
 
+    // 开关的显示值必须在本页落地：壳（ShellPageIndex.kt 的 `e.statisticsSettings`）
+    // 只在进入页面时读一次偏好，点击回调写完调度器就返回，没有任何 Compose 状态
+    // 会触发重组。若直接绑 `viewState.isEnabled`，用户点一下开关会弹回原位、
+    // 看起来像「按了没反应」。副标题也用同一个本地值重算，避免「开着却写已关闭」。
+    var enabled by remember(viewState.isEnabled) { mutableStateOf(viewState.isEnabled) }
+    val subtitle = remember(enabled, viewState.nextFireAt) {
+        StatisticsSettingsLogic.subtitle(enabled, viewState.nextFireAt)
+    }
+
     // 大标题折叠行为由骨架统一持有（Dart lib/screens/statistics_settings_screen.dart:23
     // 走 HyperosSubpage，collapsibleLargeTitle 默认 true ⇒ 用骨架默认的可折叠大标题变体）。
     QingyuPageScaffold(title = viewState.title, onBack = onBack) {
@@ -71,10 +84,13 @@ fun StatisticsSettingsPage(
                     insideMargin = PaddingValues(vertical = 2.dp),
                 ) {
                     SwitchPreference(
-                        checked = viewState.isEnabled,
-                        onCheckedChange = onWeeklyReportToggle,
+                        checked = enabled,
+                        onCheckedChange = {
+                            enabled = it
+                            onWeeklyReportToggle(it)
+                        },
                         title = viewState.tileTitle,
-                        summary = viewState.subtitle,
+                        summary = subtitle,
                         startAction = {
                             Icon(
                                 imageVector = MiuixIcons.Alarm,
