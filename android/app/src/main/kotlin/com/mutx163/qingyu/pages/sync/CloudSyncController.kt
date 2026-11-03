@@ -226,6 +226,14 @@ class CloudSyncController(
     )
 
     /**
+     * 新版密文键里是否存有密码（只读口）。
+     *
+     * 页面层判「升级后是否需要重输密码」用：`cloudSyncViewState()` 内部读过一次，
+     * 但那是快照、且被渲染字段包着，宿主/页面拿不到原始布尔值。
+     */
+    fun hasStoredPassword(): Boolean = store.hasStoredPassword()
+
+    /**
      * 最近一次错误的**原始码**（不是本地化后的句子）。
      *
      * `SyncResultToasts.forRestore/forDeleteBackup` 要的是码、再各自本地化一遍；

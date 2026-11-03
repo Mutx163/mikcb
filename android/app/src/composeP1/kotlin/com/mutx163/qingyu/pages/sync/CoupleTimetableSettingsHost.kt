@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mutx163.qingyu.pages.ShellWiring
 import com.mutx163.qingyu.pages.transfer.AppToastCapsule
+import com.mutx163.qingyu.platform.AndroidLegacyCredentialProbe
 import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
 import com.mutx163.qingyu.platform.CoupleConfigStoreImpl
 import com.mutx163.qingyu.platform.CouplePartnerPortImpl
@@ -80,6 +81,25 @@ fun CoupleTimetableSettingsHost(
             cipher = KeystoreSecretCipher(alias = "qingyu_couple_webdav"),
         )
     }
+    // 升级后一次性提示：身份条件与云同步同口径（新密文键空 + 旧 Dart 插件 prefs 有键 +
+    // 标记未写），只是键后缀与幂等标记走情侣版本。判为「该提示」时立即写标记；
+    // 写失败也照常显示（宁可下次重复，不可本次漏掉）。
+    val legacyProbe = remember(appContext) { AndroidLegacyCredentialProbe(appContext) }
+    val shouldPromptLegacyReentry = remember(configStore, prefs, legacyProbe) {
+        CloudSyncLogic.takeLegacyPasswordReentryPrompt(
+            hasStoredPassword = configStore.hasStoredPassword(),
+            legacyKeySuffix = CloudSyncLogic.LEGACY_KEY_SUFFIX_COUPLE,
+            alreadyPrompted = {
+                prefs.getBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_COUPLE, false)
+            },
+            hasLegacyDartCredential = { suffix -> legacyProbe.hasLegacyPassword(suffix) },
+            markPrompted = {
+                prefs.putBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_COUPLE, true)
+            },
+        )
+    }
+    var showLegacyReentry by remember { mutableStateOf(shouldPromptLegacyReentry) }
+
     val partnerPort = remember(wiring, prefs) { CouplePartnerPortImpl(wiring.timetable, prefs) }
     val transfer = remember(appContext) { CoupleTransferAdapter(appContext) }
     val shareAdapter = remember(appContext) { AndroidTransferShareAdapter(appContext) }
@@ -268,5 +288,19 @@ fun CoupleTimetableSettingsHost(
                 }
             }
         },
+    )
+
+    // 与连接弹层同口径：常驻组合、只翻 `show`。主按钮直接打开既有连接弹层。
+    LegacyPasswordReentryDialog(
+        show = showLegacyReentry,
+        title = CoupleStrings.coupleWebdavLoginSheetTitle.zh,
+        body = SyncStrings.webdavPasswordReentryBody.zh,
+        connectLabel = CoupleStrings.coupleWebdavConnect.zh,
+        cancelLabel = CoupleStrings.cancelAction.zh,
+        onConnect = {
+            showLegacyReentry = false
+            showConnectSheet = true
+        },
+        onDismiss = { showLegacyReentry = false },
     )
 }

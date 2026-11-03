@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.platform.AndroidLegacyCredentialProbe
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -83,6 +85,26 @@ fun CloudSyncPage(
     val viewState = remember(controller, revision) { controller.cloudSyncViewState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // 升级后一次性提示：新版密文键为空、旧 Dart 插件 prefs 里仍有密码、且标记没写过。
+    // 只在本页入口算一次（`remember(controller)`），不随重组反复探测；判为「该提示」时
+    // 立即写一次性标记（写失败也照常显示，见 CloudSyncLogic.takeLegacyPasswordReentryPrompt）。
+    val promptStore = remember(context) { PrefsKeyValueStore(context.applicationContext) }
+    val legacyProbe = remember(context) { AndroidLegacyCredentialProbe(context) }
+    val shouldPromptReentry = remember(controller, promptStore, legacyProbe) {
+        CloudSyncLogic.takeLegacyPasswordReentryPrompt(
+            hasStoredPassword = controller.hasStoredPassword(),
+            legacyKeySuffix = CloudSyncLogic.LEGACY_KEY_SUFFIX_CLOUD,
+            alreadyPrompted = {
+                promptStore.getBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_CLOUD, false)
+            },
+            hasLegacyDartCredential = { suffix -> legacyProbe.hasLegacyPassword(suffix) },
+            markPrompted = {
+                promptStore.putBool(CloudSyncLogic.LEGACY_REPROMPT_MARK_CLOUD, true)
+            },
+        )
+    }
+    var showReentry by remember { mutableStateOf(shouldPromptReentry) }
 
     // 立即同步发现两边都改过时，控制器会挂起 pendingSyncConflict；这里弹「选边」框。
     var conflictInfo by remember { mutableStateOf<SyncConflictInfo?>(null) }
@@ -177,6 +199,20 @@ fun CloudSyncPage(
             controller.resolveSyncConflict(SyncConflictChoice.CANCEL)
             conflictInfo = null
         },
+    )
+
+    // 与选边框同口径：常驻组合、只翻 `show`，退场动画能播完。
+    LegacyPasswordReentryDialog(
+        show = showReentry,
+        title = SyncStrings.cloudSyncTitle.zh,
+        body = SyncStrings.webdavPasswordReentryBody.zh,
+        connectLabel = SyncStrings.cloudSyncConnectAccount.zh,
+        cancelLabel = SyncStrings.cancelAction.zh,
+        onConnect = {
+            showReentry = false
+            onConnect()
+        },
+        onDismiss = { showReentry = false },
     )
 }
 

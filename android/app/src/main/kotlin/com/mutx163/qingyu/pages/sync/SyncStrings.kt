@@ -84,6 +84,11 @@ object SyncStrings {
     val cloudSyncPasswordHint = ArbText("cloudSyncPasswordHint", "在坚果云账户安全选项中生成")
     val cloudSyncConfigLoadFailed =
         ArbText("cloudSyncConfigLoadFailed", "云同步设置读取失败，请重新输入应用专用密码")
+    val webdavPasswordReentryBody = ArbText(
+        "webdavPasswordReentryBody",
+        "本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；" +
+            "服务器地址、账号与同步设置均已保留。",
+    )
     val cloudSyncTestSuccess = ArbText("cloudSyncTestSuccess", "WebDAV 连接成功")
     val cloudSyncTestFailed = ArbText("cloudSyncTestFailed", "WebDAV 连接失败，请检查账号、应用密码和网络")
     val cloudSyncConnectSuccess = ArbText("cloudSyncConnectSuccess", "账号连接成功")
@@ -254,6 +259,7 @@ object SyncStrings {
             cloudSyncPasswordLabel,
             cloudSyncPasswordHint,
             cloudSyncConfigLoadFailed,
+            webdavPasswordReentryBody,
             cloudSyncTestSuccess,
             cloudSyncTestFailed,
             cloudSyncConnectSuccess,
