@@ -34,6 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -317,7 +320,10 @@ private fun RecentWallpaperCard(
                     indication = LocalIndication.current,
                     onClick = onTap,
                     onLongClick = onLongPress,
-                ),
+                )
+                // 缩略图是装饰图，可读信息只有下方标签；合并后整张卡念成一句
+                // 「壁纸名，按钮」，而不是「图片 + 壁纸名」两个孤立节点。
+                .semantics(mergeDescendants = true) { role = Role.Button },
         ) {
             Box(
                 modifier = Modifier

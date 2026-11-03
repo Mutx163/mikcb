@@ -33,8 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -673,6 +677,7 @@ private fun PersonalizePage(
                             rowOptions.forEach { option ->
                                 ThemeSwatch(
                                     hex = option.hex,
+                                    label = option.label,
                                     selected = option.hex.equals(settings.seedHex, ignoreCase = true),
                                     dark = dark,
                                     onClick = { onSettingsPatch(GuideSettingsPatch.SeedColor(option.hex)) },
@@ -711,6 +716,11 @@ private fun MenuStylePreview(
                 shape = shape,
             )
             .clickable(onClick = onClick)
+            // 预览块本身是纯图形，唯一可读信息是下方 label；合并后读成一个可选项。
+            .semantics(mergeDescendants = true) {
+                role = Role.RadioButton
+                this.selected = selected
+            }
             .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -746,6 +756,7 @@ private fun MenuStylePreview(
 @Composable
 private fun ThemeSwatch(
     hex: String,
+    label: String,
     selected: Boolean,
     dark: Boolean,
     onClick: () -> Unit,
@@ -758,7 +769,13 @@ private fun ThemeSwatch(
             .clip(CircleShape)
             .background(color)
             .border(width = if (selected) 2.dp else 1.dp, color = ring, shape = CircleShape)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            // 色块只有颜色、没有文字，读屏默认只会念「按钮」；补上名字与单选语义。
+            .semantics {
+                contentDescription = label
+                role = Role.RadioButton
+                this.selected = selected
+            },
     )
 }
 

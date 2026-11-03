@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuShapes
@@ -79,8 +82,15 @@ fun QingyuCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val clickable = onClick != null || onLongPress != null
+    // 可点卡片对读屏必须是一个整体动作：合并子节点文本（否则标题/说明/取值被拆成一堆碎片），
+    // 并显式声明按钮角色（官方 Card 默认不声明，读屏只会念「可点按」而不知道这是按钮）。
+    val semanticsModifier = if (clickable) {
+        modifier.semantics(mergeDescendants = true) { role = Role.Button }
+    } else {
+        modifier
+    }
     Card(
-        modifier = modifier,
+        modifier = semanticsModifier,
         cornerRadius = cornerRadius,
         insideMargin = insideMargin,
         colors = colors,

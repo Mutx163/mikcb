@@ -28,6 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -356,15 +360,21 @@ internal fun AppearanceEditorBottomChrome(
 private fun CircleAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     val outerInteraction = remember { MutableInteractionSource() }
     Column(
-        modifier = Modifier.clickable(
-            interactionSource = outerInteraction,
-            indication = null,
-            onClick = onClick,
-        ),
+        modifier = Modifier
+            .clickable(
+                interactionSource = outerInteraction,
+                indication = null,
+                onClick = onClick,
+            )
+            // 外层才是读屏要看到的唯一节点：图标 + 文字合并成一个「按钮：label」，
+            // 内层 Surface 的点击语义必须清掉，否则同一动作会被念成两个可点区域。
+            .semantics(mergeDescendants = true) { role = Role.Button },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(
             onClick = onClick,
+            // 只保留按压手感，不向语义树暴露第二个可点节点。
+            modifier = Modifier.clearAndSetSemantics {},
             shape = CircleShape,
             color = Color.White.copy(alpha = 0.14f),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
@@ -373,7 +383,8 @@ private fun CircleAction(icon: ImageVector, label: String, onClick: () -> Unit) 
             Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = label,
+                    // 文字标签已经合并进外层节点，图标本身是装饰。
+                    contentDescription = null,
                     modifier = Modifier.size(26.dp),
                     tint = Color.White,
                 )

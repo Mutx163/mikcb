@@ -258,7 +258,8 @@ private fun IconGridCell(
             if (vector != null) {
                 Icon(
                     imageVector = vector,
-                    contentDescription = cell.label,
+                    // 名称由下方 Text 提供，卡片合并语义后图标再报一次就是重复朗读。
+                    contentDescription = null,
                     tint = iconColor,
                     modifier = Modifier.size(SettingsGlassDockIconEditorPage.ICON_SIZE_DP.dp),
                 )
@@ -266,7 +267,7 @@ private fun IconGridCell(
                 // 默认格：Dart 用 Material 的 add_rounded；这里用官方 Miuix 加号。
                 Icon(
                     imageVector = MiuixIcons.Add,
-                    contentDescription = cell.label,
+                    contentDescription = null,
                     tint = iconColor,
                     modifier = Modifier.size(DefaultIconSize),
                 )
