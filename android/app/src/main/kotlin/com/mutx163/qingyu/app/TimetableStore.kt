@@ -26,6 +26,7 @@ import java.time.LocalDateTime
  * | `timetable_profiles_schema_version` | int | 恒 1；**写路径自动盖章** |
  * | `active_timetable_profile_id` | String | 当前激活档案 id |
  * | `timetable_settings` | String(JSON) | 设置（本层只拥有时间/周次 4 键 + 单节提醒 1 键，见下） |
+ * | `app_global_settings_v1` | String(JSON) | 44 个整机级键的真源（见 [AppGlobalSettingsStore]；档案内嵌只留镜像） |
  * | `current_week` | int | 当前周次 |
  * | `time_schemes` | String(JSON) | 作息方案数组 |
  * | `schedule_date_rules` | String(JSON) | 作息日期规则数组 |
@@ -567,8 +568,24 @@ class TimetableStore(
      * 本层只认识 4 个。没有档案时回落到顶层旧镜像（**仅 bootstrap 前**，见 [loadSettings]）。
      */
     @Synchronized
-    fun loadSettingsJson(): Map<String, Any?> =
-        readActiveEmbeddedSettingsJson() ?: readLegacyTopLevelSettingsJson()
+    fun loadSettingsJson(): Map<String, Any?> {
+        val embedded = readActiveEmbeddedSettingsJson() ?: readLegacyTopLevelSettingsJson()
+        // 44 个整机级键以全局那份为准，逐个覆盖档案内嵌同名键（值为 null 也覆盖，
+        // 才能表达「已清空」）。少了这一层，切档就会连带换掉主题/字体/语言/材质/导航，
+        // 正是 Dart 2026-09-22 明确否掉的行为（app_global_settings_service.dart:140-149）。
+        return globalSettings.overlay(embedded, globalSettings.ensureInitialized())
+    }
+
+    /**
+     * 整机级全局设置（44 键，见 [AppGlobalSettingsStore]）。
+     *
+     * 播种源与 Dart `_pickSourceProfile` / `resolveInitial` 同口径：**活动档案内嵌**
+     * 优先；盘上还没有档案（bootstrap 前）时回落顶层旧镜像；两者都没有就不播种。
+     */
+    private val globalSettings = AppGlobalSettingsStore(store) {
+        readActiveEmbeddedSettingsJson()
+            ?: readLegacyTopLevelSettingsJson().takeIf { it.isNotEmpty() }
+    }
 
     /**
      * **读-合并-写**：只覆盖 [patch] 里出现的键，盘上其余键（Dart 侧 250+ 个）原样保留。
@@ -584,8 +601,20 @@ class TimetableStore(
     @Synchronized
     fun saveSettingsPatch(patch: Map<String, Any?>) {
         if (patch.isEmpty()) return
+        // 整机级键分拣（44 键）：先写全局那份（真源、不随切档变化），再与其余键一起
+        // 镜像进活动档案内嵌与顶层。镜像不是多余——Dart 备份 payload 只序列化 profiles，
+        // 全局键在档案里不留一份，备份 → 换机 → 恢复就会整组丢掉。
+        // 读侧优先级见 [loadSettingsJson]（全局覆盖档案同名键）。
         // 读-合并-写必须整体持锁（@Synchronized）：设置页模型、灵动显示、局域网导入
         // 三路写入共用本实例，不持锁时两次并发 patch 会读到同一份旧值、后写覆盖先写。
+        val (globalPatch, _) = globalSettings.split(patch)
+        if (globalPatch.isNotEmpty()) {
+            // 整机级真源：先合并进全局那份（缺数据时按 Dart 口径从活动档案播种）。
+            val next = LinkedHashMap<String, Any?>()
+            next.putAll(globalSettings.ensureInitialized())
+            next.putAll(globalPatch)
+            globalSettings.save(next)
+        }
         applySettingsPatchToActiveProfile(patch)
         val mirrored = LinkedHashMap<String, Any?>()
         mirrored.putAll(readLegacyTopLevelSettingsJson())
