@@ -45,11 +45,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -755,6 +758,9 @@ fun TimetableWeekPage(
             val contentLeftPx = (contentBounds.left - rootOrigin.x).coerceAtLeast(0f)
             val contentWidthPx = contentBounds.width
             val timeColumnPx = with(density) { style.timeColumnWidthDp.dp.toPx() }
+            // 圆角裁切路径：**一个节点一份、逐帧 rewind 复用**（draw 阶段读动画值，
+            // 不重组、不重排，也不逐帧分配 Path）。
+            val expandWindowClip = remember { Path() }
             Box(
                 modifier = Modifier
                     // 只覆盖内容区（不含顶栏/星期栏）：上面的共享带保持可见、可点。
@@ -765,6 +771,10 @@ fun TimetableWeekPage(
                     // 命中测试也停在内容区：日视图展开时不能把事件漏给下面的周网格
                     // （否则长按空白格加课会在日视图上误触发）。这个节点只宣称命中、
                     // 不消费，窗口里的真实控件照常拿事件。
+                    // （Dart 侧还有 `ignoring: progress < 0.05` 的收起尾段放行——Compose
+                    // 的命中模型没有「逐帧条件命中」，per-event 消费又会连窗口内真实
+                    // 控件一起点不了，权衡后保持常驻宣称；阈值常量与单测留在
+                    // [HOME_VIEW_EXPAND_INPUT_GATE]，见该常量 KDoc。）
                     .pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
@@ -773,8 +783,9 @@ fun TimetableWeekPage(
                         }
                     }
                     .drawWithContent {
+                        val progress = dayExpand.value
                         val window = homeViewExpandWindow(
-                            progress = dayExpand.value,
+                            progress = progress,
                             viewportWidth = rootSize.width.toFloat(),
                             contentLeft = contentLeftPx,
                             contentWidth = contentWidthPx,
@@ -782,12 +793,24 @@ fun TimetableWeekPage(
                             visibleDays = visibleDays,
                             selectedDayOfWeek = selectedDayOfWeek,
                         )
-                        clipRect(
-                            left = window.left,
-                            top = 0f,
-                            right = window.right,
-                            bottom = size.height,
-                        ) {
+                        // ── 圆角形变窗口（2026-11-03，替换直角 clipRect）──
+                        // 种子面板 28dp 圆角全程保持满值，只在贴边前的最后 0.002 带内
+                        // 收平（数值出处见 homeViewExpandCornerRadiusFactor 的 KDoc）。
+                        // 落定帧（含「减少动画」snapTo）progress 恰为 1.0 ⇒ 因子恰为 0
+                        // ⇒ RoundRect 退化为全屏矩形，裁切是 no-op，真面板无任何残角。
+                        val cornerPx = HOME_VIEW_EXPAND_SEED_CORNER_DP.dp.toPx() *
+                            homeViewExpandCornerRadiusFactor(progress)
+                        expandWindowClip.rewind()
+                        expandWindowClip.addRoundRect(
+                            RoundRect(
+                                left = window.left,
+                                top = 0f,
+                                right = window.right,
+                                bottom = size.height,
+                                cornerRadius = CornerRadius(cornerPx, cornerPx),
+                            ),
+                        )
+                        clipPath(expandWindowClip) {
                             this@drawWithContent.drawContent()
                         }
                     },

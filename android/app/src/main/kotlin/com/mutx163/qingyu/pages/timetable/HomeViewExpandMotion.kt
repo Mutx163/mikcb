@@ -103,3 +103,53 @@ fun homeViewExpandDurationMillis(speed: Double): Int {
  * `scale < 0` 现实中不存在，但按「不开动画」处理（与 `<= 0` 同一边），测试钉住这一边。
  */
 fun homeViewExpandReducedMotion(animatorDurationScale: Float): Boolean = animatorDurationScale <= 0f
+
+/**
+ * 展开窗口的**种子圆角**（逻辑 dp）。
+ *
+ * 取值出处：Flutter `HyperosMiuixNavigation.anchorExpandRadius`
+ * （`lib/ui/hyperos/hyperos_navigation.dart:162-174`）——锚点展开的种子面板 28dp，
+ * 起手保持满值，长到贴边后才收平。2026-11-03 用户真机口径：直角切口「廉价、丑陋」，
+ * 圆角形变窗口（照抄 miuix 官方下拉形变的 RoundRect 插值技法）替换直角 clipRect。
+ */
+const val HOME_VIEW_EXPAND_SEED_CORNER_DP = 28f
+
+/**
+ * 圆角收束带宽：**缓动后**进度的最后 [HOME_VIEW_EXPAND_CORNER_SETTLE_BAND] 一段里
+ * 把圆角从满值收平到 0。
+ *
+ * 取值出处：Flutter `HyperosMiuixNavigation.anchorExpandCornerSettleBand = 0.002`
+ * （`lib/ui/hyperos/hyperos_miuix_spec.dart:884`）。
+ */
+const val HOME_VIEW_EXPAND_CORNER_SETTLE_BAND = 0.002f
+
+/**
+ * 形变转场的圆角收束因子（0 = 平角，1 = 满半径）：**只收尾、不起头**。
+ *
+ * 逐点对齐 Flutter `HyperosMiuixNavigation.morphCornerRadiusFactor`
+ * （`lib/ui/hyperos/hyperos_navigation.dart:141-151`）：起手是一张带圆角的种子面板，
+ * 圆角全程保持满值；只有「窗口已经长到贴边」之后的收尾带宽内才线性收平。
+ *
+ * 反面教材（同一函数 KDoc 里 Flutter 侧 2026-10-17 真机记录）：从 0 起就按进度线性收
+ * （`28 × (1 - p)`）会在页面还差十分之一屏宽没贴边时圆角就没了——用户原话
+ * 「页面还没有完全贴边的时候，圆角就已经消失变成直角了」。
+ *
+ * @param progress **曲线作用后**的展开进度（0..1）。超出会被夹住。
+ * @param band 收尾带宽（缓动后进度占比）；`<= 0` 退化为二值开关（只在端点收平）。
+ */
+fun homeViewExpandCornerRadiusFactor(
+    progress: Float,
+    band: Float = HOME_VIEW_EXPAND_CORNER_SETTLE_BAND,
+): Float {
+    val clamped = progress.coerceIn(0f, 1f)
+    if (band <= 0f) {
+        return if (clamped >= 1f) 0f else 1f
+    }
+    return ((1f - clamped) / band).coerceIn(0f, 1f)
+}
+
+/** 挡输入阈值：展开进度低于它时，展开层不拦事件（Dart
+ * `timetable_anchored_day_overlay.dart:231-235` 的 `ignoring: progress < 0.05` 同口径
+ * ——收起尾段窗口只剩一条细缝，点按应该落到下面还看得见的周网格上）。
+ */
+const val HOME_VIEW_EXPAND_INPUT_GATE = 0.05f

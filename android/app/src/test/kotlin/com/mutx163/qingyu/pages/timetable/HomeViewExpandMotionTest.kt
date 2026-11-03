@@ -137,4 +137,36 @@ class HomeViewExpandMotionTest {
         // 现实不会出现，但判据必须站在「不开动画」那一边（漏判降级比多判更伤用户）。
         assertTrue(homeViewExpandReducedMotion(-1f))
     }
+
+    @Test
+    fun `圆角因子_起手与中段保持满值`() {
+        // Flutter 反面教材（2026-10-17 真机）：线性 28×(1-p) 会在页面还差一截没贴边时
+        // 圆角就没了。所以 0 与中段都必须是满圆角（1.0）。
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0f))
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.5f))
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.99f))
+    }
+
+    @Test
+    fun `圆角因子_只在收尾带宽内收平`() {
+        // band = 0.002：进度 0.999 时 (1-0.999)/0.002 = 0.5（带内中点）。
+        assertEquals(0.5f, homeViewExpandCornerRadiusFactor(0.999f), 0.0001f)
+        // 贴边（1.0）必须恰好为 0——落定帧（含「减少动画」snapTo(1f)）不能有残角。
+        assertEquals(0f, homeViewExpandCornerRadiusFactor(1f))
+        assertEquals(0f, homeViewExpandCornerRadiusFactor(1.5f))
+    }
+
+    @Test
+    fun `圆角因子_带宽为0退化为二值开关`() {
+        assertEquals(0f, homeViewExpandCornerRadiusFactor(1f, band = 0f))
+        assertEquals(1f, homeViewExpandCornerRadiusFactor(0.999f, band = 0f))
+    }
+
+    @Test
+    fun `挡输入阈值与种子圆角取值对齐Flutter`() {
+        // 阈值与几何常量是观感契约的一部分，改值必须是有意的（出处见各自 KDoc）。
+        assertEquals(0.05f, HOME_VIEW_EXPAND_INPUT_GATE)
+        assertEquals(28f, HOME_VIEW_EXPAND_SEED_CORNER_DP)
+        assertEquals(0.002f, HOME_VIEW_EXPAND_CORNER_SETTLE_BAND)
+    }
 }

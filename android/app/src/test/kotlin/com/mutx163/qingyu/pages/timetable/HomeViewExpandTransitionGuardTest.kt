@@ -91,6 +91,23 @@ class HomeViewExpandTransitionGuardTest {
         )
     }
 
+    @Test
+    fun `圆角形变必须走统一的纯函数因子`() {
+        // 2026-11-03 起窗口是圆角形变（替换直角 clipRect）。圆角收束只有
+        // homeViewExpandCornerRadiusFactor 这一份（28dp 种子 + 0.002 收尾带，出处见其
+        // KDoc）；渲染层直接写死半径或另立公式都会让「贴边前圆角消失」的旧病复发。
+        assertTrue(
+            "HomeViewExpandMotion 里没有 homeViewExpandCornerRadiusFactor 纯函数——" +
+                "圆角收束判据被删。",
+            motionSource.contains("fun homeViewExpandCornerRadiusFactor("),
+        )
+        assertTrue(
+            "TimetableWeekPage 没有调用 homeViewExpandCornerRadiusFactor——圆角窗口没接判据，" +
+                "等于退回直角擦除或自造半径。",
+            weekPageSource.contains("homeViewExpandCornerRadiusFactor("),
+        )
+    }
+
     // ------------------------------------------------------------------
     // 判据工具（与 CourseOverviewSortPopupGuardTest 同一套路）
     // ------------------------------------------------------------------
