@@ -191,6 +191,11 @@ AGENTS.md
 # Cloudflare wrangler CLI 本地缓存
 .wrangler/
 
+# 与本 App 无关的浏览器扩展（EmailTick 临时邮箱助手，Chrome/Edge 本地工具）
+# 只在浏览器里「加载已解压的扩展程序」用，不参与 Android 构建、不随 APK 分发。
+# 保留在本机目录，仅忽略入库；不要随代码提交。
+/emailtick-helper/
+
 # 内部工作流程文档（代码评审 / 验收清单 / 会话交接 / 推广文案，仅本地不入库）
 #
 # ⚠️ gitignore 对**已跟踪**文件无效：CODE_REVIEW_2026-08-30.md 早已入库，本规则
