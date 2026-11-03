@@ -1345,6 +1345,78 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 5. **L0**：统一入口 `scripts/test-kotlin-module.ps1 -Module pages/import`（含 `warehouse` 子目录）**OK (522 tests)**，本批新增 10 例（边界 7 + 往返 3）。咬合探针两次：删 BOM 修复 → 1 红；把 `停课周` 解析打断 → 3 红（往返 1 + 既有 2）；均已还原。只声明 JVM 单测通过，不声明编译/真机通过。
 
+### §10.31 凭据迁移审计（WebDAV 密码：Dart FlutterSecureStorage → Kotlin 加密壳）
+
+**结论：② 必须重登（只需重输一次密码；服务器/用户名/开关/备份设置不丢）。** 本批只读，未改生产代码。
+
+**1. 存储位置 / 键名 / 格式（证据）**
+- Dart 云同步：`lib/services/webdav_sync_credentials_store.dart:7` key = `webdav_sync_password`；
+  `FlutterSecureStorage`（`:35-37` `AndroidOptions(resetOnError:false)`，未设 `storageNamespace`），
+  插件版本 10.3.4（`pubspec.lock:300-307`）。
+- Dart 情侣：`lib/services/couple_webdav_credentials_store.dart:7` key = `couple_webdav_password`。
+- Kotlin 云同步：`platform/WebdavConfigStoreImpl.kt:140` prefs key = `mikcb_webdav_password_v2`；
+  `platform/KeystoreSecretCipher.kt:89` KeyStore alias = `mikcb_webdav_password_v2`。
+- Kotlin 情侣：`platform/CoupleConfigStoreImpl.kt:95` prefs key = `couple_webdav_password_blob_v1`
+  （该实现只有声明，尚未在 `ShellPageIndex` 接线）。
+- Dart 插件私有格式（AES-GCM 存值 + RSA-OAEP(SHA-256/MGF1) 包密钥、AndroidKeyStore 保护；
+  prefs 文件 `FlutterSecureStorage`、key 前缀 `VGhpcyBpcyB0aGUgcHJlZml4IGZvciBhIHNlY3VyZSBzdG9yYWdlCg`、
+  另有 `FlutterSecureStorageConfiguration:<name>`）：核对记录见 `KeystoreSecretCipher.kt:18-24`
+  （引用插件 `FlutterSecureStorageConfig.java:20`）。
+- Kotlin 格式：`AES/GCM/NoPadding`、AES-256、12B IV、128b tag，落盘 `Base64(iv||ciphertext)`
+  （`KeystoreSecretCipher.kt:43-51/88-91`）；值写在 Dart 同名 prefs
+  `FlutterSharedPreferences` 的 `flutter.mikcb_webdav_password_v2`
+  （`platform/PrefsKeyValueStore.kt:11/44-45`、`app/KeyValueStore.kt:97-100`）。
+
+**2. 判定依据**
+- ① 要求「同一 Keystore 别名 / 同一加密壳 / 可无损读出重写」：三项全不满足——
+  键名不同（`webdav_sync_password` vs `mikcb_webdav_password_v2`）、算法壳不同
+  （插件私有 RSA 包装 + 自己的配置项 vs 直连 AES-GCM）、Kotlin 无任何读取旧 key 的代码
+  （全仓 grep 只在注释里出现 `webdav_sync_password`/`couple_webdav_password`）。→ ②。
+- **重要更正**：代码注释称「`composeUi` 壳是独立包名（`.ui`），跨包共享在构造上不可能」已过时。
+  现状是同包名：`android/app/build.gradle:48` `applicationId = "com.mutx163.qingyu"`，
+  `:7`/`:146` 记录 composeP1/composeUi 两个 flavor 已于 2026-10-29 删除、页面全部并入 `main`。
+  因此升级后**数据目录与 KeyStore 同 UID**，旧的 `FlutterSecureStorage.xml` 确实还在，
+  「技术上可读旧插件文件」成立；但复刻插件私有格式（别名派生 / IV 序列化 / 迁移标记）会随
+  插件升级静默失效，代价高于重输一次，故实现刻意不复刻（`WebdavConfigStoreImpl.kt:123-139`
+  的取舍），结论仍是 ②，不是 ③。
+- 非密码部分可无损沿用：Dart `lib/services/webdav_sync_config.dart:38` `webdav_sync_config_v1`
+  ↔ Kotlin `sync/WebdavSyncConfig.kt:87`，且 Kotlin 直接读写 Dart 的
+  `FlutterSharedPreferences`（`flutter.` 前缀），所以服务器、用户名、同步开关、设备标签都在。
+
+**3. 升级后用户看到什么**
+- 云同步页：`pages/sync/CloudSyncModel.kt:347-364` 的 `connected = username非空 && hasStoredPassword`；
+  升级后 `hasStoredPassword=false` → 显示「连接账号 / 未连接」，服务器与用户名预填，
+  用户只需重输一次应用专用密码即可恢复；远端备份/课表不受影响，不是丢数据。
+- 情侣设置页同口径：`pages/sync/CoupleTimetableSettingsModel.kt:177-201`。
+- 当前**没有**「升级后请重输密码」的一次性提示；要不要加见「需 Lead 决定」。
+
+**4. 明文落盘检查（只报告，未改）**
+- 未发现明文落盘。两处写入都先 `cipher.encrypt`（`WebdavConfigStoreImpl.kt:82`、
+  `CoupleConfigStoreImpl.kt:73`），密钥只存 AndroidKeyStore；`KeystoreSecretCipher.kt:50`
+  还有 `require(!encoded.contains(plaintext))` 防御断言。配置 JSON 无 `password` 字段
+  （`sync/` 全目录 grep 仅命中 `WebdavHttpTransport` 的请求头构造，非持久化）。
+
+**5. 过期注释（一行级，建议改；本批只读未动）**
+三处 KDoc 的「独立包名」前提与现状矛盾，建议改成「同包名，但格式不兼容、且不复刻插件私有格式」：
+- `platform/WebdavConfigStoreImpl.kt:133-134`
+- `platform/CoupleConfigStoreImpl.kt:91`
+- `platform/KeystoreSecretCipher.kt:27-28`
+
+**6. 未验证项**
+- 仓库内没有 flutter_secure_storage 10.3.4 的 Java 源码（无 pub cache），插件格式依据
+  `KeystoreSecretCipher.kt:18-24` 的核对记录与引用行号，未逐行复验。
+- 真机迁移链未跑：装旧版存密码 → 覆盖装新版（同包名同签名）→ 看 `hasStoredPassword()`
+  是否仍为 false、密码框是否空、重输后能否连上。建议作为 Beta 升级验收项。
+- 情侣 WebDAV 的 Kotlin 实现尚未接线，升级影响按同口径推断，未实测。
+
+**7. 需 Lead 决定**
+1. 是否加一次性「升级后请重输网盘密码」提示（不加则用户看到「未连接」，需自己意识到要重输）。
+2. 是否修正上述三处过期注释（一行级；结论不受影响）。
+3. Phase 5 是否做一次性自动迁移：同包名可行，但要复刻插件私有格式；建议**不做**，维持
+   `v2` 键并保留「格式版本已写进键名」的区分能力（`WebdavConfigStoreImpl.kt:136-139`）。
+
+**L0**：本批为只读审计，按 Lead 指示未跑。
+
 
 
 
