@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.FormatException
 import com.mutx163.qingyu.core.ServiceMessage
 import com.mutx163.qingyu.core.TimetableSettings
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -746,7 +747,7 @@ object SpreadsheetImportModel {
         if (minute < 0 || minute > 59) return null
         if (allowEndOfDay && hour == 24 && minute == 0) return "24:00"
         if (hour < 0 || hour > 23) return null
-        return "%02d:%02d".format(hour, minute)
+        return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
     }
 
     /**

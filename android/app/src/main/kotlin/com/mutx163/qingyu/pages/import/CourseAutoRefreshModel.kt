@@ -4,6 +4,7 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.Locale
 
 /**
  * 「课表自动更新」判定真源（P3-G1 · 移植
@@ -296,6 +297,7 @@ object CourseAutoRefreshModel {
             hash = hash xor unit.code.toLong()
             hash = hash * 0x01000193L and 0xffffffffL
         }
-        return "%08x".format(hash)
+        // 指纹会参与落盘比较，必须 ASCII：默认 Locale 下 `%x` 同样会被本地化。
+        return String.format(Locale.ROOT, "%08x", hash)
     }
 }

@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.import
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.pages.import.warehouse.AiImageImportApply
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -37,7 +38,7 @@ class CapacityCriteriaParityTest {
     }
 
     private fun formatHm(minutes: Int): String =
-        "%02d:%02d".format(minutes / 60, minutes % 60)
+        String.format(Locale.ROOT, "%02d:%02d", minutes / 60, minutes % 60)
 
     /** 覆盖「空节次表 / 常规 6 节 / 12 节」三种现状。 */
     private val currentSectionSets: List<List<SectionTime>> = listOf(

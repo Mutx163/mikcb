@@ -220,11 +220,39 @@ class LocaleFormatGuardTest {
          * 其余 52 处全部落在下列作用域外目录，按前缀登记。
          */
         val WHITELIST: List<WhitelistEntry> = listOf(
+            // pages/import 的日期键、时刻键、课表指纹已改 Locale.ROOT（见 ImportLocaleFormatTest），
+            // 因此不再整段登记 pages/，按仍有余量的包目录逐条收口。
             WhitelistEntry(
-                "main/kotlin/com/mutx163/qingyu/pages/",
-                "作用域外（pages 目录属各页面线，本批明令不碰）。多为界面展示文本；" +
-                    "其中日期键（HolidayEditorLogic、ImportSharedModel、ScheduleReminderLogic）" +
-                    "与导入哈希（CourseAutoRefreshModel）确需 Locale.ROOT，待各页面线收口。",
+                "main/kotlin/com/mutx163/qingyu/pages/exam/",
+                "作用域外（exam 线）。日期/时刻展示文本，待该线收口 Locale.ROOT。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/live/",
+                "作用域外（live 线）。倒计时/直播时长展示文本。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/schedule/",
+                "作用域外（schedule 线）。日期键与时刻键，需 Locale.ROOT，待该线收口。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/settings/",
+                "作用域外（settings 线）。假期编辑的日期键，需 Locale.ROOT，待该线收口。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/sync/",
+                "作用域外（sync 线）。备份文件名时间戳，需 Locale.ROOT，待该线收口。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/timetable/",
+                "作用域外（timetable 线）。网格时刻展示文本。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/time_scheme/",
+                "作用域外（time_scheme 线）。作息时刻展示文本。",
+            ),
+            WhitelistEntry(
+                "main/kotlin/com/mutx163/qingyu/pages/transfer/",
+                "作用域外（transfer 线）。二维码传输倒计时文本。",
             ),
             WhitelistEntry(
                 "composeP1/kotlin/com/mutx163/qingyu/pages/",
@@ -240,15 +268,6 @@ class LocaleFormatGuardTest {
                 "作用域外（transfer 目录测试）。期望值复刻被测格式串，随被测代码一起改。",
             ),
             WhitelistEntry(
-                "main/kotlin/com/mutx163/qingyu/sync/",
-                "作用域外（sync 目录不在本批作用域）。SyncConflict 的 `%02x` 是哈希片段，" +
-                    "**确有落盘风险**，已单独报给 Lead，待 sync 线修。",
-            ),
-            WhitelistEntry(
-                "main/kotlin/com/mutx163/qingyu/platform/",
-                "作用域外（platform 目录本次按住，等 pages/sync 线停手）。情侣端点的 `%02x` 同上。",
-            ),
-            WhitelistEntry(
                 "main/kotlin/com/mutx163/qingyu/weather/",
                 "作用域外（weather 目录）。人类可读的体积文案，只进日志/诊断，不落盘。",
             ),
@@ -257,9 +276,22 @@ class LocaleFormatGuardTest {
                 "根包诊断工具，只格式化日志里的人类可读字节数，不落盘、不参与哈希，" +
                     "且不在本批作用域（core/app/infra/share/widgetdata）。",
             ),
+            // 同 main：pages/import 的测试辅助已改 Locale.ROOT，测试侧按包目录逐条收口。
             WhitelistEntry(
-                "test/kotlin/com/mutx163/qingyu/pages/",
-                "作用域外（pages 目录测试）。期望值复刻被测格式串，随被测代码一起改。",
+                "test/kotlin/com/mutx163/qingyu/pages/about/",
+                "作用域外（about 线测试）。期望值复刻被测格式串，随被测代码一起改。",
+            ),
+            WhitelistEntry(
+                "test/kotlin/com/mutx163/qingyu/pages/diagnostics/",
+                "作用域外（diagnostics 线测试）。期望值复刻被测格式串，随被测代码一起改。",
+            ),
+            WhitelistEntry(
+                "test/kotlin/com/mutx163/qingyu/pages/sync/",
+                "作用域外（sync 线测试）。期望值复刻被测格式串，随被测代码一起改。",
+            ),
+            WhitelistEntry(
+                "test/kotlin/com/mutx163/qingyu/pages/time_scheme/",
+                "作用域外（time_scheme 线测试）。期望值复刻被测格式串，随被测代码一起改。",
             ),
         )
     }

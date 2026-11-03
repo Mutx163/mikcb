@@ -296,8 +296,8 @@ class WarehouseCourseWriteBackTest {
     fun `节次够用时不做任何补节`() {
         val eight = (1..8).map { index ->
             SectionTime(
-                startTime = "%02d:00".format(7 + index),
-                endTime = "%02d:45".format(7 + index),
+                startTime = String.format(java.util.Locale.ROOT, "%02d:00", 7 + index),
+                endTime = String.format(java.util.Locale.ROOT, "%02d:45", 7 + index),
             )
         }
         val repository = repositoryWithSections(eight)

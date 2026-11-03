@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 /**
  * ICS 课表解析模型（P3-G1 · 移植 `lib/services/ics_import_service.dart`，
@@ -451,6 +452,7 @@ object IcsImportModel {
             WeekCalculator.startOfWeek(date),
         ) / 7 + 1).toInt()
 
+    /** 课程时刻键 `HH:MM`：落盘用，必须 [Locale.ROOT]（本地数字会破坏逐字节对拍）。 */
     private fun formatTime(time: LocalDateTime): String =
-        "%02d:%02d".format(time.hour, time.minute)
+        String.format(Locale.ROOT, "%02d:%02d", time.hour, time.minute)
 }
