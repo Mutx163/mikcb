@@ -91,6 +91,8 @@ data class CourseTask(
             }
 
             val rawSourceWeek = json["sourceWeek"]
+            // Dart：`raw is num ? raw.toInt() : int.tryParse(raw.toString())`
+            // （course_task.dart:145-147）——数字按截断，字符串按严格整数解析，两者不同。
             val sourceWeek: Long? = when (rawSourceWeek) {
                 is Number -> rawSourceWeek.toLong()
                 null -> null

@@ -51,8 +51,20 @@ data class CourseSessionNote(
 
     companion object {
         fun fromJson(json: Map<String, Any?>): CourseSessionNote = CourseSessionNote(
-            text = json["text"] as? String ?: "",
-            hasHomework = json["hasHomework"] as? Boolean ?: false,
+            // Dart `(json['text'] as String?) ?? ''` / `json['hasHomework'] as bool? ?? false`
+            // 是**裸强制转换**（course.dart:46-51）：null 才回落默认值，非 String / 非 bool
+            // 直接抛 TypeError 让整条课程被拒。Kotlin 以前用 `as?` 静默吞掉，会产出
+            // 「导入成功但备注丢了」的课表 —— 这里必须同口径抛。
+            text = when (val raw = json["text"]) {
+                null -> ""
+                is String -> raw
+                else -> throw DartFormatException("CourseSessionNote.text must be a String")
+            },
+            hasHomework = when (val raw = json["hasHomework"]) {
+                null -> false
+                is Boolean -> raw
+                else -> throw DartFormatException("CourseSessionNote.hasHomework must be a bool")
+            },
         )
     }
 }
@@ -285,7 +297,9 @@ data class Course(
             val parsed = sortedMapOf<Int, CourseSessionNote>()
             for ((key, value) in raw) {
                 val week = when (key) {
-                    is Number -> key.toInt()
+                    // Dart 只认 `int`（double 键落到 `_ => null`）；Kotlin 以前连 2.5 也截成 2。
+                    is Int -> key
+                    is Long -> key.toInt()
                     is String -> key.toIntOrNull()
                     else -> null
                 }
