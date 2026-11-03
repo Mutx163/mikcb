@@ -68,8 +68,8 @@ class FlutterAssetsDecouplingGuardTest {
     /** 文本资产（lan_edit 控制台）：钉规范化换行后的哈希。 */
     private val textPins = mapOf(
         "lan_edit/index.html" to "c405bc1a2b2a3777e1fa32384378ffb2faa98965c9b2830242a3394ec9580d1a",
-        "lan_edit/app.js" to "b2350c715038487d92fda374f64bdab7f6aae75c8c5c0085e9da5d79265d2c09",
-        "lan_edit/i18n.js" to "cd4be7b1541277ca17d72dce2c36c0917f892655132b646358cec2a7021a0c17",
+        "lan_edit/app.js" to "37477b3e43920e14f59bc527d69cebb4fe520bfd5108ef46195ad36904d9bff7",
+        "lan_edit/i18n.js" to "8959222eef02ec53b4fdd4c04efae396fd63f6f68fb60fe01b92ca6dcfbd9ba3",
         "lan_edit/lan-timetable.css" to "1775921243900872d299a71b6a2084725cf527142cc8e498c03117cad38d07cc",
         "lan_edit/tabler-icons-subset.css" to "d2e977c5168fecd9f49ff53006da7c676fcf759f68c8caa92e67f9c39df5e2fe",
     )
