@@ -16,11 +16,11 @@
 | 口径 | 条数 |
 |---|---:|
 | 表行总数（附表 120 + 查漏 18；一行含多个位置的按一行计） | **138** |
-| 已不成立（代码已修，回填列写明现状与对应修复） | **120** |
-| 仍成立（回填列已更新为当前行号；含登记过的已知债） | **17** |
+| 已不成立（代码已修，回填列写明现状与对应修复） | **121** |
+| 仍成立（回填列已更新为当前行号；含登记过的已知债） | **16** |
 | 部分成立（主问题已修、残留半条，回填列说明剩余） | **1** |
 
-> 早间汇总曾按「65 仍成立 / 76 已不成立」通报；2026-11-02 晚间逐条回填的实测为 104 / 29 / 5。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉（常驻组合退场 + per-id 语义色），计数更新为 107 / 26 / 5。**2026-11-03 第二批（app / components / timetable / sync 四域）**：又清 13 行（云备份详情组 ×4、解绑确认、WebDAV 连接弹层 ×2、同步冲突三键框、主题动作表、说明框、课表周页死 import），计数更新为上表 120 / 17 / 1。**以本节 + 两表回填列的逐条状态为准。**
+> 早间汇总曾按「65 仍成立 / 76 已不成立」通报；2026-11-02 晚间逐条回填的实测为 104 / 29 / 5。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉（常驻组合退场 + per-id 语义色），计数更新为 107 / 26 / 5。**2026-11-03 第二批（app / components / timetable / sync 四域）**：又清 13 行（云备份详情组 ×4、解绑确认、WebDAV 连接弹层 ×2、同步冲突三键框、主题动作表、说明框、课表周页死 import），计数更新为 120 / 17 / 1。**2026-11-03 第三批（timetable 文案）**：`7aba9894` 清掉 `TimetableProfilesStrings` 中文常量对象（查漏 199），计数更新为上表 121 / 16 / 1。**以本节 + 两表回填列的逐条状态为准。**
 
 ### 行号漂移规律
 
@@ -46,10 +46,11 @@
 | 第二批（11-03）：sync | `f4f7a199` 云备份详情宿主常驻组合（附表 330-333 + 281）、解绑确认常驻 + 12dp（334/335）、WebDAV 连接弹层常驻 + 动作固定底部（336/337）、同步冲突三键框竖排（查漏 198） |
 | 第二批（11-03）：app | `5d0ed9e5` 主题动作表改 ChoiceTile 行形态（附表 256）、说明框等宽 12dp（257） |
 | 第二批（11-03）：timetable | `5f0a4e7e` 顺带清掉课表周页死 import（查漏 205）；守卫假红盲区由 `2d645db5` 修掉（S1D/S3/S4 判据整体先剥注释） |
+| 第三批（11-03）：timetable 文案 | `7aba9894` `TimetableProfilesStrings` 对象清零（查漏 199）——22 条在用文案迁 `TimetableStrings`（12 复用 + 10 补录 ARB 既有键，零新增），10 条死成员删除，parity 对拍 + CJK 基线 36→4 |
 
-### 仍成立的 17 条速览（2026-11-03 第二批后）
+### 仍成立的 16 条速览（2026-11-03 第三批后）
 
-42dp 无标题空档 ×4（`CourseActionSheet` / `CourseNoteSheet` / `WeekSelectorSheet` / `AppearanceEditorHost`，等上游悬浮把手，拍板 #7）、裸 `Popup` ×1（`CourseOverviewPage`）、调课列表 480dp、备注顶部 16dp、周格白字、周加/减无障碍、学期滚轮抢手势（需真机）、选周结构分歧（按拍板 #5 保留）、`TimetableProfilesStrings` 中文常量（timetable 域：`TimetableStrings.kt` 正被并行泳道改动，迁移冲突留待下批）、输入自动聚焦 4 处未加（按拍板 #1 默认不加；课表管理一处已加待拍板）、`QingyuSheet` 标题动作贴边（潜在）/ IME 叠加（需真机+套件层）/ 官方字阶（按拍板 #2 接受）、ICS 菜单形态（按拍板 #8 保留结构）。~~云备份详情确认整组 ×4 / 解绑红+10dp / WebDAV 静态 show+动作不固定 / 主题动作表灰实心 / 说明框行尾 8dp / SyncConflict 三动作同行 / 未使用 import~~ → 已由 `f4f7a199` / `5d0ed9e5` / `5f0a4e7e` 修掉（2026-11-03 第二批）。明细见两表回填列。
+42dp 无标题空档 ×4（`CourseActionSheet` / `CourseNoteSheet` / `WeekSelectorSheet` / `AppearanceEditorHost`，等上游悬浮把手，拍板 #7）、裸 `Popup` ×1（`CourseOverviewPage`）、调课列表 480dp、备注顶部 16dp、周格白字、周加/减无障碍、学期滚轮抢手势（需真机）、选周结构分歧（按拍板 #5 保留）、输入自动聚焦 4 处未加（按拍板 #1 默认不加；课表管理一处已加待拍板）、`QingyuSheet` 标题动作贴边（潜在）/ IME 叠加（需真机+套件层）/ 官方字阶（按拍板 #2 接受）、ICS 菜单形态（按拍板 #8 保留结构）。~~云备份详情确认整组 ×4 / 解绑红+10dp / WebDAV 静态 show+动作不固定 / 主题动作表灰实心 / 说明框行尾 8dp / SyncConflict 三动作同行 / 未使用 import~~ → 已由 `f4f7a199` / `5d0ed9e5` / `5f0a4e7e` 修掉（第二批）。~~`TimetableProfilesStrings` 中文常量~~ → 已由 `7aba9894` 修掉（第三批）。明细见两表回填列。
 
 ### 需拍板的 8 个决策点（2026-11-02 暂按「能不折腾就不折腾」定默认）
 
@@ -196,7 +197,7 @@
 | `ScheduleListPage.kt:464` / `ScheduleDateRulePage.kt:534` / `AddScheduleItemPage.kt:741` | `MiuixActionButton` | `Button` 默认 `secondaryVariant` 浅灰底，文字却写死 `color = onPrimary`（白）⇒ **白字落在浅灰底上，几乎看不见**；删除按钮也不是红色。三份副本同一写法。 | **P1** | 已不成立：三份副本合并为共享 `ScheduleActionButton`，`primary` 分支用 `buttonColorsPrimary()`（现 `ScheduleActionButton.kt:48`），KDoc 记录了旧病。 |
 | `TimetableProfilesPage.kt:573/637/699/758/823` | 5 个原生 `androidx.compose.ui.window.Dialog` + `QingyuCard` | 绕开官方 `OverlayDialog`：没有 miuix 遮罩、进出动画、大屏/IME 行为；平台 `Dialog` 默认宽度也比官方 420dp 窄；例外表无登记。更多操作菜单（Dart 是 `HyperosSheet` 底部弹层）也被做成居中 `Dialog`。 | P2 | 已不成立：原生 `Dialog` 清零；4 个输入/确认弹窗走 `OverlayDialog`、更多操作菜单改 `QingyuSheet` 底部弹层（现 `TimetableProfilesPage.kt:581/645/701/742/791`）。 |
 | `TimetableProfilesPage.kt:602` | 新建/重命名/清空/删除动作 | 全部默认灰底：主操作没有 `buttonColorsPrimary()`；清空/删除是灰底红字，而 Dart `destructive` 是红底 + `onError`。 | P2 | 已不成立：主操作 `buttonColorsPrimary()`、清空/删除红底 + `onError`（现 `TimetableProfilesPage.kt:619/683/722-725/763-766`）。 |
-| `TimetableProfilesPage.kt:76` | `object TimetableProfilesStrings` 本地中文常量 | 课表管理页（含 5 个弹窗）的标题/正文/按钮/无障碍文案全在这个对象里，不是 `ArbText`/ARB；en/ja/ko/zh-TW 用户会看到中文。 | P2 | 成立：`TimetableProfilesStrings` 仍在（现 `TimetableProfilesPage.kt:81-115`，30+ 条中文常量未进 ARB）。 |
+| `TimetableProfilesPage.kt:76` | `object TimetableProfilesStrings` 本地中文常量 | 课表管理页（含 5 个弹窗）的标题/正文/按钮/无障碍文案全在这个对象里，不是 `ArbText`/ARB；en/ja/ko/zh-TW 用户会看到中文。 | P2 | 已不成立（2026-11-03 第三批）：`7aba9894` 对象清零——22 条在用文案迁入 main 侧 `TimetableStrings`（12 条复用既有 ArbText、10 条补录 ARB 既有键，零新增键、六语 ARB 未动），10 条零引用死成员删除；页面 31 处调用点改走 `TimetableStrings`，随 `TimetableStringsParityTest` 机械对拍；CJK 基线对应行 36→4（余 3 条开发预览示例数据 + 1 条「已激活」读屏键待后续入 ARB）。 |
 | `CloudSyncPage.kt:637` | WebDAV 两个动作 | 「测试连接 / 连接并拉取」都是默认灰底，主操作没有强调色；下面还多一整行「取消」`TextButton`，Dart 只有底部两枚等宽实心按钮、靠下滑/返回关闭。 | P2 | 已不成立：测试连接=`buttonColors()` 次级、连接并拉取=`buttonColorsPrimary()` 主色，取消行已去掉（现 `CloudSyncPage.kt:659`/`:672`，`:599-602` 注释明确只有两枚等宽按钮）。 |
 | `CloudSyncPage.kt:682` | `SyncConflictDialog` 裸卡片 | 三个动作塞进同一行（Dart 对 3 个动作是竖排）；**全仓没有调用点**，同步冲突实际由模型层自动裁决，用户永远看不到这个选择框。 | P2 | 已不成立（2026-11-03 第二批）：`f4f7a199` 三动作竖排整宽（取消→保留本机→使用云端）、正文居中，弹层常驻组合（现 `CloudSyncControllerPage.kt:229-280`，调用点 `:158-176`）。 |
 | `ShellPageIndex.kt:1748` | WebDAV 宿主接线 | `testing = false, connecting = false` 写死，进度圈与按钮禁用永远不生效；`onTestConnection` / `onConfirm` 在主线程直接调同步网络方法，可能卡住界面。 | P2 | 已不成立：已接真状态 `sheetTesting`/`sheetConnecting`（现 `ShellPageIndex.kt:1752-1753`），连接/测试均走 `Dispatchers.IO`（`:1779`/`:1795`，`7f085ef3`）。 |
@@ -339,4 +340,4 @@
 | **P3** | `pages/sync/CoupleWebdavConnectSheet.kt:74` | animation | 静态 show = true，宿主 showConnectSheet 置 false 时直接移出组合，关闭没有退场动画 | 让组件常驻组合，show = showConnectSheet，标题/正文在退场期间用最后一份快照。 | EXTRA(复核补) | 已不成立（2026-11-03 第二批）：`f4f7a199` sheet 加 `show` 参数、宿主弃 `if` 条件挂载改常驻组合（现 `CoupleWebdavConnectSheet.kt:76-88`、宿主 `CoupleTimetableSettingsHost.kt:228-269`）。 |
 | **P3** | `pages/sync/CoupleWebdavConnectSheet.kt:143` | layout | 动作按钮放在弹层滚动内容里，Dart 的 PickerSheetScaffold 把动作固定在弹层底部；键盘弹出或小屏时主按钮可能被推到可视区外 | 把动作行移出滚动内容、固定在弹层底部（套件需要增加固定 footer 槽，或调用方自行分段）。 | EXTRA(复核补) | 已不成立（2026-11-03 第二批）：`f4f7a199` 动作行固定弹层底部（Dart `PickerSheetScaffold` actions 槽同位）、字段区 `LazyColumn` 内滚 + `weight(1f, fill=false)`（现 `CoupleWebdavConnectSheet.kt:88-197`）。 |
 
-合计 120 条（已剔除复核明确驳回的条目）。**2026-11-02 回填**：另有查漏 18 条，两表合计 138 行。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉——两表合计 **已不成立 107 / 仍成立 26 / 部分成立 5**。**2026-11-03 第二批（app / components / timetable / sync 四域）**：`f4f7a199` + `5d0ed9e5` + `5f0a4e7e` 又清 13 行——两表合计 **已不成立 120 / 仍成立 17 / 部分成立 1**；逐条现状见「回填 11-02」列（含 11-03 追记），汇总见顶部「复核结论」。
+合计 120 条（已剔除复核明确驳回的条目）。**2026-11-02 回填**：另有查漏 18 条，两表合计 138 行。**2026-11-03 二次下探**：成就详情弹层 3 条（附表 110-112）由 `bcbc8ab6` 修掉——两表合计 **已不成立 107 / 仍成立 26 / 部分成立 5**。**2026-11-03 第二批（app / components / timetable / sync 四域）**：`f4f7a199` + `5d0ed9e5` + `5f0a4e7e` 又清 13 行。**2026-11-03 第三批（timetable 文案）**：`7aba9894` 清掉 `TimetableProfilesStrings` 对象（查漏 199）——两表合计 **已不成立 121 / 仍成立 16 / 部分成立 1**；逐条现状见「回填 11-02」列（含 11-03 追记），汇总见顶部「复核结论」。
