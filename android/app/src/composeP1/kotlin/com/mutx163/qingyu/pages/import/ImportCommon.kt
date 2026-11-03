@@ -56,15 +56,14 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -125,12 +124,12 @@ private fun ImportBottomBarBox(dark: Boolean, content: @Composable () -> Unit) {
 }
 
 /**
- * 导航行（Dart `HyperosNavTile` + `ImportIconBadge`）：36dp 图标徽标 + 标题 / 副标题
- * + 行尾箭头。用 [QingyuCard] 的 `onClick` 重载拿官方按压反馈，不用 `Modifier.clickable`。
+ * 导航行（Dart `HyperosNavTile` + `ImportIconBadge`）：官方 [ArrowPreference] 承担
+ * 标题 / 副标题 / 行尾箭头 / 按压反馈，36dp 图标徽标走 `startAction` 槽。
  *
- * 行内左右 16dp 是**刻意的**：官方轴线是「页面 0 → Card 外边距 12 → 行内 16 = 文字左缘 28」，
- * 与 `QingyuSectionTitle`（`SmallTitle` 自带 28）对齐。原来写 14 会让这一列整体偏 2dp，
- * 分组标题与卡片正文就错开一条缝（2026-10-28 对照 demo 时发现）。
+ * 行内左右 16dp 是官方 `BasicComponentDefaults.InsideMargin`：官方轴线
+ * 「页面 0 → Card 外边距 12 → 行内 16 = 文字左缘 28」，
+ * 与 `QingyuSectionTitle`（`SmallTitle` 自带 28）对齐。
  */
 @Composable
 fun ImportNavRow(
@@ -141,42 +140,20 @@ fun ImportNavRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
-    QingyuCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ImportIconBadge(icon = icon, accent = accent)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 18.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-            Icon(
-                imageVector = MiuixIcons.ChevronForward,
-                contentDescription = null,
-                tint = Color(QingyuTheme.actionIcon(dark)),
-            )
-        }
+    QingyuCard(modifier = modifier.fillMaxWidth()) {
+        ArrowPreference(
+            title = title,
+            summary = subtitle,
+            startAction = { ImportIconBadge(icon = icon, accent = accent) },
+            onClick = onClick,
+        )
     }
 }
 
 /**
- * 开关行（Dart `HyperosSwitchTile`）：与 [ImportNavRow] 同一骨架，行尾换 [Switch]。
+ * 开关行（Dart `HyperosSwitchTile`）：官方 [SwitchPreference] 承担整行点击切换与
+ * 按压反馈，36dp 图标徽标走 `startAction` 槽。
  * [enabled] = false 表示偏好还没读完，交互不可用（Dart 传 `onChanged: null`）。
  */
 @Composable
@@ -190,42 +167,23 @@ fun ImportSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
     val accent = Color(parseImportAccentHex(accentHex))
     QingyuCard(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ImportIconBadge(icon = icon, accent = accent)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1.shiftWeight(QingyuWeightDelta.MEDIUM),
-                    color = Color(QingyuTheme.primaryText(dark)),
-                )
-                Text(
-                    text = subtitle,
-                    style = MiuixTheme.textStyles.footnote1,
-                    lineHeight = 18.sp,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-            Switch(
-                checked = checked,
-                onCheckedChange = if (enabled) onCheckedChange else null,
-            )
-        }
+        SwitchPreference(
+            title = title,
+            summary = subtitle,
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            startAction = { ImportIconBadge(icon = icon, accent = accent) },
+        )
     }
 }
 
 /**
- * 取值行（Dart `HyperosListTile(title, details, onTap)`）：标题 + 行尾当前取值。
- * [enabled] = false 时不显示行尾箭头、点击无响应（Dart `onTap: null`）。
+ * 取值行（Dart `HyperosListTile(title, details, onTap)`）：官方 [ArrowPreference]，
+ * 当前行尾取值走 `endActions` 槽。
+ * [enabled] = false 时整行置灰不可点（Dart `onTap: null`）；箭头按官方 disabled 态着色。
  */
 @Composable
 fun ImportValueRow(
@@ -236,38 +194,19 @@ fun ImportValueRow(
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
-    QingyuCard(
-        modifier = modifier.fillMaxWidth(),
-        onClick = if (enabled) onClick else null,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = Color(
-                    if (enabled) QingyuTheme.primaryText(dark) else QingyuTheme.secondaryText(dark),
-                ),
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = value,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            if (enabled) {
-                Icon(
-                    imageVector = MiuixIcons.ChevronForward,
-                    contentDescription = null,
-                    tint = Color(QingyuTheme.actionIcon(dark)),
+    QingyuCard(modifier = modifier.fillMaxWidth()) {
+        ArrowPreference(
+            title = title,
+            enabled = enabled,
+            onClick = if (enabled) onClick else null,
+            endActions = {
+                Text(
+                    text = value,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = Color(QingyuTheme.secondaryText(dark)),
                 )
-            }
-        }
+            },
+        )
     }
 }
 
