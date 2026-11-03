@@ -278,7 +278,11 @@ object SpreadsheetImportModel {
      * 连 CSV 语法都解析不了才抛「编码无法识别」。
      */
     fun decodeCsvRows(bytes: ByteArray): List<List<String>> {
-        val utf8Content = String(bytes, Charsets.UTF_8) // 宽容解码：坏字节 → U+FFFD
+        // Dart `String.trim()` 的空白清单含 BOM U+FEFF（dart-sdk `lib/core/string.dart:380-397`），
+        // 所以带 UTF-8 BOM 的 CSV 在 Dart 侧 `_isHeaderRow`（spreadsheet_import_service.dart:313）
+        // 能认出表头。Kotlin `String.trim()` 不含 U+FEFF，BOM 留在首个表头格里会导致
+        // 「格式无法识别」——这是真差异。BOM 按规范只出现在文件首字节，在解码入口统一剥一次即可。
+        val utf8Content = stripLeadingBom(String(bytes, Charsets.UTF_8)) // 宽容解码：坏字节 → U+FFFD
         val utf8Rows = tryParseCsvContent(utf8Content)
         if (utf8Rows != null && detectFormat(utf8Rows) != null) {
             return utf8Rows
@@ -292,7 +296,7 @@ object SpreadsheetImportModel {
             null
         }
         if (gbkCharset != null) {
-            val gbkContent = String(bytes, gbkCharset)
+            val gbkContent = stripLeadingBom(String(bytes, gbkCharset))
             val gbkRows = tryParseCsvContent(gbkContent)
             if (gbkRows != null && detectFormat(gbkRows) != null) {
                 return gbkRows
@@ -326,6 +330,10 @@ object SpreadsheetImportModel {
     } catch (_: Exception) {
         null
     }
+
+    /** 只剥文件首字节的 UTF-8 BOM（Dart 的 `trim()` 把 U+FEFF 当空白，见 [decodeCsvRows] 注释）。 */
+    private fun stripLeadingBom(text: String): String =
+        if (text.startsWith('\uFEFF')) text.substring(1) else text
 
     private fun parseCsv(content: String): List<List<String>> {
         // Dart `_csvContent.trim().isEmpty` → tables 为空。

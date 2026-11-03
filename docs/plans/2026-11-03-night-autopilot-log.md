@@ -1236,6 +1236,70 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
 - 本批无源码改动（审计 + 日志），未推送。
 
+### 10.30 ✅ 表格导入收口：往返幂等 + 编码/换行边界 + 字段清单对拍（2026-11-04，L1 表格导入）
+
+范围：`android/app/src/main/kotlin|test/kotlin/**/pages/import/**` 与本日志；`transfer/**`、`pages/export/**` 只读引用（未改）。
+
+1. **导入→导出→再导入幂等（ICS 用真实导出实现）**
+   - 用例 `ImportRoundTripTest.ICS 导出再导入逐字段幂等`：源课表 → `transfer.collectCourseEvents` + `IcsSerializer`（本 App 真实导出链路，写文件前按 `compareIcsEvents` 排序，与 `pages/export/IcsEventCollection.kt:125-127` 一致）→ `IcsImportModel.parseWakeUpSchedule` → 同一链路再导出再导入；断言课程数 / 名称 / 教师 / 地点 / 星期 / 节次 / 钟点 / 起止周 / 单双周 / `customWeeks` / `suspendedWeeks` / `activeWeeks` / 颜色 / 简介 / 备注逐字段相同，且 `semesterStart`、`nextSemesterWeekCount` 相同。
+   - **钉住一个两侧同解的事实（不是缺口）**：Dart 导出是「一门课 × 每个上课周 = 一个 VEVENT」且不写 `RRULE`（`ics_export_service.dart:284-343`），导入只合并间隔恰为 2 周的单周课（`ics_import_service.dart:463-508`，间隔判据在 :498）。所以连续周 1-16 往返后是 16 条单周课，1/3/5/7 并成 1 条单周课；源 3 门课 → 第一次导入 18 条，第二次仍 18 条且字段相同。**不要据此把导出改成 RRULE**，那是改 Dart 契约。
+   - `id` 是 `ics-<epoch>-<index>` 位置型字段（`ics_import_service.dart:308`），两次导入的事件下标可能不同，故不参与对拍。
+   - 开学日：源学期开学日 3/4（周三）→ 导出按周一锚定、导入取 `startOfWeek` → 往返后固定为 3/2（周一）。Dart `ics_import_service.dart:45` 同口径，**两侧同解**。
+   - CSV / XLSX：**两侧都没有「课程 → CSV/XLSX」导出器**（Dart 也只有写死模板 `import_template_model.dart`）。按口径构造等价样例：`exportMikcbCsv` 覆盖导入列契约的 20 列（含上课周/开始周/结束周/单周/双周/停课周），断言 CSV 两次导入字段全同；同一行矩阵装进 xlsx（inlineStr）后 `XlsxSheetDecoder.decodeFirstSheet` + `parseRows`，与 CSV 结果逐字段相同。CSV/XLSX **不含开学日与学期周数字段**，该项只在 ICS 用例断言——两侧都没有，不是缺口。
+
+2. **编码 / 换行边界（7 例，`SpreadsheetEncodingBoundaryTest`）**
+
+   | 类别 | Kotlin 行为 | Dart 对应（行号） | 结论 |
+   |---|---|---|---|
+   | CRLF vs LF | 先按 `\r?\n` 切行（`SpreadsheetImportModel.kt:343`） | `table_parser-1.0.1/lib/src/csv.dart:56` 同句 | 两侧同解 |
+   | UTF-8 BOM | **真差异已修**：解码入口剥首字节 U+FEFF | Dart `String.trim()` 空白含 U+FEFF（`dart-sdk/lib/core/string.dart:380-397`），`_isHeaderRow` 的 `row[i].trim()`（`spreadsheet_import_service.dart:313`）会去掉 | 修后同解 |
+   | GBK 无声明 | UTF-8 认不出格式 → `charset("GBK")` 再试（`:289-306`） | `spreadsheet_import_service.dart:219-240`（`gbk.decode` 在 :227） | 两侧同解 |
+   | 末行无换行 | `split` 不需要结尾分隔符 | `csv.dart:56` 同 | 两侧同解 |
+   | 空文件（0 字节） | 抛 `spreadsheet_format_or_encoding_unrecognized` | `spreadsheet_import_service.dart:240`（`tables.isEmpty` 在 :260/:272） | 两侧同解 |
+   | 只有表头 | 识别格式、0 课、0 警告 | `spreadsheet_import_service.dart:127-196` | 两侧同解 |
+   | 只有元信息行 | 抛 `spreadsheet_format_unrecognized` | `spreadsheet_import_service.dart:129/180-184` | 两侧同解 |
+
+   - BOM 修法：`decodeCsvRows` 的 UTF-8 与 GBK 两路 decoded 内容各剥一次首字节 BOM（`stripLeadingBom`）。BOM 按规范只在文件首字节；**单元格内部的 U+FEFF 不处理**（Dart trim 会去、Kotlin 不会，但真实文件不会出现；若要逐格对齐需把 CSV 解析层全部 `trim()` 换成 `dartTrim`，本批不做，记在这里防重复排查）。
+   - 咬合探针 ①：删掉两处 `stripLeadingBom` → BOM 用例红（`spreadsheet_format_unrecognized`），还原后绿。
+
+3. **字段完整清单对拍（`ImportFlowModel` ↔ `import_export_logic.dart`）**
+   - 说明：`ImportFlowModel` 只做「解析结果 → 替换/同步计划」编排（`:126-143` 转发到 `transfer/ImportExportLogic`）；字段级合并的 Kotlin 对应体是 `transfer/ImportExportLogic.kt`（本批只读）。下表按字段给两侧行号。
+
+   | 字段 | Dart 行 | Kotlin 行 | 结论 |
+   |---|---|---|---|
+   | id | `:212` | `:215` | 同解（更新合并留本地 id） |
+   | name | `:213` | `:216` | 同解（导入空名回落本地） |
+   | teacher | `:214-216` | `:217` | 同解（空值回落本地） |
+   | location | `:217-219` | `:218` | 同解（空值回落本地） |
+   | shortName | `:220` | `:219` | 同解（留本地） |
+   | color | `:221` | `:220` | 同解（`preserveLocalColors`） |
+   | textColor | `:222` | `:221` | 同解 |
+   | courseNature | `:223` | `:222` | 同解（留本地） |
+   | description | `:224` | `:223` | 同解（本地清空可写入） |
+   | note | `:225` | `:224` | 同解 |
+   | sessionNotes | `:226` | `:225` | 同解 |
+   | timeSchemeIdOverride | `:227` | `:226` | 同解 |
+   | suspendedWeeks | `:232-234` | `:227-231` | 同解（导入带值才覆盖） |
+   | dayOfWeek/节次/起止周/单双周/customWeeks/钟点/hasCustomTime | 未显式 copy → 跟随 imported | 同（Kotlin `copy` 同语义） | 同解 |
+   | 去重键（7 字段：名/师/地/星期/起止节/activeWeeks） | `:177-188` | `:172-183` | 同解（trim+lowercase、周次排序） |
+   | 覆盖导入按名复用（13 字段 + suspendedWeeks） | `:239-267` | `:241-264` | 同解（都不改 id） |
+   | 同名多课次共享字段分发 | `:270-292` | `:270-288` | 同解（以本地课次为基底） |
+   | 课程列表等价 | `:458-471` | `:446-455` | 同解（逐条 JSON 串；Kotlin 用 `MiniJson.encode(toJson())`） |
+   | 需要补的最大节数 | `:44-55` | `:55-63` | 同解 |
+   | 最大周次（cap 30） | `:57-69` | `:66-72` | 同解 |
+   | 补节次表 | `:71-109` | `:82-106` | 同解 |
+   | 学期周数抬升只升不降 | `timetable_import_export_service.dart:588-601` | `ImportFlowModel.nextSemesterWeekCount` → `SemesterWeekUplift.kt:40` | 同解（共用实现，见 §10.24） |
+
+   - 本批对拍**未发现** `pages/import/**` 内的新字段差异（唯一新差异是 BOM，已修）；上表即该域「已对齐」证据。
+
+4. **交接摘要（未覆盖 / 两侧都没有的事实）**
+   - **需他人改（归属 transfer，不在本批路径）**：Kotlin ICS 导出只写裸行 `description`/`note`/`sessionNote` 与 `Sections:`，不写 Dart 的 `Location:`/`Description:`/`Note:`/`Session note:` 前缀（对照 `ics_export_service.dart:324-336` 与 `transfer/IcsModel.kt:139-148`）。后果：本 App 导出的 ICS 再导入时简介/备注/单周备注丢失；教师为空且未写 `Teacher:` 时，导入按位置回落会把 LOCATION 末段当教师（Dart `:281-283` 同口径，故这是导出侧缺失前缀导致的往返有损，不是导入解析错）。本批往返用例的源课程有意不含空教师/简介/备注；**修复要改 transfer 导出侧，不要改导入侧去猜**。
+   - 两侧都没有：CSV/XLSX 导出器、开学日/学期周数的表格字段、ICS/表格导入都不产出 `textColor`/`hasCustomTime`、XLSX 写入器。
+   - 未覆盖：ICS `RRULE`（除 INTERVAL=2 以外的重复规则）往返——导出不写 RRULE，本批只钉「展开/合并」现状；表格单元格内部 U+FEFF（见上）。
+   - 「有意退回、不是退步」两条继续有效（§10.24）：CSV 先切行再解析引号、XLSX 整表补宽；**不要重新实现**。
+
+5. **L0**：统一入口 `scripts/test-kotlin-module.ps1 -Module pages/import`（含 `warehouse` 子目录）**OK (522 tests)**，本批新增 10 例（边界 7 + 往返 3）。咬合探针两次：删 BOM 修复 → 1 红；把 `停课周` 解析打断 → 3 红（往返 1 + 既有 2）；均已还原。只声明 JVM 单测通过，不声明编译/真机通过。
+
 
 
 
