@@ -283,16 +283,16 @@ fun TimetableProfilesPage(
 
     // ── 4. 弹窗与对话框 ──
 
-    // 4.1 新建课表弹窗
-    if (showCreateDialog) {
-        CreateProfileDialog(
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { name ->
-                showCreateDialog = false
-                onCreateProfile(name)
-            },
-        )
-    }
+    // 4.1 新建课表弹窗：**常驻组合**，显隐只由 `show` 驱动。
+    // 条件挂载会让官方退场动画一次都播不出来（2026-11-02 弹层债口径）。
+    CreateProfileDialog(
+        show = showCreateDialog,
+        onDismiss = { showCreateDialog = false },
+        onConfirm = { name ->
+            showCreateDialog = false
+            onCreateProfile(name)
+        },
+    )
 
     // 4.2 更多操作弹层
     activeMenuProfile?.let { profile ->
@@ -528,6 +528,7 @@ private fun PartnerBadge(dark: Boolean) {
  */
 @Composable
 private fun CreateProfileDialog(
+    show: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
@@ -535,13 +536,16 @@ private fun CreateProfileDialog(
     // Dart `autofocus: true`：打开即弹键盘。要等首帧布局完成再请求焦点，
     // 节点还没挂上树时 requestFocus 会抛 IllegalStateException。
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
+    // 常驻组合后输入框不再随挂载销毁：每次「打开」重新清空并聚焦（Dart 每次弹窗都是新控制器）。
+    LaunchedEffect(show) {
+        if (!show) return@LaunchedEffect
+        nameInput = ""
         withFrameNanos { }
         runCatching { focusRequester.requestFocus() }
     }
 
     OverlayDialog(
-        show = true,
+        show = show,
         title = TimetableStrings.createTimetableTitle.zh,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),

@@ -515,27 +515,27 @@ fun AddCoursePage(
     }
 
     // ── 周选择弹层（草稿状态机在 AddCourseWeekDraftLogic）──
-    val openDraft = weekDraft
-    if (openDraft != null && weekDraftEntryId != null) {
-        val entryIndex = entries.indexOfFirst { it.id == weekDraftEntryId }
-        if (entryIndex >= 0) {
-            AddCourseWeekPickerDialog(
-                draft = openDraft,
-                availableWeeks = availableWeeks,
-                dark = dark,
-                onDraftChange = { weekDraft = it },
-                onDismiss = {
-                    weekDraft = null
-                    weekDraftEntryId = null
-                },
-                onConfirm = { confirmed ->
-                    updateEntry(entryIndex) { AddCourseWeekDraftLogic.applyToEntry(it, confirmed) }
-                    weekDraft = null
-                    weekDraftEntryId = null
-                },
-            )
-        }
-    }
+    // 常驻组合：显隐只由 `show` 驱动，不靠 `weekDraft` 是否为空来挂载；
+    // 退场动画期间的草稿内容由弹层内部的 `rememberLastNonNull` 钉住。
+    AddCourseWeekPickerDialog(
+        draftOrNull = weekDraft,
+        show = weekDraft != null && weekDraftEntryId != null,
+        availableWeeks = availableWeeks,
+        dark = dark,
+        onDraftChange = { weekDraft = it },
+        onDismiss = {
+            weekDraft = null
+            weekDraftEntryId = null
+        },
+        onConfirm = { confirmed ->
+            val entryIndex = weekDraftEntryId?.let { id -> entries.indexOfFirst { it.id == id } } ?: -1
+            if (entryIndex >= 0) {
+                updateEntry(entryIndex) { AddCourseWeekDraftLogic.applyToEntry(it, confirmed) }
+            }
+            weekDraft = null
+            weekDraftEntryId = null
+        },
+    )
 
     if (confirmDiscard) {
         OverlayDialog(
@@ -752,22 +752,26 @@ private fun AddCourseEntryFields(
  */
 @Composable
 private fun AddCourseWeekPickerDialog(
-    draft: AddCourseWeekDraft,
+    draftOrNull: AddCourseWeekDraft?,
+    show: Boolean,
     availableWeeks: List<Int>,
     dark: Boolean,
     onDraftChange: (AddCourseWeekDraft) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: (AddCourseWeekDraft) -> Unit,
 ) {
+    // 退场期快照：`show` 转 false 后宿主把 weekDraft 置空，正文仍要按最后一份草稿渲染。
+    val currentDraft = rememberLastNonNull(draftOrNull)
     // Dart 原版是全屏子页 + 可滚 ListView；这里收成对话框，正文限高 + 可滚，
     // 避免自定义周网格（53 周 / 大字号）撑破矮屏。确认/取消跟随正文滚动（与 Dart 底部动作一致）。
     val maxBodyHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
-        show = true,
+        show = show,
         title = AddCourseStrings.weekPickerTitle.zh,
         onDismissRequest = onDismiss,
     ) {
+        val draft = currentDraft ?: return@OverlayDialog
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -908,4 +912,19 @@ private fun AddCourseWeekPickerDialog(
             }
         }
     }
+}
+
+/**
+ * 退场期保留最后一份非空状态（常驻组合配方的一半，与 `TimeSchemeManagementDialogs.kt` 同口径）。
+ *
+ * 弹层 `show` 转 false 后宿主通常立刻把数据置空；退场动画期间内容 lambda 仍会被组合，
+ * 直接读可空入参会闪成空板，所以用 remember 钉住最后一份非空值。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) {
+        shown = current
+    }
+    return shown
 }

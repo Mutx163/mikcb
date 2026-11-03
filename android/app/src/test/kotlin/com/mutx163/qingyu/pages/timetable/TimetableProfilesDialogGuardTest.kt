@@ -90,6 +90,19 @@ class TimetableProfilesDialogGuardTest {
     }
 
     @Test
+    fun `新建课表弹窗必须常驻组合 显隐只由 show 驱动`() {
+        val source = pageSource()
+        assertFalse(
+            "禁止条件挂载：`if (showCreateDialog)` 会让官方退场动画一次都播不出来",
+            source.contains("if (showCreateDialog)"),
+        )
+        assertTrue(
+            "CreateProfileDialog 必须常驻组合，显隐由 `show = showCreateDialog` 驱动",
+            source.contains("show = showCreateDialog"),
+        )
+    }
+
+    @Test
     fun `清空与删除使用危险色实心按钮`() {
         listOf(CLEAR, DELETE).forEach { marker ->
             val block = functionBlock(pageSource(), marker)
