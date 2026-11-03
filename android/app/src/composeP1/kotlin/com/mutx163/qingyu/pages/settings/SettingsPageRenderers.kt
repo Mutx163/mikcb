@@ -223,7 +223,11 @@ fun SettingsPageScreen(
                     modifier = Modifier
                         .weight(contentFlex.toFloat())
                         .fillMaxWidth(),
-                    scrollBehavior = scrollBehavior,
+                    // 顶栏折叠联动按顶栏形态分流（判据见 settingsListAttachesTopBarSync）：
+                    // 小顶栏页挂了连接器会把向上滚动全部吞进「永不结束的幻影折叠」，列表滚不动。
+                    scrollBehavior = scrollBehavior.takeIf {
+                        settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
+                    },
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
                     items(items = spec.nodes, key = { it.id }) { node ->
@@ -237,9 +241,12 @@ fun SettingsPageScreen(
             // Box + LazyColumn(fillMaxSize)，只有把 innerPadding 交给它、让它贴着 Scaffold
             // 的内容区，才能拿到完整可视高度并正常滚动（旧写法把列表塞进一个 Column 再让它
             // fillMaxSize，长内容会被截断且滑不动）。
+            // 顶栏联动同样按形态分流（与预览分栏分支同一条判据，缺顶栏不挂连接器）。
             QingyuPageList(
                 innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = scrollBehavior.takeIf {
+                    settingsListAttachesTopBarSync(spec.collapsibleLargeTitle)
+                },
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 items(items = spec.nodes, key = { it.id }) { node ->
