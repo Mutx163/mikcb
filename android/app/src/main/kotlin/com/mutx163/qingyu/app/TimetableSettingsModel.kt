@@ -761,8 +761,21 @@ data class TimetableSettingsModel(
 
         /**
          * 按 Dart `TimetableSettings.fromJson` 的读口径解析（缺键/类型不符/坏值一律回落默认）。
+         *
+         * [foruiThemeWhenKeyMissing] 只在 **`foruiTheme` 键本身不存在/非字符串** 时生效；
+         * 键存在但是未知值时仍按 Dart `ForuiThemeX.fromValue` 的 `orElse` 回落 blue。
+         *
+         * 为什么需要这个参数：Dart 有两条真值不同的路径——整份缺失/坏盘走
+         * `defaults()`（构造默认 `foruiTheme = miui`，`storage_service.dart:806-814` +
+         * `timetable_settings.dart:890`）；JSON 合法但单字段缺 key 走
+         * `ForuiThemeX.fromValue(null)` 的 `orElse = blue`（`timetable_settings.dart:1697`，
+         * `settings/timetable_settings_enums.dart:87-92`）。默认值保持 blue（即 `fromJson` 口径），
+         * 只有 [TimetableSettingsModelStore.load] 的「整份缺失/坏盘」分支显式传 [ForuiTheme.MIUI]。
          */
-        fun fromJson(json: Map<String, Any?>): TimetableSettingsModel {
+        fun fromJson(
+            json: Map<String, Any?>,
+            foruiThemeWhenKeyMissing: ForuiTheme = ForuiTheme.BLUE,
+        ): TimetableSettingsModel {
             val linked = LenientJson.bool(json["linkCourseCardColors"]) ?: true
             val titleLight = LenientJson.string(json["courseCardTitleColorLight"])
                 ?: DEFAULT_CARD_TITLE_COLOR
@@ -791,7 +804,10 @@ data class TimetableSettingsModel(
                 appFontMode = AppFontMode.fromValue(LenientJson.string(json["appFontMode"])),
                 appFontWeight = normalizeAppFontWeight(LenientJson.double(json["appFontWeight"])),
                 appTextScale = normalizeAppTextScale(LenientJson.double(json["appTextScale"])),
-                foruiTheme = ForuiTheme.fromValue(LenientJson.string(json["foruiTheme"])),
+                // 键缺/类型不符 → 由调用方按路径取真值（缺省 blue）；键存在但未知 → orElse blue。
+                foruiTheme = LenientJson.string(json["foruiTheme"])
+                    ?.let { ForuiTheme.fromValue(it) }
+                    ?: foruiThemeWhenKeyMissing,
                 themeSeedColor = LenientJson.string(json["themeSeedColor"])
                     ?: DEFAULT_SEED_COLOR_FROM_JSON,
                 themeCheckpointName = LenientJson.string(json["themeCheckpointName"]),
@@ -1125,7 +1141,33 @@ data class TimetableSettingsModel(
 class TimetableSettingsModelStore(private val store: TimetableStore) {
 
     /** 读；盘上不是 JSON 对象时由 [TimetableStore.loadSettingsJson] 留档 + 删 key，返回默认值。 */
-    fun load(): TimetableSettingsModel = TimetableSettingsModel.fromJson(store.loadSettingsJson())
+    fun load(): TimetableSettingsModel {
+        val json = store.loadSettingsJson()
+        return TimetableSettingsModel.fromJson(
+            json,
+            foruiThemeWhenKeyMissing =
+                if (isDefaultsPath()) ForuiTheme.MIUI else ForuiTheme.BLUE,
+        )
+    }
+
+    /**
+     * 是否落在 Dart 的「整份缺失 / 坏盘 → `defaults()`」路径（`storage_service.dart:806-814`）。
+     *
+     * 该路径的 `foruiTheme` 取构造默认 `miui`（`timetable_settings.dart:890`）；
+     * 只要 JSON 是**合法对象**（哪怕缺 key），就走 `fromValue` 的 `orElse = blue`
+     * （`timetable_settings.dart:1697`），两条路径真值不同，所以必须显式分辨。
+     *
+     * 判据只看**原始盘面**：有合法档案数组 → 内嵌 settings 的口径归 `fromJson`；
+     * 没有档案时，顶层 `timetable_settings` 不存在/为空/解析不成对象才算坏盘。
+     */
+    private fun isDefaultsPath(): Boolean {
+        val profilesRaw = store.rawJson(TimetableStore.KEY_PROFILES)
+        if (!profilesRaw.isNullOrEmpty() && MiniJson.tryParse(profilesRaw) is List<*>) {
+            return false
+        }
+        val topRaw = store.rawJson(TimetableStore.KEY_SETTINGS)
+        return topRaw.isNullOrEmpty() || MiniJson.tryParse(topRaw) !is Map<*, *>
+    }
 
     /**
      * 合并写：只覆盖本模型拥有的键，其余键原样保留。

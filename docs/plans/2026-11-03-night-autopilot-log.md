@@ -405,6 +405,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - **镜像为何保留**：Dart 备份 payload 只序列化 profiles；全局键在档案里不留一份，备份 → 换机 → 恢复就会整组丢（Dart `_persistActiveProfileState` 写整份 settings 同口径）。所以这**不是两套冲突真源**：全局是读写真源，档案/顶层是镜像；镜像滞后由读侧 overlay 兜底。
 - **不变量**：切档只换档案自己的键；44 个全局键换档前后必须完全一致（`AppGlobalSettingsStoreTest` 的换档用例咬合）。
 
+### 2026-11-04 · `foruiTheme` 两条回落语义裁决（坏盘 vs 单字段缺，别再合成一个 fallback）
+
+- **坏盘/整份缺失**：Dart `storage_service.dart:806-814` `catch → TimetableSettings.defaults()`，`foruiTheme` 取构造默认 **miui**（`timetable_settings.dart:890`）。此路径**必须** miui。
+- **JSON 合法但单字段缺 key/未知值**：Dart `TimetableSettings.fromJson`（`timetable_settings.dart:1697`）走 `ForuiThemeX.fromValue`，其 `orElse` 是 **blue**（`settings/timetable_settings_enums.dart:87-92`）。此路径**保持 blue**，不因门 2 变红而改回 miui。
+- **实现口径**：两条路径显式分开 —— `TimetableSettingsModel.fromJson(..., foruiThemeWhenKeyMissing = blue)` 是 fromJson 口径（`2e0eda96` 的 `ForuiTheme.fromValue(null)=blue` 保留）；`TimetableSettingsModelStore.load()` 仅在「盘上没有合法档案数组，且顶层 `timetable_settings` 缺失/为空/解析不成 JSON 对象」时传 miui（`timetable_settings.dart:890`）。
+
 ## 十、五路并行（第二班）
 
 **起始**：2026-11-03 17:17（用户全权交付项目继续开发；第一班 A~E 已全部收线，见「八」五线状态表）。共享同一工作区、无 worktree 隔离，各线**只做路径限定提交、不推送**；A 线为唯一推送者与 ARB/l10n 独占。
@@ -1416,6 +1422,112 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
    `v2` 键并保留「格式版本已写进键名」的区分能力（`WebdavConfigStoreImpl.kt:136-139`）。
 
 **L0**：本批为只读审计，按 Lead 指示未跑。
+
+---
+
+### 10.32 ✅ 首页/总览域对拍：跨零点「此刻」冻结 + 考试过期回落口径（2026-11-04）
+
+> 编号：10.29 已被档案线与原生崩溃线各用一次、10.30/10.31 已占用，故本节顺延为 10.32。
+
+**1. 路径确认（先报给协调线）**
+
+`android/app/src/main/kotlin/com/mutx163/qingyu/pages/home` **不存在**。首页实际装配在三处：
+
+| 角色 | 路径 |
+|---|---|
+| 首页根页（周视图，壳默认 ROOT） | `composeP1/…/pages/timetable/TimetableWeekPage.kt` |
+| 首页宿主（仓储→页面接线、`now`/天气/假期/壁纸） | `composeP1/…/app/TimetableHost.kt` |
+| 首页日视图与「今日」卡片 | `composeP1/…/pages/timetable/day/**` + 模型层 `main/…/pages/timetable/day/**` |
+| 首页壁纸/玻璃坞/菜单（只读引用） | `main/…/pages/shell/Home*Model.kt` |
+
+「下一节课」卡片属于**桌面小组件**（`widgetdata/**`，上一批已修 `now()`），首页页面侧没有同名卡片；
+页面侧最接近的是日视图「进行中课程」高亮（已与 Dart `getCoursesInProgress` 对位，见 3）。
+
+**2. 真差异已修（3）**
+
+- **D1 首页「此刻」被冻结在快照加载那一刻**（跨零点主缺陷）
+  - Kotlin 旧：`TimetableHost.kt:115` `remember(snapshot) { LocalDateTime.now() }` —— 快照不变就永不前移；
+    跨零点后「今天」高亮、`isCurrentPageToday`、「回本周/回今日」入口、考试过期、今日天气全部停在昨天，
+    直到改设置/改课表才自愈。
+  - Dart：周视图每次构建重读 `DateTime.now()`（`timetable_screen.dart:1404`/`:1429`/`:1438`），
+    日视图 1 Hz 心跳按日内分钟数节流（`:559-574`），即「分钟变了才置脏」。
+  - 修法：`TimetableHost` 改为 1 s 轮询 + 纯判据 `TimetableDateLogic.homeClockShouldAdvance`
+    （跨日一定前移；同小时内分钟变化才前移），约每分钟一次重组，不逐秒脏化整页。
+- **D2 日视图注入的「今天」不跟真实日历走**
+  - Kotlin 旧：1 Hz 心跳只更新 `currentMinuteOfDay`，`todayDate` 参数冻结 ⇒ 星期条「今天」标记、
+    「回今日」浮钮显隐跨零点后停在昨天。
+  - 修法：新增 `TimetableDateLogic.rollTodayDate(seed, seedRealToday, realToday)`，心跳里按日差平移注入种子
+    （保留测试注入偏移的能力），页面内所有 `todayDate` 读点改用 `viewToday`。
+- **D3 考试结束钟点缺失时过期口径比 Dart 晚一分钟**
+  - Dart `Exam.isExpired`：`endTime` 解析不出回落 **23:59**（`lib/models/exam.dart:309-324`，回落值 `:311-315`）。
+  - Kotlin 旧：`DayViewDataAssembler.isExamExpired` 回落到「跨日才算过期」，23:59:30 仍把考试列在首页；
+    且与同仓 `WeekAgendaLogic.isExamExpired`（已按 23:59 + 支持 `24:00`）**两套判据**。
+  - 修法：装配器委托 `WeekAgendaLogic.isExamExpired`，删掉私有 `parseClock` 副本，判据收敛一份。
+
+**3. 双侧同解（未改，已核对）**
+
+| 块 | Dart 依据 | 结论 |
+|---|---|---|
+| 今日课程列表 / 剪枝 / 排序 | `day_course_display_logic.dart`、`WeekGridCourseMapping.visibleDayCourses`（注释已带行号） | 同解 |
+| 进行中课程高亮 | `timetable_live_activity_service.dart:1329-1390`（`currentMinutes = h*60+m`）与 Kotlin 浮点分钟 | 同解（边界等价，差异只在秒级小数，不影响分钟粒度结果） |
+| 考试倒计时 `daysUntil` | `lib/models/exam.dart:326-336`（UTC 日差）↔ `ChronoUnit.DAYS.between` | 同解 |
+| 摘要卡区间（首条开始/末条结束） | `day_view_summary_card.dart:122-123,275-278` | 同解 |
+| 空态条件（无议程且无待办带才空） | `timetable_day_view_part.dart:629-630`，组件 `:697-710` | 同解 |
+| 空态文案（「暂无课程」+「第 N 周」） | `day_view_empty_state.dart` | 同解 |
+| 天气行（停课周/单双周不挂） | `timetable_home_page_assembly.dart:456` | 同解 |
+| 首启动无开学日（按今天所在周兜底） | `timetable_day_view_part.dart:340-355` | 同解（`TimetableDateLogic.fallbackDateForViewedWeek`） |
+
+**4. 需他人改（禁碰文件）**
+
+- `ShellPageIndex.kt:753-860`（日视图分支）对「真实当前周」与「装配器 now」**分别**取钟
+  （`LocalDate.now()` 与装配器默认 `LocalDateTime.now()`）；跨零点一瞬可能周次与「今天」错位。
+  建议把同一个 `now` 显式传给 `DayViewDataAssembler.build`（该文件本批禁碰，未动）。
+- 首页数据刷新仍由壳的 `repository.observe` 驱动（`TimetableHost.kt:85-92`）：切档/改课表会刷新，
+  本次只补了「时间维度」的刷新；「跨日把 `currentWeek` 写回仓储」在 Dart 由 `commitPendingWeek`
+  负责，Kotlin 壳侧未接线，需壳线确认。
+
+**5. L0 / 探针**
+
+- 统一入口：`scripts/test-kotlin-module.ps1 -Module pages/timetable`（脚本不认 `-Module app`；
+  composeP1 渲染层不在 L0 编译范围，故判据下沉到 `pages/timetable` 模型层）。
+- 结果：**296 例全绿**（基线 291 + 新增 5：3 例 `TimetableDateLogicTest` + 2 例 `DayViewDataAssemblerTest`）。
+- 咬合探针：把 `homeClockShouldAdvance` 改 `false`、`rollTodayDate` 直接返回种子、`isExamExpired` 换回旧跨日口径
+  → **4 红**（3 例时钟 + 1 例 23:59 过期），还原后 296 绿。
+- `compose-style-lint -Domain timetable`：**5 处均为存量**（`CourseGridCard.kt` / `DayViewCommon.kt` /
+  `DayViewCourseCard.kt` 写死颜色，`MonthViewPage.kt` 裸 LazyColumn，`TimetableWeekPage.kt` 非惰性主滚动），
+  本批未新增违规、未在本域顺手改存量。
+
+**6. 剩余风险**
+
+- composeP1 的两处渲染层改动（`TimetableHost` 轮询、`DayViewPage` 时钟平移）不在 L0 编译/测试范围，
+  只能靠 L1/门 2 的整包编译与真机跨零点观察兜底；逻辑判据已全部下沉到模型层并单测。
+- 每分钟一次重组会刷新周视图的考试过期与「今天」高亮，但壁纸采样只在重组时重算；
+  若真机上观察到分钟跳出时有明显掉帧，可把轮询改为按「下一个整分钟」对齐的 `delay`。
+- 「下一节课」卡片未在页面侧存在，无法在本域验证，仍归 `widgetdata` 域。
+
+### 10.33 ✅ 门 2 红修复：`foruiTheme` 坏盘与单字段缺分两条路径（2026-11-04）
+
+**触发**：`2e0eda96` 把 `ForuiTheme.fromValue(null)` 从 `miui` 改成 `blue`（为了让「未知值」对齐 Dart orElse），门 2 检查点 `f40f998c` 的 `TimetableSettingsModelTest.corruptSettingsJsonIsArchivedAndDefaultsAreReturned`（`TimetableSettingsModelTest.kt:813`）因此红：期望 `MIUI`、实际 `BLUE`，整份模型只差该字段。
+
+**核实结论（两路径真值不同）**
+- 整份 JSON 损坏/类型错：Dart `storage_service.dart:806-814` `catch → TimetableSettings.defaults()` → 构造默认 `foruiTheme = miui`（`timetable_settings.dart:890`）。
+- JSON 合法但单字段缺 key/未知值：Dart `TimetableSettings.fromJson`（`timetable_settings.dart:1697`）→ `ForuiThemeX.fromValue(null)` 的 `orElse = blue`（`settings/timetable_settings_enums.dart:87-92`）。
+
+**修法（语义未变，只是把两条路径显式分开）**
+- `TimetableSettingsModel.fromJson(json, foruiThemeWhenKeyMissing = ForuiTheme.BLUE)`：只有键缺/非字符串时用该参数；键在但值未知仍走 `ForuiTheme.fromValue` 的 blue。
+- `TimetableSettingsModelStore.load()`：新增 `isDefaultsPath()` —— 盘上没有合法档案数组，且顶层 `timetable_settings` 缺失/为空/解析不成 JSON 对象时，按坏盘路径传 `MIUI`；有合法档案或顶层是合法对象（即使 `{}`）则保持 blue。
+- `2e0eda96` 的 `ForuiTheme.fromValue(null)=blue` 保留，**不改回** `miui`。
+
+**两条断言**
+1. 坏盘（`timetable_settings = "[1,2,3]"`）→ 整份回落默认且 `foruiTheme == MIUI`（另断言留档 key 与删除原 key；既有用例加一条显式 `MIUI`）。
+2. 合法 JSON 缺 key（`{"appThemeMode":"dark"}`）→ `BLUE` 且 `appThemeMode == DARK`；值未知（`{"foruiTheme":"brand-new"}`）→ `BLUE`（新增 `validSettingsJsonWithoutForuiThemeUsesDartOrElseBlue`）。
+
+**咬合探针**：把 `load()` 的坏盘分支改成也传 `BLUE` → **1 红**（正是 `corruptSettingsJsonIsArchivedAndDefaultsAreReturned:813`）；还原后全绿。
+
+**L0**：统一入口 `scripts/test-kotlin-module.ps1 -Module pages/settings -ExtraSources android/app/src/test/kotlin/com/mutx163/qingyu/app/TimetableSettingsModelTest.kt` → **OK (1005 tests)**（基线 1004 + 本批 1），exit 0；未裸跑 gradlew、未跑整包，只声明编译通过 / JVM 单测通过。
+
+**改动文件**：`app/TimetableSettingsModel.kt`、`app/TimetableSettingsModelTest.kt`、本日志。`pages/settings/SettingsPageState.kt` 无需改（`fromValue` 回落仍 blue，坏盘由 `load()` 单点决定）。
+
 
 
 
