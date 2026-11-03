@@ -207,7 +207,6 @@ fun MemoryStatsPage(
                             )
                         },
                     )
-                    GroupDivider(dark = dark)
                     // Dart `:242-254` 的 Perf Report 行；取值直接复用模型层的 samplingRows，
                     // 不在渲染层现拼一行（否则标题/副标题/语义色会和模型漂移）。
                     MemoryPreferenceRow(
@@ -227,7 +226,6 @@ fun MemoryStatsPage(
                     cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.compositionRows.forEachIndexed { index, row ->
-                        if (index > 0) GroupDivider(dark = dark)
                         MemoryPreferenceRow(
                             row = row,
                             pressure = viewState.pressure,
@@ -251,7 +249,6 @@ fun MemoryStatsPage(
                     cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.environmentRows.forEachIndexed { index, row ->
-                        if (index > 0) GroupDivider(dark = dark)
                         MemoryPreferenceRow(
                             row = row,
                             pressure = viewState.pressure,
@@ -270,7 +267,6 @@ fun MemoryStatsPage(
                     cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
                 ) {
                     viewState.toolRows.forEachIndexed { index, row ->
-                        if (index > 0) GroupDivider(dark = dark)
                         // Dart `:510-519`：「复制 / 查看原始 JSON」行没有快照时 onTap 为 null（不可点），
                         // 并且 `onLongPress: copyJson` —— 长按直接复制，不用先开弹层。
                         val isRawJson = row.row == MemoryStatsRow.RAW_JSON
