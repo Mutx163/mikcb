@@ -7,6 +7,7 @@ import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.WeekCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -144,9 +145,11 @@ class WarehouseCourseWriteBackTest {
     }
 
     @Test
-    fun `合并匹配到已有课程时按更新计数 不重复新增`() {
+    fun `合并后课程一字不差时按0条上报且不写盘`() {
         val existing = course("c1", name = "数学", day = 2, weeks = listOf(1, 2))
         val repository = repositoryWith(listOf(existing))
+        val seen = mutableListOf<Any>()
+        repository.observe { seen.add(it) }
 
         val result = WarehouseCourseWriteBack.apply(
             repository = repository,
@@ -157,7 +160,64 @@ class WarehouseCourseWriteBackTest {
         val outcome = (result as WarehouseCourseWriteBack.Result.Done).outcome
         assertEquals(WarehouseCourseWriteBack.Mode.MERGE, outcome.mode)
         assertEquals("只更新不新增", 1, repository.snapshot.courses.size)
-        assertTrue("匹配到的记录计入更新数", outcome.importedCount >= 1)
+        // Dart `effectiveImportedCount`：合并没有实际变化就是 0，不能谎报「更新了 1 门」。
+        assertEquals("没有实际变化", 0, outcome.importedCount)
+        assertTrue("没有实际变化就不该写盘通知", seen.isEmpty())
+    }
+
+    @Test
+    fun `导入周次超过学期总周数时抬高学期周数`() {
+        val repository = repositoryWith()
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", weeks = (1..25).toList())),
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart `importParsedCourses`：按合并后最大周次抬高 semesterWeekCount，否则第 21-25 周点不出来。
+        assertEquals(25, repository.snapshot.settings.semesterWeekCount)
+        assertEquals(listOf(1, 2), repository.snapshot.courses.single().customWeeks?.take(2))
+    }
+
+    @Test
+    fun `导入只会抬高学期周数 不会把用户设的周数压回去`() {
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(listOf(profileWith(emptyList()).toJson())),
+                "timetable_settings" to MiniJson.encode(
+                    com.mutx163.qingyu.core.TimetableSettings.defaults()
+                        .copy(semesterWeekCount = 30)
+                        .toJson(),
+                ),
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(raw))
+
+        WarehouseCourseWriteBack.apply(repository, listOf(course("c1", weeks = listOf(1, 2, 3))))
+
+        assertEquals("只升不降", 30, repository.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `确认开学日后按今天重算当前周`() {
+        val start = LocalDateTime.now().minusDays(14)
+        val repository = repositoryWith(listOf(course("c1", weeks = (1..20).toList())))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("c1", weeks = (1..20).toList())),
+            semesterStartDate = start,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        val expected = WeekCalculator.weekForDate(
+            date = LocalDateTime.now(),
+            semesterStart = start,
+            semesterWeekCount = repository.snapshot.settings.semesterWeekCount,
+            fallback = 1,
+        )
+        // Dart 换了开学日会 `calculateWeekForDate(now)` 重算当前周，不能留旧周次。
+        assertEquals(expected, repository.snapshot.currentWeek)
     }
 
     @Test

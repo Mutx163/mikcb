@@ -3,7 +3,9 @@ package com.mutx163.qingyu.pages.import.warehouse
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
+import com.mutx163.qingyu.transfer.courseListsEqual
 import com.mutx163.qingyu.transfer.dedupeImportedCourses
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
 import com.mutx163.qingyu.transfer.syncImportedCourses
@@ -114,18 +116,9 @@ object WarehouseCourseWriteBack {
 
         val before = repository.snapshot
         val mode = resolveMode(before.courses.size, requestedMode)
-        // 开学日先落盘：Dart 的导入把「用户在这次导入里确认的开学日」视为一次真实写入，
-        // 合并结果没变化也不能早退（否则首页周次/提醒仍按旧日期排）。
-        if (semesterStartDate != null) {
-            try {
-                repository.updateSettings(before.settings.copy(semesterStartDate = semesterStartDate))
-            } catch (error: Exception) {
-                return Result.Failed(error)
-            }
-        }
 
         val mergedCourses: List<Course>
-        val importedCount: Int
+        var importedCount: Int
         when (mode) {
             Mode.REPLACE -> {
                 // Dart `importParsedCourses` 覆盖导入先去重（导入包内互重的条目只留一条），
@@ -146,8 +139,59 @@ object WarehouseCourseWriteBack {
                     preserveLocalColors = preserveLocalColors,
                 )
                 mergedCourses = synced.mergedCourses
-                importedCount = synced.addedCount + synced.updatedCount
+                // Dart `effectiveImportedCount`：合并后若一门课都没变，这次导入算 0 条，
+                // 不是「更新了 N 门」——否则界面会谎报一次没有实际变化的导入。
+                importedCount = if (courseListsEqual(before.courses, mergedCourses)) {
+                    0
+                } else {
+                    synced.addedCount + synced.updatedCount
+                }
             }
+        }
+
+        // Dart 导入会按「合并后课程的最大周次」抬高学期总周数（只升不降，封顶 42），
+        // 否则第 21-25 周的课会落盘却永远点不出来。
+        val requiredWeekCount = mergedCourses.maxOfOrNull { course ->
+            course.customWeeks?.lastOrNull() ?: course.endWeek
+        } ?: before.settings.semesterWeekCount
+        val nextWeekCount = maxOf(
+            before.settings.semesterWeekCount,
+            requiredWeekCount.coerceIn(1, MAX_ALLOWED_SEMESTER_WEEK_COUNT),
+        )
+        val nextSettings = before.settings.copy(
+            semesterStartDate = semesterStartDate ?: before.settings.semesterStartDate,
+            semesterWeekCount = nextWeekCount,
+        )
+        // 与 Dart 一致：有课程变化、或用户确认了新开学日，才动设置；
+        // 「合并无变化 + 没传开学日」保持完全不动盘。
+        val shouldWriteSettings = semesterStartDate != null ||
+            (importedCount > 0 && nextWeekCount > before.settings.semesterWeekCount)
+        var settingsWritten = false
+        // Dart 换了开学日就按今天重算当前周（`calculateWeekForDate`），不能留着旧开学日的周次。
+        val nextCurrentWeek = if (semesterStartDate != null) {
+            WeekCalculator.weekForDate(
+                date = LocalDateTime.now(),
+                semesterStart = nextSettings.semesterStartDate,
+                semesterWeekCount = nextSettings.semesterWeekCount,
+                fallback = before.currentWeek,
+            )
+        } else {
+            before.currentWeek
+        }
+        if (shouldWriteSettings) {
+            try {
+                repository.updateSettings(nextSettings)
+                settingsWritten = true
+            } catch (error: Exception) {
+                rollbackSettings(repository, before, settingsWritten)
+                return Result.Failed(error)
+            }
+        }
+        // 当前周要等设置落盘后再重算；`setCurrentWeek` 会再持久化一次档案，
+        // 所以放在「课程已写成功」之后，失败也不至于留下半张课表。
+        fun refreshCurrentWeek() {
+            if (semesterStartDate == null) return
+            runCatching { repository.setCurrentWeek(nextCurrentWeek) }
         }
 
         val outcome = Outcome(
@@ -156,8 +200,9 @@ object WarehouseCourseWriteBack {
             droppedCount = droppedCount,
             weeksTrimmedCount = weeksTrimmedCount,
         )
-        // 合并后没有任何变化：不写、不通知，界面不需要闪一下。
+        // 合并后没有任何变化：若学期设置也没变，不写、不通知，界面不需要闪一下。
         if (importedCount == 0) {
+            refreshCurrentWeek()
             return Result.Done(outcome)
         }
 
@@ -167,15 +212,24 @@ object WarehouseCourseWriteBack {
                 tasks = repository.tasks,
                 exams = repository.exams,
             )
+            refreshCurrentWeek()
             Result.Done(outcome)
         } catch (error: Exception) {
             // 仓储先落盘、成功才改内存；抛错时内存仍是旧课表，宿主据此提示失败。
-            // 开学日已先行写入，这里尽力回滚，避免「课没进、学期日期却变了」的半个状态。
-            if (semesterStartDate != null) {
-                runCatching { repository.updateSettings(before.settings) }
-            }
+            // 学期设置已先行写入，这里尽力回滚，避免「课没进、学期日期却变了」的半个状态。
+            rollbackSettings(repository, before, settingsWritten)
             Result.Failed(error)
         }
+    }
+
+    /** 把先行写入的学期设置恢复成写回前的值（尽力而为，不掩盖原始错误）。 */
+    private fun rollbackSettings(
+        repository: TimetableRepository,
+        before: com.mutx163.qingyu.app.TimetableSnapshot,
+        settingsWritten: Boolean,
+    ) {
+        if (!settingsWritten) return
+        runCatching { repository.updateSettings(before.settings) }
     }
 
     /**
