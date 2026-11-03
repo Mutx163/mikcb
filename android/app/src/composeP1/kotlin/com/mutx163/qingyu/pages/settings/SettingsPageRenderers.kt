@@ -1254,6 +1254,26 @@ private fun ControlCard(
                             }
                         },
                         enabled = !node.busy,
+                        // 宽度对齐 Dart 原版：单按钮的控制卡（假期「添加假期」/「检查更新」、
+                        // 小组件页「去授权」）原版都是 `expand: true` 整宽
+                        // （settings_holiday.dart:576-592 / settings_home_widget.dart:1053-1061）；
+                        // 双按钮卡（主题卡 settings_appearance.dart:478-501 是 Wrap 并排）在
+                        // 仓库既有配方（:913-934 弹框按钮、SettingsHolidayHost:522-538）里
+                        // 统一 weight 平分整宽。裸 `Button(` 无宽度约束会缩成左上一小块
+                        // （用户 2026-11-03 实报「偏左的一小块」）。
+                        modifier = if (node.texts.size == 1) {
+                            Modifier.fillMaxWidth()
+                        } else {
+                            Modifier.weight(1f)
+                        },
+                        // Dart `HyperosButtonVariant.secondary` = `secondary` 灰底 + `onSecondaryVariant`
+                        // 墨（hyperos_controls.dart:719-727）。官方默认 `buttonColors()` 取
+                        // `secondaryVariant`（亮 #F0F0F0），与卡片白底/页底 #F2F2F2 对比比 ~1.02-1.05，
+                        // 再叠主色蓝字就成了「看不出是按钮的一小块」；这里显式降一级灰。
+                        colors = ButtonDefaults.buttonColors(
+                            color = colors.secondary,
+                            contentColor = colors.onSecondaryVariant,
+                        ),
                     ) {
                         if (node.busy) {
                             CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -1261,7 +1281,7 @@ private fun ControlCard(
                         }
                         Text(
                             text = action.text,
-                            color = colors.primary,
+                            // 墨色随 `contentColor`（Dart 是 onSecondaryVariant 深灰）。
                             style = MiuixTheme.textStyles.button,
                         )
                     }

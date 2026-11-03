@@ -51,6 +51,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -303,6 +304,15 @@ fun WidgetPreviewSection(node: SettingsInline) {
             // Dart `canPin = !checking && canPin && !loading`（:638-646）：
             // 宿主已经把「正在请求 pin」并进 checkingPin，这里只管两个开关。
             enabled = host.canPin && !host.checkingPin,
+            // Dart `_buildPinWidgetButton`（settings_home_widget.dart:1078-1093）是
+            // `HyperosButtonVariant.secondary`：`secondary` 灰底 + `onSecondaryVariant` 墨
+            // （hyperos_controls.dart:719-727）。官方默认 `buttonColors()` 取的是
+            // `secondaryVariant`（亮 #F0F0F0），与设置页底 #F2F2F2 的对比比只有 ~1.02，
+            // 按钮整个融进背景（用户 2026-11-03 实报）；必须显式降到 `secondary`（#E6E6E6）。
+            colors = ButtonDefaults.buttonColors(
+                color = MiuixTheme.colorScheme.secondary,
+                contentColor = MiuixTheme.colorScheme.onSecondaryVariant,
+            ),
         ) {
             if (host.checkingPin) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -311,8 +321,8 @@ fun WidgetPreviewSection(node: SettingsInline) {
             Text(
                 // 按钮文案由模型给（`homeWidgetPreviewAddAction`「添加到桌面」）：
                 // 卡片身份由上方标题与尺寸行表达，按钮只表达动作（Dart :638-641）。
+                // 墨色随 `contentColor`（Dart 是 onSecondaryVariant 深灰，不是主色蓝）。
                 text = node.texts.firstOrNull()?.text.orEmpty(),
-                color = MiuixTheme.colorScheme.primary,
                 style = MiuixTheme.textStyles.button,
             )
         }
