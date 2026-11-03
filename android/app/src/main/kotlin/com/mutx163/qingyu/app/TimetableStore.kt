@@ -270,22 +270,35 @@ class TimetableStore(
         }
     }
 
-    /** 写全量档案数组并盖 schema 版本章（Dart `_writeProfilesWithoutLock:1216-1226`）。 */
-    fun saveProfiles(profiles: List<TimetableProfile>) {
+    /**
+     * 写全量档案数组并盖 schema 版本章（Dart `_writeProfilesWithoutLock:1216-1226`）。
+     *
+     * [preferredEmbeddedSettings] 是**外部来源**（云备份快照）的完整内嵌 settings
+     * （id → 键值表）。合并顺序：本机旧内嵌 → 备份内嵌（优先）→ 本次 core 4 键。
+     * 这样备份带回的外观/语言等整份设置会落盘，而不是被本机旧值铺底盖住；老备份
+     * 内嵌只有 4 键时，本机其余键仍保留（与写入前的兼容口径一致）。
+     */
+    fun saveProfiles(
+        profiles: List<TimetableProfile>,
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap(),
+    ) {
         // ⚠️ `TimetableProfile.toJson()` 里的 `settings` 只有 core 4 键
         // （`TimetableSettings.toJson`），而盘上每份档案的 `settings` 是**完整**的
         // 250+ 键对象（Dart 每个档案内嵌整份 `TimetableSettings`）。直接整体重写会把
         // 其余键（含桌面小组件那 10 个）从档案里冲掉 ⇒ 桌面卡片读到的设置全部回默认。
         // 所以按 id 取旧 `settings` 铺底、再用新值覆盖（同键以新值为准），其余键保留。
         // 读不到旧数据（首次写入 / 坏 JSON）时行为与之前完全一致。
-        val previousSettings = previousEmbeddedSettingsById()
+        val previousSettings = embeddedSettingsById()
         val payload = profiles.map { profile ->
             val json = profile.toJson()
-            val old = previousSettings[profile.id]
-            if (old == null) {
+            val base = previousSettings[profile.id]
+            val preferred = preferredEmbeddedSettings[profile.id]
+            if (base == null && preferred == null) {
                 json
             } else {
-                val merged = LinkedHashMap<String, Any?>(old)
+                val merged = LinkedHashMap<String, Any?>()
+                if (base != null) merged.putAll(base)
+                if (preferred != null) merged.putAll(preferred)
                 val fresh = json["settings"]
                 if (fresh is Map<*, *>) {
                     for ((key, value) in fresh) {
@@ -315,10 +328,12 @@ class TimetableStore(
     /**
      * 盘上每份档案**内嵌**的 `settings` 原始对象（id → 键值表）。
      *
-     * 只用于 [saveProfiles] 的「铺底」；整份不是数组、条目不是对象、没有字符串 id
-     * 一律跳过（与 [loadProfiles] 的宽松口径一致，读不懂就当没有旧值）。
+     * 两个用途：①[saveProfiles] 的「铺底」；②云备份写快照时取整份设置
+     * （`TimetableProfile.toJson()` 只带 core 4 键，快照要走这里取完整对象）。
+     * 整份不是数组、条目不是对象、没有字符串 id 一律跳过
+     * （与 [loadProfiles] 的宽松口径一致，读不懂就当没有旧值）。
      */
-    private fun previousEmbeddedSettingsById(): Map<String, Map<String, Any?>> {
+    fun embeddedSettingsById(): Map<String, Map<String, Any?>> {
         val raw = store.getString(KEY_PROFILES)
         if (raw.isNullOrEmpty()) return emptyMap()
         val decoded = MiniJson.tryParse(raw)

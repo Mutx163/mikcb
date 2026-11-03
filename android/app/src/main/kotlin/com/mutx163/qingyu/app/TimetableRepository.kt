@@ -161,6 +161,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
      */
     fun rawStoredJson(key: String): String? = store.rawJson(key)
 
+    /**
+     * 盘上每份档案**内嵌**的完整 `settings`（id → 键值表，只读）。
+     *
+     * 云备份写快照要用：`TimetableProfile.settings` 只带 core 4 键，整份 250+ 键
+     * 设置只存在于磁盘档案里（见 [TimetableStore.embeddedSettingsById]）。
+     */
+    fun embeddedSettingsById(): Map<String, Map<String, Any?>> = store.embeddedSettingsById()
+
     // ---------- 对外只读视图 ----------
 
     val snapshot: TimetableSnapshot
@@ -480,6 +488,13 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         locationTimeGroups: List<LocationTimeGroup>,
         /** 快照里携带的全局设置（core 四键）；null = 取激活档案内嵌的那份。 */
         settings: TimetableSettings? = null,
+        /**
+         * 快照里每份档案**完整内嵌**的 settings（id → 键值表）。
+         *
+         * 备份恢复时这里的键优先落盘，不被本机当前内嵌覆盖；老备份只带 core 4 键时，
+         * 本机其余键仍按 [TimetableStore.saveProfiles] 的铺底口径保留。
+         */
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap(),
     ) {
         restoreFromCloudSnapshotLocked(
             profiles,
@@ -488,6 +503,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
             scheduleDateRules,
             locationTimeGroups,
             settings,
+            preferredEmbeddedSettings,
         )
         drainPendingNotify()
         // 云恢复整块替换了课 / 作业 / 考试 / 日程，绕过了写服务的提醒漏斗；
@@ -504,6 +520,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         scheduleDateRules: List<ScheduleDateRule>,
         locationTimeGroups: List<LocationTimeGroup>,
         settings: TimetableSettings?,
+        preferredEmbeddedSettings: Map<String, Map<String, Any?>>,
     ) {
         require(profiles.isNotEmpty()) { "restore snapshot must contain at least one profile" }
         val resolvedActiveId = activeProfileId
@@ -514,7 +531,7 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         val restoredWeek = clampCurrentWeekToSettings(active.currentWeek, restoredSettings).toInt()
 
         // 先落盘：全部成功后才改内存，失败时界面保持旧状态。
-        store.saveProfiles(profiles)
+        store.saveProfiles(profiles, preferredEmbeddedSettings)
         store.saveActiveProfileId(resolvedActiveId)
         store.saveSettings(restoredSettings)
         store.saveCurrentWeek(restoredWeek)

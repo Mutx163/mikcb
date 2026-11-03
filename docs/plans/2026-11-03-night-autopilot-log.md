@@ -1849,6 +1849,42 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **未触碰**：本批零生产代码改动；未读 `theme/`、壳 Activity 细节、`lib/ui/`。
 
+### 10.40 ✅ C1 云备份快照携带/恢复档案完整内嵌 settings（2026-11-04，app/store + pages/sync）
+
+**结论**：审计 C1（P1）已修。备份快照现在每档写入**完整内嵌 settings**（对齐 Dart `app_sync_snapshot_service.dart:338-400`），恢复时备份那份优先落盘，不再被本机当前内嵌铺底盖住；`app_global_settings_v1` 两边都不动（全局偏好胜出、跨档不跟随，与 Dart `_applySnapshotData:1101-1178` 同解）。
+
+**C2 裁决（Lead）**：保持 `canMerge=false`，作为**有意降级**记录，不实现合并。理由：Dart 的 merge 包能力依赖一个不存在的合并服务；迁移期不补新能力，只保证「覆盖恢复」语义明确。Kotlin 现状 `pages/sync/CloudSyncController.kt:874`（恒 false）、`:757` 注释；MERGE 分支按覆盖执行（`:891`）。
+
+**改法（新增 API 签名）**：
+
+- `TimetableStore.embeddedSettingsById(): Map<String, Map<String, Any?>>`（原 private `previousEmbeddedSettingsById` 公开为只读，返回盘上整份内嵌 JSON）
+- `TimetableStore.saveProfiles(profiles, preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap())`，合并顺序：本机旧内嵌 → 备份内嵌（优先）→ 本次 core 4 键
+- `TimetableRepository.embeddedSettingsById()`（只读透传）
+- `TimetableRepository.restoreFromCloudSnapshot(..., preferredEmbeddedSettings: Map<String, Map<String, Any?>> = emptyMap())`（透传给 `store.saveProfiles`）
+- `TimetableSnapshotBridge.buildSnapshotBytes`：每档 `fullProfileJson(profile, embedded)`（磁盘整份 settings 铺底 + 内存 core 覆盖）
+- `TimetableSnapshotBridge.applySnapshot`：`embeddedSettingsFromProfiles(rawProfiles)` 提取 id → 完整 settings，直传 restore
+
+**三条断言（`pages/sync/TimetableSnapshotBridgeTest.kt`，共 4 例）**：
+
+1. 本机 `dark`+`zh_TW`、备份 `light`+`ja` → 恢复后档案内嵌 `appThemeMode=light`、`appLocaleTag=ja`、`courseCardFontSize=12.0`；
+2. 快照 JSON 每档内嵌 settings **逐键完整**：fixture 6 键逐一对上，且键数 `> 4`（不止 core）；
+3. 恢复后 `app_global_settings_v1` 原始串与恢复前逐字节一致（全局偏好不被备份覆盖）；
+4. 老备份（内嵌只有 core 4 键）恢复 → 不报错、备份 core 键生效、本机其余键（`dark`/`zh_TW`/`9.0`）照旧保留。
+
+**咬合探针**：把 `restoreFromCloudSnapshotLocked` 的 `store.saveProfiles(profiles, preferredEmbeddedSettings)` 改回 `store.saveProfiles(profiles)`（保留本机内嵌）→ 用例 1 红（`expected:<light> but was:<dark>`，980 例中 1 失败）→ 还原后 980 例全绿。
+
+**L0（实际命令与数字）**：
+
+```
+C:\dev\pwsh\pwsh.exe -NoProfile -Command "& 'scripts/test-kotlin-module.ps1' -Module 'pages/settings' -ExtraSources '.../pages/sync/TimetableSnapshotBridge.kt','.../pages/sync/TimetableSnapshotBridgeTest.kt'"
+```
+
+- 编译文件数 258，`OK (980 tests)`（`pages/settings` 全量 + 附加 bridge 源/测试）。
+- 探针（故意改坏）：`Tests run: 980, Failures: 1`（仅用例 1）。
+- `-Module pages/sync` 目前因 **C3** 编译不过（`CouplePartnerUnlinkTest.kt:26` / `LocaleHashAsciiTest.kt:7` 引用 `platform.CouplePartnerPortImpl`，4 处 unresolved，属他线 `096ff9bb`），**本次未跑**；sync 原生用例待 C3 修复后补齐（本测试文件届时随 `-Module pages/sync` 自动纳入）。
+
+**边界**：未碰 `app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`pages/import/**`、`pages/transfer/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
 
 
 

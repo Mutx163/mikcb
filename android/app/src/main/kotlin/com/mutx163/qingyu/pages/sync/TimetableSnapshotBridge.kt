@@ -35,9 +35,11 @@ import com.mutx163.qingyu.sync.matchesFactoryDefaultTimeScheme
  * 1. 快照只带**课表族**（档案 / 作息表 / 日期规则 / 地点分组）。Dart 快照里的
  *    warehouse / macros / customHolidays / teacherRecords / partnerTimetableBinding
  *    在这里不开采——Dart 端读这份快照时这几块会是空，反之亦然。
- * 2. 档案内嵌的 `settings` 只有 core 四键（`TimetableSettings.toJson()` 的移植边界）。
- *    恢复时 `TimetableStore.saveProfiles` 会按 id 把旧档案的其余设置铺底保留，
- *    所以不会清掉用户的其它设置，但也**不会**从快照里恢复它们。
+ * 2. 档案内嵌的 `settings` **按整份写入快照**（对齐 Dart `buildSnapshotJsonFromSnapshot`
+ *    `app_sync_snapshot_service.dart:338-400`：每档序列化完整 profile）。写入前从磁盘取
+ *    完整内嵌对象（`TimetableProfile.toJson()` 只有 core 4 键），再用内存模型覆盖 core 键。
+ *    恢复时备份那份优先落盘（见 `TimetableStore.saveProfiles` 的 `preferredEmbeddedSettings`），
+ *    不再被本机当前内嵌盖住；老备份内嵌只有 4 键时，本机其余键照旧铺底保留。
  * 3. 没有差异预览：恢复是整份覆盖。
  */
 object TimetableSnapshotBridge {
@@ -60,7 +62,11 @@ object TimetableSnapshotBridge {
             "exportedAt" to exportedAtIso,
             "deviceId" to deviceId,
             "activeProfileId" to snapshot.activeProfileId,
-            "profiles" to snapshot.profiles.map { it.toJson() },
+            // 档案要带走**完整内嵌 settings**（外观/语言/材质/桌面卡片等 250+ 键）。
+            // 内存模型只有 core 4 键，整份设置只存在于磁盘档案里，故从这里取。
+            "profiles" to snapshot.profiles.map { profile ->
+                fullProfileJson(profile, repository.embeddedSettingsById()[profile.id])
+            },
             "timeSchemes" to snapshot.timeSchemes.map { it.toJson() },
             "locationTimeGroups" to snapshot.locationTimeGroups.map { it.toJsonMap() },
             "scheduleDateRules" to snapshot.scheduleDateRules.map { it.toJson() },
@@ -149,6 +155,8 @@ object TimetableSnapshotBridge {
             @Suppress("UNCHECKED_CAST")
             runCatching { TimetableSettings.fromJson(raw as Map<String, Any?>) }.getOrNull()
         }
+        // 备份里每档的完整内嵌设置：恢复时优先落盘，不被本机当前内嵌覆盖。
+        val preferredEmbeddedSettings = embeddedSettingsFromProfiles(rawProfiles)
         return try {
             repository.restoreFromCloudSnapshot(
                 profiles = profiles,
@@ -157,11 +165,50 @@ object TimetableSnapshotBridge {
                 scheduleDateRules = scheduleDateRules,
                 locationTimeGroups = locationTimeGroups,
                 settings = settings,
+                preferredEmbeddedSettings = preferredEmbeddedSettings,
             )
             SnapshotApplyResult.Applied
         } catch (error: Exception) {
             SnapshotApplyResult.Failed("sync_snapshot_apply_failed")
         }
+    }
+
+    /**
+     * 档案 JSON 的**整份设置**：磁盘内嵌对象铺底，内存模型的 core 4 键覆盖。
+     * 磁盘没有该档（或内嵌读不懂）时退回只有 core 4 键的原样 JSON。
+     */
+    private fun fullProfileJson(
+        profile: TimetableProfile,
+        embedded: Map<String, Any?>?,
+    ): Map<String, Any?> {
+        val json = LinkedHashMap<String, Any?>(profile.toJson())
+        if (embedded == null) return json
+        val merged = LinkedHashMap<String, Any?>(embedded)
+        val core = json["settings"]
+        if (core is Map<*, *>) {
+            for ((key, value) in core) {
+                if (key is String) merged[key] = value
+            }
+        }
+        json["settings"] = merged
+        return json
+    }
+
+    /** 从快照原始 profiles 提取每档完整内嵌 settings（id → 键值表）；读不懂的条目跳过。 */
+    private fun embeddedSettingsFromProfiles(rawProfiles: List<*>): Map<String, Map<String, Any?>> {
+        val out = LinkedHashMap<String, Map<String, Any?>>()
+        for (item in rawProfiles) {
+            if (item !is Map<*, *>) continue
+            val id = item["id"] as? String ?: continue
+            val settings = item["settings"]
+            if (settings !is Map<*, *>) continue
+            val copy = LinkedHashMap<String, Any?>()
+            for ((key, value) in settings) {
+                if (key is String) copy[key] = value
+            }
+            out[id] = copy
+        }
+        return out
     }
 
     /** 逐条宽松解析：非 Map / 解析抛错的条目丢弃，不让一条坏数据炸掉整份恢复。 */
