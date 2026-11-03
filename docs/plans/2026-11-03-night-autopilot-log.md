@@ -242,6 +242,17 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - `WarehouseWebLoginPage.kt:213` 写死中文「停止录制 (N)」→ 新键 **`stopRecordingWithCount`**（zh「停止录制 ({count})」，`count` 为 int 占位符；en「Stop recording ({count})」/ja「録画停止 ({count})」/ko「녹화 중지 ({count})」/zh_HK·zh_TW「停止錄製 ({count})」六份同步；gen-l10n 产物已同步；copy_style 实测新增 0 违规、0 死键）。`WarehouseStrings.kt` 已补 `stopRecordingWithCount` ArbText 引用 + 清单登记（防死键）。
 - **待 E 线**：替换 `WarehouseWebLoginPage.kt:213` 为 `WarehouseStrings.stopRecordingWithCount.filled("count", …)`，并把该文件 cjk 基线 1→0 压行。
 
+### E 线最终批次收口（2026-11-03 10:25 协调线复核回填，三笔已推送）
+- **`88906825`**：「停止录制 (N)」改走 `WarehouseStrings.stopRecordingWithCount`（A 线键接线完成）；composeP1 基线 `WarehouseWebLoginPage.kt:1` **整条删行**。
+- **`f40399cf` 为走偏过程提交，已被 `0b33a151` 取代，禁 amend 规则下保留历史，不改写**（`\u` 转义会让匹配串从基线隐身，与「基线必须继续可见」的拍板相悖）。
+- **`0b33a151`**（#9 方案 A 落地）：新建 `WarehouseFormLabels.kt`（32 行，`internal object WarehouseFormLabelStrings` 集中三条匹配串，文件名避开 `Strings`/`Arb` 排除标记，字面量留在基线待办可见）；`WarehouseMacroModels.kt` 改引用常量；main 基线**换行不加行**（`WarehouseMacroModels.kt:3` → `WarehouseFormLabels.kt:3`，总数仍 3）；`WarehouseMacroModelsTest` +17 补中文原因串反推 fieldType 钉住测试。
+- **协调线实测复核**：
+  - 门4 cjk（`i18n-cjk-baseline.py`）：composeP1 **120 条/14 文件** exit=0、`WarehouseWebLoginPage.kt` 已不在名单；main **1257 条/81 文件** exit=0（10:15:22→10:15:24。注：管线 `Select-Object -First` 截断会造成 python 提前退出报 -1，全量输出下 exit=0，已复跑确认）。
+  - 门4 copy_style ✅ 10:16:07→10:16:39 exit=0：超宽冻结 175/新增 0、死键冻结 1/新增 0、复述 0。
+  - 门2 `:app:testDevDebugUnitTest` ✅ BUILD SUCCESSFUL 7m8s（10:16:53→10:24:03），`CjkLiteralGateTest` 随换行登记通过。
+  - E 线自验：L0 `pages/import/warehouse` **232 例全绿**；门3 import 0 违规。
+- **基线删行语义确认（第 4 条核对）**：「0 计数文件不进基线」符合格式约定——门禁判定只认两类红：actual 有而基线无（新增未登记）、计数上调、基线行未随修复下调；0 计数文件本来就不进 actual 表，删行使两侧一致，`88906825` 后 cjk 门 composeP1 实测 exit=0 即为依据，不会因缺行判红。
+
 ---
 
 ## 七、需 Lead 处理项
@@ -254,14 +265,22 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 6. **（C 线报）① `ShellPageIndex.kt:1723` `WebdavConnectSheet` 仍 `if (showConnect)` 条件挂载**（壳文件禁改，记 Lead）；② `CloudBackupDetailSheet.kt:77-105` 动作区仍是半宽横排，Dart 是整宽竖排「恢复前删除后」，配色已修结构未改，改否待拍板；③ timetable 域 L0 结构债同第 5 条。
 7. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 28 条（203→175，09:50 实测 lint 冻结 175、新增 0）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
 8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
-9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。**→ Lead 已裁决（2026-11-03）：采用方案 A 收敛形态（`WarehouseFormLabelStrings` 常量对象，文件名避开 `Strings` 排除标记），基线换行不加行；转 E 线随宏回放批次落地，A 线复核基线行数后跑门 4 + 门 2 推送。**
+9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。**→ Lead 已裁决（2026-11-03）：采用方案 A 收敛形态（`WarehouseFormLabelStrings` 常量对象，文件名避开 `Strings` 排除标记），基线换行不加行；转 E 线随宏回放批次落地，A 线复核基线行数后跑门 4 + 门 2 推送。** **✅ 已落地（`0b33a151`）：基线换行不加行，仍 3 条指向 `WarehouseFormLabels.kt`；门4/门2 复测全绿（见「E 线最终批次收口」）。**
 
-## 八、当前状态（2026-11-03 09:55 更新）
+## 八、当前状态（2026-11-03 10:25 更新）
 
-- HEAD = 远端 = `f4dd925e`（09:56 推 `1c3fe57e`；10:02 推日志提交 `2afb40b8..f4dd925e`——首试 schannel TLS 握手瞬断，重试成功，ls-remote 复核一致；内容含 E 线 `f8b04f80` + A 线 `1c3fe57e` + 日志两笔）。
+- HEAD = 远端 = `0b33a151` + 本轮日志提交（10:11 推 `5caf3591..0b33a151` E 线三笔，ls-remote 复核一致；本轮日志笔随后即推）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
-- 门1 L1 编译 ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55，**门2 复测前修掉唯一红：CjkLiteralGateTest 3 条**——`WarehouseMacroModels.kt` 功能识别串登记 main 基线，性质为加行，已挂需 Lead #9）；门4 copy_style ✅ 09:50（超宽冻结 175/新增 0、死键新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
-- 5 路（A~E + 补 F）已全部完成并经 L0/门3 验证；并行方式切换为 5 条独立会话，A 线（本代理）继续 copy_style 欠账与 ARB 同步。
+- 门1 L1 编译 ✅ 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ 7m8s（10:16:53→10:24:03，E 线最终批次后复测）；门4 cjk ✅ 10:15（composeP1 120 条/14 文件、main 1257 条/81 文件，均 exit=0）+ copy_style ✅ 10:16:07→10:16:39（超宽冻结 175/新增 0、死键冻结 1/新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
+
+### 当前五线状态（早上接手直接看）
+| 线 | 状态 | 最后提交 | 备注 |
+|---|---|---|---|
+| A（文案/l10n+协调） | 键交付完毕，超宽债持续清理中 | `1c3fe57e`（stopRecordingWithCount + 基线 + gen-l10n） | 剩超宽冻结 175 条、死键 1（口径外） |
+| B（课表/课程/共享件） | ✅ 已收线 | `3ff12a15`（S6 守卫）+ `24263aa3`（已激活键替换） | 毛玻璃属上游缺口，挂 Lead #6 区 |
+| C（sync 族） | ✅ 已收线 | `134cac79`（云备份差异预览） | 壳条件挂载等待拍板项见需 Lead #6 |
+| D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
+| E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
 
 ---
 
