@@ -238,6 +238,69 @@ class WarehouseCourseWriteBackTest {
         assertEquals(listOf("高数"), repository.snapshot.courses.map { it.name })
     }
 
+    // ── 与 Dart `importParsedCourses` 对拍 ──────────────────────────────
+
+    @Test
+    fun `导入确认的开学日即使课程没有变化也会落盘`() {
+        val start = LocalDateTime.of(2026, 9, 7, 0, 0)
+        val existing = course("c1", name = "数学", day = 2, weeks = listOf(1, 2))
+        val repository = repositoryWith(listOf(existing))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(existing.copy(id = "imported-id")),
+            semesterStartDate = start,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        // Dart：`importParsedCourses` 在合并结果没变化时也不会提前 return，
+        // 因为开学日是这次导入要落盘的产物。
+        assertEquals(start, repository.snapshot.settings.semesterStartDate)
+    }
+
+    @Test
+    fun `覆盖导入先去重 计数按去重后的条数`() {
+        val repository = repositoryWith(listOf(course("old", name = "旧课")))
+        val duplicate = course("new", name = "新课", day = 3)
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(duplicate, duplicate.copy()),
+            requestedMode = WarehouseCourseWriteBack.Mode.REPLACE,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Done)
+        assertEquals(1, (result as WarehouseCourseWriteBack.Result.Done).outcome.importedCount)
+        assertEquals(listOf("新课"), repository.snapshot.courses.map { it.name })
+    }
+
+    @Test
+    fun `课程落盘失败时回滚已写入的开学日`() {
+        val oldStart = LocalDateTime.of(2026, 2, 23, 0, 0)
+        val newStart = LocalDateTime.of(2026, 9, 7, 0, 0)
+        val profile = profileWith(listOf(course("old", name = "旧课")))
+        val raw = InMemoryKeyValueStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(listOf(profile.toJson())),
+                "timetable_settings" to MiniJson.encode(
+                    com.mutx163.qingyu.core.TimetableSettings.defaults()
+                        .copy(semesterStartDate = oldStart)
+                        .toJson(),
+                ),
+            ),
+        )
+        val repository = TimetableRepository(TimetableStore(FailingWriteStore(raw, "timetable_profiles")))
+
+        val result = WarehouseCourseWriteBack.apply(
+            repository = repository,
+            courses = listOf(course("new", name = "新课", day = 5)),
+            semesterStartDate = newStart,
+        )
+
+        assertTrue(result is WarehouseCourseWriteBack.Result.Failed)
+        assertEquals("课没进就不许只改开学日", oldStart, repository.snapshot.settings.semesterStartDate)
+    }
+
     @Test
     fun `空数组载荷不写盘`() {
         val repository = repositoryWith(listOf(course("old", name = "旧课")))

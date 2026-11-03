@@ -4,8 +4,10 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
+import com.mutx163.qingyu.transfer.dedupeImportedCourses
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
 import com.mutx163.qingyu.transfer.syncImportedCourses
+import java.time.LocalDateTime
 
 /**
  * 教务适配脚本回传课程 → **写回当前档案**（F32，补 F28 的「只记日志」缺口）。
@@ -94,6 +96,8 @@ object WarehouseCourseWriteBack {
      *
      * @param droppedCount / @param weeksTrimmedCount 解析阶段的统计，只用于上屏，不参与写入。
      * @param preserveLocalColors 合并时保留本地课程颜色（与 Dart / AI 导入同口径）。
+     * @param semesterStartDate 用户在映射弹层确认的开学日；与 Dart
+     *   `importParsedCourses(semesterStart: ...)` 一样，即使课程一字不差也要落盘。
      */
     fun apply(
         repository: TimetableRepository,
@@ -102,6 +106,7 @@ object WarehouseCourseWriteBack {
         droppedCount: Int = 0,
         weeksTrimmedCount: Int = 0,
         preserveLocalColors: Boolean = true,
+        semesterStartDate: LocalDateTime? = null,
     ): Result {
         if (courses.isEmpty()) {
             return Result.NoImportableCourses(droppedCount)
@@ -109,17 +114,29 @@ object WarehouseCourseWriteBack {
 
         val before = repository.snapshot
         val mode = resolveMode(before.courses.size, requestedMode)
+        // 开学日先落盘：Dart 的导入把「用户在这次导入里确认的开学日」视为一次真实写入，
+        // 合并结果没变化也不能早退（否则首页周次/提醒仍按旧日期排）。
+        if (semesterStartDate != null) {
+            try {
+                repository.updateSettings(before.settings.copy(semesterStartDate = semesterStartDate))
+            } catch (error: Exception) {
+                return Result.Failed(error)
+            }
+        }
 
         val mergedCourses: List<Course>
         val importedCount: Int
         when (mode) {
             Mode.REPLACE -> {
+                // Dart `importParsedCourses` 覆盖导入先去重（导入包内互重的条目只留一条），
+                // 「N 条」也按去重后的条数报。
+                val deduped = dedupeImportedCourses(courses)
                 mergedCourses = replaceImportedCoursesPreservingLocalFields(
                     existingCourses = before.courses,
-                    importedCourses = courses,
+                    importedCourses = deduped,
                     preserveLocalColors = preserveLocalColors,
                 )
-                importedCount = mergedCourses.size
+                importedCount = deduped.size
             }
 
             Mode.MERGE -> {
@@ -153,6 +170,10 @@ object WarehouseCourseWriteBack {
             Result.Done(outcome)
         } catch (error: Exception) {
             // 仓储先落盘、成功才改内存；抛错时内存仍是旧课表，宿主据此提示失败。
+            // 开学日已先行写入，这里尽力回滚，避免「课没进、学期日期却变了」的半个状态。
+            if (semesterStartDate != null) {
+                runCatching { repository.updateSettings(before.settings) }
+            }
             Result.Failed(error)
         }
     }
@@ -224,6 +245,7 @@ object WarehouseCourseWriteBack {
         parsed: PayloadParse.Parsed,
         requestedMode: Mode? = null,
         preserveLocalColors: Boolean = true,
+        semesterStartDate: LocalDateTime? = null,
     ): PayloadResult = when (
         val result = apply(
             repository = repository,
@@ -232,6 +254,7 @@ object WarehouseCourseWriteBack {
             droppedCount = parsed.droppedCount,
             weeksTrimmedCount = parsed.weeksTrimmedCount,
             preserveLocalColors = preserveLocalColors,
+            semesterStartDate = semesterStartDate,
         )
     ) {
         is Result.Done -> PayloadResult.Done(result.outcome, parsed.receivedCount)

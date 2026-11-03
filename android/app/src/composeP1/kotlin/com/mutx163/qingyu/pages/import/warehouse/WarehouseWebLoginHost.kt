@@ -24,6 +24,9 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.pages.import.ImportPreviewDialog
+import com.mutx163.qingyu.pages.import.ImportServiceMessages
+import com.mutx163.qingyu.pages.import.ImportSharedModel
+import com.mutx163.qingyu.pages.import.ImportWeekAlignment
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -52,23 +55,20 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 真 WebView | [WarehouseWebLoginPage] → [WarehouseWebViewHost] |
  * | 加载进度 / 错误上屏 | [WarehouseWebLoginWebState]（错误文案优先取 ARB） |
  * | 「执行导入脚本」 | 拉脚本（[WarehouseRepositoryService.loadAdapterScript]，含 SHA-256 校验）→ 包桥接垫片 → 注入 |
- * | 脚本回传 `courses` | [WarehouseCourseImportLogic] 解析 → 已有课时弹「替换/合并」（I2-3）→ [WarehouseCourseWriteBack] 写回当前档案 |
+ * | 脚本回传 `courses` | [WarehouseCourseImportLogic] 解析 → 弹「开学日/周次映射 + 替换/合并」（I2-3）→ 按 `firstCourseWeek` 平移 → [WarehouseCourseWriteBack] 写回（含开学日） |
  * | 网页 `confirm` / `prompt` / 单选 | **原生弹窗**（I2-1，[WarehouseScriptConfirmDialog] 等），回答经 [warehouseBridgeResolveScript] 回网页 |
  * | `saveCourseConfig` | 解析并落盘学期周数/开学日（I2-2，[resolveWarehouseCourseConfig]），回答 true/false |
+ * | `savePresetTimeSlots` | 节次表 → 同名模板建/改 → 设为当前模板（Dart `_applyPendingImportedSectionsIfNeeded`），回答 true/false |
  * | 宏录制（I2-4） | 录制 JS 注入/重注 + `macro:event` 收集 + [WarehouseMacroRecordingConverter] 转步骤 + [WarehouseMacroStore] 落盘 |
  * | 桥接消息 | 已由页面过了 §6.2 门禁；这里按类型分发 |
  *
  * ## 诚实边界（别删）
  *
- * 1. **开学日/周次映射弹窗仍未接**：抓回的课周次按脚本原值写入，不做 `firstCourseWeek` 平移
- *    （Dart 那张 `pickImportSemesterConfig` 还没移植；「替换/合并」选择与它拆开，先做前者）。
- * 2. **`savePresetTimeSlots` 仍诚实回 `false`**：作息切换链路（`_applyPendingImportedSectionsIfNeeded`
- *    + 恢复点 + 轻屿专属条目）未移植；`saveCourseConfig` 已真落盘。
- * 3. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
- *    与 i2-webview 认领文件里列的缺件一致。
- * 4. **快捷导入（宏回放）未移植**：宏能录能存、列表能显示「快捷导入」入口，
+ * 1. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
+ *    见回报「需 Lead」：Dart 的记住账号存 FlutterSecureStorage，Kotlin 侧无同构存储适配。
+ * 2. **快捷导入（宏回放）未移植**：宏能录能存、列表能显示「快捷导入」入口，
  *    但点了仍是「不可用」实话——回放引擎（`warehouse_macro_replayer`）是另一刀。
- * 5. 真机未验：仓库能不能拉到脚本、教务站能不能登录并通过脚本抓课，只有用户真机可见。
+ * 3. 真机未验：仓库能不能拉到脚本、教务站能不能登录并通过脚本抓课，只有用户真机可见。
  */
 
 private const val LOG_TAG = "WarehouseWebLogin"
@@ -80,6 +80,18 @@ private data class WarehouseMacroSavePrompt(
     val autoRecord: Boolean,
     /** 导入成功后自动收尾（Dart `_completeMacroAndPop`）：成功计数记 1，且收尾后返回上一页。 */
     val completedImport: Boolean,
+)
+
+/**
+ * 已解析、等用户在「开学日/周次映射 + 替换/合并」弹层里做选择的课程。
+ *
+ * [semesterStartDate] 取用户已有设置、没有则取当前时刻（Dart `_handleCoursesMessage`
+ * 的 `provider.settings.semesterStartDate ?? DateTime.now()`）；弹层里用户可以改。
+ */
+private data class PendingWarehouseImport(
+    val parsed: WarehouseCourseWriteBack.PayloadParse.Parsed,
+    val semesterStartDate: LocalDateTime,
+    val hasExistingCourses: Boolean,
 )
 
 /**
@@ -139,8 +151,13 @@ fun WarehouseWebLoginHost(
 
     // ---- I2-1：脚本对话框的待答请求（同一时刻至多一个：脚本是 await 串行的） ----
     var pendingDialog by remember { mutableStateOf<WarehouseBridgeDialogRequest?>(null) }
-    // ---- I2-3：已解析、等用户在「替换/合并」里做选择的课程 ----
-    var pendingImport by remember { mutableStateOf<WarehouseCourseWriteBack.PayloadParse.Parsed?>(null) }
+    // ---- I2-3：已解析、等用户在「开学日/周次映射 + 替换/合并」里做选择的课程 ----
+    var pendingImport by remember { mutableStateOf<PendingWarehouseImport?>(null) }
+    // 弹层常驻组合、show 驱动显隐：待选状态清空后还要用最后一份非空内容撑完退场动画。
+    var lastPendingImport by remember { mutableStateOf<PendingWarehouseImport?>(null) }
+    LaunchedEffect(pendingImport) {
+        if (pendingImport != null) lastPendingImport = pendingImport
+    }
     // ---- I2-4：宏录制暂存 ----
     val macroEvents = remember { mutableStateListOf<Map<String, Any?>>() }
     val macroDialogResponses = remember { mutableStateMapOf<String, Any?>() }
@@ -414,11 +431,17 @@ fun WarehouseWebLoginHost(
     fun applyCourses(
         parsed: WarehouseCourseWriteBack.PayloadParse.Parsed,
         requestedMode: WarehouseCourseWriteBack.Mode?,
+        semesterStartDate: LocalDateTime,
     ) {
         val repo = repository ?: return
         scope.launch {
             val result = withContext(Dispatchers.IO) {
-                WarehouseCourseWriteBack.applyParsed(repo, parsed, requestedMode)
+                WarehouseCourseWriteBack.applyParsed(
+                    repository = repo,
+                    parsed = parsed,
+                    requestedMode = requestedMode,
+                    semesterStartDate = semesterStartDate,
+                )
             }
             Log.i(LOG_TAG, "courses write-back result=${result.javaClass.simpleName}")
             showToasts(messagesFor(result))
@@ -457,13 +480,14 @@ fun WarehouseWebLoginHost(
                     showToasts(listOf(WarehouseStrings.invalidCourseDataFormat.zh))
 
                 is WarehouseCourseWriteBack.PayloadParse.Parsed -> {
-                    if (parsed.courses.isNotEmpty() && repo.snapshot.courses.isNotEmpty()) {
-                        // 已有课：必须让用户在「更新（合并）/覆盖（替换）」之间明确选一个
-                        // （Dart `askImportReplaceExisting`；空表直接 REPLACE 不问）。
-                        pendingImport = parsed
-                    } else {
-                        applyCourses(parsed, requestedMode = null)
-                    }
+                    // 空表也要问开学日/周次映射（Dart `pickImportSemesterConfig` 无条件调用）；
+                    // 「替换/合并」只在已有课时才出现（Dart `askImportReplaceExisting`）。
+                    val settings = repo.snapshot.settings
+                    pendingImport = PendingWarehouseImport(
+                        parsed = parsed,
+                        semesterStartDate = settings.semesterStartDate ?: LocalDateTime.now(),
+                        hasExistingCourses = repo.snapshot.courses.isNotEmpty(),
+                    )
                 }
             }
         }
@@ -570,11 +594,77 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    // ---- I2-2b：savePresetTimeSlots 落盘（Dart `_applyPendingImportedSectionsIfNeeded`） ----
+
+    /**
+     * 脚本下发的作息 → 建/改「{学校} 导入节次」模板并设为当前模板。
+     *
+     * Dart 语义：解析失败/空表/写盘拒绝 → 亮提示 + 回答 false；成功 → 回答 true。
+     * 模板同名已存在就更新（不重复建），更新/应用被仓储拒绝时把服务码翻成人话再提示。
+     */
+    fun handleSavePresetTimeSlots(raw: String) {
+        val request = warehouseBridgeSaveRequest(raw, "savePresetTimeSlots")
+        if (request == null) {
+            Log.w(LOG_TAG, "savePresetTimeSlots ignored: unsafe requestId or bad shape")
+            return
+        }
+        val decoded = MiniJson.tryParse(request.payload) as? List<*>
+        if (decoded == null) {
+            showToasts(listOf(WarehouseStrings.invalidSectionTimeFormat.zh))
+            resolveBridgeRequest(request.requestId, "false")
+            return
+        }
+        val sections = ImportSharedModel.decodeAlignedImportedSections(decoded)
+        if (sections == null) {
+            showToasts(listOf(WarehouseStrings.noSectionTimesToSave.zh))
+            resolveBridgeRequest(request.requestId, "false")
+            return
+        }
+        val repo = repository
+        if (repo == null) {
+            Log.w(LOG_TAG, "savePresetTimeSlots but repository is not wired")
+            resolveBridgeRequest(request.requestId, "false")
+            return
+        }
+        val schemeName = WarehouseStrings.warehouseImportedTimeSchemeName.filled("schoolName", school.name)
+        scope.launch {
+            val error = withContext(Dispatchers.IO) {
+                try {
+                    val existing = repo.snapshot.timeSchemes.firstOrNull { it.name == schemeName }
+                    if (existing == null) {
+                        val created = repo.createTimeScheme(
+                            name = schemeName,
+                            sections = sections,
+                            applyToActiveProfile = true,
+                        )
+                        repo.applyTimeScheme(created.id)
+                    } else {
+                        repo.updateTimeScheme(existing.id, existing.name, sections)
+                            ?: repo.applyTimeScheme(existing.id)
+                    }
+                } catch (failure: Exception) {
+                    failure.message ?: failure.toString()
+                }
+            }
+            if (error != null) {
+                Log.w(LOG_TAG, "savePresetTimeSlots failed: $error")
+                showToasts(
+                    listOf(
+                        WarehouseStrings.saveSectionTimesFailedWithError.filled(
+                            "error",
+                            ImportServiceMessages.localize(error),
+                        ),
+                    ),
+                )
+            }
+            resolveBridgeRequest(request.requestId, if (error == null) "true" else "false")
+        }
+    }
+
     /**
      * 网页对话框降级：给一个确定的默认回答，避免脚本的 Promise 永远悬着。
      *
-     * 现在只服务两类：a) `savePresetTimeSlots`（作息切换链路未移植，诚实回 false）；
-     * b) 已有弹窗待答时并发到来的第二个弹窗（脚本 await 语义下不该发生）。
+     * 现在只服务「已有弹窗待答时并发到来的第二个弹窗」（脚本 await 语义下不该发生）。
      */
     fun handleDialogFallback(raw: String) {
         val answer = warehouseBridgeFallbackAnswer(raw)
@@ -618,8 +708,7 @@ fun WarehouseWebLoginHost(
 
             "savePresetTimeSlots" -> {
                 if (scriptActive) {
-                    // 作息切换链路未移植：诚实回 false（见文件头诚实边界第 2 条）。
-                    handleDialogFallback(raw)
+                    handleSavePresetTimeSlots(raw)
                 } else {
                     Log.w(LOG_TAG, "savePresetTimeSlots dropped outside import execution")
                 }
@@ -758,34 +847,42 @@ fun WarehouseWebLoginHost(
         onResult = { index -> pendingDialog?.let { answerSingleSelection(it, index) } },
     )
 
-    // ---- I2-3 「替换/合并」选择（复用导入域共享预览卡；表格导入同形态：无学期映射行） ----
-    val pendingImportShown = pendingImport
+    // ---- I2-3 开学日/周次映射 + 替换/合并（复用导入域共享预览卡） ----
+    val dialogImport = pendingImport ?: lastPendingImport
+    val lastAllowedWeek = (repository?.snapshot?.settings?.semesterWeekCount ?: 20).coerceAtLeast(1)
     ImportPreviewDialog(
-        show = pendingImportShown != null,
+        show = pendingImport != null,
         importLabel = school.name,
-        courseCount = pendingImportShown?.courses?.size ?: 0,
-        // 开学日/周次映射弹窗未接（诚实边界第 1 条）：周次按脚本原值写入。
-        semesterStartDate = null,
+        courseCount = dialogImport?.parsed?.courses?.size ?: 0,
+        semesterStartDate = dialogImport?.semesterStartDate,
         initialFirstCourseWeek = 1,
-        lastAllowedWeek = repository?.snapshot?.settings?.semesterWeekCount ?: 20,
-        hasExistingCourses = true,
+        lastAllowedWeek = lastAllowedWeek,
+        hasExistingCourses = dialogImport?.hasExistingCourses ?: false,
         onCancel = {
             // Dart：取消 = 中止本次导入（课程一个字节不落盘）。
-            Log.i(LOG_TAG, "courses import cancelled at replace/merge dialog")
+            Log.i(LOG_TAG, "courses import cancelled at semester mapping dialog")
             pendingImport = null
             scriptActive = false
         },
         onConfirm = { choice ->
-            val parsed = pendingImport
+            val pending = pendingImport
             pendingImport = null
-            if (parsed != null) {
+            if (pending != null) {
+                // Dart：确认后按 `shiftCoursesToSemesterWeeks(firstCourseWeek)` 平移周次，
+                // 并把确认的开学日写回设置（`importParsedCourses(semesterStart: ...)`）。
                 applyCourses(
-                    parsed,
-                    requestedMode = if (choice.replaceExisting) {
+                    parsed = pending.parsed.copy(
+                        courses = ImportWeekAlignment.shiftCoursesToSemesterWeeks(
+                            courses = pending.parsed.courses,
+                            firstCourseWeek = choice.firstCourseWeek,
+                        ),
+                    ),
+                    requestedMode = if (pending.hasExistingCourses && choice.replaceExisting) {
                         WarehouseCourseWriteBack.Mode.REPLACE
                     } else {
                         WarehouseCourseWriteBack.Mode.MERGE
                     },
+                    semesterStartDate = choice.semesterStartDate,
                 )
             }
         },

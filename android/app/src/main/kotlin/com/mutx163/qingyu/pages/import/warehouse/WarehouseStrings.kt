@@ -134,6 +134,7 @@ object WarehouseStrings {
     val noImportableCoursesFromScript = WarehouseArbText("noImportableCoursesFromScript", "脚本未返回可导入课程")
     val inputRequiredTitle = WarehouseArbText("inputRequiredTitle", "需要输入")
     val invalidImportUrl = WarehouseArbText("invalidImportUrl", "请输入有效的教务网址")
+    val invalidSectionTimeFormat = WarehouseArbText("invalidSectionTimeFormat", "节次时间格式不正确")
     val laterAction = WarehouseArbText("laterAction", "稍后再说")
     val localDebugModeScriptStatus = WarehouseArbText("localDebugModeScriptStatus", "本地调试模式：{scriptName}")
     val loginEntryLabel = WarehouseArbText("loginEntryLabel", "登录入口")
@@ -146,6 +147,7 @@ object WarehouseStrings {
     val noSavedDebugRecords = WarehouseArbText("noSavedDebugRecords", "还没有保存的调试记录")
     val noSavedDebugRecordsHint = WarehouseArbText("noSavedDebugRecordsHint", "先新增一条，把网址和脚本贴进去，以后就能直接复用")
     val noSavedQuickImportRecords = WarehouseArbText("noSavedQuickImportRecords", "暂无已保存的快捷导入记录")
+    val noSectionTimesToSave = WarehouseArbText("noSectionTimesToSave", "没有可保存的节次时间")
     val noUsernameOrPasswordRecognized = WarehouseArbText("noUsernameOrPasswordRecognized", "未识别到用户名或密码")
     val noValidWarehouseLoginUrl = WarehouseArbText("noValidWarehouseLoginUrl", "未找到有效的教务登录地址")
     val notNowAction = WarehouseArbText("notNowAction", "暂不")
@@ -208,6 +210,7 @@ object WarehouseStrings {
     val warehouseCustomDebugTitle = WarehouseArbText("warehouseCustomDebugTitle", "自定义调试")
     val warehouseFeedbackMissingSchoolTitle = WarehouseArbText("warehouseFeedbackMissingSchoolTitle", "缺少学校？去反馈")
     val warehouseImportExecutionLogMenuLabel = WarehouseArbText("warehouseImportExecutionLogMenuLabel", "课表导入执行日志")
+    val warehouseImportedTimeSchemeName = WarehouseArbText("warehouseImportedTimeSchemeName", "{schoolName} 导入节次")
     val warehouseMatchedAdaptersLabel = WarehouseArbText("warehouseMatchedAdaptersLabel", "匹配适配器：{names}")
     val warehouseMissingSchoolSubtitle = WarehouseArbText("warehouseMissingSchoolSubtitle", "请到反馈页提交 Issue，附上学校名称、教务系统网址与课表页截图，便于补充适配")
     val warehouseMissingSchoolTitle = WarehouseArbText("warehouseMissingSchoolTitle", "没找到你的学校？")
@@ -331,6 +334,7 @@ object WarehouseStrings {
         inputRequiredTitle,
         invalidCourseDataFormat,
         invalidImportUrl,
+        invalidSectionTimeFormat,
         laterAction,
         noImportableCoursesFromScript,
         localDebugModeScriptStatus,
@@ -344,6 +348,7 @@ object WarehouseStrings {
         noSavedDebugRecords,
         noSavedDebugRecordsHint,
         noSavedQuickImportRecords,
+        noSectionTimesToSave,
         noUsernameOrPasswordRecognized,
         noValidWarehouseLoginUrl,
         notNowAction,
@@ -405,6 +410,7 @@ object WarehouseStrings {
         warehouseCustomDebugTitle,
         warehouseFeedbackMissingSchoolTitle,
         warehouseImportExecutionLogMenuLabel,
+        warehouseImportedTimeSchemeName,
         warehouseMatchedAdaptersLabel,
         warehouseMissingSchoolSubtitle,
         warehouseMissingSchoolTitle,
