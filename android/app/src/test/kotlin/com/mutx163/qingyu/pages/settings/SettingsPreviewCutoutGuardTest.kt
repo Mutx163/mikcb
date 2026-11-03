@@ -120,9 +120,11 @@ class SettingsPreviewCutoutGuardTest {
             1,
             Regex("QingyuPreviewCutout\\(").findAll(shell).count(),
         )
-        assertTrue(
-            "课程卡片与课表页面两页的 preview 槽都应接 SettingsTimetablePreviewSlot（挖洞真预览）",
-            Regex("SettingsTimetablePreviewSlot\\(wiring\\)").findAll(shell).count() >= 2,
+        assertEquals(
+            "课程卡片与课表页面两页的 preview 槽都应接 SettingsTimetablePreviewSlot（挖洞真预览），" +
+                "并传进宿主当前草稿（不跟草稿就要退出重进才变）",
+            2,
+            Regex("SettingsTimetablePreviewSlot\\(wiring, it\\)").findAll(shell).count(),
         )
     }
 

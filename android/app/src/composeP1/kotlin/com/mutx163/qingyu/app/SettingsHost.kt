@@ -61,6 +61,7 @@ import com.mutx163.qingyu.pages.settings.SettingsStringsExt1
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsStringsExt4
 import com.mutx163.qingyu.pages.settings.SettingsTimetablePageSettingsPage
+import com.mutx163.qingyu.pages.settings.settingsPreviewDraft
 import com.mutx163.qingyu.theme.QingyuTheme
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
@@ -149,8 +150,13 @@ fun SettingsHost(
     onIntent: ((SettingsDispatch) -> Unit)? = null,
     /** 传 null 时宿主自带一个 RGB 选色弹窗；壳想接官方选色器时再传实现。 */
     onRequestColor: ((rowId: String, currentHex: String, commit: (String) -> Unit) -> Unit)? = null,
-    /** 顶部预览槽（课程卡片 / 课表页面两页的 4:6 分栏用）；null = 该页无预览。 */
-    preview: (@Composable () -> Unit)? = null,
+    /**
+     * 顶部预览槽（课程卡片 / 课表页面两页的 4:6 分栏用）；null = 该页无预览。
+     *
+     * 入参是**本宿主当前草稿**（不是盘上存档）：开关 / 滑杆一改，宿主换草稿就当场重组预览，
+     * 不必退出重进。取用口径唯一在 [settingsPreviewDraft]。
+     */
+    preview: (@Composable (TimetableSettingsModel) -> Unit)? = null,
     /**
      * 「课表自动更新」的本地存储（通用页用）。
      *
@@ -235,6 +241,12 @@ fun SettingsHost(
 
     val state = SettingsPageBridge.toSettingsPageState(model, autoState)
     val spec = SettingsPageBridge.specFor(pageId, state) ?: return
+
+    // 预览槽入参收成一条：永远是**当前草稿**（滑杆拖动中也逐帧跟手），
+    // 与 [settingsPreviewDraft] 同一口径 —— 不再回读盘上存档。
+    val previewSlot: (@Composable () -> Unit)? = preview?.let { slot ->
+        { slot(settingsPreviewDraft(model)) }
+    }
 
     /**
      * 拖动类（滑杆）行：拖动中只改内存，**250ms 后才落一次盘**。
@@ -606,7 +618,7 @@ fun SettingsHost(
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsPageScreen(
             spec = spec,
-            preview = preview,
+            preview = previewSlot,
             onBack = onBack,
             // 行动作的落点全部在 [onRowAction]（自动更新那五行走独立存储，见其 KDoc）。
             onAction = ::onRowAction,
@@ -1230,8 +1242,8 @@ fun TimetablePageSettingsHost(
     store: TimetableSettingsModelStore,
     onBack: () -> Unit,
     onNavigate: (route: String) -> Unit = {},
-    /** 顶部预览槽（4:6 分栏）；null = 不画预览。 */
-    preview: (@Composable () -> Unit)? = null,
+    /** 顶部预览槽（4:6 分栏）；null = 不画预览。入参是**本宿主当前草稿**（与 `SettingsHost` 同一口径）。 */
+    preview: (@Composable (TimetableSettingsModel) -> Unit)? = null,
 ) {
     var model by remember(store) { mutableStateOf(store.load()) }
     var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
@@ -1255,6 +1267,12 @@ fun TimetablePageSettingsHost(
             screenshotShareSupported = ScreenCaptureWatcher.isSupported,
         ),
     )
+
+    // 预览槽入参收成一条：永远是**当前草稿**（与 `SettingsHost` 同一份接线），
+    // 不读第二次盘 —— 旧实现是壳在预览槽里自己 `store.load()`，所以改开关要重进才变。
+    val previewSlot: (@Composable () -> Unit)? = preview?.let { slot ->
+        { slot(settingsPreviewDraft(model)) }
+    }
 
     /**
      * 拖动类（滑杆）行：拖动中只改内存，**250ms 静默后落一次盘**。
@@ -1344,7 +1362,7 @@ fun TimetablePageSettingsHost(
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsPageScreen(
             spec = spec,
-            preview = preview,
+            preview = previewSlot,
             onBack = onBack,
             onAction = { action, target, rowId ->
                 when (val kind = SettingsPageBridge.toKind(action)) {

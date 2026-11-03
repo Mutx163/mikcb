@@ -530,7 +530,8 @@ fun ShellPageContent(
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            preview = { SettingsTimetablePreviewSlot(wiring) },
+            // 两页同一份回推接线：宿主草稿 → 预览槽（改开关 / 拖滑杆当场跟着变）。
+            preview = { SettingsTimetablePreviewSlot(wiring, it) },
         )
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         // S2 第二批：改真宿主——密度/浮钮不透明度读模型并合并落盘；背景/材质/字色待扩模型。
@@ -538,7 +539,8 @@ fun ShellPageContent(
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            preview = { SettingsTimetablePreviewSlot(wiring) },
+            // 与「课程卡片」页同一份回推接线。
+            preview = { SettingsTimetablePreviewSlot(wiring, it) },
         )
         // 2026-10-31 F23：这一屏原先 `SettingsLivePage.spec(SettingsPageState())` —— `data` 走默认
         // 构造，两行摘要（上课前显示 / 课中显示）恒为默认值。改真宿主：从 `LiveDisplayStore`
@@ -2235,14 +2237,14 @@ private fun SettingsScreen(
  * 初始露出上半部分，窗口内可上下滚动；点击 / 长按 / 内部滚动在组件里整体关掉，
  * 读屏也聚焦不到内部控件（实现细节见该组件的 KDoc）。
  *
- * 数据：课程随仓储快照订阅实时变；显示偏好取**进页时的存档**（`store.load()` 读一次，
- * `remember` 住）——页面里改的开关要重进才反映到预览。不追草稿：写盘走 250ms 防抖，
- * 预览跟着草稿闪变只会更乱；与旧缩略图「只随仓储变化」同一口径。
+ * 数据：课程随仓储快照订阅实时变；显示偏好取**宿主当前草稿**——两页宿主把 `model`
+ * 顺着 `preview(model)` 传进来（唯一取用口径 `settingsPreviewDraft`），改开关 / 拖滑杆
+ * 当场跟着变，不必退出重进。旧实现在这里自己 `wiring.settingsModel.load()` 读一次盘，
+ * 写盘又走 250ms 防抖，预览就永远停在进页那一刻（2026-11-03 用户实报）。
  */
 @Composable
-private fun SettingsTimetablePreviewSlot(wiring: ShellWiring) {
+private fun SettingsTimetablePreviewSlot(wiring: ShellWiring, settingsModel: TimetableSettingsModel) {
     val configuration = LocalConfiguration.current
-    val settingsModel = remember(wiring) { wiring.settingsModel.load() }
     QingyuPreviewCutout(
         contentWidth = configuration.screenWidthDp.dp,
         contentHeight = configuration.screenHeightDp.dp,
