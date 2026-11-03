@@ -36,10 +36,12 @@ import top.yukonga.miuix.kmp.theme.defaultTextStyles
  * 卡片就失去主次。所以用户字重以 **`设计字重 + (用户字重 - 400)`** 施加，
  * 保留差值；结果钳在 [QingyuTypography.WEIGHT_MIN]..[WEIGHT_MAX]。
  *
- * 「系统粗体」的增量（`Configuration.fontWeightAdjustment`，API 31+）走**减法**：
- * Android 平台本身已经会把该增量加到文字上（Compose 的 `TextStyle` 解析时），
- * 这里若再加一次就是双倍。Dart 侧同样是减法（`designWeight - systemFontWeightDelta`），
- * 照抄同一口径。
+ * 「系统粗体」的增量（`Configuration.fontWeightAdjustment`，API 31+）只在
+ * **用户未改字重**时抵扣：Android 平台本身已经会把该增量加到文字上（Compose 的
+ * `TextStyle` 解析时），这里若再加一次就是双倍。Dart 侧同样是两分支
+ * （`lib/ui/app_fonts.dart:105-116`）：用户设了非默认字重 → `设计 + (用户 - 400)`、
+ * 不抵扣系统增量；用户未改 → `设计 - 系统增量`。这里直接委托
+ * [QingyuTypography.resolveShiftedWeight]，不再自己拼一份公式。
  *
  * ## 默认值等于官方，所以「没配 = 不变」是可证的
  *
@@ -108,10 +110,16 @@ internal fun buildQingyuTextStyles(
     val familyOverride = fontFamily
 
     fun TextStyle.shaped(): TextStyle {
-        // 平移：设计字重 + (用户字重 - 400)，再减掉系统已经加过的那一份。
+        // 平移：用户改过字重 → 设计字重 + (用户字重 - 400)；用户未改 → 设计字重
+        // 减掉系统已经加过的那一份。两分支由 [QingyuTypography.resolveShiftedWeight] 拥有，
+        // 与 Dart `AppFontScope.resolveShiftedWeight`（`lib/ui/app_fonts.dart:105-116`）逐行同口径。
         // `fontWeight` 为 null 时按 Compose 的默认 w400 处理（与平台一致）。
         val design = (fontWeight?.weight ?: 400)
-        val shifted = design + (userFontWeight - QingyuTypography.WEIGHT_DEFAULT) - systemWeightDelta
+        val shifted = QingyuTypography.resolveShiftedWeight(
+            userWeight = userFontWeight,
+            designWeight = design,
+            systemDelta = systemWeightDelta,
+        )
         return copy(
             fontWeight = FontWeight(shifted.coerceIn(
                 QingyuTypography.WEIGHT_MIN,
