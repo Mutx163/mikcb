@@ -14,7 +14,8 @@ import android.os.IBinder
 class LanEditForegroundService : Service() {
     companion object {
         const val CHANNEL_ID = "lan_edit_channel"
-        const val EXTRA_OPEN_LAN_EDIT = "open_lan_edit"
+        // 键值以 NotificationLaunchTarget 为唯一事实源（MainActivity 仍按旧键读，值不变）。
+        const val EXTRA_OPEN_LAN_EDIT = NotificationLaunchTarget.EXTRA_OPEN_LAN_EDIT
         private const val NOTIFICATION_ID = 41001
         const val ACTION_STOP = "com.mutx163.qingyu.LAN_EDIT_STOP"
 

@@ -356,7 +356,8 @@ object ExamReminderScheduler {
             notificationId,
             NotificationLaunchTarget.intent(context).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                putExtra("open_route", "/exams")
+                // 落页契约在 NotificationLaunchTarget（R09）：点击后进考试列表页。
+                putExtra(NotificationLaunchTarget.EXTRA_OPEN_ROUTE, NotificationLaunchTarget.ROUTE_EXAMS)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
