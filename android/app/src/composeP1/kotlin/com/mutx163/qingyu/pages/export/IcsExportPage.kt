@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +23,7 @@ import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -33,15 +33,8 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -93,42 +86,22 @@ fun IcsExportPage(
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
     val options = viewState.options
-    // Dart ics_export_screen.dart 的 HyperosSubpage 标题是纯 Text ⇒ 可折叠大标题。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        topBar = {
-            TopAppBar(
-                title = ExportStrings.icsExportTitle.zh,
-                largeTitle = ExportStrings.icsExportTitle.zh,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = ExportStrings.cancelAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        // 不手写 statusBarsPadding()：miuix Scaffold 的 contentWindowInsets
-        // 默认含 systemBars 顶部，TopAppBar 自己也会加 systemBars.only(Top)，
-        // 再写一次是第三次叠加，标题会下移一个多状态栏高（2026-10-27）。
-        Column(modifier = Modifier.fillMaxSize()) {
-            QingyuPageList(
-                innerPadding = innerPadding,
-                scrollBehavior = scrollBehavior,
-                // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
-                horizontalPadding = QingyuPageCardMargin,
-                // 顶部 8dp 与底部 24dp 是页面自己的滚动留白；手势条那段由
-                // QingyuPageList 内部按 innerPadding 算，不要重复相加。
-                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃；大标题可折叠
+    // （Dart ics_export_screen.dart 的 HyperosSubpage 标题是纯 Text）。
+    QingyuPageScaffold(title = ExportStrings.icsExportTitle.zh, onBack = onBack) {
+        // 不手写 statusBarsPadding()：官方 TopAppBar 自带系统栏顶部内边距，
+        // 再写一次是叠加，标题会下移一个多状态栏高（2026-10-27）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            // 官方配方：横向留白由卡片自己带（12dp），滚动条才贴得到屏幕边缘。
+            horizontalPadding = QingyuPageCardMargin,
+            // 顶部 8dp 与底部 24dp 是页面自己的滚动留白；手势条那段由
+            // QingyuPageList 内部按 innerPadding 算，不要重复相加。
+            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
                 // ── 1. 课表选择 ──
                 item {
                     QingyuSectionTitle(ExportStrings.icsExportProfileLabel.zh)
@@ -287,7 +260,6 @@ fun IcsExportPage(
                         }
                     }
                 }
-            }
         }
     }
 
