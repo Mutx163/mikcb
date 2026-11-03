@@ -267,11 +267,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
 9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。**→ Lead 已裁决（2026-11-03）：采用方案 A 收敛形态（`WarehouseFormLabelStrings` 常量对象，文件名避开 `Strings` 排除标记），基线换行不加行；转 E 线随宏回放批次落地，A 线复核基线行数后跑门 4 + 门 2 推送。** **✅ 已落地（`0b33a151`）：基线换行不加行，仍 3 条指向 `WarehouseFormLabels.kt`；门4/门2 复测全绿（见「E 线最终批次收口」）。**
 
-## 八、当前状态（2026-11-03 18:55 更新）
+## 八、当前状态（2026-11-03 19:45 更新）
 
-- HEAD = 远端 = `5f53e06b`（2026-11-03 18:23 推 `60a8c902..5f53e06b`，ls-remote 复核一致：含 L2 `978841df`/`5f53e06b`、L4 `9da5b72d`）。
+- HEAD = 远端 = `f67c7e12`（19:20 推 `cb669614..ac515c15` 后，其余线又提交 `ac515c15`(L3 修 LanEditRepositoryHostTest)/`f67c7e12`(L4)；本地 `8f90fee9`(L3 云备份原子化) 待本轮推送，ls-remote 将复核）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
-- 门1 L1 编译 ✅ 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ 7m8s（10:16:53→10:24:03，E 线最终批次后复测）；门4 cjk ✅ 10:15（composeP1 120 条/14 文件、main 1257 条/81 文件，均 exit=0）+ copy_style ✅ 10:16:07→10:16:39（超宽冻结 175/新增 0、死键冻结 1/新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
+- **第二班快照（19:45）**：文案债（copy_style 超宽）**158 条**、死键 1、复述 0（19:43 实测新增均 0）；L3/L2/L4 已收线，**L1 续跑中**（宏回放已提交 `a9179914`/`411dbcad`，待其把 `compileItestDebugKotlin` 修绿提交后，由协调线在干净树出**整包**门1/门2 结论）。
+- 门1 L1 编译 ✅ 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ 7m8s（10:16:53→10:24:03，E 线最终批次后复测）；门4 cjk ✅ 10:15（composeP1 120 条/14 文件、main 1257 条/81 文件，均 exit=0）+ copy_style ✅ 10:16:07→10:16:39（超宽冻结 175/新增 0、死键冻结 1/新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。**⚠ 以上门1/门2 与门4 时间戳属第一班证据；第二班改动量大，收工前必须重跑（见 10.10）。**
 
 ### 当前五线状态（早上接手直接看）
 | 线 | 状态 | 最后提交 | 备注 |
@@ -327,6 +328,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 5. **D3 / D5**：按格式问题修（不扩语义）。
 6. **`TimetableSettings` 键集**：只做审计 + 修实质差异，**不逐键重写**（避免大面积无收益改动引入回归）。
 
+### 2026-11-03 · L2 第三批裁决
+
+1. **仓储原子换档入口批准**：由 L4 给 `replaceAllProfilesAndSettings` 增加可选参数 `currentWeek: Int? = null`（默认 null、向后兼容、**单次写入单次通知**），L2 消费该入口换档。跨线协作：L4 改仓储签名 → L2 调用。
+2. **假期覆盖开关暂缓进 backlog**：需 `core/TimetableSettings` 增字段 + 设置页开关，跨 `core/` 与 `pages/settings/` 两域，当前**没有对应线**承接。登记为「**已确认缺口 + 所需域**」，**不算豁免**，不得当作已完成。
+3. **`.let` 式条件挂载批准清理**：`TimetableProfilesPage:298/312/320` 三处 `.let` 条件组合清理，并要求**扩既有守卫测试锁死**（已由 `1d5cd858` 落实）。
+
 ---
 
 ## 十、五路并行（第二班）
@@ -377,6 +384,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **2026-11-03 18:11:07→18:11:10 · 门4 cjk** ✅ exit=0：composeP1 与 main 两个源集均通过。
   - 注：本次跑门时工作区存在 L1/L2/L4 未提交中间态（`git status` 有改动+新文件），门4 为工作区扫描，故结果代表「含中间态的当前树」；按域归因未见新增违规。
 - **2026-11-03 18:49:42 · 门4 copy_style** ✅ exit=0：超宽 **158**（存量冻结 158、新增 0）、死键 1（新增 0）、复述 0。本批 A 线压掉 17 条（详见 10.9）。**注：仍含他线未提交中间态，收工前须在干净树重跑门2+门4。**
+- **2026-11-03 19:43:17→19:45:23 · 门4** ✅ exit=0：copy_style 超宽 **158**（新增 0）、死键 1（新增 0）、复述 0；cjk composeP1 与 main 两源集均 exit=0（23 残余条目含 `WidgetDataModels.kt:1`）。
 
 ### 10.8 线收口记录
 
@@ -415,6 +423,16 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   2. 周网格「系列例外」去重丢卡 → 键应为「系列@显示日」+ `#occurrenceId`，依据 `schedule_item_expander.dart:43-63`；
   3. 周次摘要单双周后缀被吞 → 应为两个独立 `if`，依据 `add_course_screen.dart:1599-1600`。
 - **待办**：`978841df` 的 `CourseActionDispatcherTest` 依赖 warehouse 编译恢复，**等 L1 收口后由协调线统一跑 app 侧单测，不得跳过**（见 10.9）。
+
+#### L2 第三批 ✅（2026-11-03 19:25 协调线回填）
+
+- **提交**：`1d5cd858`（两处条件挂载清掉 + 2 个守卫测试，4 文件 +135/−35）、`1e80ecc7`（换档同步目标档 settings，2 文件 +71/−7）。
+- **落点**：
+  - `TimetableProfilesPage:287`、`AddCoursePage:519` 改**常驻组合 + show 驱动**；后者用 `rememberLastNonNull` 保住退场时的草稿；
+  - 新增 `AddCoursePageMountGuardTest` 锁死条件挂载回潮；`TimetableProfilesDialogGuardTest` +13 行扩测。
+  - 自验：L0 timetable **257** / course **224**；`:app:compileItestDebugKotlin` 通过；`CourseActionDispatcherTest` **23 tests / 0 failures**（L1 阻塞已解除，补跑完成）。
+- **修掉的根因级 bug**：切/建/复制/删档后**只换激活 id、不换全局 settings**（Dart `timetable_provider.dart:1139-1152` 的 `_applyProfileState`）。后果：课卡落错周网格、新档默认设置不生效、复制档设置不对、删档回退设置不生效。修法：走**单次写入单次通知**（仓储原子换档入口）。
+- **自我纠错（重要，防误导接手人）**：上一批报的「假期标记 0 调用方」**是误判**——当时只看了 main 源树。实际 `composeP1/app/TimetableHost.kt:117-144` **已接线 `WeekHolidayMarking`**。据此更正，此前结论作废。
 
 #### L4（domain/services 对拍）✅ 已收线（2026-11-03 18:55 协调线回填）
 
