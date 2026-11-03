@@ -126,16 +126,16 @@ object TrendChartModel {
      *
      * Dart 用 fl_chart 的 `interval: _labelInterval(maxWeek)` 布点；fl_chart 的刻度
      * 是**从轴最小值起按 interval 递增**（`minX, minX+I, minX+2I, …`），所以这里
-     * 按 `(week - minWeek) % interval == 0` 判断，另外**首周与末周必标**
-     * （末周常常不是间隔的整数倍，不补标就会出现"最后两周都没有刻度"）。
+     * 按 `(week - minWeek) % interval == 0` 判断。末周若不是间隔整数倍，Dart 也不标；
+     * 不再额外补标（L4 逐页对照时会多出一个 Dart 没有的刻度）。
      *
-     * 例：`minWeek=1, maxWeek=20, interval=4` → 1、5、9、13、17、20。
+     * 例：`minWeek=1, maxWeek=20, interval=4` → 1、5、9、13、17。
      */
     fun weekLabels(minWeek: Int, maxWeek: Int, interval: Int): List<Int?> {
         if (maxWeek < minWeek) return emptyList()
         val step = interval.coerceAtLeast(1)
         return (minWeek..maxWeek).map { week ->
-            val labelled = week == minWeek || week == maxWeek || (week - minWeek) % step == 0
+            val labelled = week == minWeek || (week - minWeek) % step == 0
             if (labelled) week else null
         }
     }

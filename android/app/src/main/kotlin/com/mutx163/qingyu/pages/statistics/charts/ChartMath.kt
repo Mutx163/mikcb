@@ -523,9 +523,11 @@ object ChartMath {
     /** 保留一位小数（Dart `toStringAsFixed(1)`）。 */
     fun oneDecimal(value: Double): String {
         val rounded = (value * 10.0).roundToInt()
-        val whole = rounded / 10
-        val frac = abs(rounded % 10)
-        return "$whole.$frac"
+        // 符号取原值而不是取整后的数：`-0.04` 整到 0 时 Dart 仍输出 "-0.0"，
+        // 而整数除法会丢掉负号，让 `-0.3` 显示成 "0.3"。
+        val sign = if (value < 0.0) "-" else ""
+        val magnitude = abs(rounded)
+        return "$sign${magnitude / 10}.${magnitude % 10}"
     }
 
     /**

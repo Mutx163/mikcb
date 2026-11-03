@@ -78,13 +78,13 @@ class TrendChartModelTest {
         val spec = TrendChartModel.build((1..10).map { trendPoint(it, 3) }, currentWeek = 10)!!
         assertEquals(4.0, spec.maxY, 1e-9)
         assertEquals(2, spec.leftInterval)
-        // 10 周 ≤ 12 → 周刻度间隔 2
-        assertEquals(listOf(1, null, 3, null, 5, null, 7, null, 9, 10), spec.weekLabels)
+        // 10 周 ≤ 12 → 周刻度间隔 2；末周 10 不是间隔整数倍，Dart 也不标
+        assertEquals(listOf(1, null, 3, null, 5, null, 7, null, 9, null), spec.weekLabels)
     }
 
     @Test
-    fun `周标签只在首周 末周 与间隔整数倍处出现`() {
-        // 20 周 → 间隔 4；fl_chart 从轴最小值起递增：1、5、9、13、17，末周 20 补标
+    fun `周标签只在首周与间隔整数倍处出现`() {
+        // 20 周 → 间隔 4；fl_chart 从轴最小值起递增：1、5、9、13、17，末周 20 不补标
         val labels = TrendChartModel.weekLabels(1, 20, 4)
         assertEquals(20, labels.size)
         assertEquals(1, labels[0])
@@ -95,17 +95,17 @@ class TrendChartModelTest {
         assertEquals(9, labels[8])
         assertEquals(13, labels[12])
         assertEquals(17, labels[16])
-        assertEquals(20, labels[19])
+        assertNull(labels[19])
 
-        // 末周不是间隔整数倍时也要标（第 18 周，间隔 4）
+        // 末周不是间隔整数倍时同样不标（第 18 周，间隔 4）
         val uneven = TrendChartModel.weekLabels(1, 18, 4)
-        assertEquals(18, uneven[17])
-        // 首周不是间隔整数倍时也要标（从第 3 周起，间隔 4 → 3、7、11，末周 14）
+        assertNull(uneven[17])
+        // 首周不是间隔整数倍时仍要标（从第 3 周起，间隔 4 → 3、7、11，末周 14 不标）
         val offset = TrendChartModel.weekLabels(3, 14, 4)
         assertEquals(3, offset[0])
         assertEquals(7, offset[4])
         assertEquals(11, offset[8])
-        assertEquals(14, offset[11])
+        assertNull(offset[11])
         // 中间那些周不标
         assertNull(offset[1])
         assertNull(offset[10])

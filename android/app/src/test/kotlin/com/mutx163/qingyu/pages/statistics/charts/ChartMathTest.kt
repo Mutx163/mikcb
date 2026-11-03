@@ -468,6 +468,10 @@ class ChartMathTest {
         assertEquals("2.0", ChartMath.oneDecimal(2.04))
         // 4.96 → 49.6 → 50 → "5.0"（不是 "4.10"）
         assertEquals("5.0", ChartMath.oneDecimal(4.96))
+        // Dart `toStringAsFixed(1)` 保留负号；整数除法曾让 -0.3 显示成 "0.3"
+        assertEquals("-0.3", ChartMath.oneDecimal(-0.3))
+        assertEquals("-2.5", ChartMath.oneDecimal(-2.54))
+        assertEquals("-0.0", ChartMath.oneDecimal(-0.04))
     }
 
     @Test
