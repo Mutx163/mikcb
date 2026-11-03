@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import com.mutx163.qingyu.KeepAliveAccessibilityStatus
 import com.mutx163.qingyu.app.AddTaskFormReducer
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.TimetableHostDisplayPrefs
+import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.AppearanceEditorHost
 import com.mutx163.qingyu.app.DiagnosticsLogHost
 import com.mutx163.qingyu.app.rememberMonthHolidayState
@@ -77,6 +79,7 @@ import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
+import com.mutx163.qingyu.components.QingyuPreviewCutout
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.core.Course
@@ -170,7 +173,6 @@ import com.mutx163.qingyu.pages.settings.SettingsThemeManagePage
 import com.mutx163.qingyu.pages.settings.GlassDockIconEditorHost
 import com.mutx163.qingyu.pages.settings.WallpaperPositionPickerHost
 import com.mutx163.qingyu.pages.settings.WallpaperSheetPages
-import com.mutx163.qingyu.pages.settings.SettingsWeekPreview
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.shell.ShellPageCatalog
 import com.mutx163.qingyu.pages.showcase.MiuixShowcasePage
@@ -517,7 +519,7 @@ fun ShellPageContent(
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            preview = { SettingsWeekPreviewSlot(wiring) },
+            preview = { SettingsTimetablePreviewSlot(wiring) },
         )
         // 2026-10-28 补口：这一屏原先只有入口行没有落点（台账虚标三处之一）。
         // S2 第二批：改真宿主——密度/浮钮不透明度读模型并合并落盘；背景/材质/字色待扩模型。
@@ -525,7 +527,7 @@ fun ShellPageContent(
             store = wiring.settingsModel,
             onBack = onBack,
             onNavigate = { route -> shellPageIdForRoute(route)?.let(onOpenPage) },
-            preview = { SettingsWeekPreviewSlot(wiring) },
+            preview = { SettingsTimetablePreviewSlot(wiring) },
         )
         // 2026-10-31 F23：这一屏原先 `SettingsLivePage.spec(SettingsPageState())` —— `data` 走默认
         // 构造，两行摘要（上课前显示 / 课中显示）恒为默认值。改真宿主：从 `LiveDisplayStore`
@@ -2206,22 +2208,38 @@ private fun SettingsScreen(
 }
 
 /**
- * 课程卡片 / 课表页面两页顶部那块「本周课表缩略预览」：直接用课表仓储的真数据画，
- * 不另造示例。两页共用同一份（数据同源：同一仓储快照）。
+ * 课程卡片 / 课表页面两页顶部那块预览：**真组件挖洞**（2026-11-03 用户口径）。
  *
- * 预览只随仓储快照变化；页面里改开关（显示字段等）不会实时改这张缩略图——它展示的是
- * 「本周排了什么课」，不是「开关此刻长什么样」，与 Flutter 侧 `TimetableWeekPreview`
- * 的定位一致。
+ * 旧的实现是自绘缩略图（星期栏 + Canvas 网格 + 色块）——「重新做样式」被用户否掉：
+ * 预览应该是挖洞，把真实首页课表露在窗口里。现在与外观编辑页同一套：
+ * [TimetableHost] 按整屏 1:1 排版、绘制层缩进 [QingyuPreviewCutout] 的圆角窗口，
+ * 初始露出上半部分，窗口内可上下滚动；点击 / 长按 / 内部滚动在组件里整体关掉，
+ * 读屏也聚焦不到内部控件（实现细节见该组件的 KDoc）。
+ *
+ * 数据：课程随仓储快照订阅实时变；显示偏好取**进页时的存档**（`store.load()` 读一次，
+ * `remember` 住）——页面里改的开关要重进才反映到预览。不追草稿：写盘走 250ms 防抖，
+ * 预览跟着草稿闪变只会更乱；与旧缩略图「只随仓储变化」同一口径。
  */
 @Composable
-private fun SettingsWeekPreviewSlot(wiring: ShellWiring) {
-    val snapshot = wiring.timetable.snapshot
-    SettingsWeekPreview(
-        courses = snapshot.courses,
-        settings = snapshot.settings,
-        currentWeek = snapshot.currentWeek,
-        timeScheme = snapshot.timeSchemes.firstOrNull { it.id == snapshot.activeTimeSchemeId },
-    )
+private fun SettingsTimetablePreviewSlot(wiring: ShellWiring) {
+    val configuration = LocalConfiguration.current
+    val settingsModel = remember(wiring) { wiring.settingsModel.load() }
+    QingyuPreviewCutout(
+        contentWidth = configuration.screenWidthDp.dp,
+        contentHeight = configuration.screenHeightDp.dp,
+    ) {
+        TimetableHost(
+            repository = wiring.timetable,
+            // 点击在挖洞件的手势层就被关掉，这些回调永远不会被调用；给空实现让
+            // 「预览不可操作」这件事只有一处真源（外观编辑页同一口径）。
+            onOpenAddCourse = { _, _ -> },
+            onOpenCourse = {},
+            settingsModel = settingsModel,
+            // 预览不接截屏监听：真首页那一份已经接上了，再来一份等于截一次屏
+            // 弹两次提示（Dart `_isPreview` 守卫，timetable_screen.dart:913-917）。
+            screenshotSharePromptEnabled = false,
+        )
+    }
 }
 
 /**
