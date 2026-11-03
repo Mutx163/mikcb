@@ -1423,6 +1423,105 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **L0**：本批为只读审计，按 Lead 指示未跑。
 
+### §10.35 凭据迁移裁决落地 + 升级提示方案（待同步线实现）（2026-11-04）
+
+**Lead 裁决**
+1. Phase 5 **不做**一次性自动迁移：维持 `v2` 键作格式区分标记；复刻插件私有格式的成本/风险
+   高于重输一次密码。
+2. 三处过期注释**已改**（本批唯一生产改动，全部是 KDoc，无逻辑变化）：
+   - `platform/WebdavConfigStoreImpl.kt:133-141`
+   - `platform/CoupleConfigStoreImpl.kt:91-96`
+   - `platform/KeystoreSecretCipher.kt:27-32`
+   统一新口径：**「`applicationId` 已于 2026-10-29 合并 flavor 统一为 `com.mutx163.qingyu`
+   （`android/app/build.gradle:7`、`:146` 记录 composeP1 / composeUi 删除、页面并入 `main`）；
+   旧 `FlutterSecureStorage.xml` 仍在同一 UID 下、技术可读；不迁移是成本取舍，不是跨包不可能」**。
+   原「壳是独立包名（`.ui`）」是过时前提，不要再据此下结论。
+3. 一次性升级提示**要做**；本批只给方案，不改 `pages/sync/**`。
+
+**更正 §10.31 一处事实**：情侣 WebDAV 的 Kotlin 实现**已经接线**——`ShellPageIndex.kt:1812`
+`"f.couple" -> CoupleTimetableSettingsHost(...)`，宿主在 `CoupleTimetableSettingsHost.kt:76-82`
+构造 `CoupleConfigStoreImpl`（cipher 别名 `qingyu_couple_webdav`，`:80`）。§10.31 中「只有声明、
+尚未接线」「按同口径推断」两句作废；结论 ② 与用户影响不变，仅「真机未实测」仍成立。
+
+#### 升级提示方案（四要素）
+
+1. **位置**：两个「密码消费者」页面的入口，**不放进启动路径**。
+   - 云同步：`composeP1/.../pages/sync/CloudSyncControllerPage.kt:75`（`f.cloudSync` 由
+     `ShellPageIndex.kt:1720` 调用）；
+   - 情侣：`composeP1/.../pages/sync/CoupleTimetableSettingsHost.kt:69`（`f.couple`，
+     `ShellPageIndex.kt:1812`）。
+   理由：不碰 `ShellPageIndex` / `ShellWiring` / 首帧时序；只对真正用云同步的人提示；
+   不与初启引导（`i.startup`）抢弹窗。
+2. **触发条件**（三条同时成立才提示）：
+   - `hasStoredPassword() == false`（新版密文键不存在）；
+   - 旧插件 prefs 文件 `FlutterSecureStorage` 里存在以 `webdav_sync_password` 结尾的键
+     （情侣页用 `couple_webdav_password`）；
+   - 一次性标记未写过。
+   可选第 4 条（防脏数据误弹）：`config.username.trim().isNotEmpty()`。
+3. **幂等键**：`webdav_password_legacy_reprompt_v1` /
+   `couple_webdav_password_legacy_reprompt_v1`（bool，默认 false），**存 `KeyValueStore`**
+   （落盘在 `FlutterSharedPreferences`，物理键带 `flutter.` 前缀，`KeyValueStore.kt:97-100`）。
+   不写进配置 JSON、不写插件 prefs 文件：配置 JSON 走「读-合并-写」且损坏会被留档移除
+   （`WebdavConfigStoreImpl.kt:64-73`），标记若跟着配置一起被重置会重复弹；`KeyValueStore`
+   的 `commit()` 同步落盘（`PrefsKeyValueStore.kt:25-28`）。
+   **弹窗一显示就写 true**（不等用户操作）保证一次性；写入抛 `IOException` 时仍显示
+   （宁可下次重复，不可本次漏掉）。
+4. **文案键（只新增 1 个 ARB 键）**：
+   - 共用正文：**新增** `webdavPasswordReentryBody`
+     - zh：`本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。`
+     - en：`This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept.`
+     - ja / ko / zh_TW / zh_HK 由协调线统一补译并重新生成 `lib/l10n/app_localizations*.dart`。
+   - 标题复用：云同步 `SyncStrings.cloudSyncTitle`（`SyncStrings.kt:33`）；情侣
+     `CoupleStrings.coupleWebdavLoginSheetTitle`（`CoupleStrings.kt:77`）。
+   - 主按钮复用：`SyncStrings.cloudSyncConnectAccount`（`SyncStrings.kt:39`）/
+     `CoupleStrings.coupleWebdavConnect`（`CoupleStrings.kt:52`）。
+   - 取消复用：`cancelAction`（`SyncStrings.kt:159`、`CoupleStrings.kt:74`）。
+   - Kotlin 侧只加一处 `ArbText`（放 `SyncStrings` 并补进它的 `all()` 列表，保持
+     「Kotlin 键 ↔ ARB 键」对拍为绿）；情侣页直接引用 `SyncStrings.webdavPasswordReentryBody`，
+     不重复声明。
+
+#### 可直接照抄的补丁点（交同步线，含行号）
+
+1. **新增** `platform/LegacyCredentialProbe.kt`（只读探测，不解析文件内容）：
+   - `interface LegacyCredentialProbe { fun hasLegacyPassword(keySuffix: String): Boolean }`
+   - `class AndroidLegacyCredentialProbe(context: Context)` 读
+     `context.getSharedPreferences("FlutterSecureStorage", Context.MODE_PRIVATE).all.keys`，
+     用 `endsWith(keySuffix)` 判断；整段 `try { … } catch (_: Throwable) { false }`。
+   - 不做前缀逐字拼接：插件键前缀是私有格式（`KeystoreSecretCipher.kt:21-22`），后缀匹配不会
+     随插件版本改前缀而失效。
+2. `pages/sync/CloudSyncModel.kt`：`CloudSyncLogic.isAccountConnected` 在 `:174`，紧随其后加
+   `fun shouldPromptLegacyPasswordReentry(hasStoredPassword: Boolean, hasLegacyDartCredential: Boolean, alreadyPrompted: Boolean): Boolean = !hasStoredPassword && hasLegacyDartCredential && !alreadyPrompted`
+3. `pages/sync/CloudSyncController.kt`：`cloudSyncViewState()` 结束（`:226`）后开只读口
+   `fun hasStoredPassword(): Boolean = store.hasStoredPassword()`
+   （现有 `:218` 只在 viewState 内部用，页面拿不到）。
+4. `composeP1/.../CloudSyncControllerPage.kt`：
+   - `LocalContext.current`（`:85`）之后、`LaunchedEffect`（`:92`）之前，用 `remember(controller)`
+     算**一次**探测结果（`runCatching { … }.getOrDefault(false)`），不随重组重算；
+   - 在 `CloudSyncPage(...)` 调用（`:133-155`）之后、函数结束（`:181`）之前挂
+     `LegacyPasswordReentryDialog(...)`；样式抄同文件 `SyncConflictChoiceDialog`（`:233`）的
+     `OverlayDialog`，并沿用 `:157-159` 的注释口径（常驻组合、只翻 `show`，别用 `let` 摘树）；
+   - 显示时写幂等键；主按钮 `onConnect()`（打开既有连接弹层，`ShellPageIndex.kt:1736-1737`
+     的 `showConnect`），取消只关弹窗。
+5. 情侣：`CoupleTimetableSettingsHost.kt` 在 `val prefs`（`:75`）、`configStore`（`:76-82`）之后
+   同样算一次；复用该宿主已有的连接入口；标记键与键后缀用第 2/3 条的情侣版本。
+
+#### 可测点（JVM，进 L0）
+
+- `shouldPromptLegacyPasswordReentry` 四组真值表：缺密码且有旧键 → true；任一条件不满足 → false。
+- 幂等：`alreadyPrompted = true` 时判据恒 false。
+- 页面接入层：注入假 `LegacyCredentialProbe`，验「只探测一次」「标记写入后不再提示」
+  （`AndroidLegacyCredentialProbe` 依赖 `android.content`，**只能真机验**，不进 L0）。
+
+#### 未验证项（本方案）
+
+- `FlutterSecureStorage` 文件名与键前缀是插件私有常量，仓库无插件 Java 源码；探测按「文件名 +
+  键后缀」实现。若某版本插件改用 EncryptedSharedPreferences，探测会漏判——后果是不弹提示、
+  退回「用户自己发现未连接」的现状，**不会误弹**。真机验收须覆盖这条。
+- 标记键与 Dart 共享 `FlutterSharedPreferences` 文件；物理键 `flutter.webdav_password_legacy_reprompt_v1`
+  与既有业务键无冲突，Dart 侧不读它，不影响回退。
+
+**L0**：见下方实测行（本批仅 KDoc 改动 + 新增日志）。
+
 ---
 
 ### 10.32 ✅ 首页/总览域对拍：跨零点「此刻」冻结 + 考试过期回落口径（2026-11-04）
@@ -1527,6 +1626,52 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 **L0**：统一入口 `scripts/test-kotlin-module.ps1 -Module pages/settings -ExtraSources android/app/src/test/kotlin/com/mutx163/qingyu/app/TimetableSettingsModelTest.kt` → **OK (1005 tests)**（基线 1004 + 本批 1），exit 0；未裸跑 gradlew、未跑整包，只声明编译通过 / JVM 单测通过。
 
 **改动文件**：`app/TimetableSettingsModel.kt`、`app/TimetableSettingsModelTest.kt`、本日志。`pages/settings/SettingsPageState.kt` 无需改（`fromValue` 回落仍 blue，坏盘由 `load()` 单点决定）。
+
+### 10.34 ✅ 条件挂载弹层收口：course 2 处 + exam 2 处（2026-11-04）
+
+**范围**：`composeP1/.../pages/course/AddCoursePage.kt`、`.../pages/exam/ExamListPage.kt`、`.../pages/exam/AddExamPage.kt` 及其测试；未碰 `theme/`、`lib/ui/`、路由表、两个壳 Activity、`pages/ShellWiring.kt`、`pages/ShellPageIndex.kt`、`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`pages/import|sync/**`、`components/**`、`widgets|widgetdata/**`。
+
+**1. 修复前实际行为（实查，不是照抄报告）**
+- `OverlayDialog` = `top.yukonga.miuix.kmp.overlay.OverlayDialog`（miuix 0.9.4 `miuix-ui-android`）。反编译 `OverlayDialogKt` 可见它把 `show` 交给 `DialogContentLayout` → `MiuixPopupUtils$Companion.DialogLayout`，并用 `rememberDefaultDialogExitTransition(largeScreen)` 组装 `fadeOut + scaleOut + slideOutVertical`（`tween` + `DecelerateEasing`）退场动画。
+- 退场动画由弹层内部的 visible 状态机在 `show` 变 false 时触发；而条件挂载（`if (state) { OverlayDialog(show = true) }`）在状态置 false 的**同一帧**把整棵子树摘出组合，状态机来不及观察 `show = false` ⇒ 点 X / 取消时弹层瞬间消失，退场动画一次都播不出来。**三处都成立，不是「已不成立」。**
+- 额外发现：上一轮清单漏报同一文件第 4 处——`AddCoursePage.kt:576` 的 `if (confirmDelete && isEditing) { OverlayDialog(show = true) }`，同缺陷，随本批同文件一并收口（范围仍是这三个文件）。
+
+**2. 修法（仓库既有配方，未自创）**
+- 三处（含第 4 处）统一：去掉 `if (…)` 外壳，弹层常驻组合，`show` 显式驱动。
+  - `AddCoursePage.kt:546`（放弃修改）：`show = confirmDiscard`；标题/正文均常量，退场期无数据会被清空，无需 `remember` 保底。
+  - `AddCoursePage.kt:583`（删除课程，原 `:576`）：`show = confirmDelete && isEditing`；课名来自 `courseGroup` / `initialCourse`，不是瞬时置空状态。
+  - `ExamListPage.kt:229`（原 `:224`）：`show = pendingDelete != null`；关闭时 `pendingDelete` 立即置空，正文用新增的 `rememberLastNonNull(pendingDelete)`（`ExamListPage.kt:267`）钉住最后一份考试，退场期名字不闪空；删除动作改为点击时读实时值（`val target = pendingDelete`）后置空再回调，退场期不会误删。
+  - `AddExamPage.kt:433`（原 `:428`）：`show = confirmDelete`；正文取 `viewState.name`（非瞬时置空）。
+- **`LaunchedEffect(show)` 三处均不引入**：这三/四个弹层都是纯确认弹层，函数体内无 `TextField` / `FocusRequester` / 可重置输入，加一个空转 effect 属自创噪音；「只在打开时重置」的既有写法见 `TimetableProfilesPage.kt:540`（那里确有输入框）。
+
+**3. 守卫 + 咬合探针**
+- `test/.../pages/course/AddCoursePageMountGuardTest.kt` 新增 2 例（放弃修改 / 删除课程），断言：无行首 `if (confirmDiscard) {`、无行首 `if (confirmDelete && isEditing) {`、无 `show = true`、`show` 由实时状态驱动。行首锚定 + `Regex.escape`，注释里写同名写法不会假红/假绿。
+- 新建 `test/.../pages/exam/ExamDialogMountGuardTest.kt` 2 例（列表页 / 添加页），断言：无行首 `if (target != null) {`、无行首 `if (confirmDelete) {`、`show = pendingDelete != null` / `show = confirmDelete`、`rememberLastNonNull(pendingDelete)` 与 `deleteTarget?.name.orEmpty()`。
+- 探针 A（course，两处同时改回条件挂载 + `show = true`）：`-Module course` **234 例中 2 红**，断言文案分别精确命中两例；还原后绿。
+- 探针 B（exam，两处同时改回条件挂载 + `show = true`）：`-Module exam` **116 例中 2 红**，两例各自精确命中；还原后绿。
+
+**4. L0（统一入口实跑，pwsh 7）**
+- `-Module course` = **OK (234 tests)**（基线 232 + 本批 2）
+- `-Module exam` = **OK (116 tests)**（基线 114 + 本批 2）
+- 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。未推送，等协调线统一推。
+
+### 10.36 ✅ ICS 导出前缀补齐：`Location:` / `Description:` / `Note:` / `Session note:`（2026-11-04，transfer）
+
+> **结论前置：上一批报的往返有损来自「导出缺前缀」，不是导入 bug。** 本批只改导出，没有改导入去猜。
+
+- 契约：Dart `lib/services/ics_export_service.dart:316-336`。逐行对齐后 Kotlin `transfer/IcsModel.kt#buildCourseTimedEvent` 的 `descriptionParts` 顺序为
+  `Teacher:` → `Location:` → `Sections:` → `Description:` → `Note:` → `Session note:` → `Homework: yes`。
+- 空值口径先核 Dart：Dart 对 teacher/location 用 `trim()` 判空、description/note/sessionNote 用 `trim()` 判空，**空则不写该行**（不是写 `Teacher: ` 空值行）；写入值方面 teacher/location 用原值、description/note/sessionNote 用 trim 后的值。Kotlin 逐条照做（`dartTrim` 判空 + 原值/trim 值分别写入）。
+- `Location:` 与 VEVENT 的 `LOCATION` 属性同值，但必须显式写：导入侧（`pages/import/IcsImportModel.kt:261-268`）只有看到显式 `Location:` 才把 LOCATION 判定为纯地点，不再按 WakeUp「地点 + 教师」合并字段拆末段。
+- 测试（`android/app/src/test/kotlin/com/mutx163/qingyu/transfer/`）：
+  1. `IcsExportLogicTest.timedEvent_description_parts_and_session_note`：教师/地点/简介/备注/单周备注/作业全带的课，逐行断言 7 行前缀；`timedEvent_blank_fields_omit_prefixed_lines`：空白字段整行不写，只剩 `Sections: 1-2`。
+  2. `CourseExportRoundTripTest.roundTrip_empty_teacher_does_not_steal_location_tail`：空教师 + `外语楼 B203`，导出含 `Location:` 行，再导入教师 `""`、地点原样（旧实现在此会把 `B203` 当教师）。
+  3. `CourseExportRoundTripTest.roundTrip_preserves_description_and_note`：往返后简介 `上课带电脑`、备注 `第3周交作业` 与源逐字段相同。
+- 咬合探针：把 `Description:` 前缀去掉（退回裸行）→ 上述 ①的逐行断言与 ③往返同时红（2 failures）→ 还原 → 绿。
+- 导出按 RFC 5545 在 75 字节折行，断言 DESCRIPTION 内容前用 `replace("\r\n ", "")` 还原，导入用的仍是真实折行原文。
+- **L0 模块口径说明**：脚本的 `-Module transfer` 映射到 `pages/transfer`（无同名测试目录），只跑 `pages/transfer` 的 297 例，**收不到 `com/mutx163/qingyu/transfer` 下的导出测试**。本批实际用
+  `-Module transfer -ExtraSources <IcsImportModel.kt> <IcsHeaderKeywords.kt> <IcsExportLogicTest.kt> <CourseExportRoundTripTest.kt>`
+  → **OK (312 tests)**（297 + 15）。另回归跑 `-Module pages/import` → **OK (522 tests)**，确认前批往返用例在补 `Location:` 后仍成立。未裸跑 gradlew、未跑整包、未推送。
 
 
 
