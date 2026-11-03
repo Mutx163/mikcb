@@ -838,6 +838,40 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **检查点之后又落的 7 条（`f40f998c..f62fda9a`，未含在本结论内）**：`60b4bc91`、`3ef6f6f9`、`585113c4`、`59e28be8`、`30e2aca6`、`26698a59`、`f62fda9a`。
 
+**第三轮重跑（检查点 `2b4feefd` → `0d38f686`，2026-11-04 06:20–07:30）**
+
+| HEAD | 门 | 结果 | 起止 | 耗时 | 备注 |
+|---|---|---|---|---|---|
+| `2b4feefd` | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **06:24:48→06:37:16** | **12m21s（Gradle）/ 12m28s 墙钟** | 只读 worktree `mikcb-gate` 冷跑；**本轮点名两点已覆盖**：`8704a3c9`（`UmengApplication.kt` 两行接线，不在 L0 类路径，靠整包编译确认）、`30e2aca6`（新增 `app/AppGlobalSettingsStore.kt` + `TimetableStore` 出入口改造）；仅存量 warning |
+| `2b4feefd` | 门 2 `:app:testDevDebugUnitTest` | ⛔ **未跑 · 作废** | — | — | 门 1 跑完时 HEAD 已前移到 `0d38f686`（新增 5 条：`07c5b418`/`b3fe554c`/`1b6d02c8`/`132bfc2a`/`0d38f686`）；按 10.12 第 4 条「HEAD 变了旧结论作废」，把 worktree 切到 `0d38f686` 重跑，不在旧 HEAD 上单跑门 2 |
+| **`0d38f686`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **06:46:42→07:05:50** | **18m48s（Gradle）/ 19m08s 墙钟** | 同一 worktree 切 HEAD 后重跑，`compileDevDebugKotlin` 3 executed / 10 up-to-date，无 error，仅存量 warning |
+| **`0d38f686`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0，BUILD SUCCESSFUL）** | **07:09:45→07:29:40** | **19m22s（Gradle）/ 19m55s 墙钟** | **6626 tests / 532 suites / 0 failed / 0 error / 0 skipped**（按 worktree 根 `build/app/test-results/testDevDebugUnitTest/TEST-*.xml` 汇总）。`f40f998c` 那 1 例（`TimetableSettingsModelTest.corruptSettingsJsonIsArchivedAndDefaultsAreReturned:813`）**已由 `d00b284e` 修好并归零**；`WebdavHttpTransportTest.getBytesGivesUpAfterMaxRedirects` **未复现**，不计 flaky |
+
+> **结论代言 `0d38f686`（门1 ✅ + 门2 ✅，6626/0）**；主工作树当时 30 个未提交文件（他线在途），未混入。跑完 HEAD 又前移到 `13ba097a`（新增 6 条：`8821ced7`/`010c2e21`/`16717a2e`/`b3ffa81f`/`77974526`/`13ba097a`），**这 6 条不在本结论内，须再重跑**。
+
+**自上次门禁以来的变更清单（`f40f998c..0d38f686`，共 19 条）**
+1. `60b4bc91` 对齐桌面快照 `nextExamDaysUntil` 到生成时刻并补 Locale 回归测试
+2. `3ef6f6f9` test(sync): eliminate flaky webdav transport and concurrency tests
+3. `585113c4` fix(components): 字重平移两分支对齐 Dart `AppFontScope`
+4. `59e28be8` docs: 交接日志补 10.28 通用组件层收线
+5. `30e2aca6` fix(app): 补齐整机级全局设置 `app_global_settings_v1`，切档不再换掉全局偏好
+6. `26698a59` fix(timetable): 复制/新建档案补铺完整内嵌 settings，切档刷新 `lastUsedAt`
+7. `f62fda9a` 日志: 补 DST 取日裁决（有意偏离 Dart）与诊断域对拍审计结论
+8. `41bf8c31` docs: 10.28 L0 复跑改为 timetable 291 全绿
+9. `a69e09ed` docs(交接): 门禁 `f40f998c` 门1绿/门2红 1 例 + 变更清单
+10. `2d10e39b` fix(import): 表格导入收口——UTF-8 BOM 与 Dart `trim` 口径、补往返幂等与编码/换行边界用例
+11. `8704a3c9` feat(log): 原生崩溃先脱敏落本地 `app_runtime.log` 再交回 U-APM（`main.dart:321/350` 等价层）
+12. `6fa8d0ce` 日志: 凭据迁移审计（结论②必须重登；更正过期的独立包名注释前提）
+13. `d00b284e` fix(settings): `foruiTheme` 坏盘回落 `miui`、单字段缺回落 `blue`，两条路径分开
+14. `2b4feefd` fix(timetable): 首页跨零点刷新此刻 + 考试过期回落 23:59 对齐 Dart
+15. `07c5b418` fix(ui): 4 处确认弹层改为常驻组合 show 驱动
+16. `b3fe554c` fix(transfer): ICS 导出行补齐 Dart 前缀，修复再导入时教师/简介/备注有损
+17. `1b6d02c8` 文档: 更正凭据迁移三处过期注释前提 + 日志记录裁决与升级提示方案（含 L0 245 tests）
+18. `132bfc2a` fix(transfer): ICS 导出行补齐 Dart 前缀（同上，重做版）
+19. `0d38f686` docs(handover): 10.37 备份与恢复域只读对拍结论（C1 快照内嵌 settings / C2 canMerge / C3 sync L0）
+
+**检查点之后又落的 6 条（`0d38f686..13ba097a`，未含在本结论内）**：`8821ced7`（日视图当前周与装配器同一次取钟 + 跨日写回当前周）、`010c2e21`（日卡非本周灰复用域内 token）、`16717a2e`（日志 10.39 样式基线欠账）、`b3ffa81f`（日志 10.39 classReminders 移植评估）、`77974526`（备份快照携带并恢复档案完整内嵌 settings C1）、`13ba097a`（顶栏浅色 tint 收进具名常量）。
+
 - `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
 - `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
 - 前序：`4d534e04` 门 1 绿 / 门 2 红（`WidgetWeekendMoodTest` Double vs Int，已由 `6a6ab1b8` 修）；`f1472e58`/`58693492` 门 1 红为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
