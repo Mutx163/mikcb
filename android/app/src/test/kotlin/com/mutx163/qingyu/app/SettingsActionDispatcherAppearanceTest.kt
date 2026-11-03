@@ -142,10 +142,11 @@ class SettingsActionDispatcherAppearanceTest {
         // settings_appearance_editor.dart:1355-1370 `_updateLiquidTuning`
         // expectedTuning = 出厂档里**只改这一根**：用它断言「其它七根一个都没被顺手写」。
         val cases = listOf(
-            TuningCase("refraction", "12", { it.refraction }, 12.0,
-                LiquidGlassTuningModel.DEFAULTS.copy(refraction = 12.0)),
-            TuningCase("refractionBand", "20", { it.refractionBand }, 20.0,
-                LiquidGlassTuningModel.DEFAULTS.copy(refractionBand = 20.0)),
+            // 2026-11-03 收档后滑杆区间是 位移 0~10 / 作用带 1~12，这里取区间内的值验「原样写进去」
+            TuningCase("refraction", "9", { it.refraction }, 9.0,
+                LiquidGlassTuningModel.DEFAULTS.copy(refraction = 9.0)),
+            TuningCase("refractionBand", "9", { it.refractionBand }, 9.0,
+                LiquidGlassTuningModel.DEFAULTS.copy(refractionBand = 9.0)),
             TuningCase("edgePow", "4.5", { it.refractionEdgePow }, 4.5,
                 LiquidGlassTuningModel.DEFAULTS.copy(refractionEdgePow = 4.5)),
             TuningCase("dispersion", "0.6", { it.dispersion }, 0.6,
@@ -188,7 +189,8 @@ class SettingsActionDispatcherAppearanceTest {
 
         // 越界的滑杆值按滑杆区间收口（liquid_glass_tuning.dart:522-539）
         val row = SettingsActionDispatcher.ROW_MATERIAL_TUNING_PREFIX
-        assertEquals(20.0, write("99", row + "refraction").liquidGlassTuning!!.refraction, 0.0)
+        // 2026-11-03 收档：位移上限 20→10（`845dd9a49`）
+        assertEquals(10.0, write("99", row + "refraction").liquidGlassTuning!!.refraction, 0.0)
         assertEquals(0.0, write("-3", row + "blurSigma").liquidGlassTuning!!.blurSigma, 0.0)
         assertEquals(1.0, write("2", row + "tint").liquidGlassTuning!!.tintAlpha, 0.0)
         assertEquals(3.0, write("9", row + "rimWidth").liquidGlassTuning!!.rimWidth, 0.0)
@@ -206,11 +208,11 @@ class SettingsActionDispatcherAppearanceTest {
             liquidGlassPreset = "light",
         )
         val written = write(
-            "12",
+            "9",
             SettingsActionDispatcher.ROW_MATERIAL_DARK_TUNING_PREFIX + "refraction",
             base,
         )
-        assertEquals(12.0, written.liquidGlassTuningDark!!.refraction, 0.0)
+        assertEquals(9.0, written.liquidGlassTuningDark!!.refraction, 0.0)
         // 回落链是「深色档 ?? 浅色档 ?? 默认」，所以没设过时从浅色那份起跳
         assertEquals(7.0, written.liquidGlassTuning!!.refraction, 0.0)
         assertEquals(LiquidGlassTuningModel.DEFAULTS.tintAlpha, written.liquidGlassTuningDark!!.tintAlpha, 0.0)
@@ -421,12 +423,13 @@ class SettingsActionDispatcherAppearanceTest {
                 "blurSigma" to 100,
             ),
         ).liquidGlassTuning!!
-        assertEquals(20.0, tuning.refraction, 0.0)
+        // 2026-11-03 收档：位移上限 20→10、作用带默认 11→8（`845dd9a49`）
+        assertEquals(10.0, tuning.refraction, 0.0)
         assertEquals(0.0, tuning.rimWidth, 0.0)
         assertEquals(1.0, tuning.tintAlpha, 0.0)
         assertEquals(40.0, tuning.blurSigma, 0.0)
         // 缺的项 = 出厂值（第 7 格）
-        assertEquals(11.0, tuning.refractionBand, 0.0)
+        assertEquals(8.0, tuning.refractionBand, 0.0)
         assertEquals(2.5, tuning.refractionEdgePow, 0.0)
         assertEquals(0.35, tuning.dispersion, 0.0)
         assertEquals(0.2, tuning.rimStrength, 0.0)
