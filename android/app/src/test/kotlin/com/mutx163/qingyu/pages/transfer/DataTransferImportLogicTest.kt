@@ -192,18 +192,21 @@ class DataTransferImportLogicTest {
         //
         // 缺陷 A：第 1 门课的 `sessionNotes.text` 是数字。Dart
         // `CourseSessionNote.fromJson` 用裸 `as String?` → TypeError →
-        // `_parseList` 包成 `transfer_course_invalid`；Kotlin 的
-        // `CourseSessionNote.fromJson` 用 `as? String ?: ""`，收下后按空备注跳过。
+        // `_parseList` 包成 `transfer_course_invalid`；Kotlin 同样拒绝（`core/Course.kt`
+        // 已按裸转换口径抛 DartFormatException），但消息是形状说明，映射成
+        // 本仓新增的 `transfer_package_parse_failed`（已知差异 1）。
         val nestedModelDefect = singleProfilePackage.replace(
             """"endTime":"09:40"}],"""",
             """"endTime":"09:40","sessionNotes":{"1":{"text":123}}}],"""",
         )
-        val accepted = valid(DataTransferImportLogic.parse(nestedModelDefect))
-        assertEquals("高等数学", accepted.plan.courses[0].name)
+        assertEquals(
+            "transfer_package_parse_failed",
+            invalidCode(DataTransferImportLogic.parse(nestedModelDefect)),
+        )
 
-        // 再加缺陷 B：exams 少了 `name`。Kotlin 的门先返回
-        // `transfer_exam_name_required`；Dart 在 courses 阶段就已经抛
-        // `transfer_course_invalid`，根本走不到 exams。
+        // 再加缺陷 B：exams 少了 `name`。Kotlin 的门先把整包字段查完
+        // → `transfer_exam_name_required`；Dart 在 courses 阶段就已经抛
+        // `transfer_course_invalid`，根本走不到 exams。两端都拒绝，但首个码指向不同实体。
         val twoDefects = nestedModelDefect.replace(""""name":"期中",""", "")
         assertEquals(
             "transfer_exam_name_required",

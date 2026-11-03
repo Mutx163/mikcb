@@ -56,11 +56,18 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
          * 字节读到了，但不是合法 UTF-8（截断序列 / 非法字节 / 越界码点）。
          *
          * 与 Dart 文件通道的 `utf8.decode` 同口径：畸形字节直接拒绝，不做替换字符兜底。
-         * Dart 的 `TransferPackage.decodeBytes` 里定义了 `transfer_package_utf8_invalid`，
-         * 但文件通道**没有走那条路**（`data_transfer_screen.dart:415` 直接 `utf8.decode`），
-         * 所以本码目前没有 ARB 文案键——用户文案由壳接线层决定，**本类不造字符串**。
+         * 壳侧映射到 ARB `importFailedInvalidFile`（「导入失败，请确认文件有效」）——Lead 裁决
+         * 复用该键，不新增 `transfer_package_utf8_invalid` 那套六语文案。
          */
         data object InvalidEncoding : ReadResult
+
+        /**
+         * 解码成功但内容为空 / 仅空白。
+         *
+         * 壳侧映射到 ARB `importFileReadFailed`（「无法读取所选文件」），与 Dart
+         * `data_transfer_screen.dart:419-421` 同键；「仅空白」按 Lead 裁决一并判失败。
+         */
+        data object EmptyContent : ReadResult
     }
 
     /**
@@ -86,10 +93,11 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
      * 顺序：
      * 1. 查 `OpenableColumns.SIZE`，用 [TransferShareContract.exceedsLimit] 判（边界值 = 不超）；
      * 2. 查不到大小或没超时，限长读：累计超过上限立刻停并返回 [ReadResult.TooLarge]；
-     * 3. 严格 UTF-8 解码（[TransferTextDecoding.decodeStrictUtf8]），畸形字节返回 [ReadResult.InvalidEncoding]。
+     * 3. 严格 UTF-8 解码 + 空/空白判定（[TransferTextDecoding.decodeImportText]）：
+     *    畸形字节返回 [ReadResult.InvalidEncoding]，空/仅空白返回 [ReadResult.EmptyContent]。
      *
-     * 不判「解码后是空字符串」算不算失败：空文件属内容问题，交给模型层给「文件无法识别」
-     * 之类的结论，这里只负责「字节有没有拿到」。
+     * 空内容判失败与 Dart `data_transfer_screen.dart:419-421` 同键（`importFileReadFailed`）；
+     * 仅空白按 Lead 裁决一并判失败。
      */
     fun readText(
         uri: Uri,
@@ -113,11 +121,13 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
             return ReadResult.ReadFailed
         }
 
-        // 3) 严格 UTF-8 解码。畸形字节直接拒绝（与 Dart `utf8.decode` 同口径），
-        // 不做替换字符兜底——否则损坏包会带着乱码被当成合法 JSON 导进去。
-        val text = TransferTextDecoding.decodeStrictUtf8(bytes)
-            ?: return ReadResult.InvalidEncoding
-        return ReadResult.Success(text)
+        // 3) 严格 UTF-8 解码 + 空/空白判定（与 Dart 文件通道同口径）。
+        //    畸形字节直接拒绝，不做替换字符兜底——否则损坏包会带着乱码被当成合法 JSON 导进去。
+        return when (val decoded = TransferTextDecoding.decodeImportText(bytes)) {
+            is TransferTextDecoding.DecodedImportText.Success -> ReadResult.Success(decoded.text)
+            TransferTextDecoding.DecodedImportText.InvalidEncoding -> ReadResult.InvalidEncoding
+            TransferTextDecoding.DecodedImportText.EmptyContent -> ReadResult.EmptyContent
+        }
     }
 
     // ------------------------------------------------------------------

@@ -219,16 +219,17 @@ fun DataTransferHost(
                         TransferStrings.importFileTooLarge.filled("size", "20 MB"),
                     )
 
-                    is AndroidTransferDocumentAdapter.ReadResult.ReadFailed ->
-                        showToast(TransferStrings.importFileReadFailed.zh)
+                    is AndroidTransferDocumentAdapter.ReadResult.ReadFailed,
+                    is AndroidTransferDocumentAdapter.ReadResult.EmptyContent -> showToast(
+                        TransferStrings.importFileReadFailed.zh,
+                    )
+
+                    is AndroidTransferDocumentAdapter.ReadResult.InvalidEncoding ->
+                        // 畸形 UTF-8：复用「导入失败，请确认文件有效」（Lead 裁决，不新增键）。
+                        showToast(TransferStrings.importFailedInvalidFile.zh)
 
                     is AndroidTransferDocumentAdapter.ReadResult.Success ->
-                        if (result.text.isEmpty()) {
-                            // 空内容：Dart 明确落到「无法读取所选文件」（`:419-421`）。
-                            showToast(TransferStrings.importFileReadFailed.zh)
-                        } else {
-                            openImportPreview(result.text, TransferChannel.FILE)
-                        }
+                        openImportPreview(result.text, TransferChannel.FILE)
                 }
             }
         }

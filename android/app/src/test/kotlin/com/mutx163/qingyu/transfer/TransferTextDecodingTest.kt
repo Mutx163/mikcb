@@ -75,6 +75,38 @@ class TransferTextDecodingTest {
         assertEquals("高等数学$emoji", plan.courses[0].name)
     }
 
+    // ---------- 导入入口：错误分类 → 文案键（Lead 裁决） ----------
+
+    @Test
+    fun `畸形字节走解码入口报 InvalidEncoding 并复用 importFailedInvalidFile`() {
+        for (bytes in listOf(byteArrayOf(0xC3.toByte()), byteArrayOf(0xFF.toByte()))) {
+            val decoded = TransferTextDecoding.decodeImportText(bytes)
+            assertTrue("期望 InvalidEncoding，实际 $decoded", decoded is TransferTextDecoding.DecodedImportText.InvalidEncoding)
+        }
+        // 不新增 `transfer_package_utf8_invalid` 那套键；复用既有 ARB 键。
+        assertEquals(
+            "importFailedInvalidFile",
+            com.mutx163.qingyu.pages.transfer.TransferStrings.importFailedInvalidFile.key,
+        )
+    }
+
+    @Test
+    fun `空内容与仅空白内容判失败并复用 importFileReadFailed`() {
+        val blanks = listOf(
+            ByteArray(0),
+            "   ".toByteArray(Charsets.UTF_8),
+            " \n\t".toByteArray(Charsets.UTF_8),
+        )
+        for (bytes in blanks) {
+            val decoded = TransferTextDecoding.decodeImportText(bytes)
+            assertTrue("期望 EmptyContent，实际 $decoded", decoded is TransferTextDecoding.DecodedImportText.EmptyContent)
+        }
+        assertEquals(
+            "importFileReadFailed",
+            com.mutx163.qingyu.pages.transfer.TransferStrings.importFileReadFailed.key,
+        )
+    }
+
     // ---------- BOM：合法编码，交给 JSON 门 ----------
 
     @Test
