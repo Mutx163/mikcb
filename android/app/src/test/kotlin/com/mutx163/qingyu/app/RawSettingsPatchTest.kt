@@ -116,6 +116,9 @@ class RawSettingsPatchTest {
     @Test
     fun `patch 按键合并且 null 显式删键`() {
         val repository = repositoryOn()
+        // settings 单一真源：读活动档案内嵌 settings，档案自带的 core 键（sections 等）
+        // 本来就在键集里；这里只钉「不得多出 patch 之外的键」。
+        val preexisting = repository.readRawSettings().filterValues { it != null }.keys
         repository.writeRawSettingsPatch(
             linkedMapOf("customA" to "a", "customB" to "b", "customDel" to "x"),
         )
@@ -129,7 +132,7 @@ class RawSettingsPatchTest {
         assertTrue("customDel 应仍以 null 存在于键集", raw.containsKey("customDel"))
         assertNull(raw["customDel"])
         // 再次读取时 Dart 口径把 null 当缺键，读取方按需 filterValues。
-        assertEquals(setOf("customA", "customB"), raw.filterValues { it != null }.keys)
+        assertEquals(preexisting + setOf("customA", "customB"), raw.filterValues { it != null }.keys)
     }
 
     @Test
@@ -146,8 +149,9 @@ class RawSettingsPatchTest {
     @Test
     fun `空 patch 直接成功且不写盘`() {
         val repository = repositoryOn()
+        val before = repository.readRawSettings()
         assertTrue(repository.writeRawSettingsPatch(emptyMap()))
-        assertEquals(emptyMap<String, Any?>(), repository.readRawSettings())
+        assertEquals(before, repository.readRawSettings())
     }
 
     // ---------- 落盘后内存/档案同步 ----------

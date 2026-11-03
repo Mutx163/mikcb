@@ -123,7 +123,17 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     @Synchronized
     fun reload() {
         val profilesResult = store.loadProfiles()
-        loadedProfiles = profilesResult.profiles
+        // 旧 `courses` 通道 bootstrap：只在「盘上还没有可用档案」时组装默认档案
+        // （Dart `storage_service.dart:1637-1651`）。幂等标记与「不覆盖已有档案」
+        // 由 TimetableStore 保证；这里只把迁移结果并入本次装载视图。
+        var profiles = profilesResult.profiles
+        if (profiles.isEmpty()) {
+            val bootstrap = store.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+            if (bootstrap.bootstrapped) {
+                bootstrap.profile?.let { profiles = listOf(it) }
+            }
+        }
+        loadedProfiles = profiles
         val storedActiveId = store.loadActiveProfileId()
         // 悬空 id（指向不存在的档案）回落第一份，避免 activeProfileId 指向空气。
         loadedActiveProfileId = storedActiveId
@@ -282,8 +292,9 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
     @Synchronized
     private fun writeRawSettingsPatchLocked(patch: Map<String, Any?>): Boolean =
         try {
+            // saveSettingsPatch 现在同时写活动档案内嵌 settings（真源）与顶层镜像，
+            // 不必再单独调 saveSettingsPatchToActiveProfile（避免同一份档案写两遍）。
             store.saveSettingsPatch(patch)
-            store.saveSettingsPatchToActiveProfile(patch)
             reload()
             pendingNotify = true
             true

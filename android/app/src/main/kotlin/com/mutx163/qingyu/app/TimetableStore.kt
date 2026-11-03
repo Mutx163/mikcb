@@ -1,5 +1,7 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.DartFormatException
 import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.MiniJson
@@ -246,11 +248,14 @@ class TimetableStore(
      * 不追加 `*_corrupt_backup_<ts>`：条目级损坏每次冷启动都重现（本层刻意不把
      * 清洗结果写回盘），追加会让留档自己长成新的存储问题。
      */
-    private fun archiveUnparsedItems(items: List<String>) {
+    private fun archiveUnparsedItems(
+        items: List<String>,
+        key: String = KEY_PROFILES_UNPARSED_ITEMS,
+    ) {
         if (items.isEmpty()) return
         try {
             store.putString(
-                KEY_PROFILES_UNPARSED_ITEMS,
+                key,
                 MiniJson.encode(
                     linkedMapOf(
                         "archivedAt" to DartTime.toIso(LocalDateTime.now()),
@@ -350,33 +355,171 @@ class TimetableStore(
         if (profileId == null) store.remove(KEY_ACTIVE_PROFILE_ID) else store.putString(KEY_ACTIVE_PROFILE_ID, profileId)
     }
 
-    // ---------- timetable_settings ----------
+    // ---------- 旧 courses 通道一次性迁移（bootstrap） ----------
 
-    fun loadSettings(): TimetableSettings {
-        val raw = store.getString(KEY_SETTINGS)
-        if (raw.isNullOrEmpty()) return TimetableSettings.defaults()
-        val decoded = MiniJson.tryParse(raw)
-        if (decoded !is Map<*, *>) {
-            archiveCorrupt(KEY_SETTINGS)
-            return TimetableSettings.defaults()
+    /** 迁移结果：只用于日志/测试断言，不参与业务分支（幂等靠 marker）。 */
+    data class LegacyBootstrapResult(
+        val bootstrapped: Boolean,
+        val skippedReason: String? = null,
+        val profile: TimetableProfile? = null,
+        val importedCourses: Int = 0,
+        val quarantinedCourses: Int = 0,
+    )
+
+    /**
+     * 旧 `courses` 通道的一次性迁移（Dart `_doEnsureProfilesInitialized:1637-1651`）。
+     *
+     * 触发条件：`timetable_profiles` 还没有可用档案（[currentProfilesEmpty]）且旧
+     * `courses` 非空。迁移内容：
+     * - 好条目 → 新建「默认课表」档案的 courses；
+     * - 坏条目 → `courses_unparsed_items` **先留档**（Dart `_quarantineDroppedCourseEntry:711`）；
+     * - 顶层 `timetable_settings` + `semester_start` + `current_week` → 档案内嵌 settings / 周次。
+     *
+     * **幂等**：成功后写 `compose_bootstrap_migrated_v1`；已有档案或 marker 在 ⇒ 不跑。
+     * **不覆盖**：盘上档案数组非空时直接跳过（解析失败但留档也失败时 Dart 保留原 key，绝不覆盖）。
+     */
+    @Synchronized
+    fun bootstrapLegacyProfileIfNeeded(currentProfilesEmpty: Boolean): LegacyBootstrapResult {
+        if (store.getBool(KEY_BOOTSTRAP_MIGRATED, false)) {
+            return LegacyBootstrapResult(bootstrapped = false, skippedReason = "already_migrated")
         }
-        return try {
-            @Suppress("UNCHECKED_CAST")
-            TimetableSettings.fromJson(decoded as Map<String, Any?>)
+        if (!currentProfilesEmpty || !store.getString(KEY_PROFILES).isNullOrEmpty()) {
+            return LegacyBootstrapResult(bootstrapped = false, skippedReason = "profiles_present")
+        }
+        val legacyCourses = try {
+            store.getStringList(KEY_LEGACY_COURSES) ?: emptyList()
         } catch (_: Exception) {
-            archiveCorrupt(KEY_SETTINGS)
+            archiveCorrupt(KEY_LEGACY_COURSES)
+            emptyList()
+        }
+        if (legacyCourses.isEmpty()) {
+            return LegacyBootstrapResult(bootstrapped = false, skippedReason = "no_legacy_courses")
+        }
+
+        val courses = mutableListOf<Course>()
+        val quarantined = mutableListOf<String>()
+        for (rawCourse in legacyCourses) {
+            val parsed = try {
+                val decoded = MiniJson.parse(rawCourse)
+                if (decoded !is Map<*, *>) throw DartFormatException("course json must be an object")
+                @Suppress("UNCHECKED_CAST")
+                Course.fromJson(decoded as Map<String, Any?>)
+            } catch (_: Exception) {
+                null
+            }
+            if (parsed != null) courses.add(parsed) else quarantineCourseEntry(quarantined, rawCourse)
+        }
+        // 先留档再覆盖：坏条目全部进隔离档（整份 key 保留，Dart 刻意不写回原始列表）。
+        archiveUnparsedItems(quarantined, KEY_COURSES_UNPARSED_ITEMS)
+        if (courses.isEmpty()) {
+            // 全坏：Dart 把整份 key 留档再删（:672-674）；这里不建空档案。
+            archiveCorrupt(KEY_LEGACY_COURSES)
+            return LegacyBootstrapResult(
+                bootstrapped = false,
+                skippedReason = "no_parsable_courses",
+                quarantinedCourses = quarantined.size,
+            )
+        }
+
+        val legacySettingsJson = readLegacyTopLevelSettingsJson()
+        val legacySettings = try {
+            TimetableSettings.fromJson(legacySettingsJson)
+        } catch (_: Exception) {
             TimetableSettings.defaults()
+        }
+        val semesterStartMillis = if (store.contains(KEY_SEMESTER_START)) {
+            store.getLong(KEY_SEMESTER_START, 0L)
+        } else {
+            null
+        }
+        // Dart :1639-1642：旧 `semester_start` 只在 settings 里没有开学日时才补进档案。
+        val migratedSettings = if (semesterStartMillis != null && legacySettings.semesterStartDate == null) {
+            legacySettings.copy(semesterStartDate = DartTime.fromEpochMillis(semesterStartMillis))
+        } else {
+            legacySettings
+        }
+        val now = LocalDateTime.now()
+        val profile = TimetableProfile(
+            id = "profile-${nowMicros()}",
+            name = TimetableHostLogic.DEFAULT_PROFILE_NAME,
+            courses = courses,
+            settings = migratedSettings,
+            currentWeek = (loadCurrentWeek() ?: 1).toLong(),
+            createdAt = now,
+            lastUsedAt = now,
+        )
+        return try {
+            saveBootstrapProfile(profile, legacySettingsJson)
+            saveActiveProfileId(profile.id)
+            store.putBool(KEY_BOOTSTRAP_MIGRATED, true)
+            LegacyBootstrapResult(
+                bootstrapped = true,
+                profile = profile,
+                importedCourses = courses.size,
+                quarantinedCourses = quarantined.size,
+            )
+        } catch (_: Exception) {
+            // 写失败不盖 marker：下次启动重试（与 Dart :1653-1663 的 deferred 同口径）。
+            LegacyBootstrapResult(
+                bootstrapped = false,
+                skippedReason = "write_failed",
+                quarantinedCourses = quarantined.size,
+            )
         }
     }
 
     /**
-     * 盘上 `timetable_settings` 的**原始 JSON 对象**（不做模型解析）。
+     * 写一条 bootstrap 档案：`settings` 用**顶层旧设置全量对象**铺底、core 4 键收口。
      *
-     * 供设置族完整模型 [TimetableSettingsModel] 按自己的口径读——那层认识几十个键，
-     * 本层只认识 4 个。坏值同样留档 + 删 key，返回空 map。
+     * 不能走 [saveProfiles]：它按 id 取旧 settings 铺底，新 id 没有旧值，只会落 core 4 键，
+     * 用户 Dart 侧那 250+ 个设置键会在迁移这一步被抹掉。
+     */
+    private fun saveBootstrapProfile(profile: TimetableProfile, embeddedSettings: Map<String, Any?>) {
+        val settings = LinkedHashMap<String, Any?>()
+        settings.putAll(embeddedSettings)
+        settings.putAll(profile.settings.toJson())
+        val payload = LinkedHashMap<String, Any?>(profile.toJson())
+        payload["settings"] = settings
+        store.putString(KEY_PROFILES, MiniJson.encode(listOf(payload)))
+        stampProfilesSchemaVersion()
+    }
+
+    /** Dart `_quarantineDroppedCourseEntry:711-734`：原始条目编码成 JSON 字符串字面量，封顶 50 条 / 4096 字符。 */
+    private fun quarantineCourseEntry(sink: MutableList<String>, raw: String) {
+        if (sink.size >= COURSES_MAX_QUARANTINED_ITEMS) return
+        var encoded = MiniJson.encode(raw)
+        if (encoded.length > COURSES_MAX_QUARANTINED_ITEM_CHARS) {
+            encoded = encoded.substring(0, COURSES_MAX_QUARANTINED_ITEM_CHARS) + "…<truncated>"
+        }
+        sink.add(encoded)
+    }
+
+    // ---------- timetable_settings ----------
+
+    /**
+     * **settings 单一真源**：活动档案内嵌 `settings`（Dart `TimetableProfile.settings`）。
+     *
+     * 顶层 `timetable_settings` 在 Dart 侧是**旧世界镜像**：唯一写点
+     * `storage_service.dart:817-820` 无调用方，profile 化后设置只写档案内嵌
+     * （`timetable_provider.dart:1499-1510`）。读它 = 读到迁移前的旧值。
+     *
+     * 只有「盘上还没有档案」这一种状态（= bootstrap 前）才回落顶层：
+     * 那正是 Dart `_doEnsureProfilesInitialized` 组装默认档案时读的同一份数据
+     * （`storage_service.dart:1637`）。
      */
     @Synchronized
-    fun loadSettingsJson(): Map<String, Any?> {
+    fun loadSettings(): TimetableSettings {
+        val json = readActiveEmbeddedSettingsJson() ?: readLegacyTopLevelSettingsJson()
+        if (json.isEmpty()) return TimetableSettings.defaults()
+        return try {
+            TimetableSettings.fromJson(json)
+        } catch (_: Exception) {
+            TimetableSettings.defaults()
+        }
+    }
+
+    /** 旧世界顶层 `timetable_settings`；坏值留档 + 删 key，返回空 map。 */
+    private fun readLegacyTopLevelSettingsJson(): Map<String, Any?> {
         val raw = store.getString(KEY_SETTINGS)
         if (raw.isNullOrEmpty()) return emptyMap()
         val decoded = MiniJson.tryParse(raw)
@@ -390,6 +533,42 @@ class TimetableStore(
         }
         return out
     }
+
+    /**
+     * 活动档案内嵌的 `settings`；`null` 仅表示「盘上还没有档案数组」。
+     *
+     * 档案存在但没带 `settings` 时返回**空 map**（不回落顶层）：一旦有档案，
+     * 顶层就只剩镜像身份，读取永不走它。
+     */
+    private fun readActiveEmbeddedSettingsJson(): Map<String, Any?>? {
+        val raw = store.getString(KEY_PROFILES)
+        if (raw.isNullOrEmpty()) return null
+        val decoded = MiniJson.tryParse(raw)
+        if (decoded !is List<*> || decoded.isEmpty()) return null
+        val activeId = loadActiveProfileId()
+        val target = if (activeId == null) {
+            null
+        } else {
+            decoded.firstOrNull { it is Map<*, *> && it["id"] == activeId }
+        } ?: decoded.firstOrNull { it is Map<*, *> } ?: return emptyMap()
+        val settings = (target as Map<*, *>)["settings"]
+        if (settings !is Map<*, *>) return emptyMap()
+        val out = LinkedHashMap<String, Any?>()
+        for ((key, value) in settings) {
+            if (key is String) out[key] = value
+        }
+        return out
+    }
+
+    /**
+     * 盘上**活动档案内嵌** `settings` 的原始 JSON 对象（不做模型解析）。
+     *
+     * 供设置族完整模型 [TimetableSettingsModel] 按自己的口径读——那层认识几十个键，
+     * 本层只认识 4 个。没有档案时回落到顶层旧镜像（**仅 bootstrap 前**，见 [loadSettings]）。
+     */
+    @Synchronized
+    fun loadSettingsJson(): Map<String, Any?> =
+        readActiveEmbeddedSettingsJson() ?: readLegacyTopLevelSettingsJson()
 
     /**
      * **读-合并-写**：只覆盖 [patch] 里出现的键，盘上其余键（Dart 侧 250+ 个）原样保留。
@@ -407,10 +586,11 @@ class TimetableStore(
         if (patch.isEmpty()) return
         // 读-合并-写必须整体持锁（@Synchronized）：设置页模型、灵动显示、局域网导入
         // 三路写入共用本实例，不持锁时两次并发 patch 会读到同一份旧值、后写覆盖先写。
-        val merged = LinkedHashMap<String, Any?>()
-        merged.putAll(loadSettingsJson())
-        merged.putAll(patch)
-        store.putString(KEY_SETTINGS, MiniJson.encode(merged))
+        applySettingsPatchToActiveProfile(patch)
+        val mirrored = LinkedHashMap<String, Any?>()
+        mirrored.putAll(readLegacyTopLevelSettingsJson())
+        mirrored.putAll(patch)
+        store.putString(KEY_SETTINGS, MiniJson.encode(mirrored))
     }
 
     /**
@@ -444,11 +624,19 @@ class TimetableStore(
      */
     @Synchronized
     fun saveSettingsPatchToActiveProfile(patch: Map<String, Any?>) {
-        if (patch.isEmpty()) return
+        applySettingsPatchToActiveProfile(patch)
+    }
+
+    /**
+     * [saveSettingsPatchToActiveProfile] 的实现体：只写档案内嵌 settings，不碰顶层。
+     * 返回是否真的写入了档案数组（没有档案 / 数组不可用 ⇒ false）。
+     */
+    private fun applySettingsPatchToActiveProfile(patch: Map<String, Any?>): Boolean {
+        if (patch.isEmpty()) return false
         val raw = store.getString(KEY_PROFILES)
-        if (raw.isNullOrEmpty()) return
+        if (raw.isNullOrEmpty()) return false
         val decoded = MiniJson.tryParse(raw)
-        if (decoded !is List<*> || decoded.isEmpty()) return
+        if (decoded !is List<*> || decoded.isEmpty()) return false
 
         // 逐条转成可变副本：MiniJson 解出来的 map 只保证是 LinkedHashMap，
         // 但就地改「别人传进来的树」不是本层的风格，也不该依赖可变性假设。
@@ -474,7 +662,7 @@ class TimetableStore(
         } else {
             items.indexOfFirst { it is Map<*, *> }
         }
-        if (targetIndex < 0) return
+        if (targetIndex < 0) return false
         @Suppress("UNCHECKED_CAST")
         val target = items[targetIndex] as LinkedHashMap<String, Any?>
 
@@ -490,6 +678,7 @@ class TimetableStore(
 
         store.putString(KEY_PROFILES, MiniJson.encode(items))
         stampProfilesSchemaVersion()
+        return true
     }
 
     // ---------- current_week ----------
@@ -675,6 +864,22 @@ class TimetableStore(
         const val KEY_PROFILES_UNPARSED_ITEMS = "timetable_profiles_unparsed_items"
         const val KEY_ACTIVE_PROFILE_ID = "active_timetable_profile_id"
         const val KEY_SETTINGS = "timetable_settings"
+
+        /** 旧世界单 key 课程列表（`List<String>`，每条是 Course JSON）——**只读，迁移用**。 */
+        const val KEY_LEGACY_COURSES = "courses"
+
+        /** 旧世界学期开始日（epoch 毫秒，Int 落盘）——只在 bootstrap 时读。 */
+        const val KEY_SEMESTER_START = "semester_start"
+
+        /** 旧 `courses` 条目级损坏的隔离留档（与 Dart `coursesUnparsedItemsKey` 同名）。 */
+        const val KEY_COURSES_UNPARSED_ITEMS = "courses_unparsed_items"
+
+        /** bootstrap 成功后的幂等标记：存在 ⇒ 迁移已完成，不再组装默认档案。 */
+        const val KEY_BOOTSTRAP_MIGRATED = "compose_bootstrap_migrated_v1"
+
+        /** 与 Dart `_coursesMaxQuarantinedItems` / `_coursesMaxQuarantinedItemChars` 同口径。 */
+        const val COURSES_MAX_QUARANTINED_ITEMS = 50
+        const val COURSES_MAX_QUARANTINED_ITEM_CHARS = 4096
         const val KEY_CURRENT_WEEK = "current_week"
         const val KEY_TIME_SCHEMES = "time_schemes"
         const val KEY_SCHEDULE_DATE_RULES = "schedule_date_rules"

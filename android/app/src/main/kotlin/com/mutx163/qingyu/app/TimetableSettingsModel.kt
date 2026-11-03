@@ -1142,8 +1142,8 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
      */
     fun save(model: TimetableSettingsModel) {
         val patch = model.toJsonPatch()
+        // saveSettingsPatch 同时落活动档案内嵌 settings（真源）与顶层镜像。
         store.saveSettingsPatch(patch)
-        store.saveSettingsPatchToActiveProfile(patch)
     }
 
     /**
@@ -1167,7 +1167,6 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
     fun saveHomeViewMode(mode: TimetableHomeViewMode) {
         val patch = mapOf("timetableHomeViewMode" to mode.value)
         store.saveSettingsPatch(patch)
-        store.saveSettingsPatchToActiveProfile(patch)
     }
 
     /**
@@ -1192,7 +1191,6 @@ class TimetableSettingsModelStore(private val store: TimetableStore) {
     fun saveLastViewedDayOfWeek(dayOfWeek: Int) {
         val patch = mapOf("timetableLastViewedDayOfWeek" to dayOfWeek.coerceIn(1, 7))
         store.saveSettingsPatch(patch)
-        store.saveSettingsPatchToActiveProfile(patch)
     }
 }
 

@@ -2,6 +2,7 @@ package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.FlutterPrefsCodec
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
@@ -417,6 +418,166 @@ class TimetableStoreTest {
             if (key == failArchiveOf) throw java.io.IOException("disk_full")
             return delegate.archiveCorruptAndRemove(key, micros)
         }
+    }
+
+    // ---------- 旧 courses 通道 bootstrap（四种老盘态） ----------
+
+    /** 老盘态 1：`timetable_profiles` 缺失 + 旧 `courses` 有 3 门课。 */
+    @Test
+    fun bootstrapMissingProfilesBuildsDefaultProfileWithAllLegacyCourses() {
+        val legacyCourses = listOf(course("c1"), course("c2", "物理"), course("c3", "化学"))
+        val (raw, store) = newStore(
+            mapOf(
+                "courses" to FlutterPrefsCodec.encodeStringList(
+                    legacyCourses.map { MiniJson.encode(it.toJson()) },
+                ),
+                "semester_start" to "1700000000000",
+                "current_week" to "5",
+                "timetable_settings" to
+                    """{"semesterWeekCount":18,"timetableShowCurrentWeekCourses":true,"appLocaleTag":"en"}""",
+            ),
+        )
+
+        // 迁移前：没有档案；设置只能读到顶层旧镜像。
+        assertEquals(emptyList<TimetableProfile>(), store.loadProfiles().profiles)
+        assertNull(raw.getString("timetable_profiles"))
+        assertEquals("en", store.loadSettingsJson()["appLocaleTag"])
+        assertNull(raw.getString("compose_bootstrap_migrated_v1"))
+
+        // 迁移
+        val result = store.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+        assertTrue(result.bootstrapped)
+        assertEquals(3, result.importedCourses)
+        assertEquals(0, result.quarantinedCourses)
+
+        // 迁移后：3 门课都在、id 不重复、档案内嵌设置/周次正确。
+        val loaded = store.loadProfiles().profiles
+        assertEquals(1, loaded.size)
+        assertEquals("默认课表", loaded[0].name)
+        assertEquals(listOf("c1", "c2", "c3"), loaded[0].courses.map { it.id })
+        assertEquals(3, loaded[0].courses.map { it.id }.toSet().size)
+        assertEquals(5L, loaded[0].currentWeek)
+        assertEquals(18, loaded[0].settings.semesterWeekCount)
+        // Dart 读回时优先 date-only 文本（`parseSemesterStartDate`），时分归零；
+        // 这里模型落成当日 00:00，与 Dart 往返后的值一致。
+        assertEquals(
+            DartTime.fromEpochMillis(1_700_000_000_000L).toLocalDate(),
+            loaded[0].settings.semesterStartDate?.toLocalDate(),
+        )
+        assertEquals("en", store.loadSettingsJson()["appLocaleTag"])
+        assertEquals(18, store.loadSettings().semesterWeekCount)
+        // 幂等标记与 active id 落盘。
+        assertTrue(raw.getBool("compose_bootstrap_migrated_v1", false))
+        assertEquals(loaded[0].id, store.loadActiveProfileId())
+        // 旧 key 不被清掉（Dart 只在 bootstrap 时读，不写回）。
+        assertTrue(raw.contains("courses"))
+    }
+
+    /** 老盘态 2：档案存在但顶层 `timetable_settings` 与档案内嵌不同 —— 以档案内嵌为准。 */
+    @Test
+    fun settingsReadPrefersActiveProfileEmbeddedOverLegacyTopLevel() {
+        val embedded = profile("p1", listOf(course("c1"))).copy(
+            settings = TimetableSettings(semesterWeekCount = 18, activeTimeSchemeId = "ts-1"),
+            currentWeek = 7L,
+        )
+        val (raw, store) = newStore(
+            mapOf(
+                "timetable_profiles" to MiniJson.encode(listOf(embedded.toJson())),
+                "active_timetable_profile_id" to "p1",
+                "timetable_settings" to
+                    """{"semesterWeekCount":25,"appLocaleTag":"ja","timetableShowCurrentWeekCourses":false}""",
+            ),
+        )
+
+        // 迁移前：顶层是 25，档案内嵌是 18 —— 读必须给 18；
+        // 只存在于顶层的键（appLocaleTag）在档案存在时不参与读取。
+        assertEquals(18L, store.loadSettingsJson()["semesterWeekCount"])
+        assertNull(store.loadSettingsJson()["appLocaleTag"])
+        assertEquals(18, store.loadSettings().semesterWeekCount)
+
+        // 写入：真源落档案内嵌，顶层同步镜像（镜像保留自己独有的键）。
+        store.saveSettingsPatch(mapOf("semesterWeekCount" to 20))
+
+        assertEquals(20L, store.loadSettingsJson()["semesterWeekCount"])
+        assertEquals(20, store.loadSettings().semesterWeekCount)
+        val topMirror = MiniJson.parse(raw.getString("timetable_settings")!!) as Map<*, *>
+        assertEquals(20L, topMirror["semesterWeekCount"])
+        assertEquals("ja", topMirror["appLocaleTag"])
+        val embeddedWritten = (MiniJson.parse(raw.getString("timetable_profiles")!!) as List<*>)
+            .first() as Map<*, *>
+        val embeddedSettings = embeddedWritten["settings"] as Map<*, *>
+        assertEquals(20L, embeddedSettings["semesterWeekCount"])
+        assertNull(embeddedSettings["appLocaleTag"])
+    }
+
+    /** 老盘态 3：迁移后重启 —— 不再迁移（幂等），用户新建档案不被覆盖。 */
+    @Test
+    fun bootstrapIsIdempotentAcrossRestartAndNeverOverwritesUserProfiles() {
+        val (raw, store) = newStore(
+            mapOf(
+                "courses" to FlutterPrefsCodec.encodeStringList(
+                    listOf(MiniJson.encode(course("c1").toJson())),
+                ),
+            ),
+        )
+
+        assertTrue(store.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true).bootstrapped)
+        val afterFirst = store.loadProfiles().profiles.map { it.id }
+
+        // 重启（同一份盘）：rawSnapshot 是落盘名（带 flutter. 前缀），先还原成契约 key。
+        val (raw2, restarted) = newStore(raw.logicalSnapshot())
+        val second = restarted.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = false)
+        assertFalse(second.bootstrapped)
+        // marker 判在档案判之前：迁移完成过一次，之后无论盘上是否有档案都不再跑。
+        assertEquals("already_migrated", second.skippedReason)
+
+        // 即使调用方错传「空」（marker 已在），也绝不重组第二份档案。
+        val third = restarted.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+        assertFalse(third.bootstrapped)
+        assertEquals("already_migrated", third.skippedReason)
+        assertEquals(afterFirst, restarted.loadProfiles().profiles.map { it.id })
+
+        // 用户在 Compose 里新建档案 → 再次重启不被 bootstrap 覆盖。
+        restarted.saveProfiles(listOf(profile("user-1", listOf(course("c9")))))
+        val (_, restartedAgain) = newStore(raw2.logicalSnapshot())
+        val fourth = restartedAgain.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+        assertFalse(fourth.bootstrapped)
+        assertEquals(listOf("user-1"), restartedAgain.loadProfiles().profiles.map { it.id })
+    }
+
+    /** [InMemoryKeyValueStore.rawSnapshot] 是落盘名（带 `flutter.`），转回契约 key 供重启测试。 */
+    private fun InMemoryKeyValueStore.logicalSnapshot(): Map<String, String> =
+        rawSnapshot().entries.associate { (physical, value) ->
+            FrozenValueCodec.logicalKey(physical)!! to value
+        }
+
+    /** 老盘态 4：`courses` 里有坏条目 —— 好的进档案、坏的进 `courses_unparsed_items`。 */
+    @Test
+    fun bootstrapQuarantinesBadLegacyCourseEntriesBeforeOverwriting() {
+        val good1 = MiniJson.encode(course("c1").toJson())
+        val bad = "{not-json"
+        val good2 = MiniJson.encode(course("c2", "物理").toJson())
+        val (raw, store) = newStore(
+            mapOf("courses" to FlutterPrefsCodec.encodeStringList(listOf(good1, bad, good2))),
+        )
+
+        // 迁移前：没有档案，也没有隔离档。
+        assertNull(raw.getString("timetable_profiles"))
+        assertFalse(raw.contains("courses_unparsed_items"))
+
+        val result = store.bootstrapLegacyProfileIfNeeded(currentProfilesEmpty = true)
+        assertTrue(result.bootstrapped)
+        assertEquals(2, result.importedCourses)
+        assertEquals(1, result.quarantinedCourses)
+
+        // 迁移后：好条目进档案；坏条目原始 JSON 字面量进隔离档。
+        val loaded = store.loadProfiles().profiles.single()
+        assertEquals(listOf("c1", "c2"), loaded.courses.map { it.id })
+        val archive = MiniJson.parse(raw.getString("courses_unparsed_items")!!) as Map<*, *>
+        assertEquals(1L, archive["count"])
+        assertEquals(listOf(MiniJson.encode(bad)), archive["items"] as List<*>)
+        // 旧 key 保留（Dart 不写回原始列表）。
+        assertTrue(raw.contains("courses"))
     }
 
     // ---------- 夹具 ----------
