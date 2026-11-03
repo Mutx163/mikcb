@@ -122,6 +122,26 @@ object AppLogStore {
         }
     }
 
+    /**
+     * 追加一段**已格式化**的条目（崩溃落盘用：格式化与脱敏在纯函数
+     * `formatCrashEntry`，见 `infra/CrashLog.kt`）。
+     *
+     * 与 [append] 共用同一把写锁与截断逻辑；未初始化或写失败返回 false，不抛。
+     */
+    fun appendRawPayload(payload: String): Boolean {
+        val file = logFile ?: return false
+        return try {
+            synchronized(writeLock) {
+                file.parentFile?.mkdirs()
+                trimAppLogIfNeeded(file)
+                file.appendText(payload)
+            }
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     // ---------- 读 ----------
 
     /** 应用日志全文（头部 + 正文，Dart `readAppLogsText` :250-264）。 */

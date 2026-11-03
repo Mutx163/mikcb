@@ -1236,6 +1236,51 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
 - 本批无源码改动（审计 + 日志），未推送。
 
+### §10.29 原生崩溃本地落盘（补 §10.28 剩余风险，Lead 例外交）
+
+**授权范围**（"根包/应用类最小改动"）：`UmengApplication.kt`（装 handler，2 处调用）
++ `infra/`（新增 `CrashLog.kt`、`AppLogStore` 增 `appendRawPayload`）。未碰
+壳 Activity / `theme/` / `lib/ui/` / 路由表 / `ShellWiring` / `ShellPageIndex` /
+`TimetableStore` / `AppGlobalSettingsStore` / `import` / `sync` / `timetable`。
+
+**做法**（等价 Dart `lib/main.dart:321` / `:350` 的本地 app log 出口）
+- 纯函数 `formatCrashEntry`（`infra/CrashLog.kt:30`）复用 `buildLogEntryPayload`
+  （`infra/LogGate.kt:125-158`）：`time` → `level=error` → `source=app` →
+  `category=native_crash` → `message` → `extras`（`thread`/`type`）→ `error` → `stackTrace`；
+  message / stackTrace / extras 全部过 19 键表（命中整值 `key=**`，嵌套 Map 递归）。
+- `LocalCrashHandler`（`infra/CrashLog.kt:114`）：先 `recorder.record(...)` 落盘，
+  再**无条件** `delegate.uncaughtException(thread, throwable)`（`:131`）——不吞异常、
+  不改变进程终止语义；本地写盘异常被内层 `catch` 吞掉但**不影响** `:131`。
+- 落盘走 `AppLogStore.appendRawPayload`（`infra/AppLogStore.kt:131`），与 Dart
+  同一个 `filesDir/logs/app_runtime.log`、同一把写锁、同一截断逻辑。
+- 去重：`crashSignature` = 类型 + 消息 + 首帧（`infra/CrashLog.kt:53`），同进程
+  重入不重复写；换消息/换首帧照常写。
+- 安装时机（`UmengApplication.kt:31` 与 `:81`）：`onCreate` 先装一次（未同意隐私
+  也有本地记录）；U-APM `UMConfigure.init` 会覆盖默认 handler，故在
+  `UmengCrashRedaction.install()`（`:78`）之后再装一次，保证本层在最外层、
+  崩溃时**先落盘再交 U-APM**；`install()` 幂等（当前 handler 已是本层则跳过）。
+
+**四条断言**（`android/app/src/test/kotlin/.../pages/diagnostics/CrashLogTest.kt`）
+1. 字段齐全：`time/level/source/category/message/extras(thread,type)/error/stackTrace`
+   且原始栈帧 `at …(Page.kt:12)` 保留。
+2. 脱敏：消息 `name=高等数学 teacher=张老师` 与 extras `courseName=高等数学` →
+   串中不含原值、含 `name=**`/`courseName=**`，非个人字段 `room=A101` 保留。
+3. 嵌套 extras：`payload={course=线性代数, teacher=李四, ok=normal}` → 前两项 `**`、`ok=normal` 保留。
+4. 去重 + 不吞异常：同签名第二次不写、换消息重写；`append` 抛异常时 delegate 仍被调用 1 次。
+   另有真实读写用例：崩溃条目落进 `app_runtime.log`、含 `stackTrace=`、不含 PII。
+
+**咬合探针**：把 `formatCrashEntry` 临时改成「原样拼接、跳过 buildLogEntryPayload」
+→ L0 **245 run / 3 failures**（正好是断言 2/3 与真实落盘用例）；还原后 **OK (245)**。
+
+**L0**：统一入口 `scripts/test-kotlin-module.ps1`，实际模块 `-Module diagnostics`
+（`infra/` 为共享目录自动纳入，无需 `-ExtraSources`）；编译 **170** 个 .kt；
+**Tests run: 245, OK**（基线 239 + 本批 6），exit 0。
+- 未裸跑 gradlew、未跑整包；只声明 infra 编译通过 / JVM 单测通过。
+- `UmengApplication.kt` 属根包，不在 L0 类路径，两行接线**未做 Gradle 编译**（按纪律
+  不裸跑），留门 1 线复核；逻辑本体在 `infra/CrashLog.kt` 已被 L0 覆盖。
+- 未推送。
+
+
 ### 10.30 ✅ 表格导入收口：往返幂等 + 编码/换行边界 + 字段清单对拍（2026-11-04，L1 表格导入）
 
 范围：`android/app/src/main/kotlin|test/kotlin/**/pages/import/**` 与本日志；`transfer/**`、`pages/export/**` 只读引用（未改）。

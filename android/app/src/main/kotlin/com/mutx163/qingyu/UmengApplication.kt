@@ -3,6 +3,7 @@ package com.mutx163.qingyu
 import android.app.Application
 import android.content.Context
 import com.mutx163.qingyu.infra.AppLogStore
+import com.mutx163.qingyu.infra.CrashLogInstaller
 import com.umeng.commonsdk.UMConfigure
 
 class UmengApplication : Application() {
@@ -23,6 +24,11 @@ class UmengApplication : Application() {
         // 与 Flutter 侧 `AppLogService` **同一个文件、同一个格式**：`filesDir/logs/app_runtime.log`，
         // 所以在迁移期两边写的东西能互相读到；未初始化时 append 返回 false，不会崩、不会打断业务。
         AppLogStore.initialize(this)
+        // 本地崩溃落盘（Dart `main.dart:321`/`:350` 的等价层）：崩溃先脱敏写
+        // `logs/app_runtime.log`，再原样交回系统/U-APM 的 handler，不吞异常。
+        // U-APM 的 `UMConfigure.init` 会覆盖默认 handler，所以 init 之后还要再装一次
+        // （见 `initializeAnalyticsIfNeeded`）；两处都幂等。
+        CrashLogInstaller.install()
 
         BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
 
@@ -70,6 +76,9 @@ class UmengApplication : Application() {
                 // 安装失败不影响初始化本身（回退为既有行为）。
                 try {
                     UmengCrashRedaction.install()
+                    // U-APM init 已换掉默认 handler：在脱敏层外面再包一层本地落盘，
+                    // 保证崩溃先写进 app_runtime.log，再交给 U-APM 的脱敏 handler。
+                    CrashLogInstaller.install()
                 } catch (_: Throwable) {
                 }
                 return true
