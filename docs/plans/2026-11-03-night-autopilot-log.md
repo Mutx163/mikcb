@@ -284,10 +284,10 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
 | **L1（import/statistics·第二班）** | ✅ 上半场收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` | `compileItestDebugKotlin` 12m44s 通过（Itest 变体）；L0 warehouse 247 / statistics 305；登录态探针与随机课色进 backlog |
 | **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` | 结构债已解（timetable 不再依赖 settings）；假期覆盖开关挂 backlog |
-| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` | L0 sync 885 全绿；两新键待接映射 |
+| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` | L0 sync/transfer 913；Locale 哈希修复；中断硬化 6 条；两处差异处置见正文 |
 | **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实（67 处实扫、15 处已修）；widgetdata `Int`→`Double` 修半值截断 |
 
-**Locale 守卫债务（`LocaleFormatGuardTest.WHITELIST`）**：`c6e3ac33` 上 **条目 17 条 / 覆盖站点数 48**（`pages/import` 已 0 处）。**两个数字含义不同**：条目数可因「宽前缀拆成精确到包」而增加，**覆盖站点数才是债务，只降不增**（此后按覆盖站点数计）；新增条目须 Lead 批。
+**Locale 守卫债务（`LocaleFormatGuardTest.WHITELIST`）**：`5f62ded8` 后 **条目 16 条 / 覆盖站点数 48**（`pages/import` 已 0 处；`main/sync/`、`main/platform/` 两条已删）。**两个数字含义不同**：条目数可因「宽前缀拆成精确到包」而增加或删除条目而减少，**覆盖站点数才是债务，只降不增**（此后按覆盖站点数计）；新增条目须 Lead 批。
 
 ---
 
@@ -571,7 +571,8 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 2. **widgetdata 类型级 bug**：`HomeWidgetSnapshot.heightAdjustment` / `cornerRadius` 与 `WidgetSettingsFace.widgetHeightAdjustment` / `widgetCornerRadius` 原为 **`Int`**，Dart 是 **`double`**（默认 `-11.0` / `22.0`）→ ① **JSON 字节不同**（`-11` vs `-11.0`，跨端哈希与冻结格式对拍都会破防）；② **半值被截断**（`3.5` → `3`，设置值静默失真）。**已改 `Double`**，并加**直接比对 JSON 字节**的断言（不是比对对象字段，避免序列化层再变时测不出）。
 3. **52 处白名单按「是否影响落盘」拆派**：`SyncConflict.kt:212`、`CouplePartnerPortImpl.kt:172`（哈希片段 / ETag）→ **sync 线**；`ImportSharedModel` 导入哈希 → **warehouse 线**；`HolidayEditorLogic` / `ScheduleReminderLogic` / `CourseAutoRefreshModel` → **课表线**。
    - **新规矩（写进流程，各线遵守，口径已于 2026-11-03 更正）**：白名单的债务度量是**覆盖的站点数**（实际被豁免的 `String.format` / `"…".format(` 调用点数量），**覆盖数只降不增**；**条目（行）数可变**——把宽前缀拆成多条精确到包的登记属于**正确收窄**，行数会增加但覆盖下降，按行数判会误伤。**新增条目（含拆分新增）须 Lead 批**；每修一处站点必须同步收窄/删除对应条目。
-   - **现状记档（随提交滚动）**：`c6e3ac33` 上 `WHITELIST` 为 **17 条、覆盖站点数 48**（`main/pages/`、`test/pages/` 两段宽前缀已拆成 12 条精确到包登记，`main/sync/`、`main/platform/` 已删）；**`pages/import` 已 0 处、完全移出**。白名单自身另有测试保证「每条都有理由且路径仍存在」，**过期条目会自己红**。
+   - **现状记档（随提交滚动）**：`5f62ded8` 后 `WHITELIST` 为 **16 条、覆盖站点数 48**（`main/pages/`、`test/pages/` 两段宽前缀已拆成 12 条精确到包登记；`main/sync/`、`main/platform/` 已删）；**`pages/import` 已 0 处、完全移出**。白名单自身另有测试保证「每条都有理由且路径仍存在」，**过期条目会自己红**。
+   - **覆盖数复核（协调线实扫，2026-11-04 00:10）**：按守卫同口径（两种写法 + 注释屏蔽 + 顶层参数切分）复算：**总违规 48、白名单覆盖 48、未覆盖 0**，与「两处 sync/platform 修复」后仍为 **48** 一致——那两处站点在 `c6e3ac33` 时已不在 48 的计数内（登记已先删），所以**不是「从 48 再降」而是持平**；条目数 18→16。
    - **两个数字含义不同（交接区同口径）**：**条目数** = `WHITELIST` 里 `WhitelistEntry` 的条数（可因收窄拆分而增加）；**覆盖站点数** = 被豁免的实际调用点数量（这才是债务，只降不增）。
 4. **infra / share 两域「已核对一致」清单（留痕，无改动）**：冻结文件的**文件与键**、**512 KiB 上限与截断**行为、**清理顺序**、**MIME / 扩展名**映射、**20 MiB** 上限、**QR 9 字段**布局、**LAN 打分**规则 —— 逐条与 Dart 核对**一致**，本轮**无改动**。
 
@@ -586,6 +587,18 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
    - 白名单同步收窄：**`pages/import` 完全移出**（0 处）；`main/pages/`、`test/pages/` 拆成 12 条精确到包登记 → **条目 9→17，覆盖站点数 52→48**（含义不同，见「Locale 守卫债务」）。
 5. **自我纠错（防误导接手人）**：我曾判断「`CourseAutoRefreshModel` 不属 import」，**实际它在 `pages/import/` 下**——我判断错了；L1 **按目录归属去修是对的**，此前结论作废。
 6. **自验与编译口径**：L0 import **473 例**、`LocaleFormatGuardTest` **单独编跑 2 例绿**。**编译声明照 L1 报法**：locale 改动**前** `:app:compileItestDebugKotlin` **12m12s 绿**；改动**后复跑在排队**，**当前不声明编译通过**（未出结论前不得引用旧的绿）。
+
+#### sync/transfer 第五批 ✅（2026-11-04 00:15 协调线回填）
+
+- **提交与推送核算**：`5f62ded8`、`7dfd9710`、`310c2d8b` **均已随本轮日志提交 `4fff617c` 的推送区间（`c6e3ac33..4fff617c`）上远端**，核实为 `origin/compose-migration` 的祖先，无需再推。
+
+1. **Locale 落盘风险修复（`5f62ded8`）**：`SyncConflict.kt:215`、`platform/CouplePartnerPortImpl.kt:175` 的 `"%02x"` **改 `Locale.ROOT`**（哈希片段/ETag 必须恒 ASCII 十六进制）；新增 `LocaleHashAsciiTest`——`ar-EG` 下断言 **64 位 `0-9a-f`**，`@After` 还原 Locale。白名单 `main/sync/`、`main/platform/` 两条**已删**（条目 18→16）。
+   - **覆盖站点数复核**：协调线按守卫同口径实扫 **总违规 48 / 覆盖 48 / 未覆盖 0**——仍是 **48 而非下降**（这两处站点在 `c6e3ac33` 时已不在 48 的计数内，登记先删）；条目数减少不等于覆盖数减少。
+2. **探针假阴性自纠（必须留痕）**：`run-guard-only.ps1` **硬编码跑 `ComposeSheetGuardTest`**，两次「通过」是**假阴性**（测错了对象）；另建 `run-locale-guard.ps1` 后撤回修复 → **`offenders=2` 精确红**，恢复后**绿 `offenders=0`**。**规矩**：**守卫脚本本身测错对象，会让假阴性看起来像通过**——跑守卫先确认「脚本跑的是不是目标用例」，不能只看退出码。
+3. **transfer 第二轮对拍（`7dfd9710`）**：**七条一致**——结构校验 **1→15 步同序**、**20 MiB / 5 MiB 上限**、**多余键忽略**、**BOM→`transfer_package_json_invalid`**、**20 万字符不截断**、**撤销点在「导入后改名」**、**补偿顺序差异属既有有意保留**。
+4. **两处差异处置**：① **乱码字节**——Dart 严格 `utf8.decode` 拒绝，Kotlin 宽松替换字符兜底 → 损坏包会被带乱码导入成功；**Lead 已单独授权 L3 改 `platform/AndroidTransferDocumentAdapter` 一个文件**，**不记为 backlog**（属本轮授权内修复）；② **多缺陷包报错码优先级**——Dart 逐实体先查再建模型、Kotlin 整包结构门全过再建 → **已派 L3 下批评估**，做不动就**只补断言**留痕。
+5. **中断硬化（`310c2d8b`）**：`TransferInterruptionTest` **6 条**（导入 2、导出 2、局域网收发 2）；`KilledMidway : Error` 绕开 `catch(Exception)` 模拟真杀进程。**途中自纠**：首版「设置在写点被杀」断言失败——实际写序是**核心设置先落、再写 LAN 镜像**，已按真实写序改断言（不是放宽）。
+6. **自验**：L0 sync/transfer **913 例**；门 3 两域 **0 处**。
 
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
@@ -687,9 +700,10 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | **`6b33f490`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0）** | 22:54:48→23:01:34 | **6m41s（406s）** | **有效**；红项 **无** |
 | `5e8be258` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `0533bc8f`**（未跑，不沿用） |
 | `0533bc8f` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进**（未跑，不沿用） |
-| `c6e3ac33` | 门 1 / 门 2 | ⏳ **待跑** | — | — | **warehouse 落库后 HEAD**；等 **transfer 与课表线**落库、HEAD 稳定后，在只读 worktree 跑门 1 → 门 2 |
+| `c6e3ac33` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `4fff617c`**（未跑，不沿用） |
+| `4fff617c` | 门 1 / 门 2 | ⏳ **待跑** | — | — | **当前 HEAD**（已含 warehouse `c6e3ac33` 与 sync/transfer 三笔 `5f62ded8`/`7dfd9710`/`310c2d8b`）；等 **transfer 与课表线**落库、HEAD 稳定后在只读 worktree 跑门 1 → 门 2，**不为填表硬跑** |
 
-**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `c6e3ac33`（本轮日志提交后更新），**需重跑**（已列入待跑行）。**编译口径**：L1 的 locale 改动前 `:app:compileItestDebugKotlin` 12m12s 绿属**改动前证据**；改动后复跑仍在排队，**当前不声明编译通过**。
+**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `4fff617c`，**需重跑**（已列入待跑行）。**编译口径**：L1 的 locale 改动前 `:app:compileItestDebugKotlin` 12m12s 绿属**改动前证据**；改动后复跑仍在排队，**当前不声明编译通过**。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
