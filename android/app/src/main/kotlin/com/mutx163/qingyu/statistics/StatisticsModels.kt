@@ -74,6 +74,17 @@ data class Achievement(
     /** 是否携带进度信息（models:61-62） */
     val hasProgress: Boolean
         get() = progressCurrent != null && progressTarget != null && progressTarget > 0
+
+    /**
+     * 进度「越小越好」的成就：目标是最多 N 节空档，而不是攒够 N 个。
+     *
+     * 这两枚（`balanced` 均衡大师 / `gap_master` 时间管理大师）的
+     * `progressCurrent` 是当前空档数、`progressTarget` 是上限。拿它当
+     * 「已完成 / 目标」显示会得到「6/2」和一条满格进度条——与「未达成」自相矛盾。
+     * 渲染层据此**不展示线性进度**（宁缺勿假），只保留达成状态。
+     */
+    val isLowerBetterProgress: Boolean
+        get() = id == "balanced" || id == "gap_master"
 }
 
 /** models:66-90 数据故事（结构化数据，文案由 UI 层 l10n 组装） */
