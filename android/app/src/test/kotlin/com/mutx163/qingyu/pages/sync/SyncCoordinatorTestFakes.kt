@@ -139,13 +139,27 @@ class FakeLocalSnapshotStore(initial: ByteArray? = null) : LocalSnapshotStore {
     var writeCount: Int = 0
         private set
 
-    override fun readSnapshot(): ByteArray? = stored
+    /** 失败注入（2026-11-03 大包/原子性）：写 / 读抛异常，模拟磁盘满与权限拒绝。 */
+    var failNextWrite: Boolean = false
+    var failWrites: Boolean = false
+    var failReads: Boolean = false
+
+    override fun readSnapshot(): ByteArray? {
+        if (failReads) throw IllegalIOException()
+        return stored
+    }
 
     override fun writeSnapshot(bytes: ByteArray) {
+        if (failWrites || failNextWrite) {
+            failNextWrite = false
+            throw IllegalIOException()
+        }
         stored = bytes
         writeCount++
     }
 }
+
+class IllegalIOException : RuntimeException("fake disk failure")
 
 /** 内存配置存储。 */
 class FakeConfigStore(
@@ -155,8 +169,12 @@ class FakeConfigStore(
     var savedCount: Int = 0
         private set
 
+    /** 失败注入：`saveConfig` 抛异常（模拟 KV 写失败 / 进程被杀前落盘失败）。 */
+    var failSave: Boolean = false
+
     override fun loadConfig(): WebdavSyncConfig = config
     override fun saveConfig(config: WebdavSyncConfig) {
+        if (failSave) throw IllegalIOException()
         this.config = config
         savedCount++
     }

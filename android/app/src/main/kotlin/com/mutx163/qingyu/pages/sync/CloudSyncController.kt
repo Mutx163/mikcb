@@ -508,6 +508,8 @@ class CloudSyncController(
         val rollback = effectiveSnapshotProvider?.let { provider ->
             (provider() as? SnapshotBuildResult.Success)?.bytes
         }
+        // 协调器下载成功时会先覆盖本机快照文件；失败必须能还原到这份原件。
+        val previousLocal = readLocalSnapshotQuietly()
         status = status.copy(isSyncing = true)
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
@@ -519,25 +521,38 @@ class CloudSyncController(
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
             SyncOpKind.OK -> {
-                if (!applyDownloadedSnapshot(outcome.bytes)) {
+                val downloaded = outcome.bytes
+                if (!applyDownloadedSnapshot(downloaded)) {
+                    // 课表没写回：本地快照文件已被协调器换成远端那份，必须还原，
+                    // 否则下一轮会把「本地=远端」当真而漏掉用户真实改动。
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
+                    notifyChanged()
+                    return SyncResultKind.FAILED
+                }
+                if (downloaded == null) {
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
                     notifyChanged()
                     return SyncResultKind.FAILED
                 }
                 // 每次恢复成功都**重设**共享撤销点：取不到本次恢复前的快照时必须清空，
                 // 旧撤销点指向的是更早的状态，继续留着会让「撤销上一次恢复」撤错东西。
-                if (rollback != null) {
-                    undoStore.set(
-                        CloudRestoreUndoPoint(
-                            beforeBytes = rollback,
-                            afterBytes = outcome.bytes,
-                        ),
-                    )
-                } else {
-                    undoStore.clear()
-                }
-                // 恢复成功 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
+                // 恢复 = 本机现在就是远端那份：把两个基线钉到这份内容哈希
                 //（Dart restoreFromBackup 同口径）。不写它，下一轮冲突判定恒误报。
-                markSynced(outcome.remoteContentSha256)
+                val committed = commitRestoredSnapshot(
+                    remoteBytes = downloaded,
+                    remoteContentSha256 = outcome.remoteContentSha256,
+                    rollbackBytes = rollback,
+                    previousLocalSnapshot = previousLocal,
+                    undoPoint = rollback?.let {
+                        CloudRestoreUndoPoint(beforeBytes = it, afterBytes = downloaded)
+                    },
+                    resetUndo = true,
+                    localSnapshotAlreadyWritten = true,
+                )
+                if (!committed) {
+                    notifyChanged()
+                    return SyncResultKind.FAILED
+                }
                 refreshBackups()
                 SyncResultKind.DOWNLOADED
             }
@@ -604,6 +619,79 @@ class CloudSyncController(
                 false
             }
         }
+    }
+
+    /**
+     * 恢复类操作的**三件套原子收口**（2026-11-03）：
+     * 「本机快照文件 → 撤销点 → 基线钉（config）」要么全写，要么一个都不写。
+     *
+     * 旧实现是三步裸调用：`writeSnapshot` 抛错（磁盘满 / 权限）时课表已经被写回，
+     * 撤销点还没设、基线没钉，本机快照也没换——正是任务里说的半写状态。这里任意
+     * 一步失败就按相反顺序补偿：恢复旧本地快照文件 → 清撤销点（不留指向错误状态的
+     * 撤销点）→ 用恢复前字节把课表写回去 → 最后如实报错误码。补偿自己失败时
+     * 报 `backup_restore_rollback_failed`，至少让用户知道「课表现在是恢复后的，
+     * 但同步基线没动」。
+     *
+     * @param undoPoint 非空 = 同时重设撤销点；[resetUndo] 为真且 [undoPoint] 为空 =
+     *   清掉旧撤销点（旧点指向更早状态，留着会撤错东西）。
+     * @return 成功 true；失败 false 且 [status] 已带错误码。
+     */
+    private fun commitRestoredSnapshot(
+        remoteBytes: ByteArray,
+        remoteContentSha256: String?,
+        rollbackBytes: ByteArray?,
+        previousLocalSnapshot: ByteArray?,
+        undoPoint: CloudRestoreUndoPoint?,
+        resetUndo: Boolean,
+        /**
+         * 协调器 `downloadSnapshot` 成功时已经把本地快照文件写成同一份字节；
+         * 下载路径传 true 少一次整包重写（大包时省一份瞬时分配）。
+         */
+        localSnapshotAlreadyWritten: Boolean = false,
+    ): Boolean {
+        val statusBefore = status
+        return try {
+            if (!localSnapshotAlreadyWritten) snapshotStore.writeSnapshot(remoteBytes)
+            if (undoPoint != null) {
+                undoStore.set(undoPoint)
+            } else if (resetUndo) {
+                undoStore.clear()
+            }
+            markSynced(remoteContentSha256)
+            true
+        } catch (_: Exception) {
+            undoStore.clear()
+            // 旧本地快照：优先原件；从来没有（首次恢复）就写回恢复前字节，
+            // 让「本机快照」与「已回滚的课表」仍然对得上，下一轮不会误判同源。
+            val localBytes = previousLocalSnapshot ?: rollbackBytes
+            val localRestored = localBytes == null ||
+                runCatching { snapshotStore.writeSnapshot(localBytes) }.isSuccess
+            val applier = effectiveSnapshotApplier
+            val snapshotRestored = when {
+                applier == null -> true
+                rollbackBytes == null -> false
+                else -> applier(rollbackBytes) == SnapshotApplyResult.Applied
+            }
+            status = statusBefore.copy(
+                isSyncing = false,
+                lastErrorCode = if (localRestored && snapshotRestored) {
+                    "backup_restore_commit_failed"
+                } else {
+                    "backup_restore_rollback_failed"
+                },
+            )
+            notifyChanged()
+            false
+        }
+    }
+
+    private fun readLocalSnapshotQuietly(): ByteArray? =
+        runCatching { snapshotStore.readSnapshot() }.getOrNull()
+
+    /** 下载/应用失败时把协调器已经覆盖过的本地快照文件还原，避免「本地快照说同步了」。 */
+    private fun restoreLocalSnapshotQuietly(previous: ByteArray?, fallback: ByteArray?) {
+        val target = previous ?: fallback ?: return
+        runCatching { snapshotStore.writeSnapshot(target) }
     }
 
     /** 把下载到的字节写回课表。没有注入落点时退回「视为已应用」（仅单测 / 旧路径）。 */
@@ -800,26 +888,30 @@ class CloudSyncController(
         val rollback = effectiveSnapshotProvider?.let { provider ->
             (provider() as? SnapshotBuildResult.Success)?.bytes
         }
+        val previousLocal = readLocalSnapshotQuietly()
         status = status.copy(isSyncing = true)
         notifyChanged()
         val applied = applyDownloadedSnapshot(preview.bytes)
         status = status.copy(isSyncing = false)
         notifyChanged()
-        if (!applied) return SyncResultKind.FAILED
-        // 本机快照文件同步成这份字节：下载路径（coordinator.downloadSnapshot）也会写，
-        // 少了它下一轮冲突判定会拿旧本地快照误报「远端已变」。
-        snapshotStore.writeSnapshot(preview.bytes)
-        if (rollback != null) {
-            undoStore.set(
-                CloudRestoreUndoPoint(
-                    beforeBytes = rollback,
-                    afterBytes = preview.bytes,
-                ),
-            )
-        } else {
-            undoStore.clear()
+        if (!applied) {
+            // 与 openBackup 同理：本地快照若已被换掉，课表却还在旧状态，必须还原文件。
+            restoreLocalSnapshotQuietly(previousLocal, rollback)
+            return SyncResultKind.FAILED
         }
-        markSynced(preview.remoteContentSha256)
+        // 本机快照文件同步成这份字节：少了它下一轮冲突判定会拿旧本地快照误报「远端已变」。
+        // 快照 / 撤销点 / 基线钉全部交给原子收口（失败会回滚课表，不留半写状态）。
+        val committed = commitRestoredSnapshot(
+            remoteBytes = preview.bytes,
+            remoteContentSha256 = preview.remoteContentSha256,
+            rollbackBytes = rollback,
+            previousLocalSnapshot = previousLocal,
+            undoPoint = rollback?.let {
+                CloudRestoreUndoPoint(beforeBytes = it, afterBytes = preview.bytes)
+            },
+            resetUndo = true,
+        )
+        if (!committed) return SyncResultKind.FAILED
         refreshBackups()
         return SyncResultKind.DOWNLOADED
     }
@@ -1005,6 +1097,10 @@ class CloudSyncController(
         }
         // 远端比基线新：让协调器做冲突判定。resolver 恒 CANCEL = 不自动选边，
         // 冲突时协调器返回 CANCELLED + 冲突信息，挂起给页面弹「选边」框。
+        val rollback = effectiveSnapshotProvider?.let { provider ->
+            (provider() as? SnapshotBuildResult.Success)?.bytes
+        }
+        val previousLocal = readLocalSnapshotQuietly()
         status = status.copy(isSyncing = true)
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
@@ -1014,11 +1110,29 @@ class CloudSyncController(
         )
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
-            SyncOpKind.OK -> if (applyDownloadedSnapshot(outcome.bytes)) {
-                markSynced(outcome.remoteContentSha256)
-                PullPhase.Downloaded
-            } else {
-                PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
+            SyncOpKind.OK -> {
+                val downloaded = outcome.bytes
+                if (!applyDownloadedSnapshot(downloaded)) {
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
+                    PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
+                } else if (downloaded == null) {
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
+                    PullPhase.Failed("sync_snapshot_missing")
+                } else if (
+                    !commitRestoredSnapshot(
+                        remoteBytes = downloaded,
+                        remoteContentSha256 = outcome.remoteContentSha256,
+                        rollbackBytes = rollback,
+                        previousLocalSnapshot = previousLocal,
+                        undoPoint = null,
+                        resetUndo = false,
+                        localSnapshotAlreadyWritten = true,
+                    )
+                ) {
+                    PullPhase.Failed(status.lastErrorCode ?: "backup_restore_commit_failed")
+                } else {
+                    PullPhase.Downloaded
+                }
             }
             SyncOpKind.CANCELLED -> outcome.conflict?.let { PullPhase.Conflict(it) }
                 ?: PullPhase.Failed("sync_failed")
@@ -1043,6 +1157,11 @@ class CloudSyncController(
             snapshotRemotePath = config.snapshotRemotePath,
             rawPath = meta.snapshotPath,
         ) ?: return PullPhase.Failed("sync_snapshot_path_invalid")
+        // 协调器会先覆盖本机快照文件；失败时用这两份还原（见 commitRestoredSnapshot）。
+        val rollback = effectiveSnapshotProvider?.let { provider ->
+            (provider() as? SnapshotBuildResult.Success)?.bytes
+        }
+        val previousLocal = readLocalSnapshotQuietly()
         status = status.copy(isSyncing = true)
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
@@ -1054,11 +1173,30 @@ class CloudSyncController(
         )
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
-            SyncOpKind.OK -> if (applyDownloadedSnapshot(outcome.bytes)) {
-                markSynced(outcome.remoteContentSha256)
-                PullPhase.Downloaded
-            } else {
-                PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
+            SyncOpKind.OK -> {
+                val downloaded = outcome.bytes
+                if (!applyDownloadedSnapshot(downloaded)) {
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
+                    PullPhase.Failed(status.lastErrorCode ?: "sync_failed")
+                } else if (downloaded == null) {
+                    restoreLocalSnapshotQuietly(previousLocal, rollback)
+                    PullPhase.Failed("sync_snapshot_missing")
+                } else if (
+                    !commitRestoredSnapshot(
+                        remoteBytes = downloaded,
+                        remoteContentSha256 = outcome.remoteContentSha256,
+                        rollbackBytes = rollback,
+                        previousLocalSnapshot = previousLocal,
+                        undoPoint = null,
+                        resetUndo = false,
+                        localSnapshotAlreadyWritten = true,
+                    )
+                ) {
+                    // 普通同步不重设撤销点，但「本机快照 + 基线钉」仍须同进同退。
+                    PullPhase.Failed(status.lastErrorCode ?: "backup_restore_commit_failed")
+                } else {
+                    PullPhase.Downloaded
+                }
             }
             SyncOpKind.CANCELLED -> outcome.conflict?.let { PullPhase.Conflict(it) }
                 ?: PullPhase.Failed("sync_failed")
@@ -1134,10 +1272,12 @@ class CloudSyncController(
     }
 
     private fun persist(next: WebdavSyncConfig) {
+        // 先落盘再改内存（2026-11-03）：旧顺序在 `saveConfig` 抛错时会让内存里的
+        // `config` 领先于磁盘，下一次启动读回的是旧值而界面显示新值——又是半写状态。
+        store.saveConfig(next)
         config = next
         baseUrlDraft = next.baseUrl
         remoteFolderDraft = next.remoteFolder
-        store.saveConfig(next)
         notifyChanged()
     }
 

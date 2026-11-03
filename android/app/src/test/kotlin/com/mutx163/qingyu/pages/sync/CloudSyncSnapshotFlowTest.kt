@@ -4,6 +4,7 @@ import com.mutx163.qingyu.app.InMemoryKeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.Course
+import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.decodeSnapshotObject
 import org.junit.Assert.assertEquals
@@ -130,6 +131,51 @@ class CloudSyncSnapshotFlowTest {
         controller.connect("me@example.com", "pw")
         controller.refreshBackups()
         return controller to transport
+    }
+
+    @Test
+    fun `数千条课时与多档案的大快照恢复成功且可撤销`() {
+        // 2026-11-03 大包硬化：6 档案 × 400 课时 = 2400 条课时，快照 JSON ≈ 数 MB。
+        // 钉两件事：①整条「编码 → 下载 → 应用 → 撤销点」链路不因规模退化/抛错；
+        // ②撤销后回到恢复前的档案数，撤销点不被大字节截断。
+        val remote = repository()
+        val profiles = (1..6).map { p ->
+            TimetableProfile(
+                id = "big-p$p",
+                name = "档案$p",
+                courses = (1..400).map { c -> course("big-$p-$c") },
+                currentWeek = 3,
+                createdAt = java.time.LocalDateTime.of(2026, 2, 1, 0, 0),
+                lastUsedAt = java.time.LocalDateTime.of(2026, 2, 2, 0, 0),
+            )
+        }
+        remote.replaceAllProfiles(profiles, "big-p1")
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val folder = WebdavSyncConfig().historyRemoteFolder
+        val result = TimetableSnapshotBridge.buildSnapshotBytes(
+            repository = remote,
+            deviceId = "devBig",
+            exportedAtIso = "2026-03-06T08:00:00.000",
+        )
+        assertTrue(result is SnapshotBuildResult.Success)
+        val bytes = result as SnapshotBuildResult.Success
+        transport.files["${folder}backup.mikcb"] = bytes.bytes
+        val controller = controller(local, transport)
+        controller.connect("me@example.com", "pw")
+        controller.refreshBackups()
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.openBackup("backup.mikcb"))
+        assertEquals(6, local.snapshot.profiles.size)
+        assertEquals(2400, local.snapshot.profiles.sumOf { it.courses.size })
+        assertTrue("恢复成功必须留下撤销点", controller.canUndoLastRestore)
+        assertTrue(bytes.bytes.size > 200_000)
+
+        assertTrue(controller.undoLastRestore())
+        assertEquals(1, local.snapshot.profiles.size)
+        assertEquals("local-course", local.snapshot.courses.single().id)
+        assertFalse(controller.canUndoLastRestore)
     }
 
     @Test

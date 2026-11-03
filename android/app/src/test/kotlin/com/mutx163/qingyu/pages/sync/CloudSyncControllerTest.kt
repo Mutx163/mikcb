@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.sync
 
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import org.junit.Assert.assertArrayEquals
@@ -617,5 +618,140 @@ class CloudSyncControllerTest {
 
         assertFalse("断开后撤销点必须失效", controller.canUndoLastRestore)
         assertNull(sharedStore.peek())
+    }
+
+    // ---------- 失败注入：撤销点 / 基线钉 / 本机快照 三者全写或全不写 ----------
+
+    /**
+     * 造一个「预演 → 确认落盘」链路，落盘三件套里可以指定哪一步失败。
+     * 期望：失败时课表按恢复前字节写回、本机快照文件还原、撤销点清空、基线钉不动。
+     */
+    private fun previewRestoreController(
+        snapshotStore: FakeLocalSnapshotStore,
+        configStore: FakeConfigStore = FakeConfigStore(),
+        undoStore: CloudSyncUndoStore = CloudSyncUndoStore(),
+        applied: MutableList<ByteArray> = mutableListOf(),
+        applier: (ByteArray) -> SnapshotApplyResult = { SnapshotApplyResult.Applied },
+    ): CloudSyncController = CloudSyncController(
+        store = configStore,
+        snapshotStore = snapshotStore,
+        transportFactory = { _, _ -> FakeRemoteTransport() },
+        deviceLabel = "测试机",
+        clock = { "2026-03-07T09:05:00+08:00" },
+        snapshotProvider = { SnapshotBuildResult.Success(buildSyncSnapshotBytes(profileId = "pLocal")) },
+        snapshotApplier = { bytes ->
+            applied += bytes
+            applier(bytes)
+        },
+        undoStore = undoStore,
+    )
+
+    @Test
+    fun `本机快照写入失败_课表回滚且不钉基线`() {
+        val localBefore = buildSyncSnapshotBytes(profileId = "pLocal")
+        val remote = buildSyncSnapshotBytes(profileId = "pRemote")
+        val snapshotStore = FakeLocalSnapshotStore(initial = localBefore)
+        snapshotStore.failNextWrite = true
+        val undoStore = CloudSyncUndoStore()
+        val applied = mutableListOf<ByteArray>()
+        val controller = previewRestoreController(snapshotStore, undoStore = undoStore, applied = applied)
+        val hashBefore = controller.config.lastAppliedRemoteHash
+
+        val kind = controller.applyPreviewedBackupRestore(
+            preview = CloudBackupRestorePreview(
+                entryId = "e1",
+                bytes = remote,
+                canMerge = false,
+                message = "",
+                remoteContentSha256 = WebdavSyncCoordinator.snapshotContentHash(remote) ?: "",
+            ),
+            mode = TransferApplyMode.OVERWRITE,
+        )
+
+        assertEquals(SyncResultKind.FAILED, kind)
+        assertEquals("backup_restore_commit_failed", controller.lastErrorCode)
+        // 三件套全不写：本机快照还是原件、撤销点没有、基线钉没动。
+        assertArrayEquals(localBefore, snapshotStore.stored)
+        assertFalse(controller.canUndoLastRestore)
+        assertNull(undoStore.peek())
+        assertEquals(hashBefore, controller.config.lastAppliedRemoteHash)
+        // 课表被写回恢复前字节（最后一次 applier 调用是补偿，不是远端那份）。
+        assertArrayEquals(remote, applied.first())
+        assertArrayEquals(localBefore, applied.last())
+    }
+
+    @Test
+    fun `基线钉落盘失败_课表同样回滚`() {
+        val localBefore = buildSyncSnapshotBytes(profileId = "pLocal")
+        val remote = buildSyncSnapshotBytes(profileId = "pRemote")
+        val snapshotStore = FakeLocalSnapshotStore(initial = localBefore)
+        val configStore = FakeConfigStore()
+        val undoStore = CloudSyncUndoStore()
+        val applied = mutableListOf<ByteArray>()
+        val controller = previewRestoreController(
+            snapshotStore = snapshotStore,
+            configStore = configStore,
+            undoStore = undoStore,
+            applied = applied,
+        )
+        configStore.failSave = true
+        val hashBefore = controller.config.lastAppliedRemoteHash
+
+        val kind = controller.applyPreviewedBackupRestore(
+            preview = CloudBackupRestorePreview(
+                entryId = "e1",
+                bytes = remote,
+                canMerge = false,
+                message = "",
+                remoteContentSha256 = WebdavSyncCoordinator.snapshotContentHash(remote) ?: "",
+            ),
+            mode = TransferApplyMode.OVERWRITE,
+        )
+
+        assertEquals(SyncResultKind.FAILED, kind)
+        assertEquals("backup_restore_commit_failed", controller.lastErrorCode)
+        // 配置先落盘再改内存：失败时内存里的基线钉也保持旧值。
+        assertEquals(hashBefore, controller.config.lastAppliedRemoteHash)
+        assertArrayEquals(localBefore, snapshotStore.stored)
+        assertNull(undoStore.peek())
+        assertArrayEquals(localBefore, applied.last())
+    }
+
+    @Test
+    fun `写回课表失败_本机快照文件还原`() {
+        val localBefore = buildSyncSnapshotBytes(profileId = "pLocal")
+        val remote = buildSyncSnapshotBytes(profileId = "pRemote")
+        val snapshotStore = FakeLocalSnapshotStore(initial = localBefore)
+        val undoStore = CloudSyncUndoStore()
+        val controller = previewRestoreController(
+            snapshotStore = snapshotStore,
+            undoStore = undoStore,
+            applier = { bytes ->
+                if (bytes.contentEquals(remote)) {
+                    SnapshotApplyResult.Invalid("invalid_sync_snapshot_payload")
+                } else {
+                    SnapshotApplyResult.Applied
+                }
+            },
+        )
+        val hashBefore = controller.config.lastAppliedRemoteHash
+
+        val kind = controller.applyPreviewedBackupRestore(
+            preview = CloudBackupRestorePreview(
+                entryId = "e1",
+                bytes = remote,
+                canMerge = false,
+                message = "",
+                remoteContentSha256 = WebdavSyncCoordinator.snapshotContentHash(remote) ?: "",
+            ),
+            mode = TransferApplyMode.OVERWRITE,
+        )
+
+        assertEquals(SyncResultKind.FAILED, kind)
+        assertEquals("invalid_sync_snapshot_payload", controller.lastErrorCode)
+        // 本地快照文件必须还是恢复前那份（协调器没参与这条路径，但补偿先读后写）。
+        assertArrayEquals(localBefore, snapshotStore.stored)
+        assertNull(undoStore.peek())
+        assertEquals(hashBefore, controller.config.lastAppliedRemoteHash)
     }
 }
