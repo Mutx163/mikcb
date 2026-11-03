@@ -731,7 +731,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importRandomCourseColorTitle => '수업 색상 무작위';
 
   @override
-  String get importRandomCourseColorSubtitle => '수업명과 교수로 프리셋 색을 자동 배정';
+  String get importRandomCourseColorSubtitle => '수업명·교수로 색 자동 배정';
 
   @override
   String get importRandomColorGroupTitle => '랜덤 색상 그룹';
@@ -797,7 +797,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodIcsTitle => '.ics 캘린더 가져오기';
 
   @override
-  String get importMethodIcsSubtitle => '다른 시간표 앱에서 내보낸 캘린더 파일';
+  String get importMethodIcsSubtitle => '타 앱에서 내보낸 캘린더';
 
   @override
   String get importMethodAiTitle => '이미지 인식 가져오기';
@@ -809,13 +809,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get importMethodWarehouseTitle => '교무 시스템 가져오기';
 
   @override
-  String get importMethodWarehouseSubtitle => '학교 교무 시스템에 로그인하여 가져오기';
+  String get importMethodWarehouseSubtitle => '교무 시스템에서 가져오기';
 
   @override
   String get importMethodSpreadsheetTitle => '표 가져오기';
 
   @override
-  String get importMethodSpreadsheetSubtitle => 'Excel / CSV 템플릿을 작성해 가져오기';
+  String get importMethodSpreadsheetSubtitle => 'Excel/CSV 템플릿으로 가져오기';
 
   @override
   String get spreadsheetImportTitle => '표 가져오기';
@@ -2282,7 +2282,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '샤오미 아일랜드 왼쪽 텍스트 아이콘';
 
   @override
-  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 권장. 타 기기는 오류 가능';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 권장, 타 기기 주의';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '타이포그래피 및 위치 미세 조정';
@@ -8362,7 +8362,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => '오래된 백업은 자동 삭제';
 
   @override
   String cloudBackupMaxAgeOption(int days) {

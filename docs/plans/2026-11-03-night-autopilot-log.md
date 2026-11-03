@@ -422,6 +422,23 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   3. **单节课明细行缺日期层级 / 钟点 / 考试角标，且用 ASCII 连字符** —— 对齐 Dart `session_list_card`（`6cd44e7e`）。
 - **门禁口径提醒（重要）**：上面 12m44s 通过的是 **`Itest` 变体**（`compileItestDebugKotlin`）。**门 1 的官方口径是 `:app:compileDevDebugKotlin`**，收工前仍需在**干净树**按口径重跑一次；门 2 同样待干净树重跑。
 
+#### L4（逻辑层）收口裁决与依据（2026-11-03 21:00 协调线逐条回填）
+
+- **提交**：`ce6f1cee`（`replaceAllProfilesAndSettings` 增可选 `currentWeek`）、`2651eacf`（DartTime 双向容错 / 哈希 Dart 数字编码 / prune 按字节写回）。两笔均已在远端（`ce6f1cee` 为 `2651eacf` 的祖先，`51d1998b` 随本轮推）。
+
+1. **API（原子换档入口）**：`replaceAllProfilesAndSettings(..., currentWeek: Int? = null)` —— **同锁写入、通知仍只 1 次、null 时零回归**（默认参数，旧调用点行为不变）。已交 L2 消费。
+2. **D2 时间解析**：**读**双向放宽（ISO / `Z` / 显式偏移 / 宽松格式 / 首尾空格均能解析）；**写**恒 `yyyy-MM-ddTHH:mm:ss.mmm` 且**无偏移**。探针验证（`toIso` 恒 3 位毫秒）**实测红**，确认探针有效后还原代码。
+3. **D4 跨端哈希（关键根因）**：**仅** `SyncConflict` 的哈希路径改接 `dartJsonNumber`，持久化用的 `MiniJson` **未动**（避免影响存储格式）。探针（`-0.0` → `0.0`）**4 处红**后还原，证明改动点被覆盖。**这条修掉的是「同步持续误判内容变更」的根因**——Dart 与 Kotlin 数字编码不一致会让每次比对都判定为变更。
+4. **D1 prune 写回**：顺序固定为 **先留档 → 再按「原始字节」切片写回 → 条目级损坏不写回 → 写回在 `reload()` 锁内**。探针实测红后还原。要点是用原始字节切片而非重新序列化，避免格式漂移。
+5. **D3/D5 前提反转（重要：原结论作废）**：
+   - Dart `holiday_entry.dart:228` 用 `int.tryParse` **不 trim**；Kotlin **已 trim**，即 Kotlin 行为**更宽**，原「Kotlin 缺失 trim」的判断不成立。
+   - Dart `timetable_profile.dart:291` 的 profile 留档本来就是 `…(截断)` 形态；`…<truncated>` 属**未移植的旧 `courses` 通道**，不是当前通道的差异。
+   - **结论：不改才是对齐**；已补守卫测试锁住现状。
+6. **250+ 键审计结论**：Dart **184** 键 / Kotlin **113** 键 / 缺 **71** / 多余 **0** / 同名异默认 **0**。因全部走 merge patch，**缺键既不会被清也不会回落默认**，故**不修、不逐键重写**。
+7. **D6 未移植成员**：逐项核对，**均有等价实现或无调用方**，只记清单不做。
+8. **L0 唯一红属他线引入**：`StatisticsSessionModel.kt` 有未走 ARB 的中文，已责令 **L1 清理（不许加基线）**。
+9. **平台端口建议（backlog）**：`platform/` 的 WebDAV 端口定义在 `CloudSyncController.kt` 内（import `pages/transfer`），导致 platform 单测**无法独立编译**、本轮少跑 **22 例**。记 backlog：**「L3 收口后把端口搬出 controller」**。
+
 #### L3（sync/transfer）✅ 已收线（2026-11-03 18:12 协调线回填）
 
 - **提交**：`c17a9fb2`（11 文件 +494/−42：恢复弹层动作区竖排、LAN 整份设置对齐、云备份预览落盘与损坏门）+ `5b4b5c3f`（2 文件 +6/−3：情侣课表 `partner_file_missing`）。
@@ -491,6 +508,8 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | 第一班累计 | — | — | 203→175 | 175 | — |
 | **B1** | 宽度 ≥22.0 | en 11 + ja 3 + ko 3 = 17 条压缩（含 ja/ko `cloudBackupMaxCountSubtitle` 由英文补译为日/韩文） | **17** | **158** | 18:49:42 exit=0 |
 | B2 | 20.0–21.9 | en 2 + ja 6 + ko 2 + zh_TW 1 = 11 条压缩（多为日文长句改短词、韩文去掉敬语尾） | **10** | **148** | 20:39:34→20:40:53 exit=0 |
+| B3 | 18.0–19.9 | en 9 + ja 3 + ko 6 = 18 条压缩（标题类压到 ≤11、副标题去掉重复主语；ja/ko 的 `cloudBackupMaxAgeSubtitle` 原为英文占位，顺带补译） | **18** | **130** | 21:12:41→21:16:30 exit=0 |
+| 合计 | — | — | 28 | **130** | 基线文件 140 行（含 10 条历史残留行，下次对齐时清） |
 
 **B2 明细（10 条实际压掉）**：`en/beforeClassReminderSubtitle`（`Alert {minutes} min before class`）、`en/layoutShowOtherWeeksTitle`（`Off-week courses`，标题 ≤11）、`ja/liveMiuiLabelImageSubtitle`、`ja/themeManageSubtitle`、`ja/importRandomCourseColorSubtitle`、`ja/bingWallpaperAutoApplySubtitle`、`ja/importMethodIcsSubtitle`、`ja/liquidGlassScopeDockSubtitle`、`ko/preferShortNameSubtitle`、`zh_TW/hyperosShowcaseSubpageSubtitle`。另有 `ko/unifiedCourseCardColorSubtitle` 同批改写但基线无对应行（原本不在冻结集），故实际压掉 10 行、158→148。
 

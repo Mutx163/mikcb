@@ -841,8 +841,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importMethodSpreadsheetTitle => 'Spreadsheet Import';
 
   @override
-  String get importMethodSpreadsheetSubtitle =>
-      'Import from an Excel or CSV template';
+  String get importMethodSpreadsheetSubtitle => 'Excel or CSV template';
 
   @override
   String get spreadsheetImportTitle => 'Spreadsheet Import';
@@ -2172,7 +2171,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get duringClassReminderTitle => 'During Class and Before End Reminder';
+  String get duringClassReminderTitle => 'In-class reminders';
 
   @override
   String get liveClassReminderLeadTitle => 'Highlight timing';
@@ -2239,8 +2238,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'If the school bell is early, shift earlier. If the bell is late, shift later.';
 
   @override
-  String get duringEndTimeDisplayLabel =>
-      'During-class / before-end time style';
+  String get duringEndTimeDisplayLabel => 'In-class time style';
 
   @override
   String get liveDisplayContentTitle => 'Display Content';
@@ -2352,8 +2350,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveMiuiLabelImageTitle => 'Xiaomi Island Left Text Icon';
 
   @override
-  String get liveMiuiLabelImageSubtitle =>
-      'For Xiaomi/Redmi; others may glitch';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi only';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle =>
@@ -2414,8 +2411,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveDisplayConfigModeTitle => 'Configuration Mode';
 
   @override
-  String get followBeforeClassDisplayTitle =>
-      'Follow Before-class Display Settings';
+  String get followBeforeClassDisplayTitle => 'Follow pre-class';
 
   @override
   String get liveKeepAliveTitle => 'Keep Alive';
@@ -3343,8 +3339,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWidgetShowCountdownTitle => 'Show countdown';
 
   @override
-  String get homeWidgetShowCountdownSubtitle =>
-      'Show a countdown to the next class';
+  String get homeWidgetShowCountdownSubtitle => 'Countdown to next class';
 
   @override
   String get homeWidgetCountdownLeadTitle => 'Countdown lead time';
@@ -3555,8 +3550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutHorizontalAlignLabel => 'Horizontal alignment';
 
   @override
-  String get layoutShowConflictBadgeTitle =>
-      'Show conflict pill on the home page';
+  String get layoutShowConflictBadgeTitle => 'Show conflict pill';
 
   @override
   String get layoutConflictOpacityTitle => 'Conflict course opacity';
@@ -4266,8 +4260,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePullQuickImportSubtitle => 'Auto quick-import on pull-down';
 
   @override
-  String get longPressEmptySlotToAddTitle =>
-      'Long-press empty slot to add course';
+  String get longPressEmptySlotToAddTitle => 'Long-press to add';
 
   @override
   String get longPressEmptySlotToAddSubtitle => 'Long-press, then tap plus';
@@ -8530,7 +8523,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => 'Older backups are removed';
 
   @override
   String cloudBackupMaxAgeOption(int days) {

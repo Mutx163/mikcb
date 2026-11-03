@@ -2160,7 +2160,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timeCorrectionHelp => '学校のチャイムが時間割より数秒早い場合は「早める」、遅い場合は「遅らせる」に設定。';
 
   @override
-  String get duringEndTimeDisplayLabel => '授業中/終了リマインダーの時間スタイル';
+  String get duringEndTimeDisplayLabel => '授業中の時刻表示';
 
   @override
   String get liveDisplayContentTitle => '表示内容';
@@ -8335,7 +8335,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudBackupMaxAgeTitle => 'Maximum age';
 
   @override
-  String get cloudBackupMaxAgeSubtitle => 'Backups older than this are removed';
+  String get cloudBackupMaxAgeSubtitle => '古いバックアップは自動削除';
 
   @override
   String cloudBackupMaxAgeOption(int days) {
@@ -9836,7 +9836,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get weatherShowOnWeekCardTitle => '週表示のカード';
 
   @override
-  String get weatherShowOnWeekCardSubtitle => 'マスが狭いので 1 項目だけ（気温優先）';
+  String get weatherShowOnWeekCardSubtitle => 'マスが狭いので気温優先';
 
   @override
   String get weatherShowOnSheetTitle => '授業詳細シート';

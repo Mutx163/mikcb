@@ -1037,7 +1037,7 @@
     }
   },
   "timeCorrectionHelp": "学校のチャイムが時間割より数秒早い場合は「早める」、遅い場合は「遅らせる」に設定。",
-  "duringEndTimeDisplayLabel": "授業中/終了リマインダーの時間スタイル",
+  "duringEndTimeDisplayLabel": "授業中の時刻表示",
   "liveDisplayContentTitle": "表示内容",
   "showCourseNameTitle": "授業名を表示",
   "preferShortNameTitle": "略称を優先表示",
@@ -4659,7 +4659,7 @@
     }
   },
   "cloudBackupMaxAgeTitle": "Maximum age",
-  "cloudBackupMaxAgeSubtitle": "Backups older than this are removed",
+  "cloudBackupMaxAgeSubtitle": "古いバックアップは自動削除",
   "cloudBackupMaxAgeOption": "{days} days",
   "@cloudBackupMaxAgeOption": {
     "placeholders": {
@@ -5646,7 +5646,7 @@
   "weatherSectionDisplayTitle": "表示",
   "weatherShowOnDayCardTitle": "日表示のカード",
   "weatherShowOnWeekCardTitle": "週表示のカード",
-  "weatherShowOnWeekCardSubtitle": "マスが狭いので 1 項目だけ（気温優先）",
+  "weatherShowOnWeekCardSubtitle": "マスが狭いので気温優先",
   "weatherShowOnSheetTitle": "授業詳細シート",
   "weatherSectionContentTitle": "表示する項目",
   "weatherShowPhenomenonTitle": "天気",
