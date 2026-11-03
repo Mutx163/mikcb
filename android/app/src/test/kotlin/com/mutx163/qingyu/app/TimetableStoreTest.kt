@@ -145,6 +145,68 @@ class TimetableStoreTest {
     }
 
     @Test
+    fun itemLevelDropArchivesRawEntriesUnderRollingKey() {
+        // Dart `_archiveUnparsedProfileItems`（storage_service.dart:1136-1150）：
+        // 条目级损坏在盘上不写回，所以原始字节必须另存一份，否则进程一退就永久消失。
+        val payload = """
+            [{"id":"p1","name":"课表-p1","currentWeek":3,"courses":[
+              {"id":"c1","name":"数学","teacher":"张老师","location":"A101",
+               "dayOfWeek":1,"startSection":1,"endSection":2,
+               "startTime":"08:00","endTime":"09:40"},
+              "garbage-course-entry"
+            ]}]
+        """.trimIndent()
+        val (raw, store) = newStore(mapOf("timetable_profiles" to payload))
+
+        store.loadProfiles()
+
+        val archive = MiniJson.parse(
+            raw.getString("timetable_profiles_unparsed_items")!!,
+        ) as Map<*, *>
+        val items = archive["items"] as List<*>
+        assertEquals(1, (archive["count"] as Number).toInt())
+        assertEquals("留档的是原始条目编码串，不是解析后的半成品", "\"garbage-course-entry\"", items.single())
+        // 时间戳按 Dart 口径是本机 ISO 串（不是 epoch 数字）。
+        assertTrue(
+            "archivedAt 应为 ISO 串，实际 ${archive["archivedAt"]}",
+            Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$""")
+                .matches(archive["archivedAt"] as String),
+        )
+        // 归档归归档，原 key 仍然一个字节不变。
+        assertEquals(payload, raw.getString("timetable_profiles"))
+    }
+
+    @Test
+    fun itemLevelDropQuarantineIsCappedAt50AndTruncatedAt4096() {
+        val garbage = (1..59).joinToString(",") { "\"bad-$it\"" }
+        val huge = "\"" + "x".repeat(5000) + "\""
+        // 超长条放最前面：留档上限按到达顺序截断，放后面根本进不了留档。
+        val payload = """[{"id":"p1","name":"课表","courses":[$huge,$garbage]}]"""
+        val (raw, store) = newStore(mapOf("timetable_profiles" to payload))
+
+        store.loadProfiles()
+
+        val items = (MiniJson.parse(raw.getString("timetable_profiles_unparsed_items")!!) as Map<*, *>)
+            .let { it["items"] as List<*> }
+        assertEquals("留档上限 50 条", 50, items.size)
+        // 单条超长值被截到 4096 字符再打截断标记，避免畸形数据撑爆存储。
+        val truncated = items[0] as String
+        assertTrue("首条超长值应带截断标记", truncated.endsWith("…(截断)"))
+        assertEquals(4096, truncated.length - "…(截断)".length)
+    }
+
+    @Test
+    fun cleanLoadWritesNoUnparsedArchive() {
+        val (raw, store) = newStore(
+            mapOf("timetable_profiles" to """[{"id":"p1","name":"课表","courses":[]}]"""),
+        )
+
+        store.loadProfiles()
+
+        assertNull(raw.getString("timetable_profiles_unparsed_items"))
+    }
+
+    @Test
     fun repeatedCorruptionKeepsOnlyNewestBackup() {
         val raw = InMemoryKeyValueStore()
         var micros = 100L

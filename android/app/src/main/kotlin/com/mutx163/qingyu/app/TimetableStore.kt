@@ -1,5 +1,6 @@
 package com.mutx163.qingyu.app
 
+import com.mutx163.qingyu.core.DartTime
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.ScheduleDateRule
@@ -7,6 +8,7 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
 import java.io.IOException
+import java.time.LocalDateTime
 
 /**
  * 课表相关 key 的**领域存储**（纯 Kotlin，无 Android 依赖）。
@@ -107,12 +109,40 @@ class TimetableStore(
                 corruptBackupKey = archiveCorrupt(KEY_PROFILES),
             )
         }
+        // 坏条目一律先留档再交给内存视图（Dart `_archiveUnparsedProfileItems`，:1136-1150）。
+        // 不做这一步，条目级损坏在每次冷启动都会重演，而原始字节只活在内存里，
+        // 进程一退就永久消失——这正是 Dart 侧最在意的「丢课要能找回」。
+        archiveUnparsedItems(parsed.quarantinedItems)
         return ProfilesLoadResult(
             profiles = parsed.profiles,
             didDrop = parsed.didDrop,
             itemLevelOnlyDrop = parsed.hasItemLevelOnlyDrops,
             quarantinedItems = parsed.quarantinedItems,
         )
+    }
+
+    /**
+     * 把解析失败的原始条目留档到**单个滚动 key**（覆盖写，Dart :1136-1150 同口径）。
+     *
+     * 不追加 `*_corrupt_backup_<ts>`：条目级损坏每次冷启动都重现（本层刻意不把
+     * 清洗结果写回盘），追加会让留档自己长成新的存储问题。
+     */
+    private fun archiveUnparsedItems(items: List<String>) {
+        if (items.isEmpty()) return
+        try {
+            store.putString(
+                KEY_PROFILES_UNPARSED_ITEMS,
+                MiniJson.encode(
+                    linkedMapOf(
+                        "archivedAt" to DartTime.toIso(LocalDateTime.now()),
+                        "count" to items.size,
+                        "items" to items,
+                    ),
+                ),
+            )
+        } catch (_: Exception) {
+            // 留档失败不阻断启动：坏条目本就进不了内存视图，这里只是尽力保留找回的可能。
+        }
     }
 
     /** 写全量档案数组并盖 schema 版本章（Dart `_writeProfilesWithoutLock:1216-1226`）。 */
@@ -215,6 +245,7 @@ class TimetableStore(
      * 供设置族完整模型 [TimetableSettingsModel] 按自己的口径读——那层认识几十个键，
      * 本层只认识 4 个。坏值同样留档 + 删 key，返回空 map。
      */
+    @Synchronized
     fun loadSettingsJson(): Map<String, Any?> {
         val raw = store.getString(KEY_SETTINGS)
         if (raw.isNullOrEmpty()) return emptyMap()
@@ -241,8 +272,11 @@ class TimetableStore(
      * JSON**。两者对读侧等价（Dart 的 `lenientXxx(null) ?? 默认值` 与
      * `parseNestedObject` 都把 null 当缺键），但只有显式 null 才能真正清掉一个键。
      */
+    @Synchronized
     fun saveSettingsPatch(patch: Map<String, Any?>) {
         if (patch.isEmpty()) return
+        // 读-合并-写必须整体持锁（@Synchronized）：设置页模型、灵动显示、局域网导入
+        // 三路写入共用本实例，不持锁时两次并发 patch 会读到同一份旧值、后写覆盖先写。
         val merged = LinkedHashMap<String, Any?>()
         merged.putAll(loadSettingsJson())
         merged.putAll(patch)
@@ -278,6 +312,7 @@ class TimetableStore(
      * - **解析失败什么都不做**（不删数据、不留档）——这份数据仍可能被 Dart 侧读走，
      *   这里没有「损坏自愈」的语义。
      */
+    @Synchronized
     fun saveSettingsPatchToActiveProfile(patch: Map<String, Any?>) {
         if (patch.isEmpty()) return
         val raw = store.getString(KEY_PROFILES)
@@ -502,6 +537,12 @@ class TimetableStore(
     companion object {
         const val KEY_PROFILES = "timetable_profiles"
         const val KEY_PROFILES_SCHEMA_VERSION = "timetable_profiles_schema_version"
+
+        /**
+         * 条目级损坏的原始条目留档（单个滚动 key，覆盖写）。
+         * 与 Dart `StorageService._unparsedProfileItemsKey` 同名（storage_service.dart:1127）。
+         */
+        const val KEY_PROFILES_UNPARSED_ITEMS = "timetable_profiles_unparsed_items"
         const val KEY_ACTIVE_PROFILE_ID = "active_timetable_profile_id"
         const val KEY_SETTINGS = "timetable_settings"
         const val KEY_CURRENT_WEEK = "current_week"

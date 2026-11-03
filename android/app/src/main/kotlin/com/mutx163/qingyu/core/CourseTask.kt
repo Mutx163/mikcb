@@ -52,7 +52,9 @@ data class CourseTask(
             "title" to title,
             "courseId" to courseId,
             "sourceWeek" to sourceWeek,
-            "dueDate" to dueDate?.let { DartTime.toIso(it) },
+            // Dart 构造函数保证 dueDate 恒为本地零点（course_task.dart:62）。
+            // 解析侧已归一，这里再兜一层：UI 侧若带时分秒构造，写出的字节仍与 Dart 一致。
+            "dueDate" to dueDate?.let { DartTime.toIso(dateOnly(it)) },
             "note" to note,
             "isCompleted" to isCompleted,
             "source" to source.value,
@@ -100,7 +102,9 @@ data class CourseTask(
                 title = readStringOrNull("title") ?: "",
                 courseId = readStringOrNull("courseId"),
                 sourceWeek = sourceWeek,
-                dueDate = DartTime.tryParseIso(json["dueDate"]?.toString()),
+                // Dart 构造函数把 dueDate 归一到本地零点（course_task.dart:62），
+                // 解析侧必须同步归一，否则读入 "…T13:00" 后原样写回，产出与 Dart 不同的 JSON。
+                dueDate = DartTime.tryParseIso(json["dueDate"]?.toString())?.let { dateOnly(it) },
                 note = readStringOrNull("note"),
                 // 类型不对没有合理真值，按缺省 false 收下，不让标记字段丢整条任务。
                 isCompleted = json["isCompleted"] is Boolean && json["isCompleted"] as Boolean,

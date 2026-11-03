@@ -239,6 +239,55 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         pendingNotify = true
     }
 
+    // ---------- 整份原始 settings 的带锁通道 ----------
+
+    /**
+     * **带锁读盘上整份 settings**（原样键集，含本层不认识的 Dart 侧 250+ 键）。
+     *
+     * 给「必须按整份 JSON 处理、又不该绕过仓储直接摸 `KeyValueStore`」的调用方
+     * （当前是局域网导入）。返回值是副本，调用方随便改不会影响内存或盘上状态。
+     *
+     * 注意：盘上可能保留合并写产生的显式 `null`（表示「该键已删除」）。本方法原样返回，
+     * 语义判断留给调用方，与 [TimetableStore.loadSettingsJson] 一致。
+     */
+    fun readRawSettings(): Map<String, Any?> = readRawSettingsLocked()
+
+    @Synchronized
+    private fun readRawSettingsLocked(): Map<String, Any?> = LinkedHashMap(store.loadSettingsJson())
+
+    /**
+     * **带锁按 patch 合并写整份 settings**：只覆盖 [patch] 里出现的键，值 `null` 表示删键。
+     *
+     * 口径与 [TimetableStore.saveSettingsPatch] / [TimetableStore.saveSettingsPatchToActiveProfile]
+     * 完全相同（后者同步活动档案内嵌的 `settings`，桌面小组件读的是那一份）；
+     * 区别只在于**整段读-合并-写发生在同一把锁内**，与 UI 设置编辑并发时不会丢更新。
+     *
+     * 成功后从盘上重载一次内存快照并通知监听者（patch 可能改到核心键，
+     * 如 `semesterWeekCount` / `sections`，不能只写盘不改内存）。
+     *
+     * @return true = 已落盘且快照已刷新；false = 底层抛错（内存不动）。
+     */
+    fun writeRawSettingsPatch(patch: Map<String, Any?>): Boolean {
+        if (patch.isEmpty()) return true
+        val ok = writeRawSettingsPatchLocked(patch)
+        if (ok) drainPendingNotify()
+        return ok
+    }
+
+    @Synchronized
+    private fun writeRawSettingsPatchLocked(patch: Map<String, Any?>): Boolean =
+        try {
+            store.saveSettingsPatch(patch)
+            store.saveSettingsPatchToActiveProfile(patch)
+            reload()
+            pendingNotify = true
+            true
+        } catch (_: Exception) {
+            // 顶层写与档案内嵌写之间失败时，盘上可能只落了前一半；
+            // 本层不实现跨 key 事务（见 replaceActiveProfileContent 的同类说明），内存保持旧值。
+            false
+        }
+
     // ---------- 备份恢复用的原子入口 ----------
 
     /**

@@ -207,6 +207,40 @@ class WeekCalculatorTest {
         assertEquals("2026-02-28T00:00:00.000", DartTime.toIso(moved))
     }
 
+    // ---------- 闰日 [人推] ----------
+
+    @Test
+    fun `leap day is one day and startOfWeek lands in February`() {
+        // 2024-02-29 是周四；2024-02-28 周三 → 日历日差 1（不是 0，也不是 2）。
+        assertEquals(
+            1L,
+            WeekCalculator.daysBetween(
+                t("2024-02-28T00:00:00.000"),
+                t("2024-02-29T00:00:00.000"),
+            ),
+        )
+        // 2024-03-01 周五所在周的周一仍是 2 月的 26 日（跨月不跨周）。
+        assertEquals(
+            "2024-02-26T00:00:00.000",
+            DartTime.toIso(WeekCalculator.startOfWeek(t("2024-03-01T18:30:00.000"))),
+        )
+        // 以闰日为开学日的第 2 周是第一周之后的 7 天。
+        assertEquals(
+            2L,
+            WeekCalculator.getWeekIndex(
+                t("2024-03-07T00:00:00.000"),
+                t("2024-02-29T00:00:00.000"),
+            ),
+        )
+    }
+
+    @Test
+    fun `non leap year feb 29 rolls to march 1 like dart`() {
+        // Dart `DateTime(2023,2,29)` 归一成 3-1；Kotlin 侧不应抛或被当成 2-28。
+        val rolled = DartTime.tryParseIso("2023-02-29")
+        assertEquals("2023-03-01T00:00:00.000", DartTime.toIso(rolled!!))
+    }
+
     // ---------- 跨年边界 [人推] ----------
 
     @Test

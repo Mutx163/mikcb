@@ -174,13 +174,23 @@ data class ScheduleItem(
             val rawReminder =
                 json["reminderMinutesBefore"] ?: json["reminderMinutes"] ?: json["reminder"]
 
+            val resolvedStartDate = dateOnly(parsedStartDate ?: legacyDate ?: now)
+            // Dart 构造函数 `_resolveNormalizedEndDate`（schedule_item.dart:468-478）：
+            // endDate 早于 startDate 时钳到 startDate，否则 `occursOn` 的区间为空，
+            // 且 toJson 会把「end < start」原样写回，与 Dart 的数据越漂越远。
+            val resolvedEndCandidate =
+                dateOnly(parsedEndDate ?: parsedStartDate ?: legacyDate ?: now)
+            val resolvedEndDate =
+                if (resolvedEndCandidate.isBefore(resolvedStartDate)) resolvedStartDate
+                else resolvedEndCandidate
+
             return ScheduleItem(
                 id = idValue,
                 title = readStringOrNull("title") ?: "",
                 location = readStringOrNull("location"),
                 note = readStringOrNull("note"),
-                startDate = dateOnly(parsedStartDate ?: legacyDate ?: now),
-                endDate = dateOnly(parsedEndDate ?: parsedStartDate ?: legacyDate ?: now),
+                startDate = resolvedStartDate,
+                endDate = resolvedEndDate,
                 startTime = readStringOrNull("startTime") ?: "08:00",
                 endTime = readStringOrNull("endTime") ?: "09:00",
                 color = readStringOrNull("color") ?: "#5B9CF6",
