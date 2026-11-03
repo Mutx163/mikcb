@@ -398,6 +398,64 @@ class TimetableProfilesControllerTest {
         assertEquals(sourceStart, f.repo.snapshot.settings.semesterStartDate)
     }
 
+    // ============ 换档后的「当前周」游标（Dart `_applyProfileState` :1139-1148） ============
+
+    @Test
+    fun `切换档案时当前周按目标档开学日重算 而不是带上一份的周数`() {
+        val oldStart = LocalDateTime.of(2026, 8, 31, 0, 0) // 旧档：t0 落在第 1 周
+        val newStart = LocalDateTime.of(2026, 2, 23, 0, 0) // 新档：t0 落在第 28 周，钳到 18
+        val oldProfile = profile("p1", "旧课表", currentWeek = 1L)
+            .copy(settings = profile("p1").settings.copy(semesterStartDate = oldStart, semesterWeekCount = 16))
+        val newProfile = profile("p2", "新课表", currentWeek = 7L)
+            .copy(settings = profile("p2").settings.copy(semesterStartDate = newStart, semesterWeekCount = 18))
+        val f = fixture(profiles = listOf(oldProfile, newProfile), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, clock = { t0 })
+
+        val result = controller.switchProfile("p2")
+
+        assertTrue(result is TimetableProfileActionResult.Success)
+        // t0 = 2026-09-01，新档开学日 2026-02-23 ⇒ 第 28 个日历周，超学期 18 周 ⇒ 钳到 18。
+        assertEquals("切档后当前周必须按目标档开学日算", 18, f.repo.snapshot.currentWeek)
+        assertEquals(18L, f.repo.snapshot.profiles.first { it.id == "p2" }.currentWeek)
+        // 同一次合并写入只通知一次（周次与设置一起落）。
+        assertEquals("p2", f.repo.snapshot.activeProfileId)
+    }
+
+    @Test
+    fun `换档后的当前周落盘 杀进程重开仍在`() {
+        val newStart = LocalDateTime.of(2026, 2, 23, 0, 0)
+        val oldProfile = profile("p1", currentWeek = 1L)
+        val newProfile = profile("p2", currentWeek = 7L)
+            .copy(settings = profile("p2").settings.copy(semesterStartDate = newStart, semesterWeekCount = 18))
+        val f = fixture(profiles = listOf(oldProfile, newProfile), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, clock = { t0 })
+
+        controller.switchProfile("p2")
+
+        // 杀进程重开（同一份盘、新实例）：周次不能退回 7 或旧档的 1。
+        val reopened = TimetableRepository(TimetableStore(f.raw))
+        assertEquals(18, reopened.snapshot.currentWeek)
+        assertEquals(18L, reopened.snapshot.profiles.first { it.id == "p2" }.currentWeek)
+    }
+
+    @Test
+    fun `不传周次的写入路径保持旧行为 周次不被改写`() {
+        // 重命名走 `replaceAllProfiles`（settings / currentWeek 都不传），
+        // 必须与 L4 加参数之前完全一致：不写 `current_week`，周次仍是档案里的值。
+        val f = fixture(profiles = listOf(profile("p1", "旧名字", currentWeek = 3L)), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, clock = { t0 })
+
+        controller.renameProfile("p1", "新名字")
+
+        assertEquals(3, f.repo.snapshot.currentWeek)
+        assertFalse(
+            "没传 currentWeek 就不该写 current_week 键",
+            f.raw.contains(TimetableStore.KEY_CURRENT_WEEK),
+        )
+        val reopened = TimetableRepository(TimetableStore(f.raw))
+        assertEquals(3, reopened.snapshot.currentWeek)
+    }
+
     // ============ 落盘失败：返回 Failed 且仓储不变 ============
 
     @Test

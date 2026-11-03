@@ -5,6 +5,7 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.weather.BingWallpaperPrefs
 import com.mutx163.qingyu.weather.WallpaperEvictionSources
 import java.io.File
@@ -111,6 +112,7 @@ class TimetableProfilesController(
             activeProfileId = newProfile.id,
             failureMessage = TimetableStrings.saveFailed.zh,
             settings = newProfile.settings,
+            currentWeek = currentWeekFor(newProfile),
         ) { TimetableStrings.formatCreatedProfile(finalName) }
     }
 
@@ -128,7 +130,13 @@ class TimetableProfilesController(
         return try {
             // 切档 = 换激活 id **并且**把全局设置换成目标档那份（Dart `_applyProfileState`）。
             // 仓储的 setActiveProfile 只换 id，设置会留在旧档，所以走合并写入口。
-            repository.replaceAllProfilesAndSettings(snap.profiles, id, target.settings)
+            // 当前周同样按**目标档**的开学日重算（不能带着上一份课表的周数）。
+            repository.replaceAllProfilesAndSettings(
+                profiles = snap.profiles,
+                activeProfileId = id,
+                settings = target.settings,
+                currentWeek = currentWeekFor(target),
+            )
             TimetableProfileActionResult.Success(TimetableStrings.formatSwitchedToProfile(target.name))
         } catch (_: Exception) {
             TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.zh)
@@ -175,6 +183,7 @@ class TimetableProfilesController(
             activeProfileId = copy.id,
             failureMessage = TimetableStrings.saveFailed.zh,
             settings = copy.settings,
+            currentWeek = currentWeekFor(copy),
         ) { TimetableStrings.copiedCurrentTimetable.zh }
     }
 
@@ -233,6 +242,7 @@ class TimetableProfilesController(
             activeProfileId = newActiveId,
             failureMessage = TimetableStrings.deleteFailed.zh,
             settings = nextActive?.settings,
+            currentWeek = nextActive?.let { currentWeekFor(it) },
         ) { TimetableStrings.formatDeletedProfile(target.name) }
         // 只在**档案真的删掉之后**回收；落盘失败（Failed）时档案还在，一张都不动。
         if (result is TimetableProfileActionResult.Success) {
@@ -329,16 +339,40 @@ class TimetableProfilesController(
         activeProfileId: String?,
         failureMessage: String,
         settings: TimetableSettings? = null,
+        currentWeek: Int? = null,
         successMessage: () -> String,
     ): TimetableProfileActionResult = try {
         if (settings != null) {
-            repository.replaceAllProfilesAndSettings(profiles, activeProfileId, settings)
+            repository.replaceAllProfilesAndSettings(profiles, activeProfileId, settings, currentWeek)
         } else {
             repository.replaceAllProfiles(profiles, activeProfileId)
         }
         TimetableProfileActionResult.Success(successMessage())
     } catch (_: Exception) {
         TimetableProfileActionResult.Failed(failureMessage)
+    }
+
+    /**
+     * 换档后的「当前周」：对齐 Dart `_applyProfileState`（`timetable_provider.dart:1139-1148`）。
+     *
+     * - 目标档**有开学日** ⇒ 按它自己的开学日把「今天」换算成日历周，再钳进学期周数
+     *   （两份课表开学日不同时，切过去必须是目标档该在的那一周，而**不是**恢复上次浏览停留的周次）；
+     * - 无开学日 ⇒ 无从推导，保留目标档持久化的 `currentWeek` 再钳（v2.0 行为）。
+     */
+    private fun currentWeekFor(profile: TimetableProfile): Int {
+        val settings = profile.settings
+        val week = WeekCalculator.calendarWeekForDate(
+            date = clock(),
+            semesterStart = settings.semesterStartDate,
+            fallback = profile.currentWeek.toInt(),
+        )
+        return clampCurrentWeek(week, settings.semesterWeekCount)
+    }
+
+    /** Dart `clampCurrentWeekToSettings`（`lib/models/timetable_profile.dart:27-38`）。 */
+    private fun clampCurrentWeek(week: Int, semesterWeekCount: Int): Int {
+        val maxWeek = semesterWeekCount.coerceAtLeast(1)
+        return week.coerceIn(1, maxWeek)
     }
 
     /** 新档默认设置：沿用「当前生效作息模板」（或第一份方案）的 sections，否则用默认模板。 */
