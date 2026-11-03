@@ -463,6 +463,25 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   3. 其余 2 处：按 Dart 行为对齐（详见 `f67c7e12`）。
 - **本批新键（A 线已交付，待 L3 接映射）**：`backupRestoreCommitFailed`（恢复提交失败，已回滚）、`backupRestoreRollbackFailed`（恢复失败且回滚失败，请检查存储）。六份 ARB 已同步、gen-l10n 已跑、`BackupFileStrings` 已登记 ArbText 防死键（死键新增 0）。命名已按惯例纠正为 camelCase（原先误用下划线式，见 10.11 第 3 条）。
 
+#### sync 线第三批 ✅（2026-11-03 21:30 协调线回填）
+
+- **提交**：`57b52ef2` / `1d27b38c` / `b594ed72`（已在远端）+ `51d1998b`（守卫 S8）+ `aee72ffa`（幂等用例）。四件落点如下：
+1. **错误码映射**：`BackupFileStrings` 正式接入 `lastErrorCode` 映射；顺带**修好原本就红的 `BackupFileStringsParityTest`**（5 → 7 条，新增两键后对拍恢复全绿）。
+2. **WebDAV 写失败分类**：HTTP **405 / 422 / 429 / 3xx** 统一归为 `invalid_response`，对齐 Dart `sanitizeWebdavErrorMessage` 的分类口径（不再把可归因失败报成通用失败）。
+3. **删除备份错误码**：`missing_credentials` / `backup_not_found` **取代裸 `FAILED`**，用户侧能区分「没登录」与「备份不存在」。
+4. **S8 守卫**：扫 `pages/sync` **7 处弹层**，全部常驻组合 + show 驱动；咬合探针 `CloudSyncControllerPage.kt:242` 套 `if (false)` → **实测红**，还原后**无残留**（证明守卫真的能咬住回潮）。
+   - 另含**大快照幂等用例**：`aee72ffa` 覆盖「**落盘一半被杀 → 重开再恢复**」，验证重入后不会产生重复/半写数据。
+- **自验**：L0 sync 族 **888 例全绿**；门 3（`compose-style-lint`）sync 域 **0 处**新增。
+
+**两条「有意保留的反向差异」（不是欠账，勿当 bug 修）**：
+
+1. **`no_local_user_data` 映射保留**：Dart 侧把它落到泛化错误（属**信息丢失**、非标准做法）；Kotlin 保留更精确的映射。**有意不从 Dart 收窄**。
+2. **`WebdavSyncConfig.fromJson` 逐字段容忍保留**：Kotlin 比 Dart **更宽**（缺字段/类型异常不整体失败），**不改数据行为**，属兼容性优势，保留。
+
+**backlog（已登记，不本轮做）**：
+- `maybePullRemote` 的生命周期 wiring —— **需改壳**（壳文件禁改），转需 Lead/Owner 排期。
+- platform 端口搬出 `CloudSyncController` —— **需排期**，且要**避开在途的 `pages/sync` 改动**，避免撞车。
+
 #### L2（course/timetable）✅ 已收线（2026-11-03 18:25 协调线回填）
 
 - **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
