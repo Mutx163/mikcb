@@ -27,6 +27,7 @@ import com.mutx163.qingyu.transfer.lan.LanEditApiRouter
 import com.mutx163.qingyu.transfer.lan.LanEditHttpServer
 import com.mutx163.qingyu.transfer.lan.LanEditRepositoryHost
 import com.mutx163.qingyu.transfer.lan.LanEditStaticAssets
+import com.mutx163.qingyu.transfer.lan.LanTransferUndoStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,9 +66,9 @@ import java.net.NetworkInterface
  *    控制台页面由 `transfer/lan/LanEditStaticAssets.kt` 从 Flutter asset 发，装配漏了这一项
  *    浏览器就是一片空白。**但「浏览器真能打开」没在真机上验过**，仍归用户验收。
  * 2. `import/apply` **不再是 501**：`378b801f`（2026-10-30）接上了真应用
- *    （`transfer/lan/LanTransferLogic.kt` 算差异 + `LanTransferApplier.kt` 写仓储）。
- *    仍缺的两条是「导入后没有撤销点（`transferId` 恒 null）」与「设置只应用已移植子集」，
- *    详见 `.agents/compose-phase3/claims/F17-lan-apply-501.md` §明确没做。
+ *    （`transfer/lan/LanTransferLogic.kt` 算差异 + `LanTransferApplier.kt` 写仓储）；
+ *    2026-11-02 补上撤销点（`apply` 回真实 `transferId`，`POST /api/v1/import/undo`
+ *    只回退这一批、保留用户之后的操作）。仍缺的是「设置只应用已移植子集」。
  * 3. 真机没对照过：端口是否真能连、通知栏常驻、关掉后是否真的打不开，全部归用户验收。
  */
 @Composable
@@ -248,7 +249,8 @@ object LanEditServiceRuntime {
             return try {
                 val newSession = LanEditSession.create()
                 val router = LanEditApiRouter(
-                    host = LanEditRepositoryHost(repository),
+                    // 撤销点按进程存活：停服再开仍能撤销上一个导入（杀进程才失效）。
+                    host = LanEditRepositoryHost(repository, undoStore = LanTransferUndoStore.shared),
                     session = newSession,
                 )
                 val newServer = LanEditHttpServer(
