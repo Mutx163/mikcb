@@ -52,7 +52,7 @@ import java.util.UUID
  * | 脚本回传 `courses` | [WarehouseCourseImportLogic] 解析 → [WarehouseCourseWriteBack] 走仓储原子入口写回当前档案 |
  * | 网页 `confirm` / `prompt` / 单选 | [WarehouseBridgeDialogHost] 原生弹层（F32 收口），回传契约见模型层文件头 |
  * | 网页 `saveCourseConfig` | 字段表单 → 白名单字段落盘（[warehouseCourseConfigResolution]）→ `true`/`false` |
- * | 网页 `savePresetTimeSlots` | 载荷是数组、无界面可弹：仍按降级回答 `false`（诚实边界第 2 条） |
+ * | 网页 `savePresetTimeSlots` | 载荷是节次数组、无界面可弹：直接走写链路（[WarehousePresetTimeSlotsWriteBack]）→ 落盘成功 `true` / 失败 `false` |
  * | 桥接消息 | 已由页面过了 §6.2 门禁；这里按类型分发 |
  *
  * ## 诚实边界（别删）
@@ -60,9 +60,9 @@ import java.util.UUID
  * 1. **抓回来的课直接写当前档案**：没有 Dart 的「替换/合并」弹窗与开学日/周次映射弹窗；
  *    默认策略是「空表替换、非空合并」（见 [WarehouseCourseWriteBack]）。周次按脚本原值写入，
  *    不做 `firstCourseWeek` 平移。
- * 2. **`savePresetTimeSlots` 没有界面**：它的载荷是节次时间数组（不是「用户输入」型交互），
- *    应用作息模板的写链路也没移植，不能弹一个「确认保存」却什么都不存——所以仍按降级
- *    回答 `false`（配置没落盘不能骗脚本）。`saveCourseConfig` 已有表单与落盘。
+ * 2. **`savePresetTimeSlots` 没有界面，但它不是「用户输入」型交互**：脚本的语义就是
+ *    「存这套全局作息」，直接落盘并套用（解析 → 校验 → 仓储 createTimeScheme/updateTimeScheme
+ *    + applyTimeScheme）；写链路失败回 `false` 并提示，不静默、也不画一个什么都不存的确认框。
  * 3. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
  *    与 i2-webview 认领文件里列的缺件一致。
  * 4. 宏录制/快捷导入仍未移植，按钮给「不可用」实话。
@@ -126,6 +126,9 @@ fun WarehouseWebLoginHost(
     // 当前挂起的原生对话框请求（F32：脚本的 Promise 在等用户回答）。
     // 同刻至多一个：脚本按 await 串行发问；同刻又来一条说明脚本没等，后者走降级。
     var pendingDialog by remember { mutableStateOf<WarehouseBridgeDialogRequest?>(null) }
+    // 本次脚本会话里已落盘生效的节次签名（对齐 Dart `_appliedImportedSectionsSignature`）：
+    // 同一份载荷不重复落盘，新脚本窗口（重新执行 / 页面跳转）清零。
+    var appliedSectionsSignature by remember { mutableStateOf<String?>(null) }
 
     /** 把一条回答 resolve 给网页并收起挂起弹层（requestId 不可信时脚本是空串，注入为安全 no-op）。 */
     fun answerAndClose(answer: WarehouseBridgeDialogAnswer) {
@@ -170,6 +173,7 @@ fun WarehouseWebLoginHost(
                 session = session.withStage(WarehouseWebLoginStage.INJECTING_SCRIPT)
                 // 新一轮执行前排空上一轮可能还挂着的弹层（正常已被 complete/error/导航排空）。
                 cancelPendingDialog("re-execute")
+                appliedSectionsSignature = null
                 scope.launch {
                     val loaded = withContext(Dispatchers.IO) {
                         service.loadAdapterScript(school, adapter)
@@ -372,6 +376,77 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    /** 不经挂起弹层，直接把一个值 resolve 给网页侧 Promise（savePresetTimeSlots 用）。 */
+    fun answerRequest(requestId: String, jsonValue: String, kind: String) {
+        val script = warehouseBridgeResolveScript(requestId, jsonValue)
+        if (script.isNotEmpty()) {
+            controller.injectJavaScript(script)
+        }
+        Log.i(LOG_TAG, "bridge $kind answered with $jsonValue")
+    }
+
+    /**
+     * `savePresetTimeSlots`：节次数组载荷直接落盘（不是「用户输入」型交互，不弹确认框）。
+     * 解析 / 校验 / 落盘全在 [WarehousePresetTimeSlotsWriteBack]，走仓储时间方案写入口；
+     * 成功 resolve `true`，任何一步失败 resolve `false` 并提示可读原因（不静默）。
+     * 同一份载荷在同一脚本会话内不重复落盘（对齐 Dart 的签名去重，按成功回话）。
+     */
+    fun handleSavePresetTimeSlots(raw: String) {
+        val request = warehousePresetTimeSlotsRequest(raw)
+        if (request == null) {
+            // 坏结构（坏 JSON / requestId 不可信 / payload 缺失）：按旧降级口径回答
+            // （可信 id 回 false；不可信 id 不注入任何东西）。
+            handleDialogFallback(raw)
+            return
+        }
+        val repo = repository
+        if (repo == null) {
+            // 壳没传仓储：作息没落盘，不能回 true 骗脚本（与 saveCourseConfig 同一口径）。
+            answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
+            showToasts(listOf(WarehouseStrings.saveFailed.zh))
+            return
+        }
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                WarehousePresetTimeSlotsWriteBack.applyPayload(
+                    repository = repo,
+                    payload = request.payload,
+                    schemeName = WarehouseStrings.warehouseImportedTimeSchemeName
+                        .filled("schoolName", school.name),
+                )
+            }
+            when (result) {
+                is WarehousePresetTimeSlotsWriteBack.PayloadResult.Applied -> {
+                    appliedSectionsSignature = result.signature
+                    answerRequest(request.requestId, "true", kind = "savePresetTimeSlots")
+                }
+
+                is WarehousePresetTimeSlotsWriteBack.PayloadResult.InvalidFormat -> {
+                    answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
+                    showToasts(listOf(WarehouseStrings.invalidSectionTimeFormat.zh))
+                }
+
+                is WarehousePresetTimeSlotsWriteBack.PayloadResult.NoSectionTimes -> {
+                    answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
+                    showToasts(listOf(WarehouseStrings.noSectionTimesToSave.zh))
+                }
+
+                is WarehousePresetTimeSlotsWriteBack.PayloadResult.Failed -> {
+                    val reason = result.errorCode
+                        ?: result.cause?.javaClass?.simpleName
+                        ?: "unknown"
+                    Log.w(LOG_TAG, "preset time slots write failed: $reason")
+                    answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
+                    showToasts(
+                        listOf(
+                            WarehouseStrings.saveSectionTimesFailedWithError.filled("error", reason),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     fun handleBridgeMessage(raw: String) {
         val type = warehouseBridgeMessageType(raw)
         when (type) {
@@ -387,14 +462,13 @@ fun WarehouseWebLoginHost(
             "prompt",
             "singleSelection",
             "saveCourseConfig",
-            "savePresetTimeSlots",
             -> {
                 if (!scriptActive) {
                     Log.w(LOG_TAG, "dialog message dropped outside import execution: $type")
                 } else {
                     val request = warehouseBridgeDialogRequest(raw)
                     when {
-                        // 解析不出界面（坏载荷 / savePresetTimeSlots 数组等）：降级默认值回答。
+                        // 解析不出界面（坏载荷等）：降级默认值回答。
                         request == null -> handleDialogFallback(raw)
 
                         // 同刻已有挂起：脚本本应 await 串行；后到的按降级回答，不吞（避免第二个 Promise 挂死）。
@@ -405,6 +479,16 @@ fun WarehouseWebLoginHost(
 
                         else -> pendingDialog = request
                     }
+                }
+            }
+
+            // savePresetTimeSlots 不是「用户输入」型交互：没有界面可弹，
+            // 解析载荷直接落盘并套用（写链路见 WarehousePresetTimeSlotsWriteBack）。
+            "savePresetTimeSlots" -> {
+                if (!scriptActive) {
+                    Log.w(LOG_TAG, "dialog message dropped outside import execution: $type")
+                } else {
+                    handleSavePresetTimeSlots(raw)
                 }
             }
 
@@ -440,6 +524,7 @@ fun WarehouseWebLoginHost(
                 // 挂着的对话框先按「取消」回话（旧 JS 上下文若还活着能收到，收不到也无害）。
                 cancelPendingDialog("page navigation")
                 scriptActive = false
+                appliedSectionsSignature = null
                 session = session.copy(
                     currentUrl = url,
                     stage = WarehouseWebLoginStage.LOADING,

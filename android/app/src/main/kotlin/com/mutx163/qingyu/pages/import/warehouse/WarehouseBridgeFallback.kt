@@ -9,7 +9,7 @@ import com.mutx163.qingyu.core.MiniJson
  *
  * 适配脚本通过 `AndroidBridgePromise.showAlert/showPrompt/showSingleSelection/...` 等
  * 拿到一个 Promise，原生不回话就**永远停在那里**：脚本不报错、不继续、导入没有任何反应。
- * 原生对话框 UI 还没移植，所以这里给一个**确定、可解释**的默认回答，先让脚本不挂起。
+ * 所以这里给一个**确定、可解释**的默认回答，让脚本在「原生没有对应界面」时也不挂起。
  *
  * ## 每种对话框的回答口径
  *
@@ -18,11 +18,13 @@ import com.mutx163.qingyu.core.MiniJson
  * | `confirm` / `showAlert` | `true` | 对齐 Dart 宏回放：未录到的 confirm 默认确认，不因缺弹窗取消自动化 |
  * | `prompt` | 脚本自带 `defaultValue` | 与 Dart 宏回放的兜底一致（`recorded ?? defaultValue`） |
  * | `singleSelection` | 脚本自带 `selectedIndex` | 与 Dart 后台导入一致（`selectedIndex`，缺省 0） |
- * | `saveCourseConfig` / `savePresetTimeSlots` | `false` | 诚实不可用：配置没落盘，不能回 `true` 骗脚本 |
+ * | `saveCourseConfig` | （宿主有原生表单，正常不走这里） | 兜底 `false`：配置没落盘，不能回 `true` 骗脚本 |
+ * | `savePresetTimeSlots` | （宿主已接写链路，正常不走这里） | 兜底 `false`：只剩坏结构消息（payload 非字符串等）会落到这里，同样不骗成功 |
  *
  * ⚠️ **诚实边界**：这些不是「用户选了」，只是「没有原生界面时的确定性兜底」。
  * 依赖用户选择（如选学期、选周次）的脚本，结果可能与用户真实意图不同；
- * 原生对话框接上后应替换本模块，见认领文件 F32。
+ * `savePresetTimeSlots` 的正式回答在 `WarehousePresetTimeSlotsWriteBack`（直接落盘），
+ * `saveCourseConfig` 的正式回答在宿主表单；本模块只剩坏结构消息的兜底职责。
  *
  * requestId 是不可信输入，和 [warehouseBridgeResolveScript] 共用同一份校验。
  */
