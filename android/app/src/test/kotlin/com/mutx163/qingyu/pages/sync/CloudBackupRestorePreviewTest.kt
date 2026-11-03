@@ -206,4 +206,53 @@ class CloudBackupRestorePreviewTest {
 
         assertTrue("恢复成功后撤销点必须就位", controller.canUndoLastRestore)
     }
+
+    @Test
+    fun `空字节备份_错误码是missing_backup_snapshot`() {
+        val transport = FakeRemoteTransport()
+        val controller = connected(transport)
+        // Dart `_previewBackupRestore`：空字节与「下载不到」同码，不是 JSON 格式错误。
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] = ByteArray(0)
+
+        val preview = controller.previewBackupRestore("2026-03-06.mikcb")
+
+        assertNull(preview)
+        assertEquals("missing_backup_snapshot", controller.lastErrorCode)
+    }
+
+    @Test
+    fun `空profiles快照也不摆合并按钮`() {
+        val transport = FakeRemoteTransport()
+        val controller = connected(transport)
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] =
+            ("""{"app":"mikcb","schemaVersion":2,"backupType":"sync",""" +
+                """"exportedAt":"2026-03-06T09:05:00.000","deviceId":"devA",""" +
+                """"profiles":[],"timeSchemes":[]}""").toByteArray()
+
+        val preview = controller.previewBackupRestore("2026-03-06.mikcb")!!
+
+        // 旧实现用 `!isFullBackupPlan(plan)`：profiles 为空 ⇒ 误判成可合并。
+        assertTrue("空 profiles 的快照仍是全量包，canMerge 必须 false", !preview.canMerge)
+        assertTrue(
+            "正文不应出现合并段，实际=${preview.message}",
+            !preview.message.contains("merge:"),
+        )
+    }
+
+    @Test
+    fun `profiles全解不出来_预览回missing_sync_timetable_data`() {
+        val transport = FakeRemoteTransport()
+        val controller = connected(transport)
+        // 核心负载「全损」：数组非空、但没有一条能解成档案。Dart parseSnapshotJson 的
+        // :601-607 门给 `missing_sync_timetable_data`，不能当成空课表放行。
+        transport.files["/Apps/qingyu-sync/history/2026-03-06.mikcb"] =
+            ("""{"app":"mikcb","schemaVersion":2,"backupType":"sync",""" +
+                """"exportedAt":"2026-03-06T09:05:00.000","deviceId":"devA",""" +
+                """"profiles":["garbage"],"timeSchemes":[]}""").toByteArray()
+
+        val preview = controller.previewBackupRestore("2026-03-06.mikcb")
+
+        assertNull(preview)
+        assertEquals("missing_sync_timetable_data", controller.lastErrorCode)
+    }
 }

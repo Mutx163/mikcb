@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.LanEditForegroundService
 import com.mutx163.qingyu.app.KeyValueStore
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.pages.ShellWiring
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.share.LanAddressScoring
@@ -27,6 +28,7 @@ import com.mutx163.qingyu.transfer.lan.LanEditApiRouter
 import com.mutx163.qingyu.transfer.lan.LanEditHttpServer
 import com.mutx163.qingyu.transfer.lan.LanEditRepositoryHost
 import com.mutx163.qingyu.transfer.lan.LanEditStaticAssets
+import com.mutx163.qingyu.transfer.lan.TimetableStoreLanSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -247,8 +249,13 @@ object LanEditServiceRuntime {
             appContext = context.applicationContext
             return try {
                 val newSession = LanEditSession.create()
+                // 设置要按 Dart 的 250+ 键整份读写：仓储只拥有时间/周次核心四键，
+                // 其余键由同一个存储上的 TimetableStore 负责。
+                val settingsStore = TimetableStoreLanSettings(
+                    TimetableStore(PrefsKeyValueStore(context.applicationContext)),
+                )
                 val router = LanEditApiRouter(
-                    host = LanEditRepositoryHost(repository),
+                    host = LanEditRepositoryHost(repository, settingsStore = settingsStore),
                     session = newSession,
                 )
                 val newServer = LanEditHttpServer(

@@ -84,10 +84,19 @@ class LanEditRepositoryHost(
     private val parseSpreadsheet: (ByteArray, String, TimetableSettings) -> LanEditSpreadsheetParse = { _, _, _ ->
         throw UnsupportedOperationException("spreadsheet_import_unsupported")
     },
+    /**
+     * 整份设置读写缝（Dart 250+ 键口径）。为 null 时退化为核心四键子集
+     * （老单测与未接线调用方不受影响）。
+     */
+    private val settingsStore: LanTransferSettingsStore? = null,
 ) : LanEditHost, LanTransferHost {
 
     /** 传输包预览/应用/撤销的执行层（无状态，只持仓储与撤销索引）。 */
-    private val applier = LanTransferApplier(repository, undoStore)
+    private val applier = LanTransferApplier(
+        repository = repository,
+        undoStore = undoStore,
+        settingsStore = settingsStore,
+    )
 
     /**
      * 仓储在构造时就装载完毕（`TimetableRepository.init { reload() }`），
@@ -231,7 +240,7 @@ class LanEditRepositoryHost(
                 profileName = activeProfileName,
                 currentWeek = snapshot.currentWeek,
                 activeProfileId = snapshot.activeProfileId,
-                settingsJson = snapshot.settings.toJson(),
+                settingsJson = settingsStore?.readSettingsJson() ?: snapshot.settings.toJson(),
                 coursesJson = snapshot.courses.map { it.toJson() },
                 tasksJson = repository.tasks.map { it.toJson() },
                 examsJson = repository.exams.map { it.toJson() },

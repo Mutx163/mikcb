@@ -45,6 +45,11 @@ class LanTransferApplier(
     /** 撤销点索引；局域网服务传 [LanTransferUndoStore.shared]，测试各自建独立实例。 */
     private val undoStore: LanTransferUndoStore = LanTransferUndoStore(),
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * 整份设置的读写缝。为 null 时退化为旧的「只写核心四键」路径
+     * （JVM 单测与未接线的调用方不受影响）。
+     */
+    private val settingsStore: LanTransferSettingsStore? = null,
 ) {
 
     /** 本地当前状态（差异的 current 侧）。 */
@@ -59,6 +64,7 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
+            settingsJson = settingsStore?.readSettingsJson(),
         )
     }
 
@@ -175,6 +181,7 @@ class LanTransferApplier(
             )
         }
         plan.settings?.let { repository.updateSettings(it) }
+        plan.settingsJson?.let { settingsStore?.writeSettingsPatch(it) }
         plan.currentWeek?.let { repository.setCurrentWeek(it) }
         plan.scheduleDateRules?.let { repository.updateScheduleDateRules(it) }
         plan.locationTimeGroups?.let { repository.updateLocationTimeGroups(it) }
@@ -254,6 +261,12 @@ class LanTransferApplier(
 
         if (incomingSettings != null && incoming.scope.carriesSettings) {
             repository.updateSettings(incomingSettings)
+            // Dart 的 settings 是整份替换；核心四键已由上面写入，这里补齐其余键。
+            val raw = packageSource.settingsJson
+            val sink = settingsStore
+            if (raw != null && sink != null) {
+                sink.writeSettingsPatch(LanTransferLogic.settingsReplacePatch(raw, sink.readSettingsJson()))
+            }
         }
         val week = incoming.currentWeek
         if (week != null &&
@@ -334,6 +347,7 @@ class LanTransferApplier(
             scheduleDateRules = snapshot.scheduleDateRules,
             locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
+            settingsJson = settingsStore?.readSettingsJson(),
             currentWeek = snapshot.currentWeek,
         )
     }
@@ -344,6 +358,11 @@ class LanTransferApplier(
             repository.scheduleItems = before.scheduleItems
             repository.replaceActiveProfileContent(before.courses, before.tasks, before.exams)
             repository.updateSettings(before.settings)
+            val sink = settingsStore
+            val beforeJson = before.settingsJson
+            if (sink != null && beforeJson != null) {
+                sink.writeSettingsPatch(LanTransferLogic.settingsReplacePatch(beforeJson, sink.readSettingsJson()))
+            }
             repository.setCurrentWeek(before.currentWeek)
             repository.updateScheduleDateRules(before.scheduleDateRules)
             repository.updateLocationTimeGroups(before.locationTimeGroups)

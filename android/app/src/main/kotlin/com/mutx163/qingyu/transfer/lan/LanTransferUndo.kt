@@ -45,6 +45,8 @@ data class LanTransferState(
     val scheduleDateRules: List<ScheduleDateRule> = emptyList(),
     val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     val settings: TimetableSettings = TimetableSettings.defaults(),
+    /** 整份设置原始 map（未接线读写缝时为 null，撤销口径退化为核心四键）。 */
+    val settingsJson: Map<String, Any?>? = null,
     val currentWeek: Int = 1,
 )
 
@@ -150,6 +152,8 @@ data class LanTransferUndoPlan(
     val scheduleDateRules: List<ScheduleDateRule>? = null,
     val locationTimeGroups: List<LocationTimeGroup>? = null,
     val settings: TimetableSettings? = null,
+    /** 整份设置的反向补丁（已按「导入前 + 外来新增键写 null」算好）。 */
+    val settingsJson: Map<String, Any?>? = null,
     val currentWeek: Int? = null,
     val timeSchemesToDelete: List<String> = emptyList(),
     val timeSchemesToRestore: List<TimeScheme> = emptyList(),
@@ -241,7 +245,22 @@ object LanTransferUndoLogic {
         } else {
             null
         }
-        settings?.let { counts["settings"] = 1 }
+
+        // 整份设置（250+ 键）的反向补丁：与集合同一口径——导入确实改了、现在仍是
+        // 「导入后」的值才回退；用户导入后自行改过设置就整块放过。
+        val beforeJson = token.before.settingsJson
+        val afterJson = token.after.settingsJson
+        val currentJson = current.settingsJson
+        val settingsJson = if (
+            beforeJson != null && afterJson != null && currentJson != null &&
+            !LanTransferLogic.sameJson(beforeJson, afterJson) &&
+            LanTransferLogic.sameJson(currentJson, afterJson)
+        ) {
+            LanTransferLogic.settingsReplacePatch(beforeJson, currentJson)
+        } else {
+            null
+        }
+        if (settings != null || settingsJson != null) counts["settings"] = 1
 
         val week = if (
             token.before.currentWeek != token.after.currentWeek &&
@@ -261,6 +280,7 @@ object LanTransferUndoLogic {
             scheduleDateRules = rulesPatch?.items,
             locationTimeGroups = groupsPatch?.items,
             settings = settings,
+            settingsJson = settingsJson,
             currentWeek = week,
             timeSchemesToDelete = schemePlan.deletedIds,
             timeSchemesToRestore = schemePlan.restored,

@@ -3,7 +3,6 @@ package com.mutx163.qingyu.pages.sync
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -74,16 +73,18 @@ fun CloudBackupDetailSheet(
                 view.summaryLine?.let { DetailLine(it, dark) }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(
+                // Dart `PickerSheetScaffold(actions = Column(crossAxisAlignment = stretch))`：
+                // 动作区是**整宽竖排**，恢复在上、删除在下，两者间隔 12dp。
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Dart 动作顺序是「恢复在前、删除在后」（旧版排反了，主次关系相反）。
+                    // 恢复是主操作：主色实心整宽按钮。
                     Button(
                         onClick = onRestore,
                         enabled = !busy,
                         colors = ButtonDefaults.buttonColorsPrimary(),
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(SyncStrings.cloudBackupRestoreAction.zh)
                     }
@@ -91,15 +92,16 @@ fun CloudBackupDetailSheet(
                     // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
                     // `cloudBackupDeleteTitle`（那句是确认弹框标题「删除此备份」）。
                     if (view.canDelete) {
+                        // Dart `HyperosButtonVariant.destructive` = 中性底色 + 危险色字，
+                        // 对应 miuix 的 `textButtonColors(textColor = error)`。
                         TextButton(
                             text = SyncStrings.deleteAction.zh,
                             onClick = onDelete,
                             enabled = !busy,
-                            // 删除是破坏性操作：文字按钮只染字色（`textColor`），不是底色。
                             colors = ButtonDefaults.textButtonColors(
                                 textColor = Color(QingyuTheme.error(dark)),
                             ),
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }

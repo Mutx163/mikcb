@@ -86,13 +86,22 @@ object TimetableSnapshotBridge {
         if (!envelope.isValid) {
             return SnapshotApplyResult.Invalid(envelope.errorCode ?: "invalid_sync_snapshot_payload")
         }
-        val profiles = TimetableProfile.parseProfilesPayload(
-            json["profiles"] as? List<*> ?: emptyList<Any?>(),
-        ).profiles
+        val rawProfiles = json["profiles"] as? List<*> ?: emptyList<Any?>()
+        val profiles = TimetableProfile.parseProfilesPayload(rawProfiles).profiles
+        // Dart parseSnapshotJson :601-607 的核心负载「全损」门：集合非空、但一条有效
+        // 记录都没解出来 → 核心负载损坏。不能当「空课表」放行（否则整份覆盖会把
+        // 用户课表清空），也别错报成 sync_snapshot_no_profiles。
+        if (rawProfiles.isNotEmpty() && profiles.isEmpty()) {
+            return SnapshotApplyResult.Invalid("missing_sync_timetable_data")
+        }
         if (profiles.isEmpty()) {
             return SnapshotApplyResult.Invalid("sync_snapshot_no_profiles")
         }
+        val rawTimeSchemes = json["timeSchemes"] as? List<*> ?: emptyList<Any?>()
         val timeSchemes = parseLenient(json["timeSchemes"]) { TimeScheme.fromJson(it) }
+        if (rawTimeSchemes.isNotEmpty() && timeSchemes.isEmpty()) {
+            return SnapshotApplyResult.Invalid("missing_sync_timetable_data")
+        }
         val scheduleDateRules = parseLenient(json["scheduleDateRules"]) { ScheduleDateRule.fromJson(it) }
         val locationTimeGroups = parseLenient(json["locationTimeGroups"]) { LocationTimeGroup.fromJson(it) }
         val activeProfileId = json["activeProfileId"] as? String
