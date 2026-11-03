@@ -1977,6 +1977,34 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -Mo
 
 **边界**：只改 `transfer/lan/LanEditHttp.kt`、`transfer/lan/LanEditHttpServer.kt`、`transfer/lan/LanEditHttpServerTest.kt`；未碰 `pages/sync/**`（只读核对）、`pages/import/**`（仅 `-ExtraSources` 测试引用）、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/timetable/**`、`components/**`、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
 
+### 10.41 ✅ `pages/sync` L0 自足 + 升级后「请重输网盘密码」一次性提示（2026-11-04）
+
+**A. L0 脚本（`6a00dd98`）**
+
+`096ff9bb` 让 `CouplePartnerUnlinkTest.kt` / `LocaleHashAsciiTest.kt` 直接引用 `platform.CouplePartnerPortImpl`，但 `pages/sync` 的源集止于模块目录，`-Module pages/sync` 报 4 处 `unresolved`；生产侧 `CloudSyncController` 还引用 `pages/transfer` 的差异/导入预览逻辑，历史上只能靠临时 `-ExtraSources` 补齐。
+
+修 `scripts/test-kotlin-module.ps1`：新增**模块专属单文件清单**（不是整目录）：
+
+- `pages/transfer/DataTransferApplyLogic.kt`、`DataTransferDiffLogic.kt`、`DataTransferImportLogic.kt`、`DataTransferModel.kt`、`TransferStrings.kt`（均零 Android import，是 `pages/sync` 生产代码的真实闭包）；
+- `platform/CouplePartnerPortImpl.kt`（纯 Kotlin 端口实现，两个用例直接构造）。
+
+`platform/` 整目录刻意不收（内含 `Context` / AndroidKeyStore 适配层）；`pages/transfer/` 也不整目录收，避免某个页面文件以后引入 Compose 时把本模块静默带红。
+
+实测：编译 **196** 文件，`OK (363 tests)`（旧口径 353，且这 363 含 B 新增 6 例；`TimetableSnapshotBridgeTest` 已由档案线修绿）。
+
+**B. 升级后一次性提示（`46280a4b` + 文案 `d39c4a49`）**
+
+1. `platform/LegacyCredentialProbe.kt`：只读 `FlutterSecureStorage` prefs 的**键名集合**，按后缀 `webdav_sync_password` / `couple_webdav_password` 匹配；不拼插件私有前缀、不解密、不反序列化；任何异常按「不存在」。
+2. `CloudSyncModel.kt`：纯判据 `shouldPromptLegacyPasswordReentry(hasStoredPassword, hasLegacyDartCredential, alreadyPrompted)`——三者同时成立才 true。取数口 `takeLegacyPasswordReentryPrompt`：**先读标记再探测**（第二次进入不再碰 prefs 键集合），判为提示时立即写标记，写失败仍返回 true（宁可下次重复，不可本次漏掉）。
+3. `CloudSyncController.hasStoredPassword()`：只读口，避免页面把渲染快照当原始布尔用。
+4. 两个入口（`CloudSyncControllerPage.kt` / `CoupleTimetableSettingsHost.kt`）都用**常驻组合 + `show`** 的 `OverlayDialog`（共用 `LegacyPasswordReentryDialog.kt`），未条件挂载；主按钮打开既有连接弹层，取消只关框。
+5. 幂等键 `webdav_password_legacy_reprompt_v1` / `couple_webdav_password_legacy_reprompt_v1`，只走 `KeyValueStore`（不写配置 JSON、不写插件 prefs）。
+6. 文案只新增 1 个 ARB 键 `webdavPasswordReentryBody`，六份 `lib/l10n/*.arb`（zh/en/ja/ko/zh_TW/zh_HK，后四份为翻译）同步写入并跑 `gen-l10n`；Kotlin 侧 `SyncStrings` 加 `ArbText` 并进 `allTexts`；标题/按钮复用 `cloudSyncTitle`、`cloudSyncConnectAccount`、`coupleWebdavLoginSheetTitle`、`coupleWebdavConnect`、`cancelAction`。
+
+**四条断言**（`LegacyPasswordReentryTest`，L0 6 例全绿）：① 三条件同时成立 → true；② 任一不成立 → false；③ 首访提示、标记落盘、二访不再提示且不再探测（`probeCalls == 1`）；④ 旧键不存在 → 不提示且不写标记。另补「已有密码不探测」「标记写失败仍提示」。
+
+**门禁/边界**：`dart run tool/copy_style_lint.dart` → 行内超宽 130 条（存量 130，新增 **0**）、死键 0 新增、复述标题 0 新增。未改 `theme/`、两个壳 Activity、`lib/ui/`、路由表、`app/TimetableStore.kt`；未跑 gradlew/整包；ARB 六份 + 生成物单独一笔（`d39c4a49`）。
+
 
 
 
