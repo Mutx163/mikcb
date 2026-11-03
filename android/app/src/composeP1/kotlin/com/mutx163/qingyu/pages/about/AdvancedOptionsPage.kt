@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
@@ -107,8 +108,8 @@ fun AdvancedOptionsPage(
             innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             horizontalPadding = QingyuPageCardMargin,
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(QingyuPageCardMargin),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+            verticalArrangement = AboutPageListSpacing,
         ) {
             // 1. 弹窗提醒
             item(key = "prompt") {
@@ -288,10 +289,14 @@ fun AdvancedOptionsPage(
     }
 }
 
-/** 一组设置行共用一张卡（官方「一整张 Card 里多个 Preference」的写法；行自带 16dp 内边距）。 */
+/** 一组设置行共用一张卡（官方「一整张 Card 里多个 Preference」的写法；行自带 16dp 内边距）。
+ *  圆角走设置组语义 24dp（[QingyuCardDefaults.SettingsGroupCorner]，Dart `settingsGroupRadius`）。 */
 @Composable
 private fun GroupCard(content: @Composable ColumnScope.() -> Unit) {
-    QingyuCard(modifier = Modifier.fillMaxWidth()) { content() }
+    QingyuCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+    ) { content() }
 }
 
 /** 镜像测速结果小胶囊：成功显示耗时（ms），失败显示「失败」（Dart `_buildMirrorProbeStatusChip`）。 */

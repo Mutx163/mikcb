@@ -184,8 +184,6 @@ class FlutterAssetsDecouplingGuardTest {
                 "noticesAssetPath = \"licenses/NOTICES.gz\"",
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/SupportCreatorPage.kt" to
                 "\"donate/wechatpay.png\"",
-            "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt" to
-                "\"branding/launcher_icon.png\"",
             // 2026-11-03 补：控制台映射表同款路径病（照抄 Dart 的 assets/ 前缀 → 整表 404）。
             "main/kotlin/com/mutx163/qingyu/transfer/lan/LanEditStaticAssets.kt" to
                 "\"lan_edit/index.html\"",
@@ -197,6 +195,15 @@ class FlutterAssetsDecouplingGuardTest {
                 text.contains(needle),
             )
         }
+        // 关于页图标 2026-11-03 起换两层 PNG（AboutAppIconBadge），不再读 branding 资产；
+        // 该页从此不应再出现任何 assets.open 调用（先剥注释再判）。
+        val staticCode = stripKotlinComments(
+            pageSource("composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt").readText(),
+        )
+        assertFalse(
+            "关于页不应再直接读资产（图标已收编 PagesCommon.AboutAppIconBadge）",
+            staticCode.contains(".open("),
+        )
     }
 
     // ---- 5. 读路径与磁盘文件对拍（2026-11-03，二维码不显示的根因守卫） ----
@@ -212,9 +219,8 @@ class FlutterAssetsDecouplingGuardTest {
             "donate/wechatpay.png",
             "donate/alipay.png",
         ),
-        "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutStaticPage.kt" to listOf(
-            "branding/launcher_icon.png",
-        ),
+        // AboutStaticPage 2026-11-03 起图标走 PagesCommon.AboutAppIconBadge（两层 PNG），
+        // 不再读 branding 资产，从本表移除；上面「前缀棘轮」测试仍盯着它不读任何资产。
     )
 
     @Test

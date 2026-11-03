@@ -1,6 +1,5 @@
 package com.mutx163.qingyu.pages.about
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,23 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
@@ -36,7 +30,6 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
-import com.mutx163.qingyu.components.QingyuPageScaffold as SharedQingyuPageScaffold
 import com.mutx163.qingyu.infra.AppReleaseInfo
 import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.AppUpdateDownloadChannel
@@ -54,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.icon.extended.Update
-import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
@@ -98,7 +90,7 @@ fun AboutUpdatePage(
 ) {
     val phase = resolveAboutUpdatePagePhase(packageInfoAvailable, checking, result)
 
-    SharedQingyuPageScaffold(
+    QingyuPageScaffold(
         title = AboutUpdatePageStrings.screenTitle,
         onBack = onBack,
         actions = {
@@ -142,36 +134,10 @@ fun AboutUpdatePage(
     }
 }
 
-/**
- * 应用图标徽标（Dart `AppIconBadge`）：圆角方图。
- *
- * 自适应启动图的两层 PNG 叠起来画（与 `SettingsPageRenderers` / `StatisticsExportCards`
- * 同一套避法）。不能写 `painterResource(context.applicationInfo.icon)`：
- * API 26+ 上该 id 解析到 `mipmap-anydpi-v26/ic_launcher.xml`，而本仓 classpath 的
- * compose ui 1.12 里 painterResource 只认 `<vector>` XML 与位图，根标签是
- * `adaptive-icon` 时直接抛 `IllegalArgumentException`——进页即闪退
- * （2026-11-03 用户实测「进入版本更新页直接闪退」的根因）。
- */
+/** 应用图标徽标：全族共享 [AboutAppIconBadge]（两层 PNG；历史根因见 PagesCommon 注释）。 */
 @Composable
 private fun AppIconBadge(size: Dp = 72.dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.22f)),
-    ) {
-        Image(
-            painter = painterResource(id = R.mipmap.ic_launcher_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Image(
-            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+    AboutAppIconBadge(size = size)
 }
 
 @Composable
@@ -193,6 +159,10 @@ private fun AboutUpdateCheckingView(appName: String, innerPadding: PaddingValues
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            Spacer(Modifier.height(16.dp))
+            // 进行中反馈（2026-11-03 补）：原先只有一行灰字、连转圈都没有，
+            // 「点了重新检查没反应」的观感就来自这里。官方指示器 + 文案同屏。
+            CircularProgressIndicator()
             Spacer(Modifier.height(12.dp))
             Text(
                 text = AboutUpdatePageStrings.checkingForUpdate,
@@ -214,8 +184,8 @@ private fun AboutUpdateCheckFailedView(
         innerPadding = innerPadding,
         scrollBehavior = scrollBehavior,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(QingyuPageCardMargin),
+        contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+        verticalArrangement = AboutPageListSpacing,
     ) {
         item(key = "check-failed") {
             QingyuCard(
@@ -263,8 +233,8 @@ private fun AboutUpdateReadyView(
         innerPadding = innerPadding,
         scrollBehavior = scrollBehavior,
         horizontalPadding = QingyuPageCardMargin,
-        contentPadding = PaddingValues(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(QingyuPageCardMargin),
+        contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+        verticalArrangement = AboutPageListSpacing,
     ) {
         item(key = "status") {
             AboutUpdateStatusCardFull(
@@ -353,7 +323,7 @@ private fun AboutUpdateStatusCardFull(
             } else {
                 Text(
                     text = "${AboutUpdateStrings.currentVersionLabel} ${result.currentVersion}",
-                    style = MiuixTheme.textStyles.footnote1,
+                    style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
                     color = colors.onSurfaceVariantSummary,
                 )
             }
@@ -382,7 +352,7 @@ private fun AboutUpdateStatusCardFull(
     }
 }
 
-/** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调。 */
+/** Dart `_buildVersionTransition`：旧版本弱化 → 箭头 → 新版本强调。版本号用等宽字体，数字对齐干净。 */
 @Composable
 private fun VersionTransition(currentVersion: String, latestVersion: String) {
     val colors = MiuixTheme.colorScheme
@@ -393,7 +363,7 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
     ) {
         Text(
             text = currentVersion,
-            style = MiuixTheme.textStyles.footnote1,
+            style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
             color = colors.onSurfaceVariantSummary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -404,7 +374,9 @@ private fun VersionTransition(currentVersion: String, latestVersion: String) {
         Spacer(Modifier.width(6.dp))
         Text(
             text = latestVersion,
-            style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
+            style = MiuixTheme.textStyles.footnote1
+                .copy(fontFamily = FontFamily.Monospace)
+                .shiftWeight(QingyuWeightDelta.SEMIBOLD),
             color = colors.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -473,7 +445,11 @@ private fun NotesBodyCard(body: String) {
     }
 }
 
-/** 更新重点 + 分类计数 + 分组条目（页面默认展开，Dart `initiallyExpanded: true`）。 */
+/** 更新重点 + 分类计数；完整条目默认收起、点开铺开（共享件，与更新日志页同一形态）。
+ *
+ *  与 Dart 的刻意分歧（Dart `initiallyExpanded: true`）：一版动辄几十条全部铺开会把
+ *  状态卡挤出一整屏灰字；现在重点行 + 计数常显，全文在「查看全部 N 项」后面，
+ *  信息一条不少、首屏只给重点。展开/收起文案复用更新日志页的既有 ARB 键。 */
 @Composable
 private fun ExpandedDigest(digest: ReleaseNotesDigest) {
     val colors = MiuixTheme.colorScheme
@@ -485,7 +461,7 @@ private fun ExpandedDigest(digest: ReleaseNotesDigest) {
         )
         Spacer(Modifier.height(8.dp))
         for (highlight in digest.highlights) {
-            UpdateHighlightRow(highlight)
+            ReleaseNotesHighlightRow(highlight)
         }
         val counts = releaseChangeCounts(digest)
         if (counts.isNotEmpty()) {
@@ -496,91 +472,8 @@ private fun ExpandedDigest(digest: ReleaseNotesDigest) {
                 color = colors.onSurfaceVariantSummary,
             )
         }
-        Spacer(Modifier.height(10.dp))
-        Spacer(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.secondaryContainer))
-        Spacer(Modifier.height(10.dp))
-        UpdateGroupedEntries(digest)
+        ReleaseNotesExpandableBody(digest)
     }
-}
-
-private val updateDigestGroupOrder = listOf(
-    ReleaseChangeKind.ADDED,
-    ReleaseChangeKind.IMPROVED,
-    ReleaseChangeKind.REMOVED,
-    ReleaseChangeKind.FIXED,
-    ReleaseChangeKind.OTHER,
-)
-
-@Composable
-private fun UpdateGroupedEntries(digest: ReleaseNotesDigest) {
-    val colors = MiuixTheme.colorScheme
-    var first = true
-    for (kind in updateDigestGroupOrder) {
-        val group = digest.entries.filter { it.kind == kind }
-        if (group.isEmpty()) continue
-        if (!first) Spacer(Modifier.height(12.dp))
-        first = false
-        val label = group.firstOrNull { it.label.isNotEmpty() }?.label
-        if (label != null) {
-            Text(
-                text = "$label · ${group.size}",
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = digestKindColor(kind, colors),
-            )
-            Spacer(Modifier.height(6.dp))
-        }
-        for (entry in group) {
-            Text(
-                text = entry.text,
-                style = MiuixTheme.textStyles.footnote1,
-                color = colors.onSurfaceSecondary,
-                lineHeight = 20.sp,
-                modifier = Modifier.padding(bottom = 10.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun UpdateHighlightRow(entry: ReleaseChangeEntry) {
-    val colors = MiuixTheme.colorScheme
-    val accent = digestKindColor(entry.kind, colors)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Spacer(
-            modifier = Modifier
-                .padding(top = 7.dp)
-                .size(5.dp)
-                .background(accent, CircleShape),
-        )
-        Spacer(Modifier.width(8.dp))
-        if (entry.label.isNotEmpty()) {
-            Text(
-                text = entry.label,
-                style = MiuixTheme.textStyles.footnote1.shiftWeight(QingyuWeightDelta.SEMIBOLD),
-                color = accent,
-            )
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(
-            text = entry.headline,
-            style = MiuixTheme.textStyles.body2,
-            color = colors.onBackground,
-            lineHeight = 19.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-private fun digestKindColor(kind: ReleaseChangeKind, colors: Colors): Color = when (kind) {
-    ReleaseChangeKind.ADDED -> colors.primary
-    ReleaseChangeKind.REMOVED -> colors.error
-    ReleaseChangeKind.IMPROVED, ReleaseChangeKind.FIXED -> colors.onSurfaceSecondary
-    ReleaseChangeKind.OTHER -> colors.onSurfaceVariantSummary
 }
 
 /** 底部下载进度条（Dart `_buildDownloadProgressBar`）。 */

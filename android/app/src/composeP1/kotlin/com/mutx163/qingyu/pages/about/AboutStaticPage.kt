@@ -4,14 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,29 +17,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuCardDefaults
 import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuSectionTitle
@@ -50,8 +42,6 @@ import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.theme.QingyuTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -68,6 +58,7 @@ import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Update
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -106,44 +97,50 @@ fun AboutStaticPage(
 
     QingyuPageScaffold(title = AboutInfoStrings.aboutTitle, onBack = onBack) {
         QingyuPageList(
-            // 底部手势条高度显式算进 contentPadding；QingyuPageList 内部还会把传入
-            // innerPadding 的 bottom 再加一次，所以 innerPadding 这里只给 top，避免小白条算两遍
-            // （与 schedule/ScheduleListPage 同一配方）。
-            innerPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
+            innerPadding = innerPadding,
             scrollBehavior = scrollBehavior,
             // 官方配方：页面横向留白由每个块自己带（Card 12dp），
             // 不在 contentPadding 里加左右内边距——否则滚动条贴不到屏幕边缘。
             horizontalPadding = QingyuPageCardMargin,
-            contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding() + 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = AboutPageListBottomPadding),
+            verticalArrangement = AboutPageListSpacing,
         ) {
             // ── 头部信息卡 ──
             item(key = "about-hero") {
                 AboutHeroCard()
             }
 
-            // ── 三段列表 ──
+            // ── 三段列表：一段一张设置组卡（圆角 24），行走官方 ArrowPreference ──
+            // （2026-11-03 版面收口：原先一行一张自拼卡、行内 Row+箭头手拼，
+            //   与高级选项页的官方 preference 形态不一致。）
             for (section in sections) {
                 item(key = "section-${section.label}") {
                     QingyuSectionTitle(section.label)
                 }
-                items(section.entries) { entry ->
-                    QingyuRow(
-                        title = entry.title,
-                        subtitle = entry.subtitle,
-                        icon = { RowIcon(entry) },
-                        onClick = {
-                            when (entry.kind) {
-                                // 说明层：页内弹层，不外跳。
-                                AboutEntryKind.POSITIONING,
-                                AboutEntryKind.IMPORT_MIGRATION -> infoSheetEntry = entry
-                                // 仓库说明：页内弹层，含三个动作。
-                                AboutEntryKind.REPOSITORY -> repositorySheetOpen = true
-                                // 其余都是「推一页」，交给壳把它们转成壳页面 id。
-                                else -> onOpenPage(routeOf(entry.kind))
-                            }
-                        },
-                    )
+                item(key = "group-${section.label}") {
+                    QingyuCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = QingyuCardDefaults.SettingsGroupCorner,
+                    ) {
+                        section.entries.forEach { entry ->
+                            ArrowPreference(
+                                title = entry.title,
+                                summary = entry.subtitle.takeIf { it.isNotEmpty() },
+                                startAction = { RowIcon(entry) },
+                                onClick = {
+                                    when (entry.kind) {
+                                        // 说明层：页内弹层，不外跳。
+                                        AboutEntryKind.POSITIONING,
+                                        AboutEntryKind.IMPORT_MIGRATION -> infoSheetEntry = entry
+                                        // 仓库说明：页内弹层，含三个动作。
+                                        AboutEntryKind.REPOSITORY -> repositorySheetOpen = true
+                                        // 其余都是「推一页」，交给壳把它们转成壳页面 id。
+                                        else -> onOpenPage(routeOf(entry.kind))
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -193,7 +190,11 @@ private fun routeOf(kind: AboutEntryKind): String = when (kind) {
     AboutEntryKind.REPOSITORY -> "a.about"
 }
 
-/** 头部信息卡：对照 `AboutScreen.build` 的第一张卡（Dart :252-294）。 */
+/** 头部信息卡：对照 `AboutScreen.build` 的第一张卡（Dart :252-294）。
+ *
+ *  2026-11-03 版面收口：内边距收 [QingyuCardDefaults.ContentInsideMargin]（16dp，与全族一致）；
+ *  图标换共享 [AboutAppIconBadge]（两层 PNG，与更新页同一身份块）；版本号等宽字体，
+ *  与「当前版本 / 最新版本」的更新页口径一致。 */
 @Composable
 private fun AboutHeroCard() {
     val dark = isSystemInDarkTheme()
@@ -216,10 +217,10 @@ private fun AboutHeroCard() {
 
     QingyuCard(
         modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(20.dp),
+        insideMargin = QingyuCardDefaults.ContentInsideMargin,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            AppIconBadge(size = 84.dp, radius = 24.dp)
+            AboutAppIconBadge(size = 84.dp)
             Spacer(Modifier.height(16.dp))
             Text(
                 text = AboutInfoStrings.appName,
@@ -229,7 +230,7 @@ private fun AboutHeroCard() {
             Spacer(Modifier.height(6.dp))
             Text(
                 text = versionText,
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.footnote1.copy(fontFamily = FontFamily.Monospace),
                 color = Color(QingyuTheme.secondaryText(dark)),
             )
             Spacer(Modifier.height(12.dp))
@@ -253,37 +254,8 @@ private fun AboutHeroCard() {
     }
 }
 
-/** 应用图标：读 APK 里 `branding/launcher_icon.png`（2026-11-02 起落主 assets，与 Flutter 同一份）。
- *  路径不带 `assets/` 前缀——AssetManager 本就相对 assets 根，多一层前缀必 FileNotFound（2026-11-03）。 */
-@Composable
-private fun AppIconBadge(size: Dp, radius: Dp) {
-    val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(initialValue = null) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                context.assets.open("branding/launcher_icon.png").use { stream ->
-                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                }
-            }.getOrNull()
-        }
-    }
-    val image = bitmap
-    if (image != null) {
-        Image(
-            bitmap = image,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(size)
-                .clip(RoundedCornerShape(radius)),
-        )
-    } else {
-        // 读不到资产时留尺寸占位，不画一个假图标。
-        Box(Modifier.size(size))
-    }
-}
-
-/** 三格元信息条（Dart `_buildHeroMetaStrip`，:528-572）：平台 / 重点 / 更新。 */
+/** 三格元信息条（Dart `_buildHeroMetaStrip`，:528-572）：平台 / 重点 / 更新。
+ *  三格用留白分隔（2026-11-03 去线收口：原来格间竖 1dp 线删除）。 */
 @Composable
 private fun HeroMetaStrip(updateValue: String) {
     val dark = isSystemInDarkTheme()
@@ -303,13 +275,11 @@ private fun HeroMetaStrip(updateValue: String) {
             value = AboutInfoStrings.platformValue,
             modifier = Modifier.weight(1f),
         )
-        HeroMetaDivider()
         HeroMetaCell(
             label = AboutInfoStrings.focusLabel,
             value = AboutInfoStrings.focusValue,
             modifier = Modifier.weight(1f),
         )
-        HeroMetaDivider()
         HeroMetaCell(
             label = AboutInfoStrings.updateLabel,
             value = updateValue,
@@ -339,17 +309,6 @@ private fun HeroMetaCell(label: String, value: String, modifier: Modifier = Modi
             color = Color(QingyuTheme.primaryText(dark)),
         )
     }
-}
-
-@Composable
-private fun HeroMetaDivider() {
-    val dark = isSystemInDarkTheme()
-    Box(
-        modifier = Modifier
-            .width(1.dp)
-            .height(28.dp)
-            .background(Color(QingyuTheme.dividerLine(dark))),
-    )
 }
 
 /**
@@ -458,13 +417,14 @@ private fun AboutRepositorySheet(
     }
 }
 
-/** 行首图标：矢量取自官方图标包，配色取自 Flutter 同行的彩豆。 */
+/** 行首图标：矢量取自官方图标包，配色取自 Flutter 同行的彩豆；全族行首图标统一 24dp。 */
 @Composable
 private fun RowIcon(entry: AboutInfoEntry) {
     Icon(
         imageVector = iconOf(entry.icon),
         contentDescription = null,
         tint = Color(entry.accentArgb),
+        modifier = Modifier.size(24.dp),
     )
 }
 

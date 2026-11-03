@@ -1,20 +1,31 @@
 package com.mutx163.qingyu.pages.about
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageCardMargin
 import com.mutx163.qingyu.components.QingyuPageContentScope
 import com.mutx163.qingyu.components.QingyuPageScaffold as SharedPageScaffold
 import com.mutx163.qingyu.components.QingyuPageTheme
@@ -88,9 +99,16 @@ fun QingyuPageScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable QingyuPageContentScope.() -> Unit,
 ) {
-    SharedPageScaffold(title = title, onBack = onBack, actions = actions, content = content)
+    SharedPageScaffold(
+        title = title,
+        onBack = onBack,
+        actions = actions,
+        bottomBar = bottomBar,
+        content = content,
+    )
 }
 
 // 分组小标题原先在这里自己拼（13sp + `start = 4.dp` + 次要文字色），对不齐官方那条
@@ -156,5 +174,43 @@ fun QingyuRow(
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = margin) { content() }
     } else {
         QingyuCard(modifier = Modifier.fillMaxWidth(), insideMargin = margin, onClick = onClick) { content() }
+    }
+}
+
+// ── 关于族共享视觉参数（2026-11-03 版面收口：关于页 / 更新页 / 捐助页 / 高级选项一套刻度） ──
+
+/** 列表条目间距：全族统一 12dp（官方 demo 分段间距；此前关于页独写 8dp，已收编）。 */
+val AboutPageListSpacing: Arrangement.Vertical = Arrangement.spacedBy(QingyuPageCardMargin)
+
+/** 列表底部额外留白：全族统一 24dp（叠在 [QingyuPageList] 的 innerPadding.bottom 之上）。 */
+val AboutPageListBottomPadding: Dp = 24.dp
+
+/**
+ * 关于族统一的「应用图标身份块」（自适应启动图两层 PNG，圆角 = 尺寸 × 22%）。
+ *
+ * 两层 PNG 的避法与根因见 `AboutUpdatePage.AppIconBadge` 的历史注释——这里收成
+ * 全族唯一实现，关于页头部卡与更新页（检查中 / 状态卡）共用，不再各画各的。
+ * 实现只此一份：`ic_launcher_background/foreground` 字面量只允许出现在本文件
+ * （[AboutStyleRatchetGuardTest] 钉着）。
+ */
+@Composable
+fun AboutAppIconBadge(size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.22f)),
+    ) {
+        Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
