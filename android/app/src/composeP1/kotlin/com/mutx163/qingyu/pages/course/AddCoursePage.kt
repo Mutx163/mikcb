@@ -537,74 +537,76 @@ fun AddCoursePage(
         },
     )
 
-    if (confirmDiscard) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = AddCourseStrings.courseFormDiscardTitle.zh,
-            summary = AddCourseStrings.courseFormDiscardMessage.zh,
-            onDismissRequest = { confirmDiscard = false },
+    // 常驻组合（2026-11-04 弹层债收口）：显隐只由 `show` 驱动。原先 `if (confirmDiscard)`
+    // 在状态置 false 的同一帧把整棵 OverlayDialog 摘出组合，官方退场动画
+    // （miuix 0.9.4 `DialogLayout` 的 fadeOut + scaleOut + slideOut）一次都播不出来。
+    // 标题/正文均为常量文案，退场期间没有会被清空的数据，无需 `rememberLastNonNull`。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDiscard,
+        title = AddCourseStrings.courseFormDiscardTitle.zh,
+        summary = AddCourseStrings.courseFormDiscardMessage.zh,
+        onDismissRequest = { confirmDiscard = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = { confirmDiscard = false },
+                modifier = Modifier.weight(1f),
             ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { confirmDiscard = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = {
-                        confirmDiscard = false
-                        dirty = false
-                        onBack()
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = AddCourseStrings.courseFormDiscardAction.zh)
-                }
+                Text(text = AddCourseStrings.cancelAction.zh)
+            }
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = {
+                    confirmDiscard = false
+                    dirty = false
+                    onBack()
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = AddCourseStrings.courseFormDiscardAction.zh)
             }
         }
     }
 
-    if (confirmDelete && isEditing) {
-        val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = AddCourseStrings.deleteCourseTitle.zh,
-            summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
-            onDismissRequest = { confirmDelete = false },
+    // 删除确认弹层同样常驻组合：`show` 由实时状态驱动，关闭不再整棵摘出组合。
+    // 课名不是会被清空的瞬时数据（来自 `courseGroup` / `initialCourse`），退场期照常可读。
+    val deleteTargetName = courseGroup?.name ?: initialCourse?.name.orEmpty()
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDelete && isEditing,
+        title = AddCourseStrings.deleteCourseTitle.zh,
+        summary = AddCourseStrings.confirmDeleteCourseMessage.filled("name", deleteTargetName),
+        onDismissRequest = { confirmDelete = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = { confirmDelete = false },
+                modifier = Modifier.weight(1f),
             ) {
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = { confirmDelete = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = AddCourseStrings.cancelAction.zh)
-                }
-                top.yukonga.miuix.kmp.basic.Button(
-                    onClick = {
-                        confirmDelete = false
-                        onDelete()
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = AddCourseStrings.deleteAction.zh)
-                }
+                Text(text = AddCourseStrings.cancelAction.zh)
+            }
+            top.yukonga.miuix.kmp.basic.Button(
+                onClick = {
+                    confirmDelete = false
+                    onDelete()
+                },
+                modifier = Modifier.weight(1f),
+                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = AddCourseStrings.deleteAction.zh)
             }
         }
     }

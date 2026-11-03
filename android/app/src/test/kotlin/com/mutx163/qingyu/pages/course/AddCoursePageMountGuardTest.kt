@@ -38,6 +38,43 @@ class AddCoursePageMountGuardTest {
         )
     }
 
+    @Test
+    fun `放弃修改弹层必须常驻组合 显隐只由 show 驱动`() {
+        val source = pageSource()
+        // 行首锚定：注释里提到 `if (confirmDiscard)` 不会假红/假绿。
+        assertFalse(
+            "禁止条件挂载：`if (confirmDiscard) { OverlayDialog(show = true) }` 会在关闭瞬间" +
+                "把整棵弹层摘出组合，官方退场动画一次都播不出来",
+            conditionalMount("confirmDiscard").containsMatchIn(source),
+        )
+        assertTrue(
+            "放弃修改弹层必须常驻组合，显隐由 `show = confirmDiscard` 驱动",
+            source.contains("show = confirmDiscard"),
+        )
+        assertFalse(
+            "组件常驻后不许再写死 `show = true`",
+            Regex("""^\s*show = true""", RegexOption.MULTILINE).containsMatchIn(source),
+        )
+    }
+
+    @Test
+    fun `删除课程确认弹层必须常驻组合 显隐只由 show 驱动`() {
+        val source = pageSource()
+        assertFalse(
+            "禁止条件挂载：`if (confirmDelete && isEditing) { OverlayDialog(show = true) }` " +
+                "会让退场动画一次都播不出来",
+            conditionalMount("confirmDelete && isEditing").containsMatchIn(source),
+        )
+        assertTrue(
+            "删除确认弹层必须常驻组合，显隐由 `show = confirmDelete && isEditing` 驱动",
+            source.contains("show = confirmDelete && isEditing"),
+        )
+    }
+
+    /** 行首锚定的条件挂载判据：注释 / KDoc 里的同名字样不算命中。 */
+    private fun conditionalMount(condition: String): Regex =
+        Regex("""^\s*if \(${Regex.escape(condition)}\) \{""", RegexOption.MULTILINE)
+
     private fun pageSource(): String {
         val file = File(
             androidSrc(),
