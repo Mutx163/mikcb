@@ -41,6 +41,14 @@
     <cache-path name="transfer_share" path="transfer-share/" />
 
     <!--
+      课表分享图导出（2026-11-03 加）：TimetableShareLauncher 把「干净课表图」PNG
+      写进 cacheDir/timetable-share/ 再交给系统分享面板。name/path 与
+      TimetableShareImageModel.PROVIDER_PATH_NAME / CACHE_DIR_NAME 对拍（有单测钉住），
+      下划线（Uri 别名）与连字符（真实目录名）口径与上两条一致。
+    -->
+    <cache-path name="timetable_share" path="timetable-share/" />
+
+    <!--
       应用日志导出（2026-10-29 加）：`DiagnosticsLogHost.shareLogText` 把当前视图那份日志
       写进 cacheDir/log-share/ 再交给系统分享面板。
 
