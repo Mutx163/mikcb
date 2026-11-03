@@ -153,8 +153,8 @@ object WeekExpressionParser {
      *   `startWeek`/`endWeek`（首/末周）并把 `isOddWeek`/`isEvenWeek` 置 false；
      * - `suspendedWeekExpression` 非空：剥键 → 解析 → 写 `suspendedWeeks`
      *   （不碰 start/end/单双开关）；
-     * - 空白表达式原样留在 map 里不动（Dart: isNotEmpty 守卫，实际走
-     *   remove 后判空——空白串 remove 后 isNotEmpty 为 false，等价于不写键）。
+     * - 两个输入键（`weekExpression` / `suspendedWeekExpression`）**总是先被 remove**；
+     *   空白表达式只是不写任何派生字段（Dart: remove 后 isNotEmpty 为 false）。
      */
     fun applyWeekExpressionFields(
         slotMap: MutableMap<String, Any?>,
@@ -226,7 +226,7 @@ object WeekExpressionParser {
  * Dart `throw FormatException(encodeServiceMessage(...))` 的本族对应物：
  * message 就是 `code|key=value|...` 载荷。
  */
-class WeekExpressionException(message: String) : RuntimeException(message)
+class WeekExpressionException(message: String) : IllegalArgumentException(message)
 
 /** Dart encodeServiceMessage 的纯形状（与 core/TimeScheme.kt 的 ServiceMessage 同口径，本族自持）。 */
 private object ServiceMessagePayload {
