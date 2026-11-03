@@ -277,7 +277,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 ### 当前五线状态（早上接手直接看）
 | 线 | 状态 | 最后提交 | 备注 |
 |---|---|---|---|
-| A（文案/l10n+协调） | 键交付完毕；B1/B2 已压债 | `a7c05724`（备份键改名）+ 本轮（B2 压债 + L1 日志） | 剩超宽冻结 **148** 条、死键 1（口径外） |
+| A（文案/l10n+协调） | 键交付完毕；B1/B2/B3 已压债 | `a7c05724`（备份键改名）+ 本轮（B3 压债 + L4 日志） | 剩超宽冻结 **130** 条、死键 1（口径外） |
 | B（课表/课程/共享件） | ✅ 已收线 | `3ff12a15`（S6 守卫）+ `24263aa3`（已激活键替换） | 毛玻璃属上游缺口，挂 Lead #6 区 |
 | C（sync 族） | ✅ 已收线 | `134cac79`（云备份差异预览） | 壳条件挂载等待拍板项见需 Lead #6 |
 | D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
@@ -285,7 +285,9 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | **L1（import/statistics·第二班）** | ✅ 上半场收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` | `compileItestDebugKotlin` 12m44s 通过（Itest 变体）；L0 warehouse 247 / statistics 305；登录态探针与随机课色进 backlog |
 | **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` | 结构债已解（timetable 不再依赖 settings）；假期覆盖开关挂 backlog |
 | **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` | L0 sync 885 全绿；两新键待接映射 |
-| **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` | 对拍 9 域对齐；原子换档入口待其加 `currentWeek` 参数 |
+| **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实（67 处实扫、15 处已修）；widgetdata `Int`→`Double` 修半值截断 |
+
+**Locale 守卫债务（`LocaleFormatGuardTest.WHITELIST`）**：HEAD `0533bc8f` 上 **9 条**（覆盖 **52 处**未传 Locale 的调用）；sync 线工作树已删 `sync/`、`platform/` 两条 → **7 条**（待其提交）。**规矩：每修一处就删一行或收窄前缀，`WHITELIST` 只降不增；新增白名单行须 Lead 批。** 守卫为结构约束（新增漏传 Locale 直接红），白名单只是已知债务的可见清单。
 
 ---
 
@@ -553,6 +555,19 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `maybePullRemote` 生命周期 wiring（同上，需改壳）。
 - platform 端口搬出 `CloudSyncController`（需排期，避让在途 `pages/sync`）。
 
+#### 逻辑层（L4）第四批 ✅（2026-11-03 23:15 协调线回填）
+
+- **提交**：`36aecada`（`LocaleFormatGuardTest`）、`49a5a739`（widgetdata 类型与 Locale 修复）。两笔均已在远端（推送时 `Everything up-to-date`，核实为 `0533bc8f` 的祖先）。
+
+1. **Locale 守卫做实（不是纸面守卫）**：**实扫 `android/app/src/**` 全量**，共 **67 处**未显式传 `Locale`；其中**作用域内 15 处已逐处修**（`core/app/infra/share/widgetdata`；widgetdata 主源 12 处快照/时间文本 + 3 处本域测试辅助）。
+   - **最大漏网形态**：`"…".format(…)` **扩展函数写法**（首版正则只匹配 `String.format(`，会漏掉这类调用）——两种写法**已同时收进扫描**。这条要记住：Java 静态方法与 Kotlin 扩展**是同一语义的两种写法**，守卫只咬一种等于半残。
+   - **插针验证两次**：① `ScheduleDateRuleLogic.formatIsoDate` 摘掉 `Locale.ROOT` → **2 例红**；② `HomeWidgetHostPipeline.kt:371/380` 改回 `.format(...)` 扩展写法 → **精确点名红**（证明扩展形态确实被覆盖）。
+2. **widgetdata 类型级 bug**：`HomeWidgetSnapshot.heightAdjustment` / `cornerRadius` 与 `WidgetSettingsFace.widgetHeightAdjustment` / `widgetCornerRadius` 原为 **`Int`**，Dart 是 **`double`**（默认 `-11.0` / `22.0`）→ ① **JSON 字节不同**（`-11` vs `-11.0`，跨端哈希与冻结格式对拍都会破防）；② **半值被截断**（`3.5` → `3`，设置值静默失真）。**已改 `Double`**，并加**直接比对 JSON 字节**的断言（不是比对对象字段，避免序列化层再变时测不出）。
+3. **52 处白名单按「是否影响落盘」拆派**：`SyncConflict.kt:212`、`CouplePartnerPortImpl.kt:172`（哈希片段 / ETag）→ **sync 线**；`ImportSharedModel` 导入哈希 → **warehouse 线**；`HolidayEditorLogic` / `ScheduleReminderLogic` / `CourseAutoRefreshModel` → **课表线**。
+   - **新规矩（写进流程，各线遵守）**：**每修一处，就删白名单一行或收窄对应前缀；`WHITELIST` 只降不增**。守卫的「白名单条数」是债务度量，不是免罪符。
+   - **现状记档（随提交滚动）**：HEAD `0533bc8f` 上 `WHITELIST` 为 **9 条**（按目录前缀登记，覆盖 **52 处**）；本轮 sync 线已在工作树把 `sync/`、`platform/` 两条删掉（对应 `SyncConflict.kt`、`CouplePartnerPortImpl.kt` 已改 `Locale.ROOT`）→ **7 条**，待其提交后生效。白名单自身另有测试保证「每条都有理由且路径仍存在」，**过期条目会自己红**。
+4. **infra / share 两域「已核对一致」清单（留痕，无改动）**：冻结文件的**文件与键**、**512 KiB 上限与截断**行为、**清理顺序**、**MIME / 扩展名**映射、**20 MiB** 上限、**QR 9 字段**布局、**LAN 打分**规则 —— 逐条与 Dart 核对**一致**，本轮**无改动**。
+
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
 - **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
@@ -651,9 +666,10 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `a8e4cf22` | 门 1 `:app:compileDevDebugKotlin` | ❌ **无结论** | 22:30:36→22:40:46 | 611s | **互斥锁排队超时 611s**（他线构建长期占用），非代码红；门 2 未跑 |
 | **`6b33f490`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | 22:46:43→22:54:28 | **7m35s（465s）** | **有效**；主树 8 个未提交（widgetdata 域），不影响结论 |
 | **`6b33f490`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0）** | 22:54:48→23:01:34 | **6m41s（406s）** | **有效**；红项 **无** |
-| `5e8be258` | 门 1 / 门 2 | ⏳ **待跑** | — | — | **当前 HEAD**，等 transfer 三笔落库后跑一轮 |
+| `5e8be258` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `0533bc8f`**（未跑，不沿用） |
+| `0533bc8f` | 门 1 / 门 2 | ⏳ **待跑** | — | — | **当前 HEAD**；transfer 三笔（`DataTransferImportLogicTest`/`LanTransferUndoTest`/新增 `TransferInterruptionTest`）与 L4/sync 的 Locale 改动仍在工作树，**落库后按新 HEAD 跑** |
 
-**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `5e8be258`，**需重跑**（已列入待跑行）。
+**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `0533bc8f`，**需重跑**（已列入待跑行）。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
