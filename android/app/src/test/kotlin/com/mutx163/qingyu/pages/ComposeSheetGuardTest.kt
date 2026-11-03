@@ -15,6 +15,7 @@ import java.io.File
  * | 规则 | miuix 默认 | 本仓口径（Dart 出处） | 症状 |
  * |---|---|---|---|
  * | S1 | `OverlayBottomSheet(insideMargin = 24dp)` | 16dp（`hyperosMiuixBottomSheetInsideMargin`） | 调用点自己再叠 16dp ⇒ 单边 40dp，内容被挤成中间窄条 |
+ * | S1D | `OverlayDialog(insideMargin = 24dp)` | 单边合计 16dp（横 16 或 0/8 + 内容补齐） | 对话框走官方默认 24dp，与全仓 16dp 口径不一致（2026-11-02 弹窗审计 S13） |
  * | S2 | 只 `imePadding()`（只让键盘） | 手势区/导航栏 + 16dp（`bottomGapInsetOf`） | 最后一排按钮贴屏幕最下沿、被小白条压住 |
  * | S3 | `textButtonColors(color = …)` 是**底色** | 危险色只染**字**（Dart `destructive` 变体） | 「红底 + 默认灰字」：既不像原版，对比度也不够 |
  *
@@ -35,7 +36,8 @@ import java.io.File
  * ## 判定范围
  *
  * 只扫 `composeP1/kotlin/`。套件自身（`components/QingyuSheet.kt`）豁免 S1；
- * `components/` 其余文件不豁免（它们也不该直接调弹层）。
+ * `components/` 其余文件不豁免（它们也不该直接调弹层）。S1D（OverlayDialog）没有
+ * 对应套件，豁免口径与 S1 相同：`pages/showcase/` 展厅就是故意展示官方裸组件默认值的。
  */
 class ComposeSheetGuardTest {
 
@@ -52,6 +54,10 @@ class ComposeSheetGuardTest {
             "一个 OverlayBottomSheet 调用点都没扫到，判据已失效",
             files.any { File(it).readText().contains("OverlayBottomSheet(") },
         )
+        assertTrue(
+            "一个 OverlayDialog 调用点都没扫到，S1D 判据已失效",
+            files.any { File(it).readText().contains("OverlayDialog(") },
+        )
     }
 
     @Test
@@ -61,10 +67,10 @@ class ComposeSheetGuardTest {
 
         val regressions = actual.keys.filter { it !in baseline }
         assertTrue(
-            "新增了绕开 `components/QingyuSheet.kt` 的弹层调用（应当改用 `QingyuSheet(...)`，" +
-                "它统一给 16dp 侧边距 + 底部手势区让位）：\n" +
-                regressions.joinToString("\n") { "    $it" } +
-                "\n（`OverlayBottomSheet(` 只允许出现在套件文件里）",
+            "新增了弹层守卫违规（`OverlayBottomSheet(` 只允许出现在套件文件里，" +
+                "应改用 `QingyuSheet(...)`——统一给 16dp 侧边距 + 底部手势区让位；" +
+                "`OverlayDialog` 须显式传 `insideMargin`，官方默认 24dp 不合本仓 16dp 口径）：\n" +
+                regressions.joinToString("\n") { "    $it" },
             regressions.isEmpty(),
         )
 
@@ -98,6 +104,13 @@ class ComposeSheetGuardTest {
                         result["$relative|S1"] =
                             "第 ${index + 1} 行直接调 `OverlayBottomSheet`，应改用 `QingyuSheet`"
                     }
+                }
+            }
+            if (!relative.startsWith(SHOWCASE_PREFIX)) {
+                dialogInsideMarginViolations(text).forEach { line ->
+                    result["$relative|S1D"] =
+                        "第 $line 行 `OverlayDialog` 未显式传 `insideMargin`：" +
+                            "官方默认 24dp，本仓口径单边合计 16dp"
                 }
             }
             dangerousColorUsages(text).forEach { line ->
@@ -135,6 +148,37 @@ class ComposeSheetGuardTest {
             if (close < 0) break
             val argument = colorArgument(text.substring(openParen + 1, close))
             if (argument != null && DANGER_COLOR.containsMatchIn(argument)) {
+                hits += text.take(start).count { it == '\n' } + 1
+            }
+            from = close
+        }
+        return hits
+    }
+
+    /**
+     * 找出 `OverlayDialog(` 调用**没显式传 `insideMargin`** 的行号（规则 S1D）。
+     *
+     * 2026-11-02 弹窗审计 S13：守卫原本只拦 `OverlayBottomSheet`，对话框全走官方默认
+     * 24dp 而守卫看不见。只卡「有没有显式传」这一个判据：数值是否凑够本仓口径
+     *（横 16，或横 0/8 + 内容自带 padding 补齐）由评审把关——文本层判数值会误伤
+     * `DpSize(0.dp, 16.dp)` 这类合理写法。
+     */
+    private fun dialogInsideMarginViolations(text: String): List<Int> {
+        val hits = mutableListOf<Int>()
+        var from = 0
+        while (true) {
+            val start = text.indexOf(DIALOG_CALL, from)
+            if (start < 0) break
+            // `XxxOverlayDialog(` 这类自定义名字的尾巴也是 `OverlayDialog(` —— 卡词边界。
+            if (start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_')) {
+                from = start + DIALOG_CALL.length
+                continue
+            }
+            val openParen = start + DIALOG_CALL.length - 1
+            val close = matchingParen(text, openParen)
+            if (close < 0) break
+            val args = text.substring(openParen + 1, close)
+            if (!args.contains("insideMargin")) {
                 hits += text.take(start).count { it == '\n' } + 1
             }
             from = close
@@ -301,6 +345,9 @@ class ComposeSheetGuardTest {
         const val SHOWCASE_PREFIX = "pages/showcase/"
 
         val SHEET_CALL = Regex("""\bOverlayBottomSheet\s*\(""")
+
+        /** `OverlayDialog(` 调用标记（规则 S1D，取实参用，按括号配平）。 */
+        const val DIALOG_CALL = "OverlayDialog("
 
         const val TEXT_BUTTON_CALL = "textButtonColors("
 

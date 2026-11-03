@@ -1,0 +1,11 @@
+# 弹层套件守卫（ComposeSheetGuardTest）的棘轮基线 —— course 域
+#
+# 一行一处待还的债：<composeP1/kotlin/com/mutx163/qingyu 之后的相对路径>|<规则>|<说明>
+# 规则（表头详见守卫 KDoc）：S1 = 没走 components/QingyuSheet 套件；
+#       S1D = OverlayDialog 未显式传 insideMargin（官方默认 24dp，本仓口径单边合计 16dp）；
+#       S3 = textButtonColors(color = 危险色)（红底灰字，危险色该染字）；
+#       S4 = buttonColors(color = 危险色) 没给 contentColor（实心红底配默认字色）。
+# 修好一处就删一行；留着已修好的行会被守卫判「过期」而变红。
+# 只改自己域的文件，别跑全量重生成（多 Agent 并行时会互相踩）。
+
+pages/course/ClassAlarmSheet.kt|S1D|OverlayDialog 未显式传 insideMargin（官方默认 24dp）；该处还是 show = true 静态挂载，course 泳道还债时一并收
