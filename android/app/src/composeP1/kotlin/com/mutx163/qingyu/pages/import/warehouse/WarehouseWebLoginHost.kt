@@ -24,6 +24,7 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -582,10 +583,15 @@ fun WarehouseWebLoginHost(
                 }
 
                 is WarehousePresetTimeSlotsWriteBack.PayloadResult.Failed -> {
-                    val reason = result.errorCode
+                    val rawReason = result.errorCode
                         ?: result.cause?.javaClass?.simpleName
                         ?: "unknown"
-                    Log.w(LOG_TAG, "preset time slots write failed: $reason")
+                    Log.w(LOG_TAG, "preset time slots write failed: $rawReason")
+                    // 错误码过时间方案服务消息本地化（认不出的码原样返回，不会变空串）；
+                    // 异常类名不是 service message 码，保持原文不喂本地化器。
+                    val reason = result.errorCode
+                        ?.let { TimeSchemeServiceMessages.localize(it) }
+                        ?: rawReason
                     answerRequest(request.requestId, "false", kind = "savePresetTimeSlots")
                     showToasts(
                         listOf(

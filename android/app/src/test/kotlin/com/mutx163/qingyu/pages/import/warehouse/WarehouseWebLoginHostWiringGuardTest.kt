@@ -89,6 +89,15 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    @Test
+    fun `savePresetTimeSlots 失败提示的错误码必须过服务消息本地化`() {
+        assertTrue(
+            "savePresetTimeSlots 的 Failed 分支必须把错误码先过 TimeSchemeServiceMessages.localize " +
+                "（认不出的码原样返回，不许把 `code|k=v` 原文摆上 Toast）",
+            hostSource.contains("TimeSchemeServiceMessages.localize("),
+        )
+    }
+
     private fun readHostSource(): String {
         val relative =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt"
