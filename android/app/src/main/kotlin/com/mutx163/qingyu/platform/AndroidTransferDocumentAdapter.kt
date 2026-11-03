@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.mutx163.qingyu.share.TransferShareContract
+import com.mutx163.qingyu.transfer.TransferTextDecoding
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 
@@ -50,6 +51,14 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
 
         /** 打不开流、provider 失效、权限被撤回等。 */
         data object ReadFailed : ReadResult
+
+        /**
+         * 字节读到了，但不是合法 UTF-8（截断序列 / 非法字节 / 越界码点）。
+         *
+         * 与 Dart 文件通道的 `utf8.decode` 同口径：畸形字节直接拒绝，不做替换字符兜底。
+         * 用户文案由壳接线层决定；ARB 目前没有对应的键（见回报），**本类不造字符串**。
+         */
+        data object InvalidEncoding : ReadResult
     }
 
     /**
@@ -75,7 +84,7 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
      * 顺序：
      * 1. 查 `OpenableColumns.SIZE`，用 [TransferShareContract.exceedsLimit] 判（边界值 = 不超）；
      * 2. 查不到大小或没超时，限长读：累计超过上限立刻停并返回 [ReadResult.TooLarge]；
-     * 3. `String(bytes, UTF_8)` 解码。
+     * 3. 严格 UTF-8 解码（[TransferTextDecoding.decodeStrictUtf8]），畸形字节返回 [ReadResult.InvalidEncoding]。
      *
      * 不判「解码后是空字符串」算不算失败：空文件属内容问题，交给模型层给「文件无法识别」
      * 之类的结论，这里只负责「字节有没有拿到」。
@@ -102,8 +111,11 @@ class AndroidTransferDocumentAdapter(private val context: Context) {
             return ReadResult.ReadFailed
         }
 
-        // 3) UTF-8 解码。包体是 JSON 文本，非法字节由替换字符兜底，不额外判罚。
-        return ReadResult.Success(String(bytes, Charsets.UTF_8))
+        // 3) 严格 UTF-8 解码。畸形字节直接拒绝（与 Dart `utf8.decode` 同口径），
+        // 不做替换字符兜底——否则损坏包会带着乱码被当成合法 JSON 导进去。
+        val text = TransferTextDecoding.decodeStrictUtf8(bytes)
+            ?: return ReadResult.InvalidEncoding
+        return ReadResult.Success(text)
     }
 
     // ------------------------------------------------------------------
