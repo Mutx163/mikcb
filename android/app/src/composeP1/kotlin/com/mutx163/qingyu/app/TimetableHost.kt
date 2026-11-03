@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import com.mutx163.qingyu.pages.shell.HomeNavIcons
 import com.mutx163.qingyu.pages.shell.rememberHomeFloatingInsets
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.calendar.HolidayData
@@ -222,6 +223,57 @@ fun TimetableHost(
     // 以前页面写死 72dp，手势导航下正好落在药丸里 —— 用户报的「按钮在导航栏底下」。
     val floatingInsets = rememberHomeFloatingInsets(settingsModel)
 
+    // ── 「分享当前视图的干净课表图」的组装（2026-11-03）──────────────────────
+    // 截屏提示与顶栏菜单「分享课表图片」两个入口共用这一份（Dart 同一条
+    // `_shareTimetableImage`：dayOfWeek 为 null ⇒ 周图，绝不出第二份导图逻辑）。
+    // week 取调用方给的「用户正看着的周」：截屏提示由页面给 pager 落定周，
+    // 菜单动作这里用仓储当前周（翻页落定时 onWeekChanged 已写回；菜单「先收完
+    // 再执行」的时序下两者一致——Dart `_visibleWeek` 是屏层直接持有，无此差）。
+    fun shareCurrentView(week: Int, dayOfWeek: Int?) {
+        shareTimetableImage(
+            context = appContext,
+            doc = if (dayOfWeek == null) {
+                TimetableShareRequests.weekDocument(
+                    courses = snapshot.courses,
+                    week = week,
+                    settings = settings,
+                    style = style,
+                    visibleDays = visibleDays,
+                    today = LocalDate.now(),
+                )
+            } else {
+                TimetableShareRequests.dayDocument(
+                    courses = snapshot.courses,
+                    week = week,
+                    dayOfWeek = dayOfWeek,
+                    settings = settings,
+                    showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
+                )
+            },
+            exportWidthDp = TimetableShareImageModel.exportWidthDp(
+                appContext.resources.displayMetrics.widthPixels /
+                    appContext.resources.displayMetrics.density,
+            ),
+        )
+    }
+
+    // 顶栏「更多」菜单条目补挂：壳的过滤只认「有页面去处」的 id（`homeTopMenuItems`），
+    // 「分享课表图片」不是推页动作会被滤掉——用户排列里显式加过它时在这里补挂
+    // （判据在 [TimetableHostLogic.shouldAppendShareTimetableEntry]，JVM 单测钉住；
+    // 图标/文案走 [HomeNavIcons] 与底栏/全部功能页同一份解析，零新增文案）。
+    // 追加位置在列表末尾：壳过滤时已丢掉它在用户排列里的原位，这里是补偿不是复刻。
+    val menuItemsWithShare = remember(homeMenuItems, settingsModel?.homeGridMenuActions) {
+        val wantsShare = TimetableHostLogic.shouldAppendShareTimetableEntry(
+            itemIds = homeMenuItems.mapTo(mutableSetOf()) { it.id },
+            homeGridMenuActions = settingsModel?.homeGridMenuActions.orEmpty(),
+        )
+        if (wantsShare) {
+            homeMenuItems + HomeNavIcons.menuItem(TimetableHostLogic.SHARE_TIMETABLE_MENU_ID)
+        } else {
+            homeMenuItems
+        }
+    }
+
     TimetableWeekPage(
         courses = snapshot.courses,
         timeScheme = TimetableHostLogic.resolveActiveTimeScheme(
@@ -264,8 +316,22 @@ fun TimetableHost(
         homeTitleStyle = settingsModel?.homeTitleStyle ?: HomeTitleStyle.CLASSIC,
         // 菜单形态取自用户存档（Dart `homeMenuStyle`，:1489 默认 list）；壳没传就走默认。
         homeMenuStyle = settingsModel?.homeMenuStyle ?: HomeMenuStyle.LIST,
-        homeMenuItems = homeMenuItems,
-        onHomeMenuSelect = onHomeMenuSelect,
+        homeMenuItems = menuItemsWithShare,
+        // 顶栏菜单「分享课表图片」在宿主拦截（Dart timetable_screen.dart:966-968 同口径：
+        // 分享要带「当前可见周」与周/日视图，只有首页这一层知道，不走壳的推页映射）。
+        // 周视图分享仓储当前周（翻页落定时已写回，见 shareCurrentView 注释）；日视图
+        // 分享正看着的那一天。条目可见性见 [menuItemsWithShare] 的补挂判据。
+        onHomeMenuSelect = { id ->
+            if (id == TimetableHostLogic.SHARE_TIMETABLE_MENU_ID) {
+                if (homeViewMode == TimetableHomeViewMode.DAY) {
+                    shareCurrentView(selectedWeek, selectedDayOfWeek)
+                } else {
+                    shareCurrentView(currentWeek, null)
+                }
+            } else {
+                onHomeMenuSelect(id)
+            }
+        },
         // 壁纸层：页面画在内容最底下，并据此把底色改透明。
         backdrop = homeChrome.backdrop,
         // 壁纸上的顶栏墨色（深壁纸 ⇒ 浅墨）。null = 没壁纸 / 亮度还没测出来 ⇒ 主题墨色。
@@ -283,34 +349,9 @@ fun TimetableHost(
         screenshotSharePromptEnabled =
             screenshotSharePromptEnabled && settingsModel?.screenshotSharePromptEnabled == true,
         // 截屏提示「分享」按钮的动作（2026-11-03 导出链路落地）：页面给「用户正看着的
-        // 周 / 日」，这里组装导出文档并发起系统分享（Dart `_shareTimetableImage` 同口径——
-        // 截屏提示直接分享当前视图的图，没有中间面板）。dayOfWeek = null ⇒ 周图。
-        onShareScreenshot = { week, dayOfWeek ->
-            shareTimetableImage(
-                context = appContext,
-                doc = if (dayOfWeek == null) {
-                    TimetableShareRequests.weekDocument(
-                        courses = snapshot.courses,
-                        week = week,
-                        settings = settings,
-                        style = style,
-                        visibleDays = visibleDays,
-                        today = LocalDate.now(),
-                    )
-                } else {
-                    TimetableShareRequests.dayDocument(
-                        courses = snapshot.courses,
-                        week = week,
-                        dayOfWeek = dayOfWeek,
-                        settings = settings,
-                        showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
-                    )
-                },
-                exportWidthDp = TimetableShareImageModel.exportWidthDp(
-                    appContext.resources.displayMetrics.widthPixels /
-                        appContext.resources.displayMetrics.density,
-                ),
-            )
-        },
+        // 周 / 日」，组装与发起走 [shareCurrentView]——与顶栏菜单「分享课表图片」
+        // 同一份（Dart `_shareTimetableImage` 同口径——截屏提示直接分享当前视图的图，
+        // 没有中间面板）。dayOfWeek = null ⇒ 周图。
+        onShareScreenshot = { week, dayOfWeek -> shareCurrentView(week, dayOfWeek) },
     )
 }

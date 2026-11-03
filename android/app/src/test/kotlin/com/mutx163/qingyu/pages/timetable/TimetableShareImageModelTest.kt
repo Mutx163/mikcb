@@ -1,8 +1,10 @@
 package com.mutx163.qingyu.pages.timetable
 
+import com.mutx163.qingyu.app.TimetableHostLogic
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimetableSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -273,6 +275,51 @@ class TimetableShareImageModelTest {
         assertEquals(fallback, TimetableShareImageModel.parseHexArgb("#12345", fallback))
         assertEquals(0xFF2563EB.toInt(), TimetableShareImageModel.parseHexArgb("#2563EB", fallback))
         assertEquals(0xFF2563EB.toInt(), TimetableShareImageModel.parseHexArgb("2563eb", fallback))
+    }
+
+    // ------------------------------------------------------------------
+    // 顶栏菜单「分享课表图片」的补挂判据（TimetableHostLogic，纯逻辑）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `菜单补挂_用户排列里显式加过分享条目才补挂`() {
+        val actions = listOf("overview", "shareTimetable", "settings", "support")
+        assertTrue(
+            TimetableHostLogic.shouldAppendShareTimetableEntry(
+                itemIds = setOf("overview", "settings", "support"),
+                homeGridMenuActions = actions,
+            ),
+        )
+    }
+
+    @Test
+    fun `菜单补挂_默认排列没有分享条目则不出现`() {
+        // Dart HomeGridMenu.defaultActions 八项里没有 shareTimetable：
+        // 排列里没加过 ⇒ 不可见（Dart resolveHomeGridMenuEntries 同口径）。
+        assertFalse(
+            TimetableHostLogic.shouldAppendShareTimetableEntry(
+                itemIds = setOf("overview", "statistics", "addCourse"),
+                homeGridMenuActions = listOf("overview", "statistics", "addCourse"),
+            ),
+        )
+        // 空排列（回退默认表）同样不出现。
+        assertFalse(
+            TimetableHostLogic.shouldAppendShareTimetableEntry(
+                itemIds = setOf("overview"),
+                homeGridMenuActions = emptyList(),
+            ),
+        )
+    }
+
+    @Test
+    fun `菜单补挂_条目已在列表里不重复挂`() {
+        // 壳理论上滤不掉它（可见性谓词决定的），但判据自保：已挂就不追加。
+        assertFalse(
+            TimetableHostLogic.shouldAppendShareTimetableEntry(
+                itemIds = setOf("overview", "shareTimetable"),
+                homeGridMenuActions = listOf("overview", "shareTimetable"),
+            ),
+        )
     }
 
     // ------------------------------------------------------------------

@@ -152,6 +152,36 @@ object TimetableHostLogic {
         activeTimeSchemeId: String?,
     ): TimeScheme? =
         schemes.firstOrNull { it.id == activeTimeSchemeId } ?: schemes.firstOrNull()
+
+    // ── 顶栏菜单「分享课表图片」（Dart home_menu_catalog.dart:111-128）─────────
+
+    /**
+     * 菜单条目「分享课表图片」的稳定 id（Dart `kHomeMenuCatalog` 的条目主键，
+     * 与底栏编辑器 / 全部功能页同一条键空间）。
+     */
+    const val SHARE_TIMETABLE_MENU_ID = "shareTimetable"
+
+    /**
+     * 顶栏「更多」菜单要不要**补挂**「分享课表图片」条目。
+     *
+     * ## 为什么需要补挂（壳的过滤口径决定的）
+     *
+     * 壳装配菜单（`homeTopMenuItems`）的可见性谓词是「id 在壳页面映射表里有去处」，
+     * 而分享不是推页动作、映射表里没有它 ⇒ 即使把它加进八宫格排列，条目也会被壳滤掉。
+     * 宿主拿得到用户排列（`settingsModel.homeGridMenuActions`），所以在宿主补挂。
+     *
+     * 判据与 Dart `resolveHomeGridMenuEntries`（`home_menu_catalog.dart:509-531`）等价：
+     * 「shareTimetable 在目录里、`visible()` 恒 true」⇒ **用户排列里显式加过它才可见**；
+     * 空表 / 退化回退的默认排列（`HomeGridMenu.defaultActions` 八项）里没有它 ⇒ 不出现。
+     *
+     * @param itemIds 壳已装配的菜单条目 id 集（不该重复挂）。
+     * @param homeGridMenuActions 用户存档的八宫格排列（已 normalize：去重/截断/钉住 settings）。
+     */
+    fun shouldAppendShareTimetableEntry(
+        itemIds: Set<String>,
+        homeGridMenuActions: List<String>,
+    ): Boolean =
+        SHARE_TIMETABLE_MENU_ID !in itemIds && SHARE_TIMETABLE_MENU_ID in homeGridMenuActions
 }
 
 /** 删除目标（Dart `add_course_screen.dart` 两条删除分支）。 */
