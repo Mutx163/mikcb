@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable.month
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -27,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
@@ -41,6 +46,7 @@ import com.mutx163.qingyu.app.HomeTitleStyle
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
+import com.mutx163.qingyu.pages.timetable.chromeDisplayedPage
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
@@ -53,6 +59,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.LinkedHashMap
 
 /**
  * 月视图整页壳：**日历卡**（上半）+ **可折叠信息面板**（下半）。
@@ -71,17 +78,18 @@ import java.time.LocalDateTime
  *
  * ## 本页只管四件事
  *
- * * 聚焦哪个月（工具栏 / 点邻月补位格）；
+ * * 聚焦哪个月（工具栏箭头 / 横向手势翻月 / 点邻月补位格）；
  * * 选中哪天（点格子 / 点预览行；再点同一天取消）；
  * * 展开进度（拉杆 / 面板任意位置纵向拖 / 松手吸附）；
  * * 把两半画出来。
  *
  * 数据与导航去处都由宿主注入：网格来自 [MonthGridModel.build]、议程行来自
- * [MonthDayAgendaModel.build]，本页不读 provider（Dart 侧的 provider 订阅与
- * 42 格缓存是宿主的事）。
+ * [MonthDayAgendaModel.build]，本页不读 provider。**42 格缓存留在本页**（只留三页，
+ * 对应 Dart `MonthViewDataCache`）：横向滑动会同时组合相邻月，交给宿主反而要求
+ * 它替我们做缓存。
  *
  * @param gridProvider 给定年月产出 42 格月历。**必须幂等**：本页在年月或
- *   [dataRevision] 变化时重新调用，其余时间复用上次结果。
+ *   [dataRevision] 变化时重新调用，其余时间复用最近三页的结果。
  * @param agendaProvider 给定日期产出当日议程行（已经排好序）。
  * @param dataRevision 数据版本戳：宿主的数据（课程 / 考试 / 日程）一变就换一个新值，
  *   本页据此丢弃缓存的两份数据。传 null 表示「只在换月时重取」。
@@ -126,11 +134,23 @@ fun MonthViewPage(
     /** 无壁纸 / 实体玻璃带用的页底色（ARGB，来自 `HomeBackdropSnapshot.pageColorArgb`）。 */
     pageColorArgb: Int? = null,
 ) {
-    // ── 状态：聚焦月 + 选中日 + 展开进度 ──
+    // ── 状态：翻月 pager + 选中日 + 展开进度 ──
     //
     // 初始进度 1 = 展开：用户没要求记住收起态，进页面看整月是默认预期（Dart 口径）。
-    var focusedYear by remember { mutableIntStateOf(initialYear) }
-    var focusedMonth by remember { mutableIntStateOf(initialMonth) }
+    val initialPage = remember(initialYear, initialMonth) {
+        MonthPagerModel.pageOf(initialYear, initialMonth)
+    }
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { MonthPagerModel.PAGE_COUNT },
+    )
+    // 聚焦月跟**落定的页**走，不直接读 `currentPage`：手指还按着时那个值在
+    // 滑过半页就跳，标题与面板会中途改字。判据复用周视图那条（`chromeDisplayedPage`
+    // 已有 JVM 单测）：手势进行中保持上一次落定页，完全停稳后才跟当前页。
+    var appliedPage by remember(pagerState) { mutableIntStateOf(initialPage) }
+    val focused = MonthPagerModel.monthOfPage(appliedPage)
+    val focusedYear = focused.first
+    val focusedMonth = focused.second
     var selectedDate by remember { mutableStateOf<LocalDateTime?>(null) }
     val expand = remember { Animatable(1f) }
     // 拖拽起点：松手判「翻面还是弹回」的基准（判据在 settleTarget）。
@@ -139,9 +159,23 @@ fun MonthViewPage(
     // 数据：只在年月 / 版本戳变化时重取（拖拽期间每帧重算 42 格是纯浪费）。
     val gridSource by rememberUpdatedState(gridProvider)
     val agendaSource by rememberUpdatedState(agendaProvider)
-    val grid = remember(focusedYear, focusedMonth, dataRevision) {
-        gridSource(focusedYear, focusedMonth)
+    // 翻月缓存只留三页（Dart `MonthViewDataCache` 同口径）：滑动途中相邻页会被
+    // 组合，不缓存就等于每帧重算 42 格。
+    val gridCache = remember(dataRevision) { LinkedHashMap<Int, MonthGrid>() }
+    val gridForPage: (Int) -> MonthGrid = remember(dataRevision) {
+        { page ->
+            gridCache[page] ?: run {
+                val (year, month) = MonthPagerModel.monthOfPage(page)
+                gridSource(year, month).also { built ->
+                    if (gridCache.size >= GRID_CACHE_PAGES) {
+                        gridCache.remove(gridCache.keys.first())
+                    }
+                    gridCache[page] = built
+                }
+            }
+        }
     }
+    val grid = remember(appliedPage, dataRevision) { gridForPage(appliedPage) }
     val selectedInMonth = selectedDate?.takeIf {
         it.year == focusedYear && it.monthValue == focusedMonth
     }
@@ -150,6 +184,17 @@ fun MonthViewPage(
     }
     val upcoming = remember(grid, today) {
         MonthPanelModel.scheduledDays(grid, today)
+    }
+
+    // 翻页落定 → 聚焦月同步**一次**（与周视图 `chromeDisplayedPage` 同一条规则）：
+    // 手势 / 吸附进行中保持旧页，停稳后才切换。这里没有第二条「外部周次」跳页
+    // 源（`initialYear/initialMonth` 只是初值），所以不需要 `targetPage` 那种防抢。
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
+            .collect { (page, scrolling) ->
+                val next = chromeDisplayedPage(page, scrolling, appliedPage)
+                if (next != appliedPage) appliedPage = next
+            }
     }
 
     // ── 壁纸 + 顶栏玻璃带（2026-11-01 补，与周 / 日视图同一套）──
@@ -178,11 +223,18 @@ fun MonthViewPage(
     }
 
     val isCurrentMonth = focusedYear == today.year && focusedMonth == today.monthValue
+    // 翻月入口（箭头 / 补位格）统一走 pager：`animateScrollToPage` 会自己把
+    // 标题的连续进度喂给工具栏，落定后再由上面的 effect 同步聚焦月。
+    val slideToPage: (Int) -> Unit = { page ->
+        scope.launch {
+            pagerState.animateScrollToPage(
+                page.coerceIn(0, MonthPagerModel.PAGE_COUNT - 1),
+                animationSpec = MONTH_SLIDE_SPEC,
+            )
+        }
+    }
     val shiftMonth: (Int) -> Unit = { delta ->
-        // 用 Calendar 语义做年月进位，避免 12 月 +1 后出现「13 月」。
-        val base = LocalDate.of(focusedYear, focusedMonth, 1).plusMonths(delta.toLong())
-        focusedYear = base.year
-        focusedMonth = base.monthValue
+        slideToPage(pagerState.currentPage + delta)
     }
 
     Scaffold(
@@ -244,6 +296,8 @@ fun MonthViewPage(
             }
             MonthViewBody(
                 grid = grid,
+                gridForPage = gridForPage,
+                pagerState = pagerState,
                 agendaRows = agendaRows,
                 upcoming = upcoming,
                 today = today,
@@ -257,15 +311,19 @@ fun MonthViewPage(
                 onPreviousMonth = { shiftMonth(-1) },
                 onNextMonth = { shiftMonth(1) },
                 onBackToCurrentMonth = {
-                    focusedYear = today.year
-                    focusedMonth = today.monthValue
+                    // Dart 先 setState 再 animateToPage：面板与「今天」药丸立刻
+                    // 跟到目标月，卡片再滑过去。
+                    val target = MonthPagerModel.pageOf(today.year, today.monthValue)
+                    appliedPage = target
+                    slideToPage(target)
                 },
                 onDayTap = { date ->
-                    if (date.year != focusedYear || date.monthValue != focusedMonth) {
+                    val page = MonthPagerModel.pageOf(date.year, date.monthValue)
+                    if (page != appliedPage) {
                         // 点到邻月补位格：翻到那个月再选中它（否则点了什么都不发生）。
-                        focusedYear = date.year
-                        focusedMonth = date.monthValue
+                        appliedPage = page
                         selectedDate = date
+                        slideToPage(page)
                     } else {
                         // 再点同一天 = 取消选中（与「点同一档 Tab 收起」同口径）。
                         selectedDate = if (selectedDate == date) null else date
@@ -316,15 +374,29 @@ fun MonthViewPage(
 /** 吸附动画时长（Dart `_kGridCollapseBaseMs`）。 */
 private const val GRID_COLLAPSE_MS = 260
 
+/** 翻月动画时长（Dart `260.scaledMs`；本仓不做系统速度倍率，取同一基数）。 */
+private const val MONTH_SLIDE_MS = 260
+
+/** 翻月缓动：Dart `Curves.easeOutCubic` = cubic-bezier(0.215, 0.61, 0.355, 1)。 */
+private val MONTH_SLIDE_SPEC = tween<Float>(
+    durationMillis = MONTH_SLIDE_MS,
+    easing = CubicBezierEasing(0.215f, 0.61f, 0.355f, 1f),
+)
+
+/** 翻月网格缓存页数（Dart `MonthViewDataCache` 只留三页）。 */
+private const val GRID_CACHE_PAGES = 3
+
 /**
- * 月份切换不需要额外节流：连续快速点箭头时 `Animatable` 会自己接续
- * （新的目标覆盖旧的动画）。
+ * 月份切换不需要额外节流：连续快速点箭头时 `PagerState.animateScrollToPage`
+ * 会从当前位置接续（新的目标覆盖旧的动画），不会叠成一串排队动画。
  */
 
 /** 页面主体：把「版面账」与「两半内容」放在同一个有界宽高里算。 */
 @Composable
 private fun MonthViewBody(
     grid: MonthGrid,
+    gridForPage: (Int) -> MonthGrid,
+    pagerState: PagerState,
     agendaRows: List<MonthAgendaRow>,
     upcoming: List<MonthDayEntry>,
     today: LocalDateTime,
@@ -353,6 +425,11 @@ private fun MonthViewBody(
         val availableHeightDp = maxHeight.value.toDouble()
         val density = LocalDensity.current
         val progress = expandProgress().toDouble()
+        // 小数页号：`currentPage` 在滑过半页时跳，加上连续偏移才是「翻到几成」。
+        // 读它会让本层在滑动中逐帧重组 —— 卡高必须跟着跨着的两页走（Dart 的
+        // AnimatedBuilder 同一条账）。
+        val pageValue = pagerState.currentPage.toDouble() +
+            pagerState.currentPageOffsetFraction.toDouble()
         val keptRow = MonthPanelModel.rowToKeep(
             dates = grid.days.map { it.date },
             year = focusedYear,
@@ -377,12 +454,31 @@ private fun MonthViewBody(
             topPaddingDp = MonthMetrics.CARD_PADDING,
             rowCount = grid.rowsInMonth,
         )
+        // 卡高按**跨着的两页**里较多的行数算（判据在 `MonthPagerModel.cardRowCount`）：
+        // 5 行月挨着 6 行月时只按聚焦月算会把高那页最后一行裁掉。
+        val cardRowCount = MonthPagerModel.cardRowCount(pageValue) { page ->
+            gridForPage(page).rowsInMonth
+        }
+        val cardLayout = MonthPanelModel.layout(
+            progress = progress,
+            availableHeightDp = availableHeightDp,
+            availableWidthDp = availableWidthDp,
+            headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+            weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
+            minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
+            maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
+            keptRow = keptRow,
+            weekNumberColumnVisible = showWeekNumbers && grid.days.any { it.weekIndex != null },
+            handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+            topPaddingDp = MonthMetrics.CARD_PADDING,
+            rowCount = cardRowCount,
+        )
 
         val rowHeightDp = layout.rowHeight
         // 网格窗口高度 = 版面账里的 gridHeight 减掉上内边距（卡片自己加那段 padding）。
         val gridWindowHeightDp =
-            (layout.gridHeight - MonthMetrics.CARD_PADDING).coerceAtLeast(0.0)
-        val cardHeightDp = layout.gridHeight + MonthCalendarChrome.CARD_CHROME
+            (cardLayout.gridHeight - MonthMetrics.CARD_PADDING).coerceAtLeast(0.0)
+        val cardHeightDp = cardLayout.gridHeight + MonthCalendarChrome.CARD_CHROME
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -393,13 +489,18 @@ private fun MonthViewBody(
                 MonthCalendarCard(
                     modifier = Modifier.height(cardHeightDp.dp),
                     navigator = {
+                        // 标题跟手指连续滑动（Dart `month_view_toolbar.dart:235-266`
+                        // 读 `PageController.page` 的 floor + frac）。
+                        val basePage = MonthPagerModel.pagerPage(pageValue)
+                        val (baseYear, baseMonth) = MonthPagerModel.monthOfPage(basePage)
                         MonthViewToolbar(
-                            year = focusedYear,
-                            month = focusedMonth,
+                            year = baseYear,
+                            month = baseMonth,
                             isCurrentMonth = isCurrentMonth,
                             onPreviousMonth = onPreviousMonth,
                             onNextMonth = onNextMonth,
                             onBackToCurrentMonth = onBackToCurrentMonth,
+                            pageFraction = MonthPagerModel.pageFraction(pageValue).toFloat(),
                         )
                     },
                     onDragStart = onDragStart,
@@ -415,7 +516,8 @@ private fun MonthViewBody(
                             .clipToBounds()
                             // Dart 把纵向拖拽挂在整个日历 PageView 上（`month_view_screen.dart:439-443`），
                             // 不是只挂 26dp 拉杆：在格子上上下滑同样能收放。用触摸斜率判据
-                            // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走。
+                            // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走；
+                            // 与 pager 的横向手势正交，同一手势不会互相抢。
                             .pointerInput(rowHeightDp, grid.rowsInMonth) {
                                 val tracker = VelocityTracker()
                                 detectVerticalDragGestures(
@@ -441,16 +543,61 @@ private fun MonthViewBody(
                                 )
                             },
                     ) {
-                        MonthGrid(
-                            grid = grid,
-                            today = today,
-                            selectedDate = selectedInMonth,
-                            onDayTap = onDayTap,
-                            rowHeight = rowHeightDp.dp,
-                            visibleRows = grid.rowsInMonth,
-                            rowOffset = layout.scrollOffset.dp,
-                            showWeekNumbers = showWeekNumbers,
-                        )
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) { page ->
+                            // 每页用**自己**的行数与保留行算版面：相邻月行数可能不同，
+                            // 复用聚焦月那份会让另一页格子高度错一整行（Dart
+                            // `_buildGridPage` 同口径）。
+                            val (year, month) = MonthPagerModel.monthOfPage(page)
+                            val pageGrid = gridForPage(page)
+                            val pageSelected = selectedInMonth?.takeIf {
+                                it.year == year && it.monthValue == month
+                            }
+                            val pageKeptRow = MonthPanelModel.rowToKeep(
+                                dates = pageGrid.days.map { it.date },
+                                year = year,
+                                month = month,
+                                selectedDate = pageSelected,
+                                today = today,
+                            )
+                            val pageLayout = MonthPanelModel.layout(
+                                progress = progress,
+                                availableHeightDp = availableHeightDp,
+                                availableWidthDp = availableWidthDp,
+                                headerHeightDp = MonthGridMetrics.HEADER_HEIGHT,
+                                weekLabelWidthDp = MonthGridMetrics.WEEK_LABEL_WIDTH,
+                                minRowHeightDp = MonthGridMetrics.MIN_ROW_HEIGHT,
+                                maxRowHeightDp = MonthGridMetrics.MAX_ROW_HEIGHT,
+                                keptRow = pageKeptRow,
+                                weekNumberColumnVisible = showWeekNumbers &&
+                                    pageGrid.days.any { it.weekIndex != null },
+                                handleHeightDp = MonthCalendarChrome.CARD_CHROME,
+                                topPaddingDp = MonthMetrics.CARD_PADDING,
+                                rowCount = pageGrid.rowsInMonth,
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(
+                                        (pageLayout.gridHeight - MonthMetrics.CARD_PADDING)
+                                            .coerceAtLeast(0.0).dp,
+                                    )
+                                    .clipToBounds(),
+                            ) {
+                                MonthGrid(
+                                    grid = pageGrid,
+                                    today = today,
+                                    selectedDate = pageSelected,
+                                    onDayTap = onDayTap,
+                                    rowHeight = pageLayout.rowHeight.dp,
+                                    visibleRows = pageGrid.rowsInMonth,
+                                    rowOffset = pageLayout.scrollOffset.dp,
+                                    showWeekNumbers = showWeekNumbers,
+                                )
+                            }
+                        }
                     }
                 }
             }
