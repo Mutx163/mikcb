@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.QingyuBackIconButton
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
@@ -100,6 +102,8 @@ fun MonthViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    /** 顶栏返回键的去处。显隐由根页判据决定（见 `navigationIcon` 传参处）。 */
+    onBack: () -> Unit = {},
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
@@ -235,6 +239,12 @@ fun MonthViewPage(
                             homeMenuStyle = homeMenuStyle,
                             menuItems = homeMenuItems,
                             onMenuSelect = onHomeMenuSelect,
+                            // 根页（底栏栈底）不画返回键；从「更多功能」等处推入时画出。
+                            navigationIcon = if (rememberShellShouldShowBackButton()) {
+                                { QingyuBackIconButton(onBack = onBack) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }

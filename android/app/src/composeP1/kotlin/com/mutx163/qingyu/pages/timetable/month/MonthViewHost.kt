@@ -73,6 +73,8 @@ fun MonthViewHost(
     material: HomeMaterialRenderSpec? = null,
     hasBackdrop: Boolean = false,
     pageColorArgb: Int? = null,
+    /** 顶栏返回键的去处；显隐由页面里的根页判据决定。 */
+    onBack: () -> Unit = {},
 ) {
     val clock = now ?: remember { LocalDateTime.now() }
 
@@ -111,6 +113,7 @@ fun MonthViewHost(
         onAddCourse = onAddCourse,
         homeTitleStyle = homeTitleStyle,
         profileName = profileName,
+        onBack = onBack,
         homeMenuStyle = homeMenuStyle,
         homeMenuItems = homeMenuItems,
         onHomeMenuSelect = onHomeMenuSelect,

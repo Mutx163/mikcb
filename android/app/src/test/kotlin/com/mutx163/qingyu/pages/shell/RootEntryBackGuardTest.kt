@@ -49,7 +49,7 @@ class RootEntryBackGuardTest {
     }
 
     @Test
-    fun `四个手拼顶栏页必须消费同一份判据`() {
+    fun `手拼顶栏的根页候选必须消费同一份判据`() {
         for ((label, path) in HAND_BUILT_PAGES) {
             val code = codeOnly(source(path))
             assertTrue(
@@ -179,13 +179,17 @@ class RootEntryBackGuardTest {
 
         /**
          * 手拼顶栏的根页候选（不走 QingyuPageScaffold，判据取法守卫到这里）。
-         * 月视图与课表管理在 timetable 域（另一条会话在改），收口后再接——不进本清单。
+         *
+         * 2026-11-03 收口：月视图（`c2.month`，从「更多功能」推入时是二级页）与
+         * 课表管理（`d1.profiles`）接上同一份判据，并入清单。
          */
         val HAND_BUILT_PAGES = listOf(
             "任务清单页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/task/TaskListPage.kt",
             "日程列表页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/schedule/ScheduleListPage.kt",
             "课程总览页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/course/CourseOverviewPage.kt",
             "局域网传输页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/LanEditPage.kt",
+            "月视图页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/month/MonthViewPage.kt",
+            "课表管理页" to "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/timetable/TimetableProfilesPage.kt",
         )
     }
 }

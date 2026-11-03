@@ -41,6 +41,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuSheet
 import com.mutx163.qingyu.components.QingyuWeightDelta
+import com.mutx163.qingyu.components.rememberShellShouldShowBackButton
 import com.mutx163.qingyu.components.shiftWeight
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -178,12 +179,14 @@ fun TimetableProfilesPage(
                 largeTitle = TimetableStrings.timetableProfilesTitle.zh,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = TimetableStrings.cancelAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
+                    if (rememberShellShouldShowBackButton()) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = TimetableStrings.cancelAction.zh,
+                                tint = Color(QingyuTheme.actionIcon(dark)),
+                            )
+                        }
                     }
                 },
                 actions = {

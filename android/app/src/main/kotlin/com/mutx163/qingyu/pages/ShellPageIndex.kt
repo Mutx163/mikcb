@@ -682,6 +682,8 @@ fun ShellPageContent(
                 material = homeChrome.material,
                 hasBackdrop = homeChrome.hasBackdrop,
                 pageColorArgb = homeChrome.pageColorArgb,
+                // 根页不画返回键、推入时画出：判据在页面里消费（`rememberShellShouldShowBackButton`）。
+                onBack = onBack,
                 onAddCourse = { date ->
                     wiring.pendingAddCourseSeed = Pair(date.dayOfWeek.value, 1)
                     wiring.pendingEditCourse = null

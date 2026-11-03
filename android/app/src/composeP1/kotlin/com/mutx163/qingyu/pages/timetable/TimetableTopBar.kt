@@ -124,6 +124,14 @@ fun TimetableTopBar(
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     menuItems: List<TimetableMenuItem> = emptyList(),
     onMenuSelect: (String) -> Unit = {},
+    /**
+     * 顶栏左侧导航槽（返回键）。`null` = 不画。
+     *
+     * 显隐**不在这里判**：调用方按根页判据
+     * [com.mutx163.qingyu.components.rememberShellShouldShowBackButton] 决定传不传，
+     * 与骨架同一份取法（守卫 `RootEntryBackGuardTest` 钉住）。
+     */
+    navigationIcon: (@Composable () -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
     // 压在壁纸上时，墨色跟**壁纸明暗**走（Dart `homePageChromeForegroundForLuminance`：
@@ -147,6 +155,9 @@ fun TimetableTopBar(
             .padding(horizontal = TimetableTopBarMetrics.H_PADDING.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (navigationIcon != null) {
+            navigationIcon()
+        }
         Column(
             modifier = Modifier
                 .weight(1f)
