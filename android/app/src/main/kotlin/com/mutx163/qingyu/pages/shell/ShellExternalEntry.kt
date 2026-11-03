@@ -171,8 +171,9 @@ object ShellExternalEntry {
     /**
      * payload → 壳页面 id。
      *
-     * backup（数据传输页 `g3.dataTransfer`）当前只有「带到对的页面」这一步落点；
-     * 传输页自动预览接线不在本批（transfer 泳道有并行改动，见交付说明）。
+     * backup（数据传输页 `g3.dataTransfer`）：跳板只负责「带到对的页面」，
+     * 备份文本由传输页宿主经 [com.mutx163.qingyu.pages.ShellExternalEntryHub.consumeImport]
+     * 接进导入预览（与「选择文件导入」同一条链路，2026-11-02 接上）。
      */
     fun importTargetPage(payload: ImportPayload): String = when (payload) {
         is ImportPayload.Ics -> "g1.icsImport"

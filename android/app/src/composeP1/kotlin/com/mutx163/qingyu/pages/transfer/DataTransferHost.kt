@@ -28,6 +28,8 @@ import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.pages.ShellExternalEntryHub
+import com.mutx163.qingyu.pages.shell.ShellExternalEntry
 import com.mutx163.qingyu.platform.AndroidTransferDocumentAdapter
 import com.mutx163.qingyu.platform.AndroidTransferShareAdapter
 import com.mutx163.qingyu.share.TransferApplyMode
@@ -244,6 +246,17 @@ fun DataTransferHost(
             showToast(TransferStrings.importFailedInvalidFile.zh)
         } else {
             openImportPreview(text, TransferChannel.QR)
+        }
+    }
+
+    // 外部打开 .mikcb / .json 备份（R1 补口 2026-11-02 的最后一步）：透明跳板把 payload
+    // 备进 `ShellExternalEntryHub`、壳把页面推到本页后，这里把备份文本接进与「选择文件
+    // 导入」同一条预览链路——外部打开的本来就是一份文件，通道按 FILE 口径。kind 不符时
+    // （ics / spreadsheet / 超限各有自己的落点页）`consumeImport` 不消费，各页面互不抢。
+    LaunchedEffect(ShellExternalEntryHub.pendingImport) {
+        val payload = ShellExternalEntryHub.consumeImport("backup") ?: return@LaunchedEffect
+        if (payload is ShellExternalEntry.ImportPayload.Backup) {
+            openImportPreview(payload.text, TransferChannel.FILE)
         }
     }
 
