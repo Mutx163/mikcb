@@ -18,11 +18,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.ExternalImportReader
-import com.mutx163.qingyu.pages.diagnostics.LiveFixtureActions
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.pages.import.ImportSharedModel
 import com.mutx163.qingyu.pages.import.ImportStrings
 import com.mutx163.qingyu.pages.live.DisplaySettingsPage
 import com.mutx163.qingyu.pages.live.DisplaySettingsStrings
+import com.mutx163.qingyu.pages.live.LiveCourseTestStage
+import com.mutx163.qingyu.pages.live.LiveCourseTestSessions
 import com.mutx163.qingyu.pages.live.LiveCurrentCourseSource
 import com.mutx163.qingyu.pages.live.LiveDisplayStore
 import com.mutx163.qingyu.pages.live.LiveImagePickLogic
@@ -35,6 +37,7 @@ import com.mutx163.qingyu.pages.live.withMiuiIslandExpandedIconMode
 import com.mutx163.qingyu.pages.live.withMiuiIslandExpandedIconPath
 import com.mutx163.qingyu.pages.live.withMiuiIslandLabelLogoPath
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.widgetdata.MILESTONE_RECENT_END_LABEL_KEY
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,7 +62,7 @@ import java.time.LocalDateTime
  * | 任何开关 / 下拉 / 滑杆 | `_updateDisplay` → `updateTimetableSettings` | [LiveDisplayStore.saveDisplay]（读-合并写，250ms 防抖，离开页面补写一次） |
  * | 选左侧标签 Logo / 展开态大图标 | `_pickAndStoreImage`（`live_settings_subpages.dart:1310-1364`） | 系统选图 → 复制进 `app_flutter/miui_label_logos` / `miui_expanded_icons`，文件名前缀与 Dart 逐字一致 |
  * | 免打扰权限 | `_openDoNotDisturbAccess` | [Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS] |
- * | 速览「试弹 / 停止」 | `triggerLiveStagePreviewTest` | **起不了岛**：Kotlin 侧没有原生触发管线，点了给一句实话（[LiveFixtureActions.TRIGGER_REFRESH_MISSING]），按钮不装成「正在跑」 |
+ * | 速览「试弹 / 停止」 | `triggerLiveStagePreviewTest` / `cancelLiveUpdateCourseTest` | [LiveTestTrigger]：合成 30 秒单阶段窗口 → 双暂停（Kotlin 侧只剩原生闹钟一路）→ 完整载荷起前台服务 → 成功后自动退后台；按钮态跨页面由 [LiveCourseTestSessions] 单槽记录，到点自动翻回 |
  *
  * ## 为什么防抖而不是每次改动直接写
  *
@@ -67,11 +70,11 @@ import java.time.LocalDateTime
  * Dart 侧同样是 250ms 防抖 + 离开页面补写（`live_settings_subpages.dart:247-256 / :395-399`）。
  * 这里用 `LaunchedEffect(version)` 实现：`version` 一变就取消上一次待写任务。
  *
- * ## 速览为什么不做「假动画」
+ * ## 试弹会话进行中改设置 = 热更新
  *
- * 台账 §1.2：能力没到位不许装成能用。岛由原生 `LiveUpdateService` 弹，
- * 触发链（`live_testing_trigger.dart` 978 行）在 Kotlin 侧还没有对应物，
- * 所以按钮照常渲染、点了一句话说明差哪一步，**不翻成「停止测试」态**。
+ * Dart `hotUpdateLiveCourseTestSession`：会话在跑时调整显示配置，真机岛即时响应。
+ * 本宿主在防抖落盘后调 [LiveTestTrigger.hotUpdateIfSettingsChanged]——设置指纹没变
+ * （无关字段）不重发载荷，变了才重投。
  */
 @Composable
 fun LiveDisplayHost(
@@ -117,11 +120,90 @@ fun LiveDisplayHost(
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
+    // ── 试弹（速览）管线：Context 侧调度器 + 页面按钮态 ──
+    // 会话是进程级单槽：返回重进页面按会话恢复「停止测试」态（Dart 上收全局的同一动机）。
+    // settingsJson 供给生产刷新用整份设置：与 [store] 同一份 SharedPreferences，读回一致。
+    val triggerSettingsStore = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
+    val trigger = remember(context, timetableRepository) {
+        LiveTestTrigger(
+            context = context,
+            repository = timetableRepository,
+            settingsJson = { triggerSettingsStore.loadSettingsJson() },
+            localizeMilestone = { key ->
+                context.getString(
+                    if (key == MILESTONE_RECENT_END_LABEL_KEY) {
+                        R.string.milestone_recent_end
+                    } else {
+                        R.string.milestone_next_start
+                    },
+                )
+            },
+        )
+    }
+    val previewStage = if (forDuringEnd) LiveCourseTestStage.DURING_CLASS else LiveCourseTestStage.BEFORE_CLASS
+    val initialSession = remember { LiveCourseTestSessions.current() }
+    var stagePreviewActive by remember { mutableStateOf(initialSession?.stage == previewStage) }
+    var stagePreviewBusy by remember { mutableStateOf(false) }
+    /** 会话终点毫秒：>0 时由下方 `LaunchedEffect` 到点把按钮翻回「试弹」态。 */
+    var stagePreviewEndMillis by remember { mutableStateOf(initialSession?.sessionEndMillis ?: 0L) }
+
+    fun startStagePreview() {
+        if (stagePreviewBusy) return
+        scope.launch {
+            stagePreviewBusy = true
+            val stageWord = if (forDuringEnd) {
+                DisplaySettingsStrings.stagePreviewStageDuringClass.zh
+            } else {
+                DisplaySettingsStrings.stagePreviewStageBeforeClass.zh
+            }
+            when (val outcome = trigger.startStagePreview(forDuringEnd = forDuringEnd, display = latestState)) {
+                is LiveTestTrigger.Outcome.Started -> {
+                    stagePreviewActive = true
+                    stagePreviewEndMillis = outcome.session.sessionEndMillis
+                    showToast(DisplaySettingsStrings.stagePreviewStartedToast.filled("stage", stageWord))
+                    // 岛只在桌面/状态栏可见：成功后自动退后台（等效按 Home）。
+                    trigger.moveTaskToBack()
+                }
+                LiveTestTrigger.Outcome.InFlight ->
+                    showToast(DisplaySettingsStrings.testingInFlight.zh)
+                is LiveTestTrigger.Outcome.DispatchFailed ->
+                    // Dart 同口径：sendFailedWithError 的 error 参数带失败细节。
+                    showToast(
+                        DisplaySettingsStrings.sendFailedWithError
+                            .filled("error", outcome.detail),
+                    )
+            }
+            stagePreviewBusy = false
+        }
+    }
+
+    fun stopStagePreview() {
+        if (stagePreviewBusy) return
+        scope.launch {
+            stagePreviewBusy = true
+            trigger.cancelStagePreview()
+            stagePreviewActive = false
+            stagePreviewEndMillis = 0
+            showToast(DisplaySettingsStrings.stagePreviewStoppedToast.zh)
+            stagePreviewBusy = false
+        }
+    }
+
     // 250ms 防抖：期间又改就取消上一次，只写最后一份。
     LaunchedEffect(version) {
         if (version == 0) return@LaunchedEffect
         delay(SAVE_DEBOUNCE_MILLIS)
         store.saveDisplay(latestState, forDuringEnd)
+        // 试弹会话在跑时，显示改动热更新真机岛（指纹没变 = 无关改动，不重发）。
+        trigger.hotUpdateIfSettingsChanged(latestState)
+    }
+    // 速览会话到点：按钮自动翻回「试弹」态（岛已被原生按会话终点收尾）。
+    LaunchedEffect(stagePreviewEndMillis) {
+        if (stagePreviewEndMillis <= 0L) return@LaunchedEffect
+        val remaining = stagePreviewEndMillis - System.currentTimeMillis()
+        if (remaining > 0) delay(remaining)
+        stagePreviewActive = false
+        stagePreviewEndMillis = 0
     }
     // 离开页面补写：防抖窗口内退出时那一份不能丢（Dart `dispose` 同口径）。
     // `version == 0` = 用户什么都没改 ⇒ **一个字节都不写**：
@@ -205,11 +287,11 @@ fun LiveDisplayHost(
             null
         },
         onOpenDoNotDisturbAccess = { openDoNotDisturbAccess(context, ::showToast) },
-        // 起不了岛就给实话，不假装在跑（见类注释「速览为什么不做假动画」）。
-        onStagePreviewStart = { showToast(LiveFixtureActions.TRIGGER_REFRESH_MISSING) },
-        onStagePreviewStop = { showToast(LiveFixtureActions.TRIGGER_REFRESH_MISSING) },
-        stagePreviewActive = false,
-        stagePreviewBusy = false,
+        // 试弹：真起岛（合成 30 秒单阶段窗口 + 完整载荷），停止则立即收岛并恢复正式调度。
+        onStagePreviewStart = { startStagePreview() },
+        onStagePreviewStop = { stopStagePreview() },
+        stagePreviewActive = stagePreviewActive,
+        stagePreviewBusy = stagePreviewBusy,
     )
 }
 
