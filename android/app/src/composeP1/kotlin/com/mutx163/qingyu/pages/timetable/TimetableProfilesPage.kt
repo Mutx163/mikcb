@@ -294,76 +294,76 @@ fun TimetableProfilesPage(
         },
     )
 
-    // 4.2 更多操作弹层
-    activeMenuProfile?.let { profile ->
-        val canDelete = profiles.size > 1 && !profile.isPartnerImported
-        ProfileMoreActionsDialog(
-            profile = profile,
-            canDelete = canDelete,
-            dark = dark,
-            onDismiss = { activeMenuProfile = null },
-            onSwitch = {
-                activeMenuProfile = null
-                onSwitchProfile(profile.id)
-            },
-            onRename = {
-                activeMenuProfile = null
-                renamingProfile = profile
-            },
-            onDuplicate = {
-                activeMenuProfile = null
-                onDuplicateProfile(profile.id)
-            },
-            onClear = {
-                activeMenuProfile = null
-                clearingProfile = profile
-            },
-            onDelete = {
-                activeMenuProfile = null
-                deletingProfile = profile
-            },
-            onCannotDeleteWarning = {
-                activeMenuProfile = null
-                localToast = TimetableStrings.keepAtLeastOneProfile.zh
-            },
-        )
-    }
+    // 4.2 更多操作弹层：同样**常驻组合**——`?.let {}` 也是条件挂载，退场动画同样被打断。
+    // 关闭时宿主把状态置空，因此回调用 `rememberLastNonNull` 的上一份快照取 id。
+    val menuProfile = rememberLastNonNull(activeMenuProfile)
+    ProfileMoreActionsDialog(
+        profileOrNull = activeMenuProfile,
+        show = activeMenuProfile != null,
+        canDelete = menuProfile?.let { profiles.size > 1 && !it.isPartnerImported } ?: false,
+        dark = dark,
+        onDismiss = { activeMenuProfile = null },
+        onSwitch = {
+            activeMenuProfile = null
+            menuProfile?.let { onSwitchProfile(it.id) }
+        },
+        onRename = {
+            activeMenuProfile = null
+            renamingProfile = menuProfile
+        },
+        onDuplicate = {
+            activeMenuProfile = null
+            menuProfile?.let { onDuplicateProfile(it.id) }
+        },
+        onClear = {
+            activeMenuProfile = null
+            clearingProfile = menuProfile
+        },
+        onDelete = {
+            activeMenuProfile = null
+            deletingProfile = menuProfile
+        },
+        onCannotDeleteWarning = {
+            activeMenuProfile = null
+            localToast = TimetableStrings.keepAtLeastOneProfile.zh
+        },
+    )
 
     // 4.3 重命名弹窗
-    renamingProfile?.let { profile ->
-        RenameProfileDialog(
-            profile = profile,
-            onDismiss = { renamingProfile = null },
-            onConfirm = { newName ->
-                renamingProfile = null
-                onRenameProfile(profile.id, newName)
-            },
-        )
-    }
+    val renameTarget = rememberLastNonNull(renamingProfile)
+    RenameProfileDialog(
+        profileOrNull = renamingProfile,
+        show = renamingProfile != null,
+        onDismiss = { renamingProfile = null },
+        onConfirm = { newName ->
+            renamingProfile = null
+            renameTarget?.let { onRenameProfile(it.id, newName) }
+        },
+    )
 
     // 4.4 清空课程确认弹窗
-    clearingProfile?.let { profile ->
-        ClearCoursesConfirmDialog(
-            profile = profile,
-            onDismiss = { clearingProfile = null },
-            onConfirm = {
-                clearingProfile = null
-                onClearCourses(profile.id)
-            },
-        )
-    }
+    val clearTarget = rememberLastNonNull(clearingProfile)
+    ClearCoursesConfirmDialog(
+        profileOrNull = clearingProfile,
+        show = clearingProfile != null,
+        onDismiss = { clearingProfile = null },
+        onConfirm = {
+            clearingProfile = null
+            clearTarget?.let { onClearCourses(it.id) }
+        },
+    )
 
     // 4.5 删除课表确认弹窗
-    deletingProfile?.let { profile ->
-        DeleteProfileConfirmDialog(
-            profile = profile,
-            onDismiss = { deletingProfile = null },
-            onConfirm = {
-                deletingProfile = null
-                onDeleteProfile(profile.id)
-            },
-        )
-    }
+    val deleteTarget = rememberLastNonNull(deletingProfile)
+    DeleteProfileConfirmDialog(
+        profileOrNull = deletingProfile,
+        show = deletingProfile != null,
+        onDismiss = { deletingProfile = null },
+        onConfirm = {
+            deletingProfile = null
+            deleteTarget?.let { onDeleteProfile(it.id) }
+        },
+    )
 }
 
 /**
@@ -596,24 +596,31 @@ private fun CreateProfileDialog(
  */
 @Composable
 private fun RenameProfileDialog(
-    profile: TimetableProfileItem,
+    profileOrNull: TimetableProfileItem?,
+    show: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var nameInput by remember(profile) { mutableStateOf(profile.name) }
-    // 与新建框同口径：打开即聚焦名称输入框。
+    // 常驻组合：退场动画期间入参已被宿主置空，用最后一份非空快照继续渲染。
+    val current = rememberLastNonNull(profileOrNull)
+    var nameInput by remember { mutableStateOf("") }
+    // 与新建框同口径：每次「打开」回填名称并聚焦（Dart 每次弹窗都是新控制器）。
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(show) {
+        if (!show) return@LaunchedEffect
+        val target = current ?: return@LaunchedEffect
+        nameInput = target.name
         withFrameNanos { }
         runCatching { focusRequester.requestFocus() }
     }
 
     OverlayDialog(
-        show = true,
+        show = show,
         title = TimetableStrings.renameTimetableTitle.zh,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
+        val profile = current ?: return@OverlayDialog
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -660,14 +667,17 @@ private fun RenameProfileDialog(
  */
 @Composable
 private fun ClearCoursesConfirmDialog(
-    profile: TimetableProfileItem,
+    profileOrNull: TimetableProfileItem?,
+    show: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    // 常驻组合：退场动画期间仍用最后一份非空快照渲染正文。
+    val current = rememberLastNonNull(profileOrNull)
     OverlayDialog(
-        show = true,
+        show = show,
         title = TimetableStrings.clearCurrentTimetableTitle.zh,
-        summary = TimetableStrings.clearCurrentTimetableMessage.filled("name", profile.name),
+        summary = current?.let { TimetableStrings.clearCurrentTimetableMessage.filled("name", it.name) },
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -701,14 +711,17 @@ private fun ClearCoursesConfirmDialog(
  */
 @Composable
 private fun DeleteProfileConfirmDialog(
-    profile: TimetableProfileItem,
+    profileOrNull: TimetableProfileItem?,
+    show: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    // 常驻组合：退场动画期间仍用最后一份非空快照渲染正文。
+    val current = rememberLastNonNull(profileOrNull)
     OverlayDialog(
-        show = true,
+        show = show,
         title = TimetableStrings.deleteTimetableTitle.zh,
-        summary = TimetableStrings.deleteTimetableMessage.filled("name", profile.name),
+        summary = current?.let { TimetableStrings.deleteTimetableMessage.filled("name", it.name) },
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
@@ -742,7 +755,8 @@ private fun DeleteProfileConfirmDialog(
  */
 @Composable
 private fun ProfileMoreActionsDialog(
-    profile: TimetableProfileItem,
+    profileOrNull: TimetableProfileItem?,
+    show: Boolean,
     canDelete: Boolean,
     dark: Boolean,
     onDismiss: () -> Unit,
@@ -753,12 +767,15 @@ private fun ProfileMoreActionsDialog(
     onDelete: () -> Unit,
     onCannotDeleteWarning: () -> Unit,
 ) {
+    // 常驻组合：退场动画期间入参已被宿主置空，用最后一份非空快照继续渲染。
+    val current = rememberLastNonNull(profileOrNull)
     // Dart 是 `HyperosSheet` 底部弹层，不是居中 Dialog。
     QingyuSheet(
-        show = true,
-        title = profile.name,
+        show = show,
+        title = current?.name.orEmpty(),
         onDismissRequest = onDismiss,
     ) {
+        val profile = current ?: return@QingyuSheet
         Column(modifier = Modifier.fillMaxWidth()) {
             // 1. 切换到此课表（非激活状态展示）
             if (!profile.isActive) {
@@ -883,4 +900,17 @@ private fun ActionMenuItem(
             modifier = Modifier.weight(1f),
         )
     }
+}
+
+/**
+ * 钉住最后一份非空入参。
+ *
+ * 弹层改为常驻组合后，宿主关闭时会把状态置空，但官方退场动画还要播一会儿；
+ * 这期间正文仍需要原来的对象（名称、id、课程数）才画得出来。
+ */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var shown by remember { mutableStateOf(current) }
+    if (current != null) shown = current
+    return shown
 }
