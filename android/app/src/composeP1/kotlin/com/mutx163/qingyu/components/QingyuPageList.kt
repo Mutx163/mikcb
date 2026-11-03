@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.SmallTitleDefaults
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -139,9 +140,18 @@ fun rememberQingyuScrollBehavior(): ScrollBehavior = MiuixScrollBehavior()
 fun QingyuSectionTitle(
     text: String,
     modifier: Modifier = Modifier,
+    /**
+     * 标题文字的内边距。默认是官方 `SmallTitle` 的 28dp 横向——用于
+     * **列表本身没有横向内边距**的页面。
+     *
+     * 若列表已经统一加了 12dp（`horizontalPadding = QingyuPageCardMargin`），
+     * 这里要传 `PaddingValues(horizontal = 16.dp, vertical = 8.dp)`，
+     * 才能和卡内 16dp 的文字左缘一起落在 28dp 轴线上；继续用默认值会变成 40dp。
+     */
+    insideMargin: PaddingValues = SmallTitleDefaults.InsideMargin,
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
-        SmallTitle(text = text)
+        SmallTitle(text = text, insideMargin = insideMargin)
     }
 }
 
