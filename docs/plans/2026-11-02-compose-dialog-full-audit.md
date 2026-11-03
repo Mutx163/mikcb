@@ -73,6 +73,8 @@
 
 **玻璃分层方案（未落地，待拍板/待真机）**：弹窗表面玻璃有两条路——①像 Nexio 一样 fork `miuix-ui` 在 `DialogContentLayout`/`BottomSheetContentLayout` 内部接 `miuix-blur`（干净、跟手动画天然对齐，但改库=依赖升级/例外审批，Lead 专属）；②不 fork，用官方公开参数从外部拼（`OverlayDialog(cornerRadius=X, backgroundColor=半透明)` + `modifier` 里挂 miuix-blur 的 `drawBackdrop`）——可行但有两条代价：47 处 `OverlayDialog` 调用点要迁统一封装；`OverlayBottomSheet` 拖动位移经 graphicsLayer 施加、外部采样层拿不到内部偏移，**拖动时模糊区可能错位，必须真机验证**。仓内已有玻璃基建可复用（`QingyuPageScaffold.rememberQingyuBlurBackdrop` 页面级 backdrop、`components/liquid/` 折射）。在真机验证 + 审批前不动默认观感（「不要为了像而硬塞模糊」）。
 
+**2026-11-03 追记：玻璃已选定方案并落地试点**（用户拍板「改库……先改一个看看效果」）。物理 fork 两条路（includeBuild / project 替换）都要求本地模块提供 miuix-ui 全部 API = 整库 vendor，违背「diff = 单文件级别、不整库搬」红线，故走「官方公开参数 + miuix-blur 官方模块」：`components/glass/GlassOverlayDialog.kt`（官方容器 + `cornerRadius=32dp` 与玻璃面同值锁定 + 半透明压色 亮0.78/暗0.87 + `drawBackdrop(colorControls 饱和度1.5 + blur 24dp, highlight=GlassStrokeMiddle*)`；无录像带/不支持 RuntimeShader/开关关 → 自动回落官方实心）+ `QingyuDialogGlass.enabled` 一键回退 + `QingyuPageScaffold` 以 `LocalQingyuPageBackdrop` 复用顶栏既有录像带（不新增图层录制）。**试点唯一调用点：加课页「删除课程确认」**；其余 46 处弹窗与全部底部弹层保持现状，守卫 `QingyuGlassDialogGuardTest` 钉调用点数=1 与开关默认；例外登记见 `miuix-component-first-standard.md` 第 5 条。遗留：进场动画期采样跟手、底部弹层拖动（暂不接玻璃）、低端机帧率——只能真机验证。
+
 
 
 ### 需拍板的 8 个决策点（2026-11-02 暂按「能不折腾就不折腾」定默认）
