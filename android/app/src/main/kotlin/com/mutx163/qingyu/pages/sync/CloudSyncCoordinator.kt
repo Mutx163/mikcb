@@ -151,7 +151,9 @@ interface LocalSnapshotStore {
  *   生产缺省用系统时钟（Dart `DateTime.now()` 同位）。
  */
 class WebdavSyncCoordinator(
-    private val transport: WebdavRemoteTransport,
+    // 公开：恢复前差异预览只拿字节不落盘（`CloudSyncController.previewBackupRestore`），
+    // 必须绕开 downloadSnapshot 的写本地副作用（2026-11-03）。
+    val transport: WebdavRemoteTransport,
     private val localStore: LocalSnapshotStore,
     private val nowMillis: () -> Long = { System.currentTimeMillis() },
 ) {

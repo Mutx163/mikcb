@@ -1,6 +1,20 @@
 package com.mutx163.qingyu.pages.sync
 
 import com.mutx163.qingyu.app.TimetableRepository
+import com.mutx163.qingyu.core.LocationTimeGroup
+import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.core.ScheduleDateRule
+import com.mutx163.qingyu.core.TimeScheme
+import com.mutx163.qingyu.core.TimetableProfile
+import com.mutx163.qingyu.core.TimetableSettings
+import com.mutx163.qingyu.pages.transfer.DataTransferApplyLogic
+import com.mutx163.qingyu.pages.transfer.DataTransferDiffLogic
+import com.mutx163.qingyu.pages.transfer.DataTransferImportLogic
+import com.mutx163.qingyu.pages.transfer.TransferDiffCurrent
+import com.mutx163.qingyu.pages.transfer.TransferImportPlan
+import com.mutx163.qingyu.share.TransferApplyMode
+import com.mutx163.qingyu.share.TransferChannel
+import com.mutx163.qingyu.share.TransferScope
 import com.mutx163.qingyu.sync.SyncConflictChoice
 import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.sync.WebdavSyncConfig
@@ -48,6 +62,29 @@ interface WebdavConfigStore {
 
 /** 连接结果：成功 / 失败 + 可本地化的错误码。 */
 data class CloudSyncConnectResult(val success: Boolean, val errorCode: String? = null)
+
+/**
+ * 一次「恢复前差异预览」的载荷（Dart `WebdavTransferPreview` 的裁剪对位）。
+ *
+ * [bytes] 留作落盘用：用户选完模式后 `applyPreviewedBackupRestore` 直接复用，
+ * 不二次下载。[message] 是预览弹窗的整段正文（含 merge/overwrite 两段摘要，
+ * 逐字对 Dart `showTransferPreviewDialog` 的格式）。[canMerge] = false 时
+ * 弹层不摆「合并更改」按钮（快照恒是全量包，与传输页同口径）。
+ */
+data class CloudBackupRestorePreview(
+    val entryId: String,
+    val bytes: ByteArray,
+    val canMerge: Boolean,
+    val message: String,
+) {
+    override fun equals(other: Any?): Boolean =
+        other is CloudBackupRestorePreview &&
+            entryId == other.entryId && bytes.contentEquals(other.bytes) &&
+            canMerge == other.canMerge && message == other.message
+
+    override fun hashCode(): Int =
+        31 * (31 * (31 * entryId.hashCode() + bytes.contentHashCode()) + canMerge.hashCode()) + message.hashCode()
+}
 
 class CloudSyncController(
     private val store: WebdavConfigStore,
@@ -594,8 +631,151 @@ class CloudSyncController(
     fun backupEntry(entryId: String): CloudBackupEntryModel? =
         backupEntries.firstOrNull { it.id == entryId }
 
+    // ---------- 恢复前差异预览（2026-11-03 · 接 Dart `previewBackupRestore`） ----------
+
     /**
-     * 删除某条远端备份（Dart `deleteBackup`：索引查条目 → 当前版本拒绝 → 删文件 → 维护索引）。
+     * 下载并解析某条历史备份，给出「恢复前差异预览」：
+     * 覆盖/合并两份差异摘要 + 弹窗正文（Dart `cloud_backup_list_screen.dart:135-151`
+     * 的 `previewBackupRestore` → `showTransferPreviewDialog` 链）。
+     *
+     * ## 与 Dart 的对位与刻意差异
+     *
+     * - **对位**：快照体 → 传输包模型走 `DataTransferImportLogic.parse`（同一道校验门 +
+     *   同一批 fromJson，Dart `buildTransferPackageFromSnapshot` 同口径）；
+     *   差异计算走 `DataTransferDiffLogic.compare`（按 scope 选基线、按 (档案 id, 实体 id)
+     *   配对、removed 按 mode + scope 判据）；
+     *   预览正文走 `DataTransferImportLogic.previewMessage`（逐字对 Dart 弹窗格式）。
+     * - **刻意差异**（与传输页同源，不是这次新引入）：快照只带课表族实体
+     *   （`TimetableSnapshotBridge` 类注释诚实边界 1），tasks/exams 的 diff 恒为 0；
+     *   云备份快照恒是全量包（`isFullBackupPlan`），`canMerge` 恒 false——与传输页
+     *   「全量包不摆合并按钮」同一条理由（合并服务不存在，点了必然失败）。
+     *
+     * 快照字节留在返回值里：用户选完模式后落盘经 [applyPreviewedBackupRestore]
+     * 走原有 `openBackup` 路径（撤销点 / 基线钉哈希 / 刷新列表一处不缺），
+     * 不二次下载。
+     *
+     * @return 预览载荷；未连接 / 条目不存在 / 下载或解析失败 → null（错误码落
+     *   [lastErrorCode]，宿主按既有 toast 口径提示）。
+     */
+    fun previewBackupRestore(entryId: String): CloudBackupRestorePreview? {
+        val coordinator = coordinatorOrNull() ?: return null
+        val file = remoteFiles.firstOrNull { it.fileName == entryId }
+            ?: return null
+        val bytes = coordinator.transport.getBytes(file.remotePath).let { result ->
+            when {
+                result.isFailed || result.isNotFound || result.bytes == null -> {
+                    status = status.copy(lastErrorCode = result.errorMessage ?: "backup_not_found")
+                    notifyChanged()
+                    return null
+                }
+                else -> result.bytes
+            }
+        }
+        // 快照 JSON → 传输包模型：**手动**构 plan（Dart `buildTransferPackageFromSnapshot`
+        // 同口径——快照信封 `backupType: sync` 不是传输包信封，喂给
+        // `DataTransferImportLogic.parse` 会撞 `transfer_package_type_invalid`）。
+        // 只搬 diff 真正消费的实体面；快照里的 warehouse / macros / 节假日 / 伴侣绑定等
+        // 云专属键留在快照上，恢复落盘由 `TimetableSnapshotBridge.applySnapshot` 管。
+        val json = try {
+            decodeSnapshotObject(String(bytes, Charsets.UTF_8))
+        } catch (error: Exception) {
+            status = status.copy(
+                lastErrorCode = error.message ?: "invalid_sync_snapshot_payload",
+            )
+            notifyChanged()
+            return null
+        }
+        val envelope = checkSnapshotEnvelopeAndChecksum(json)
+        if (!envelope.isValid) {
+            status = status.copy(
+                lastErrorCode = envelope.errorCode ?: "invalid_sync_snapshot_payload",
+            )
+            notifyChanged()
+            return null
+        }
+        val plan = try {
+            TransferImportPlan(
+                profiles = TimetableProfile.parseProfilesPayload(
+                    json["profiles"] as? List<*> ?: emptyList<Any?>(),
+                ).profiles,
+                activeProfileId = json["activeProfileId"] as? String,
+                courses = emptyList(),
+                settings = (json["settings"] as? Map<*, *>)?.let { raw ->
+                    @Suppress("UNCHECKED_CAST")
+                    runCatching {
+                        TimetableSettings.fromJson(raw as Map<String, Any?>)
+                    }.getOrNull()
+                },
+                currentWeek = (json["currentWeek"] as? Number)?.toInt(),
+                timeSchemes = parseSnapshotList(json["timeSchemes"]) { TimeScheme.fromJson(it) },
+                tasks = emptyList(),
+                exams = emptyList(),
+                scheduleItems = emptyList(),
+                scheduleDateRules = parseSnapshotList(json["scheduleDateRules"]) {
+                    ScheduleDateRule.fromJson(it)
+                },
+                locationTimeGroups = parseSnapshotList(json["locationTimeGroups"]) {
+                    LocationTimeGroup.fromJson(it)
+                },
+            )
+        } catch (error: Exception) {
+            status = status.copy(lastErrorCode = error.message ?: "sync_snapshot_parse_failed")
+            notifyChanged()
+            return null
+        }
+        val repo = repository
+        val current = if (repo != null) {
+            val snapshot = repo.snapshot
+            TransferDiffCurrent.ofSnapshot(
+                snapshot = snapshot,
+                tasks = repo.tasks,
+                exams = repo.exams,
+            )
+        } else {
+            // 旧路径（无仓储）：没有可对比的真实现场，给一份全零基线，
+            // 预览只剩「入包有多少条」——与旧版「恢复无预览」相比仍是净增益。
+            TransferDiffCurrent()
+        }
+        val scope = TransferScope.ALL_DATA
+        val canMerge = !DataTransferApplyLogic.isFullBackupPlan(plan)
+        val overwrite = DataTransferDiffLogic
+            .compare(current, plan, scope, TransferApplyMode.OVERWRITE)
+            .toSummaries()
+        val merge = if (canMerge) {
+            DataTransferDiffLogic
+                .compare(current, plan, scope, TransferApplyMode.MERGE)
+                .toSummaries()
+        } else {
+            null
+        }
+        return CloudBackupRestorePreview(
+            entryId = entryId,
+            bytes = bytes,
+            canMerge = canMerge,
+            message = DataTransferImportLogic.previewMessage(
+                channel = TransferChannel.CLOUD,
+                scope = scope,
+                packageId = file.fileName.removeSuffix(".mikcb"),
+                overwrite = overwrite,
+                merge = merge,
+            ),
+        )
+    }
+
+    /**
+     * 按用户选定的模式落盘一次已预览的恢复。
+     *
+     * 本仓快照落盘只有「整份覆盖」一条实现（`TimetableSnapshotBridge.applySnapshot`，
+     * 与传输页 `DataTransferApplyLogic` 对全量包拒绝合并同一条边界）；快照恒是全量包，
+     * 弹层也不给「合并」按钮。若调用方硬传 [TransferApplyMode.MERGE]（预览里根本没摆出
+     * 这个选项），按覆盖处理——不静默吞掉，也不另开一条没人能走到的代码路径。
+     */
+    fun applyPreviewedBackupRestore(
+        preview: CloudBackupRestorePreview,
+        mode: TransferApplyMode,
+    ): SyncResultKind = openBackup(preview.entryId)
+
+    /** 删除某条远端备份（Dart `deleteBackup`：索引查条目 → 当前版本拒绝 → 删文件 → 维护索引）。
      *
      * 条目从 `history/index.json` 查（读不到走恢复重建）；文件与索引都认识它才动得起来，
      * 不认识的远端文件永远不会被这条路删掉。当前版本闸门是两道：索引的 `isCurrent`，
@@ -944,6 +1124,23 @@ class CloudSyncController(
     private fun cancelIfCoordinator() {
         // 协调器按需构造，取消标记挂在「当前这次操作」的实例上；这里没有长效实例，
         // 真实下载是同步阻塞调用，页面退出通常发生在调用栈返回后，故以断开传输为准。
+    }
+
+    /** 快照 JSON 列表键 → 实体列表：逐条宽松解析（与 `TimetableSnapshotBridge.parseLenient` 同口径）。 */
+    private inline fun <T> parseSnapshotList(raw: Any?, parse: (Map<String, Any?>) -> T): List<T> {
+        val list = raw as? List<*> ?: return emptyList()
+        val out = ArrayList<T>(list.size)
+        for (item in list) {
+            if (item !is Map<*, *>) continue
+            @Suppress("UNCHECKED_CAST")
+            val map = item as Map<String, Any?>
+            try {
+                out.add(parse(map))
+            } catch (_: Exception) {
+                // 与 TimetableSnapshotBridge 的读侧同口径：坏条目丢弃，其余照常。
+            }
+        }
+        return out
     }
 
     private fun toEntry(file: RemoteBackupFile): CloudBackupEntryModel = CloudBackupEntryModel(

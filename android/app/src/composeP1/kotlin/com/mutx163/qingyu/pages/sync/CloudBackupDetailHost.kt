@@ -18,6 +18,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.mutx163.qingyu.pages.transfer.TransferPreviewContent
+import com.mutx163.qingyu.pages.transfer.TransferPreviewDialog
+import com.mutx163.qingyu.share.TransferApplyMode
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,13 +49,21 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * |---|---|
  * | `CloudBackupListLogic`（纯逻辑，有单测） | 三行详情文案、删除确认文案、动作集合 |
  * | `SyncResultToasts`（纯逻辑，有单测） | 结果 → 提示文案（成功/失败/是否刷新列表） |
- * | 本文件 | 弹层编排：sheet → 确认框 → 调控制器 → 弹提示 |
+ * | 本文件 | 弹层编排：sheet → 恢复前差异预览 → 调控制器 → 弹提示 |
+ *
+ * ## 恢复链（2026-11-03 接上差异预览，对齐 Dart `cloud_backup_list_screen.dart:135-178`）
+ *
+ * 点「恢复」→ `controller.previewBackupRestore`（IO 线程：下载 + 解析 + 算差异，
+ * **不落盘**）→ 弹 `TransferPreviewDialog`（取消 / 覆盖当前课表；快照恒是全量包，
+ * 与传输页同口径不摆「合并」）→ 选定后 `applyPreviewedBackupRestore` 走原有
+ * `openBackup` 路径落盘（撤销点 / 基线钉哈希 / 刷新列表一处不缺）。
  *
  * ## 诚实边界
  *
- * - 恢复走 `controller.openBackup`：**强制以远端为准**下载并落盘（Dart `KEEP_REMOTE`），
- *   没有 Dart 那套「先预览差异、再选合并/覆盖」的二次确认——那需要传输包预览，
- *   归 `f.*` 的传输族（本批不动）。这里的确认只有「点哪个备份」这一次。
+ * - 恢复最终走 `controller.openBackup`：**强制以远端为准**整份覆盖落盘
+ *   （`TimetableSnapshotBridge.applySnapshot` 没有合并路径，与传输页对全量包
+ *   拒绝合并同一条边界）。Dart 的「设为当前版本」二次确认在 Compose 侧由
+ *   `applyDownloadedSnapshot` + `markSynced` 一并完成，不单独再弹。
  * - 恢复成功后列表会由控制器自己刷新（`openBackup` 内部 `refreshBackups`）。
  * - 真机联网（真 WebDAV 账号）验收归用户；本层只声明编译与 JVM 单测。
  *
@@ -81,21 +92,12 @@ fun CloudBackupDetailHost(
     val scope = rememberCoroutineScope()
 
     var busy by remember { mutableStateOf(false) }
-    var confirmRestore by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    // 恢复前差异预览：null = 不展示；非空时弹 TransferPreviewDialog。
+    var restorePreview by remember { mutableStateOf<CloudBackupRestorePreview?>(null) }
 
     fun toast(toast: SyncToast) {
         Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
-    }
-
-    fun restore(entryId: String) {
-        busy = true
-        scope.launch {
-            val kind = withContext(Dispatchers.IO) { controller.openBackup(entryId) }
-            busy = false
-            toast(SyncResultToasts.forRestore(kind == SyncResultKind.DOWNLOADED, controller.lastErrorCode))
-            onDismiss()
-        }
     }
 
     CloudBackupDetailSheet(
@@ -103,58 +105,58 @@ fun CloudBackupDetailHost(
         view = view,
         busy = busy,
         onDismissRequest = { if (!busy) onDismiss() },
-        // 恢复是**整份覆盖**且会丢本地未同步修改：先弹二次确认，点「恢复」才真的写回。
-        onRestore = { confirmRestore = true },
+        // 恢复是**整份覆盖**且会丢本地未同步修改：先下载算差异预览，用户看过再定。
+        onRestore = {
+            val id = activeEntry?.id ?: return@CloudBackupDetailSheet
+            busy = true
+            scope.launch {
+                val preview = withContext(Dispatchers.IO) { controller.previewBackupRestore(id) }
+                busy = false
+                if (preview != null) {
+                    restorePreview = preview
+                } else {
+                    toast(SyncResultToasts.forRestore(false, controller.lastErrorCode))
+                }
+            }
+        },
         onDelete = { confirmDelete = true },
     )
 
-    // 两个确认框同样常驻组合、只翻 `show`（条件挂载同样杀退场动画）；正文按 Dart
-    // `showHyperosDialog` 的 message 居中（旧版左对齐，审核 P3）。
-    OverlayDialog(
-        insideMargin = DpSize(16.dp, 16.dp),
-        show = confirmRestore,
-        title = SyncStrings.cloudBackupRestoreTitle.zh,
-        onDismissRequest = { confirmRestore = false },
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (activeEntry != null) {
-                Text(
-                    text = SyncStrings.cloudBackupRestoreBody.filled(
-                        "time",
-                        CloudBackupListLogic.formatEntryTime(activeEntry),
-                    ),
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextButton(
-                    text = SyncStrings.cancelAction.zh,
-                    onClick = { confirmRestore = false },
-                    enabled = !busy,
-                    colors = ButtonDefaults.textButtonColors(),
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = {
-                        confirmRestore = false
-                        activeEntry?.let { restore(it.id) }
-                    },
-                    enabled = !busy && activeEntry != null,
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(SyncStrings.cloudBackupRestoreAction.zh)
+    // 恢复前差异预览弹窗（Dart `showTransferPreviewDialog(title: cloudBackupRestoreTitle)`）：
+    // 常驻组合、只翻 `show`；内容走 TransferPreviewDialog 自己的 remember 保底。
+    // 取消/点遮罩 = 放弃恢复（不落盘）；选定模式 → 落盘 → toast（成功带「撤销」）。
+    TransferPreviewDialog(
+        content = restorePreview?.let {
+            TransferPreviewContent(
+                title = CloudBackupListLogic.restorePreviewTitle(),
+                message = it.message,
+            )
+        },
+        canMerge = restorePreview?.canMerge ?: false,
+        onChoose = { mode ->
+            val preview = restorePreview
+            restorePreview = null
+            if (mode != null && preview != null) {
+                busy = true
+                scope.launch {
+                    val kind = withContext(Dispatchers.IO) {
+                        controller.applyPreviewedBackupRestore(preview, mode)
+                    }
+                    busy = false
+                    toast(
+                        SyncResultToasts.forRestore(
+                            kind == SyncResultKind.DOWNLOADED,
+                            controller.lastErrorCode,
+                        ),
+                    )
+                    if (kind == SyncResultKind.DOWNLOADED) onDismiss()
                 }
             }
-        }
-    }
+        },
+    )
 
+    // 删除确认框同样常驻组合、只翻 `show`（条件挂载同样杀退场动画）；正文按 Dart
+    // `showHyperosDialog` 的 message 居中（旧版左对齐，审核 P3）。
     OverlayDialog(
         insideMargin = DpSize(16.dp, 16.dp),
         show = confirmDelete,

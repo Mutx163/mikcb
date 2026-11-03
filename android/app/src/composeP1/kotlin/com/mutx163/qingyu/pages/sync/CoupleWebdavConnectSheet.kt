@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 账号或密码为空 / 正在忙 → 两个按钮都不可点 | `credentialsFilled && !busy` |
  *
  * 弹层内部只剩「输入框里现在是什么」这一类 UI 态；网络与落盘都在宿主侧。
+ *
+ * ## 常驻组合（2026-11-03 弹窗审核 P3 收口）
+ *
+ * 本组件**常驻组合**，可见性只由 [show] 驱动——旧版 `show = true` 静态写在组件里、
+ * 靠宿主 `if (showConnectSheet)` 整棵移出组合来关闭，官方退场动画一次都播不出来。
+ * 文本/忙碌态全部来自宿主 [texts]（随 viewState 稳定存在），退场期间无需快照保底；
+ * 每次打开（[show] 翻 true）把三格输入重置回宿主初值，与旧版「重新挂载 = 清空」同语义。
  */
 @Composable
 fun CoupleWebdavConnectSheet(
@@ -57,21 +65,30 @@ fun CoupleWebdavConnectSheet(
     initialSlot: Int,
     testing: Boolean,
     connecting: Boolean,
+    show: Boolean,
     onDismissRequest: () -> Unit,
     onTest: (username: String, password: String) -> Unit,
     onConfirm: (username: String, password: String, mySlot: Int) -> Unit,
 ) {
     val dark = isSystemInDarkTheme()
-    var username by remember(initialUsername) { mutableStateOf(initialUsername) }
+    var username by remember { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
-    var slot by remember(initialSlot) { mutableStateOf(if (initialSlot == 2) 2 else 1) }
+    var slot by remember { mutableStateOf(if (initialSlot == 2) 2 else 1) }
+    // 常驻后重组不再重建组件：每次打开重新吃宿主初值（旧版靠重新挂载天然做到）。
+    LaunchedEffect(show, initialUsername, initialSlot) {
+        if (show) {
+            username = initialUsername
+            password = ""
+            slot = if (initialSlot == 2) 2 else 1
+        }
+    }
 
     // Dart `_credentialsFilled`：两项都填了才允许测试/连接（否则点了只会闪一下转圈，不说原因）。
     val credentialsFilled = username.trim().isNotEmpty() && password.isNotEmpty()
     val busy = testing || connecting
 
     QingyuSheet(
-        show = true,
+        show = show,
         title = texts.title,
         onDismissRequest = onDismissRequest,
         // 同 [CloudBackupDetailSheet]：内容自留 4dp，框架侧仍给 16dp（合计 20dp，对齐页面口径）。
