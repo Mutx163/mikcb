@@ -110,6 +110,7 @@ class TimetableProfilesController(
             profiles = snap.profiles + newProfile,
             activeProfileId = newProfile.id,
             failureMessage = TimetableStrings.saveFailed.zh,
+            settings = newProfile.settings,
         ) { TimetableStrings.formatCreatedProfile(finalName) }
     }
 
@@ -125,11 +126,10 @@ class TimetableProfilesController(
             return TimetableProfileActionResult.Rejected()
         }
         return try {
-            if (repository.setActiveProfile(id)) {
-                TimetableProfileActionResult.Success(TimetableStrings.formatSwitchedToProfile(target.name))
-            } else {
-                TimetableProfileActionResult.Rejected()
-            }
+            // 切档 = 换激活 id **并且**把全局设置换成目标档那份（Dart `_applyProfileState`）。
+            // 仓储的 setActiveProfile 只换 id，设置会留在旧档，所以走合并写入口。
+            repository.replaceAllProfilesAndSettings(snap.profiles, id, target.settings)
+            TimetableProfileActionResult.Success(TimetableStrings.formatSwitchedToProfile(target.name))
         } catch (_: Exception) {
             TimetableProfileActionResult.Failed(TimetableStrings.saveFailed.zh)
         }
@@ -174,6 +174,7 @@ class TimetableProfilesController(
             profiles = snap.profiles + copy,
             activeProfileId = copy.id,
             failureMessage = TimetableStrings.saveFailed.zh,
+            settings = copy.settings,
         ) { TimetableStrings.copiedCurrentTimetable.zh }
     }
 
@@ -225,10 +226,13 @@ class TimetableProfilesController(
         }
         // 回收候选必须取**删除前**那份档案的壁纸（删完就从盘上消失了）。
         val profilesJsonBefore = readRawJson(TimetableStore.KEY_PROFILES)
+        // 删激活档会自动换档，全局设置要跟着回退档走（Dart 删档后同样 `_applyProfileState`）。
+        val nextActive = remaining.firstOrNull { it.id == newActiveId }
         val result = write(
             profiles = remaining,
             activeProfileId = newActiveId,
             failureMessage = TimetableStrings.deleteFailed.zh,
+            settings = nextActive?.settings,
         ) { TimetableStrings.formatDeletedProfile(target.name) }
         // 只在**档案真的删掉之后**回收；落盘失败（Failed）时档案还在，一张都不动。
         if (result is TimetableProfileActionResult.Success) {
@@ -312,14 +316,26 @@ class TimetableProfilesController(
         }
     }
 
-    /** 统一的「整份替换 + 落盘」：成功才取成功文案；落盘抛错 → [TimetableProfileActionResult.Failed]。 */
+    /**
+     * 统一的「整份替换 + 落盘」：成功才取成功文案；落盘抛错 → [TimetableProfileActionResult.Failed]。
+     *
+     * [settings] 非空时走 `replaceAllProfilesAndSettings`：切档/新建/复制/删档回退会换激活档，
+     * 全局设置必须**同步**换成新激活档的那份（Dart `_applyProfileState`，
+     * `timetable_provider.dart:1139-1152`）。只换 `activeProfileId` 会出现
+     * 「课程是新档的、学期/作息还是旧档的」。两次写入合并成一次，监听者只收一次通知。
+     */
     private inline fun write(
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         failureMessage: String,
+        settings: TimetableSettings? = null,
         successMessage: () -> String,
     ): TimetableProfileActionResult = try {
-        repository.replaceAllProfiles(profiles, activeProfileId)
+        if (settings != null) {
+            repository.replaceAllProfilesAndSettings(profiles, activeProfileId, settings)
+        } else {
+            repository.replaceAllProfiles(profiles, activeProfileId)
+        }
         TimetableProfileActionResult.Success(successMessage())
     } catch (_: Exception) {
         TimetableProfileActionResult.Failed(failureMessage)

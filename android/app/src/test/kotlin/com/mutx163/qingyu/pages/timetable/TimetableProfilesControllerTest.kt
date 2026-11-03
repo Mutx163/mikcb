@@ -350,6 +350,54 @@ class TimetableProfilesControllerTest {
         assertFalse(partnerItem.isActive)
     }
 
+    // ============ 换档必须换全局设置（Dart `_applyProfileState`） ============
+
+    @Test
+    fun `切换档案时全局设置跟着目标档走 而不是留在旧档`() {
+        val oldStart = LocalDateTime.of(2026, 2, 23, 0, 0)
+        val newStart = LocalDateTime.of(2026, 8, 31, 0, 0)
+        val oldProfile = profile("p1", "旧课表")
+            .copy(settings = profile("p1").settings.copy(semesterStartDate = oldStart, semesterWeekCount = 18))
+        val newProfile = profile("p2", "新课表")
+            .copy(settings = profile("p2").settings.copy(semesterStartDate = newStart, semesterWeekCount = 16))
+        val f = fixture(profiles = listOf(oldProfile, newProfile), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo)
+
+        val result = controller.switchProfile("p2")
+
+        assertTrue(result is TimetableProfileActionResult.Success)
+        assertEquals("开学日必须换成目标档的", newStart, f.repo.snapshot.settings.semesterStartDate)
+        assertEquals("总周数必须换成目标档的", 16, f.repo.snapshot.settings.semesterWeekCount)
+        // 落盘同样要换：杀进程重开不能又回到旧档的学期。
+        val reopened = TimetableRepository(TimetableStore(f.raw))
+        assertEquals(newStart, reopened.snapshot.settings.semesterStartDate)
+        assertEquals(16, reopened.snapshot.settings.semesterWeekCount)
+    }
+
+    @Test
+    fun `新建课表后全局设置用新档默认值 而不是沿用旧档开学日`() {
+        val oldStart = LocalDateTime.of(2026, 2, 23, 0, 0)
+        val oldProfile = profile("p1").copy(settings = profile("p1").settings.copy(semesterStartDate = oldStart))
+        val f = fixture(profiles = listOf(oldProfile), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t0 })
+
+        controller.createProfile("新课表")
+
+        assertNull("新档默认不带开学日，全局设置也不能还留着旧档的", f.repo.snapshot.settings.semesterStartDate)
+    }
+
+    @Test
+    fun `复制课表后全局设置沿用来源档`() {
+        val sourceStart = LocalDateTime.of(2026, 8, 31, 0, 0)
+        val source = profile("p1").copy(settings = profile("p1").settings.copy(semesterStartDate = sourceStart))
+        val f = fixture(profiles = listOf(source), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t0 })
+
+        controller.duplicateProfile("p1")
+
+        assertEquals(sourceStart, f.repo.snapshot.settings.semesterStartDate)
+    }
+
     // ============ 落盘失败：返回 Failed 且仓储不变 ============
 
     @Test
