@@ -1133,6 +1133,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get qrTransferScanHint => '상대방 화면에 카메라를 대고 완료될 때까지 유지하세요';
 
   @override
+  String get qrTransferCameraUnavailable =>
+      '카메라를 사용할 수 없습니다. 다른 앱에서 사용 중인지 확인해 주세요';
+
+  @override
+  String get qrTransferCameraRetry => '재시도';
+
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '$received프레임 수신 · $decoded/$total 복호화됨';
   }

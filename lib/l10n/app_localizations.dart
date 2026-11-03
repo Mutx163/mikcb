@@ -2150,6 +2150,18 @@ abstract class AppLocalizations {
   /// **'将摄像头对准对方手机屏幕，保持稳定，等待进度完成'**
   String get qrTransferScanHint;
 
+  /// No description provided for @qrTransferCameraUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'相机不可用，请检查是否被其他应用占用'**
+  String get qrTransferCameraUnavailable;
+
+  /// No description provided for @qrTransferCameraRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get qrTransferCameraRetry;
+
   /// No description provided for @qrTransferReceiveProgress.
   ///
   /// In zh, this message translates to:

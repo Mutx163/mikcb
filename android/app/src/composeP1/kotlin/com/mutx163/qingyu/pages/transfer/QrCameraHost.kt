@@ -16,9 +16,14 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -33,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
@@ -53,6 +59,7 @@ import com.mutx163.qingyu.share.camera.PermissionState
 import com.mutx163.qingyu.share.camera.ScanPipeline
 import com.mutx163.qingyu.theme.QingyuTheme
 import java.util.concurrent.Executors
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -276,9 +283,14 @@ private fun CameraPreview(
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
+    // 绑定失败不能只留黑屏：明确告诉用户相机被占用，并给一个重试入口。
+    var bindFailed by remember { mutableStateOf(false) }
+    // 点「重试」时自增，作为 DisposableEffect 的 key 重新走一遍绑定。
+    var bindAttempt by remember { mutableStateOf(0) }
 
-    DisposableEffect(active, lifecycleOwner) {
+    DisposableEffect(active, lifecycleOwner, bindAttempt) {
         if (!active) {
+            bindFailed = false
             return@DisposableEffect onDispose { }
         }
         var provider: ProcessCameraProvider? = null
@@ -311,8 +323,10 @@ private fun CameraPreview(
                     imageAnalysis,
                 )
                 provider = cameraProvider
+                bindFailed = false
             } catch (_: Exception) {
-                // 相机被占用 / 无可用后摄：保留空预览，页面照常显示；不把整页带崩。
+                // 相机被占用 / 无可用后摄：渲染层换成可见提示 + 重试，不把整页带崩。
+                bindFailed = true
             }
         }
         providerFuture.addListener(bindListener, ContextCompat.getMainExecutor(context))
@@ -325,7 +339,43 @@ private fun CameraPreview(
         }
     }
 
-    AndroidView(factory = { previewView }, modifier = modifier)
+    Box(modifier = modifier) {
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        if (bindFailed) {
+            CameraBindFailedHint(
+                onRetry = {
+                    bindFailed = false
+                    bindAttempt++
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+/** 相机绑定失败的可见提示：说清原因，并保留重试入口（不是一句死字）。 */
+@Composable
+private fun CameraBindFailedHint(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(MiuixTheme.colorScheme.surface)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = TransferStrings.qrTransferCameraUnavailable.zh,
+            style = MiuixTheme.textStyles.body2,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text(text = TransferStrings.qrTransferCameraRetry.zh)
+        }
+    }
 }
 
 /**

@@ -1166,6 +1166,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Point the camera at the other phone\'s screen and hold steady until progress completes';
 
   @override
+  String get qrTransferCameraUnavailable =>
+      'Camera unavailable. Check whether another app is using it.';
+
+  @override
+  String get qrTransferCameraRetry => 'Retry';
+
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '$received frames received · $decoded/$total decoded';
   }

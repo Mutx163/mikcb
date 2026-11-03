@@ -32,4 +32,4 @@ android/app/src/main/kotlin/com/mutx163/qingyu/UmengCrashRedaction.kt|1|崩溃�
 android/app/src/main/kotlin/com/mutx163/qingyu/UmengDiagnosticReporter.kt|1|诊断上报失败不影响功能
 android/app/src/main/kotlin/com/mutx163/qingyu/WidgetSystemActions.kt|1|小组件系统动作尽力而为，失败由下次刷新补
 android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|1|自检中断异常忽略，不是用户动作失败
-android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|2|L219 打不开系统设置有手动兜底；L314 相机绑定失败缺 ARB 文案，待清（已报用户）
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|1|打不开系统应用详情页时有手动兜底；相机绑定失败已改为可见提示 + 重试（本行已下调）

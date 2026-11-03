@@ -1113,6 +1113,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get qrTransferScanHint => '将摄像头对准对方手机屏幕，保持稳定，等待进度完成';
 
   @override
+  String get qrTransferCameraUnavailable => '相机不可用，请检查是否被其他应用占用';
+
+  @override
+  String get qrTransferCameraRetry => '重试';
+
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 帧 · 已解出 $decoded/$total';
   }
@@ -11127,6 +11132,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get qrTransferScanHint => '將相機對準對方手機螢幕，保持穩定，等待進度完成';
 
   @override
+  String get qrTransferCameraUnavailable => '相機無法使用，請檢查是否被其他應用程式佔用';
+
+  @override
+  String get qrTransferCameraRetry => '重試';
+
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 幀 · 已解出 $decoded/$total';
   }
@@ -21181,6 +21191,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get qrTransferScanHint => '將相機對準對方手機螢幕，保持穩定，等待進度完成';
 
   @override
+  String get qrTransferCameraUnavailable => '相機無法使用，請檢查是否被其他應用程式佔用';
+
+  @override
+  String get qrTransferCameraRetry => '重試';
+
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 幀 · 已解出 $decoded/$total';
   }

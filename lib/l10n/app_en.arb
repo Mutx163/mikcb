@@ -616,6 +616,8 @@
   "qrTransferStop": "Stop Sending",
   "qrTransferScanTitle": "Scan to Receive",
   "qrTransferScanHint": "Point the camera at the other phone's screen and hold steady until progress completes",
+  "qrTransferCameraUnavailable": "Camera unavailable. Check whether another app is using it.",
+  "qrTransferCameraRetry": "Retry",
   "qrTransferReceiveProgress": "{received} frames received · {decoded}/{total} decoded",
   "@qrTransferReceiveProgress": {
     "placeholders": {

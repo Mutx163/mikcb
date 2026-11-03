@@ -2109,13 +2109,26 @@ fun ShellPageContent(
                 ),
                 onBack = onBack,
                 onPersistHideFromRecents = { hidden ->
-                    runCatching {
-                        context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)
-                            .edit().putBoolean("hide_from_recents", hidden).apply()
-                        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
-                        am?.appTasks?.forEach { it.setExcludeFromRecents(hidden) }
-                        true
+                    // `apply()` 是异步写，失败拿不到结果：会出现「开关看着关了、实际没关」。
+                    // 改成 `commit()` 并检查返回值；失败交回页面（页面会把开关弹回原值），这里补 toast。
+                    val prefs = context.getSharedPreferences("native_runtime_prefs", android.content.Context.MODE_PRIVATE)
+                    val saved = runCatching {
+                        prefs.edit().putBoolean("hide_from_recents", hidden).commit()
                     }.getOrDefault(false)
+                    if (saved) {
+                        // appTasks 是尽力而为：拿不到任务栈不算落盘失败——下次冷启动会按同一份 prefs 重放。
+                        runCatching {
+                            val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+                            am?.appTasks?.forEach { it.setExcludeFromRecents(hidden) }
+                        }.onFailure { Log.w("ShellPageIndex", "hideFromRecents: 应用到 appTasks 失败", it) }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            com.mutx163.qingyu.pages.live.LiveKeepAliveStrings.saveFailed.zh,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    saved
                 },
                 onProbeAccessibilityEnabled = { KeepAliveAccessibilityStatus.isEnabled(context) },
                 onOpenAccessibilitySettings = {

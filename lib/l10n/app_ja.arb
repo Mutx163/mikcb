@@ -496,6 +496,8 @@
   "qrTransferStop": "送信を停止",
   "qrTransferScanTitle": "読み取って受信",
   "qrTransferScanHint": "相手の画面にカメラを向け、完了まで安定して構えてください",
+  "qrTransferCameraUnavailable": "カメラを使用できません。ほかのアプリが使用中でないか確認してください",
+  "qrTransferCameraRetry": "再試行",
   "qrTransferReceiveProgress": "受信 {received} フレーム · 解読 {decoded}/{total}",
   "@qrTransferReceiveProgress": {
     "placeholders": {

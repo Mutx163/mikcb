@@ -91,6 +91,9 @@ object TransferStrings {
     val qrTransferStop = ArbText("qrTransferStop", "停止发送")
     val qrTransferScanTitle = ArbText("qrTransferScanTitle", "扫码接收")
     val qrTransferScanHint = ArbText("qrTransferScanHint", "将摄像头对准对方手机屏幕，保持稳定，等待进度完成")
+    val qrTransferCameraUnavailable =
+        ArbText("qrTransferCameraUnavailable", "相机不可用，请检查是否被其他应用占用")
+    val qrTransferCameraRetry = ArbText("qrTransferCameraRetry", "重试")
     val qrTransferReceiveProgress =
         ArbText("qrTransferReceiveProgress", "已接收 {received} 帧 · 已解出 {decoded}/{total}")
     val qrTransferReceiveComplete = ArbText("qrTransferReceiveComplete", "数据接收完成，正在导入……")
@@ -200,6 +203,8 @@ object TransferStrings {
         qrTransferStop,
         qrTransferScanTitle,
         qrTransferScanHint,
+        qrTransferCameraUnavailable,
+        qrTransferCameraRetry,
         qrTransferReceiveProgress,
         qrTransferReceiveComplete,
         qrTransferRestart,
