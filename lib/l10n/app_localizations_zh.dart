@@ -396,6 +396,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncConfigLoadFailed => '云同步设置读取失败，请重新输入应用专用密码';
 
   @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。';
+
+  @override
   String get cloudSyncStatusTitle => '同步状态';
 
   @override
@@ -10408,6 +10412,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncConfigLoadFailed => '雲端同步設定讀取失敗，請重新輸入應用專用密碼';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。';
 
   @override
   String get cloudSyncStatusTitle => '同步狀態';
@@ -20462,6 +20470,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncConfigLoadFailed => '雲端同步設定讀取失敗，請重新輸入應用專用密碼';
+
+  @override
+  String get webdavPasswordReentryBody =>
+      '本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。';
 
   @override
   String get cloudSyncStatusTitle => '同步狀態';

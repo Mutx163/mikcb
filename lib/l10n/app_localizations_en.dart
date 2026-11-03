@@ -418,6 +418,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t load cloud sync settings. Please re-enter your app password.';
 
   @override
+  String get webdavPasswordReentryBody =>
+      'This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept.';
+
+  @override
   String get cloudSyncStatusTitle => 'Status';
 
   @override

@@ -842,6 +842,12 @@ abstract class AppLocalizations {
   /// **'云同步设置读取失败，请重新输入应用专用密码'**
   String get cloudSyncConfigLoadFailed;
 
+  /// No description provided for @webdavPasswordReentryBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'本次更新更改了密码的本地保存方式，需要重新输入一次应用专用密码；服务器地址、账号与同步设置均已保留。'**
+  String get webdavPasswordReentryBody;
+
   /// No description provided for @cloudSyncStatusTitle.
   ///
   /// In zh, this message translates to:

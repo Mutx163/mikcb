@@ -405,6 +405,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '클라우드 동기화 설정을 불러오지 못했습니다. 앱 비밀번호를 다시 입력해 주세요.';
 
   @override
+  String get webdavPasswordReentryBody =>
+      '이번 업데이트로 비밀번호 저장 방식이 변경되었습니다. 앱 비밀번호를 한 번 다시 입력해 주세요. 서버 주소, 계정 및 동기화 설정은 유지됩니다.';
+
+  @override
   String get cloudSyncStatusTitle => '동기화 상태';
 
   @override

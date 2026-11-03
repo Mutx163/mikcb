@@ -405,6 +405,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'クラウド同期の設定を読み込めませんでした。アプリパスワードを再入力してください。';
 
   @override
+  String get webdavPasswordReentryBody =>
+      '今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。';
+
+  @override
   String get cloudSyncStatusTitle => '同期状態';
 
   @override

@@ -185,6 +185,7 @@
   "cloudSyncHttpConfirmProceed": "Save anyway",
   "cloudSyncRemoteFolderLabel": "Remote folder",
   "cloudSyncConfigLoadFailed": "Couldn't load cloud sync settings. Please re-enter your app password.",
+  "webdavPasswordReentryBody": "This update changed how the password is stored on this device. Please re-enter your app-specific password once; your server address, account and sync settings have been kept.",
   "cloudSyncStatusTitle": "Status",
   "cloudSyncLastSyncedLabel": "Last synced",
   "cloudSyncLastErrorLabel": "Latest error",

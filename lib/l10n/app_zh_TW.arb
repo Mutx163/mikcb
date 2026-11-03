@@ -62,6 +62,7 @@
   "cloudSyncHttpConfirmProceed": "仍要儲存",
   "cloudSyncRemoteFolderLabel": "遠端目錄",
   "cloudSyncConfigLoadFailed": "雲端同步設定讀取失敗，請重新輸入應用專用密碼",
+  "webdavPasswordReentryBody": "本次更新更改了密碼的本機儲存方式，需要重新輸入一次應用程式專用密碼；伺服器位址、帳號與同步設定均已保留。",
   "cloudSyncStatusTitle": "同步狀態",
   "cloudSyncLastSyncedLabel": "上次同步",
   "cloudSyncLastErrorLabel": "最近錯誤",

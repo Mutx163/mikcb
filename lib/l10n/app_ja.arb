@@ -62,6 +62,7 @@
   "cloudSyncHttpConfirmProceed": "それでも保存",
   "cloudSyncRemoteFolderLabel": "リモートフォルダ",
   "cloudSyncConfigLoadFailed": "クラウド同期の設定を読み込めませんでした。アプリパスワードを再入力してください。",
+  "webdavPasswordReentryBody": "今回の更新でパスワードの保存方法が変更されたため、アプリ専用パスワードをもう一度入力してください。サーバーアドレス、アカウント、同期設定は保持されています。",
   "cloudSyncStatusTitle": "同期状態",
   "cloudSyncLastSyncedLabel": "最終同期",
   "cloudSyncLastErrorLabel": "最新のエラー",
