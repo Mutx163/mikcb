@@ -170,7 +170,13 @@ class WebdavRequestsTest {
         assertEquals("auth_failed", classifyWebdavWriteFailure(401, null, ""))
         assertEquals("access_denied", classifyWebdavWriteFailure(403, null, ""))
         assertEquals("invalid_response", classifyWebdavWriteFailure(500, null, ""))
-        assertEquals("sync_failed", classifyWebdavWriteFailure(400, null, ""))
+        // Dart 写路径走 sanitizeWebdavErrorMessage：除 401/403/404/5xx 外一律
+        // invalid_response，405/422/429/3xx 不能落成泛化的 sync_failed。
+        assertEquals("invalid_response", classifyWebdavWriteFailure(400, null, ""))
+        assertEquals("invalid_response", classifyWebdavWriteFailure(405, null, ""))
+        assertEquals("invalid_response", classifyWebdavWriteFailure(422, null, ""))
+        assertEquals("invalid_response", classifyWebdavWriteFailure(429, null, ""))
+        assertEquals("invalid_response", classifyWebdavWriteFailure(302, null, ""))
     }
 
     @Test

@@ -261,7 +261,10 @@ fun classifyWebdavWriteFailure(
             401 -> "auth_failed"
             403 -> "access_denied"
             404, 409, 412, 423, 507 -> "invalid_response"
-            else -> if (statusCode >= 500) "invalid_response" else "sync_failed"
+            // Dart 写路径走 `sanitizeWebdavErrorMessage`：除 401/403/404/5xx 外，
+            // 其余任何状态（含 405/422/429/3xx）一律 `invalid_response`，
+            // 不能落成泛化的 `sync_failed`。
+            else -> "invalid_response"
         }
     }
     // 无状态码的文本分支：只认关键词，绝不透出原文（Dart sanitize 同口径）。
