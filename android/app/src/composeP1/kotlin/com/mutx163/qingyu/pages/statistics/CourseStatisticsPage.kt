@@ -757,11 +757,15 @@ private fun StoryList(stories: List<StoryView>, dark: Boolean) {
     }
 }
 
+/** ARB 正文里的 `**text**` 加粗片段（对齐 Dart `_buildRichContent`）。 */
+// 顶层预编译：boldSegments 直接写在 Text(text = …) 的组合路径里，原先每次重组
+// 都重新 new 一个 Regex 再全文扫描；正则与输入无关，提为常量只编一次。
+private val BOLD_SEGMENT_PATTERN = Regex("""\*\*(.*?)\*\*""")
+
 /** 把 ARB 正文里的 `**text**` 解析成加粗片段（对齐 Dart `_buildRichContent`）。 */
 private fun boldSegments(content: String): AnnotatedString = buildAnnotatedString {
-    val pattern = Regex("""\*\*(.*?)\*\*""")
     var lastEnd = 0
-    for (match in pattern.findAll(content)) {
+    for (match in BOLD_SEGMENT_PATTERN.findAll(content)) {
         if (match.range.first > lastEnd) {
             append(content.substring(lastEnd, match.range.first))
         }
