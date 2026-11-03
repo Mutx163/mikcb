@@ -385,4 +385,227 @@ class IcsImportModelTest {
         assertEquals(1, result.courses[0].dayOfWeek)
         assertEquals(3, result.courses[1].dayOfWeek)
     }
+
+    // ==========================================
+    // 8. Dart 2026-10-27 修复的导出格式（Sections / 显式前缀）
+    // ==========================================
+
+    private fun rawEvent(vararg lines: String): String = buildString {
+        append("BEGIN:VEVENT\r\n")
+        for (line in lines) append(line).append("\r\n")
+        append("END:VEVENT\r\n")
+    }
+
+    @Test
+    fun `本 App 导出的 Sections 前缀课可导入且前缀行归位`() {
+        // 对应 Dart `64284a2c`：导出侧 `Sections: 3-4` 在第 2 行，旧实现只认中文首行 → 整课丢弃
+        val content = calendar(
+            event(
+                description = "Teacher: 张老师\\nSections: 3-4\\nLocation: 教三-201\\n" +
+                    "Description: 线性系统\\nNote: 带计算器",
+            ),
+        )
+        val course = parse(content).courses.single()
+        assertEquals("高等数学", course.name)
+        assertEquals("张老师", course.teacher)
+        assertEquals("教三-201", course.location)
+        assertEquals("线性系统", course.description)
+        assertEquals("带计算器", course.note)
+        assertEquals(3, course.startSection)
+        assertEquals(4, course.endSection)
+    }
+
+    @Test
+    fun `Period 前缀与裸区间节次同样可识别`() {
+        val period = calendar(
+            event(description = "Period 5-6\\nA101\\n李老师"),
+        )
+        val periodCourse = parse(period).courses.single()
+        assertEquals(5, periodCourse.startSection)
+        assertEquals(6, periodCourse.endSection)
+        assertEquals("A101", periodCourse.location)
+        assertEquals("李老师", periodCourse.teacher)
+
+        val bare = calendar(event(description = "9-10节\\nB202\\n王老师"))
+        val bareCourse = parse(bare).courses.single()
+        assertEquals(9, bareCourse.startSection)
+        assertEquals(10, bareCourse.endSection)
+        assertEquals("B202", bareCourse.location)
+        assertEquals("王老师", bareCourse.teacher)
+    }
+
+    @Test
+    fun `显式 Location 是纯地点，不再从地点串里拆教师`() {
+        // Dart 注释的反例：Location: 教三-201 若按旧口径拆末段，教师会变成 教三-201
+        val content = calendar(event(description = "Sections: 1-2\\nLocation: 教三-201"))
+        val course = parse(content).courses.single()
+        assertEquals("教三-201", course.location)
+        assertEquals("", course.teacher)
+    }
+
+    @Test
+    fun `节次行被剔除后教师地点位移不再错位`() {
+        // 中文三行：节次 + 地点 + 教师；旧实现把 descriptionLines[1] 当教师
+        val content = calendar(event(description = "第1 - 2节\\nA101\\n张老师"))
+        val course = parse(content).courses.single()
+        assertEquals("A101", course.location)
+        assertEquals("张老师", course.teacher)
+    }
+
+    // ==========================================
+    // 9. RRULE 展开口径（COUNT / BYDAY / EXDATE 与 Dart 同为不展开）
+    // ==========================================
+
+    @Test
+    fun `COUNT 与 UNTIL 同时存在时 UNTIL 决定结束周、COUNT 被忽略`() {
+        val content = calendar(event(rrule = "FREQ=WEEKLY;COUNT=3;UNTIL=20260427T080000"))
+        val course = parse(content).courses.single()
+        // 与 `UNTIL=20260427T080000` 单独存在同解：第 9 周
+        assertEquals(9, course.endWeek)
+    }
+
+    @Test
+    fun `只有 COUNT 时不展开、结束周回落起始周`() {
+        // Dart 的 _parseEndWeek 只认 UNTIL；COUNT 不参与周次计算
+        val content = calendar(event(rrule = "FREQ=WEEKLY;COUNT=10"))
+        val course = parse(content).courses.single()
+        assertEquals(course.startWeek, course.endWeek)
+    }
+
+    @Test
+    fun `BYDAY 被忽略，不改变周次区间`() {
+        val content = calendar(event(rrule = "FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20260427T080000"))
+        val course = parse(content).courses.single()
+        assertEquals(9, course.endWeek)
+    }
+
+    @Test
+    fun `EXDATE 不拆分课程也不排除实例`() {
+        val content = calendar(
+            event(rrule = "FREQ=WEEKLY;UNTIL=20260427T080000", extra = "EXDATE:20260316T080000\r\n"),
+        )
+        val course = parse(content).courses.single()
+        assertEquals(1, course.startWeek)
+        assertEquals(9, course.endWeek)
+    }
+
+    // ==========================================
+    // 10. 时间语义：TZID / 跨天 / 全天 / 非法日期
+    // ==========================================
+
+    @Test
+    fun `TZID 参数被丢弃，时间按墙上时刻不换算`() {
+        // 对应 Dart test：TZID=/Asia/Shanghai 时 08:20 就是 08:20（不按 tz 转 UTC）
+        val content = calendar(
+            rawEvent(
+                "SUMMARY:时区课",
+                "DTSTART;TZID=/Asia/Shanghai:20260302T082000",
+                "DTEND;TZID=/Asia/Shanghai:20260302T100000",
+                "DESCRIPTION:第 1-2 节\\nA101\\n张老师",
+                "LOCATION:A101 张老师",
+            ),
+        )
+        val course = parse(content).courses.single()
+        assertEquals("08:20", course.startTime)
+        assertEquals("10:00", course.endTime)
+        assertEquals(1, course.dayOfWeek)
+        assertEquals(1, course.startWeek)
+    }
+
+    @Test
+    fun `跨天 DTEND 只取结束时刻，日归属仍看 DTSTART`() {
+        // Dart 不做跨日归一：dayOfWeek/startTime 取 DTSTART，endTime 取 DTEND 的墙钟
+        val content = calendar(event(dtStart = "20260302T220000", dtEnd = "20260303T010000"))
+        val course = parse(content).courses.single()
+        assertEquals(1, course.dayOfWeek)
+        assertEquals("22:00", course.startTime)
+        assertEquals("01:00", course.endTime)
+        assertEquals(1, course.startWeek)
+        assertEquals(1, course.endWeek)
+    }
+
+    @Test
+    fun `VALUE=DATE 的全天事件因缺 T 时刻被跳过`() {
+        val allDay = calendar(
+            rawEvent(
+                "SUMMARY:全天课",
+                "DTSTART;VALUE=DATE:20260302",
+                "DTEND;VALUE=DATE:20260303",
+                "DESCRIPTION:第 1-2 节",
+            ),
+        )
+        val alone = parse(allDay)
+        assertTrue(alone.courses.isEmpty())
+        assertEquals(fixedNow, alone.semesterStart)
+
+        // 与正常事件混排时只丢全天那条，其余照常导入
+        val mixed = parse(calendar(event(summary = "正常课"), rawEvent(
+            "SUMMARY:全天课",
+            "DTSTART;VALUE=DATE:20260303",
+            "DTEND;VALUE=DATE:20260304",
+            "DESCRIPTION:第 1-2 节",
+        )))
+        assertEquals(1, mixed.courses.size)
+        assertEquals("正常课", mixed.courses[0].name)
+    }
+
+    @Test
+    fun `非法日历日期按 Dart 字段顺延而非丢弃`() {
+        // 20260231 不存在：Dart DateTime(...) 顺延到 2026-03-03（周二）
+        val content = calendar(event(dtStart = "20260231T080000", dtEnd = "20260231T094000"))
+        val course = parse(content).courses.single()
+        assertEquals(2, course.dayOfWeek)
+        assertEquals("08:00", course.startTime)
+    }
+
+    // ==========================================
+    // 11. 失败粒度 / id 下标
+    // ==========================================
+
+    @Test
+    fun `坏事件逐条跳过，后续好事件照常导入且下标不前移`() {
+        // 第一条缺 SUMMARY → 丢弃；第二条的 id 后缀应为已收课程数 0（Dart rawCourses.length）
+        val content = calendar(event(summary = ""), event(summary = "正常课"))
+        val result = parse(content)
+        assertEquals(1, result.courses.size)
+        assertEquals("正常课", result.courses[0].name)
+        assertTrue(result.courses[0].id.endsWith("-0"))
+        // 学期起点仍取最早 DTSTART（坏事件也带 DTSTART）
+        assertEquals(LocalDateTime.of(2026, 3, 2, 0, 0), result.semesterStart)
+    }
+
+    // ==========================================
+    // 12. 合并：偶周 + description 不进合并键
+    // ==========================================
+
+    @Test
+    fun `偶周单周课合并为双周课`() {
+        // 基准课锚定学期起点为 03-02（第 1 周），双周课落在第 2、4 周
+        val anchor = event(summary = "基准课", dtStart = "20260302T100000", dtEnd = "20260302T114000")
+        val week2 = event(dtStart = "20260309T080000", dtEnd = "20260309T094000")
+        val week4 = event(dtStart = "20260323T080000", dtEnd = "20260323T094000")
+        val courses = parse(calendar(anchor, week2, week4)).courses
+        assertEquals(2, courses.size)
+        val merged = courses.single { it.name == "高等数学" }
+        assertEquals(2, merged.startWeek)
+        assertEquals(4, merged.endWeek)
+        assertTrue(!merged.isOddWeek)
+        assertTrue(merged.isEvenWeek)
+    }
+
+    @Test
+    fun `description 不进合并键，note 进`() {
+        val week1 = event(
+            dtStart = "20260302T080000", dtEnd = "20260302T094000",
+            description = "第 1-2 节\\nDescription: A",
+        )
+        val week3 = event(
+            dtStart = "20260316T080000", dtEnd = "20260316T094000",
+            description = "第 1-2 节\\nDescription: B",
+        )
+        val course = parse(calendar(week1, week3)).courses.single()
+        assertEquals(1, course.startWeek)
+        assertEquals(3, course.endWeek)
+        assertEquals("A", course.description)
+    }
 }
