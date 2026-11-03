@@ -123,7 +123,10 @@ object StatisticsService {
         val dailyMaxSections = calculateDailyMaxSections(activeWeeklyCourses)
 
         // 收集所有教室
-        val allRooms = allCourses.map { it.location }.toSet()
+        // 空地点不是「一间教室」：`AddCourseFormModel` 默认 location = ""，线上课/自习课
+        // 也经常不填。原先把空串收进集合，4 间真实教室 + 1 门无地点课就会假解锁
+        // 「教室探索家」（5/5）。同文件其它教室口径（:287 / :626 / :757）都过滤了空值。
+        val allRooms = allCourses.map { it.location.trim() }.filter { it.isNotEmpty() }.toSet()
 
         // 全勤课程数（周排课口径）
         val perfectAttendanceCount = allCourses.count { hasPerfectAttendance(it, currentWeek) }
@@ -408,17 +411,25 @@ object StatisticsService {
         val hasCalendar = semesterStartDate != null && totalWeeks > 0
 
         var sectionsTotal = 0
+        // 课程周次可能超出学期总周数（AI 导入未裁剪、或用户把学期从 20 周改小）。
+        // 总览/周视图都按 `semesterWeekCount` 截止，进度卡的「共 N 节」也必须同口径，
+        // 否则会出现「总览 32 节、进度卡共 40 节、100% 提前到来」。
+        val weekCap = if (totalWeeks > 0) totalWeeks else Int.MAX_VALUE
         for (course in allCourses) {
-            sectionsTotal += course.sectionCount * countScheduledWeeks(course)
+            sectionsTotal += course.sectionCount * countScheduledWeeks(course, weekCap)
         }
 
         var sectionsDone = 0
         var weeksElapsed = if (currentWeek < 1) 0 else currentWeek
         var phase = SemesterProgressPhase.ESTIMATED
 
-        if (hasCalendar && semesterStartDate != null) {
+        if (hasCalendar) {
             val calendarWeek = calendarWeekForDate(reference, semesterStartDate)
-            if (calendarWeek < 1) {
+            // 开学日不是周一时，开学日之前的几天仍落在「第 1 周」里
+            // （`calendarWeekForDate` 按周一归周，会返回 1）。必须显式比较日期，
+            // 否则开学前一两天会显示「进行中」而不是「还未开学」。
+            val beforeStart = reference.toLocalDate().isBefore(semesterStartDate)
+            if (beforeStart || calendarWeek < 1) {
                 sectionsDone = 0
                 weeksElapsed = 0
                 phase = SemesterProgressPhase.BEFORE_START
@@ -451,7 +462,7 @@ object StatisticsService {
             // 开学日**数 totalWeeks*7-1 天，开学日不是周一时就比最后一个教学周的
             // 周日多出 weekday-1 天：卡片会出现「phase 已经是 ended、印着的结束日
             // 却还在未来」这种自相矛盾。
-            semesterEndDate = if (hasCalendar && semesterStartDate != null) {
+            semesterEndDate = if (hasCalendar) {
                 weekStart(semesterStartDate).plusDays(totalWeeks * 7L - 1)
             } else {
                 null
@@ -495,6 +506,15 @@ object StatisticsService {
         for (course in allCourses) {
             if (course.sectionCount <= 0) continue
             done += course.sectionCount * countActiveWeeks(course, calendarWeek - 1)
+            // 第 1 周的「整周」里，开学日之前的上课日并没有发生。开学日不是周一时
+            // （很常见），`countActiveWeeks(course, calendarWeek - 1)` 会把它们算进来；
+            // 只有 calendarWeek >= 2 时第 1 周才在该累加范围内。
+            if (calendarWeek > 1 &&
+                course.isActiveInWeek(1) &&
+                course.dayOfWeek < semesterStart.dayOfWeek.value
+            ) {
+                done -= course.sectionCount
+            }
             if (!course.isActiveInWeek(calendarWeek)) continue
             for (offset in 0 until 7) {
                 val day = weekStartDay.plusDays(offset.toLong())
@@ -1000,10 +1020,15 @@ object StatisticsService {
         return maxStreak.coerceIn(0, 7)
     }
 
-    /** 课程完整开课周期内的计划周数（含单双周/自定义周次，不含停课，service:1149-1155）。 */
-    private fun countScheduledWeeks(course: CourseStub): Int {
+    /**
+     * 课程完整开课周期内的计划周数（含单双周/自定义周次，不含停课，service:1149-1155）。
+     *
+     * @param maxWeek 学期总周数上限。进度卡按它截止；全勤判据仍用默认值
+     *   （全勤看的是课程自己的完整周期，不该被学期设置截断）。
+     */
+    private fun countScheduledWeeks(course: CourseStub, maxWeek: Int = Int.MAX_VALUE): Int {
         var count = 0
-        for (week in course.startWeek..course.endWeek) {
+        for (week in course.startWeek..minOf(course.endWeek, maxWeek)) {
             if (course.isActiveInWeek(week)) count++
         }
         return count

@@ -681,6 +681,64 @@ class StatisticsServiceTest {
         assertEquals(SemesterProgressPhase.ESTIMATED, progress.phase)
     }
 
+    @Test
+    fun `progress week2 does not count week1 days before start date`() {
+        // 周三开学（9-9），周一 1-2 节的课。到第 2 周（9-16）时：
+        // 第 1 周的 9/7 还没开学，不能算已上；只有 9/14 的 2 节。
+        val start = java.time.LocalDate.of(2026, 9, 9)
+        val progress = StatisticsService.calculateSemesterProgress(
+            listOf(course("1", "数学", 1, 1, 2)),
+            currentWeek = 2, semesterWeekCount = 16,
+            semesterStartDate = start,
+            now = java.time.LocalDateTime.of(2026, 9, 16, 0, 0),
+        )
+        assertEquals(2, progress.sectionsDone)
+    }
+
+    @Test
+    fun `progress before start date within week1 is before start`() {
+        // 9/7 与开学日 9/9 同属第 1 周，但 9/7 还没开学，必须走 BEFORE_START。
+        val start = java.time.LocalDate.of(2026, 9, 9)
+        val progress = StatisticsService.calculateSemesterProgress(
+            listOf(course("1", "数学", 1, 1, 2)),
+            currentWeek = 1, semesterWeekCount = 16,
+            semesterStartDate = start,
+            now = java.time.LocalDateTime.of(2026, 9, 7, 0, 0),
+        )
+        assertEquals(SemesterProgressPhase.BEFORE_START, progress.phase)
+        assertEquals(0, progress.sectionsDone)
+        assertEquals(0, progress.weeksElapsed)
+    }
+
+    @Test
+    fun `progress total sections capped by semester week count`() {
+        // 课程排到第 20 周、学期只有 16 周：总览/周视图都只算 16 周，
+        // 进度卡的「共 N 节」也必须一致，否则 100% 会提前到来。
+        val courses = listOf(course("1", "数学", 1, 1, 2, endWeek = 20))
+        val progress = StatisticsService.calculateSemesterProgress(
+            courses, currentWeek = 16, semesterWeekCount = 16,
+        )
+        assertEquals(32, progress.sectionsTotal)
+    }
+
+    @Test
+    fun `explorer achievement ignores blank location`() {
+        // 4 间真实教室 + 1 门未填地点（线上/自习）不能被算成 5 间而假解锁。
+        val courses = listOf(
+            course("1", "A", 1, 1, 2, location = "A101"),
+            course("2", "B", 2, 1, 2, location = "B202"),
+            course("3", "C", 3, 1, 2, location = "C303"),
+            course("4", "D", 4, 1, 2, location = "D404"),
+            course("5", "E", 5, 1, 2, location = ""),
+        )
+        val explorer = achievement(
+            StatisticsService.calculateAchievements(courses, currentWeek = 1),
+            "explorer",
+        )
+        assertFalse(explorer.isUnlocked)
+        assertEquals(4, explorer.progressCurrent)
+    }
+
     // ========== calculateHeatmap（Dart 测试抄录 service_test:620-651） ==========
 
     @Test
