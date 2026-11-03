@@ -421,7 +421,13 @@ private fun TaskEmptyState(
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = onAddTask) {
+        // Dart `task_list_screen.dart:71-74`：空态 CTA 是 `HyperosButton` 默认 variant
+        // = primary 蓝底实心；官方默认 `buttonColors()` 灰底在页底 #F2F2F2 上对比比
+        // ~1.02（融进背景），主操作必须显式按主操作配色。
+        Button(
+            onClick = onAddTask,
+            colors = ButtonDefaults.buttonColorsPrimary(),
+        ) {
             Text(text = TaskStrings.addTask)
         }
     }

@@ -43,6 +43,7 @@ import com.mutx163.qingyu.statistics.StatisticsExportModule
 import com.mutx163.qingyu.statistics.StatisticsExportOptions
 import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -532,6 +533,10 @@ fun StatisticsExportSheetContent(
                 if (options == null) onEmptySelection() else onConfirm(options)
             },
             modifier = Modifier.fillMaxWidth(),
+            // Dart `statistics_export_sheet.dart:145-147` 是默认 variant（primary 蓝底实心）
+            // + expand: true；官方默认 `buttonColors()` 的灰底在本仓设置页底 #F2F2F2 上
+            // 对比比 ~1.02，主操作会整个融进背景 —— 显式按主操作配色。
+            colors = ButtonDefaults.buttonColorsPrimary(),
         ) {
             Text(text = ExportSheetModel.actionLabel)
         }
