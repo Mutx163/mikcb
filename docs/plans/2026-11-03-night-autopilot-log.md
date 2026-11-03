@@ -384,7 +384,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
    - Kotlin 改为**复用既有键显示具体原因**，**不新增 ARB**（实现见 `CoupleStrings.kt:130-154`，传输码经 `SyncStrings.localizeSyncError` 映射）。
    - 理由：迁移期「以 Dart 为真值」的原则，遇到「**Dart 本身丢失信息或误导用户**」时不适用——与此前 `no_local_user_data` 同一条逻辑（Dart 落泛化属信息丢失，Kotlin 保留精确）。
 2. **`CouplePartnerPortImpl.unlink()` 必须补写 active 键**（Dart `timetable_partner_service.dart:161-184`），`platform/` 单文件已授权。
-   - 核对结果：**当前实现已满足**（`platform/CouplePartnerPortImpl.kt:70-84`：解绑后若 active 正是 `partner-imported`，切回第一份非情侣档并 `replaceAllProfiles` 落盘），**无需再改**；授权保留待后续同类修补。
+   - ~~核对结果：当前实现已满足、无需再改~~ **该结论作废**（本代理上轮误判，见 10.19）：`02698142` 及截至 `6a6ab1b8` 的完整函数体只有 `replaceAllProfiles(next, snapshot.activeProfileId)`——**active 原样落盘**，未做写侧补偿；界面正常是因为**读侧** `TimetableRepository.reload()`/`activeProfile` 对未知 id 回落第一份。**写侧补偿由 `096ff9bb` 补上**。
 
 ---
 
@@ -570,6 +570,8 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `qingyu_only` 索引探测：需**适配器列表加载 + host 合并**，属跨壳改动，排期做。
 - **折线点位「槽心 vs 边到边」**：已派 L1 下批处理（当前是槽心定位，Dart 为边到边，属视觉对齐差异）。
 - **`classReminders` 整体未移植**（2026-11-04 确认）：**通知族 + 课程/日视图 + 设置族**三块，跨域整块缺口，需 Lead 排期；**不算豁免**。
+- **`hasCustomTime`**（精确到行）：`AddCourseFormModel.kt:162` 加字段 + `:406-415` 透传；`ShellPageIndex.kt:997-1008` `clockResolver` 回传布尔（**已授权例外科改，仅该 lambda**）；两处完成即划掉。
+- **课程级复制/移动**：**明确不补**——两侧都无实现（全仓无 `copyCourse`/`duplicateCourse`/`moveCourse`，动作面板无入口），唯一「复制」是档案级 `duplicateProfile`。**事实，不是缺口。**
 
 #### 逻辑层（L4）第三批 ✅（2026-11-03 22:15 协调线回填）
 
@@ -832,3 +834,55 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 3. **「对方停用情侣功能」无标记位**：拉取只按**内容哈希**判 `unchanged`——`couple_webdav_service.dart:234-241`（`lastRemoteContentHash == contentHash && host.hasPartnerBinding` → `unchanged`）。对方停止上传只是**不写 slot**，哈希不变，于是本地看到 `unchanged`，不存在任何「已停用」标记或状态位。
 4. **误导性折叠的实测证据**：`couple_webdav_service.dart:188-199` — `getBytes` 把 401 / 超时 / 网络错误吞成 `null`，随后统一折成 `couple_webdav_partner_file_missing`；对应文案在 `lib/l10n/app_localizations_zh.dart:301`「未找到对方课表文件，请让对方先上传」。故 Kotlin 不照抄（裁决见九章）。
 5. **台账处置**：`docs/` 检索「配对码」**0 命中**；若其他台账出现「配对码过期」类待办，一律标记**已不成立**，证据行号 = 本节 1–4 条。
+
+### 10.18 ✅ 迁移阻断解除 · A+B 落地（`e57607b5`，5 文件）
+
+**A. 旧 `courses` 字符串列表通道 bootstrap**
+- marker `compose_bootstrap_migrated_v1`；**幂等**（重复启动不重复迁移）。
+- **先留档再覆盖**；**全坏条目走 Dart 整份留档**（不丢原始盘）。
+- 仅在 `timetable_profiles` 缺失/为空时消费旧 `courses`，不再直接建空课程档案。
+
+**B. 档案内嵌 settings 为唯一真源**
+- `loadSettingsJson()` 单点改读档案；顶层 `timetable_settings` 降级为 **bootstrap 播种源 + 回退 Flutter 镜像**。
+- `appLocaleTag` 等**只存顶层**的键保留原读写路径（不强行迁入档案）。
+
+**四种盘态表（含迁移前/后显式断言）**
+
+| # | 盘态 | 迁移前 | 迁移后 |
+|---|---|---|---|
+| ① | `profiles` 缺失 + 3 门课 | 旧 `courses` 有 3 门、无档案 | 1 档案、id 唯一、`currentWeek=5`、`semesterWeekCount=18`、开学日、locale 保留、marker |
+| ② | 档案在 + 顶层 25 vs 内嵌 18 | 两处冲突 | 读 **18**；patch 后 **20** 且镜像保留 `ja` |
+| ③ | 重启 | — | `already_migrated`；**用户新建档不被覆盖** |
+| ④ | 2 好 + 1 坏 | 坏条目混在 | 隔离档 `count=1`；旧 key 保留 |
+
+**B 的第二扇门结论**：全仓**无旁路直读顶层 settings**（settings 页 / live / classAlarm / appUpdate 读取点均经档案或 `loadSettingsJson()` 单点；读取点清单见提交说明）。
+
+**声明口径**：真机迁移未验，仅「**JVM 单测通过 + 四种老盘状态覆盖**」。
+
+**今晚唯一批准的一次 CJK 基线加行**：`IcsImportModel.kt` 的 **16 条 ICS 表头关键字**（数据匹配串、**永不上屏**）。
+- 处置：抽进独立常量文件（文件名**不含 `Strings`/`Arb`**）+ KDoc 明写**禁用于屏上文案** + 基线**只登记该文件命中行** + 测试钉住**无 Composable 引用**。
+- 理由：数据匹配串与界面文案在门禁里**形态相同、性质不同**；「转义隐藏」与「按文件名排除」都已被前例否决。**此为例外，不是先例。**
+
+**另一条授权**：`ShellPageIndex.kt` **最小例外科改**——仅 `:1576-1582`、`:2050-2058` 两个 toggle 函数体内追加 `writeRawSettingsPatch` + 启动回写 pref；**禁改布局/主题/路由/页面装配**；提交说明须写明「Lead 授权例外科改 + 只动哪两处」。
+
+### 10.19 🔧 判断修正 · unlink 的「已有补偿」是**读侧兜底**，不是写侧补偿
+
+- **实证**：`git show 02698142:.../CouplePartnerPortImpl.kt` 与 `git show 6a6ab1b8:.../` 取完整 `unlink()` 函数体，**两处逐字相同**，只有 `repository.replaceAllProfiles(next, snapshot.activeProfileId)`——**active 原样落盘**。
+- **读侧假象**：`TimetableRepository.reload()` / `activeProfile` 对未知 id 回落第一份，界面看着正常；**读时回落 ≠ 写侧补偿**，盘上仍是指向已删除档案的**悬空 id**。
+- **修正**：写侧补偿由 `096ff9bb` 补上（active 正是 `partner-imported` 时切回第一份非情侣档并落盘，另加 `CouplePartnerUnlinkTest`）。
+- **纪律（写死）**：「某处已有补偿」这类结论**必须附 `git show <rev>:<path>` 的完整函数体与行号**，不接受任何转述；**读侧兜底是最容易冒充写侧补偿的形态**。
+- **来源**：sync 线实证，与本代理及 Lead 上轮判断相反；上轮「已满足、无需再改」的结论已在本节与九章标注作废。
+
+### 10.20 🧹 情侣文案精确映射 + ICS 死副本删除（`096ff9bb` / `5289c6da`）
+
+1. **情侣文案映射落地（`096ff9bb`）**：7 个网络码委托 `SyncStrings.localizeSyncError`；地址/文件类复用既有键；**未新增 ARB**。两条旧断言由「Dart 折叠结果」改为「新文案」——**这是纠错而非放宽**（旧断言钉住的正是误导行为）。
+2. **ICS 死副本删除（`5289c6da`）**：删 `transfer/IcsImportParser.kt`（412 行）+ `IcsImportParserTest.kt`（449 行）；`unfoldLines` 收进 `IcsText.kt`，基线删一行。依据：**全仓无生产调用方**；覆盖未丢（`IcsImportModelTest` 已有三类用例）。
+3. **咬合探针三处同退**：一次退三处 → **3 failures 精确命中三个测试**；恢复后全绿。这种「一次退三处、三条各命中」的探针比单点探针更能证明覆盖是真的。
+
+### 10.21 🗑 删单次课对齐 Dart（`df1a9873`）
+
+1. **修复内容**：最后一周只 `filterNot` 移除、**不删整课、不动 exams**（Dart `:2790-2792`、`:2798-2812` 均不碰 `_exams`）；**中间周也不再走 `update`**——原实现会把共享字段广播到同名兄弟课并多跑 `syncExamReminders`，Dart 两件都不做。快照/回滚保持 `courses/tasks/profiles` 三份。
+2. **三条保留断言**：删中间周 → `[1,3]` + 考试/手写作业在；删最后一周 → `[1,2]` + 不动；删唯一一次 → 课消失但**考试仍在**、派生作业随课消失。
+3. **插曲（共享工作区范例）**：跑 L0 时另一线正在改 `app/TimetableStore.kt`，真实仓连续编译红；课程线用「HEAD 版 `TimetableStore` + 自己的改动」搭**净室临时树**跑通并删净室，随后真实仓复跑 **230 / 284**。正确做法是：**不替人提交、也不因此停下**。
+4. **backlog 精确到行**：`hasCustomTime` 只需两处——`AddCourseFormModel.kt:162` 加字段 + `:406-415` 透传；`ShellPageIndex.kt:997-1008` `clockResolver` 回传布尔（**Lead 已授权例外科改，仅该 lambda**，做完此条即可划掉）。
+5. **明确「不要补」**：课程级复制 / 移动到其他档案**两侧都无实现**（全仓无 `copyCourse`/`duplicateCourse`/`moveCourse`，动作面板无入口）；唯一「复制」是档案级 `duplicateProfile`。**这是事实，不是缺口，后续不要当任务派。**
