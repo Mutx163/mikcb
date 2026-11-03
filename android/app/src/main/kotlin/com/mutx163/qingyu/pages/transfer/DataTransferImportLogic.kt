@@ -70,7 +70,17 @@ data class TransferImportPackageInfo(
     /** 顶层课程数 + 各档案课程数（全量包只有后者非零）。 */
     val courseCount: Int,
     val profileCount: Int,
-)
+    /**
+     * 旧格式兼容解析时逐条跳过的坏条目（键 → 条数）。
+     *
+     * 当前信封解析恒为空；只有 [DataTransferLegacyBackupLogic] 会产出非空。
+     * Dart 用 `AppDataBackup.droppedCounts` 让导入完成提示如实报「跳过了 N 条」，
+     * 这里同样交给 [TransferRestoredNotice.droppedCount]（旧宿主把它硬编码成 0）。
+     */
+    val droppedCounts: Map<String, Int> = emptyMap(),
+) {
+    val droppedTotal: Int get() = droppedCounts.values.sum()
+}
 
 /**
  * 解析出来、**尚未落盘**的导入计划。

@@ -4,6 +4,7 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
 import com.mutx163.qingyu.core.Exam
+import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
 import com.mutx163.qingyu.core.TimeScheme
@@ -42,16 +43,19 @@ import com.mutx163.qingyu.share.overwriteUsesMergeSemantics
  * 3. **基线固定按 `CURRENT_TIMETABLE` 打包**。全量包（`ALL_DATA`）进来时，档案内的实体
  *    全部判「新增」、本机顶层实体全部判「删除」，一份自己刚导出的备份会显示「+120 / -120」。
  *
- * ## 与 Dart 的刻意差异（三条，都有理由）
+ * ## 与 Dart 的刻意差异（两条，都有理由）
  *
  * 1. **不保存 `before` / `after` 的完整 JSON**。Dart 的 `TransferEntityChange` 带两份
  *    实体快照给第三方消费；Compose 侧预览只渲染计数与标签，为一次全量导入把几百条实体的
  *    两侧 JSON 都留在内存里没有读者。
- * 2. **`locations` 恒为 `+0 / ~0 / -0`**。Kotlin 的导入链路既不解析地点作息分组
- *    （`TransferImportPlan` 没有这个字段）、也不落盘（`DataTransferHost.applyImport`
- *    没有写入口），给出非零计数等于向用户承诺一次不会发生的写入。
- * 3. **`time_schemes` 按 id 配对，不做内容归一之外的软匹配**。Dart 同处也是按 id
+ * 2. **`time_schemes` 按 id 配对，不做内容归一之外的软匹配**。Dart 同处也是按 id
  *    （`_TransferEntity.key`），软匹配只发生在落盘的课程合并里。
+ *
+ * 2026-11-03 修：`locations` 原先恒为 `+0 / ~0 / -0`（理由是「不解析也不落盘」），
+ * 但 `TransferImportPlan.locationTimeGroups` 与 `DataTransferHost.applyImport` 早已
+ * 双双接通——预览却在告诉用户「地点分组不会有任何变化」，而落盘会写。现在与 Dart
+ * `_entitiesForKind`（`transfer_diff_service.dart:369-399`）同口径：顶层列表按 id 配对，
+ * removed 同样只在「覆盖且该 scope 不是合并语义」时统计。
  */
 object DataTransferDiffLogic {
 
@@ -130,8 +134,19 @@ object DataTransferDiffLogic {
                 ),
                 reportRemovals,
             ),
-            // 地点作息分组：见类注释「刻意差异 2」——既不解析也不落盘，所以恒空。
-            TransferEntityDiff(TransferDiffKind.LOCATIONS, emptyList()),
+            // 地点作息分组：与落盘侧同口径（顶层列表、按 id 配对、模板引用不参与标签）。
+            compareEntities(
+                TransferDiffKind.LOCATIONS,
+                sideEntities(
+                    current.locationTimeGroups, emptyList(), { emptyList() }, false,
+                    LocationTimeGroup::id, LocationTimeGroup::name, LocationTimeGroup::toJsonMap,
+                ),
+                sideEntities(
+                    plan.locationTimeGroups, emptyList(), { emptyList() }, false,
+                    LocationTimeGroup::id, LocationTimeGroup::name, LocationTimeGroup::toJsonMap,
+                ),
+                reportRemovals,
+            ),
             compareEntities(
                 TransferDiffKind.TASKS,
                 sideEntities(
@@ -395,6 +410,8 @@ data class TransferDiffCurrent(
     val scheduleItems: List<ScheduleItem> = emptyList(),
     val timeSchemes: List<TimeScheme> = emptyList(),
     val scheduleDateRules: List<ScheduleDateRule> = emptyList(),
+    /** 顶层地点作息分组（落盘侧会写，预览必须同步算，见类注释）。 */
+    val locationTimeGroups: List<LocationTimeGroup> = emptyList(),
     val settings: TimetableSettings? = null,
 ) {
     companion object {
@@ -417,6 +434,7 @@ data class TransferDiffCurrent(
             scheduleItems = snapshot.scheduleItems,
             timeSchemes = snapshot.timeSchemes,
             scheduleDateRules = snapshot.scheduleDateRules,
+            locationTimeGroups = snapshot.locationTimeGroups,
             settings = snapshot.settings,
         )
     }

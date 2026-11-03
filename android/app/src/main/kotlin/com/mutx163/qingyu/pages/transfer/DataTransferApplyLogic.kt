@@ -6,6 +6,7 @@ import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
 import com.mutx163.qingyu.core.ScheduleItem
+import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
@@ -365,6 +366,146 @@ object DataTransferApplyLogic {
      */
     fun undoKindFor(plan: TransferImportPlan): TransferUndoScope =
         if (isFullBackupPlan(plan)) TransferUndoScope.FULL_PROFILES else TransferUndoScope.ACTIVE_PROFILE_CONTENT
+
+    // ── 落盘前校验（Dart `TransferDiffService.validate(..., current: current)`） ──
+
+    /**
+     * 本机引用基线：校验「包里的课/作业/考试/规则/分组指向的课与作息表」是否都存在。
+     *
+     * Dart 的可用集是「包内 + 本机」（`transfer_diff_service.dart:226-240`），因为落盘时
+     * 宿主会先把包里的模板补进本机表；只按本机现有表判会误报跨设备导入。
+     */
+    data class TransferReferenceBaseline(
+        val courseIds: Set<String> = emptySet(),
+        val timeSchemeIds: Set<String> = emptySet(),
+    )
+
+    /**
+     * 与 Dart `validate` 同序的**阻塞性**错误（有 current 时全部是 error，不是 warning）。
+     *
+     * 旧实现只做结构校验就落盘：包里一条 `exam` 指向不存在的课，Kotlin 会把它写进档案
+     * （渲染层按 `courseId` 找不到课就静默不画），Dart 则在 `applyToProvider` 前置返回
+     * `applied: false` + `exam_course_missing:<id>`，一个字节不写。这里补齐同一道门。
+     *
+     * 顺序与 Dart 一致：`transfer_all_data_empty` → exams → tasks → time_rules →
+     * locations → courses。
+     */
+    fun referenceErrors(
+        plan: TransferImportPlan,
+        baseline: TransferReferenceBaseline,
+    ): List<String> {
+        val errors = ArrayList<String>()
+        if (plan.profiles.isEmpty() &&
+            plan.courses.isEmpty() &&
+            plan.exams.isEmpty() &&
+            plan.tasks.isEmpty() &&
+            plan.scheduleItems.isEmpty() &&
+            plan.timeSchemes.isEmpty() &&
+            plan.scheduleDateRules.isEmpty() &&
+            plan.locationTimeGroups.isEmpty() &&
+            plan.settings == null
+        ) {
+            // Dart 只在 scope == allData 时报；单课表空包另有 transfer_package_empty。
+            errors += "transfer_all_data_empty"
+        }
+        val availableCourseIds = HashSet<String>(plan.courses.size + baseline.courseIds.size)
+        plan.courses.mapTo(availableCourseIds) { it.id }
+        for (profile in plan.profiles) profile.courses.mapTo(availableCourseIds) { it.id }
+        availableCourseIds += baseline.courseIds
+        val availableSchemeIds = HashSet<String>(plan.timeSchemes.size + baseline.timeSchemeIds.size)
+        plan.timeSchemes.mapTo(availableSchemeIds) { it.id }
+        availableSchemeIds += baseline.timeSchemeIds
+
+        for (exam in plan.exams + plan.profiles.flatMap { it.exams }) {
+            if (exam.courseId.isNotEmpty() && exam.courseId !in availableCourseIds) {
+                errors += "exam_course_missing:${exam.id}"
+            }
+        }
+        for (task in plan.tasks + plan.profiles.flatMap { it.tasks }) {
+            val courseId = task.courseId
+            if (courseId != null && courseId !in availableCourseIds) {
+                errors += "task_course_missing:${task.id}"
+            }
+        }
+        for (rule in plan.scheduleDateRules) {
+            if (rule.timeSchemeId.isEmpty() || rule.timeSchemeId !in availableSchemeIds) {
+                errors += "time_rule_scheme_missing:${rule.id}"
+            }
+        }
+        for (group in plan.locationTimeGroups) {
+            if (group.timeSchemeId.isEmpty() || group.timeSchemeId !in availableSchemeIds) {
+                errors += "location_scheme_missing:${group.id}"
+            }
+        }
+        for (course in plan.courses + plan.profiles.flatMap { it.courses }) {
+            val schemeId = course.timeSchemeIdOverride
+            if (schemeId != null && schemeId.isNotEmpty() && schemeId !in availableSchemeIds) {
+                errors += "course_scheme_missing:${course.id}"
+            }
+        }
+        return errors
+    }
+
+    /**
+     * 时间模板落盘步骤（Dart `_mergeTimeSchemes`，`unified_transfer_service.dart:842-894`）。
+     *
+     * 三条判据，顺序也一致：
+     * 1. **同 id**：用外来名称 / 节次更新本机那套（宿主执行失败必须抛出，Dart 同）；
+     * 2. **id 不同但节次表完全相同**：复用本机 id，**不改名**——这是「同一张表的另一份」，
+     *    把机主自起的名字顶掉会连带改掉所有引用它的档案；
+     * 3. 其余新建。
+     *
+     * 旧宿主 `reconcileTimeSchemes` 只做了 1 与 3，于是每次跨设备导入都会多堆一套
+     * 节次完全相同的模板（Dart 有 2）。抽成纯函数后这条判据才有 JVM 单测钉着。
+     */
+    sealed interface TimeSchemeStep {
+        /** 同 id：按外来值更新；[localId] 即引用映射目标。 */
+        data class Update(
+            val localId: String,
+            val name: String,
+            val sections: List<SectionTime>,
+        ) : TimeSchemeStep
+
+        /** 节次签名相同：复用本机 [localId]，不写盘。 */
+        data class Reuse(val incomingId: String, val localId: String) : TimeSchemeStep
+
+        /** 本机没有同 id / 同签名：新建。 */
+        data class Create(
+            val incomingId: String,
+            val name: String,
+            val sections: List<SectionTime>,
+        ) : TimeSchemeStep
+    }
+
+    fun planTimeSchemeSteps(
+        current: List<TimeScheme>,
+        incoming: List<TimeScheme>,
+    ): List<TimeSchemeStep> {
+        val localById = current.associateBy { it.id }
+        val localIdBySignature = LinkedHashMap<List<SectionTime>, String>(current.size)
+        for (scheme in current) localIdBySignature.putIfAbsent(scheme.sections, scheme.id)
+        val steps = ArrayList<TimeSchemeStep>(incoming.size)
+        for (scheme in incoming) {
+            val sameId = localById[scheme.id]
+            if (sameId != null) {
+                steps += TimeSchemeStep.Update(sameId.id, scheme.name, scheme.sections)
+                // 更新后本机的节次变了：旧签名从索引里摘掉、新签名指向本机 id，
+                // 否则同一批里后续同签名的外来表会误判为「没有双胞胎」而多建一套
+                // （Dart :868-872 同）。
+                localIdBySignature.remove(sameId.sections)
+                localIdBySignature[scheme.sections] = sameId.id
+                continue
+            }
+            val twinId = localIdBySignature[scheme.sections]
+            if (twinId != null) {
+                steps += TimeSchemeStep.Reuse(scheme.id, twinId)
+                continue
+            }
+            steps += TimeSchemeStep.Create(scheme.id, scheme.name, scheme.sections)
+            localIdBySignature[scheme.sections] = scheme.id
+        }
+        return steps
+    }
 }
 
 /** 撤销快照抓的范围：决定撤销时把哪一份数据整份写回。 */
