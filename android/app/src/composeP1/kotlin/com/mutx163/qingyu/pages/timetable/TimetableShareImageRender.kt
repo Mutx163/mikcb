@@ -11,8 +11,8 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
-import com.mutx163.qingyu.pages.statistics.charts.ExportBrandModel
 import com.mutx163.qingyu.pages.statistics.charts.QrEncodeModel
+import com.mutx163.qingyu.statistics.ExportBrandModel
 import java.io.ByteArrayOutputStream
 import kotlin.math.max
 import kotlin.math.roundToInt

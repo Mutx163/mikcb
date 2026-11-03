@@ -2,7 +2,7 @@ package com.mutx163.qingyu.pages.timetable
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
-import com.mutx163.qingyu.pages.statistics.charts.ExportBrandModel
+import com.mutx163.qingyu.statistics.ExportBrandModel
 import java.io.File
 import java.time.LocalDate
 

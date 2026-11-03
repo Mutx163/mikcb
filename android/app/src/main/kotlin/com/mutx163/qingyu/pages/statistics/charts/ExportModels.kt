@@ -189,83 +189,16 @@ object ExportSheetModel {
  * 二维码边长**跟着文字块高度走**（48~72 之间夹住），这样右侧不留大片空白，
  * 也不用 `IntrinsicHeight`（Dart 注释明确写了二维码里的 `LayoutBuilder` 不参与固有测量）。
  */
-object ExportBrandModel {
 
-    val appName: String get() = ChartsStrings.timetableAppName.zh
-    val tagline: String get() = ChartsStrings.statisticsExportBrandTagline.zh
-
-    /** 网址展示串（`StatisticsExportBrand.WEBSITE_DISPLAY`）。 */
-    val websiteDisplay: String
-        get() = com.mutx163.qingyu.statistics.StatisticsExportBrand.WEBSITE_DISPLAY
-
-    /** 二维码内容（`StatisticsExportBrand.WEBSITE_URL`）。 */
-    val websiteUrl: String
-        get() = com.mutx163.qingyu.statistics.StatisticsExportBrand.WEBSITE_URL
-
-    const val LOGO_SIZE_DP = 40
-    const val LOGO_RADIUS_DP = 11
-    const val LOGO_TO_TEXT_GAP_DP = 10
-    const val TEXT_TO_QR_GAP_DP = 8
-
-    /** 顶部分隔线到内容、内容到底部分隔线都是 `SizedBox(height: 10)`。 */
-    const val DIVIDER_GAP_DP = 10
-
-    /** 条自身外边距 `EdgeInsets.symmetric(horizontal: 2, vertical: 2)`。 */
-    const val OUTER_PADDING_DP = 2
-
-    /** 分隔线透明度 `withValues(alpha: 0.7)`。 */
-    const val DIVIDER_ALPHA = 0.7f
-
-    /** 二维码边长夹取区间 `clamp(48.0, 72.0)`。 */
-    const val QR_MIN_DP = 48f
-    const val QR_MAX_DP = 72f
-
-    /** 文字块三行之间的两个空隙：标题→一句话 1dp，一句话→网址 2dp。 */
-    const val TITLE_TO_TAGLINE_GAP_DP = 1
-    const val TAGLINE_TO_URL_GAP_DP = 2
-
-    /** 字号 / 行高的兜底值（Dart `titleStyle.fontSize ?? 17` 等）。 */
-    const val FALLBACK_TITLE_FONT_SIZE = 17f
-    const val FALLBACK_TITLE_LINE_HEIGHT = 1.1f
-    const val FALLBACK_DETAIL_FONT_SIZE = 13f
-    const val FALLBACK_DETAIL_LINE_HEIGHT = 1.15f
-
-    /** 标题行高（brand_footer:46-47）：字号 × 行高，取不到就用 17 × 1.1。 */
-    fun titleLineHeight(
-        fontSize: Float? = null,
-        lineHeight: Float? = null,
-    ): Float = (fontSize ?: FALLBACK_TITLE_FONT_SIZE) *
-        (lineHeight ?: FALLBACK_TITLE_LINE_HEIGHT)
-
-    /** 说明行高（brand_footer:48-49）：字号 × 行高，兜底 13 × 1.15。 */
-    fun detailLineHeight(
-        fontSize: Float? = null,
-        lineHeight: Float? = null,
-    ): Float = (fontSize ?: FALLBACK_DETAIL_FONT_SIZE) *
-        (lineHeight ?: FALLBACK_DETAIL_LINE_HEIGHT)
-
-    /**
-     * 估算文字块总高（brand_footer:46-51）：
-     * 标题高 + 1 + 说明高 + 2 + 说明高（两行说明分别是「一句话」和「网址」）。
-     */
-    fun textBlockHeight(
-        titleFontSize: Float? = null,
-        titleLineHeight: Float? = null,
-        detailFontSize: Float? = null,
-        detailLineHeight: Float? = null,
-    ): Float = titleLineHeight(titleFontSize, titleLineHeight) +
-        TITLE_TO_TAGLINE_GAP_DP +
-        detailLineHeight(detailFontSize, detailLineHeight) +
-        TAGLINE_TO_URL_GAP_DP +
-        detailLineHeight(detailFontSize, detailLineHeight)
-
-    /** 二维码边长 = 文字块高度夹在 48~72（brand_footer:66）。 */
-    fun qrSize(textBlockHeight: Float): Float =
-        textBlockHeight.coerceIn(QR_MIN_DP, QR_MAX_DP)
-
-    /** 便捷入口：直接用兜底字号算二维码边长（等价于亮色主题下的实际值）。 */
-    fun defaultQrSize(): Float = qrSize(textBlockHeight())
-}
+/**
+ * 品牌条模型已下沉共享层（2026-11-03 域边界治理）：课表域的「干净课表图」也要用
+ * `textBlockHeight`/`qrSize` 算高度预算，main 层跨域 import 统计域类型会被
+ * 域边界守卫判红，故实现搬到 `com.mutx163.qingyu.statistics.ExportBrandModel`
+ * （L0 共享收编目录），这里留**委托保形 val** 指向同一单例——charts 包与
+ * composeP1 统计渲染的既有 `ExportBrandModel.xxx` 引用、以及 `ExportModelsTest`
+ * 的值断言全部原样工作，不重复一份实现。
+ */
+val ExportBrandModel = com.mutx163.qingyu.statistics.ExportBrandModel
 
 /** 导出排行的名次徽章配色（course_ranking:218-239）。 */
 enum class ExportRankTone {
