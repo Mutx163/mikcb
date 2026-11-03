@@ -87,6 +87,12 @@ class WarehouseShellState {
      * （无已存宏才自动录）。由列表宿主在导航前写好，登录页 `LaunchedEffect` 读一次。
      */
     var autoRecordMacro by mutableStateOf(false)
+
+    /**
+     * 快捷导入入口（P2）带来的待回放宏：列表页/课程导入页读出记录放这里，
+     * 登录页 `LaunchedEffect` 消费一次即清（与 [autoRecordMacro] 同款跨页暂存）。
+     */
+    var playbackMacro by mutableStateOf<WarehouseMacroRecord?>(null)
 }
 
 /** `g2.warehouseImport`：学校选择页（数据源 = `index/root_index.yaml`）。 */
@@ -101,16 +107,24 @@ fun WarehouseImportPickerHost(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val service = remember(fetch) { WarehouseRepositoryService(fetch) }
+    // 宏持久化（P2）：课程导入页的快捷导入入口要列「全部已存宏」（跨学校）。
+    val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
 
     var phase by remember { mutableStateOf(WarehouseListPhase.Loading) }
     var schools by remember { mutableStateOf<List<WarehouseSchoolEntry>>(emptyList()) }
     var recentSchoolIds by remember { mutableStateOf<List<String>>(emptyList()) }
     var reloadToken by remember { mutableStateOf(0) }
+    // 已存宏的完整记录（条目 + 步骤数，选择器要用）；空 = 入口不亮（不是「测出来没有」）。
+    var macroRecords by remember { mutableStateOf<List<WarehouseMacroRecord>>(emptyList()) }
+    var showMacroPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(reloadToken) {
         phase = WarehouseListPhase.Loading
         val loaded = withContext(Dispatchers.IO) { service.loadRootIndex() }
         recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
+        macroRecords = withContext(Dispatchers.IO) {
+            macroStore.getAllMacroEntries().mapNotNull { macroStore.getMacro(it.schoolId, it.adapterId) }
+        }
         when (loaded) {
             is WarehouseLoad.Ok -> {
                 schools = loaded.value.schools
@@ -126,6 +140,24 @@ fun WarehouseImportPickerHost(
         }
     }
 
+    /** 把选中的宏接到跨页暂存并进登录页回放（学校/适配器对象由宏记录构造最小真数据）。 */
+    fun startQuickImport(record: WarehouseMacroRecord) {
+        state.school = WarehouseSchoolEntry(
+            id = record.schoolId,
+            name = record.schoolName,
+            resourceFolder = record.schoolResourceFolder,
+        )
+        state.adapter = WarehouseAdapterEntry(
+            id = record.adapterId,
+            name = record.adapterName,
+            script = record.adapterAssetJsPath,
+            importUrl = record.importUrl,
+        )
+        state.autoRecordMacro = false
+        state.playbackMacro = record
+        onOpenPage(WarehouseRoutes.WEB_LOGIN)
+    }
+
     WarehouseCourseImportPage(
         allSchools = schools,
         recentSchoolIds = recentSchoolIds,
@@ -134,9 +166,9 @@ fun WarehouseImportPickerHost(
         adapterMatches = emptyMap(),
         phase = phase,
         onBack = onBack,
-        // 宏（快捷导入）引擎未移植 ⇒ 卡片不显示，数量恒 0，不是「测出来没有」。
-        hasQuickImportMacro = false,
-        quickImportMacroCount = 0,
+        // P2 起有真值：存过宏才亮快捷导入入口，数量 = 已存宏数。
+        hasQuickImportMacro = macroRecords.isNotEmpty(),
+        quickImportMacroCount = macroRecords.size,
         onRetry = { reloadToken += 1 },
         onSelectSchool = { school ->
             state.school = school
@@ -146,10 +178,29 @@ fun WarehouseImportPickerHost(
                 recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
             }
         },
-        onQuickImportClick = { toastUnavailable(context, "quick import: macro engine not ported (F08-8c)") },
+        // 单宏直接跑；多宏弹选择器（Dart 课程导入页宏选择器同口径）。
+        onQuickImportClick = {
+            when {
+                macroRecords.isEmpty() ->
+                    toastUnavailable(context, "quick import: no saved macro records")
+
+                macroRecords.size == 1 -> startQuickImport(macroRecords.first())
+                else -> showMacroPicker = true
+            }
+        },
         onFeedbackClick = { onOpenPage(WarehouseRoutes.FEEDBACK) },
         onCustomDebugClick = { onOpenPage(WarehouseRoutes.CUSTOM_DEBUG) },
         onExecutionLogClick = { toastUnavailable(context, "execution log: import pipeline not ported (F08-8c)") },
+    )
+
+    WarehouseQuickImportPickerDialog(
+        show = showMacroPicker,
+        records = macroRecords,
+        onPick = { record ->
+            showMacroPicker = false
+            startQuickImport(record)
+        },
+        onDismiss = { showMacroPicker = false },
     )
 }
 
@@ -162,6 +213,7 @@ fun WarehouseSchoolAdaptersHost(
     fetch: WarehouseFetch = remember { WarehouseJdkFetch() },
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val school = state.school
     if (school == null) {
         // 直接进这一页（壳的页面清单里点进来）时没有选中学校：退回选择页，而不是拿演示学校凑合。
@@ -208,10 +260,8 @@ fun WarehouseSchoolAdaptersHost(
     WarehouseSchoolAdaptersPage(
         school = school,
         adapters = adapters,
-        // 宏映射真值（P1）：存过录制的适配器本来要亮「快捷导入」按钮，但回放引擎
-        // 属 P2 —— 按拍板 D7 保持隐藏（macroMap 只喂「录制」入口要用的真值判断，
-        // 页面上「快捷导入」按钮由 hasMacro 驱动，这里先传空表避免画不可点的假入口）。
-        macroMap = emptyMap(),
+        // 宏映射真值（P2）：存过录制的适配器亮「快捷导入」按钮（回放引擎已接）。
+        macroMap = macroMap,
         phase = phase,
         onBack = onBack,
         onRefresh = { reloadToken += 1 },
@@ -237,7 +287,23 @@ fun WarehouseSchoolAdaptersHost(
             state.autoRecordMacro = true
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
-        onQuickImportAdapter = { toastUnavailable(context, "quick import: replay engine not ported (P2)") },
+        onQuickImportAdapter = { adapter ->
+            // 「快捷导入」（P2 起可用）：读出该适配器的宏 → 进登录页自动回放。
+            scope.launch {
+                val record = withContext(Dispatchers.IO) {
+                    macroStore.getMacro(school.id, adapter.id)
+                }
+                if (record == null) {
+                    // 宏在列表加载后、点击前被删等边缘：给实话，不画空转。
+                    toastUnavailable(context, "quick import: macro record missing")
+                } else {
+                    state.adapter = adapter
+                    state.autoRecordMacro = false
+                    state.playbackMacro = record
+                    onOpenPage(WarehouseRoutes.WEB_LOGIN)
+                }
+            }
+        },
     )
 }
 

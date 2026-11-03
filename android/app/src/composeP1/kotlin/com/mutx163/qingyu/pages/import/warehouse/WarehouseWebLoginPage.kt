@@ -68,6 +68,8 @@ fun WarehouseWebLoginPage(
      * 空集合时该放行路径永不生效（门禁只会更严）。
      */
     trustedLoginUrls: List<String> = emptyList(),
+    /** 前台宏回放中（宿主真实状态）：回放导航阶段的 UI 类消息靠它过 §6.2 门禁。 */
+    foregroundReplayActive: Boolean = false,
     onBack: () -> Unit = {},
     onReload: () -> Unit = {},
     onToggleDesktopMode: () -> Unit = {},
@@ -287,6 +289,7 @@ fun WarehouseWebLoginPage(
                             trustedLoginUrls = trustedLoginUrls,
                             macroRecordingActive =
                             sessionState.macroState == WarehouseMacroActionState.RECORDING,
+                            foregroundReplayActive = foregroundReplayActive,
                         )
                     ) {
                         onWebBridgeMessage?.invoke(raw)
