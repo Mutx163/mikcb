@@ -302,3 +302,46 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 2. ⚠️ **文件名不得含 `Strings`/`Arb`**（建议 `WarehouseFormLabels.kt`）：门禁按文件名排除，叫 `*Strings.kt` 会被整文件跳过——既违背「基线可见」，还会触发「已修复但基线未下调」红（排除文件扫描计数恒 0）。对象名按 Lead 建议用 `WarehouseFormLabelStrings`，文件名与对象名允许不同。
 3. 基线换行不加行：`cjk-literal-baseline-main.txt` 把 `WarehouseMacroModels.kt:3` 一行改为常量文件 `:3`，总条目 3 不变。
 **复核口径（E 线提交后 A 线执行）**：确认基线行数未增长（仍 3 条、全部指向常量对象所在文件）→ 跑门 4 + 门 2 → 推送。
+
+---
+
+## 十、五路并行（第二班）
+
+**起始**：2026-11-03 17:17（用户全权交付项目继续开发；第一班 A~E 已全部收线，见「八」五线状态表）。共享同一工作区、无 worktree 隔离，各线**只做路径限定提交、不推送**；A 线为唯一推送者与 ARB/l10n 独占。
+
+### 10.1 四条新线（文件域互斥）
+
+| 线 | 域（白名单） | 起始 | 任务 | 验收闸门 | 禁止触碰 |
+|---|---|---|---|---|---|
+| **L1 import/statistics 收尾** | `android/app/src/**/pages/import/**`、`pages/statistics/**` + 对应测试 | 17:17 | 收尾 I2 剩余诚实债（开学日/周次映射弹窗、`savePresetTimeSlots`、宏回放引擎、登录态探针/自动填充）+ bug 排查 | L0 + 门3 | lib/**、ARB、其他线域 |
+| **L2 course/timetable 结构债** | `android/app/src/**/pages/course/**`、`pages/timetable/**`；**独占本轮 `components/**` 与新建共享文件命名权** | 17:17 | 解 `timetable`→`settings` 反向依赖结构债（需Lead#5）+ bug 排查 | L0 + 门3 | lib/**、ARB、其他线域 |
+| **L3 sync/transfer 收尾** | `android/app/src/**/pages/sync/**`、`transfer/**` + 对应测试 | 17:17 | 云备份/WebDAV/LAN 收尾（含 D 线留下的 LAN 设置子集，需Lead#4）+ bug 排查 | L0 + 门3 | lib/**、ARB、其他线域 |
+| **L4 domain/services 对拍** | `domain/**`、`services/**`、`models/**` + `test/domain`、`test/services`、`test/models` | 17:17 | 与 Dart 对拍 bug 排查（数据格式冻结，不可改序列化字段） | L0 + 门3 | lib/**、ARB、其他线域、`*ServiceMessages.kt` 既有键 |
+
+### 10.2 A 线（协调线）职责
+
+1. **独占 ARB 与 l10n 生成**：任何线需新键 → 经本节「10.4 需 A 线」区申报，由 A 线增键、六份 `lib/l10n/*.arb` 同步、跑 `flutter gen-l10n`、确认死键不新增（`copy_style_lint.dart` 死键冻结 1 / 新增 0）。
+2. **唯一推送者**：定期 `git push https://github.com/Mutx163/mikcb.git compose-migration:compose-migration`，`ls-remote` 复核远端 HEAD 后回填「八」。
+3. **继续清 copy_style 超宽债**：当前冻结 **175 条**（第一班从 203 清到 175），按宽度降序逐批清，每批核验后压 `tool/copy_style_baseline.txt`。
+4. **跑门 3/门 4**（每轮带时间戳）。
+5. **跨域冲突裁决口径**：同一文件两线都想改 → **谁先提交谁保留，后者改道**，并在本节「10.5 冲突记录」写明。
+
+### 10.3 跑门前置纪律
+
+跑门 1/门 2 前先 `git status --porcelain` 确认工作区无他人未提交中间态；撞上半成品则等对方提交或按其域跳过本次验证范围——**不替人提交、不 reset、不 checkout --**。
+
+### 10.4 需 A 线（新键申报区）
+
+_（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位符 / 语言范围」格式登记）_
+
+### 10.5 需 Lead（第二班）
+
+_（空）_
+
+### 10.6 冲突记录
+
+_（空）_
+
+### 10.7 门禁实测（第二班）
+
+_（每轮重跑追加带时间戳记录）_
