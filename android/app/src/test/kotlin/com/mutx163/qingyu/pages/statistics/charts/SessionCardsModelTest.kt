@@ -79,38 +79,6 @@ class SessionCardsModelTest {
     }
 
     @Test
-    fun `覆盖卡分母是全部课次 不是计划课次`() {
-        val data = stats(
-            listOf(
-                session(phase = CourseSessionPhase.DONE, noteText = "第一章"),
-                session(phase = CourseSessionPhase.SUSPENDED, noteText = "停课周也记了"),
-                session(phase = CourseSessionPhase.DONE, hasHomework = true),
-                session(phase = CourseSessionPhase.HOLIDAY, hasReminder = true),
-            ),
-        )
-        val rows = SessionCardsModel.coverage(data)
-        assertEquals(3, rows.size)
-        // 有备注 2 / 4（停课与假期都算在分母里）
-        assertEquals("2 / 4", rows[0].countLabel)
-        assertEquals(0.5, rows[0].fraction, 1e-9)
-        // 有作业 1 / 4
-        assertEquals("1 / 4", rows[1].countLabel)
-        assertEquals(0.25, rows[1].fraction, 1e-9)
-        // 设过提醒 1 / 4
-        assertEquals("1 / 4", rows[2].countLabel)
-        assertEquals(SessionTone.BLUE, rows[0].tone)
-        assertEquals(SessionTone.ORANGE, rows[1].tone)
-        assertEquals(SessionTone.PURPLE, rows[2].tone)
-    }
-
-    @Test
-    fun `分母为零时比例为零且不出现 NaN`() {
-        val row = SessionCardsModel.coverageRow("有备注", 0, 0, SessionTone.BLUE)
-        assertEquals("0 / 0", row.countLabel)
-        assertEquals(0.0, row.fraction, 1e-9)
-    }
-
-    @Test
     fun `标题 有真实日期写日期 没有就写周次`() {
         // 2026-09-16 是周三
         val withDate = session(date = LocalDateTime.of(2026, 9, 16, 8, 0), dayOfWeek = 3)

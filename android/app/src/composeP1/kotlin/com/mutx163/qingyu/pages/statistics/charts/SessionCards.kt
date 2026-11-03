@@ -94,69 +94,6 @@ fun SessionSummaryCard(
 }
 
 /**
- * 记录覆盖卡：这门课有多少次课留下了备注 / 作业 / 提醒。
- *
- * 对应 Dart `lib/widgets/statistics/session_coverage_card.dart`（121 行）。
- * 每行 = 标签 + `count / total` + 6dp 圆角进度条（真的按比例画）。
- *
- * 分母是**全部课次**（含停课与假期）——理由见 [SessionCardsModel] 的 KDoc，
- * 换成计划课次会出现 `3 / 1` 这种超过 100% 的数。
- */
-@Composable
-fun SessionCoverageCard(
-    stats: CourseSessionStats,
-    dark: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    if (stats.isEmpty) {
-        QingyuCard(
-            modifier = modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            Text(
-                text = SessionCardsModel.emptyMessage,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-        }
-        return
-    }
-
-    val rows = SessionCardsModel.coverage(stats)
-    QingyuCard(
-        modifier = modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(16.dp),
-    ) {
-        Column {
-            rows.forEachIndexed { index, row ->
-                if (index > 0) Spacer(Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = row.label,
-                        style = MiuixTheme.textStyles.body2,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = row.countLabel,
-                        style = MiuixTheme.textStyles.body2,
-                        color = Color(QingyuTheme.primaryText(dark)),
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                ChartProgressBar(
-                    fraction = row.fraction,
-                    color = sessionToneColor(row.tone, dark),
-                    dark = dark,
-                )
-            }
-        }
-    }
-}
-
-/**
  * 课次列表卡：每次课一行（日期/周次 · 星期、节次 · 钟点 · 教室、状态角标、备注）。
  *
  * 对应 Dart `lib/widgets/statistics/session_list_card.dart`（199 行）。

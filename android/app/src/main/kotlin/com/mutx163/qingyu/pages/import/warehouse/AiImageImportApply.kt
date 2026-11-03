@@ -62,6 +62,14 @@ object AiImageImportApply {
             activeTimeSchemeId = snapshot.activeTimeSchemeId,
         )?.sections ?: snapshot.settings.sections
 
+    /**
+     * 最终课表要用到的最大节次；没有课返回 0。
+     *
+     * 与 [com.mutx163.qingyu.pages.import.ImportFlowModel.requiredSectionCount] 同口径，
+     * 两者由 `CapacityCriteriaParityTest` 对表钉住（见该测试的说明）。
+     */
+    fun requiredSectionCount(courses: List<Course>): Int = courses.maxOfOrNull { it.endSection } ?: 0
+
     /** 现有节次够不够用：需要到第 [requiredSectionCount] 节才算不够。 */
     fun needsExpansion(currentSections: List<SectionTime>, requiredSectionCount: Int): Boolean =
         requiredSectionCount > currentSections.size
@@ -82,7 +90,7 @@ object AiImageImportApply {
 
         val before = repository.snapshot
         val currentSections = activeSections(before)
-        val required = request.courses.maxOfOrNull { it.endSection } ?: 0
+        val required = requiredSectionCount(request.courses)
         val scheme = TimetableHostLogic.resolveActiveTimeScheme(
             schemes = before.timeSchemes,
             activeTimeSchemeId = before.activeTimeSchemeId,

@@ -8,7 +8,6 @@ import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.WeekCalculator
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
-import com.mutx163.qingyu.transfer.buildExpandedSections
 import com.mutx163.qingyu.transfer.courseListsEqual
 import com.mutx163.qingyu.transfer.dedupeImportedCourses
 import com.mutx163.qingyu.transfer.replaceImportedCoursesPreservingLocalFields
@@ -156,21 +155,21 @@ object WarehouseCourseWriteBack {
         // Dart `ensureImportSectionCapacity`：最终课表要用到第几节超过现有节次时先补齐，
         // 再写课程。
         //
-        // 判据与 `ImportFlowModel.needsSectionExpansion` / `sectionsForImport` 同源，
-        // 但本文件的 L0 编译范围是 `pages/import/warehouse`，**收不到 `pages/import` 根目录**
-        // 的 `ImportFlowModel.kt`（`test-kotlin-module.ps1` 的 mainDir 就是模块子目录）；
-        // 直接引用会让 `-Module pages/import/warehouse` 全线 Unresolved。所以这里直接调
-        // 共享的 `transfer.buildExpandedSections`，配额判断照抄那两行的定义，不另造判据。
+        // 判据在 [AiImageImportApply]（与 `ImportFlowModel.needsSectionExpansion` /
+        // `sectionsForImport` 同口径，由 `CapacityCriteriaParityTest` 对表钉住）。
+        // 本文件的 L0 编译范围是 `pages/import/warehouse`，**收不到 `pages/import` 根目录**
+        // 的 `ImportFlowModel.kt`（`test-kotlin-module.ps1` 的 mainDir 就是模块子目录），
+        // 所以不直接引用它，而由测试在 `pages/import` 根目录同时看见两边、防止漂移。
         val currentSections = AiImageImportApply.activeSections(before)
-        val requiredSections = mergedCourses.maxOfOrNull { it.endSection } ?: 0
+        val requiredSections = AiImageImportApply.requiredSectionCount(mergedCourses)
         val scheme = TimetableHostLogic.resolveActiveTimeScheme(
             schemes = before.timeSchemes,
             activeTimeSchemeId = before.activeTimeSchemeId,
         )
-        val needsSectionExpansion = requiredSections > currentSections.size
+        val needsSectionExpansion = AiImageImportApply.needsExpansion(currentSections, requiredSections)
         var sectionsExpanded = false
         if (needsSectionExpansion) {
-            val nextSections = buildExpandedSections(currentSections, requiredSections)
+            val nextSections = AiImageImportApply.expandedSections(currentSections, requiredSections)
             try {
                 if (scheme != null) {
                     // 有主模板时页面读的是模板节次，写设置里的节次表不会生效。
