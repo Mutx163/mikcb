@@ -41,6 +41,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -414,17 +415,19 @@ fun CourseGridCard(
             }
         }
 
-        // ── 右上角角标：假 / 停 / 冲突 **一行多枚**（Dart `course_card.dart:_buildBadgeRow`，
-        //    `:450-464`：showHoliday / showSuspended / customBadgeText 可以并排出现）──
+        // ── 右上角角标：铃铛 / 假 / 停 / 冲突 **一行多枚**（Dart `course_card.dart:_buildBadgeRow`，
+        //    `:610-661`：提醒铃铛排在最前，其后 showHoliday / showSuspended / customBadgeText）──
         // 一审漏了两件事：①假期角标从来没画（`holidayForDay` 是死参数）；②停课只有压淡、
         // 没有「停」字。这里按 Dart 的顺序与优先级补齐：假期优先于停课
         //（`showSuspended: isSuspended && !isHoliday`，`:461`）。
+        // 铃铛**只在真实设过提醒时亮**（`WeekCardModel.hasReminder` ← `classReminders`）；
+        // 没有这份数据（开学日未设 / 宿主没传键集）就什么都不画，不做假的已设标记。
         val badges = buildList {
             if (isHoliday) add(TimetableStrings.holidayBadgeLabel.zh)
             if (model.isSuspended && !isHoliday) add(TimetableStrings.suspendedBadgeLabel.zh)
             if (model.badge == WeekCardBadge.CONFLICT) add(TimetableStrings.conflictLabel.zh)
         }
-        if (badges.isNotEmpty()) {
+        if (model.hasReminder || badges.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -432,6 +435,24 @@ fun CourseGridCard(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 提醒铃铛（Dart `_buildReminderIndicator`）：16dp 白底圆 + 主题蓝图标，
+                // 与作业红点同尺寸、同「白底 + 圆」口径，只靠图标区分语义。
+                if (model.hasReminder) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.92f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Alarm,
+                            contentDescription = null,
+                            modifier = Modifier.size(10.dp),
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 badges.forEach { label ->
                     Box(
                         modifier = Modifier
