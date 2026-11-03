@@ -2,6 +2,9 @@ package com.mutx163.qingyu.app
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseTask
+import com.mutx163.qingyu.core.EventPrivacy
+import com.mutx163.qingyu.core.EventSink
+import com.mutx163.qingyu.core.EventSinks
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.LocationTimeGroup
 import com.mutx163.qingyu.core.ScheduleDateRule
@@ -75,8 +78,10 @@ data class TimetableSnapshot(
  *
  * ## 明确不做的（诚实清单）
  *
- * - `logEvent` / `syncExamReminders` / `updateLiveActivity` 是**空实现**：
- *   埋点、考试提醒通知、实时活动都属 Phase 4 原生能力对齐，本阶段只接线数据。
+ * - `syncExamReminders` / `updateLiveActivity` 仍是**空实现**：
+ *   考试提醒通知、实时活动都属 Phase 4 原生能力对齐，本阶段只接线数据。
+ *   `logEvent` 自 2026-11-03 起接通：先过 [EventPrivacy.sanitize] 隐私闸门，
+ *   再进注入的 [EventSink]（默认 [EventSinks.shared] 内存环形缓冲）。
  * - 不做跨 key 事务日志（`app_global_settings_mirror_tx_v1`）：那是全局设置族的活。
  * - 并发写**串行化但不做事务**：局域网编辑服务（`LanEditHttpServer`）每个连接一个
  *   工作线程，与 UI 主线程共用同一份内存状态；本类所有公开读写入口都挂在同一把
@@ -92,7 +97,15 @@ data class TimetableSnapshot(
  *   情侣同步）维持「立即通知」语义不变。这些契约由 `TimetableRepositoryTest`
  *   的持锁断言与并发测试钉住。
  */
-class TimetableRepository(private val store: TimetableStore) : TimetableCoursePort, TimetableScheduleItemPort {
+class TimetableRepository(
+    private val store: TimetableStore,
+    /**
+     * 埋点出口（2026-11-03 接通；此前是空实现）。默认汇入进程级内存环形缓冲
+     * [EventSinks.shared]（不联网、不落盘）。替换实现时注入即可；参数在
+     * [logEvent] 入口先过 [EventPrivacy.sanitize] 隐私闸门，任何实现拿到的都是干净参数。
+     */
+    private val eventSink: EventSink = EventSinks.shared,
+) : TimetableCoursePort, TimetableScheduleItemPort {
 
     private var loadedProfiles: List<TimetableProfile> = emptyList()
     private var loadedActiveProfileId: String? = null
@@ -957,9 +970,14 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         currentLiveCourseId = null
     }
 
-    /** 埋点：Phase 4 才接分析服务，本阶段空实现（不假装记了）。 */
+    /**
+     * 埋点出口：先过 [EventPrivacy.sanitize] 隐私闸门（默认拒绝——只放行
+     * 数值/布尔参数，课程名、教师名、地点名、档案名、URL、账号及一切自由文本、
+     * 随机 id、日期一律剥掉），再交给注入的 [eventSink]（默认本地内存环形缓冲，
+     * 不联网、不落盘、无用户标识）。Phase 4 接真分析后端时只需替换 sink 实现。
+     */
     override fun logEvent(name: String, parameters: Map<String, Any>) {
-        // no-op：Compose 侧还没有分析通道。
+        eventSink.log(name, EventPrivacy.sanitize(parameters))
     }
 
     /**
