@@ -57,7 +57,10 @@ object WarehouseWebLoginWebState {
      * @param currentUrl 当前页地址（WebView 现值），算 [trustedPageOrigin] 用。
      * @param trustedLoginUrls 受信地址集合（适配器登记地址 + 受信自定义地址），
      *   host 化后与 [currentUrl] 的 host 比对；空集合 ⇒ 受信放行永不生效（只会更严）。
-     * @param macroRecordingActive 录制态（会话真实状态；录制引擎未移植时恒 false）。
+     * @param macroRecordingActive 录制态（会话真实状态）。
+     * @param foregroundReplayActive 前台回放中（会话真实状态）：回放的导航阶段不在
+     *   导入执行期，脚本/旧页面发出的 confirm 等消息靠它放行（门禁签名本就预留，
+     *   消费方移植时传真值——P2 起接真）。
      */
     fun shouldDeliverBridgeMessage(
         raw: String?,
@@ -65,11 +68,13 @@ object WarehouseWebLoginWebState {
         currentUrl: String? = null,
         trustedLoginUrls: List<String> = emptyList(),
         macroRecordingActive: Boolean = false,
+        foregroundReplayActive: Boolean = false,
     ): Boolean = shouldProcessWarehouseBridgeMessage(
         type = warehouseBridgeMessageType(raw),
         importExecutionActive = stage == WarehouseWebLoginStage.EXECUTING,
         macroRecordingActive = macroRecordingActive,
-        // 前台回放引擎尚未移植（F08-8c）：Kotlin 侧没有对应状态，恒 false（默认值）。
+        foregroundReplayActive = foregroundReplayActive,
+        // 前台回放引擎（F08-8c）已随 P2 接线；后台回放（P3）无对应状态，恒 false（默认值）。
         trustedPageOrigin = warehouseUrlOnTrustedHosts(
             currentUrl,
             warehouseTrustedLoginHosts(*trustedLoginUrls.toTypedArray()),
