@@ -43,9 +43,22 @@ class WarehouseImportPrefs(private val store: KeyValueStore) {
         store.remove(CUSTOM_URL_PREFIX + adapterId)
     }
 
-    /** 最近使用过的学校 id，**最近的在前**；没记录过回空列表。 */
-    fun recentSchoolIds(): List<String> =
-        store.getStringList(RECENT_SCHOOL_IDS_KEY).orEmpty()
+    /**
+     * 最近使用过的学校 id，**最近的在前**；没记录过回空列表。
+     *
+     * 解码失败（值被写坏 / 类型不符）时**留档自愈**再回空表，不照抛：
+     * 「最近使用」只是便利数据，为它炸掉整个选校页不成比例——坏值留档
+     * （与 `TimetableStore` 同一口径），用户最多丢 ★ 列表，页面照常可用。
+     */
+    fun recentSchoolIds(): List<String> {
+        val decoded = try {
+            store.getStringList(RECENT_SCHOOL_IDS_KEY)
+        } catch (_: Exception) {
+            store.archiveCorruptAndRemove(RECENT_SCHOOL_IDS_KEY, nowMicros())
+            null
+        }
+        return decoded.orEmpty()
+    }
 
     /**
      * 记一次「最近使用」：去重、最近的排最前、最多留 [MAX_RECENT_SCHOOLS] 条。
@@ -70,3 +83,6 @@ class WarehouseImportPrefs(private val store: KeyValueStore) {
         const val MAX_RECENT_SCHOOLS = 8
     }
 }
+
+/** 留档时间戳口径与 Dart 一致：微秒。 */
+private fun nowMicros(): Long = System.currentTimeMillis() * 1000L

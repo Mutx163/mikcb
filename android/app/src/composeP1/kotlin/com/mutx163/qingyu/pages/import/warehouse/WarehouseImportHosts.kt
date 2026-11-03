@@ -122,6 +122,13 @@ fun WarehouseImportPickerHost(
         phase = WarehouseListPhase.Loading
         val loaded = withContext(Dispatchers.IO) { service.loadRootIndex() }
         recentSchoolIds = withContext(Dispatchers.IO) { prefs.recentSchoolIds() }
+            .also { ids ->
+                // 显式记录：盘上的最近列表带重复（云恢复原样直写的历史数据）时，
+                // 渲染层会按首次出现去重（schoolsToBeans）——这里留一条日志方便对账。
+                if (ids.size != ids.distinct().size) {
+                    Log.w(LOG_TAG, "recent school ids contain duplicates; render dedupes by first occurrence")
+                }
+            }
         macroRecords = withContext(Dispatchers.IO) {
             macroStore.getAllMacroEntries().mapNotNull { macroStore.getMacro(it.schoolId, it.adapterId) }
         }

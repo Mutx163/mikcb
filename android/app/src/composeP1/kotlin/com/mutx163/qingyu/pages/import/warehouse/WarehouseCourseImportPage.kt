@@ -293,7 +293,7 @@ fun WarehouseCourseImportPage(
                                     Spacer(modifier = Modifier.height(3.dp))
                                     val matched = adapterMatches[bean.school.id]
                                     val subtitle = if (!matched.isNullOrEmpty()) {
-                                        WarehouseStrings.warehouseMatchedAdaptersLabel.filled("adapters", matched.joinToString("、"))
+                                        WarehouseStrings.warehouseMatchedAdaptersLabel.filled("names", matched.joinToString("、"))
                                     } else if (bean.isRecent) {
                                         WarehouseStrings.recentSchoolLabel.zh
                                     } else {

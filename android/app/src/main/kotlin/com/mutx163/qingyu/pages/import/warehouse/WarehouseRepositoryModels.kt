@@ -228,7 +228,10 @@ fun schoolsToBeans(
     recentSchoolIds: List<String>,
 ): List<WarehouseSchoolBean> {
     val schoolMap = schools.associateBy { it.id }
-    val recentOrdered = recentSchoolIds.mapNotNull { schoolMap[it] }
+    // 最近列表按「首次出现」去重：云端恢复原样直写（Dart restoreRecentSchools 不去重），
+    // 盘上可能躺着重复 id；不去重则同一所学校在 ★ 组出现两次，Compose 选校列表
+    // items(key = school.id) 首屏组合时抛 IllegalArgumentException 整页闪退。
+    val recentOrdered = recentSchoolIds.distinct().mapNotNull { schoolMap[it] }
     val remaining = schools.filter { it.id !in recentSchoolIds }
 
     val genericRemaining = remaining.filter { isGenericWarehouseSchool(it.name) }

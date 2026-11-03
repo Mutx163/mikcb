@@ -62,6 +62,9 @@ fun parseWarehouseRootIndex(content: String): WarehouseRootIndex {
             province = row["province"].orEmpty(),
         )
     }.filter { it.id.isNotEmpty() && it.name.isNotEmpty() && it.resourceFolder.isNotEmpty() }
+        // 仓库文件是手写的、CI 会合并：同一 id 出现两条 = 选校列表 items(key = id)
+        // 抛 IllegalArgumentException 整页闪退。保首次、丢后续，别让一条重复行杀死整页。
+        .distinctBy { it.id }
 
     if (schools.isEmpty()) {
         // 行数不为 0 却全被过滤 = 文件形状变了（键改名 / 缩进变了），日志里要能看出来。
@@ -97,6 +100,8 @@ fun parseWarehouseAdaptersIndex(
             sha256 = row["sha256"].orEmpty(),
         )
     }.filter { it.id.isNotEmpty() && it.script.isNotEmpty() }
+        // 同 adapter_id 出现两条 = 适配器列表 items(key = id) 首屏组合即崩（与根索引同一类洞）。
+        .distinctBy { it.id }
 
     if (adapters.isEmpty()) {
         // 带上学校名：多所学校共用同一个适配仓时，日志里必须能分清是哪一所为空。
