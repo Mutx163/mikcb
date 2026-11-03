@@ -45,7 +45,9 @@ com/mutx163/qingyu/pages/settings/SettingsGlassDockIconEditorPage.kt:5
 com/mutx163/qingyu/pages/settings/SettingsHomeWidgetPage.kt:5
 com/mutx163/qingyu/pages/transfer/QrFountainLt.kt:5
 com/mutx163/qingyu/share/qr/QrEncoder.kt:5
-com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureActions.kt:4
+# pages/diagnostics/LiveTestingFixtureActions.kt 由 4 下调为 3（2026-11-03 触发管线迁移，
+# 占位常量 TRIGGER_REFRESH_MISSING 连同其中文字面量一并删除）。
+com/mutx163/qingyu/pages/diagnostics/LiveTestingFixtureActions.kt:3
 com/mutx163/qingyu/pages/import/ImportTemplateModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/AiImageImportModel.kt:4
 com/mutx163/qingyu/pages/import/warehouse/WarehouseRepositoryModels.kt:4

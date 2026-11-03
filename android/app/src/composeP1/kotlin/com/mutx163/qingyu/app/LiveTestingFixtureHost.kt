@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.R
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimetableSettings
@@ -19,6 +20,8 @@ import com.mutx163.qingyu.pages.diagnostics.LiveFixtureMessages
 import com.mutx163.qingyu.pages.diagnostics.LiveTestingFixtureHost as FixtureHostPort
 import com.mutx163.qingyu.pages.diagnostics.LiveTestingFixturePage
 import com.mutx163.qingyu.pages.diagnostics.buildLiveFixtureViewState
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
+import com.mutx163.qingyu.widgetdata.MILESTONE_RECENT_END_LABEL_KEY
 import com.mutx163.qingyu.widgetdata.SectionTimeData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -40,7 +43,7 @@ import java.time.LocalDateTime
  * | 安装 24 时段测试课表 | `_installQuickFixtureGrid`（:209-250）→ `installSectionGrid` | [LiveFixtureActions.installGrid]：清旧夹具 → 套 24 段整点节次 → 每节一门夹具课，一次落盘 |
  * | 清除测试课表 | `_clearQuickFixtureGrid`（:252-284）→ `removeAllFixtureCourses` | [LiveFixtureActions.clear]：**只删 `live_test_` 前缀**，用户真课原样保留（单测反向验证过） |
  * | 课前提醒档位 | `HyperosSegmentedControl`（:106-114） | 页面内 state（[leadMinutes]），只影响触发时的提前量 |
- * | 触发某节 / 当前节 / 下一节 | `_triggerQuickFixtureSlot`（:286-312） | [LiveFixtureActions.upsertTimed]：真写一门「N 分钟后上课」的夹具课 |
+ * | 触发某节 / 当前节 / 下一节 | `_triggerQuickFixtureSlot`（:286-312） | [LiveFixtureActions.upsertTimed] 真写一门「N 分钟后上课」的夹具课 → [LiveTestTrigger.productionRefresh]（快照同步 + reschedule，岛按课前提醒设置弹出） |
  *
  * ## 数据全来自仓储真快照
  *
@@ -50,14 +53,10 @@ import java.time.LocalDateTime
  *
  * ## 未完成（不假装）
  *
- * 1. **原生超级岛刷新**：Dart `triggerLiveUpdateTestForSectionSlot`（`live_testing_trigger.dart`
- *    978 行）负责把测试课喂给原生岛并锁阶段；Kotlin 侧没有生产 `LiveHostFace` 实现、
- *    也没有 `miui_live_activities` 通道，所以这里只做到「写课」，提示里明说还差这一步
- *    （[LiveFixtureActions.TRIGGER_REFRESH_MISSING]）。
- * 2. **24 时段方案条目**：仓储没有 `createTimeScheme/applyTimeScheme`，所以只套节次表，
- *    方案列表里不会多出「超级岛测试24时段」（详见 [RepositoryFixtureHost.applySections]）。
- *
- * 两件都登记在 `.agents/compose-phase3/claims/_DIAG-settings-fixture-gaps.md`。
+ * **24 时段方案条目**：仓储有 `createTimeScheme/applyTimeScheme` 可补，但本批没接——
+ * 装网格只套**节次表**（[RepositoryFixtureHost.applySections]），方案列表里不会多出
+ * 「超级岛测试24时段」那条。效果上「左栏时间与课程对得上」已达成，
+ * 仍登记在 `.agents/compose-phase3/claims/_DIAG-settings-fixture-gaps.md`。
  *
  * @param repository 课表仓储（壳里是 `wiring.timetable`）
  * @param onBack 返回
@@ -104,6 +103,26 @@ fun LiveTestingFixtureHost(
         (error as? IllegalStateException)?.message ?: error.toString()
 
     val fixtureHost = remember(repository) { RepositoryFixtureHost(repository) }
+
+    // 生产刷新宿主：写完测试课后把仓储整份同步给原生并立即重排（岛按课前提醒弹出）。
+    // 壳没有 Dart 通道，快照由 LiveNativeSnapshotBuilder 现造——这是触发管线迁完的标志。
+    val triggerStore = remember(context) { TimetableStore(PrefsKeyValueStore(context)) }
+    val productionTrigger = remember(context, repository, triggerStore) {
+        LiveTestTrigger(
+            context = context,
+            repository = repository,
+            settingsJson = { triggerStore.loadSettingsJson() },
+            localizeMilestone = { key ->
+                context.getString(
+                    if (key == MILESTONE_RECENT_END_LABEL_KEY) {
+                        R.string.milestone_recent_end
+                    } else {
+                        R.string.milestone_next_start
+                    },
+                )
+            },
+        )
+    }
 
     val snapshot = repository.snapshot
     val viewState = buildLiveFixtureViewState(
@@ -162,8 +181,8 @@ fun LiveTestingFixtureHost(
     }
 
     fun trigger(sectionNumber: Int, @Suppress("UNUSED_PARAMETER") source: String) {
-        // 触发来源（quick_fixture_current_slot / next_slot / grid）在 Dart 里是给埋点与
-        // 诊断日志用的；Kotlin 侧触发管线未迁移，暂时只保留形参，不编造落点。
+        // Dart `triggerLiveUpdateTestForSectionSlot` 两步：先写测试课（只挪钟点），
+        // 再走生产刷新（快照同步 + reschedule，有课在窗立即起岛）。两步都真做。
         val lead = leadMinutes.toLong()
         scope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -174,6 +193,8 @@ fun LiveTestingFixtureHost(
                         now = LocalDateTime.now(),
                         leadMinutes = lead,
                     )
+                    // 刷新失败按触发失败上报：课已改好但岛没接管，不能报成功。
+                    productionTrigger.productionRefresh()
                 }
             }
             result

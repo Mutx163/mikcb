@@ -343,11 +343,13 @@ class LiveTestingFixtureActionsTest {
         assertEquals("已清除 3 门测试课", LiveFixtureMessages.cleared(3))
         assertEquals("清除测试课表失败：boom", LiveFixtureMessages.clearFailed("boom"))
         assertEquals("安装测试课表失败：bad", LiveFixtureMessages.installFailed("bad"))
-        // 触发那句必须**说清**还差原生刷新这一步，不能让人以为岛已经弹了。
+        // 触发管线已迁移（2026-11-03）：那句要**说清**课已改好、岛将按课前提醒设置弹出；
+        // 占位话「管线尚未迁移」不得回来——回来就说明有人把功能改回了空壳。
         val triggered = LiveFixtureMessages.triggered(3, 5)
         assertTrue(triggered.contains("第3节"))
         assertTrue(triggered.contains("5 分钟"))
-        assertTrue(triggered.contains(LiveFixtureActions.TRIGGER_REFRESH_MISSING))
+        assertTrue(triggered.contains("弹出"))
+        assertFalse(triggered.contains("尚未迁移"))
         assertFalse(triggered.contains("null"))
     }
 }

@@ -26,7 +26,7 @@ import java.time.LocalDateTime
  * | `installSectionGrid`（:414-442） | [installGrid] | 24 段整点节次 + 每节一门夹具课 |
  * | `upsertTimedFixtureCourse`（:444-480） | [upsertTimed] | 只挪钟点、节次下标不动（周网格位置稳定） |
  * | `ensureHourlyTimeScheme`（:142-178） | **未移植** | Kotlin 仓储没有 `createTimeScheme` / `updateTimeScheme`，见 [LiveTestingFixtureHost.applySections] 的说明 |
- * | `triggerLiveUpdateTestForSectionSlot`（`live_testing_trigger.dart`） | **未移植** | 原生超级岛触发管线（978 行）在 Kotlin 侧还没有对应物，见 [TRIGGER_REFRESH_MISSING] |
+ * | `triggerLiveUpdateTestForSectionSlot`（`live_testing_trigger.dart`） | **写课半步在本文件** | 生产刷新半步（快照同步 + reschedule）在 `app/LiveTestTriggerNative.kt` 的 [LiveTestTrigger.productionRefresh]，宿主按 Dart 顺序（写课 → 刷新）串接 |
  */
 object LiveFixtureActions {
 
@@ -41,14 +41,6 @@ object LiveFixtureActions {
 
     /** 写测试课时的空节次表错误（Dart `StateError('当前课表没有节次时间，无法写入测试课')`）。 */
     const val EMPTY_SECTIONS_FOR_TIMED: String = "当前课表没有节次时间，无法写入测试课"
-
-    /**
-     * 「触发某节」在 Kotlin 侧**只做到写课**，还差原生超级岛刷新这一步。
-     *
-     * 不假装成功：页面会把这句话原样告诉测试员。
-     */
-    const val TRIGGER_REFRESH_MISSING: String =
-        "原生超级岛触发管线尚未迁移（Kotlin 侧无对应物）"
 
     /**
      * 清空夹具课（Dart `removeAllFixtureCourses`，:398-410）。

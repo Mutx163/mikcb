@@ -123,13 +123,11 @@ object LiveFixtureMessages {
     /**
      * 「触发某节」写课成功后的一句话。
      *
-     * Dart 这个位置的文案来自原生触发管线（`LiveTestingTriggerResult.message`，
-     * success/inFlight/error 三态各一句）。Kotlin 侧管线还没迁，所以这里**不假装**
-     * 岛已弹出：说清「课已改好」与「刷新还差什么」。
+     * 与 Dart `triggerLiveUpdateTestForSectionSlot` 同语义：写课只是前半步，
+     * 随后的生产刷新会把仓储整份同步给原生并立即重排——岛按课前提醒设置弹出。
      */
     fun triggered(sectionNumber: Int, leadMinutes: Long): String =
-        "已把第${sectionNumber}节改成 ${leadMinutes} 分钟后上课；" +
-            LiveFixtureActions.TRIGGER_REFRESH_MISSING
+        "已把第${sectionNumber}节改成 ${leadMinutes} 分钟后上课，超级岛将按课前提醒设置弹出"
 
     fun triggerFailed(detail: String): String = "触发测试失败：$detail"
 }

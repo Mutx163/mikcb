@@ -31,7 +31,8 @@ import org.junit.Test
  *    只写不读是「回显缺失」，两条都算没接线；
  * 3. 宿主那三个曾经是空实现的回调必须各有真落点：
  *    勿扰权限要真跳系统页（`ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`）、
- *    试弹起停要真给一句实话（`TRIGGER_REFRESH_MISSING`）、选图要真拉起系统选图
+ *    试弹起停要真接触发管线（`LiveTestTrigger(` + `startStagePreview(` / `cancelStagePreview(`，
+ *    且占位话 `TRIGGER_REFRESH_MISSING` 不得回来）、选图要真拉起系统选图
  *    （`pickLauncher.launch(`）。
  *
  * ## 为什么「有牙齿」用合成文本证明，而不是临时改壳文件
@@ -89,8 +90,19 @@ class LiveWiringGuardTest {
         if (!hostCode.contains("ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS")) {
             out += "宿主没有真跳系统勿扰权限页（找不到 ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS）"
         }
-        if (!hostCode.contains("TRIGGER_REFRESH_MISSING")) {
-            out += "试弹起停没有给实话（找不到 TRIGGER_REFRESH_MISSING）——不许用空 lambda 假装能跑"
+        // 试弹必须真起岛（2026-11-03 触发管线迁移后改判据）：宿主要接 LiveTestTrigger
+        // 调度器并真的调起停；「管线未迁移」那句占位话不得回来——占位回来 = 功能又变空壳。
+        if (!hostCode.contains("LiveTestTrigger(")) {
+            out += "宿主没有接试弹调度器（找不到 LiveTestTrigger() ——试弹按钮只会是空壳"
+        }
+        if (!hostCode.contains("startStagePreview(")) {
+            out += "试弹开始没有真起岛（找不到 startStagePreview() ——不许拿占位提示当交付"
+        }
+        if (!hostCode.contains("cancelStagePreview(")) {
+            out += "试弹停止没有真收岛（找不到 cancelStagePreview()）"
+        }
+        if (hostCode.contains("TRIGGER_REFRESH_MISSING")) {
+            out += "宿主里又出现了占位提示 TRIGGER_REFRESH_MISSING——触发管线已迁移，占位话必须删掉"
         }
         if (!hostCode.contains("pickLauncher.launch(")) {
             out += "选图没有真拉起系统选图（找不到 pickLauncher.launch(）"
@@ -141,6 +153,36 @@ class LiveWiringGuardTest {
         assertTrue(found.any { it.contains("LiveDisplayHost(") })
         assertTrue(found.any { it.contains("LiveReminderTimingHost(") })
         assertTrue(found.any { it.contains("空 lambda") })
+        // 试弹判据改版后的反向验证：旧写法（没接触发器）必须被新判据抓住
+        assertTrue(found.any { it.contains("LiveTestTrigger(") })
+        assertTrue(found.any { it.contains("startStagePreview(") })
+        assertTrue(found.any { it.contains("cancelStagePreview(") })
+    }
+
+    /**
+     * 占位话回归探针：宿主里只要再出现「管线未迁移」那句占位提示（哪怕只在实参里），
+     * 守卫就必须红——触发管线已迁移，这句话的存在本身就说明有人把功能改回了空壳。
+     */
+    @Test
+    fun `占位提示回来时守卫会红`() {
+        val host = """
+            fun LiveDisplayHost(forDuringEnd: Boolean, onBack: () -> Unit) {
+                val trigger = LiveTestTrigger(context, repository, { emptyMap() }, { it })
+                DisplaySettingsPage(
+                    onStagePreviewStart = { showToast(LiveFixtureActions.TRIGGER_REFRESH_MISSING) },
+                    onStagePreviewStop = { showToast("已停止") },
+                    onOpenDoNotDisturbAccess = { openDoNotDisturbAccess() },
+                    onPickImage = { pickLauncher.launch("image/*"); null },
+                )
+            }
+        """.trimIndent()
+        // 用真实壳文件过基线判据（除占位句外其余判据喂真实壳会误报，这里只喂合成宿主），
+        // 判据函数会因缺 loadDisplay/saveDisplay 等报别的违规——只断言占位句那一条在。
+        val found = violations(source(SHELL_INDEX), host)
+        assertTrue(
+            "占位句 TRIGGER_REFRESH_MISSING 回到宿主里，守卫没红",
+            found.any { it.contains("TRIGGER_REFRESH_MISSING") },
+        )
     }
 
     /**
