@@ -40,7 +40,6 @@ en/homeWidgetHideCompletedSubtitle
 en/homeWidgetHideCompletedTitle
 en/homeWidgetShowCountdownSubtitle
 en/homeWidgetShowLocationSubtitle
-en/homeWidgetShowTomorrowSubtitle
 en/homeWidgetShowTomorrowTitle
 en/icsExportSkipHolidayCourses
 en/importFirstCourseWeekMappingLabel
@@ -61,13 +60,11 @@ en/layoutEnableHapticsTitle
 en/layoutHorizontalAlignLabel
 en/layoutShowConflictBadgeTitle
 en/layoutShowDescriptionTitle
-en/layoutShowOtherWeeksSubtitle
 en/layoutShowOtherWeeksTitle
 en/layoutShowTimeLabelsTitle
 en/layoutTimeColumnDisplayLabel
 en/liquidGlassDarkBoostLabel
 en/liquidGlassDarkIndependentLabel
-en/liquidGlassDarkIndependentSubtitle
 en/liquidGlassRefractionBandLabel
 en/liquidGlassScopeDockSubtitle
 en/liquidGlassScopeDockTitle
@@ -124,7 +121,6 @@ ja/hideFromRecentsTitle
 ja/hidePrefixTextTitle
 ja/homeMenuCustomizeTitle
 ja/homePullQuickImportTitle
-ja/homeWidgetShowTomorrowSubtitle
 ja/homeWidgetShowTomorrowTitle
 ja/icsExportSectionTitle
 ja/importMethodIcsSubtitle
@@ -136,10 +132,8 @@ ja/layoutBackToCurrentWeekButtonOpacityTitle
 ja/layoutCompactFontSizeTitle
 ja/layoutEnableHapticsTitle
 ja/layoutShowConflictBadgeTitle
-ja/layoutShowOtherWeeksSubtitle
 ja/layoutShowTimeLabelsTitle
 ja/liquidGlassDarkBoostLabel
-ja/liquidGlassDarkIndependentSubtitle
 ja/liquidGlassPresetLabel
 ja/liquidGlassScopeDockSubtitle
 ja/liveClassReminderLeadTitle
@@ -174,7 +168,6 @@ ko/homePageBackdropFollowsWeekPagerTitle
 ko/homePullQuickImportTitle
 ko/homeWidgetHideCompletedSubtitle
 ko/homeWidgetShowLocationSubtitle
-ko/homeWidgetShowTomorrowSubtitle
 ko/homeWidgetShowTomorrowTitle
 ko/importMethodAiSubtitle
 ko/importMethodIcsSubtitle
@@ -184,11 +177,9 @@ ko/importRandomCourseColorSubtitle
 ko/languageSectionSubtitle
 ko/layoutEnableHapticsTitle
 ko/layoutHideWeekendsTitle
-ko/layoutShowOtherWeeksSubtitle
 ko/layoutShowTimeLabelsTitle
 ko/liquidGlassDarkBoostLabel
 ko/liquidGlassDarkIndependentLabel
-ko/liquidGlassDarkIndependentSubtitle
 ko/liveBeforeClassQuickActionAutoSubtitle
 ko/liveMiuiLabelImageSubtitle
 ko/liveMiuiLabelImageTitle
