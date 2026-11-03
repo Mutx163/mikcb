@@ -450,7 +450,7 @@ class CloudSyncController(
      * 3. 两边都改过 → **挂起冲突**等用户选边（[resolveSyncConflict]），绝不静默覆盖。
      */
     fun syncNow(): SyncResultKind {
-        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        val coordinator = coordinatorOrNull() ?: return failWithCode("missing_credentials")
         return when (val pull = runPullPhase(coordinator)) {
             is PullPhase.Downloaded -> SyncResultKind.DOWNLOADED
             is PullPhase.Failed -> {
@@ -479,7 +479,7 @@ class CloudSyncController(
         pendingSyncConflict ?: return SyncResultKind.CANCELLED
         pendingSyncConflict = null
         return when (choice) {
-            SyncConflictChoice.KEEP_LOCAL -> runUpload(CloudBackupSource.AUTO)
+            SyncConflictChoice.KEEP_LOCAL -> runUpload(CloudBackupSource.AUTO, force = true)
             SyncConflictChoice.KEEP_REMOTE -> downloadApplyAndMark(
                 resolver = { SyncConflictChoice.KEEP_REMOTE },
             )
@@ -978,9 +978,25 @@ class CloudSyncController(
 
     // ── 内部 ──
 
-    private fun runUpload(source: CloudBackupSource): SyncResultKind {
-        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+    private fun runUpload(source: CloudBackupSource, force: Boolean = false): SyncResultKind {
+        val coordinator = coordinatorOrNull() ?: return failWithCode("missing_credentials")
         val bytes = currentSnapshotBytes() ?: return SyncResultKind.FAILED
+        // 自动上传前先按 Dart `decideWebdavAutoUpload` 的优先级判「远近一致」：
+        // 一致就返回 UP_TO_DATE，不再发布新版本化正文、不写历史文件——否则每次自动
+        // 同步都会堆一份一模一样的备份（手动备份与冲突选「保留本机」走 force，不跳过）。
+        if (!force && source == CloudBackupSource.AUTO) {
+            val meta = coordinator.fetchRemoteMeta(config)
+            if (meta is RemoteMetaFetch.Ok) {
+                val remoteHash = meta.contentSha256.trim()
+                if (remoteHash.isNotEmpty() &&
+                    remoteHash == WebdavSyncCoordinator.snapshotContentHash(bytes)
+                ) {
+                    status = status.copy(isSyncing = false, lastErrorCode = null)
+                    notifyChanged()
+                    return SyncResultKind.UP_TO_DATE
+                }
+            }
+        }
         val exportedAtIso = exportedAtIsoOf(bytes)
         status = status.copy(isSyncing = true)
         isCreatingBackup = true

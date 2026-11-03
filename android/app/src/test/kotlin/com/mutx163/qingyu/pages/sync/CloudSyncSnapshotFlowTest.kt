@@ -79,6 +79,27 @@ class CloudSyncSnapshotFlowTest {
     // ---------- 上传 ----------
 
     @Test
+    fun `自动同步_远近一致时不重复发布且返回已一致`() {
+        // Dart `decideWebdavAutoUpload`：远端哈希 == 本机字节哈希 → upToDate，
+        // 不发布新版本化正文、不写历史文件。此前 Kotlin 没有这道闸，每次自动同步
+        // 都会在云端多堆一份一模一样的备份。
+        val repository = repository()
+        repository.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val controller = controller(repository, transport)
+        controller.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, controller.createBackup())
+        val backupsBefore = transport.files.keys.count { it.endsWith(".mikcb") }
+
+        assertEquals(SyncResultKind.UP_TO_DATE, controller.syncNow())
+        assertEquals(
+            "已一致时不得再写任何快照文件",
+            backupsBefore,
+            transport.files.keys.count { it.endsWith(".mikcb") },
+        )
+    }
+
+    @Test
     fun `立即备份_上传字节来自当前课表`() {
         val repository = repository()
         repository.addCourse(course("local-course"))
