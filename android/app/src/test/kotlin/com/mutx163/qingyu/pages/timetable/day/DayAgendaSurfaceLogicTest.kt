@@ -1,7 +1,7 @@
 package com.mutx163.qingyu.pages.timetable.day
 
-import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
-import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.SurfaceMaterialState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,7 +1,7 @@
 package com.mutx163.qingyu.pages.timetable.day
 
-import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
-import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.core.HomeMaterialRenderSpec
+import com.mutx163.qingyu.core.SurfaceMaterialState
 
 /**
  * 日视图议程卡的**卡面填充透明度**（2026-11-01 接壁纸/玻璃时抽出）。

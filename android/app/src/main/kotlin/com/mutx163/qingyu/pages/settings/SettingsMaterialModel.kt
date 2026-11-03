@@ -214,30 +214,33 @@ enum class GlassModeChoice(val value: String, val label: ArbText) {
 }
 
 /**
- * 某个表面当前生效的材质态（`lib/models/surface_material.dart:10-33`）。
+ * 某个表面当前生效的材质态——真源已下沉 [com.mutx163.qingyu.core.SurfaceMaterialState]
+ * （`lib/models/surface_material.dart:10-33`）。
  *
- * 与渲染侧门控**同口径**的纯推导：只用于面板里那张「各表面当前材质」只读地图，
- * 系统级降级（无障碍 / 降动效 / 不支持 shader）不在推导范围内。
+ * ## 为什么搬家（2026-11-03 跨域引用治理）
+ *
+ * 它是「设置算好、渲染层照单执行」的**跨域渲染契约**：课表域（日视图议程卡 alpha）
+ * 与壳（顶栏玻璃带 / 玻璃坞）都直接消费。原先定义在这里，课表域的 main 与测试反向
+ * import 设置域，`pages/timetable` 的 L0 离开 `-ExtraSources` 编不过。
+ * 本别名让设置域既有调用方（main / 测试 / composeP1）一行不改。
  */
-enum class SurfaceMaterialState(val value: String, val label: ArbText) {
-    /** 表面已关闭（顶栏玻璃总开关关掉后不再渲染）。 */
-    OFF("off", SettingsStringsExt1.materialStateOff),
+typealias SurfaceMaterialState = com.mutx163.qingyu.core.SurfaceMaterialState
 
-    /** 实体（模糊总开关关、作用范围关的回退）。 */
-    SOLID("solid", SettingsStringsExt1.materialStateSolid),
-
-    /** 磨砂（玻璃坞作用范围关掉时的回退）。 */
-    FROST("frost", SettingsStringsExt1.materialStateFrost),
-
-    /** 渐进模糊（子页顶栏 2026-09-23 起锁死的那一档）。 */
-    FROST_PROGRESSIVE("frostProgressive", SettingsStringsExt1.headerBlurStyleInspire),
-
-    /** 高斯模糊（课程卡片自己那档的展示标签）。 */
-    FROST_GAUSSIAN("frostGaussian", SettingsStringsExt1.headerBlurStyleGaussian),
-
-    /** 液态玻璃（高级材质）。 */
-    LIQUID_GLASS("liquidGlass", SettingsStringsExt1.frostedGlassModeLiquid),
-}
+/**
+ * 材质态的屏上文案（面板「各表面当前材质」只读地图用）。
+ *
+ * core 的枚举只带**身份与落盘值**；label 是设置域的 UI 语义，留在设置域
+ * ——同包扩展，调用方（如 `surfaceRow` 的 `value.label`）无感。
+ */
+val SurfaceMaterialState.label: ArbText
+    get() = when (this) {
+        SurfaceMaterialState.OFF -> SettingsStringsExt1.materialStateOff
+        SurfaceMaterialState.SOLID -> SettingsStringsExt1.materialStateSolid
+        SurfaceMaterialState.FROST -> SettingsStringsExt1.materialStateFrost
+        SurfaceMaterialState.FROST_PROGRESSIVE -> SettingsStringsExt1.headerBlurStyleInspire
+        SurfaceMaterialState.FROST_GAUSSIAN -> SettingsStringsExt1.headerBlurStyleGaussian
+        SurfaceMaterialState.LIQUID_GLASS -> SettingsStringsExt1.frostedGlassModeLiquid
+    }
 
 /**
  * 材质面板与壁纸流程读到的材质状态（页面私有输入）。
@@ -278,71 +281,11 @@ data class MaterialPanelState(
 )
 
 /**
- * 渲染层直接消费的**材质快照**（首页顶栏玻璃带 / 课程卡片 / 玻璃坞）。
- *
- * ## 为什么要有这一层
- *
- * 2026-11-01 之前，材质面板里改「默认材质 / 顶栏玻璃 / 八根旋钮」能落盘、能读回、
- * 面板读数也对，但**屏幕上什么都没有发生**：渲染层从来没有读过
- * `frostedBlurEnabled` / `homeBandGlassMaterial` / `liquidGlassTuning`。
- *
- * 现在由 [SettingsMaterialModel.renderSpecOf] 一次性把「该画哪一档、用多大模糊 /
- * 染色 / 折射」算成这个不可变对象，渲染层只照单执行，不再各自判断设置语义。
- *
- * ## 字段与落盘键的对应（逐条，别另起口径）
- *
- * | 字段 | 来自 |
- * |---|---|
- * | [band] | `homePageHeaderBlurEnabled` + `homeBandGlassMaterial` + `frostedBlurEnabled`（[SettingsMaterialModel.homeBandSurfaceMaterial]） |
- * | [dock] | `frostedBlurEnabled` + `liquidGlassDockEnabled`（[SettingsMaterialModel.dockSurfaceMaterial]） |
- * | [courseCard] | `courseCardSurfaceStyle` + `frostedBlurEnabled` + 有没有可用壁纸（[SettingsMaterialModel.courseCardSurfaceMaterial]） |
- * | [liquidTintAlpha] / [liquidBlurSigma] / [liquidRefraction] / [liquidRefractionBand] / [liquidRimStrength] / [liquidDispersion] | `liquidGlassTuning`（深色独立时取 `liquidGlassTuningDark`，再套深色配方） |
- * | [courseCardTintAlpha] / [courseCardBlurSigma] / [courseCardRefraction] / [courseCardRefractionBand] / [courseCardDispersion] | `courseCardGlassTuning`（卡片自己那套，刻意与全局分开） |
- *
- * 深色配方与 Dart `LiquidGlassDarkRecipe`（`liquid_glass_tuning.dart:676-748`）同口径：
- * 深色**恒**乘 `tintAlphaScale = 0.85`；`darkGlassBoostEnabled` 打开时再乘
- * `blurSigmaScale = 1.3`、`rimStrengthScale = 0.6`、`dispersionScale = 0.7`；浅色恒等。
- *
- * ⚠️ [courseCardBlurSigma] 是**唯一不吃深色配方**的字段：它喂的是整屏预糊位图，
- * 一张图只按一个 sigma 烤一次（Dart `course_glass_tuning.dart:165-170`），且量程止于
- * `kPreblurMaxSigma = 24` 而不是全局的 40。改它之前先读 `renderSpecOf` 里那段注释。
- *
- * ⚠️ **卡片那三个折射字段（[courseCardRefraction] / [courseCardRefractionBand] /
- * [courseCardDispersion]）刻意不与顶栏带共用**：Dart 给卡片单独一套 `CourseGlassTuning`
- * （`course_glass_tuning.dart:5-23`），用户在「课程卡片」页拖的旋钮只影响卡片，
- * 反之亦然。渲染层拿这两组值分别喂各自的 `lens()`，混用就是「调一处两处都变」。
- *
- * @param band 顶栏玻璃带。没有壁纸时解析成 [SurfaceMaterialState.SOLID]（Dart
- *   `homePageHeaderUsesFrostedChrome` 在无壁纸时恒 false），关掉总开关时是
- *   [SurfaceMaterialState.OFF]（整条不画）。
- * @param dock 玻璃坞。作用范围关 → 磨砂（仍模糊、不折射）；总闸关 → 实体。
- * @param courseCard 课程卡片。无壁纸 / 总闸关 / 选了实体档 → 实体。
+ * 渲染层直接消费的**材质快照**——真源已下沉 [com.mutx163.qingyu.core.HomeMaterialRenderSpec]，
+ * 字段、默认值与「为什么要有这一层」的完整说明见其 KDoc（2026-11-03 跨域引用治理：
+ * 课表域与壳的渲染方不该反向 import 设置域）。本别名让设置域既有调用方一行不改。
  */
-data class HomeMaterialRenderSpec(
-    val band: SurfaceMaterialState = SurfaceMaterialState.OFF,
-    val dock: SurfaceMaterialState = SurfaceMaterialState.FROST,
-    val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
-    val liquidTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
-    val liquidBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
-    val liquidRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
-    val liquidRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
-    val liquidRimStrength: Float = LiquidGlassTuning.DEFAULT_RIM_STRENGTH.toFloat(),
-    /**
-     * 色散强度（0–1），`liquidGlassTuning.dispersion` 套深色配方后的值。
-     *
-     * 喂 miuix `lens(chromaticAberration = …)`（`components/liquid/LiquidLens.kt`）；
-     * 0 = 走更便宜的无色散着色器。
-     */
-    val liquidDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
-    val courseCardTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
-    val courseCardBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
-    /** 课卡边缘折射位移（逻辑 px），取**卡片自己那套**的 `refraction`。 */
-    val courseCardRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
-    /** 课卡折射作用带宽度（逻辑 px），取卡片那套的 `refractionBand`。 */
-    val courseCardRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
-    /** 课卡色散强度（0–1），取卡片那套的 `dispersion` 并套深色配方。 */
-    val courseCardDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
-)
+typealias HomeMaterialRenderSpec = com.mutx163.qingyu.core.HomeMaterialRenderSpec
 
 /** 材质/表面的纯推导（`lib/models/surface_material.dart` + `glass_mode_choice.dart`）。 */
 object SettingsMaterialModel {
