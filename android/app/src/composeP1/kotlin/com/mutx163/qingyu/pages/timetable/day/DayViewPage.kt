@@ -224,6 +224,20 @@ fun DayViewPage(
     homeTitleStyle: HomeTitleStyle = HomeTitleStyle.CLASSIC,
     profileName: String? = null,
     showTopBar: Boolean = true,
+    /**
+     * 作为**首页的日视图展开层**渲染时，顶栏玻璃带的高度（含状态栏 + 标题行 + 星期栏）。
+     *
+     * 非空 = 本页**不画自己的顶栏 / 星期栏 / 玻璃带**（那一条带由首页统一画，周视图
+     * 也在用），正文从这条高度往下开始。这样展开窗口里只有一个正文，不会出现
+     * 「首页顶栏 + 日视图顶栏」两套壳叠在一起、也不会在动画中露出一截重复标题。
+     */
+    contentTopInset: Dp? = null,
+    /**
+     * 首页星期栏当前选中的那一天。窗口常驻时外部换日靠它驱动 pager 滚动
+     * （`initial*` 只在第一次组合生效，之后不再重开页面）。
+     */
+    requestedWeek: Int? = null,
+    requestedDayOfWeek: Int? = null,
     homeMenuStyle: HomeMenuStyle = HomeMenuStyle.LIST,
     homeMenuItems: List<TimetableMenuItem> = emptyList(),
     onHomeMenuSelect: (String) -> Unit = {},
@@ -300,6 +314,23 @@ fun DayViewPage(
 
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
+
+    // ── 外部选日（首页星期栏）→ pager ──
+    // 作为首页展开层时，星期栏一直由首页画：点另一天不会重建本页（`initial*` 不会重跑），
+    // 所以必须在这里把「想看的那天」滚进 pager。日视图自己翻页后经 `onPageChanged`
+    // 回写同一份状态，因此这里不会和手势打架（目标与当前页相同时直接跳过）。
+    LaunchedEffect(requestedWeek, requestedDayOfWeek, visibleDays) {
+        val week = requestedWeek ?: return@LaunchedEffect
+        val dayOfWeek = requestedDayOfWeek ?: return@LaunchedEffect
+        val target = DayViewPaging.globalPage(
+            visibleDays = visibleDays,
+            week = week,
+            dayOfWeek = DayViewPaging.normalizeDayOfWeek(visibleDays, dayOfWeek),
+        ).coerceIn(0, pageCount - 1)
+        if (pagerState.currentPage != target) {
+            pagerState.animateScrollToPage(target)
+        }
+    }
 
     // 「今天在哪一周」：优先按开学日现算（跨周自动跟手），算不出才用仓储当前周。
     val todayWeek = realCurrentWeek
@@ -497,6 +528,13 @@ fun DayViewPage(
             // 三块内容装在同一个盒子里，玻璃只在**一个**节点上挂一次（一次采样、
             // 一次高斯、一次折射、一次染色）。玻璃层本身是共享件
             //（`TimetableChromeBandGlass`），与周/月视图同一条带。
+            //
+            // 作为首页展开层（`contentTopInset != null`）时不画这条带：首页那条带
+            // 已经在同一位置、同一材质上画好了，这里再画一遍会在界面交界处叠出
+            // 第二份模糊/染色；正文按同一条带的高度下移即可。
+            if (contentTopInset != null) {
+                Spacer(modifier = Modifier.height(contentTopInset))
+            } else {
             TimetableChromeBandGlass(
                 material = material,
                 hasBackdrop = hasBackdrop,
@@ -556,6 +594,7 @@ fun DayViewPage(
                         )
                     }
                 }
+            }
             }
             // 下方内容：从玻璃带底部开始，占满剩余高度（底部仍铺到屏幕最底）。
             Box(
