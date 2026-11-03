@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,7 +25,11 @@ import com.mutx163.qingyu.components.QingyuPageList
 import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.MiniJson
+import com.mutx163.qingyu.app.TimetableHostLogic
+import com.mutx163.qingyu.pages.import.ImportFlowModel
+import com.mutx163.qingyu.pages.import.ImportRandomColorStore
 import com.mutx163.qingyu.pages.time_scheme.TimeSchemeServiceMessages
+import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.transfer.MAX_ALLOWED_SEMESTER_WEEK_COUNT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,6 +37,7 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -54,7 +60,7 @@ import java.util.UUID
  * | 真 WebView | [WarehouseWebLoginPage] → [WarehouseWebViewHost] |
  * | 加载进度 / 错误上屏 | [WarehouseWebLoginWebState]（错误文案优先取 ARB） |
  * | 「执行导入脚本」 | 拉脚本（[WarehouseRepositoryService.loadAdapterScript]，含 SHA-256 校验）→ 包桥接垫片 → 注入 |
- * | 脚本回传 `courses` | 两步确认（覆盖/更新 → 开学日/首周）→ 周次平移 → [WarehouseCourseWriteBack] 写回当前档案 |
+ * | 脚本回传 `courses` | 三步确认（覆盖/更新 → 开学日/首周 → 节次不够时「自动补齐并导入」）→ 周次平移 + 随机配色 → [WarehouseCoursesImportApply] 收尾落盘 |
  * | 网页 `toast` / `error` | 轻提示显示脚本原文（error 缺省兜底固定文案） |
  * | 网页 `confirm` / `prompt` / 单选 | [WarehouseBridgeDialogHost] 原生弹层（F32 收口），回传契约见模型层文件头 |
  * | 网页 `saveCourseConfig` | 字段表单 → 白名单字段落盘（[warehouseCourseConfigResolution]）→ `true`/`false` |
@@ -63,20 +69,31 @@ import java.util.UUID
  *
  * ## 诚实边界（别删）
  *
- * 1. **抓回来的课写当前档案前问两步**（覆盖/更新、开学日/首周，任一取消=中止导入，
- *    对齐 Dart `askImportReplaceExisting` / `pickImportSemesterConfig`）；按用户确认的
- *    「课表第 1 周 = 校历第 N 周」平移周次后写回（[warehouseShiftCoursesToFirstWeek]）。
- *    与 Dart 的差异：节次容量自动扩展（`ensureImportSectionCapacity`）、随机配色、
- *    作息应用链（`_applyPendingImportedSectionsIfNeeded`，见 `savePresetTimeSlots`）
- *    未接入本流程；设置与课程是两次独立落盘，中间失败可能出现「设置已新、课程未动」。
+ * 1. **抓回来的课写当前档案前按需问三步**（覆盖/更新、开学日/首周，节次不够时再加
+ *    「自动补齐并导入」，任一取消=中止导入，对齐 Dart `askImportReplaceExisting` /
+ *    `pickImportSemesterConfig` / `ensureImportSectionCapacity`）；按用户确认的
+ *    「课表第 1 周 = 校历第 N 周」平移周次（[warehouseShiftCoursesToFirstWeek]）、
+ *    按偏好随机配色，再由 [WarehouseCoursesImportApply] 收尾落盘（周数不够自动扩、
+ *    扩节失败一条不写）。与 Dart 的差异只剩：设置与课程是两次独立落盘，
+ *    中间失败可能出现「设置已新、课程未动」。
  * 2. **`savePresetTimeSlots` 没有界面，但它不是「用户输入」型交互**：脚本的语义就是
  *    「存这套全局作息」，直接落盘并套用（解析 → 校验 → 仓储 createTimeScheme/updateTimeScheme
  *    + applyTimeScheme）；写链路失败回 `false` 并提示，不静默、也不画一个什么都不存的确认框。
  * 3. **登录态探针/自动填充未接**（`WarehouseWebLoginPage` 的 remembered-account 相关回调仍是默认空实现），
  *    与 i2-webview 认领文件里列的缺件一致。
- * 4. 宏录制/快捷导入仍未移植，按钮给「不可用」实话。
+ * 4. **宏录制已接（P1）**：手动开关 / 首次导入自动录制 / 成功后询问保存，存储与
+ *    Dart 同键共读；**回放（快捷导入）仍未移植**，保存的宏本期只落盘不回放（P2）。
  * 5. 真机未验：仓库能不能拉到脚本、教务站能不能登录并通过脚本抓课，只有用户真机可见。
  */
+
+/**
+ * 录制完成后的保存询问载荷：转出的步骤 + 来自哪个入口（自动完成 / 手动停止）。
+ * 正文文案与 successfulImportCount 都按它区分（Dart widget.autoRecord 同语义）。
+ */
+private class WarehouseMacroSavePrompt(
+    val steps: List<WarehouseMacroStep>,
+    val autoRecord: Boolean,
+)
 
 private const val LOG_TAG = "WarehouseWebLogin"
 
@@ -92,6 +109,22 @@ private class WarehouseCoursesImportSession(
     val receivedCount: Int,
     val droppedCount: Int,
     val weeksTrimmedCount: Int,
+)
+
+/**
+ * 第二步确认后的落盘计划：课程已平移、已按偏好配色，只差用户对节次扩容的
+ * 最后确认（节次够用时跳过第三步直接落盘）。计数留给完成/中断提示的文案。
+ */
+private class WarehouseCoursesFinalizePlan(
+    val courses: List<Course>,
+    val replaceExisting: Boolean,
+    val preserveLocalColors: Boolean,
+    val startDate: LocalDate,
+    val receivedCount: Int,
+    val droppedCount: Int,
+    val weeksTrimmedCount: Int,
+    val requiredSectionCount: Int,
+    val currentSectionCount: Int,
 )
 
 /**
@@ -152,6 +185,204 @@ fun WarehouseWebLoginHost(
     // 本次脚本会话里已落盘生效的节次签名（对齐 Dart `_appliedImportedSectionsSignature`）：
     // 同一份载荷不重复落盘，新脚本窗口（重新执行 / 页面跳转）清零。
     var appliedSectionsSignature by remember { mutableStateOf<String?>(null) }
+
+    // ---- 宏录制（P1）：录制态 / 事件缓冲 / 弹窗应答存入 ----
+    // 存储与适配器列表宿主同一套键（Dart SharedPreferences 同键共读，D1）。
+    val macroStore = remember(context) { WarehouseMacroStore(PrefsKeyValueStore(context)) }
+    var macroState by remember { mutableStateOf(WarehouseMacroActionState.IDLE) }
+    var recordedStepsCount by remember { mutableIntStateOf(0) }
+    var macroRawEvents by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
+    // 弹窗应答（N6 存入侧）：用户作答后写入，保存时进 record.dialogResponses。
+    val macroDialogResponses = remember { LinkedHashMap<String, Any?>() }
+    // 当前挂起弹层的应答 key（录制态收到对话框请求时算好，作答时用）。
+    var pendingDialogResponseKey by remember { mutableStateOf<String?>(null) }
+    // 保存询问（0 步骤不问；对齐 Dart _completeMacroAndPop / _stopMacroRecording 的确认框）。
+    var macroSavePrompt by remember { mutableStateOf<WarehouseMacroSavePrompt?>(null) }
+    var macroBusy by remember { mutableStateOf(false) }
+
+    // ---- 宏录制方法（P1，对齐 Dart _startMacroRecording / _stopMacroRecording / _completeMacroAndPop）----
+    // 注意：这段必须声明在 confirmCoursesImport / finalizeCoursesImport 之前——
+    // Kotlin 局部函数只能使用在声明点之前已声明的符号（导入成功的自动完成是前向调用）。
+
+    fun resetMacroRecording() {
+        macroState = WarehouseMacroActionState.IDLE
+        recordedStepsCount = 0
+        macroRawEvents = emptyList()
+        macroDialogResponses.clear()
+        pendingDialogResponseKey = null
+    }
+
+    fun startMacroRecording(autoRecord: Boolean) {
+        if (macroState == WarehouseMacroActionState.RECORDING || macroBusy) return
+        macroState = WarehouseMacroActionState.RECORDING
+        recordedStepsCount = 0
+        macroRawEvents = emptyList()
+        // 每次录制从干净的应答表开始：上次「停止但不保存」（或同一 WebView 上重录）
+        // 不能把旧应答泄漏进新宏（Dart _startMacroRecording 的防泄漏注释同款）。
+        macroDialogResponses.clear()
+        controller.injectJavaScript(WarehouseMacroRecorderJs.INJECT_SCRIPT)
+        Toast.makeText(
+            context,
+            if (autoRecord) {
+                WarehouseStrings.courseImportAutoRecordingStartedTip.zh
+            } else {
+                WarehouseStrings.courseImportRecordingStartedTip.zh
+            },
+            Toast.LENGTH_SHORT,
+        ).show()
+    }
+
+    /** dump 补收：把页面缓冲里的尾部事件并进已收列表（桥不可用时的兜底，失败留痕不中断）。 */
+    fun dumpRecordedEvents(onDone: () -> Unit) {
+        controller.evaluateJavaScript(WarehouseMacroRecorderJs.DUMP_SCRIPT) { result ->
+            if (!result.isNullOrEmpty() && result != "[]") {
+                val decoded = MiniJson.tryParse(result)
+                if (decoded is List<*>) {
+                    val merged = macroRawEvents.toMutableList()
+                    for (item in decoded) {
+                        val map = item as? Map<*, *> ?: continue
+                        val event = LinkedHashMap<String, Any?>()
+                        for ((k, v) in map) {
+                            if (k is String) event[k] = v
+                        }
+                        merged.add(event)
+                    }
+                    macroRawEvents = merged
+                }
+            }
+            onDone()
+        }
+    }
+
+    fun stopMacroRecording() {
+        if (macroState != WarehouseMacroActionState.RECORDING || macroBusy) return
+        macroState = WarehouseMacroActionState.STOPPED
+        macroBusy = true
+        dumpRecordedEvents {
+            val steps = WarehouseMacroRecordingConverter.convert(macroRawEvents)
+            macroBusy = false
+            if (steps.isEmpty()) {
+                // 未录到任何操作：回 IDLE + 提示，不问保存（Dart 同款）。
+                resetMacroRecording()
+                Toast.makeText(
+                    context,
+                    WarehouseStrings.courseImportRecordingEmptyTip.zh,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            } else {
+                macroSavePrompt = WarehouseMacroSavePrompt(steps = steps, autoRecord = false)
+            }
+        }
+    }
+
+    /** 导入成功自动完成：0 步骤直接退出不打扰（导入本身已成功），有步骤则问保存。 */
+    fun completeMacroAndPop() {
+        if (macroState != WarehouseMacroActionState.RECORDING || macroBusy) return
+        macroState = WarehouseMacroActionState.STOPPED
+        macroBusy = true
+        dumpRecordedEvents {
+            val steps = WarehouseMacroRecordingConverter.convert(macroRawEvents)
+            macroBusy = false
+            if (steps.isEmpty()) {
+                resetMacroRecording()
+                onBack()
+            } else {
+                macroSavePrompt = WarehouseMacroSavePrompt(steps = steps, autoRecord = true)
+            }
+        }
+    }
+
+    fun saveCurrentMacro() {
+        val prompt = macroSavePrompt ?: return
+        macroBusy = true
+        scope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                try {
+                    val now = LocalDateTime.now()
+                    macroStore.saveMacro(
+                        WarehouseMacroRecord(
+                            schoolId = school.id,
+                            adapterId = adapter.id,
+                            schoolName = school.name,
+                            adapterName = adapter.adapterName,
+                            importUrl = target.loginUrl,
+                            // 脚本页地址按旧版同款脱敏（session id 之类不进宏 / 不进云同步）。
+                            scriptPageUrl = sanitizeWarehouseScriptPageUrl(
+                                controller.liveUrl() ?: session.currentUrl.ifEmpty { target.loginUrl },
+                            ),
+                            schoolResourceFolder = school.resourceFolder,
+                            adapterAssetJsPath = adapter.script,
+                            steps = prompt.steps,
+                            dialogResponses = LinkedHashMap<String, Any?>(macroDialogResponses),
+                            createdAt = now,
+                            updatedAt = now,
+                            // 自动完成（导入成功）计一次成功；手动停止保存不计（Dart 同口径）。
+                            successfulImportCount = if (prompt.autoRecord) 1 else 0,
+                            useDesktopMode = controller.isDesktopMode,
+                        ),
+                    )
+                    true
+                } catch (error: Exception) {
+                    Log.w(LOG_TAG, "macro save failed: ${error.javaClass.simpleName}")
+                    false
+                }
+            }
+            macroBusy = false
+            macroSavePrompt = null
+            resetMacroRecording()
+            if (saved) {
+                Toast.makeText(
+                    context,
+                    WarehouseStrings.courseImportRecordingSavedStatus
+                        .filled("count", prompt.steps.size.toString()),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                onBack()
+            } else {
+                Toast.makeText(context, WarehouseStrings.saveFailed.zh, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun discardCurrentMacro() {
+        macroSavePrompt = null
+        resetMacroRecording()
+    }
+
+    /** `macro:event` 分支：录制态收事件进缓冲（坏 payload 丢这一条，不中断录制）。 */
+    fun handleMacroEvent(raw: String) {
+        if (macroState != WarehouseMacroActionState.RECORDING) return
+        val event = parseWarehouseMacroEventPayload(raw) ?: return
+        macroRawEvents = macroRawEvents + event
+        recordedStepsCount += 1
+    }
+
+    /** 录制态把挂起弹层的应答 key 算好（key 口径与 Dart warehouseDialogResponseKey 逐字一致）。 */
+    fun rememberPendingDialogKey(raw: String) {
+        if (macroState != WarehouseMacroActionState.RECORDING) {
+            pendingDialogResponseKey = null
+            return
+        }
+        val message = MiniJson.tryParse(raw) as? Map<*, *>
+        val type = warehouseBridgeMessageType(raw)
+        pendingDialogResponseKey = if (message == null || type == null) {
+            null
+        } else {
+            warehouseDialogResponseKey(type, message)
+        }
+    }
+
+    /**
+     * 用户作答后把应答存进录制表：confirm 存 bool（取消也是 false）；
+     * prompt 存文本（取消 null 不存）；单选存「所选项文字」（宿主日后调整
+     * 选项顺序也不会选错，回放时还原成下标属 P2）。
+     */
+    fun recordMacroDialogResponse(value: Any?) {
+        if (macroState != WarehouseMacroActionState.RECORDING) return
+        val key = pendingDialogResponseKey ?: return
+        if (value == null) return
+        macroDialogResponses[key] = value
+    }
 
     /** 把一条回答 resolve 给网页并收起挂起弹层（requestId 不可信时脚本是空串，注入为安全 no-op）。 */
     fun answerAndClose(answer: WarehouseBridgeDialogAnswer) {
@@ -244,67 +475,6 @@ fun WarehouseWebLoginHost(
         }
     }
 
-    /** 把写回结果翻成用户能看懂的几句话（全部取 ARB 原文，不在代码里硬写中文）。 */
-    fun messagesFor(result: WarehouseCourseWriteBack.PayloadResult): List<String> {
-        val messages = mutableListOf<String>()
-        when (result) {
-            is WarehouseCourseWriteBack.PayloadResult.InvalidFormat ->
-                messages.add(WarehouseStrings.invalidCourseDataFormat.zh)
-
-            is WarehouseCourseWriteBack.PayloadResult.NoImportableCourses -> {
-                messages.add(WarehouseStrings.noImportableCoursesFromScript.zh)
-                if (result.droppedCount > 0) {
-                    messages.add(
-                        WarehouseStrings.importCourseRecordsDropped.filled(
-                            "imported" to result.receivedCount.toString(),
-                            "dropped" to result.droppedCount.toString(),
-                        ),
-                    )
-                }
-            }
-
-            is WarehouseCourseWriteBack.PayloadResult.Failed -> {
-                Log.e(LOG_TAG, "course write-back failed: ${result.cause?.javaClass?.simpleName}")
-                messages.add(WarehouseStrings.importFailedStatus.zh)
-            }
-
-            is WarehouseCourseWriteBack.PayloadResult.Done -> {
-                val outcome = result.outcome
-                when {
-                    outcome.importedCount == 0 -> messages.add(WarehouseStrings.importNoCourseChanges.zh)
-                    outcome.mode == WarehouseCourseWriteBack.Mode.REPLACE ->
-                        messages.add(
-                            WarehouseStrings.importOverwriteCount.filled(
-                                "count" to outcome.importedCount.toString(),
-                            ),
-                        )
-
-                    else -> messages.add(
-                        WarehouseStrings.importUpdatedCount.filled(
-                            "count" to outcome.importedCount.toString(),
-                        ),
-                    )
-                }
-                if (outcome.droppedCount > 0) {
-                    messages.add(
-                        WarehouseStrings.importCourseRecordsDropped.filled(
-                            "imported" to result.receivedCount.toString(),
-                            "dropped" to outcome.droppedCount.toString(),
-                        ),
-                    )
-                }
-                if (outcome.weeksTrimmedCount > 0) {
-                    messages.add(
-                        WarehouseStrings.importCourseWeeksTrimmed.filled(
-                            "count" to outcome.weeksTrimmedCount.toString(),
-                        ),
-                    )
-                }
-            }
-        }
-        return messages
-    }
-
     /** 一次待确认的脚本课程包：解析结果 + 上屏要用的计数（F32 前缺的两步确认挂这里）。 */
     var coursesSession by remember { mutableStateOf<WarehouseCoursesImportSession?>(null) }
 
@@ -313,6 +483,12 @@ fun WarehouseWebLoginHost(
 
     /** 用户在第一步的选择：true = 覆盖导入（替换），false = 更新课表（合并）。 */
     var coursesReplaceExisting by remember { mutableStateOf(true) }
+
+    /** 第二步确认后的落盘计划（已平移+配色）；节次不够时等用户在第三步点头。 */
+    var coursesFinalizePlan by remember { mutableStateOf<WarehouseCoursesFinalizePlan?>(null) }
+
+    /** 第三步（节次补齐确认）是否在问。 */
+    var coursesAskExpansion by remember { mutableStateOf(false) }
 
     fun handleCoursesMessage(raw: String) {
         val payload = warehouseBridgeCoursesPayload(raw)
@@ -394,67 +570,144 @@ fun WarehouseWebLoginHost(
     }
 
     /** 两步确认任一步取消：中止整次导入（对齐旧版——不写回、提示、结束执行期）。 */
-    fun cancelCoursesImport() {
+    fun cancelCoursesImport(interrupted: Boolean = false) {
         coursesSession = null
         coursesAskReplace = false
+        coursesFinalizePlan = null
+        coursesAskExpansion = false
         scriptActive = false
-        Log.i(LOG_TAG, "courses import cancelled by user")
-        showToasts(listOf(WarehouseStrings.importCancelledStatus.zh))
+        Log.i(LOG_TAG, "courses import cancelled by user interrupted=$interrupted")
+        // 第三步（节次补齐确认）取消落在「导入已中断」，与旧版 capacity 路径同文案。
+        showToasts(
+            listOf(
+                if (interrupted) WarehouseStrings.importInterruptedStatus.zh
+                else WarehouseStrings.importCancelledStatus.zh,
+            ),
+        )
     }
 
-    /** 第二步确认：按「课表第 1 周 = 校历第 N 周」平移，写回设置与课程。 */
+    /** 完成提示（Done 文案口径与旧写回层一致，计数来自本次会话）。 */
+    fun doneMessagesFor(plan: WarehouseCoursesFinalizePlan, importedCount: Int): List<String> {
+        val messages = mutableListOf<String>()
+        messages.add(
+            when {
+                importedCount == 0 -> WarehouseStrings.importNoCourseChanges.zh
+                plan.replaceExisting -> WarehouseStrings.importOverwriteCount.filled("count", importedCount.toString())
+                else -> WarehouseStrings.importUpdatedCount.filled("count", importedCount.toString())
+            },
+        )
+        if (plan.droppedCount > 0) {
+            messages.add(
+                WarehouseStrings.importCourseRecordsDropped.filled(
+                    "imported" to plan.receivedCount.toString(),
+                    "dropped" to plan.droppedCount.toString(),
+                ),
+            )
+        }
+        if (plan.weeksTrimmedCount > 0) {
+            messages.add(
+                WarehouseStrings.importCourseWeeksTrimmed.filled("count", plan.weeksTrimmedCount.toString()),
+            )
+        }
+        return messages
+    }
+
+    /** 第三步确认或无需扩节：落盘（扩节 + 学期设置 + 课程），失败提示并已回滚。 */
+    fun finalizeCoursesImport(plan: WarehouseCoursesFinalizePlan, expandSections: Boolean) {
+        val repo = repository ?: return
+        coursesFinalizePlan = null
+        coursesAskExpansion = false
+        scriptActive = false
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                WarehouseCoursesImportApply.apply(
+                    repository = repo,
+                    request = WarehouseCoursesImportApply.Request(
+                        courses = plan.courses,
+                        semesterStartDate = plan.startDate,
+                        replaceExisting = plan.replaceExisting,
+                        preserveLocalColors = plan.preserveLocalColors,
+                        expandSections = expandSections,
+                    ),
+                )
+            }
+            when (result) {
+                is WarehouseCoursesImportApply.Result.Done -> {
+                    Log.i(LOG_TAG, "courses import done importedCount=${result.importedCount}")
+                    showToasts(doneMessagesFor(plan, result.importedCount))
+                    // 导入成功（写回课程数 > 0）且正在录制：自动完成录制并询问保存
+                    // （对齐 Dart `importedCount > 0 && recording → _completeMacroAndPop`）。
+                    if (result.importedCount > 0 && macroState == WarehouseMacroActionState.RECORDING) {
+                        completeMacroAndPop()
+                    }
+                }
+
+                is WarehouseCoursesImportApply.Result.Failed -> {
+                    // 服务码（如节次补不满）过本地化再展示；其余落固定文案。
+                    val text = result.serviceMessage
+                        ?.let { TimeSchemeServiceMessages.localize(it) }
+                        ?: WarehouseStrings.importFailedStatus.zh
+                    Log.w(LOG_TAG, "courses import failed serviceMessage=${result.serviceMessage}")
+                    showToasts(listOf(text))
+                }
+            }
+        }
+    }
+
+    /** 第二步确认：平移 + 按偏好配色，然后视节次容量直接落盘或先进第三步确认。 */
     fun confirmCoursesImport(startDate: LocalDate, firstCourseWeek: Int) {
         val session = coursesSession ?: return
         val repo = repository ?: return
         val replaceExisting = coursesReplaceExisting
         coursesSession = null
         coursesAskReplace = false
+        // 录制态：把开学日/首周应答存进宏（N6 固定键 semesterConfig：ISO 日期 + 首周数）。
+        if (macroState == WarehouseMacroActionState.RECORDING) {
+            macroDialogResponses["semesterConfig"] = linkedMapOf<String, Any?>(
+                "startDate" to startDate.toString(),
+                "firstCourseWeek" to firstCourseWeek,
+            )
+        }
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                try {
-                    val shifted = warehouseShiftCoursesToFirstWeek(session.courses, firstCourseWeek)
-                    // 对齐旧版 importParsedCourses（timetable_import_export_service.dart:596-601）：
-                    // 用户确认的开学日写进设置；课程需要的周数比现设大就自动扩。
-                    val before = repo.snapshot.settings
-                    val requiredWeeks = warehouseMaxCourseWeek(shifted, before.semesterWeekCount)
-                    repo.updateSettings(
-                        before.copy(
-                            semesterStartDate = startDate.atStartOfDay(),
-                            semesterWeekCount = maxOf(before.semesterWeekCount, requiredWeeks),
-                        ),
-                    )
-                    WarehouseCourseWriteBack.apply(
-                        repository = repo,
-                        courses = shifted,
-                        requestedMode = if (replaceExisting) {
-                            WarehouseCourseWriteBack.Mode.REPLACE
-                        } else {
-                            WarehouseCourseWriteBack.Mode.MERGE
-                        },
-                        droppedCount = session.droppedCount,
-                        weeksTrimmedCount = session.weeksTrimmedCount,
-                    )
-                } catch (error: Exception) {
-                    Log.w(LOG_TAG, "courses write-back failed: ${error.javaClass.simpleName}")
-                    WarehouseCourseWriteBack.Result.Failed(error)
-                }
+            val plan = withContext(Dispatchers.IO) {
+                // 随机配色（Dart coursesWithOptionalRandomColors）：开关关→原样；
+                // 开→按用户选的色板组给「同名同教师」派生同色。
+                val colorPrefs = ImportRandomColorStore(PrefsKeyValueStore(context)).snapshot()
+                val shifted = warehouseShiftCoursesToFirstWeek(session.courses, firstCourseWeek)
+                val colored = ImportFlowModel.coursesWithOptionalRandomColors(shifted, colorPrefs)
+                val preserveLocalColors = ImportFlowModel.shouldPreserveLocalColors(
+                    replaceExisting = replaceExisting,
+                    randomColorsEnabled = colorPrefs.enabled,
+                )
+                // 节次容量判据（Dart previewImportedCourseRequiredSectionCount）：
+                // 最大结束节号 vs 当前生效节次表（有主模板取模板）。
+                val snapshot = repo.snapshot
+                val currentSections = WarehouseCoursesImportApply.activeSections(
+                    snapshot.settings,
+                    TimetableHostLogic.resolveActiveTimeScheme(
+                        schemes = snapshot.timeSchemes,
+                        activeTimeSchemeId = snapshot.activeTimeSchemeId,
+                    )?.sections,
+                )
+                WarehouseCoursesFinalizePlan(
+                    courses = colored,
+                    replaceExisting = replaceExisting,
+                    preserveLocalColors = preserveLocalColors,
+                    startDate = startDate,
+                    receivedCount = session.receivedCount,
+                    droppedCount = session.droppedCount,
+                    weeksTrimmedCount = session.weeksTrimmedCount,
+                    requiredSectionCount = WarehouseCoursesImportApply.requiredSectionCount(colored),
+                    currentSectionCount = currentSections.size,
+                )
             }
-            // messagesFor 吃的是 PayloadResult 形状；补上收到总数供文案用。
-            val payloadResult = when (result) {
-                is WarehouseCourseWriteBack.Result.Done ->
-                    WarehouseCourseWriteBack.PayloadResult.Done(result.outcome, session.receivedCount)
-
-                is WarehouseCourseWriteBack.Result.NoImportableCourses ->
-                    WarehouseCourseWriteBack.PayloadResult.NoImportableCourses(
-                        result.droppedCount,
-                        session.receivedCount,
-                    )
-
-                is WarehouseCourseWriteBack.Result.Failed ->
-                    WarehouseCourseWriteBack.PayloadResult.Failed(result.cause, session.receivedCount)
+            if (plan.requiredSectionCount > plan.currentSectionCount) {
+                // 第三步：节次不够，先问用户（旧版 ensureImportSectionCapacity 的确认框）。
+                coursesFinalizePlan = plan
+                coursesAskExpansion = true
+            } else {
+                finalizeCoursesImport(plan, expandSections = false)
             }
-            Log.i(LOG_TAG, "courses write-back result=${result.javaClass.simpleName}")
-            showToasts(messagesFor(payloadResult))
         }
     }
 
@@ -603,6 +856,15 @@ fun WarehouseWebLoginHost(
         }
     }
 
+    // 首次导入 / 显式「录制导入」入口的自动录制（Dart initState postFrame 的等价位）。
+    // 意图消费一次即清：从页面清单直接回到这一页时不应再自动开录制。
+    LaunchedEffect(target.loginUrl) {
+        if (state.autoRecordMacro) {
+            state.autoRecordMacro = false
+            startMacroRecording(autoRecord = true)
+        }
+    }
+
     fun handleBridgeMessage(raw: String) {
         val type = warehouseBridgeMessageType(raw)
         when (type) {
@@ -643,7 +905,10 @@ fun WarehouseWebLoginHost(
                             handleDialogFallback(raw)
                         }
 
-                        else -> pendingDialog = request
+                        else -> {
+                            rememberPendingDialogKey(raw)
+                            pendingDialog = request
+                        }
                     }
                 }
             }
@@ -657,6 +922,10 @@ fun WarehouseWebLoginHost(
                     handleSavePresetTimeSlots(raw)
                 }
             }
+
+            // 宏录制事件（P1）：门禁已按录制态放行，这里再自检一道（纵深防御，
+            // 与 Dart `_handleMacroEvent` 开头的状态判断同口径）。
+            "macro:event" -> handleMacroEvent(raw)
 
             "complete" -> {
                 cancelPendingDialog("complete")
@@ -684,7 +953,10 @@ fun WarehouseWebLoginHost(
     Box(modifier = Modifier.fillMaxSize()) {
         WarehouseWebLoginPage(
             title = school.name,
-            sessionState = session,
+            sessionState = session.copy(
+                macroState = macroState,
+                recordedStepsCount = recordedStepsCount,
+            ),
             webViewController = controller,
             trustedLoginUrls = trustedLoginUrls,
             onBack = onBack,
@@ -714,6 +986,11 @@ fun WarehouseWebLoginHost(
                         stage = WarehouseWebLoginWebState.stageForProgress(100),
                         errorMessage = null,
                     )
+                }
+                // 录制中每个页面加载完都重注入录制 JS（安装哨兵让重复注入变 no-op；
+                // 新导航重建 JS 上下文，不重注入的话后几页收不到任何事件——Dart 同款）。
+                if (macroState == WarehouseMacroActionState.RECORDING) {
+                    controller.injectJavaScript(WarehouseMacroRecorderJs.INJECT_SCRIPT)
                 }
             },
             onWebError = { error ->
@@ -749,7 +1026,11 @@ fun WarehouseWebLoginHost(
                 }
             },
             onToggleMacroRecording = {
-                toastUnavailable(context, "macro recording: engine not ported (F08-8c)")
+                if (macroState == WarehouseMacroActionState.RECORDING) {
+                    stopMacroRecording()
+                } else {
+                    startMacroRecording(autoRecord = false)
+                }
             },
             onExecuteImport = { executeImportScript() },
         )
@@ -765,18 +1046,35 @@ fun WarehouseWebLoginHost(
                         val pending = pendingDialog
                         // requestId 对得上才答：弹层已换人时旧动作作废（脚本 requestId 唯一）。
                         if (pending != null && pending.requestId == action.requestId) {
+                            // 录制态：confirm 的取消也记成 false（Dart 同口径）；
+                            // prompt / 单选的取消不记（Dart 只在结果非 null 时存）。
+                            if (pending is WarehouseBridgeDialogRequest.Confirm) {
+                                recordMacroDialogResponse(false)
+                            }
                             answerAndClose(warehouseBridgeDialogCancelAnswer(pending))
                         }
                     }
 
-                    is WarehouseBridgeDialogUserAction.Confirm ->
+                    is WarehouseBridgeDialogUserAction.Confirm -> {
+                        recordMacroDialogResponse(action.confirmed)
                         answerAndClose(warehouseBridgeConfirmAnswer(action.requestId, action.confirmed))
+                    }
 
-                    is WarehouseBridgeDialogUserAction.Prompt ->
+                    is WarehouseBridgeDialogUserAction.Prompt -> {
+                        recordMacroDialogResponse(action.text)
                         answerAndClose(warehouseBridgePromptAnswer(action.requestId, action.text))
+                    }
 
-                    is WarehouseBridgeDialogUserAction.Selection ->
+                    is WarehouseBridgeDialogUserAction.Selection -> {
+                        // 录制存「所选项文字」不存下标（Dart 同款：选项顺序变了也不会选错）。
+                        val pending = pendingDialog
+                        if (pending is WarehouseBridgeDialogRequest.SingleSelection &&
+                            action.index in pending.options.indices
+                        ) {
+                            recordMacroDialogResponse(pending.options[action.index])
+                        }
                         answerAndClose(warehouseBridgeSelectionAnswer(action.requestId, action.index))
+                    }
                 }
             },
         )
@@ -788,6 +1086,10 @@ fun WarehouseWebLoginHost(
             show = importSession != null && coursesAskReplace,
             courseCount = importSession?.courses?.size ?: 0,
             onPick = { replaceExisting ->
+                // 录制态：把覆盖/更新的选择存进宏（N6 固定键 replaceExisting）。
+                if (macroState == WarehouseMacroActionState.RECORDING) {
+                    macroDialogResponses["replaceExisting"] = replaceExisting
+                }
                 coursesReplaceExisting = replaceExisting
                 coursesAskReplace = false
             },
@@ -803,6 +1105,31 @@ fun WarehouseWebLoginHost(
                 confirmCoursesImport(startDate, firstCourseWeek)
             },
             onDismiss = { cancelCoursesImport() },
+        )
+
+        // 第三步（按需）：节次表装不下导入课程时问「自动补齐并导入」；
+        // 取消落「导入已中断」（旧版 ensureImportSectionCapacity 的取消路径）。
+        val finalizePlan = coursesFinalizePlan
+        WarehouseSectionExpansionDialog(
+            show = coursesAskExpansion && finalizePlan != null,
+            currentSectionCount = finalizePlan?.currentSectionCount ?: 0,
+            requiredSectionCount = finalizePlan?.requiredSectionCount ?: 0,
+            onConfirm = {
+                val plan = finalizePlan
+                if (plan != null) finalizeCoursesImport(plan, expandSections = true)
+            },
+            onCancel = { cancelCoursesImport(interrupted = true) },
+        )
+
+        // 录制保存询问（P1）：常驻组合、show 由 macroSavePrompt 驱动；
+        // 保存 → 构造记录落盘（键与 Dart 同键共读）；取消 → 清状态不留痕。
+        val savePrompt = macroSavePrompt
+        WarehouseMacroSaveRecordingDialog(
+            show = savePrompt != null,
+            stepCount = savePrompt?.steps?.size ?: 0,
+            autoRecord = savePrompt?.autoRecord ?: false,
+            onSave = { saveCurrentMacro() },
+            onDiscard = { discardCurrentMacro() },
         )
     }
 }

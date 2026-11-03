@@ -18,7 +18,18 @@ import java.io.File
  */
 class WarehouseWebLoginHostWiringGuardTest {
 
-    private val hostSource: String by lazy { readHostSource() }
+    private val hostSource: String by lazy { stripKotlinComments(readHostSource()) }
+
+    @Test
+    fun `判据必须剥掉注释 注释掉的接线不算接线`() {
+        // 2026-11-03 咬合探针实测：把 `state.autoRecordMacro = false` 注释掉后旧判据仍命中。
+        val fake = "fun fake() {\n    // state.autoRecordMacro = false\n}"
+        assertFalse(
+            "注释掉的判据不许再命中",
+            stripKotlinComments(fake).contains("state.autoRecordMacro = false"),
+        )
+        assertTrue("字符串字面量里的内容不许被当注释吃掉", stripKotlinComments("val u = \"a//b\"").contains("a//b"))
+    }
 
     @Test
     fun `登录地址必须来自解析函数 不许出现占位地址`() {
@@ -98,6 +109,22 @@ class WarehouseWebLoginHostWiringGuardTest {
         )
     }
 
+    @Test
+    fun `宏录制接线必须钉住 事件分发 自动录制消费一次 保存询问`() {
+        assertTrue(
+            "macro:event 必须分发到 handleMacroEvent（录制态收事件进缓冲）",
+            hostSource.contains("\"macro:event\" -> handleMacroEvent(raw)"),
+        )
+        assertTrue(
+            "首次导入自动录制必须消费一次意图（读后即清：回到本页不得再自动开录）",
+            hostSource.contains("state.autoRecordMacro = false"),
+        )
+        assertTrue(
+            "录制保存询问必须挂 WarehouseMacroSaveRecordingDialog（常驻组合，show 由状态驱动）",
+            hostSource.contains("WarehouseMacroSaveRecordingDialog("),
+        )
+    }
+
     private fun readHostSource(): String {
         val relative =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginHost.kt"
@@ -108,5 +135,76 @@ class WarehouseWebLoginHostWiringGuardTest {
             dir = dir?.parentFile
         }
         error("找不到宿主源码 $relative（当前目录 ${File("").absolutePath}）")
+    }
+
+    /**
+     * 剥掉行注释与斜杠星块注释再判（正本在 `ComposeSheetGuardTest.stripKotlinComments`）：
+     * 把守卫判据那行注释掉不算还接着线；块注释按 Kotlin 语义可嵌套；
+     * 字符串字面量（含转义）原样保留，`"https://…"` 不会把行尾真参吃掉。
+     */
+    private fun stripKotlinComments(source: String): String {
+        val sb = StringBuilder(source.length)
+        var i = 0
+        var inLineComment = false
+        var inBlockComment = false
+        var blockDepth = 0
+        var stringQuote: Char? = null
+        while (i < source.length) {
+            val ch = source[i]
+            val next = if (i + 1 < source.length) source[i + 1] else ' '
+            when {
+                inLineComment -> {
+                    if (ch == '\n') {
+                        inLineComment = false
+                        sb.append(ch)
+                    }
+                    i++
+                }
+                inBlockComment -> {
+                    if (ch == '/' && next == '*') {
+                        blockDepth++
+                        i += 2
+                    } else if (ch == '*' && next == '/') {
+                        blockDepth--
+                        i += 2
+                        if (blockDepth == 0) inBlockComment = false
+                    } else {
+                        if (ch == '\n') sb.append(ch)
+                        i++
+                    }
+                }
+                stringQuote != null -> {
+                    sb.append(ch)
+                    if (ch == '\\' && i + 1 < source.length) {
+                        sb.append(source[i + 1])
+                        i += 2
+                    } else {
+                        if (ch == stringQuote) stringQuote = null
+                        i++
+                    }
+                }
+                ch == '/' && next == '/' -> {
+                    inLineComment = true
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '/' && next == '*' -> {
+                    inBlockComment = true
+                    blockDepth = 1
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '"' || ch == '\'' -> {
+                    stringQuote = ch
+                    sb.append(ch)
+                    i++
+                }
+                else -> {
+                    sb.append(ch)
+                    i++
+                }
+            }
+        }
+        return sb.toString()
     }
 }

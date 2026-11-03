@@ -350,9 +350,12 @@ class WarehouseBridgeDialogTest {
     // 宿主接线守卫（composeP1 不在 L0 编译范围，接线事实按源码结构判）
     // ---------------------------------------------------------------------------
 
-    private val hostSource: String by lazy { readSource("WarehouseWebLoginHost.kt") }
-    private val dialogHostSource: String by lazy { readSource("WarehouseBridgeDialogHost.kt") }
-    private val importDialogsSource: String by lazy { readSource("WarehouseCoursesImportDialogs.kt") }
+    private val hostSource: String by lazy { readSource("composeP1", "WarehouseWebLoginHost.kt") }
+    private val dialogHostSource: String by lazy { readSource("composeP1", "WarehouseBridgeDialogHost.kt") }
+    private val importDialogsSource: String by lazy { readSource("composeP1", "WarehouseCoursesImportDialogs.kt") }
+
+    /** courses 收尾落盘层在 `main` 源集（扩节/周数自动扩随实现收进了模型层）。 */
+    private val applySource: String by lazy { readSource("main", "WarehouseCoursesImportApply.kt") }
 
     @Test
     fun `courses 写回前必须问两步并按用户选择平移写回`() {
@@ -360,9 +363,22 @@ class WarehouseBridgeDialogTest {
         assertTrue("必须问覆盖还是更新", hostSource.contains("WarehouseReplaceExistingDialog("))
         assertTrue("必须确认开学日与首周", hostSource.contains("WarehouseSemesterMappingSheet("))
         assertTrue("写回前必须按首周平移", hostSource.contains("warehouseShiftCoursesToFirstWeek("))
-        assertTrue("周数不够必须自动扩（对齐旧版 importParsedCourses）", hostSource.contains("warehouseMaxCourseWeek("))
-        assertTrue("用户选择必须传给 requestedMode", hostSource.contains("requestedMode = if (replaceExisting)"))
-        assertTrue("取消必须结束导入执行期", hostSource.contains("fun cancelCoursesImport()"))
+        assertTrue(
+            "收尾落盘必须走 WarehouseCoursesImportApply（扩节与失败回滚在模型层收口）",
+            hostSource.contains("WarehouseCoursesImportApply.apply("),
+        )
+        assertTrue(
+            "周数不够必须自动扩（对齐旧版 importParsedCourses；判据随实现收在收尾层）",
+            applySource.contains("warehouseMaxCourseWeek("),
+        )
+        assertTrue(
+            "用户选择必须传给 requestedMode",
+            applySource.contains("requestedMode = if (request.replaceExisting)"),
+        )
+        assertTrue(
+            "取消必须结束导入执行期（interrupted 区分第三步取消落「导入已中断」）",
+            hostSource.contains("fun cancelCoursesImport("),
+        )
     }
 
     @Test
@@ -428,14 +444,86 @@ class WarehouseBridgeDialogTest {
         assertTrue("降级路径必须保留", hostSource.contains("handleDialogFallback(raw)"))
     }
 
-    private fun readSource(fileName: String): String {
-        val relative = "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName"
+    private fun readSource(sourceSet: String, fileName: String): String {
+        val relative = "android/app/src/$sourceSet/kotlin/com/mutx163/qingyu/pages/import/warehouse/$fileName"
         var dir: File? = File("").absoluteFile
         repeat(8) {
             val candidate = File(dir, relative)
-            if (candidate.isFile) return candidate.readText(Charsets.UTF_8)
+            if (candidate.isFile) return stripKotlinComments(candidate.readText(Charsets.UTF_8))
             dir = dir?.parentFile
         }
         error("找不到源码 $relative（当前目录 ${File("").absolutePath}）")
+    }
+
+    /**
+     * 剥掉行注释与斜杠星块注释再判（正本在 `ComposeSheetGuardTest.stripKotlinComments`）：
+     * 把守卫判据那行注释掉不算还接着线（2026-11-03 宿主接线守卫咬合探针同款洞）；
+     * 块注释按 Kotlin 语义可嵌套；字符串字面量（含转义）原样保留，
+     * `"https://…"` 不会把行尾真参吃掉。
+     */
+    private fun stripKotlinComments(source: String): String {
+        val sb = StringBuilder(source.length)
+        var i = 0
+        var inLineComment = false
+        var inBlockComment = false
+        var blockDepth = 0
+        var stringQuote: Char? = null
+        while (i < source.length) {
+            val ch = source[i]
+            val next = if (i + 1 < source.length) source[i + 1] else ' '
+            when {
+                inLineComment -> {
+                    if (ch == '\n') {
+                        inLineComment = false
+                        sb.append(ch)
+                    }
+                    i++
+                }
+                inBlockComment -> {
+                    if (ch == '/' && next == '*') {
+                        blockDepth++
+                        i += 2
+                    } else if (ch == '*' && next == '/') {
+                        blockDepth--
+                        i += 2
+                        if (blockDepth == 0) inBlockComment = false
+                    } else {
+                        if (ch == '\n') sb.append(ch)
+                        i++
+                    }
+                }
+                stringQuote != null -> {
+                    sb.append(ch)
+                    if (ch == '\\' && i + 1 < source.length) {
+                        sb.append(source[i + 1])
+                        i += 2
+                    } else {
+                        if (ch == stringQuote) stringQuote = null
+                        i++
+                    }
+                }
+                ch == '/' && next == '/' -> {
+                    inLineComment = true
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '/' && next == '*' -> {
+                    inBlockComment = true
+                    blockDepth = 1
+                    sb.append(' ')
+                    i += 2
+                }
+                ch == '"' || ch == '\'' -> {
+                    stringQuote = ch
+                    sb.append(ch)
+                    i++
+                }
+                else -> {
+                    sb.append(ch)
+                    i++
+                }
+            }
+        }
+        return sb.toString()
     }
 }
