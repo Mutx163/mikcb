@@ -154,7 +154,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 **串行约束**：门 3（L1）绿之前只用 L0 + 门4 验收；六份 ARB 只归 A；壳/拍板/真机项不进 5 路。
 **已不成立（别再改，主控审计+本代理复核）**：调课 480dp、周格白字、周加/减无障碍、备注 16dp、写死中文、导入两动作排布；ExamTimePickerSheet（文件不存在）；CourseActionSheet L308（按需挂载子弹层，非条件挂载）。
 **被拍板挡住（不进 5 路，记此）**：42dp 空档×4、官方字阶、自动聚焦、选周结构、ICS 菜单、滚轮抢手势。
-**文档已过时（记已不成立）**：ST1 classReminders、局域网撤销点、perf manifest、台账 P3-E 成就详情、§9.10 exam、DEMO 60→63；KDoc 自相矛盾 ×2（TimetableStore.kt:44、ClassAlarmSheet.kt:50）顺手修。
+**文档已过时（记已不成立）**：~~ST1 classReminders~~（**2026-11-04 更正：不是文档过时，而是整体未移植 → backlog**）、局域网撤销点、perf manifest、台账 P3-E 成就详情、§9.10 exam、DEMO 60→63；KDoc 自相矛盾 ×2（TimetableStore.kt:44、ClassAlarmSheet.kt:50）顺手修。
 
 ---
 
@@ -283,7 +283,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
 | **L1（import/statistics·第二班）** | ✅ 收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` + `6af3fd36`/`85ab22e3`/`22444ce3`/`c6e3ac33`/`f56c89be` | L0 import 473 / statistics 310（**该 310 用 2.4.10 手工编译，按 10.15 需用统一入口重跑才作数**）；学期进度钳 0..100 |
-| **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` + `9a5ebf48` / `c4587694` | 结构债已解；月视图横向翻月 2400 页；`TimetableGridMetrics` 兜底时刻 `Locale.ROOT`；假期覆盖开关挂 backlog |
+| **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` + `9a5ebf48` / `c4587694` | 结构债已解；月视图横向翻月 2400 页；`TimetableGridMetrics` 兜底时刻 `Locale.ROOT`；~~假期覆盖开关挂 backlog~~ **更正（2026-11-04）：`holidayOverrideEnabled` 已双向读写，旧说法作废** |
 | **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` + `9dd376d2` / `ec9b57e8` + `0b5a85ca` / `d53b8ae6` | L0 sync/transfer 918；Locale 哈希修复；严格 UTF-8 解码；`when` 5/5 覆盖；第三轮对拍四条一致；**门 1 已在 `a7eef5be` 绿** |
 | **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实；widgetdata `Int`→`Double` **漏改根包 `TodayWidgetSnapshotInfo`（`TodayWidgetSupport.kt`/`StatsWidgetSupport.kt`）→ 门 2 测试源集编译红，待 L4 补** |
 
@@ -352,7 +352,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 ### 2026-11-03 · L2 第三批裁决
 
 1. **仓储原子换档入口批准**：由 L4 给 `replaceAllProfilesAndSettings` 增加可选参数 `currentWeek: Int? = null`（默认 null、向后兼容、**单次写入单次通知**），L2 消费该入口换档。跨线协作：L4 改仓储签名 → L2 调用。
-2. **假期覆盖开关暂缓进 backlog**：需 `core/TimetableSettings` 增字段 + 设置页开关，跨 `core/` 与 `pages/settings/` 两域，当前**没有对应线**承接。登记为「**已确认缺口 + 所需域**」，**不算豁免**，不得当作已完成。
+2. ~~**假期覆盖开关暂缓进 backlog**~~ **作废（2026-11-04 更正）**：`holidayOverrideEnabled` **不是写死 false**，已双向读写——`MonthHolidaySettings.kt:46`（写）+ `LiveSelfCheckHost.kt:376-380`（读/自检）。此项从 backlog 移除，不构成缺口。另：`timetableShowCurrentWeekCourses` 是 Dart **只写不读**的遗留键，真正生效的是 `timetableShowNonCurrentWeekCourses`（两侧都读）。
 3. **`.let` 式条件挂载批准清理**：`TimetableProfilesPage:298/312/320` 三处 `.let` 条件组合清理，并要求**扩既有守卫测试锁死**（已由 `1d5cd858` 落实）。
 
 ### 2026-11-03 · L1 上半场裁决
@@ -365,6 +365,17 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - **现状**：`StatsInfoModels` 已钳 0..100（测试 `156%` → `100%`），`CourseStatisticsModel` 未钳（与 Dart 一致）→ 同一数据在统计页与课程统计页显示不一致。
 - **决定**：**统一钳 0..100**，属「**有意改进的差异**」。理由：进度 >100% 只可能因为**当前周次已越过学期总周数**，数据本身不自洽；把 `156%` 展示出来会被用户当成算错。
 - **实现约束**：必须做成**单一共享函数 `semesterProgressRatio()`**（含钳制），两处都调它；**不许两处各写 `coerceIn`**（否则日后一处改了另一处又分叉）。
+
+---
+
+### 2026-11-04 · 两条升级阻断缺陷裁决（`app/` A+B 一次迁移）
+
+1. **档案内嵌 `settings` 为唯一真源**：`timetable_profiles` 内嵌的 `settings` 定为**唯一权威读取点**；顶层 `timetable_settings` 降级为 **bootstrap 一次性播种源**（仅在档案缺失/为空时使用）。
+2. **`loadSettingsJson()` 单一读取点改读档案**：Compose 侧 settings 页 / live / classAlarm / appUpdate 统一从档案内嵌 settings 读，不再直读顶层键；老用户升级后**未在 Compose 改过的键不再静默回退**。
+3. **写入落档案 + 保留顶层镜像**：写入以档案为准，同时保留顶层镜像供**回退 Flutter 窗口**使用；镜像不是真源，读路径不依赖它。
+4. **`courses` 旧字符串列表通道必须迁移**：Dart 仅在 `timetable_profiles` 缺失/为空时用它 bootstrap 默认档案（`storage_service.dart:1612-1651`）；Kotlin 必须同样消费，**不得直接建空课程档案**——否则老课程在盘上但界面整批不可见，且「空档案 + active id」被固化写回。
+5. **两键启动时单向对账**：`weeklyReportEnabled`、`liveHideFromRecents`（写 native pref、settings 不读）走启动时 **settings → native pref 单向对账**，不逐个改读取方。
+6. **声明口径**：本轮只声明「**JVM 单测通过 + 四种老盘状态覆盖**」；**未做真实老盘实测**，真机迁移未验。
 
 ---
 
@@ -549,6 +560,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 - `qingyu_only` 索引探测：需**适配器列表加载 + host 合并**，属跨壳改动，排期做。
 - **折线点位「槽心 vs 边到边」**：已派 L1 下批处理（当前是槽心定位，Dart 为边到边，属视觉对齐差异）。
+- **`classReminders` 整体未移植**（2026-11-04 确认）：**通知族 + 课程/日视图 + 设置族**三块，跨域整块缺口，需 Lead 排期；**不算豁免**。
 
 #### 逻辑层（L4）第三批 ✅（2026-11-03 22:15 协调线回填）
 
@@ -756,9 +768,11 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | **`58693492`** | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | **00:06:06→00:13:23** | **7m05s（Gradle 报告）/ 7m17s 墙钟** | **真实编译错误（非「未跑」）**：`DataTransferHost.kt:217` 缺 `InvalidEncoding` 分支，根因 sealed 变体未同步调用方。**门 2 未跑**（门 1 红即停） |
 | **`a7eef5be`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **00:19:14→00:27:27** | **8m7s（Gradle）/ 8m13s 墙钟** | `0b5a85ca` 修好 `DataTransferHost` 后增量重跑；无 error，仅既有 warning |
 | **`a7eef5be`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **00:27:36→00:33:33** | **5m55s（Gradle）/ 5m57s 墙钟** | **真实红（测试源集编译失败）**：`test/.../WidgetWeekendMoodTest.kt:33:28`、`34:24` 传 `Double`，而 `TodayWidgetSnapshotInfo.heightAdjustment/cornerRadius` 仍是 `Int`。根因：`49a5a739` 把测试字面量改成 Double 并改了 `HomeWidgetSnapshotData`，**漏改根包 `TodayWidgetSupport.kt` / `StatsWidgetSupport.kt` 的快照类**（Dart 是 double，应改模型而非回退测试）。**待 L4 修复后重跑门 2** |
-| `d53b8ae6` | 门 2 | ⏳ **待跑** | — | — | 只加测试（+37/−0），不改被测语义；**待上述测试编译红修复后与门 2 一起跑** |
+| `d53b8ae6` | 门 1 / 门 2 | ⏳ **未单独跑** | — | — | 作废口径：HEAD 已推进到 `4d534e04`（`d53b8ae6` 只加测试 +37/−0，未改主源集，结论由 `4d534e04` 覆盖） |
+| **`4d534e04`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **00:50:50→00:54:04** | **2m51s（Gradle）/ 3m13s 墙钟** | **当前 HEAD**；`compileDevDebugKotlin UP-TO-DATE`（主源集自 `a7eef5be` 起无改动，只推进了测试与文档），任务真实执行且 exit=0 |
+| **`4d534e04`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **00:54:23→00:59:17** | **4m44s（Gradle）/ 4m54s 墙钟** | **同一真实红**：`compileDevDebugUnitTestKotlin FAILED`，`WidgetWeekendMoodTest.kt:33:28`/`34:24` actual `Double` vs `Int` expected；其余任务 UP-TO-DATE。**待 L4 对齐 `TodayWidgetSnapshotInfo` 后重跑** |
 
-**有效结论口径**：**门 1 在 HEAD `a7eef5be` 实测绿（00:19:14→00:27:27，8m7s，exit=0）**，该绿**只代言 `a7eef5be`**。**门 2 在 `a7eef5be` 实测红（00:27:36→00:33:33，5m55s）**，红项为测试源集编译错误（`WidgetWeekendMoodTest.kt:33/34` Double vs `TodayWidgetSnapshotInfo` Int），**当前不声明「两门全绿」**。前序 `f1472e58`/`58693492` 门 1 红均为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
+**有效结论口径**：**门 1 在 HEAD `4d534e04` 实测绿（00:50:50→00:54:04，Gradle 2m51s / 墙钟 3m13s，exit=0）**，该绿**代言 `4d534e04`**（主源集未变，属 `a7eef5be` 修复后的延续）。**门 2 在同一 HEAD 实测红（00:54:23→00:59:17，Gradle 4m44s / 墙钟 4m54s，exit=1）**，红项唯一为测试源集编译错误（`WidgetWeekendMoodTest.kt:33/34` Double vs `TodayWidgetSnapshotInfo` Int），**当前不声明「两门全绿」**。前序 `a7eef5be` 门 1 绿 / 门 2 红为同一条红链的前序证据；`f1472e58`/`58693492` 门 1 红均为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
@@ -774,3 +788,26 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **实测（2026-11-04）**：`-Module pages/settings` **971 例 OK，00:01:33→00:04:51，耗时 3m18s**（含编译 253 文件 + JUnit）。
 - **补充实测（重跑 `f56c89be` 的 statistics 310 例）**：`-Module statistics` **310 例 OK，00:35:54→00:39:37，耗时 3m43s**（编译 180 文件 + JUnit）。结论：`f56c89be` 的 310 例**已用统一入口重跑并给出数字**，此前「2.4.10 手工编译」的证据作废、但结论数一致。
 - **纪律**：**以后 L0 只用这一个入口，不许各自写包装脚本**；旧成果（如 `f56c89be` 的 310 例）用 `kotlin-compiler-embeddable 2.4.10` 手工编译，**不可复现、不可作为验收证据**，需改用本入口重跑才作数。
+
+### 10.16 🚫 阻断级 · 两条升级阻断缺陷（2026-11-04，逻辑层挖出，已派修）
+
+> 这是今晚**最重要的发现**：两条都会让**老用户升级后数据/设置静默失效**，且现有 JVM 单测覆盖不到（需专项补「四种老盘状态」用例）。
+
+**A. 旧 `courses` 字符串列表通道未迁移（阻断）**
+- Dart 仅在 `timetable_profiles` 缺失/为空时用它 bootstrap 默认档案（`storage_service.dart:1612-1651`）。
+- Kotlin **无任何读取点**，直接建**空课程**默认档案，并把「空档案 + active id」写回盘。
+- 后果：**老课程仍在盘上，界面整批不可见**，且状态被固化（再启动也看不到）。
+
+**B. 顶层 `timetable_settings` 被误当权威（阻断）**
+- Dart 写点 `saveTimetableSettings`（`storage_service.dart:817-820`）全仓**无调用方**；现行设置只写**档案内嵌 settings**。
+- Compose 侧 settings 页 / live / classAlarm / appUpdate 全从顶层 `loadSettingsJson()` 读。
+- 后果：老用户升级后，**未在 Compose 改过的键静默回退默认值**。
+
+**处置**：两条均在 `app/` 域，**A+B 一次迁移**；裁决见「九、2026-11-04 · 两条升级阻断缺陷裁决」。
+
+**声明口径**：修复后只能声明「**JVM 单测通过 + 四种老盘状态覆盖**」；**未做真实老盘实测**，不得写成「迁移已验证」。
+
+**顺带更正三条旧结论**：
+1. `holidayOverrideEnabled` **不是写死 false**——已双向读写（`MonthHolidaySettings.kt:46` + `LiveSelfCheckHost.kt:376-380`）；旧 backlog 项作废。
+2. `timetableShowCurrentWeekCourses` 是 Dart **只写不读**的遗留键；真正生效的是 `timetableShowNonCurrentWeekCourses`，两侧都读。
+3. `classReminders` **确认整体未移植** → backlog（**通知族 + 课程/日视图 + 设置族**三块，跨域整块缺口，需 Lead 排期）。
