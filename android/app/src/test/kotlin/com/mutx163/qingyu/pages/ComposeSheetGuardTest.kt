@@ -107,12 +107,52 @@ class ComposeSheetGuardTest {
      *
      * `pages/sync` 的弹层同样是常驻组合 + `show` 驱动（备份详情、控制器页、情侣 WebDAV、
      * 情侣课表设置）；条件挂载会让退场动画整棵消失，且编译/单测都看不出来。
-     * 咬合探针：给 `CloudSyncControllerPage.kt:242` 的 `OverlayDialog` 套 `if (false) { ... }`
-     * 必须红，还原后绿（2026-11-03 实际执行过）。
+     *
+     * 2026-11-03 扩容：判据从「只认 `QingyuSheet` / `OverlayDialog`」扩到
+     * `OverlayListPopup` 与裸 `Popup`（见 [SHEET_ENTRY]），后两种写在 `if (show) { }` 里
+     * 之前是漏网的；[弹层判据认得 OverlayListPopup 与裸 Popup] 是这条判据的自检。
+     * 咬合探针（2026-11-03 实际执行过）：给 `CloudSyncControllerPage.kt:242` 的
+     * `OverlayDialog` 套 `if (false) { ... }` 必红；再给 sync 页临时套
+     * `if (false) { OverlayListPopup(...) }` 与 `if (false) { Popup(...) }` 也必红，
+     * 还原后绿。
      */
     @Test
     fun `pages sync 自建弹层必须常驻组合且 show 驱动`() =
         assertPermanentSheetMounts(SYNC_PREFIX, "pages/sync")
+
+    /**
+     * S7/S8 判据自检：弹层入口必须同时认得 `OverlayListPopup` 与裸 `Popup`。
+     *
+     * 2026-11-03 扩容前 `SHEET_ANY` 只有 `QingyuSheet` / `OverlayDialog`，sync 域换成
+     * `OverlayListPopup` 或平台 `Popup` 写在 `if (show) { … }` 里照样全绿——判据会空转。
+     * 这条直接喂样本给 [conditionalSheetMounts]，不依赖仓里有没有真实 popup 调用点。
+     */
+    @Test
+    fun `弹层判据认得 OverlayListPopup 与裸 Popup`() {
+        fun wrapped(entry: String) = conditionalSheetMounts(
+            "if (show) {\n    $entry\n}\n",
+        )
+        assertTrue(
+            "判据漏了 OverlayListPopup",
+            wrapped("OverlayListPopup(items = emptyList())").isNotEmpty(),
+        )
+        assertTrue(
+            "判据漏了裸 Popup",
+            wrapped("Popup(alignment = Alignment.Center) { }").isNotEmpty(),
+        )
+        assertTrue(
+            "单行条件挂载也漏了",
+            conditionalSheetMounts("if (show) OverlayListPopup(items = emptyList())\n").isNotEmpty(),
+        )
+        assertTrue(
+            "`PopupProperties(` 不该被当成弹层（同前缀误伤）",
+            conditionalSheetMounts("if (show) {\n    PopupProperties(focusable = true)\n}\n").isEmpty(),
+        )
+        assertTrue(
+            "常驻组合（show 驱动）不该被误判",
+            conditionalSheetMounts("OverlayListPopup(show = show, items = emptyList())\n").isEmpty(),
+        )
+    }
 
     private fun assertPermanentSheetMounts(prefix: String, label: String) {
         val files = renderFiles().filter { it.contains(prefix) }
@@ -502,12 +542,22 @@ class ComposeSheetGuardTest {
         /** S8：`pages/sync` 与 S7 同等强度。 */
         const val SYNC_PREFIX = "/pages/sync/"
 
-        /** 弹层入口（套件与 miuix 对话框）。 */
-        val SHEET_ANY = Regex("""(?:QingyuSheet|OverlayDialog)\s*\(""")
+        /**
+         * 弹层入口。
+         *
+         * 2026-11-03 扩容：`OverlayListPopup`（miuix 列表弹层，sync 域的「选边 / 操作菜单」
+         * 会用）与**裸 `Popup(`**（平台弹层，S6 之外的兜底——S6 只认全限定名，绕过 import
+         * 的别名/局部符号拦不住）也必须算「弹层调用」。`\b` 保证不会把 `OverlayListPopup(`
+         * 拆成两个命中，也不会误伤 `PopupProperties(`（`\s*\(` 要求紧跟左括号）。
+         */
+        val SHEET_ENTRY = "(?:QingyuSheet|OverlayDialog|OverlayListPopup|\\bPopup)"
+
+        /** 弹层入口（套件 / miuix 对话框 / miuix 列表弹层 / 平台裸 Popup）。 */
+        val SHEET_ANY = Regex("""$SHEET_ENTRY\s*\(""")
 
         /** `if (...) QingyuSheet(...)` 不换行形态。 */
         val SINGLE_LINE_CONDITIONAL_SHEET = Regex(
-            """if\s*\(.*\)\s*(?:QingyuSheet|OverlayDialog)\s*\(""",
+            """if\s*\(.*\)\s*$SHEET_ENTRY\s*\(""",
         )
     }
 }
