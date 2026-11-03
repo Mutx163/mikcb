@@ -369,7 +369,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 
 _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位符 / 语言范围」格式登记）_
 
-1. **已交付**（2026-11-03 19:57）：`backup_restore_commit_failed` / `backup_restore_rollback_failed` —— L3 报的两处哑掉文案。六份 ARB 已同步（zh/en/ja/ko/zh_HK/zh_TW），gen-l10n exit=0，`BackupFileStrings` 补 ArbText 引用（死键新增 0，copy_style 19:57:51 exit=0）。**待 L3 接映射后即可显示。**
+1. **已交付**（2026-11-03 20:06，已按命名惯例纠正）：`backupRestoreCommitFailed` / `backupRestoreRollbackFailed` —— L3 报的两处哑掉文案。六份 ARB 已同步（zh/en/ja/ko/zh_HK/zh_TW），gen-l10n exit=0，`BackupFileStrings` 补 ArbText 引用（死键新增 0，copy_style 20:06:09 exit=0）。**待 L3 接映射后即可显示。**
+   - **映射提示**：`CloudSyncController` 内部错误码仍是下划线式（`"backup_restore_commit_failed"` / `"backup_restore_rollback_failed"`，L3 域，未改），L3 接映射时需**显式**把内部码映射到上述 camelCase ARB 键（两者字面已不一致，不能靠同名匹配）。
 
 ### 10.5 需 Lead（第二班）
 
@@ -392,6 +393,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **2026-11-03 18:49:42 · 门4 copy_style** ✅ exit=0：超宽 **158**（存量冻结 158、新增 0）、死键 1（新增 0）、复述 0。本批 A 线压掉 17 条（详见 10.9）。**注：仍含他线未提交中间态，收工前须在干净树重跑门2+门4。**
 - **2026-11-03 19:43:17→19:45:23 · 门4** ✅ exit=0：copy_style 超宽 **158**（新增 0）、死键 1（新增 0）、复述 0；cjk composeP1 与 main 两源集均 exit=0（23 残余条目含 `WidgetDataModels.kt:1`）。
 - **2026-11-03 19:55:53→19:57:51 · 门4（增键后）** ✅ exit=0：gen-l10n exit=0；copy_style 超宽 **158**（新增 0）、死键 **1**（新增 **0**）、复述 0 —— 两个新键已由 `BackupFileStrings` 引用，未产生新死键。
+- **2026-11-03 20:03:55→20:06:09 · 门4（键改名后）** ✅ exit=0：gen-l10n exit=0；copy_style 超宽 **158**（新增 0）、死键 1（新增 0）、复述 0。
 
 ### 10.8 线收口记录
 
@@ -426,7 +428,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   1. **`LOCATIONS` 预览恒零差异** —— 差异预览**等于失效**：无论实际差异如何都显示「无差异」，用户看不到将要变更的内容（已修）。
   2. **旧 `.mikcb` / `full` 备份通道 4 个永不出错的错误码** —— **死分支**：这些错误码在该通道永远不会触发，属无效防御代码（已识别并处置）。
   3. 其余 2 处：按 Dart 行为对齐（详见 `f67c7e12`）。
-- **本批新键（A 线已交付，待 L3 接映射）**：`backup_restore_commit_failed`（恢复提交失败，已回滚）、`backup_restore_rollback_failed`（恢复失败且回滚失败，请检查存储）。六份 ARB 已同步、gen-l10n 已跑、`BackupFileStrings` 已登记 ArbText 防死键（死键新增 0）。
+- **本批新键（A 线已交付，待 L3 接映射）**：`backupRestoreCommitFailed`（恢复提交失败，已回滚）、`backupRestoreRollbackFailed`（恢复失败且回滚失败，请检查存储）。六份 ARB 已同步、gen-l10n 已跑、`BackupFileStrings` 已登记 ArbText 防死键（死键新增 0）。命名已按惯例纠正为 camelCase（原先误用下划线式，见 10.11 第 3 条）。
 
 #### L2（course/timetable）✅ 已收线（2026-11-03 18:25 协调线回填）
 
@@ -491,4 +493,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 1. **PS 5.1 `[Console]::OutputEncoding` / `Encoding.Default` 是 936（GBK）**。直接 `& scripts/test-kotlin-module.ps1` 会按 GBK 解析 UTF-8 无 BOM 脚本，报 `200:67 缺少 ]`（其实是中文注释/字符串被截断导致括号失衡），**看起来像脚本语法坏了，实际是编码**。
 2. **PS 5.1 写 argfile 会带 BOM**，`kotlinc` 读到 BOM 后把首参数当乱码，报 **`?-cp`**（`kotlinc` 认为 classpath 参数名是 `?`）。
 
-**正确姿势**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）+ 把 kotlinc 放进 PATH**（`scripts/with-kotlinc.ps1` 已封装）。用 PS 5.1 跑 L0 的结论一律不可信。
+3. **文案键命名铁律：一律 camelCase**。全库 3008 个 ARB 键中原本只有 2 个带下划线，就是 A 线误加的那两个。**错误码式下划线命名（如 `backup_restore_commit_failed`）只用于 Kotlin 内部码（`lastErrorCode` 等），不得进 ARB**；接映射时须显式把内部码映射到 camelCase 键，不能靠同名匹配。
+   - **成因与纠正**：Lead 转达 L3 错误码写法时未做命名转换，A 线照抄入 ARB，导致 `backup_restore_commit_failed` / `backup_restore_rollback_failed` 两键命名违规。**已纠正**为 `backupRestoreCommitFailed` / `backupRestoreRollbackFailed`（六份 ARB + `BackupFileStrings` 引用 + gen-l10n 重跑；copy_style 20:06:09 exit=0，超宽 158/死键 1 新增均 0；`CloudSyncController` 内部错误码按上述铁律保留下划线未动）。
+
+**正确姿势（针对坑 1/2）**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）+ 把 kotlinc 放进 PATH**（`scripts/with-kotlinc.ps1` 已封装）。用 PS 5.1 跑 L0 的结论一律不可信。

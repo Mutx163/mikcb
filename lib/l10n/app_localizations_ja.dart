@@ -10284,8 +10284,8 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get backup_restore_commit_failed => '復元に失敗し、ロールバック済み';
+  String get backupRestoreCommitFailed => '復元に失敗し、ロールバック済み';
 
   @override
-  String get backup_restore_rollback_failed => '復元・ロールバック失敗、要確認';
+  String get backupRestoreRollbackFailed => '復元・ロールバック失敗、要確認';
 }

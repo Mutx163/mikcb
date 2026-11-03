@@ -52,11 +52,11 @@ object BackupFileStrings {
 
     /** 恢复提交阶段失败：已回滚到操作前状态（原子化的用户可见结论）。 */
     val backupRestoreCommitFailed =
-        ArbText("backup_restore_commit_failed", "恢复提交失败，已回滚")
+        ArbText("backupRestoreCommitFailed", "恢复提交失败，已回滚")
 
     /** 恢复失败且回滚也失败：本地可能停在半写状态，需用户检查存储。 */
     val backupRestoreRollbackFailed =
-        ArbText("backup_restore_rollback_failed", "恢复失败且回滚失败，请检查存储")
+        ArbText("backupRestoreRollbackFailed", "恢复失败且回滚失败，请检查存储")
 
     /** 所有 ARB 文案清单，用于 [BackupFileStringsParityTest] 机械化逐字对拍。 */
     val allTexts: List<ArbText> by lazy {

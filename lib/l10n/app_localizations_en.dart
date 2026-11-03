@@ -10517,8 +10517,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backup_restore_commit_failed => 'Restore failed; rolled back';
+  String get backupRestoreCommitFailed => 'Restore failed; rolled back';
 
   @override
-  String get backup_restore_rollback_failed => 'Both failed; check storage';
+  String get backupRestoreRollbackFailed => 'Both failed; check storage';
 }

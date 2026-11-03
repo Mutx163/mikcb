@@ -5984,6 +5984,6 @@
   "scheduleQuickPresetHoursOnly": "{hours}시간",
   "scheduleQuickPresetMinutesOnly": "{minutes}분",
   "scheduleQuickPresetHoursMinutes": "{hours}시간 {minutes}분",
-  "backup_restore_commit_failed": "복원 실패, 롤백됨",
-  "backup_restore_rollback_failed": "복원·롤백 실패, 저장소 확인"
+  "backupRestoreCommitFailed": "복원 실패, 롤백됨",
+  "backupRestoreRollbackFailed": "복원·롤백 실패, 저장소 확인"
 }

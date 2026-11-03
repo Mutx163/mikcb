@@ -18255,17 +18255,17 @@ abstract class AppLocalizations {
   /// **'{hours} 小时 {minutes} 分'**
   String scheduleQuickPresetHoursMinutes(int hours, int minutes);
 
-  /// No description provided for @backup_restore_commit_failed.
+  /// No description provided for @backupRestoreCommitFailed.
   ///
   /// In zh, this message translates to:
   /// **'恢复提交失败，已回滚'**
-  String get backup_restore_commit_failed;
+  String get backupRestoreCommitFailed;
 
-  /// No description provided for @backup_restore_rollback_failed.
+  /// No description provided for @backupRestoreRollbackFailed.
   ///
   /// In zh, this message translates to:
   /// **'恢复失败且回滚失败，请检查存储'**
-  String get backup_restore_rollback_failed;
+  String get backupRestoreRollbackFailed;
 }
 
 class _AppLocalizationsDelegate

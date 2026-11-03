@@ -10313,8 +10313,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get backup_restore_commit_failed => '복원 실패, 롤백됨';
+  String get backupRestoreCommitFailed => '복원 실패, 롤백됨';
 
   @override
-  String get backup_restore_rollback_failed => '복원·롤백 실패, 저장소 확인';
+  String get backupRestoreRollbackFailed => '복원·롤백 실패, 저장소 확인';
 }
