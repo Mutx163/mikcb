@@ -51,6 +51,29 @@ object TimetableStrings {
     val deleteFailed = ArbText("deleteFailed", "删除失败")
     val clearFailed = ArbText("clearFailed", "清空失败，课表内容没有变化")
 
+    // ── 课表管理页动作与确认正文（2026-11-03 自 composeP1 渲染层中文常量对象迁入）──
+    // 十条键全部是 ARB 既有键，无新增文案；原来散在 TimetableProfilesStrings 里的
+    // 常量按 ArbText 口径逐字抄录，入 [arbTexts] 清单随 parity 测试对拍。
+    val createAction = ArbText("createAction", "创建")
+    val cancelAction = ArbText("cancelAction", "取消")
+    val renameAction = ArbText("renameAction", "重命名")
+    val clearAction = ArbText("clearAction", "清空")
+    val deleteAction = ArbText("deleteAction", "删除")
+    val moreActionsTooltip = ArbText("moreActionsTooltip", "更多操作")
+    val coupleTimetablePartnerReadOnlyBadge = ArbText("coupleTimetablePartnerReadOnlyBadge", "对方课表 只读")
+    val coupleTimetableTitle = ArbText("coupleTimetableTitle", "情侣课表")
+    val clearCurrentTimetableMessage =
+        ArbText("clearCurrentTimetableMessage", "确定清空 {name} 的全部课程？课表设置将保留")
+    val deleteTimetableMessage = ArbText("deleteTimetableMessage", "确定删除课表 {name}？")
+
+    /** 清空当前课表的确认正文（Dart `l10n.clearCurrentTimetableMessage`）。 */
+    fun formatClearCurrentTimetableMessage(name: String): String =
+        clearCurrentTimetableMessage.filled("name", name)
+
+    /** 删除课表的确认正文（Dart `l10n.deleteTimetableMessage`）。 */
+    fun formatDeleteTimetableMessage(name: String): String =
+        deleteTimetableMessage.filled("name", name)
+
     // ── 周视图导航与网格展示 ──
     val backToCurrentWeekAction = ArbText("backToCurrentWeekAction", "回本周")
     val nonCurrentWeekLabel = ArbText("nonCurrentWeekLabel", "非本周")
@@ -333,6 +356,16 @@ object TimetableStrings {
             saveFailed,
             deleteFailed,
             clearFailed,
+            createAction,
+            cancelAction,
+            renameAction,
+            clearAction,
+            deleteAction,
+            moreActionsTooltip,
+            coupleTimetablePartnerReadOnlyBadge,
+            coupleTimetableTitle,
+            clearCurrentTimetableMessage,
+            deleteTimetableMessage,
             backToCurrentWeekAction,
             nonCurrentWeekLabel,
             currentWeekBullet,

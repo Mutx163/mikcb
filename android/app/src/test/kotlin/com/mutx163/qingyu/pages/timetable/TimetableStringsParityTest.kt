@@ -53,6 +53,12 @@ class TimetableStringsParityTest {
         assertEquals("已重命名为 大四", TimetableStrings.formatRenamedProfile("大四"))
         assertEquals("已删除课表：测试课表", TimetableStrings.formatDeletedProfile("测试课表"))
         assertEquals("已清空课表：旧课表", TimetableStrings.formatClearedProfile("旧课表"))
+        // 课表管理页迁入的两条确认正文（2026-11-03 自渲染层中文常量对象迁入）。
+        assertEquals(
+            "确定清空 大二下 的全部课程？课表设置将保留",
+            TimetableStrings.formatClearCurrentTimetableMessage("大二下"),
+        )
+        assertEquals("确定删除课表 大三上？", TimetableStrings.formatDeleteTimetableMessage("大三上"))
     }
 
     @Test
