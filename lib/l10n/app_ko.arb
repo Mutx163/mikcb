@@ -2033,7 +2033,7 @@
   "quickImportDismissAction": "완료",
   "quickImportRetryAction": "재시도",
   "homePullQuickImportTitle": "홈 당겨서 빠른 가져오기",
-  "homePullQuickImportSubtitle": "홈 시간표를 아래로 당기면 교무 빠른 가져오기를 백그라운드에서 실행합니다",
+  "homePullQuickImportSubtitle": "당기면 빠른 가져오기 자동 실행",
   "longPressEmptySlotToAddTitle": "빈 칸을 길게 눌러 수업 추가",
   "longPressEmptySlotToAddSubtitle": "길게 누른 뒤 점선 +를 탭하여 추가",
   "homePullQuickImportFetchingCourses": "새 수업을 가져오는 중…",

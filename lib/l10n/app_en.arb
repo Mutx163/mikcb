@@ -2248,7 +2248,7 @@
   "quickImportDismissAction": "Done",
   "quickImportRetryAction": "Retry",
   "homePullQuickImportTitle": "Pull to quick-import",
-  "homePullQuickImportSubtitle": "Pull down on the home timetable to run warehouse quick import in the background",
+  "homePullQuickImportSubtitle": "Auto quick-import on pull-down",
   "longPressEmptySlotToAddTitle": "Long-press empty slot to add course",
   "longPressEmptySlotToAddSubtitle": "Long-press a slot, then tap the dashed plus",
   "homePullQuickImportFetchingCourses": "Fetching new courses…",
