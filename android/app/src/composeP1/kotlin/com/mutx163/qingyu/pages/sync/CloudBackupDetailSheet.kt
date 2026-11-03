@@ -1,9 +1,7 @@
 package com.mutx163.qingyu.pages.sync
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +15,6 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -43,7 +40,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 @Composable
 fun CloudBackupDetailSheet(
-    view: CloudBackupDetailView,
+    show: Boolean,
+    view: CloudBackupDetailView?,
     busy: Boolean,
     onDismissRequest: () -> Unit,
     onRestore: () -> Unit,
@@ -51,46 +49,52 @@ fun CloudBackupDetailSheet(
 ) {
     val dark = isSystemInDarkTheme()
 
+    // 弹层常驻组合、show 由宿主驱动（2026-11-03 弹层审计）：`show = true` + 宿主条件挂载
+    // 时，entryId 置空整棵弹层被移出组合，260ms 退场动画一次都不播。
+    // `view` 在退场期间是宿主保留的最后一份非空快照；首次组合（还没打开过）为 null，
+    // 此时 show = false、内容不会被看到。
     QingyuSheet(
-        show = true,
-        title = view.title,
+        show = show,
+        title = view?.title,
         onDismissRequest = onDismissRequest,
         // 内容左右自留 4dp（与页面口径的「16 + 4」一致，正文/按钮都不自带横向内边距），
         // 所以框架侧照旧给 16dp：单边合计 20dp，不是 miuix 默认 24 的 28。
         contentPadsHorizontally = false,
     ) {
+        val current = view ?: return@QingyuSheet
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-            DetailLine(view.deviceLine, dark)
-            DetailLine(view.sourceLine, dark)
-            view.summaryLine?.let { DetailLine(it, dark) }
+            DetailLine(current.deviceLine, dark)
+            DetailLine(current.sourceLine, dark)
+            current.summaryLine?.let { DetailLine(it, dark) }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Row(
+            // 动作区对齐 Dart `showCloudBackupDetailSheet`（cloud_backup_ui_helpers.dart:76-94）：
+            // 整宽竖排、恢复在前（primary）、删除在后（destructive 红底 + onError），间距 12dp。
+            // 原先是半宽并排 Row 且删除在左，与 Dart 的顺序与主次都相反。
+            Button(
+                onClick = onRestore,
+                enabled = !busy,
+                colors = ButtonDefaults.buttonColorsPrimary(),
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 「删除」只在 Dart 给的动作里有才画（当前版本备份不可删，见 buildDetail）。
-                // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
-                // `cloudBackupDeleteTitle`（那句是确认弹框标题「删除此备份」）。
-                if (view.canDelete) {
-                    TextButton(
-                        text = SyncStrings.deleteAction.zh,
-                        onClick = onDelete,
-                        enabled = !busy,
-                        // 删除是破坏性操作：文字按钮只染字色（`textColor`），不是底色。
-                        colors = ButtonDefaults.textButtonColors(
-                            textColor = Color(QingyuTheme.error(dark)),
-                        ),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+                Text(SyncStrings.cloudBackupRestoreAction.zh)
+            }
+            // 「删除」只在 Dart 给的动作里有才画（当前版本备份不可删，见 buildDetail）。
+            // 按钮文字用 Dart 的 `l10n.deleteAction`（通用「删除」），不是
+            // `cloudBackupDeleteTitle`（那句是确认弹框标题「删除此备份」）。
+            if (current.canDelete) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Button(
-                    onClick = onRestore,
+                    onClick = onDelete,
                     enabled = !busy,
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                    modifier = Modifier.weight(1f),
+                    // 删除是破坏性操作：红底 + onError 字（Dart destructive 同口径）。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.error(dark)),
+                        contentColor = Color(QingyuTheme.onError(dark)),
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(SyncStrings.cloudBackupRestoreAction.zh)
+                    Text(SyncStrings.deleteAction.zh)
                 }
             }
         }

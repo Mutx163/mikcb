@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +28,8 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 /**
  * 「连接坚果云情侣课表」弹层（Dart `lib/widgets/couple_webdav_connect_sheet.dart`）。
@@ -45,13 +49,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 应用专用密码框（`obscureText: true`） | `PasswordVisualTransformation()` |
  * | 本机槽位 1 / 2 二选一，选中态为主色 | 两个 `Button`，选中用 `buttonColorsPrimary()`、未选中用 `buttonColors()` |
  * | 槽位说明（`coupleWebdavMySlotHint`） | [CoupleWebdavSheetTexts.slotHint] |
- * | 底部「测试连接」(次要) + 「连接并拉取」(主色) | 同排两个 `Button`，各 `weight(1f)`；前者 `buttonColors()`、后者 `buttonColorsPrimary()` |
+ * | 底部「测试连接」(次要) + 「连接并拉取」(主色)，`PickerSheetScaffold` actions 槽固定在弹层底部 | 同排两个 `Button`，各 `weight(1f)`、固定在滚动字段区之下；前者 `buttonColors()`、后者 `buttonColorsPrimary()` |
  * | 账号或密码为空 / 正在忙 → 两个按钮都不可点 | `credentialsFilled && !busy` |
  *
  * 弹层内部只剩「输入框里现在是什么」这一类 UI 态；网络与落盘都在宿主侧。
  */
 @Composable
 fun CoupleWebdavConnectSheet(
+    show: Boolean,
     texts: CoupleWebdavSheetTexts,
     initialUsername: String,
     initialSlot: Int,
@@ -70,71 +75,95 @@ fun CoupleWebdavConnectSheet(
     val credentialsFilled = username.trim().isNotEmpty() && password.isNotEmpty()
     val busy = testing || connecting
 
+    // 弹层常驻组合、show 由宿主驱动（2026-11-03 弹层审计）：宿主原先
+    // `if (showConnectSheet) { …(show = true) }` 条件挂载，关闭时 260ms 退场动画一次不播。
     QingyuSheet(
-        show = true,
+        show = show,
         title = texts.title,
         onDismissRequest = onDismissRequest,
         // 同 [CloudBackupDetailSheet]：内容自留 4dp，框架侧仍给 16dp（合计 20dp，对齐页面口径）。
         contentPadsHorizontally = false,
+        // 字段区自己滚（矮屏/键盘弹起时先收缩、内部滚动），
+        // 「测试连接 / 连接并拉取」固定在弹层底部——Dart `PickerSheetScaffold` 的 actions 槽同位
+        //（原先动作行混在可滚内容里，键盘弹出时主按钮可能被推出可视区，弹层审计 #337）。
+        contentScrolls = true,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-            Text(
-                text = texts.subtitle,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            TextField(
-                value = username,
-                onValueChange = { username = it },
-                label = texts.usernameLabel,
-                useLabelAsPlaceholder = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                label = texts.passwordLabel,
-                useLabelAsPlaceholder = true,
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = texts.slotLabel,
-                style = MiuixTheme.textStyles.body2,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 字段区惰性列表（样式守卫 R2：主滚动必须 LazyColumn，不用 Column+verticalScroll）：
+            // 矮屏/键盘弹起时先收缩（weight fill=false）、内部滚动，动作行固定在弹层底部。
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .scrollEndHaptic()
+                    .overScrollVertical()
+                    .padding(horizontal = 4.dp),
             ) {
-                SlotButton(
-                    label = texts.slotOne,
-                    selected = slot == 1,
-                    enabled = !busy,
-                    onClick = { slot = 1 },
-                    modifier = Modifier.weight(1f),
-                )
-                SlotButton(
-                    label = texts.slotTwo,
-                    selected = slot == 2,
-                    enabled = !busy,
-                    onClick = { slot = 2 },
-                    modifier = Modifier.weight(1f),
-                )
+                item(key = "fields") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = texts.subtitle,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = texts.usernameLabel,
+                            useLabelAsPlaceholder = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = texts.passwordLabel,
+                            useLabelAsPlaceholder = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = texts.slotLabel,
+                            style = MiuixTheme.textStyles.body2,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            SlotButton(
+                                label = texts.slotOne,
+                                selected = slot == 1,
+                                enabled = !busy,
+                                onClick = { slot = 1 },
+                                modifier = Modifier.weight(1f),
+                            )
+                            SlotButton(
+                                label = texts.slotTwo,
+                                selected = slot == 2,
+                                enabled = !busy,
+                                onClick = { slot = 2 },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = texts.slotHint,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = Color(QingyuTheme.secondaryText(dark)),
+                        )
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = texts.slotHint,
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color(QingyuTheme.secondaryText(dark)),
-            )
             Spacer(modifier = Modifier.height(16.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // 次要：先测连接（不落盘）。
@@ -164,6 +193,9 @@ fun CoupleWebdavConnectSheet(
                     Text(text = texts.confirmLabel)
                 }
             }
+            // S2：底部让位（系统手势区 + 16dp 呼吸）垫在**固定动作行之下**：
+            // 垫进滚动区会在按钮上方造出一截永远空着的板（套件 KDoc「两种布局」口径）。
+            Spacer(modifier = Modifier.height(bottomInset))
         }
     }
 }

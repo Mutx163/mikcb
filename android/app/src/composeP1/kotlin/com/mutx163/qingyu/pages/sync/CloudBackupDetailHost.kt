@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.theme.QingyuTheme
@@ -73,10 +74,6 @@ fun CloudBackupDetailHost(
     entryId: String?,
     onDismiss: () -> Unit,
 ) {
-    if (entryId == null) return
-
-    val entry = controller.backupEntry(entryId) ?: return
-    val view = remember(entry, controller.revision) { CloudBackupListLogic.buildDetail(entry) }
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -88,14 +85,32 @@ fun CloudBackupDetailHost(
     var showRestoreConfirm by remember { mutableStateOf(false) }
     var restoreDiff by remember { mutableStateOf<RestoreDiffSummary?>(null) }
 
+    // 弹层常驻组合（2026-11-03 弹层审计）：entryId 置空时**不再整棵摘除**宿主，
+    // 详情弹层与两个确认框的 260ms 退场动画才能播完。宿主原先 `if (entryId == null) return`
+    // + 两个 `if (confirm*) { OverlayDialog(show = true) }`，关闭时全部无退场。
+    val detailView = remember(entryId, controller.revision) {
+        entryId?.let { id -> controller.backupEntry(id)?.let(CloudBackupListLogic::buildDetail) }
+    }
+    val shownView = rememberLastNonNull(detailView)
+    val deleteMessage = remember(entryId, controller.revision) {
+        entryId?.let { id -> controller.backupEntry(id) }?.let(CloudBackupListLogic::deleteConfirmMessage)
+    }
+    val shownDeleteMessage = rememberLastNonNull(deleteMessage)
+    // 恢复确认正文里的备份时间：同口径保留最后一份非空（退场期间不闪空）。
+    val restoreBodyTime = remember(entryId, controller.revision) {
+        entryId?.let { id -> controller.backupEntry(id) }?.let(CloudBackupListLogic::formatEntryTime)
+    }
+    val shownRestoreTime = rememberLastNonNull(restoreBodyTime)
+
     fun toast(toast: SyncToast) {
         Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
     }
 
     fun restore() {
+        val id = entryId ?: return
         busy = true
         scope.launch {
-            val prepared = withContext(Dispatchers.IO) { controller.prepareRestore(entryId) }
+            val prepared = withContext(Dispatchers.IO) { controller.prepareRestore(id) }
             busy = false
             when (prepared) {
                 is RestorePrepareOutcome.Ready -> {
@@ -119,6 +134,7 @@ fun CloudBackupDetailHost(
     }
 
     fun applyRestore() {
+        val id = entryId ?: return
         busy = true
         scope.launch {
             val kind = withContext(Dispatchers.IO) { controller.confirmPreparedRestore() }
@@ -130,7 +146,8 @@ fun CloudBackupDetailHost(
     }
 
     CloudBackupDetailSheet(
-        view = view,
+        show = detailView != null,
+        view = shownView,
         busy = busy,
         onDismissRequest = { if (!busy) onDismiss() },
         // 恢复是**整份覆盖**且会丢本地未同步修改：先下载算概要，确认框里看过影响面再写回。
@@ -145,13 +162,13 @@ fun CloudBackupDetailHost(
         onDismissRequest = { if (!busy) cancelRestoreConfirm() },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // 短确认句居中（Dart 对话框 message 同口径）；下面的差异概要是清单，保持左对齐。
             Text(
-                text = SyncStrings.cloudBackupRestoreBody.filled(
-                    "time",
-                    CloudBackupListLogic.formatEntryTime(entry),
-                ),
+                text = SyncStrings.cloudBackupRestoreBody.filled("time", shownRestoreTime.orEmpty()),
                 style = MiuixTheme.textStyles.body2,
                 color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
             )
             // 差异概要（prepare 成功必有值；null 只出现在退场/隐藏期，不渲染）。
             restoreDiff?.let { diff ->
@@ -191,53 +208,64 @@ fun CloudBackupDetailHost(
         }
     }
 
-    if (confirmDelete) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = SyncStrings.cloudBackupDeleteTitle.zh,
-            onDismissRequest = { confirmDelete = false },
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = CloudBackupListLogic.deleteConfirmMessage(entry),
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
+    // 删除确认框同样常驻：`show` 由 confirmDelete 驱动，退场期间用 shownDeleteMessage
+    // 继续渲染（原先是 `if (confirmDelete) { OverlayDialog(show = true) }` 条件挂载）。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = confirmDelete,
+        title = SyncStrings.cloudBackupDeleteTitle.zh,
+        onDismissRequest = { confirmDelete = false },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = shownDeleteMessage.orEmpty(),
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    text = SyncStrings.cancelAction.zh,
+                    onClick = { confirmDelete = false },
+                    enabled = !busy,
+                    colors = ButtonDefaults.textButtonColors(),
+                    modifier = Modifier.weight(1f),
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                Button(
+                    onClick = {
+                        confirmDelete = false
+                        val id = entryId ?: return@Button
+                        busy = true
+                        scope.launch {
+                            val kind = withContext(Dispatchers.IO) { controller.deleteBackup(id) }
+                            busy = false
+                            toast(SyncResultToasts.forDeleteBackup(kind, controller.lastErrorCode))
+                            onDismiss()
+                        }
+                    },
+                    enabled = !busy,
+                    // 删除备份是破坏性操作：红底 + onError 字。
+                    colors = ButtonDefaults.buttonColors(
+                        color = Color(QingyuTheme.error(dark)),
+                        contentColor = Color(QingyuTheme.onError(dark)),
+                    ),
+                    modifier = Modifier.weight(1f),
                 ) {
-                    TextButton(
-                        text = SyncStrings.cancelAction.zh,
-                        onClick = { confirmDelete = false },
-                        enabled = !busy,
-                        colors = ButtonDefaults.textButtonColors(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Button(
-                        onClick = {
-                            confirmDelete = false
-                            busy = true
-                            scope.launch {
-                                val kind = withContext(Dispatchers.IO) { controller.deleteBackup(entryId) }
-                                busy = false
-                                toast(SyncResultToasts.forDeleteBackup(kind, controller.lastErrorCode))
-                                onDismiss()
-                            }
-                        },
-                        enabled = !busy,
-                        // 删除备份是破坏性操作：红底 + onError 字。
-                        colors = ButtonDefaults.buttonColors(
-                            color = Color(QingyuTheme.error(dark)),
-                            contentColor = Color(QingyuTheme.onError(dark)),
-                        ),
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(SyncStrings.deleteAction.zh)
-                    }
+                    Text(SyncStrings.deleteAction.zh)
                 }
             }
         }
     }
+}
+
+/** 保留最后一次非空值：退场动画期间用它继续渲染（同 TimeSchemeHost 的同名私有件）。 */
+@Composable
+private fun <T : Any> rememberLastNonNull(current: T?): T? {
+    var last by remember { mutableStateOf<T?>(null) }
+    if (current != null) last = current
+    return last
 }

@@ -258,37 +258,40 @@ fun CoupleTimetableSettingsPage(
         }
     }
 
-    if (showUnlinkConfirm) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = viewState.unlinkConfirmTitle,
-            summary = viewState.unlinkConfirmMessage,
-            onDismissRequest = { showUnlinkConfirm = false },
+    // 解绑确认框常驻组合、show 由状态驱动（2026-11-03 弹层审计）：
+    // 原先 `if (showUnlinkConfirm) { OverlayDialog(show = true) }` 条件挂载，退场动画永不播；
+    // 标题/正文来自 viewState（页面级状态，非空），退场期间不会闪空。
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showUnlinkConfirm,
+        title = viewState.unlinkConfirmTitle,
+        summary = viewState.unlinkConfirmMessage,
+        onDismissRequest = { showUnlinkConfirm = false },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            Button(
+                onClick = { showUnlinkConfirm = false },
+                modifier = Modifier.weight(1f),
             ) {
-                Button(
-                    onClick = { showUnlinkConfirm = false },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = viewState.unlinkConfirmCancelLabel)
-                }
-                Button(
-                    onClick = {
-                        showUnlinkConfirm = false
-                        onAction(CoupleTimetableSettingsLogic.COUPLE_UNLINK)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        color = Color(QingyuTheme.error(dark)),
-                        contentColor = Color(QingyuTheme.onError(dark)),
-                    ),
-                ) {
-                    Text(text = viewState.unlinkConfirmActionLabel)
-                }
+                Text(text = viewState.unlinkConfirmCancelLabel)
+            }
+            Button(
+                onClick = {
+                    showUnlinkConfirm = false
+                    onAction(CoupleTimetableSettingsLogic.COUPLE_UNLINK)
+                },
+                modifier = Modifier.weight(1f),
+                // 实心红是有意的语义强化（Dart 同按钮是 primary 主色，见拍板 #6）：
+                // 解绑会直接删掉对方课表的本地绑定，红底比主色更能拦住误触。
+                colors = ButtonDefaults.buttonColors(
+                    color = Color(QingyuTheme.error(dark)),
+                    contentColor = Color(QingyuTheme.onError(dark)),
+                ),
+            ) {
+                Text(text = viewState.unlinkConfirmActionLabel)
             }
         }
     }

@@ -225,45 +225,46 @@ fun CoupleTimetableSettingsHost(
         }
     }
 
-    if (showConnectSheet) {
-        CoupleWebdavConnectSheet(
-            texts = viewState.webdavSheetTexts,
-            initialUsername = config.username,
-            initialSlot = config.normalizedMySlot,
-            testing = sheetTesting,
-            connecting = sheetConnecting,
-            onDismissRequest = { showConnectSheet = false },
-            onTest = { username, password ->
-                scope.launch {
-                    sheetTesting = true
-                    val ok = withContext(Dispatchers.IO) {
-                        controller.testConnection(username, password)
-                    }
-                    sheetTesting = false
-                    notify(
-                        if (ok) {
-                            viewState.webdavSheetTexts.testSuccess
-                        } else {
-                            viewState.webdavSheetTexts.testFailed
-                        },
-                    )
+    // 弹层常驻组合（2026-11-03 弹层审计）：`show` 由 showConnectSheet 驱动，
+    // 原先 `if (showConnectSheet)` 条件挂载会让关闭时的 260ms 退场动画一次不播。
+    CoupleWebdavConnectSheet(
+        show = showConnectSheet,
+        texts = viewState.webdavSheetTexts,
+        initialUsername = config.username,
+        initialSlot = config.normalizedMySlot,
+        testing = sheetTesting,
+        connecting = sheetConnecting,
+        onDismissRequest = { showConnectSheet = false },
+        onTest = { username, password ->
+            scope.launch {
+                sheetTesting = true
+                val ok = withContext(Dispatchers.IO) {
+                    controller.testConnection(username, password)
                 }
-            },
-            onConfirm = { username, password, mySlot ->
-                scope.launch {
-                    sheetConnecting = true
-                    val outcome = withContext(Dispatchers.IO) {
-                        controller.connect(username, password, mySlot)
-                    }
-                    sheetConnecting = false
-                    if (outcome.ok) {
-                        showConnectSheet = false
-                        outcome.pullToast?.let { notify(it.message) }
+                sheetTesting = false
+                notify(
+                    if (ok) {
+                        viewState.webdavSheetTexts.testSuccess
                     } else {
-                        notify(viewState.webdavSheetTexts.testFailed)
-                    }
+                        viewState.webdavSheetTexts.testFailed
+                    },
+                )
+            }
+        },
+        onConfirm = { username, password, mySlot ->
+            scope.launch {
+                sheetConnecting = true
+                val outcome = withContext(Dispatchers.IO) {
+                    controller.connect(username, password, mySlot)
                 }
-            },
-        )
-    }
+                sheetConnecting = false
+                if (outcome.ok) {
+                    showConnectSheet = false
+                    outcome.pullToast?.let { notify(it.message) }
+                } else {
+                    notify(viewState.webdavSheetTexts.testFailed)
+                }
+            }
+        },
+    )
 }
