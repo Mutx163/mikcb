@@ -121,10 +121,9 @@ class StatisticsSessionModelTest {
 
     // ── 3b. 提醒数据拿不到时不画那一行（审核 misc-wiring P1-4 的回归网）──
     //
-    // Kotlin 侧 `core/TimetableSettings` 至今没有 `classReminders` 字段，所以
-    // `stats.reminderSessions` 恒为 0：照旧画第三行等于在屏上写「提醒 0/N」——
-    // 用户会以为「我一节课都没设提醒」，而真相是这份数据还没接。
-    // 拿不到就不画（宁缺勿假）。下面三条把「画/不画」两个方向都钉住，
+    // 数据源已接（`core/TimetableSettings.classReminders`，见 `StatisticsFeed`），
+    // 生产路径恒传 true；本组用例钉的是「万一将来某个调用方真的拿不到数据」时
+    // 不许拿「提醒 0/N」冒充真实读数。满数据/缺数据两个方向都钉住，
     // 免得以后有人为了「三行才对」把假读数加回来。
 
     @Test

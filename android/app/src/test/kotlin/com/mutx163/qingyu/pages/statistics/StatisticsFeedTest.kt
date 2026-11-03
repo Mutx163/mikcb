@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.statistics
 
 import com.mutx163.qingyu.app.TimetableSnapshot
+import com.mutx163.qingyu.core.ClassReminderEntry
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseNature
 import com.mutx163.qingyu.core.CourseSessionPhase
@@ -555,6 +556,7 @@ class StatisticsFeedTest {
         semesterStartEpochDay: Long? = SEMESTER_START.toEpochDay(),
         profiles: List<TimetableProfile> = emptyList(),
         activeProfileId: String? = null,
+        classReminders: List<ClassReminderEntry> = emptyList(),
     ): TimetableSnapshot = TimetableSnapshot(
         profiles = profiles,
         activeProfileId = activeProfileId,
@@ -562,6 +564,7 @@ class StatisticsFeedTest {
         settings = TimetableSettings(
             semesterWeekCount = semesterWeekCount,
             semesterStartDate = settingsStartDate?.atStartOfDay(),
+            classReminders = classReminders,
         ),
         currentWeek = currentWeek,
         semesterStartEpochDay = semesterStartEpochDay,
@@ -578,15 +581,58 @@ class StatisticsFeedTest {
         selectedWeek = selectedWeek,
     )
 
-    // ── 9b. 提醒数据拿不到就不画那一行（审核 misc-wiring P1-4 的回归网）──
+    // ── 9b. 提醒数据源（审核 misc-wiring P1-4 的收尾）──
     //
-    // Kotlin 侧 `core/TimetableSettings` 至今没有 `classReminders` 字段，所以
-    // `stats.reminderSessions` 恒为 0。照旧画第三行等于在屏上写「提醒 0/N」：
-    // 用户会以为「我一节课都没设提醒」，而真相是这份数据还没接。
-    // 拿不到就不画（宁缺勿假）；壳将来传了真键集，三行自动回来。
+    // 数据源是 `core/TimetableSettings.classReminders`（随仓储快照进来）。
+    // 之前 Kotlin 侧没有这个字段，覆盖行只能整行隐藏（宁缺勿假）；现在字段已补，
+    // 「设过提醒」必须读真条目：空表 = 真的没设过（照画 0/N），有条目 = 真的计数。
+    // 咬合探针打在这里：把 feed 的默认键集改回 `emptySet()`，下面第二条立刻红。
 
     @Test
-    fun `壳没传提醒键时覆盖卡只有两行`() {
+    fun `覆盖卡的设过提醒读快照里的真实条目`() {
+        val course = course(id = "c1", name = "线性代数")
+        val snap = snapshot(
+            courses = listOf(course),
+            profiles = listOf(profileFixture(id = "p1", name = "课表 1", courses = listOf(course))),
+            activeProfileId = "p1",
+            // 2026-10-14（第 6 周周三）是这门课的一次真实课次。
+            classReminders = listOf(
+                ClassReminderEntry(courseId = "c1", date = "2026-10-14", minuteOfDay = 470),
+            ),
+        )
+        val input = StatisticsFeed.Input.fromSnapshot(snap)
+
+        assertEquals(
+            "快照里的提醒键必须原样换装",
+            setOf("c1|2026-10-14"),
+            input.reminderKeys,
+        )
+        val session = StatisticsFeed.feed(input = input, now = NOW).session
+        assertEquals("数据源已接，覆盖卡必须三行", 3, session.coverageRows.size)
+        assertEquals("设过提醒", session.coverageRows[2].label)
+        assertEquals(1, session.coverageRows[2].count)
+    }
+
+    @Test
+    fun `没设过提醒时照画 0 而不是整行消失`() {
+        val course = course(id = "c1", name = "线性代数")
+        val snap = snapshot(
+            courses = listOf(course),
+            profiles = listOf(profileFixture(id = "p1", name = "课表 1", courses = listOf(course))),
+            activeProfileId = "p1",
+        )
+        val session = StatisticsFeed.feed(
+            input = StatisticsFeed.Input.fromSnapshot(snap),
+            now = NOW,
+        ).session
+
+        assertEquals("空表是「真的没设过」，不是「拿不到」", 3, session.coverageRows.size)
+        assertEquals("设过提醒", session.coverageRows[2].label)
+        assertEquals(0, session.coverageRows[2].count)
+    }
+
+    @Test
+    fun `调用方仍可显式换一份提醒键集`() {
         val course = course(id = "c1", name = "线性代数")
         val snap = snapshot(
             courses = listOf(course),
@@ -595,22 +641,13 @@ class StatisticsFeedTest {
         )
         val input = StatisticsFeed.Input.fromSnapshot(snap)
 
-        val byDefault = StatisticsFeed.feed(input = input, now = NOW)
-        assertEquals(
-            "默认（拿不到提醒数据）不应画「设过提醒」那一行",
-            2,
-            byDefault.session.coverageRows.size,
-        )
-
-        val withKeys = StatisticsFeed.feed(
+        val session = StatisticsFeed.feed(
             input = input,
             now = NOW,
-            reminderKeys = setOf("c1|2026-09-16"),
-        )
-        assertEquals(
-            "传入真键集后应恢复三行",
-            3,
-            withKeys.session.coverageRows.size,
-        )
+            reminderKeys = setOf("c1|2026-10-14"),
+        ).session
+
+        assertEquals(3, session.coverageRows.size)
+        assertEquals(1, session.coverageRows[2].count)
     }
 }

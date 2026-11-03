@@ -104,12 +104,9 @@ object StatisticsSessionModel {
      * 分母固定为**全部课次**（含停课与假期），见类注释里那条「3/1」的坑。
      *
      * @param reminderDataAvailable 「单节课提醒」这份数据到底拿不拿得到。
-     *   2026-10-29 修（审核 misc-wiring P1-4）：Kotlin 侧 `core/TimetableSettings` 至今
-     *   **没有** `classReminders` 字段（`grep -rn classReminders` 全仓只命中
-     *   `StatisticsFeed` 的一句注释），所以 `stats.reminderSessions` 恒为 0。
-     *   照旧画第三行等于在屏上写「提醒 0/N」——用户会以为「我一节课都没设提醒」，
-     *   而真相是**我们还没接这份数据**。拿不到就**不画这一行**（宁缺勿假），
-     *   等设置族把字段移植过来、由 [viewState] 传入真键集后自动恢复。
+     *   数据源在 `core/TimetableSettings.classReminders`（2026-11-02 已接），
+     *   [StatisticsFeed] 恒传真键集 ⇒ 这里恒为 true；参数保留只为让「拿不到数据」
+     *   的调用方（如将来某个离线快照）显式隐藏第三行，而不是画一个恒 0 的假读数。
      */
     fun coverageRows(
         stats: CourseSessionStats,

@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.statistics
 
 import com.mutx163.qingyu.app.TimetableRepository
 import com.mutx163.qingyu.app.TimetableSnapshot
+import com.mutx163.qingyu.core.ClassReminderLogic
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.CourseSession
 import com.mutx163.qingyu.core.CourseSessionStatsCalculator
@@ -58,7 +59,7 @@ import java.time.LocalDateTime
  *
  * | 能力 | 现状 | 影响 |
  * |---|---|---|
- * | 单节课提醒（`classReminders`） | 快照**不含**该键（属设置族/通知族，尚未接） | [sessionViewState] 的「设过提醒」计数恒 0；需要时由调用方注入 [sessionViewState] 的 `reminderKeys` |
+ * | 单节课提醒（`classReminders`） | **已接**：`core/TimetableSettings.classReminders` 随快照进来，[Input.reminderKeys] 直接给出真键集 | 明细页「设过提醒」按真实条目计数；空表 = 真的没设过（不再隐藏那一行） |
  * | 节假日（`isHoliday`） | 快照不含节假日表 | 课次不会出现 `HOLIDAY` 阶段；可由调用方注入 `isHoliday` |
  * | 生效作息（`timeSchemes`）解析出的真实钟点 | 快照带 `timeSchemes`，但课次统计按课程自带的 `startTime/endTime` | 与已交付的 `CourseStatisticsLogic` 同口径，不在这里另起一套解析 |
  * | 学期起始日 | 优先用 `semesterStartEpochDay`（天序，跨时区不挪天），缺失才回落 `settings.semesterStartDate` | 未设时统计页走「按周估算」分支，单节课明细页出现 ARB 提示 |
@@ -110,6 +111,14 @@ object StatisticsFeed {
 
         /** 同一门课的多个上课时段（顺序 = 课程在快照里的出现顺序）。 */
         val courseGroups: List<CourseGroup> get() = groupByCourseName(courses)
+
+        /**
+         * 已设的单节课提醒键集合（格式 `courseId|yyyy-MM-dd`）。
+         *
+         * **真源**：[settings]、即 `core/TimetableSettings.classReminders`（随仓储快照进来）。
+         * 空集 = 用户真的没设过提醒，不是「数据拿不到」——两者在屏上的含义完全不同。
+         */
+        val reminderKeys: Set<String> get() = ClassReminderLogic.keysOf(settings.classReminders)
 
         /** 收敛后的当前周次：`< 1` 归 1，`> semesterWeekCount` 归总周数。 */
         val settledCurrentWeek: Int
@@ -204,11 +213,10 @@ object StatisticsFeed {
      * @param previousSelection 上次选中的课名；被删了自动回落第一门
      *   （收敛逻辑在 [StatisticsSessionModel.resolveSelection]，这里不另写一份）。
      * @param now 注入时钟（「已过 / 今天 / 未到」的唯一判据来源）。
-     * @param reminderKeys 已设置的单节课提醒键，格式 `courseId|yyyy-MM-dd`。
-     *   **`null` = 拿不到这份数据**（Kotlin 侧 `core/TimetableSettings` 至今没有
-     *   `classReminders` 字段），此时覆盖卡**不画「设过提醒」那一行**，
-     *   而不是画一个恒 0 的假读数（审核 misc-wiring P1-4）。
-     *   将来设置/通知族把字段移植过来后，由调用方传真键集即可，本类形状不用改。
+     * @param reminderKeys 覆盖用的提醒键集合，格式 `courseId|yyyy-MM-dd`；`null` = 用
+     *   [Input.reminderKeys]（快照里的真实 `classReminders`）。**数据源已接通**，
+     *   空集是「真的没设过」，覆盖行照常画出来（不再因为「拿不到」而整行隐藏）；
+     *   保留该参数只为让调用方能显式换一份键集（测试 / 离线导入）。
      * @param isHoliday 节假日判定；快照不含节假日表，默认不判。
      */
     fun sessionViewState(
@@ -220,6 +228,7 @@ object StatisticsFeed {
     ): StatisticsSessionViewState {
         val groups = input.courseGroups
         val coursesByName = groups.associateBy { it.name }
+        val effectiveReminderKeys = reminderKeys ?: input.reminderKeys
         return StatisticsSessionModel.viewState(
             courseNames = groups.map { it.name },
             previousSelection = previousSelection,
@@ -233,12 +242,12 @@ object StatisticsFeed {
                         exams = input.exams,
                         now = now,
                         isHoliday = isHoliday,
-                        reminderKeys = reminderKeys ?: emptySet(),
+                        reminderKeys = effectiveReminderKeys,
                     )
                 }
             },
             dateTextOf = ::sessionDateText,
-            reminderDataAvailable = reminderKeys != null,
+            reminderDataAvailable = true,
         )
     }
 
@@ -275,7 +284,7 @@ object StatisticsFeed {
      *
      * 两份状态必须来自**同一份输入**，否则「主页说 3 门课、明细页只有一个可选」
      * 这类不一致会天天出现（它们以前各自被喂一份写死常量，正是这个病）。
-     * @param reminderKeys 见 [sessionViewState]：`null` = 拿不到提醒数据（不画那一行假读数）。
+     * @param reminderKeys 见 [sessionViewState]：`null` = 用快照里的真实 `classReminders`。
      */
     fun feed(
         input: Input,
