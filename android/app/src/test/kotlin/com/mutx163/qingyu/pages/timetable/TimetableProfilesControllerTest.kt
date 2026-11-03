@@ -11,6 +11,7 @@ import com.mutx163.qingyu.core.SectionTime
 import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableProfileKind
+import com.mutx163.qingyu.core.TimetableSettings
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -91,6 +92,61 @@ class TimetableProfilesControllerTest {
             listOf(SectionTime("09:00", "09:45"), SectionTime("09:55", "10:40")),
             created.settings.sections,
         )
+    }
+
+    // ============ 新建档的作息模板兜底（Dart `_buildDefaultSettingsForNewProfile` :1787-1798） ============
+
+    @Test
+    fun `新建档时生效作息 id 有效 就用那一份 而不是第一份`() {
+        val first = scheme("ts1", "08:00")
+        val second = scheme("ts2", "09:00")
+        val f = fixture(
+            profiles = listOf(profile("p1")),
+            activeId = "p1",
+            schemes = listOf(first, second),
+            settings = TimetableSettings.defaults().copy(activeTimeSchemeId = "ts2"),
+        )
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t0 })
+
+        controller.createProfile("新课表")
+
+        val created = f.repo.snapshot.profiles.first { it.id == "p2" }
+        assertEquals("有效 id 必须用它，不能被 first 覆盖", "ts2", created.settings.activeTimeSchemeId)
+        assertEquals(second.sections, created.settings.sections)
+    }
+
+    @Test
+    fun `新建档时生效作息 id 失效 回落第一份方案`() {
+        // Dart `activeTimeScheme`（timetable_provider.dart:612-613）按 id 查，查不到为 null；
+        // `_buildDefaultSettingsForNewProfile` 再显式回落 `_timeSchemes.first`（:1787-1798）。
+        val first = scheme("ts1", "08:00")
+        val second = scheme("ts2", "09:00")
+        val f = fixture(
+            profiles = listOf(profile("p1")),
+            activeId = "p1",
+            schemes = listOf(first, second),
+            settings = TimetableSettings.defaults().copy(activeTimeSchemeId = "gone"),
+        )
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t0 })
+
+        controller.createProfile("新课表")
+
+        val created = f.repo.snapshot.profiles.first { it.id == "p2" }
+        assertEquals("ts1", created.settings.activeTimeSchemeId)
+        assertEquals(first.sections, created.settings.sections)
+    }
+
+    @Test
+    fun `没有任何作息方案时新建档用默认设置`() {
+        val f = fixture(profiles = listOf(profile("p1")), activeId = "p1")
+        val controller = TimetableProfilesController(f.repo, idFactory = { "p2" }, clock = { t0 })
+
+        controller.createProfile("新课表")
+
+        val base = TimetableSettings.defaults()
+        val created = f.repo.snapshot.profiles.first { it.id == "p2" }
+        assertEquals(base.activeTimeSchemeId, created.settings.activeTimeSchemeId)
+        assertEquals(base.sections, created.settings.sections)
     }
 
     // ============ 切换（含「首页数据跟着变」契约） ============
@@ -489,14 +545,24 @@ class TimetableProfilesControllerTest {
         profiles: List<TimetableProfile>,
         activeId: String? = profiles.firstOrNull()?.id,
         schemes: List<TimeScheme> = emptyList(),
+        settings: TimetableSettings? = null,
     ): Fixture {
         val raw = InMemoryKeyValueStore()
         val store = TimetableStore(raw)
         if (profiles.isNotEmpty()) store.saveProfiles(profiles)
         store.saveActiveProfileId(activeId)
+        settings?.let { store.saveSettings(it) }
         if (schemes.isNotEmpty()) store.saveTimeSchemes(schemes)
         return Fixture(raw, store, TimetableRepository(store))
     }
+
+    private fun scheme(id: String, startTime: String) = TimeScheme(
+        id = id,
+        name = "作息-$id",
+        sections = listOf(SectionTime(startTime, "09:45"), SectionTime("09:55", "10:40")),
+        createdAt = t0,
+        updatedAt = t0,
+    )
 
     private fun course(id: String, name: String = "数学") = Course(
         id = id,
