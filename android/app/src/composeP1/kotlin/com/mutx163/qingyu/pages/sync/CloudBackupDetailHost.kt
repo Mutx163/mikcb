@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 云端备份「详情 → 恢复 / 删除」的**宿主**（2026-10-30 F12 新增）。
+ * 云端备份「详情 → 差异概要 → 恢复 / 删除」的**宿主**（2026-10-30 F12 新增）。
  *
  * ## 它替掉了什么
  *
@@ -44,15 +44,24 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * | 层 | 负责 |
  * |---|---|
  * | `CloudBackupListLogic`（纯逻辑，有单测） | 三行详情文案、删除确认文案、动作集合 |
+ * | `RestoreDiffLogic` + `RestoreDiffStrings`（纯逻辑，有单测） | 差异概要计数与概要行文案 |
  * | `SyncResultToasts`（纯逻辑，有单测） | 结果 → 提示文案（成功/失败/是否刷新列表） |
- * | 本文件 | 弹层编排：sheet → 确认框 → 调控制器 → 弹提示 |
+ * | 本文件 | 弹层编排：sheet → 预览下载 → 确认框（带概要）→ 调控制器 → 弹提示 |
+ *
+ * ## 恢复是两步（2026-11-03 起带差异预览）
+ *
+ * 点「恢复」先走 [CloudSyncController.prepareRestore]：下载远端快照、校验、与当前
+ * 本机算「将新增 X、覆盖 Y、删除 Z」概要——**零副作用**，用户没确认前任何一端都不动。
+ * 确认框里给出概要后，点「恢复」才走 [CloudSyncController.confirmPreparedRestore]
+ * 应用（预览的字节就是应用的字节，不存在二次下载被并发换掉）；取消即
+ * [CloudSyncController.discardPreparedRestore] 丢弃。恢复是整份覆盖，这一眼概要
+ * 是用户确认前唯一的影响面说明。
  *
  * ## 诚实边界
  *
- * - 恢复走 `controller.openBackup`：**强制以远端为准**下载并落盘（Dart `KEEP_REMOTE`），
- *   没有 Dart 那套「先预览差异、再选合并/覆盖」的二次确认——那需要传输包预览，
- *   归 `f.*` 的传输族（本批不动）。这里的确认只有「点哪个备份」这一次。
- * - 恢复成功后列表会由控制器自己刷新（`openBackup` 内部 `refreshBackups`）。
+ * - 恢复走两步入口：**强制以远端为准**（Dart `KEEP_REMOTE` 语义）。
+ * - 恢复成功后列表会由控制器自己刷新（confirm 内部 `refreshBackups`）；
+ *   撤销入口在两页备份区（`canUndoRestore` 有撤销点才出现，见 `CloudRestoreUndoCard`）。
  * - 真机联网（真 WebDAV 账号）验收归用户；本层只声明编译与 JVM 单测。
  *
  * @param entryId 要展示的备份 id，null = 不展示
@@ -74,7 +83,10 @@ fun CloudBackupDetailHost(
 
     var busy by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    var confirmRestore by remember { mutableStateOf(false) }
+    // 恢复确认框常驻组合、由 show 驱动（退场动画要能播完）；概要在 prepare 成功后才有，
+    // 隐藏期间保留最后一份非空值，退场中不至于闪空。
+    var showRestoreConfirm by remember { mutableStateOf(false) }
+    var restoreDiff by remember { mutableStateOf<RestoreDiffSummary?>(null) }
 
     fun toast(toast: SyncToast) {
         Toast.makeText(context, toast.message, Toast.LENGTH_SHORT).show()
@@ -83,8 +95,35 @@ fun CloudBackupDetailHost(
     fun restore() {
         busy = true
         scope.launch {
-            val kind = withContext(Dispatchers.IO) { controller.openBackup(entryId) }
+            val prepared = withContext(Dispatchers.IO) { controller.prepareRestore(entryId) }
             busy = false
+            when (prepared) {
+                is RestorePrepareOutcome.Ready -> {
+                    restoreDiff = prepared.diff
+                    showRestoreConfirm = true
+                }
+                is RestorePrepareOutcome.Failed ->
+                    toast(SyncResultToasts.forRestore(false, prepared.errorCode))
+                // 缺文件 / 未连接走既有错误通道（lastErrorCode 为空时给通用失败句）。
+                RestorePrepareOutcome.NotFound ->
+                    toast(SyncResultToasts.forRestore(false, controller.lastErrorCode))
+                RestorePrepareOutcome.Missing ->
+                    toast(SyncResultToasts.forRestore(false, controller.lastErrorCode))
+            }
+        }
+    }
+
+    fun cancelRestoreConfirm() {
+        showRestoreConfirm = false
+        controller.discardPreparedRestore()
+    }
+
+    fun applyRestore() {
+        busy = true
+        scope.launch {
+            val kind = withContext(Dispatchers.IO) { controller.confirmPreparedRestore() }
+            busy = false
+            showRestoreConfirm = false
             toast(SyncResultToasts.forRestore(kind == SyncResultKind.DOWNLOADED, controller.lastErrorCode))
             onDismiss()
         }
@@ -94,49 +133,59 @@ fun CloudBackupDetailHost(
         view = view,
         busy = busy,
         onDismissRequest = { if (!busy) onDismiss() },
-        // 恢复是**整份覆盖**且会丢本地未同步修改：先弹二次确认，点「恢复」才真的写回。
-        onRestore = { confirmRestore = true },
+        // 恢复是**整份覆盖**且会丢本地未同步修改：先下载算概要，确认框里看过影响面再写回。
+        onRestore = { restore() },
         onDelete = { confirmDelete = true },
     )
 
-    if (confirmRestore) {
-        OverlayDialog(
-            insideMargin = DpSize(16.dp, 16.dp),
-            show = true,
-            title = SyncStrings.cloudBackupRestoreTitle.zh,
-            onDismissRequest = { confirmRestore = false },
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = SyncStrings.cloudBackupRestoreBody.filled(
-                        "time",
-                        CloudBackupListLogic.formatEntryTime(entry),
-                    ),
-                    style = MiuixTheme.textStyles.body2,
-                    color = Color(QingyuTheme.secondaryText(dark)),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    TextButton(
-                        text = SyncStrings.cancelAction.zh,
-                        onClick = { confirmRestore = false },
-                        enabled = !busy,
-                        colors = ButtonDefaults.textButtonColors(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Button(
-                        onClick = {
-                            confirmRestore = false
-                            restore()
-                        },
-                        enabled = !busy,
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(SyncStrings.cloudBackupRestoreAction.zh)
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = showRestoreConfirm,
+        title = SyncStrings.cloudBackupRestoreTitle.zh,
+        onDismissRequest = { if (!busy) cancelRestoreConfirm() },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = SyncStrings.cloudBackupRestoreBody.filled(
+                    "time",
+                    CloudBackupListLogic.formatEntryTime(entry),
+                ),
+                style = MiuixTheme.textStyles.body2,
+                color = Color(QingyuTheme.secondaryText(dark)),
+            )
+            // 差异概要（prepare 成功必有值；null 只出现在退场/隐藏期，不渲染）。
+            restoreDiff?.let { diff ->
+                val diffLines = RestoreDiffStrings.buildDiffLines(diff)
+                if (diffLines.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        diffLines.forEach { line ->
+                            Text(
+                                text = line,
+                                style = MiuixTheme.textStyles.body2,
+                                color = Color(QingyuTheme.primaryText(dark)),
+                            )
+                        }
                     }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                TextButton(
+                    text = SyncStrings.cancelAction.zh,
+                    onClick = { if (!busy) cancelRestoreConfirm() },
+                    enabled = !busy,
+                    colors = ButtonDefaults.textButtonColors(),
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = { if (!busy) applyRestore() },
+                    enabled = !busy,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(SyncStrings.cloudBackupRestoreAction.zh)
                 }
             }
         }
