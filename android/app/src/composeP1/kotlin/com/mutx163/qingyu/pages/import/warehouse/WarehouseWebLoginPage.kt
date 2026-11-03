@@ -210,7 +210,10 @@ fun WarehouseWebLoginPage(
                         onClick = onToggleMacroRecording,
                         modifier = Modifier.weight(1f),
                         content = { Text(text = if (isRecording) {
-                            "停止录制 (${sessionState.recordedStepsCount})"
+                            WarehouseStrings.stopRecordingWithCount.filled(
+                                "count",
+                                sessionState.recordedStepsCount.toString(),
+                            )
                         } else {
                             WarehouseStrings.recordImportAction.zh
                         }) },

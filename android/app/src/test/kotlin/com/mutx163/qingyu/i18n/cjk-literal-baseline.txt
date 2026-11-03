@@ -16,4 +16,3 @@ com/mutx163/qingyu/pages/feedback/FeedbackPage.kt:1
 com/mutx163/qingyu/pages/guide/MoreFeaturesPage.kt:1
 com/mutx163/qingyu/pages/guide/MoreFeaturesSearchOverlay.kt:1
 com/mutx163/qingyu/pages/import/warehouse/WarehouseSchoolAdaptersPage.kt:1
-com/mutx163/qingyu/pages/import/warehouse/WarehouseWebLoginPage.kt:1
