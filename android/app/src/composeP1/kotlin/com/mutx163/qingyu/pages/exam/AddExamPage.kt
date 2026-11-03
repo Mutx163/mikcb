@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.core.Course
@@ -37,14 +39,10 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Link
@@ -103,56 +101,38 @@ fun AddExamPage(
     val dark = isSystemInDarkTheme()
     var confirmDelete by remember { mutableStateOf(false) }
     val pageTitle = if (viewState.isEditing) ExamStrings.editExam.zh else ExamStrings.addExam.zh
-    // 顶栏折叠行为：Dart `add_exam_screen.dart:83-86` 走 HyperosSubpage 默认参数
-    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
-    // 一个页面实例一个：返回重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
-        topBar = {
-            TopAppBar(
-                title = pageTitle,
-                largeTitle = pageTitle,
-                scrollBehavior = scrollBehavior,
-                color = Color(QingyuTheme.scaffoldBackground(dark)),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = ExamStrings.cancelAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    if (viewState.isEditing) {
-                        IconButton(onClick = { confirmDelete = true }) {
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = ExamStrings.deleteExam.zh,
-                                tint = Color(QingyuTheme.actionIcon(dark)),
-                            )
-                        }
-                    }
-                    IconButton(onClick = onSave) {
-                        Icon(
-                            imageVector = MiuixIcons.Ok,
-                            contentDescription = ExamStrings.saveExam.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠
+    // （Dart `add_exam_screen.dart:83-86` 走 HyperosSubpage 默认参数）。
+    QingyuPageScaffold(
+        title = pageTitle,
+        onBack = onBack,
+        actions = {
+            if (viewState.isEditing) {
+                IconButton(onClick = { confirmDelete = true }) {
+                    Icon(
+                        imageVector = MiuixIcons.Delete,
+                        contentDescription = ExamStrings.deleteExam.zh,
+                        tint = Color(QingyuTheme.actionIcon(dark)),
+                    )
+                }
+            }
+            IconButton(onClick = onSave) {
+                Icon(
+                    imageVector = MiuixIcons.Ok,
+                    contentDescription = ExamStrings.saveExam.zh,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
         },
-    ) { innerPadding ->
+    ) {
         // 页面主滚动走共享套件：末端轻震 + 过度滚动 + 顶栏联动 + 滚动条。
         // 表单页同样是一整页纵向内容，每张卡片一个 item（惰性组合），不再用非惰性的 Column。
+        // 表单页：imePadding 把整页抬到键盘之上（壳是 edge-to-edge，adjustResize 不生效）。
         QingyuPageList(
             innerPadding = innerPadding,
             // QingyuPageList 的 contentPadding 只吃底部与横向，顶部 8dp 留白用 modifier 补。
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 8.dp).imePadding(),
             scrollBehavior = scrollBehavior,
             horizontalPadding = 16.dp,
             contentPadding = PaddingValues(bottom = 8.dp),

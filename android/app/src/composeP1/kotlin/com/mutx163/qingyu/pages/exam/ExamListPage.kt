@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,12 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
+import com.mutx163.qingyu.components.QingyuPageList
+import com.mutx163.qingyu.components.QingyuPageScaffold
 import com.mutx163.qingyu.components.QingyuSectionTitle
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
@@ -42,14 +41,10 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Alarm
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Location
@@ -57,8 +52,6 @@ import top.yukonga.miuix.kmp.icon.extended.Months
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 进行中徽标用的橙色（取应用层彩豆 token，对齐 Dart `HyperosIconColors.orange`）。 */
@@ -92,62 +85,30 @@ fun ExamListPage(
 ) {
     val dark = isSystemInDarkTheme()
     var pendingDelete by remember { mutableStateOf<Exam?>(null) }
-    // 顶栏折叠行为：Dart `exam_list_screen.dart:30-32` 走 HyperosSubpage 默认参数
-    // （`collapsibleLargeTitle` 默认 true，见 `hyperos_page.dart:170`），标题是纯 Text ⇒ 有大标题。
-    // 一个页面实例一个：返回重新进入应从展开态开始。
-    val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        containerColor = Color(QingyuTheme.scaffoldBackground(dark)),
-        // 顶栏进槽位：官方 TopAppBar 自带系统栏顶部内边距，放进槽位后 Scaffold 不再重复给一份。
-        topBar = {
-            TopAppBar(
-                title = ExamStrings.examListTitle.zh,
-                largeTitle = ExamStrings.examListTitle.zh,
-                scrollBehavior = scrollBehavior,
-                color = Color(QingyuTheme.scaffoldBackground(dark)),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = ExamStrings.cancelAction.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAddExam) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = ExamStrings.addExam.zh,
-                            tint = Color(QingyuTheme.actionIcon(dark)),
-                        )
-                    }
-                },
-            )
+    // 共享骨架：官方 TopAppBar + 标准返回键 + 顶栏毛玻璃 + actions 槽；大标题可折叠
+    // （Dart `exam_list_screen.dart:30-32` 走 HyperosSubpage 默认参数）。
+    QingyuPageScaffold(
+        title = ExamStrings.examListTitle.zh,
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = onAddExam) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = ExamStrings.addExam.zh,
+                    tint = Color(QingyuTheme.actionIcon(dark)),
+                )
+            }
         },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+    ) {
+        // 官方页面骨架：末端轻震 + 过度滚动 + 顶栏联动 + 滚动条（QingyuPageList 内置）。
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+            horizontalPadding = 16.dp,
+            contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 官方滚动手感：末端轻震 + 过度滚动回弹。
-                    .scrollEndHaptic()
-                    .overScrollVertical()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    // 底部把系统手势条那段算进去，否则最后一行钻到小白条底下。
-                    bottom = innerPadding.calculateBottomPadding() + 28.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
                 if (viewState.isEmpty) {
                     item {
                         ExamEmptyState(dark = dark, onAddExam = onAddExam)
@@ -215,7 +176,6 @@ fun ExamListPage(
                         }
                     }
                 }
-            }
         }
     }
 
