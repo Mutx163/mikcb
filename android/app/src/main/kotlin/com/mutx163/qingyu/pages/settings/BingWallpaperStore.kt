@@ -103,11 +103,11 @@ class BingWallpaperStore(private val prefs: KeyValueStore) {
     }
 
     companion object {
-        /** 自动换开关（Dart `bing_wallpaper_store.dart:39`）。 */
-        const val PREF_AUTO_APPLY = "bing_wallpaper_auto_apply_v1"
+        /** 自动换开关（Dart `bing_wallpaper_store.dart:39`；字面量在共享 `weather/BingWallpaperPrefs`）。 */
+        const val PREF_AUTO_APPLY = com.mutx163.qingyu.weather.BingWallpaperPrefs.AUTO_APPLY
 
-        /** 下载台账 JSON 数组（Dart 同文件 `:36`）。 */
-        const val PREF_LEDGER = "bing_wallpaper_v1"
+        /** 下载台账 JSON 数组（Dart 同文件 `:36`；字面量在共享 `weather/BingWallpaperPrefs`）。 */
+        const val PREF_LEDGER = com.mutx163.qingyu.weather.BingWallpaperPrefs.LEDGER
 
         /**
          * 台账落盘形状：**JSON 数组**（Dart `jsonEncode([...])`），不是包一层对象。

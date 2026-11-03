@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.settings
 import com.mutx163.qingyu.app.LiquidGlassTuningModel
 import com.mutx163.qingyu.app.TimetableSettingsModel
 import com.mutx163.qingyu.app.CourseCardSurfaceStyle as ModelCourseCardSurfaceStyle
+import com.mutx163.qingyu.core.CourseCardSurface
 import kotlin.math.abs
 
 /**
@@ -219,25 +220,23 @@ enum class GlassModeChoice(val value: String, val label: ArbText) {
  * 与渲染侧门控**同口径**的纯推导：只用于面板里那张「各表面当前材质」只读地图，
  * 系统级降级（无障碍 / 降动效 / 不支持 shader）不在推导范围内。
  */
-enum class SurfaceMaterialState(val value: String, val label: ArbText) {
-    /** 表面已关闭（顶栏玻璃总开关关掉后不再渲染）。 */
-    OFF("off", SettingsStringsExt1.materialStateOff),
+typealias SurfaceMaterialState = com.mutx163.qingyu.core.SurfaceMaterialState
 
-    /** 实体（模糊总开关关、作用范围关的回退）。 */
-    SOLID("solid", SettingsStringsExt1.materialStateSolid),
-
-    /** 磨砂（玻璃坞作用范围关掉时的回退）。 */
-    FROST("frost", SettingsStringsExt1.materialStateFrost),
-
-    /** 渐进模糊（子页顶栏 2026-09-23 起锁死的那一档）。 */
-    FROST_PROGRESSIVE("frostProgressive", SettingsStringsExt1.headerBlurStyleInspire),
-
-    /** 高斯模糊（课程卡片自己那档的展示标签）。 */
-    FROST_GAUSSIAN("frostGaussian", SettingsStringsExt1.headerBlurStyleGaussian),
-
-    /** 液态玻璃（高级材质）。 */
-    LIQUID_GLASS("liquidGlass", SettingsStringsExt1.frostedGlassModeLiquid),
-}
+/**
+ * 材质态 → 面板文案（档位词汇已下沉到 `core/SurfaceMaterial.kt`，中文文案仍归设置页）。
+ *
+ * 用扩展属性而不是枚举字段：枚举字段会把 `SettingsStringsExt1`（设置页 ARB 持有者）
+ * 一并拖进共享层，timetable 域就又要反向依赖设置页了。
+ */
+val com.mutx163.qingyu.core.SurfaceMaterialState.label: ArbText
+    get() = when (this) {
+        SurfaceMaterialState.OFF -> SettingsStringsExt1.materialStateOff
+        SurfaceMaterialState.SOLID -> SettingsStringsExt1.materialStateSolid
+        SurfaceMaterialState.FROST -> SettingsStringsExt1.materialStateFrost
+        SurfaceMaterialState.FROST_PROGRESSIVE -> SettingsStringsExt1.headerBlurStyleInspire
+        SurfaceMaterialState.FROST_GAUSSIAN -> SettingsStringsExt1.headerBlurStyleGaussian
+        SurfaceMaterialState.LIQUID_GLASS -> SettingsStringsExt1.frostedGlassModeLiquid
+    }
 
 /**
  * 材质面板与壁纸流程读到的材质状态（页面私有输入）。
@@ -321,7 +320,7 @@ data class MaterialPanelState(
 data class HomeMaterialRenderSpec(
     val band: SurfaceMaterialState = SurfaceMaterialState.OFF,
     val dock: SurfaceMaterialState = SurfaceMaterialState.FROST,
-    val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
+    override val courseCard: SurfaceMaterialState = SurfaceMaterialState.SOLID,
     val liquidTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
     val liquidBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
     val liquidRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
@@ -334,7 +333,7 @@ data class HomeMaterialRenderSpec(
      * 0 = 走更便宜的无色散着色器。
      */
     val liquidDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
-    val courseCardTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
+    override val courseCardTintAlpha: Float = LiquidGlassTuning.DEFAULT_TINT_ALPHA.toFloat(),
     val courseCardBlurSigma: Float = LiquidGlassTuning.DEFAULT_BLUR_SIGMA.toFloat(),
     /** 课卡边缘折射位移（逻辑 px），取**卡片自己那套**的 `refraction`。 */
     val courseCardRefraction: Float = LiquidGlassTuning.DEFAULT_REFRACTION.toFloat(),
@@ -342,7 +341,7 @@ data class HomeMaterialRenderSpec(
     val courseCardRefractionBand: Float = LiquidGlassTuning.DEFAULT_REFRACTION_BAND.toFloat(),
     /** 课卡色散强度（0–1），取卡片那套的 `dispersion` 并套深色配方。 */
     val courseCardDispersion: Float = LiquidGlassTuning.DEFAULT_DISPERSION.toFloat(),
-)
+) : CourseCardSurface
 
 /** 材质/表面的纯推导（`lib/models/surface_material.dart` + `glass_mode_choice.dart`）。 */
 object SettingsMaterialModel {

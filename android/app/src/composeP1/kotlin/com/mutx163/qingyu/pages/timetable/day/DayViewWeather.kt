@@ -18,6 +18,11 @@ import java.time.LocalDate
  *
  * 把「provider + 设置」→「(日期, 课程) → 一行文本」的绑定收敛在这里，
  * 壳里只要一行调用，不必自己拼文案（文案模板在 `TimetableStrings.formatWeatherLine`）。
+ *
+ * 2026-11-03：本文件从 `main/` 挪到 UI 源树（`composeP1/`）。它取的是**页面文案**
+ *（`WeatherStrings.categoryLabel` 的本地化表），属于 UI 层胶水；留在 `main/` 会让
+ * timetable 的纯逻辑闭包反向依赖 `pages/weather` 的字符串表，L0（只编 main + 共享
+ * 包）就跑不过。逻辑本身没搬动，调用方（壳）的 import 也不变。
  */
 object DayViewWeather {
 

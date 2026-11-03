@@ -5,8 +5,8 @@ import com.mutx163.qingyu.app.TimetableSnapshot
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.core.TimetableSettings
-import com.mutx163.qingyu.pages.settings.BingWallpaperStore
-import com.mutx163.qingyu.pages.settings.WallpaperEvictionSources
+import com.mutx163.qingyu.weather.BingWallpaperPrefs
+import com.mutx163.qingyu.weather.WallpaperEvictionSources
 import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID
@@ -274,7 +274,7 @@ class TimetableProfilesController(
         }
         val profilesAfter = readRawJson(TimetableStore.KEY_PROFILES)
         val settings = readRawJson(TimetableStore.KEY_SETTINGS)
-        val ledger = readRawJson(BingWallpaperStore.PREF_LEDGER)
+        val ledger = readRawJson(BingWallpaperPrefs.LEDGER)
         if (!profilesAfter.ok || !settings.ok || !ledger.ok) {
             LOGGER.info(
                 "skip wallpaper reclaim: source unreadable " +
