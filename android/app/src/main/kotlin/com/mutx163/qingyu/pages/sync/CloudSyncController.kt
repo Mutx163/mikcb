@@ -19,6 +19,7 @@ import com.mutx163.qingyu.sync.SyncConflictInfo
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import com.mutx163.qingyu.sync.resolveManualPullConflictChoice
 import com.mutx163.qingyu.sync.resolveRemoteSnapshotPath
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -521,7 +522,7 @@ class CloudSyncController(
         val outcome = coordinator.downloadSnapshot(
             config = config,
             remotePath = file.remotePath,
-            hasLocalUserData = true,
+            hasLocalUserData = localHasUserDataNow(),
             resolver = { SyncConflictChoice.KEEP_REMOTE },
         )
         status = status.copy(isSyncing = false)
@@ -1086,8 +1087,17 @@ class CloudSyncController(
             RemoteMetaFetch.NotFound -> legacyPullPhase(coordinator) ?: PullPhase.ProceedToUpload
             is RemoteMetaFetch.Ok -> {
                 if (meta.contentSha256.isEmpty()) return PullPhase.ProceedToUpload
-                pullAndApplyRemote(coordinator, meta, resolver = { SyncConflictChoice.CANCEL })
-                    ?: PullPhase.ProceedToUpload
+                pullAndApplyRemote(
+                    coordinator,
+                    meta,
+                    hasLocalUserData = localHasUserDataNow(),
+                    // Dart `resolveManualPullConflictChoice`：本机是空壳时不弹「选边」，
+                    // 直接以云端为准；有本地用户数据才挂起等用户选。
+                    resolver = { info ->
+                        resolveManualPullConflictChoice(info.localHasUserData)
+                            ?: SyncConflictChoice.CANCEL
+                    },
+                ) ?: PullPhase.ProceedToUpload
             }
         }
     }
@@ -1119,8 +1129,8 @@ class CloudSyncController(
         if (envelope.actualHash == config.lastAppliedRemoteHash) {
             return null
         }
-        // 远端比基线新：让协调器做冲突判定。resolver 恒 CANCEL = 不自动选边，
-        // 冲突时协调器返回 CANCELLED + 冲突信息，挂起给页面弹「选边」框。
+        // 远端比基线新：让协调器做冲突判定。空壳本机直接以云端为准；有本地
+        // 用户数据才挂起（CANCEL）等页面弹「选边」框（Dart 手动拉取同口径）。
         val rollback = effectiveSnapshotProvider?.let { provider ->
             (provider() as? SnapshotBuildResult.Success)?.bytes
         }
@@ -1129,8 +1139,11 @@ class CloudSyncController(
         notifyChanged()
         val outcome = coordinator.downloadSnapshot(
             config = config,
-            hasLocalUserData = true,
-            resolver = { SyncConflictChoice.CANCEL },
+            hasLocalUserData = localHasUserDataNow(),
+            resolver = { info ->
+                resolveManualPullConflictChoice(info.localHasUserData)
+                    ?: SyncConflictChoice.CANCEL
+            },
         )
         status = status.copy(isSyncing = false)
         return when (outcome.kind) {
@@ -1173,6 +1186,7 @@ class CloudSyncController(
     private fun pullAndApplyRemote(
         coordinator: WebdavSyncCoordinator,
         meta: RemoteMetaFetch.Ok,
+        hasLocalUserData: Boolean,
         resolver: (SyncConflictInfo) -> SyncConflictChoice,
     ): PullPhase? {
         if (meta.contentSha256 == config.lastAppliedRemoteHash) return null
@@ -1192,7 +1206,7 @@ class CloudSyncController(
             config = config,
             remotePath = snapshotPath,
             expectedRemoteHash = meta.contentSha256,
-            hasLocalUserData = true,
+            hasLocalUserData = hasLocalUserData,
             resolver = resolver,
         )
         status = status.copy(isSyncing = false)
@@ -1252,7 +1266,14 @@ class CloudSyncController(
                     else -> SyncResultKind.CANCELLED
                 }
             }
-            is RemoteMetaFetch.Ok -> when (val phase = pullAndApplyRemote(coordinator, meta, resolver)) {
+            is RemoteMetaFetch.Ok -> when (
+                val phase = pullAndApplyRemote(
+                    coordinator,
+                    meta,
+                    hasLocalUserData = localHasUserDataNow(),
+                    resolver = resolver,
+                )
+            ) {
                 PullPhase.Downloaded -> SyncResultKind.DOWNLOADED
                 is PullPhase.Failed -> {
                     status = status.copy(lastErrorCode = phase.errorCode)
@@ -1262,6 +1283,19 @@ class CloudSyncController(
                 else -> SyncResultKind.CANCELLED
             }
         }
+    }
+
+    /**
+     * 本机是否含用户亲手沉淀的课表数据（冲突预决策用；Dart
+     * `AppSyncSnapshot.hasUserAuthoredData`）。空壳本机遇到云端有数据时不弹「选边」框，
+     * 直接以云端为准（Dart `resolveManualPullConflictChoice`）。
+     *
+     * 没有仓储（单测 / 旧的本地快照文件路径）时保守返回 true：宁可多弹一次「选边」，
+     * 也不在看不见数据时静默把本机覆盖成云端。
+     */
+    private fun localHasUserDataNow(): Boolean {
+        val repo = repository ?: return true
+        return TimetableSnapshotBridge.localHasUserAuthoredData(repo)
     }
 
     /**

@@ -10,9 +10,12 @@ import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.sync.SNAPSHOT_APP_ID
 import com.mutx163.qingyu.sync.SNAPSHOT_BACKUP_TYPE
 import com.mutx163.qingyu.sync.SNAPSHOT_SCHEMA_VERSION
+import com.mutx163.qingyu.sync.SnapshotUserDataSignals
 import com.mutx163.qingyu.sync.checkSnapshotEnvelopeAndChecksum
 import com.mutx163.qingyu.sync.computeContentSha256
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import com.mutx163.qingyu.sync.hasUserAuthoredData
+import com.mutx163.qingyu.sync.matchesFactoryDefaultTimeScheme
 
 /**
  * 课表仓储 ⇄ 云同步快照字节的**桥**（修「立即备份必然失败 / 恢复点了没效果」）。
@@ -73,6 +76,43 @@ object TimetableSnapshotBridge {
         } catch (error: Exception) {
             SnapshotBuildResult.Failure("sync_snapshot_serialize_failed")
         }
+    }
+
+    /**
+     * 本机是否含**用户亲手沉淀**的课表数据（Dart `AppSyncSnapshot.hasUserAuthoredData`
+     * 在 Kotlin 可观测域上的投影）。
+     *
+     * 用途同 Dart `resolveManualPullConflictChoice`：空壳本机（全新设备 / 只有出厂默认
+     * 档案与默认作息）遇到云端有数据时不弹「选边」框，直接以云端为准——空壳没有可保护
+     * 的本地内容，弹框只会让新用户以为同步出错。
+     *
+     * 未开采域（教师/地点记录、自定义节假日、宏、情侣绑定、导入仓库）本来就不进 Kotlin
+     * 快照，缺省按「没有」参与判定；判定偏保守的一侧是 [hasUserAuthoredData] 的原样顺序，
+     * 不在这里自创额外放行条件。
+     */
+    fun localHasUserAuthoredData(repository: TimetableRepository): Boolean {
+        val snapshot = repository.snapshot
+        return hasUserAuthoredData(
+            SnapshotUserDataSignals(
+                locationTimeGroupsNotEmpty = snapshot.locationTimeGroups.isNotEmpty(),
+                scheduleDateRulesNotEmpty = snapshot.scheduleDateRules.isNotEmpty(),
+                timeSchemeCount = snapshot.timeSchemes.size,
+                timeSchemeMatchesFactoryDefault = snapshot.timeSchemes.size == 1 &&
+                    matchesFactoryDefaultTimeScheme(snapshot.timeSchemes.single()),
+                profileCount = snapshot.profiles.size,
+                profilesHaveCourses = snapshot.profiles.any { profile ->
+                    profile.courses.isNotEmpty() ||
+                        profile.tasks.isNotEmpty() ||
+                        profile.exams.isNotEmpty() ||
+                        profile.scheduleItems.isNotEmpty()
+                },
+                partnerImportedPresent = snapshot.profiles.any { it.isPartnerImported },
+                renamedAwayFromDefaultPresent = snapshot.profiles.any { profile ->
+                    profile.name.trim().isNotEmpty() &&
+                        profile.name.trim() != TimetableRepository.DEFAULT_PROFILE_NAME
+                },
+            ),
+        )
     }
 
     /** 恢复侧：快照字节 → 仓储（整份覆盖，写回成功后仓储只通知一次）。 */

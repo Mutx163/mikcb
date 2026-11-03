@@ -138,6 +138,57 @@ class CloudSyncSnapshotFlowTest {
         assertTrue("不应向远端写入任何东西", transport.files.isEmpty())
     }
 
+    // ---------- 下载：空壳本机的冲突预决策 ----------
+
+    @Test
+    fun `空壳本机首次同步_不弹选边框直接采用云端`() {
+        // Dart `resolveManualPullConflictChoice`：本机没有用户亲手沉淀的数据
+        //（全新设备 / 只有出厂默认档案）时，首次同步分歧不弹「选边」框，直接以云端为准。
+        // 此前 Kotlin 恒传 hasLocalUserData = true，空壳设备也会被弹框拦住。
+        val repository = repository() // 盘上没有任何档案
+        val transport = FakeRemoteTransport()
+        val controller = controller(repository, transport)
+        controller.connect("me@example.com", "pw")
+        seedRemoteSnapshot(
+            transport = transport,
+            config = controller.config,
+            bytes = remoteSnapshotBytes("remote-course"),
+            deviceId = "devB",
+        )
+
+        assertEquals(SyncResultKind.DOWNLOADED, controller.syncNow())
+        assertNull("空壳本机没有可保护的数据，不该挂起冲突", controller.pendingSyncConflict)
+        assertTrue(
+            "应直接把云端课表写回本机",
+            repository.snapshot.profiles.flatMap { it.courses }.any { it.id == "remote-course" },
+        )
+    }
+
+    @Test
+    fun `有本地课表时首次同步分歧_仍挂起选边`() {
+        // 同一路径的另一侧：本机确有自己的课时 → 必须让用户选边，绝不静默覆盖。
+        val repository = repository()
+        repository.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val controller = controller(repository, transport)
+        controller.connect("me@example.com", "pw")
+        seedRemoteSnapshot(
+            transport = transport,
+            config = controller.config,
+            bytes = remoteSnapshotBytes("remote-course"),
+            deviceId = "devB",
+        )
+
+        assertEquals(SyncResultKind.CANCELLED, controller.syncNow())
+        val conflict = controller.pendingSyncConflict
+        assertNotNull("有本地用户数据必须挂起冲突", conflict)
+        assertTrue(conflict!!.localHasUserData)
+        assertTrue(
+            "挂起期间本机课表不得被覆盖",
+            repository.snapshot.profiles.flatMap { it.courses }.any { it.id == "local-course" },
+        )
+    }
+
     // ---------- 恢复 ----------
 
     private fun controllerWithRemote(
