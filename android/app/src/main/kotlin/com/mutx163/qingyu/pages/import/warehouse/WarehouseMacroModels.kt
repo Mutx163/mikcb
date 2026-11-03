@@ -53,19 +53,22 @@ fun warehouseManualInputReasonForFieldType(fieldType: String?): String =
  * （Dart `_inferManualInputFieldType`：中文「验证码/校验码」、captcha/verification → captcha；
  * 「密码」/password/pwd → password）。
  *
- * 这里的中文是**对 Dart 旧存档做子串匹配**的功能字符（Dart 写盘的原因串可能是中文），
- * 不是 UI 文案；用 \u 转义写出来是因为 cjk 棘轮按源码里的裸中文字符计数，
- * 转义后字节与裸写完全一致、门禁不误报（不许往基线加行）。
+ * 中文匹配串集中在 WarehouseFormLabelStrings（Lead 拍板的方案 A 收敛：
+ * 功能识别串登记基线保持可见，不转义、不整文件跳过）。
  */
 internal fun inferWarehouseManualInputFieldType(reason: String?): String? {
     val value = reason ?: return null
     val lower = value.lowercase()
-    if (value.contains("\u9A8C\u8BC1\u7801") || value.contains("\u6821\u9A8C\u7801") ||
+    if (value.contains(WarehouseFormLabelStrings.CAPTCHA_PRIMARY) ||
+        value.contains(WarehouseFormLabelStrings.CAPTCHA_SECONDARY) ||
         lower.contains("captcha") || lower.contains("verification")
     ) {
         return "captcha"
     }
-    if (value.contains("\u5BC6\u7801") || lower.contains("password") || lower.contains("pwd")) {
+    if (
+        value.contains(WarehouseFormLabelStrings.PASSWORD) ||
+        lower.contains("password") || lower.contains("pwd")
+    ) {
         return "password"
     }
     return null

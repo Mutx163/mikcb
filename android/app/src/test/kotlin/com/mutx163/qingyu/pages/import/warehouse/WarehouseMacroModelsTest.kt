@@ -74,6 +74,23 @@ class WarehouseMacroModelsTest {
     }
 
     @Test
+    fun `旧宏中文原因串反推 fieldType（匹配串与 Dart 逐字一致）`() {
+        // 旧版 Dart 可能把中文原因写进宏记录；识别串集中在 WarehouseFormLabelStrings（Lead 方案 A）。
+        assertEquals("captcha", WarehouseMacroStep.fromJson(
+            mapOf("type" to "waitForManualInput", "value" to "请输入图形验证码后继续"),
+        ).fieldType)
+        assertEquals("captcha", WarehouseMacroStep.fromJson(
+            mapOf("type" to "waitForManualInput", "value" to "请输入校验码"),
+        ).fieldType)
+        assertEquals("password", WarehouseMacroStep.fromJson(
+            mapOf("type" to "waitForManualInput", "value" to "请输入密码"),
+        ).fieldType)
+        assertNull(WarehouseMacroStep.fromJson(
+            mapOf("type" to "waitForManualInput", "value" to "manual review"),
+        ).fieldType)
+    }
+
+    @Test
     fun `步骤 round trip 保持类型与字段`() {
         val original = WarehouseMacroStep.waitForUrl("**/xsMain**")
         val restored = WarehouseMacroStep.fromJson(original.toJson())
