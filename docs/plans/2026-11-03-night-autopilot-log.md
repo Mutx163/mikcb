@@ -284,8 +284,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
 | **L1（import/statistics·第二班）** | ✅ 收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` + `6af3fd36`/`85ab22e3`/`22444ce3`/`c6e3ac33`/`f56c89be` | L0 import 473 / statistics 310（**该 310 用 2.4.10 手工编译，按 10.15 需用统一入口重跑才作数**）；学期进度钳 0..100 |
 | **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` + `9a5ebf48` / `c4587694` | 结构债已解；月视图横向翻月 2400 页；`TimetableGridMetrics` 兜底时刻 `Locale.ROOT`；假期覆盖开关挂 backlog |
-| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` + `9dd376d2` / `ec9b57e8` | L0 sync/transfer 918；Locale 哈希修复；严格 UTF-8 解码；中断硬化 6 条；**HEAD 编译红在 `DataTransferHost.kt:217`，修复在工作树未提交** |
-| **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实（67 处实扫、15 处已修）；widgetdata `Int`→`Double` 修半值截断 |
+| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` + `9dd376d2` / `ec9b57e8` + `0b5a85ca` / `d53b8ae6` | L0 sync/transfer 918；Locale 哈希修复；严格 UTF-8 解码；`when` 5/5 覆盖；第三轮对拍四条一致；**门 1 已在 `a7eef5be` 绿** |
+| **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实；widgetdata `Int`→`Double` **漏改根包 `TodayWidgetSnapshotInfo`（`TodayWidgetSupport.kt`/`StatsWidgetSupport.kt`）→ 门 2 测试源集编译红，待 L4 补** |
 
 **Locale 守卫债务（`LocaleFormatGuardTest.WHITELIST`）**：**覆盖站点数才是债务（只降不增）**，**条目数可因拆分/删条目而变**，两数含义不同。**每次改白名单或修格式化站点，都必须附一次带 HEAD 的复算**（不要只在批次结束时数一次）；因为「先删登记、后修代码」会让两轮之间的口径对不上，不带 HEAD 的数字没有可比性。
 
@@ -295,6 +295,8 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | `9dd376d2` | **50** | **48** | **2** ❌ | 16 | 2026-11-03 23:49 |
 | `c4587694` | **48** | **48** | **0** ✅ | 16 | 2026-11-03 23:50 |
 | `58693492` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:05 |
+| `a7eef5be` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:19 |
+| `d53b8ae6` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:35 |
 
 - **`c4587694` 收口**：课表线把 `TimetableGridMetrics.kt:57` 两处兜底时刻改 `Locale.ROOT` 后，UNCOVERED 归零。**`pages/timetable` 条目已消失**（不再需要），**`time_scheme` 条目仍在**（其站点未修，属作用域外）；条目数仍 16（删 timetable 的同时此前拆分为精确到包的登记形态不变）。
 
@@ -636,7 +638,9 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **严格 UTF-8 解码**：新增 `TransferTextDecoding.kt`（`CharsetDecoder` + `REPORT`）；`AndroidTransferDocumentAdapter` 第 3 步改严格、新增 `ReadResult.InvalidEncoding`（**只改这一个 platform 文件**）；4 用例（`\xC3` 拒、`\xFF` 拒、4 字节 emoji 放行、BOM 放行但 JSON 门报错）。L0 **918**、门 3 transfer **0 处**。
 - **裁决**：UTF-8 错误文案**复用 `importFailedInvalidFile`**，不新增键——Dart 定义了 `transfer_package_utf8_invalid` 但文件通道从未使用（平台落英文 `FormatException`），属 Dart 未完成分支；**空文本**按 Dart 改 `importFileReadFailed`。
 - **多缺陷包报错码**：**有意接受的缺口**，具体包例——Kotlin 报 `transfer_exam_name_required` vs Dart 报 `transfer_course_invalid`。
-- **已派 core 模型严格性给逻辑层**：`sessionNotes.text=123` 等类型不符时 Kotlin 静默跳过、Dart 整包拒绝 → 用户得到「导入成功但备注丢了」；要求 core 层按 Dart 抛/拒，**不静默**。
+- **transfer 第三轮对拍（四条一致）**：① **导出命名**规则一致；② **历史排序无分页**（一次取全，不分页）；③ **多次导入叠加撤销**（各撤销点按 id 先后可撤销）；④ **会话超时与 PIN 上限**的完整行为一致。
+- **`d53b8ae6` 复核**：仅改 `LanTransferUndoTest.kt`，**+37/−0**，无删除行、无断言放宽——属**补用例**（钉住「多次导入叠加撤销」），被测语义未动。
+- **已派 core 模型严格性给逻辑层**：`sessionNotes.text=123` 等类型不符时 Kotlin 静默跳过、Dart 整包拒绝 → 用户得到「导入成功但备注丢了」；要求 core 层按 Dart 抛/拒，**不静默**（`a7eef5be` 已落：数字 text 拒收）。
 
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
@@ -749,9 +753,12 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `c4587694` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进**（未跑，不沿用） |
 | `f1472e58` | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | —（首轮输出已清理，未记录） | — | 编译错误 `composeP1/.../pages/transfer/DataTransferHost.kt:217`「`when` 必须穷尽，缺 `InvalidEncoding`」；**门 2 未跑** |
 | `f56c89be` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `58693492`**（未跑，不沿用） |
-| **`58693492`** | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | **00:06:06→00:13:23** | **7m05s（Gradle 报告）/ 7m17s 墙钟** | **当前 HEAD**；同一处红：`DataTransferHost.kt:217` 缺 `InvalidEncoding`。根因 `9dd376d2` 在 platform 适配器新增 sealed 变体 `ReadResult.InvalidEncoding`，**未同步 composeP1 调用方**（`pages/transfer` 属 L3 域；修复已在工作树未提交）。**门 2 未跑**（门 1 红即停） |
+| **`58693492`** | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | **00:06:06→00:13:23** | **7m05s（Gradle 报告）/ 7m17s 墙钟** | **真实编译错误（非「未跑」）**：`DataTransferHost.kt:217` 缺 `InvalidEncoding` 分支，根因 sealed 变体未同步调用方。**门 2 未跑**（门 1 红即停） |
+| **`a7eef5be`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **00:19:14→00:27:27** | **8m7s（Gradle）/ 8m13s 墙钟** | `0b5a85ca` 修好 `DataTransferHost` 后增量重跑；无 error，仅既有 warning |
+| **`a7eef5be`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **00:27:36→00:33:33** | **5m55s（Gradle）/ 5m57s 墙钟** | **真实红（测试源集编译失败）**：`test/.../WidgetWeekendMoodTest.kt:33:28`、`34:24` 传 `Double`，而 `TodayWidgetSnapshotInfo.heightAdjustment/cornerRadius` 仍是 `Int`。根因：`49a5a739` 把测试字面量改成 Double 并改了 `HomeWidgetSnapshotData`，**漏改根包 `TodayWidgetSupport.kt` / `StatsWidgetSupport.kt` 的快照类**（Dart 是 double，应改模型而非回退测试）。**待 L4 修复后重跑门 2** |
+| `d53b8ae6` | 门 2 | ⏳ **待跑** | — | — | 只加测试（+37/−0），不改被测语义；**待上述测试编译红修复后与门 2 一起跑** |
 
-**有效结论口径**：门 1、门 2 唯一有效结论仍是 **HEAD `6b33f490`**（只代言该哈希）。此后所有 HEAD **均未产生「绿」结论**：`f1472e58`/`58693492` 门 1 **红**（同一编译错误），门 2 未跑。**当前不声明编译通过**（L1 的 `:app:compileItestDebugKotlin` 12m12s、课表 9m47s 均为**各自改动前的证据**，不能代言当前 HEAD）。**白名单复算（HEAD `58693492`，00:05:47）**：TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16。
+**有效结论口径**：**门 1 在 HEAD `a7eef5be` 实测绿（00:19:14→00:27:27，8m7s，exit=0）**，该绿**只代言 `a7eef5be`**。**门 2 在 `a7eef5be` 实测红（00:27:36→00:33:33，5m55s）**，红项为测试源集编译错误（`WidgetWeekendMoodTest.kt:33/34` Double vs `TodayWidgetSnapshotInfo` Int），**当前不声明「两门全绿」**。前序 `f1472e58`/`58693492` 门 1 红均为**真实编译错误**（`DataTransferHost.kt:217` 缺 `InvalidEncoding`），不是流程故障。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
@@ -765,4 +772,5 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **唯一入口**：`pwsh 7 -File scripts/test-kotlin-module.ps1 -Module <域>`（可加 `-KotlincPath` 换编译器）。
 - **探测顺序**：`-KotlincPath` → 仓库便携 `.tools/kotlinc/bin/kotlinc.bat` → PATH → Android Studio 内置；全落空**报错 exit 1**，**不静默降级**。
 - **实测（2026-11-04）**：`-Module pages/settings` **971 例 OK，00:01:33→00:04:51，耗时 3m18s**（含编译 253 文件 + JUnit）。
+- **补充实测（重跑 `f56c89be` 的 statistics 310 例）**：`-Module statistics` **310 例 OK，00:35:54→00:39:37，耗时 3m43s**（编译 180 文件 + JUnit）。结论：`f56c89be` 的 310 例**已用统一入口重跑并给出数字**，此前「2.4.10 手工编译」的证据作废、但结论数一致。
 - **纪律**：**以后 L0 只用这一个入口，不许各自写包装脚本**；旧成果（如 `f56c89be` 的 310 例）用 `kotlin-compiler-embeddable 2.4.10` 手工编译，**不可复现、不可作为验收证据**，需改用本入口重跑才作数。
