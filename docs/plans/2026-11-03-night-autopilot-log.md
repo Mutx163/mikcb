@@ -637,16 +637,27 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 2. 从主工作树**复制两个被 gitignore 的本机文件**：`android/local.properties`（含 `sdk.dir`，没有它 Gradle 起不来）、仓库根 `gradle.properties`（含 `org.gradle.java.home`）。**另需复制 `.dart_tool/` 并设 `PUB_CACHE`**，否则门 2 的 Flutter 资源链路会缺件。
 3. 依次跑门 1 `:app:compileDevDebugKotlin` → 门 2 `:app:testDevDebugUnitTest`，**一律走 `scripts/safe-gradle.ps1`**（全机互斥锁跨 worktree 同样生效，排队防爆内存）。
 4. **结果必须标注对应 HEAD 哈希**：`HEAD` 变了旧结论**作废**，不许拿 HEAD A 的绿代言 HEAD B。
-5. 跑完清理：`git worktree remove`（长路径会失败，改用 `robocopy <空目录> <worktree> /MIR` 清空后 `Remove-Item`，再 `git worktree prune`）。
+5. 跑完清理：**`git worktree remove` 在 Windows 长路径下会失败**（`error: failed to delete ... Filename too long`，构建产物路径超 260 字符），改用 `robocopy <空目录> <worktree> /MIR` 清空后 `Remove-Item`，再 `git worktree prune`。**下一个人别再用 `git worktree remove` 硬试**。
 6. **记录口径**：写「门禁在 HEAD `<哈希>` 的只读 worktree 上实测，主工作树当时有 N 个未提交文件（属其他域在途），不影响本结论」。
+7. **常设动作**：**每推送一个批次，就对新的 HEAD 跑一轮门 1 → 门 2，再把结果写进下方门禁表并随日志推送**。不得用上一轮结果代替新一轮。
+8. **互斥锁超时的处理**：`safe-gradle` 等锁**超过 10 分钟即判「无结论」**（exit=1，属设计内的放弃执行，**不是编译/测试红**），**隔一段时间再试一次**；**重试时不许把前一次的绿当成本次结果**。**连续两次超时**则记日志「**环境阻塞**」并上报 Lead。
 
-### 10.13 门 1/门 2 实测结论（收工证据）
+### 10.13 门禁表（每次推送批次后对新高 HEAD 实测）
 
-| 轮次 | HEAD | 门 1 `:app:compileDevDebugKotlin` | 门 2 `:app:testDevDebugUnitTest` | 结论 |
-|---|---|---|---|---|
-| 首轮 | `45dc4f89` | ✅ 21:37:40→21:59:10，12m52s，exit=0 | ✅ 22:04:41→22:27:53，13m29s，exit=0 | 通过，但 HEAD 已推进 → 按规矩作废 |
-| 二轮 | `a8e4cf22` | ❌ **排队超时**（等 10 分钟未获互斥锁，611s，exit=1） | 未跑 | **无结论，作废**（他线构建长期占用锁，非代码问题） |
-| **三轮（有效）** | **`6b33f490`** | ✅ **22:46:43→22:54:28，7m35s（465s），exit=0** | ✅ **22:54:48→23:01:34，6m41s（406s），exit=0** | **有效结论** |
+| HEAD | 门 | 结果 | 起止时间 | 耗时 | 备注 |
+|---|---|---|---|---|---|
+| `45dc4f89` | 门 1 `:app:compileDevDebugKotlin` | ✅ 绿（exit=0） | 21:37:40→21:59:10 | 12m52s | **作废（HEAD 已推进到 22:xx 的新提交）**；冷构建首轮 |
+| `45dc4f89` | 门 2 `:app:testDevDebugUnitTest` | ✅ 绿（exit=0） | 22:04:41→22:27:53 | 13m29s | **作废（同上）** |
+| `a8e4cf22` | 门 1 `:app:compileDevDebugKotlin` | ❌ **无结论** | 22:30:36→22:40:46 | 611s | **互斥锁排队超时 611s**（他线构建长期占用），非代码红；门 2 未跑 |
+| **`6b33f490`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | 22:46:43→22:54:28 | **7m35s（465s）** | **有效**；主树 8 个未提交（widgetdata 域），不影响结论 |
+| **`6b33f490`** | 门 2 `:app:testDevDebugUnitTest` | ✅ **绿（exit=0）** | 22:54:48→23:01:34 | **6m41s（406s）** | **有效**；红项 **无** |
+| `5e8be258` | 门 1 / 门 2 | ⏳ **待跑** | — | — | **当前 HEAD**，等 transfer 三笔落库后跑一轮 |
 
-**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。跑完后主 HEAD 已推进到 `49a5a739`（他线新提交），**该结论只代言 `6b33f490`**，后续 HEAD 需重跑。
-**观察**：首轮冷构建 12m52s / 13m29s，三轮增量 7m35s / 6m41s；二轮的失败是**锁排队超时**（`safe-gradle` 已按设计放弃执行，未损坏任何产物），并非编译或测试红。
+**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `5e8be258`，**需重跑**（已列入待跑行）。
+**观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
+
+### 10.14 本机配置文件防误提交（已核实）
+
+- `android/local.properties`（含 `sdk.dir` 绝对路径）→ 由 `android/.gitignore:4` 的 `/local.properties` 忽略；`git ls-files` **无记录**（未被跟踪）。
+- 仓库根 `gradle.properties`（含 `org.gradle.java.home` 绝对路径）→ 由根 `.gitignore:216` 的 `/gradle.properties` 忽略；`git ls-files` **无记录**。
+- 两者**均只在本机存在**，worktree 门禁里是**手工复制**过去的副本，不会进库。**任何人不得 `git add -f` 这两个文件**。
