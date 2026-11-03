@@ -15,6 +15,17 @@ import com.mutx163.qingyu.core.MiniJson
 /** 台账保留的条数（图库一次展示 8 天 + 最近挑过几张；封顶的唯一理由是磁盘）。 */
 const val MAX_DOWNLOADED_ENTRIES = 12
 
+/**
+ * 下载台账的 prefs 契约 key（`bing_wallpaper_v1`，JSON 数组）。
+ *
+ * 2026-11-03 从 `pages.settings.BingWallpaperStore.PREF_LEDGER` 提到共享层：
+ * 键是**跨域契约**——课表域删档案回收独占用图时要读同一份台账
+ * （`TimetableProfilesController` → `WallpaperEvictionSources.planProfileDeletionReclaim`），
+ * 契约 key 放在契约逻辑（本文件）旁边，设置域的 [com.mutx163.qingyu.pages.settings.BingWallpaperStore]
+ * 委托到这里的同一个常量，两边永不漂移。
+ */
+const val LEDGER_PREFS_KEY = "bing_wallpaper_v1"
+
 /** 台账里的一条：`dateKey@档位@尺寸` → 本地路径。 */
 data class BingWallpaperLedgerEntry(
     val dateKey: String,

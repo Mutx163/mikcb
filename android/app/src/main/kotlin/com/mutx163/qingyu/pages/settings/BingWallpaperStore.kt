@@ -5,6 +5,7 @@ import com.mutx163.qingyu.core.MiniJson
 import com.mutx163.qingyu.weather.BingWallpaperLedger
 import com.mutx163.qingyu.weather.BingWallpaperRecordResult
 import com.mutx163.qingyu.weather.BingWallpaperResolution
+import com.mutx163.qingyu.weather.LEDGER_PREFS_KEY
 import com.mutx163.qingyu.weather.WallpaperTargetSize
 
 /**
@@ -106,8 +107,13 @@ class BingWallpaperStore(private val prefs: KeyValueStore) {
         /** 自动换开关（Dart `bing_wallpaper_store.dart:39`）。 */
         const val PREF_AUTO_APPLY = "bing_wallpaper_auto_apply_v1"
 
-        /** 下载台账 JSON 数组（Dart 同文件 `:36`）。 */
-        const val PREF_LEDGER = "bing_wallpaper_v1"
+        /**
+         * 下载台账 JSON 数组（Dart 同文件 `:36`）。
+         *
+         * 2026-11-03 起委托共享层 [LEDGER_PREFS_KEY]：这是跨域契约 key（课表域
+         * 删档案回收独占用图读同一份台账），真源随契约逻辑放在共享层。
+         */
+        const val PREF_LEDGER = LEDGER_PREFS_KEY
 
         /**
          * 台账落盘形状：**JSON 数组**（Dart `jsonEncode([...])`），不是包一层对象。
