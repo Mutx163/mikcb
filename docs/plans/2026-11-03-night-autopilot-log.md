@@ -951,3 +951,15 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
    - `-Module pages/import`：**OK (504 tests)**（新增 1 例周数上限）。
    - `-Module statistics`：**OK (312 tests)**（新增 1 例并列名次）。
    - 只声明 JVM 单测通过，不声明编译/真机通过。
+
+### 10.25 ✅ 课卡天气门槛落地（`2d3f4fc0`，Lead 授权例外科改，仅三处）
+
+1. **授权范围（已记 §10.22 第 6 条）**：只动 `composeP1/app/TimetableHost.kt` 天气挂载处、`composeP1/pages/timetable/day/DayViewWeather.kt` 调用处、`ShellPageIndex.kt` weather lambda 那几行；其余布局/主题/路由/装配一行未改，`ShellWiring.kt` 未触碰。
+2. **写了哪几行**：
+   - `TimetableHost.kt:173-176`：`lookup` 的 `when` 首分支加 `!course.isActiveInWeek(week) -> null`（周卡，Dart `timetable_home_page_assembly.dart:456`）。
+   - `DayViewWeather.kt:32-34/:39-42/:48-51`：`lineProvider` 取数器签名加 `week`，门为 `if (!course.isActiveInWeek(week)) null`（日卡，Dart `day_view_course_agenda_card_variants.dart:166-169`）。
+   - `ShellPageIndex.kt:827-831`：`dataProvider` 内包一层 `weatherOf?.let { resolve -> { date, course -> resolve(week, date, course) } }`，只此一处。
+3. **先核实已有门槛**：Kotlin 两处原本都没有 `isActiveInWeek`——周卡只判 `date/occurrence`，日卡只判 `date`；`WeekGridCourseMapping.kt:198` 与 `DayViewDataAssembler` 的包装层也都不判。故属于真缺口，不是重复加门。
+4. **守卫 + 探针**：新增 `pages/timetable/day/WeatherGateGuardTest.kt`（4 例，正则锚定行首，注释掉的门不会假绿）。探针两轮：注释 `TimetableHost` 门 → **288 run / 1 failure** 精确命中周卡用例；去掉 `DayViewWeather` 门 → **288 run / 1 failure** 精确命中日卡用例；还原后全绿。
+5. **L0**：`-Module timetable` **288 例**、`-Module course` **232 例**，均 exit 0；`compose-style-lint -Domain timetable` 仍为既有 5 处基线（本次 0 新增）。只声明 JVM 单测通过，不声明编译/真机通过。
+6. **剩下的**：整包 L1/L2 由门 1 专线负责；本笔未 push，由协调线统一推。
