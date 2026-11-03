@@ -82,6 +82,9 @@ object HomeFloatingMetrics {
      * Dart `_backToTodayButtonScrollInset` 把「浮钮顶边 + 间隙」减去坞避让，
      * 再叠在坞避让之上 —— 净效果就是这一条。钮不显示时不要加（不为一颗看不见的
      * 按钮白留空白）。
+     *
+     * 2026-11-03 钮重做成 miuix 官方 `FloatingActionButton`：默认 60dp（原 38dp
+     * 磨砂胶囊），这里跟着钮的真实高度走，否则最后一张卡滚不到钮的上方。
      */
-    const val BACK_TO_TODAY_SCROLL_EXTRA_DP = 38f + DOCK_GAP_DP
+    const val BACK_TO_TODAY_SCROLL_EXTRA_DP = 60f + DOCK_GAP_DP
 }

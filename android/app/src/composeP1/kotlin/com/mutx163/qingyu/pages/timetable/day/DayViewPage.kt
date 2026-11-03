@@ -12,12 +12,10 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,12 +34,11 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.mutx163.qingyu.components.QingyuCard
-import com.mutx163.qingyu.components.QingyuWeightDelta
-import com.mutx163.qingyu.components.shiftWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import com.mutx163.qingyu.app.HomeMenuStyle
@@ -57,7 +54,6 @@ import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
 import com.mutx163.qingyu.pages.shell.HomeFloatingMetrics
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.pages.timetable.ApplyChromeStatusBarInk
-import com.mutx163.qingyu.pages.timetable.homeFloatingChipSurface
 import com.mutx163.qingyu.pages.timetable.TimetableDateLogic
 import com.mutx163.qingyu.pages.timetable.TimetableMenuItem
 import com.mutx163.qingyu.pages.timetable.TimetableTopBar
@@ -65,11 +61,12 @@ import com.mutx163.qingyu.pages.timetable.TimetableWeekdayHeader
 import com.mutx163.qingyu.pages.timetable.WeekSelectorSheet
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
+import com.mutx163.qingyu.pages.timetable.month.MonthViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -437,16 +434,12 @@ fun DayViewPage(
     }
     // σ = 0 是**有效的清档**（Dart 清澈档）：背景原样透出、不跑高斯，连预糊也省掉。
     val cardPreblurActive = cardGlassActive && cardBlurSigmaPx > 0f
-    // ── 「回今日」浮钮的玻璃档（与周视图「回本周」同一条，见 `homeFloatingChipSurface`）──
-    // 跟的是**玻璃坞**那一档（作用范围 → 玻璃坞），不是课程卡片的材质。
-    val floatingGlassActive = (material?.dock == SurfaceMaterialState.LIQUID_GLASS ||
-        material?.dock == SurfaceMaterialState.FROST) &&
-        hasBackdrop && isRuntimeShaderSupported()
     // 浮钮只在「当前看的不是今天」时出现；不可见就不为它录整屏。
+    // （2026-11-03：「回今日」换官方 FloatingActionButton 后不再采玻璃，
+    // 录像带判据里那一份「浮钮真要玻璃」随之移除。）
     val showsBackToToday = !isCurrentPageToday
-    // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采，或浮钮真要玻璃。
-    val pageBackdropActive = bandBlurActive || cardGlassActive ||
-        (floatingGlassActive && showsBackToToday)
+    // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采。
+    val pageBackdropActive = bandBlurActive || cardGlassActive
     val cardGlassSource: Backdrop? = when {
         !cardGlassActive -> null
         cardPreblurActive -> cardGlassBackdrop
@@ -533,7 +526,15 @@ fun DayViewPage(
             // 已经在同一位置、同一材质上画好了，这里再画一遍会在界面交界处叠出
             // 第二份模糊/染色；正文按同一条带的高度下移即可。
             if (contentTopInset != null) {
-                Spacer(modifier = Modifier.height(contentTopInset))
+                // 展开层正文顶缝（2026-11-03 补齐）：Dart 面板在星期栏与滚动区之间有
+                // `SizedBox(height: 14)`（`timetable_day_view_part.dart:37`），缝在滚动区
+                // **外**，所以摘要卡吸顶（`PinnedHeaderSliver` 钉在滚动区顶）时也永远
+                // 离星期栏 14dp。Compose 版此前裸 `Spacer(contentTopInset)`、列表顶到
+                // 窗口顶：LazyColumn 的 stickyHeader 钉住位是 `-beforeContentPadding`
+                // （foundation `LazyLayoutStickyItems.calculateStickingItemOffset`），
+                // 滚过 2×contentPadding 后首卡永久贴死星期栏底边——用户真机口径
+                // 「第一个卡片插到星期栏下面，重叠了」就是这一条。
+                Spacer(modifier = Modifier.height(contentTopInset + DAY_VIEW_CONTENT_TOP_SEAM_DP.dp))
             } else {
             TimetableChromeBandGlass(
                 material = material,
@@ -669,16 +670,14 @@ fun DayViewPage(
 
                 // 「回今日」浮钮（Dart `timetable_screen.dart:1556-1574`）：
                 // 翻到别的日期后一键回到今天；停在今天时不出现。
+                // 2026-11-03 重做：miuix 官方 `FloatingActionButton`（CircleShape +
+                // primary 容器 + onPrimary 内容 + 官方按压反馈与投影，默认 60dp 满足
+                // 48dp 触摸区）。此前是 38dp 磨砂胶囊装「回今日」3 字长文案——用户口径
+                // 「长的非常的丑陋……改成一个单独的『今』」。可见字复用 ARB 已有的
+                // 「今天」短键（与月视图「回到当前月」短按钮同一枚键，跨视图同语义）；
+                // 无障碍念完整语义（`backToTodayAction`），读屏用户不只听到一个字。
                 if (showsBackToToday) {
-                    val todayButtonShape = RoundedCornerShape(BACK_TO_TODAY_HEIGHT_DP.dp / 2)
-                    val todayChipSurface = homeFloatingChipSurface(
-                        backdrop = if (floatingGlassActive) pageBackdrop else null,
-                        material = material,
-                        hasBackdrop = hasBackdrop,
-                        shape = todayButtonShape,
-                        solidColor = MiuixTheme.colorScheme.surface,
-                    )
-                    BackToTodayButton(
+                    FloatingActionButton(
                         onClick = {
                             scope.launch {
                                 pagerState.animateScrollToPage(
@@ -690,16 +689,24 @@ fun DayViewPage(
                                 )
                             }
                         },
-                        surface = todayChipSurface,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
+                            .semantics {
+                                contentDescription = DayViewStrings.backToTodayAction.zh
+                            }
                             // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
                             // 宿主没接时退回旧口径（系统内边距 + 20dp）。
                             .padding(
                                 bottom = floatingButtonBottomInset
                                     ?: (innerPadding.calculateBottomPadding() + 20.dp),
                             ),
-                    )
+                    ) {
+                        Text(
+                            text = MonthViewStrings.monthViewBackToCurrentMonthShort.zh,
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onPrimary,
+                        )
+                    }
                 }
             }
         }
@@ -729,39 +736,9 @@ fun DayViewPage(
 }
 
 /**
- * 日视图底部居中的「回今日」浮钮。
- *
- * Dart `timetable_back_to_today_button.dart`：38dp 高、圆角 = 半高、左右 16dp、
- * 14sp / w700 / 主题强调色，**磨砂胶囊底**（液态档是同一块玻璃 + 折射）。
- * 这里用 [QingyuCard]（官方卡片的按压反馈）承载同一套尺寸与文案，卡面由
- * [homeFloatingChipSurface] 画（玻璃 / 实底回落）—— 与周视图「回本周」同一份判据。
- *
- * @param surface 卡面 modifier（玻璃或实底），由调用方在 composition 里建好。
+ * 展开层正文顶缝：星期栏底边与滚动区之间（Dart `timetable_day_view_part.dart:37`
+ * 的 `SizedBox(height: 14)`）。缝在滚动区**外**，摘要卡吸顶时也保持这条距离。
  */
-@Composable
-private fun BackToTodayButton(
-    onClick: () -> Unit,
-    surface: Modifier,
-    modifier: Modifier = Modifier,
-) {
-    val dark = isSystemInDarkTheme()
-    QingyuCard(
-        modifier = modifier.height(BACK_TO_TODAY_HEIGHT_DP.dp).then(surface),
-        cornerRadius = BACK_TO_TODAY_HEIGHT_DP.dp / 2,
-        insideMargin = PaddingValues(horizontal = 16.dp),
-        // 卡面自己画（上面那条 modifier），卡片本体让开 —— 否则主题实底会把玻璃盖住。
-        colors = CardDefaults.defaultColors(color = Color.Transparent),
-        onClick = onClick,
-    ) {
-        Text(
-            text = DayViewStrings.backToTodayAction.zh,
-            style = MiuixTheme.textStyles.body2.shiftWeight(QingyuWeightDelta.BOLD),
-            color = Color(QingyuTheme.primary(dark = dark)),
-        )
-    }
-}
-
-/** 「回今日」钮高（Dart `TimetableBackToTodayButton.height = 38`），圆角恒为其一半。 */
-private const val BACK_TO_TODAY_HEIGHT_DP = 38f
+private const val DAY_VIEW_CONTENT_TOP_SEAM_DP = 14f
 
 

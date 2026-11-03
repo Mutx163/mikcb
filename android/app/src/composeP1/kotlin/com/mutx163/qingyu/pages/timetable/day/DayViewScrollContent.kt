@@ -85,7 +85,12 @@ fun DayViewScrollContent(
     contentPadding: PaddingValues = PaddingValues(
         start = 14.dp,
         end = 14.dp,
-        top = 8.dp,
+        // top = 0（2026-11-03）：星期栏与滚动区之间的缝由页面在滚动区**外**给
+        // （`DayViewPage.DAY_VIEW_CONTENT_TOP_SEAM_DP`，Dart `timetable_day_view_part.dart:37`
+        // 的 14dp 同口径）。stickyHeader 的钉住位是 `-beforeContentPadding`
+        // （foundation `LazyLayoutStickyItems`），top padding 只在静止时有缝、
+        // 滚过 2×padding 后首卡会贴死星期栏——缝必须在滚动区外才钉住不消失。
+        top = 0.dp,
         bottom = bottomInset,
     ),
 ) {
