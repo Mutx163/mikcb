@@ -4092,6 +4092,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stopRecordingTooltip => '停止录制';
 
   @override
+  String stopRecordingWithCount(int count) {
+    return '停止录制 ($count)';
+  }
+
+  @override
   String get startRecordingTooltip => '录制操作';
 
   @override
@@ -14093,6 +14098,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get stopRecordingTooltip => '停止錄製';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '停止錄製 ($count)';
+  }
 
   @override
   String get startRecordingTooltip => '錄製操作';
@@ -24136,6 +24146,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get stopRecordingTooltip => '停止錄製';
+
+  @override
+  String stopRecordingWithCount(int count) {
+    return '停止錄製 ($count)';
+  }
 
   @override
   String get startRecordingTooltip => '錄製操作';

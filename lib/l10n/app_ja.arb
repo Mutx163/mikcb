@@ -2064,6 +2064,14 @@
   },
   "warehouseAdaptersLoadFailedTitle": "アダプタ一覧を読み込めません",
   "stopRecordingTooltip": "録画停止",
+  "stopRecordingWithCount": "録画停止 ({count})",
+  "@stopRecordingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "startRecordingTooltip": "操作を録画",
   "savedImportUrlHint": "教務URLを保存済み，次回直接インポート可能",
   "adapterIntroSubtitle": "アダプタ情報、ログインエントリとスクリプトステータスを確認可能",

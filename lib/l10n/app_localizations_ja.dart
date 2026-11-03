@@ -4162,6 +4162,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get stopRecordingTooltip => '録画停止';
 
   @override
+  String stopRecordingWithCount(int count) {
+    return '録画停止 ($count)';
+  }
+
+  @override
   String get startRecordingTooltip => '操作を録画';
 
   @override

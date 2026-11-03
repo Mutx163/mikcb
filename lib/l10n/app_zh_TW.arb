@@ -2057,6 +2057,14 @@
   },
   "warehouseAdaptersLoadFailedTitle": "暫時無法讀取適配器列表",
   "stopRecordingTooltip": "停止錄製",
+  "stopRecordingWithCount": "停止錄製 ({count})",
+  "@stopRecordingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "startRecordingTooltip": "錄製操作",
   "savedImportUrlHint": "已保存教務網址，下次可直接匯入",
   "adapterIntroSubtitle": "可查看適配器資訊、登入入口與腳本狀態",

@@ -2064,6 +2064,14 @@
   },
   "warehouseAdaptersLoadFailedTitle": "어댑터 목록을 불러올 수 없습니다",
   "stopRecordingTooltip": "녹화 중지",
+  "stopRecordingWithCount": "녹화 중지 ({count})",
+  "@stopRecordingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "startRecordingTooltip": "동작 녹화",
   "savedImportUrlHint": "교무 URL 저장됨. 다음에 바로 가져올 수 있습니다",
   "adapterIntroSubtitle": "어댑터 정보, 로그인 항목과 스크립트 상태를 확인할 수 있습니다",

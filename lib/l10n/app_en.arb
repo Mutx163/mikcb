@@ -2279,6 +2279,14 @@
   },
   "warehouseAdaptersLoadFailedTitle": "Could not load adapter list",
   "stopRecordingTooltip": "Stop recording",
+  "stopRecordingWithCount": "Stop recording ({count})",
+  "@stopRecordingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "startRecordingTooltip": "Record actions",
   "savedImportUrlHint": "Academic-system URL saved. You can import directly next time",
   "adapterIntroSubtitle": "You can view adapter info, the login entry, and script status here",

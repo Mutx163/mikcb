@@ -2306,6 +2306,14 @@
   },
   "warehouseAdaptersLoadFailedTitle": "暂时无法读取适配器列表",
   "stopRecordingTooltip": "停止录制",
+  "stopRecordingWithCount": "停止录制 ({count})",
+  "@stopRecordingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "startRecordingTooltip": "录制操作",
   "savedImportUrlHint": "已保存教务网址，下次可直接导入",
   "adapterIntroSubtitle": "可查看适配器信息、登录入口与脚本状态",

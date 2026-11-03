@@ -195,6 +195,8 @@ object WarehouseStrings {
     val startDebugAction = WarehouseArbText("startDebugAction", "开始调试")
     val startRecordingTooltip = WarehouseArbText("startRecordingTooltip", "录制操作")
     val stopRecordingTooltip = WarehouseArbText("stopRecordingTooltip", "停止录制")
+    /** 录制中主按钮「停止录制 (N)」，N 为已录步数（`WarehouseWebLoginPage` 底部按钮）。 */
+    val stopRecordingWithCount = WarehouseArbText("stopRecordingWithCount", "停止录制 ({count})")
     val switchToDesktopWebTooltip = WarehouseArbText("switchToDesktopWebTooltip", "切换到桌面端页面")
     val switchToMobileWebTooltip = WarehouseArbText("switchToMobileWebTooltip", "切换到移动端页面")
     val unknownLocation = WarehouseArbText("unknownLocation", "未知地点")
@@ -391,6 +393,7 @@ object WarehouseStrings {
         startDebugAction,
         startRecordingTooltip,
         stopRecordingTooltip,
+        stopRecordingWithCount,
         switchToDesktopWebTooltip,
         switchToMobileWebTooltip,
         unknownLocation,

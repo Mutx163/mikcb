@@ -192,7 +192,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 | **B 课表/课程/共享件** | `android/app/src/**/pages/course/**`、`pages/timetable/**`（**不含** `TimetableStrings.kt`）、`components/QingyuSheet.kt`、`pages/ComposeSheetGuardTest.kt` | QingyuSheet IME 叠加（:104-106）、标题动作对齐、弹层毛玻璃未接（QingyuSheet 零 blur 引用）评估与实现、守卫只拦 OverlayBottomSheet 的补全 | L0 + 门3 | ✅ **已收线**（见下「B 线收口」） |
 | **C sync 族** | `android/app/src/**/pages/sync/**` | 云备份差异预览（CloudBackupDetailHost.kt:52-54）、sync 域剩余弹层与文案一致性（不动 ARB，需要的键报给 A） | L0 + 门3 | ✅ **已收线**（见下「C 线收口」） |
 | **D settings** | `android/app/src/**/app/SettingsHost.kt`、`pages/settings/**` | 主题动作表灰实心、设置子集（LanTransferApplier.kt:30 归属按台账核）、SettingsHost 剩余样式债 | L0 + 门3 | ✅ **已收线**（见下「D 线收口」） |
-| **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | lib/**、ARB、其他域 |
+| **E statistics + import** | `android/app/src/**/pages/statistics/**`、`pages/import/**`、`pages/import/warehouse/**` | I2 四件（原生 confirm/prompt、`saveCourseConfig` 落盘、替换/合并弹窗、宏录制，见 WIRING-NOTE.md:286-348） | L0 + 门3 | ✅ **已收线**（见下「E 线收口」）；禁触 lib/**、ARB、其他域 |
 
 ### 协调线职责（本代理）
 - 每小时用 `git push https://github.com/Mutx163/mikcb.git compose-migration:compose-migration` 推送一次。
@@ -227,6 +227,21 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 - **验收**：L0 `-Module sync` 327 tests OK。
 - **L1 当前红是 E 线半成品**：`pages/import/warehouse/WarehouseBridgeDialogs.kt` 的 `KeyboardOptions` 未解析（E 线未提交的在途改动），**与 C 线无关**；门 1/门 2 等 E 线收口后再复跑，本次红不计入 C 线。
 
+### E 线收口（2026-11-03 09:55 回填，提交 `f8b04f80`，17 文件 +2759/-90 全在白名单）
+- **I2 四件落点**：
+  1. `WarehouseBridgeDialogs.kt`：原生 confirm/prompt/单选三弹窗常驻组合 + show 驱动 + remember 保留最后非空，取消语义逐字对齐 Dart；prompt 接 `validateYearInput`。
+  2. `WarehouseCourseConfig.kt`：周数 >0 且开学日为真实日历日才落盘，无效输入不覆盖既有配置。
+  3. `WarehouseCourseWriteBack`：拆 `parsePayload`/`applyParsed`，替换/合并复用共享 `ImportPreviewDialog`。
+  4. `WarehouseMacro*` 四文件：录制 JS 逐字移植，存档键名 `warehouse_macro_record_*`（与 Dart 同一份 SharedPreferences），认不出的步骤 type 抛异常（不兜成 delay）。
+- **E 线自验**：L0 import 231 例全绿；门 3 import/statistics 0 违规；L1 编译 BUILD SUCCESSFUL（4m05s）。
+- **协调线复测（真实实测，不沿用旧结论）**：门 1 `:app:compileDevDebugKotlin` ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05，仅既有 warning）；门 2 `:app:testDevDebugUnitTest` ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55）。
+- **门 2 复测前一度红 1 处（已处置，归 E 线文件 + A 线基线）**：`CjkLiteralGateTest` 报 main 源集新增未登记文件 `WarehouseMacroModels.kt`：3 条中文字面量（L59「验证码」「校验码」、L64「密码」）——经核为 `inferWarehouseManualInputFieldType` 匹配网页表单 label 的功能识别串，**非屏上文案**。处置：循 main 基线既有先例（`WarehouseRepositoryModels.kt:4`、`AiImageImportModel.kt:4` 等 4 份 import/warehouse 功能串登记），在 `cjk-literal-baseline-main.txt` 登记 `WarehouseMacroModels.kt:3`（i18n 基线目录属 A 线白名单）；若后续 E 线把识别串拆入独立 `*Strings.kt`，该行自然退出基线。
+- **已不成立（勿再按旧文改）**：WIRING-NOTE §9/§10 四条；`ImportCommon.kt:538` 写死中文（现 :665 已走键）；`ImportCommon.kt:785` 两动作竖排（现 :703-720 已横排等宽）。
+
+### A 线回 E 线（键名交付）
+- `WarehouseWebLoginPage.kt:213` 写死中文「停止录制 (N)」→ 新键 **`stopRecordingWithCount`**（zh「停止录制 ({count})」，`count` 为 int 占位符；en「Stop recording ({count})」/ja「録画停止 ({count})」/ko「녹화 중지 ({count})」/zh_HK·zh_TW「停止錄製 ({count})」六份同步；gen-l10n 产物已同步；copy_style 实测新增 0 违规、0 死键）。`WarehouseStrings.kt` 已补 `stopRecordingWithCount` ArbText 引用 + 清单登记（防死键）。
+- **待 E 线**：替换 `WarehouseWebLoginPage.kt:213` 为 `WarehouseStrings.stopRecordingWithCount.filled("count", …)`，并把该文件 cjk 基线 1→0 压行。
+
 ---
 
 ## 七、需 Lead 处理项
@@ -237,11 +252,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 4. **（D 线报）LAN 导入的设置子集补全属 transfer 域**：`LanTransferLogic.kt:51` 自认只比时间/周次子集，需 transfer 域 Owner 接手；台账同条「撤销点 transferId 恒 null」已不成立（`LanTransferUndoStore` 已在）。
 5. **（B 线报）timetable 域 L0 跑不过属既有结构债**：`TimetableProfilesController.kt`/`DayAgendaSurfaceLogic.kt` 反向引用 `pages/settings` 8+ 个类（旧提交 06522f5c/49eaf778），ExtraSources 补 6 文件仍不闭合，`test-kotlin-module.ps1:176-179` 自述同类未修。**是否解耦或扩脚本白名单需裁决。**
 6. **（C 线报）① `ShellPageIndex.kt:1723` `WebdavConnectSheet` 仍 `if (showConnect)` 条件挂载**（壳文件禁改，记 Lead）；② `CloudBackupDetailSheet.kt:77-105` 动作区仍是半宽横排，Dart 是整宽竖排「恢复前删除后」，配色已修结构未改，改否待拍板；③ timetable 域 L0 结构债同第 5 条。
-7. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 21 条（203→182）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
+7. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 28 条（203→175，09:50 实测 lint 冻结 175、新增 0）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
+8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
 
-## 八、当前状态（2026-11-03 02:45 更新）
+## 八、当前状态（2026-11-03 09:55 更新）
 
-- HEAD = 远端 = `9e604163`（已核对一致，无 ahead/behind）。
+- HEAD：`f8b04f80`（E 线 I2 收口）+ 本轮 A 线 ARB/基线/日志提交；推送后远端 HEAD 以 ls-remote 复核为准。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
-- 四道门全绿（L1 编译 ✅ 02:20、L2 整包单测 ✅ 02:26、样式守卫 ✅ 02:35、文案门禁+cjk 棘轮 ✅ 02:35）。
+- 门1 L1 编译 ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55）；门4 copy_style ✅ 09:50（超宽冻结 175/新增 0、死键新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
 - 5 路（A~E + 补 F）已全部完成并经 L0/门3 验证；并行方式切换为 5 条独立会话，A 线（本代理）继续 copy_style 欠账与 ARB 同步。

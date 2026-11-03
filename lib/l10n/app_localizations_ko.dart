@@ -4178,6 +4178,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get stopRecordingTooltip => '녹화 중지';
 
   @override
+  String stopRecordingWithCount(int count) {
+    return '녹화 중지 ($count)';
+  }
+
+  @override
   String get startRecordingTooltip => '동작 녹화';
 
   @override

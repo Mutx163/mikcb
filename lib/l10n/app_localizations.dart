@@ -7588,6 +7588,12 @@ abstract class AppLocalizations {
   /// **'停止录制'**
   String get stopRecordingTooltip;
 
+  /// No description provided for @stopRecordingWithCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止录制 ({count})'**
+  String stopRecordingWithCount(int count);
+
   /// No description provided for @startRecordingTooltip.
   ///
   /// In zh, this message translates to:
