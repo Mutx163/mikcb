@@ -523,7 +523,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **backlog（已登记，不本轮做）**：
 - `maybePullRemote` 的生命周期 wiring —— **需改壳**（壳文件禁改），转需 Lead/Owner 排期。
-- platform 端口搬出 `CloudSyncController` —— **需排期**，且要**避开在途的 `pages/sync` 改动**，避免撞车。
+- ~~platform 端口搬出 `CloudSyncController`~~ —— ✅ 已完成（`d68e2b88`，2026-11-04），见 §10.23。
 
 #### L2（course/timetable）第四批 ✅（2026-11-03 21:40 协调线回填）
 
@@ -597,7 +597,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 **backlog（sync 侧）**：
 - `decideWebdavAutoUpload` / `resolveSyncConflictAutomatically` **仅测试调用**，**LWW 生产接线未做**（需生命周期 + 改壳），登记缺口。
 - `maybePullRemote` 生命周期 wiring（同上，需改壳）。
-- platform 端口搬出 `CloudSyncController`（需排期，避让在途 `pages/sync`）。
+- ~~platform 端口搬出 `CloudSyncController`~~ —— ✅ 已完成（`d68e2b88`），见 §10.23。
 
 #### 逻辑层（L4）第四批 ✅（2026-11-03 23:15 协调线回填）
 
@@ -905,3 +905,17 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 1. **`bd2af39f` 例外科改落地（授权范围内）**：`ShellPageIndex.kt` **只加两处**——`onWeeklyReportToggle`（`:1574-1576`）与 `onPersistHideFromRecents`（`:2051-2053`），各追加一行 `writeRawSettingsPatch`；**未改布局/主题/路由/页面装配**。同笔 `ShellWiring.kt` +46 行 = 启动时 settings→native pref 单向对账（对应裁决「`weeklyReportEnabled`、`liveHideFromRecents` 走启动对账」）。
 2. **`a1d2b48b` 表单钟点（backlog 第一处）**：`AddCourseEntryClock` 新增 `hasCustomTime`（默认 `false`），`buildSavePayload` 透传给 `toCourse`（Dart `add_course_screen.dart:2022-2039`）；补两用例（自定义时间课保存后仍 `true`、非自定义课不为 `true`）。**该 backlog 项不能划掉**：第二处 `ShellPageIndex.kt:997-1008` 的 `clockResolver` 仍在**工作区未提交**（已见 diff：改用 `CourseDomain.editCourseClock(...)` 回传布尔，属授权 lambda 范围）。
 3. **`0f99dee1` 启动对账收敛**：把 `bd2af39f` 的启动回写抽成纯决策层 `app/NativePrefReconcileLogic.kt`（+137）+ `ShellWiring` 40 行接线 + 212 行单测。**三笔均动主源集**，故 `df1a9873` 的门结论不代言 `0f99dee1`。
+
+### 10.23 ✅ platform 端口搬出（`d68e2b88`，3 文件）+ `maybePullRemote` 评估
+
+**A. 端口搬出**
+1. `WebdavConfigStore`（原在 `CloudSyncController.kt`）与 `LocalSnapshotStore`（原在 `CloudSyncCoordinator.kt`）搬进新文件 `pages/sync/CloudSyncPorts.kt`。新文件只 import `sync/WebdavSyncConfig`，**零 `android.*`、零 `pages/transfer`**；包名不变 ⇒ 全仓调用方零改 import。
+2. **platform 22 例进 L0**：L0 脚本以单文件白名单喂入 `CloudSyncPorts` + `platform/{LocalSnapshotStoreImpl,WebdavConfigStoreImpl,SecretCipher,ScreenCaptureWatchLogic}.kt` + 3 个测试文件（整目录仍不可收：含 `Context`/Keystore 胶水）。
+3. **数字**：L0 **1887 例**（原 1865 + 22）exit 0；另跑 `pages/sync` 模块（含 `CloudSyncController` 全包编译）**353 例** green，证明搬迁未破坏同步域。
+
+**B. `maybePullRemote` 评估结论：不接（需壳授权 + 4 个缺口）**
+1. **控制器是页面级**：`f.cloudSync` / `f.backupList` 各 `remember` 一个实例（`ShellPageIndex.kt:1698`、`:1783`）；Dart 是进程级单例。
+2. **无「只拉」API**：`syncNow()` 冲突一律挂起等 UI 选边（`CloudSyncController.kt:453-456`）；`runPullPhase` 用**手动**策略（`:1102-1105`）；后台策略 `webdavBackgroundPullShouldCancel` / `resolveSyncConflictForBackground`（`sync/SyncConflict.kt:71/:84`）**已有 L0 测试但无生产调用**。
+3. **无生命周期钩子**：`PagesShellActivity` 无 `onResume` / `Lifecycle*`（Dart 有 3 处：`main.dart:921/1105/1145`）。
+4. **无互斥**：Dart `_syncGate` 串行化；Kotlin 控制器可被启动拉取与页面 `refreshOnEnter` 叠跑。
+5. 若接：需 `pullRemoteInBackground()`（含 `keepLocal → 上传` 链）+ App 级实例 + `PagesShellActivity.onCreate` 里 `LaunchedEffect(wiring)`（约 10 行，**壳文件，需 Lead 授权**）；`allowConflictPrompt=false` 的「本地有用户数据且未同步 → 取消」语义必须照搬。**本条只评估、未实现。**
