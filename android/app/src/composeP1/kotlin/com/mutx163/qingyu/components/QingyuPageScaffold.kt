@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -103,16 +104,23 @@ class QingyuPageContentScope(
  * 见 [rememberQingyuBlurBackdrop]：设备不支持 `RuntimeShader`，或系统关了动画/移除动画时
  * 直接返回 null；此时不挂录屏层、不挂模糊修饰符、顶栏继续用不透明页面底色。
  *
- * ## 宽屏
+ * ## 宽屏（2026-11-03 第一批落地，判据见 core/QingyuAdaptiveRules.kt）
  *
- * 官方 demo 的宽屏做法在**壳层**（`AppContent.kt:251-276` 用 `NavigationRail` 包住 NavHost、
- * 由 `shouldShowSplitPane()` 判宽）和**页面自身**（`WideScreenContent` 双栏）协作完成；
- * 页面用的 `AdaptiveTopAppBar` 也只是 demo 自己的 `utils` 辅助函数，不是 miuix 组件。
- * 共享骨架无法替页面做这件事，只提供**默认关闭**的 [maxContentWidth] 做保守增强。
+ * 三档以**窗口宽度**为准（紧凑 <600dp / 中宽 / 宽屏），页面侧零改动，全部由骨架兜底：
  *
- * @param maxContentWidth 非 null 时把内容列限制到该宽度并在宽屏上水平居中；null（默认）保持原样。
- *   不默认开启：官方 demo 在宽屏上并不限制内容宽度，且官方 [TopAppBar] 的大标题是左对齐、
- *   不受这个约束影响——默认打开会让大标题与内容列错开，所以只留作显式选择。
+ * - **中宽与宽档**：内容列限宽 640dp 居中（[maxContentWidth] 缺省时由骨架给默认值）；
+ *   顶栏内容同步限制到**同一根内容列**（毛玻璃面仍然通栏），大标题 / 返回键 / 动作键
+ *   与正文共用一条左缘——不这么做的话标题贴窗口边缘、正文居中，两套左缘错开
+ *   （这正是本骨架旧注释里「默认限宽会让大标题与内容列错开」那条顾虑的解法）。
+ * - **宽屏档**：可折叠大标题换成单行 [SmallTopAppBar]（demo `AdaptiveTopAppBar` 的等价
+ *   做法）。本仓 miuix 版本没有 demo 的 `defaultWindowInsetsPadding` 参数，内边距行为
+ *   与现有 `smallTopBar` 分支保持一致；[scrollBehavior] 照常下发，小标题变体不吃折叠、无副作用。
+ * - **紧凑档**（手机竖屏 <600dp）：与宽屏适配落地前逐像素一致。
+ *
+ * 壳层（Rail 批次）接入后应通过 [QingyuLocalWindowAdaptive] 在根部注入统一取值；
+ * 未注入时骨架按窗口自算，平板 / 折叠屏竖屏宽窗立即生效，不依赖壳层改造。
+ *
+ * @param maxContentWidth 页面显式限宽；null（默认）时中宽/宽档自动用 640dp，紧凑档不限宽。
  */
 @Composable
 fun QingyuPageScaffold(
@@ -132,26 +140,59 @@ fun QingyuPageScaffold(
     val pageBackground = Color(QingyuTheme.scaffoldBackground(dark))
     val backdrop = rememberQingyuBlurBackdrop(pageBackground)
     val barColor = if (backdrop != null) Color.Transparent else pageBackground
+    // 宽屏三档取值：页面显式传入的 maxContentWidth 优先，缺省时中宽/宽档用 640dp 默认值。
+    val adaptive = rememberQingyuWindowAdaptive()
+    val cap = maxContentWidth ?: adaptive.maxContentWidth
     Scaffold(
         containerColor = pageBackground,
         topBar = {
             QingyuBlurredTopBar(backdrop = backdrop, dark = dark) {
-                if (smallTopBar) {
-                    SmallTopAppBar(
-                        title = title,
-                        color = barColor,
-                        navigationIcon = { QingyuBackIconButton(onBack = onBack) },
-                        actions = actions,
-                    )
+                // 宽屏/中宽档把顶栏内容限制到与正文同一根内容列（毛玻璃面仍然通栏）：
+                // 限宽只包内容、不包模糊面，标题/返回键/动作键与正文左缘保持对齐。
+                // 宽屏档的大标题换成单行小标题（demo AdaptiveTopAppBar 的等价分支），
+                // 小标题在通栏窗口上不再有「32sp 大标题 + 永远收不起」的观感问题。
+                val bar: @Composable () -> Unit = {
+                    when {
+                        smallTopBar -> {
+                            SmallTopAppBar(
+                                title = title,
+                                color = barColor,
+                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                actions = actions,
+                            )
+                        }
+                        adaptive.isWideScreen -> {
+                            SmallTopAppBar(
+                                title = title,
+                                color = barColor,
+                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                actions = actions,
+                            )
+                        }
+                        else -> {
+                            TopAppBar(
+                                title = title,
+                                color = barColor,
+                                largeTitle = title,
+                                scrollBehavior = scrollBehavior,
+                                navigationIcon = { QingyuBackIconButton(onBack = onBack) },
+                                actions = actions,
+                            )
+                        }
+                    }
+                }
+                if (cap != null) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .widthIn(max = cap),
+                        ) {
+                            bar()
+                        }
+                    }
                 } else {
-                    TopAppBar(
-                        title = title,
-                        color = barColor,
-                        largeTitle = title,
-                        scrollBehavior = scrollBehavior,
-                        navigationIcon = { QingyuBackIconButton(onBack = onBack) },
-                        actions = actions,
-                    )
+                    bar()
                 }
             }
         },
@@ -164,7 +205,6 @@ fun QingyuPageScaffold(
                 .fillMaxSize()
                 .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier),
         ) {
-            val cap = maxContentWidth
             val contentModifier = if (cap != null) {
                 Modifier
                     .fillMaxHeight()
