@@ -1,6 +1,8 @@
 package com.mutx163.qingyu.pages.timetable
 
 import java.time.LocalDate
+import java.time.LocalDateTime
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -80,6 +82,39 @@ class TimetableDateLogicTest {
                 totalWeeks = 16,
                 today = LocalDate.of(2026, 10, 7),
             ),
+        )
+    }
+
+    // ── 首页「此刻」前移（跨零点 / 分钟节流）──
+
+    @Test
+    fun `同一分钟内不推进 分钟变化才推进`() {
+        val base = LocalDateTime.of(2026, 10, 28, 9, 0, 0)
+        assertFalse(TimetableDateLogic.homeClockShouldAdvance(base, base.plusSeconds(59)))
+        assertTrue(TimetableDateLogic.homeClockShouldAdvance(base, LocalDateTime.of(2026, 10, 28, 9, 1, 0)))
+        assertTrue(TimetableDateLogic.homeClockShouldAdvance(base, LocalDateTime.of(2026, 10, 28, 10, 0, 0)))
+    }
+
+    @Test
+    fun `跨零点一定推进`() {
+        val beforeMidnight = LocalDateTime.of(2026, 10, 28, 23, 59, 30)
+        assertTrue(
+            TimetableDateLogic.homeClockShouldAdvance(beforeMidnight, LocalDateTime.of(2026, 10, 29, 0, 0, 1)),
+        )
+    }
+
+    @Test
+    fun `注入时钟的今天按真实日历平移 跨零点后不再停在昨天`() {
+        val injected = LocalDate.of(2026, 10, 28)
+        // 同一天：保持注入值。
+        assertEquals(
+            injected,
+            TimetableDateLogic.rollTodayDate(injected, LocalDate.of(2026, 10, 28), LocalDate.of(2026, 10, 28)),
+        )
+        // 跨一天：跟到次日（Dart 每次构建重读 `DateTime.now()`，`timetable_screen.dart:1429`）。
+        assertEquals(
+            LocalDate.of(2026, 10, 29),
+            TimetableDateLogic.rollTodayDate(injected, LocalDate.of(2026, 10, 28), LocalDate.of(2026, 10, 29)),
         )
     }
 }

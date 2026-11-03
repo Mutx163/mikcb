@@ -301,12 +301,18 @@ fun DayViewPage(
     val scope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
 
+    // 跨零点：`todayDate` 只是注入种子（测试可给固定日期），运行期按真实日历平移。
+    // 只读参数的话，首页常驻不复位时「今天」高亮 / 回今日入口会停在昨天
+    //（Dart 每次构建都重读 `DateTime.now()`，`timetable_screen.dart:1404`/`:1429`/`:1438`）。
+    val seedRealToday = remember { LocalDate.now() }
+    var viewToday by remember { mutableStateOf(todayDate) }
+
     // 「今天在哪一周」：优先按开学日现算（跨周自动跟手），算不出才用仓储当前周。
     val todayWeek = realCurrentWeek
         ?: TimetableDateLogic.currentSemesterWeek(
             semesterStart = semesterStartDate,
             totalWeeks = totalWeeks.coerceAtLeast(1),
-            today = todayDate,
+            today = viewToday,
         )
         ?: initialWeek
 
@@ -314,17 +320,17 @@ fun DayViewPage(
     val currentTarget = DayViewPaging.targetForGlobalPage(visibleDays, pagerState.currentPage)
     val currentTargetWeek = currentTarget?.week ?: initialWeek
     val currentTargetDayOfWeek = currentTarget?.dayOfWeek
-        ?: DayViewPaging.normalizeDayOfWeek(visibleDays, todayDate.dayOfWeek.value)
+        ?: DayViewPaging.normalizeDayOfWeek(visibleDays, viewToday.dayOfWeek.value)
     val isCurrentPageToday = currentTarget != null &&
         if (semesterStartDate != null) {
             TimetableDateLogic.dateForWeekDay(
                 semesterStart = semesterStartDate,
                 week = currentTarget.week,
                 dayOfWeek = currentTarget.dayOfWeek,
-            ) == todayDate
+            ) == viewToday
         } else {
             // 没设开学日：与装配器同口径——同一周内、星期相同才算今天。
-            currentTarget.dayOfWeek == todayDate.dayOfWeek.value && currentTarget.week == todayWeek
+            currentTarget.dayOfWeek == viewToday.dayOfWeek.value && currentTarget.week == todayWeek
         }
 
     // ── 1 Hz 局部进度心跳驱动 ──
@@ -340,6 +346,7 @@ fun DayViewPage(
             delay(1000L)
             val now = LocalDateTime.now()
             currentMinuteOfDay = now.hour * 60.0 + now.minute + now.second / 60.0
+            viewToday = TimetableDateLogic.rollTodayDate(todayDate, seedRealToday, now.toLocalDate())
         }
     }
 
@@ -420,7 +427,7 @@ fun DayViewPage(
         visibleDays = visibleDays,
         semesterStart = semesterStartDate,
         totalWeeks = totalWeeks.coerceAtLeast(1),
-        today = todayDate,
+        today = viewToday,
     )
     // 录像带只在真有人采时才挂：顶栏带要采、议程卡液态档要采，或浮钮真要玻璃。
     val pageBackdropActive = bandBlurActive || cardGlassActive ||
@@ -538,7 +545,7 @@ fun DayViewPage(
                         TimetableWeekdayHeader(
                             week = currentTarget.week,
                             currentWeek = todayWeek,
-                            todayDate = todayDate,
+                            todayDate = viewToday,
                             semesterStartDate = semesterStartDate,
                             visibleDays = visibleDays,
                             style = weekdayStyle,
@@ -655,7 +662,7 @@ fun DayViewPage(
                                     DayViewPaging.globalPage(
                                         visibleDays = visibleDays,
                                         week = todayWeek,
-                                        dayOfWeek = todayDate.dayOfWeek.value,
+                                        dayOfWeek = viewToday.dayOfWeek.value,
                                     ).coerceIn(0, pageCount - 1),
                                 )
                             }

@@ -262,6 +262,68 @@ class DayViewDataAssemblerTest {
             .firstOrNull { it.kind == SummaryChipKind.EXAM })
     }
 
+    @Test
+    fun `考试结束钟点缺失时按 23-59 过期 与 Dart Exam-isExpired 同口径`() {
+        // Dart `lib/models/exam.dart:309-324`：`endTime` 解析不出时回落到 23:59，
+        // 即「当天 23:59 之前都算未过期」。此前这里回落到「跨日才算过期」，
+        // 23:59:30 仍把考试列在首页，与 Dart 差一分钟。
+        val exam = Exam(
+            id = "e-empty-end",
+            courseId = "c-none",
+            name = "晚课小测",
+            dateTime = LocalDateTime.of(2026, 10, 28, 0, 0),
+            startTime = "20:00",
+            endTime = "",
+            createdAt = now,
+            updatedAt = now,
+        )
+        assertFalse(
+            "23:58:59 还没过 23:59 的边界，不该判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 58, 59)),
+        )
+        assertTrue(
+            "23:59 之后即过期（Dart 回落 23:59，不是跨日才过期）",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 59, 30)),
+        )
+        assertTrue(
+            "次日 00:00:30 已过 23:59，应判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 29, 0, 0, 30)),
+        )
+
+        // 装配层同判据：过期当天考试不进议程。
+        val day = DayViewDataAssembler.build(
+            week = 3,
+            dayOfWeek = 3,
+            courses = emptyList(),
+            settings = TimetableSettings(semesterWeekCount = 20, semesterStartDate = null),
+            currentWeek = 3,
+            exams = listOf(exam),
+            now = LocalDateTime.of(2026, 10, 28, 23, 59, 30),
+        )
+        assertEquals(0, day.agendaEntries.count { it is DayAgendaEntry.ExamEntry })
+    }
+
+    @Test
+    fun `考试结束钟点写 24-00 时同样按 Dart 口径处理`() {
+        val exam = Exam(
+            id = "e-midnight-end",
+            courseId = "c-none",
+            name = "跨零点考试",
+            dateTime = LocalDateTime.of(2026, 10, 28, 0, 0),
+            startTime = "23:00",
+            endTime = "24:00",
+            createdAt = now,
+            updatedAt = now,
+        )
+        assertFalse(
+            "24:00 应解析成当天 23:59 前后仍在进行，不该在 23:30 判过期",
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 28, 23, 30)),
+        )
+        assertTrue(
+            DayViewDataAssembler.isExamExpired(exam, LocalDateTime.of(2026, 10, 29, 0, 0, 1)),
+        )
+    }
+
     // ------------------------------------------------------------------ 夹具
 
     private fun course(

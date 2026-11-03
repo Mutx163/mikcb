@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 /**
@@ -103,4 +104,27 @@ object TimetableDateLogic {
     /** 该日期所在周的周一（Dart `start.subtract(Duration(days: start.weekday - 1))`）。 */
     fun mondayOf(date: LocalDate): LocalDate =
         date.minusDays((date.dayOfWeek.value - 1).toLong())
+
+    /**
+     * 首页「此刻」是否需要前移。
+     *
+     * Dart 日视图的进度心跳按**日内分钟数**节流：分钟没变就跳过，避免每秒脏化缓存页
+     * （`timetable_screen.dart:559-574`）；周视图每次构建都重读 `DateTime.now()`
+     * （同文件 `:1404`/`:1429`/`:1438`）。两条合起来的口径就是本函数：跨日一定前移，
+     * 否则同一小时内分钟变化才前移。
+     */
+    fun homeClockShouldAdvance(previous: LocalDateTime, current: LocalDateTime): Boolean =
+        previous.toLocalDate() != current.toLocalDate() ||
+            previous.hour != current.hour ||
+            previous.minute != current.minute
+
+    /**
+     * 跨零点后把注入的「今天」跟着真实日期平移。
+     *
+     * 渲染层允许测试注入固定时钟（`DayViewPage(todayDate = ...)`）：运行期以注入值为种子，
+     * 按「种子当天的真实日期 → 当前真实日期」的日差平移，既保留测试偏移，又不会在
+     * 首页常驻跨零点后停在昨天（Dart 侧无注入点，每次构建直接重读 `DateTime.now()`）。
+     */
+    fun rollTodayDate(seedToday: LocalDate, seedRealToday: LocalDate, realToday: LocalDate): LocalDate =
+        seedToday.plusDays(ChronoUnit.DAYS.between(seedRealToday, realToday))
 }
