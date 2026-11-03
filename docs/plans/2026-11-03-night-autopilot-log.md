@@ -1146,5 +1146,76 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
 - 未推送。
 
+### §10.28 诊断域（`pages/diagnostics` + 应用日志）对拍审计（2026-11-04）
+
+**路径核实**：`pages/diagnostics` 实际存在（15 个 .kt）；应用级日志/诊断在仓库根包
+`com.mutx163.qingyu/UmengDiagnosticReporter.kt`、`UmengCrashRedaction.kt`、`UmengApplication.kt`
+与 `infra/{AppLogFile,AppLogStore,DiagnosticsLog,LogGate,LogRedaction}.kt`（不在 `app/` 子包里，
+按真实结构取根包 + `infra/`）。本批**无新增代码差异**，均为审计结论。
+
+**1. 日志脱敏（安全）→ 双侧同解、无泄漏**
+- 19 键个人字段表逐字一致：Dart `lib/logging/app_debug_log.dart:189-219` ↔ Kotlin
+  `infra/LogRedaction.kt:18-38`；原生侧 `UmengDiagnosticReporter.kt` 的 `personalLogFieldKeysLower`
+  同 19 键。两边都**故意不含** `password/passwd/token/cookie/secret/credential`（Dart 口径如此，
+  Kotlin 不擅自加键，避免与 Dart 表漂移）。
+- WebDAV 凭据无进日志入口：错误文本只出安全短码（Dart `webdav_error_message.dart:27-99` ↔
+  Kotlin `sync/WebdavFailures.kt:236-286`，`:234` 明示「含 URL 时只做关键词匹配，永不原文返回」）；
+  `basicAuthorizationHeader`（`sync/WebdavRequests.kt:172-174`）只构造请求头，全仓零日志调用。
+- 诊断 `context=`（`UmengDiagnosticReporter.kt:409-465`）只取布尔/数值/枚举码
+  （`liveMiuiIslandLabelContent` 是 `MiuiIslandLabelContent.value` 编码，不是自由文本），
+  不含 WebDAV 配置、Cookie、token、备份路径；`buildDiagnosticContext` 读的是 `timetable_settings`
+  而非凭证存储。
+- 脱敏函数体逐行对齐：Dart `redactPersonalFields`（`app_debug_log.dart`）↔ `LogGate.kt:125-158`
+  ↔ `LogRedaction.kt`；`error/stackTrace` 走同一条脱敏出口。
+- 原生 reporter 的边界字符比 Dart 多认 `(`/`,`（`UmengDiagnosticReporter.kt` 注释「Dart 侧暂未放宽」）
+  ——这是**更严格**的本地加固，不回改 Dart。
+
+**2. 诊断包字段 → 双侧同解**
+- 头部逐行一致：`log_export_title` / `exportedAt=<millis>`（仅导出）/ `platform=android` /
+  `version=<version>+<build>`（拿不到则省略）/ `----`
+  （Dart `app_log_service.dart:515-527` ↔ `infra/AppLogFile.kt:54-58`、`99+`）。
+- 条目字段逐行一致：`time` → `level`（先过 `normalizeLogLevel`）→ `source=app` → `category` →
+  `message` → `extras`（缩进两格）→ `error` → `stackTrace` → 空行
+  （Dart `:529-590` ↔ `infra/LogGate.kt:125-158`）。脱敏前后差异仅：命中表的 extras 键整值
+  写 `key=**`、嵌套值递归脱敏，Dart 同解。
+- 原生超级岛日志头（分享主题 + `context=` 设备/设置块）属迁移前既有原生通道
+  （Dart 经 `LiveUpdateService` 直接取原生文本），非迁移差异。
+
+**3. 崩溃/异常上报路径 → 口径不同，非吞异常**
+- Dart：`FlutterError.onError`（`lib/main.dart:321`）与 `PlatformDispatcher.onError`（`:350`）
+  把框架/平台错误 force 写进 app log。
+- Kotlin：原生崩溃交给 U-APM（`UmengCrashRedaction.kt:53-60` 先脱敏再 `delegate`），
+  不吞、栈帧不动；Compose/Kotlin 无 Flutter 框架错误等价层，协程/线程崩溃最终仍走默认 handler。
+- **剩余风险**：本地 `app_runtime.log` 不含原生崩溃条目（U-APM 有栈，本地诊断包没有）。
+  未改 `UmengDiagnosticReporter/UmengCrashRedaction`：这两个根包 Android 文件不在 L0 类路径，
+  改动无法用 JVM 单测/咬合探针验证，留待门 1（Gradle 编译）线评估。
+
+**4. 性能快照键名（`.name` vs `.value`）→ 无反例**
+- 键集与 Dart `lib/logging/performance_settings_snapshot.dart:145-190` 对齐；逐个核对
+  `.name/.value`：`themeMode`、`fontMode` 用 `.value`（Dart 也是 `.value`，`:178`/`:181`）；
+  `foruiTheme`、`menuStyle`、`timeColumnWidthMode`、`courseSpacingMode` 的 Dart `.name`
+  与 Kotlin `.value` 是同一字符串；`navigationForm`、`courseCardStyle` 用显式驼峰映射
+  （`PerformanceSettingsSnapshot.kt:170-208`）。上批 settings 线的 `.name/.value` 问题未复现。
+- 顺带核对 perf 页/会话：`PerfPageLedger` 的 `frames/janky/jankyPct/worstBuildMs/avgBuildMs/
+  worstRasterMs/avgRasterMs/firstFrameMs/cpuMs/rssDeltaKb/fps/verdict/page` 与 Dart
+  `lib/utils/perf_page_ledger.dart` 键名一致；`PerfStartupRecorder` ↔ `lib/utils/perf_startup.dart`
+  同键；会话文件名 UTC 时间戳（Dart `perf_probe.dart` 同口径）。
+
+**5. 其余顺带核对（同解）**
+- 数字格式一律 `Locale.US/ROOT`（`PerfReportModel.kt:138`、`MemoryStatsModel.kt`），无隐式 Locale。
+- `dartNumberText` 复刻 Dart `toString()`（整数不带小数点、`60.0` 保持 `60.0`），
+  `PerfReportModel.kt:119-129`；`formatWholeNumber` 对齐 `toStringAsFixed(0)`（Dart `perf_report_screen.dart:290`）。
+- 日志查看器首行 `log_export_title` 特殊处理、`DiagnosticsLog` 解析/`DiagnosticsLogFeed` 增量追加
+  与 Dart `diagnostics_log_parser.dart` 同解。
+- `prettyDiagnosticsFieldLabel` 的 default 直接回原键（Dart 走 `AppLogMessageLocalizer.localizeField`，
+  229 键）：`LiveDiagnosticsLogModel.kt:321` 已注明该翻译表属跨页共享件、不在本页实现 → 已知待办。
+
+**L0 数字**（统一入口，pwsh 7，`scripts/test-kotlin-module.ps1`）
+- 实际模块：`-Module diagnostics`（脚本规整为 `pages/diagnostics`）；编译 168 个 .kt。
+- **Tests run: 239, OK**（17 个测试类），exit 0。
+- 未裸跑 gradlew、未跑整包；只声明编译通过 / JVM 单测通过。
+- 本批无源码改动（审计 + 日志），未推送。
+
+
 
 
