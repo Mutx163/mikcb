@@ -733,7 +733,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importRandomCourseColorTitle => '授業カラーをランダム';
 
   @override
-  String get importRandomCourseColorSubtitle => '授業名と教員でプリセット色を自動割り当て';
+  String get importRandomCourseColorSubtitle => '授業名と教員で色を自動割当';
 
   @override
   String get importRandomColorGroupTitle => 'ランダム配色グループ';
@@ -799,7 +799,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importMethodIcsTitle => '.icsカレンダーインポート';
 
   @override
-  String get importMethodIcsSubtitle => '他の時間割アプリから書き出したカレンダー';
+  String get importMethodIcsSubtitle => '他アプリが書き出したカレンダー';
 
   @override
   String get importMethodAiTitle => '画像認識インポート';
@@ -2270,7 +2270,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liveMiuiLabelImageTitle => '小米アイランド左側テキストアイコン';
 
   @override
-  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 推奨。他機種は不具合の可能性';
+  String get liveMiuiLabelImageSubtitle => 'Xiaomi/Redmi 推奨、他機種は注意';
 
   @override
   String get liveMiuiLabelAdvancedAccordionTitle => '文字組版と位置の微調整';
@@ -2776,7 +2776,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bingWallpaperAutoApplyTitle => '毎日自動で変更';
 
   @override
-  String get bingWallpaperAutoApplySubtitle => 'すべての時間割で共有、現在のものだけ変更';
+  String get bingWallpaperAutoApplySubtitle => '全時間割で共有、現在のみ変更';
 
   @override
   String get bingWallpaperAutoApplyApplying => '今日の壁紙に切り替えています';
@@ -5431,7 +5431,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeManageTitle => 'テーマ管理';
 
   @override
-  String get themeManageSubtitle => 'テーマのエクスポート、インポート、切り替え';
+  String get themeManageSubtitle => 'テーマの書き出し・取り込み・切替';
 
   @override
   String get themePreset => 'プリセットテーマ';
@@ -8796,7 +8796,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get liquidGlassScopeDockTitle => 'ガラスドック操作';
 
   @override
-  String get liquidGlassScopeDockSubtitle => '下部のフローティングピルと授業追加ボタン';
+  String get liquidGlassScopeDockSubtitle => '下部の浮遊ピルと加課ボタン';
 
   @override
   String get frostedGlassModeLiquid => 'リキッドガラス';

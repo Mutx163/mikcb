@@ -1159,7 +1159,7 @@
   "liveReminderTimingTitle": "Reminder Timing",
   "liveReminderSwitchesTitle": "Reminder Switches",
   "beforeClassReminderTitle": "Before Class Reminder",
-  "beforeClassReminderSubtitle": "Trigger {minutes} minutes before class starts",
+  "beforeClassReminderSubtitle": "Alert {minutes} min before class",
   "@beforeClassReminderSubtitle": {
     "placeholders": {
       "minutes": {
@@ -1838,7 +1838,7 @@
   "layoutShowTimeLabelsTitle": "Show start and end labels",
   "layoutShowWeeksTitle": "Show weeks",
   "layoutShowDescriptionTitle": "Show course description",
-  "layoutShowOtherWeeksTitle": "Show courses outside the current week",
+  "layoutShowOtherWeeksTitle": "Off-week courses",
   "layoutShowOtherWeeksSubtitle": "Off-week courses dimmed",
   "weekGridShowExamsTitle": "Show exams in week view",
   "weekGridShowExamsSubtitle": "Long-press add skips exams",

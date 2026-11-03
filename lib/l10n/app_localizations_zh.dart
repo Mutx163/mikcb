@@ -27300,8 +27300,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get hyperosShowcaseRootPageDetails => '無返回鍵的根頁面';
 
   @override
-  String get hyperosShowcaseSubpageSubtitle =>
-      '目前頁面就是 Subpage + HyperosListView';
+  String get hyperosShowcaseSubpageSubtitle => '本頁即 Subpage 樣例';
 
   @override
   String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';

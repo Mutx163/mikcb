@@ -725,7 +725,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unifiedCourseCardColorTitle => '수업 카드 색상 통일';
 
   @override
-  String get unifiedCourseCardColorSubtitle => '끄면 각 수업의 개별 색상을 계속 사용합니다';
+  String get unifiedCourseCardColorSubtitle => '끄면 수업별 색상 유지';
 
   @override
   String get importRandomCourseColorTitle => '수업 색상 무작위';
@@ -2183,7 +2183,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get preferShortNameTitle => '약칭 우선 표시';
 
   @override
-  String get preferShortNameSubtitle => '약칭을 입력하지 않으면 적용되지 않습니다';
+  String get preferShortNameSubtitle => '약칭 없으면 적용 안 됨';
 
   @override
   String get showLocationTitle => '장소 표시';

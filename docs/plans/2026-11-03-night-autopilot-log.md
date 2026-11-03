@@ -277,12 +277,12 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 ### 当前五线状态（早上接手直接看）
 | 线 | 状态 | 最后提交 | 备注 |
 |---|---|---|---|
-| A（文案/l10n+协调） | 键交付完毕，超宽债持续清理中 | `57712c02`（L2 第三批日志）+ 本轮（两备份键 + gen-l10n + 环境坑） | 剩超宽冻结 **158** 条、死键 1（口径外） |
+| A（文案/l10n+协调） | 键交付完毕；B1/B2 已压债 | `a7c05724`（备份键改名）+ 本轮（B2 压债 + L1 日志） | 剩超宽冻结 **148** 条、死键 1（口径外） |
 | B（课表/课程/共享件） | ✅ 已收线 | `3ff12a15`（S6 守卫）+ `24263aa3`（已激活键替换） | 毛玻璃属上游缺口，挂 Lead #6 区 |
 | C（sync 族） | ✅ 已收线 | `134cac79`（云备份差异预览） | 壳条件挂载等待拍板项见需 Lead #6 |
 | D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
-| **L1（import/statistics·第二班）** | ⏸ 续跑中 | `a9179914` / `411dbcad` | 先修 `compileItestDebugKotlin`；门1/门2 待其提交后由协调线出结论 |
+| **L1（import/statistics·第二班）** | ✅ 上半场收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` | `compileItestDebugKotlin` 12m44s 通过（Itest 变体）；L0 warehouse 247 / statistics 305；登录态探针与随机课色进 backlog |
 | **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` | 结构债已解（timetable 不再依赖 settings）；假期覆盖开关挂 backlog |
 | **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` | L0 sync 885 全绿；两新键待接映射 |
 | **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` | 对拍 9 域对齐；原子换档入口待其加 `currentWeek` 参数 |
@@ -337,6 +337,11 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 1. **仓储原子换档入口批准**：由 L4 给 `replaceAllProfilesAndSettings` 增加可选参数 `currentWeek: Int? = null`（默认 null、向后兼容、**单次写入单次通知**），L2 消费该入口换档。跨线协作：L4 改仓储签名 → L2 调用。
 2. **假期覆盖开关暂缓进 backlog**：需 `core/TimetableSettings` 增字段 + 设置页开关，跨 `core/` 与 `pages/settings/` 两域，当前**没有对应线**承接。登记为「**已确认缺口 + 所需域**」，**不算豁免**，不得当作已完成。
 3. **`.let` 式条件挂载批准清理**：`TimetableProfilesPage:298/312/320` 三处 `.let` 条件组合清理，并要求**扩既有守卫测试锁死**（已由 `1d5cd858` 落实）。
+
+### 2026-11-03 · L1 上半场裁决
+
+1. **登录态探针 / 自动填充：不做** —— Dart 走 `FlutterSecureStorage`，Kotlin 侧**仅有模型、无存储**；跨端加密存储不兼容，且迁移策略未定。进 backlog，标注「**已确认缺口 + 阻塞原因**」，不算豁免。
+2. **随机课程色：不做** —— 颜色必须走主题令牌，随机色会**直接破样式守卫**。进 backlog，标注「**已确认缺口 + 阻塞原因**」。
 
 ---
 
@@ -406,6 +411,17 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - **续跑修复顺序（L1 自定，第一件事）**：先把 `compileItestDebugKotlin` 修绿（宏回放引擎移植的编译依赖），再接开学日/周次映射弹窗、`savePresetTimeSlots`、登录态探针/自动填充。
 - **对门禁的影响（重要）**：**门 1 / 门 2 在 warehouse 编译恢复前不可信**——L1 是半成品状态，整包编译/单测结论会被它带红，不能作为收工证据。收工前须等 L1 提交后，在干净树重跑门 1（`compileDevDebugKotlin`）+ 门 2 + 门 4。
 
+#### L1 上半场 ✅ 收口（2026-11-03 20:35 协调线回填）
+
+- **提交**：`59a3092a` / `a9179914`（已在远端）+ `411dbcad` / `6cd44e7e`（本轮回填前已推）。
+- **编译阻塞正式解除**：`:app:compileItestDebugKotlin` **BUILD SUCCESSFUL 12m44s**（warehouse 编译阻塞解除）。
+- **自验**：L0 `pages/import/warehouse` **247 例**、`statistics` **305 例**；样式守卫两域 **0 处**；**无新增 ARB 键**。
+- **修掉的 3 处真实差异**：
+  1. **MERGE 无变化仍报「更新 N 门」且照写存储** —— Dart `effectiveImportedCount` 为 0 且**不写**；Kotlin 原先误报并落盘（已修，避免无变更写盘）。
+  2. **导入后不抬总周数 / 不重算当前周** —— 导入成功后应同步扩张学期周数并重算当前周（Dart 行为）。
+  3. **单节课明细行缺日期层级 / 钟点 / 考试角标，且用 ASCII 连字符** —— 对齐 Dart `session_list_card`（`6cd44e7e`）。
+- **门禁口径提醒（重要）**：上面 12m44s 通过的是 **`Itest` 变体**（`compileItestDebugKotlin`）。**门 1 的官方口径是 `:app:compileDevDebugKotlin`**，收工前仍需在**干净树**按口径重跑一次；门 2 同样待干净树重跑。
+
 #### L3（sync/transfer）✅ 已收线（2026-11-03 18:12 协调线回填）
 
 - **提交**：`c17a9fb2`（11 文件 +494/−42：恢复弹层动作区竖排、LAN 整份设置对齐、云备份预览落盘与损坏门）+ `5b4b5c3f`（2 文件 +6/−3：情侣课表 `partner_file_missing`）。
@@ -474,7 +490,9 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 |---|---|---|---|---|---|
 | 第一班累计 | — | — | 203→175 | 175 | — |
 | **B1** | 宽度 ≥22.0 | en 11 + ja 3 + ko 3 = 17 条压缩（含 ja/ko `cloudBackupMaxCountSubtitle` 由英文补译为日/韩文） | **17** | **158** | 18:49:42 exit=0 |
-| B2 | 20.0–21.9 | — | 待做 | 158 | — |
+| B2 | 20.0–21.9 | en 2 + ja 6 + ko 2 + zh_TW 1 = 11 条压缩（多为日文长句改短词、韩文去掉敬语尾） | **10** | **148** | 20:39:34→20:40:53 exit=0 |
+
+**B2 明细（10 条实际压掉）**：`en/beforeClassReminderSubtitle`（`Alert {minutes} min before class`）、`en/layoutShowOtherWeeksTitle`（`Off-week courses`，标题 ≤11）、`ja/liveMiuiLabelImageSubtitle`、`ja/themeManageSubtitle`、`ja/importRandomCourseColorSubtitle`、`ja/bingWallpaperAutoApplySubtitle`、`ja/importMethodIcsSubtitle`、`ja/liquidGlassScopeDockSubtitle`、`ko/preferShortNameSubtitle`、`zh_TW/hyperosShowcaseSubpageSubtitle`。另有 `ko/unifiedCourseCardColorSubtitle` 同批改写但基线无对应行（原本不在冻结集），故实际压掉 10 行、158→148。
 
 **B1 明细（17 条）**：`en/bingWallpaperAutoApplySubtitle`、`en/importRandomCourseColorSubtitle`、`en/weatherShowOnWeekCardSubtitle`、`en/unifiedCourseCardColorSubtitle`、`en/preferShortNameSubtitle`、`en/weatherEnableSubtitle`、`en/longPressEmptySlotToAddSubtitle`、`en/liquidGlassScopeDockSubtitle`、`en/homeWidgetHideCompletedSubtitle`、`en/importMethodIcsSubtitle`、`en/cloudBackupMaxCountSubtitle`、`ja/weatherEnableSubtitle`、`ja/hidePrefixTextTitle`、`ja/cloudBackupMaxCountSubtitle`、`ko/weatherEnableSubtitle`、`ko/hidePrefixTextTitle`、`ko/cloudBackupMaxCountSubtitle`。
 
@@ -485,6 +503,8 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 **收工前必须在「干净工作树」重跑门 2（`safe-gradle.ps1 :app:testDevDebugUnitTest`）与门 4（cjk 两源集 + copy_style）**——上一轮 18:11 / 18:49 两次门 4 均含他线未提交中间态，只能作为阶段性证据，不能作为收工证据。
 
 **另加（19:00 更新）**：**门 1 / 门 2 待 warehouse 编译恢复后重跑**。L1 上一轮跑爆 step 上限未提交，其半成品（宏回放引擎移植）会让整包编译/单测带红，因此当前**不给出门 1 / 门 2 结论**；等 L1 把 `compileItestDebugKotlin` 修绿并提交后，协调线在干净树依次跑门 1 → 门 2 → 门 4 再出结论。
+
+**更新（20:35）**：warehouse 编译阻塞**已解除**——`:app:compileItestDebugKotlin` 实测 **BUILD SUCCESSFUL 12m44s**（L1 提交 `411dbcad` 后）。但**这是 `Itest` 变体**，**门 1 官方口径是 `:app:compileDevDebugKotlin`**，收工前仍须在**干净树**按口径重跑；门 2 同期重跑。当前工作区仍有 L2/L3/L4 未提交改动（15 个文件），不构成干净树。
 
 ### 10.11 环境坑（影响全队 L0，必读）
 

@@ -12,7 +12,6 @@ en/aboutCheckPrereleaseTitle
 en/beforeClassDisplaySettingsTitle
 en/beforeClassPopupLabel
 en/beforeClassQuickActionTitle
-en/beforeClassReminderSubtitle
 en/beforeClassReminderTitle
 en/beforeEndSecondsLabel
 en/cloudBackupManualProtectedTitle
@@ -51,7 +50,6 @@ en/layoutEnableHapticsTitle
 en/layoutHorizontalAlignLabel
 en/layoutShowConflictBadgeTitle
 en/layoutShowDescriptionTitle
-en/layoutShowOtherWeeksTitle
 en/layoutShowTimeLabelsTitle
 en/layoutTimeColumnDisplayLabel
 en/liquidGlassDarkBoostLabel
@@ -84,7 +82,6 @@ en/weekGridShowSchedulesTitle
 en/weeklyReportTitle
 ja/beforeClassQuickActionTitle
 ja/beforeEndSecondsLabel
-ja/bingWallpaperAutoApplySubtitle
 ja/cloudBackupManualProtectedTitle
 ja/cloudBackupMaxAgeSubtitle
 ja/cloudSyncEnabledTitle
@@ -102,10 +99,8 @@ ja/homeMenuCustomizeTitle
 ja/homePullQuickImportTitle
 ja/homeWidgetShowTomorrowTitle
 ja/icsExportSectionTitle
-ja/importMethodIcsSubtitle
 ja/importMethodIcsTitle
 ja/importMethodWarehouseSubtitle
-ja/importRandomCourseColorSubtitle
 ja/layoutBackToCurrentWeekButtonOpacityTitle
 ja/layoutCompactFontSizeTitle
 ja/layoutEnableHapticsTitle
@@ -113,10 +108,8 @@ ja/layoutShowConflictBadgeTitle
 ja/layoutShowTimeLabelsTitle
 ja/liquidGlassDarkBoostLabel
 ja/liquidGlassPresetLabel
-ja/liquidGlassScopeDockSubtitle
 ja/liveClassReminderLeadTitle
 ja/liveMiuiExpandedIconLabel
-ja/liveMiuiLabelImageSubtitle
 ja/liveMiuiLabelImageTitle
 ja/liveMiuiLabelOffsetXLabel
 ja/liveMiuiLabelOffsetYLabel
@@ -124,7 +117,6 @@ ja/locationTimeMatchEntryTitle
 ja/longPressEmptySlotToAddTitle
 ja/settingsScreenshotShareTitle
 ja/showStageTextTitle
-ja/themeManageSubtitle
 ja/unifiedCourseCardColorSubtitle
 ja/weatherShowOnWeekCardSubtitle
 ko/beforeEndSecondsLabel
@@ -158,10 +150,8 @@ ko/liveMiuiLabelOffsetYLabel
 ko/locationTimeMatchEntryTitle
 ko/longPressEmptySlotToAddTitle
 ko/openInSystemBrowserAction
-ko/preferShortNameSubtitle
 ko/settingsScreenshotShareTitle
 ko/showStageTextTitle
-ko/unifiedCourseCardColorSubtitle
 zh_HK/duringEndTimeDisplayLabel
 zh_HK/liveClassReminderLeadTitle
 zh_TW/duringEndTimeDisplayLabel

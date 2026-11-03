@@ -2168,7 +2168,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String beforeClassReminderSubtitle(int minutes) {
-    return 'Trigger $minutes minutes before class starts';
+    return 'Alert $minutes min before class';
   }
 
   @override
@@ -3531,8 +3531,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutShowDescriptionTitle => 'Show course description';
 
   @override
-  String get layoutShowOtherWeeksTitle =>
-      'Show courses outside the current week';
+  String get layoutShowOtherWeeksTitle => 'Off-week courses';
 
   @override
   String get layoutShowOtherWeeksSubtitle => 'Off-week courses dimmed';
