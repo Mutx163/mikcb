@@ -77,7 +77,7 @@ class CoupleSyncCoordinatorTest {
     fun `拉取时远端缺失判失败`() {
         val outcome = CoupleSyncCoordinator(FakeRemoteTransport()).pullPartnerTimetable(defaultCoupleConfig())
         assertEquals(CouplePullKind.FAILED, outcome.kind)
-        assertEquals("couple_webdav_pull_failed", outcome.errorCode)
+        assertEquals("couple_webdav_partner_file_missing", outcome.errorCode)
         assertNull(outcome.bytes)
     }
 
