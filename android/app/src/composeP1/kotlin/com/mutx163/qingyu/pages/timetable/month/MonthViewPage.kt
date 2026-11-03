@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.timetable.month
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntSize
@@ -276,13 +279,14 @@ fun MonthViewPage(
                     dragStart = expand.value
                     scope.launch { expand.stop() }
                 },
-                onDragUpdate = { dy, rowHeightDp ->
+                onDragUpdate = { dy, rowHeightDp, rowCount ->
                     scope.launch {
                         expand.snapTo(
                             MonthPanelModel.progressAfterDrag(
                                 progress = expand.value.toDouble(),
                                 deltaDy = dy.toDouble(),
                                 rowHeightDp = rowHeightDp,
+                                rowCount = rowCount,
                             ).toFloat(),
                         )
                     }
@@ -339,7 +343,7 @@ private fun MonthViewBody(
     onOpenAgendaRow: (MonthAgendaRow) -> Unit,
     onAddCourse: (LocalDateTime) -> Unit,
     onDragStart: () -> Unit,
-    onDragUpdate: (dy: Float, rowHeightDp: Double) -> Unit,
+    onDragUpdate: (dy: Float, rowHeightDp: Double, rowCount: Int) -> Unit,
     onDragEnd: (velocityDy: Float) -> Unit,
 ) {
     androidx.compose.foundation.layout.BoxWithConstraints(
@@ -347,6 +351,7 @@ private fun MonthViewBody(
     ) {
         val availableWidthDp = maxWidth.value.toDouble()
         val availableHeightDp = maxHeight.value.toDouble()
+        val density = LocalDensity.current
         val progress = expandProgress().toDouble()
         val keptRow = MonthPanelModel.rowToKeep(
             dates = grid.days.map { it.date },
@@ -398,7 +403,7 @@ private fun MonthViewBody(
                         )
                     },
                     onDragStart = onDragStart,
-                    onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp) },
+                    onDragUpdate = { dy -> onDragUpdate(dy, rowHeightDp, grid.rowsInMonth) },
                     onDragEnd = onDragEnd,
                 ) {
                     // 窗口裁剪在我们这层：MonthGrid 画全部 4~6 行，窗口只露 visible 行，
@@ -407,7 +412,34 @@ private fun MonthViewBody(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(gridWindowHeightDp.dp)
-                            .clipToBounds(),
+                            .clipToBounds()
+                            // Dart 把纵向拖拽挂在整个日历 PageView 上（`month_view_screen.dart:439-443`），
+                            // 不是只挂 26dp 拉杆：在格子上上下滑同样能收放。用触摸斜率判据
+                            // （`detectVerticalDragGestures`），点格选日期不会被拖拽抢走。
+                            .pointerInput(rowHeightDp, grid.rowsInMonth) {
+                                val tracker = VelocityTracker()
+                                detectVerticalDragGestures(
+                                    onDragStart = {
+                                        tracker.resetTracking()
+                                        onDragStart()
+                                    },
+                                    onVerticalDrag = { change, dragAmount ->
+                                        tracker.addPosition(change.uptimeMillis, change.position)
+                                        change.consume()
+                                        onDragUpdate(
+                                            with(density) { dragAmount.toDp().value },
+                                            rowHeightDp,
+                                            grid.rowsInMonth,
+                                        )
+                                    },
+                                    onDragEnd = {
+                                        onDragEnd(
+                                            with(density) { tracker.calculateVelocity().y.toDp().value },
+                                        )
+                                    },
+                                    onDragCancel = { onDragEnd(0f) },
+                                )
+                            },
                     ) {
                         MonthGrid(
                             grid = grid,
@@ -452,7 +484,7 @@ private fun MonthViewBody(
             }
         }
         dragState.onCollapseStart = onDragStart
-        dragState.onCollapseUpdate = { dy -> onDragUpdate(dy, rowHeightDp) }
+        dragState.onCollapseUpdate = { dy -> onDragUpdate(dy, rowHeightDp, grid.rowsInMonth) }
         dragState.onCollapseEnd = onDragEnd
     }
 }

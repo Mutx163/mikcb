@@ -45,19 +45,29 @@ class MonthPanelModelTest {
     }
 
     @Test
-    fun `拖拽行程固定按五行算而不是本页行数`() {
-        // 归一化基准 = (6 − 1) × 行高 = 200（行高 40）。
+    fun `拖拽行程按本页真实行数算 而不是固定六行口径`() {
+        // 归一化基准 = (本页行数 − 1) × 行高（Dart `month_grid_collapse.dart:165-178`）。
+        // 6 行月（默认）仍是 5 × 40 = 200。
         assertEquals(200.0, MonthPanelModel.dragExtent(40.0), 1e-9)
+        assertEquals(160.0, MonthPanelModel.dragExtent(40.0, rowCount = 5), 1e-9)
+        assertEquals(120.0, MonthPanelModel.dragExtent(40.0, rowCount = 4), 1e-9)
 
-        // 上滑 100（半程）= 收起一半。
+        // 5 行月：拖满 4 行高度（160dp）就完全收起；按旧 200dp 口径只走到 0.8，
+        // 手指后半段白走 40dp —— 这正是 Dart 2026-11 修掉的「格子跟不上手指」。
+        assertEquals(0.0, MonthPanelModel.progressAfterDrag(1.0, -160.0, 40.0, rowCount = 5), 1e-9)
+        assertEquals(0.5, MonthPanelModel.progressAfterDrag(1.0, -80.0, 40.0, rowCount = 5), 1e-9)
+
+        // 6 行月：上滑 100 = 半程；下 100 从收起 = 半程。
         assertEquals(0.5, MonthPanelModel.progressAfterDrag(1.0, -100.0, 40.0), 1e-9)
-        // 下滑 100（从收起）= 展开一半。
         assertEquals(0.5, MonthPanelModel.progressAfterDrag(0.0, 100.0, 40.0), 1e-9)
         // 拖过头钳在两端，不会得到负进度或大于 1 的进度。
         assertEquals(0.0, MonthPanelModel.progressAfterDrag(0.2, -900.0, 40.0), 1e-9)
         assertEquals(1.0, MonthPanelModel.progressAfterDrag(0.8, 900.0, 40.0), 1e-9)
         // 行高算不出来时原样返回（不能除 0，也不该跳到端点）。
         assertEquals(0.42, MonthPanelModel.progressAfterDrag(0.42, -100.0, 0.0), 1e-9)
+        // 行数越界钳到 1..6：一行月行程为 0，原样返回。
+        assertEquals(0.42, MonthPanelModel.progressAfterDrag(0.42, -100.0, 40.0, rowCount = 0), 1e-9)
+        assertEquals(200.0, MonthPanelModel.dragExtent(40.0, rowCount = 99), 1e-9)
     }
 
     @Test

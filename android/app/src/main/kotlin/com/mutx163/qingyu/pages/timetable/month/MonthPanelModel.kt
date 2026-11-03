@@ -401,25 +401,36 @@ object MonthPanelModel {
     }
 
     /**
-     * 拖拽行程的**归一化基准**：从完全展开拖到完全收起，手指要走多少 dp。
+     * 拖拽行程的**归一化基准**：从完全展开拖到收起，手指要走多少 dp。
      *
-     * ⚠️ 常数是「最大行数 − 保留行数」× 行高（= 5 × 行高），**不是**「本页实际
-     * 行数 − 1」× 行高。Dart 页面（`month_view_screen.dart:_updateGridDragDy`）
-     * 用的恒是 6 行口径：换成按实际行数算，5 行月的「拖到底」会比 6 行月短 20%，
-     * 同一个手势在不同月份的手感就不一样了。
+     * 必须按**这一页真实行数**算：`(行数 − 保留行数) × 行高`（Dart
+     * `month_grid_collapse.dart:165-178` 的 `monthGridDragTravel`）。
+     * 4/5 行月的旧实现按 6 行口径写死，手指走满 5 行距离时窗口早已停在 1 行，
+     * 后半段变成「手指还在动、格子不动」—— 2026-11 Dart 侧修的就是这个。
+     *
+     * @param rowCount 本页实际行数（[MonthGrid.rowsInMonth]，4~6）；越界值钳到
+     *   [MonthCollapse.COLLAPSED_ROWS]..[MonthCollapse.MAX_ROWS]。
      */
-    fun dragExtent(rowHeightDp: Double): Double =
-        (MonthCollapse.MAX_ROWS - MonthCollapse.COLLAPSED_ROWS) * rowHeightDp
+    fun dragExtent(rowHeightDp: Double, rowCount: Int = MonthCollapse.MAX_ROWS): Double {
+        val rows = rowCount.coerceIn(MonthCollapse.COLLAPSED_ROWS, MonthCollapse.MAX_ROWS)
+        return (rows - MonthCollapse.COLLAPSED_ROWS) * rowHeightDp
+    }
 
     /**
      * 拖拽位移 → 新进度（1:1 跟手，手指向上移 [deltaDy] < 0 即收起）。
      *
-     * 行程为 0（行高算不出来 / 屏幕为零）时原样返回并钳在 0..1：不能除以 0，
-     * 也不该把「算不出」翻译成「跳到端点」。
+     * 行程按 [dragExtent]（本页真实行数）算；为 0（行高算不出来 / 屏幕为零 /
+     * 只有一行）时原样返回并钳在 0..1：不能除以 0，也不该把「算不出」
+     * 翻译成「跳到端点」。
      */
-    fun progressAfterDrag(progress: Double, deltaDy: Double, rowHeightDp: Double): Double {
+    fun progressAfterDrag(
+        progress: Double,
+        deltaDy: Double,
+        rowHeightDp: Double,
+        rowCount: Int = MonthCollapse.MAX_ROWS,
+    ): Double {
         val clamped = progress.coerceIn(0.0, 1.0)
-        val extent = dragExtent(rowHeightDp)
+        val extent = dragExtent(rowHeightDp, rowCount)
         if (extent <= 0.0) return clamped
         return (clamped + deltaDy / extent).coerceIn(0.0, 1.0)
     }
