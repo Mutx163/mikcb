@@ -21,11 +21,9 @@ data class TrendChartSpec(
     val elapsed: List<TrendDatum>,
     /** 未来周（`weekNumber > currentWeek`）：浅色虚线预告，无圆点。 */
     val future: List<TrendDatum>,
-    /** 横轴槽位总数（= maxWeek - minWeek + 1），每个槽位等宽。 */
-    val weekSlotCount: Int,
-    /** 首个周次（横轴左界）。 */
+    /** 首个周次（横轴左界，= fl_chart 的 minX）。 */
     val minWeek: Int,
-    /** 末个周次（横轴右界）。 */
+    /** 末个周次（横轴右界，= fl_chart 的 maxX）。 */
     val maxWeek: Int,
     /** 数据里的最大课时（未加留白）。 */
     val maxSections: Int,
@@ -106,7 +104,6 @@ object TrendChartModel {
         return TrendChartSpec(
             elapsed = elapsed,
             future = future,
-            weekSlotCount = (maxWeek - minWeek + 1).coerceAtLeast(1),
             minWeek = minWeek,
             maxWeek = maxWeek,
             maxSections = maxSections,
@@ -140,9 +137,19 @@ object TrendChartModel {
         }
     }
 
-    /** 折线在画布上的 x：按周次落在第 `week - minWeek` 个槽位中心。 */
-    fun pointX(week: Int, minWeek: Int, slotCount: Int, canvasWidth: Float): Float =
-        ChartMath.barCenterX(week - minWeek, slotCount, canvasWidth)
+    /**
+     * 折线在画布上的 x。
+     *
+     * fl_chart 的 `getPixelX` 把 `minX..maxX` **线性铺满**画布可用宽度
+     * （`x = (value - minX) / (maxX - minX) * width`），首周贴左边缘、末周贴右边缘，
+     * **不是**落在均分槽位的中心。本迁移上一版按 `barCenterX`（槽心）映射，
+     * 首末两周各内缩半个槽宽，与 Dart 图对不上；2026-11-03 改为边到边。
+     *
+     * 只有一个周次时值域退化（`maxX - minX == 0`）：fl_chart 会算出 NaN 路径，
+     * 这里退到画布正中（[ChartMath.mapX] 的既有兜底），标签行同口径也是 50%。
+     */
+    fun pointX(week: Int, minWeek: Int, maxWeek: Int, canvasWidth: Float): Float =
+        ChartMath.mapX(week.toDouble(), minWeek.toDouble(), maxWeek.toDouble(), canvasWidth)
 
     /** 折线在画布上的 y（0 节在底部，`maxY` 在顶部）。 */
     fun pointY(sections: Int, maxY: Double, canvasHeight: Float): Float =

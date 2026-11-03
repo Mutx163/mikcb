@@ -72,7 +72,8 @@ fun TrendChartCard(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     TrendLineCanvas(spec = spec, dark = dark)
-                    ChartAxisLabelRow(
+                    // 折线点位是边到边映射，标签行也按同一口径绝对定位（槽心会让刻度与点错位半个槽）。
+                    ChartEdgeAxisLabelRow(
                         labels = spec.weekLabels.map { week -> week?.toString() },
                         dark = dark,
                     )

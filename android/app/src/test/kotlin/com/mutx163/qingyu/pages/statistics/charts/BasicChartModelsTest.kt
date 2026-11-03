@@ -63,8 +63,6 @@ class TrendChartModelTest {
         val spec = TrendChartModel.build(trend, currentWeek = 8)!!
         assertEquals(1, spec.minWeek)
         assertEquals(20, spec.maxWeek)
-        // 槽位总数 = 20 - 1 + 1
-        assertEquals(20, spec.weekSlotCount)
         // 最大课时 40 → 上限 41（+1 留白）
         assertEquals(40, spec.maxSections)
         assertEquals(41.0, spec.maxY, 1e-9)
@@ -115,14 +113,31 @@ class TrendChartModelTest {
     }
 
     @Test
-    fun `点位落在槽位中心`() {
-        // 20 槽、宽 400 → 每槽 20；第 1 周中心 10，第 20 周中心 390
-        assertEquals(10f, TrendChartModel.pointX(1, 1, 20, 400f), 1e-4f)
-        assertEquals(30f, TrendChartModel.pointX(2, 1, 20, 400f), 1e-4f)
-        assertEquals(390f, TrendChartModel.pointX(20, 1, 20, 400f), 1e-4f)
+    fun `点位按 fl_chart 边到边映射 首末周贴边`() {
+        // fl_chart `getPixelX`：x = (value - minX) / (maxX - minX) * width，
+        // 周次 1..20、宽 400 → 第 1 周在 0、第 20 周在 400（不是槽心 10 / 390）
+        assertEquals(0f, TrendChartModel.pointX(1, 1, 20, 400f), 1e-4f)
+        assertEquals(400f, TrendChartModel.pointX(20, 1, 20, 400f), 1e-4f)
+        // 第 2 周 = 400 × 1/19 ≈ 21.05
+        assertEquals(400f / 19f, TrendChartModel.pointX(2, 1, 20, 400f), 1e-4f)
+        // 起点不是第 1 周时同样按 minWeek..maxWeek 铺满：周次 3..14，第 7 周 = 400 × 4/11
+        assertEquals(400f * 4f / 11f, TrendChartModel.pointX(7, 3, 14, 400f), 1e-4f)
+        // 只有一个周次：值域退化（fl_chart 会算 NaN），退到画布正中
+        assertEquals(200f, TrendChartModel.pointX(5, 5, 5, 400f), 1e-4f)
         // 纵轴：上限 4、高 160，值 3 → 160 - 3/4*160 = 40
         assertEquals(40f, TrendChartModel.pointY(3, 4.0, 160f), 1e-4f)
         assertEquals(160f, TrendChartModel.pointY(0, 4.0, 160f), 1e-4f)
+    }
+
+    @Test
+    fun `周标签的落点与折线点位同口径`() {
+        // 标签行第 i 个槽位的中心 = width × i/(n-1)；点位应是同一个 x，
+        // 否则刻度会与折线错位（这正是上一版槽心映射的问题）。
+        val labels = TrendChartModel.weekLabels(1, 20, 4)
+        val indexOfWeek5 = labels.indexOf(5)
+        assertEquals(4, indexOfWeek5)
+        val labelCenter = 400f * indexOfWeek5 / (labels.size - 1)
+        assertEquals(labelCenter, TrendChartModel.pointX(5, 1, 20, 400f), 1e-4f)
     }
 
     @Test
