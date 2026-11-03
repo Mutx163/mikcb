@@ -154,6 +154,7 @@ class IcsExportLogicTest {
         teacher: String = "张老师",
         location: String = "A101",
         description: String? = null,
+        note: String? = null,
         sessionNotes: Map<Int, CourseSessionNote>? = null,
         customWeeks: List<Int>? = null,
     ): Course = Course(
@@ -172,6 +173,7 @@ class IcsExportLogicTest {
         isEvenWeek = isEvenWeek,
         customWeeks = customWeeks,
         description = description,
+        note = note,
         sessionNotes = sessionNotes,
     )
 
@@ -235,13 +237,15 @@ class IcsExportLogicTest {
 
     @Test
     fun timedEvent_description_parts_and_session_note() {
-        // [Dart推演] descriptionParts 的拼装与去重（:316-325, _joinDistinct）
+        // [Dart抄录] ics_export_service.dart:323-336：每一行都必须带明确前缀；
+        // 行序 Teacher → Location → Sections → Description → Note → Session note → Homework。
         val event = buildCourseTimedEvent(
             profileId = "profile-1",
             course = course(
                 teacher = "张老师",
                 location = "A101",
                 description = "课程简介",
+                note = "第2周交作业",
                 sessionNotes = mapOf(1 to CourseSessionNote(text = "第1周小测", hasHomework = true)),
             ),
             occurrenceDate = LocalDateTime.of(2026, 3, 2, 0, 0),
@@ -250,7 +254,15 @@ class IcsExportLogicTest {
         assertNotNull(event)
         val parts = event!!.description!!.split("\n")
         assertEquals(
-            listOf("Teacher: 张老师", "Sections: 1-2", "课程简介", "第1周小测", "Homework: yes"),
+            listOf(
+                "Teacher: 张老师",
+                "Location: A101",
+                "Sections: 1-2",
+                "Description: 课程简介",
+                "Note: 第2周交作业",
+                "Session note: 第1周小测",
+                "Homework: yes",
+            ),
             parts,
         )
         // 不带 sessionNote 的周没有那两行
@@ -261,6 +273,27 @@ class IcsExportLogicTest {
             week = 2,
         )!!
         assertFalse(otherWeek.description!!.contains("Homework: yes"))
+        assertFalse(otherWeek.description!!.contains("Session note:"))
+    }
+
+    @Test
+    fun timedEvent_blank_fields_omit_prefixed_lines() {
+        // [Dart抄录] ics_export_service.dart:324-336：trim 后为空的行整行不写，
+        // 空串不是写成 `Teacher: ` 这种空值行。
+        val event = buildCourseTimedEvent(
+            profileId = "profile-1",
+            course = course(
+                teacher = "   ",
+                location = "",
+                description = "  ",
+                note = "",
+                sessionNotes = mapOf(1 to CourseSessionNote(text = "  ", hasHomework = false)),
+            ),
+            occurrenceDate = LocalDateTime.of(2026, 3, 2, 0, 0),
+            week = 1,
+        )
+        assertNotNull(event)
+        assertEquals(listOf("Sections: 1-2"), event!!.description!!.split("\n"))
     }
 
     @Test

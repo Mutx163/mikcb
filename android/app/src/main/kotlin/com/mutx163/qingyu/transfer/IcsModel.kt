@@ -137,13 +137,24 @@ fun buildCourseTimedEvent(
     }
 
     val sessionNote = course.sessionNoteForWeek(week)
+    // 每一行都必须带明确前缀（Dart `ics_export_service.dart:316-336`，2026-11 修）：
+    // 裸行的简介/备注/节次备注会被导入侧当成「位置式的教师/地点」，
+    // 空教师 + 有 LOCATION 时尤其会把 LOCATION 末段误取成教师。本行序与 Dart 逐行一致：
+    // Teacher → Location → Sections → Description → Note → Session note → Homework。
     val descriptionParts = mutableListOf<String>()
     if (dartTrim(course.teacher).isNotEmpty()) descriptionParts.add("Teacher: ${course.teacher}")
+    // 与 LOCATION 属性同值，但显式写出来：导入侧据此判定 LOCATION 是纯地点，
+    // 不再按 WakeUp 的「地点 + 教师」合并字段去拆末段（ics_import_service.dart:261-268）。
+    if (dartTrim(course.location).isNotEmpty()) descriptionParts.add("Location: ${course.location}")
     descriptionParts.add("Sections: ${course.startSection}-${course.endSection}")
-    course.description?.let { if (dartTrim(it).isNotEmpty()) descriptionParts.add(dartTrim(it)) }
-    course.note?.let { if (dartTrim(it).isNotEmpty()) descriptionParts.add(dartTrim(it)) }
+    course.description?.let {
+        if (dartTrim(it).isNotEmpty()) descriptionParts.add("Description: ${dartTrim(it)}")
+    }
+    course.note?.let {
+        if (dartTrim(it).isNotEmpty()) descriptionParts.add("Note: ${dartTrim(it)}")
+    }
     if (sessionNote != null && dartTrim(sessionNote.text).isNotEmpty()) {
-        descriptionParts.add(dartTrim(sessionNote.text))
+        descriptionParts.add("Session note: ${dartTrim(sessionNote.text)}")
     }
     if (sessionNote?.hasHomework == true) descriptionParts.add("Homework: yes")
 
