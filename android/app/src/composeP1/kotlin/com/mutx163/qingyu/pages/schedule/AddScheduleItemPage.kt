@@ -84,6 +84,12 @@ fun AddScheduleItemPage(
     onBack: () -> Unit,
     onSave: (ScheduleItemData, applyToAll: Boolean?) -> Unit,
     onDelete: (ScheduleItemData, applyToAll: Boolean?) -> Unit = { _, _ -> },
+    /** 选了提醒档位且通知权限不可用时为 true：提醒卡片下显示「检查通知权限」行动作与缺失说明。 */
+    reminderPermissionMissing: Boolean = false,
+    /** 点击「检查通知权限」行动作（null = 不显示行动作行）。 */
+    onRequestNotificationPermission: (() -> Unit)? = null,
+    /** 用户点了某个提醒档位（含「关」）；宿主据此刷新权限状态（对齐旧版选择时刷新）。 */
+    onReminderSelected: ((Int?) -> Unit)? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val isEditing = scheduleItem != null
@@ -617,7 +623,10 @@ fun AddScheduleItemPage(
                                                 if (isSelected) Color.Transparent else Color(QingyuTheme.dividerLine(dark)),
                                                 RoundedCornerShape(8.dp),
                                             )
-                                            .clickable { reminderMinutes = mins }
+                                            .clickable {
+                                                reminderMinutes = mins
+                                                onReminderSelected?.invoke(mins)
+                                            }
                                             .padding(horizontal = 12.dp, vertical = 8.dp),
                                     ) {
                                         Text(
@@ -627,6 +636,34 @@ fun AddScheduleItemPage(
                                         )
                                     }
                                 }
+                            }
+                            // 通知权限不可用：行动作 + 缺失说明（对齐旧版
+                            // add_schedule_item_screen.dart:552-570——选了提醒档位才出现，
+                            // 点行动作弹系统框/跳通知设置；文案沿用既有键，零新增）。
+                            if (reminderMinutes != null && reminderPermissionMissing && onRequestNotificationPermission != null) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(QingyuTheme.card(dark)))
+                                        .clickable(onClick = onRequestNotificationPermission)
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = ScheduleStrings.scheduleReminderPermissionAction.zh,
+                                        style = MiuixTheme.textStyles.body2
+                                            .shiftWeight(QingyuWeightDelta.MEDIUM),
+                                        color = MiuixTheme.colorScheme.primary,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = ScheduleStrings.scheduleReminderPermissionMissing.zh,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
                             }
                         }
                     }

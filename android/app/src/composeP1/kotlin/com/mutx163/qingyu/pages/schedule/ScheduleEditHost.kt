@@ -1,9 +1,19 @@
 package com.mutx163.qingyu.pages.schedule
 
+import android.Manifest
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.core.permission.PermissionFlow
+import com.mutx163.qingyu.core.permission.PermissionStep
+import com.mutx163.qingyu.platform.permission.PermissionSystemActions
 
 /**
  * 日程「新建 / 编辑」页的**宿主层（反馈部分）**。
@@ -60,11 +70,61 @@ fun ScheduleEditHost(
     onFinish: () -> Unit,
 ) {
     val context = LocalContext.current
+
+    // ── 通知权限（对齐旧版 add_schedule_item_screen.dart:552-597）──
+    //
+    // 旧版：选中提醒档位时查一次通知权限（初始乐观视为已授予，`:65`）；不可用时在
+    // 提醒卡片下显示「检查通知权限」行动作 + 缺失说明；点行动作弹系统框，被拒后
+    // 直接送系统通知设置页（`:586-592`），回来再查一次并刷新显示。
+    // 状态机只用它管「还能不能弹框」：永久拒绝后点行动作不再空弹一次、直达设置页
+    // （旧版是先空弹一次被系统秒拒再跳，终点相同）。
+    var reminderPermissionMissing by remember { mutableStateOf(false) }
+    val activity = remember(context) { PermissionSystemActions.findHostActivity(context) }
+    val notificationFlow = remember {
+        PermissionFlow(initiallyGranted = PermissionSystemActions.notificationsGranted(context))
+    }
+
+    fun refreshPermissionMissing() {
+        reminderPermissionMissing = !PermissionSystemActions.notificationsGranted(context)
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val canAskAgain = activity?.let {
+            PermissionSystemActions.canAskAgain(it, Manifest.permission.POST_NOTIFICATIONS)
+        } ?: false
+        notificationFlow.onSystemResult(granted, canAskAgain)
+        if (!granted) {
+            // 与旧版同出口：被拒就送系统通知设置页（永久拒绝时系统框本来就不再弹）。
+            PermissionSystemActions.openNotificationSettings(context)
+        }
+        refreshPermissionMissing()
+    }
+
+    fun requestNotificationPermission() {
+        when (notificationFlow.onTrigger()) {
+            PermissionStep.Proceed -> refreshPermissionMissing()
+            PermissionStep.LaunchRequest ->
+                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            PermissionStep.OpenSettings -> {
+                PermissionSystemActions.openNotificationSettings(context)
+                refreshPermissionMissing()
+            }
+        }
+    }
+
     AddScheduleItemPage(
         scheduleItem = scheduleItem,
         initialDate = initialDate,
         occurrenceDate = occurrenceDate,
         onBack = onFinish,
+        reminderPermissionMissing = reminderPermissionMissing,
+        onRequestNotificationPermission = { requestNotificationPermission() },
+        onReminderSelected = { minutes ->
+            // 选了具体档位才关心权限（对齐旧版 :547-549 选择时刷新；「关」不查）。
+            if (minutes != null) refreshPermissionMissing()
+        },
         onSave = { draft, applyToAll ->
             if (onSave(draft, applyToAll)) {
                 // 先关页再弹提示：Dart 也是 `pop(true)` 之后 showAppToast
