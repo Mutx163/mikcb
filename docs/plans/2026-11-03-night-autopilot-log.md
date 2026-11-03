@@ -277,14 +277,14 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 ### 当前五线状态（早上接手直接看）
 | 线 | 状态 | 最后提交 | 备注 |
 |---|---|---|---|
-| A（文案/l10n+协调） | 键交付完毕；B1/B2/B3 已压债 | `a7c05724`（备份键改名）+ 本轮（B3 压债 + L4 日志） | 剩超宽冻结 **130** 条、死键 1（口径外） |
+| A（文案/l10n+协调） | 键交付完毕；B1/B2/B3 已压债；L0 入口已修 | `a7c05724`（备份键改名）+ `58693492`（L0 工具链） | 剩超宽冻结 **130** 条、死键 1（口径外） |
 | B（课表/课程/共享件） | ✅ 已收线 | `3ff12a15`（S6 守卫）+ `24263aa3`（已激活键替换） | 毛玻璃属上游缺口，挂 Lead #6 区 |
 | C（sync 族） | ✅ 已收线 | `134cac79`（云备份差异预览） | 壳条件挂载等待拍板项见需 Lead #6 |
 | D（settings） | ✅ 已收线 | `1c42a026`（三项结清） | LAN 设置子集归 transfer 域，挂 Lead #4 |
 | E（statistics+import） | ✅ 已收线 | `f8b04f80`（I2 四件）+ `88906825`/`0b33a151`（键接线 + #9 方案 A）；`f40399cf` 走偏已被取代、保留历史 | 剩余诚实债挂需 Lead #8（回放引擎等四项） |
-| **L1（import/statistics·第二班）** | ✅ 上半场收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` | `compileItestDebugKotlin` 12m44s 通过（Itest 变体）；L0 warehouse 247 / statistics 305；登录态探针与随机课色进 backlog |
-| **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` | 结构债已解（timetable 不再依赖 settings）；假期覆盖开关挂 backlog |
-| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` | L0 sync/transfer 913；Locale 哈希修复；中断硬化 6 条；两处差异处置见正文 |
+| **L1（import/statistics·第二班）** | ✅ 收线 | `59a3092a`/`a9179914` + `411dbcad`/`6cd44e7e` + `6af3fd36`/`85ab22e3`/`22444ce3`/`c6e3ac33`/`f56c89be` | L0 import 473 / statistics 310（**该 310 用 2.4.10 手工编译，按 10.15 需用统一入口重跑才作数**）；学期进度钳 0..100 |
+| **L2（course/timetable·第二班）** | ✅ 已收线 | `1d5cd858` / `1e80ecc7` + `9a5ebf48` / `c4587694` | 结构债已解；月视图横向翻月 2400 页；`TimetableGridMetrics` 兜底时刻 `Locale.ROOT`；假期覆盖开关挂 backlog |
+| **L3（sync/transfer·第二班）** | ✅ 已收线 | `ac515c15` / `f67c7e12` / `8f90fee9` / `98d54890` + `5f62ded8` / `7dfd9710` / `310c2d8b` + `9dd376d2` / `ec9b57e8` | L0 sync/transfer 918；Locale 哈希修复；严格 UTF-8 解码；中断硬化 6 条；**HEAD 编译红在 `DataTransferHost.kt:217`，修复在工作树未提交** |
 | **L4（domain/services·第二班）** | ✅ 已收线 | `9da5b72d` / `36aecada` / `49a5a739` | 对拍 9 域对齐；Locale 守卫做实（67 处实扫、15 处已修）；widgetdata `Int`→`Double` 修半值截断 |
 
 **Locale 守卫债务（`LocaleFormatGuardTest.WHITELIST`）**：**覆盖站点数才是债务（只降不增）**，**条目数可因拆分/删条目而变**，两数含义不同。**每次改白名单或修格式化站点，都必须附一次带 HEAD 的复算**（不要只在批次结束时数一次）；因为「先删登记、后修代码」会让两轮之间的口径对不上，不带 HEAD 的数字没有可比性。
@@ -294,6 +294,7 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 | `d7a3fe7d` | **50** | **48** | **2** ❌ | 16 | 2026-11-03 23:45 |
 | `9dd376d2` | **50** | **48** | **2** ❌ | 16 | 2026-11-03 23:49 |
 | `c4587694` | **48** | **48** | **0** ✅ | 16 | 2026-11-03 23:50 |
+| `58693492` | **48** | **48** | **0** ✅ | 16 | 2026-11-04 00:05 |
 
 - **`c4587694` 收口**：课表线把 `TimetableGridMetrics.kt:57` 两处兜底时刻改 `Locale.ROOT` 后，UNCOVERED 归零。**`pages/timetable` 条目已消失**（不再需要），**`time_scheme` 条目仍在**（其站点未修，属作用域外）；条目数仍 16（删 timetable 的同时此前拆分为精确到包的登记形态不变）。
 
@@ -622,6 +623,21 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 4. **白名单复算（HEAD `c4587694`，23:50）**：**TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16**；**`pages/timetable` 条目已消失**、**`time_scheme` 条目仍在**（其站点未修，属作用域外）。
 5. **工作区状态**：课表域已清，**只剩 statistics 线改动**（`CourseStatisticsModel`/`StatsInfoModels`/`SemesterProgressRatio` 等）；**已在只读 worktree 开跑门 1 → 门 2**。
 
+#### L1/L4（statistics）学期进度钳制 ✅（`f56c89be`，2026-11-04 00:00 协调线回填）
+
+- **实现**：新增 `SemesterProgressRatio.kt` **单一共享函数** `semesterProgressRatio()`，`StatsInfoModels` 与 `CourseStatisticsModel` **两处调用点统一**（不再各写 `coerceIn`）；L0 statistics **310**。
+- **性质**：**有意偏离 Dart**。理由：进度 >100% 只能说明**当前周已越过学期总周数**、数据不自洽，展示 `156%` 会被用户当成算错。
+- **补充裁决（已确认，不追加偏离）**：**「无开学日但有节数」保持 20%**——百分比是**节数口径**，与日历周数无关，Dart 原行为即如此。
+
+#### L3（sync/transfer）第六批 ✅（2026-11-04 00:10 协调线回填）
+
+- **两笔核算**：`9dd376d2` **已随本轮推送上远端**；`ec9b57e8` 本轮推送（显式路径，2 文件）。
+- **流程违规确认（两条，不改历史）**：① `5f62ded8` 含 `LocaleFormatGuardTest.kt`（属课表线的删行，sync 用 `add -A` 带入）；② `9dd376d2` 含本日志（属协调线已暂存内容）。**规矩写死**：**只用显式路径提交，禁 `git add -A` / `git add .` / `git commit -a`；共享工作区里别人的改动一律不带**。证据口径：「一笔提交里混进别人域文件会让归属失真」。`ec9b57e8` 已改为显式路径（2 文件）。
+- **严格 UTF-8 解码**：新增 `TransferTextDecoding.kt`（`CharsetDecoder` + `REPORT`）；`AndroidTransferDocumentAdapter` 第 3 步改严格、新增 `ReadResult.InvalidEncoding`（**只改这一个 platform 文件**）；4 用例（`\xC3` 拒、`\xFF` 拒、4 字节 emoji 放行、BOM 放行但 JSON 门报错）。L0 **918**、门 3 transfer **0 处**。
+- **裁决**：UTF-8 错误文案**复用 `importFailedInvalidFile`**，不新增键——Dart 定义了 `transfer_package_utf8_invalid` 但文件通道从未使用（平台落英文 `FormatException`），属 Dart 未完成分支；**空文本**按 Dart 改 `importFileReadFailed`。
+- **多缺陷包报错码**：**有意接受的缺口**，具体包例——Kotlin 报 `transfer_exam_name_required` vs Dart 报 `transfer_course_invalid`。
+- **已派 core 模型严格性给逻辑层**：`sessionNotes.text=123` 等类型不符时 Kotlin 静默跳过、Dart 整包拒绝 → 用户得到「导入成功但备注丢了」；要求 core 层按 Dart 抛/拒，**不静默**。
+
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
 - **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
@@ -694,7 +710,10 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 3. **文案键命名铁律：一律 camelCase**。全库 3008 个 ARB 键中原本只有 2 个带下划线，就是 A 线误加的那两个。**错误码式下划线命名（如 `backup_restore_commit_failed`）只用于 Kotlin 内部码（`lastErrorCode` 等），不得进 ARB**；接映射时须显式把内部码映射到 camelCase 键，不能靠同名匹配。
    - **成因与纠正**：Lead 转达 L3 错误码写法时未做命名转换，A 线照抄入 ARB，导致 `backup_restore_commit_failed` / `backup_restore_rollback_failed` 两键命名违规。**已纠正**为 `backupRestoreCommitFailed` / `backupRestoreRollbackFailed`（六份 ARB + `BackupFileStrings` 引用 + gen-l10n 重跑；copy_style 20:06:09 exit=0，超宽 158/死键 1 新增均 0；`CloudSyncController` 内部错误码按上述铁律保留下划线未动）。
 
-**正确姿势（针对坑 1/2）**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）+ 把 kotlinc 放进 PATH**（`scripts/with-kotlinc.ps1` 已封装）。用 PS 5.1 跑 L0 的结论一律不可信。
+4. **`test-kotlin-module.ps1` 曾硬编码「Android Studio 内置 kotlinc」路径**（回退只到 PATH），本机无 Studio 就必然失败，逼得每个代理各自手搓包装脚本（`f56c89be` 的 310 例就是用 Gradle 缓存的 `kotlin-compiler-embeddable 2.4.10` 手工编 JUnitCore 跑出来的，**不可复现**）。**已修（`58693492`）**：探测顺序改为 **`-KotlincPath` → 仓库便携 `.tools/kotlinc/bin/kotlinc.bat` → PATH → 最后才试 Studio**；全部落空**报清晰错误并 exit 1**（不静默降级）；stdlib 取 kotlinc 自带 `lib/kotlin-stdlib.jar`；脚本开头**拒绝 PS 5.1**（`Major -lt 7` 直接报错）；argfile 写 `utf8NoBOM`。
+5. **L0 只有一个入口**：`pwsh 7 -File scripts/test-kotlin-module.ps1 -Module <域>`。**不许再各自写包装脚本**；要临时换编译器用 `-KotlincPath`，不要改脚本默认值。
+
+**正确姿势（针对坑 1/2/4/5）**：**必须用 pwsh 7（`C:\dev\pwsh\pwsh.exe`）跑唯一入口 `scripts/test-kotlin-module.ps1`**；便携 kotlinc 与 mingit 由脚本/`scripts/with-kotlinc.ps1` 自动定位，不需要手工放 PATH。用 PS 5.1 跑 L0 的结论一律不可信。
 
 ### 10.12 门 1/门 2 标准做法：在 HEAD 的只读 worktree 上跑（已定为本项目标准流程）
 
@@ -710,6 +729,7 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 6. **记录口径**：写「门禁在 HEAD `<哈希>` 的只读 worktree 上实测，主工作树当时有 N 个未提交文件（属其他域在途），不影响本结论」。
 7. **常设动作**：**每推送一个批次，就对新的 HEAD 跑一轮门 1 → 门 2，再把结果写进下方门禁表并随日志推送**。不得用上一轮结果代替新一轮。
 8. **互斥锁超时的处理**：`safe-gradle` 等锁**超过 10 分钟即判「无结论」**（exit=1，属设计内的放弃执行，**不是编译/测试红**），**隔一段时间再试一次**；**重试时不许把前一次的绿当成本次结果**。**连续两次超时**则记日志「**环境阻塞**」并上报 Lead。
+9. **本轮例外**：`58693492` 门 1 红后**暂留 worktree**，等 `DataTransferHost.kt` 编译修复提交、HEAD 稳定后**增量重跑**（冷构建约 12 分钟，增量约 7 分钟）；门禁定论后仍按第 5 条清理。
 
 ### 10.13 门禁表（每次推送批次后对新高 HEAD 实测）
 
@@ -726,9 +746,12 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | `4fff617c` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `d7a3fe7d`**（未跑，不沿用） |
 | `d7a3fe7d` | 门 1 / 门 2 | ⛔ **按住** | — | — | **守卫复算 UNCOVERED=2**（`TimetableGridMetrics.kt:57` ×2），HEAD 推进后未跑 |
 | `9dd376d2` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `c4587694`**（未跑，不沿用） |
-| `c4587694` | 门 1 / 门 2 | ▶️ **已开跑** | — | — | **当前 HEAD**；守卫复算 **TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16**，课表域已清（工作区仅剩 statistics 线改动）→ 在只读 worktree 跑门 1 → 门 2 |
+| `c4587694` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进**（未跑，不沿用） |
+| `f1472e58` | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | —（首轮输出已清理，未记录） | — | 编译错误 `composeP1/.../pages/transfer/DataTransferHost.kt:217`「`when` 必须穷尽，缺 `InvalidEncoding`」；**门 2 未跑** |
+| `f56c89be` | 门 1 / 门 2 | ⏳ **未跑** | — | — | **作废：HEAD 已推进到 `58693492`**（未跑，不沿用） |
+| **`58693492`** | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | **00:06:06→00:13:23** | **7m05s（Gradle 报告）/ 7m17s 墙钟** | **当前 HEAD**；同一处红：`DataTransferHost.kt:217` 缺 `InvalidEncoding`。根因 `9dd376d2` 在 platform 适配器新增 sealed 变体 `ReadResult.InvalidEncoding`，**未同步 composeP1 调用方**（`pages/transfer` 属 L3 域；修复已在工作树未提交）。**门 2 未跑**（门 1 红即停） |
 
-**有效结论口径**：门 1、门 2 均在 **HEAD `6b33f490`** 的只读 worktree 上实测通过；主工作树当时有 **8 个未提交文件**（`widgetdata/` 域 5 个主源 + 3 个测试，属其他线在途），**不影响本结论**。**该结论只代言 `6b33f490`**；此后 HEAD 已推进到 `c4587694`，**守卫复算 UNCOVERED=0**，**正在该 HEAD 的只读 worktree 上跑门 1 → 门 2**（结果另行回填）。**编译口径**：L1 的 locale 改动前 `:app:compileItestDebugKotlin` 12m12s 绿属**改动前证据**；改动后复跑仍在排队，**当前不声明编译通过**。
+**有效结论口径**：门 1、门 2 唯一有效结论仍是 **HEAD `6b33f490`**（只代言该哈希）。此后所有 HEAD **均未产生「绿」结论**：`f1472e58`/`58693492` 门 1 **红**（同一编译错误），门 2 未跑。**当前不声明编译通过**（L1 的 `:app:compileItestDebugKotlin` 12m12s、课表 9m47s 均为**各自改动前的证据**，不能代言当前 HEAD）。**白名单复算（HEAD `58693492`，00:05:47）**：TOTAL 48 / COVERED 48 / UNCOVERED 0 / ENTRIES 16。
 **观察**：首轮冷构建 12m52s / 13m29s，增量 7m35s / 6m41s。
 
 ### 10.14 本机配置文件防误提交（已核实）
@@ -736,3 +759,10 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `android/local.properties`（含 `sdk.dir` 绝对路径）→ 由 `android/.gitignore:4` 的 `/local.properties` 忽略；`git ls-files` **无记录**（未被跟踪）。
 - 仓库根 `gradle.properties`（含 `org.gradle.java.home` 绝对路径）→ 由根 `.gitignore:216` 的 `/gradle.properties` 忽略；`git ls-files` **无记录**。
 - 两者**均只在本机存在**，worktree 门禁里是**手工复制**过去的副本，不会进库。**任何人不得 `git add -f` 这两个文件**。
+
+### 10.15 L0 统一入口（`58693492` 起）
+
+- **唯一入口**：`pwsh 7 -File scripts/test-kotlin-module.ps1 -Module <域>`（可加 `-KotlincPath` 换编译器）。
+- **探测顺序**：`-KotlincPath` → 仓库便携 `.tools/kotlinc/bin/kotlinc.bat` → PATH → Android Studio 内置；全落空**报错 exit 1**，**不静默降级**。
+- **实测（2026-11-04）**：`-Module pages/settings` **971 例 OK，00:01:33→00:04:51，耗时 3m18s**（含编译 253 文件 + JUnit）。
+- **纪律**：**以后 L0 只用这一个入口，不许各自写包装脚本**；旧成果（如 `f56c89be` 的 310 例）用 `kotlin-compiler-embeddable 2.4.10` 手工编译，**不可复现、不可作为验收证据**，需改用本入口重跑才作数。
