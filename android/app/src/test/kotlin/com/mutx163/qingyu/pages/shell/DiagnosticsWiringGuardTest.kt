@@ -119,9 +119,15 @@ class DiagnosticsWiringGuardTest {
     /**
      * 分派层 `when (pageId)` 的「id → 分支体」。
      *
-     * 分支体 = 从 `"id" ->` 的箭头之后，到**下一条**分支箭头之前。
-     * 最后一条分支取到文件末尾（`else ->` 之前的内容会一并算进去，
-     * 但受管页面都不会是最后一条，且判据只在分支体里找字样，不影响结论）。
+     * 分支体 = 从 `"id" ->` 的箭头之后，到**下一条**分支箭头之前；最后一条带引号的
+     * 分支截止到 `when` 的 `else ->`（或文件末尾）。
+     *
+     * ## 为什么最后一条必须截在 `else ->`
+     *
+     * 旧写法让最后一条分支一直吃到文件末尾。2026-11-03 `k.feedback` 排到了最后一条，
+     * 它后面 418 行的 `SettingsScreen(...)` 等函数也被算进分支体，其中
+     * `onOpenCourse = {}` 命中了「空回调」判据 —— 这是**守卫自己越界**，不是接线回退。
+     * 边界应当是分派 `when` 的兜底分支，不是文件末尾。
      */
     private fun branchBlocks(): Map<String, String> {
         val source = dispatchSource().readText(Charsets.UTF_8)
@@ -129,7 +135,9 @@ class DiagnosticsWiringGuardTest {
         val blocks = LinkedHashMap<String, String>()
         matches.forEachIndexed { index, match ->
             val start = match.range.last + 1
-            val end = matches.getOrNull(index + 1)?.range?.first ?: source.length
+            val end = matches.getOrNull(index + 1)?.range?.first
+                ?: ELSE_BRANCH.find(source, start)?.range?.first
+                ?: source.length
             val id = match.groupValues[1]
             // 同一个 id 出现多次时不覆盖：次数由 `ShellPageDispatchCoverageTest` 管，
             // 这里取第一段即可（Kotlin 也只认第一条）。
@@ -320,5 +328,11 @@ class DiagnosticsWiringGuardTest {
 
         /** 分派分支：行首空白 + 引号 id + 箭头（与覆盖守卫同一口径）。 */
         val BRANCH = Regex("""^[ \t]*"([A-Za-z0-9._-]+)"[ \t]*->""", RegexOption.MULTILINE)
+
+        /**
+         * `when` 的兜底分支：只作为「最后一条引号分支」的结束边界，本身不是页面 id。
+         * 见 [branchBlocks] 的说明（否则分支体会把 `when` 之后的函数一起吞进来）。
+         */
+        val ELSE_BRANCH = Regex("""^[ \t]*else[ \t]*->""", RegexOption.MULTILINE)
     }
 }
