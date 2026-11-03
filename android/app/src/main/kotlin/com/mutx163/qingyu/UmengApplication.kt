@@ -2,11 +2,21 @@ package com.mutx163.qingyu
 
 import android.app.Application
 import android.content.Context
+import android.os.SystemClock
 import com.mutx163.qingyu.infra.AppLogStore
+import com.mutx163.qingyu.pages.diagnostics.PerfProbeCore
 import com.umeng.commonsdk.UMConfigure
 
 class UmengApplication : Application() {
     override fun onCreate() {
+        // A2（2026-11-03）：启动打点「进程进入」段。此刻探针尚未安装（安装发生在壳
+        // Activity 的 onCreate），必须用 **PerfProbeCore 的显式时间戳重载**（其注释明说
+        // 给 Application 用）：打点先缓冲，安装时按原时刻补记。platform 包装层
+        // `PerfProbe.markStartup(label)` 依赖内部时钟、此刻未配置，会把打点丢掉，
+        // 所以这里直接调内核；时间戳与探针装成后的时钟同源
+        //（elapsedRealtimeNanos / 1000，微秒），分段不会错位。
+        // 正式包探针不安装：这一条只是往进程内缓冲放一对 (标签, 时戳)，无 I/O 无计算。
+        PerfProbeCore.markStartup("mainEnter", SystemClock.elapsedRealtimeNanos() / 1000L)
         super.onCreate()
 
         // 金标联盟公平运行内存：进程级动态注册，不依赖 Flutter 引擎是否存活。

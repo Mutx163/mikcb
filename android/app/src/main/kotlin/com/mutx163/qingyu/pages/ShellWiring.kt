@@ -164,8 +164,20 @@ class ShellWiring(context: Context) {
      */
     val autoRefresh: CourseAutoRefreshStore = CourseAutoRefreshStore(keyValueStore)
 
-    /** 只读一次盘：下面两个运行期偏好初值来自同一份设置，别为了两行解析两遍 JSON。 */
-    private val initialSettings: TimetableSettingsModel = settingsModel.load()
+    /**
+     * 冷启动的**唯一一次**全量设置解析（A1 · 2026-11-03）。
+     *
+     * 构造时读一次盘，供首帧前的三个消费方共用（此前各读各的，同一份
+     * `timetable_settings` JSON 在首帧前被主线程解析了 4 遍）：
+     * 1. 下面 `pageTransitionSpeed` / `enableHaptics` / `homeViewMode` /
+     *    `homeSelectedDayOfWeek` 的初值；
+     * 2. `PagesShellActivity.setContent` 主题桥的设置初值（`remember(wiring)`）；
+     * 3. `PagesShell` 冷启动恢复视图档 `initialRootId`（`remember(wiring)`）。
+     *
+     * 只当**初值**用：设置页改完返回主屏仍走 `settingsRevision` 自增触发的重读，
+     * 那条纪律不变（守卫 `HomeSettingsRefreshGuardTest` 钉着）。
+     */
+    val initialSettings: TimetableSettingsModel = settingsModel.load()
 
     /**
      * 页面转场速度（Dart `pageTransitionSpeed`，0.5~2.5，1.0 = 原速）。

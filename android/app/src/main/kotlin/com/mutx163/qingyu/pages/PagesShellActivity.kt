@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
+import android.view.Choreographer
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -43,7 +44,6 @@ import com.mutx163.qingyu.ScheduleReminderCoordinator
 import com.mutx163.qingyu.app.AppFontMode
 import com.mutx163.qingyu.app.AppThemeMode
 import com.mutx163.qingyu.app.TimetableSettingsModel
-import com.mutx163.qingyu.app.TimetableSettingsModelStore
 import com.mutx163.qingyu.app.TimetableStore
 import com.mutx163.qingyu.components.QingyuPageTheme
 import com.mutx163.qingyu.app.TimetableHomeViewMode
@@ -57,6 +57,7 @@ import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.homeDockVisible
+import com.mutx163.qingyu.pages.shell.localeTagFromRawSettingsJson
 import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import kotlin.math.roundToInt
 import java.util.Locale
@@ -227,8 +228,11 @@ class PagesShellActivity : ComponentActivity() {
                     ScheduleDateRuleAutoApplyHost.applyDue(wiring.timetable, schedulePrefs)
                 }
             }
+            // A1（2026-11-03）：初值不再自己解析一遍 JSON —— 取 ShellWiring 构造时
+            // 那一次共享解析（`initialSettings`）；之后的更新仍走 onReloadSettings /
+            // settingsRevision（回主屏重读），那条纪律不变。
             var settingsModel by remember(wiring) {
-                mutableStateOf(wiring.settingsModel.load())
+                mutableStateOf(wiring.initialSettings)
             }
             val appDark = resolveAppDark(
                 mode = settingsModel.appThemeMode,
@@ -257,6 +261,17 @@ class PagesShellActivity : ComponentActivity() {
                     onReloadSettings = { settingsModel = it },
                 )
             }
+        }
+
+        // A2（2026-11-03）：启动打点「首帧」段。Choreographer 首帧回调是标准做法，
+        // 不新造机制：setContent 之后排一个一次性回调，第一个 vsync 到来时补记
+        // firstFrame。此时探针已安装（onCreate 早段 PerfProbe.attach），打点走探针
+        // 自己的单调时钟；正式包探针未安装，这条打点被直接丢弃，零成本。
+        // 语义边界（如实说明）：它是「setContent 后第一个 vsync」，极端情况下可能
+        // 略早于 Compose 首绘完成，读数是首帧耗时的近似上界。启动分段于是有三段：
+        // mainEnter（进程进入 Application）→ shellAttach（壳挂载）→ firstFrame（首帧）。
+        Choreographer.getInstance().postFrameCallback {
+            PerfProbe.markStartup("firstFrame")
         }
     }
 
@@ -317,12 +332,17 @@ class PagesShellActivity : ComponentActivity() {
  * 应用语言：按存档的 `appLocaleTag` 覆写配置语言。空串 = 跟随系统。
  *
  * 见 [PagesShellActivity.attachBaseContext] 的效果边界说明。
+ *
+ * A1（2026-11-03）：这里早于一切 UI，此前为了拿一个语言键把整份设置模型反序列化
+ * 一遍（首帧前 4 遍解析之一）。现在只读 `timetable_settings` 原始串、单键捞出语言
+ * 标记，读口径与全量模型逐字一致（对拍测试 `ShellColdStartSettingsTest` 钉住）；
+ * 损坏留档仍由冷启动必经的 `ShellWiring` 解析在同一次启动里完成，最终状态不变。
  */
 private fun withAppLocale(base: Context): Context {
     val tag = runCatching {
-        TimetableSettingsModelStore(
-            TimetableStore(PrefsKeyValueStore(base)),
-        ).load().appLocaleTag
+        localeTagFromRawSettingsJson(
+            PrefsKeyValueStore(base).getString(TimetableStore.KEY_SETTINGS),
+        )
     }.getOrNull().orEmpty()
     if (tag.isBlank()) return base
     val locale = runCatching { LocaleList.forLanguageTags(tag)[0] }.getOrNull() ?: return base
@@ -444,8 +464,10 @@ private fun PagesShell(
     //
     // 首屏停在哪个视图由存档决定（Dart `timetableHomeViewMode`，冷启动恢复上次停留的
     // 周 / 日 / 月）—— 这是此前同样没接上的一个死键。
+    // A1（2026-11-03）：初值改取 ShellWiring 共享的那一次解析（`initialSettings`），
+    // 不再整份重读 JSON。键仍是 `remember(wiring)`：换 wiring 才重算。
     val initialRootId = remember(wiring) {
-        rootItemIdForView(wiring.settingsModel.load().timetableHomeViewMode)
+        rootItemIdForView(wiring.initialSettings.timetableHomeViewMode)
     }
     val backStack = remember { navBackStackOf(ShellRoute.Dock(initialRootId)) }
 
