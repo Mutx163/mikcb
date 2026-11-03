@@ -31,6 +31,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +74,7 @@ import com.mutx163.qingyu.pages.shell.rememberHomeDockUsesBackdrop
 import kotlin.math.roundToInt
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
@@ -512,7 +514,7 @@ private fun PagesShell(
         DockPagerMotion.pageItemIds(dockIds, initialRootId)
     }
     // 当前主屏条目：**高亮与滑动目标的事实源**。点击底栏立即更新（选中态即时响应），
-    // 内容区由下面的切换效果滑到对应页。
+    // 内容区由 [animateDockPagerTo] 在点击作用域内直接滑到对应页。
     var currentRootId by remember { mutableStateOf(initialRootId) }
     val pagerState = rememberPagerState(
         initialPage = DockPagerMotion.indexOfPage(dockPageIds, initialRootId) ?: 0,
@@ -520,6 +522,43 @@ private fun PagesShell(
         dockPageIds.size
     }
     val backStack = remember { navBackStackOf(ShellRoute.Dock) }
+
+    // 底栏切换动画的启动器（官方 demo `MainPagerState.animateToPage` 的壳侧等价）：
+    // **点击作用域内直接 launch**，不等重组——如果经由 `LaunchedEffect(currentRootId)` 触发，
+    // 点击帧只写状态、动画要等下一帧重组应用后才起步，中间隔出 1~2 帧零位移
+    //（用户 2026-11-03 报的「切换起步顿一下」主因之一，同帧还有目标页首帧组合，见
+    // Pager 的 beyondViewportPageCount 注释）。连点不同标签时取消上一个滑动协程再起新的，
+    // 收敛到最新目标（demo 的 `navJob?.cancel()` 同语义）。系统关动画
+    //（`ANIMATOR_DURATION_SCALE` ≤ 0，判据 `DockPagerMotion.reducedMotion`）时直接落定、
+    // 零中间帧；系统值只在组合期读一次，改开发者选项后壳会重建取新值。
+    val context = LocalContext.current
+    val pagerReducedMotion = remember(context) {
+        DockPagerMotion.reducedMotion(
+            Settings.Global.getFloat(
+                context.contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f,
+            ),
+        )
+    }
+    val pagerAnimScope = rememberCoroutineScope()
+    // 在飞滑动协程的引用：连点时取消上一个。不进快照状态（job 变化不需要重组）。
+    val pagerAnimJobRef = remember { java.util.concurrent.atomic.AtomicReference<kotlinx.coroutines.Job?>(null) }
+
+    /** 点击作用域内直接滑到 [itemId] 对应的主屏页（起步不隔帧，见上方注释）。 */
+    fun animateDockPagerTo(itemId: String) {
+        val target = DockPagerMotion.indexOfPage(dockPageIds, itemId) ?: return
+        pagerAnimJobRef.getAndSet(null)?.cancel()
+        pagerAnimJobRef.set(
+            pagerAnimScope.launch {
+                if (pagerReducedMotion) {
+                    pagerState.scrollToPage(target)
+                } else {
+                    pagerState.springAnimateToPage(target)
+                }
+            },
+        )
+    }
 
     /**
      * 推页序号：每次 push 分配一个递增 token，让两条路由的值互不相等。
@@ -620,6 +659,7 @@ private fun PagesShell(
             }
             wiring.switchHomeViewMode(mode)
             currentRootId = ROOT_WEEK
+            animateDockPagerTo(ROOT_WEEK)
             return
         }
 
@@ -629,6 +669,7 @@ private fun PagesShell(
         if (DockPagerMotion.slideStep(currentRootId, itemId, dockPageIds) == 0) return
         if (mode != null) wiring.switchHomeViewMode(mode)
         currentRootId = itemId
+        animateDockPagerTo(itemId)
     }
 
     /**
@@ -663,32 +704,14 @@ private fun PagesShell(
     val topRoute = backStack.lastOrNull()
     val atRoot = topRoute is ShellRoute.Dock
 
-    // 底栏切换动画（官方 demo `MainPagerState.animateToPage` 的壳侧等价）：
-    // [currentRootId] 变化 → 内容区滑到目标页，动画引擎是 miuix 官方的
-    // `springAnimateToPage`（方向由页下标决定：目标在右新页从右进，在左反之）。
-    // LaunchedEffect 键变化会取消上一个滑动协程再起新的 —— 转场中快速连点不同标签，
-    // 天然收敛到最新目标，不积压页面（与 demo 的 `navJob?.cancel()` 同语义）。
-    // 系统关动画（`ANIMATOR_DURATION_SCALE` ≤ 0，判据 `DockPagerMotion.reducedMotion`，
-    // 与首页展开动画那条降级同一口径）时直接落定，零中间帧。系统值只在组合期读一次：
-    // 改开发者选项后壳会重建，重建时取到新值。
-    val context = LocalContext.current
-    val pagerReducedMotion = remember(context) {
-        DockPagerMotion.reducedMotion(
-            Settings.Global.getFloat(
-                context.contentResolver,
-                Settings.Global.ANIMATOR_DURATION_SCALE,
-                1f,
-            ),
-        )
-    }
-    LaunchedEffect(currentRootId, dockPageIds) {
+    // 底栏排列变化的对齐（不是点击切换的路径——那个由 [animateDockPagerTo] 在点击作用域
+    // 内直接启动）：设置里改完底栏排列回主屏，页列表可能缩/移，把 Pager 对回当前条目
+    // 对应的页。瞬时落定即可（低频、非观感路径）。
+    LaunchedEffect(dockPageIds) {
         val target = DockPagerMotion.indexOfPage(dockPageIds, currentRootId)
             ?: return@LaunchedEffect
-        if (target == pagerState.targetPage) return@LaunchedEffect
-        if (pagerReducedMotion) {
+        if (target != pagerState.targetPage) {
             pagerState.scrollToPage(target)
-        } else {
-            pagerState.springAnimateToPage(target)
         }
     }
 
@@ -829,6 +852,12 @@ private fun PagesShell(
                                     state = pagerState,
                                     modifier = Modifier.fillMaxSize(),
                                     userScrollEnabled = false,
+                                    // 预组合相邻 1 页（2026-11-03 起步顿挫修）：默认 0 时目标页
+                                    // 在滑动第一帧才进入组合窗口，重页（课表/统计）首帧组合掉帧
+                                    // 就是「起步一顿」的另一半成因。代价（如实）：
+                                    // ① 冷启动首帧多组合 1 个相邻页（一次性，页在视口外不绘制）；
+                                    // ② 常驻组合数 = 当前页 ± 1（内存多一份相邻页的组合树）。
+                                    beyondViewportPageCount = 1,
                                 ) { page ->
                                     val pageItemId = dockPageIds[page]
                                     if (pageItemId == HomeDockNavModel.DEV_INDEX_ID) {

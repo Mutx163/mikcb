@@ -86,6 +86,36 @@ class DockPagerWiringGuardTest {
     }
 
     @Test
+    fun `底栏切换动画必须由点击作用域直接启动且预组合相邻页`() {
+        val activity = codeOnly(source(ACTIVITY))
+        assertTrue(
+            "壳里没有点击作用域内的滑动启动器（animateDockPagerTo + pagerAnimScope.launch）：" +
+                "动画若经由 LaunchedEffect(currentRootId) 触发，起步要等下一帧重组，" +
+                "点底栏会先顿一帧再滑（用户 2026-11-03 报的起步顿挫）",
+            dockPagerStartsOnTap(activity),
+        )
+        assertTrue(
+            "HorizontalPager 没配 beyondViewportPageCount = 1：相邻页不预组合时，" +
+                "目标页在滑动第一帧才组合，重页首帧掉帧同样是起步一顿",
+            activity.contains("beyondViewportPageCount = 1"),
+        )
+        // 反向探针 1：动画触发改回状态驱动（LaunchedEffect），判据必须红。
+        val effectDriven = activity.replace(
+            "fun animateDockPagerTo(", "fun XanimateDockPagerTo(",
+        )
+        assertFalse(
+            "咬合探针失效：启动器被摘掉后判据仍为真",
+            dockPagerStartsOnTap(effectDriven),
+        )
+        // 反向探针 2：预组合去掉，判据必须红。
+        val noPrecompose = activity.replace("beyondViewportPageCount = 1", "beyondViewportPageCount = 0")
+        assertFalse(
+            "咬合探针失效：预组合改 0 后判据仍为真",
+            noPrecompose.contains("beyondViewportPageCount = 1"),
+        )
+    }
+
+    @Test
     fun `守卫本身没有空转`() {
         // 防空转：文本解析一旦因格式变化失效，上面几条「零违规」会全部变绿。
         val activity = source(ACTIVITY)
@@ -120,6 +150,16 @@ class DockPagerWiringGuardTest {
 
     private fun shellHasNoStackBottomReplace(text: String): Boolean =
         !text.contains("instantOnReplace") && !text.contains("backStack[0]")
+
+    /**
+     * 起步不隔帧的判据：滑动启动器在（点击作用域内的 launch + 状态写入同帧发生），
+     * 且**不得**出现「以 currentRootId 为键的 LaunchedEffect」——那是状态驱动触发，
+     * 动画要等下一帧重组应用后才起步（起步顿挫的成因一）。
+     */
+    private fun dockPagerStartsOnTap(text: String): Boolean =
+        text.contains("fun animateDockPagerTo(") &&
+            text.contains("pagerAnimScope.launch") &&
+            !text.contains("LaunchedEffect(currentRootId")
 
     // ------------------------------------------------------------------ 定位
 
