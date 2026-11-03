@@ -523,6 +523,7 @@ class CloudSyncController(
             config = config,
             remotePath = file.remotePath,
             hasLocalUserData = localHasUserDataNow(),
+            readLocalSnapshot = ::readLocalSnapshotForConflict,
             resolver = { SyncConflictChoice.KEEP_REMOTE },
         )
         status = status.copy(isSyncing = false)
@@ -694,6 +695,20 @@ class CloudSyncController(
 
     private fun readLocalSnapshotQuietly(): ByteArray? =
         runCatching { snapshotStore.readSnapshot() }.getOrNull()
+
+    /**
+     * 冲突判定用的「本机现在这份课表」。
+     *
+     * 有仓储 / 注入快照时用**实时快照**：上传路径从不写本机快照文件，若进程在
+     * 「云端已写好、基线还没钉」之间被杀，重启后文件仍是空的，只按文件判会把
+     * 「远端 == 本机」当成首次分歧，弹出假「选边」框。
+     * 实时快照明确为空（没有用户数据）时返回 null，不能回落旧文件——旧文件正是
+     * 可能已经与实际课表脱节的那一份。
+     */
+    private fun readLocalSnapshotForConflict(): ByteArray? {
+        val provider = effectiveSnapshotProvider ?: return readLocalSnapshotQuietly()
+        return (provider() as? SnapshotBuildResult.Success)?.bytes
+    }
 
     /** 下载/应用失败时把协调器已经覆盖过的本地快照文件还原，避免「本地快照说同步了」。 */
     private fun restoreLocalSnapshotQuietly(previous: ByteArray?, fallback: ByteArray?) {
@@ -1140,6 +1155,7 @@ class CloudSyncController(
         val outcome = coordinator.downloadSnapshot(
             config = config,
             hasLocalUserData = localHasUserDataNow(),
+            readLocalSnapshot = ::readLocalSnapshotForConflict,
             resolver = { info ->
                 resolveManualPullConflictChoice(info.localHasUserData)
                     ?: SyncConflictChoice.CANCEL
@@ -1207,6 +1223,7 @@ class CloudSyncController(
             remotePath = snapshotPath,
             expectedRemoteHash = meta.contentSha256,
             hasLocalUserData = hasLocalUserData,
+            readLocalSnapshot = ::readLocalSnapshotForConflict,
             resolver = resolver,
         )
         status = status.copy(isSyncing = false)

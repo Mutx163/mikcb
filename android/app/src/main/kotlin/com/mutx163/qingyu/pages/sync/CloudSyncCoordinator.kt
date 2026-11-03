@@ -555,6 +555,9 @@ class WebdavSyncCoordinator(
      * @param expectedRemoteHash meta 声明的内容哈希；非空且与正文重算值不符 →
      *   `sync_snapshot_meta_mismatch`（Dart `downloadAndApply` 的配对校验）
      * @param hasLocalUserData 本机快照是否含用户亲手沉淀的数据（冲突自动决策要用）
+     * @param readLocalSnapshot 读「本机现在这份课表」的字节；默认读本机快照文件。
+     *   控制器有仓储时应传入**实时快照**：进程在两次同步之间被杀时，快照文件可能是空的
+     *   （上传从不写它），只按文件判会把「远端==本机」误判成首次分歧、弹出假冲突框。
      * @param resolver 冲突裁决（默认 LWW + 字典序平局判云端；后台拉取传 background 版）
      */
     fun downloadSnapshot(
@@ -562,6 +565,7 @@ class WebdavSyncCoordinator(
         remotePath: String = config.snapshotRemotePath,
         expectedRemoteHash: String? = null,
         hasLocalUserData: Boolean = false,
+        readLocalSnapshot: () -> ByteArray? = localStore::readSnapshot,
         resolver: (SyncConflictInfo) -> SyncConflictChoice = ::resolveSyncConflictAutomatically,
     ): DownloadSnapshotOutcome {
         cancelled = false
@@ -609,7 +613,7 @@ class WebdavSyncCoordinator(
         }
 
         val remoteHash = envelope.actualHash
-        val localBytes = localStore.readSnapshot()
+        val localBytes = readLocalSnapshot()
         val localHash = localBytes?.let { snapshotContentHash(it) }.orEmpty()
 
         val conflict = webdavPullHasSyncConflict(

@@ -27,12 +27,17 @@ class FakeRemoteTransport : WebdavRemoteTransport {
     var listResultOverride: HistoryListResult? = null
     var getResultOverride: GetBytesResult? = null
     var putFailureCode: String? = null
+    var deleteFailureCode: String? = null
     var ensureFailureCode: String? = null
     var connectionErrorCode: String? = null
 
     /** 在 GET / PUT 前回调（用于模拟「用户中途退出」）。 */
     var beforeGet: () -> Unit = {}
     var beforePut: () -> Unit = {}
+    var beforeList: () -> Unit = {}
+
+    /** 在 PUT **成功落盘之后**回调（用于模拟「最后一步写完就被杀」）。 */
+    var afterPut: (String) -> Unit = {}
 
     /** 置位后下一次 GET 返回被篡改的字节（模拟传输损坏/并发覆盖），用完自动复位。 */
     var tamperNextGet: Boolean = false
@@ -56,6 +61,7 @@ class FakeRemoteTransport : WebdavRemoteTransport {
         private set
 
     override fun listHistoryBackupFiles(historyRemoteFolder: String): HistoryListResult {
+        beforeList()
         listResultOverride?.let { return it }
         val names = files.keys
             .filter { it.startsWith(historyRemoteFolder) }
@@ -80,6 +86,7 @@ class FakeRemoteTransport : WebdavRemoteTransport {
         beforePut()
         putFailureCode?.let { return WebdavWriteResult.failed(it) }
         files[remotePath] = bytes
+        afterPut(remotePath)
         return WebdavWriteResult.ok(201, null)
     }
 
@@ -128,6 +135,7 @@ class FakeRemoteTransport : WebdavRemoteTransport {
     override fun testConnection(): String? = connectionErrorCode
 
     override fun deleteRemoteFile(remotePath: String): WebdavWriteResult {
+        deleteFailureCode?.let { return WebdavWriteResult.failed(it) }
         val existed = files.remove(remotePath) != null
         return if (existed) WebdavWriteResult.ok(204, null) else WebdavWriteResult.ok(404, null, notFound = true)
     }
@@ -160,6 +168,13 @@ class FakeLocalSnapshotStore(initial: ByteArray? = null) : LocalSnapshotStore {
 }
 
 class IllegalIOException : RuntimeException("fake disk failure")
+
+/**
+ * 模拟「进程被杀在中途」：抛出 `Error`（不是 `Exception`），控制器的补偿分支
+ * （`catch (_: Exception)`）不会执行——这正是 SIGKILL 与「可捕获失败」的差别，
+ * 磁盘上留下的是被杀那一刻的中间状态。测试用 try/catch 接住它再「重启」。
+ */
+class KilledMidway : Error("process killed midway")
 
 /** 内存配置存储。 */
 class FakeConfigStore(

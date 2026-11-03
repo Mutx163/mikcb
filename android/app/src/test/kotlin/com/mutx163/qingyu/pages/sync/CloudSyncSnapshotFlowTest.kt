@@ -7,11 +7,13 @@ import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.core.TimetableProfile
 import com.mutx163.qingyu.sync.WebdavSyncConfig
 import com.mutx163.qingyu.sync.decodeSnapshotObject
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /**
@@ -480,6 +482,272 @@ class CloudSyncSnapshotFlowTest {
         assertEquals("sync_snapshot_apply_failed", controller.lastErrorCode)
         // 写回失败时撤销点不能丢：用户还可以再试一次。
         assertTrue(controller.canUndoLastRestore)
+    }
+
+    // ---------- 进程被杀在中途（第四轮：恢复 / 上传各 3 个中断点） ----------
+
+    /** 同一份存储 + 同一份假远端重建控制器 = 「杀进程后重开 App」。 */
+    private fun restartingController(
+        store: FakeConfigStore,
+        snapshotStore: FakeLocalSnapshotStore,
+        transport: FakeRemoteTransport,
+        repository: TimetableRepository,
+        snapshotApplier: ((ByteArray) -> SnapshotApplyResult)? = null,
+    ): CloudSyncController = CloudSyncController(
+        store = store,
+        snapshotStore = snapshotStore,
+        transportFactory = { _, _ -> transport },
+        deviceLabel = "测试机",
+        clock = { "2026-03-07T09:05:00+08:00" },
+        repository = repository,
+        snapshotApplier = snapshotApplier,
+        undoStore = CloudSyncUndoStore(),
+    )
+
+    private fun FakeRemoteTransport.versionedBodies(): List<String> =
+        files.keys.filter { it.endsWith(".mikcb") && !it.contains("/history/") }
+
+    private fun FakeRemoteTransport.historyFiles(): List<String> =
+        files.keys.filter { it.contains("/history/") && it.endsWith(".mikcb") }
+
+    @Test
+    fun `上传中断_正文已写meta未写_重启续跑只留一份`() {
+        // 被杀点：版本化正文已 PUT，meta 指针还没发。远端处于「有正文、无指针」的半写状态。
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(store, snapshotStore, transport, local)
+        first.connect("me@example.com", "pw")
+        var putCount = 0
+        transport.beforePut = {
+            putCount++
+            if (putCount == 2) throw KilledMidway() // 第 2 个 PUT = meta（正文已是第 1 个）
+        }
+        try {
+            first.createBackup()
+            fail("应在 meta 之前被杀")
+        } catch (_: KilledMidway) {
+        }
+        transport.beforePut = {}
+        assertFalse("被杀在 meta 前：指针不存在", transport.files.containsKey(first.config.metaRemotePath))
+        assertEquals("正文已经落地", 1, transport.versionedBodies().size)
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.UPLOADED, second.syncNow())
+
+        assertTrue("续跑必须补上指针", transport.files.containsKey(second.config.metaRemotePath))
+        assertEquals("同一内容只留一份正文", 1, transport.versionedBodies().size)
+        assertEquals("只写一条历史", 1, transport.historyFiles().size)
+        assertNull(second.pendingSyncConflict)
+    }
+
+    @Test
+    fun `上传中断_meta已写历史未写_重启不弹假冲突也不重复发布`() {
+        // 被杀点：meta 已发布，历史文件还没写。重启时本机课表 == 远端，绝不能再弹「选边」。
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(store, snapshotStore, transport, local)
+        first.connect("me@example.com", "pw")
+        var putCount = 0
+        transport.beforePut = {
+            putCount++
+            if (putCount == 3) throw KilledMidway() // 第 3 个 PUT = 历史文件
+        }
+        try {
+            first.createBackup()
+            fail("应在历史文件之前被杀")
+        } catch (_: KilledMidway) {
+        }
+        transport.beforePut = {}
+        assertTrue("meta 已经发布", transport.files.containsKey(first.config.metaRemotePath))
+        assertTrue("历史还没写", transport.historyFiles().isEmpty())
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        val kind = second.syncNow()
+
+        assertEquals(SyncResultKind.DOWNLOADED, kind)
+        assertNull("本机与远端一致时不得挂起冲突", second.pendingSyncConflict)
+        assertTrue("已一致时不得重复写历史", transport.historyFiles().isEmpty())
+        assertEquals("正文不得翻倍", 1, transport.versionedBodies().size)
+    }
+
+    @Test
+    fun `上传中断_历史已写索引未写_重启列表从listing自愈`() {
+        // 被杀点：历史文件已写，index.json 还没写。重启后备份列表必须从 listing 恢复出这一条。
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(store, snapshotStore, transport, local)
+        first.connect("me@example.com", "pw")
+        var putCount = 0
+        transport.beforePut = {
+            putCount++
+            if (putCount == 4) throw KilledMidway() // 第 4 个 PUT = index.json
+        }
+        try {
+            first.createBackup()
+            fail("应在索引之前被杀")
+        } catch (_: KilledMidway) {
+        }
+        transport.beforePut = {}
+        assertFalse(
+            "索引还没写",
+            transport.files.containsKey(first.config.historyIndexRemotePath),
+        )
+        assertEquals("历史已经落盘", 1, transport.historyFiles().size)
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        assertEquals(SyncResultKind.DOWNLOADED, second.syncNow())
+        assertNull(second.pendingSyncConflict)
+        second.refreshBackups()
+
+        assertEquals("索引缺失时按 listing 重建出一条，不许丢备份", 1, second.backupListViewState().rows.size)
+    }
+
+    @Test
+    fun `恢复中断_远端已取回但本机快照没写成_重启重试成功`() {
+        // 被杀点：远端字节已取回，写本机快照时进程死掉。磁盘上什么都不该变。
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        transport.files["${WebdavSyncConfig().historyRemoteFolder}backup.mikcb"] =
+            remoteSnapshotBytes("remote-course")
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(store, snapshotStore, transport, local)
+        first.connect("me@example.com", "pw")
+        first.refreshBackups()
+        snapshotStore.failNextWrite = true
+        try {
+            first.openBackup("backup.mikcb")
+            fail("应在写本机快照时被杀")
+        } catch (_: IllegalIOException) {
+        }
+        assertNull("被杀在写快照前：文件不得留下远端内容", snapshotStore.stored)
+        assertEquals(listOf("local-course"), local.snapshot.profiles.flatMap { it.courses }.map { it.id })
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals(SyncResultKind.DOWNLOADED, second.openBackup("backup.mikcb"))
+        assertEquals(listOf("remote-course"), local.snapshot.profiles.flatMap { it.courses }.map { it.id })
+    }
+
+    @Test
+    fun `恢复中断_快照文件已写课表还没写回_重启重试成功`() {
+        // 被杀点：本机快照文件已被协调器覆盖，写回课表之前进程死掉。
+        // 重启后文件「看起来像远端」，课表却还是旧的——重试必须把课表也换过去。
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val transport = FakeRemoteTransport()
+        val remoteBytes = remoteSnapshotBytes("remote-course")
+        transport.files["${WebdavSyncConfig().historyRemoteFolder}backup.mikcb"] = remoteBytes
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(
+            store,
+            snapshotStore,
+            transport,
+            local,
+            snapshotApplier = { throw KilledMidway() },
+        )
+        first.connect("me@example.com", "pw")
+        first.refreshBackups()
+        try {
+            first.openBackup("backup.mikcb")
+            fail("应在写回课表时被杀")
+        } catch (_: KilledMidway) {
+        }
+        assertArrayEquals("快照文件已换成远端那份", remoteBytes, snapshotStore.stored)
+        assertEquals("课表还没被写回", listOf("local-course"), local.snapshot.profiles.flatMap { it.courses }.map { it.id })
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals(SyncResultKind.DOWNLOADED, second.openBackup("backup.mikcb"))
+        assertEquals(listOf("remote-course"), local.snapshot.profiles.flatMap { it.courses }.map { it.id })
+    }
+
+    @Test
+    fun `恢复中断_课表已写回收口未完成_重启不弹假冲突且不叠加`() {
+        // 被杀点：课表已经写回，撤销点/基线钉还没写。重启后「本机==远端」，
+        // 同步不得把它当成首次分歧弹「选边」，再恢复一次也不许让档案翻倍。
+        val remote = repository()
+        remote.replaceAllProfiles(
+            (1..3).map { p ->
+                TimetableProfile(
+                    id = "kill-p$p",
+                    name = "档案$p",
+                    courses = (1..4).map { c -> course("kill-$p-$c") },
+                    currentWeek = 2,
+                    createdAt = java.time.LocalDateTime.of(2026, 2, 1, 0, 0),
+                    lastUsedAt = java.time.LocalDateTime.of(2026, 2, 2, 0, 0),
+                )
+            },
+            "kill-p1",
+        )
+        val remoteBytes = TimetableSnapshotBridge.buildSnapshotBytes(
+            repository = remote,
+            deviceId = "devKill",
+            exportedAtIso = "2026-03-06T08:00:00.000",
+        ).let { (it as SnapshotBuildResult.Success).bytes }
+        val transport = FakeRemoteTransport()
+        transport.files["${WebdavSyncConfig().historyRemoteFolder}backup.mikcb"] = remoteBytes
+        val local = repository()
+        local.addCourse(course("local-course"))
+        val store = FakeConfigStore()
+        val snapshotStore = FakeLocalSnapshotStore()
+
+        val first = restartingController(
+            store,
+            snapshotStore,
+            transport,
+            local,
+            snapshotApplier = { bytes ->
+                TimetableSnapshotBridge.applySnapshot(local, bytes)
+                throw KilledMidway() // 课表已写回，收口（撤销点/基线）还没做
+            },
+        )
+        first.connect("me@example.com", "pw")
+        first.refreshBackups()
+        try {
+            first.openBackup("backup.mikcb")
+            fail("应在收口前被杀")
+        } catch (_: KilledMidway) {
+        }
+        assertEquals("课表已写回", 3, local.snapshot.profiles.size)
+
+        val second = restartingController(store, snapshotStore, transport, local)
+        second.connect("me@example.com", "pw")
+        second.refreshBackups()
+        assertEquals(SyncResultKind.DOWNLOADED, second.openBackup("backup.mikcb"))
+
+        assertEquals("重复恢复不得叠加档案", 3, local.snapshot.profiles.size)
+        assertEquals(12, local.snapshot.profiles.sumOf { it.courses.size })
+        assertEquals(
+            "档案 id 不允许重复",
+            3,
+            local.snapshot.profiles.map { it.id }.toSet().size,
+        )
+        // 基线钉在收口之前就丢了，重启后的同步走「推本地」而不是再拉一次；
+        // 这里只钉住用户可感知的一点：本机与远端一致，绝不能挂起「选边」。
+        assertTrue("不得返回 CANCELLED（那是挂起选边）", second.syncNow() != SyncResultKind.CANCELLED)
+        assertNull("本机==远端时不得弹假冲突", second.pendingSyncConflict)
     }
 
     // ---------- 进页加载 ----------
