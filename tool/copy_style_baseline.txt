@@ -19,7 +19,6 @@ en/bingWallpaperAutoApplySubtitle
 en/cloudBackupManualProtectedTitle
 en/cloudBackupMaxAgeSubtitle
 en/cloudBackupMaxCountSubtitle
-en/countdownFormatHelp
 en/courseConflictDetailEntryTitle
 en/duringClassReminderTitle
 en/duringClassStatusNotificationTitle
@@ -38,7 +37,6 @@ en/homePullQuickImportTitle
 en/homeWidgetHideCompletedSubtitle
 en/homeWidgetHideCompletedTitle
 en/homeWidgetShowCountdownSubtitle
-en/homeWidgetShowLocationSubtitle
 en/homeWidgetShowTomorrowTitle
 en/icsExportSkipHolidayCourses
 en/importFirstCourseWeekMappingLabel
@@ -66,7 +64,6 @@ en/liquidGlassDarkIndependentLabel
 en/liquidGlassRefractionBandLabel
 en/liquidGlassScopeDockSubtitle
 en/liquidGlassScopeDockTitle
-en/liveBeforeClassQuickActionAutoSubtitle
 en/liveMiuiLabelImageSubtitle
 en/liveMiuiLabelImageTitle
 en/liveMiuiLabelLogoCornerRadiusLabel
@@ -105,7 +102,6 @@ ja/cloudBackupMaxCountSubtitle
 ja/cloudSyncEnabledTitle
 ja/copyLoginAddressAction
 ja/copyScriptAddressAction
-ja/countdownFormatHelp
 ja/duringClassReminderTitle
 ja/duringClassStatusNotificationTitle
 ja/duringEndDisplaySettingsTitle
@@ -150,7 +146,6 @@ ko/bingWallpaperAutoApplySubtitle
 ko/cloudBackupManualProtectedTitle
 ko/cloudBackupMaxAgeSubtitle
 ko/cloudBackupMaxCountSubtitle
-ko/countdownFormatHelp
 ko/courseRecolorTileTitle
 ko/duringEndDisplaySettingsTitle
 ko/duringEndTimeDisplayLabel
@@ -160,7 +155,6 @@ ko/hidePrefixTextTitle
 ko/homePageBackdropFollowsWeekPagerTitle
 ko/homePullQuickImportTitle
 ko/homeWidgetHideCompletedSubtitle
-ko/homeWidgetShowLocationSubtitle
 ko/homeWidgetShowTomorrowTitle
 ko/importMethodAiSubtitle
 ko/importMethodIcsSubtitle
@@ -172,7 +166,6 @@ ko/layoutHideWeekendsTitle
 ko/layoutShowTimeLabelsTitle
 ko/liquidGlassDarkBoostLabel
 ko/liquidGlassDarkIndependentLabel
-ko/liveBeforeClassQuickActionAutoSubtitle
 ko/liveMiuiLabelImageSubtitle
 ko/liveMiuiLabelImageTitle
 ko/liveMiuiLabelLogoCornerRadiusLabel

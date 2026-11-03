@@ -1044,7 +1044,7 @@
   "showLocationTitle": "場所を表示",
   "showCountdownTitle": "カウントダウンを表示",
   "countdownFormatLabel": "カウントダウン形式",
-  "countdownFormatHelp": "分のみは分単位、秒ありは秒単位で更新",
+  "countdownFormatHelp": "分のみは分ごと、秒ありは秒ごと",
   "showStageTextTitle": "ステージステータステキストを表示",
   "hidePrefixTextTitle": "「授業開始まで / 授業終了まで」接頭辞を非表示",
   "hidePrefixTextInactiveHint": "現在は無効：上の「カウントダウンを表示」を有効にする必要があります",
