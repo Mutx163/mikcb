@@ -46,6 +46,8 @@ object CourseActionStrings {
         "classAlarmCourseConfirmMessage",
         "将在系统时钟创建每周 {weekday} {time} 的闹钟，提前 {lead} 分钟响铃，上课周次 {weeks}。非上课周与假期仍会响铃，需在系统时钟中删除。",
     )
+    /** 「已设提醒：{time}」——旧版一次性提醒条目的展示行（弹层「已设提醒」块）。 */
+    val classAlarmExistingLabel = CourseArbText("classAlarmExistingLabel", "已设提醒：{time}")
     val selectTimeTitle = CourseArbText("selectTimeTitle", "选择时间")
 
     // ── 说明与兜底 ──
@@ -97,6 +99,7 @@ object CourseActionStrings {
         classAlarmLaunchFailedToast,
         classAlarmCourseConfirmTitle,
         classAlarmCourseConfirmMessage,
+        classAlarmExistingLabel,
         selectTimeTitle,
         courseActionSheetNotice,
         unknownTeacher,
@@ -124,6 +127,10 @@ object CourseActionStrings {
     /** 快捷响点按钮（「上课前 {minutes} 分钟提醒」）。 */
     fun classAlarmQuickLabel(minutes: Int): String =
         classAlarmQuickOption.filled("minutes", minutes.toString())
+
+    /** 已设提醒行（「已设提醒：HH:mm」）；HH:mm 由 `ClassAlarmPlanLogic.formatClock` 产出。 */
+    fun classAlarmExistingText(time: String): String =
+        classAlarmExistingLabel.filled("time", time)
 
     /** 教师 / 地点的空值兜底（Dart `course_action_sheet.dart:768-775`）。 */
     fun teacherOrUnknown(teacher: String): String =

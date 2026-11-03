@@ -112,6 +112,16 @@ fun CourseActionSheet(
     leadMinutes: Int = 30,
     /** 闹钟是否跳过系统时钟保存页（宿主从 `classAlarmSkipUi` 读，缺省 false）。 */
     skipUi: Boolean = false,
+    /**
+     * 选中这节课（**课程 × 真实日期**）旧版一次性提醒的响点（当日分钟数）。
+     * null = 没设过 / 宿主还没接 `classReminders` 读侧 ⇒ 子弹层不画「已设提醒」行。
+     */
+    existingReminderMinuteOfDay: Int? = null,
+    /**
+     * 移除旧提醒回调；null = 宿主没接写侧 ⇒ 子弹层不画取消入口（不画点不掉的假按钮）。
+     * 持久化、toast 与是否收起弹层都归宿主（Dart 成功才收、失败留在原地）。
+     */
+    onRemoveReminder: (() -> Unit)? = null,
     onEvent: (CourseActionEvent) -> Unit,
     onAlarmEvent: (ClassAlarmEvent) -> Unit,
     onDismiss: () -> Unit,
@@ -313,6 +323,8 @@ fun CourseActionSheet(
             courseDate = activeSection.alarmDate,
             leadMinutes = leadMinutes,
             skipUi = skipUi,
+            existingReminderMinuteOfDay = existingReminderMinuteOfDay,
+            onRemoveReminder = onRemoveReminder,
             onEvent = onAlarmEvent,
             onDismiss = { stage = CourseSheetStage.NONE },
         )

@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -26,8 +28,11 @@ import com.mutx163.qingyu.theme.QingyuTheme
 import java.time.LocalDate
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Alarm
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -46,10 +51,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 1. Dart 成功打开系统时钟后**先收起本弹层**、失败留在原地；这里统一「点了就收」，
  *    失败由宿主 toast 说明——宿主无法把启动结果同步回弹层，与其等一个假的同步点，
  *    不如让用户从入口行重开（入口行的出现判据不受影响）。
- * 2. Dart 弹层里「已设提醒：HH:mm / 取消旧提醒」两块读旧版一次性本地通知条目
- *    （`timetable_settings.classReminders`）；那份数据的读侧刚由统计泳道接进
- *    Compose（含旧数据逐条容错），写侧（移除入口）尚不在位——本版**不画**这两块，
- *    等写侧落地再补，不画一个删不掉的假入口。
+ * 2. 「已设提醒：HH:mm / 取消」读旧版一次性本地通知条目（`timetable_settings.classReminders`，
+ *    Dart `:259-281` / `:329-337`）。渲染侧已就位：响点由宿主经 [existingReminderMinuteOfDay]
+ *    传入、移除回调经 [onRemoveReminder] 抛回——**任一未接（默认 null）整块不渲染**，
+ *    与课卡铃铛同一条「拿不到就不亮」口径，不画点不掉的假入口。缺口只剩宿主接线：
+ *    读侧（`classReminders` 按 course+日期匹配）与写侧（`ClassReminderLogic.remove` +
+ *    `TimetableStore.saveSettingsPatch` 落盘、`classAlarmRemovedToast`、成功才收弹层）。
  *
  * 确认文案的星期跟随**真实响点**（提前量把响点挪过午夜时是前一天，Dart `:117-125`）。
  *
@@ -57,6 +64,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * @param courseDate 这节课在本周的真实日期（信息行用；null 只影响信息行首段）。
  * @param leadMinutes 提前量（宿主从设置读，[ClassAlarmPlanLogic.leadMinutesFromSettings]）。
  * @param skipUi 是否跳过系统时钟保存页（[ClassAlarmPlanLogic.skipUiFromSettings]）。
+ * @param existingReminderMinuteOfDay 旧版一次性提醒的响点（当日分钟数）；null = 不画已设块。
+ * @param onRemoveReminder 移除回调；null = 不画取消入口。只删旧条目，不动系统时钟闹钟
+ *   （Dart `_removeLegacyReminder` 同口径）；持久化、toast 与是否收弹层归宿主。
  */
 @Composable
 fun ClassAlarmSheet(
@@ -66,6 +76,8 @@ fun ClassAlarmSheet(
     courseDate: LocalDate?,
     leadMinutes: Int,
     skipUi: Boolean,
+    existingReminderMinuteOfDay: Int? = null,
+    onRemoveReminder: (() -> Unit)? = null,
     onEvent: (ClassAlarmEvent) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -101,6 +113,31 @@ fun ClassAlarmSheet(
                 maxLines = 1,
             )
             Spacer(modifier = Modifier.height(12.dp))
+
+            // 已设提醒（Dart `:259-281`）：旧版一次性本地通知条目，宿主传了响点才画；
+            // 新写入的系统时钟重复闹钟不受取消影响（Dart `_removeLegacyReminder` 注释同口径）。
+            existingReminderMinuteOfDay?.let { minute ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Alarm,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = Color(QingyuTheme.primary(dark)),
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = CourseActionStrings.classAlarmExistingText(
+                            ClassAlarmPlanLogic.formatClock(minute),
+                        ),
+                        style = MiuixTheme.textStyles.body2,
+                        color = Color(QingyuTheme.primaryText(dark)),
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // 快捷响点（Dart `:282-288`）：开始 − 提前量；越过午夜时交给计划的响点日。
             // 钟点解析不出时按 Dart 置灰（`:285` `onPressed: startMinutes == null ? null : …`）。
@@ -141,6 +178,20 @@ fun ClassAlarmSheet(
                     onDismiss()
                 },
             )
+
+            // 取消旧提醒（Dart `:329-337` destructive「取消」）：已设块在、写侧回调也接了才画。
+            // 点击后**不自行收起**——持久化在宿主：成功才收弹层 + toast（Dart 成功才 pop）。
+            if (existingReminderMinuteOfDay != null && onRemoveReminder != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = CourseActionStrings.cancelAction.zh,
+                    colors = ButtonDefaults.textButtonColors(
+                        textColor = Color(QingyuTheme.destructive()),
+                    ),
+                    onClick = { onRemoveReminder?.invoke() },
+                )
+            }
         }
     }
 
