@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.CourseActionStrings
 import com.mutx163.qingyu.components.QingyuSheet
@@ -220,32 +221,48 @@ fun ClassAlarmSheet(
     }
 
     // 确认弹层（Dart `:142-152` `showAppConfirmDialogWithBody`）：星期跟随真实响点。
-    val confirm = pendingConfirm
-    if (confirm != null) {
-        val (plan, pickedMinute) = confirm
-        val ringIso = plan.repeatDays.firstOrNull()
+    //
+    // 常驻组合（弹层不许条件挂载，配方见
+    // .agents/notes/implemented/architecture/2026-11-02-settings-dialogs-persistent-composition.md）：
+    // `show` 跟 `pendingConfirm` **实时**判空；正文用 remember 保留的**最后一份非空**计划渲染，
+    // 点取消/确认后 260ms 退场动画期间不会闪成空板。收层瞬间 course / resolvedStartTime
+    // 也可能一起归 null，展示派生全部按可空兜底（ringIso 回 1、weeks 回 "—"、summary 回空串）。
+    var confirmed by remember { mutableStateOf(pendingConfirm) }
+    if (pendingConfirm != null) confirmed = pendingConfirm
+    val confirm = confirmed
+    val ringIso = confirm?.let { (plan, _) ->
+        plan.repeatDays.firstOrNull()
             ?.let { ClassAlarmPlanLogic.isoWeekdayFromCalendar(it) }
             ?.takeIf { it != 0 }
-            ?: course?.dayOfWeek
-            ?: 1
-        val startMinutesForLead = resolvedStartTime?.let { ClassAlarmPlanLogic.parseClockMinutes(it) }
-        val lead = ClassAlarmPlanLogic.clampLeadMinutes(leadMinutes)
-        val effectiveLead = if (startMinutesForLead == null) {
-            lead
-        } else {
-            ClassAlarmPlanLogic.effectiveLead(pickedMinute, startMinutesForLead, lead)
-        }
-        OverlayDialog(
-            show = true,
-            title = CourseActionStrings.classAlarmCourseConfirmTitle.zh,
-            summary = CourseActionStrings.classAlarmConfirmMessage(
-                weekday = CourseActionSheetStrings.weekdayLabel(ringIso),
-                time = ClassAlarmPlanLogic.formatClock(plan.hour * 60 + plan.minute),
-                lead = effectiveLead,
-                weeks = course?.let { ClassAlarmPlanLogic.weeksSummary(it) } ?: "—",
-            ),
-            onDismissRequest = { pendingConfirm = null },
-        ) {
+    }
+        ?: course?.dayOfWeek
+        ?: 1
+    val startMinutesForLead = resolvedStartTime?.let { ClassAlarmPlanLogic.parseClockMinutes(it) }
+    val lead = ClassAlarmPlanLogic.clampLeadMinutes(leadMinutes)
+    val effectiveLead = if (startMinutesForLead == null || confirm == null) {
+        lead
+    } else {
+        ClassAlarmPlanLogic.effectiveLead(confirm.second, startMinutesForLead, lead)
+    }
+    val summaryText = confirm?.let { (plan, _) ->
+        CourseActionStrings.classAlarmConfirmMessage(
+            weekday = CourseActionSheetStrings.weekdayLabel(ringIso),
+            time = ClassAlarmPlanLogic.formatClock(plan.hour * 60 + plan.minute),
+            lead = effectiveLead,
+            weeks = course?.let { ClassAlarmPlanLogic.weeksSummary(it) } ?: "—",
+        )
+    } ?: ""
+    OverlayDialog(
+        insideMargin = DpSize(16.dp, 16.dp),
+        show = pendingConfirm != null,
+        title = CourseActionStrings.classAlarmCourseConfirmTitle.zh,
+        summary = summaryText,
+        onDismissRequest = { pendingConfirm = null },
+    ) {
+        // show=false 时 miuix 仍会组合正文 lambda：内容必须对 null 安全（守卫 current）。
+        val current = confirmed
+        if (current != null) {
+            val plan = current.first
             Row(modifier = Modifier.fillMaxWidth()) {
                 TextButton(
                     text = CourseActionStrings.cancelAction.zh,
