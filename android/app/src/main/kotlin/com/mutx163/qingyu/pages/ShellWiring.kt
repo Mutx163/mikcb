@@ -224,10 +224,10 @@ class ShellWiring(context: Context) {
      * 下一次宿主挂载时，首页展开动画该从哪一档起步。
      *
      * 只在「底栏从别的页面切回课表」这种**宿主会被重建**的路径上需要：
-     * 路由替换是瞬时切换（`PagesShellActivity.instantOnReplace`），新宿主第一帧
-     * 如果直接按 `homeViewMode` 落定，就会跳过展开/收起动画。页面在常驻时切换
-     * 不读这个值（`dayMode` 变化本身就会触发动画），由 `PagesShellActivity` 在换路由前
-     * 经 [requestHomeViewMotion] 显式登记。
+     * 主屏内容区是 HorizontalPager（2026-11-03 起），课表页在转场目标页进入视口时
+     * 才组合（或重建），新宿主第一帧如果直接按 `homeViewMode` 落定，就会跳过
+     * 展开/收起动画。页面在常驻时切换不读这个值（`dayMode` 变化本身就会触发动画），
+     * 由 `PagesShellActivity.selectRoot` 在触发滑动前经 [requestHomeViewMotion] 显式登记。
      *
      * `consumeHomeViewMotionSeed()` 读一次就清：冷启动不应该播动画。
      */

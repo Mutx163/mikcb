@@ -5,10 +5,11 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
 /**
  * 壳页面层的路由 —— miuix-nav 返回栈里的「键」。
  *
- * - [Dock]：栈底那一层，主屏；[itemId] 是当前停在哪个**底栏条目**
- *   （`week` / `day` / `tasks` / `settings` / `monthView` …，取值来自用户的
- *   `glassDockActions` 存档）。切条目 = 替换这条路由，转场交给 NavDisplay，
- *   不自己写动画。
+ * - [Dock]：栈底那一层，主屏（2026-11-03 起无参数：主屏停在第几个底栏条目由壳的
+ *   `currentRootId` 状态持有，内容区用 `HorizontalPager` 承载、点底栏滑过去 ——
+ *   miuix-nav 的 `NavChange.Replace` 官方就是瞬时直切（旧条目同帧卸载、驱动不动），
+ *   根级切换的左右滑转场只能走官方 demo 的 Pager 形态；`itemId` 状态化之后栈底
+ *   不再发生替换，返回栈语义不变）。
  * - [Page]：从索引点开的、或页面内部推开的任意一页；[id] 即 [ShellPageContent]
  *   认识的目录 id（`a.about` / `b.general` / `c1.week` …）。
  *
@@ -21,12 +22,15 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
 sealed interface ShellRoute : NavKey {
 
     /**
-     * 栈底的主屏，[itemId] 指当前停的底栏条目。
+     * 栈底的主屏。**无参数** —— 停在第几个底栏条目由壳的状态持有
+     * （`PagesShellActivity.currentRootId`），换条目不再动返回栈。
      *
      * 2026-10-31 之前这里叫 `slotId`、只认四个写死的槽位（timetable/schedule/task/
      * settings）；底栏改为读用户存档后条目集合是可变的，「槽位」这个词不再成立。
+     * 2026-11-03 之前是 `data class Dock(val itemId: String)`：切底栏 = 替换栈底路由，
+     * miuix-nav 按 Replace 瞬时直切（用户报「点底栏闪现」）——现改为 Pager 滑动。
      */
-    data class Dock(val itemId: String) : ShellRoute
+    data object Dock : ShellRoute
 
     /**
      * 页面层的一页，[id] 即目录 id。

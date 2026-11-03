@@ -39,7 +39,7 @@ import org.junit.Test
  * ## 咬合探针（2026-10-31 重写后做过）
  *
  * 在 `PagesShellActivity.kt` 的主屏分支里临时加一行 `TaskListHost(` → 第 2 条立即红；
- * 把 `pageId = rootPageIdFor(route.itemId)` 改成写死 `"d2.taskList"` → 第 3 条立即红；
+ * 把 `pageId = rootPageIdFor(pageItemId)` 改成写死 `"d2.taskList"` → 第 3 条立即红；
  * 两处都还原后复跑全绿。
  */
 class TaskWiringGuardTest {
@@ -117,8 +117,8 @@ class TaskWiringGuardTest {
         )
         assertTrue(
             "底栏条目来源必须由 HomeDockNavModel 解析（读用户存档），找不到解析调用" +
-                "（2026-11-01 起坞由 shell/HomeGlassDock.kt 画，解析也搬去了那里）",
-            source("shell/HomeGlassDock.kt").contains("HomeDockNavModel.resolveIds("),
+                "（2026-11-03 起三处共用 resolveDockIds 合一入口：坞 / Rail / 壳 Pager 页列表）",
+            source("shell/HomeGlassDock.kt").contains("HomeDockNavModel.resolveDockIds("),
         )
     }
 

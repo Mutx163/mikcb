@@ -46,17 +46,11 @@ fun ShellNavigationRail(
     expanded: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // 条目解析与 HomeGlassDock 完全同源（含「用户没自定义过底栏时追加开发壳索引」）。
+    // 条目解析与 HomeGlassDock 完全同源（含「用户没自定义过底栏时追加开发壳索引」），
+    // 走 `resolveDockIds` 合一入口：壳的 Pager 页列表、坞都由同一方法解析，三处同源。
     val dockIds = remember(settingsModel, isNavigable) {
-        val resolved = HomeDockNavModel.resolveIds(settingsModel.glassDockActions) { id ->
+        HomeDockNavModel.resolveDockIds(settingsModel.glassDockActions) { id ->
             isNavigable(id)
-        }
-        if (settingsModel.glassDockActions.isEmpty() &&
-            resolved.size < HomeDockNavModel.MAX_SLOTS
-        ) {
-            resolved + HomeDockNavModel.DEV_INDEX_ID
-        } else {
-            resolved
         }
     }
     val railState: NavigationRailState = rememberNavigationRailState(

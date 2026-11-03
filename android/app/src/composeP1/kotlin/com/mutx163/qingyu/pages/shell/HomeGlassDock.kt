@@ -69,16 +69,10 @@ fun HomeGlassDock(
 
     // 底栏条目：**由用户存档决定**（Dart `resolveGlassDockActionIds`）。空表回退默认三格；
     // 用户没自定义过时，开发壳的「页面索引」追加到末尾（与拆壳前的壳层口径一致）。
+    // 走 `resolveDockIds` 合一入口：壳的 Pager 页列表、Rail 都由同一方法解析，三处同源。
     val dockIds = remember(settingsModel, isNavigable) {
-        val resolved = HomeDockNavModel.resolveIds(settingsModel.glassDockActions) { id ->
+        HomeDockNavModel.resolveDockIds(settingsModel.glassDockActions) { id ->
             isNavigable(id)
-        }
-        if (settingsModel.glassDockActions.isEmpty() &&
-            resolved.size < HomeDockNavModel.MAX_SLOTS
-        ) {
-            resolved + HomeDockNavModel.DEV_INDEX_ID
-        } else {
-            resolved
         }
     }
     val isDark = isSystemInDarkTheme()

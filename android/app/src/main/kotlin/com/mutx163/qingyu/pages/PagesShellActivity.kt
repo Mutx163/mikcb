@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
+import android.provider.Settings
 import android.view.Choreographer
 import android.view.View
 import android.view.WindowManager
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +38,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
@@ -59,6 +63,7 @@ import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.platform.PerfProbe
 import com.mutx163.qingyu.platform.ScreenCaptureWatcher
 import com.mutx163.qingyu.pages.shell.HomeDockNavModel
+import com.mutx163.qingyu.pages.shell.DockPagerMotion
 import com.mutx163.qingyu.pages.shell.HomeGlassDock
 import com.mutx163.qingyu.pages.shell.ShellNavigationRail
 import com.mutx163.qingyu.pages.shell.homeDockVisible
@@ -73,7 +78,6 @@ import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.navBackStackOf
-import top.yukonga.miuix.kmp.nav.runtime.NavChange
 import top.yukonga.miuix.kmp.nav.runtime.NavProgrammaticEasing
 import top.yukonga.miuix.kmp.nav.transition.NavMotion
 import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
@@ -81,6 +85,7 @@ import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransition
 import top.yukonga.miuix.kmp.nav.transition.NavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
+import top.yukonga.miuix.kmp.utils.springAnimateToPage
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -94,6 +99,13 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
  * 其余条目（`tasks` / `scheduleList` / `settings` / `statistics` …）渲染成对应页面，
  * **底栏保持可见**——与 Flutter「玻璃坞内嵌页」（`kInlineDockPages`）同构：
  * 点底栏换内容、返回回周视图。打开底栏以外的页面才 push 一层、底栏让位。
+ *
+ * 主屏切换的转场（2026-11-03 起）：内容区是 `HorizontalPager`，主屏条目由壳的
+ * `currentRootId` 状态持有，点底栏用 miuix 官方 `springAnimateToPage` 沿标签顺序
+ * 滑到目标页（右边的标签从右进、左边反之）。miuix-nav 对路由替换（`NavChange.Replace`）
+ * 官方就是瞬时直切 —— 根级切换要动画只有这条官方形态（官方 demo `AppContent.kt`
+ * 的 `MainPagerState` 同款）；换条目不再动返回栈。周 / 日两格是同一课表页的
+ * 两种展开态，互点不滑动、保留页内的展开窗口动画。
  *
  * 推入的页面有两种转场（都是官方能力，壳不自研几何）：
  * * 普通页走官方 `NavTransitions.MiuixDefault` 侧滑；
@@ -470,10 +482,13 @@ private fun PagesShell(
         NavTransitions.MiuixDefault.scaledToUserSpeed(wiring.pageTransitionSpeed)
     }
 
-    // 页面层用 miuix-nav 的返回栈（唯一合规做法，不自研转场）。栈底是 [ShellRoute.Dock]
-    // （主屏：某个底栏条目/视图），打开一页 push 一层、返回 pop 一层；切底栏 = 替换栈底
-    // 那条路由。所有转场由 NavDisplay（NavTransitions.MiuixDefault + NavDisplayEffects.Default）
-    // 负责，不写一行自研动画。
+    // 页面层用 miuix-nav 的返回栈（推页/返回的转场仍由它负责，不自研）。栈底是
+    // [ShellRoute.Dock]（主屏，无参数）；打开一页 push 一层、返回 pop 一层。
+    // **换底栏条目不再动返回栈**（2026-11-03）：主屏停在第几个条目由下面的
+    // [currentRootId] 状态持有，内容区用 `HorizontalPager` 承载、点底栏
+    // `springAnimateToPage`（miuix 官方工具，官方 demo 同款）滑过去 —— miuix-nav 对
+    // `NavChange.Replace` 官方就是瞬时直切（旧条目同帧卸载、驱动 float 不动），
+    // 根级切换要左右滑只能走官方 demo 的 Pager 形态。
     //
     // 首屏停在哪个视图由存档决定（Dart `timetableHomeViewMode`，冷启动恢复上次停留的
     // 周 / 日 / 月）—— 这是此前同样没接上的一个死键。
@@ -482,7 +497,28 @@ private fun PagesShell(
     val initialRootId = remember(wiring) {
         rootItemIdForView(wiring.initialSettings.timetableHomeViewMode)
     }
-    val backStack = remember { navBackStackOf(ShellRoute.Dock(initialRootId)) }
+    // 底栏条目排列：与坞 / Rail 同一个解析入口（`HomeDockNavModel.resolveDockIds`，
+    // 用户存档驱动 + 开发壳索引追加），Pager 的页列表由它派生，三处逐字同源。
+    val dockIds = remember(settingsModel) {
+        HomeDockNavModel.resolveDockIds(settingsModel.glassDockActions) { id ->
+            rootPageIdFor(id) != null
+        }
+    }
+    // Pager 页列表：主屏内渲染的条目按规范键去重（day/week 是同一课表宿主的两种
+    // 展开态，必须是同一页）；冷启动恢复的条目不在排列里时补到末尾。映射与方向
+    // 判据在 `DockPagerMotion`（纯逻辑，JVM 单测钉住）。
+    val dockPageIds = remember(dockIds, initialRootId) {
+        DockPagerMotion.pageItemIds(dockIds, initialRootId)
+    }
+    // 当前主屏条目：**高亮与滑动目标的事实源**。点击底栏立即更新（选中态即时响应），
+    // 内容区由下面的切换效果滑到对应页。
+    var currentRootId by remember { mutableStateOf(initialRootId) }
+    val pagerState = rememberPagerState(
+        initialPage = DockPagerMotion.indexOfPage(dockPageIds, initialRootId) ?: 0,
+    ) {
+        dockPageIds.size
+    }
+    val backStack = remember { navBackStackOf(ShellRoute.Dock) }
 
     /**
      * 推页序号：每次 push 分配一个递增 token，让两条路由的值互不相等。
@@ -555,44 +591,43 @@ private fun PagesShell(
         }
 
         val mode = homeViewModeOf(itemId)
-        val dock = backStack.lastOrNull() as? ShellRoute.Dock
-        val currentRootId = dock?.itemId ?: ROOT_WEEK
-        val inTimetableHome = currentRootId == ROOT_WEEK
 
-        // ── 周 / 日：同一个首页宿主的两种展开态，**不换路由** ──
+        // ── 周 / 日：同一个首页宿主的两种展开态，特殊效果不经 Pager ──
         // 原版 Flutter 的底栏「日/周」就是在首页内部切展开态（`toggleDayView`），
-        // 不是推页。以前这里把 `Dock(itemId)` 换掉，miuix 把栈底替换播成
-        // 「从左侧滑入」——与原版「选中那一列长成整屏」完全不同（2026-11-02 用户实报）。
-        // 现在只改 `ShellWiring.homeViewMode`，页面自己播窗口动画，栈底始终是课表宿主。
+        // 「选中的那一列长成整屏」的窗口动画由页面自己播（2026-11-02 用户实报后接的）。
+        // day 与 week 在 Pager 里也是同一页（`DockPagerMotion.normalizePageKey`），
+        // 所以这两格互点不滑动，只在「从别的底栏页切回课表」时才让 Pager 滑过去。
         if (mode == TimetableHomeViewMode.WEEK || mode == TimetableHomeViewMode.DAY) {
-            if (!inTimetableHome) {
-                // 从别的底栏页切回课表：这一下确实换了内容宿主，只能换路由。
-                // 栈底替换用瞬时转场（`instantOnReplace`）。进的是日视图时告诉新宿主
-                // 「从周视图起步」，展开动画从 `dayProgressSeed` 开始播，看不到侧滑；
-                // 进的是周视图则不需要（新宿主本来就停在周视图）。
+            if (DockPagerMotion.slideStep(currentRootId, ROOT_WEEK, dockPageIds) == 0) {
+                // 已在课表页：只切展开态，页面自己播窗口动画。
                 if (mode == TimetableHomeViewMode.DAY) {
-                    wiring.requestHomeViewMotion(TimetableHomeViewMode.WEEK)
+                    // 重复点「日」同档：无动作（Dart `timetable_dock_actions.dart` 同口径）。
+                    if (wiring.homeViewMode == TimetableHomeViewMode.DAY) return
+                    wiring.setHomeSelection(wiring.homeSelectedWeek, wiring.homeSelectedDayOfWeek)
+                    wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
+                } else {
+                    if (wiring.homeViewMode == TimetableHomeViewMode.WEEK) return
+                    wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
                 }
-                wiring.switchHomeViewMode(mode)
-                backStack[0] = ShellRoute.Dock(ROOT_WEEK)
                 return
             }
+            // 从别的底栏页切回课表：Pager 滑过去。进的是日视图时告诉新宿主
+            // 「从周视图起步」，展开动画从 `dayProgressSeed` 开始播，与滑动叠加不冲突
+            //（新宿主在滑动中组合，展开动画在落定后接着播）；进周视图则不需要种子。
             if (mode == TimetableHomeViewMode.DAY) {
-                // 重复点「日」同档：无动作（Dart `timetable_dock_actions.dart` 同口径）。
-                if (wiring.homeViewMode == TimetableHomeViewMode.DAY) return
-                wiring.setHomeSelection(wiring.homeSelectedWeek, wiring.homeSelectedDayOfWeek)
-                wiring.switchHomeViewMode(TimetableHomeViewMode.DAY)
-            } else {
-                if (wiring.homeViewMode == TimetableHomeViewMode.WEEK) return
-                wiring.switchHomeViewMode(TimetableHomeViewMode.WEEK)
+                wiring.requestHomeViewMotion(TimetableHomeViewMode.WEEK)
             }
+            wiring.switchHomeViewMode(mode)
+            currentRootId = ROOT_WEEK
             return
         }
 
-        // ── 其余主屏条目（任务 / 设置 / 月视图…）仍按路由切换 ──
-        if (currentRootId == itemId) return
+        // ── 其余主屏条目（任务 / 设置 / 月视图…）：Pager 沿标签顺序滑动 ──
+        // 方向由页下标决定（目标在右从右进、在左反之），判据是纯逻辑
+        // `DockPagerMotion.slideStep`；0 = 重复点当前页，无动作（Dart 同口径）。
+        if (DockPagerMotion.slideStep(currentRootId, itemId, dockPageIds) == 0) return
         if (mode != null) wiring.switchHomeViewMode(mode)
-        backStack[0] = ShellRoute.Dock(itemId)
+        currentRootId = itemId
     }
 
     /**
@@ -623,20 +658,45 @@ private fun PagesShell(
         }
     }
 
-    // 栈顶路由：是 Dock 则停在主屏某个条目；是 Page 则压着页面层。
+    // 栈顶路由：是 Dock 则停在主屏；是 Page 则压着页面层。
     val topRoute = backStack.lastOrNull()
-    val currentRootId = (topRoute as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK
     val atRoot = topRoute is ShellRoute.Dock
 
-    // 高亮口径（侧边导航栏与玻璃坞**同源**，2026-11-03 第 2 批）：课表宿主的路由固定在
-    // `week`（周 / 日是页内展开态，不换路由），高亮跟 `homeViewMode` 走（[dockSelectedIdOf]）。
-    // Rail 的选中从**返回栈底部**的主屏条目取（不是栈顶）：压着页面时 Rail 仍亮它背后的
-    // 那个条目——与 demo「推页不改 Rail 选中」一致；坞条目在各自 entry 里按自己的
-    // `route.itemId` 算（推入转场期间坞还露着，高亮不能闪到别的条目上）。
-    val railSelectedId = dockSelectedIdOf(
-        itemId = (backStack.firstOrNull() as? ShellRoute.Dock)?.itemId ?: ROOT_WEEK,
-        homeViewMode = wiring.homeViewMode,
-    )
+    // 底栏切换动画（官方 demo `MainPagerState.animateToPage` 的壳侧等价）：
+    // [currentRootId] 变化 → 内容区滑到目标页，动画引擎是 miuix 官方的
+    // `springAnimateToPage`（方向由页下标决定：目标在右新页从右进，在左反之）。
+    // LaunchedEffect 键变化会取消上一个滑动协程再起新的 —— 转场中快速连点不同标签，
+    // 天然收敛到最新目标，不积压页面（与 demo 的 `navJob?.cancel()` 同语义）。
+    // 系统关动画（`ANIMATOR_DURATION_SCALE` ≤ 0，判据 `DockPagerMotion.reducedMotion`，
+    // 与首页展开动画那条降级同一口径）时直接落定，零中间帧。系统值只在组合期读一次：
+    // 改开发者选项后壳会重建，重建时取到新值。
+    val context = LocalContext.current
+    val pagerReducedMotion = remember(context) {
+        DockPagerMotion.reducedMotion(
+            Settings.Global.getFloat(
+                context.contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f,
+            ),
+        )
+    }
+    LaunchedEffect(currentRootId, dockPageIds) {
+        val target = DockPagerMotion.indexOfPage(dockPageIds, currentRootId)
+            ?: return@LaunchedEffect
+        if (target == pagerState.targetPage) return@LaunchedEffect
+        if (pagerReducedMotion) {
+            pagerState.scrollToPage(target)
+        } else {
+            pagerState.springAnimateToPage(target)
+        }
+    }
+
+    // 高亮口径（侧边导航栏与玻璃坞**同源**，2026-11-03 第 2 批）：课表宿主的条目固定在
+    // [ROOT_WEEK]（周 / 日是页内展开态，不换条目），高亮跟 `homeViewMode` 走
+    //（[dockSelectedIdOf]）。主屏条目事实源是 [currentRootId]：压着页面时它不变，
+    // Rail 仍亮背后的那个条目 —— 与 demo「推页不改 Rail 选中」一致；坞条目渲染在
+    // 栈底条目里，按同一状态算高亮（推入转场期间坞还露着，高亮不能闪到别的条目上）。
+    val railSelectedId = dockSelectedIdOf(currentRootId, wiring.homeViewMode)
 
     // 回到主屏时重读设置：设置页里改完底栏排列 / 形态 / 圆钮图标，返回主屏立刻是新的。
     // 设置页与图标挑选页都压在这个返回栈里（`ShellRoute.Page`）：push 时 `atRoot` 变 false，
@@ -740,9 +800,12 @@ private fun PagesShell(
                 // 于是它与首页同属一棵子树：页面推入 / 缩放时坞跟着一起动，而不是整块消失；
                 // 外观编辑页的缩尺预览卡也画这同一个组件，卡片里从此有坞。
                 //
-                // 内容由底栏条目 id 决定：`week`/`day`/`monthView` → 周 / 日 / 月视图；
-                // 内嵌页（Dart `inlineDockPages`）→ 对应页面，坞常驻；返回回到周视图。
-                entry<ShellRoute.Dock>(transition = pageTransition.instantOnReplace()) { route ->
+                // 内容区是 **HorizontalPager**（2026-11-03 左右滑转场）：主屏条目各占一页，
+                // 点底栏由上面的切换效果 `springAnimateToPage` 滑到目标页（官方 demo 同款，
+                // miuix-nav 的 Replace 无转场，根级切换只有这条官方形态）。手势翻页关闭：
+                // 课表 / 月视图页内有自己的横向手势（翻周 / 翻月），Pager 不与之抢。
+                // 页列表 `dockPageIds` 由底栏排列派生（day/week 归一成同一课表页）。
+                entry<ShellRoute.Dock> { _ ->
                     Box(modifier = Modifier.fillMaxSize()) {
                         Box(
                             modifier = Modifier
@@ -756,29 +819,36 @@ private fun PagesShell(
                                     },
                                 ),
                         ) {
-                            if (route.itemId == HomeDockNavModel.DEV_INDEX_ID) {
-                                // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
-                                // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
-                                ShellPageIndexScreen(
-                                    onOpenPage = { target -> pushPage(target) },
-                                    onBack = { selectRoot(ROOT_WEEK) },
-                                )
-                            } else {
-                                ShellPageContent(
-                                    pageId = rootPageIdFor(route.itemId) ?: ROOT_WEEK_PAGE_ID,
-                                    onBack = { selectRoot(ROOT_WEEK) },
-                                    wiring = wiring,
-                                    onOpenPage = { target -> pushPage(target) },
-                                    // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
-                                    // `settingsModel`，`QingyuPageTheme` 立刻重建。
-                                    onSettingsChanged = onReloadSettings,
-                                )
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize(),
+                                userScrollEnabled = false,
+                            ) { page ->
+                                val pageItemId = dockPageIds[page]
+                                if (pageItemId == HomeDockNavModel.DEV_INDEX_ID) {
+                                    // 开发壳专属：页面索引（L4 逐页对照）。它不是一个业务页面，
+                                    // 所以直接画在这里，不进 `ShellPageContent` 的分派表。
+                                    ShellPageIndexScreen(
+                                        onOpenPage = { target -> pushPage(target) },
+                                        onBack = { selectRoot(ROOT_WEEK) },
+                                    )
+                                } else {
+                                    ShellPageContent(
+                                        pageId = rootPageIdFor(pageItemId) ?: ROOT_WEEK_PAGE_ID,
+                                        onBack = { selectRoot(ROOT_WEEK) },
+                                        wiring = wiring,
+                                        onOpenPage = { target -> pushPage(target) },
+                                        // 设置页当场换肤：把新模型回推到 `setContent` 顶层的
+                                        // `settingsModel`，`QingyuPageTheme` 立刻重建。
+                                        onSettingsChanged = onReloadSettings,
+                                    )
+                                }
                             }
                         }
                         HomeGlassDock(
                             settingsModel = settingsModel,
                             // 高亮口径与 Rail 同源（见 [dockSelectedIdOf] 与 railSelectedId 注释）。
-                            selectedId = dockSelectedIdOf(route.itemId, wiring.homeViewMode),
+                            selectedId = dockSelectedIdOf(currentRootId, wiring.homeViewMode),
                             // 宽屏档整块不组合，由左侧 Rail 接管导航（方案第 2 批口径）。
                             replacedByRail = shellRail.railVisible,
                             // 底栏条目 → 壳页面：与「有没有去处」同一张表（视图动作另有分支）。
@@ -833,8 +903,8 @@ private const val ROOT_WEEK_PAGE_ID = "c1.week"
 /**
  * 主屏条目的**高亮 id**（玻璃坞与侧边导航栏同源的口径，2026-11-03 第 2 批）。
  *
- * 课表宿主的路由固定在 [ROOT_WEEK]（周 / 日是页内展开态，不换路由），
- * 所以「日」档时高亮要落在日动作条目上；其余条目就是路由 id 本身。
+ * 课表宿主固定对应 [ROOT_WEEK] 条目（周 / 日是页内展开态，不换条目），
+ * 所以「日」档时高亮要落在日动作条目上；其余条目就是条目 id 本身。
  */
 private fun dockSelectedIdOf(itemId: String, homeViewMode: TimetableHomeViewMode): String =
     if (itemId == ROOT_WEEK) {
@@ -937,44 +1007,11 @@ private fun NavTransition.scaledToUserSpeed(speed: Double): NavTransition {
     }
 }
 
-/**
- * 栈底**替换**（底栏切页）走瞬时切换，其余情况（被推入页覆盖时的视差等）仍用官方预设。
- *
- * ## 为什么只改替换这一种
- *
- * 原版 Flutter 的玻璃坞内嵌页切换是「闪现直切、无滑动转场」
- * （`timetable_home_dock_shell.dart:123-124`），而 miuix 会把 `backStack[0]` 的替换
- * 归成 `NavChange.Replace` 并套用推入/退出的位移 —— 观感就是「新页面从左侧滑进来」。
- * 周 / 日现在已改成同一宿主的页内展开（不经过这条），但任务 / 设置 / 月视图等
- * 底栏切换仍是路由替换，同样不该滑。把 Replace 的 transform 置空即可；几何一点没写，
- * 只是**不插一脚**，仍是官方 `NavTransition` 接口 + 官方预设。
- *
- * 被页面层覆盖（`relativeDepth > 0`）时照常委托官方预设：推入页的视差 / 变暗
- * 必须保留，那不是「底栏切换」。
- */
-private fun NavTransition.instantOnReplace(): NavTransition {
-    val delegate = this
-    // 与 `InstantSwap` 同一条纪律：替换虽然零位移，但驱动 float 仍要走完一个时长，
-    // 这段时间里看不见的旧条目会挡点击。100ms 足够把旧条目卸掉，又不会让底栏切页
-    // 之后有半秒「点了没反应」（2026-11-01 外观编辑页事故的同一成因）。
-    val fastMotion = NavMotion(
-        programmatic = NavSettleSpec.Tween(INSTANT_SWAP_DURATION_MS, NavProgrammaticEasing),
-    )
-    return object : NavTransition {
-        private fun NavTransitionScope.isReplace(): Boolean =
-            change is NavChange.Replace || change is NavChange.ReplaceAll
-
-        override fun Modifier.transformEntry(scope: NavTransitionScope): Modifier =
-            if (scope.isReplace()) Modifier else with(delegate) { transformEntry(scope) }
-
-        override val opaqueDepth: Float get() = delegate.opaqueDepth
-        override val dismissDirection: NavSwipeDirection get() = delegate.dismissDirection
-        override val motion: NavMotion get() = fastMotion
-
-        override fun scrimFraction(scope: NavTransitionScope): Float =
-            if (scope.isReplace()) 0f else delegate.scrimFraction(scope)
-    }
-}
+// 栈底「替换」（底栏切页）已不复存在（2026-11-03）：主屏条目由壳的 currentRootId 状态
+// 持有、内容区走 HorizontalPager 滑动，栈底 ShellRoute.Dock 无参数、永不替换 ——
+// 旧版为「复刻 Flutter 直切」而写的 instantOnReplace 连同 NavChange.Replace 的判定
+// 一起删除。NavDisplay 转场只剩推入（Push）/ 返回（Pop）/ 多层弹回（MultiPop），
+// 全部由官方预设负责。
 
 /** 通知权限「是否已问过」的 prefs 名与键：与业务设置分开，设置重置不影响它。 */
 private const val NOTIFICATION_PERMISSION_PREFS = "shell_notification_permission"

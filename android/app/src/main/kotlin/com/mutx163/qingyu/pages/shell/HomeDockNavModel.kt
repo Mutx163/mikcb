@@ -189,6 +189,25 @@ object HomeDockNavModel {
     }
 
     /**
+     * 底栏排列的**完整解析**（= [resolveIds] + 开发壳索引追加），坞、Rail、壳三处共用的
+     * 唯一入口（2026-11-03 起，Pager 主屏页列表也由它驱动，三处必须逐字同源）。
+     *
+     * 用户没自定义过底栏（`raw` 为空）且解析结果不满 [MAX_SLOTS] 时，把开发壳的
+     * 「页面索引」追加到末尾 —— 一旦用户动过底栏就完全按存档来，不把开发件混进去。
+     */
+    fun resolveDockIds(
+        raw: List<String>,
+        isNavigable: (String) -> Boolean,
+    ): List<String> {
+        val resolved = resolveIds(raw, isNavigable)
+        return if (raw.isEmpty() && resolved.size < MAX_SLOTS) {
+            resolved + DEV_INDEX_ID
+        } else {
+            resolved
+        }
+    }
+
+    /**
      * 当前该高亮第几格。
      *
      * @param ids 解析后的排列。

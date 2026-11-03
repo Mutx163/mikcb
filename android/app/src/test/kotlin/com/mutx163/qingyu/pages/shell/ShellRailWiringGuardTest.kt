@@ -89,8 +89,9 @@ class ShellRailWiringGuardTest {
     fun `Rail 条目与坞同源`() {
         val rail = codeOnly(source(RAIL))
         assertTrue(
-            "ShellNavigationRail 必须复用 HomeDockNavModel.resolveIds（用户存档驱动的同一张排列表）",
-            rail.contains("HomeDockNavModel.resolveIds"),
+            "ShellNavigationRail 必须复用 HomeDockNavModel.resolveDockIds（用户存档驱动的" +
+                "同一张排列表；2026-11-03 起与壳 Pager 页列表三处同一入口）",
+            rail.contains("HomeDockNavModel.resolveDockIds"),
         )
         assertTrue(
             "ShellNavigationRail 必须复用 HomeDockNavModel.selectedIndex（高亮口径同源，排列没有则整栏不亮）",
