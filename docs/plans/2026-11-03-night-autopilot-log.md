@@ -2005,6 +2005,73 @@ C:\dev\pwsh\pwsh.exe -NoProfile -Command "& ./scripts/test-kotlin-module.ps1 -Mo
 
 **门禁/边界**：`dart run tool/copy_style_lint.dart` → 行内超宽 130 条（存量 130，新增 **0**）、死键 0 新增、复述标题 0 新增。未改 `theme/`、两个壳 Activity、`lib/ui/`、路由表、`app/TimetableStore.kt`；未跑 gradlew/整包；ARB 六份 + 生成物单独一笔（`d39c4a49`）。
 
+### 10.42 ✅ compose-style-lint 补 components 域 + 顶栏浅色 tint 具名化（2026-11-04，scripts + components）
+
+**范围**：`scripts/compose-style-lint.ps1`、`test/.../pages/ComposePageStyleGuardTest.kt`、
+`tool/compose_style_baseline/components.txt`（新增）；`components/QingyuPageScaffold.kt` 一行级 token 替代（本批任务明确允许的「改成 token」路线）。
+禁碰清单全部未动：`pages/**`（course/timetable 仅只读复扫）、`pages/ShellPageIndex.kt`、`pages/ShellWiring.kt`、
+`app/TimetableStore.kt`、`app/AppGlobalSettingsStore.kt`、`app/TimetableSettingsModel.kt`、`pages/import|sync/**`、
+`pages/timetable/TimetableProfilesController.kt`、`pages/home` 装配、`theme/`、两个壳 Activity、`lib/ui/`、路由表。
+
+**1. 脚本改法（`compose-style-lint.ps1`）**
+
+- 新增 `$componentsRoot`（`composeP1/.../qingyu/components`）；域表从「`pages` 下目录」改成哈希表 `$domainRoots`：
+  `pages/<域>` 自动建域，`components` 单独注册（目录存在才注册）。`-Domain all` 取 `$domainRoots.Keys`；
+  单域用 `ContainsKey` 校验，「没有这个域」的错误信息改为列全部可选域。
+- `Get-Violations` 改用 `$dir = $domainRoots[$DomainName]`；相对路径按 `$dir` 截取，components 域补 `components/` 前缀，
+  保证基线键（`rel|rule`）与守卫（相对 `pagesRoot`）同一口径。
+- 新增 `$fileExempt`，只有一条：`components/QingyuCard.kt = @("R3")`，R3 判断加 `$fx` 闸门。**是单文件单规则豁免，
+  不是整类 R3/R5 放宽**；理由：规则文档 `docs/reference/compose-page-style-rules.md` §二 R3 已明文豁免该文件自身。
+- `.DESCRIPTION` 补 components 域与基线键前缀说明。
+- 守卫 `ComposePageStyleGuardTest` 同口径同步：扫描根加 `componentsRoot`、`relOf` 补前缀、`fileExempt` 同表，
+  避免「脚本绿灯、守卫红灯」的口径漂移。
+
+**2. 三组数字（components 域）**
+
+- 首跑：**1 处** → `R3 components/QingyuCard.kt 第 82 行`。
+- 修后：**0 处**（干净）。
+- 新增基线/豁免：**基线 0 行**（`components.txt` 只有 4 行表头注释，未跑 `-Write` 以免抹掉原因文字）
+  + **豁免 1 条**（`components/QingyuCard.kt` 的 R3）。唯一一行的理由如上：该文件就是「卡片统一入口」的实现本体，
+  R3 对它自指无意义，且规则文档已明文豁免；既没改代码，也没把 R3 整类关掉。
+
+**3. 回归（不得变差）**
+
+- timetable：**5 处 / 明细 10（R5 3+2+3、R2 1+1）/ 基线 5 行** —— 与 §10.39 完全一致。
+- course：**0 处 / 基线 0 行**。
+
+**4. 咬合探针**
+
+- 临时在 `components/__StyleProbe.kt` 写 `Color(0xFF000000)` → `-Domain components` 报
+  **1 处 R5 `components/__StyleProbe.kt` 第 5 行**；删除该文件后再跑 **0 处**。
+- 产物代码无残留：该目录 `git status` 只剩已提交的 token 改动，探针文件未进任何提交。
+
+**5. 顶栏浅色 tint 收口（`QingyuPageScaffold.kt`）**
+
+- `Color.White.copy(alpha = LightTintAlpha)` → `Color(LightTintArgb).copy(alpha = LightTintAlpha)`，
+  同 object 内新增 `const val LightTintArgb = 0xFFFFFFFF`，与既有 `DarkTintArgb` 成对命名。
+- **纯等价替换**：白色与 alpha 0.70 都不变，渲染结果无差异；目的只是把「固定 tint」变成可具名 token。
+- 补记：R5 正则只认 `Color(0x` 字面量，`Color.White` 原本**不在** lint 命中里 —— 这条不是为了消红，是上批留下的命名欠账。
+
+**6. L0**
+
+```
+C:\dev\pwsh\pwsh.exe -NoProfile -File scripts/test-kotlin-module.ps1 -Module course
+C:\dev\pwsh\pwsh.exe -NoProfile -File scripts/test-kotlin-module.ps1 -Module timetable
+```
+
+- course = **OK (234 tests)**；timetable = **OK (299 tests)**。
+- components 不属任何 L0 模块编译单元（composeP1 的 androidx 依赖 L0 解析不了），故未裸跑 gradlew、未跑整包；
+  守卫测试本轮未在 L0 执行，其通过与否由门 2 覆盖 —— **不声明它通过**。
+
+**7. 提交归属（碰撞披露）**
+
+- `13ba097a` = 顶栏 token，单独干净提交。
+- 脚本 + 守卫 + 基线三条本应单独提交，但并行线执行**不带 pathspec** 的 `git commit` 时把这三条卷进了 `2e735b9d`
+  （该提交同时含 `transfer/lan` 改动与另一节日志）。内容完整（守卫 37 行、脚本 39 行、基线 4 行表头），**未丢失**，
+  仅归属混线；按纪律不用 `--amend`/`reset --hard` 改写历史。未推送。
+
+---
+
 
 
 
