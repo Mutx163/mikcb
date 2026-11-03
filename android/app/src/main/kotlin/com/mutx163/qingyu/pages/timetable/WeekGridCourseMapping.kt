@@ -2,6 +2,7 @@ package com.mutx163.qingyu.pages.timetable
 
 import com.mutx163.qingyu.core.Course
 import com.mutx163.qingyu.course.CourseDomain
+import java.time.LocalDate
 
 /**
  * 课卡左上角那行小字（Dart `resolveCompactOverlineText`，
@@ -44,6 +45,14 @@ data class WeekCardModel(
      * `timetable_day_column.dart:146-147`）⇒ 卡面左上角白底小红点。
      */
     val hasHomework: Boolean = false,
+    /**
+     * 这节课（**课程 × 真实日期**）是否已设单节课提醒（Dart `hasReminder`，
+     * `timetable_day_column.dart:138-145`）⇒ 卡面右上角白底蓝铃铛。
+     *
+     * 数据源是 `core/TimetableSettings.classReminders`；日期未知（没设开学日）或
+     * 调用方没给提醒键时为 false ——「拿不到就不亮」，不画一个假的已设标记。
+     */
+    val hasReminder: Boolean = false,
     /**
      * 这一节次的天气一行（Dart `weather: callbacks.weather(item, date)`，
      * `timetable_day_column.dart:164`）。天气没开 / 没数据时为 null。
@@ -136,6 +145,13 @@ object WeekGridCourseMapping {
         style: WeekViewStyle,
         conflicts: Map<String, Set<String>>,
         weatherOf: ((Course) -> String?)? = null,
+        /**
+         * 「这门课在**当前排版的那一天**是否已设单节课提醒」。
+         *
+         * 由 [cardsForWeek] 用周次 + 星期算出真实日期后查 [reminderKeys]；直接调本函数
+         * 的调用方（单测 / 单天排版）自己保证日期口径。null = 无提醒数据 ⇒ 不亮铃铛。
+         */
+        hasReminderOf: ((Course) -> Boolean)? = null,
     ): List<WeekCardModel> {
         val visible = visibleDayCourses(dayCourses, week)
 
@@ -164,6 +180,7 @@ object WeekGridCourseMapping {
                     ),
                     colorHex = style.unifiedCardColorHex,
                     hasHomework = course.hasHomeworkInWeek(week),
+                    hasReminder = hasReminderOf?.invoke(course) ?: false,
                     weatherText = weatherOf?.invoke(course),
                 )
             }
@@ -181,6 +198,16 @@ object WeekGridCourseMapping {
         style: WeekViewStyle,
         visibleDays: List<Int> = (1..7).toList(),
         weatherOf: ((week: Int, dayOfWeek: Int, Course) -> String?)? = null,
+        /**
+         * 已设单节课提醒的键集合（`courseId|yyyy-MM-dd`）。
+         * null = 调用方没有这份数据（不画铃铛）；空集 = 真的没设过（同样不画，但语义不同）。
+         */
+        reminderKeys: Set<String>? = null,
+        /**
+         * 学期起始日（判断某周某天对应哪个真实日期）。缺失时日期未知 ⇒ 铃铛一律不亮，
+         * 与 Dart `_dateForWeekDay` 返回 null 的口径一致。
+         */
+        semesterStartDate: LocalDate? = null,
     ): Map<Int, List<WeekCardModel>> {
         val conflicts = conflictMap(courses, week)
         return visibleDays.associateWith { dayOfWeek ->
@@ -190,12 +217,20 @@ object WeekGridCourseMapping {
                 dayOfWeek = dayOfWeek,
                 showNonCurrentWeekCourses = style.showNonCurrentWeekCourses,
             )
+            val reminderDate = reminderKeys?.let {
+                TimetableDateLogic.dateForWeekDay(semesterStartDate, week, dayOfWeek)
+            }
             displayCards(
                 dayCourses = dayCourses,
                 week = week,
                 style = style,
                 conflicts = conflicts,
                 weatherOf = weatherOf?.let { resolve -> { course -> resolve(week, dayOfWeek, course) } },
+                hasReminderOf = if (reminderKeys != null && reminderDate != null) {
+                    { course -> "${course.id}|$reminderDate" in reminderKeys }
+                } else {
+                    null
+                },
             )
         }
     }

@@ -6,6 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 /**
  * 周视图「课程取数与排版」单测（`WeekGridCourseMapping`）。
@@ -550,5 +551,77 @@ class WeekGridCourseMappingTest {
         assertTrue(cards.all { it.isConflicting })
         assertTrue(cards.all { it.overline == WeekCardOverline.CONFLICT })
         assertTrue(cards.all { it.badge == WeekCardBadge.CONFLICT })
+    }
+
+    // ------------------------------------------------------------------
+    // 单节课提醒铃铛（Dart `hasReminder`，timetable_day_column.dart:138-145）
+    // 数据源：`core/TimetableSettings.classReminders` 换装出来的 `courseId|yyyy-MM-dd`。
+    // ------------------------------------------------------------------
+
+    /** 固定开学日 2026-09-07（周一），第 3 周周一 = 2026-09-21。 */
+    private val semesterStart: LocalDate = LocalDate.of(2026, 9, 7)
+
+    @Test
+    fun `提醒键命中当天才亮铃铛`() {
+        val monday = course(id = "c1", dayOfWeek = 1)
+        val cards = WeekGridCourseMapping.cardsForWeek(
+            courses = listOf(monday),
+            week = 3,
+            style = WeekViewStyle(),
+            visibleDays = listOf(1),
+            reminderKeys = setOf("c1|2026-09-21"),
+            semesterStartDate = semesterStart,
+        )
+
+        assertTrue("第 3 周周一 = 2026-09-21，已设提醒应亮", cards.getValue(1).single().hasReminder)
+    }
+
+    @Test
+    fun `提醒日期对不上就不亮 也不串到别的周`() {
+        val monday = course(id = "c1", dayOfWeek = 1)
+        val otherDay = WeekGridCourseMapping.cardsForWeek(
+            courses = listOf(monday),
+            week = 3,
+            style = WeekViewStyle(),
+            visibleDays = listOf(1),
+            // 同是周一，但日期属于第 2 周（2026-09-14）。
+            reminderKeys = setOf("c1|2026-09-14"),
+            semesterStartDate = semesterStart,
+        )
+        assertFalse(otherDay.getValue(1).single().hasReminder)
+
+        val otherCourse = WeekGridCourseMapping.cardsForWeek(
+            courses = listOf(course(id = "c2", dayOfWeek = 1)),
+            week = 3,
+            style = WeekViewStyle(),
+            visibleDays = listOf(1),
+            reminderKeys = setOf("c1|2026-09-21"),
+            semesterStartDate = semesterStart,
+        )
+        assertFalse("键必须课程 id 也一致", otherCourse.getValue(1).single().hasReminder)
+    }
+
+    @Test
+    fun `没有提醒数据源或开学日时一律不亮`() {
+        val monday = course(id = "c1", dayOfWeek = 1)
+        val noData = WeekGridCourseMapping.cardsForWeek(
+            courses = listOf(monday),
+            week = 3,
+            style = WeekViewStyle(),
+            visibleDays = listOf(1),
+            reminderKeys = null,
+            semesterStartDate = semesterStart,
+        )
+        assertFalse("拿不到提醒数据不是「已设」", noData.getValue(1).single().hasReminder)
+
+        val noCalendar = WeekGridCourseMapping.cardsForWeek(
+            courses = listOf(monday),
+            week = 3,
+            style = WeekViewStyle(),
+            visibleDays = listOf(1),
+            reminderKeys = setOf("c1|2026-09-21"),
+            semesterStartDate = null,
+        )
+        assertFalse("日期未知时无法匹配真实课次", noCalendar.getValue(1).single().hasReminder)
     }
 }
