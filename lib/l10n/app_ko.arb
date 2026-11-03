@@ -6018,5 +6018,16 @@
   "scheduleQuickPresetCommute": "이동",
   "scheduleQuickPresetHoursOnly": "{hours}시간",
   "scheduleQuickPresetMinutesOnly": "{minutes}분",
-  "scheduleQuickPresetHoursMinutes": "{hours}시간 {minutes}분"
+  "scheduleQuickPresetHoursMinutes": "{hours}시간 {minutes}분",
+  "clearSearchAction": "지우기",
+  "increaseAction": "1개 추가",
+  "decreaseAction": "1개 제거",
+  "colorOptionLabel": "{name}",
+  "@colorOptionLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

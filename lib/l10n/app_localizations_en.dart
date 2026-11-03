@@ -1172,6 +1172,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get qrTransferCameraRetry => 'Retry';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '$received frames received · $decoded/$total decoded';
   }
@@ -10513,5 +10514,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours hr $minutes min';
+  }
+
+  @override
+  String get clearSearchAction => 'Clear';
+
+  @override
+  String get increaseAction => 'Add a course';
+
+  @override
+  String get decreaseAction => 'Remove a course';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
   }
 }

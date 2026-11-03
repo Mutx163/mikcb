@@ -6018,5 +6018,16 @@
   "scheduleQuickPresetCommute": "Commute",
   "scheduleQuickPresetHoursOnly": "{hours} hr",
   "scheduleQuickPresetMinutesOnly": "{minutes} min",
-  "scheduleQuickPresetHoursMinutes": "{hours} hr {minutes} min"
+  "scheduleQuickPresetHoursMinutes": "{hours} hr {minutes} min",
+  "clearSearchAction": "Clear",
+  "increaseAction": "Add a course",
+  "decreaseAction": "Remove a course",
+  "colorOptionLabel": "{name}",
+  "@colorOptionLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

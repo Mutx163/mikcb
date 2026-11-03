@@ -1118,6 +1118,7 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get qrTransferCameraRetry => '重试';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 帧 · 已解出 $decoded/$total';
   }
@@ -10021,6 +10022,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小时 $minutes 分';
   }
+
+  @override
+  String get clearSearchAction => '清空';
+
+  @override
+  String get increaseAction => '增加一门';
+
+  @override
+  String get decreaseAction => '减少一门';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -11137,6 +11152,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get qrTransferCameraRetry => '重試';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 幀 · 已解出 $decoded/$total';
   }
@@ -20080,6 +20096,20 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小時 $minutes 分';
   }
+
+  @override
+  String get clearSearchAction => '清空';
+
+  @override
+  String get increaseAction => '增加一門';
+
+  @override
+  String get decreaseAction => '減少一門';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -21196,6 +21226,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get qrTransferCameraRetry => '重試';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '已接收 $received 幀 · 已解出 $decoded/$total';
   }
@@ -30138,5 +30169,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 小時 $minutes 分';
+  }
+
+  @override
+  String get clearSearchAction => '清空';
+
+  @override
+  String get increaseAction => '增加一門';
+
+  @override
+  String get decreaseAction => '減少一門';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
   }
 }

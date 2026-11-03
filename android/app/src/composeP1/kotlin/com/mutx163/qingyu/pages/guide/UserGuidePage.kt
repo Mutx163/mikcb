@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -763,12 +764,10 @@ private fun ThemeSwatch(
 ) {
     val color = parseHexColorOrFallback(hex)
     val ring = if (selected) Color(QingyuTheme.primary(dark = dark)) else Color(QingyuTheme.dividerLine(dark))
+    // 可点区撑到 48dp，色块视觉本体仍是 32dp；只放大命中面，不改视觉尺寸。
     Box(
         modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(color)
-            .border(width = if (selected) 2.dp else 1.dp, color = ring, shape = CircleShape)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .clickable(onClick = onClick)
             // 色块只有颜色、没有文字，读屏默认只会念「按钮」；补上名字与单选语义。
             .semantics {
@@ -776,7 +775,16 @@ private fun ThemeSwatch(
                 role = Role.RadioButton
                 this.selected = selected
             },
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(color)
+                .border(width = if (selected) 2.dp else 1.dp, color = ring, shape = CircleShape),
+        )
+    }
 }
 
 // ───────────────────────────── 使用技巧页 ─────────────────────────────

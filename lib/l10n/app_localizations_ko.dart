@@ -1139,6 +1139,7 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get qrTransferCameraRetry => '재시도';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '$received프레임 수신 · $decoded/$total 복호화됨';
   }
@@ -10321,5 +10322,19 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours시간 $minutes분';
+  }
+
+  @override
+  String get clearSearchAction => '지우기';
+
+  @override
+  String get increaseAction => '1개 추가';
+
+  @override
+  String get decreaseAction => '1개 제거';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
   }
 }

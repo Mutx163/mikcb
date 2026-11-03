@@ -6018,5 +6018,16 @@
   "scheduleQuickPresetCommute": "出行",
   "scheduleQuickPresetHoursOnly": "{hours} 小時",
   "scheduleQuickPresetMinutesOnly": "{minutes} 分鐘",
-  "scheduleQuickPresetHoursMinutes": "{hours} 小時 {minutes} 分"
+  "scheduleQuickPresetHoursMinutes": "{hours} 小時 {minutes} 分",
+  "clearSearchAction": "清空",
+  "increaseAction": "增加一門",
+  "decreaseAction": "減少一門",
+  "colorOptionLabel": "{name}",
+  "@colorOptionLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -1,5 +1,4 @@
 # 无标签纯图标按钮 · 白名单（只减不增）
 # 格式：相对 composeP1 根目录的路径|数量|原因
 # 纪律：修好一条就删掉/下调对应行；新增行必须人工编辑并写明原因，守卫不会自动补。
-pages/settings/GlassDockIconPickerScreen.kt|1|搜索框清除按钮；settings 域没有「清空」文案键，待 Lead 入 ARB 后补 contentDescription
-pages/sync/CoupleTimetableSettingsPage.kt|2|「+/-」计数按钮与调色板色块都没有现成文案键；其中色块还需要颜色名键，待 Lead 入 ARB
+# 2026-11-03：清空按钮、情侣课表 +/-、调色板色块已补语义标签，基线清零。

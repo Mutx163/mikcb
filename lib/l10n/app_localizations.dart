@@ -18272,6 +18272,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{hours} 小时 {minutes} 分'**
   String scheduleQuickPresetHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @clearSearchAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空'**
+  String get clearSearchAction;
+
+  /// No description provided for @increaseAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'增加一门'**
+  String get increaseAction;
+
+  /// No description provided for @decreaseAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'减少一门'**
+  String get decreaseAction;
+
+  /// No description provided for @colorOptionLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name}'**
+  String colorOptionLabel(String name);
 }
 
 class _AppLocalizationsDelegate

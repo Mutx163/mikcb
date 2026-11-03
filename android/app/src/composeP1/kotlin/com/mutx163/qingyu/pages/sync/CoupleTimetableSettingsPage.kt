@@ -28,6 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuCard
 import com.mutx163.qingyu.components.QingyuCardDefaults
@@ -382,7 +387,11 @@ private fun StepButton(
     ) {
         Icon(
             imageVector = if (isPlus) MiuixIcons.Add else MiuixIcons.Remove,
-            contentDescription = null,
+            contentDescription = if (isPlus) {
+                CoupleStrings.increaseAction.zh
+            } else {
+                CoupleStrings.decreaseAction.zh
+            },
             tint = tint,
             modifier = Modifier.size(20.dp),
         )
@@ -453,6 +462,12 @@ private fun ColorChip(
     ) {
         IconButton(
             onClick = { onPick(hex) },
+            modifier = Modifier.semantics {
+                contentDescription = CoupleStrings.colorOptionLabel.filled("name", CoupleColorNames.nameFor(hex))
+                // 单选态交给语义属性，不写进文案。
+                role = Role.RadioButton
+                this.selected = selected
+            },
             backgroundColor = color,
             cornerRadius = ColorChipRadius,
             minWidth = ColorChipSize,

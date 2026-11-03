@@ -159,8 +159,7 @@ private fun IconSearchCard(
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         imageVector = MiuixIcons.Close,
-                        // 搜索框自带提示语；清除是图形按钮，不另造中文文案。
-                        contentDescription = null,
+                        contentDescription = SettingsStringsExt4.clearSearchAction.zh,
                         modifier = Modifier.size(18.dp),
                     )
                 }

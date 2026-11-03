@@ -5859,5 +5859,16 @@
   "scheduleQuickPresetCommute": "移動",
   "scheduleQuickPresetHoursOnly": "{hours} 時間",
   "scheduleQuickPresetMinutesOnly": "{minutes} 分",
-  "scheduleQuickPresetHoursMinutes": "{hours} 時間 {minutes} 分"
+  "scheduleQuickPresetHoursMinutes": "{hours} 時間 {minutes} 分",
+  "clearSearchAction": "クリア",
+  "increaseAction": "1 件追加",
+  "decreaseAction": "1 件削除",
+  "colorOptionLabel": "{name}",
+  "@colorOptionLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

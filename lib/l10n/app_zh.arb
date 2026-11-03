@@ -6200,5 +6200,16 @@
         "type": "int"
       }
     }
+  },
+  "clearSearchAction": "清空",
+  "increaseAction": "增加一门",
+  "decreaseAction": "减少一门",
+  "colorOptionLabel": "{name}",
+  "@colorOptionLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

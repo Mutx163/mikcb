@@ -1138,6 +1138,7 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get qrTransferCameraRetry => '再試行';
 
+  @override
   String qrTransferReceiveProgress(int received, int decoded, int total) {
     return '受信 $received フレーム · 解読 $decoded/$total';
   }
@@ -10292,5 +10293,19 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String scheduleQuickPresetHoursMinutes(int hours, int minutes) {
     return '$hours 時間 $minutes 分';
+  }
+
+  @override
+  String get clearSearchAction => 'クリア';
+
+  @override
+  String get increaseAction => '1 件追加';
+
+  @override
+  String get decreaseAction => '1 件削除';
+
+  @override
+  String colorOptionLabel(String name) {
+    return '$name';
   }
 }

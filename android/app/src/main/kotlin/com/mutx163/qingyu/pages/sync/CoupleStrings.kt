@@ -15,6 +15,9 @@ object CoupleStrings {
     val coupleTimetablePartnerNameLabel = ArbText("coupleTimetablePartnerNameLabel", "对方名称")
     val coupleTimetableLastImportedAt = ArbText("coupleTimetableLastImportedAt", "上次导入：{time}")
     val courseCountBullet = ArbText("courseCountBullet", "课程数量：{count} 门")
+    val increaseAction = ArbText("increaseAction", "增加一门")
+    val decreaseAction = ArbText("decreaseAction", "减少一门")
+    val colorOptionLabel = ArbText("colorOptionLabel", "{name}")
 
     // ── 三个主按钮 ──
     val coupleTimetableExportForPartner =
@@ -148,6 +151,9 @@ object CoupleStrings {
             coupleTimetablePartnerNameLabel,
             coupleTimetableLastImportedAt,
             courseCountBullet,
+            increaseAction,
+            decreaseAction,
+            colorOptionLabel,
             coupleTimetableExportForPartner,
             coupleTimetableImportPartner,
             coupleTimetableUnlink,

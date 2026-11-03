@@ -108,6 +108,7 @@ object SettingsStringsExt4 {
 
     val glassDockButtonIconTitle = ArbText("glassDockButtonIconTitle", "圆钮图标")
     val glassDockButtonIconSearchHint = ArbText("glassDockButtonIconSearchHint", "搜索图标名称")
+    val clearSearchAction = ArbText("clearSearchAction", "清空")
     val glassDockButtonIconDefault = ArbText("glassDockButtonIconDefault", "默认 加号")
 
     // ------------------------------------------------------------ 恢复默认（settings_reset.dart:213-294）
@@ -210,6 +211,7 @@ object SettingsStringsExt4 {
         memoryStatsEntryTitle,
         glassDockButtonIconTitle,
         glassDockButtonIconSearchHint,
+        clearSearchAction,
         glassDockButtonIconDefault,
         settingsResetDefaultsTitle,
         settingsResetDefaultsConfirmTitle,

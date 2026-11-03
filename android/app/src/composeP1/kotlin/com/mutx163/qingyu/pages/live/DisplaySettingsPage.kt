@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -628,22 +629,30 @@ private fun ColorDotRow(
                 horizontal = QingyuShapes.ROW_PADDING_HORIZONTAL.dp,
                 vertical = QingyuShapes.ROW_PADDING_VERTICAL.dp,
             ),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        // 色点可点区从 40dp 撑到 48dp 后，6 个点需要更紧的间距；收间距而不是缩命中面。
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         LiveDisplayLogic.LABEL_COLORS.forEach { hex ->
             val selected = selectedHex.equals(hex, ignoreCase = true)
+            // 可点区撑到 48dp，色块视觉本体仍是 40dp。
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(parseColor(hex))
-                    .border(
-                        width = if (selected) 2.5.dp else 1.dp,
-                        color = if (selected) MiuixTheme.colorScheme.primary else Color(QingyuTheme.dividerLine(dark)),
-                        shape = RoundedCornerShape(16.dp),
-                    )
+                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                     .clickable(enabled = enabled) { onSelect(hex) },
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(parseColor(hex))
+                        .border(
+                            width = if (selected) 2.5.dp else 1.dp,
+                            color = if (selected) MiuixTheme.colorScheme.primary else Color(QingyuTheme.dividerLine(dark)),
+                            shape = RoundedCornerShape(16.dp),
+                        ),
+                )
+            }
         }
     }
 }

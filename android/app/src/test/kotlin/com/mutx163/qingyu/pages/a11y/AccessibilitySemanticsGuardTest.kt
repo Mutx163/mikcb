@@ -152,6 +152,42 @@ class AccessibilitySemanticsGuardTest {
         )
     }
 
+    // ---------------------------------------------------------------- 文案键与触摸区
+
+    @Test
+    fun `四个无障碍文案键都有真实引用`() {
+        val code = composeSourcesCode()
+        ACCESSIBILITY_KEYS.forEach { token ->
+            assertTrue("$token 在 composeP1 里没有任何引用（死键，加键没人用）", code.contains(token))
+        }
+        assertFalse(
+            "咬合探针失效：删掉 clearSearchAction 引用后判据仍为真",
+            allKeysReferenced(
+                code.replace("SettingsStringsExt4.clearSearchAction", ""),
+            ),
+        )
+    }
+
+    @Test
+    fun `三处触摸区不小于48dp`() {
+        val files = listOf(
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/exam/AddExamPage.kt",
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/guide/UserGuidePage.kt",
+            "android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/live/DisplaySettingsPage.kt",
+        )
+        files.forEach { path ->
+            val source = read(path)
+            assertTrue(
+                "$path 的可点区没有用 sizeIn 撑到 48dp（读源码判 sizeIn/48dp 在场）",
+                hasMinimumTouchTarget(source),
+            )
+            assertFalse(
+                "$path 的咬合探针失效：48dp 改回 32dp 后仍为真",
+                hasMinimumTouchTarget(source.replace("48.dp", "32.dp")),
+            )
+        }
+    }
+
     // ---------------------------------------------------------------- 判据实现
 
     /** 违规收集：相对 composeP1 根目录的路径 → 条数。 */
@@ -172,6 +208,19 @@ class AccessibilitySemanticsGuardTest {
 
     private fun detectsIconButtonWithoutLabel(source: String): Boolean =
         iconButtonBlocks(stripComments(source)).any { !hasAccessibleLabel(it) }
+
+    private fun composeSourcesCode(): String =
+        composeRoot().walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .joinToString("\n") { stripComments(it.readText(Charsets.UTF_8)) }
+
+    private fun allKeysReferenced(code: String): Boolean =
+        ACCESSIBILITY_KEYS.all { code.contains(it) }
+
+    private fun hasMinimumTouchTarget(source: String): Boolean {
+        val code = stripComments(source)
+        return code.contains("sizeIn(") && code.contains("48.dp")
+    }
 
     /** `IconButton(` 调用块（含 lambda），用括号/花括号配对，避免截断。 */
     private fun iconButtonBlocks(text: String): List<String> {
@@ -273,6 +322,13 @@ class AccessibilitySemanticsGuardTest {
             .joinToString("\n") { line -> line.substringBefore("//") }
 
     private companion object {
+        val ACCESSIBILITY_KEYS = listOf(
+            "SettingsStringsExt4.clearSearchAction",
+            "CoupleStrings.increaseAction",
+            "CoupleStrings.decreaseAction",
+            "CoupleStrings.colorOptionLabel",
+        )
+
         const val COMPOSE_ROOT =
             "android/app/src/composeP1/kotlin/com/mutx163/qingyu"
 
