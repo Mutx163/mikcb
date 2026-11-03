@@ -377,6 +377,12 @@ class CloudSyncController(
         notifyChanged()
     }
 
+    /** 落错误码到 `status.lastErrorCode` 并返回 FAILED（页面经 `for*` 本地化）。 */
+    private fun failWithCode(errorCode: String): SyncResultKind {
+        recordConnectFailure(errorCode)
+        return SyncResultKind.FAILED
+    }
+
     fun disconnect() {
         transport?.let { cancelIfCoordinator() }
         transport = null
@@ -923,7 +929,9 @@ class CloudSyncController(
      * 以及本机上传基线（`lastUploadedLocalHash`）——它是其他设备「最新一份」的参照。
      */
     fun deleteBackup(entryId: String): SyncResultKind {
-        val coordinator = coordinatorOrNull() ?: return SyncResultKind.FAILED
+        // Dart `deleteBackup`：`buildConnectionParams == null` → `missing_credentials`，
+        // 索引里查不到条目 → `backup_not_found`（都不是泛化的「同步失败」）。
+        val coordinator = coordinatorOrNull() ?: return failWithCode("missing_credentials")
         val entries = when (val loaded = coordinator.loadBackupIndex(config)) {
             is BackupIndexLoad.Failed -> {
                 status = status.copy(lastErrorCode = loaded.errorCode)
@@ -934,13 +942,13 @@ class CloudSyncController(
         }
         // UI 行 id 用的是文件名；索引 id 用的是 backupId，两个都能定位到同一条。
         val entry = entries.firstOrNull { it.fileName == entryId || it.id == entryId }
-            ?: return SyncResultKind.FAILED
+            ?: return failWithCode("backup_not_found")
         if (entry.isCurrent || entry.contentSha256 == config.lastUploadedLocalHash) {
             status = status.copy(lastErrorCode = "cannot_delete_current_backup")
             notifyChanged()
             return SyncResultKind.FAILED
         }
-        val active = ensureTransport() ?: return SyncResultKind.FAILED
+        val active = ensureTransport() ?: return failWithCode("missing_credentials")
         val result = active.deleteRemoteFile(config.historyBackupRemotePath(entry.fileName))
         if (result.isFailed) {
             status = status.copy(lastErrorCode = result.errorMessage ?: "delete_failed")
