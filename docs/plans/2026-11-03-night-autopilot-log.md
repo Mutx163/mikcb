@@ -1675,6 +1675,36 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
   `-Module transfer -ExtraSources <IcsImportModel.kt> <IcsHeaderKeywords.kt> <IcsExportLogicTest.kt> <CourseExportRoundTripTest.kt>`
   → **OK (312 tests)**（297 + 15）。另回归跑 `-Module pages/import` → **OK (522 tests)**，确认前批往返用例在补 `Location:` 后仍成立。未裸跑 gradlew、未跑整包、未推送。
 
+### 10.37 ✅ 备份与恢复域对拍（只读核对，无代码改动；2026-11-04）
+
+**边界**：核心逻辑在 `pages/sync/**`，按派发规矩**只读核对 + 给补丁**，本批未改一行 sync 代码，也未碰 `app/`。无 `pages/backup/**`。
+
+**1. 备份文件结构（逐项一致，除 settings 载体）**
+- 目录/索引/命名/版本全对齐：`history/index.json`（Dart `webdav_sync_config.dart:119-129` ↔ Kotlin `sync/WebdavSyncConfig.kt:93,156-163`）；`{"version":1,"entries":[...]}`（Dart `cloud_backup_index_service.dart:104` ↔ Kotlin `CloudBackupIndexCodec.kt:37,87`）；文件名 `id.mikcb`（Dart `:157` ↔ Kotlin `:53`）；id = 本地时刻 `yyyyMMdd-HHmmss` + 哈希前 8（Dart `:139` ↔ Kotlin `:40-50`）；entry 键序一致（Kotlin `:63-80`）。
+- **真差异（同根）**：快照 `profiles[].settings` Kotlin 只写 core 4 键（`TimetableSnapshotBridge.kt:38,63` 用 `TimetableProfile.toJson()`），Dart 写整份 `TimetableSettings`（`app_sync_snapshot_service.dart:338-400` 用 `profile.toJson()`）；Kotlin 另写顶层 `"settings"`（Dart payload 无此键，`_buildPayloadMap`）。老版本备份两边都能恢复（`fromJson` 均 lenient、缺字段回默认；多出的顶层键 Dart 忽略）。
+- 归属：`pages/sync/TimetableSnapshotBridge.kt`（只读域）+ `app/TimetableStore.kt`（禁改）。
+
+**2. 恢复语义与 `canMerge`**
+- Kotlin 仍**恒 false**：`CloudSyncController.kt:874`；`:757` 注释明写「云备份快照恒是全量包（`isFullBackupPlan`），合并服务不存在」，`TransferApplyMode.MERGE` 被当覆盖（`:891`）。→ 是**故意**，不是漏接。
+- 但 **Dart 并非如此**：恢复前同时构建 merge + overwrite 两个包（`webdav_sync_service.dart:647-699`），`applyPreviewedBackupRestore` 按 mode 择包（`:702-749`），弹层提供两个按钮（`transfer_preview_dialog.dart:47-52`）。→ 能力缺口，归属同步/传输线。
+
+**3. 恢复后的设置一致性**
+- 44 个全局键：两边都**不动** `app_global_settings_v1`（Kotlin `TimetableRepository.kt:499-534`；Dart `_applySnapshotData`，`:1101-1178`）→ **当前全局偏好胜出，同解**。
+- 档案内嵌 settings：Dart 全量覆盖；Kotlin `store.saveProfiles` 按 id 保留**本机当前**内嵌（`TimetableStore.kt:273-299`），备份里的外观/语言被丢弃，新 id 只有 core。→ **真差异**（与第 1 条同根），归属同上。
+
+**4. 空/损坏/超大备份**
+- 与 Dart 一致，3 处刻意差异已在 `BackupFileReadModel.kt:37-46` 声明：>20MB → `importFileTooLarge`（Dart `unified_transfer_service.dart:142` + `data_transfer_screen.dart:406-411`）；blank → 空文件（Dart 只判 `content.isEmpty`，`:419`）；坏 JSON/信封/哈希/元数据分类到同一批 ARB 文案。云恢复路径两边都**没有** 20MB 门（该门只用于本地备份文件还原）。多一道 `profiles==0` 拒绝（复用 Dart `sync_snapshot_no_profiles` 文案），属已声明偏差。→ **同解（无真差异）**。
+
+**需他人改（本批只报告，未修）**
+- C1（P1）快照 profiles 内嵌 settings 不完整（写/读两端）：归属 `app/TimetableStore.kt` + `pages/sync/TimetableSnapshotBridge.kt`。补丁方向：store 暴露「按 id 读原始内嵌 settings JSON」，bridge 写快照时拼原始 JSON；恢复时按 id 直写原始 settings（不经 `TimetableProfile.fromJson` 回写），或让 `saveProfiles` 支持「备份 raw settings 优先」。否则任何恢复都丢外观/语言，旧备份里的外观永远回不来。
+- C2（P2）恢复合并能力缺口：归属 `pages/sync` + `pages/transfer`（merge service 尚未移植）；`canMerge=false` + MERGE→覆盖 是故意降级，需产品确认是否补齐。
+- C3（P2，非备份域）`pages/sync` 测试目录当前在 L0 不可编译：`096ff9bb` 的 `CouplePartnerUnlinkTest.kt:26`、`LocaleHashAsciiTest.kt:7` 引用 `platform.CouplePartnerPortImpl`（L0 白名单不含 `platform/`，4 处 unresolved reference）。归属同步线；与本批无关。
+
+**L0（诚实口径）**：本批零代码改动，按规矩仍试跑 `-Module pages/sync` → **编译失败**（即 C3，先于本批已存在），备份用例无法在 L0 隔离；最近一次该模块绿为 §10.23 的 **353 例**。未裸跑 gradlew、未跑整包、未推送。
+
+**日志提交**：仅本文件追加，无代码路径。
+
+
 
 
 
