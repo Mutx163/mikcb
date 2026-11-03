@@ -21,9 +21,9 @@ class BackupFileStringsParityTest {
     private val arbMap: Map<String, String> by lazy { loadArbZh() }
 
     @Test
-    fun `五条快照错误文案与 app_zh_arb 逐字一致`() {
+    fun `七条快照与恢复错误文案与 app_zh_arb 逐字一致`() {
         val texts = BackupFileStrings.allTexts
-        assertEquals("快照类文案应恰好 5 条", 5, texts.size)
+        assertEquals("快照/恢复类文案应恰好 7 条", 7, texts.size)
 
         for (item in texts) {
             val template = arbMap[item.key]

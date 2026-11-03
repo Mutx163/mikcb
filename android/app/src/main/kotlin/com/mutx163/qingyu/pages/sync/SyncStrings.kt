@@ -203,6 +203,10 @@ object SyncStrings {
         "provider_not_ready" -> syncErrorProviderNotReady.zh
         "no_local_user_data" -> syncErrorNoLocalData.zh
         "insecure_url_blocked" -> syncErrorInsecureUrl.zh
+        // 恢复三件套提交失败（ARB 键为 camelCase：backupRestoreCommitFailed /
+        // backupRestoreRollbackFailed，见 BackupFileStrings）。
+        "backup_restore_commit_failed" -> BackupFileStrings.backupRestoreCommitFailed.zh
+        "backup_restore_rollback_failed" -> BackupFileStrings.backupRestoreRollbackFailed.zh
         else -> syncErrorSyncFailed.zh
     }
 
