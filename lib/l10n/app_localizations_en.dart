@@ -4467,6 +4467,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backToTodayAction => 'Back to Today';
 
   @override
+  String get timetableBackToTodayShort => 'Today';
+
+  @override
   String get ongoingCourseBadge => 'In Class';
 
   @override

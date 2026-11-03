@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -70,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
@@ -77,6 +77,7 @@ import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
 import com.mutx163.qingyu.pages.shell.HomeBackgroundModel
+import com.mutx163.qingyu.pages.timetable.day.DayViewStrings
 import com.mutx163.qingyu.pages.shell.HomeInkPolarity
 import com.mutx163.qingyu.core.Exam
 import com.mutx163.qingyu.core.ScheduleItem
@@ -85,8 +86,6 @@ import com.mutx163.qingyu.core.TimeScheme
 import com.mutx163.qingyu.core.TimetableSettings
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -478,18 +477,10 @@ fun TimetableWeekPage(
         realCurrentWeek != null &&
         realCurrentWeek != browsingWeek
 
-    // ── 「回本周」浮钮的玻璃档（2026-11-01）──
-    // 与 Dart 同一条：浮钮跟的是**玻璃坞**那一档（作用范围 → 玻璃坞），不是课程卡片的
-    // 材质 —— 它是浮在首页上的控件，与底栏同一族。见 `homeFloatingChipSurface`。
-    val floatingGlassActive = materialSpec?.dock.let { dock ->
-        (dock == SurfaceMaterialState.LIQUID_GLASS || dock == SurfaceMaterialState.FROST) &&
-            hasBackdrop && isRuntimeShaderSupported()
-    }
-    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采，或浮钮真要玻璃。
-    // 否则整屏录制是纯浪费（`PagesShellActivity.kt:296-300` 同一条纪律）。
-    // 浮钮那一份只在它**真的可见**时才算 —— 不为一颗看不见的按钮录整屏。
-    val pageBackdropActive = bandBlurActive || cardGlassActive ||
-        (floatingGlassActive && showBackToCurrentWeek)
+    // 录像带只在**真有人采**时才挂：顶栏带要采、课卡液态档要采。
+    // （2026-11-03：「回本周」换成共用件 BackToTodayFab——半透明底不采录像带，
+    // 判据里那一份「浮钮真要玻璃」随之移除。）
+    val pageBackdropActive = bandBlurActive || cardGlassActive
 
     Scaffold(
         // 有壁纸时底色必须透明，否则不透明主题底会把壁纸整张盖掉。
@@ -682,21 +673,16 @@ fun TimetableWeekPage(
                 // ── 「回本周」浮钮（Dart 浮钮唯一入口）──
                 // 日视图展开时不画：那是周视图的浮钮，日视图有自己的「回今日」
                 // （Dart 两套独立体系，见 `_shouldShowFloatingBackToTodayButton`）。
+                // 2026-11-03：与日视图「回今日」换成**同一颗共用件**
+                // [BackToTodayFab]（玻璃/形状/描边/投影只有一处实现，用户口径
+                // 「周视图也用同一个按钮」）；可见字同为单字「今」，
+                // 读屏念完整语义「回本周」（`backToCurrentWeekAction`）。
+                // 旧版行为原样保留：浏览周 ≠ 真实当前周才出现（显隐判据见
+                // [showBackToCurrentWeek]），点按回到本周；透明度设置压在
+                // 底色与文字上（`backToCurrentWeekOpacity`）。
                 if (showBackToCurrentWeek && !dayVisible) {
-                    // Dart 把 `timetableFloatingBackToCurrentWeekButtonOpacity` 分别压在
-                    // **染色**与**内容**两层，而不是包住整块玻璃（`timetable_back_to_current_week_button.dart:40-82`）：
-                    // 包住会让采样失真。这里同口径。
                     val buttonOpacity = style.backToCurrentWeekOpacity.coerceIn(0f, 1f)
-                    val buttonShape = RoundedCornerShape(ButtonDefaults.CornerRadius)
-                    val chipSurface = homeFloatingChipSurface(
-                        backdrop = if (floatingGlassActive) pageBackdrop else null,
-                        material = materialSpec,
-                        hasBackdrop = hasBackdrop,
-                        shape = buttonShape,
-                        solidColor = MiuixTheme.colorScheme.surface,
-                        tintAlphaScale = buttonOpacity,
-                    )
-                    Button(
+                    BackToTodayFab(
                         onClick = {
                             realCurrentWeek?.let { target ->
                                 coroutineScope.launch {
@@ -706,6 +692,9 @@ fun TimetableWeekPage(
                                 }
                             }
                         },
+                        label = DayViewStrings.backToTodayShort.zh,
+                        contentDescription = TimetableStrings.backToCurrentWeekAction.zh,
+                        alpha = buttonOpacity,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
@@ -713,21 +702,8 @@ fun TimetableWeekPage(
                             .padding(
                                 bottom = floatingButtonBottomInset
                                     ?: (innerPadding.calculateBottomPadding() + 72.dp),
-                            )
-                            .then(chipSurface),
-                        // 卡面交给上面那条 modifier 画（玻璃 / 实底），按钮本体让开；
-                        // 字色跟主题走（Dart 用 `onSurface`，图标才是强调色）。
-                        colors = ButtonDefaults.buttonColors(
-                            color = Color.Transparent,
-                            contentColor = Color(QingyuTheme.primaryText(dark)),
-                        ),
-                    ) {
-                        Text(
-                            text = TimetableStrings.backToCurrentWeekAction.zh,
-                            modifier = Modifier.alpha(buttonOpacity),
-                            style = MiuixTheme.textStyles.button,
-                        )
-                    }
+                            ),
+                    )
                 }
             }
         }

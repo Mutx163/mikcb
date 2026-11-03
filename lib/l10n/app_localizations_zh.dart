@@ -4258,6 +4258,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backToTodayAction => '回今日';
 
   @override
+  String get timetableBackToTodayShort => '今';
+
+  @override
   String get ongoingCourseBadge => '正在上课';
 
   @override
@@ -14267,6 +14270,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get backToTodayAction => '回今日';
+
+  @override
+  String get timetableBackToTodayShort => '今';
 
   @override
   String get ongoingCourseBadge => '正在上課';
@@ -24318,6 +24324,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get backToTodayAction => '回今日';
+
+  @override
+  String get timetableBackToTodayShort => '今';
 
   @override
   String get ongoingCourseBadge => '正在上課';

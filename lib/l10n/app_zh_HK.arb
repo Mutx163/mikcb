@@ -2368,6 +2368,7 @@
   "scheduleTimeRange": "{start} – {end}",
   "scheduleWeeklyWithDay": "每週{day}",
   "backToTodayAction": "回今日",
+  "timetableBackToTodayShort": "今",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}節",
   "@courseWeekdaySectionSummary": {
     "placeholders": {

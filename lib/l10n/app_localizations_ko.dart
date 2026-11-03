@@ -4344,6 +4344,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get backToTodayAction => '오늘로 돌아가기';
 
   @override
+  String get timetableBackToTodayShort => '오늘';
+
+  @override
   String get ongoingCourseBadge => '수업 중';
 
   @override

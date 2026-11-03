@@ -2182,6 +2182,7 @@
   "todayTimetableTitle": "오늘 시간표",
   "backToWeekViewAction": "주간 뷰로 돌아가기",
   "backToTodayAction": "오늘로 돌아가기",
+  "timetableBackToTodayShort": "오늘",
   "ongoingCourseBadge": "수업 중",
   "dayViewEmptyTitle": "수업 없음",
   "shortNamePrefix": "약칭: {value}",

@@ -2394,6 +2394,7 @@
   "todayTimetableTitle": "Today's Timetable",
   "backToWeekViewAction": "Back to Week View",
   "backToTodayAction": "Back to Today",
+  "timetableBackToTodayShort": "Today",
   "ongoingCourseBadge": "In Class",
   "dayViewEmptyTitle": "No classes today",
   "shortNamePrefix": "Short name: {value}",

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import com.mutx163.qingyu.app.HomeMenuStyle
 import com.mutx163.qingyu.app.HomeTitleStyle
+import com.mutx163.qingyu.components.BackToTodayFab
 import com.mutx163.qingyu.components.liquid.lens
 import com.mutx163.qingyu.components.liquid.vibrancy
 import com.mutx163.qingyu.core.Course
@@ -61,12 +62,10 @@ import com.mutx163.qingyu.pages.timetable.TimetableWeekdayHeader
 import com.mutx163.qingyu.pages.timetable.WeekSelectorSheet
 import com.mutx163.qingyu.pages.timetable.WeekViewStyle
 import com.mutx163.qingyu.pages.timetable.TimetableChromeBandGlass
-import com.mutx163.qingyu.pages.timetable.month.MonthViewStrings
 import com.mutx163.qingyu.theme.QingyuTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -670,14 +669,12 @@ fun DayViewPage(
 
                 // 「回今日」浮钮（Dart `timetable_screen.dart:1556-1574`）：
                 // 翻到别的日期后一键回到今天；停在今天时不出现。
-                // 2026-11-03 重做：miuix 官方 `FloatingActionButton`（CircleShape +
-                // primary 容器 + onPrimary 内容 + 官方按压反馈与投影，默认 60dp 满足
-                // 48dp 触摸区）。此前是 38dp 磨砂胶囊装「回今日」3 字长文案——用户口径
-                // 「长的非常的丑陋……改成一个单独的『今』」。可见字复用 ARB 已有的
-                // 「今天」短键（与月视图「回到当前月」短按钮同一枚键，跨视图同语义）；
-                // 无障碍念完整语义（`backToTodayAction`），读屏用户不只听到一个字。
+                // 2026-11-03：与周视图「回本周」换成**同一颗共用件** [BackToTodayFab]
+                // （圆角胶囊、半透明主题主色底、亮棱描边、官方投影——只有一处实现，
+                // 用户口径「周视图也用同一个按钮」）。可见字是专用短键
+                // `backToTodayShort`（单字「今」），读屏念完整语义 `backToTodayAction`。
                 if (showsBackToToday) {
-                    FloatingActionButton(
+                    BackToTodayFab(
                         onClick = {
                             scope.launch {
                                 pagerState.animateScrollToPage(
@@ -689,24 +686,17 @@ fun DayViewPage(
                                 )
                             }
                         },
+                        label = DayViewStrings.backToTodayShort.zh,
+                        contentDescription = DayViewStrings.backToTodayAction.zh,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .semantics {
-                                contentDescription = DayViewStrings.backToTodayAction.zh
-                            }
                             // 底边距由宿主按玻璃坞药丸的真实占用算好（见 `HomeFloatingMetrics`）；
                             // 宿主没接时退回旧口径（系统内边距 + 20dp）。
                             .padding(
                                 bottom = floatingButtonBottomInset
                                     ?: (innerPadding.calculateBottomPadding() + 20.dp),
                             ),
-                    ) {
-                        Text(
-                            text = MonthViewStrings.monthViewBackToCurrentMonthShort.zh,
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
+                    )
                 }
             }
         }

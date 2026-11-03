@@ -30,6 +30,15 @@ object DayViewStrings {
     val backToWeekViewAction = ArbText("backToWeekViewAction", "返回周视图")
     /** 底部「回今日」浮钮（Dart `timetable_back_to_today_button.dart:65`）。 */
     val backToTodayAction = ArbText("backToTodayAction", "回今日")
+
+    /**
+     * 「回今日」悬浮按钮的**可见短字**（ARB `timetableBackToTodayShort` = 「今」）。
+     *
+     * 只用于这颗 FAB 的屏上文字（一个字）；无障碍仍念 [backToTodayAction] 完整语义。
+     * 2026-11-03 用户拍板新增：此前可见字借了月视图的 `monthViewBackToCurrentMonthShort`
+     * （「今天」两字），用户要单字。
+     */
+    val backToTodayShort = ArbText("timetableBackToTodayShort", "今")
     val weekLabel = ArbText("weekLabel", "第 {week} 周")
     val courseCountSummary = ArbText("courseCountSummary", "{count} 门课")
     val scheduleCountSummary = ArbText("scheduleCountSummary", "日程 {count} 项")
@@ -222,6 +231,7 @@ object DayViewStrings {
             examSeatLabel,
             monthViewAgendaTitle,
             backToTodayAction,
+            backToTodayShort,
             taskOverdueSection,
             taskCompletedSection,
             taskHomeworkDefaultTitle,

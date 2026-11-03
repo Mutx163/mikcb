@@ -4328,6 +4328,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get backToTodayAction => '今日に戻る';
 
   @override
+  String get timetableBackToTodayShort => '今日';
+
+  @override
   String get ongoingCourseBadge => '授業中';
 
   @override

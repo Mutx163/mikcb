@@ -2182,6 +2182,7 @@
   "todayTimetableTitle": "今日の時間割",
   "backToWeekViewAction": "週表示に戻る",
   "backToTodayAction": "今日に戻る",
+  "timetableBackToTodayShort": "今日",
   "ongoingCourseBadge": "授業中",
   "dayViewEmptyTitle": "授業なし",
   "shortNamePrefix": "略称：{value}",

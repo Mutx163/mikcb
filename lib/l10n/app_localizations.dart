@@ -7894,6 +7894,12 @@ abstract class AppLocalizations {
   /// **'回今日'**
   String get backToTodayAction;
 
+  /// 回今日悬浮按钮的屏上短字（单字）。只用于这颗悬浮按钮的可见文字；无障碍完整语义用 backToTodayAction。勿把本键复用到长文案处。
+  ///
+  /// In zh, this message translates to:
+  /// **'今'**
+  String get timetableBackToTodayShort;
+
   /// No description provided for @ongoingCourseBadge.
   ///
   /// In zh, this message translates to:
