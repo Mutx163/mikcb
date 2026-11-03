@@ -32,7 +32,9 @@ class LiveUpdateRefreshWorker(
             Log.w(TAG, DiagnosticLogMessages.LOG_FGS_START_BLOCKED, e)
             try {
                 LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = false)
-            } catch (_: Exception) {}
+            } catch (rescheduleError: Exception) {
+                Log.w(TAG, "reschedule after blocked foreground service failed", rescheduleError)
+            }
             Result.success()
         } catch (e: Exception) {
             Log.w(TAG, DiagnosticLogMessages.LOG_LIVE_UPDATE_REFRESH_WORKER_FAILED, e)

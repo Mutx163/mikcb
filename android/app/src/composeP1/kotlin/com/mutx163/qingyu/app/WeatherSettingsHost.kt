@@ -18,6 +18,7 @@ import com.mutx163.qingyu.core.permission.PermissionStep
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageState
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.pages.settings.SettingsWeatherPage
 import com.mutx163.qingyu.pages.settings.WeatherPageData
 import com.mutx163.qingyu.pages.settings.WeatherStatus
@@ -87,8 +88,17 @@ fun WeatherSettingsHost(
     version
 
     fun writeModel(next: TimetableSettingsModel) {
-        store.save(next)
-        model = next
+        // 落盘失败绝不进内存：否则界面显示已保存、重启后回退（静默失败）。
+        runCatching { store.save(next) }.fold(
+            onSuccess = { model = next },
+            onFailure = {
+                Toast.makeText(
+                    context,
+                    SettingsStringsExt2.saveFailed.zh,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+        )
     }
 
     fun showToast(message: String) {

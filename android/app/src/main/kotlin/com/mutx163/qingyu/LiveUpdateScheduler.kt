@@ -937,7 +937,9 @@ object LiveUpdateScheduler {
                     )
                 )
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "record live snapshot settings diagnostics failed", e)
+        }
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_snapshot_synced",
@@ -1316,7 +1318,9 @@ object LiveUpdateScheduler {
                 // 与 LiveUpdateService.CHANNEL_ID (v2) 同渠道；顺带清理旧版本低优先级渠道。
                 try {
                     manager.deleteNotificationChannel("live_update_channel")
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    Log.w(TAG, "delete legacy live update channel failed", e)
+                }
                 manager.createNotificationChannel(
                     NotificationChannel(
                         LiveUpdateService.CHANNEL_ID,

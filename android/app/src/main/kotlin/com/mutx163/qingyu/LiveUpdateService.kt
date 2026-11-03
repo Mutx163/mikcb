@@ -817,7 +817,9 @@ class LiveUpdateService : Service() {
             // 前台服务被拒时把预建的通知撤掉，别留下一条没人管的常驻通知。
             try {
                 manager?.cancel(NOTIFICATION_ID)
-            } catch (_: Exception) {}
+            } catch (cancelError: Exception) {
+                Log.w(TAG, "cancel pre-built notification after foreground rejection failed", cancelError)
+            }
             throw e
         }
         hasStartedForeground = true
@@ -832,7 +834,9 @@ class LiveUpdateService : Service() {
         // 清理老版本低优先级渠道，避免系统通知设置页残留两套重名渠道
         try {
             manager.deleteNotificationChannel(OLD_CHANNEL_ID)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "delete old live update channel failed", e)
+        }
 
         val channel = NotificationChannel(
             CHANNEL_ID,

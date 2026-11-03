@@ -1,0 +1,35 @@
+# 「静默失败」空 catch 存量白名单（守卫：SilentFailureCatchGuardTest）
+#
+# 格式：<仓库相对路径>|<允许条数>|<原因>
+# 规则：
+#   1. 新增空 catch 或条数上调 -> 守卫失败，必须改代码，不许往这里加行；
+#   2. 已修复但这里没删行 / 条数没下调 -> 同样失败，防止「只进不出」；
+#   3. 关键写路径（设置保存 / 课程导入 / 云同步 / 宏录制 / 提醒调度）不允许登记。
+#
+# 每一条都要能说清「为什么这次静默可以接受」。标注「待清」的是本批审计登记、
+# 但受禁区或缺少 ARB 键所限暂时没改的点，后续泳道接手时逐条清掉并同步删行。
+
+android/app/src/main/kotlin/com/mutx163/qingyu/app/TimetableStore.kt|3|读侧逐条宽松解析：坏条目丢弃，整份全坏时外层 archiveCorrupt 留档，不是写失败
+android/app/src/main/kotlin/com/mutx163/qingyu/calendar/HolidayPreferences.kt|2|读侧宽松解析，坏条目丢弃，外层另有留档口径
+android/app/src/main/kotlin/com/mutx163/qingyu/core/TimeScheme.kt|1|读侧宽松解析，坏字段回退默认值
+android/app/src/main/kotlin/com/mutx163/qingyu/core/TimetableProfile.kt|1|读侧宽松解析，坏字段回退默认值
+android/app/src/main/kotlin/com/mutx163/qingyu/FairMemoryAdapter.kt|2|内存统计是装饰数据，取不到就返回空，不影响任何用户动作
+android/app/src/main/kotlin/com/mutx163/qingyu/infra/UpdateUrls.kt|2|更新地址兼容解析，坏形态跳过，不阻塞主源
+android/app/src/main/kotlin/com/mutx163/qingyu/MainActivity.kt|13|壳 Activity（本批禁区）：历史最佳努力清理，交壳泳道处理，待清
+android/app/src/main/kotlin/com/mutx163/qingyu/MemoryStatsCollector.kt|3|统计采集尽力而为，失败不影响功能，诊断页会显示「未知」
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroCloudSync.kt|1|宏条目逐条宽松解析，坏条目丢弃，不炸整份快照
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/import/warehouse/WarehouseMacroReplayer.kt|3|回放等待/重载超时后转全量路径，由宿主统一报失败，避免重复提示
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/sync/TimetableSnapshotBridge.kt|1|快照恢复读侧逐条宽松解析，坏条目丢弃
+android/app/src/main/kotlin/com/mutx163/qingyu/pages/timetable/month/MonthHolidayDataLoader.kt|1|节假日是装饰信息，失败落空态或保留旧值
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/guide/GuidePermissionProbe.kt|7|权限能力探测，抛错即视为不支持该能力
+android/app/src/main/kotlin/com/mutx163/qingyu/platform/PerfProbe.kt|3|性能探针失败静默空操作（正式包按设计关闭）
+android/app/src/main/kotlin/com/mutx163/qingyu/sync/WebdavHttpTransport.kt|1|socket 关闭失败，这条连接本来就要丢弃
+android/app/src/main/kotlin/com/mutx163/qingyu/sync/WebdavRequests.kt|1|XML 解析器可选 feature 不支持时继续解析本地可信文本
+android/app/src/main/kotlin/com/mutx163/qingyu/TodayWidgetSupport.kt|4|桌面小组件刷新尽力而为，系统可能随时限流，失败由下次刷新补
+android/app/src/main/kotlin/com/mutx163/qingyu/transfer/lan/LanEditHttpServer.kt|4|局域网服务端连接清理，失败不影响本次请求结果
+android/app/src/main/kotlin/com/mutx163/qingyu/UmengApplication.kt|1|应用启动初始化尽力而为，不阻塞启动
+android/app/src/main/kotlin/com/mutx163/qingyu/UmengCrashRedaction.kt|1|崩溃脱敏解析失败时退回原文上报
+android/app/src/main/kotlin/com/mutx163/qingyu/UmengDiagnosticReporter.kt|1|诊断上报失败不影响功能
+android/app/src/main/kotlin/com/mutx163/qingyu/WidgetSystemActions.kt|1|小组件系统动作尽力而为，失败由下次刷新补
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/app/LiveSelfCheckHost.kt|1|自检中断异常忽略，不是用户动作失败
+android/app/src/composeP1/kotlin/com/mutx163/qingyu/pages/transfer/QrCameraHost.kt|2|L219 打不开系统设置有手动兜底；L314 相机绑定失败缺 ARB 文案，待清（已报用户）

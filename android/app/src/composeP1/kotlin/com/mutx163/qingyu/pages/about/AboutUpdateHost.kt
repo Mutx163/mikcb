@@ -22,6 +22,7 @@ import com.mutx163.qingyu.infra.AppUpdateCheckResult
 import com.mutx163.qingyu.infra.buildDownloadUrl
 import com.mutx163.qingyu.infra.recordingEnabledFromPrefs
 import com.mutx163.qingyu.infra.releasesApiUrl
+import com.mutx163.qingyu.pages.settings.SettingsStringsExt2
 import com.mutx163.qingyu.platform.PrefsKeyValueStore
 import com.mutx163.qingyu.isTrustedSystemDownloadUrl
 import kotlinx.coroutines.Dispatchers
@@ -94,8 +95,14 @@ fun AboutUpdateHostPage(
     }
 
     fun persist(updated: AppUpdateSettings) {
+        val previous = settings
         settings = updated
-        runCatching { store.saveSettingsPatch(updated.toPatch()) }
+        val saved = runCatching { store.saveSettingsPatch(updated.toPatch()) }.isSuccess
+        if (!saved) {
+            // 写盘失败必须让用户知道，并把界面退回旧值：不能停在「看着改了、其实没存」的假成功态。
+            settings = previous
+            Toast.makeText(context, SettingsStringsExt2.saveFailed.zh, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
