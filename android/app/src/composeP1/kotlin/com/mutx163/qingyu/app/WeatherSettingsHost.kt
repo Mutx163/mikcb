@@ -1,6 +1,9 @@
 package com.mutx163.qingyu.app
 
+import android.Manifest
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.mutx163.qingyu.core.permission.PermissionFlow
+import com.mutx163.qingyu.core.permission.PermissionStep
 import com.mutx163.qingyu.pages.settings.SettingsAction
 import com.mutx163.qingyu.pages.settings.SettingsPageScreen
 import com.mutx163.qingyu.pages.settings.SettingsPageState
@@ -18,6 +23,7 @@ import com.mutx163.qingyu.pages.settings.WeatherPageData
 import com.mutx163.qingyu.pages.settings.WeatherStatus
 import com.mutx163.qingyu.pages.weather.WeatherLocationFailure
 import com.mutx163.qingyu.pages.weather.WeatherStrings
+import com.mutx163.qingyu.platform.permission.PermissionSystemActions
 import com.mutx163.qingyu.weather.DeviceLocationFailure
 import com.mutx163.qingyu.weather.WeatherProvider
 import com.mutx163.qingyu.weather.WeatherState
@@ -32,6 +38,16 @@ import kotlinx.coroutines.withContext
  * 数据流与设置族其它页同一套循环，但有两个来源：
  * - 设备级天气状态（开关 / 是否定位中 / 城市 / 取数状态）来自 [WeatherProvider]；
  * - 六个显示开关（日卡/周卡/弹窗/现象/温度/概率）来自 [TimetableSettingsModelStore]。
+ *
+ * ## 权限（对齐旧版 `settings_weather.dart:243-277` + `device_location_service.dart:302-316`）
+ *
+ * 旧版 geolocator 在 `locate()` 内部会**主动弹系统权限框**（denied → requestPermission）；
+ * Kotlin 侧 `AndroidWeatherLocationSource` 拿不到 Activity 结果，此前直接回 PERMISSION_DENIED
+ * ⇒ 用户点「使用当前位置」**永远看不到申请框**、只有一句失败 toast（静默失败缺口，本次补上）：
+ * - 未授予 → 弹系统框，授予后立即定位；
+ * - 拒绝一次 → 照走定位，toast 显示 PERMISSION_DENIED 解释（与旧版失败出口一致）；
+ * - 永久拒绝 → toast + 跳系统应用详情页（跳设置是本次按用户要求补的出路，旧版只有文案）；
+ * - 打开天气开关且还没有城市时自动定位（`settings_weather.dart:243-254`），同走本流程。
  *
  * ## 为什么单独一个宿主而不是塞进 SettingsHost
  *
@@ -92,13 +108,69 @@ fun WeatherSettingsHost(
         }
     }
 
+    val activity = remember(context) { PermissionSystemActions.findHostActivity(context) }
+    val permissionFlow = remember {
+        PermissionFlow(
+            initiallyGranted = PermissionSystemActions.anyGranted(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ),
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        val granted = grants.values.any { it }
+        val canAskAgain = activity?.let {
+            PermissionSystemActions.canAskAgain(it, Manifest.permission.ACCESS_FINE_LOCATION)
+        } ?: false
+        permissionFlow.onSystemResult(granted, canAskAgain)
+        when {
+            granted -> locate()
+            // 永久拒绝：toast 解释 + 送系统设置（系统不再弹框，只能去那里开）。
+            !canAskAgain -> {
+                showToast(
+                    WeatherStrings.locationFailureMessage(
+                        WeatherLocationFailure.PERMISSION_DENIED_FOREVER,
+                    ),
+                )
+                PermissionSystemActions.openAppDetailsSettings(context)
+            }
+            // 拒绝一次：与旧版失败出口一致——走定位，toast PERMISSION_DENIED 解释。
+            else -> locate()
+        }
+    }
+
+    fun locateWithPermission() {
+        if (provider.isLocating) return
+        when (permissionFlow.onTrigger()) {
+            PermissionStep.Proceed -> locate()
+            PermissionStep.LaunchRequest -> permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+            PermissionStep.OpenSettings -> {
+                showToast(
+                    WeatherStrings.locationFailureMessage(
+                        WeatherLocationFailure.PERMISSION_DENIED_FOREVER,
+                    ),
+                )
+                PermissionSystemActions.openAppDetailsSettings(context)
+            }
+        }
+    }
+
     fun toggle(rowId: String) {
         when (rowId) {
             "weather.enable" -> scope.launch {
                 val nextEnabled = !provider.enabled
                 withContext(Dispatchers.IO) { provider.setEnabled(nextEnabled) }
                 // 打开且还没有城市时主动定位一次（否则用户会停在「开关开着、卡片却没天气」）。
-                if (nextEnabled && provider.location == null) locate()
+                // 定位走权限申请前置的同一入口（旧版 _toggleWeather → _locateWeather）。
+                if (nextEnabled && provider.location == null) locateWithPermission()
             }
             "weather.showOnDayCard" -> writeModel(model.copy(weatherShowOnDayCard = !model.weatherShowOnDayCard))
             "weather.showOnWeekCard" -> writeModel(model.copy(weatherShowOnWeekCard = !model.weatherShowOnWeekCard))
@@ -132,7 +204,7 @@ fun WeatherSettingsHost(
                 SettingsAction.WRITE_SETTING -> toggle(rowId)
                 SettingsAction.RUN_NOW ->
                     if (rowId == "weather.useCurrentLocation") {
-                        locate()
+                        locateWithPermission()
                     } else if (rowId == "weather.retry") {
                         scope.launch { withContext(Dispatchers.IO) { provider.retry() } }
                     }
