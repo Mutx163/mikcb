@@ -199,6 +199,11 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 - 每轮收口跑门 1（L1 编译）与门 2（整包单测）并回填日志（含时间戳）。
 - 各线提交只做路径限定；若发现越界，立刻记日志「越界提交 + 哈希 + 文件」，**不回滚**。
 
+### A 线进展（2026-11-03 02:50）
+copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）：`homePullQuickImportSubtitle`（af1e70de）、`liquidGlassDarkIndependentSubtitle`/`layoutShowOtherWeeksSubtitle`/`homeWidgetShowTomorrowSubtitle`（d8699c72）。
+**判据确认**（推翻子代理「机制性卡死」结论）：lint 只扫 `lib/**` 行控件绑定（`HyperosSwitchTile` 等的 `title`/`subtitle`/`details`/`hint`/`caption` 参数）× 六份 ARB 词条，**改短外语 ARB 词条即可清债**——ARB 属 A 线白名单，不动 lib。方法：读 zh 模板语义 → 压缩 en/ja/ko 到 ≤17 宽（说明）/≤11 宽（标题）→ `visualWidth`（汉字1/ASCII0.55/占位符3）核验 → 删基线对应行 → 门4 复测无新增。zh/zh_HK/zh_TW 模板已合规不动。
+**后续**：剩 191 条按宽度降序逐批清（en 95 / ja 56 / ko 48 / zh_HK·zh_TW 各 2），每批提交+推送。
+
 ---
 
 ## 七、需 Lead 处理项
