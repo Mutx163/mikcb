@@ -1793,6 +1793,63 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 
 **6. 补记**：上一轮条件挂载清单漏报的 `AddCoursePage.kt:576` 已在 §10.34 记录并随 `07c5b418` 修复（同文件第 4 处）。
 
+---
+
+### 10.39 📋 classReminders 移植评估（只读，不改生产代码；2026-11-04）
+
+**总判断**：不是「整族空白」，而是**「壳全在、源缺一半」**——通道/权限/Receiver/AlarmManager/开机重排都在 Kotlin（`ExamReminderScheduler.kt`），
+缺的是「`classReminders` 条目 → fires」的纯计算与设置键，以及由 Kotlin 侧自驱的 reconcile（现在仍由 Flutter 经 `MainActivity.kt:1209` 推全量）。
+可推进性高：核心判据可纯 JVM 测，排在设置键与通知通道之后的活都可在这台无手机虚拟机上完成。
+
+**A. 通知通道 / 权限 / 前台服务**
+
+| 项 | Dart | Kotlin 现状 |
+|---|---|---|
+| 通道 id/importance | 原生共用 `exam_reminder_channel`（Dart 侧常量 `MainActivity.kt:60` `com.mutx163.qingyu/exam_reminder`） | **已有**：`ExamReminderScheduler.kt:74-90` 创建，`IMPORTANCE_DEFAULT`；无 group、无自定义铃声/震动 |
+| 权限 | `docs/PRODUCT.md:306-320`（首启申请通知权限、首显超级岛确保通道建立） | **已有**：Manifest `:92` POST_NOTIFICATIONS、`:99` RECEIVE_BOOT_COMPLETED、`:100` SCHEDULE_EXACT_ALARM、`:97-98` FOREGROUND_SERVICE(_SPECIAL_USE)、`:95` SET_ALARM |
+| 开机/时区重排 | Dart `ExamReminderScheduler`（同仓原生） | **已有**：`.ExamReminderReceiver` Manifest `:358-368`（BOOT_COMPLETED / TIMEZONE_CHANGED），`ExamReminderScheduler.kt:154-160` 处理 |
+| 投递门禁 | 原生 | **已有**：`ExamReminderScheduler.kt:316-391`（权限 + 总开关 + 渠道重要性三查，`:277-279` 投不出去不删快照） |
+| 前台服务 | 超级岛用 `LiveUpdateService` | **已有**（与本族无关，勿混用）：`LiveUpdateService.kt`，渠道各自独立 |
+| 其它族 | 日程提醒独立管线 | **已有**：`scheduleReminderScheduler.kt:24-49/80-126/357-395`（`schedule_reminder_channel`，精确闹钟降级） |
+
+**B. 课程提醒触发（缺口所在）**
+
+| 环节 | Dart 真源 | Kotlin 现状 |
+|---|---|---|
+| 条目→fire 计算 | `class_reminder_service.dart:64-116`（`buildFires`：条目→`ExamReminderFire`，`offsetMinutes=0`，标题=课程名、正文=地点/时间；过滤过期/非法；按触发时刻排序）；默认提前 `30` 分钟 `:12`；稳定 requestCode（含 `minuteOfDay`）`:57-62` | **缺**：全仓无 `ClassReminderFire`/`classReminders` 计算；Kotlin 只接收 native fire JSON |
+| 全量重建时机 | `timetable_provider.dart:2655-2674`（`_syncExamRemindersImpl` 把 `additionalFires` 并入 reconcile；25+ 点火点见 `:2615` 注释：改设置/改课/删课/换档/冷启动） | **半缺**：reconcile 存在，但入口是 Flutter `MainActivity.kt:1209`；Kotlin 侧无「改课表/设置后自驱 reconcile」 |
+| 取消/过期 | 全量重建天然清理；旧版一次性提醒取消 `class_reminder_sheet.dart:169-211` | **半缺**：native 快照会过滤过期（`ExamReminderScheduler.kt`），但无 Kotlin 条目源可取消 |
+| 视图参与 | 日视图铃铛 `timetable_day_column.dart:136-145`；周视图不画；桌面小组件不参与；sheet `class_reminder_sheet.dart:17-29` | **缺**：日视图无铃铛（`DayViewCourseCard`/`DayViewCourseRow` 无 reminder 入参）；sheet 只有系统闹钟版 `ClassAlarmSheet.kt` + 纯计划 `core/ClassAlarmPlan.kt`（Dart 同功能在 `class_reminder_sheet.dart:75-167`） |
+
+**C. 设置族**
+
+| 键 | Dart | Kotlin |
+|---|---|---|
+| `classReminders`（条目列表，含 courseId/date/通知开关） | `timetable_settings.dart:615`（构造 `:913`、toJson `:1246`、fromJson `:1749`、copyWith `:2054`） | **缺**：`app/TimetableSettingsModel.kt:31-33` 明确「提醒未覆盖」；`TimetableStore.kt:49` 注释也只说 core 4 键 |
+| 单节提醒默认提前量 | Dart `ClassReminderService.defaultLeadMinutes = 30`（`:12`），非独立设置键 | **缺**（建议常量放纯计划层，不新增用户键） |
+| `liveClassReminderStartMinutes`（超级岛重点提醒，**不是**本族键） | `timetable_settings.dart:547/884/1212/1686` | **已有旁路**：`WidgetDataModels.kt:248`、`LiveUpdateScheduler.kt:349`，但不在 settings 模型 `OWNED_KEYS`，设置页改不了 |
+| 震动/铃声/免打扰/系统级开关 | 无独立键（走系统渠道/免打扰） | 无（与 Dart 同解） |
+
+→ 真要新增的只有 `classReminders` 一个键 + 六份 ARB 的 3~4 条文案（铃铛语义、开启/关闭、提前量说明、通知标题/正文模板）。
+
+**D. 可测性分级**
+
+- **纯 JVM 可测**：`buildFires` 等价物（周次/单双周/停课周/过期/排序/requestCode 稳定性）；`classReminders` 读侧 lenient 解析与 copyWith；日视图铃铛可见性判据；reconcile 差量（新增/取消/同 requestCode 覆盖）。
+- **需 Robolectric / 整包**：通道 `ensureChannel`、`AlarmManager` 精确降级、Receiver 注册与开机重排、`PendingIntent` flag 等价性。
+- **只能真机验**：Doze/厂商后台限制、免打扰与渠道静音、开机后真实投递、超级岛共存。
+
+**E. 排期建议（先 3 件）**
+
+1. **`core/ClassReminderPlan.kt`：条目→fire 纯计算**（对齐 `class_reminder_service.dart:64-116`，含 30 分钟默认提前、requestCode 哈希、排序与过滤）。
+   改：新增 1 文件 + `pages/timetable` 测试；无需 manifest/store 改动。授权：提醒域认领（与既有 `ClassAlarmPlanTest` 同规格）。
+2. **设置键 `classReminders` + 六份 ARB**（读侧 lenient + copyWith；先只读不写 UI）。
+   改：`app/TimetableSettingsModel.kt`（`OWNED_KEYS` 扩容）、`lib/l10n/app_*.arb` ×6 对应 Kotlin 字符串表。授权：设置模型线（该文件本批禁碰，需 Lead 指派）。
+3. **Kotlin 自驱 reconcile 接线**：仓储快照变更 → `ClassReminderPlan.buildFires` → 复用 `ExamReminderScheduler.reconcile`（通道/权限已就绪，不新增 manifest）。
+   改：`TimetableRepository` 增加一个 reconcile 出口或壳侧 `LaunchedEffect` 监听快照；涉及禁碰文件，需 store/壳线授权。幂等：全量重建 + 快照持久化；失败：保留旧快照，下次变更/开机重试。
+
+**未触碰**：本批零生产代码改动；未读 `theme/`、壳 Activity 细节、`lib/ui/`。
+
+
 
 
 
