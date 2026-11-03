@@ -1,6 +1,7 @@
 package com.mutx163.qingyu.pages.timetable
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -116,5 +117,24 @@ class HomeViewExpandMotionTest {
         assertEquals(420, homeViewExpandDurationMillis(0.1))
         assertEquals(84, homeViewExpandDurationMillis(2.5))
         assertEquals(84, homeViewExpandDurationMillis(9.0))
+    }
+
+    @Test
+    fun `减少动画判据_缩放归零即降级`() {
+        // 系统关动画 = ANIMATOR_DURATION_SCALE == 0（Flutter disableAnimations 的 Android 等价）。
+        assertTrue(homeViewExpandReducedMotion(0f))
+    }
+
+    @Test
+    fun `减少动画判据_正常缩放不降级`() {
+        assertFalse(homeViewExpandReducedMotion(1f)) // 系统默认
+        assertFalse(homeViewExpandReducedMotion(0.5f)) // 用户在开发者选项调慢（仍是动画，不降级）
+        assertFalse(homeViewExpandReducedMotion(2.5f)) // 调快同理
+    }
+
+    @Test
+    fun `减少动画判据_负数按不播动画处理`() {
+        // 现实不会出现，但判据必须站在「不开动画」那一边（漏判降级比多判更伤用户）。
+        assertTrue(homeViewExpandReducedMotion(-1f))
     }
 }

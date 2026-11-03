@@ -85,3 +85,21 @@ fun homeViewExpandDurationMillis(speed: Double): Int {
     val clamped = speed.coerceIn(0.5, 2.5)
     return (210.0 / clamped).roundToInt().coerceAtLeast(1)
 }
+
+/**
+ * 「减少动画」降级判据（2026-11-03 补齐，此前 Flutter 有、Compose 迁移漏了）。
+ *
+ * 对齐 Flutter `DayViewExpandMotion.reduceMotion`
+ * （`lib/ui/hyperos/day_view_expand_motion.dart:92-102`）与它的展开/收起两个落定分支
+ * （同文件 `expand`/`collapse`，:128-149）：系统开启「减少动画」时**不播逐帧形变**，
+ * 展开直接落到 1、收起直接落到 0。理由不是省算力——开这个开关的用户（前庭功能障碍）
+ * 对任何逐帧运动都敏感，「短一点的动画」也还是动画。
+ *
+ * 系统来源：Flutter 读 `MediaQuery.disableAnimations`；Android 上同一开关的系统表达
+ * 是「动画时长缩放」归零（`Settings.Global.ANIMATOR_DURATION_SCALE == 0`，开发者选项里
+ * 三个动画缩放一起关时的那一份）。判据取值放这里保持纯函数（JVM 可测），Android 侧的
+ * 实际读取在渲染层薄适配（`TimetableWeekPage` 读完传进来），本文件不 import android。
+ *
+ * `scale < 0` 现实中不存在，但按「不开动画」处理（与 `<= 0` 同一边），测试钉住这一边。
+ */
+fun homeViewExpandReducedMotion(animatorDurationScale: Float): Boolean = animatorDurationScale <= 0f

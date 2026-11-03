@@ -3,6 +3,7 @@ package com.mutx163.qingyu.pages.timetable
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -308,6 +309,23 @@ fun TimetableWeekPage(
     val dayExpand = remember { Animatable(dayProgressSeed.coerceIn(0f, 1f)) }
     val dayExpandEasing = remember { CubicBezierEasing(0.25f, 0f, 0.75f, 1f) }
     val dayExpandDuration = homeViewExpandDurationMillis(transitionSpeed)
+    // ── 「减少动画」降级（2026-11-03 补齐，对齐 Flutter DayViewExpandMotion.expand/collapse）──
+    // 系统把「动画时长缩放」归零时，展开/收起都**不播逐帧形变**：直接 snap 到目标值。
+    // 判据是纯函数（[homeViewExpandReducedMotion]，JVM 单测在 HomeViewExpandMotionTest），
+    // 这里只是 Android 取值的薄适配。系统设置进程内不广播，remember 一次即可
+    // （Flutter 的 MediaQuery 同样只在配置变化时刷新，行为一致）。
+    // `LocalContext.current` 是 composable 调用，必须在 remember 外取（calculation
+    // 标了 @DisallowComposableCalls），context 作 key 只是为了调用结构正确。
+    val resolverContext = LocalContext.current
+    val dayExpandReducedMotion = remember(resolverContext) {
+        homeViewExpandReducedMotion(
+            Settings.Global.getFloat(
+                resolverContext.contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f,
+            ),
+        )
+    }
     // 收起动画还没走完时，展开层必须继续留在树上（否则会看到日视图瞬间消失再收回）。
     // `closing` 只在动画起止各改一次：若直接用 `dayExpand.value > 0` 判断可见性，
     // 进度每帧变化都会让整页重组一次（几何已经走 layout 阶段的逐帧读，见下方窗口）。
@@ -318,10 +336,18 @@ fun TimetableWeekPage(
         } else if (dayExpand.value > 0f) {
             closing = true
         }
-        dayExpand.animateTo(
-            targetValue = if (dayMode) 1f else 0f,
-            animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
-        )
+        val expandTarget = if (dayMode) 1f else 0f
+        if (dayExpandReducedMotion) {
+            // 降级：两个方向都直接落定（Dart `controller.value = 1/0` 同口径）。
+            // snap 后 value 恰为 1.0/0.0，下方的落定判据（dayVisible + `value < 0.999f`
+            // 才画周网格）当帧即成立——不存在「已落定但真面板还没接管」的中间帧。
+            dayExpand.snapTo(expandTarget)
+        } else {
+            dayExpand.animateTo(
+                targetValue = expandTarget,
+                animationSpec = tween(durationMillis = dayExpandDuration, easing = dayExpandEasing),
+            )
+        }
         if (!dayMode) closing = false
     }
     val dayVisible = dayMode || closing
