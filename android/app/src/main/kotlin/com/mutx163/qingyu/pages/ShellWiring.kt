@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.mutx163.qingyu.app.CourseActionDispatcher
 import com.mutx163.qingyu.app.KeyValueStore
+import com.mutx163.qingyu.app.NativePrefReconcileLogic
+import com.mutx163.qingyu.app.PrefReconcilePort
 import com.mutx163.qingyu.app.ScheduleEditDispatcher
 import com.mutx163.qingyu.app.TimetableHost
 import com.mutx163.qingyu.app.TimetableRepository
@@ -126,10 +128,15 @@ class ShellWiring(context: Context) {
     }
 
     private fun reconcileNativePrefsFromSettings() {
-        val settings = timetableStore.loadSettingsJson()
-        (settings["weeklyReportEnabled"] as? Boolean)?.let { enabled ->
-            if (WeeklyReportScheduler.isEnabled(context) != enabled) {
-                if (enabled) {
+        // 判断全在 `NativePrefReconcileLogic`（纯 Kotlin，L0 直测）；这里只做
+        // 「读值 → 调决策 → 执行副作用」三件事。
+        NativePrefReconcileLogic.reconcile(
+            settings = timetableStore.loadSettingsJson(),
+            port = object : PrefReconcilePort {
+                override fun weeklyReportEnabled(): Boolean =
+                    WeeklyReportScheduler.isEnabled(context)
+
+                override fun scheduleWeeklyReport() {
                     val snapshot = timetable.snapshot
                     WeeklyReportScheduler.scheduleNext(
                         context = context,
@@ -142,17 +149,24 @@ class ShellWiring(context: Context) {
                             semesterWeekCount = snapshot.settings.semesterWeekCount,
                         ),
                     )
-                } else {
+                }
+
+                override fun cancelWeeklyReport() {
                     WeeklyReportScheduler.cancel(context)
                 }
-            }
-        }
-        // 键名与 `pages/ShellPageIndex.kt` 的 keepAlive 落点、`LiveUpdateService` 同源；
-        // 此处的写入是「恢复备份后把设置真正应用到运行时」的那一步。
-        (settings["liveHideFromRecents"] as? Boolean)?.let { hidden ->
-            context.getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
-                .edit().putBoolean("hide_from_recents", hidden).apply()
-        }
+
+                // 键名与 `pages/ShellPageIndex.kt` 的 keepAlive 落点、`LiveUpdateService` 同源；
+                // 此处的写入是「恢复备份后把设置真正应用到运行时」的那一步。
+                override fun liveHideFromRecents(): Boolean =
+                    context.getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
+                        .getBoolean("hide_from_recents", false)
+
+                override fun writeLiveHideFromRecents(value: Boolean) {
+                    context.getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
+                        .edit().putBoolean("hide_from_recents", value).apply()
+                }
+            },
+        )
     }
 
     /**
