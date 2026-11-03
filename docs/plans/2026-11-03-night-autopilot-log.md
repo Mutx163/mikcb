@@ -785,10 +785,14 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 | **`5289c6da`** | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **02:13:05→02:27:44** | **14m00s（Gradle）/ 14m39s 墙钟** | A+B 迁移（`e57607b5`）+ 13 文件类型对齐（`6a6ab1b8`）+ ICS 死副本删除后的首次全量主源集编译；仅既有 warning |
 | `df1a9873` | 门 1 `:app:compileDevDebugKotlin` | ✅ **绿（exit=0）** | **02:28:53→02:42:32** | **13m24s（Gradle）/ 13m39s 墙钟** | 删单次课改动增量编译通过；**此绿只代言 `df1a9873`**——HEAD 此后推进到 `0f99dee1`（`bd2af39f`/`a1d2b48b`/`0f99dee1` 均动主源集），见「有效结论口径」 |
 | **`df1a9873`** | 门 2 `:app:testDevDebugUnitTest` | ❌ **红（exit=1）** | **02:45:08→02:58:12** | **12m12s（Gradle）/ 13m04s 墙钟** | **6538 tests / 6 failed**：①`CjkLiteralGateTest:151` → `IcsImportModel.kt` 1→16 条（**批准例外未落地**：常量文件未抽出、基线未登记）；②`WarehouseCourseWriteBackTest` ×5（`:223`/`:291`/`:311`/`:328`/`:439`）→ 详见下方「两类红定性」。 |
-| `0f99dee1` | 门 1 `:app:compileDevDebugKotlin` | ⏳ **跑中** | — | — | 主源集有变（`ShellPageIndex` 例外科改、`AddCourseFormModel`、`NativePrefReconcileLogic` 新增 + `ShellWiring`），必须重跑；数字回填于本节末尾 |
-| `0f99dee1` | 门 2 `:app:testDevDebugUnitTest` | ⛔ **暂不跑（有已知红）** | — | — | 两类红的修复仍在**工作区未提交**（CJK 常量文件 + warehouse 夹具），提交前跑门 2 只会复现同 6 例；**待修复提交后一次性重跑门 1 → 门 2** |
+| **`d68e2b88`** | 门 1 `:app:compileDevDebugKotlin` | ❌ **红（exit=1）** | **03:17:15→03:22:08** | **4m48s（Gradle）/ 4m53s 墙钟** | **真实编译错误（非未跑）**：`pages/ShellWiring.kt` **6 条 error**——`:31` 把 `WeeklyReportScheduleLogic` 从**错包名** `com.mutx163.qingyu.WeeklyReportScheduleLogic` 导入（真实位置 `app/`），另缺 `java.time.LocalDateTime` import（`:144-146` 连带）。**已派该文件归属线修**（工作区已见 diff：改 `.app.` + 补 import）。 |
+| **`d68e2b88`** | 门 2 `:app:testDevDebugUnitTest` | ⛔ **未跑 · 阻塞因=门1 红（`ShellWiring.kt` 导入，6 error）** | **03:22:08（决定不跑）**，HEAD=`d68e2b88` | — | **门 1 转绿后的第一件事就是跑门 2**，不许再挂。另：`a1933aa8`（CJK 常量外提）、`38018912`（warehouse 夹具随单一真源迁移）两笔已修此前的 6 例红，复跑时应归零。 |
 
-**有效结论口径（2026-11-04 03:2x 定稿）**：**门 2 已跑，不是「未跑」**——最近一次跑在 `df1a9873`（02:45:08→02:58:12，Gradle 12m12s / 墙钟 13m04s，exit=1，**6538 tests / 6 failed**）；该 HEAD 的门 1 亦实测绿（02:28:53→02:42:32，Gradle 13m24s / 墙钟 13m39s）。**但 HEAD 已推进到 `0f99dee1`（新三笔均动主源集），旧结论不代言新 HEAD**；`0f99dee1` 门 1 重跑中，门 2 待两类红修复提交后一次性重跑。**期间不声明「两门全绿」。**
+**有效结论口径（2026-11-04 03:22 定稿）**：
+- **门 2 曾实跑（不是从未跑）**：最近一次在 `df1a9873`（02:45:08→02:58:12，Gradle 12m12s / 墙钟 13m04s，exit=1，**6538 tests / 6 failed**），该 HEAD 门 1 绿（02:28:53→02:42:32）。
+- **当前门 1 红 `d68e2b88`**（03:17:15→03:22:08，Gradle 4m48s / 墙钟 4m53s，exit=1）：`ShellWiring.kt` 错包名导入 + 缺 `LocalDateTime`，6 条 error 全在该文件；**门 2 因此未跑**（阻塞因已写进表）。
+- **门 1 转绿后的第一件事跑门 2**；此前 6 例红中 CJK（`a1933aa8`）与 warehouse 夹具（`38018912`）两笔已修，复跑应归零。
+- **期间不声明「两门全绿」。**
 
 - `5289c6da` 门 1 ✅ 绿（02:13:05→02:27:44，Gradle 14m00s / 墙钟 14m39s，exit=0）——A+B 迁移后的首次全量主源集编译。
 - `df1a9873` 门 1 ✅ 绿 / 门 2 ❌ 红（数字同上）。
@@ -903,8 +907,11 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 ### 10.22 ✅ 授权例外科改落地 + 表单钟点 + 启动对账收敛（`bd2af39f` / `a1d2b48b` / `0f99dee1`）
 
 1. **`bd2af39f` 例外科改落地（授权范围内）**：`ShellPageIndex.kt` **只加两处**——`onWeeklyReportToggle`（`:1574-1576`）与 `onPersistHideFromRecents`（`:2051-2053`），各追加一行 `writeRawSettingsPatch`；**未改布局/主题/路由/页面装配**。同笔 `ShellWiring.kt` +46 行 = 启动时 settings→native pref 单向对账（对应裁决「`weeklyReportEnabled`、`liveHideFromRecents` 走启动对账」）。
-2. **`a1d2b48b` 表单钟点（backlog 第一处）**：`AddCourseEntryClock` 新增 `hasCustomTime`（默认 `false`），`buildSavePayload` 透传给 `toCourse`（Dart `add_course_screen.dart:2022-2039`）；补两用例（自定义时间课保存后仍 `true`、非自定义课不为 `true`）。**该 backlog 项不能划掉**：第二处 `ShellPageIndex.kt:997-1008` 的 `clockResolver` 仍在**工作区未提交**（已见 diff：改用 `CourseDomain.editCourseClock(...)` 回传布尔，属授权 lambda 范围）。
-3. **`0f99dee1` 启动对账收敛**：把 `bd2af39f` 的启动回写抽成纯决策层 `app/NativePrefReconcileLogic.kt`（+137）+ `ShellWiring` 40 行接线 + 212 行单测。**三笔均动主源集**，故 `df1a9873` 的门结论不代言 `0f99dee1`。
+2. **`a1d2b48b` 表单钟点（backlog 第一处）**：`AddCourseEntryClock` 新增 `hasCustomTime`（默认 `false`），`buildSavePayload` 透传给 `toCourse`（Dart `add_course_screen.dart:2022-2039`）；补两用例（自定义时间课保存后仍 `true`、非自定义课不为 `true`）。
+3. **`f902bba1` 表单钟点第二处 → backlog 该项可划掉**：`ShellPageIndex.kt` 的 `clockResolver` 改走 `CourseDomain.editCourseClock`，回传**真实 start/end + `hasCustomTime`**（编辑既有课且原文自定义、节次未变时，模板不覆盖适配脚本钉住的钟点）；属 Lead 授权的**仅该 lambda** 例外科改。L0：`course` **232 例** / `timetable` **284 例**，均 exit 0。
+4. **`0f99dee1` 启动对账收敛**：把 `bd2af39f` 的启动回写抽成纯决策层 `app/NativePrefReconcileLogic.kt`（+137）+ `ShellWiring` 40 行接线 + 212 行单测。**`bd2af39f`/`a1d2b48b`/`0f99dee1` 三笔均动主源集**，故 `df1a9873` 的门结论不代言其后 HEAD。
+5. **`d68e2b88` platform 端口搬出 + `maybePullRemote` 评估**：详见 **§10.23**（`CloudSyncPorts.kt` 零 Android 依赖，L0 1887 例 + `pages/sync` 353 例；`maybePullRemote` 结论「**不接**：4 个缺口 + 约 10 行壳文件需授权」）。**本条只补交叉引用，不重复。**
+6. **🔑 新授权 · 天气门槛（周/日卡对齐 Dart）**：周卡/日卡的天气显示要按 **`isActiveInWeek(week)`** 判是否属于当前周（Dart `timetable_home_page_assembly.dart:456`、`day_view_course_agenda_card_variants.dart:166-169`）。**授权范围仅三处**：`composeP1/app/TimetableHost.kt` 挂载处、`pages/timetable/day/DayViewWeather.kt`、`ShellPageIndex.kt` 的 weather lambda 那几行；**其余文件不动**，不得借机改布局/主题/路由。
 
 ### 10.23 ✅ platform 端口搬出（`d68e2b88`，3 文件）+ `maybePullRemote` 评估
 
