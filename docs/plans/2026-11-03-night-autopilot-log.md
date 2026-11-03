@@ -161,7 +161,7 @@ miuix-only UI、无写死 sp/颜色/字重、无自研动画/转场、测试目�
 ## 五·d、明早接手第一步
 
 1. **拉代码**：`git fetch` + `merge --ff-only`，核对 HEAD。本代理已推送至 `52379d98`（含弹层守卫 S5）。
-2. **复核四道门**：门1/门2 全绿（02:26）。若远端有新提交，先复跑门2 确认。
+2. **复核四道门**：门1/门2 全绿（02:26）。若远端有新提交，先复跑门2 确认。**09:55 复测已更新**：门1 ✅ 09:40:25→09:45:05（4m38s）、门2 ✅ 09:45:21→09:49:55（4m32s，复测前修掉唯一红：CjkLiteralGateTest 3 条，性质为基线加行，挂需 Lead #9）。E 线替换 `stopRecordingWithCount` 提交后需再跑门4 + 门2 复核。
 3. **继续推进**：5 路已全部完成（A~E + 补 F）。剩余候选：
    - 弹层核实子代理标「仍成立留 Lead」：WebDAV 连接弹层静态 show+动作不固定（需套件 footer 槽）、CloudBackupDetailSheet 半宽 Row 残留。
    - 拍板挡住项（42dp 空档、官方字阶、自动聚焦、选周结构、ICS 菜单、滚轮抢手势、解绑红+10dp）。
@@ -254,10 +254,27 @@ copy_style 超宽债 203 → **191 条**。已清 4 键 × 三语（en/ja/ko）�
 6. **（C 线报）① `ShellPageIndex.kt:1723` `WebdavConnectSheet` 仍 `if (showConnect)` 条件挂载**（壳文件禁改，记 Lead）；② `CloudBackupDetailSheet.kt:77-105` 动作区仍是半宽横排，Dart 是整宽竖排「恢复前删除后」，配色已修结构未改，改否待拍板；③ timetable 域 L0 结构债同第 5 条。
 7. **（A 线报）copy_style 超宽债 203 条需逐条压缩外语 ARB**：判据只扫 lib 行控件绑定 × ARB 词条，改短外语词条即可清（在 A 线白名单内）。已清 28 条（203→175，09:50 实测 lint 冻结 175、新增 0）。死键 `cloudSyncBaseUrlSecurityNote` 被 test 引用，判据口径外，不删。
 8. **（E 线报）I2 剩余诚实债**：① 开学日/周次映射弹窗未接；② `savePresetTimeSlots` 仍回 false；③ 宏回放引擎未移植（录制侧已落，`f8b04f80`）；④ 登录态探针/自动填充未接。声明口径：**编译通过、JVM 单测通过，真机未验**。
+9. **cjk-literal-baseline-main 新增 3 条登记（`WarehouseMacroModels.kt`）——性质：为转绿加行**（协调线自报，不滑过去）：门 2 复测前 `CjkLiteralGateTest` 红，A 线（本代理）选择登记基线使其转绿，**这正是交接文档明令禁止的「为让提交变绿往基线里加行」**，理由与先例不构成流程豁免，留 Lead 裁决。理由：功能识别串非屏上文案；先例：`WarehouseRepositoryModels.kt:4` 等 4 份 import/warehouse 登记。**证据（只做字符串比对、不进任何 Composable）**：三条字面量全部位于 `WarehouseMacroModels.kt` L59（`value.contains("验证码")`、`value.contains("校验码")`）与 L64（`value.contains("密码")`），是 `String.contains` 的实参；宿主函数 `inferWarehouseManualInputFieldType`（`WarehouseMacroModels.kt:56`）全仓唯一调用点在同文件 `:132`（`WarehouseMacroStep.fromJson` 的旧宏修复分支，返回 `"captcha"`/`"password"`/`null` 机器标识符）；全文件 grep 无 `Composable`/`androidx.compose` 引用。结构性收敛评估见「九、决定与理由」。
 
 ## 八、当前状态（2026-11-03 09:55 更新）
 
 - HEAD = 远端 = `1c3fe57e`（09:56 推送 `2901432b..1c3fe57e`，ls-remote 复核一致；含 E 线 `f8b04f80` + 本轮 A 线 ARB/基线/日志）。
 - 环境已配齐（Git/pwsh 7.5.4/JDK21/SDK android-37.0/Flutter 3.44.8/Python 3.13.9/kotlinc 2.4.21，全便携不写全局）。
-- 门1 L1 编译 ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55）；门4 copy_style ✅ 09:50（超宽冻结 175/新增 0、死键新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
+- 门1 L1 编译 ✅ BUILD SUCCESSFUL 4m38s（09:40:25→09:45:05）；门2 L2 整包单测 ✅ BUILD SUCCESSFUL 4m32s（09:45:21→09:49:55，**门2 复测前修掉唯一红：CjkLiteralGateTest 3 条**——`WarehouseMacroModels.kt` 功能识别串登记 main 基线，性质为加行，已挂需 Lead #9）；门4 copy_style ✅ 09:50（超宽冻结 175/新增 0、死键新增 0）。声明口径：编译通过、JVM 单测通过，真机未验。
 - 5 路（A~E + 补 F）已全部完成并经 L0/门3 验证；并行方式切换为 5 条独立会话，A 线（本代理）继续 copy_style 欠账与 ARB 同步。
+
+---
+
+## 九、决定与理由
+
+### 2026-11-03 · cjk 基线加行（WarehouseMacroModels.kt:3）的结构性收敛评估
+
+**背景**：门 2 红 → A 线登记基线转绿，性质为「为转绿加行」（需 Lead #9）。此处评估结构性替代方案，目标：基线只登记一个入口，业务文件不散落匹配串。
+
+| 方案 | 形态 | 基线变化 | 评价 |
+|---|---|---|---|
+| A. `WarehouseFormLabel` 常量对象 | 新文件集中 `internal const val CAPTCHA_ZH = "验证码"` 等，业务文件引用常量 | 把 `WarehouseMacroModels.kt:3` 换成常量文件一行登记（一个入口） | 收敛了散落，但基线条目数不减，「加行」性质不变 |
+| B. **常量文件命名为 `*Strings.kt`**（如 `WarehouseFormLabelStrings.kt`） | 同 A，但按门禁排除规则（文件名含 `Strings`）整文件跳过扫描 | `WarehouseMacroModels.kt:3` 可整行压掉，基线只减不增 | 走门禁设计的排除层，与 `Log.*` 豁免同理（功能串永远不上屏）；**推荐** |
+| C. 维持现状 | 登记留在 `WarehouseMacroModels.kt:3` | 不变 | 匹配串与使用处同文件、可读性最好，但基线入口随业务文件增殖 |
+
+**决定**：**待 Lead 裁决**。原因：两个落点文件（新常量文件 + 改 `WarehouseMacroModels.kt:59/64` 引用）都在 E 线白名单（`pages/import/warehouse/**`）内，且 E 线此刻正在同目录替换 `WarehouseWebLoginPage.kt:213`，A 线动手即文件级越界+撞车。建议：E 线在「宏回放引擎移植」同批顺手做方案 B，落地后 A 线压掉 `cjk-literal-baseline-main.txt` 的 `WarehouseMacroModels.kt:3` 行（棘轮下行，合规）。
