@@ -146,13 +146,27 @@ fun WarehouseWebLoginHost(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val school = state.school
-    val adapter = state.adapter
+    // 壳给每个路由条目单独 `remember { WarehouseShellState() }`（条目彼此是独立组合作用域），
+    // 所以上一页写进 state 的学校和适配器到不了这一页。来源页点按钮时已
+    // [WarehouseImportHandoff.publish]，这里首次组合取走（取走即清）。
+    val handoff = remember { WarehouseImportHandoff.take() }
+    val school = state.school ?: handoff?.school
+    val adapter = state.adapter ?: handoff?.adapter
 
     if (school == null || adapter == null) {
-        // 直接从页面清单点进来时没有暂存：退回选校页，而不是拿演示学校凑合。
-        LaunchedEffect(Unit) { onOpenPage(WarehouseRoutes.IMPORT_PICKER) }
+        // 拿不到目标（只可能从页面清单直接点进来）：给一句实话 + 返回键，
+        // **不再静默退回选校页**——用户实报的「点网页导入，回答学校列表页面」就是那一下静默跳转。
+        LaunchedEffect(Unit) { Log.w(LOG_TAG, "webLogin opened without school/adapter") }
+        WarehouseNoTargetPage(WarehouseStrings.webLoginImport.zh, onBack)
         return
+    }
+
+    // 交接件落进本页状态：宏的「自动录制 / 待回放」各自只消费一次（与页内路径同一套消费逻辑）。
+    LaunchedEffect(Unit) {
+        if (state.school == null) state.school = school
+        if (state.adapter == null) state.adapter = adapter
+        if (handoff?.autoRecordMacro == true) state.autoRecordMacro = true
+        if (handoff?.playbackMacro != null) state.playbackMacro = handoff.playbackMacro
     }
 
     val customUrl = prefs.customImportUrl(adapter.id)
@@ -1491,6 +1505,41 @@ private fun WarehouseWebLoginMissingUrlPage(onBack: () -> Unit) {
                 ) {
                     Text(
                         text = WarehouseStrings.noValidWarehouseLoginUrl.zh,
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 宿主拿不到「学校 / 适配器」时的诚实空态（只可能从页面清单直接点进来）。
+ *
+ * 为什么不跳回选校页：用户实报「点网页导入，回答学校列表页面」——静默跳转既不解释、
+ * 又像点错了地方。这里留在原页，给一句「该去哪选」+ 返回键，行为可预期。
+ * 文案复用既有键（`warehouseSchoolTapHint`），不新增 ARB。
+ */
+@Composable
+internal fun WarehouseNoTargetPage(title: String, onBack: () -> Unit) {
+    QingyuPageScaffold(
+        title = title,
+        onBack = onBack,
+    ) {
+        QingyuPageList(
+            innerPadding = innerPadding,
+            scrollBehavior = scrollBehavior,
+        ) {
+            item(key = "no-target") {
+                QingyuCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingyuPageCardMargin, vertical = 12.dp),
+                    insideMargin = QingyuCardDefaults.ContentInsideMargin,
+                ) {
+                    Text(
+                        text = WarehouseStrings.warehouseSchoolTapHint.zh,
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

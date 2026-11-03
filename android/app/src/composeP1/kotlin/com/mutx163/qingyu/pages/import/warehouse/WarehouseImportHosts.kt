@@ -71,11 +71,15 @@ internal object WarehouseRoutes {
 }
 
 /**
- * 三个仓库页之间的暂存：壳里 `remember { WarehouseShellState() }`，挂在 `when (pageId)` 之上。
+ * 三个仓库页之间的**页内**暂存（学校 / 适配器 / 待录制·待回放意图）。
  *
- * 与 `ImportShellBridge` 同一个做法（壳的导航只有 `onOpenPage(pageId)`，**不带参数**）：
- * 选中哪所学校、哪个适配器放在这里，下一页从这取。切页不丢，退出壳就丢——与 Dart 的
- * 「页面间传对象」体验一致，也不落盘（这两项本来就不该进存档）。
+ * ⚠️ 它**不会自动跨页**：壳里是 `remember { WarehouseShellState() }`，而 `ShellPageContent`
+ * 是**每个路由条目各组合一次**（miuix-nav 的条目彼此是独立组合作用域），所以推新页
+ * 拿到的是全新实例。跨页要用的目标必须经 [WarehouseImportHandoff] 交接——
+ * 2026-11-03 真机实报「点网页导入被打回学校列表」就是漏了这一步（详见该对象的注释）。
+ *
+ * 与 `ImportShellBridge` 同一个做法：壳的导航只有 `onOpenPage(pageId)`、**不带参数**，
+ * 选中的对象不落盘（这两项本来就不该进存档）。
  */
 class WarehouseShellState {
     var school by mutableStateOf<WarehouseSchoolEntry?>(null)
@@ -149,19 +153,23 @@ fun WarehouseImportPickerHost(
 
     /** 把选中的宏接到跨页暂存并进登录页回放（学校/适配器对象由宏记录构造最小真数据）。 */
     fun startQuickImport(record: WarehouseMacroRecord) {
-        state.school = WarehouseSchoolEntry(
+        val school = WarehouseSchoolEntry(
             id = record.schoolId,
             name = record.schoolName,
             resourceFolder = record.schoolResourceFolder,
         )
-        state.adapter = WarehouseAdapterEntry(
+        val adapter = WarehouseAdapterEntry(
             id = record.adapterId,
             name = record.adapterName,
             script = record.adapterAssetJsPath,
             importUrl = record.importUrl,
         )
+        state.school = school
+        state.adapter = adapter
         state.autoRecordMacro = false
         state.playbackMacro = record
+        // 跨页唯一通路：壳给每个路由条目独立的 WarehouseShellState（见 WarehouseImportHandoff）。
+        WarehouseImportHandoff.publish(school, adapter, playbackMacro = record)
         onOpenPage(WarehouseRoutes.WEB_LOGIN)
     }
 
@@ -277,21 +285,28 @@ fun WarehouseSchoolAdaptersHost(
             // 「网页登录导入」= 去登录页（Dart 同名按钮的语义）。
             // 首次导入（该适配器还没存过宏）自动开始录制——对齐 Dart
             // `shouldAutoRecordWarehouseImport(forceRecord = false, hasExistingMacro)`。
-            state.adapter = adapter
-            state.autoRecordMacro = shouldAutoRecordWarehouseImport(
+            val autoRecord = shouldAutoRecordWarehouseImport(
                 forceRecord = false,
                 hasExistingMacro = macroMap[adapter.id] ?: false,
             )
+            state.adapter = adapter
+            state.autoRecordMacro = autoRecord
+            state.playbackMacro = null
+            // 目标页拿到的是新实例：选择必须经交接件带过去，否则登录页见 null 会退回选校页。
+            WarehouseImportHandoff.publish(school, adapter, autoRecordMacro = autoRecord)
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
         onViewAdapterDetail = { adapter ->
             state.adapter = adapter
+            WarehouseImportHandoff.publish(school, adapter)
             onOpenPage(WarehouseRoutes.DETAIL)
         },
         onRecordAdapter = { adapter ->
             // 「录制导入」（P1 起可用）：显式录制，无论有没有已存宏（Dart autoRecord: true 恒真）。
             state.adapter = adapter
             state.autoRecordMacro = true
+            state.playbackMacro = null
+            WarehouseImportHandoff.publish(school, adapter, autoRecordMacro = true)
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
         onQuickImportAdapter = { adapter ->
@@ -307,6 +322,7 @@ fun WarehouseSchoolAdaptersHost(
                     state.adapter = adapter
                     state.autoRecordMacro = false
                     state.playbackMacro = record
+                    WarehouseImportHandoff.publish(school, adapter, playbackMacro = record)
                     onOpenPage(WarehouseRoutes.WEB_LOGIN)
                 }
             }
@@ -323,10 +339,15 @@ fun WarehouseAdapterDetailHost(
     onOpenPage: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val school = state.school
-    val adapter = state.adapter
+    // 壳给每页的是独立实例：目标经交接件带过来（见 [WarehouseImportHandoff]）。
+    val handoff = remember { WarehouseImportHandoff.take() }
+    val school = state.school ?: handoff?.school
+    val adapter = state.adapter ?: handoff?.adapter
     if (school == null || adapter == null) {
-        LaunchedEffect(Unit) { onOpenPage(WarehouseRoutes.IMPORT_PICKER) }
+        // 拿不到目标（只可能从页面清单直接点进来）：如实说一句 + 给返回键，
+        // **不再静默跳回选校页**——「点进来又被打回列表」正是那一下静默跳转造成的。
+        LaunchedEffect(Unit) { Log.w(LOG_TAG, "adapter detail opened without school/adapter") }
+        WarehouseNoTargetPage(WarehouseStrings.adapterInfoTitle.zh, onBack)
         return
     }
 
@@ -370,6 +391,7 @@ fun WarehouseAdapterDetailHost(
         },
         onOpenWebLogin = {
             state.adapter = adapter
+            WarehouseImportHandoff.publish(school, adapter)
             onOpenPage(WarehouseRoutes.WEB_LOGIN)
         },
     )
