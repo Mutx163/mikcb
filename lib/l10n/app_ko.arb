@@ -362,6 +362,7 @@
   },
   "moreActionsTooltip": "더 많은 작업",
   "switchToThisTimetable": "이 시간표로 전환",
+  "timetableProfileActiveBadge": "활성",
   "renameAction": "이름 변경",
   "duplicateAction": "복사",
   "clearCoursesAction": "수업 비우기",

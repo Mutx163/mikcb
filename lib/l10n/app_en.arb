@@ -485,6 +485,7 @@
   },
   "moreActionsTooltip": "More Actions",
   "switchToThisTimetable": "Switch to this timetable",
+  "timetableProfileActiveBadge": "Active",
   "renameAction": "Rename",
   "duplicateAction": "Duplicate",
   "clearCoursesAction": "Clear Courses",

@@ -361,6 +361,7 @@
   },
   "moreActionsTooltip": "更多操作",
   "switchToThisTimetable": "切換到此課表",
+  "timetableProfileActiveBadge": "已啟用",
   "renameAction": "重新命名",
   "duplicateAction": "複製",
   "clearCoursesAction": "清空課程",

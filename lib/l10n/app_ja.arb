@@ -362,6 +362,7 @@
   },
   "moreActionsTooltip": "その他の操作",
   "switchToThisTimetable": "この時間割に切替",
+  "timetableProfileActiveBadge": "有効",
   "renameAction": "名前変更",
   "duplicateAction": "複製",
   "clearCoursesAction": "授業をクリア",
