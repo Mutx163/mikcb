@@ -251,6 +251,8 @@ class FlutterAssetsDecouplingGuardTest {
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/ChangelogPage.kt",
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/OpenSourceLicensesHost.kt",
             "composeP1/kotlin/com/mutx163/qingyu/pages/about/AboutUpdatePage.kt",
+            // 2026-11-03 全仓前缀病扫描补：壳里的节假日读取（只读源码，不改该文件）。
+            "main/kotlin/com/mutx163/qingyu/pages/ShellWiring.kt",
         )
         for (relative in pages) {
             val text = pageSource(relative).readText()
@@ -288,6 +290,75 @@ class FlutterAssetsDecouplingGuardTest {
                 "IllegalArgumentException，进页即闪退）。改用 ic_launcher_background/foreground " +
                 "两层 PNG，见 AboutUpdatePage.AppIconBadge 注释",
             code.contains("applicationInfo.icon"),
+        )
+    }
+
+    // ---- 6. painterResource 资源类型对拍（2026-11-03 全仓扫描，同类闪退棘轮） ----
+
+    /** 源码里 `painterResource(id = R.<type>.<name>)` 的调用形态（先剥注释后匹配）。 */
+    private val painterResourceCall = Regex("""painterResource\s*\(\s*id\s*=\s*R\.(\w+)\.(\w+)""")
+
+    /**
+     * 把每一处 `painterResource` 的资源常量反查到 res 目录里的**真实文件**：
+     * 本仓 classpath 的 compose ui 1.12 只认 `<vector>` XML 与位图；adaptive-icon /
+     * layer-list / selector / shape XML 会直接抛 IllegalArgumentException
+     * （2026-11-03「进版本更新页闪退」的根因类，详见 AboutUpdatePage.AppIconBadge 注释）。
+     * 全仓 6 处调用（about/settings/statistics 各两层 PNG）已核为位图——本守卫把它们
+     * 与「以后任何人新加的调用」一起钉住：喂 XML 非 vector 资源就红。
+     */
+    @Test
+    fun `painterResource targets resolve to vector xml or bitmaps never other xml types`() {
+        val resDir = File(repoRoot(), "android/app/src/main/res")
+        val srcRoots = listOf(
+            File(repoRoot(), "android/app/src/composeP1/kotlin"),
+            File(repoRoot(), "android/app/src/main/kotlin"),
+        )
+        val checked = LinkedHashMap<String, Int>()
+        val offenders = mutableListOf<String>()
+        for (root in srcRoots) {
+            val sources = root.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+            for (f in sources) {
+                val code = stripKotlinComments(f.readText())
+                for (m in painterResourceCall.findAll(code)) {
+                    val type = m.groupValues[1]
+                    val name = m.groupValues[2]
+                    val key = "R.$type.$name"
+                    checked[key] = (checked[key] ?: 0) + 1
+                    if (checked[key] != 1) continue // 同一资源只反查一次
+                    // 资源目录形如 res/<type>-<限定符>/，如 mipmap-anydpi-v26 / drawable-night。
+                    val dirs = resDir.listFiles { d -> d.isDirectory }?.filter {
+                        it.name == type || it.name.startsWith("$type-")
+                    }.orEmpty()
+                    val files = dirs.flatMap { d ->
+                        d.listFiles { x -> x.isFile && x.nameWithoutExtension == name }.orEmpty().toList()
+                    }
+                    if (files.isEmpty()) {
+                        offenders.add("$key 反查不到 res 文件（扫描器目录口径要修，见本测试）")
+                        continue
+                    }
+                    for (file in files.filter { it.extension == "xml" }) {
+                        val isVector = Regex("<vector[\\s>]").containsMatchIn(file.readText())
+                        if (!isVector) {
+                            offenders.add(
+                                "$key → res/${file.parentFile.name}/${file.name} 不是 <vector> XML" +
+                                    "（adaptive-icon / layer-list / selector / shape 喂给 " +
+                                    "painterResource 必抛 IllegalArgumentException），改用位图或两层 PNG",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(
+            "全仓 painterResource 调用反查数异常（现状：2 个位图资源 × 6 处调用 = " +
+                "about/settings/statistics 各两层 PNG）。实际资源 ${checked.keys}，" +
+                "调用 ${checked.values.sum()} 处",
+            checked.size >= 2 && checked.values.sum() >= 6,
+        )
+        assertTrue(
+            "painterResource 喂了非 <vector> 的 XML 资源（真机进页即闪退）：\n" +
+                offenders.joinToString("\n"),
+            offenders.isEmpty(),
         )
     }
 }
