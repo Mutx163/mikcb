@@ -64,6 +64,12 @@ object SettingsStrings {
     /** 确认键（ARB `confirmAction`；设置域的弹层按钮共用这一条）。 */
     val confirmAction = ArbText("confirmAction", "确认")
 
+    /**
+     * 选色弹窗标题（ARB `textColorSelectColor`；Dart `_showColorPicker` 同一条）。
+     * 课卡文字四行与课表页面设置六行共用的那个弹窗。
+     */
+    val textColorSelectColor = ArbText("textColorSelectColor", "选择颜色")
+
     // -------------------------------------------------------- 外观与配色页
 
     val appearanceTitle = ArbText("appearanceTitle", "外观与配色")

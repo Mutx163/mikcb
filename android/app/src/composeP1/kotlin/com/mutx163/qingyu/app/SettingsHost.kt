@@ -1,7 +1,6 @@
 package com.mutx163.qingyu.app
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -24,12 +22,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.components.QingyuSheet
-import com.mutx163.qingyu.components.QingyuSlider
 import com.mutx163.qingyu.components.QingyuWeightDelta
 import com.mutx163.qingyu.components.shiftWeight
 import com.mutx163.qingyu.pages.import.CourseAutoRefreshModel
@@ -68,6 +65,7 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -1018,10 +1016,19 @@ internal fun SettingsConfirmResetDialog(
 }
 
 /**
- * RGB 选色弹窗：三通道滑杆 + 实时预览 + 十六进制读数。
+ * 选色弹窗：官方 [ColorPicker] + 取消 / 确认（Dart `timetable_text_color_settings.dart:343-395`
+ * 的 `_showColorPicker` 同构：`showHyperosDialog(title, body: MiuixColorPicker, actions: …)`）。
  *
- * 容器是官方 `OverlayDialog`（2026-11-02 从自绘 `Box + 黑遮罩 + QingyuCard` 换过来）。
- * 不传 `title`：内容首行「RGB + 十六进制」就是标题，避免官方标题与它重复。
+ * **落盘节奏**：拖动中只改弹窗本地的色值，**确认才回调一次 [onConfirm]**（Dart 的
+ * `pickerColor` 局部变量 + 确认按钮取值同口径）；取消不产生任何写入。此前这里是一套
+ * 手拼的「RGB 三滑杆 + 色块预览 + 十六进制读数」，2026-11-03 换官方 `basic.ColorPicker`
+ * ——模型层（`MiuixRowComponent.COLOR_SWATCH`）本来就登记着「选色弹窗用官方 ColorPicker」，
+ * 官方件在（miuix-ui 0.9.4 的 `basic/ColorPicker.kt`），没理由自己画。
+ *
+ * 标题取 ARB 既有键 `textColorSelectColor`（Dart 弹窗标题同一条）。
+ *
+ * 常驻组合同 [SettingsConfirmResetDialog]：调用方关闭只清掉 pending 的编辑目标，
+ * `show` 驱动官方退场动画；退场期间用保留的最后一份初值继续渲染。
  */
 @Composable
 private fun SettingsColorPickerDialog(
@@ -1029,51 +1036,24 @@ private fun SettingsColorPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    // 弹窗常驻组合（同 [SettingsConfirmResetDialog]）：调用方关闭只清掉 pending 的
-    // 编辑目标，`show` 驱动官方退场动画；退场期间用保留的最后一份 hex 继续渲染
-    //（`parseHexRgb` 对空串按黑处理，首次组合时的占位不会出事）。
     var shownHex by remember { mutableStateOf(initialHex ?: "") }
     if (initialHex != null) shownHex = initialHex
-    val initial = remember(shownHex) { parseHexRgb(shownHex) }
-    var red by remember(shownHex) { mutableStateOf(initial[0]) }
-    var green by remember(shownHex) { mutableStateOf(initial[1]) }
-    var blue by remember(shownHex) { mutableStateOf(initial[2]) }
-    val hex = rgbToHex(red, green, blue)
+    // 拖动中的本地色：每次重新打开都按初值重置（`remember` 的初值只在首次组合算一次）。
+    var pickerColor by remember(shownHex) {
+        mutableStateOf(Color(SettingsRowRenderTable.tryParseArgb(shownHex) ?: 0xFF000000))
+    }
 
     OverlayDialog(
         show = initialHex != null,
+        title = SettingsStrings.textColorSelectColor.zh,
         onDismissRequest = onDismiss,
         insideMargin = DpSize(16.dp, 16.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 官方对话框不带 title 时，这一行「RGB + 十六进制」就是标题。
-                Text(
-                    text = "RGB",
-                    style = MiuixTheme.textStyles.title4
-                        .shiftWeight(QingyuWeightDelta.BOLD),
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = hex,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(red, green, blue)),
+            ColorPicker(
+                color = pickerColor,
+                onColorChanged = { pickerColor = it },
             )
-            ColorChannel("R", red) { red = it }
-            ColorChannel("G", green) { green = it }
-            ColorChannel("B", blue) { blue = it }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -1086,7 +1066,7 @@ private fun SettingsColorPickerDialog(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    onClick = { onConfirm(hex) },
+                    onClick = { onConfirm(pickerColor.toHexRgb()) },
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
@@ -1099,45 +1079,16 @@ private fun SettingsColorPickerDialog(
     }
 }
 
-@Composable
-private fun ColorChannel(label: String, value: Int, onChange: (Int) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.width(20.dp),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onBackground,
-        )
-        QingyuSlider(
-            value = value / 255f,
-            onValueChange = { onChange((it * 255f).toInt().coerceIn(0, 255)) },
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value.toString(),
-            modifier = Modifier.width(40.dp),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
-}
-
-/** `#RRGGBB` / `#AARRGGBB` → [r, g, b]（0..255）；坏值按黑处理。 */
-private fun parseHexRgb(hex: String): IntArray {
-    val cleaned = hex.trim().removePrefix("#")
-    val value = cleaned.toLongOrNull(16) ?: 0L
-    return intArrayOf(
-        ((value shr 16) and 0xFF).toInt(),
-        ((value shr 8) and 0xFF).toInt(),
-        (value and 0xFF).toInt(),
+/** Compose 色 → 模型存的 `#RRGGBB`（不透明；选色行只承载六位十六进制）。 */
+private fun Color.toHexRgb(): String {
+    val argb = toArgb()
+    return "#%02X%02X%02X".format(
+        Locale.ROOT,
+        (argb shr 16) and 0xFF,
+        (argb shr 8) and 0xFF,
+        argb and 0xFF,
     )
 }
-
-private fun rgbToHex(r: Int, g: Int, b: Int): String =
-    "#%02X%02X%02X".format(Locale.ROOT, r, g, b)
 
 // =====================================================================================
 // S2 接线：首页与导航 + 两个编辑器（真数据 / 真落盘）
@@ -1274,12 +1225,48 @@ fun TimetablePageSettingsHost(
     var pendingReset by remember { mutableStateOf<SettingsResetScope?>(null) }
     var pendingColor by remember { mutableStateOf<ColorEdit?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     fun toast(message: String) {
         if (message.isNotBlank()) {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
+
+    // spec 提出来一份：滑杆行集合要从它推（`remember(spec)`），Box 里渲染也复用这一份。
+    // 截屏检测开关的行可见性跟着设备能力走：Android 14+（官方 ScreenCaptureCallback）
+    // 才出现这一行，不支持的平台整行不出现（Dart `_screenshotShareSupported` 同口径）。
+    // 此前走桥的默认 false 恒隐藏；能力判据唯一真源在 ScreenCaptureWatcher.isSupported。
+    val spec = SettingsTimetablePageSettingsPage.spec(
+        SettingsPageBridge.toTimetablePageState(
+            model,
+            screenshotShareSupported = ScreenCaptureWatcher.isSupported,
+        ),
+    )
+
+    /**
+     * 拖动类（滑杆）行：拖动中只改内存，**250ms 静默后落一次盘**。
+     *
+     * 与 [SettingsHost] 主宿主、Dart `settings_timetable_page.dart` 同一策略。本页有四根
+     * 滑杆（行高 / 课卡间距 / 回到本周按钮不透明度 / 壁纸模糊），此前这里没有防抖：
+     * 每个拖动 tick 都会同步 `store.save()`（`commit()` 落盘）＋读回校验一次。
+     */
+    val sliderRowIds = remember(spec) {
+        spec.rowsOnScreen()
+            .filter { it.component == MiuixRowComponent.SLIDER }
+            .map { it.id }
+            .toSet()
+    }
+    val writer = remember(store) {
+        DebouncedSettingsWriter(store, scope) {
+            // 滑杆那一档没落盘：内存拉回盘上真值并提示（与主宿主 `resetDraft` 同语义）。
+            model = runCatching { store.load() }.getOrNull() ?: model
+            Log.e(LOG_TAG, "timetable-page debounced settings save did not land")
+            toast(SettingsStringsExt2.saveFailed.zh)
+        }
+    }
+    // 离开本页：把防抖里欠着的那一档补写掉（主宿主 `DisposableEffect` 同口径）。
+    DisposableEffect(writer) { onDispose { writer.flush() } }
 
     /** 算好的新模型 → 落盘 → **读回校验** → 更新状态；失败时回到盘上真值并提示。 */
     fun commitModel(next: TimetableSettingsModel): Boolean {
@@ -1307,7 +1294,17 @@ fun TimetablePageSettingsHost(
                 model = model,
             )
         ) {
-            is SettingsDispatch.Write -> commitModel(result.model)
+            is SettingsDispatch.Write -> {
+                if (actual in sliderRowIds) {
+                    // 拖动中只改内存，250ms 静默后落一次盘；预览跟着 `model` 当场变。
+                    model = result.model
+                    writer.schedule(result.model)
+                } else {
+                    // 先补写防抖里欠着的那一档，避免旧值后落地把新值盖回去（主宿主同口径）。
+                    writer.flush()
+                    commitModel(result.model)
+                }
+            }
             // 没写也要留痕：宿主不静默吞掉未知 rowId，排查时能按日志定位。
             is SettingsDispatch.Ignored -> Log.w(
                 LOG_TAG,
@@ -1326,6 +1323,7 @@ fun TimetablePageSettingsHost(
             toast(SettingsStrings.aboutUnavailable.zh)
             return
         }
+        writer.flush()
         if (commitModel(next)) {
             toast(SettingsStringsExt4.settingsResetDoneMessage.zh)
         }
@@ -1333,16 +1331,7 @@ fun TimetablePageSettingsHost(
 
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsPageScreen(
-            spec = SettingsTimetablePageSettingsPage.spec(
-                // 截屏检测开关的行可见性跟着设备能力走：Android 14+（官方
-                // ScreenCaptureCallback）才出现这一行，不支持的平台整行不出现
-                // （Dart `_screenshotShareSupported` 同口径）。此前走桥的默认 false，
-                // 恒隐藏；能力判据唯一真源在 ScreenCaptureWatcher.isSupported。
-                SettingsPageBridge.toTimetablePageState(
-                    model,
-                    screenshotShareSupported = ScreenCaptureWatcher.isSupported,
-                ),
-            ),
+            spec = spec,
             preview = preview,
             onBack = onBack,
             onAction = { action, target, rowId ->
