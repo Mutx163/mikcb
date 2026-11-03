@@ -527,6 +527,16 @@ _（空，各线按「键名建议 / 所在文件:行号 / 中文原文 / 占位
 - `qingyu_only` 索引探测：需**适配器列表加载 + host 合并**，属跨壳改动，排期做。
 - **折线点位「槽心 vs 边到边」**：已派 L1 下批处理（当前是槽心定位，Dart 为边到边，属视觉对齐差异）。
 
+#### 逻辑层（L4）第三批 ✅（2026-11-03 22:15 协调线回填）
+
+- **提交**：`76740e83`（`resolveActiveTimeScheme` null 语义）、`19af64fa`（`Locale.ROOT` 落盘字节 + year 0..99）、`31cd0fd8`（并发探针用例）。三笔均已在远端（`45dc4f89..22444ce3`）。
+
+1. **`resolveActiveTimeScheme` 去掉兜底分支**：原实现末尾 `?: schemes.firstOrNull()` 会在 id 找不到时静默回落到第一个方案；现改为**返回 null**（对齐 Dart `timetable_provider.dart:604-620` 与 `timetable_day_view_part.dart:548-560` 的 `activeTimeScheme?.sections ?? settings.sections` 语义）。已核查**所有调用方都有兜底**（null 时走 `settings.sections`），**无 NPE 风险**。
+2. **Locale 落盘字节漂移（跨端哈希隐患）**：`HolidayData.dateKey`、`ScheduleDateRuleLogic.formatIsoDate`、6 个 `core/` 文件与 `statistics/ClockTime.kt` 的 `String.format` **全部钉 `Locale.ROOT`**。理由：`ar-EG` 等区域会输出**非 ASCII 数字**（如阿拉伯-印度数字），导致**落盘字节与 Dart 不同** → 跨端哈希**误判内容变更**（与 D4 同一类根因，只是触发面在格式化侧）。新增 `CalendarLocaleAndYearGuardTest` **5 例**。
+3. **year 0..99 语义**：`parseIsoDate` 对齐 Dart `DateTime(y, m, d)` 的 **1900 + y** 解释；落到该区间的年份**返回 null**（不擅自补 1900，避免与 Dart 分叉）。
+4. **并发探针自述（过程写进用例注释，不只留结果）**：首版探针「两侧纯等长延时、写序单调」**测不出混拼**（等于没咬住）；改为「**A 第一笔落地后放行 B、A 第二笔延后 60ms**」才**必现**，失败信息 `expected:<[b1]> but was:<[a1, a2]>`。**这条过程已写进 `31cd0fd8` 的用例注释**——探针不咬合时的自述比结论更有价值，避免后人以为"跑绿即安全"。
+5. **自验与新增发现**：L0 **1841 例 0 红**；顺带发现 `TimetableProfilesController.kt:381` 有**同款 `.firstOrNull()` 假设**（同类静默回落），**已派课表线**处理。
+
 #### L2（course/timetable）结构债与 bug 修复 ✅ 已收线（2026-11-03 18:25 协调线回填）
 
 - **提交**：`f80a3c42`（结构债下沉，已在上轮推送）+ `978841df`（调课单周换周落盘 + 备注随课迁移，2 文件 +76/−22）+ `5f53e06b`（周网格去重丢卡 + 单双周后缀，4 文件 +80/−7）。
