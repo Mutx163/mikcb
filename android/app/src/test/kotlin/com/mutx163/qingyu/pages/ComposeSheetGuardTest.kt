@@ -18,6 +18,7 @@ import java.io.File
  * | S2 | 只 `imePadding()`（只让键盘） | 手势区/导航栏 + 16dp（`bottomGapInsetOf`） | 最后一排按钮贴屏幕最下沿、被小白条压住 |
  * | S3 | `textButtonColors(color = …)` 是**底色** | 危险色只染**字**（Dart `destructive` 变体） | 「红底 + 默认灰字」：既不像原版，对比度也不够 |
  * | S5 | `OverlayDialog` 缺省 `insideMargin = 24dp` | 对话框横向 16dp（与 S1 同一口径） | 内容自带边距叠上去就是 32~40dp |
+ * | S6 | 平台 `androidx.compose.ui.window.Dialog` / `Popup` | 一律走 miuix 官方 `OverlayDialog` / `QingyuSheet` / `OverlayListPopup` | 无遮罩/返回键/进出动画口径，弹层审核查漏的 11 个自建弹窗全是这种形态 |
  *
  * 32 个底部弹层里 32 个都缺 S2、27 个叠了侧边距。**根因不是缺组件，是每个调用方各自记**
  * —— 所以修法是把口径收进套件 `com.mutx163.qingyu.components.QingyuSheet`，再用这条守卫
@@ -120,8 +121,39 @@ class ComposeSheetGuardTest {
                     "第 $line 行 `OverlayDialog` 没传 `insideMargin`：官方默认 24dp，本仓口径" +
                         "横向 16dp（`DpSize(16.dp, 16.dp)`），缺省会与内容边距叠成 32~40dp"
             }
+            platformDialogUsages(text).forEach { line ->
+                result["$relative|S6"] =
+                    "第 $line 行引用平台 `androidx.compose.ui.window.Dialog/Popup`：绕开 miuix 官方" +
+                        "弹层就没有遮罩、返回键关闭与进出动画（2026-11-02 弹窗审核查漏的 11 个自建弹窗" +
+                        "全是这种形态）。改用 `OverlayDialog` / `QingyuSheet` / `OverlayListPopup`"
+            }
         }
         return result
+    }
+
+    /**
+     * 找出平台 `androidx.compose.ui.window.Dialog` / `Popup` 的引用行号（规则 S6，2026-11-03 补）。
+     *
+     * 背景：弹窗审核查漏发现 11 个自建/内联弹窗（日程族 4、云同步 2、课表管理 5）全部绕开
+     * miuix 官方弹层 —— 它们既不被 S1（`OverlayBottomSheet`）也不被 S5（`OverlayDialog`）
+     * 拦住，因为根本没调官方入口。判据只认**全限定名**（import 或全限定调用）：Kotlin 不调
+     * import / 全限定名就到不了平台 `Dialog`/`Popup`，所以这条是零误报的硬门。整行注释
+     * 先掏空（与 S5 同口径），`CourseOverviewPage.kt` 的考古 KDoc 不会误伤。
+     * 词边界 `\b` 保证 `PopupProperties` 这类同前缀类型也会被拦——它只服务于平台 `Popup`，
+     * 本就应一起走官方组件；`OverlayListPopup` 等官方组件不含该全限定名，不受影响。
+     */
+    private fun platformDialogUsages(text: String): List<Int> {
+        val hits = mutableListOf<Int>()
+        text.lineSequence().forEachIndexed { index, line ->
+            val trimmed = line.trimStart()
+            if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) {
+                return@forEachIndexed
+            }
+            if (PLATFORM_DIALOG_REF.containsMatchIn(line)) {
+                hits += index + 1
+            }
+        }
+        return hits
     }
 
     /**
@@ -346,6 +378,9 @@ class ComposeSheetGuardTest {
 
         /** 对话框口径的入口（规则 S5）。 */
         const val DIALOG_CALL = "OverlayDialog("
+
+        /** 平台 Dialog/Popup 的全限定名（规则 S6）。 */
+        val PLATFORM_DIALOG_REF = Regex("""androidx\.compose\.ui\.window\.(Dialog|Popup)\b""")
 
         const val TEXT_BUTTON_CALL = "textButtonColors("
 
