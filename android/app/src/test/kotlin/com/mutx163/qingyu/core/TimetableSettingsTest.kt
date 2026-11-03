@@ -177,11 +177,19 @@ class TimetableSettingsTest {
             semesterStartDate = DartTime.dateTime(2026, 9, 7),
         ).toJson()
         assertEquals(
-            listOf("sections", "activeTimeSchemeId", "semesterWeekCount", "semesterStartDate", "semesterStartDateText"),
+            listOf(
+                "sections",
+                "activeTimeSchemeId",
+                "semesterWeekCount",
+                "semesterStartDate",
+                "semesterStartDateText",
+                "classReminders",
+            ),
             json.keys.toList(),
         )
         assertEquals("2026-09-07", json["semesterStartDateText"])
         assertEquals(true, json["semesterStartDate"] is Long)
+        assertEquals(emptyList<Any?>(), json["classReminders"])
         assertNull(TimetableSettings().toJson()["semesterStartDate"]?.let { org.junit.Assert.assertNull(it) })
         assertNull(TimetableSettings().toJson()["semesterStartDateText"])
     }

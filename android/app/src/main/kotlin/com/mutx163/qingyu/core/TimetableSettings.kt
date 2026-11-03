@@ -14,8 +14,9 @@ import java.time.LocalDateTime
  * - [activeTimeSchemeId]（默认作息路由）
  * - [semesterWeekCount]（周次钳制）
  * - [semesterStartDate]（课次日期锚定，双键读写）
+ * - [classReminders]（单节课提醒数据源，统计「设过提醒」与课卡铃铛的唯一来源）
  *
- * toJson 只下发这四个键（键名与 Dart 逐字一致）；fromJson 对这四个键按 Dart
+ * toJson 只下发这五个键（键名与 Dart 逐字一致）；fromJson 对这五个键按 Dart
  * 口径解析，其余键忽略。**完整设置模型的合并/回写语义由设置族移植时补齐**——
  * 在那之前，Compose 侧不得用本类整体覆盖设置存档（会丢其余字段），只应按键读。
  */
@@ -24,6 +25,13 @@ data class TimetableSettings(
     val activeTimeSchemeId: String? = null,
     val semesterWeekCount: Int = 20,
     val semesterStartDate: LocalDateTime? = null,
+    /**
+     * 单节课提醒（Dart `timetable_settings.dart:615` / `:1749`）。
+     *
+     * 按「课程 × 真实日期」记录是否设过提醒；条目格式与校验见 [ClassReminderEntry]。
+     * 空表 = 真的没设过（不是「拿不到」）：数据源已接，统计与课卡都按它判。
+     */
+    val classReminders: List<ClassReminderEntry> = emptyList(),
 ) {
 
     fun toJson(): Map<String, Any?> = linkedMapOf(
@@ -34,6 +42,8 @@ data class TimetableSettings(
         // 毫秒键继续写给旧版本与旧存档（timetable_settings.dart:1069-1075）。
         "semesterStartDate" to semesterStartDate?.let { DartTime.toEpochMillis(it) },
         "semesterStartDateText" to formatSemesterStartDateText(semesterStartDate),
+        // 单节课提醒：条数少、结构固定，写侧与 Dart `timetable_settings.dart:1246` 同形。
+        "classReminders" to classReminders.map { it.toJson() },
     )
 
     fun toJsonString(): String = MiniJson.encode(toJson())
@@ -61,7 +71,8 @@ data class TimetableSettings(
          *   **整表皆坏**（healedCount == size）才整套回落（timetable_settings.dart:1320-1333）；
          * - semesterWeekCount：lenientInt ?: 20，再 _atLeastOneWeek（<1 → 1）；
          * - semesterStartDate：文本键优先、畸形文本返回 null **不**回落毫秒；
-         *   文本键缺失才回落毫秒（归一到本地零点）。
+         *   文本键缺失才回落毫秒（归一到本地零点）；
+         * - classReminders：走 [ClassReminderEntry.listFromJson]，坏条目逐条丢弃。
          */
         fun fromJson(json: Map<String, Any?>): TimetableSettings {
             val rawSections = json["sections"] as? List<*> ?: emptyList<Any?>()
@@ -79,6 +90,9 @@ data class TimetableSettings(
                     text = json["semesterStartDateText"],
                     millis = json["semesterStartDate"],
                 ),
+                // 坏条目逐条丢弃（Dart `ClassReminderEntry.listFromJson`），
+                // 单条脏数据不许把整份设置打回默认。
+                classReminders = ClassReminderEntry.listFromJson(json["classReminders"]),
             )
         }
 
