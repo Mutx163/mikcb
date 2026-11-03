@@ -93,4 +93,13 @@ object DockPagerMotion {
      * 系统值，spring 动画在缩放为 0 时会被压成零时长 —— 显式判据是双保险，且让单测可钉。
      */
     fun reducedMotion(animatorDurationScale: Float): Boolean = animatorDurationScale <= 0f
+
+    /**
+     * 该主屏条目是否把壁纸铺在自己底下（周 / 日 / 月三个视图）。
+     *
+     * 只有这三个视图是「照片在上、内容浮在玻璃上」；其余内嵌页（任务、设置、取件码…）
+     * 是不透明的主题面，坞压在它们上面时墨色必须按主题判 —— Dart 旧版对应
+     * `isInlinePage`（`timetable_glass_dock.dart:85-86` 把它算成「壁纸亮度 = null」）。
+     */
+    fun showsWallpaper(itemId: String): Boolean = HomeDockNavModel.isViewAction(itemId)
 }

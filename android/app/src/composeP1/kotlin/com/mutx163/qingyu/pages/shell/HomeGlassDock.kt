@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mutx163.qingyu.app.HomeNavigationForm
 import com.mutx163.qingyu.app.TimetableSettingsModel
+import com.mutx163.qingyu.app.rememberHomeBackdropChrome
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.SettingsMaterialModel
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
@@ -64,6 +65,15 @@ fun HomeGlassDock(
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
     replacedByRail: Boolean = false,
+    /**
+     * 坞底下是不是**壁纸**（周 / 日 / 月三个视图为 true；任务、设置这类内嵌实色页为 false）。
+     *
+     * 墨色判据（[DockInkRule]）要按「药丸 + 底下那层」的合成亮度翻黑 / 白；内嵌页底下
+     * 是不透明主题面，若仍拿壁纸亮度算，浅色主题 + 暗壁纸就会给浅底配白字。
+     * Dart 旧版对应 `isInlinePage`（`timetable_glass_dock.dart:85-86`）。
+     * 默认 true = 预览卡（外观编辑页）预览的就是课表首页，底下一定有壁纸。
+     */
+    overWallpaper: Boolean = true,
 ) {
     if (!homeDockVisible(settingsModel) || replacedByRail) return
 
@@ -86,6 +96,11 @@ fun HomeGlassDock(
         )
     }
     val roundActionId = HomeDockNavModel.roundButtonAction(settingsModel.glassDockButtonEntryId)
+    // 坞压住的那条壁纸带亮度（墨色判据的唯一输入）。壁纸解码 / 取景 / 四条亮度带
+    // 的推导只在 `rememberHomeBackdropChrome` 一处；这里只取 dock 那条，避免壳与页面
+    // 各算一份亮度。首帧同步读进程缓存，切视图不会先按主题墨色画一帧再翻面。
+    val chrome = rememberHomeBackdropChrome(settingsModel)
+    val wallpaperLuminance = if (overWallpaper) chrome.bands?.dock else null
 
     GlassDockNavigationBar(
         items = dockIds.map { HomeNavIcons.dockItem(it) },
@@ -95,6 +110,7 @@ fun HomeGlassDock(
         // 反而会多录一层、白费一次采样（与壳层同一条纪律）。
         backdrop = backdrop,
         material = material,
+        wallpaperLuminance = wallpaperLuminance,
         modifier = modifier,
         // 只有「点开换主屏内容」的条目（视图动作 / 内嵌页）才挪选中指示器；
         // 点开是推一层页面的条目（外观编辑器、表单页）主屏没换，指示器必须留在原格，

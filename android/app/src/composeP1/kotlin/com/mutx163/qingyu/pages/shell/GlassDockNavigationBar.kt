@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -74,6 +75,7 @@ import com.mutx163.qingyu.pages.settings.GlassDockIconVectors
 import com.mutx163.qingyu.pages.settings.HomeMaterialRenderSpec
 import com.mutx163.qingyu.pages.settings.LiquidGlassTuning
 import com.mutx163.qingyu.pages.settings.SurfaceMaterialState
+import com.mutx163.qingyu.theme.QingyuTheme
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -193,6 +195,12 @@ fun GlassDockNavigationBar(
      * 实体（不采样）/ 磨砂（模糊、不折射）/ 液态（模糊 + 折射 + 染色）。
      */
     material: HomeMaterialRenderSpec? = null,
+    /**
+     * 药丸底下那条壁纸的亮度（0~1，来自 `HomeBackgroundModel.InkBands.dock`）。
+     * null = 底下不是壁纸（内嵌实色页 / 没有壁纸），墨色按主题面判。
+     * 判据本身在 [DockInkRule]：标签与图标共用同一份结果，不在这里各算一套。
+     */
+    wallpaperLuminance: Double? = null,
     modifier: Modifier = Modifier,
     maxWidthDp: Int = 380,
     trailingContent: (@Composable () -> Unit)? = null,
@@ -208,7 +216,6 @@ fun GlassDockNavigationBar(
     val safeIndex = if (hasSelection) selectedIndex else 0
     val colors = MiuixTheme.colorScheme
     val accentColor = colors.primary
-    val tabContentColor = colors.onBackground
     val surfaceContainer = colors.surfaceContainer
     val isDark = surfaceContainer.luminanceIsDark()
 
@@ -235,6 +242,29 @@ fun GlassDockNavigationBar(
             surfaceContainer.copy(alpha = material.liquidTintAlpha.coerceIn(0f, 0.9f))
         else -> surfaceContainer.copy(alpha = 0.4f)
     }
+
+    // ── 标签 / 图标墨色（唯一判据 DockInkRule，2026-11-03）──
+    //
+    // 以前固定取 `colors.onBackground`：浅色主题 + 暗壁纸就是「近黑的字压暗照片」，
+    // 深色主题 + 亮壁纸反过来；药丸染色强度从 0 拉到 0.9 时也没有任何跟随。
+    // 现在把「药丸染色 + 底下壁纸」合成成一个有效亮度，再按 Dart 旧版那条 0.45 阈值
+    // 翻黑 / 白。壁纸亮度只在真有采样、且宿主确认「这一页底下是壁纸」时参与
+    //（`wallpaperLuminance == null` ⇒ 内嵌实色页，按主题面判）。
+    val surfaceLuminance = HomeBackgroundModel.relativeLuminance(surfaceContainer.toArgb())
+    val dockLuminance = DockInkRule.effectiveLuminance(
+        surfaceLuminance = surfaceLuminance,
+        wallpaperLuminance = if (isBlurActive) wallpaperLuminance else null,
+        tintAlpha = containerColor.alpha.toDouble(),
+    )
+    val inkState = DockInkRule.resolve(dockLuminance, isDarkTheme = isDark)
+    // 墨色本体仍是主题令牌（与课表顶栏同一套近白 / 近黑），不在这里写死色值。
+    val baseInk = Color(QingyuTheme.primaryText(dark = inkState.useLightInk))
+    val selectedInk = if (inkState.selectedUsesAccent) {
+        accentColor
+    } else {
+        baseInk.copy(alpha = inkState.selectedAlpha)
+    }
+    val unselectedInk = baseInk.copy(alpha = inkState.unselectedAlpha)
     val dockBlurRadiusPx = with(density) {
         (material?.liquidBlurSigma ?: GlassDockGeometry.GlassBlurRadiusDp).dp.toPx()
     }
@@ -449,6 +479,9 @@ fun GlassDockNavigationBar(
     /** 条目内容。**被复用三次**：外壳、② 折射副本、③ 指示器副本。 */
     val tabsContent: @Composable RowScope.() -> Unit = {
         items.forEachIndexed { index, item ->
+            // 选中墨色跟**报告的选中项**走（safeIndex），不跟拖动中的动画索引：
+            // 否则手指拖过中间格时中间格会先亮一下。
+            val itemInk = if (hasSelection && index == safeIndex) selectedInk else unselectedInk
             Column(
                 modifier = Modifier
                     .semantics(mergeDescendants = true) {
@@ -473,27 +506,32 @@ fun GlassDockNavigationBar(
                 ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(
-                    modifier = Modifier.size(GlassDockGeometry.GlassIconSizeDp.dp),
-                    imageVector = item.icon,
-                    // 装饰性：相邻的文字已经说明了这一项是什么，
-                    // 这里再给 contentDescription 会让读屏念两遍。
-                    contentDescription = null,
-                )
-                val label = item.label
-                if (label != null) {
-                    Text(
-                        text = label,
-                        style = labelStyle.shiftWeight(
-                            if (hasSelection && index == currentIndex) {
-                                QingyuWeightDelta.SEMIBOLD
-                            } else {
-                                0
-                            },
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                // 图标与文字共用这一份 [itemInk]（判据只有 DockInkRule 一处）：
+                // 以前图标吃的是 `LocalContentColor` 的主题墨色、文字有时被另一层
+                // provider 覆盖，于是会出现「图标还行、字发灰」。
+                CompositionLocalProvider(LocalContentColor provides itemInk) {
+                    Icon(
+                        modifier = Modifier.size(GlassDockGeometry.GlassIconSizeDp.dp),
+                        imageVector = item.icon,
+                        // 装饰性：相邻的文字已经说明了这一项是什么，
+                        // 这里再给 contentDescription 会让读屏念两遍。
+                        contentDescription = null,
                     )
+                    val label = item.label
+                    if (label != null) {
+                        Text(
+                            text = label,
+                            style = labelStyle.shiftWeight(
+                                if (hasSelection && index == currentIndex) {
+                                    QingyuWeightDelta.SEMIBOLD
+                                } else {
+                                    0
+                                },
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -532,7 +570,7 @@ fun GlassDockNavigationBar(
             // 一层 4dp 内边距；那 4dp 是 Row 自己 `.height().padding(4.dp)` 的内边距。
             // 这里曾经多包了一层：玻璃因此比 demo 窄 8dp、整体还右下各偏 4dp，而指示器
             // 仍按外层坐标摆放 —— 结果选中块在左端贴死玻璃边、右端却空出 4dp，两端不对称。
-            CompositionLocalProvider(LocalContentColor provides tabContentColor) {
+            CompositionLocalProvider(LocalContentColor provides unselectedInk) {
                 Row(
                     modifier = Modifier
                         .selectableGroup()

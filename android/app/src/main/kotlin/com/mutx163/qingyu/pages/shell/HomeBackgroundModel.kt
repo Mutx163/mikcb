@@ -242,6 +242,18 @@ object HomeBackgroundModel {
     const val BODY_BAND_TO = 0.72
 
     /**
+     * 玻璃坞（底部药丸）压住的那条带：从药丸上沿到系统手势条上沿。
+     *
+     * 这是 Compose 侧新加的第四条带（Dart 旧版没有，坞借的是 `body`）：坞贴在屏幕
+     * **底部**，而正文带在 0.72 就截止了。照片下半部（山体 / 建筑 / 夜色）通常比
+     * 中段暗得多，「正文区亮、坞底下暗」时按正文带判会把坞的字判成深色，压在暗底上
+     * 看不见（2026-11-03 用户报「底栏字体反色有问题」的真机截图就是这种构图）。
+     * 区间取药丸本体（高 64dp + 底部内边距，约在 78%~96% 视口高），不含状态栏侧。
+     */
+    const val DOCK_BAND_FROM = 0.78
+    const val DOCK_BAND_TO = 0.96
+
+    /**
      * miuix-blur 的 blur **半径**换算成 sigma 的斜率。
      *
      * 出处：`top.yukonga.miuix.kmp.blur` 内部 `BLUR_RADIUS_TO_SIGMA = 0.45f`
@@ -540,7 +552,7 @@ object HomeBackgroundModel {
      * 「顶栏」那一档决定 chrome 的翻面；星期栏/正文档位决定**压在壁纸上的那些字**
      * （星期栏、时间列、日视图空态）该用深墨还是浅墨。三档来自同一张位图、一次扫描。
      */
-    data class InkBands(val top: Double?, val weekday: Double?, val body: Double?)
+    data class InkBands(val top: Double?, val weekday: Double?, val body: Double?, val dock: Double? = null)
 
     /**
      * 压在壁纸上的墨色（Dart `homePageOverWallpaperInk`，`home_page_background.dart:763-799`）。

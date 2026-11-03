@@ -893,6 +893,9 @@ private fun PagesShell(
                                 // 设备不支持 runtime shader 时别把 backdrop 传进去：
                                 // 传了也画不出模糊，反而会多录一层、白费一次采样。
                                 backdrop = if (glassAvailable) backdrop else null,
+                                // 墨色判据要知道「坞底下是不是照片」：周 / 日 / 月视图是，
+                                // 任务、设置这些内嵌页是不透明主题面（Dart `isInlinePage` 同口径）。
+                                overWallpaper = DockPagerMotion.showsWallpaper(currentRootId),
                                 modifier = Modifier.align(Alignment.BottomCenter),
                             )
                         }

@@ -481,7 +481,12 @@ private fun measureInkBands(
     val toColumn = (width * (left + sourceWidth)).toInt().coerceIn(fromColumn + 1, width)
     val firstRow = ((top + sourceHeight * HomeBackgroundModel.CHROME_TOP_BAND_FROM) * height)
         .toInt().coerceIn(0, height - 1)
-    val lastRow = ((top + sourceHeight * HomeBackgroundModel.BODY_BAND_TO) * height)
+    // 扫到最低那条带的底：正文带止于 0.72，玻璃坞带要一直读到 0.96
+    //（坞的墨色判据用它，见 `HomeBackgroundModel.DOCK_BAND_FROM`）。
+    val lastRow = ((top + sourceHeight * maxOf(
+        HomeBackgroundModel.BODY_BAND_TO,
+        HomeBackgroundModel.DOCK_BAND_TO,
+    )) * height)
         .toInt().coerceIn(firstRow + 1, height)
     val pixels = IntArray(width * lastRow)
     bitmap.getPixels(pixels, 0, width, 0, 0, width, lastRow)
@@ -522,6 +527,10 @@ private fun measureInkBands(
         body = band(
             HomeBackgroundModel.BODY_BAND_FROM,
             HomeBackgroundModel.BODY_BAND_TO,
+        ),
+        dock = band(
+            HomeBackgroundModel.DOCK_BAND_FROM,
+            HomeBackgroundModel.DOCK_BAND_TO,
         ),
     )
 }.getOrNull()
