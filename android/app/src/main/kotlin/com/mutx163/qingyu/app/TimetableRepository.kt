@@ -386,8 +386,15 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         settings: TimetableSettings,
+        /**
+         * 可选的日历周（调用方已按新 [settings] 算好并 clamp）。
+         *
+         * 非空时与 [profiles] / [settings] 在**同一次锁定写入**里落盘（`current_week` 键 +
+         * 活动档案内嵌的 `currentWeek`），并且仍然只通知一次；为空时行为与旧签名完全一致。
+         */
+        currentWeek: Int? = null,
     ) {
-        replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings)
+        replaceAllProfilesAndSettingsLocked(profiles, activeProfileId, settings, currentWeek)
         drainPendingNotify()
         // 日期规则自动套用会整块换档案（含日程与考试），绕过了写服务的提醒漏斗，
         // 这里补一次重排（`ScheduleReminderScheduler.reconcile` KDoc 列明的
@@ -400,13 +407,31 @@ class TimetableRepository(private val store: TimetableStore) : TimetableCoursePo
         profiles: List<TimetableProfile>,
         activeProfileId: String?,
         settings: TimetableSettings,
+        currentWeek: Int?,
     ) {
+        // 周次非空：先把新设置下的钳制结果同步进活动档案（Dart `_persistActiveProfileState`
+        // 的一致性口径），再与其余 key 一起落盘。悬空 id 回落第一份，与 [reload] 读侧一致。
+        val clampedWeek = currentWeek
+            ?.let { clampCurrentWeekToSettings(it.toLong(), settings).toInt() }
+        val nextProfiles = if (clampedWeek == null) {
+            profiles
+        } else {
+            val targetId = activeProfileId
+                ?.takeIf { id -> profiles.any { it.id == id } }
+                ?: profiles.firstOrNull()?.id
+            profiles.map { profile ->
+                if (profile.id == targetId) profile.copy(currentWeek = clampedWeek.toLong())
+                else profile
+            }
+        }
         store.saveSettings(settings)
-        store.saveProfiles(profiles)
+        store.saveProfiles(nextProfiles)
         store.saveActiveProfileId(activeProfileId)
+        if (clampedWeek != null) store.saveCurrentWeek(clampedWeek)
         loadedSettings = settings
-        loadedProfiles = profiles
+        loadedProfiles = nextProfiles
         loadedActiveProfileId = activeProfileId
+        if (clampedWeek != null) loadedCurrentWeek = clampedWeek
         pendingNotify = true
     }
 

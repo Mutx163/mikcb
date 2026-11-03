@@ -392,6 +392,52 @@ class TimetableRepositoryTest {
     }
 
     @Test
+    fun replaceAllProfilesAndSettingsWritesCurrentWeekInSamePassAndNotifiesOnce() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        val seen = mutableListOf<TimetableSnapshot>()
+        repository.observe { seen.add(it) }
+
+        val settings = TimetableSettings(semesterWeekCount = 18)
+        repository.replaceAllProfilesAndSettings(
+            profiles = listOf(profile("p1")),
+            activeProfileId = "p1",
+            settings = settings,
+            currentWeek = 7,
+        )
+
+        assertEquals("一次写入只通知一次", 1, seen.size)
+        assertEquals(7, seen[0].currentWeek)
+        assertEquals(7, repository.snapshot.currentWeek)
+        // 活动档案内嵌的 currentWeek 与全局周次一致（Dart _persistActiveProfileState 口径）。
+        assertEquals(7L, repository.snapshot.profiles.single().currentWeek)
+        assertEquals("7", raw.rawSnapshot()["flutter.current_week"])
+
+        // 「杀进程重开」：同一份盘、新的仓储实例，周次读回相同。
+        val reopened = TimetableRepository(TimetableStore(raw))
+        assertEquals(7, reopened.snapshot.currentWeek)
+        assertEquals(7L, reopened.snapshot.profiles.single().currentWeek)
+    }
+
+    @Test
+    fun replaceAllProfilesAndSettingsWithoutCurrentWeekLeavesWeekUntouched() {
+        val raw = InMemoryKeyValueStore()
+        val repository = TimetableRepository(TimetableStore(raw))
+        repository.updateSettings(TimetableSettings(semesterWeekCount = 20))
+        repository.setCurrentWeek(5)
+
+        repository.replaceAllProfilesAndSettings(
+            profiles = listOf(profile("p1")),
+            activeProfileId = "p1",
+            settings = TimetableSettings(semesterWeekCount = 20),
+            // 不传 currentWeek：与旧签名行为一致，盘上的周次不动。
+        )
+
+        assertEquals(5, repository.snapshot.currentWeek)
+        assertEquals("5", raw.rawSnapshot()["flutter.current_week"])
+    }
+
+    @Test
     fun setCurrentWeekOnWriteFailureDoesNotNotify() {
         val failing = FailingWriteStore()
         val repository = TimetableRepository(TimetableStore(failing))
